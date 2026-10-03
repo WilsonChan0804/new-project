@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>LWK Viewer - Board</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="board.css">
+</head>
+<body class="board-page own-nav">
+<header>
+  <b class="brand">LWK Viewer</b>
+  <div class="seg">
+    <a id="to-sheets" class="seg-btn" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" href="model.html">3D</a>
+    <span class="seg-btn on">Board</span>
+    <a id="to-dash" class="seg-btn" href="dashboard.html">Dashboard</a>
+  </div>
+  <select id="b-project" title="Project"></select>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="b-who"></span>
+    <a href="#" id="d-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<!-- The board's own strip: which board, who is here, is it saved. -->
+<div id="bd-bar">
+  <button id="bd-menu" class="bar-btn" title="All boards of this project"><span class="i" data-icon="menu"></span><span class="lab">Boards</span></button>
+  <input id="bd-title" type="text" maxlength="120" spellcheck="false" title="Board name - click to rename" disabled>
+  <span id="bd-edited" class="muted"></span>
+  <span class="spacer"></span>
+  <span id="bd-readonly" class="ro-pill" hidden title="Your role on this project is Viewer: you can look, but not change the board">View only</span>
+  <div id="bd-people" title="Who is on this board now"></div>
+  <span id="bd-save" class="save-pill" hidden></span>
+  <span id="bd-timer-view" hidden></span>
+  <div id="bd-search" hidden>
+    <input id="bd-search-in" type="search" placeholder="Find text on this board" autocomplete="off">
+    <span id="bd-search-n" class="muted"></span>
+    <button id="bd-search-prev" class="bar-btn" title="Previous match (Shift+Enter)"><span class="i" data-icon="chevl"></span></button>
+    <button id="bd-search-next" class="bar-btn" title="Next match (Enter)"><span class="i" data-icon="chevr"></span></button>
+    <button id="bd-search-x" class="bar-btn" title="Close (Esc)"><span class="i" data-icon="close"></span></button>
+  </div>
+  <button id="bd-search-btn" class="bar-btn" title="Find text on this board (Ctrl+F)"><span class="i" data-icon="search"></span></button>
+  <button id="bd-timer-btn" class="bar-btn" title="A countdown everyone on the board sees"><span class="i" data-icon="timer"></span></button>
+  <button id="bd-present" class="bar-btn" title="Show the frames one after another"><span class="i" data-icon="play"></span><span class="lab">Present</span></button>
+  <button id="bd-export" class="bar-btn" title="Save as a picture, or back the board up"><span class="i" data-icon="download"></span><span class="lab">Export</span></button>
+  <button id="bd-help" class="bar-btn" title="Keyboard shortcuts (?)"><span class="i" data-icon="help"></span></button>
+</div>
+
+<div id="bd-main">
+  <aside id="bd-list" hidden>
+    <div class="bl-head">
+      <b>Boards</b>
+      <span class="spacer"></span>
+      <button id="bl-new" title="Start a new board from a template"><span class="i" data-icon="plus"></span> New board</button>
+      <button id="bl-close" class="ghost" title="Close"><span class="i" data-icon="close"></span></button>
+    </div>
+    <ul id="bl-items"></ul>
+    <div class="bl-foot">
+      <button id="bl-import" class="ghost" title="Bring in a board saved with Export - Backup (.json)"><span class="i" data-icon="upload"></span> Import a backup</button>
+    </div>
+  </aside>
+
+  <div id="bd-stage" tabindex="-1">
+    <div id="bd-world">
+      <div id="bd-objs"><svg id="bd-branches" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <svg id="bd-conns" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div id="bd-labels"></div>
+      <div id="bd-cursors"></div>
+    </div>
+    <div id="bd-overlay"></div>
+
+    <div id="bd-tools" role="toolbar" aria-label="Tools"></div>
+    <div id="bd-toolopts" hidden></div>
+    <div id="bd-ctx" hidden></div>
+    <div id="bd-pop" hidden></div>
+
+    <div id="bd-zoom">
+      <button id="z-map" class="ghost" title="Overview map"><span class="i" data-icon="map"></span></button>
+      <button id="z-out" class="ghost" title="Zoom out (-)"><span class="i" data-icon="minus"></span></button>
+      <button id="z-100" class="ghost" title="Back to 100% (Ctrl+0)">100%</button>
+      <button id="z-in" class="ghost" title="Zoom in (+)"><span class="i" data-icon="plus"></span></button>
+      <button id="z-fit" class="ghost" title="Fit everything on the screen (Shift+1)"><span class="i" data-icon="fit"></span></button>
+    </div>
+    <canvas id="bd-mini" width="200" height="130" hidden></canvas>
+    <div id="bd-info" hidden></div>
+    <div id="bd-present-bar" hidden>
+      <button id="pr-prev" title="Previous (left arrow)"><span class="i" data-icon="chevl"></span></button>
+      <span id="pr-label"></span>
+      <button id="pr-next" title="Next (right arrow, space)"><span class="i" data-icon="chevr"></span></button>
+      <button id="pr-stop" title="Stop (Esc)"><span class="i" data-icon="close"></span></button>
+    </div>
+
+    <!-- No board open: what to start from, and what is already there. -->
+    <div id="bd-home" hidden>
+      <div class="home-card">
+        <h2>Boards</h2>
+        <p class="muted" id="home-lead">A free canvas for the project team: mind maps, ideas, rules and settings, general notes. Everyone on the project sees the same board and can work on it together.</p>
+        <h3 id="home-new-h">Start a new board</h3>
+        <div class="tpl-grid" id="home-tpls"></div>
+        <h3 id="home-list-h" hidden>Open a board</h3>
+        <ul id="home-items" class="home-items"></ul>
+        <p id="bd-msg" class="muted"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comments on one object. -->
+  <aside id="bd-thread" hidden>
+    <div class="th-head"><b>Comments</b><span id="th-on" class="muted"></span><span class="spacer"></span>
+      <button id="th-close" class="ghost" title="Close"><span class="i" data-icon="close"></span></button></div>
+    <div id="th-list"></div>
+    <div class="th-new"><textarea id="th-text" rows="2" maxlength="2000" placeholder="Write a comment ..."></textarea>
+      <button id="th-send" class="primary">Send</button></div>
+  </aside>
+</div>
+
+<!-- New board: a name and a template. -->
+<div id="bd-new-back" class="bd-back" hidden>
+  <form id="bd-new" class="bd-dlg" onsubmit="return false">
+    <h3>New board</h3>
+    <label>Name<input id="nb-title" type="text" maxlength="120" placeholder="e.g. Facade workshop, BIM rules, Week 12 ideas"></label>
+    <div class="tpl-grid" id="nb-tpls"></div>
+    <div class="row end"><button type="button" id="nb-cancel" class="ghost">Cancel</button><button type="button" id="nb-go" class="primary">Create</button></div>
+  </form>
+</div>
+
+<!-- Link a card to an issue or a sheet of this project. -->
+<div id="bd-link-back" class="bd-back" hidden>
+  <div id="bd-link" class="bd-dlg wide">
+    <h3>Link to the project</h3>
+    <div class="lk-tabs"><button id="lk-tab-issue" class="on">Issues</button><button id="lk-tab-sheet">Sheets</button></div>
+    <input id="lk-q" type="search" placeholder="Search by number, title, person or status" autocomplete="off">
+    <ul id="lk-list"></ul>
+    <div class="row end"><button type="button" id="lk-cancel" class="ghost">Cancel</button></div>
+  </div>
+</div>
+
+<div id="bd-help-back" class="bd-back" hidden>
+  <div id="bd-help-dlg" class="bd-dlg wide">
+    <h3>Keyboard and touch</h3>
+    <div id="help-body"></div>
+    <div class="row end"><button type="button" id="help-close">Close</button></div>
+  </div>
+</div>
+
+<div id="bd-ask-back" class="bd-back" hidden>
+  <div id="bd-ask" class="bd-dlg">
+    <p id="ask-text"></p>
+    <div class="row end"><button type="button" id="ask-no" class="ghost">Cancel</button><button type="button" id="ask-yes" class="danger">Delete</button></div>
+  </div>
+</div>
+
+<div id="bd-toast" hidden></div>
+<input id="bd-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+<input id="bd-import-file" type="file" accept=".json,application/json" hidden>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="board.js"></script>
+<script type="module" src="offline.js"></script>
+</body>
+</html>

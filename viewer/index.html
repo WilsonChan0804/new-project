@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>LWK Viewer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234c8dff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LWK Viewer">
+<meta name="theme-color" content="#f28022">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="brand">LWK Viewer</div>
+  <div class="mode">
+    <button class="active">Sheets</button>
+    <button onclick="location.href='model.html'+(new URLSearchParams(location.search).get('project')?'?project='+encodeURIComponent(new URLSearchParams(location.search).get('project')):'')">3D</button>
+  </div>
+  <div id="project" class="muted"></div>
+  <select id="proj-switch" hidden title="Switch project"></select>
+  <div id="conn" class="conn" title="Connection to the server">offline</div>
+  <div class="spacer"></div>
+  <div class="mode" title="What finishing a markup does">
+    <button id="mode-comment" class="active">Comment</button>
+    <button id="mode-issue">Issue</button>
+  </div>
+  <button id="files-btn" class="ghost" data-icon="download" title="Download or bring in PDFs, comments and issues (JSON), and BCF">Files &#9662;</button>
+  <span class="hdr-files" hidden>
+    <button id="export-pdf" class="ghost" data-icon="download"
+      title="Download the sheets with their markups as a PDF">PDF</button>
+    <button id="import-pdf-btn" class="ghost" data-icon="upload"
+      title="Add a PDF drawing made outside Revit to the sheet list">PDF</button>
+    <input id="import-pdf" type="file" accept="application/pdf,.pdf" hidden>
+    <span class="hdr-sep"></span>
+    <button id="export-json" class="ghost" data-icon="download"
+      title="Download all comments and issues as a JSON file">JSON</button>
+    <button id="import-btn" class="ghost" data-icon="upload"
+      title="Bring in comments and issues from a JSON file">JSON</button>
+    <input id="import-json" type="file" accept="application/json,.json" hidden>
+    <span class="hdr-sep"></span>
+    <button id="export-bcf" class="ghost" data-icon="export"
+      title="Download issues as BCF for Revit or Navisworks">BCF</button>
+  </span>
+  <!-- an older JSON export in a format the importer cannot read back -->
+  <button id="export-all" hidden>Export JSON</button>
+</header>
+
+<div id="layout">
+
+  <aside id="sheets">
+    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
+      Sheets <span id="sheet-total" class="count-chip"></span>
+      <span class="spacer"></span>
+    </div>
+    <div class="sheet-find">
+      <input type="search" id="sheet-find" placeholder="Search all sheets (numbers, names, words on the drawings)"
+        title="Searches sheet numbers and names at once, and every word printed on every drawing (read the first time, then kept on the server)">
+      <div id="sheet-find-note" class="muted" hidden></div>
+    </div>
+    <ul id="sheet-list"></ul>
+    <ul id="find-list" hidden></ul>
+  </aside>
+
+  <main id="stage">
+
+    <div id="toolbar">
+      <div class="tools" id="tools"></div>
+      <div class="spacer"></div>
+      <button id="show-markups" class="ghost"
+        title="Hide all markups">&#128065;</button>
+      <button id="hide-done" class="ghost" title="Hide resolved and closed issues on the drawing">&#10003; Hide closed</button>
+      <button id="split-toggle" class="ghost"
+        title="Read a second sheet alongside this one">&#9707; Split</button>
+      <button id="links-toggle" class="ghost active"
+        title="Section marks, callouts and elevation markers as links to their sheets">&#8599; Links</button>
+      <button id="links-back" class="ghost" hidden title="Back to the sheet you came from"></button>
+      <button id="cmp-toggle" class="ghost"
+        title="Compare this sheet with an earlier version: red is removed, green is added">&#8646; Compare</button>
+      <button id="sync-toggle" class="ghost"
+        title="The model beside the sheet: click a plan to go there in 3D, and see where you are in 3D on the sheet">&#9635; 2D + 3D</button>
+      <span class="sep"></span>
+      <button id="undo" class="ghost" disabled title="Undo (Ctrl+Z)">&#8630;</button>
+      <button id="redo" class="ghost" disabled title="Redo (Ctrl+Y)">&#8631;</button>
+      <span class="sep"></span>
+      <label class="p" title="Drawing scale for Measure, Area and Angle. Leave blank to use the scale recorded for the viewport.">1:
+        <input id="meas-scale" type="number" min="1" step="1"
+          placeholder="auto" style="width:60px">
+      </label>
+      <span class="sep"></span>
+      <div class="zoom">
+        <button id="rotate" title="Rotate page 90 degrees">&#8635;</button>
+        <button id="zoom-out">&minus;</button>
+        <span id="zoom-label">100%</span>
+        <button id="zoom-in">+</button>
+        <button id="zoom-fit" class="ghost">Fit</button>
+      </div>
+    </div>
+
+    <div id="props">
+      <label class="p" title="The layer new markups go on (and, with markups selected, the layer they are moved to)">Layer
+        <select id="p-layer" style="max-width:130px"></select></label>
+      <button id="layers-btn" class="ghost" title="Show or hide markup layers" style="font-size:11px;padding:2px 8px">Layers</button>
+      <span class="sep"></span>
+      <label class="p">Line<input type="color" id="p-color" value="#ff3b30"></label>
+      <label class="p">Fill<input type="color" id="p-fill" value="#ff3b30"></label>
+      <label class="p" title="Colour of text, labels and measurement values - separate from the line">Text<input type="color" id="p-tcolor" value="#ff3b30"></label>
+      <label class="p">Opacity<input type="range" id="p-fillop" min="0" max="100" value="0"></label>
+      <label class="p">Weight
+<input id="p-width" type="number" list="dl-width" value="0.5"
+          min="0.05" max="20" step="0.05" style="width:62px"
+          title="Line weight in paper millimetres - pick one or type any value">
+      </label>
+      <label class="p">Type
+        <select id="p-dash">
+          <option value="none">Solid</option>
+          <option value="dash">Dashed</option>
+          <option value="dot">Dotted</option>
+          <option value="dashdot">Dash-dot</option>
+        </select>
+      </label>
+      <span class="sep"></span>
+      <label class="p">Font
+        <select id="p-font">
+          <optgroup label="Sans">
+            <option>Segoe UI</option><option>Arial</option><option>Arial Narrow</option><option>Calibri</option>
+            <option>Tahoma</option><option>Verdana</option><option>Century Gothic</option><option>Helvetica</option></optgroup>
+          <optgroup label="Serif"><option>Times New Roman</option><option>Georgia</option><option>Cambria</option></optgroup>
+          <optgroup label="Drawing and code"><option>ISOCPEUR</option><option>Consolas</option><option>Courier New</option></optgroup>
+          <optgroup label="Hand"><option>Segoe Print</option><option>Comic Sans MS</option></optgroup>
+          <optgroup label="Chinese"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>Microsoft YaHei</option><option>SimSun</option><option>PingFang TC</option></optgroup>
+        </select>
+      </label>
+      <label class="p">Size
+<input id="p-size" type="number" list="dl-size" value="3.5"
+          min="0.5" max="200" step="0.5" style="width:62px"
+          title="Text height in paper millimetres - pick one or type any value">
+      </label>
+      <label class="p">Align
+        <select id="p-align">
+          <option value="start">Left</option>
+          <option value="middle">Centre</option>
+          <option value="end">Right</option>
+        </select>
+      </label>
+      <span class="sep"></span>
+      <span id="a-geom" hidden title="Exact position and size, in paper millimetres">
+        <label class="p">X<input id="g-x" type="number" step="0.5" style="width:62px"></label>
+        <label class="p">Y<input id="g-y" type="number" step="0.5" style="width:62px"></label>
+        <label class="p">W<input id="g-w" type="number" step="0.5" min="0" style="width:58px"></label>
+        <label class="p">H<input id="g-h" type="number" step="0.5" min="0" style="width:58px"></label>
+        <label class="p">&ang;<input id="g-r" type="number" step="1" style="width:52px"></label>
+      </span>
+      <label class="p" id="a-scale-wrap" hidden
+        title="Scale of the selected measurements. Changing it re-reads only them.">
+        Scale 1:<input id="a-scale" type="number" min="1" step="1" style="width:60px">
+      </label>
+      <button id="a-rotl" class="ghost" disabled title="Rotate 90 degrees anticlockwise (Shift+R)">&#8634;</button>
+      <button id="a-rotr" class="ghost" disabled title="Rotate 90 degrees clockwise (R)">&#8635;</button>
+      <button id="a-group" class="ghost" disabled title="Group the selected markups: they then select, move, rotate and take an issue together (Ctrl+G)">&#9635; Group</button>
+      <button id="a-ungroup" class="ghost" hidden title="Ungroup (Ctrl+Shift+G)">Ungroup</button>
+      <button id="a-issue" class="ghost" disabled data-icon="issue" title="Raise an issue on the selected markup">Issue</button>
+      <button id="a-copy" class="ghost" disabled data-icon="copy" title="Copy (Ctrl+C), paste with Ctrl+V">Copy</button>
+      <button id="a-paste" class="ghost" data-icon="paste" title="Paste (Ctrl+V) - onto another sheet at the same spot">Paste</button>
+      <button id="a-delete" class="ghost" disabled data-icon="trash" title="Delete (Del)">Delete</button>
+    </div>
+
+    <div id="cmp-bar" hidden>
+      <b>Compare</b>
+      <select id="cmp-src" title="What to compare this sheet with"></select>
+      <input id="cmp-file" type="file" accept="application/pdf,.pdf" hidden>
+      <span class="seg" id="cmp-view" title="What to show">
+        <button data-v="diff" class="ghost active">Changes</button>
+        <button data-v="old" class="ghost">Earlier</button>
+        <button data-v="new" class="ghost">Current</button>
+      </span>
+      <span id="cmp-legend" class="cmp-legend">
+        <span><i class="rm"></i>Removed</span><span><i class="add"></i>Added</span><span><i class="same"></i>Unchanged</span>
+      </span>
+      <span class="cmp-nav">
+        <button id="cmp-prev" class="ghost" disabled title="Previous change (Shift+N)">&#9664;</button>
+        <span id="cmp-count"></span>
+        <button id="cmp-next" class="ghost" disabled title="Next change (N)">&#9654;</button>
+      </span>
+      <label class="row-check" title="Outline each changed area"><input id="cmp-boxes" type="checkbox" checked> Outline</label>
+      <span id="cmp-status" class="muted"></span>
+      <span class="spacer"></span>
+      <button id="cmp-close" class="ghost" title="Stop comparing">&#10005;</button>
+    </div>
+
+    <div id="stage-row">
+    <div id="scroll">
+      <button id="poly-finish" hidden title="Finish the polyline or polygon">
+    &#10003; Finish</button>
+  <div id="page">
+        <canvas id="pdf"></canvas>
+        <canvas id="pdf-detail" hidden></canvas>
+        <canvas id="cmp" hidden></canvas>
+        <div id="textlayer" class="textLayer" hidden></div>
+        <svg id="find-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="inklayer" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="linklayer"></div>
+      </div>
+      <div id="empty" class="muted">Pick a sheet to start.</div>
+    </div>
+
+    <section id="split-pane" hidden>
+      <div id="split-bar">
+        <select id="split-sheet" title="Sheet to read alongside"></select>
+        <button id="split-out" class="ghost" title="Zoom out">&minus;</button>
+        <button id="split-in" class="ghost" title="Zoom in">+</button>
+        <button id="split-fit" class="ghost">Fit</button>
+        <span id="split-status" class="muted"></span>
+        <span class="spacer"></span>
+        <button id="split-close" class="ghost" title="Close the second sheet">&#10005;</button>
+      </div>
+      <div id="split-scroll">
+        <div id="split-page">
+          <canvas id="split-pdf"></canvas>
+          <canvas id="split-detail" hidden></canvas>
+          <svg id="split-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="sync-pane" hidden>
+      <div id="sync-bar">
+        <b>3D</b>
+        <span class="seg" id="sync-click" title="What a click on a plan does in 3D">
+          <button data-v="walk" class="ghost active">Stand there</button>
+          <button data-v="look" class="ghost">Look at</button>
+        </span>
+        <button id="sync-walk" class="ghost" data-icon="walk" title="Walk: click a plan on the sheet, or a floor in 3D, to stand there">Walk</button>
+        <label class="row-check" title="Keep the you-are-here marker in view, and open the plan of the floor you walk onto">
+          <input id="sync-follow" type="checkbox" checked> Follow</label>
+        <button id="sync-issue" class="ghost" data-icon="issue" title="Raise an issue in the 3D view: click this, then click the spot in 3D">Issue</button>
+        <button id="sync-pins" class="ghost active" title="Show or hide the issue markers in the 3D view">Issues</button>
+        <button id="sync-depth" class="ghost" title="Depth: soft shadows in corners and fine lines on edges">Depth</button>
+        <span id="sync-status" class="muted"></span>
+        <span class="spacer"></span>
+        <button id="sync-open" class="ghost" title="Open the full 3D page">&#8599;</button>
+        <button id="sync-close" class="ghost" title="Close the 3D view">&#10005;</button>
+      </div>
+      <div id="sync-host"></div>
+    </section>
+    </div>
+
+    <div id="errlog" hidden></div>
+    <div id="status-row"><div id="status" class="muted"></div>
+      <span id="sheet-perf-live" class="muted"></span>
+      <a href="#" id="sheet-perf-open" title="How long this sheet took to load and draw, and memory - with a Copy button">Performance</a></div>
+    <div id="sheet-perf-panel" hidden>
+      <div class="walk-head"><b>Performance</b><span class="spacer"></span>
+        <button id="sheet-perf-copy" class="ghost">Copy</button>
+        <button id="sheet-perf-close" class="ghost">Close</button></div>
+      <div class="perf-set">
+        <label title="Automatic: big drawings, slow lines, phones and tablets are shown from the server's pictures (fast, light); others from the PDF (sharp at any zoom)">Drawing
+          <select id="sheet-draw"><option value="">automatic</option><option value="tiles">server pictures (fast)</option><option value="pdf">PDF (sharpest)</option></select></label>
+      </div>
+      <pre id="sheet-perf-text"></pre>
+    </div>
+  </main>
+
+  <aside id="items">
+    <div class="panel-head" style="display:flex;align-items:center;gap:8px">
+      <span id="filter-tabs">
+        <button data-filter="all" class="active">All</button>
+        <button data-filter="issue">Issues</button>
+        <button data-filter="comment">Comments</button>
+      </span>
+      <span class="spacer"></span>
+      <span id="issue-total" class="muted" style="font-weight:400"></span>
+    </div>
+    <div id="group-bar">
+      Group
+      <select id="group-by">
+        <option value="sheet" selected>Sheet</option>
+        <option value="status">Status</option>
+        <option value="assignee">Assigned to</option>
+        <option value="author">Raised by</option>
+        <option value="view">View</option>
+        <option value="issuetype">Issue type</option>
+        <option value="type">Markup type</option>
+        <option value="none">No grouping</option>
+      </select>
+      <input type="search" id="item-search" placeholder="Search">
+    </div>
+    <div id="filter-bar">
+      <select id="flt-type" title="Only issues of this type"><option value="">All types</option></select>
+      <select id="flt-status" title="Only issues with this status">
+        <option value="">All status</option><option value="open-any">Open or in progress</option>
+        <option value="Open">Open</option><option value="In progress">In progress</option>
+        <option value="Resolved">Resolved</option><option value="Closed">Closed</option>
+        <option value="done-any">Resolved or closed</option><option value="query">With an open query</option>
+      </select>
+      <select id="sort-by" title="Order within each group">
+        <option value="number">Sort: number</option><option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option><option value="due">Due date</option>
+        <option value="priority">Priority</option><option value="type">Issue type</option>
+        <option value="title">Title A-Z</option>
+      </select>
+    </div>
+    <ul id="item-list"></ul>
+  </aside>
+
+</div>
+
+<div id="dialog-back" hidden>
+  <form id="dialog" onsubmit="return false">
+    <h3>Raise issue</h3>
+    <label>Title<input id="f-title" required maxlength="120"></label>
+    <label>Description<textarea id="f-desc" rows="3"></textarea></label>
+    <div class="row">
+      <label>Type<select id="f-type"></select></label>
+      <label>Assign to<input id="f-assignee" placeholder="name or email"></label>
+      <label>Due<input id="f-due" type="date"></label>
+    </div>
+    <div class="row">
+      <label>Status
+        <select id="f-status">
+          <option value="Open">Open</option>
+          <option value="In progress">In progress</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </label>
+      <label>Priority
+        <select id="f-priority">
+          <option>Low</option><option selected>Normal</option>
+          <option>High</option><option>Critical</option>
+        </select>
+      </label>
+    </div>
+    <div id="f-anchor" class="anchor muted"></div>
+    <p class="warn">Nothing is emailed. Issues stay in this browser until a
+      server is added. Use Export to hand them on.</p>
+    <div class="row end">
+      <button id="f-cancel" class="ghost">Cancel</button>
+      <button id="f-save">Save issue</button>
+    </div>
+  </form>
+</div>
+
+<div id="files-back" hidden>
+  <div id="files-dlg" role="dialog" aria-label="Files">
+    <div class="files-head"><b>Files</b><span class="spacer"></span><button id="files-close" class="ghost" title="Close">&#10005;</button></div>
+    <div class="files-cols">
+      <div>
+        <div class="files-title">Download</div>
+        <button data-go="export-pdf"><b>Sheets as PDF</b><span>with their markups - this sheet, sheets with markups, or all</span></button>
+        <button data-go="export-json"><b>Comments and issues (JSON)</b><span>everything on this project, to keep or move</span></button>
+        <button data-go="export-bcf"><b>Issues as BCF</b><span>for Revit, Navisworks, BIMcollab</span></button>
+      </div>
+      <div>
+        <div class="files-title">Bring in</div>
+        <button data-go="import-pdf-btn"><b>A PDF drawing</b><span>made outside Revit, added to the sheet list</span></button>
+        <button data-go="import-btn"><b>Comments and issues (JSON)</b><span>from a file downloaded here before</span></button>
+        <button data-go="bcf-3d"><b>Issues from BCF</b><span>opens the 3D page, where they are placed in the model</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="text-back" hidden>
+  <form id="textdlg" onsubmit="return false">
+    <h3>Text</h3>
+    <textarea id="t-body" rows="4"></textarea>
+    <div class="row end">
+      <button id="t-cancel" class="ghost">Cancel</button>
+      <button id="t-ok">OK</button>
+    </div>
+  </form>
+</div>
+
+
+<datalist id="dl-width">
+  <option value="0.13"><option value="0.18"><option value="0.25"><option value="0.35">
+  <option value="0.5"><option value="0.7"><option value="1"><option value="1.4">
+  <option value="2"><option value="3"><option value="4"><option value="5"><option value="8">
+</datalist>
+<datalist id="dl-size">
+  <option value="1.8"><option value="2"><option value="2.5"><option value="3.5">
+  <option value="5"><option value="7"><option value="10"><option value="14">
+  <option value="20"><option value="30"><option value="50"><option value="80">
+</datalist>
+
+<div id="pdf-back" hidden>
+  <div id="pdf-dlg">
+    <h3>Export PDF with markups</h3>
+    <label>Sheets
+      <select id="pdf-scope">
+        <option value="current">This sheet</option>
+        <option value="marked" selected>Every sheet that has markups</option>
+        <option value="all">All sheets</option>
+      </select></label>
+    <label>Markups
+      <select id="pdf-markups">
+        <option value="editable" selected>Editable - real PDF comments, can be moved and edited</option>
+        <option value="flat">Flattened - drawn into the page, cannot be changed</option>
+      </select></label>
+    <label>Resolution for flattened markups
+      <select id="pdf-dpi">
+        <option value="100">100 dpi - small file, screen reading</option>
+        <option value="150" selected>150 dpi - print and read dimensions</option>
+        <option value="200">200 dpi - fine print, larger file</option>
+      </select></label>
+    <label style="display:flex;align-items:center;gap:6px;color:var(--ink)">
+      <input id="pdf-report" type="checkbox" checked style="width:auto">
+      Add an issue report at the end</label>
+    <p class="muted" style="font-size:11px;margin:4px 0 10px">The drawing is
+      kept exactly as exported from Revit - sharp lines, selectable text.
+      Editable markups arrive as comments in PDF-XChange, Acrobat or
+      Bluebeam; each issue also gets a note with its details.</p>
+    <div class="row end">
+      <button id="pdf-cancel" class="ghost">Cancel</button>
+      <button id="pdf-go">Export</button>
+    </div>
+  </div>
+</div>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <h3>LWK Viewer</h3>
+    <label>Your name<input id="gate-name" placeholder="so issues show who raised them"></label>
+    <label>Project passphrase<input id="gate-pass" type="password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Open</button></div>
+  </form>
+</div>
+
+<script type="module" src="app.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="offline.js"></script>
+</body>
+</html>

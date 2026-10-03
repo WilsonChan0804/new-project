@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>LWK Viewer &mdash; 3D</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234c8dff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LWK Viewer">
+<meta name="theme-color" content="#f28022">
+<!-- to lay a sheet's plan drawing into the model -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="brand">LWK Viewer</div>
+  <div class="mode">
+    <button onclick="location.href='index.html'+(new URLSearchParams(location.search).get('project')?'?project='+encodeURIComponent(new URLSearchParams(location.search).get('project')):'')">Sheets</button>
+    <button class="active">3D</button>
+  </div>
+  <div class="spacer"></div>
+  <div id="project" class="muted"></div>
+  <select id="proj-switch" hidden title="Switch project"></select>
+  <div id="conn" class="conn" title="Connection to the server">offline</div>
+  <div class="mode" title="What clicking does">
+    <button id="m-nav" class="active">Navigate</button>
+    <button id="m-issue">Add issue</button>
+    <button id="m-measure" class="ghost" data-icon="measure" title="Measure with snapping">Measure</button>
+    <button id="m-walk" class="ghost" data-icon="walk" title="Walk through the model at eye level: click a floor to stand on it, then W A S D or the arrow keys to move and drag to look around">Walk</button>
+  </div>
+  <button id="pins-toggle" class="ghost" title="Show or hide the issue markers">Hide issues</button>
+  <button id="done-toggle" class="ghost" title="Hide resolved and closed issues in the model">&#10003; Hide closed</button>
+  <span id="display-modes" class="seg" title="How the model is drawn">
+    <button data-mode="shaded" class="ghost active">Shaded</button>
+    <button data-mode="white" class="ghost">White</button>
+    <button data-mode="xray" class="ghost">X-ray</button>
+  </span>
+  <button id="depth-toggle" class="ghost" title="Depth: soft shadows in corners and fine lines on edges">Depth</button>
+  <label for="floor-select" class="flr-lab"
+    title="Choose a floor to see it as a plan: the model is cut 1.2 m above that floor and viewed from above, like a Revit floor plan. Page Up / Page Down step between floors.">Floor plan</label>
+  <select id="floor-select" title="Cut the model at this floor and look down (Page Up / Page Down to step)"
+    style="width:auto;max-width:190px;font-size:12px;padding:3px 6px"></select>
+  <button id="plan-draw" class="ghost" data-icon="sheet"
+    title="Lay the sheet's plan drawing - annotations, dimensions, tags - over this floor">Drawing</button>
+  <select id="plan-draw-pick" hidden title="More than one sheet shows this floor: choose which drawing"
+    style="width:auto;max-width:200px;font-size:12px;padding:3px 6px"></select>
+  <button id="top-test" class="ghost" title="Two topics looking straight down, one per coordinate frame - for checking BCF placement in Revit">Top test</button>
+  <button id="axis-test" class="ghost" title="Axis test topics for checking BCF camera directions in Revit">Axis test</button>
+  <div class="mode hdr-pair">
+    <button id="fit3d" class="ghost" title="Show the whole model">Fit</button>
+    <button id="bcf-menu" class="ghost" title="Issues as BCF: download for Revit or Navisworks, or bring them in">BCF &#9662;</button>
+    <span id="bcf-pair" hidden>
+    <button id="export-bcf" class="ghost" title="Download the 3D issues as BCF for Revit or Navisworks">Export BCF</button>
+    <button id="import-bcf" class="ghost" title="Read a .bcfzip from Revit, Navisworks, Solibri or ACC as 3D issues">Import BCF</button>
+    </span>
+    <input id="import-bcf-file" type="file" accept=".bcf,.bcfzip,application/zip" hidden>
+  </div>
+</header>
+
+<div id="layout3d">
+
+  <aside id="models">
+    <div class="panel-head">
+      Models <span id="model-count" class="muted"></span>
+      <label class="row-check" style="margin-top:6px;font-size:11px"
+        title="Place linked models by their Revit placement">
+        <input type="checkbox" id="xf-toggle" checked style="width:auto"> Apply link transforms</label>
+      <label class="row-check" style="margin-top:4px;font-size:11px"
+        title="Load a typical floor only near where you are looking - for phones and tablets, which have far less memory. On by default on those devices.">
+        <input type="checkbox" id="light-on" style="width:auto"> Light mode (phones, tablets)</label>
+      <div style="margin-top:6px; display:flex; gap:4px;">
+        <button id="all-on" class="ghost" style="font-size:11px;padding:2px 7px">All on</button>
+        <button id="all-off" class="ghost" style="font-size:11px;padding:2px 7px">All off</button>
+      </div>
+    </div>
+    <ul id="model-list"></ul>
+
+    <div class="panel-head">Section</div>
+    <div class="pad" id="sec-panel">
+      <div class="icon-row">
+        <label class="ictog" data-icon="box" title="Turn the section box on or off - then drag the orange arrows on the model"><input type="checkbox" id="sec-on">Box</label>
+        <button id="sec-face" class="ghost" data-icon="plane" title="Click a surface: cut the model with a plane on that face">Plane</button>
+        <button id="sec-align" class="ghost" data-icon="align" title="Click a wall: square the section box to it">Align</button>
+        <button id="sec-flip" class="ghost" data-icon="flip" title="Keep the other side of the section plane">Flip</button>
+        <button id="sec-reset" class="ghost" data-icon="reset" title="Back to the whole model">Reset</button>
+      </div>
+      <div class="muted hint">Drag the orange arrows on the model to move a cut.</div>
+      <div class="sec-look">
+        <label class="row-check" title="Where the cut passes through walls, floors and columns, fill it solid - like the cut in a drawing">
+          <input type="checkbox" id="sec-poche" checked> Solid fill on the cut</label>
+        <label class="row-check" title="In a floor plan: surfaces paler, the floors below faded, so the cut walls read first">
+          <input type="checkbox" id="sec-planlook" checked> Plan look for floor plans</label>
+      </div>
+      <div hidden>
+        <div class="sec-row"><span>X</span>
+          <input type="range" id="sx0" min="0" max="100" step="any" value="0">
+          <input type="range" id="sx1" min="0" max="100" step="any" value="100"></div>
+        <div class="sec-row"><span>Y</span>
+          <input type="range" id="sy0" min="0" max="100" step="any" value="0">
+          <input type="range" id="sy1" min="0" max="100" step="any" value="100"></div>
+        <div class="sec-row"><span>H</span>
+          <input type="range" id="sh0" min="0" max="100" step="any" value="0">
+          <input type="range" id="sh1" min="0" max="100" step="any" value="100"></div>
+        <div class="sec-row"><span>R</span>
+          <input type="range" id="srot" min="-180" max="180" value="0"></div>
+      </div>
+    </div>
+
+    <div class="panel-head">Measure</div>
+    <div class="pad" id="meas-panel">
+      <div class="icon-row">
+        <button id="meas-distance" class="ghost active" data-icon="measure" title="Distance between two points">Distance</button>
+        <button id="meas-angle" class="ghost" data-icon="angle" title="Angle between three points">Angle</button>
+        <button id="meas-area" class="ghost" data-icon="area" title="Area of a polygon">Area</button>
+        <button id="meas-ortho" class="ghost" data-icon="align" title="Straight: keep the next point in line along X, Y or height (or hold Shift)">Straight</button>
+        <button id="meas-undo" class="ghost" data-icon="undo" title="Take back the last point">Undo</button>
+        <button id="meas-clear" class="ghost" data-icon="trash" title="Remove all measurements">Clear</button>
+        <button id="meas-keep" class="ghost" data-icon="dimension" title="Keep this distance as a dimension that stays in the model">Keep</button>
+      </div>
+      <div class="dims-head"><label class="row-check" style="width:auto">
+        <input type="checkbox" id="dims-on" checked> Dimensions</label>
+        <span id="dim-count" class="count-chip"></span></div>
+      <ul id="dim-list" class="dim-list"></ul>
+      <div class="muted hint">Snaps to corners (red), midpoints (purple), square off an edge
+        (green), edges (blue) and surfaces (grey) - a ring shows each snap. Esc drops a measurement.</div>
+    </div>
+
+    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
+      Elements <span class="spacer"></span>
+      <button id="cat-all" class="ghost" style="font-size:11px" title="Show every category">Show all</button>
+    </div>
+    <ul id="cat-list" class="cat-list"></ul>
+
+    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
+      Model browser <span class="spacer"></span>
+      <span id="mb-count" class="muted" style="font-weight:400;font-size:11px"></span>
+    </div>
+    <div class="pad" id="mb-panel">
+      <input id="mb-search" type="search" placeholder="Search names, types, levels, properties ..."
+        title="Words match names, categories, families, types and levels; property:value (e.g. Fire Rating:2 hr) matches a property" style="width:100%;font-size:12px">
+      <div id="mb-actions" class="mb-actions" hidden>
+        <button id="mb-select" class="ghost">Select</button>
+        <button id="mb-isolate" class="ghost">Isolate</button>
+        <button id="mb-zoom" class="ghost">Zoom</button>
+        <span id="mb-what" class="muted"></span>
+      </div>
+      <ul id="mb-tree" class="mb-tree"></ul>
+    </div>
+
+    <div class="panel-head">Display</div>
+    <div class="pad" id="disp-panel">
+      <div class="disp-row"><span class="muted">Background</span>
+        <span class="swatches" id="bg-swatches"></span>
+        <input type="color" id="bg-color" title="Any background colour"></div>
+      <div class="disp-row"><label class="row-check" style="width:auto">
+          <input type="checkbox" id="ground-on"> <span class="muted">Ground</span></label>
+        <span class="swatches" id="ground-swatches"></span>
+        <input type="color" id="ground-color" title="Any ground colour"></div>
+      <div class="disp-row"><label class="row-check" style="width:auto"
+          title="Show or hide the grid under the model">
+          <input type="checkbox" id="grid-on" checked> <span class="muted">Grid</span></label></div>
+      <div class="disp-sub" title="The Depth button in the header: soft shadow in corners, lines on edges">Depth shading</div>
+      <div class="disp-row"><span class="muted" style="width:56px">Shadow</span>
+        <input type="range" id="dfx-ao" min="0" max="100" step="5" style="flex:1">
+        <input type="color" id="dfx-ao-col" title="Shadow colour"></div>
+      <div class="disp-row"><span class="muted" style="width:56px">Edges</span>
+        <input type="range" id="dfx-edge" min="0" max="100" step="5" style="flex:1">
+        <input type="color" id="dfx-edge-col" title="Edge line colour"></div>
+      <div class="disp-row"><button id="dfx-reset" class="ghost" style="font-size:11px">Usual depth shading</button></div>
+    </div>
+
+    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
+      Saved views
+      <span class="spacer"></span>
+      <button id="view-save" class="ghost" data-icon="camera" style="font-size:11px"
+        title="Save the current camera, section box and hidden elements">Save</button>
+    </div>
+    <ul id="view-list" style="list-style:none;margin:0;padding:0"></ul>
+
+    <!-- Kept for the script, not shown: the view cube and the floor list in
+         the top bar do these jobs now. The projection and "front" controls
+         are moved under the view cube at start-up. -->
+    <div id="pv-legacy" hidden>
+      <button id="pv-top">Plan</button><button id="pv-front">Front</button>
+      <button id="pv-back">Back</button><button id="pv-left">Left</button>
+      <button id="pv-right">Right</button><button id="pv-iso">3D</button>
+      <button id="pv-ortho" class="ghost" data-icon="ortho"
+        title="Switch between perspective and parallel projection">Perspective</button>
+      <button id="pv-setalign" class="ghost" data-icon="front"
+        title="Click a wall to set which way Front faces">Set front</button>
+      <button id="pv-clearalign" class="ghost" data-icon="world"
+        title="Measure the views from the world axes again">World</button>
+      <span id="pv-align">world</span>
+      <button id="pv-section">Look at section plane</button>
+    </div>
+    <div id="floors-legacy" hidden>
+      <span id="floor-count"></span>
+      <button id="floor-down"></button><button id="floor-up"></button>
+      <input id="floor-cut" type="number" value="1.2" step="0.1" min="0.1">
+      <input id="floor-ortho" type="checkbox" checked>
+      <button id="floor-cal"></button><button id="floor-exit"></button>
+      <ul id="floor-list"></ul>
+    </div>
+  </aside>
+
+  <main id="stage3d">
+    <div id="canvas-wrap">
+      <div id="walk-hud" hidden>
+        <div class="walk-head">
+          <b>Walking</b>
+          <span class="spacer"></span>
+          <button id="walk-exit" class="ghost" title="Stop walking (Esc)">Stop</button>
+        </div>
+        <div class="walk-keys muted">
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows move</span>
+          <span>drag to look</span>
+          <span><kbd>Shift</kbd> faster</span>
+          <span><kbd>PgUp</kbd><kbd>PgDn</kbd> floor up / down</span>
+          <span><kbd>Q</kbd><kbd>E</kbd> down / up (gravity off)</span>
+          <span><kbd>Esc</kbd> stop</span>
+        </div>
+        <div class="walk-set">
+          <label title="Height of your eyes above the floor">Eye
+            <input id="walk-eye" type="number" min="0.8" max="3" step="0.05" value="1.6"> m</label>
+          <label title="Walking speed; Shift is three times this">Speed
+            <input id="walk-speed" type="range" min="0.5" max="8" step="0.1" value="1.5">
+            <span id="walk-speed-val">1.5</span> m/s</label>
+        </div>
+        <div class="walk-set">
+          <label class="row-check" title="Stay on the floor and follow stairs and ramps"><input id="walk-gravity" type="checkbox" checked> Gravity</label>
+          <label class="row-check" title="Stop at walls instead of passing through them (doors are closed in the model, so you cannot walk through a doorway with this on)"><input id="walk-collide" type="checkbox"> Walls block</label>
+        </div>
+        <div class="walk-pad" title="Hold to move (for touch screens)">
+          <button data-walk="turnL" title="Turn left">&#8630;</button><button data-walk="forward" title="Forward">&#9650;</button><button data-walk="turnR" title="Turn right">&#8631;</button>
+          <button data-walk="left" title="Step left">&#9664;</button><button data-walk="back" title="Back">&#9660;</button><button data-walk="right" title="Step right">&#9654;</button>
+        </div>
+      </div>
+      <div id="perf-panel" hidden>
+        <div class="walk-head"><b>Performance</b><span class="spacer"></span>
+          <button id="perf-copy" class="ghost" title="Copy this report as text, to paste into a message">Copy</button>
+          <button id="perf-close" class="ghost">Close</button></div>
+        <div class="perf-set">
+          <label title="Fetch each model in pieces as the view needs them, and let go of pieces past the memory budget (models the server has prepared)">Streaming
+            <select id="perf-tiles"><option value="">automatic</option><option value="1">on</option><option value="0">off</option></select></label>
+          <label title="Geometry this device keeps; more is let go, least recently seen first">Memory budget
+            <select id="perf-budget"><option value="">automatic</option><option>150</option><option>250</option>
+              <option>400</option><option>800</option><option>1500</option></select> MB</label>
+          <label title="WebGL is the standard way. WebGPU is newer and may be faster on some devices - a trial: the same models and files, only the drawing changes. The page reloads to switch.">Drawing with
+            <button id="perf-gpu" class="ghost" type="button">WebGL</button></label>
+          <label title="While the view moves, draw a lighter picture when the frame rate drops (the still view is always full quality)">While moving
+            <select id="perf-autoq"><option value="1">follow the frame rate</option><option value="0">always full quality</option></select></label>
+          <span class="muted">(streaming and budget apply after reloading the page)</span>
+        </div>
+        <pre id="perf-text"></pre>
+      </div>
+    </div>
+    <div id="errlog" hidden></div>
+    <div id="status" class="muted">Starting...</div>
+    <div id="camline" class="muted">floor: <b id="cam-level">-</b>
+      &nbsp;&middot;&nbsp; camera to target: <b id="cam">-</b>
+      <span class="cam-hint">&nbsp;&middot;&nbsp; double-click a surface to focus on it</span>
+      &nbsp;&middot;&nbsp; <span id="perf-live"></span>
+      <a href="#" id="perf-open" title="Load times, triangles and memory - with a Copy button">Performance</a></div>
+  </main>
+
+  <aside id="inspect">
+    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
+      Selection
+      <span class="spacer"></span>
+      <span id="vis-count" class="muted" style="font-weight:400;font-size:11px"></span>
+      <button id="vis-isolate" class="ghost" style="font-size:11px"
+        title="Show only the selected element">Isolate</button>
+      <button id="vis-hide" class="ghost" style="font-size:11px"
+        title="Hide the selected element">Hide</button>
+      <button id="vis-show" class="ghost" style="font-size:11px" disabled
+        title="Show everything again">Show all</button>
+    </div>
+    <div id="inspect-body" class="pad muted">
+      Click an element in the model.
+    </div>
+    <div class="panel-head" style="display:flex;align-items:center;gap:6px">Issues in 3D <span id="i3-count" class="muted"
+      style="font-weight:400"></span>
+</div>
+    <div id="group-bar">
+      Group
+      <select id="i3-group">
+        <option value="status" selected>Status</option>
+        <option value="level">Floor</option>
+        <option value="issuetype">Issue type</option>
+        <option value="assignee">Assigned to</option>
+        <option value="author">Raised by</option>
+        <option value="model">Model</option>
+        <option value="none">No grouping</option>
+      </select>
+      <input type="search" id="i3-search" placeholder="Search">
+    </div>
+    <div id="i3-filter-bar">
+      <select id="i3-ftype" title="Only issues of this type"><option value="">All types</option></select>
+      <select id="i3-fstatus" title="Only issues with this status">
+        <option value="">All status</option><option value="open-any">Open or in progress</option>
+        <option value="Open">Open</option><option value="In progress">In progress</option>
+        <option value="Resolved">Resolved</option><option value="Closed">Closed</option>
+        <option value="done-any">Resolved or closed</option><option value="query">With an open query</option>
+      </select>
+      <select id="i3-sort" title="Order within each group">
+        <option value="number">Sort: number</option><option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option><option value="due">Due date</option>
+        <option value="updated">Recently updated</option>
+      </select>
+    </div>
+    <ul id="i3-list"></ul>
+  </aside>
+
+</div>
+
+<div id="i3-back" hidden>
+  <form id="i3-dlg" onsubmit="return false">
+    <h3>New issue at this point</h3>
+    <div class="row">
+      <label style="flex:2">Title<input id="i3-title" required maxlength="120"></label>
+      <label>Type<select id="i3-type"></select></label>
+    </div>
+    <label>Description<textarea id="i3-desc" rows="3"></textarea></label>
+    <div class="row">
+      <label>Assign to<input id="i3-assignee" placeholder="name or email"></label>
+      <label>Due<input id="i3-due" type="date"></label>
+    </div>
+    <div class="row">
+      <label>Status
+        <select id="i3-status">
+          <option value="Open">Open</option>
+          <option value="In progress">In progress</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </label>
+      <label>Priority
+        <select id="i3-priority">
+          <option>Low</option><option selected>Normal</option>
+          <option>High</option><option>Critical</option>
+        </select>
+      </label>
+    </div>
+    <div id="i3-anchor" class="anchor muted"></div>
+    <div class="snapline">
+      <img id="i3-thumb" alt="viewpoint">
+      <div>
+        <button id="i3-markup" class="ghost">Mark up snapshot</button>
+        <div id="i3-markup-count" class="muted" style="font-size:11px"></div>
+      </div>
+    </div>
+    <p class="warn">Nothing is emailed. Issues stay in this browser until a
+      server is added.</p>
+    <div class="row end">
+      <button id="i3-cancel" class="ghost">Cancel</button>
+      <button id="i3-save">Save issue</button>
+    </div>
+  </form>
+</div>
+
+<div id="view-back" hidden>
+  <div id="view-dlg">
+    <div id="view-bar">
+      <b id="view-title"></b>
+      <div class="spacer"></div>
+      <button id="view-close" class="ghost">Close</button>
+    </div>
+    <div id="view-stage"><img id="view-img" alt="issue snapshot"></div>
+  </div>
+</div>
+
+<div id="snap-back" hidden>
+  <div id="snap-dlg">
+    <div id="snap-bar">
+      <div id="snap-tools" class="tools"></div>
+      <span class="sep"></span>
+      <label class="p">Line<input type="color" id="snap-color" value="#ff3b30"></label>
+      <label class="p">Fill<input type="color" id="snap-fill" value="#ff3b30"></label>
+      <label class="p" title="Colour of text - separate from the line">Text<input type="color" id="snap-tcolor" value="#ff3b30"></label>
+      <label class="p">Opacity<input type="range" id="snap-fillop" min="0" max="100" value="0"></label>
+      <label class="p">Weight
+        <input id="snap-width" type="number" list="dl-width" value="0.5"
+          min="0.05" max="20" step="0.05" style="width:58px"
+          title="Line weight - same scale as the sheets page">
+      </label>
+      <label class="p">Type
+        <select id="snap-dash">
+          <option value="none">Solid</option>
+          <option value="dash">Dashed</option>
+          <option value="dot">Dotted</option>
+          <option value="dashdot">Dash-dot</option>
+        </select>
+      </label>
+      <span class="sep"></span>
+      <label class="p">Font
+        <select id="snap-font">
+          <optgroup label="Sans">
+            <option>Segoe UI</option><option>Arial</option><option>Arial Narrow</option><option>Calibri</option>
+            <option>Tahoma</option><option>Verdana</option><option>Century Gothic</option><option>Helvetica</option></optgroup>
+          <optgroup label="Serif"><option>Times New Roman</option><option>Georgia</option><option>Cambria</option></optgroup>
+          <optgroup label="Drawing and code"><option>ISOCPEUR</option><option>Consolas</option><option>Courier New</option></optgroup>
+          <optgroup label="Hand"><option>Segoe Print</option><option>Comic Sans MS</option></optgroup>
+          <optgroup label="Chinese"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>Microsoft YaHei</option><option>SimSun</option><option>PingFang TC</option></optgroup>
+        </select>
+      </label>
+      <label class="p">Size
+        <input id="snap-size" type="number" list="dl-size" value="3.5"
+          min="0.5" max="200" step="0.5" style="width:58px"
+          title="Text size - same scale as the sheets page">
+      </label>
+      <label class="p">Align
+        <select id="snap-align">
+          <option value="start">Left</option>
+          <option value="middle">Centre</option>
+          <option value="end">Right</option>
+        </select>
+      </label>
+      <span class="sep"></span>
+      <button id="snap-delete" class="ghost" disabled>Delete</button>
+      <button id="snap-undo" class="ghost">Undo</button>
+      <button id="snap-clear" class="ghost">Clear</button>
+      <div class="spacer"></div>
+      <button id="snap-cancel" class="ghost">Cancel</button>
+      <button id="snap-ok">Done</button>
+    </div>
+    <div id="snap-stage">
+      <img id="snap-img" alt="snapshot">
+      <svg id="snap-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+</div>
+
+
+<datalist id="dl-width">
+  <option value="0.25"><option value="0.5"><option value="0.7"><option value="1">
+  <option value="1.4"><option value="2"><option value="3"><option value="5"><option value="8">
+</datalist>
+<datalist id="dl-size">
+  <option value="2"><option value="2.5"><option value="3.5"><option value="5">
+  <option value="7"><option value="10"><option value="14"><option value="20">
+  <option value="30"><option value="50">
+</datalist>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <h3>LWK Viewer</h3>
+    <label>Your name<input id="gate-name" placeholder="so issues show who raised them"></label>
+    <label>Project passphrase<input id="gate-pass" type="password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Open</button></div>
+  </form>
+</div>
+
+<script>
+  /* Before the 3D library loads: on phones and tablets, let go of geometry
+     that is out of view much sooner (see tools/build.mjs). Same test as
+     S.lowMemory in model.js. */
+  (function () {
+    var q = new URLSearchParams(location.search).get("light");
+    var mobile = /iP(hone|ad|od)|Android/.test(navigator.userAgent)
+      || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+      || (navigator.deviceMemory !== undefined && navigator.deviceMemory <= 2);
+    if (q === "1" || (mobile && q !== "0")) window.LWK_GPU_FACTOR = 40;
+  })();
+</script>
+<script type="module" src="model.js"></script>
+<script type="module" src="nav.js"></script>
+<script type="module" src="offline.js"></script>
+</body>
+</html>

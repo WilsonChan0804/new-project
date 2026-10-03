@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LWK Viewer - Issue report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+<div class="bar noprint">
+  <b>Issue report</b>
+  <label>Group by
+    <select id="r-group">
+      <option value="assignee">Assigned to</option>
+      <option value="sheet">Sheet / 3D</option>
+      <option value="status">Status</option>
+      <option value="none">No grouping (by number)</option>
+    </select></label>
+  <label><input type="checkbox" id="r-pics" checked> Pictures</label>
+  <label><input type="checkbox" id="r-comments" checked> Comments</label>
+  <label><input type="checkbox" id="r-history"> Change history</label>
+  <span class="spacer"></span>
+  <span id="r-msg"></span>
+  <button id="r-print">Print / Save as PDF</button>
+</div>
+<main id="report"></main>
+<script type="module" src="report.js"></script>
+</body>
+</html>

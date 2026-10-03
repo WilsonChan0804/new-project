@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Admin</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+</head>
+<body class="admin-page own-nav">
+<header>
+  <b class="brand">LWK Viewer</b>
+  <div class="seg">
+    <a id="to-sheets" class="seg-btn" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" href="board.html">Board</a>
+    <a id="to-dash" class="seg-btn" href="dashboard.html">Dashboard</a>
+    <span class="seg-btn on">Admin</span>
+  </div>
+  <div id="lwk-nav">
+    <span class="who" id="a-who"></span>
+    <a href="#" id="a-signout">Sign out</a>
+  </div>
+</header>
+
+<main id="admin">
+  <div class="tabs">
+    <button data-tab="projects" id="tab-projects">Projects and members</button>
+    <button data-tab="people" id="tab-people" hidden>People</button>
+    <button data-tab="publish" id="tab-publish">Auto publish</button>
+    <button data-tab="devices" id="tab-devices" hidden>Devices</button>
+    <button data-tab="account" id="tab-account">My account</button>
+  </div>
+
+  <div id="a-msg"></div>
+
+  <section class="pane" id="pane-projects">
+    <div class="split">
+      <div class="card">
+        <h3>Projects <small>that you manage</small></h3>
+        <ul class="proj-list" id="a-projects"></ul>
+        <div id="a-bin-wrap" hidden>
+          <h3 style="margin-top:18px">Deleted projects <small>kept in the bin on the server</small></h3>
+          <ul class="proj-list bin-list" id="a-bin"></ul>
+        </div>
+      </div>
+      <div class="card">
+        <h3 id="a-proj-title">Members</h3>
+        <p class="muted" style="font-size:12px;margin-top:-4px">
+          <b>Project admin</b> manages members and can edit or delete anything.
+          <b>Publisher</b> is a member who can also publish the drawings and the 3D model from Revit.
+          <b>Member</b> raises and edits issues and comments, and deletes their own.
+          <b>Viewer</b> can look at everything but change nothing.</p>
+        <div class="table-wrap"><table id="a-members"></table></div>
+
+        <h3 style="margin-top:16px">Add people to this project</h3>
+        <div class="form-row">
+          <label>Existing account
+            <select id="a-add-user"></select></label>
+          <label>Role
+            <select id="a-add-role">
+              <option value="member">Member</option>
+              <option value="publisher">Publisher</option>
+              <option value="viewer">Viewer</option>
+              <option value="admin">Project admin</option>
+            </select></label>
+          <button id="a-add-go">Add</button>
+        </div>
+        <details id="a-new-wrap">
+          <summary style="cursor:pointer;font-size:12px;color:var(--accent-deep);font-weight:600">
+            Someone without an account yet</summary>
+          <div class="form-row" style="margin-top:8px">
+            <label>Email<input id="n-email" type="email" placeholder="name@lwk.com"></label>
+            <label>Name<input id="n-name" placeholder="Chan Tai Man"></label>
+            <label>Office
+              <select id="n-office"><option>HK</option><option>Manila</option><option>UK</option>
+                <option value="">Other</option></select></label>
+            <label>Company<input id="n-company" placeholder="LWK, or a consultant"></label>
+            <label>Team<input id="n-team" list="dl-team" placeholder="Design team"></label>
+            <label>Discipline<input id="n-disc" list="dl-disc" placeholder="Architecture"></label>
+            <label>Role
+              <select id="n-role">
+                <option value="member">Member</option>
+              <option value="publisher">Publisher</option>
+                <option value="viewer">Viewer</option>
+                <option value="admin">Project admin</option>
+              </select></label>
+            <button id="n-go">Create and add</button>
+          </div>
+        </details>
+
+        <h3 style="margin-top:18px">Teams channel <small>issue updates posted to the project's channel</small></h3>
+        <div class="form-row">
+          <label style="flex:1;min-width:280px">Workflow webhook address
+            <input id="t-hook" placeholder="https://...logic.azure.com/workflows/..." style="width:100%"></label>
+          <button id="t-save">Save</button>
+          <button id="t-test" class="ghost">Send a test</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0;font-size:12px">
+          <label>Weekly summary to the channel
+            <select id="t-dday"><option value="off">Off</option><option value="mon">Monday</option><option value="tue">Tuesday</option>
+              <option value="wed">Wednesday</option><option value="thu">Thursday</option><option value="fri">Friday</option>
+              <option value="sat">Saturday</option><option value="sun">Sunday</option></select></label>
+          <label>at <select id="t-dhour"></select> (Hong Kong time)</label>
+        </div>
+        <details style="font-size:12px">
+          <summary style="cursor:pointer;color:var(--accent-deep);font-weight:600">How to get the address (2 minutes, no IT needed)</summary>
+          <ol style="margin:8px 0 0 18px;line-height:1.7">
+            <li>In Teams, go to the project's channel, click <b>...</b> (More options) next to its name, choose <b>Workflows</b>.</li>
+            <li>Pick <b>"Post to a channel when a webhook request is received"</b>, give it a name (e.g. LWK Viewer), click Next, check the team and channel, click <b>Add workflow</b>.</li>
+            <li>Copy the address it shows, paste it above, <b>Save</b>, then <b>Send a test</b>.</li>
+          </ol>
+          <p class="muted">Posted: a new issue, a new assignee, a status change, a new due date and new comments - each with a button that opens the issue.</p>
+        </details>
+
+        <h3 id="layers" style="margin-top:18px">Markup layers <small>who can see and change the markups on each layer</small></h3>
+        <p class="muted" style="font-size:12px;margin:0 0 6px">Project admins can always see and change everything. A locked layer's
+          issues can still be answered (status, comments) by those who can see them.</p>
+        <div id="a-layers" class="layer-admin"></div>
+        <div class="form-row" style="margin-top:6px">
+          <input id="a-layer-new" placeholder="New layer name" style="max-width:220px">
+          <button id="a-layer-add" class="ghost">Add layer</button>
+          <span class="spacer"></span>
+          <button id="a-layers-save">Save layers</button>
+        </div>
+
+        <h3 style="margin-top:18px">Phones and tablets <small>prepared on the server after every upload</small></h3>
+        <p class="muted" style="font-size:12px;margin:0 0 6px">After each upload the server works out what is seen from
+          outside, writes the phone copy, and cuts each model into streamed pieces (fetched as the view needs them).
+          Projects uploaded before this was added can be prepared now.</p>
+        <div class="form-row">
+          <button id="a-prep" class="ghost">Prepare this project now</button>
+          <button id="a-prep-log" class="ghost">Show progress</button>
+        </div>
+        <pre id="a-prep-out" class="dev-detail" hidden></pre>
+
+        <div id="a-danger" class="danger-zone" hidden>
+          <h3 style="margin-top:18px">Delete this project</h3>
+          <p class="muted" style="font-size:12px;margin:0 0 6px">Removes the project from the viewer for everyone:
+            its models, sheets, issues, markups and members. It is moved to the bin on the server, not erased -
+            it can be restored from the list on the left. If Revit publishes to the same name again, a new,
+            empty project appears.</p>
+          <button id="a-del" class="danger">Delete project ...</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-people" hidden>
+    <div class="card">
+      <h3>People <small>every account on this server</small></h3>
+      <div class="form-row">
+        <label>Email<input id="p-email" type="email" placeholder="name@lwk.com"></label>
+        <label>Name<input id="p-name"></label>
+        <label>Office
+          <select id="p-office"><option>HK</option><option>Manila</option><option>UK</option>
+            <option value="">Other</option></select></label>
+        <label>Company<input id="p-company" placeholder="LWK"></label>
+        <label>Team<input id="p-team" list="dl-team" placeholder="Design team"></label>
+        <label>Discipline<input id="p-disc" list="dl-disc" placeholder="Architecture"></label>
+        <label class="check"><input type="checkbox" id="p-admin"> Site admin</label>
+        <button id="p-go">Add person</button>
+      </div>
+      <details id="p-bulk" style="margin:6px 0 10px">
+        <summary>Add many people at once (paste from Excel)</summary>
+        <p class="muted" style="font-size:12px;margin:6px 0">One person per line, columns in this order (tab or comma between them; a heading row is skipped):<br>
+          <code>Email, Name, Office, Company, Team, Discipline, Project, Role</code> - only Email and Name are needed.
+          Project is the project's id or title; Role is member, publisher, viewer or admin. Someone who already has an account is just added to the project.</p>
+        <textarea id="p-bulk-text" rows="6" style="width:100%;font-family:monospace;font-size:12px"
+          placeholder="amy.chan@lwk.com&#9;Amy Chan&#9;HK&#9;LWK&#9;Design team&#9;Architecture&#9;Test3&#9;member"></textarea>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <button id="p-bulk-go">Add them</button>
+          <button class="ghost" id="p-bulk-csv" hidden>Download the passwords (CSV)</button>
+          <span class="muted" id="p-bulk-note"></span>
+        </div>
+        <div class="table-wrap"><table id="p-bulk-out"></table></div>
+      </details>
+      <div class="filter-bar" id="pf-bar">
+        <input type="search" id="pf-q" placeholder="Search name, email ...">
+        <select id="pf-office"><option value="">All offices</option></select>
+        <select id="pf-company"><option value="">All companies</option></select>
+        <select id="pf-team"><option value="">All teams</option></select>
+        <select id="pf-disc"><option value="">All disciplines</option></select>
+        <select id="pf-status"><option value="">Everyone</option><option value="active">Active</option>
+          <option value="off">Deactivated</option><option value="admin">Site admins</option>
+          <option value="nopass">Not signed in yet</option></select>
+        <button class="ghost" id="pf-clear">Clear</button>
+        <span class="muted" id="pf-count"></span>
+      </div>
+      <div class="table-wrap"><table id="a-people"></table></div>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-publish" hidden>
+    <div class="card">
+      <h3>Auto publish <small>which Revit file is published to which project, from which PC, and when</small></h3>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">Every PC reports its publish settings here - when they are
+        saved in Revit (LWK tab &gt; <b>Auto Publish</b> or <b>Publish</b>) and after every run. A row in red means the
+        <b>same model is published at night from more than one PC</b>: the two overwrite each other, so one of them
+        should be switched off (in Revit on that PC: Auto Publish &gt; Night export on / off). The settings themselves
+        are changed in Revit on the PC that publishes; "Take off the list" only removes a line that is no longer true.</p>
+      <div class="form-row" style="margin:8px 0">
+        <label>Project<select id="pj-project"><option value="">All my projects</option></select></label>
+        <label>Show<select id="pj-filter">
+          <option value="">everything</option><option value="night">night export on</option>
+          <option value="dup">published twice only</option></select></label>
+        <button id="pj-reload" class="ghost">Refresh</button>
+        <span class="muted" id="pj-count"></span>
+      </div>
+      <div class="table-wrap"><table id="pj-table"></table></div>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-devices" hidden>
+    <div class="card">
+      <h3>Devices <small>how phones, tablets and computers cope with the 3D view</small></h3>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">Each 3D page reports once its models are in and when it is
+        left. <b>Crash</b> means the page stopped while on screen without closing - on a phone or tablet almost
+        always Safari running out of memory. Memory figures are the viewer's own estimate of what the models take on
+        the graphics card. Click a row for everything that was reported.</p>
+      <div id="d-summary" class="dev-summary"></div>
+      <div class="form-row" style="margin:8px 0">
+        <label>Show<select id="d-filter">
+          <option value="">everything</option><option value="crash">crashes and lost 3D only</option>
+          <option value="phone">phones and tablets only</option></select></label>
+        <button id="d-reload" class="ghost">Refresh</button>
+      </div>
+      <div class="table-wrap"><table id="d-table"></table></div>
+      <pre id="d-detail" class="dev-detail" hidden></pre>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-account" hidden>
+    <div class="card" style="max-width:520px">
+      <h3>My account</h3>
+      <p id="acc-who" style="font-size:13px"></p>
+      <div class="form-row" style="flex-direction:column;align-items:stretch">
+        <label>Current password (or the temporary one you were given)
+          <input id="acc-old" type="password" autocomplete="current-password"></label>
+        <label>New password (at least 8 characters)
+          <input id="acc-new" type="password" autocomplete="new-password"></label>
+        <label>New password again
+          <input id="acc-new2" type="password" autocomplete="new-password"></label>
+        <div><button id="acc-go">Change password</button></div>
+      </div>
+    </div>
+    <div class="card" style="max-width:520px" id="acc-notify-card" hidden>
+      <h3>Notifications <small>what reaches you outside the viewer</small></h3>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">You are told when an issue is <b>assigned to you</b>, when
+        <b>your query is answered</b> (or someone replies to you), when an issue <b>you raised is resolved or closed</b>,
+        and the day before an issue assigned to you is <b>due</b>. In the project's Teams channel you are @mentioned
+        (when a project admin has set the channel); by email when the server has an email account.</p>
+      <label class="check"><input type="checkbox" id="acc-email"> Email me as well</label>
+      <p id="acc-email-note" class="muted" style="font-size:11px;margin:6px 0 0"></p>
+      <div id="acc-email-test-row" hidden style="margin-top:8px"><button class="ghost" id="acc-email-test">Send me a test email</button>
+        <span class="muted" style="font-size:11px">(site admin: checks the server's email account)</span></div>
+    </div>
+  </section>
+</main>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="admin.js"></script>
+<datalist id="dl-team"><option>Design team</option><option>Project team</option><option>Production team</option><option>BIM team</option><option>Management</option><option>Consultant</option></datalist>
+<datalist id="dl-disc"><option>Architecture</option><option>Interior</option><option>Landscape</option><option>Planning</option><option>Structure</option><option>MEP</option><option>Facade</option><option>QS</option><option>Contractor</option></datalist>
+<script type="module" src="offline.js"></script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+</head>
+<body class="dash-page own-nav">
+<header>
+  <b class="brand">LWK Viewer</b>
+  <div class="seg">
+    <a id="to-sheets" class="seg-btn" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" href="board.html">Board</a>
+    <span class="seg-btn on">Dashboard</span>
+  </div>
+  <select id="d-project" title="Project"></select>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="d-who"></span>
+    <a href="#" id="d-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<main id="dash">
+  <section class="filters">
+    <label title="Open issues always show; closed ones only if closed in this period">Closed within
+      <select id="f-range">
+        <option value="0">Any time</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90" selected>Last 90 days</option>
+        <option value="365">Last 12 months</option>
+      </select></label>
+    <label>Type <select id="f-type"><option value="">All types</option></select></label>
+    <label>Assigned to <select id="f-assignee"><option value="">Everyone</option></select></label>
+    <label>Office <select id="f-office"><option value="">All offices</option></select></label>
+    <label>Team <select id="f-team"><option value="">All teams</option></select></label>
+    <label>Discipline <select id="f-disc"><option value="">All disciplines</option></select></label>
+    <label class="check"><input type="checkbox" id="f-mine"> Only mine</label>
+    <label class="check"><input type="checkbox" id="f-dismissed"> Include "not an issue"</label>
+    <span class="spacer"></span>
+    <span id="d-updated" class="muted"></span>
+    <button id="d-refresh" class="ghost" title="Fetch the latest">Refresh</button>
+    <button id="d-csv" title="Every issue in the current filter, for Excel">Export CSV</button>
+    <button id="d-report" title="A printable report of the issues in the current filter, with pictures - save it as PDF">Report</button>
+  </section>
+
+  <section class="digest" id="digest" hidden>
+    <div class="dg-head"><b>This week</b> <span class="muted">last 7 days</span>
+      <span class="spacer"></span>
+      <button id="dg-send" class="ghost" title="Post this summary to the project's Teams channel now (it is also posted every week by itself)">Send to Teams</button></div>
+    <div id="dg-body"></div>
+  </section>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid">
+    <div class="card wide">
+      <h3>Raised and closed, by week <small>last 12 weeks, with the open total</small></h3>
+      <div id="c-trend" class="chart"></div>
+    </div>
+    <div class="card">
+      <h3>By status</h3>
+      <div id="c-status" class="chart"></div>
+    </div>
+    <div class="card">
+      <h3>By type <small>open issues</small></h3>
+      <div id="c-type" class="chart"></div>
+    </div>
+    <div class="card">
+      <h3>By priority <small>open issues</small></h3>
+      <div id="c-priority" class="chart"></div>
+    </div>
+    <div class="card">
+      <h3>Where <small>open issues by sheet / 3D</small></h3>
+      <div id="c-where" class="chart"></div>
+    </div>
+  </section>
+
+  <section class="card full">
+    <h3>Responsibility <small>who holds what - click a row to filter</small></h3>
+    <div class="table-wrap"><table id="t-people"></table></div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <h3>Overdue <small>open, past their due date</small></h3>
+      <div class="table-wrap"><table id="t-overdue" class="list"></table></div>
+    </div>
+    <div class="card">
+      <h3>Due in the next 14 days</h3>
+      <div class="table-wrap"><table id="t-due" class="list"></table></div>
+    </div>
+    <div class="card">
+      <h3>Recently changed <small>from each issue's history</small></h3>
+      <div class="table-wrap"><table id="t-recent" class="list"></table></div>
+    </div>
+    <div class="card">
+      <h3>Going quiet <small>open, not touched for 14 days or more</small></h3>
+      <div class="table-wrap"><table id="t-stale" class="list"></table></div>
+    </div>
+  </section>
+
+  <section class="card full" id="exports-card">
+    <h3>How this project is published <small>each Revit file that feeds it: what it sends, when, and how the last run went - change these in Revit (Publish / Export jobs)</small></h3>
+    <div id="exports-body" class="muted" style="font-size:12px">Loading ...</div>
+  </section>
+
+  <section class="card full" id="by-office-card">
+    <h3>By office <small>open issues held by each office</small></h3>
+    <div id="c-office" class="chart"></div>
+  </section>
+
+  <p id="d-msg" class="muted"></p>
+</main>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="dashboard.js"></script>
+<script type="module" src="offline.js"></script>
+</body>
+</html>
