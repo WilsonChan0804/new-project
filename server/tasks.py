@@ -161,6 +161,14 @@ CREATE TABLE IF NOT EXISTS projects (
     deleted     INTEGER NOT NULL DEFAULT 0,
     created_by TEXT, created_at TEXT, updated_by TEXT, updated_at TEXT
 );
+-- Members of a project that has no viewer project (no export yet). A
+-- project with a viewer project keeps its members in accounts.db, as before.
+CREATE TABLE IF NOT EXISTS reg_members (
+    reg   TEXT NOT NULL,
+    uid   INTEGER NOT NULL,
+    role  TEXT NOT NULL DEFAULT 'member',
+    PRIMARY KEY (reg, uid)
+);
 """
 
 # Columns added after the first release: (table, column, definition).
@@ -630,6 +638,25 @@ def to_iso(v):
 
 def is_done(v):
     return str(v or "").strip().lower() in ("1", "true", "yes", "done", "completed", "complete", "closed", "已完成")
+
+
+def project_people(core, reg):
+    """(set of account ids, project row) for a register project: its
+    owners and members (chat.py: who is in the project's channel)."""
+    try:
+        with Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
+            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (reg,)).fetchone()
+            if not r:
+                return set(), None
+            r = dict(r)
+            uids = set(p.get("uid") for p in json.loads(r["owners"] or "[]") if p.get("uid") is not None)
+            if r["viewer"] and core.project_dir(r["viewer"]):
+                uids.update(m["id"] for m in core.ACC.members(r["viewer"]) if m.get("active"))
+            else:
+                uids.update(m["uid"] for m in d.execute("SELECT uid FROM reg_members WHERE reg = ?", (reg,)))
+            return uids, r
+    except Exception:
+        return set(), None
 
 
 def reg_ids_for_viewer(core, pid):
@@ -1420,7 +1447,51 @@ def register(app, core):
         return False
 
     def reg_can_create(w):
-        return w.site_admin or "admin" in core.ACC.memberships(w.uid).values()
+        """Projects are added on the Admin page, by a site admin."""
+        return w.site_admin
+
+    def ensure_registry(d):
+        """Every viewer project (export folder) has its row on the Projects
+        page, so the two lists never disagree."""
+        have = set(r["viewer"] for r in d.execute("SELECT viewer FROM projects WHERE viewer != '' AND deleted = 0"))
+        t = now_iso()
+        for p in core.list_projects():
+            if p["id"] in have:
+                continue
+            rev = next_rev(d)
+            # a project already on the page under that name (made before its first upload): link it
+            keys = (p["id"].lower(), p["title"].lower(), split_code(p["title"])[1].lower())
+            hit = next((r for r in d.execute("SELECT * FROM projects WHERE viewer = '' AND deleted = 0").fetchall()
+                        if any(k and k.lower() in keys for k in (r["short"], r["name"], r["code"]))), None)
+            if hit:
+                d.execute("UPDATE projects SET viewer = ?, rev = ? WHERE id = ?", (p["id"], rev, hit["id"]))
+                link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (hit["id"],)).fetchone(), rev)
+                continue
+            code, short = split_code(p["title"])
+            d.execute("INSERT INTO projects (id, code, name, short, viewer, sort, rev, created_by, created_at, updated_at) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, 'server', ?, ?)",
+                      (new_id(), code, p["title"], short if code else p["id"], p["id"], time.time(), rev, t, t))
+            link_groups(d, d.execute("SELECT * FROM projects WHERE viewer = ? AND deleted = 0", (p["id"],)).fetchone(), rev)
+
+    def members_of(d, r):
+        """[{uid, name, email, team, office, role}] - the viewer project's
+        members, or (no viewer project yet) the project's own list."""
+        out = []
+        if r["viewer"] and core.project_dir(r["viewer"]):
+            if core.accounts_on():
+                for m in core.ACC.members(r["viewer"]):
+                    if m.get("active"):
+                        out.append({"uid": m["id"], "name": m["name"], "email": m.get("email") or "", "team": m.get("team") or "",
+                                    "office": m.get("office") or "", "discipline": m.get("discipline") or "", "role": m["role"]})
+            return out
+        if not core.accounts_on():
+            return out
+        for m in d.execute("SELECT * FROM reg_members WHERE reg = ?", (r["id"],)).fetchall():
+            u = core.ACC.get(m["uid"])
+            if u and u["active"]:
+                out.append({"uid": u["id"], "name": u["name"], "email": u.get("email") or "", "team": u.get("team") or "",
+                            "office": u.get("office") or "", "discipline": u.get("discipline") or "", "role": m["role"]})
+        return out
 
     def split_code(text):
         """"HKA-P-01681-ARC - SKW" -> ("HKA-P-01681-ARC", "SKW")."""
@@ -1447,8 +1518,13 @@ def register(app, core):
         except Exception:
             return None
         today = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 8 * 3600))
-        open_ = [it for it in items if it["issue"].get("status") not in ("Resolved", "Closed")]
-        return {"total": len(items), "open": len(open_),
+        open_ = [it for it in items if it["issue"].get("status") not in ("Resolved", "Closed")
+                 and not it["issue"].get("dismissed")]
+        by = {}
+        for it in items:
+            st = "Not an issue" if it["issue"].get("dismissed") else (it["issue"].get("status") or "Open")
+            by[st] = by.get(st, 0) + 1
+        return {"total": len(items), "open": len(open_), "by_status": by,
                 "overdue": len([it for it in open_ if (it["issue"].get("due_date") or "9999") < today])}
 
     def reg_stats(d, w, ids=None):
@@ -1481,11 +1557,19 @@ def register(app, core):
     async def reg_list(request: Request, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
+            ensure_registry(d)
             rows = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
             stats = reg_stats(d, w)
+            members = dict((r["id"], members_of(d, r)) for r in rows)
         out = []
         for r in rows:
+            ms = members[r["id"]]
+            mine = w.site_admin or any(m["uid"] == w.uid for m in ms) \
+                or any(o.get("uid") == w.uid for o in json.loads(r["owners"] or "[]"))
+            if not mine:
+                continue
             p = reg_row(r)
+            p["members"] = ms
             p["can_edit"] = reg_can_edit(w, r)
             p["stats"] = stats.get(r["id"]) or {"tasks": 0, "done": 0, "overdue": 0, "groups": [], "open_tasks": []}
             p["stats"]["open_tasks"] = p["stats"]["open_tasks"][:12]
@@ -1529,6 +1613,11 @@ def register(app, core):
             if not cur["short"]:
                 cur["short"] = split_code(cur["name"])[1]
             rev = next_rev(d)
+            if old and cur["viewer"] and cur["viewer"] != old["viewer"] and core.accounts_on():
+                # the members gathered before the model existed come along
+                for m in d.execute("SELECT * FROM reg_members WHERE reg = ?", (old["id"],)).fetchall():
+                    if not core.ACC.role(m["uid"], cur["viewer"]):
+                        core.ACC.set_member(cur["viewer"], m["uid"], m["role"] if m["role"] in core.ROLES else "member", by=by)
             pid = pid or new_id()
             d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, links, notes, sort, rev, "
                       "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
@@ -1556,6 +1645,73 @@ def register(app, core):
             d.execute("UPDATE groups SET reg = '', rev = ? WHERE reg = ?", (rev, pid))
         return {"ok": True}
 
+    def reg_get(d, rid):
+        r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (rid,)).fetchone()
+        if not r:
+            raise HTTPException(status_code=404, detail="No such project")
+        return r
+
+    @app.get("/api/registry/{rid}/members")
+    async def reg_members_get(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            r = reg_get(d, rid)
+            return {"members": members_of(d, r), "viewer": r["viewer"], "can_edit": reg_can_edit(w, r)}
+
+    @app.put("/api/registry/{rid}/members")
+    async def reg_members_put(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+        """{uid, role} - a project without a viewer project. (One with a
+        viewer project: Admin > Projects and members, as before.)"""
+        w = core.who(request, x_viewer_token)
+        body = await read_json(request)
+        with db() as d:
+            r = reg_get(d, rid)
+            if not reg_can_edit(w, r):
+                raise HTTPException(status_code=403, detail="Only the project's admins or a site admin")
+            if r["viewer"] and core.project_dir(r["viewer"]):
+                raise HTTPException(status_code=400, detail="This project's members are those of its viewer project")
+            try:
+                uid = int(body.get("uid"))
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="Who?")
+            if not core.ACC.get(uid):
+                raise HTTPException(status_code=404, detail="No such person")
+            role = body.get("role") if body.get("role") in core.ROLES else "member"
+            d.execute("INSERT INTO reg_members (reg, uid, role) VALUES (?, ?, ?) "
+                      "ON CONFLICT(reg, uid) DO UPDATE SET role = excluded.role", (rid, uid, role))
+        return {"ok": True}
+
+    @app.delete("/api/registry/{rid}/members/{uid}")
+    async def reg_members_del(request: Request, rid: str, uid: int, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            r = reg_get(d, rid)
+            if not reg_can_edit(w, r):
+                raise HTTPException(status_code=403, detail="Only the project's admins or a site admin")
+            d.execute("DELETE FROM reg_members WHERE reg = ? AND uid = ?", (rid, uid))
+        return {"ok": True}
+
+    @app.get("/api/registry/{rid}/tasks")
+    async def reg_tasks(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+        """The project's tasks, with their sub-tasks, from every task list
+        you can open that has a group for this project."""
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            reg_get(d, rid)
+            mine = dict((r["id"], r) for r, _ in visible_lists(d, w))
+            out = []
+            for g in d.execute("SELECT * FROM groups WHERE reg = ? AND deleted = 0 ORDER BY sort", (rid,)).fetchall():
+                if g["list_id"] not in mine:
+                    continue
+                rows = [task_row(t) for t in d.execute(
+                    "SELECT * FROM tasks WHERE group_id = ? AND deleted = 0 ORDER BY sort", (g["id"],))]
+                tops = [t for t in rows if not t["parent_id"]]
+                for t in tops:
+                    t["children"] = [k for k in rows if k["parent_id"] == t["id"]]
+                out.append({"group": group_row(g), "list_id": g["list_id"], "list_title": mine[g["list_id"]]["title"],
+                            "tasks": tops})
+        return {"groups": out}
+
     @app.post("/api/registry/import")
     async def reg_import(request: Request, x_viewer_token: str = Header(default="")):
         """A project table (Lark Base "Projects", or Excel): columns Project,
@@ -1581,7 +1737,7 @@ def register(app, core):
         if c["name"] is None:
             raise HTTPException(status_code=400, detail="No Project column found")
         people = matcher()
-        projects = [p["id"] for p in core.list_projects()]
+        projects = core.list_projects()
         by, t = person(w, body), now_iso()
         made = 0
         with db() as d:
@@ -1601,7 +1757,8 @@ def register(app, core):
                           "title": "Project folder" if not label or label.startswith("http") else label}] if url else []
                 viewer = clean_text(g("viewer"), 80)
                 if not viewer:
-                    viewer = next((p for p in projects if p.lower() in (short.lower(), code.lower(), str(folder).strip().lower())), "")
+                    viewer = next((p["id"] for p in projects if p["id"].lower() in (short.lower(), code.lower(), name.lower(), str(folder).strip().lower())
+                                   or p["title"].lower() in (short.lower(), name.lower())), "")
                 old = have.get(name.lower())
                 pid = old["id"] if old else new_id()
                 d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, links, notes, sort, rev, "

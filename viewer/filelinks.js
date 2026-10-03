@@ -73,8 +73,14 @@ export function classify(url) {
   if (kind === "issue") name = "Issue" + (q.get("sheet") ? " on " + q.get("sheet") : "");
   if (kind === "project") name = "Project";
   const ext = (name.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || "";
+  // a video: by its file type, or SharePoint's /:v:/ share links
+  const video = /^(mp4|mov|m4v|webm|avi|wmv|mkv)$/i.test(ext) || /\/:v:\//.test(u.pathname);
+  // a page made to be shown inside another one: OneDrive's and SharePoint's "Embed"
+  const embed = (host.endsWith("onedrive.live.com") && /^\/embed/i.test(u.pathname))
+    || (host.endsWith(".sharepoint.com") && /\/_layouts\/15\/(embed|videoembedhost|stream)\.aspx/i.test(u.pathname))
+    ? u.href : "";
   return {
-    kind, url: u.href, name,
+    kind, url: u.href, name, video, embed,
     ext: ext.toLowerCase(), type: EXT_KIND[ext.toLowerCase()] || "",
     project: q.get("project") || "", ref: (kind === "issue" ? q.get("select") : kind === "task" ? q.get("task") : q.get("sheet") || q.get("select")) || "",
     service: SERVICES[kind].label,
@@ -120,6 +126,11 @@ export function linkify(html) {
     const c = classify(url);
     if (!c) return m;
     if (c.kind === "url") return `<a href="${esc(url)}" target="_blank" rel="noopener">${m}</a>`;
+    if (c.embed) return `<div class="fl-embed"><iframe src="${esc(c.embed)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen loading="lazy"></iframe>`
+      + `<a href="${esc(url)}" target="_blank" rel="noopener">${badge(c.kind)} Open in ${esc(c.service)}</a></div>`;
+    if (c.video) return `<a class="fl-video" href="${esc(url)}" target="_blank" rel="noopener" title="Play in ${esc(c.service)} (signed in with your Microsoft account)">`
+      + `<span class="fl-play"><svg viewBox="0 0 24 24" width="22" height="22"><polygon points="8 5 19 12 8 19" fill="#fff"/></svg></span>`
+      + `<span><b>${esc(c.name || "Video")}</b><small>${esc(c.service)} video - opens the player</small></span></a>`;
     return chip({ kind: c.kind, url, title: c.name || c.service + " file" });
   });
 }
@@ -141,6 +152,15 @@ export function linkify(html) {
   padding: 0 4px; border-radius: 4px; color: #fff; font-size: 9px; font-weight: 700; letter-spacing: .3px; }
 .fl-x { padding: 0 4px !important; font-size: 10px; line-height: 1; color: var(--muted, #6b7480); }
 .fl-list { display: flex; flex-wrap: wrap; }
+.fl-embed { margin: 4px 0; max-width: 560px; }
+.fl-embed iframe { width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--line, #e2e6ec); border-radius: 8px; background: #000; display: block; }
+.fl-embed a { font-size: 11px; color: var(--muted, #6b7480); text-decoration: none; display: inline-flex; gap: 4px; align-items: center; margin-top: 3px; }
+.fl-video { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--line, #e2e6ec); border-radius: 10px; padding: 8px 12px 8px 8px;
+  margin: 4px 0; text-decoration: none; color: var(--ink, #1f2430); background: var(--panel, #fff); max-width: 420px; white-space: normal; }
+.fl-video:hover { border-color: var(--accent, #f28022); }
+.fl-play { width: 54px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #1f2430, #414a5a); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.fl-video span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.fl-video small { color: var(--muted, #6b7480); font-size: 11px; }
 .fl-add { display: flex; gap: 6px; margin-top: 4px; }
 .fl-add input { flex: 1; font-size: 12px; }
 `;

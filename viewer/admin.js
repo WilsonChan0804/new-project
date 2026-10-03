@@ -35,7 +35,24 @@ const ROLE_LABEL = { admin: "Project admin", publisher: "Publisher", member: "Me
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined,
   { day: "numeric", month: "short", year: "numeric" }) : "never");
 
-const A = { me: null, projects: [], users: [], pid: "", members: [] };
+const A = { me: null, projects: [], users: [], pid: "", members: [], regs: [], reg: "", regCreate: false };
+
+/* A project's members: those of its viewer project when it has one (as
+   before), otherwise the project's own list (tasks.py reg_members). */
+async function memberList() {
+  if (A.pid) return (await api(`/api/admin/projects/${encodeURIComponent(A.pid)}/members`)).members || [];
+  const r = await api(`/api/registry/${encodeURIComponent(A.reg)}/members`);
+  return r.members.map((m) => ({ id: m.uid, name: m.name, email: m.email, office: m.office, company: "", team: m.team,
+    discipline: m.discipline, role: m.role, active: true }));
+}
+function memberPut(uid, role) {
+  if (A.pid) return api(`/api/admin/projects/${encodeURIComponent(A.pid)}/members`, { method: "PUT", body: JSON.stringify({ user_id: uid, role }) });
+  return api(`/api/registry/${encodeURIComponent(A.reg)}/members`, { method: "PUT", body: JSON.stringify({ uid, role }) });
+}
+function memberDel(uid) {
+  if (A.pid) return api(`/api/admin/projects/${encodeURIComponent(A.pid)}/members/${uid}`, { method: "DELETE" });
+  return api(`/api/registry/${encodeURIComponent(A.reg)}/members/${uid}`, { method: "DELETE" });
+}
 
 function msg(html, kind) {
   $("#a-msg").innerHTML = html ? `<div class="notice ${kind || ""}">${html}</div>` : "";
@@ -186,24 +203,136 @@ function show(tab) {
 /* ------------------------------------------------------------ projects */
 
 async function loadProjects() {
-  const data = await api("/api/admin/projects");
+  const [data, reg] = await Promise.all([
+    api("/api/admin/projects"),
+    api("/api/registry").catch(() => ({ projects: [], can_create: false })),
+  ]);
   A.projects = data.projects || [];
+  A.regs = (reg.projects || []).filter((r) => r.can_edit);
+  A.regCreate = !!reg.can_create;
+  $("#a-reg-tools").hidden = !A.regCreate;
   const ul = $("#a-projects");
-  if (!A.projects.length) {
+  if (!A.regs.length) {
     ul.innerHTML = `<li class="empty">You do not manage any project.</li>`;
     $("#a-proj-title").textContent = "Members";
-    A.pid = null;
+    $("#a-reg").hidden = true;
+    A.pid = null; A.reg = "";
     return;
   }
-  if (!A.projects.find((p) => p.id === A.pid)) {
-    A.pid = A.projects.find((p) => p.id === project()) ? project() : A.projects[0].id;
+  if (!A.regs.find((r) => r.id === A.reg)) {
+    const want = A.pid || project();
+    const hit = A.regs.find((r) => r.viewer && r.viewer === want);
+    A.reg = (hit || A.regs[0]).id;
   }
-  ul.innerHTML = A.projects.map((p) => `<li data-id="${esc(p.id)}" class="${p.id === A.pid ? "on" : ""}">`
-    + `<span>${esc(p.title)}<div class="sub">${esc(p.id)}</div></span>`
-    + `<span class="pill">${p.members}</span></li>`).join("");
-  ul.querySelectorAll("li[data-id]").forEach((li) => {
-    li.onclick = () => { A.pid = li.dataset.id; loadProjects().then(loadMembers); };
+  const cur = A.regs.find((r) => r.id === A.reg);
+  A.pid = cur.viewer && A.projects.find((p) => p.id === cur.viewer) ? cur.viewer : null;
+  ul.innerHTML = A.regs.map((r) => `<li data-reg="${esc(r.id)}" class="${r.id === A.reg ? "on" : ""}">`
+    + `<span>${esc(r.short || r.name)}<div class="sub">${esc(r.code || r.name)}`
+    + (r.viewer ? ` · ${esc(r.viewer)}` : ` · <span class="nm">no model yet</span>`) + `</div></span>`
+    + `<span class="pill" title="Members">${r.members.length}</span></li>`).join("");
+  ul.querySelectorAll("li[data-reg]").forEach((li) => {
+    li.onclick = () => { A.reg = li.dataset.reg; A.pid = null; loadProjects().then(loadMembers); };
   });
+  fillReg(cur);
+}
+
+/* ------------------------------------------------------------ project details */
+
+let REG_LINKS = [];
+function fillReg(r) {
+  $("#a-reg").hidden = !r;
+  if (!r) return;
+  $("#a-reg-title").textContent = r.id ? "Project details" : "New project";
+  $("#r-name").value = r.name || "";
+  $("#r-code").value = r.code || "";
+  $("#r-short").value = r.short || "";
+  $("#r-status").value = r.status || "Active";
+  $("#r-team").value = r.team || "";
+  const vs = A.allViewer || [];
+  const taken = new Set(A.regs.filter((x) => x.viewer && x.id !== r.id).map((x) => x.viewer));
+  $("#r-viewer").innerHTML = `<option value="">- none yet -</option>` + vs.map((v) =>
+    `<option value="${esc(v.id)}"${v.id === r.viewer ? " selected" : ""}${taken.has(v.id) ? " disabled" : ""}>${esc(v.title)}${v.title !== v.id ? " (" + esc(v.id) + ")" : ""}${taken.has(v.id) ? " - used" : ""}</option>`).join("")
+    + (r.viewer && !vs.some((v) => v.id === r.viewer) ? `<option value="${esc(r.viewer)}" selected>${esc(r.viewer)}</option>` : "");
+  const owners = new Set((r.owners || []).map((o) => o.uid));
+  $("#r-owners").innerHTML = A.users.filter((u) => u.active).map((u) =>
+    `<option value="${u.id}"${owners.has(u.id) ? " selected" : ""}>${esc(u.name)}${u.team ? " · " + esc(u.team) : ""}</option>`).join("");
+  REG_LINKS = (r.links || []).slice();
+  paintRegLinks();
+  $("#r-notes").value = r.notes || "";
+  $("#r-open").href = r.id ? "projects.html?p=" + encodeURIComponent(r.id) : "projects.html";
+  $("#r-open").hidden = !r.id;
+  $("#r-del").hidden = !(r.id && A.me.site_admin);
+  A.editing = r;
+}
+
+function paintRegLinks() {
+  $("#r-links").innerHTML = REG_LINKS.map((l) => `<span class="fl-chip">${esc(l.title || l.url)}`
+    + `<button type="button" class="ghost fl-x" data-i="${REG_LINKS.indexOf(l)}" title="Remove">&#10005;</button></span>`).join("")
+    || `<span class="muted" style="font-size:12px">None yet.</span>`;
+}
+
+function wireRegistry() {
+  $("#r-link-add").onclick = () => {
+    const url = $("#r-link").value.trim();
+    if (!/^https?:\/\//i.test(url)) { msg("A link starts with https://", "bad"); return; }
+    let title = "";
+    try { title = decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).pop() || ""); } catch (e) {}
+    title = prompt("A name for this link", title && !/^[:a-z]$/i.test(title) ? title : "Project folder") || "Project folder";
+    REG_LINKS.push({ kind: "url", url, title });
+    $("#r-link").value = "";
+    paintRegLinks();
+  };
+  $("#r-links").onclick = (ev) => {
+    const b = ev.target.closest("[data-i]");
+    if (b) { REG_LINKS.splice(Number(b.dataset.i), 1); paintRegLinks(); }
+  };
+  $("#r-save").onclick = async () => {
+    const r = A.editing || {};
+    const owners = [...$("#r-owners").selectedOptions].map((o) => ({ uid: Number(o.value), name: o.textContent.split(" · ")[0] }));
+    try {
+      const out = await api("/api/registry", { method: "POST", body: JSON.stringify({
+        id: r.id || undefined, name: $("#r-name").value, code: $("#r-code").value, short: $("#r-short").value,
+        status: $("#r-status").value, team: $("#r-team").value, viewer: $("#r-viewer").value,
+        owners, links: REG_LINKS, notes: $("#r-notes").value }) });
+      msg(r.id ? "Project saved." : "Project added - now add its members below.", "ok");
+      A.reg = out.id; A.pid = null;
+      await loadProjects(); await loadMembers();
+    } catch (e) { msg(esc(e.message), "bad"); }
+  };
+  $("#r-del").onclick = async () => {
+    const r = A.editing;
+    if (!r || !confirm(`Take ${r.short || r.name} off the Projects page?\n\nIts model and sheets, issues, tasks and files are not touched.`
+      + (r.viewer ? "\n\nNote: while its viewer project exists it comes back on its own - delete the viewer project (below) to remove both." : ""))) return;
+    try { await api("/api/registry/" + encodeURIComponent(r.id), { method: "DELETE" }); A.reg = ""; await loadProjects(); await loadMembers(); }
+    catch (e) { msg(esc(e.message), "bad"); }
+  };
+  $("#a-reg-new").onclick = () => {
+    A.reg = "";
+    for (const li of document.querySelectorAll("#a-projects li")) li.classList.remove("on");
+    fillReg({ name: "", status: "Active", owners: [{ uid: A.me.user.id }], links: [] });
+    $("#a-members").innerHTML = "";
+    $("#a-proj-title").textContent = "Members - save the project first";
+    $("#a-viewer-only").hidden = true;
+    $("#r-name").focus();
+  };
+  $("#a-reg-import").onclick = () => {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".xlsx,.csv";
+    inp.onchange = async () => {
+      const file = inp.files[0];
+      if (!file) return;
+      const body = {};
+      if (/\.xlsx$/i.test(file.name)) {
+        body.xlsx = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(",")[1]); fr.readAsDataURL(file); });
+      } else body.csv = await file.text();
+      try {
+        const r = await api("/api/registry/import", { method: "POST", body: JSON.stringify(body) });
+        msg(`${r.imported} projects imported.` + (r.unmatched.length ? ` No account yet for: ${esc(r.unmatched.join(", "))}.` : ""), "ok");
+        await loadProjects(); await loadMembers();
+      } catch (e) { msg(esc(e.message), "bad"); }
+    };
+    inp.click();
+  };
 }
 
 /* ------------------------------------------------------------ devices */
@@ -356,7 +485,7 @@ async function loadBin() {
       try {
         await api(`/api/admin/deleted-projects/${encodeURIComponent(name)}/restore`, { method: "POST" });
         msg(`${esc(d.project)} is back.`, "ok");
-        A.pid = d.project;
+        A.pid = d.project; A.reg = "";
       } catch (e) { msg(esc(e.message), "bad"); }
       await loadProjects(); await loadMembers(); await loadBin();
     };
@@ -421,11 +550,14 @@ async function loadUsers() {
 }
 
 async function loadMembers() {
-  if (!A.pid) { $("#a-members").innerHTML = ""; $("#a-danger").hidden = true; return; }
+  $("#a-viewer-only").hidden = !A.pid;
+  $("#a-no-viewer").hidden = !!A.pid || !A.reg;
+  if (!A.pid && !A.reg) { $("#a-members").innerHTML = ""; $("#a-danger").hidden = true; return; }
   const p = A.projects.find((x) => x.id === A.pid);
-  $("#a-proj-title").textContent = "Members of " + (p ? p.title : A.pid);
+  const rg = A.regs.find((x) => x.id === A.reg);
+  $("#a-proj-title").textContent = "Members of " + (rg ? rg.short || rg.name : p ? p.title : A.pid);
   $("#a-danger").hidden = !(A.me && A.me.site_admin);
-  A.members = (await api(`/api/admin/projects/${encodeURIComponent(A.pid)}/members`)).members || [];
+  A.members = await memberList();
   const t = $("#a-members");
   t.innerHTML = `<thead><tr><th>Name</th><th>Email</th><th>Office</th><th>Company</th><th>Team</th><th>Discipline</th><th>Role</th>`
     + `<th>Added</th><th></th></tr></thead><tbody>`
@@ -454,8 +586,7 @@ async function loadMembers() {
     }
     tr.querySelector(".role").onchange = async (e) => {
       try {
-        await api(`/api/admin/projects/${encodeURIComponent(A.pid)}/members`,
-          { method: "PUT", body: JSON.stringify({ user_id: uid, role: e.target.value }) });
+        await memberPut(uid, e.target.value);
         msg("Role changed.", "ok");
       } catch (err) { msg(esc(err.message), "bad"); }
       await loadMembers();
@@ -464,7 +595,7 @@ async function loadMembers() {
       const m = A.members.find((x) => x.id === uid);
       if (!confirm(`Remove ${m.name} from this project? Their issues and comments stay.`)) return;
       try {
-        await api(`/api/admin/projects/${encodeURIComponent(A.pid)}/members/${uid}`, { method: "DELETE" });
+        await memberDel(uid);
         msg(`${esc(m.name)} removed from the project.`, "ok");
       } catch (err) { msg(esc(err.message), "bad"); }
       await loadProjects(); await loadMembers();
@@ -533,8 +664,7 @@ function wireProjects() {
     const uid = +$("#a-add-user").value;
     if (!uid) return;
     try {
-      await api(`/api/admin/projects/${encodeURIComponent(A.pid)}/members`,
-        { method: "PUT", body: JSON.stringify({ user_id: uid, role: $("#a-add-role").value }) });
+      await memberPut(uid, $("#a-add-role").value);
       const u = A.users.find((x) => x.id === uid);
       const role = $("#a-add-role").value;
       const p = A.projects.find((x) => x.id === A.pid);
@@ -557,8 +687,9 @@ function wireProjects() {
       const r = await api("/api/admin/users", { method: "POST", body: JSON.stringify({
         email: $("#n-email").value, name: $("#n-name").value, office: $("#n-office").value,
         company: $("#n-company").value, team: $("#n-team").value.trim(), discipline: $("#n-disc").value.trim(),
-        project: A.pid, role: $("#n-role").value }) });
-      tempNotice(r.user, r.temp_password, { project: A.pid, role: $("#n-role").value });
+        project: A.pid || undefined, role: $("#n-role").value }) });
+      if (!A.pid && A.reg) await memberPut(r.user.id, $("#n-role").value);
+      tempNotice(r.user, r.temp_password, { project: A.pid || "", role: $("#n-role").value });
       for (const id of ["#n-email", "#n-name", "#n-company"]) $(id).value = "";
       await loadUsers(); await loadProjects(); await loadMembers();
     } catch (e) { msg(esc(e.message), "bad"); }
@@ -908,7 +1039,10 @@ async function main() {
   $("#d-reload").onclick = () => loadDevices();
   $("#d-filter").onchange = () => renderDevices();
   wireProjects();
+  wireRegistry();
+  A.reg = new URLSearchParams(location.search).get("reg") || "";
   wirePeople();
+  try { A.allViewer = (await api("/api/projects")).projects || []; } catch (e) { A.allViewer = []; }
   await loadUsers();
   await loadProjects();
   await loadMembers();

@@ -2,6 +2,7 @@
  * sub-tasks, what it is linked to (issues, sheets, 3D views, OneDrive and
  * ACC files), the discussion and the history. */
 
+import { METHOD_OPTS, isMethod, ic } from "./tasks-util.js";
 import { $, esc, avatar, people, fmtDate, fmtWhen, ago, isOverdue, priorityPill, pickPeople, pickOne, pickDate, PRIORITIES, toast, modal } from "./tasks-util.js";
 import { chip, makeLink, classify, linkify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
@@ -73,14 +74,19 @@ function paint(T) {
   const others = t.links.filter((l) => l.kind !== "issue");
   const scroll = box.querySelector(".td-body") ? box.querySelector(".td-body").scrollTop : 0;
 
+  const seq = T.sequence(), at = seq.indexOf(t.id);
   box.innerHTML = `<div class="td-top">
-      <button class="td-done${t.done ? " on" : ""}" data-act="done"${ed ? "" : " disabled"}>${t.done ? "&#10003; Completed" : "Mark complete"}</button>
+      <button class="ghost td-backbtn icon-btn" data-act="close" title="Back to the list">${ic("back", 18)} Back</button>
+      <button class="td-done icon-btn${t.done ? " on" : ""}" data-act="done"${ed ? "" : " disabled"}>${t.done ? ic("check") + " Completed" : "Mark complete"}</button>
       <span class="spacer"></span>
-      ${T.S.accounts ? `<button class="ghost" data-act="follow" title="${following ? "Stop getting emails about this task" : "Get emails when it changes or someone comments"}">${following ? "&#128276; Following" : "&#128277; Follow"}</button>` : ""}
-      <button class="ghost" data-act="share" title="Send this task to a chat in the Messenger">&#128172; Share</button>
-      <button class="ghost" data-act="copy" title="Copy a link to this task">&#128279;</button>
-      ${ed ? `<button class="ghost danger" data-act="delete" title="Delete task">&#128465;</button>` : ""}
-      <button class="ghost" data-act="close" title="Close">&#10005;</button>
+      <span class="td-nav"><button class="ghost" data-act="prev" title="Previous task (K)"${at > 0 ? "" : " disabled"}>${ic("up")}</button>`
+        + `<small class="muted">${at >= 0 ? at + 1 + " / " + seq.length : ""}</small>`
+        + `<button class="ghost" data-act="next" title="Next task (J)"${at >= 0 && at < seq.length - 1 ? "" : " disabled"}>${ic("down")}</button></span>
+      ${T.S.accounts ? `<button class="ghost icon-btn" data-act="follow" title="${following ? "Following - you get emails when it changes. Click to stop" : "Get emails when it changes or someone comments"}">${ic(following ? "bell" : "belloff")}<span class="lab">${following ? "Following" : "Follow"}</span></button>` : ""}
+      <button class="ghost icon-btn" data-act="share" title="Send this task to a chat in the Messenger">${ic("share")}<span class="lab">Share</span></button>
+      <button class="ghost" data-act="copy" title="Copy a link to this task">${ic("link")}</button>
+      ${ed ? `<button class="ghost danger" data-act="delete" title="Delete task">${ic("trash")}</button>` : ""}
+      <button class="ghost td-x" data-act="close" title="Close">${ic("close")}</button>
     </div>
     <div class="td-body">
       ${parent ? `<a href="#" class="td-parent" data-open="${esc(parent.id)}">&larr; ${esc(parent.title || "Parent task")}</a>` : ""}
@@ -97,6 +103,10 @@ function paint(T) {
         const shown = f.type === "person" ? (people(v, 6) || `<span class="muted">Add</span>`)
           : f.type === "date" ? (v ? esc(fmtDate(v, true)) : `<span class="muted">-</span>`)
           : f.type === "check" ? `<span class="cbx${v ? " on" : ""}"></span>`
+            + (f.name.trim().toLowerCase() === "milestone" ? ` <small class="muted">${v ? "a milestone - a gold diamond on the Gantt" : "tick to mark as a milestone"}</small>` : "")
+          : isMethod(f) ? `<span class="sel-pill">${v === "AND" ? "AND" : "OR"}</span> <small class="muted">${v === "AND"
+            ? `every owner completes their part${t.owners.length > 1 ? ` (${(t.vals[(T.fieldNamed("task completers") || {}).id] || []).length} of ${t.owners.length} done)` : ""}`
+            : "done when any owner completes it"}</small>`
           : (v != null && v !== "" ? esc(v) : `<span class="muted">-</span>`);
         return row(esc(f.name), shown, ed && "f:" + f.id);
       }).join("")}
@@ -177,6 +187,7 @@ function wire(T, box, t) {
     if (!a) return;
     const k = a.dataset.act;
     if (k === "close") return close(T);
+    if (k === "prev" || k === "next") return step(T, k === "next" ? 1 : -1);
     if (k === "share") {
       const url = location.origin + location.pathname.replace(/[^/]*$/, "") + `tasks.html?list=${t.list_id}&task=${t.id}`;
       window.open(`messenger.html?share=${encodeURIComponent(url)}&title=${encodeURIComponent(t.title || "Task")}`, "_blank");
@@ -194,7 +205,7 @@ function wire(T, box, t) {
       return;
     }
     if (!ed) return;
-    if (k === "done") return T.save(t.id, { done: !t.done });
+    if (k === "done") return T.toggleDone(t);
     if (k === "delete") return T.remove(t.id);
     if (k === "owners") return pickPeople(a, t.owners, T.people(), (v) => T.save(t.id, { owners: v }));
     if (k === "start" || k === "due") return pickDate(a, t[k], (v) => T.save(t.id, { [k]: v }));
@@ -205,6 +216,7 @@ function wire(T, box, t) {
       const f = T.S.fields.get(k.slice(2));
       const set = (v) => T.save(t.id, { vals: { [f.id]: v } });
       if (f.type === "person") return pickPeople(a, t.vals[f.id] || [], T.people(), set);
+      if (isMethod(f)) return pickOne(a, METHOD_OPTS, t.vals[f.id] || "OR", set);
       if (f.type === "select") return pickOne(a, [""].concat(f.options), t.vals[f.id] || "", set);
       if (f.type === "date") return pickDate(a, t.vals[f.id], set);
       if (f.type === "check") return set(!t.vals[f.id]);
@@ -214,7 +226,7 @@ function wire(T, box, t) {
     }
     if (k === "subdone") {
       const s = T.task(ev.target.closest(".td-sub").dataset.id);
-      return T.save(s.id, { done: !s.done });
+      return T.toggleDone(s);
     }
     if (k === "addlink") return addLink(T, t, box.querySelector(".td-link"));
     if (k === "linkissue") return linkIssue(T, t);
@@ -314,6 +326,23 @@ async function linkIssue(T, t) {
   }));
   T.save(t.id, { links: t.links.concat(add) });
 }
+
+/* the task before / after this one, in the order the list shows them */
+function step(T, d) {
+  if (!CUR) return;
+  const seq = T.sequence();
+  const i = seq.indexOf(CUR.id);
+  const id = seq[i + d];
+  if (id) T.openTask(id);
+}
+document.addEventListener("keydown", (ev) => {
+  if (!CUR || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  const a = document.activeElement;
+  if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
+  if (ev.key === "j" || ev.key === "J") { ev.preventDefault(); step(window.LWKTasks, 1); }
+  if (ev.key === "k" || ev.key === "K") { ev.preventDefault(); step(window.LWKTasks, -1); }
+  if (ev.key === "Escape" && !document.querySelector(".t-modal, .t-pop")) close(window.LWKTasks);
+});
 
 function paintPend() {
   const el = document.querySelector("#t-detail .td-pend");

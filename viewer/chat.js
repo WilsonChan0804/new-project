@@ -10,7 +10,7 @@
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop } from "./tasks-util.js";
+import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop, ic, pop } from "./tasks-util.js";
 import { linkify, badge } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 
@@ -122,9 +122,10 @@ function paintHead() {
   $("#c-icon").outerHTML = `<span id="c-icon">${roomIcon(r)}</span>`;
   $("#c-title").textContent = r.title;
   const p = r.kind === "project" ? C.projects[r.project] : null;
-  $("#c-sub").textContent = r.kind === "project" ? "Project channel" + (p && p.code ? " · " + p.code : "")
-    : r.kind === "dm" ? "Direct message" : r.kind === "task" ? `Task discussion · ${r.list_title} / ${r.group_title}`
-      : `Group · ${r.members.length} people`;
+  $("#c-sub").textContent = r.description ? r.description.split("\n")[0]
+    : r.kind === "project" ? "Project channel" + (p && p.code ? " · " + p.code : "")
+      : r.kind === "dm" ? "Direct message" : r.kind === "task" ? `Task discussion · ${r.list_title} / ${r.group_title}`
+        : `Group · ${r.members.length} people`;
   $("#c-mcount").textContent = r.members ? r.members.length : "";
   $("#c-members-btn").hidden = r.kind === "dm";
   $("#c-files-btn").hidden = r.kind === "task";
@@ -173,25 +174,40 @@ function cardHtml(m) {
   return "";
 }
 
+/* An "Embed" code pasted from OneDrive / SharePoint (<iframe src="...">)
+   is kept as its address, which linkify() shows as a player. */
+const unframe = (t) => String(t || "").replace(/<iframe[^>]*\ssrc=["']([^"']+)["'][^>]*>(\s*<\/iframe>)?/gi, " $1 ");
+
+function textHtml(body) {
+  return mention(linkify(esc(unframe(body))));
+}
+
 function msgHtml(m, prev) {
   if (m.kind === "system") return `<div class="c-sys">${esc(m.body)} · ${esc(short(m.created_at))}</div>`;
-  const same = prev && prev.kind !== "system" && prev.uid === m.uid && prev.author === m.author
+  const fwd = m.card && m.card.type === "forward" ? m.card : null;
+  const same = prev && prev.kind !== "system" && prev.uid === m.uid && prev.author === m.author && !fwd
     && Date.parse(m.created_at) - Date.parse(prev.created_at) < 5 * 60e3 && !m.reply_to;
   const mine = m.uid != null && m.uid === C.uid;
   const reply = m.reply_to && C.msgs.find((x) => x.id === m.reply_to);
   const by = m.kind === "card" ? (m.author ? m.author + " · update" : "Update") : m.author;
+  const inner = fwd ? (fwd.inner ? cardHtml({ card: fwd.inner }) : "") : m.kind === "card" ? cardHtml(m) : "";
+  const room = C.room.kind !== "task";
   return `<div class="c-msg${same ? " cont" : ""}${mine ? " mine" : ""}" data-id="${esc(m.id)}">`
-    + (same ? `<span class="c-av"></span>` : `<span class="c-av">${m.kind === "card" ? `<span class="c-ico bot">&#9881;</span>` : avatar({ name: m.author }, 34)}</span>`)
+    + (same ? `<span class="c-av"></span>` : `<span class="c-av">${m.kind === "card" ? `<span class="c-ico bot">${ic("bell", 18)}</span>` : avatar({ name: m.author }, 34)}</span>`)
     + `<div class="c-body">`
     + (same ? "" : `<div class="c-meta"><b>${esc(by)}</b><small title="${esc(fmtWhen(m.created_at))}">${esc(short(m.created_at))}</small></div>`)
     + (m.deleted ? `<div class="c-del">message deleted</div>`
       : (reply ? `<div class="c-quote"><b>${esc(reply.author)}</b> ${esc((reply.body || "").slice(0, 120))}</div>` : "")
-        + (m.kind === "card" ? cardHtml(m) : "")
-        + (m.body ? `<div class="c-text">${mention(linkify(esc(m.body)))}${m.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>` : "")
-        + filesHtml(m.files))
+        + (fwd ? `<div class="c-fwd">${ic("forward", 13)} Forwarded from <b>${esc(fwd.from)}</b> in ${esc(fwd.room)}</div>` : "")
+        + `<div class="${fwd ? "c-fwd-body" : ""}">`
+        + inner
+        + (m.body ? `<div class="c-text">${textHtml(m.body)}${m.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>` : "")
+        + filesHtml(m.files) + `</div>`)
     + `</div>`
-    + (!m.deleted && m.kind !== "card" && C.room.kind !== "task" ? `<div class="c-acts"><button class="ghost" data-reply="${esc(m.id)}" title="Reply">&#8617;</button>`
-      + (mine ? `<button class="ghost" data-edit="${esc(m.id)}" title="Edit">&#9998;</button><button class="ghost" data-del="${esc(m.id)}" title="Delete">&#128465;</button>` : "")
+    + (!m.deleted && room ? `<div class="c-acts">`
+      + (m.kind !== "card" ? `<button class="ghost" data-reply="${esc(m.id)}" title="Reply">${ic("reply")}</button>` : "")
+      + `<button class="ghost" data-fwd="${esc(m.id)}" title="Forward to another chat">${ic("forward")}</button>`
+      + (mine && m.kind !== "card" ? `<button class="ghost" data-edit="${esc(m.id)}" title="Edit">${ic("edit")}</button><button class="ghost" data-del="${esc(m.id)}" title="Delete">${ic("trash")}</button>` : "")
       + `</div>` : "")
     + `</div>`;
 }
@@ -393,54 +409,149 @@ async function newChat() {
   } catch (e) { toast(e.message, true); }
 }
 
-function members() {
-  const r = C.room;
+/* Chat info: what it is for (the description, as in WhatsApp), who is in
+   it, and leaving or deleting it. */
+function info(rr) {
+  const r = rr || C.room;
   const box = $("#c-right");
-  if (!box.hidden && box.dataset.v === "m") { box.hidden = true; return; }
+  if (!rr && !box.hidden && box.dataset.v === "i") { box.hidden = true; return; }
   box.hidden = false;
-  box.dataset.v = "m";
-  const list = (r.members || []).map((u) => C.byUid[u] || { uid: u, name: "?" });
-  box.innerHTML = `<div class="cp-h"><b>${r.kind === "task" ? "Followers" : "Members"}</b> <span class="muted">${list.length}</span><span class="spacer"></span><button class="ghost" data-x>&#10005;</button></div>`
-    + list.map((p) => `<div class="cp-p">${avatar(p, 28)}<span><b>${esc(p.name)}</b><small class="muted">${esc([p.team, p.office].filter(Boolean).join(" · "))}</small></span>`
-      + (r.kind !== "task" && p.uid !== C.uid && (r.role === "admin" || C.me.site_admin) ? `<button class="ghost" data-rm="${p.uid}" title="Remove from the chat">&#10005;</button>` : "")
-      + (p.uid !== C.uid ? `<button class="ghost" data-dm="${p.uid}" title="Direct message">&#128172;</button>` : "") + `</div>`).join("")
-    + (r.kind !== "task" && r.kind !== "dm" ? `<button class="cp-add">+ Add people</button><button class="ghost danger cp-leave">Leave this chat</button>` : "")
-    + (r.kind !== "task" && r.kind !== "dm" && r.role === "admin" ? `<button class="ghost cp-rename">Rename</button>` : "");
+  box.dataset.v = "i";
+  const admin = r.role === "admin" || C.me.site_admin;
+  const list = (r.members || []).map((u) => C.byUid[u] || { uid: u, name: "?" })
+    .sort((a, b) => (b.uid === C.uid) - (a.uid === C.uid) || a.name.localeCompare(b.name));
+  const p = r.kind === "project" ? C.projects[r.project] : null;
+  box.innerHTML = `<div class="cp-h"><b>${r.kind === "task" ? "Task discussion" : r.kind === "dm" ? "Direct message" : "Chat info"}</b><span class="spacer"></span>`
+    + `<button class="ghost" data-x title="Close">${ic("close")}</button></div>`
+    + `<div class="ci-top">${roomIcon(r)}<div><b>${esc(r.title)}</b><small class="muted">${r.kind === "project" ? "Project channel" + (p && p.code ? " · " + esc(p.code) : "") : r.kind === "group" ? "Group" : r.kind === "dm" ? "Direct message" : ""}</small></div></div>`
+    + (r.kind !== "dm" && r.kind !== "task" ? `<div class="ci-sec"><div class="ci-h">Description${admin ? ` <button class="ghost linkish" data-desc>edit</button>` : ""}</div>`
+      + `<div class="ci-desc">${r.description ? textHtml(r.description) : `<span class="muted">${admin ? "Say what this chat is for - its rules, key links, who to ask." : "No description."}</span>`}</div></div>` : "")
+    + (r.created_by ? `<div class="ci-sec muted" style="font-size:11px">Started by ${esc(r.created_by)} · ${esc(fmtWhen(r.created_at))}</div>` : "")
+    + `<div class="ci-sec"><div class="ci-h">${r.kind === "task" ? "Followers" : "Members"} <span class="muted">${list.length}</span></div>`
+    + list.map((u) => `<div class="cp-p">${avatar(u, 30)}<span class="cp-n"><b>${esc(u.name)}${u.uid === C.uid ? " <small class=\"muted\">(you)</small>" : ""}</b>`
+      + `<small class="muted">${esc([u.team, u.office].filter(Boolean).join(" · "))}</small></span>`
+      + (u.uid !== C.uid ? `<button class="ghost" data-dm="${u.uid}" title="Direct message">${ic("chat")}</button>` : "")
+      + (r.kind !== "task" && r.kind !== "dm" && u.uid !== C.uid && admin ? `<button class="ghost" data-rm="${u.uid}" title="Remove from the chat">${ic("close")}</button>` : "")
+      + `</div>`).join("")
+    + (r.kind !== "task" && r.kind !== "dm" ? `<button class="cp-add icon-btn">${ic("plus")} Add people</button>` : "") + `</div>`
+    + (r.kind !== "task" ? `<div class="ci-sec ci-actions">`
+      + `<button class="ghost icon-btn" data-files>${ic("clip")} Pictures and files</button>`
+      + (r.kind !== "dm" ? `<button class="ghost icon-btn" data-leave>${ic("exit")} Leave this chat</button>` : "")
+      + (admin && (r.kind !== "dm" || C.me.site_admin) ? `<button class="ghost danger icon-btn" data-delroom>${ic("trash")} Delete this chat</button>` : "")
+      + `</div>` : "");
   box.onclick = async (ev) => {
     if (ev.target.closest("[data-x]")) { box.hidden = true; return; }
     const rm = ev.target.closest("[data-rm]"), dm = ev.target.closest("[data-dm]");
     try {
+      if (ev.target.closest("[data-desc]")) {
+        const f = await modal("Description of " + r.title, `<textarea name="d" rows="6" maxlength="2000" placeholder="What is this chat for? Rules, key links, who to ask ...">${esc(r.description || "")}</textarea>`
+          + (r.kind !== "dm" ? `<label>Name <input name="t" value="${esc(r.title)}" maxlength="80"></label>` : ""), "Save");
+        if (!f) return;
+        await api(`/api/chat/rooms/${r.id}`, { method: "PATCH", body: JSON.stringify({ description: f.d.value, title: f.t ? f.t.value : r.title }) });
+        r.description = f.d.value; if (f.t) r.title = f.t.value || r.title;
+        if (C.room && C.room.id === r.id) paintHead();
+        await loadRooms(); info(r);
+      }
       if (rm) {
         await api(`/api/chat/rooms/${r.id}/members`, { method: "PUT", body: JSON.stringify({ remove: [Number(rm.dataset.rm)] }) });
         r.members = r.members.filter((u) => u !== Number(rm.dataset.rm));
-        box.hidden = true; members();
+        info(r);
       }
       if (dm) {
         const x = await api("/api/chat/rooms", { method: "POST", body: JSON.stringify({ kind: "dm", user: Number(dm.dataset.dm) }) });
         await loadRooms(); openRoom(x.id);
       }
       if (ev.target.closest(".cp-add")) {
-        pickPeople(ev.target, [], C.people.filter((p) => !r.members.includes(p.uid)), async (v) => {
+        pickPeople(ev.target.closest(".cp-add"), [], C.people.filter((p) => !r.members.includes(p.uid)), async (v) => {
           const add = v.map((p) => p.uid).filter((u) => !r.members.includes(u));
           if (!add.length) return;
           await api(`/api/chat/rooms/${r.id}/members`, { method: "PUT", body: JSON.stringify({ add }) });
           r.members = r.members.concat(add);
-          paintHead();
+          if (C.room && C.room.id === r.id) paintHead();
         });
       }
-      if (ev.target.closest(".cp-leave")) {
-        if (!confirm("Leave " + r.title + "?")) return;
-        await api(`/api/chat/rooms/${r.id}/members`, { method: "PUT", body: JSON.stringify({ remove: [C.uid] }) });
-        C.room = null; $("#c-conv").hidden = true; $("#c-empty").hidden = false; box.hidden = true;
-        await loadRooms();
-      }
-      if (ev.target.closest(".cp-rename")) {
-        const t = prompt("Name of the chat", r.title);
-        if (!t) return;
-        await api(`/api/chat/rooms/${r.id}`, { method: "PATCH", body: JSON.stringify({ title: t }) });
-        r.title = t; paintHead(); await loadRooms();
-      }
+      if (ev.target.closest("[data-files]")) { box.dataset.v = ""; files(); }
+      if (ev.target.closest("[data-leave]")) await leave(r);
+      if (ev.target.closest("[data-delroom]")) await removeRoom(r);
     } catch (e) { toast(e.message, true); }
+  };
+}
+
+async function leave(r) {
+  if (!confirm("Leave " + r.title + "? You can be added back by anyone in it.")) return;
+  await api(`/api/chat/rooms/${r.id}/members`, { method: "PUT", body: JSON.stringify({ remove: [C.uid] }) });
+  closeRoom(r.id);
+  await loadRooms();
+}
+
+async function removeRoom(r) {
+  if (!confirm(`Delete "${r.title}" for everyone? Its messages will no longer be shown to anyone.`)) return;
+  await api(`/api/chat/rooms/${r.id}`, { method: "DELETE" });
+  closeRoom(r.id);
+  await loadRooms();
+  toast("Chat deleted");
+}
+
+function closeRoom(id) {
+  if (!C.room || C.room.id !== id) return;
+  C.room = null;
+  $("#c-conv").hidden = true; $("#c-empty").hidden = false; $("#c-right").hidden = true;
+  $("#c-app").classList.remove("in-room");
+  history.replaceState(null, "", "messenger.html");
+}
+
+/* Forward a message: choose the chats, add a line if you like. */
+async function forwardMsg(m) {
+  const rooms = C.rooms.filter((r) => !C.room || r.id !== C.room.id);
+  if (!rooms.length) return toast("No other chat to forward to - start one first", true);
+  const p = modal("Forward to", `<div class="fw-prev">${esc((m.body || (m.card && (m.card.title || (m.card.inner || {}).title)) || (m.files[0] || {}).name || "").slice(0, 160))}</div>`
+    + `<input class="fw-q" placeholder="Search chats">`
+    + `<div class="fw-list">${rooms.map((r) => `<label class="fw-row">`
+      + `<input type="checkbox" value="${esc(r.id)}">${roomIcon(r)}<span><b>${esc(r.title)}</b><small class="muted">${r.kind === "project" ? "Project channel" : r.kind === "dm" ? "Direct message" : "Group"}</small></span></label>`).join("")}</div>`
+    + `<label>Add a message <input name="note" placeholder="optional"></label>`, "Forward");
+  const form = document.querySelector(".t-modal");
+  form.querySelector(".fw-q").oninput = (ev) => {
+    const q = ev.target.value.toLowerCase();
+    for (const row of form.querySelectorAll(".fw-row")) row.hidden = q && !row.textContent.toLowerCase().includes(q);
+  };
+  const f = await p;
+  if (!f) return;
+  const ids = [...f.querySelectorAll(".fw-row input:checked")].map((i) => i.value);
+  if (!ids.length) return toast("Choose at least one chat", true);
+  try {
+    const r = await api(`/api/chat/messages/${m.id}/forward`, { method: "POST", body: JSON.stringify({ rooms: ids, note: f.note.value }) });
+    toast(`Forwarded to ${r.sent.length} chat${r.sent.length === 1 ? "" : "s"}`);
+  } catch (e) { toast(e.message, true); }
+}
+
+/* Right-click (or long-press) a chat in the list. */
+function roomMenu(ev, id) {
+  const r = C.rooms.find((x) => x.id === id);
+  if (!r) return;
+  ev.preventDefault();
+  const admin = r.role === "admin" || C.me.site_admin;
+  const el = pop(ev.target.closest(".cr"), `<div class="po-row" data-k="open">${ic("chat")} Open</div>`
+    + `<div class="po-row" data-k="info">${ic("info")} Details</div>`
+    + (r.unread ? `<div class="po-row" data-k="read">${ic("read")} Mark as read</div>` : "")
+    + (r.kind !== "dm" ? `<div class="po-row" data-k="leave">${ic("exit")} Leave</div>` : "")
+    + (admin && (r.kind !== "dm" || C.me.site_admin) ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete chat</div>` : ""), 200);
+  el.style.left = Math.min(innerWidth - 210, ev.clientX) + "px";
+  el.style.top = Math.min(innerHeight - 200, ev.clientY) + "px";
+  el.style.bottom = "";
+  el.onclick = async (e) => {
+    const k = (e.target.closest(".po-row") || {}).dataset;
+    if (!k) return;
+    closePop();
+    try {
+      if (k.k === "open") openRoom(r.id);
+      if (k.k === "info") { if (!C.room || C.room.id !== r.id) await openRoom(r.id); info(C.room); }
+      if (k.k === "read") {
+        await api(`/api/chat/rooms/${r.id}/read`, { method: "POST", body: JSON.stringify({ seq: r.last_seq }) });
+        r.unread = 0; r.mention = 0; paintRooms();
+      }
+      if (k.k === "leave") await leave(r);
+      if (k.k === "del") await removeRoom(r);
+    } catch (err) { toast(err.message, true); }
   };
 }
 
@@ -489,7 +600,17 @@ async function share(url, title) {
 
 /* ------------------------------------------------------------ wiring */
 
+function icons() {
+  $("#c-back").innerHTML = ic("back", 20) + `<span>Chats</span>`;
+  $("#c-files-btn").innerHTML = ic("clip") + `<span class="lab">Files</span>`;
+  $("#c-members-btn").innerHTML = ic("users") + ` <span id="c-mcount"></span>`;
+  $("#c-members-btn").title = "Chat info and members";
+  $("#c-new").innerHTML = ic("compose", 18);
+  $("#c-attach").innerHTML = ic("clip", 18);
+}
+
 function wire() {
+  icons();
   $("#c-rooms").onclick = async (ev) => {
     const j = ev.target.closest("[data-join]");
     if (j) {
@@ -519,7 +640,22 @@ function wire() {
     if (b) { C.pend.splice(Number(b.dataset.unpend), 1); paintPend(); }
   };
   $("#c-back").onclick = () => $("#c-app").classList.remove("in-room");
-  $("#c-members-btn").onclick = members;
+  $("#c-members-btn").onclick = () => info();
+  $("#c-head .ch-title").onclick = () => { if (C.room && C.room.kind !== "dm") info(); };
+  $("#c-rooms").addEventListener("contextmenu", (ev) => {
+    const a = ev.target.closest(".cr[data-room]");
+    if (a && !a.dataset.room.startsWith(TASK)) roomMenu(ev, a.dataset.room);
+  });
+  // a phone: hold a chat for its menu
+  let hold = null;
+  $("#c-rooms").addEventListener("touchstart", (ev) => {
+    const a = ev.target.closest(".cr[data-room]");
+    if (!a || a.dataset.room.startsWith(TASK)) return;
+    const t = ev.touches[0];
+    hold = setTimeout(() => { hold = "fired"; roomMenu({ preventDefault() {}, target: a, clientX: t.clientX, clientY: t.clientY }, a.dataset.room); }, 550);
+  }, { passive: true });
+  $("#c-rooms").addEventListener("touchend", (ev) => { if (hold === "fired") ev.preventDefault(); clearTimeout(hold); hold = null; });
+  $("#c-rooms").addEventListener("touchmove", () => { clearTimeout(hold); hold = null; }, { passive: true });
   $("#c-files-btn").onclick = files;
   $("#c-join-btn").onclick = async () => {
     try { await api(`/api/chat/rooms/${C.room.id}/join`, { method: "POST", body: "{}" }); await loadRooms(); openRoom(C.room.id); }
@@ -533,6 +669,15 @@ function wire() {
       C.more = r.more;
       paintMsgs(false);
       box.scrollTop = box.scrollHeight - h0;
+      return;
+    }
+    const fw = ev.target.closest("[data-fwd]");
+    if (fw) return forwardMsg(C.msgs.find((x) => x.id === fw.dataset.fwd));
+    // a phone has no hover: a tap on a message shows its buttons
+    const msg = ev.target.closest(".c-msg");
+    if (msg && !ev.target.closest("a, button, video, iframe") && matchMedia("(hover: none)").matches) {
+      for (const x of document.querySelectorAll(".c-msg.show-acts")) if (x !== msg) x.classList.remove("show-acts");
+      msg.classList.toggle("show-acts");
       return;
     }
     const rp = ev.target.closest("[data-reply]"), ed = ev.target.closest("[data-edit]"), dl = ev.target.closest("[data-del]");

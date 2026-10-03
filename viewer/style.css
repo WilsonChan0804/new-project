@@ -1139,7 +1139,7 @@ body:has(> #layout) > #layout, body:has(> #layout3d) > #layout3d {
   header { padding: 3px 8px; column-gap: 5px; row-gap: 3px; }
   header .spacer { display: none; }
   .conn { max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
-  #lwk-nav .who { display: none; }
+  body.own-nav #lwk-nav .who { display: none; }
 }
 /* Keep one row on a normal desktop: the header links are compact, the
    name moves into the tooltip, the status pill stays short. */
@@ -1826,3 +1826,12 @@ body.lwk-offline #lwk-nav a[href] { opacity: .55; }
   font-size: 10px; line-height: 16px; text-align: center; vertical-align: 1px; font-weight: 700; }
 .chat-badge.at { background: #7c3aed; }
 .chat-badge[hidden] { display: none; }
+
+/* every page: the page links scroll sideways on a phone rather than vanish */
+@media (max-width: 900px) {
+  body.own-nav header { overflow: hidden; }
+  header .seg { overflow-x: auto; flex: 1 1 auto; min-width: 0; scrollbar-width: none; margin-right: 6px; }
+  header .seg::-webkit-scrollbar { display: none; }
+  header .seg .seg-btn { white-space: nowrap; padding: 5px 9px; }
+  header .brand small, .tasks-page header .spacer { display: none; }
+  body.own-nav #lwk-nav .who { display: none; }

@@ -135,6 +135,9 @@ class Db(object):
             if self.path not in _READY:
                 self.db.execute("PRAGMA journal_mode=WAL")
                 self.db.executescript(SCHEMA)
+                have = set(r[1] for r in self.db.execute("PRAGMA table_info(rooms)"))
+                if "description" not in have:     # added later: the chat's "about", as in WhatsApp
+                    self.db.execute("ALTER TABLE rooms ADD COLUMN description TEXT NOT NULL DEFAULT ''")
                 self.db.commit()
                 _READY.add(self.path)
         except Exception:
@@ -277,31 +280,12 @@ def register(app, core):
     def membership(d, rid, uid):
         return d.execute("SELECT * FROM room_members WHERE room = ? AND uid = ?", (rid, uid)).fetchone()
 
-    def reg_project(reg):
-        """The register project row (tasks.db) or None."""
-        if not reg or tasks is None:
-            return None
-        with tasks.Db(os.path.join(core.CFG["data"], "tasks.db")) as td:
-            r = td.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (reg,)).fetchone()
-            if not r:
-                return None
-            r = dict(r)
-            lists = [g["list_id"] for g in td.execute("SELECT DISTINCT list_id FROM groups WHERE reg = ? AND deleted = 0", (reg,))]
-            r["list_members"] = [m["uid"] for m in td.execute(
-                "SELECT uid FROM list_members WHERE list_id IN (%s)" % ",".join("?" * len(lists)), lists)] if lists else []
-            return r
-
     def project_people(reg):
-        """Who belongs in a job's channel: its owners, its viewer project's
-        members and the members of the task lists that hold its groups."""
-        r = reg_project(reg)
-        if not r:
+        """Who belongs in a project's channel: its owners and members (the
+        Admin page's members of the project)."""
+        if tasks is None:
             return set(), None
-        uids = set(p.get("uid") for p in json.loads(r["owners"] or "[]") if p.get("uid") is not None)
-        uids.update(r["list_members"])
-        if r["viewer"] and core.project_dir(r["viewer"]):
-            uids.update(m["id"] for m in core.ACC.members(r["viewer"]) if m.get("active"))
-        return uids, r
+        return tasks.project_people(core, reg)
 
     def can_join(w, room):
         if w.site_admin:
@@ -324,6 +308,7 @@ def register(app, core):
             other = [u for u in mem if u != uid]
             title = (names or {}).get(other[0], "Someone") if other else "Just you"
         return {"id": r["id"], "kind": r["kind"], "title": title, "project": r["project"],
+                "description": r["description"], "created_by": r["created_by"] or "", "created_at": r["created_at"] or "",
                 "last_seq": r["last_seq"], "last_at": r["last_at"], "last_text": r["last_text"],
                 "unread": unread, "mention": mention, "member": bool(m), "role": m["role"] if m else "",
                 "members": mem, "last_read": last_read, "rev": r["rev"]}
@@ -426,11 +411,68 @@ def register(app, core):
             r = get_room(d, rid)
             m = membership(d, rid, w.uid)
             if r["kind"] == "dm" or not (w.site_admin or (m and m["role"] == "admin")):
-                raise HTTPException(status_code=403, detail="Only the chat's admins can rename it")
-            title = clean_text(body.get("title"), 80) or r["title"]
-            d.execute("UPDATE rooms SET title = ?, rev = ? WHERE id = ?", (title, next_rev(d), rid))
-            _insert(d, rid, None, "", "system", body="%s renamed the chat to %s" % (w.name, title))
+                raise HTTPException(status_code=403, detail="Only the chat's admins can change its name and description")
+            title = clean_text(body.get("title"), 80) or r["title"] if "title" in body else r["title"]
+            desc = clean_text(body.get("description"), 2000, True) if "description" in body else r["description"]
+            d.execute("UPDATE rooms SET title = ?, description = ?, rev = ? WHERE id = ?", (title, desc, next_rev(d), rid))
+            if title != r["title"]:
+                _insert(d, rid, None, "", "system", body="%s renamed the chat to %s" % (w.name, title))
+            if desc != r["description"]:
+                _insert(d, rid, None, "", "system", body="%s changed the description" % w.name)
         return {"ok": True}
+
+    @app.delete("/api/chat/rooms/{rid}")
+    async def room_delete(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+        """Gone for everyone (a chat admin or a site admin). Its messages are
+        kept in the file, out of sight, in case it was a mistake."""
+        w = me(request, x_viewer_token)
+        with db() as d:
+            r = get_room(d, rid)
+            m = membership(d, rid, w.uid)
+            if not (w.site_admin or (m and m["role"] == "admin" and r["kind"] != "dm")):
+                raise HTTPException(status_code=403, detail="Only the chat's admins or a site admin can delete it")
+            d.execute("UPDATE rooms SET deleted = 1, rev = ? WHERE id = ?", (next_rev(d), rid))
+        return {"ok": True}
+
+    @app.post("/api/chat/messages/{mid}/forward")
+    async def forward(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """{rooms: [id], note}: the message (its text, pictures and files)
+        into other chats, marked as forwarded from where it was written."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        note = clean_text(body.get("note"), MAX_TEXT, True).strip()
+        sent = []
+        with db() as d:
+            m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
+            if not m or not membership(d, m["room"], w.uid):
+                raise HTTPException(status_code=404, detail="No such message")
+            src = d.execute("SELECT * FROM rooms WHERE id = ?", (m["room"],)).fetchone()
+            for rid in (body.get("rooms") or [])[:20]:
+                if not isinstance(rid, str) or not SAFE_ID.match(rid):
+                    continue
+                r = d.execute("SELECT * FROM rooms WHERE id = ? AND deleted = 0", (rid,)).fetchone()
+                if not r or not membership(d, rid, w.uid):
+                    continue
+                # the files are shared, not copied: a new record in the new chat
+                fs = []
+                for f in json.loads(m["files"] or "[]"):
+                    old = d.execute("SELECT * FROM files WHERE id = ?", (f["id"],)).fetchone()
+                    if not old:
+                        continue
+                    fid = new_id()
+                    d.execute("INSERT INTO files (id, room, task, name, size, mime, uid, author, created_at, stored) "
+                              "VALUES (?,?,'',?,?,?,?,?,?,?)", (fid, rid, old["name"], old["size"], old["mime"],
+                                                               w.uid, w.name, now_iso(), old["stored"]))
+                    fs.append(file_meta(d.execute("SELECT * FROM files WHERE id = ?", (fid,)).fetchone()))
+                card = json.loads(m["card"]) if m["card"] else None
+                fwd = {"type": "forward", "from": m["author"] or "Update",
+                       "room": src["title"] if src["kind"] != "dm" else "a direct message", "at": m["created_at"],
+                       "inner": card}
+                if note:
+                    _insert(d, rid, w.uid, w.name, "text", body=note)
+                _insert(d, rid, w.uid, w.name, "text", body=m["body"], card=fwd, files=fs)
+                sent.append(rid)
+        return {"sent": sent}
 
     @app.post("/api/chat/rooms/{rid}/join")
     async def room_join(request: Request, rid: str, x_viewer_token: str = Header(default="")):
@@ -687,7 +729,7 @@ def register(app, core):
         path = os.path.join(files_dir(), f["stored"])
         if not os.path.isfile(path):
             raise HTTPException(status_code=404, detail="The file is no longer on the server")
-        inline = f["mime"].startswith("image/") or f["mime"] == "application/pdf"
+        inline = f["mime"].split("/")[0] in ("image", "video", "audio") or f["mime"] == "application/pdf"
         return FileResponse(path, media_type=f["mime"], filename=f["name"],
                             content_disposition_type="inline" if inline else "attachment")
 

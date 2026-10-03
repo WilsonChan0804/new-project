@@ -6,18 +6,24 @@
 <title>LWK Viewer - Admin</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="dash.css">
+<style>
+.reg-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 12px; }
+.reg-grid label, .reg-l { display: flex; flex-direction: column; font-size: 12px; color: var(--ink-2); gap: 3px; margin-top: 6px; }
+.reg-l select, .reg-l textarea { width: 100%; }
+.proj-list li .sub .nm { color: #b45309; }
+</style>
 </head>
 <body class="admin-page own-nav">
 <header>
   <b class="brand">LWK Viewer</b>
   <div class="seg">
-    <a id="to-sheets" class="seg-btn" href="index.html">Sheets</a>
-    <a id="to-3d" class="seg-btn" href="model.html">3D</a>
-    <a id="to-board" class="seg-btn" href="board.html">Board</a>
-    <a id="to-tasks" class="seg-btn" href="tasks.html">Tasks</a>
-    <a id="to-projects" class="seg-btn" href="projects.html">Projects</a>
-    <a id="to-chat" class="seg-btn chat-link" href="messenger.html">Chat</a>
-    <a id="to-dash" class="seg-btn" href="dashboard.html">Dashboard</a>
+    <a id="to-projects" class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
+    <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
     <span class="seg-btn on">Admin</span>
   </div>
   <div id="lwk-nav">
@@ -41,6 +47,10 @@
     <div class="split">
       <div class="card">
         <h3>Projects <small>that you manage</small></h3>
+        <div class="form-row" id="a-reg-tools" hidden style="margin:-4px 0 8px">
+          <button id="a-reg-new">+ New project</button>
+          <button id="a-reg-import" class="ghost" title="A project table exported from Lark Base or Excel (.xlsx / CSV)">Import</button>
+        </div>
         <ul class="proj-list" id="a-projects"></ul>
         <div id="a-bin-wrap" hidden>
           <h3 style="margin-top:18px">Deleted projects <small>kept in the bin on the server</small></h3>
@@ -52,6 +62,31 @@
         </div>
       </div>
       <div class="card">
+        <div id="a-reg" hidden>
+          <h3 id="a-reg-title">Project details</h3>
+          <p class="muted" style="font-size:12px;margin-top:-4px">What everyone sees on the Projects page. Link the viewer project
+            (the model and sheets published from Revit) here; a project can be set up and given members before its first upload.</p>
+          <div class="form-row reg-grid">
+            <label>Project name<input id="r-name" placeholder="HKA-P-01681-ARC - SKW"></label>
+            <label>Code<input id="r-code" placeholder="HKA-P-01681-ARC"></label>
+            <label>Short name<input id="r-short" placeholder="SKW - as the task groups call it"></label>
+            <label>Status<select id="r-status"><option>Active</option><option>On hold</option><option>Tender</option><option>Completed</option><option>Archived</option></select></label>
+            <label>Group / team<input id="r-team" list="dl-team" placeholder="e.g. Arbel's Group"></label>
+            <label>Viewer project (model and sheets)<select id="r-viewer"></select></label>
+          </div>
+          <label class="reg-l">Owners <small class="muted">(Ctrl+click for several)</small><select id="r-owners" multiple size="4"></select></label>
+          <label class="reg-l">Folders and files <small class="muted">OneDrive, SharePoint or ACC links</small></label>
+          <div id="r-links" class="fl-list"></div>
+          <div class="fl-add"><input id="r-link" placeholder="https://... folder link"><button id="r-link-add" class="ghost">Add</button></div>
+          <label class="reg-l">Notes<textarea id="r-notes" rows="2"></textarea></label>
+          <div class="form-row" style="margin-top:8px">
+            <button id="r-save">Save project</button>
+            <a id="r-open" class="ghost" href="projects.html" style="font-size:12px">Open its page</a>
+            <span class="spacer"></span>
+            <button id="r-del" class="ghost danger" hidden title="Take it off the Projects page. Its tasks, issues, model and files stay where they are.">Remove from Projects</button>
+          </div>
+          <hr style="border:0;border-top:1px solid var(--line);margin:14px 0 4px">
+        </div>
         <h3 id="a-proj-title">Members</h3>
         <p class="muted" style="font-size:12px;margin-top:-4px">
           <b>Project admin</b> manages members and can edit or delete anything.
@@ -96,6 +131,7 @@
           </div>
         </details>
 
+        <div id="a-viewer-only">
         <h3 style="margin-top:18px">Teams channel <small>issue updates posted to the project's channel</small></h3>
         <div class="form-row">
           <label style="flex:1;min-width:280px">Workflow webhook address
@@ -149,6 +185,9 @@
             empty project appears.</p>
           <button id="a-del" class="danger">Delete project ...</button>
         </div>
+        </div>
+        <p id="a-no-viewer" class="muted" style="font-size:12px;margin-top:14px" hidden>The Teams channel, markup layers and phone copies
+          are set up once this project has a viewer project (after its first upload from Revit, linked above).</p>
       </div>
     </div>
   </section>

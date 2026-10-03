@@ -3,6 +3,7 @@
 
 import { esc, people, fmtDate, isOverdue, priorityPill, progress } from "./tasks-util.js";
 import { badge } from "./filelinks.js";
+import { groupLinks } from "./tasks-list.js";
 
 function card(T, t) {
   const p = T.progressOf(t.id);
@@ -30,7 +31,7 @@ export function render(T, el) {
   const x = el.querySelector(".kb") ? el.querySelector(".kb").scrollLeft : 0;
   el.innerHTML = `<div class="kb">` + buckets.map((b) =>
     `<section class="kb-col" data-b="${esc(b.key)}"><header><b>${esc(b.title)}</b> <span class="muted">${b.tasks.length}</span>`
-    + (b.project ? ` <small class="muted" title="Viewer project">${esc(b.project)}</small>` : "") + `</header>`
+    + `</header>` + (b.project || (b.group && b.group.reg) ? `<div class="kb-links">${groupLinks(b)}</div>` : "")
     + `<div class="kb-cards">${b.tasks.map((t) => card(T, t)).join("")}</div>`
     + (T.canEdit() && (S.groupBy !== "group" || b.group) ? `<input class="kb-new" placeholder="+ New task">` : "")
     + `</section>`).join("")
@@ -42,7 +43,7 @@ export function render(T, el) {
     const c = ev.target.closest(".kb-card");
     if (!c) return;
     const t = T.task(c.dataset.id);
-    if (ev.target.closest("[data-act=done]")) return T.save(t.id, { done: !t.done });
+    if (ev.target.closest("[data-act=done]")) return T.toggleDone(t);
     T.openTask(t.id);
   };
   el.onkeydown = (ev) => {

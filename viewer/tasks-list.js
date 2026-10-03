@@ -1,8 +1,18 @@
 /* List view: the grouped table, as in Lark - a row per task, sub-tasks
  * under an arrow, every cell editable where it stands. */
 
+import { METHOD_OPTS, isMethod } from "./tasks-util.js";
 import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, pickPeople, pickOne, pickDate, PRIORITIES } from "./tasks-util.js";
 import { badge } from "./filelinks.js";
+
+/* A group that is a project: straight to its page, sheets and issues dashboard. */
+export function groupLinks(b) {
+  const g = b.group || {};
+  const q = b.project ? "?project=" + encodeURIComponent(b.project) : "";
+  return (g.reg ? ` <a class="tl-gl" href="projects.html?p=${encodeURIComponent(g.reg)}" title="The project page">Project</a>` : "")
+    + (b.project ? ` <a class="tl-gl" href="index.html${q}" title="Sheets of ${esc(b.project)}">Sheets</a>`
+      + ` <a class="tl-gl" href="dashboard.html${q}" title="Issues and tasks of ${esc(b.project)}">Dashboard</a>` : "");
+}
 
 export function columns(T) {
   const S = T.S;
@@ -85,7 +95,7 @@ export function render(T, el) {
     h += `<div class="tl-group" data-b="${esc(b.key)}">`
       + `<div class="tl-gh"><button class="ghost tl-gt" data-act="fold">${shut ? "&#9656;" : "&#9662;"}</button>`
       + `<b>${esc(b.title)}</b> <span class="muted">${b.tasks.length}</span>`
-      + (b.project ? ` <a class="tl-proj" href="index.html?project=${encodeURIComponent(b.project)}" title="Open this project's sheets">${badge("sheet")} ${esc(b.project)}</a>` : "")
+      + groupLinks(b)
       + `</div>`;
     if (!shut) {
       h += b.tasks.map((t) => row(T, t, cols, 0)).join("");
@@ -121,7 +131,7 @@ function wire(T, el, buckets) {
       S.expanded.has(t.id) ? S.expanded.delete(t.id) : S.expanded.add(t.id);
       return render(T, el);
     }
-    if (act && act.dataset.act === "done") return T.save(t.id, { done: !t.done });
+    if (act && act.dataset.act === "done") return T.toggleDone(t);
     const c = ev.target.closest("[data-col]");
     if (!c || !T.canEdit()) return T.openTask(t.id);
     const k = c.dataset.col;
@@ -132,6 +142,7 @@ function wire(T, el, buckets) {
       const f = T.S.fields.get(k.slice(2));
       const set = (v) => T.save(t.id, { vals: { [f.id]: v } });
       if (f.type === "person") return pickPeople(c, t.vals[f.id] || [], T.people(), set);
+      if (isMethod(f)) return pickOne(c, METHOD_OPTS, t.vals[f.id] || "OR", set);
       if (f.type === "select") return pickOne(c, [""].concat(f.options), t.vals[f.id] || "", set);
       if (f.type === "date") return pickDate(c, t.vals[f.id], set);
       if (f.type === "check") return set(!t.vals[f.id]);

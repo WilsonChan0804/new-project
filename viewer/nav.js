@@ -12,7 +12,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-03c";
+const LWK_VERSION = "2026-10-04a";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -144,10 +144,9 @@ async function afterSignIn() {
     nav.id = "lwk-nav";
     nav.innerHTML =
       `<a href="#" id="lwk-send-task" title="Keep this sheet or 3D view on a task (Tasks page)">+ Task</a>`
-      + `<a href="${link("tasks.html")}" title="Team task lists: who does what, by when - linked to issues, sheets, OneDrive and ACC">Tasks</a>`
-      + `<a href="${link("projects.html")}" title="Every job: owners, folders, tasks, issues">Projects</a>`
-      + `<a class="chat-link" href="${link("messenger.html")}" title="Messenger: project channels, group chats, direct messages">Chat</a>`
       + `<a href="${link("board.html")}" title="Whiteboards: notes, mind maps, rules and ideas for the team">Board</a>`
+      + `<a href="${link("tasks.html")}" title="Team task lists: who does what, by when - linked to issues, sheets, OneDrive and ACC">Tasks</a>`
+      + `<a class="chat-link" href="${link("messenger.html")}" title="Messenger: project channels, group chats, direct messages">Chat</a>`
       + `<a href="${link("dashboard.html")}" title="Issue status, responsibilities and due dates">Dashboard</a>`
       + (managesSomething && ME.accounts
         ? `<a href="${link("admin.html")}" title="People and project members">Admin</a>` : "")
@@ -158,6 +157,16 @@ async function afterSignIn() {
           + `<a href="#" id="lwk-signout">Sign out</a>`
         : "");
     header.appendChild(nav);
+    // Projects first, before Sheets and 3D - the order every page uses
+    const mode = header.querySelector(".mode");
+    if (mode && !document.getElementById("lwk-to-projects")) {
+      const b = document.createElement("button");
+      b.id = "lwk-to-projects";
+      b.textContent = "Projects";
+      b.title = "Your projects: their sheets, 3D, tasks, issues, files and chat";
+      b.onclick = () => { location.href = link("projects.html"); };
+      mode.insertBefore(b, mode.firstChild);
+    }
     const st = document.getElementById("lwk-send-task");
     if (st) st.onclick = (ev) => { ev.preventDefault(); sendToTask(); };
     const so = document.getElementById("lwk-signout");

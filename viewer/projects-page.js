@@ -1,40 +1,34 @@
-/* Projects: the register of jobs (what the Lark Base "Projects" table did).
+/* Projects: your jobs, and everything about each one in one place - its
+ * people, its sheets and model, its tasks (with their sub-tasks, from every
+ * team's task list), its issues by status, its files and its chat.
  *
- * Each job has its code, owners, team, status, where its files are
- * (OneDrive / ACC links) and which viewer project shows its drawings and
- * model. The task groups linked to it give its task counts, the viewer
- * project its issues, and it can have a channel in the Messenger.
+ * Read-only: projects, their members and their viewer project are set up
+ * on the Admin page (Projects and members). Those who may change a project
+ * get a "Manage" button that goes there.
  */
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, people, avatar, fmtDate, pickPeople, modal, toast, pop, closePop } from "./tasks-util.js";
-import { chip, makeLink, classify } from "./filelinks.js";
+import { $, esc, people, avatar, fmtDate, toast, ic } from "./tasks-util.js";
+import { chip } from "./filelinks.js";
 
-const STATUSES = ["Active", "On hold", "Tender", "Completed", "Archived"];
-const P = { me: null, list: [], canCreate: false, viewer: [], people: [], rooms: {}, open: "", q: "", status: "", team: "" };
+const P = { me: null, list: [], rooms: {}, open: "", q: "", status: "", tree: {}, shut: new Set() };
+const ISSUE_ORDER = ["Open", "In progress", "Resolved", "Closed", "Not an issue"];
+const ISSUE_COL = { "Open": "#e2453c", "In progress": "#e8a13a", "Resolved": "#3b82f6", "Closed": "#0e9f6e", "Not an issue": "#9aa3ae" };
 
 async function load() {
-  const [r, vp, pp, rooms] = await Promise.all([
+  const [r, rooms] = await Promise.all([
     api("/api/registry"),
-    api("/api/projects").catch(() => ({ projects: [] })),
-    api("/api/people").catch(() => ({ people: [] })),
     api("/api/chat/rooms").catch(() => ({ rooms: [], joinable: [] })),
   ]);
   P.list = r.projects;
-  P.canCreate = r.can_create;
-  P.viewer = vp.projects || [];
-  P.people = pp.people || [];
   P.rooms = {};
   for (const x of (rooms.rooms || []).concat(rooms.joinable || [])) if (x.kind === "project") P.rooms[x.project] = x;
-  $("#pj-new").hidden = $("#pj-import").hidden = !P.canCreate;
-  const fill = (sel, vals, label) => {
-    const cur = sel.value;
-    sel.innerHTML = `<option value="">${label}</option>` + vals.map((v) => `<option>${esc(v)}</option>`).join("");
-    sel.value = vals.includes(cur) ? cur : "";
-  };
-  fill($("#pj-status"), [...new Set(P.list.map((p) => p.status).filter(Boolean))].sort(), "Any status");
-  fill($("#pj-team"), [...new Set(P.list.map((p) => p.team).filter(Boolean))].sort(), "Any team");
+  const st = $("#pj-status"), cur = st.value;
+  const vals = [...new Set(P.list.map((p) => p.status).filter(Boolean))].sort();
+  st.innerHTML = `<option value="">Any status</option>` + vals.map((v) => `<option>${esc(v)}</option>`).join("");
+  st.value = vals.includes(cur) ? cur : "";
+  $("#pj-manage").hidden = !P.list.some((p) => p.can_edit);
   render();
   if (P.open) openDetail(P.open);
 }
@@ -45,173 +39,169 @@ function ratio(st) {
   return `<span class="pj-ratio"><span class="prog wide"><i style="width:${pct}%"></i></span><b>${pct}%</b></span>`;
 }
 
-function viewerLinks(p) {
-  if (!p.viewer) return `<span class="muted">-</span>`;
-  if (!p.viewer_ok) return `<span class="muted" title="You are not a member of this viewer project">${esc(p.viewer)}</span>`;
-  const q = "?project=" + encodeURIComponent(p.viewer);
-  return `<span class="pj-vl"><a href="index.html${q}" title="Sheets">2D</a><a href="model.html${q}" title="3D model">3D</a>`
-    + `<a href="dashboard.html${q}" title="Issues dashboard">Issues</a></span>`;
+/* the issues of a project, by status: a thin stacked bar and the numbers */
+function issueBar(is, big) {
+  if (!is) return `<span class="muted">-</span>`;
+  if (!is.total) return `<span class="muted">none</span>`;
+  const by = is.by_status || {};
+  const parts = ISSUE_ORDER.filter((k) => by[k]).map((k) => `<i style="width:${(by[k] / is.total) * 100}%;background:${ISSUE_COL[k]}" title="${esc(k)}: ${by[k]}"></i>`).join("");
+  return `<span class="pj-iss${big ? " big" : ""}"><span class="pj-ibar">${parts}</span>`
+    + `<span><b class="${is.overdue ? "bad" : ""}">${is.open}</b> open / ${is.total}</span></span>`;
+}
+
+function opens(p) {
+  const q = p.viewer ? "?project=" + encodeURIComponent(p.viewer) : "";
+  const g = p.stats.groups.find((x) => x.can_open);
+  const room = P.rooms[p.id];
+  return `<span class="pj-vl">`
+    + (p.viewer_ok ? `<a href="index.html${q}" title="Sheets">Sheets</a><a href="model.html${q}" title="3D model">3D</a>` : "")
+    + (g ? `<a href="tasks.html?list=${esc(g.list_id)}" title="Tasks (${esc(g.list_title)})">Tasks</a>` : "")
+    + (room ? `<a href="messenger.html?room=${esc(room.id)}" title="${room.member ? "The project's chat" : "Join the project's chat"}">Chat${room.unread ? ` <b class="pj-n">${room.unread}</b>` : ""}</a>` : "")
+    + (p.viewer_ok ? `<a href="dashboard.html${q}" title="Issues and tasks dashboard">Dashboard</a>` : "")
+    + `</span>`;
 }
 
 function render() {
   const q = P.q.trim().toLowerCase();
-  const rows = P.list.filter((p) => (!P.status || p.status === P.status) && (!P.team || p.team === P.team)
-    && (!q || [p.code, p.name, p.short, p.team, p.viewer, p.owners.map((o) => o.name).join(" ")].join(" ").toLowerCase().includes(q)));
+  const rows = P.list.filter((p) => (!P.status || p.status === P.status)
+    && (!q || [p.code, p.name, p.short, p.team, p.viewer, p.members.map((m) => m.name).join(" ")].join(" ").toLowerCase().includes(q)));
   $("#pj-count").textContent = `${rows.length} of ${P.list.length}`;
   if (!P.list.length) {
-    $("#t-view").innerHTML = `<div class="t-empty"><h3>No projects yet</h3><p>Add your jobs - or import the project table from Lark Base (Export &rarr; Excel).</p>`
-      + (P.canCreate ? `<button class="primary" id="pj-e-new">+ New project</button> <button id="pj-e-imp">Import</button>` : `<p class="muted">A project admin or site admin adds them.</p>`) + `</div>`;
-    if (P.canCreate) { $("#pj-e-new").onclick = () => edit(null); $("#pj-e-imp").onclick = importFile; }
+    $("#t-view").innerHTML = `<div class="t-empty"><h3>No projects yet</h3><p>You are not a member of any project. A project admin adds you on the Admin page.</p></div>`;
     return;
   }
   $("#t-view").innerHTML = `<table class="pj">
-    <thead><tr><th>Project</th><th>Owner</th><th>Team</th><th>Project folder</th><th>Viewer</th><th>Status</th>
-      <th class="num">Tasks</th><th class="num">Done</th><th>Completion</th><th class="num">Overdue</th><th class="num">Open issues</th><th>Open tasks</th><th>Chat</th></tr></thead>
+    <thead><tr><th>Project</th><th>Members</th><th>Open</th><th>Status</th>
+      <th class="num">Tasks</th><th>Completion</th><th class="num">Overdue</th><th>Issues</th><th>Open tasks</th><th>Folder</th></tr></thead>
     <tbody>${rows.map((p) => {
-      const st = p.stats, room = P.rooms[p.id];
+      const st = p.stats;
       return `<tr data-id="${esc(p.id)}" class="${P.open === p.id ? "sel" : ""}">
-        <td class="pj-name"><b>${esc(p.short || p.name)}</b><small class="muted">${esc(p.code || (p.short !== p.name ? p.name : ""))}</small></td>
-        <td>${people(p.owners, 3)}</td>
-        <td>${esc(p.team)}</td>
-        <td class="pj-links">${p.links.slice(0, 2).map((l) => chip(l)).join("") || `<span class="muted">-</span>`}</td>
-        <td>${viewerLinks(p)}</td>
+        <td class="pj-name"><b>${esc(p.short || p.name)}</b><small class="muted">${esc(p.code || (p.short !== p.name ? p.name : ""))}${p.team ? " · " + esc(p.team) : ""}</small></td>
+        <td>${people(p.members, 5) || `<span class="muted">-</span>`}</td>
+        <td>${opens(p)}</td>
         <td><span class="pj-st st-${esc(p.status.toLowerCase().replace(/\s+/g, "-"))}">${esc(p.status)}</span></td>
-        <td class="num">${st.tasks}</td><td class="num">${st.done}</td><td>${ratio(st)}</td>
+        <td class="num">${st.done}/${st.tasks}</td><td>${ratio(st)}</td>
         <td class="num ${st.overdue ? "bad" : ""}">${st.overdue || ""}</td>
-        <td class="num">${p.issues ? `<span class="${p.issues.overdue ? "bad" : ""}" title="${p.issues.overdue} overdue of ${p.issues.open} open (${p.issues.total} in all)">${p.issues.open}</span>` : `<span class="muted">-</span>`}</td>
+        <td>${issueBar(p.issues)}</td>
         <td class="pj-tasks">${st.open_tasks.slice(0, 2).map((t) => `<a class="pj-chip${t.overdue ? " bad" : ""}" href="tasks.html?list=${esc(t.list_id)}&task=${esc(t.id)}" title="${esc(t.title)}${t.due ? " - due " + esc(t.due) : ""}">${esc(t.title)}</a>`).join("")}`
           + `${st.open_tasks.length > 2 ? `<span class="pj-more">+${st.open_tasks.length - 2}</span>` : ""}</td>
-        <td>${room ? `<a class="pj-chat" href="messenger.html?room=${esc(room.id)}" title="${room.member ? "Open the channel" : "Join the channel"}">&#128172;${room.unread ? ` <b>${room.unread}</b>` : ""}</a>` : ""}</td>
+        <td class="pj-links">${p.links.slice(0, 1).map((l) => chip(l)).join("") || `<span class="muted">-</span>`}</td>
       </tr>`;
     }).join("")}</tbody></table>`;
 }
 
-/* ------------------------------------------------------------ detail */
+/* ------------------------------------------------------------ one project */
 
-function openDetail(id) {
+async function openDetail(id) {
   const p = P.list.find((x) => x.id === id);
   if (!p) return;
   P.open = id;
   history.replaceState(null, "", "projects.html?p=" + encodeURIComponent(id));
-  const st = p.stats, room = P.rooms[p.id];
+  paintDetail(p);
+  render();
+  try { P.tree[id] = (await api(`/api/registry/${encodeURIComponent(id)}/tasks`)).groups; } catch (e) { P.tree[id] = []; }
+  if (P.open === id) paintDetail(p);
+}
+
+function taskTree(p) {
+  const groups = P.tree[p.id];
+  if (!groups) return `<p class="muted">Loading ...</p>`;
+  if (!groups.length) return `<p class="muted td-none">No task list has a group for this project yet (Tasks &rarr; ... &rarr; Groups and projects).</p>`;
+  const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  const late = (t) => !t.done && t.due && t.due.slice(0, 10) < today;
+  const row = (t, sub) => `<a class="pt-row${t.done ? " done" : ""}${sub ? " sub" : ""}" href="tasks.html?list=${esc(t.list_id)}&task=${esc(t.id)}">`
+    + `<span class="tick${t.done ? " on" : ""}"></span><span class="pt-t">${esc(t.title || "Untitled")}</span>`
+    + (t.children && t.children.length ? `<small class="muted">${t.children.filter((k) => k.done).length}/${t.children.length}</small>` : "")
+    + `<span class="spacer"></span>${t.due ? `<small class="${late(t) ? "bad" : "muted"}">${esc(fmtDate(t.due))}</small>` : ""}${people(t.owners, 2)}</a>`;
+  return groups.map((g) => {
+    const open = g.tasks.filter((t) => !t.done).length;
+    return `<div class="pt-g"><div class="pt-gh"><b>${esc(g.list_title)}</b> / ${esc(g.group.title)} <small class="muted">${open} open of ${g.tasks.length}</small>`
+      + `<span class="spacer"></span><a href="tasks.html?list=${esc(g.list_id)}">Open list</a></div>`
+      + g.tasks.map((t) => {
+        const kids = t.children || [];
+        const shut = !P.shut.has(t.id);
+        return `<div class="pt-task">`
+          + (kids.length ? `<button class="ghost pt-exp${shut ? "" : " open"}" data-exp="${esc(t.id)}" title="${kids.length} sub-tasks">${ic("next", 14)}</button>` : `<span class="pt-exp"></span>`)
+          + row(t, false) + `</div>`
+          + (kids.length && !shut ? `<div class="pt-kids">${kids.map((k) => row(k, true)).join("")}</div>` : "");
+      }).join("") + `</div>`;
+  }).join("");
+}
+
+function membersHtml(p) {
+  if (!p.members.length) return `<p class="muted td-none">No members yet.</p>`;
+  const by = new Map();
+  for (const m of p.members) {
+    const k = m.team || m.office || "Others";
+    if (!by.has(k)) by.set(k, []);
+    by.get(k).push(m);
+  }
+  return [...by.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([k, ms]) =>
+    `<div class="pm-team"><small class="muted">${esc(k)} · ${ms.length}</small>`
+    + ms.map((m) => `<span class="pm" title="${esc(m.email)}${m.role ? " - " + esc(m.role) : ""}">${avatar(m, 26)}<span>${esc(m.name)}</span></span>`).join("")
+    + `</div>`).join("");
+}
+
+function paintDetail(p) {
+  const st = p.stats, room = P.rooms[p.id], is = p.issues;
   const box = $("#t-detail");
   box.hidden = false;
-  box.innerHTML = `<div class="td-top"><b style="font-size:15px">${esc(p.short || p.name)}</b><span class="spacer"></span>
-      ${p.can_edit ? `<button class="ghost" data-act="edit">Edit</button><button class="ghost danger" data-act="delete" title="Delete">&#128465;</button>` : ""}
-      <button class="ghost" data-act="close">&#10005;</button></div>
+  document.body.classList.add("detail-on");
+  const q = p.viewer ? "?project=" + encodeURIComponent(p.viewer) : "";
+  box.innerHTML = `<div class="td-top">
+      <button class="ghost td-backbtn icon-btn" data-act="close">${ic("back", 18)} Back</button>
+      <b class="pd-t">${esc(p.short || p.name)}</b><span class="spacer"></span>
+      ${p.can_edit ? `<a class="ghost pd-manage" href="admin.html?reg=${encodeURIComponent(p.id)}#projects" data-manage title="Details, members and the viewer project are set on the Admin page">${ic("edit")} Manage</a>` : ""}
+      <button class="ghost td-x" data-act="close">${ic("close")}</button></div>
     <div class="td-body">
-      <div class="td-num muted">${esc(p.code)}${p.code && p.name !== p.short ? " · " : ""}${p.name !== p.short ? esc(p.name) : ""}</div>
-      <div class="td-r"><span class="td-l">Owners</span><div class="td-v">${people(p.owners, 6) || "-"}</div></div>
-      <div class="td-r"><span class="td-l">Team</span><div class="td-v">${esc(p.team) || "-"}</div></div>
+      <div class="td-num muted">${esc([p.code, p.name !== p.short && !(p.code && p.name.includes(p.code)) ? p.name : ""].filter(Boolean).join(" · "))}</div>
+      <div class="pd-open">${opens(p)}</div>
       <div class="td-r"><span class="td-l">Status</span><div class="td-v"><span class="pj-st st-${esc(p.status.toLowerCase().replace(/\s+/g, "-"))}">${esc(p.status)}</span></div></div>
-      <div class="td-r"><span class="td-l">Viewer</span><div class="td-v">${p.viewer ? esc(p.viewer) + " " + viewerLinks(p) : `<span class="muted">not linked</span>`}</div></div>
+      <div class="td-r"><span class="td-l">Owners</span><div class="td-v">${people(p.owners, 6) || "-"}</div></div>
+      ${p.team ? `<div class="td-r"><span class="td-l">Group</span><div class="td-v">${esc(p.team)}</div></div>` : ""}
       ${p.notes ? `<p class="pj-notes">${esc(p.notes)}</p>` : ""}
 
-      <h4>Files</h4>
-      <div class="fl-list">${p.links.map((l) => chip(l)).join("") || `<span class="muted td-none">No folder links yet - add the OneDrive / ACC folder with Edit.</span>`}</div>
+      <h4>Team <span class="muted">${p.members.length}</span></h4>
+      ${membersHtml(p)}
 
-      <h4>Chat</h4>
-      ${room ? `<a class="primary-link" href="messenger.html?room=${esc(room.id)}">&#128172; ${room.member ? "Open" : "Join"} the ${esc(p.short || p.name)} channel</a>${room.unread ? ` <b class="bad">${room.unread} unread</b>` : ""}`
-        : P.me.accounts ? `<button data-act="room">Start a channel for this project</button> <span class="muted" style="font-size:11px">task and issue updates are posted into it</span>` : `<span class="muted">The Messenger needs accounts.</span>`}
+      <h4>Issues ${is ? `<span class="muted">${is.open} open of ${is.total}</span>` : ""}</h4>
+      ${is ? `<div class="pd-istat">${ISSUE_ORDER.filter((k) => (is.by_status || {})[k]).map((k) =>
+        `<a href="dashboard.html${q}" class="pd-is" style="--c:${ISSUE_COL[k]}"><b>${is.by_status[k]}</b><span>${esc(k)}</span></a>`).join("")
+        || `<span class="muted">No issues yet.</span>`}${is.overdue ? `<a href="dashboard.html${q}" class="pd-is" style="--c:#b42318"><b>${is.overdue}</b><span>Overdue</span></a>` : ""}</div>`
+        : `<p class="muted td-none">${p.viewer ? "You are not a member of its viewer project." : "No model and sheets published for this project yet."}</p>`}
 
       <h4>Tasks <span class="muted">${st.done} / ${st.tasks} done${st.overdue ? `, <span class="bad">${st.overdue} overdue</span>` : ""}</span></h4>
-      ${st.groups.length ? st.groups.map((g) => `<div class="pj-g">${g.can_open ? `<a href="tasks.html?list=${esc(g.list_id)}">${esc(g.list_title)} / <b>${esc(g.title)}</b></a>` : `${esc(g.list_title)} / <b>${esc(g.title)}</b>`}</div>`).join("")
-        : `<p class="muted td-none">No task group is linked to this project. In Tasks: ... &rarr; Groups and projects.</p>`}
-      <div class="pj-open">${st.open_tasks.map((t) => `<a class="td-sub" href="tasks.html?list=${esc(t.list_id)}&task=${esc(t.id)}">`
-        + `<span class="tick"></span><span class="td-st">${esc(t.title)}</span><span class="spacer"></span>`
-        + (t.due ? `<small class="${t.overdue ? "bad" : "muted"}">${esc(fmtDate(t.due))}</small>` : "") + people(t.owners, 2) + `</a>`).join("")}</div>
+      <div class="pt">${taskTree(p)}</div>
 
-      <h4>Issues</h4>
-      ${p.issues ? `<p>${p.issues.open} open of ${p.issues.total}${p.issues.overdue ? `, <span class="bad">${p.issues.overdue} overdue</span>` : ""} · <a href="dashboard.html?project=${encodeURIComponent(p.viewer)}">Issues dashboard</a></p>`
-        : `<p class="muted td-none">${p.viewer ? "You are not a member of the viewer project." : "Link a viewer project (Edit) to see its issues here."}</p>`}
+      <h4>Files</h4>
+      <div class="fl-list">${p.links.map((l) => chip(l)).join("") || `<span class="muted td-none">No folder links yet.</span>`}</div>
+
+      <h4>Chat</h4>
+      ${room ? `<a class="primary-link" href="messenger.html?room=${esc(room.id)}">${ic("chat")} ${room.member ? "Open" : "Join"} the ${esc(p.short || p.name)} channel</a>${room.unread ? ` <b class="bad">${room.unread} unread</b>` : ""}`
+        : P.me.accounts ? `<button data-act="room">${ic("chat")} Start a channel for this project</button> <span class="muted" style="font-size:11px">its members are added; task and issue updates are posted into it</span>` : ""}
       <div class="td-subscr muted">${p.updated_by ? "Last changed by " + esc(p.updated_by) + " " + esc((p.updated_at || "").slice(0, 10)) : ""}</div>
     </div>`;
   box.onclick = async (ev) => {
+    const ex = ev.target.closest("[data-exp]");
+    if (ex) {
+      ev.preventDefault();
+      P.shut.has(ex.dataset.exp) ? P.shut.delete(ex.dataset.exp) : P.shut.add(ex.dataset.exp);
+      return paintDetail(p);
+    }
+    if (ev.target.closest("[data-manage]")) { try { localStorage.setItem("lwk-viewer:project", p.viewer || ""); } catch (e) {} }
     const a = ev.target.closest("[data-act]");
     if (!a) return;
-    const k = a.dataset.act;
-    if (k === "close") { box.hidden = true; P.open = ""; history.replaceState(null, "", "projects.html"); render(); }
-    if (k === "edit") edit(p);
-    if (k === "delete") {
-      if (!confirm(`Delete ${p.short || p.name} from the Projects page? Its tasks, issues and files stay where they are.`)) return;
-      try { await api("/api/registry/" + p.id, { method: "DELETE" }); box.hidden = true; P.open = ""; await load(); }
-      catch (e) { toast(e.message, true); }
+    if (a.dataset.act === "close") {
+      box.hidden = true; document.body.classList.remove("detail-on");
+      P.open = ""; history.replaceState(null, "", "projects.html"); render();
     }
-    if (k === "room") {
+    if (a.dataset.act === "room") {
       try {
         const r = await api("/api/chat/rooms", { method: "POST", body: JSON.stringify({ kind: "project", project: p.id }) });
         location.href = "messenger.html?room=" + encodeURIComponent(r.id);
       } catch (e) { toast(e.message, true); }
     }
   };
-  render();
-}
-
-async function edit(p) {
-  const cur = p ? JSON.parse(JSON.stringify(p)) : { code: "", name: "", short: "", owners: [], team: "", status: "Active", viewer: "", links: [], notes: "" };
-  const vopts = `<option value="">- none -</option>` + P.viewer.map((v) =>
-    `<option value="${esc(v.id)}"${v.id === cur.viewer ? " selected" : ""}>${esc(v.title)}${v.title !== v.id ? " (" + esc(v.id) + ")" : ""}</option>`).join("");
-  const done = modal(p ? "Edit " + (p.short || p.name) : "New project", `
-    <label>Project name <input name="name" value="${esc(cur.name)}" required placeholder="e.g. HKA-P-01681-ARC - SKW"></label>
-    <div class="pj-2"><label>Code <input name="code" value="${esc(cur.code)}" placeholder="HKA-P-01681-ARC"></label>
-      <label>Short name <input name="short" value="${esc(cur.short)}" placeholder="SKW - the task group name"></label></div>
-    <div class="pj-2"><label>Team <input name="team" value="${esc(cur.team)}" placeholder="e.g. Arbel's Group" list="pj-teams"></label>
-      <label>Status <select name="status">${STATUSES.concat(STATUSES.includes(cur.status) ? [] : [cur.status]).map((s) => `<option${s === cur.status ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></label></div>
-    <datalist id="pj-teams">${[...new Set(P.list.map((x) => x.team).filter(Boolean))].map((t) => `<option value="${esc(t)}">`).join("")}</datalist>
-    <label>Owners <div class="pj-owners td-v act">${people(cur.owners, 8) || `<span class="muted">choose</span>`}</div></label>
-    <label>Viewer project <select name="viewer">${vopts}</select></label>
-    <label>Folders and files <small class="muted">OneDrive, SharePoint or ACC links</small></label>
-    <div class="fl-list pj-links-ed">${cur.links.map((l) => chip(l, { remove: true })).join("")}</div>
-    <div class="fl-add"><input class="pj-link" placeholder="https://... folder link"><button type="button" class="pj-addlink">Add</button></div>
-    <label>Notes <textarea name="notes" rows="2">${esc(cur.notes)}</textarea></label>`, p ? "Save" : "Create");
-  const form = document.querySelector(".t-modal");
-  const paintLinks = () => { form.querySelector(".pj-links-ed").innerHTML = cur.links.map((l) => chip(l, { remove: true })).join(""); };
-  form.querySelector(".pj-owners").onclick = (ev) => pickPeople(ev.currentTarget, cur.owners, P.people, (v) => {
-    cur.owners = v;
-    form.querySelector(".pj-owners").innerHTML = people(v, 8) || `<span class="muted">choose</span>`;
-  });
-  const addLink = () => {
-    const inp = form.querySelector(".pj-link");
-    const url = inp.value.trim();
-    if (!url) return;
-    const c = classify(url);
-    if (!c) return toast("That is not a web link", true);
-    cur.links.push(makeLink(url, c.name || (c.service + " folder"), P.me.user ? P.me.user.name : ""));
-    inp.value = "";
-    paintLinks();
-  };
-  form.querySelector(".pj-addlink").onclick = addLink;
-  form.querySelector(".pj-link").onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); addLink(); } };
-  form.querySelector(".pj-links-ed").onclick = (ev) => {
-    const b = ev.target.closest("[data-remove]");
-    if (b) { cur.links = cur.links.filter((l) => l.id !== b.dataset.remove); paintLinks(); }
-  };
-  const f = await done;
-  if (!f) return;
-  try {
-    const r = await api("/api/registry", { method: "POST", body: JSON.stringify({
-      id: p ? p.id : undefined, name: f.name.value, code: f.code.value, short: f.short.value, team: f.team.value,
-      status: f.status.value, viewer: f.viewer.value, notes: f.notes.value, owners: cur.owners, links: cur.links }) });
-    P.open = r.id;
-    await load();
-  } catch (e) { toast(e.message, true); }
-}
-
-async function importFile() {
-  const f = await modal("Import projects", `<p class="muted" style="font-size:12px">From Lark Base: open the Projects table, ... &rarr; Export &rarr; Excel. Or any sheet with the columns
-    <b>Project</b>, Owner, Group (team), Project Folder, Status (and optionally Code, Viewer). A project already here (same name) is updated. "HKA-P-01681-ARC - SKW" is split into code and short name, and groups called SKW in the task lists are linked to it.</p>
-    <input type="file" name="file" accept=".xlsx,.csv" required>`, "Import");
-  if (!f || !f.file.files[0]) return;
-  const file = f.file.files[0];
-  const body = {};
-  if (/\.xlsx$/i.test(file.name)) {
-    body.xlsx = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(",")[1]); fr.readAsDataURL(file); });
-  } else body.csv = await file.text();
-  try {
-    const r = await api("/api/registry/import", { method: "POST", body: JSON.stringify(body) });
-    toast(`${r.imported} projects imported` + (r.unmatched.length ? ` - no account yet for ${r.unmatched.join(", ")}` : ""));
-    await load();
-  } catch (e) { toast(e.message, true); }
 }
 
 async function start() {
@@ -219,18 +209,15 @@ async function start() {
   P.me = me;
   header(me);
   P.open = new URLSearchParams(location.search).get("p") || "";
-  $("#pj-new").onclick = () => edit(null);
-  $("#pj-import").onclick = importFile;
   $("#pj-q").oninput = (ev) => { P.q = ev.target.value; render(); };
   $("#pj-status").onchange = (ev) => { P.status = ev.target.value; render(); };
-  $("#pj-team").onchange = (ev) => { P.team = ev.target.value; render(); };
   $("#t-view").onclick = (ev) => {
     if (ev.target.closest("a")) return;
     const tr = ev.target.closest("tr[data-id]");
     if (tr) openDetail(tr.dataset.id);
   };
   await load();
-  setInterval(() => { if (!document.hidden && !document.querySelector(".t-modal")) load().catch(() => {}); }, 60000);
+  setInterval(() => { if (!document.hidden) load().catch(() => {}); }, 60000);
 }
 
 start().catch((e) => { $("#t-view").innerHTML = `<p class="bad" style="padding:20px">${esc(e.message)}</p>`; });

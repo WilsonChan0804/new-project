@@ -46,9 +46,11 @@ const ICON = { pdf: "PDF", dwg: "DWG", rvt: "RVT", xlsx: "XLS", xls: "XLS", docx
 export function filesHtml(files) {
   if (!files || !files.length) return "";
   const pics = files.filter((f) => (f.mime || "").startsWith("image/"));
-  const rest = files.filter((f) => !(f.mime || "").startsWith("image/"));
+  const vids = files.filter((f) => (f.mime || "").startsWith("video/"));
+  const rest = files.filter((f) => !(f.mime || "").startsWith("image/") && !(f.mime || "").startsWith("video/"));
   return `<div class="up-files">`
     + pics.map((f) => `<a class="up-pic" href="${esc(f.url)}" target="_blank" title="${esc(f.name)}"><img src="${esc(f.url)}" alt="${esc(f.name)}" loading="lazy"></a>`).join("")
+    + vids.map((f) => `<div class="up-vid"><video src="${esc(f.url)}" controls preload="metadata" playsinline></video><small>${esc(f.name)} · ${esc(size(f.size || 0))}</small></div>`).join("")
     + rest.map((f) => {
       const ext = (f.name.split(".").pop() || "").toLowerCase();
       return `<a class="up-file" href="${esc(f.url)}" target="_blank" title="Open / download"><span class="up-ext">${esc(ICON[ext] || ext.toUpperCase().slice(0, 4) || "FILE")}</span>`
@@ -88,6 +90,8 @@ export function catchFiles(el, take) {
   st.id = "up-css";
   st.textContent = `
 .up-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.up-vid video { max-width: 420px; width: 100%; max-height: 300px; border-radius: 8px; background: #000; display: block; }
+.up-vid small { color: var(--muted, #6b7480); font-size: 10px; }
 .up-pic img { max-width: 240px; max-height: 180px; border-radius: 6px; border: 1px solid var(--line, #e2e6ec); display: block; object-fit: cover; }
 .up-file { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line, #e2e6ec); border-radius: 8px; padding: 6px 10px;
   text-decoration: none; color: var(--ink, #1f2430); background: var(--panel, #fff); max-width: 300px; }

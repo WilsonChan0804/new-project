@@ -4,6 +4,39 @@
 
 import { esc, people, fmtDate, today, addDays, daysBetween, isOverdue, avatarColor } from "./tasks-util.js";
 
+/* Where a task sits on the timeline: [first day, last day, kind].
+   plan  start and due date            a solid bar
+   due   due date only                 a diamond on the day
+   open  start date only               runs to today (or to when it was done), fading out
+   none  no dates at all               from when it was made, drawn as an outline */
+function spanOf(t) {
+  const s = (t.start || "").slice(0, 10), d = (t.due || "").slice(0, 10);
+  const fin = (t.completed_at || "").slice(0, 10), now = today();
+  if (s && d) return [s, d < s ? s : d, "plan"];
+  if (d) return [d, d, "due"];
+  if (s) return [s, fin && fin >= s ? fin : t.done ? s : (now > s ? now : s), "open"];
+  const c = (t.created_at || "").slice(0, 10);
+  if (c) return [c, fin && fin >= c ? fin : t.done ? c : (now > c ? now : c), "none"];
+  return null;
+}
+
+const DONE = "#16a34a";
+function colourOf(t) {
+  if (t.done) return DONE;
+  if (isOverdue(t)) return "#e2453c";
+  return t.owners[0] ? avatarColor(t.owners[0].name) : "#3b82f6";
+}
+
+const LEGEND = `<span class="gt-leg">`
+  + `<span><i class="lg-bar" style="--c:#3b82f6"></i>Planned (colour of the first owner)</span>`
+  + `<span><i class="lg-bar" style="--c:${DONE}"></i>Done</span>`
+  + `<span><i class="lg-bar" style="--c:#e2453c"></i>Overdue</span>`
+  + `<span><i class="lg-bar open" style="--c:#6366f1"></i>Start date only</span>`
+  + `<span><i class="lg-bar none" style="--c:#6366f1"></i>No dates</span>`
+  + `<span><i class="lg-ms"></i>Due date only</span>`
+  + `<span><i class="lg-ms gold"></i>Milestone</span>`
+  + `<span><i class="lg-today"></i>Today</span></span>`;
+
 const ZOOM = { day: 34, week: 14, month: 4 };
 const LEFT = 300;
 
@@ -24,7 +57,7 @@ export function render(T, el) {
   }
   // the span shown: everything dated, with room either side, and today
   const dates = [today()];
-  for (const r of rows) if (r.t) { if (r.t.start) dates.push(r.t.start.slice(0, 10)); if (r.t.due) dates.push(r.t.due.slice(0, 10)); }
+  for (const r of rows) if (r.t) { const sp = spanOf(r.t); if (sp) dates.push(sp[0], sp[1]); }
   dates.sort();
   let d0 = addDays(dates[0], zoom === "month" ? -30 : -10);
   let d1 = addDays(dates[dates.length - 1], zoom === "month" ? 90 : 30);
@@ -53,24 +86,30 @@ export function render(T, el) {
   const tx = x(today());
 
   const bar = (t) => {
-    const s = (t.start || t.due || "").slice(0, 10), e = (t.due || t.start || "").slice(0, 10);
-    if (!s) return `<span class="gt-hint">${T.canEdit() ? "click to schedule" : ""}</span>`;
-    const col = t.done ? "#9aa3ae" : isOverdue(t) ? "var(--bad)" : t.owners[0] ? avatarColor(t.owners[0].name) : "var(--info)";
-    if (!t.start && t.due) {
-      return `<span class="gt-ms" data-id="${esc(t.id)}" data-kind="ms" style="left:${x(e) + px / 2 - 7}px;background:${col}" title="${esc(t.title)} - due ${esc(fmtDate(e))}"></span>`
-        + `<span class="gt-lab" style="left:${x(e) + px + 6}px">${esc(t.title)}</span>`;
+    const sp = spanOf(t);
+    if (!sp) return `<span class="gt-hint">${T.canEdit() ? "click to schedule" : ""}</span>`;
+    const [s, e, kind] = sp;
+    const col = colourOf(t);
+    const ms = T.isMilestone(t);
+    const tip = `${t.title}\n${kind === "plan" ? fmtDate(s) + " - " + fmtDate(e) : kind === "due" ? "Due " + fmtDate(e)
+      : kind === "open" ? "Started " + fmtDate(s) + " - no due date" : "No dates - shown from when it was made"}${t.done ? "\nDone" : isOverdue(t) ? "\nOverdue" : ""}`;
+    if (ms || kind === "due") {
+      return `<span class="gt-ms${ms ? " gold" : ""}" data-id="${esc(t.id)}" data-kind="ms" style="left:${x(e) + px / 2 - 8}px;${ms ? "" : "background:" + col}" title="${esc(tip)}"></span>`
+        + `<span class="gt-lab" style="left:${x(e) + px + 8}px">${ms ? "<b>Milestone</b> · " : ""}${esc(t.title)}</span>`;
     }
     const w = Math.max(px, (daysBetween(s, e) + 1) * px);
-    return `<span class="gt-bar${t.done ? " done" : ""}" data-id="${esc(t.id)}" style="left:${x(s)}px;width:${w}px;background:${col}" `
-      + `title="${esc(t.title)}: ${esc(fmtDate(s))} - ${esc(fmtDate(e))}"><b class="gt-h l"></b><em>${esc(w > 80 ? t.title : "")}</em><b class="gt-h r"></b></span>`
+    return `<span class="gt-bar k-${kind}${t.done ? " done" : ""}" data-id="${esc(t.id)}" style="left:${x(s)}px;width:${w}px;--c:${col}" `
+      + `title="${esc(tip)}"><b class="gt-h l"></b><em>${esc(w > 80 ? t.title : "")}</em><b class="gt-h r"></b></span>`
       + (w <= 80 ? `<span class="gt-lab" style="left:${x(s) + w + 6}px">${esc(t.title)}</span>` : "");
   };
+
 
   const prevScroll = el.querySelector(".gt-scroll");
   const sx = prevScroll ? prevScroll.scrollLeft : null, sy = prevScroll ? prevScroll.scrollTop : 0;
   el.innerHTML = `<div class="gt-bar-top">Zoom <span class="gt-zoom">${Object.keys(ZOOM).map((z) =>
     `<button data-z="${z}" class="${z === zoom ? "on" : ""}">${z[0].toUpperCase() + z.slice(1)}</button>`).join("")}</span>`
     + `<button class="ghost gt-today">Today</button><span class="muted" style="font-size:11px">Drag bars to move; drag the ends to change dates.</span></div>`
+    + `<div class="gt-legend">${LEGEND}</div>`
     + `<div class="gt-scroll"><div class="gt" style="width:${LEFT + W}px;--left:${LEFT}px">`
     + `<div class="gt-row gt-headrow"><div class="gt-l"><b>Task</b></div><div class="gt-r" style="width:${W}px"><div class="gt-mon">${top}</div><div class="gt-day">${bot}</div></div></div>`
     + `<div class="gt-body"><div class="gt-grid" style="left:${LEFT}px;width:${W}px">${grid}<i class="today" style="left:${tx + px / 2}px"></i></div>`
@@ -147,7 +186,7 @@ export function render(T, el) {
       T.S.dragging = false;
       if (!moved) return T.openTask(t.id);
       if (!dd) return render(T, el);
-      const s = (t.start || t.due).slice(0, 10), e = (t.due || t.start).slice(0, 10);
+      const [s, e] = spanOf(t);
       if (mode === "ms") T.save(t.id, { due: addDays(e, dd) });
       else if (mode === "m") T.save(t.id, { start: addDays(s, dd), due: addDays(e, dd) });
       else if (mode === "l") T.save(t.id, { start: addDays(s, Math.min(dd, daysBetween(s, e))) });

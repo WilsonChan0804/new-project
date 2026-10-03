@@ -13,13 +13,13 @@
 <header>
   <b class="brand">LWK Viewer</b>
   <div class="seg">
-    <a class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
-    <a class="seg-btn" data-page="model.html" href="model.html">3D</a>
-    <a class="seg-btn" data-page="board.html" href="board.html">Board</a>
-    <a class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
     <span class="seg-btn on">Projects</span>
-    <a class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
-    <a class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
+    <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
   </div>
   <span class="spacer"></span>
   <div id="lwk-nav">
@@ -37,13 +37,10 @@
       <span class="spacer"></span>
     </div>
     <div id="t-bar">
-      <button id="pj-new" class="primary" hidden>+ New project</button>
-      <button id="pj-import" hidden title="A project table from Lark Base or Excel (.xlsx or CSV)">Import</button>
-      <input id="pj-q" type="search" placeholder="Search projects" autocomplete="off">
+      <input id="pj-q" type="search" placeholder="Search projects or people" autocomplete="off">
       <select id="pj-status"><option value="">Any status</option></select>
-      <select id="pj-team"><option value="">Any team</option></select>
       <span class="spacer"></span>
-      <span class="muted" style="font-size:11px">A job's tasks are the task groups linked to it (Tasks &rarr; ... &rarr; Groups and projects)</span>
+      <a id="pj-manage" class="ghost" href="admin.html#projects" hidden style="font-size:12px" title="Add projects, set their members and link their viewer project">Manage projects (Admin)</a>
     </div>
     <div id="t-view"><p class="muted" style="padding:20px">Loading ...</p></div>
   </main>

@@ -6,17 +6,30 @@
 <title>LWK Viewer - Dashboard</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="dash.css">
+<style>
+.dtasks h3 a { font-size: 11px; font-weight: 600; color: var(--accent-deep); margin-left: 8px; text-decoration: none; }
+.dt-k { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+.dt-k b { font-size: 20px; color: var(--ink); display: block; line-height: 1.1; }
+.dt-k .bad b { color: var(--bad); }
+.dt-g { font-size: 12px; margin: 8px 0 2px; color: var(--muted); }
+.dt-g a { color: var(--accent-deep); text-decoration: none; font-weight: 600; }
+.dt-row { display: flex; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; color: var(--ink); text-decoration: none; }
+.dt-row:hover { background: var(--panel-2); }
+.dt-row .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-row small { color: var(--muted); white-space: nowrap; }
+.dt-row small.late { color: var(--bad); }
+</style>
 </head>
 <body class="dash-page own-nav">
 <header>
   <b class="brand">LWK Viewer</b>
   <div class="seg">
-    <a id="to-sheets" class="seg-btn" href="index.html">Sheets</a>
-    <a id="to-3d" class="seg-btn" href="model.html">3D</a>
-    <a id="to-board" class="seg-btn" href="board.html">Board</a>
-    <a id="to-tasks" class="seg-btn" href="tasks.html">Tasks</a>
-    <a id="to-projects" class="seg-btn" href="projects.html">Projects</a>
-    <a id="to-chat" class="seg-btn chat-link" href="messenger.html">Chat</a>
+    <a id="to-projects" class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
+    <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
     <span class="seg-btn on">Dashboard</span>
   </div>
   <select id="d-project" title="Project"></select>
@@ -50,6 +63,8 @@
     <button id="d-csv" title="Every issue in the current filter, for Excel">Export CSV</button>
     <button id="d-report" title="A printable report of the issues in the current filter, with pictures - save it as PDF">Report</button>
   </section>
+
+  <section class="card full dtasks" id="d-tasks" hidden></section>
 
   <section class="digest" id="digest" hidden>
     <div class="dg-head"><b>This week</b> <span class="muted">last 7 days</span>

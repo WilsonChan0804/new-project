@@ -125,7 +125,21 @@ export const T = {
     }
     return [...out.values()];
   },
-  save, create, remove, openTask, render, ownerKey, flush,
+  save, create, remove, openTask, render, ownerKey, flush, toggleDone,
+  /* every task in the order the open view lists them: a task, then its sub-tasks */
+  sequence() {
+    const out = [];
+    for (const b of T.buckets(T.visible())) for (const t of b.tasks) {
+      if (out.includes(t.id)) continue;
+      out.push(t.id);
+      for (const k of T.children(t.id)) out.push(k.id);
+    }
+    return out;
+  },
+  /* the custom field of that name (Lark's Completion method, Task completers, Milestone) */
+  fieldNamed(name) { return T.fields().find((f) => f.name.trim().toLowerCase() === name); },
+  methodOf(t) { const f = T.fieldNamed("completion method"); return f && t.vals[f.id] === "AND" ? "AND" : "OR"; },
+  isMilestone(t) { const f = T.fieldNamed("milestone"); return !!(f && t.vals[f.id]); },
   async openListTask(listId, taskId) { await openList(listId); if (taskId && S.tasks.has(taskId)) openTask(taskId); },
   dropInto(t, bucket, beforeId) {
     /* what "moving into this column / group" means for each Group by */
@@ -175,6 +189,30 @@ function save(id, patch) {
   render();
   if (S.openId === id) Detail.refresh(T);
   schedule();
+}
+
+/* Ticking a task. Completion method OR (the usual): any owner finishing it
+   finishes it. AND: every owner ticks their own part - who has is kept in
+   "Task completers" - and the task is done when all of them have. */
+function toggleDone(t) {
+  const cf = T.fieldNamed("task completers");
+  const me = S.me || {};
+  const meP = { uid: me.uid, name: me.name };
+  const isMe = (p) => (me.uid != null && p.uid === me.uid) || (me.uid == null && p.name === me.name);
+  if (T.methodOf(t) === "AND" && t.owners.length > 1 && cf) {
+    let done = (t.vals[cf.id] || []).slice();
+    if (!t.owners.some(isMe)) {
+      if (!confirm(`This task is done when all ${t.owners.length} owners have finished their part (completion method AND), and you are not one of them.\n\nMark the whole task as ${t.done ? "not done" : "done"} anyway?`)) return;
+      return save(t.id, { done: !t.done, vals: { [cf.id]: t.done ? [] : t.owners.slice() } });
+    }
+    done = done.some(isMe) ? done.filter((p) => !isMe(p)) : done.concat([meP]);
+    const all = t.owners.every((o) => done.some((d) => (o.uid != null && d.uid === o.uid) || d.name === o.name));
+    if (!all && !t.done) toast(`Your part is done - ${t.owners.length - done.length} more owner${t.owners.length - done.length > 1 ? "s" : ""} to go`);
+    return save(t.id, { vals: { [cf.id]: done }, done: all });
+  }
+  const patch = { done: !t.done };
+  if (cf) patch.vals = { [cf.id]: t.done ? [] : [meP] };
+  save(t.id, patch);
 }
 
 function create(fields) {
@@ -747,6 +785,12 @@ function wire() {
     else if (a.dataset.mode) { flush(); S.mode = a.dataset.mode; S.listId = ""; S.list = null; setUrl(); paintSide(); render(); }
   };
   $("#t-side-toggle").onclick = () => document.body.classList.toggle("side-off");
+  $("#t-side-open").onclick = () => document.body.classList.toggle("side-open");
+  // a phone: choosing something in the drawer closes it; so does a tap beside it
+  $("#t-side").addEventListener("click", (ev) => { if (ev.target.closest(".ts-item")) document.body.classList.remove("side-open"); });
+  document.addEventListener("pointerdown", (ev) => {
+    if (document.body.classList.contains("side-open") && !ev.target.closest("#t-side, #t-side-open")) document.body.classList.remove("side-open");
+  });
   $("#t-newlist").onclick = (ev) => {
     const el = pop(ev.currentTarget, `<div class="po-row" data-k="new">New task list</div><div class="po-row" data-k="lark">Import a Lark task list (.xlsx)</div>`, 240);
     el.onclick = (e) => {
@@ -853,7 +897,6 @@ async function start() {
     location.href = "admin.html?first=1&next=" + encodeURIComponent(location.pathname + location.search) + "#account";
     return;
   }
-  if (innerWidth < 900) document.body.classList.add("side-off");
   S.me = { uid: me.user ? me.user.id : null, name: me.user ? me.user.name : "", user: me.user, accounts: me.accounts,
     site_admin: me.site_admin, projects: me.projects };
   headerLinks();

@@ -712,8 +712,38 @@ async function main() {
   $("#to-admin").href = link("admin.html");
   wireFilters();
   await loadData();
+  projectTasks().catch(() => {});
   // Keep it current while it is left open on a screen in the office.
   setInterval(() => { if (!document.hidden) loadData().catch(() => {}); }, 120000);
 }
 
 main().catch(showError);
+
+
+/* The project's tasks - from every team's task list that has a group for
+   it (Tasks page). Shown only when the project is on the Projects page. */
+async function projectTasks() {
+  const box = document.getElementById("d-tasks");
+  const reg = ((await api("/api/registry")).projects || []).find((p) => p.viewer === project());
+  if (!reg) return;
+  const tree = (await api(`/api/registry/${encodeURIComponent(reg.id)}/tasks`)).groups || [];
+  const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  const all = tree.flatMap((g) => g.tasks.map((t) => Object.assign(t, { _g: g })));
+  const open = all.filter((t) => !t.done);
+  const late = open.filter((t) => t.due && t.due.slice(0, 10) < today);
+  const subs = all.reduce((n, t) => n + (t.children || []).length, 0);
+  const subsDone = all.reduce((n, t) => n + (t.children || []).filter((k) => k.done).length, 0);
+  const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  open.sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
+  box.hidden = false;
+  box.innerHTML = `<h3>Tasks <small>${esc(reg.short || reg.name)} - from the team task lists</small><a href="projects.html?p=${esc(reg.id)}">Project page</a></h3>`
+    + (all.length ? `<div class="dt-k"><span><b>${all.length}</b>tasks</span><span><b>${all.length - open.length}</b>done</span>`
+      + `<span class="${late.length ? "bad" : ""}"><b>${late.length}</b>overdue</span><span><b>${subsDone}/${subs}</b>sub-tasks done</span></div>`
+      + tree.map((g) => `<div class="dt-g">${esc(g.list_title)} / <b>${esc(g.group.title)}</b> · <a href="tasks.html?list=${esc(g.list_id)}">open the list</a></div>`).join("")
+      + open.slice(0, 12).map((t) => `<a class="dt-row" href="tasks.html?list=${esc(t.list_id)}&task=${esc(t.id)}"><span class="t">${esc(t.title || "Untitled")}</span>`
+        + ((t.children || []).length ? `<small>${t.children.filter((k) => k.done).length}/${t.children.length} sub-tasks</small>` : "")
+        + `<small>${esc((t.owners || []).map((p) => p.name).join(", "))}</small>`
+        + (t.due ? `<small class="${t.due.slice(0, 10) < today ? "late" : ""}">due ${esc(t.due.slice(0, 10))}</small>` : "") + `</a>`).join("")
+      + (open.length > 12 ? `<div class="dt-g">and ${open.length - 12} more open</div>` : "")
+      : `<p class="muted" style="font-size:12px">No task list has a group for this project yet. In Tasks: ... &rarr; Groups and projects.</p>`);
+}
