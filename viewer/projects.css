@@ -76,3 +76,7 @@ table.pj .num { text-align: right; font-variant-numeric: tabular-nums; }
   #t-detail .td-x { display: none; }
   table.pj { min-width: 900px; }
 }
+.pd-parts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.pd-part { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+.pd-part b { min-width: 120px; }
+.t-pop a.po-row { display: block; color: var(--ink); text-decoration: none; }

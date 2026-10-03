@@ -35,7 +35,7 @@ const LWK_VERSION = "2026-10-03a";
     b.appendChild(s);
   }
 })();
-import { api, link, project, signOut } from "./nav.js";
+import { api, link, project, signOut, projectOptions } from "./nav.js";
 import { ISSUE_TYPES } from "./issuetypes.js";
 
 const $ = (s) => document.querySelector(s);
@@ -103,8 +103,11 @@ async function loadProjects() {
   const data = await api("/api/projects");
   const ps = data.projects || [];
   const sel = $("#d-project");
-  sel.innerHTML = ps.map((p) => `<option value="${esc(p.id)}">${esc(p.title)}`
-    + `${p.role && D.me.accounts ? " (" + p.role + ")" : ""}</option>`).join("");
+  const plain = () => ({ html: ps.map((p) => `<option value="${esc(p.id)}">${esc(p.title)}`
+    + `${p.role && D.me.accounts ? " (" + esc(p.role) + ")" : ""}</option>`).join(""), ids: ps.map((p) => p.id) });
+  // the names from the Projects page; a project of several models as a group
+  const ch = await projectOptions(project(), plain);
+  sel.innerHTML = ch.html || plain().html;
   let want = project();
   if (!ps.find((p) => p.id === want) && ps.length) want = ps[0].id;
   if (!want) {
@@ -724,7 +727,8 @@ main().catch(showError);
    it (Tasks page). Shown only when the project is on the Projects page. */
 async function projectTasks() {
   const box = document.getElementById("d-tasks");
-  const reg = ((await api("/api/registry")).projects || []).find((p) => p.viewer === project());
+  const reg = ((await api("/api/registry")).projects || [])
+    .find((p) => (p.viewers || []).includes(project()) || p.viewer === project());
   if (!reg) return;
   const tree = (await api(`/api/registry/${encodeURIComponent(reg.id)}/tasks`)).groups || [];
   const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);

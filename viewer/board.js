@@ -19,7 +19,7 @@
  * picker, presenting and the timer are in board-extra.js.
  */
 
-import { api, link, project, signOut } from "./nav.js";
+import { api, link, project, signOut, projectOptions } from "./nav.js";
 import { esc, uid, clone, clamp, round1, col, STICKY_COLORS, INK_COLORS, SHAPE_FILLS, BRANCH_COLORS, isDark, personColor,
          initials, ago, icon, center, unionBox, boxesTouch, route, arrowHead, simplify, penPath } from "./board-util.js";
 import { createSync } from "./board-sync.js";
@@ -2726,8 +2726,11 @@ async function loadProjects() {
   const data = await api("/api/projects");
   const ps = data.projects || [];
   const sel = $("#b-project");
-  sel.innerHTML = ps.map((p) => `<option value="${esc(p.id)}">${esc(p.title)}`
-    + `${p.role && A.me.accounts ? " (" + esc(p.role) + ")" : ""}</option>`).join("");
+  const plain = () => ({ html: ps.map((p) => `<option value="${esc(p.id)}">${esc(p.title)}`
+    + `${p.role && A.me.accounts ? " (" + esc(p.role) + ")" : ""}</option>`).join(""), ids: ps.map((p) => p.id) });
+  // the names from the Projects page; a project of several models as a group
+  const ch = await projectOptions(project(), plain);
+  sel.innerHTML = ch.html || plain().html;
   let want = project();
   if (!ps.find((p) => p.id === want) && ps.length) want = ps[0].id;
   if (!want) {

@@ -35,7 +35,7 @@ const ROLE_LABEL = { admin: "Project admin", publisher: "Publisher", member: "Me
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined,
   { day: "numeric", month: "short", year: "numeric" }) : "never");
 
-const A = { me: null, projects: [], users: [], pid: "", members: [], regs: [], reg: "", regCreate: false };
+const A = { me: null, projects: [], users: [], pid: "", members: [], regs: [], reg: "", part: "", regCreate: false };
 
 /* A project's members: those of its viewer project when it has one (as
    before), otherwise the project's own list (tasks.py reg_members). */
@@ -225,13 +225,20 @@ async function loadProjects() {
     A.reg = (hit || A.regs[0]).id;
   }
   const cur = A.regs.find((r) => r.id === A.reg);
-  A.pid = cur.viewer && A.projects.find((p) => p.id === cur.viewer) ? cur.viewer : null;
+  // a project of several models: one part at a time below (members, Teams, layers)
+  const parts = (cur.viewers || []).filter((v) => A.projects.find((p) => p.id === v));
+  A.pid = parts.includes(A.part) ? A.part : parts[0] || null;
+  const pw = $("#a-part-wrap");
+  pw.hidden = parts.length < 2;
+  const ttl = (v) => ((A.allViewer || []).find((x) => x.id === v) || A.projects.find((x) => x.id === v) || { title: v }).title;
+  $("#a-part").innerHTML = parts.map((v) => `<option value="${esc(v)}"${v === A.pid ? " selected" : ""}>${esc(ttl(v))}</option>`).join("");
+  $("#a-part").onchange = (ev) => { A.part = ev.target.value; A.pid = ev.target.value; loadMembers(); };
   ul.innerHTML = A.regs.map((r) => `<li data-reg="${esc(r.id)}" class="${r.id === A.reg ? "on" : ""}">`
     + `<span>${esc(r.short || r.name)}<div class="sub">${esc(r.code || r.name)}`
-    + (r.viewer ? ` · ${esc(r.viewer)}` : ` · <span class="nm">no model yet</span>`) + `</div></span>`
+    + ((r.parts || []).length ? ` · ${esc(r.parts.map((x) => x.title).join(", "))}` : ` · <span class="nm">no model yet</span>`) + `</div></span>`
     + `<span class="pill" title="Members">${r.members.length}</span></li>`).join("");
   ul.querySelectorAll("li[data-reg]").forEach((li) => {
-    li.onclick = () => { A.reg = li.dataset.reg; A.pid = null; loadProjects().then(loadMembers); };
+    li.onclick = () => { A.reg = li.dataset.reg; A.pid = null; A.part = ""; loadProjects().then(loadMembers); };
   });
   fillReg(cur);
 }
@@ -249,10 +256,13 @@ function fillReg(r) {
   $("#r-status").value = r.status || "Active";
   $("#r-team").value = r.team || "";
   const vs = A.allViewer || [];
-  const taken = new Set(A.regs.filter((x) => x.viewer && x.id !== r.id).map((x) => x.viewer));
-  $("#r-viewer").innerHTML = `<option value="">- none yet -</option>` + vs.map((v) =>
-    `<option value="${esc(v.id)}"${v.id === r.viewer ? " selected" : ""}${taken.has(v.id) ? " disabled" : ""}>${esc(v.title)}${v.title !== v.id ? " (" + esc(v.id) + ")" : ""}${taken.has(v.id) ? " - used" : ""}</option>`).join("")
-    + (r.viewer && !vs.some((v) => v.id === r.viewer) ? `<option value="${esc(r.viewer)}" selected>${esc(r.viewer)}</option>` : "");
+  const mine = new Set(r.viewers || (r.viewer ? [r.viewer] : []));
+  const holder = (v) => A.regs.find((x) => x.id !== r.id && (x.viewers || []).includes(v));
+  $("#r-viewer").innerHTML = vs.map((v) => {
+    const h = holder(v);
+    return `<option value="${esc(v.id)}"${mine.has(v.id) ? " selected" : ""}>${esc(v.title)}${v.title !== v.id ? " (" + esc(v.id) + ")" : ""}`
+      + `${h ? " - now in " + esc(h.short || h.name) : ""}</option>`;
+  }).join("") + [...mine].filter((v) => !vs.some((x) => x.id === v)).map((v) => `<option value="${esc(v)}" selected>${esc(v)}</option>`).join("");
   const owners = new Set((r.owners || []).map((o) => o.uid));
   $("#r-owners").innerHTML = A.users.filter((u) => u.active).map((u) =>
     `<option value="${u.id}"${owners.has(u.id) ? " selected" : ""}>${esc(u.name)}${u.team ? " · " + esc(u.team) : ""}</option>`).join("");
@@ -292,7 +302,7 @@ function wireRegistry() {
     try {
       const out = await api("/api/registry", { method: "POST", body: JSON.stringify({
         id: r.id || undefined, name: $("#r-name").value, code: $("#r-code").value, short: $("#r-short").value,
-        status: $("#r-status").value, team: $("#r-team").value, viewer: $("#r-viewer").value,
+        status: $("#r-status").value, team: $("#r-team").value, viewers: [...$("#r-viewer").selectedOptions].map((o) => o.value),
         owners, links: REG_LINKS, notes: $("#r-notes").value }) });
       msg(r.id ? "Project saved." : "Project added - now add its members below.", "ok");
       A.reg = out.id; A.pid = null;
@@ -555,7 +565,8 @@ async function loadMembers() {
   if (!A.pid && !A.reg) { $("#a-members").innerHTML = ""; $("#a-danger").hidden = true; return; }
   const p = A.projects.find((x) => x.id === A.pid);
   const rg = A.regs.find((x) => x.id === A.reg);
-  $("#a-proj-title").textContent = "Members of " + (rg ? rg.short || rg.name : p ? p.title : A.pid);
+  $("#a-proj-title").textContent = "Members of " + (rg ? rg.short || rg.name : p ? p.title : A.pid)
+    + (rg && (rg.parts || []).length > 1 && p ? " - " + p.title : "");
   $("#a-danger").hidden = !(A.me && A.me.site_admin);
   A.members = await memberList();
   const t = $("#a-members");

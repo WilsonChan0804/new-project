@@ -29,13 +29,17 @@ Team task lists, replacing Lark Tasks, connected to the viewer.
 The register of jobs, like the Lark Base "Projects" table. Each project has:
 - a code and name, its owners, team and status;
 - its folders (OneDrive / SharePoint / ACC links);
-- the viewer project that shows its drawings and model.
+- the viewer projects that show its drawings and models. A job with several Revit models and sheet sets (e.g. MOS Site 1 and Site 2, each exported to its own folder) stays **one project with several parts**. In Admin > Projects, Ctrl+click every folder under *Models and sheets*. A folder that already belongs to another project is moved over; an entry the server made on its own for that folder is removed, and its task groups move with it.
 
 Task groups are linked to a project (Tasks > `...` > *Groups and projects*); a group named like the project's short name (SKW, YTM ...) is linked automatically. The page shows per project:
 - number of tasks, done, completion %, overdue, and the open tasks;
-- open issues, from its viewer project;
-- buttons to its sheets, 3D and issues dashboard;
+- open issues, added up over all its parts, with a count for each part;
+- buttons to its sheets, 3D and issues dashboard (with several parts, each button lists them);
 - its chat channel.
+
+Members are kept per part, because they are what opens that part. The project's members, and its channel, are everyone on any part. When Admin edits a project with several parts, it shows a part selector above the members.
+
+The project pickers on Sheets, 3D, Board and Dashboard list these project names. A project with several parts is a group, with its parts under it.
 
 Import: export the Lark Base table to Excel, then *Import*. The columns used are Project, Owner, Group, Project Folder and Status. "HKA-P-01681-ARC - SKW" is split into a code and a short name.
 

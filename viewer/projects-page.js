@@ -9,7 +9,7 @@
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, people, avatar, fmtDate, toast, ic } from "./tasks-util.js";
+import { $, esc, people, avatar, fmtDate, toast, ic, pop, closePop } from "./tasks-util.js";
 import { chip } from "./filelinks.js";
 
 const P = { me: null, list: [], rooms: {}, open: "", q: "", status: "", tree: {}, shut: new Set() };
@@ -49,17 +49,36 @@ function issueBar(is, big) {
     + `<span><b class="${is.overdue ? "bad" : ""}">${is.open}</b> open / ${is.total}</span></span>`;
 }
 
+/* Sheets / 3D / Dashboard of a project. A project of several models (Site 1,
+   Site 2 ...) gets a small menu of its parts on each. */
 function opens(p) {
-  const q = p.viewer ? "?project=" + encodeURIComponent(p.viewer) : "";
+  const parts = (p.parts || []).filter((x) => x.ok);
   const g = p.stats.groups.find((x) => x.can_open);
   const room = P.rooms[p.id];
+  const one = (page, label, title) => {
+    if (!parts.length) return "";
+    if (parts.length === 1) return `<a href="${page}?project=${encodeURIComponent(parts[0].id)}" title="${title}">${label}</a>`;
+    return `<a href="#" data-parts="${page}" data-reg="${esc(p.id)}" title="${title} - ${parts.length} parts">${label} &#9662;</a>`;
+  };
   return `<span class="pj-vl">`
-    + (p.viewer_ok ? `<a href="index.html${q}" title="Sheets">Sheets</a><a href="model.html${q}" title="3D model">3D</a>` : "")
+    + one("index.html", "Sheets", "Sheets") + one("model.html", "3D", "3D model")
     + (g ? `<a href="tasks.html?list=${esc(g.list_id)}" title="Tasks (${esc(g.list_title)})">Tasks</a>` : "")
     + (room ? `<a href="messenger.html?room=${esc(room.id)}" title="${room.member ? "The project's chat" : "Join the project's chat"}">Chat${room.unread ? ` <b class="pj-n">${room.unread}</b>` : ""}</a>` : "")
-    + (p.viewer_ok ? `<a href="dashboard.html${q}" title="Issues and tasks dashboard">Dashboard</a>` : "")
+    + one("dashboard.html", "Dashboard", "Issues and tasks dashboard")
     + `</span>`;
 }
+
+/* the menu of parts behind Sheets / 3D / Dashboard */
+document.addEventListener("click", (ev) => {
+  const a = ev.target.closest("[data-parts]");
+  if (!a) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const p = P.list.find((x) => x.id === a.dataset.reg);
+  const parts = (p.parts || []).filter((x) => x.ok);
+  const el = pop(a, parts.map((x) => `<a class="po-row" href="${a.dataset.parts}?project=${encodeURIComponent(x.id)}">${esc(x.title)}</a>`).join(""), 220);
+  el.addEventListener("click", () => closePop());
+}, true);
 
 function render() {
   const q = P.q.trim().toLowerCase();
@@ -156,6 +175,15 @@ function paintDetail(p) {
     <div class="td-body">
       <div class="td-num muted">${esc([p.code, p.name !== p.short && !(p.code && p.name.includes(p.code)) ? p.name : ""].filter(Boolean).join(" · "))}</div>
       <div class="pd-open">${opens(p)}</div>
+      ${(p.parts || []).length > 1 ? `<h4 style="margin-top:6px">Models and sheets <span class="muted">${p.parts.length} parts</span></h4>`
+        + `<div class="pd-parts">${p.parts.map((x) => {
+          const st = ((p.issues || {}).parts || []).find((y) => y.viewer === x.id);
+          const q = "?project=" + encodeURIComponent(x.id);
+          return `<div class="pd-part"><b>${esc(x.title)}</b>`
+            + (x.ok ? `<span class="pj-vl"><a href="index.html${q}">Sheets</a><a href="model.html${q}">3D</a><a href="dashboard.html${q}">Dashboard</a></span>` : `<small class="muted">not a member</small>`)
+            + (st ? `<small class="muted">${st.open} open issue${st.open === 1 ? "" : "s"}${st.overdue ? `, <span class="bad">${st.overdue} overdue</span>` : ""}</small>` : "")
+            + `</div>`;
+        }).join("")}</div>` : ""}
       <div class="td-r"><span class="td-l">Status</span><div class="td-v"><span class="pj-st st-${esc(p.status.toLowerCase().replace(/\s+/g, "-"))}">${esc(p.status)}</span></div></div>
       <div class="td-r"><span class="td-l">Owners</span><div class="td-v">${people(p.owners, 6) || "-"}</div></div>
       ${p.team ? `<div class="td-r"><span class="td-l">Group</span><div class="td-v">${esc(p.team)}</div></div>` : ""}

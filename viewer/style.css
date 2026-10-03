@@ -1835,3 +1835,8 @@ body.lwk-offline #lwk-nav a[href] { opacity: .55; }
   header .seg .seg-btn { white-space: nowrap; padding: 5px 9px; }
   header .brand small, .tasks-page header .spacer { display: none; }
   body.own-nav #lwk-nav .who { display: none; }
+
+/* the sheets and 3D pages: the page links share the Sheets / 3D group */
+header .mode.page-links { flex-wrap: nowrap; flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+header .mode.page-links::-webkit-scrollbar { display: none; }
+header .mode.page-links button { white-space: nowrap; }

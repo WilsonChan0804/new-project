@@ -176,6 +176,7 @@ MIGRATIONS = (
     ("tasks", "ext_id", "TEXT NOT NULL DEFAULT ''"),      # the Lark task id, so a re-import updates
     ("groups", "reg", "TEXT NOT NULL DEFAULT ''"),        # projects.id
     ("comments", "files", "TEXT NOT NULL DEFAULT '[]'"),  # attachments (chat.py stores them)
+    ("projects", "viewers", "TEXT NOT NULL DEFAULT '[]'"), # every viewer project (model + sheets) of a job
 )
 
 MAX_BODY = 2 * 1024 * 1024
@@ -244,6 +245,9 @@ class Db(object):
                     if col not in have:
                         self.db.execute("ALTER TABLE %s ADD COLUMN %s %s" % (table, col, sql))
                 self.db.execute("CREATE INDEX IF NOT EXISTS idx_tasks_ext ON tasks(list_id, ext_id)")
+                # a project from before it could hold several models: its one viewer project
+                for r in self.db.execute("SELECT id, viewer FROM projects WHERE viewer != '' AND viewers = '[]'").fetchall():
+                    self.db.execute("UPDATE projects SET viewers = ? WHERE id = ?", (json.dumps([r[1]]), r[0]))
                 self.db.commit()
                 _READY.add(self.path)
         except Exception:
@@ -640,6 +644,18 @@ def is_done(v):
     return str(v or "").strip().lower() in ("1", "true", "yes", "done", "completed", "complete", "closed", "已完成")
 
 
+def viewers_of(r):
+    """The viewer projects (model and sheets) of a project - one or several
+    parts, e.g. MOS Site 1 and Site 2. The first is its main one."""
+    try:
+        v = json.loads(r["viewers"] or "[]")
+    except (TypeError, ValueError, IndexError, KeyError):
+        v = []
+    if not v and r["viewer"]:
+        v = [r["viewer"]]
+    return [x for x in v if isinstance(x, str) and x]
+
+
 def project_people(core, reg):
     """(set of account ids, project row) for a register project: its
     owners and members (chat.py: who is in the project's channel)."""
@@ -650,9 +666,10 @@ def project_people(core, reg):
                 return set(), None
             r = dict(r)
             uids = set(p.get("uid") for p in json.loads(r["owners"] or "[]") if p.get("uid") is not None)
-            if r["viewer"] and core.project_dir(r["viewer"]):
-                uids.update(m["id"] for m in core.ACC.members(r["viewer"]) if m.get("active"))
-            else:
+            parts = [v for v in viewers_of(r) if core.project_dir(v)]
+            for v in parts:
+                uids.update(m["id"] for m in core.ACC.members(v) if m.get("active"))
+            if not parts:
                 uids.update(m["uid"] for m in d.execute("SELECT uid FROM reg_members WHERE reg = ?", (reg,)))
             return uids, r
     except Exception:
@@ -663,7 +680,8 @@ def reg_ids_for_viewer(core, pid):
     """The register projects shown by a viewer project (for issue cards)."""
     try:
         with Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
-            return [r["id"] for r in d.execute("SELECT id FROM projects WHERE viewer = ? AND deleted = 0", (pid,))]
+            return [r["id"] for r in d.execute("SELECT * FROM projects WHERE deleted = 0 AND viewers LIKE ?", ('%"' + pid + '"%',))
+                    if pid in viewers_of(r)]
     except Exception:
         return []
 
@@ -1434,7 +1452,7 @@ def register(app, core):
     def reg_row(r):
         return {"id": r["id"], "code": r["code"], "name": r["name"], "short": r["short"],
                 "owners": json.loads(r["owners"] or "[]"), "team": r["team"], "status": r["status"],
-                "viewer": r["viewer"], "links": json.loads(r["links"] or "[]"), "notes": r["notes"],
+                "viewer": r["viewer"], "viewers": viewers_of(r), "links": json.loads(r["links"] or "[]"), "notes": r["notes"],
                 "sort": r["sort"], "rev": r["rev"], "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or ""}
 
     def reg_can_edit(w, r):
@@ -1442,7 +1460,7 @@ def register(app, core):
             return True
         if r is not None and any(p.get("uid") == w.uid for p in json.loads(r["owners"] or "[]")):
             return True
-        if r is not None and r["viewer"] and core.project_dir(r["viewer"]) and core.role_in(w, r["viewer"]) == "admin":
+        if r is not None and any(core.project_dir(v) and core.role_in(w, v) == "admin" for v in viewers_of(r)):
             return True
         return False
 
@@ -1453,7 +1471,9 @@ def register(app, core):
     def ensure_registry(d):
         """Every viewer project (export folder) has its row on the Projects
         page, so the two lists never disagree."""
-        have = set(r["viewer"] for r in d.execute("SELECT viewer FROM projects WHERE viewer != '' AND deleted = 0"))
+        have = set()
+        for r in d.execute("SELECT * FROM projects WHERE deleted = 0"):
+            have.update(viewers_of(r))
         t = now_iso()
         for p in core.list_projects():
             if p["id"] in have:
@@ -1464,25 +1484,36 @@ def register(app, core):
             hit = next((r for r in d.execute("SELECT * FROM projects WHERE viewer = '' AND deleted = 0").fetchall()
                         if any(k and k.lower() in keys for k in (r["short"], r["name"], r["code"]))), None)
             if hit:
-                d.execute("UPDATE projects SET viewer = ?, rev = ? WHERE id = ?", (p["id"], rev, hit["id"]))
+                d.execute("UPDATE projects SET viewer = ?, viewers = ?, rev = ? WHERE id = ?",
+                          (p["id"], json.dumps([p["id"]]), rev, hit["id"]))
                 link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (hit["id"],)).fetchone(), rev)
                 continue
             code, short = split_code(p["title"])
-            d.execute("INSERT INTO projects (id, code, name, short, viewer, sort, rev, created_by, created_at, updated_at) "
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, 'server', ?, ?)",
-                      (new_id(), code, p["title"], short if code else p["id"], p["id"], time.time(), rev, t, t))
+            d.execute("INSERT INTO projects (id, code, name, short, viewer, viewers, sort, rev, created_by, created_at, updated_at) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'server', ?, ?)",
+                      (new_id(), code, p["title"], short if code else p["id"], p["id"], json.dumps([p["id"]]), time.time(), rev, t, t))
             link_groups(d, d.execute("SELECT * FROM projects WHERE viewer = ? AND deleted = 0", (p["id"],)).fetchone(), rev)
 
     def members_of(d, r):
         """[{uid, name, email, team, office, role}] - the viewer project's
         members, or (no viewer project yet) the project's own list."""
         out = []
-        if r["viewer"] and core.project_dir(r["viewer"]):
+        parts = [v for v in viewers_of(r) if core.project_dir(v)]
+        if parts:
             if core.accounts_on():
-                for m in core.ACC.members(r["viewer"]):
-                    if m.get("active"):
-                        out.append({"uid": m["id"], "name": m["name"], "email": m.get("email") or "", "team": m.get("team") or "",
-                                    "office": m.get("office") or "", "discipline": m.get("discipline") or "", "role": m["role"]})
+                rank = core.RANK
+                seen = {}
+                for v in parts:
+                    for m in core.ACC.members(v):
+                        if not m.get("active"):
+                            continue
+                        had = seen.get(m["id"])
+                        if had is None:
+                            seen[m["id"]] = {"uid": m["id"], "name": m["name"], "email": m.get("email") or "", "team": m.get("team") or "",
+                                             "office": m.get("office") or "", "discipline": m.get("discipline") or "", "role": m["role"]}
+                        elif rank.get(m["role"], 0) > rank.get(had["role"], 0):
+                            had["role"] = m["role"]     # the highest role on any part
+                out = list(seen.values())
             return out
         if not core.accounts_on():
             return out
@@ -1509,7 +1540,27 @@ def register(app, core):
                           (r["id"], r["viewer"] or g["project"], rev, g["id"]))
                 d.execute("UPDATE lists SET rev = ? WHERE id = ?", (rev, g["list_id"]))
 
-    def issue_stats(w, pid):
+    def issue_stats(w, pids):
+        """Issues of all the project's parts you can open, added up; and per part."""
+        if isinstance(pids, str):
+            pids = [pids] if pids else []
+        titles = dict((p["id"], p["title"]) for p in core.list_projects())
+        total = None
+        for pid in pids:
+            one = issue_stats_one(w, pid)
+            if one is None:
+                continue
+            if total is None:
+                total = {"total": 0, "open": 0, "overdue": 0, "by_status": {}, "parts": []}
+            for k in ("total", "open", "overdue"):
+                total[k] += one[k]
+            for k, n in one["by_status"].items():
+                total["by_status"][k] = total["by_status"].get(k, 0) + n
+            total["parts"].append({"viewer": pid, "title": titles.get(pid, pid), "open": one["open"], "total": one["total"],
+                                   "overdue": one["overdue"]})
+        return total
+
+    def issue_stats_one(w, pid):
         if not pid or not core.project_dir(pid) or not core.role_in(w, pid):
             return None
         try:
@@ -1561,6 +1612,7 @@ def register(app, core):
             rows = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
             stats = reg_stats(d, w)
             members = dict((r["id"], members_of(d, r)) for r in rows)
+        titles = dict((x["id"], x["title"]) for x in core.list_projects())
         out = []
         for r in rows:
             ms = members[r["id"]]
@@ -1573,8 +1625,13 @@ def register(app, core):
             p["can_edit"] = reg_can_edit(w, r)
             p["stats"] = stats.get(r["id"]) or {"tasks": 0, "done": 0, "overdue": 0, "groups": [], "open_tasks": []}
             p["stats"]["open_tasks"] = p["stats"]["open_tasks"][:12]
-            p["issues"] = issue_stats(w, r["viewer"])
-            p["viewer_ok"] = bool(r["viewer"] and core.project_dir(r["viewer"]) and core.role_in(w, r["viewer"]))
+            p["issues"] = issue_stats(w, viewers_of(r))
+            p["parts"] = [{"id": v, "title": titles.get(v, v), "ok": bool(core.project_dir(v) and core.role_in(w, v))}
+                          for v in viewers_of(r)]
+            ok = [x for x in p["parts"] if x["ok"]]
+            p["viewer_ok"] = bool(ok)
+            if ok and not (r["viewer"] and any(x["id"] == r["viewer"] for x in ok)):
+                p["viewer"] = ok[0]["id"]           # links go to a part this person can open
             out.append(p)
         return {"projects": out, "can_create": reg_can_create(w)}
 
@@ -1591,7 +1648,7 @@ def register(app, core):
             if not old and not reg_can_create(w):
                 raise HTTPException(status_code=403, detail="Only project admins and site admins can add projects")
             cur = reg_row(old) if old else {"code": "", "name": "", "short": "", "owners": [], "team": "",
-                                            "status": "Active", "viewer": "", "links": [], "notes": "", "sort": time.time()}
+                                            "status": "Active", "viewer": "", "viewers": [], "links": [], "notes": "", "sort": time.time()}
             for k in ("code", "short", "team", "status"):
                 if k in body:
                     cur[k] = clean_text(body[k], 80)
@@ -1603,30 +1660,54 @@ def register(app, core):
                 cur["owners"] = clean_people(body["owners"])
             if "links" in body:
                 cur["links"] = clean_links(body["links"])
-            if "viewer" in body:
-                v = clean_text(body["viewer"], 80)
-                if v and not core.project_dir(v):
-                    raise HTTPException(status_code=400, detail="No viewer project %s" % v)
-                cur["viewer"] = v
+            # its parts: one viewer project or several (Site 1, Site 2 ...)
+            if "viewers" in body or "viewer" in body:
+                vs = body.get("viewers") if isinstance(body.get("viewers"), list) else [body.get("viewer")]
+                vs = [clean_text(v, 80) for v in vs if v]
+                vs = list(dict.fromkeys(vs))[:20]
+                for v in vs:
+                    if not core.project_dir(v):
+                        raise HTTPException(status_code=400, detail="No viewer project %s" % v)
+                cur["viewers"] = vs
+            cur["viewer"] = cur["viewers"][0] if cur["viewers"] else ""
             if not cur["name"]:
                 raise HTTPException(status_code=400, detail="A project needs a name")
             if not cur["short"]:
                 cur["short"] = split_code(cur["name"])[1]
+            if not cur["code"]:
+                cur["code"] = split_code(cur["name"])[0]
             rev = next_rev(d)
-            if old and cur["viewer"] and cur["viewer"] != old["viewer"] and core.accounts_on():
+            pid = pid or new_id()
+            before = viewers_of(old) if old else []
+            added = [v for v in cur["viewers"] if v not in before]
+            if old and added and core.accounts_on():
                 # the members gathered before the model existed come along
                 for m in d.execute("SELECT * FROM reg_members WHERE reg = ?", (old["id"],)).fetchall():
-                    if not core.ACC.role(m["uid"], cur["viewer"]):
-                        core.ACC.set_member(cur["viewer"], m["uid"], m["role"] if m["role"] in core.ROLES else "member", by=by)
-            pid = pid or new_id()
-            d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, links, notes, sort, rev, "
-                      "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                    for v in added:
+                        if not core.ACC.role(m["uid"], v):
+                            core.ACC.set_member(v, m["uid"], m["role"] if m["role"] in core.ROLES else "member", by=by)
+            # a part taken from another project: out of that one. An entry the
+            # server made for that model alone goes, and its task groups move here.
+            for o in d.execute("SELECT * FROM projects WHERE deleted = 0 AND id != ?", (pid,)).fetchall():
+                theirs = viewers_of(o)
+                if not any(v in theirs for v in added):
+                    continue
+                left = [v for v in theirs if v not in added]
+                if not left and o["created_by"] == "server":
+                    d.execute("UPDATE projects SET deleted = 1, viewers = '[]', viewer = '', rev = ? WHERE id = ?", (rev, o["id"]))
+                    d.execute("UPDATE groups SET reg = ?, rev = ? WHERE reg = ?", (pid, rev, o["id"]))
+                else:
+                    d.execute("UPDATE projects SET viewers = ?, viewer = ?, rev = ? WHERE id = ?",
+                              (json.dumps(left), left[0] if left else "", rev, o["id"]))
+            d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, viewers, links, notes, sort, rev, "
+                      "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                       "ON CONFLICT(id) DO UPDATE SET code=excluded.code, name=excluded.name, short=excluded.short, "
                       "owners=excluded.owners, team=excluded.team, status=excluded.status, viewer=excluded.viewer, "
-                      "links=excluded.links, notes=excluded.notes, rev=excluded.rev, deleted=0, "
+                      "viewers=excluded.viewers, links=excluded.links, notes=excluded.notes, rev=excluded.rev, deleted=0, "
+                      "created_by=CASE WHEN projects.created_by = 'server' THEN excluded.updated_by ELSE projects.created_by END, "
                       "updated_by=excluded.updated_by, updated_at=excluded.updated_at",
                       (pid, cur["code"], cur["name"], cur["short"], json.dumps(cur["owners"]), cur["team"], cur["status"],
-                       cur["viewer"], json.dumps(cur["links"]), cur["notes"], cur["sort"], rev, by, t, by, t))
+                       cur["viewer"], json.dumps(cur["viewers"]), json.dumps(cur["links"]), cur["notes"], cur["sort"], rev, by, t, by, t))
             link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone(), rev)
             row = d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
         return reg_row(row)
@@ -1656,7 +1737,7 @@ def register(app, core):
         w = core.who(request, x_viewer_token)
         with db() as d:
             r = reg_get(d, rid)
-            return {"members": members_of(d, r), "viewer": r["viewer"], "can_edit": reg_can_edit(w, r)}
+            return {"members": members_of(d, r), "viewer": r["viewer"], "viewers": viewers_of(r), "can_edit": reg_can_edit(w, r)}
 
     @app.put("/api/registry/{rid}/members")
     async def reg_members_put(request: Request, rid: str, x_viewer_token: str = Header(default="")):
@@ -1668,8 +1749,8 @@ def register(app, core):
             r = reg_get(d, rid)
             if not reg_can_edit(w, r):
                 raise HTTPException(status_code=403, detail="Only the project's admins or a site admin")
-            if r["viewer"] and core.project_dir(r["viewer"]):
-                raise HTTPException(status_code=400, detail="This project's members are those of its viewer project")
+            if any(core.project_dir(v) for v in viewers_of(r)):
+                raise HTTPException(status_code=400, detail="This project's members are those of its viewer projects")
             try:
                 uid = int(body.get("uid"))
             except (TypeError, ValueError):
@@ -1711,6 +1792,26 @@ def register(app, core):
                 out.append({"group": group_row(g), "list_id": g["list_id"], "list_title": mine[g["list_id"]]["title"],
                             "tasks": tops})
         return {"groups": out}
+
+    @app.get("/api/project-choices")
+    async def project_choices(request: Request, x_viewer_token: str = Header(default="")):
+        """For the project pickers (Board, Dashboard, the sheets and 3D pages):
+        the viewer projects you can open, under the names of their projects."""
+        w = core.who(request, x_viewer_token)
+        mine = [p for p in core.list_projects() if core.role_in(w, p["id"])]
+        titles = dict((p["id"], p["title"]) for p in mine)
+        with db() as d:
+            ensure_registry(d)
+            rows = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+        out, used = [], set()
+        for r in rows:
+            parts = [{"id": v, "title": titles[v]} for v in viewers_of(r) if v in titles]
+            if not parts:
+                continue
+            used.update(x["id"] for x in parts)
+            out.append({"reg": r["id"], "name": r["short"] or r["name"], "full": r["name"], "code": r["code"], "parts": parts})
+        others = [{"id": p["id"], "title": p["title"]} for p in mine if p["id"] not in used]
+        return {"projects": out, "others": others}
 
     @app.post("/api/registry/import")
     async def reg_import(request: Request, x_viewer_token: str = Header(default="")):
@@ -1755,19 +1856,24 @@ def register(app, core):
                 label = str(folder).strip()
                 links = [{"kind": "url", "url": url,
                           "title": "Project folder" if not label or label.startswith("http") else label}] if url else []
-                viewer = clean_text(g("viewer"), 80)
-                if not viewer:
-                    viewer = next((p["id"] for p in projects if p["id"].lower() in (short.lower(), code.lower(), name.lower(), str(folder).strip().lower())
-                                   or p["title"].lower() in (short.lower(), name.lower())), "")
+                # "Viewer": one viewer project, or several ("MOS-S1; MOS-S2")
+                ids = set(p["id"] for p in projects)
+                vs = [v.strip() for v in re.split(r"[,;\n]+", str(g("viewer") or "")) if v.strip() in ids]
+                if not vs:
+                    vs = [p["id"] for p in projects if p["id"].lower() in (short.lower(), code.lower(), name.lower(), str(folder).strip().lower())
+                          or p["title"].lower() in (short.lower(), name.lower())][:1]
                 old = have.get(name.lower())
+                if old and not vs:
+                    vs = viewers_of(old)
                 pid = old["id"] if old else new_id()
-                d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, links, notes, sort, rev, "
-                          "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,?) "
+                d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, viewers, links, notes, sort, rev, "
+                          "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,?) "
                           "ON CONFLICT(id) DO UPDATE SET code=excluded.code, owners=excluded.owners, team=excluded.team, "
-                          "status=excluded.status, viewer=CASE WHEN excluded.viewer != '' THEN excluded.viewer ELSE viewer END, "
+                          "status=excluded.status, viewer=excluded.viewer, viewers=excluded.viewers, "
                           "links=excluded.links, rev=excluded.rev, updated_by=excluded.updated_by, updated_at=excluded.updated_at",
                           (pid, code, name, short, json.dumps(people(g("owner"))), clean_text(g("team"), 80),
-                           clean_text(g("status"), 40) or "Active", viewer, json.dumps(clean_links(links)), i, rev, by, t, by, t))
+                           clean_text(g("status"), 40) or "Active", vs[0] if vs else "", json.dumps(vs),
+                           json.dumps(clean_links(links)), i, rev, by, t, by, t))
                 link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone(), rev)
                 made += 1
         return {"imported": made, "unmatched": sorted(people.missing)}

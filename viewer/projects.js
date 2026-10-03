@@ -94,4 +94,10 @@ function fillSwitcher(list, cur) {
   // Nothing to switch between: keep the header uncluttered.
   sel.hidden = list.length < 2;
   sel.onchange = () => go(sel.value);
+  // The names from the Projects page, a project of several models as a group
+  // (nav.js). Left as it is when the server has no Projects page.
+  import("./nav.js").then(async (nav) => {
+    const ch = await nav.projectOptions(cur);
+    if (ch && ch.html) sel.innerHTML = ch.html;
+  }).catch(() => {});
 }

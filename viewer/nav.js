@@ -12,7 +12,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-04a";
+const LWK_VERSION = "2026-10-04b";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -144,10 +144,6 @@ async function afterSignIn() {
     nav.id = "lwk-nav";
     nav.innerHTML =
       `<a href="#" id="lwk-send-task" title="Keep this sheet or 3D view on a task (Tasks page)">+ Task</a>`
-      + `<a href="${link("board.html")}" title="Whiteboards: notes, mind maps, rules and ideas for the team">Board</a>`
-      + `<a href="${link("tasks.html")}" title="Team task lists: who does what, by when - linked to issues, sheets, OneDrive and ACC">Tasks</a>`
-      + `<a class="chat-link" href="${link("messenger.html")}" title="Messenger: project channels, group chats, direct messages">Chat</a>`
-      + `<a href="${link("dashboard.html")}" title="Issue status, responsibilities and due dates">Dashboard</a>`
       + (managesSomething && ME.accounts
         ? `<a href="${link("admin.html")}" title="People and project members">Admin</a>` : "")
       + (ME.user
@@ -157,15 +153,28 @@ async function afterSignIn() {
           + `<a href="#" id="lwk-signout">Sign out</a>`
         : "");
     header.appendChild(nav);
-    // Projects first, before Sheets and 3D - the order every page uses
+    // The page links in the same place and order as on every other page:
+    // Projects, Sheets, 3D, Board, Tasks, Chat, Dashboard - in the group
+    // that already holds this page's Sheets and 3D buttons.
     const mode = header.querySelector(".mode");
     if (mode && !document.getElementById("lwk-to-projects")) {
-      const b = document.createElement("button");
-      b.id = "lwk-to-projects";
-      b.textContent = "Projects";
-      b.title = "Your projects: their sheets, 3D, tasks, issues, files and chat";
-      b.onclick = () => { location.href = link("projects.html"); };
-      mode.insertBefore(b, mode.firstChild);
+      const mk = (id, label, page, title, cls) => {
+        const b = document.createElement("button");
+        b.id = id;
+        b.textContent = label;
+        b.title = title;
+        if (cls) b.className = cls;
+        b.onclick = () => { location.href = link(page); };
+        return b;
+      };
+      mode.classList.add("page-links");
+      mode.insertBefore(mk("lwk-to-projects", "Projects", "projects.html", "Your projects: their sheets, 3D, tasks, issues, files and chat"), mode.firstChild);
+      mode.appendChild(mk("lwk-to-board", "Board", "board.html", "Whiteboards: notes, mind maps, rules and ideas for the team"));
+      mode.appendChild(mk("lwk-to-tasks", "Tasks", "tasks.html", "Team task lists: who does what, by when"));
+      mode.appendChild(mk("lwk-to-chat", "Chat", "messenger.html", "Messenger: project channels, group chats, direct messages", "chat-link"));
+      mode.appendChild(mk("lwk-to-dash", "Dashboard", "dashboard.html", "Issues and tasks of this project"));
+      chatBadge.on = false;
+      setTimeout(chatBadge, 300);
     }
     const st = document.getElementById("lwk-send-task");
     if (st) st.onclick = (ev) => { ev.preventDefault(); sendToTask(); };
@@ -429,7 +438,7 @@ if (document.getElementById("gate") && !document.body.classList.contains("own-na
    page (Messenger: chat.py). Looked at every 30 seconds. */
 export function chatBadge() {
   if (chatBadge.on) return;
-  const links = () => document.querySelectorAll("a.chat-link");
+  const links = () => document.querySelectorAll("a.chat-link, button.chat-link");
   if (!links().length) return;
   chatBadge.on = true;
   const paint = async () => {
@@ -450,3 +459,25 @@ export function chatBadge() {
 }
 // after the page has drawn its header (and signed in)
 setTimeout(() => { try { if (localStorage.getItem(TOKEN_KEY)) chatBadge(); } catch (e) {} }, 2500);
+
+
+/* The project pickers (Board, Dashboard, the sheets and 3D pages): the viewer
+   projects you can open, listed under the names of their projects - a
+   project with several parts (Site 1, Site 2) as a group. */
+export async function projectOptions(current, fallback) {
+  const e = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const opt = (id, label) => `<option value="${e(id)}"${id === current ? " selected" : ""}>${e(label)}</option>`;
+  try {
+    const r = await api("/api/project-choices");
+    let h = "";
+    for (const p of r.projects) {
+      const head = p.name + (p.code && p.code !== p.name ? " · " + p.code : "");
+      if (p.parts.length === 1) h += opt(p.parts[0].id, head);
+      else h += `<optgroup label="${e(head)}">` + p.parts.map((x) => opt(x.id, p.name + " - " + x.title)).join("") + `</optgroup>`;
+    }
+    if (r.others.length) h += `<optgroup label="Other models">` + r.others.map((x) => opt(x.id, x.title)).join("") + `</optgroup>`;
+    return { html: h, ids: r.projects.flatMap((p) => p.parts.map((x) => x.id)).concat(r.others.map((x) => x.id)) };
+  } catch (err) {
+    return fallback ? fallback() : { html: "", ids: [] };
+  }
+}
