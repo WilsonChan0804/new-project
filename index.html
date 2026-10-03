@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Trip Planner</title>
+  <meta name="description" content="Offline-first trip planner for Hong Kong and Japan">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Trip">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-main">
+      <h1 id="tripName">Trip</h1>
+      <div id="tripSub" class="muted small"></div>
+    </div>
+    <span id="netStatus" class="pill"></span>
+    <button class="icon-btn" data-act="undo" title="Undo last change" aria-label="Undo">↶</button>
+  </header>
+
+  <main id="view"></main>
+
+  <nav class="tabbar" aria-label="Sections">
+    <button data-act="tab" data-id="plan"><span>🗓️</span>Plan</button>
+    <button data-act="tab" data-id="bookings"><span>🎫</span>Bookings</button>
+    <button data-act="tab" data-id="ideas"><span>💡</span>Ideas</button>
+    <button data-act="tab" data-id="info"><span>🧰</span>Info</button>
+  </nav>
+
+  <dialog id="modal"></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="photoInput" accept="image/*" multiple hidden>
+  <input type="file" id="importInput" accept="application/json,.json" hidden>
+
+  <script src="app.js"></script>
+</body>
+</html>
