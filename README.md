@@ -33,26 +33,14 @@ The site has to be served over https once for offline mode to work. The easiest 
 
 To run it locally: `python3 -m http.server` and then open http://localhost:8000.
 
-## Loading your own itinerary
-Use the in-app ✏️ / ＋ buttons, or import a JSON file shaped like this:
+## Your itinerary
+The itinerary lives in `trip-data.js` (Cantonese, with Japanese names). The app loads it the first time it opens. After that, your edits are saved on the phone. If you change `trip-data.js`, increase `seedVersion` and the app will offer to load the new version.
 
-```json
-{
-  "name": "HK & Japan 2026",
-  "days": [
-    { "date": "2026-12-01", "city": "Hong Kong", "country": "HK", "title": "Arrive",
-      "items": [
-        { "type": "flight", "time": "07:35", "title": "Flight to HK", "number": "CX 123",
-          "from": "Singapore Changi Airport", "to": "Hong Kong International Airport", "ref": "ABC123" },
-        { "type": "hotel", "time": "15:00", "title": "Hotel ABC", "address": "...", "localName": "...",
-          "url": "https://...", "ref": "12345" }
-      ] }
-  ],
-  "ideas": []
-}
-```
+Each item has a start and end time. **上移／下移** (move up/down) swaps the two time slots, and **⏱ 延遲** (delay) shifts everything after an item. The **＋** between items inserts a new item and pushes the later ones back.
 
-Item `type` can be `flight`, `train`, `bus`, `ferry`, `hotel`, `food`, `sight`, `shop` or `other`.
-Optional fields are `endTime`, `place`, `address`, `localName`, `url`, `ref`, `cost`, `notes`, `planB`, `country` (`HK`/`JP`) and `links: [{label, url}]`.
+Other fields:
+- **Timetables:** `timetable: [{dep, arr, name, note}]`
+- **Menus:** `menu: {items: [{name, ja, price, star, desc}]}`
+- **Place photos:** `wiki: 'ja:根津神社'`. The photo is downloaded once and then kept for offline use.
 
 When you change app files, bump `VERSION` in `sw.js` so installed copies update.

@@ -1,11 +1,12 @@
 {
-  "name": "Trip Planner – Hong Kong & Japan",
-  "short_name": "Trip",
+  "name": "旅程 Planner – 香港・日本",
+  "short_name": "旅程",
+  "lang": "zh-HK",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f5f2",
-  "theme_color": "#0f766e",
+  "background_color": "#EFEEEA",
+  "theme_color": "#EFEEEA",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
