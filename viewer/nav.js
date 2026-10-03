@@ -12,7 +12,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-03a";
+const LWK_VERSION = "2026-10-03b";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -143,7 +143,9 @@ async function afterSignIn() {
     const nav = document.createElement("div");
     nav.id = "lwk-nav";
     nav.innerHTML =
-      `<a href="${link("board.html")}" title="Whiteboards: notes, mind maps, rules and ideas for the team">Board</a>`
+      `<a href="#" id="lwk-send-task" title="Keep this sheet or 3D view on a task (Tasks page)">+ Task</a>`
+      + `<a href="${link("tasks.html")}" title="Team task lists: who does what, by when - linked to issues, sheets, OneDrive and ACC">Tasks</a>`
+      + `<a href="${link("board.html")}" title="Whiteboards: notes, mind maps, rules and ideas for the team">Board</a>`
       + `<a href="${link("dashboard.html")}" title="Issue status, responsibilities and due dates">Dashboard</a>`
       + (managesSomething && ME.accounts
         ? `<a href="${link("admin.html")}" title="People and project members">Admin</a>` : "")
@@ -154,6 +156,8 @@ async function afterSignIn() {
           + `<a href="#" id="lwk-signout">Sign out</a>`
         : "");
     header.appendChild(nav);
+    const st = document.getElementById("lwk-send-task");
+    if (st) st.onclick = (ev) => { ev.preventDefault(); sendToTask(); };
     const so = document.getElementById("lwk-signout");
     if (so) so.onclick = (ev) => { ev.preventDefault(); signOut(); };
   }
@@ -176,6 +180,31 @@ async function afterSignIn() {
       wireMentions();
     } catch (e) { /* no members list: typing a name still works */ }
   }
+}
+
+/* "+ Task": the sheet or 3D place on screen now, as a link kept on a task.
+   The sheet page keeps the sheet number; the 3D page the point looked at,
+   which model.html?at= flies back to. */
+function viewLink() {
+  const p = project();
+  const base = location.origin + location.pathname.replace(/[^/]*$/, "");
+  const sh = window.SHEETS && window.SHEETS.S && window.SHEETS.S.sheet;
+  if (sh) {
+    return { url: base + "index.html?" + new URLSearchParams({ project: p, sheet: sh.number }).toString(),
+             title: "Sheet " + sh.number + (sh.name ? " - " + sh.name : "") };
+  }
+  const L = window.LWK;
+  if (L && L.S && L.S.controls && L.sceneToInternalMM) {
+    const mm = L.sceneToInternalMM(L.S.controls.target).map((n) => Math.round(n));
+    return { url: base + "model.html?" + new URLSearchParams({ project: p, at: mm.join(","), label: "a task" }).toString(),
+             title: "3D view" };
+  }
+  return { url: location.href, title: document.title };
+}
+
+function sendToTask() {
+  const v = viewLink();
+  window.open(link("tasks.html", { attach: v.url, title: v.title }), "_blank");
 }
 
 /* ------------------------------------------------ assignee drop-down */

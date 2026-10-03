@@ -409,6 +409,7 @@ function describeLast(i) {
   if (!h) return "";
   if (h.event === "created") return " raised it";
   if (h.event === "comment") return " commented";
+  if (h.event === "file") return h.to ? " linked a file" : " removed a file link";
   if (h.field === "status") return " → " + esc(h.to);
   if (h.field === "assigned_to") return " assigned " + esc(h.to || "nobody");
   if (h.field === "due_date") return " due " + esc(h.to || "none");
@@ -705,6 +706,7 @@ async function main() {
   $("#to-sheets").href = link("index.html");
   $("#to-3d").href = link("model.html");
   if ($("#to-board")) $("#to-board").href = link("board.html");
+  if ($("#to-tasks")) $("#to-tasks").href = link("tasks.html");
   $("#to-admin").href = link("admin.html");
   wireFilters();
   await loadData();

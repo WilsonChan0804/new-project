@@ -15,6 +15,7 @@
    along a workflow, so it gets its own control, its own confirmation and
    its own recorded reason. */
 import { ISSUE_TYPES, typeOptions, shortDate } from "./issuetypes.js";
+import { chip, makeLink, classify, linkify } from "./filelinks.js";
 
 const STATUSES = ["Open", "In progress", "Resolved", "Closed"];
 const PRIORITIES = ["Low", "Normal", "High", "Critical"];
@@ -73,6 +74,12 @@ export function ensureDialog() {
             <span class="muted" style="font-size:11px">Site photos, sketches,
               a screenshot of the clash</span>
           </div>
+          <div class="disc-head"><b>Files</b> <span class="muted" style="font-size:11px">OneDrive, SharePoint, ACC</span></div>
+          <div id="detail-files" class="fl-list"></div>
+          <div class="fl-add"><input id="detail-fileurl" placeholder="Paste a OneDrive, SharePoint or ACC link"><button id="detail-addfile" class="ghost">Add</button></div>
+          <div class="disc-head"><b>Tasks</b> <span id="detail-tcount" class="muted"></span><span class="spacer"></span>
+            <button id="detail-newtask" class="ghost linkish" hidden>+ New task from this issue</button></div>
+          <div id="detail-tasks"></div>
           <div id="detail-dismissed" hidden></div>
           <div class="disc-head"><b>Discussion</b> <span id="disc-count" class="muted"></span>
             <span class="spacer"></span><span id="disc-open" class="disc-open" hidden></span></div>
@@ -262,7 +269,7 @@ export function openIssue(item, opts) {
         : `<span class="q-badge">${answers.length ? "Query - replied" : "Query - awaiting reply"}</span>`;
       return `<div class="cmt${q ? " query" : ""}${c.author && c.author === me ? " mine" : ""}" style="margin-left:${Math.min(depth, 4) * 18}px">`
         + `<div class="cmt-h"><b>${esc(c.author || "?")}</b>${badge}<span class="spacer"></span><span>${esc(when(c.at))}</span></div>`
-        + `<div class="cmt-t">${mentionHtml(c.text, c.mentions)}</div>`
+        + `<div class="cmt-t">${linkify(mentionHtml(c.text, c.mentions))}</div>`
         + `<div class="cmt-a"><button class="ghost linkish" data-reply="${esc(cid(c))}">Reply</button>`
         + (q && !c.resolved ? `<button class="ghost linkish" data-resolve="${esc(cid(c))}">Mark answered</button>` : "")
         + (q && c.resolved ? `<button class="ghost linkish" data-reopen="${esc(cid(c))}">Reopen query</button>` : "")
@@ -298,6 +305,35 @@ export function openIssue(item, opts) {
   renderComments();
   renderImages();
   renderDismissed();
+  if (!Array.isArray(iss.files)) iss.files = [];
+  const renderFiles = () => {
+    const box = $("#detail-files");
+    box.innerHTML = iss.files.map((f) => chip(f, { remove: true })).join("")
+      || `<span class="muted" style="font-size:11px">No files linked - the drawing, calc or model this is about.</span>`;
+  };
+  renderFiles();
+  $("#detail-files").onclick = async (ev) => {
+    const b = ev.target.closest("[data-remove]");
+    if (!b) return;
+    iss.files = iss.files.filter((f) => f.id !== b.dataset.remove);
+    renderFiles();
+    await opts.onSave(collect());
+  };
+  const addFile = async () => {
+    const inp = $("#detail-fileurl");
+    const url = inp.value.trim();
+    if (!url) return;
+    const c = classify(url);
+    if (!c) { alert("That does not look like a web link (https://...)"); return; }
+    const name = c.name || prompt(`A name for this ${c.service} link (the file name helps others find it)`, "") || "";
+    iss.files.push(makeLink(url, name, opts.author));
+    inp.value = "";
+    renderFiles();
+    await opts.onSave(collect());
+  };
+  $("#detail-addfile").onclick = addFile;
+  $("#detail-fileurl").onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); addFile(); } };
+  loadTasks(item, iss);
 
   const collect = () => {
     iss.title = $("#detail-title").value.trim() || iss.title || "Issue";
@@ -458,3 +494,96 @@ export function openIssue(item, opts) {
   back.hidden = false;
   $("#detail-title").focus();
 }
+
+
+/* ------------------------------------------------ tasks for an issue */
+
+function apiHeaders() {
+  const h = { "Content-Type": "application/json" };
+  try {
+    const t = localStorage.getItem("lwk-viewer:token");
+    if (t) h["X-Viewer-Token"] = t;
+  } catch (e) {}
+  const p = currentProject();
+  if (p) h["X-Project"] = p;
+  return h;
+}
+function currentProject() {
+  const q = new URLSearchParams(location.search).get("project");
+  if (q) return q;
+  try { return localStorage.getItem("lwk-viewer:project") || ""; } catch (e) { return ""; }
+}
+
+/* The tasks (Tasks page) that point at this issue, and a way to make one. */
+async function loadTasks(item, iss) {
+  const box = document.getElementById("detail-tasks");
+  const btn = document.getElementById("detail-newtask");
+  const count = document.getElementById("detail-tcount");
+  box.innerHTML = "";
+  count.textContent = "";
+  btn.hidden = true;
+  const pid = currentProject();
+  let r;
+  try {
+    const res = await fetch("/api/tasks-by-issue?issue=" + encodeURIComponent(item.id) + "&project=" + encodeURIComponent(pid),
+                            { headers: apiHeaders() });
+    if (!res.ok) return;
+    r = await res.json();
+  } catch (e) { return; }
+  count.textContent = r.tasks.length ? String(r.tasks.length) : "";
+  box.innerHTML = r.tasks.map((t) => {
+    const who = (t.owners || []).map((p) => p.name).join(", ");
+    const late = !t.done && t.due && t.due.slice(0, 10) < new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+    return `<div class="it-task${t.done ? " done" : ""}"><span class="it-tick">${t.done ? "&#10003;" : "&#9675;"}</span>`
+      + (t.can_open ? `<a href="tasks.html?list=${encodeURIComponent(t.list_id)}&task=${encodeURIComponent(t.id)}" target="_blank">${esc(t.title || "Task")}</a>`
+        : `<span>${esc(t.title || "Task")}</span>`)
+      + `<small class="muted"> ${esc(t.list_title || "")}${who ? " · " + esc(who) : ""}</small>`
+      + (t.due ? `<small class="${late ? "it-late" : "muted"}"> · due ${esc(t.due.slice(0, 10))}</small>` : "") + `</div>`;
+  }).join("") || `<span class="muted" style="font-size:11px">No task points at this issue yet.</span>`;
+  if (!r.lists.length || !item.issue) return;
+  btn.hidden = false;
+  btn.onclick = async () => {
+    let list = r.lists[0];
+    if (r.lists.length > 1) {
+      const names = r.lists.map((l, i) => `${i + 1}. ${l.title}`).join("\n");
+      const n = prompt("Which task list?\n\n" + names, "1");
+      if (n === null) return;
+      list = r.lists[Number(n) - 1];
+      if (!list) return;
+    }
+    try {
+      // the list's group for this project, if it has one
+      const all = await (await fetch("/api/tasks?list=" + encodeURIComponent(list.id), { headers: apiHeaders() })).json();
+      const g = (all.groups || []).find((x) => x.project === pid) || (all.groups || [])[0];
+      const id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).slice(0, 20);
+      const url = item.sheet
+        ? `index.html?project=${encodeURIComponent(pid)}&sheet=${encodeURIComponent(item.sheet)}&select=${encodeURIComponent(item.id)}`
+        : `model.html?project=${encodeURIComponent(pid)}&select=${encodeURIComponent(item.id)}`;
+      const body = { list: list.id, tasks: [{
+        id, title: iss.title || "Issue", group_id: g ? g.id : "", due: iss.due_date || "",
+        priority: { Critical: "Urgent", High: "High", Normal: "Medium", Low: "Low" }[iss.priority] || "",
+        description: (iss.description || "") ,
+        links: [{ kind: "issue", project: pid, ref: item.id, title: `#${iss.number || "?"} ${iss.title || "Issue"}`, url }]
+          .concat((iss.files || []).map((f) => Object.assign({}, f))),
+      }] };
+      const res = await fetch("/api/tasks", { method: "POST", headers: apiHeaders(), body: JSON.stringify(body) });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.detail || "HTTP " + res.status);
+      window.open(`tasks.html?list=${encodeURIComponent(list.id)}&task=${encodeURIComponent(id)}`, "_blank");
+      loadTasks(item, iss);
+    } catch (e) { alert("Could not make the task: " + e.message); }
+  };
+}
+
+(function css() {
+  if (document.getElementById("it-css")) return;
+  const st = document.createElement("style");
+  st.id = "it-css";
+  st.textContent = `#detail-tasks { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; font-size: 12px; }
+.it-task a { color: var(--accent-deep, #d1660e); font-weight: 600; text-decoration: none; }
+.it-task.done a, .it-task.done span { text-decoration: line-through; color: var(--muted, #6b7480); }
+.it-tick { display: inline-block; width: 16px; color: var(--ok, #0e9f6e); }
+.it-late { color: var(--bad, #e2453c); }
+#detail-files { margin-bottom: 2px; }`;
+  document.head.appendChild(st);
+})();

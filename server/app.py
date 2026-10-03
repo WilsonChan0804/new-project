@@ -379,7 +379,7 @@ async def logout():
     return resp
 
 
-SERVER_VERSION = "2026-10-03a"
+SERVER_VERSION = "2026-10-03b"
 
 
 @app.get("/api/ping")
@@ -462,6 +462,13 @@ def stamp(prev, item, w, store=None):
                                  "from": piss.get(f) or "", "to": iss.get(f) or ""})
             if len(iss.get("comments") or []) > len(piss.get("comments") or []):
                 hist.append({"at": t, "by": by, "event": "comment"})
+            # OneDrive / SharePoint / ACC links on the issue (filelinks.js)
+            fa = set(f.get("url") for f in (iss.get("files") or []) if isinstance(f, dict))
+            fb = set(f.get("url") for f in (piss.get("files") or []) if isinstance(f, dict))
+            if fa - fb:
+                hist.append({"at": t, "by": by, "event": "file", "to": "%d added" % len(fa - fb)})
+            if fb - fa:
+                hist.append({"at": t, "by": by, "event": "file", "from": "%d removed" % len(fb - fa)})
         st = iss.get("status") or "Open"
         was_closed = (piss or {}).get("status") in CLOSED
         if st in CLOSED:
@@ -3435,6 +3442,13 @@ try:
     boards.register(app, sys.modules[__name__])
 except Exception as _ex:
     print("boards not loaded: %s" % _ex)
+
+# Tasks (tasks.py): the team task lists, joined to issues, sheets and 3D.
+try:
+    import tasks
+    tasks.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("tasks not loaded: %s" % _ex)
 
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.

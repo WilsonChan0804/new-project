@@ -2790,6 +2790,7 @@ async function main() {
   $("#to-sheets").href = link("index.html");
   $("#to-3d").href = link("model.html");
   $("#to-dash").href = link("dashboard.html");
+  if ($("#to-tasks")) $("#to-tasks").href = link("tasks.html");
   $("#to-admin").href = link("admin.html");
 
   await loadBoards();

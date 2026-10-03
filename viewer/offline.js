@@ -928,7 +928,7 @@ function renderDialog() {
     h += `<div>The browser may clear this copy if the device runs short of space. Installing the viewer (browser menu, "Install" or "Add to Home Screen") protects it.</div>`;
   }
   h += `<div>Offline you can read the downloaded sheets and model, draw markups, raise issues, comment and change status. `
-    + `The dashboard, admin, whiteboards, comparing with earlier versions and adding PDFs need a connection; Teams and email notices go out when your changes upload.</div>`;
+    + `The dashboard, admin, whiteboards, tasks, comparing with earlier versions and adding PDFs need a connection; Teams and email notices go out when your changes upload.</div>`;
   h += `</section>`;
 
   UI.back.querySelector("#off-body").innerHTML = h;

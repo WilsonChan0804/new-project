@@ -362,6 +362,31 @@ async function loadBin() {
     };
   });
 }
+/* Task lists (Tasks page): all of them, for a site admin - and back from
+   the bin when one was deleted by mistake. */
+async function loadTaskLists() {
+  const wrap = $("#a-tl-wrap");
+  if (!A.me || !A.me.site_admin) { wrap.hidden = true; return; }
+  let list = [];
+  try { list = (await api("/api/admin/task-lists")).lists || []; } catch (e) { list = []; }
+  wrap.hidden = !list.length;
+  $("#a-tl").innerHTML = list.map((l) => `<li data-tl="${esc(l.id)}">`
+    + `<span>${l.deleted ? esc(l.title) : `<a href="tasks.html?list=${encodeURIComponent(l.id)}">${esc(l.title)}</a>`}`
+    + `<div class="sub">${esc(l.team || "")} ${l.tasks} tasks, ${l.members} members`
+    + `${l.deleted ? " - deleted " + esc((l.updated_at || "").slice(0, 10)) + (l.updated_by ? " by " + esc(l.updated_by) : "") : ""}</div></span>`
+    + (l.deleted ? `<button class="ghost restore">Restore</button>` : "") + `</li>`).join("");
+  $("#a-tl").querySelectorAll(".restore").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.closest("li").dataset.tl;
+      try {
+        await api(`/api/admin/task-lists/${encodeURIComponent(id)}/restore`, { method: "POST" });
+        msg("The task list is back.", "ok");
+      } catch (e) { msg(esc(e.message), "bad"); }
+      loadTaskLists();
+    };
+  });
+}
+
 // "20260927-204800" -> "27 Sep 2026 20:48"
 function fmtWhen(w) {
   const m = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/.exec(w || "");
@@ -849,6 +874,7 @@ async function main() {
   $("#to-3d").href = link("model.html");
   if ($("#to-board")) $("#to-board").href = link("board.html");
   $("#to-dash").href = link("dashboard.html");
+  if ($("#to-tasks")) $("#to-tasks").href = link("tasks.html");
   for (const b of document.querySelectorAll(".tabs button")) b.onclick = () => show(b.dataset.tab);
   $("#tab-publish").addEventListener("click", () => loadPublishJobs());
   $("#pj-reload").onclick = () => loadPublishJobs();
@@ -885,6 +911,7 @@ async function main() {
   await loadProjects();
   await loadMembers();
   loadBin();
+  loadTaskLists();
   const want = location.hash.replace("#", "");
   if (want === "people" && A.me.site_admin) { show("people"); renderPeople(); }
   else if (want === "devices" && A.me.site_admin) { show("devices"); loadDevices(); }

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Tasks</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="tasks.css">
+</head>
+<body class="tasks-page own-nav">
+<header>
+  <b class="brand">LWK Viewer</b>
+  <div class="seg">
+    <a id="to-sheets" class="seg-btn" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" href="board.html">Board</a>
+    <span class="seg-btn on">Tasks</span>
+    <a id="to-dash" class="seg-btn" href="dashboard.html">Dashboard</a>
+  </div>
+  <span class="spacer"></span>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="t-who"></span>
+    <a href="#" id="t-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<div id="t-app">
+  <aside id="t-side">
+    <button id="t-side-toggle" class="ghost" title="Hide or show the side bar">&#9776;</button>
+    <div class="ts-sec">
+      <a class="ts-item" data-quick="owned"><span class="ts-i">&#128100;</span>Owned <b class="ts-n" id="n-owned"></b></a>
+      <a class="ts-item" data-quick="subscribed"><span class="ts-i">&#128278;</span>Subscribed</a>
+      <a class="ts-item" data-mode="activity"><span class="ts-i">&#128337;</span>Activities</a>
+    </div>
+    <div class="ts-sec">
+      <div class="ts-h">Quick access</div>
+      <a class="ts-item sub" data-quick="all">All tasks</a>
+      <a class="ts-item sub" data-quick="created">Created</a>
+      <a class="ts-item sub" data-quick="assigned">Assigned</a>
+      <a class="ts-item sub" data-quick="completed">Completed</a>
+    </div>
+    <div class="ts-sec">
+      <div class="ts-h">Task lists <button id="t-newlist" class="ghost ts-plus" title="Start a new task list">+</button></div>
+      <div id="t-lists"></div>
+    </div>
+    <div class="ts-sec">
+      <a class="ts-item" data-mode="people"><span class="ts-i">&#128101;</span>People</a>
+    </div>
+  </aside>
+
+  <main id="t-main">
+    <div id="t-head">
+      <div class="th-title">
+        <span class="th-icon">&#9745;</span>
+        <h2 id="t-title">Tasks</h2>
+        <small id="t-team" class="muted"></small>
+        <button id="t-menu" class="ghost" title="List settings" hidden>&#8943;</button>
+      </div>
+      <nav id="t-tabs" hidden>
+        <button data-view="list" class="on">List</button>
+        <button data-view="kanban">Kanban</button>
+        <button data-view="gantt">Gantt</button>
+        <button data-view="dash">Dashboard</button>
+        <button data-view="activity">Activities</button>
+      </nav>
+      <span class="spacer"></span>
+      <div id="t-members" title="People on this list"></div>
+      <button id="t-share" hidden title="Who can see and edit this list">Members</button>
+    </div>
+
+    <div id="t-bar" hidden>
+      <span class="tb-new"><button id="t-new" class="primary">+ New task</button><button id="t-new-more" class="primary" title="More">&#9662;</button></span>
+      <input id="f-q" type="search" placeholder="Search tasks" autocomplete="off">
+      <select id="f-status" title="Which tasks">
+        <option value="all">All tasks</option>
+        <option value="open">Not done</option>
+        <option value="done">Done</option>
+        <option value="overdue">Overdue</option>
+        <option value="mine">Mine</option>
+      </select>
+      <select id="f-owner" title="Owner"><option value="">Any owner</option></select>
+      <select id="f-pri" title="Priority"><option value="">Any priority</option><option>Urgent</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <label class="tb-l">Sort <select id="f-sort">
+        <option value="custom">Custom</option><option value="due">Due date</option><option value="start">Start date</option>
+        <option value="priority">Priority</option><option value="title">Title</option><option value="created">Newest</option>
+      </select></label>
+      <label class="tb-l">Group by <select id="f-group">
+        <option value="group">Custom group</option><option value="owner">Owner</option><option value="priority">Priority</option>
+        <option value="status">Status</option><option value="due">Due</option>
+      </select></label>
+      <button id="t-cols" class="ghost" title="Columns and custom fields">Customize</button>
+      <span class="spacer"></span>
+      <span id="t-save" class="muted"></span>
+    </div>
+
+    <div id="t-view"><p class="muted" style="padding:20px">Loading ...</p></div>
+  </main>
+
+  <aside id="t-detail" hidden></aside>
+</div>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="tasks.js"></script>
+</body>
+</html>
