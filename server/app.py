@@ -534,7 +534,31 @@ async def put_item(request: Request, x_viewer_token: str = Header(default=""),
     CFG["base_url"] = str(request.base_url)
     notify_teams(x_project, prev, item, str(request.base_url))
     notify_people(x_project, prev, item, str(request.base_url), w)
+    chat_issue_card(x_project, prev, item, w)
     return {"rev": rev, "id": item["id"], "item": item}
+
+
+def chat_issue_card(pid, prev, item, w):
+    """A new issue, or one whose status changed, as a card in the job's
+    Messenger channel (chat.py), when the job is on the Projects page."""
+    iss = item.get("issue")
+    if not isinstance(iss, dict) or not accounts_on():
+        return
+    piss = (prev or {}).get("issue") or {}
+    if piss and (piss.get("status") or "Open") == (iss.get("status") or "Open"):
+        return
+    try:
+        import chat
+        import tasks
+        regs = tasks.reg_ids_for_viewer(sys.modules[__name__], "default" if CFG["single"] else pid)
+        if regs:
+            chat.post_card(regs, {
+                "type": "issue", "event": "status" if piss else "raised", "project": pid, "id": item["id"],
+                "number": iss.get("number"), "title": iss.get("title") or "Issue", "status": iss.get("status") or "Open",
+                "sheet": item.get("sheet") or "", "assigned_to": iss.get("assigned_to") or "",
+                "due": iss.get("due_date") or ""}, w.name or item.get("author") or "")
+    except Exception as ex:
+        print("issue card: %s" % ex)
 
 
 # ------------------------------------------------------------- Teams
@@ -3449,6 +3473,13 @@ try:
     tasks.register(app, sys.modules[__name__])
 except Exception as _ex:
     print("tasks not loaded: %s" % _ex)
+
+# Messenger (chat.py): project channels, group chats and direct messages.
+try:
+    import chat
+    chat.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("chat not loaded: %s" % _ex)
 
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.

@@ -1820,3 +1820,9 @@ body.lwk-offline #lwk-nav a[href] { opacity: .55; }
   #off-dlg .off-grow { flex-basis: 60%; }
 }
 #off-dlg .nowrap { white-space: nowrap; }
+
+/* the unread badge on Chat links (pagekit.js / nav.js), on every page */
+.chat-badge { display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 4px; border-radius: 8px; background: #e2453c; color: #fff;
+  font-size: 10px; line-height: 16px; text-align: center; vertical-align: 1px; font-weight: 700; }
+.chat-badge.at { background: #7c3aed; }
+.chat-badge[hidden] { display: none; }

@@ -9,10 +9,12 @@ export function columns(T) {
   const cols = [
     { k: "priority", name: "Priority", w: 92 }, { k: "owners", name: "Owner", w: 150 },
     { k: "start", name: "Start", w: 90 }, { k: "due", name: "Due", w: 100 },
-    { k: "progress", name: "Sub-tasks", w: 112 }, { k: "completed", name: "Completed", w: 130 },
+    { k: "progress", name: "Sub-tasks", w: 112 },
   ];
-  for (const f of T.fields()) cols.push({ k: "f:" + f.id, name: f.name, w: f.type === "person" ? 150 : 120, field: f });
-  cols.push({ k: "links", name: "Links & files", w: 120 });
+  for (const f of T.fields()) cols.push({ k: "f:" + f.id, name: f.name, w: f.type === "person" ? 150 : f.type === "check" ? 90 : 120, field: f });
+  cols.push({ k: "subscribers", name: "Subscribers", w: 150 }, { k: "creator", name: "Creator", w: 130 },
+    { k: "created", name: "Created on", w: 130 }, { k: "completed", name: "Completed on", w: 130 },
+    { k: "updated", name: "Updated on", w: 130 }, { k: "links", name: "Links & files", w: 120 });
   return cols.filter((c) => !S.hidden.has(c.k));
 }
 
@@ -26,6 +28,10 @@ function cell(T, t, c) {
     return p.total ? progress(p.done, p.total) + ` <small class="muted">${p.done}/${p.total}</small>` : `<span class="muted">-</span>`;
   }
   if (c.k === "completed") return t.done && t.completed_at ? `<small>${esc(fmtWhen(t.completed_at))}</small>` : "";
+  if (c.k === "subscribers") return people(t.subscribers, 4);
+  if (c.k === "creator") return t.created_by ? people([{ uid: t.created_uid, name: t.created_by }]) : "";
+  if (c.k === "created") return t.created_at ? `<small>${esc(fmtWhen(t.created_at))}</small>` : "";
+  if (c.k === "updated") return t.updated_at ? `<small>${esc(fmtWhen(t.updated_at))}</small>` : "";
   if (c.k === "links") {
     if (!t.links.length) return "";
     const kinds = [...new Set(t.links.map((l) => l.kind))];
@@ -35,6 +41,8 @@ function cell(T, t, c) {
     const v = t.vals[c.field.id];
     if (c.field.type === "person") return people(v) || `<span class="muted add">+</span>`;
     if (c.field.type === "date") return v ? esc(fmtDate(v)) : "";
+    if (c.field.type === "check") return `<span class="cbx${v ? " on" : ""}"></span>`;
+    if (c.field.type === "select" && v) return `<span class="sel-pill">${esc(v)}</span>`;
     return esc(v == null ? "" : v);
   }
   return "";
@@ -126,6 +134,7 @@ function wire(T, el, buckets) {
       if (f.type === "person") return pickPeople(c, t.vals[f.id] || [], T.people(), set);
       if (f.type === "select") return pickOne(c, [""].concat(f.options), t.vals[f.id] || "", set);
       if (f.type === "date") return pickDate(c, t.vals[f.id], set);
+      if (f.type === "check") return set(!t.vals[f.id]);
       const v = prompt(f.name, t.vals[f.id] == null ? "" : t.vals[f.id]);
       if (v !== null) set(v);
       return;
@@ -159,11 +168,12 @@ function wire(T, el, buckets) {
     const r = ev.target.closest(".tl-row[data-id]");
     if (!r) return;
     dragId = r.dataset.id;
+    T.S.dragging = true;
     ev.dataTransfer.effectAllowed = "move";
     ev.dataTransfer.setData("text/plain", dragId);
     r.classList.add("dragging");
   };
-  el.ondragend = () => { dragId = null; for (const x of el.querySelectorAll(".drop-before, .drop-in, .dragging")) x.classList.remove("drop-before", "drop-in", "dragging"); };
+  el.ondragend = () => { dragId = null; T.S.dragging = false; for (const x of el.querySelectorAll(".drop-before, .drop-in, .dragging")) x.classList.remove("drop-before", "drop-in", "dragging"); };
   el.ondragover = (ev) => {
     if (!dragId) return;
     const g = ev.target.closest(".tl-group");

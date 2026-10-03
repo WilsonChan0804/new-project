@@ -12,7 +12,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-03b";
+const LWK_VERSION = "2026-10-03c";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -145,6 +145,8 @@ async function afterSignIn() {
     nav.innerHTML =
       `<a href="#" id="lwk-send-task" title="Keep this sheet or 3D view on a task (Tasks page)">+ Task</a>`
       + `<a href="${link("tasks.html")}" title="Team task lists: who does what, by when - linked to issues, sheets, OneDrive and ACC">Tasks</a>`
+      + `<a href="${link("projects.html")}" title="Every job: owners, folders, tasks, issues">Projects</a>`
+      + `<a class="chat-link" href="${link("messenger.html")}" title="Messenger: project channels, group chats, direct messages">Chat</a>`
       + `<a href="${link("board.html")}" title="Whiteboards: notes, mind maps, rules and ideas for the team">Board</a>`
       + `<a href="${link("dashboard.html")}" title="Issue status, responsibilities and due dates">Dashboard</a>`
       + (managesSomething && ME.accounts
@@ -412,3 +414,30 @@ if (document.getElementById("gate") && !document.body.classList.contains("own-na
   adaptGate();
   afterSignIn();
 }
+
+
+/* The number of unread chat messages beside every "Chat" link, on every
+   page (Messenger: chat.py). Looked at every 30 seconds. */
+export function chatBadge() {
+  if (chatBadge.on) return;
+  const links = () => document.querySelectorAll("a.chat-link");
+  if (!links().length) return;
+  chatBadge.on = true;
+  const paint = async () => {
+    if (document.hidden) return;
+    let n = 0, m = 0;
+    try { const r = await api("/api/chat/unread"); n = r.total; m = r.mentions; } catch (e) { return; }
+    for (const a of links()) {
+      let b = a.querySelector(".chat-badge");
+      if (!b) { b = document.createElement("b"); b.className = "chat-badge"; a.appendChild(b); }
+      b.hidden = !n;
+      b.textContent = n > 99 ? "99+" : String(n);
+      b.classList.toggle("at", !!m);
+      b.title = m ? m + " mention" + (m > 1 ? "s" : "") + " of you" : n + " unread";
+    }
+  };
+  paint();
+  setInterval(paint, 30000);
+}
+// after the page has drawn its header (and signed in)
+setTimeout(() => { try { if (localStorage.getItem(TOKEN_KEY)) chatBadge(); } catch (e) {} }, 2500);

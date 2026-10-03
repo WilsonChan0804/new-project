@@ -306,3 +306,10 @@ b.mention { color: var(--accent-deep); }
   .td-kpis { grid-template-columns: 1fr 1fr; }
   .tasks-page header .seg { display: none; }
 }
+
+.cbx { display: inline-block; width: 15px; height: 15px; border: 1.5px solid #b8c0cc; border-radius: 3px; vertical-align: middle; position: relative; background: #fff; }
+.cbx.on { background: var(--info); border-color: var(--info); }
+.cbx.on::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.sel-pill { display: inline-block; padding: 0 8px; border-radius: 4px; background: #eef1f5; font-size: 12px; font-weight: 600; }
+.td-cbtns { display: flex; flex-direction: column; gap: 4px; }
+.td-pend { margin-top: 2px; }

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Projects</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="tasks.css">
+<link rel="stylesheet" href="projects.css">
+</head>
+<body class="tasks-page projects-page own-nav">
+<header>
+  <b class="brand">LWK Viewer</b>
+  <div class="seg">
+    <a class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <span class="seg-btn on">Projects</span>
+    <a class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <a class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
+  </div>
+  <span class="spacer"></span>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="h-who"></span>
+    <a href="#" id="h-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<div id="t-app">
+  <main id="t-main">
+    <div id="t-head">
+      <div class="th-title"><span class="th-icon">&#9873;</span><h2>Projects</h2>
+        <small class="muted" id="pj-count"></small></div>
+      <span class="spacer"></span>
+    </div>
+    <div id="t-bar">
+      <button id="pj-new" class="primary" hidden>+ New project</button>
+      <button id="pj-import" hidden title="A project table from Lark Base or Excel (.xlsx or CSV)">Import</button>
+      <input id="pj-q" type="search" placeholder="Search projects" autocomplete="off">
+      <select id="pj-status"><option value="">Any status</option></select>
+      <select id="pj-team"><option value="">Any team</option></select>
+      <span class="spacer"></span>
+      <span class="muted" style="font-size:11px">A job's tasks are the task groups linked to it (Tasks &rarr; ... &rarr; Groups and projects)</span>
+    </div>
+    <div id="t-view"><p class="muted" style="padding:20px">Loading ...</p></div>
+  </main>
+  <aside id="t-detail" hidden></aside>
+</div>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="projects.js"></script>
+</body>
+</html>

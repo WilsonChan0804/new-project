@@ -20,6 +20,8 @@ const SERVICES = {
   sheet: { label: "Sheet", color: "#d1660e", mark: "2D" },
   view3d: { label: "3D view", color: "#7c3aed", mark: "3D" },
   issue: { label: "Issue", color: "#e2453c", mark: "#" },
+  task: { label: "Task", color: "#0e9f6e", mark: "&#10003;" },
+  project: { label: "Project", color: "#4f46e5", mark: "P" },
   url: { label: "Link", color: "#6b7480", mark: "↗" },
 };
 
@@ -49,6 +51,9 @@ export function classify(url) {
   else if (host.endsWith(".sharepoint.com")) kind = "sharepoint";
   else if (host === "acc.autodesk.com" || host.endsWith(".b360.autodesk.com")
            || (host.endsWith("autodesk.com") && /\/(docs|build|projects)\//.test(path))) kind = "acc";
+  else if (u.origin === location.origin && /\/tasks\.html$/.test(u.pathname) && q.get("task")) kind = "task";
+  else if (u.origin === location.origin && /\/projects\.html$/.test(u.pathname) && q.get("p")) kind = "project";
+  else if (u.origin === location.origin && /\/(index|model)\.html$/.test(u.pathname) && q.get("select")) kind = "issue";
   else if (u.origin === location.origin && /\/index\.html$/.test(u.pathname) && q.get("sheet")) kind = "sheet";
   else if (u.origin === location.origin && /\/model\.html$/.test(u.pathname)) kind = "view3d";
 
@@ -63,12 +68,15 @@ export function classify(url) {
     if (/\.[a-z0-9]{2,5}$/i.test(last)) name = last;
   }
   if (kind === "sheet") name = "Sheet " + q.get("sheet");
-  if (kind === "view3d") name = q.get("select") ? "3D - issue view" : "3D view";
+  if (kind === "view3d") name = "3D view" + (q.get("project") ? " - " + q.get("project") : "");
+  if (kind === "task") name = "Task";
+  if (kind === "issue") name = "Issue" + (q.get("sheet") ? " on " + q.get("sheet") : "");
+  if (kind === "project") name = "Project";
   const ext = (name.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || "";
   return {
     kind, url: u.href, name,
     ext: ext.toLowerCase(), type: EXT_KIND[ext.toLowerCase()] || "",
-    project: q.get("project") || "", ref: q.get("sheet") || q.get("select") || "",
+    project: q.get("project") || "", ref: (kind === "issue" ? q.get("select") : kind === "task" ? q.get("task") : q.get("sheet") || q.get("select")) || "",
     service: SERVICES[kind].label,
   };
 }
@@ -86,7 +94,7 @@ export function makeLink(url, title, by) {
 
 export function badge(kind) {
   const s = SERVICES[kind] || SERVICES.url;
-  return `<span class="fl-badge" style="background:${s.color}" title="${esc(s.label)}">${esc(s.mark)}</span>`;
+  return `<span class="fl-badge" style="background:${s.color}" title="${esc(s.label)}">${s.mark.startsWith("&") ? s.mark : esc(s.mark)}</span>`;
 }
 
 /* One link as a chip that opens it. Viewer links open in this tab's
@@ -98,7 +106,7 @@ export function chip(link, opts) {
   const sub = [s.label, c.type].filter(Boolean).join(" · ");
   return `<span class="fl-chip" data-id="${esc(link.id || "")}">`
     + badge(link.kind)
-    + `<a href="${esc(link.url)}" target="${link.kind === "sheet" || link.kind === "view3d" ? "_self" : "_blank"}"`
+    + `<a href="${esc(link.url)}" target="${["sheet", "view3d", "task", "issue", "project"].includes(link.kind) ? "_self" : "_blank"}"`
     + ` rel="noopener" title="${esc(link.url)}">${esc(link.title || c.name || link.url)}</a>`
     + `<small>${esc(sub)}</small>`
     + (opts.remove ? `<button type="button" class="fl-x ghost" data-remove="${esc(link.id || "")}" title="Remove the link (the file itself stays)">&#10005;</button>` : "")

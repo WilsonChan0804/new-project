@@ -63,12 +63,13 @@ export function render(T, el) {
     const c = ev.target.closest(".kb-card");
     if (!c) return;
     dragId = c.dataset.id;
+    T.S.dragging = true;
     ev.dataTransfer.effectAllowed = "move";
     ev.dataTransfer.setData("text/plain", dragId);
     c.classList.add("dragging");
   };
   const clear = () => { for (const x of el.querySelectorAll(".drop-before, .drop-in, .dragging")) x.classList.remove("drop-before", "drop-in", "dragging"); };
-  el.ondragend = () => { dragId = null; clear(); };
+  el.ondragend = () => { dragId = null; T.S.dragging = false; clear(); };
   el.ondragover = (ev) => {
     if (!dragId) return;
     const col = ev.target.closest(".kb-col");

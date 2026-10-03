@@ -3,7 +3,7 @@
 Revit review for sheets (2D) and the model (3D), with issues, whiteboards, a dashboard - and team task lists.
 
 - `server/` - FastAPI + SQLite. Start with `server/run.bat` (or `python app.py --root <exports folder> --pass <passphrase>`).
-- `viewer/` - the pages: `index.html` (sheets), `model.html` (3D), `board.html`, `tasks.html`, `dashboard.html`, `admin.html`.
+- `viewer/` - the pages: `index.html` (sheets), `model.html` (3D), `board.html`, `tasks.html`, `projects.html`, `messenger.html`, `dashboard.html`, `admin.html`.
 
 ## Tasks (`tasks.html`)
 
@@ -16,7 +16,45 @@ Team task lists, replacing Lark Tasks, connected to the viewer.
 - **Custom fields:** person, select, text, date and number columns (by default Modelers and Project Manager).
 - **Members:** owner (settings), editor (add and change tasks) and viewer (read only). Site admins see every list.
 - **Notifications:** email, when the server has `LWK_SMTP_*` set. People are emailed when they become owners, are @mentioned, or a task they follow gets a comment or is completed. They also get a daily mail of their tasks due tomorrow and overdue.
-- **Import from Lark:** export the Lark task list, save it as CSV, then `...` > Import. Columns are matched by name: Task Title, Custom Group, Parent Task, Owner, Priority, Start Time, Due Date, Status, Completed At, Description. Any other column becomes a text field.
+- **Import from Lark:** in Lark, open the task list and choose ... > Export (Excel). Then in Tasks use **+** > *Import a Lark task list (.xlsx)* to make a new list, or `...` > *Import* to bring it into an open list. Everything comes in:
+  - groups, sub-tasks (the "< parent" suffix Lark adds is removed), owners, subscribers and creator;
+  - created / start / completed / due / updated dates, done status and priority;
+  - Completion method, Task completers, Milestone, Modelers and Project Manager;
+  - a link back to each task in Lark.
+
+  Tasks are matched by their Lark task id, so importing the same export again updates them instead of adding them twice. Names with no account yet are kept as names; once the accounts exist, use `...` > *Match names to accounts*. CSV works too.
+
+## Projects (`projects.html`)
+
+The register of jobs, like the Lark Base "Projects" table. Each project has:
+- a code and name, its owners, team and status;
+- its folders (OneDrive / SharePoint / ACC links);
+- the viewer project that shows its drawings and model.
+
+Task groups are linked to a project (Tasks > `...` > *Groups and projects*); a group named like the project's short name (SKW, YTM ...) is linked automatically. The page shows per project:
+- number of tasks, done, completion %, overdue, and the open tasks;
+- open issues, from its viewer project;
+- buttons to its sheets, 3D and issues dashboard;
+- its chat channel.
+
+Import: export the Lark Base table to Excel, then *Import*. The columns used are Project, Owner, Group, Project Folder and Status. "HKA-P-01681-ARC - SKW" is split into a code and a short name.
+
+## Messenger (`messenger.html`)
+
+Chat inside the viewer (needs accounts):
+- **Project channels:** one per project. Everyone on the project is added, and new tasks, assignments, completions, task comments and new or changed issues of that project are posted into it as cards.
+- **Group chats** and **direct messages**.
+- **Task discussions:** the comments of the tasks you follow, answered from here.
+- **In messages:**
+  - @mentions, which email the person when mail is set up;
+  - replies, edits and deletes;
+  - pictures and files up to 50 MB each, pasted, dropped or attached, and kept in `<data>/chat_files/`;
+  - task, issue, sheet, OneDrive and ACC links, shown as cards.
+- **Finding things:** a search over all your chats, and a Files list per chat.
+- **Unread count:** shown on the **Chat** link of every page.
+- **Send to chat:** a task (Share) or an issue can be sent into a chat.
+
+Data: `<data>/chat.db`.
 
 ### Links to issues, sheets, 3D, OneDrive and ACC
 

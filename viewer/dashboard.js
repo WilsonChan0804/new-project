@@ -707,6 +707,8 @@ async function main() {
   $("#to-3d").href = link("model.html");
   if ($("#to-board")) $("#to-board").href = link("board.html");
   if ($("#to-tasks")) $("#to-tasks").href = link("tasks.html");
+  if ($("#to-projects")) $("#to-projects").href = link("projects.html");
+  if ($("#to-chat")) $("#to-chat").href = link("messenger.html");
   $("#to-admin").href = link("admin.html");
   wireFilters();
   await loadData();

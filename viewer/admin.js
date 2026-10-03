@@ -875,6 +875,8 @@ async function main() {
   if ($("#to-board")) $("#to-board").href = link("board.html");
   $("#to-dash").href = link("dashboard.html");
   if ($("#to-tasks")) $("#to-tasks").href = link("tasks.html");
+  if ($("#to-projects")) $("#to-projects").href = link("projects.html");
+  if ($("#to-chat")) $("#to-chat").href = link("messenger.html");
   for (const b of document.querySelectorAll(".tabs button")) b.onclick = () => show(b.dataset.tab);
   $("#tab-publish").addEventListener("click", () => loadPublishJobs());
   $("#pj-reload").onclick = () => loadPublishJobs();

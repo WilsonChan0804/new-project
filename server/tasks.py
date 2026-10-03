@@ -140,7 +140,35 @@ CREATE TABLE IF NOT EXISTS activity (
 );
 CREATE INDEX IF NOT EXISTS idx_activity_list ON activity(list_id, id);
 CREATE INDEX IF NOT EXISTS idx_activity_task ON activity(task_id, id);
+
+-- The project register (Projects page): one row per job, with its code,
+-- who runs it, where its files are and which viewer project shows it.
+-- Task groups point at it (groups.reg), which is how a job's tasks, its
+-- issues and its chat channel find each other.
+CREATE TABLE IF NOT EXISTS projects (
+    id          TEXT PRIMARY KEY,
+    code        TEXT NOT NULL DEFAULT '',
+    name        TEXT NOT NULL,
+    short       TEXT NOT NULL DEFAULT '',
+    owners      TEXT NOT NULL DEFAULT '[]',
+    team        TEXT NOT NULL DEFAULT '',
+    status      TEXT NOT NULL DEFAULT 'Active',
+    viewer      TEXT NOT NULL DEFAULT '',
+    links       TEXT NOT NULL DEFAULT '[]',
+    notes       TEXT NOT NULL DEFAULT '',
+    sort        REAL NOT NULL DEFAULT 0,
+    rev         INTEGER NOT NULL DEFAULT 0,
+    deleted     INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT, created_at TEXT, updated_by TEXT, updated_at TEXT
+);
 """
+
+# Columns added after the first release: (table, column, definition).
+MIGRATIONS = (
+    ("tasks", "ext_id", "TEXT NOT NULL DEFAULT ''"),      # the Lark task id, so a re-import updates
+    ("groups", "reg", "TEXT NOT NULL DEFAULT ''"),        # projects.id
+    ("comments", "files", "TEXT NOT NULL DEFAULT '[]'"),  # attachments (chat.py stores them)
+)
 
 MAX_BODY = 2 * 1024 * 1024
 MAX_TITLE = 300
@@ -152,7 +180,7 @@ MAX_PEOPLE = 30
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{4,48}$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$")
 PRIORITIES = ("", "Low", "Medium", "High", "Urgent")
-FIELD_TYPES = ("person", "select", "text", "date", "number")
+FIELD_TYPES = ("person", "select", "text", "date", "number", "check")
 LIST_ROLES = {"viewer": 1, "editor": 2, "owner": 3}
 LINK_KINDS = ("issue", "sheet", "view3d", "onedrive", "sharepoint", "acc", "url")
 # What a patch may set. Everything else is the server's to say.
@@ -203,6 +231,11 @@ class Db(object):
             if self.path not in _READY:
                 self.db.execute("PRAGMA journal_mode=WAL")
                 self.db.executescript(SCHEMA)
+                for table, col, sql in MIGRATIONS:
+                    have = set(r[1] for r in self.db.execute("PRAGMA table_info(%s)" % table))
+                    if col not in have:
+                        self.db.execute("ALTER TABLE %s ADD COLUMN %s %s" % (table, col, sql))
+                self.db.execute("CREATE INDEX IF NOT EXISTS idx_tasks_ext ON tasks(list_id, ext_id)")
                 self.db.commit()
                 _READY.add(self.path)
         except Exception:
@@ -269,6 +302,22 @@ def clean_date(v):
     return s
 
 
+def link_kind(url):
+    """onedrive / sharepoint / acc / url, from the address (as filelinks.js does)."""
+    m = re.match(r"^https?://([^/]+)(/[^?#]*)?", url or "", re.I)
+    if not m:
+        return "url"
+    host, path = m.group(1).lower(), (m.group(2) or "")
+    if host == "1drv.ms" or host.endswith("onedrive.live.com") or host.endswith("-my.sharepoint.com"):
+        return "onedrive"
+    if host.endswith(".sharepoint.com"):
+        return "sharepoint"
+    if host == "acc.autodesk.com" or host.endswith(".b360.autodesk.com") or \
+            (host.endswith("autodesk.com") and re.search(r"/(docs|build|projects)/", path)):
+        return "acc"
+    return "url"
+
+
 def clean_links(v):
     out = []
     for l in (v if isinstance(v, list) else []):
@@ -276,6 +325,8 @@ def clean_links(v):
             continue
         kind = l.get("kind") if l.get("kind") in LINK_KINDS else "url"
         url = clean_text(l.get("url"), 2000)
+        if kind == "url":
+            kind = link_kind(url)
         if url and not re.match(r"^(https?://|index\.html|model\.html|/)", url, re.I):
             raise HTTPException(status_code=400, detail="A link must start with https://")
         item = {"id": clean_text(l.get("id"), 48) or new_id(), "kind": kind, "url": url,
@@ -310,6 +361,9 @@ def clean_vals(v, fields):
             val = clean_date(val)
             if val:
                 out[fid] = val
+        elif t == "check":
+            if val in (True, 1, "1", "true", "yes", "Yes"):
+                out[fid] = True
         elif t == "number":
             try:
                 if val not in (None, ""):
@@ -336,7 +390,7 @@ def group_row(r):
     if r["deleted"]:
         return {"id": r["id"], "deleted": True, "rev": r["rev"]}
     return {"id": r["id"], "list_id": r["list_id"], "title": r["title"], "project": r["project"] or "",
-            "sort": r["sort"], "rev": r["rev"]}
+            "reg": r["reg"] or "", "sort": r["sort"], "rev": r["rev"]}
 
 
 def field_row(r):
@@ -356,7 +410,7 @@ def task_row(r):
             "start": r["start"] or "", "due": r["due"] or "",
             "owners": json.loads(r["owners"] or "[]"), "vals": json.loads(r["vals"] or "{}"),
             "links": json.loads(r["links"] or "[]"), "subscribers": json.loads(r["subscribers"] or "[]"),
-            "sort": r["sort"], "comment_count": r["comment_count"], "rev": r["rev"],
+            "sort": r["sort"], "comment_count": r["comment_count"], "rev": r["rev"], "ext_id": r["ext_id"] or "",
             "created_by": r["created_by"] or "", "created_uid": r["created_uid"],
             "created_at": r["created_at"] or "",
             "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or ""}
@@ -378,63 +432,175 @@ def short(field, v):
     return str(v if v is not None else "")
 
 
-# ------------------------------------------------------------ CSV import
+# ------------------------------------------------------------ import (Lark, Excel, CSV)
+#
+# Lark's "Export" of a task list is an .xlsx with one row per task and per
+# sub-task. Python's own zipfile and XML reader are enough to read it, so
+# the server needs nothing new installed. A CSV (Excel "Save as CSV") goes
+# through the same mapping.
 
-def parse_csv(text):
-    """A Lark (or Excel) export. The column names Lark uses are matched
-    loosely, so a sheet tidied up by hand still comes in."""
+XNS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+RNS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+HYPERLINK = re.compile(r'HYPERLINK\(\s*"((?:[^"]|"")*)"\s*[,;]\s*"((?:[^"]|"")*)"\s*\)', re.I)
+BUILTIN_DATES = set(range(14, 23)) | {45, 46, 47}
+
+
+class Cell(str):
+    """A cell's text, with the address of the link it carried (Lark puts
+    each task's own Lark link on its title)."""
+    url = ""
+
+
+def _col_index(ref):
+    n = 0
+    for ch in ref:
+        if not ch.isalpha():
+            break
+        n = n * 26 + (ord(ch.upper()) - 64)
+    return n - 1
+
+
+def read_xlsx(data):
+    """The first sheet of a workbook as rows of cells (str, Cell or
+    datetime)."""
+    import datetime
+    import zipfile
+    import xml.etree.ElementTree as ET
+    try:
+        z = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="That is not an Excel (.xlsx) file")
+    names = set(z.namelist())
+    shared = []
+    if "xl/sharedStrings.xml" in names:
+        for si in ET.fromstring(z.read("xl/sharedStrings.xml")).iter(XNS + "si"):
+            shared.append("".join(t.text or "" for t in si.iter(XNS + "t")))
+    dates = set()
+    if "xl/styles.xml" in names:
+        st = ET.fromstring(z.read("xl/styles.xml"))
+        custom = {}
+        nf = st.find(XNS + "numFmts")
+        for f in (nf if nf is not None else []):
+            custom[int(f.get("numFmtId"))] = f.get("formatCode") or ""
+        xfs = st.find(XNS + "cellXfs")
+        for i, xf in enumerate(xfs if xfs is not None else []):
+            fid = int(xf.get("numFmtId") or 0)
+            code = re.sub(r'"[^"]*"|\[[^\]]*\]', "", custom.get(fid, "")).lower()
+            if fid in BUILTIN_DATES or (fid in custom and re.search(r"[dy]", code)):
+                dates.add(i)
+    wb = ET.fromstring(z.read("xl/workbook.xml"))
+    first = wb.find(XNS + "sheets")[0]
+    rid = first.get(RNS + "id")
+    target = "worksheets/sheet1.xml"
+    if "xl/_rels/workbook.xml.rels" in names:
+        for r in ET.fromstring(z.read("xl/_rels/workbook.xml.rels")):
+            if r.get("Id") == rid:
+                target = r.get("Target")
+    path = target.lstrip("/") if target.startswith("/") else "xl/" + target
+    sheet = ET.fromstring(z.read(path))
+    rows = []
+    for row in sheet.iter(XNS + "row"):
+        cells = {}
+        for c in row.iter(XNS + "c"):
+            t = c.get("t")
+            v = c.find(XNS + "v")
+            f = c.find(XNS + "f")
+            val = v.text if v is not None and v.text is not None else ""
+            if t == "s" and val:
+                val = shared[int(val)]
+            elif t == "inlineStr":
+                val = "".join(x.text or "" for x in c.iter(XNS + "t"))
+            elif t in (None, "n") and val and int(c.get("s") or 0) in dates:
+                try:
+                    val = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=float(val))
+                except (ValueError, OverflowError):
+                    pass
+            if isinstance(val, str):
+                m = HYPERLINK.search(f.text or "" if f is not None else "") or HYPERLINK.search(val)
+                if m:
+                    cell = Cell(m.group(2).replace('""', '"'))
+                    cell.url = m.group(1).replace('""', '"')
+                    val = cell
+            cells[_col_index(c.get("r") or "A")] = val
+        if cells:
+            rows.append([cells.get(i, "") for i in range(max(cells) + 1)])
+    return rows
+
+
+def read_csv(text):
     text = text.lstrip("﻿")
     try:
         dialect = csv.Sniffer().sniff(text[:4096], delimiters=",\t;")
     except csv.Error:
         dialect = csv.excel
-    rows = list(csv.reader(io.StringIO(text), dialect))
-    if not rows:
-        return [], []
-    head = [h.strip().lower() for h in rows[0]]
-
-    def col(*names):
-        for n in names:
-            for i, h in enumerate(head):
-                if h == n:
-                    return i
-        for n in names:
-            for i, h in enumerate(head):
-                if n in h:
-                    return i
-        return None
-    cols = {
-        "title": col("task title", "title", "task", "name", "summary"),
-        "group": col("custom group", "group", "section", "project"),
-        "parent": col("parent task", "parent"),
-        "owner": col("owner", "assignee", "assigned to", "assignees"),
-        "priority": col("priority"),
-        "start": col("start time", "start date", "start"),
-        "due": col("due date", "due", "deadline", "end"),
-        "done": col("status", "completed", "done", "state"),
-        "completed_at": col("completed at", "completed time", "completion time"),
-        "description": col("description", "notes", "details"),
-    }
-    if cols["title"] is None:
-        raise HTTPException(status_code=400, detail="No title column found (looked for Task Title, Title, Task, Name)")
-    known = set(i for i in cols.values() if i is not None)
-    extra = [(i, rows[0][i].strip()) for i in range(len(head)) if i not in known and rows[0][i].strip()]
     out = []
-    for r in rows[1:]:
-        def g(k):
-            i = cols[k]
-            return (r[i].strip() if i is not None and i < len(r) else "")
-        if not g("title"):
+    for r in csv.reader(io.StringIO(text), dialect):
+        cells = []
+        for v in r:
+            m = HYPERLINK.search(v)
+            if m:
+                c = Cell(m.group(2))
+                c.url = m.group(1)
+                v = c
+            cells.append(v)
+        out.append(cells)
+    return out
+
+
+# What each column means, by the names Lark and Excel users give them.
+ALIASES = {
+    "title": ("task title", "title", "task", "task name", "name", "summary"),
+    "description": ("task description", "description", "notes", "details"),
+    "done": ("completion status", "status", "completed", "done", "state"),
+    "group": ("custom group", "group", "section"),
+    "owner": ("owner", "owners", "assignee", "assignees", "assigned to"),
+    "subscribers": ("subscriber", "subscribers", "followers"),
+    "creator": ("creator", "created by"),
+    "created": ("created on", "created at", "created time"),
+    "start": ("start date", "start time", "start"),
+    "completed_at": ("completed on", "completed at", "completion time"),
+    "due": ("due date", "due", "deadline", "end date"),
+    "updated": ("updated on", "updated at"),
+    "priority": ("priority",),
+    "ext": ("task id",),
+    "parent_ext": ("parent task id",),
+    "parent": ("parent task", "parent"),
+    "list": ("task list",),
+}
+# Columns that become custom fields of a known kind.
+KNOWN_FIELDS = {
+    "modelers": "person", "project manager": "person", "task completers": "person",
+    "completion method": "select", "milestone": "check",
+}
+# Lark's own working columns: counts and lookups it works out itself.
+IGNORED = re.compile(r"^(task list id|sub-task count|comment count|predecessor task id|successor task id|"
+                     r"by owner|by incomplete|by completed|completion rate|overdue|overdue days|task days|"
+                     r"sourceid|sub-task progress|parent items.*|lookup.*|l\d|main task group|main task title|"
+                     r"text \d+|link \d+)$", re.I)
+
+
+def map_columns(head):
+    """{canonical key: column index}, {field name: (index, type)}."""
+    low = [str(h or "").strip().lower() for h in head]
+    cols, fields = {}, {}
+    for key, names in ALIASES.items():
+        for n in names:
+            if n in low and low.index(n) not in cols.values():
+                cols[key] = low.index(n)
+                break
+    for i, h in enumerate(low):
+        if not h or i in cols.values() or IGNORED.match(h):
             continue
-        row = dict((k, g(k)) for k in cols)
-        row["extra"] = dict((n, r[i].strip() if i < len(r) else "") for i, n in extra)
-        out.append(row)
-    return out, [n for _, n in extra]
+        fields[str(head[i]).strip()] = (i, KNOWN_FIELDS.get(h, "text"))
+    return cols, fields
 
 
-def to_date(s):
-    """'Jul 4', '2026/07/04', '04/07/2026', '2026-07-04 10:00' -> YYYY-MM-DD."""
-    s = (s or "").strip()
+def to_date(v):
+    """A date cell -> YYYY-MM-DD (Hong Kong / Manila day)."""
+    import datetime
+    if isinstance(v, datetime.datetime):
+        return (v + datetime.timedelta(hours=8)).strftime("%Y-%m-%d")
+    s = str(v or "").strip()
     if not s:
         return ""
     m = re.match(r"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})", s)
@@ -453,7 +619,27 @@ def to_date(s):
     return ""
 
 
-# ------------------------------------------------------------ routes
+def to_iso(v):
+    """A date-and-time cell (Lark exports UTC) -> ISO time."""
+    import datetime
+    if isinstance(v, datetime.datetime):
+        return v.strftime("%Y-%m-%dT%H:%M:%SZ")
+    d = to_date(v)
+    return d + "T00:00:00Z" if d else ""
+
+
+def is_done(v):
+    return str(v or "").strip().lower() in ("1", "true", "yes", "done", "completed", "complete", "closed", "已完成")
+
+
+def reg_ids_for_viewer(core, pid):
+    """The register projects shown by a viewer project (for issue cards)."""
+    try:
+        with Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
+            return [r["id"] for r in d.execute("SELECT id FROM projects WHERE viewer = ? AND deleted = 0", (pid,))]
+    except Exception:
+        return []
+
 
 def register(app, core):
 
@@ -559,6 +745,27 @@ def register(app, core):
 
     def task_url(t):
         return "%stasks.html?list=%s&task=%s" % (core.CFG.get("base_url") or "", t["list_id"], t["id"])
+
+    def card(task, event, by, text=""):
+        """A line in the job's chat channel (chat.py) for what just happened
+        to a task. Only top-level tasks of a group linked to a project."""
+        try:
+            import chat
+        except Exception:
+            return
+        try:
+            with db() as d:
+                g = d.execute("SELECT g.reg, g.title, l.title AS list_title FROM groups g JOIN lists l ON l.id = g.list_id "
+                              "WHERE g.id = ?", (task.get("group_id") or "",)).fetchone()
+        except Exception:
+            return
+        if not g or not g["reg"]:
+            return
+        chat.post_card([g["reg"]], {
+            "type": "task", "event": event, "list_id": task["list_id"], "task_id": task["id"],
+            "title": task.get("title") or "Untitled task", "group": g["title"], "list": g["list_title"],
+            "due": task.get("due") or "", "done": bool(task.get("done")),
+            "owners": [p.get("name") for p in task.get("owners") or []], "text": (text or "")[:300]}, by)
 
     # ------------------------------------------------ people
 
@@ -751,12 +958,20 @@ def register(app, core):
                     raise HTTPException(status_code=400, detail="No project %s (or you are not on it)" % pid)
                 title = clean_text(g.get("title"), 120) or (old["title"] if old else "Group")
                 sort = float(g.get("sort")) if isinstance(g.get("sort"), (int, float)) else (old["sort"] if old else 0)
+                # the register project (Projects page); its viewer project wins
+                reg = clean_text(g.get("reg"), 48) if "reg" in g else (old["reg"] if old else "")
+                if reg:
+                    rr = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (reg,)).fetchone()
+                    if not rr:
+                        reg = ""
+                    elif rr["viewer"]:
+                        pid = rr["viewer"]
                 if old:
-                    d.execute("UPDATE groups SET title = ?, project = ?, sort = ?, rev = ?, deleted = 0 WHERE id = ?",
-                              (title, pid, sort, rev, gid))
+                    d.execute("UPDATE groups SET title = ?, project = ?, reg = ?, sort = ?, rev = ?, deleted = 0 WHERE id = ?",
+                              (title, pid, reg, sort, rev, gid))
                 else:
-                    d.execute("INSERT INTO groups (id, list_id, title, project, sort, rev) VALUES (?, ?, ?, ?, ?, ?)",
-                              (gid, lid, title, pid, sort, rev))
+                    d.execute("INSERT INTO groups (id, list_id, title, project, reg, sort, rev) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                              (gid, lid, title, pid, reg, sort, rev))
             d.execute("UPDATE lists SET rev = ? WHERE id = ?", (rev, lid))
         return {"rev": rev}
 
@@ -953,6 +1168,8 @@ def register(app, core):
                     log(d, lid, tid, new["title"], by, "created")
                     if new["owners"]:
                         events.append(("owner", dict(new, id=tid, list_id=lid), new["owners"]))
+                    elif not new["parent_id"]:
+                        events.append(("created", dict(new, id=tid, list_id=lid), []))
                 if "links" in p:
                     sync_issue_links(d, tid, new["links"])
                 if cur and cur["group_id"] != new["group_id"]:
@@ -978,6 +1195,10 @@ def register(app, core):
             rows = [task_row(r) for r in d.execute(
                 "SELECT * FROM tasks WHERE rev = ? AND list_id = ?", (rev, lid))]
         for kind, task, who_ in events:
+            card(task, {"owner": "assigned", "done": "completed", "created": "created"}[kind], by,
+                 ", ".join(p["name"] for p in who_) if kind == "owner" else "")
+            if kind == "created":
+                continue
             if kind == "owner":
                 notify(who_, "Task for you: %s" % task["title"],
                        "%s made you an owner of \"%s\"%s.\n\n%s" % (
@@ -998,7 +1219,7 @@ def register(app, core):
                 raise HTTPException(status_code=404, detail="No such task (it may have been deleted)")
             _, role = need_list(d, w, r["list_id"])
             cs = [{"id": c["id"], "author": c["author"] or "", "uid": c["uid"], "body": c["body"],
-                   "created_at": c["created_at"]} for c in d.execute(
+                   "files": json.loads(c["files"] or "[]"), "created_at": c["created_at"]} for c in d.execute(
                 "SELECT * FROM comments WHERE task_id = ? AND deleted = 0 ORDER BY created_at", (tid,))]
             hist = [dict(a) for a in d.execute(
                 "SELECT at, by, event, field, old, new FROM activity WHERE task_id = ? ORDER BY id DESC LIMIT 200", (tid,))]
@@ -1009,7 +1230,15 @@ def register(app, core):
         w = core.who(request, x_viewer_token)
         body = await read_json(request)
         text = clean_text(body.get("body"), MAX_COMMENT, multiline=True).strip()
-        if not text:
+        # pictures and files sent with it were uploaded first (chat.py)
+        files = []
+        if body.get("files"):
+            try:
+                import chat
+                files = chat.files_for(body.get("files"), task=tid)
+            except Exception:
+                files = []
+        if not text and not files:
             raise HTTPException(status_code=400, detail="An empty comment")
         by, t = person(w, body), now_iso()
         with db() as d:
@@ -1018,8 +1247,8 @@ def register(app, core):
                 raise HTTPException(status_code=404, detail="No such task")
             need_list(d, w, r["list_id"], "editor")
             cid = new_id()
-            d.execute("INSERT INTO comments (id, task_id, author, uid, body, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                      (cid, tid, by, w.uid, text, t))
+            d.execute("INSERT INTO comments (id, task_id, author, uid, body, created_at, files) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                      (cid, tid, by, w.uid, text, t, json.dumps(files)))
             subs = json.loads(r["subscribers"] or "[]")
             # "@Full Name", by the exact names of the accounts (names have spaces)
             mentioned = []
@@ -1043,7 +1272,8 @@ def register(app, core):
         others = [s for s in subs if s.get("uid") not in [m["uid"] for m in mentioned]]
         notify(others, "New comment: %s" % task["title"],
                "%s wrote on \"%s\":\n\n%s\n\n%s" % (by, task["title"], text, url), w.uid)
-        return {"id": cid, "author": by, "uid": w.uid, "body": text, "created_at": t, "task": task}
+        card(task, "comment", by, text or "%d file%s" % (len(files), "" if len(files) == 1 else "s"))
+        return {"id": cid, "author": by, "uid": w.uid, "body": text, "files": files, "created_at": t, "task": task}
 
     @app.delete("/api/tasks/{tid}/comments/{cid}")
     async def task_comment_delete(request: Request, tid: str, cid: str, x_viewer_token: str = Header(default="")):
@@ -1172,87 +1402,507 @@ def register(app, core):
                              % (q, " AND id < ?" if before else ""), args).fetchall()
         return {"activity": [dict(r) for r in rows]}
 
+    # ------------------------------------------------ project register
+
+    def reg_row(r):
+        return {"id": r["id"], "code": r["code"], "name": r["name"], "short": r["short"],
+                "owners": json.loads(r["owners"] or "[]"), "team": r["team"], "status": r["status"],
+                "viewer": r["viewer"], "links": json.loads(r["links"] or "[]"), "notes": r["notes"],
+                "sort": r["sort"], "rev": r["rev"], "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or ""}
+
+    def reg_can_edit(w, r):
+        if w.site_admin:
+            return True
+        if r is not None and any(p.get("uid") == w.uid for p in json.loads(r["owners"] or "[]")):
+            return True
+        if r is not None and r["viewer"] and core.project_dir(r["viewer"]) and core.role_in(w, r["viewer"]) == "admin":
+            return True
+        return False
+
+    def reg_can_create(w):
+        return w.site_admin or "admin" in core.ACC.memberships(w.uid).values()
+
+    def split_code(text):
+        """"HKA-P-01681-ARC - SKW" -> ("HKA-P-01681-ARC", "SKW")."""
+        m = re.match(r"^([A-Z]{2,}[A-Z0-9]*-[A-Z0-9-]*\d[A-Z0-9-]*?)-?\s*-?\s+(.+)$", text.strip())
+        return (m.group(1).rstrip("-"), m.group(2).strip()) if m else ("", text.strip())
+
+    def link_groups(d, r, rev):
+        """Groups named like the project (its short name, name or code) and
+        not yet linked are linked to it; linked groups follow its viewer
+        project."""
+        keys = [k.lower() for k in (r["short"], r["name"], r["code"]) if k]
+        for g in d.execute("SELECT * FROM groups WHERE deleted = 0").fetchall():
+            if (not g["reg"] and g["title"].lower() in keys) or g["reg"] == r["id"]:
+                d.execute("UPDATE groups SET reg = ?, project = ?, rev = ? WHERE id = ?",
+                          (r["id"], r["viewer"] or g["project"], rev, g["id"]))
+                d.execute("UPDATE lists SET rev = ? WHERE id = ?", (rev, g["list_id"]))
+
+    def issue_stats(w, pid):
+        if not pid or not core.project_dir(pid) or not core.role_in(w, pid):
+            return None
+        try:
+            items = [it for it in core.store_for(pid).all_items()[1]
+                     if it.get("issue") and not it.get("deleted")]
+        except Exception:
+            return None
+        today = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 8 * 3600))
+        open_ = [it for it in items if it["issue"].get("status") not in ("Resolved", "Closed")]
+        return {"total": len(items), "open": len(open_),
+                "overdue": len([it for it in open_ if (it["issue"].get("due_date") or "9999") < today])}
+
+    def reg_stats(d, w, ids=None):
+        """Per register project: its task groups, task counts, open tasks."""
+        today = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 8 * 3600))
+        mine = dict((r["id"], r) for r, _ in visible_lists(d, w))
+        out = {}
+        for g in d.execute("SELECT g.*, l.title AS list_title FROM groups g JOIN lists l ON l.id = g.list_id "
+                           "WHERE g.deleted = 0 AND l.deleted = 0 AND g.reg != ''").fetchall():
+            if ids and g["reg"] not in ids:
+                continue
+            st = out.setdefault(g["reg"], {"tasks": 0, "done": 0, "overdue": 0, "groups": [], "open_tasks": []})
+            st["groups"].append({"id": g["id"], "title": g["title"], "list_id": g["list_id"],
+                                 "list_title": g["list_title"], "can_open": g["list_id"] in mine})
+            for t in d.execute("SELECT * FROM tasks WHERE group_id = ? AND parent_id = '' AND deleted = 0",
+                               (g["id"],)).fetchall():
+                st["tasks"] += 1
+                st["done"] += t["done"]
+                late = not t["done"] and t["due"] and t["due"][:10] < today
+                st["overdue"] += 1 if late else 0
+                if not t["done"] and g["list_id"] in mine:
+                    st["open_tasks"].append({"id": t["id"], "list_id": t["list_id"], "title": t["title"],
+                                             "due": t["due"], "overdue": bool(late),
+                                             "owners": json.loads(t["owners"] or "[]")})
+        for st in out.values():
+            st["open_tasks"].sort(key=lambda x: x["due"] or "9999")
+        return out
+
+    @app.get("/api/registry")
+    async def reg_list(request: Request, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            rows = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+            stats = reg_stats(d, w)
+        out = []
+        for r in rows:
+            p = reg_row(r)
+            p["can_edit"] = reg_can_edit(w, r)
+            p["stats"] = stats.get(r["id"]) or {"tasks": 0, "done": 0, "overdue": 0, "groups": [], "open_tasks": []}
+            p["stats"]["open_tasks"] = p["stats"]["open_tasks"][:12]
+            p["issues"] = issue_stats(w, r["viewer"])
+            p["viewer_ok"] = bool(r["viewer"] and core.project_dir(r["viewer"]) and core.role_in(w, r["viewer"]))
+            out.append(p)
+        return {"projects": out, "can_create": reg_can_create(w)}
+
+    @app.post("/api/registry")
+    async def reg_save(request: Request, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        body = await read_json(request)
+        by, t = person(w, body), now_iso()
+        with db() as d:
+            pid = body.get("id") if isinstance(body.get("id"), str) and SAFE_ID.match(body.get("id")) else None
+            old = d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone() if pid else None
+            if old and not reg_can_edit(w, old):
+                raise HTTPException(status_code=403, detail="Only the project's owners, its viewer admins or a site admin can change it")
+            if not old and not reg_can_create(w):
+                raise HTTPException(status_code=403, detail="Only project admins and site admins can add projects")
+            cur = reg_row(old) if old else {"code": "", "name": "", "short": "", "owners": [], "team": "",
+                                            "status": "Active", "viewer": "", "links": [], "notes": "", "sort": time.time()}
+            for k in ("code", "short", "team", "status"):
+                if k in body:
+                    cur[k] = clean_text(body[k], 80)
+            if "name" in body:
+                cur["name"] = clean_text(body["name"], 160)
+            if "notes" in body:
+                cur["notes"] = clean_text(body["notes"], 4000, True)
+            if "owners" in body:
+                cur["owners"] = clean_people(body["owners"])
+            if "links" in body:
+                cur["links"] = clean_links(body["links"])
+            if "viewer" in body:
+                v = clean_text(body["viewer"], 80)
+                if v and not core.project_dir(v):
+                    raise HTTPException(status_code=400, detail="No viewer project %s" % v)
+                cur["viewer"] = v
+            if not cur["name"]:
+                raise HTTPException(status_code=400, detail="A project needs a name")
+            if not cur["short"]:
+                cur["short"] = split_code(cur["name"])[1]
+            rev = next_rev(d)
+            pid = pid or new_id()
+            d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, links, notes, sort, rev, "
+                      "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                      "ON CONFLICT(id) DO UPDATE SET code=excluded.code, name=excluded.name, short=excluded.short, "
+                      "owners=excluded.owners, team=excluded.team, status=excluded.status, viewer=excluded.viewer, "
+                      "links=excluded.links, notes=excluded.notes, rev=excluded.rev, deleted=0, "
+                      "updated_by=excluded.updated_by, updated_at=excluded.updated_at",
+                      (pid, cur["code"], cur["name"], cur["short"], json.dumps(cur["owners"]), cur["team"], cur["status"],
+                       cur["viewer"], json.dumps(cur["links"]), cur["notes"], cur["sort"], rev, by, t, by, t))
+            link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone(), rev)
+            row = d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
+        return reg_row(row)
+
+    @app.delete("/api/registry/{pid}")
+    async def reg_delete(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such project")
+            if not reg_can_edit(w, r):
+                raise HTTPException(status_code=403, detail="You cannot delete this project")
+            rev = next_rev(d)
+            d.execute("UPDATE projects SET deleted = 1, rev = ? WHERE id = ?", (rev, pid))
+            d.execute("UPDATE groups SET reg = '', rev = ? WHERE reg = ?", (rev, pid))
+        return {"ok": True}
+
+    @app.post("/api/registry/import")
+    async def reg_import(request: Request, x_viewer_token: str = Header(default="")):
+        """A project table (Lark Base "Projects", or Excel): columns Project,
+        Owner, Group / Team, Project Folder, Status, Code, Viewer."""
+        w = core.who(request, x_viewer_token)
+        if not reg_can_create(w):
+            raise HTTPException(status_code=403, detail="Only project admins and site admins can add projects")
+        body = await read_json(request)
+        rows = rows_from(body)
+        if len(rows) < 2:
+            raise HTTPException(status_code=400, detail="Nothing to import")
+        low = [str(h or "").strip().lower() for h in rows[0]]
+
+        def col(*names):
+            for n in names:
+                if n in low:
+                    return low.index(n)
+            return None
+        c = {"name": col("project", "project name", "name"), "code": col("code", "project code", "job number"),
+             "owner": col("owner", "owners", "project owner"), "team": col("group", "team"),
+             "folder": col("project folder", "folder", "link", "onedrive", "acc"), "status": col("status"),
+             "viewer": col("viewer", "viewer project")}
+        if c["name"] is None:
+            raise HTTPException(status_code=400, detail="No Project column found")
+        people = matcher()
+        projects = [p["id"] for p in core.list_projects()]
+        by, t = person(w, body), now_iso()
+        made = 0
+        with db() as d:
+            rev = next_rev(d)
+            have = dict((r["name"].lower(), r) for r in d.execute("SELECT * FROM projects WHERE deleted = 0"))
+            for i, r in enumerate(rows[1:]):
+                g = lambda k: (r[c[k]] if c[k] is not None and c[k] < len(r) else "")
+                name = clean_text(g("name"), 160)
+                if not name:
+                    continue
+                code, short = split_code(name)
+                code = clean_text(g("code"), 80) or code
+                folder = g("folder")
+                url = getattr(folder, "url", "") or (str(folder) if str(folder).startswith("http") else "")
+                label = str(folder).strip()
+                links = [{"kind": "url", "url": url,
+                          "title": "Project folder" if not label or label.startswith("http") else label}] if url else []
+                viewer = clean_text(g("viewer"), 80)
+                if not viewer:
+                    viewer = next((p for p in projects if p.lower() in (short.lower(), code.lower(), str(folder).strip().lower())), "")
+                old = have.get(name.lower())
+                pid = old["id"] if old else new_id()
+                d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, links, notes, sort, rev, "
+                          "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,?) "
+                          "ON CONFLICT(id) DO UPDATE SET code=excluded.code, owners=excluded.owners, team=excluded.team, "
+                          "status=excluded.status, viewer=CASE WHEN excluded.viewer != '' THEN excluded.viewer ELSE viewer END, "
+                          "links=excluded.links, rev=excluded.rev, updated_by=excluded.updated_by, updated_at=excluded.updated_at",
+                          (pid, code, name, short, json.dumps(people(g("owner"))), clean_text(g("team"), 80),
+                           clean_text(g("status"), 40) or "Active", viewer, json.dumps(clean_links(links)), i, rev, by, t, by, t))
+                link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone(), rev)
+                made += 1
+        return {"imported": made, "unmatched": sorted(people.missing)}
+
+    @app.post("/api/task-lists/{lid}/groups/{gid}/reg")
+    async def group_reg(request: Request, lid: str, gid: str, x_viewer_token: str = Header(default="")):
+        """Link one group to a register project ({reg: id or ""})."""
+        w = core.who(request, x_viewer_token)
+        body = await read_json(request)
+        with db() as d:
+            need_list(d, w, lid, "editor")
+            g = d.execute("SELECT * FROM groups WHERE id = ? AND list_id = ?", (gid, lid)).fetchone()
+            if not g:
+                raise HTTPException(status_code=404, detail="No such group")
+            reg = clean_text(body.get("reg"), 48)
+            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (reg,)).fetchone() if reg else None
+            if reg and not r:
+                raise HTTPException(status_code=404, detail="No such project")
+            rev = next_rev(d)
+            d.execute("UPDATE groups SET reg = ?, project = ?, rev = ? WHERE id = ?",
+                      (reg, (r["viewer"] if r else "") or (g["project"] if r else ""), rev, gid))
+            d.execute("UPDATE lists SET rev = ? WHERE id = ?", (rev, lid))
+        return {"ok": True}
+
     # ------------------------------------------------ import
+
+    def matcher():
+        """Names in a Lark export -> accounts. Lark often has first names
+        only ("Jake"), so a first name that fits exactly one account is
+        taken as that person. A name with no account is kept as a name and
+        can be matched later (relink), once the account exists."""
+        users = [u for u in core.ACC.list() if u["active"]] if core.accounts_on() else []
+        full = dict((u["name"].strip().lower(), u) for u in users if u["name"])
+        first = {}
+        for u in users:
+            f = (u["name"] or "").strip().lower().split(" ")[0]
+            first.setdefault(f, []).append(u)
+        missing = set()
+
+        def one(name):
+            n = (name or "").strip()
+            if not n:
+                return None
+            u = full.get(n.lower())
+            if not u:
+                hits = first.get(n.lower()) or [x for x in users if x["name"].lower().startswith(n.lower() + " ")]
+                u = hits[0] if len(hits) == 1 else None
+            if u:
+                return {"uid": u["id"], "name": u["name"]}
+            missing.add(n)
+            return {"uid": None, "name": n}
+
+        def many(v):
+            if isinstance(v, list):
+                names = [p.get("name") if isinstance(p, dict) else p for p in v]
+            else:
+                names = re.split(r"[,;/、，\n]+", str(v or ""))
+            return clean_people([p for p in (one(x) for x in names) if p])
+        many.missing = missing
+        many.one = one
+        return many
+
+    def do_import(d, w, lid, rows, by):
+        if len(rows) < 2:
+            raise HTTPException(status_code=400, detail="The file has no rows under its heading")
+        cols, extra = map_columns(rows[0])
+        if "title" not in cols:
+            raise HTTPException(status_code=400, detail="No title column found (looked for Task title, Title, Task, Name)")
+        people = matcher()
+        t = now_iso()
+        rev = next_rev(d)
+        body = [r for r in rows[1:] if any(str(c).strip() for c in r)]
+
+        def cell(r, key):
+            i = cols.get(key)
+            return r[i] if i is not None and i < len(r) else ""
+
+        # custom fields: the ones the list has, and new ones for the file's columns
+        fields = dict((r["name"].lower(), (r["id"], r["type"])) for r in d.execute(
+            "SELECT * FROM fields WHERE list_id = ? AND deleted = 0", (lid,)))
+        n_fields = len(fields)
+        for name, (i, typ) in extra.items():
+            vals = [r[i] for r in body if i < len(r) and str(r[i]).strip() not in ("", "0")]
+            if name.lower() in fields or (typ == "text" and not vals):
+                continue
+            opts = sorted(set(str(v).strip() for v in vals))[:50] if typ == "select" else []
+            fid = new_id()
+            d.execute("INSERT INTO fields (id, list_id, name, type, options, sort, rev) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                      (fid, lid, clean_text(name, 60), typ, json.dumps(opts), n_fields, rev))
+            fields[name.lower()] = (fid, typ)
+            n_fields += 1
+        groups = dict((r["title"].lower(), r["id"]) for r in d.execute(
+            "SELECT * FROM groups WHERE list_id = ? AND deleted = 0", (lid,)))
+        regs = {}
+        for r in d.execute("SELECT * FROM projects WHERE deleted = 0"):
+            for k in (r["short"], r["name"], r["code"]):
+                if k:
+                    regs.setdefault(k.lower(), r)
+        known = dict((r["ext_id"], r) for r in d.execute(
+            "SELECT * FROM tasks WHERE list_id = ? AND ext_id != '' AND deleted = 0", (lid,)))
+        num = d.execute("SELECT next_number FROM lists WHERE id = ?", (lid,)).fetchone()["next_number"]
+        made = changed = new_groups = 0
+        by_ext, by_title, parents = {}, {}, []
+        for i, r in enumerate(body):
+            title = cell(r, "title")
+            ext = clean_text(cell(r, "ext"), 64)
+            gname = clean_text(cell(r, "group"), 120)
+            if gname and gname.lower() not in groups:
+                gid = new_id()
+                reg = regs.get(gname.lower())
+                d.execute("INSERT INTO groups (id, list_id, title, project, reg, sort, rev) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                          (gid, lid, gname, reg["viewer"] if reg else "", reg["id"] if reg else "", len(groups), rev))
+                groups[gname.lower()] = gid
+                new_groups += 1
+            vals = {}
+            for name, (ci, typ) in extra.items():
+                if name.lower() not in fields or ci >= len(r):
+                    continue
+                fid, ftyp = fields[name.lower()]
+                v = r[ci]
+                if ftyp == "person":
+                    v = people(v)
+                elif ftyp == "check":
+                    v = is_done(v)
+                elif ftyp == "date":
+                    v = to_date(v)
+                elif ftyp == "number":
+                    try:
+                        v = float(v) if str(v).strip() else None
+                    except ValueError:
+                        v = None
+                else:
+                    v = clean_text(v, 500)
+                if v not in (None, "", [], False):
+                    vals[fid] = v
+            done = is_done(cell(r, "done"))
+            pr = str(cell(r, "priority") or "").strip().capitalize()
+            creator = people.one(str(cell(r, "creator") or "").split(",")[0]) if cell(r, "creator") else None
+            links = []
+            if getattr(title, "url", ""):
+                links.append({"id": "lark-" + (ext or new_id())[:20], "kind": "url", "url": title.url, "title": "Open in Lark",
+                              "project": "", "ref": "", "added_by": by, "added_at": t})
+            rec = {
+                "title": clean_text(title, MAX_TITLE), "description": clean_text(cell(r, "description"), MAX_DESC, True),
+                "done": done, "completed_at": (to_iso(cell(r, "completed_at")) or t) if done else "",
+                "priority": pr if pr in PRIORITIES else "", "start": to_date(cell(r, "start")), "due": to_date(cell(r, "due")),
+                "owners": people(cell(r, "owner")), "subscribers": people(cell(r, "subscribers")),
+                "group_id": groups.get(gname.lower(), "") if gname else "",
+            }
+            old = known.get(ext) if ext else None
+            if old:
+                tid = old["id"]
+                keep = [l for l in json.loads(old["links"] or "[]") if not str(l.get("id", "")).startswith("lark-")]
+                merged = dict(json.loads(old["vals"] or "{}"))
+                merged.update(vals)
+                d.execute("UPDATE tasks SET title=?, description=?, done=?, completed_at=?, priority=?, start=?, due=?, "
+                          "owners=?, subscribers=?, group_id=CASE WHEN ? != '' THEN ? ELSE group_id END, vals=?, links=?, "
+                          "sort=?, rev=?, updated_by=?, updated_at=? WHERE id=?",
+                          (rec["title"], rec["description"], int(done), rec["completed_at"], rec["priority"], rec["start"],
+                           rec["due"], json.dumps(rec["owners"]), json.dumps(rec["subscribers"]), rec["group_id"],
+                           rec["group_id"], json.dumps(merged), json.dumps(keep + links), i, rev, by,
+                           to_iso(cell(r, "updated")) or t, tid))
+                changed += 1
+            else:
+                tid = new_id()
+                d.execute(
+                    "INSERT INTO tasks (id, list_id, group_id, parent_id, number, title, description, done, completed_at, "
+                    "priority, start, due, owners, vals, links, subscribers, sort, rev, ext_id, created_by, created_uid, "
+                    "created_at, updated_by, updated_at) VALUES (?,?,?,'',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (tid, lid, rec["group_id"], num, rec["title"], rec["description"], int(done), rec["completed_at"],
+                     rec["priority"], rec["start"], rec["due"], json.dumps(rec["owners"]), json.dumps(vals),
+                     json.dumps(links), json.dumps(rec["subscribers"]), i, rev, ext,
+                     creator["name"] if creator else by, creator["uid"] if creator else w.uid,
+                     to_iso(cell(r, "created")) or t, by, to_iso(cell(r, "updated")) or t))
+                num += 1
+                made += 1
+            if ext:
+                by_ext[ext] = tid
+            by_title.setdefault(rec["title"].lower(), tid)
+            parents.append((tid, rec["title"], clean_text(cell(r, "parent_ext"), 64), clean_text(cell(r, "parent"), MAX_TITLE)))
+        # sub-tasks under their parents, now that every row has an id
+        for tid, title, pext, ptitle in parents:
+            pid = by_ext.get(pext) if pext else None
+            if not pid and pext:
+                row = d.execute("SELECT id FROM tasks WHERE list_id = ? AND ext_id = ? AND deleted = 0", (lid, pext)).fetchone()
+                pid = row["id"] if row else None
+            if not pid and ptitle:
+                pid = by_title.get(ptitle.lower())
+            if not pid or pid == tid:
+                continue
+            par = d.execute("SELECT title, group_id FROM tasks WHERE id = ?", (pid,)).fetchone()
+            # Lark writes a sub-task as "Its title < Parent title"
+            suffix = " < " + par["title"]
+            new_title = title[:-len(suffix)] if title.endswith(suffix) and len(title) > len(suffix) else title
+            d.execute("UPDATE tasks SET parent_id = ?, group_id = ?, title = ? WHERE id = ?",
+                      (pid, par["group_id"], new_title, tid))
+        if not groups:
+            d.execute("INSERT INTO groups (id, list_id, title, project, sort, rev) VALUES (?, ?, 'General', '', 0, ?)",
+                      (new_id(), lid, rev))
+        d.execute("UPDATE tasks SET group_id = (SELECT id FROM groups WHERE list_id = ? AND deleted = 0 ORDER BY sort LIMIT 1) "
+                  "WHERE list_id = ? AND group_id = '' AND parent_id = ''", (lid, lid))
+        d.execute("UPDATE lists SET next_number = ?, rev = ? WHERE id = ?", (num, rev, lid))
+        title = d.execute("SELECT title FROM lists WHERE id = ?", (lid,)).fetchone()["title"]
+        log(d, lid, "", title, by, "imported", "", "", "%d new, %d updated" % (made, changed))
+        return {"created": made, "updated": changed, "groups": new_groups, "unmatched": sorted(people.missing)}
+
+    def rows_from(body):
+        import base64
+        if body.get("xlsx"):
+            try:
+                data = base64.b64decode(str(body["xlsx"]).split(",")[-1])
+            except Exception:
+                raise HTTPException(status_code=400, detail="The Excel file did not arrive whole")
+            return read_xlsx(data)
+        if body.get("csv"):
+            return read_csv(str(body["csv"]))
+        raise HTTPException(status_code=400, detail="Nothing to import")
 
     @app.post("/api/task-lists/{lid}/import")
     async def tasks_import(request: Request, lid: str, x_viewer_token: str = Header(default="")):
-        """A Lark export saved as CSV: {csv: "..."}. Groups are made as
-        needed, owners matched to accounts by name, a "Parent task" column
-        makes sub-tasks, and columns this list does not know become text
-        fields."""
+        """A Lark export (.xlsx) or a CSV into this list: {xlsx: base64} or
+        {csv: text}. Rows with a Lark task id that is already here update
+        that task, so the same export can be brought in again."""
         w = core.who(request, x_viewer_token)
         body = await read_json(request)
-        rows, extra = parse_csv(str(body.get("csv") or ""))
-        if not rows:
-            raise HTTPException(status_code=400, detail="Nothing to import")
-        by, t = person(w, body), now_iso()
-        users = {}
-        if core.accounts_on():
-            for u in core.ACC.list():
-                users[u["name"].lower()] = {"uid": u["id"], "name": u["name"]}
-
-        def people_of(s):
-            out = []
-            for n in re.split(r"[,;/、，\n]+", s or ""):
-                n = n.strip()
-                if n:
-                    out.append(users.get(n.lower()) or {"uid": None, "name": n})
-            return clean_people(out)
-        made = 0
+        rows = rows_from(body)
         with db() as d:
-            lrow, _ = need_list(d, w, lid, "editor")
+            need_list(d, w, lid, "editor")
+            return do_import(d, w, lid, rows, person(w, body))
+
+    @app.post("/api/task-lists/import")
+    async def tasks_import_new(request: Request, x_viewer_token: str = Header(default="")):
+        """A whole Lark task list as a new list here, named after it."""
+        w = core.who(request, x_viewer_token)
+        if core.accounts_on() and not w.site_admin:
+            if not any(core.RANK.get(r, 0) >= core.RANK["member"] for r in core.ACC.memberships(w.uid).values()):
+                raise HTTPException(status_code=403, detail="Only project members can start a task list")
+        body = await read_json(request)
+        rows = rows_from(body)
+        cols, _ = map_columns(rows[0] if rows else [])
+        title = clean_text(body.get("title"), 120)
+        if not title and "list" in cols and len(rows) > 1:
+            title = clean_text(rows[1][cols["list"]], 120)
+        title = title or "Imported tasks"
+        by, t = person(w, body), now_iso()
+        lid = new_id()
+        with db() as d:
+            d.execute("INSERT INTO lists (id, title, team, rev, created_by, created_uid, created_at, updated_by, updated_at) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                      (lid, title, clean_text(body.get("team"), 80), next_rev(d), by, w.uid, t, by, t))
+            if w.uid is not None:
+                d.execute("INSERT INTO list_members (list_id, uid, role) VALUES (?, ?, 'owner')", (lid, w.uid))
+            log(d, lid, "", title, by, "list-created")
+            out = do_import(d, w, lid, rows, by)
+            # everyone named in the file who has an account may open it
+            if core.accounts_on():
+                seen = set(r["uid"] for r in d.execute("SELECT uid FROM list_members WHERE list_id = ?", (lid,)))
+                for r in d.execute("SELECT owners, subscribers FROM tasks WHERE list_id = ?", (lid,)).fetchall():
+                    for p in json.loads(r["owners"]) + json.loads(r["subscribers"]):
+                        if p.get("uid") is not None and p["uid"] not in seen:
+                            seen.add(p["uid"])
+                            d.execute("INSERT INTO list_members (list_id, uid, role) VALUES (?, ?, 'editor')", (lid, p["uid"]))
+        out["id"] = lid
+        out["title"] = title
+        return out
+
+    @app.post("/api/task-lists/{lid}/relink")
+    async def tasks_relink(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+        """Names kept from an import, matched again to accounts (for people
+        whose accounts were made after the import)."""
+        w = core.who(request, x_viewer_token)
+        people = matcher()
+        n = 0
+        with db() as d:
+            need_list(d, w, lid, "editor")
+            ptypes = set(r["id"] for r in d.execute(
+                "SELECT id FROM fields WHERE list_id = ? AND type = 'person' AND deleted = 0", (lid,)))
             rev = next_rev(d)
-            groups = dict((r["title"].lower(), r["id"]) for r in d.execute(
-                "SELECT * FROM groups WHERE list_id = ? AND deleted = 0", (lid,)))
-            fields = dict((r["name"].lower(), (r["id"], r["type"])) for r in d.execute(
-                "SELECT * FROM fields WHERE list_id = ? AND deleted = 0", (lid,)))
-            for i, name in enumerate(extra):
-                if name.lower() not in fields:
-                    fid = new_id()
-                    d.execute("INSERT INTO fields (id, list_id, name, type, options, sort, rev) VALUES (?, ?, ?, 'text', '[]', ?, ?)",
-                              (fid, lid, clean_text(name, 60), 100 + i, rev))
-                    fields[name.lower()] = (fid, "text")
-            by_title = {}
-            pending_parent = []
-            num = d.execute("SELECT next_number FROM lists WHERE id = ?", (lid,)).fetchone()["next_number"]
-            for i, r in enumerate(rows):
-                gname = r["group"] or "Imported"
-                if gname.lower() not in groups:
-                    gid = new_id()
-                    d.execute("INSERT INTO groups (id, list_id, title, project, sort, rev) VALUES (?, ?, ?, '', ?, ?)",
-                              (gid, lid, clean_text(gname, 120), len(groups), rev))
-                    groups[gname.lower()] = gid
-                done = r["done"].strip().lower() in ("done", "completed", "complete", "true", "yes", "1", "closed", "已完成")
-                vals = {}
-                for name, v in (r.get("extra") or {}).items():
-                    fid, typ = fields[name.lower()]
-                    if v:
-                        vals[fid] = people_of(v) if typ == "person" else v[:500]
-                tid = new_id()
-                pr = r["priority"].strip().capitalize()
-                d.execute(
-                    "INSERT INTO tasks (id, list_id, group_id, parent_id, number, title, description, done, "
-                    "completed_at, priority, start, due, owners, vals, links, subscribers, sort, rev, "
-                    "created_by, created_uid, created_at, updated_by, updated_at) "
-                    "VALUES (?,?,?,'',?,?,?,?,?,?,?,?,?,?,'[]','[]',?,?,?,?,?,?,?)",
-                    (tid, lid, groups[gname.lower()], num, clean_text(r["title"], MAX_TITLE),
-                     clean_text(r["description"], MAX_DESC, True), int(done),
-                     (to_date(r["completed_at"]) or t[:10]) if done else "",
-                     pr if pr in PRIORITIES else "", to_date(r["start"]), to_date(r["due"]),
-                     json.dumps(people_of(r["owner"])), json.dumps(vals), i, rev, by, w.uid, t, by, t))
-                num += 1
-                made += 1
-                by_title.setdefault(r["title"].strip().lower(), tid)
-                if r["parent"]:
-                    pending_parent.append((tid, r["parent"].strip().lower()))
-            for tid, parent in pending_parent:
-                pid = by_title.get(parent)
-                if pid and pid != tid:
-                    d.execute("UPDATE tasks SET parent_id = ?, group_id = (SELECT group_id FROM tasks WHERE id = ?) "
-                              "WHERE id = ?", (pid, pid, tid))
-            d.execute("UPDATE lists SET next_number = ?, rev = ? WHERE id = ?", (num, rev, lid))
-            log(d, lid, "", lrow["title"], by, "imported", "", "", "%d tasks" % made)
-        return {"imported": made}
+            for r in d.execute("SELECT * FROM tasks WHERE list_id = ? AND deleted = 0", (lid,)).fetchall():
+                o, s_, v = json.loads(r["owners"]), json.loads(r["subscribers"]), json.loads(r["vals"])
+                if not any(p.get("uid") is None for p in o + s_ + [x for k in ptypes for x in (v.get(k) or [])]):
+                    continue
+                o2, s2 = people(o), people(s_)
+                v2 = dict(v)
+                for k in ptypes:
+                    if v.get(k):
+                        v2[k] = people(v[k])
+                if (o2, s2, v2) != (o, s_, v):
+                    d.execute("UPDATE tasks SET owners = ?, subscribers = ?, vals = ?, rev = ? WHERE id = ?",
+                              (json.dumps(o2), json.dumps(s2), json.dumps(v2), rev, r["id"]))
+                    n += 1
+        return {"changed": n, "unmatched": sorted(people.missing)}
 
     # ------------------------------------------------ due reminders
 

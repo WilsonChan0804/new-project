@@ -131,6 +131,7 @@ export function render(T, el) {
     let dd = 0, moved = false;
     b.setPointerCapture(ev.pointerId);
     b.classList.add("drag");
+    T.S.dragging = true;
     const move = (e) => {
       dd = Math.round((e.clientX - x0) / px);
       if (Math.abs(e.clientX - x0) > 3) moved = true;
@@ -141,7 +142,9 @@ export function render(T, el) {
     const up = () => {
       b.removeEventListener("pointermove", move);
       b.removeEventListener("pointerup", up);
+      b.removeEventListener("pointercancel", up);
       b.classList.remove("drag");
+      T.S.dragging = false;
       if (!moved) return T.openTask(t.id);
       if (!dd) return render(T, el);
       const s = (t.start || t.due).slice(0, 10), e = (t.due || t.start).slice(0, 10);
@@ -152,6 +155,7 @@ export function render(T, el) {
     };
     b.addEventListener("pointermove", move);
     b.addEventListener("pointerup", up);
+    b.addEventListener("pointercancel", up);
     ev.preventDefault();
   };
 }

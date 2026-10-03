@@ -4,6 +4,9 @@
 
 import { $, esc, avatar, people, fmtDate, fmtWhen, ago, isOverdue, priorityPill, pickPeople, pickOne, pickDate, PRIORITIES, toast, modal } from "./tasks-util.js";
 import { chip, makeLink, classify, linkify } from "./filelinks.js";
+import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
+
+let PEND = [];           // files waiting to go with the next comment
 
 let CUR = null;          // { id, comments, activity, loadedFor }
 
@@ -15,6 +18,7 @@ export function close(T) {
 }
 
 export async function open(T, id) {
+  if (!CUR || CUR.id !== id) PEND = [];
   CUR = { id, comments: [], activity: [], loading: true };
   $("#t-detail").hidden = false;
   document.body.classList.add("detail-on");
@@ -73,6 +77,7 @@ function paint(T) {
       <button class="td-done${t.done ? " on" : ""}" data-act="done"${ed ? "" : " disabled"}>${t.done ? "&#10003; Completed" : "Mark complete"}</button>
       <span class="spacer"></span>
       ${T.S.accounts ? `<button class="ghost" data-act="follow" title="${following ? "Stop getting emails about this task" : "Get emails when it changes or someone comments"}">${following ? "&#128276; Following" : "&#128277; Follow"}</button>` : ""}
+      <button class="ghost" data-act="share" title="Send this task to a chat in the Messenger">&#128172; Share</button>
       <button class="ghost" data-act="copy" title="Copy a link to this task">&#128279;</button>
       ${ed ? `<button class="ghost danger" data-act="delete" title="Delete task">&#128465;</button>` : ""}
       <button class="ghost" data-act="close" title="Close">&#10005;</button>
@@ -90,7 +95,9 @@ function paint(T) {
       ${T.fields().map((f) => {
         const v = t.vals[f.id];
         const shown = f.type === "person" ? (people(v, 6) || `<span class="muted">Add</span>`)
-          : f.type === "date" ? (v ? esc(fmtDate(v, true)) : `<span class="muted">-</span>`) : (v != null && v !== "" ? esc(v) : `<span class="muted">-</span>`);
+          : f.type === "date" ? (v ? esc(fmtDate(v, true)) : `<span class="muted">-</span>`)
+          : f.type === "check" ? `<span class="cbx${v ? " on" : ""}"></span>`
+          : (v != null && v !== "" ? esc(v) : `<span class="muted">-</span>`);
         return row(esc(f.name), shown, ed && "f:" + f.id);
       }).join("")}
       <textarea class="td-desc" rows="3" placeholder="${ed ? "Add description" : ""}"${ed ? "" : " readonly"}>${esc(t.description)}</textarea>
@@ -114,8 +121,10 @@ function paint(T) {
       <div class="td-comments">${CUR.loading ? `<p class="muted">Loading ...</p>` : CUR.comments.map((c) =>
         `<div class="td-c">${avatar({ name: c.author })}<div><div class="td-ch"><b>${esc(c.author)}</b> <small class="muted" title="${esc(fmtWhen(c.created_at))}">${esc(ago(c.created_at))}</small>`
         + ((ed && (c.uid === meUid || T.isOwner() || !T.S.accounts)) ? ` <button class="ghost linkish" data-delc="${esc(c.id)}">delete</button>` : "")
-        + `</div><div class="td-ct">${mentionify(linkify(esc(c.body)), T)}</div></div></div>`).join("") || `<p class="muted td-none">No comments yet.</p>`}</div>
-      ${ed ? `<div class="td-compose"><textarea class="td-newc" rows="2" placeholder="Add a comment. @name to tell someone; paste OneDrive / ACC links. Ctrl+Enter to send."></textarea><button class="primary" data-act="comment">Send</button></div>` : ""}
+        + `</div><div class="td-ct">${mentionify(linkify(esc(c.body)), T)}</div>${filesHtml(c.files)}</div></div>`).join("") || `<p class="muted td-none">No comments yet.</p>`}</div>
+      ${ed ? `<div class="td-compose"><textarea class="td-newc" rows="2" placeholder="Add a comment. @name to tell someone; paste a screenshot or OneDrive / ACC links. Ctrl+Enter to send."></textarea>`
+        + `<div class="td-cbtns"><button class="ghost" data-act="attach" title="Attach pictures or files (up to 50 MB each)">&#128206;</button><button class="primary" data-act="comment">Send</button></div></div>`
+        + `<div class="td-pend">${pendingHtml(PEND)}</div><input type="file" class="td-file" multiple hidden>` : ""}
 
       <details class="td-hist"><summary>History</summary>${CUR.activity.map((a) =>
         `<div class="td-hr"><b>${esc(a.by || "?")}</b> ${a.event === "changed" ? `changed ${esc(a.field)}${a.field === "description" ? "" : `: <span class="muted">${esc(a.old || "-")}</span> &rarr; ${esc(a.new || "-")}`}` : esc(a.event)}`
@@ -168,6 +177,11 @@ function wire(T, box, t) {
     if (!a) return;
     const k = a.dataset.act;
     if (k === "close") return close(T);
+    if (k === "share") {
+      const url = location.origin + location.pathname.replace(/[^/]*$/, "") + `tasks.html?list=${t.list_id}&task=${t.id}`;
+      window.open(`messenger.html?share=${encodeURIComponent(url)}&title=${encodeURIComponent(t.title || "Task")}`, "_blank");
+      return;
+    }
     if (k === "copy") {
       const url = location.origin + location.pathname.replace(/[^/]*$/, "") + `tasks.html?list=${t.list_id}&task=${t.id}`;
       try { await navigator.clipboard.writeText(url); toast("Link copied"); } catch (e) { prompt("Link to this task", url); }
@@ -193,6 +207,7 @@ function wire(T, box, t) {
       if (f.type === "person") return pickPeople(a, t.vals[f.id] || [], T.people(), set);
       if (f.type === "select") return pickOne(a, [""].concat(f.options), t.vals[f.id] || "", set);
       if (f.type === "date") return pickDate(a, t.vals[f.id], set);
+      if (f.type === "check") return set(!t.vals[f.id]);
       const v = prompt(f.name, t.vals[f.id] == null ? "" : t.vals[f.id]);
       if (v !== null) set(v);
       return;
@@ -204,6 +219,7 @@ function wire(T, box, t) {
     if (k === "addlink") return addLink(T, t, box.querySelector(".td-link"));
     if (k === "linkissue") return linkIssue(T, t);
     if (k === "comment") return sendComment(T, t, box.querySelector(".td-newc"));
+    if (k === "attach") return box.querySelector(".td-file").click();
   };
   const ns = box.querySelector(".td-newsub");
   if (ns) ns.onkeydown = (ev) => {
@@ -220,6 +236,13 @@ function wire(T, box, t) {
   if (nc) {
     nc.onkeydown = (ev) => { if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) sendComment(T, t, nc); };
     mentionPicker(T, nc);
+    const take = (fs) => addFiles(T, t, fs);
+    catchFiles(nc, take);
+    box.querySelector(".td-file").onchange = (ev) => { take(Array.from(ev.target.files || [])); ev.target.value = ""; };
+    box.querySelector(".td-pend").onclick = (ev) => {
+      const b = ev.target.closest("[data-unpend]");
+      if (b) { PEND.splice(Number(b.dataset.unpend), 1); paintPend(); }
+    };
   }
 }
 
@@ -292,14 +315,34 @@ async function linkIssue(T, t) {
   T.save(t.id, { links: t.links.concat(add) });
 }
 
+function paintPend() {
+  const el = document.querySelector("#t-detail .td-pend");
+  if (el) el.innerHTML = pendingHtml(PEND);
+}
+
+async function addFiles(T, t, files) {
+  await T.flush();             // a new task must be on the server first
+  for (const f of files) {
+    const p = { name: f.name || "pasted.png", mime: f.type, size: f.size, url: f.type.startsWith("image/") ? URL.createObjectURL(f) : "" };
+    PEND.push(p);
+    paintPend();
+    try { Object.assign(p, await upload(f, { task: t.id }, p.name)); }
+    catch (e) { p.error = e.message; }
+    paintPend();
+  }
+}
+
 async function sendComment(T, t, ta) {
   const body = ta.value.trim();
-  if (!body) return;
+  if (PEND.some((p) => !p.id && !p.error)) return toast("Still uploading - a moment", true);
+  const files = PEND.filter((p) => p.id).map((p) => p.id);
+  if (!body && !files.length) return;
   ta.disabled = true;
   try {
     // a brand-new task must reach the server before it can be commented on
     await T.flush();
-    const r = await T.api(`/api/tasks/${t.id}/comments`, { method: "POST", body: JSON.stringify({ body, by: T.me.name }) });
+    const r = await T.api(`/api/tasks/${t.id}/comments`, { method: "POST", body: JSON.stringify({ body, files, by: T.me.name }) });
+    PEND = [];
     CUR.comments.push(r);
     Object.assign(t, { comment_count: r.task.comment_count, subscribers: r.task.subscribers });
     CUR.commentCount = t.comment_count;

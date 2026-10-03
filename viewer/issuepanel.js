@@ -78,7 +78,8 @@ export function ensureDialog() {
           <div id="detail-files" class="fl-list"></div>
           <div class="fl-add"><input id="detail-fileurl" placeholder="Paste a OneDrive, SharePoint or ACC link"><button id="detail-addfile" class="ghost">Add</button></div>
           <div class="disc-head"><b>Tasks</b> <span id="detail-tcount" class="muted"></span><span class="spacer"></span>
-            <button id="detail-newtask" class="ghost linkish" hidden>+ New task from this issue</button></div>
+            <button id="detail-newtask" class="ghost linkish" hidden>+ New task from this issue</button>
+            <button id="detail-tochat" class="ghost linkish" title="Send this issue to a chat in the Messenger">Send to chat</button></div>
           <div id="detail-tasks"></div>
           <div id="detail-dismissed" hidden></div>
           <div class="disc-head"><b>Discussion</b> <span id="disc-count" class="muted"></span>
@@ -334,6 +335,14 @@ export function openIssue(item, opts) {
   $("#detail-addfile").onclick = addFile;
   $("#detail-fileurl").onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); addFile(); } };
   loadTasks(item, iss);
+  $("#detail-tochat").onclick = () => {
+    const pid = currentProject();
+    const base = location.origin + location.pathname.replace(/[^/]*$/, "");
+    const url = base + (item.sheet
+      ? `index.html?project=${encodeURIComponent(pid)}&sheet=${encodeURIComponent(item.sheet)}&select=${encodeURIComponent(item.id)}`
+      : `model.html?project=${encodeURIComponent(pid)}&select=${encodeURIComponent(item.id)}`);
+    window.open(`messenger.html?share=${encodeURIComponent(url)}&title=${encodeURIComponent(`Issue #${iss.number || "?"} ${iss.title || ""}`)}`, "_blank");
+  };
 
   const collect = () => {
     iss.title = $("#detail-title").value.trim() || iss.title || "Issue";
@@ -543,12 +552,19 @@ async function loadTasks(item, iss) {
   if (!r.lists.length || !item.issue) return;
   btn.hidden = false;
   btn.onclick = async () => {
-    let list = r.lists[0];
-    if (r.lists.length > 1) {
-      const names = r.lists.map((l, i) => `${i + 1}. ${l.title}`).join("\n");
+    // the lists with a group for this project come first; one of them: no question
+    let cands = r.lists;
+    try {
+      const all = await (await fetch("/api/task-lists", { headers: apiHeaders() })).json();
+      const linked = new Set((all.lists || []).filter((l) => (l.groups || []).some((g) => g.project === pid)).map((l) => l.id));
+      if (r.lists.some((l) => linked.has(l.id))) cands = r.lists.filter((l) => linked.has(l.id));
+    } catch (e) {}
+    let list = cands[0];
+    if (cands.length > 1) {
+      const names = cands.map((l, i) => `${i + 1}. ${l.title}`).join("\n");
       const n = prompt("Which task list?\n\n" + names, "1");
       if (n === null) return;
-      list = r.lists[Number(n) - 1];
+      list = cands[Number(n) - 1];
       if (!list) return;
     }
     try {

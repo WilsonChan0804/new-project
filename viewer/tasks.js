@@ -297,7 +297,8 @@ async function pull() {
 
 /* Others' changes: every few seconds while the page is in view. */
 setInterval(async () => {
-  if (document.hidden || !S.listId || S.mode !== "list" || saving) return;
+  // not while something is being dragged: a redraw would drop it
+  if (document.hidden || !S.listId || S.mode !== "list" || saving || S.dragging) return;
   try {
     if (await pull()) {
       // a new-task box being typed in keeps its text
@@ -376,8 +377,9 @@ function render() {
   if (!S.list) {
     el.innerHTML = `<div class="t-empty"><h3>No task list open</h3>`
       + `<p>Start one for your team - groups inside it can each be a project.</p>`
-      + `<button class="primary" id="t-empty-new">+ New task list</button></div>`;
+      + `<button class="primary" id="t-empty-new">+ New task list</button> <button id="t-empty-lark">Import a Lark task list (.xlsx)</button></div>`;
     $("#t-empty-new").onclick = newList;
+    $("#t-empty-lark").onclick = () => importFile(true);
     return;
   }
   if (S.view === "kanban") return KanbanView.render(T, el);
@@ -500,17 +502,24 @@ T.projects = projectsList;
 
 async function editGroups() {
   const projects = await projectsList();
-  const opts = (cur) => `<option value="">- no project -</option>` + projects.map((p) =>
-    `<option value="${esc(p.id)}"${p.id === cur ? " selected" : ""}>${esc(p.title)}${p.title !== p.id ? " (" + esc(p.id) + ")" : ""}</option>`).join("")
-    + (cur && !projects.some((p) => p.id === cur) ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : "");
+  const reg = await registry();
+  // a group points at a job on the Projects page (r:) - or straight at a viewer project (v:)
+  const opts = (g) => {
+    const cur = g.reg ? "r:" + g.reg : g.project ? "v:" + g.project : "";
+    const o = (v, label) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${label}</option>`;
+    return o("", "- no project -")
+      + (reg.length ? `<optgroup label="Projects page">${reg.map((p) => o("r:" + p.id, esc(p.short || p.name) + (p.code ? " · " + esc(p.code) : ""))).join("")}</optgroup>` : "")
+      + `<optgroup label="Viewer project only">${projects.map((p) => o("v:" + p.id, esc(p.title) + (p.title !== p.id ? " (" + esc(p.id) + ")" : ""))).join("")}`
+      + (g.project && !g.reg && !projects.some((p) => p.id === g.project) ? o("v:" + g.project, esc(g.project)) : "") + `</optgroup>`;
+  };
   const row = (g) => `<div class="eg-row" data-id="${esc(g.id || "")}"><input class="eg-t" value="${esc(g.title)}" placeholder="Group name">`
-    + `<select class="eg-p">${opts(g.project)}</select><button type="button" class="ghost eg-up" title="Move up">&uarr;</button>`
+    + `<select class="eg-p">${opts(g)}</select><button type="button" class="ghost eg-up" title="Move up">&uarr;</button>`
     + `<button type="button" class="ghost eg-del" title="Delete">&#10005;</button></div>`;
-  const back = modal("Groups and projects", `<p class="muted" style="font-size:12px">Each group can be linked to a viewer project - its tasks can then link that project's issues, sheets and 3D views.</p>`
+  const back = modal("Groups and projects", `<p class="muted" style="font-size:12px">Link each group to its job on the Projects page: its tasks then count there, link that job's issues, sheets and 3D views, and post updates to the job's chat channel.</p>`
     + `<div class="eg">${T.groups().map(row).join("")}</div><button type="button" class="ghost eg-add">+ Add group</button>`, "Save");
   const form = document.querySelector(".t-modal");
   form.querySelector(".eg-add").onclick = () => {
-    form.querySelector(".eg").insertAdjacentHTML("beforeend", row({ title: "", project: "" }));
+    form.querySelector(".eg").insertAdjacentHTML("beforeend", row({ title: "", project: "", reg: "" }));
     form.querySelector(".eg .eg-row:last-child input").focus();
   };
   const dels = [];
@@ -523,7 +532,10 @@ async function editGroups() {
   if (!f) return;
   const groups = [...f.querySelectorAll(".eg-row")].map((r, i) => ({
     id: r.dataset.id || undefined, title: r.querySelector(".eg-t").value.trim() || "Group",
-    project: r.querySelector(".eg-p").value, sort: i }));
+    ...(() => {
+      const v = r.querySelector(".eg-p").value;
+      return v.startsWith("r:") ? { reg: v.slice(2) } : { reg: "", project: v.slice(2) };
+    })(), sort: i }));
   try {
     await api(`/api/task-lists/${S.listId}/groups`, { method: "POST", body: JSON.stringify({
       groups: groups.concat(dels.map((id) => ({ id, deleted: true }))) }) });
@@ -533,11 +545,20 @@ async function editGroups() {
 }
 T.editGroups = editGroups;
 
+let REG = null;
+async function registry(fresh) {
+  if (REG && !fresh) return REG;
+  try { REG = (await api("/api/registry")).projects || []; } catch (e) { REG = []; }
+  return REG;
+}
+T.registry = registry;
+
 async function editFields() {
   const cols = [["priority", "Priority"], ["owners", "Owner"], ["start", "Start"], ["due", "Due"], ["progress", "Sub-task progress"],
-    ["completed", "Completed"], ["links", "Links & files"]];
+    ["completed", "Completed on"], ["subscribers", "Subscribers"], ["creator", "Creator"], ["created", "Created on"],
+    ["updated", "Updated on"], ["links", "Links & files"]];
   const row = (f) => `<div class="eg-row" data-id="${esc(f.id || "")}"><input class="ef-n" value="${esc(f.name)}" placeholder="Column name">`
-    + `<select class="ef-t">${["person", "select", "text", "date", "number"].map((t) => `<option${t === f.type ? " selected" : ""}>${t}</option>`).join("")}</select>`
+    + `<select class="ef-t">${["person", "select", "text", "date", "number", "check"].map((t) => `<option${t === f.type ? " selected" : ""}>${t}</option>`).join("")}</select>`
     + `<input class="ef-o" value="${esc((f.options || []).join(", "))}" placeholder="choices, for select">`
     + `<button type="button" class="ghost eg-del">&#10005;</button></div>`;
   const all = cols.concat(T.fields().map((f) => ["f:" + f.id, f.name]));
@@ -593,15 +614,43 @@ async function editMembers() {
   } catch (e) { toast(e.message, true); }
 }
 
-async function importCsv() {
-  const f = await modal("Import from Lark or Excel", `<p class="muted" style="font-size:12px">In Lark: open the task list, ... &rarr; Export, then save it as CSV (in Excel: Save As &rarr; CSV UTF-8). Columns found by name: Task Title, Custom Group, Parent Task, Owner, Priority, Start Time, Due Date, Status, Completed At, Description. Other columns become text fields.</p>`
-    + `<input type="file" name="file" accept=".csv,.tsv,.txt" required>`, "Import");
+/* A Lark export (.xlsx, as Lark gives it) or a CSV. Into this list, or
+   (newList) as a new list named after the Lark one. The same export can be
+   brought in again later: tasks are matched by their Lark task id. */
+async function importFile(newList) {
+  const f = await modal(newList ? "Import a Lark task list" : "Import into " + S.list.title,
+    `<p class="muted" style="font-size:12px">In Lark: open the task list, <b>...</b> &rarr; <b>Export</b> (Excel). Choose that file here - .xlsx as it is, or a CSV.`
+    + ` Groups, sub-tasks, owners, followers, Modelers, Project Manager, priorities, dates and done / not done all come in. Bringing the same list in again updates the tasks instead of adding them twice.</p>`
+    + `<input type="file" name="file" accept=".xlsx,.csv,.tsv,.txt" required>`
+    + (newList ? `<label>Name of the new list <input name="title" placeholder="from the file (e.g. LWK-MANILA)"></label>` : ""), "Import");
   if (!f) return;
   const file = f.file.files[0];
   if (!file) return;
+  const body = {};
+  if (/\.xlsx$/i.test(file.name)) {
+    body.xlsx = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(String(fr.result).split(",")[1]);
+      fr.onerror = () => rej(new Error("Could not read the file"));
+      fr.readAsDataURL(file);
+    });
+  } else body.csv = await file.text();
+  if (newList && f.title.value.trim()) body.title = f.title.value.trim();
+  toast("Importing ...");
   try {
-    const r = await api(`/api/task-lists/${S.listId}/import`, { method: "POST", body: JSON.stringify({ csv: await file.text() }) });
-    toast(`Imported ${r.imported} tasks`);
+    const r = await api(newList ? "/api/task-lists/import" : `/api/task-lists/${S.listId}/import`, { method: "POST", body: JSON.stringify(body) });
+    if (newList) { await loadLists(); await openList(r.id); } else { S.rev = 0; await pull(); render(); }
+    await modal("Imported", `<p>${r.created} new task${r.created === 1 ? "" : "s"}, ${r.updated} updated${r.groups ? `, ${r.groups} new group${r.groups === 1 ? "" : "s"}` : ""}.</p>`
+      + (r.unmatched.length ? `<p class="muted" style="font-size:12px">These names have no account on this server yet, so they are kept as names: <b>${r.unmatched.map(esc).join(", ")}</b>.`
+        + ` Once a site admin has made their accounts (Admin &rarr; People), use <b>...</b> &rarr; <b>Match names to accounts</b>.</p>` : "")
+      + `<p class="muted" style="font-size:12px">Link each group to its job: <b>...</b> &rarr; <b>Groups and projects</b>.</p>`, "OK");
+  } catch (e) { toast(e.message, true); }
+}
+
+async function relink() {
+  try {
+    const r = await api(`/api/task-lists/${S.listId}/relink`, { method: "POST", body: "{}" });
+    toast(`${r.changed} task${r.changed === 1 ? "" : "s"} updated` + (r.unmatched.length ? ` - still no account: ${r.unmatched.join(", ")}` : ""), !!r.unmatched.length);
     S.rev = 0; await pull(); render();
   } catch (e) { toast(e.message, true); }
 }
@@ -633,7 +682,7 @@ async function listMenu(anchor) {
   const own = T.isOwner(), ed = T.canEdit();
   const items = [
     own && ["rename", "Rename list"], ed && ["groups", "Groups and projects"], ["fields", "Customize columns"],
-    ed && ["import", "Import from Lark / CSV"], ["export", "Export to CSV (Excel)"], own && ["delete", "Delete list"]].filter(Boolean);
+    ed && ["import", "Import from Lark (.xlsx) / CSV"], ed && ["relink", "Match names to accounts"], ["export", "Export to CSV (Excel)"], own && ["delete", "Delete list"]].filter(Boolean);
   const el = pop(anchor, items.map(([k, n]) => `<div class="po-row${k === "delete" ? " bad" : ""}" data-k="${k}">${n}</div>`).join(""), 220);
   el.onclick = async (ev) => {
     const r = ev.target.closest(".po-row");
@@ -642,7 +691,8 @@ async function listMenu(anchor) {
     const k = r.dataset.k;
     if (k === "groups") editGroups();
     if (k === "fields") editFields();
-    if (k === "import") importCsv();
+    if (k === "import") importFile(false);
+    if (k === "relink") relink();
     if (k === "export") exportCsv();
     if (k === "rename") {
       const f = await modal("Rename list", `<label>Name<input name="t" value="${esc(S.list.title)}" maxlength="120"></label>`
@@ -697,7 +747,15 @@ function wire() {
     else if (a.dataset.mode) { flush(); S.mode = a.dataset.mode; S.listId = ""; S.list = null; setUrl(); paintSide(); render(); }
   };
   $("#t-side-toggle").onclick = () => document.body.classList.toggle("side-off");
-  $("#t-newlist").onclick = newList;
+  $("#t-newlist").onclick = (ev) => {
+    const el = pop(ev.currentTarget, `<div class="po-row" data-k="new">New task list</div><div class="po-row" data-k="lark">Import a Lark task list (.xlsx)</div>`, 240);
+    el.onclick = (e) => {
+      const r = e.target.closest(".po-row");
+      if (!r) return;
+      closePop();
+      if (r.dataset.k === "new") newList(); else importFile(true);
+    };
+  };
   $("#t-tabs").onclick = (ev) => {
     const b = ev.target.closest("button[data-view]");
     if (!b) return;
@@ -711,12 +769,12 @@ function wire() {
     if (t) openTask(t.id);
   };
   $("#t-new-more").onclick = (ev) => {
-    const el = pop(ev.currentTarget, `<div class="po-row" data-k="group">New group</div><div class="po-row" data-k="import">Import from Lark / CSV</div>`, 200);
+    const el = pop(ev.currentTarget, `<div class="po-row" data-k="group">New group</div><div class="po-row" data-k="import">Import from Lark (.xlsx) / CSV</div>`, 230);
     el.onclick = (e) => {
       const r = e.target.closest(".po-row");
       if (!r) return;
       closePop();
-      if (r.dataset.k === "group") editGroups(); else importCsv();
+      if (r.dataset.k === "group") editGroups(); else importFile(false);
     };
   };
   $("#t-menu").onclick = (ev) => listMenu(ev.currentTarget);
@@ -768,7 +826,8 @@ async function ensureSignedIn() {
 function headerLinks() {
   const p = project();
   const q = p ? "?project=" + encodeURIComponent(p) : "";
-  for (const [id, page] of [["to-sheets", "index.html"], ["to-3d", "model.html"], ["to-board", "board.html"], ["to-dash", "dashboard.html"], ["to-admin", "admin.html"]]) {
+  for (const [id, page] of [["to-sheets", "index.html"], ["to-3d", "model.html"], ["to-board", "board.html"], ["to-dash", "dashboard.html"], ["to-admin", "admin.html"],
+    ["to-projects", "projects.html"], ["to-chat", "messenger.html"]]) {
     if ($("#" + id)) $("#" + id).href = page + q;
   }
   const me = S.me || {};

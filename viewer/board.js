@@ -2791,6 +2791,8 @@ async function main() {
   $("#to-3d").href = link("model.html");
   $("#to-dash").href = link("dashboard.html");
   if ($("#to-tasks")) $("#to-tasks").href = link("tasks.html");
+  if ($("#to-projects")) $("#to-projects").href = link("projects.html");
+  if ($("#to-chat")) $("#to-chat").href = link("messenger.html");
   $("#to-admin").href = link("admin.html");
 
   await loadBoards();

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Chat</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="tasks.css">
+<link rel="stylesheet" href="chat.css">
+</head>
+<body class="tasks-page chat-page own-nav">
+<header>
+  <b class="brand">LWK Viewer</b>
+  <div class="seg">
+    <a class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <a class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
+    <span class="seg-btn on">Chat</span>
+    <a class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
+  </div>
+  <span class="spacer"></span>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="h-who"></span>
+    <a href="#" id="h-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<div id="c-app">
+  <aside id="c-side">
+    <div class="cs-top">
+      <input id="c-q" type="search" placeholder="Search chats - Enter to search messages" autocomplete="off">
+      <button id="c-new" class="ghost" title="New chat">&#9998;</button>
+    </div>
+    <div id="c-rooms"></div>
+  </aside>
+
+  <main id="c-main">
+    <div id="c-empty" class="t-empty"><h3>Messenger</h3>
+      <p>Chat with the team: a channel for each project, group chats and direct messages.
+        Task and issue updates of a project appear in its channel. Paste screenshots, send files, and paste task, issue,
+        OneDrive or ACC links - they show as cards.</p>
+      <button class="primary" id="c-empty-new">Start a chat</button></div>
+    <div id="c-conv" hidden>
+      <div id="c-head">
+        <button class="ghost" id="c-back" title="All chats">&lsaquo;</button>
+        <div class="ch-title"><span id="c-icon" class="c-ico"></span><div><b id="c-title"></b><small id="c-sub" class="muted"></small></div></div>
+        <span class="spacer"></span>
+        <span id="c-links"></span>
+        <button class="ghost" id="c-files-btn" title="Pictures and files sent here">&#128206; Files</button>
+        <button class="ghost" id="c-members-btn" title="Who is in this chat">&#128101; <span id="c-mcount"></span></button>
+      </div>
+      <div id="c-join" hidden><span>You are not in this channel yet.</span> <button class="primary" id="c-join-btn">Join</button></div>
+      <div id="c-msgs"></div>
+      <div id="c-compose">
+        <div id="c-reply" hidden></div>
+        <div id="c-pend"></div>
+        <div class="cc-row">
+          <button class="ghost" id="c-attach" title="Send pictures or files (up to 50 MB each) - or paste / drop them">&#128206;</button>
+          <textarea id="c-text" rows="1" placeholder="Message - @ to mention, paste a screenshot, Enter to send, Shift+Enter for a new line"></textarea>
+          <button class="primary" id="c-send">Send</button>
+        </div>
+        <input type="file" id="c-file" multiple hidden>
+      </div>
+    </div>
+  </main>
+
+  <aside id="c-right" hidden></aside>
+</div>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="chat.js"></script>
+</body>
+</html>
