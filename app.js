@@ -1,81 +1,105 @@
 'use strict';
 
 /* =========================================================
-   旅程 Planner — 離線可用嘅香港・日本行程
-   行程存喺 localStorage；相片／附件存喺 IndexedDB。
+   東京 4 日 —— 簡單、離線可用嘅行程
+   行程存喺 localStorage；相片存喺 IndexedDB。
    ========================================================= */
 
-const STORE_KEY = 'trip-planner:v2';
-const SEED = window.SEED_TRIP || { seedVersion: 0, name: '我的旅程', days: [], ideas: [] };
+const STORE_KEY = 'trip-planner:v3';
+const SEED = window.SEED_TRIP || { seedVersion: 0, name: '我的旅程', days: [] };
 
 const TYPES = {
-  flight: { label: '航班' },
-  train:  { label: '鐵路／地鐵' },
-  bus:    { label: '巴士' },
-  walk:   { label: '步行' },
-  ferry:  { label: '船' },
-  hotel:  { label: '住宿' },
-  food:   { label: '食飯' },
-  sight:  { label: '景點' },
-  shop:   { label: '購物' },
-  other:  { label: '其他' },
+  flight: '航班', train: '電車', bus: '巴士', walk: '步行', ferry: '船',
+  hotel: '酒店', food: '食飯', sight: '景點', shop: '購物', other: '其他',
 };
 const TRANSPORT = new Set(['flight', 'train', 'bus', 'ferry', 'walk']);
-const COUNTRIES = { HK: '香港', JP: '日本', UK: '英國' };
 const WEEK = '日一二三四五六';
-const TAXI_PHRASE = {
-  HK: '唔該，我想去呢度。<small>請帶我去這裡 · Please take me here</small>',
-  JP: 'ここへ行ってください。<small>請帶我去呢度 · Please take me here</small>',
-  UK: 'Please take me here.',
-};
 
-/* ---------- icons (stroke, 24×24) ---------- */
+/* ---------- 日語常用句 ---------- */
+const PHRASES = [
+  { cat: '基本', items: [
+    ['こんにちは', 'konnichiwa', '你好'],
+    ['ありがとうございます', 'arigatō gozaimasu', '多謝'],
+    ['すみません', 'sumimasen', '唔好意思（叫人／借借）'],
+    ['はい ／ いいえ', 'hai / iie', '係 ／ 唔係'],
+    ['大丈夫です', 'daijōbu desu', '冇問題／唔使喇'],
+    ['日本語が話せません', 'nihongo ga hanasemasen', '我唔識講日文'],
+    ['英語は話せますか', 'eigo wa hanasemasu ka', '你識唔識講英文？'],
+  ] },
+  { cat: '餐廳', items: [
+    ['二人です', 'futari desu', '兩位'],
+    ['予約しています', 'yoyaku shite imasu', '我有訂位'],
+    ['どのくらい待ちますか', 'dono kurai machimasu ka', '要等幾耐？'],
+    ['英語のメニューはありますか', 'eigo no menyū wa arimasu ka', '有冇英文餐牌？'],
+    ['おすすめは何ですか', 'osusume wa nan desu ka', '有咩推介？'],
+    ['これをください', 'kore o kudasai', '我要呢個'],
+    ['お水をください', 'omizu o kudasai', '唔該俾杯水'],
+    ['お会計お願いします', 'okaikei onegaishimasu', '唔該埋單'],
+    ['ごちそうさまでした', 'gochisōsama deshita', '多謝款待（食完講）'],
+  ] },
+  { cat: '購物', items: [
+    ['いくらですか', 'ikura desu ka', '幾多錢？'],
+    ['カードは使えますか', 'kādo wa tsukaemasu ka', '可唔可以碌卡？'],
+    ['免税できますか', 'menzei dekimasu ka', '可唔可以退稅？'],
+    ['袋はいりません', 'fukuro wa irimasen', '唔使袋'],
+    ['これはありますか', 'kore wa arimasu ka', '有冇呢樣嘢？（指住相）'],
+  ] },
+  { cat: '交通', items: [
+    ['駅はどこですか', 'eki wa doko desu ka', '車站喺邊？'],
+    ['この電車は銀座に行きますか', 'kono densha wa Ginza ni ikimasu ka', '呢架車去唔去銀座？'],
+    ['スカイライナーの切符を二枚ください', 'sukairainā no kippu o nimai kudasai', '唔該兩張 Skyliner 車飛'],
+    ['ここまでお願いします', 'koko made onegaishimasu', '（的士）唔該去呢度'],
+    ['ここで止めてください', 'koko de tomete kudasai', '（的士）喺度停得喇'],
+  ] },
+  { cat: '酒店', items: [
+    ['チェックインお願いします', 'chekku-in onegaishimasu', '我想 Check-in'],
+    ['荷物を預かってもらえますか', 'nimotsu o azukatte moraemasu ka', '可唔可以寄存行李？'],
+    ['Wi-Fiのパスワードは何ですか', 'wai-fai no pasuwādo wa nan desu ka', 'Wi-Fi 密碼係咩？'],
+  ] },
+  { cat: '求助', items: [
+    ['トイレはどこですか', 'toire wa doko desu ka', '洗手間喺邊？'],
+    ['道に迷いました', 'michi ni mayoimashita', '我蕩失路'],
+    ['助けてください', 'tasukete kudasai', '救命／幫幫我'],
+    ['病院に連れて行ってください', 'byōin ni tsurete itte kudasai', '唔該帶我去醫院'],
+    ['警察を呼んでください', 'keisatsu o yonde kudasai', '唔該幫我報警'],
+  ] },
+];
+
+/* ---------- icons ---------- */
 const ICONS = {
   flight: '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   train: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/><path d="M9 14h.01M15 14h.01"/>',
-  bus: '<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 10h16M8 21v-4M16 21v-4M8 14h.01M16 14h.01"/>',
+  bus: '<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 10h16M8 21v-4M16 21v-4"/>',
   walk: '<circle cx="13" cy="4" r="2"/><path d="m7 21 3-7 3 3v4M6 12l3-4 4 1 3 3"/>',
-  ferry: '<path d="M2 20c2 1 4 1 6 0s4-1 6 0 4 1 6 0M4 17l-1-5h18l-2 5M6 12V7h12v5M12 4v3"/>',
+  ferry: '<path d="M2 20c2 1 4 1 6 0s4-1 6 0 4 1 6 0M4 17l-1-5h18l-2 5M6 12V7h12v5"/>',
   hotel: '<path d="M3 20V5M3 15h18v5M21 15v-3a3 3 0 0 0-3-3h-7v6"/><circle cx="7" cy="11" r="2"/>',
   food: '<path d="M4 2v7a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V2M7 2v20M20 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3zm0 0v7"/>',
   sight: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
   shop: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/>',
   other: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
-  chevron: '<path d="m6 9 6 6 6-6"/>',
   map: '<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',
   route: '<circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/>',
-  image: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
   copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
-  up: '<path d="m18 15-6-6-6 6"/>',
-  down: '<path d="m6 9 6 6 6-6"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
-  skip: '<path d="m5 4 10 8-10 8zM19 5v14"/>',
   reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
-  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
-  car: '<path d="M5 17h14M6 17v2M18 17v2M5 11l2-5h10l2 5M4 11h16v6H4z"/><path d="M7.5 14h.01M16.5 14h.01"/>',
-  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
-  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/>',
-  move: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-  swap: '<path d="m16 3 4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/>',
+  car: '<path d="M5 17h14M6 17v2M18 17v2M5 11l2-5h10l2 5M4 11h16v6H4z"/>',
   star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
   ext: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9z"/>',
-  sort: '<path d="M3 6h18M6 12h12M10 18h4"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
-  ticket: '<path d="M2 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 0 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 17v2M13 11v2"/>',
-  bulb: '<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
-  info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
-  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  sound: '<path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',
+  left: '<path d="m15 18-6-6 6-6"/>',
+  right: '<path d="m9 18 6-6-6-6"/>',
 };
 const icon = (name, cls = '') =>
   `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
-/* ---------- small helpers ---------- */
+/* ---------- helpers ---------- */
 const $ = (s, r = document) => r.querySelector(s);
 const enc = encodeURIComponent;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -87,107 +111,70 @@ const nowHM = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d
 const isHM = t => /^\d{1,2}:\d{2}$/.test(t || '');
 const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const fromMin = x => { x = ((x % 1440) + 1440) % 1440; return `${pad(Math.floor(x / 60))}:${pad(x % 60)}`; };
-const clampMin = x => Math.max(0, Math.min(23 * 60 + 59, x));
-
-function durOf(it) {
-  if (!isHM(it.time) || !isHM(it.end)) return null;
-  return (toMin(it.end) - toMin(it.time) + 1440) % 1440;
-}
+const durOf = it => (isHM(it.time) && isHM(it.end)) ? (toMin(it.end) - toMin(it.time) + 1440) % 1440 : null;
 function durStr(m) {
   if (m == null) return '';
   const h = Math.floor(m / 60), mm = m % 60;
   return h && mm ? `${h}小時${mm}分` : h ? `${h}小時` : `${mm}分`;
 }
-function dateParts(s) {
-  const d = new Date(s + 'T00:00');
-  return { d: d.getDate(), m: d.getMonth() + 1, w: WEEK[d.getDay()], y: d.getFullYear() };
-}
-function fmtDate(s, long = false) {
-  if (!s) return '未定日期';
-  const p = dateParts(s);
-  return long ? `${p.m}月${p.d}日（星期${p.w}）` : `${p.m}月${p.d}日`;
-}
-function addDays(s, n) {
-  const d = s ? new Date(s + 'T00:00') : new Date();
-  d.setDate(d.getDate() + n);
-  return ymd(d);
-}
+const dateParts = s => { const d = new Date(s + 'T00:00'); return { d: d.getDate(), m: d.getMonth() + 1, w: WEEK[d.getDay()] }; };
 const daysBetween = (a, b) => Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / 86400000);
-function normUrl(u) {
-  u = (u || '').trim();
-  if (!u) return '';
-  return /^[a-z][a-z0-9+.-]*:/i.test(u) ? u : 'https://' + u;
-}
-const short = s => (s || '').split(/[,(（]/)[0].trim();
+const normUrl = u => { u = (u || '').trim(); return !u ? '' : /^[a-z][a-z0-9+.-]*:/i.test(u) ? u : 'https://' + u; };
+const nameOf = (raw, zh) => zh || (raw || '').split(/[,(（]/)[0].trim();
 
-/* ---------- link builders ---------- */
 const gmapSearch = q => `https://www.google.com/maps/search/?api=1&query=${enc(q)}`;
 const gmapDir = (from, to, mode = 'transit') =>
   `https://www.google.com/maps/dir/?api=1${from ? `&origin=${enc(from)}` : ''}&destination=${enc(to)}&travelmode=${mode}`;
 const gsearch = q => `https://www.google.com/search?q=${enc(q)}`;
-const gimages = q => `https://www.google.com/search?tbm=isch&q=${enc(q)}`;
 
-/** 呢項行程完咗之後人喺邊 —— 用嚟計下一項嘅路線起點 */
 function locOf(it) {
   if (!it) return '';
-  if (TRANSPORT.has(it.type)) return it.to || '';
-  return it.place || it.address || '';
-}
-const countryOf = (it, day) => it.country || (day && day.country) || '';
-const nameOf = (raw, zh) => zh || short(raw);
-
-function stationMapQuery(name, country) {
-  if (country === 'JP') return `${name} 構内図`;
-  if (country === 'HK') return `${name} 站 出口 地圖`;
-  return `${name} station map`;
+  return TRANSPORT.has(it.type) ? (it.to || '') : (it.place || it.address || '');
 }
 
-function linksFor(it, prevLoc, country) {
+/** 每項最有用嘅連結 */
+function linksFor(it, prevLoc) {
   const L = [];
   const add = (label, url, kind = '', ic = '') => { if (url) L.push({ label, url, kind, ic }); };
   const t = it.type;
-  if (it.url) add(t === 'hotel' ? '酒店網站' : it.type === 'food' ? '網站／訂位' : '官方網站', normUrl(it.url), 'primary', 'ext');
-
   if (t === 'flight') {
     const no = (it.number || '').replace(/\s+/g, '');
-    if (no && !no.includes('待填')) {
-      add('航班狀態', `https://www.flightradar24.com/data/flights/${enc(no.toLowerCase())}`, '', 'flight');
-      add('Google 航班', gsearch(`${it.number} flight status`));
-    }
-    if (it.from) add(`去${nameOf(it.from, it.fromZh)}`, gmapDir('', it.from), '', 'route');
-    if (it.to) add('航廈圖', gimages(`${it.to} terminal map`), '', 'image');
+    if (no && !no.includes('待填')) add('航班狀態', `https://www.flightradar24.com/data/flights/${enc(no.toLowerCase())}`, 'accent', 'flight');
+    if (it.url) add('訂單', normUrl(it.url), '', 'ext');
   } else if (t === 'walk') {
-    if (it.to) add('步行路線', gmapDir(it.from || prevLoc, it.to, 'walking'), 'primary-soft', 'route');
+    if (it.to) add('步行路線', gmapDir(it.from || prevLoc, it.to, 'walking'), 'accent', 'route');
   } else if (TRANSPORT.has(t)) {
-    if (it.to) add('路線及班次', gmapDir(it.from || prevLoc, it.to), 'primary-soft', 'route');
-    if (it.from) add(`去${nameOf(it.from, it.fromZh)}`, gmapDir('', it.from), '', 'route');
-    if (t === 'train') {
-      if (it.from) add(`${nameOf(it.from, it.fromZh)} 站內圖`, gimages(stationMapQuery(it.from, country)), '', 'image');
-      if (it.to) add(`${nameOf(it.to, it.toZh)} 站內圖`, gimages(stationMapQuery(it.to, country)), '', 'image');
-    }
-    if (it.timetableUrl) add('全日時刻表', normUrl(it.timetableUrl), '', 'clock');
-    if (t === 'train' && country === 'HK') add('港鐵行程指南', 'https://www.mtr.com.hk/ch/customer/jp/index.php');
-    if (t === 'train' && country === 'JP') add('Jorudan 轉乘', 'https://world.jorudan.co.jp/mln/zh-tw/');
+    if (it.to) add('路線及班次', gmapDir(it.from || prevLoc, it.to), 'accent', 'route');
+    if (it.timetableUrl) add('時刻表', normUrl(it.timetableUrl), '', 'clock');
+    (it.stationLinks || []).forEach(l => add(l.label, normUrl(l.url), '', 'map'));
   } else {
     const q = locOf(it) || it.titleJa || it.title;
-    add('地圖', gmapSearch(q), 'primary-soft', 'map');
-    if (prevLoc && prevLoc !== q) add('由上一站去', gmapDir(prevLoc, q), '', 'route');
-    add('由我而家位置去', gmapDir('', q), '', 'route');
-    if (t === 'food') {
-      const name = it.titleJa || it.place || it.title;
-      if (country === 'JP') add('Tabelog 食評', gsearch(`tabelog ${name}`));
-      if (country === 'HK') add('OpenRice 食評', gsearch(`openrice ${name}`));
-      add('Google 食評', gsearch(`${name} 評價`));
-    } else if (t !== 'hotel' || country) {
-      add('附近食肆', gmapSearch(`restaurants near ${q}`));
+    if (it.place || it.address) {
+      add('導航', gmapDir('', q), 'accent', 'route');
+      add('地圖', gmapSearch(q), '', 'map');
     }
+    if (it.url) add(t === 'food' ? '網站／訂位' : t === 'hotel' ? '酒店網站' : '官網', normUrl(it.url), '', 'ext');
+    if (t === 'food' && it.titleJa) add('Tabelog 食評', gsearch(`tabelog ${it.titleJa}`), '', 'star');
   }
-  (it.stationLinks || []).forEach(l => add(l.label, normUrl(l.url), '', 'map'));
-  (it.links || []).forEach(l => add(l.label || '連結', normUrl(l.url), 'plain', 'ext'));
+  (it.links || []).forEach(l => add(l.label || '連結', normUrl(l.url), '', 'ext'));
   return L;
 }
 
-/* ---------- IndexedDB：附件同離線相片 ---------- */
+/* ---------- 讀音（Web Speech，用手機內置日文聲） ---------- */
+function speak(text, lang = 'ja-JP') {
+  if (!('speechSynthesis' in window)) return toast('呢部機唔支援讀音');
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[（(].*?[）)]/g, ''));
+  u.lang = lang;
+  u.rate = 0.85;
+  const v = speechSynthesis.getVoices().find(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2)));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+if ('speechSynthesis' in window) speechSynthesis.getVoices();
+const speakBtn = (text, cls = '') => text ? `<button type="button" class="speak ${cls}" data-act="speak" data-text="${esc(text)}" aria-label="讀出">${icon('sound')}</button>` : '';
+
+/* ---------- IndexedDB ---------- */
 const PhotoDB = {
   _db: null,
   open() {
@@ -208,23 +195,18 @@ const PhotoDB = {
       tx.onerror = () => rej(tx.error);
     });
   },
-  put(id, blob) { return this.run('readwrite', s => s.put(blob, id)); },
+  put(id, v) { return this.run('readwrite', s => s.put(v, id)); },
   get(id) { return this.run('readonly', s => s.get(id)); },
   del(id) { return this.run('readwrite', s => s.delete(id)); },
-  keys() { return this.run('readonly', s => s.getAllKeys()); },
 };
-const photoURLs = new Map();
-
-async function hydratePhotos(root = document) {
-  for (const img of root.querySelectorAll('img[data-photo]')) {
-    const id = img.dataset.photo;
-    if (!photoURLs.has(id)) {
-      const blob = await PhotoDB.get(id).catch(() => null);
-      if (!blob) { img.alt = '搵唔到'; continue; }
-      photoURLs.set(id, URL.createObjectURL(blob));
-    }
-    img.src = photoURLs.get(id);
-  }
+const blobURLs = new Map();
+async function blobURL(key) {
+  if (blobURLs.has(key)) return blobURLs.get(key);
+  const b = await PhotoDB.get(key).catch(() => null);
+  if (!b) return null;
+  const u = URL.createObjectURL(b);
+  blobURLs.set(key, u);
+  return u;
 }
 
 function resizeImage(file, max = 2000) {
@@ -245,122 +227,128 @@ function resizeImage(file, max = 2000) {
   });
 }
 
-/* ---------- 地點封面相（Wikipedia），第一次上網時下載，之後離線可用 ---------- */
-const coverURLs = new Map();
-const coverPending = new Map();
+/* ---------- 預先揀好嘅地點相（Wikimedia Commons）：下載一次，之後離線可睇 ---------- */
+const CAPI = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|mime&iiurlwidth=1000';
+const hasPicConf = it => !!(it.pics?.length || it.picCat || it.picQuery);
+const picConfKey = it => 'piclist:' + JSON.stringify([it.pics || [], it.picCat || '', it.picQuery || '']);
 
-async function fetchWikiImage(wiki) {
-  const i = wiki.indexOf(':');
-  const lang = wiki.slice(0, i), title = wiki.slice(i + 1);
-  const api = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=thumbnail&pithumbsize=1000&redirects=1&titles=${enc(title)}`;
-  const j = await (await fetch(api)).json();
-  const page = Object.values(j.query?.pages || {})[0];
-  const src = page?.thumbnail?.source;
-  if (!src) return null;
-  const r = await fetch(src);
-  return r.ok ? r.blob() : null;
+async function capi(params) {
+  const j = await (await fetch(CAPI + params)).json();
+  return Object.values(j.query?.pages || {});
+}
+async function resolvePics(it) {
+  const out = [], seen = new Set();
+  const push = p => {
+    const ii = p.imageinfo?.[0];
+    if (!ii?.thumburl || !/jpe?g|png|webp/i.test(ii.mime || '') || seen.has(p.title)) return;
+    seen.add(p.title);
+    out.push({ title: p.title, thumb: ii.thumburl });
+  };
+  const norm = s => s.replace(/_/g, ' ').toLowerCase();
+  if (it.pics?.length) {
+    const pages = await capi('&titles=' + enc(it.pics.join('|'))).catch(() => []);
+    it.pics.forEach(t => { const p = pages.find(x => norm(x.title) === norm(t)); if (p) push(p); });
+  }
+  if (out.length < 3 && it.picCat) (await capi(`&generator=categorymembers&gcmtitle=${enc(it.picCat)}&gcmtype=file&gcmlimit=12`).catch(() => [])).forEach(push);
+  if (out.length < 3 && it.picQuery) (await capi(`&generator=search&gsrnamespace=6&gsrlimit=8&gsrsearch=${enc('filetype:bitmap ' + it.picQuery)}`).catch(() => []))
+    .sort((a, b) => (a.index || 0) - (b.index || 0)).forEach(push);
+  return out.slice(0, 3);
 }
 
-function getCover(wiki) {
-  if (coverURLs.has(wiki)) return Promise.resolve(coverURLs.get(wiki));
-  if (coverPending.has(wiki)) return coverPending.get(wiki);
+const picPending = new Map();
+/** 返回 [{key, title}]；離線又未下載過就返回 null */
+function getItemPics(it) {
+  if (!hasPicConf(it)) return Promise.resolve([]);
+  const ck = picConfKey(it);
+  if (picPending.has(ck)) return picPending.get(ck);
   const p = (async () => {
-    const key = 'cover:' + wiki;
-    let blob = await PhotoDB.get(key).catch(() => null);
-    if (!blob && navigator.onLine) {
-      blob = await fetchWikiImage(wiki).catch(() => null);
-      if (blob) await PhotoDB.put(key, blob).catch(() => {});
-      else { coverURLs.set(wiki, null); return null; } // 試過網絡都冇
+    let titles = await PhotoDB.get(ck).catch(() => null);
+    if (!titles && navigator.onLine) {
+      const found = await resolvePics(it).catch(() => []);
+      titles = [];
+      for (const r of found) {
+        const key = 'pic:' + r.title;
+        try {
+          if (!(await PhotoDB.get(key))) {
+            const res = await fetch(r.thumb);
+            if (!res.ok) continue;
+            await PhotoDB.put(key, await res.blob());
+          }
+          titles.push(r.title);
+        } catch { /* skip this one */ }
+      }
+      if (titles.length) await PhotoDB.put(ck, titles).catch(() => {});
     }
-    if (!blob) return null; // 離線又未下載：下次再試
-    const url = URL.createObjectURL(blob);
-    coverURLs.set(wiki, url);
-    return url;
-  })().finally(() => coverPending.delete(wiki));
-  coverPending.set(wiki, p);
+    return titles ? titles.map(t => ({ key: 'pic:' + t, title: t })) : null;
+  })().finally(() => picPending.delete(ck));
+  picPending.set(ck, p);
   return p;
 }
 
-function hydrateCovers(root = document) {
-  root.querySelectorAll('[data-cover]').forEach(async el => {
-    const url = await getCover(el.dataset.cover);
-    if (url) { el.style.backgroundImage = `url("${url}")`; el.classList.add('loaded'); }
-    else el.classList.add('nocover');
-  });
+async function hydratePics(root = document) {
+  for (const box of root.querySelectorAll('.pics[data-item]')) {
+    const it = findItem(box.dataset.item)?.item;
+    if (!it) continue;
+    const list = await getItemPics(it);
+    if (!box.isConnected) continue;
+    box.querySelectorAll('.pic.skeleton').forEach(s => s.remove());
+    if (list?.length) {
+      const html = (await Promise.all(list.map(async (p, i) => {
+        const u = await blobURL(p.key);
+        return u ? `<button type="button" class="pic" data-act="view-pics" data-id="${it.id}" data-i="${i}"><img src="${u}" alt=""></button>` : '';
+      }))).join('');
+      box.insertAdjacentHTML('afterbegin', html);
+    }
+    for (const img of box.querySelectorAll('img[data-photo]')) {
+      const u = await blobURL(img.dataset.photo);
+      if (u) img.src = u;
+    }
+  }
 }
 
-function allItems() { return [...trip.days.flatMap(d => d.items), ...trip.ideas]; }
-const allWikis = () => [...new Set(allItems().map(i => i.wiki).filter(Boolean))];
-
-async function prefetchCovers(force = false) {
+async function prefetchAll() {
   if (!navigator.onLine) return;
-  const wikis = allWikis();
+  const items = allItems().filter(hasPicConf);
   let done = 0;
-  for (const w of wikis) {
-    if (force) { coverURLs.delete(w); await PhotoDB.del('cover:' + w).catch(() => {}); }
-    await getCover(w);
+  for (const it of items) {
+    await getItemPics(it);
     done++;
-    const el = $('#coverStatus');
-    if (el) el.textContent = `離線相片：${done}／${wikis.length}`;
+    const el = $('#picStatus');
+    if (el) el.textContent = `下載緊地點相片：${done}／${items.length}`;
   }
-  updateCoverStatus();
+  updatePicStatus();
 }
-async function updateCoverStatus() {
-  const el = $('#coverStatus');
+async function updatePicStatus() {
+  const el = $('#picStatus');
   if (!el) return;
-  const keys = new Set(await PhotoDB.keys().catch(() => []));
-  const wikis = allWikis();
-  const have = wikis.filter(w => keys.has('cover:' + w)).length;
-  el.textContent = `離線地點相：已下載 ${have}／${wikis.length}`;
-}
-
-/* ---------- Wikimedia Commons 搵相（頭 3 張） ---------- */
-async function commonsSearch(q, n = 3) {
-  const api = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${enc('filetype:bitmap ' + q)}&gsrnamespace=6&gsrlimit=${n}&prop=imageinfo&iiprop=url&iiurlwidth=1000`;
-  const j = await (await fetch(api)).json();
-  return Object.values(j.query?.pages || {})
-    .sort((a, b) => (a.index || 0) - (b.index || 0))
-    .map(p => ({ title: p.title.replace(/^File:/, ''), thumb: p.imageinfo?.[0]?.thumburl, full: p.imageinfo?.[0]?.url, page: p.imageinfo?.[0]?.descriptionurl }))
-    .filter(x => x.thumb);
-}
-
-function imageQueries(it, country) {
-  const qs = [];
-  if (it.type === 'flight') {
-    if (it.to) qs.push(`${it.to} terminal`);
-    if (it.from) qs.push(`${it.from} terminal`);
-  } else if (TRANSPORT.has(it.type)) {
-    for (const s of [it.from, it.to]) if (s) qs.push(country === 'JP' ? `${short(s)} 構内図` : `${short(s)} station`);
-    for (const s of [it.from, it.to]) if (s) qs.push(short(s));
-  }
-  qs.push(it.titleJa || it.place || it.title);
-  return [...new Set(qs.filter(Boolean))].slice(0, 4);
+  const items = allItems().filter(hasPicConf);
+  let have = 0;
+  for (const it of items) if (await PhotoDB.get(picConfKey(it)).catch(() => null)) have++;
+  el.textContent = have === items.length
+    ? `✓ 所有地點相片已經存喺手機（${have} 項）`
+    : `地點相片：已下載 ${have}／${items.length} 項（要上網先下載到）`;
 }
 
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
-const ui = { tab: 'plan', open: new Set(), collapsed: new Set(), img: {} };
+const ui = { tab: 'plan', day: null };
 const undoStack = [];
 
 function freshSeed() { return JSON.parse(JSON.stringify(SEED)); }
-function load() {
-  try { const s = localStorage.getItem(STORE_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+function load() { try { const s = localStorage.getItem(STORE_KEY); return s ? JSON.parse(s) : null; } catch { return null; } }
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(trip)); } catch { toast('⚠️ 儲存唔到'); } }
+const allItems = () => trip.days.flatMap(d => d.items);
+function findItem(id) {
+  for (const day of trip.days) {
+    const i = day.items.findIndex(x => x.id === id);
+    if (i >= 0) return { list: day.items, index: i, item: day.items[i], day };
+  }
+  return null;
 }
-function save() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(trip)); } catch { toast('⚠️ 儲存唔到——手機空間可能唔夠'); }
-}
-function normalize() {
-  trip.days = trip.days || [];
-  trip.ideas = trip.ideas || [];
-  trip.days.forEach(d => { d.items = d.items || []; });
-  trip.days.sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
-}
-/** 所有改動都經呢度，咁先可以「還原」 */
 function commit(fn, msg) {
   undoStack.push(JSON.stringify(trip));
-  if (undoStack.length > 60) undoStack.shift();
+  if (undoStack.length > 40) undoStack.shift();
   fn();
-  normalize();
   save();
   render();
   if (msg) toast(msg, true);
@@ -372,441 +360,269 @@ function undo() {
   render();
   toast('已還原');
 }
-
-function findItem(id) {
-  for (const day of trip.days) {
-    const i = day.items.findIndex(x => x.id === id);
-    if (i >= 0) return { list: day.items, index: i, item: day.items[i], day };
-  }
-  const i = trip.ideas.findIndex(x => x.id === id);
-  if (i >= 0) return { list: trip.ideas, index: i, item: trip.ideas[i], day: null };
-  return null;
-}
-const findDay = id => trip.days.find(d => d.id === id);
-
-/* ---------- 時間槽邏輯 ---------- */
-/** 上／下移：兩項交換位置，同時交換時段。每項保留自己嘅時長，中間嘅空檔不變。 */
-function swapSlots(list, i, j) {
-  if (i < 0 || j >= list.length) return;
-  const a = list[i], b = list[j];
-  if (isHM(a.time) && isHM(b.time)) {
-    const S = toMin(a.time);
-    const dA = durOf(a) ?? 0, dB = durOf(b) ?? 0;
-    const aEnd = toMin(a.time) + dA;
-    const gap = Math.max(0, toMin(b.time) - aEnd);
-    const hadEndA = isHM(a.end), hadEndB = isHM(b.end);
-    b.time = fromMin(S);
-    if (hadEndB) b.end = fromMin(S + dB);
-    a.time = fromMin(S + dB + gap);
-    if (hadEndA) a.end = fromMin(S + dB + gap + dA);
-  }
-  list[i] = b;
-  list[j] = a;
-}
-/** 由 index 開始，將之後所有未完成嘅項目推後／提早 mins 分鐘 */
 function shiftFrom(list, index, mins) {
   list.slice(index).forEach(it => {
     if (it.status === 'done' || !isHM(it.time)) return;
     const d = durOf(it);
-    it.time = fromMin(clampMin(toMin(it.time) + mins));
+    it.time = fromMin(Math.max(0, Math.min(1439, toMin(it.time) + mins)));
     if (d != null) it.end = fromMin(toMin(it.time) + d);
   });
 }
+const hotelItem = () => allItems().find(i => i.type === 'hotel' && i.address);
 
 /* ---------- rendering ---------- */
 function render() {
-  normalize();
-  $('#tripName').textContent = trip.name || '我的旅程';
   document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.id === ui.tab));
   const view = $('#view');
-  const stripLeft = $('.strip')?.scrollLeft || 0;
-  view.innerHTML = ({ plan: renderPlan, bookings: renderBookings, ideas: renderIdeas, info: renderInfo }[ui.tab])();
-  const strip = $('.strip');
-  if (strip) strip.scrollLeft = stripLeft;
-  if (ui.activeDay) $(`.strip-day[data-id="${ui.activeDay}"]`)?.classList.add('is-active');
-  hydratePhotos(view);
-  hydrateCovers(view);
-  if (ui.tab === 'info') { showStorageInfo(); updateCoverStatus(); }
+  view.innerHTML = ({ plan: renderPlan, bookings: renderBookings, phrases: renderPhrases, info: renderInfo }[ui.tab])();
+  hydratePics(view);
+  if (ui.tab === 'info') updatePicStatus();
 }
 
-function renderHero() {
-  const first = trip.days[0]?.date, last = trip.days[trip.days.length - 1]?.date;
-  const today = todayStr();
-  let countdown = '', cdLabel = '';
-  if (first) {
-    const n = daysBetween(today, first);
-    if (n > 0) { countdown = n; cdLabel = '日後出發'; }
-    else if (last && daysBetween(today, last) >= 0) { countdown = `D${daysBetween(first, today) + 1}`; cdLabel = '旅程進行中'; }
-    else { countdown = '✓'; cdLabel = '旅程完滿結束'; }
-  }
-  const jpDays = trip.days.filter(d => d.country === 'JP').length;
-  const hkDays = trip.days.filter(d => d.country === 'HK').length;
-  const seedNote = SEED.seedVersion > (trip.seedVersion || 0)
-    ? `<div class="notice">${icon('info')}<div class="grow"><b>有新版行程資料</b><br><span class="muted">載入會取代你喺手機改過嘅內容（之後仍可還原）。</span></div><button class="btn dark sm" data-act="load-seed">載入</button></div>` : '';
-  return `${seedNote}
-  <section class="hero">
-    <div class="hero-text">
-      <p class="eyebrow">${first ? `${fmtDate(first)} – ${fmtDate(last)} · ${trip.days.length} 日` : '未有日子'}</p>
-      <h1 class="display">${esc(trip.name || '我的旅程')}</h1>
-    </div>
-    <div class="stats">
-      <div class="stat accent"><b>${countdown}</b><span>${cdLabel}</span></div>
-      <div class="stat"><b>${jpDays}</b><span>日本日數</span></div>
-      <div class="stat"><b>${hkDays}</b><span>香港日數</span></div>
-    </div>
-  </section>`;
-}
-
-function renderStrip() {
-  const today = todayStr();
-  return `<nav class="strip" aria-label="日子">${trip.days.map(d => {
-    const p = dateParts(d.date);
-    return `<button class="strip-day c-${d.country || 'x'} ${d.group ? 'g-tour' : ''} ${d.date === today ? 'is-today' : ''} ${d.items.length ? '' : 'is-empty'}" data-act="goto-day" data-id="${d.id}">
-      <span class="w">${p.w}</span><b>${p.d}</b><span class="c">${esc(short(d.city || '') || '—')}</span></button>`;
-  }).join('')}</nav>`;
+function currentDay() {
+  if (!ui.day) ui.day = (trip.days.find(d => d.date === todayStr()) || trip.days[0] || {}).id;
+  return trip.days.find(d => d.id === ui.day) || trip.days[0];
 }
 
 function renderPlan() {
+  const day = currentDay();
+  if (!day) return `<div class="card">未有行程。</div>`;
   const today = todayStr();
-  let html = renderHero() + renderStrip();
-  if (!trip.days.length) html += `<div class="card empty">未有日子。喺下面加第一日，或者去「資訊」匯入備份。</div>`;
-  let prevLoc = '';
-  let lastMonth = '';
-  trip.days.forEach((day, di) => {
-    const p = day.date ? dateParts(day.date) : null;
-    const month = p ? `${p.y}年${p.m}月` : '';
-    if (month && month !== lastMonth) { html += `<h2 class="month">${month}</h2>`; lastMonth = month; }
-    html += renderDay(day, di, today, prevLoc);
-    const locs = day.items.filter(i => i.status !== 'skipped').map(locOf).filter(Boolean);
-    if (locs.length) prevLoc = locs[locs.length - 1];
-  });
-  html += `<button class="btn ghost wide" data-act="add-day">${icon('plus')} 加一日</button>`;
-  return html;
-}
+  const tabs = trip.days.map((d, i) => {
+    const p = dateParts(d.date);
+    return `<button class="daytab ${d.id === day.id ? 'on' : ''} ${d.date === today ? 'today' : ''}" data-act="day" data-id="${d.id}">
+      <span>Day ${i + 1}</span><b>${p.m}/${p.d}</b><span>星期${p.w}</span></button>`;
+  }).join('');
 
-function renderDay(day, di, today, prevLoc) {
   const isToday = day.date === today;
-  const empty = !day.items.length;
-  const collapsed = ui.collapsed.has(day.id);
-  const p = day.date ? dateParts(day.date) : { d: '?', m: '', w: '' };
-  const active = day.items.filter(i => i.status !== 'skipped');
-  const locs = active.map(locOf).filter(Boolean).filter((v, i, a) => v !== a[i - 1]).slice(0, 10);
+  const locs = day.items.map(locOf).filter(Boolean).filter((v, i, a) => v !== a[i - 1]).slice(0, 10);
   const routeUrl = locs.length >= 2 ? 'https://www.google.com/maps/dir/' + locs.map(enc).join('/') : '';
-  const cover = day.items.find(i => i.wiki && i.type !== 'hotel')?.wiki || day.items.find(i => i.wiki)?.wiki;
-
-  let nextId = null;
-  if (isToday) {
-    const now = nowHM();
-    const pending = day.items.filter(i => !i.status || i.status === 'planned');
-    nextId = (pending.find(i => !isHM(i.time) || (i.end || i.time) >= now) || {}).id;
-  }
-
-  if (empty) {
-    return `<section class="day day-empty c-${day.country || 'x'} ${isToday ? 'today' : ''}" id="day-${day.id}">
-      <div class="dnum"><b>${p.d}</b><span>${p.m}月 · ${p.w}</span></div>
-      <div class="grow"><h3>${esc(day.title || '未有安排')}</h3><p class="muted">${esc(day.city || '')}</p></div>
-      <button class="icon-btn" data-act="insert" data-day="${day.id}" data-index="0" aria-label="加項目">${icon('plus')}</button>
-      <button class="icon-btn" data-act="edit-day" data-id="${day.id}" aria-label="改日子">${icon('edit')}</button>
-    </section>`;
-  }
+  const p = dateParts(day.date);
 
   let items = '';
-  day.items.forEach((it, idx) => {
-    items += renderInsert(day.id, idx);
-    items += renderItem(it, { prevLoc, country: countryOf(it, day), isNext: it.id === nextId, isToday, dayId: day.id });
-    if (it.status !== 'skipped' && locOf(it)) prevLoc = locOf(it);
+  let prevLoc = '';
+  const now = nowHM();
+  const nextId = isToday ? (day.items.find(i => i.status !== 'done' && (!isHM(i.end) || i.end > now)) || {}).id : null;
+  day.items.forEach(it => {
+    items += it.type === 'walk' ? renderWalk(it, prevLoc) : renderItem(it, prevLoc, it.id === nextId);
+    if (locOf(it)) prevLoc = locOf(it);
   });
-  items += renderInsert(day.id, day.items.length);
 
-  return `<section class="day c-${day.country || 'x'} ${isToday ? 'today' : ''} ${collapsed ? 'collapsed' : ''} ${day.group ? 'g-tour' : ''}" id="day-${day.id}">
-    <header class="day-head ${cover ? 'has-cover' : ''}">
-      ${cover ? `<div class="day-cover" data-cover="${esc(cover)}"></div>` : ''}
-      <div class="day-head-inner" data-act="toggle-day" data-id="${day.id}">
-        <div class="dnum"><b>${p.d}</b><span>${p.m}月 · 星期${p.w}</span></div>
-        <div class="grow">
-          <div class="day-tags">
-            <span class="tag">第${di + 1}日</span>
-            ${day.country ? `<span class="tag country">${COUNTRIES[day.country] || day.country}</span>` : ''}
-            ${day.group ? `<span class="tag tour">跟團</span>` : ''}
-            ${isToday ? `<span class="tag now">今日</span>` : ''}
-          </div>
-          <h3>${esc(day.title || day.city || '')}</h3>
-          <p class="muted">${esc(day.city || '')}${day.cityJa && day.cityJa !== day.city ? ` · ${esc(day.cityJa)}` : ''} · ${day.items.length} 項</p>
-        </div>
-        <span class="chev">${icon('chevron')}</span>
+  return `<nav class="daytabs">${tabs}</nav>
+    ${renderCountdown(day)}
+    <section class="dayhead">
+      <p class="eyebrow">${p.m}月${p.d}日 星期${p.w} · ${esc(day.city || '')}</p>
+      <h1>${esc(day.title || '')}</h1>
+      ${day.notes ? `<p class="muted">${esc(day.notes)}</p>` : ''}
+      <div class="row">
+        ${routeUrl ? `<a class="chip dark" href="${routeUrl}" target="_blank" rel="noopener">${icon('route')}全日路線</a>` : ''}
+        <a class="chip" href="${gsearch(`東京 天気 ${p.m}月${p.d}日`)}" target="_blank" rel="noopener">${icon('cloud')}天氣</a>
+        <button class="chip" data-act="hotel">${icon('hotel')}返酒店</button>
       </div>
-    </header>
-    <div class="day-tools">
-      ${routeUrl ? `<a class="chip dark" href="${routeUrl}" target="_blank" rel="noopener">${icon('route')}全日路線</a>` : ''}
-      ${day.city ? `<a class="chip" href="${gsearch(`${short(day.cityJa || day.city)} 天氣 ${fmtDate(day.date)}`)}" target="_blank" rel="noopener">${icon('cloud')}天氣</a>` : ''}
-      <button class="chip" data-act="sort-day" data-id="${day.id}">${icon('sort')}按時間排</button>
-      <button class="chip" data-act="edit-day" data-id="${day.id}">${icon('edit')}改日子</button>
-    </div>
-    ${day.notes ? `<div class="day-notes">${esc(day.notes)}</div>` : ''}
-    <div class="timeline">${items}</div>
-  </section>`;
+    </section>
+    <div class="list">${items}</div>`;
 }
 
-function renderInsert(dayId, index) {
-  return `<div class="insert"><button data-act="insert" data-day="${dayId}" data-index="${index}" aria-label="喺呢度加項目">${icon('plus')}</button></div>`;
+function renderCountdown(day) {
+  const first = trip.days[0]?.date;
+  if (!first || day.id !== trip.days[0].id) return '';
+  const n = daysBetween(todayStr(), first);
+  return n > 0 ? `<div class="count"><b>${n}</b><span>日後出發</span></div>` : '';
 }
 
-function renderItem(it, { prevLoc = '', country = '', isNext = false, isToday = false, idea = false } = {}) {
-  const T = TYPES[it.type] || TYPES.other;
-  const open = ui.open.has(it.id);
-  const status = it.status || 'planned';
+function renderWalk(it, prevLoc) {
+  const d = durOf(it);
+  return `<div class="walk ${it.status === 'done' ? 'done' : ''}" id="item-${it.id}">
+    <span class="t">${esc(it.time || '')}</span>
+    ${icon('walk')}
+    <span class="grow">步行${d ? ` ${durStr(d)}` : ''} · ${esc(it.title)}</span>
+    <a class="mini" href="${gmapDir(it.from || prevLoc, it.to, 'walking')}" target="_blank" rel="noopener">路線</a>
+  </div>`;
+}
+
+function picsRow(it, big = false) {
+  const user = (it.photos || []).map(p => `<button type="button" class="pic" data-act="view-photo" data-id="${it.id}" data-photo="${p}"><img data-photo="${p}" alt=""></button>`).join('');
+  const sk = hasPicConf(it) ? '<span class="pic skeleton"></span>'.repeat(big ? 3 : 2) : '';
+  return `<div class="pics ${big ? 'big' : ''}" data-item="${it.id}">${sk}${user}
+    <button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button></div>`;
+}
+
+function titleHtml(it) {
+  // 電車項目嘅日文站名已經喺路線行顯示，唔使重複
+  const dupRoute = TRANSPORT.has(it.type) && it.type !== 'flight' && (it.from || it.to);
+  const ja = it.titleJa && it.titleJa !== it.title && !dupRoute ? it.titleJa : '';
+  return `<h3 class="title">${esc(it.title)}${ja ? ` <span class="ja" lang="ja">${esc(ja)}</span>` : ''}</h3>`;
+}
+function routeHtml(it, big = false) {
+  if (!TRANSPORT.has(it.type) || !(it.from || it.to)) return '';
+  const side = (raw, zh) => `<b>${esc(nameOf(raw, zh))}</b>${raw && zh && raw !== zh ? ` <span lang="ja">${esc(raw)}</span>` : ''}`;
+  return `<p class="route ${big ? 'big' : ''}">${side(it.from, it.fromZh)} → ${side(it.to, it.toZh)}</p>`;
+}
+
+function renderItem(it, prevLoc, isNext) {
   const d = durOf(it);
   const isT = TRANSPORT.has(it.type);
-
-  const sub = [];
-  if (isT) {
-    if (it.from || it.to) sub.push(`${nameOf(it.from, it.fromZh) || '?'} → ${nameOf(it.to, it.toZh) || '?'}`);
-    if (it.number) sub.push(it.number);
-  } else if (it.address) sub.push(it.address);
-  if (it.ref) sub.push(`訂位 ${it.ref}`);
-
-  const tags = [
-    isNext ? `<span class="tag now">下一項</span>` : '',
-    status === 'done' ? `<span class="tag ok">${icon('check')}完成</span>` : '',
-    status === 'skipped' ? `<span class="tag">已跳過</span>` : '',
-    it.planB ? `<span class="tag warn">有後備</span>` : '',
-    it.menu ? `<span class="tag">菜單</span>` : '',
-    it.timetable?.length ? `<span class="tag">時刻表</span>` : '',
-    it.photos?.length ? `<span class="tag">${icon('image')}${it.photos.length}</span>` : '',
-  ].join('');
-
-  const links = linksFor(it, prevLoc, country);
-  const shown = open ? links : links.slice(0, 3);
-  const linkHtml = shown.map(l => `<a class="chip ${l.kind}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.ic ? icon(l.ic) : ''}${esc(l.label)}</a>`).join('')
-    + (!open && links.length > 3 ? `<button class="chip more" data-act="toggle-item" data-id="${it.id}">+${links.length - 3}</button>` : '');
-
-  const time = isHM(it.time)
-    ? `<b>${esc(it.time)}</b>${isHM(it.end) ? `<span>${esc(it.end)}</span>` : ''}${d ? `<em>${durStr(d)}</em>` : ''}`
-    : `<b class="muted">—</b>`;
-
-  return `<article class="item t-${it.type} status-${status} ${isNext ? 'next' : ''} ${open ? 'open' : ''}" id="item-${it.id}">
-    <div class="item-time">${time}</div>
-    <div class="item-rail"><span class="dot">${icon(it.type)}</span></div>
-    <div class="item-card">
-      <div class="item-head" data-act="toggle-item" data-id="${it.id}">
+  const badges = [it.menu ? '菜單' : '', it.timetable?.length ? '時刻表' : '', it.planB ? '後備方案' : '']
+    .filter(Boolean).map(b => `<span class="badge">${b}</span>`).join('');
+  const links = linksFor(it, prevLoc).slice(0, 3)
+    .map(l => `<a class="chip ${l.kind}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.ic ? icon(l.ic) : ''}${esc(l.label)}</a>`).join('');
+  return `<article class="item t-${it.type} ${it.status === 'done' ? 'done' : ''} ${isNext ? 'next' : ''}" id="item-${it.id}">
+    <div class="when"><b>${esc(it.time || '')}</b>${isHM(it.end) ? `<span>${esc(it.end)}</span>` : ''}${d ? `<em>${durStr(d)}</em>` : ''}</div>
+    <div class="card">
+      <div class="head" data-act="open" data-id="${it.id}">
+        <span class="dot">${icon(it.type)}</span>
         <div class="grow">
-          <div class="item-kicker">${T.label}${tags}</div>
-          <h4 class="item-title">${esc(it.title || '（未命名）')}</h4>
-          ${it.titleJa && it.titleJa !== it.title ? `<p class="item-ja" lang="ja">${esc(it.titleJa)}</p>` : ''}
-          ${sub.length ? `<p class="item-sub">${esc(sub.join(' · '))}</p>` : ''}
+          <p class="kind">${TYPES[it.type] || ''}${it.number ? ` · ${esc(it.number)}` : ''}${isNext ? ' <b class="nowtag">下一項</b>' : ''}${it.status === 'done' ? ' · ✓ 完成' : ''}</p>
+          ${titleHtml(it)}
+          ${routeHtml(it)}
         </div>
-        ${it.wiki ? `<div class="thumb" data-cover="${esc(it.wiki)}"></div>` : ''}
+        ${speakBtn(it.titleJa || (isT ? it.to : ''))}
       </div>
-      <div class="links">${linkHtml}</div>
-      ${open ? renderDetails(it, country, isToday, idea) : ''}
+      ${picsRow(it)}
+      ${it.notes ? `<p class="note">${esc(it.notes.split('\n')[0])}</p>` : ''}
+      <div class="row">${links}<button type="button" class="chip more" data-act="open" data-id="${it.id}">${badges || '詳情'}${icon('right')}</button></div>
     </div>
   </article>`;
 }
 
-function renderDetails(it, country, isToday, idea) {
-  const status = it.status || 'planned';
-  const kv = [
-    ['地址', it.address], ['營業時間', it.hours], ['訂位號碼', it.ref], ['費用', it.cost], ['備註', it.notes],
-  ].filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
-  const photos = (it.photos || []).map(p => `<img data-photo="${p}" data-act="view-photo" data-id="${it.id}" alt="附件">`).join('');
+/* ---------- 詳情（彈出） ---------- */
+function openItem(id) {
+  const f = findItem(id);
+  if (!f) return;
+  const it = f.item;
   const isT = TRANSPORT.has(it.type);
-  const btn = (act, ic, label, extra = '') => `<button class="btn sm ${extra}" data-act="${act}" data-id="${it.id}">${icon(ic)}${label}</button>`;
-  return `<div class="details">
-    ${it.wiki ? `<div class="hero-photo" data-cover="${esc(it.wiki)}"><span>相片：Wikipedia</span></div>` : ''}
-    ${kv ? `<dl class="kv">${kv}</dl>` : ''}
-    ${it.planB ? `<div class="planb"><b>後備方案</b><p>${esc(it.planB)}</p></div>` : ''}
-    ${it.menu ? renderMenu(it.menu) : ''}
-    ${it.timetable?.length || it.timetableNote ? renderTimetable(it, isToday) : ''}
-    ${renderImagePanel(it, country)}
-    ${photos ? `<div class="sec"><h5>${icon('image')}附件（離線可睇）</h5><div class="photos">${photos}</div></div>` : ''}
-    <div class="actions">
-      ${status !== 'done' ? btn('status-done', 'check', '完成') : ''}
-      ${status !== 'skipped' ? btn('status-skip', 'skip', '跳過') : ''}
-      ${status !== 'planned' ? btn('status-reset', 'reset', '重設') : ''}
-      ${btn('edit-item', 'edit', '修改')}
-      ${idea ? '' : btn('move-up', 'up', '上移') + btn('move-down', 'down', '下移')}
-      ${btn('move-item', 'move', idea ? '排入日子' : '搬去第日')}
-      ${!idea && isHM(it.time) ? btn('shift', 'clock', '延遲') : ''}
-      ${it.planB ? btn('swap-planb', 'swap', '用後備方案') : ''}
-      ${it.titleJa || it.address || (isT && it.to) ? btn('taxi', 'car', '俾司機睇') : ''}
-      ${btn('add-photo', 'camera', '加相')}
-      ${btn('dup-item', 'copy', '複製')}
-      ${btn('del-item', 'trash', '刪除', 'danger')}
-    </div>
-  </div>`;
+  const prevLoc = (() => { for (let i = f.index - 1; i >= 0; i--) if (locOf(f.list[i])) return locOf(f.list[i]); return ''; })();
+  const kv = [['時間', [it.time, it.end].filter(Boolean).join(' – ')], ['地址', it.address], ['營業時間', it.hours], ['訂位號碼', it.ref], ['備註', it.notes]]
+    .filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  const links = linksFor(it, prevLoc).map(l => `<a class="chip ${l.kind}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.ic ? icon(l.ic) : ''}${esc(l.label)}</a>`).join('');
+  const menu = it.menu ? `<section class="sec"><h4>${icon('food')}菜單及推介${it.menu.url ? ` <a href="${esc(normUrl(it.menu.url))}" target="_blank" rel="noopener">完整菜單</a>` : ''}</h4>
+    <ul class="menu">${it.menu.items.map(m => `<li><div class="grow"><b>${m.star ? '⭐ ' : ''}${esc(m.name)}</b>${m.ja ? `<span class="mja" lang="ja">${esc(m.ja)}${speakBtn(m.ja, 'sm')}</span>` : ''}${m.desc ? `<small>${esc(m.desc)}</small>` : ''}</div>${m.price ? `<span class="price">${esc(m.price)}</span>` : ''}</li>`).join('')}</ul>
+    ${it.menu.tips ? `<p class="hint">${esc(it.menu.tips)}</p>` : ''}</section>` : '';
+  const nextIdx = f.day.date === todayStr() && it.timetable ? it.timetable.findIndex(r => r.dep >= nowHM()) : -1;
+  const tt = it.timetable?.length ? `<section class="sec"><h4>${icon('clock')}時刻表${it.timetableUrl ? ` <a href="${esc(normUrl(it.timetableUrl))}" target="_blank" rel="noopener">官方全日</a>` : ''}</h4>
+    <table class="tt"><tr><th>開出</th><th>到達</th><th>班次</th><th></th></tr>${it.timetable.map((r, i) => `<tr class="${r.note ? 'pick' : ''} ${i === nextIdx ? 'nextrow' : ''}"><td><b>${esc(r.dep)}</b></td><td>${esc(r.arr || '')}</td><td>${esc(r.name || '')}</td><td>${esc(r.note || '')}${i === nextIdx ? ' 下一班' : ''}</td></tr>`).join('')}</table>
+    ${it.timetableNote ? `<p class="hint">${esc(it.timetableNote)}</p>` : ''}</section>` : '';
+  const taxiable = it.titleJa || it.address || (isT && it.to);
+  openModal({
+    title: `${it.time || ''} ${TYPES[it.type] || ''}`,
+    cls: 'sheet',
+    body: `<div class="sheet-title"><div class="grow">${titleHtml(it)}</div>${speakBtn(it.titleJa || (isT ? it.to : ''))}</div>
+      ${routeHtml(it, true)}
+      ${picsRow(it, true)}
+      <div class="row">${links}</div>
+      ${kv ? `<dl class="kv">${kv}</dl>` : ''}
+      ${it.planB ? `<div class="planb"><b>後備方案</b><p>${esc(it.planB)}</p></div>` : ''}
+      ${menu}${tt}
+      <div class="actions">
+        ${it.status === 'done' ? `<button type="button" class="btn" data-act="undone" data-id="${id}">${icon('reset')}未完成</button>` : `<button type="button" class="btn dark" data-act="done" data-id="${id}">${icon('check')}完成</button>`}
+        ${isHM(it.time) ? `<button type="button" class="btn" data-act="shift" data-id="${id}">${icon('clock')}延遲</button>` : ''}
+        ${taxiable ? `<button type="button" class="btn" data-act="taxi" data-id="${id}">${icon('car')}俾司機睇</button>` : ''}
+        <button type="button" class="btn" data-act="edit" data-id="${id}">${icon('edit')}修改</button>
+        <button type="button" class="btn danger" data-act="del" data-id="${id}">${icon('trash')}刪除</button>
+      </div>`,
+    onOpen: form => hydratePics(form),
+  });
 }
 
-function renderMenu(menu) {
-  const rows = (menu.items || []).map(m => `<li class="${m.star ? 'star' : ''}">
-      <div class="grow">
-        <div class="mname">${m.star ? icon('star', 'gold') : ''}${esc(m.name)}</div>
-        ${m.ja ? `<div class="mja" lang="ja">${esc(m.ja)}</div>` : ''}
-        ${m.desc ? `<div class="mdesc">${esc(m.desc)}</div>` : ''}
-      </div>
-      ${m.price ? `<div class="mprice">${esc(m.price)}</div>` : ''}
-    </li>`).join('');
-  return `<div class="sec menu">
-    <h5>${icon('food')}菜單及推介${menu.url ? `<a href="${esc(normUrl(menu.url))}" target="_blank" rel="noopener">完整菜單 ${icon('ext')}</a>` : ''}</h5>
-    <ul>${rows}</ul>
-    ${menu.tips ? `<p class="hint">${esc(menu.tips)}</p>` : ''}
-  </div>`;
-}
-
-function renderTimetable(it, isToday) {
-  const now = nowHM();
-  const rows = it.timetable || [];
-  const nextIdx = isToday ? rows.findIndex(r => r.dep >= now) : -1;
-  const body = rows.map((r, i) => `<tr class="${i === nextIdx ? 'next' : ''} ${r.note ? 'pick' : ''}">
-      <td><b>${esc(r.dep)}</b></td><td>${esc(r.arr || '')}</td><td>${esc(r.name || '')}</td><td>${esc(r.note || '')}${i === nextIdx ? ' <span class="tag now">下一班</span>' : ''}</td>
-    </tr>`).join('');
-  return `<div class="sec timetable">
-    <h5>${icon('clock')}時刻表${it.timetableUrl ? `<a href="${esc(normUrl(it.timetableUrl))}" target="_blank" rel="noopener">全日 ${icon('ext')}</a>` : ''}</h5>
-    ${rows.length ? `<table><thead><tr><th>開出</th><th>到達</th><th>班次</th><th></th></tr></thead><tbody>${body}</tbody></table>` : ''}
-    ${it.timetableNote ? `<p class="hint">${esc(it.timetableNote)}</p>` : ''}
-  </div>`;
-}
-
-function renderImagePanel(it, country) {
-  const qs = imageQueries(it, country);
-  const st = ui.img[it.id];
-  return `<div class="sec imgsearch">
-    <h5>${icon('search')}搵相／站內圖（頭 3 張）</h5>
-    <div class="qchips">${qs.map(q => `<button class="chip ${st?.q === q ? 'dark' : ''}" data-act="img-search" data-id="${it.id}" data-q="${esc(q)}">${esc(q)}</button>`).join('')}
-      <button class="chip" data-act="img-custom" data-id="${it.id}">${icon('edit')}自己打</button></div>
-    <div id="imgres-${it.id}">${renderImgResults(it.id)}</div>
-  </div>`;
-}
-
-function renderImgResults(id) {
-  const st = ui.img[id];
-  if (!st) return `<p class="hint">揀一個關鍵字，會由 Wikimedia Commons 搵頭 3 張相；撳「儲存」就會存落手機，冇網都睇到。</p>`;
-  if (st.loading) return `<p class="hint">搵緊「${esc(st.q)}」…</p>`;
-  const google = `<a class="chip" href="${gimages(st.q)}" target="_blank" rel="noopener">${icon('ext')}喺 Google 圖片睇更多</a>`;
-  if (st.error) return `<p class="hint">搵唔到（${esc(st.error)}）。</p>${google}`;
-  if (!st.items.length) return `<p class="hint">Commons 冇「${esc(st.q)}」嘅相。</p>${google}`;
-  return `<div class="imggrid">${st.items.map((r, i) => `<figure>
-      <img src="${esc(r.thumb)}" alt="${esc(r.title)}" loading="lazy">
-      <figcaption>
-        <button class="btn sm dark" data-act="img-save" data-id="${id}" data-i="${i}">${st.saved?.[i] ? icon('check') + '已儲存' : icon('download') + '儲存'}</button>
-        <a class="btn sm" href="${esc(r.full)}" target="_blank" rel="noopener">${icon('ext')}大圖</a>
-      </figcaption></figure>`).join('')}</div>${google}`;
-}
-
+/* ---------- 訂單 ---------- */
 function renderBookings() {
   const rows = [];
   trip.days.forEach((day, di) => day.items.forEach(it => {
-    if (it.ref || it.type === 'flight' || (it.type === 'hotel' && it.url) || (it.type === 'food' && it.url) || it.photos?.length) rows.push({ it, day, di });
+    if (it.type === 'flight' || 'ref' in it || it.photos?.length || (it.type === 'hotel' && /check-in/i.test(it.title))) rows.push({ it, day, di });
   }));
-  trip.ideas.forEach(it => { if (it.ref) rows.push({ it, day: null }); });
-  let html = `<section class="page-head"><p class="eyebrow">訂單及票據</p><h1 class="display sm">訂單</h1>
-    <p class="muted">所有航班、住宿、餐廳訂位同有訂位號碼嘅項目。冇網都睇到——記得將電子機票、QR code 截圖「加相」。</p></section>`;
-  if (!rows.length) html += `<div class="card empty">未有訂單。喺任何項目加「訂位號碼」就會喺度出現。</div>`;
+  let html = `<section class="pagehead"><h1>訂單</h1><p class="muted">機票、酒店、餐廳訂位。電子機票、QR code 截圖用「加相」存喺度，冇網都睇到。</p></section>`;
   for (const { it, day, di } of rows) {
-    const T = TYPES[it.type] || TYPES.other;
-    const when = day ? `第${di + 1}日 · ${fmtDate(day.date, true)}${isHM(it.time) ? ' · ' + it.time : ''}` : '未排日子';
-    const photos = (it.photos || []).map(p => `<img data-photo="${p}" data-act="view-photo" data-id="${it.id}" alt="附件">`).join('');
-    const extra = TRANSPORT.has(it.type) ? [it.number, it.from || it.to ? `${nameOf(it.from, it.fromZh)} → ${nameOf(it.to, it.toZh)}` : ''].filter(Boolean).join(' · ') : (it.address || '');
+    const p = dateParts(day.date);
     const missing = it.type === 'flight' && (!it.number || it.number.includes('待填'));
     html += `<div class="card booking t-${it.type}">
-      <div class="booking-row">
+      <div class="head" data-act="open" data-id="${it.id}">
         <span class="dot">${icon(it.type)}</span>
         <div class="grow">
-          <p class="eyebrow">${esc(when)} · ${T.label}</p>
-          <h4 class="item-title">${esc(it.title)}</h4>
-          ${it.titleJa && it.titleJa !== it.title ? `<p class="item-ja" lang="ja">${esc(it.titleJa)}</p>` : ''}
-          ${extra ? `<p class="item-sub">${esc(extra)}</p>` : ''}
-          ${it.ref ? `<div class="ref">${esc(it.ref)}</div>` : `<p class="hint ${missing ? 'warn' : ''}">${missing ? '⚠️ 航班資料未填' : '未有訂位號碼'}</p>`}
+          <p class="kind">Day ${di + 1} · ${p.m}/${p.d}（${p.w}）${it.time ? ' · ' + esc(it.time) : ''}</p>
+          ${titleHtml(it)}
+          ${it.ref ? `<p class="ref">${esc(it.ref)}</p>` : `<p class="hint ${missing ? 'warn' : ''}">${missing ? '⚠️ 航班號／時間未填' : '未填訂位號碼'}</p>`}
         </div>
-        ${it.ref ? `<button class="btn sm" data-act="copy" data-val="${esc(it.ref)}">${icon('copy')}複製</button>` : ''}
       </div>
-      ${photos ? `<div class="photos">${photos}</div>` : ''}
-      <div class="links">
+      ${picsRow(it)}
+      <div class="row">
+        ${it.ref ? `<button class="chip" data-act="copy" data-val="${esc(it.ref)}">${icon('copy')}複製號碼</button>` : ''}
         ${it.url ? `<a class="chip dark" href="${esc(normUrl(it.url))}" target="_blank" rel="noopener">${icon('ext')}開訂單／網站</a>` : ''}
-        <button class="chip" data-act="goto-item" data-id="${it.id}">${icon('calendar')}喺行程睇</button>
-        <button class="chip" data-act="edit-item" data-id="${it.id}">${icon('edit')}修改</button>
-        <button class="chip" data-act="add-photo" data-id="${it.id}">${icon('camera')}加票據相</button>
+        <button class="chip" data-act="edit" data-id="${it.id}">${icon('edit')}填資料</button>
       </div>
     </div>`;
   }
   return html;
 }
 
-function renderIdeas() {
-  let html = `<section class="page-head"><p class="eyebrow">後備清單</p><h1 class="display sm">靈感</h1>
-    <p class="muted">「可能會去」嘅地方——落雨、臨時改計劃、有空檔時用。撳「排入日子」放落行程。刪除日子時，嗰日嘅項目都會搬嚟呢度。</p></section>`;
-  html += `<div class="day"><div class="timeline">`;
-  html += trip.ideas.length
-    ? trip.ideas.map(it => renderItem(it, { country: it.country || '', idea: true })).join('')
-    : `<div class="empty">未有靈感。</div>`;
-  html += `</div></div><button class="btn ghost wide" data-act="add-idea">${icon('plus')} 加靈感</button>`;
-  return html;
+/* ---------- 日語 ---------- */
+function renderPhrases() {
+  const places = [...new Map(allItems().filter(i => i.titleJa && i.type !== 'walk').map(i => [i.titleJa, i])).values()];
+  const row = (ja, zh, ro = '') => `<button class="phrase" data-act="speak" data-text="${esc(ja)}">
+      <div class="grow"><b lang="ja">${esc(ja)}</b>${ro ? `<span class="ro">${esc(ro)}</span>` : ''}<span class="zh">${esc(zh)}</span></div>${icon('sound')}</button>`;
+  return `<section class="pagehead"><h1>日語</h1><p class="muted">撳任何一句就會讀出嚟（用手機內置日文聲，冇網都得）。</p></section>
+    ${PHRASES.map(g => `<section class="card phr"><h2>${g.cat}</h2>${g.items.map(([ja, ro, zh]) => row(ja, zh, ro)).join('')}</section>`).join('')}
+    <section class="card phr"><h2>地點讀音</h2>${places.map(i => row(i.titleJa, i.title)).join('')}</section>`;
 }
 
+/* ---------- 資訊（日本） ---------- */
 function renderInfo() {
-  const hotels = [...new Map(allItems().filter(i => i.type === 'hotel' && (i.address || i.place)).map(h => [h.address || h.place, h])).values()];
-  return `<section class="page-head"><p class="eyebrow">工具箱</p><h1 class="display sm">資訊</h1></section>
-  <div class="grid-cards">
-    <div class="card">
-      <h2>${icon('info')}緊急電話</h2>
-      <h3>香港</h3>
-      <ul class="plain">
-        <li>警察／消防／救護：<a href="tel:999"><b>999</b></a></li>
-        <li>旅發局旅客熱線：<a href="tel:+85225081234">+852 2508 1234</a></li>
-      </ul>
-      <h3>日本</h3>
-      <ul class="plain">
-        <li>警察：<a href="tel:110"><b>110</b></a> · 消防／救護：<a href="tel:119"><b>119</b></a></li>
-        <li>JNTO 旅客熱線（24小時，英／中）：<a href="tel:+815038162787">050-3816-2787</a></li>
-      </ul>
-      <h3>英國</h3>
-      <ul class="plain"><li>Emergency：<a href="tel:999"><b>999</b></a> / <a href="tel:112">112</a></li></ul>
+  const h = hotelItem();
+  return `<section class="pagehead"><h1>日本資訊</h1></section>
+  <section class="card">
+    <h2>🆘 緊急</h2>
+    <ul class="plain">
+      <li>警察 <a class="tel" href="tel:110">110</a> · 火警／救護車 <a class="tel" href="tel:119">119</a></li>
+      <li>JNTO 旅客熱線（24 小時，有中文）<a href="tel:+815038162787">050-3816-2787</a></li>
+      <li>入境處「協助在外香港居民」熱線 <a href="tel:+8521868">(+852) 1868</a></li>
+    </ul>
+    <button class="phrase" data-act="speak" data-text="助けてください"><div class="grow"><b lang="ja">助けてください</b><span class="zh">救命／幫幫我</span></div>${icon('sound')}</button>
+  </section>
+  ${h ? `<section class="card">
+    <h2>🏨 酒店</h2>
+    <p><b>三井花園飯店 銀座築地</b><br><span lang="ja">${esc(h.titleJa)}</span><br><span class="muted">${esc(h.address)}</span><br><span class="muted">電話 03-5565-2731</span></p>
+    <div class="row"><button class="chip dark" data-act="hotel">${icon('car')}俾司機睇／導航</button>${speakBtn(h.titleJa)}</div>
+  </section>` : ''}
+  <section class="card">
+    <h2>📋 要知</h2>
+    <ul class="plain">
+      <li><b>時差</b>：日本比香港快 1 小時。</li>
+      <li><b>插頭</b>：A 型兩腳扁插、100V —— 香港三腳插要帶<b>轉換插頭</b>。</li>
+      <li><b>天氣</b>：10 月尾東京大約 13–20°C，早晚涼，帶薄外套。</li>
+      <li><b>交通卡</b>：iPhone「錢包」可以加 Suica，拍卡搭車、便利店俾錢。</li>
+      <li><b>現金</b>：築地、谷中好多小店只收現金；7-Eleven ATM 可以用海外卡提款。</li>
+      <li><b>退稅</b>：同一間店同日買滿 ¥5,000（未連稅），出示護照。</li>
+      <li><b>貼士</b>：日本唔使俾貼士。</li>
+      <li><b>垃圾桶</b>：街上好少，帶個膠袋。</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>🔗 連結</h2>
+    <div class="row">
+      <a class="chip" href="https://www.vjw.digital.go.jp/" target="_blank" rel="noopener">Visit Japan Web</a>
+      <a class="chip" href="https://www.keisei.co.jp/keisei/tetudou/skyliner/tc/" target="_blank" rel="noopener">Skyliner</a>
+      <a class="chip" href="https://www.tokyometro.jp/tcn/" target="_blank" rel="noopener">東京 Metro</a>
+      <a class="chip" href="https://world.jorudan.co.jp/mln/zh-tw/" target="_blank" rel="noopener">Jorudan 轉乘</a>
+      <a class="chip" href="https://www.jma.go.jp/bosai/forecast/" target="_blank" rel="noopener">日本天氣</a>
     </div>
-
-    <div class="card">
-      <h2>${icon('hotel')}住宿地址</h2>
-      <ul class="plain">${hotels.map(h => `<li><b>${esc(h.title)}</b>${h.titleJa ? `<br><span lang="ja">${esc(h.titleJa)}</span>` : ''}${h.address ? `<br><span class="muted">${esc(h.address)}</span>` : ''}<br><button class="chip" data-act="taxi" data-id="${h.id}">${icon('car')}俾司機睇</button></li>`).join('')}</ul>
+  </section>
+  <section class="card">
+    <h2>📴 出發前準備</h2>
+    <p class="muted" id="picStatus">檢查緊相片…</p>
+    <div class="row"><button class="chip dark" data-act="prefetch">${icon('download')}下載所有地點相片</button></div>
+    <ul class="plain">
+      <li>上網時打開一次，再「加到主畫面」—— 之後冇網都開到。</li>
+      <li>Google Maps 預先下載「東京」離線地圖。</li>
+      <li>喺「日語」頁試一次讀音。冇聲：iPhone 設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2>💾 備份</h2>
+    <div class="row">
+      <button class="chip" data-act="export">${icon('download')}匯出備份</button>
+      <button class="chip" data-act="import">匯入備份</button>
+      <button class="chip danger" data-act="reset">重設為原始行程</button>
     </div>
-
-    <div class="card">
-      <h2>${icon('download')}冇網準備</h2>
-      <p class="muted" id="coverStatus">離線地點相：計緊…</p>
-      <div class="btn-row"><button class="btn dark sm" data-act="prefetch">${icon('download')}下載／更新所有地點相</button></div>
-      <ul class="plain">
-        <li>上網時打開一次，再「加到主畫面」——之後冇網都開到。</li>
-        <li>Google Maps 預先下載「離線地圖」：香港、東京、富士山、高山、京都、大阪（搜尋同步行路線離線都用到，但電車班次唔得）。</li>
-        <li>每項行程撳「搵相」→「儲存」，將站內圖、航廈圖存落手機。</li>
-        <li>電子機票、QR code、酒店確認信截圖，用「加相」存喺對應項目。</li>
-        <li>定期「匯出備份」，傳去自己 email。</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>${icon('ext')}實用連結</h2>
-      <ul class="plain">
-        <li><a href="https://www.vjw.digital.go.jp/" target="_blank" rel="noopener">Visit Japan Web</a>（入境＋海關 QR）</li>
-        <li><a href="https://www.keisei.co.jp/keisei/tetudou/skyliner/tc/" target="_blank" rel="noopener">京成 Skyliner</a> · <a href="https://www.tokyometro.jp/tcn/" target="_blank" rel="noopener">東京 Metro</a></li>
-        <li><a href="https://world.jorudan.co.jp/mln/zh-tw/" target="_blank" rel="noopener">Jorudan 轉乘查詢</a> · <a href="https://japantravel.navitime.com/zh-tw/" target="_blank" rel="noopener">NAVITIME Japan Travel</a></li>
-        <li><a href="https://www.jma.go.jp/bosai/forecast/" target="_blank" rel="noopener">日本氣象廳</a> · <a href="https://www.hko.gov.hk/tc/" target="_blank" rel="noopener">香港天文台</a></li>
-        <li><a href="https://www.mtr.com.hk/ch/customer/jp/index.php" target="_blank" rel="noopener">港鐵行程指南</a> · <a href="https://www.citybus.com.hk/" target="_blank" rel="noopener">城巴</a></li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>${icon('copy')}備份及同步</h2>
-      <p class="muted">行程只存喺呢部機。匯出檔案可以備份或者搬去另一部機（附件相片都會一齊匯出）。</p>
-      <div class="btn-row">
-        <button class="btn dark sm" data-act="export">${icon('download')}匯出備份</button>
-        <button class="btn sm" data-act="import">匯入備份</button>
-        <button class="btn sm" data-act="persist">鎖定資料唔俾瀏覽器清除</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn sm" data-act="rename-trip">${icon('edit')}改旅程名</button>
-        <button class="btn sm danger" data-act="load-seed">重設為原始行程</button>
-        <button class="btn sm danger" data-act="reset-blank">清空重新開始</button>
-      </div>
-      <p class="hint" id="storageInfo"></p>
-    </div>
-  </div>`;
+  </section>`;
 }
 
 /* ---------- modal ---------- */
@@ -827,131 +643,38 @@ function openModal({ title, body, submitLabel = '儲存', onSubmit, onOpen, cls 
   });
   dlg.querySelectorAll('[data-close]').forEach(b => { b.onclick = () => dlg.close(); });
   dlg.onclick = e => { if (e.target === dlg) dlg.close(); };
-  dlg.showModal();
+  if (!dlg.open) dlg.showModal();
   if (onOpen) onOpen(form);
   return form;
 }
 const closeModal = () => $('#modal').open && $('#modal').close();
 
-const menuToText = m => (m?.items || []).map(x => `${x.star ? '⭐ ' : ''}${x.name || ''} | ${x.ja || ''} | ${x.price || ''} | ${x.desc || ''}`).join('\n');
-function textToMenu(txt, old) {
-  const items = txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-    const star = /^(⭐|\*)/.test(l);
-    const [name, ja, price, desc] = l.replace(/^(⭐|\*)\s*/, '').split('|').map(s => (s || '').trim());
-    const o = { name };
-    if (ja) o.ja = ja; if (price) o.price = price; if (desc) o.desc = desc; if (star) o.star = true;
-    return o;
-  }).filter(o => o.name);
-  return items.length ? { ...(old || {}), items } : (old?.url || old?.tips ? { ...old, items: [] } : undefined);
-}
-const ttToText = rows => (rows || []).map(r => `${r.dep} → ${r.arr || ''} | ${r.name || ''} | ${r.note || ''}`).join('\n');
-function textToTT(txt) {
-  return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-    const [times, name, note] = l.split('|').map(s => (s || '').trim());
-    const m = times.match(/(\d{1,2}:\d{2})\D*(\d{1,2}:\d{2})?/);
-    if (!m) return null;
-    const o = { dep: m[1].padStart(5, '0') };
-    if (m[2]) o.arr = m[2].padStart(5, '0'); if (name) o.name = name; if (note) o.note = note;
-    return o;
-  }).filter(Boolean).sort((a, b) => a.dep.localeCompare(b.dep));
-}
-
-function itemFormHtml(it, { insertNote = '' } = {}) {
-  const f = (name, label, attrs = '') =>
-    `<label>${label}<input name="${name}" value="${esc(it[name] || '')}" ${attrs}></label>`;
-  const typeOpts = Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${it.type === k ? 'selected' : ''}>${v.label}</option>`).join('');
-  const linksTxt = (it.links || []).map(l => `${l.label} | ${l.url}`).join('\n');
-  return `
-    ${insertNote}
-    <div class="grid3">
-      <label>類型<select name="type">${typeOpts}</select></label>
-      <label>開始<input type="time" name="time" value="${esc(it.time || '')}"></label>
-      <label>結束<input type="time" name="end" value="${esc(it.end || '')}"></label>
-    </div>
-    <p class="hint" id="durHint"></p>
-    ${f('title', '標題（中文）*', 'required placeholder="例如：晚餐：一蘭拉麵"')}
-    ${f('titleJa', '日文／當地名稱（俾司機睇、搜尋用）', 'lang="ja" placeholder="一蘭 渋谷店"')}
-    <div class="tonly">
-      <div class="grid2">
-        ${f('from', '出發地（日文／英文，用嚟搜尋）', 'placeholder="新宿駅"')}
-        ${f('fromZh', '出發地中文名', 'placeholder="新宿站"')}
-        ${f('to', '目的地（日文／英文）', 'placeholder="京都駅"')}
-        ${f('toZh', '目的地中文名', 'placeholder="京都站"')}
-      </div>
-      ${f('number', '班次／航班號', 'placeholder="CX 500 · Skyliner 56號"')}
-      <label>時刻表（每行一班：開出 → 到達 | 班次 | 備註）<textarea name="timetable" rows="4" placeholder="17:43 → 18:24 | 56號 | 最貼合">${esc(ttToText(it.timetable))}</textarea></label>
-      ${f('timetableNote', '時刻表備註')}
-      ${f('timetableUrl', '全日時刻表連結', 'inputmode="url"')}
-    </div>
-    <div class="ponly">${f('place', 'Google Maps 搜尋名稱', 'placeholder="一蘭 渋谷店"')}</div>
-    ${f('address', '地址')}
-    <div class="grid2">
-      ${f('hours', '營業時間')}
-      ${f('cost', '費用', 'placeholder="¥3,000"')}
-      ${f('ref', '訂位／確認號碼')}
-      ${f('url', '網站／訂位連結', 'inputmode="url" placeholder="https://…"')}
-    </div>
-    <label>備註<textarea name="notes" rows="3" placeholder="出口號碼、要點、注意事項…">${esc(it.notes || '')}</textarea></label>
-    <label>後備方案（萬一去唔到）<textarea name="planB" rows="2" placeholder="如果落雨／關門：改去…">${esc(it.planB || '')}</textarea></label>
-    <details class="adv"><summary>菜單、連結、相片設定</summary>
-      <label>菜單（每行一樣：⭐ 中文名 | 日文名 | 價錢 | 描述）<textarea name="menu" rows="4" placeholder="⭐ 雞白湯拉麵 | 鶏白湯Soba | ¥2,000 | 招牌">${esc(menuToText(it.menu))}</textarea></label>
-      <label>完整菜單連結<input name="menuUrl" value="${esc(it.menu?.url || '')}" inputmode="url"></label>
-      <label>其他連結（每行一個：名稱 | 網址）<textarea name="links" rows="2" placeholder="菜單 | https://…">${esc(linksTxt)}</textarea></label>
-      <div class="grid2">
-        <label>地點相（Wikipedia 條目）<input name="wiki" value="${esc(it.wiki || '')}" placeholder="ja:根津神社"></label>
-        <label>國家（影響食評／站內圖連結）<select name="country">
-          <option value="">跟返嗰日</option>
-          ${Object.entries(COUNTRIES).map(([k, v]) => `<option value="${k}" ${it.country === k ? 'selected' : ''}>${v}</option>`).join('')}
-        </select></label>
-      </div>
-    </details>`;
-}
-
-function readItemForm(fd, it) {
-  for (const k of ['type', 'time', 'end', 'title', 'titleJa', 'from', 'fromZh', 'to', 'toZh', 'number', 'place', 'address', 'hours', 'ref', 'cost', 'url', 'notes', 'planB', 'country', 'wiki', 'timetableNote', 'timetableUrl']) {
-    const v = (fd.get(k) || '').toString().trim();
-    if (v) it[k] = v; else delete it[k];
-  }
-  const tt = textToTT((fd.get('timetable') || '').toString());
-  if (tt.length) it.timetable = tt; else delete it.timetable;
-  const menu = textToMenu((fd.get('menu') || '').toString(), it.menu);
-  const menuUrl = (fd.get('menuUrl') || '').toString().trim();
-  if (menu || menuUrl) { it.menu = menu || { items: [] }; if (menuUrl) it.menu.url = menuUrl; else delete it.menu.url; }
-  else delete it.menu;
-  if (it.menu && !it.menu.items?.length && !it.menu.url && !it.menu.tips) delete it.menu;
-  it.links = (fd.get('links') || '').toString().split('\n').map(line => {
-    line = line.trim();
-    if (!line) return null;
-    const i = line.lastIndexOf('|');
-    return i >= 0 ? { label: line.slice(0, i).trim(), url: line.slice(i + 1).trim() } : { label: '連結', url: line };
-  }).filter(l => l && l.url);
-  if (!it.links.length) delete it.links;
-  return it;
-}
-
-function bindItemForm(form) {
-  const sync = () => {
-    form.dataset.kind = TRANSPORT.has(form.elements.type.value) ? 'transport' : 'place';
-    const t = form.elements.time.value, e = form.elements.end.value;
-    const d = t && e ? durOf({ time: t, end: e }) : null;
-    $('#durHint', form).textContent = d != null ? `時長：${durStr(d)}` : '';
-  };
-  ['type', 'time', 'end'].forEach(n => form.elements[n].addEventListener('input', sync));
-  sync();
-}
-
 function editItem(id) {
-  const f = findItem(id);
-  if (!f) return;
-  const oldDur = durOf(f.item), oldEnd = f.item.end;
+  const it = findItem(id).item;
+  const oldEnd = it.end;
+  const f = (name, label, attrs = '') => `<label>${label}<input name="${name}" value="${esc(it[name] || '')}" ${attrs}></label>`;
   openModal({
-    title: '修改項目',
-    body: itemFormHtml(f.item) + (f.day ? `<label class="check"><input type="checkbox" name="pushLater" checked> 時間變長／變短時，之後嘅行程自動跟住調整</label>` : ''),
-    onOpen: bindItemForm,
+    title: '修改',
+    body: `<div class="grid2">
+        <label>開始<input type="time" name="time" value="${esc(it.time || '')}"></label>
+        <label>結束<input type="time" name="end" value="${esc(it.end || '')}"></label>
+      </div>
+      ${f('title', '標題（中文）', 'required')}
+      ${f('titleJa', '日文名稱', 'lang="ja"')}
+      ${TRANSPORT.has(it.type) ? f('number', '航班／班次') : ''}
+      ${f('ref', '訂位／確認號碼')}
+      ${f('address', '地址')}
+      ${f('url', '網站／訂單連結', 'inputmode="url"')}
+      <label>備註<textarea name="notes" rows="4">${esc(it.notes || '')}</textarea></label>
+      ${isHM(it.end) ? `<label class="check"><input type="checkbox" name="push" checked> 改結束時間時，之後嘅行程跟住移</label>` : ''}`,
     onSubmit: fd => commit(() => {
       const cur = findItem(id);
-      readItemForm(fd, cur.item);
-      if (fd.get('pushLater') && cur.day && isHM(oldEnd) && isHM(cur.item.end) && oldDur != null) {
+      for (const k of ['time', 'end', 'title', 'titleJa', 'number', 'ref', 'address', 'url', 'notes']) {
+        if (!fd.has(k)) continue;
+        const v = fd.get(k).toString().trim();
+        if (v || (k === 'ref' && 'ref' in cur.item)) cur.item[k] = v; else delete cur.item[k];
+      }
+      if (fd.get('push') && isHM(oldEnd) && isHM(cur.item.end)) {
         const delta = toMin(cur.item.end) - toMin(oldEnd);
         if (delta) shiftFrom(cur.list, cur.index + 1, delta);
       }
@@ -959,297 +682,114 @@ function editItem(id) {
   });
 }
 
-/** 喺 index 位置插入新項目；預設接住上一項完結時間開始，30 分鐘 */
-function insertItem(dayId, index) {
-  const day = findDay(dayId);
-  const prev = day.items[index - 1], next = day.items[index];
-  let start = prev ? (isHM(prev.end) ? prev.end : prev.time) : (next && isHM(next.time) ? fromMin(toMin(next.time) - 30) : '');
-  const draft = { id: uid(), type: 'sight', status: 'planned' };
-  if (isHM(start)) { draft.time = start; draft.end = fromMin(toMin(start) + 30); }
-  const where = prev && next ? `插入喺「${prev.title}」同「${next.title}」之間` : prev ? `加喺「${prev.title}」之後` : next ? `加喺「${next.title}」之前` : `加去 ${fmtDate(day.date)}`;
-  openModal({
-    title: '加項目',
-    body: itemFormHtml(draft, { insertNote: `<p class="hint strong">${esc(where)}</p>` })
-      + (next ? `<label class="check"><input type="checkbox" name="pushLater" checked> 如果時間撞，之後嘅行程自動順延</label>` : ''),
-    submitLabel: '加入',
-    onOpen: bindItemForm,
-    onSubmit: fd => commit(() => {
-      readItemForm(fd, draft);
-      const d = findDay(dayId);
-      d.items.splice(index, 0, draft);
-      const nx = d.items[index + 1];
-      if (fd.get('pushLater') && nx && isHM(nx.time) && isHM(draft.end || draft.time)) {
-        const overlap = toMin(draft.end || draft.time) - toMin(nx.time);
-        if (overlap > 0) shiftFrom(d.items, index + 1, overlap);
-      }
-      ui.open.add(draft.id);
-    }, '已加入'),
-  });
-}
-
-function addIdea() {
-  const draft = { id: uid(), type: 'sight', status: 'planned' };
-  openModal({
-    title: '加靈感',
-    body: itemFormHtml(draft),
-    submitLabel: '加入',
-    onOpen: bindItemForm,
-    onSubmit: fd => commit(() => { readItemForm(fd, draft); trip.ideas.push(draft); }, '已加入'),
-  });
-}
-
-function dayFormHtml(d) {
-  return `
-    <label>日期<input type="date" name="date" value="${esc(d.date || '')}"></label>
-    ${d.group ? `<label class="check"><input type="checkbox" name="groupShift" checked> 整團一齊改（同組嘅日子跟住移，保持連續）</label>` : ''}
-    <div class="grid2">
-      <label>城市（中文）<input name="city" value="${esc(d.city || '')}" placeholder="東京"></label>
-      <label>城市（日文／英文）<input name="cityJa" value="${esc(d.cityJa || '')}" placeholder="東京"></label>
-      <label>國家<select name="country">
-        <option value="">—</option>
-        ${Object.entries(COUNTRIES).map(([k, v]) => `<option value="${k}" ${d.country === k ? 'selected' : ''}>${v}</option>`).join('')}
-      </select></label>
-      <label>分組（例如 tour）<input name="group" value="${esc(d.group || '')}"></label>
-    </div>
-    <label>主題<input name="title" value="${esc(d.title || '')}" placeholder="淺草、上野"></label>
-    <label>當日備註<textarea name="notes" rows="4">${esc(d.notes || '')}</textarea></label>`;
-}
-function readDayForm(fd, d) {
-  for (const k of ['date', 'city', 'cityJa', 'country', 'title', 'notes', 'group']) {
-    const v = (fd.get(k) || '').toString().trim();
-    if (v) d[k] = v; else delete d[k];
-  }
-}
-
-function editDay(id) {
-  const d = findDay(id);
-  const oldDate = d.date;
-  openModal({
-    title: `改日子 · ${fmtDate(d.date)}`,
-    body: dayFormHtml(d) + `<div class="btn-row">
-        <button type="button" class="btn sm" id="dupDay">${icon('copy')}複製呢日</button>
-        <button type="button" class="btn sm danger" id="delDay">${icon('trash')}刪除呢日</button></div>
-        <p class="hint">刪除日子會將項目搬去「靈感」，唔會唔見。</p>`,
-    onSubmit: fd => commit(() => {
-      const day = findDay(id);
-      readDayForm(fd, day);
-      if (fd.get('groupShift') && day.group && oldDate && day.date && day.date !== oldDate) {
-        const delta = daysBetween(oldDate, day.date);
-        trip.days.filter(x => x.group === day.group && x.id !== day.id).forEach(x => { x.date = addDays(x.date, delta); });
-        // 移走同新團期撞日、而且冇安排嘅空白日子
-        const groupDates = new Set(trip.days.filter(x => x.group === day.group).map(x => x.date));
-        trip.days = trip.days.filter(x => x.group === day.group || x.items.length || !groupDates.has(x.date));
-        fillGaps();
-      }
-    }, '已更新日子'),
-    onOpen: form => {
-      form.querySelector('#delDay').onclick = () => {
-        closeModal();
-        commit(() => {
-          const day = findDay(id);
-          trip.ideas.push(...day.items);
-          trip.days = trip.days.filter(x => x.id !== id);
-        }, '已刪除日子，項目搬咗去「靈感」');
-      };
-      form.querySelector('#dupDay').onclick = () => {
-        closeModal();
-        commit(() => {
-          const day = findDay(id);
-          const copy = JSON.parse(JSON.stringify(day));
-          copy.id = uid();
-          copy.date = addDays(day.date, 1);
-          delete copy.group;
-          copy.items.forEach(i => { i.id = uid(); i.status = 'planned'; });
-          trip.days.push(copy);
-        }, '已複製日子');
-      };
-    },
-  });
-}
-
-/** 補返中間冇咗嘅日子（例如移團期之後），用前一日嘅城市 */
-function fillGaps() {
-  normalize();
-  const out = [];
-  trip.days.forEach((d, i) => {
-    const prev = out[out.length - 1];
-    if (prev && prev.date && d.date) {
-      for (let k = 1; k < daysBetween(prev.date, d.date); k++) {
-        const base = prev.group ? (trip.days.slice(0, i).reverse().find(x => !x.group) || {}) : prev;
-        out.push({ id: uid(), date: addDays(prev.date, k), city: base.city || prev.city, cityJa: base.cityJa, country: base.country || prev.country, title: `${base.city || ''}自由活動`, items: [] });
-      }
-    }
-    out.push(d);
-  });
-  trip.days = out;
-}
-
-function addDay() {
-  const lastDay = trip.days[trip.days.length - 1];
-  const d = { id: uid(), date: lastDay ? addDays(lastDay.date, 1) : todayStr(), city: lastDay?.city, country: lastDay?.country, items: [] };
-  openModal({
-    title: '加一日',
-    body: dayFormHtml(d),
-    submitLabel: '加入',
-    onSubmit: fd => commit(() => { readDayForm(fd, d); trip.days.push(d); }, '已加日子'),
-  });
-}
-
-function moveItem(id) {
-  const f = findItem(id);
-  const opts = trip.days.map((d, i) =>
-    `<option value="${d.id}" ${f.day && f.day.id === d.id ? 'selected' : ''}>第${i + 1}日 · ${esc(fmtDate(d.date, true))}${d.city ? ' · ' + esc(d.city) : ''}</option>`).join('');
-  openModal({
-    title: `搬「${f.item.title}」`,
-    body: `<label>搬去<select name="to"><option value="ideas" ${!f.day ? 'selected' : ''}>靈感（未排日子）</option>${opts}</select></label>
-      <label>新開始時間（可留空）<input type="time" name="time" value="${esc(f.item.time || '')}"></label>
-      <p class="hint">時長會保留；項目會按時間插入新日子。</p>`,
-    submitLabel: '搬',
-    onSubmit: fd => commit(() => {
-      const cur = findItem(id);
-      const [it] = cur.list.splice(cur.index, 1);
-      const d = durOf(it);
-      const t = (fd.get('time') || '').toString();
-      if (t) { it.time = t; if (d != null) it.end = fromMin(toMin(t) + d); } else { delete it.time; delete it.end; }
-      const to = fd.get('to');
-      if (to === 'ideas') { trip.ideas.push(it); return; }
-      const list = findDay(to).items;
-      const at = isHM(it.time) ? list.findIndex(x => isHM(x.time) && x.time > it.time) : -1;
-      if (at >= 0) list.splice(at, 0, it); else list.push(it);
-    }, '已搬'),
-  });
-}
-
 function shiftItems(id) {
   const f = findItem(id);
   openModal({
-    title: '遲咗／早咗？',
-    body: `<p class="hint strong">將「${esc(f.item.title)}」同當日之後所有未完成項目一齊移。</p>
-      <div class="btn-row">
-        ${[-30, -15, 10, 15, 30, 60, 90].map(m => `<button type="button" class="btn sm ${m > 0 ? '' : 'ghost'}" data-min="${m}">${m > 0 ? '+' : ''}${m} 分</button>`).join('')}
-      </div>
-      <label>或者自己輸入分鐘（負數＝提早）<input type="number" name="mins" value="30" step="5"></label>`,
-    submitLabel: '移時間',
+    title: '遲咗？',
+    body: `<p class="hint">「${esc(f.item.title)}」同當日之後所有項目一齊推後。</p>
+      <div class="bigbtns">${[10, 15, 30, 45, 60].map(m => `<button type="button" class="btn" data-min="${m}">+${m} 分</button>`).join('')}
+      <button type="button" class="btn ghost" data-min="-15">提早 15 分</button></div>`,
     onOpen: form => form.querySelectorAll('[data-min]').forEach(b => {
-      b.onclick = () => { form.elements.mins.value = b.dataset.min; form.requestSubmit(); };
+      b.onclick = () => {
+        const m = parseInt(b.dataset.min, 10);
+        closeModal();
+        commit(() => { const cur = findItem(id); shiftFrom(cur.list, cur.index, m); }, m > 0 ? `已推後 ${m} 分鐘` : `已提早 ${-m} 分鐘`);
+      };
     }),
-    onSubmit: fd => {
-      const mins = parseInt(fd.get('mins'), 10);
-      if (!mins) return;
-      commit(() => { const cur = findItem(id); shiftFrom(cur.list, cur.index, mins); }, `已${mins > 0 ? '延遲' : '提早'} ${Math.abs(mins)} 分鐘`);
-    },
   });
 }
 
-function showTaxi(id) {
-  const { item: it, day } = findItem(id);
-  const c = countryOf(it, day) || 'JP';
+function showTaxi(it) {
   const isT = TRANSPORT.has(it.type);
-  const big = isT ? (it.to || '') : (it.titleJa || it.place || it.title);
-  const sub = isT ? (it.toZh || '') : (it.titleJa ? it.title : '');
+  const big = isT ? it.to : (it.titleJa || it.place || it.title);
   openModal({
     title: '俾司機睇',
     cls: 'taxi-modal',
     body: `<div class="taxi">
-      <div class="phrase" lang="${c === 'JP' ? 'ja' : 'zh-HK'}">${TAXI_PHRASE[c] || TAXI_PHRASE.JP}</div>
-      <div class="big" lang="${c === 'JP' ? 'ja' : 'zh-HK'}">${esc(big)}</div>
-      ${!isT && it.address ? `<div class="addr">${esc(it.address)}</div>` : ''}
-      ${sub ? `<div class="muted">${esc(sub)}</div>` : ''}
+      <p class="phrase-big" lang="ja">ここへ行ってください</p>
+      <p class="muted">請帶我去呢度</p>
+      <div class="big" lang="ja">${esc(big)}</div>
+      ${!isT && it.address ? `<div class="addr" lang="ja">${esc(it.address)}</div>` : ''}
+      <div class="row center">
+        <button type="button" class="btn dark" data-act="speak" data-text="${esc(`${big}までお願いします`)}">${icon('sound')}讀出</button>
+        <a class="btn" href="${gmapDir('', isT ? it.to : (it.place || it.address))}" target="_blank" rel="noopener">${icon('route')}導航</a>
+      </div>
     </div>`,
   });
 }
 
-function viewPhoto(itemId, photoId) {
+async function viewPics(id, start, userPhoto) {
+  const it = findItem(id).item;
+  const commons = (await getItemPics(it)) || [];
+  const all = [
+    ...commons.map(p => ({ key: p.key, cap: p.title.replace(/^File:/, '').replace(/\.\w+$/, '') + '（Wikimedia Commons）', user: false })),
+    ...(it.photos || []).map(p => ({ key: p, cap: '你加嘅相', user: true })),
+  ];
+  if (!all.length) return;
+  let i = userPhoto ? all.findIndex(p => p.key === userPhoto) : start;
+  if (!(i >= 0)) i = 0;
+  const show = async form => {
+    const p = all[i];
+    form.querySelector('.viewer img').src = (await blobURL(p.key)) || '';
+    form.querySelector('.viewer .cap').textContent = `${i + 1}／${all.length} · ${p.cap}`;
+    form.querySelector('#delPic').hidden = !p.user;
+  };
   openModal({
-    title: findItem(itemId)?.item.title || '附件',
-    body: `<img class="photo-full" data-photo="${photoId}" alt="">
-      <div class="btn-row"><button type="button" class="btn sm danger" id="delPhoto">${icon('trash')}刪除附件</button></div>`,
+    title: it.title,
+    cls: 'viewer-modal',
+    body: `<div class="viewer"><img alt="">
+        ${all.length > 1 ? `<button type="button" class="nav l" aria-label="上一張">${icon('left')}</button><button type="button" class="nav r" aria-label="下一張">${icon('right')}</button>` : ''}
+        <p class="cap"></p></div>
+      <div class="row"><button type="button" class="btn danger" id="delPic">${icon('trash')}刪除呢張</button><button type="button" class="btn" data-act="open" data-id="${id}">返去詳情</button></div>`,
     onOpen: form => {
-      hydratePhotos(form);
-      form.querySelector('#delPhoto').onclick = () => {
-        if (!confirm('刪除呢張相？')) return;
+      const go = step => { i = (i + step + all.length) % all.length; show(form); };
+      form.querySelector('.nav.l')?.addEventListener('click', () => go(-1));
+      form.querySelector('.nav.r')?.addEventListener('click', () => go(1));
+      let x0 = null;
+      const v = form.querySelector('.viewer');
+      v.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+      v.addEventListener('touchend', e => {
+        if (x0 == null) return;
+        const dx = e.changedTouches[0].clientX - x0;
+        if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+        x0 = null;
+      });
+      form.querySelector('#delPic').onclick = () => {
+        const p = all[i];
+        if (!p.user || !confirm('刪除呢張相？')) return;
         closeModal();
-        commit(() => {
-          const it = findItem(itemId).item;
-          it.photos = (it.photos || []).filter(p => p !== photoId);
-        }, '已刪除附件');
-        PhotoDB.del(photoId).catch(() => {});
+        commit(() => { const cur = findItem(id).item; cur.photos = (cur.photos || []).filter(x => x !== p.key); }, '已刪除相片');
+        PhotoDB.del(p.key).catch(() => {});
       };
+      show(form);
     },
   });
 }
 
-/* ---------- 搵相 ---------- */
-async function runImageSearch(id, q) {
-  ui.img[id] = { q, loading: true, items: [] };
-  const box = $('#imgres-' + id);
-  const refresh = () => { const b = $('#imgres-' + id); if (b) b.innerHTML = renderImgResults(id); };
-  if (box) box.innerHTML = renderImgResults(id);
-  document.querySelectorAll(`[data-act="img-search"][data-id="${id}"]`).forEach(b => b.classList.toggle('dark', b.dataset.q === q));
-  if (!navigator.onLine) { ui.img[id] = { q, error: '而家冇網絡', items: [] }; return refresh(); }
-  try {
-    ui.img[id] = { q, items: await commonsSearch(q, 3), saved: {} };
-  } catch (e) {
-    ui.img[id] = { q, error: e.message, items: [] };
-  }
-  refresh();
-}
-
-async function saveSearchImage(id, i) {
-  const st = ui.img[id];
-  const r = st?.items[i];
-  if (!r || st.saved?.[i]) return;
-  try {
-    const blob = await (await fetch(r.thumb)).blob();
-    const pid = 'p_' + uid();
-    await PhotoDB.put(pid, blob);
-    st.saved = { ...(st.saved || {}), [i]: true };
-    commit(() => {
-      const it = findItem(id).item;
-      it.photos = [...(it.photos || []), pid];
-      ui.open.add(id);
-    }, '已儲存，冇網都睇到');
-  } catch (e) {
-    toast('儲存唔到：' + e.message);
-  }
-}
-
 /* ---------- 匯入／匯出 ---------- */
 async function exportTrip() {
-  const ids = new Set();
-  allItems().forEach(it => (it.photos || []).forEach(p => ids.add(p)));
   const photos = {};
-  for (const id of ids) {
+  for (const id of allItems().flatMap(i => i.photos || [])) {
     const blob = await PhotoDB.get(id).catch(() => null);
     if (blob) photos[id] = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
   }
-  const data = JSON.stringify({ app: 'trip-planner', version: 2, exportedAt: new Date().toISOString(), trip, photos });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-  a.download = `trip-backup-${todayStr()}.json`;
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'trip-planner', version: 3, trip, photos })], { type: 'application/json' }));
+  a.download = `tokyo-trip-backup-${todayStr()}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   toast('已下載備份');
 }
-
 async function importTrip(file) {
   try {
     const data = JSON.parse(await file.text());
     const t = data.trip || data;
-    if (!Array.isArray(t.days)) throw new Error('檔案入面搵唔到 days');
-    if (!confirm(`用「${t.name || '匯入嘅行程'}」（${t.days.length} 日）取代現有行程？之後可以還原。`)) return;
-    for (const [id, url] of Object.entries(data.photos || {})) {
-      const blob = await (await fetch(url)).blob();
-      await PhotoDB.put(id, blob);
-    }
-    const fix = it => { it.id = it.id || uid(); it.type = it.type || 'other'; it.status = it.status || 'planned'; if (it.endTime && !it.end) { it.end = it.endTime; delete it.endTime; } return it; };
-    t.days.forEach(d => { d.id = d.id || uid(); d.items = (d.items || []).map(fix); });
-    t.ideas = (t.ideas || []).map(fix);
-    commit(() => { trip = t; }, '已匯入');
-  } catch (e) {
-    alert('匯入唔到：' + e.message);
-  }
+    if (!Array.isArray(t.days)) throw new Error('檔案格式唔啱');
+    if (!confirm('用備份取代現有行程？')) return;
+    for (const [id, url] of Object.entries(data.photos || {})) await PhotoDB.put(id, await (await fetch(url)).blob());
+    commit(() => { trip = t; ui.day = null; }, '已匯入');
+  } catch (e) { alert('匯入唔到：' + e.message); }
 }
 
 /* ---------- toast ---------- */
@@ -1263,153 +803,57 @@ function toast(msg, withUndo = false) {
 }
 
 /* ---------- actions ---------- */
-const setStatus = (id, val, msg) => commit(() => {
-  const it = findItem(id).item;
-  it.status = val;
-  if (val !== 'planned') ui.open.delete(id);
-}, msg);
-
+let pendingPhotoItem = null;
 const actions = {
   tab: id => { ui.tab = id; render(); window.scrollTo(0, 0); },
+  day: id => { ui.day = id; render(); window.scrollTo(0, 0); },
   undo,
-  'toggle-day': id => { ui.collapsed.has(id) ? ui.collapsed.delete(id) : ui.collapsed.add(id); $('#day-' + id)?.classList.toggle('collapsed'); },
-  'toggle-item': id => {
-    ui.open.has(id) ? ui.open.delete(id) : ui.open.add(id);
-    const el = $('#item-' + id);
-    const f = findItem(id);
-    if (!el || !f) return render();
-    // 只重畫呢一項，唔好成頁跳
-    const prevLoc = (() => {
-      if (!f.day) return '';
-      for (let i = f.index - 1; i >= 0; i--) if (f.list[i].status !== 'skipped' && locOf(f.list[i])) return locOf(f.list[i]);
-      return '';
-    })();
-    const isToday = f.day && f.day.date === todayStr();
-    const tmp = document.createElement('div');
-    tmp.innerHTML = renderItem(f.item, { prevLoc, country: countryOf(f.item, f.day), isNext: el.classList.contains('next'), isToday, idea: !f.day });
-    const fresh = tmp.firstElementChild;
-    el.replaceWith(fresh);
-    hydrateCovers(fresh);
-    hydratePhotos(fresh);
-  },
-  'goto-day': (id, chip) => {
-    ui.activeDay = id;
-    document.querySelectorAll('.strip-day.is-active').forEach(x => x.classList.remove('is-active'));
-    chip?.classList.add('is-active');
-    chip?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-    ui.collapsed.delete(id);
-    const el = $('#day-' + id);
-    el?.classList.remove('collapsed');
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  },
-  'add-day': addDay,
-  'edit-day': editDay,
-  insert: (_, el) => insertItem(el.dataset.day, parseInt(el.dataset.index, 10)),
-  'add-idea': addIdea,
-  'edit-item': editItem,
-  'move-item': moveItem,
-  shift: shiftItems,
-  taxi: showTaxi,
-  'sort-day': id => commit(() => {
-    findDay(id).items.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
-  }, '已按時間排好'),
-  'status-done': id => setStatus(id, 'done', '已完成'),
-  'status-skip': id => setStatus(id, 'skipped', '已跳過'),
-  'status-reset': id => setStatus(id, 'planned', '已重設'),
-  'move-up': id => commit(() => { const f = findItem(id); swapSlots(f.list, f.index - 1, f.index); }, '已上移（時段互換）'),
-  'move-down': id => commit(() => { const f = findItem(id); swapSlots(f.list, f.index, f.index + 1); }, '已下移（時段互換）'),
-  'dup-item': id => commit(() => {
-    const f = findItem(id);
-    const copy = { ...JSON.parse(JSON.stringify(f.item)), id: uid(), status: 'planned' };
-    f.list.splice(f.index + 1, 0, copy);
-    ui.open.add(copy.id);
-  }, '已複製'),
-  'del-item': id => commit(() => { const f = findItem(id); f.list.splice(f.index, 1); }, '已刪除'),
-  'swap-planb': id => commit(() => {
-    const it = findItem(id).item;
-    const old = { title: it.title, titleJa: it.titleJa, notes: it.notes };
-    const plan = it.planB.trim();
-    const first = plan.split('\n')[0].replace(/^(如果[^：:]*[：:]\s*)/, '').trim();
-    it.title = first.slice(0, 60) || plan.slice(0, 60);
-    it.place = it.title;
-    ['titleJa', 'address', 'url', 'wiki', 'menu', 'hours', 'ref'].forEach(k => delete it[k]);
-    it.notes = plan;
-    it.planB = `原本計劃：${old.title}${old.titleJa ? `（${old.titleJa}）` : ''}${old.notes ? '\n' + old.notes : ''}`;
-  }, '已轉用後備方案——撳「修改」補資料'),
+  open: id => openItem(id),
+  speak: (_, el) => speak(el.dataset.text),
+  done: id => { closeModal(); commit(() => { findItem(id).item.status = 'done'; }, '已完成'); },
+  undone: id => { closeModal(); commit(() => { findItem(id).item.status = 'planned'; }, '已改返未完成'); },
+  shift: id => shiftItems(id),
+  taxi: id => showTaxi(findItem(id).item),
+  hotel: () => { const h = hotelItem(); if (h) showTaxi(h); },
+  edit: id => editItem(id),
+  del: id => { if (!confirm('刪除呢項？')) return; closeModal(); commit(() => { const f = findItem(id); f.list.splice(f.index, 1); }, '已刪除'); },
   'add-photo': id => { pendingPhotoItem = id; $('#photoInput').click(); },
-  'view-photo': (id, el) => viewPhoto(id, el.dataset.photo),
-  'img-search': (id, el) => runImageSearch(id, el.dataset.q),
-  'img-custom': id => openModal({
-    title: '自己打關鍵字',
-    body: `<label>關鍵字（日文／英文效果最好）<input name="q" value="${esc(ui.img[id]?.q || '')}" required></label>`,
-    submitLabel: '搵',
-    onSubmit: fd => { runImageSearch(id, fd.get('q').toString().trim()); },
-  }),
-  'img-save': (id, el) => saveSearchImage(id, parseInt(el.dataset.i, 10)),
-  'goto-item': id => {
-    const f = findItem(id);
-    ui.tab = f.day ? 'plan' : 'ideas';
-    ui.open.add(id);
-    if (f.day) ui.collapsed.delete(f.day.id);
-    render();
-    $('#item-' + id)?.scrollIntoView({ block: 'center' });
-  },
+  'view-pics': (id, el) => viewPics(id, parseInt(el.dataset.i, 10)),
+  'view-photo': (id, el) => viewPics(id, 0, el.dataset.photo),
   copy: (_, el) => navigator.clipboard?.writeText(el.dataset.val).then(() => toast('已複製'), () => toast('複製唔到')),
-  'rename-trip': () => openModal({
-    title: '改旅程名',
-    body: `<label>旅程名稱<input name="name" value="${esc(trip.name || '')}" required></label>`,
-    onSubmit: fd => commit(() => { trip.name = fd.get('name').toString().trim(); }),
-  }),
+  prefetch: () => { toast('下載緊相片…'); prefetchAll().then(() => toast('相片已存好，離線可睇')); },
   export: exportTrip,
   import: () => $('#importInput').click(),
-  prefetch: () => { toast('下載緊地點相…'); prefetchCovers(true).then(() => toast('地點相已更新，離線可用')); },
-  persist: async () => {
-    if (!navigator.storage?.persist) return toast('呢個瀏覽器唔支援');
-    const ok = await navigator.storage.persist();
-    toast(ok ? '已鎖定，瀏覽器唔會自動清除' : '瀏覽器拒絕——請「加到主畫面」並定期匯出備份');
-  },
-  'load-seed': () => { if (confirm('載入原始行程？你喺手機改過嘅內容會被取代（之後可以還原）。')) commit(() => { trip = freshSeed(); }, '已載入原始行程'); },
-  'reset-blank': () => { if (confirm('清空所有行程？（之後可以還原）')) commit(() => { trip = { name: '我的旅程', seedVersion: SEED.seedVersion, days: [], ideas: [] }; }, '已清空'); },
+  reset: () => { if (confirm('重設為原始行程？你改過嘅內容會被取代（可以還原）。')) commit(() => { trip = freshSeed(); ui.day = null; }, '已重設'); },
 };
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
-  if (!el) return;
-  const fn = actions[el.dataset.act];
-  if (!fn) return;
+  if (!el || !actions[el.dataset.act]) return;
   e.preventDefault();
-  fn(el.dataset.id, el, e);
+  e.stopPropagation();
+  actions[el.dataset.act](el.dataset.id, el, e);
 });
 
-let pendingPhotoItem = null;
 $('#photoInput').addEventListener('change', async e => {
   const files = [...e.target.files];
   e.target.value = '';
   if (!files.length || !pendingPhotoItem) return;
   const id = pendingPhotoItem;
   const ids = [];
-  try {
-    for (const file of files) {
-      const pid = 'p_' + uid();
-      await PhotoDB.put(pid, await resizeImage(file));
-      ids.push(pid);
-    }
-  } catch (err) {
-    return toast('儲存唔到相：' + err.message);
+  for (const file of files) {
+    const pid = 'p_' + uid();
+    try { await PhotoDB.put(pid, await resizeImage(file)); ids.push(pid); } catch (err) { toast('存唔到相：' + err.message); }
   }
-  commit(() => {
-    const it = findItem(id).item;
-    it.photos = [...(it.photos || []), ...ids];
-    ui.open.add(id);
-  }, `已加 ${ids.length} 張相（離線可睇）`);
+  if (!ids.length) return;
+  const wasOpen = $('#modal').open;
+  closeModal();
+  commit(() => { const it = findItem(id).item; it.photos = [...(it.photos || []), ...ids]; }, `已加 ${ids.length} 張相`);
+  if (wasOpen) openItem(id);
 });
-$('#importInput').addEventListener('change', e => {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (file) importTrip(file);
-});
+$('#importInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importTrip(f); });
 
-/* ---------- 網絡狀態 ---------- */
+/* ---------- 網絡 ---------- */
 function updateNet() {
   const on = navigator.onLine;
   const el = $('#netStatus');
@@ -1417,30 +861,18 @@ function updateNet() {
   el.classList.toggle('offline', !on);
   document.body.classList.toggle('is-offline', !on);
 }
-window.addEventListener('online', () => { updateNet(); prefetchCovers(); });
+window.addEventListener('online', () => { updateNet(); prefetchAll().then(() => { if (!$('#modal').open) render(); }); });
 window.addEventListener('offline', updateNet);
-
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
-
-// 每分鐘更新「下一項」
-setInterval(() => { if (ui.tab === 'plan' && !$('#modal').open && !Object.values(ui.img).some(s => s.loading)) render(); }, 60_000);
-
-function showStorageInfo() {
-  navigator.storage?.estimate?.().then(({ usage, quota }) => {
-    const el = $('#storageInfo');
-    if (el) el.textContent = `已用空間：${(usage / 1048576).toFixed(1)} MB／可用 ${(quota / 1048576).toFixed(0)} MB`;
-  });
-}
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+setInterval(() => { if (ui.tab === 'plan' && !$('#modal').open) render(); }, 60_000);
 
 /* ---------- boot ---------- */
-if (trip.seedVersion == null && !load()) trip.seedVersion = SEED.seedVersion;
-normalize();
+if ((trip.seedVersion || 0) < SEED.seedVersion) {
+  if (confirm('有新版行程，要唔要載入？（你改過嘅內容會被取代）')) trip = freshSeed();
+  else trip.seedVersion = SEED.seedVersion;
+}
+$('#tripName').textContent = trip.name || '東京';
 save();
 updateNet();
 render();
-// 自動跳去今日
-if (trip.days.some(d => d.date === todayStr())) setTimeout(() => $('.day.today')?.scrollIntoView({ block: 'start' }), 50);
-// 背景下載地點相，等冇網都有相睇
-setTimeout(() => prefetchCovers(), 1500);
+setTimeout(() => prefetchAll().then(() => { if (ui.tab !== 'plan' || $('#modal').open) return; render(); }), 1200);

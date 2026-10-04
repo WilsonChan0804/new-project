@@ -34,13 +34,9 @@ The site has to be served over https once for offline mode to work. The easiest 
 To run it locally: `python3 -m http.server` and then open http://localhost:8000.
 
 ## Your itinerary
-The itinerary lives in `trip-data.js` (Cantonese, with Japanese names). The app loads it the first time it opens. After that, your edits are saved on the phone. If you change `trip-data.js`, increase `seedVersion` and the app will offer to load the new version.
+The Tokyo trip (29/10–1/11) lives in `trip-data.js`, in Cantonese with Japanese names. The app loads it the first time it opens; after that, your edits are saved on the phone. If you change `trip-data.js`, increase `seedVersion` and the app will offer to load the new version.
 
-Each item has a start and end time. **上移／下移** (move up/down) swaps the two time slots, and **⏱ 延遲** (delay) shifts everything after an item. The **＋** between items inserts a new item and pushes the later ones back.
-
-Other fields:
-- **Timetables:** `timetable: [{dep, arr, name, note}]`
-- **Menus:** `menu: {items: [{name, ja, price, star, desc}]}`
-- **Place photos:** `wiki: 'ja:根津神社'`. The photo is downloaded once and then kept for offline use.
+- **Photos:** `pics` lists Wikimedia Commons files picked for each stop. If there are fewer than 3, `picCat` and `picQuery` fill the gap. The phone downloads them the first time it's online and keeps them for offline use.
+- **Japanese tab:** common phrases and the Japanese place names are read aloud with the phone's built-in Japanese voice, which also works offline.
 
 When you change app files, bump `VERSION` in `sw.js` so installed copies update.
