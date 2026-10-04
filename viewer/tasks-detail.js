@@ -6,6 +6,7 @@ import { METHOD_OPTS, isMethod, ic } from "./tasks-util.js";
 import { $, esc, avatar, people, fmtDate, fmtWhen, ago, isOverdue, priorityPill, pickPeople, pickOne, pickDate, PRIORITIES, toast, modal } from "./tasks-util.js";
 import { chip, makeLink, classify, linkify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
+import { elementsBlock, wireElementBlocks } from "./revit.js";
 
 let PEND = [];           // files waiting to go with the next comment
 
@@ -32,10 +33,13 @@ async function loadExtra(T) {
   const t = T.task(id);
   if (!t || t.fresh && !t.number) { if (CUR) { CUR.loading = false; paint(T); } return; }
   try {
-    const r = await T.api("/api/tasks/" + encodeURIComponent(id));
+    const hasIssues = (t.links || []).some((l) => l.kind === "issue");
+    const [r, iss] = await Promise.all([T.api("/api/tasks/" + encodeURIComponent(id)),
+      hasIssues ? T.api("/api/tasks/" + encodeURIComponent(id) + "/issues").catch(() => null) : null]);
     if (!CUR || CUR.id !== id) return;
     CUR.comments = r.comments;
     CUR.activity = r.activity;
+    CUR.issues = iss ? Object.fromEntries(iss.issues.map((x) => [x.project + "|" + x.id, x])) : {};
   } catch (e) { /* not on the server yet */ }
   if (CUR) { CUR.loading = false; paint(T); }
 }
@@ -60,6 +64,7 @@ function issueUrl(l) {
 }
 
 function paint(T) {
+  wireElementBlocks();
   const box = $("#t-detail");
   const t = T.task(CUR.id);
   if (!t) { box.hidden = true; return; }
@@ -119,7 +124,20 @@ function paint(T) {
       ${ed ? `<input class="td-newsub" placeholder="+ Add sub-task, Enter">` : ""}` : ""}
 
       <h4>Linked issues ${issues.length ? `<span class="muted">${issues.length}</span>` : ""}</h4>
-      <div class="fl-list">${issues.map((l) => chip({ ...l, url: issueUrl(l) }, { remove: ed })).join("") || `<span class="muted td-none">No issues linked</span>`}</div>
+      <div class="fl-list td-issues">${issues.map((l) => {
+        // the issue as it is now: its status, and its Revit element
+        const now = (CUR.issues || {})[l.project + "|" + l.ref];
+        const st = now && now.status;
+        return `<span class="td-iss">${chip({ ...l, title: now && now.number ? `#${now.number} ${now.title}` : l.title, url: issueUrl(l) }, { remove: ed })}`
+          + (st ? `<span class="td-ist st-${esc(st.toLowerCase().replace(/\s+/g, "-"))}" title="The issue's status now">${esc(st)}</span>` : "") + `</span>`;
+      }).join("") || `<span class="muted td-none">No issues linked</span>`}</div>
+      ${issues.map((l) => {
+        const now = (CUR.issues || {})[l.project + "|" + l.ref];
+        const e = now && now.element;
+        return e && (e.revit_id || e.revit_uid) ? elementsBlock(l.project, [{ id: String(e.revit_id || ""), uid: e.revit_uid || "", name: e.name || "", category: e.category || "" }],
+          "Element of #" + (now.number || "?")) : "";
+      }).join("")}
+      ${others.filter((l) => l.elements && l.elements.length).map((l) => elementsBlock(l.project || new URLSearchParams((l.url.split("?")[1] || "")).get("project") || "", l.elements, "Elements to change")).join("")}
       ${ed ? `<button class="ghost td-add" data-act="linkissue">+ Link an issue${g && g.project ? " of " + esc(g.project) : ""}</button>` : ""}
 
       <h4>Files, sheets and 3D views ${others.length ? `<span class="muted">${others.length}</span>` : ""}</h4>

@@ -368,3 +368,12 @@ button svg.ic { pointer-events: none; }
 .td-nav small { font-size: 11px; min-width: 44px; text-align: center; }
 .td-backbtn { display: none; font-weight: 600; padding-left: 2px !important; }
 .td-top .lab { margin-left: 2px; }
+
+/* a linked issue's status now, beside its chip */
+.td-iss { display: inline-flex; align-items: center; gap: 2px; margin-right: 4px; }
+.td-ist { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 9px; background: #fde2e1; color: #b42318; white-space: nowrap; }
+.td-ist.st-in-progress { background: #fdeccb; color: #93590b; }
+.td-ist.st-resolved, .td-ist.st-closed { background: #e7f7f0; color: #0b7a55; }
+.td-ist.st-deleted { background: #eef1f5; color: var(--muted); }
+.tl-m.iss-open { color: #b42318; font-weight: 600; }
+.tl-m.iss-done { color: #0b7a55; }

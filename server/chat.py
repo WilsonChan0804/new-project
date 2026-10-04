@@ -260,6 +260,37 @@ def _insert(d, room, uid, author, kind, body="", card=None, files=None, reply_to
     return d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone()
 
 
+def search_messages(uid, words, limit=20):
+    """Messages in the chats this person is in with every word (the search
+    on every page, tasks.py): [{id, room, room_title, author, body, at}]."""
+    if CORE is None or uid is None or not words:
+        return []
+    cond = " AND ".join(["(LOWER(x.body) LIKE ? OR LOWER(x.files) LIKE ? OR LOWER(x.card) LIKE ?)"] * len(words))
+    args = [uid]
+    for wd in words:
+        args += ["%" + wd + "%"] * 3
+    with db() as d:
+        rows = d.execute("SELECT x.*, r.title AS room_title, r.kind AS room_kind FROM messages x "
+                         "JOIN room_members m ON m.room = x.room AND m.uid = ? "
+                         "JOIN rooms r ON r.id = x.room AND r.deleted = 0 "
+                         "WHERE x.deleted = 0 AND " + cond + " ORDER BY x.created_at DESC LIMIT ?",
+                         args + [limit]).fetchall()
+    def said(r):
+        if r["body"]:
+            return plain_links(r["body"])[:300]
+        try:
+            c = json.loads(r["card"] or "{}") or {}
+        except ValueError:
+            c = {}
+        inner = c.get("inner") or {}
+        t = c.get("title") or inner.get("title") or ""
+        n = c.get("number") or inner.get("number")
+        return (("#%s " % n) if n else "") + t
+    return [{"id": r["id"], "room": r["room"], "room_title": r["room_title"] if r["room_kind"] != "dm" else "Direct message",
+             "author": r["author"], "body": said(r), "at": r["created_at"],
+             "files": [f.get("name") for f in json.loads(r["files"] or "[]")]} for r in rows]
+
+
 def post_card(reg_ids, card, author=""):
     """A task or issue update, into the channels of those register projects
     (called by tasks.py and app.py). Never raises: a card that cannot be

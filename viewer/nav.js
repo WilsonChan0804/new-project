@@ -8,11 +8,13 @@
  * a Viewer, and offers the project's members as assignees.
  */
 
+import { installSearch } from "./search.js";
+
 
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-07";
+const LWK_VERSION = "2026-10-08";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -238,6 +240,15 @@ function viewLink() {
     return { url: base + "index.html?" + new URLSearchParams({ project: p, sheet: sh.number }).toString(),
              title: "Sheet " + sh.number + (sh.name ? " - " + sh.name : "") };
   }
+  // elements selected in 3D: the task keeps them ("elements to change")
+  const els = window.LWK3D && window.LWK3D.selectedElements ? window.LWK3D.selectedElements() : [];
+  if (els.length) {
+    const keys = els.map((e) => e.uid || e.id).filter(Boolean).slice(0, 40);
+    const cats = [...new Set(els.map((e) => e.category).filter(Boolean))];
+    return { url: base + "model.html?" + new URLSearchParams({ project: p, elements: keys.join(",") }).toString(),
+             title: els.length === 1 ? `${els[0].category || "Element"}: ${els[0].name || els[0].id}` : `${els.length} elements: ${cats.slice(0, 3).join(", ")}`,
+             elements: els };
+  }
   const L = window.LWK;
   if (L && L.S && L.S.controls && L.sceneToInternalMM) {
     const mm = L.sceneToInternalMM(L.S.controls.target).map((n) => Math.round(n));
@@ -249,6 +260,10 @@ function viewLink() {
 
 function sendToTask() {
   const v = viewLink();
+  // the element list is handed over beside the address (it can be long)
+  try {
+    if (v.elements) localStorage.setItem("lwk-viewer:attach-elements", JSON.stringify({ url: v.url, elements: v.elements.slice(0, 500), at: Date.now() }));
+  } catch (e) {}
   window.open(link("tasks.html", { attach: v.url, title: v.title }), "_blank");
 }
 
@@ -506,3 +521,6 @@ export async function projectOptions(current, fallback) {
     return fallback ? fallback() : { html: "", ids: [] };
   }
 }
+
+// the search on every page (search.js): its button goes into #lwk-nav
+if (document.querySelector("header")) installSearch();

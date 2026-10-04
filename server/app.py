@@ -379,7 +379,7 @@ async def logout():
     return resp
 
 
-SERVER_VERSION = "2026-10-07"
+SERVER_VERSION = "2026-10-08"
 
 
 @app.get("/api/ping")
@@ -529,13 +529,56 @@ async def put_item(request: Request, x_viewer_token: str = Header(default=""),
     st = store_for(x_project)
     prev = st.get(item["id"])
     check_layer_edit(x_project, w, role, prev, item)
+    CFG["base_url"] = str(request.base_url)
+    rev, item = save_item(x_project, prev, item, w, str(request.base_url))
+    out = {"rev": rev, "id": item["id"], "item": item}
+    # resolved or closed: the tasks still open on it are named, so the page
+    # can offer to complete them too (tasks.py)
+    iss, piss = item.get("issue"), (prev or {}).get("issue") or {}
+    if isinstance(iss, dict) and iss.get("status") in CLOSED and piss.get("status") not in CLOSED:
+        try:
+            import tasks
+            out["open_tasks"] = tasks.issue_resolved(sys.modules[__name__], x_project, item["id"], iss, w.name)
+        except Exception as ex:
+            print("issue -> tasks: %s" % ex)
+    return out
+
+
+def save_item(pid, prev, item, w, base_url=""):
+    """Every change to an item, from the page or from the server itself (a
+    task closing its issues): history, then the Teams, email and chat
+    messages that go with it."""
+    st = store_for(pid)
     item = stamp(prev, item, w, st)
     rev = st.put(item, author=item.get("author"))
-    CFG["base_url"] = str(request.base_url)
-    notify_teams(x_project, prev, item, str(request.base_url))
-    notify_people(x_project, prev, item, str(request.base_url), w)
-    chat_issue_card(x_project, prev, item, w)
-    return {"rev": rev, "id": item["id"], "item": item}
+    notify_teams(pid, prev, item, base_url or CFG.get("base_url") or "")
+    notify_people(pid, prev, item, base_url or CFG.get("base_url") or "", w)
+    chat_issue_card(pid, prev, item, w)
+    return rev, item
+
+
+def set_issue_status(pid, iid, status, w, note=""):
+    """Change one issue's status from the server (tasks.py, a task marked
+    done resolving its issues), as if it was changed in the viewer.
+    Returns (ok, reason)."""
+    if not project_dir(pid):
+        return False, "no such project"
+    r = role_in(w, pid)
+    if not r or RANK.get(r, 0) < RANK["member"]:
+        return False, "you are not a member of " + pid
+    st = store_for(pid)
+    prev = st.get(iid)
+    if not prev or prev.get("deleted") or not isinstance(prev.get("issue"), dict):
+        return False, "no such issue"
+    item = json.loads(json.dumps(prev))
+    item["issue"]["status"] = status
+    if note:
+        cs = list(item["issue"].get("comments") or [])
+        cs.append({"id": "c" + uuid.uuid4().hex[:12], "author": w.name or "", "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                   "text": note[:2000]})
+        item["issue"]["comments"] = cs
+    save_item(pid, prev, item, w)
+    return True, ""
 
 
 def chat_issue_card(pid, prev, item, w):
@@ -2052,6 +2095,100 @@ async def goto_poll(request: Request, after: int = -1, x_viewer_token: str = Hea
     if after < 0 or not g or g["seq"] <= after or g["claimed"] or time.time() - g["ts"] > GOTO_TTL:
         return {"goto": None, "seq": cur}
     return {"goto": {k: g[k] for k in ("seq", "project", "id", "kind", "sheet")}, "seq": cur}
+
+
+# ------------------------------------------------- Revit add-in (viewer -> Revit)
+# Kept in memory per person, like GOTO. The add-in polls for what to select;
+# it posts what is selected in Revit for the viewer to use. The exchange is
+# described for the add-in's developer in server/REVIT_ADDIN_API.md.
+REVIT_REQ = {}          # key -> [request, ...] (the last 20)
+REVIT_SEQ = [0]
+REVIT_SEEN = {}         # key -> time the add-in last polled
+REVIT_SEL = {}          # key -> {project, document, elements, at}
+
+
+def _clean_elements(v, cap=500):
+    out = []
+    for e in (v if isinstance(v, list) else [])[:cap]:
+        if not isinstance(e, dict):
+            continue
+        rid = str(e.get("id") if e.get("id") is not None else e.get("revit_id") or "")[:20]
+        uid = str(e.get("uid") or e.get("revit_uid") or "")[:80]
+        if not re.match(r"^-?\d{0,19}$", rid) or not re.match(r"^[A-Za-z0-9-]{0,80}$", uid) or not (rid or uid):
+            continue
+        out.append({"id": rid, "uid": uid, "name": str(e.get("name") or "")[:120],
+                    "category": str(e.get("category") or "")[:80]})
+    return out
+
+
+@app.post("/api/revit/requests")
+async def revit_request(request: Request, x_viewer_token: str = Header(default="")):
+    """The viewer: {project, kind: "select", elements: [{id, uid}], issue,
+    title, viewpoint}. Answers whether the add-in has been listening."""
+    w = who(request, x_viewer_token)
+    body = await request.json() or {}
+    els = _clean_elements(body.get("elements"))
+    if not els:
+        raise HTTPException(status_code=400, detail="No Revit elements to show")
+    key = _goto_key(w)
+    REVIT_SEQ[0] += 1
+    req = {"seq": REVIT_SEQ[0], "kind": "select", "project": str(body.get("project") or "")[:80],
+           "elements": els, "issue": str(body.get("issue") or "")[:80], "title": str(body.get("title") or "")[:200],
+           "viewpoint": body.get("viewpoint") if isinstance(body.get("viewpoint"), dict) else None,
+           "at": time.time(), "claimed": False}
+    REVIT_REQ[key] = (REVIT_REQ.get(key) or [])[-19:] + [req]
+    return {"seq": req["seq"], "addin_seen": time.time() - REVIT_SEEN.get(key, 0) < 30}
+
+
+@app.get("/api/revit/requests")
+async def revit_poll(request: Request, after: int = 0, x_viewer_token: str = Header(default="")):
+    """The add-in, every few seconds: what to select (unclaimed, under 10 minutes old)."""
+    w = who(request, x_viewer_token)
+    key = _goto_key(w)
+    REVIT_SEEN[key] = time.time()
+    now = time.time()
+    out = [dict((k, v) for k, v in r.items() if k != "claimed") for r in REVIT_REQ.get(key) or []
+           if r["seq"] > after and not r["claimed"] and now - r["at"] < 600]
+    return {"requests": out, "seq": REVIT_SEQ[0]}
+
+
+@app.post("/api/revit/requests/claim")
+async def revit_claim(request: Request, x_viewer_token: str = Header(default="")):
+    w = who(request, x_viewer_token)
+    body = await request.json() or {}
+    for r in REVIT_REQ.get(_goto_key(w)) or []:
+        if r["seq"] == int(body.get("seq") or -1):
+            r["claimed"] = True
+            return {"ok": True}
+    return {"ok": False}
+
+
+@app.get("/api/revit/status")
+async def revit_status(request: Request, x_viewer_token: str = Header(default="")):
+    w = who(request, x_viewer_token)
+    return {"addin_seen": time.time() - REVIT_SEEN.get(_goto_key(w), 0) < 30}
+
+
+@app.post("/api/revit/selection")
+async def revit_selection_put(request: Request, x_viewer_token: str = Header(default="")):
+    """The add-in: {project, document, elements: [{id, uid, name, category}]}"""
+    w = who(request, x_viewer_token)
+    body = await request.json() or {}
+    key = _goto_key(w)
+    REVIT_SEEN[key] = time.time()
+    REVIT_SEL[key] = {"project": str(body.get("project") or "")[:80], "document": str(body.get("document") or "")[:200],
+                      "elements": _clean_elements(body.get("elements")), "at": time.time()}
+    return {"ok": True, "count": len(REVIT_SEL[key]["elements"])}
+
+
+@app.get("/api/revit/selection")
+async def revit_selection_get(request: Request, x_viewer_token: str = Header(default="")):
+    """The viewer: what is selected in Revit now (sent in the last hour)."""
+    w = who(request, x_viewer_token)
+    s = REVIT_SEL.get(_goto_key(w))
+    if not s or time.time() - s["at"] > 3600:
+        return {"elements": [], "project": "", "document": "", "age": None}
+    return dict(s, age=int(time.time() - s["at"]))
 
 
 @app.post("/api/goto/claim")

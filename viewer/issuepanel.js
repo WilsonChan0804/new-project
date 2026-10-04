@@ -16,8 +16,10 @@
    its own recorded reason. */
 import { ISSUE_TYPES, typeOptions, shortDate } from "./issuetypes.js";
 import { chip, makeLink, classify, linkify } from "./filelinks.js";
+import { elementsOf, elementsBlock, wireElementBlocks } from "./revit.js";
 
 const STATUSES = ["Open", "In progress", "Resolved", "Closed"];
+const CLOSED = ["Resolved", "Closed"];
 const PRIORITIES = ["Low", "Normal", "High", "Critical"];
 
 const esc = (s) => String(s == null ? "" : s)
@@ -67,6 +69,7 @@ export function ensureDialog() {
             <span id="detail-where"></span>
             <span id="detail-raised"></span>
           </div>
+          <div id="detail-element"></div>
           <div id="detail-images"></div>
           <div class="detail-add">
             <input id="detail-file" type="file" accept="image/*" multiple hidden>
@@ -335,6 +338,10 @@ export function openIssue(item, opts) {
   $("#detail-addfile").onclick = addFile;
   $("#detail-fileurl").onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); addFile(); } };
   loadTasks(item, iss);
+  // the Revit element it is about (3D issues), with Copy IDs / 3D / Revit
+  wireElementBlocks();
+  $("#detail-element").innerHTML = elementsBlock(currentProject(), elementsOf(item), "Revit element");
+  const statusWas = iss.status || "Open";
   $("#detail-tochat").onclick = () => {
     const pid = currentProject();
     const base = location.origin + location.pathname.replace(/[^/]*$/, "");
@@ -365,6 +372,8 @@ export function openIssue(item, opts) {
     try {
       await opts.onSave(collect());
       close();
+      // resolved or closed now: offer to complete the tasks still open on it
+      if (CLOSED.includes(iss.status) && !CLOSED.includes(statusWas)) offerTaskDone(item, iss);
     } finally {
       b.disabled = false;
     }
@@ -551,44 +560,117 @@ async function loadTasks(item, iss) {
   }).join("") || `<span class="muted" style="font-size:11px">No task points at this issue yet.</span>`;
   if (!r.lists.length || !item.issue) return;
   btn.hidden = false;
-  btn.onclick = async () => {
-    // the lists with a group for this project come first; one of them: no question
-    let cands = r.lists;
+  btn.onclick = () => newTaskForm(item, iss, r.lists).catch((e) => alert("Could not make the task: " + e.message));
+}
+
+/* A small form over the issue window (the issue pages have no modal of
+   their own). Resolves with the form, or null on Cancel. */
+function miniForm(title, html, ok) {
+  return new Promise((resolve) => {
+    const back = document.createElement("div");
+    back.className = "it-form-back";
+    back.innerHTML = `<form class="it-form" onsubmit="return false"><h3>${esc(title)}</h3>${html}`
+      + `<div class="it-form-b"><span class="it-form-msg muted"></span><span class="spacer"></span><button type="button" class="ghost" data-x>Cancel</button>`
+      + `<button type="submit" class="primary">${esc(ok)}</button></div></form>`;
+    document.body.appendChild(back);
+    const f = back.querySelector("form");
+    const done = (v) => { back.remove(); resolve(v); };
+    back.querySelector("[data-x]").onclick = () => done(null);
+    f.onsubmit = () => { done(f); return false; };
+    back.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { ev.stopPropagation(); done(null); } });
+    setTimeout(() => { const i = f.querySelector("input, select"); if (i) i.focus(); }, 0);
+  });
+}
+
+const issueUrlOf = (item, pid) => item.sheet
+  ? `index.html?project=${encodeURIComponent(pid)}&sheet=${encodeURIComponent(item.sheet)}&select=${encodeURIComponent(item.id)}`
+  : `model.html?project=${encodeURIComponent(pid)}&select=${encodeURIComponent(item.id)}`;
+
+/* "New task from this issue": the list and group of this project first,
+   the issue's assignee as owner, its due date, its files and element. */
+async function newTaskForm(item, iss, lists) {
+  const pid = currentProject();
+  const H = apiHeaders();
+  const [allLists, ppl] = await Promise.all([
+    fetch("/api/task-lists", { headers: H }).then((r) => r.json()).catch(() => ({ lists: [] })),
+    fetch("/api/people", { headers: H }).then((r) => r.json()).catch(() => ({ people: [] })),
+  ]);
+  const linked = new Set((allLists.lists || []).filter((l) => (l.groups || []).some((g) => g.project === pid)).map((l) => l.id));
+  const cands = lists.slice().sort((a, b) => linked.has(b.id) - linked.has(a.id));
+  const people = ppl.people || [];
+  const who = (iss.assigned_to || "").trim().toLowerCase();
+  const owner = people.find((p) => p.name.toLowerCase() === who) || people.find((p) => who && p.name.toLowerCase().startsWith(who));
+  const els = elementsOf(item);
+  const f = miniForm("New task from issue #" + (iss.number || "?"),
+    `<label>Task list <select name="list">${cands.map((l) => `<option value="${esc(l.id)}">${esc(l.title)}${linked.has(l.id) ? "" : " (no group for " + esc(pid) + ")"}</option>`).join("")}</select></label>`
+    + `<label>Group <select name="group"><option value="">Loading ...</option></select></label>`
+    + `<label>Title <input name="title" value="${esc(`#${iss.number || "?"} ${iss.title || "Issue"}`)}"></label>`
+    + `<div class="it-2"><label>Owner <select name="owner"><option value="">Nobody yet</option>${people.map((p) => `<option value="${p.uid}"${owner && owner.uid === p.uid ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label>`
+    + `<label>Due <input type="date" name="due" value="${esc((iss.due_date || "").slice(0, 10))}"></label></div>`
+    + (els.length ? `<p class="muted" style="font-size:11px;margin:2px 0">The Revit element (${esc(els[0].category || els[0].name || "element")}${els[0].id ? ", id " + esc(els[0].id) : ""}) goes with it.</p>` : "")
+    + `<label class="row-check"><input type="checkbox" name="go"> Open the task when made</label>`, "Make the task");
+  // the groups of the chosen list, this project's first
+  const form = document.querySelector(".it-form");
+  if (form) {
+    const fill = async () => {
+      const gsel = form.querySelector("[name=group]");
+      try {
+        const all = await (await fetch("/api/tasks?list=" + encodeURIComponent(form.list.value), { headers: H })).json();
+        const gs = (all.groups || []).filter((g) => !g.deleted);
+        gs.sort((a, b) => (b.project === pid) - (a.project === pid));
+        gsel.innerHTML = gs.map((g) => `<option value="${esc(g.id)}">${esc(g.title)}${g.project === pid ? " (" + esc(pid) + ")" : ""}</option>`).join("") || `<option value="">(no groups)</option>`;
+      } catch (e) { gsel.innerHTML = `<option value="">(no groups)</option>`; }
+    };
+    form.list.onchange = fill;
+    fill();
+  }
+  const done = await f;
+  if (!done) return;
+  const id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).slice(0, 20);
+  const own = people.find((p) => String(p.uid) === done.owner.value);
+  const where = item.sheet ? "Sheet " + item.sheet : "3D" + (item.level ? " · " + item.level : "");
+  const links = [{ kind: "issue", project: pid, ref: item.id, title: `#${iss.number || "?"} ${iss.title || "Issue"}`, url: issueUrlOf(item, pid) }]
+    .concat((iss.files || []).map((x) => Object.assign({}, x)));
+  if (els.length) {
+    links.push({ kind: "view3d", project: pid, url: `model.html?project=${encodeURIComponent(pid)}&elements=${encodeURIComponent(els.map((e) => e.uid || e.id).join(","))}`,
+      title: (els.length === 1 ? els[0].name || els[0].category || "Element" : els.length + " elements") + " (Revit)", elements: els });
+  }
+  const body = { list: done.list.value, tasks: [{
+    id, title: done.title.value.trim() || iss.title || "Issue", group_id: done.group.value || "", due: done.due.value || "",
+    owners: own ? [{ uid: own.uid, name: own.name }] : [],
+    priority: { Critical: "Urgent", High: "High", Normal: "Medium", Low: "Low" }[iss.priority] || "",
+    description: [iss.description || "", where + (els.length ? " · " + (els[0].category || "") + " " + (els[0].name || "") + (els[0].id ? " (Revit id " + els[0].id + ")" : "") : "")].filter(Boolean).join("\n\n"),
+    links,
+  }] };
+  const res = await fetch("/api/tasks", { method: "POST", headers: H, body: JSON.stringify(body) });
+  const out = await res.json();
+  if (!res.ok) throw new Error(out.detail || "HTTP " + res.status);
+  if (done.go.checked) window.open(`tasks.html?list=${encodeURIComponent(done.list.value)}&task=${encodeURIComponent(id)}`, "_blank");
+  loadTasks(item, iss);
+}
+
+/* The issue was just resolved: its tasks still open can be completed too. */
+async function offerTaskDone(item, iss) {
+  const pid = currentProject();
+  let r;
+  try {
+    r = await (await fetch("/api/tasks-by-issue?issue=" + encodeURIComponent(item.id) + "&project=" + encodeURIComponent(pid), { headers: apiHeaders() })).json();
+  } catch (e) { return; }
+  const open = (r.tasks || []).filter((t) => !t.done && t.can_open);
+  if (!open.length) return;
+  const f = await miniForm(`Issue #${iss.number || "?"} is ${iss.status}`,
+    `<p class="muted" style="font-size:12px;margin-top:0">These tasks on it are still open:</p>`
+    + open.map((t, i) => `<label class="row-check"><input type="checkbox" name="t${i}" checked> <b>${esc(t.title || "Task")}</b> <small class="muted">${esc(t.list_title || "")}</small></label>`).join(""),
+    "Mark them done");
+  if (!f) return;
+  const byList = {};
+  open.forEach((t, i) => { if (f["t" + i] && f["t" + i].checked) (byList[t.list_id] = byList[t.list_id] || []).push({ id: t.id, done: true }); });
+  for (const [list, tasks] of Object.entries(byList)) {
     try {
-      const all = await (await fetch("/api/task-lists", { headers: apiHeaders() })).json();
-      const linked = new Set((all.lists || []).filter((l) => (l.groups || []).some((g) => g.project === pid)).map((l) => l.id));
-      if (r.lists.some((l) => linked.has(l.id))) cands = r.lists.filter((l) => linked.has(l.id));
-    } catch (e) {}
-    let list = cands[0];
-    if (cands.length > 1) {
-      const names = cands.map((l, i) => `${i + 1}. ${l.title}`).join("\n");
-      const n = prompt("Which task list?\n\n" + names, "1");
-      if (n === null) return;
-      list = cands[Number(n) - 1];
-      if (!list) return;
-    }
-    try {
-      // the list's group for this project, if it has one
-      const all = await (await fetch("/api/tasks?list=" + encodeURIComponent(list.id), { headers: apiHeaders() })).json();
-      const g = (all.groups || []).find((x) => x.project === pid) || (all.groups || [])[0];
-      const id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).slice(0, 20);
-      const url = item.sheet
-        ? `index.html?project=${encodeURIComponent(pid)}&sheet=${encodeURIComponent(item.sheet)}&select=${encodeURIComponent(item.id)}`
-        : `model.html?project=${encodeURIComponent(pid)}&select=${encodeURIComponent(item.id)}`;
-      const body = { list: list.id, tasks: [{
-        id, title: iss.title || "Issue", group_id: g ? g.id : "", due: iss.due_date || "",
-        priority: { Critical: "Urgent", High: "High", Normal: "Medium", Low: "Low" }[iss.priority] || "",
-        description: (iss.description || "") ,
-        links: [{ kind: "issue", project: pid, ref: item.id, title: `#${iss.number || "?"} ${iss.title || "Issue"}`, url }]
-          .concat((iss.files || []).map((f) => Object.assign({}, f))),
-      }] };
-      const res = await fetch("/api/tasks", { method: "POST", headers: apiHeaders(), body: JSON.stringify(body) });
-      const out = await res.json();
-      if (!res.ok) throw new Error(out.detail || "HTTP " + res.status);
-      window.open(`tasks.html?list=${encodeURIComponent(list.id)}&task=${encodeURIComponent(id)}`, "_blank");
-      loadTasks(item, iss);
-    } catch (e) { alert("Could not make the task: " + e.message); }
-  };
+      const res = await fetch("/api/tasks", { method: "POST", headers: apiHeaders(), body: JSON.stringify({ list, tasks }) });
+      if (!res.ok) { const o = await res.json().catch(() => ({})); alert("Could not complete the task: " + (o.detail || res.status)); }
+    } catch (e) { alert("Could not complete the task: " + e.message); }
+  }
 }
 
 (function css() {
@@ -597,6 +679,14 @@ async function loadTasks(item, iss) {
   st.id = "it-css";
   st.textContent = `#detail-tasks { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; font-size: 12px; }
 .it-task a { color: var(--accent-deep, #d1660e); font-weight: 600; text-decoration: none; }
+.it-form-back { position: fixed; inset: 0; z-index: 300; background: rgba(20,26,36,.35); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.it-form { background: var(--panel, #fff); border-radius: 12px; padding: 16px 18px; width: min(460px, 96vw); max-height: 90vh; overflow: auto; box-shadow: 0 20px 60px rgba(20,26,36,.3); display: flex; flex-direction: column; gap: 8px; }
+.it-form h3 { margin: 0 0 4px; font-size: 16px; }
+.it-form label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted, #6b7480); }
+.it-form label.row-check { flex-direction: row; align-items: center; gap: 6px; color: var(--ink, #1f2430); }
+.it-form input:not([type=checkbox]), .it-form select { font-size: 14px; }
+.it-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.it-form-b { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
 .it-task.done a, .it-task.done span { text-decoration: line-through; color: var(--muted, #6b7480); }
 .it-tick { display: inline-block; width: 16px; color: var(--ok, #0e9f6e); }
 .it-late { color: var(--bad, #e2453c); }

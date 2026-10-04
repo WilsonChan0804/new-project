@@ -268,6 +268,7 @@ async function flush() {
     $("#t-save").textContent = "Saved";
     render();
     if (S.openId) Detail.refresh(T);
+    if ((res.open_issues || []).length) offerResolve(res.open_issues);
   } catch (e) {
     // put them back, under anything changed since
     for (const p of batch) {
@@ -282,6 +283,33 @@ async function flush() {
     saving = false;
   }
 }
+/* A task just done whose issues are still open: offer to resolve them, the
+   same as resolving them in the viewer (history, emails, chat card). */
+async function offerResolve(list) {
+  const mine = list.filter((x) => x.ok);
+  if (!mine.length) return;
+  const f = await modal("Resolve its issues too?", `<p class="muted" style="font-size:12px;margin-top:0">`
+    + `<b>${esc(mine[0].task_title || "This task")}</b> is done. These linked issues are still open:</p>`
+    + mine.map((x, i) => `<label class="row-check"><input type="checkbox" name="i${i}" checked> `
+      + `<b>#${esc(x.number || "?")}</b> ${esc(x.title)} <small class="muted">(${esc(x.project)}${x.sheet ? " · " + esc(x.sheet) : " · 3D"} · ${esc(x.status)})</small></label>`).join("")
+    + `<label>Mark them <select name="st"><option>Resolved</option><option>Closed</option></select></label>`, "Update issues");
+  if (!f) return;
+  const byTask = {};
+  mine.forEach((x, i) => { if (f["i" + i] && f["i" + i].checked) (byTask[x.task_id] = byTask[x.task_id] || []).push({ project: x.project, id: x.id }); });
+  let n = 0, skipped = [];
+  for (const [tid, issues] of Object.entries(byTask)) {
+    try {
+      const r = await api(`/api/tasks/${tid}/close-issues`, { method: "POST", body: JSON.stringify({ issues, status: f.st.value }) });
+      n += r.done.length;
+      skipped = skipped.concat(r.skipped);
+    } catch (e) { toast(e.message, true); }
+  }
+  if (n) toast(`${n} issue${n === 1 ? "" : "s"} marked ${f.st.value}`);
+  if (skipped.length) toast(`Not changed: ${skipped.map((x) => x.reason).join("; ")}`, true);
+  render();
+  if (S.openId) Detail.refresh(T);
+}
+
 addEventListener("beforeunload", (ev) => {
   if (pending.size) { flush(); ev.preventDefault(); ev.returnValue = ""; }
 });
@@ -761,6 +789,14 @@ async function attachFromViewer(url, title) {
   if (!f) return;
   const link = makeLink(url, f.title.value, S.me.name);
   if (!link) return toast("That is not a link that can be kept", true);
+  // Revit elements chosen on the 3D page come with it (nav.js sendToTask)
+  try {
+    const h = JSON.parse(localStorage.getItem("lwk-viewer:attach-elements") || "null");
+    if (h && h.url === url && Date.now() - h.at < 30 * 60e3) {
+      link.elements = h.elements;
+      localStorage.removeItem("lwk-viewer:attach-elements");
+    }
+  } catch (e) {}
   if (f.task.value) {
     const [lid, tid] = f.task.value.split("|");
     await openList(lid);

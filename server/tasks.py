@@ -347,6 +347,19 @@ def clean_links(v):
                 "title": clean_text(l.get("title"), 300),
                 "project": clean_text(l.get("project"), 80), "ref": clean_text(l.get("ref"), 120),
                 "added_by": clean_text(l.get("added_by"), 100), "added_at": clean_text(l.get("added_at"), 30)}
+        # the Revit elements a 3D link points at ("elements to change")
+        if kind == "view3d" and isinstance(l.get("elements"), list):
+            els = []
+            for e in l["elements"][:500]:
+                if not isinstance(e, dict):
+                    continue
+                rid, uid = clean_text(e.get("id"), 20), clean_text(e.get("uid"), 80)
+                if not (re.match(r"^-?\d{1,19}$", rid) or re.match(r"^[A-Za-z0-9-]{8,80}$", uid)):
+                    continue
+                els.append({"id": rid, "uid": uid, "name": clean_text(e.get("name"), 120),
+                            "category": clean_text(e.get("category"), 80)})
+            if els:
+                item["elements"] = els
         if kind == "issue" and not (item["project"] and item["ref"]):
             continue
         if kind != "issue" and not url:
@@ -686,6 +699,27 @@ def reg_ids_for_viewer(core, pid):
                     if pid in viewers_of(r)]
     except Exception:
         return []
+
+
+def issue_resolved(core, pid, iid, iss, by):
+    """An issue was resolved or closed (app.py put_item): each open task
+    linked to it gets a line in its activity, and the tasks are returned so
+    the page can offer to complete them."""
+    out = []
+    with Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
+        rows = d.execute("SELECT t.* FROM tasks t JOIN issue_links l ON l.task_id = t.id "
+                         "WHERE l.project = ? AND l.issue = ? AND t.deleted = 0 AND t.done = 0", (pid, iid)).fetchall()
+        if not rows:
+            return out
+        rev = next_rev(d)
+        label = "#%s %s" % (iss.get("number") or "?", iss.get("title") or "Issue")
+        for t in rows:
+            d.execute("INSERT INTO activity (list_id, task_id, title, at, by, event, field, old, new) VALUES (?,?,?,?,?,?,?,?,?)",
+                      (t["list_id"], t["id"], t["title"], now_iso(), by or "", "issue-" + (iss.get("status") or "resolved").lower(),
+                       "issue", label[:300], (iss.get("status") or "")[:300]))
+            d.execute("UPDATE tasks SET rev = ? WHERE id = ?", (rev, t["id"]))
+            out.append({"id": t["id"], "list_id": t["list_id"], "number": t["number"], "title": t["title"]})
+    return out
 
 
 def register(app, core):
@@ -1075,8 +1109,40 @@ def register(app, core):
                 "SELECT * FROM list_members WHERE list_id = ?", (list,))]
         l = list_row(row)
         l["members"] = members
+        add_issue_state(w, ts)
         return {"rev": rev, "full": not since, "role": role, "list": l,
                 "groups": gs, "fields": fs, "tasks": ts}
+
+    def linked_issues(w, links):
+        """The issues a task links to, as they are now: [{project, id,
+        number, title, status, sheet, open, ok}]. ok: this person may open it."""
+        out = []
+        for l in links or []:
+            if l.get("kind") != "issue" or not l.get("project") or not l.get("ref"):
+                continue
+            pid, iid = l["project"], l["ref"]
+            ok = bool(core.project_dir(pid) and core.role_in(w, pid))
+            row = {"project": pid, "id": iid, "number": None, "title": l.get("title") or "Issue",
+                   "status": "", "sheet": "", "open": False, "ok": ok, "url": l.get("url") or ""}
+            if ok:
+                issues, _ = items_of(pid)
+                hit = next((x for x in issues if x["id"] == iid), None)
+                if hit:
+                    row.update(number=hit["number"], title=hit["title"], status=hit["status"], sheet=hit["sheet"],
+                               open=not hit["dismissed"] and hit["status"] not in ("Resolved", "Closed"),
+                               element=hit.get("element"))
+                else:
+                    row["status"] = "Deleted"
+            out.append(row)
+        return out
+
+    def add_issue_state(w, rows):
+        for t in rows:
+            if t.get("deleted") or not any(l.get("kind") == "issue" for l in t.get("links") or []):
+                continue
+            iss = linked_issues(w, t["links"])
+            t["issues_open"] = sum(1 for x in iss if x["open"])
+            t["issues_total"] = len(iss)
 
     @app.post("/api/tasks")
     async def tasks_save(request: Request, x_viewer_token: str = Header(default="")):
@@ -1241,6 +1307,14 @@ def register(app, core):
                 log(d, lid, tid, old["title"], by, "deleted")
             rows = [task_row(r) for r in d.execute(
                 "SELECT * FROM tasks WHERE rev = ? AND list_id = ?", (rev, lid))]
+        # completed: the issues it links to that are still open, so the page
+        # can offer to resolve them too
+        open_issues = []
+        for kind, task, who_ in events:
+            if kind == "done":
+                for x in linked_issues(w, task.get("links")):
+                    if x["open"]:
+                        open_issues.append(dict(x, task_id=task["id"], task_title=task["title"]))
         for kind, task, who_ in events:
             card(task, {"owner": "assigned", "done": "completed", "created": "created"}[kind], by,
                  ", ".join(p["name"] for p in who_) if kind == "owner" else "")
@@ -1254,7 +1328,46 @@ def register(app, core):
             else:
                 notify(who_, "Completed: %s" % task["title"],
                        "%s marked \"%s\" as done.\n\n%s" % (by, task["title"], task_url(task)), w.uid)
-        return {"rev": rev, "tasks": rows}
+        add_issue_state(w, rows)
+        return {"rev": rev, "tasks": rows, "open_issues": open_issues}
+
+    @app.get("/api/tasks/{tid}/issues")
+    def task_issues(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+        """The issues this task links to, with their status now."""
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such task")
+            need_list(d, w, r["list_id"])
+            links = json.loads(r["links"] or "[]")
+        return {"issues": linked_issues(w, links)}
+
+    @app.post("/api/tasks/{tid}/close-issues")
+    async def task_close_issues(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+        """{issues: [{project, id}], status: "Resolved"}: the issues this task
+        links to, resolved through the viewer's own save (history, emails,
+        chat cards), with a note naming the task."""
+        w = core.who(request, x_viewer_token)
+        body = await read_json(request)
+        status = body.get("status") if body.get("status") in ("Resolved", "Closed") else "Resolved"
+        with db() as d:
+            r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such task")
+            need_list(d, w, r["list_id"], "editor")
+            lst = d.execute("SELECT * FROM lists WHERE id = ?", (r["list_id"],)).fetchone()
+            links = json.loads(r["links"] or "[]")
+        mine = set((l.get("project"), l.get("ref")) for l in links if l.get("kind") == "issue")
+        tlabel = "%s T-%s %s" % (lst["title"] if lst else "", r["number"], r["title"])
+        done, skipped = [], []
+        for x in (body.get("issues") or [])[:50]:
+            if not isinstance(x, dict) or (x.get("project"), x.get("id")) not in mine:
+                continue
+            ok, why = core.set_issue_status(x["project"], x["id"], status, w,
+                                            "%s with task %s" % (status, tlabel.strip()))
+            (done if ok else skipped).append(dict(x, reason=why))
+        return {"done": done, "skipped": skipped}
 
     @app.get("/api/tasks/{tid}")
     async def task_one(request: Request, tid: str, x_viewer_token: str = Header(default="")):
@@ -1888,9 +2001,14 @@ def register(app, core):
                 continue
             iss = it.get("issue")
             if isinstance(iss, dict):
+                el = it.get("element") if isinstance(it.get("element"), dict) else None
                 issues.append({"id": it["id"], "number": iss.get("number"), "title": iss.get("title") or "Issue",
                                "status": iss.get("status") or "Open", "dismissed": bool(iss.get("dismissed")),
-                               "sheet": it.get("sheet") or ""})
+                               "sheet": it.get("sheet") or "", "description": (iss.get("description") or "")[:2000],
+                               "assigned_to": iss.get("assigned_to") or "", "level": it.get("level") or iss.get("level") or "",
+                               "element": el, "updated_at": iss.get("updated_at") or it.get("created_at") or "",
+                               "files": [{"title": f.get("title") or f.get("name") or "", "url": f.get("url") or "", "kind": f.get("kind") or "url"}
+                                         for f in (iss.get("files") or []) if isinstance(f, dict) and f.get("url")][:30]})
             elif it.get("placement") == "view" and it.get("name"):
                 views.append({"id": it["id"], "name": it["name"]})
         _ITEMS[pid] = (rev, issues, views)
@@ -1987,6 +2105,109 @@ def register(app, core):
         for x in out:
             x.pop("_k", None)
         return {"rows": out[:30]}
+
+    # ------------------------------------------------ search on every page
+
+    @app.get("/api/search")
+    def search_all(request: Request, q: str = "", limit: int = 8, project: str = "",
+                   x_viewer_token: str = Header(default="")):
+        """Every word of q (2+ letters) in projects, tasks, issues, sheets,
+        3D views, messages and file links this person may see. project: one
+        register project only (its parts and task groups)."""
+        w = core.who(request, x_viewer_token)
+        words = [x for x in re.split(r"\s+", (q or "").strip().lower()) if x][:6]
+        if not words or len("".join(words)) < 2:
+            return {"q": q, "groups": []}
+        limit = max(3, min(50, limit))
+        has = lambda *texts: all(any(wd in (t or "").lower() for t in texts) for wd in words)
+        titles = dict((p["id"], p["title"]) for p in core.list_projects())
+        groups = {"projects": [], "tasks": [], "issues": [], "sheets": [], "views": [], "messages": [], "files": []}
+        more = dict((k, 0) for k in groups)
+
+        def add(g, row):
+            if len(groups[g]) < limit:
+                groups[g].append(row)
+            else:
+                more[g] += 1
+        with db() as d:
+            ensure_registry(d)
+            regs = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+            scope = [r for r in regs if r["id"] == project] or regs
+            # projects
+            for r in regs:
+                mine = w.site_admin or any(core.role_in(w, v) for v in viewers_of(r)) \
+                    or any(o.get("uid") == w.uid for o in json.loads(r["owners"] or "[]"))
+                if mine and has(r["name"], r["code"], r["short"], r["team"]):
+                    add("projects", {"kind": "project", "title": r["short"] or r["name"], "sub": " · ".join(x for x in (r["code"], r["team"], r["status"]) if x),
+                                     "url": "projects.html?p=" + r["id"]})
+            # tasks
+            lists = dict((r["id"], r) for r, _ in visible_lists(d, w))
+            regset = set(r["id"] for r in scope) if project else None
+            if lists:
+                qs = ",".join("?" * len(lists))
+                rows = d.execute("SELECT t.*, g.title AS g_title, g.reg AS g_reg FROM tasks t LEFT JOIN groups g ON g.id = t.group_id "
+                                 "WHERE t.deleted = 0 AND t.list_id IN (%s) AND (%s) ORDER BY t.done, t.updated_at DESC" % (
+                                     qs, " AND ".join(["(LOWER(t.title) LIKE ? OR LOWER(t.description) LIKE ? OR LOWER(t.links) LIKE ? OR ('t-' || t.number) = ?)"] * len(words))),
+                                 list(lists.keys()) + [a for wd in words for a in ("%" + wd + "%", "%" + wd + "%", "%" + wd + "%", wd)]).fetchall()
+                for t in rows:
+                    if regset is not None and t["g_reg"] not in regset:
+                        continue
+                    who_ = ", ".join(p.get("name") or "" for p in json.loads(t["owners"] or "[]"))
+                    add("tasks", {"kind": "task", "title": t["title"] or "Untitled task", "done": bool(t["done"]),
+                                  "sub": " · ".join(x for x in ("T-%s" % t["number"], lists[t["list_id"]]["title"], t["g_title"] or "",
+                                                                 who_, ("due " + t["due"][:10]) if t["due"] else "", "done" if t["done"] else "") if x),
+                                  "url": "tasks.html?" + urlencode({"list": t["list_id"], "task": t["id"]})})
+                    # its file links
+                    for l in json.loads(t["links"] or "[]"):
+                        if l.get("kind") in ("onedrive", "sharepoint", "acc", "url") and has(l.get("title"), l.get("url")):
+                            add("files", {"kind": l.get("kind"), "title": l.get("title") or l.get("url"), "sub": "on task: " + (t["title"] or ""),
+                                          "url": l.get("url"), "external": True})
+        # issues, sheets, 3D views: the viewer projects in scope you can open
+        parts = []
+        for r in scope:
+            for v in viewers_of(r):
+                if v not in [x[0] for x in parts] and core.project_dir(v) and core.role_in(w, v):
+                    parts.append((v, r["short"] or r["name"]))
+        if not project:
+            for p in core.list_projects():
+                if p["id"] not in [x[0] for x in parts] and core.role_in(w, p["id"]):
+                    parts.append((p["id"], p["title"]))
+        for v, pname in parts:
+            where = pname + (" - " + titles.get(v, v) if titles.get(v, v) != pname else "")
+            issues, views = items_of(v)
+            for it in sorted(issues, key=lambda x: (x["dismissed"] or x["status"] in ("Resolved", "Closed"), -(x["number"] or 0))):
+                el = it.get("element") or {}
+                if has("#%s" % (it["number"] or ""), it["title"], it["description"], it["sheet"], it["assigned_to"],
+                       el.get("name"), el.get("category"), str(el.get("revit_id") or "")):
+                    url = ("index.html?" + urlencode({"project": v, "sheet": it["sheet"], "select": it["id"]})) if it["sheet"] \
+                        else ("model.html?" + urlencode({"project": v, "select": it["id"]}))
+                    add("issues", {"kind": "issue", "title": "#%s %s" % (it["number"] or "?", it["title"]), "status": it["status"],
+                                   "sub": " · ".join(x for x in (where, it["sheet"] or "3D", it["status"], it["assigned_to"]) if x), "url": url})
+                for f in it.get("files") or []:
+                    if has(f["title"], f["url"]):
+                        kind = f["kind"] if f["kind"] in ("onedrive", "sharepoint", "acc") else link_kind(f["url"])
+                        add("files", {"kind": kind, "title": f["title"] or f["url"], "external": True, "url": f["url"],
+                                      "sub": "on issue #%s %s · %s" % (it["number"] or "?", it["title"], where)})
+            for sh in sheets_of(v):
+                if has(str(sh.get("number")), sh.get("name")):
+                    add("sheets", {"kind": "sheet", "title": "%s %s" % (sh.get("number"), sh.get("name") or ""), "sub": where,
+                                   "url": "index.html?" + urlencode({"project": v, "sheet": sh.get("number")})})
+            for vw in views:
+                if has(vw["name"]):
+                    add("views", {"kind": "view3d", "title": vw["name"], "sub": where + " · saved 3D view",
+                                  "url": "model.html?" + urlencode({"project": v, "select": vw["id"]})})
+        # messages (and the files sent in them)
+        try:
+            import chat
+            for m in chat.search_messages(w.uid, words, limit * 2):
+                add("messages", {"kind": "message", "title": (m["author"] + ": " if m["author"] else "") + (m["body"] or ", ".join(m["files"])),
+                                 "sub": m["room_title"] + " · " + (m["at"] or "")[:10], "url": "messenger.html?room=" + m["room"]})
+        except Exception as ex:
+            print("search messages: %s" % ex)
+        names = {"projects": "Projects", "tasks": "Tasks", "issues": "Issues", "sheets": "Sheets", "views": "3D views",
+                 "messages": "Messages", "files": "Files and links"}
+        return {"q": q, "groups": [{"key": k, "title": names[k], "rows": groups[k], "more": more[k]}
+                                   for k in groups if groups[k]]}
 
     @app.post("/api/registry/import")
     async def reg_import(request: Request, x_viewer_token: str = Header(default="")):

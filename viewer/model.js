@@ -44,6 +44,7 @@ import * as Tele from "./telemetry.js";
 import { createCutLines } from "./cutlines.js";
 import { initPanels, initVGrip } from "./panels.js";
 import { createAO } from "./ao.js";
+import { copyIds, showInRevit, wireElementBlocks } from "./revit.js";
 
 /* Fragments geometry is in METRES. The Revit exporter writes millimetres
    everywhere - manifest paper_to_model, link transforms, issue positions -
@@ -486,7 +487,7 @@ async function initScene() {
             const g = await found.part.model.getGuidsByLocalIds([found.hit.localId]);
             guid = g && g[0];
           } catch (e) {}
-          openIssue3D(found.hit.point, { guid, name: found.name });
+          openIssue3D(found.hit.point, { guid, name: found.name, part: found.part, localId: found.hit.localId });
         } catch (e) { showError("long press", e); }
       }, 600) };
     }
@@ -3298,7 +3299,9 @@ async function mbSelect() {
     if (lids.length) { await part.model.setColor(lids, PICK_COLOR); n += lids.length; }
   }
   S.needsRender = true; S.dirty = true;
-  status(`${MB.pick.label}: ${n} selected (coloured). Click the model to clear.`);
+  S.selEls = selectionFromBrowser();
+  status(`${MB.pick.label}: ${n} selected (coloured). Click the model to clear.`
+    + (S.selEls.length ? " + Task keeps them on a task; Copy Revit IDs for Revit." : ""));
 }
 async function mbIsolate() {
   if (mbEmpty()) return;
@@ -3335,7 +3338,7 @@ async function mbElement(rec, e) {
   const c = bx[0] && !bx[0].isEmpty() ? bx[0].getCenter(new THREE.Vector3()) : null;
   let guid = null;
   try { guid = (await part.model.getGuidsByLocalIds([lids[0]]))[0]; } catch (err) {}
-  showSelection(rec.entry.name, { localId: lids[0], point: c }, guid);
+  showSelection(rec.entry.name, { localId: lids[0], point: c, part }, guid);
   await mbZoom(new Map([[rec, new Set([e])]]));
   if (S.closeDrawers) S.closeDrawers();
 }
@@ -4745,7 +4748,7 @@ async function open3DMenu(ev, found) {
       guid = g && g[0];
     } catch (e) { /* no GUID: the rest of the menu still works */ }
     found.guid = guid;
-    showSelection(found.name, found.hit, guid);
+    showSelection(found.name, Object.assign(found.hit, { part: found.part }), guid);
     showProperties(found.part, found.hit.localId);
     await highlight(found.part, found.hit.localId);
   }
@@ -4773,7 +4776,7 @@ async function open3DMenu(ev, found) {
         S.walk.startAt(found.hit.point, found.hit.normal);
       } } : null,
     onElement ? { label: "Add issue here", action: () => {
-        openIssue3D(found.hit.point, { guid: found.guid, name: found.name });
+        openIssue3D(found.hit.point, { guid: found.guid, name: found.name, part: found.part, localId: found.hit.localId });
       } } : null,
     onElement ? { label: "Section on this face", action: () => {
         setMode("face"); sectionFromFace(ev);
@@ -4987,21 +4990,21 @@ async function pickBody(ev) {
   }
 
   if (S.mode === "face") {
-    showSelection(found.name, found.hit, guid);
+    showSelection(found.name, Object.assign(found.hit, { part: found.part }), guid);
     return;
   }
   if (S.mode === "issue") {
     // one issue at a time: the window is open, so a click only picks
-    if (!$("#i3-back").hidden) { showSelection(found.name, found.hit, guid); status("Finish or cancel the issue being written first."); return; }
+    if (!$("#i3-back").hidden) { showSelection(found.name, Object.assign(found.hit, { part: found.part }), guid); status("Finish or cancel the issue being written first."); return; }
     if (!found.hit.point) {
       status("Hit registered but it carried no position, so no issue "
              + "can be placed there.");
       return;
     }
-    openIssue3D(found.hit.point, { guid: guid, name: found.name });
+    openIssue3D(found.hit.point, { guid: guid, name: found.name, part: found.part, localId: found.hit.localId });
     return;
   }
-  showSelection(found.name, found.hit, guid);
+  showSelection(found.name, Object.assign(found.hit, { part: found.part }), guid);
   showProperties(found.part, found.hit.localId);
   highlight(found.part, found.hit.localId);
 
@@ -5025,10 +5028,104 @@ async function pickBody(ev) {
   }
 }
 
+/* ------------------------------------------------- Revit elements */
+
+/* The Revit element behind a picked id: { revit_id, revit_uid, ifc_guid,
+   name, category, family, type, level, model }. A model exported by the LWK
+   add-in (.lwkm) knows all of it; an older one only its IFC GUID and the
+   manifest's element list. */
+function recOfPart(part) {
+  for (const rec of S.loaded.values()) if (rec.parts && rec.parts.includes(part)) return rec;
+  return null;
+}
+function elementOfRec(rec, e) {
+  const h = rec.parts[0].model.head, el = h.el;
+  const at = (k) => (el[k] ? el[k][e] : undefined);
+  return {
+    revit_id: at("id") != null ? String(at("id")) : "", revit_uid: at("uid") || "", ifc_guid: at("guid") || "",
+    name: at("name") || "", category: (h.cats && el.cat ? h.cats[el.cat[e]] : "") || "",
+    family: at("family") || "", type: at("type") || "", level: at("level") || "", model: rec.entry.name,
+  };
+}
+function elementInfo(part, localId, guid) {
+  try {
+    if (part && part.model && part.model.head && typeof part.model.elementOfId === "function" && localId != null) {
+      const e = part.model.elementOfId(localId);
+      const rec = recOfPart(part);
+      if (e != null && rec) return elementOfRec(rec, e);
+    }
+  } catch (err) { /* below */ }
+  const m = guid && lookupElement(guid);
+  if (m) return { revit_id: m.element_id != null ? String(m.element_id) : "", revit_uid: "", ifc_guid: guid, name: "", category: m.category || "", level: m.level || "" };
+  return guid ? { revit_id: "", revit_uid: "", ifc_guid: guid } : null;
+}
+const escH = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const asLink = (x) => ({ id: x.revit_id || "", uid: x.revit_uid || "", name: x.name || x.family || "", category: x.category || "" });
+
+/* What is selected now (a pick, or the model browser's Select), for
+   "+ Task", Copy Revit IDs and Show in Revit. */
+S.selEls = [];
+function selectionFromBrowser() {
+  const out = [];
+  for (const [rec, els] of (MB.pick && MB.pick.sets) || []) {
+    for (const e of els) { out.push(asLink(elementOfRec(rec, e))); if (out.length >= 500) return out; }
+  }
+  return out;
+}
+window.LWK3D = Object.assign(window.LWK3D || {}, {
+  selectedElements: () => (S.selEls || []).filter((x) => x.id || x.uid),
+});
+
+/* The inspect panel's Copy Revit ID / Show in Revit / + Task. */
+function wireSelectionButtons() {
+  wireElementBlocks();
+  const box = $("#inspect-body");
+  if (!box || box.dataset.rvWired) return;
+  box.dataset.rvWired = "1";
+  box.addEventListener("click", (ev) => {
+    const b = ev.target.closest("#sel-copyid, #sel-revit, #sel-task");
+    if (!b) return;
+    const els = window.LWK3D.selectedElements();
+    if (b.id === "sel-copyid") copyIds(els);
+    if (b.id === "sel-revit") showInRevit(Store.currentProject(), els, { title: els.map((e) => e.name).filter(Boolean).slice(0, 3).join(", ") });
+    if (b.id === "sel-task") { const t = document.getElementById("lwk-send-task"); if (t) t.click(); }
+  });
+}
+
+/* model.html?elements=<UniqueId or ElementId>,... : picked out and zoomed to. */
+async function elementsFromUrl() {
+  const want = (new URLSearchParams(location.search).get("elements") || "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (!want.length) return;
+  for (let i = 0; i < 900 && !S.modelsReady; i++) await new Promise((r) => setTimeout(r, 200));
+  if (!mbRecs().length) { status("Finding Revit elements needs a model published by the LWK add-in (.lwkm)."); return; }
+  const keys = new Set(want);
+  const sets = new Map();
+  for (const rec of mbRecs()) {
+    const el = rec.parts[0].model.head.el;
+    const n = (el.id || []).length;
+    for (let e = 0; e < n; e++) {
+      if (keys.has((el.uid || [])[e]) || keys.has(String(el.id[e]))) {
+        if (!sets.has(rec)) sets.set(rec, new Set());
+        sets.get(rec).add(e);
+      }
+    }
+  }
+  if (!sets.size) { status("Those Revit elements are not in this model (changed or deleted since)."); return; }
+  MB.pick = { sets, label: want.length === 1 ? "the element" : want.length + " elements" };
+  await mbSelect();
+  S.selEls = selectionFromBrowser();
+  await mbZoom(sets);
+  const [rec, es] = [...sets.entries()][0];
+  const info = elementOfRec(rec, [...es][0]);
+  const found = [...sets.values()].reduce((n, x) => n + x.size, 0);
+  status(`${found} of ${want.length} element${want.length === 1 ? "" : "s"} found: ${info.category || ""} ${info.name || ""}`.trim());
+}
+
 function showSelection(modelName, hit, guid, extra) {
   if (S.drawerNote) S.drawerNote();
   const el = $("#inspect-body");
   if (!modelName) {
+    S.selEls = [];
     el.className = "pad muted";
     el.innerHTML = (extra || "Nothing under the cursor.");
     return;
@@ -5054,11 +5151,21 @@ function showSelection(modelName, hit, guid, extra) {
                 + `<b>${s[0]}, ${s[1]}, ${s[2]} m</b></div>`;
             })()
         : "")
-    + (match
-        ? `<div class="kv"><span>Category</span><b>${match.category}</b></div>`
-          + `<div class="kv"><span>Level</span><b>${match.level || "&mdash;"}</b></div>`
-          + `<div class="kv"><span>Revit id</span><b>${match.element_id}</b></div>`
-        : "")
+    + (() => {
+        // the Revit element: what Revit calls it, and the ways back to Revit
+        const info = elementInfo(hit.part, hit.localId, guid) || (match ? { revit_id: String(match.element_id || ""), category: match.category, level: match.level } : null);
+        S.selEls = info && (info.revit_id || info.revit_uid) ? [asLink(info)] : [];
+        if (!info || !(info.revit_id || info.revit_uid || info.category)) return "";
+        return (info.category ? `<div class="kv"><span>Category</span><b>${escH(info.category)}</b></div>` : "")
+          + (info.family || info.type ? `<div class="kv"><span>Family / type</span><b>${escH([info.family, info.type].filter(Boolean).join(": "))}</b></div>` : "")
+          + (info.level ? `<div class="kv"><span>Level</span><b>${escH(info.level)}</b></div>` : "")
+          + (info.revit_id ? `<div class="kv"><span>Revit id</span><b>${escH(info.revit_id)}</b></div>` : "")
+          + (info.revit_uid ? `<div class="kv"><span>UniqueId</span><b style="font-size:10px;word-break:break-all">${escH(info.revit_uid)}</b></div>` : "")
+          + (info.revit_id || info.revit_uid ? `<div class="rv-b" style="margin:6px 0 2px">`
+            + `<button type="button" class="ghost" id="sel-copyid" title="In Revit: Manage > Select by ID, paste">Copy Revit ID</button>`
+            + `<button type="button" class="ghost" id="sel-revit" title="Revit's LWK add-in selects it">Show in Revit</button>`
+            + `<button type="button" class="ghost" id="sel-task" title="Keep it on a task (Tasks page)">+ Task</button></div>` : "");
+      })()
     + `<div id="props" class="muted" style="margin-top:8px">Reading properties...</div>`;
 }
 
@@ -6774,6 +6881,8 @@ async function saveIssue3D() {
     model_shared_mm: sceneToSharedMM(p.point),
     ifc_guid: (p.hit && p.hit.guid) || null,
     model_name: (p.hit && p.hit.name) || null,
+    // the Revit element it is about: its ids for Revit (Select by ID, the add-in, BCF)
+    element: (p.hit && elementInfo(p.hit.part, p.hit.localId, p.hit.guid)) || null,
     created_at: new Date().toISOString(),
     viewpoint: p.shot ? p.shot.camera : null,
     snapshot: snapshot,
@@ -7212,6 +7321,8 @@ async function boot() {
   loadFloors().catch((e) => showError("floors", e));
   gotoFromUrl().catch((e) => { jumpVeil(false); showError("goto", e); });
   selectFromUrl().catch((e) => showError("select", e));
+  elementsFromUrl().catch((e) => showError("elements", e));
+  wireSelectionButtons();
   if (new URLSearchParams(location.search).get("embed") !== "1") startGoto(Store, async (g) => {
     if (g.kind !== "3d" || (g.project && g.project !== Store.currentProject())) {
       location.href = issueLink(g);

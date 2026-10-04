@@ -87,7 +87,8 @@ function placement(item) {
         || item.model_mm || null,
       normal: null,
       view_name: item.model_name || null,
-      ifc_guid: item.ifc_guid || null,
+      ifc_guid: item.ifc_guid || (item.element && item.element.ifc_guid) || null,
+      revit_id: (item.element && item.element.revit_id) || null,
     };
   }
   const a = item.anchor || {};
@@ -225,9 +226,12 @@ function viewpointXml(item, guid) {
     + `Guid="${guid}">\n`;
 
   const pl = placement(item);
-  if (pl.ifc_guid) {
+  if (pl.ifc_guid || pl.revit_id) {
+    // IfcGuid for IFC tools; AuthoringToolId (the Revit ElementId) for the
+    // Revit BCF add-ins, which select the element by it
     xml += "  <Components>\n    <Selection>\n";
-    xml += `      <Component IfcGuid="${xmlEscape(pl.ifc_guid)}"/>\n`;
+    xml += `      <Component${pl.ifc_guid ? ` IfcGuid="${xmlEscape(pl.ifc_guid)}"` : ""}`
+      + (pl.revit_id ? ` OriginatingSystem="Autodesk Revit" AuthoringToolId="${xmlEscape(pl.revit_id)}"` : "") + `/>\n`;
     xml += "    </Selection>\n";
     xml += '    <Visibility DefaultVisibility="true"/>\n';
     xml += "  </Components>\n";

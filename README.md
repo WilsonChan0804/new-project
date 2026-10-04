@@ -97,6 +97,35 @@ Data: `<data>/chat.db`.
 
 Data lives in `<data>/tasks.db` (one file for the server, beside `accounts.db`).
 
+## Issues and tasks together
+
+- **A task from an issue.** In the issue window, *+ New task from this issue* opens a form:
+  - the task list and group of this project come first;
+  - the owner is the issue's *Assigned to* and the due date is the issue's;
+  - the issue, its files and its Revit element go on the task.
+- **Closing one offers to close the other.**
+  - Mark a task complete and its linked issues are still open: the Tasks page asks *Resolve its issues too?* They are resolved exactly as in the viewer: history, emails, the chat card, and a note naming the task.
+  - Resolve or close an issue that has open tasks: the issue window offers to mark them done. Each such task also gets a line in its activity.
+- **Live status.** In the task window each linked issue shows its status now (Open / In progress / Resolved). In the task list, a task shows `#2 open` while it has open issues, or `#✓` once they are all resolved.
+
+## Revit elements
+
+- **What is kept.** A 3D issue keeps the Revit element it was placed on: ElementId, UniqueId, IFC GUID, category, family/type and level. Models published by the LWK add-in (`.lwkm`) know all of these; older ones only the IFC GUID.
+- **The 3D page.** Clicking an element shows its Revit id and UniqueId, with *Copy Revit ID*, *Show in Revit* and *+ Task*. Elements chosen in the model browser (Select) go together.
+- **Back into Revit, today, with no add-in change:**
+  - *Copy Revit IDs*, then in Revit **Manage > Select by ID**, paste;
+  - **BCF export** writes the element as `AuthoringToolId` (the ElementId), which Revit BCF tools (BCF Manager, BCFier, Revizto) select.
+- **Elements on tasks.** "+ Task" on the 3D page with elements selected keeps them on the task as *Elements to change*, with Copy Revit IDs, Show in 3D and Show in Revit.
+- **Show in 3D:** `model.html?project=...&elements=<UniqueId or ElementId>,...` picks them out and zooms to them.
+- **Show in Revit.** The viewer asks Revit's LWK add-in through the server (`/api/revit/requests`, which the add-in polls). Until the add-in does this, the IDs are copied for *Select by ID* instead.
+  - What the add-in needs to do is in `server/REVIT_ADDIN_API.md`: poll and select, and send Revit's selection to the viewer.
+
+## Search
+
+- **Opening it.** The magnifier in the header of every page, **Ctrl+K**, or **/**.
+- **What it searches.** One box for projects, tasks (title, description, `T-12`), issues (`#12`, title, description, sheet, assignee, Revit element and id), sheets, saved 3D views, chat messages, and the OneDrive / SharePoint / ACC links on tasks and issues.
+- **Results.** Grouped by kind. ↑ ↓ and Enter open one. You only see what you may open.
+
 ## Speed
 
 How the pages open fast (server: `assets.py`, viewer: `boot.js`):

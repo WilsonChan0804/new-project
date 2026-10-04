@@ -65,6 +65,10 @@ function row(T, t, cols, depth) {
     kids.length ? `<span class="tl-m" title="Sub-tasks">&#8627; ${kids.filter((k) => k.done).length}/${kids.length}</span>` : "",
     t.links.length ? `<span class="tl-m" title="Links and files">&#128206; ${t.links.length}</span>` : "",
     t.comment_count ? `<span class="tl-m" title="Comments">&#128172; ${t.comment_count}</span>` : "",
+    // its linked issues: how many are still open
+    t.issues_total ? (t.issues_open
+      ? `<span class="tl-m iss-open" title="Linked issues still open">#${t.issues_open} open</span>`
+      : `<span class="tl-m iss-done" title="Its linked issues are all resolved">#&#10003;</span>`) : "",
   ].join("");
   let h = `<div class="tl-row${t.done ? " done" : ""}${T.S.openId === t.id ? " sel" : ""}${depth ? " sub" : ""}" data-id="${esc(t.id)}"`
     + (T.canEdit() ? ` draggable="true"` : "") + `>`
