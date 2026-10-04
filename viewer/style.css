@@ -1842,3 +1842,10 @@ body.lwk-offline #lwk-nav a[href] { opacity: .55; }
 header .mode.page-links { flex-wrap: nowrap; flex: 0 0 auto; min-width: max-content; overflow: visible; }
 header .mode.page-links::-webkit-scrollbar { display: none; }
 header .mode.page-links button { white-space: nowrap; }
+
+/* a phone: a project drop-down in the header (Dashboard, Board) gives way
+   to the page tabs, which always keep room to be scrolled */
+@media (max-width: 900px) {
+  header select { flex: 0 1 auto; min-width: 64px; max-width: 32vw; text-overflow: ellipsis; }
+  header .seg { min-width: 40vw; }
+}

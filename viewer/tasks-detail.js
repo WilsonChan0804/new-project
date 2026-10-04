@@ -2,6 +2,7 @@
  * sub-tasks, what it is linked to (issues, sheets, 3D views, OneDrive and
  * ACC files), the discussion and the history. */
 
+import { formatHtml } from "./chatfmt.js";
 import { METHOD_OPTS, isMethod, ic } from "./tasks-util.js";
 import { $, esc, avatar, people, fmtDate, fmtWhen, ago, isOverdue, priorityPill, pickPeople, pickOne, pickDate, PRIORITIES, toast, modal } from "./tasks-util.js";
 import { chip, makeLink, classify, linkify } from "./filelinks.js";
@@ -153,7 +154,7 @@ function paint(T) {
         + `</div>`
         + (CUR.editing === c.id
           ? `<div class="td-cedit"><textarea class="td-cedit-t" rows="3">${esc(c.body)}</textarea><div><button class="primary" data-savec="${esc(c.id)}">Save</button> <button class="ghost" data-cancelc>Cancel</button></div></div>`
-          : `<div class="td-ct">${mentionify(linkify(esc(c.body)), T)}${c.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>`)
+          : `<div class="td-ct">${formatHtml(c.body, (t) => mentionify(linkify(esc(t)), T))}${c.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>`)
         + `${filesHtml(c.files)}</div></div>`).join("") || `<p class="muted td-none">No comments yet.</p>`}</div>
       ${ed ? `<div class="td-compose"><textarea class="td-newc" rows="2" placeholder="Add a comment. @name to tell someone; paste a screenshot or OneDrive / ACC links. Ctrl+Enter to send."></textarea>`
         + `<div class="td-cbtns"><button class="ghost" data-act="attach" title="Attach pictures or files (up to 50 MB each)">&#128206;</button><button class="primary" data-act="comment">Send</button></div></div>`

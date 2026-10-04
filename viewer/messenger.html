@@ -18,6 +18,7 @@
 <link rel="modulepreload" href="emoji.js">
 <link rel="modulepreload" href="whatsapp.js">
 <link rel="modulepreload" href="chatfmt.js">
+<link rel="modulepreload" href="richbox.js">
 <link rel="modulepreload" href="chatcards.js">
 </head>
 <body class="tasks-page chat-page own-nav">
@@ -71,15 +72,22 @@
       <div id="c-compose">
         <div id="c-reply" hidden></div>
         <div id="c-pend"></div>
-        <div id="c-fmtbar" hidden></div>
-        <div class="cc-row">
-          <button class="ghost" id="c-plus" title="Poll, event or task">+</button>
-          <button class="ghost" id="c-attach" title="Send pictures or files (up to 50 MB each) - or paste / drop them">&#128206;</button>
-          <button class="ghost" id="c-linkbtn" title="Link a task (#), an issue (!), a sheet ($) or the 3D model (%)">#</button>
-          <textarea id="c-text" rows="1" placeholder="Message - @ person, # task, ! issue, $ sheet, % 3D"></textarea>
-          <button class="ghost" id="c-fmt" title="Formatting: bold, italic, lists, quotes, code">Aa</button>
-          <button class="ghost" id="c-emoji" title="Emoji">&#128578;</button>
-          <button class="primary" id="c-send" title="Send (Ctrl+Enter)">Send</button>
+        <div class="cb">
+          <div id="c-text" data-ph="Message - @ person, # task, ! issue, $ sheet, % 3D"></div>
+          <div class="cb-bar">
+            <div id="c-fmtbar" class="cb-fmt" hidden></div>
+            <span class="cb-gap"></span>
+            <div class="cb-acts">
+              <button type="button" class="cb-b" id="c-fmt" title="Formatting: bold, italic, lists, quotes, links, code">Aa</button>
+              <button type="button" class="cb-b" id="c-emoji" title="Emoji">&#128578;</button>
+              <button type="button" class="cb-b" id="c-at" title="Mention someone (@)">@</button>
+              <button type="button" class="cb-b" id="c-linkbtn" title="Link a task (#), an issue (!), a sheet ($) or the 3D model (%)">#</button>
+              <button type="button" class="cb-b" id="c-attach" title="Send pictures or files (up to 50 MB each) - or paste / drop them">&#128206;</button>
+              <button type="button" class="cb-b" id="c-plus" title="Poll, event or task">+</button>
+              <button type="button" class="cb-b" id="c-expand" title="A bigger box">&#8599;</button>
+              <button type="button" class="cb-send" id="c-send" title="Send (Ctrl+Enter)">Send</button>
+            </div>
+          </div>
         </div>
         <input type="file" id="c-file" multiple hidden>
         <input type="file" id="c-wa-file" accept=".txt,.zip,text/plain,application/zip" hidden>

@@ -17,7 +17,8 @@ const abs = (u) => { try { return new URL(u, location.href).href; } catch (e) { 
 
 /* [label](viewer address) -> "label: https://..." for outside the viewer */
 export function plainText(body) {
-  return String(body || "").replace(/\[([^\]\n]{1,200})\]\(([^\s)]+)\)/g, (m, label, url) => label + ": " + abs(url));
+  return String(body || "").replace(/\[([^\]\n]{1,200})\]\(([^\s)]+)\)/g, (m, label, url) => label + ": " + abs(url))
+    .replace(/(^|[^\w+])\+\+(\S[^\n]*?\S|\S)\+\+(?![\w+])/g, "$1$2");     // underline: WhatsApp has none
 }
 
 export function waText(m, roomTitle) {
@@ -32,6 +33,9 @@ export function waText(m, roomTitle) {
       : `model.html?project=${encodeURIComponent(inner.project)}&select=${encodeURIComponent(inner.id)}`));
   }
   if (inner.type === "whatsapp") for (const l of (inner.lines || []).slice(-30)) out.push(`[${l.at}] ${l.name}: ${l.text}`);
+  if (inner.type === "poll") out.push(`Poll: ${inner.question}`, ...(inner.options || []).map((o) => `- ${o.text}`));
+  if (inner.type === "event") out.push(`Event: ${inner.title}`, `${inner.start.replace("T", " ")}${inner.end && inner.end !== inner.start ? " - " + inner.end.replace("T", " ") : ""}${inner.all_day ? " (all day)" : ""}`,
+    ...[inner.location, inner.link].filter(Boolean));
   if (m.body) out.push(plainText(m.body));
   for (const f of m.files || []) out.push(`${f.name}: ${abs(f.url)}`);
   if (!out.length && roomTitle) out.push(roomTitle);

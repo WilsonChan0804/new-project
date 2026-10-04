@@ -377,3 +377,11 @@ button svg.ic { pointer-events: none; }
 .td-ist.st-deleted { background: #eef1f5; color: var(--muted); }
 .tl-m.iss-open { color: #b42318; font-weight: 600; }
 .tl-m.iss-done { color: #0b7a55; }
+
+/* formatting in a comment (written in the Messenger: chatfmt.js) */
+.td-ct .c-ul, .td-ct .c-ol { margin: 2px 0; padding-left: 22px; white-space: normal; }
+.td-ct li { white-space: pre-wrap; }
+.td-ct .c-bq { margin: 2px 0; padding-left: 10px; border-left: 3px solid var(--line); color: var(--ink-2); }
+.td-ct .c-pre, .td-ct code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; background: var(--line-soft); border-radius: 4px; }
+.td-ct .c-pre { padding: 6px 10px; margin: 2px 0; white-space: pre-wrap; }
+.td-ct code { padding: 0 4px; }

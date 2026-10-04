@@ -1,7 +1,7 @@
 /* Message formatting, as WhatsApp writes it (so a message forwarded to or
  * pasted from WhatsApp keeps its look):
  *
- *   *bold*  _italic_  ~strike~  `code`
+ *   *bold*  _italic_  ~strike~  ++underline++  `code`
  *   ``` a block of code ```
  *   - a bullet        1. a numbered line        > a quote
  *
@@ -9,8 +9,8 @@
  * not a mark goes through the page's own renderer (escaping, links,
  * @mentions, # ! $ % chips), so no HTML can come in through the marks.
  *
- * The format bar (Aa in the message box) and Ctrl+B / Ctrl+I / Ctrl+Shift+X
- * put the marks round the selection; Enter on a list line starts the next.
+ * The message box (richbox.js) shows the formatting itself and writes it
+ * this way when the message is sent.
  */
 
 import { esc } from "./tasks-util.js";
@@ -18,8 +18,8 @@ import { esc } from "./tasks-util.js";
 // kept whole: code spans, [label](address) links and plain addresses
 const ATOM = /`[^`\n]+`|\[[^\]\n]{1,200}\]\([^\s)]+\)|https?:\/\/[^\s<>"']+/g;
 // a mark: not inside a word, not round spaces
-const MARK = /(^|[^\w*_~`\u0000])([*_~])(?=[^\s])([^\n]*?[^\s])\2(?![\w*_~`])/;
-const TAG = { "*": "b", "_": "i", "~": "s" };
+const MARK = /(^|[^\w*_~`+\u0000])(\+\+|[*_~])(?=[^\s])([^\n]*?[^\s])\2(?![\w*_~`+])/;
+const TAG = { "*": "b", "_": "i", "~": "s", "++": "u" };
 
 /* One line (or several) of running text: marks, atoms and the rest. */
 function inline(text, render) {
@@ -35,7 +35,7 @@ function inline(text, render) {
     if (!m) return plain(t);
     const at = m.index + m[1].length;
     const tag = TAG[m[2]];
-    return plain(t.slice(0, at)) + `<${tag}>` + walk(m[3], depth + 1) + `</${tag}>` + walk(t.slice(at + m[3].length + 2), depth);
+    return plain(t.slice(0, at)) + `<${tag}>` + walk(m[3], depth + 1) + `</${tag}>` + walk(t.slice(at + m[3].length + 2 * m[2].length), depth);
   };
   return walk(s, 0);
 }
@@ -110,117 +110,13 @@ export function plainText(text) {
   return t;
 }
 
-/* ------------------------------------------------------------ the box */
-
-/* Marks round the selection (or round the word at the caret); again
-   takes them off. */
-export function wrap(ta, mark) {
-  let a = ta.selectionStart, b = ta.selectionEnd;
-  const v = ta.value;
-  if (a === b) {
-    // the word at the caret
-    while (a > 0 && /\S/.test(v[a - 1])) a--;
-    while (b < v.length && /\S/.test(v[b])) b++;
-  }
-  const sel = v.slice(a, b);
-  const m = mark.length;
-  let text, s0, s1;
-  if (sel.length >= 2 * m && sel.startsWith(mark) && sel.endsWith(mark)) {
-    text = sel.slice(m, -m); s0 = a; s1 = a + text.length;
-  } else if (v.slice(a - m, a) === mark && v.slice(b, b + m) === mark) {
-    a -= m; b += m; text = sel; s0 = a; s1 = a + sel.length;
-  } else {
-    // marks go round the words, not round spaces at either end
-    const lead = sel.match(/^\s*/)[0], tail = sel.match(/\s*$/)[0];
-    const core = sel.slice(lead.length, sel.length - tail.length);
-    text = lead + mark + core + mark + tail; s0 = a + lead.length + m; s1 = s0 + core.length;
-  }
-  ta.setRangeText(text, a, b, "end");
-  ta.setSelectionRange(s0, s1);
-  ta.focus();
-  ta.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-/* A ``` block round the selected lines. */
-export function codeBlock(ta) {
-  const v = ta.value;
-  let a = ta.selectionStart, b = ta.selectionEnd;
-  a = v.lastIndexOf("\n", a - 1) + 1;
-  const e = v.indexOf("\n", b);
-  b = e < 0 ? v.length : e;
-  const sel = v.slice(a, b);
-  const text = "```\n" + sel + "\n```";
-  ta.setRangeText(text, a, b, "end");
-  ta.setSelectionRange(a + 4, a + 4 + sel.length);
-  ta.focus();
-  ta.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-/* "- ", "1. " or "> " in front of each selected line; again takes it off. */
-export function linePrefix(ta, kind) {
-  const v = ta.value;
-  let a = v.lastIndexOf("\n", ta.selectionStart - 1) + 1;
-  let e = v.indexOf("\n", ta.selectionEnd);
-  if (e < 0) e = v.length;
-  const lines = v.slice(a, e).split("\n");
-  const re = kind === "ol" ? NUMBER : kind === "ul" ? BULLET : QUOTE;
-  const all = lines.every((l) => re.test(l));
-  const out = lines.map((l, i) => all ? l.replace(re, "")
-    : (kind === "ol" ? `${i + 1}. ` : kind === "ul" ? "- " : "> ") + l.replace(BULLET, "").replace(NUMBER, "").replace(QUOTE, ""));
-  const text = out.join("\n");
-  ta.setRangeText(text, a, e, "end");
-  ta.setSelectionRange(a + text.length, a + text.length);
-  ta.focus();
-  ta.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-/* Enter at the end of a list line: the next bullet or number. An empty
-   item ends the list. True when it did something. */
-export function continueList(ta) {
-  const v = ta.value, at = ta.selectionStart;
-  if (at !== ta.selectionEnd) return false;
-  const a = v.lastIndexOf("\n", at - 1) + 1;
-  const line = v.slice(a, at);
-  if (v.slice(at).split("\n")[0].trim()) return false;
-  let m = NUMBER.exec(line), next = "";
-  if (m) next = line.match(/^\s*/)[0] + (Number(m[1]) + 1) + ". ";
-  else if ((m = BULLET.exec(line))) next = m[0];
-  else if ((m = QUOTE.exec(line))) next = "> ";
-  else return false;
-  if (!line.slice(m[0].length).trim()) {
-    ta.setRangeText("", a, at, "end");          // an empty item: the list ends
-  } else {
-    ta.setRangeText("\n" + next, at, at, "end");
-  }
-  ta.dispatchEvent(new Event("input", { bubbles: true }));
-  return true;
-}
-
-export const FORMAT_BAR = [
-  ["b", "*", "<b>B</b>", "Bold (Ctrl+B)"],
-  ["i", "_", "<i>I</i>", "Italic (Ctrl+I)"],
-  ["s", "~", "<s>S</s>", "Strikethrough (Ctrl+Shift+X)"],
-  ["code", "`", "<code>&lt;/&gt;</code>", "Code"],
-  ["ul", "", "&#8226; List", "Bulleted list"],
-  ["ol", "", "1. List", "Numbered list"],
-  ["quote", "", "&#10077; Quote", "Quote"],
-  ["pre", "", "```", "Block of code"],
-];
-
-/* A click on the bar, or a shortcut. */
-export function applyFormat(ta, k) {
-  const f = FORMAT_BAR.find((x) => x[0] === k);
-  if (!f) return;
-  if (f[1]) return wrap(ta, f[1]);
-  if (k === "pre") return codeBlock(ta);
-  return linePrefix(ta, k === "quote" ? "quote" : k);
-}
-
+/* Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Shift+X: which format, or "". */
 export function formatKey(ev) {
   if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return "";
   const k = ev.key.toLowerCase();
   if (k === "b" && !ev.shiftKey) return "b";
   if (k === "i" && !ev.shiftKey) return "i";
   if (k === "x" && ev.shiftKey) return "s";
+  if (k === "u" && !ev.shiftKey) return "u";
   return "";
 }

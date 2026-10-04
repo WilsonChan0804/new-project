@@ -345,13 +345,16 @@ def person_card(c):
     return whatsapp_card(c)
 
 
-FORMAT = re.compile(r"(?<![\w*_~`])([*_~])(?=\S)([^\n]*?\S)\1(?![\w*_~`])")
+FORMAT = re.compile(r"(?<![\w*_~`+])(\+\+|[*_~])(?=\S)([^\n]*?\S)\1(?![\w*_~`+])")
+# [label](https://...) written in the message box (its link button)
+MD_LINK = re.compile(r"\[([^\]\n]{1,200})\]\((https?://[^\s)]+)\)")
 
 
 def plain_links(text):
     """The text as it reads, for the chat list and for emails: link labels,
     without the formatting marks."""
     t = LINK_MD.sub(lambda m: m.group(1), text or "")
+    t = MD_LINK.sub(lambda m: "%s (%s)" % (m.group(1), m.group(2)), t)
     t = re.sub(r"^```\w*\s*$", "", t, flags=re.M).replace("```", "")
     t = re.sub(r"`([^`\n]+)`", r"\1", t)
     for _ in range(3):

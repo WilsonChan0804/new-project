@@ -11,7 +11,7 @@
  */
 
 import { api } from "./nav.js";
-import { esc, modal, toast, pickPeople } from "./tasks-util.js";
+import { esc, modal, toast, pickPeople, ic } from "./tasks-util.js";
 
 /* ------------------------------------------------------------ poll */
 
@@ -27,12 +27,12 @@ export function pollHtml(m, ctx) {
     const who = voters && voters[o.id] ? voters[o.id].map(name).join(", ") : "";
     return `<button type="button" class="pl-o${mine.includes(o.id) ? " me" : ""}" data-vote="${esc(m.id)}" data-opt="${esc(o.id)}"${closed ? " disabled" : ""} title="${esc(who || (c.anonymous ? "Anonymous poll" : "No votes yet"))}">`
       + `<span class="pl-bar" style="width:${pct}%"></span>`
-      + `<span class="pl-box">${c.multi ? (mine.includes(o.id) ? "&#9745;" : "&#9744;") : (mine.includes(o.id) ? "&#9673;" : "&#9675;")}</span>`
+      + `<span class="pl-box ${c.multi ? "sq" : "rd"}${mine.includes(o.id) ? " on" : ""}">${mine.includes(o.id) ? ic("check", 11) : ""}</span>`
       + `<span class="pl-t">${esc(o.text)}</span><span class="pl-n">${n}${total ? ` · ${pct}%` : ""}</span></button>`
       + (who ? `<div class="pl-who muted">${esc(who)}</div>` : "");
   }).join("");
   const mineMsg = m.uid === ctx.uid;
-  return `<div class="c-card poll${closed ? " closed" : ""}"><div class="cc-h"><span class="cc-ico">&#128202;</span> <b>Poll</b>`
+  return `<div class="c-card poll${closed ? " closed" : ""}"><div class="cc-h"><span class="cc-badge poll">${ic("poll", 14)}</span> <b>Poll</b>`
     + ` <span class="muted">${c.multi ? "choose any" : "choose one"}${c.anonymous ? " · anonymous" : ""}${closed ? " · closed" : c.closes ? " · until " + esc(c.closes) : ""}</span></div>`
     + `<div class="cc-t">${esc(c.question)}</div><div class="pl-os">${rows}</div>`
     + `<div class="cc-f"><span class="muted">${people} ${people === 1 ? "person" : "people"} voted</span><span class="spacer"></span>`

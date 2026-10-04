@@ -29,7 +29,8 @@ import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 import { emojiPicker, QUICK } from "./emoji.js";
 import { toWhatsApp, parseWhatsApp, readExport, waText } from "./whatsapp.js";
-import { formatHtml, plainText, applyFormat, formatKey, continueList, FORMAT_BAR } from "./chatfmt.js";
+import { formatHtml, plainText, formatKey } from "./chatfmt.js";
+import { RichBox } from "./richbox.js";
 import { pollHtml, eventHtml, pollForm, eventForm, taskForm, vote, closePoll, rsvp } from "./chatcards.js";
 
 const C = {
@@ -37,6 +38,7 @@ const C = {
   room: null, msgs: [], more: false, newer: false, rev: 0, reply: null, pend: [], q: "", pins: [], pinAt: 0,
 };
 const TASK = "task:";
+let BOX = null;                 // the message box (richbox.js)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ------------------------------------------------------------ kept on this device */
@@ -400,7 +402,11 @@ function textHtml(body) {
   return formatHtml(unframe(body), plainHtml);
 }
 
+const MD_LINK = /^\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]+)\)$/;
 function plainHtml(src) {
+  // a link made with the box's link button: its words, linked
+  const ext = MD_LINK.exec(src);
+  if (ext && new URL(ext[2]).origin !== location.origin) return `<a href="${esc(ext[2])}" target="_blank" rel="noopener">${esc(ext[1])}</a>`;
   let out = "", at = 0, m;
   LINK_MD.lastIndex = 0;
   while ((m = LINK_MD.exec(src))) {
@@ -444,7 +450,7 @@ function reactsHtml(m) {
 
 /* Editing in place: the words in a box, Save / Cancel. */
 function editorHtml(m) {
-  return `<div class="c-edit"><textarea data-etext="${esc(m.id)}" rows="3">${esc(C.editText != null ? C.editText : m.body || "")}</textarea>`
+  return `<div class="c-edit"><div class="c-ebox" data-etext="${esc(m.id)}"></div>`
     + `<div class="c-edit-b"><button type="button" class="primary" data-esave="${esc(m.id)}">Save</button>`
     + `<button type="button" class="ghost" data-ecancel>Cancel</button><small class="muted">Ctrl+Enter saves · Esc cancels</small></div></div>`;
 }
@@ -459,14 +465,15 @@ function startEdit(id) {
   if (!m) return;
   C.editing = id;
   C.editText = m.body || "";
+  C.editBox = null;
   paintMsgs(false);
-  const ta = document.querySelector(`[data-etext="${CSS.escape(id)}"]`);
-  if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.style.height = Math.min(240, ta.scrollHeight + 2) + "px"; }
+  if (C.editBox) { C.editBox.focus(); C.editBox.caretToEnd(); }
 }
 
 function stopEdit() {
   C.editing = null;
   C.editText = null;
+  C.editBox = null;
   paintMsgs(false);
 }
 
@@ -588,15 +595,20 @@ function paintMsgs(toBottom) {
   });
   if (!C.msgs.length) h += `<p class="muted c-none">${C.room.kind === "task" ? "No comments on this task yet." : "No messages yet - say hello."}</p>`;
   if (C.newer) h += `<button class="ghost c-latest" data-latest>${ic("down", 14)} Newer messages - go to the latest</button>`;
-  // a message being changed keeps its cursor through a repaint (new messages)
-  const ed = C.editing && document.activeElement && document.activeElement.dataset && document.activeElement.dataset.etext
-    ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+  // a message being changed keeps its box (and caret) through a repaint
+  const eb = C.editing && C.editBox;
+  const had = eb && eb.el.contains(document.activeElement) || (eb && document.activeElement === eb.el);
+  if (had) eb.saveRange();
   const top = box.scrollTop;
   box.innerHTML = h;
-  if (ed) {
-    const t = box.querySelector(`[data-etext="${CSS.escape(C.editing)}"]`);
-    if (t) { t.focus({ preventScroll: true }); t.setSelectionRange(ed[0], ed[1]); t.style.height = Math.min(240, t.scrollHeight + 2) + "px"; }
-    box.scrollTop = top;
+  const slot = C.editing && box.querySelector(`[data-etext="${CSS.escape(C.editing)}"]`);
+  if (slot) {
+    if (eb) slot.replaceWith(eb.el);
+    else {
+      C.editBox = new RichBox(slot);
+      C.editBox.value = C.editText || "";
+    }
+    if (had) { eb.restoreRange(); box.scrollTop = top; }
   }
   if (toBottom || atBottom) box.scrollTop = box.scrollHeight;
   for (const img of box.querySelectorAll("img")) img.addEventListener("load", () => { if (toBottom || atBottom) box.scrollTop = box.scrollHeight; }, { once: true });
@@ -637,15 +649,13 @@ async function addFiles(files) {
 /* The message shows at once ("sending ..."); the server's copy replaces it.
    One that did not go stays, with "send again". */
 async function send() {
-  const ta = $("#c-text");
-  const body = ta.value.trim();
+  const body = BOX.value.trim();
   if (!C.room) return;
   if (C.pend.some((p) => !p.id && !p.error)) return toast("Still uploading - a moment", true);
   const files = C.pend.filter((p) => p.id);
   if (!body && !files.length) return;
   closePop();
-  ta.value = "";
-  fit();
+  BOX.clear();
   C.pend = [];
   paintPend();
   const tmp = { id: "tmp" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), uid: C.uid,
@@ -737,11 +747,6 @@ async function sendCard(card, files, body) {
   await deliver(tmp, C.room, card);
 }
 
-function fit() {
-  const ta = $("#c-text");
-  ta.style.height = "auto";
-  ta.style.height = Math.min(180, ta.scrollHeight) + "px";
-}
 
 /* @ lists the people in this chat; # ! $ % the tasks, issues, sheets and 3D
    of the project (all your projects outside a project channel). */
@@ -749,16 +754,10 @@ const LINK_KINDS = { "#": "task", "!": "issue", "$": "sheet", "%": "model" };
 const LINK_SAY = { task: "tasks", issue: "issues", sheet: "sheets", model: "3D models or saved views" };
 let lsTimer = null, lsSeq = 0;
 
-function insertAt(ta, start, len, text) {
-  ta.value = ta.value.slice(0, start) + text + ta.value.slice(start + len);
-  const at = start + text.length;
-  ta.setSelectionRange(at, at);
-  ta.focus();
-  fit();
-}
-
-function linkMd(row) {
-  return `[${row.label.replace(/[\[\]\n]/g, " ").trim()}](${row.url}) `;
+/* a picked task, issue, sheet or view: a chip in the box, sent as [label](address) */
+function putLink(row) {
+  const label = row.label.replace(/[\[\]\n]/g, " ").trim();
+  BOX.insertChip(`[${label}](${row.url})`, label);
 }
 
 function rowHtml(x, i) {
@@ -799,38 +798,39 @@ async function searchLinks(kind, q, reg) {
 /* The list under the message box while # ! $ % is typed: the project
    chips first, then what matches in the chosen project. */
 async function inlineLinks(sym, q) {
-  const ta = $("#c-text");
+  const box = $("#c-text");
   const token = sym + q, kind = LINK_KINDS[sym], reg = linkScope();
-  const start = ta.selectionStart - token.length;
   const seq = ++lsSeq;
   let rows = [];
   try { rows = await searchLinks(kind, q, reg); } catch (e) { return; }
   // still the word being typed (not an older, shorter one)
-  const now = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(ta.value.slice(0, ta.selectionStart));
+  const now = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(BOX.textBefore());
   if (seq !== lsSeq || !now || now[2] + now[3] !== token) return;
+  BOX.saveRange();
   const where = reg ? ` in ${(C.projects[reg] || {}).short || (C.projects[reg] || {}).name || "this project"}` : "";
-  const el = pop(ta, scopeChips(reg)
+  const el = pop(box, scopeChips(reg)
     + (rows.length ? `<div class="lk-h muted">${esc(sym)} ${LINK_SAY[kind]}${esc(where)} - pick one to link it</div>` + rows.map(rowHtml).join("")
       : `<div class="po-empty muted">No ${LINK_SAY[kind]}${q ? ` matching "${esc(q)}"` : ""}${esc(where)}</div>`), 360);
   el.classList.add("lk-pop");
   kbFirst(el);
-  // the chips must not take the focus from the message box
-  el.addEventListener("pointerdown", (ev) => { if (ev.target.closest(".lk-pc")) ev.preventDefault(); });
+  // nothing in the list takes the focus (or the caret) from the message box
+  el.addEventListener("pointerdown", (ev) => ev.preventDefault());
   el.addEventListener("click", (ev) => {
     const pc = ev.target.closest(".lk-pc");
-    if (pc) { setScope(pc.dataset.reg); ta.focus(); inlineLinks(sym, q); return; }
+    if (pc) { setScope(pc.dataset.reg); BOX.restoreRange(); inlineLinks(sym, q); return; }
     const r = ev.target.closest(".po-row");
     if (!r) return;
     closePop();
-    insertAt(ta, start, token.length, linkMd(rows[Number(r.dataset.v)]));
+    BOX.restoreRange();
+    BOX.replaceBefore(token.length, "");
+    putLink(rows[Number(r.dataset.v)]);
   });
 }
 
 function wirePickers() {
-  const ta = $("#c-text");
-  ta.addEventListener("input", () => {
-    fit();
-    const upto = ta.value.slice(0, ta.selectionStart);
+  const box = $("#c-text");
+  box.addEventListener("input", () => {
+    const upto = BOX.textBefore();
     const m = /(^|\s)@([^\s@]{0,30})$/.exec(upto);
     const lm = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(upto);
     clearTimeout(lsTimer);
@@ -839,31 +839,33 @@ function wirePickers() {
       lsTimer = setTimeout(() => inlineLinks(lm[2], q), q ? 160 : 0);
       return;
     }
-    if (!m || !C.room) return closePop();
+    // nothing to pick: a list of people or links goes (the emoji panel stays)
+    const pickerOpen = () => { const o = document.querySelector(".t-pop"); return o && !o.classList.contains("ej-pop"); };
+    if (!m || !C.room) { if (pickerOpen()) closePop(); return; }
     const q = m[2].toLowerCase();
     const pool = C.people.filter((p) => !C.room.members || C.room.kind === "task" || C.room.members.includes(p.uid));
     const opts = pool.filter((p) => p.uid !== C.uid && p.name.toLowerCase().includes(q)).slice(0, 8);
-    if (!opts.length) return closePop();
-    const el = pickOne(ta, opts.map((p) => ({ value: p.name, label: avatar(p) + " " + esc(p.name) })), "", (name) => {
-      const start = upto.length - m[2].length - 1;
-      insertAt(ta, start, m[2].length + 1, "@" + name + " ");
+    if (!opts.length) { if (pickerOpen()) closePop(); return; }
+    BOX.saveRange();
+    const el = pickOne(box, opts.map((p) => ({ value: p.name, label: avatar(p) + " " + esc(p.name) })), "", (name) => {
+      BOX.restoreRange();
+      BOX.replaceBefore(m[2].length + 1, "@" + name + "\u00a0");
     });
+    el.addEventListener("pointerdown", (ev) => ev.preventDefault());
     kbFirst(el);
-    setTimeout(() => ta.focus(), 0);
+    setTimeout(() => { if (document.activeElement !== box) BOX.restoreRange(); }, 0);
   });
-  // WhatsApp lines pasted: send them as one quote, if that is what is wanted
-  ta.addEventListener("paste", (ev) => {
-    const t = ev.clipboardData && ev.clipboardData.getData("text/plain");
-    if (!t || !C.room || C.room.kind === "task") return;
-    const lines = parseWhatsApp(t);
-    if (lines.length < 2) return;
-    ev.preventDefault();
-    if (confirm(`These look like ${lines.length} messages copied from WhatsApp. Send them as a WhatsApp quote?\n\n(Cancel: paste them as plain text.)`)) {
-      sendCard({ type: "whatsapp", title: "From WhatsApp", lines });
-    } else {
-      insertAt(ta, ta.selectionStart, ta.selectionEnd - ta.selectionStart, t);
-    }
-  });
+}
+
+/* WhatsApp lines pasted: send them as one quote, if that is what is wanted.
+   True when it took them. */
+function pastedWhatsApp(t) {
+  if (!C.room || C.room.kind === "task") return false;
+  const lines = parseWhatsApp(t);
+  if (lines.length < 2) return false;
+  if (!confirm(`These look like ${lines.length} messages copied from WhatsApp. Send them as a WhatsApp quote?\n\n(Cancel: paste them as plain text.)`)) return false;
+  sendCard({ type: "whatsapp", title: "From WhatsApp", lines });
+  return true;
 }
 
 /* The arrow keys move through an open list; Enter or Tab picks. */
@@ -892,8 +894,7 @@ function kbNav(ev) {
 /* The # button: the same lists, with tabs, for a phone (or anyone who does
    not remember the symbols). */
 function linkMenu(anchor) {
-  const ta = $("#c-text");
-  const at = ta.selectionStart || ta.value.length, len = (ta.selectionEnd || at) - at;
+  BOX.saveRange();
   const tabs = [["task", "# Task"], ["issue", "! Issue"], ["sheet", "$ Sheet"], ["model", "% 3D"]];
   const cur = linkScope();
   const el = pop(anchor && anchor.nodeType ? anchor : $("#c-linkbtn"), `<label class="lk-ps">Project <select class="lk-psel">${scopeList().map(([id, n]) => `<option value="${esc(id)}"${id === cur ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`
@@ -920,11 +921,12 @@ function linkMenu(anchor) {
     const r = ev.target.closest(".po-row");
     if (!r) return;
     closePop();
-    insertAt(ta, at, len, linkMd(rows[Number(r.dataset.v)]));
+    BOX.restoreRange();
+    putLink(rows[Number(r.dataset.v)]);
   });
   q.oninput = () => { clearTimeout(timer); timer = setTimeout(run, 160); };
   q.onkeydown = (ev) => {
-    if (ev.key === "Enter" && rows.length) { ev.preventDefault(); closePop(); insertAt(ta, at, len, linkMd(rows[0])); }
+    if (ev.key === "Enter" && rows.length) { ev.preventDefault(); closePop(); BOX.restoreRange(); putLink(rows[0]); }
   };
   if (matchMedia("(hover: hover)").matches) q.focus();
   run();
@@ -1346,19 +1348,56 @@ async function share(url, title) {
 
 /* ------------------------------------------------------------ wiring */
 
+/* The format buttons, as in Lark. */
+const FMT = [
+  ["b", "<b class=\"fl\">B</b>", "Bold (Ctrl+B)"],
+  ["s", "<s class=\"fl\">S</s>", "Strikethrough (Ctrl+Shift+X)"],
+  ["i", "<i class=\"fl\">I</i>", "Italic (Ctrl+I)"],
+  ["u", "<u class=\"fl\">U</u>", "Underline (Ctrl+U)"],
+  ["|"],
+  ["ol", ic("olist", 18), "Numbered list"],
+  ["ul", ic("ulist", 18), "Bulleted list"],
+  ["quote", ic("quote", 16), "Quote"],
+  ["|"],
+  ["link", ic("link", 17), "Link"],
+  ["code", ic("code", 17), "Code"],
+  ["pre", ic("braces", 17), "Block of code"],
+];
+
+/* the format buttons light up for what the caret is in */
+function paintFmt() {
+  const bar = $("#c-fmtbar");
+  if (!BOX || bar.hidden) return;
+  const st = BOX.states();
+  for (const b of bar.querySelectorAll("[data-fmt]")) b.classList.toggle("on", !!st[b.dataset.fmt]);
+}
+
+async function linkForm() {
+  BOX.saveRange();
+  const r = BOX.saved;
+  const sel = r && !r.collapsed ? r.toString() : "";
+  const f = await modal("Link", `<label>Address <input name="u" placeholder="https://..." value="${esc(/^https?:\/\//.test(sel) ? sel : "")}" required></label>`
+    + `<label>Text <input name="t" value="${esc(/^https?:\/\//.test(sel) ? "" : sel)}" placeholder="optional - the address shows when empty"></label>`, "Add link");
+  if (!f || !f.u.value.trim()) { BOX.restoreRange(); return; }
+  BOX.link(f.u.value.trim(), f.t.value.trim());
+}
+
 function icons() {
   $("#c-back").innerHTML = ic("back", 20) + `<span>Chats</span>`;
   $("#c-files-btn").innerHTML = ic("clip") + `<span class="lab">Files</span>`;
   $("#c-members-btn").innerHTML = ic("users") + ` <span id="c-mcount"></span>`;
   $("#c-members-btn").title = "Chat info and members";
   $("#c-new").innerHTML = ic("compose", 18);
-  $("#c-attach").innerHTML = ic("clip", 18);
-  $("#c-plus").innerHTML = ic("plus", 19);
-  $("#c-fmt").innerHTML = ic("format", 18);
-  $("#c-fmtbar").innerHTML = FORMAT_BAR.map(([k, , label, title]) => `<button type="button" class="ghost" data-fmt="${k}" title="${title}">${label}</button>`).join("")
-    + `<small class="muted">as in WhatsApp: *bold* _italic_ ~strike~</small>`;
+  $("#c-attach").innerHTML = ic("clip", 19);
+  $("#c-plus").innerHTML = ic("pluscircle", 19);
+  $("#c-fmt").innerHTML = `<span class="aa">A<small>a</small></span>`;
+  $("#c-at").innerHTML = ic("at", 19);
+  $("#c-linkbtn").innerHTML = ic("hash", 18);
+  $("#c-expand").innerHTML = ic("expand", 17);
+  $("#c-fmtbar").innerHTML = FMT.map(([k, label, title]) => k === "|" ? `<span class="cb-sep"></span>`
+    : `<button type="button" class="cb-b" data-fmt="${k}" title="${title}">${label}</button>`).join("");
   $("#c-emoji").innerHTML = ic("smile", 19);
-  $("#c-send").innerHTML = ic("send", 17) + `<span class="lab">Send</span>`;
+  $("#c-send").innerHTML = ic("sendfill", 20) + `<span class="lab">Send</span>`;
 }
 
 function wire() {
@@ -1380,27 +1419,48 @@ function wire() {
   $("#c-send").onclick = send;
   // Enter is a new line (phone and computer alike); the Send button sends,
   // and so does Ctrl+Enter / Cmd+Enter on a keyboard.
-  $("#c-text").onkeydown = (ev) => {
+  BOX = new RichBox($("#c-text"), { onPaste: pastedWhatsApp });
+  $("#c-text").addEventListener("keydown", (ev) => {
     if (kbNav(ev)) return;
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); send(); }
-    else if (ev.key === "Enter" && !ev.shiftKey && !ev.altKey && !ev.isComposing && continueList(ev.target)) ev.preventDefault();
     const fk = formatKey(ev);
-    if (fk) { ev.preventDefault(); applyFormat(ev.target, fk); }
+    if (fk) { ev.preventDefault(); BOX.format(fk); paintFmt(); }
     if (ev.key === "Escape" && C.reply) { C.reply = null; $("#c-reply").hidden = true; }
-  };
+  });
+  document.addEventListener("selectionchange", () => { if (document.activeElement === $("#c-text")) paintFmt(); });
   // the Send button must not take the focus (a phone's keyboard would close)
   $("#c-send").addEventListener("pointerdown", (ev) => ev.preventDefault());
   // the format bar works on the message box without taking its focus
-  $("#c-fmtbar").addEventListener("pointerdown", (ev) => { if (ev.target.closest("[data-fmt]")) ev.preventDefault(); });
-  $("#c-fmtbar").onclick = (ev) => { const b = ev.target.closest("[data-fmt]"); if (b) applyFormat($("#c-text"), b.dataset.fmt); };
-  $("#c-fmt").onclick = () => {
-    const bar = $("#c-fmtbar");
-    bar.hidden = !bar.hidden;
-    $("#c-fmt").classList.toggle("on", !bar.hidden);
-    try { localStorage.setItem("lwk-viewer:chat-fmt", bar.hidden ? "" : "1"); } catch (e) {}
-    $("#c-text").focus();
+  // the box's buttons keep the focus (and the caret) in the box
+  for (const b of document.querySelectorAll("#c-compose .cb-bar")) b.addEventListener("pointerdown", (ev) => { if (ev.target.closest("button")) ev.preventDefault(); });
+  $("#c-fmtbar").onclick = (ev) => {
+    const b = ev.target.closest("[data-fmt]");
+    if (!b) return;
+    if (b.dataset.fmt === "link") return linkForm();
+    BOX.format(b.dataset.fmt);
+    paintFmt();
   };
-  try { if (localStorage.getItem("lwk-viewer:chat-fmt")) { $("#c-fmtbar").hidden = false; $("#c-fmt").classList.add("on"); } } catch (e) {}
+  const showFmt = (on) => {
+    $("#c-fmtbar").hidden = !on;
+    $("#c-fmt").classList.toggle("on", on);
+    $("#c-compose").classList.toggle("fmt-on", on);
+    paintFmt();
+  };
+  $("#c-fmt").onclick = () => {
+    const on = $("#c-fmtbar").hidden;
+    showFmt(on);
+    try { localStorage.setItem("lwk-viewer:chat-fmt", on ? "1" : "0"); } catch (e) {}
+  };
+  // on at first on a computer, off on a phone (room for the words), then as left
+  let fmtPref = null;
+  try { fmtPref = localStorage.getItem("lwk-viewer:chat-fmt"); } catch (e) {}
+  showFmt(fmtPref ? fmtPref === "1" : matchMedia("(hover: hover) and (min-width: 700px)").matches);
+  $("#c-at").onclick = () => { if (!BOX.range()) BOX.caretToEnd(); BOX.insertText((/\S$/.test(BOX.textBefore()) ? " " : "") + "@"); };
+  $("#c-expand").onclick = () => {
+    const big = $("#c-compose").classList.toggle("big");
+    $("#c-expand").innerHTML = ic(big ? "shrink" : "expand", 17);
+    BOX.focus();
+  };
   $("#c-plus").onclick = plusMenu;
   $("#c-topics").onclick = async (ev) => {
     const nt = ev.target.closest("[data-newtopic]");
@@ -1422,8 +1482,8 @@ function wire() {
   wirePickers();
   $("#c-linkbtn").onclick = () => linkMenu();
   $("#c-emoji").onclick = () => {
-    const ta = $("#c-text");
-    emojiPicker($("#c-emoji"), (e) => insertAt(ta, ta.selectionStart, ta.selectionEnd - ta.selectionStart, e), true);
+    BOX.saveRange();
+    emojiPicker($("#c-emoji"), (e) => { BOX.restoreRange(); BOX.insertText(e); BOX.saveRange(); }, true);
   };
   $("#c-wa-file").onchange = (ev) => { const f = (ev.target.files || [])[0]; ev.target.value = ""; if (f) importWhatsApp(f); };
   $("#c-attach").onclick = () => $("#c-file").click();
@@ -1541,17 +1601,14 @@ function wire() {
   // the box a message is changed in
   $("#c-msgs").addEventListener("input", (ev) => {
     const t = ev.target.closest("[data-etext]");
-    if (!t) return;
-    C.editText = t.value;
-    t.style.height = "auto";
-    t.style.height = Math.min(240, t.scrollHeight + 2) + "px";
+    if (t && t._rb) C.editText = t._rb.value;
   });
   $("#c-msgs").addEventListener("keydown", (ev) => {
     const t = ev.target.closest("[data-etext]");
     if (!t) return;
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); saveEdit(t.dataset.etext); }
     const fk = formatKey(ev);
-    if (fk) { ev.preventDefault(); applyFormat(t, fk); C.editText = t.value; }
+    if (fk && t._rb) { ev.preventDefault(); t._rb.format(fk); C.editText = t._rb.value; }
     if (ev.key === "Escape") { ev.preventDefault(); stopEdit(); }
   });
 }
@@ -1648,8 +1705,7 @@ async function incoming(id) {
     for (const x of files) { try { got.push(await upload(x, { room: C.room.id }, x.name)); } catch (e) {} }
     return sendCard({ type: "whatsapp", title: "From WhatsApp", lines }, got);
   }
-  $("#c-text").value = text;
-  fit();
+  BOX.value = text;
   if (files.length) await addFiles(files);
   toast("Check it and press Send");
 }
