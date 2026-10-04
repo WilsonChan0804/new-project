@@ -2,7 +2,16 @@
  *
  * Left: the chats - project channels, groups, direct messages - and the
  * task discussions you follow. Middle: the conversation. New messages come
- * from /api/chat/sync every few seconds.
+ * from /api/chat/sync, held open by the server until something changes.
+ *
+ * Fast to open: the last chats and their last messages are kept on this
+ * device and shown at once, then replaced by the server's answer; a message
+ * sent shows at once, "sending ...", until the server has it.
+ *
+ * In the message box: @ a person, # a task, ! an issue, $ a sheet, % the 3D
+ * model or a saved view - picked from a list, sent as [label](address) and
+ * shown as a chip. Enter is a new line; the Send button (or Ctrl+Enter)
+ * sends.
  *
  * A task discussion is the task's own comments (tasks.py), shown here like
  * a chat so nobody has to look in two places.
@@ -11,14 +20,44 @@
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop, ic, pop } from "./tasks-util.js";
-import { linkify, badge } from "./filelinks.js";
+import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
+import { emojiPicker, QUICK } from "./emoji.js";
+import { toWhatsApp, parseWhatsApp, readExport } from "./whatsapp.js";
 
 const C = {
   me: null, uid: null, people: [], byUid: {}, rooms: [], joinable: [], threads: [], projects: {},
   room: null, msgs: [], more: false, rev: 0, reply: null, pend: [], q: "",
 };
 const TASK = "task:";
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* ------------------------------------------------------------ kept on this device */
+
+/* The last chats and the last messages of the last few opened, so the page
+   shows them at once. Per account; signing out clears them (nav.js). */
+const CK = "lwk-viewer:chat:";
+function keep(k, v) {
+  try { localStorage.setItem(CK + C.uid + ":" + k, JSON.stringify(v)); } catch (e) {}
+}
+function kept(k) {
+  try { return JSON.parse(localStorage.getItem(CK + C.uid + ":" + k) || "null"); } catch (e) { return null; }
+}
+let keepTimer = null;
+function keepRoom() {
+  const r = C.room;
+  if (!r || r.kind === "task") return;
+  clearTimeout(keepTimer);
+  keepTimer = setTimeout(() => {
+    keep("m:" + r.id, { room: r, messages: C.msgs.filter((m) => !m.pending && !m.failed).slice(-60), more: C.more || C.msgs.length > 60 });
+    const order = [r.id].concat((kept("opened") || []).filter((x) => x !== r.id));
+    for (const old of order.slice(10)) { try { localStorage.removeItem(CK + C.uid + ":m:" + old); } catch (e) {} }
+    keep("opened", order.slice(0, 10));
+  }, 800);
+}
+function forget(id) {
+  try { localStorage.removeItem(CK + C.uid + ":m:" + id); } catch (e) {}
+}
 
 /* ------------------------------------------------------------ loading */
 
@@ -26,16 +65,33 @@ async function loadRooms() {
   const r = await api("/api/chat/rooms");
   C.rooms = r.rooms;
   C.joinable = r.joinable;
-  try {
-    const t = await api("/api/tasks-mine?view=subscribed");
+  keep("rooms", { rooms: C.rooms, joinable: C.joinable });
+  paintRooms();
+  loadExtras().catch(() => {});
+}
+
+/* The task discussions you follow and the projects' names: after the
+   chats are on screen, not before. */
+let extrasAt = 0;
+async function loadExtras(force) {
+  const jobs = [api("/api/tasks-mine?view=subscribed").then((t) => {
     C.threads = t.tasks.filter((x) => x.comment_count > 0)
       .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || "")).slice(0, 30);
-  } catch (e) { C.threads = []; }
-  try {
-    const p = await api("/api/registry");
-    C.projects = Object.fromEntries(p.projects.map((x) => [x.id, x]));
-  } catch (e) { C.projects = {}; }
+  }).catch(() => {})];
+  if (force || Date.now() - extrasAt > 600e3) {
+    jobs.push(api("/api/registry?lite=1").then((p) => {
+      C.projects = Object.fromEntries(p.projects.map((x) => [x.id, x]));
+      extrasAt = Date.now();
+    }).catch(() => {}));
+  }
+  await Promise.all(jobs);
   paintRooms();
+  if (C.room && C.room.kind === "project") paintHead();
+}
+
+function setPeople(list) {
+  C.people = list || [];
+  C.byUid = Object.fromEntries(C.people.map((p) => [p.uid, p]));
 }
 
 function roomIcon(r) {
@@ -51,7 +107,7 @@ function paintRooms() {
   const row = (r) => `<a class="cr${C.room && C.room.id === r.id ? " on" : ""}${r.unread ? " unread" : ""}" data-room="${esc(r.id)}">`
     + roomIcon(r)
     + `<span class="cr-m"><span class="cr-t"><b>${esc(r.title)}</b><small>${r.last_at ? esc(short(r.last_at)) : ""}</small></span>`
-    + `<span class="cr-l">${esc(r.last_text || "")}</span></span>`
+    + `<span class="cr-l">${esc(plainLabels(r.last_text || ""))}</span></span>`
     + (r.unread ? `<b class="cr-n${r.mention ? " at" : ""}">${r.mention ? "@" : ""}${r.unread > 99 ? "99+" : r.unread}</b>` : "")
     + `</a>`;
   const sec = (title, list) => list.length ? `<div class="cs-h">${title}</div>` + list.map(row).join("") : "";
@@ -68,6 +124,8 @@ function paintRooms() {
   const n = C.rooms.reduce((s, r) => s + (r.unread || 0), 0);
   document.title = (n ? `(${n}) ` : "") + "LWK Viewer - Chat";
 }
+
+const plainLabels = (t) => String(t || "").replace(/\[([^\]\n]{1,200})\]\([^\s)]+\)/g, "$1");
 
 function short(iso) {
   const d = new Date(iso);
@@ -87,20 +145,42 @@ async function openRoom(id) {
   $("#c-reply").hidden = true;
   $("#c-right").hidden = true;
   if (id.startsWith(TASK)) return openThread(id.slice(TASK.length));
-  const r = await api(`/api/chat/rooms/${encodeURIComponent(id)}/messages?limit=60`);
+  const ticket = ++openTicket;
+  const was = kept("m:" + id);
+  if (was && was.room) {
+    // what this device showed last time, straight away
+    C.room = was.room;
+    C.msgs = was.messages || [];
+    C.more = was.more;
+    paintHead();
+    paintMsgs(true);
+    paintRooms();
+  }
+  let r;
+  try {
+    r = await api(`/api/chat/rooms/${encodeURIComponent(id)}/messages?limit=60`);
+  } catch (e) {
+    if (was) { forget(id); if (ticket === openTicket) closeRoom(id); }
+    throw e;
+  }
+  if (ticket !== openTicket) return;           // another chat was opened meanwhile
+  const mine = C.room && C.room.id === id ? C.msgs.filter((m) => m.pending || m.failed) : [];
   C.room = r.room;
-  C.msgs = r.messages;
+  C.msgs = r.messages.concat(mine);
   C.more = r.more;
   history.replaceState(null, "", "messenger.html?room=" + encodeURIComponent(id));
   paintHead();
-  paintMsgs(true);
+  paintMsgs(!was);
   markRead();
   paintRooms();
-  $("#c-text").focus();
+  if (matchMedia("(hover: hover)").matches) $("#c-text").focus();
 }
+let openTicket = 0;
 
 async function openThread(tid) {
+  const ticket = ++openTicket;
   const r = await api("/api/tasks/" + encodeURIComponent(tid));
+  if (ticket !== openTicket) return;
   const t = r.task;
   const meta = C.threads.find((x) => x.id === tid) || {};
   C.room = { id: TASK + tid, kind: "task", title: t.title || "Untitled task", member: r.role !== "viewer", task: t,
@@ -178,8 +258,51 @@ function cardHtml(m) {
    is kept as its address, which linkify() shows as a player. */
 const unframe = (t) => String(t || "").replace(/<iframe[^>]*\ssrc=["']([^"']+)["'][^>]*>(\s*<\/iframe>)?/gi, " $1 ");
 
+/* [label](viewer address) - what # ! $ % put in - as a chip with the label.
+   Only the viewer's own pages: anything else stays as the words typed. */
+const LINK_MD = /\[([^\]\n]{1,200})\]\(((?:https?:\/\/[^\s)]+\/)?(?:index|model|tasks|projects|dashboard)\.html\?[^\s)]*)\)/g;
+
 function textHtml(body) {
-  return mention(linkify(esc(unframe(body))));
+  const src = unframe(body);
+  let out = "", at = 0, m;
+  LINK_MD.lastIndex = 0;
+  while ((m = LINK_MD.exec(src))) {
+    out += mention(linkify(esc(src.slice(at, m.index))));
+    const url = new URL(m[2], location.href);
+    const c = url.origin === location.origin ? classify(url.href) : null;
+    out += c ? chip({ kind: c.kind === "url" ? "url" : c.kind, url: url.pathname.replace(/^.*\//, "") + url.search, title: m[1] })
+      : esc(m[0]);
+    at = m.index + m[0].length;
+  }
+  return out + mention(linkify(esc(src.slice(at))));
+}
+
+/* Messages from WhatsApp (pasted, or an exported chat) as one quote. */
+const waOpen = new Set();
+function waHtml(m) {
+  const c = m.card, files = m.files || [];
+  const all = c.lines || [];
+  const open = waOpen.has(m.id) || all.length <= 8;
+  const lines = open ? all : all.slice(-8);
+  const row = (l) => {
+    const f = l.file && files.find((x) => x.name === l.file);
+    return `<div class="wa-l"><div class="wa-n"><b>${esc(l.name)}</b><small>${esc(l.at)}</small></div>`
+      + (l.text ? `<div class="wa-t">${textHtml(l.text)}</div>` : "")
+      + (f ? filesHtml([f]) : l.file ? `<small class="muted">${ic("clip", 12)} ${esc(l.file)} (not brought in)</small>` : "") + `</div>`;
+  };
+  return `<div class="c-card wa"><div class="cc-h"><span class="fl-badge wa-b">WA</span> <b>${esc(c.title || "From WhatsApp")}</b>`
+    + ` <span class="muted">${all.length} message${all.length === 1 ? "" : "s"}${c.cut ? " (the oldest left out)" : ""}</span></div>`
+    + (!open ? `<button type="button" class="ghost linkish wa-more" data-wa-all="${esc(m.id)}">Show all ${all.length}</button>` : "")
+    + `<div class="wa-lines">${lines.map(row).join("")}</div></div>`;
+}
+
+function reactsHtml(m) {
+  const rs = Object.entries(m.reactions || {});
+  if (!rs.length) return "";
+  return `<div class="c-rxs">` + rs.map(([e, us]) => {
+    const names = us.map((u) => (u === C.uid ? "You" : (C.byUid[u] || {}).name || "Someone")).join(", ");
+    return `<button type="button" class="c-rx${us.includes(C.uid) ? " me" : ""}" data-rx="${esc(e)}" data-mid="${esc(m.id)}" title="${esc(names)}">${e}<b>${us.length}</b></button>`;
+  }).join("") + `<button type="button" class="c-rx add" data-react="${esc(m.id)}" title="React">${ic("smile", 14)}</button></div>`;
 }
 
 function msgHtml(m, prev) {
@@ -190,7 +313,10 @@ function msgHtml(m, prev) {
   const mine = m.uid != null && m.uid === C.uid;
   const reply = m.reply_to && C.msgs.find((x) => x.id === m.reply_to);
   const by = m.kind === "card" ? (m.author ? m.author + " · update" : "Update") : m.author;
-  const inner = fwd ? (fwd.inner ? cardHtml({ card: fwd.inner }) : "") : m.kind === "card" ? cardHtml(m) : "";
+  const wa = m.card && m.card.type === "whatsapp";
+  const inner = fwd ? (fwd.inner ? cardHtml({ card: fwd.inner }) : "") : m.kind === "card" ? cardHtml(m) : wa ? waHtml(m) : "";
+  const shown = wa ? new Set((m.card.lines || []).map((l) => l.file).filter(Boolean)) : null;
+  const files = shown ? (m.files || []).filter((f) => !shown.has(f.name)) : m.files;
   const room = C.room.kind !== "task";
   return `<div class="c-msg${same ? " cont" : ""}${mine ? " mine" : ""}" data-id="${esc(m.id)}">`
     + (same ? `<span class="c-av"></span>` : `<span class="c-av">${m.kind === "card" ? `<span class="c-ico bot">${ic("bell", 18)}</span>` : avatar({ name: m.author }, 34)}</span>`)
@@ -202,11 +328,16 @@ function msgHtml(m, prev) {
         + `<div class="${fwd ? "c-fwd-body" : ""}">`
         + inner
         + (m.body ? `<div class="c-text">${textHtml(m.body)}${m.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>` : "")
-        + filesHtml(m.files) + `</div>`)
+        + filesHtml(files) + `</div>`
+        + (m.pending ? `<div class="c-state">sending ...</div>` : "")
+        + (m.failed ? `<div class="c-state bad">Not sent - <button type="button" class="ghost linkish" data-retry="${esc(m.id)}">send again</button> · <button type="button" class="ghost linkish" data-drop="${esc(m.id)}">remove</button></div>` : "")
+        + (room ? reactsHtml(m) : ""))
     + `</div>`
-    + (!m.deleted && room ? `<div class="c-acts">`
+    + (!m.deleted && room && !m.pending && !m.failed ? `<div class="c-acts">`
+      + `<button class="ghost" data-react="${esc(m.id)}" title="React">${ic("smile")}</button>`
       + (m.kind !== "card" ? `<button class="ghost" data-reply="${esc(m.id)}" title="Reply">${ic("reply")}</button>` : "")
       + `<button class="ghost" data-fwd="${esc(m.id)}" title="Forward to another chat">${ic("forward")}</button>`
+      + `<button class="ghost" data-wa="${esc(m.id)}" title="Send to WhatsApp">${ic("whatsapp")}</button>`
       + (mine && m.kind !== "card" ? `<button class="ghost" data-edit="${esc(m.id)}" title="Edit">${ic("edit")}</button><button class="ghost" data-del="${esc(m.id)}" title="Delete">${ic("trash")}</button>` : "")
       + `</div>` : "")
     + `</div>`;
@@ -229,6 +360,7 @@ function paintMsgs(toBottom) {
   box.innerHTML = h;
   if (toBottom || atBottom) box.scrollTop = box.scrollHeight;
   for (const img of box.querySelectorAll("img")) img.addEventListener("load", () => { if (toBottom || atBottom) box.scrollTop = box.scrollHeight; }, { once: true });
+  keepRoom();
 }
 
 let readTimer = null;
@@ -262,35 +394,65 @@ async function addFiles(files) {
   }
 }
 
+/* The message shows at once ("sending ..."); the server's copy replaces it.
+   One that did not go stays, with "send again". */
 async function send() {
   const ta = $("#c-text");
   const body = ta.value.trim();
+  if (!C.room) return;
   if (C.pend.some((p) => !p.id && !p.error)) return toast("Still uploading - a moment", true);
-  const files = C.pend.filter((p) => p.id).map((p) => p.id);
+  const files = C.pend.filter((p) => p.id);
   if (!body && !files.length) return;
+  closePop();
   ta.value = "";
   fit();
-  const pend = C.pend;
   C.pend = [];
   paintPend();
+  const tmp = { id: "tmp" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), uid: C.uid,
+    author: (C.me.user || {}).name || "", body, files, created_at: new Date().toISOString(), kind: "text",
+    reply_to: C.reply || "", pending: true, seq: 1e12 };
+  C.reply = null;
+  $("#c-reply").hidden = true;
+  C.msgs.push(tmp);
+  paintMsgs(true);
+  await deliver(tmp, C.room);
+}
+
+async function deliver(tmp, room, card) {
+  tmp.pending = true;
+  tmp.failed = false;
   try {
-    if (C.room.kind === "task") {
-      const c = await api(`/api/tasks/${C.room.task.id}/comments`, { method: "POST", body: JSON.stringify({ body, files }) });
-      C.msgs.push({ id: c.id, uid: c.uid, author: c.author, body: c.body, files: c.files, created_at: c.created_at, kind: "text" });
+    let m;
+    if (room.kind === "task") {
+      const c = await api(`/api/tasks/${room.task.id}/comments`, { method: "POST", body: JSON.stringify({ body: tmp.body, files: tmp.files.map((f) => f.id) }) });
+      m = { id: c.id, uid: c.uid, author: c.author, body: c.body, files: c.files, created_at: c.created_at, kind: "text" };
     } else {
-      const m = await api(`/api/chat/rooms/${C.room.id}/messages`, { method: "POST",
-        body: JSON.stringify({ body, files, reply_to: C.reply || "" }) });
-      if (!C.msgs.some((x) => x.id === m.id)) C.msgs.push(m);
+      m = await api(`/api/chat/rooms/${room.id}/messages`, { method: "POST",
+        body: JSON.stringify({ body: tmp.body, files: tmp.files.map((f) => f.id), reply_to: tmp.reply_to || "", card: card || tmp.card || null }) });
     }
-    C.reply = null;
-    $("#c-reply").hidden = true;
-    paintMsgs(true);
+    if (!C.room || C.room.id !== room.id) return;
+    const i = C.msgs.indexOf(tmp);
+    if (C.msgs.some((x) => x.id === m.id)) { if (i >= 0) C.msgs.splice(i, 1); }
+    else if (i >= 0) C.msgs[i] = m;
+    else C.msgs.push(m);
+    C.msgs.sort((a, b) => (a.seq || 0) - (b.seq || 0) || 0);
   } catch (e) {
-    ta.value = body;
-    C.pend = pend;
-    paintPend();
+    tmp.pending = false;
+    tmp.failed = true;
+    tmp.error = e.message;
     toast(e.message, true);
   }
+  if (C.room && C.room.id === room.id) paintMsgs(true);
+}
+
+/* A card someone sends (only WhatsApp quotes): the same way as a message. */
+async function sendCard(card, files, body) {
+  if (!C.room || C.room.kind === "task") return;
+  const tmp = { id: "tmp" + Date.now().toString(36), uid: C.uid, author: (C.me.user || {}).name || "", body: body || "",
+    files: files || [], card, created_at: new Date().toISOString(), kind: "text", pending: true, seq: 1e12 };
+  C.msgs.push(tmp);
+  paintMsgs(true);
+  await deliver(tmp, C.room, card);
 }
 
 function fit() {
@@ -299,47 +461,239 @@ function fit() {
   ta.style.height = Math.min(180, ta.scrollHeight) + "px";
 }
 
-/* @ lists the people in this chat */
-function wireMentions() {
+/* @ lists the people in this chat; # ! $ % the tasks, issues, sheets and 3D
+   of the project (all your projects outside a project channel). */
+const LINK_KINDS = { "#": "task", "!": "issue", "$": "sheet", "%": "model" };
+const LINK_SAY = { task: "tasks", issue: "issues", sheet: "sheets", model: "3D models or saved views" };
+let lsTimer = null, lsSeq = 0;
+
+function insertAt(ta, start, len, text) {
+  ta.value = ta.value.slice(0, start) + text + ta.value.slice(start + len);
+  const at = start + text.length;
+  ta.setSelectionRange(at, at);
+  ta.focus();
+  fit();
+}
+
+function linkMd(row) {
+  return `[${row.label.replace(/[\[\]\n]/g, " ").trim()}](${row.url}) `;
+}
+
+function rowHtml(x, i) {
+  return `<div class="po-row lk-row" data-v="${i}">${badge(x.kind)}<span class="lk-m"><b>${esc(x.label)}</b>`
+    + (x.sub ? `<small class="muted">${esc(x.sub)}</small>` : "") + `</span></div>`;
+}
+
+async function searchLinks(kind, q) {
+  const reg = C.room && C.room.kind === "project" ? C.room.project : "";
+  const r = await api(`/api/link-search?kind=${kind}&q=${encodeURIComponent(q)}&reg=${encodeURIComponent(reg)}`);
+  return r.rows || [];
+}
+
+function wirePickers() {
   const ta = $("#c-text");
   ta.addEventListener("input", () => {
     fit();
     const upto = ta.value.slice(0, ta.selectionStart);
     const m = /(^|\s)@([^\s@]{0,30})$/.exec(upto);
+    const lm = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(upto);
+    clearTimeout(lsTimer);
+    if (lm && C.room) {
+      const sym = lm[2], q = lm[3], token = sym + q, start = upto.length - token.length;
+      const kind = LINK_KINDS[sym];
+      lsTimer = setTimeout(async () => {
+        const seq = ++lsSeq;
+        let rows = [];
+        try { rows = await searchLinks(kind, q); } catch (e) { return; }
+        // still the word being typed (not an older, shorter one)
+        const now = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(ta.value.slice(0, ta.selectionStart));
+        if (seq !== lsSeq || !now || now[2] + now[3] !== token) return;
+        if (!rows.length) {
+          pop(ta, `<div class="po-empty muted">No ${LINK_SAY[kind]}${q ? ` matching "${esc(q)}"` : ""}${C.room.kind === "project" ? " in this project" : ""}</div>`, 300);
+          return;
+        }
+        const el = pop(ta, `<div class="lk-h muted">${esc(sym)} ${LINK_SAY[kind]} - pick one to link it</div>` + rows.map(rowHtml).join(""), 340);
+        el.classList.add("lk-pop");
+        kbFirst(el);
+        el.addEventListener("click", (ev) => {
+          const r = ev.target.closest(".po-row");
+          if (!r) return;
+          closePop();
+          insertAt(ta, start, token.length, linkMd(rows[Number(r.dataset.v)]));
+        });
+      }, q ? 160 : 0);
+      return;
+    }
     if (!m || !C.room) return closePop();
     const q = m[2].toLowerCase();
     const pool = C.people.filter((p) => !C.room.members || C.room.kind === "task" || C.room.members.includes(p.uid));
     const opts = pool.filter((p) => p.uid !== C.uid && p.name.toLowerCase().includes(q)).slice(0, 8);
     if (!opts.length) return closePop();
-    pickOne(ta, opts.map((p) => ({ value: p.name, label: avatar(p) + " " + esc(p.name) })), "", (name) => {
+    const el = pickOne(ta, opts.map((p) => ({ value: p.name, label: avatar(p) + " " + esc(p.name) })), "", (name) => {
       const start = upto.length - m[2].length - 1;
-      ta.value = ta.value.slice(0, start) + "@" + name + " " + ta.value.slice(ta.selectionStart);
-      ta.focus();
+      insertAt(ta, start, m[2].length + 1, "@" + name + " ");
     });
+    kbFirst(el);
     setTimeout(() => ta.focus(), 0);
   });
+  // WhatsApp lines pasted: send them as one quote, if that is what is wanted
+  ta.addEventListener("paste", (ev) => {
+    const t = ev.clipboardData && ev.clipboardData.getData("text/plain");
+    if (!t || !C.room || C.room.kind === "task") return;
+    const lines = parseWhatsApp(t);
+    if (lines.length < 2) return;
+    ev.preventDefault();
+    if (confirm(`These look like ${lines.length} messages copied from WhatsApp. Send them as a WhatsApp quote?\n\n(Cancel: paste them as plain text.)`)) {
+      sendCard({ type: "whatsapp", title: "From WhatsApp", lines });
+    } else {
+      insertAt(ta, ta.selectionStart, ta.selectionEnd - ta.selectionStart, t);
+    }
+  });
+}
+
+/* The arrow keys move through an open list; Enter or Tab picks. */
+function kbFirst(el) {
+  const first = el && el.querySelector(".po-row");
+  if (first) first.classList.add("kb");
+}
+function kbNav(ev) {
+  const el = document.querySelector(".t-pop:not(.ej-pop)");
+  if (!el || !["ArrowDown", "ArrowUp", "Enter", "Tab"].includes(ev.key) || ev.ctrlKey || ev.metaKey) return false;
+  const rows = [...el.querySelectorAll(".po-row")];
+  if (!rows.length) return false;
+  let i = rows.findIndex((r) => r.classList.contains("kb"));
+  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+    if (i >= 0) rows[i].classList.remove("kb");
+    i = ev.key === "ArrowDown" ? (i + 1) % rows.length : (i <= 0 ? rows.length - 1 : i - 1);
+    rows[i].classList.add("kb");
+    rows[i].scrollIntoView({ block: "nearest" });
+  } else {
+    (rows[i >= 0 ? i : 0]).click();
+  }
+  ev.preventDefault();
+  return true;
+}
+
+/* The # button: the same lists, with tabs, for a phone (or anyone who does
+   not remember the symbols). */
+function linkMenu() {
+  const ta = $("#c-text");
+  const at = ta.selectionStart || ta.value.length, len = (ta.selectionEnd || at) - at;
+  const tabs = [["task", "# Task"], ["issue", "! Issue"], ["sheet", "$ Sheet"], ["model", "% 3D"]];
+  const el = pop($("#c-linkbtn"), `<div class="lk-tabs">${tabs.map(([k, l], i) => `<button type="button" class="ghost${i ? "" : " on"}" data-k="${k}">${l}</button>`).join("")}</div>`
+    + `<input class="lk-q" placeholder="Search" autocomplete="off"><div class="lk-list"><p class="muted">Loading ...</p></div>`, 360);
+  el.classList.add("lk-pop");
+  let kind = "task", rows = [], seq = 0, timer = null;
+  const q = el.querySelector(".lk-q"), list = el.querySelector(".lk-list");
+  const run = async () => {
+    const n = ++seq;
+    try { rows = await searchLinks(kind, q.value.trim()); } catch (e) { list.innerHTML = `<p class="bad">${esc(e.message)}</p>`; return; }
+    if (n !== seq) return;
+    list.innerHTML = rows.length ? rows.map(rowHtml).join("") : `<p class="muted">No ${LINK_SAY[kind]} found${C.room && C.room.kind === "project" ? " in this project" : ""}.</p>`;
+  };
+  el.addEventListener("click", (ev) => {
+    const t = ev.target.closest("[data-k]");
+    if (t) {
+      kind = t.dataset.k;
+      for (const b of el.querySelectorAll("[data-k]")) b.classList.toggle("on", b === t);
+      run();
+      return;
+    }
+    const r = ev.target.closest(".po-row");
+    if (!r) return;
+    closePop();
+    insertAt(ta, at, len, linkMd(rows[Number(r.dataset.v)]));
+  });
+  q.oninput = () => { clearTimeout(timer); timer = setTimeout(run, 160); };
+  q.onkeydown = (ev) => {
+    if (ev.key === "Enter" && rows.length) { ev.preventDefault(); closePop(); insertAt(ta, at, len, linkMd(rows[0])); }
+  };
+  if (matchMedia("(hover: hover)").matches) q.focus();
+  run();
+}
+
+/* WhatsApp's "Export chat" (.txt, or .zip with the pictures): one quote. */
+async function importWhatsApp(file) {
+  if (!C.room || C.room.kind === "task") return;
+  let ex;
+  try { ex = await readExport(file); } catch (e) { return toast(e.message, true); }
+  const big = ex.media.filter((f) => f.size > 50 * 1024 * 1024);
+  const media = ex.media.filter((f) => f.size <= 50 * 1024 * 1024).slice(0, 200);
+  if (!confirm(`Bring ${ex.lines.length} WhatsApp messages${media.length ? ` and ${media.length} picture${media.length === 1 ? "" : "s"} / file${media.length === 1 ? "" : "s"}` : ""} into "${C.room.title}"?`
+    + (big.length ? `\n\n${big.length} file(s) over 50 MB are left out.` : ""))) return;
+  const room = C.room, got = [];
+  for (let i = 0; i < media.length; i++) {
+    toast(`Uploading ${i + 1} of ${media.length} ...`);
+    try { got.push(await upload(media[i], { room: room.id }, media[i].name)); } catch (e) { /* that one is listed as not brought in */ }
+  }
+  if (!C.room || C.room.id !== room.id) await openRoom(room.id);
+  await sendCard({ type: "whatsapp", title: ex.title, lines: ex.lines }, got);
+  toast("WhatsApp chat brought in");
+}
+
+/* Reactions: the quick ones, and + for the rest. */
+function reactMenu(btn, mid) {
+  const el = pop(btn, `<div class="rx-quick">${QUICK.map((e) => `<button type="button" class="ej" data-e="${e}">${e}</button>`).join("")}`
+    + `<button type="button" class="ghost rx-more" title="More">${ic("plus")}</button></div>`, 280);
+  el.classList.add("rx-pop");
+  el.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-e]");
+    if (b) { closePop(); react(mid, b.dataset.e); return; }
+    if (ev.target.closest(".rx-more")) emojiPicker(btn, (e) => react(mid, e));
+  });
+}
+
+async function react(mid, e) {
+  const m = C.msgs.find((x) => x.id === mid);
+  if (!m) return;
+  // shown at once; the server's answer settles it
+  const rs = Object.assign({}, m.reactions || {});
+  const us = (rs[e] || []).slice();
+  const i = us.indexOf(C.uid);
+  if (i >= 0) us.splice(i, 1); else us.push(C.uid);
+  if (us.length) rs[e] = us; else delete rs[e];
+  m.reactions = rs;
+  paintMsgs(false);
+  try {
+    const r = await api(`/api/chat/messages/${mid}/react`, { method: "POST", body: JSON.stringify({ emoji: e }) });
+    Object.assign(m, r, { reactions: r.reactions || {} });
+  } catch (err) { toast(err.message, true); }
+  paintMsgs(false);
 }
 
 /* ------------------------------------------------------------ sync */
 
-async function sync() {
-  if (document.hidden && C.rev) return;
-  let r;
-  try { r = await api("/api/chat/sync?since=" + C.rev); } catch (e) { return; }
+/* wait: hold the request open (seconds) until something changes. Resolves
+   true when something did. */
+async function sync(wait) {
+  const r = await api("/api/chat/sync?since=" + C.rev + (wait && C.rev ? "&wait=" + wait : ""));
   const first = !C.rev;
+  const changed = r.rev !== C.rev;
   C.rev = r.rev;
-  if (first) return;
+  if (first || !changed) return changed;
   let roomsChanged = false;
   for (const x of r.rooms) {
     const i = C.rooms.findIndex((y) => y.id === x.id);
-    if (i >= 0) C.rooms[i] = x; else C.rooms.unshift(x);
     roomsChanged = true;
+    if (x.deleted) {
+      if (i >= 0) C.rooms.splice(i, 1);
+      forget(x.id);
+      closeRoom(x.id);
+      continue;
+    }
+    if (i >= 0) C.rooms[i] = x; else C.rooms.unshift(x);
   }
   let mine = false;
   for (const m of r.messages) {
     if (!C.room || m.room !== C.room.id) continue;
     const i = C.msgs.findIndex((y) => y.id === m.id);
-    if (i >= 0) C.msgs[i] = m; else C.msgs.push(m);
+    if (i >= 0) C.msgs[i] = m;
+    else {
+      // my own message, back before the send itself has answered
+      const t = m.uid === C.uid ? C.msgs.findIndex((y) => y.pending && (y.body || "") === (m.body || "")) : -1;
+      if (t >= 0) C.msgs.splice(t, 1);
+      C.msgs.push(m);
+    }
     mine = true;
   }
   if (roomsChanged) {
@@ -354,7 +708,23 @@ async function sync() {
     paintMsgs(false);
     markRead();
   }
-  if (roomsChanged) paintRooms();
+  if (roomsChanged) { paintRooms(); keep("rooms", { rooms: C.rooms, joinable: C.joinable }); }
+  return true;
+}
+
+/* Always one request waiting for the next change. A server too old to hold
+   it (answers at once with nothing new) is asked every 3 seconds instead;
+   a hidden page asks less often. */
+async function syncLoop() {
+  let fails = 0;
+  for (;;) {
+    const t0 = Date.now();
+    let changed = false;
+    try { changed = await sync(document.hidden ? 0 : 25); fails = 0; } catch (e) { fails++; }
+    if (fails) await sleep(Math.min(20000, 2000 * fails));
+    else if (document.hidden) await sleep(10000);
+    else if (!changed && Date.now() - t0 < 1500) await sleep(3000);
+  }
 }
 
 /* a task discussion has no sync of its own: look again now and then */
@@ -436,6 +806,7 @@ function info(rr) {
     + (r.kind !== "task" && r.kind !== "dm" ? `<button class="cp-add icon-btn">${ic("plus")} Add people</button>` : "") + `</div>`
     + (r.kind !== "task" ? `<div class="ci-sec ci-actions">`
       + `<button class="ghost icon-btn" data-files>${ic("clip")} Pictures and files</button>`
+      + `<button class="ghost icon-btn" data-wa-in title="WhatsApp > the chat > More > Export chat: send the .txt or .zip here">${ic("download")} Import WhatsApp chat</button>`
       + (r.kind !== "dm" ? `<button class="ghost icon-btn" data-leave>${ic("exit")} Leave this chat</button>` : "")
       + (admin && (r.kind !== "dm" || C.me.site_admin) ? `<button class="ghost danger icon-btn" data-delroom>${ic("trash")} Delete this chat</button>` : "")
       + `</div>` : "");
@@ -471,6 +842,7 @@ function info(rr) {
         });
       }
       if (ev.target.closest("[data-files]")) { box.dataset.v = ""; files(); }
+      if (ev.target.closest("[data-wa-in]")) $("#c-wa-file").click();
       if (ev.target.closest("[data-leave]")) await leave(r);
       if (ev.target.closest("[data-delroom]")) await removeRoom(r);
     } catch (e) { toast(e.message, true); }
@@ -533,6 +905,8 @@ function roomMenu(ev, id) {
   const el = pop(ev.target.closest(".cr"), `<div class="po-row" data-k="open">${ic("chat")} Open</div>`
     + `<div class="po-row" data-k="info">${ic("info")} Details</div>`
     + (r.unread ? `<div class="po-row" data-k="read">${ic("read")} Mark as read</div>` : "")
+    + `<div class="po-row" data-k="wa-in">${ic("download")} Import WhatsApp chat ...</div>`
+    + `<div class="po-row" data-k="wa-out">${ic("whatsapp")} Send chat link to WhatsApp</div>`
     + (r.kind !== "dm" ? `<div class="po-row" data-k="leave">${ic("exit")} Leave</div>` : "")
     + (admin && (r.kind !== "dm" || C.me.site_admin) ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete chat</div>` : ""), 200);
   el.style.left = Math.min(innerWidth - 210, ev.clientX) + "px";
@@ -551,6 +925,8 @@ function roomMenu(ev, id) {
       }
       if (k.k === "leave") await leave(r);
       if (k.k === "del") await removeRoom(r);
+      if (k.k === "wa-in") { if (!C.room || C.room.id !== r.id) await openRoom(r.id); $("#c-wa-file").click(); }
+      if (k.k === "wa-out") await toWhatsApp({ body: `${r.title} - LWK Viewer chat\n` + new URL("messenger.html?room=" + encodeURIComponent(r.id), location.href).href });
     } catch (err) { toast(err.message, true); }
   };
 }
@@ -607,6 +983,8 @@ function icons() {
   $("#c-members-btn").title = "Chat info and members";
   $("#c-new").innerHTML = ic("compose", 18);
   $("#c-attach").innerHTML = ic("clip", 18);
+  $("#c-emoji").innerHTML = ic("smile", 19);
+  $("#c-send").innerHTML = ic("send", 17) + `<span class="lab">Send</span>`;
 }
 
 function wire() {
@@ -626,11 +1004,22 @@ function wire() {
   $("#c-new").onclick = newChat;
   $("#c-empty-new").onclick = newChat;
   $("#c-send").onclick = send;
+  // Enter is a new line (phone and computer alike); the Send button sends,
+  // and so does Ctrl+Enter / Cmd+Enter on a keyboard.
   $("#c-text").onkeydown = (ev) => {
-    if (ev.key === "Enter" && !ev.shiftKey && !document.querySelector(".t-pop")) { ev.preventDefault(); send(); }
+    if (kbNav(ev)) return;
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); send(); }
     if (ev.key === "Escape" && C.reply) { C.reply = null; $("#c-reply").hidden = true; }
   };
-  wireMentions();
+  // the Send button must not take the focus (a phone's keyboard would close)
+  $("#c-send").addEventListener("pointerdown", (ev) => ev.preventDefault());
+  wirePickers();
+  $("#c-linkbtn").onclick = linkMenu;
+  $("#c-emoji").onclick = () => {
+    const ta = $("#c-text");
+    emojiPicker($("#c-emoji"), (e) => insertAt(ta, ta.selectionStart, ta.selectionEnd - ta.selectionStart, e), true);
+  };
+  $("#c-wa-file").onchange = (ev) => { const f = (ev.target.files || [])[0]; ev.target.value = ""; if (f) importWhatsApp(f); };
   $("#c-attach").onclick = () => $("#c-file").click();
   $("#c-file").onchange = (ev) => { addFiles(Array.from(ev.target.files || [])); ev.target.value = ""; };
   catchFiles($("#c-text"), addFiles);
@@ -673,6 +1062,18 @@ function wire() {
     }
     const fw = ev.target.closest("[data-fwd]");
     if (fw) return forwardMsg(C.msgs.find((x) => x.id === fw.dataset.fwd));
+    const rx = ev.target.closest("[data-rx]");
+    if (rx) return react(rx.dataset.mid, rx.dataset.rx);
+    const ra = ev.target.closest("[data-react]");
+    if (ra) return reactMenu(ra, ra.dataset.react);
+    const wa = ev.target.closest("[data-wa]");
+    if (wa) return toWhatsApp(C.msgs.find((x) => x.id === wa.dataset.wa), C.room.title).catch((e) => toast(e.message, true));
+    const all = ev.target.closest("[data-wa-all]");
+    if (all) { waOpen.add(all.dataset.waAll); return paintMsgs(false); }
+    const rt = ev.target.closest("[data-retry]");
+    if (rt) { const m = C.msgs.find((x) => x.id === rt.dataset.retry); if (m) deliver(m, C.room, m.card); return paintMsgs(false); }
+    const dr = ev.target.closest("[data-drop]");
+    if (dr) { C.msgs = C.msgs.filter((x) => x.id !== dr.dataset.drop); return paintMsgs(false); }
     // a phone has no hover: a tap on a message shows its buttons
     const msg = ev.target.closest(".c-msg");
     if (msg && !ev.target.closest("a, button, video, iframe") && matchMedia("(hover: none)").matches) {
@@ -709,6 +1110,23 @@ function wire() {
 }
 
 async function start() {
+  const q = new URLSearchParams(location.search);
+  /* Signed in on this device before: everything is asked for at once, and
+     what the device showed last time is on screen before the server has
+     answered anything - the sign-in check included. */
+  let last = 0, early = null, opening = null, want = "";
+  try { last = Number(localStorage.getItem(CK + "uid")) || 0; } catch (e) {}
+  if (last) {
+    C.uid = last;
+    early = [api("/api/people").catch(() => null), api("/api/chat/rooms").catch(() => null)];
+    wire();
+    const was = kept("rooms");
+    if (was) { C.rooms = was.rooms || []; C.joinable = was.joinable || []; }
+    setPeople(kept("people") || []);
+    if (was) paintRooms();
+    want = q.get("room") || (!q.get("task") && !q.get("share") && !q.get("incoming") && innerWidth > 900 && C.rooms[0] ? C.rooms[0].id : "");
+    if (want && C.rooms.some((r) => r.id === want)) opening = openRoom(want).catch(() => null);
+  }
   const me = await ensureSignedIn();
   C.me = me;
   header(me);
@@ -716,24 +1134,77 @@ async function start() {
     $("#c-app").innerHTML = `<div class="t-empty"><h3>The Messenger needs accounts</h3><p>This server runs with a shared passphrase, so it does not know who is who. A site admin can switch accounts on (Admin page).</p></div>`;
     return;
   }
+  if (last && last !== me.user.id) {
+    // someone else on this device: nothing of the last person's stays
+    try { localStorage.setItem(CK + "uid", String(me.user.id)); } catch (e) {}
+    location.reload();
+    return;
+  }
   C.uid = me.user.id;
-  try { C.people = (await api("/api/people")).people || []; } catch (e) { C.people = []; }
-  C.byUid = Object.fromEntries(C.people.map((p) => [p.uid, p]));
-  wire();
-  await loadRooms();
-  await sync();
-  setInterval(sync, 3000);
-  setInterval(() => { if (!document.hidden) loadRooms().catch(() => {}); }, 120000);
-  const q = new URLSearchParams(location.search);
-  if (q.get("share")) await share(q.get("share"), q.get("title") || "Link");
+  try { localStorage.setItem(CK + "uid", String(C.uid)); } catch (e) {}
+  if (!last) {
+    wire();
+    want = q.get("room") || "";
+    if (want) opening = openRoom(want).catch(() => null);
+  }
+  const got = early ? await Promise.all(early) : [];
+  const ppl = got[0] || await api("/api/people").catch(() => null);
+  const rooms = got[1] || await api("/api/chat/rooms");
+  if (ppl) { setPeople(ppl.people || []); keep("people", C.people); }
+  C.rooms = rooms.rooms;
+  C.joinable = rooms.joinable;
+  keep("rooms", { rooms: C.rooms, joinable: C.joinable });
+  paintRooms();
+  if (C.room && ppl) paintMsgs(false);         // names and @mentions, now known
+  loadExtras(true).catch(() => {});
+  syncLoop();
+  if (q.get("incoming")) await incoming(q.get("incoming"));
+  else if (q.get("share")) await share(q.get("share"), q.get("title") || "Link");
   else if (q.get("room")) {
     const id = q.get("room");
     if (!C.rooms.some((r) => r.id === id) && C.joinable.some((r) => r.id === id)) {
       try { await api(`/api/chat/rooms/${id}/join`, { method: "POST", body: "{}" }); await loadRooms(); } catch (e) {}
     }
-    await openRoom(id).catch((e) => toast(e.message, true));
+    if (opening) await opening;
+    if (!C.room || C.room.id !== id) await openRoom(id).catch((e) => toast(e.message, true));
   } else if (q.get("task")) await openRoom(TASK + q.get("task")).catch((e) => toast(e.message, true));
-  else if (C.rooms[0] && innerWidth > 900) await openRoom(C.rooms[0].id);
+  else if (!opening && C.rooms[0] && innerWidth > 900) await openRoom(C.rooms[0].id);
+}
+
+/* Shared from another app (Android: WhatsApp > Share > LWK Viewer). sw.js
+   kept what came in; choose the chat, and it waits in the message box. */
+async function incoming(id) {
+  let meta = null, files = [];
+  try {
+    const c = await caches.open("lwk-share");
+    const r = await c.match(`/__share/${id}/meta`);
+    if (r) {
+      meta = await r.json();
+      for (let i = 0; i < (meta.files || []).length; i++) {
+        const f = await c.match(`/__share/${id}/${i}`);
+        if (f) files.push(new File([await f.blob()], meta.files[i].name || "shared", { type: meta.files[i].type || "" }));
+      }
+      for (const k of await c.keys()) if (new URL(k.url).pathname.startsWith(`/__share/${id}/`)) await c.delete(k);
+    }
+  } catch (e) { /* nothing kept */ }
+  history.replaceState(null, "", "messenger.html");
+  if (!meta) return toast("Nothing came in - share it again", true);
+  if (!C.rooms.length) return toast("Start a chat first, then share into it", true);
+  const text = [meta.title, meta.text, meta.url].filter(Boolean).join("\n");
+  const f = await modal("Send to a chat", `<p class="muted" style="font-size:12px">${esc(text.slice(0, 200))}${files.length ? `<br>${files.length} file${files.length === 1 ? "" : "s"}: ${esc(files.map((x) => x.name).join(", ").slice(0, 200))}` : ""}</p>`
+    + `<label>Chat <select name="room">${C.rooms.map((r) => `<option value="${esc(r.id)}">${esc(r.title)}${r.kind === "project" ? " (project)" : ""}</option>`).join("")}</select></label>`, "Next");
+  if (!f) return;
+  await openRoom(f.room.value);
+  const lines = parseWhatsApp(text);
+  if (lines.length >= 2 && confirm(`Send these ${lines.length} WhatsApp messages as a WhatsApp quote?`)) {
+    const got = [];
+    for (const x of files) { try { got.push(await upload(x, { room: C.room.id }, x.name)); } catch (e) {} }
+    return sendCard({ type: "whatsapp", title: "From WhatsApp", lines }, got);
+  }
+  $("#c-text").value = text;
+  fit();
+  if (files.length) await addFiles(files);
+  toast("Check it and press Send");
 }
 
 start().catch((e) => { const m = $("#c-main"); if (m) m.innerHTML = `<p class="bad" style="padding:20px">${esc(e.message)}</p>`; });

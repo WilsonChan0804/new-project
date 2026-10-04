@@ -16,9 +16,12 @@ Storage: <data>/chat.db, and the pictures and files people send in
 <data>/chat_files/ (50 MB each - drawings and models stay in OneDrive and
 ACC and are sent as links).
 
-New messages reach the page by polling /api/chat/sync every few seconds
-with the last revision it saw, the same way issues and boards sync.
+New messages reach the page through /api/chat/sync with the last revision
+it saw. With ?wait=N the request is held (up to N seconds) until something
+changes, so a message shows up at once without asking every few seconds.
 """
+
+import asyncio
 
 import json
 import mimetypes
@@ -138,6 +141,9 @@ class Db(object):
                 have = set(r[1] for r in self.db.execute("PRAGMA table_info(rooms)"))
                 if "description" not in have:     # added later: the chat's "about", as in WhatsApp
                     self.db.execute("ALTER TABLE rooms ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+                have = set(r[1] for r in self.db.execute("PRAGMA table_info(messages)"))
+                if "reactions" not in have:       # added later: {emoji: [uid, ...]}
+                    self.db.execute("ALTER TABLE messages ADD COLUMN reactions TEXT NOT NULL DEFAULT '{}'")
                 self.db.commit()
                 _READY.add(self.path)
         except Exception:
@@ -170,9 +176,46 @@ def files_dir():
     return d
 
 
+# The latest revision, kept in memory so a waiting /api/chat/sync can see a
+# change without asking the database (set by next_rev; the writer holds the
+# lock until it has committed, so a reader woken by it sees the new rows).
+_REV = [0]
+
+
 def next_rev(d):
     d.execute("UPDATE counter SET value = value + 1 WHERE name = 'rev'")
-    return d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"]
+    rev = d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"]
+    _REV[0] = max(_REV[0], rev)
+    return rev
+
+
+# [label](viewer address) - a task, issue, sheet or 3D link picked with # ! $ %
+LINK_MD = re.compile(r"\[([^\]\n]{1,200})\]\(((?:https?://[^\s)]+/)?(?:index|model|tasks|projects|dashboard)\.html\?[^\s)]*)\)")
+
+
+def whatsapp_card(c):
+    """A card a person may send: messages from WhatsApp (pasted, or an
+    exported chat), cleaned and capped. Anything else: None."""
+    if not isinstance(c, dict) or c.get("type") != "whatsapp":
+        return None
+    lines = []
+    for x in (c.get("lines") or [])[:3000]:
+        if not isinstance(x, dict):
+            continue
+        lines.append({"at": clean_text(x.get("at"), 40), "name": clean_text(x.get("name"), 80),
+                      "text": clean_text(x.get("text"), 2000, True), "file": clean_text(x.get("file"), 200)})
+    if not lines:
+        return None
+    out = {"type": "whatsapp", "title": clean_text(c.get("title"), 120) or "From WhatsApp", "lines": lines}
+    while len(json.dumps(out)) > 400000 and len(out["lines"]) > 1:
+        out["lines"] = out["lines"][len(out["lines"]) // 10 or 1:]
+        out["cut"] = True
+    return out
+
+
+def plain_links(text):
+    """The text as it reads, for the chat list and for emails."""
+    return LINK_MD.sub(lambda m: m.group(1), text or "")
 
 
 def msg_row(r):
@@ -183,6 +226,12 @@ def msg_row(r):
         return out
     out.update({"body": r["body"], "card": json.loads(r["card"]) if r["card"] else None,
                 "files": json.loads(r["files"] or "[]"), "reply_to": r["reply_to"], "edited_at": r["edited_at"]})
+    try:
+        re_ = json.loads(r["reactions"] or "{}")
+    except (IndexError, KeyError, ValueError):
+        re_ = {}
+    if re_:
+        out["reactions"] = re_
     return out
 
 
@@ -203,7 +252,7 @@ def _insert(d, room, uid, author, kind, body="", card=None, files=None, reply_to
               "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
               (mid, room, seq, uid, author, kind, body, json.dumps(card) if card else "", json.dumps(files or []),
                reply_to, "," + ",".join(str(m) for m in mentions) + ",", t, rev))
-    preview = body or (card or {}).get("title") or ("%d file%s" % (len(files or []), "" if len(files or []) == 1 else "s"))
+    preview = plain_links(body) or (card or {}).get("title") or ("%d file%s" % (len(files or []), "" if len(files or []) == 1 else "s"))
     d.execute("UPDATE rooms SET last_seq = ?, last_at = ?, last_text = ?, rev = ? WHERE id = ?",
               (seq, t, ((author + ": ") if author else "") + preview[:120], rev, room))
     if uid is not None:
@@ -298,10 +347,13 @@ def register(app, core):
     def room_view(d, r, uid, names=None):
         m = membership(d, r["id"], uid)
         last_read = m["last_read"] if m else r["last_seq"]
-        unread = d.execute("SELECT COUNT(*) AS n FROM messages WHERE room = ? AND seq > ? AND deleted = 0 "
-                           "AND (uid IS NULL OR uid != ?)", (r["id"], last_read, uid)).fetchone()["n"] if m else 0
-        mention = d.execute("SELECT COUNT(*) AS n FROM messages WHERE room = ? AND seq > ? AND deleted = 0 "
-                            "AND mentions LIKE ?", (r["id"], last_read, "%%,%d,%%" % uid)).fetchone()["n"] if m else 0
+        unread = mention = 0
+        if m and r["last_seq"] > last_read:
+            c = d.execute("SELECT SUM(CASE WHEN uid IS NULL OR uid != ? THEN 1 ELSE 0 END) AS n, "
+                          "SUM(CASE WHEN mentions LIKE ? THEN 1 ELSE 0 END) AS m "
+                          "FROM messages WHERE room = ? AND seq > ? AND deleted = 0",
+                          (uid, "%%,%d,%%" % uid, r["id"], last_read)).fetchone()
+            unread, mention = c["n"] or 0, c["m"] or 0
         mem = [x["uid"] for x in d.execute("SELECT uid FROM room_members WHERE room = ?", (r["id"],))]
         title = r["title"]
         if r["kind"] == "dm":
@@ -542,29 +594,33 @@ def register(app, core):
 
     @app.post("/api/chat/rooms/{rid}/messages")
     async def send(request: Request, rid: str, x_viewer_token: str = Header(default="")):
-        """{body, files: [file id], reply_to}"""
+        """{body, files: [file id], reply_to, card}. The only card a person
+        may send is {type: "whatsapp"}: messages copied or exported from
+        WhatsApp, shown as a quote."""
         w = me(request, x_viewer_token)
         body = await read_json(request)
         text = clean_text(body.get("body"), MAX_TEXT, True).strip()
+        card = whatsapp_card(body.get("card"))
         us = users()
         with db() as d:
             r = get_room(d, rid)
             if not membership(d, rid, w.uid):
                 raise HTTPException(status_code=403, detail="You are not in this chat")
-            ids = [i for i in (body.get("files") or []) if isinstance(i, str) and SAFE_ID.match(i)][:20]
+            # an exported WhatsApp chat brings its pictures along: more of them
+            ids = [i for i in (body.get("files") or []) if isinstance(i, str) and SAFE_ID.match(i)][:200 if card else 20]
             fs = [file_meta(f) for f in d.execute(
                 "SELECT * FROM files WHERE id IN (%s) AND room = ?" % ",".join("?" * len(ids)), ids + [rid])] if ids else []
-            if not text and not fs:
+            if not text and not fs and not card:
                 raise HTTPException(status_code=400, detail="An empty message")
             members = set(x["uid"] for x in d.execute("SELECT uid FROM room_members WHERE room = ?", (rid,)))
             ments = [u for u in mentions_in(text, us) if u in members and u != w.uid]
             reply = clean_text(body.get("reply_to"), 48)
-            row = _insert(d, rid, w.uid, w.name, "text", body=text, files=fs, reply_to=reply, mentions=ments)
+            row = _insert(d, rid, w.uid, w.name, "text", body=text, card=card, files=fs, reply_to=reply, mentions=ments)
             title = r["title"] if r["kind"] != "dm" else "a direct message"
         if ments:
             base = core.CFG.get("base_url") or ""
             mail(ments, "%s mentioned you in %s" % (w.name, title),
-                 "%s wrote in %s:\n\n%s\n\n%smessenger.html?room=%s" % (w.name, title, text, base, rid))
+                 "%s wrote in %s:\n\n%s\n\n%smessenger.html?room=%s" % (w.name, title, plain_links(text), base, rid))
         return msg_row(row)
 
     @app.patch("/api/chat/messages/{mid}")
@@ -595,6 +651,36 @@ def register(app, core):
                       (next_rev(d), mid))
         return {"ok": True}
 
+    @app.post("/api/chat/messages/{mid}/react")
+    async def react(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """{emoji}: add my reaction, or take it away when it is there."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        e = clean_text(body.get("emoji"), 16)
+        if not e or re.search(r"[A-Za-z0-9<>&\"']", e):
+            raise HTTPException(status_code=400, detail="Pick an emoji")
+        with db() as d:
+            m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
+            if not m or not membership(d, m["room"], w.uid):
+                raise HTTPException(status_code=404, detail="No such message")
+            try:
+                rs = json.loads(m["reactions"] or "{}")
+            except ValueError:
+                rs = {}
+            who = rs.get(e) or []
+            if w.uid in who:
+                who.remove(w.uid)
+            else:
+                if e not in rs and len(rs) >= 20:
+                    raise HTTPException(status_code=400, detail="That message has enough different reactions")
+                who.append(w.uid)
+            if who:
+                rs[e] = who
+            else:
+                rs.pop(e, None)
+            d.execute("UPDATE messages SET reactions = ?, rev = ? WHERE id = ?", (json.dumps(rs), next_rev(d), mid))
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone())
+
     @app.post("/api/chat/rooms/{rid}/read")
     async def read(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
@@ -606,10 +692,21 @@ def register(app, core):
         return {"ok": True}
 
     @app.get("/api/chat/sync")
-    async def sync(request: Request, since: int = 0, x_viewer_token: str = Header(default="")):
+    async def sync(request: Request, since: int = 0, wait: int = 0, x_viewer_token: str = Header(default="")):
         """What changed in my chats since revision `since`: the rooms (with
-        their unread counts) and the new or changed messages."""
+        their unread counts) and the new or changed messages. wait=N (up to
+        30): when nothing has changed yet, answer as soon as something does,
+        or after N seconds."""
         w = me(request, x_viewer_token)
+        if wait and since:
+            if not _REV[0]:
+                with db() as d:
+                    _REV[0] = max(_REV[0], d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"])
+            end = time.time() + max(1, min(30, wait))
+            while _REV[0] <= since and time.time() < end:
+                if await request.is_disconnected():
+                    return {"rev": since, "rooms": [], "messages": []}
+                await asyncio.sleep(0.2)
         with db() as d:
             rev = d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"]
             if since >= rev:
@@ -619,7 +716,9 @@ def register(app, core):
                            "WHERE m.uid = ? AND r.rev > ?", (w.uid, since)).fetchall()
             msgs = d.execute("SELECT x.* FROM messages x JOIN room_members m ON m.room = x.room "
                              "WHERE m.uid = ? AND x.rev > ? ORDER BY x.rev LIMIT 500", (w.uid, since)).fetchall() if since else []
-            return {"rev": rev, "rooms": [room_view(d, r, w.uid, names) for r in rs], "messages": [msg_row(m) for m in msgs]}
+            # a chat deleted since: just that, so the page takes it off its list
+            return {"rev": rev, "rooms": [{"id": r["id"], "deleted": True} if r["deleted"] else room_view(d, r, w.uid, names) for r in rs],
+                    "messages": [msg_row(m) for m in msgs]}
 
     @app.get("/api/chat/unread")
     async def unread(request: Request, x_viewer_token: str = Header(default="")):

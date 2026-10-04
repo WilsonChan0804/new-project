@@ -8,6 +8,15 @@
 <link rel="stylesheet" href="dash.css">
 <link rel="stylesheet" href="tasks.css">
 <link rel="stylesheet" href="chat.css">
+<!-- every script the page needs, fetched at once rather than one import after another -->
+<link rel="modulepreload" href="chat.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="pagekit.js">
+<link rel="modulepreload" href="tasks-util.js">
+<link rel="modulepreload" href="filelinks.js">
+<link rel="modulepreload" href="uploads.js">
+<link rel="modulepreload" href="emoji.js">
+<link rel="modulepreload" href="whatsapp.js">
 </head>
 <body class="tasks-page chat-page own-nav">
 <header>
@@ -60,10 +69,13 @@
         <div id="c-pend"></div>
         <div class="cc-row">
           <button class="ghost" id="c-attach" title="Send pictures or files (up to 50 MB each) - or paste / drop them">&#128206;</button>
-          <textarea id="c-text" rows="1" placeholder="Message - @ to mention, paste a screenshot, Enter to send, Shift+Enter for a new line"></textarea>
-          <button class="primary" id="c-send">Send</button>
+          <button class="ghost" id="c-linkbtn" title="Link a task (#), an issue (!), a sheet ($) or the 3D model (%)">#</button>
+          <textarea id="c-text" rows="1" placeholder="Message - @ person, # task, ! issue, $ sheet, % 3D"></textarea>
+          <button class="ghost" id="c-emoji" title="Emoji">&#128578;</button>
+          <button class="primary" id="c-send" title="Send (Ctrl+Enter)">Send</button>
         </div>
         <input type="file" id="c-file" multiple hidden>
+        <input type="file" id="c-wa-file" accept=".txt,.zip,text/plain,application/zip" hidden>
       </div>
     </div>
   </main>

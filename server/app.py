@@ -379,7 +379,7 @@ async def logout():
     return resp
 
 
-SERVER_VERSION = "2026-10-04b"
+SERVER_VERSION = "2026-10-05"
 
 
 @app.get("/api/ping")
@@ -3588,6 +3588,13 @@ def main():
         print("NOTE    : %s holds issues from before projects existed."
               % os.path.join(data_dir, "viewer.db"))
         print("          Set ADOPT in run.bat to the project they belong to.")
+
+    # Shared to the installed viewer before its service worker was there to
+    # catch it (sw.js shareIn): open the Messenger, which says to share again.
+    @app.post("/share-in")
+    async def share_in_fallback():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("messenger.html?incoming=none", status_code=303)
 
     # Mounted last so the API routes above take precedence over index.html.
     app.mount("/", StaticFiles(directory=VIEWER_DIR, html=True), name="viewer")

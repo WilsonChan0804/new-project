@@ -36,6 +36,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from urllib.parse import urlencode
 
 from fastapi import HTTPException, Request, Header
 
@@ -1356,7 +1357,7 @@ def register(app, core):
     # ------------------------------------------------ across lists
 
     @app.get("/api/tasks-mine")
-    async def tasks_mine(request: Request, view: str = "owned", x_viewer_token: str = Header(default="")):
+    def tasks_mine(request: Request, view: str = "owned", x_viewer_token: str = Header(default="")):
         """Quick Access: owned (open, mine), subscribed, assigned (by me to
         others), created, completed (mine), all (every list I can see)."""
         w = core.who(request, x_viewer_token)
@@ -1604,13 +1605,27 @@ def register(app, core):
             st["open_tasks"].sort(key=lambda x: x["due"] or "9999")
         return out
 
+    # Plain def, not async: the issue counts read every item of every
+    # project, and FastAPI runs a plain handler in its thread pool, so a slow
+    # answer here does not hold up everyone else's requests (the chat).
     @app.get("/api/registry")
-    async def reg_list(request: Request, x_viewer_token: str = Header(default="")):
+    def reg_list(request: Request, lite: int = 0, x_viewer_token: str = Header(default="")):
+        """lite=1: names, members and parts only - no task or issue counts
+        (the Messenger)."""
         w = core.who(request, x_viewer_token)
         with db() as d:
             ensure_registry(d)
             rows = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
-            stats = reg_stats(d, w)
+            if lite:
+                # just the groups, for the chat's Tasks link
+                stats = {}
+                mine_l = set(r["id"] for r, _ in visible_lists(d, w))
+                for g in d.execute("SELECT id, title, list_id, reg FROM groups WHERE deleted = 0 AND reg != '' ORDER BY sort").fetchall():
+                    st = stats.setdefault(g["reg"], {"tasks": 0, "done": 0, "overdue": 0, "groups": [], "open_tasks": []})
+                    st["groups"].append({"id": g["id"], "title": g["title"], "list_id": g["list_id"], "list_title": "",
+                                         "can_open": g["list_id"] in mine_l})
+            else:
+                stats = reg_stats(d, w)
             members = dict((r["id"], members_of(d, r)) for r in rows)
         titles = dict((x["id"], x["title"]) for x in core.list_projects())
         out = []
@@ -1625,7 +1640,7 @@ def register(app, core):
             p["can_edit"] = reg_can_edit(w, r)
             p["stats"] = stats.get(r["id"]) or {"tasks": 0, "done": 0, "overdue": 0, "groups": [], "open_tasks": []}
             p["stats"]["open_tasks"] = p["stats"]["open_tasks"][:12]
-            p["issues"] = issue_stats(w, viewers_of(r))
+            p["issues"] = None if lite else issue_stats(w, viewers_of(r))
             p["parts"] = [{"id": v, "title": titles.get(v, v), "ok": bool(core.project_dir(v) and core.role_in(w, v))}
                           for v in viewers_of(r)]
             ok = [x for x in p["parts"] if x["ok"]]
@@ -1773,7 +1788,7 @@ def register(app, core):
         return {"ok": True}
 
     @app.get("/api/registry/{rid}/tasks")
-    async def reg_tasks(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def reg_tasks(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         """The project's tasks, with their sub-tasks, from every task list
         you can open that has a group for this project."""
         w = core.who(request, x_viewer_token)
@@ -1794,7 +1809,7 @@ def register(app, core):
         return {"groups": out}
 
     @app.get("/api/project-choices")
-    async def project_choices(request: Request, x_viewer_token: str = Header(default="")):
+    def project_choices(request: Request, x_viewer_token: str = Header(default="")):
         """For the project pickers (Board, Dashboard, the sheets and 3D pages):
         the viewer projects you can open, under the names of their projects."""
         w = core.who(request, x_viewer_token)
@@ -1812,6 +1827,124 @@ def register(app, core):
             out.append({"reg": r["id"], "name": r["short"] or r["name"], "full": r["name"], "code": r["code"], "parts": parts})
         others = [{"id": p["id"], "title": p["title"]} for p in mine if p["id"] not in used]
         return {"projects": out, "others": others}
+
+    # ------------------------------------------------ links for the Messenger
+
+    _ITEMS = {}          # viewer project -> (time, issues, saved views)
+
+    def items_of(pid):
+        hit = _ITEMS.get(pid)
+        if hit and time.time() - hit[0] < 30:
+            return hit[1], hit[2]
+        try:
+            items = core.store_for(pid).all_items()[1]
+        except Exception:
+            items = []
+        issues, views = [], []
+        for it in items:
+            if it.get("deleted"):
+                continue
+            iss = it.get("issue")
+            if isinstance(iss, dict):
+                issues.append({"id": it["id"], "number": iss.get("number"), "title": iss.get("title") or "Issue",
+                               "status": iss.get("status") or "Open", "dismissed": bool(iss.get("dismissed")),
+                               "sheet": it.get("sheet") or ""})
+            elif it.get("placement") == "view" and it.get("name"):
+                views.append({"id": it["id"], "name": it["name"]})
+        _ITEMS[pid] = (time.time(), issues, views)
+        return issues, views
+
+    def sheets_of(pid):
+        try:
+            with open(os.path.join(core.project_dir(pid), "manifest.json"), encoding="utf-8") as f:
+                return [x for x in (json.load(f).get("sheets") or []) if isinstance(x, dict) and x.get("number")]
+        except Exception:
+            return []
+
+    @app.get("/api/link-search")
+    def link_search(request: Request, kind: str = "task", q: str = "", reg: str = "",
+                    x_viewer_token: str = Header(default="")):
+        """# task, ! issue, $ sheet, % 3D in the Messenger: what matches q, as
+        [{label, sub, url, kind}]. In a project's channel (reg) only that
+        project; otherwise every project you can open."""
+        w = core.who(request, x_viewer_token)
+        ql = (q or "").strip().lower()[:60]
+        titles = dict((p["id"], p["title"]) for p in core.list_projects())
+        with db() as d:
+            ensure_registry(d)
+            regs = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+            one = [r for r in regs if r["id"] == reg]
+            scope = one or regs
+            out = []
+            if kind == "task":
+                lists = dict((r["id"], r) for r, _ in visible_lists(d, w))
+                if lists:
+                    args = list(lists.keys())
+                    sql = ("SELECT t.*, g.title AS g_title, g.reg AS g_reg FROM tasks t JOIN groups g ON g.id = t.group_id "
+                           "WHERE t.deleted = 0 AND g.deleted = 0 AND t.list_id IN (%s)" % ",".join("?" * len(args)))
+                    if one:
+                        sql += " AND g.reg = ?"
+                        args.append(reg)
+                    if ql:
+                        sql += " AND (LOWER(t.title) LIKE ? OR LOWER(g.title) LIKE ?)"
+                        args += ["%" + ql + "%", "%" + ql + "%"]
+                    sql += " ORDER BY t.done, CASE WHEN t.due = '' THEN 1 ELSE 0 END, t.due, t.updated_at DESC LIMIT 20"
+                    for t in d.execute(sql, args).fetchall():
+                        out.append({"kind": "task", "label": t["title"] or "Untitled task",
+                                    "sub": "%s / %s%s" % (lists[t["list_id"]]["title"], t["g_title"], " · done" if t["done"] else ""),
+                                    "url": "tasks.html?" + urlencode({"list": t["list_id"], "task": t["id"]})})
+                return {"rows": out}
+        # issues, sheets, 3D: the viewer projects in scope that you can open
+        parts = []
+        for r in scope:
+            name = r["short"] or r["name"]
+            for v in viewers_of(r):
+                if core.project_dir(v) and core.role_in(w, v) and v not in [x[0] for x in parts]:
+                    parts.append((v, name, titles.get(v, v), len(viewers_of(r)) > 1))
+        if not one:
+            used = set(x[0] for x in parts)
+            for p in core.list_projects():
+                if p["id"] not in used and core.role_in(w, p["id"]):
+                    parts.append((p["id"], p["title"], p["title"], False))
+
+        def where(name, title, many):
+            return name + (" - " + title if many else "") if not one or many else ""
+        for v, name, title, many in parts:
+            at = where(name, title, many)
+            if kind == "issue":
+                issues, _ = items_of(v)
+                for it in issues:
+                    hay = ("#%s %s %s" % (it["number"] or "", it["title"], it["sheet"])).lower()
+                    if ql and ql.lstrip("#") not in hay:
+                        continue
+                    url = ("index.html?" + urlencode({"project": v, "sheet": it["sheet"], "select": it["id"]})) if it["sheet"] \
+                        else ("model.html?" + urlencode({"project": v, "select": it["id"]}))
+                    closed = it["dismissed"] or it["status"] in ("Resolved", "Closed")
+                    out.append({"kind": "issue", "label": "#%s %s" % (it["number"] or "?", it["title"]),
+                                "sub": " · ".join(x for x in (at, it["sheet"] or "3D", it["status"]) if x),
+                                "url": url, "_k": (closed, -(it["number"] or 0))})
+            elif kind == "sheet":
+                for sh in sheets_of(v):
+                    lab = "%s %s" % (sh.get("number"), sh.get("name") or "")
+                    if ql and ql not in lab.lower():
+                        continue
+                    out.append({"kind": "sheet", "label": lab.strip(), "sub": at,
+                                "url": "index.html?" + urlencode({"project": v, "sheet": sh.get("number")}), "_k": (0, 0)})
+            elif kind == "model":
+                lab = "3D model - " + (title if many or not one else name)
+                if not ql or ql in lab.lower() or ql in name.lower():
+                    out.append({"kind": "view3d", "label": lab, "sub": "" if one and not many else name,
+                                "url": "model.html?" + urlencode({"project": v}), "_k": (0, 0)})
+                _, views = items_of(v)
+                for vw in views:
+                    if ql and ql not in vw["name"].lower():
+                        continue
+                    out.append({"kind": "view3d", "label": "3D view - " + vw["name"], "sub": at,
+                                "url": "model.html?" + urlencode({"project": v, "select": vw["id"]}), "_k": (1, 0)})
+        out.sort(key=lambda x: x.get("_k", (0, 0)))
+        for x in out:
+            x.pop("_k", None)
+        return {"rows": out[:30]}
 
     @app.post("/api/registry/import")
     async def reg_import(request: Request, x_viewer_token: str = Header(default="")):

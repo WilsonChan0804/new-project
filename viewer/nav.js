@@ -12,7 +12,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-04b";
+const LWK_VERSION = "2026-10-05";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -77,6 +77,10 @@ export async function signOut() {
   } catch (e) {}
   try { await fetch("/api/logout", { method: "POST" }); } catch (e) {}
   try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+  // the Messenger's copy of the last chats (chat.js) is this person's
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith("lwk-viewer:chat:")) localStorage.removeItem(k);
+  } catch (e) {}
   location.href = "index.html";
 }
 

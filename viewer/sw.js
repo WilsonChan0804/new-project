@@ -464,8 +464,26 @@ async function snapFetch(event, url) {
   }
 }
 
+/* Shared to the installed viewer from another app (Android: WhatsApp >
+   Share > LWK Viewer; app.webmanifest share_target). What came in is kept
+   here until the Messenger picks it up (chat.js incoming). */
+async function shareIn(event) {
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  try {
+    const form = await event.request.formData();
+    const files = form.getAll("files").filter((f) => f && typeof f === "object" && f.size);
+    const meta = { title: form.get("title") || "", text: form.get("text") || "", url: form.get("url") || "",
+      files: files.map((f) => ({ name: f.name, type: f.type })) };
+    const c = await caches.open("lwk-share");
+    await c.put(`/__share/${id}/meta`, new Response(JSON.stringify(meta), { headers: { "Content-Type": "application/json" } }));
+    for (let i = 0; i < files.length; i++) await c.put(`/__share/${id}/${i}`, new Response(files[i]));
+  } catch (e) { /* the page says nothing came in */ }
+  return Response.redirect(new URL("messenger.html?incoming=" + id, self.registration.scope).href, 303);
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+  if (req.method === "POST" && /\/share-in$/.test(new URL(req.url).pathname)) { event.respondWith(shareIn(event)); return; }
   if (req.method !== "GET") return;
   let url;
   try { url = new URL(req.url); } catch (e) { return; }

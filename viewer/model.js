@@ -6490,7 +6490,15 @@ function focusRoom(p, idx) {
    its author stood - once the issue has arrived and the model is there. */
 async function selectFromUrl() {
   const id = new URLSearchParams(location.search).get("select");
-  if (id) await selectIssue(id);
+  if (!id) return;
+  // a saved view (linked from the Messenger with %): fly to it
+  for (let i = 0; i < 900 && !(S.items.some((x) => x.id === id) && S.modelsReady); i++) {
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  const v = S.items.find((x) => x.id === id);
+  if (v && isView(v)) { restoreView(v); renderViewList(); return; }
+  if (!v) { status("That issue or view is not in this project (deleted, or a sheet issue)."); return; }
+  await selectIssue(id);
 }
 
 /* Picks an issue out as a click on it in the list does. Waits for the

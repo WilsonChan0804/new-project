@@ -1837,6 +1837,8 @@ body.lwk-offline #lwk-nav a[href] { opacity: .55; }
   body.own-nav #lwk-nav .who { display: none; }
 
 /* the sheets and 3D pages: the page links share the Sheets / 3D group */
-header .mode.page-links { flex-wrap: nowrap; flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+/* Never shrunk: on a phone the header itself scrolls sideways, and a group
+   that could shrink was squeezed to nothing inside it (no tabs to tap). */
+header .mode.page-links { flex-wrap: nowrap; flex: 0 0 auto; min-width: max-content; overflow: visible; }
 header .mode.page-links::-webkit-scrollbar { display: none; }
 header .mode.page-links button { white-space: nowrap; }

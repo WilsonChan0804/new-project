@@ -57,6 +57,27 @@ Chat inside the viewer (needs accounts):
 - **Finding things:** a search over all your chats, and a Files list per chat.
 - **Unread count:** shown on the **Chat** link of every page.
 - **Send to chat:** a task (Share) or an issue can be sent into a chat.
+- **Typing:** Enter makes a new line, on a phone and a computer alike. The Send button sends; on a keyboard, Ctrl+Enter (Cmd+Enter) does too.
+- **Linking things while typing:**
+  - **@** a person, **#** a task, **!** an issue, **$** a sheet, **%** the 3D model or a saved 3D view;
+  - a list opens as you type (↑ ↓ and Enter, or tap) and the pick shows in the message as a chip with its name, which opens it;
+  - in a project channel the lists show that project only, and anywhere else every project you can open;
+  - the **#** button beside the paper clip opens the same lists with tabs.
+- **Emoji:** the 🙂 button. **Reactions:** hover a message (tap it on a phone) and press the smiley: 👍 ❤️ 😂 😮 🙏 ✅, or + for any emoji. Tap a reaction to add yours or take it away.
+- **WhatsApp:**
+  - **Out:** on any message, the WhatsApp button sends its words, links and files on.
+    - On a phone, pictures and files go as themselves through the phone's share sheet.
+    - On a computer, it opens WhatsApp Desktop or WhatsApp Web with the text.
+  - **In:**
+    - **Copied messages:** messages copied in WhatsApp and pasted into the message box are offered as one "From WhatsApp" quote.
+    - **Exported chat:** in WhatsApp, open the chat > More > Export chat, and send yourself the `.zip` (with media) or `.txt`. Then, in a chat's menu (right-click it, or Chat info), choose *Import WhatsApp chat* and pick the file. Its messages arrive as one quote with the pictures in place.
+    - **Android, with the viewer installed as an app:** WhatsApp > Share > LWK Viewer, then choose the chat.
+    - iPhone browsers do not offer this, so copy and paste or export instead.
+  - There is no automatic two-way link with WhatsApp. That needs Meta's WhatsApp Business API, a business number of its own, and the server reachable from the internet.
+- **Speed:**
+  - The page keeps the last chats and their last messages on the device and shows them at once, while the server is asked.
+  - A message you send shows straight away ("sending ..."); if it does not go, it stays there with *send again*.
+  - New messages arrive within a moment: the page keeps one request open that the server answers as soon as anything changes.
 
 Data: `<data>/chat.db`.
 
