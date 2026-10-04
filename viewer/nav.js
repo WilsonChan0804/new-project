@@ -12,7 +12,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-05";
+const LWK_VERSION = "2026-10-06";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -58,6 +58,27 @@ export async function api(path, opts) {
   return data;
 }
 
+/* A page's last answer kept on this device (per account), shown at once on
+   the next visit while the server is asked again - as the Messenger does.
+   Signing out clears them. */
+const KEEP = "lwk-viewer:keep:";
+export function keptCopy(name) {
+  try {
+    const u = localStorage.getItem(KEEP + "uid");
+    return u ? JSON.parse(localStorage.getItem(KEEP + u + ":" + name) || "null") : null;
+  } catch (e) { return null; }
+}
+export function keepCopy(name, value, uid) {
+  try {
+    if (uid) localStorage.setItem(KEEP + "uid", String(uid));
+    const u = localStorage.getItem(KEEP + "uid");
+    if (!u) return;
+    const s = JSON.stringify(value);
+    if (s.length > 1500000) { localStorage.removeItem(KEEP + u + ":" + name); return; }
+    localStorage.setItem(KEEP + u + ":" + name, s);
+  } catch (e) { /* full: the next visit simply waits for the server */ }
+}
+
 export const link = (page, extra) => {
   const p = project();
   const q = new URLSearchParams();
@@ -79,7 +100,7 @@ export async function signOut() {
   try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
   // the Messenger's copy of the last chats (chat.js) is this person's
   try {
-    for (const k of Object.keys(localStorage)) if (k.startsWith("lwk-viewer:chat:")) localStorage.removeItem(k);
+    for (const k of Object.keys(localStorage)) if (k.startsWith("lwk-viewer:chat:") || k.startsWith(KEEP)) localStorage.removeItem(k);
   } catch (e) {}
   location.href = "index.html";
 }

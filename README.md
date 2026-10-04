@@ -62,7 +62,9 @@ Chat inside the viewer (needs accounts):
   - **@** a person, **#** a task, **!** an issue, **$** a sheet, **%** the 3D model or a saved 3D view;
   - a list opens as you type (↑ ↓ and Enter, or tap) and the pick shows in the message as a chip with its name, which opens it;
   - in a project channel the lists show that project only, and anywhere else every project you can open;
-  - the **#** button beside the paper clip opens the same lists with tabs.
+  - the **#** button beside the paper clip opens the same lists with tabs;
+  - **choose the project first:** the list starts with a row of projects (**All projects**, SKW, Kai Tak 2A3, MOS ...). In a project channel its own project is chosen to begin with; anywhere else the one you chose last. Tap another to look there instead; the # button has the same choice as a drop-down.
+- **Copy:** every message (and every task comment) has a Copy button. Links are copied as "name: full address", so they still work when pasted into an email or WhatsApp.
 - **Emoji:** the 🙂 button. **Reactions:** hover a message (tap it on a phone) and press the smiley: 👍 ❤️ 😂 😮 🙏 ✅, or + for any emoji. Tap a reaction to add yours or take it away.
 - **WhatsApp:**
   - **Out:** on any message, the WhatsApp button sends its words, links and files on.
@@ -89,3 +91,29 @@ Data: `<data>/chat.db`.
 - Planned next: a built-in file browser using Microsoft Graph (OneDrive / SharePoint) and Autodesk APS (ACC). It needs an Azure app registration, an APS app and approval by the ACC account admin. The stored links are already in the shape it will use.
 
 Data lives in `<data>/tasks.db` (one file for the server, beside `accounts.db`).
+
+## Speed
+
+How the pages open fast (server: `assets.py`, viewer: `boot.js`):
+- **Compressed:** the viewer's files and the server's answers go out gzipped. The 3D library drops from 4.8 MB to 0.7 MB, and `app.js` from 246 kB to 74 kB.
+- **Kept by the browser:**
+  - Every page lists its files with a version tag (`nav.js?v=...`), so after the first visit the browser opens them from its own cache without asking the server.
+  - A file that changes gets a new tag, so an update is picked up at once and old and new files are never mixed.
+- **Asked for at once:**
+  - Each page names all its files up front, so they download together.
+  - `boot.js`, first on every page, starts the page's data requests while the big scripts are still downloading.
+  - Two parts of a page asking for the same thing share one request.
+- **Kept on the device:** the Projects page and the Messenger show what they showed last time at once, then the server's answer.
+- **Measured on test data**, with 150 ms of delay per request (as over a VPN or tunnel), first visit / next visit:
+
+| Page | Before | Now |
+|---|---|---|
+| Projects | 0.84 s / 0.83 s | 0.65 s / 0.19 s |
+| Sheets | 2.7 s / 2.7 s | 1.65 s / 0.96 s |
+| 3D | 3.8 s / 2.3 s | 1.3 s / 0.78 s |
+| Board | 1.4 s / 1.3 s | 0.82 s / 0.36 s |
+| Tasks | 1.5 s / 1.4 s | 1.0 s / 0.52 s |
+| Dashboard | 1.35 s / 1.3 s | 0.73 s / 0.58 s |
+| Messenger | 0.93 s / 0.84 s | 0.85 s / 0.38 s |
+
+- If a proxy in front of the server has trouble with this, start it with `--plain-assets` (or `set "PLAIN_ASSETS=1"` in run.bat) to serve the files as they are.

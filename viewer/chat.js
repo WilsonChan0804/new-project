@@ -23,7 +23,7 @@ import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closeP
 import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 import { emojiPicker, QUICK } from "./emoji.js";
-import { toWhatsApp, parseWhatsApp, readExport } from "./whatsapp.js";
+import { toWhatsApp, parseWhatsApp, readExport, waText } from "./whatsapp.js";
 
 const C = {
   me: null, uid: null, people: [], byUid: {}, rooms: [], joinable: [], threads: [], projects: {},
@@ -333,8 +333,10 @@ function msgHtml(m, prev) {
         + (m.failed ? `<div class="c-state bad">Not sent - <button type="button" class="ghost linkish" data-retry="${esc(m.id)}">send again</button> · <button type="button" class="ghost linkish" data-drop="${esc(m.id)}">remove</button></div>` : "")
         + (room ? reactsHtml(m) : ""))
     + `</div>`
+    + (!m.deleted && !room && !m.pending && !m.failed ? `<div class="c-acts"><button class="ghost" data-copy="${esc(m.id)}" title="Copy">${ic("copy")}</button></div>` : "")
     + (!m.deleted && room && !m.pending && !m.failed ? `<div class="c-acts">`
       + `<button class="ghost" data-react="${esc(m.id)}" title="React">${ic("smile")}</button>`
+      + `<button class="ghost" data-copy="${esc(m.id)}" title="Copy">${ic("copy")}</button>`
       + (m.kind !== "card" ? `<button class="ghost" data-reply="${esc(m.id)}" title="Reply">${ic("reply")}</button>` : "")
       + `<button class="ghost" data-fwd="${esc(m.id)}" title="Forward to another chat">${ic("forward")}</button>`
       + `<button class="ghost" data-wa="${esc(m.id)}" title="Send to WhatsApp">${ic("whatsapp")}</button>`
@@ -484,10 +486,64 @@ function rowHtml(x, i) {
     + (x.sub ? `<small class="muted">${esc(x.sub)}</small>` : "") + `</span></div>`;
 }
 
-async function searchLinks(kind, q) {
-  const reg = C.room && C.room.kind === "project" ? C.room.project : "";
-  const r = await api(`/api/link-search?kind=${kind}&q=${encodeURIComponent(q)}&reg=${encodeURIComponent(reg)}`);
+/* Which project the lists look in: chosen first (the chips / the select),
+   starting from the channel's own project, else the one chosen last. */
+const LK = { byRoom: {} };
+const LK_KEY = "lwk-viewer:link-project";
+function linkScope() {
+  if (!C.room) return "";
+  if (C.room.id in LK.byRoom) return LK.byRoom[C.room.id];
+  if (C.room.kind === "project" && C.room.project) return C.room.project;
+  let v = "";
+  try { v = localStorage.getItem(LK_KEY) || ""; } catch (e) {}
+  return v && C.projects[v] ? v : "";
+}
+function setScope(reg) {
+  if (C.room) LK.byRoom[C.room.id] = reg;
+  try { localStorage.setItem(LK_KEY, reg); } catch (e) {}
+}
+function scopeList() {
+  return [["", "All projects"]].concat(Object.values(C.projects)
+    .map((p) => [p.id, p.short || p.name]).sort((a, b) => a[1].localeCompare(b[1])));
+}
+function scopeChips(cur) {
+  return `<div class="lk-proj" title="Choose the project first">` + scopeList().map(([id, n]) =>
+    `<button type="button" class="lk-pc${id === cur ? " on" : ""}" data-reg="${esc(id)}">${esc(n)}</button>`).join("") + `</div>`;
+}
+
+async function searchLinks(kind, q, reg) {
+  const r = await api(`/api/link-search?kind=${kind}&q=${encodeURIComponent(q)}&reg=${encodeURIComponent(reg || "")}`);
   return r.rows || [];
+}
+
+/* The list under the message box while # ! $ % is typed: the project
+   chips first, then what matches in the chosen project. */
+async function inlineLinks(sym, q) {
+  const ta = $("#c-text");
+  const token = sym + q, kind = LINK_KINDS[sym], reg = linkScope();
+  const start = ta.selectionStart - token.length;
+  const seq = ++lsSeq;
+  let rows = [];
+  try { rows = await searchLinks(kind, q, reg); } catch (e) { return; }
+  // still the word being typed (not an older, shorter one)
+  const now = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(ta.value.slice(0, ta.selectionStart));
+  if (seq !== lsSeq || !now || now[2] + now[3] !== token) return;
+  const where = reg ? ` in ${(C.projects[reg] || {}).short || (C.projects[reg] || {}).name || "this project"}` : "";
+  const el = pop(ta, scopeChips(reg)
+    + (rows.length ? `<div class="lk-h muted">${esc(sym)} ${LINK_SAY[kind]}${esc(where)} - pick one to link it</div>` + rows.map(rowHtml).join("")
+      : `<div class="po-empty muted">No ${LINK_SAY[kind]}${q ? ` matching "${esc(q)}"` : ""}${esc(where)}</div>`), 360);
+  el.classList.add("lk-pop");
+  kbFirst(el);
+  // the chips must not take the focus from the message box
+  el.addEventListener("pointerdown", (ev) => { if (ev.target.closest(".lk-pc")) ev.preventDefault(); });
+  el.addEventListener("click", (ev) => {
+    const pc = ev.target.closest(".lk-pc");
+    if (pc) { setScope(pc.dataset.reg); ta.focus(); inlineLinks(sym, q); return; }
+    const r = ev.target.closest(".po-row");
+    if (!r) return;
+    closePop();
+    insertAt(ta, start, token.length, linkMd(rows[Number(r.dataset.v)]));
+  });
 }
 
 function wirePickers() {
@@ -499,29 +555,8 @@ function wirePickers() {
     const lm = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(upto);
     clearTimeout(lsTimer);
     if (lm && C.room) {
-      const sym = lm[2], q = lm[3], token = sym + q, start = upto.length - token.length;
-      const kind = LINK_KINDS[sym];
-      lsTimer = setTimeout(async () => {
-        const seq = ++lsSeq;
-        let rows = [];
-        try { rows = await searchLinks(kind, q); } catch (e) { return; }
-        // still the word being typed (not an older, shorter one)
-        const now = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(ta.value.slice(0, ta.selectionStart));
-        if (seq !== lsSeq || !now || now[2] + now[3] !== token) return;
-        if (!rows.length) {
-          pop(ta, `<div class="po-empty muted">No ${LINK_SAY[kind]}${q ? ` matching "${esc(q)}"` : ""}${C.room.kind === "project" ? " in this project" : ""}</div>`, 300);
-          return;
-        }
-        const el = pop(ta, `<div class="lk-h muted">${esc(sym)} ${LINK_SAY[kind]} - pick one to link it</div>` + rows.map(rowHtml).join(""), 340);
-        el.classList.add("lk-pop");
-        kbFirst(el);
-        el.addEventListener("click", (ev) => {
-          const r = ev.target.closest(".po-row");
-          if (!r) return;
-          closePop();
-          insertAt(ta, start, token.length, linkMd(rows[Number(r.dataset.v)]));
-        });
-      }, q ? 160 : 0);
+      const q = lm[3];
+      lsTimer = setTimeout(() => inlineLinks(lm[2], q), q ? 160 : 0);
       return;
     }
     if (!m || !C.room) return closePop();
@@ -580,16 +615,19 @@ function linkMenu() {
   const ta = $("#c-text");
   const at = ta.selectionStart || ta.value.length, len = (ta.selectionEnd || at) - at;
   const tabs = [["task", "# Task"], ["issue", "! Issue"], ["sheet", "$ Sheet"], ["model", "% 3D"]];
-  const el = pop($("#c-linkbtn"), `<div class="lk-tabs">${tabs.map(([k, l], i) => `<button type="button" class="ghost${i ? "" : " on"}" data-k="${k}">${l}</button>`).join("")}</div>`
+  const cur = linkScope();
+  const el = pop($("#c-linkbtn"), `<label class="lk-ps">Project <select class="lk-psel">${scopeList().map(([id, n]) => `<option value="${esc(id)}"${id === cur ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`
+    + `<div class="lk-tabs">${tabs.map(([k, l], i) => `<button type="button" class="ghost${i ? "" : " on"}" data-k="${k}">${l}</button>`).join("")}</div>`
     + `<input class="lk-q" placeholder="Search" autocomplete="off"><div class="lk-list"><p class="muted">Loading ...</p></div>`, 360);
   el.classList.add("lk-pop");
   let kind = "task", rows = [], seq = 0, timer = null;
-  const q = el.querySelector(".lk-q"), list = el.querySelector(".lk-list");
+  const q = el.querySelector(".lk-q"), list = el.querySelector(".lk-list"), psel = el.querySelector(".lk-psel");
+  psel.onchange = () => { setScope(psel.value); run(); };
   const run = async () => {
     const n = ++seq;
-    try { rows = await searchLinks(kind, q.value.trim()); } catch (e) { list.innerHTML = `<p class="bad">${esc(e.message)}</p>`; return; }
+    try { rows = await searchLinks(kind, q.value.trim(), psel.value); } catch (e) { list.innerHTML = `<p class="bad">${esc(e.message)}</p>`; return; }
     if (n !== seq) return;
-    list.innerHTML = rows.length ? rows.map(rowHtml).join("") : `<p class="muted">No ${LINK_SAY[kind]} found${C.room && C.room.kind === "project" ? " in this project" : ""}.</p>`;
+    list.innerHTML = rows.length ? rows.map(rowHtml).join("") : `<p class="muted">No ${LINK_SAY[kind]} found${psel.value ? " in this project" : ""}.</p>`;
   };
   el.addEventListener("click", (ev) => {
     const t = ev.target.closest("[data-k]");
@@ -629,6 +667,31 @@ async function importWhatsApp(file) {
   if (!C.room || C.room.id !== room.id) await openRoom(room.id);
   await sendCard({ type: "whatsapp", title: ex.title, lines: ex.lines }, got);
   toast("WhatsApp chat brought in");
+}
+
+/* Copy: the words as they read, links as "label: address". The clipboard
+   API needs https; on the office network (plain http) the old way works. */
+async function copyMsg(m) {
+  if (!m) return;
+  const text = waText(m, "");
+  let done = false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); done = true; } catch (e) {}
+  }
+  if (!done) {
+    const t = document.createElement("textarea");
+    t.value = text;
+    t.setAttribute("readonly", "");
+    t.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+    document.body.appendChild(t);
+    t.select();
+    t.setSelectionRange(0, text.length);
+    try { done = document.execCommand("copy"); } catch (e) {}
+    t.remove();
+  }
+  toast(done ? "Copied" : "Could not copy - select the text and copy it", !done);
+  closePop();
+  for (const x of document.querySelectorAll(".c-msg.show-acts")) x.classList.remove("show-acts");
 }
 
 /* Reactions: the quick ones, and + for the rest. */
@@ -1066,6 +1129,8 @@ function wire() {
     if (rx) return react(rx.dataset.mid, rx.dataset.rx);
     const ra = ev.target.closest("[data-react]");
     if (ra) return reactMenu(ra, ra.dataset.react);
+    const cp = ev.target.closest("[data-copy]");
+    if (cp) return copyMsg(C.msgs.find((x) => x.id === cp.dataset.copy));
     const wa = ev.target.closest("[data-wa]");
     if (wa) return toWhatsApp(C.msgs.find((x) => x.id === wa.dataset.wa), C.room.title).catch((e) => toast(e.message, true));
     const all = ev.target.closest("[data-wa-all]");

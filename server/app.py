@@ -379,7 +379,7 @@ async def logout():
     return resp
 
 
-SERVER_VERSION = "2026-10-05"
+SERVER_VERSION = "2026-10-06"
 
 
 @app.get("/api/ping")
@@ -3511,6 +3511,10 @@ def main():
                     help="Delete an account (made by mistake) and exit")
     ap.add_argument("--port", type=int, default=8713)
     ap.add_argument("--host", default="0.0.0.0")
+    ap.add_argument("--plain-assets", action="store_true",
+                    default=os.environ.get("PLAIN_ASSETS", "") not in ("", "0"),
+                    help="Serve the viewer's files as they are: no compression, no import map "
+                         "(if a proxy in front of the server has trouble with them)")
     args = ap.parse_args()
 
     if not args.root and not args.export:
@@ -3595,6 +3599,15 @@ def main():
     async def share_in_fallback():
         from fastapi.responses import RedirectResponse
         return RedirectResponse("messenger.html?incoming=none", status_code=303)
+
+    # The viewer's files compressed and kept by the browser, the API's JSON
+    # compressed (assets.py). Added last, so they are the outermost.
+    import assets
+    if not args.plain_assets:
+        assets.register_json_gzip(app)
+        assets.register(app, sys.modules[__name__])
+    else:
+        print("assets  : plain (--plain-assets)")
 
     # Mounted last so the API routes above take precedence over index.html.
     app.mount("/", StaticFiles(directory=VIEWER_DIR, html=True), name="viewer")

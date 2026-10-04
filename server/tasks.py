@@ -1561,15 +1561,27 @@ def register(app, core):
                                    "overdue": one["overdue"]})
         return total
 
+    # counted again only when the project's issues changed (its revision)
+    _STATS = {}
+
     def issue_stats_one(w, pid):
         if not pid or not core.project_dir(pid) or not core.role_in(w, pid):
             return None
+        today = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 8 * 3600))
         try:
-            items = [it for it in core.store_for(pid).all_items()[1]
-                     if it.get("issue") and not it.get("deleted")]
+            st = core.store_for(pid)
+            rev = st.current_rev()
+            hit = _STATS.get(pid)
+            if hit and hit[0] == rev and hit[1] == today:
+                return json.loads(hit[2])
+            items = [it for it in st.all_items()[1] if it.get("issue") and not it.get("deleted")]
         except Exception:
             return None
-        today = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 8 * 3600))
+        out = count_issues(items, today)
+        _STATS[pid] = (rev, today, json.dumps(out))
+        return out
+
+    def count_issues(items, today):
         open_ = [it for it in items if it["issue"].get("status") not in ("Resolved", "Closed")
                  and not it["issue"].get("dismissed")]
         by = {}
@@ -1830,14 +1842,19 @@ def register(app, core):
 
     # ------------------------------------------------ links for the Messenger
 
-    _ITEMS = {}          # viewer project -> (time, issues, saved views)
+    _ITEMS = {}          # viewer project -> (revision, issues, saved views)
 
     def items_of(pid):
+        try:
+            st = core.store_for(pid)
+            rev = st.current_rev()
+        except Exception:
+            return [], []
         hit = _ITEMS.get(pid)
-        if hit and time.time() - hit[0] < 30:
+        if hit and hit[0] == rev:
             return hit[1], hit[2]
         try:
-            items = core.store_for(pid).all_items()[1]
+            items = st.all_items()[1]
         except Exception:
             items = []
         issues, views = [], []
@@ -1851,7 +1868,7 @@ def register(app, core):
                                "sheet": it.get("sheet") or ""})
             elif it.get("placement") == "view" and it.get("name"):
                 views.append({"id": it["id"], "name": it["name"]})
-        _ITEMS[pid] = (time.time(), issues, views)
+        _ITEMS[pid] = (rev, issues, views)
         return issues, views
 
     def sheets_of(pid):

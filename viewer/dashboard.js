@@ -727,7 +727,7 @@ main().catch(showError);
    it (Tasks page). Shown only when the project is on the Projects page. */
 async function projectTasks() {
   const box = document.getElementById("d-tasks");
-  const reg = ((await api("/api/registry")).projects || [])
+  const reg = ((await api("/api/registry?lite=1")).projects || [])
     .find((p) => (p.viewers || []).includes(project()) || p.viewer === project());
   if (!reg) return;
   const tree = (await api(`/api/registry/${encodeURIComponent(reg.id)}/tasks`)).groups || [];

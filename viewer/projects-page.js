@@ -7,7 +7,7 @@
  * get a "Manage" button that goes there.
  */
 
-import { api } from "./nav.js";
+import { api, keptCopy, keepCopy } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, people, avatar, fmtDate, toast, ic, pop, closePop } from "./tasks-util.js";
 import { chip } from "./filelinks.js";
@@ -24,13 +24,19 @@ async function load() {
   P.list = r.projects;
   P.rooms = {};
   for (const x of (rooms.rooms || []).concat(rooms.joinable || [])) if (x.kind === "project") P.rooms[x.project] = x;
+  keepCopy("projects", { list: P.list, rooms: P.rooms }, P.me && P.me.user && P.me.user.id);
+  paintList();
+  if (P.open) openDetail(P.open);
+}
+
+/* the status filter, the table */
+function paintList() {
   const st = $("#pj-status"), cur = st.value;
   const vals = [...new Set(P.list.map((p) => p.status).filter(Boolean))].sort();
   st.innerHTML = `<option value="">Any status</option>` + vals.map((v) => `<option>${esc(v)}</option>`).join("");
   st.value = vals.includes(cur) ? cur : "";
   $("#pj-manage").hidden = !P.list.some((p) => p.can_edit);
   render();
-  if (P.open) openDetail(P.open);
 }
 
 function ratio(st) {
@@ -233,6 +239,14 @@ function paintDetail(p) {
 }
 
 async function start() {
+  // the list as it was last time, at once (replaced when the server answers)
+  const was = keptCopy("projects");
+  if (was && was.list) {
+    P.list = was.list;
+    P.rooms = was.rooms || {};
+    P.me = { accounts: true };
+    try { paintList(); } catch (e) { /* drawn properly in a moment */ }
+  }
   const me = await ensureSignedIn();
   P.me = me;
   header(me);

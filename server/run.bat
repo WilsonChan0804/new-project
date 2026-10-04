@@ -22,6 +22,9 @@ set "ROOT=C:\dev\lwk-viewer\exports"
 set "PASSPHRASE=lwk2026"
 set "ADOPT=merged01"
 set "PORT=8713"
+REM Only if a proxy in front of the server has trouble with the compressed,
+REM browser-kept page files (see README, Speed): remove the REM below.
+REM set "PLAIN_ASSETS=1"
 
 cd /d "%~dp0"
 
