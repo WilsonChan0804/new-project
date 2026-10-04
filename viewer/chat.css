@@ -215,3 +215,11 @@ b.mention.me { background: #ede9fe; color: #6d28d9; border-radius: 3px; padding:
 .lk-pc.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .lk-ps { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 6px; }
 .lk-ps select { flex: 1; font-size: 13px; }
+
+/* changing a message in place */
+.c-edit { margin-top: 2px; }
+.c-edit textarea { width: 100%; min-height: 60px; font-size: 14px; resize: vertical; border: 1px solid var(--accent); border-radius: 8px; padding: 6px 8px; }
+.c-edit-b { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.c-edit-b button { padding: 3px 12px; }
+.c-edit-b small { font-size: 11px; }
+@media (pointer: coarse) { .c-edit textarea { font-size: 16px; } .c-edit-b small { display: none; } }

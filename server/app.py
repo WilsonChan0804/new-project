@@ -379,7 +379,7 @@ async def logout():
     return resp
 
 
-SERVER_VERSION = "2026-10-06"
+SERVER_VERSION = "2026-10-07"
 
 
 @app.get("/api/ping")

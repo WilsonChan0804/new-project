@@ -6306,8 +6306,9 @@ function jumpVeil(on, text) {
    floats at cut height, as a drawing held over the model would. */
 const MM_PT = 72 / 25.4;
 if (window.pdfjsLib) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  // pdf.js is served by the viewer (vendor/), through the import map's cached copy
+  pdfjsLib.GlobalWorkerOptions.workerSrc = (typeof import.meta.resolve === "function" ? import.meta.resolve("./vendor/pdf.worker.min.js")
+      : new URL("vendor/pdf.worker.min.js", location.href).href);
 }
 
 /* The sheet viewports that show a floor: plan views whose own level (the

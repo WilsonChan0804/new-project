@@ -186,7 +186,7 @@ async function openThread(tid) {
   C.room = { id: TASK + tid, kind: "task", title: t.title || "Untitled task", member: r.role !== "viewer", task: t,
     list_title: meta.list_title || "", group_title: meta.group_title || "", members: (t.subscribers || []).map((s) => s.uid) };
   C.msgs = r.comments.map((c) => ({ id: c.id, uid: c.uid, author: c.author, body: c.body, files: c.files || [],
-    created_at: c.created_at, kind: "text", seq: 0 }));
+    edited_at: c.edited_at || "", created_at: c.created_at, kind: "text", seq: 0 }));
   C.more = false;
   history.replaceState(null, "", "messenger.html?task=" + encodeURIComponent(tid));
   paintHead();
@@ -305,6 +305,92 @@ function reactsHtml(m) {
   }).join("") + `<button type="button" class="c-rx add" data-react="${esc(m.id)}" title="React">${ic("smile", 14)}</button></div>`;
 }
 
+/* Editing in place: the words in a box, Save / Cancel. */
+function editorHtml(m) {
+  return `<div class="c-edit"><textarea data-etext="${esc(m.id)}" rows="3">${esc(C.editText != null ? C.editText : m.body || "")}</textarea>`
+    + `<div class="c-edit-b"><button type="button" class="primary" data-esave="${esc(m.id)}">Save</button>`
+    + `<button type="button" class="ghost" data-ecancel>Cancel</button><small class="muted">Ctrl+Enter saves · Esc cancels</small></div></div>`;
+}
+
+/* The writer, a chat admin or a site admin; a task comment: its writer. */
+function canDelete(m) {
+  if (!m) return false;
+  const mine = m.uid != null && m.uid === C.uid;
+  if (C.room && C.room.kind === "task") return mine;
+  return mine || (C.room && C.room.role === "admin") || !!(C.me && C.me.site_admin);
+}
+
+function startEdit(id) {
+  const m = C.msgs.find((x) => x.id === id);
+  if (!m) return;
+  C.editing = id;
+  C.editText = m.body || "";
+  paintMsgs(false);
+  const ta = document.querySelector(`[data-etext="${CSS.escape(id)}"]`);
+  if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.style.height = Math.min(240, ta.scrollHeight + 2) + "px"; }
+}
+
+function stopEdit() {
+  C.editing = null;
+  C.editText = null;
+  paintMsgs(false);
+}
+
+async function saveEdit(id) {
+  const m = C.msgs.find((x) => x.id === id);
+  const t = (C.editText || "").trim();
+  if (!m) return stopEdit();
+  if (t === (m.body || "").trim()) return stopEdit();
+  try {
+    if (C.room.kind === "task") {
+      const c = await api(`/api/tasks/${C.room.task.id}/comments/${m.id}`, { method: "PATCH", body: JSON.stringify({ body: t }) });
+      Object.assign(m, { body: c.body, edited_at: c.edited_at });
+    } else {
+      Object.assign(m, await api(`/api/chat/messages/${m.id}`, { method: "PATCH", body: JSON.stringify({ body: t }) }));
+    }
+    stopEdit();
+    toast("Message changed");
+  } catch (e) { toast(e.message, true); }
+}
+
+async function deleteMsg(m) {
+  if (!m || !confirm("Delete this message for everyone?")) return;
+  try {
+    if (C.room.kind === "task") {
+      await api(`/api/tasks/${C.room.task.id}/comments/${m.id}`, { method: "DELETE" });
+      C.msgs = C.msgs.filter((x) => x.id !== m.id);
+    } else {
+      await api(`/api/chat/messages/${m.id}`, { method: "DELETE" });
+      m.deleted = true;
+    }
+    paintMsgs(false);
+  } catch (e) { toast(e.message, true); }
+}
+
+/* More: the rest of what can be done with a message, with words. */
+function moreMenu(btn, id) {
+  const m = C.msgs.find((x) => x.id === id);
+  if (!m) return;
+  const room = C.room.kind !== "task";
+  const el = pop(btn, `<div class="po-row" data-k="copy">${ic("copy")} Copy</div>`
+    + (room ? `<div class="po-row" data-k="fwd">${ic("forward")} Forward to another chat</div>` : "")
+    + (room ? `<div class="po-row" data-k="wa">${ic("whatsapp")} Send to WhatsApp</div>` : "")
+    + (m.uid === C.uid && m.kind !== "card" ? `<div class="po-row" data-k="edit">${ic("edit")} Edit</div>` : "")
+    + (canDelete(m) ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete</div>` : ""), 220);
+  el.addEventListener("click", (ev) => {
+    const r = ev.target.closest(".po-row");
+    if (!r) return;
+    closePop();
+    for (const x of document.querySelectorAll(".c-msg.show-acts")) x.classList.remove("show-acts");
+    const k = r.dataset.k;
+    if (k === "copy") copyMsg(m);
+    if (k === "fwd") forwardMsg(m);
+    if (k === "wa") toWhatsApp(m, C.room.title).catch((e) => toast(e.message, true));
+    if (k === "edit") startEdit(m.id);
+    if (k === "del") deleteMsg(m);
+  });
+}
+
 function msgHtml(m, prev) {
   if (m.kind === "system") return `<div class="c-sys">${esc(m.body)} · ${esc(short(m.created_at))}</div>`;
   const fwd = m.card && m.card.type === "forward" ? m.card : null;
@@ -327,20 +413,20 @@ function msgHtml(m, prev) {
         + (fwd ? `<div class="c-fwd">${ic("forward", 13)} Forwarded from <b>${esc(fwd.from)}</b> in ${esc(fwd.room)}</div>` : "")
         + `<div class="${fwd ? "c-fwd-body" : ""}">`
         + inner
-        + (m.body ? `<div class="c-text">${textHtml(m.body)}${m.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>` : "")
+        + (C.editing === m.id ? editorHtml(m)
+          : m.body ? `<div class="c-text">${textHtml(m.body)}${m.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>` : "")
         + filesHtml(files) + `</div>`
         + (m.pending ? `<div class="c-state">sending ...</div>` : "")
         + (m.failed ? `<div class="c-state bad">Not sent - <button type="button" class="ghost linkish" data-retry="${esc(m.id)}">send again</button> · <button type="button" class="ghost linkish" data-drop="${esc(m.id)}">remove</button></div>` : "")
         + (room ? reactsHtml(m) : ""))
     + `</div>`
-    + (!m.deleted && !room && !m.pending && !m.failed ? `<div class="c-acts"><button class="ghost" data-copy="${esc(m.id)}" title="Copy">${ic("copy")}</button></div>` : "")
-    + (!m.deleted && room && !m.pending && !m.failed ? `<div class="c-acts">`
-      + `<button class="ghost" data-react="${esc(m.id)}" title="React">${ic("smile")}</button>`
-      + `<button class="ghost" data-copy="${esc(m.id)}" title="Copy">${ic("copy")}</button>`
-      + (m.kind !== "card" ? `<button class="ghost" data-reply="${esc(m.id)}" title="Reply">${ic("reply")}</button>` : "")
-      + `<button class="ghost" data-fwd="${esc(m.id)}" title="Forward to another chat">${ic("forward")}</button>`
-      + `<button class="ghost" data-wa="${esc(m.id)}" title="Send to WhatsApp">${ic("whatsapp")}</button>`
-      + (mine && m.kind !== "card" ? `<button class="ghost" data-edit="${esc(m.id)}" title="Edit">${ic("edit")}</button><button class="ghost" data-del="${esc(m.id)}" title="Delete">${ic("trash")}</button>` : "")
+    // the buttons: React, Reply, Edit (your own), and More (Copy, Forward,
+    // WhatsApp, Delete). A task's comments: Edit and More.
+    + (!m.deleted && !m.pending && !m.failed && C.editing !== m.id ? `<div class="c-acts">`
+      + (room ? `<button class="ghost" data-react="${esc(m.id)}" title="React">${ic("smile")}</button>` : "")
+      + (room && m.kind !== "card" ? `<button class="ghost" data-reply="${esc(m.id)}" title="Reply">${ic("reply")}</button>` : "")
+      + (mine && m.kind !== "card" ? `<button class="ghost" data-edit="${esc(m.id)}" title="Edit">${ic("edit")}</button>` : "")
+      + `<button class="ghost" data-more="${esc(m.id)}" title="More: copy, forward, WhatsApp${canDelete(m) ? ", delete" : ""}">${ic("more")}</button>`
       + `</div>` : "")
     + `</div>`;
 }
@@ -359,7 +445,16 @@ function paintMsgs(toBottom) {
     h += msgHtml(m, C.msgs[i - 1]);
   });
   if (!C.msgs.length) h += `<p class="muted c-none">${C.room.kind === "task" ? "No comments on this task yet." : "No messages yet - say hello."}</p>`;
+  // a message being changed keeps its cursor through a repaint (new messages)
+  const ed = C.editing && document.activeElement && document.activeElement.dataset && document.activeElement.dataset.etext
+    ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+  const top = box.scrollTop;
   box.innerHTML = h;
+  if (ed) {
+    const t = box.querySelector(`[data-etext="${CSS.escape(C.editing)}"]`);
+    if (t) { t.focus({ preventScroll: true }); t.setSelectionRange(ed[0], ed[1]); t.style.height = Math.min(240, t.scrollHeight + 2) + "px"; }
+    box.scrollTop = top;
+  }
   if (toBottom || atBottom) box.scrollTop = box.scrollHeight;
   for (const img of box.querySelectorAll("img")) img.addEventListener("load", () => { if (toBottom || atBottom) box.scrollTop = box.scrollHeight; }, { once: true });
   keepRoom();
@@ -795,8 +890,9 @@ setInterval(async () => {
   if (document.hidden || !C.room || C.room.kind !== "task") return;
   try {
     const r = await api("/api/tasks/" + encodeURIComponent(C.room.task.id));
-    if (r.comments.length !== C.msgs.length) {
-      C.msgs = r.comments.map((c) => ({ id: c.id, uid: c.uid, author: c.author, body: c.body, files: c.files || [], created_at: c.created_at, kind: "text" }));
+    const sig = (l) => JSON.stringify(l.map((c) => [c.id, c.body, c.edited_at || ""]));
+    if (!C.editing && sig(r.comments) !== sig(C.msgs.filter((x) => !x.pending && !x.failed))) {
+      C.msgs = r.comments.map((c) => ({ id: c.id, uid: c.uid, author: c.author, body: c.body, files: c.files || [], edited_at: c.edited_at || "", created_at: c.created_at, kind: "text" }));
       paintMsgs(false);
     }
   } catch (e) {}
@@ -1131,6 +1227,14 @@ function wire() {
     if (ra) return reactMenu(ra, ra.dataset.react);
     const cp = ev.target.closest("[data-copy]");
     if (cp) return copyMsg(C.msgs.find((x) => x.id === cp.dataset.copy));
+    const mo = ev.target.closest("[data-more]");
+    if (mo) return moreMenu(mo, mo.dataset.more);
+    const eb = ev.target.closest("[data-edit]");
+    if (eb) return startEdit(eb.dataset.edit);
+    const es = ev.target.closest("[data-esave]");
+    if (es) return saveEdit(es.dataset.esave);
+    if (ev.target.closest("[data-ecancel]")) return stopEdit();
+    if (ev.target.closest(".c-edit")) return;
     const wa = ev.target.closest("[data-wa]");
     if (wa) return toWhatsApp(C.msgs.find((x) => x.id === wa.dataset.wa), C.room.title).catch((e) => toast(e.message, true));
     const all = ev.target.closest("[data-wa-all]");
@@ -1146,7 +1250,7 @@ function wire() {
       msg.classList.toggle("show-acts");
       return;
     }
-    const rp = ev.target.closest("[data-reply]"), ed = ev.target.closest("[data-edit]"), dl = ev.target.closest("[data-del]");
+    const rp = ev.target.closest("[data-reply]");
     if (rp) {
       const m = C.msgs.find((x) => x.id === rp.dataset.reply);
       C.reply = m.id;
@@ -1155,23 +1259,21 @@ function wire() {
       $("#c-noreply").onclick = () => { C.reply = null; $("#c-reply").hidden = true; };
       $("#c-text").focus();
     }
-    try {
-      if (ed) {
-        const m = C.msgs.find((x) => x.id === ed.dataset.edit);
-        const t = prompt("Edit your message", m.body);
-        if (t === null || t.trim() === m.body) return;
-        Object.assign(m, await api(`/api/chat/messages/${m.id}`, { method: "PATCH", body: JSON.stringify({ body: t }) }));
-        paintMsgs(false);
-      }
-      if (dl) {
-        if (!confirm("Delete this message for everyone?")) return;
-        await api(`/api/chat/messages/${dl.dataset.del}`, { method: "DELETE" });
-        const m = C.msgs.find((x) => x.id === dl.dataset.del);
-        m.deleted = true;
-        paintMsgs(false);
-      }
-    } catch (e) { toast(e.message, true); }
   };
+  // the box a message is changed in
+  $("#c-msgs").addEventListener("input", (ev) => {
+    const t = ev.target.closest("[data-etext]");
+    if (!t) return;
+    C.editText = t.value;
+    t.style.height = "auto";
+    t.style.height = Math.min(240, t.scrollHeight + 2) + "px";
+  });
+  $("#c-msgs").addEventListener("keydown", (ev) => {
+    const t = ev.target.closest("[data-etext]");
+    if (!t) return;
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); saveEdit(t.dataset.etext); }
+    if (ev.key === "Escape") { ev.preventDefault(); stopEdit(); }
+  });
 }
 
 async function start() {

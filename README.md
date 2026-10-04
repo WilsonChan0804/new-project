@@ -64,6 +64,11 @@ Chat inside the viewer (needs accounts):
   - in a project channel the lists show that project only, and anywhere else every project you can open;
   - the **#** button beside the paper clip opens the same lists with tabs;
   - **choose the project first:** the list starts with a row of projects (**All projects**, SKW, Kai Tak 2A3, MOS ...). In a project channel its own project is chosen to begin with; anywhere else the one you chose last. Tap another to look there instead; the # button has the same choice as a drop-down.
+- **Changing and deleting:**
+  - Hover a message (tap it on a phone): 🙂 react, ↩ reply, ✏️ edit (your own) and ⋯ More (Copy, Forward, Send to WhatsApp, Delete).
+  - **Edit** changes the message in place: Ctrl+Enter saves, Esc cancels. Everyone then sees it with "(edited)".
+  - **Delete** is for the writer, the chat's admin or a site admin; the others see "message deleted".
+  - A task's comments work the same way, in the Messenger and on the Tasks page. Only the writer can edit; the writer or the list owner can delete.
 - **Copy:** every message (and every task comment) has a Copy button. Links are copied as "name: full address", so they still work when pasted into an email or WhatsApp.
 - **Emoji:** the 🙂 button. **Reactions:** hover a message (tap it on a phone) and press the smiley: 👍 ❤️ 😂 😮 🙏 ✅, or + for any emoji. Tap a reaction to add yours or take it away.
 - **WhatsApp:**
@@ -116,4 +121,10 @@ How the pages open fast (server: `assets.py`, viewer: `boot.js`):
 | Dashboard | 1.35 s / 1.3 s | 0.73 s / 0.58 s |
 | Messenger | 0.93 s / 0.84 s | 0.85 s / 0.38 s |
 
+- **pdf.js** (draws the sheets) is served by the viewer itself (`viewer/vendor/pdf.min.js` and `pdf.worker.min.js`, version 3.11.174, Apache-2.0), not from cdnjs. That saves a connection to another site, and it is kept with the rest of the files.
+- **Faster still: HTTP/2 in front of the server.**
+  - uvicorn speaks HTTP/1.1, so a browser opens 6 connections at most and a first visit to the Sheets page (about 50 files) waits in a queue.
+  - If https comes from a proxy (Caddy, nginx, IIS, Azure Front Door), switch on HTTP/2 (and Brotli) there.
+  - Repeat visits do not need it: their files come from the browser's cache.
+- **Big PDFs:** a sheet set exported as one big PDF (hundreds of MB) is slow on every device. Let the server build the sheets' picture tiles after each export (*Performance* on the Sheets page), or export one PDF per sheet.
 - If a proxy in front of the server has trouble with this, start it with `--plain-assets` (or `set "PLAIN_ASSETS=1"` in run.bat) to serve the files as they are.

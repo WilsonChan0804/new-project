@@ -223,8 +223,9 @@ async function pictures(list) {
 }
 
 async function main() {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  // pdf.js is served by the viewer (vendor/), through the import map's cached copy
+  pdfjsLib.GlobalWorkerOptions.workerSrc = (typeof import.meta.resolve === "function" ? import.meta.resolve("./vendor/pdf.worker.min.js")
+      : new URL("vendor/pdf.worker.min.js", location.href).href);
   $("#r-msg").textContent = "Loading ...";
   await load();
   for (const id of ["#r-group", "#r-pics", "#r-comments", "#r-history"]) $(id).onchange = render;

@@ -178,6 +178,7 @@ MIGRATIONS = (
     ("groups", "reg", "TEXT NOT NULL DEFAULT ''"),        # projects.id
     ("comments", "files", "TEXT NOT NULL DEFAULT '[]'"),  # attachments (chat.py stores them)
     ("projects", "viewers", "TEXT NOT NULL DEFAULT '[]'"), # every viewer project (model + sheets) of a job
+    ("comments", "edited_at", "TEXT NOT NULL DEFAULT ''"),  # changed by its writer after posting
 )
 
 MAX_BODY = 2 * 1024 * 1024
@@ -1265,7 +1266,8 @@ def register(app, core):
                 raise HTTPException(status_code=404, detail="No such task (it may have been deleted)")
             _, role = need_list(d, w, r["list_id"])
             cs = [{"id": c["id"], "author": c["author"] or "", "uid": c["uid"], "body": c["body"],
-                   "files": json.loads(c["files"] or "[]"), "created_at": c["created_at"]} for c in d.execute(
+                   "files": json.loads(c["files"] or "[]"), "created_at": c["created_at"],
+                   "edited_at": c["edited_at"] if "edited_at" in c.keys() else ""} for c in d.execute(
                 "SELECT * FROM comments WHERE task_id = ? AND deleted = 0 ORDER BY created_at", (tid,))]
             hist = [dict(a) for a in d.execute(
                 "SELECT at, by, event, field, old, new FROM activity WHERE task_id = ? ORDER BY id DESC LIMIT 200", (tid,))]
@@ -1320,6 +1322,29 @@ def register(app, core):
                "%s wrote on \"%s\":\n\n%s\n\n%s" % (by, task["title"], text, url), w.uid)
         card(task, "comment", by, text or "%d file%s" % (len(files), "" if len(files) == 1 else "s"))
         return {"id": cid, "author": by, "uid": w.uid, "body": text, "files": files, "created_at": t, "task": task}
+
+    @app.patch("/api/tasks/{tid}/comments/{cid}")
+    async def task_comment_edit(request: Request, tid: str, cid: str, x_viewer_token: str = Header(default="")):
+        """{body}: the writer changes their own comment."""
+        w = core.who(request, x_viewer_token)
+        body = await read_json(request)
+        text = clean_text(body.get("body"), MAX_COMMENT, multiline=True).strip()
+        with db() as d:
+            r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
+            c = d.execute("SELECT * FROM comments WHERE id = ? AND task_id = ? AND deleted = 0", (cid, tid)).fetchone()
+            if not r or not c:
+                raise HTTPException(status_code=404, detail="No such comment")
+            need_list(d, w, r["list_id"], "editor")
+            if c["uid"] != w.uid or (w.uid is None and (c["author"] or "") != (w.name or "")):
+                raise HTTPException(status_code=403, detail="Only the writer can change a comment")
+            if not text and not json.loads(c["files"] or "[]"):
+                raise HTTPException(status_code=400, detail="An empty comment - delete it instead")
+            t = now_iso()
+            d.execute("UPDATE comments SET body = ?, edited_at = ? WHERE id = ?", (text, t, cid))
+            d.execute("UPDATE tasks SET rev = ? WHERE id = ?", (next_rev(d), tid))
+            log(d, r["list_id"], tid, r["title"], person(w, body), "comment-edited", "", (c["body"] or "")[:200], text[:200])
+        return {"id": cid, "author": c["author"] or "", "uid": c["uid"], "body": text,
+                "files": json.loads(c["files"] or "[]"), "created_at": c["created_at"], "edited_at": t}
 
     @app.delete("/api/tasks/{tid}/comments/{cid}")
     async def task_comment_delete(request: Request, tid: str, cid: str, x_viewer_token: str = Header(default="")):

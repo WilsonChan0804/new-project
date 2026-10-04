@@ -130,8 +130,13 @@ function paint(T) {
       <h4>Comments ${t.comment_count ? `<span class="muted">${t.comment_count}</span>` : ""}</h4>
       <div class="td-comments">${CUR.loading ? `<p class="muted">Loading ...</p>` : CUR.comments.map((c) =>
         `<div class="td-c">${avatar({ name: c.author })}<div><div class="td-ch"><b>${esc(c.author)}</b> <small class="muted" title="${esc(fmtWhen(c.created_at))}">${esc(ago(c.created_at))}</small>`
+        + ((ed && (c.uid === meUid || !T.S.accounts)) && CUR.editing !== c.id ? ` <button class="ghost linkish" data-editc="${esc(c.id)}">edit</button>` : "")
         + ((ed && (c.uid === meUid || T.isOwner() || !T.S.accounts)) ? ` <button class="ghost linkish" data-delc="${esc(c.id)}">delete</button>` : "")
-        + `</div><div class="td-ct">${mentionify(linkify(esc(c.body)), T)}</div>${filesHtml(c.files)}</div></div>`).join("") || `<p class="muted td-none">No comments yet.</p>`}</div>
+        + `</div>`
+        + (CUR.editing === c.id
+          ? `<div class="td-cedit"><textarea class="td-cedit-t" rows="3">${esc(c.body)}</textarea><div><button class="primary" data-savec="${esc(c.id)}">Save</button> <button class="ghost" data-cancelc>Cancel</button></div></div>`
+          : `<div class="td-ct">${mentionify(linkify(esc(c.body)), T)}${c.edited_at ? ` <small class="muted">(edited)</small>` : ""}</div>`)
+        + `${filesHtml(c.files)}</div></div>`).join("") || `<p class="muted td-none">No comments yet.</p>`}</div>
       ${ed ? `<div class="td-compose"><textarea class="td-newc" rows="2" placeholder="Add a comment. @name to tell someone; paste a screenshot or OneDrive / ACC links. Ctrl+Enter to send."></textarea>`
         + `<div class="td-cbtns"><button class="ghost" data-act="attach" title="Attach pictures or files (up to 50 MB each)">&#128206;</button><button class="primary" data-act="comment">Send</button></div></div>`
         + `<div class="td-pend">${pendingHtml(PEND)}</div><input type="file" class="td-file" multiple hidden>` : ""}
@@ -172,6 +177,20 @@ function wire(T, box, t) {
     const rm = ev.target.closest("[data-remove]");
     if (rm) {
       return T.save(t.id, { links: t.links.filter((l) => l.id !== rm.dataset.remove) });
+    }
+    // changing your own comment, in place
+    const ec = ev.target.closest("[data-editc]");
+    if (ec) { CUR.editing = ec.dataset.editc; paint(T); const ta = document.querySelector(".td-cedit-t"); if (ta) ta.focus(); return; }
+    if (ev.target.closest("[data-cancelc]")) { CUR.editing = null; return paint(T); }
+    const sc = ev.target.closest("[data-savec]");
+    if (sc) {
+      const ta = document.querySelector(".td-cedit-t");
+      try {
+        await T.api(`/api/tasks/${t.id}/comments/${sc.dataset.savec}`, { method: "PATCH", body: JSON.stringify({ body: ta ? ta.value : "" }) });
+        CUR.editing = null;
+        await loadExtra(T);
+      } catch (e) { toast(e.message, true); }
+      return;
     }
     const dc = ev.target.closest("[data-delc]");
     if (dc) {

@@ -47,8 +47,9 @@ async function pdfLib() {
 const PT_MM = 25.4 / 72;
 const MM_PT = 72 / 25.4;
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+// pdf.js is served by the viewer (vendor/), through the import map's cached copy
+pdfjsLib.GlobalWorkerOptions.workerSrc = (typeof import.meta.resolve === "function" ? import.meta.resolve("./vendor/pdf.worker.min.js")
+    : new URL("vendor/pdf.worker.min.js", location.href).href);
 
 /* kind: how the pointer builds the geometry.
    drag2 = press-drag-release, free = sampled path,
@@ -275,6 +276,7 @@ function canvasFrom(u, v) {
 const pxPerMM = () => S.scale * MM_PT;
 
 function eventPoint(ev) {
+  if (!S.viewport) return [0, 0];
   const r = $("#overlay").getBoundingClientRect();
   return paperFrom(ev.clientX - r.left, ev.clientY - r.top);
 }
@@ -810,7 +812,9 @@ function redraw(target) {
     return;
   }
   while (svg.firstChild) svg.removeChild(svg.firstChild);
-  if (!S.sheet) return;
+  // a sheet chosen but its page not shown yet: nothing to draw on (the draw
+  // after the page is ready follows)
+  if (!S.sheet || !S.viewport || !S.page) return;
 
   const mine = S.items.filter((i) => i.sheet === S.sheet.number);
   const hid = S.hiddenLayers || new Set();
@@ -1626,6 +1630,7 @@ async function snipRegion(item) {
   const y0 = Math.min(p0[1], p1[1]), y1 = Math.max(p0[1], p1[1]);
   const wmm = x1 - x0, hmm = y1 - y0;
   if (wmm < 2 || hmm < 2) { status("Drag a larger box to snip."); return; }
+  if (!S.page) return;
 
   let scale = 300 / 72;
   const longest = Math.max(wmm, hmm) * MM_PT * scale;
@@ -3031,11 +3036,14 @@ function wireSheetFind() {
 async function openSheet(sheet) {
   if (INK.pending.length) flushInk();
   try { localStorage.setItem(lastSheetKey(), sheet.number); } catch (e) {}
-  S.sheet = sheet; S.sel = []; S.rotation = 0; S._restored = null;
+  // the previous sheet's page and viewport must not be drawn on with this
+  // sheet's markups (layer rules, sync answers can arrive in between)
+  S.sheet = sheet; S.sel = []; S.rotation = 0; S._restored = null; S.viewport = null;
   try { AREAS.sheetOpened(); } catch (e) {}
   _rendered = { scale: 0, rotation: -1, page: null };   // new page, bitmap is stale
   // the sheet being left lets go of its decoded pictures and fonts
   if (S.page) { const old = S.page; setTimeout(() => { if (old !== S.page) { try { old.cleanup(); } catch (e) {} } }, 0); }
+  S.page = null;            // until this sheet's page is here (zooming meanwhile waits)
   if (_task) { try { _task.cancel(); } catch (e) {} _task = null; }
   document.querySelectorAll("#sheet-list li").forEach((li) =>
     li.classList.toggle("active", li.dataset.num === sheet.number));
@@ -3510,6 +3518,7 @@ function settle(delay) {
 }
 
 function fit() {
+  if (!S.page) return;                   // a sheet still on its way
   const v1 = S.page.getViewport({ scale: 1, rotation: S.rotation });
   S.scale = Math.max(0.1, ($("#scroll").clientWidth - 40) / v1.width);
   renderPage();

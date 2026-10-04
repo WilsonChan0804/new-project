@@ -43,7 +43,6 @@ const SNAP_CACHE = "lwk-snap-v1";
 const dataCache = (p) => "lwk-data-" + encodeURIComponent(p);
 const COPIES_KEY = "lwk-offline:copies";
 const SESSION_KEY = "lwk-offline:session-user";
-const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
 
 const QS = new URLSearchParams(location.search);
 const EMBED = QS.get("embed") === "1";
@@ -305,7 +304,9 @@ async function fetchInto(cache, url, signal, onBytes, size) {
 
 async function cacheCdn(signal) {
   if (typeof caches === "undefined") return false;
-  const urls = new Set([PDFJS + "pdf.min.js", PDFJS + "pdf.worker.min.js"]);
+  // pdf.js now comes from the viewer (vendor/, kept with its files); only a
+  // page that still loads something from the CDN needs it kept here
+  const urls = new Set();
   for (const s of document.querySelectorAll("script[src^='https://cdnjs.cloudflare.com/']")) urls.add(s.src);
   try {
     const w = window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions && window.pdfjsLib.GlobalWorkerOptions.workerSrc;
