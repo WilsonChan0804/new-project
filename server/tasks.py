@@ -691,6 +691,46 @@ def project_people(core, reg):
         return set(), None
 
 
+def project_admin(core, w, reg):
+    """May this person manage a register project's chat channel and its
+    topics (delete them)? A site admin, an owner of the project, or a
+    project admin of one of its parts."""
+    if w.site_admin:
+        return True
+    try:
+        with Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
+            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (reg,)).fetchone()
+            if not r:
+                return False
+            r = dict(r)
+        if w.uid in [p.get("uid") for p in json.loads(r["owners"] or "[]")]:
+            return True
+        return any(core.role_in(w, v) == "admin" for v in viewers_of(r) if core.project_dir(v))
+    except Exception:
+        return False
+
+
+def task_card(core, w, tid):
+    """A task as a chat card (chat.py: a task someone sends in a message),
+    only when this person may open it. None otherwise."""
+    if not isinstance(tid, str) or not SAFE_ID.match(tid):
+        return None
+    with Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
+        r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
+        if not r:
+            return None
+        if not w.site_admin and not d.execute("SELECT 1 FROM list_members WHERE list_id = ? AND uid = ?",
+                                              (r["list_id"], w.uid)).fetchone():
+            return None
+        t = task_row(r)
+        g = d.execute("SELECT g.title, l.title AS list_title FROM lists l LEFT JOIN groups g ON g.id = ? "
+                      "WHERE l.id = ?", (t.get("group_id") or "", t["list_id"])).fetchone()
+    return {"type": "task", "event": "shared", "list_id": t["list_id"], "task_id": t["id"],
+            "title": t.get("title") or "Untitled task", "group": (g["title"] if g else "") or "",
+            "list": (g["list_title"] if g else "") or "", "due": t.get("due") or "", "done": bool(t.get("done")),
+            "owners": [p.get("name") for p in t.get("owners") or []], "text": (t.get("description") or "")[:300]}
+
+
 def reg_ids_for_viewer(core, pid):
     """The register projects shown by a viewer project (for issue cards)."""
     try:
@@ -827,9 +867,10 @@ def register(app, core):
     def task_url(t):
         return "%stasks.html?list=%s&task=%s" % (core.CFG.get("base_url") or "", t["list_id"], t["id"])
 
-    def card(task, event, by, text=""):
+    def card(task, event, by, text="", skip=""):
         """A line in the job's chat channel (chat.py) for what just happened
-        to a task. Only top-level tasks of a group linked to a project."""
+        to a task. Only top-level tasks of a group linked to a project.
+        skip: a chat the task was just sent into by hand (no second card)."""
         try:
             import chat
         except Exception:
@@ -846,7 +887,7 @@ def register(app, core):
             "type": "task", "event": event, "list_id": task["list_id"], "task_id": task["id"],
             "title": task.get("title") or "Untitled task", "group": g["title"], "list": g["list_title"],
             "due": task.get("due") or "", "done": bool(task.get("done")),
-            "owners": [p.get("name") for p in task.get("owners") or []], "text": (text or "")[:300]}, by)
+            "owners": [p.get("name") for p in task.get("owners") or []], "text": (text or "")[:300]}, by, skip)
 
     # ------------------------------------------------ people
 
@@ -1317,7 +1358,8 @@ def register(app, core):
                         open_issues.append(dict(x, task_id=task["id"], task_title=task["title"]))
         for kind, task, who_ in events:
             card(task, {"owner": "assigned", "done": "completed", "created": "created"}[kind], by,
-                 ", ".join(p["name"] for p in who_) if kind == "owner" else "")
+                 ", ".join(p["name"] for p in who_) if kind == "owner" else "",
+                 skip=body.get("chat_room") if kind == "created" and isinstance(body.get("chat_room"), str) else "")
             if kind == "created":
                 continue
             if kind == "owner":
@@ -2201,7 +2243,7 @@ def register(app, core):
             import chat
             for m in chat.search_messages(w.uid, words, limit * 2):
                 add("messages", {"kind": "message", "title": (m["author"] + ": " if m["author"] else "") + (m["body"] or ", ".join(m["files"])),
-                                 "sub": m["room_title"] + " · " + (m["at"] or "")[:10], "url": "messenger.html?room=" + m["room"]})
+                                 "sub": m["room_title"] + " · " + (m["at"] or "")[:10], "url": "messenger.html?room=" + m["room"] + "&msg=" + m["id"]})
         except Exception as ex:
             print("search messages: %s" % ex)
         names = {"projects": "Projects", "tasks": "Tasks", "issues": "Issues", "sheets": "Sheets", "views": "3D views",

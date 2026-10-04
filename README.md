@@ -47,6 +47,9 @@ Import: export the Lark Base table to Excel, then *Import*. The columns used are
 
 Chat inside the viewer (needs accounts):
 - **Project channels:** one per project. Everyone on the project is added, and new tasks, assignments, completions, task comments and new or changed issues of that project are posted into it as cards.
+- **Topics:** sub-channels of a project channel for one subject (Facade, MEP coordination, Site visits ...).
+  - Anyone in the channel opens one with **+ Topic** (the tabs under the channel's name, the channel's right-click menu, or New chat). Everyone in the channel is added; people on the project who are not in yet see it under "Channels you can join".
+  - Topics are listed under their channel. The channel itself is the **# General** tab.
 - **Group chats** and **direct messages**.
 - **Task discussions:** the comments of the tasks you follow, answered from here.
 - **In messages:**
@@ -67,8 +70,19 @@ Chat inside the viewer (needs accounts):
 - **Changing and deleting:**
   - Hover a message (tap it on a phone): 🙂 react, ↩ reply, ✏️ edit (your own) and ⋯ More (Copy, Forward, Send to WhatsApp, Delete).
   - **Edit** changes the message in place: Ctrl+Enter saves, Esc cancels. Everyone then sees it with "(edited)".
-  - **Delete** is for the writer, the chat's admin or a site admin; the others see "message deleted".
+  - **Edit** and **Delete** are for the person who sent the message only - not the chat's admin, not a site admin. The others see "message deleted".
   - A task's comments work the same way, in the Messenger and on the Tasks page. Only the writer can edit; the writer or the list owner can delete.
+- **Deleting a chat:**
+  - a direct message: either of the two people (it goes for both);
+  - a group: its admins (the person who started it) or a site admin;
+  - a project channel or topic: the project's admins (owners on the Projects page, project admins of its models) or a site admin. A channel takes its topics with it.
+- **Pinned messages:** ⋯ More > **Pin**, by anyone in the chat, up to 100 a chat. The bar under the chat's name shows the latest pin; a click shows the message and moves on to the next, **All** lists them (with unpin).
+- **The + button** (left of the paper clip):
+  - **Poll:** a question with 2 to 10 choices; one answer or several, by name or anonymous, optionally closing after a date. The bars fill as people vote; the writer can close (and reopen) it.
+  - **Event / meeting:** title, date, time or all day, place and a Teams link. Everyone in the chat is invited (and emailed when mail is set up), replies **Going / Maybe / Can't go**, and gets **Add to calendar** (an `.ics` for Outlook, Google or the phone). The writer can change or cancel it; the chat is told.
+  - **Task:** made in a task list (the project's lists and group first in a project channel), with owners (the chat's people first), due date and priority; its card goes into the chat. ⋯ More > **Make a task** does the same from any message: its words as the description, the people @mentioned as owners and a link back to the message.
+- **Formatting** (the **Aa** button, as in WhatsApp): `*bold*`, `_italic_`, `~strike~`, `` `code` ``, ```` ``` ```` blocks, and lines starting `- `, `1. ` or `> ` for lists and quotes. Ctrl+B, Ctrl+I and Ctrl+Shift+X work on the selection; Enter on a list line starts the next item. Messages forwarded to WhatsApp keep the look.
+- **Links to a message:** ⋯ More > *Copy link to this message* (`messenger.html?room=…&msg=…`) opens the chat at that message; search results and pins do the same.
 - **Copy:** every message (and every task comment) has a Copy button. Links are copied as "name: full address", so they still work when pasted into an email or WhatsApp.
 - **Emoji:** the 🙂 button. **Reactions:** hover a message (tap it on a phone) and press the smiley: 👍 ❤️ 😂 😮 🙏 ✅, or + for any emoji. Tap a reaction to add yours or take it away.
 - **WhatsApp:**

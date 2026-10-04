@@ -8,6 +8,13 @@ Rooms:
            Lark bots posted into the group chats.
   group    any group of people, named by whoever starts it
   dm       two people
+  topic    a sub-channel of a project channel for one subject (parent =
+           the channel); everyone on the project can open and join one
+
+Besides text, a message may carry a poll, an event (with replies and an
+.ics for Outlook) or a task, and may be pinned (many per chat).
+Formatting is WhatsApp's: *bold* _italic_ ~strike~ `code`, ``` blocks,
+lines starting - / 1. / > for lists and quotes.
 
 A task's own discussion stays on the task (tasks.py comments); the
 Messenger lists the ones you follow beside the rooms.
@@ -22,6 +29,7 @@ changes, so a message shows up at once without asking every few seconds.
 """
 
 import asyncio
+import calendar
 
 import json
 import mimetypes
@@ -33,7 +41,7 @@ import time
 import uuid
 
 from fastapi import HTTPException, Request, Header
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS counter (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
@@ -98,7 +106,8 @@ CREATE INDEX IF NOT EXISTS idx_files_room ON files(room);
 MAX_FILE = 50 * 1024 * 1024
 MAX_TEXT = 8000
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{4,48}$")
-KINDS = ("project", "group", "dm")
+KINDS = ("project", "group", "dm", "topic")
+MAX_PINS = 100
 
 _LOCK = threading.Lock()
 _READY = set()
@@ -144,6 +153,14 @@ class Db(object):
                 have = set(r[1] for r in self.db.execute("PRAGMA table_info(messages)"))
                 if "reactions" not in have:       # added later: {emoji: [uid, ...]}
                     self.db.execute("ALTER TABLE messages ADD COLUMN reactions TEXT NOT NULL DEFAULT '{}'")
+                for col in ("pinned_at", "pinned_by"):    # added later: pinned messages
+                    if col not in have:
+                        self.db.execute("ALTER TABLE messages ADD COLUMN %s TEXT NOT NULL DEFAULT ''" % col)
+                if "answers" not in have:         # added later: poll votes, event replies {value: [uid, ...]}
+                    self.db.execute("ALTER TABLE messages ADD COLUMN answers TEXT NOT NULL DEFAULT '{}'")
+                have = set(r[1] for r in self.db.execute("PRAGMA table_info(rooms)"))
+                if "parent" not in have:          # added later: a topic's project channel
+                    self.db.execute("ALTER TABLE rooms ADD COLUMN parent TEXT NOT NULL DEFAULT ''")
                 self.db.commit()
                 _READY.add(self.path)
         except Exception:
@@ -213,12 +230,145 @@ def whatsapp_card(c):
     return out
 
 
+WHEN = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$")
+RSVP = ("yes", "maybe", "no")
+
+
+def poll_card(c):
+    """{type: poll, question, options: [text], multi, anonymous, closes}"""
+    q = clean_text(c.get("question"), 300)
+    opts = []
+    for x in (c.get("options") or [])[:10]:
+        t = clean_text(x.get("text") if isinstance(x, dict) else x, 120)
+        if t and t not in [o["text"] for o in opts]:
+            opts.append({"id": "o%d" % (len(opts) + 1), "text": t})
+    if not q or len(opts) < 2:
+        raise HTTPException(status_code=400, detail="A poll needs a question and at least 2 different choices")
+    closes = clean_text(c.get("closes"), 10)    # the last day votes are taken
+    return {"type": "poll", "question": q, "title": q, "options": opts, "multi": bool(c.get("multi")),
+            "anonymous": bool(c.get("anonymous")), "closes": closes if WHEN.match(closes) else "", "closed": False}
+
+
+def event_card(c):
+    """{type: event, title, start, end, all_day, tz (minutes east of UTC),
+    location, link, notes}. Times are the writer's local time."""
+    title = clean_text(c.get("title"), 160)
+    start, end = clean_text(c.get("start"), 16), clean_text(c.get("end"), 16)
+    all_day = bool(c.get("all_day"))
+    if all_day:
+        start, end = start[:10], (end or start)[:10]
+    elif start and not end:
+        end = start
+    if not title or not WHEN.match(start) or not WHEN.match(end):
+        raise HTTPException(status_code=400, detail="An event needs a title and a start date")
+    if end < start:
+        raise HTTPException(status_code=400, detail="The event ends before it starts")
+    try:
+        tz = max(-14 * 60, min(14 * 60, int(c.get("tz") or 0)))
+    except (TypeError, ValueError):
+        tz = 0
+    link = clean_text(c.get("link"), 1000)
+    if link and not re.match(r"^https?://", link):
+        link = ""
+    return {"type": "event", "title": title, "start": start, "end": end, "all_day": all_day, "tz": tz,
+            "location": clean_text(c.get("location"), 200), "link": link,
+            "notes": clean_text(c.get("notes"), 2000, True), "cancelled": False}
+
+
+def when_text(c):
+    """"Mon 6 Oct 2026, 14:00-15:30" - for emails and system lines."""
+    def day(x):
+        try:
+            return time.strftime("%a %d %b %Y", time.strptime(x[:10], "%Y-%m-%d")).replace(" 0", " ")
+        except ValueError:
+            return x[:10]
+    if c.get("all_day"):
+        return day(c["start"]) + ("" if c["end"][:10] == c["start"][:10] else " - " + day(c["end"])) + " (all day)"
+    t0, t1 = c["start"][11:16], c["end"][11:16]
+    if c["end"][:10] == c["start"][:10]:
+        return "%s, %s%s" % (day(c["start"]), t0 or "", ("-" + t1) if t1 and t1 != t0 else "")
+    return "%s %s - %s %s" % (day(c["start"]), t0, day(c["end"]), t1)
+
+
+def ics_text(c, uid, organiser, room, url, stamp):
+    """An iCalendar (RFC 5545) file for one event card."""
+    def esc(v):
+        return (v or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
+    def utc(x):
+        t = time.strptime(x if "T" in x else x + "T00:00", "%Y-%m-%dT%H:%M")
+        return time.strftime("%Y%m%dT%H%M00Z", time.gmtime(calendar.timegm(t) - int(c.get("tz") or 0) * 60))
+
+    def fold(line):
+        out, b = [], line.encode("utf-8")
+        while len(b) > 74:
+            cut = 74
+            while cut and (b[cut] & 0xC0) == 0x80:
+                cut -= 1
+            out.append(b[:cut].decode("utf-8"))
+            b = b" " + b[cut:]
+        out.append(b.decode("utf-8"))
+        return "\r\n".join(out)
+    if c.get("all_day"):
+        end = time.strftime("%Y%m%d", time.gmtime(calendar.timegm(time.strptime(c["end"][:10], "%Y-%m-%d")) + 86400))
+        when = ["DTSTART;VALUE=DATE:" + c["start"][:10].replace("-", ""), "DTEND;VALUE=DATE:" + end]
+    else:
+        end = c["end"] if c["end"] > c["start"] else c["start"]
+        when = ["DTSTART:" + utc(c["start"]), "DTEND:" + utc(end)]
+        if end == c["start"]:
+            when[1] = "DURATION:PT1H"
+    notes = "\n".join(x for x in (c.get("notes"), c.get("link"), ("Chat: " + room) if room else "", url) if x)
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//LWK Viewer//Messenger//EN", "METHOD:PUBLISH",
+             "BEGIN:VEVENT", "UID:%s@lwk-viewer" % uid,
+             "DTSTAMP:" + time.strftime("%Y%m%dT%H%M%SZ", time.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ"))] + when + [
+             "SUMMARY:" + esc(("CANCELLED: " if c.get("cancelled") else "") + c["title"]),
+             "DESCRIPTION:" + esc(notes)]
+    if c.get("location"):
+        lines.append("LOCATION:" + esc(c["location"]))
+    if c.get("link"):
+        lines.append("URL:" + c["link"])
+    if organiser:
+        lines.append("ORGANIZER;CN=%s:mailto:noreply@lwk-viewer" % esc(organiser).replace(":", ""))
+    lines += ["STATUS:" + ("CANCELLED" if c.get("cancelled") else "CONFIRMED"), "END:VEVENT", "END:VCALENDAR"]
+    return "\r\n".join(fold(x) for x in lines) + "\r\n"
+
+
+def person_card(c):
+    """A card a person may send: WhatsApp messages, a poll or an event.
+    (A task goes through task_ref in send(): it needs the sender.)"""
+    if not isinstance(c, dict):
+        return None
+    if c.get("type") == "poll":
+        return poll_card(c)
+    if c.get("type") == "event":
+        return event_card(c)
+    return whatsapp_card(c)
+
+
+FORMAT = re.compile(r"(?<![\w*_~`])([*_~])(?=\S)([^\n]*?\S)\1(?![\w*_~`])")
+
+
 def plain_links(text):
-    """The text as it reads, for the chat list and for emails."""
-    return LINK_MD.sub(lambda m: m.group(1), text or "")
+    """The text as it reads, for the chat list and for emails: link labels,
+    without the formatting marks."""
+    t = LINK_MD.sub(lambda m: m.group(1), text or "")
+    t = re.sub(r"^```\w*\s*$", "", t, flags=re.M).replace("```", "")
+    t = re.sub(r"`([^`\n]+)`", r"\1", t)
+    for _ in range(3):
+        t = FORMAT.sub(r"\2", t)
+    return t
 
 
-def msg_row(r):
+def answers_of(r):
+    try:
+        return json.loads(r["answers"] or "{}") or {}
+    except (IndexError, KeyError, ValueError):
+        return {}
+
+
+def msg_row(r, uid=None):
+    """A message for the page of person uid (what they voted, and who
+    voted for what unless the poll is anonymous)."""
     out = {"id": r["id"], "room": r["room"], "seq": r["seq"], "uid": r["uid"], "author": r["author"],
            "kind": r["kind"], "created_at": r["created_at"], "rev": r["rev"]}
     if r["deleted"]:
@@ -232,6 +382,19 @@ def msg_row(r):
         re_ = {}
     if re_:
         out["reactions"] = re_
+    try:
+        if r["pinned_at"]:
+            out["pinned"] = {"at": r["pinned_at"], "by": r["pinned_by"]}
+    except (IndexError, KeyError):
+        pass
+    c = out["card"] or {}
+    if c.get("type") in ("poll", "event"):
+        a = answers_of(r)
+        out["counts"] = dict((k, len(v)) for k, v in a.items())
+        out["mine"] = [k for k, v in a.items() if uid is not None and uid in v]
+        out["voters_n"] = len(set(u for v in a.values() for u in v))
+        if not c.get("anonymous"):
+            out["voters"] = a
     return out
 
 
@@ -252,7 +415,9 @@ def _insert(d, room, uid, author, kind, body="", card=None, files=None, reply_to
               "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
               (mid, room, seq, uid, author, kind, body, json.dumps(card) if card else "", json.dumps(files or []),
                reply_to, "," + ",".join(str(m) for m in mentions) + ",", t, rev))
-    preview = plain_links(body) or (card or {}).get("title") or ("%d file%s" % (len(files or []), "" if len(files or []) == 1 else "s"))
+    icon = {"poll": "Poll: ", "event": "Event: ", "task": "Task: "}.get((card or {}).get("type"), "")
+    preview = plain_links(body) or (icon + ((card or {}).get("title") or "") if card and card.get("title") else "") \
+        or ("%d file%s" % (len(files or []), "" if len(files or []) == 1 else "s"))
     d.execute("UPDATE rooms SET last_seq = ?, last_at = ?, last_text = ?, rev = ? WHERE id = ?",
               (seq, t, ((author + ": ") if author else "") + preview[:120], rev, room))
     if uid is not None:
@@ -291,10 +456,11 @@ def search_messages(uid, words, limit=20):
              "files": [f.get("name") for f in json.loads(r["files"] or "[]")]} for r in rows]
 
 
-def post_card(reg_ids, card, author=""):
+def post_card(reg_ids, card, author="", skip=""):
     """A task or issue update, into the channels of those register projects
     (called by tasks.py and app.py). Never raises: a card that cannot be
-    posted must not stop the save it reports."""
+    posted must not stop the save it reports. skip: a chat that already
+    has it (a task sent there by hand)."""
     if CORE is None or not reg_ids:
         return
     try:
@@ -302,7 +468,7 @@ def post_card(reg_ids, card, author=""):
             for reg in set(reg_ids):
                 r = d.execute("SELECT id FROM rooms WHERE kind = 'project' AND project = ? AND deleted = 0",
                               (reg,)).fetchone()
-                if r:
+                if r and r["id"] != skip:
                     _insert(d, r["id"], None, author, "card", card=card)
     except Exception as ex:
         print("chat card: %s" % ex)
@@ -370,12 +536,44 @@ def register(app, core):
     def can_join(w, room):
         if w.site_admin:
             return True
-        if room["kind"] != "project":
+        if room["kind"] not in ("project", "topic"):
             return False
         uids, _ = project_people(room["project"])
         return w.uid in uids
 
-    def room_view(d, r, uid, names=None):
+    _ADMIN = {}
+
+    def project_admin(w, reg):
+        """tasks.project_admin, remembered for half a minute (the chat list
+        and every sync ask it for each project channel)."""
+        if w.site_admin:
+            return True
+        if tasks is None or not reg:
+            return False
+        k = (w.uid, reg)
+        hit = _ADMIN.get(k)
+        if hit and hit[0] > time.time():
+            return hit[1]
+        v = tasks.project_admin(core, w, reg)
+        if len(_ADMIN) > 5000:
+            _ADMIN.clear()
+        _ADMIN[k] = (time.time() + 30, v)
+        return v
+
+    def can_delete_room(d, w, r, m=None):
+        """A direct message: either of the two. A group: its admins. A
+        project channel or topic: the project's admins. Site admins: all."""
+        m = m if m is not None else membership(d, r["id"], w.uid)
+        if r["kind"] == "dm":
+            return bool(m) or w.site_admin
+        if w.site_admin:
+            return True
+        if r["kind"] == "group":
+            return bool(m and m["role"] == "admin")
+        return project_admin(w, r["project"])
+
+    def room_view(d, r, w, names=None):
+        uid = w.uid
         m = membership(d, r["id"], uid)
         last_read = m["last_read"] if m else r["last_seq"]
         unread = mention = 0
@@ -390,7 +588,8 @@ def register(app, core):
         if r["kind"] == "dm":
             other = [u for u in mem if u != uid]
             title = (names or {}).get(other[0], "Someone") if other else "Just you"
-        return {"id": r["id"], "kind": r["kind"], "title": title, "project": r["project"],
+        return {"id": r["id"], "kind": r["kind"], "title": title, "project": r["project"], "parent": r["parent"],
+                "can_delete": can_delete_room(d, w, r, m),
                 "description": r["description"], "created_by": r["created_by"] or "", "created_at": r["created_at"] or "",
                 "last_seq": r["last_seq"], "last_at": r["last_at"], "last_text": r["last_text"],
                 "unread": unread, "mention": mention, "member": bool(m), "role": m["role"] if m else "",
@@ -424,27 +623,46 @@ def register(app, core):
         with db() as d:
             mine = d.execute("SELECT r.* FROM rooms r JOIN room_members m ON m.room = r.id "
                              "WHERE m.uid = ? AND r.deleted = 0 ORDER BY r.last_at DESC", (w.uid,)).fetchall()
-            out = [room_view(d, r, w.uid, names) for r in mine]
+            out = [room_view(d, r, w, names) for r in mine]
             have = set(r["id"] for r in mine)
-            others = d.execute("SELECT * FROM rooms WHERE kind = 'project' AND deleted = 0").fetchall()
+            others = d.execute("SELECT * FROM rooms WHERE kind IN ('project', 'topic') AND deleted = 0").fetchall()
         joinable = []
         for r in others:
             if r["id"] not in have and can_join(w, r):
-                joinable.append({"id": r["id"], "kind": "project", "title": r["title"], "project": r["project"]})
+                joinable.append({"id": r["id"], "kind": r["kind"], "title": r["title"], "project": r["project"],
+                                 "parent": r["parent"]})
         return {"rooms": out, "joinable": joinable, "me": w.uid}
 
     @app.post("/api/chat/rooms")
     async def room_create(request: Request, x_viewer_token: str = Header(default="")):
-        """{kind: "dm", user} | {kind: "group", title, members} | {kind: "project", project}"""
+        """{kind: "dm", user} | {kind: "group", title, members} | {kind: "project", project}
+        | {kind: "topic", parent: project channel id, title, description}"""
         w = me(request, x_viewer_token)
         body = await read_json(request)
         kind = body.get("kind")
         if kind not in KINDS:
-            raise HTTPException(status_code=400, detail="kind: dm, group or project")
+            raise HTTPException(status_code=400, detail="kind: dm, group, project or topic")
         us = users()
         t = now_iso()
+        parent, desc = "", ""
         with db() as d:
-            if kind == "dm":
+            if kind == "topic":
+                par = get_room(d, clean_text(body.get("parent"), 48))
+                if par["kind"] != "project":
+                    raise HTTPException(status_code=400, detail="A topic belongs to a project channel")
+                if not membership(d, par["id"], w.uid) and not w.site_admin:
+                    raise HTTPException(status_code=403, detail="Join the project channel first")
+                title = clean_text(body.get("title"), 80)
+                if not title:
+                    raise HTTPException(status_code=400, detail="Give the topic a name")
+                if d.execute("SELECT 1 FROM rooms WHERE kind = 'topic' AND parent = ? AND deleted = 0 AND LOWER(title) = ?",
+                             (par["id"], title.lower())).fetchone():
+                    raise HTTPException(status_code=409, detail="This channel already has a topic with that name")
+                parent, project, key = par["id"], par["project"], ""
+                desc = clean_text(body.get("description"), 2000, True)
+                members = set(x["uid"] for x in d.execute("SELECT uid FROM room_members WHERE room = ?", (parent,))
+                              if x["uid"] in us) | {w.uid}
+            elif kind == "dm":
                 try:
                     other = int(body.get("user"))
                 except (TypeError, ValueError):
@@ -454,7 +672,7 @@ def register(app, core):
                 key = "%d:%d" % tuple(sorted((w.uid, other)))
                 r = d.execute("SELECT * FROM rooms WHERE kind = 'dm' AND dm_key = ? AND deleted = 0", (key,)).fetchone()
                 if r:
-                    return room_view(d, r, w.uid, dict((k, v["name"]) for k, v in us.items()))
+                    return room_view(d, r, w, dict((k, v["name"]) for k, v in us.items()))
                 members, title, project = {w.uid, other}, "", ""
             elif kind == "group":
                 title = clean_text(body.get("title"), 80) or "Group chat"
@@ -466,7 +684,7 @@ def register(app, core):
                 r = d.execute("SELECT * FROM rooms WHERE kind = 'project' AND project = ? AND deleted = 0",
                               (project,)).fetchone()
                 if r:
-                    return room_view(d, r, w.uid)
+                    return room_view(d, r, w)
                 uids, reg = project_people(project)
                 if not reg:
                     raise HTTPException(status_code=404, detail="No such project on the Projects page")
@@ -476,14 +694,17 @@ def register(app, core):
                 title = reg["short"] or reg["name"]
                 key = ""
             rid = new_id()
-            d.execute("INSERT INTO rooms (id, kind, title, project, dm_key, created_by, created_uid, created_at, last_at, rev) "
-                      "VALUES (?,?,?,?,?,?,?,?,?,?)", (rid, kind, title, project, key, w.name, w.uid, t, t, next_rev(d)))
+            d.execute("INSERT INTO rooms (id, kind, title, project, dm_key, created_by, created_uid, created_at, last_at, rev, "
+                      "parent, description) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                      (rid, kind, title, project, key, w.name, w.uid, t, t, next_rev(d), parent, desc))
             for u in members:
                 d.execute("INSERT INTO room_members (room, uid, role, joined_at) VALUES (?, ?, ?, ?)",
                           (rid, u, "admin" if u == w.uid else "member", t))
             if kind != "dm":
                 _insert(d, rid, None, "", "system", body="%s started %s" % (w.name, title))
-            return room_view(d, d.execute("SELECT * FROM rooms WHERE id = ?", (rid,)).fetchone(), w.uid,
+            if kind == "topic":
+                _insert(d, parent, None, "", "system", body="%s opened the topic # %s" % (w.name, title))
+            return room_view(d, d.execute("SELECT * FROM rooms WHERE id = ?", (rid,)).fetchone(), w,
                              dict((k, v["name"]) for k, v in us.items()))
 
     @app.patch("/api/chat/rooms/{rid}")
@@ -493,7 +714,8 @@ def register(app, core):
         with db() as d:
             r = get_room(d, rid)
             m = membership(d, rid, w.uid)
-            if r["kind"] == "dm" or not (w.site_admin or (m and m["role"] == "admin")):
+            if r["kind"] == "dm" or not (w.site_admin or (m and m["role"] == "admin")
+                                         or (r["kind"] in ("project", "topic") and project_admin(w, r["project"]))):
                 raise HTTPException(status_code=403, detail="Only the chat's admins can change its name and description")
             title = clean_text(body.get("title"), 80) or r["title"] if "title" in body else r["title"]
             desc = clean_text(body.get("description"), 2000, True) if "description" in body else r["description"]
@@ -506,15 +728,25 @@ def register(app, core):
 
     @app.delete("/api/chat/rooms/{rid}")
     async def room_delete(request: Request, rid: str, x_viewer_token: str = Header(default="")):
-        """Gone for everyone (a chat admin or a site admin). Its messages are
-        kept in the file, out of sight, in case it was a mistake."""
+        """Gone for everyone. Who may: either person of a direct message, a
+        group's admins, a project's admins for its channel and topics, and
+        site admins (can_delete_room). A project channel takes its topics
+        with it. The messages are kept in the file, out of sight, in case it
+        was a mistake."""
         w = me(request, x_viewer_token)
         with db() as d:
             r = get_room(d, rid)
-            m = membership(d, rid, w.uid)
-            if not (w.site_admin or (m and m["role"] == "admin" and r["kind"] != "dm")):
-                raise HTTPException(status_code=403, detail="Only the chat's admins or a site admin can delete it")
-            d.execute("UPDATE rooms SET deleted = 1, rev = ? WHERE id = ?", (next_rev(d), rid))
+            if not can_delete_room(d, w, r):
+                raise HTTPException(status_code=403, detail={
+                    "dm": "Only the two people in it can delete a direct message",
+                    "group": "Only the group's admins can delete it"}.get(
+                        r["kind"], "Only the project's admins can delete its channel and topics"))
+            rev = next_rev(d)
+            d.execute("UPDATE rooms SET deleted = 1, rev = ? WHERE id = ?", (rev, rid))
+            if r["kind"] == "project":
+                d.execute("UPDATE rooms SET deleted = 1, rev = ? WHERE kind = 'topic' AND parent = ?", (rev, rid))
+            elif r["kind"] == "topic" and r["parent"]:
+                _insert(d, r["parent"], None, "", "system", body="%s deleted the topic # %s" % (w.name, r["title"]))
         return {"ok": True}
 
     @app.post("/api/chat/messages/{mid}/forward")
@@ -609,29 +841,54 @@ def register(app, core):
     # ------------------------------------------------------------ messages
 
     @app.get("/api/chat/rooms/{rid}/messages")
-    async def messages(request: Request, rid: str, before: int = 0, limit: int = 60,
+    async def messages(request: Request, rid: str, before: int = 0, around: int = 0, at: str = "", limit: int = 60,
                        x_viewer_token: str = Header(default="")):
+        """The latest messages, those before seq `before`, or those around
+        seq `around` / message `at` (a pinned message or a search hit) -
+        then `newer` says there are later ones than this page."""
         w = me(request, x_viewer_token)
         names = dict((k, v["name"]) for k, v in users().items())
+        limit = max(1, min(200, limit))
         with db() as d:
             r = get_room(d, rid)
             if not membership(d, rid, w.uid) and not w.site_admin:
                 raise HTTPException(status_code=403, detail="You are not in this chat")
-            q = "SELECT * FROM messages WHERE room = ?" + (" AND seq < ?" if before else "") + " ORDER BY seq DESC LIMIT ?"
-            args = [rid] + ([before] if before else []) + [max(1, min(200, limit))]
-            rows = [msg_row(x) for x in d.execute(q, args)][::-1]
-            view = room_view(d, r, w.uid, names)
-        return {"room": view, "messages": rows, "more": bool(rows) and rows[0]["seq"] > 1}
+            if at:
+                x = d.execute("SELECT seq FROM messages WHERE id = ? AND room = ?", (clean_text(at, 48), rid)).fetchone()
+                around = x["seq"] if x else 0
+            if around and around > r["last_seq"] - limit // 2:
+                around = 0          # among the latest anyway
+            if around:
+                lo = max(1, around - limit // 2)
+                rows = [msg_row(x, w.uid) for x in d.execute(
+                    "SELECT * FROM messages WHERE room = ? AND seq >= ? AND seq < ? ORDER BY seq", (rid, lo, lo + limit))]
+            else:
+                q = "SELECT * FROM messages WHERE room = ?" + (" AND seq < ?" if before else "") + " ORDER BY seq DESC LIMIT ?"
+                args = [rid] + ([before] if before else []) + [limit]
+                rows = [msg_row(x, w.uid) for x in d.execute(q, args)][::-1]
+            view = room_view(d, r, w, names)
+        return {"room": view, "messages": rows, "more": bool(rows) and rows[0]["seq"] > 1,
+                "newer": bool(around) and bool(rows) and rows[-1]["seq"] < r["last_seq"]}
+
+    def task_ref(w, c):
+        """{type: task_ref, task}: the task as a card, if the sender may open it."""
+        if tasks is None:
+            raise HTTPException(status_code=400, detail="Tasks are not available on this server")
+        tc = tasks.task_card(core, w, c.get("task"))
+        if not tc:
+            raise HTTPException(status_code=403, detail="You cannot open that task")
+        return tc
 
     @app.post("/api/chat/rooms/{rid}/messages")
     async def send(request: Request, rid: str, x_viewer_token: str = Header(default="")):
-        """{body, files: [file id], reply_to, card}. The only card a person
-        may send is {type: "whatsapp"}: messages copied or exported from
-        WhatsApp, shown as a quote."""
+        """{body, files: [file id], reply_to, card}. A card a person may send:
+        {type: "whatsapp"} (messages copied or exported from WhatsApp),
+        {type: "poll"}, {type: "event"} or {type: "task_ref", task}."""
         w = me(request, x_viewer_token)
         body = await read_json(request)
         text = clean_text(body.get("body"), MAX_TEXT, True).strip()
-        card = whatsapp_card(body.get("card"))
+        raw = body.get("card")
+        card = task_ref(w, raw) if isinstance(raw, dict) and raw.get("type") == "task_ref" else person_card(raw)
         us = users()
         with db() as d:
             r = get_room(d, rid)
@@ -648,11 +905,25 @@ def register(app, core):
             reply = clean_text(body.get("reply_to"), 48)
             row = _insert(d, rid, w.uid, w.name, "text", body=text, card=card, files=fs, reply_to=reply, mentions=ments)
             title = r["title"] if r["kind"] != "dm" else "a direct message"
+        base = core.CFG.get("base_url") or ""
         if ments:
-            base = core.CFG.get("base_url") or ""
             mail(ments, "%s mentioned you in %s" % (w.name, title),
                  "%s wrote in %s:\n\n%s\n\n%smessenger.html?room=%s" % (w.name, title, plain_links(text), base, rid))
-        return msg_row(row)
+        if card and card["type"] == "event":
+            mail([u for u in members if u != w.uid], "Invitation: %s (%s)" % (card["title"], when_text(card)),
+                 "%s invited %s to:\n\n%s\n%s%s%s\n\nReply and add it to your calendar:\n%smessenger.html?room=%s&msg=%s"
+                 % (w.name, title, card["title"], when_text(card),
+                    ("\n" + card["location"]) if card["location"] else "", ("\n" + card["link"]) if card["link"] else "",
+                    base, rid, row["id"]))
+        return msg_row(row, w.uid)
+
+    def own_message(d, w, mid, what):
+        m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
+        if not m:
+            raise HTTPException(status_code=404, detail="No such message")
+        if m["uid"] is None or m["uid"] != w.uid:
+            raise HTTPException(status_code=403, detail="Only the person who sent a message can %s it" % what)
+        return m
 
     @app.patch("/api/chat/messages/{mid}")
     async def edit(request: Request, mid: str, x_viewer_token: str = Header(default="")):
@@ -660,27 +931,172 @@ def register(app, core):
         body = await read_json(request)
         text = clean_text(body.get("body"), MAX_TEXT, True).strip()
         with db() as d:
-            m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
-            if not m or m["uid"] != w.uid:
-                raise HTTPException(status_code=403, detail="Only your own messages can be edited")
-            if not text and not json.loads(m["files"] or "[]"):
+            m = own_message(d, w, mid, "edit")
+            if not text and not json.loads(m["files"] or "[]") and not m["card"]:
                 raise HTTPException(status_code=400, detail="An empty message - delete it instead")
             d.execute("UPDATE messages SET body = ?, edited_at = ?, rev = ? WHERE id = ?", (text, now_iso(), next_rev(d), mid))
-            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone())
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.delete("/api/chat/messages/{mid}")
     async def remove(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """Only the person who sent it (not a chat admin, not a site admin)."""
         w = me(request, x_viewer_token)
         with db() as d:
-            m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
-            if not m:
-                raise HTTPException(status_code=404, detail="No such message")
-            mem = membership(d, m["room"], w.uid)
-            if m["uid"] != w.uid and not w.site_admin and not (mem and mem["role"] == "admin"):
-                raise HTTPException(status_code=403, detail="Only the writer or a chat admin can delete a message")
-            d.execute("UPDATE messages SET deleted = 1, body = '', card = '', files = '[]', rev = ? WHERE id = ?",
-                      (next_rev(d), mid))
+            own_message(d, w, mid, "delete")
+            d.execute("UPDATE messages SET deleted = 1, body = '', card = '', files = '[]', answers = '{}', "
+                      "pinned_at = '', pinned_by = '', rev = ? WHERE id = ?", (next_rev(d), mid))
         return {"ok": True}
+
+    # ------------------------------------------------------------ pins
+
+    def member_message(d, w, mid):
+        m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
+        if not m or not membership(d, m["room"], w.uid):
+            raise HTTPException(status_code=404, detail="No such message")
+        return m
+
+    @app.post("/api/chat/messages/{mid}/pin")
+    async def pin(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """{on: true|false}. Anyone in the chat; up to MAX_PINS a chat."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        on = bool(body.get("on", True))
+        with db() as d:
+            m = member_message(d, w, mid)
+            if m["kind"] == "system":
+                raise HTTPException(status_code=400, detail="That line cannot be pinned")
+            if on and not m["pinned_at"]:
+                n = d.execute("SELECT COUNT(*) AS n FROM messages WHERE room = ? AND deleted = 0 AND pinned_at != ''",
+                              (m["room"],)).fetchone()["n"]
+                if n >= MAX_PINS:
+                    raise HTTPException(status_code=400, detail="This chat has %d pinned messages - unpin one first" % MAX_PINS)
+                d.execute("UPDATE messages SET pinned_at = ?, pinned_by = ?, rev = ? WHERE id = ?",
+                          (now_iso(), w.name, next_rev(d), mid))
+                _insert(d, m["room"], None, "", "system", body="%s pinned a message" % w.name)
+            elif not on and m["pinned_at"]:
+                d.execute("UPDATE messages SET pinned_at = '', pinned_by = '', rev = ? WHERE id = ?", (next_rev(d), mid))
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
+
+    @app.get("/api/chat/rooms/{rid}/pins")
+    async def pins(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+        """The pinned messages of a chat, the latest pinned first."""
+        w = me(request, x_viewer_token)
+        with db() as d:
+            get_room(d, rid)
+            if not membership(d, rid, w.uid) and not w.site_admin:
+                raise HTTPException(status_code=403, detail="You are not in this chat")
+            rows = d.execute("SELECT * FROM messages WHERE room = ? AND deleted = 0 AND pinned_at != '' "
+                             "ORDER BY pinned_at DESC, seq DESC", (rid,)).fetchall()
+        return {"messages": [msg_row(r, w.uid) for r in rows]}
+
+    # ------------------------------------------------------------ polls and events
+
+    def set_answers(d, m, a):
+        d.execute("UPDATE messages SET answers = ?, rev = ? WHERE id = ?",
+                  (json.dumps(dict((k, v) for k, v in a.items() if v)), next_rev(d), m["id"]))
+
+    @app.post("/api/chat/messages/{mid}/vote")
+    async def vote(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """{options: [option id]}: my answer to a poll (replaces my last
+        one; [] takes it back)."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        with db() as d:
+            m = member_message(d, w, mid)
+            c = json.loads(m["card"] or "{}") or {}
+            if c.get("type") != "poll":
+                raise HTTPException(status_code=400, detail="That message is not a poll")
+            if c.get("closed") or (c.get("closes") and c["closes"] < now_iso()[:len(c["closes"])]):
+                raise HTTPException(status_code=400, detail="This poll is closed")
+            ids = [o["id"] for o in c["options"]]
+            pick = [x for x in (body.get("options") or []) if x in ids]
+            pick = sorted(set(pick), key=ids.index)
+            if not c.get("multi"):
+                pick = pick[:1]
+            a = answers_of(m)
+            for k in ids:
+                v = [u for u in a.get(k, []) if u != w.uid]
+                if k in pick:
+                    v.append(w.uid)
+                a[k] = v
+            set_answers(d, m, a)
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
+
+    @app.post("/api/chat/messages/{mid}/close")
+    async def close_poll(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """{closed: true|false}: the poll's writer stops (or reopens) the voting."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        with db() as d:
+            m = own_message(d, w, mid, "close")
+            c = json.loads(m["card"] or "{}") or {}
+            if c.get("type") != "poll":
+                raise HTTPException(status_code=400, detail="That message is not a poll")
+            c["closed"] = bool(body.get("closed", True))
+            if not c["closed"]:
+                c["closes"] = ""
+            d.execute("UPDATE messages SET card = ?, rev = ? WHERE id = ?", (json.dumps(c), next_rev(d), mid))
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
+
+    @app.post("/api/chat/messages/{mid}/rsvp")
+    async def rsvp(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """{value: yes | maybe | no | ""}: my reply to an event."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        v = body.get("value") or ""
+        if v and v not in RSVP:
+            raise HTTPException(status_code=400, detail="yes, maybe or no")
+        with db() as d:
+            m = member_message(d, w, mid)
+            c = json.loads(m["card"] or "{}") or {}
+            if c.get("type") != "event":
+                raise HTTPException(status_code=400, detail="That message is not an event")
+            if c.get("cancelled"):
+                raise HTTPException(status_code=400, detail="This event was cancelled")
+            a = answers_of(m)
+            for k in RSVP:
+                a[k] = [u for u in a.get(k, []) if u != w.uid] + ([w.uid] if k == v else [])
+            set_answers(d, m, a)
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
+
+    @app.patch("/api/chat/messages/{mid}/event")
+    async def event_edit(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """The event's writer changes it ({title, start, ...} as when sent)
+        or cancels it ({cancelled: true}). The chat is told."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        with db() as d:
+            m = own_message(d, w, mid, "change")
+            c = json.loads(m["card"] or "{}") or {}
+            if c.get("type") != "event":
+                raise HTTPException(status_code=400, detail="That message is not an event")
+            if body.get("cancelled"):
+                c["cancelled"] = True
+                say = "%s cancelled the event %s" % (w.name, c["title"])
+            else:
+                c = event_card(dict(c, **dict((k, v) for k, v in body.items() if k != "type")))
+                say = "%s changed the event %s (%s)" % (w.name, c["title"], when_text(c))
+            d.execute("UPDATE messages SET card = ?, edited_at = ?, rev = ? WHERE id = ?",
+                      (json.dumps(c), now_iso(), next_rev(d), mid))
+            _insert(d, m["room"], None, "", "system", body=say)
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
+
+    @app.get("/api/chat/messages/{mid}/event.ics")
+    async def event_ics(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """The event for Outlook, Google or the phone's calendar."""
+        w = core.who(request, x_viewer_token)      # the cookie, for a plain link
+        with db() as d:
+            m = member_message(d, w, mid)
+            c = json.loads(m["card"] or "{}") or {}
+            if c.get("type") != "event":
+                raise HTTPException(status_code=404, detail="That message is not an event")
+            room = d.execute("SELECT * FROM rooms WHERE id = ?", (m["room"],)).fetchone()
+        base = core.CFG.get("base_url") or ""
+        url = "%smessenger.html?room=%s&msg=%s" % (base, m["room"], mid)
+        data = ics_text(c, mid, m["author"], room["title"] if room["kind"] != "dm" else "", url, m["edited_at"] or m["created_at"])
+        name = re.sub(r"[^A-Za-z0-9._-]+", "_", c["title"])[:60] or "event"
+        return Response(content=data, media_type="text/calendar; charset=utf-8",
+                        headers={"Content-Disposition": 'attachment; filename="%s.ics"' % name})
 
     @app.post("/api/chat/messages/{mid}/react")
     async def react(request: Request, mid: str, x_viewer_token: str = Header(default="")):
@@ -710,7 +1126,7 @@ def register(app, core):
             else:
                 rs.pop(e, None)
             d.execute("UPDATE messages SET reactions = ?, rev = ? WHERE id = ?", (json.dumps(rs), next_rev(d), mid))
-            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone())
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.post("/api/chat/rooms/{rid}/read")
     async def read(request: Request, rid: str, x_viewer_token: str = Header(default="")):
@@ -748,8 +1164,8 @@ def register(app, core):
             msgs = d.execute("SELECT x.* FROM messages x JOIN room_members m ON m.room = x.room "
                              "WHERE m.uid = ? AND x.rev > ? ORDER BY x.rev LIMIT 500", (w.uid, since)).fetchall() if since else []
             # a chat deleted since: just that, so the page takes it off its list
-            return {"rev": rev, "rooms": [{"id": r["id"], "deleted": True} if r["deleted"] else room_view(d, r, w.uid, names) for r in rs],
-                    "messages": [msg_row(m) for m in msgs]}
+            return {"rev": rev, "rooms": [{"id": r["id"], "deleted": True} if r["deleted"] else room_view(d, r, w, names) for r in rs],
+                    "messages": [msg_row(m, w.uid) for m in msgs]}
 
     @app.get("/api/chat/unread")
     async def unread(request: Request, x_viewer_token: str = Header(default="")):
@@ -776,7 +1192,7 @@ def register(app, core):
                              "WHERE x.deleted = 0 AND (x.body LIKE ? OR x.files LIKE ? OR x.card LIKE ?) "
                              "ORDER BY x.created_at DESC LIMIT 100",
                              (w.uid, "%" + q + "%", "%" + q + "%", "%" + q + "%")).fetchall()
-        return {"messages": [msg_row(r) for r in rows]}
+        return {"messages": [msg_row(r, w.uid) for r in rows]}
 
     @app.get("/api/chat/project-room")
     async def project_room(request: Request, project: str = "", x_viewer_token: str = Header(default="")):

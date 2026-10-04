@@ -17,6 +17,8 @@
 <link rel="modulepreload" href="uploads.js">
 <link rel="modulepreload" href="emoji.js">
 <link rel="modulepreload" href="whatsapp.js">
+<link rel="modulepreload" href="chatfmt.js">
+<link rel="modulepreload" href="chatcards.js">
 </head>
 <body class="tasks-page chat-page own-nav">
 <header>
@@ -62,15 +64,20 @@
         <button class="ghost" id="c-files-btn" title="Pictures and files sent here">&#128206; Files</button>
         <button class="ghost" id="c-members-btn" title="Who is in this chat">&#128101; <span id="c-mcount"></span></button>
       </div>
+      <div id="c-topics" hidden></div>
+      <div id="c-pins" hidden></div>
       <div id="c-join" hidden><span>You are not in this channel yet.</span> <button class="primary" id="c-join-btn">Join</button></div>
       <div id="c-msgs"></div>
       <div id="c-compose">
         <div id="c-reply" hidden></div>
         <div id="c-pend"></div>
+        <div id="c-fmtbar" hidden></div>
         <div class="cc-row">
+          <button class="ghost" id="c-plus" title="Poll, event or task">+</button>
           <button class="ghost" id="c-attach" title="Send pictures or files (up to 50 MB each) - or paste / drop them">&#128206;</button>
           <button class="ghost" id="c-linkbtn" title="Link a task (#), an issue (!), a sheet ($) or the 3D model (%)">#</button>
           <textarea id="c-text" rows="1" placeholder="Message - @ person, # task, ! issue, $ sheet, % 3D"></textarea>
+          <button class="ghost" id="c-fmt" title="Formatting: bold, italic, lists, quotes, code">Aa</button>
           <button class="ghost" id="c-emoji" title="Emoji">&#128578;</button>
           <button class="primary" id="c-send" title="Send (Ctrl+Enter)">Send</button>
         </div>

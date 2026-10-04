@@ -15,6 +15,11 @@
  *
  * A task discussion is the task's own comments (tasks.py), shown here like
  * a chat so nobody has to look in two places.
+ *
+ * A project channel can have topics (sub-channels for one subject), listed
+ * under it. Messages can be pinned (the bar under the chat's name), carry
+ * a poll, an event or a task (the + button), and be formatted the way
+ * WhatsApp does it (Aa: *bold* _italic_ ~strike~, lists, quotes, code).
  */
 
 import { api } from "./nav.js";
@@ -24,10 +29,12 @@ import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 import { emojiPicker, QUICK } from "./emoji.js";
 import { toWhatsApp, parseWhatsApp, readExport, waText } from "./whatsapp.js";
+import { formatHtml, plainText, applyFormat, formatKey, continueList, FORMAT_BAR } from "./chatfmt.js";
+import { pollHtml, eventHtml, pollForm, eventForm, taskForm, vote, closePoll, rsvp } from "./chatcards.js";
 
 const C = {
   me: null, uid: null, people: [], byUid: {}, rooms: [], joinable: [], threads: [], projects: {},
-  room: null, msgs: [], more: false, rev: 0, reply: null, pend: [], q: "",
+  room: null, msgs: [], more: false, newer: false, rev: 0, reply: null, pend: [], q: "", pins: [], pinAt: 0,
 };
 const TASK = "task:";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -86,7 +93,7 @@ async function loadExtras(force) {
   }
   await Promise.all(jobs);
   paintRooms();
-  if (C.room && C.room.kind === "project") paintHead();
+  if (C.room && (C.room.kind === "project" || C.room.kind === "topic")) paintHead();
 }
 
 function setPeople(list) {
@@ -97,6 +104,7 @@ function setPeople(list) {
 function roomIcon(r) {
   if (r.kind === "dm") return avatar({ name: r.title }, 34);
   if (r.kind === "project") return `<span class="c-ico pj">P</span>`;
+  if (r.kind === "topic") return `<span class="c-ico tp">#</span>`;
   if (r.kind === "task") return `<span class="c-ico tk">&#10003;</span>`;
   return `<span class="c-ico gr">&#128101;</span>`;
 }
@@ -112,20 +120,30 @@ function paintRooms() {
     + `</a>`;
   const sec = (title, list) => list.length ? `<div class="cs-h">${title}</div>` + list.map(row).join("") : "";
   const by = (k) => C.rooms.filter((r) => r.kind === k && match(r));
+  // a channel's topics just under it (indented); a topic whose channel is
+  // not in the list (not joined) on its own
+  const channels = C.rooms.filter((r) => r.kind === "project");
+  const topicsOf = (id) => C.rooms.filter((t) => t.kind === "topic" && t.parent === id && (match(t) || q && match(C.rooms.find((x) => x.id === id) || {})));
+  const pjRows = channels.map((r) => {
+    const ts = topicsOf(r.id);
+    if (!match(r) && !ts.length) return "";
+    return row(r) + ts.map((t) => row(t).replace('class="cr', 'class="cr sub')).join("");
+  }).join("") + C.rooms.filter((t) => t.kind === "topic" && !channels.some((c) => c.id === t.parent) && match(t)).map(row).join("");
   const threads = C.threads.filter((t) => !q || t.title.toLowerCase().includes(q)).map((t) => ({
     id: TASK + t.id, kind: "task", title: t.title || "Untitled task", last_text: `${t.list_title} / ${t.group_title} · ${t.comment_count} comment${t.comment_count > 1 ? "s" : ""}`,
     last_at: t.updated_at, task: t }));
   const join = C.joinable.filter(match);
-  $("#c-rooms").innerHTML = sec("Project channels", by("project")) + sec("Groups", by("group")) + sec("Direct messages", by("dm"))
+  $("#c-rooms").innerHTML = (pjRows ? `<div class="cs-h">Project channels</div>` + pjRows : "") + sec("Groups", by("group")) + sec("Direct messages", by("dm"))
     + sec("Task discussions", threads)
     + (join.length ? `<div class="cs-h">Channels you can join</div>` + join.map((r) => `<a class="cr join" data-join="${esc(r.id)}">${roomIcon(r)}`
-      + `<span class="cr-m"><span class="cr-t"><b>${esc(r.title)}</b></span><span class="cr-l">Join</span></span></a>`).join("") : "")
+      + `<span class="cr-m"><span class="cr-t"><b>${esc(r.title)}</b></span><span class="cr-l">${r.kind === "topic" ? "Topic in " + esc(roomTitle(r.parent) || "a project channel") + " · " : ""}Join</span></span></a>`).join("") : "")
     + (!C.rooms.length && !threads.length && !join.length ? `<p class="muted cs-none">No chats yet. Start one with the pencil above.</p>` : "");
   const n = C.rooms.reduce((s, r) => s + (r.unread || 0), 0);
   document.title = (n ? `(${n}) ` : "") + "LWK Viewer - Chat";
 }
 
-const plainLabels = (t) => String(t || "").replace(/\[([^\]\n]{1,200})\]\([^\s)]+\)/g, "$1");
+const plainLabels = (t) => plainText(String(t || "").replace(/\[([^\]\n]{1,200})\]\([^\s)]+\)/g, "$1"));
+const roomTitle = (id) => ((C.rooms.find((x) => x.id === id) || C.joinable.find((x) => x.id === id) || {}).title || "");
 
 function short(iso) {
   const d = new Date(iso);
@@ -137,7 +155,8 @@ function short(iso) {
 
 /* ------------------------------------------------------------ a room */
 
-async function openRoom(id) {
+/* at: a message to show (a pin, a search hit, a link with &msg=). */
+async function openRoom(id, at) {
   closePop();
   C.reply = null;
   C.pend = [];
@@ -158,7 +177,7 @@ async function openRoom(id) {
   }
   let r;
   try {
-    r = await api(`/api/chat/rooms/${encodeURIComponent(id)}/messages?limit=60`);
+    r = await api(`/api/chat/rooms/${encodeURIComponent(id)}/messages?limit=60${at ? "&at=" + encodeURIComponent(at) : ""}`);
   } catch (e) {
     if (was) { forget(id); if (ticket === openTicket) closeRoom(id); }
     throw e;
@@ -166,14 +185,94 @@ async function openRoom(id) {
   if (ticket !== openTicket) return;           // another chat was opened meanwhile
   const mine = C.room && C.room.id === id ? C.msgs.filter((m) => m.pending || m.failed) : [];
   C.room = r.room;
-  C.msgs = r.messages.concat(mine);
+  C.newer = !!r.newer;
+  C.msgs = C.newer ? r.messages : r.messages.concat(mine);
   C.more = r.more;
+  if (!was || was.room.id !== id) { C.pins = []; C.pinAt = 0; }
   history.replaceState(null, "", "messenger.html?room=" + encodeURIComponent(id));
   paintHead();
-  paintMsgs(!was);
+  paintMsgs(!was && !at);
+  if (at) flash(at);
   markRead();
   paintRooms();
-  if (matchMedia("(hover: hover)").matches) $("#c-text").focus();
+  loadPins();
+  if (matchMedia("(hover: hover)").matches && !at) $("#c-text").focus();
+}
+
+/* A message brought into view and lit up for a moment. Not on the page
+   (an older one): the messages round it are fetched. */
+async function jumpTo(mid) {
+  if (!C.room) return;
+  if (!C.msgs.some((m) => m.id === mid)) return openRoom(C.room.id, mid);
+  flash(mid);
+}
+function flash(mid) {
+  const el = document.querySelector(`.c-msg[data-id="${CSS.escape(mid)}"]`);
+  if (!el) return;
+  el.scrollIntoView({ block: "center" });
+  el.classList.add("lit");
+  setTimeout(() => el.classList.remove("lit"), 2200);
+}
+
+/* ------------------------------------------------------------ pins */
+
+async function loadPins() {
+  const room = C.room;
+  if (!room || room.kind === "task" || room.member === false) { C.pins = []; return paintPins(); }
+  try {
+    const r = await api(`/api/chat/rooms/${room.id}/pins`);
+    if (!C.room || C.room.id !== room.id) return;
+    C.pins = r.messages;
+    C.pinAt = Math.min(C.pinAt, Math.max(0, C.pins.length - 1));
+  } catch (e) { C.pins = []; }
+  paintPins();
+}
+
+/* The bar under the chat's name: one pinned message at a time (the latest
+   first); a click shows it and moves the bar on to the next. */
+function paintPins() {
+  const bar = $("#c-pins");
+  const ps = C.pins || [];
+  if (!ps.length || !C.room) { bar.hidden = true; return; }
+  const m = ps[C.pinAt] || ps[0];
+  bar.hidden = false;
+  bar.innerHTML = `<span class="pn-ico">${ic("pin", 15)}</span>`
+    + `<button type="button" class="pn-m" data-pjump="${esc(m.id)}"><small class="muted">Pinned${ps.length > 1 ? ` · ${C.pinAt + 1} of ${ps.length}` : ""}</small>`
+    + `<span>${esc(m.author ? m.author + ": " : "")}${esc(pinText(m))}</span></button>`
+    + (ps.length > 1 ? `<button type="button" class="ghost pn-all" data-pall>All ${ps.length}</button>` : "");
+}
+const pinText = (m) => (plainLabels(m.body || "") || (m.card && (m.card.question || m.card.title)) || ((m.files || [])[0] || {}).name || "").slice(0, 140);
+
+async function pinMsg(m, on) {
+  try {
+    const r = await api(`/api/chat/messages/${m.id}/pin`, { method: "POST", body: JSON.stringify({ on }) });
+    Object.assign(m, r);
+    if (!r.pinned) delete m.pinned;
+    paintMsgs(false);
+    toast(on ? "Pinned - everyone in the chat sees it at the top" : "Unpinned");
+    await loadPins();
+  } catch (e) { toast(e.message, true); }
+}
+
+function pinsPanel() {
+  const box = $("#c-right");
+  box.hidden = false;
+  box.dataset.v = "p";
+  const ps = C.pins || [];
+  box.innerHTML = `<div class="cp-h"><b>Pinned messages</b> <span class="muted">${ps.length}</span><span class="spacer"></span><button class="ghost" data-x>${ic("close")}</button></div>`
+    + (ps.map((m) => `<div class="cp-pin"><a class="cp-s" data-pjump="${esc(m.id)}"><b>${esc(m.author || "Update")}</b> <small class="muted">${esc(short(m.created_at))}</small><br>`
+      + `<span>${esc(pinText(m))}</span></a><small class="muted">pinned by ${esc((m.pinned || {}).by || "")}</small>`
+      + ` <button type="button" class="ghost linkish" data-unpin="${esc(m.id)}">unpin</button></div>`).join("") || `<p class="muted">Nothing pinned.</p>`);
+  box.onclick = async (ev) => {
+    if (ev.target.closest("[data-x]")) { box.hidden = true; return; }
+    const j = ev.target.closest("[data-pjump]");
+    if (j) return jumpTo(j.dataset.pjump);
+    const u = ev.target.closest("[data-unpin]");
+    if (u) {
+      const m = C.msgs.find((x) => x.id === u.dataset.unpin) || C.pins.find((x) => x.id === u.dataset.unpin);
+      if (m) { await pinMsg(m, false); pinsPanel(); }
+    }
+  };
 }
 let openTicket = 0;
 
@@ -201,9 +300,10 @@ function paintHead() {
   $("#c-conv").hidden = false;
   $("#c-icon").outerHTML = `<span id="c-icon">${roomIcon(r)}</span>`;
   $("#c-title").textContent = r.title;
-  const p = r.kind === "project" ? C.projects[r.project] : null;
+  const p = r.kind === "project" || r.kind === "topic" ? C.projects[r.project] : null;
   $("#c-sub").textContent = r.description ? r.description.split("\n")[0]
     : r.kind === "project" ? "Project channel" + (p && p.code ? " · " + p.code : "")
+      : r.kind === "topic" ? "Topic in " + (roomTitle(r.parent) || "the project channel")
       : r.kind === "dm" ? "Direct message" : r.kind === "task" ? `Task discussion · ${r.list_title} / ${r.group_title}`
         : `Group · ${r.members.length} people`;
   $("#c-mcount").textContent = r.members ? r.members.length : "";
@@ -222,6 +322,34 @@ function paintHead() {
   $("#c-links").innerHTML = links;
   $("#c-join").hidden = r.member !== false || r.kind === "task";
   $("#c-compose").hidden = r.member === false;
+  $("#c-plus").hidden = r.kind === "task";
+  paintTopics();
+  paintPins();
+}
+
+/* A project channel and its topics, as tabs under the chat's name. */
+function paintTopics() {
+  const r = C.room, bar = $("#c-topics");
+  const chan = r && (r.kind === "project" ? r : r.kind === "topic" ? C.rooms.find((x) => x.id === r.parent) : null);
+  if (!chan) { bar.hidden = true; return; }
+  const ts = C.rooms.filter((x) => x.kind === "topic" && x.parent === chan.id)
+    .concat(C.joinable.filter((x) => x.kind === "topic" && x.parent === chan.id).map((x) => Object.assign({ join: true }, x)));
+  bar.hidden = false;
+  bar.innerHTML = `<button type="button" class="tp-c${r.id === chan.id ? " on" : ""}" data-topic="${esc(chan.id)}"># General</button>`
+    + ts.map((t) => `<button type="button" class="tp-c${r.id === t.id ? " on" : ""}${t.join ? " join" : ""}${t.unread ? " unread" : ""}" data-topic="${esc(t.id)}"${t.join ? ` data-tjoin="1" title="Join this topic"` : ""}># ${esc(t.title)}${t.unread ? ` <b>${t.unread}</b>` : ""}</button>`).join("")
+    + `<button type="button" class="tp-c add" data-newtopic="${esc(chan.id)}" title="A sub-channel for one subject, e.g. Facade, MEP coordination">${ic("plus", 13)} Topic</button>`;
+}
+
+async function newTopic(parent) {
+  const f = await modal("New topic", `<p class="muted" style="font-size:12px">A sub-channel of ${esc(roomTitle(parent) || "the project channel")} for one subject. Everyone in the channel is added.</p>`
+    + `<label>Name <input name="t" maxlength="80" placeholder="e.g. Facade, MEP coordination, Site visits" required></label>`
+    + `<label>What it is for <textarea name="d" rows="2" maxlength="2000" placeholder="optional"></textarea></label>`, "Open topic");
+  if (!f || !f.t.value.trim()) return;
+  try {
+    const r = await api("/api/chat/rooms", { method: "POST", body: JSON.stringify({ kind: "topic", parent, title: f.t.value.trim(), description: f.d.value.trim() }) });
+    await loadRooms();
+    openRoom(r.id);
+  } catch (e) { toast(e.message, true); }
 }
 
 /* ------------------------------------------------------------ messages */
@@ -237,11 +365,11 @@ function mention(html) {
 function cardHtml(m) {
   const c = m.card || {};
   if (c.type === "task") {
-    const say = { created: "New task", assigned: "Assigned", completed: "Completed", comment: "New comment", reopened: "Reopened" }[c.event] || "Updated";
+    const say = { created: "New task", assigned: "Assigned", completed: "Completed", comment: "New comment", reopened: "Reopened", shared: c.done ? "Task (done)" : "Task" }[c.event] || "Updated";
     return `<div class="c-card task ev-${esc(c.event)}"><div class="cc-h">${badge("task")} <b>${esc(say)}</b> <span class="muted">${esc(c.list)} / ${esc(c.group)}</span></div>`
       + `<div class="cc-t">${esc(c.title)}</div>`
       + (c.text ? `<div class="cc-x">${c.event === "assigned" ? "to " : ""}${esc(c.text)}</div>` : "")
-      + `<div class="cc-f">${c.owners && c.owners.length ? "Owner: " + esc(c.owners.join(", ")) : ""}${c.due ? " · Due " + esc(c.due) : ""}`
+      + `<div class="cc-f">${c.owners && c.owners.length ? "Owner: " + esc(c.owners.join(", ")) : c.event === "shared" ? "No owner yet" : ""}${c.due ? " · Due " + esc(c.due) : ""}`
       + `<span class="spacer"></span><a href="tasks.html?list=${esc(c.list_id)}&task=${esc(c.task_id)}">View task</a></div></div>`;
   }
   if (c.type === "issue") {
@@ -251,6 +379,10 @@ function cardHtml(m) {
       + `<div class="cc-t">#${esc(c.number || "?")} ${esc(c.title)}</div>`
       + `<div class="cc-f">${c.assigned_to ? "Assigned to " + esc(c.assigned_to) : ""}${c.due ? " · Due " + esc(c.due) : ""}<span class="spacer"></span><a href="${esc(url)}">Show in viewer</a></div></div>`;
   }
+  const ctx = { uid: C.uid, byUid: C.byUid };
+  if (m.pending && ["poll", "event", "task_ref"].includes(c.type)) return `<div class="c-card"><div class="cc-t">${esc(c.question || c.title || "")}</div></div>`;
+  if (c.type === "poll") return pollHtml(m, ctx);
+  if (c.type === "event") return eventHtml(m, ctx);
   return "";
 }
 
@@ -262,8 +394,13 @@ const unframe = (t) => String(t || "").replace(/<iframe[^>]*\ssrc=["']([^"']+)["
    Only the viewer's own pages: anything else stays as the words typed. */
 const LINK_MD = /\[([^\]\n]{1,200})\]\(((?:https?:\/\/[^\s)]+\/)?(?:index|model|tasks|projects|dashboard)\.html\?[^\s)]*)\)/g;
 
+/* The words of a message: WhatsApp's formatting (chatfmt.js) round the
+   page's own drawing of plain text (links, chips, @mentions). */
 function textHtml(body) {
-  const src = unframe(body);
+  return formatHtml(unframe(body), plainHtml);
+}
+
+function plainHtml(src) {
   let out = "", at = 0, m;
   LINK_MD.lastIndex = 0;
   while ((m = LINK_MD.exec(src))) {
@@ -312,12 +449,9 @@ function editorHtml(m) {
     + `<button type="button" class="ghost" data-ecancel>Cancel</button><small class="muted">Ctrl+Enter saves · Esc cancels</small></div></div>`;
 }
 
-/* The writer, a chat admin or a site admin; a task comment: its writer. */
+/* Only the person who sent it - not a chat admin, not a site admin. */
 function canDelete(m) {
-  if (!m) return false;
-  const mine = m.uid != null && m.uid === C.uid;
-  if (C.room && C.room.kind === "task") return mine;
-  return mine || (C.room && C.room.role === "admin") || !!(C.me && C.me.site_admin);
+  return !!m && m.uid != null && m.uid === C.uid && m.kind !== "card";
 }
 
 function startEdit(id) {
@@ -373,10 +507,13 @@ function moreMenu(btn, id) {
   if (!m) return;
   const room = C.room.kind !== "task";
   const el = pop(btn, `<div class="po-row" data-k="copy">${ic("copy")} Copy</div>`
+    + (room ? `<div class="po-row" data-k="pin">${ic("pin")} ${m.pinned ? "Unpin" : "Pin"}</div>` : "")
+    + (room ? `<div class="po-row" data-k="task">${ic("task")} Make a task</div>` : "")
     + (room ? `<div class="po-row" data-k="fwd">${ic("forward")} Forward to another chat</div>` : "")
     + (room ? `<div class="po-row" data-k="wa">${ic("whatsapp")} Send to WhatsApp</div>` : "")
+    + (room ? `<div class="po-row" data-k="link">${ic("link")} Copy link to this message</div>` : "")
     + (m.uid === C.uid && m.kind !== "card" ? `<div class="po-row" data-k="edit">${ic("edit")} Edit</div>` : "")
-    + (canDelete(m) ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete</div>` : ""), 220);
+    + (canDelete(m) ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete</div>` : ""), 240);
   el.addEventListener("click", (ev) => {
     const r = ev.target.closest(".po-row");
     if (!r) return;
@@ -384,6 +521,9 @@ function moreMenu(btn, id) {
     for (const x of document.querySelectorAll(".c-msg.show-acts")) x.classList.remove("show-acts");
     const k = r.dataset.k;
     if (k === "copy") copyMsg(m);
+    if (k === "pin") pinMsg(m, !m.pinned);
+    if (k === "task") taskFromMsg(m);
+    if (k === "link") copyMsg({ body: new URL(`messenger.html?room=${encodeURIComponent(C.room.id)}&msg=${encodeURIComponent(m.id)}`, location.href).href, files: [] });
     if (k === "fwd") forwardMsg(m);
     if (k === "wa") toWhatsApp(m, C.room.title).catch((e) => toast(e.message, true));
     if (k === "edit") startEdit(m.id);
@@ -400,16 +540,18 @@ function msgHtml(m, prev) {
   const reply = m.reply_to && C.msgs.find((x) => x.id === m.reply_to);
   const by = m.kind === "card" ? (m.author ? m.author + " · update" : "Update") : m.author;
   const wa = m.card && m.card.type === "whatsapp";
-  const inner = fwd ? (fwd.inner ? cardHtml({ card: fwd.inner }) : "") : m.kind === "card" ? cardHtml(m) : wa ? waHtml(m) : "";
+  const own = m.card && ["poll", "event", "task", "task_ref"].includes(m.card.type);
+  const inner = fwd ? (fwd.inner ? cardHtml({ card: fwd.inner }) : "") : m.kind === "card" || own ? cardHtml(m) : wa ? waHtml(m) : "";
   const shown = wa ? new Set((m.card.lines || []).map((l) => l.file).filter(Boolean)) : null;
   const files = shown ? (m.files || []).filter((f) => !shown.has(f.name)) : m.files;
   const room = C.room.kind !== "task";
   return `<div class="c-msg${same ? " cont" : ""}${mine ? " mine" : ""}" data-id="${esc(m.id)}">`
     + (same ? `<span class="c-av"></span>` : `<span class="c-av">${m.kind === "card" ? `<span class="c-ico bot">${ic("bell", 18)}</span>` : avatar({ name: m.author }, 34)}</span>`)
     + `<div class="c-body">`
-    + (same ? "" : `<div class="c-meta"><b>${esc(by)}</b><small title="${esc(fmtWhen(m.created_at))}">${esc(short(m.created_at))}</small></div>`)
+    + (same && !m.pinned ? "" : `<div class="c-meta"><b>${same ? "" : esc(by)}</b><small title="${esc(fmtWhen(m.created_at))}">${same ? "" : esc(short(m.created_at))}</small>`
+      + (m.pinned ? `<span class="c-pinned" title="Pinned by ${esc(m.pinned.by)}">${ic("pin", 12)} pinned</span>` : "") + `</div>`)
     + (m.deleted ? `<div class="c-del">message deleted</div>`
-      : (reply ? `<div class="c-quote"><b>${esc(reply.author)}</b> ${esc((reply.body || "").slice(0, 120))}</div>` : "")
+      : (reply ? `<div class="c-quote" data-pjump="${esc(reply.id)}"><b>${esc(reply.author)}</b> ${esc(plainLabels(reply.body || (reply.card && (reply.card.question || reply.card.title)) || "").slice(0, 120))}</div>` : "")
         + (fwd ? `<div class="c-fwd">${ic("forward", 13)} Forwarded from <b>${esc(fwd.from)}</b> in ${esc(fwd.room)}</div>` : "")
         + `<div class="${fwd ? "c-fwd-body" : ""}">`
         + inner
@@ -424,9 +566,9 @@ function msgHtml(m, prev) {
     // WhatsApp, Delete). A task's comments: Edit and More.
     + (!m.deleted && !m.pending && !m.failed && C.editing !== m.id ? `<div class="c-acts">`
       + (room ? `<button class="ghost" data-react="${esc(m.id)}" title="React">${ic("smile")}</button>` : "")
-      + (room && m.kind !== "card" ? `<button class="ghost" data-reply="${esc(m.id)}" title="Reply">${ic("reply")}</button>` : "")
+      + (room ? `<button class="ghost" data-reply="${esc(m.id)}" title="Reply">${ic("reply")}</button>` : "")
       + (mine && m.kind !== "card" ? `<button class="ghost" data-edit="${esc(m.id)}" title="Edit">${ic("edit")}</button>` : "")
-      + `<button class="ghost" data-more="${esc(m.id)}" title="More: copy, forward, WhatsApp${canDelete(m) ? ", delete" : ""}">${ic("more")}</button>`
+      + `<button class="ghost" data-more="${esc(m.id)}" title="More: copy, pin, make a task, forward, WhatsApp${canDelete(m) ? ", delete" : ""}">${ic("more")}</button>`
       + `</div>` : "")
     + `</div>`;
 }
@@ -445,6 +587,7 @@ function paintMsgs(toBottom) {
     h += msgHtml(m, C.msgs[i - 1]);
   });
   if (!C.msgs.length) h += `<p class="muted c-none">${C.room.kind === "task" ? "No comments on this task yet." : "No messages yet - say hello."}</p>`;
+  if (C.newer) h += `<button class="ghost c-latest" data-latest>${ic("down", 14)} Newer messages - go to the latest</button>`;
   // a message being changed keeps its cursor through a repaint (new messages)
   const ed = C.editing && document.activeElement && document.activeElement.dataset && document.activeElement.dataset.etext
     ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
@@ -542,7 +685,49 @@ async function deliver(tmp, room, card) {
   if (C.room && C.room.id === room.id) paintMsgs(true);
 }
 
-/* A card someone sends (only WhatsApp quotes): the same way as a message. */
+/* The + in the message box: a poll, an event or a task. */
+function plusMenu() {
+  const el = pop($("#c-plus"), `<div class="po-row" data-k="poll">${ic("poll")} Poll</div>`
+    + `<div class="po-row" data-k="event">${ic("calendar")} Event / meeting</div>`
+    + `<div class="po-row" data-k="task">${ic("task")} Task</div>`
+    + `<div class="po-row" data-k="link">${ic("hash")} Link a task, issue, sheet or 3D view</div>`, 260);
+  el.addEventListener("click", async (ev) => {
+    const r = ev.target.closest(".po-row");
+    if (!r) return;
+    closePop();
+    if (r.dataset.k === "poll") { const c = await pollForm(); if (c) sendCard(c); }
+    if (r.dataset.k === "event") { const c = await eventForm(); if (c) sendCard(c); }
+    if (r.dataset.k === "task") sendTask();
+    if (r.dataset.k === "link") linkMenu($("#c-plus"));
+  });
+}
+
+async function sendTask(prefill, body) {
+  const room = C.room;
+  const t = await taskForm({ room, people: C.people, byUid: C.byUid }, prefill);
+  if (!t) return;
+  if (!C.room || C.room.id !== room.id) await openRoom(room.id);
+  await sendCard({ type: "task_ref", task: t.task, title: (prefill && prefill.title) || "Task" }, [], body || "");
+  toast("Task made");
+}
+
+/* More > Make a task: the words as its title and description, the people
+   @mentioned as owners, a link back to the message. */
+function taskFromMsg(m) {
+  const text = plainLabels(m.body || (m.card && (m.card.question || m.card.title)) || "").trim();
+  const first = text.split("\n").find((l) => l.trim()) || "";
+  const owners = C.people.filter((p) => p.uid !== C.uid && (m.body || "").includes("@" + p.name)).map((p) => p.uid);
+  const url = `/messenger.html?room=${encodeURIComponent(C.room.id)}&msg=${encodeURIComponent(m.id)}`;
+  return sendTask({
+    title: first.slice(0, 200),
+    owners,
+    description: (m.author ? m.author + " wrote in " + C.room.title + ":\n" : "") + text,
+    links: [{ kind: "url", url, title: "The message in " + C.room.title }],
+  }, "");
+}
+
+/* A card someone sends (WhatsApp quotes, polls, events, tasks): the same
+   way as a message. */
 async function sendCard(card, files, body) {
   if (!C.room || C.room.kind === "task") return;
   const tmp = { id: "tmp" + Date.now().toString(36), uid: C.uid, author: (C.me.user || {}).name || "", body: body || "",
@@ -706,12 +891,12 @@ function kbNav(ev) {
 
 /* The # button: the same lists, with tabs, for a phone (or anyone who does
    not remember the symbols). */
-function linkMenu() {
+function linkMenu(anchor) {
   const ta = $("#c-text");
   const at = ta.selectionStart || ta.value.length, len = (ta.selectionEnd || at) - at;
   const tabs = [["task", "# Task"], ["issue", "! Issue"], ["sheet", "$ Sheet"], ["model", "% 3D"]];
   const cur = linkScope();
-  const el = pop($("#c-linkbtn"), `<label class="lk-ps">Project <select class="lk-psel">${scopeList().map(([id, n]) => `<option value="${esc(id)}"${id === cur ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`
+  const el = pop(anchor && anchor.nodeType ? anchor : $("#c-linkbtn"), `<label class="lk-ps">Project <select class="lk-psel">${scopeList().map(([id, n]) => `<option value="${esc(id)}"${id === cur ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`
     + `<div class="lk-tabs">${tabs.map(([k, l], i) => `<button type="button" class="ghost${i ? "" : " on"}" data-k="${k}">${l}</button>`).join("")}</div>`
     + `<input class="lk-q" placeholder="Search" autocomplete="off"><div class="lk-list"><p class="muted">Loading ...</p></div>`, 360);
   el.classList.add("lk-pop");
@@ -842,10 +1027,13 @@ async function sync(wait) {
     if (i >= 0) C.rooms[i] = x; else C.rooms.unshift(x);
   }
   let mine = false;
+  let pins = false;
   for (const m of r.messages) {
     if (!C.room || m.room !== C.room.id) continue;
     const i = C.msgs.findIndex((y) => y.id === m.id);
+    if (m.pinned || (i >= 0 && C.msgs[i].pinned) || m.deleted || (m.kind === "system" && / pinned a message$/.test(m.body || ""))) pins = true;
     if (i >= 0) C.msgs[i] = m;
+    else if (C.newer) continue;             // looking at older messages: "go to the latest" shows them
     else {
       // my own message, back before the send itself has answered
       const t = m.uid === C.uid ? C.msgs.findIndex((y) => y.pending && (y.body || "") === (m.body || "")) : -1;
@@ -866,6 +1054,8 @@ async function sync(wait) {
     paintMsgs(false);
     markRead();
   }
+  if (pins) loadPins();
+  if (roomsChanged && C.room && (C.room.kind === "project" || C.room.kind === "topic")) paintTopics();
   if (roomsChanged) { paintRooms(); keep("rooms", { rooms: C.rooms, joinable: C.joinable }); }
   return true;
 }
@@ -903,15 +1093,20 @@ setInterval(async () => {
 async function newChat() {
   const projects = Object.values(C.projects).filter((p) => !C.rooms.some((r) => r.kind === "project" && r.project === p.id)
     && !C.joinable.some((r) => r.project === p.id));
+  const chans = C.rooms.filter((r) => r.kind === "project");
   const f = modal("New chat", `
     <label class="row-check"><input type="radio" name="k" value="dm" checked> Direct message</label>
     <label class="row-check"><input type="radio" name="k" value="group"> Group chat</label>
     ${projects.length ? `<label class="row-check"><input type="radio" name="k" value="project"> Project channel</label>` : ""}
+    ${chans.length ? `<label class="row-check"><input type="radio" name="k" value="topic"> Topic in a project channel</label>` : ""}
     <div class="nc-dm"><label>With <select name="user">${C.people.filter((p) => p.uid !== C.uid).map((p) => `<option value="${p.uid}">${esc(p.name)}${p.team ? " · " + esc(p.team) : ""}</option>`).join("")}</select></label></div>
     <div class="nc-group" hidden><label>Name <input name="title" placeholder="e.g. SKW modelling team"></label>
       <label>People <div class="nc-people td-v act"><span class="muted">choose</span></div></label></div>
     <div class="nc-project" hidden><label>Project <select name="project">${projects.map((p) => `<option value="${esc(p.id)}">${esc(p.short || p.name)}${p.code ? " · " + esc(p.code) : ""}</option>`).join("")}</select></label>
-      <p class="muted" style="font-size:11px">Everyone on the project (its owners, viewer project members and task list members) is added. Task and issue updates are posted into it.</p></div>`, "Start");
+      <p class="muted" style="font-size:11px">Everyone on the project (its owners, viewer project members and task list members) is added. Task and issue updates are posted into it.</p></div>
+    <div class="nc-topic" hidden><label>Channel <select name="parent">${chans.map((r) => `<option value="${esc(r.id)}"${C.room && (C.room.id === r.id || C.room.parent === r.id) ? " selected" : ""}>${esc(r.title)}</option>`).join("")}</select></label>
+      <label>Topic <input name="ttitle" maxlength="80" placeholder="e.g. Facade, MEP coordination"></label>
+      <p class="muted" style="font-size:11px">A sub-channel for one subject. Everyone in the channel is added.</p></div>`, "Start");
   const form = document.querySelector(".t-modal");
   let chosen = [];
   const show = () => {
@@ -919,6 +1114,7 @@ async function newChat() {
     form.querySelector(".nc-dm").hidden = k !== "dm";
     form.querySelector(".nc-group").hidden = k !== "group";
     form.querySelector(".nc-project").hidden = k !== "project";
+    form.querySelector(".nc-topic").hidden = k !== "topic";
   };
   for (const r of form.querySelectorAll("input[name=k]")) r.onchange = show;
   form.querySelector(".nc-people").onclick = (ev) => pickPeople(ev.currentTarget, chosen, C.people.filter((p) => p.uid !== C.uid), (v) => {
@@ -930,7 +1126,8 @@ async function newChat() {
   const k = done.querySelector("input[name=k]:checked").value;
   const body = k === "dm" ? { kind: "dm", user: Number(done.user.value) }
     : k === "group" ? { kind: "group", title: done.title.value, members: chosen.map((p) => p.uid) }
-      : { kind: "project", project: done.project.value };
+      : k === "topic" ? { kind: "topic", parent: done.parent.value, title: done.ttitle.value }
+        : { kind: "project", project: done.project.value };
   try {
     const r = await api("/api/chat/rooms", { method: "POST", body: JSON.stringify(body) });
     await loadRooms();
@@ -946,16 +1143,22 @@ function info(rr) {
   if (!rr && !box.hidden && box.dataset.v === "i") { box.hidden = true; return; }
   box.hidden = false;
   box.dataset.v = "i";
-  const admin = r.role === "admin" || C.me.site_admin;
+  const admin = r.role === "admin" || C.me.site_admin || (r.kind !== "group" && r.kind !== "dm" && r.can_delete);
   const list = (r.members || []).map((u) => C.byUid[u] || { uid: u, name: "?" })
     .sort((a, b) => (b.uid === C.uid) - (a.uid === C.uid) || a.name.localeCompare(b.name));
-  const p = r.kind === "project" ? C.projects[r.project] : null;
+  const p = r.kind === "project" || r.kind === "topic" ? C.projects[r.project] : null;
+  const topics = r.kind === "project" ? C.rooms.filter((t) => t.kind === "topic" && t.parent === r.id) : [];
   box.innerHTML = `<div class="cp-h"><b>${r.kind === "task" ? "Task discussion" : r.kind === "dm" ? "Direct message" : "Chat info"}</b><span class="spacer"></span>`
     + `<button class="ghost" data-x title="Close">${ic("close")}</button></div>`
-    + `<div class="ci-top">${roomIcon(r)}<div><b>${esc(r.title)}</b><small class="muted">${r.kind === "project" ? "Project channel" + (p && p.code ? " · " + esc(p.code) : "") : r.kind === "group" ? "Group" : r.kind === "dm" ? "Direct message" : ""}</small></div></div>`
+    + `<div class="ci-top">${roomIcon(r)}<div><b>${esc(r.title)}</b><small class="muted">${r.kind === "project" ? "Project channel" + (p && p.code ? " · " + esc(p.code) : "") : r.kind === "topic" ? "Topic in " + esc(roomTitle(r.parent) || "the project channel") : r.kind === "group" ? "Group" : r.kind === "dm" ? "Direct message" : ""}</small></div></div>`
     + (r.kind !== "dm" && r.kind !== "task" ? `<div class="ci-sec"><div class="ci-h">Description${admin ? ` <button class="ghost linkish" data-desc>edit</button>` : ""}</div>`
       + `<div class="ci-desc">${r.description ? textHtml(r.description) : `<span class="muted">${admin ? "Say what this chat is for - its rules, key links, who to ask." : "No description."}</span>`}</div></div>` : "")
     + (r.created_by ? `<div class="ci-sec muted" style="font-size:11px">Started by ${esc(r.created_by)} · ${esc(fmtWhen(r.created_at))}</div>` : "")
+    + (r.kind === "project" ? `<div class="ci-sec"><div class="ci-h">Topics <span class="muted">${topics.length}</span></div>`
+      + topics.map((t) => `<a class="ci-topic" data-open="${esc(t.id)}"># ${esc(t.title)}</a>`).join("")
+      + `<button class="ghost linkish" data-newtopic="${esc(r.id)}">${ic("plus", 13)} New topic</button></div>` : "")
+    + (r.kind !== "task" ? `<div class="ci-sec"><div class="ci-h">Pinned <span class="muted">${C.room && C.room.id === r.id ? (C.pins || []).length : ""}</span></div>`
+      + (C.room && C.room.id === r.id && C.pins.length ? `<button class="ghost linkish" data-pall>Show the pinned messages</button>` : `<span class="muted" style="font-size:12px">Pin a message from its ⋯ menu: everyone sees it at the top.</span>`) + `</div>` : "")
     + `<div class="ci-sec"><div class="ci-h">${r.kind === "task" ? "Followers" : "Members"} <span class="muted">${list.length}</span></div>`
     + list.map((u) => `<div class="cp-p">${avatar(u, 30)}<span class="cp-n"><b>${esc(u.name)}${u.uid === C.uid ? " <small class=\"muted\">(you)</small>" : ""}</b>`
       + `<small class="muted">${esc([u.team, u.office].filter(Boolean).join(" · "))}</small></span>`
@@ -967,7 +1170,7 @@ function info(rr) {
       + `<button class="ghost icon-btn" data-files>${ic("clip")} Pictures and files</button>`
       + `<button class="ghost icon-btn" data-wa-in title="WhatsApp > the chat > More > Export chat: send the .txt or .zip here">${ic("download")} Import WhatsApp chat</button>`
       + (r.kind !== "dm" ? `<button class="ghost icon-btn" data-leave>${ic("exit")} Leave this chat</button>` : "")
-      + (admin && (r.kind !== "dm" || C.me.site_admin) ? `<button class="ghost danger icon-btn" data-delroom>${ic("trash")} Delete this chat</button>` : "")
+      + (r.can_delete ? `<button class="ghost danger icon-btn" data-delroom>${ic("trash")} Delete this ${r.kind === "topic" ? "topic" : "chat"}</button>` : "")
       + `</div>` : "");
   box.onclick = async (ev) => {
     if (ev.target.closest("[data-x]")) { box.hidden = true; return; }
@@ -1001,6 +1204,11 @@ function info(rr) {
         });
       }
       if (ev.target.closest("[data-files]")) { box.dataset.v = ""; files(); }
+      const op = ev.target.closest("[data-open]");
+      if (op) openRoom(op.dataset.open);
+      const nt = ev.target.closest("[data-newtopic]");
+      if (nt) await newTopic(nt.dataset.newtopic);
+      if (ev.target.closest("[data-pall]")) pinsPanel();
       if (ev.target.closest("[data-wa-in]")) $("#c-wa-file").click();
       if (ev.target.closest("[data-leave]")) await leave(r);
       if (ev.target.closest("[data-delroom]")) await removeRoom(r);
@@ -1016,7 +1224,9 @@ async function leave(r) {
 }
 
 async function removeRoom(r) {
-  if (!confirm(`Delete "${r.title}" for everyone? Its messages will no longer be shown to anyone.`)) return;
+  const n = r.kind === "project" ? C.rooms.filter((t) => t.kind === "topic" && t.parent === r.id).length : 0;
+  if (!confirm(r.kind === "dm" ? `Delete this conversation with ${r.title}? It goes for both of you.`
+    : `Delete "${r.title}" for everyone? Its messages will no longer be shown to anyone.${n ? `\n\nIts ${n} topic${n === 1 ? "" : "s"} go${n === 1 ? "es" : ""} too.` : ""}`)) return;
   await api(`/api/chat/rooms/${r.id}`, { method: "DELETE" });
   closeRoom(r.id);
   await loadRooms();
@@ -1038,7 +1248,7 @@ async function forwardMsg(m) {
   const p = modal("Forward to", `<div class="fw-prev">${esc((m.body || (m.card && (m.card.title || (m.card.inner || {}).title)) || (m.files[0] || {}).name || "").slice(0, 160))}</div>`
     + `<input class="fw-q" placeholder="Search chats">`
     + `<div class="fw-list">${rooms.map((r) => `<label class="fw-row">`
-      + `<input type="checkbox" value="${esc(r.id)}">${roomIcon(r)}<span><b>${esc(r.title)}</b><small class="muted">${r.kind === "project" ? "Project channel" : r.kind === "dm" ? "Direct message" : "Group"}</small></span></label>`).join("")}</div>`
+      + `<input type="checkbox" value="${esc(r.id)}">${roomIcon(r)}<span><b>${esc(r.title)}</b><small class="muted">${r.kind === "project" ? "Project channel" : r.kind === "topic" ? "Topic in " + esc(roomTitle(r.parent)) : r.kind === "dm" ? "Direct message" : "Group"}</small></span></label>`).join("")}</div>`
     + `<label>Add a message <input name="note" placeholder="optional"></label>`, "Forward");
   const form = document.querySelector(".t-modal");
   form.querySelector(".fw-q").oninput = (ev) => {
@@ -1060,14 +1270,14 @@ function roomMenu(ev, id) {
   const r = C.rooms.find((x) => x.id === id);
   if (!r) return;
   ev.preventDefault();
-  const admin = r.role === "admin" || C.me.site_admin;
   const el = pop(ev.target.closest(".cr"), `<div class="po-row" data-k="open">${ic("chat")} Open</div>`
     + `<div class="po-row" data-k="info">${ic("info")} Details</div>`
     + (r.unread ? `<div class="po-row" data-k="read">${ic("read")} Mark as read</div>` : "")
     + `<div class="po-row" data-k="wa-in">${ic("download")} Import WhatsApp chat ...</div>`
     + `<div class="po-row" data-k="wa-out">${ic("whatsapp")} Send chat link to WhatsApp</div>`
     + (r.kind !== "dm" ? `<div class="po-row" data-k="leave">${ic("exit")} Leave</div>` : "")
-    + (admin && (r.kind !== "dm" || C.me.site_admin) ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete chat</div>` : ""), 200);
+    + (r.kind === "project" ? `<div class="po-row" data-k="topic">${ic("hash")} New topic</div>` : "")
+    + (r.can_delete ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete ${r.kind === "topic" ? "topic" : "chat"}</div>` : ""), 200);
   el.style.left = Math.min(innerWidth - 210, ev.clientX) + "px";
   el.style.top = Math.min(innerHeight - 200, ev.clientY) + "px";
   el.style.bottom = "";
@@ -1084,6 +1294,7 @@ function roomMenu(ev, id) {
       }
       if (k.k === "leave") await leave(r);
       if (k.k === "del") await removeRoom(r);
+      if (k.k === "topic") await newTopic(r.id);
       if (k.k === "wa-in") { if (!C.room || C.room.id !== r.id) await openRoom(r.id); $("#c-wa-file").click(); }
       if (k.k === "wa-out") await toWhatsApp({ body: `${r.title} - LWK Viewer chat\n` + new URL("messenger.html?room=" + encodeURIComponent(r.id), location.href).href });
     } catch (err) { toast(err.message, true); }
@@ -1110,12 +1321,12 @@ async function searchMessages(q) {
   box.dataset.v = "s";
   const title = (id) => (C.rooms.find((x) => x.id === id) || {}).title || "";
   box.innerHTML = `<div class="cp-h"><b>"${esc(q)}"</b> <span class="muted">${r.messages.length} found</span><span class="spacer"></span><button class="ghost" data-x>&#10005;</button></div>`
-    + (r.messages.map((m) => `<a class="cp-s" data-room="${esc(m.room)}"><b>${esc(title(m.room))}</b> <small class="muted">${esc(short(m.created_at))}</small><br>`
-      + `<span>${esc(m.author)}: ${esc((m.body || (m.card && m.card.title) || (m.files[0] || {}).name || "").slice(0, 160))}</span></a>`).join("") || `<p class="muted">Nothing found.</p>`);
+    + (r.messages.map((m) => `<a class="cp-s" data-room="${esc(m.room)}" data-msg="${esc(m.id)}"><b>${esc(title(m.room))}</b> <small class="muted">${esc(short(m.created_at))}</small><br>`
+      + `<span>${esc(m.author)}: ${esc((plainLabels(m.body || "") || (m.card && (m.card.question || m.card.title)) || (m.files[0] || {}).name || "").slice(0, 160))}</span></a>`).join("") || `<p class="muted">Nothing found.</p>`);
   box.onclick = (ev) => {
     if (ev.target.closest("[data-x]")) { box.hidden = true; return; }
     const a = ev.target.closest("[data-room]");
-    if (a) openRoom(a.dataset.room);
+    if (a) openRoom(a.dataset.room, a.dataset.msg).catch((e) => toast(e.message, true));
   };
 }
 
@@ -1142,6 +1353,10 @@ function icons() {
   $("#c-members-btn").title = "Chat info and members";
   $("#c-new").innerHTML = ic("compose", 18);
   $("#c-attach").innerHTML = ic("clip", 18);
+  $("#c-plus").innerHTML = ic("plus", 19);
+  $("#c-fmt").innerHTML = ic("format", 18);
+  $("#c-fmtbar").innerHTML = FORMAT_BAR.map(([k, , label, title]) => `<button type="button" class="ghost" data-fmt="${k}" title="${title}">${label}</button>`).join("")
+    + `<small class="muted">as in WhatsApp: *bold* _italic_ ~strike~</small>`;
   $("#c-emoji").innerHTML = ic("smile", 19);
   $("#c-send").innerHTML = ic("send", 17) + `<span class="lab">Send</span>`;
 }
@@ -1168,12 +1383,44 @@ function wire() {
   $("#c-text").onkeydown = (ev) => {
     if (kbNav(ev)) return;
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); send(); }
+    else if (ev.key === "Enter" && !ev.shiftKey && !ev.altKey && !ev.isComposing && continueList(ev.target)) ev.preventDefault();
+    const fk = formatKey(ev);
+    if (fk) { ev.preventDefault(); applyFormat(ev.target, fk); }
     if (ev.key === "Escape" && C.reply) { C.reply = null; $("#c-reply").hidden = true; }
   };
   // the Send button must not take the focus (a phone's keyboard would close)
   $("#c-send").addEventListener("pointerdown", (ev) => ev.preventDefault());
+  // the format bar works on the message box without taking its focus
+  $("#c-fmtbar").addEventListener("pointerdown", (ev) => { if (ev.target.closest("[data-fmt]")) ev.preventDefault(); });
+  $("#c-fmtbar").onclick = (ev) => { const b = ev.target.closest("[data-fmt]"); if (b) applyFormat($("#c-text"), b.dataset.fmt); };
+  $("#c-fmt").onclick = () => {
+    const bar = $("#c-fmtbar");
+    bar.hidden = !bar.hidden;
+    $("#c-fmt").classList.toggle("on", !bar.hidden);
+    try { localStorage.setItem("lwk-viewer:chat-fmt", bar.hidden ? "" : "1"); } catch (e) {}
+    $("#c-text").focus();
+  };
+  try { if (localStorage.getItem("lwk-viewer:chat-fmt")) { $("#c-fmtbar").hidden = false; $("#c-fmt").classList.add("on"); } } catch (e) {}
+  $("#c-plus").onclick = plusMenu;
+  $("#c-topics").onclick = async (ev) => {
+    const nt = ev.target.closest("[data-newtopic]");
+    if (nt) return newTopic(nt.dataset.newtopic);
+    const t = ev.target.closest("[data-topic]");
+    if (!t) return;
+    try {
+      if (t.dataset.tjoin) { await api(`/api/chat/rooms/${t.dataset.topic}/join`, { method: "POST", body: "{}" }); await loadRooms(); }
+      await openRoom(t.dataset.topic);
+    } catch (e) { toast(e.message, true); }
+  };
+  $("#c-pins").onclick = (ev) => {
+    if (ev.target.closest("[data-pall]")) return pinsPanel();
+    const j = ev.target.closest("[data-pjump]");
+    if (!j) return;
+    jumpTo(j.dataset.pjump);
+    if (C.pins.length > 1) { C.pinAt = (C.pinAt + 1) % C.pins.length; paintPins(); }
+  };
   wirePickers();
-  $("#c-linkbtn").onclick = linkMenu;
+  $("#c-linkbtn").onclick = () => linkMenu();
   $("#c-emoji").onclick = () => {
     const ta = $("#c-text");
     emojiPicker($("#c-emoji"), (e) => insertAt(ta, ta.selectionStart, ta.selectionEnd - ta.selectionStart, e), true);
@@ -1219,6 +1466,37 @@ function wire() {
       box.scrollTop = box.scrollHeight - h0;
       return;
     }
+    if (ev.target.closest("[data-latest]")) return openRoom(C.room.id);
+    const pj = ev.target.closest("[data-pjump]");
+    if (pj) return jumpTo(pj.dataset.pjump);
+    const msgOf = (el, k) => C.msgs.find((x) => x.id === el.dataset[k]);
+    const settle = async (m, job) => {
+      try { const r = await job; Object.assign(m, r); if (!r.voters) delete m.voters; paintMsgs(false); }
+      catch (e) { toast(e.message, true); }
+    };
+    const vo = ev.target.closest("[data-vote]");
+    if (vo) { const m = msgOf(vo, "vote"); return m && settle(m, vote(m, vo.dataset.opt)); }
+    const pc = ev.target.closest("[data-pclose]");
+    if (pc) {
+      const m = msgOf(pc, "pclose");
+      if (m && (pc.dataset.on !== "1" || confirm("Close this poll? Nobody can vote after that (you can reopen it)."))) settle(m, closePoll(m, pc.dataset.on === "1"));
+      return;
+    }
+    const rs = ev.target.closest("[data-rsvp]");
+    if (rs) { const m = msgOf(rs, "rsvp"); return m && settle(m, rsvp(m, rs.dataset.v)); }
+    const ee = ev.target.closest("[data-evedit]");
+    if (ee) {
+      const m = msgOf(ee, "evedit");
+      const c = m && await eventForm(m.card);
+      if (c) settle(m, api(`/api/chat/messages/${m.id}/event`, { method: "PATCH", body: JSON.stringify(c) }));
+      return;
+    }
+    const ec = ev.target.closest("[data-evcancel]");
+    if (ec) {
+      const m = msgOf(ec, "evcancel");
+      if (m && confirm(`Cancel "${m.card.title}"? Everyone in the chat is told.`)) settle(m, api(`/api/chat/messages/${m.id}/event`, { method: "PATCH", body: JSON.stringify({ cancelled: true }) }));
+      return;
+    }
     const fw = ev.target.closest("[data-fwd]");
     if (fw) return forwardMsg(C.msgs.find((x) => x.id === fw.dataset.fwd));
     const rx = ev.target.closest("[data-rx]");
@@ -1255,7 +1533,7 @@ function wire() {
       const m = C.msgs.find((x) => x.id === rp.dataset.reply);
       C.reply = m.id;
       $("#c-reply").hidden = false;
-      $("#c-reply").innerHTML = `Replying to <b>${esc(m.author)}</b>: ${esc((m.body || "").slice(0, 80))} <button class="ghost linkish" id="c-noreply">cancel</button>`;
+      $("#c-reply").innerHTML = `Replying to <b>${esc(m.author || "Update")}</b>: ${esc(plainLabels(m.body || (m.card && (m.card.question || m.card.title)) || "").slice(0, 80))} <button class="ghost linkish" id="c-noreply">cancel</button>`;
       $("#c-noreply").onclick = () => { C.reply = null; $("#c-reply").hidden = true; };
       $("#c-text").focus();
     }
@@ -1272,6 +1550,8 @@ function wire() {
     const t = ev.target.closest("[data-etext]");
     if (!t) return;
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); saveEdit(t.dataset.etext); }
+    const fk = formatKey(ev);
+    if (fk) { ev.preventDefault(); applyFormat(t, fk); C.editText = t.value; }
     if (ev.key === "Escape") { ev.preventDefault(); stopEdit(); }
   });
 }
@@ -1333,7 +1613,7 @@ async function start() {
       try { await api(`/api/chat/rooms/${id}/join`, { method: "POST", body: "{}" }); await loadRooms(); } catch (e) {}
     }
     if (opening) await opening;
-    if (!C.room || C.room.id !== id) await openRoom(id).catch((e) => toast(e.message, true));
+    if (!C.room || C.room.id !== id || q.get("msg")) await openRoom(id, q.get("msg") || "").catch((e) => toast(e.message, true));
   } else if (q.get("task")) await openRoom(TASK + q.get("task")).catch((e) => toast(e.message, true));
   else if (!opening && C.rooms[0] && innerWidth > 900) await openRoom(C.rooms[0].id);
 }
