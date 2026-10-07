@@ -39,25 +39,47 @@ try {
 }
 
 const t0 = Date.now();
-const head = fs.readFileSync(src, { encoding: "latin1", flag: "r" }).slice(0, 2000);
+/* Only the start of the file is read for the check: reading a whole IFC
+   as text fails past 512 MB ("Cannot create a string longer than ..."). */
+const fd = fs.openSync(src, "r");
+const hb = Buffer.alloc(4096);
+const hn = fs.readSync(fd, hb, 0, 4096, 0);
+fs.closeSync(fd);
+const head = hb.subarray(0, hn).toString("latin1");
+const MB = fs.statSync(src).size / 1048576;
 if (!/ISO-10303-21/.test(head)) {
   console.error("That file is not an IFC (STEP) file. Ask for IFC 2x3 or IFC4 - .ifc, not .ifczip or .ifcxml.");
   process.exit(4);
 }
 const schema = (head.match(/FILE_SCHEMA\s*\(\s*\(\s*'([^']+)'/i) || [])[1] || "?";
-console.log(`reading ${path.basename(src)} (${(fs.statSync(src).size / 1048576).toFixed(1)} MB, ${schema})`);
+console.log(`reading ${path.basename(src)} (${MB.toFixed(1)} MB, ${schema})`);
+
+/* One line saying why, for the page (refs.py shows the last line). */
+function fail(e) {
+  const m = String((e && (e.message || e)) || "");
+  const big = /memory|alloc|out of bounds|RangeError|heap|Array buffer|too large|ERR_STRING_TOO_LONG/i.test(m + " " + (e && e.name));
+  console.error(big
+    ? `The IFC is too big to convert on this server (${MB.toFixed(0)} MB). Ask for it split (by building, storey or discipline) or exported without unneeded property sets, or give the server more memory.`
+    : "The IFC could not be converted: " + m.split("\n")[0].slice(0, 240));
+  process.exit(5);
+}
+process.on("uncaughtException", fail);
+process.on("unhandledRejection", fail);
 
 const importer = new FRAGS.IfcImporter();
 importer.wasm = { absolute: true, path: WASM };
 let last = -1;
-const bytes = await importer.process({
-  bytes: new Uint8Array(fs.readFileSync(src)),
-  raw: false,
-  progressCallback: (p) => {
-    const pct = Math.floor((typeof p === "number" ? p : 0) * 100 / 10) * 10;
-    if (pct !== last) { last = pct; console.log(`progress ${pct}%`); }
-  },
-});
+let bytes;
+try {
+  bytes = await importer.process({
+    bytes: new Uint8Array(fs.readFileSync(src)),
+    raw: false,
+    progressCallback: (p) => {
+      const pct = Math.floor((typeof p === "number" ? p : 0) * 100 / 10) * 10;
+      if (pct !== last) { last = pct; console.log(`progress ${pct}%`); }
+    },
+  });
+} catch (e) { fail(e); }
 const tmp = out + ".part";
 fs.writeFileSync(tmp, bytes);
 fs.renameSync(tmp, out);

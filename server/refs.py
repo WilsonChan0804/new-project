@@ -82,6 +82,13 @@ def placement_of(p):
             "x": num("x", 1e9), "y": num("y", 1e9), "z": num("z", 1e7), "rot": num("rot", 360)}
 
 
+def reason(err):
+    """The line of the converter's output that says why (not the stack)."""
+    lines = [l.strip() for l in (err or "").splitlines() if l.strip()]
+    keep = [l for l in lines if not re.match(r"^(at |\^|Node\.js v|\}|\{|code:|file:///)", l) and len(l) > 3]
+    return (keep[-1] if keep else "The conversion failed")[:300]
+
+
 def convert(core, root, pid, rid, src, out, after=None):
     """IFC -> .frag on the server's background worker."""
     node = core.node_bin()
@@ -100,7 +107,8 @@ def convert(core, root, pid, rid, src, out, after=None):
         t0 = time.time()
         update_ref(root, rid, status="converting", progress=0)
         try:
-            proc = subprocess.Popen([node, "--max-old-space-size=8192", script, src, out],
+            big = os.path.getsize(src) > 1024 * 1048576
+            proc = subprocess.Popen([node, "--max-old-space-size=%d" % (12288 if big else 8192), script, src, out],
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for line in proc.stdout:
                 m = re.match(r"progress (\d+)%", line.strip())
@@ -112,7 +120,7 @@ def convert(core, root, pid, rid, src, out, after=None):
             code, err = 1, str(e)
         if code or not os.path.isfile(out):
             core.bg_log("%s: IFC %s failed: %s" % (pid, os.path.basename(src), (err or "")[-600:]))
-            update_ref(root, rid, status="failed", error=(err or "The conversion failed").strip()[-400:])
+            update_ref(root, rid, status="failed", error=reason(err))
             return
         mb = round(os.path.getsize(out) / 1048576.0, 1)
         core.bg_log("%s: IFC %s converted in %.0f s (%s MB)" % (pid, os.path.basename(src), time.time() - t0, mb))
