@@ -1,0 +1,11 @@
+{
+  "name": "lwk-viewer-tools",
+  "private": true,
+  "description": "Server-side tools of the LWK Viewer: phone copies, tiles and the IFC converter for consultant models. Run `npm install` here once (needs internet).",
+  "type": "module",
+  "dependencies": {
+    "@thatopen/fragments": "3.4.7",
+    "three": "0.182.0",
+    "web-ifc": "0.0.78"
+  }
+}

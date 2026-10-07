@@ -10,7 +10,17 @@ Revit review for sheets (2D) and the model (3D), with issues, whiteboards, a das
 Team task lists, replacing Lark Tasks, connected to the viewer.
 
 - **Lists per team** (e.g. LWK-MANILA). The groups inside a list are usually the jobs (SKW, Kai Tak 2A3, NDH ...). A group can be linked to a viewer project (`...` > Groups and projects).
-- **Views:** List (grouped table, inline editing, sub-tasks, drag to reorder or regroup), Kanban (drag cards between columns), Gantt (drag bars, or drag their ends), Dashboard (total / completed / incomplete / overdue, by assignee, average duration, by project, due soon), and Activities (everything that changed).
+- **Views:**
+  - **List:** grouped table, inline editing and drag to reorder or regroup.
+  - **Kanban:** drag cards between columns. The sideways scrollbar is always on screen; Shift+wheel, dragging empty space and the ‹ › buttons also scroll.
+  - **Gantt:** drag bars or their ends. Each change asks first (Cancel puts the bar back; "Don't ask again today" turns that off on the device).
+  - **Dashboard:** total / completed / incomplete / overdue, by assignee, average duration, by project, due soon.
+  - **Activities:** everything that changed.
+- **Sub-tasks under sub-tasks**, as in Lark, up to 5 levels:
+  - the **+** on a row adds one;
+  - dropping a task on the right half of another task's title makes it its sub-task;
+  - the task window lists them with their own add box.
+  - Deleting a task deletes everything under it (Ctrl+Z brings it all back).
 - **Quick access:** Owned, Subscribed, All, Created, Assigned and Completed, across every list you can see.
 - **People:** the organisation (the accounts on the server) by team, office, company or discipline, with each person's open and overdue tasks.
 - **Custom fields:** person, select, text, date and number columns (by default Modelers and Project Manager).
@@ -138,6 +148,104 @@ What is coming up for you, by date:
 - Writing into Outlook itself (two-way) would need an Azure app registration for Microsoft Graph, from IT.
 
 Data: `<data>/calendar_keys.json`.
+
+## Notifications and the app
+
+**While any viewer page is open** (a tab, a window, or the installed app):
+- **New messages** show as system notifications on Windows, macOS and Android. A chat you are looking at stays quiet. A click opens the chat at the message.
+- **Unread counts** show as "(3)" in the tab title, on the app's icon and on every Chat link. They update within a second or two, without reloading.
+- **The bell** in the header has the settings:
+  - turn notifications on (the browser asks once);
+  - choose **every message**, **only @mentions and direct messages**, or **nothing**;
+  - turn push on for this device;
+  - install the app.
+- **Mute** a single chat in Chat info. A muted chat still notifies you when you are @mentioned.
+
+**Install as an app.** The viewer installs as an app with its own window and icon, and shortcuts to Chat, Tasks, Calendar, Folders and Projects:
+- **Edge / Chrome:** the bell > *Install the app*, or the install icon in the address bar.
+- **Android:** menu > *Add to Home screen*.
+- **iPhone / iPad:** Safari > Share > *Add to Home Screen*.
+
+**Push (no page open).** When the viewer is reached over **https** (the Cloudflare tunnel, or a certificate on the server), the bell > *Turn on for this device* delivers messages to that phone or computer even with the app closed. Details:
+- The server signs with its own key (`<data>/vapid.json`, made on first start) and needs only the `cryptography` package (`pip install -r requirements.txt`). No account with Google or Apple is needed.
+- On plain http, notifications still come while a page is open.
+
+Data: `<data>/push.db` holds the devices; levels and muted chats are in `chat.db`.
+
+## Undo (Ctrl+Z)
+
+**Ctrl+Z** (Cmd+Z on a Mac) undoes the last change and **Ctrl+Y** or Ctrl+Shift+Z redoes it. A note says what was undone, with **Redo**. Inside a text box the keys keep their usual typing undo. What can be undone:
+- **Tasks:**
+  - any field change;
+  - Kanban moves, list drags and Gantt drags;
+  - a new task;
+  - a delete (it comes back with its sub-tasks).
+- **Messenger:**
+  - a delete (the sender's message comes back, within a day);
+  - an edit, a pin and a reaction.
+- **Folders:** delete, rename, move, upload and a new folder.
+
+The Sheets and 3D pages keep their own undo for markups.
+
+## Folders (`folders.html`)
+
+Each project's files, in a folder on the server (the VM's drive, a network share, later a cloud or office server).
+- **Where:**
+  - a site admin sets the path: Folders > ⋯ > *Folder on the server*;
+  - until then it is `<data>/project_files/<project id>`;
+  - files put into that folder another way (Explorer, a sync tool) simply show up.
+- **Working with files:**
+  - browse by the tree, the path bar or search;
+  - upload by dropping files or whole folders (up to 2 GB each);
+  - make folders, rename and move (drag onto a folder);
+  - preview PDFs, pictures and videos, or download.
+- **Who may do what:**
+  - the project's people see, upload, organise and rename;
+  - **delete** is for the person who uploaded it, or a project admin;
+  - deleted things wait in **Recently deleted** and can be put back (or press Ctrl+Z).
+- **Pinned** documents are pinned by project admins for everyone; **Starred** ones are each person's own. Both follow a file when it is renamed or moved.
+- **Folder templates:**
+  - a project admin saves a project's folder tree (folders only) as a template (⋯ > *Save these folders as a template*);
+  - in another project, *Lay out folders from a template* makes the folders that are missing;
+  - nothing is ever deleted or renamed.
+- **To Sheets:** a PDF > ⋯ > *Add to the Sheets page* makes its pages into a sheet set of their own, as an upload on the Sheets page does.
+
+Data: `<data>/files_meta.db` (uploader, pins, stars, bin), `<data>/files_roots.json`, `<data>/folder_templates.json`.
+
+## Consultant models in 3D (IFC)
+
+Ask consultants for **IFC** (IFC 2x3 or IFC4). SketchUp, Revit, Tekla, ArchiCAD and Rhino all export it.
+- It keeps every element, its properties and its real coordinates.
+- "WebGL" is how a browser draws. It is not a file to exchange.
+
+The server converts IFC into the viewer's own 3D format with `server/tools/ifc2frag.mjs`. This needs Node.js (already used for the phone copies) and, once, `npm install` in `server/tools`.
+
+Three ways to use a consultant model:
+1. **Added to this project's 3D:** 3D > Models > **+ Consultant model (IFC)**.
+   - It is listed under *Consultant models* with on/off and a see-through slider.
+   - **Place** puts it where it belongs, for everyone:
+     - **shared coordinates** (survey: what a coordinated consultant exports);
+     - **this model's origin**;
+     - or **no coordinates: set in the middle**;
+     - then move east / north / up and turn by hand, with a live preview.
+   - Its elements can be clicked and issues raised on them.
+2. **Overlay another project's model:** **+ Overlay another project** picks any project you can open and one of its models (an IFC project or a Revit export). It is placed on the shared coordinates the two projects use.
+3. **A 3D page of its own:** Admin > Projects > **New 3D project from IFC** makes a project holding only that model. Use it as a standalone reference when its coordinates match nothing. It can still be overlaid elsewhere later.
+
+Data: `<project>/refs/` and `<project>/refs.json`. A Revit export never touches them.
+
+## 3D issues open as they were made
+
+Issues raised in 3D keep the camera and everything that shaped the view:
+- the section box (with its rotation) or section plane;
+- hidden elements and parallel / perspective projection;
+- the floor plan, and whether the author was walking.
+
+**Show in view**, a click in the issue list and links (`?select=`) all go back to exactly that.
+
+In Revit, *LWK Issues > Go to* opens:
+- an issue seen through a camera (the viewer's normal view, and always when walking) in a **perspective camera view "LWK Issue - <you> (camera)"**, from the same eye and with the same section box;
+- parallel views in the isometric issue view, as before.
 
 ## Sheets from outside: their own sets
 

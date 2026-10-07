@@ -762,18 +762,32 @@ def element_by_ifc_guid(doc, guid):
         return None
 
 
-def issue_view(doc, user):
+def wants_perspective(vp):
+    """Was the issue seen through a perspective camera (the viewer's usual
+    one, and always when walking)? Then Revit opens it in a perspective
+    view from the same eye. An isometric view from an eye inside the
+    building shows the whole building from outside - which is what a
+    walk-through issue used to open as."""
+    if not vp or not vp.get("position_internal_mm") or not vp.get("target_internal_mm"):
+        return False
+    if vp.get("walk"):
+        return True
+    return vp.get("ortho") is not True
+
+
+def issue_view(doc, user, perspective=False):
     """A personal 3D view for going to issues, so nobody's own 3D view is
-    boxed and turned by someone else's click."""
+    boxed and turned by someone else's click. Two of them: an isometric one,
+    and a perspective (camera) one for issues seen through a camera."""
     from Autodesk.Revit.DB import (FilteredElementCollector, View3D, ViewFamilyType,
                                    ViewFamily)
-    name = "LWK Issue - %s" % (user or os.environ.get("USERNAME", "me"))
+    name = "LWK Issue - %s%s" % (user or os.environ.get("USERNAME", "me"), " (camera)" if perspective else "")
     for v in FilteredElementCollector(doc).OfClass(View3D):
-        if not v.IsTemplate and v.Name == name:
+        if not v.IsTemplate and v.Name == name and bool(v.IsPerspective) == bool(perspective):
             return v
     vft = [t for t in FilteredElementCollector(doc).OfClass(ViewFamilyType)
            if t.ViewFamily == ViewFamily.ThreeDimensional][0]
-    v = View3D.CreateIsometric(doc, vft.Id)
+    v = View3D.CreatePerspective(doc, vft.Id) if perspective else View3D.CreateIsometric(doc, vft.Id)
     try:
         v.Name = name
     except Exception:
@@ -866,6 +880,18 @@ def viewpoint_view(view, vp, p):
         view.SetOrientation(ViewOrientation3D(eye, up, fwd))
     except Exception:
         pass
+    if view.IsPerspective:
+        # a camera: it shows what is in front of the eye, as the author saw
+        # it - no zooming afterwards (that would move the eye), and no far
+        # clip cutting off the room beyond
+        try:
+            from Autodesk.Revit.DB import BuiltInParameter
+            fc = view.get_Parameter(BuiltInParameter.VIEWER_BOUND_ACTIVE_FAR)
+            if fc is not None and not fc.IsReadOnly:
+                fc.Set(0)
+        except Exception:
+            pass
+        return "camera"
     # what to fill the window with: the box when there is one, else round the target
     if planes:
         def world(u, v, w):

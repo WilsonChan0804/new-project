@@ -95,6 +95,8 @@ export function setProject(id) {
 
 /* Where this project's files are served from. */
 export const dataUrl = (rel) => {
+  // another project's file (a model overlaid from it): already a whole path
+  if (typeof rel === "string" && rel.startsWith("/data/")) return rel;
   const p = currentProject();
   return "/data/" + (p ? encodeURIComponent(p) + "/" : "") + rel;
 };

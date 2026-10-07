@@ -979,7 +979,8 @@ function askPrepare() {
 
 async function loadTiled(entry) {
   const t0 = performance.now();
-  const F = lwkFrame();
+  // a model overlaid from another project brings its own frame (refs below)
+  const F = entry._frame || lwkFrame();
   const idxUrl = Store.dataUrl(tileName(entry, ".tidx"));
   const res = await fetch(idxUrl).catch(() => null);
   if (!res || !res.ok) return false;
@@ -1058,7 +1059,7 @@ async function loadTiled(entry) {
 
 async function loadLwk(entry, mode, near) {
   const t0 = performance.now();
-  const F = lwkFrame();
+  const F = entry._frame || lwkFrame();
   if (!F) throw new Error("this export has no lwk_frame in its manifest");
   Tele.note(`${entry.name}: loading (${entry.fragments_mb != null ? entry.fragments_mb + " MB" : "size unknown"}`
     + `${entry.tiles ? ", has tiles" : entry.tiles === false ? ", no tiles" : ""}${mode ? ", " + mode : ""}${near ? ", near" : ""})`);
@@ -1847,6 +1848,9 @@ function worldBox(part) {
     part.object.updateMatrixWorld(true);
     return out.copy(part.model.box).applyMatrix4(part.object.matrixWorld);
   }
+
+  // a consultant model (refs): the library's box already says where it sits
+  if (part.isRef && part.model && part.model.box && !part.model.box.isEmpty()) return out.copy(part.model.box);
 
   const live = new THREE.Box3().setFromObject(part.object);
   if (!live.isEmpty()) out.union(live);
@@ -5074,6 +5078,11 @@ function selectionFromBrowser() {
 }
 window.LWK3D = Object.assign(window.LWK3D || {}, {
   selectedElements: () => (S.selEls || []).filter((x) => x.id || x.uid),
+  // where each loaded model sits in the scene (support and tests)
+  extents: () => [...S.loaded].map(([k, rec]) => [k, rec.parts.map((p) => {
+    const b = worldBox(p);
+    return b.isEmpty() ? null : [b.min.toArray().map((v) => +v.toFixed(2)), b.max.toArray().map((v) => +v.toFixed(2))];
+  })]),
 });
 
 /* The inspect panel's Copy Revit ID / Show in Revit / + Task. */
@@ -5339,7 +5348,7 @@ function shortModelName(name, models) {
 }
 
 function renderModelList() {
-  const models = (S.manifest.models || []).filter((m) => m.fragments);
+  const models = (S.manifest.models || []).filter((m) => m.fragments && m.status !== "converting");
   $("#model-count").textContent = `(${models.length})`;
   const ul = $("#model-list");
   ul.innerHTML = "";
@@ -7339,7 +7348,10 @@ async function boot() {
   if (!$("#project").textContent) $("#project").textContent =
     (S.manifest.source && S.manifest.source.title) || "";
 
-  const withFrags = (S.manifest.models || []).filter((m) => m.fragments);
+  // a model made from an IFC is not there until the server has converted it
+  const converting = (S.manifest.models || []).filter((m) => m.status === "converting");
+  const withFrags = (S.manifest.models || []).filter((m) => m.fragments && m.status !== "converting");
+  if (converting.length && !withFrags.length) { waitConversion(); return; }
   if (!withFrags.length) {
     status("No fragments in the manifest. Run tools/convert.bat on this "
       + "export folder first.");
@@ -7884,6 +7896,8 @@ async function boot() {
     try { await box._loading; } catch (e) { /* reported by the handler */ }
   }
   S.modelsReady = true;
+  // consultant models and overlays (refs.py), after the project's own
+  initRefs().catch((e) => showError("refs", e));
   // from the sheets page's Files window: "Issues from BCF"
   if (new URLSearchParams(location.search).get("importbcf") === "1") {
     const ib = document.getElementById("import-bcf"), bm = document.getElementById("bcf-menu");
@@ -7967,6 +7981,449 @@ function walkBoxes() {
   _walkBoxes = { t: now, list };
   return list;
 }
+
+/* ------------------------------------------------- consultant models */
+
+/* Models from other companies (refs.py): an IFC the server converted, or
+   another project's 3D model overlaid on this one. Each is placed by its
+   own coordinates:
+     shared    - its IFC numbers are the project's survey coordinates (what
+                 Revit's "shared coordinates" export gives, and what a
+                 coordinated consultant uses);
+     internal  - its numbers are this Revit model's internal origin;
+     fit       - nobody agreed coordinates: set down on the middle of the
+                 project, to be moved by hand;
+   then moved and turned by hand on top (Place). Placement and the default
+   on/off are the project's (saved for everyone); a person's own on/off
+   and transparency stay on their device.
+
+   The frames, checked against a converted IFC: fragments keeps the IFC's
+   world coordinates (Y-up metres, o) and stores geometry as local =
+   coord . o; the scene is reached with T . Off . coord^-1. */
+const RF = { list: [], open: null, poll: null, sources: null, canAdd: false };
+const refKey = (r) => "ref:" + r.id;
+const refPref = (r, k, d) => { try { const v = localStorage.getItem(`lwk-ref:${Store.currentProject ? Store.currentProject() : ""}:${r.id}:${k}`); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const refSet = (r, k, v) => { try { localStorage.setItem(`lwk-ref:${Store.currentProject ? Store.currentProject() : ""}:${r.id}:${k}`, JSON.stringify(v)); } catch (e) {} };
+
+async function refApi(path, opts) {
+  const o = Object.assign({}, opts || {});
+  o.headers = Object.assign(Store.authHeaders(), o.json === false ? {} : { "Content-Type": "application/json" }, o.headers || {});
+  const r = await fetch(path, o);
+  let d = null;
+  try { d = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((d && d.detail) || "HTTP " + r.status);
+  return d;
+}
+
+/* this project's shared coordinates (Y-up metres) -> the scene */
+function sharedYupToScene() {
+  const F = lwkFrame();
+  if (F) return F.C.clone();
+  const hp = firstHostPart();
+  if (!hp || !hp.coord) return null;
+  hp.model.object.updateMatrix();
+  return new THREE.Matrix4().multiplyMatrices(hp.model.object.matrix, hp.coord);
+}
+function internalToSharedZ() {
+  const F = lwkFrame();
+  if (F) return F.IS.clone();
+  const PL = projectLocationMatrix();
+  return PL ? PL.clone().invert() : new THREE.Matrix4();
+}
+
+/* the hand-made move and turn, in shared axes (Z up, mm and degrees) */
+function refOffset(pl) {
+  const T = new THREE.Matrix4().makeTranslation(fromMM(pl.x || 0), fromMM(pl.y || 0), fromMM(pl.z || 0));
+  const R = new THREE.Matrix4().makeRotationZ((pl.rot || 0) * Math.PI / 180);
+  return Zm.clone().invert().multiply(T).multiply(R).multiply(Zm);
+}
+
+function hostBox() {
+  const box = new THREE.Box3();
+  for (const [k, rec] of S.loaded) {
+    if (k.startsWith("ref:")) continue;
+    for (const p of rec.parts) { const b = worldBox(p); if (!b.isEmpty()) box.union(b); }
+  }
+  return box;
+}
+
+/* original (Y-up metres) -> scene, for a placement */
+function refTarget(pl, oBox) {
+  const Zi = Zm.clone().invert();
+  let T = sharedYupToScene();
+  if (pl.mode === "internal" && T) T = T.multiply(Zi).multiply(internalToSharedZ()).multiply(Zm);
+  if (pl.mode === "fit" || !T) {
+    // its footprint's middle on the project's, its bottom on the project's bottom
+    const hb = hostBox();
+    const c = oBox && !oBox.isEmpty() ? oBox.getCenter(new THREE.Vector3()) : new THREE.Vector3();
+    const want = hb.isEmpty() ? new THREE.Vector3() : hb.getCenter(new THREE.Vector3());
+    const dy = hb.isEmpty() || !oBox || oBox.isEmpty() ? 0 : hb.min.y - oBox.min.y;
+    T = new THREE.Matrix4().makeTranslation(want.x - c.x, dy, want.z - c.z);
+  }
+  return T.multiply(refOffset(pl));
+}
+
+function placeRef(rec, pl) {
+  const p = rec.parts[0];
+  // a fast 3D model overlaid from another project is placed as it loads
+  if (!p || !p.coord || rec.lwk) return;
+  const oBox = rec.oBox;
+  const X = refTarget(pl, oBox).multiply(p.coord.clone().invert());
+  X.decompose(p.model.object.position, p.model.object.quaternion, p.model.object.scale);
+  p.model.object.updateMatrixWorld(true);
+  S.dirty = true;
+  S._camKey = null;
+  if (S.fragments) S.fragments.update(true).catch(() => {});
+}
+
+async function setRefOpacity(rec, v) {
+  const m = rec.parts[0] && rec.parts[0].model;
+  if (!m || !m.setOpacity) return;
+  try {
+    if (v >= 0.99) await m.resetOpacity(undefined);
+    else await m.setOpacity(undefined, v);
+  } catch (e) {
+    try {
+      const ids = await m.getItemsIdsWithGeometry();
+      if (v >= 0.99) await m.resetOpacity(ids); else await m.setOpacity(ids, v);
+    } catch (e2) { /* left solid */ }
+  }
+  S.dirty = true;
+  if (S.fragments) S.fragments.update(true).catch(() => {});
+}
+
+/* the entry an overlay loads: the other project's model, its paths whole */
+async function overlayEntry(r) {
+  const res = await fetch(`/data/${encodeURIComponent(r.project)}/manifest.json`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${r.project}: you cannot open that project, or it has no 3D`);
+  const man = await res.json();
+  const m = (man.models || []).find((x) => x.name === r.model);
+  if (!m) throw new Error(`${r.model} is not in ${r.project} any more`);
+  const e = JSON.parse(JSON.stringify(m));
+  const whole = (p) => (p && !p.startsWith("/data/") ? `/data/${encodeURIComponent(r.project)}/${p}` : p);
+  for (const k of ["fragments", "props", "mobile", "tiles_index"]) if (typeof e[k] === "string") e[k] = whole(e[k]);
+  e.name = refKey(r);
+  e.role = "ref";
+  e.instances = [];
+  e._lwkFrame = man.lwk_frame || null;
+  return e;
+}
+
+async function loadRef(r) {
+  if (S.loaded.has(refKey(r)) || r.status !== "ready") return;
+  const pl = r.placement || { mode: "shared" };
+  if (r.kind === "overlay") {
+    const e = await overlayEntry(r);
+    if (e.format === "lwkm") {
+      /* its internal -> its shared, then this project's shared -> scene */
+      const f = e._lwkFrame;
+      const IS = new THREE.Matrix4();
+      const t = f && f.internal_to_shared_mm;
+      if (t && t.length === 12) IS.set(t[0], t[1], t[2], t[3] / 1000, t[4], t[5], t[6], t[7] / 1000, t[8], t[9], t[10], t[11] / 1000, 0, 0, 0, 1);
+      const T = refTarget(Object.assign({}, pl, pl.mode === "internal" ? { mode: "shared" } : {}), null);
+      const Zi = Zm.clone().invert();
+      const C = (lwkFrame() || {}).C || new THREE.Matrix4();
+      e._frame = { base: T.clone().multiply(Zi).multiply(IS), C };
+      e.tiles = false;
+      await loadLwk(e, "full");
+      const rec = S.loaded.get(refKey(r));
+      if (rec) { rec.ref = r; rec.oBox = null; }
+      return;
+    }
+    r = Object.assign({}, r, { fragments: e.fragments });
+  }
+  const url = Store.dataUrl(r.fragments);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${r.name}: HTTP ${res.status}`);
+  const buf = await res.arrayBuffer();
+  const id = refKey(r);
+  const model = await S.fragments.load(buf, { modelId: id });
+  model.useCamera && model.useCamera(S.camera);
+  S.scene.add(model.object);
+  await S.fragments.update(true);
+  let coord = null;
+  try { coord = await model.getCoordinationMatrix(); } catch (e) { coord = new THREE.Matrix4(); }
+  const part = { id, model, object: model.object, coord, place: null, idx: 0, isRef: true };
+  const rec = { entry: { name: id, role: "ref", fragments: r.fragments }, parts: [part], buf: null, places: [null],
+                light: false, calib: null, busy: null, ref: r };
+  /* its extent in its own coordinates (for "fit"): model.box is where it
+     sits now (world = object . local), and local = coord . original */
+  try {
+    const mb = model.box;
+    model.object.updateMatrixWorld(true);
+    const toO = coord.clone().invert().multiply(model.object.matrixWorld.clone().invert());
+    rec.oBox = mb && !mb.isEmpty() ? mb.clone().applyMatrix4(toO) : null;
+  } catch (e) { rec.oBox = null; }
+  S.loaded.set(id, rec);
+  placeRef(rec, pl);
+  const op = refPref(r, "opacity", r.opacity == null ? 1 : r.opacity);
+  if (op < 0.99) await setRefOpacity(rec, op);
+  if (S.display && S.display !== "shaded") applyDisplayMaterials();
+  applyCategories().then(renderCategories);
+  status(`${r.name}: shown${r.company ? " (" + r.company + ")" : ""}.`);
+}
+
+async function initRefs() {
+  if (!$("#ref-panel")) return;
+  try {
+    const d = await refApi("/api/refs");
+    RF.list = d.refs || [];
+    RF.canAdd = !!d.can_add;
+  } catch (e) {
+    RF.list = [];
+    RF.canAdd = false;
+  }
+  renderRefs();
+  for (const r of RF.list) {
+    if (r.kind === "host" || r.status !== "ready") continue;
+    if (!refPref(r, "on", r.on !== false)) continue;
+    try { await loadRef(r); } catch (e) { status(e.message); }
+  }
+  renderRefs();
+  pollRefs();
+}
+
+/* a conversion under way: asked again every few seconds until it is done */
+function pollRefs() {
+  clearTimeout(RF.poll);
+  if (!RF.list.some((r) => r.status === "waiting" || r.status === "converting")) return;
+  RF.poll = setTimeout(async () => {
+    try {
+      const was = new Map(RF.list.map((r) => [r.id, r.status]));
+      RF.list = (await refApi("/api/refs")).refs || [];
+      for (const r of RF.list) {
+        if (r.status === "ready" && was.get(r.id) !== "ready" && r.kind !== "host") {
+          try { await loadRef(r); } catch (e) { status(e.message); }
+        }
+      }
+      renderRefs();
+    } catch (e) {}
+    pollRefs();
+  }, 3000);
+}
+
+/* A project made from an IFC, its model still being converted. */
+function waitConversion() {
+  status("The model is being converted from IFC on the server - it shows here by itself when it is ready.");
+  const tick = async () => {
+    try {
+      const d = await refApi("/api/refs");
+      const h = (d.refs || []).find((r) => r.kind === "host");
+      if (h && h.status === "failed") { status("The conversion failed: " + (h.error || "")); return; }
+      if (h && h.status === "ready") { location.reload(); return; }
+      status(`Converting the IFC on the server ... ${h ? h.progress || 0 : 0}%`);
+    } catch (e) {}
+    setTimeout(tick, 3000);
+  };
+  tick();
+}
+
+
+function renderRefs() {
+  const box = $("#ref-panel");
+  if (!box) return;
+  const list = RF.list.filter((r) => r.kind !== "host");
+  box.hidden = !list.length && !RF.canAdd;
+  let h = `<div class="ref-head">Consultant models <span class="muted">${list.length || ""}</span></div>`;
+  for (const r of list) {
+    const loaded = S.loaded.has(refKey(r));
+    const on = r.status === "ready" && refPref(r, "on", r.on !== false);
+    const st = r.status === "ready" ? "" : r.status === "failed"
+      ? `<div class="ref-bad">Not converted: ${escH(r.error || "")}${r.can_change && r.kind === "ifc" ? ` <button class="ghost ref-b" data-rf="retry">Try again</button>` : ""}</div>`
+      : `<div class="ref-prog"><i style="width:${r.progress || 0}%"></i></div><small class="muted">Converting on the server ... ${r.progress || 0}%</small>`;
+    const what = [r.company, r.discipline, r.kind === "overlay" ? "from " + r.project : ""].filter(Boolean).join(" · ");
+    h += `<div class="ref-row" data-ref="${escH(r.id)}">`
+      + `<label class="row-check" title="${escH(r.source_file || r.name)}"><input type="checkbox" data-rf="on"${on ? " checked" : ""}${r.status !== "ready" ? " disabled" : ""}> <span class="nm">${escH(r.name)}</span></label>`
+      + (what ? `<small class="muted ref-what">${escH(what)}</small>` : "")
+      + st
+      + (r.status === "ready" ? `<div class="ref-tools"><input type="range" min="10" max="100" step="5" value="${Math.round(refPref(r, "opacity", r.opacity == null ? 1 : r.opacity) * 100)}" data-rf="op" title="See-through"${loaded ? "" : " disabled"}>`
+        + (r.can_change ? `<button class="ghost ref-b" data-rf="place"${loaded ? "" : " disabled"} title="Move and turn it into place (for everyone)">Place</button>` : "")
+        + `</div>` : "")
+      + (r.can_change ? `<button class="ghost ref-b ref-x" data-rf="del" title="Remove from this project">&times;</button>` : "")
+      + (RF.open === r.id ? placeHtml(r) : "")
+      + `</div>`;
+  }
+  if (RF.canAdd) {
+    h += `<div class="ref-add"><button class="ghost ref-b" data-rf="add">+ Consultant model (IFC)</button>`
+      + `<button class="ghost ref-b" data-rf="overlay">+ Overlay another project</button></div>`
+      + `<input type="file" id="ref-file" accept=".ifc" hidden>`
+      + `<div id="ref-form"></div>`;
+  }
+  box.innerHTML = h;
+}
+
+function placeHtml(r) {
+  const pl = r.placement || { mode: "shared" };
+  const num = (k, lab, unit) => `<label>${lab}<input type="number" step="${k === "rot" ? 0.5 : 10}" data-pl="${k}" value="${Number(pl[k] || 0)}"><small>${unit}</small></label>`;
+  const mode = (v, t, d) => `<label class="row-check" title="${d}"><input type="radio" name="pl-mode-${escH(r.id)}" data-pl="mode" value="${v}"${(pl.mode || "shared") === v ? " checked" : ""}> ${t}</label>`;
+  return `<div class="ref-place">`
+    + mode("shared", "Shared coordinates", "Its IFC is on the project's survey coordinates - what a coordinated consultant exports")
+    + mode("internal", "This model's origin", "Its IFC is on this Revit model's internal origin")
+    + mode("fit", "No coordinates: set in the middle", "Placed on the middle of the project, to be moved by hand")
+    + `<div class="ref-nums">${num("x", "East", "mm")}${num("y", "North", "mm")}${num("z", "Up", "mm")}${num("rot", "Turn", "°")}</div>`
+    + `<div class="ref-btns"><button class="ghost ref-b" data-rf="pl-cancel">Cancel</button><button class="ref-b" data-rf="pl-save">Save for everyone</button></div></div>`;
+}
+
+function readPlace(row, r) {
+  const pl = Object.assign({}, r.placement || {});
+  for (const el of row.querySelectorAll("[data-pl]")) {
+    if (el.type === "radio") { if (el.checked) pl.mode = el.value; }
+    else pl[el.dataset.pl] = Number(el.value) || 0;
+  }
+  return pl;
+}
+
+function uploadIfc(file, meta) {
+  return new Promise((res, rej) => {
+    const q = new URLSearchParams({ file: file.name, name: meta.name || "", company: meta.company || "", discipline: meta.discipline || "" });
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/refs/upload?" + q);
+    const hd = Store.authHeaders();
+    for (const k of Object.keys(hd)) xhr.setRequestHeader(k, hd[k]);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) status(`Uploading ${file.name} ... ${Math.round(ev.loaded / ev.total * 100)}%`); };
+    xhr.onload = () => {
+      let d = null;
+      try { d = JSON.parse(xhr.responseText); } catch (e) {}
+      if (xhr.status >= 200 && xhr.status < 300) res(d); else rej(new Error((d && d.detail) || "HTTP " + xhr.status));
+    };
+    xhr.onerror = () => rej(new Error("No connection"));
+    xhr.send(file);
+  });
+}
+
+async function showOverlayForm() {
+  const f = $("#ref-form");
+  f.innerHTML = `<small class="muted">Loading the projects ...</small>`;
+  let ps = [];
+  try { ps = (await refApi("/api/refs/sources")).projects; } catch (e) { f.innerHTML = `<small class="ref-bad">${escH(e.message)}</small>`; return; }
+  if (!ps.length) { f.innerHTML = `<small class="muted">No other project with a 3D model that you can open.</small>`; return; }
+  f.innerHTML = `<div class="ref-place"><label>Model <select id="ov-pick">${ps.map((p) => `<optgroup label="${escH(p.title)}">${p.models.map((m) =>
+      `<option value="${escH(p.id)}|${escH(m.name)}">${escH(m.name)}${m.role ? " (" + escH(m.role) + ")" : ""}</option>`).join("")}</optgroup>`).join("")}</select></label>`
+    + `<small class="muted">Placed on the shared coordinates both projects use; Place moves it if they differ. A model with no common coordinates is better opened on its own page.</small>`
+    + `<div class="ref-btns"><button class="ghost ref-b" data-rf="form-x">Cancel</button><button class="ref-b" data-rf="ov-go">Overlay</button></div></div>`;
+}
+
+function showAddForm(file) {
+  const f = $("#ref-form");
+  const stem = file.name.replace(/\.ifc$/i, "");
+  f.innerHTML = `<div class="ref-place"><b class="ref-fn">${escH(file.name)}</b> <small class="muted">${(file.size / 1048576).toFixed(1)} MB</small>`
+    + `<label>Name <input id="rf-name" value="${escH(stem)}" maxlength="80"></label>`
+    + `<label>Company <input id="rf-co" maxlength="80" placeholder="e.g. ABC Structural Engineers"></label>`
+    + `<label>Discipline <input id="rf-di" maxlength="40" list="rf-dis" placeholder="Structure, MEP, Interior ..."></label>`
+    + `<datalist id="rf-dis"><option>Structure</option><option>MEP</option><option>Interior</option><option>Facade</option><option>Landscape</option><option>Survey</option></datalist>`
+    + `<div class="ref-btns"><button class="ghost ref-b" data-rf="form-x">Cancel</button><button class="ref-b" data-rf="add-go">Upload and convert</button></div></div>`;
+  f._file = file;
+}
+
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("#ref-panel [data-rf]");
+  if (!b || b.type === "checkbox" || b.type === "range") return;
+  const k = b.dataset.rf;
+  const row = b.closest("[data-ref]");
+  const r = row && RF.list.find((x) => x.id === row.dataset.ref);
+  try {
+    if (k === "add") return $("#ref-file").click();
+    if (k === "overlay") return showOverlayForm();
+    if (k === "form-x") { $("#ref-form").innerHTML = ""; return; }
+    if (k === "add-go") {
+      const f = $("#ref-form");
+      b.disabled = true;
+      const d = await uploadIfc(f._file, { name: $("#rf-name").value, company: $("#rf-co").value, discipline: $("#rf-di").value });
+      status(`${d.ref.name}: uploaded - converting on the server.`);
+      RF.list.push(Object.assign({ can_change: true }, d.ref));
+      renderRefs();
+      pollRefs();
+      return;
+    }
+    if (k === "ov-go") {
+      const [project, model] = $("#ov-pick").value.split("|");
+      const d = await refApi("/api/refs/overlay", { method: "POST", body: JSON.stringify({ project, model }) });
+      const nr = Object.assign({ can_change: true }, d.ref);
+      RF.list.push(nr);
+      renderRefs();
+      await loadRef(nr);
+      renderRefs();
+      return;
+    }
+    if (!r) return;
+    if (k === "del") {
+      if (!confirm(`Remove "${r.name}" from this project, for everyone?`)) return;
+      await refApi("/api/refs/" + r.id, { method: "DELETE" });
+      await unloadModel(refKey(r));
+      RF.list = RF.list.filter((x) => x.id !== r.id);
+      renderRefs();
+      S.dirty = true;
+    } else if (k === "retry") {
+      await refApi(`/api/refs/${r.id}/convert`, { method: "POST", body: "{}" });
+      r.status = "waiting"; r.error = "";
+      renderRefs();
+      pollRefs();
+    } else if (k === "place") {
+      RF.open = RF.open === r.id ? null : r.id;
+      RF.before = JSON.parse(JSON.stringify(r.placement || {}));
+      renderRefs();
+    } else if (k === "pl-cancel") {
+      r.placement = RF.before;
+      const rec = S.loaded.get(refKey(r));
+      if (rec && rec.parts[0] && rec.parts[0].coord) placeRef(rec, r.placement);
+      RF.open = null;
+      renderRefs();
+    } else if (k === "pl-save") {
+      const pl = readPlace(row, r);
+      const d = await refApi("/api/refs/" + r.id, { method: "PATCH", body: JSON.stringify({ placement: pl }) });
+      r.placement = d.ref.placement;
+      RF.open = null;
+      const rec = S.loaded.get(refKey(r));
+      if (rec && rec.lwk) { await unloadModel(refKey(r)); await loadRef(r); }
+      renderRefs();
+      status(`${r.name}: placed for everyone.`);
+    }
+  } catch (e) { status(e.message); b.disabled = false; }
+});
+
+document.addEventListener("change", async (ev) => {
+  if (ev.target.id === "ref-file") {
+    const f = ev.target.files[0];
+    if (f) showAddForm(f);
+    ev.target.value = "";
+    return;
+  }
+  const el = ev.target.closest && ev.target.closest("#ref-panel [data-rf], #ref-panel [data-pl]");
+  if (!el) return;
+  const row = el.closest("[data-ref]");
+  const r = row && RF.list.find((x) => x.id === row.dataset.ref);
+  if (!r) return;
+  if (el.dataset.rf === "on") {
+    refSet(r, "on", el.checked);
+    el.disabled = true;
+    try {
+      if (el.checked) { status(`Loading ${r.name} ...`); await loadRef(r); }
+      else { await unloadModel(refKey(r)); S.dirty = true; }
+    } catch (e) { status(e.message); el.checked = false; }
+    renderRefs();
+  } else if (el.dataset.pl) {
+    const rec = S.loaded.get(refKey(r));
+    if (rec && rec.parts[0] && rec.parts[0].coord) placeRef(rec, readPlace(row, r));    // live
+  }
+});
+
+document.addEventListener("input", (ev) => {
+  const el = ev.target.closest && ev.target.closest("#ref-panel [data-rf=op], #ref-panel input[type=number][data-pl]");
+  if (!el) return;
+  const row = el.closest("[data-ref]");
+  const r = row && RF.list.find((x) => x.id === row.dataset.ref);
+  const rec = r && S.loaded.get(refKey(r));
+  if (!rec) return;
+  if (el.dataset.rf === "op") {
+    const v = Number(el.value) / 100;
+    refSet(r, "opacity", v);
+    clearTimeout(RF.opT);
+    RF.opT = setTimeout(() => setRefOpacity(rec, v), 120);
+  } else if (rec.parts[0] && rec.parts[0].coord) {
+    placeRef(rec, readPlace(row, r));
+  }
+});
 
 async function rayHit(origin, dir, maxDist) {
   const d = dir.clone().normalize();

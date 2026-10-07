@@ -263,6 +263,31 @@ label.p select { width: auto; padding: 2px 4px; }
 .row-check .nm { font-size: 12px; }
 #model-list .tags { font-size: 11px; color: var(--muted); margin-left: 23px; }
 
+/* consultant models (model.js: renderRefs) */
+#ref-panel { padding: 6px 0 8px; border-bottom: 1px solid var(--line); }
+#ref-panel[hidden] { display: none; }
+.ref-head { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; padding: 4px 12px; }
+.ref-row { position: relative; padding: 5px 30px 6px 12px; border-top: 1px solid var(--line-soft); }
+.ref-row .ref-what { display: block; margin-left: 23px; font-size: 11px; }
+.ref-tools { display: flex; align-items: center; gap: 6px; margin: 4px 0 0 23px; }
+.ref-tools input[type=range] { flex: 1; min-width: 60px; }
+.ref-b { font-size: 11px; padding: 2px 8px; }
+.ref-x { position: absolute; right: 4px; top: 4px; font-size: 15px; padding: 0 6px; }
+.ref-bad { color: var(--bad); font-size: 11px; margin-left: 23px; }
+.ref-prog { height: 4px; background: var(--line); border-radius: 2px; margin: 4px 0 2px 23px; overflow: hidden; }
+.ref-prog i { display: block; height: 100%; background: var(--accent); }
+.ref-row > small.muted { margin-left: 23px; font-size: 11px; }
+.ref-add { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 12px 0; }
+.ref-place { margin: 6px 0 2px; padding: 8px; background: var(--panel-2); border-radius: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+#ref-form .ref-place { margin: 6px 12px 0; }
+.ref-place label { font-size: 12px; }
+.ref-place select, .ref-place input:not([type=radio]) { width: 100%; }
+.ref-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin-top: 4px; }
+.ref-nums label { display: flex; flex-direction: column; gap: 1px; font-size: 11px; color: var(--muted); }
+.ref-nums small { display: none; }
+.ref-btns { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+.ref-fn { font-size: 12px; word-break: break-all; }
+
 .pad { padding: 12px; }
 .kv {
   display: flex; justify-content: space-between; gap: 10px;

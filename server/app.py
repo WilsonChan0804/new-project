@@ -3622,6 +3622,13 @@ try:
 except Exception as _ex:
     print("chat not loaded: %s" % _ex)
 
+# Consultant models (refs.py): IFC from other companies in the 3D view.
+try:
+    import refs
+    refs.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("refs not loaded: %s" % _ex)
+
 # Folders (files.py): each project's files, in a folder on the server.
 try:
     import files

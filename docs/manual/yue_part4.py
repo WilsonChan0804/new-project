@@ -3,11 +3,24 @@
 from blocks import *
 
 PART = [
+    H2('顧問嘅 model（IFC）'),
+    P('其他公司（結構、MEP、室內、幕牆）嘅 model 可以同 project 自己嘅一齊睇。叫佢哋俾 **IFC**（IFC 2x3 或者 IFC4）：SketchUp、Revit、Tekla、ArchiCAD 同 Rhino 全部都出得，而且保留晒元件、屬性同真實座標。（「WebGL」係瀏覽器畫圖嘅方法，唔係用嚟交換嘅檔案格式。）'),
+    TABLE(['用法', '點做'], [
+        ['加入呢個 project 嘅 3D', '**Models** panel > **+ Consultant model (IFC)**：揀 .ifc，填名、公司同專業，撳 **Upload and convert**。Server 會轉換（有進度條），完成後就喺 **Consultant models** 出現'],
+        ['疊另一個 project 嘅 model', '**+ Overlay another project**：揀一個你開得嘅 project 同佢其中一個 model。會用兩個 project 共用嘅 shared coordinates 擺位'],
+        ['自己一版 3D', 'Admin 用 **New 3D project from IFC**（Admin 版）開。座標同乜都對唔上嘅 model 用：做一個獨立參考，之後一樣可以疊落其他 project'],
+    ]),
+    UL([
+        '每個顧問 model 有剔格（你自己開／關）同一條可以調透明嘅 slider。',
+        '**Place**（加佢嗰個人或者 project admin）幫所有人設定擺喺邊：**Shared coordinates**（有協調座標嘅顧問就係呢個）、**This model\'s origin**，或者 **No coordinates: set in the middle**；再用 **East / North / Up**（mm）同 **Turn**（°）一路睇一路手動移。**Save for everyone** 儲存；**Cancel** 放返原位。',
+        '佢嘅元件一樣撳得，一樣可以開 issue。',
+        '**×** 由 project 移除（加佢嗰個人或者 project admin）。',
+    ]),
     H2('Issue 同 BCF'),
     P('Issue 係一個 markup 或者 3D 嘅一點，有標題、類型、負責人、到期日同對話；server 會幫佢編號（#N），同一個 issue 會喺 Sheets、3D、Dashboard 同 Revit 出現。'),
     H3('開 issue'),
     TABLE(['喺邊', '點做'], [
-        ['喺 sheet 上面', '將頂部轉做 **Issue** 再畫 markup；或者揀一個 markup 撳 **Issue**；或者右鍵撳佢揀 **Raise issue**。會自動夾一張圖則嘅截圖。'],
+        ['喺 sheet 上面', '將頂部轉做 **Issue** 再畫 markup；或者揀一個 markup 撳 **Issue**；或者右鍵撳佢揀 **Raise issue**。會自動夾一張清晰嘅圖則截圖：直接由 PDF 用大約 200 dpi 畫出嚟，唔受你放大幾多或者電腦嘅速度設定影響。'],
         ['喺 3D', '撳 **Add issue**，然後撳個位（iPad：㩒住）。鏡頭、section 同隱藏咗嘅元件會一齊儲存，仲會夾一張截圖。**Mark up snapshot** 俾你喺張相上面畫嘢（cloud、箭咀、文字等等）。'],
     ]),
     P('填好 issue 視窗，然後撳 **Save issue**：'),
@@ -23,7 +36,8 @@ PART = [
     ]),
     H3('跟進 issue'),
     UL([
-        '喺清單撳一個 issue（或者 3D 入面佢支 pin）打開佢。喺 3D，視圖會飛返去開 issue 嗰個人企嘅位置，連埋佢嘅 section 同隱藏咗嘅元件。',
+        '喺清單撳一個 issue（或者 3D 入面佢支 pin）打開佢。喺 3D，視圖會返去開 issue 嗰個人見到嘅樣：同一個眼位同方向、section box 連佢嘅角度（或者 section plane）、隱藏咗嘅元件、平行定透視，同 floor plan。**Show in view** 同 issue 連結都一樣。',
+        '**喺 Revit**（LWK Issues > **Go to**）：用 viewer 普通鏡頭、或者行緊（walk）時開嘅 issue，會喺一個透視鏡頭視圖 **LWK Issue - <你> (camera)** 由同一個眼位打開，連埋同一個 section box，唔再係由外面睇成棟樓。',
         '喺 issue 視窗：改標題同欄位、**Add photo**（地盤相，可以一次加幾張），喺 **Add a comment** 寫低再撳 **Comment**。打 **@** 可以 mention project 成員。',
         '**Show in view** 返去嗰個位；**Show in 3D** 喺嗰度打開 3D 版。',
         '**Not an issue** 會連一個人人睇到嘅原因閂咗佢；同一個掣可以重開。',

@@ -917,7 +917,15 @@ def go_to(uiapp, i, plan, user, say):
         p = L._xyz(i.model_mm)
         t = Transaction(doc, "LWK Issues - go to #%d" % i.number)
         t.Start()
-        view = L.issue_view(doc, user)
+        # seen through a camera (walking, or the viewer's usual perspective):
+        # a perspective view from the same eye, not an isometric one - from an
+        # eye inside the building that showed the whole building from outside
+        camera = L.wants_perspective(i.viewpoint)
+        try:
+            view = L.issue_view(doc, user, camera)
+        except Exception:
+            camera = False
+            view = L.issue_view(doc, user)
         # as the author saw it (their camera and section box), else a box
         # round the point
         seen = None
@@ -926,10 +934,15 @@ def go_to(uiapp, i, plan, user, say):
         except Exception:
             seen = None
         if seen is None:
+            if view.IsPerspective:
+                # no camera after all: the boxed isometric view
+                view = L.issue_view(doc, user)
             L.box_view(view, p)
         t.Commit()
         uidoc.ActiveView = view
-        if seen is not None:
+        if seen == "camera":
+            pass           # the eye is the view; zooming would move it
+        elif seen is not None:
             L.zoom(uidoc, view, seen[0], seen[1])
         else:
             h = 3000.0 / L.FT_MM
@@ -939,8 +952,10 @@ def go_to(uiapp, i, plan, user, say):
             ids = List[ElementId]()
             ids.Add(el.Id)
             uidoc.Selection.SetElementIds(ids)
-        say("#%d: %s%s." % (i.number, "3D view as it was raised (camera and section box)" if seen is not None
-                                 else "3D view boxed round the point", ", element selected" if el is not None else ""))
+        what = ("camera view from where it was raised%s" % (" (walking)" if (i.viewpoint or {}).get("walk") else "")
+                if seen == "camera" else "3D view as it was raised (camera and section box)" if seen is not None
+                else "3D view boxed round the point")
+        say("#%d: %s%s." % (i.number, what, ", element selected" if el is not None else ""))
         return
 
     if plan:

@@ -212,6 +212,7 @@ async function loadProjects() {
   A.regs = (reg.projects || []).filter((r) => r.can_edit);
   A.regCreate = !!reg.can_create;
   $("#a-reg-tools").hidden = !A.regCreate;
+  if ($("#a-ifc-new")) $("#a-ifc-new").hidden = !(A.me && A.me.site_admin);
   const ul = $("#a-projects");
   if (!A.regs.length) {
     ul.innerHTML = `<li class="empty">You do not manage any project.</li>`;
@@ -697,6 +698,27 @@ async function prepLog() {
 
 function wireProjects() {
   $("#a-del").onclick = deleteProject;
+  /* A consultant's IFC as a 3D project of its own (refs.py, case 3): a
+     standalone reference, converted on the server. */
+  const ifcB = $("#a-ifc-new"), ifcF = $("#a-ifc-file");
+  if (ifcB && ifcF) {
+    ifcB.onclick = () => ifcF.click();
+    ifcF.onchange = async () => {
+      const f = ifcF.files[0];
+      ifcF.value = "";
+      if (!f) return;
+      const stem = f.name.replace(/\.ifc$/i, "");
+      const id = prompt("A short id for the new 3D project (letters, digits, - and _), e.g. SKW-STR:", stem.replace(/[^A-Za-z0-9_-]+/g, "-").slice(0, 30));
+      if (!id) return;
+      const title = prompt("Its title (shown at the top of its 3D page):", stem) || id;
+      msg(`Uploading ${esc(f.name)} ...`, "ok");
+      try {
+        const r = await api(`/api/admin/projects/from-ifc?id=${encodeURIComponent(id)}&title=${encodeURIComponent(title)}&file=${encodeURIComponent(f.name)}`,
+          { method: "POST", body: f, headers: { "Content-Type": "application/octet-stream" } });
+        msg(`Made <b>${esc(r.project)}</b>. The server is converting the model; <a href="model.html?project=${encodeURIComponent(r.project)}" target="_blank">open its 3D page</a> (it shows by itself when ready). Add its members as for any project; to show it with another project, use 3D > Models > + Overlay another project there.`, "ok");
+      } catch (e) { msg(esc(e.message), "bad"); }
+    };
+  }
   $("#a-prep").onclick = async () => {
     try {
       const r = await api(`/api/admin/projects/${encodeURIComponent(A.pid)}/phone-copies`, { method: "POST" });
