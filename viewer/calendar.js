@@ -13,7 +13,8 @@
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, modal, toast, ic } from "./tasks-util.js";
+import { $, esc, modal, toast, ic, pop, closePop } from "./tasks-util.js";
+import { taskForm } from "./chatcards.js";
 
 const K = {
   view: matchMedia("(max-width: 700px)").matches ? "list" : "month",
@@ -119,7 +120,7 @@ function paintList(list, onlyDay) {
   }
   const t = today();
   const keys = Object.keys(days).sort();
-  $("#cal-body").innerHTML = `<div class="cl">` + (keys.map((k) => `<div class="cl-day${k === t ? " today" : ""}${k < t ? " past" : ""}">`
+  $("#cal-body").innerHTML = `<div class="cl">` + (keys.map((k) => `<div class="cl-day${k === t ? " today" : ""}${k < t ? " past" : ""}" data-day="${k}">`
     + `<div class="cl-h"><b>${esc(fromIso(k).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }))}</b>${k === t ? ` <span class="cl-today">Today</span>` : ""}</div>`
     + days[k].map((e) => chip(e, true)).join("") + `</div>`).join("")
     || `<p class="muted cal-none">Nothing this month for you${K.kinds.size < 3 ? " (with these filters)" : ""}.</p>`) + `</div>`;
@@ -187,8 +188,9 @@ async function outlook() {
   await p;
 }
 
-/* + Event: events are sent in a chat, so its people are invited and reply. */
-async function newEvent() {
+/* + Event: events are sent in a chat, so its people are invited and reply.
+   day / time: from a right-click on a day (a meeting has a time). */
+async function newEvent(day, time, title) {
   let rooms = [];
   try { rooms = (await api("/api/chat/rooms")).rooms; } catch (e) { return toast(e.message, true); }
   if (!rooms.length) return toast("Start a chat first: an event is sent to the people in a chat", true);
@@ -196,7 +198,36 @@ async function newEvent() {
       replies Going / Maybe / Can't go and gets it in their calendar.</p>
     <label>Chat <select name="room">${rooms.map((r) => `<option value="${esc(r.id)}">${esc(r.title)}${r.kind === "project" ? " (project)" : r.kind === "topic" ? " (topic)" : ""}</option>`).join("")}</select></label>`, "Next");
   if (!f) return;
-  location.href = "messenger.html?room=" + encodeURIComponent(f.room.value) + "&new=event";
+  const extra = typeof day === "string" && day ? "&date=" + day + (time ? "&time=" + time : "") + (title ? "&title=" + encodeURIComponent(title) : "") : "";
+  location.href = "messenger.html?room=" + encodeURIComponent(f.room.value) + "&new=event" + extra;
+}
+
+/* A task due on a day, made right here. */
+async function newTask(day) {
+  let ppl = [];
+  try { ppl = (await api("/api/people")).people || []; } catch (e) {}
+  const me = K.me && K.me.user;
+  const byUid = Object.fromEntries(ppl.map((p) => [p.uid, p]));
+  const r = await taskForm({ room: null, people: ppl, byUid }, { due: day, owners: me && byUid[me.id] ? [me.id] : [] });
+  if (r) { toast("Task made, due " + day); load(); }
+}
+
+/* Right-click (or hold on a phone) a day: add an event, a meeting or a task on it. */
+function dayMenu(day, x, y) {
+  const label = new Date(day + "T12:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  const el = pop({ getBoundingClientRect: () => ({ left: x, right: x, top: y, bottom: y }) },
+    `<div class="muted" style="padding:4px 8px;font-size:11px">${esc(label)}</div>`
+    + `<div class="po-row" data-k="event">Add event (all day)</div>`
+    + `<div class="po-row" data-k="meeting">Add meeting</div>`
+    + `<div class="po-row" data-k="task">Add task due this day</div>`, 220);
+  el.onclick = (ev) => {
+    const r = ev.target.closest("[data-k]");
+    if (!r) return;
+    closePop();
+    if (r.dataset.k === "event") newEvent(day);
+    if (r.dataset.k === "meeting") newEvent(day, "10:00", "Meeting");
+    if (r.dataset.k === "task") newTask(day);
+  };
 }
 
 /* ------------------------------------------------------------ wiring */
@@ -221,7 +252,22 @@ function wire() {
     };
   }
   $("#cal-outlook").onclick = outlook;
-  $("#cal-new").onclick = newEvent;
+  $("#cal-new").onclick = () => newEvent();
+  $("#cal-body").addEventListener("contextmenu", (ev) => {
+    const d = ev.target.closest("[data-day]");
+    if (!d || ev.target.closest(".ce")) return;
+    ev.preventDefault();
+    dayMenu(d.dataset.day, ev.clientX, ev.clientY);
+  });
+  // a phone: hold a day
+  let holdT = null;
+  $("#cal-body").addEventListener("touchstart", (ev) => {
+    const d = ev.target.closest("[data-day]");
+    if (!d || ev.target.closest(".ce")) return;
+    const t = ev.touches[0];
+    holdT = setTimeout(() => dayMenu(d.dataset.day, t.clientX, t.clientY), 550);
+  }, { passive: true });
+  for (const e of ["touchend", "touchmove", "touchcancel"]) $("#cal-body").addEventListener(e, () => clearTimeout(holdT), { passive: true });
   $("#cal-body").addEventListener("click", (ev) => {
     const more = ev.target.closest(".cm-more");
     if (more) { paintList(shown(), more.dataset.day); return; }
@@ -245,6 +291,7 @@ function wire() {
 
 async function start() {
   const me = await ensureSignedIn();
+  K.me = me;
   header(me);
   if (!me.accounts) {
     $("#cal").innerHTML = `<div class="t-empty"><h3>The calendar needs accounts</h3><p>A site admin can switch accounts on (Admin page).</p></div>`;

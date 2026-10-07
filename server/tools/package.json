@@ -1,7 +1,7 @@
 {
   "name": "lwk-viewer-tools",
   "private": true,
-  "description": "Server-side tools of the LWK Viewer: phone copies, tiles and the IFC converter for consultant models. Run `npm install` here once (needs internet).",
+  "description": "Server-side tools of the LWK Viewer: phone copies, tiles and the IFC converter for consultant models. The IFC converter is bundled in ifc/ (frags.bundle.cjs); `npm install` here is optional, for a newer one.",
   "type": "module",
   "dependencies": {
     "@thatopen/fragments": "3.4.7",

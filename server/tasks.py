@@ -179,7 +179,13 @@ MIGRATIONS = (
     ("comments", "files", "TEXT NOT NULL DEFAULT '[]'"),  # attachments (chat.py stores them)
     ("projects", "viewers", "TEXT NOT NULL DEFAULT '[]'"), # every viewer project (model + sheets) of a job
     ("comments", "edited_at", "TEXT NOT NULL DEFAULT ''"),  # changed by its writer after posting
+    ("projects", "info", "TEXT NOT NULL DEFAULT '{}'"),    # project no., address, client, GFA ... (INFO_KEYS)
+    ("projects", "thumb", "TEXT NOT NULL DEFAULT ''"),     # its picture, <data>/project_thumbs/<file>
 )
+
+# What the Projects page keeps about a project, beyond its name and code.
+INFO_KEYS = ("project_no", "address", "client", "building_type", "site_area", "gfa", "storeys", "stage",
+             "start", "completion", "description")
 
 MAX_BODY = 2 * 1024 * 1024
 MAX_TITLE = 300
@@ -883,7 +889,20 @@ def register(app, core):
                 out.append((u["name"], u["email"]))
         return out
 
-    def notify(people, subject, text, actor_uid=None):
+    def notify(people, subject, text, actor_uid=None, url="", kind="task", short=""):
+        # on their open pages, their phones (push) and under the bell - with
+        # or without email set up
+        try:
+            import chat
+            seen = set()
+            for p in people:
+                uid = p.get("uid")
+                if uid is None or uid == actor_uid or uid in seen:
+                    continue
+                seen.add(uid)
+                chat.inbox_post(uid, kind, subject, short or text.split("\n")[0][:240], url)
+        except Exception as ex:
+            print("task inbox: %s" % ex)
         targets = [(n, e) for n, e in people_emails([p for p in people if p.get("uid") != actor_uid])]
         if not targets or not core.smtp_ready():
             return
@@ -1409,10 +1428,12 @@ def register(app, core):
                 notify(who_, "Task for you: %s" % task["title"],
                        "%s made you an owner of \"%s\"%s.\n\n%s" % (
                            by, task["title"], (", due " + task["due"]) if task["due"] else "", task_url(task)),
-                       w.uid)
+                       w.uid, task_url(task), "assigned",
+                       "%s made you an owner%s" % (by, (", due " + task["due"][:10]) if task["due"] else ""))
             else:
                 notify(who_, "Completed: %s" % task["title"],
-                       "%s marked \"%s\" as done.\n\n%s" % (by, task["title"], task_url(task)), w.uid)
+                       "%s marked \"%s\" as done.\n\n%s" % (by, task["title"], task_url(task)), w.uid,
+                       task_url(task), "done", "%s marked it done" % by)
         add_issue_state(w, rows)
         return {"rev": rev, "tasks": rows, "open_issues": open_issues}
 
@@ -1544,10 +1565,11 @@ def register(app, core):
             task = task_row(d.execute("SELECT * FROM tasks WHERE id = ?", (tid,)).fetchone())
         url = task_url(task)
         notify(mentioned, "%s mentioned you: %s" % (by, task["title"]),
-               "%s wrote on \"%s\":\n\n%s\n\n%s" % (by, task["title"], text, url), w.uid)
+               "%s wrote on \"%s\":\n\n%s\n\n%s" % (by, task["title"], text, url), w.uid, url, "mention", text[:240])
         others = [s for s in subs if s.get("uid") not in [m["uid"] for m in mentioned]]
         notify(others, "New comment: %s" % task["title"],
-               "%s wrote on \"%s\":\n\n%s\n\n%s" % (by, task["title"], text, url), w.uid)
+               "%s wrote on \"%s\":\n\n%s\n\n%s" % (by, task["title"], text, url), w.uid, url, "comment",
+               "%s: %s" % (by, text[:220]))
         card(task, "comment", by, text or "%d file%s" % (len(files), "" if len(files) == 1 else "s"))
         return {"id": cid, "author": by, "uid": w.uid, "body": text, "files": files, "created_at": t, "task": task}
 
@@ -1707,7 +1729,21 @@ def register(app, core):
         return {"id": r["id"], "code": r["code"], "name": r["name"], "short": r["short"],
                 "owners": json.loads(r["owners"] or "[]"), "team": r["team"], "status": r["status"],
                 "viewer": r["viewer"], "viewers": viewers_of(r), "links": json.loads(r["links"] or "[]"), "notes": r["notes"],
-                "sort": r["sort"], "rev": r["rev"], "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or ""}
+                "sort": r["sort"], "rev": r["rev"], "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or "",
+                "info": reg_info(r), "thumb": ("/api/registry/%s/thumb?v=%s" % (r["id"], r["thumb"].split(".")[0][-8:])) if reg_thumb(r) else ""}
+
+    def reg_info(r):
+        try:
+            v = json.loads(r["info"] or "{}")
+        except (ValueError, IndexError, KeyError):
+            v = {}
+        return dict((k, v[k]) for k in INFO_KEYS if isinstance(v, dict) and v.get(k))
+
+    def reg_thumb(r):
+        try:
+            return r["thumb"] or ""
+        except (IndexError, KeyError):
+            return ""
 
     def reg_can_edit(w, r):
         if w.site_admin:
@@ -1988,9 +2024,95 @@ def register(app, core):
                       "updated_by=excluded.updated_by, updated_at=excluded.updated_at",
                       (pid, cur["code"], cur["name"], cur["short"], json.dumps(cur["owners"]), cur["team"], cur["status"],
                        cur["viewer"], json.dumps(cur["viewers"]), json.dumps(cur["links"]), cur["notes"], cur["sort"], rev, by, t, by, t))
+            if isinstance(body.get("info"), dict):
+                info = dict(reg_info(old)) if old else {}
+                for k in INFO_KEYS:
+                    if k in body["info"]:
+                        v = clean_text(body["info"][k], 2000 if k == "description" else 200, k in ("description", "address"))
+                        if v:
+                            info[k] = v
+                        else:
+                            info.pop(k, None)
+                d.execute("UPDATE projects SET info = ? WHERE id = ?", (json.dumps(info, ensure_ascii=False), pid))
             link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone(), rev)
             row = d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
         return reg_row(row)
+
+    # ------------------------------------------------ the project's picture
+
+    THUMBS = lambda: os.path.join(core.CFG["data"], "project_thumbs")
+    IMG = {b"\xff\xd8\xff": "jpg", b"\x89PNG": "png", b"RIFF": "webp", b"GIF8": "gif"}
+
+    def reg_member(w, r):
+        if w.site_admin or reg_can_edit(w, r):
+            return True
+        uids, _ = project_people(core, r["id"])
+        return w.uid in uids
+
+    @app.post("/api/registry/{pid}/thumb")
+    async def reg_thumb_put(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+        """The body is the picture (JPG, PNG, WebP or GIF, up to 8 MB)."""
+        w = core.who(request, x_viewer_token)
+        raw = await request.body()
+        if len(raw) > 8 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="A picture up to 8 MB")
+        ext = next((e for sig, e in IMG.items() if raw.startswith(sig)), None)
+        if not ext or (ext == "webp" and raw[8:12] != b"WEBP"):
+            raise HTTPException(status_code=400, detail="A JPG, PNG, WebP or GIF picture please")
+        with db() as d:
+            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such project")
+            if not reg_can_edit(w, r):
+                raise HTTPException(status_code=403, detail="Only the project's owners or admins can change its picture")
+            folder = THUMBS()
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
+            old = reg_thumb(r)
+            name = "%s-%s.%s" % (pid, uuid.uuid4().hex[:8], ext)
+            with open(os.path.join(folder, name), "wb") as f:
+                f.write(raw)
+            d.execute("UPDATE projects SET thumb = ?, rev = ? WHERE id = ?", (name, next_rev(d), pid))
+            row = d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
+        if old and os.path.basename(old) == old:
+            try:
+                os.remove(os.path.join(folder, old))
+            except OSError:
+                pass
+        return reg_row(row)
+
+    @app.delete("/api/registry/{pid}/thumb")
+    async def reg_thumb_del(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such project")
+            if not reg_can_edit(w, r):
+                raise HTTPException(status_code=403, detail="Only the project's owners or admins can change its picture")
+            old = reg_thumb(r)
+            d.execute("UPDATE projects SET thumb = '', rev = ? WHERE id = ?", (next_rev(d), pid))
+        if old and os.path.basename(old) == old:
+            try:
+                os.remove(os.path.join(THUMBS(), old))
+            except OSError:
+                pass
+        return {"ok": True}
+
+    @app.get("/api/registry/{pid}/thumb")
+    async def reg_thumb_get(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
+        if not r or not reg_thumb(r) or not reg_member(w, r):
+            raise HTTPException(status_code=404, detail="No picture")
+        p = os.path.join(THUMBS(), os.path.basename(reg_thumb(r)))
+        if not os.path.isfile(p):
+            raise HTTPException(status_code=404, detail="No picture")
+        from fastapi.responses import FileResponse
+        resp = FileResponse(p)
+        resp.headers["Cache-Control"] = "private, max-age=86400"
+        return resp
 
     @app.delete("/api/registry/{pid}")
     async def reg_delete(request: Request, pid: str, x_viewer_token: str = Header(default="")):
@@ -2706,7 +2828,8 @@ def register(app, core):
             for t in sorted(ts, key=lambda t: t["due"]):
                 state = "OVERDUE" if t["due"][:10] < today else "due today" if t["due"][:10] == today else "due tomorrow"
                 lines.append("- %s (%s, %s)\n  %s" % (t["title"], state, t["due"][:10], task_url(t)))
-            notify([{"uid": uid}], "Tasks due: %d" % len(ts), "These tasks of yours need attention:\n\n" + "\n".join(lines))
+            notify([{"uid": uid}], "Tasks due: %d" % len(ts), "These tasks of yours need attention:\n\n" + "\n".join(lines),
+                   None, "tasks.html", "due", ", ".join(t["title"] for t in ts[:4]) + (" ..." if len(ts) > 4 else ""))
 
     def reminder_loop():
         while True:

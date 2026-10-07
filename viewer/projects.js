@@ -116,6 +116,7 @@ function fillSwitcher(list, cur) {
     SETS.sel = sel;
     SETS.cur = cur;
     paintSets();
+    nav.projectTwoStep(sel);     // project first, then its model / sheet set
   }).catch(() => {});
 }
 

@@ -379,6 +379,75 @@ def register(app, core):
                 break
         return {"items": out}
 
+    # ------------------------------------------------------------ Office files, read in the page
+
+    OFFICE = {".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".rtf", ".pps", ".ppsx"}
+    _CONVERT = threading.Lock()
+
+    def soffice():
+        """LibreOffice, when the server has it: LWK_SOFFICE, the PATH, or
+        where its Windows installer puts it."""
+        cands = [os.environ.get("LWK_SOFFICE") or "", shutil.which("soffice") or "", shutil.which("libreoffice") or "",
+                 r"C:\Program Files\LibreOffice\program\soffice.exe",
+                 r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+                 "/usr/bin/soffice", "/usr/lib/libreoffice/program/soffice"]
+        return next((c for c in cands if c and os.path.isfile(c)), "")
+
+    @app.get("/api/files/{reg}/preview")
+    async def file_preview(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
+        """A Word, Excel or PowerPoint file as a PDF, to read in the page
+        without downloading it. Made with LibreOffice on the server and kept
+        (until the file changes) in <data>/preview_cache."""
+        access(request, x_viewer_token, reg)
+        full = inside(root_of(reg), clean_rel(path))
+        if not os.path.isfile(full):
+            raise HTTPException(status_code=404, detail="That file is not there any more")
+        if os.path.splitext(full)[1].lower() not in OFFICE:
+            raise HTTPException(status_code=400, detail="Only Office files are turned into a preview")
+        exe = soffice()
+        if not exe:
+            raise HTTPException(status_code=501, detail="LibreOffice is not installed on the server")
+        st = os.stat(full)
+        import hashlib
+        key = hashlib.sha1(("%s|%s|%d|%d" % (reg, full, st.st_size, int(st.st_mtime))).encode("utf-8")).hexdigest()
+        cache = os.path.join(CORE.CFG["data"], "preview_cache")
+        out = os.path.join(cache, key + ".pdf")
+        if not os.path.isfile(out):
+            if not os.path.isdir(cache):
+                os.makedirs(cache)
+
+            def convert():
+                with _CONVERT:
+                    if os.path.isfile(out):
+                        return True
+                    work = os.path.join(cache, "w-" + key)
+                    os.makedirs(work, exist_ok=True)
+                    src = os.path.join(work, "in" + os.path.splitext(full)[1].lower())
+                    shutil.copyfile(full, src)
+                    try:
+                        import subprocess
+                        subprocess.run([exe, "--headless", "--norestore", "-env:UserInstallation=file:///" +
+                                        os.path.join(cache, "profile").replace("\\", "/").lstrip("/"),
+                                        "--convert-to", "pdf", "--outdir", work, src],
+                                       capture_output=True, timeout=180)
+                        made = os.path.join(work, "in.pdf")
+                        if os.path.isfile(made):
+                            os.replace(made, out)
+                            return True
+                        return False
+                    except Exception:
+                        return False
+                    finally:
+                        shutil.rmtree(work, ignore_errors=True)
+            import asyncio
+            ok = await asyncio.get_event_loop().run_in_executor(None, convert)
+            if not ok:
+                raise HTTPException(status_code=422, detail="LibreOffice could not open that file")
+        r = FileResponse(out, media_type="application/pdf", filename=os.path.splitext(os.path.basename(full))[0] + ".pdf",
+                         content_disposition_type="inline")
+        r.headers["Cache-Control"] = "private, max-age=3600"
+        return r
+
     @app.get("/api/files/{reg}/file")
     async def file_get(request: Request, reg: str, path: str = "", download: int = 0,
                        x_viewer_token: str = Header(default="")):

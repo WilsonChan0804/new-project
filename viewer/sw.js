@@ -552,14 +552,14 @@ self.addEventListener("message", (event) => {
 
 /* ------------------------------------------------------------ notifications */
 
-/* A chat message pushed by the server (push.py), with no page needed. A
-   page of ours in front shows it itself (notify.js), so nothing here then. */
+/* A message pushed by the server (push.py), with no page needed. It is
+   always shown: iPhone and iPad stop delivering to a site whose pushes show
+   nothing. A page that shows the same message itself uses the same tag,
+   so the two are one notification. */
 self.addEventListener("push", (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : "" }; }
   event.waitUntil((async () => {
-    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    if (wins.some((c) => c.visibilityState === "visible" && c.focused)) return;
     await self.registration.showNotification(d.title || "LWK Viewer", {
       body: d.body || "", tag: d.tag || undefined, icon: "icons/icon-192.png", badge: "icons/icon-192.png",
       data: { url: d.url || "messenger.html" } });

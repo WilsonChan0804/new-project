@@ -5,7 +5,7 @@
   "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f2f4f7",
+  "background_color": "#f28022",
   "theme_color": "#f28022",
   "share_target": {
     "action": "share-in",

@@ -1849,21 +1849,21 @@ function worldBox(part) {
     return out.copy(part.model.box).applyMatrix4(part.object.matrixWorld);
   }
 
-  // a consultant model (refs): the library's box already says where it sits
-  if (part.isRef && part.model && part.model.box && !part.model.box.isEmpty()) return out.copy(part.model.box);
-
-  const live = new THREE.Box3().setFromObject(part.object);
-  if (!live.isEmpty()) out.union(live);
-
+  /* A fragments model's box is already where it sits in the scene: the
+     library applies the model's own matrix (get box()). Applying it again
+     doubled a model with an offset - a site plan exported at 835 km came
+     out at 1670 km, and Fit flew the camera out of sight. */
+  part.object.updateMatrixWorld(true);
   const mb = part.model && part.model.box;
   if (mb && !mb.isEmpty()) {
+    // (matrixWorld: a placement's group, typical floors, is in it too)
     const b = mb.clone();
-    part.object.updateMatrixWorld(true);
-    b.applyMatrix4(part.object.matrixWorld);
     // Only trust it when it actually describes something of a sane size.
     const s = b.getSize(new THREE.Vector3());
-    if (Math.max(s.x, s.y, s.z) > 0.001) out.union(b);
+    if (Math.max(s.x, s.y, s.z) > 0.001) return out.copy(b);
   }
+  const live = new THREE.Box3().setFromObject(part.object);
+  if (!live.isEmpty()) out.union(live);
   return out;
 }
 
@@ -2815,6 +2815,16 @@ function restoreLastView() {
   let v = null;
   try { v = JSON.parse(localStorage.getItem(lastViewKey()) || "null"); } catch (e) {}
   if (!v || !v.pos) return false;
+  /* A view kept from before a fix, or from a model since moved, that
+     looks at nothing near the building: fit instead. */
+  try {
+    const box = sceneBox();
+    if (!box.isEmpty()) {
+      const t = new THREE.Vector3().fromArray(v.target);
+      const far = box.distanceToPoint(t) > 20000 || box.distanceToPoint(new THREE.Vector3().fromArray(v.pos)) > 50000;
+      if (far) { try { localStorage.removeItem(lastViewKey()); } catch (e) {} return false; }
+    }
+  } catch (e) {}
   if (v.ortho && !S.ortho) setOrtho(true);
   if (!v.ortho && S.ortho) setOrtho(false);
   S.camera.up.fromArray(v.up || [0, 1, 0]);

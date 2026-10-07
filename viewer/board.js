@@ -19,7 +19,7 @@
  * picker, presenting and the timer are in board-extra.js.
  */
 
-import { api, link, project, signOut, projectOptions } from "./nav.js";
+import { api, link, project, signOut, projectOptions, projectTwoStep } from "./nav.js";
 import { esc, uid, clone, clamp, round1, col, STICKY_COLORS, INK_COLORS, SHAPE_FILLS, BRANCH_COLORS, isDark, personColor,
          initials, ago, icon, center, unionBox, boxesTouch, route, arrowHead, simplify, penPath } from "./board-util.js";
 import { createSync } from "./board-sync.js";
@@ -2743,6 +2743,7 @@ async function loadProjects() {
     return false;
   }
   sel.value = want;
+  projectTwoStep(sel);           // project first, then its model
   if (want !== project()) {
     localStorage.setItem("lwk-viewer:project", want);
     history.replaceState(null, "", "board.html?project=" + encodeURIComponent(want));

@@ -4,8 +4,8 @@ project's own model.
 
 Ask them for IFC (IFC 2x3 or IFC4 - SketchUp, Revit, Tekla, ArchiCAD,
 Rhino and the rest all export it). The server turns it into the viewer's
-own 3D format with tools/ifc2frag.mjs (Node.js; `npm install` once in
-server/tools), keeping the elements, their properties and their real
+own 3D format with tools/ifc2frag.mjs (Node.js, already used for the
+phone copies; the converter itself is bundled in tools/ifc/), keeping the elements, their properties and their real
 coordinates.
 
 Three ways to use one:
@@ -89,9 +89,11 @@ def convert(core, root, pid, rid, src, out, after=None):
     if not node:
         update_ref(root, rid, status="failed", error="Node.js is not installed on the server (it is also what makes the phone copies)")
         return
-    if not os.path.isdir(os.path.join(os.path.dirname(script), "node_modules", "@thatopen", "fragments")):
+    tools = os.path.dirname(script)
+    if not (os.path.isfile(os.path.join(tools, "ifc", "frags.bundle.cjs"))
+            or os.path.isdir(os.path.join(tools, "node_modules", "@thatopen", "fragments"))):
         update_ref(root, rid, status="failed",
-                   error="The IFC converter is not installed: on the server run `npm install` in server/tools (once)")
+                   error="The IFC converter is missing from server/tools/ifc - update the server again")
         return
 
     def run():

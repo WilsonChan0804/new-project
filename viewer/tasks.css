@@ -363,8 +363,6 @@ b.mention { color: var(--accent-deep); }
   .td-kpi b { font-size: 32px; }
   .gt-l { width: 170px !important; }
 }
-}
-}
 
 .cbx { display: inline-block; width: 15px; height: 15px; border: 1.5px solid #b8c0cc; border-radius: 3px; vertical-align: middle; position: relative; background: #fff; }
 .cbx.on { background: var(--info); border-color: var(--info); }

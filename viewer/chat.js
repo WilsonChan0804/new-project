@@ -1718,7 +1718,10 @@ async function start() {
     // from the Calendar page's + Event: the event form, in this chat
     if (q.get("new") === "event" && C.room && C.room.id === id) {
       history.replaceState(null, "", "messenger.html?room=" + encodeURIComponent(id));
-      const c = await eventForm();
+      // from the Calendar's right-click on a day: that day (and time)
+      const day = /^\d{4}-\d{2}-\d{2}$/.test(q.get("date") || "") ? q.get("date") : "";
+      const tm = /^\d{2}:\d{2}$/.test(q.get("time") || "") ? q.get("time") : "";
+      const c = await eventForm(null, day ? { start: day + "T" + (tm || "10:00"), all_day: !tm, title: q.get("title") || "" } : null);
       if (c) sendCard(c);
     }
   } else if (q.get("task")) await openRoom(TASK + q.get("task")).catch((e) => toast(e.message, true));

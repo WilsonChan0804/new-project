@@ -80,3 +80,18 @@ table.pj .num { text-align: right; font-variant-numeric: tabular-nums; }
 .pd-part { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
 .pd-part b { min-width: 120px; }
 .t-pop a.po-row { display: block; color: var(--ink); text-decoration: none; }
+
+/* the project's picture and information */
+.pj-thumb { float: left; width: 44px; height: 32px; object-fit: cover; border-radius: 4px; margin: 1px 8px 0 0; }
+.pd-thumb { position: relative; margin: -4px 0 10px; border-radius: 8px; overflow: hidden; background: var(--panel-2); aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; }
+.pd-thumb[data-act] { cursor: pointer; }
+.pd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pd-thumb.none { aspect-ratio: auto; height: 64px; border: 1.5px dashed var(--line); color: var(--muted); font-size: 12px; }
+.pd-thumb-x { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.55) !important; color: #fff !important; border-radius: 50%; width: 26px; height: 26px; padding: 0; font-size: 16px; }
+.pd-edit { margin-left: auto; font-size: 11px; padding: 2px 8px; }
+h4 .pd-edit { float: right; }
+.pd-info .td-v { white-space: normal; }
+.pd-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.pd-form label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.pd-form label.wide { grid-column: 1 / -1; }
+@media (max-width: 600px) { .pd-form { grid-template-columns: 1fr; } }

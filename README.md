@@ -1,5 +1,7 @@
 # LWK Viewer
 
+The LWK + Partners logo (white, on the orange bar) is in every page's header and on the installed app's icon.
+
 Revit review for sheets (2D) and the model (3D), with issues, whiteboards, a dashboard - and team task lists.
 
 - `server/` - FastAPI + SQLite. Start with `server/run.bat` (or `python app.py --root <exports folder> --pass <passphrase>`).
@@ -49,7 +51,16 @@ Task groups are linked to a project (Tasks > `...` > *Groups and projects*); a g
 
 Members are kept per part, because they are what opens that part. The project's members, and its channel, are everyone on any part. When Admin edits a project with several parts, it shows a part selector above the members.
 
-The project pickers on Sheets, 3D, Board and Dashboard list these project names. A project with several parts is a group, with its parts under it.
+The project pickers on Sheets, 3D, Board and Dashboard are **two drop-downs**:
+- the **project** (name · code);
+- then **its model / sheet set**. These are its parts, such as Site 1 and Site 2, and, on the Sheets page, "Revit sheets" and each uploaded PDF set. The second one is hidden when there is only one choice.
+
+**Project information and picture.** In a project's panel, **Edit** under *Project information* keeps:
+- project no., client, address and building type;
+- site area, GFA, storeys and stage;
+- start, completion and a description.
+
+Click (or drop a picture on) the top of the panel to give the project a **picture**; it also shows in the list. Project owners and admins can change both.
 
 Import: export the Lark Base table to Excel, then *Import*. The columns used are Project, Owner, Group, Project Folder and Status. "HKA-P-01681-ARC - SKW" is split into a code and a short name.
 
@@ -127,6 +138,13 @@ Data lives in `<data>/tasks.db` (one file for the server, beside `accounts.db`).
 
 ## Calendar (`calendar.html`)
 
+**Right-click a day** (hold it on a phone) to add, on that day:
+- an **event** (all day);
+- a **meeting** (from 10:00);
+- a **task** due that day.
+
+Events and meetings are sent in a chat you choose; a task goes into a task list you choose.
+
 What is coming up for you, by date:
 - **Meetings:** events sent in the Messenger (+ > Event) in the chats you are in, with your reply.
 - **My tasks:** the tasks you own, on their due date.
@@ -160,6 +178,15 @@ Data: `<data>/calendar_keys.json`.
   - turn push on for this device;
   - install the app.
 - **Mute** a single chat in Chat info. A muted chat still notifies you when you are @mentioned.
+- **Not only chat messages.** You are also told when:
+  - a task is made yours or one you own is completed;
+  - you are @mentioned in a task comment or an issue comment;
+  - a task you follow gets a comment;
+  - an issue is assigned to you, or your query is answered;
+  - an issue you raised is resolved;
+  - you have tasks due.
+
+  The bell's **For you** list keeps the latest 50, with a red count of the unread ones. Each one opens the task or issue.
 
 **Install as an app.** The viewer installs as an app with its own window and icon, and shortcuts to Chat, Tasks, Calendar, Folders and Projects:
 - **Edge / Chrome:** the bell > *Install the app*, or the install icon in the address bar.
@@ -169,6 +196,11 @@ Data: `<data>/calendar_keys.json`.
 **Push (no page open).** When the viewer is reached over **https** (the Cloudflare tunnel, or a certificate on the server), the bell > *Turn on for this device* delivers messages to that phone or computer even with the app closed. Details:
 - The server signs with its own key (`<data>/vapid.json`, made on first start) and needs only the `cryptography` package (`pip install -r requirements.txt`). No account with Google or Apple is needed.
 - On plain http, notifications still come while a page is open.
+- **iPhone / iPad:**
+  1. Add the viewer to the Home Screen (Safari > Share > Add to Home Screen) and open it from there.
+  2. In the bell, turn on notifications, then **Turn on for this device**.
+  3. **Send a test**. If it fails, the bell now says why, for example "the server could not reach web.push.apple.com" or "web.push.apple.com refused the server's signature".
+- **The contact the server signs pushes with** is the first site admin's email. Set `LWK_PUSH_CONTACT=mailto:you@company.com` to choose it. (Apple refuses made-up addresses, which is why earlier tests on iPhone were not delivered.)
 
 Data: `<data>/push.db` holds the devices; levels and muted chats are in `chat.db`.
 
@@ -209,6 +241,10 @@ Each project's files, in a folder on the server (the VM's drive, a network share
   - in another project, *Lay out folders from a template* makes the folders that are missing;
   - nothing is ever deleted or renamed.
 - **To Sheets:** a PDF > ⋯ > *Add to the Sheets page* makes its pages into a sheet set of their own, as an upload on the Sheets page does.
+- **Right-click a folder in the tree** (or ⋯ on a folder) for: *New folder here*, Open, Star, Pin, Copy link, Rename, *Move to ...* and Delete.
+- **Read documents in the page.** PDF, pictures, video, text and **Word, Excel and PowerPoint** open beside the list, with no download.
+  - Office files are turned into a PDF by **LibreOffice on the server**: install it once on the VM (free, libreoffice.org; it is found in `C:\Program Files\LibreOffice`, or set `LWK_SOFFICE`). Converted copies are kept in `<data>/preview_cache` until the file changes.
+  - Without LibreOffice, Word (.docx) and Excel (.xlsx / .csv) are drawn in the browser with a simpler look. PowerPoint then needs LibreOffice.
 
 Data: `<data>/files_meta.db` (uploader, pins, stars, bin), `<data>/files_roots.json`, `<data>/folder_templates.json`.
 
@@ -218,7 +254,7 @@ Ask consultants for **IFC** (IFC 2x3 or IFC4). SketchUp, Revit, Tekla, ArchiCAD 
 - It keeps every element, its properties and its real coordinates.
 - "WebGL" is how a browser draws. It is not a file to exchange.
 
-The server converts IFC into the viewer's own 3D format with `server/tools/ifc2frag.mjs`. This needs Node.js (already used for the phone copies) and, once, `npm install` in `server/tools`.
+The server converts IFC into the viewer's own 3D format with `server/tools/ifc2frag.mjs`. It needs Node.js, which the phone copies already use. The converter itself is bundled in `server/tools/ifc/`, so there is nothing to install. (`npm install` in `server/tools` is optional, for a newer version.)
 
 Three ways to use a consultant model:
 1. **Added to this project's 3D:** 3D > Models > **+ Consultant model (IFC)**.

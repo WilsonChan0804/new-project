@@ -6,7 +6,7 @@
  * - becomes the same .frag format the viewer already shows, with its
  * elements, their properties and their real coordinates kept. Uses the
  * same fragments version as viewer/vendor/three-fragments.js (3.4.7) and
- * web-ifc to read the IFC. Needs `npm install` in this folder once.
+ * web-ifc to read the IFC. Bundled in tools/ifc/ - nothing to install.
  *
  * Prints progress lines, then one JSON line: {"ok":true,"bytes":...}.
  */
@@ -21,12 +21,21 @@ if (!src || !out) {
   process.exit(2);
 }
 
-let FRAGS;
+/* The converter comes bundled (tools/ifc/frags.bundle.cjs and the web-ifc
+   wasm beside it), so nothing has to be installed. A newer copy installed
+   with `npm install` in this folder is used first when there is one. */
+let FRAGS, WASM = path.join(HERE, "node_modules", "web-ifc") + path.sep;
 try {
   FRAGS = await import("@thatopen/fragments");
 } catch (e) {
-  console.error("The IFC converter is not installed: run `npm install` in " + HERE + " (needs internet once).");
-  process.exit(3);
+  try {
+    const { createRequire } = await import("node:module");
+    FRAGS = createRequire(import.meta.url)(path.join(HERE, "ifc", "frags.bundle.cjs"));
+    WASM = path.join(HERE, "ifc") + path.sep;
+  } catch (e2) {
+    console.error("The IFC converter is missing: server/tools/ifc/frags.bundle.cjs (" + e2.message + ")");
+    process.exit(3);
+  }
 }
 
 const t0 = Date.now();
@@ -39,7 +48,7 @@ const schema = (head.match(/FILE_SCHEMA\s*\(\s*\(\s*'([^']+)'/i) || [])[1] || "?
 console.log(`reading ${path.basename(src)} (${(fs.statSync(src).size / 1048576).toFixed(1)} MB, ${schema})`);
 
 const importer = new FRAGS.IfcImporter();
-importer.wasm = { absolute: true, path: path.join(HERE, "node_modules", "web-ifc") + path.sep };
+importer.wasm = { absolute: true, path: WASM };
 let last = -1;
 const bytes = await importer.process({
   bytes: new Uint8Array(fs.readFileSync(src)),

@@ -37,7 +37,9 @@ const ICON = { pdf: "&#128213;", dwg: "&#128208;", dxf: "&#128208;", rvt: "&#127
 const extOf = (n) => (n.includes(".") ? n.split(".").pop().toLowerCase() : "");
 const iconOf = (e) => (e.dir ? "&#128193;" : ICON[extOf(e.name)] || "&#128196;");
 const isPdf = (e) => !e.dir && extOf(e.name) === "pdf";
-const PREVIEW = new Set(["pdf", "png", "jpg", "jpeg", "gif", "webp", "svg", "txt", "csv", "mp4", "webm", "mp3", "json"]);
+const OFFICE = new Set(["doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "ppsx", "odt", "ods", "odp", "rtf"]);
+const TEXT = new Set(["txt", "md", "log", "json", "xml", "ini", "cfg", "py", "js", "css", "html", "dyn", "bat", "ps1", "lsp"]);
+const PREVIEW = new Set(["pdf", "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "csv", "mp4", "webm", "mov", "mp3", "m4a", "wav", ...OFFICE, ...TEXT]);
 
 function size(n) {
   if (!n) return "";
@@ -235,9 +237,11 @@ function preview(e) {
   const ext = extOf(e.name);
   const url = fileUrl(e.path);
   let body;
-  if (ext === "pdf" || ext === "txt" || ext === "csv" || ext === "json") body = `<iframe src="${esc(url)}" title="${esc(e.name)}"></iframe>`;
-  else if (["mp4", "webm"].includes(ext)) body = `<video src="${esc(url)}" controls></video>`;
-  else if (ext === "mp3") body = `<audio src="${esc(url)}" controls></audio>`;
+  const later = OFFICE.has(ext) || TEXT.has(ext) || ext === "csv";
+  if (ext === "pdf") body = `<iframe src="${esc(url)}" title="${esc(e.name)}"></iframe>`;
+  else if (later) body = `<div class="pv-none">Opening ${esc(e.name)} ...</div>`;
+  else if (["mp4", "webm", "mov"].includes(ext)) body = `<video src="${esc(url)}" controls playsinline></video>`;
+  else if (["mp3", "m4a", "wav"].includes(ext)) body = `<audio src="${esc(url)}" controls></audio>`;
   else body = `<img src="${esc(url)}" alt="${esc(e.name)}">`;
   box.innerHTML = `<div class="pv-bar"><b title="${esc(e.path)}">${esc(e.name)}</b>`
     + (isPdf(e) ? `<button class="ghost" data-pv="sheets" title="Add its pages to a set on the Sheets page">To Sheets</button>` : "")
@@ -245,6 +249,10 @@ function preview(e) {
     + `<a class="ghost btn" href="${esc(fileUrl(e.path, true))}" title="Download">&#11015;</a>`
     + `<button class="ghost" data-pv="x" title="Close">&times;</button></div><div class="pv-body">${body}</div>`;
   box.hidden = false;
+  if (later) showDoc(e, box.querySelector(".pv-body")).catch((err) => {
+    const b = box.querySelector(".pv-body");
+    if (b) b.innerHTML = `<div class="pv-none">${esc(err.message)}<br><a href="${esc(fileUrl(e.path, true))}">Download it</a></div>`;
+  });
   box.onclick = (ev) => {
     const b = ev.target.closest("[data-pv]");
     if (!b) return;
@@ -253,15 +261,85 @@ function preview(e) {
   };
 }
 
+/* Word, Excel, PowerPoint and text files, read in the page. The server
+   turns Office files into a PDF with LibreOffice when it has it (the same
+   look as in Office); without it, Word and Excel are drawn here in the
+   browser (simpler: no charts, approximate layout). */
+const CDN = {
+  jszip: "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+  docx: "https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js",
+  xlsx: "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+};
+const loaded = {};
+function script(src) {
+  if (!loaded[src]) loaded[src] = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error("The reader for this file could not be loaded (no internet?)"));
+    document.head.appendChild(s);
+  });
+  return loaded[src];
+}
+
+async function showDoc(e, body) {
+  const ext = extOf(e.name);
+  if (TEXT.has(ext)) {
+    const t = await (await fetch(fileUrl(e.path))).text();
+    body.innerHTML = `<pre class="pv-text"></pre>`;
+    body.firstChild.textContent = t.length > 2e6 ? t.slice(0, 2e6) + "\n..." : t;
+    return;
+  }
+  if (OFFICE.has(ext)) {
+    const res = await fetch(`${base()}/preview?path=${encodeURIComponent(e.path)}`, { headers: { "X-Viewer-Token": localStorage.getItem("lwk-viewer:token") || "" } });
+    if (res.ok) {
+      const u = URL.createObjectURL(await res.blob());
+      body.innerHTML = `<iframe src="${u}" title="${esc(e.name)}"></iframe>`;
+      return;
+    }
+    if (res.status !== 501) {
+      let m = "This file could not be shown";
+      try { m = (await res.json()).detail || m; } catch (err) {}
+      throw new Error(m);
+    }
+  }
+  // no LibreOffice on the server: in the browser
+  const buf = await (await fetch(fileUrl(e.path))).arrayBuffer();
+  if (ext === "docx") {
+    await script(CDN.jszip);
+    await script(CDN.docx);
+    body.innerHTML = `<div class="pv-doc"></div>`;
+    await window.docx.renderAsync(buf, body.firstChild, null, { inWrapper: true, ignoreLastRenderedPageBreak: false });
+    body.insertAdjacentHTML("afterbegin", `<div class="pv-note">Shown in the browser - for the exact look, ask the admin to install LibreOffice on the server.</div>`);
+    return;
+  }
+  if (["xlsx", "xls", "csv", "ods"].includes(ext)) {
+    await script(CDN.xlsx);
+    const wb = window.XLSX.read(buf, { type: "array" });
+    const tabs = wb.SheetNames;
+    body.innerHTML = `<div class="pv-sheets">${tabs.length > 1 ? `<div class="pv-tabs">${tabs.map((n, i) => `<button class="${i ? "" : "on"}" data-tab="${i}">${esc(n)}</button>`).join("")}</div>` : ""}<div class="pv-grid"></div></div>`;
+    const grid = body.querySelector(".pv-grid");
+    const show = (i) => {
+      grid.innerHTML = window.XLSX.utils.sheet_to_html(wb.Sheets[tabs[i]], { editable: false });
+      for (const b of body.querySelectorAll(".pv-tabs button")) b.classList.toggle("on", Number(b.dataset.tab) === i);
+    };
+    body.onclick = (ev) => { const b = ev.target.closest("[data-tab]"); if (b) show(Number(b.dataset.tab)); };
+    show(0);
+    return;
+  }
+  body.innerHTML = `<div class="pv-none">${esc(e.name)} needs LibreOffice on the server to be shown here.<br><a href="${esc(fileUrl(e.path, true))}">Download it</a></div>`;
+}
+
 /* ------------------------------------------------------------ changes */
 
-async function newFolder() {
-  if (F.mode !== "folder") await go(F.path);
+async function newFolder(inPath) {
+  // inPath: a folder picked in the tree or the list (right-click > New folder here)
+  const at = typeof inPath === "string" ? inPath : F.path;
+  if (typeof inPath !== "string" && F.mode !== "folder") await go(F.path);
   const f = await modal("New folder", `<label>Name <input name="n" maxlength="200" placeholder="e.g. 02 Drawings"></label>`
-    + `<p class="muted" style="font-size:12px;margin:6px 0 0">In ${esc(F.path || (F.proj ? F.proj.name : ""))}</p>`, "Make");
+    + `<p class="muted" style="font-size:12px;margin:6px 0 0">In ${esc(at || (F.proj ? F.proj.name : ""))}</p>`, "Make");
   if (!f || !f.n.value.trim()) return;
   try {
-    const r = await post("/mkdir", { path: F.path, name: f.n.value.trim() });
+    const r = await post("/mkdir", { path: at, name: f.n.value.trim() });
+    F.open.add(at);
     Undo.record({ label: `new folder "${f.n.value.trim()}"`, undo: async () => { await post("/delete", { paths: [r.path] }); await afterChange(); },
       redo: async () => { await post("/mkdir", { path: parentOf(r.path), name: nameOf(r.path) }); await afterChange(); } });
     await afterChange();
@@ -560,7 +638,15 @@ function itemMenu(e, x, y) {
     el.onclick = (ev) => { if (ev.target.closest("[data-k=restore]")) { closePop(); restore(many ? F.items.filter((i) => F.sel.has(i.path)).map((i) => i.id) : [e.id]); } };
     return;
   }
+  // the top of the tree: the project's folder itself
+  if (e.root) {
+    const el = pop({ getBoundingClientRect: () => ({ left: x, right: x, top: y, bottom: y }) },
+      `<div class="po-row" data-k="newdir">New folder here</div><div class="po-row" data-k="open">Open</div>`, 220);
+    el.onclick = (ev) => { const r = ev.target.closest("[data-k]"); if (!r) return; closePop(); if (r.dataset.k === "newdir") newFolder(""); else go(""); };
+    return;
+  }
   const rows = many ? [["move", `Move ${paths.length} items to ...`], ["delete", `Delete ${paths.length} items`]] : [
+    ...(e.dir ? [["newdir", "New folder here"]] : []),
     ["open", e.dir ? "Open" : PREVIEW.has(extOf(e.name)) ? "Preview" : "Download"],
     ...(e.dir ? [] : [["download", "Download"]]),
     ...(isPdf(e) ? [["sheets", "Add to the Sheets page ..."]] : []),
@@ -578,6 +664,7 @@ function itemMenu(e, x, y) {
     closePop();
     const k = r.dataset.k;
     if (k === "open") openItem(e);
+    else if (k === "newdir") newFolder(e.path);
     else if (k === "download") location.href = fileUrl(e.path, true);
     else if (k === "sheets") toSheets(e);
     else if (k === "star") star(e, !e.starred);
@@ -594,6 +681,17 @@ function itemMenu(e, x, y) {
 
 function wire() {
   $("#fo-proj").onchange = (ev) => openProject(ev.target.value, "");
+  /* right-click a folder in the tree: the same menu as in the list */
+  $("#fo-tree").addEventListener("contextmenu", async (ev) => {
+    const nl = ev.target.closest(".fo-nl");
+    if (!nl) return;
+    ev.preventDefault();
+    const p = nl.dataset.path;
+    if (!p) return itemMenu({ root: true, path: "", name: "", dir: true }, ev.clientX, ev.clientY);
+    const pinned = (F.quick.pinned || []).some((x) => x.path === p), starred = (F.quick.starred || []).some((x) => x.path === p);
+    F.sel = new Set();
+    itemMenu({ path: p, name: nameOf(p), dir: true, pinned, starred }, ev.clientX, ev.clientY);
+  });
   $("#fo-side").addEventListener("click", (ev) => {
     const q = ev.target.closest("[data-q]");
     if (q) { document.body.classList.remove("fo-side-open"); return showQuick(q.dataset.q); }

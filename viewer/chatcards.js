@@ -129,9 +129,10 @@ export async function rsvp(m, v) {
   return api(`/api/chat/messages/${m.id}/rsvp`, { method: "POST", body: JSON.stringify({ value: now === v ? "" : v }) });
 }
 
-export async function eventForm(old) {
+export async function eventForm(old, prefill) {
   const t = new Date(Date.now() + 86400e3);
-  const c = old || { title: "", start: `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}T10:00`, end: "", all_day: false, location: "", link: "", notes: "" };
+  // prefill: a new event with some of it given (the Calendar's right-click on a day)
+  const c = old || Object.assign({ title: "", start: `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}T10:00`, end: "", all_day: false, location: "", link: "", notes: "" }, prefill || {});
   const day = c.start.slice(0, 10), t0 = c.start.slice(11, 16) || "10:00";
   const t1 = c.end && c.end.slice(0, 10) === day ? c.end.slice(11, 16) : (() => { const [h, mi] = t0.split(":").map(Number); return `${pad(Math.min(23, h + 1))}:${pad(mi)}`; })();
   const p = modal(old ? "Change the event" : "New event", `<label>Title <input name="title" maxlength="160" value="${esc(c.title)}" placeholder="e.g. Facade workshop" required></label>`

@@ -9,7 +9,14 @@
 
 import { api, keptCopy, keepCopy } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, people, avatar, fmtDate, toast, ic, pop, closePop } from "./tasks-util.js";
+import { $, esc, people, avatar, fmtDate, toast, ic, pop, closePop, modal } from "./tasks-util.js";
+
+/* What is kept about a project beyond its name (tasks.py INFO_KEYS), in order. */
+const INFO = [
+  ["project_no", "Project no."], ["client", "Client"], ["address", "Address"], ["building_type", "Building type"],
+  ["site_area", "Site area (m²)"], ["gfa", "GFA (m²)"], ["storeys", "Storeys"], ["stage", "Stage"],
+  ["start", "Start"], ["completion", "Completion"], ["description", "Description"],
+];
 import { chip } from "./filelinks.js";
 
 const P = { me: null, list: [], rooms: {}, open: "", q: "", status: "", tree: {}, shut: new Set() };
@@ -102,7 +109,7 @@ function render() {
     <tbody>${rows.map((p) => {
       const st = p.stats;
       return `<tr data-id="${esc(p.id)}" class="${P.open === p.id ? "sel" : ""}">
-        <td class="pj-name"><b>${esc(p.short || p.name)}</b><small class="muted">${esc(p.code || (p.short !== p.name ? p.name : ""))}${p.team ? " · " + esc(p.team) : ""}</small></td>
+        <td class="pj-name">${p.thumb ? `<img class="pj-thumb" src="${esc(p.thumb)}" alt="" loading="lazy">` : ""}<b>${esc(p.short || p.name)}</b><small class="muted">${esc(p.code || (p.short !== p.name ? p.name : ""))}${p.team ? " · " + esc(p.team) : ""}</small></td>
         <td>${people(p.members, 5) || `<span class="muted">-</span>`}</td>
         <td>${opens(p)}</td>
         <td><span class="pj-st st-${esc(p.status.toLowerCase().replace(/\s+/g, "-"))}">${esc(p.status)}</span></td>
@@ -180,8 +187,15 @@ function paintDetail(p) {
       ${p.can_edit ? `<a class="ghost pd-manage" href="admin.html?reg=${encodeURIComponent(p.id)}#projects" data-manage title="Details, members and the viewer project are set on the Admin page">${ic("edit")} Manage</a>` : ""}
       <button class="ghost td-x" data-act="close">${ic("close")}</button></div>
     <div class="td-body">
+      ${p.thumb || p.can_edit ? `<div class="pd-thumb${p.thumb ? "" : " none"}"${p.can_edit ? ` data-act="thumb" title="Click or drop a picture to change it"` : ""}>`
+        + (p.thumb ? `<img src="${esc(p.thumb)}" alt="${esc(p.short || p.name)}">` : `<span>+ Add a picture of the project</span>`)
+        + (p.can_edit && p.thumb ? `<button class="ghost pd-thumb-x" data-act="thumbdel" title="Remove the picture">&times;</button>` : "")
+        + `</div><input type="file" id="pd-thumb-file" accept="image/*" hidden>` : ""}
       <div class="td-num muted">${esc([p.code, p.name !== p.short && !(p.code && p.name.includes(p.code)) ? p.name : ""].filter(Boolean).join(" · "))}</div>
       <div class="pd-open">${opens(p)}</div>
+      <h4>Project information ${p.can_edit ? `<button class="ghost pd-edit" data-act="info">${ic("edit")} Edit</button>` : ""}</h4>
+      <div class="pd-info">${INFO.filter(([k]) => (p.info || {})[k]).map(([k, l]) => `<div class="td-r"><span class="td-l">${esc(l)}</span><div class="td-v">${esc(p.info[k]).replace(/\n/g, "<br>")}</div></div>`).join("")
+        || `<p class="muted td-none">${p.can_edit ? "Nothing yet - Edit adds the project no., client, address, site area, GFA ..." : "Nothing yet."}</p>`}</div>
       ${(p.parts || []).length > 1 ? `<h4 style="margin-top:6px">Models and sheets <span class="muted">${p.parts.length} parts</span></h4>`
         + `<div class="pd-parts">${p.parts.map((x) => {
           const st = ((p.issues || {}).parts || []).find((y) => y.viewer === x.id);
@@ -230,6 +244,15 @@ function paintDetail(p) {
       box.hidden = true; document.body.classList.remove("detail-on");
       P.open = ""; history.replaceState(null, "", "projects.html"); render();
     }
+    if (a.dataset.act === "info") return editInfo(p);
+    if (a.dataset.act === "thumbdel") {
+      ev.stopPropagation();
+      if (!confirm("Remove the project's picture?")) return;
+      try { await api(`/api/registry/${encodeURIComponent(p.id)}/thumb`, { method: "DELETE" }); p.thumb = ""; paintDetail(p); render(); }
+      catch (e) { toast(e.message, true); }
+      return;
+    }
+    if (a.dataset.act === "thumb") return $("#pd-thumb-file").click();
     if (a.dataset.act === "room") {
       try {
         const r = await api("/api/chat/rooms", { method: "POST", body: JSON.stringify({ kind: "project", project: p.id }) });
@@ -238,6 +261,50 @@ function paintDetail(p) {
     }
   };
 }
+
+async function editInfo(p) {
+  const i = p.info || {};
+  const f = await modal("Project information - " + (p.short || p.name), `<div class="pd-form">`
+    + INFO.map(([k, l]) => k === "description" || k === "address"
+      ? `<label class="wide">${esc(l)}<textarea name="${k}" rows="${k === "description" ? 4 : 2}">${esc(i[k] || "")}</textarea></label>`
+      : `<label>${esc(l)}<input name="${k}" value="${esc(i[k] || "")}" ${k === "start" || k === "completion" ? 'placeholder="e.g. 2026-03 or Q2 2027"' : ""}></label>`).join("")
+    + `</div>`, "Save");
+  if (!f) return;
+  const info = {};
+  for (const [k] of INFO) info[k] = f[k].value.trim();
+  try {
+    const r = await api("/api/registry", { method: "POST", body: JSON.stringify({ id: p.id, info }) });
+    p.info = r.info;
+    paintDetail(p);
+    toast("Saved");
+  } catch (e) { toast(e.message, true); }
+}
+
+async function putThumb(p, file) {
+  if (!file || !/^image\//.test(file.type)) { toast("A picture please (JPG, PNG or WebP)", true); return; }
+  try {
+    const r = await api(`/api/registry/${encodeURIComponent(p.id)}/thumb`, { method: "POST", body: file, headers: { "Content-Type": file.type } });
+    p.thumb = r.thumb;
+    paintDetail(p);
+    render();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* a picture dropped on the panel's picture, or picked with a click */
+document.addEventListener("change", (ev) => {
+  if (ev.target.id !== "pd-thumb-file") return;
+  const p = P.list.find((x) => x.id === P.open);
+  if (p) putThumb(p, ev.target.files[0]);
+  ev.target.value = "";
+});
+document.addEventListener("dragover", (ev) => { if (ev.target.closest && ev.target.closest(".pd-thumb[data-act]")) ev.preventDefault(); });
+document.addEventListener("drop", (ev) => {
+  const t = ev.target.closest && ev.target.closest(".pd-thumb[data-act]");
+  if (!t) return;
+  ev.preventDefault();
+  const p = P.list.find((x) => x.id === P.open);
+  if (p && ev.dataTransfer.files[0]) putThumb(p, ev.dataTransfer.files[0]);
+});
 
 async function start() {
   // the list as it was last time, at once (replaced when the server answers)

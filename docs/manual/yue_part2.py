@@ -4,6 +4,8 @@ from blocks import *
 
 PART = [
     H2('Projects 項目'),
+    P('Sheets、3D、Board 同 Dashboard 頂部嘅 project 選單分開兩個：先揀 **project**（名 · 編號），再揀**佢嘅 model 或者 sheet set**（例如 Site 1／Site 2，或者 Sheets 版嘅「Revit sheets」同每個上載咗嘅 PDF set）。'),
+    P('喺 project 嘅資料欄，**Project information** 可以記低 project no.、client、地址、建築類型、地盤面積、GFA、層數、階段、開始同完成日期同簡介（**Edit**，project owner 同 admin 先改得）。撳或者拖一張相落資料欄頂部，就可以俾個 project 一張**相**，清單入面都會見到。'),
     P('**Projects** 版列出團隊嘅 job，每個 job 嘅人、圖則、model、task、issue、檔案同 chat 都喺同一個地方。呢版係俾人睇嘅；admin 喺 **Admin > Projects and members** 設定 project（撳 **Manage** 掣會帶你去）。'),
     LABEL('清單'),
     TABLE(['欄', '顯示'], [
@@ -106,6 +108,7 @@ PART = [
         '同 WhatsApp 之間冇自動雙向同步。',
     ]),
     H2('Calendar 日曆'),
+    P('**右撳某一日**（手機㩒住）可以喺嗰日加 **event**（全日）、**meeting**（10:00 開始，揀邀請邊個 chat）或者一個嗰日到期嘅 **task**。'),
     P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日，同**派咗俾你嘅 issue** 嘅到期日。'),
     UL([
         '電腦係月曆，手機係清單（**Month** / **List**）。剔格可以顯示或者隱藏會議、task 同 issue。**‹ ›** 同 **Today** 轉月份；手機可以掃。',
@@ -120,8 +123,10 @@ PART = [
         '**開住任何一版 viewer 嘅時候**（任何一版、背景嘅分頁，或者個 app）：新訊息會喺 Windows、Mac 同 Android 彈通知；撳一下就打開嗰個 chat 去到嗰條訊息。你睇緊嗰個 chat 就唔會彈。分頁標題會顯示未讀數，例如 **(3) LWK Viewer**，app 個 icon 都會有。',
         '**頂部嘅鈴**：撳 **Turn on notifications**（瀏覽器會問一次），再揀 **Every message**（所有訊息）、**@mentions and direct messages**（只係 @你 同私訊）或者 **Nothing**（唔通知）。',
         '**某個 chat 靜音：** Chat info > **Mute notifications**。靜咗音嘅 chat 有人 @你 都照通知。',
+        '**唔止訊息：** 有 task 派咗俾你、有人喺 task 或者 issue 度 @你、有 issue 派咗俾你或者你嘅 query 有人答、你嘅 task 就快到期，都會通知你。鈴入面嘅 **For you** 清單列出最近嘅（紅色數字係未睇嘅）；撳一項就打開，**Mark all read** 清咗個數字。',
         '**裝 app：** 鈴 > **Install the app**（Edge、Chrome），或者網址列右邊嘅安裝 icon。Android：選單 > **Add to Home screen**。iPhone／iPad：Safari > 分享 > **加至主畫面**。App 會用自己嘅視窗打開，右撳 icon 有 Chat、Tasks、Calendar、Folders 同 Projects 捷徑。',
         '**冇開任何一版都收到（push）：** 鈴 > **Turn on for this device**。要用 viewer 嘅 **https** 地址開先得（問你嘅 admin）。之後就算 app 閂咗，部手機或者電腦都會收到訊息。',
+        '**iPhone／iPad：** 先喺 Safari > 分享 > **加至主畫面**，再由主畫面個 icon 打開；然後喺鈴度開通知、撳 **Turn on for this device**，再撳 **Send a test**。收唔到嘅話，會講埋原因（例如 server 連唔到 Apple）。Server 更新之後，請關一次再開一次 push。',
     ]),
     H2('還原（Undo）'),
     UL([
@@ -132,6 +137,8 @@ PART = [
         '喺輸入框打緊字嘅時候，Ctrl+Z 照舊還原打字。Sheets 同 3D 版嘅 markup 有自己嘅 undo。',
     ]),
     H2('Folders 檔案夾'),
+    P('喺左邊 folder 樹右撳一個 folder（或者用 folder 嘅 ⋯），可以 **New folder here**（喺度開新 folder）、改名、**Move to ...**、加星、Pin、copy 連結同刪除。'),
+    P('**唔使下載都睇到：** 撳 PDF、相、片、文字檔，或者 **Word、Excel、PowerPoint**，就會喺清單隔籬打開。Server 裝咗 LibreOffice（問你嘅 admin）嘅話，Office 檔案會同喺 Office 入面一模一樣；未裝就用簡單啲嘅方式顯示 Word 同 Excel，PowerPoint 要下載。'),
     P('**Folders** 將每個 project 嘅檔案放喺 server 上面一個 folder，好似 ACC Docs 或者共用 drive 咁。喺左上角揀 project。'),
     UL([
         '**瀏覽：** 左邊嘅 folder 樹、頂部嘅路徑，或者 **Search this project\'s files** 搜尋。雙擊 folder 打開；撳 PDF、相或者片就預覽。',

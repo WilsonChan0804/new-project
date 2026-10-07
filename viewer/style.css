@@ -1860,6 +1860,7 @@ body.lwk-offline #lwk-nav a[href] { opacity: .55; }
   header .seg .seg-btn { white-space: nowrap; padding: 5px 9px; }
   header .brand small, .tasks-page header .spacer { display: none; }
   body.own-nav #lwk-nav .who { display: none; }
+}
 
 /* the sheets and 3D pages: the page links share the Sheets / 3D group */
 /* Never shrunk: on a phone the header itself scrolls sideways, and a group
@@ -1879,3 +1880,19 @@ header .mode.page-links button { white-space: nowrap; }
 .set-chip { font-size: 11px; font-weight: 700; color: #6d28d9; background: #ede9fe; border-radius: 10px; padding: 1px 8px;
   max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .set-chip[hidden] { display: none; }
+
+/* the company logo in the header: white on the orange bar */
+.brand { display: inline-flex; align-items: center; gap: 6px; }
+.brand .brand-logo { height: 24px; width: auto; display: block; }
+.brand .brand-app { font-weight: 700; font-size: 13px; letter-spacing: .3px; opacity: .95; }
+@media (max-width: 700px) { .brand .brand-logo { height: 20px; } .brand .brand-app { display: none; } }
+
+/* project, then its model / sheet set (nav.js projectTwoStep) */
+header select.two-proj, header select.two-part {
+  width: auto; max-width: 240px; padding: 4px 8px; font-size: 12px;
+  background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 6px;
+}
+header select.two-proj { font-weight: 700; }
+header select.two-proj option, header select.two-part option { color: var(--ink); background: #fff; font-weight: 400; }
+header select.two-proj[hidden], header select.two-part[hidden] { display: none; }
+@media (max-width: 700px) { header select.two-proj, header select.two-part { max-width: 120px; } }

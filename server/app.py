@@ -713,8 +713,9 @@ def _member_by_name(pid, name):
     return None
 
 
-def personal_targets(pid, prev, item, actor=""):
-    """[(name, email, why)] - never the person who made the change."""
+def personal_targets(pid, prev, item, actor="", with_uid=False):
+    """[(name, email, why)] - never the person who made the change.
+    with_uid: [(name, email, why, uid)]."""
     iss = item.get("issue")
     if not isinstance(iss, dict):
         return []
@@ -727,7 +728,7 @@ def personal_targets(pid, prev, item, actor=""):
             return
         if any(o[0] == m["name"] for o in out):
             return
-        out.append((m["name"], m.get("email") or "", why))
+        out.append((m["name"], m.get("email") or "", why, m.get("id")))
 
     if iss.get("assigned_to") and (iss.get("assigned_to") or "") != (piss.get("assigned_to") or ""):
         add(iss["assigned_to"], "assigned to you")
@@ -737,6 +738,10 @@ def personal_targets(pid, prev, item, actor=""):
     for c in comments:
         if _comment_key(c) in old_keys:
             continue
+        # @name in a comment: that person is told
+        for nm in (c.get("mentions") or [])[:20]:
+            if isinstance(nm, str):
+                add(nm.lstrip("@"), "%s mentioned you" % (c.get("author") or "someone"))
         q = by_id.get(c.get("reply_to"))
         if q is not None and q.get("kind") == "query":
             add(q.get("author") or "", "your query was answered by %s" % (c.get("author") or "someone"))
@@ -745,7 +750,7 @@ def personal_targets(pid, prev, item, actor=""):
     st, pst = iss.get("status") or "Open", piss.get("status") or "Open"
     if piss and st != pst and st in ("Resolved", "Closed"):
         add(iss.get("author") or "", "the issue you raised is now %s" % st)
-    return out
+    return out if with_uid else [o[:3] for o in out]
 
 
 def smtp_ready():
@@ -790,7 +795,7 @@ def notify_people(pid, prev, item, base, w):
     if not accounts_on():
         return
     try:
-        targets = personal_targets(pid, prev, item, getattr(w, "name", "") or "")
+        targets = personal_targets(pid, prev, item, getattr(w, "name", "") or "", with_uid=True)
     except Exception as ex:
         print("notify: %s" % ex)
         return
@@ -798,6 +803,18 @@ def notify_people(pid, prev, item, base, w):
         return
     iss = item["issue"]
     import threading
+    # on their open pages, their phones and under the bell, mail or not
+    try:
+        import chat
+        for name, email, why, uid in targets:
+            if uid is None:
+                continue
+            chat.inbox_post(uid, "mention" if "mentioned" in why else "issue",
+                            "#%s %s" % (iss.get("number", "?"), iss.get("title") or "Issue"),
+                            "%s (%s)" % (why[0].upper() + why[1:], pid), issue_link(pid, item, base))
+    except Exception as ex:
+        print("issue inbox: %s" % ex)
+    targets = [t[:3] for t in targets]
 
     def send():
         # (Teams: the channel card itself @mentions them - notify_teams)

@@ -31,7 +31,7 @@ async function call(path, opts) {
 }
 
 const N = {
-  rev: 0, total: 0, mentions: 0, level: "all", muted: [],
+  rev: 0, total: 0, mentions: 0, inbox: 0, level: "all", muted: [],
   installEv: null, started: false,
 };
 
@@ -59,7 +59,7 @@ function inFront(room) {
 
 async function show(n) {
   if (!hasNotes() || Notification.permission !== "granted") return;
-  if (inFront(n.room) || seen(n.id)) return;
+  if ((!n.inbox && inFront(n.room)) || seen(n.id)) return;
   const opts = { body: n.body, tag: n.id, icon: "icons/icon-192.png", badge: "icons/icon-192.png",
                  data: { url: n.url } };
   try {
@@ -94,7 +94,9 @@ async function loop() {
       N.rev = r.rev;
       if (r.level) N.level = r.level;
       if (r.muted) N.muted = r.muted;
+      if (r.inbox !== undefined) N.inbox = r.inbox;
       if (r.total !== undefined) counts(r.total, r.mentions || 0);
+      if ((r.items || []).some((x) => x.inbox) && panel) paintPanel();
       fails = 0;
       // a page in the background asks less often (the browser slows it anyway)
       if (document.hidden) await new Promise((res) => setTimeout(res, 1500));
@@ -116,7 +118,21 @@ function css() {
   s.textContent = `
 #lwk-bell { display: inline-flex; align-items: center; gap: 4px; position: relative; cursor: pointer; }
 #lwk-bell .dot { position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: #e11d48; border: 1.5px solid #fff; }
-#lwk-bell .dot[hidden] { display: none; }
+#lwk-bell .dot[hidden], #lwk-bell .cnt[hidden] { display: none; }
+#lwk-bell .cnt { position: absolute; top: -4px; right: -6px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: #e11d48;
+  color: #fff; font: 700 10px/15px system-ui, sans-serif; text-align: center; box-sizing: border-box; }
+.lwk-np { max-height: calc(100vh - 70px); overflow-y: auto; }
+.lwk-np h4 { display: flex; align-items: center; }
+.lwk-np .lnk { margin-left: auto; border: 0 !important; background: none !important; color: #d1660e !important; font-size: 11px !important; padding: 0 !important; }
+.np-list { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; }
+.np-it { display: flex; gap: 8px; padding: 6px; border-radius: 6px; text-decoration: none; color: inherit; }
+.np-it:hover { background: rgba(242,128,34,.1); }
+.np-it.new { background: rgba(242,128,34,.08); }
+.np-it.new b { color: #d1660e; }
+.np-k { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #ffeedd; color: #d1660e; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+.np-t { display: flex; flex-direction: column; min-width: 0; }
+.np-t b { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-t small { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lwk-np { position: fixed; z-index: 10000; width: 330px; max-width: calc(100vw - 16px); background: #fff; color: #1f2937;
   border-radius: 10px; box-shadow: 0 12px 36px rgba(0,0,0,.22); padding: 14px; font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .lwk-np h4 { margin: 0 0 6px; font-size: 13px; }
@@ -159,7 +175,26 @@ function paintBell() {
   if (!b) return;
   // a dot until notifications are on (and not refused) - the way in
   const off = hasNotes() && Notification.permission === "default" && N.level !== "off";
-  b.querySelector(".dot").hidden = !off;
+  b.querySelector(".dot").hidden = !off && !N.inbox;
+  let n = b.querySelector(".cnt");
+  if (!n) { n = document.createElement("b"); n.className = "cnt"; b.appendChild(n); }
+  n.hidden = !N.inbox;
+  n.textContent = N.inbox > 99 ? "99+" : String(N.inbox || "");
+  if (N.inbox) b.querySelector(".dot").hidden = true;
+  b.title = N.inbox ? `${N.inbox} new for you - tasks, issues and @mentions` : "Notifications and the app";
+}
+
+const KIND_ICON = { mention: "@", assigned: "&#9745;", done: "&#10003;", comment: "&#128172;", issue: "!", due: "&#9200;", task: "&#9745;" };
+async function recentHtml() {
+  let r;
+  try { r = await call("/api/chat/inbox"); } catch (e) { return ""; }
+  if (!r.items.length) return `<section><h4>For you</h4><span class="muted">Tasks given to you, @mentions on tasks and issues, issues assigned to you - they show here.</span></section>`;
+  const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const when = (a) => { const d = new Date(a); return isNaN(d) ? "" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+  return `<section><h4>For you ${r.unread ? `<button class="lnk" data-np="readall">Mark all read</button>` : ""}</h4><div class="np-list">`
+    + r.items.slice(0, 20).map((x) => `<a class="np-it${x.read ? "" : " new"}" href="${esc(x.url)}" data-in="${esc(x.id)}">`
+      + `<span class="np-k">${KIND_ICON[x.kind] || "&#8226;"}</span><span class="np-t"><b>${esc(x.title)}</b><small>${esc(x.body)}</small><small class="muted">${esc(when(x.at))}</small></span></a>`).join("")
+    + `</div></section>`;
 }
 
 let panel = null;
@@ -213,7 +248,9 @@ async function paintPanel() {
   else if (N.installEv) inst = `<button class="pri" data-np="install">Install the app</button> <span class="muted">its own window and icon, a badge with the unread count</span>`;
   else if (isIOS()) inst = `<span class="muted">In Safari: tap Share <b>&#x2191;</b>, then <b>Add to Home Screen</b>.</span>`;
   else inst = `<span class="muted">In Edge or Chrome: the <b>Install</b> icon at the right of the address bar (or menu &gt; Apps &gt; Install this site as an app). On Android: menu &gt; Add to Home screen.</span>`;
-  panel.innerHTML = `<section><h4>Chat notifications</h4>${note}</section>
+  const recent = await recentHtml();
+  if (!panel) return;
+  panel.innerHTML = recent + `<section><h4>Chat notifications</h4>${note}</section>
     <section><h4>Tell me about</h4>
       ${lv("all", "Every message", "in all my chats (muted chats left out)")}
       ${lv("mentions", "@mentions and direct messages", "group chats stay quiet unless I'm mentioned")}
@@ -227,15 +264,29 @@ async function paintPanel() {
     catch (e) { alert(e.message); }
   };
   panel.onclick = async (ev) => {
+    const it = ev.target.closest("[data-in]");
+    if (it) { call("/api/chat/inbox/read", { method: "POST", body: JSON.stringify({ ids: [it.dataset.in] }) }).catch(() => {}); return; }
     const b = ev.target.closest("[data-np]");
     if (!b) return;
+    if (b.dataset.np === "readall") {
+      ev.preventDefault();
+      await call("/api/chat/inbox/read", { method: "POST", body: JSON.stringify({ all: true }) }).catch(() => {});
+      N.inbox = 0; paintBell(); paintPanel();
+      return;
+    }
     const k = b.dataset.np;
     b.disabled = true;
     try {
       if (k === "perm") { await askPermission(); }
       else if (k === "pushon") { await pushOn(); }
       else if (k === "pushoff") { await pushOff(); }
-      else if (k === "test") { const r = await call("/api/push/test", { method: "POST", body: "{}" }); if (!r.sent) alert("Nothing was delivered - is the server online on the internet?"); }
+      else if (k === "test") {
+        const r = await call("/api/push/test", { method: "POST", body: "{}" });
+        if (!r.devices) alert("No device of yours has push on - press Turn on for this device first.");
+        else if (!r.sent) alert("Not delivered:\n\n" + r.results.map((x) => "- " + (x.device ? x.device.split(") ")[0] + ") " : "") + x.why).join("\n")
+          + "\n\n(The server signs as " + r.contact + ".)");
+        else alert(`Sent to ${r.sent} of ${r.devices} device${r.devices === 1 ? "" : "s"} - it should show in a moment.`);
+      }
       else if (k === "install") { N.installEv.prompt(); await N.installEv.userChoice; N.installEv = null; }
     } catch (e) { alert(e.message); }
     paintBell();

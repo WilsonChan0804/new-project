@@ -35,7 +35,7 @@ const LWK_VERSION = "2026-10-03a";
     b.appendChild(s);
   }
 })();
-import { api, link, project, signOut, projectOptions } from "./nav.js";
+import { api, link, project, signOut, projectOptions, projectTwoStep } from "./nav.js";
 import { ISSUE_TYPES } from "./issuetypes.js";
 
 const $ = (s) => document.querySelector(s);
@@ -117,6 +117,7 @@ async function loadProjects() {
     return false;
   }
   sel.value = want;
+  projectTwoStep(sel);           // project first, then its model
   localStorage.setItem("lwk-viewer:project", want);
   history.replaceState(null, "", "dashboard.html?project=" + encodeURIComponent(want));
   sel.onchange = () => {

@@ -116,6 +116,8 @@ DOC = [
         "**Messenger:** the project's channel shows new tasks, assignments, completions and comments, and new or changed issues, as cards.",
     ]),
     H2('Projects'),
+    P('The project drop-down at the top of Sheets, 3D, Board and Dashboard is two: first the **project** (name · code), then **its model or sheet set** (for example Site 1 / Site 2, or on Sheets "Revit sheets" and each uploaded PDF set).'),
+    P('In a project\'s panel, **Project information** keeps the project no., client, address, building type, site area, GFA, storeys, stage, start and completion dates and a description (**Edit**, for the project\'s owners and admins). Click or drop a picture at the top of the panel to give the project a **picture**; it also shows in the list.'),
     P('The **Projects** page lists the team\'s jobs, each with its people, drawings, model, tasks, issues, files and chat in one place. It is for reading; admins set projects up on **Admin > Projects and members** (the **Manage** button takes you there).'),
     LABEL('The list'),
     TABLE(['Column', 'Shows'], [
@@ -218,6 +220,7 @@ DOC = [
         'There is no automatic two-way link with WhatsApp.',
     ]),
     H2('Calendar'),
+    P('**Right-click a day** (hold it on a phone) to add on that day an **event** (all day), a **meeting** (from 10:00, choose the chat to invite) or a **task** due that day.'),
     P('**Calendar** shows what is coming up for you, by date: **meetings** sent in the Messenger (with your reply), **your tasks** on their due dates and **issues assigned to you** on their due dates.'),
     UL([
         'A month on a computer, a list on a phone (**Month** / **List**). The tick boxes show or hide meetings, tasks and issues. **‹ ›** and **Today** move through the months; on a phone, swipe.',
@@ -232,8 +235,10 @@ DOC = [
         '**While a viewer page is open** (any page, a tab in the background, or the app): new messages show as notifications on Windows, Mac and Android; a click opens the chat at the message. The chat you are looking at stays quiet. The tab title shows the unread count, e.g. **(3) LWK Viewer**, and so does the app\'s icon.',
         '**The bell** in the top bar: **Turn on notifications** (the browser asks once), then choose **Every message**, **@mentions and direct messages** or **Nothing**.',
         '**Mute a chat:** Chat info > **Mute notifications**. A muted chat still tells you when you are @mentioned.',
+        '**Not only messages:** you are also told when a task is made yours, when you are @mentioned on a task or an issue, when an issue is assigned to you or your query is answered, and when tasks you own are due. The bell\'s **For you** list keeps the latest ones (a red number shows how many are new); click one to open it, **Mark all read** clears the number.',
         '**Install the app:** the bell > **Install the app** (Edge, Chrome), or the install icon at the right of the address bar. On Android: menu > **Add to Home screen**. On iPhone and iPad: Safari > Share > **Add to Home Screen**. The app opens in its own window, with shortcuts to Chat, Tasks, Calendar, Folders and Projects (right-click the icon).',
         '**When no page is open (push):** the bell > **Turn on for this device**. This works when the viewer is opened by its **https** address; ask your admin. Messages then arrive on that phone or computer even with the app closed.',
+        '**iPhone and iPad:** first add the viewer to the Home Screen (Safari > Share > **Add to Home Screen**) and open it from there; then in the bell turn on notifications and **Turn on for this device**, and press **Send a test**. If it does not arrive, the message says why (for example the server cannot reach Apple). After a server update, turn push off and on again once.',
     ]),
     H2('Undo'),
     UL([
@@ -244,6 +249,8 @@ DOC = [
         'While you type in a box, Ctrl+Z undoes the typing as usual. The Sheets and 3D pages keep their own undo for markups.',
     ]),
     H2('Folders'),
+    P('Right-click a folder in the tree on the left (or use ⋯ on a folder) for **New folder here**, **Rename**, **Move to ...**, **Star**, **Pin**, **Copy link** and **Delete**.'),
+    P('**Reading documents without downloading:** click a PDF, picture, video, text file, or a **Word, Excel or PowerPoint** file and it opens beside the list. Office files look exactly as in Office when LibreOffice is installed on the server (ask your admin); without it, Word and Excel are shown in a simpler way and PowerPoint has to be downloaded.'),
     P('**Folders** holds each project\'s files in a folder on the server, like ACC Docs or a shared drive. Pick the project at the top left.'),
     UL([
         '**Browse:** the folder tree on the left, the path at the top, or **Search this project\'s files**. Double-click a folder to open it; click a PDF, picture or video to preview it.',

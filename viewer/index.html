@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>LWK Viewer</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234c8dff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="app.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -13,11 +12,12 @@
 <meta name="apple-mobile-web-app-title" content="LWK Viewer">
 <meta name="theme-color" content="#f28022">
 <script src="vendor/pdf.min.js"></script>
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
 </head>
 <body>
 
 <header>
-  <div class="brand">LWK Viewer</div>
+  <div class="brand"><img class="brand-logo" src="icons/logo-white.png" alt="LWK + Partners"><span class="brand-app">Viewer</span></div>
   <div class="mode">
     <button class="active">Sheets</button>
     <button onclick="location.href='model.html'+(new URLSearchParams(location.search).get('project')?'?project='+encodeURIComponent(new URLSearchParams(location.search).get('project')):'')">3D</button>

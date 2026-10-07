@@ -138,22 +138,62 @@ def encrypt(payload, p256dh, auth):
 
 
 def send_one(sub, data, subject):
-    """Send to one browser. Returns the push service's HTTP status."""
+    """Send to one browser: (HTTP status, what the push service said).
+    No Topic header: Apple's push service is strict about what it gets."""
     body = encrypt(json.dumps(data).encode("utf-8"), sub["p256dh"], sub["auth"])
     req = urllib.request.Request(sub["endpoint"], data=body, method="POST", headers={
         "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream",
-        "TTL": "86400", "Urgency": "high", "Topic": str(data.get("tag", ""))[:32].replace("-", "") or "lwk",
+        "TTL": "86400", "Urgency": "high",
         "Authorization": vapid_auth(sub["endpoint"], subject)})
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
-            return r.status
+            return r.status, ""
     except urllib.error.HTTPError as e:
-        return e.code
+        try:
+            why = e.read(300).decode("utf-8", "replace")
+        except Exception:
+            why = ""
+        return e.code, (why or e.reason or "").strip()
 
 
 def subject():
-    s = (CORE.CFG.get("push_contact") or "").strip() if hasattr(CORE, "CFG") else ""
-    return s if s.startswith(("mailto:", "https:")) else "mailto:admin@lwk-viewer.local"
+    """Who runs this server, as the push services want to know (the VAPID
+    "sub"). Apple refuses a made-up address (BadJwtToken), so: the
+    LWK_PUSH_CONTACT setting, else a site admin's own email, else the
+    viewer's own https address."""
+    s = (os.environ.get("LWK_PUSH_CONTACT") or "").strip()
+    if not s and hasattr(CORE, "CFG"):
+        s = (CORE.CFG.get("push_contact") or "").strip()
+    if s and "@" in s and not s.startswith("mailto:"):
+        s = "mailto:" + s
+    if s.startswith(("mailto:", "https:")):
+        return s
+    try:
+        for u in CORE.ACC.list():
+            if u.get("active") and u.get("is_admin") and "@" in (u.get("email") or "") \
+                    and not u["email"].lower().endswith((".local", ".localhost")):
+                return "mailto:" + u["email"]
+        for u in CORE.ACC.list():
+            if u.get("active") and "@" in (u.get("email") or "") and not u["email"].lower().endswith(".local"):
+                return "mailto:" + u["email"]
+    except Exception:
+        pass
+    base = (CORE.CFG.get("base_url") or "") if hasattr(CORE, "CFG") else ""
+    return base.rstrip("/") if base.startswith("https://") else "mailto:noreply@lwkp.com"
+
+
+def explain(code, why, endpoint):
+    """What a push service's answer means, in words."""
+    host = urllib.parse.urlsplit(endpoint).netloc
+    if code == 0:
+        return "the server could not reach %s (%s) - is outgoing internet open on the server?" % (host, why or "no connection")
+    if code in (404, 410):
+        return "this device is no longer registered - turn push on again in the bell"
+    if code in (401, 403):
+        return "%s refused the server's signature (%s %s)" % (host, code, why[:120])
+    if code == 413:
+        return "the message was too big"
+    return "%s answered %s %s" % (host, code, why[:120])
 
 
 def send_to(uid, data):
@@ -163,12 +203,21 @@ def send_to(uid, data):
     try:
         subs = c.execute("SELECT * FROM subs WHERE uid = ?", (uid,)).fetchall()
         sent = 0
+        results = []
         for s in subs:
             try:
-                code = send_one(s, data, subject())
+                code, why = send_one(s, data, subject())
             except Exception as e:
-                print("push: %s" % e)
-                code = 0
+                code, why = 0, str(e)
+            ok = 200 <= code < 300
+            results.append({"device": (s["agent"] or "")[:80], "ok": ok, "status": code,
+                            "why": "" if ok else explain(code, why, s["endpoint"])})
+            if not ok:
+                msg = "push to %s failed: %s" % (urllib.parse.urlsplit(s["endpoint"]).netloc, explain(code, why, s["endpoint"]))
+                try:
+                    CORE.bg_log(msg)
+                except Exception:
+                    print(msg)
             if code in (404, 410):
                 c.execute("DELETE FROM subs WHERE endpoint = ?", (s["endpoint"],))
             elif 200 <= code < 300:
@@ -178,6 +227,7 @@ def send_to(uid, data):
                 c.execute("UPDATE subs SET fails = fails + 1 WHERE endpoint = ?", (s["endpoint"],))
                 c.execute("DELETE FROM subs WHERE endpoint = ? AND fails > 20", (s["endpoint"],))
         c.commit()
+        send_to.last = results
         return sent
     finally:
         c.close()
@@ -218,6 +268,20 @@ def hook(mid):
     t.start()
 
 
+def hook_inbox(uid, data):
+    """chat.inbox_post: one person's notice, pushed to their devices."""
+    try:
+        c = _db()
+        n = c.execute("SELECT COUNT(*) FROM subs WHERE uid = ?", (uid,)).fetchone()[0]
+        c.close()
+    except Exception:
+        n = 0
+    if not n:
+        return
+    t = threading.Thread(target=lambda: send_to(uid, data), daemon=True)
+    t.start()
+
+
 def register(app, core):
     global CORE
     CORE = core
@@ -227,6 +291,7 @@ def register(app, core):
         import chat
         if HAVE_CRYPTO:
             chat.PUSH_HOOK = hook
+            chat.PUSH_INBOX = hook_inbox
     except Exception:
         pass
 
@@ -292,7 +357,12 @@ def register(app, core):
     async def push_test(request: Request, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         import asyncio
-        n = await asyncio.get_event_loop().run_in_executor(None, send_to, w.uid, {
-            "title": "LWK Viewer", "body": "Notifications are on for this device.", "url": "messenger.html",
-            "tag": "test"})
-        return {"sent": n}
+        out = {}
+
+        def run():
+            out["sent"] = send_to(w.uid, {"title": "LWK Viewer", "body": "Notifications are on for this device.",
+                                          "url": "messenger.html", "tag": "test"})
+            out["results"] = list(getattr(send_to, "last", []))
+        await asyncio.get_event_loop().run_in_executor(None, run)
+        return {"sent": out.get("sent", 0), "devices": len(out.get("results", [])), "results": out.get("results", []),
+                "contact": subject()}

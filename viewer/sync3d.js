@@ -313,6 +313,8 @@ export function createSync3D(ctx) {
      sheet that has that floor's plan - the one most like the sheet being
      read (same scale, same series of numbers). */
   function follow() {
+    // a sheet still opening (the walk switched it): nothing to follow on yet
+    if (!S.viewport || !S.page) return;
     const w = where();
     if (!w) return;
     if (w.vp && w.gap === 0) {
@@ -359,6 +361,7 @@ export function createSync3D(ctx) {
 
   function keepInView(uv) {
     const sc = $("#scroll");
+    if (!S.viewport || !sc || !$("#page")) return;
     const [x, y] = ctx.canvasFrom(uv[0], uv[1]);
     const P = $("#page").getBoundingClientRect(), R = sc.getBoundingClientRect();
     const sx = P.left - R.left + x, sy = P.top - R.top + y;   // in the visible box

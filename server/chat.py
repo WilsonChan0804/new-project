@@ -101,6 +101,21 @@ CREATE TABLE IF NOT EXISTS files (
     stored     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_files_room ON files(room);
+-- What concerns one person outside the chats (a task made theirs, an
+-- @mention on a task or an issue, an issue assigned ...): shown and pushed
+-- like a message, and listed under the bell.
+CREATE TABLE IF NOT EXISTS inbox (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid    INTEGER NOT NULL,
+    kind   TEXT NOT NULL DEFAULT '',
+    title  TEXT NOT NULL DEFAULT '',
+    body   TEXT NOT NULL DEFAULT '',
+    url    TEXT NOT NULL DEFAULT '',
+    at     TEXT NOT NULL,
+    rev    INTEGER NOT NULL,
+    read   INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_inbox_uid ON inbox(uid, rev);
 CREATE TABLE IF NOT EXISTS notify_prefs (
     uid    INTEGER PRIMARY KEY,
     level  TEXT NOT NULL DEFAULT 'all',
@@ -443,7 +458,39 @@ def _insert(d, room, uid, author, kind, body="", card=None, files=None, reply_to
 # ------------------------------------------------------------ notifications
 
 PUSH_HOOK = None
+PUSH_INBOX = None
 LEVELS = ("all", "mentions", "off")
+
+
+def inbox_post(uid, kind, title, body="", url=""):
+    """Tell one person about something that concerns them (tasks.py,
+    app.py): it shows on their open pages within a second or two, is pushed
+    to their devices, and is listed under the bell."""
+    if CORE is None or uid is None:
+        return
+    try:
+        with db() as d:
+            if notify_prefs(d, uid)["level"] == "off":
+                return
+            rev = next_rev(d)
+            cur = d.execute("INSERT INTO inbox (uid, kind, title, body, url, at, rev) VALUES (?,?,?,?,?,?,?)",
+                            (int(uid), str(kind)[:20], str(title)[:200], str(body)[:400], str(url)[:500], now_iso(), rev))
+            iid = cur.lastrowid
+            d.execute("DELETE FROM inbox WHERE uid = ? AND id < ?", (int(uid), iid - 300))
+    except Exception as e:
+        print("inbox: %s" % e)
+        return
+    if PUSH_INBOX:
+        try:
+            PUSH_INBOX(int(uid), {"title": str(title)[:200], "body": str(body)[:240], "url": url or "messenger.html",
+                                  "tag": "in%d" % iid})
+        except Exception:
+            pass
+
+
+def inbox_row(r):
+    return {"id": "in%d" % r["id"], "inbox": True, "kind": r["kind"], "title": r["title"], "body": r["body"],
+            "url": r["url"], "at": r["at"], "read": bool(r["read"]), "mention": r["kind"] == "mention"}
 
 
 def notify_prefs(d, uid):
@@ -1332,14 +1379,41 @@ def register(app, core):
                     n = notice_of(x, room, w.uid)
                     if wants(pref, room["id"], room["kind"], n["mention"]):
                         items.append(n)
+                if pref["level"] != "off":
+                    items += [inbox_row(x) for x in d.execute(
+                        "SELECT * FROM inbox WHERE uid = ? AND rev > ? ORDER BY rev LIMIT 30", (w.uid, since))]
             c = d.execute(
                 "SELECT COUNT(*) AS n, SUM(CASE WHEN x.mentions LIKE ? THEN 1 ELSE 0 END) AS m FROM messages x "
                 "JOIN room_members rm ON rm.room = x.room AND rm.uid = ? "
                 "JOIN rooms r ON r.id = x.room AND r.deleted = 0 "
                 "WHERE x.seq > rm.last_read AND x.deleted = 0 AND (x.uid IS NULL OR x.uid != ?)",
                 ("%%,%d,%%" % w.uid, w.uid, w.uid)).fetchone()
+            unseen = d.execute("SELECT COUNT(*) AS n FROM inbox WHERE uid = ? AND read = 0", (w.uid,)).fetchone()["n"]
         return {"rev": rev, "items": items, "total": c["n"] or 0, "mentions": c["m"] or 0,
-                "level": pref["level"], "muted": pref["muted"]}
+                "inbox": unseen, "level": pref["level"], "muted": pref["muted"]}
+
+    @app.get("/api/chat/inbox")
+    async def inbox_list(request: Request, x_viewer_token: str = Header(default="")):
+        """The latest things that concerned me (under the bell)."""
+        w = me(request, x_viewer_token)
+        with db() as d:
+            rows = d.execute("SELECT * FROM inbox WHERE uid = ? ORDER BY id DESC LIMIT 50", (w.uid,)).fetchall()
+            unseen = d.execute("SELECT COUNT(*) AS n FROM inbox WHERE uid = ? AND read = 0", (w.uid,)).fetchone()["n"]
+        return {"items": [inbox_row(r) for r in rows], "unread": unseen}
+
+    @app.post("/api/chat/inbox/read")
+    async def inbox_read(request: Request, x_viewer_token: str = Header(default="")):
+        """{ids: ["in12", ...]} or {all: true}."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        with db() as d:
+            if body.get("all"):
+                d.execute("UPDATE inbox SET read = 1 WHERE uid = ?", (w.uid,))
+            else:
+                ids = [int(str(x)[2:]) for x in (body.get("ids") or [])[:200] if str(x).startswith("in") and str(x)[2:].isdigit()]
+                for i in ids:
+                    d.execute("UPDATE inbox SET read = 1 WHERE uid = ? AND id = ?", (w.uid, i))
+        return {"ok": True}
 
     @app.get("/api/chat/notify-settings")
     async def notify_get(request: Request, x_viewer_token: str = Header(default="")):

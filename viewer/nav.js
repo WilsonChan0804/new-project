@@ -15,7 +15,7 @@ import { startNotify } from "./notify.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-08";
+const LWK_VERSION = "2026-10-09";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -534,3 +534,76 @@ export async function projectOptions(current, fallback) {
 
 // the search on every page (search.js): its button goes into #lwk-nav
 if (document.querySelector("header")) installSearch();
+
+/* Project first, then its model or sheet set: the one long drop-down
+   (every project with its parts under it) shown as two. They are built
+   from that drop-down itself - its groups are the projects, their options
+   the parts (and, on the Sheets page, the PDF sets) - and choosing sets
+   its value and fires its change, so each page goes on as before. The
+   original stays in the page, hidden. */
+export function projectTwoStep(sel) {
+  if (!sel || sel._two) return;
+  const proj = document.createElement("select");
+  const part = document.createElement("select");
+  proj.className = (sel.className || "") + " two-proj";
+  part.className = (sel.className || "") + " two-part";
+  proj.title = "Project";
+  part.title = "Model / sheet set of this project";
+  sel.before(proj, part);
+  sel._two = { proj, part };
+  const NOT = "Not on the Projects page";
+  const groups = () => {
+    const out = [];
+    for (const n of sel.children) {
+      if (n.tagName === "OPTGROUP" && n.label !== NOT) {
+        out.push({ key: "g:" + n.label, label: n.label, opts: [...n.querySelectorAll("option")] });
+      } else if (n.tagName === "OPTGROUP") {
+        for (const o of n.querySelectorAll("option")) out.push({ key: "o:" + o.value, label: o.textContent, opts: [o] });
+      } else if (n.tagName === "OPTION") {
+        out.push({ key: "o:" + n.value, label: n.textContent, opts: [n] });
+      }
+    }
+    return out;
+  };
+  const shortName = (label, o) => {
+    const t = (o.textContent || "").trim();
+    const head = label.split(" · ")[0];
+    const s = t.startsWith(head + " · ") ? t.slice(head.length + 3) : t;
+    return s === head || s === label ? "Model and sheets" : s;
+  };
+  let painting = false;
+  const paint = () => {
+    painting = true;
+    const gs = groups();
+    const cur = sel.selectedOptions[0] || sel.options[0];
+    const at = gs.find((g) => g.opts.includes(cur)) || gs[0];
+    const esc = (x) => String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+    proj.innerHTML = gs.map((g) => `<option value="${esc(g.key)}"${g === at ? " selected" : ""}>${esc(g.label)}</option>`).join("");
+    part.innerHTML = at ? at.opts.map((o) => `<option value="${esc(o.value)}"${o === cur ? " selected" : ""}>${esc(shortName(at.label, o))}</option>`).join("") : "";
+    part.hidden = !at || at.opts.length < 2;
+    proj.hidden = sel.hidden && gs.length < 2 && part.hidden;
+    sel.hidden = true;
+    sel.style.display = "none";
+    painting = false;
+  };
+  const choose = (value) => {
+    if (sel.value === value) return;
+    sel.value = value;
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  proj.onchange = () => {
+    const g = groups().find((x) => x.key === proj.value);
+    if (!g || !g.opts.length) return;
+    let want = g.opts[0].value;
+    try { const k = localStorage.getItem("lwk-viewer:part:" + g.key); if (k && g.opts.some((o) => o.value === k)) want = k; } catch (e) {}
+    choose(want);
+    paint();
+  };
+  part.onchange = () => {
+    try { localStorage.setItem("lwk-viewer:part:" + proj.value, part.value); } catch (e) {}
+    choose(part.value);
+  };
+  new MutationObserver(() => { if (!painting) paint(); }).observe(sel, { childList: true, subtree: true, attributes: true, attributeFilter: ["selected", "label"] });
+  sel.addEventListener("change", () => { if (!painting) paint(); });
+  paint();
+}
