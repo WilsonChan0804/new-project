@@ -71,6 +71,7 @@ function opens(p) {
     + (g ? `<a href="tasks.html?list=${esc(g.list_id)}" title="Tasks (${esc(g.list_title)})">Tasks</a>` : "")
     + (room ? `<a href="messenger.html?room=${esc(room.id)}" title="${room.member ? "The project's chat" : "Join the project's chat"}">Chat${room.unread ? ` <b class="pj-n">${room.unread}</b>` : ""}</a>` : "")
     + one("dashboard.html", "Dashboard", "Issues and tasks dashboard")
+    + `<a href="folders.html?reg=${encodeURIComponent(p.id)}" title="The project's files, in its folder on the server">Folders</a>`
     + `</span>`;
 }
 

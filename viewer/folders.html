@@ -3,28 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>LWK Viewer - Projects</title>
+<title>LWK Viewer - Folders</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="dash.css">
 <link rel="stylesheet" href="tasks.css">
-<link rel="stylesheet" href="projects.css">
+<link rel="stylesheet" href="folders.css">
+<link rel="modulepreload" href="folders.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="pagekit.js">
+<link rel="modulepreload" href="tasks-util.js">
 <link rel="manifest" href="app.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f28022">
 </head>
-<body class="tasks-page projects-page own-nav">
+<body class="tasks-page fo-page own-nav">
 <header>
   <b class="brand">LWK Viewer</b>
   <div class="seg">
-    <span class="seg-btn on">Projects</span>
+    <a id="to-projects" class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
     <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
     <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
     <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
     <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
     <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
     <a id="to-cal" class="seg-btn" data-page="calendar.html" href="calendar.html">Calendar</a>
-    <a id="to-folders" class="seg-btn" data-page="folders.html" href="folders.html">Folders</a>
+    <span class="seg-btn on">Folders</span>
     <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
   </div>
   <span class="spacer"></span>
@@ -35,24 +39,36 @@
   </div>
 </header>
 
-<div id="t-app">
-  <main id="t-main">
-    <div id="t-head">
-      <div class="th-title"><span class="th-icon">&#9873;</span><h2>Projects</h2>
-        <small class="muted" id="pj-count"></small></div>
+<main id="fo">
+  <aside id="fo-side">
+    <select id="fo-proj" title="Project"></select>
+    <nav class="fo-quick">
+      <button data-q="pinned">&#128204; Pinned <small id="fo-n-pinned"></small></button>
+      <button data-q="starred">&#11088; Starred <small id="fo-n-starred"></small></button>
+      <button data-q="recent">&#128337; Recent</button>
+      <button data-q="bin">&#128465; Recently deleted</button>
+    </nav>
+    <div class="fo-treehead">Folders</div>
+    <div id="fo-tree"></div>
+  </aside>
+  <section id="fo-main">
+    <div class="fo-bar">
+      <button class="ghost fo-sidebtn" id="fo-side-open" title="Folders">&#9776;</button>
+      <div id="fo-crumbs"></div>
       <span class="spacer"></span>
+      <input id="fo-search" type="search" placeholder="Search this project's files">
+      <button class="ghost" id="fo-newdir" title="New folder">+ Folder</button>
+      <button class="primary" id="fo-up" title="Upload files (or drop them here)">Upload</button>
+      <button class="ghost" id="fo-more" title="Templates, location">&#8943;</button>
+      <input type="file" id="fo-file" multiple hidden>
+      <input type="file" id="fo-dir" webkitdirectory multiple hidden>
     </div>
-    <div id="t-bar">
-      <input id="pj-q" type="search" placeholder="Search projects or people" autocomplete="off">
-      <select id="pj-status"><option value="">Any status</option></select>
-      <span class="spacer"></span>
-      <a id="pj-manage" class="ghost" href="admin.html#projects" hidden style="font-size:12px" title="Add projects, set their members and link their viewer project">Manage projects (Admin)</a>
-    </div>
-    <div id="t-view"><p class="muted" style="padding:20px">Loading ...</p></div>
-  </main>
-  <aside id="t-detail" hidden></aside>
-</div>
-
+    <div id="fo-list" tabindex="0"></div>
+    <div id="fo-drop" hidden><div>Drop to upload into <b id="fo-drop-to"></b></div></div>
+  </section>
+  <aside id="fo-prev" hidden></aside>
+</main>
+<div id="fo-prog" hidden></div>
 <div id="gate-back" hidden>
   <form id="gate" onsubmit="return false">
     <b>Sign in</b>
@@ -63,6 +79,6 @@
   </form>
 </div>
 
-<script type="module" src="projects-page.js"></script>
+<script type="module" src="folders.js"></script>
 </body>
 </html>

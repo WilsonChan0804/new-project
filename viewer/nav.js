@@ -201,6 +201,7 @@ async function afterSignIn() {
       mode.appendChild(mk("lwk-to-tasks", "Tasks", "tasks.html", "Team task lists: who does what, by when"));
       mode.appendChild(mk("lwk-to-chat", "Chat", "messenger.html", "Messenger: project channels, group chats, direct messages", "chat-link"));
       mode.appendChild(mk("lwk-to-cal", "Calendar", "calendar.html", "Meetings, your tasks and issues by date - and in Outlook"));
+      mode.appendChild(mk("lwk-to-folders", "Folders", "folders.html", "The project's files: folders on the server, pinned and starred documents"));
       mode.appendChild(mk("lwk-to-dash", "Dashboard", "dashboard.html", "Issues and tasks of this project"));
       chatBadge.on = false;
       setTimeout(chatBadge, 300);

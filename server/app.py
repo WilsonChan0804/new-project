@@ -3622,6 +3622,13 @@ try:
 except Exception as _ex:
     print("chat not loaded: %s" % _ex)
 
+# Folders (files.py): each project's files, in a folder on the server.
+try:
+    import files
+    files.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("files not loaded: %s" % _ex)
+
 # Push (push.py): chat messages to phones and computers with no page open
 # (needs https; the pages show them by themselves while open).
 try:
