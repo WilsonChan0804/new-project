@@ -1,0 +1,6 @@
+title: |-
+  Export
+  Viewer
+tooltip: >-
+  Export this model and chosen sheets for the viewer, by hand: manifest, IFC and one PDF per sheet.
+author: Wilson Chan

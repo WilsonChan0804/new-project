@@ -1,0 +1,87 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Publish to LWK Viewer" Width="560" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize" FontSize="12.5">
+  <Window.Resources>
+    <Style TargetType="GroupBox">
+      <Setter Property="Margin" Value="0,0,0,10"/>
+      <Setter Property="Padding" Value="8,6,8,8"/>
+    </Style>
+    <Style TargetType="CheckBox"><Setter Property="Margin" Value="0,4,0,2"/></Style>
+    <Style TargetType="RadioButton"><Setter Property="Margin" Value="18,3,0,1"/></Style>
+    <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+  </Window.Resources>
+  <StackPanel Margin="14">
+    <TextBlock x:Name="doc_title" FontSize="15" FontWeight="Bold" Margin="0,0,0,2"/>
+    <TextBlock Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,10"
+      Text="Publish now exports what you tick and sends it to the viewer in one go. Save settings only keeps the choices (and the night export) - nothing is exported. To set up a model without opening it, use Auto Publish on the LWK tab."/>
+
+    <GroupBox Header="Where">
+      <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+        <TextBlock Text="Viewer project"/>
+        <ComboBox x:Name="project_box" Grid.Column="1" IsEditable="True" Margin="0,2"
+          ToolTip="The project on the viewer server. Choose one, or type a new name (letters, digits, - and _)"/>
+        <TextBlock Grid.Row="1" Text="Server"/>
+        <TextBlock x:Name="server_text" Grid.Row="1" Grid.Column="1" Foreground="#555" TextTrimming="CharacterEllipsis" Margin="0,4"/>
+        <Button x:Name="signin_btn" Grid.Row="1" Grid.Column="2" Content="Sign in ..." Padding="8,1" Margin="6,2,0,2" Click="signin_click"/>
+        <TextBlock Grid.Row="2" Text="Export folder"/>
+        <TextBox x:Name="folder_box" Grid.Row="2" Grid.Column="1" Margin="0,2"
+          ToolTip="Where the files are written on this PC before they are sent (kept, so the next publish only sends what changed)"/>
+        <Button Grid.Row="2" Grid.Column="2" Content="..." Padding="8,1" Margin="6,2,0,2" Click="browse_click"/>
+      </Grid>
+    </GroupBox>
+
+    <GroupBox Header="What">
+      <StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <CheckBox x:Name="do3d" Content="3D model (fast format, with its linked models)" IsChecked="True"/>
+          <ComboBox x:Name="detail_box" Width="150" Margin="12,0,0,0" SelectedIndex="1">
+            <ComboBoxItem Content="Coarse (lightest)"/>
+            <ComboBoxItem Content="Medium (recommended)"/>
+            <ComboBoxItem Content="Fine (most detail)"/>
+          </ComboBox>
+        </StackPanel>
+        <CheckBox x:Name="dosheets" Content="Sheets (PDF, with their views mapped to the model)" IsChecked="True" Margin="0,10,0,2"/>
+        <RadioButton x:Name="sheets_all" Content="All sheets" GroupName="sheets" IsChecked="True"/>
+        <StackPanel Orientation="Horizontal">
+          <RadioButton x:Name="sheets_set" Content="A Revit sheet set" GroupName="sheets"/>
+          <ComboBox x:Name="set_box" Width="220" Margin="10,1,0,0"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <RadioButton x:Name="sheets_list" Content="These sheets:" GroupName="sheets"/>
+          <Button Content="Choose ..." Padding="8,0" Margin="10,1,0,0" Click="choose_sheets_click"/>
+          <TextBlock x:Name="list_text" Foreground="#555" Margin="8,0,0,0"/>
+        </StackPanel>
+        <CheckBox x:Name="keep_others" IsChecked="True" Margin="18,6,0,0"
+          Content="Keep sheets published before that are not in this choice"/>
+        <CheckBox x:Name="as_part" Margin="0,8,0,0"
+          Content="This file adds its sheets to a project published from another Revit file"/>
+        <TextBlock Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="20,2,0,0"
+          Text="For example the area plans and schedules kept in their own master file: their sheets are added, and the 3D model and the sheets of the other file stay as they are."/>
+      </StackPanel>
+    </GroupBox>
+
+    <GroupBox Header="Then">
+      <StackPanel>
+        <CheckBox x:Name="upload" Content="Send to the viewer server (only what changed)" IsChecked="True"/>
+        <CheckBox x:Name="open_after" Content="Open it in the browser when done" IsChecked="True"/>
+        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+          <CheckBox x:Name="nightly" Content="Publish this model again every night at"/>
+          <TextBox x:Name="night_time" Width="52" Text="01:00" Margin="8,2,0,0"/>
+          <CheckBox x:Name="weekdays" Content="Mon-Fri only" Margin="12,4,0,2"/>
+        </StackPanel>
+        <TextBlock x:Name="nightly_note" Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="20,2,0,0"/>
+      </StackPanel>
+    </GroupBox>
+
+    <DockPanel LastChildFill="False" Margin="0,4,0,0">
+      <TextBlock x:Name="status_text" Foreground="#B45309" TextWrapping="Wrap" Width="240" DockPanel.Dock="Left"/>
+      <Button Content="Cancel" Width="80" Margin="8,0,0,0" DockPanel.Dock="Right" IsCancel="True" Click="cancel_click"/>
+      <Button x:Name="go_btn" Content="Publish now" Width="100" FontWeight="Bold" DockPanel.Dock="Right" IsDefault="True" Click="publish_click"/>
+      <Button x:Name="save_btn" Content="Save settings" Width="100" Margin="0,0,8,0" DockPanel.Dock="Right" Click="save_click"
+              ToolTip="Keeps these choices (and the night export, if ticked) WITHOUT publishing now - nothing is exported"/>
+    </DockPanel>
+  </StackPanel>
+</Window>

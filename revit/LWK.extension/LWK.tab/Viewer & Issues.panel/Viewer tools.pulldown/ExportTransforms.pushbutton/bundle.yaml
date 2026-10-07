@@ -1,0 +1,6 @@
+title: |-
+  Link
+  Places
+tooltip: >-
+  Write every linked model's placement (transform) to a file, for checking how links sit in the viewer.
+author: Wilson Chan

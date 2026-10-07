@@ -1,0 +1,6 @@
+title: |-
+  Run
+  Export
+tooltip: >-
+  Export every registered model now: sheet PDFs, the 3D model (IFC, link by link) and upload to the viewer server. Shift-click exports the model open now instead. Progress: export-progress.txt in the export folder.
+author: Wilson Chan

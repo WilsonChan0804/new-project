@@ -1,0 +1,6 @@
+title: |-
+  Add
+  Model
+tooltip: >-
+  Register this ACC model for auto-export: sheets, what to leave out of 3D, IFC schema. After this, Run Export can export it without anyone opening it.
+author: Wilson Chan

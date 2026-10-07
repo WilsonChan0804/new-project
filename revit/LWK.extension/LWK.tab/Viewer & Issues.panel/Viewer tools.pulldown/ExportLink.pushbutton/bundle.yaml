@@ -1,0 +1,6 @@
+title: |-
+  Export
+  Link
+tooltip: >-
+  Export the model open now as a linked model of a registered project, for links the automatic export cannot open itself (e.g. a cloud model saved in an older Revit version). The master model's next export uses it for 14 days. A big model can be split into 2-4 parts and exported in several Revit windows at once - about 3x faster with 3 windows.
+author: Wilson Chan

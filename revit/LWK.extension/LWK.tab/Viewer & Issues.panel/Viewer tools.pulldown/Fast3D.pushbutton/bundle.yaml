@@ -1,0 +1,6 @@
+title: |-
+  Fast
+  3D Export
+tooltip: >-
+  The new fast 3D format: the model and its links read straight from Revit's renderer (no IFC, no conversion). Family types, repeated links and typical-floor groups are read once and placed by transform. Writes the 3D part of a registered project's export, and can upload it.
+author: Wilson Chan

@@ -1,0 +1,7 @@
+title: |-
+  Auto
+  Publish
+tooltip: >-
+  Set up and review the automatic (night) publishing to the LWK Viewer WITHOUT opening any model: add a model from the ACC models this PC has opened before, choose what it sends and where, switch its night export on or off, set the time - and see everyone else's auto-publish settings from the server, with any model that is published twice pointed out. Check setup says why a night did not run (nothing is exported); Test night run does the real thing now.
+author: Wilson Chan
+context: zero-doc

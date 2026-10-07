@@ -1,0 +1,13 @@
+title: "Viewer\ntools"
+tooltip: The step-by-step viewer tools (Publish does all of this in one go)
+layout:
+  - Fast3D
+  - ViewerExport
+  - UploadNow
+  - AutoExportAdd
+  - AutoExportRun
+  - ScheduleNightly
+  - ExportJobs
+  - ExportLink
+  - ExportTransforms
+  - TestRepeatedLinks
