@@ -37,6 +37,7 @@ export function render(T, el) {
     + `</section>`).join("")
     + `</div>`;
   el.querySelector(".kb").scrollLeft = x;
+  wireScroll(el);
 
   const bucketOf = (k) => buckets.find((b) => b.key === k);
   el.onclick = (ev) => {
@@ -91,3 +92,46 @@ export function render(T, el) {
     if (t && b) T.dropInto(t, b, c && c.dataset.id !== dragId ? c.dataset.id : null);
   };
 }
+
+/* Moving sideways without reaching for the scrollbar: the mouse wheel with
+   Shift (or a sideways swipe), dragging the board's empty space, and the
+   ‹ › buttons at the edges. */
+function wireScroll(el) {
+  const kb = el.querySelector(".kb");
+  for (const b of el.querySelectorAll(".kb-edge")) b.remove();
+  const mk = (cls, txt, d) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "kb-edge " + cls;
+    b.innerHTML = txt;
+    b.title = d < 0 ? "Earlier columns" : "More columns";
+    b.onclick = () => kb.scrollBy({ left: d * Math.max(280, kb.clientWidth * 0.8), behavior: "smooth" });
+    el.appendChild(b);
+    return b;
+  };
+  const L = mk("l", "&lsaquo;", -1), R = mk("r", "&rsaquo;", 1);
+  const edges = () => {
+    L.hidden = kb.scrollLeft < 4;
+    R.hidden = kb.scrollLeft + kb.clientWidth >= kb.scrollWidth - 4;
+  };
+  kb.addEventListener("scroll", edges, { passive: true });
+  edges();
+  kb.addEventListener("wheel", (ev) => {
+    if (!ev.shiftKey || ev.deltaX) return;
+    kb.scrollLeft += ev.deltaY;
+    ev.preventDefault();
+  }, { passive: false });
+  kb.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 0 || ev.pointerType !== "mouse" || ev.target.closest(".kb-card, input, button, a, .kb-cards")) return;
+    DRAG.kb = kb;
+    DRAG.x = ev.clientX;
+    DRAG.left = kb.scrollLeft;
+    kb.classList.add("grab");
+  });
+  if (!DRAG.wired) {
+    DRAG.wired = true;
+    addEventListener("pointermove", (ev) => { if (DRAG.kb) DRAG.kb.scrollLeft = DRAG.left - (ev.clientX - DRAG.x); });
+    addEventListener("pointerup", () => { if (DRAG.kb) { DRAG.kb.classList.remove("grab"); DRAG.kb = null; } });
+  }
+}
+const DRAG = { kb: null, x: 0, left: 0, wired: false };

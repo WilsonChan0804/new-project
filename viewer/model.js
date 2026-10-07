@@ -5753,6 +5753,10 @@ function captureViewpoint() {
       target_shared_mm: sceneToSharedMM(t),
       up: [S.camera.up.x, S.camera.up.y, S.camera.up.z],
       fov: fovOf(),
+      // perspective or parallel, and walking at eye level: Revit opens a
+      // walk-through issue as a perspective view from the same eye
+      ortho: !!S.ortho,
+      walk: !!(S.walk && S.walk.on),
       // the section box / plane as cutting planes in Revit's own frame, so
       // BCF opens in Revit with the same section box (clipping_internal)
       clipping_internal: clippingInternal(),
@@ -5803,6 +5807,13 @@ function viewState() {
       box: sec.box && !sec.box.isEmpty() ? sec.box.min.toArray().concat(sec.box.max.toArray()) : null,
     } : { on: false },
     hidden: Array.from(S.hidden || []),
+    // how it was looked at: parallel or perspective, the floor plan picked,
+    // and whether the author was walking (eye height)
+    ortho: !!S.ortho,
+    zoom: S.camera && S.camera.isOrthographicCamera ? S.camera.zoom || 1 : null,
+    floor: S.floorIndex === undefined ? null : S.floorIndex,
+    plan_cut: S.planCut ? { y: S.planCut.y } : null,
+    walk: S.walk && S.walk.on ? { eye: S.walk.settings.eye } : null,
   };
 }
 
@@ -5846,6 +5857,45 @@ function applyViewState(st) {
     if (S.arrows) S.arrows.clear();
   }
   if (st.hidden) applyHidden(new Set(st.hidden));
+  // older states say nothing about these: leave them as they are
+  if (st.floor !== undefined) {
+    S.floorIndex = st.floor === null ? undefined : st.floor;
+    const sel = document.getElementById("floor-select");
+    if (sel) sel.value = st.floor === null ? "" : String(st.floor);
+  }
+  if (st.plan_cut !== undefined) S.planCut = st.plan_cut ? { y: st.plan_cut.y } : null;
+  if (st.ortho !== undefined) {
+    if (!!st.ortho !== !!S.ortho) setOrtho(!!st.ortho);
+    if (st.ortho && st.zoom && S.camera.isOrthographicCamera) {
+      S.camera.zoom = st.zoom;
+      S.camera.updateProjectionMatrix();
+    }
+  }
+}
+
+/* An issue's view exactly as its author had it: the camera they stood at,
+   AND the section box or plane (with its rotation), hidden elements,
+   projection and floor plan in force - so the reviewer sees what the
+   author saw, not the outside of the wall they were looking into. Used by
+   a click in the list, "Show in view" and ?select= links alike. */
+function goToIssueView(it) {
+  if (S.walk && (S.walk.on || S.walk.picking)) S.walk.stop();
+  const vp = it.viewpoint;
+  const st = it.viewpoint_state || (vp && vp.state) || null;
+  if (st) applyViewState(st);
+  else if (vp && (vp.ortho === true || vp.ortho === false) && !!vp.ortho !== !!S.ortho) setOrtho(!!vp.ortho);
+  if (vp && vp.position_mm && vp.target_mm) {
+    const pos = new THREE.Vector3(fromMM(vp.position_mm[0]), fromMM(vp.position_mm[1]), fromMM(vp.position_mm[2]));
+    const tgt = new THREE.Vector3(fromMM(vp.target_mm[0]), fromMM(vp.target_mm[1]), fromMM(vp.target_mm[2]));
+    if (vp.up && vp.up.length === 3) S.camera.up.fromArray(vp.up);
+    if ((st && st.walk) || vp.walk) {
+      status("This issue was raised while walking: you are at the same eye point - press Walk to carry on from here.");
+    }
+    return flyTo(pos, tgt, vp.fov);
+  }
+  const p = issuePoint(it) || S.controls.target.clone();
+  const dir = S.camera.position.clone().sub(S.controls.target).normalize();
+  return flyTo(p.clone().add(dir.multiplyScalar(8)), p);
 }
 
 /* Glide rather than jump. An instant cut to a new viewpoint loses the
@@ -6885,6 +6935,11 @@ async function saveIssue3D() {
     element: (p.hit && elementInfo(p.hit.part, p.hit.localId, p.hit.guid)) || null,
     created_at: new Date().toISOString(),
     viewpoint: p.shot ? p.shot.camera : null,
+    /* the section box, plane, hidden elements, projection and floor in force
+       when the issue was raised - "Show in view" puts them all back. The
+       picture's camera alone was kept before, so a sectioned issue opened
+       on the outside of the building. */
+    viewpoint_state: p.shot ? p.shot.state : null,
     snapshot: snapshot,
     snapshot_raw: snapshotRaw,
     markup: p.markup || [],
@@ -7042,24 +7097,7 @@ function renderIssueList() {
         + `<div class="body"><div class="t">${title}</div><div class="tline">${bits}</div></div>`
         + `<span class="chip ${I3_STATUS_CLASS[st] || "open"}">${st}</span></div>`;
 
-      const jump = () => {
-        const p = issuePoint(it) || S.controls.target.clone();
-        /* The camera the issue was raised from, AND the section and hidden
-           elements that were in force - so the reviewer sees what the
-           author saw, not the outside of the wall they were looking into. */
-        const vp = it.viewpoint;
-        applyViewState(it.viewpoint_state || (vp && vp.state));
-        if (vp && vp.position_mm && vp.target_mm) {
-          return flyTo(
-            new THREE.Vector3(fromMM(vp.position_mm[0]), fromMM(vp.position_mm[1]),
-                              fromMM(vp.position_mm[2])),
-            new THREE.Vector3(fromMM(vp.target_mm[0]), fromMM(vp.target_mm[1]),
-                              fromMM(vp.target_mm[2])),
-            vp.fov);
-        }
-        const dir = S.camera.position.clone().sub(S.controls.target).normalize();
-        return flyTo(p.clone().add(dir.multiplyScalar(8)), p);
-      };
+      const jump = () => goToIssueView(it);
       li.addEventListener("contextmenu", (ev) => {
         ev.preventDefault();
         openMenu(ev.clientX, ev.clientY, issueMenu3D(it, () => li.click(), jump));
@@ -7088,6 +7126,7 @@ function renderIssueList() {
             if (!shot || !shot.image) return false;
             item.snapshot = await Store.uploadSnapshot(shot.image);
             item.viewpoint = shot.camera;
+            item.viewpoint_state = shot.state;
             item.markup = [];     // drawn on the old picture
             item.snapshot_raw = null;
             return true;

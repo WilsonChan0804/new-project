@@ -691,6 +691,38 @@ def project_people(core, reg):
         return set(), None
 
 
+MAX_DEPTH = 5
+
+
+def descendants(d, tid, deleted=0, rev=None):
+    """Ids of every sub-task below a task, at all levels (not deleted, or -
+    for a restore - deleted together with it, at revision rev)."""
+    out, todo = [], [tid]
+    while todo and len(out) < 5000:
+        pid = todo.pop()
+        if rev is None:
+            rows = d.execute("SELECT id FROM tasks WHERE parent_id = ? AND deleted = ?", (pid, deleted)).fetchall()
+        else:
+            rows = d.execute("SELECT id FROM tasks WHERE parent_id = ? AND deleted = ? AND rev = ?",
+                             (pid, deleted, rev)).fetchall()
+        for r in rows:
+            out.append(r["id"])
+            todo.append(r["id"])
+    return out
+
+
+def subtree_depth(d, tid):
+    """How many levels of sub-tasks are below a task (0: none)."""
+    best, level, layer = 0, 0, [tid]
+    while layer and level < 50:
+        q = "SELECT id FROM tasks WHERE deleted = 0 AND parent_id IN (%s)" % ",".join("?" * len(layer))
+        layer = [r["id"] for r in d.execute(q, layer)]
+        if layer:
+            level += 1
+            best = level
+    return best
+
+
 def project_admin(core, w, reg):
     """May this person manage a register project's chat channel and its
     topics (delete them)? A site admin, an owner of the project, or a
@@ -1261,6 +1293,18 @@ def register(app, core):
                                     (new["parent_id"],)).fetchone()
                     if not par or par["list_id"] != lid:
                         raise HTTPException(status_code=400, detail="The parent task is not in this list")
+                    # sub-tasks of sub-tasks, as in Lark - but never a loop,
+                    # and not deeper than MAX_DEPTH levels
+                    up, depth = par, 1
+                    while up and up["parent_id"]:
+                        if up["parent_id"] == tid:
+                            raise HTTPException(status_code=400, detail="A task cannot go under its own sub-task")
+                        depth += 1
+                        if depth >= MAX_DEPTH:
+                            raise HTTPException(status_code=400, detail="Sub-tasks go %d levels deep at most" % MAX_DEPTH)
+                        up = d.execute("SELECT parent_id, group_id FROM tasks WHERE id = ?", (up["parent_id"],)).fetchone()
+                    if cur and depth + 1 + subtree_depth(d, tid) > MAX_DEPTH:
+                        raise HTTPException(status_code=400, detail="Sub-tasks go %d levels deep at most" % MAX_DEPTH)
                     new["group_id"] = par["group_id"]
                 completed_at = (cur or {}).get("completed_at") or ""
                 if new["done"] and not (cur or {}).get("done"):
@@ -1327,9 +1371,9 @@ def register(app, core):
                 if "links" in p:
                     sync_issue_links(d, tid, new["links"])
                 if cur and cur["group_id"] != new["group_id"]:
-                    # sub-tasks go where their parent goes
-                    d.execute("UPDATE tasks SET group_id = ?, rev = ? WHERE parent_id = ? AND deleted = 0",
-                              (new["group_id"], rev, tid))
+                    # sub-tasks (at every level) go where their parent goes
+                    for k in descendants(d, tid):
+                        d.execute("UPDATE tasks SET group_id = ?, rev = ? WHERE id = ?", (new["group_id"], rev, k))
                 out.append(tid)
             for tid in dels if isinstance(dels, list) else []:
                 if not isinstance(tid, str) or not SAFE_ID.match(tid):
@@ -1339,8 +1383,7 @@ def register(app, core):
                     continue
                 if role != "owner" and old["created_uid"] != w.uid and core.accounts_on():
                     raise HTTPException(status_code=403, detail="Only the person who made a task, or a list owner, can delete it")
-                ids = [tid] + [r["id"] for r in d.execute(
-                    "SELECT id FROM tasks WHERE parent_id = ? AND deleted = 0", (tid,))]
+                ids = [tid] + descendants(d, tid)
                 for i in ids:
                     d.execute("UPDATE tasks SET deleted = 1, rev = ?, updated_by = ?, updated_at = ? WHERE id = ?",
                               (rev, by, t, i))
@@ -1384,6 +1427,36 @@ def register(app, core):
             need_list(d, w, r["list_id"])
             links = json.loads(r["links"] or "[]")
         return {"issues": linked_issues(w, links)}
+
+    @app.post("/api/tasks/{tid}/restore")
+    async def task_restore(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+        """Undo a delete: the task and the sub-tasks deleted with it (the same
+        revision) come back, with their links to issues."""
+        w = core.who(request, x_viewer_token)
+        if not SAFE_ID.match(tid or ""):
+            raise HTTPException(status_code=404, detail="No such task")
+        by, t = person(w), now_iso()
+        with db() as d:
+            old = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 1", (tid,)).fetchone()
+            if not old:
+                raise HTTPException(status_code=404, detail="Nothing to restore")
+            _, role = need_list(d, w, old["list_id"], "editor")
+            if role != "owner" and old["created_uid"] != w.uid and core.accounts_on():
+                raise HTTPException(status_code=403, detail="Only the person who made a task, or a list owner, can restore it")
+            if old["parent_id"] and not d.execute("SELECT 1 FROM tasks WHERE id = ? AND deleted = 0", (old["parent_id"],)).fetchone():
+                raise HTTPException(status_code=400, detail="Its parent task is gone - restore that first")
+            ids = [tid] + descendants(d, tid, deleted=1, rev=old["rev"])
+            rev = next_rev(d)
+            for i in ids:
+                d.execute("UPDATE tasks SET deleted = 0, rev = ?, updated_by = ?, updated_at = ? WHERE id = ?", (rev, by, t, i))
+                r = d.execute("SELECT links FROM tasks WHERE id = ?", (i,)).fetchone()
+                try:
+                    sync_issue_links(d, i, json.loads(r["links"] or "[]"))
+                except Exception:
+                    pass
+            log(d, old["list_id"], tid, old["title"], by, "restored")
+            rows = [task_row(r) for r in d.execute("SELECT * FROM tasks WHERE rev = ? AND list_id = ?", (rev, old["list_id"]))]
+        return {"tasks": rows, "rev": rev}
 
     @app.post("/api/tasks/{tid}/close-issues")
     async def task_close_issues(request: Request, tid: str, x_viewer_token: str = Header(default="")):

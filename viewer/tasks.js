@@ -58,6 +58,20 @@ export const T = {
   fields: () => [...S.fields.values()].sort((a, b) => a.sort - b.sort),
   task: (id) => S.tasks.get(id),
   children: (id) => [...S.tasks.values()].filter((t) => t.parent_id === id).sort((a, b) => a.sort - b.sort),
+  /* every sub-task below a task, at any level, in list order */
+  descendants(id) {
+    const out = [];
+    const walk = (pid) => { for (const k of T.children(pid)) { out.push(k); walk(k.id); } };
+    walk(id);
+    return out;
+  },
+  /* 0 for a top task, 1 for its sub-task and so on */
+  depth(id) {
+    let n = 0, t = S.tasks.get(id);
+    while (t && t.parent_id && n < 20) { t = S.tasks.get(t.parent_id); n++; }
+    return n;
+  },
+  MAX_DEPTH: 5,
   progressOf(id) {
     const k = T.children(id);
     return { done: k.filter((t) => t.done).length, total: k.length };
@@ -88,7 +102,7 @@ export const T = {
     };
     const tops = [...S.tasks.values()].filter((t) => !t.parent_id);
     // a parent shows when one of its sub-tasks matches too
-    return tops.filter((t) => okOne(t) || ((q || f.owner) && T.children(t.id).some(okOne))).sort(sorter());
+    return tops.filter((t) => okOne(t) || ((q || f.owner) && T.descendants(t.id).some(okOne))).sort(sorter());
   },
   /* tasks bucketed by the "Group by" choice: [{key, title, project, tasks}] */
   buckets(tasks) {
@@ -132,7 +146,7 @@ export const T = {
     for (const b of T.buckets(T.visible())) for (const t of b.tasks) {
       if (out.includes(t.id)) continue;
       out.push(t.id);
-      for (const k of T.children(t.id)) out.push(k.id);
+      for (const k of T.descendants(t.id)) out.push(k.id);
     }
     return out;
   },
@@ -185,7 +199,7 @@ function save(id, patch) {
   const p = pending.get(id) || { id };
   for (const [k, v] of Object.entries(patch)) p[k] = k === "vals" ? Object.assign({}, p.vals || {}, v) : v;
   pending.set(id, p);
-  if (patch.group_id) for (const k of T.children(id)) k.group_id = patch.group_id;
+  if (patch.group_id) for (const k of T.descendants(id)) k.group_id = patch.group_id;
   render();
   if (S.openId === id) Detail.refresh(T);
   schedule();
@@ -237,14 +251,15 @@ function create(fields) {
 async function remove(id) {
   const t = S.tasks.get(id);
   if (!t) return;
-  const kids = T.children(id).length;
+  const subs = T.descendants(id);
+  const kids = subs.length;
   if (!confirm(`Delete "${t.title || "this task"}"${kids ? ` and its ${kids} sub-task${kids > 1 ? "s" : ""}` : ""}?`)) return;
   await flush();
   try {
     await api("/api/tasks", { method: "POST", body: JSON.stringify({ list: S.listId, tasks: [], deleted: [id] }) });
     S.tasks.delete(id);
-    for (const k of T.children(id)) S.tasks.delete(k.id);
-    if (S.openId === id) Detail.close(T);
+    for (const k of subs) S.tasks.delete(k.id);
+    if (S.openId === id || subs.some((k) => k.id === S.openId)) Detail.close(T);
     render();
   } catch (e) { toast(e.message, true); }
 }

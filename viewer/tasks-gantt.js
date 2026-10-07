@@ -2,7 +2,7 @@
  * change the start or the due date; click an empty row to give a task
  * dates. A task with only a due date is a diamond. */
 
-import { esc, people, fmtDate, today, addDays, daysBetween, isOverdue, avatarColor } from "./tasks-util.js";
+import { esc, people, fmtDate, today, addDays, daysBetween, isOverdue, avatarColor, modal } from "./tasks-util.js";
 
 /* Where a task sits on the timeline: [first day, last day, kind].
    plan  start and due date            a solid bar
@@ -51,8 +51,11 @@ export function render(T, el) {
     rows.push({ head: b });
     if (S.collapsed.has(b.key)) continue;
     for (const t of b.tasks) {
-      rows.push({ t, depth: 0 });
-      if (S.expanded.has(t.id)) for (const k of T.children(t.id)) rows.push({ t: k, depth: 1 });
+      const add = (x, depth) => {
+        rows.push({ t: x, depth });
+        if (S.expanded.has(x.id)) for (const k of T.children(x.id)) add(k, depth + 1);
+      };
+      add(t, 0);
     }
   }
   // the span shown: everything dated, with room either side, and today
@@ -117,7 +120,7 @@ export function render(T, el) {
       ? `<div class="gt-row gt-g" data-b="${esc(r.head.key)}"><div class="gt-l"><button class="ghost tl-gt">${S.collapsed.has(r.head.key) ? "&#9656;" : "&#9662;"}</button><b>${esc(r.head.title)}</b> <span class="muted">${r.head.tasks.length}</span></div><div class="gt-r" style="width:${W}px"></div></div>`
       : `<div class="gt-row${r.t.done ? " done" : ""}${S.openId === r.t.id ? " sel" : ""}" data-id="${esc(r.t.id)}">`
         + `<div class="gt-l" style="padding-left:${10 + r.depth * 20}px">`
-        + (!r.depth && T.children(r.t.id).length ? `<button class="ghost tl-exp${S.expanded.has(r.t.id) ? " open" : ""}" data-act="exp">&#9656;</button>` : `<span class="tl-exp"></span>`)
+        + (T.children(r.t.id).length ? `<button class="ghost tl-exp${S.expanded.has(r.t.id) ? " open" : ""}" data-act="exp">&#9656;</button>` : `<span class="tl-exp"></span>`)
         + `<span class="gt-t" data-act="open">${esc(r.t.title || "Untitled task")}</span>${people(r.t.owners, 2)}</div>`
         + `<div class="gt-r" style="width:${W}px">${bar(r.t)}</div></div>`).join("")
     + `</div></div></div>`;
@@ -187,14 +190,32 @@ export function render(T, el) {
       if (!moved) return T.openTask(t.id);
       if (!dd) return render(T, el);
       const [s, e] = spanOf(t);
-      if (mode === "ms") T.save(t.id, { due: addDays(e, dd) });
-      else if (mode === "m") T.save(t.id, { start: addDays(s, dd), due: addDays(e, dd) });
-      else if (mode === "l") T.save(t.id, { start: addDays(s, Math.min(dd, daysBetween(s, e))) });
-      else T.save(t.id, { due: addDays(e, Math.max(dd, -daysBetween(s, e))), start: t.start || s });
+      let patch;
+      if (mode === "ms") patch = { due: addDays(e, dd) };
+      else if (mode === "m") patch = { start: addDays(s, dd), due: addDays(e, dd) };
+      else if (mode === "l") patch = { start: addDays(s, Math.min(dd, daysBetween(s, e))) };
+      else patch = { due: addDays(e, Math.max(dd, -daysBetween(s, e))), start: t.start || s };
+      confirmMove(t, patch).then((yes) => { if (yes) T.save(t.id, patch); else render(T, el); });
     };
     b.addEventListener("pointermove", move);
     b.addEventListener("pointerup", up);
     b.addEventListener("pointercancel", up);
     ev.preventDefault();
   };
+}
+
+/* A bar is easily moved by mistake: say what will change and ask first
+   (unless "don't ask again today" was ticked on this device). */
+const ASK_KEY = "lwk-viewer:gantt-no-ask";
+async function confirmMove(t, patch) {
+  try { if (localStorage.getItem(ASK_KEY) === today()) return true; } catch (e) {}
+  const span = (a, b) => (a && b && a !== b ? `${fmtDate(a)} – ${fmtDate(b)}` : fmtDate(b || a) || "no date");
+  const was = span((t.start || "").slice(0, 10), (t.due || "").slice(0, 10));
+  const now = span(("start" in patch ? patch.start : t.start || "").slice(0, 10), ("due" in patch ? patch.due : t.due || "").slice(0, 10));
+  const f = await modal("Change the dates?", `<p style="margin:0 0 8px"><b>${esc(t.title || "Untitled task")}</b></p>`
+    + `<p class="muted" style="margin:0 0 4px">From <b>${esc(was)}</b></p><p style="margin:0 0 10px">to <b>${esc(now)}</b></p>`
+    + `<label class="row-check"><input type="checkbox" name="noask"> Don't ask again today</label>`, "Save");
+  if (!f) return false;
+  if (f.noask.checked) { try { localStorage.setItem(ASK_KEY, today()); } catch (e) {} }
+  return true;
 }

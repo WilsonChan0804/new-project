@@ -824,6 +824,8 @@ function redraw(target) {
     const pin = it.issue ? String(it.issue.number || ++n) : null;
     if (hid.size && hid.has(layerOf(it))) continue;       // numbers stay the same
     if (S.hideDone && issueDone(it)) continue;            // "Hide closed" (numbers stay)
+    // an issue made elsewhere (the API, a task) may have no shape on the sheet
+    if (!it.points_mm || !it.points_mm.length) continue;
     svg.appendChild(render(it, { pin: pin }));
   }
   if (S.draft) svg.appendChild(render(S.draft, {}));
@@ -3753,12 +3755,10 @@ function saveIssue() {
   const it = S.items.find((x) => x.id === S.pendingIssueFor);
   if (it) {
     if (!it.snapshot) {
-      const shot = captureSheetSnapshot(it);
-      if (shot) {
-        Store.uploadSnapshot(shot)
-          .then((p) => { it.snapshot = p; return putItem(it); })
-          .catch(() => {});
-      }
+      captureSheetSnapshot(it).then((shot) => {
+        if (!shot) return;
+        return Store.uploadSnapshot(shot).then((p) => { it.snapshot = p; return putItem(it); });
+      }).catch(() => {});
     }
     it.issue = {
       guid: uid(), title: title,
@@ -3796,7 +3796,7 @@ async function resnapSheet(item) {
     if (c && c.width && !_task && S.page) break;
     await new Promise((r) => setTimeout(r, 100));
   }
-  const shot = captureSheetSnapshot(item);
+  const shot = await captureSheetSnapshot(item);
   if (!shot) return false;
   item.snapshot = await Store.uploadSnapshot(shot);
   return true;
@@ -3805,10 +3805,11 @@ async function resnapSheet(item) {
 /* A BCF topic without a picture is much harder to act on. Sheet markups
    have no camera, but they do have a page, so a crop of the drawing around
    the markup serves the same purpose. */
-function captureSheetSnapshot(item) {
+const SNAP_DPI = 200, SNAP_MAX_PX = 3000;
+async function captureSheetSnapshot(item) {
   try {
     const c = $("#pdf");
-    if (!c || !c.width) return null;
+    if (!S.viewport || ((!c || !c.width) && !S.page)) return null;
 
     /* A sheet item is itself the markup: its geometry is on the item, not
        nested under a `markup` property. Reading the wrong one silently
@@ -3820,27 +3821,50 @@ function captureSheetSnapshot(item) {
     const pad = Math.max(120, 0.12 * Math.max(
       Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)));
 
-    // The page canvas may be drawn smaller than it shows (see
-    // MAX_CANVAS_PX): positions are page pixels, the bitmap is kb of that.
-    const cssW = parseFloat(c.style.width) || c.width;
-    const kb = c.width / cssW;
+    // positions are page pixels at the current zoom (S.viewport)
     let x0 = Math.max(0, Math.min(...xs) - pad);
     let y0 = Math.max(0, Math.min(...ys) - pad);
-    let x1 = Math.min(cssW, Math.max(...xs) + pad);
-    let y1 = Math.min(c.height / kb, Math.max(...ys) + pad);
+    let x1 = Math.min(S.viewport.width, Math.max(...xs) + pad);
+    let y1 = Math.min(S.viewport.height, Math.max(...ys) + pad);
     if (x1 - x0 < 60 || y1 - y0 < 60) return null;
 
+    /* The picture is drawn afresh from the PDF at about 200 dpi (longest
+       side at most 3000 px), not copied off the screen: the screen canvas
+       is only as sharp as the zoom, the device's canvas limit and the
+       "server pictures" mode a slow computer may be on, which is why
+       issue pictures came out blurred. The screen copy is the fallback. */
+    let scale = SNAP_DPI / 72 / S.scale;
+    const longest = Math.max(x1 - x0, y1 - y0) * scale;
+    if (longest > SNAP_MAX_PX) scale *= SNAP_MAX_PX / longest;
     const out = document.createElement("canvas");
-    const maxW = 1400;
-    const scale = Math.min(1, maxW / (x1 - x0));
-    out.width = Math.round((x1 - x0) * scale);
-    out.height = Math.round((y1 - y0) * scale);
-
+    out.width = Math.max(1, Math.round((x1 - x0) * scale));
+    out.height = Math.max(1, Math.round((y1 - y0) * scale));
     const ctx = out.getContext("2d");
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, out.width, out.height);
-    ctx.drawImage(c, x0 * kb, y0 * kb, (x1 - x0) * kb, (y1 - y0) * kb,
-                  0, 0, out.width, out.height);
+    let drawn = false;
+    if (S.page) {
+      try {
+        const vp = S.page.getViewport({ scale: S.scale * scale, rotation: S.rotation,
+                                        offsetX: -x0 * scale, offsetY: -y0 * scale });
+        await S.page.render({ canvasContext: ctx, viewport: vp }).promise;
+        drawn = true;
+      } catch (e) { /* the page was closed or the render failed: use the screen */ }
+    }
+    if (!drawn) {
+      if (!c || !c.width) return null;
+      // The page canvas may be drawn smaller than it shows (see
+      // MAX_CANVAS_PX): positions are page pixels, the bitmap is kb of that.
+      const cssW = parseFloat(c.style.width) || c.width;
+      const kb = c.width / cssW;
+      scale = Math.min(1, 1400 / (x1 - x0));
+      out.width = Math.round((x1 - x0) * scale);
+      out.height = Math.round((y1 - y0) * scale);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(c, x0 * kb, y0 * kb, (x1 - x0) * kb, (y1 - y0) * kb,
+                    0, 0, out.width, out.height);
+    }
 
     // The markup itself is drawn on top, in the crop's own coordinates.
     ctx.save();

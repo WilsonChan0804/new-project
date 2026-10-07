@@ -74,6 +74,8 @@ function paint(T) {
   const g = T.S.groups.get(t.group_id);
   const parent = t.parent_id && T.task(t.parent_id);
   const kids = T.children(t.id);
+  /* sub-tasks under sub-tasks, as in Lark, up to T.MAX_DEPTH levels */
+  const canSub = T.depth(t.id) < T.MAX_DEPTH - 1;
   const meUid = T.me && T.me.uid;
   const following = (t.subscribers || []).some((s) => s.uid != null && s.uid === meUid);
   const issues = t.links.filter((l) => l.kind === "issue");
@@ -118,11 +120,12 @@ function paint(T) {
       }).join("")}
       <textarea class="td-desc" rows="3" placeholder="${ed ? "Add description" : ""}"${ed ? "" : " readonly"}>${esc(t.description)}</textarea>
 
-      ${!parent ? `<h4>Sub-tasks ${kids.length ? `<span class="muted">${kids.filter((k) => k.done).length} / ${kids.length}</span>` : ""}</h4>
+      ${canSub || kids.length ? `<h4>Sub-tasks ${kids.length ? `<span class="muted">${kids.filter((k) => k.done).length} / ${kids.length}</span>` : ""}</h4>
       <div class="td-subs">${kids.map((k) => `<div class="td-sub${k.done ? " done" : ""}" data-id="${esc(k.id)}">`
         + `<button class="tick${k.done ? " on" : ""}" data-act="subdone"></button><span class="td-st" data-open="${esc(k.id)}">${esc(k.title || "Untitled")}</span>`
+        + (T.children(k.id).length ? `<span class="td-subn muted" data-open="${esc(k.id)}" title="Sub-tasks">${T.progressOf(k.id).done} / ${T.children(k.id).length}</span>` : "")
         + `<span class="spacer"></span>${k.due ? `<small class="${isOverdue(k) ? "bad" : "muted"}">${esc(fmtDate(k.due))}</small>` : ""}${people(k.owners, 2)}</div>`).join("")}</div>
-      ${ed ? `<input class="td-newsub" placeholder="+ Add sub-task, Enter">` : ""}` : ""}
+      ${ed && canSub ? `<input class="td-newsub" placeholder="+ Add sub-task, Enter">` : ""}` : ""}
 
       <h4>Linked issues ${issues.length ? `<span class="muted">${issues.length}</span>` : ""}</h4>
       <div class="fl-list td-issues">${issues.map((l) => {

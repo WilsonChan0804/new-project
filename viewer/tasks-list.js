@@ -75,12 +75,13 @@ function row(T, t, cols, depth) {
     + `<div class="tl-c tl-title" style="padding-left:${8 + depth * 22}px">`
     + (kids.length ? `<button class="tl-exp ghost${open ? " open" : ""}" data-act="exp">&#9656;</button>` : `<span class="tl-exp"></span>`)
     + `<button class="tick${t.done ? " on" : ""}" data-act="done" title="${t.done ? "Mark not done" : "Mark done"}"></button>`
-    + `<span class="tl-t" data-act="open">${esc(t.title || "Untitled task")}</span>${meta}</div>`
+    + `<span class="tl-t" data-act="open">${esc(t.title || "Untitled task")}</span>${meta}`
+    + (T.canEdit() && depth + 1 < T.MAX_DEPTH ? `<button class="ghost tl-addsub" data-act="addsub" title="Add a sub-task">+</button>` : "") + `</div>`
     + cols.map((c) => `<div class="tl-c" data-col="${esc(c.k)}">${cell(T, t, c)}</div>`).join("")
     + `</div>`;
   if (open) {
     for (const k of kids) h += row(T, k, cols, depth + 1);
-    if (T.canEdit()) h += `<div class="tl-row tl-newsub" style="--d:${depth + 1}"><div class="tl-c tl-title" style="padding-left:${8 + (depth + 1) * 22 + 22}px">`
+    if (T.canEdit() && depth + 1 < T.MAX_DEPTH) h += `<div class="tl-row tl-newsub" style="--d:${depth + 1}"><div class="tl-c tl-title" style="padding-left:${8 + (depth + 1) * 22 + 22}px">`
       + `<input class="tl-new" data-parent="${esc(t.id)}" placeholder="+ Add sub-task, Enter"></div></div>`;
   }
   return h;
@@ -135,6 +136,13 @@ function wire(T, el, buckets) {
       S.expanded.has(t.id) ? S.expanded.delete(t.id) : S.expanded.add(t.id);
       return render(T, el);
     }
+    if (act && act.dataset.act === "addsub") {
+      S.expanded.add(t.id);
+      render(T, el);
+      const n = el.querySelector(`.tl-new[data-parent="${CSS.escape(t.id)}"]`);
+      if (n) n.focus();
+      return;
+    }
     if (act && act.dataset.act === "done") return T.toggleDone(t);
     const c = ev.target.closest("[data-col]");
     if (!c || !T.canEdit()) return T.openTask(t.id);
@@ -188,15 +196,31 @@ function wire(T, el, buckets) {
     ev.dataTransfer.setData("text/plain", dragId);
     r.classList.add("dragging");
   };
-  el.ondragend = () => { dragId = null; T.S.dragging = false; for (const x of el.querySelectorAll(".drop-before, .drop-in, .dragging")) x.classList.remove("drop-before", "drop-in", "dragging"); };
+  el.ondragend = () => { dragId = null; T.S.dragging = false; for (const x of el.querySelectorAll(".drop-before, .drop-in, .drop-nest, .dragging")) x.classList.remove("drop-before", "drop-in", "drop-nest", "dragging"); };
+  /* dropped on the right half of a task's title: it becomes that task's
+     sub-task (as in Lark), unless that makes a loop or goes too deep */
+  const nestTarget = (ev, r) => {
+    if (!r || r.dataset.id === dragId) return null;
+    const cell = ev.target.closest(".tl-title");
+    if (!cell) return null;
+    const box = cell.getBoundingClientRect();
+    if (ev.clientX < box.left + box.width * 0.45) return null;
+    const par = T.task(r.dataset.id), t = T.task(dragId);
+    if (!par || !t || par.id === t.parent_id) return null;
+    if (T.descendants(t.id).some((k) => k.id === par.id)) return null;
+    const below = (id) => Math.max(0, ...T.children(id).map((k) => 1 + below(k.id)));
+    if (T.depth(par.id) + 1 + below(t.id) >= T.MAX_DEPTH) return null;
+    return par;
+  };
   el.ondragover = (ev) => {
     if (!dragId) return;
     const g = ev.target.closest(".tl-group");
     if (!g) return;
     ev.preventDefault();
-    for (const x of el.querySelectorAll(".drop-before, .drop-in")) x.classList.remove("drop-before", "drop-in");
+    for (const x of el.querySelectorAll(".drop-before, .drop-in, .drop-nest")) x.classList.remove("drop-before", "drop-in", "drop-nest");
     const r = ev.target.closest(".tl-row[data-id]");
-    if (r && !r.classList.contains("sub") && r.dataset.id !== dragId) r.classList.add("drop-before");
+    if (nestTarget(ev, r)) r.classList.add("drop-nest");
+    else if (r && !r.classList.contains("sub") && r.dataset.id !== dragId) r.classList.add("drop-before");
     else g.classList.add("drop-in");
   };
   el.ondrop = (ev) => {
@@ -207,6 +231,12 @@ function wire(T, el, buckets) {
     const t = T.task(dragId);
     const b = g && bucketOf(g.dataset.b);
     if (!t || !b) return;
+    const par = nestTarget(ev, r);
+    if (par) {
+      const last = T.children(par.id).reduce((m, k) => Math.max(m, k.sort), 0);
+      T.S.expanded.add(par.id);
+      return T.save(t.id, { parent_id: par.id, group_id: par.group_id, sort: last + 1 });
+    }
     if (t.parent_id) T.save(t.id, { parent_id: "" });      // a sub-task dragged out becomes a task
     T.dropInto(t, b, r && !r.classList.contains("sub") && r.dataset.id !== dragId ? r.dataset.id : null);
   };
