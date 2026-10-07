@@ -9,6 +9,7 @@
  */
 
 import { installSearch } from "./search.js";
+import { startNotify } from "./notify.js";
 
 
 /* Which version of the viewer this browser is running - shown small beside
@@ -204,6 +205,7 @@ async function afterSignIn() {
       chatBadge.on = false;
       setTimeout(chatBadge, 300);
     }
+    setTimeout(startNotify, 400);
     const st = document.getElementById("lwk-send-task");
     if (st) st.onclick = (ev) => { ev.preventDefault(); sendToTask(); };
     const so = document.getElementById("lwk-signout");
@@ -482,10 +484,11 @@ export function chatBadge() {
   const links = () => document.querySelectorAll("a.chat-link, button.chat-link");
   if (!links().length) return;
   chatBadge.on = true;
-  const paint = async () => {
-    if (document.hidden) return;
+  const paint = async (known) => {
+    if (!known && document.hidden) return;
     let n = 0, m = 0;
-    try { const r = await api("/api/chat/unread"); n = r.total; m = r.mentions; } catch (e) { return; }
+    if (known) { n = known.total; m = known.mentions; }
+    else { try { const r = await api("/api/chat/unread"); n = r.total; m = r.mentions; } catch (e) { return; } }
     for (const a of links()) {
       let b = a.querySelector(".chat-badge");
       if (!b) { b = document.createElement("b"); b.className = "chat-badge"; a.appendChild(b); }
@@ -497,9 +500,11 @@ export function chatBadge() {
   };
   paint();
   setInterval(paint, 30000);
+  // notify.js knows at once when a message comes
+  window.addEventListener("lwk-unread", (ev) => paint(ev.detail));
 }
 // after the page has drawn its header (and signed in)
-setTimeout(() => { try { if (localStorage.getItem(TOKEN_KEY)) chatBadge(); } catch (e) {} }, 2500);
+setTimeout(() => { try { if (localStorage.getItem(TOKEN_KEY)) { chatBadge(); startNotify(); } } catch (e) {} }, 2500);
 
 
 /* The project pickers (Board, Dashboard, the sheets and 3D pages): the viewer

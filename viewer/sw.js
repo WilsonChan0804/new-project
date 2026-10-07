@@ -548,3 +548,39 @@ self.addEventListener("message", (event) => {
   };
   event.waitUntil(run());
 });
+
+
+/* ------------------------------------------------------------ notifications */
+
+/* A chat message pushed by the server (push.py), with no page needed. A
+   page of ours in front shows it itself (notify.js), so nothing here then. */
+self.addEventListener("push", (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : "" }; }
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    if (wins.some((c) => c.visibilityState === "visible" && c.focused)) return;
+    await self.registration.showNotification(d.title || "LWK Viewer", {
+      body: d.body || "", tag: d.tag || undefined, icon: "icons/icon-192.png", badge: "icons/icon-192.png",
+      data: { url: d.url || "messenger.html" } });
+    try { if (self.navigator.setAppBadge) await self.navigator.setAppBadge(); } catch (e) {}
+  })());
+});
+
+/* A click on a notification: to the chat, in a viewer window already open
+   when there is one. */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "messenger.html", self.registration.scope).href;
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const w = wins.find((c) => /messenger\.html/.test(c.url)) || wins[0];
+    if (w) {
+      try { await w.focus(); } catch (e) {}
+      try { if (w.navigate) { await w.navigate(url); return; } } catch (e) {}
+      w.postMessage({ type: "open-url", url });
+      return;
+    }
+    await self.clients.openWindow(url);
+  })());
+});

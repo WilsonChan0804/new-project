@@ -101,6 +101,11 @@ CREATE TABLE IF NOT EXISTS files (
     stored     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_files_room ON files(room);
+CREATE TABLE IF NOT EXISTS notify_prefs (
+    uid    INTEGER PRIMARY KEY,
+    level  TEXT NOT NULL DEFAULT 'all',
+    muted  TEXT NOT NULL DEFAULT '[]'
+);
 """
 
 MAX_FILE = 50 * 1024 * 1024
@@ -427,7 +432,86 @@ def _insert(d, room, uid, author, kind, body="", card=None, files=None, reply_to
               (seq, t, ((author + ": ") if author else "") + preview[:120], rev, room))
     if uid is not None:
         d.execute("UPDATE room_members SET last_read = ? WHERE room = ? AND uid = ?", (seq, room, uid))
+    if PUSH_HOOK and kind != "system":
+        try:
+            PUSH_HOOK(mid)        # push.py: sent from its own thread once this is committed
+        except Exception:
+            pass
     return d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone()
+
+
+# ------------------------------------------------------------ notifications
+
+PUSH_HOOK = None
+LEVELS = ("all", "mentions", "off")
+
+
+def notify_prefs(d, uid):
+    """{level: all | mentions | off, muted: [room ids]} of a person."""
+    r = d.execute("SELECT level, muted FROM notify_prefs WHERE uid = ?", (uid,)).fetchone()
+    if not r:
+        return {"level": "all", "muted": []}
+    try:
+        muted = [x for x in json.loads(r["muted"] or "[]") if isinstance(x, str)]
+    except ValueError:
+        muted = []
+    return {"level": r["level"] if r["level"] in LEVELS else "all", "muted": muted}
+
+
+def wants(pref, room_id, room_kind, mentioned):
+    """Does this person want to be told about a message (their level and
+    the chats they muted)? A mention of them gets through a muted chat."""
+    if pref["level"] == "off":
+        return False
+    if mentioned:
+        return True
+    if room_id in pref["muted"]:
+        return False
+    return pref["level"] == "all" or room_kind == "dm"
+
+
+def notice_of(r, room, uid):
+    """What a notification about message r says, for person uid."""
+    text = plain_links(r["body"] or "")
+    if not text and r["card"]:
+        try:
+            c = json.loads(r["card"]) or {}
+        except ValueError:
+            c = {}
+        text = {"poll": "Poll: ", "event": "Event: ", "task": "Task: "}.get(c.get("type"), "") + (c.get("title") or c.get("question") or "")
+    if not text:
+        try:
+            n = len(json.loads(r["files"] or "[]"))
+        except ValueError:
+            n = 0
+        text = "%d file%s" % (n, "" if n == 1 else "s") if n else "New message"
+    mentioned = ",%d," % uid in (r["mentions"] or "")
+    title = r["author"] or "Messenger"
+    if room["kind"] != "dm":
+        title = "%s · %s" % (r["author"] or "", room["title"] or "Chat")
+    return {"id": r["id"], "room": room["id"], "title": title, "body": text[:240], "mention": mentioned,
+            "dm": room["kind"] == "dm", "url": "messenger.html?room=%s&at=%s" % (room["id"], r["id"]),
+            "at": r["created_at"]}
+
+
+def notify_targets(mid):
+    """[(uid, notice)] for a new message: everyone in the chat but its
+    writer who wants to hear about it (push.py)."""
+    with db() as d:
+        r = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
+        if not r or r["kind"] == "system":
+            return []
+        room = d.execute("SELECT * FROM rooms WHERE id = ? AND deleted = 0", (r["room"],)).fetchone()
+        if not room:
+            return []
+        out = []
+        for m in d.execute("SELECT uid FROM room_members WHERE room = ?", (room["id"],)).fetchall():
+            if m["uid"] == r["uid"]:
+                continue
+            n = notice_of(r, room, m["uid"])
+            if wants(notify_prefs(d, m["uid"]), room["id"], room["kind"], n["mention"]):
+                out.append((m["uid"], n))
+        return out
 
 
 def search_messages(uid, words, limit=20):
@@ -1212,6 +1296,77 @@ def register(app, core):
             # a chat deleted since: just that, so the page takes it off its list
             return {"rev": rev, "rooms": [{"id": r["id"], "deleted": True} if r["deleted"] else room_view(d, r, w, names) for r in rs],
                     "messages": [msg_row(m, w.uid) for m in msgs]}
+
+    @app.get("/api/chat/notify")
+    async def notify(request: Request, since: int = 0, wait: int = 0, x_viewer_token: str = Header(default="")):
+        """For the notifications on every page (notify.js): the new messages
+        for me since revision `since` that I want to hear about, and my
+        unread counts. wait=N (up to 30): held open until something changes,
+        so a message shows within a second or two."""
+        w = core.who(request, x_viewer_token)
+        if w.uid is None:
+            return {"rev": 0, "items": [], "total": 0, "mentions": 0, "level": "off"}
+        if wait and since:
+            if not _REV[0]:
+                with db() as d:
+                    _REV[0] = max(_REV[0], d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"])
+            end = time.time() + max(1, min(30, wait))
+            while _REV[0] <= since and time.time() < end:
+                if await request.is_disconnected():
+                    return {"rev": since, "items": [], "same": True}
+                await asyncio.sleep(0.3)
+        with db() as d:
+            rev = d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"]
+            pref = notify_prefs(d, w.uid)
+            items = []
+            if since and since < rev:
+                rows = d.execute(
+                    "SELECT x.*, r.kind AS room_kind, r.title AS room_title FROM messages x "
+                    "JOIN room_members m ON m.room = x.room AND m.uid = ? "
+                    "JOIN rooms r ON r.id = x.room AND r.deleted = 0 "
+                    "WHERE x.rev > ? AND x.deleted = 0 AND x.kind != 'system' AND x.edited_at = '' "
+                    "AND (x.uid IS NULL OR x.uid != ?) AND x.seq > m.last_read ORDER BY x.rev LIMIT 50",
+                    (w.uid, since, w.uid)).fetchall()
+                for x in rows:
+                    room = {"id": x["room"], "kind": x["room_kind"], "title": x["room_title"]}
+                    n = notice_of(x, room, w.uid)
+                    if wants(pref, room["id"], room["kind"], n["mention"]):
+                        items.append(n)
+            c = d.execute(
+                "SELECT COUNT(*) AS n, SUM(CASE WHEN x.mentions LIKE ? THEN 1 ELSE 0 END) AS m FROM messages x "
+                "JOIN room_members rm ON rm.room = x.room AND rm.uid = ? "
+                "JOIN rooms r ON r.id = x.room AND r.deleted = 0 "
+                "WHERE x.seq > rm.last_read AND x.deleted = 0 AND (x.uid IS NULL OR x.uid != ?)",
+                ("%%,%d,%%" % w.uid, w.uid, w.uid)).fetchone()
+        return {"rev": rev, "items": items, "total": c["n"] or 0, "mentions": c["m"] or 0,
+                "level": pref["level"], "muted": pref["muted"]}
+
+    @app.get("/api/chat/notify-settings")
+    async def notify_get(request: Request, x_viewer_token: str = Header(default="")):
+        w = me(request, x_viewer_token)
+        with db() as d:
+            return notify_prefs(d, w.uid)
+
+    @app.post("/api/chat/notify-settings")
+    async def notify_set(request: Request, x_viewer_token: str = Header(default="")):
+        """{level: all | mentions | off} and/or {mute_room: id, on: true|false}."""
+        w = me(request, x_viewer_token)
+        body = await read_json(request)
+        with db() as d:
+            p = notify_prefs(d, w.uid)
+            if "level" in body:
+                if body["level"] not in LEVELS:
+                    raise HTTPException(status_code=400, detail="level: all, mentions or off")
+                p["level"] = body["level"]
+            rid = body.get("mute_room")
+            if rid:
+                if not membership(d, str(rid), w.uid):
+                    raise HTTPException(status_code=404, detail="No such chat")
+                p["muted"] = [x for x in p["muted"] if x != rid] + ([str(rid)] if body.get("on", True) else [])
+            d.execute("INSERT INTO notify_prefs (uid, level, muted) VALUES (?, ?, ?) "
+                      "ON CONFLICT(uid) DO UPDATE SET level = excluded.level, muted = excluded.muted",
+                      (w.uid, p["level"], json.dumps(p["muted"])))
+            return p
 
     @app.get("/api/chat/unread")
     async def unread(request: Request, x_viewer_token: str = Header(default="")):

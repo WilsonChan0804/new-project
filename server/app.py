@@ -3622,6 +3622,14 @@ try:
 except Exception as _ex:
     print("chat not loaded: %s" % _ex)
 
+# Push (push.py): chat messages to phones and computers with no page open
+# (needs https; the pages show them by themselves while open).
+try:
+    import push
+    push.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("push not loaded: %s" % _ex)
+
 # Calendar (calendar_feed.py): meetings, tasks and issues due, as a page and
 # as a feed Outlook can subscribe to.
 try:

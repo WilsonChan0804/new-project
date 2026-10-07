@@ -160,6 +160,7 @@ function short(iso) {
 
 /* at: a message to show (a pin, a search hit, a link with &msg=). */
 async function openRoom(id, at) {
+  window.LWKOpenRoom = id;           // notify.js: no notification for the chat in front
   closePop();
   C.reply = null;
   C.pend = [];
@@ -1198,6 +1199,11 @@ function info(rr) {
     + (r.kind !== "task" && r.kind !== "dm" ? `<button class="cp-add icon-btn">${ic("plus")} Add people</button>` : "") + `</div>`
     + (r.kind !== "task" ? `<div class="ci-sec ci-actions">`
       + `<button class="ghost icon-btn" data-files>${ic("clip")} Pictures and files</button>`
+      + (() => {
+        // notifications for this chat (notify.js): a muted chat stays quiet unless I'm @mentioned
+        const muted = window.LWKNotify && window.LWKNotify.state().muted.includes(r.id);
+        return `<button class="ghost icon-btn" data-mute="${muted ? 0 : 1}">${ic(muted ? "bell" : "belloff")} ${muted ? "Unmute notifications" : "Mute notifications"}</button>`;
+      })()
       + `<button class="ghost icon-btn" data-wa-in title="WhatsApp > the chat > More > Export chat: send the .txt or .zip here">${ic("download")} Import WhatsApp chat</button>`
       + (r.kind !== "dm" ? `<button class="ghost icon-btn" data-leave>${ic("exit")} Leave this chat</button>` : "")
       + (r.can_delete ? `<button class="ghost danger icon-btn" data-delroom>${ic("trash")} Delete this ${r.kind === "topic" ? "topic" : "chat"}</button>` : "")
@@ -1206,6 +1212,15 @@ function info(rr) {
     if (ev.target.closest("[data-x]")) { box.hidden = true; return; }
     const rm = ev.target.closest("[data-rm]"), dm = ev.target.closest("[data-dm]");
     try {
+      const mu = ev.target.closest("[data-mute]");
+      if (mu && window.LWKNotify) {
+        const on = mu.dataset.mute === "1";
+        await window.LWKNotify.muteRoom(r.id, on);
+        toast(on ? "Muted - you hear about this chat only when @mentioned" : "Notifications on for this chat");
+        mu.dataset.mute = on ? "0" : "1";
+        mu.innerHTML = `${ic(on ? "bell" : "belloff")} ${on ? "Unmute notifications" : "Mute notifications"}`;
+        return;
+      }
       if (ev.target.closest("[data-desc]")) {
         const f = await modal("Description of " + r.title, `<textarea name="d" rows="6" maxlength="2000" placeholder="What is this chat for? Rules, key links, who to ask ...">${esc(r.description || "")}</textarea>`
           + (r.kind !== "dm" ? `<label>Name <input name="t" value="${esc(r.title)}" maxlength="80"></label>` : ""), "Save");
