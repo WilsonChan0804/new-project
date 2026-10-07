@@ -2270,6 +2270,8 @@ function sharedMaterials() {
 
 function applyDisplayMaterials() {
   const mode = S.display || "shaded";
+  const tints = new Set();
+  for (const rec of S.loaded.values()) for (const p of rec.parts) if (p.model && p.model._lwkTint) tints.add(new THREE.Color(p.model._lwkTint).getHex());
   let changed = 0;
   for (const mat of sharedMaterials()) {
     if (!mat || !mat.color) continue;
@@ -2280,10 +2282,11 @@ function applyDisplayMaterials() {
     }
     const o = u.lwkOrig;
     if (o.color === PICK_HEX) continue;            // the selection highlight
+    if (tints.has(o.color)) continue;              // a model shown in one colour keeps it
     if (u.lwkMode === mode) continue;
-    mat.color.setHex(mode === "white" ? WHITE.getHex() : o.color);
+    mat.color.setHex(u.lwkTint ? new THREE.Color(u.lwkTint).getHex() : mode === "white" ? WHITE.getHex() : o.color);
     // fast 3D materials carry their colours per vertex
-    if (u.lwk) mat.vertexColors = mode !== "white";
+    if (u.lwk) mat.vertexColors = mode !== "white" && !u.lwkTint;
     if (mode === "xray") {
       mat.transparent = true;
       mat.opacity = Math.min(o.opacity === undefined ? 1 : o.opacity, 0.22);
@@ -2681,7 +2684,112 @@ function setDepthFx(on) {
    carries the display mode. */
 async function restoreItem(model, localId) {
   await model.resetColor([localId]);
+  // a model shown in one colour keeps it
+  if (model._lwkTint != null) await model.setColor([localId], new THREE.Color(model._lwkTint));
 }
+
+/* ------------------------------------------------------ a model in one colour
+
+   To compare a consultant's model with the project's own (or two models
+   with each other), a whole model can be drawn in one colour: picked per
+   model, remembered on this device. Fast 3D models have materials of their
+   own, so their colour is changed there (nothing extra to draw); fragments
+   models colour their elements. */
+const TINTS = [["#e53935", "Red"], ["#fb8c00", "Orange"], ["#fdd835", "Yellow"], ["#43a047", "Green"],
+  ["#00acc1", "Cyan"], ["#1e88e5", "Blue"], ["#8e24aa", "Purple"], ["#9e9e9e", "Grey"]];
+const tintKey = (name) => `lwk-tint:${Store.currentProject ? Store.currentProject() : ""}:${name}`;
+function tintOf(name) { try { return localStorage.getItem(tintKey(name)) || ""; } catch (e) { return ""; } }
+function tintSave(name, hex) { try { if (hex) localStorage.setItem(tintKey(name), hex); else localStorage.removeItem(tintKey(name)); } catch (e) {} }
+
+async function tintRec(rec, hex) {
+  const mode = S.display || "shaded";
+  if (rec.lwk) {
+    const mats = new Set();
+    for (const p of rec.parts) for (const m of (p.model.materials || [])) mats.add(m);
+    for (const mat of mats) {
+      if (!mat || !mat.color) continue;
+      const u = mat.userData || (mat.userData = {});
+      if (!u.lwkOrig) u.lwkOrig = { color: mat.color.getHex(), opacity: mat.opacity, transparent: mat.transparent, depthWrite: mat.depthWrite };
+      if (u.lwkOrig.color === PICK_HEX) continue;
+      u.lwkTint = hex || null;
+      mat.color.setHex(hex ? new THREE.Color(hex).getHex() : mode === "white" ? WHITE.getHex() : u.lwkOrig.color);
+      mat.vertexColors = !hex && mode !== "white";
+      mat.needsUpdate = true;
+    }
+  } else {
+    for (const p of rec.parts) {
+      const m = p.model;
+      if (!m || !m.setColor) continue;
+      m._lwkTint = hex || null;
+      try {
+        if (hex) await m.setColor(undefined, new THREE.Color(hex)); else await m.resetColor(undefined);
+      } catch (e) {
+        const ids = await m.getItemsIdsWithGeometry();
+        if (hex) await m.setColor(ids, new THREE.Color(hex)); else await m.resetColor(ids);
+      }
+    }
+    // the see-through of a consultant model is kept
+    if (rec.ref) {
+      const op = refPref(rec.ref, "opacity", rec.ref.opacity == null ? 1 : rec.ref.opacity);
+      if (op < 0.99) await setRefOpacity(rec, op);
+    }
+    if (S.fragments) await S.fragments.update(true).catch(() => {});
+  }
+  S.dirty = true;
+}
+
+/* the colour remembered for a model, once it is loaded */
+async function applyTint(name) {
+  const rec = S.loaded.get(name);
+  const hex = tintOf(name);
+  if (rec && hex) { try { await tintRec(rec, hex); } catch (e) { /* left in its own colours */ } }
+}
+
+async function setTint(name, hex) {
+  tintSave(name, hex);
+  const rec = S.loaded.get(name);
+  if (rec) await tintRec(rec, hex);
+  for (const b of document.querySelectorAll(`[data-tint="${CSS.escape(name)}"]`)) paintSwatch(b, hex);
+}
+
+function paintSwatch(b, hex) {
+  b.classList.toggle("on", !!hex);
+  b.style.setProperty("--sw", hex || "transparent");
+  b.title = hex ? "Shown in one colour - click to change" : "Show this model in one colour, to compare";
+}
+function swatchHtml(name, extra) {
+  const hex = tintOf(name);
+  return `<button class="ghost m-sw${hex ? " on" : ""}" data-tint="${escH(name)}" style="--sw:${hex || "transparent"}"`
+    + ` title="${hex ? "Shown in one colour - click to change" : "Show this model in one colour, to compare"}"${extra || ""}></button>`;
+}
+
+/* the colours, under the swatch that was pressed */
+function tintMenu(btn) {
+  document.querySelector(".tint-pop")?.remove();
+  const name = btn.dataset.tint;
+  const cur = tintOf(name);
+  const pop = document.createElement("div");
+  pop.className = "tint-pop";
+  pop.innerHTML = `<button class="tp-orig${cur ? "" : " on"}" data-hex="">Own colours</button><div class="tp-grid">`
+    + TINTS.map(([h, n]) => `<button class="tp-c${cur.toLowerCase() === h ? " on" : ""}" data-hex="${h}" title="${n}" style="background:${h}"></button>`).join("")
+    + `<label class="tp-c tp-any" title="Any colour"><input type="color" value="${cur || "#e53935"}"></label></div>`;
+  document.body.appendChild(pop);
+  const r = btn.getBoundingClientRect();
+  pop.style.left = Math.max(6, Math.min(window.innerWidth - pop.offsetWidth - 6, r.left)) + "px";
+  pop.style.top = (r.bottom + pop.offsetHeight + 6 > window.innerHeight ? Math.max(6, r.top - pop.offsetHeight - 4) : r.bottom + 4) + "px";
+  const pick = (hex) => { pop.remove(); document.removeEventListener("pointerdown", away, true); setTint(name, hex).catch((e) => status(e.message)); };
+  pop.addEventListener("click", (ev) => { const b = ev.target.closest("[data-hex]"); if (b) pick(b.dataset.hex); });
+  pop.querySelector("input").addEventListener("change", (ev) => pick(ev.target.value));
+  const away = (ev) => { if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener("pointerdown", away, true); } };
+  setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
+}
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest && ev.target.closest("[data-tint]");
+  if (!b) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  tintMenu(b);
+}, true);
 
 /* ------------------------------------------------------ element filter
 
@@ -5093,6 +5201,7 @@ window.LWK3D = Object.assign(window.LWK3D || {}, {
     const b = worldBox(p);
     return b.isEmpty() ? null : [b.min.toArray().map((v) => +v.toFixed(2)), b.max.toArray().map((v) => +v.toFixed(2))];
   })]),
+  tints: () => [...S.loaded].map(([k, rec]) => [k, !!rec.lwk, rec.parts.map((p) => p.model._lwkTint || (p.model.materials || []).map((m) => m.userData && m.userData.lwkTint).join(","))]),
 });
 
 /* The inspect panel's Copy Revit ID / Show in Revit / + Task. */
@@ -5376,6 +5485,7 @@ function renderModelList() {
       `<div class="mrow"><label class="row-check" title="${m.name}">`
       + `<input type="checkbox" id="${id}">`
       + `<span class="nm">${short}</span></label>`
+      + swatchHtml(m.name)
       + `<button class="m-more ghost" title="Details">&#9656;</button></div>`
       + `<div class="m-detail" hidden>`
       + `<div class="tags">${m.role || "link"} &middot; `
@@ -5403,7 +5513,7 @@ function renderModelList() {
         if (on) {
           status("Loading " + m.name + " ...");
           // Kept on the box so start-up can wait for it to finish.
-          ev.target._loading = loadModel(m);
+          ev.target._loading = loadModel(m).then(() => applyTint(m.name));
           await ev.target._loading;
         }
         else await unloadModel(m.name);
@@ -8138,6 +8248,7 @@ async function loadRef(r) {
       await loadLwk(e, "full");
       const rec = S.loaded.get(refKey(r));
       if (rec) { rec.ref = r; rec.oBox = null; }
+      await applyTint(refKey(r));
       return;
     }
     r = Object.assign({}, r, { fragments: e.fragments });
@@ -8168,6 +8279,7 @@ async function loadRef(r) {
   placeRef(rec, pl);
   const op = refPref(r, "opacity", r.opacity == null ? 1 : r.opacity);
   if (op < 0.99) await setRefOpacity(rec, op);
+  await applyTint(id);
   if (S.display && S.display !== "shaded") applyDisplayMaterials();
   applyCategories().then(renderCategories);
   status(`${r.name}: shown${r.company ? " (" + r.company + ")" : ""}.`);
@@ -8248,7 +8360,7 @@ function renderRefs() {
       + `<label class="row-check" title="${escH(r.source_file || r.name)}"><input type="checkbox" data-rf="on"${on ? " checked" : ""}${r.status !== "ready" ? " disabled" : ""}> <span class="nm">${escH(r.name)}</span></label>`
       + (what ? `<small class="muted ref-what">${escH(what)}</small>` : "")
       + st
-      + (r.status === "ready" ? `<div class="ref-tools"><input type="range" min="10" max="100" step="5" value="${Math.round(refPref(r, "opacity", r.opacity == null ? 1 : r.opacity) * 100)}" data-rf="op" title="See-through"${loaded ? "" : " disabled"}>`
+      + (r.status === "ready" ? `<div class="ref-tools">${swatchHtml(refKey(r), loaded ? "" : " disabled")}<input type="range" min="10" max="100" step="5" value="${Math.round(refPref(r, "opacity", r.opacity == null ? 1 : r.opacity) * 100)}" data-rf="op" title="See-through"${loaded ? "" : " disabled"}>`
         + (r.can_change ? `<button class="ghost ref-b" data-rf="place"${loaded ? "" : " disabled"} title="Move and turn it into place (for everyone)">Place</button>` : "")
         + `</div>` : "")
       + (r.can_change ? `<button class="ghost ref-b ref-x" data-rf="del" title="Remove from this project">&times;</button>` : "")

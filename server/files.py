@@ -289,7 +289,8 @@ def register(app, core):
             if w.site_admin or w.uid in uids or tasks.project_admin(core, w, r["id"]):
                 out.append({"id": r["id"], "name": r["short"] or r["name"], "full": r["name"], "code": r["code"],
                             "parts": tasks.viewers_of(r)})
-        return {"projects": out, "site_admin": bool(w.site_admin)}
+        # office_preview: LibreOffice found, so Office files are shown as in Office
+        return {"projects": out, "site_admin": bool(w.site_admin), "office_preview": bool(soffice())}
 
     @app.get("/api/files/{reg}/list")
     async def file_list(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
@@ -416,6 +417,8 @@ def register(app, core):
             if not os.path.isdir(cache):
                 os.makedirs(cache)
 
+            why = []
+
             def convert():
                 with _CONVERT:
                     if os.path.isfile(out):
@@ -426,23 +429,38 @@ def register(app, core):
                     shutil.copyfile(full, src)
                     try:
                         import subprocess
-                        subprocess.run([exe, "--headless", "--norestore", "-env:UserInstallation=file:///" +
+                        pr = subprocess.run([exe, "--headless", "--norestore", "-env:UserInstallation=file:///" +
                                         os.path.join(cache, "profile").replace("\\", "/").lstrip("/"),
                                         "--convert-to", "pdf", "--outdir", work, src],
-                                       capture_output=True, timeout=180)
+                                       capture_output=True, timeout=600)   # a 100 MB document takes minutes
                         made = os.path.join(work, "in.pdf")
                         if os.path.isfile(made):
                             os.replace(made, out)
                             return True
+                        why.append((pr.stdout or b"").decode("utf-8", "replace") + (pr.stderr or b"").decode("utf-8", "replace"))
                         return False
-                    except Exception:
+                    except subprocess.TimeoutExpired:
+                        why.append("timeout")
+                        return False
+                    except Exception as e:
+                        why.append(str(e))
                         return False
                     finally:
                         shutil.rmtree(work, ignore_errors=True)
             import asyncio
             ok = await asyncio.get_event_loop().run_in_executor(None, convert)
             if not ok:
-                raise HTTPException(status_code=422, detail="LibreOffice could not open that file")
+                w = " ".join(why)
+                if "could not be loaded" in w:
+                    # only libreoffice-core: Writer, Calc and Impress are packages of their own
+                    detail = ("LibreOffice on the server cannot read this kind of file - install "
+                              "libreoffice-writer, libreoffice-calc and libreoffice-impress")
+                elif "timeout" in w:
+                    detail = "The file is too big to convert in 10 minutes"
+                else:
+                    detail = "LibreOffice could not open that file"
+                print("preview of %s failed: %s" % (path, w.strip()[-300:]), flush=True)
+                raise HTTPException(status_code=422, detail=detail)
         r = FileResponse(out, media_type="application/pdf", filename=os.path.splitext(os.path.basename(full))[0] + ".pdf",
                          content_disposition_type="inline")
         r.headers["Cache-Control"] = "private, max-age=3600"

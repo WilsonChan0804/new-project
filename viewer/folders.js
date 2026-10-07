@@ -34,6 +34,7 @@ const ICON = { pdf: "&#128213;", dwg: "&#128208;", dxf: "&#128208;", rvt: "&#127
   xlsx: "&#128202;", xls: "&#128202;", csv: "&#128202;", docx: "&#128221;", doc: "&#128221;", pptx: "&#128202;", txt: "&#128196;",
   zip: "&#128230;", rar: "&#128230;", "7z": "&#128230;", mp4: "&#127916;", mov: "&#127916;", mp3: "&#127925;",
   jpg: "&#128444;", jpeg: "&#128444;", png: "&#128444;", gif: "&#128444;", webp: "&#128444;", heic: "&#128444;", svg: "&#128444;" };
+const PHONE = () => window.matchMedia("(max-width: 860px)").matches;
 const extOf = (n) => (n.includes(".") ? n.split(".").pop().toLowerCase() : "");
 const iconOf = (e) => (e.dir ? "&#128193;" : ICON[extOf(e.name)] || "&#128196;");
 const isPdf = (e) => !e.dir && extOf(e.name) === "pdf";
@@ -62,6 +63,7 @@ async function loadProjects() {
   const r = await api("/api/files/projects");
   F.projects = r.projects;
   F.siteAdmin = r.site_admin;
+  F.officePreview = !!r.office_preview;
   const q = new URLSearchParams(location.search);
   const viewer = q.get("project");
   let reg = q.get("reg") || "";
@@ -238,17 +240,24 @@ function preview(e) {
   const url = fileUrl(e.path);
   let body;
   const later = OFFICE.has(ext) || TEXT.has(ext) || ext === "csv";
-  if (ext === "pdf") body = `<iframe src="${esc(url)}" title="${esc(e.name)}"></iframe>`;
+  // #view=FitH: the whole width of the page, landscape pages too
+  if (ext === "pdf") body = `<iframe src="${esc(url)}#view=FitH" title="${esc(e.name)}"></iframe>`;
   else if (later) body = `<div class="pv-none">Opening ${esc(e.name)} ...</div>`;
   else if (["mp4", "webm", "mov"].includes(ext)) body = `<video src="${esc(url)}" controls playsinline></video>`;
   else if (["mp3", "m4a", "wav"].includes(ext)) body = `<audio src="${esc(url)}" controls></audio>`;
   else body = `<img src="${esc(url)}" alt="${esc(e.name)}">`;
   box.innerHTML = `<div class="pv-bar"><b title="${esc(e.path)}">${esc(e.name)}</b>`
     + (isPdf(e) ? `<button class="ghost" data-pv="sheets" title="Add its pages to a set on the Sheets page">To Sheets</button>` : "")
+    + `<span class="pv-zoom" hidden><button class="ghost" data-pv="zo" title="Smaller">&minus;</button>`
+    + `<button class="ghost pv-fit" data-pv="fit" title="Fit the page to the width">Fit</button>`
+    + `<button class="ghost" data-pv="zi" title="Bigger">+</button></span>`
+    + `<button class="ghost pv-wide" data-pv="wide" title="Wider: hide the folders and the file list (Esc)">&#10530;</button>`
     + `<a class="ghost btn" href="${esc(url)}" target="_blank" rel="noopener" title="Open in a new tab">&#8599;</a>`
     + `<a class="ghost btn" href="${esc(fileUrl(e.path, true))}" title="Download">&#11015;</a>`
-    + `<button class="ghost" data-pv="x" title="Close">&times;</button></div><div class="pv-body">${body}</div>`;
+    + `<button class="ghost" data-pv="x" title="Close">&times;</button></div><div class="pv-body">${body}</div><div class="pv-grip" title="Drag to make the preview wider"></div>`;
   box.hidden = false;
+  box._zoom = null;
+  if (lsGet("wide", false)) setWide(true, true);
   if (later) showDoc(e, box.querySelector(".pv-body")).catch((err) => {
     const b = box.querySelector(".pv-body");
     if (b) b.innerHTML = `<div class="pv-none">${esc(err.message)}<br><a href="${esc(fileUrl(e.path, true))}">Download it</a></div>`;
@@ -256,9 +265,60 @@ function preview(e) {
   box.onclick = (ev) => {
     const b = ev.target.closest("[data-pv]");
     if (!b) return;
-    if (b.dataset.pv === "x") { box.hidden = true; box.innerHTML = ""; }
+    if (b.dataset.pv === "x") closePreview();
     if (b.dataset.pv === "sheets") toSheets(e);
+    if (b.dataset.pv === "wide") setWide(!document.body.classList.contains("fo-wide"));
+    if (b.dataset.pv === "fit") zoom(box, "fit");
+    if (b.dataset.pv === "zi") zoom(box, 1.15);
+    if (b.dataset.pv === "zo") zoom(box, 1 / 1.15);
   };
+}
+
+function closePreview() {
+  const box = $("#fo-prev");
+  if (box._ro) box._ro.disconnect();
+  box.hidden = true;
+  box.innerHTML = "";
+  setWide(false, true);
+}
+
+/* More room for the preview: the folder column (remembered) and, with
+   the preview's wide button, the file list too. */
+function setSide(hidden) {
+  document.body.classList.toggle("fo-side-hidden", hidden);
+  lsSet("sideHidden", hidden);
+}
+function setWide(on, keep) {
+  document.body.classList.toggle("fo-wide", on);
+  if (!keep) lsSet("wide", on);
+}
+
+/* Zoom of a document drawn in the page (Word without LibreOffice, Excel).
+   "Fit" makes the widest page fit the width of the preview - landscape
+   pages too - and follows the preview when it gets wider or narrower. */
+function zoom(box, how) {
+  const z = box._zoom;
+  if (!z) return;
+  const avail = Math.max(100, z.wrap.parentElement.clientWidth - 12);
+  const fitK = Math.min(1, avail / Math.max(1, z.natural));
+  if (how === "fit") z.fit = true;
+  else if (typeof how === "number") { z.fit = false; z.k = Math.min(4, Math.max(0.2, (z.k || fitK) * how)); }
+  const k = z.fit ? fitK : z.k;
+  z.k = k;
+  z.wrap.style.zoom = String(k);
+  const f = box.querySelector(".pv-fit");
+  if (f) { f.textContent = z.fit ? "Fit" : Math.round(k * 100) + "%"; f.classList.toggle("on", z.fit); }
+}
+function zoomable(box, wrap, natural, fit) {
+  wrap.style.zoom = "";
+  // measured once, at 100%
+  box._zoom = { wrap, natural: natural(), fit: fit !== false, k: 1 };
+  const zs = box.querySelector(".pv-zoom");
+  if (zs) zs.hidden = false;
+  if (box._ro) box._ro.disconnect();
+  box._ro = new ResizeObserver(() => { if (box._zoom && box._zoom.fit) zoom(box); });
+  box._ro.observe(box);
+  zoom(box);
 }
 
 /* Word, Excel, PowerPoint and text files, read in the page. The server
@@ -288,17 +348,21 @@ async function showDoc(e, body) {
     body.firstChild.textContent = t.length > 2e6 ? t.slice(0, 2e6) + "\n..." : t;
     return;
   }
+  F.convertError = "";
   if (OFFICE.has(ext)) {
+    if (F.officePreview) body.innerHTML = `<div class="pv-none"><span class="pv-spin"></span>Opening ${esc(e.name)} ...<br><small>A big file takes a while the first time; it is quick after that.</small></div>`;
     const res = await fetch(`${base()}/preview?path=${encodeURIComponent(e.path)}`, { headers: { "X-Viewer-Token": localStorage.getItem("lwk-viewer:token") || "" } });
     if (res.ok) {
       const u = URL.createObjectURL(await res.blob());
-      body.innerHTML = `<iframe src="${u}" title="${esc(e.name)}"></iframe>`;
+      body.innerHTML = `<iframe src="${u}#view=FitH" title="${esc(e.name)}"></iframe>`;
       return;
     }
+    let m = "This file could not be shown";
     if (res.status !== 501) {
-      let m = "This file could not be shown";
       try { m = (await res.json()).detail || m; } catch (err) {}
-      throw new Error(m);
+      // Word and Excel can still be drawn here
+      if (!["docx", "xlsx", "xls", "ods"].includes(ext)) throw new Error(m);
+      F.convertError = m;
     }
   }
   // no LibreOffice on the server: in the browser
@@ -308,7 +372,22 @@ async function showDoc(e, body) {
     await script(CDN.docx);
     body.innerHTML = `<div class="pv-doc"></div>`;
     await window.docx.renderAsync(buf, body.firstChild, null, { inWrapper: true, ignoreLastRenderedPageBreak: false });
-    body.insertAdjacentHTML("afterbegin", `<div class="pv-note">Shown in the browser - for the exact look, ask the admin to install LibreOffice on the server.</div>`);
+    body.insertAdjacentHTML("afterbegin", `<div class="pv-note">Simplified preview${!F.siteAdmin ? ""
+      : F.officePreview ? " - the server could not convert it: " + esc(F.convertError || "")
+      : " - for the exact look (and PowerPoint, .doc, .xls), install LibreOffice on the server: see the manual, Folders > Previews"}</div>`);
+    const box = $("#fo-prev");
+    const wrap = body.querySelector(".docx-wrapper") || body.querySelector(".pv-doc").firstElementChild;
+    /* pages keep their own width (landscape is wider); a page whose table
+       runs past its edge is made as wide as the table. The widest decides. */
+    for (const sec of wrap.querySelectorAll("section.docx")) {
+      if (sec.scrollWidth > sec.offsetWidth + 2) {
+        const pr = parseFloat(getComputedStyle(sec).paddingRight) || 0;
+        sec.style.boxSizing = "border-box";
+        sec.style.width = sec.scrollWidth + pr + "px";
+      }
+    }
+    const natural = () => Math.max(...[...wrap.querySelectorAll("section.docx")].map((x) => x.offsetWidth), 300) + 24;
+    if (wrap) zoomable(box, wrap, natural);
     return;
   }
   if (["xlsx", "xls", "csv", "ods"].includes(ext)) {
@@ -319,6 +398,8 @@ async function showDoc(e, body) {
     const grid = body.querySelector(".pv-grid");
     const show = (i) => {
       grid.innerHTML = window.XLSX.utils.sheet_to_html(wb.Sheets[tabs[i]], { editable: false });
+      const box = $("#fo-prev"), t = grid.querySelector("table");
+      if (t) zoomable(box, t, () => t.offsetWidth, false);
       for (const b of body.querySelectorAll(".pv-tabs button")) b.classList.toggle("on", Number(b.dataset.tab) === i);
     };
     body.onclick = (ev) => { const b = ev.target.closest("[data-tab]"); if (b) show(Number(b.dataset.tab)); };
@@ -703,7 +784,25 @@ function wire() {
     document.body.classList.remove("fo-side-open");
     go(p);
   });
-  $("#fo-side-open").onclick = () => document.body.classList.toggle("fo-side-open");
+  // phone: the folders slide in; a computer: the folder column is hidden or shown (remembered)
+  $("#fo-side-open").onclick = () => (PHONE() ? document.body.classList.toggle("fo-side-open") : setSide(!document.body.classList.contains("fo-side-hidden")));
+  setSide(lsGet("sideHidden", false));
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && document.body.classList.contains("fo-wide") && !document.querySelector(".t-modal")) setWide(false);
+  });
+  // the preview's left edge: drag to make it wider (remembered)
+  const prev = $("#fo-prev");
+  const pw = lsGet("prevW", 0);
+  if (pw) prev.style.width = pw + "px";
+  prev.addEventListener("pointerdown", (ev) => {
+    if (!ev.target.classList.contains("pv-grip") || PHONE()) return;
+    ev.preventDefault();
+    const x0 = ev.clientX, w0 = prev.offsetWidth;
+    const move = (m) => { prev.style.width = Math.min(window.innerWidth - 120, Math.max(280, w0 + x0 - m.clientX)) + "px"; };
+    const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); lsSet("prevW", prev.offsetWidth); };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+  });
   $("#fo-crumbs").onclick = (ev) => { const a = ev.target.closest("[data-go]"); if (!a) return; ev.preventDefault(); go(a.dataset.go); };
   let t = null;
   $("#fo-search").oninput = (ev) => { clearTimeout(t); t = setTimeout(() => search(ev.target.value).catch((e) => toast(e.message, true)), 300); };

@@ -139,6 +139,11 @@ PART = [
     H2('Folders 檔案夾'),
     P('喺左邊 folder 樹右撳一個 folder（或者用 folder 嘅 ⋯），可以 **New folder here**（喺度開新 folder）、改名、**Move to ...**、加星、Pin、copy 連結同刪除。'),
     P('**唔使下載都睇到：** 撳 PDF、相、片、文字檔，或者 **Word、Excel、PowerPoint**，就會喺清單隔籬打開。Server 裝咗 LibreOffice（問你嘅 admin）嘅話，Office 檔案會同喺 Office 入面一模一樣；未裝就用簡單啲嘅方式顯示 Word 同 Excel，PowerPoint 要下載。'),
+    UL([
+        '**俾文件多啲位：** 清單左上角嘅 **☰** 收埋／打開左邊 folder 欄（會記住）。預覽入面嘅 **⤢** 連 folder 同檔案清單都收埋，文件用晒成個闊度；再撳一次或者 **Esc** 就返嚟。拖預覽嘅左邊邊位可以拉闊。',
+        '**成版睇晒：** 喺網頁度顯示嘅 Word 同 Excel 一開就係 **Fit**：最闊嗰版（橫向都得）啱啱好放得落預覽闊度，電腦同手機都係。**−**、**+** 縮放；**Fit** 返原。PDF 一打開就係頁闊。',
+        '**Admin 用 - 喺 server 裝 LibreOffice**（Ubuntu）：`sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress fonts-noto-cjk fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea`，然後重開 viewer service。Writer、Calc、Impress 三個都要裝：淨係得 libreoffice-core 嘅話，網頁會話「cannot read this kind of file」。大文件第一次要等一陣，之後有 cache，即刻開到。',
+    ]),
     P('**Folders** 將每個 project 嘅檔案放喺 server 上面一個 folder，好似 ACC Docs 或者共用 drive 咁。喺左上角揀 project。'),
     UL([
         '**瀏覽：** 左邊嘅 folder 樹、頂部嘅路徑，或者 **Search this project\'s files** 搜尋。雙擊 folder 打開；撳 PDF、相或者片就預覽。',

@@ -251,6 +251,11 @@ DOC = [
     H2('Folders'),
     P('Right-click a folder in the tree on the left (or use ⋯ on a folder) for **New folder here**, **Rename**, **Move to ...**, **Star**, **Pin**, **Copy link** and **Delete**.'),
     P('**Reading documents without downloading:** click a PDF, picture, video, text file, or a **Word, Excel or PowerPoint** file and it opens beside the list. Office files look exactly as in Office when LibreOffice is installed on the server (ask your admin); without it, Word and Excel are shown in a simpler way and PowerPoint has to be downloaded.'),
+    UL([
+        '**More room for the document:** **☰** (top left of the list) hides or shows the folder column, and is remembered. **⤢** in the preview hides the folders and the file list too, so the document gets the whole width; press it again, or **Esc**, to bring them back. Drag the preview\'s left edge to make it wider.',
+        '**Whole page:** Word and Excel files shown in the page start at **Fit**: the widest page, landscape pages too, fits the width of the preview, on a computer and on a phone. **−** and **+** zoom; **Fit** goes back. PDFs open at the page width.',
+        '**For the admin - installing LibreOffice** on the server (Ubuntu): `sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress fonts-noto-cjk fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea`, then restart the viewer service. All three of Writer, Calc and Impress are needed: with only libreoffice-core the page says "cannot read this kind of file". A big document takes a while the first time; it is kept, so it opens at once after that.',
+    ]),
     P('**Folders** holds each project\'s files in a folder on the server, like ACC Docs or a shared drive. Pick the project at the top left.'),
     UL([
         '**Browse:** the folder tree on the left, the path at the top, or **Search this project\'s files**. Double-click a folder to open it; click a PDF, picture or video to preview it.',
@@ -470,6 +475,7 @@ DOC = [
     ]),
     UL([
         'Each consultant model has a tick box (on / off for you) and a slider to make it see-through.',
+        '**One colour, to compare:** the small circle beside a consultant model (and beside each model in the **Models** list) shows the whole model in one colour - red, orange, yellow, green, cyan, blue, purple, grey or any colour - for example the project grey and the structure red. **Own colours** puts it back. It is remembered on this device, works with the see-through slider, and stays in **White** mode.',
         '**Place** (the person who added it, or a project admin) sets where it sits for everyone: **Shared coordinates** (what a coordinated consultant exports), **This model\'s origin**, or **No coordinates: set in the middle**; then **East / North / Up** (mm) and **Turn** (°) move it by hand while you watch. **Save for everyone** keeps it; **Cancel** puts it back.',
         'Its elements can be clicked and issues raised on them like the project\'s own.',
         '**×** removes it from the project (who added it, or a project admin).',

@@ -12,6 +12,7 @@ PART = [
     ]),
     UL([
         '每個顧問 model 有剔格（你自己開／關）同一條可以調透明嘅 slider。',
+        '**整體上色，方便比較：** 顧問 model 隔籬（同 **Models** 清單每個 model 隔籬）嘅小圓圈，可以將成個 model 變一隻顏色 - 紅、橙、黃、綠、青、藍、紫、灰或者任揀 - 例如自己 project 灰色、結構紅色。**Own colours** 變返原色。會記喺呢部機，可以同透明 slider 一齊用，**White** 模式都保留顏色。',
         '**Place**（加佢嗰個人或者 project admin）幫所有人設定擺喺邊：**Shared coordinates**（有協調座標嘅顧問就係呢個）、**This model\'s origin**，或者 **No coordinates: set in the middle**；再用 **East / North / Up**（mm）同 **Turn**（°）一路睇一路手動移。**Save for everyone** 儲存；**Cancel** 放返原位。',
         '佢嘅元件一樣撳得，一樣可以開 issue。',
         '**×** 由 project 移除（加佢嗰個人或者 project admin）。',

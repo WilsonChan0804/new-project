@@ -1901,3 +1901,18 @@ header select.two-proj[hidden], header select.two-part[hidden] { display: none; 
   header select.two-proj, header select.two-part { max-width: 110px; min-width: 70px; flex: 0 0 auto; }
 }
 .ref-head .ref-conv { float: right; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 10px; color: var(--muted); }
+
+/* a model in one colour (3D: the swatch in the model list and Consultant models) */
+.m-sw { flex: none; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 1.5px dashed #9aa3ad !important;
+  background: var(--sw, transparent) !important; cursor: pointer; }
+.m-sw.on { border: 2px solid #fff !important; box-shadow: 0 0 0 1px #8a939c; }
+.m-sw:disabled { opacity: .4; cursor: default; }
+.tint-pop { position: fixed; z-index: 1000; background: #fff; color: #222; border-radius: 10px; padding: 8px; width: 168px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.22); font-size: 12px; }
+.tint-pop .tp-orig { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+.tint-pop .tp-orig.on, .tint-pop .tp-orig:hover { background: #f1f3f5; font-weight: 600; }
+.tint-pop .tp-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px; }
+.tint-pop .tp-c { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #ccd; cursor: pointer; padding: 0; position: relative; overflow: hidden; }
+.tint-pop .tp-c.on { box-shadow: 0 0 0 2px #222; }
+.tint-pop .tp-any { background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
+.tint-pop .tp-any input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }

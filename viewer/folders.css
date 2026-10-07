@@ -24,7 +24,7 @@
 
 #fo-main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
 .fo-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.fo-sidebtn { display: none; }
+.fo-sidebtn { display: inline-block; }
 #fo-crumbs { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; min-width: 0; font-size: 14px; }
 #fo-crumbs a { color: var(--ink-2); padding: 3px 6px; border-radius: 5px; text-decoration: none; font-weight: 600; }
 #fo-crumbs a:hover { background: var(--line-soft); }
@@ -58,8 +58,26 @@
   align-items: center; justify-content: center; z-index: 5; pointer-events: none; font-size: 16px; color: var(--accent-ink); }
 #fo-drop > div { background: var(--panel); padding: 12px 20px; border-radius: 10px; box-shadow: var(--shadow); }
 
-#fo-prev { width: min(46vw, 760px); flex: none; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--panel-2); }
+#fo-prev { width: min(46vw, 760px); flex: none; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--panel-2);
+  position: relative; max-width: calc(100% - 120px); }
+#fo-prev .pv-grip { position: absolute; left: -4px; top: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 2; }
+#fo-prev .pv-grip:hover { background: var(--accent-soft); }
+#fo-prev .pv-zoom { display: inline-flex; gap: 2px; }
+#fo-prev .pv-zoom[hidden] { display: none; }
+#fo-prev .pv-fit { min-width: 50px; font-size: 12px; }
+#fo-prev .pv-fit.on, body.fo-wide #fo-prev .pv-wide { background: var(--accent-soft); color: var(--accent-ink); }
+#fo-prev .pv-spin { display: block; width: 22px; height: 22px; margin: 0 auto 10px; border: 3px solid var(--line); border-top-color: var(--accent);
+  border-radius: 50%; animation: pv-spin 0.8s linear infinite; }
+@keyframes pv-spin { to { transform: rotate(360deg); } }
+
+/* more room for the preview: the folder column hidden (the ☰ button), or
+   the preview on the whole width (its wide button) */
+body.fo-side-hidden #fo-side { display: none; }
+body.fo-wide #fo-prev:not([hidden]) { flex: 1; width: auto !important; max-width: none; }
+body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-side,
+body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 #fo-prev .pv-bar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
+#fo-prev .pv-bar a.btn { text-decoration: none; padding: 4px 7px; color: var(--ink-2); }
 #fo-prev .pv-bar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 #fo-prev .pv-body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: auto; }
 #fo-prev iframe { width: 100%; height: 100%; border: 0; background: #fff; }
@@ -91,7 +109,10 @@
   .fo-head, .fo-row { grid-template-columns: 34px minmax(0, 1fr) 84px 34px; }
   .fo-head .c-by, .fo-row .c-by, .fo-head .c-size, .fo-row .c-size { display: none; }
   #fo-search { width: 100%; order: 10; }
-  #fo-prev { position: absolute; inset: 0; width: auto; z-index: 15; }
+  #fo-prev { position: absolute; inset: 0; width: auto !important; max-width: none; z-index: 15; }
+  #fo-prev .pv-grip, #fo-prev .pv-wide { display: none; }
+  #fo-prev .pv-bar { gap: 2px; padding: 6px; }
+  body.fo-side-hidden #fo-side { display: flex; }
 }
 
 /* documents read in the page */
@@ -100,6 +121,8 @@
 #fo-prev .pv-body > img, #fo-prev .pv-body > video, #fo-prev .pv-body > audio, #fo-prev .pv-body > .pv-none { margin: auto; }
 #fo-prev .pv-text { margin: 0; padding: 12px; font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow: auto; background: #fff; }
 #fo-prev .pv-doc { overflow: auto; background: #e9ecef; }
+#fo-prev .pv-doc .docx-wrapper { padding: 10px 6px; background: transparent; align-items: center; }
+#fo-prev .pv-doc .docx-wrapper > section.docx { margin-bottom: 12px; flex: none; overflow: visible; }
 #fo-prev .pv-note { font-size: 11px; color: var(--muted); padding: 4px 10px; background: #fffbe6; }
 #fo-prev .pv-body:has(.pv-note) { flex-direction: column; }
 .pv-sheets { display: flex; flex-direction: column; overflow: hidden; background: #fff; }
