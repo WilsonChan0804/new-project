@@ -15,7 +15,7 @@ import { startNotify } from "./notify.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-10";
+const LWK_VERSION = "2026-10-11";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -541,6 +541,7 @@ if (document.querySelector("header")) installSearch();
    the parts (and, on the Sheets page, the PDF sets) - and choosing sets
    its value and fires its change, so each page goes on as before. The
    original stays in the page, hidden. */
+const PHONE_Q = "(max-width: 700px), (pointer: coarse) and (max-height: 520px)";
 export function projectTwoStep(sel) {
   if (!sel || sel._two) return;
   const proj = document.createElement("select");
@@ -559,7 +560,8 @@ export function projectTwoStep(sel) {
      just after the logo. */
   const home = document.createComment("two-step");
   wrap.before(home);
-  const phone = matchMedia("(max-width: 700px)");
+  // a phone, upright or on its side (wider than 700 then, but no room either)
+  const phone = matchMedia(PHONE_Q);
   const place = () => {
     const brand = document.querySelector("header .brand");
     if (phone.matches && brand && brand.parentNode === wrap.parentNode) brand.after(wrap);
@@ -595,10 +597,11 @@ export function projectTwoStep(sel) {
     const at = gs.find((g) => g.opts.includes(cur)) || gs[0];
     const esc = (x) => String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
     // a phone: the short name only (the code is cut off anyway)
-    const small = matchMedia("(max-width: 700px)").matches;
+    const small = matchMedia(PHONE_Q).matches;
     proj.innerHTML = gs.map((g) => `<option value="${esc(g.key)}"${g === at ? " selected" : ""}>${esc(small ? g.label.split(" · ")[0] : g.label)}</option>`).join("");
     part.innerHTML = at ? at.opts.map((o) => `<option value="${esc(o.value)}"${o === cur ? " selected" : ""}>${esc(shortName(at.label, o))}</option>`).join("") : "";
-    part.hidden = !at || at.opts.length < 2;
+    // shown even with one: it says which model / sheet set this is
+    part.hidden = !at || !at.opts.length;
     proj.hidden = sel.hidden && gs.length < 2 && part.hidden;
     sel.hidden = true;
     sel.style.display = "none";

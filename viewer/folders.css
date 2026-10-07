@@ -101,7 +101,9 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 .fo-pick div:hover { background: var(--line-soft); }
 .fo-pick div.on { background: var(--accent-soft); font-weight: 600; }
 
-@media (max-width: 860px) {
+/* a phone, upright or on its side (folders.js PHONE) */
+@media (max-width: 860px), (pointer: coarse) and (max-height: 520px) {
+  body.fo-side-open #fo-main::after { content: ""; position: absolute; inset: 0; background: rgba(20, 26, 36, .25); z-index: 9; }
   #fo-side { position: absolute; z-index: 10; inset: 0 auto 0 0; transform: translateX(-100%); transition: transform .15s; visibility: hidden; }
   body.fo-side-open #fo-side { visibility: visible; box-shadow: 4px 0 18px rgba(0,0,0,.15); }
   body.fo-side-open #fo-side { transform: none; }
@@ -132,3 +134,11 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 .pv-grid { overflow: auto; flex: 1; }
 .pv-grid table { border-collapse: collapse; font-size: 12px; }
 .pv-grid td { border: 1px solid #e2e6ec; padding: 2px 6px; white-space: nowrap; }
+
+/* PDFs drawn page by page (phones and tablets) */
+#fo-prev .pv-body > .pv-pdf { flex: 1; min-width: 0; overflow: auto; background: #e9ecef; }
+#fo-prev .pv-pages { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8px; width: max-content; min-width: 100%; box-sizing: border-box; margin: 0 auto; }
+#fo-prev .pv-page { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); flex: none; }
+#fo-prev .pv-page canvas { width: 100%; height: 100%; display: block; }
+/* two fingers zoom the document, not the page around it */
+#fo-prev .pv-body { touch-action: pan-x pan-y; }

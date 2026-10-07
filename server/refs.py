@@ -78,8 +78,19 @@ def clean(v, n):
 def placement_of(p):
     p = p if isinstance(p, dict) else {}
     num = lambda k, lim: max(-lim, min(lim, float(p.get(k) or 0)))
-    return {"mode": p.get("mode") if p.get("mode") in MODES else "shared",
-            "x": num("x", 1e9), "y": num("y", 1e9), "z": num("z", 1e7), "rot": num("rot", 360)}
+    out = {"mode": p.get("mode") if p.get("mode") in MODES else "shared",
+           "x": num("x", 1e9), "y": num("y", 1e9), "z": num("z", 1e7), "rot": num("rot", 360)}
+    # "fit": the spot it was set on, in the project's shared coordinates
+    # (Y-up metres) - so every device puts it in the same place
+    a = p.get("anchor")
+    try:
+        if isinstance(a, (list, tuple)) and len(a) == 3:
+            v = [float(x) for x in a]
+            if all(abs(x) < 1e8 for x in v):
+                out["anchor"] = v
+    except (TypeError, ValueError):
+        pass
+    return out
 
 
 def converter_version():

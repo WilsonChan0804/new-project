@@ -621,9 +621,10 @@ async function initScene() {
       qualityNote();
     }
     if (S.cube) S.cube.update();
-    if (S.display && S.display !== "shaded" && now - (S.lastMatSweep || 0) > 800) {
+    if (((S.display && S.display !== "shaded") || S.tintsOn) && now - (S.lastMatSweep || 0) > 800) {
       S.lastMatSweep = now;
       applyDisplayMaterials();
+      if (S.tintsOn) syncTints().catch(() => {});
     }
 
     /* Distance from camera to orbit target, live. If this keeps falling
@@ -2270,8 +2271,16 @@ function sharedMaterials() {
 
 function applyDisplayMaterials() {
   const mode = S.display || "shaded";
-  const tints = new Set();
-  for (const rec of S.loaded.values()) for (const p of rec.parts) if (p.model && p.model._lwkTint) tints.add(new THREE.Color(p.model._lwkTint).getHex());
+  /* models shown in one colour (tintRec): the fast 3D ones through their
+     own materials - pieces streamed in later included - and the colours of
+     the fragments ones, which are left alone */
+  const tints = new Set(), tintOfMat = new Map();
+  for (const rec of S.loaded.values()) {
+    if (!rec.tint) continue;
+    const hex = new THREE.Color(rec.tint).getHex();
+    if (!rec.lwk) { tints.add(hex); continue; }
+    for (const p of rec.parts) for (const m of (p.model.materials || [])) tintOfMat.set(m, hex);
+  }
   let changed = 0;
   for (const mat of sharedMaterials()) {
     if (!mat || !mat.color) continue;
@@ -2283,10 +2292,12 @@ function applyDisplayMaterials() {
     const o = u.lwkOrig;
     if (o.color === PICK_HEX) continue;            // the selection highlight
     if (tints.has(o.color)) continue;              // a model shown in one colour keeps it
-    if (u.lwkMode === mode) continue;
-    mat.color.setHex(u.lwkTint ? new THREE.Color(u.lwkTint).getHex() : mode === "white" ? WHITE.getHex() : o.color);
+    const tint = tintOfMat.get(mat);
+    const key = mode + "|" + (tint == null ? "" : tint);
+    if (u.lwkMode === key) continue;
+    mat.color.setHex(tint != null ? tint : mode === "white" ? WHITE.getHex() : o.color);
     // fast 3D materials carry their colours per vertex
-    if (u.lwk) mat.vertexColors = mode !== "white" && !u.lwkTint;
+    if (u.lwk) mat.vertexColors = mode !== "white" && tint == null;
     if (mode === "xray") {
       mat.transparent = true;
       mat.opacity = Math.min(o.opacity === undefined ? 1 : o.opacity, 0.22);
@@ -2297,7 +2308,7 @@ function applyDisplayMaterials() {
       mat.depthWrite = o.depthWrite;
     }
     mat.needsUpdate = true;
-    u.lwkMode = mode;
+    u.lwkMode = key;
     changed++;
   }
   if (changed) S.dirty = true;
@@ -2702,40 +2713,47 @@ function tintOf(name) { try { return localStorage.getItem(tintKey(name)) || ""; 
 function tintSave(name, hex) { try { if (hex) localStorage.setItem(tintKey(name), hex); else localStorage.removeItem(tintKey(name)); } catch (e) {} }
 
 async function tintRec(rec, hex) {
-  const mode = S.display || "shaded";
+  rec.tint = hex || "";
+  S.tintsOn = [...S.loaded.values()].some((r) => r.tint);
   if (rec.lwk) {
-    const mats = new Set();
-    for (const p of rec.parts) for (const m of (p.model.materials || [])) mats.add(m);
-    for (const mat of mats) {
-      if (!mat || !mat.color) continue;
-      const u = mat.userData || (mat.userData = {});
-      if (!u.lwkOrig) u.lwkOrig = { color: mat.color.getHex(), opacity: mat.opacity, transparent: mat.transparent, depthWrite: mat.depthWrite };
-      if (u.lwkOrig.color === PICK_HEX) continue;
-      u.lwkTint = hex || null;
-      mat.color.setHex(hex ? new THREE.Color(hex).getHex() : mode === "white" ? WHITE.getHex() : u.lwkOrig.color);
-      mat.vertexColors = !hex && mode !== "white";
-      mat.needsUpdate = true;
-    }
+    applyDisplayMaterials();
   } else {
-    for (const p of rec.parts) {
-      const m = p.model;
-      if (!m || !m.setColor) continue;
-      m._lwkTint = hex || null;
-      try {
-        if (hex) await m.setColor(undefined, new THREE.Color(hex)); else await m.resetColor(undefined);
-      } catch (e) {
-        const ids = await m.getItemsIdsWithGeometry();
-        if (hex) await m.setColor(ids, new THREE.Color(hex)); else await m.resetColor(ids);
-      }
-    }
-    // the see-through of a consultant model is kept
-    if (rec.ref) {
-      const op = refPref(rec.ref, "opacity", rec.ref.opacity == null ? 1 : rec.ref.opacity);
-      if (op < 0.99) await setRefOpacity(rec, op);
-    }
+    for (const p of rec.parts) await tintPart(rec, p);
     if (S.fragments) await S.fragments.update(true).catch(() => {});
   }
   S.dirty = true;
+}
+
+/* a fragments model (or one more copy of it) in its model's colour */
+async function tintPart(rec, p) {
+  const m = p.model;
+  const hex = rec.tint || null;
+  if (!m || !m.setColor || (m._lwkTint || null) === hex) return;
+  m._lwkTint = hex;
+  try {
+    if (hex) await m.setColor(undefined, new THREE.Color(hex)); else await m.resetColor(undefined);
+  } catch (e) {
+    const ids = await m.getItemsIdsWithGeometry();
+    if (hex) await m.setColor(ids, new THREE.Color(hex)); else await m.resetColor(ids);
+  }
+  // the see-through of a consultant model is kept
+  if (rec.ref) {
+    const op = refPref(rec.ref, "opacity", rec.ref.opacity == null ? 1 : rec.ref.opacity);
+    if (op < 0.99) await setRefOpacity(rec, op);
+  }
+}
+
+/* copies loaded after the colour was set (light mode floors) get it too */
+async function syncTints() {
+  if (S._tintSync) return;
+  S._tintSync = true;
+  let n = 0;
+  for (const rec of S.loaded.values()) {
+    if (rec.lwk || !rec.tint) continue;
+    for (const p of rec.parts) if ((p.model._lwkTint || null) !== rec.tint) { await tintPart(rec, p).catch(() => {}); n++; }
+  }
+  if (n && S.fragments) await S.fragments.update(true).catch(() => {});
+  S._tintSync = false;
 }
 
 /* the colour remembered for a model, once it is loaded */
@@ -2743,24 +2761,47 @@ async function applyTint(name) {
   const rec = S.loaded.get(name);
   const hex = tintOf(name);
   if (rec && hex) { try { await tintRec(rec, hex); } catch (e) { /* left in its own colours */ } }
+  paintTintReset();
 }
 
 async function setTint(name, hex) {
   tintSave(name, hex);
+  // the buttons at once; the model follows
+  for (const b of document.querySelectorAll(`[data-tint="${CSS.escape(name)}"]`)) paintSwatch(b, hex);
+  paintTintReset();
   const rec = S.loaded.get(name);
   if (rec) await tintRec(rec, hex);
-  for (const b of document.querySelectorAll(`[data-tint="${CSS.escape(name)}"]`)) paintSwatch(b, hex);
 }
 
 function paintSwatch(b, hex) {
   b.classList.toggle("on", !!hex);
   b.style.setProperty("--sw", hex || "transparent");
   b.title = hex ? "Shown in one colour - click to change" : "Show this model in one colour, to compare";
+  const x = b.nextElementSibling;
+  if (x && x.classList.contains("m-swx")) x.hidden = !hex;
 }
 function swatchHtml(name, extra) {
   const hex = tintOf(name);
   return `<button class="ghost m-sw${hex ? " on" : ""}" data-tint="${escH(name)}" style="--sw:${hex || "transparent"}"`
-    + ` title="${hex ? "Shown in one colour - click to change" : "Show this model in one colour, to compare"}"${extra || ""}></button>`;
+    + ` title="${hex ? "Shown in one colour - click to change" : "Show this model in one colour, to compare"}"${extra || ""}></button>`
+    + `<button class="ghost m-swx" data-untint="${escH(name)}" title="Back to its own colours"${hex ? "" : " hidden"}>&#8634;</button>`;
+}
+/* "Reset colours" in the Models panel, while any model is in one colour */
+function paintTintReset() {
+  const b = document.getElementById("tint-reset");
+  if (!b) return;
+  let any = false;
+  try { const pre = tintKey(""); for (let i = 0; i < localStorage.length; i++) if ((localStorage.key(i) || "").startsWith(pre)) { any = true; break; } } catch (e) {}
+  b.hidden = !any;
+}
+async function resetTints() {
+  const pre = tintKey("");
+  const names = [];
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i) || ""; if (k.startsWith(pre)) names.push(k.slice(pre.length)); } } catch (e) {}
+  for (const n of names) await setTint(n, "");
+  for (const rec of S.loaded.values()) if (rec.tint) await tintRec(rec, "");
+  paintTintReset();
+  status("Every model is back in its own colours.");
 }
 
 /* the colours, under the swatch that was pressed */
@@ -2770,7 +2811,7 @@ function tintMenu(btn) {
   const cur = tintOf(name);
   const pop = document.createElement("div");
   pop.className = "tint-pop";
-  pop.innerHTML = `<button class="tp-orig${cur ? "" : " on"}" data-hex="">Own colours</button><div class="tp-grid">`
+  pop.innerHTML = `<button class="tp-orig${cur ? "" : " on"}" data-hex="">&#8634; Original colour</button><div class="tp-grid">`
     + TINTS.map(([h, n]) => `<button class="tp-c${cur.toLowerCase() === h ? " on" : ""}" data-hex="${h}" title="${n}" style="background:${h}"></button>`).join("")
     + `<label class="tp-c tp-any" title="Any colour"><input type="color" value="${cur || "#e53935"}"></label></div>`;
   document.body.appendChild(pop);
@@ -2784,11 +2825,15 @@ function tintMenu(btn) {
   setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
 }
 document.addEventListener("click", (ev) => {
-  const b = ev.target.closest && ev.target.closest("[data-tint]");
-  if (!b) return;
+  const t = ev.target.closest && ev.target;
+  if (!t) return;
+  const x = t.closest("[data-untint]"), b = t.closest("[data-tint]"), all = t.closest("#tint-reset");
+  if (!x && !b && !all) return;
   ev.preventDefault();
   ev.stopPropagation();
-  tintMenu(b);
+  if (x) setTint(x.dataset.untint, "").catch((e) => status(e.message));
+  else if (all) resetTints().catch((e) => status(e.message));
+  else tintMenu(b);
 }, true);
 
 /* ------------------------------------------------------ element filter
@@ -5201,7 +5246,10 @@ window.LWK3D = Object.assign(window.LWK3D || {}, {
     const b = worldBox(p);
     return b.isEmpty() ? null : [b.min.toArray().map((v) => +v.toFixed(2)), b.max.toArray().map((v) => +v.toFixed(2))];
   })]),
-  tints: () => [...S.loaded].map(([k, rec]) => [k, !!rec.lwk, rec.parts.map((p) => p.model._lwkTint || (p.model.materials || []).map((m) => m.userData && m.userData.lwkTint).join(","))]),
+  // per model: its colour, and how many of its fast 3D materials show a colour of their own
+  tints: () => [...S.loaded].map(([k, rec]) => [k, rec.tint || "", rec.lwk
+    ? rec.parts.reduce((t, p) => t + (p.model.materials || []).filter((m) => m.userData && /\|\d/.test(m.userData.lwkMode || "")).length, 0)
+    : rec.parts.filter((p) => p.model._lwkTint).length]),
 });
 
 /* The inspect panel's Copy Revit ID / Show in Revit / + Task. */
@@ -7473,8 +7521,8 @@ async function boot() {
   const withFrags = (S.manifest.models || []).filter((m) => m.fragments && m.status !== "converting");
   if (converting.length && !withFrags.length) { waitConversion(); return; }
   if (!withFrags.length) {
-    status("No fragments in the manifest. Run tools/convert.bat on this "
-      + "export folder first.");
+    status("This project has no 3D model yet - export it from Revit with the LWK add-in, "
+      + "or an admin can make one from an IFC (Admin > New 3D project from IFC).");
     return;
   }
 
@@ -8016,6 +8064,7 @@ async function boot() {
     try { await box._loading; } catch (e) { /* reported by the handler */ }
   }
   S.modelsReady = true;
+  S.leftOutN = leftOut.length;
   // consultant models and overlays (refs.py), after the project's own
   initRefs().catch((e) => showError("refs", e));
   // from the sheets page's Files window: "Issues from BCF"
@@ -8173,15 +8222,40 @@ function refTarget(pl, oBox) {
   let T = sharedYupToScene();
   if (pl.mode === "internal" && T) T = T.multiply(Zi).multiply(internalToSharedZ()).multiply(Zm);
   if (pl.mode === "fit" || !T) {
-    // its footprint's middle on the project's, its bottom on the project's bottom
-    const hb = hostBox();
+    /* its footprint's middle on the project's, its bottom on the project's
+       bottom. Where that is was kept when it was placed (the anchor, in
+       shared coordinates): what is loaded differs between devices - a
+       phone leaves linked models out - and so would the middle. */
     const c = oBox && !oBox.isEmpty() ? oBox.getCenter(new THREE.Vector3()) : new THREE.Vector3();
-    const want = hb.isEmpty() ? new THREE.Vector3() : hb.getCenter(new THREE.Vector3());
-    const dy = hb.isEmpty() || !oBox || oBox.isEmpty() ? 0 : hb.min.y - oBox.min.y;
+    const SY = sharedYupToScene();
+    let want, floor = null;
+    if (pl.anchor && pl.anchor.length === 3 && SY) {
+      want = new THREE.Vector3().fromArray(pl.anchor).applyMatrix4(SY);
+      floor = want.y;
+    } else {
+      const hb = hostBox();
+      want = hb.isEmpty() ? new THREE.Vector3() : hb.getCenter(new THREE.Vector3());
+      if (!hb.isEmpty()) floor = hb.min.y;
+    }
+    const dy = floor == null || !oBox || oBox.isEmpty() ? 0 : floor - oBox.min.y;
     T = new THREE.Matrix4().makeTranslation(want.x - c.x, dy, want.z - c.z);
   }
   return T.multiply(refOffset(pl));
 }
+
+/* the middle and bottom of the project as loaded here, in shared
+   coordinates (Y-up metres): the anchor of a "fit" placement */
+function fitAnchor() {
+  const SY = sharedYupToScene();
+  const hb = hostBox();
+  if (!SY || hb.isEmpty()) return null;
+  const c = hb.getCenter(new THREE.Vector3());
+  c.y = hb.min.y;
+  return c.applyMatrix4(SY.clone().invert()).toArray().map((v) => Math.round(v * 1000) / 1000);
+}
+/* everything of the project loaded (a computer, not light mode)? then its
+   middle can be trusted */
+const wholeProject = () => S.modelsReady && !S.light && !S.lowMemory && !(S.lazyLinks || []).length && !S.leftOutN;
 
 function placeRef(rec, pl) {
   const p = rec.parts[0];
@@ -8277,6 +8351,16 @@ async function loadRef(r) {
   } catch (e) { rec.oBox = null; }
   S.loaded.set(id, rec);
   placeRef(rec, pl);
+  /* placed "in the middle" before anchors were kept: kept now, once, from a
+     computer that has the whole project - phones then put it there too */
+  if (pl.mode === "fit" && !pl.anchor && r.can_change && wholeProject() && r.kind !== "overlay") {
+    const anchor = fitAnchor();
+    if (anchor) {
+      refApi("/api/refs/" + r.id, { method: "PATCH", body: JSON.stringify({ placement: Object.assign({}, pl, { anchor }) }) })
+        .then((d) => { const x = RF.list.find((y) => y.id === r.id); if (x && d && d.ref) x.placement = d.ref.placement; })
+        .catch(() => {});
+    }
+  }
   const op = refPref(r, "opacity", r.opacity == null ? 1 : r.opacity);
   if (op < 0.99) await setRefOpacity(rec, op);
   await applyTint(id);
@@ -8495,6 +8579,7 @@ document.addEventListener("click", async (ev) => {
       renderRefs();
     } else if (k === "pl-save") {
       const pl = readPlace(row, r);
+      if (pl.mode === "fit" && !pl.anchor) { const a = fitAnchor(); if (a) pl.anchor = a; }
       const d = await refApi("/api/refs/" + r.id, { method: "PATCH", body: JSON.stringify({ placement: pl }) });
       r.placement = d.ref.placement;
       RF.open = null;

@@ -254,6 +254,7 @@ DOC = [
     UL([
         '**More room for the document:** **☰** (top left of the list) hides or shows the folder column, and is remembered. **⤢** in the preview hides the folders and the file list too, so the document gets the whole width; press it again, or **Esc**, to bring them back. Drag the preview\'s left edge to make it wider.',
         '**Whole page:** Word and Excel files shown in the page start at **Fit**: the widest page, landscape pages too, fits the width of the preview, on a computer and on a phone. **−** and **+** zoom; **Fit** goes back. PDFs open at the page width.',
+        '**On a phone or tablet** (upright or on its side) a document opens full screen: PDFs and converted Office files show every page, one under the other, to scroll through; pinch with two fingers or use **−** / **+** to zoom. **☰** opens the folders; tap beside them to close.',
         '**For the admin - installing LibreOffice** on the server (Ubuntu): `sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress fonts-noto-cjk fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea`, then restart the viewer service. All three of Writer, Calc and Impress are needed: with only libreoffice-core the page says "cannot read this kind of file". A big document takes a while the first time; it is kept, so it opens at once after that.',
     ]),
     P('**Folders** holds each project\'s files in a folder on the server, like ACC Docs or a shared drive. Pick the project at the top left.'),
@@ -475,7 +476,8 @@ DOC = [
     ]),
     UL([
         'Each consultant model has a tick box (on / off for you) and a slider to make it see-through.',
-        '**One colour, to compare:** the small circle beside a consultant model (and beside each model in the **Models** list) shows the whole model in one colour - red, orange, yellow, green, cyan, blue, purple, grey or any colour - for example the project grey and the structure red. **Own colours** puts it back. It is remembered on this device, works with the see-through slider, and stays in **White** mode.',
+        '**One colour, to compare:** the small circle beside a consultant model (and beside each model in the **Models** list) shows the whole model in one colour - red, orange, yellow, green, cyan, blue, purple, grey or any colour - for example the project grey and the structure red. **↺ Original colour** (in the colours, or the **↺** beside a coloured model) puts it back; **↺ Reset colours** at the top of the Models panel puts every model back. It is remembered on this device, works with the see-through slider, and stays in **White** mode.',
+        'A model set **in the middle** (no coordinates) keeps that spot for everyone, phones included - phones load fewer linked models, so it is no longer worked out again on each device.',
         '**Place** (the person who added it, or a project admin) sets where it sits for everyone: **Shared coordinates** (what a coordinated consultant exports), **This model\'s origin**, or **No coordinates: set in the middle**; then **East / North / Up** (mm) and **Turn** (°) move it by hand while you watch. **Save for everyone** keeps it; **Cancel** puts it back.',
         'Its elements can be clicked and issues raised on them like the project\'s own.',
         '**×** removes it from the project (who added it, or a project admin).',

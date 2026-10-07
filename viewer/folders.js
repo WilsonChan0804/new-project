@@ -34,7 +34,11 @@ const ICON = { pdf: "&#128213;", dwg: "&#128208;", dxf: "&#128208;", rvt: "&#127
   xlsx: "&#128202;", xls: "&#128202;", csv: "&#128202;", docx: "&#128221;", doc: "&#128221;", pptx: "&#128202;", txt: "&#128196;",
   zip: "&#128230;", rar: "&#128230;", "7z": "&#128230;", mp4: "&#127916;", mov: "&#127916;", mp3: "&#127925;",
   jpg: "&#128444;", jpeg: "&#128444;", png: "&#128444;", gif: "&#128444;", webp: "&#128444;", heic: "&#128444;", svg: "&#128444;" };
-const PHONE = () => window.matchMedia("(max-width: 860px)").matches;
+// a phone, upright or on its side (folders.css uses the same)
+const PHONE = () => window.matchMedia("(max-width: 860px), (pointer: coarse) and (max-height: 520px)").matches;
+// phones and tablets: their browsers show a PDF in a frame as one still picture
+const TOUCH = () => window.matchMedia("(pointer: coarse)").matches;
+const TOKEN = () => { try { return localStorage.getItem("lwk-viewer:token") || ""; } catch (e) { return ""; } };
 const extOf = (n) => (n.includes(".") ? n.split(".").pop().toLowerCase() : "");
 const iconOf = (e) => (e.dir ? "&#128193;" : ICON[extOf(e.name)] || "&#128196;");
 const isPdf = (e) => !e.dir && extOf(e.name) === "pdf";
@@ -239,9 +243,9 @@ function preview(e) {
   const ext = extOf(e.name);
   const url = fileUrl(e.path);
   let body;
-  const later = OFFICE.has(ext) || TEXT.has(ext) || ext === "csv";
+  const later = OFFICE.has(ext) || TEXT.has(ext) || ext === "csv" || (ext === "pdf" && TOUCH());
   // #view=FitH: the whole width of the page, landscape pages too
-  if (ext === "pdf") body = `<iframe src="${esc(url)}#view=FitH" title="${esc(e.name)}"></iframe>`;
+  if (ext === "pdf" && !later) body = `<iframe src="${esc(url)}#view=FitH" title="${esc(e.name)}"></iframe>`;
   else if (later) body = `<div class="pv-none">Opening ${esc(e.name)} ...</div>`;
   else if (["mp4", "webm", "mov"].includes(ext)) body = `<video src="${esc(url)}" controls playsinline></video>`;
   else if (["mp3", "m4a", "wav"].includes(ext)) body = `<audio src="${esc(url)}" controls></audio>`;
@@ -303,9 +307,12 @@ function zoom(box, how) {
   const fitK = Math.min(1, avail / Math.max(1, z.natural));
   if (how === "fit") z.fit = true;
   else if (typeof how === "number") { z.fit = false; z.k = Math.min(4, Math.max(0.2, (z.k || fitK) * how)); }
+  else if (how && how.k) { z.fit = false; z.k = Math.min(4, Math.max(0.2, how.k)); }
   const k = z.fit ? fitK : z.k;
+  const was = z.k;
   z.k = k;
   z.wrap.style.zoom = String(k);
+  if (z.onZoom && Math.abs(was - k) > 1e-3) z.onZoom(k);
   const f = box.querySelector(".pv-fit");
   if (f) { f.textContent = z.fit ? "Fit" : Math.round(k * 100) + "%"; f.classList.toggle("on", z.fit); }
 }
@@ -319,6 +326,91 @@ function zoomable(box, wrap, natural, fit) {
   box._ro = new ResizeObserver(() => { if (box._zoom && box._zoom.fit) zoom(box); });
   box._ro.observe(box);
   zoom(box);
+}
+
+/* Two fingers on the preview zoom it (phones). The page itself is not
+   pinch-zoomed there (touch-action in folders.css). */
+function pinch(box) {
+  let d0 = 0, k0 = 1, raf = 0, want = 0;
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  box.addEventListener("touchstart", (ev) => {
+    if (ev.touches.length === 2 && box._zoom) { d0 = dist(ev.touches); k0 = box._zoom.k || 1; }
+  }, { passive: true });
+  box.addEventListener("touchmove", (ev) => {
+    if (ev.touches.length !== 2 || !d0 || !box._zoom) return;
+    ev.preventDefault();
+    want = k0 * dist(ev.touches) / d0;
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; zoom(box, { k: want }); });
+  }, { passive: false });
+  box.addEventListener("touchend", (ev) => { if (ev.touches.length < 2) d0 = 0; }, { passive: true });
+}
+
+/* A PDF read with pdf.js, every page under the other (phones and tablets:
+   there a PDF in a frame is a still picture of its first page, which can
+   neither be scrolled nor zoomed). Pages are drawn as they come near, and
+   drawn again sharper after zooming in. */
+async function showPdf(body, src) {
+  await script("vendor/pdf.min.js");
+  const lib = window.pdfjsLib;
+  lib.GlobalWorkerOptions.workerSrc = new URL("vendor/pdf.worker.min.js", location.href).href;
+  const doc = await lib.getDocument(typeof src === "string"
+    ? { url: src, httpHeaders: { "X-Viewer-Token": TOKEN() }, withCredentials: true } : { data: src }).promise;
+  const box = $("#fo-prev");
+  if (!box.contains(body)) return;
+  const CSS_PX = 96 / 72;
+  const first = (await doc.getPage(1)).getViewport({ scale: CSS_PX });
+  body.innerHTML = `<div class="pv-pdf"><div class="pv-pages">${Array.from({ length: doc.numPages }, (_, i) =>
+    `<div class="pv-page" data-n="${i + 1}" style="width:${first.width}px;height:${first.height}px"><canvas></canvas></div>`).join("")}</div></div>`;
+  const scroller = body.querySelector(".pv-pdf"), wrap = body.querySelector(".pv-pages");
+  const drawn = new Map();          // page number -> the zoom it was drawn at
+  const pages = new Map();
+  const draw = async (div) => {
+    const n = Number(div.dataset.n);
+    const k = (box._zoom && box._zoom.k) || 1;
+    if (drawn.get(n) >= k - 1e-3) return;
+    drawn.set(n, k);
+    try {
+      const page = pages.get(n) || await doc.getPage(n);
+      pages.set(n, page);
+      const vp = page.getViewport({ scale: CSS_PX });
+      // sharp on this screen, but within what a phone's canvas can hold
+      let r = (window.devicePixelRatio || 1) * Math.max(k, 0.5);
+      const cap = 12e6 / (vp.width * vp.height);
+      if (r * r > cap) r = Math.sqrt(cap);
+      const c = document.createElement("canvas");
+      c.width = Math.floor(vp.width * r);
+      c.height = Math.floor(vp.height * r);
+      await page.render({ canvasContext: c.getContext("2d"), viewport: page.getViewport({ scale: CSS_PX * r }) }).promise;
+      div.replaceChildren(c);
+    } catch (e) { drawn.delete(n); }
+  };
+  const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) draw(e.target); },
+    { root: scroller, rootMargin: "800px 0px" });
+  for (const d of wrap.children) io.observe(d);
+  zoomable(box, wrap, () => first.width + 16);
+  const z = box._zoom;
+  let t = 0;
+  z.onZoom = () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      const r0 = scroller.getBoundingClientRect();
+      for (const d of wrap.children) {
+        const r = d.getBoundingClientRect();
+        if (r.bottom > r0.top - 400 && r.top < r0.bottom + 400) draw(d);
+      }
+    }, 250);
+  };
+  // the real size of every page (landscape ones are wider), then fit again
+  for (let n = 2; n <= doc.numPages && n <= 400; n++) {
+    const pg = await doc.getPage(n);
+    pages.set(n, pg);
+    const vp = pg.getViewport({ scale: CSS_PX });
+    const d = wrap.children[n - 1];
+    if (Math.abs(vp.width - first.width) > 1 || Math.abs(vp.height - first.height) > 1) {
+      d.style.width = vp.width + "px"; d.style.height = vp.height + "px";
+      if (vp.width + 16 > z.natural) { z.natural = vp.width + 16; zoom(box); }
+    }
+  }
 }
 
 /* Word, Excel, PowerPoint and text files, read in the page. The server
@@ -342,6 +434,7 @@ function script(src) {
 
 async function showDoc(e, body) {
   const ext = extOf(e.name);
+  if (ext === "pdf") return showPdf(body, fileUrl(e.path));
   if (TEXT.has(ext)) {
     const t = await (await fetch(fileUrl(e.path))).text();
     body.innerHTML = `<pre class="pv-text"></pre>`;
@@ -353,6 +446,7 @@ async function showDoc(e, body) {
     if (F.officePreview) body.innerHTML = `<div class="pv-none"><span class="pv-spin"></span>Opening ${esc(e.name)} ...<br><small>A big file takes a while the first time; it is quick after that.</small></div>`;
     const res = await fetch(`${base()}/preview?path=${encodeURIComponent(e.path)}`, { headers: { "X-Viewer-Token": localStorage.getItem("lwk-viewer:token") || "" } });
     if (res.ok) {
+      if (TOUCH()) return showPdf(body, await res.arrayBuffer());
       const u = URL.createObjectURL(await res.blob());
       body.innerHTML = `<iframe src="${u}#view=FitH" title="${esc(e.name)}"></iframe>`;
       return;
@@ -787,6 +881,13 @@ function wire() {
   // phone: the folders slide in; a computer: the folder column is hidden or shown (remembered)
   $("#fo-side-open").onclick = () => (PHONE() ? document.body.classList.toggle("fo-side-open") : setSide(!document.body.classList.contains("fo-side-hidden")));
   setSide(lsGet("sideHidden", false));
+  pinch($("#fo-prev"));
+  // a phone: a tap beside the folders drawer closes it
+  document.addEventListener("pointerdown", (ev) => {
+    if (!document.body.classList.contains("fo-side-open")) return;
+    if (ev.target.closest("#fo-side, #fo-side-open, .t-pop, .t-modal")) return;
+    document.body.classList.remove("fo-side-open");
+  }, true);
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && document.body.classList.contains("fo-wide") && !document.querySelector(".t-modal")) setWide(false);
   });

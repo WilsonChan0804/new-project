@@ -142,6 +142,7 @@ PART = [
     UL([
         '**俾文件多啲位：** 清單左上角嘅 **☰** 收埋／打開左邊 folder 欄（會記住）。預覽入面嘅 **⤢** 連 folder 同檔案清單都收埋，文件用晒成個闊度；再撳一次或者 **Esc** 就返嚟。拖預覽嘅左邊邊位可以拉闊。',
         '**成版睇晒：** 喺網頁度顯示嘅 Word 同 Excel 一開就係 **Fit**：最闊嗰版（橫向都得）啱啱好放得落預覽闊度，電腦同手機都係。**−**、**+** 縮放；**Fit** 返原。PDF 一打開就係頁闊。',
+        '**手機同平板**（打直或者打橫）：文件會全屏打開，PDF 同轉換咗嘅 Office 檔案一頁接一頁，可以向下碌晒全部頁；兩隻手指 pinch 或者用 **−** / **+** 縮放。**☰** 打開 folder 欄，撳旁邊空位就收返。',
         '**Admin 用 - 喺 server 裝 LibreOffice**（Ubuntu）：`sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress fonts-noto-cjk fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea`，然後重開 viewer service。Writer、Calc、Impress 三個都要裝：淨係得 libreoffice-core 嘅話，網頁會話「cannot read this kind of file」。大文件第一次要等一陣，之後有 cache，即刻開到。',
     ]),
     P('**Folders** 將每個 project 嘅檔案放喺 server 上面一個 folder，好似 ACC Docs 或者共用 drive 咁。喺左上角揀 project。'),
