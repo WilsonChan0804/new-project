@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Calendar</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="tasks.css">
+<link rel="stylesheet" href="calendar.css">
+<link rel="modulepreload" href="calendar.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="pagekit.js">
+<link rel="modulepreload" href="tasks-util.js">
+</head>
+<body class="tasks-page cal-page own-nav">
+<header>
+  <b class="brand">LWK Viewer</b>
+  <div class="seg">
+    <a id="to-projects" class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
+    <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <span class="seg-btn on">Calendar</span>
+    <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
+  </div>
+  <span class="spacer"></span>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="h-who"></span>
+    <a href="#" id="h-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<main id="cal">
+  <div class="cal-top">
+    <div class="cal-nav">
+      <button class="ghost" id="cal-prev" title="Earlier">&lsaquo;</button>
+      <button class="ghost" id="cal-today">Today</button>
+      <button class="ghost" id="cal-next" title="Later">&rsaquo;</button>
+      <h2 id="cal-title"></h2>
+    </div>
+    <span class="spacer"></span>
+    <div class="cal-kinds" id="cal-kinds">
+      <label class="ck meeting"><input type="checkbox" value="meeting" checked> Meetings</label>
+      <label class="ck task"><input type="checkbox" value="task" checked> My tasks</label>
+      <label class="ck issue"><input type="checkbox" value="issue" checked> My issues</label>
+    </div>
+    <div class="seg-sw" id="cal-view">
+      <button data-v="month" class="on">Month</button><button data-v="list">List</button>
+    </div>
+    <button class="ghost" id="cal-new" title="Events are made in a chat, so everyone in it is invited">+ Event</button>
+    <button class="primary" id="cal-outlook" title="See this calendar in Outlook">Add to Outlook</button>
+  </div>
+  <div id="cal-body"></div>
+  <aside id="cal-side" hidden></aside>
+</main>
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="calendar.js"></script>
+</body>
+</html>

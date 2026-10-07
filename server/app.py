@@ -3418,7 +3418,11 @@ async def import_sheets(request: Request, x_viewer_token: str = Header(default="
                         x_project: str = Header(default="")):
     require_project(request, x_project, "member", x_viewer_token)
     root = project_root_for(x_project)
-    incoming = (await request.json() or {}).get("sheets") or []
+    body = await request.json() or {}
+    incoming = body.get("sheets") or []
+    # The set the drawings go in: their own entry in the Sheets page's
+    # drop-down, apart from the sheets published from Revit.
+    set_name = re.sub(r"[\x00-\x1f\x7f]+", " ", str(body.get("set") or "")).strip()[:60] or "Uploaded PDFs"
     have = read_imported(root)
     taken = {s.get("number") for s in have}
     try:
@@ -3440,7 +3444,7 @@ async def import_sheets(request: Request, x_viewer_token: str = Header(default="
         taken.add(num)
         rec = {"number": num, "name": str(sh.get("name") or "")[:120],
                "pdf": pdf, "page": int(sh.get("page") or 1),
-               "external": True, "viewports": []}
+               "external": True, "set": set_name, "viewports": []}
         have.append(rec)
         added.append(rec)
     write_imported(root, have)
@@ -3617,6 +3621,14 @@ try:
     chat.register(app, sys.modules[__name__])
 except Exception as _ex:
     print("chat not loaded: %s" % _ex)
+
+# Calendar (calendar_feed.py): meetings, tasks and issues due, as a page and
+# as a feed Outlook can subscribe to.
+try:
+    import calendar_feed
+    calendar_feed.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("calendar not loaded: %s" % _ex)
 
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.

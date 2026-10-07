@@ -171,6 +171,14 @@ export function pop(anchor, html, width) {
   const below = innerHeight - r.bottom;
   if (below < 260 && r.top > below) el.style.bottom = (innerHeight - r.top + 4) + "px";
   else el.style.top = (r.bottom + 4) + "px";
+  // wholly on screen, however tall it is (it scrolls when it cannot fit)
+  const b = el.getBoundingClientRect();
+  if (b.top < 6 || b.bottom > innerHeight - 6) {
+    el.style.bottom = "";
+    el.style.maxHeight = (innerHeight - 12) + "px";
+    el.style.overflowY = "auto";
+    el.style.top = Math.max(6, Math.min(innerHeight - 6 - Math.min(b.height, innerHeight - 12), b.top)) + "px";
+  }
   POP = el;
   return el;
 }

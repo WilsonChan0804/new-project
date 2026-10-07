@@ -37,7 +37,7 @@ Properties go in a second file, <name>.props.json, read by the viewer only
 when someone asks for an element's properties.
 """
 
-__version__ = "2026-09-27f"
+__version__ = "2026-10-07a"
 
 import gzip
 import io
@@ -947,4 +947,5 @@ def export(doc, folder, probe, exclude_bics=(), detail="medium", group_share=Tru
              "center_internal_m": list(run.writers[0].offset) if run.writers else [0, 0, 0]}
     mins = (time.time() - t0) / 60.0
     probe.info("fast3d", "fast 3D export done in %.1f min" % mins)
-    return {"models": models, "lwk_frame": frame, "minutes": round(mins, 2)}
+    return {"models": models, "lwk_frame": frame, "minutes": round(mins, 2),
+            "triangles": sum(w.stats["triangles"] for w in run.writers)}

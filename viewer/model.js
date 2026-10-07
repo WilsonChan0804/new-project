@@ -7296,7 +7296,8 @@ async function boot() {
     status("Could not load manifest.json: " + e.message); return;
   }
 
-  $("#project").textContent =
+  // the project's title from the Projects page (projects.js), when it has one
+  if (!$("#project").textContent) $("#project").textContent =
     (S.manifest.source && S.manifest.source.title) || "";
 
   const withFrags = (S.manifest.models || []).filter((m) => m.fragments);

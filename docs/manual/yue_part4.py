@@ -157,6 +157,10 @@ PART = [
         ['**Test Links**', '快速檢查放咗多過一次嘅 link'],
     ]),
     P('**夜晚 export 需要：** 部電腦開住同登入咗（鎖咗 screen 冇問題）、排咗嘅時間 Revit 要閂咗、Revit 登入咗 Autodesk。每個 model 預大約 15 分鐘。Log 喺 %APPDATA%\\LWK\\nightly。'),
+    UL([
+        'Model 嘅每個 workset 都會逐個名打開，冇 load 嘅 link 會 load 返。如果仲有 workset 閂住，或者 3D model 出咗嚟係空嘅，viewer 會**保留上次好嘅 3D model**（sheet 照傳），log 最尾寫 **result FAILED** 同原因。',
+        '已知嘅對話框會自動答，唔會令夜晚 export 停住：DWG 嘅 paper space 冇嘢（Yes）、DWG import 嘅通知（Close），同開 Revit 時嘅 **External Tools - Add-in Assembly Not Found**（由 launcher 嘅 watcher 撳 Close）。每個對話框都會寫入 nightly\\dialogs.log。最好係喺嗰部電腦修好或者移除壞咗嘅 add-in。',
+    ]),
     H3('Revit 入面嘅 LWK Issues 視窗'),
     UL([
         '列出一個 project 喺 viewer 嘅 issue：**Show** 未完成同做緊、派俾我嘅，或者全部；可以搜尋；欄有 #、Title、Type、Status、Priority、Assigned to、Due、Where。',
@@ -181,7 +185,7 @@ PART = [
     P('每個 project 一定要留最少一個 project admin。'),
     H3('Project 同成員'),
     UL([
-        '**Add people to this project：** 揀一個 **Existing account** 同 Role，再撳 **Add**；或者填 **Someone without an account yet**（Email、Name、Office、Company、Role）再撳 **Create and add**。臨時密碼只會顯示**一次**。',
+        '**Add people to this project：** 搜尋，用 **team**、**office** 或者 **company** 篩選，剔幾個人（或者 **Select all shown**），揀 Role 再撳 **Add N people**；或者填 **Someone without an account yet**（Email、Name、Office、Company、Role）再撳 **Create and add**。臨時密碼只會顯示**一次**。',
         '用 **Email invitation**（打開你自己嘅 Outlook）或者 **Copy invitation** 傳俾佢。佢第一次 sign in 要揀自己嘅密碼。',
         '喺成員表改角色，或者 **Remove** 一個人（佢嘅 issue 同 comment 會留低）。',
         '**Teams channel：** 貼 Teams Workflow webhook 網址，**Save**，**Send a test**，再揀每週總結嘅日子同鐘數（香港時間）。',

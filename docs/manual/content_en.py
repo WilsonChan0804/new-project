@@ -216,6 +216,15 @@ DOC = [
         '**Android:** with the viewer installed as an app, use WhatsApp\'s **Share** > **LWK Viewer** and choose the chat. (iPhone does not offer this: copy and paste, or export.)',
         'There is no automatic two-way link with WhatsApp.',
     ]),
+    H2('Calendar'),
+    P('**Calendar** shows what is coming up for you, by date: **meetings** sent in the Messenger (with your reply), **your tasks** on their due dates and **issues assigned to you** on their due dates.'),
+    UL([
+        'A month on a computer, a list on a phone (**Month** / **List**). The tick boxes show or hide meetings, tasks and issues. **‹ ›** and **Today** move through the months; on a phone, swipe.',
+        'Click an entry for its details, then open the chat, the task or the issue. Replies to a meeting are made in its chat.',
+        '**+ Event:** choose a chat; the event form opens there, so everyone in it is invited.',
+        '**Add to Outlook:** **Open in Outlook on this PC** subscribes Outlook to your calendar (choose **Yes**), or copy the address and use Outlook\'s **Add calendar > From Internet**. Outlook then shows the entries beside your own calendar and updates them by itself. Outlook on the web and on phones can only reach it when the viewer is reachable from the internet.',
+        'The address is yours alone: **Make a new address** if it was shared by mistake (the old one stops working).',
+    ]),
     H2('Sheets (2D)'),
     P('The Sheets page shows every published sheet as the real PDF, searchable and ready for markup; markups save by themselves, there is no Save button.'),
     H3('Finding a sheet'),
@@ -224,7 +233,7 @@ DOC = [
         'Click a sheet to open it. The viewer remembers the last sheet you had open.',
         '**Search all sheets** finds sheet numbers, names and any words printed on the drawings (room names, notes, grid labels). Matches are highlighted on the sheet. The first search on a project can take a moment while the drawings are read.',
         '**Page Down / Page Up** go to the next or previous sheet.',
-        'To add an outside PDF (a consultant drawing, a sketch), use the **PDF** upload button. It appears in the list as "Imported 2D only" and can be removed with its **✕**.',
+        'To add an outside PDF (a consultant drawing, a sketch), use the **PDF** upload button and name its **set** (e.g. "Uploaded PDFs" or "Consultant 2026-10"). Each set is its own entry in the drop-down at the top, under the project\'s title, apart from the sheets from Revit. Its sheets show "Imported 2D only" and can be removed with their **✕**.',
     ]),
     H3('Moving around a sheet'),
     TABLE(['Action', 'Mouse', 'iPad / touch'], [
@@ -569,6 +578,10 @@ DOC = [
         ['**Test Links**', 'Quick check of links placed more than once'],
     ]),
     P('**Nightly export needs:** the PC left on and logged in (a locked screen is fine), Revit closed at the scheduled time, and Revit signed in to Autodesk. Allow about 15 minutes per model. Logs are in %APPDATA%\\LWK\\nightly.'),
+    UL([
+        'Every workset of the model is opened by name and unloaded links are loaded. If a workset is still closed, or the 3D model comes out empty, the viewer **keeps the last good 3D model** (the sheets still go), and the log ends with **result FAILED** and the reason.',
+        'Known dialogs are answered so the night is not stopped: a DWG with an empty paper space (Yes), DWG import notes (Close), and **External Tools - Add-in Assembly Not Found** at start-up (Close, by the launcher\'s watcher). Every dialog is written to nightly\\dialogs.log. Best: repair or remove the broken add-in on that PC.',
+    ]),
     H3('LWK Issues window in Revit'),
     UL([
         "Lists the viewer's issues for a project: **Show** open and in progress, assigned to me, or all; search; columns #, Title, Type, Status, Priority, Assigned to, Due, Where.",
@@ -593,7 +606,7 @@ DOC = [
     P('Every project must keep at least one project admin.'),
     H3('Projects and members'),
     UL([
-        '**Add people to this project:** pick an **Existing account** and a Role, then **Add**; or fill in **Someone without an account yet** (Email, Name, Office, Company, Role) and **Create and add**. A temporary password is shown **once**.',
+        '**Add people to this project:** search, narrow by **team**, **office** or **company**, tick several (or **Select all shown**), choose the Role and press **Add N people**; or fill in **Someone without an account yet** (Email, Name, Office, Company, Role) and **Create and add**. A temporary password is shown **once**.',
         'Send it with **Email invitation** (opens your own Outlook) or **Copy invitation**. The person must choose their own password at first sign-in.',
         'Change a role in the members table, or **Remove** someone (their issues and comments stay).',
         '**Teams channel:** paste the Teams Workflow webhook address, **Save**, **Send a test**, and choose the day and hour (Hong Kong time) for the weekly summary.',

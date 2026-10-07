@@ -181,7 +181,7 @@ async function afterSignIn() {
         : "");
     header.appendChild(nav);
     // The page links in the same place and order as on every other page:
-    // Projects, Sheets, 3D, Board, Tasks, Chat, Dashboard - in the group
+    // Projects, Sheets, 3D, Board, Tasks, Chat, Calendar, Dashboard - in the group
     // that already holds this page's Sheets and 3D buttons.
     const mode = header.querySelector(".mode");
     if (mode && !document.getElementById("lwk-to-projects")) {
@@ -199,6 +199,7 @@ async function afterSignIn() {
       mode.appendChild(mk("lwk-to-board", "Board", "board.html", "Whiteboards: notes, mind maps, rules and ideas for the team"));
       mode.appendChild(mk("lwk-to-tasks", "Tasks", "tasks.html", "Team task lists: who does what, by when"));
       mode.appendChild(mk("lwk-to-chat", "Chat", "messenger.html", "Messenger: project channels, group chats, direct messages", "chat-link"));
+      mode.appendChild(mk("lwk-to-cal", "Calendar", "calendar.html", "Meetings, your tasks and issues by date - and in Outlook"));
       mode.appendChild(mk("lwk-to-dash", "Dashboard", "dashboard.html", "Issues and tasks of this project"));
       chatBadge.on = false;
       setTimeout(chatBadge, 300);
@@ -509,14 +510,17 @@ export async function projectOptions(current, fallback) {
   const opt = (id, label) => `<option value="${e(id)}"${id === current ? " selected" : ""}>${e(label)}</option>`;
   try {
     const r = await api("/api/project-choices");
+    // every project under its own title, its models (one or several) below
     let h = "";
+    const titles = {};
     for (const p of r.projects) {
       const head = p.name + (p.code && p.code !== p.name ? " · " + p.code : "");
-      if (p.parts.length === 1) h += opt(p.parts[0].id, head);
-      else h += `<optgroup label="${e(head)}">` + p.parts.map((x) => opt(x.id, p.name + " - " + x.title)).join("") + `</optgroup>`;
+      // the option keeps the project's name, so the closed drop-down still says it
+      h += `<optgroup label="${e(head)}">` + p.parts.map((x) => opt(x.id, p.parts.length === 1 ? p.name : p.name + " · " + x.title)).join("") + `</optgroup>`;
+      for (const x of p.parts) titles[x.id] = head;
     }
-    if (r.others.length) h += `<optgroup label="Other models">` + r.others.map((x) => opt(x.id, x.title)).join("") + `</optgroup>`;
-    return { html: h, ids: r.projects.flatMap((p) => p.parts.map((x) => x.id)).concat(r.others.map((x) => x.id)) };
+    if (r.others.length) h += `<optgroup label="Not on the Projects page">` + r.others.map((x) => opt(x.id, x.title)).join("") + `</optgroup>`;
+    return { html: h, titles, ids: r.projects.flatMap((p) => p.parts.map((x) => x.id)).concat(r.others.map((x) => x.id)) };
   } catch (err) {
     return fallback ? fallback() : { html: "", ids: [] };
   }

@@ -1280,9 +1280,10 @@ function roomMenu(ev, id) {
     + (r.kind !== "dm" ? `<div class="po-row" data-k="leave">${ic("exit")} Leave</div>` : "")
     + (r.kind === "project" ? `<div class="po-row" data-k="topic">${ic("hash")} New topic</div>` : "")
     + (r.can_delete ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete ${r.kind === "topic" ? "topic" : "chat"}</div>` : ""), 200);
-  el.style.left = Math.min(innerWidth - 210, ev.clientX) + "px";
-  el.style.top = Math.min(innerHeight - 200, ev.clientY) + "px";
+  // where it was asked for, but wholly on screen (it is taller with more rows)
   el.style.bottom = "";
+  el.style.left = Math.max(4, Math.min(innerWidth - el.offsetWidth - 8, ev.clientX)) + "px";
+  el.style.top = Math.max(4, Math.min(innerHeight - el.offsetHeight - 8, ev.clientY)) + "px";
   el.onclick = async (e) => {
     const k = (e.target.closest(".po-row") || {}).dataset;
     if (!k) return;
@@ -1671,6 +1672,12 @@ async function start() {
     }
     if (opening) await opening;
     if (!C.room || C.room.id !== id || q.get("msg")) await openRoom(id, q.get("msg") || "").catch((e) => toast(e.message, true));
+    // from the Calendar page's + Event: the event form, in this chat
+    if (q.get("new") === "event" && C.room && C.room.id === id) {
+      history.replaceState(null, "", "messenger.html?room=" + encodeURIComponent(id));
+      const c = await eventForm();
+      if (c) sendCard(c);
+    }
   } else if (q.get("task")) await openRoom(TASK + q.get("task")).catch((e) => toast(e.message, true));
   else if (!opening && C.rooms[0] && innerWidth > 900) await openRoom(C.rooms[0].id);
 }

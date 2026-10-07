@@ -11,7 +11,7 @@ PART = [
         '撳一張 sheet 就打開。Viewer 會記住你上次打開嘅 sheet。',
         '**Search all sheets** 搵 sheet 編號、名，同埋圖上面印住嘅任何字（房名、note、grid 編號）。搵到嘅會喺 sheet 上面 highlight。一個 project 第一次搜尋可能要等一陣，因為要讀晒啲圖。',
         '**Page Down / Page Up** 去下一張或者上一張 sheet。',
-        '要加外面嘅 PDF（顧問嘅圖、草圖），用 **PDF** upload 掣。佢會喺清單顯示做「Imported 2D only」，撳佢個 **✕** 就可以移除。',
+        '要加外面嘅 PDF（顧問嘅圖、草圖），用 **PDF** upload 掣，再改個 **set** 名（例如「Uploaded PDFs」或者「Consultant 2026-10」）。每個 set 喺頂部 drop-down 入面、project 標題下面自己一項，同 Revit 嘅 sheet 分開。佢啲 sheet 會顯示「Imported 2D only」，撳 **✕** 就可以移除。',
     ]),
     H3('喺 sheet 上面移動'),
     TABLE(['動作', '滑鼠', 'iPad / 觸控'], [

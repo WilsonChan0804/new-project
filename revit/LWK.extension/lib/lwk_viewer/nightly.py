@@ -49,6 +49,8 @@ Files, all in %APPDATA%/LWK:
                              from, and the launcher's limits
   nightly/scheduler.log      what the launcher decided
   nightly/<date>.log         what Revit did
+  nightly/dialogs.log        the dialogs the launcher's watcher closed or
+                             saw (see _WATCH below)
 """
 
 import os
@@ -59,7 +61,7 @@ import datetime
 
 import System
 
-__version__ = "2026-10-03a"
+__version__ = "2026-10-07a"
 
 BASE = os.path.join(os.environ.get("APPDATA", "."), "LWK")
 # The launcher before 2026-10-03 wrote this one flag and started one Revit.
@@ -661,7 +663,7 @@ def write_list(jobs=None, only=None):
 # quote in a path can break it. If PowerShell cannot run at all, the old
 # rule applies - any Revit open, nothing is started - and the log says so.
 _BAT = r'''@echo off
-REM LWK-LAUNCHER 3
+REM LWK-LAUNCHER 4
 REM LWK Viewer night export. Started by Windows Task Scheduler every night,
 REM or with the word  test  by the Test night run button of Auto Publish.
 REM For every Revit version listed in LWK_nightly_versions.txt, one after
@@ -801,6 +803,8 @@ exit /b 0
 
 :flagok
 set /a RAN+=1
+set "LWK_DLOG=%LWK%\nightly\dialogs.log"
+if "%PS%"=="1" start "" /b "%PSEXE%" -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand @@WATCH@@
 >>"%LOG%" echo %date% %time%  Revit %YEAR%: starting "%LWK_EXE%" - time limit %LIMIT_MIN% minutes.
 echo     Starting Revit %YEAR%. It publishes its models and then closes by itself.
 echo     This window waits for it. Progress is written in "%LWK%\nightly"
@@ -849,8 +853,59 @@ exit /b 0
 '''
 
 
+# The dialog watcher. Started by the launcher next to each Revit it starts,
+# for as long as that Revit runs (or the time limit). Some dialogs come
+# before the LWK tools are loaded and can answer anything - "External Tools
+# - Add-in Assembly Not Found" when an add-in's DLL is missing (6 Oct: the
+# LWK Excel to Revit Import add-in) - and they stop Revit until someone
+# clicks. The watcher presses the one harmless button of the dialogs it
+# knows, and writes every dialog it sees into nightly/dialogs.log; any other
+# dialog is left alone (and logged), as a person would want.
+# It reaches PowerShell as -EncodedCommand: no script file, so the script
+# execution policy does not apply, and no quoting in the .bat to break.
+_WATCH = u"""$ErrorActionPreference='SilentlyContinue'
+Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+$A=[Windows.Automation.AutomationElement]; $S=[Windows.Automation.TreeScope]
+$B=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,[Windows.Automation.ControlType]::Button)
+$X=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,[Windows.Automation.ControlType]::Text)
+$D=New-Object Windows.Automation.PropertyCondition($A::ClassNameProperty,'#32770')
+$log=$env:LWK_DLOG; $seen=@{}; $t0=Get-Date; $lim=[int]$env:LWK_LIMIT_SEC; if($lim -lt 600){$lim=10800}; $gone=0; $had=$false
+function Say($m){ Add-Content -LiteralPath $log -Value ((Get-Date -Format s)+'  Revit '+$env:YEAR+'  '+$m) }
+function Press($w,$names){ foreach($n in $names){ foreach($b in $w.FindAll($S::Descendants,$B)){ if($b.Current.Name -eq $n){ $b.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); return $n } } }; return $null }
+function Look($w){
+  $title=$w.Current.Name
+  $txt=(@($w.FindAll($S::Descendants,$X)) | ForEach-Object { $_.Current.Name }) -join ' '
+  $ans=$null
+  if($title -like '*Add-in Assembly Not Found*' -or $txt -like '*Failed to initialize the add-in*'){ $ans=@('Close','OK') }
+  elseif($txt -like '*import from the Model space*'){ $ans=@('Yes') }
+  elseif($txt -like '*was out of range*' -or $txt -like '*entities were lost during import*'){ $ans=@('Close','OK') }
+  $key=$title+'|'+$txt
+  if($ans){ $p=Press $w $ans; if($p){ Say ('pressed '+$p+' on: '+$title+' - '+$txt) } }
+  elseif($txt -and -not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt) }
+}
+while(((Get-Date)-$t0).TotalSeconds -lt $lim){
+  $ps=@(Get-Process -Name Revit | Where-Object { $_.Path -eq $env:LWK_EXE })
+  if($ps.Count -eq 0){ if($had){ $gone+=2; if($gone -ge 60){ break } } } else { $had=$true; $gone=0 }
+  foreach($p in $ps){
+    $pc=New-Object Windows.Automation.PropertyCondition($A::ProcessIdProperty,$p.Id)
+    foreach($w in $A::RootElement.FindAll($S::Children,$pc)){
+      if($w.Current.ClassName -eq '#32770'){ Look $w }
+      foreach($d in $w.FindAll($S::Children,$D)){ Look $d }
+    }
+  }
+  Start-Sleep -Seconds 2
+}
+"""
+
+
+def watch_encoded():
+    """_WATCH as PowerShell's -EncodedCommand wants it: base64 of UTF-16LE."""
+    import base64
+    return base64.b64encode(_WATCH.replace(u"\r\n", u"\n").encode("utf-16-le")).decode("ascii")
+
+
 def bat_text():
-    return u"\r\n".join((u"%s" % _BAT).splitlines()) + u"\r\n"
+    return (u"\r\n".join((u"%s" % _BAT).splitlines()) + u"\r\n").replace(u"@@WATCH@@", watch_encoded())
 
 
 def bat_is_current():

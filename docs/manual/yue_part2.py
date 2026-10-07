@@ -104,4 +104,13 @@ PART = [
         '**Android：** 將 viewer 安裝做 app 之後，喺 WhatsApp 撳 **Share** > **LWK Viewer**，再揀 chat。（iPhone 唔支援：用 copy 貼上，或者匯出。）',
         '同 WhatsApp 之間冇自動雙向同步。',
     ]),
+    H2('Calendar 日曆'),
+    P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日，同**派咗俾你嘅 issue** 嘅到期日。'),
+    UL([
+        '電腦係月曆，手機係清單（**Month** / **List**）。剔格可以顯示或者隱藏會議、task 同 issue。**‹ ›** 同 **Today** 轉月份；手機可以掃。',
+        '撳一項睇詳情，再打開個 chat、task 或者 issue。回覆會議要喺佢個 chat 入面。',
+        '**+ Event：** 揀一個 chat，活動表格就喺嗰度打開，chat 入面所有人都會被邀請。',
+        '**Add to Outlook：** **Open in Outlook on this PC** 會令 Outlook 訂閱你嘅日曆（揀 **Yes**），或者 copy 個地址，用 Outlook 嘅 **Add calendar > From Internet**。之後 Outlook 會喺你自己嘅日曆隔籬顯示，並自己更新。Outlook 網頁版同手機版要 viewer 喺互聯網上連得到先得。',
+        '個地址係你自己嘅：唔小心分享咗就撳 **Make a new address**（舊嗰個會停用）。',
+    ]),
 ]

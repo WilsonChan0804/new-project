@@ -15,7 +15,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-03a";
+const LWK_VERSION = "2026-10-07a";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -27,6 +27,7 @@ const LWK_VERSION = "2026-10-03a";
   }
 })();
 import { api, link, project, signOut } from "./nav.js";
+import { avatar } from "./tasks-util.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? "" : s)
@@ -573,7 +574,7 @@ async function loadMembers() {
   t.innerHTML = `<thead><tr><th>Name</th><th>Email</th><th>Office</th><th>Company</th><th>Team</th><th>Discipline</th><th>Role</th>`
     + `<th>Added</th><th></th></tr></thead><tbody>`
     + (A.members.length ? A.members.map((m) => `<tr data-id="${m.id}">`
-      + `<td>${esc(m.name)}${m.active ? "" : ' <span class="pill off">inactive</span>'}</td>`
+      + `<td><span class="namecell">${avatar(m, 26)}<span class="nm-t">${esc(m.name)}${m.active ? "" : ' <span class="pill off">inactive</span>'}</span></span></td>`
       + `<td>${esc(m.email)}</td><td>${esc(m.office)}</td><td>${esc(m.company)}</td>`
       + `<td><input class="cell-team" list="dl-team" value="${esc(m.team || "")}" placeholder="-" title="Team - pick or type"></td>`
       + `<td><input class="cell-disc" list="dl-disc" value="${esc(m.discipline || "")}" placeholder="-" title="Discipline - pick or type"></td>`
@@ -622,12 +623,62 @@ async function loadMembers() {
   } catch (e) { $("#t-hook").value = ""; }
   loadLayersAdmin().catch((e) => { $("#a-layers").innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
   const inIt = new Set(A.members.map((m) => m.id));
-  const free = A.users.filter((u) => u.active && !inIt.has(u.id));
-  $("#a-add-user").innerHTML = free.length
-    ? free.map((u) => `<option value="${u.id}">${esc(u.name)} - ${esc(u.email)}`
-      + `${u.office ? " (" + esc(u.office) + ")" : ""}</option>`).join("")
-    : `<option value="">Everyone already has access</option>`;
-  $("#a-add-go").disabled = !free.length;
+  ADD.free = A.users.filter((u) => u.active && !inIt.has(u.id)).sort((a, b) => a.name.localeCompare(b.name));
+  for (const id of [...ADD.sel]) if (!ADD.free.some((u) => u.id === id)) ADD.sel.delete(id);
+  fillAddFilters();
+  paintAdd();
+}
+
+/* ------------------------------------------------ adding several people */
+
+/* Who can be added: everyone with an account not yet in the project.
+   Search, narrow by team / office / company, tick several, one role. */
+const ADD = { free: [], sel: new Set() };
+
+function fillAddFilters() {
+  for (const [id, key, all] of [["#a-add-team", "team", "All teams"], ["#a-add-office", "office", "All offices"],
+    ["#a-add-company", "company", "All companies"]]) {
+    const el = $(id);
+    if (!el) continue;
+    const cur = el.value;
+    const vals = [...new Set(ADD.free.map((u) => (u[key] || "").trim()).filter(Boolean))].sort();
+    el.innerHTML = `<option value="">${all}</option>` + vals.map((v) => `<option${v === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+    el.hidden = !vals.length;
+  }
+}
+
+function addShown() {
+  const q = ($("#a-add-q").value || "").trim().toLowerCase();
+  const f = { team: $("#a-add-team").value, office: $("#a-add-office").value, company: $("#a-add-company").value };
+  return ADD.free.filter((u) => (!q || (u.name + " " + u.email + " " + (u.team || "")).toLowerCase().includes(q))
+    && Object.entries(f).every(([k, v]) => !v || (u[k] || "").trim() === v));
+}
+
+function paintAdd() {
+  const shown = addShown();
+  const box = $("#a-add-list");
+  box.innerHTML = !ADD.free.length ? `<div class="addp-empty">Everyone with an account already has access.</div>`
+    : !shown.length ? `<div class="addp-empty">Nobody matches - change the search or the filters.</div>`
+      : shown.map((u) => `<label class="addp-row${ADD.sel.has(u.id) ? " on" : ""}" data-id="${u.id}">`
+        + `<input type="checkbox"${ADD.sel.has(u.id) ? " checked" : ""}>${avatar(u, 28)}`
+        + `<span class="who"><b>${esc(u.name)}</b><small>${esc([u.team, u.office, u.company, u.email].filter(Boolean).join(" · "))}</small></span></label>`).join("");
+  const n = ADD.sel.size;
+  $("#a-add-n").textContent = n ? `${n} chosen` : `${shown.length} shown`;
+  $("#a-add-go").textContent = n > 1 ? `Add ${n} people` : "Add";
+  $("#a-add-go").disabled = !n;
+}
+
+function wireAdd() {
+  for (const id of ["#a-add-q", "#a-add-team", "#a-add-office", "#a-add-company"]) $(id).addEventListener("input", paintAdd);
+  $("#a-add-list").addEventListener("change", (ev) => {
+    const row = ev.target.closest(".addp-row");
+    if (!row) return;
+    const id = +row.dataset.id;
+    if (ev.target.checked) ADD.sel.add(id); else ADD.sel.delete(id);
+    paintAdd();
+  });
+  $("#a-add-all").onclick = () => { for (const u of addShown()) ADD.sel.add(u.id); paintAdd(); };
+  $("#a-add-none").onclick = () => { ADD.sel.clear(); paintAdd(); };
 }
 
 async function prepLog() {
@@ -671,26 +722,33 @@ function wireProjects() {
       msg("Test sent - it should appear in the channel within a few seconds.", "ok");
     } catch (e) { msg(esc(e.message), "bad"); }
   };
+  wireAdd();
   $("#a-add-go").onclick = async () => {
-    const uid = +$("#a-add-user").value;
-    if (!uid) return;
-    try {
-      await memberPut(uid, $("#a-add-role").value);
+    const ids = [...ADD.sel];
+    if (!ids.length) return;
+    const role = $("#a-add-role").value;
+    const done = [], failed = [];
+    $("#a-add-go").disabled = true;
+    for (const uid of ids) {
       const u = A.users.find((x) => x.id === uid);
-      const role = $("#a-add-role").value;
+      try { await memberPut(uid, role); done.push(u); ADD.sel.delete(uid); }
+      catch (e) { failed.push((u ? u.name : uid) + ": " + e.message); }
+    }
+    if (done.length) {
       const p = A.projects.find((x) => x.id === A.pid);
       const addr = location.origin + "/?project=" + encodeURIComponent(A.pid);
-      const inv = { to: u.email,
+      const inv = { to: done.map((u) => u.email).filter(Boolean).join(","),
         subject: `LWK Viewer - you have been added to ${p ? p.title : A.pid}`,
-        body: [`Hi ${(u.name || "").split(/\s+/)[0]},`, "",
+        body: [done.length === 1 ? `Hi ${(done[0].name || "").split(/\s+/)[0]},` : "Hi all,", "",
           `You have been added to ${p ? p.title : A.pid} on the LWK Viewer as ${ROLE_LABEL[role]}`
           + ` - you can ${ROLE_CAN[role]}.`, "",
           `Open ${addr} and sign in with your usual email and password.`, "", "Thanks,",
           (A.me.user && A.me.user.name) || ""].join("\r\n") };
-      msg(`${esc(u ? u.name : "They")} can now open this project as ${ROLE_LABEL[role]}.`
-        + inviteButtons(inv), "ok");
+      msg((done.length === 1 ? esc(done[0].name) + " can" : `${done.length} people can`)
+        + ` now open this project as ${ROLE_LABEL[role]}.`
+        + (failed.length ? `<br>Not added: ${esc(failed.join("; "))}` : "") + inviteButtons(inv), failed.length ? "bad" : "ok");
       wireInvite(inv);
-    } catch (e) { msg(esc(e.message), "bad"); }
+    } else if (failed.length) msg("Not added: " + esc(failed.join("; ")), "bad");
     await loadProjects(); await loadMembers();
   };
   $("#n-go").onclick = async () => {
@@ -787,9 +845,9 @@ async function renderPeople(cached) {
   t.innerHTML = `<thead><tr>${head}<th></th></tr></thead><tbody>`
     + (shown.length ? "" : `<tr><td colspan="9" class="empty">Nobody matches these filters.</td></tr>`)
     + shown.map((u) => `<tr data-id="${u.id}">`
-      + `<td>${esc(u.name)} ${u.is_admin ? '<span class="pill admin">site admin</span>' : ""}`
+      + `<td><span class="namecell">${avatar(u, 28)}<span class="nm-t">${esc(u.name)} ${u.is_admin ? '<span class="pill admin">site admin</span>' : ""}`
       + `${u.active ? "" : '<span class="pill off">deactivated</span>'}`
-      + `${u.must_change && u.active ? '<div class="sub">has not set a password yet</div>' : ""}</td>`
+      + `${u.must_change && u.active ? '<div class="sub">has not set a password yet</div>' : ""}</span></span></td>`
       + `<td>${esc(u.email)}</td><td>${esc(u.office)}</td><td>${esc(u.company)}</td>`
       + `<td>${esc(u.team || "")}</td><td>${esc(u.discipline || "")}</td>`
       + `<td class="num">${u.projects}</td><td>${fmt(u.last_login)}</td>`

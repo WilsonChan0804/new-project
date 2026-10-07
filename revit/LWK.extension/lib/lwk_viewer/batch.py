@@ -16,10 +16,11 @@ in your name to block a colleague. Nothing is saved.
 """
 
 # Printed by the auto-export buttons, so a stale copy is obvious.
-__version__ = "2026-10-03a"
+__version__ = "2026-10-07a"
 
 import os
 import io
+import re
 import json
 import datetime
 
@@ -131,6 +132,42 @@ class DialogLog(object):
         "TaskDialog_Unresolved_References": (1002, "missing links: continued without them"),
     }
 
+    # Dialogs with no id (DialogId ''), known by their words: the ones a
+    # linked or imported DWG raises while a model opens (night of 6 Oct -
+    # each waited for someone to click). (pattern, answer, what it means)
+    #   6 = Yes, 8 = Close (TaskDialogResult); 1 = OK for a plain message box.
+    TEXT_ANSWERS = [
+        (re.compile(r"no valid elements in the file's paper space.*import from the model space", re.I | re.S),
+         6, "a DWG with an empty paper space: imported its model space (Yes)"),
+        (re.compile(r"numerical data within the imported file was out of range", re.I),
+         "close", "a DWG with out-of-range numbers: noted, closed"),
+        (re.compile(r"some entities were lost during import", re.I),
+         "close", "a DWG with entities Revit cannot read: noted, closed"),
+    ]
+
+    @staticmethod
+    def text_rule(msg, kind):
+        """(result, what it means) for a dialog known by its words, else None.
+        kind: the event args' type name - a task dialog closes with Close (8),
+        a plain message box with OK (1)."""
+        for rx, ans, why in DialogLog.TEXT_ANSWERS:
+            if rx.search(msg or ""):
+                if ans == "close":
+                    ans = 8 if kind == "TaskDialogShowingEventArgs" else 1
+                return ans, why
+        return None
+
+    @staticmethod
+    def ok_only(args, kind):
+        """A message box whose only button is OK: nothing to choose, so it
+        can be dismissed (MB_OK is 0 in the low four bits of DialogType)."""
+        if kind != "MessageBoxShowingEventArgs":
+            return False
+        try:
+            return (int(args.DialogType) & 0xF) == 0
+        except Exception:
+            return False
+
     def __init__(self, uiapp, probe, answer=False):
         self.uiapp, self.probe = uiapp, probe
         self.app = uiapp.Application
@@ -144,9 +181,15 @@ class DialogLog(object):
                 msg = (args.Message or "").replace("\r", " ").replace("\n", " ")
             except Exception:
                 msg = ""
+            kind = args.GetType().Name
             rule = self.SAFE_ANSWERS.get(did) if self.answer else None
+            if self.answer and not rule:
+                rule = self.text_rule(msg, kind)
+                if not rule and self.ok_only(args, kind):
+                    rule = (1, "a message with only an OK button: closed")
             if rule and args.OverrideResult(rule[0]):
-                self.probe.warn("dialog", "answered '%s' - %s" % (did, rule[1]))
+                self.probe.warn("dialog", "answered '%s' - %s%s" % (did or "message", rule[1],
+                                (": " + msg[:160]) if msg else ""))
             else:
                 # its wording goes in the log, so a rule can be added from
                 # what it actually says rather than from a guess
@@ -191,28 +234,62 @@ class DialogLog(object):
 
 # ------------------------------------------------------------------ open
 
+def closed_worksets(doc):
+    """Names of the user worksets of an open model that are closed."""
+    try:
+        if not doc.IsWorkshared:
+            return []
+        from Autodesk.Revit.DB import FilteredWorksetCollector, WorksetKind
+        return [w.Name for w in FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
+                if not w.IsOpen]
+    except Exception:
+        return []
+
+
+def workset_config(path, probe):
+    """Every user workset of the model, by name of its id, read from the file
+    itself (WorksharingUtils.GetUserWorksetInfo).
+
+    WorksetConfigurationOption.OpenAllWorksets alone was not enough: the
+    nightly logs of 6 Oct showed every workset CLOSED after an open that
+    asked for all of them - so no host geometry, and none of the links on
+    those worksets loaded. Naming each workset to open is the form that
+    Revit always honours."""
+    try:
+        from System.Collections.Generic import List
+        from Autodesk.Revit.DB import WorksetId
+        infos = list(WorksharingUtils.GetUserWorksetInfo(path))
+        if infos:
+            cfg = WorksetConfiguration(WorksetConfigurationOption.CloseAllWorksets)
+            cfg.Open(List[WorksetId]([w.Id for w in infos]))
+            return cfg, len(infos)
+    except Exception as ex:
+        probe.warn("open", "could not read the model's worksets before opening (%s); "
+                           "asking Revit to open all of them" % ex)
+    return WorksetConfiguration(WorksetConfigurationOption.OpenAllWorksets), None
+
+
 def open_cloud(app, job, probe):
     path = ModelPathUtils.ConvertCloudGUIDsToCloudPath(
         job["region"], System.Guid(job["project"]), System.Guid(job["model"]))
     # Every workset open. A cloud model otherwise opens with whatever the
     # last user had open, and a closed workset is geometry silently missing
-    # from the IFC - a tower or a podium, in a master model split by workset.
-    # Detached, so what the export leaves out (in a transaction that is
-    # rolled back) needs no element borrowed from ACC; attached only if
-    # Revit refuses to detach.
+    # from the export - a tower or a podium, in a master model split by
+    # workset - and its links are not loaded either.
     # Revit refuses to detach a cloud model ("Detach option is not valid for
-    # cloud model"), so a cloud model is opened attached straight away.
-    for mode in (DetachFromCentralOption.DoNotDetach,):
+    # cloud model"), so a cloud model is opened attached, and nothing is
+    # synchronised back (release()).
+    doc = None
+    for attempt in (1, 2):
         opts = OpenOptions()
-        opts.DetachFromCentralOption = mode
-        opts.SetOpenWorksetsConfiguration(
-            WorksetConfiguration(WorksetConfigurationOption.OpenAllWorksets))
-        detached = mode == DetachFromCentralOption.DetachAndPreserveWorksets
-        probe.info("open", "opening %s from ACC (all worksets, %s)"
-                   % (job["title"], "detached copy, nothing goes back to ACC" if detached
-                      else "attached, will not sync"))
+        opts.DetachFromCentralOption = DetachFromCentralOption.DoNotDetach
+        cfg, n = workset_config(path, probe)
+        opts.SetOpenWorksetsConfiguration(cfg)
+        probe.info("open", "opening %s from ACC (%s, attached, will not sync)%s"
+                   % (job["title"], "all %d worksets by name" % n if n else "all worksets",
+                      "" if attempt == 1 else " - second try"))
         try:
-            return app.OpenDocumentFile(path, opts)
+            doc = app.OpenDocumentFile(path, opts)
         except Exception as ex:
             if "not saved in current release" in str(ex):
                 raise Exception(
@@ -221,6 +298,65 @@ def open_cloud(app, job, probe):
                     "Revit, then Shift-click Run Export (exports the open model), or upgrade "
                     "it on ACC once (open, Save / Sync) so the automatic export can open it")
             raise
+        closed = closed_worksets(doc)
+        if not closed:
+            break
+        if attempt == 1:
+            probe.warn("open", "%d workset(s) still closed after opening (%s): closing the model "
+                               "and opening it again" % (len(closed), ", ".join(closed[:6])))
+            try:
+                release(doc, probe)
+                doc.Close(False)
+            except Exception as ex:
+                probe.warn("open", "could not close it to try again: %s" % ex)
+                break
+            doc = None
+        else:
+            probe.error("open", "%d workset(s) are still closed after a second try (%s): the 3D "
+                                "model will not be replaced (the viewer keeps the last good one)"
+                        % (len(closed), ", ".join(closed[:6])))
+    load_links(doc, probe)
+    return doc
+
+
+def load_links(doc, probe):
+    """Revit links that did not load with the model (on a workset that was
+    closed, or set to unloaded by the last user) are loaded, so they are in
+    the 3D model. Only this open copy changes; nothing is synchronised."""
+    try:
+        from Autodesk.Revit.DB import RevitLinkType
+        types = list(FilteredElementCollector(doc).OfClass(RevitLinkType))
+    except Exception as ex:
+        probe.warn("links", "could not list the links: %s" % ex)
+        return
+    loaded = failed = 0
+    for lt in types:
+        try:
+            if RevitLinkType.IsLoaded(doc, lt.Id):
+                continue
+            # a nested link is loaded with its parent
+            try:
+                if lt.IsNestedLink:
+                    continue
+            except Exception:
+                pass
+            res = lt.Load()
+            ok = True
+            try:
+                ok = str(res.LoadResult) == "LinkLoaded"      # LinkLoadResultType
+            except Exception:
+                pass
+            if ok:
+                loaded += 1
+            else:
+                failed += 1
+                probe.warn("links", "could not load '%s': %s" % (lt.Name, getattr(res, "LoadResult", "?")))
+        except Exception as ex:
+            failed += 1
+            probe.warn("links", "could not load '%s': %s" % (getattr(lt, "Name", "?"), ex))
+    if loaded or failed:
+        probe.info("links", "%d link(s) loaded that were not%s"
+                   % (loaded, (", %d could not be" % failed) if failed else ""))
 
 
 def release(doc, probe):
@@ -414,6 +550,18 @@ def export_open_doc(doc, job, probe, manifest, exporters, progress=None):
         end_marker(folder)
         return True
 
+    # A closed workset is a model with parts missing (and links not loaded):
+    # never let it replace the last good 3D model in the viewer. The sheets
+    # still go.
+    closed = closed_worksets(doc)
+    if closed:
+        probe.error("3d", "3D model NOT exported: %d workset(s) closed (%s). The viewer keeps "
+                          "the last good 3D model; the sheets are sent."
+                    % (len(closed), ", ".join(closed[:6])))
+        job["_3d_failed"] = "worksets closed: " + ", ".join(closed[:6])
+        end_marker(folder)
+        return True
+
     schema = job.get("schema", "IFC2x3")
     exporters.LIGHT["on"] = (job.get("ifc_detail") or "light") != "full"
     exporters.LINK_ROUTE["via_host"] = (job.get("link_route") or "host") != "open"
@@ -435,6 +583,14 @@ def export_open_doc(doc, job, probe, manifest, exporters, progress=None):
                             group_share=job.get("group_share", True) is not False,
                             props=job.get("fast3d_props", True) is not False)
         probe.info("time", "fast 3D export took %.1f min" % ((time.time() - t2) / 60.0))
+        if not res.get("triangles") and res["models"]:
+            # Nothing drawn: an empty model must not replace a good one.
+            probe.error("3d", "the 3D export came out EMPTY (0 triangles): nothing is sent, so the "
+                              "viewer keeps the last good export. Check that the model's worksets "
+                              "and links load when it is opened.")
+            job["_3d_failed"] = "the 3D export was empty"
+            end_marker(folder)
+            return False
         data["models"] = res["models"]
         data["lwk_frame"] = res["lwk_frame"]
         data["probe"] = probe.records
@@ -826,6 +982,7 @@ def run_job(uiapp, job, echo, doc=None, unattended=False):
     started = datetime.datetime.now().isoformat()
     opened = None
     ok = False
+    job.pop("_3d_failed", None)
     try:
         with DialogLog(uiapp, probe, answer=unattended):
             if doc is None:
@@ -845,6 +1002,16 @@ def run_job(uiapp, job, echo, doc=None, unattended=False):
                 opened.Close(False)
             except Exception as ex:
                 probe.warn("close", "could not close: %s" % ex)
+        # one line at the end that says how it went
+        failed3d = job.pop("_3d_failed", None)
+        if failed3d:
+            probe.error("result", "FAILED - %s; the viewer keeps the last good 3D model%s"
+                        % (failed3d, " (the sheets were sent)" if ok else ""))
+            ok = False
+        elif ok:
+            probe.info("result", "OK")
+        else:
+            probe.error("result", "FAILED - see the errors above; nothing was replaced in the viewer")
         write_log(job["folder"], probe, started)
         try:
             livelog.stop()

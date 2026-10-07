@@ -115,6 +115,77 @@ Data: `<data>/chat.db`.
 
 Data lives in `<data>/tasks.db` (one file for the server, beside `accounts.db`).
 
+## Calendar (`calendar.html`)
+
+What is coming up for you, by date:
+- **Meetings:** events sent in the Messenger (+ > Event) in the chats you are in, with your reply.
+- **My tasks:** the tasks you own, on their due date.
+- **My issues:** open issues assigned to you, on their due date.
+
+**Layout and controls:**
+- A month view on a computer, a list on a phone; either can be chosen.
+- Filters for the three kinds of entry.
+- A click shows the details and a way to the chat, task or issue.
+- **+ Event** opens the event form in a chat you choose. An event is always sent in a chat, so its people are invited and can reply.
+
+**Add to Outlook.** Every person has their own calendar address (`/cal/<key>.ics`, from `calendar_feed.py`). Outlook subscribes to it and shows the entries beside your own Outlook calendar, refreshing them by itself:
+- the **webcal://** link opens Outlook on the PC;
+- or add it by hand with **Add calendar > From Internet**.
+
+**Limits and safety:**
+- Outlook on the web and on phones fetch the address from Microsoft's servers, so they need the viewer reachable from the internet. Outlook on an office PC does not.
+- The key in the address is its only sign-in. **Make a new address** replaces it, and the old one stops working.
+- Writing into Outlook itself (two-way) would need an Azure app registration for Microsoft Graph, from IT.
+
+Data: `<data>/calendar_keys.json`.
+
+## Sheets from outside: their own sets
+
+A PDF uploaded on the Sheets page (consultant drawings, scans) goes into a **set** of its own, named at upload: "Uploaded PDFs", or a new name.
+- Each set is its own entry in the drop-down at the top, under the project's title, after the Revit sheets (`?set=` in the address).
+- Choosing a set shows only its sheets; the Revit entry shows only the sheets from Revit.
+- The sheets stay in the same project, so markups, issues, search and compare work as before.
+- Opening a sheet of another set (from an issue or a link) switches to its set.
+
+The drop-downs on the Sheets, 3D, Board and Dashboard pages list every project under its title (name · code), with its models below it.
+
+## Admin
+
+**Adding people to a project.** Search, narrow by team, office or company, tick several (or **Select all shown**), choose one role and press **Add N people**. One invitation email can go to all of them.
+
+**Layout.** The project's settings are in colour-keyed sections:
+- project details (orange);
+- members (blue);
+- adding people (teal);
+- Teams (purple);
+- markup layers (green);
+- phones (grey);
+- delete (red).
+
+People, members and the picker show each person's avatar.
+
+## Night export from Revit (`revit/LWK.extension`)
+
+The pyRevit extension that publishes from Revit is kept in this repository under `revit/`.
+
+**What the night run does:**
+- **Worksets.** It opens each ACC model with every user workset named, read from the file itself (`WorksharingUtils.GetUserWorksetInfo`). `OpenAllWorksets` alone was found to leave them closed. If any workset is still closed, it opens the model once more.
+- **Links.** It loads Revit links that did not load.
+- **A failed 3D export keeps the last good one.** With closed worksets, the 3D model is not exported and the sheets still go. An export that comes out empty (0 triangles) sends nothing.
+- **A result line.** Each job's log ends with `result OK` or `result FAILED - ...`.
+
+**Dialogs:**
+- **While Revit runs:** known dialogs are answered by their wording during an unattended run:
+  - a DWG with an empty paper space: Yes (import its model space);
+  - the out-of-range and "entities were lost" import notes: Close;
+  - any message with only an OK button: OK.
+  Others are logged and left alone.
+- **Before the LWK tools load:** the launcher runs a small watcher next to Revit (PowerShell UI Automation, passed as `-EncodedCommand`, so no script policy applies). It handles dialogs that come before the tools load, such as **External Tools - Add-in Assembly Not Found**, which it closes. It writes every dialog it sees to `%APPDATA%\LWK\nightly\dialogs.log`.
+
+**Advice for the PC:**
+- Repair or remove the broken add-in's `.addin` file, under `C:\ProgramData\Autodesk\Revit\Addins\<year>` or `%APPDATA%\Autodesk\Revit\Addins\<year>`, or tick *Do not show this message again* once.
+- Update the PC by replacing the `LWK.extension` folder with the one from `revit/`.
+
 ## Issues and tasks together
 
 - **A task from an issue.** In the issue window, *+ New task from this issue* opens a form:

@@ -11,6 +11,48 @@
 .reg-grid label, .reg-l { display: flex; flex-direction: column; font-size: 12px; color: var(--ink-2); gap: 3px; margin-top: 6px; }
 .reg-l select, .reg-l textarea { width: 100%; }
 .proj-list li .sub .nm { color: #b45309; }
+/* the project's settings in colour-keyed sections, so each topic reads apart */
+.asec { --c: #94a3b8; --t: #f8fafc; border: 1px solid var(--line); border-left: 4px solid var(--c); background: var(--t);
+  border-radius: 10px; padding: 10px 14px 12px; margin: 12px 0; }
+.asec > h3 { margin: 2px 0 8px; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.asec > h3 small { font-weight: 400; }
+.asec-ic { width: 26px; height: 26px; border-radius: 7px; background: var(--c); color: #fff; display: inline-flex; align-items: center;
+  justify-content: center; font-size: 14px; flex: none; }
+.asec-proj { --c: #ea7a1c; --t: #fff8f1; }
+.asec-mem { --c: #2563eb; --t: #f5f8ff; }
+.asec-add { --c: #0891b2; --t: #f2fbfd; }
+.asec-teams { --c: #7c3aed; --t: #f8f5ff; }
+.asec-layers { --c: #0d9488; --t: #f1fbf9; }
+.asec-phone { --c: #64748b; --t: #f8fafc; }
+.asec-danger { --c: #dc2626; --t: #fff5f5; }
+.asec .table-wrap { background: var(--panel); border-radius: 8px; }
+/* adding people: search, filters, tick several */
+.addp-top { display: flex; gap: 6px; flex-wrap: wrap; }
+.addp-top input { flex: 1 1 220px; min-width: 160px; }
+.addp-top select { flex: 0 1 160px; min-width: 110px; }
+.addp-bar { display: flex; gap: 6px; align-items: center; margin: 6px 0 4px; font-size: 12px; }
+.addp-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.addp-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line-soft, #eef1f4); cursor: pointer; font-size: 13px; }
+.addp-row:last-child { border-bottom: 0; }
+#admin .addp-row { flex-direction: row !important; justify-content: flex-start; margin: 0; width: auto; color: var(--ink); font-size: 13px; }
+#admin .addp-row input[type=checkbox] { width: 16px !important; height: 16px; flex: none; margin: 0; min-width: 0; }
+#admin .addp-row .who b { font-weight: 600; }
+.addp-row:hover { background: #f5f8ff; }
+.addp-row.on { background: #eaf2ff; }
+.addp-row .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.addp-row .who small { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.addp-empty { padding: 12px; font-size: 12px; color: var(--muted); }
+/* avatars (as on the Tasks and Chat pages) */
+.av { width: 26px; height: 26px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 700; display: inline-flex;
+  align-items: center; justify-content: center; flex: none; vertical-align: middle; }
+.namecell { display: flex; align-items: center; gap: 8px; }
+.namecell .nm-t { min-width: 0; }
+/* a phone: the tabs scroll sideways rather than widen the page */
+@media (max-width: 700px) {
+  #admin .tabs { display: flex; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  #admin .tabs button { flex: none; white-space: nowrap; }
+  .asec { padding: 8px 10px 10px; }
+}
 </style>
 </head>
 <body class="admin-page own-nav">
@@ -23,6 +65,7 @@
     <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
     <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
     <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <a id="to-cal" class="seg-btn" data-page="calendar.html" href="calendar.html">Calendar</a>
     <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
     <span class="seg-btn on">Admin</span>
   </div>
@@ -62,8 +105,8 @@
         </div>
       </div>
       <div class="card">
-        <div id="a-reg" hidden>
-          <h3 id="a-reg-title">Project details</h3>
+        <div id="a-reg" class="asec asec-proj" hidden>
+          <h3 id="a-reg-title"><span class="asec-ic">&#9776;</span>Project details</h3>
           <p class="muted" style="font-size:12px;margin-top:-4px">What everyone sees on the Projects page. Link the viewer project
             (the model and sheets published from Revit) here; a project can be set up and given members before its first upload.</p>
           <div class="form-row reg-grid">
@@ -87,9 +130,9 @@
             <span class="spacer"></span>
             <button id="r-del" class="ghost danger" hidden title="Take it off the Projects page. Its tasks, issues, model and files stay where they are.">Remove from Projects</button>
           </div>
-          <hr style="border:0;border-top:1px solid var(--line);margin:14px 0 4px">
         </div>
-        <h3 id="a-proj-title">Members</h3>
+        <div class="asec asec-mem">
+        <h3><span class="asec-ic">&#128101;</span><span id="a-proj-title">Members</span></h3>
         <label id="a-part-wrap" class="reg-l" hidden style="max-width:360px">Part <small class="muted">members, Teams channel and layers are kept for each model</small>
           <select id="a-part"></select></label>
         <p class="muted" style="font-size:12px;margin-top:-4px">
@@ -99,18 +142,32 @@
           <b>Viewer</b> can look at everything but change nothing.</p>
         <div class="table-wrap"><table id="a-members"></table></div>
 
-        <h3 style="margin-top:16px">Add people to this project</h3>
-        <div class="form-row">
-          <label>Existing account
-            <select id="a-add-user"></select></label>
-          <label>Role
-            <select id="a-add-role">
-              <option value="member">Member</option>
-              <option value="publisher">Publisher</option>
-              <option value="viewer">Viewer</option>
-              <option value="admin">Project admin</option>
-            </select></label>
-          <button id="a-add-go">Add</button>
+        </div>
+        <div class="asec asec-add">
+        <h3><span class="asec-ic">&#10133;</span>Add people to this project</h3>
+        <div class="addp">
+          <div class="addp-top">
+            <input id="a-add-q" type="search" placeholder="Search names or emails" autocomplete="off">
+            <select id="a-add-team" title="Only this team"><option value="">All teams</option></select>
+            <select id="a-add-office" title="Only this office"><option value="">All offices</option></select>
+            <select id="a-add-company" title="Only this company"><option value="">All companies</option></select>
+          </div>
+          <div class="addp-bar">
+            <button type="button" class="ghost" id="a-add-all">Select all shown</button>
+            <button type="button" class="ghost" id="a-add-none">Clear</button>
+            <span class="spacer"></span><span id="a-add-n" class="muted"></span>
+          </div>
+          <div id="a-add-list" class="addp-list"></div>
+          <div class="form-row" style="margin-top:8px">
+            <label>Role for them
+              <select id="a-add-role">
+                <option value="member">Member</option>
+                <option value="publisher">Publisher</option>
+                <option value="viewer">Viewer</option>
+                <option value="admin">Project admin</option>
+              </select></label>
+            <button id="a-add-go">Add</button>
+          </div>
         </div>
         <details id="a-new-wrap">
           <summary style="cursor:pointer;font-size:12px;color:var(--accent-deep);font-weight:600">
@@ -134,9 +191,11 @@
             <button id="n-go">Create and add</button>
           </div>
         </details>
+        </div>
 
         <div id="a-viewer-only">
-        <h3 style="margin-top:18px">Teams channel <small>issue updates posted to the project's channel</small></h3>
+        <div class="asec asec-teams">
+        <h3><span class="asec-ic">&#128172;</span>Teams channel <small>issue updates posted to the project's channel</small></h3>
         <div class="form-row">
           <label style="flex:1;min-width:280px">Workflow webhook address
             <input id="t-hook" placeholder="https://...logic.azure.com/workflows/..." style="width:100%"></label>
@@ -160,7 +219,9 @@
           <p class="muted">Posted: a new issue, a new assignee, a status change, a new due date and new comments - each with a button that opens the issue.</p>
         </details>
 
-        <h3 id="layers" style="margin-top:18px">Markup layers <small>who can see and change the markups on each layer</small></h3>
+        </div>
+        <div class="asec asec-layers">
+        <h3 id="layers"><span class="asec-ic">&#9998;</span>Markup layers <small>who can see and change the markups on each layer</small></h3>
         <p class="muted" style="font-size:12px;margin:0 0 6px">Project admins can always see and change everything. A locked layer's
           issues can still be answered (status, comments) by those who can see them.</p>
         <div id="a-layers" class="layer-admin"></div>
@@ -171,7 +232,9 @@
           <button id="a-layers-save">Save layers</button>
         </div>
 
-        <h3 style="margin-top:18px">Phones and tablets <small>prepared on the server after every upload</small></h3>
+        </div>
+        <div class="asec asec-phone">
+        <h3><span class="asec-ic">&#128241;</span>Phones and tablets <small>prepared on the server after every upload</small></h3>
         <p class="muted" style="font-size:12px;margin:0 0 6px">After each upload the server works out what is seen from
           outside, writes the phone copy, and cuts each model into streamed pieces (fetched as the view needs them).
           Projects uploaded before this was added can be prepared now.</p>
@@ -180,9 +243,10 @@
           <button id="a-prep-log" class="ghost">Show progress</button>
         </div>
         <pre id="a-prep-out" class="dev-detail" hidden></pre>
+        </div>
 
-        <div id="a-danger" class="danger-zone" hidden>
-          <h3 style="margin-top:18px">Delete this project</h3>
+        <div id="a-danger" class="danger-zone asec asec-danger" hidden>
+          <h3><span class="asec-ic">&#9888;</span>Delete this project</h3>
           <p class="muted" style="font-size:12px;margin:0 0 6px">Removes the project from the viewer for everyone:
             its models, sheets, issues, markups and members. It is moved to the bin on the server, not erased -
             it can be restored from the list on the left. If Revit publishes to the same name again, a new,

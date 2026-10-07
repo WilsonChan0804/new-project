@@ -21,9 +21,14 @@ function when(t) {
 }
 
 function go(id) {
-  Store.setProject(id);
+  // a set of uploaded PDFs on the Sheets page: "<project>\u0001<set>"
+  const [pid, set] = String(id).split("\u0001");
+  Store.setProject(pid);
   const url = new URL(location.href);
-  url.searchParams.set("project", id);
+  url.searchParams.set("project", pid);
+  if (set) url.searchParams.set("set", set);
+  else url.searchParams.delete("set");
+  if (pid !== Store.currentProject() || set !== undefined) url.searchParams.delete("sheet");
   location.href = url.toString();
 }
 
@@ -93,11 +98,58 @@ function fillSwitcher(list, cur) {
     + `${esc(p.title)}</option>`).join("");
   // Nothing to switch between: keep the header uncluttered.
   sel.hidden = list.length < 2;
-  sel.onchange = () => go(sel.value);
-  // The names from the Projects page, a project of several models as a group
-  // (nav.js). Left as it is when the server has no Projects page.
+  sel.onchange = () => {
+    // a set of this project: the Sheets page shows it without a reload
+    const [pid, set] = sel.value.split("\u0001");
+    if (pid === cur && SETS.show) return SETS.show(set || "");
+    go(sel.value);
+  };
+  // The names from the Projects page, every project under its title, its
+  // models below it (nav.js). Left as it is when the server has none.
   import("./nav.js").then(async (nav) => {
     const ch = await nav.projectOptions(cur);
-    if (ch && ch.html) sel.innerHTML = ch.html;
+    if (ch && ch.html) {
+      sel.innerHTML = ch.html;
+      const t = document.getElementById("project");
+      if (t && ch.titles && ch.titles[cur]) { t.textContent = ch.titles[cur]; t.title = "Project"; }
+    }
+    SETS.sel = sel;
+    SETS.cur = cur;
+    paintSets();
   }).catch(() => {});
+}
+
+/* The Sheets page's sets (app.js tells, see sheetSets): the sheets from
+   Revit, then each set of uploaded PDFs, as entries of the current project
+   in the drop-down. */
+const SETS = { sel: null, cur: "", list: [], at: "", show: null };
+
+export function sheetSets(list, at, show) {
+  SETS.list = list || [];
+  SETS.at = at || "";
+  SETS.show = show;
+  paintSets();
+}
+
+function paintSets() {
+  const sel = SETS.sel;
+  if (!sel) return;
+  for (const o of [...sel.querySelectorAll("option[data-set]")]) o.remove();
+  const mine = [...sel.options].find((o) => o.value === SETS.cur);
+  if (!mine) return;
+  if (!mine.dataset.label) mine.dataset.label = mine.textContent;
+  if (!SETS.list.length) { mine.textContent = mine.dataset.label; mine.selected = true; return; }
+  mine.textContent = mine.dataset.label + " · Revit sheets";
+  let after = mine;
+  for (const name of SETS.list) {
+    const o = document.createElement("option");
+    o.value = SETS.cur + "\u0001" + name;
+    o.dataset.set = name;
+    o.textContent = mine.dataset.label + " · " + name;
+    after.after(o);
+    after = o;
+  }
+  const want = SETS.at ? [...sel.options].find((o) => o.dataset.set === SETS.at) : mine;
+  if (want) want.selected = true;
+  sel.hidden = false;
 }

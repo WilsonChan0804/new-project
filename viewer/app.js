@@ -2,7 +2,7 @@ import { attachTemplates } from "./templates.js";
 import { smoothPath, simplify, recognize } from "./ink.js";
 import { buildBcf, download } from "./bcf.js";
 import * as Store from "./store.js";
-import { ensureProject } from "./projects.js";
+import { ensureProject, sheetSets } from "./projects.js";
 import * as MK from "./markup.js";
 import { iconButton, iconSvg, decorateIcons } from "./icons.js";
 import { attachPalette } from "./palette.js";
@@ -85,6 +85,7 @@ const TOOLS = [
 const DRAWING_KINDS = new Set(["drag2", "free", "poly", "click", "erase", "match"]);
 
 const S = {
+  set: "",                 // the set of sheets shown: "" = from Revit, else uploaded PDFs
   manifest: null, sheet: null, pdf: null, page: null,
   scale: 1, rotation: 0, viewport: null, pageMM: [0, 0],
   tool: "select", mode: "comment",
@@ -3035,6 +3036,8 @@ function wireSheetFind() {
 
 async function openSheet(sheet) {
   if (INK.pending.length) flushInk();
+  // a sheet of another set (from an issue, a link, a search): its set too
+  if (S.manifest && sheetSet(sheet) !== S.set) showSet(sheetSet(sheet), true);
   try { localStorage.setItem(lastSheetKey(), sheet.number); } catch (e) {}
   // the previous sheet's page and viewport must not be drawn on with this
   // sheet's markups (layer rules, sync answers can arrive in between)
@@ -3149,7 +3152,7 @@ function restoreSheetView(sheet) {
 
 /* Previous / next sheet in the list (PageUp / PageDown). */
 function stepSheet(d) {
-  const list = (S.manifest && S.manifest.sheets || []);
+  const list = S.manifest ? setSheets() : [];
   const i = list.findIndex((s) => S.sheet && s.number === S.sheet.number);
   const nx = list[i + d];
   if (nx) {
@@ -3885,11 +3888,45 @@ function captureSheetSnapshot(item) {
 
 /* --------------------------------------------------------------- lists */
 
+/* Sets of sheets. The sheets published from Revit are one set (""); PDFs
+   uploaded from outside go in sets of their own ("Uploaded PDFs", or a
+   name given at upload), each its own entry in the header's drop-down, so
+   they do not pile up under the drawings from the model. They stay in the
+   same project: markups, issues, search and compare work across sets. */
+const PDF_SET = "Uploaded PDFs";
+const sheetSet = (s) => (s && s.external ? (s.set || PDF_SET) : "");
+const setNames = () => [...new Set(S.manifest.sheets.filter((s) => s.external).map(sheetSet))];
+const setSheets = () => S.manifest.sheets.filter((s) => sheetSet(s) === S.set);
+
+function pickSet(want) {
+  const names = setNames();
+  const hasRevit = S.manifest.sheets.some((s) => !s.external);
+  S.set = want && names.includes(want) ? want : hasRevit || !names.length ? "" : names[0];
+}
+
+/* Show another set (the drop-down, or a sheet of another set opened from
+   an issue or a link). */
+function showSet(name, keepSheet) {
+  pickSet(name);
+  const url = new URL(location.href);
+  if (S.set) url.searchParams.set("set", S.set); else url.searchParams.delete("set");
+  window.history.replaceState(null, "", url.toString());   // (app.js has a history of its own: undo)
+  renderSheets();
+  sheetSets(setNames(), S.set, (n) => showSet(n));
+  if (!keepSheet) {
+    const first = setSheets()[0];
+    if (first && (!S.sheet || sheetSet(S.sheet) !== S.set)) openSheet(first);
+  }
+}
+
 function renderSheets() {
   const ul = $("#sheet-list"); ul.innerHTML = "";
+  const list = setSheets();
   const tot = document.getElementById("sheet-total");
-  if (tot) tot.textContent = S.manifest.sheets.length;
-  for (const s of S.manifest.sheets) {
+  if (tot) tot.textContent = list.length;
+  const lab = document.getElementById("sheet-set");
+  if (lab) { lab.textContent = S.set || ""; lab.hidden = !S.set; }
+  for (const s of list) {
     const vps = s.viewports || [];
     const mapped = vps.filter((v) => v.paper_to_model).length;
     const li = document.createElement("li");
@@ -5041,6 +5078,12 @@ async function importPdf(file) {
         + "Sheet number prefix (pages are numbered after it):",
     stem.slice(0, 24));
   if (prefix === null) return;
+  const have = setNames();
+  let set = prompt("Which set do these drawings go in? They get their own entry in the drop-down at the top, "
+    + "apart from the sheets from Revit.\n\nType a new name for a new set"
+    + (have.length ? ", or one of: " + have.join(", ") : "") + ".", S.set || have[0] || PDF_SET);
+  if (set === null) return;
+  set = set.trim().slice(0, 60) || PDF_SET;
 
   status(`Uploading ${file.name} ...`);
   const res = await fetch("/api/import/pdf?name=" + encodeURIComponent(file.name), {
@@ -5068,12 +5111,13 @@ async function importPdf(file) {
   const reg = await fetch("/api/import/sheets", {
     method: "POST",
     headers: Object.assign(Store.authHeaders(), { "Content-Type": "application/json" }),
-    body: JSON.stringify({ sheets: sheets }),
+    body: JSON.stringify({ sheets: sheets, set }),
   });
   if (!reg.ok) { status("Import failed while adding the sheets."); return; }
   const added = (await reg.json()).added || [];
   await reloadManifest();
-  status(`Imported ${added.length} sheet(s) from ${file.name}.`);
+  status(`Imported ${added.length} sheet(s) from ${file.name} into "${set}".`);
+  showSet(set, true);
   const first = S.manifest.sheets.find((s) => added[0] && s.number === added[0].number);
   if (first) openSheet(first);
 }
@@ -5092,6 +5136,8 @@ async function removeImportedSheet(s) {
 async function reloadManifest() {
   const res = await fetch(Store.dataUrl("manifest.json"), { cache: "no-store" });
   S.manifest = await res.json();
+  pickSet(S.set);
+  sheetSets(setNames(), S.set, (n) => showSet(n));
   renderSheets();
   // The split pane's sheet list is built once; rebuild it next time.
   const sel = document.getElementById("split-sheet");
@@ -5627,8 +5673,11 @@ async function boot() {
   } catch (e) {
     status("Could not load manifest.json: " + e.message); return;
   }
-  $("#project").textContent =
+  // the project's title from the Projects page (projects.js), when it has one
+  if (!$("#project").textContent) $("#project").textContent =
     (S.manifest.source && S.manifest.source.title) || "";
+  pickSet(new URLSearchParams(location.search).get("set"));
+  sheetSets(setNames(), S.set, (n) => showSet(n));
   load(); renderSheets(); renderList();
   status(`${S.manifest.sheets.length} sheets, `
     + `${(S.manifest.elements || []).length} elements.`);
@@ -5636,8 +5685,12 @@ async function boot() {
   // Back where the user left off: the sheet in the link if there is one,
   // otherwise the last sheet opened on this project.
   let want = new URLSearchParams(location.search).get("sheet");
+  const named = !!want;
   if (!want) { try { want = localStorage.getItem(lastSheetKey()); } catch (e) {} }
-  const again = want && S.manifest.sheets.find((s) => s.number === want);
+  let again = want && S.manifest.sheets.find((s) => s.number === want);
+  // the last sheet opened is of another set than the one asked for: the
+  // set's first sheet instead (a sheet named in the address still wins)
+  if (!named && again && sheetSet(again) !== S.set) again = setSheets()[0];
   if (again) {
     await openSheet(again);
     const li = document.querySelector(`#sheet-list li[data-num="${CSS.escape(again.number)}"]`);
