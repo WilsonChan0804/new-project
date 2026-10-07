@@ -24,6 +24,7 @@ import * as GanttView from "./tasks-gantt.js";
 import * as DashView from "./tasks-dash.js";
 import * as PeopleView from "./tasks-people.js";
 import * as Detail from "./tasks-detail.js";
+import * as Undo from "./undo.js";
 
 const LS = "lwk-tasks:";
 const ls = {
@@ -190,9 +191,37 @@ function sorter() {
 
 /* ------------------------------------------------------------ saving */
 
+/* What a change was, for the Undo note */
+const FIELD_LABEL = { title: "title", description: "description", priority: "priority", start: "start date",
+  due: "due date", owners: "owners", group_id: "group", parent_id: "parent task", sort: "order",
+  links: "links", vals: "field" };
+function changeLabel(t, patch) {
+  const ks = Object.keys(patch).filter((k) => k !== "sort" || Object.keys(patch).length === 1);
+  const name = `"${(t.title || "task").slice(0, 40)}"`;
+  if ("done" in patch) return (patch.done ? "ticked " : "unticked ") + name;
+  if (ks.length === 2 && "start" in patch && "due" in patch) return "dates of " + name;
+  if ("group_id" in patch && !("parent_id" in patch)) return "moved " + name;
+  if ("parent_id" in patch) return (patch.parent_id ? "made a sub-task: " : "made a task: ") + name;
+  return ks.map((k) => FIELD_LABEL[k] || k).join(", ") + " of " + name;
+}
+const copy = (v) => (v === undefined ? "" : JSON.parse(JSON.stringify(v)));
+
 function save(id, patch) {
   const t = S.tasks.get(id);
   if (!t || !T.canEdit()) return;
+  if (!Undo.replaying()) {
+    // the old values of exactly the fields changed: Ctrl+Z saves them back
+    const old = {};
+    for (const k of Object.keys(patch)) {
+      if (k === "vals") {
+        old.vals = {};
+        for (const f of Object.keys(patch.vals || {})) old.vals[f] = t.vals[f] === undefined ? null : copy(t.vals[f]);
+      } else old[k] = copy(t[k]);
+    }
+    if (patch.group_id && !("group_id" in old)) old.group_id = t.group_id;
+    const redoPatch = copy(patch);
+    Undo.record({ label: changeLabel(t, patch), undo: () => save(id, old), redo: () => save(id, redoPatch) });
+  }
   Object.assign(t, patch);
   if (patch.vals) t.vals = Object.assign({}, t.vals, patch.vals);
   if ("done" in patch) t.completed_at = patch.done ? new Date().toISOString() : "";
@@ -245,7 +274,27 @@ function create(fields) {
   pending.set(id, p);
   render();
   schedule(50);
+  if (!Undo.replaying()) {
+    Undo.record({ label: `new task "${(t.title || "task").slice(0, 40)}"`, merge: false,
+                  undo: () => deleteNow(id), redo: () => restoreNow(id) }, { separate: true });
+  }
   return t;
+}
+
+/* Delete and undelete without asking: what Undo and Redo use */
+async function deleteNow(id) {
+  await flush();
+  const subs = T.descendants(id);
+  await api("/api/tasks", { method: "POST", body: JSON.stringify({ list: S.listId, tasks: [], deleted: [id] }) });
+  S.tasks.delete(id);
+  for (const k of subs) S.tasks.delete(k.id);
+  if (S.openId === id || subs.some((k) => k.id === S.openId)) Detail.close(T);
+  render();
+}
+async function restoreNow(id) {
+  const r = await api(`/api/tasks/${encodeURIComponent(id)}/restore`, { method: "POST", body: "{}" });
+  for (const x of r.tasks || []) S.tasks.set(x.id, x);
+  render();
 }
 
 async function remove(id) {
@@ -261,6 +310,8 @@ async function remove(id) {
     for (const k of subs) S.tasks.delete(k.id);
     if (S.openId === id || subs.some((k) => k.id === S.openId)) Detail.close(T);
     render();
+    Undo.record({ label: `deleted "${(t.title || "task").slice(0, 40)}"`, merge: false,
+                  undo: () => restoreNow(id), redo: () => deleteNow(id) }, { separate: true });
   } catch (e) { toast(e.message, true); }
 }
 

@@ -28,6 +28,7 @@ import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closeP
 import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 import { emojiPicker, QUICK } from "./emoji.js";
+import * as Undo from "./undo.js";
 import { toWhatsApp, parseWhatsApp, readExport, waText } from "./whatsapp.js";
 import { formatHtml, plainText, formatKey } from "./chatfmt.js";
 import { RichBox } from "./richbox.js";
@@ -251,7 +252,10 @@ async function pinMsg(m, on) {
     Object.assign(m, r);
     if (!r.pinned) delete m.pinned;
     paintMsgs(false);
-    toast(on ? "Pinned - everyone in the chat sees it at the top" : "Unpinned");
+    if (!Undo.replaying()) {
+      toast(on ? "Pinned - everyone in the chat sees it at the top" : "Unpinned");
+      Undo.record({ label: on ? "pinned a message" : "unpinned a message", undo: () => pinMsg(m, !on), redo: () => pinMsg(m, on) });
+    }
     await loadPins();
   } catch (e) { toast(e.message, true); }
 }
@@ -482,16 +486,25 @@ async function saveEdit(id) {
   const t = (C.editText || "").trim();
   if (!m) return stopEdit();
   if (t === (m.body || "").trim()) return stopEdit();
+  const was = m.body || "";
+  const task = C.room.kind === "task" ? C.room.task : null;
   try {
-    if (C.room.kind === "task") {
-      const c = await api(`/api/tasks/${C.room.task.id}/comments/${m.id}`, { method: "PATCH", body: JSON.stringify({ body: t }) });
-      Object.assign(m, { body: c.body, edited_at: c.edited_at });
-    } else {
-      Object.assign(m, await api(`/api/chat/messages/${m.id}`, { method: "PATCH", body: JSON.stringify({ body: t }) }));
-    }
+    await setBody(m, t, false, task);
     stopEdit();
     toast("Message changed");
+    Undo.record({ label: "edited a message", undo: () => setBody(m, was, true, task), redo: () => setBody(m, t, true, task) });
   } catch (e) { toast(e.message, true); }
+}
+
+/* a message's text, saved (for an edit and its Undo / Redo) */
+async function setBody(m, t, paint, task) {
+  if (task) {
+    const c = await api(`/api/tasks/${task.id}/comments/${m.id}`, { method: "PATCH", body: JSON.stringify({ body: t }) });
+    Object.assign(m, { body: c.body, edited_at: c.edited_at });
+  } else {
+    Object.assign(m, await api(`/api/chat/messages/${m.id}`, { method: "PATCH", body: JSON.stringify({ body: t }) }));
+  }
+  if (paint) paintMsgs(false);
 }
 
 async function deleteMsg(m) {
@@ -503,9 +516,23 @@ async function deleteMsg(m) {
     } else {
       await api(`/api/chat/messages/${m.id}`, { method: "DELETE" });
       m.deleted = true;
+      // the sender can bring it back for a day (Ctrl+Z)
+      Undo.record({ label: "deleted a message", undo: () => restoreMsg(m), redo: () => dropMsg(m) });
     }
     paintMsgs(false);
   } catch (e) { toast(e.message, true); }
+}
+async function restoreMsg(m) {
+  const r = await api(`/api/chat/messages/${m.id}/restore`, { method: "POST", body: "{}" });
+  delete m.deleted;
+  Object.assign(m, r);
+  paintMsgs(false);
+  loadPins();
+}
+async function dropMsg(m) {
+  await api(`/api/chat/messages/${m.id}`, { method: "DELETE" });
+  m.deleted = true;
+  paintMsgs(false);
 }
 
 /* More: the rest of what can be done with a message, with words. */
@@ -1002,6 +1029,7 @@ async function react(mid, e) {
   try {
     const r = await api(`/api/chat/messages/${mid}/react`, { method: "POST", body: JSON.stringify({ emoji: e }) });
     Object.assign(m, r, { reactions: r.reactions || {} });
+    if (!Undo.replaying()) Undo.record({ label: "reaction " + e, undo: () => react(mid, e), redo: () => react(mid, e) });
   } catch (err) { toast(err.message, true); }
   paintMsgs(false);
 }

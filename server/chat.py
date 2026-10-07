@@ -158,6 +158,8 @@ class Db(object):
                         self.db.execute("ALTER TABLE messages ADD COLUMN %s TEXT NOT NULL DEFAULT ''" % col)
                 if "answers" not in have:         # added later: poll votes, event replies {value: [uid, ...]}
                     self.db.execute("ALTER TABLE messages ADD COLUMN answers TEXT NOT NULL DEFAULT '{}'")
+                if "kept" not in have:            # added later: a deleted message's content, for Undo (24 h)
+                    self.db.execute("ALTER TABLE messages ADD COLUMN kept TEXT NOT NULL DEFAULT ''")
                 have = set(r[1] for r in self.db.execute("PRAGMA table_info(rooms)"))
                 if "parent" not in have:          # added later: a topic's project channel
                     self.db.execute("ALTER TABLE rooms ADD COLUMN parent TEXT NOT NULL DEFAULT ''")
@@ -945,10 +947,51 @@ def register(app, core):
         """Only the person who sent it (not a chat admin, not a site admin)."""
         w = me(request, x_viewer_token)
         with db() as d:
-            own_message(d, w, mid, "delete")
+            m = own_message(d, w, mid, "delete")
+            # what it said is kept, unseen by anyone, for a day: the sender
+            # can undo the delete (Ctrl+Z) - then it is gone for good
+            kept = m["kept"] if m["deleted"] else json.dumps({"at": time.time(), "m": {
+                k: m[k] for k in ("body", "card", "files", "answers", "pinned_at", "pinned_by")}})
             d.execute("UPDATE messages SET deleted = 1, body = '', card = '', files = '[]', answers = '{}', "
-                      "pinned_at = '', pinned_by = '', rev = ? WHERE id = ?", (next_rev(d), mid))
+                      "pinned_at = '', pinned_by = '', kept = ?, rev = ? WHERE id = ?", (kept, next_rev(d), mid))
+            forget_kept(d)
         return {"ok": True}
+
+    KEEP_S = 24 * 3600
+
+    def forget_kept(d):
+        for r in d.execute("SELECT id, kept FROM messages WHERE kept != ''").fetchall():
+            try:
+                old = time.time() - json.loads(r["kept"]).get("at", 0) > KEEP_S
+            except ValueError:
+                old = True
+            if old:
+                d.execute("UPDATE messages SET kept = '' WHERE id = ?", (r["id"],))
+
+    @app.post("/api/chat/messages/{mid}/restore")
+    async def restore(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+        """Undo a delete: only the sender, within a day."""
+        w = me(request, x_viewer_token)
+        with db() as d:
+            m = d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone()
+            if not m:
+                raise HTTPException(status_code=404, detail="No such message")
+            if m["uid"] is None or m["uid"] != w.uid:
+                raise HTTPException(status_code=403, detail="Only the person who sent a message can restore it")
+            if not m["deleted"]:
+                return msg_row(m, w.uid)
+            try:
+                k = json.loads(m["kept"] or "")
+            except ValueError:
+                k = None
+            if not k or time.time() - k.get("at", 0) > KEEP_S:
+                raise HTTPException(status_code=410, detail="That message was deleted too long ago to bring back")
+            v = k.get("m") or {}
+            d.execute("UPDATE messages SET deleted = 0, body = ?, card = ?, files = ?, answers = ?, pinned_at = ?, "
+                      "pinned_by = ?, kept = '', rev = ? WHERE id = ?",
+                      (v.get("body", ""), v.get("card", ""), v.get("files", "[]"), v.get("answers", "{}"),
+                       v.get("pinned_at", ""), v.get("pinned_by", ""), next_rev(d), mid))
+            return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     # ------------------------------------------------------------ pins
 
