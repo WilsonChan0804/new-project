@@ -24,6 +24,12 @@ const LS = "lwk-viewer:folders:";
 const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) {} };
 
+/* 00 BIM: the project's models and sheets as the viewer holds them, to open
+   and download - nothing can be added, changed or deleted there (files.py) */
+const BIM = "00 BIM";
+const isBim = (p) => { const l = String(p || "").toLowerCase(); return l === "00 bim" || l.startsWith("00 bim/"); };
+const LOCKED = "00 BIM is kept by the viewer: its models and sheets can be opened and downloaded, not added to, changed or deleted.";
+
 const base = () => `/api/files/${encodeURIComponent(F.reg)}`;
 const post = (path, body) => api(base() + path, { method: "POST", body: JSON.stringify(body || {}) });
 const fileUrl = (p, dl) => `${base()}/file?path=${encodeURIComponent(p)}${dl ? "&download=1" : ""}`;
@@ -40,7 +46,7 @@ const PHONE = () => window.matchMedia("(max-width: 860px), (pointer: coarse) and
 const TOUCH = () => window.matchMedia("(pointer: coarse)").matches;
 const TOKEN = () => { try { return localStorage.getItem("lwk-viewer:token") || ""; } catch (e) { return ""; } };
 const extOf = (n) => (n.includes(".") ? n.split(".").pop().toLowerCase() : "");
-const iconOf = (e) => (e.dir ? "&#128193;" : ICON[extOf(e.name)] || "&#128196;");
+const iconOf = (e) => (e.dir ? (e.path === BIM ? "&#128274;" : "&#128193;") : e.kind === "model" ? "&#127959;" : ICON[extOf(e.name)] || "&#128196;");
 const isPdf = (e) => !e.dir && extOf(e.name) === "pdf";
 const OFFICE = new Set(["doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "ppsx", "odt", "ods", "odp", "rtf"]);
 const TEXT = new Set(["txt", "md", "log", "json", "xml", "ini", "cfg", "py", "js", "css", "html", "dyn", "bat", "ps1", "lsp"]);
@@ -111,6 +117,7 @@ async function go(path, keepSel) {
     F.admin = r.admin;
     F.me = r.me;
     F.path = r.path;
+    F.locked = !!r.locked;
   } catch (e) {
     if (path) return go(parentOf(path));
     F.items = [];
@@ -169,7 +176,7 @@ function paintCrumbs() {
   let h = `<a href="#" data-go="" class="fo-drop-t" data-path="">${esc(F.proj ? F.proj.name : "Files")}</a>`;
   parts.forEach((p, i) => {
     const at = parts.slice(0, i + 1).join("/");
-    h += `<span class="sep">&rsaquo;</span><a href="#" data-go="${esc(at)}" class="fo-drop-t" data-path="${esc(at)}">${esc(p)}</a>`;
+    h += `<span class="sep">&rsaquo;</span><a href="#" data-go="${esc(at)}" class="${isBim(at) ? "" : "fo-drop-t"}" data-path="${esc(at)}">${i === 0 && p === BIM ? "&#128274; " : ""}${esc(p)}</a>`;
   });
   c.innerHTML = h;
 }
@@ -187,19 +194,24 @@ function paint() {
       recent: ["No files yet", ""], bin: ["The bin is empty", "Deleted files and folders wait here, so they can be put back."],
       search: ["Nothing found", "Names are searched, in every folder of this project."],
     }[F.mode];
+    if (F.mode === "folder" && F.locked) msg[0] = "Nothing here yet", msg[1] = "The project's sheets and 3D models show here once they are exported from Revit (or uploaded on the Sheets page).";
     list.innerHTML = `<div class="fo-empty"><b>${esc(msg[0])}</b>${esc(msg[1])}</div>`;
+    $("#fo-up").disabled = $("#fo-newdir").disabled = F.mode === "folder" && F.locked;
     return;
   }
-  let h = `<div class="fo-head"><span></span><span>Name</span><span>${F.mode === "bin" ? "Deleted" : "Modified"}</span><span class="c-size">Size</span><span class="c-by">${F.mode === "bin" ? "Deleted by" : "Uploaded by"}</span><span></span></div>`;
+  const note = F.mode === "folder" && F.locked ? `<div class="fo-locked">&#128274; ${esc(LOCKED)} The 3D models open on the 3D page.</div>` : "";
+  $("#fo-up").disabled = $("#fo-newdir").disabled = F.mode === "folder" && F.locked;
+  let h = note + `<div class="fo-head"><span></span><span>Name</span><span>${F.mode === "bin" ? "Deleted" : "Modified"}</span><span class="c-size">Size</span><span class="c-by">${F.mode === "bin" ? "Deleted by" : "Uploaded by"}</span><span></span></div>`;
   for (const e of F.items) {
     const where = elsewhere && parentOf(e.path) ? `<span class="fo-where">${esc(parentOf(e.path))}</span>` : "";
     const flags = (e.pinned ? `<span class="flags" title="Pinned for everyone">&#128204;</span>` : "") + (e.starred ? `<span class="flags" title="Starred">&#11088;</span>` : "");
-    h += `<div class="fo-row${F.sel.has(e.path) ? " sel" : ""}${e.dir ? " fo-drop-t" : ""}" data-path="${esc(e.path)}" draggable="${!e.bin}"${e.bin ? ` data-bin="${esc(e.id)}"` : ""}>`
+    const lock = e.locked ? `<span class="flags" title="${esc(LOCKED)}">&#128274;</span>` : "";
+    h += `<div class="fo-row${F.sel.has(e.path) ? " sel" : ""}${e.dir && !e.locked ? " fo-drop-t" : ""}${e.locked ? " locked" : ""}" data-path="${esc(e.path)}" draggable="${!e.bin && !e.locked}"${e.bin ? ` data-bin="${esc(e.id)}"` : ""}>`
       + `<span class="ico">${iconOf(e)}</span>`
-      + `<span><span class="nm" data-open>${esc(e.name)}</span>${e.dir && e.count != null ? `<small class="muted"> ${e.count} item${e.count === 1 ? "" : "s"}</small>` : ""}${flags}${where}</span>`
+      + `<span><span class="nm" data-open>${esc(e.name)}</span>${e.dir && e.count != null ? `<small class="muted"> ${e.count} item${e.count === 1 ? "" : "s"}</small>` : ""}${flags}${e.path === BIM ? lock : ""}${where}</span>`
       + `<span class="muted">${esc(when(e.bin ? e.at : e.mtime))}</span>`
       + `<span class="muted c-size">${e.dir ? "" : esc(size(e.size))}</span>`
-      + `<span class="muted c-by">${esc(e.by || "")}</span>`
+      + `<span class="muted c-by">${esc(e.locked && !e.dir && !e.by ? "LWK Viewer" : e.by || "")}</span>`
       + `<button class="fo-dots" data-dots title="More">&#8943;</button></div>`;
   }
   list.innerHTML = h;
@@ -221,8 +233,8 @@ function paintTree() {
     const ks = kids.get(p) || [];
     const open = F.open.has(p);
     return `<div class="fo-node${open ? " open" : ""}" data-node="${esc(p)}">`
-      + `<button class="fo-nl fo-drop-t${F.mode === "folder" && F.path === p ? " on" : ""}" data-path="${esc(p)}">`
-      + `<span class="tw" data-tw>${ks.length ? "&#9654;" : ""}</span><span>&#128193;</span><span class="nm">${esc(label)}</span></button>`
+      + `<button class="fo-nl${isBim(p) ? "" : " fo-drop-t"}${F.mode === "folder" && F.path === p ? " on" : ""}" data-path="${esc(p)}">`
+      + `<span class="tw" data-tw>${ks.length ? "&#9654;" : ""}</span><span>${p === BIM ? "&#128274;" : "&#128193;"}</span><span class="nm">${esc(label)}</span></button>`
       + (ks.length && open ? `<div class="fo-kids">${ks.map((k) => node(k, nameOf(k))).join("")}</div>` : "")
       + `</div>`;
   };
@@ -234,6 +246,8 @@ function paintTree() {
 function openItem(e) {
   if (e.bin) return;
   if (e.dir) return go(e.path);
+  // a 3D model in 00 BIM: on the 3D page
+  if (e.open && (e.nofile || e.kind === "model")) { location.href = e.open; return; }
   if (PREVIEW.has(extOf(e.name))) return preview(e);
   location.href = fileUrl(e.path, true);
 }
@@ -820,6 +834,28 @@ function itemMenu(e, x, y) {
     el.onclick = (ev) => { const r = ev.target.closest("[data-k]"); if (!r) return; closePop(); if (r.dataset.k === "newdir") newFolder(""); else go(""); };
     return;
   }
+  if (e.locked || isBim(e.path)) {
+    const rows = [
+      ["open", e.dir ? "Open" : e.open ? "Open in 3D" : PREVIEW.has(extOf(e.name)) ? "Preview" : "Download"],
+      ...(!e.dir && !e.nofile ? [["download", "Download"]] : []),
+      ["link", "Copy link"],
+      ...(F.mode !== "folder" ? [["where", "Show in its folder"]] : []),
+    ];
+    const el = pop({ getBoundingClientRect: () => ({ left: x, right: x, top: y, bottom: y }) },
+      rows.map(([k, t]) => `<div class="po-row" data-k="${k}">${esc(t)}</div>`).join("")
+      + `<div class="po-row muted" style="white-space:normal;font-size:11px">&#128274; ${esc(LOCKED)}</div>`, 260);
+    el.onclick = async (ev) => {
+      const r = ev.target.closest("[data-k]");
+      if (!r) return;
+      closePop();
+      const k = r.dataset.k;
+      if (k === "open") openItem(e);
+      else if (k === "download") location.href = fileUrl(e.path, true);
+      else if (k === "link") copyLink(e);
+      else if (k === "where") { await go(parentOf(e.path)); F.sel = new Set([e.path]); paint(); }
+    };
+    return;
+  }
   const rows = many ? [["move", `Move ${paths.length} items to ...`], ["delete", `Delete ${paths.length} items`]] : [
     ...(e.dir ? [["newdir", "New folder here"]] : []),
     ["open", e.dir ? "Open" : PREVIEW.has(extOf(e.name)) ? "Preview" : "Download"],
@@ -865,7 +901,7 @@ function wire() {
     if (!p) return itemMenu({ root: true, path: "", name: "", dir: true }, ev.clientX, ev.clientY);
     const pinned = (F.quick.pinned || []).some((x) => x.path === p), starred = (F.quick.starred || []).some((x) => x.path === p);
     F.sel = new Set();
-    itemMenu({ path: p, name: nameOf(p), dir: true, pinned, starred }, ev.clientX, ev.clientY);
+    itemMenu({ path: p, name: nameOf(p), dir: true, pinned, starred, locked: isBim(p) }, ev.clientX, ev.clientY);
   });
   $("#fo-side").addEventListener("click", (ev) => {
     const q = ev.target.closest("[data-q]");
@@ -940,7 +976,8 @@ function wire() {
   list.addEventListener("keydown", (ev) => {
     if (ev.target.closest("input, textarea")) return;
     const sel = F.items.filter((i) => F.sel.has(i.path) && !i.bin);
-    if (ev.key === "Delete" && sel.length) { ev.preventDefault(); remove(sel.map((i) => i.path)); }
+    if ((ev.key === "Delete" || ev.key === "F2") && sel.some((i) => i.locked)) { ev.preventDefault(); toast(LOCKED, true); }
+    else if (ev.key === "Delete" && sel.length) { ev.preventDefault(); remove(sel.map((i) => i.path)); }
     else if (ev.key === "F2" && sel.length === 1) { ev.preventDefault(); rename(sel[0]); }
     else if (ev.key === "Enter" && sel.length === 1) { ev.preventDefault(); openItem(sel[0]); }
     else if (ev.key === "Backspace" && F.mode === "folder" && F.path) { ev.preventDefault(); go(parentOf(F.path)); }
@@ -950,7 +987,7 @@ function wire() {
   let drag = null;
   document.addEventListener("dragstart", (ev) => {
     const row = ev.target.closest && ev.target.closest(".fo-row");
-    if (!row || row.dataset.bin) return;
+    if (!row || row.dataset.bin || row.classList.contains("locked")) return;
     if (!F.sel.has(row.dataset.path)) { F.sel = new Set([row.dataset.path]); paintSel(); }
     drag = [...F.sel];
     ev.dataTransfer.effectAllowed = "move";
@@ -997,6 +1034,7 @@ function wire() {
     ev.preventDefault();
     if (F.mode !== "folder") { toast("Open a folder first, then drop the files on it", true); return; }
     const to = tg && tg.classList.contains("fo-row") ? tg.dataset.path : F.path;
+    if (isBim(to)) { toast(LOCKED, true); return; }
     const files = await filesFrom(ev.dataTransfer);
     if (files.length) addUploads(files, to);
   });

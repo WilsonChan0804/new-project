@@ -24,6 +24,13 @@ nothing is ever deleted or renamed.
 Every path a page sends is a path inside the project's folder ("Drawings/
 Arch/A-101.pdf"); it is resolved on the disk and refused unless it stays
 inside that folder - no "..", no hidden names, no links leading out.
+
+00 BIM: every project's folder starts with it. It is not on the disk: it
+shows what the viewer already holds for the project - its sheets (PDFs from
+Revit and the uploaded PDF sets) and its 3D models (opened on the 3D page;
+an IFC can be downloaded) - always up to date, nothing copied. Everyone
+can open and download there; nobody can add, rename, move or delete (a
+real folder of that name on the disk is shown inside it, read-only too).
 """
 
 import json
@@ -211,6 +218,28 @@ def folder_tree(root, limit=2000):
     return out
 
 
+BIM = "00 BIM"
+
+
+def bim_parts(parts):
+    """Is this path in 00 BIM?"""
+    return bool(parts) and parts[0].lower() == BIM.lower()
+
+
+def bim_name(n):
+    """A name usable as a path part."""
+    n = BAD_NAME.sub("-", re.sub(r"\s+", " ", str(n or ""))).strip().strip(".").strip()
+    return n[:150] or "unnamed"
+
+
+def read_json(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
 def register(app, core):
     global CORE
     CORE = core
@@ -275,6 +304,132 @@ def register(app, core):
         return {"pins": pins, "stars": stars, "by": dict((r["path"], nm.get(r["uid"], r["name"])) for r in ups),
                 "by_uid": dict((r["path"], r["uid"]) for r in ups)}
 
+    # ------------------------------------------------------------ 00 BIM
+
+    def bim_index(row):
+        """{path: node} for 00 BIM: folders ({"dir": True}) and files
+        ({"full": file on the server or "", "open": page link, "kind"})."""
+        idx = {BIM: {"dir": True}}
+        parts = tasks.viewers_of(row)
+        for pid in parts:
+            try:
+                root = os.path.realpath(core.project_root_for(pid))
+            except Exception:
+                continue
+            man = read_json(os.path.join(root, "manifest.json")) or {}
+            title = (man.get("source") or {}).get("title") or pid
+            base = BIM if len(parts) == 1 else BIM + "/" + bim_name(title if title != pid else pid)
+            idx[base] = {"dir": True}
+
+            def under(rel):
+                full = os.path.realpath(os.path.join(root, str(rel or "")))
+                return full if rel and os.path.commonpath([full, root]) == root and os.path.isfile(full) else ""
+
+            def add(folder, name, node):
+                idx.setdefault(folder, {"dir": True})
+                stem, ext = os.path.splitext(bim_name(name))
+                nm, k = stem + ext, 2
+                while folder + "/" + nm in idx:
+                    nm, k = "%s (%d)%s" % (stem, k, ext), k + 1
+                idx[folder + "/" + nm] = node
+
+            sheets_dir = base + "/2D Sheets"
+            seen = set()
+            for sh in man.get("sheets") or []:
+                full = under(sh.get("pdf"))
+                if full and full not in seen:
+                    seen.add(full)
+                    add(sheets_dir, "%s %s.pdf" % (sh.get("number") or "", sh.get("name") or ""),
+                        {"full": full, "kind": "sheet", "open": ""})
+            imp = read_json(os.path.join(root, "imported_sheets.json")) or {}
+            for sh in imp.get("sheets") or []:
+                full = under(sh.get("pdf"))
+                if full and full not in seen:
+                    seen.add(full)
+                    stem = re.sub(r"-[0-9a-f]{8}$", "", os.path.splitext(os.path.basename(full))[0])
+                    add(sheets_dir + "/" + bim_name(sh.get("set") or "Uploaded PDFs"), stem + ".pdf",
+                        {"full": full, "kind": "sheet", "open": ""})
+            models_dir = base + "/3D Models"
+            link = "model.html?project=" + pid
+            for m in man.get("models") or []:
+                if not m.get("fragments") or m.get("status") == "converting":
+                    continue
+                f = under(m.get("fragments"))
+                ifc = under(os.path.splitext(m.get("fragments"))[0] + ".ifc")
+                nm = m.get("name") or "model"
+                if ifc:
+                    add(models_dir, nm + ".ifc", {"full": ifc, "kind": "model", "open": link})
+                elif f:
+                    # a Revit export: seen on the 3D page (its file is for the viewer only)
+                    add(models_dir, nm + " (3D)", {"full": "", "kind": "model", "open": link, "size": os.path.getsize(f),
+                                                   "mtime": os.path.getmtime(f)})
+            refs = read_json(os.path.join(root, "refs.json")) or {}
+            for r in refs.get("refs") or []:
+                ifc = under(r.get("ifc")) if r.get("kind") == "ifc" else ""
+                if ifc:
+                    who = " - " + r["company"] if r.get("company") else ""
+                    add(models_dir + "/Consultant models", "%s%s.ifc" % (r.get("name") or "model", who),
+                        {"full": ifc, "kind": "model", "open": link})
+        return idx
+
+    def bim_entry(path, node, idx, meta):
+        name = path.split("/")[-1]
+        if node.get("dir"):
+            n = sum(1 for k in idx if k.rsplit("/", 1)[0] == path and k != path)
+            return {"name": name, "path": path, "dir": True, "size": 0, "mtime": "", "count": n,
+                    "pinned": False, "starred": False, "by": "", "locked": True}
+        full = node.get("full") or ""
+        try:
+            st = os.stat(full) if full else None
+        except OSError:
+            st = None
+        mt = st.st_mtime if st else node.get("mtime")
+        return {"name": name, "path": path, "dir": False, "size": st.st_size if st else node.get("size", 0),
+                "mtime": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(mt)) if mt else "",
+                "pinned": False, "starred": False, "by": "", "locked": True,
+                "open": node.get("open") or "", "nofile": not full, "kind": node.get("kind", "")}
+
+    def bim_list(row, root, parts, meta):
+        """What is in a folder of 00 BIM: what the viewer holds, then a real
+        folder of that name on the disk, if there is one."""
+        idx = bim_index(row)
+        path = "/".join([BIM] + parts[1:])
+        if path not in idx and not os.path.isdir(os.path.join(root, *parts)):
+            raise HTTPException(status_code=404, detail="That folder is not there any more")
+        items = [bim_entry(k, v, idx, meta) for k, v in idx.items() if k != path and k.rsplit("/", 1)[0] == path]
+        names = set(e["name"].lower() for e in items)
+        try:
+            real = inside(root, parts)
+        except HTTPException:
+            real = ""
+        if real and os.path.isdir(real):
+            for n in os.listdir(real):
+                if not visible(n) or n.lower() in names:
+                    continue
+                try:
+                    e = entry(root, os.path.join(real, n), meta)
+                    e["locked"] = True
+                    items.append(e)
+                except OSError:
+                    continue
+        items.sort(key=lambda e: (not e["dir"], e["name"].lower()))
+        return path, items
+
+    def bim_file(row, root, parts):
+        """The file on the server behind a 00 BIM path."""
+        node = bim_index(row).get("/".join([BIM] + parts[1:]))
+        if node and node.get("full"):
+            return node["full"]
+        full = inside(root, parts)
+        return full if os.path.isfile(full) else ""
+
+    def not_bim(*paths):
+        for p in paths:
+            parts = clean_rel(p) if isinstance(p, str) or p is None else p
+            if bim_parts(parts):
+                raise HTTPException(status_code=403, detail="00 BIM is kept by the viewer: its models and sheets "
+                                    "can be opened and downloaded, not added to, changed or deleted")
+
     # ------------------------------------------------------------ the folder
 
     @app.get("/api/files/projects")
@@ -296,13 +451,22 @@ def register(app, core):
     async def file_list(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
         w, admin, row = access(request, x_viewer_token, reg)
         root = root_of(reg)
-        full = inside(root, clean_rel(path))
+        parts = clean_rel(path)
+        meta = meta_for(reg, w.uid)
+        if bim_parts(parts):
+            rel, items = bim_list(row, root, parts, meta)
+            return {"path": rel, "items": items, "admin": admin, "locked": True,
+                    "project": {"id": reg, "name": row["short"] or row["name"], "parts": tasks.viewers_of(row)},
+                    "me": w.uid}
+        full = inside(root, parts)
         if not os.path.isdir(full):
             raise HTTPException(status_code=404, detail="That folder is not there any more")
-        meta = meta_for(reg, w.uid)
         items = []
+        if full == root:
+            idx = bim_index(row)
+            items.append(bim_entry(BIM, idx[BIM], idx, meta))
         for n in os.listdir(full):
-            if not visible(n):
+            if not visible(n) or (full == root and n.lower() == BIM.lower()):
                 continue
             p = os.path.join(full, n)
             try:
@@ -311,7 +475,7 @@ def register(app, core):
                 items.append(entry(root, p, meta))
             except (OSError, ValueError):
                 continue
-        items.sort(key=lambda e: (not e["dir"], e["name"].lower()))
+        items.sort(key=lambda e: (not e.get("locked"), not e["dir"], e["name"].lower()))
         return {"path": rel_of(root, full) if full != root else "", "items": items, "admin": admin,
                 "project": {"id": reg, "name": row["short"] or row["name"], "parts": tasks.viewers_of(row)},
                 "me": w.uid}
@@ -319,8 +483,12 @@ def register(app, core):
     @app.get("/api/files/{reg}/tree")
     async def file_tree(request: Request, reg: str, x_viewer_token: str = Header(default="")):
         """Every folder, for the tree on the left."""
-        access(request, x_viewer_token, reg)
-        return {"folders": folder_tree(root_of(reg), 5000)}
+        _, _, row = access(request, x_viewer_token, reg)
+        root = root_of(reg)
+        bim = [k for k, v in bim_index(row).items() if v.get("dir")]
+        real = folder_tree(root, 5000)
+        have = set(x.lower() for x in bim)
+        return {"folders": bim + [f for f in real if f.lower() not in have], "locked": [BIM]}
 
     @app.get("/api/files/{reg}/quick")
     async def file_quick(request: Request, reg: str, x_viewer_token: str = Header(default="")):
@@ -360,13 +528,16 @@ def register(app, core):
 
     @app.get("/api/files/{reg}/search")
     async def file_search(request: Request, reg: str, q: str = "", x_viewer_token: str = Header(default="")):
-        w, _, _ = access(request, x_viewer_token, reg)
+        w, _, row = access(request, x_viewer_token, reg)
         words = [x for x in str(q or "").lower().split() if x][:5]
         if not words:
             return {"items": []}
         root = root_of(reg)
         meta = meta_for(reg, w.uid)
-        out, seen = [], 0
+        idx = bim_index(row)
+        out = [bim_entry(k, v, idx, meta) for k, v in idx.items()
+               if all(x in k.split("/")[-1].lower() for x in words)][:100]
+        seen = 0
         for dp, dns, fns in os.walk(root):
             dns[:] = [x for x in dns if visible(x)]
             for n in dns + fns:
@@ -399,9 +570,10 @@ def register(app, core):
         """A Word, Excel or PowerPoint file as a PDF, to read in the page
         without downloading it. Made with LibreOffice on the server and kept
         (until the file changes) in <data>/preview_cache."""
-        access(request, x_viewer_token, reg)
-        full = inside(root_of(reg), clean_rel(path))
-        if not os.path.isfile(full):
+        _, _, row = access(request, x_viewer_token, reg)
+        parts = clean_rel(path)
+        full = bim_file(row, root_of(reg), parts) if bim_parts(parts) else inside(root_of(reg), parts)
+        if not full or not os.path.isfile(full):
             raise HTTPException(status_code=404, detail="That file is not there any more")
         if os.path.splitext(full)[1].lower() not in OFFICE:
             raise HTTPException(status_code=400, detail="Only Office files are turned into a preview")
@@ -469,13 +641,15 @@ def register(app, core):
     @app.get("/api/files/{reg}/file")
     async def file_get(request: Request, reg: str, path: str = "", download: int = 0,
                        x_viewer_token: str = Header(default="")):
-        access(request, x_viewer_token, reg)
-        full = inside(root_of(reg), clean_rel(path))
-        if not os.path.isfile(full):
+        _, _, row = access(request, x_viewer_token, reg)
+        parts = clean_rel(path)
+        full = bim_file(row, root_of(reg), parts) if bim_parts(parts) else inside(root_of(reg), parts)
+        if not full or not os.path.isfile(full):
             raise HTTPException(status_code=404, detail="That file is not there any more")
         ext = os.path.splitext(full)[1].lower()
         how = "inline" if ext in INLINE and not download else "attachment"
-        r = FileResponse(full, filename=os.path.basename(full), content_disposition_type=how)
+        # in 00 BIM it goes by the name shown there ("A-101 Ground floor plan.pdf")
+        r = FileResponse(full, filename=parts[-1] if bim_parts(parts) else os.path.basename(full), content_disposition_type=how)
         r.headers["Cache-Control"] = "private, no-cache"
         r.headers["X-Content-Type-Options"] = "nosniff"
         if ext == ".svg":
@@ -491,6 +665,7 @@ def register(app, core):
         w, _, _ = access(request, x_viewer_token, reg)
         root = root_of(reg)
         parts = clean_rel(path)
+        not_bim(parts)
         rel_name = str(name or "").replace("\\", "/")
         sub = [clean_name(x) for x in rel_name.split("/")[:-1] if x]   # a folder dropped whole
         nm = clean_name(rel_name.split("/")[-1])
@@ -529,6 +704,7 @@ def register(app, core):
         w, _, _ = access(request, x_viewer_token, reg)
         b = await body_of(request)
         root = root_of(reg)
+        not_bim(b.get("path"), (clean_rel(b.get("path")) + [clean_name(b.get("name"))]))
         parent = inside(root, clean_rel(b.get("path")))
         nm = clean_name(b.get("name"))
         full = os.path.join(parent, nm)
@@ -542,6 +718,9 @@ def register(app, core):
         return {"path": rel}
 
     def do_move(reg, root, src_rel, dest_parent_rel, new_name=None):
+        not_bim(src_rel, dest_parent_rel)
+        if new_name is not None or not clean_rel(dest_parent_rel):
+            not_bim(clean_rel(dest_parent_rel) + [clean_name(new_name if new_name is not None else (clean_rel(src_rel) or [""])[-1])])
         src = inside(root, clean_rel(src_rel))
         if src == root or not os.path.exists(src):
             raise HTTPException(status_code=404, detail="That is not there any more")
@@ -611,6 +790,7 @@ def register(app, core):
             ups = dict((r["path"], r["uid"]) for r in d.execute("SELECT path, uid FROM uploads WHERE reg = ?", (reg,)))
         out = []
         for p in (b.get("paths") or [])[:500]:
+            not_bim(p)
             full = inside(root, clean_rel(p))
             if full == root or not os.path.exists(full):
                 continue
@@ -682,6 +862,7 @@ def register(app, core):
         """{path, on} - for everyone in the project (project admins)."""
         w, _, _ = access(request, x_viewer_token, reg, "admin")
         b = await body_of(request)
+        not_bim(b.get("path"))
         rel = "/".join(clean_rel(b.get("path")))
         if not rel or not os.path.exists(inside(root_of(reg), clean_rel(rel))):
             raise HTTPException(status_code=404, detail="That is not there any more")
@@ -697,6 +878,7 @@ def register(app, core):
         """{path, on} - my own."""
         w, _, _ = access(request, x_viewer_token, reg)
         b = await body_of(request)
+        not_bim(b.get("path"))
         rel = "/".join(clean_rel(b.get("path")))
         if not rel:
             raise HTTPException(status_code=400, detail="Nothing to star")
@@ -723,7 +905,7 @@ def register(app, core):
         nm = re.sub(r"\s+", " ", str(b.get("name") or "")).strip()[:80]
         if not nm:
             raise HTTPException(status_code=400, detail="Give the template a name")
-        folders = folder_tree(root_of(reg))
+        folders = [f for f in folder_tree(root_of(reg)) if not bim_parts(f.split("/"))]
         if not folders:
             raise HTTPException(status_code=400, detail="This project's folder has no folders to save")
         with _LOCK:
@@ -756,12 +938,15 @@ def register(app, core):
             raise HTTPException(status_code=404, detail="No such template")
         root = root_of(reg)
         base = clean_rel(b.get("path"))
+        not_bim(base)
         made = 0
         with Meta() as d:
             for f in t["folders"]:
                 try:
                     parts = base + clean_rel(f)
                 except HTTPException:
+                    continue
+                if bim_parts(parts):
                     continue
                 full = inside(root, parts)
                 if not os.path.isdir(full):
@@ -784,6 +969,7 @@ def register(app, core):
         if pid not in tasks.viewers_of(row):
             raise HTTPException(status_code=400, detail="That is not one of this project's sheet sets")
         core.require_project(request, pid, "member", x_viewer_token)
+        not_bim(b.get("path"))
         full = inside(root_of(reg), clean_rel(b.get("path")))
         if not os.path.isfile(full) or not full.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only a PDF can go to the Sheets page")

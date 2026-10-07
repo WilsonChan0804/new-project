@@ -146,6 +146,7 @@ PART = [
         '**Admin 用 - 喺 server 裝 LibreOffice**（Ubuntu）：`sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress fonts-noto-cjk fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea`，然後重開 viewer service。Writer、Calc、Impress 三個都要裝：淨係得 libreoffice-core 嘅話，網頁會話「cannot read this kind of file」。大文件第一次要等一陣，之後有 cache，即刻開到。',
     ]),
     P('**Folders** 將每個 project 嘅檔案放喺 server 上面一個 folder，好似 ACC Docs 或者共用 drive 咁。喺左上角揀 project。'),
+    P('**00 BIM**（🔒，永遠排第一）放住 viewer 已有嘅嘢，自動更新：**2D Sheets**（由 Revit 出嘅 sheet，用編號同名稱命名，同埋喺 Sheets 頁上載嘅 PDF set）同 **3D Models**（喺 3D 頁打開；IFC 檔案 - IFC project 同顧問 model - 可以下載）。Project 入面所有人都可以打開同下載，但冇人可以加、改名、搬或者刪。有幾個部分嘅 project，每部分一個 folder。'),
     UL([
         '**瀏覽：** 左邊嘅 folder 樹、頂部嘅路徑，或者 **Search this project\'s files** 搜尋。雙擊 folder 打開；撳 PDF、相或者片就預覽。',
         '**上載：** 將檔案，甚至成個 folder 拖落版面（或者拖落清單入面某個 folder），或者撳 **Upload**。**+ Folder** 開新 folder。',

@@ -142,3 +142,9 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 #fo-prev .pv-page canvas { width: 100%; height: 100%; display: block; }
 /* two fingers zoom the document, not the page around it */
 #fo-prev .pv-body { touch-action: pan-x pan-y; }
+
+/* 00 BIM: the viewer's models and sheets, read-only */
+.fo-locked { margin: 8px 12px; padding: 8px 12px; border-radius: 8px; background: #fff6ec; border: 1px solid #f6d3b0;
+  color: var(--ink-2); font-size: 12px; }
+.fo-row.locked .nm { color: var(--ink); }
+.fo-bar button:disabled { opacity: .45; cursor: not-allowed; }

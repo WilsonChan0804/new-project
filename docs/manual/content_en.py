@@ -258,6 +258,7 @@ DOC = [
         '**For the admin - installing LibreOffice** on the server (Ubuntu): `sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc libreoffice-impress fonts-noto-cjk fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea`, then restart the viewer service. All three of Writer, Calc and Impress are needed: with only libreoffice-core the page says "cannot read this kind of file". A big document takes a while the first time; it is kept, so it opens at once after that.',
     ]),
     P('**Folders** holds each project\'s files in a folder on the server, like ACC Docs or a shared drive. Pick the project at the top left.'),
+    P('**00 BIM** (🔒, always first) holds what the viewer has for the project, always up to date: **2D Sheets** (the sheets exported from Revit, named by number and name, and the PDF sets uploaded on the Sheets page) and **3D Models** (opened on the 3D page; IFC files - IFC projects and consultant models - can be downloaded). Everyone in the project can open and download there; nobody can add, rename, move or delete. A project with several parts has a folder per part.'),
     UL([
         '**Browse:** the folder tree on the left, the path at the top, or **Search this project\'s files**. Double-click a folder to open it; click a PDF, picture or video to preview it.',
         '**Upload:** drop files, or whole folders, onto the page (or onto a folder in the list), or press **Upload**. **+ Folder** makes a folder.',
