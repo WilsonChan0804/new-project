@@ -82,6 +82,16 @@ def placement_of(p):
             "x": num("x", 1e9), "y": num("y", 1e9), "z": num("z", 1e7), "rot": num("rot", 360)}
 
 
+def converter_version():
+    """The VERSION line of tools/ifc2frag.mjs, as the server has it now."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools", "ifc2frag.mjs"), encoding="utf-8") as f:
+            m = re.search(r'const VERSION = "([^"]+)"', f.read())
+        return m.group(1) if m else "before 2026-10-08"
+    except Exception:
+        return ""
+
+
 def reason(err):
     """The line of the converter's output that says why (not the stack)."""
     lines = [l.strip() for l in (err or "").splitlines() if l.strip()]
@@ -120,11 +130,11 @@ def convert(core, root, pid, rid, src, out, after=None):
             code, err = 1, str(e)
         if code or not os.path.isfile(out):
             core.bg_log("%s: IFC %s failed: %s" % (pid, os.path.basename(src), (err or "")[-600:]))
-            update_ref(root, rid, status="failed", error=reason(err))
+            update_ref(root, rid, status="failed", error=reason(err), converter=converter_version())
             return
         mb = round(os.path.getsize(out) / 1048576.0, 1)
         core.bg_log("%s: IFC %s converted in %.0f s (%s MB)" % (pid, os.path.basename(src), time.time() - t0, mb))
-        update_ref(root, rid, status="ready", error="", progress=100, mb=mb)
+        update_ref(root, rid, status="ready", error="", progress=100, mb=mb, converter=converter_version())
         if after:
             after()
     core.bg("ifc:%s:%s" % (pid, rid), run)
@@ -151,7 +161,11 @@ def register(app, core):
             r = dict(r)
             r["can_change"] = can_change(w, role, r)
             out.append(r)
-        return {"refs": out, "can_add": core.RANK[role] >= core.RANK["member"],
+        cv = converter_version()
+        for r in out:
+            # failed with an older converter than the one installed now: worth a retry
+            r["stale"] = r.get("status") == "failed" and r.get("kind") == "ifc" and (r.get("converter") or "") != cv
+        return {"refs": out, "can_add": core.RANK[role] >= core.RANK["member"], "converter_version": cv,
                 "converter": bool(core.node_bin())}
 
     @app.post("/api/refs/upload")

@@ -8179,6 +8179,7 @@ async function initRefs() {
     const d = await refApi("/api/refs");
     RF.list = d.refs || [];
     RF.canAdd = !!d.can_add;
+    RF.conv = d.converter_version || "";
   } catch (e) {
     RF.list = [];
     RF.canAdd = false;
@@ -8234,12 +8235,13 @@ function renderRefs() {
   if (!box) return;
   const list = RF.list.filter((r) => r.kind !== "host");
   box.hidden = !list.length && !RF.canAdd;
-  let h = `<div class="ref-head">Consultant models <span class="muted">${list.length || ""}</span></div>`;
+  let h = `<div class="ref-head">Consultant models <span class="muted">${list.length || ""}</span>`
+    + (RF.conv ? `<small class="ref-conv" title="The IFC converter on the server">converter ${escH(RF.conv)}</small>` : "") + `</div>`;
   for (const r of list) {
     const loaded = S.loaded.has(refKey(r));
     const on = r.status === "ready" && refPref(r, "on", r.on !== false);
     const st = r.status === "ready" ? "" : r.status === "failed"
-      ? `<div class="ref-bad">Not converted: ${escH(r.error || "")}${r.can_change && r.kind === "ifc" ? ` <button class="ghost ref-b" data-rf="retry">Try again</button>` : ""}</div>`
+      ? `<div class="ref-bad">${r.stale ? `<b>Failed with an older converter - press Try again.</b> ` : ""}Not converted: ${escH(r.error || "")}${r.can_change && r.kind === "ifc" ? ` <button class="ghost ref-b" data-rf="retry">Try again</button>` : ""}</div>`
       : `<div class="ref-prog"><i style="width:${r.progress || 0}%"></i></div><small class="muted">Converting on the server ... ${r.progress || 0}%</small>`;
     const what = [r.company, r.discipline, r.kind === "overlay" ? "from " + r.project : ""].filter(Boolean).join(" · ");
     h += `<div class="ref-row" data-ref="${escH(r.id)}">`

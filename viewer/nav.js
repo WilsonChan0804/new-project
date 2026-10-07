@@ -549,8 +549,24 @@ export function projectTwoStep(sel) {
   part.className = (sel.className || "") + " two-part";
   proj.title = "Project";
   part.title = "Model / sheet set of this project";
-  sel.before(proj, part);
-  sel._two = { proj, part };
+  const wrap = document.createElement("span");
+  wrap.className = "two-wrap";
+  wrap.append(proj, part);
+  sel.before(wrap);
+  sel._two = { proj, part, wrap };
+  /* On a phone the header is one row that scrolls sideways, and the two
+     drop-downs at its far end were off the screen: there they go first,
+     just after the logo. */
+  const home = document.createComment("two-step");
+  wrap.before(home);
+  const phone = matchMedia("(max-width: 700px)");
+  const place = () => {
+    const brand = document.querySelector("header .brand");
+    if (phone.matches && brand && brand.parentNode === wrap.parentNode) brand.after(wrap);
+    else home.after(wrap);
+  };
+  place();
+  if (phone.addEventListener) phone.addEventListener("change", place);
   const NOT = "Not on the Projects page";
   const groups = () => {
     const out = [];
@@ -578,7 +594,9 @@ export function projectTwoStep(sel) {
     const cur = sel.selectedOptions[0] || sel.options[0];
     const at = gs.find((g) => g.opts.includes(cur)) || gs[0];
     const esc = (x) => String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-    proj.innerHTML = gs.map((g) => `<option value="${esc(g.key)}"${g === at ? " selected" : ""}>${esc(g.label)}</option>`).join("");
+    // a phone: the short name only (the code is cut off anyway)
+    const small = matchMedia("(max-width: 700px)").matches;
+    proj.innerHTML = gs.map((g) => `<option value="${esc(g.key)}"${g === at ? " selected" : ""}>${esc(small ? g.label.split(" · ")[0] : g.label)}</option>`).join("");
     part.innerHTML = at ? at.opts.map((o) => `<option value="${esc(o.value)}"${o === cur ? " selected" : ""}>${esc(shortName(at.label, o))}</option>`).join("") : "";
     part.hidden = !at || at.opts.length < 2;
     proj.hidden = sel.hidden && gs.length < 2 && part.hidden;

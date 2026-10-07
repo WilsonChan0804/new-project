@@ -15,6 +15,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+// shown in the 3D page's Consultant models, so it can be seen which one the server runs
+const VERSION = "2026-10-08";
 const [src, out] = process.argv.slice(2);
 if (!src || !out) {
   console.error("usage: node ifc2frag.mjs <in.ifc> <out.frag>");
@@ -52,14 +54,14 @@ if (!/ISO-10303-21/.test(head)) {
   process.exit(4);
 }
 const schema = (head.match(/FILE_SCHEMA\s*\(\s*\(\s*'([^']+)'/i) || [])[1] || "?";
-console.log(`reading ${path.basename(src)} (${MB.toFixed(1)} MB, ${schema})`);
+console.log(`converter ${VERSION}: reading ${path.basename(src)} (${MB.toFixed(1)} MB, ${schema})`);
 
 /* One line saying why, for the page (refs.py shows the last line). */
 function fail(e) {
   const m = String((e && (e.message || e)) || "");
-  const big = /memory|alloc|out of bounds|RangeError|heap|Array buffer|too large|ERR_STRING_TOO_LONG/i.test(m + " " + (e && e.name));
+  const big = /memory|alloc|out of bounds|RangeError|heap|Array buffer|too large|Aborted|ERR_STRING_TOO_LONG/i.test(m + " " + (e && e.name));
   console.error(big
-    ? `The IFC is too big to convert on this server (${MB.toFixed(0)} MB). Ask for it split (by building, storey or discipline) or exported without unneeded property sets, or give the server more memory.`
+    ? `The IFC is too big to convert on this server (${MB.toFixed(0)} MB; the converter works in at most 4 GB of memory, which fits IFC files up to about 1.5-2 GB). Ask for it split (by building, storey or discipline) or exported without unneeded property sets.`
     : "The IFC could not be converted: " + m.split("\n")[0].slice(0, 240));
   process.exit(5);
 }
@@ -83,4 +85,4 @@ try {
 const tmp = out + ".part";
 fs.writeFileSync(tmp, bytes);
 fs.renameSync(tmp, out);
-console.log(JSON.stringify({ ok: true, bytes: bytes.length, ms: Date.now() - t0, schema }));
+console.log(JSON.stringify({ ok: true, bytes: bytes.length, ms: Date.now() - t0, schema, converter: VERSION }));
