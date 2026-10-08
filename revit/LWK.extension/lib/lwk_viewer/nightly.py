@@ -921,7 +921,7 @@ public static System.Collections.Generic.List<System.IntPtr> Of(uint want) {
   return l; }
 '@
 $W32=$true } catch {}
-$log=$env:LWK_DLOG; $seen=@{}; $t0=Get-Date; $lim=[int]$env:LWK_LIMIT_SEC; if($lim -lt 600){$lim=10800}; $gone=0; $had=$false
+$log=$env:LWK_DLOG; $seen=@{}; $found=@{}; $nSeen=0; $nPressed=0; $beat=Get-Date; $t0=Get-Date; $lim=[int]$env:LWK_LIMIT_SEC; if($lim -lt 600){$lim=10800}; $gone=0; $had=$false
 function Say($m){ Add-Content -LiteralPath $log -Value ((Get-Date -Format s)+'  Revit '+$env:YEAR+'  '+$m) }
 # the dialog's own buttons (not the title bar's Close)
 function Buttons($w){ @($w.FindAll($S::Descendants,$B) | Where-Object { $q=$TW.GetParent($_); -not $q -or $q.Current.ControlType -ne $CT::TitleBar }) }
@@ -935,17 +935,20 @@ function Look($w){
   elseif($txt -match '[.]dll' -and $txt -match "(could not|couldn't|can't|cannot|can not|unable to|not found|failed|missing|not exist)"){ $ans=@('Close','OK'); $why='a missing DLL' }
   elseif($txt -like '*extents greater than*' -or ($txt -like '*Click OK to continue*' -and $txt -like '*import*')){ $ans=@('OK'); $why='a DWG partly out of range: imported, the far part cut off' }
   elseif($txt -like '*import from the Model space*'){ $ans=@('Yes'); $why='a DWG with an empty paper space: its model space imported' }
-  elseif($txt -like '*was out of range*' -or $txt -like '*entities were lost during import*'){ $ans=@('Close','OK'); $why='a DWG Revit cannot fully read: noted' }
+  elseif($title -like '*Lost on Import*' -or $txt -like '*were lost during import*' -or $txt -like '*cannot be imported*' -or $txt -like '*was out of range*'){ $ans=@('Close','OK'); $why='a DWG Revit cannot fully read: noted' }
   elseif($bs.Count -eq 1){ $ans=@($bs[0].Current.Name); $why='only one button, nothing to choose' }
   $key=$title+'|'+$txt
-  if($ans){ $p=Press $bs $ans; if($p){ Say ('pressed '+$p+' ('+$why+') on: '+$title+' - '+$txt); return } }
+  $script:nSeen++
+  if($ans){ $p=Press $bs $ans; if($p){ $script:nPressed++; Say ('pressed '+$p+' ('+$why+') on: '+$title+' - '+$txt); return } }
   if(-not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt+' ['+(($bs | ForEach-Object { $_.Current.Name }) -join ', ')+']') }
 }
 Say ('watching'+$(if($W32){''}else{' (without Windows window list: only dialogs under Revit''s main window)'}))
 while(((Get-Date)-$t0).TotalSeconds -lt $lim){
   $ps=@(Get-Process -Name Revit | Where-Object { $_.Path -eq $env:LWK_EXE })
   if($ps.Count -eq 0){ if($had){ $gone+=2; if($gone -ge 60){ break } } } else { $had=$true; $gone=0 }
+  if(((Get-Date)-$beat).TotalMinutes -ge 10){ $beat=Get-Date; Say ('still watching: '+$ps.Count+' Revit running, '+$nSeen+' dialog look(s), '+$nPressed+' pressed so far') }
   foreach($p in $ps){
+    if(-not $found.ContainsKey($p.Id)){ $found[$p.Id]=1; Say ('found Revit (process '+$p.Id+')') }
     if($W32){
       foreach($h in [LWK.Win]::Of([uint32]$p.Id)){ $w=$A::FromHandle($h); if($w){ Look $w } }
     } else {

@@ -175,7 +175,7 @@ PART = [
     P('**夜晚 export 需要：** 部電腦開住同登入咗（鎖咗 screen 冇問題）、排咗嘅時間 Revit 要閂咗、Revit 登入咗 Autodesk。每個 model 預大約 15 分鐘。Log 喺 %APPDATA%\\LWK\\nightly。'),
     UL([
         'Model 嘅每個 workset 都會逐個名打開，冇 load 嘅 link 會 load 返。如果仲有 workset 閂住，或者 3D model 出咗嚟係空嘅，viewer 會**保留上次好嘅 3D model**（sheet 照傳），log 最尾寫 **result FAILED** 同原因。',
-        '已知嘅對話框會自動答，唔會令夜晚 export 停住：DWG 嘅 paper space 冇嘢（Yes）、DWG **extents greater than 1E9**（OK：照樣 import，只係切走好遠嗰部分）、DWG import 嘅通知（Close）、**External Tools - Add-in Assembly Not Found** 同其他 add-in 嘅 **搵唔到 xxx.dll** 訊息（Close），同埋所有得一個掣嘅訊息。LWK 工具未載入之前、或者開 model 期間彈出嘅對話框，由 launcher 嘅 watcher 處理，佢會搵晒嗰個 Revit 嘅所有視窗。每個對話框都會寫入 nightly\\dialogs.log。更新之後，下次你自己開 Revit 時，launcher 同 watcher 會自動更新。最好係喺嗰部電腦修好或者移除壞咗嘅 add-in。',
+        '已知嘅對話框會自動答，唔會令夜晚 export 停住：DWG 嘅 paper space 冇嘢（Yes）、DWG **extents greater than 1E9**（OK：照樣 import，只係切走好遠嗰部分）、DWG import 嘅通知例如 **Elements Lost on Import**（Close）、**External Tools - Add-in Assembly Not Found** 同其他 add-in 嘅 **搵唔到 xxx.dll** 訊息（Close），同埋所有得一個掣嘅訊息。LWK 工具未載入之前、或者開 model 期間彈出嘅對話框，由 launcher 嘅 watcher 處理，佢會搵晒嗰個 Revit 嘅所有視窗。每個對話框都會寫入 nightly\\dialogs.log。更新之後，下次你自己開 Revit 時，launcher 同 watcher 會自動更新。最好係喺嗰部電腦修好或者移除壞咗嘅 add-in。',
     ]),
     H3('Revit 入面嘅 LWK Issues 視窗'),
     UL([

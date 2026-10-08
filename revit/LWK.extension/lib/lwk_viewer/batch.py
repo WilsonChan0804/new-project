@@ -141,8 +141,11 @@ class DialogLog(object):
          6, "a DWG with an empty paper space: imported its model space (Yes)"),
         (re.compile(r"numerical data within the imported file was out of range", re.I),
          "close", "a DWG with out-of-range numbers: noted, closed"),
-        (re.compile(r"some entities were lost during import", re.I),
-         "close", "a DWG with entities Revit cannot read: noted, closed"),
+        # "Elements Lost on Import" (8 Oct): "Some elements were lost during
+        # import. ActiveX and some proprietary components cannot be imported."
+        (re.compile(r"(entities|elements) were lost (during|on) import|elements lost on import"
+                    r"|activex.{0,40}cannot be imported", re.I | re.S),
+         "close", "a DWG with elements Revit cannot read (ActiveX, proxies): noted, closed"),
         # 8 Oct: "Geometry in the file LG.dwg has extents greater than 1E9.
         # Data exceeding that range will be truncated. Click OK to continue,
         # Cancel to exit import." - OK keeps the link, without the far part
