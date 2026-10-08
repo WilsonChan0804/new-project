@@ -179,7 +179,11 @@ def visible(name):
 
 def move_meta(d, reg, old, new):
     """A file or folder moved or renamed: its uploader, pin and stars go with it."""
+    like_new = new.replace("%", r"\%").replace("_", r"\_") + "/%"
     for t in ("uploads", "pins", "stars"):
+        # rows still at the new name belong to something no longer there (a
+        # file deleted earlier keeps its rows for a restore): the moved one wins
+        d.execute("DELETE FROM %s WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')" % t, (reg, new, like_new))
         d.execute("UPDATE %s SET path = ? || substr(path, ?) WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')" % t,
                   (new, len(old) + 1, reg, old, old.replace("%", r"\%").replace("_", r"\_") + "/%"))
 
