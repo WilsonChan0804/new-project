@@ -95,6 +95,8 @@ const ICONS = {
   sound: '<path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',
   left: '<path d="m15 18-6-6 6-6"/>',
   right: '<path d="m9 18 6-6-6-6"/>',
+  navigate: '<path d="m3 11 19-9-9 19-2-8z"/>',
+  table: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
 };
 const icon = (name, cls = '') =>
   `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -127,35 +129,53 @@ const gmapDir = (from, to, mode = 'transit') =>
   `https://www.google.com/maps/dir/?api=1${from ? `&origin=${enc(from)}` : ''}&destination=${enc(to)}&travelmode=${mode}`;
 const gsearch = q => `https://www.google.com/search?q=${enc(q)}`;
 
+const MAPQ = SEED.mapq || {};
+const mq = s => MAPQ[s] || s || '';
+
+/** 呢項行程完咗之後人喺邊 —— 用嚟計下一項嘅路線起點 */
 function locOf(it) {
   if (!it) return '';
-  return TRANSPORT.has(it.type) ? (it.to || '') : (it.place || it.address || '');
+  if (TRANSPORT.has(it.type)) return mq(it.to);
+  return it.mapQuery || mq(it.place) || it.address || '';
+}
+/** 呢項行程嘅目的地（Google Maps 用） */
+const destOf = it => locOf(it) || it.titleJa || it.title;
+
+/** Excel「預約/地圖 URL」欄入面嘅連結，前面嘅文字做標籤（例如「預約：https://…」） */
+function xUrlLinks(it) {
+  const parts = (it.xUrl || '').split(/(https?:\/\/[^\s，、]+)/);
+  const out = [];
+  for (let i = 1; i < parts.length; i += 2) {
+    const before = parts[i - 1].trim().replace(/[：:]\s*$/, '').trim();
+    const url = parts[i];
+    const isMap = /maps\.app\.goo\.gl|google\.[^/]+\/maps/.test(url);
+    out.push({ label: before || (isMap ? 'Excel 地圖連結' : /ekitan|timetable/.test(url) ? '時刻表（Excel）' : 'Excel 連結'), url, isMap });
+  }
+  return out;
 }
 
-/** 每項最有用嘅連結 */
+/** 每項嘅連結：1. 上一站 → 呢度  2. 我嘅位置 → 呢度，再加網站、Tabelog、時刻表等 */
 function linksFor(it, prevLoc) {
   const L = [];
-  const add = (label, url, kind = '', ic = '') => { if (url) L.push({ label, url, kind, ic }); };
+  const seen = new Set();
+  const add = (label, url, kind = '', ic = '') => { if (url && !seen.has(url)) { seen.add(url); L.push({ label, url, kind, ic }); } };
   const t = it.type;
   if (t === 'flight') {
     const no = (it.number || '').replace(/\s+/g, '');
     if (no && !no.includes('待填')) add('航班狀態', `https://www.flightradar24.com/data/flights/${enc(no.toLowerCase())}`, 'accent', 'flight');
-    if (it.url) add('訂單', normUrl(it.url), '', 'ext');
-  } else if (t === 'walk') {
-    if (it.to) add('步行路線', gmapDir(it.from || prevLoc, it.to, 'walking'), 'accent', 'route');
-  } else if (TRANSPORT.has(t)) {
-    if (it.to) add('路線及班次', gmapDir(it.from || prevLoc, it.to), 'accent', 'route');
-    if (it.timetableUrl) add('時刻表', normUrl(it.timetableUrl), '', 'clock');
-    (it.stationLinks || []).forEach(l => add(l.label, normUrl(l.url), '', 'map'));
   } else {
-    const q = locOf(it) || it.titleJa || it.title;
-    if (it.place || it.address) {
-      add('導航', gmapDir('', q), 'accent', 'route');
-      add('地圖', gmapSearch(q), '', 'map');
-    }
-    if (it.url) add(t === 'food' ? '網站／訂位' : t === 'hotel' ? '酒店網站' : '官網', normUrl(it.url), '', 'ext');
-    if (t === 'food' && it.titleJa) add('Tabelog 食評', gsearch(`tabelog ${it.titleJa}`), '', 'star');
+    const mode = t === 'walk' ? 'walking' : 'transit';
+    const dest = destOf(it);
+    const origin = TRANSPORT.has(t) ? (mq(it.from) || prevLoc) : prevLoc;
+    if (origin && origin !== dest) add('上一站 → 呢度', gmapDir(origin, dest, mode), 'accent', 'route');
+    add('我嘅位置 → 呢度', gmapDir('', dest, mode), origin && origin !== dest ? '' : 'accent', 'navigate');
+    if (!TRANSPORT.has(t)) add('地圖', gmapSearch(dest), '', 'map');
   }
+  (it.tabelog || []).forEach(tb => add(`Tabelog ★${tb.rating}`, tb.url, 'tabelog', 'star'));
+  xUrlLinks(it).forEach(l => add(l.label, l.url, '', l.isMap ? 'map' : 'ext'));
+  if (it.url) add(it.type === 'food' ? '網站／訂位' : it.type === 'hotel' ? '酒店網站' : '官網', normUrl(it.url), '', 'ext');
+  if (it.timetableUrl) add('時刻表', normUrl(it.timetableUrl), '', 'clock');
+  (it.stationLinks || []).forEach(l => add(l.label, normUrl(l.url), '', 'map'));
   (it.links || []).forEach(l => add(l.label || '連結', normUrl(l.url), '', 'ext'));
   return L;
 }
@@ -318,7 +338,18 @@ async function prefetchAll() {
   }
   updatePicStatus();
 }
+async function downloadOffline() {
+  if (!navigator.onLine) return toast('要上網先下載到');
+  toast('下載緊離線資料，請保持 App 開住…');
+  await prefetchAll();
+  await prefetchMaps((d, n) => { const el = $('#mapStatus'); if (el) el.textContent = `地圖及路線：${d}／${n}`; });
+  localStorage.setItem('trip-maps-at', String(Date.now()));
+  updatePicStatus();
+  toast('離線資料已下載好');
+}
 async function updatePicStatus() {
+  const ms = $('#mapStatus');
+  if (ms) { const t = +localStorage.getItem('trip-maps-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
   const el = $('#picStatus');
   if (!el) return;
   const items = allItems().filter(hasPicConf);
@@ -327,6 +358,326 @@ async function updatePicStatus() {
   el.textContent = have === items.length
     ? `✓ 所有地點相片已經存喺手機（${have} 項）`
     : `地點相片：已下載 ${have}／${items.length} 項（要上網先下載到）`;
+}
+
+/* ---------- 天氣（Open-Meteo，免費；上網時更新，離線顯示最後一次） ---------- */
+const ACCU_URL = 'https://www.accuweather.com/ja/jp/tokyo/226396/november-weather/226396';
+const WX_API = 'https://api.open-meteo.com/v1/forecast?latitude=35.6762&longitude=139.6503&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=16';
+const WMO = c => c === 0 ? ['☀️', '晴'] : c <= 2 ? ['🌤️', '大致晴'] : c === 3 ? ['☁️', '陰'] : c <= 48 ? ['🌫️', '霧']
+  : c <= 57 ? ['🌦️', '毛毛雨'] : c <= 67 ? ['🌧️', '雨'] : c <= 77 ? ['🌨️', '雪'] : c <= 82 ? ['🌦️', '驟雨'] : ['⛈️', '雷雨'];
+function wxCache() { try { return JSON.parse(localStorage.getItem('trip-wx') || 'null'); } catch { return null; } }
+async function loadWeather() {
+  if (!navigator.onLine) return;
+  try {
+    const r = await fetch(WX_API);
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j.daily) return;
+    localStorage.setItem('trip-wx', JSON.stringify({ at: Date.now(), j }));
+    const el = $('#wx');
+    if (el) el.innerHTML = wxText(currentDay());
+  } catch { /* 冇網就用舊資料 */ }
+}
+function wxText(day) {
+  const c = wxCache();
+  const D = c?.j?.daily;
+  const parts = [];
+  const at = i => ({ e: WMO(D.weather_code[i]), hi: Math.round(D.temperature_2m_max[i]), lo: Math.round(D.temperature_2m_min[i]), pop: D.precipitation_probability_max?.[i] });
+  if (c?.j?.current && D) {
+    const [e, t] = WMO(c.j.current.weather_code);
+    const i = D.time.indexOf(todayStr());
+    const d = i >= 0 ? at(i) : null;
+    parts.push(`<b>今日東京</b> ${e} ${t} ${Math.round(c.j.current.temperature_2m)}°${d ? `（${d.lo}–${d.hi}°）` : ''}`);
+  }
+  if (day && day.date !== todayStr()) {
+    const p = dateParts(day.date);
+    const i = D ? D.time.indexOf(day.date) : -1;
+    if (i >= 0) { const d = at(i); parts.push(`<b>${p.m}/${p.d} 預測</b> ${d.e[0]} ${d.e[1]} ${d.lo}–${d.hi}°${d.pop != null ? ` · 降雨 ${d.pop}%` : ''}`); }
+    else parts.push(`<b>${p.m}/${p.d}</b> 平年約 12–19°（出發前兩星期內先有預測）`);
+  }
+  if (c?.at) { const t = new Date(c.at); parts.push(`<small>更新 ${t.getMonth() + 1}/${t.getDate()} ${pad(t.getHours())}:${pad(t.getMinutes())}</small>`); }
+  return parts.join('<br>') || '上網後顯示天氣';
+}
+
+/* ---------- 離線地圖：地點座標＋步行路線＋地圖圖塊，下載一次之後冇網都睇到 ---------- */
+const TILE_URL = (z, x, y) => `https://${'abcd'[(x + y) % 4]}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}@2x.png`;
+const GEO_URL = q => `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=jp&accept-language=ja&q=${enc(q)}`;
+const FOOT_URL = (a, b) => `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let geoChain = Promise.resolve();
+
+/** 地址 → 座標（Nominatim 每秒最多一次；結果存喺手機） */
+async function geocode(q) {
+  q = (q || '').trim();
+  if (!q) return null;
+  const key = 'geo:' + q;
+  const c = await PhotoDB.get(key).catch(() => null);
+  if (c) return c.none ? null : c;
+  if (!navigator.onLine) return null;
+  const job = geoChain.then(async () => {
+    try {
+      const r = await fetch(GEO_URL(q));
+      if (!r.ok) return null;
+      const j = await r.json();
+      const g = j[0] ? { lat: +j[0].lat, lon: +j[0].lon } : { none: true };
+      await PhotoDB.put(key, g).catch(() => {});
+      return g;
+    } catch { return null; } finally { await sleep(1100); }
+  });
+  geoChain = job.catch(() => {});
+  const g = await job;
+  return g && !g.none ? g : null;
+}
+function cleanAddr(a) {
+  a = (a || '').replace(/〒\d{3}-\d{4}\s*/, '').replace(/^[^：]*：/, '').split(/[；（(]/)[0].trim();
+  const m = a.match(/^(.*?[0-9０-９]+(?:[-－][0-9０-９]+)*)/);
+  return m ? m[1] : a;
+}
+async function firstGeo(qs) {
+  for (const q of qs.filter(Boolean)) { const g = await geocode(q); if (g) return g; }
+  return null;
+}
+const placePt = it => firstGeo([it.geo, cleanAddr(it.address), (it.titleJa || '').split(/[（(・]/)[0], it.place]);
+const stationPt = s => firstGeo([s, s && s.replace(/駅$/, '') + '駅 東京']);
+const startPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? stationPt(it.from) : placePt(it);
+const endPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? stationPt(it.to) : placePt(it);
+
+/** 計呢項嘅地圖：起點 a（上一站）、終點 b（呢度）、路線 */
+async function mapGeom(list, idx) {
+  const it = list[idx];
+  if (it.type === 'flight') return null;
+  const prevReal = list.slice(0, idx).reverse().find(x => x.type !== 'walk');
+  const nextReal = list.slice(idx + 1).find(x => x.type !== 'walk');
+  let a = null, b = null;
+  if (it.type === 'walk') {
+    a = (prevReal && await endPt(prevReal)) || await firstGeo([mq(it.from), it.from]);
+    b = (nextReal && await startPt(nextReal)) || await firstGeo([mq(it.to), it.to]);
+  } else if (TRANSPORT.has(it.type)) {
+    a = await stationPt(it.from);
+    b = await stationPt(it.to);
+  } else {
+    a = prevReal ? await endPt(prevReal) : null;
+    b = await placePt(it);
+  }
+  if (!b && !a) return null;
+  let route = null, walking = false;
+  if (a && b && distM(a, b) > 30) {
+    walking = it.type === 'walk' || (!TRANSPORT.has(it.type) && distM(a, b) < 2500);
+    if (walking) route = await footRoute(a, b);
+  }
+  return { a, b, route, walking };
+}
+async function footRoute(a, b) {
+  const key = `route:${a.lat.toFixed(5)},${a.lon.toFixed(5)};${b.lat.toFixed(5)},${b.lon.toFixed(5)}`;
+  const c = await PhotoDB.get(key).catch(() => null);
+  if (c) return c;
+  if (!navigator.onLine) return null;
+  try {
+    const r = await fetch(FOOT_URL(a, b));
+    const j = await r.json();
+    const coords = j.routes?.[0]?.geometry?.coordinates?.map(([lon, lat]) => [lat, lon]);
+    if (coords?.length) { await PhotoDB.put(key, coords).catch(() => {}); return coords; }
+  } catch { /* 用直線 */ }
+  return null;
+}
+function distM(a, b) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const distStr = m => m >= 1000 ? `${(m / 1000).toFixed(1)} 公里` : `${Math.round(m / 10) * 10} 米`;
+function bearingName(a, b) {
+  const r = Math.PI / 180;
+  const y = Math.sin((b.lon - a.lon) * r) * Math.cos(b.lat * r);
+  const x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r);
+  const deg = (Math.atan2(y, x) / r + 360) % 360;
+  return ['北', '東北', '東', '東南', '南', '西南', '西', '西北'][Math.round(deg / 45) % 8];
+}
+const wx2 = (lon, z) => (lon + 180) / 360 * 2 ** z * 256;
+const wy2 = (lat, z) => { const s = Math.sin(lat * Math.PI / 180); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 2 ** z * 256; };
+
+/** 計要邊啲圖塊（W×H CSS px 嘅畫面） */
+function mapView(g, W, H) {
+  const pts = [g.a, g.b, ...(g.route || []).map(([lat, lon]) => ({ lat, lon }))].filter(Boolean);
+  let z = 17;
+  for (; z > 3; z--) {
+    const xs = pts.map(p => wx2(p.lon, z)), ys = pts.map(p => wy2(p.lat, z));
+    if (Math.max(...xs) - Math.min(...xs) <= W - 70 && Math.max(...ys) - Math.min(...ys) <= H - 60) break;
+  }
+  if (pts.length === 1) z = 16;
+  const xs = pts.map(p => wx2(p.lon, z)), ys = pts.map(p => wy2(p.lat, z));
+  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+  const left = cx - W / 2, top = cy - H / 2;
+  const tiles = [];
+  for (let tx = Math.floor(left / 256); tx <= Math.floor((left + W) / 256); tx++)
+    for (let ty = Math.floor(top / 256); ty <= Math.floor((top + H) / 256); ty++) tiles.push([z, tx, ty]);
+  return { z, left, top, tiles };
+}
+async function getTile(z, x, y, fetchMissing) {
+  const key = `tile:${z}/${x}/${y}`;
+  let b = await PhotoDB.get(key).catch(() => null);
+  if (!b && fetchMissing && navigator.onLine) {
+    try { const r = await fetch(TILE_URL(z, x, y)); if (r.ok) { b = await r.blob(); await PhotoDB.put(key, b).catch(() => {}); } } catch { /* skip */ }
+  }
+  return b;
+}
+
+async function drawItemMap(id) {
+  const box = document.querySelector(`.omap[data-map="${id}"]`);
+  const info = $('#omap-info-' + id);
+  const f = findItem(id);
+  if (!box || !f) return;
+  const g = await mapGeom(f.list, f.index);
+  if (!box.isConnected) return;
+  if (!g) { info.textContent = navigator.onLine ? '搵唔到呢個地點嘅座標。' : '未下載地圖資料——上網時喺「資訊」撳「下載離線資料」。'; box.hidden = true; return; }
+  const canvas = box.querySelector('canvas');
+  const W = box.clientWidth || 340, H = 240, dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#e8e6df'; ctx.fillRect(0, 0, W, H);
+  const v = mapView(g, W, H);
+  let missing = 0;
+  for (const [z, x, y] of v.tiles) {
+    const blob = await getTile(z, x, y, true);
+    if (!blob) { missing++; continue; }
+    try { const img = await createImageBitmap(blob); ctx.drawImage(img, x * 256 - v.left, y * 256 - v.top, 256, 256); } catch { missing++; }
+  }
+  const P = p => [wx2(p.lon, v.z) - v.left, wy2(p.lat, v.z) - v.top];
+  const line = (pts, dash) => {
+    ctx.save(); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1a73e8';
+    if (dash) ctx.setLineDash([8, 8]);
+    ctx.beginPath(); pts.forEach((p, i) => { const [x, y] = P(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.restore();
+  };
+  if (g.route) line(g.route.map(([lat, lon]) => ({ lat, lon })), false);
+  else if (g.a && g.b) line([g.a, g.b], true);
+  const dot = (p, fill, r, label) => {
+    const [x, y] = P(p);
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
+    if (label) { ctx.font = '700 12px sans-serif'; ctx.fillStyle = '#111'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.strokeText(label, x + 10, y - 8); ctx.fillText(label, x + 10, y - 8); }
+  };
+  if (g.a) dot(g.a, '#8a8780', 7, '上一站');
+  if (g.b) dot(g.b, '#e8452c', 9, '呢度');
+  const lines = [];
+  if (g.a && g.b) lines.push(`${g.walking ? '步行' : '直線'}距離約 ${distStr(g.route ? routeLen(g.route) : distM(g.a, g.b))}${g.route ? '（步行路線）' : ''}`);
+  if (ui.me) {
+    const [x, y] = P(ui.me);
+    if (x > 0 && y > 0 && x < W && y < H) { ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.fillStyle = 'rgba(26,115,232,.18)'; ctx.fill(); dot(ui.me, '#1a73e8', 7, '你'); }
+    if (g.b) lines.push(`你而家距離「呢度」${distStr(distM(ui.me, g.b))}，向${bearingName(ui.me, g.b)}行`);
+  }
+  if (missing) lines.push(navigator.onLine ? '部分地圖載入唔到。' : `有 ${missing} 格地圖未下載（上網時撳「下載離線資料」）。`);
+  info.textContent = lines.join(' · ') || ' ';
+}
+const routeLen = r => r.slice(1).reduce((s, p, i) => s + distM({ lat: r[i][0], lon: r[i][1] }, { lat: p[0], lon: p[1] }), 0);
+
+/** 下載全部地圖資料（座標、步行路線、圖塊） */
+async function prefetchMaps(onProgress) {
+  const jobs = trip.days.flatMap(d => d.items.map((it, i) => [d.items, i])).filter(([l, i]) => l[i].type !== 'flight');
+  let done = 0;
+  for (const [list, i] of jobs) {
+    if (!navigator.onLine) break;
+    const g = await mapGeom(list, i).catch(() => null);
+    if (g) for (const W of [360, 640]) for (const [z, x, y] of mapView(g, W, 240).tiles) await getTile(z, x, y, true);
+    onProgress?.(++done, jobs.length);
+  }
+}
+
+/* ---------- Excel 匯出／匯入（同你嘅 Itinerary 試算表一樣格式） ---------- */
+const XL_HEAD = ['日期', '開始', '結束', '時長', '活動', '備註', '交通', '預約/地圖 URL'];
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'vendor/xlsx.full.min.js';
+    s.onload = res;
+    s.onerror = () => rej(new Error('載入唔到 Excel 工具（第一次要上網）'));
+    document.head.appendChild(s);
+  });
+}
+async function exportExcel() {
+  try { await loadXLSX(); } catch (e) { return toast(e.message); }
+  const aoa = [XL_HEAD];
+  trip.days.forEach((d, i) => {
+    if (i) aoa.push([]);
+    const [y, m, dd] = d.date.split('-').map(Number);
+    d.items.forEach(it => aoa.push([new Date(y, m - 1, dd), it.time || '', it.end || '—', durStr(durOf(it)) || '', it.title || '', it.xNote || '', it.xTransport || '', it.xUrl || '']));
+  });
+  const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
+  for (let r = 1; r < aoa.length; r++) { const c = ws[XLSX.utils.encode_cell({ r, c: 0 })]; if (c) c.z = 'yyyy-mm-dd'; }
+  ws['!cols'] = [12, 7, 7, 9, 38, 34, 46, 60].map(wch => ({ wch }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  XLSX.writeFile(wb, `Tokyo_Itinerary_${todayStr()}.xlsx`);
+  toast('已匯出 Excel');
+}
+const cellStr = v => { const s = String(v ?? '').trim(); return s === '—' || s === '-' ? '' : s; };
+function cellDate(v) {
+  if (typeof v === 'number') { const d = XLSX.SSF.parse_date_code(v); return d ? `${d.y}-${pad(d.m)}-${pad(d.d)}` : ''; }
+  if (v instanceof Date) return ymd(v);
+  const m = String(v || '').match(/(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
+  return m ? `${m[1]}-${pad(+m[2])}-${pad(+m[3])}` : '';
+}
+function cellTime(v) {
+  if (typeof v === 'number') { const mins = Math.round((v % 1) * 1440); return fromMin(mins); }
+  const m = String(v || '').match(/(\d{1,2})[:：](\d{2})/);
+  return m ? `${pad(+m[1])}:${m[2]}` : '';
+}
+function guessType(act, tr) {
+  if (/航班|起飛|Flight/i.test(act)) return 'flight';
+  if (/早餐|午餐|晚餐|食/.test(act)) return 'food';
+  if (/酒店|Check-in|Check-out/i.test(act)) return 'hotel';
+  if (/→/.test(act) && /線|Skyliner|電車|地鐵|Metro|JR|巴士/.test(tr)) return 'train';
+  if (/→/.test(act) || /^步行|步行約/.test(tr)) return 'walk';
+  if (/免稅|購物|LOFT|Loft|書店|STOCK/.test(act)) return 'shop';
+  return 'sight';
+}
+async function importExcel(file) {
+  try {
+    await loadXLSX();
+    const wb = XLSX.read(await file.arrayBuffer(), { cellDates: false });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+    const hi = rows.findIndex(r => r.some(c => String(c).trim() === '活動'));
+    if (hi < 0) throw new Error('搵唔到「活動」欄');
+    const H = rows[hi].map(c => String(c).trim());
+    const col = n => H.findIndex(h => h.startsWith(n));
+    const C = { date: col('日期'), st: col('開始'), en: col('結束'), act: col('活動'), note: col('備註'), tr: col('交通'), url: col('預約') };
+    const parsed = [];
+    for (const r of rows.slice(hi + 1)) {
+      const act = cellStr(r[C.act]), date = cellDate(r[C.date]);
+      if (!act || !date) continue;
+      parsed.push({ date, time: cellTime(r[C.st]), end: cellTime(r[C.en]), act, note: C.note >= 0 ? cellStr(r[C.note]) : '', tr: C.tr >= 0 ? cellStr(r[C.tr]) : '', url: C.url >= 0 ? cellStr(r[C.url]) : '' });
+    }
+    if (!parsed.length) throw new Error('Excel 入面搵唔到行程');
+    const old = new Map(trip.days.map(d => [d.date, d]));
+    const used = new Set();
+    const days = [];
+    let upd = 0, add = 0;
+    for (const row of parsed) {
+      let day = days.find(d => d.date === row.date);
+      if (!day) {
+        const o = old.get(row.date);
+        day = { ...(o ? JSON.parse(JSON.stringify({ ...o, items: [] })) : { id: 'd' + row.date.replace(/-/g, ''), date: row.date, country: 'JP', city: '東京', title: '' }), items: [] };
+        days.push(day);
+      }
+      const pool = (old.get(row.date)?.items || []).filter(i => !used.has(i.id));
+      const m = pool.find(i => i.title === row.act) || pool.find(i => row.time && i.time === row.time);
+      let it;
+      if (m) { used.add(m.id); it = JSON.parse(JSON.stringify(m)); upd++; }
+      else { it = { id: uid(), status: 'planned', type: guessType(row.act, row.tr) }; add++; }
+      it.title = row.act;
+      if (row.time) it.time = row.time; else delete it.time;
+      if (row.end) it.end = row.end; else delete it.end;
+      it.xNote = row.note; it.xTransport = row.tr; it.xUrl = row.url;
+      day.items.push(it);
+    }
+    const removed = trip.days.reduce((n, d) => n + d.items.filter(i => !used.has(i.id)).length, 0);
+    days.sort((a, b) => a.date.localeCompare(b.date));
+    if (!confirm(`Excel 有 ${parsed.length} 項：更新 ${upd} 項、新增 ${add} 項、刪除 ${removed} 項。\n照 Excel 更新行程？（之後可以還原）`)) return;
+    commit(() => { trip.days = days; ui.day = null; }, '已由 Excel 更新行程');
+  } catch (e) {
+    alert('匯入 Excel 唔到：' + e.message);
+  }
 }
 
 /* ---------- state ---------- */
@@ -404,7 +755,7 @@ function renderPlan() {
   const now = nowHM();
   const nextId = isToday ? (day.items.find(i => i.status !== 'done' && (!isHM(i.end) || i.end > now)) || {}).id : null;
   day.items.forEach(it => {
-    items += it.type === 'walk' ? renderWalk(it, prevLoc) : renderItem(it, prevLoc, it.id === nextId);
+    items += renderItem(it, prevLoc, it.id === nextId);
     if (locOf(it)) prevLoc = locOf(it);
   });
 
@@ -416,10 +767,13 @@ function renderPlan() {
       ${day.notes ? `<p class="muted">${esc(day.notes)}</p>` : ''}
       <div class="row">
         ${routeUrl ? `<a class="chip dark" href="${routeUrl}" target="_blank" rel="noopener">${icon('route')}全日路線</a>` : ''}
-        <a class="chip" href="${gsearch(`東京 天気 ${p.m}月${p.d}日`)}" target="_blank" rel="noopener">${icon('cloud')}天氣</a>
-        <button class="chip" data-act="hotel">${icon('hotel')}返酒店</button>
+      </div>
+      <div class="wxbar">
+        <a class="chip" href="${ACCU_URL}" target="_blank" rel="noopener">${icon('cloud')}天氣</a>
+        <span class="wx" id="wx">${wxText(day)}</span>
       </div>
     </section>
+    <p class="legend"><b>開始</b> · 至 結束 · <span class="dur">需時</span></p>
     <div class="list">${items}</div>`;
 }
 
@@ -430,13 +784,13 @@ function renderCountdown(day) {
   return n > 0 ? `<div class="count"><b>${n}</b><span>日後出發</span></div>` : '';
 }
 
-function renderWalk(it, prevLoc) {
+function whenHtml(it) {
+  if (!isHM(it.time)) return '<div class="when"></div>';
   const d = durOf(it);
-  return `<div class="walk ${it.status === 'done' ? 'done' : ''}" id="item-${it.id}">
-    <span class="t">${esc(it.time || '')}</span>
-    ${icon('walk')}
-    <span class="grow">步行${d ? ` ${durStr(d)}` : ''} · ${esc(it.title)}</span>
-    <a class="mini" href="${gmapDir(it.from || prevLoc, it.to, 'walking')}" target="_blank" rel="noopener">路線</a>
+  return `<div class="when" aria-label="${esc(it.time)} 開始${isHM(it.end) ? `，${esc(it.end)} 結束` : ''}">
+    <b>${esc(it.time)}</b>
+    ${isHM(it.end) ? `<span class="to">至 ${esc(it.end)}</span>` : ''}
+    ${d ? `<span class="dur">${durStr(d)}</span>` : ''}
   </div>`;
 }
 
@@ -450,38 +804,44 @@ function picsRow(it, big = false) {
 function titleHtml(it) {
   // 電車項目嘅日文站名已經喺路線行顯示，唔使重複
   const dupRoute = TRANSPORT.has(it.type) && it.type !== 'flight' && (it.from || it.to);
-  // 中文標題已經包含日文名（例如「早餐：まぐろのみやこ」）就唔再重複
+  // 標題已經包含日文名（例如「早餐：まぐろのみやこ」）就唔再重複
   const jaBase = (it.titleJa || '').split(/[（(]/)[0].trim();
   const ja = it.titleJa && it.titleJa !== it.title && !dupRoute && !(jaBase && it.title.includes(jaBase)) ? it.titleJa : '';
   return `<h3 class="title">${esc(it.title)}${ja ? ` <span class="ja" lang="ja">${esc(ja)}</span>` : ''}</h3>`;
 }
 function routeHtml(it, big = false) {
-  if (!TRANSPORT.has(it.type) || !(it.from || it.to)) return '';
+  if (!TRANSPORT.has(it.type) || it.type === 'walk' || !(it.from || it.to)) return '';
   const side = (raw, zh) => `<b>${esc(nameOf(raw, zh))}</b>${raw && zh && raw !== zh ? ` <span lang="ja">${esc(raw)}</span>` : ''}`;
   return `<p class="route ${big ? 'big' : ''}">${side(it.from, it.fromZh)} → ${side(it.to, it.toZh)}</p>`;
 }
+/** Excel 原文：交通、備註 */
+function xlRows(it) {
+  return `${it.xTransport ? `<p class="xrow"><span class="xk">交通</span><span>${esc(it.xTransport)}</span></p>` : ''}
+    ${it.xNote ? `<p class="xrow"><span class="xk">備註</span><span>${esc(it.xNote)}</span></p>` : ''}`;
+}
+const chipHtml = l => `<a class="chip ${l.kind}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.ic ? icon(l.ic) : ''}${esc(l.label)}</a>`;
 
 function renderItem(it, prevLoc, isNext) {
-  const d = durOf(it);
   const isT = TRANSPORT.has(it.type);
-  const badges = [it.menu ? '菜單' : '', it.timetable?.length ? '時刻表' : '', it.planB ? '後備方案' : '']
+  const isWalk = it.type === 'walk';
+  const badges = [it.tabelog ? '食評' : '', it.menu ? '菜單' : '', it.timetable?.length ? '時刻表' : '', it.planB ? '後備方案' : '']
     .filter(Boolean).map(b => `<span class="badge">${b}</span>`).join('');
-  const links = linksFor(it, prevLoc).slice(0, 3)
-    .map(l => `<a class="chip ${l.kind}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.ic ? icon(l.ic) : ''}${esc(l.label)}</a>`).join('');
-  return `<article class="item t-${it.type} ${it.status === 'done' ? 'done' : ''} ${isNext ? 'next' : ''}" id="item-${it.id}">
-    <div class="when"><b>${esc(it.time || '')}</b>${isHM(it.end) ? `<span>${esc(it.end)}</span>` : ''}${d ? `<em>${durStr(d)}</em>` : ''}</div>
+  const links = linksFor(it, prevLoc).slice(0, isWalk ? 2 : 3).map(chipHtml).join('');
+  const showPics = hasPicConf(it) || it.photos?.length;
+  return `<article class="item t-${it.type} ${isWalk ? 'is-walk' : ''} ${it.status === 'done' ? 'done' : ''} ${isNext ? 'next' : ''}" id="item-${it.id}">
+    ${whenHtml(it)}
     <div class="card">
       <div class="head" data-act="open" data-id="${it.id}">
         <span class="dot">${icon(it.type)}</span>
         <div class="grow">
-          <p class="kind">${TYPES[it.type] || ''}${it.number ? ` · ${esc(it.number)}` : ''}${isNext ? ' <b class="nowtag">下一項</b>' : ''}${it.status === 'done' ? ' · ✓ 完成' : ''}</p>
+          <p class="kind">${TYPES[it.type] || ''}${it.number && !isWalk ? ` · ${esc(it.number)}` : ''}${isNext ? ' <b class="nowtag">下一項</b>' : ''}${it.status === 'done' ? ' · ✓ 完成' : ''}</p>
           ${titleHtml(it)}
           ${routeHtml(it)}
         </div>
-        ${speakBtn(it.titleJa || (isT ? it.to : ''))}
+        ${isWalk ? '' : speakBtn(it.titleJa || (isT ? it.to : ''))}
       </div>
-      ${picsRow(it)}
-      ${it.notes ? `<p class="note">${esc(it.notes.split('\n')[0])}</p>` : ''}
+      ${xlRows(it)}
+      ${showPics ? picsRow(it) : ''}
       <div class="row">${links}<button type="button" class="chip more" data-act="open" data-id="${it.id}">${badges || '詳情'}${icon('right')}</button></div>
     </div>
   </article>`;
@@ -494,9 +854,21 @@ function openItem(id) {
   const it = f.item;
   const isT = TRANSPORT.has(it.type);
   const prevLoc = (() => { for (let i = f.index - 1; i >= 0; i--) if (locOf(f.list[i])) return locOf(f.list[i]); return ''; })();
-  const kv = [['時間', [it.time, it.end].filter(Boolean).join(' – ')], ['地址', it.address], ['營業時間', it.hours], ['訂位號碼', it.ref], ['備註', it.notes]]
+  const xl = [['時間', [it.time, it.end].filter(Boolean).join(' 至 ') + (durOf(it) ? `（${durStr(durOf(it))}）` : '')], ['活動', it.title], ['交通', it.xTransport], ['備註', it.xNote], ['預約/地圖 URL', it.xUrl]]
     .filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
-  const links = linksFor(it, prevLoc).map(l => `<a class="chip ${l.kind}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.ic ? icon(l.ic) : ''}${esc(l.label)}</a>`).join('');
+  const extra = [['日文', it.titleJa], ['地址', it.address], ['營業時間', it.hours], ['訂位號碼', it.ref], ['補充', it.notes]]
+    .filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  const links = linksFor(it, prevLoc).map(chipHtml).join('');
+  const tabelog = it.tabelog?.length ? `<section class="sec tb"><h4>${icon('star')}Tabelog 食評</h4>
+    ${it.tabelog.map(tb => `<div class="tbrow">
+      <div class="score"><b>${esc(tb.rating)}</b><small>Tabelog</small></div>
+      <div class="grow">
+        <p class="tbname" lang="ja">${esc(tb.name)}</p>
+        <p class="hint">${esc(tb.reviews)} 則評價 · 預算 ${esc(tb.budget)}</p>
+        <ul>${tb.summary.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+        <a class="chip tabelog" href="${esc(tb.url)}" target="_blank" rel="noopener">${icon('ext')}開 Tabelog 頁面</a>
+      </div></div>`).join('')}
+    <p class="hint">評分及摘要係 2026 年 10 月整理，離線都睇到；最新評分以 Tabelog 為準。</p></section>` : '';
   const menu = it.menu ? `<section class="sec"><h4>${icon('food')}菜單及推介${it.menu.url ? ` <a href="${esc(normUrl(it.menu.url))}" target="_blank" rel="noopener">完整菜單</a>` : ''}</h4>
     <ul class="menu">${it.menu.items.map(m => `<li><div class="grow"><b>${m.star ? '⭐ ' : ''}${esc(m.name)}</b>${m.ja ? `<span class="mja" lang="ja">${esc(m.ja)}${speakBtn(m.ja, 'sm')}</span>` : ''}${m.desc ? `<small>${esc(m.desc)}</small>` : ''}</div>${m.price ? `<span class="price">${esc(m.price)}</span>` : ''}</li>`).join('')}</ul>
     ${it.menu.tips ? `<p class="hint">${esc(it.menu.tips)}</p>` : ''}</section>` : '';
@@ -504,17 +876,22 @@ function openItem(id) {
   const tt = it.timetable?.length ? `<section class="sec"><h4>${icon('clock')}時刻表${it.timetableUrl ? ` <a href="${esc(normUrl(it.timetableUrl))}" target="_blank" rel="noopener">官方全日</a>` : ''}</h4>
     <table class="tt"><tr><th>開出</th><th>到達</th><th>班次</th><th></th></tr>${it.timetable.map((r, i) => `<tr class="${r.note ? 'pick' : ''} ${i === nextIdx ? 'nextrow' : ''}"><td><b>${esc(r.dep)}</b></td><td>${esc(r.arr || '')}</td><td>${esc(r.name || '')}</td><td>${esc(r.note || '')}${i === nextIdx ? ' 下一班' : ''}</td></tr>`).join('')}</table>
     ${it.timetableNote ? `<p class="hint">${esc(it.timetableNote)}</p>` : ''}</section>` : '';
-  const taxiable = it.titleJa || it.address || (isT && it.to);
+  const map = it.type === 'flight' ? '' : `<section class="sec"><h4>${icon('map')}離線地圖</h4>
+    <div class="omap" data-map="${id}"><canvas></canvas><p class="omap-attr">© OpenStreetMap © CARTO</p></div>
+    <p class="hint omap-info" id="omap-info-${id}">載入緊…</p>
+    <div class="row"><button type="button" class="chip" data-act="locate" data-id="${id}">${icon('navigate')}顯示我嘅位置（GPS，離線都用到）</button></div></section>`;
+  const taxiable = it.titleJa || it.address || (isT && it.to && it.type !== 'walk');
   openModal({
     title: `${it.time || ''} ${TYPES[it.type] || ''}`,
     cls: 'sheet',
-    body: `<div class="sheet-title"><div class="grow">${titleHtml(it)}</div>${speakBtn(it.titleJa || (isT ? it.to : ''))}</div>
+    body: `<div class="sheet-title"><div class="grow">${titleHtml(it)}</div>${speakBtn(it.titleJa || (isT && it.type !== 'walk' ? it.to : ''))}</div>
       ${routeHtml(it, true)}
-      ${picsRow(it, true)}
+      <dl class="kv xl">${xl}</dl>
       <div class="row">${links}</div>
-      ${kv ? `<dl class="kv">${kv}</dl>` : ''}
+      ${picsRow(it, true)}
+      ${extra ? `<dl class="kv">${extra}</dl>` : ''}
       ${it.planB ? `<div class="planb"><b>後備方案</b><p>${esc(it.planB)}</p></div>` : ''}
-      ${menu}${tt}
+      ${tabelog}${menu}${tt}${map}
       <div class="actions">
         ${it.status === 'done' ? `<button type="button" class="btn" data-act="undone" data-id="${id}">${icon('reset')}未完成</button>` : `<button type="button" class="btn dark" data-act="done" data-id="${id}">${icon('check')}完成</button>`}
         ${isHM(it.time) ? `<button type="button" class="btn" data-act="shift" data-id="${id}">${icon('clock')}延遲</button>` : ''}
@@ -522,7 +899,7 @@ function openItem(id) {
         <button type="button" class="btn" data-act="edit" data-id="${id}">${icon('edit')}修改</button>
         <button type="button" class="btn danger" data-act="del" data-id="${id}">${icon('trash')}刪除</button>
       </div>`,
-    onOpen: form => hydratePics(form),
+    onOpen: form => { hydratePics(form); drawItemMap(id); },
   });
 }
 
@@ -608,14 +985,25 @@ function renderInfo() {
     </div>
   </section>
   <section class="card">
-    <h2>📴 出發前準備</h2>
+    <h2>📴 離線資料</h2>
     <p class="muted" id="picStatus">檢查緊相片…</p>
-    <div class="row"><button class="chip dark" data-act="prefetch">${icon('download')}下載所有地點相片</button></div>
+    <p class="muted" id="mapStatus"></p>
+    <div class="row"><button class="chip dark" data-act="offline-all">${icon('download')}下載離線資料（相片＋地圖＋步行路線）</button></div>
     <ul class="plain">
       <li>上網時打開一次，再「加到主畫面」—— 之後冇網都開到。</li>
-      <li>Google Maps 預先下載「東京」離線地圖。</li>
+      <li>每項「詳情」入面有<b>離線地圖</b>：上一站 → 呢度嘅位置同步行路線；撳「顯示我嘅位置」用 GPS（冇網都得）睇距離同方向。</li>
+      <li>餐廳嘅 Tabelog 評分、菜單、營業時間已經存喺 App 入面，離線都睇到。外部網站本身（Tabelog、京成等）要上網先開到。</li>
+      <li>Google Maps 預先下載「東京」離線地圖，冇網都可以搜尋同駕車導航。</li>
       <li>喺「日語」頁試一次讀音。冇聲：iPhone 設定 → 輔助使用 → 朗讀內容 → 聲音 → 日文。</li>
     </ul>
+  </section>
+  <section class="card">
+    <h2>${icon('table')} Excel</h2>
+    <p class="muted">格式同你嘅 Itinerary 試算表一樣（日期、開始、結束、時長、活動、備註、交通、預約/地圖 URL）。喺 Excel 改完再匯入，App 會按「活動」或「開始時間」配對，保留相片、菜單、Tabelog 等資料。</p>
+    <div class="row">
+      <button class="chip dark" data-act="xlsx-export">${icon('download')}匯出 Excel</button>
+      <button class="chip" data-act="xlsx-import">${icon('table')}匯入 Excel</button>
+    </div>
   </section>
   <section class="card">
     <h2>💾 備份</h2>
@@ -655,23 +1043,29 @@ function editItem(id) {
   const it = findItem(id).item;
   const oldEnd = it.end;
   const f = (name, label, attrs = '') => `<label>${label}<input name="${name}" value="${esc(it[name] || '')}" ${attrs}></label>`;
+  const ta = (name, label, rows = 2) => `<label>${label}<textarea name="${name}" rows="${rows}">${esc(it[name] || '')}</textarea></label>`;
   openModal({
-    title: '修改',
+    title: '修改（同 Excel 欄位一樣）',
     body: `<div class="grid2">
         <label>開始<input type="time" name="time" value="${esc(it.time || '')}"></label>
         <label>結束<input type="time" name="end" value="${esc(it.end || '')}"></label>
       </div>
-      ${f('title', '標題（中文）', 'required')}
-      ${f('titleJa', '日文名稱', 'lang="ja"')}
-      ${TRANSPORT.has(it.type) ? f('number', '航班／班次') : ''}
-      ${f('ref', '訂位／確認號碼')}
-      ${f('address', '地址')}
-      ${f('url', '網站／訂單連結', 'inputmode="url"')}
-      <label>備註<textarea name="notes" rows="4">${esc(it.notes || '')}</textarea></label>
+      ${f('title', '活動', 'required')}
+      ${ta('xNote', '備註')}
+      ${ta('xTransport', '交通')}
+      ${ta('xUrl', '預約/地圖 URL')}
+      <details class="adv"><summary>其他資料</summary>
+        ${f('titleJa', '日文名稱', 'lang="ja"')}
+        ${TRANSPORT.has(it.type) ? f('number', '航班／班次') : ''}
+        ${f('ref', '訂位／確認號碼')}
+        ${f('address', '地址')}
+        ${f('url', '網站／訂單連結', 'inputmode="url"')}
+        ${ta('notes', '補充', 3)}
+      </details>
       ${isHM(it.end) ? `<label class="check"><input type="checkbox" name="push" checked> 改結束時間時，之後嘅行程跟住移</label>` : ''}`,
     onSubmit: fd => commit(() => {
       const cur = findItem(id);
-      for (const k of ['time', 'end', 'title', 'titleJa', 'number', 'ref', 'address', 'url', 'notes']) {
+      for (const k of ['time', 'end', 'title', 'xNote', 'xTransport', 'xUrl', 'titleJa', 'number', 'ref', 'address', 'url', 'notes']) {
         if (!fd.has(k)) continue;
         const v = fd.get(k).toString().trim();
         if (v || (k === 'ref' && 'ref' in cur.item)) cur.item[k] = v; else delete cur.item[k];
@@ -824,6 +1218,15 @@ const actions = {
   'view-photo': (id, el) => viewPics(id, 0, el.dataset.photo),
   copy: (_, el) => navigator.clipboard?.writeText(el.dataset.val).then(() => toast('已複製'), () => toast('複製唔到')),
   prefetch: () => { toast('下載緊相片…'); prefetchAll().then(() => toast('相片已存好，離線可睇')); },
+  'offline-all': () => downloadOffline(),
+  'xlsx-export': () => exportExcel(),
+  'xlsx-import': () => $('#xlsxInput').click(),
+  locate: id => {
+    if (!navigator.geolocation) return toast('呢部機唔支援定位');
+    toast('搵緊你嘅位置…');
+    navigator.geolocation.getCurrentPosition(p => { ui.me = { lat: p.coords.latitude, lon: p.coords.longitude }; drawItemMap(id); },
+      () => toast('攞唔到位置——請容許「定位」權限'), { enableHighAccuracy: true, timeout: 15000 });
+  },
   export: exportTrip,
   import: () => $('#importInput').click(),
   reset: () => { if (confirm('重設為原始行程？你改過嘅內容會被取代（可以還原）。')) commit(() => { trip = freshSeed(); ui.day = null; }, '已重設'); },
@@ -853,6 +1256,7 @@ $('#photoInput').addEventListener('change', async e => {
   commit(() => { const it = findItem(id).item; it.photos = [...(it.photos || []), ...ids]; }, `已加 ${ids.length} 張相`);
   if (wasOpen) openItem(id);
 });
+$('#xlsxInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importExcel(f); });
 $('#importInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importTrip(f); });
 
 /* ---------- 網絡 ---------- */
@@ -877,4 +1281,6 @@ $('#tripName').textContent = trip.name || '東京';
 save();
 updateNet();
 render();
+loadWeather();
+window.addEventListener('online', loadWeather);
 setTimeout(() => prefetchAll().then(() => { if (ui.tab !== 'plan' || $('#modal').open) return; render(); }), 1200);

@@ -18,7 +18,6 @@ window.SEED_TRIP = (() => {
     place: '三井ガーデンホテル銀座築地',
     address: '〒104-0045 東京都中央区築地4-7-1',
     url: 'https://www.gardenhotels.co.jp/ginza-tsukiji/',
-    picQuery: 'Tsukiji Chuo Tokyo street',
   };
   const H = { fromZh: '酒店', toZh: '酒店' };
   const TSUKIJI_PICS_A = ['File:Tsukiji Outer Market -01.jpg', 'File:Tsukiji Outer Market -09.jpg', 'File:Tamagoyaki (3099935773).jpg'];
@@ -33,13 +32,13 @@ window.SEED_TRIP = (() => {
     { name: '山芋泥', ja: 'とろろ', desc: '配麥飯一流' },
   ], tips: '每件放落石板燒 10–15 秒就夠。價錢以店內為準。' };
 
-  return {
-    seedVersion: 4,
+  const trip = {
+    seedVersion: 5,
     name: '東京 4 日',
     days: [
       /* ================= Day 1 · 10/29（四） ================= */
       day('2026-10-29', { city: '東京', title: '抵達東京・築地蠔湯拉麵', notes: '早上由北角出發去香港機場。日本比香港快 1 小時。' }, [
-        I({ type: 'flight', time: '11:00', end: '15:55', title: '香港 → 東京成田 T2', titleJa: '香港 → 成田空港 第2ターミナル', number: '（待填）', from: 'Hong Kong International Airport', fromZh: '香港機場', to: '成田国際空港 第2ターミナル', toZh: '成田機場 T2', pics: NRT_PICS,
+        I({ extra: true, type: 'flight', time: '11:00', end: '15:55', title: '香港 → 東京成田 T2', titleJa: '香港 → 成田空港 第2ターミナル', number: '（待填）', from: 'Hong Kong International Airport', fromZh: '香港機場', to: '成田国際空港 第2ターミナル', toZh: '成田機場 T2', pics: NRT_PICS,
           notes: '15:55（日本時間）抵達。起飛時間待填。\n落機前填好 Visit Japan Web，入境 QR code 截圖「加相」。' }),
         I({ type: 'other', time: '15:55', end: '17:10', title: '抵達成田 T2＋入境＋取行李', titleJa: '成田空港 第2ターミナル 到着・入国審査', place: '成田国際空港 第2ターミナル', pics: NRT_PICS, picCat: 'Category:Interior of Narita International Airport Terminal 2',
           notes: '落機 → 入境審查 → 行李提取 → 海關 → B1 京成電鐵站。預留入境及行李時間。' }),
@@ -317,4 +316,75 @@ window.SEED_TRIP = (() => {
       ]),
     ],
   };
+
+  /* ---------- Excel 原文（1007_Tokyo_Itinerary.xlsx）：活動、備註、交通、預約/地圖 URL ---------- */
+  const XL = {"2026-10-29": [["15:55","17:10","抵達成田機場 T2＋入境＋取行李","預留入境及行李時間","落機 → 入境審查 → 行李提取 → 海關 → B1 京成電鐵站","https://keisei.ekitan.com/naritaacs-i-tc/timetable/station/682-6/d1?dw=3&date=20261029"],["17:10","17:30","買／領 Skyliner 車票＋候車","Skyliner 全車指定席，或需預訂","成田空港第2・第3航廈站 → Skyliner 月台","Skyliner 購票：https://www.keisei.co.jp/keisei/tetudou/skyliner/e-ticket/zht/"],["17:30","18:15","成田機場 → 京成上野","","Skyliner：空港第2ビル → 京成上野",""],["18:15","18:25","京成上野 → 上野站","","京成上野站出站 → 步行至東京Metro上野站",""],["18:25","18:45","上野 → 築地","","東京Metro日比谷線：上野 → 築地直達",""],["18:45","19:00","築地站 → 酒店","Mitsui Garden Hotel Ginza Tsukiji","築地站2號出口 → 步行約4分鐘",""],["19:00","19:20","酒店 Check-in＋放行李","","",""],["19:20","19:30","酒店 → 晚餐","","步行往築地3丁目",""],["19:30","20:20","晚餐：Ramen Oyster And Shell らぁ麺 牡蠣と貝","牡蠣及貝類湯底拉麵","",""],["20:20","20:30","返回酒店","","步行約10分鐘",""],["20:30","21:00","酒店休息","","",""]],"2026-10-30": [["09:00","09:05","酒店 → 築地早餐","","步行往築地場外市場",""],["09:05","09:45","早餐：まぐろのみやこ","熟海鮮及鮪魚料理","",""],["09:45","10:20","築地 → 根津站","","築地站 → 日比谷線至日比谷 → 轉千代田線至根津",""],["10:20","10:30","根津站 → 根津神社","","根津站 → 步行約10分鐘",""],["10:30","11:10","根津神社","千本鳥居及江戶神社建築","",""],["11:10","11:20","根津神社 → へび道","","步行往千駄木／谷中方向","https://maps.app.goo.gl/MVfeDKywwRQWXbpL8"],["11:20","11:50","へび道散步","下町住宅街景","沿彎曲舊河道路線步行",""],["11:50","12:00","へび道 → 吉里 谷中総本店","","步行往谷中餐廳",""],["12:00","13:10","午餐：吉里 谷中総本店","日式老宅＋鰻魚料理","","預約：https://gabg600.gorp.jp/"],["13:10","13:50","谷中 → 早稻田","大手町轉線步行較長","千駄木站 → 千代田線至大手町 → 轉東西線至早稻田",""],["13:50","14:00","早稻田站 → 村上春樹圖書館","","早稻田站 → 步行約7–10分鐘",""],["14:00","15:30","村上春樹圖書館","隈研吾改建；書籍、唱片及展覽","",""],["15:30","16:00","早稻田 → 新宿","","早稻田站 → 東西線至高田馬場 → 轉JR山手線至新宿",""],["16:00","17:00","LUMINE 2","女裝（COCO DEAL、Mila Owen、Arpege story）","新宿站南口步行前往","https://maps.app.goo.gl/eYTRyBynHFw9TkQo9"],["17:00","17:15","LUMINE 2 → BEAMS JAPAN","","步行往新宿三丁目方向",""],["17:15","18:00","BEAMS JAPAN","日本服飾、工藝及選物","",""],["18:00","18:15","BEAMS JAPAN → 歌舞伎町一番街","","步行經靖國通往歌舞伎町",""],["18:15","18:40","歌舞伎町一番街散步","霓虹街景","一番街牌坊及附近街道",""],["18:40","18:50","歌舞伎町 → 牛かつもと村 新宿アルタ裏店","","向新宿東口方向步行",""],["18:50","19:55","晚餐：牛かつもと村 新宿アルタ裏店","牛炸扒＋石爐自行加熱","","預約：https://www.gyukatsu-motomura.com/reservation-1?stt_lang=en"],["19:55","20:05","餐廳 → 新宿站","","步行往新宿站東口／丸之內線",""],["20:05","20:35","新宿 → 東銀座","","丸之內線：新宿 → 銀座 → 轉日比谷線至東銀座",""],["20:35","21:00","酒店休息","","",""]],"2026-10-31": [["09:00","09:05","酒店 → 築地場外市場","","步行約5分鐘",""],["09:05","09:50","早餐：まるきた2號＋齋藤水產","海鮮丼＋即開生蠔","築地場外市場內步行",""],["09:50","10:25","築地 → 表參道","","築地站 → 日比谷線至銀座 → 轉銀座線至表參道",""],["10:25","10:35","表參道站 → 根津美術館","","A5出口 → 步行約8–10分鐘",""],["10:35","11:45","根津美術館","隈研吾建築＋日本古美術","",""],["11:45","13:20","南青山／表參道建築散步","全段以建築外觀及拍照為主","PRADA → SunnyHills → Tod's → HUGO BOSS → Louis Vuitton → 表參道 Hills → Dior → GYRE，全程步行","https://maps.app.goo.gl/p86NnKfAEhwoQzWB8"],["13:20","13:45","GYRE → 代官山","只有部分班次可直通","明治神宮前站 → 副都心線／東橫線 → 代官山",""],["13:45","13:50","代官山站 → Matsunosuke","","代官山站 → 步行約5分鐘",""],["13:50","14:40","午餐：Matsunosuke N.Y.","Apple Pie、蛋糕及 Pancake","",""],["14:40","14:45","Matsunosuke → 代官山蔦屋書店","","沿舊山手通步行","https://maps.app.goo.gl/6FBtQqPM4MUm7kAD7"],["14:45","15:25","代官山蔦屋書店／T-SITE","書店、設計及生活選物","",""],["15:25","15:30","蔦屋書店 → B.C STOCK","","步行約5分鐘",""],["15:30","15:50","B.C STOCK","Outlet／折扣選物","",""],["15:50","16:00","B.C STOCK → ZAPADY-DOO","","步行",""],["16:00","16:30","ZAPADY-DOO","家品及生活雜貨","",""],["16:30","16:45","ZAPADY-DOO → Kindal 中目黑","","步行往中目黑方向",""],["16:45","17:05","Kindal 中目黑","二手設計師品牌","",""],["17:05","17:20","Kindal → Starbucks Reserve Roastery Tokyo","","沿目黑川步行",""],["17:20","17:50","Starbucks Reserve Roastery Tokyo","隈研吾設計大型烘焙工坊","",""],["17:50","18:05","Starbucks → 中目黑一帶","","沿目黑川往餐廳方向步行",""],["18:05","18:20","中目黑散步／Buffer","預留排隊、洗手間或行程延誤","餐廳附近自由散步",""],["18:20","18:30","前往餐廳和牛すき焼 そしじ 中目黒店","","步行往和牛すき焼 そしじ",""],["18:30","19:40","晚餐：和牛すき焼 そしじ 中目黒店","和牛壽喜燒","","預約：https://tabelog.com/tw/tokyo/A1317/A131701/13318941/dtlrvwlst/"],["19:40","20:10","中目黑 → 赤羽橋","","日比谷線：中目黑 → 六本木 → 轉大江戶線至赤羽橋",""],["20:10","20:30","赤羽橋遠眺東京鐵塔","出一出站看東京鐵塔夜景","赤羽橋站附近步行",""],["20:30","21:00","赤羽橋 → 酒店","約21:00到酒店","大江戶線：赤羽橋 → 築地市場 → 步行回酒店",""]],"2026-11-01": [["09:00","09:15","酒店 Check-out＋寄存行李","","酒店前台辦理退房及寄存行李",""],["09:15","09:20","酒店 → 北海番屋","","步行往築地場外市場",""],["09:20","10:00","早餐：北海番屋","北海道系海鮮丼","",""],["10:00","10:20","北海番屋 → Ginza Itoya","","由築地步行經銀座四丁目 → 銀座二丁目",""],["10:20","11:00","Ginza Itoya","老字號文具專門店","",""],["11:00","11:10","Itoya → Ginza Loft","","銀座二丁目內步行",""],["11:10","12:00","Ginza Loft","文具、美妝及生活雜貨","",""],["12:00","12:10","Ginza Loft → 銀座三越","","沿中央通步行往銀座四丁目",""],["12:10","12:50","銀座三越 B2／B3","食品、甜點及手信","",""],["12:50","13:00","銀座三越 → 酒店","","步行經東銀座返回酒店",""],["13:00","13:20","酒店取行李＋整理","","前台領取寄存行李",""],["13:20","13:30","酒店 → 築地站","酒店距築地站約4分鐘","步行至築地站2號出口一帶",""],["13:30","13:50","築地 → 上野","","東京Metro日比谷線：築地 → 上野",""],["13:50","14:00","上野站 → 京成上野站","有行李預留10分鐘","由東京Metro上野站步行往京成上野站",""],["14:00","14:20","買票＋候車","Skyliner 全車指定席，或需預訂","京成上野站 Skyliner 售票處／月台",""],["14:20","15:01","京成上野 → 成田機場 T2","","Skyliner：京成上野 → 空港第2ビル",""],["15:01","15:15","車站 → T2 出發層","","空港第2ビル站 → 國際線出發層",""],["15:15","16:00","Check-in＋寄艙","19:00航班","航空公司櫃位",""],["16:00","16:30","保安檢查＋出境","","International Departures → Security → Immigration",""],["16:30","17:10","免稅店","先買必買品(Fa-So-La Souvenir) & 攞飛","出境後購物區",""],["17:10","18:00","晚餐：うなぎ四代目菊川","鰻魚料理","Terminal 2 出境後區域",""],["18:00","18:25","最後免稅購物","","沿登機閘口方向購物",""],["18:25","","到達登機Gate","","建議至少起飛前35分鐘已在Gate附近",""],["19:00","","航班起飛","","",""]]};
+
+
+  /* ---------- Tabelog 摘要（2026/10 整理，評分會變） ---------- */
+  const TABELOG = {
+    'らぁ麺 牡蠣と貝 築地本店': { url: 'https://tabelog.com/tw/tokyo/A1313/A131301/13292429/', rating: '3.68', reviews: '約 2,000', budget: '¥1,000–1,999',
+      summary: ['「鴨to葱」姊妹店，用廣島蠔煮成忌廉般濃湯，加貝油提香', '食評最多讚湯底夠濃；可以加枱面檸檬汁轉味', '午市同週末多遊客，要預排隊時間'] },
+    'まぐろのみやこ 築地': { url: 'https://tabelog.com/tw/tokyo/A1313/A131301/13145358/', rating: '3.29', reviews: '約 80', budget: '¥1,000–1,999',
+      summary: ['店頭用火槍即場燒海鮮（浜焼き），好有睇頭', '名物「みやこにぎり」：三文魚包住拖羅', '戶外座位有時坐滿'] },
+    '鰻 吉里 谷中総本店': { url: 'https://tabelog.com/tw/tokyo/A1311/A131106/13117215/', rating: '3.45', reviews: '—', budget: '午市約 ¥2,500；晚市 ¥6,000–7,999',
+      summary: ['古民家改裝，環境舒服', '收尾可以揀鰻重或者鰻魚飯三食', '千駄木站步行約 1–3 分鐘'] },
+    '海鮮丼まるきた 2号店': { url: 'https://tabelog.com/tw/tokyo/A1313/A131301/13164063/', rating: '3.41', reviews: '200+', budget: '¥2,000–2,999',
+      summary: ['款式好多，CP 值高', '有限定「カマトロ丼」（吞拿魚鮫位拖羅）', '唔收信用卡／電子支付，帶現金'] },
+    '斉藤水産 築地': { url: 'https://tabelog.com/tw/tokyo/A1313/A131301/13147413/', rating: '3.18', reviews: '約 186', budget: '生蠔 ¥500–800／隻',
+      summary: ['店頭揀殻付生蠔，即開加柚子醋', '食評：蠔肉濃、夠厚，但有「觀光區價錢」', '平啲可以去築地魚河岸 キタニ水産'] },
+    '牛かつもと村 新宿アルタ裏店': { url: 'https://tabelog.com/tw/tokyo/A1304/A130401/13195827/', rating: '3.07', reviews: '約 105', budget: '¥1,000–1,999',
+      summary: ['自己用石板燒到想要嘅熟度', '食評評價分歧；新宿南口店 3.14 分'] },
+    '松之助 N.Y. 代官山': { url: 'https://tabelog.com/tw/tokyo/A1303/A130303/13005179/', rating: '3.7+', reviews: '百名店', budget: '¥1,000–1,999',
+      summary: ['招牌蘋果批，秋冬有 Big Apple Pie', '芝士蛋糕焗得好軟滑', '週末下晝約等 15 分鐘；有食評話逗留上限 40 分鐘'] },
+    '和牛すき焼 そしじ 中目黒店': { url: 'https://tabelog.com/tw/tokyo/A1317/A131701/13318941/', rating: '3.20', reviews: '約 58', budget: '晚市 ¥6,000–7,999',
+      summary: ['嚴選和牛＋專用米＋雞蛋＋特製鍋', '有座敷（榻榻米）位', '評價分歧：有人讚牛柳，有人覺得貴'] },
+    '北海番屋 築地': { url: 'https://tabelog.com/tw/tokyo/A1313/A131301/13108642/', rating: '3.39', reviews: '約 140', budget: '午市 ¥3,000–3,999',
+      summary: ['北海道系海鮮丼，招牌北海丼（海膽、三文魚子、蟹、牡丹蝦）', '有焼き台枱可以燒浜焼き', 'Tabelog 寫星期一、三休息（星期日有開）'] },
+    'うなぎ四代目菊川 成田空港店': { url: 'https://tabelog.com/tw/chiba/A1204/A120401/12058270/', rating: '3.03', reviews: '約 16', budget: '¥3,000–3,999',
+      summary: ['T2 本館 2 樓，07:30–22:00，唔接受預約', '鰻魚飯三食約 ¥3,900 起', '食評：味道好，以專門店嚟講價錢合理'] },
+  };
+  /* ---------- 地圖搜尋（Google Maps 用嘅準確名稱／地址） ---------- */
+  const MAPQ = {
+    'ビームス ジャパン 新宿': 'Beams Japan, B1F 5F 3 Chome-32-6 Shinjuku, Shinjuku City, Tokyo 160-0022, Japan',
+    'ルミネ新宿 ルミネ2': 'LUMINE 2, 3 Chome-38-2 Shinjuku, Shinjuku City, Tokyo 160-0022, Japan',
+    'らぁ麺 牡蠣と貝 築地本店': 'らぁ麺 牡蠣と貝 築地本店, 3 Chome-16-9 Tsukiji, Chuo City, Tokyo',
+    'まぐろのみやこ 築地': 'まぐろのみやこ, 4 Chome-13-13 Tsukiji, Chuo City, Tokyo',
+    '鰻 吉里 谷中総本店': '鰻 吉里 谷中総本店, 3 Chome-2-6 Yanaka, Taito City, Tokyo',
+    '海鮮丼まるきた 2号店': '海鮮丼まるきた 2号店, 4 Chome-13-18 Tsukiji, Chuo City, Tokyo',
+    '牛かつもと村 新宿アルタ裏店': '牛かつもと村 新宿アルタ裏店, 3 Chome-22-7 Shinjuku, Shinjuku City, Tokyo',
+    '松之助 N.Y. 代官山': 'Matsunosuke N.Y., 29-9 Sarugakucho, Shibuya City, Tokyo',
+    'ZAPADY-DOO 代官山店': 'ZAPADY-DOO, 1 Chome-33-15 Ebisunishi, Shibuya City, Tokyo',
+    'カインドオル 中目黒店': 'Kindal Nakameguro, 1 Chome-16-12 Aobadai, Meguro City, Tokyo',
+    'スターバックス リザーブ ロースタリー 東京': 'Starbucks Reserve Roastery Tokyo, 2 Chome-19-23 Aobadai, Meguro City, Tokyo',
+    '和牛すき焼 そしじ 中目黒店': '和牛すき焼 そしじ 中目黒店, 3 Chome-16-1 Kamimeguro, Meguro City, Tokyo',
+    '北海番屋 築地': '北海番屋, 4 Chome-14-16 Tsukiji, Chuo City, Tokyo',
+    '銀座 伊東屋 本店': 'Ginza Itoya, 2 Chome-7-15 Ginza, Chuo City, Tokyo',
+    '三井ガーデンホテル銀座築地': 'Mitsui Garden Hotel Ginza Tsukiji, 4 Chome-7-1 Tsukiji, Chuo City, Tokyo',
+    '根津神社': '根津神社, 1 Chome-28-9 Nezu, Bunkyo City, Tokyo',
+    '根津美術館': 'Nezu Museum, 6 Chome-5-1 Minamiaoyama, Minato City, Tokyo',
+  };
+
+  // 將 Excel 原文併入每一項（同 Excel 行一一對應；extra 係 Excel 冇嘅項目）
+  trip.days.forEach(d => {
+    const rows = XL[d.date] || [];
+    d.items.filter(i => !i.extra).forEach((it, k) => {
+      const r = rows[k];
+      if (!r) return;
+      const [st, en, act, note, tr, url] = r;
+      if (st) it.time = st;
+      if (en) it.end = en;
+      it.title = act;
+      it.xNote = note;
+      it.xTransport = tr;
+      it.xUrl = url;
+    });
+    d.items.forEach(it => {
+      if (it.place && TABELOG[it.place]) it.tabelog = [{ name: it.place.replace(/ (築地|代官山)$/, ''), ...TABELOG[it.place] }];
+      if (it.place === '海鮮丼まるきた 2号店') it.tabelog.push({ name: '築地 斉藤水産', ...TABELOG['斉藤水産 築地'] });
+      if (it.place && MAPQ[it.place]) it.mapQuery = MAPQ[it.place];
+    });
+  });
+  trip.mapq = MAPQ;
+  return trip;
 })();

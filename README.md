@@ -34,9 +34,10 @@ The site has to be served over https once for offline mode to work. The easiest 
 To run it locally: `python3 -m http.server` and then open http://localhost:8000.
 
 ## Your itinerary
-The Tokyo trip (29/10–1/11) lives in `trip-data.js`, in Cantonese with Japanese names. The app loads it the first time it opens; after that, your edits are saved on the phone. If you change `trip-data.js`, increase `seedVersion` and the app will offer to load the new version.
+The Tokyo trip (29/10–1/11) lives in `trip-data.js`. The `XL` block holds the exact wording from `1007_Tokyo_Itinerary.xlsx`: 活動 (activity), 備註 (notes), 交通 (transport), and 預約/地圖 URL (booking/map URL). The app adds Japanese names, menus, Tabelog summaries, photos and map queries on top. If you change `trip-data.js`, increase `seedVersion` and the app will offer to load the new version.
 
-- **Photos:** `pics` lists Wikimedia Commons files picked for each stop. If there are fewer than 3, `picCat` and `picQuery` fill the gap. The phone downloads them the first time it's online and keeps them for offline use.
-- **Japanese tab:** common phrases and the Japanese place names are read aloud with the phone's built-in Japanese voice, which also works offline.
+- **Excel:** the 資訊 (Info) tab can export and import the same 8-column sheet. On import, rows are matched by 活動 (activity) or by 開始 (start time), so photos, menus and Tabelog data on matched rows are kept. It uses SheetJS (`vendor/xlsx.full.min.js`, Apache-2.0).
+- **Offline:** use "下載離線資料" (download offline data) in Info. It saves the photos, OpenStreetMap/CARTO map tiles, Nominatim coordinates and walking routes (routing.openstreetmap.de) for every stop. The GPS dot works with no network.
+- **Weather:** comes from Open-Meteo. The last result is cached so it still shows offline.
 
 When you change app files, bump `VERSION` in `sw.js` so installed copies update.

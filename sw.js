@@ -1,8 +1,8 @@
 // Service worker：令 App 冇網都開到。
 // 改咗 App 檔案之後將 VERSION 加一，手機先會攞新版。
-const VERSION = 'trip-planner-v4';
+const VERSION = 'trip-planner-v5';
 const FONT_CACHE = 'trip-planner-fonts';
-const ASSETS = ['./', './index.html', './app.js', './trip-data.js', './styles.css', './manifest.webmanifest', './icon.svg'];
+const ASSETS = ['./', './index.html', './app.js', './trip-data.js', './styles.css', './manifest.webmanifest', './icon.svg', './vendor/xlsx.full.min.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
