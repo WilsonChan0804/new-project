@@ -352,3 +352,5 @@ dialog::backdrop { background: rgba(10,10,10,.5); }
 .pinpaste { display: block; font-size: 13px; color: var(--muted); font-weight: 700; margin-top: 10px; }
 .pinpaste input { flex: 1; min-width: 0; padding: 9px 10px; font: 500 16px var(--font); border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink); }
 .pinpaste .row { margin-top: 6px; flex-wrap: nowrap; }
+
+.bigbtns.one { grid-template-columns: 1fr; }

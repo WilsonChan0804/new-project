@@ -342,14 +342,14 @@ async function downloadOffline() {
   if (!navigator.onLine) return toast('要上網先下載到');
   toast('下載緊離線資料，請保持 App 開住…');
   await prefetchAll();
-  await prefetchMaps(msg => { const el = $('#mapStatus'); if (el) el.textContent = msg; });
-  localStorage.setItem('trip-maps3-at', String(Date.now()));
+  const r = await prefetchMaps(msg => { const el = $('#mapStatus'); if (el) el.textContent = msg; });
+  if (r.done >= r.total) localStorage.setItem('trip-maps4-at', String(Date.now()));
   updatePicStatus();
-  toast('離線資料已下載好');
+  toast(r.done >= r.total ? `離線資料已下載好（地圖 ${r.total} 格）` : '下載未完成——上網後再撳一次會繼續');
 }
 async function updatePicStatus() {
   const ms = $('#mapStatus');
-  if (ms) { const t = +localStorage.getItem('trip-maps3-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
+  if (ms) { const t = +localStorage.getItem('trip-maps4-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
   const el = $('#picStatus');
   if (!el) return;
   const items = allItems().filter(hasPicConf);
@@ -458,8 +458,10 @@ function cleanAddr(a) {
   const m = a.match(/^(.*?[0-9０-９]+(?:[-－][0-9０-９]+)*)/);
   return m ? m[1] : a;
 }
+/** 只接受東京／成田一帶嘅座標；地址搜尋出錯（例如搵到第二個縣）就當搵唔到 */
+const okPt = p => p && p.lat > 35.45 && p.lat < 35.95 && p.lon > 139.45 && p.lon < 140.55;
 async function firstGeo(qs) {
-  for (const q of qs.filter(Boolean)) { const g = await geocode(q); if (g) return g; }
+  for (const q of qs.filter(Boolean)) { const g = await geocode(q); if (okPt(g)) return g; }
   return null;
 }
 async function placePt(it) {
@@ -492,7 +494,7 @@ async function mapGeom(list, idx) {
   if (!b && !a) return null;
   let route = null, walking = false;
   if (a && b && distM(a, b) > 30) {
-    walking = it.type === 'walk' || (!TRANSPORT.has(it.type) && distM(a, b) < 2500);
+    walking = !TRANSPORT.has(it.type) && distM(a, b) < 2500 || (it.type === 'walk' && distM(a, b) < 3000);
     if (walking) route = await footRoute(a, b);
   }
   return { a, b, route, walking };
@@ -654,35 +656,50 @@ function startLocate(id) {
   }, () => toast('攞唔到位置——請容許「定位」權限'), { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 });
 }
 
-/** 下載全部地圖資料：座標、步行路線、每個地點 13–17 級圖塊（可以離線放大縮小） */
-async function prefetchMaps(onProgress) {
+/** 要下載嘅地圖圖塊：每個地點周圍 14–17 級（細範圍）、東京＋成田總覽。上限 3,000 格 */
+async function wantedTiles(onProgress) {
   const jobs = trip.days.flatMap(d => d.items.map((it, i) => [d.items, i])).filter(([l, i]) => l[i].type !== 'flight');
   const want = new Set();
   const addBox = (lat1, lon1, lat2, lon2, z) => {
-    for (let x = tileX(Math.min(lon1, lon2), z); x <= tileX(Math.max(lon1, lon2), z); x++)
-      for (let y = tileY(Math.max(lat1, lat2), z); y <= tileY(Math.min(lat1, lat2), z); y++) want.add(`${z}/${x}/${y}`);
+    const x1 = tileX(Math.min(lon1, lon2), z), x2 = tileX(Math.max(lon1, lon2), z);
+    const y1 = tileY(Math.max(lat1, lat2), z), y2 = tileY(Math.min(lat1, lat2), z);
+    if ((x2 - x1 + 1) * (y2 - y1 + 1) > 60) return; // 範圍太大（地點出錯）就唔下載
+    for (let x = x1; x <= x2; x++) for (let y = y1; y <= y2; y++) want.add(`${z}/${x}/${y}`);
   };
   const around = (p, z, m) => { const dLat = m / 111000, dLon = m / (111000 * Math.cos(p.lat * Math.PI / 180)); addBox(p.lat - dLat, p.lon - dLon, p.lat + dLat, p.lon + dLon, z); };
-  const R = { 13: 1500, 14: 900, 15: 600, 16: 400, 17: 250 };
-  // 東京市區＋成田機場總覽
-  for (const z of [11, 12]) addBox(35.62, 139.66, 35.74, 139.81, z);
-  for (const z of [11, 12, 13]) addBox(35.75, 140.36, 35.79, 140.41, z);
+  const R = { 14: 700, 15: 450, 16: 280, 17: 160 };
+  for (const z of [11, 12]) addBox(35.63, 139.68, 35.73, 139.80, z);
+  for (const z of [12, 13]) addBox(35.76, 140.37, 35.78, 140.40, z);
   let done = 0;
   for (const [list, i] of jobs) {
-    if (!navigator.onLine) break;
     const g = await mapGeom(list, i).catch(() => null);
-    if (g) for (const p of [g.a, g.b].filter(Boolean)) for (const z of [13, 14, 15, 16, 17]) around(p, z, R[z]);
-    if (g?.route) for (const z of [14, 15, 16]) { const la = g.route.map(r => r[0]), lo = g.route.map(r => r[1]); addBox(Math.min(...la), Math.min(...lo), Math.max(...la), Math.max(...lo), z); }
+    for (const p of [g?.a, g?.b].filter(okPt)) for (const z of [14, 15, 16, 17]) around(p, z, R[z]);
+    if (g?.route && g.route.length) for (const z of [15, 16]) { const la = g.route.map(r => r[0]), lo = g.route.map(r => r[1]); addBox(Math.min(...la), Math.min(...lo), Math.max(...la), Math.max(...lo), z); }
     onProgress?.(`搵緊地點及路線 ${++done}／${jobs.length}`);
   }
-  const tiles = [...want];
-  let n = 0;
-  for (const t of tiles) {
-    if (!navigator.onLine) break;
-    const [z, x, y] = t.split('/').map(Number);
-    await getTile(z, x, y, true);
-    if (++n % 10 === 0 || n === tiles.length) onProgress?.(`下載緊地圖 ${n}／${tiles.length}`);
-  }
+  return [...want].slice(0, 3000);
+}
+/** 下載地圖：6 格同時下載；已經下載過嘅會跳過，所以中途停咗下次會由停低嗰度繼續 */
+async function prefetchMaps(onProgress) {
+  const tiles = await wantedTiles(onProgress);
+  const wantKeys = new Set(tiles.map(t => TILE_PREFIX + t));
+  // 清走唔需要嘅舊圖塊（之前出錯下載咗太多）
+  const removed = await PhotoDB.run('readwrite', st => {
+    let n = 0; const req = st.openCursor();
+    req.onsuccess = () => { const c = req.result; if (!c) return; const k = String(c.key); if (k.startsWith('tile') && !wantKeys.has(k)) { c.delete(); n++; } c.continue(); };
+    return { get result() { return n; } };
+  }).catch(() => 0);
+  let n = 0, i = 0;
+  const worker = async () => {
+    while (i < tiles.length && navigator.onLine) {
+      const [z, x, y] = tiles[i++].split('/').map(Number);
+      await getTile(z, x, y, true);
+      n++;
+      if (n % 10 === 0 || n === tiles.length) onProgress?.(`下載緊地圖 ${n}／${tiles.length}（可以隨時停，下次會繼續）`);
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  return { total: tiles.length, done: n, removed };
 }
 
 /* ---------- Excel 匯出／匯入（同你嘅 Itinerary 試算表一樣格式） ---------- */
@@ -1124,7 +1141,8 @@ function renderInfo() {
     </div>
   </section>
   <section class="card">
-    <h2>💾 備份</h2>
+    <h2>💾 備份及相片同步</h2>
+    <p class="muted">相片同修改只存喺每部機入面。想喺電腦加相再放上手機：電腦開呢個網站 → 加相 → 「匯出備份」→ 用 AirDrop／WhatsApp／電郵將檔案傳去手機 → 手機「匯入備份」→ 揀「只加入相片」。</p>
     <div class="row">
       <button class="chip" data-act="export">${icon('download')}匯出備份</button>
       <button class="chip" data-act="import">匯入備份</button>
@@ -1300,9 +1318,32 @@ async function importTrip(file) {
     const data = JSON.parse(await file.text());
     const t = data.trip || data;
     if (!Array.isArray(t.days)) throw new Error('檔案格式唔啱');
-    if (!confirm('用備份取代現有行程？')) return;
-    for (const [id, url] of Object.entries(data.photos || {})) await PhotoDB.put(id, await (await fetch(url)).blob());
-    commit(() => { trip = t; ui.day = null; }, '已匯入');
+    const photos = Object.entries(data.photos || {});
+    const choose = mode => new Promise(res => openModal({
+      title: '匯入備份',
+      body: `<p>備份有 ${t.days.length} 日行程、${photos.length} 張你加嘅相。</p>
+        <div class="bigbtns one">
+          <button type="button" class="btn dark" data-mode="photos">只加入相片（保留呢部機嘅行程）</button>
+          <button type="button" class="btn" data-mode="all">取代整個行程（連相片）</button>
+          <button type="button" class="btn ghost" data-mode="">取消</button>
+        </div>`,
+      onOpen: form => form.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => { closeModal(); res(b.dataset.mode); }; }),
+    }));
+    const mode = await choose();
+    if (!mode) return;
+    for (const [id, url] of photos) await PhotoDB.put(id, await (await fetch(url)).blob());
+    if (mode === 'all') return commit(() => { trip = t; ui.day = null; }, '已匯入整個行程');
+    // 只合併相片：按項目 id（或者同日同活動名）加入相片
+    const src = t.days.flatMap(d => d.items.map(i => [d.date, i]));
+    let added = 0;
+    commit(() => {
+      trip.days.forEach(d => d.items.forEach(it => {
+        const m = src.find(([, x]) => x.id === it.id) || src.find(([dd, x]) => dd === d.date && x.title === it.title);
+        const ps = (m?.[1].photos || []).filter(p => !(it.photos || []).includes(p));
+        if (ps.length) { it.photos = [...(it.photos || []), ...ps]; added += ps.length; }
+      }));
+    }, `已加入相片`);
+    toast(`已加入 ${added} 張相`);
   } catch (e) { alert('匯入唔到：' + e.message); }
 }
 
