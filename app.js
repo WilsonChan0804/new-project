@@ -343,13 +343,13 @@ async function downloadOffline() {
   toast('下載緊離線資料，請保持 App 開住…');
   await prefetchAll();
   await prefetchMaps((d, n) => { const el = $('#mapStatus'); if (el) el.textContent = `地圖及路線：${d}／${n}`; });
-  localStorage.setItem('trip-maps-at', String(Date.now()));
+  localStorage.setItem('trip-maps2-at', String(Date.now()));
   updatePicStatus();
   toast('離線資料已下載好');
 }
 async function updatePicStatus() {
   const ms = $('#mapStatus');
-  if (ms) { const t = +localStorage.getItem('trip-maps-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
+  if (ms) { const t = +localStorage.getItem('trip-maps2-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
   const el = $('#picStatus');
   if (!el) return;
   const items = allItems().filter(hasPicConf);
@@ -400,7 +400,13 @@ function wxText(day) {
 }
 
 /* ---------- 離線地圖：地點座標＋步行路線＋地圖圖塊，下載一次之後冇網都睇到 ---------- */
-const TILE_URL = (z, x, y) => `https://${'abcd'[(x + y) % 4]}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}@2x.png`;
+// 地圖圖塊：Esri World Street Map（免 API key）；載入唔到就用 OpenStreetMap。
+// （CARTO 由 2026 年 9 月起要 API key，冇 key 只會俾「API KEY REQUIRED」水印圖。）
+const TILE_SOURCES = [
+  (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`,
+  (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+];
+const TILE_PREFIX = 'tile2:';
 const GEO_URL = q => `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=jp&accept-language=ja&q=${enc(q)}`;
 const FOOT_URL = (a, b) => `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -515,10 +521,16 @@ function mapView(g, W, H) {
   return { z, left, top, tiles };
 }
 async function getTile(z, x, y, fetchMissing) {
-  const key = `tile:${z}/${x}/${y}`;
+  const key = `${TILE_PREFIX}${z}/${x}/${y}`;
   let b = await PhotoDB.get(key).catch(() => null);
   if (!b && fetchMissing && navigator.onLine) {
-    try { const r = await fetch(TILE_URL(z, x, y)); if (r.ok) { b = await r.blob(); await PhotoDB.put(key, b).catch(() => {}); } } catch { /* skip */ }
+    for (const src of TILE_SOURCES) {
+      try {
+        const r = await fetch(src(z, x, y));
+        const type = r.headers.get('content-type') || '';
+        if (r.ok && type.startsWith('image/')) { b = await r.blob(); if (b.size > 200) { await PhotoDB.put(key, b).catch(() => {}); break; } b = null; }
+      } catch { /* 試下一個 */ }
+    }
   }
   return b;
 }
@@ -557,10 +569,11 @@ async function drawItemMap(id) {
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
     if (label) { ctx.font = '700 12px sans-serif'; ctx.fillStyle = '#111'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.strokeText(label, x + 10, y - 8); ctx.fillText(label, x + 10, y - 8); }
   };
-  if (g.a) dot(g.a, '#8a8780', 7, '上一站');
+  const apart = g.a && g.b && distM(g.a, g.b) > 30; // 上一站同呢度唔係同一個位先畫
+  if (g.a && (apart || !g.b)) dot(g.a, '#8a8780', 7, '上一站');
   if (g.b) dot(g.b, '#e8452c', 9, '呢度');
   const lines = [];
-  if (g.a && g.b) lines.push(`${g.walking ? '步行' : '直線'}距離約 ${distStr(g.route ? routeLen(g.route) : distM(g.a, g.b))}${g.route ? '（步行路線）' : ''}`);
+  if (apart) lines.push(`${g.walking ? '步行' : '直線'}距離約 ${distStr(g.route ? routeLen(g.route) : distM(g.a, g.b))}${g.route ? '（步行路線）' : ''}`);
   if (ui.me) {
     const [x, y] = P(ui.me);
     if (x > 0 && y > 0 && x < W && y < H) { ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.fillStyle = 'rgba(26,115,232,.18)'; ctx.fill(); dot(ui.me, '#1a73e8', 7, '你'); }
@@ -877,7 +890,7 @@ function openItem(id) {
     <table class="tt"><tr><th>開出</th><th>到達</th><th>班次</th><th></th></tr>${it.timetable.map((r, i) => `<tr class="${r.note ? 'pick' : ''} ${i === nextIdx ? 'nextrow' : ''}"><td><b>${esc(r.dep)}</b></td><td>${esc(r.arr || '')}</td><td>${esc(r.name || '')}</td><td>${esc(r.note || '')}${i === nextIdx ? ' 下一班' : ''}</td></tr>`).join('')}</table>
     ${it.timetableNote ? `<p class="hint">${esc(it.timetableNote)}</p>` : ''}</section>` : '';
   const map = it.type === 'flight' ? '' : `<section class="sec"><h4>${icon('map')}離線地圖</h4>
-    <div class="omap" data-map="${id}"><canvas></canvas><p class="omap-attr">© OpenStreetMap © CARTO</p></div>
+    <div class="omap" data-map="${id}"><canvas></canvas><p class="omap-attr">© Esri · © OpenStreetMap</p></div>
     <p class="hint omap-info" id="omap-info-${id}">載入緊…</p>
     <div class="row"><button type="button" class="chip" data-act="locate" data-id="${id}">${icon('navigate')}顯示我嘅位置（GPS，離線都用到）</button></div></section>`;
   const taxiable = it.titleJa || it.address || (isT && it.to && it.type !== 'walk');
@@ -1282,5 +1295,10 @@ save();
 updateNet();
 render();
 loadWeather();
+// 清走舊版下載嘅 CARTO 水印圖塊（一次）
+if (!localStorage.getItem('trip-tiles-cleaned')) {
+  PhotoDB.run('readwrite', st => { const req = st.openCursor(); req.onsuccess = () => { const c = req.result; if (!c) return; if (String(c.key).startsWith('tile:')) c.delete(); c.continue(); }; return null; })
+    .then(() => localStorage.setItem('trip-tiles-cleaned', '1')).catch(() => {});
+}
 window.addEventListener('online', loadWeather);
 setTimeout(() => prefetchAll().then(() => { if (ui.tab !== 'plan' || $('#modal').open) return; render(); }), 1200);
