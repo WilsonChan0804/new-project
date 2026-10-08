@@ -95,3 +95,8 @@ h4 .pd-edit { float: right; }
 .pd-form label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
 .pd-form label.wide { grid-column: 1 / -1; }
 @media (max-width: 600px) { .pd-form { grid-template-columns: 1fr; } }
+
+/* Projects page: sortable column headings */
+table.pj th.pj-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+table.pj th.pj-sort:hover { color: var(--ink); }
+table.pj th.pj-sort.on { color: var(--accent-ink); }

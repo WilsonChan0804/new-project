@@ -437,7 +437,7 @@ def register(app, core):
         """The projects whose folders I can open (for the page's picker)."""
         w = person(request, x_viewer_token)
         with tasks.Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
-            rows = [dict(r) for r in d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()]
+            rows = [dict(r) for r in tasks.project_order(d.execute("SELECT * FROM projects WHERE deleted = 0").fetchall())]
         out = []
         for r in rows:
             uids, _ = tasks.project_people(core, r["id"])

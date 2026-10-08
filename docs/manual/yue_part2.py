@@ -4,6 +4,7 @@ from blocks import *
 
 PART = [
     H2('Projects 項目'),
+    P('**排序：** project 按狀態排 - **Active** 先，跟住 **On hold**、**Completed**、**Archived** - 同一狀態再按名排。Projects 版同所有 project 選單（Sheets、3D、Board、Dashboard、Folders、Messenger）都用呢個次序。喺 Projects 版撳欄目標題（Project、Status、Tasks、Completion、Overdue、Issues）或者用 **Sort** 可以轉其他排法；再撳一次就倒轉。會記住你嘅選擇。'),
     P('Sheets、3D、Board 同 Dashboard 頂部嘅 project 選單分開兩個：先揀 **project**（名 · 編號），再揀**佢嘅 model 或者 sheet set**（例如 Site 1／Site 2，或者 Sheets 版嘅「Revit sheets」同每個上載咗嘅 PDF set）。'),
     P('喺 project 嘅資料欄，**Project information** 可以記低 project no.、client、地址、建築類型、地盤面積、GFA、層數、階段、開始同完成日期同簡介（**Edit**，project owner 同 admin 先改得）。撳或者拖一張相落資料欄頂部，就可以俾個 project 一張**相**，清單入面都會見到。'),
     P('**Projects** 版列出團隊嘅 job，每個 job 嘅人、圖則、model、task、issue、檔案同 chat 都喺同一個地方。呢版係俾人睇嘅；admin 喺 **Admin > Projects and members** 設定 project（撳 **Manage** 掣會帶你去）。'),

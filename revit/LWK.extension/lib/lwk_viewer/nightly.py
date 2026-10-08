@@ -70,6 +70,8 @@ FLAG = os.path.join(BASE, "run_jobs_on_start.flag")
 LOG_DIR = os.path.join(BASE, "nightly")
 SCHED_LOG = os.path.join(LOG_DIR, "scheduler.log")
 BAT = os.path.join(BASE, "LWK_nightly.bat")
+# the dialog watcher the launcher starts next to each Revit (_WATCH)
+WATCH_FILE = os.path.join(BASE, "LWK_dialog_watch.ps1")
 LIST = os.path.join(BASE, "LWK_nightly_versions.txt")
 TEST_LIST = os.path.join(BASE, "LWK_nightly_test.txt")
 TASK = "LWK Viewer Nightly Export"
@@ -134,6 +136,28 @@ def _fresh(path):
 def flag_is_fresh():
     """The old launcher's single flag."""
     return os.path.isfile(FLAG) and _fresh(FLAG)
+
+
+def launcher_busy():
+    """Is the night launcher running now? A fresh flag of any Revit version,
+    or a "launcher started" in its log with no "launcher finished" after it
+    (within the last 12 hours)."""
+    try:
+        for name in os.listdir(BASE):
+            if _FLAG_NAME.match(name) and _fresh(os.path.join(BASE, name)):
+                return True
+    except Exception:
+        pass
+    if flag_is_fresh():
+        return True
+    try:
+        if (datetime.datetime.now() - datetime.datetime.fromtimestamp(os.path.getmtime(SCHED_LOG))).total_seconds() > 12 * 3600:
+            return False
+        with io.open(SCHED_LOG, encoding="utf-8", errors="replace") as f:
+            tail = f.read()[-20000:]
+        return tail.rfind("launcher started") > tail.rfind("launcher finished")
+    except Exception:
+        return False
 
 
 def remove_flag():
@@ -663,7 +687,7 @@ def write_list(jobs=None, only=None):
 # quote in a path can break it. If PowerShell cannot run at all, the old
 # rule applies - any Revit open, nothing is started - and the log says so.
 _BAT = r'''@echo off
-REM LWK-LAUNCHER 4
+REM LWK-LAUNCHER 5
 REM LWK Viewer night export. Started by Windows Task Scheduler every night,
 REM or with the word  test  by the Test night run button of Auto Publish.
 REM For every Revit version listed in LWK_nightly_versions.txt, one after
@@ -804,7 +828,8 @@ exit /b 0
 :flagok
 set /a RAN+=1
 set "LWK_DLOG=%LWK%\nightly\dialogs.log"
-if "%PS%"=="1" start "" /b "%PSEXE%" -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand @@WATCH@@
+set "LWK_WATCH=%LWK%\LWK_dialog_watch.ps1"
+if "%PS%"=="1" if exist "%LWK_WATCH%" start "" /b "%PSEXE%" -NoProfile -NonInteractive -WindowStyle Hidden -Command "iex ([IO.File]::ReadAllText($env:LWK_WATCH))"
 >>"%LOG%" echo %date% %time%  Revit %YEAR%: starting "%LWK_EXE%" - time limit %LIMIT_MIN% minutes.
 echo     Starting Revit %YEAR%. It publishes its models and then closes by itself.
 echo     This window waits for it. Progress is written in "%LWK%\nightly"
@@ -857,40 +882,78 @@ exit /b 0
 # for as long as that Revit runs (or the time limit). Some dialogs come
 # before the LWK tools are loaded and can answer anything - "External Tools
 # - Add-in Assembly Not Found" when an add-in's DLL is missing (6 Oct: the
-# LWK Excel to Revit Import add-in) - and they stop Revit until someone
-# clicks. The watcher presses the one harmless button of the dialogs it
-# knows, and writes every dialog it sees into nightly/dialogs.log; any other
-# dialog is left alone (and logged), as a person would want.
-# It reaches PowerShell as -EncodedCommand: no script file, so the script
-# execution policy does not apply, and no quoting in the .bat to break.
+# LWK Excel to Revit Import add-in), another add-in's own "cannot find
+# xxx.dll" message - and they stop Revit until someone clicks. So can a DWG
+# link while a model opens ("extents greater than 1E9 ... Click OK to
+# continue", 8 Oct).
+#
+# Every window of that Revit is found through Windows itself (EnumWindows):
+# a dialog owned by the "Open Model" progress window is not under Revit's
+# main window, which is all the first version looked at. The watcher
+# presses the harmless button of the dialogs it knows, and the only button
+# of a dialog that has one (an OK-only message: nothing to choose); every
+# other dialog is left alone and written into nightly/dialogs.log.
+#
+# It is kept in a file and run with Invoke-Expression: not a script file
+# as far as PowerShell is concerned, so the execution policy does not apply,
+# and it no longer has to fit on one line of the .bat (8191 characters).
 _WATCH = u"""$ErrorActionPreference='SilentlyContinue'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
-$A=[Windows.Automation.AutomationElement]; $S=[Windows.Automation.TreeScope]
-$B=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,[Windows.Automation.ControlType]::Button)
-$X=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,[Windows.Automation.ControlType]::Text)
+$A=[Windows.Automation.AutomationElement]; $S=[Windows.Automation.TreeScope]; $CT=[Windows.Automation.ControlType]
+$B=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,$CT::Button)
+$X=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,$CT::Text)
 $D=New-Object Windows.Automation.PropertyCondition($A::ClassNameProperty,'#32770')
+$TW=[Windows.Automation.TreeWalker]::ControlViewWalker
+$W32=$false
+try {
+Add-Type -Namespace LWK -Name Win -MemberDefinition @'
+public delegate bool EnumProc(System.IntPtr h, System.IntPtr p);
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc f, System.IntPtr p);
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(System.IntPtr h, out uint pid);
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool IsWindowVisible(System.IntPtr h);
+[System.Runtime.InteropServices.DllImport("user32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)] public static extern int GetClassName(System.IntPtr h, System.Text.StringBuilder s, int n);
+public static System.Collections.Generic.List<System.IntPtr> Of(uint want) {
+  var l = new System.Collections.Generic.List<System.IntPtr>();
+  EnumWindows(delegate(System.IntPtr h, System.IntPtr p) {
+    uint pid; GetWindowThreadProcessId(h, out pid);
+    if (pid == want && IsWindowVisible(h)) { var s = new System.Text.StringBuilder(256); GetClassName(h, s, 256); if (s.ToString() == "#32770") l.Add(h); }
+    return true; }, System.IntPtr.Zero);
+  return l; }
+'@
+$W32=$true } catch {}
 $log=$env:LWK_DLOG; $seen=@{}; $t0=Get-Date; $lim=[int]$env:LWK_LIMIT_SEC; if($lim -lt 600){$lim=10800}; $gone=0; $had=$false
 function Say($m){ Add-Content -LiteralPath $log -Value ((Get-Date -Format s)+'  Revit '+$env:YEAR+'  '+$m) }
-function Press($w,$names){ foreach($n in $names){ foreach($b in $w.FindAll($S::Descendants,$B)){ if($b.Current.Name -eq $n){ $b.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); return $n } } }; return $null }
+# the dialog's own buttons (not the title bar's Close)
+function Buttons($w){ @($w.FindAll($S::Descendants,$B) | Where-Object { $q=$TW.GetParent($_); -not $q -or $q.Current.ControlType -ne $CT::TitleBar }) }
+function Press($bs,$names){ foreach($n in $names){ foreach($b in $bs){ if($b.Current.Name -eq $n){ $b.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); return $n } } }; return $null }
 function Look($w){
   $title=$w.Current.Name
   $txt=(@($w.FindAll($S::Descendants,$X)) | ForEach-Object { $_.Current.Name }) -join ' '
-  $ans=$null
-  if($title -like '*Add-in Assembly Not Found*' -or $txt -like '*Failed to initialize the add-in*'){ $ans=@('Close','OK') }
-  elseif($txt -like '*import from the Model space*'){ $ans=@('Yes') }
-  elseif($txt -like '*was out of range*' -or $txt -like '*entities were lost during import*'){ $ans=@('Close','OK') }
+  $bs=Buttons $w
+  $ans=$null; $why=''
+  if($title -like '*Add-in Assembly Not Found*' -or $txt -like '*Failed to initialize the add-in*'){ $ans=@('Close','OK'); $why='an add-in that cannot load' }
+  elseif($txt -match '[.]dll' -and $txt -match "(could not|couldn't|can't|cannot|can not|unable to|not found|failed|missing|not exist)"){ $ans=@('Close','OK'); $why='a missing DLL' }
+  elseif($txt -like '*extents greater than*' -or ($txt -like '*Click OK to continue*' -and $txt -like '*import*')){ $ans=@('OK'); $why='a DWG partly out of range: imported, the far part cut off' }
+  elseif($txt -like '*import from the Model space*'){ $ans=@('Yes'); $why='a DWG with an empty paper space: its model space imported' }
+  elseif($txt -like '*was out of range*' -or $txt -like '*entities were lost during import*'){ $ans=@('Close','OK'); $why='a DWG Revit cannot fully read: noted' }
+  elseif($bs.Count -eq 1){ $ans=@($bs[0].Current.Name); $why='only one button, nothing to choose' }
   $key=$title+'|'+$txt
-  if($ans){ $p=Press $w $ans; if($p){ Say ('pressed '+$p+' on: '+$title+' - '+$txt) } }
-  elseif($txt -and -not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt) }
+  if($ans){ $p=Press $bs $ans; if($p){ Say ('pressed '+$p+' ('+$why+') on: '+$title+' - '+$txt); return } }
+  if(-not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt+' ['+(($bs | ForEach-Object { $_.Current.Name }) -join ', ')+']') }
 }
+Say ('watching'+$(if($W32){''}else{' (without Windows window list: only dialogs under Revit''s main window)'}))
 while(((Get-Date)-$t0).TotalSeconds -lt $lim){
   $ps=@(Get-Process -Name Revit | Where-Object { $_.Path -eq $env:LWK_EXE })
   if($ps.Count -eq 0){ if($had){ $gone+=2; if($gone -ge 60){ break } } } else { $had=$true; $gone=0 }
   foreach($p in $ps){
-    $pc=New-Object Windows.Automation.PropertyCondition($A::ProcessIdProperty,$p.Id)
-    foreach($w in $A::RootElement.FindAll($S::Children,$pc)){
-      if($w.Current.ClassName -eq '#32770'){ Look $w }
-      foreach($d in $w.FindAll($S::Children,$D)){ Look $d }
+    if($W32){
+      foreach($h in [LWK.Win]::Of([uint32]$p.Id)){ $w=$A::FromHandle($h); if($w){ Look $w } }
+    } else {
+      $pc=New-Object Windows.Automation.PropertyCondition($A::ProcessIdProperty,$p.Id)
+      foreach($w in $A::RootElement.FindAll($S::Children,$pc)){
+        if($w.Current.ClassName -eq '#32770'){ Look $w }
+        foreach($d in $w.FindAll($S::Children,$D)){ Look $d }
+      }
     }
   }
   Start-Sleep -Seconds 2
@@ -898,21 +961,23 @@ while(((Get-Date)-$t0).TotalSeconds -lt $lim){
 """
 
 
-def watch_encoded():
-    """_WATCH as PowerShell's -EncodedCommand wants it: base64 of UTF-16LE."""
-    import base64
-    return base64.b64encode(_WATCH.replace(u"\r\n", u"\n").encode("utf-16-le")).decode("ascii")
+def watch_text():
+    return u"\r\n".join(_WATCH.splitlines()) + u"\r\n"
 
 
 def bat_text():
-    return (u"\r\n".join((u"%s" % _BAT).splitlines()) + u"\r\n").replace(u"@@WATCH@@", watch_encoded())
+    return u"\r\n".join((u"%s" % _BAT).splitlines()) + u"\r\n"
 
 
 def bat_is_current():
-    """Is the launcher on this PC the one this version of the tools writes?"""
+    """Are the launcher and its dialog watcher on this PC the ones this
+    version of the tools writes?"""
     try:
         with io.open(BAT, encoding="utf-8", errors="replace", newline="") as f:
-            return f.read() == bat_text()
+            if f.read() != bat_text():
+                return False
+        with io.open(WATCH_FILE, encoding="utf-8", errors="replace", newline="") as f:
+            return f.read() == watch_text()
     except Exception:
         return False
 
@@ -922,6 +987,8 @@ def write_bat(exe=None):
     Revits to start is in the list file - kept for older callers.)"""
     _ensure(BASE)
     _ensure(LOG_DIR)
+    with io.open(WATCH_FILE, "w", encoding="utf-8", newline="") as f:
+        f.write(watch_text())
     with io.open(BAT, "w", encoding="utf-8", newline="") as f:
         f.write(bat_text())
     return BAT
@@ -1160,6 +1227,16 @@ def on_revit_start(uiapp):
     year = revit_year(uiapp)
     mode = take_flag(year, schedule_year())
     if not mode:
+        # a Revit started by a person: the night launcher is not running, so
+        # this is when an older launcher (and dialog watcher) on this PC can
+        # be renewed after the tools were updated - never during a night run,
+        # as rewriting a .bat while Windows runs it derails it
+        try:
+            if os.path.isfile(BAT) and not bat_is_current() and not launcher_busy():
+                for line in ensure_launcher():
+                    NightLog()(line)
+        except Exception:
+            pass
         return
     log = NightLog()
     log("Revit %s started by the night launcher%s" % (year, " (TEST run)" if mode == "test" else ""))

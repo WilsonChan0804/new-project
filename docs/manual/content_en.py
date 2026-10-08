@@ -116,6 +116,7 @@ DOC = [
         "**Messenger:** the project's channel shows new tasks, assignments, completions and comments, and new or changed issues, as cards.",
     ]),
     H2('Projects'),
+    P('**Order:** projects are listed by status - **Active** first, then **On hold**, **Completed** and **Archived** - and by name within each. The Projects page and every project drop-down (Sheets, 3D, Board, Dashboard, Folders, Messenger) use this order. On the Projects page, click a column heading (Project, Status, Tasks, Completion, Overdue, Issues) or use **Sort** to order the list another way; click again to reverse it. Your choice is remembered.'),
     P('The project drop-down at the top of Sheets, 3D, Board and Dashboard is two: first the **project** (name · code), then **its model or sheet set** (for example Site 1 / Site 2, or on Sheets "Revit sheets" and each uploaded PDF set).'),
     P('In a project\'s panel, **Project information** keeps the project no., client, address, building type, site area, GFA, storeys, stage, start and completion dates and a description (**Edit**, for the project\'s owners and admins). Click or drop a picture at the top of the panel to give the project a **picture**; it also shows in the list.'),
     P('The **Projects** page lists the team\'s jobs, each with its people, drawings, model, tasks, issues, files and chat in one place. It is for reading; admins set projects up on **Admin > Projects and members** (the **Manage** button takes you there).'),
@@ -640,7 +641,7 @@ DOC = [
     P('**Nightly export needs:** the PC left on and logged in (a locked screen is fine), Revit closed at the scheduled time, and Revit signed in to Autodesk. Allow about 15 minutes per model. Logs are in %APPDATA%\\LWK\\nightly.'),
     UL([
         'Every workset of the model is opened by name and unloaded links are loaded. If a workset is still closed, or the 3D model comes out empty, the viewer **keeps the last good 3D model** (the sheets still go), and the log ends with **result FAILED** and the reason.',
-        'Known dialogs are answered so the night is not stopped: a DWG with an empty paper space (Yes), DWG import notes (Close), and **External Tools - Add-in Assembly Not Found** at start-up (Close, by the launcher\'s watcher). Every dialog is written to nightly\\dialogs.log. Best: repair or remove the broken add-in on that PC.',
+        'Known dialogs are answered so the night is not stopped: a DWG with an empty paper space (Yes), a DWG with **extents greater than 1E9** (OK: it is imported without the far part), DWG import notes (Close), **External Tools - Add-in Assembly Not Found** and any other add-in\'s **cannot find xxx.dll** message (Close), and any message that has only one button. Dialogs that come before the LWK tools load, or while a model opens, are answered by the launcher\'s watcher, which finds every window of that Revit. Every dialog is written to nightly\\dialogs.log. The launcher and its watcher are renewed by themselves the next time Revit is opened by hand after an update. Best: repair or remove the broken add-in on that PC.',
     ]),
     H3('LWK Issues window in Revit'),
     UL([

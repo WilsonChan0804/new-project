@@ -33,7 +33,7 @@
 #fo-search { width: 230px; }
 
 #fo-list { flex: 1; overflow: auto; min-height: 0; outline: none; }
-.fo-head, .fo-row { display: grid; grid-template-columns: 34px minmax(200px, 1fr) 150px 90px 150px 34px; align-items: center; }
+.fo-head, .fo-row { display: grid; grid-template-columns: 34px minmax(200px, 1fr) 160px 90px 150px 34px; align-items: center; }
 .fo-head { position: sticky; top: 0; background: var(--panel); z-index: 1; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 700;
   color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
 .fo-head > span { padding: 7px 8px; }
@@ -108,7 +108,8 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
   body.fo-side-open #fo-side { visibility: visible; box-shadow: 4px 0 18px rgba(0,0,0,.15); }
   body.fo-side-open #fo-side { transform: none; }
   .fo-sidebtn { display: inline-block; }
-  .fo-head, .fo-row { grid-template-columns: 34px minmax(0, 1fr) 84px 34px; }
+  .fo-head, .fo-row { grid-template-columns: 34px minmax(0, 1fr) 118px 34px; }
+  .fo-row > span.muted:not(.c-size):not(.c-by) { font-size: 11px; }
   .fo-head .c-by, .fo-row .c-by, .fo-head .c-size, .fo-row .c-size { display: none; }
   #fo-search { width: 100%; order: 10; }
   #fo-prev { position: absolute; inset: 0; width: auto !important; max-width: none; z-index: 15; }

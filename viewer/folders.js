@@ -59,12 +59,12 @@ function size(n) {
   while (n >= 1024 && i < 3) { n /= 1024; i++; }
   return (i ? n.toFixed(n < 10 ? 1 : 0) : n) + " " + u[i];
 }
+// date and time, e.g. "8 Oct 2026 14:32"
 function when(iso) {
   const d = new Date(iso);
-  if (isNaN(d)) return "";
-  const same = d.toDateString() === new Date().toDateString();
-  return same ? d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+  if (!iso || isNaN(d)) return "";
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " "
+    + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 /* ------------------------------------------------------------ loading */
@@ -287,8 +287,8 @@ function preview(e) {
     if (b.dataset.pv === "sheets") toSheets(e);
     if (b.dataset.pv === "wide") setWide(!document.body.classList.contains("fo-wide"));
     if (b.dataset.pv === "fit") zoom(box, "fit");
-    if (b.dataset.pv === "zi") zoom(box, 1.15);
-    if (b.dataset.pv === "zo") zoom(box, 1 / 1.15);
+    if (b.dataset.pv === "zi") zoomAbout(box, 1.15);
+    if (b.dataset.pv === "zo") zoomAbout(box, 1 / 1.15);
   };
 }
 
@@ -345,18 +345,51 @@ function zoomable(box, wrap, natural, fit) {
 /* Two fingers on the preview zoom it (phones). The page itself is not
    pinch-zoomed there (touch-action in folders.css). */
 function pinch(box) {
-  let d0 = 0, k0 = 1, raf = 0, want = 0;
+  let d0 = 0, k0 = 1, raf = 0, u = null, last = null;
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
   box.addEventListener("touchstart", (ev) => {
-    if (ev.touches.length === 2 && box._zoom) { d0 = dist(ev.touches); k0 = box._zoom.k || 1; }
+    if (ev.touches.length !== 2 || !box._zoom) return;
+    d0 = dist(ev.touches);
+    k0 = box._zoom.k || 1;
+    // the spot of the document between the two fingers: it stays under them
+    const m = mid(ev.touches);
+    u = pointAt(box._zoom, m[0], m[1]);
   }, { passive: true });
   box.addEventListener("touchmove", (ev) => {
     if (ev.touches.length !== 2 || !d0 || !box._zoom) return;
     ev.preventDefault();
-    want = k0 * dist(ev.touches) / d0;
-    if (!raf) raf = requestAnimationFrame(() => { raf = 0; zoom(box, { k: want }); });
+    last = { k: k0 * dist(ev.touches) / d0, m: mid(ev.touches) };
+    if (!raf) raf = requestAnimationFrame(() => {
+      raf = 0;
+      zoom(box, { k: last.k });
+      putPoint(box._zoom, u, last.m[0], last.m[1]);
+    });
   }, { passive: false });
   box.addEventListener("touchend", (ev) => { if (ev.touches.length < 2) d0 = 0; }, { passive: true });
+}
+
+/* Where a point of the screen is in the document (unzoomed), and the
+   scroll that puts that point of the document back under it. */
+function pointAt(z, ax, ay) {
+  const r = z.wrap.getBoundingClientRect(), k = z.k || 1;
+  return [(ax - r.left) / k, (ay - r.top) / k];
+}
+function putPoint(z, u, ax, ay) {
+  if (!u) return;
+  const sc = z.wrap.parentElement, r = z.wrap.getBoundingClientRect(), k = z.k || 1;
+  sc.scrollLeft += r.left + u[0] * k - ax;
+  sc.scrollTop += r.top + u[1] * k - ay;
+}
+/* − and +: about the middle of what is in view */
+function zoomAbout(box, f) {
+  const z = box._zoom;
+  if (!z) return;
+  const r = z.wrap.parentElement.getBoundingClientRect();
+  const ax = r.left + r.width / 2, ay = r.top + r.height / 2;
+  const u = pointAt(z, ax, ay);
+  zoom(box, f);
+  putPoint(z, u, ax, ay);
 }
 
 /* A PDF read with pdf.js, every page under the other (phones and tablets:

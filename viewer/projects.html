@@ -46,6 +46,15 @@
     <div id="t-bar">
       <input id="pj-q" type="search" placeholder="Search projects or people" autocomplete="off">
       <select id="pj-status"><option value="">Any status</option></select>
+      <select id="pj-sort" title="Order of the list">
+        <option value="status:1">Sort: status, then name</option>
+        <option value="name:1">Sort: name A-Z</option>
+        <option value="name:-1">Sort: name Z-A</option>
+        <option value="code:1">Sort: project number</option>
+        <option value="overdue:-1">Sort: most overdue</option>
+        <option value="issues:-1">Sort: most open issues</option>
+        <option value="done:-1">Sort: most complete</option>
+      </select>
       <span class="spacer"></span>
       <a id="pj-manage" class="ghost" href="admin.html#projects" hidden style="font-size:12px" title="Add projects, set their members and link their viewer project">Manage projects (Admin)</a>
     </div>

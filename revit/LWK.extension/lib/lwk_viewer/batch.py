@@ -143,6 +143,15 @@ class DialogLog(object):
          "close", "a DWG with out-of-range numbers: noted, closed"),
         (re.compile(r"some entities were lost during import", re.I),
          "close", "a DWG with entities Revit cannot read: noted, closed"),
+        # 8 Oct: "Geometry in the file LG.dwg has extents greater than 1E9.
+        # Data exceeding that range will be truncated. Click OK to continue,
+        # Cancel to exit import." - OK keeps the link, without the far part
+        (re.compile(r"extents greater than|click ok to continue.{0,40}import", re.I | re.S),
+         1, "a DWG partly out of range: imported, the far part cut off (OK)"),
+        # another add-in that cannot find its DLL: nothing to decide
+        (re.compile(r"\.dll\b.*(could not|couldn't|can't|cannot|can not|unable to|not found|failed|missing|not exist)"
+                    r"|(could not|couldn't|can't|cannot|can not|unable to|failed to)\b.{0,80}\.dll\b", re.I | re.S),
+         "close", "an add-in's missing DLL: noted, closed"),
     ]
 
     @staticmethod
@@ -187,7 +196,17 @@ class DialogLog(object):
                 rule = self.text_rule(msg, kind)
                 if not rule and self.ok_only(args, kind):
                     rule = (1, "a message with only an OK button: closed")
-            if rule and args.OverrideResult(rule[0]):
+            done = False
+            if rule:
+                # a "close" that this dialog has no Close for: OK
+                for ans in [rule[0]] + ([1] if rule[0] == 8 else []):
+                    try:
+                        if args.OverrideResult(ans):
+                            done = True
+                            break
+                    except Exception:
+                        continue
+            if done:
                 self.probe.warn("dialog", "answered '%s' - %s%s" % (did or "message", rule[1],
                                 (": " + msg[:160]) if msg else ""))
             else:

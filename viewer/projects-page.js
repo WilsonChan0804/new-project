@@ -19,7 +19,35 @@ const INFO = [
 ];
 import { chip } from "./filelinks.js";
 
-const P = { me: null, list: [], rooms: {}, open: "", q: "", status: "", tree: {}, shut: new Set() };
+const P = { me: null, list: [], rooms: {}, open: "", q: "", status: "", tree: {}, shut: new Set(), sort: { by: "status", dir: 1 } };
+try { const s = JSON.parse(localStorage.getItem("lwk-projects:sort") || "null"); if (s && s.by) P.sort = s; } catch (e) {}
+
+/* The usual order (as the server lists them, and every project drop-down):
+   active first, then on hold, completed, archived - then by name. */
+const RANK = { "active": 0, "in progress": 0, "ongoing": 0, "on hold": 1, "on-hold": 1, "onhold": 1, "hold": 1, "paused": 1,
+  "suspended": 1, "completed": 3, "complete": 3, "done": 3, "finished": 3, "closed": 3, "archived": 4, "archive": 4,
+  "cancelled": 5, "canceled": 5 };
+const rank = (st) => { const r = RANK[String(st || "").trim().toLowerCase().replace(/\s+/g, " ")]; return r == null ? 2 : r; };
+const nameOf = (p) => (p.short || p.name || "").trim();
+const byName = (a, b) => nameOf(a).localeCompare(nameOf(b), undefined, { sensitivity: "base", numeric: true });
+const pct = (p) => (p.stats.tasks ? p.stats.done / p.stats.tasks : -1);
+const SORTS = {
+  status: (a, b) => rank(a.status) - rank(b.status) || byName(a, b),
+  name: byName,
+  code: (a, b) => (a.code || "").localeCompare(b.code || "", undefined, { numeric: true }) || byName(a, b),
+  tasks: (a, b) => a.stats.tasks - b.stats.tasks || byName(a, b),
+  done: (a, b) => pct(a) - pct(b) || byName(a, b),
+  overdue: (a, b) => (a.stats.overdue || 0) - (b.stats.overdue || 0) || byName(a, b),
+  issues: (a, b) => ((a.issues && a.issues.open) || 0) - ((b.issues && b.issues.open) || 0) || byName(a, b),
+};
+function sorted(rows) {
+  const f = SORTS[P.sort.by] || SORTS.status;
+  return rows.slice().sort((a, b) => f(a, b) * P.sort.dir);
+}
+const th = (key, label, cls) => {
+  const on = P.sort.by === key;
+  return `<th class="pj-sort${on ? " on" : ""}${cls ? " " + cls : ""}" data-sort="${key}" title="Sort by ${esc(label.toLowerCase())}${key === "status" ? " (active, on hold, completed, archived - then by name)" : ""}">${esc(label)}${on ? (P.sort.dir > 0 ? " &#9650;" : " &#9660;") : ""}</th>`;
+};
 const ISSUE_ORDER = ["Open", "In progress", "Resolved", "Closed", "Not an issue"];
 const ISSUE_COL = { "Open": "#e2453c", "In progress": "#e8a13a", "Resolved": "#3b82f6", "Closed": "#0e9f6e", "Not an issue": "#9aa3ae" };
 
@@ -39,7 +67,7 @@ async function load() {
 /* the status filter, the table */
 function paintList() {
   const st = $("#pj-status"), cur = st.value;
-  const vals = [...new Set(P.list.map((p) => p.status).filter(Boolean))].sort();
+  const vals = [...new Set(P.list.map((p) => p.status).filter(Boolean))].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
   st.innerHTML = `<option value="">Any status</option>` + vals.map((v) => `<option>${esc(v)}</option>`).join("");
   st.value = vals.includes(cur) ? cur : "";
   $("#pj-manage").hidden = !P.list.some((p) => p.can_edit);
@@ -96,16 +124,22 @@ document.addEventListener("click", (ev) => {
 
 function render() {
   const q = P.q.trim().toLowerCase();
-  const rows = P.list.filter((p) => (!P.status || p.status === P.status)
+  const rows = sorted(P.list).filter((p) => (!P.status || p.status === P.status)
     && (!q || [p.code, p.name, p.short, p.team, p.viewer, p.members.map((m) => m.name).join(" ")].join(" ").toLowerCase().includes(q)));
   $("#pj-count").textContent = `${rows.length} of ${P.list.length}`;
+  const ss = $("#pj-sort");
+  if (ss) {
+    const v = P.sort.by + ":" + P.sort.dir;
+    if (![...ss.options].some((o) => o.value === v)) ss.insertAdjacentHTML("beforeend", `<option value="${esc(v)}" data-extra>Sort: ${esc(P.sort.by)} ${P.sort.dir > 0 ? "&#9650;" : "&#9660;"}</option>`);
+    ss.value = v;
+  }
   if (!P.list.length) {
     $("#t-view").innerHTML = `<div class="t-empty"><h3>No projects yet</h3><p>You are not a member of any project. A project admin adds you on the Admin page.</p></div>`;
     return;
   }
   $("#t-view").innerHTML = `<table class="pj">
-    <thead><tr><th>Project</th><th>Members</th><th>Open</th><th>Status</th>
-      <th class="num">Tasks</th><th>Completion</th><th class="num">Overdue</th><th>Issues</th><th>Open tasks</th><th>Folder</th></tr></thead>
+    <thead><tr>${th("name", "Project")}<th>Members</th><th>Open</th>${th("status", "Status")}
+      ${th("tasks", "Tasks", "num")}${th("done", "Completion")}${th("overdue", "Overdue", "num")}${th("issues", "Issues")}<th>Open tasks</th><th>Folder</th></tr></thead>
     <tbody>${rows.map((p) => {
       const st = p.stats;
       return `<tr data-id="${esc(p.id)}" class="${P.open === p.id ? "sel" : ""}">
@@ -122,6 +156,16 @@ function render() {
       </tr>`;
     }).join("")}</tbody></table>`;
 }
+
+/* a column heading: sort by it (again: the other way round); remembered */
+document.addEventListener("click", (ev) => {
+  const h = ev.target.closest && ev.target.closest("th[data-sort]");
+  if (!h) return;
+  const by = h.dataset.sort;
+  P.sort = P.sort.by === by ? { by, dir: -P.sort.dir } : { by, dir: ["tasks", "done", "overdue", "issues"].includes(by) ? -1 : 1 };
+  try { localStorage.setItem("lwk-projects:sort", JSON.stringify(P.sort)); } catch (e) {}
+  render();
+});
 
 /* ------------------------------------------------------------ one project */
 
@@ -321,6 +365,12 @@ async function start() {
   P.open = new URLSearchParams(location.search).get("p") || "";
   $("#pj-q").oninput = (ev) => { P.q = ev.target.value; render(); };
   $("#pj-status").onchange = (ev) => { P.status = ev.target.value; render(); };
+  $("#pj-sort").onchange = (ev) => {
+    const [by, dir] = ev.target.value.split(":");
+    P.sort = { by, dir: Number(dir) || 1 };
+    try { localStorage.setItem("lwk-projects:sort", JSON.stringify(P.sort)); } catch (e) {}
+    render();
+  };
   $("#t-view").onclick = (ev) => {
     if (ev.target.closest("a")) return;
     const tr = ev.target.closest("tr[data-id]");

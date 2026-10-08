@@ -811,7 +811,7 @@ function setScope(reg) {
 }
 function scopeList() {
   return [["", "All projects"]].concat(Object.values(C.projects)
-    .map((p) => [p.id, p.short || p.name]).sort((a, b) => a[1].localeCompare(b[1])));
+    .map((p) => [p.id, p.short || p.name]));     // in the server's order: by status, then name
 }
 function scopeChips(cur) {
   return `<div class="lk-proj" title="Choose the project first">` + scopeList().map(([id, n]) =>

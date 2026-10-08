@@ -665,6 +665,27 @@ def is_done(v):
     return str(v or "").strip().lower() in ("1", "true", "yes", "done", "completed", "complete", "closed", "已完成")
 
 
+# The order projects are listed in, everywhere (Projects page, every
+# project drop-down): by status - active first, then on hold, completed,
+# archived - then by name.
+STATUS_RANK = {"active": 0, "in progress": 0, "ongoing": 0, "on hold": 1, "on-hold": 1, "onhold": 1, "hold": 1,
+               "paused": 1, "suspended": 1, "completed": 3, "complete": 3, "done": 3, "finished": 3, "closed": 3,
+               "archived": 4, "archive": 4, "cancelled": 5, "canceled": 5}
+
+
+def status_rank(status):
+    # a status of its own wording comes after On hold, before Completed
+    return STATUS_RANK.get(re.sub(r"\s+", " ", str(status or "").strip().lower()), 2)
+
+
+def project_order(rows):
+    """rows (sqlite rows or dicts of the projects table), in the order above."""
+    def key(r):
+        nm = (r["short"] or r["name"] or "").strip().lower()
+        return (status_rank(r["status"]), nm, (r["code"] or "").lower())
+    return sorted(rows, key=key)
+
+
 def viewers_of(r):
     """The viewer projects (model and sheets) of a project - one or several
     parts, e.g. MOS Site 1 and Site 2. The first is its main one."""
@@ -1916,7 +1937,7 @@ def register(app, core):
         w = core.who(request, x_viewer_token)
         with db() as d:
             ensure_registry(d)
-            rows = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+            rows = project_order(d.execute("SELECT * FROM projects WHERE deleted = 0").fetchall())
             if lite:
                 # just the groups, for the chat's Tasks link
                 stats = {}
@@ -2204,15 +2225,17 @@ def register(app, core):
         titles = dict((p["id"], p["title"]) for p in mine)
         with db() as d:
             ensure_registry(d)
-            rows = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+            rows = project_order(d.execute("SELECT * FROM projects WHERE deleted = 0").fetchall())
         out, used = [], set()
         for r in rows:
             parts = [{"id": v, "title": titles[v]} for v in viewers_of(r) if v in titles]
             if not parts:
                 continue
             used.update(x["id"] for x in parts)
-            out.append({"reg": r["id"], "name": r["short"] or r["name"], "full": r["name"], "code": r["code"], "parts": parts})
-        others = [{"id": p["id"], "title": p["title"]} for p in mine if p["id"] not in used]
+            out.append({"reg": r["id"], "name": r["short"] or r["name"], "full": r["name"], "code": r["code"], "parts": parts,
+                        "status": r["status"]})
+        others = sorted([{"id": p["id"], "title": p["title"]} for p in mine if p["id"] not in used],
+                        key=lambda x: (x["title"] or x["id"]).lower())
         return {"projects": out, "others": others}
 
     # ------------------------------------------------ links for the Messenger
@@ -2269,7 +2292,7 @@ def register(app, core):
         titles = dict((p["id"], p["title"]) for p in core.list_projects())
         with db() as d:
             ensure_registry(d)
-            regs = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+            regs = project_order(d.execute("SELECT * FROM projects WHERE deleted = 0").fetchall())
             one = [r for r in regs if r["id"] == reg]
             scope = one or regs
             out = []
@@ -2368,7 +2391,7 @@ def register(app, core):
                 more[g] += 1
         with db() as d:
             ensure_registry(d)
-            regs = d.execute("SELECT * FROM projects WHERE deleted = 0 ORDER BY sort, name").fetchall()
+            regs = project_order(d.execute("SELECT * FROM projects WHERE deleted = 0").fetchall())
             scope = [r for r in regs if r["id"] == project] or regs
             # projects
             for r in regs:
