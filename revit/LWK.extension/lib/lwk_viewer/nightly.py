@@ -898,6 +898,7 @@ exit /b 0
 # as far as PowerShell is concerned, so the execution policy does not apply,
 # and it no longer has to fit on one line of the .bat (8191 characters).
 _WATCH = u"""$ErrorActionPreference='SilentlyContinue'
+$VER='2026-10-08c'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
 $A=[Windows.Automation.AutomationElement]; $S=[Windows.Automation.TreeScope]; $CT=[Windows.Automation.ControlType]
 $B=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,$CT::Button)
@@ -909,40 +910,90 @@ try {
 Add-Type -Namespace LWK -Name Win -MemberDefinition @'
 public delegate bool EnumProc(System.IntPtr h, System.IntPtr p);
 [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc f, System.IntPtr p);
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool EnumChildWindows(System.IntPtr parent, EnumProc f, System.IntPtr p);
 [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(System.IntPtr h, out uint pid);
 [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool IsWindowVisible(System.IntPtr h);
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern int GetWindowLong(System.IntPtr h, int i);
 [System.Runtime.InteropServices.DllImport("user32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)] public static extern int GetClassName(System.IntPtr h, System.Text.StringBuilder s, int n);
+[System.Runtime.InteropServices.DllImport("user32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)] public static extern int GetWindowText(System.IntPtr h, System.Text.StringBuilder s, int n);
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool PostMessage(System.IntPtr h, uint m, System.IntPtr w, System.IntPtr l);
+static string Cls(System.IntPtr h) { var s = new System.Text.StringBuilder(256); GetClassName(h, s, 256); return s.ToString(); }
+public static string Text(System.IntPtr h) { var s = new System.Text.StringBuilder(512); GetWindowText(h, s, 512); return s.ToString(); }
 public static System.Collections.Generic.List<System.IntPtr> Of(uint want) {
   var l = new System.Collections.Generic.List<System.IntPtr>();
   EnumWindows(delegate(System.IntPtr h, System.IntPtr p) {
     uint pid; GetWindowThreadProcessId(h, out pid);
-    if (pid == want && IsWindowVisible(h)) { var s = new System.Text.StringBuilder(256); GetClassName(h, s, 256); if (s.ToString() == "#32770") l.Add(h); }
+    if (pid == want && IsWindowVisible(h) && Cls(h) == "#32770") l.Add(h);
     return true; }, System.IntPtr.Zero);
   return l; }
+public static System.Collections.Generic.List<System.IntPtr> Buttons(System.IntPtr dlg) {
+  var l = new System.Collections.Generic.List<System.IntPtr>();
+  EnumChildWindows(dlg, delegate(System.IntPtr h, System.IntPtr p) {
+    if (IsWindowVisible(h) && Cls(h) == "Button") {
+      int t = GetWindowLong(h, -16) & 0xF;
+      if (t == 0 || t == 1 || t == 0xE || t == 0xF) l.Add(h);
+    }
+    return true; }, System.IntPtr.Zero);
+  return l; }
+public static string Statics(System.IntPtr dlg) {
+  var sb = new System.Text.StringBuilder();
+  EnumChildWindows(dlg, delegate(System.IntPtr h, System.IntPtr p) {
+    if (IsWindowVisible(h) && Cls(h) == "Static") { var t = Text(h); if (t.Length > 0) sb.Append(t).Append(' '); }
+    return true; }, System.IntPtr.Zero);
+  return sb.ToString().Trim(); }
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern int GetDlgCtrlID(System.IntPtr h);
+[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern System.IntPtr GetParent(System.IntPtr h);
+// what the button itself tells its dialog when clicked (WM_COMMAND, BN_CLICKED):
+// works whether or not the dialog is the active window, unlike BM_CLICK
+public static bool Click(System.IntPtr b) {
+  int id = GetDlgCtrlID(b) & 0xFFFF;
+  return PostMessage(GetParent(b), 0x0111, new System.IntPtr(id), b); }
+public static bool Close(System.IntPtr dlg) { return PostMessage(dlg, 0x0010, System.IntPtr.Zero, System.IntPtr.Zero); }
 '@
-$W32=$true } catch {}
+$W32=$true } catch { $why32=$_.Exception.Message }
 $log=$env:LWK_DLOG; $seen=@{}; $found=@{}; $nSeen=0; $nPressed=0; $beat=Get-Date; $t0=Get-Date; $lim=[int]$env:LWK_LIMIT_SEC; if($lim -lt 600){$lim=10800}; $gone=0; $had=$false
 function Say($m){ Add-Content -LiteralPath $log -Value ((Get-Date -Format s)+'  Revit '+$env:YEAR+'  '+$m) }
-# the dialog's own buttons (not the title bar's Close)
-function Buttons($w){ @($w.FindAll($S::Descendants,$B) | Where-Object { $q=$TW.GetParent($_); -not $q -or $q.Current.ControlType -ne $CT::TitleBar }) }
-function Press($bs,$names){ foreach($n in $names){ foreach($b in $bs){ if($b.Current.Name -eq $n){ $b.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); return $n } } }; return $null }
-function Look($w){
+function Clean($n){ ([string]$n).Replace('&','').Trim() }
+# the dialog's own buttons as UI Automation sees them (not the title bar's Close)
+function Buttons($w){ @($w.FindAll($S::Descendants,$B) | Where-Object { $q=$TW.GetParent($_); (-not $q) -or ($q.Current.ControlType.Id -ne $CT::TitleBar.Id) }) }
+# the buttons as Windows has them: [name, how to press]
+function AllButtons($w,$h){
+  $out=@()
+  foreach($b in (Buttons $w)){ $out+=,@((Clean $b.Current.Name),'uia',$b) }
+  if($W32 -and $h){ foreach($bh in [LWK.Win]::Buttons($h)){ $n=Clean ([LWK.Win]::Text($bh)); if(-not ($out | Where-Object { $_[0] -eq $n })){ $out+=,@($n,'w32',$bh) } } }
+  return ,$out
+}
+function Press($bs,$names){
+  foreach($n in $names){ foreach($b in $bs){ if($b[0] -eq $n){
+    if($b[1] -eq 'uia'){ try { $b[2].GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); return $n+' (UIA)' } catch {} }
+    else { if([LWK.Win]::Click($b[2])){ return $n+' (Windows)' } }
+  } } }
+  return $null
+}
+function Look($w,$h){
   $title=$w.Current.Name
   $txt=(@($w.FindAll($S::Descendants,$X)) | ForEach-Object { $_.Current.Name }) -join ' '
-  $bs=Buttons $w
-  $ans=$null; $why=''
-  if($title -like '*Add-in Assembly Not Found*' -or $txt -like '*Failed to initialize the add-in*'){ $ans=@('Close','OK'); $why='an add-in that cannot load' }
-  elseif($txt -match '[.]dll' -and $txt -match "(could not|couldn't|can't|cannot|can not|unable to|not found|failed|missing|not exist)"){ $ans=@('Close','OK'); $why='a missing DLL' }
+  if($W32 -and $h -and -not $txt){ $txt=[LWK.Win]::Statics($h) }
+  $bs=AllButtons $w $h
+  $ans=$null; $why=''; $orClose=$false
+  if($title -like '*Add-in Assembly Not Found*' -or $txt -like '*Failed to initialize the add-in*'){ $ans=@('Close','OK'); $why='an add-in that cannot load'; $orClose=$true }
+  elseif($txt -match '[.]dll' -and $txt -match "(could not|couldn't|can't|cannot|can not|unable to|not found|failed|missing|not exist)"){ $ans=@('Close','OK'); $why='a missing DLL'; $orClose=$true }
   elseif($txt -like '*extents greater than*' -or ($txt -like '*Click OK to continue*' -and $txt -like '*import*')){ $ans=@('OK'); $why='a DWG partly out of range: imported, the far part cut off' }
   elseif($txt -like '*import from the Model space*'){ $ans=@('Yes'); $why='a DWG with an empty paper space: its model space imported' }
-  elseif($title -like '*Lost on Import*' -or $txt -like '*were lost during import*' -or $txt -like '*cannot be imported*' -or $txt -like '*was out of range*'){ $ans=@('Close','OK'); $why='a DWG Revit cannot fully read: noted' }
-  elseif($bs.Count -eq 1){ $ans=@($bs[0].Current.Name); $why='only one button, nothing to choose' }
+  elseif($title -like '*Lost on Import*' -or $txt -like '*were lost during import*' -or $txt -like '*cannot be imported*' -or $txt -like '*was out of range*'){ $ans=@('Close','OK'); $why='a DWG Revit cannot fully read: noted'; $orClose=$true }
+  elseif($bs.Count -eq 1){ $ans=@($bs[0][0]); $why='only one button, nothing to choose' }
   $key=$title+'|'+$txt
   $script:nSeen++
-  if($ans){ $p=Press $bs $ans; if($p){ $script:nPressed++; Say ('pressed '+$p+' ('+$why+') on: '+$title+' - '+$txt); return } }
-  if(-not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt+' ['+(($bs | ForEach-Object { $_.Current.Name }) -join ', ')+']') }
+  $names=(($bs | ForEach-Object { $_[0]+'/'+$_[1] }) -join ', ')
+  if($ans){
+    $p=Press $bs $ans
+    if($p){ $script:nPressed++; Say ('pressed '+$p+' ('+$why+') on: '+$title+' - '+$txt); return }
+    # a dialog that only says something, its button not found: closed as with its X (Esc)
+    if($orClose -and $W32 -and $h -and -not $seen.ContainsKey('x|'+$key)){ $seen['x|'+$key]=1; if([LWK.Win]::Close($h)){ $script:nPressed++; Say ('closed (its X) - no button found ['+$names+'] ('+$why+') on: '+$title+' - '+$txt); return } }
+  }
+  if(-not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt+' ['+$names+']') }
 }
-Say ('watching'+$(if($W32){''}else{' (without Windows window list: only dialogs under Revit''s main window)'}))
+Say ('watching (watcher '+$VER+')'+$(if($W32){''}else{' WITHOUT the Windows window list ('+$why32+'): only dialogs under Revit''s main window'}))
 while(((Get-Date)-$t0).TotalSeconds -lt $lim){
   $ps=@(Get-Process -Name Revit | Where-Object { $_.Path -eq $env:LWK_EXE })
   if($ps.Count -eq 0){ if($had){ $gone+=2; if($gone -ge 60){ break } } } else { $had=$true; $gone=0 }
@@ -950,12 +1001,12 @@ while(((Get-Date)-$t0).TotalSeconds -lt $lim){
   foreach($p in $ps){
     if(-not $found.ContainsKey($p.Id)){ $found[$p.Id]=1; Say ('found Revit (process '+$p.Id+')') }
     if($W32){
-      foreach($h in [LWK.Win]::Of([uint32]$p.Id)){ $w=$A::FromHandle($h); if($w){ Look $w } }
+      foreach($h in [LWK.Win]::Of([uint32]$p.Id)){ $w=$A::FromHandle($h); if($w){ Look $w $h } }
     } else {
       $pc=New-Object Windows.Automation.PropertyCondition($A::ProcessIdProperty,$p.Id)
       foreach($w in $A::RootElement.FindAll($S::Children,$pc)){
-        if($w.Current.ClassName -eq '#32770'){ Look $w }
-        foreach($d in $w.FindAll($S::Children,$D)){ Look $d }
+        if($w.Current.ClassName -eq '#32770'){ Look $w $null }
+        foreach($d in $w.FindAll($S::Children,$D)){ Look $d $null }
       }
     }
   }

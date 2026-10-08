@@ -130,6 +130,9 @@ class DialogLog(object):
         # "Open Manage Links to correct the problem" (1001) or
         # "Ignore and continue opening the project" (1002)
         "TaskDialog_Unresolved_References": (1002, "missing links: continued without them"),
+        # its only button is Close (TaskDialogResult.Close = 8): a note that a
+        # DWG held ActiveX or proxy objects Revit cannot read (8 Oct test run)
+        "TaskDialog_Elements_Lost_On_Import": (8, "a DWG with elements Revit cannot read: noted, closed"),
     }
 
     # Dialogs with no id (DialogId ''), known by their words: the ones a
