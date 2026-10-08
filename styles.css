@@ -336,3 +336,19 @@ dialog::backdrop { background: rgba(10,10,10,.5); }
 .omap canvas { display: block; width: 100%; height: 240px; }
 .omap-attr { position: absolute; right: 6px; bottom: 4px; font-size: 9.5px; color: #555; background: rgba(255,255,255,.7); padding: 0 4px; border-radius: 4px; margin: 0; }
 @media (max-width: 420px) { .item { grid-template-columns: 54px 1fr; gap: 8px; } .when b { font-size: 16px; } }
+
+/* ---------- interactive map ---------- */
+.omap { height: 300px; }
+.omap .leaf { position: absolute; inset: 0; z-index: 0; background: #e8e6df; }
+.omap .leaf.empty::after { content: "未有地點座標"; position: absolute; inset: 0; display: grid; place-items: center; color: #777; font-weight: 700; pointer-events: none; z-index: 500; }
+.omap-full { position: absolute; top: 10px; right: 10px; z-index: 1000; width: 38px; height: 38px; border-radius: 10px; border: 0; background: #fff; color: #111; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.25); cursor: pointer; }
+.omap.full { position: fixed; inset: 0; height: auto; z-index: 9999; border-radius: 0; }
+.omap.full .omap-full { top: calc(12px + env(safe-area-inset-top)); }
+.leaflet-container { font: inherit; }
+.leaflet-touch .leaflet-bar a { width: 38px; height: 38px; line-height: 38px; font-size: 20px; }
+.omap-tip { font-weight: 800; font-size: 12px; padding: 2px 6px; border-radius: 6px; }
+.tile-missing { background: repeating-linear-gradient(45deg, #ece9e1 0 10px, #e3e0d8 10px 20px); }
+.pinpanel { margin-top: 10px; padding: 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.pinpaste { display: block; font-size: 13px; color: var(--muted); font-weight: 700; margin-top: 10px; }
+.pinpaste input { flex: 1; min-width: 0; padding: 9px 10px; font: 500 16px var(--font); border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink); }
+.pinpaste .row { margin-top: 6px; flex-wrap: nowrap; }

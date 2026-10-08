@@ -37,6 +37,7 @@ To run it locally: `python3 -m http.server` and then open http://localhost:8000.
 The Tokyo trip (29/10–1/11) lives in `trip-data.js`. The `XL` block holds the exact wording from `1007_Tokyo_Itinerary.xlsx`: 活動 (activity), 備註 (notes), 交通 (transport), and 預約/地圖 URL (booking/map URL). The app adds Japanese names, menus, Tabelog summaries, photos and map queries on top. If you change `trip-data.js`, increase `seedVersion` and the app will offer to load the new version.
 
 - **Excel:** the 資訊 (Info) tab can export and import the same 8-column sheet. On import, rows are matched by 活動 (activity) or by 開始 (start time), so photos, menus and Tabelog data on matched rows are kept. It uses SheetJS (`vendor/xlsx.full.min.js`, Apache-2.0).
+- **Map:** the interactive map uses Leaflet (`vendor/leaflet`, BSD-2-Clause). It can zoom offline up to level 17 and shows up to 19 by enlarging. Addresses are located with the GSI address search, and you can fix a pin by tapping the map, using your GPS, or pasting coordinates from Google Maps.
 - **Offline:** use "下載離線資料" (download offline data) in Info. It saves the photos, Esri World Street Map tiles (OpenStreetMap as backup), Nominatim coordinates and walking routes (routing.openstreetmap.de) for every stop. The GPS dot works with no network.
 - **Weather:** comes from Open-Meteo. The last result is cached so it still shows offline.
 

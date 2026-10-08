@@ -342,14 +342,14 @@ async function downloadOffline() {
   if (!navigator.onLine) return toast('要上網先下載到');
   toast('下載緊離線資料，請保持 App 開住…');
   await prefetchAll();
-  await prefetchMaps((d, n) => { const el = $('#mapStatus'); if (el) el.textContent = `地圖及路線：${d}／${n}`; });
-  localStorage.setItem('trip-maps2-at', String(Date.now()));
+  await prefetchMaps(msg => { const el = $('#mapStatus'); if (el) el.textContent = msg; });
+  localStorage.setItem('trip-maps3-at', String(Date.now()));
   updatePicStatus();
   toast('離線資料已下載好');
 }
 async function updatePicStatus() {
   const ms = $('#mapStatus');
-  if (ms) { const t = +localStorage.getItem('trip-maps2-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
+  if (ms) { const t = +localStorage.getItem('trip-maps3-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
   const el = $('#picStatus');
   if (!el) return;
   const items = allItems().filter(hasPicConf);
@@ -399,7 +399,7 @@ function wxText(day) {
   return parts.join('<br>') || '上網後顯示天氣';
 }
 
-/* ---------- 離線地圖：地點座標＋步行路線＋地圖圖塊，下載一次之後冇網都睇到 ---------- */
+/* ---------- 離線地圖（Leaflet）：可以放大縮小、拖動；圖塊下載一次之後冇網都用到 ---------- */
 // 地圖圖塊：Esri World Street Map（免 API key）；載入唔到就用 OpenStreetMap。
 // （CARTO 由 2026 年 9 月起要 API key，冇 key 只會俾「API KEY REQUIRED」水印圖。）
 const TILE_SOURCES = [
@@ -407,32 +407,51 @@ const TILE_SOURCES = [
   (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
 ];
 const TILE_PREFIX = 'tile2:';
-const GEO_URL = q => `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=jp&accept-language=ja&q=${enc(q)}`;
+const MAX_CACHE_Z = 17; // 下載到 17 級；再放大會用 17 級放大顯示
+// 日本國土地理院（GSI）地址搜尋：日文地址準確到街區；搵唔到先用 OpenStreetMap Nominatim
+const GSI_URL = q => `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${enc(q)}`;
+const NOMI_URL = q => `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=jp&accept-language=ja&q=${enc(q)}`;
 const FOOT_URL = (a, b) => `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-let geoChain = Promise.resolve();
 
-/** 地址 → 座標（Nominatim 每秒最多一次；結果存喺手機） */
+/** 車站同機場座標（固定，唔使上網查） */
+const FIXED_LL = {
+  '空港第2ビル駅': [35.77310, 140.38700], '成田国際空港 第2ターミナル': [35.77200, 140.38740], 'うなぎ四代目菊川 成田空港店': [35.77230, 140.38690],
+  '京成上野駅': [35.71128, 139.77380], '上野駅': [35.71120, 139.77690], '築地駅': [35.66800, 139.77220], '根津駅': [35.71750, 139.76560],
+  '千駄木駅': [35.72560, 139.76300], '早稲田駅': [35.70560, 139.72120], '新宿駅': [35.69050, 139.70040], '西武新宿駅': [35.69600, 139.70030],
+  '東銀座駅': [35.66970, 139.76710], '銀座駅': [35.67170, 139.76500], '表参道駅': [35.66540, 139.71210], '明治神宮前駅': [35.66850, 139.70520],
+  '代官山駅': [35.64810, 139.70340], '中目黒駅': [35.64410, 139.69900], '赤羽橋駅': [35.65510, 139.74370], '築地市場駅': [35.66500, 139.76630],
+};
+const ll = a => ({ lat: a[0], lon: a[1] });
+
+let geoChain = Promise.resolve();
+/** 地址 → 座標（結果存喺手機，之後離線用） */
 async function geocode(q) {
   q = (q || '').trim();
   if (!q) return null;
-  const key = 'geo:' + q;
+  const key = 'geo2:' + q;
   const c = await PhotoDB.get(key).catch(() => null);
   if (c) return c.none ? null : c;
   if (!navigator.onLine) return null;
   const job = geoChain.then(async () => {
+    let g = null, answered = false;
     try {
-      const r = await fetch(GEO_URL(q));
-      if (!r.ok) return null;
-      const j = await r.json();
-      const g = j[0] ? { lat: +j[0].lat, lon: +j[0].lon } : { none: true };
-      await PhotoDB.put(key, g).catch(() => {});
-      return g;
-    } catch { return null; } finally { await sleep(1100); }
+      const r = await fetch(GSI_URL(q));
+      if (r.ok) { answered = true; const j = await r.json(); const f = j?.[0]?.geometry?.coordinates; if (f) g = { lat: +f[1], lon: +f[0] }; }
+    } catch { /* 試 Nominatim */ }
+    if (!g) {
+      try {
+        await sleep(1000);
+        const r = await fetch(NOMI_URL(q));
+        if (r.ok) { answered = true; const j = await r.json(); if (j[0]) g = { lat: +j[0].lat, lon: +j[0].lon }; }
+      } catch { /* 冇結果 */ }
+    }
+    if (g || answered) await PhotoDB.put(key, g || { none: true }).catch(() => {});
+    await sleep(300);
+    return g;
   });
   geoChain = job.catch(() => {});
-  const g = await job;
-  return g && !g.none ? g : null;
+  return job;
 }
 function cleanAddr(a) {
   a = (a || '').replace(/〒\d{3}-\d{4}\s*/, '').replace(/^[^：]*：/, '').split(/[；（(]/)[0].trim();
@@ -443,8 +462,13 @@ async function firstGeo(qs) {
   for (const q of qs.filter(Boolean)) { const g = await geocode(q); if (g) return g; }
   return null;
 }
-const placePt = it => firstGeo([it.geo, cleanAddr(it.address), (it.titleJa || '').split(/[（(・]/)[0], it.place]);
-const stationPt = s => firstGeo([s, s && s.replace(/駅$/, '') + '駅 東京']);
+async function placePt(it) {
+  if (it.lat != null && it.lon != null) return { lat: it.lat, lon: it.lon };        // 你自己修正過
+  if (Array.isArray(it.geo)) return ll(it.geo);
+  if (FIXED_LL[it.place]) return ll(FIXED_LL[it.place]);
+  return firstGeo([typeof it.geo === 'string' && cleanAddr(it.geo), cleanAddr(it.address), it.address, (it.titleJa || '').split(/[（(・]/)[0], it.place]);
+}
+const stationPt = s => s && FIXED_LL[s] ? Promise.resolve(ll(FIXED_LL[s])) : firstGeo([s, s && mq(s)]);
 const startPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? stationPt(it.from) : placePt(it);
 const endPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? stationPt(it.to) : placePt(it);
 
@@ -452,12 +476,12 @@ const endPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? station
 async function mapGeom(list, idx) {
   const it = list[idx];
   if (it.type === 'flight') return null;
-  const prevReal = list.slice(0, idx).reverse().find(x => x.type !== 'walk');
-  const nextReal = list.slice(idx + 1).find(x => x.type !== 'walk');
+  const prevReal = list.slice(0, idx).reverse().find(x => x.type !== 'walk' && x.type !== 'flight');
+  const nextReal = list.slice(idx + 1).find(x => x.type !== 'walk' && x.type !== 'flight');
   let a = null, b = null;
   if (it.type === 'walk') {
-    a = (prevReal && await endPt(prevReal)) || await firstGeo([mq(it.from), it.from]);
-    b = (nextReal && await startPt(nextReal)) || await firstGeo([mq(it.to), it.to]);
+    a = (prevReal && await endPt(prevReal)) || await stationPt(it.from);
+    b = (nextReal && await startPt(nextReal)) || await stationPt(it.to);
   } else if (TRANSPORT.has(it.type)) {
     a = await stationPt(it.from);
     b = await stationPt(it.to);
@@ -500,26 +524,10 @@ function bearingName(a, b) {
   const deg = (Math.atan2(y, x) / r + 360) % 360;
   return ['北', '東北', '東', '東南', '南', '西南', '西', '西北'][Math.round(deg / 45) % 8];
 }
-const wx2 = (lon, z) => (lon + 180) / 360 * 2 ** z * 256;
-const wy2 = (lat, z) => { const s = Math.sin(lat * Math.PI / 180); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 2 ** z * 256; };
+const routeLen = r => r.slice(1).reduce((s, p, i) => s + distM({ lat: r[i][0], lon: r[i][1] }, { lat: p[0], lon: p[1] }), 0);
+const tileX = (lon, z) => Math.floor((lon + 180) / 360 * 2 ** z);
+const tileY = (lat, z) => { const s = Math.sin(lat * Math.PI / 180); return Math.floor((0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 2 ** z); };
 
-/** 計要邊啲圖塊（W×H CSS px 嘅畫面） */
-function mapView(g, W, H) {
-  const pts = [g.a, g.b, ...(g.route || []).map(([lat, lon]) => ({ lat, lon }))].filter(Boolean);
-  let z = 17;
-  for (; z > 3; z--) {
-    const xs = pts.map(p => wx2(p.lon, z)), ys = pts.map(p => wy2(p.lat, z));
-    if (Math.max(...xs) - Math.min(...xs) <= W - 70 && Math.max(...ys) - Math.min(...ys) <= H - 60) break;
-  }
-  if (pts.length === 1) z = 16;
-  const xs = pts.map(p => wx2(p.lon, z)), ys = pts.map(p => wy2(p.lat, z));
-  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
-  const left = cx - W / 2, top = cy - H / 2;
-  const tiles = [];
-  for (let tx = Math.floor(left / 256); tx <= Math.floor((left + W) / 256); tx++)
-    for (let ty = Math.floor(top / 256); ty <= Math.floor((top + H) / 256); ty++) tiles.push([z, tx, ty]);
-  return { z, left, top, tiles };
-}
 async function getTile(z, x, y, fetchMissing) {
   const key = `${TILE_PREFIX}${z}/${x}/${y}`;
   let b = await PhotoDB.get(key).catch(() => null);
@@ -535,64 +543,145 @@ async function getTile(z, x, y, fetchMissing) {
   return b;
 }
 
+/* --- Leaflet --- */
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (!document.querySelector('link[href$="leaflet.css"]')) {
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'vendor/leaflet/leaflet.css'; document.head.appendChild(l);
+  }
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'vendor/leaflet/leaflet.js';
+    s.onload = res;
+    s.onerror = () => rej(new Error('載入唔到地圖工具'));
+    document.head.appendChild(s);
+  });
+}
+function offlineTileLayer() {
+  const Layer = L.GridLayer.extend({
+    createTile(c, done) {
+      const img = document.createElement('img');
+      img.alt = '';
+      getTile(c.z, c.x, c.y, true).then(b => {
+        if (!b) { img.className = 'tile-missing'; done(null, img); return; }
+        img.onload = () => done(null, img);
+        img.onerror = () => done(null, img);
+        img.src = URL.createObjectURL(b);
+      });
+      return img;
+    },
+  });
+  const layer = new Layer({ maxNativeZoom: MAX_CACHE_Z, maxZoom: 19, minZoom: 5, tileSize: 256, attribution: '© Esri · © OpenStreetMap' });
+  layer.on('tileunload', e => { if (e.tile.src?.startsWith('blob:')) URL.revokeObjectURL(e.tile.src); });
+  return layer;
+}
+const mapState = { map: null, id: null, layers: null, watch: null, pin: false };
+function closeMapState() {
+  if (mapState.watch != null) navigator.geolocation?.clearWatch(mapState.watch);
+  mapState.map?.remove();
+  Object.assign(mapState, { map: null, id: null, layers: null, watch: null, pin: false, fitted: false });
+}
+
+/** 喺詳情入面顯示（或者重畫）呢項嘅地圖 */
 async function drawItemMap(id) {
   const box = document.querySelector(`.omap[data-map="${id}"]`);
   const info = $('#omap-info-' + id);
   const f = findItem(id);
   if (!box || !f) return;
+  try { await loadLeaflet(); } catch (e) { info.textContent = e.message; return; }
   const g = await mapGeom(f.list, f.index);
   if (!box.isConnected) return;
-  if (!g) { info.textContent = navigator.onLine ? '搵唔到呢個地點嘅座標。' : '未下載地圖資料——上網時喺「資訊」撳「下載離線資料」。'; box.hidden = true; return; }
-  const canvas = box.querySelector('canvas');
-  const W = box.clientWidth || 340, H = 240, dpr = Math.min(2, window.devicePixelRatio || 1);
-  canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = H + 'px';
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#e8e6df'; ctx.fillRect(0, 0, W, H);
-  const v = mapView(g, W, H);
-  let missing = 0;
-  for (const [z, x, y] of v.tiles) {
-    const blob = await getTile(z, x, y, true);
-    if (!blob) { missing++; continue; }
-    try { const img = await createImageBitmap(blob); ctx.drawImage(img, x * 256 - v.left, y * 256 - v.top, 256, 256); } catch { missing++; }
+  const holder = box.querySelector('.leaf');
+  if (!g) {
+    info.textContent = navigator.onLine ? '搵唔到呢個地點嘅座標——撳「修正位置」自己揀。' : '未有座標——上網時喺「資訊」撳「下載離線資料」，或者撳「修正位置」。';
+    holder.classList.add('empty');
+  } else holder.classList.remove('empty');
+  if (mapState.id !== id || !mapState.map || mapState.map.getContainer() !== holder) {
+    closeMapState();
+    const map = L.map(holder, { zoomControl: true, attributionControl: true, maxZoom: 19, minZoom: 5, tap: true });
+    map.attributionControl.setPrefix(false);
+    offlineTileLayer().addTo(map);
+    map.on('click', e => { if (mapState.pin) setItemLatLon(id, e.latlng.lat, e.latlng.lng); });
+    Object.assign(mapState, { map, id, layers: L.layerGroup().addTo(map) });
+    $('#modal').addEventListener('close', closeMapState, { once: true });
   }
-  const P = p => [wx2(p.lon, v.z) - v.left, wy2(p.lat, v.z) - v.top];
-  const line = (pts, dash) => {
-    ctx.save(); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1a73e8';
-    if (dash) ctx.setLineDash([8, 8]);
-    ctx.beginPath(); pts.forEach((p, i) => { const [x, y] = P(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.restore();
-  };
-  if (g.route) line(g.route.map(([lat, lon]) => ({ lat, lon })), false);
-  else if (g.a && g.b) line([g.a, g.b], true);
-  const dot = (p, fill, r, label) => {
-    const [x, y] = P(p);
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
-    if (label) { ctx.font = '700 12px sans-serif'; ctx.fillStyle = '#111'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.strokeText(label, x + 10, y - 8); ctx.fillText(label, x + 10, y - 8); }
-  };
-  const apart = g.a && g.b && distM(g.a, g.b) > 30; // 上一站同呢度唔係同一個位先畫
-  if (g.a && (apart || !g.b)) dot(g.a, '#8a8780', 7, '上一站');
-  if (g.b) dot(g.b, '#e8452c', 9, '呢度');
+  const { map, layers } = mapState;
+  layers.clearLayers();
+  const pts = [];
+  const tip = (m, t) => m.bindTooltip(t, { permanent: true, direction: 'right', className: 'omap-tip', offset: [8, 0] });
+  if (g?.route) layers.addLayer(L.polyline(g.route, { color: '#1a73e8', weight: 6, opacity: .85 }));
+  else if (g?.a && g?.b) layers.addLayer(L.polyline([[g.a.lat, g.a.lon], [g.b.lat, g.b.lon]], { color: '#1a73e8', weight: 4, dashArray: '8 8' }));
+  const apart = g?.a && g?.b && distM(g.a, g.b) > 30;
+  if (g?.a && (apart || !g.b)) { layers.addLayer(tip(L.circleMarker([g.a.lat, g.a.lon], { radius: 8, color: '#fff', weight: 3, fillColor: '#8a8780', fillOpacity: 1 }), '上一站')); pts.push([g.a.lat, g.a.lon]); }
+  if (g?.b) { layers.addLayer(tip(L.circleMarker([g.b.lat, g.b.lon], { radius: 10, color: '#fff', weight: 3, fillColor: '#e8452c', fillOpacity: 1 }), '呢度')); pts.push([g.b.lat, g.b.lon]); }
+  if (g?.route) g.route.forEach(p => pts.push(p));
+  if (ui.me) layers.addLayer(L.circleMarker([ui.me.lat, ui.me.lon], { radius: 8, color: '#fff', weight: 3, fillColor: '#1a73e8', fillOpacity: 1 }).bindTooltip('你', { permanent: true, direction: 'left', className: 'omap-tip' }));
+  if (!mapState.fitted) {
+    if (pts.length > 1) map.fitBounds(pts, { padding: [36, 36], maxZoom: 17 });
+    else if (pts.length === 1) map.setView(pts[0], 17);
+    else map.setView([35.6762, 139.7503], 12);
+    mapState.fitted = true;
+  }
+  setTimeout(() => map.invalidateSize(), 50);
   const lines = [];
   if (apart) lines.push(`${g.walking ? '步行' : '直線'}距離約 ${distStr(g.route ? routeLen(g.route) : distM(g.a, g.b))}${g.route ? '（步行路線）' : ''}`);
-  if (ui.me) {
-    const [x, y] = P(ui.me);
-    if (x > 0 && y > 0 && x < W && y < H) { ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.fillStyle = 'rgba(26,115,232,.18)'; ctx.fill(); dot(ui.me, '#1a73e8', 7, '你'); }
-    if (g.b) lines.push(`你而家距離「呢度」${distStr(distM(ui.me, g.b))}，向${bearingName(ui.me, g.b)}行`);
-  }
-  if (missing) lines.push(navigator.onLine ? '部分地圖載入唔到。' : `有 ${missing} 格地圖未下載（上網時撳「下載離線資料」）。`);
-  info.textContent = lines.join(' · ') || ' ';
+  if (ui.me && g?.b) lines.push(`你而家距離「呢度」${distStr(distM(ui.me, g.b))}，向${bearingName(ui.me, g.b)}行`);
+  if (f.item.lat != null) lines.push('📍 用緊你修正嘅位置');
+  if (mapState.pin) lines.push('👆 撳地圖上正確嘅位置');
+  if (g) info.textContent = lines.join(' · ') || '兩指放大縮小、拖動睇周圍。';
 }
-const routeLen = r => r.slice(1).reduce((s, p, i) => s + distM({ lat: r[i][0], lon: r[i][1] }, { lat: p[0], lon: p[1] }), 0);
+function setItemLatLon(id, lat, lon) {
+  mapState.pin = false;
+  commit(() => { const it = findItem(id).item; if (lat == null) { delete it.lat; delete it.lon; } else { it.lat = +lat.toFixed(6); it.lon = +lon.toFixed(6); } },
+    lat == null ? '已還原自動位置' : '已儲存呢度嘅位置');
+  mapState.fitted = false;
+  $('#pinpanel-' + id)?.setAttribute('hidden', '');
+  drawItemMap(id);
+}
+function parseLatLon(s) {
+  const m = String(s || '').match(/(-?\d{1,3}\.\d+)\s*[,，\s]\s*(-?\d{1,3}\.\d+)/);
+  return m ? { lat: +m[1], lon: +m[2] } : null;
+}
+function startLocate(id) {
+  if (!navigator.geolocation) return toast('呢部機唔支援定位');
+  toast('搵緊你嘅位置…');
+  if (mapState.watch != null) navigator.geolocation.clearWatch(mapState.watch);
+  let first = true;
+  mapState.watch = navigator.geolocation.watchPosition(p => {
+    ui.me = { lat: p.coords.latitude, lon: p.coords.longitude };
+    drawItemMap(id);
+    if (first && mapState.map) { first = false; mapState.map.setView([ui.me.lat, ui.me.lon], Math.max(mapState.map.getZoom(), 16)); }
+  }, () => toast('攞唔到位置——請容許「定位」權限'), { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 });
+}
 
-/** 下載全部地圖資料（座標、步行路線、圖塊） */
+/** 下載全部地圖資料：座標、步行路線、每個地點 13–17 級圖塊（可以離線放大縮小） */
 async function prefetchMaps(onProgress) {
   const jobs = trip.days.flatMap(d => d.items.map((it, i) => [d.items, i])).filter(([l, i]) => l[i].type !== 'flight');
+  const want = new Set();
+  const addBox = (lat1, lon1, lat2, lon2, z) => {
+    for (let x = tileX(Math.min(lon1, lon2), z); x <= tileX(Math.max(lon1, lon2), z); x++)
+      for (let y = tileY(Math.max(lat1, lat2), z); y <= tileY(Math.min(lat1, lat2), z); y++) want.add(`${z}/${x}/${y}`);
+  };
+  const around = (p, z, m) => { const dLat = m / 111000, dLon = m / (111000 * Math.cos(p.lat * Math.PI / 180)); addBox(p.lat - dLat, p.lon - dLon, p.lat + dLat, p.lon + dLon, z); };
+  const R = { 13: 1500, 14: 900, 15: 600, 16: 400, 17: 250 };
+  // 東京市區＋成田機場總覽
+  for (const z of [11, 12]) addBox(35.62, 139.66, 35.74, 139.81, z);
+  for (const z of [11, 12, 13]) addBox(35.75, 140.36, 35.79, 140.41, z);
   let done = 0;
   for (const [list, i] of jobs) {
     if (!navigator.onLine) break;
     const g = await mapGeom(list, i).catch(() => null);
-    if (g) for (const W of [360, 640]) for (const [z, x, y] of mapView(g, W, 240).tiles) await getTile(z, x, y, true);
-    onProgress?.(++done, jobs.length);
+    if (g) for (const p of [g.a, g.b].filter(Boolean)) for (const z of [13, 14, 15, 16, 17]) around(p, z, R[z]);
+    if (g?.route) for (const z of [14, 15, 16]) { const la = g.route.map(r => r[0]), lo = g.route.map(r => r[1]); addBox(Math.min(...la), Math.min(...lo), Math.max(...la), Math.max(...lo), z); }
+    onProgress?.(`搵緊地點及路線 ${++done}／${jobs.length}`);
+  }
+  const tiles = [...want];
+  let n = 0;
+  for (const t of tiles) {
+    if (!navigator.onLine) break;
+    const [z, x, y] = t.split('/').map(Number);
+    await getTile(z, x, y, true);
+    if (++n % 10 === 0 || n === tiles.length) onProgress?.(`下載緊地圖 ${n}／${tiles.length}`);
   }
 }
 
@@ -889,10 +978,25 @@ function openItem(id) {
   const tt = it.timetable?.length ? `<section class="sec"><h4>${icon('clock')}時刻表${it.timetableUrl ? ` <a href="${esc(normUrl(it.timetableUrl))}" target="_blank" rel="noopener">官方全日</a>` : ''}</h4>
     <table class="tt"><tr><th>開出</th><th>到達</th><th>班次</th><th></th></tr>${it.timetable.map((r, i) => `<tr class="${r.note ? 'pick' : ''} ${i === nextIdx ? 'nextrow' : ''}"><td><b>${esc(r.dep)}</b></td><td>${esc(r.arr || '')}</td><td>${esc(r.name || '')}</td><td>${esc(r.note || '')}${i === nextIdx ? ' 下一班' : ''}</td></tr>`).join('')}</table>
     ${it.timetableNote ? `<p class="hint">${esc(it.timetableNote)}</p>` : ''}</section>` : '';
-  const map = it.type === 'flight' ? '' : `<section class="sec"><h4>${icon('map')}離線地圖</h4>
-    <div class="omap" data-map="${id}"><canvas></canvas><p class="omap-attr">© Esri · © OpenStreetMap</p></div>
+  const map = it.type === 'flight' ? '' : `<section class="sec"><h4>${icon('map')}地圖（離線可用）</h4>
+    <div class="omap" data-map="${id}"><div class="leaf"></div>
+      <button type="button" class="omap-full" data-act="map-full" aria-label="全螢幕">⤢</button></div>
     <p class="hint omap-info" id="omap-info-${id}">載入緊…</p>
-    <div class="row"><button type="button" class="chip" data-act="locate" data-id="${id}">${icon('navigate')}顯示我嘅位置（GPS，離線都用到）</button></div></section>`;
+    <div class="row">
+      <button type="button" class="chip" data-act="locate" data-id="${id}">${icon('navigate')}我喺邊（GPS）</button>
+      <button type="button" class="chip" data-act="pin-fix" data-id="${id}">${icon('edit')}修正位置</button>
+    </div>
+    <div class="pinpanel" id="pinpanel-${id}" hidden>
+      <p class="hint">位置唔啱？揀一個方法：</p>
+      <div class="row">
+        <button type="button" class="chip dark" data-act="pin-tap" data-id="${id}">👆 喺地圖上撳</button>
+        <button type="button" class="chip" data-act="pin-me" data-id="${id}">📍 用我而家位置</button>
+        ${it.lat != null ? `<button type="button" class="chip" data-act="pin-reset" data-id="${id}">還原自動位置</button>` : ''}
+      </div>
+      <label class="pinpaste">或者貼上 Google Maps 座標（例如 35.66551, 139.77064）
+        <span class="row"><input id="pinval-${id}" inputmode="decimal" placeholder="35.66551, 139.77064"><button type="button" class="chip dark" data-act="pin-paste" data-id="${id}">儲存</button></span></label>
+      <p class="hint">Google Maps 攞座標：長按地點 → 落咗紅色大頭針 → 向上掃，撳座標就會複製。</p>
+    </div></section>`;
   const taxiable = it.titleJa || it.address || (isT && it.to && it.type !== 'walk');
   openModal({
     title: `${it.time || ''} ${TYPES[it.type] || ''}`,
@@ -901,10 +1005,11 @@ function openItem(id) {
       ${routeHtml(it, true)}
       <dl class="kv xl">${xl}</dl>
       <div class="row">${links}</div>
+      ${map}
       ${picsRow(it, true)}
       ${extra ? `<dl class="kv">${extra}</dl>` : ''}
       ${it.planB ? `<div class="planb"><b>後備方案</b><p>${esc(it.planB)}</p></div>` : ''}
-      ${tabelog}${menu}${tt}${map}
+      ${tabelog}${menu}${tt}
       <div class="actions">
         ${it.status === 'done' ? `<button type="button" class="btn" data-act="undone" data-id="${id}">${icon('reset')}未完成</button>` : `<button type="button" class="btn dark" data-act="done" data-id="${id}">${icon('check')}完成</button>`}
         ${isHM(it.time) ? `<button type="button" class="btn" data-act="shift" data-id="${id}">${icon('clock')}延遲</button>` : ''}
@@ -1234,12 +1339,16 @@ const actions = {
   'offline-all': () => downloadOffline(),
   'xlsx-export': () => exportExcel(),
   'xlsx-import': () => $('#xlsxInput').click(),
-  locate: id => {
+  locate: id => startLocate(id),
+  'map-full': (_, el) => { const box = el.closest('.omap'); box.classList.toggle('full'); el.textContent = box.classList.contains('full') ? '✕' : '⤢'; setTimeout(() => mapState.map?.invalidateSize(), 60); },
+  'pin-fix': id => { const p = $('#pinpanel-' + id); if (p) p.hidden = !p.hidden; },
+  'pin-tap': id => { mapState.pin = true; toast('撳地圖上正確嘅位置'); drawItemMap(id); },
+  'pin-me': id => {
     if (!navigator.geolocation) return toast('呢部機唔支援定位');
-    toast('搵緊你嘅位置…');
-    navigator.geolocation.getCurrentPosition(p => { ui.me = { lat: p.coords.latitude, lon: p.coords.longitude }; drawItemMap(id); },
-      () => toast('攞唔到位置——請容許「定位」權限'), { enableHighAccuracy: true, timeout: 15000 });
+    navigator.geolocation.getCurrentPosition(p => setItemLatLon(id, p.coords.latitude, p.coords.longitude), () => toast('攞唔到位置'), { enableHighAccuracy: true, timeout: 20000 });
   },
+  'pin-paste': id => { const v = parseLatLon($('#pinval-' + id)?.value); if (!v) return toast('格式唔啱，例如 35.66551, 139.77064'); setItemLatLon(id, v.lat, v.lon); },
+  'pin-reset': id => setItemLatLon(id, null, null),
   export: exportTrip,
   import: () => $('#importInput').click(),
   reset: () => { if (confirm('重設為原始行程？你改過嘅內容會被取代（可以還原）。')) commit(() => { trip = freshSeed(); ui.day = null; }, '已重設'); },
@@ -1290,6 +1399,17 @@ if ((trip.seedVersion || 0) < SEED.seedVersion) {
   if (confirm('有新版行程，要唔要載入？（你改過嘅內容會被取代）')) trip = freshSeed();
   else trip.seedVersion = SEED.seedVersion;
 }
+// 將新版種子資料嘅定位欄位加入已儲存行程（唔會改你嘅內容）
+(() => {
+  const seedItems = new Map(SEED.days.flatMap(d => d.items).map(i => [i.id, i]));
+  let changed = false;
+  trip.days.forEach(d => d.items.forEach(it => {
+    const s = seedItems.get(it.id);
+    if (!s) return;
+    for (const k of ['geo', 'place', 'mapQuery']) if (s[k] && it[k] == null) { it[k] = s[k]; changed = true; }
+  }));
+  if (changed) save();
+})();
 $('#tripName').textContent = trip.name || '東京';
 save();
 updateNet();

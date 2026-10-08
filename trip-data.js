@@ -365,6 +365,19 @@ window.SEED_TRIP = (() => {
     '根津美術館': 'Nezu Museum, 6 Chome-5-1 Minamiaoyama, Minato City, Tokyo',
   };
 
+  /* ---------- 地圖定位：冇地址嘅地點用呢度嘅日文地址或座標 [緯度, 經度] ---------- */
+  const GEO = {
+    'へび道 谷中': [35.72255, 139.76585],
+    '歌舞伎町一番街': '東京都新宿区歌舞伎町1-19-1',
+    '表参道': '東京都港区南青山5-2-6',
+    '代官山 蔦屋書店': '東京都渋谷区猿楽町17-5',
+    'B.C STOCK 代官山店': '東京都渋谷区猿楽町19-5',
+    '目黒川 中目黒': [35.64465, 139.69865],
+    '東京タワー': [35.65858, 139.74543],
+    '銀座ロフト': '東京都中央区銀座2-4-6',
+  };
+  const AIRPORT_T2 = ['保安檢查＋出境', '免稅店', '最後免稅購物', '到達登機Gate'];
+
   // 將 Excel 原文併入每一項（同 Excel 行一一對應；extra 係 Excel 冇嘅項目）
   trip.days.forEach(d => {
     const rows = XL[d.date] || [];
@@ -383,6 +396,8 @@ window.SEED_TRIP = (() => {
       if (it.place && TABELOG[it.place]) it.tabelog = [{ name: it.place.replace(/ (築地|代官山)$/, ''), ...TABELOG[it.place] }];
       if (it.place === '海鮮丼まるきた 2号店') it.tabelog.push({ name: '築地 斉藤水産', ...TABELOG['斉藤水産 築地'] });
       if (it.place && MAPQ[it.place]) it.mapQuery = MAPQ[it.place];
+      if (!it.place && AIRPORT_T2.includes(it.title)) it.place = '成田国際空港 第2ターミナル';
+      if (it.place && GEO[it.place]) it.geo = GEO[it.place];
     });
   });
   trip.mapq = MAPQ;
