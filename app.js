@@ -450,7 +450,9 @@ function picsRow(it, big = false) {
 function titleHtml(it) {
   // 電車項目嘅日文站名已經喺路線行顯示，唔使重複
   const dupRoute = TRANSPORT.has(it.type) && it.type !== 'flight' && (it.from || it.to);
-  const ja = it.titleJa && it.titleJa !== it.title && !dupRoute ? it.titleJa : '';
+  // 中文標題已經包含日文名（例如「早餐：まぐろのみやこ」）就唔再重複
+  const jaBase = (it.titleJa || '').split(/[（(]/)[0].trim();
+  const ja = it.titleJa && it.titleJa !== it.title && !dupRoute && !(jaBase && it.title.includes(jaBase)) ? it.titleJa : '';
   return `<h3 class="title">${esc(it.title)}${ja ? ` <span class="ja" lang="ja">${esc(ja)}</span>` : ''}</h3>`;
 }
 function routeHtml(it, big = false) {
