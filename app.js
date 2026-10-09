@@ -229,7 +229,7 @@ async function blobURL(key) {
   return u;
 }
 
-function resizeImage(file, max = 2000) {
+function resizeImage(file, max = 1600) {
   return new Promise(res => {
     const img = new Image();
     const u = URL.createObjectURL(file);
@@ -303,27 +303,6 @@ function getItemPics(it) {
   })().finally(() => picPending.delete(ck));
   picPending.set(ck, p);
   return p;
-}
-
-async function hydratePics(root = document) {
-  for (const box of root.querySelectorAll('.pics[data-item]')) {
-    const it = findItem(box.dataset.item)?.item;
-    if (!it) continue;
-    const list = await getItemPics(it);
-    if (!box.isConnected) continue;
-    box.querySelectorAll('.pic.skeleton').forEach(s => s.remove());
-    if (list?.length) {
-      const html = (await Promise.all(list.map(async (p, i) => {
-        const u = await blobURL(p.key);
-        return u ? `<button type="button" class="pic" data-act="view-pics" data-id="${it.id}" data-i="${i}"><img src="${u}" alt=""></button>` : '';
-      }))).join('');
-      box.insertAdjacentHTML('afterbegin', html);
-    }
-    for (const img of box.querySelectorAll('img[data-photo]')) {
-      const u = await blobURL(img.dataset.photo);
-      if (u) img.src = u;
-    }
-  }
 }
 
 async function prefetchAll() {
@@ -799,6 +778,381 @@ async function importExcel(file) {
   }
 }
 
+/* =========================================================
+   就地修改：撳任何資料就可以改（手機、電腦都得）
+   ========================================================= */
+/** 文字入面嘅網址變成可以撳嘅連結 */
+const linkify = s => esc(s).replace(/https?:\/\/[^\s<>"'，、。；）)]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+
+const menuToText = m => (m?.items || []).map(x => `${x.star ? '⭐ ' : ''}${x.name || ''} | ${x.ja || ''} | ${x.price || ''} | ${x.desc || ''}`).join('\n');
+function textToMenuItems(txt) {
+  return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const star = /^(⭐|\*)/.test(l);
+    const [name, ja, price, desc] = l.replace(/^(⭐|\*)\s*/, '').split('|').map(s => (s || '').trim());
+    const o = { name };
+    if (ja) o.ja = ja; if (price) o.price = price; if (desc) o.desc = desc; if (star) o.star = true;
+    return o;
+  }).filter(o => o.name);
+}
+const ttToText = rows => (rows || []).map(r => `${r.dep} → ${r.arr || ''} | ${r.name || ''} | ${r.note || ''}`).join('\n');
+function textToTT(txt) {
+  return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const [times, name, note] = l.split('|').map(s => (s || '').trim());
+    const m = times.match(/(\d{1,2}:\d{2})\D*(\d{1,2}:\d{2})?/);
+    if (!m) return null;
+    const o = { dep: m[1].padStart(5, '0') };
+    if (m[2]) o.arr = m[2].padStart(5, '0'); if (name) o.name = name; if (note) o.note = note;
+    return o;
+  }).filter(Boolean).sort((a, b) => a.dep.localeCompare(b.dep));
+}
+const linksToText = ls => (ls || []).map(l => `${l.label} | ${l.url}`).join('\n');
+function textToLinks(txt) {
+  return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/https?:\/\/\S+/);
+    if (!m) return null;
+    const label = l.replace(m[0], '').replace(/[|｜：:]\s*$/, '').replace(/^\s*[|｜]\s*/, '').trim();
+    return { label: label || '連結', url: m[0] };
+  }).filter(Boolean);
+}
+const tbToText = tbs => (tbs || []).map(t => [`${t.name} | ${t.rating} | ${t.reviews} | ${t.budget} | ${t.url}`, ...(t.summary || []).map(s => `- ${s}`)].join('\n')).join('\n\n');
+function textToTb(txt) {
+  return txt.split(/\n\s*\n/).map(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return null;
+    const [name, rating, reviews, budget, url] = lines[0].split('|').map(s => (s || '').trim());
+    return { name, rating: rating || '—', reviews: reviews || '—', budget: budget || '—', url: url || '', summary: lines.slice(1).map(l => l.replace(/^[-•・]\s*/, '')) };
+  }).filter(t => t && t.name);
+}
+
+/** 特別欄位：點樣讀出嚟做文字、點樣由文字寫返入去 */
+const FIELD_IO = {
+  menuText: { get: it => menuToText(it.menu), set: (it, v) => { const items = textToMenuItems(v); if (items.length) it.menu = { ...(it.menu || {}), items }; else delete it.menu; } },
+  menuTips: { get: it => it.menu?.tips || '', set: (it, v) => { if (!it.menu) it.menu = { items: [] }; if (v) it.menu.tips = v; else delete it.menu.tips; } },
+  menuUrl: { get: it => it.menu?.url || '', set: (it, v) => { if (!it.menu) it.menu = { items: [] }; if (v) it.menu.url = v; else delete it.menu.url; } },
+  ttText: { get: it => ttToText(it.timetable), set: (it, v) => { const t = textToTT(v); if (t.length) it.timetable = t; else delete it.timetable; } },
+  linksText: { get: it => linksToText(it.links), set: (it, v) => { const l = textToLinks(v); if (l.length) it.links = l; else delete it.links; } },
+  tbText: { get: it => tbToText(it.tabelog), set: (it, v) => { const t = textToTb(v); if (t.length) it.tabelog = t; else delete it.tabelog; } },
+};
+const FIELD_HINT = {
+  menuText: '每行一樣：⭐ 中文名 | 日文名 | 價錢 | 描述（⭐ 代表推介）',
+  ttText: '每行一班：開出 → 到達 | 班次 | 備註，例如 17:43 → 18:24 | 56號 | 建議',
+  linksText: '每行一個：名稱 | 網址，例如 菜單 | https://…',
+  tbText: '第一行：名稱 | 評分 | 評價數 | 預算 | Tabelog 網址；之後每行「- 摘要」。幾間餐廳之間空一行。',
+  xUrl: '可以寫「預約：https://…」，網址會變成按鈕',
+};
+
+/** 可以就地修改嘅一行資料 */
+function ef(kind, id, field, label, val, { ph = '撳呢度加', compact = false, h1 = false } = {}) {
+  const shown = val ? linkify(val) : `<i class="muted">${ph}</i>`;
+  return `<div class="ef ${compact ? 'compact' : ''} ${h1 ? 'h1' : ''} ${val ? '' : 'empty'}" data-act="ef" data-kind="${kind}" data-id="${id}" data-field="${field}">
+    ${label ? `<span class="ef-k">${label}</span>` : ''}<div class="ef-v">${compact ? '' : shown}</div><span class="ef-pen" aria-hidden="true">✎</span></div>`;
+}
+const efTarget = el => el.dataset.kind === 'day' ? findDay(el.dataset.id) : findItem(el.dataset.id)?.item;
+const findDay = id => trip.days.find(d => d.id === id);
+function startEdit(el) {
+  if (el.classList.contains('editing')) return;
+  const obj = efTarget(el);
+  if (!obj) return;
+  const f = el.dataset.field;
+  const cur = FIELD_IO[f] ? FIELD_IO[f].get(obj) : (obj[f] ?? '');
+  el.classList.add('editing');
+  const rows = Math.min(12, Math.max(2, String(cur).split('\n').length + 1));
+  el.querySelector('.ef-v').innerHTML = `<textarea rows="${rows}">${esc(cur)}</textarea>
+    ${FIELD_HINT[f] ? `<p class="hint">${FIELD_HINT[f]}</p>` : ''}
+    <div class="row"><button type="button" class="chip dark" data-act="ef-save">儲存</button><button type="button" class="chip" data-act="ef-cancel">取消</button></div>`;
+  const ta = el.querySelector('textarea');
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+function saveEdit(el) {
+  const v = el.querySelector('textarea').value.trim();
+  const { kind, id, field } = el.dataset;
+  if (field === 'title' && !v) return toast('標題唔可以留空');
+  const sheetOpen = $('#modal').open && kind === 'item';
+  const scroll = $('#modal .modal-body')?.scrollTop || 0;
+  commit(() => {
+    const obj = kind === 'day' ? findDay(id) : findItem(id).item;
+    if (FIELD_IO[field]) FIELD_IO[field].set(obj, v);
+    else if (v || field === 'ref') obj[field] = v; else delete obj[field];
+  }, '已儲存');
+  if (sheetOpen) { openItem(id); requestAnimationFrame(() => { const b = $('#modal .modal-body'); if (b) b.scrollTop = scroll; }); }
+}
+function cancelEdit(el) {
+  const kind = el.dataset.kind, id = el.dataset.id;
+  if (kind === 'item' && $('#modal').open) { const scroll = $('#modal .modal-body').scrollTop; openItem(id); requestAnimationFrame(() => { $('#modal .modal-body').scrollTop = scroll; }); }
+  else render();
+}
+
+/* =========================================================
+   相片：預設地點相＋你加嘅相，可以排次序、隱藏、刪除
+   ========================================================= */
+async function orderedPics(it) {
+  const commons = (await getItemPics(it)) || [];
+  const all = [
+    ...commons.map(p => ({ key: p.key, user: false, cap: p.title.replace(/^File:/, '').replace(/\.\w+$/, '') + '（Wikimedia Commons）' })),
+    ...(it.photos || []).map(k => ({ key: k, user: true, cap: '你加嘅相' })),
+  ];
+  const hidden = new Set(it.picHidden || []);
+  const order = it.picOrder || [];
+  const rank = k => { const i = order.indexOf(k); return i < 0 ? 1e6 : i; };
+  return all.filter(p => !hidden.has(p.key)).map((p, i) => ({ ...p, n: i })).sort((a, b) => rank(a.key) - rank(b.key) || a.n - b.n);
+}
+/** 相片網址：手機有就用手機；你加嘅相如果手機冇，就由 GitHub 下載 */
+async function photoURL(key) {
+  const u = await blobURL(key);
+  if (u || !key.startsWith('p_') || !navigator.onLine) return u;
+  try {
+    const c = ghCfg();
+    const r = await fetch(`https://raw.githubusercontent.com/${c.owner}/${c.repo}/${c.branch}/${PHOTO_DIR}/${key}.jpg`, { cache: 'no-store' });
+    if (!r.ok) return null;
+    const b = await r.blob();
+    await PhotoDB.put(key, b);
+    await PhotoDB.put('up:' + key, 1);
+    return blobURL(key);
+  } catch { return null; }
+}
+function picsRow(it, big = false) {
+  const n = (it.photos?.length || 0) + (hasPicConf(it) ? (big ? 3 : 2) : 0);
+  return `<div class="pics ${big ? 'big' : ''} ${n ? '' : 'none'}" data-item="${it.id}" ${big ? 'data-big="1"' : ''}>${'<span class="pic skeleton"></span>'.repeat(Math.min(n, big ? 3 : 2))}
+    <button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button></div>`;
+}
+async function hydratePics(root = document) {
+  for (const box of root.querySelectorAll('.pics[data-item]')) {
+    const it = findItem(box.dataset.item)?.item;
+    if (!it) continue;
+    const list = await orderedPics(it);
+    if (!box.isConnected) continue;
+    const arrange = ui.arrange === it.id && box.dataset.big;
+    const tiles = await Promise.all(list.map(async (p, i) => {
+      const u = await photoURL(p.key);
+      if (!u) return '';
+      return `<div class="pic ${arrange ? 'arr' : ''}">
+        <button type="button" class="picbtn" data-act="view-pics" data-id="${it.id}" data-i="${i}"><img src="${u}" alt=""></button>
+        ${arrange ? `<span class="picctl">
+          <button type="button" data-act="pic-move" data-id="${it.id}" data-key="${esc(p.key)}" data-dir="-1" aria-label="向前">◀</button>
+          <button type="button" data-act="pic-move" data-id="${it.id}" data-key="${esc(p.key)}" data-dir="1" aria-label="向後">▶</button>
+          <button type="button" data-act="pic-hide" data-id="${it.id}" data-key="${esc(p.key)}" aria-label="移除">✕</button></span>` : ''}
+      </div>`;
+    }));
+    if (!box.isConnected) continue;
+    const extra = box.dataset.big && list.length > 1
+      ? `<button type="button" class="pic arrange" data-act="pic-arrange" data-id="${it.id}">${arrange ? '✓<span>完成</span>' : '⇄<span>排次序</span>'}</button>` : '';
+    const restore = arrange && it.picHidden?.length ? `<button type="button" class="pic arrange" data-act="pic-restore" data-id="${it.id}">↺<span>還原隱藏</span></button>` : '';
+    box.classList.toggle('none', !tiles.join(''));
+    box.innerHTML = tiles.join('') + `<button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button>` + extra + restore;
+  }
+}
+async function movePic(id, key, dir) {
+  const it = findItem(id).item;
+  const keys = (await orderedPics(it)).map(p => p.key);
+  const i = keys.indexOf(key), j = i + dir;
+  if (i < 0 || j < 0 || j >= keys.length) return;
+  [keys[i], keys[j]] = [keys[j], keys[i]];
+  commit(() => { findItem(id).item.picOrder = keys; });
+  hydratePics($('#modal'));
+}
+function hidePic(id, key) {
+  const it = findItem(id).item;
+  if (key.startsWith('p_')) {
+    if (!confirm('刪除你加嘅呢張相？')) return;
+    commit(() => { const x = findItem(id).item; x.photos = (x.photos || []).filter(k => k !== key); }, '已刪除相片');
+  } else {
+    commit(() => { const x = findItem(id).item; x.picHidden = [...new Set([...(x.picHidden || []), key])]; }, '已隱藏呢張相');
+  }
+  hydratePics($('#modal'));
+}
+
+async function viewPics(id, start) {
+  const it = findItem(id).item;
+  const all = await orderedPics(it);
+  if (!all.length) return;
+  let i = Math.min(Math.max(0, start || 0), all.length - 1);
+  const show = async form => {
+    const p = all[i];
+    form.querySelector('.viewer img').src = (await photoURL(p.key)) || '';
+    form.querySelector('.viewer .cap').textContent = `${i + 1}／${all.length} · ${p.cap}`;
+    form.querySelector('#delPic').textContent = p.user ? '刪除呢張' : '隱藏呢張';
+  };
+  openModal({
+    title: it.title,
+    cls: 'viewer-modal',
+    body: `<div class="viewer"><img alt="">
+        ${all.length > 1 ? `<button type="button" class="nav l" aria-label="上一張">${icon('left')}</button><button type="button" class="nav r" aria-label="下一張">${icon('right')}</button>` : ''}
+        <p class="cap"></p></div>
+      <div class="row"><button type="button" class="btn danger" id="delPic">刪除呢張</button><button type="button" class="btn" data-act="open" data-id="${id}">返去詳情</button></div>`,
+    onOpen: form => {
+      const go = step => { i = (i + step + all.length) % all.length; show(form); };
+      form.querySelector('.nav.l')?.addEventListener('click', () => go(-1));
+      form.querySelector('.nav.r')?.addEventListener('click', () => go(1));
+      let x0 = null;
+      const v = form.querySelector('.viewer');
+      v.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+      v.addEventListener('touchend', e => {
+        if (x0 == null) return;
+        const dx = e.changedTouches[0].clientX - x0;
+        if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+        x0 = null;
+      });
+      form.querySelector('#delPic').onclick = () => { hidePic(id, all[i].key); openItem(id); };
+      show(form);
+    },
+  });
+}
+
+/* =========================================================
+   GitHub 同步：行程同你加嘅相存喺 GitHub（data/），
+   所有裝置同之後嘅新版 App 都用同一份資料
+   ========================================================= */
+const GH_DEF = { owner: 'WilsonChan0804', repo: 'new-project', branch: 'claude/trip-planner', token: '' };
+const DATA_PATH = 'data/trip.json';
+const PHOTO_DIR = 'data/photos';
+const ghCfg = () => { try { return { ...GH_DEF, ...JSON.parse(localStorage.getItem('gh-cfg') || '{}') }; } catch { return { ...GH_DEF }; } };
+const ghOn = () => !!ghCfg().token;
+const syncState = () => { try { return JSON.parse(localStorage.getItem('gh-sync') || '{}'); } catch { return {}; } };
+const setSyncState = s => localStorage.setItem('gh-sync', JSON.stringify({ ...syncState(), ...s }));
+const isDirty = () => localStorage.getItem('gh-dirty') === '1';
+const b64enc = s => btoa(unescape(encodeURIComponent(s)));
+const b64dec = s => decodeURIComponent(escape(atob(s.replace(/\n/g, ''))));
+const sync = { busy: false, timer: null };
+
+function ghReq(path, { method = 'GET', body, raw = false } = {}) {
+  const c = ghCfg();
+  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}${method === 'GET' ? `?ref=${enc(c.branch)}&t=${Date.now()}` : ''}`;
+  const headers = { Accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json' };
+  if (c.token) headers.Authorization = `Bearer ${c.token}`;
+  if (body) headers['Content-Type'] = 'application/json';
+  return fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
+}
+async function ghGetData() {
+  const r = await ghReq(DATA_PATH);
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`GitHub 回應 ${r.status}`);
+  const j = await r.json();
+  const text = j.content ? b64dec(j.content) : await (await ghReq(DATA_PATH, { raw: true })).text();
+  return { sha: j.sha, data: JSON.parse(text) };
+}
+function syncStatus(msg) {
+  localStorage.setItem('gh-status', msg);
+  const el = $('#ghStatus');
+  if (el) el.textContent = msg;
+}
+const hhmm = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+/** 由 GitHub 攞最新資料（冇 token 都讀到，因為 repo 係公開） */
+async function pullSync({ quiet = true } = {}) {
+  if (!navigator.onLine || sync.busy) return;
+  let r;
+  try { r = await ghGetData(); } catch (e) { if (!quiet) syncStatus('讀取 GitHub 失敗：' + e.message); return; }
+  const st = syncState();
+  if (!r) { if (ghOn()) return pushSync(); return; }
+  if (r.sha === st.sha) { if (isDirty() && ghOn()) pushSync(); else if (!quiet) syncStatus(`✓ 已經係最新（${hhmm()}）`); return; }
+  const remote = r.data?.trip;
+  if (!remote?.days) return;
+  const firstTime = !st.sha;
+  const local = JSON.stringify(trip);
+  if (local === JSON.stringify(remote)) { setSyncState({ sha: r.sha }); localStorage.removeItem('gh-dirty'); return; }
+  let takeRemote = true;
+  if (isDirty()) {
+    takeRemote = confirm(firstTime
+      ? 'GitHub 上面已經有一份行程。\n「確定」＝用 GitHub 嗰份（建議）\n「取消」＝用呢部機嘅版本，之後上傳去 GitHub'
+      : 'GitHub 上面有另一部機嘅新修改，呢部機亦有未上傳嘅修改。\n「確定」＝用 GitHub 嗰份\n「取消」＝用呢部機嘅版本覆蓋 GitHub');
+  }
+  if (takeRemote) {
+    undoStack.push(local);
+    // 呢部機加過、但 GitHub 版本冇嘅相，保留落去
+    let keptPhotos = 0;
+    const byId = new Map(remote.days.flatMap(d => d.items).map(i => [i.id, i]));
+    allItems().forEach(it => {
+      const r2 = byId.get(it.id);
+      const extra = (it.photos || []).filter(p => r2 && !(r2.photos || []).includes(p));
+      if (extra.length) { r2.photos = [...(r2.photos || []), ...extra]; keptPhotos += extra.length; }
+    });
+    trip = remote;
+    save();
+    setSyncState({ sha: r.sha });
+    localStorage.removeItem('gh-dirty');
+    syncStatus(`✓ 已下載最新內容（${hhmm()}）`);
+    if (!$('#modal').open) render();
+    toast('已同步其他裝置嘅修改');
+    if (keptPhotos) { localStorage.setItem('gh-dirty', '1'); if (ghOn()) pushSync(); }
+  } else {
+    setSyncState({ sha: r.sha });
+    localStorage.setItem('gh-dirty', '1');
+    if (ghOn()) pushSync();
+  }
+}
+/** 上傳你加嘅相（未上傳過嘅） */
+async function uploadPhotos() {
+  const ids = [...new Set(allItems().flatMap(i => i.photos || []))];
+  for (const id of ids) {
+    if (await PhotoDB.get('up:' + id).catch(() => null)) continue;
+    const blob = await PhotoDB.get(id).catch(() => null);
+    if (!blob) continue;
+    const dataUrl = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+    const r = await ghReq(`${PHOTO_DIR}/${id}.jpg`, { method: 'PUT', body: { message: `App 加相 ${id}`, content: dataUrl.split(',')[1], branch: ghCfg().branch } });
+    if (r.ok || r.status === 422) await PhotoDB.put('up:' + id, 1); // 422 = 已經有
+    else throw new Error(`上傳相片失敗（${r.status}）`);
+  }
+}
+/** 將呢部機嘅修改上傳去 GitHub */
+async function pushSync() {
+  if (!ghOn() || !navigator.onLine || sync.busy) return;
+  sync.busy = true;
+  syncStatus('上傳緊…');
+  try {
+    await uploadPhotos();
+    const cur = await ghGetData();
+    const st = syncState();
+    if (cur && st.sha && cur.sha !== st.sha) { sync.busy = false; return pullSync({ quiet: false }); }
+    const body = JSON.stringify({ app: 'trip-planner', version: 4, savedAt: new Date().toISOString(), trip }, null, 1);
+    const r = await ghReq(DATA_PATH, { method: 'PUT', body: { message: `App 更新行程 ${new Date().toISOString().slice(0, 16)}`, content: b64enc(body), branch: ghCfg().branch, ...(cur ? { sha: cur.sha } : {}) } });
+    if (r.status === 401 || r.status === 403) throw new Error('Token 冇權限或者已過期');
+    if (!r.ok) throw new Error(`GitHub 回應 ${r.status}`);
+    const j = await r.json();
+    setSyncState({ sha: j.content.sha });
+    localStorage.removeItem('gh-dirty');
+    syncStatus(`✓ 已上傳到 GitHub（${hhmm()}）`);
+  } catch (e) {
+    syncStatus('同步失敗：' + e.message + '（上網後會再試）');
+  } finally { sync.busy = false; }
+}
+function schedulePush() {
+  localStorage.setItem('gh-dirty', '1');
+  clearTimeout(sync.timer);
+  if (ghOn()) { syncStatus('有未上傳嘅修改…'); sync.timer = setTimeout(pushSync, 3000); }
+}
+function syncCardHtml() {
+  const c = ghCfg();
+  return `<section class="card" id="sync">
+    <h2>☁️ GitHub 同步（手機、電腦一齊用）</h2>
+    <p class="muted" id="ghStatus">${esc(localStorage.getItem('gh-status') || (ghOn() ? '已設定' : '未設定：而家只係讀取 GitHub 上面嘅資料'))}</p>
+    <p class="muted">你喺 App 改嘅所有嘢同你加嘅相，會存去 GitHub repo 嘅 <code>data/</code> 資料夾。其他裝置打開 App 會自動攞到；我之後出新版 App 亦會用返呢份資料，唔會蓋走你嘅修改。</p>
+    <label class="field">GitHub Token（每部要改資料嘅裝置都要貼一次）
+      <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_…" value="${esc(c.token)}"></label>
+    <details class="adv"><summary>Repo 設定</summary>
+      <label class="field">Owner<input id="ghOwner" value="${esc(c.owner)}"></label>
+      <label class="field">Repo<input id="ghRepo" value="${esc(c.repo)}"></label>
+      <label class="field">Branch<input id="ghBranch" value="${esc(c.branch)}"></label>
+    </details>
+    <div class="row">
+      <button class="chip dark" data-act="gh-save">儲存並同步</button>
+      <button class="chip" data-act="gh-now">而家同步</button>
+      ${c.token ? '<button class="chip danger" data-act="gh-forget">移除 Token</button>' : ''}
+    </div>
+    <details class="adv"><summary>點樣攞 Token？（5 分鐘）</summary>
+      <ol class="plain">
+        <li>電腦登入 GitHub → 右上角頭像 → <b>Settings</b> → 左邊最底 <b>Developer settings</b> → <b>Personal access tokens → Fine-grained tokens</b> → <b>Generate new token</b>。</li>
+        <li>Token name：<i>trip app</i>；Expiration：揀 <b>90 days</b>（或者旅程完之後）。</li>
+        <li>Repository access：<b>Only select repositories</b> → 揀 <b>${esc(c.repo)}</b>。</li>
+        <li>Permissions → Repository permissions → <b>Contents：Read and write</b>。</li>
+        <li>撳 <b>Generate token</b>，複製（<code>github_pat_</code> 開頭），貼喺上面再撳「儲存並同步」。</li>
+      </ol>
+      <p class="hint">Token 只存喺呢部機。因為 repo 係公開（GitHub Pages 要求），你加嘅相亦會係公開檔案，唔好放護照、信用卡等敏感相片。</p>
+    </details>
+  </section>`;
+}
+
+
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
 const ui = { tab: 'plan', day: null };
@@ -819,7 +1173,9 @@ function commit(fn, msg) {
   undoStack.push(JSON.stringify(trip));
   if (undoStack.length > 40) undoStack.shift();
   fn();
+  trip.updatedAt = Date.now();
   save();
+  schedulePush();
   render();
   if (msg) toast(msg, true);
 }
@@ -827,6 +1183,7 @@ function undo() {
   if (!undoStack.length) return toast('冇嘢可以還原');
   trip = JSON.parse(undoStack.pop());
   save();
+  schedulePush();
   render();
   toast('已還原');
 }
@@ -882,8 +1239,8 @@ function renderPlan() {
     ${renderCountdown(day)}
     <section class="dayhead">
       <p class="eyebrow">${p.m}月${p.d}日 星期${p.w} · ${esc(day.city || '')}</p>
-      <h1>${esc(day.title || '')}</h1>
-      ${day.notes ? `<p class="muted">${esc(day.notes)}</p>` : ''}
+      ${ef('day', day.id, 'title', '', day.title || '', { ph: '撳呢度加標題', h1: true })}
+      ${ef('day', day.id, 'notes', '', day.notes || '', { ph: '撳呢度加當日備註' })}
       <div class="row">
         ${routeUrl ? `<a class="chip dark" href="${routeUrl}" target="_blank" rel="noopener">${icon('route')}全日路線</a>` : ''}
       </div>
@@ -913,13 +1270,6 @@ function whenHtml(it) {
   </div>`;
 }
 
-function picsRow(it, big = false) {
-  const user = (it.photos || []).map(p => `<button type="button" class="pic" data-act="view-photo" data-id="${it.id}" data-photo="${p}"><img data-photo="${p}" alt=""></button>`).join('');
-  const sk = hasPicConf(it) ? '<span class="pic skeleton"></span>'.repeat(big ? 3 : 2) : '';
-  return `<div class="pics ${big ? 'big' : ''}" data-item="${it.id}">${sk}${user}
-    <button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button></div>`;
-}
-
 function titleHtml(it) {
   // 電車項目嘅日文站名已經喺路線行顯示，唔使重複
   const dupRoute = TRANSPORT.has(it.type) && it.type !== 'flight' && (it.from || it.to);
@@ -935,8 +1285,7 @@ function routeHtml(it, big = false) {
 }
 /** Excel 原文：交通、備註 */
 function xlRows(it) {
-  return `${it.xTransport ? `<p class="xrow"><span class="xk">交通</span><span>${esc(it.xTransport)}</span></p>` : ''}
-    ${it.xNote ? `<p class="xrow"><span class="xk">備註</span><span>${esc(it.xNote)}</span></p>` : ''}`;
+  return ['xTransport', 'xNote'].filter(k => it[k]).map(k => ef('item', it.id, k, k === 'xTransport' ? '交通' : '備註', it[k])).join('');
 }
 const chipHtml = l => `<a class="chip ${l.kind}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.ic ? icon(l.ic) : ''}${esc(l.label)}</a>`;
 
@@ -946,7 +1295,6 @@ function renderItem(it, prevLoc, isNext) {
   const badges = [it.tabelog ? '食評' : '', it.menu ? '菜單' : '', it.timetable?.length ? '時刻表' : '', it.planB ? '後備方案' : '']
     .filter(Boolean).map(b => `<span class="badge">${b}</span>`).join('');
   const links = linksFor(it, prevLoc).slice(0, isWalk ? 2 : 3).map(chipHtml).join('');
-  const showPics = hasPicConf(it) || it.photos?.length;
   return `<article class="item t-${it.type} ${isWalk ? 'is-walk' : ''} ${it.status === 'done' ? 'done' : ''} ${isNext ? 'next' : ''}" id="item-${it.id}">
     ${whenHtml(it)}
     <div class="card">
@@ -960,7 +1308,7 @@ function renderItem(it, prevLoc, isNext) {
         ${isWalk ? '' : speakBtn(it.titleJa || (isT ? it.to : ''))}
       </div>
       ${xlRows(it)}
-      ${showPics ? picsRow(it) : ''}
+      ${picsRow(it)}
       <div class="row">${links}<button type="button" class="chip more" data-act="open" data-id="${it.id}">${badges || '詳情'}${icon('right')}</button></div>
     </div>
   </article>`;
@@ -973,28 +1321,33 @@ function openItem(id) {
   const it = f.item;
   const isT = TRANSPORT.has(it.type);
   const prevLoc = (() => { for (let i = f.index - 1; i >= 0; i--) if (locOf(f.list[i])) return locOf(f.list[i]); return ''; })();
-  const xl = [['時間', [it.time, it.end].filter(Boolean).join(' 至 ') + (durOf(it) ? `（${durStr(durOf(it))}）` : '')], ['活動', it.title], ['交通', it.xTransport], ['備註', it.xNote], ['預約/地圖 URL', it.xUrl]]
-    .filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
-  const extra = [['日文', it.titleJa], ['地址', it.address], ['營業時間', it.hours], ['訂位號碼', it.ref], ['補充', it.notes]]
-    .filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  const E = (field, label, opt) => ef('item', id, field, label, FIELD_IO[field] ? FIELD_IO[field].get(it) : it[field], opt);
+  const when = [it.time, it.end].filter(Boolean).join(' 至 ') + (durOf(it) ? `（${durStr(durOf(it))}）` : '');
+  const xl = `<div class="ef ro" data-act="edit" data-id="${id}"><span class="ef-k">時間</span><div class="ef-v">${esc(when) || '<i class="muted">撳呢度加時間</i>'}</div><span class="ef-pen">✎</span></div>
+    ${E('title', '活動')}${E('xTransport', '交通')}${E('xNote', '備註')}${E('xUrl', '預約/地圖 URL')}`;
+  const extraF = [['titleJa', '日文'], ['address', '地址'], ['hours', '營業時間'], ['ref', '訂位號碼'], ['url', '網站'], ['notes', '補充'], ['linksText', '其他連結'], ['planB', '後備方案']];
+  const hasV = ([k]) => !!(FIELD_IO[k] ? FIELD_IO[k].get(it) : it[k]);
+  const extra = extraF.filter(hasV).map(([k, l]) => E(k, l)).join('');
+  const extraEmpty = extraF.filter(f => !hasV(f)).map(([k, l]) => E(k, l)).join('');
   const links = linksFor(it, prevLoc).map(chipHtml).join('');
-  const tabelog = it.tabelog?.length ? `<section class="sec tb"><h4>${icon('star')}Tabelog 食評</h4>
+  const tabelog = it.tabelog?.length ? `<section class="sec tb"><h4>${icon('star')}Tabelog 食評${E('tbText', '改', { compact: true })}</h4>
     ${it.tabelog.map(tb => `<div class="tbrow">
       <div class="score"><b>${esc(tb.rating)}</b><small>Tabelog</small></div>
       <div class="grow">
         <p class="tbname" lang="ja">${esc(tb.name)}</p>
         <p class="hint">${esc(tb.reviews)} 則評價 · 預算 ${esc(tb.budget)}</p>
-        <ul>${tb.summary.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
-        <a class="chip tabelog" href="${esc(tb.url)}" target="_blank" rel="noopener">${icon('ext')}開 Tabelog 頁面</a>
+        <ul>${(tb.summary || []).map(s => `<li>${linkify(s)}</li>`).join('')}</ul>
+        ${tb.url ? `<a class="chip tabelog" href="${esc(normUrl(tb.url))}" target="_blank" rel="noopener">${icon('ext')}開 Tabelog 頁面</a>` : ''}
       </div></div>`).join('')}
     <p class="hint">評分及摘要係 2026 年 10 月整理，離線都睇到；最新評分以 Tabelog 為準。</p></section>` : '';
-  const menu = it.menu ? `<section class="sec"><h4>${icon('food')}菜單及推介${it.menu.url ? ` <a href="${esc(normUrl(it.menu.url))}" target="_blank" rel="noopener">完整菜單</a>` : ''}</h4>
-    <ul class="menu">${it.menu.items.map(m => `<li><div class="grow"><b>${m.star ? '⭐ ' : ''}${esc(m.name)}</b>${m.ja ? `<span class="mja" lang="ja">${esc(m.ja)}${speakBtn(m.ja, 'sm')}</span>` : ''}${m.desc ? `<small>${esc(m.desc)}</small>` : ''}</div>${m.price ? `<span class="price">${esc(m.price)}</span>` : ''}</li>`).join('')}</ul>
-    ${it.menu.tips ? `<p class="hint">${esc(it.menu.tips)}</p>` : ''}</section>` : '';
+  const addMore = [!it.tabelog?.length && !isT ? E('tbText', '＋ Tabelog 食評', { compact: true }) : '', !it.menu && !isT ? E('menuText', '＋ 菜單', { compact: true }) : '', !it.timetable?.length && isT && it.type !== 'walk' ? E('ttText', '＋ 時刻表', { compact: true }) : ''].join('');
+  const menu = it.menu ? `<section class="sec"><h4>${icon('food')}菜單及推介${it.menu.url ? ` <a href="${esc(normUrl(it.menu.url))}" target="_blank" rel="noopener">完整菜單</a>` : ''}${E('menuText', '改', { compact: true })}</h4>
+    <ul class="menu">${(it.menu.items || []).map(m => `<li><div class="grow"><b>${m.star ? '⭐ ' : ''}${esc(m.name)}</b>${m.ja ? `<span class="mja" lang="ja">${esc(m.ja)}${speakBtn(m.ja, 'sm')}</span>` : ''}${m.desc ? `<small>${linkify(m.desc)}</small>` : ''}</div>${m.price ? `<span class="price">${esc(m.price)}</span>` : ''}</li>`).join('')}</ul>
+    ${E('menuTips', '貼士')}${E('menuUrl', '完整菜單網址')}</section>` : '';
   const nextIdx = f.day.date === todayStr() && it.timetable ? it.timetable.findIndex(r => r.dep >= nowHM()) : -1;
-  const tt = it.timetable?.length ? `<section class="sec"><h4>${icon('clock')}時刻表${it.timetableUrl ? ` <a href="${esc(normUrl(it.timetableUrl))}" target="_blank" rel="noopener">官方全日</a>` : ''}</h4>
+  const tt = it.timetable?.length ? `<section class="sec"><h4>${icon('clock')}時刻表${it.timetableUrl ? ` <a href="${esc(normUrl(it.timetableUrl))}" target="_blank" rel="noopener">官方全日</a>` : ''}${E('ttText', '改', { compact: true })}</h4>
     <table class="tt"><tr><th>開出</th><th>到達</th><th>班次</th><th></th></tr>${it.timetable.map((r, i) => `<tr class="${r.note ? 'pick' : ''} ${i === nextIdx ? 'nextrow' : ''}"><td><b>${esc(r.dep)}</b></td><td>${esc(r.arr || '')}</td><td>${esc(r.name || '')}</td><td>${esc(r.note || '')}${i === nextIdx ? ' 下一班' : ''}</td></tr>`).join('')}</table>
-    ${it.timetableNote ? `<p class="hint">${esc(it.timetableNote)}</p>` : ''}</section>` : '';
+    ${E('timetableNote', '備註')}${E('timetableUrl', '官方時刻表網址')}</section>` : '';
   const map = it.type === 'flight' ? '' : `<section class="sec"><h4>${icon('map')}地圖（離線可用）</h4>
     <div class="omap" data-map="${id}"><div class="leaf"></div>
       <button type="button" class="omap-full" data-act="map-full" aria-label="全螢幕">⤢</button></div>
@@ -1020,13 +1373,14 @@ function openItem(id) {
     cls: 'sheet',
     body: `<div class="sheet-title"><div class="grow">${titleHtml(it)}</div>${speakBtn(it.titleJa || (isT && it.type !== 'walk' ? it.to : ''))}</div>
       ${routeHtml(it, true)}
-      <dl class="kv xl">${xl}</dl>
+      <div class="efs">${xl}</div>
       <div class="row">${links}</div>
       ${map}
       ${picsRow(it, true)}
-      ${extra ? `<dl class="kv">${extra}</dl>` : ''}
-      ${it.planB ? `<div class="planb"><b>後備方案</b><p>${esc(it.planB)}</p></div>` : ''}
+      ${extra ? `<div class="efs">${extra}</div>` : ''}
+      ${extraEmpty ? `<details class="adv addinfo"><summary>＋ 加其他資料（地址、連結、後備方案…）</summary><div class="efs">${extraEmpty}</div></details>` : ''}
       ${tabelog}${menu}${tt}
+      ${addMore ? `<div class="row addmore">${addMore}</div>` : ''}
       <div class="actions">
         ${it.status === 'done' ? `<button type="button" class="btn" data-act="undone" data-id="${id}">${icon('reset')}未完成</button>` : `<button type="button" class="btn dark" data-act="done" data-id="${id}">${icon('check')}完成</button>`}
         ${isHM(it.time) ? `<button type="button" class="btn" data-act="shift" data-id="${id}">${icon('clock')}延遲</button>` : ''}
@@ -1140,9 +1494,10 @@ function renderInfo() {
       <button class="chip" data-act="xlsx-import">${icon('table')}匯入 Excel</button>
     </div>
   </section>
+  ${syncCardHtml()}
   <section class="card">
-    <h2>💾 備份及相片同步</h2>
-    <p class="muted">相片同修改只存喺每部機入面。想喺電腦加相再放上手機：電腦開呢個網站 → 加相 → 「匯出備份」→ 用 AirDrop／WhatsApp／電郵將檔案傳去手機 → 手機「匯入備份」→ 揀「只加入相片」。</p>
+    <h2>💾 備份檔</h2>
+    <p class="muted">冇設定 GitHub 同步嘅時候，可以用備份檔搬資料：「匯出備份」→ AirDrop／WhatsApp／電郵傳去另一部機 →「匯入備份」。</p>
     <div class="row">
       <button class="chip" data-act="export">${icon('download')}匯出備份</button>
       <button class="chip" data-act="import">匯入備份</button>
@@ -1250,54 +1605,6 @@ function showTaxi(it) {
   });
 }
 
-async function viewPics(id, start, userPhoto) {
-  const it = findItem(id).item;
-  const commons = (await getItemPics(it)) || [];
-  const all = [
-    ...commons.map(p => ({ key: p.key, cap: p.title.replace(/^File:/, '').replace(/\.\w+$/, '') + '（Wikimedia Commons）', user: false })),
-    ...(it.photos || []).map(p => ({ key: p, cap: '你加嘅相', user: true })),
-  ];
-  if (!all.length) return;
-  let i = userPhoto ? all.findIndex(p => p.key === userPhoto) : start;
-  if (!(i >= 0)) i = 0;
-  const show = async form => {
-    const p = all[i];
-    form.querySelector('.viewer img').src = (await blobURL(p.key)) || '';
-    form.querySelector('.viewer .cap').textContent = `${i + 1}／${all.length} · ${p.cap}`;
-    form.querySelector('#delPic').hidden = !p.user;
-  };
-  openModal({
-    title: it.title,
-    cls: 'viewer-modal',
-    body: `<div class="viewer"><img alt="">
-        ${all.length > 1 ? `<button type="button" class="nav l" aria-label="上一張">${icon('left')}</button><button type="button" class="nav r" aria-label="下一張">${icon('right')}</button>` : ''}
-        <p class="cap"></p></div>
-      <div class="row"><button type="button" class="btn danger" id="delPic">${icon('trash')}刪除呢張</button><button type="button" class="btn" data-act="open" data-id="${id}">返去詳情</button></div>`,
-    onOpen: form => {
-      const go = step => { i = (i + step + all.length) % all.length; show(form); };
-      form.querySelector('.nav.l')?.addEventListener('click', () => go(-1));
-      form.querySelector('.nav.r')?.addEventListener('click', () => go(1));
-      let x0 = null;
-      const v = form.querySelector('.viewer');
-      v.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
-      v.addEventListener('touchend', e => {
-        if (x0 == null) return;
-        const dx = e.changedTouches[0].clientX - x0;
-        if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
-        x0 = null;
-      });
-      form.querySelector('#delPic').onclick = () => {
-        const p = all[i];
-        if (!p.user || !confirm('刪除呢張相？')) return;
-        closeModal();
-        commit(() => { const cur = findItem(id).item; cur.photos = (cur.photos || []).filter(x => x !== p.key); }, '已刪除相片');
-        PhotoDB.del(p.key).catch(() => {});
-      };
-      show(form);
-    },
-  });
-}
-
 /* ---------- 匯入／匯出 ---------- */
 async function exportTrip() {
   const photos = {};
@@ -1374,7 +1681,22 @@ const actions = {
   del: id => { if (!confirm('刪除呢項？')) return; closeModal(); commit(() => { const f = findItem(id); f.list.splice(f.index, 1); }, '已刪除'); },
   'add-photo': id => { pendingPhotoItem = id; $('#photoInput').click(); },
   'view-pics': (id, el) => viewPics(id, parseInt(el.dataset.i, 10)),
-  'view-photo': (id, el) => viewPics(id, 0, el.dataset.photo),
+  ef: (_, el) => startEdit(el),
+  'ef-save': (_, el) => saveEdit(el.closest('.ef')),
+  'ef-cancel': (_, el) => cancelEdit(el.closest('.ef')),
+  'pic-move': (id, el) => movePic(id, el.dataset.key, +el.dataset.dir),
+  'pic-hide': (id, el) => hidePic(id, el.dataset.key),
+  'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')); },
+  'pic-restore': id => { commit(() => { delete findItem(id).item.picHidden; }, '已還原隱藏嘅相'); hydratePics($('#modal')); },
+  'gh-save': () => {
+    const v = s => ($(s)?.value || '').trim();
+    const c = { ...ghCfg(), token: v('#ghToken'), owner: v('#ghOwner') || GH_DEF.owner, repo: v('#ghRepo') || GH_DEF.repo, branch: v('#ghBranch') || GH_DEF.branch };
+    localStorage.setItem('gh-cfg', JSON.stringify(c));
+    syncStatus('同步緊…');
+    pullSync({ quiet: false }).then(() => { if (ui.tab === 'info' && !$('#modal').open) render(); });
+  },
+  'gh-now': () => { syncStatus('同步緊…'); (isDirty() && ghOn() ? pushSync() : pullSync({ quiet: false })); },
+  'gh-forget': () => { if (!confirm('喺呢部機移除 GitHub Token？')) return; const c = ghCfg(); delete c.token; localStorage.setItem('gh-cfg', JSON.stringify({ owner: c.owner, repo: c.repo, branch: c.branch })); localStorage.removeItem('gh-status'); render(); },
   copy: (_, el) => navigator.clipboard?.writeText(el.dataset.val).then(() => toast('已複製'), () => toast('複製唔到')),
   prefetch: () => { toast('下載緊相片…'); prefetchAll().then(() => toast('相片已存好，離線可睇')); },
   'offline-all': () => downloadOffline(),
@@ -1396,11 +1718,22 @@ const actions = {
 };
 
 document.addEventListener('click', e => {
+  // 資料入面嘅連結照常打開；改緊嘅輸入框唔理
+  const link = e.target.closest('a[href]');
+  if (link && !link.dataset.act) return;
+  if (e.target.closest('.ef.editing textarea, .ef.editing .hint')) return;
   const el = e.target.closest('[data-act]');
   if (!el || !actions[el.dataset.act]) return;
   e.preventDefault();
   e.stopPropagation();
   actions[el.dataset.act](el.dataset.id, el, e);
+});
+
+document.addEventListener('keydown', e => {
+  const ta = e.target.closest?.('.ef.editing textarea');
+  if (!ta) return;
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveEdit(ta.closest('.ef')); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelEdit(ta.closest('.ef')); }
 });
 
 $('#photoInput').addEventListener('change', async e => {
@@ -1462,4 +1795,10 @@ if (!localStorage.getItem('trip-tiles-cleaned')) {
     .then(() => localStorage.setItem('trip-tiles-cleaned', '1')).catch(() => {});
 }
 window.addEventListener('online', loadWeather);
+// GitHub 同步：開 App、返回 App、重新上網都會攞最新
+let lastPull = 0;
+const autoPull = () => { if (Date.now() - lastPull < 60_000) return; lastPull = Date.now(); pullSync(); };
+autoPull();
+window.addEventListener('online', () => { lastPull = 0; autoPull(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoPull(); });
 setTimeout(() => prefetchAll().then(() => { if (ui.tab !== 'plan' || $('#modal').open) return; render(); }), 1200);

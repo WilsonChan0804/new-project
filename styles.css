@@ -354,3 +354,45 @@ dialog::backdrop { background: rgba(10,10,10,.5); }
 .pinpaste .row { margin-top: 6px; flex-wrap: nowrap; }
 
 .bigbtns.one { grid-template-columns: 1fr; }
+
+/* ---------- 就地修改 ---------- */
+.efs { display: flex; flex-direction: column; gap: 2px; background: var(--surface-2); border-radius: var(--r); padding: 6px 8px; }
+.ef { display: flex; gap: 8px; align-items: flex-start; padding: 6px; border-radius: 10px; cursor: text; font-size: 14.5px; line-height: 1.45; }
+.ef:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.ef-k { flex: none; min-width: 64px; font-size: 12px; font-weight: 800; color: var(--muted); padding-top: 2px; }
+.ef-v { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+.ef-v a, .xrow a, .tb a { color: inherit; text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 2px; overflow-wrap: anywhere; }
+.ef-pen { flex: none; font-size: 13px; color: var(--muted); opacity: .55; padding-top: 1px; }
+.ef.empty .ef-v i { font-style: normal; opacity: .7; }
+.ef.editing { cursor: default; background: var(--surface); box-shadow: 0 0 0 2px var(--accent); flex-wrap: wrap; }
+.ef.editing .ef-pen { display: none; }
+.ef.editing .ef-v { flex-basis: 100%; white-space: normal; }
+.ef.editing textarea { width: 100%; font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); resize: vertical; }
+.ef.editing .row { margin-top: 6px; }
+.ef.h1 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; padding: 2px 4px; margin: 2px -4px; }
+.ef.h1 .ef-v { line-height: 1.15; }
+.dayhead .ef:not(.h1) { color: var(--muted); padding: 2px 4px; margin: 0 -4px; }
+.dayhead .ef:not(.h1) .ef-v { color: var(--ink-2); }
+.card > .ef { margin: 6px -6px 0; font-size: 14px; }
+.card > .ef .ef-k { min-width: 0; font-size: 11.5px; background: var(--surface-2); border-radius: 6px; padding: 2px 6px; }
+.card > .ef .ef-v { color: var(--ink-2); }
+.ef.compact { display: inline-flex; padding: 3px 9px; margin-left: 8px; border: 1px dashed var(--line); border-radius: 999px; font-size: 12px; vertical-align: middle; cursor: pointer; }
+.ef.compact .ef-k { min-width: 0; padding: 0; color: var(--ink-2); }
+.ef.compact .ef-pen { display: none; }
+.ef.compact.editing { display: flex; margin: 8px 0 0; border-radius: 12px; border-style: solid; font-size: 14px; font-weight: 400; letter-spacing: 0; }
+.ef.ro { cursor: pointer; }
+.addmore .ef.compact { margin-left: 0; }
+h4 .ef.compact { font-weight: 700; }
+code { font-size: .92em; background: var(--surface-2); border-radius: 5px; padding: 1px 5px; }
+label.field { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 10px; }
+label.field input { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+
+/* ---------- 相片排序 ---------- */
+.pic { position: relative; }
+.picbtn { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.pics.none .pic.add { width: auto; flex-direction: row; gap: 4px; padding: 4px 12px; aspect-ratio: auto; height: 32px; border-radius: 999px; }
+.pic.arrange { width: 74px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 18px; font-weight: 700; cursor: pointer; }
+.pic.arrange span { font-size: 12px; }
+.pic.arr { outline: 2px solid var(--accent); outline-offset: -2px; }
+.picctl { position: absolute; inset: auto 0 0 0; display: flex; justify-content: space-between; padding: 6px; background: linear-gradient(transparent, rgba(0,0,0,.55)); }
+.picctl button { width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); color: #121212; font-size: 15px; font-weight: 800; cursor: pointer; }

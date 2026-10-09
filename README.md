@@ -1,6 +1,6 @@
 # Trip Planner: Hong Kong & Japan
 
-A phone-friendly trip planner that works offline. There's no server and no login. Your plan stays on your own device.
+A phone-friendly trip planner that works offline. There's no server and no login. Your plan is saved on the device, and you can sync it through this GitHub repo (see below).
 
 ## What it does
 - **Day-by-day plan.** Every item gets one-tap links that are built from the details you enter:
@@ -40,5 +40,15 @@ The Tokyo trip (29/10–1/11) lives in `trip-data.js`. The `XL` block holds the 
 - **Map:** the interactive map uses Leaflet (`vendor/leaflet`, BSD-2-Clause). It can zoom offline up to level 17 and shows up to 19 by enlarging. Addresses are located with the GSI address search, and you can fix a pin by tapping the map, using your GPS, or pasting coordinates from Google Maps.
 - **Offline:** use "下載離線資料" (download offline data) in Info. It saves the photos, Esri World Street Map tiles (OpenStreetMap as backup), Nominatim coordinates and walking routes (routing.openstreetmap.de) for every stop. The GPS dot works with no network.
 - **Weather:** comes from Open-Meteo. The last result is cached so it still shows offline.
+
+## Editing and sync (GitHub)
+- **Edit in place:** tap any text in an item's details (活動, 交通, 備註, URL, 地址, 營業時間, Tabelog, 菜單, 時刻表, 其他連結, 後備方案…) or a day's title or notes, change it, then tap 儲存 (save). Ctrl/⌘+Enter saves on a computer. Every URL in any text becomes a clickable link.
+- **Photos:** every item has 加相 (add photo). In the details sheet, ⇄ 排次序 (reorder) shows ◀ ▶ to move a photo and ✕ to hide a preset photo or delete your own.
+- **Where the data lives:** with a GitHub token set in 資訊 → ☁️ GitHub 同步 (GitHub sync), every change is committed to this repo:
+  - the itinerary goes to `data/trip.json`
+  - your photos go to `data/photos/<id>.jpg`
+
+  Other devices pull the data automatically, even without a token, because the repo is public. Future app versions read the same file, so your edits are kept. Use a fine-grained token limited to this repo with **Contents: Read and write**.
+- **For developers:** run `git pull` before changing the app, so you include the data commits made from the app. To change the itinerary content after `data/trip.json` exists, edit `data/trip.json` instead of `trip-data.js`. `trip-data.js` is only the starting seed.
 
 When you change app files, bump `VERSION` in `sw.js` so installed copies update.

@@ -1,6 +1,6 @@
 // Service worker：令 App 冇網都開到。
 // 改咗 App 檔案之後將 VERSION 加一，手機先會攞新版。
-const VERSION = 'trip-planner-v9';
+const VERSION = 'trip-planner-v10';
 const FONT_CACHE = 'trip-planner-fonts';
 const ASSETS = ['./', './index.html', './app.js', './trip-data.js', './styles.css', './manifest.webmanifest', './icon.svg', './icon-180.png', './vendor/xlsx.full.min.js', './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css'];
 
