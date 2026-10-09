@@ -159,6 +159,7 @@ export function installSearch() {
     b.innerHTML = ICON + `<span class="lab">Search</span>`;
     b.onclick = (ev) => { ev.preventDefault(); open(); };
     nav.insertBefore(b, nav.firstChild);
+    helpButton(nav, b);
     return true;
   };
   const tick = () => { if (!place() && ++tries < 120) setTimeout(tick, 500); };
@@ -171,12 +172,31 @@ export function installSearch() {
   css();
 }
 
+/* "?": the manual (help/, docsify), at the chapter for this page */
+const HELP_PAGE = {
+  "folders.html": "folders", "model.html": "3d-moving-around", "index.html": "sheets-2d", "tasks.html": "tasks",
+  "messenger.html": "messenger", "calendar.html": "calendar", "board.html": "board", "dashboard.html": "dashboard-and-projects",
+  "projects.html": "projects", "admin.html": "for-admins",
+};
+function helpButton(nav, after) {
+  if (document.getElementById("lwk-help-btn")) return;
+  const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  const a = document.createElement("a");
+  a.id = "lwk-help-btn";
+  a.href = "help/#/" + (HELP_PAGE[page] || "");
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.title = "Help: the user manual (English / 廣東話)";
+  a.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>`;
+  nav.insertBefore(a, after.nextSibling);
+}
+
 function css() {
   if (document.getElementById("sr-css")) return;
   const st = document.createElement("style");
   st.id = "sr-css";
   st.textContent = `
-#lwk-search-btn { display: inline-flex; align-items: center; gap: 4px; }
+#lwk-search-btn, #lwk-help-btn { display: inline-flex; align-items: center; gap: 4px; }
 #lwk-search { position: fixed; inset: 0; z-index: 400; background: rgba(20, 26, 36, .35); display: flex; justify-content: center; align-items: flex-start; padding-top: 8vh; }
 #lwk-search[hidden] { display: none; }
 .sr-box { width: min(720px, 94vw); max-height: 78vh; display: flex; flex-direction: column; background: var(--panel, #fff); color: var(--ink, #1f2430);

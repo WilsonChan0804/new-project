@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Help</title>
+<link rel="icon" type="image/png" href="../icons/favicon-64.png">
+<meta name="theme-color" content="#f28022">
+<!-- docsify (vendor/docsify, MIT): the user manual as web pages. The pages
+     are made from the same text as the Word manuals - docs/manual/
+     build_markdown.py - so do not edit en/ or yue/ by hand. -->
+<link rel="stylesheet" href="../vendor/docsify/vue.css">
+<style>
+  :root { --theme-color: #f28022; --lwk-ink: #222; }
+  body { font-family: "Segoe UI", system-ui, -apple-system, "Microsoft JhengHei", "PingFang HK", sans-serif; color: var(--lwk-ink); }
+  .sidebar { padding-top: 0; }
+  .sidebar > h1 { margin: 0; padding: 14px 16px; background: #f28022; text-align: left; }
+  .sidebar > h1 a { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 15px; font-weight: 700; text-decoration: none; }
+  .sidebar > h1 img { height: 26px; width: auto; }
+  .sidebar .search { margin: 10px 0 0; padding: 6px 12px; border-bottom: 1px solid #eee; }
+  .sidebar .search input { border-radius: 6px; }
+  .sidebar ul li a { font-size: 14px; }
+  .sidebar-toggle { background: rgba(242, 128, 34, .12); }
+  .markdown-section { max-width: 860px; padding: 30px 28px 60px; }
+  .markdown-section table { display: table; width: 100%; }
+  .markdown-section td, .markdown-section th { vertical-align: top; }
+  .markdown-section code { font-size: .88em; white-space: pre-wrap; word-break: break-word; }
+  /* the language switch and the way back, top right */
+  .lwk-top { position: fixed; top: 12px; right: 18px; z-index: 30; display: flex; gap: 6px; }
+  .lwk-top a { font-size: 13px; padding: 5px 11px; border-radius: 6px; border: 1px solid #e3e3e3; background: #fff;
+    color: #444; text-decoration: none; }
+  .lwk-top a.on { background: #f28022; border-color: #f28022; color: #fff; font-weight: 600; }
+  @media (max-width: 768px) {
+    .lwk-top { top: 8px; right: 8px; }
+    .markdown-section { padding: 52px 16px 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="lwk-top">
+  <a href="#" data-lang="en">English</a>
+  <a href="#" data-lang="yue">廣東話</a>
+  <a href="../projects.html" title="Back to the viewer">Viewer &#8599;</a>
+</div>
+<div id="app">Loading the manual ...</div>
+<script>
+  /* Pages live in en/ and yue/ with the same names; the language last
+     chosen (or the browser's) opens when no page is asked for. */
+  function lwkFixHash() {
+    var pick = "en";
+    try { pick = localStorage.getItem("lwk-help:lang") || (/^zh/i.test(navigator.language) ? "yue" : "en"); } catch (e) {}
+    if (!/^#\/(en|yue)(\/|$)/.test(location.hash)) {
+      var page = (location.hash.match(/^#\/([a-z0-9-]+)$/) || [])[1];      // help/#/folders from the viewer
+      location.replace("#/" + pick + "/" + (page && page !== "en" && page !== "yue" ? page : ""));
+    }
+  }
+  lwkFixHash();
+  window.addEventListener("hashchange", lwkFixHash);
+  function lwkLang() { return /^#\/yue/.test(location.hash) ? "yue" : "en"; }
+  function lwkPaint() {
+    var l = lwkLang();
+    document.documentElement.lang = l === "yue" ? "zh-HK" : "en";
+    document.querySelectorAll(".lwk-top [data-lang]").forEach(function (a) { a.classList.toggle("on", a.dataset.lang === l); });
+  }
+  document.addEventListener("click", function (ev) {
+    var a = ev.target.closest && ev.target.closest(".lwk-top [data-lang]");
+    if (!a) return;
+    ev.preventDefault();
+    var to = a.dataset.lang;
+    try { localStorage.setItem("lwk-help:lang", to); } catch (e) {}
+    // the same page in the other language
+    location.hash = location.hash.replace(/^#\/(en|yue)/, "#/" + to);
+  });
+  window.addEventListener("hashchange", lwkPaint);
+  window.$docsify = {
+    name: '<img src="../icons/logo-white.png" alt="LWK + Partners"><span>Viewer Help</span>',
+    nameLink: { "/en/": "#/en/", "/yue/": "#/yue/", "/": "#/en/" },
+    loadSidebar: true,
+    alias: { "/en/.*/_sidebar.md": "/en/_sidebar.md", "/yue/.*/_sidebar.md": "/yue/_sidebar.md" },
+    subMaxLevel: 3,
+    maxLevel: 3,
+    auto2top: true,
+    relativePath: false,
+    themeColor: "#f28022",
+    search: {
+      paths: "auto",
+      depth: 3,
+      namespace: "lwk-help",
+      placeholder: { "/en/": "Search the manual", "/yue/": "搜尋手冊", "/": "Search" },
+      noData: { "/en/": "Nothing found", "/yue/": "搵唔到", "/": "Nothing found" },
+    },
+    plugins: [function (hook) { hook.doneEach(lwkPaint); }],
+  };
+</script>
+<script src="../vendor/docsify/docsify.min.js"></script>
+<script src="../vendor/docsify/search.min.js"></script>
+<script src="../vendor/docsify/zoom-image.min.js"></script>
+</body>
+</html>
