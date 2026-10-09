@@ -1,7 +1,7 @@
 {
  "app": "trip-planner",
  "version": 4,
- "savedAt": "2026-10-09T01:42:58.119Z",
+ "savedAt": "2026-10-09T01:43:09.147Z",
  "trip": {
   "seedVersion": 5,
   "name": "東京 4 日",
@@ -32,8 +32,8 @@
       ],
       "notes": "15:55（日本時間）抵達。起飛時間待填。\n落機前填好 Visit Japan Web，入境 QR code 截圖「加相」。",
       "picOrder": [
-       "pic:File:Departure lobby of Tokyo-Narita Airport Terminal 2.JPG",
        "pic:File:Narita Airpoert Terminal 2 Check-in Area.JPG",
+       "pic:File:Departure lobby of Tokyo-Narita Airport Terminal 2.JPG",
        "pic:File:Narita Airport Terminal 2 exterior.jpg"
       ]
      },
@@ -55,7 +55,12 @@
       "notes": "落機 → 入境審查 → 行李提取 → 海關 → B1 京成電鐵站。預留入境及行李時間。",
       "xNote": "預留入境及行李時間",
       "xTransport": "落機 → 入境審查 → 行李提取 → 海關 → B1 京成電鐵站",
-      "xUrl": "https://keisei.ekitan.com/naritaacs-i-tc/timetable/station/682-6/d1?dw=3&date=20261029"
+      "xUrl": "https://keisei.ekitan.com/naritaacs-i-tc/timetable/station/682-6/d1?dw=3&date=20261029",
+      "picOrder": [
+       "pic:File:Departure lobby of Tokyo-Narita Airport Terminal 2.JPG",
+       "pic:File:Narita Airport Terminal 2 exterior.jpg",
+       "pic:File:Narita Airpoert Terminal 2 Check-in Area.JPG"
+      ]
      },
      {
       "id": "s3",
@@ -2165,6 +2170,6 @@
    "根津神社": "根津神社, 1 Chome-28-9 Nezu, Bunkyo City, Tokyo",
    "根津美術館": "Nezu Museum, 6 Chome-5-1 Minamiaoyama, Minato City, Tokyo"
   },
-  "updatedAt": 1791510174853
+  "updatedAt": 1791510185840
  }
 }
