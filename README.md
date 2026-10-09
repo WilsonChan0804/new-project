@@ -70,4 +70,9 @@ API:
 
 Writes need the `X-Trip-Key` header. Reads are public unless you set `TRIP_VIEW_KEY`.
 
+## Your data is never overwritten by app updates
+- Everything you edit (text, photos, photo order, phrases) is stored on the server in `~/trip-data/` and in each device's browser. App updates only replace the program files in `~/trip-app/`.
+- `trip-data.js` is only the starting itinerary. A new app version never replaces your trip with it. New fields are added through `MIGRATIONS` in `app.js`; each one runs once and only fills fields an item doesn't already have.
+- The server keeps the last 300 versions in `~/trip-data/history/`.
+
 When you change app files, bump `VERSION` in `sw.js` so installed copies update.

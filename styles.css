@@ -422,3 +422,12 @@ rt { font-size: .5em; font-weight: 600; color: var(--muted); letter-spacing: 0; 
 .addphr { margin-top: 10px; }
 .phr-preview { font-size: 22px; font-weight: 700; line-height: 2; min-height: 1em; margin: 6px 0; }
 .taxi .big ruby rt { font-size: .38em; }
+
+/* ---------- 相片左右箭咀 ---------- */
+.pics-wrap { position: relative; }
+.pics-nav { display: none; position: absolute; top: calc(50% + 6px); transform: translateY(-50%); z-index: 2; width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid var(--ink); background: var(--surface); color: var(--ink); place-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,.15); }
+.pics-nav.l { left: -6px; } .pics-nav.r { right: -6px; }
+.pics-wrap.ovf .pics-nav { display: grid; }
+.pics-wrap.ovf.at-start .pics-nav.l, .pics-wrap.ovf.at-end .pics-nav.r { display: none; }
+@media (hover: none) { .pics-wrap .pics-nav { width: 30px; height: 30px; opacity: .85; } }

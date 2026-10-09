@@ -18,7 +18,8 @@ import threading
 import time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
+from urllib.request import urlopen, Request
 
 APP_DIR = Path(__file__).resolve().parent.parent
 DATA = Path(os.environ.get('TRIP_DATA', Path.home() / 'trip-data'))
@@ -170,6 +171,30 @@ def reading(text):
     return {'ruby': merged, 'kana': ''.join(h for _, h in toks), 'romaji': romaji.strip()}
 
 
+def translate(text):
+    """中文／廣東話 → 日文。先試 Google Translate（識廣東話），唔得就用 MyMemory。"""
+    ua = {'User-Agent': 'Mozilla/5.0 trip-app'}
+    try:
+        url = ('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ja&dt=t&q=' + quote(text))
+        with urlopen(Request(url, headers=ua), timeout=8) as r:
+            j = json.loads(r.read().decode('utf-8'))
+        ja = ''.join(seg[0] for seg in j[0] if seg and seg[0]).strip()
+        if ja:
+            return {'ja': ja, 'via': 'google'}
+    except Exception:
+        pass
+    try:
+        url = 'https://api.mymemory.translated.net/get?langpair=zh-TW|ja&q=' + quote(text)
+        with urlopen(Request(url, headers=ua), timeout=8) as r:
+            j = json.loads(r.read().decode('utf-8'))
+        ja = (j.get('responseData') or {}).get('translatedText', '').strip()
+        if ja:
+            return {'ja': ja, 'via': 'mymemory'}
+    except Exception:
+        pass
+    return None
+
+
 class H(BaseHTTPRequestHandler):
     server_version = 'TripServer/1'
 
@@ -296,6 +321,20 @@ class H(BaseHTTPRequestHandler):
                 return self.send(400, {'error': '格式唔啱'})
             r = reading(text)
             return self.send(200, r) if r else self.send(501, {'error': '伺服器未裝 pykakasi'})
+        if path == '/api/translate':
+            if not self.can_edit():
+                return self.deny()
+            try:
+                text = json.loads(self.body(4000)).get('text', '').strip()[:500]
+            except Exception:
+                return self.send(400, {'error': '格式唔啱'})
+            if not text:
+                return self.send(400, {'error': '冇字'})
+            t = translate(text)
+            if not t:
+                return self.send(502, {'error': '翻譯服務暫時用唔到'})
+            r = reading(t['ja']) or {}
+            return self.send(200, {**t, 'ruby': r.get('ruby'), 'kana': r.get('kana'), 'romaji': r.get('romaji')})
         return self.send(404, {'error': 'not found'})
 
     def static(self, path):

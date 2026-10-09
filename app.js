@@ -929,8 +929,10 @@ async function photoURL(key) {
 }
 function picsRow(it, big = false) {
   const n = (it.photos?.length || 0) + (hasPicConf(it) ? (big ? 3 : 2) : 0);
-  return `<div class="pics ${big ? 'big' : ''} ${n ? '' : 'none'}" data-item="${it.id}" ${big ? 'data-big="1"' : ''}>${'<span class="pic skeleton"></span>'.repeat(Math.min(n, big ? 3 : 2))}
-    <button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button></div>`;
+  return `<div class="pics-wrap"><button type="button" class="pics-nav l" data-act="pics-scroll" data-dir="-1" aria-label="上一張">${icon('left')}</button>
+    <div class="pics ${big ? 'big' : ''} ${n ? '' : 'none'}" data-item="${it.id}" ${big ? 'data-big="1"' : ''}>${'<span class="pic skeleton"></span>'.repeat(Math.min(n, big ? 3 : 2))}
+    <button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button></div>
+    <button type="button" class="pics-nav r" data-act="pics-scroll" data-dir="1" aria-label="下一張">${icon('right')}</button></div>`;
 }
 async function hydratePics(root = document) {
   for (const box of root.querySelectorAll('.pics[data-item]')) {
@@ -963,9 +965,24 @@ async function hydratePics(root = document) {
       + `<button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button>` + ctl
       + (arrange && it.picDeleted?.length ? `<button type="button" class="pic arrange" data-act="pic-undelete" data-id="${it.id}">↺<span>還原刪除咗嘅預設相（${it.picDeleted.length}）</span></button>` : '');
     enableDrag(box, it.id, arrange);
+    picsOverflow(box);
   }
 }
 
+/** 相片多過一行：顯示左右箭咀（電腦用） */
+function picsOverflow(box) {
+  const wrap = box.parentElement;
+  if (!wrap?.classList.contains('pics-wrap')) return;
+  const upd = () => {
+    const ovf = box.scrollWidth > box.clientWidth + 4;
+    wrap.classList.toggle('ovf', ovf);
+    wrap.classList.toggle('at-start', box.scrollLeft < 4);
+    wrap.classList.toggle('at-end', box.scrollLeft + box.clientWidth > box.scrollWidth - 4);
+  };
+  box.onscroll = upd;
+  requestAnimationFrame(upd);
+  box.querySelectorAll('img').forEach(i => i.addEventListener('load', upd, { once: true }));
+}
 /* 拖放排序：滑鼠直接拖；手指喺「排次序」模式入面拖 */
 let picDragJust = 0;
 function enableDrag(box, id, arrange) {
@@ -1067,6 +1084,9 @@ async function viewPics(id, start) {
       const go = step => { i = (i + step + all.length) % all.length; show(form); };
       form.querySelector('.nav.l')?.addEventListener('click', () => go(-1));
       form.querySelector('.nav.r')?.addEventListener('click', () => go(1));
+      // 電腦：鍵盤左右鍵轉相
+      const key = e => { if (!form.isConnected) return document.removeEventListener('keydown', key); if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1); };
+      if (all.length > 1) document.addEventListener('keydown', key);
       let x0 = null;
       const v = form.querySelector('.viewer');
       v.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
@@ -1234,7 +1254,17 @@ function syncCardHtml() {
 const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isGmaps = u => /^https:\/\/(www\.)?google\.[a-z.]+\/maps|^https:\/\/maps\.google\./.test(u);
 const MAP_APPS = { gapp: 'Google Maps App', apple: 'Apple 地圖', web: '網頁版 Google Maps' };
+const MAP_LANGS = { 'zh-TW': '中文', ja: '日本語', en: 'English' };
+const mapLang = () => localStorage.getItem('map-lang') || 'zh-TW';
+/** Google Maps 網址加語言（hl），地名會用中文／日文顯示 */
+function withLang(url) {
+  if (!isGmaps(url)) return url;
+  const u = new URL(url);
+  u.searchParams.set('hl', mapLang());
+  return u.toString();
+}
 function mapLink(url, app) {
+  url = withLang(url);
   if (app === 'gapp') return url.replace(/^https:\/\//, 'comgooglemapsurl://');
   if (app !== 'apple') return url;
   const u = new URL(url);
@@ -1323,6 +1353,7 @@ function render() {
   view.innerHTML = ({ plan: renderPlan, bookings: renderBookings, phrases: renderPhrases, info: renderInfo }[ui.tab])();
   hydratePics(view);
   if (ui.tab === 'info') updatePicStatus();
+  if (ui.tab === 'plan') window.Kappa?.attachBuddy(view.querySelector('.list'));
 }
 
 function currentDay() {
@@ -1604,9 +1635,10 @@ function phraseForm(gid, pid) {
   const autoKana = auto.kana;
   openModal({
     title: pid ? '改句子' : `加句子（${g.cat}）`,
-    body: `<label>日文<textarea name="ja" rows="2" lang="ja" required>${esc(p.ja)}</textarea></label>
-      <label>中文意思<input name="zh" value="${esc(p.zh)}"></label>
-      <div class="row"><button type="button" class="chip dark" id="autoRd">↻ 自動產生讀音（要上網）</button></div>
+    body: `<label>中文／廣東話（例如：唔該，幾多錢？）<input name="zh" value="${esc(p.zh)}"></label>
+      <div class="row"><button type="button" class="chip dark" id="doTr">🔁 翻譯成日文</button><span class="hint" id="trInfo"></span></div>
+      <label>日文（可以自己改）<textarea name="ja" rows="2" lang="ja" required>${esc(p.ja)}</textarea></label>
+      <div class="row"><button type="button" class="chip" id="autoRd">↻ 自動產生讀音（要上網）</button></div>
       <p class="phr-preview" lang="ja" id="rdPrev"></p>
       <label>平假名讀音（可以自己改）<input name="kana" lang="ja" value="${esc(auto.kana)}"></label>
       <label>羅馬拼音（可以自己改）<input name="ro" value="${esc(auto.ro)}"></label>
@@ -1626,6 +1658,24 @@ function phraseForm(gid, pid) {
         prev();
       };
       form.querySelector('#autoRd').onclick = gen;
+      form.querySelector('#doTr').onclick = async () => {
+        const zh = form.zh.value.trim();
+        if (!zh) return toast('請先打中文／廣東話');
+        const b = form.querySelector('#doTr'), info = form.querySelector('#trInfo');
+        b.textContent = '翻譯緊…';
+        try {
+          const r = await srvReq('/api/translate', { method: 'POST', body: { text: zh } });
+          if (r.status === 401) throw new Error('要先喺「資訊」輸入同步密碼');
+          if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `伺服器回應 ${r.status}`);
+          const j = await r.json();
+          form.ja.value = j.ja;
+          auto = { ruby: j.ruby || null, kana: j.kana || '', ro: j.romaji || '' };
+          form.kana.value = auto.kana; form.ro.value = auto.ro;
+          info.textContent = '機器翻譯，請睇下啱唔啱';
+          prev();
+        } catch (e) { toast('翻譯唔到：' + e.message); }
+        b.textContent = '🔁 翻譯成日文';
+      };
       form.ja.addEventListener('change', gen);
       form.kana.addEventListener('input', prev);
       prev();
@@ -1711,7 +1761,10 @@ function renderInfo() {
   </section>
   ${syncCardHtml()}
   <section class="card">
-    <h2>🗺 地圖 App</h2>
+    <h2>🗺 地圖</h2>
+    <p class="muted">Google Maps 地名語言：</p>
+    <div class="row">${Object.entries(MAP_LANGS).map(([k, v]) => `<button class="chip ${mapLang() === k ? 'dark' : ''}" data-act="map-lang" data-id="${k}">${v}</button>`).join('')}</div>
+    <p class="hint">用 Google Maps App 嘅話，App 會跟手機設定：iPhone「設定」→「Google Maps」→「語言」揀中文或日文。</p>
     <p class="muted">iPhone 撳地圖連結時用：${esc(MAP_APPS[localStorage.getItem('map-app')] || '每次問我')}</p>
     <div class="row">${Object.entries(MAP_APPS).map(([k, v]) => `<button class="chip ${localStorage.getItem('map-app') === k ? 'dark' : ''}" data-act="map-app" data-id="${k}">${v}</button>`).join('')}
       <button class="chip" data-act="map-app" data-id="">每次問我</button></div>
@@ -1894,7 +1947,7 @@ const actions = {
   undo,
   open: id => openItem(id),
   speak: (_, el) => speak(el.dataset.text),
-  done: id => { closeModal(); commit(() => { findItem(id).item.status = 'done'; }, '已完成'); },
+  done: id => { const t = findItem(id).item.title; closeModal(); commit(() => { findItem(id).item.status = 'done'; }, '已完成'); window.Kappa?.celebrate(esc(t)); },
   undone: id => { closeModal(); commit(() => { findItem(id).item.status = 'planned'; }, '已改返未完成'); },
   shift: id => shiftItems(id),
   taxi: id => showTaxi(findItem(id).item),
@@ -1912,6 +1965,8 @@ const actions = {
   'pic-undelete': id => { commit(() => { delete findItem(id).item.picDeleted; }, '已還原預設相'); hydratePics($('#modal')); },
   'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')).then(() => $('#modal .pics.big')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); },
   kappa: () => window.Kappa?.play(),
+  'pics-scroll': (_, el) => { const box = el.parentElement.querySelector('.pics'); const t = box.querySelector('.pic'); box.scrollBy({ left: +el.dataset.dir * Math.max(120, (t?.offsetWidth || 150) + 8), behavior: 'smooth' }); },
+  'map-lang': id => { localStorage.setItem('map-lang', id); render(); },
   'map-app': id => { if (id) localStorage.setItem('map-app', id); else localStorage.removeItem('map-app'); render(); },
   'phr-mode': () => { ui.phrEdit = !ui.phrEdit; render(); },
   'phr-add': (_, el) => phraseForm(el.dataset.g),
@@ -1959,9 +2014,9 @@ document.addEventListener('click', e => {
   // 資料入面嘅連結照常打開；改緊嘅輸入框唔理
   const link = e.target.closest('a[href]');
   if (link && !link.dataset.act) {
-    if (isGmaps(link.href) && isIOS()) {
+    if (isGmaps(link.href)) {
       e.preventDefault();
-      const app = localStorage.getItem('map-app');
+      const app = isIOS() ? localStorage.getItem('map-app') : 'web';
       if (app) openMap(link.href, app); else chooseMapApp(link.href);
     }
     return;
@@ -2014,20 +2069,27 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) naviga
 setInterval(() => { if (ui.tab === 'plan' && !$('#modal').open) render(); }, 60_000);
 
 /* ---------- boot ---------- */
-if ((trip.seedVersion || 0) < SEED.seedVersion) {
-  if (confirm('有新版行程，要唔要載入？（你改過嘅內容會被取代）')) trip = freshSeed();
-  else trip.seedVersion = SEED.seedVersion;
-}
-// 將新版種子資料嘅定位欄位加入已儲存行程（唔會改你嘅內容）
+/* 新版 App 永遠唔會覆蓋你改過嘅內容：
+   只會喺每個「補充」第一次執行時，幫冇呢個欄位嘅項目補上（之後你刪咗都唔會再加返）。
+   將來要加新資料，就喺 MIGRATIONS 加一行新 id。 */
+const MIGRATIONS = [
+  { id: 'loc-2026-10', fields: ['geo', 'place', 'mapQuery'] },
+];
 (() => {
+  const done = new Set(JSON.parse(localStorage.getItem('migrated') || '[]'));
   const seedItems = new Map(SEED.days.flatMap(d => d.items).map(i => [i.id, i]));
   let changed = false;
-  trip.days.forEach(d => d.items.forEach(it => {
-    const s = seedItems.get(it.id);
-    if (!s) return;
-    for (const k of ['geo', 'place', 'mapQuery']) if (s[k] && it[k] == null) { it[k] = s[k]; changed = true; }
-  }));
-  if (changed) save();
+  for (const m of MIGRATIONS) {
+    if (done.has(m.id)) continue;
+    trip.days.forEach(d => d.items.forEach(it => {
+      const s = seedItems.get(it.id);
+      if (s) for (const k of m.fields) if (s[k] != null && it[k] == null) it[k] = s[k];
+    }));
+    done.add(m.id);
+    changed = true;
+  }
+  if (changed) { localStorage.setItem('migrated', JSON.stringify([...done])); save(); }
+  trip.seedVersion = Math.max(trip.seedVersion || 0, SEED.seedVersion || 0);
 })();
 ensurePhrases();
 $('#tripName').textContent = trip.name || '東京';

@@ -9,11 +9,14 @@
       <path d="M40 212 q12 6 26 0 M120 214 q14 6 30 0 M80 220 q12 4 26 0" stroke="#0A84D6" stroke-width="3" fill="none" stroke-linecap="round"/>
       <g class="kp-drops" fill="#3FB6F5" stroke="none"><path d="M18 170 q-8 14 2 18 q10 -2 -2 -18z"/><path d="M182 168 q8 14 -2 18 q-10 -2 2 -18z"/><path d="M34 150 q-6 10 1 13 q8 -2 -1 -13z"/><path d="M166 150 q6 10 -1 13 q-8 -2 1 -13z"/></g></g>
     <g class="kp-all" stroke="${OL}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+      <!-- 手：喺身體後面伸出嚟，膊頭位藏喺身體入面，轉動時好自然 -->
+      <g class="kp-arm kp-armL"><path d="M74 146 Q52 158 32 178" fill="none" stroke-width="23"/><path d="M74 146 Q52 158 32 178" fill="none" stroke="#6DB84B" stroke-width="15"/>
+        <path d="M26 176 l-3 5 M31 182 l-2 6" stroke-width="3"/></g>
+      <g class="kp-arm kp-armR"><path d="M126 146 Q148 158 168 178" fill="none" stroke-width="23"/><path d="M126 146 Q148 158 168 178" fill="none" stroke="#6DB84B" stroke-width="15"/>
+        <path d="M174 176 l3 5 M169 182 l2 6" stroke-width="3"/></g>
       <g class="kp-feet" fill="#6DB84B"><path d="M70 196 q-4 12 6 14 l14 0 q4 -8 -2 -14z"/><path d="M130 196 q4 12 -6 14 l-14 0 q-4 -8 2 -14z"/></g>
       <path class="kp-bodyshape" d="M60 126 C50 160 54 202 100 204 C146 202 150 160 140 126 Z" fill="#6DB84B"/>
-      <circle cx="100" cy="170" r="24" fill="#FFF4A6" stroke="none"/>
-      <g class="kp-arm kp-armL"><path d="M64 138 C50 146 40 156 33 168 C29 176 38 181 43 175 C51 165 60 158 70 152 Z" fill="#6DB84B"/></g>
-      <g class="kp-arm kp-armR"><path d="M136 138 C150 146 160 156 167 168 C171 176 162 181 157 175 C149 165 140 158 130 152 Z" fill="#6DB84B"/></g>
+      <circle class="kp-belly" cx="100" cy="170" r="24" fill="#FFF4A6" stroke="none"/>
       <g class="kp-head">
         <path d="M28 98 C28 54 60 36 100 36 C140 36 172 54 172 98 C172 130 142 144 100 144 C58 144 28 130 28 98 Z" fill="#6DB84B"/>
         <g fill="#2E7D32"><path d="M66 44 L42 16 L80 38 Z"/><path d="M134 44 L158 16 L120 38 Z"/><path d="M66 42 L16 50 L66 60 Z"/><path d="M134 42 L184 50 L134 60 Z"/><path d="M68 48 L76 72 L92 50 Z"/><path d="M90 50 L100 74 L110 50 Z"/><path d="M108 50 L124 72 L132 48 Z"/></g>
@@ -150,5 +153,79 @@
       fail() { clearTimeout(fallback); startAnim(); clearTimeout(this._t); this._t = setTimeout(this.end, list.length * 150 + 400); },
     };
   }
-  window.Kappa = { play, say, hide, morae };
+  /* ---------- 行程表上面嘅小河童：捲到邊個項目，就跳去嗰個項目嘅時間下面 ---------- */
+  let buddy = null, buddyId = null, buddyRaf = 0;
+  function attachBuddy(list) {
+    if (!list) return;
+    buddy = document.createElement('div');
+    buddy.className = 'kp-buddy';
+    buddy.innerHTML = `<div class="kp kp-mini" data-face="dot">${SVG}</div>`;
+    buddy.title = '撳我';
+    buddy.addEventListener('click', () => { const k = buddy.firstElementChild; k.dataset.move = ''; void k.offsetWidth; k.dataset.move = 'hop'; k.dataset.face = 'squint'; setTimeout(() => { k.dataset.move = ''; k.dataset.face = 'dot'; }, 1600); });
+    list.appendChild(buddy);
+    placeBuddy(true);
+  }
+  function placeBuddy(instant) {
+    if (!buddy?.isConnected) return;
+    const items = [...buddy.parentElement.querySelectorAll(':scope > .item')];
+    if (!items.length) return;
+    const line = innerHeight * 0.42;
+    let target = items[0];
+    for (const it of items) { if (it.getBoundingClientRect().top <= line) target = it; else break; }
+    const when = target.querySelector('.when');
+    const lr = buddy.parentElement.getBoundingClientRect(), wr = (when || target).getBoundingClientRect(), tr = target.getBoundingClientRect();
+    // 時間已經捲咗上去：河童仔留喺畫面頂（頂欄下面），但唔會走出呢個項目
+    const minY = Math.max(0, ...[...document.querySelectorAll('.topbar, .daytabs')].map(e => e.getBoundingClientRect().bottom)) + 8;
+    const yVp = Math.min(Math.max((when ? wr.bottom : wr.top + 60) + 6, minY), tr.bottom - 58);
+    const top = yVp - lr.top, left = wr.left - lr.left + (when ? (wr.width - 46) / 2 : 0);
+    const k = buddy.firstElementChild;
+    k.dataset.face = target.classList.contains('done') ? 'happy' : 'dot';
+    const same = target.id === buddyId && !instant;
+    const first = buddyId == null || instant;
+    buddyId = target.id;
+    buddy.style.transition = first ? 'none' : same ? 'transform .12s linear' : '';
+    buddy.style.transform = `translate(${left}px, ${top}px)`;
+    if (same) return;
+    if (!first) { k.classList.remove('jumping'); void k.offsetWidth; k.classList.add('jumping'); }
+  }
+  addEventListener('scroll', () => { cancelAnimationFrame(buddyRaf); buddyRaf = requestAnimationFrame(() => placeBuddy(false)); }, { passive: true });
+  addEventListener('resize', () => placeBuddy(true));
+
+  /* ---------- 完成項目：大河童頭＋抽獎中獎效果 ---------- */
+  function chime() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      [523, 659, 784, 1047, 1319].forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'triangle'; o.frequency.value = f;
+        const t = ac.currentTime + i * 0.09;
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+        o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.65);
+      });
+      setTimeout(() => ac.close(), 1500);
+    } catch { /* 冇聲都冇所謂 */ }
+  }
+  function celebrate(title) {
+    document.querySelector('.kp-party')?.remove();
+    const host = document.querySelector('dialog[open]') || document.body;
+    const o = document.createElement('div');
+    o.className = 'kp-party';
+    const colors = ['#FFD84D', '#FF7F86', '#6DB84B', '#3FB6F5', '#FFF4A6', '#FF9F3D'];
+    const bits = Array.from({ length: 70 }, (_, i) => {
+      const c = colors[i % colors.length], l = Math.random() * 100, d = (Math.random() * 0.8).toFixed(2), dur = (1.6 + Math.random() * 1.4).toFixed(2), r = Math.round(Math.random() * 360);
+      const shape = i % 5 === 0 ? 'coin' : i % 3 === 0 ? 'star' : 'paper';
+      return `<i class="${shape}" style="left:${l}%;--c:${c};--r:${r}deg;animation-delay:${d}s;animation-duration:${dur}s"></i>`;
+    }).join('');
+    const head = SVG.replace('viewBox="0 0 200 230"', 'viewBox="14 8 172 138"');
+    o.innerHTML = `<div class="kp-rays"></div><div class="kp-glow"></div><div class="kp-confetti">${bits}</div>
+      <div class="kp-win"><div class="kp kp-bighead" data-face="squint" style="--open:.55;--w:1.05">${head}</div>
+        <p class="kp-win-t">🎉 完成！🎉</p>${title ? `<p class="kp-win-s">${title}</p>` : ''}<p class="kp-win-j" lang="ja">やったね！よくできました！</p></div>`;
+    o.addEventListener('click', () => o.remove());
+    host.appendChild(o);
+    chime();
+    setTimeout(() => o.classList.add('bye'), 2900);
+    setTimeout(() => o.remove(), 3400);
+  }
+
+  window.Kappa = { play, say, hide, morae, attachBuddy, placeBuddy, celebrate };
 })();
