@@ -8,14 +8,16 @@
  * a Viewer, and offers the project's members as assignees.
  */
 
+import "./theme.js";                       // light / dark, before anything is drawn
 import { installSearch } from "./search.js";
 import { startNotify } from "./notify.js";
+import { checkWhatsNew } from "./whatsnew.js";
 
 
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-15";
+const LWK_VERSION = "2026-10-16";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -26,6 +28,10 @@ const LWK_VERSION = "2026-10-15";
     b.appendChild(s);
   }
 })();
+// after an update: what changed, once (whatsnew.js) - not on the sign-in form
+if (!/[?&]signin\b/.test(location.search)) {
+  try { if (localStorage.getItem("lwk-viewer:token")) checkWhatsNew(LWK_VERSION); } catch (e) {}
+}
 const TOKEN_KEY = "lwk-viewer:token";
 const PROJECT_KEY = "lwk-viewer:project";
 

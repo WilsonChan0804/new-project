@@ -14,6 +14,9 @@
  * https address, see push.py), and install the viewer as an app.
  */
 
+import { showWhatsNew } from "./whatsnew.js";
+import { setTheme, themeHtml } from "./theme.js";
+
 const TOKEN_KEY = "lwk-viewer:token";
 const SEEN_KEY = "lwk-viewer:notified";
 const token = () => { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } };
@@ -256,7 +259,9 @@ async function paintPanel() {
       ${lv("mentions", "@mentions and direct messages", "group chats stay quiet unless I'm mentioned")}
       ${lv("off", "Nothing", "the unread counts only")}</section>
     <section><h4>When no page is open (push)</h4>${push}</section>
-    <section><h4>The app</h4>${inst}</section>`;
+    <section><h4>The app</h4>${inst}</section>
+    <section><h4>Look</h4>${themeHtml()}</section>
+    <section><button class="lnk" data-np="whatsnew">What's new in the viewer</button></section>`;
   panel.onchange = async (ev) => {
     const r = ev.target.closest("input[name=lwk-lv]");
     if (!r) return;
@@ -288,6 +293,8 @@ async function paintPanel() {
         else alert(`Sent to ${r.sent} of ${r.devices} device${r.devices === 1 ? "" : "s"} - it should show in a moment.`);
       }
       else if (k === "install") { N.installEv.prompt(); await N.installEv.userChoice; N.installEv = null; }
+      else if (k === "whatsnew") { closePanel(); showWhatsNew(); return; }
+      else if (k.startsWith("theme:")) { setTheme(k.slice(6)); }
     } catch (e) { alert(e.message); }
     paintBell();
     paintPanel();
