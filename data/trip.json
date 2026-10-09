@@ -1,7 +1,7 @@
 {
  "app": "trip-planner",
  "version": 4,
- "savedAt": "2026-10-09T01:32:12.598Z",
+ "savedAt": "2026-10-09T01:34:14.285Z",
  "trip": {
   "seedVersion": 5,
   "name": "東京 4 日",
@@ -67,7 +67,10 @@
       "notes": "成田空港第2・第3航廈站 → Skyliner 月台。全車指定席，建議預先網上買 e-ticket（撳「官網」）。",
       "xNote": "Skyliner 全車指定席，或需預訂",
       "xTransport": "成田空港第2・第3航廈站 → Skyliner 月台",
-      "xUrl": "Skyliner 購票：https://www.keisei.co.jp/keisei/tetudou/skyliner/e-ticket/zht/"
+      "xUrl": "Skyliner 購票：https://www.keisei.co.jp/keisei/tetudou/skyliner/e-ticket/zht/",
+      "picHidden": [
+       "pic:File:Narita Air Terminal 2 Station 200507.jpg"
+      ]
      },
      {
       "id": "s4",
@@ -2156,6 +2159,7 @@
    "三井ガーデンホテル銀座築地": "Mitsui Garden Hotel Ginza Tsukiji, 4 Chome-7-1 Tsukiji, Chuo City, Tokyo",
    "根津神社": "根津神社, 1 Chome-28-9 Nezu, Bunkyo City, Tokyo",
    "根津美術館": "Nezu Museum, 6 Chome-5-1 Minamiaoyama, Minato City, Tokyo"
-  }
+  },
+  "updatedAt": 1791509650932
  }
 }
