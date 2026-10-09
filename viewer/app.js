@@ -19,6 +19,7 @@ import { startGoto, issueLink } from "./goto.js";
 import * as Tele from "./telemetry.js";
 import { makeTilePage, tileStats } from "./sheettiles.js";
 import { initPanels, initSplitter, initVGrip } from "./panels.js";
+import { copyLink } from "./share.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
@@ -831,7 +832,8 @@ function redraw(target) {
   if (S.draft) svg.appendChild(render(S.draft, {}));
 
   const selItems = S.sel.map((id) => S.items.find((x) => x.id === id))
-    .filter((it) => it && it.sheet === S.sheet.number);
+    // (an issue with no shape on the sheet - made from a task or the API - has no box to draw)
+    .filter((it) => it && it.sheet === S.sheet.number && it.points_mm && it.points_mm.length);
   const allPx = [];
   for (const it of selItems) {
     const P = it.points_mm.map((p) => canvasFrom(p[0], p[1]));
@@ -978,7 +980,8 @@ function selBounds(items) {
 }
 
 function fillGeometry() {
-  const items = S.sel.map((id) => S.items.find((x) => x.id === id)).filter(Boolean);
+  const items = S.sel.map((id) => S.items.find((x) => x.id === id))
+    .filter((it) => it && it.points_mm && it.points_mm.length);
   const box = $("#a-geom");
   box.hidden = !items.length;
   if (!items.length) return;
@@ -5393,6 +5396,12 @@ function wireChrome() {
   $("#zoom-out").addEventListener("click", () => zoomAt(0.8));
   $("#zoom-fit").addEventListener("click", fit);
   $("#poly-finish").addEventListener("click", () => S.endPoly && S.endPoly());
+  // a link that opens this sheet
+  $("#sheet-link").addEventListener("click", () => {
+    if (!S.sheet) return status("Open a sheet first.");
+    copyLink("index.html?project=" + encodeURIComponent(Store.currentProject() || "") + "&sheet=" + encodeURIComponent(S.sheet.number),
+      "sheet " + S.sheet.number);
+  });
   $("#show-markups").addEventListener("click", () => {
     S.hideMarkups = !S.hideMarkups;
     $("#show-markups").classList.toggle("active", !S.hideMarkups);
@@ -5730,7 +5739,12 @@ async function boot() {
     for (let i = 0; i < 60 && !S.items.find((x) => x.id === selId); i++) {
       await new Promise((r) => setTimeout(r, 250));
     }
-    if (S.items.find((x) => x.id === selId)) select([selId], false);
+    const it = S.items.find((x) => x.id === selId);
+    if (it) {
+      select([selId], false);
+      // a link to an issue opens it, as a click in the list does
+      if (it.issue) openIssueFromSheet(it);
+    }
   }
   // "Open in web viewer" from Revit lands in this page, not a new tab
   startGoto(Store, async (g) => {

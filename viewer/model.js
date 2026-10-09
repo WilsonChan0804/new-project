@@ -43,6 +43,7 @@ import { ensureProject } from "./projects.js";
 import * as Tele from "./telemetry.js";
 import { createCutLines } from "./cutlines.js";
 import { initPanels, initVGrip, foldSections } from "./panels.js";
+import { copyLink } from "./share.js";
 import { createAO } from "./ao.js";
 import { copyIds, showInRevit, wireElementBlocks } from "./revit.js";
 
@@ -2949,24 +2950,48 @@ function renderCategories() {
    elements are kept per project and put back on return. */
 const lastViewKey = () => "lwk-viewer:last3d:" + (Store.currentProject() || "default");
 
-function rememberView() {
-  if (!S.modelsReady) return;
-  try {
-    const t = S.controls.target;
-    localStorage.setItem(lastViewKey(), JSON.stringify({
-      at: Date.now(), ortho: !!S.ortho,
-      pos: S.camera.position.toArray(), target: [t.x, t.y, t.z],
-      up: S.camera.up.toArray(), zoom: S.camera.zoom || 1,
-      frame: S.camera.isOrthographicCamera ? [S.camera.left, S.camera.right, S.camera.top, S.camera.bottom] : null,
-      state: viewState(), floor: S.floorIndex === undefined ? null : S.floorIndex,
-      display: S.display || "shaded",
-    }));
-  } catch (e) {}
+/* the view as it is: camera, projection, section box or plane, hidden
+   elements, floor and display mode */
+function liveView() {
+  const t = S.controls.target;
+  return {
+    at: Date.now(), ortho: !!S.ortho,
+    pos: S.camera.position.toArray(), target: [t.x, t.y, t.z],
+    up: S.camera.up.toArray(), zoom: S.camera.zoom || 1,
+    frame: S.camera.isOrthographicCamera ? [S.camera.left, S.camera.right, S.camera.top, S.camera.bottom] : null,
+    state: viewState(), floor: S.floorIndex === undefined ? null : S.floorIndex,
+    display: S.display || "shaded",
+  };
 }
 
-function restoreLastView() {
-  let v = null;
-  try { v = JSON.parse(localStorage.getItem(lastViewKey()) || "null"); } catch (e) {}
+function rememberView() {
+  if (!S.modelsReady) return;
+  try { localStorage.setItem(lastViewKey(), JSON.stringify(liveView())); } catch (e) {}
+}
+
+/* "Copy link to this view": the view in the address (?view=), so whoever
+   opens the link sees what you see. Numbers rounded to the millimetre; a
+   very long list of hidden elements is left out to keep the link short. */
+const _b64 = (txt) => btoa(unescape(encodeURIComponent(txt))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const _unb64 = (b) => decodeURIComponent(escape(atob(b.replace(/-/g, "+").replace(/_/g, "/"))));
+function viewLink() {
+  const v = liveView();
+  const round = (x) => (typeof x === "number" ? Math.round(x * 1000) / 1000 : Array.isArray(x) ? x.map(round)
+    : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, y]) => [k, round(y)])) : x);
+  let r = round(v);
+  delete r.at;
+  if (r.state && (r.state.hidden || []).length > 300) r.state = Object.assign({}, r.state, { hidden: [] });
+  return "model.html?project=" + encodeURIComponent(Store.currentProject() || "") + "&view=" + _b64(JSON.stringify(r));
+}
+function viewFromUrl() {
+  const q = new URLSearchParams(location.search).get("view");
+  if (!q) return null;
+  try { return JSON.parse(_unb64(q)); } catch (e) { return null; }
+}
+
+function restoreLastView(given) {
+  let v = given || null;
+  if (!v) { try { v = JSON.parse(localStorage.getItem(lastViewKey()) || "null"); } catch (e) {} }
   if (!v || !v.pos) return false;
   /* A view kept from before a fix, or from a model since moved, that
      looks at nothing near the building: fit instead. */
@@ -2975,7 +3000,7 @@ function restoreLastView() {
     if (!box.isEmpty()) {
       const t = new THREE.Vector3().fromArray(v.target);
       const far = box.distanceToPoint(t) > 20000 || box.distanceToPoint(new THREE.Vector3().fromArray(v.pos)) > 50000;
-      if (far) { try { localStorage.removeItem(lastViewKey()); } catch (e) {} return false; }
+      if (far) { if (!given) { try { localStorage.removeItem(lastViewKey()); } catch (e) {} } return false; }
     }
   } catch (e) {}
   if (v.ortho && !S.ortho) setOrtho(true);
@@ -2998,7 +3023,8 @@ function restoreLastView() {
   }
   if (v.display && v.display !== "shaded") setDisplay(v.display);
   S.dirty = true;
-  status("Back where you left the 3D view. Fit or the home button for the whole building.");
+  status(given ? "The view from the link. Fit or the home button for the whole building."
+    : "Back where you left the 3D view. Fit or the home button for the whole building.");
   return true;
 }
 
@@ -7551,6 +7577,7 @@ async function boot() {
     await selectIssue(g.id);
   });
   $("#fit3d").addEventListener("click", fitAll);
+  $("#view-link").addEventListener("click", () => copyLink(viewLink(), "this 3D view"));
 
   $("#m-nav").addEventListener("click", () => setMode("nav"));
   $("#m-issue").addEventListener("click", () => setMode("issue"));
@@ -8117,7 +8144,9 @@ async function boot() {
      back out of the room it had just been placed in. */
   const uq = new URLSearchParams(location.search);
   if (!uq.get("at") && !uq.get("select")) {
-    if (!restoreLastView()) await fitAll();
+    // a link to a view (?view=) first, else where this person left it
+    const linked = viewFromUrl();
+    if (!(linked && restoreLastView(linked)) && !restoreLastView()) await fitAll();
   }
   // keep the view, so coming back from the sheets finds it again
   setInterval(rememberView, 2000);

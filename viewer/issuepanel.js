@@ -17,6 +17,9 @@
 import { ISSUE_TYPES, typeOptions, shortDate } from "./issuetypes.js";
 import { chip, makeLink, classify, linkify } from "./filelinks.js";
 import { elementsOf, elementsBlock, wireElementBlocks } from "./revit.js";
+import { issueLink } from "./goto.js";
+import { copyLink } from "./share.js";
+import * as Store from "./store.js";
 
 const STATUSES = ["Open", "In progress", "Resolved", "Closed"];
 const CLOSED = ["Resolved", "Closed"];
@@ -58,6 +61,7 @@ export function ensureDialog() {
       <div id="detail-head">
         <span class="pin issue" id="detail-no"></span>
         <input id="detail-title" placeholder="Title">
+        <button id="detail-link" class="ghost" title="Copy a link to this issue">&#128279;</button>
         <button id="detail-close" class="ghost" title="Close">&#10005;</button>
       </div>
       <div id="detail-body">
@@ -141,6 +145,12 @@ export function openIssue(item, opts) {
   if (!Array.isArray(iss.comments)) iss.comments = [];
 
   $("#detail-no").textContent = opts.number || "";
+  // a link that opens this issue where it is - on its sheet, or in 3D
+  $("#detail-link").onclick = () => {
+    const project = new URLSearchParams(location.search).get("project") || Store.currentProject() || "";
+    copyLink(issueLink({ project, id: item.id, kind: item.placement === "3d" ? "3d" : "2d", sheet: item.sheet }),
+      "issue " + (opts.number ? "#" + opts.number : ""));
+  };
   $("#detail-title").value = iss.title || "";
   $("#detail-desc").value = iss.description || "";
   $("#detail-type").innerHTML = typeOptions(iss.type || "general");
