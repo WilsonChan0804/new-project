@@ -58,7 +58,7 @@ To set it up, copy this folder to the VM as `~/trip-app` and run `bash ~/trip-ap
 - installs pykakasi in a venv
 - creates an edit password in `~/trip-data/env`
 - installs a systemd service called `trip-app`
-- installs Caddy for HTTPS at `https://<ip-with-dashes>.sslip.io/`
+- installs Caddy for HTTPS at `https://trip.<ip-with-dashes>.sslip.io/`
 
 To update the app later, copy the folder again and run the script again. Your data in `~/trip-data` is not touched.
 

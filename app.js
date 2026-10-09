@@ -1087,7 +1087,7 @@ async function viewPics(id, start) {
    雲端同步：行程同你加嘅相存喺你自己嘅 VM 伺服器，
    所有裝置（同之後嘅新版 App）都用同一份資料
    ========================================================= */
-const DEFAULT_SERVER = 'https://20-189-122-56.sslip.io';
+const DEFAULT_SERVER = 'https://trip.20-189-122-56.sslip.io';
 const srvBase = () => (localStorage.getItem('srv-url') || (/github\.io$|^$/.test(location.hostname) || location.protocol === 'file:' ? DEFAULT_SERVER : location.origin)).replace(/\/+$/, '');
 const srvKey = () => localStorage.getItem('srv-key') || '';
 const ghOn = () => !!srvKey(); // 有密碼先可以上傳
