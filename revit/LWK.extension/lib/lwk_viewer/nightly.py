@@ -1251,11 +1251,13 @@ def run_night(uiapp, log, year=None, mode="night"):
         jobs, left = night_jobs(batch.load_jobs(), year, schedule_year(), local_index(), only)
         for j, y in left:
             log("%s: belongs to Revit %s - not opened in this Revit %s" % (j.get("title"), y, year))
-        results = batch.run_all(uiapp, log, unattended=True, jobs=jobs)
+        # a test run publishes even what has not changed (that is what is tested)
+        results = batch.run_all(uiapp, log, unattended=True, jobs=jobs, force=(mode == "test"))
         log("----")
         for title, ok, c in results:
             log("%-40s %s  (%d warnings, %d errors)"
-                % (title, "OK" if ok else "FAILED", c.get("warn", 0), c.get("error", 0)))
+                % (title, "UNCHANGED" if c.get("unchanged") else "OK" if ok else "FAILED",
+                   c.get("warn", 0), c.get("error", 0)))
         if not results:
             log("no model to publish in Revit %s - nothing to export" % year)
     except Exception as ex:

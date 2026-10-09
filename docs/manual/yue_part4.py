@@ -176,6 +176,8 @@ PART = [
     UL([
         'Model 嘅每個 workset 都會逐個名打開，冇 load 嘅 link 會 load 返。如果仲有 workset 閂住，或者 3D model 出咗嚟係空嘅，viewer 會**保留上次好嘅 3D model**（sheet 照傳），log 最尾寫 **result FAILED** 同原因。',
         '已知嘅對話框會自動答，唔會令夜晚 export 停住：DWG 嘅 paper space 冇嘢（Yes）、DWG **extents greater than 1E9**（OK：照樣 import，只係切走好遠嗰部分）、DWG import 嘅通知例如 **Elements Lost on Import**（Close）、**External Tools - Add-in Assembly Not Found** 同其他 add-in 嘅 **搵唔到 xxx.dll** 訊息（Close），同埋所有得一個掣嘅訊息。LWK 工具未載入之前、或者開 model 期間彈出嘅對話框，由 launcher 嘅 watcher 處理，佢會搵晒嗰個 Revit 嘅所有視窗。每個對話框都會寫入 nightly\\dialogs.log。更新之後，下次你自己開 Revit 時，launcher 同 watcher 會自動更新。最好係喺嗰部電腦修好或者移除壞咗嘅 add-in。',
+        '**夜晚只發佈有改動嘅 model：** 開咗 model 之後，夜晚 run 會讀 model 同每個 link model 嘅版本（Revit 每次儲存都有編號）。如果上次發佈之後一個都冇再儲存過、job 設定又一樣，就唔會 export，夜晚 log 會寫 **UNCHANGED**。Test run、自己撳 Run Export、改咗設定或者更新咗工具，都一定會發佈。仍然要先開 model 先讀到版本。',
+        '**時間：** 每個 Revit 版本最多可以行 3 個鐘（nightly_schedule.json 嘅 limit_hours）；版本會一個跟一個咁行（2023、2024、2025），嗰部電腦已經開咗嘅 Revit 版本，當晚會跳過。夜晚 run 最好早啲開始（例如 01:00），等所有版本喺朝早有人開 Revit 之前做完。',
     ]),
     H3('Revit 入面嘅 LWK Issues 視窗'),
     UL([

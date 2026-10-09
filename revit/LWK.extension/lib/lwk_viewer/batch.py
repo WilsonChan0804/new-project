@@ -16,7 +16,7 @@ in your name to block a colleague. Nothing is saved.
 """
 
 # Printed by the auto-export buttons, so a stale copy is obvious.
-__version__ = "2026-10-07a"
+__version__ = "2026-10-09a"
 
 import os
 import io
@@ -606,7 +606,9 @@ def export_open_doc(doc, job, probe, manifest, exporters, progress=None):
         res = fast3d.export(doc, folder, probe, exclude_bics=spec["revit_bics"],
                             detail=job.get("fast3d_detail") or "medium",
                             group_share=job.get("group_share", True) is not False,
-                            props=job.get("fast3d_props", True) is not False)
+                            props=job.get("fast3d_props", True) is not False,
+                            # nobody waits at night: 30 minutes for all the links' properties
+                            props_limit_s=1800 if job.get("_unattended") else 600)
         probe.info("time", "fast 3D export took %.1f min" % ((time.time() - t2) / 60.0))
         if not res.get("triangles") and res["models"]:
             # Nothing drawn: an empty model must not replace a good one.
@@ -973,32 +975,134 @@ def upload_job(job, probe, summary=None):
     server is the export folder's name unless the job says otherwise
     ("upload_project"), and "upload": false switches it off for a job."""
     if job.get("upload") is False:
-        return
+        return True                    # nothing to send: counts as done
     try:
         from lwk_viewer import issues as LI
         server, token = LI.upload_settings()
         if not (server and token):
             probe.info("upload", "not uploaded: sign in once in LWK Issues to switch on "
                                  "automatic upload to the viewer server")
-            return
+            return False
         pid = job.get("upload_project") or os.path.basename(os.path.normpath(job["folder"]))
         LI.upload_export(LI.Client(server, token), job["folder"], pid,
                          lambda text: probe.info("upload", text),
                          part={"source": job.get("title") or pid} if job.get("publish_part") else None,
                          job=summary)
+        return True
     except Exception as ex:
         probe.warn("upload", "upload to the viewer server failed: %s" % ex)
+        return False
+
+
+# ------------------------------------------- has anything changed since the last publish?
+
+PUBLISHED = ".lwk_published.json"
+# what a job asks for: a change to any of these publishes again
+_SIG_KEYS = ("publish_sheets", "publish_3d", "sheet_mode", "sheet_set", "sheet_numbers", "sheet_prefix",
+             "model_format", "fast3d_detail", "fast3d_props", "ifc_detail", "ifc_exclude", "group_share",
+             "upload_project", "publish_part")
+
+
+def model_signature(doc, job, probe=None):
+    """Which version of the model and of each linked model is open, with
+    what the job asks for and the version of these tools. None when it
+    cannot be told (then the model is always published).
+
+    Revit numbers every save of a model (Document.GetDocumentVersion: a
+    GUID that changes on every save and the number of saves), for cloud
+    models too - so an unchanged model and unchanged links mean the export
+    would come out the same as last time."""
+    try:
+        from Autodesk.Revit.DB import Document, RevitLinkInstance, CADLinkType
+    except Exception:
+        return None
+
+    def ver(d):
+        try:
+            v = Document.GetDocumentVersion(d)
+            return u"%s/%d" % (v.VersionGUID, v.NumberOfSaves)
+        except Exception:
+            return u""
+
+    host = ver(doc)
+    if not host:
+        return None
+    links, seen, todo = {}, set(), [doc]
+    while todo:
+        d = todo.pop()
+        try:
+            insts = list(FilteredElementCollector(d).OfClass(RevitLinkInstance))
+        except Exception:
+            insts = []
+        for li in insts:
+            try:
+                ld = li.GetLinkDocument()
+            except Exception:
+                ld = None
+            if ld is None:
+                continue
+            key = u"%s" % (ld.PathName or ld.Title)
+            if key in seen:
+                continue
+            seen.add(key)
+            v = ver(ld)
+            if not v:
+                return None            # a link whose version cannot be told
+            links[u"%s" % ld.Title] = v
+            todo.append(ld)            # its own (nested) links too
+    try:
+        cad = sorted(u"%s" % t.Name for t in FilteredElementCollector(doc).OfClass(CADLinkType))
+    except Exception:
+        cad = []
+    return {"host": host, "links": links, "cad": cad, "tools": __version__,
+            "job": dict((k, job.get(k)) for k in _SIG_KEYS)}
+
+
+def _sig_text(sig):
+    from lwk_viewer import jsonio
+    return jsonio.dumps(sig, indent=0, sort_keys=True)
+
+
+def last_published(folder):
+    try:
+        with io.open(os.path.join(folder, PUBLISHED), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def remember_published(folder, sig):
+    try:
+        from lwk_viewer import jsonio
+        jsonio.write_atomic(os.path.join(folder, PUBLISHED),
+                            {"signature": sig, "at": datetime.datetime.now().isoformat()[:16].replace("T", " ")})
+    except Exception:
+        pass
+
+
+def unchanged_since(folder, sig):
+    """The date of the last publish when sig is what it published, else None."""
+    last = last_published(folder)
+    if not sig or not last or not last.get("signature"):
+        return None
+    if _sig_text(last["signature"]) != _sig_text(sig):
+        return None
+    return last.get("at") or "?"
 
 
 # ------------------------------------------------------------- one job
 
-def run_job(uiapp, job, echo, doc=None, unattended=False):
+def run_job(uiapp, job, echo, doc=None, unattended=False, force=False):
     """Export one registered model. Used by the Run button and by the nightly
     run, so what is tested by hand is exactly what runs at night.
 
     doc: an already open model to export instead of opening job's model
     (the Shift-click test). Whatever this opened, it closes: ownership
-    handed back, nothing saved, nothing synchronised."""
+    handed back, nothing saved, nothing synchronised.
+
+    At night (unattended, not force), a model whose version and whose
+    links' versions are the ones last published is not exported again:
+    the viewer already has exactly that. force: a test or hand run."""
     from lwk_viewer import manifest, exporters
     from lwk_viewer.probe import Probe
     probe = Probe(echo=echo)
@@ -1007,17 +1111,32 @@ def run_job(uiapp, job, echo, doc=None, unattended=False):
     started = datetime.datetime.now().isoformat()
     opened = None
     ok = False
+    same = None
+    sig = None
+    uploaded = False
     job.pop("_3d_failed", None)
+    job["_unattended"] = bool(unattended)
     try:
         with DialogLog(uiapp, probe, answer=unattended):
             if doc is None:
                 opened = open_cloud(uiapp.Application, job, probe)
                 doc = opened
-            ok = export_open_doc(doc, job, probe, manifest, exporters)
-        if ok:
+            sig = model_signature(doc, job, probe)
+            if sig is None:
+                probe.info("changes", "the model's version could not be read: published in full")
+            elif unattended and not force and job.get("skip_unchanged", True) is not False:
+                same = unchanged_since(job["folder"], sig)
+            if same:
+                probe.info("changes", "no change in the model or its %d linked model(s) since the last "
+                                      "publish (%s), and the same settings: nothing exported tonight"
+                           % (len(sig["links"]), same))
+                ok = True
+            else:
+                ok = export_open_doc(doc, job, probe, manifest, exporters)
+        if ok and not same:
             if (job.get("model_format") or "ifc") != "lwkm" and job.get("publish_3d", True) is not False:
                 run_convert(job["folder"], job.get("tools") or DEFAULT_TOOLS, probe)
-            upload_job(job, probe, summary=job_summary(job, probe, started, ok=True))
+            uploaded = upload_job(job, probe, summary=job_summary(job, probe, started, ok=True))
     except Exception as ex:
         probe.error("job", "%s failed: %s" % (job.get("title"), ex))
     finally:
@@ -1029,12 +1148,18 @@ def run_job(uiapp, job, echo, doc=None, unattended=False):
                 probe.warn("close", "could not close: %s" % ex)
         # one line at the end that says how it went
         failed3d = job.pop("_3d_failed", None)
-        if failed3d:
+        job.pop("_unattended", None)
+        if same:
+            probe.info("result", "UNCHANGED - the viewer already has this version")
+        elif failed3d:
             probe.error("result", "FAILED - %s; the viewer keeps the last good 3D model%s"
                         % (failed3d, " (the sheets were sent)" if ok else ""))
             ok = False
         elif ok:
             probe.info("result", "OK")
+            # what was published, so tomorrow night can tell whether anything changed
+            if sig is not None and uploaded:
+                remember_published(job["folder"], sig)
         else:
             probe.error("result", "FAILED - see the errors above; nothing was replaced in the viewer")
         write_log(job["folder"], probe, started)
@@ -1044,10 +1169,13 @@ def run_job(uiapp, job, echo, doc=None, unattended=False):
             pass
         if awake:
             keep_awake(False)
-    return ok, probe.counts()
+    counts = dict(probe.counts())
+    if same:
+        counts["unchanged"] = 1
+    return ok, counts
 
 
-def run_all(uiapp, echo, unattended=False, jobs=None):
+def run_all(uiapp, echo, unattended=False, jobs=None, force=False):
     """Every enabled job, one after another - never two at once: each is
     opened, exported and closed before the next begins. Returns
     [(title, ok, counts)].
@@ -1059,6 +1187,6 @@ def run_all(uiapp, echo, unattended=False, jobs=None):
     results = []
     for i, job in enumerate(jobs):
         echo("## %d of %d: %s" % (i + 1, len(jobs), job.get("title")))
-        ok, c = run_job(uiapp, job, echo, unattended=unattended)
+        ok, c = run_job(uiapp, job, echo, unattended=unattended, force=force)
         results.append((job.get("title"), ok, c))
     return results

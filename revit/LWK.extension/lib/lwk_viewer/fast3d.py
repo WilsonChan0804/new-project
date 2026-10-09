@@ -37,7 +37,7 @@ Properties go in a second file, <name>.props.json, read by the viewer only
 when someone asks for an element's properties.
 """
 
-__version__ = "2026-10-07a"
+__version__ = "2026-10-09a"
 
 import gzip
 import io
@@ -83,6 +83,22 @@ def _plain(o):
         except Exception:
             continue
     return str(o)
+
+
+def _head_json(head):
+    """The header as UTF-8 bytes. IronPython's json breaks on any name
+    outside plain ASCII (O-slash, degree, Chinese) when it escapes them
+    itself (ensure_ascii, the default): "'unknown' codec can't decode byte
+    0xd8" left four linked models of DCH out of the 3D model (9 Oct). So
+    the text is written as it is and encoded here; jsonio is the fallback."""
+    try:
+        txt = json.dumps(head, ensure_ascii=False, separators=(",", ":"), default=_plain)
+        if not isinstance(txt, type(u"")):
+            txt = txt.decode("utf-8")
+        return txt.encode("utf-8")
+    except Exception:
+        from lwk_viewer import jsonio
+        return jsonio.dumps(head, indent=0, sort_keys=False).encode("utf-8")
 
 
 def _bytes(arr):
@@ -321,7 +337,7 @@ class DocWriter(object):
                     "mat": [mat_off, len(mats)]},
             "stats": self.stats,
         }
-        js = json.dumps(head, separators=(",", ":"), default=_plain).encode("utf-8")
+        js = _head_json(head)
         js += b" " * ((-len(js)) % 8)
         import struct
         path = os.path.join(folder, self.stem + ".lwkm")
