@@ -38,7 +38,6 @@ DOC = [
     ]),
     H2('Before you start'),
     P("You need an account, a supported browser and the viewer's web address; nothing is installed on your computer."),
-    P('**This manual is also online:** the **?** at the top of every page opens it in the viewer at the chapter for that page, with search and English / 廣東話. It is always the latest version.'),
     LABEL('Your account'),
     UL([
         'An admin creates your account and sends you an invitation with a **temporary password**.',

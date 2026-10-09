@@ -133,9 +133,3 @@ if __name__ == "__main__":
             print("skipped", mod, ex)
             continue
         build(content, os.path.join(HERE, name), lang)
-    # the same manual as the viewer's Help pages (viewer/help/)
-    try:
-        import build_markdown
-        build_markdown.build()
-    except Exception as ex:
-        print("help pages not written:", ex)
