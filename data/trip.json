@@ -1,7 +1,7 @@
 {
  "app": "trip-planner",
  "version": 4,
- "savedAt": "2026-10-09T01:34:14.285Z",
+ "savedAt": "2026-10-09T01:42:58.119Z",
  "trip": {
   "seedVersion": 5,
   "name": "東京 4 日",
@@ -30,7 +30,12 @@
        "File:Narita Airpoert Terminal 2 Check-in Area.JPG",
        "File:Narita Airport Terminal 2 exterior.jpg"
       ],
-      "notes": "15:55（日本時間）抵達。起飛時間待填。\n落機前填好 Visit Japan Web，入境 QR code 截圖「加相」。"
+      "notes": "15:55（日本時間）抵達。起飛時間待填。\n落機前填好 Visit Japan Web，入境 QR code 截圖「加相」。",
+      "picOrder": [
+       "pic:File:Departure lobby of Tokyo-Narita Airport Terminal 2.JPG",
+       "pic:File:Narita Airpoert Terminal 2 Check-in Area.JPG",
+       "pic:File:Narita Airport Terminal 2 exterior.jpg"
+      ]
      },
      {
       "id": "s2",
@@ -2160,6 +2165,6 @@
    "根津神社": "根津神社, 1 Chome-28-9 Nezu, Bunkyo City, Tokyo",
    "根津美術館": "Nezu Museum, 6 Chome-5-1 Minamiaoyama, Minato City, Tokyo"
   },
-  "updatedAt": 1791509650932
+  "updatedAt": 1791510174853
  }
 }
