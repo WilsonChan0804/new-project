@@ -42,7 +42,7 @@ import { fetchLwkm, parseLwkm, createLwkModel, writeMobileLwkm, ENVELOPE_CATS, p
 import { ensureProject } from "./projects.js";
 import * as Tele from "./telemetry.js";
 import { createCutLines } from "./cutlines.js";
-import { initPanels, initVGrip } from "./panels.js";
+import { initPanels, initVGrip, foldSections } from "./panels.js";
 import { createAO } from "./ao.js";
 import { copyIds, showInRevit, wireElementBlocks } from "./revit.js";
 
@@ -8991,37 +8991,10 @@ function renderPerf() {
    a short scrolling window. A click on a heading folds that section, and
    the choice is remembered. */
 (function wirePanels() {
-  const KEY = "lwk.panels3d";
-  let folded = {};
-  try { folded = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
-  const heads = document.querySelectorAll("#models > .panel-head");
-  heads.forEach((head, i) => {
-    // the model list folds too (the arrow on its heading): a long list of
-    // links pushed Section and Measure far down the panel
-    const name = (head.firstChild && head.firstChild.textContent || head.textContent)
-      .trim().split(/\s+/)[0] || ("panel" + i);
-    const body = [];
-    for (let el = head.nextElementSibling; el && !el.classList.contains("panel-head");
-         el = el.nextElementSibling) body.push(el);
-    const chev = document.createElement("span");
-    chev.className = "chev";
-    head.insertBefore(chev, head.firstChild);
-    head.classList.add("foldable");
-    head.title = head.title || "Click to fold or open this section";
-    const apply = () => {
-      const f = !!folded[name];
-      head.classList.toggle("folded", f);
-      chev.textContent = f ? "\u25B8" : "\u25BE";
-      body.forEach((el) => el.classList.toggle("sec-folded", f));
-    };
-    head.addEventListener("click", (ev) => {
-      if (ev.target.closest("button, input, select, label, a")) return;
-      folded[name] = !folded[name];
-      try { localStorage.setItem(KEY, JSON.stringify(folded)); } catch (e) {}
-      apply();
-    });
-    apply();
-  });
+  // the model list folds too (the arrow on its heading): a long list of
+  // links pushed Section and Measure far down the panel
+  foldSections(document.querySelectorAll("#models > .panel-head"), "lwk.panels3d",
+    (head, i) => (head.firstChild && head.firstChild.textContent || head.textContent).trim().split(/\s+/)[0] || ("panel" + i));
 })();
 
 (function wirePerfUi() {

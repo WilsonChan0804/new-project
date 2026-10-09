@@ -18,6 +18,8 @@ const INFO = [
   ["start", "Start"], ["completion", "Completion"], ["description", "Description"],
 ];
 import { chip } from "./filelinks.js";
+import { foldSections } from "./panels.js";
+import { copyLink } from "./share.js";
 
 const P = { me: null, list: [], rooms: {}, open: "", q: "", status: "", tree: {}, shut: new Set(), sort: { by: "status", dir: 1 } };
 try { const s = JSON.parse(localStorage.getItem("lwk-projects:sort") || "null"); if (s && s.by) P.sort = s; } catch (e) {}
@@ -228,6 +230,7 @@ function paintDetail(p) {
   box.innerHTML = `<div class="td-top">
       <button class="ghost td-backbtn icon-btn" data-act="close">${ic("back", 18)} Back</button>
       <b class="pd-t">${esc(p.short || p.name)}</b><span class="spacer"></span>
+      <button class="ghost" data-act="link" title="Copy a link to this project">${ic("link")}</button>
       ${p.can_edit ? `<a class="ghost pd-manage" href="admin.html?reg=${encodeURIComponent(p.id)}#projects" data-manage title="Details, members and the viewer project are set on the Admin page">${ic("edit")} Manage</a>` : ""}
       <button class="ghost td-x" data-act="close">${ic("close")}</button></div>
     <div class="td-body">
@@ -274,6 +277,9 @@ function paintDetail(p) {
         : P.me.accounts ? `<button data-act="room">${ic("chat")} Start a channel for this project</button> <span class="muted" style="font-size:11px">its members are added; task and issue updates are posted into it</span>` : ""}
       <div class="td-subscr muted">${p.updated_by ? "Last changed by " + esc(p.updated_by) + " " + esc((p.updated_at || "").slice(0, 10)) : ""}</div>
     </div>`;
+  // each section folds (remembered on this device)
+  foldSections(box.querySelectorAll("h4"), "lwk-projects:fold",
+    (h) => (h.textContent || "").trim().split(/\s+/)[0]);
   box.onclick = async (ev) => {
     const ex = ev.target.closest("[data-exp]");
     if (ex) {
@@ -284,6 +290,7 @@ function paintDetail(p) {
     if (ev.target.closest("[data-manage]")) { try { localStorage.setItem("lwk-viewer:project", p.viewer || ""); } catch (e) {} }
     const a = ev.target.closest("[data-act]");
     if (!a) return;
+    if (a.dataset.act === "link") return copyLink("projects.html?p=" + encodeURIComponent(p.id), p.short || p.name);
     if (a.dataset.act === "close") {
       box.hidden = true; document.body.classList.remove("detail-on");
       P.open = ""; history.replaceState(null, "", "projects.html"); render();

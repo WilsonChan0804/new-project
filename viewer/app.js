@@ -3050,8 +3050,11 @@ async function openSheet(sheet) {
   if (S.page) { const old = S.page; setTimeout(() => { if (old !== S.page) { try { old.cleanup(); } catch (e) {} } }, 0); }
   S.page = null;            // until this sheet's page is here (zooming meanwhile waits)
   if (_task) { try { _task.cancel(); } catch (e) {} _task = null; }
-  document.querySelectorAll("#sheet-list li").forEach((li) =>
-    li.classList.toggle("active", li.dataset.num === sheet.number));
+  document.querySelectorAll("#sheet-list li").forEach((li) => {
+    li.classList.toggle("active", li.dataset.num === sheet.number);
+    // the sheet you are on stays in view in the list
+    if (li.dataset.num === sheet.number && li.offsetParent) li.scrollIntoView({ block: "nearest" });
+  });
 
   if (!sheet.pdf) { status(sheet.number + " has no PDF in this export."); return; }
   $("#empty").hidden = true;

@@ -28,6 +28,7 @@ const LWK_VERSION = "2026-10-07a";
 })();
 import { api, link, project, signOut } from "./nav.js";
 import { avatar } from "./tasks-util.js";
+import { foldSections } from "./panels.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? "" : s)
@@ -1146,6 +1147,9 @@ async function main() {
   else if (want === "account") show("account");
   else show("projects");
   $("#tab-people").addEventListener("click", renderPeople);
+  // the long sections fold (remembered on this device)
+  foldSections(document.querySelectorAll(".pane .card h3"), "lwk-admin:fold",
+    (h) => h.id || (h.textContent || "").trim().split(/\s+/).slice(0, 3).join(" "));
 }
 
 main().catch((e) => msg("Could not load: " + esc(e.message), "bad"));

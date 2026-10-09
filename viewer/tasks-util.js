@@ -281,6 +281,17 @@ export function modal(title, bodyHtml, okLabel) {
   });
 }
 
+/* Grey placeholder rows while a list loads (style.css .lwk-skel). */
+export function skeleton(rows = 6, label = "Loading") {
+  const widths = [62, 44, 78, 55, 70, 38, 66, 50];
+  let h = `<div class="lwk-skel-wrap" role="status" aria-label="${label}">`;
+  for (let i = 0; i < rows; i++) {
+    h += `<div class="lwk-skel-row"><span class="lwk-skel dot"></span><span class="lwk-skel" style="width:${widths[i % widths.length]}%"></span>`
+      + `<span class="lwk-skel" style="width:${10 + (i * 7) % 14}%;margin-left:auto"></span></div>`;
+  }
+  return h + `</div>`;
+}
+
 export function toast(msg, bad) {
   const t = document.createElement("div");
   t.className = "t-toast" + (bad ? " bad" : "");

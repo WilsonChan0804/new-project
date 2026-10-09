@@ -141,6 +141,13 @@ function paintRooms() {
     + (join.length ? `<div class="cs-h">Channels you can join</div>` + join.map((r) => `<a class="cr join" data-join="${esc(r.id)}">${roomIcon(r)}`
       + `<span class="cr-m"><span class="cr-t"><b>${esc(r.title)}</b></span><span class="cr-l">${r.kind === "topic" ? "Topic in " + esc(roomTitle(r.parent) || "a project channel") + " · " : ""}Join</span></span></a>`).join("") : "")
     + (!C.rooms.length && !threads.length && !join.length ? `<p class="muted cs-none">No chats yet. Start one with the pencil above.</p>` : "");
+  // the open chat in view in the list, once each time another one is opened
+  // (not on every repaint, which would take the list from under the user)
+  const cur = C.room && C.room.id;
+  if (cur && C._inView !== cur) {
+    const on = $("#c-rooms").querySelector(".cr.on");
+    if (on && on.offsetParent) { on.scrollIntoView({ block: "nearest" }); C._inView = cur; }
+  }
   const n = C.rooms.reduce((s, r) => s + (r.unread || 0), 0);
   document.title = (n ? `(${n}) ` : "") + "LWK Viewer - Chat";
 }

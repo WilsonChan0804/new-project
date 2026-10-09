@@ -243,3 +243,45 @@ export function initVGrip({ el, key, def = 0.45, min = 60, inside = false }) {
   addEventListener("resize", apply);
   return { apply };
 }
+
+/* Sections that fold: a click on a heading hides what follows it, up to
+   the next heading, and the choice is remembered (per device, under key).
+   heads: the heading elements, in order. nameOf(head): the name a section
+   is remembered by (its first words by default). Can be called again after
+   a part of the page is drawn anew: each heading is wired once. */
+export function foldSections(heads, key, nameOf) {
+  heads = [...heads];
+  const set = new Set(heads);
+  let folded = {};
+  try { folded = JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) {}
+  heads.forEach((head, i) => {
+    const name = nameOf ? nameOf(head, i)
+      : (head.textContent || "").trim().split(/\s+/).slice(0, 3).join(" ") || "section" + i;
+    const body = [];
+    for (let el = head.nextElementSibling; el && !set.has(el); el = el.nextElementSibling) body.push(el);
+    let chev = head.querySelector(":scope > .chev");
+    if (!chev) {
+      chev = document.createElement("span");
+      chev.className = "chev";
+      head.insertBefore(chev, head.firstChild);
+    }
+    head.classList.add("foldable");
+    if (!head.title) head.title = "Click to fold or open this section";
+    const apply = () => {
+      const f = !!folded[name];
+      head.classList.toggle("folded", f);
+      chev.textContent = f ? "▸" : "▾";
+      body.forEach((el) => el.classList.toggle("sec-folded", f));
+    };
+    if (!head._fold) {
+      head.addEventListener("click", (ev) => {
+        if (ev.target.closest("button, input, select, label, a")) return;
+        folded[name] = !folded[name];
+        try { localStorage.setItem(key, JSON.stringify(folded)); } catch (e) {}
+        head._fold();
+      });
+    }
+    head._fold = apply;
+    apply();
+  });
+}

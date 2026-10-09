@@ -89,7 +89,8 @@ async function openProject(reg, path) {
   F.proj = F.projects.find((p) => p.id === reg) || null;
   $("#fo-proj").value = reg;
   lsSet("reg", reg);
-  F.open = new Set([""]);
+  // the folders left open in the tree last time, in this project
+  F.open = new Set([""].concat(lsGet("open:" + reg, [])));
   await Promise.all([loadTree(), loadQuick()]);
   await go(path || "");
 }
@@ -238,7 +239,12 @@ function paintTree() {
       + (ks.length && open ? `<div class="fo-kids">${ks.map((k) => node(k, nameOf(k))).join("")}</div>` : "")
       + `</div>`;
   };
-  $("#fo-tree").innerHTML = node("", F.proj ? F.proj.name : "Files");
+  const tree = $("#fo-tree");
+  tree.innerHTML = node("", F.proj ? F.proj.name : "Files");
+  if (F.reg) lsSet("open:" + F.reg, [...F.open].filter(Boolean).slice(0, 300));
+  // the folder you are in stays in view
+  const on = tree.querySelector(".fo-nl.on");
+  if (on && on.offsetParent) on.scrollIntoView({ block: "nearest" });
 }
 
 /* ------------------------------------------------------------ opening */

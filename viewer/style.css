@@ -1013,11 +1013,11 @@ button.danger:hover:not(:disabled) { background: #fdece8; border-color: #f2b8aa;
 #perf-open { color: var(--accent-deep); }
 
 /* Foldable sections in the 3D left panel */
-#models > .panel-head.foldable { cursor: pointer; user-select: none; }
+.foldable { cursor: pointer; user-select: none; }
 #models > .panel-head.foldable:hover { background: var(--panel-2); }
-#models > .panel-head .chev {
+.foldable > .chev {
   display: inline-block; width: 12px; margin-right: 3px;
-  color: var(--muted); font-size: 10px;
+  color: var(--muted); font-size: 10px; font-weight: 400;
 }
 .sec-folded { display: none !important; }
 /* The element list shows every category; the panel itself scrolls. */
@@ -1924,3 +1924,41 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 .m-swx:hover { color: var(--ink); }
 .m-swx[hidden] { display: none; }
 .tint-pop .tp-orig { font-size: 13px; font-weight: 600; border: 1px solid #dde1e6 !important; text-align: center !important; padding: 7px 6px !important; }
+
+/* ------------------------------------------------------------------
+   Callouts: one look for every note on every page - info (blue), tip
+   (orange), warn (amber), ok (green), bad (red). Colours from variables,
+   so dark mode needs nothing more. */
+:root {
+  --co-info: #3b82f6; --co-info-bg: #eff6ff;
+  --co-tip: #f28022; --co-tip-bg: #fff6ec;
+  --co-warn: #d97706; --co-warn-bg: #fffbeb;
+  --co-ok: #0e9f6e; --co-ok-bg: #ecfdf5;
+  --co-bad: #e2453c; --co-bad-bg: #fef2f2;
+  --skel-a: #eceff3; --skel-b: #f6f7f9;
+}
+.lwk-callout { display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--line); border-left: 4px solid var(--co-info); background: var(--co-info-bg);
+  color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
+.lwk-callout::before { flex: none; font-weight: 700; width: 14px; text-align: center; color: var(--co-info); content: "i"; }
+.lwk-callout.tip { border-left-color: var(--co-tip); background: var(--co-tip-bg); }
+.lwk-callout.tip::before { content: "\2605"; color: var(--co-tip); }
+.lwk-callout.warn { border-left-color: var(--co-warn); background: var(--co-warn-bg); }
+.lwk-callout.warn::before { content: "!"; color: var(--co-warn); }
+.lwk-callout.ok { border-left-color: var(--co-ok); background: var(--co-ok-bg); }
+.lwk-callout.ok::before { content: "\2713"; color: var(--co-ok); }
+.lwk-callout.bad { border-left-color: var(--co-bad); background: var(--co-bad-bg); }
+.lwk-callout.bad::before { content: "\2715"; color: var(--co-bad); }
+.lwk-callout.lock::before { content: "\1F512"; font-weight: 400; width: auto; }
+.lwk-callout > :first-child { margin-top: 0; }
+
+/* Loading placeholders: grey shapes where the content will be, instead of
+   "Loading ..." - the page does not jump when it arrives. */
+.lwk-skel-wrap { padding: 10px 12px; display: flex; flex-direction: column; gap: 12px; }
+.lwk-skel-row { display: flex; gap: 10px; align-items: center; }
+.lwk-skel { display: block; height: 12px; border-radius: 6px; flex: none;
+  background: linear-gradient(90deg, var(--skel-a) 25%, var(--skel-b) 37%, var(--skel-a) 63%);
+  background-size: 400% 100%; animation: lwk-skel 1.4s ease infinite; }
+.lwk-skel.dot { width: 22px; height: 22px; border-radius: 50%; }
+@keyframes lwk-skel { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@media (prefers-reduced-motion: reduce) { .lwk-skel { animation: none; } }
