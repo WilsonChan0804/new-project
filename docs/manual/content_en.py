@@ -241,6 +241,17 @@ DOC = [
         '**When no page is open (push):** the bell > **Turn on for this device**. This works when the viewer is opened by its **https** address; ask your admin. Messages then arrive on that phone or computer even with the app closed.',
         '**iPhone and iPad:** first add the viewer to the Home Screen (Safari > Share > **Add to Home Screen**) and open it from there; then in the bell turn on notifications and **Turn on for this device**, and press **Send a test**. If it does not arrive, the message says why (for example the server cannot reach Apple). After a server update, turn push off and on again once.',
     ]),
+    H2('Look, links and what\'s new'),
+    P('Small things that make the viewer easier to find your way around and to share.'),
+    UL([
+        '**Dark mode:** the bell > **Look** > **Dark**. **Auto** follows your computer or phone (dark at night if it is set so); **Light** is the usual look. It is kept on each computer or phone. Drawings, PDFs, document previews and the whiteboard stay white, as paper; the 3D background turns dark grey unless you picked a colour in Display.',
+        '**What\'s new:** after each update a small card lists what changed, once. **Got it** closes it; the bell > **What\'s new in the viewer** shows the whole list at any time.',
+        '**Copy link** (the 🔗 buttons) copies an address to paste into a chat or an email. Only people in the project can open it.',
+        '**A sheet:** the 🔗 in the sheet toolbar. **An issue:** the 🔗 at the top of the issue (2D or 3D). **A project:** the 🔗 on the project\'s panel (Projects page). **A 3D view:** the 🔗 next to **Fit** in the 3D header copies the exact view - camera, section box or plane, floor, display mode and hidden elements - and whoever opens it sees the same.',
+        '**Sections fold:** click a heading on a project\'s panel (Projects page), on the Admin page or in the 3D left panel to fold or open it. The viewer remembers which ones you folded.',
+        '**Lists keep your place:** Folders reopens the folders you had open in the tree, and the sheet list and the chat list keep the one you are on in view.',
+        '**While a list loads** grey placeholder rows show where it will be.',
+    ]),
     H2('Undo'),
     UL([
         '**Ctrl+Z** (Cmd+Z on a Mac) undoes the last change; **Ctrl+Y** (or Ctrl+Shift+Z) redoes it. A note at the bottom says what was undone, with **Redo**.',

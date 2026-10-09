@@ -129,6 +129,17 @@ PART = [
         '**冇開任何一版都收到（push）：** 鈴 > **Turn on for this device**。要用 viewer 嘅 **https** 地址開先得（問你嘅 admin）。之後就算 app 閂咗，部手機或者電腦都會收到訊息。',
         '**iPhone／iPad：** 先喺 Safari > 分享 > **加至主畫面**，再由主畫面個 icon 打開；然後喺鈴度開通知、撳 **Turn on for this device**，再撳 **Send a test**。收唔到嘅話，會講埋原因（例如 server 連唔到 Apple）。Server 更新之後，請關一次再開一次 push。',
     ]),
+    H2('外觀、連結同新功能'),
+    P('幾樣小嘢，等你喺 viewer 入面易啲搵路，又易啲同人分享。'),
+    UL([
+        '**深色模式（Dark mode）：** 鈴 > **Look** > **Dark**。**Auto** 跟你部電腦或者手機（佢設咗夜晚轉深色就跟住轉）；**Light** 係平時嘅樣。每部電腦、每部手機各自記住。圖則、PDF、文件預覽同白板會保持白色（當係紙）；3D 背景會變深灰，除非你喺 Display 揀咗自己嘅顏色。',
+        '**新功能（What\'s new）：** 每次更新之後會彈一張小卡，講有咩改咗，只出一次。撳 **Got it** 收埋；隨時都可以喺鈴 > **What\'s new in the viewer** 睇晒成個列表。',
+        '**複製連結（Copy link，🔗 掣）：** 複製一個網址，可以貼落 chat 或者 email。只有 project 入面嘅人先開到。',
+        '**一張 sheet：** sheet 工具列嘅 🔗。**一個 issue：** issue 頂部嘅 🔗（2D 或 3D）。**一個 project：** Projects 版 project panel 嘅 🔗。**一個 3D 視角：** 3D 頂部 **Fit** 隔籬嘅 🔗，會複製返一模一樣嘅視角 - 鏡頭、section box 或 plane、樓層、顯示模式同隱藏咗嘅元件 - 開嘅人會見到一樣嘢。',
+        '**可以摺埋嘅部分：** 喺 project panel（Projects 版）、Admin 版或者 3D 左邊 panel，撳個標題就摺埋或者打開。viewer 會記住你摺埋咗邊啲。',
+        '**列表記住你去到邊：** Folders 會重新打開你之前喺樹度開咗嘅 folder；sheet 列表同 chat 列表會將你而家嗰個保持喺眼前。',
+        '**列表載入緊嘅時候** 會見到灰色嘅佔位行，話你知內容會喺邊度出。',
+    ]),
     H2('還原（Undo）'),
     UL([
         '**Ctrl+Z**（Mac 係 Cmd+Z）還原上一個改動；**Ctrl+Y**（或者 Ctrl+Shift+Z）重做。底部會顯示還原咗乜嘢，有 **Redo** 掣。',
