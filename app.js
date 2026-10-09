@@ -886,7 +886,7 @@ function cancelEdit(el) {
 /* =========================================================
    相片：預設地點相＋你加嘅相，可以排次序、隱藏、刪除
    ========================================================= */
-async function orderedPics(it) {
+async function orderedPics(it, withHidden = false) {
   const commons = (await getItemPics(it)) || [];
   const all = [
     ...commons.map(p => ({ key: p.key, user: false, cap: p.title.replace(/^File:/, '').replace(/\.\w+$/, '') + '（Wikimedia Commons）' })),
@@ -895,7 +895,7 @@ async function orderedPics(it) {
   const hidden = new Set(it.picHidden || []);
   const order = it.picOrder || [];
   const rank = k => { const i = order.indexOf(k); return i < 0 ? 1e6 : i; };
-  return all.filter(p => !hidden.has(p.key)).map((p, i) => ({ ...p, n: i })).sort((a, b) => rank(a.key) - rank(b.key) || a.n - b.n);
+  return all.map((p, i) => ({ ...p, n: i, hidden: hidden.has(p.key) })).filter(p => withHidden || !p.hidden).sort((a, b) => rank(a.key) - rank(b.key) || a.n - b.n);
 }
 /** 相片網址：手機有就用手機；你加嘅相如果手機冇，就由 GitHub 下載 */
 async function photoURL(key) {
@@ -920,46 +920,111 @@ async function hydratePics(root = document) {
   for (const box of root.querySelectorAll('.pics[data-item]')) {
     const it = findItem(box.dataset.item)?.item;
     if (!it) continue;
-    const list = await orderedPics(it);
+    const big = !!box.dataset.big;
+    const arrange = big && ui.arrange === it.id;
+    const list = await orderedPics(it, arrange);
     if (!box.isConnected) continue;
-    const arrange = ui.arrange === it.id && box.dataset.big;
     const tiles = await Promise.all(list.map(async (p, i) => {
       const u = await photoURL(p.key);
       if (!u) return '';
-      return `<div class="pic ${arrange ? 'arr' : ''}">
-        <button type="button" class="picbtn" data-act="view-pics" data-id="${it.id}" data-i="${i}"><img src="${u}" alt=""></button>
-        ${arrange ? `<span class="picctl">
-          <button type="button" data-act="pic-move" data-id="${it.id}" data-key="${esc(p.key)}" data-dir="-1" aria-label="向前">◀</button>
-          <button type="button" data-act="pic-move" data-id="${it.id}" data-key="${esc(p.key)}" data-dir="1" aria-label="向後">▶</button>
-          <button type="button" data-act="pic-hide" data-id="${it.id}" data-key="${esc(p.key)}" aria-label="移除">✕</button></span>` : ''}
+      const k = esc(p.key);
+      return `<div class="pic ${arrange ? 'arr' : ''} ${p.hidden ? 'hid' : ''}" data-key="${k}">
+        <button type="button" class="picbtn" ${arrange ? '' : `data-act="view-pics" data-id="${it.id}" data-i="${i}"`}><img src="${u}" alt="" draggable="false"></button>
+        ${arrange ? `<span class="picgrip" aria-hidden="true">⠿</span><span class="picctl">
+          ${p.hidden
+            ? `<button type="button" data-act="pic-unhide" data-id="${it.id}" data-key="${k}">👁 顯示</button>`
+            : `<button type="button" data-act="pic-hide" data-id="${it.id}" data-key="${k}">🙈 隱藏</button>`}
+          ${p.user ? `<button type="button" class="del" data-act="pic-del" data-id="${it.id}" data-key="${k}">🗑 刪除</button>` : ''}</span>` : ''}
       </div>`;
     }));
     if (!box.isConnected) continue;
-    const extra = box.dataset.big && list.length > 1
-      ? `<button type="button" class="pic arrange" data-act="pic-arrange" data-id="${it.id}">${arrange ? '✓<span>完成</span>' : '⇄<span>排次序</span>'}</button>` : '';
-    const restore = arrange && it.picHidden?.length ? `<button type="button" class="pic arrange" data-act="pic-restore" data-id="${it.id}">↺<span>還原隱藏</span></button>` : '';
-    box.classList.toggle('none', !tiles.join(''));
-    box.innerHTML = tiles.join('') + `<button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button>` + extra + restore;
+    const shown = tiles.filter(Boolean).length;
+    box.classList.toggle('none', !shown);
+    box.classList.toggle('arranging', arrange);
+    const ctl = big && (list.length > 0 || it.picHidden?.length)
+      ? `<button type="button" class="pic arrange" data-act="pic-arrange" data-id="${it.id}">${arrange ? '✓<span>完成</span>' : '⇄<span>排次序／隱藏</span>'}</button>` : '';
+    box.innerHTML = (arrange ? '<p class="hint arrhint">拖住相片移動次序（電腦用滑鼠拖；手機用手指按住拖）。</p>' : '') + tiles.join('')
+      + `<button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button>` + ctl;
+    enableDrag(box, it.id, arrange);
   }
 }
-async function movePic(id, key, dir) {
-  const it = findItem(id).item;
-  const keys = (await orderedPics(it)).map(p => p.key);
-  const i = keys.indexOf(key), j = i + dir;
-  if (i < 0 || j < 0 || j >= keys.length) return;
-  [keys[i], keys[j]] = [keys[j], keys[i]];
-  commit(() => { findItem(id).item.picOrder = keys; });
+
+/* 拖放排序：滑鼠直接拖；手指喺「排次序」模式入面拖 */
+let picDragJust = 0;
+function enableDrag(box, id, arrange) {
+  box.onpointerdown = e => {
+    const tile = e.target.closest('.pic[data-key]');
+    if (!tile || e.target.closest('.picctl') || e.button > 0) return;
+    if (e.pointerType !== 'mouse' && !arrange) return; // 手機：要先撳「排次序」
+    const x0 = e.clientX, y0 = e.clientY;
+    let ghost = null;
+    const move = ev => {
+      if (!ghost) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+        const r = tile.getBoundingClientRect();
+        ghost = tile.cloneNode(true);
+        ghost.className = 'pic ghost';
+        Object.assign(ghost.style, { width: r.width + 'px', height: r.height + 'px', left: 0, top: 0 });
+        ghost.dx = x0 - r.left; ghost.dy = y0 - r.top;
+        document.body.appendChild(ghost);
+        tile.classList.add('dragging');
+      }
+      ev.preventDefault();
+      ghost.style.transform = `translate(${ev.clientX - ghost.dx}px, ${ev.clientY - ghost.dy}px) rotate(2deg)`;
+      const over = [...box.querySelectorAll('.pic[data-key]')].find(t => {
+        if (t === tile) return false;
+        const r = t.getBoundingClientRect();
+        return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
+      });
+      if (over) {
+        const r = over.getBoundingClientRect();
+        over.parentNode.insertBefore(tile, ev.clientX < r.left + r.width / 2 ? over : over.nextSibling);
+      }
+      // 近邊位自動捲動
+      const br = box.getBoundingClientRect();
+      if (ev.clientX > br.right - 30) box.scrollLeft += 12; else if (ev.clientX < br.left + 30) box.scrollLeft -= 12;
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      if (!ghost) return;
+      ghost.remove();
+      tile.classList.remove('dragging');
+      picDragJust = Date.now();
+      const keys = [...box.querySelectorAll('.pic[data-key]')].map(t => t.dataset.key);
+      const it = findItem(id).item;
+      if (JSON.stringify(keys) === JSON.stringify((it.picOrder || []).filter(k => keys.includes(k)))) return;
+      commit(() => { const x = findItem(id).item; x.picOrder = [...keys, ...(x.picOrder || []).filter(k => !keys.includes(k))]; }, '已改相片次序');
+      hydratePics($('#modal').open ? $('#modal') : document);
+    };
+    window.addEventListener('pointermove', move, { passive: false });
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+}
+// 拖完放手唔好當成「撳相」
+document.addEventListener('click', e => { if (Date.now() - picDragJust < 300 && e.target.closest('.pics')) { e.stopPropagation(); e.preventDefault(); } }, true);
+
+function setPicHidden(id, key, hide) {
+  commit(() => {
+    const x = findItem(id).item;
+    const s = new Set(x.picHidden || []);
+    hide ? s.add(key) : s.delete(key);
+    if (s.size) x.picHidden = [...s]; else delete x.picHidden;
+  }, hide ? '已隱藏（排次序入面可以再顯示）' : '已顯示');
   hydratePics($('#modal'));
 }
-function hidePic(id, key) {
-  const it = findItem(id).item;
-  if (key.startsWith('p_')) {
-    if (!confirm('刪除你加嘅呢張相？')) return;
-    commit(() => { const x = findItem(id).item; x.photos = (x.photos || []).filter(k => k !== key); }, '已刪除相片');
-  } else {
-    commit(() => { const x = findItem(id).item; x.picHidden = [...new Set([...(x.picHidden || []), key])]; }, '已隱藏呢張相');
-  }
+function deletePic(id, key) {
+  if (!confirm('永久刪除呢張你加嘅相？')) return false;
+  commit(() => {
+    const x = findItem(id).item;
+    x.photos = (x.photos || []).filter(k => k !== key);
+    if (x.picHidden) x.picHidden = x.picHidden.filter(k => k !== key);
+    if (x.picOrder) x.picOrder = x.picOrder.filter(k => k !== key);
+  }, '已刪除相片');
   hydratePics($('#modal'));
+  return true;
 }
 
 async function viewPics(id, start) {
@@ -971,7 +1036,7 @@ async function viewPics(id, start) {
     const p = all[i];
     form.querySelector('.viewer img').src = (await photoURL(p.key)) || '';
     form.querySelector('.viewer .cap').textContent = `${i + 1}／${all.length} · ${p.cap}`;
-    form.querySelector('#delPic').textContent = p.user ? '刪除呢張' : '隱藏呢張';
+    form.querySelector('#delPic').hidden = !p.user;
   };
   openModal({
     title: it.title,
@@ -979,7 +1044,7 @@ async function viewPics(id, start) {
     body: `<div class="viewer"><img alt="">
         ${all.length > 1 ? `<button type="button" class="nav l" aria-label="上一張">${icon('left')}</button><button type="button" class="nav r" aria-label="下一張">${icon('right')}</button>` : ''}
         <p class="cap"></p></div>
-      <div class="row"><button type="button" class="btn danger" id="delPic">刪除呢張</button><button type="button" class="btn" data-act="open" data-id="${id}">返去詳情</button></div>`,
+      <div class="row"><button type="button" class="btn" id="hidePic">🙈 隱藏</button><button type="button" class="btn danger" id="delPic">🗑 刪除</button><button type="button" class="btn" data-act="open" data-id="${id}">返去詳情</button></div>`,
     onOpen: form => {
       const go = step => { i = (i + step + all.length) % all.length; show(form); };
       form.querySelector('.nav.l')?.addEventListener('click', () => go(-1));
@@ -993,7 +1058,8 @@ async function viewPics(id, start) {
         if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
         x0 = null;
       });
-      form.querySelector('#delPic').onclick = () => { hidePic(id, all[i].key); openItem(id); };
+      form.querySelector('#hidePic').onclick = () => { setPicHidden(id, all[i].key, true); openItem(id); };
+      form.querySelector('#delPic').onclick = () => { if (deletePic(id, all[i].key)) openItem(id); };
       show(form);
     },
   });
@@ -1375,8 +1441,8 @@ function openItem(id) {
       ${routeHtml(it, true)}
       <div class="efs">${xl}</div>
       <div class="row">${links}</div>
-      ${map}
       ${picsRow(it, true)}
+      ${map}
       ${extra ? `<div class="efs">${extra}</div>` : ''}
       ${extraEmpty ? `<details class="adv addinfo"><summary>＋ 加其他資料（地址、連結、後備方案…）</summary><div class="efs">${extraEmpty}</div></details>` : ''}
       ${tabelog}${menu}${tt}
@@ -1684,10 +1750,10 @@ const actions = {
   ef: (_, el) => startEdit(el),
   'ef-save': (_, el) => saveEdit(el.closest('.ef')),
   'ef-cancel': (_, el) => cancelEdit(el.closest('.ef')),
-  'pic-move': (id, el) => movePic(id, el.dataset.key, +el.dataset.dir),
-  'pic-hide': (id, el) => hidePic(id, el.dataset.key),
-  'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')); },
-  'pic-restore': id => { commit(() => { delete findItem(id).item.picHidden; }, '已還原隱藏嘅相'); hydratePics($('#modal')); },
+  'pic-hide': (id, el) => setPicHidden(id, el.dataset.key, true),
+  'pic-unhide': (id, el) => setPicHidden(id, el.dataset.key, false),
+  'pic-del': (id, el) => deletePic(id, el.dataset.key),
+  'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')).then(() => $('#modal .pics.big')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); },
   'gh-save': () => {
     const v = s => ($(s)?.value || '').trim();
     const c = { ...ghCfg(), token: v('#ghToken'), owner: v('#ghOwner') || GH_DEF.owner, repo: v('#ghRepo') || GH_DEF.repo, branch: v('#ghBranch') || GH_DEF.branch };

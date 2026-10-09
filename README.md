@@ -43,7 +43,7 @@ The Tokyo trip (29/10–1/11) lives in `trip-data.js`. The `XL` block holds the 
 
 ## Editing and sync (GitHub)
 - **Edit in place:** tap any text in an item's details (活動, 交通, 備註, URL, 地址, 營業時間, Tabelog, 菜單, 時刻表, 其他連結, 後備方案…) or a day's title or notes, change it, then tap 儲存 (save). Ctrl/⌘+Enter saves on a computer. Every URL in any text becomes a clickable link.
-- **Photos:** every item has 加相 (add photo). In the details sheet, ⇄ 排次序 (reorder) shows ◀ ▶ to move a photo and ✕ to hide a preset photo or delete your own.
+- **Photos:** every item has 加相 (add photo). On a computer, drag any photo with the mouse to reorder it. On a phone, tap ⇄ 排次序／隱藏 (reorder/hide), then hold and drag with your finger. That mode also has 🙈 隱藏 (hide, can be undone with 👁 顯示) and 🗑 刪除 (delete, for your own photos). The photo viewer has the same buttons.
 - **Where the data lives:** with a GitHub token set in 資訊 → ☁️ GitHub 同步 (GitHub sync), every change is committed to this repo:
   - the itinerary goes to `data/trip.json`
   - your photos go to `data/photos/<id>.jpg`
