@@ -408,3 +408,17 @@ label.field input { display: block; width: 100%; margin-top: 4px; font: inherit;
 .picctl button.del { background: #fff; color: #C0392B; }
 .pics.arranging .pic.add, .pics.arranging .pic.arrange { width: calc(25% - 6px); aspect-ratio: 4 / 3; }
 .pics.arranging .picbtn { cursor: grab; }
+
+/* ---------- 日語：平假名、羅馬拼音、編輯 ---------- */
+ruby { ruby-position: over; }
+rt { font-size: .5em; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.phrase b { line-height: 1.9; }
+.phrase .kana { display: block; font-size: 11px; font-weight: 600; color: var(--muted); line-height: 1.2; }
+.phrase-wrap { position: relative; }
+.phr h2 + .phrase-wrap .phrase, .phr .hint + .phrase-wrap .phrase { border-top: 0; }
+.phr-ctl { display: flex; gap: 6px; justify-content: flex-end; padding: 0 0 10px; }
+.phr h2 { display: flex; gap: 6px; align-items: center; }
+.phr h2 .chip { font-size: 12px; padding: 4px 10px; }
+.addphr { margin-top: 10px; }
+.phr-preview { font-size: 22px; font-weight: 700; line-height: 2; min-height: 1em; margin: 6px 0; }
+.taxi .big ruby rt { font-size: .38em; }

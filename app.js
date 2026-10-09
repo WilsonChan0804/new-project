@@ -893,17 +893,17 @@ async function orderedPics(it, withHidden = false) {
     ...(it.photos || []).map(k => ({ key: k, user: true, cap: '你加嘅相' })),
   ];
   const hidden = new Set(it.picHidden || []);
+  const deleted = new Set(it.picDeleted || []);
   const order = it.picOrder || [];
   const rank = k => { const i = order.indexOf(k); return i < 0 ? 1e6 : i; };
-  return all.map((p, i) => ({ ...p, n: i, hidden: hidden.has(p.key) })).filter(p => withHidden || !p.hidden).sort((a, b) => rank(a.key) - rank(b.key) || a.n - b.n);
+  return all.filter(p => !deleted.has(p.key)).map((p, i) => ({ ...p, n: i, hidden: hidden.has(p.key) })).filter(p => withHidden || !p.hidden).sort((a, b) => rank(a.key) - rank(b.key) || a.n - b.n);
 }
 /** 相片網址：手機有就用手機；你加嘅相如果手機冇，就由 GitHub 下載 */
 async function photoURL(key) {
   const u = await blobURL(key);
   if (u || !key.startsWith('p_') || !navigator.onLine) return u;
   try {
-    const c = ghCfg();
-    const r = await fetch(`https://raw.githubusercontent.com/${c.owner}/${c.repo}/${c.branch}/${PHOTO_DIR}/${key}.jpg`, { cache: 'no-store' });
+    const r = await srvReq(`/api/photos/${key}.jpg`);
     if (!r.ok) return null;
     const b = await r.blob();
     await PhotoDB.put(key, b);
@@ -934,7 +934,7 @@ async function hydratePics(root = document) {
           ${p.hidden
             ? `<button type="button" data-act="pic-unhide" data-id="${it.id}" data-key="${k}">👁 顯示</button>`
             : `<button type="button" data-act="pic-hide" data-id="${it.id}" data-key="${k}">🙈 隱藏</button>`}
-          ${p.user ? `<button type="button" class="del" data-act="pic-del" data-id="${it.id}" data-key="${k}">🗑 刪除</button>` : ''}</span>` : ''}
+          <button type="button" class="del" data-act="pic-del" data-id="${it.id}" data-key="${k}">🗑 刪除</button></span>` : ''}
       </div>`;
     }));
     if (!box.isConnected) continue;
@@ -944,7 +944,8 @@ async function hydratePics(root = document) {
     const ctl = big && (list.length > 0 || it.picHidden?.length)
       ? `<button type="button" class="pic arrange" data-act="pic-arrange" data-id="${it.id}">${arrange ? '✓<span>完成</span>' : '⇄<span>排次序／隱藏</span>'}</button>` : '';
     box.innerHTML = (arrange ? '<p class="hint arrhint">拖住相片移動次序（電腦用滑鼠拖；手機用手指按住拖）。</p>' : '') + tiles.join('')
-      + `<button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button>` + ctl;
+      + `<button type="button" class="pic add" data-act="add-photo" data-id="${it.id}" aria-label="加相">${icon('plus')}<span>加相</span></button>` + ctl
+      + (arrange && it.picDeleted?.length ? `<button type="button" class="pic arrange" data-act="pic-undelete" data-id="${it.id}">↺<span>還原刪除咗嘅預設相（${it.picDeleted.length}）</span></button>` : '');
     enableDrag(box, it.id, arrange);
   }
 }
@@ -1016,11 +1017,13 @@ function setPicHidden(id, key, hide) {
   hydratePics($('#modal'));
 }
 function deletePic(id, key) {
-  if (!confirm('永久刪除呢張你加嘅相？')) return false;
+  const user = key.startsWith('p_');
+  if (!confirm(user ? '永久刪除呢張你加嘅相？' : '刪除呢張預設相？（佢唔會再出現；排次序入面可以還原）')) return false;
   commit(() => {
     const x = findItem(id).item;
-    x.photos = (x.photos || []).filter(k => k !== key);
-    if (x.picHidden) x.picHidden = x.picHidden.filter(k => k !== key);
+    if (user) x.photos = (x.photos || []).filter(k => k !== key);
+    else x.picDeleted = [...new Set([...(x.picDeleted || []), key])];
+    if (x.picHidden) { x.picHidden = x.picHidden.filter(k => k !== key); if (!x.picHidden.length) delete x.picHidden; }
     if (x.picOrder) x.picOrder = x.picOrder.filter(k => k !== key);
   }, '已刪除相片');
   hydratePics($('#modal'));
@@ -1036,7 +1039,6 @@ async function viewPics(id, start) {
     const p = all[i];
     form.querySelector('.viewer img').src = (await photoURL(p.key)) || '';
     form.querySelector('.viewer .cap').textContent = `${i + 1}／${all.length} · ${p.cap}`;
-    form.querySelector('#delPic').hidden = !p.user;
   };
   openModal({
     title: it.title,
@@ -1066,84 +1068,77 @@ async function viewPics(id, start) {
 }
 
 /* =========================================================
-   GitHub 同步：行程同你加嘅相存喺 GitHub（data/），
-   所有裝置同之後嘅新版 App 都用同一份資料
+   雲端同步：行程同你加嘅相存喺你自己嘅 VM 伺服器，
+   所有裝置（同之後嘅新版 App）都用同一份資料
    ========================================================= */
-const GH_DEF = { owner: 'WilsonChan0804', repo: 'new-project', branch: 'claude/trip-planner', token: '' };
-const DATA_PATH = 'data/trip.json';
-const PHOTO_DIR = 'data/photos';
-const ghCfg = () => { try { return { ...GH_DEF, ...JSON.parse(localStorage.getItem('gh-cfg') || '{}') }; } catch { return { ...GH_DEF }; } };
-const ghOn = () => !!ghCfg().token;
-const syncState = () => { try { return JSON.parse(localStorage.getItem('gh-sync') || '{}'); } catch { return {}; } };
-const setSyncState = s => localStorage.setItem('gh-sync', JSON.stringify({ ...syncState(), ...s }));
-const isDirty = () => localStorage.getItem('gh-dirty') === '1';
-const b64enc = s => btoa(unescape(encodeURIComponent(s)));
-const b64dec = s => decodeURIComponent(escape(atob(s.replace(/\n/g, ''))));
+const DEFAULT_SERVER = 'https://20-189-122-56.sslip.io';
+const srvBase = () => (localStorage.getItem('srv-url') || (/github\.io$|^$/.test(location.hostname) || location.protocol === 'file:' ? DEFAULT_SERVER : location.origin)).replace(/\/+$/, '');
+const srvKey = () => localStorage.getItem('srv-key') || '';
+const ghOn = () => !!srvKey(); // 有密碼先可以上傳
+const isDirty = () => localStorage.getItem('srv-dirty') === '1';
+const getRev = () => +localStorage.getItem('srv-rev') || 0;
 const sync = { busy: false, timer: null };
 
-function ghReq(path, { method = 'GET', body, raw = false } = {}) {
-  const c = ghCfg();
-  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}${method === 'GET' ? `?ref=${enc(c.branch)}&t=${Date.now()}` : ''}`;
-  const headers = { Accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json' };
-  if (c.token) headers.Authorization = `Bearer ${c.token}`;
-  if (body) headers['Content-Type'] = 'application/json';
-  return fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
-}
-async function ghGetData() {
-  const r = await ghReq(DATA_PATH);
-  if (r.status === 404) return null;
-  if (!r.ok) throw new Error(`GitHub 回應 ${r.status}`);
-  const j = await r.json();
-  const text = j.content ? b64dec(j.content) : await (await ghReq(DATA_PATH, { raw: true })).text();
-  return { sha: j.sha, data: JSON.parse(text) };
+function srvReq(path, { method = 'GET', body, json = true } = {}) {
+  const headers = {};
+  if (srvKey()) headers['X-Trip-Key'] = srvKey();
+  if (body !== undefined && json) headers['Content-Type'] = 'application/json';
+  return fetch(srvBase() + path, { method, headers, body: body === undefined ? undefined : (json ? JSON.stringify(body) : body), cache: 'no-store' });
 }
 function syncStatus(msg) {
-  localStorage.setItem('gh-status', msg);
+  localStorage.setItem('srv-status', msg);
   const el = $('#ghStatus');
   if (el) el.textContent = msg;
 }
 const hhmm = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
-/** 由 GitHub 攞最新資料（冇 token 都讀到，因為 repo 係公開） */
+/** 用伺服器嘅版本（保留呢部機加過、但伺服器冇嘅相） */
+function adoptRemote(d) {
+  const remote = d.trip;
+  undoStack.push(JSON.stringify(trip));
+  let kept = 0;
+  const byId = new Map(remote.days.flatMap(x => x.items).map(i => [i.id, i]));
+  allItems().forEach(it => {
+    const r2 = byId.get(it.id);
+    const extra = (it.photos || []).filter(p => r2 && !(r2.photos || []).includes(p));
+    if (extra.length) { r2.photos = [...(r2.photos || []), ...extra]; kept += extra.length; }
+  });
+  trip = remote;
+  ensurePhrases();
+  save();
+  localStorage.setItem('srv-rev', d.rev);
+  localStorage.removeItem('srv-dirty');
+  if (!$('#modal').open) render();
+  if (kept) { localStorage.setItem('srv-dirty', '1'); schedulePush(); }
+}
+/** 由伺服器攞最新資料 */
 async function pullSync({ quiet = true } = {}) {
   if (!navigator.onLine || sync.busy) return;
   let r;
-  try { r = await ghGetData(); } catch (e) { if (!quiet) syncStatus('讀取 GitHub 失敗：' + e.message); return; }
-  const st = syncState();
-  if (!r) { if (ghOn()) return pushSync(); return; }
-  if (r.sha === st.sha) { if (isDirty() && ghOn()) pushSync(); else if (!quiet) syncStatus(`✓ 已經係最新（${hhmm()}）`); return; }
-  const remote = r.data?.trip;
-  if (!remote?.days) return;
-  const firstTime = !st.sha;
-  const local = JSON.stringify(trip);
-  if (local === JSON.stringify(remote)) { setSyncState({ sha: r.sha }); localStorage.removeItem('gh-dirty'); return; }
-  let takeRemote = true;
-  if (isDirty()) {
-    takeRemote = confirm(firstTime
-      ? 'GitHub 上面已經有一份行程。\n「確定」＝用 GitHub 嗰份（建議）\n「取消」＝用呢部機嘅版本，之後上傳去 GitHub'
-      : 'GitHub 上面有另一部機嘅新修改，呢部機亦有未上傳嘅修改。\n「確定」＝用 GitHub 嗰份\n「取消」＝用呢部機嘅版本覆蓋 GitHub');
+  try { r = await srvReq('/api/trip'); } catch { if (!quiet) syncStatus('連唔到伺服器（' + srvBase() + '）'); return; }
+  if (r.status === 404) { if (ghOn()) return pushSync(); return; }
+  if (r.status === 401) { if (!quiet) syncStatus('需要密碼先睇到資料'); return; }
+  if (!r.ok) { if (!quiet) syncStatus('伺服器回應 ' + r.status); return; }
+  const d = await r.json();
+  if (!d?.trip?.days) return;
+  if (d.rev === getRev()) {
+    if (isDirty() && ghOn()) pushSync(); else if (!quiet) syncStatus(`✓ 已經係最新（${hhmm()}）`);
+    return;
   }
-  if (takeRemote) {
-    undoStack.push(local);
-    // 呢部機加過、但 GitHub 版本冇嘅相，保留落去
-    let keptPhotos = 0;
-    const byId = new Map(remote.days.flatMap(d => d.items).map(i => [i.id, i]));
-    allItems().forEach(it => {
-      const r2 = byId.get(it.id);
-      const extra = (it.photos || []).filter(p => r2 && !(r2.photos || []).includes(p));
-      if (extra.length) { r2.photos = [...(r2.photos || []), ...extra]; keptPhotos += extra.length; }
-    });
-    trip = remote;
-    save();
-    setSyncState({ sha: r.sha });
-    localStorage.removeItem('gh-dirty');
+  if (JSON.stringify(trip) === JSON.stringify(d.trip)) { localStorage.setItem('srv-rev', d.rev); localStorage.removeItem('srv-dirty'); return; }
+  let take = true;
+  if (isDirty()) {
+    take = confirm(getRev()
+      ? '伺服器有另一部機嘅新修改，呢部機亦有未上傳嘅修改。\n「確定」＝用伺服器嗰份\n「取消」＝用呢部機嘅版本覆蓋伺服器'
+      : '伺服器已經有一份行程。\n「確定」＝用伺服器嗰份（建議）\n「取消」＝用呢部機嘅版本，上傳覆蓋伺服器');
+  }
+  if (take) {
+    adoptRemote(d);
     syncStatus(`✓ 已下載最新內容（${hhmm()}）`);
-    if (!$('#modal').open) render();
-    toast('已同步其他裝置嘅修改');
-    if (keptPhotos) { localStorage.setItem('gh-dirty', '1'); if (ghOn()) pushSync(); }
+    if (!quiet || getRev() > 1) toast('已同步其他裝置嘅修改');
   } else {
-    setSyncState({ sha: r.sha });
-    localStorage.setItem('gh-dirty', '1');
+    localStorage.setItem('srv-rev', d.rev);
+    localStorage.setItem('srv-dirty', '1');
     if (ghOn()) pushSync();
   }
 }
@@ -1154,70 +1149,112 @@ async function uploadPhotos() {
     if (await PhotoDB.get('up:' + id).catch(() => null)) continue;
     const blob = await PhotoDB.get(id).catch(() => null);
     if (!blob) continue;
-    const dataUrl = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
-    const r = await ghReq(`${PHOTO_DIR}/${id}.jpg`, { method: 'PUT', body: { message: `App 加相 ${id}`, content: dataUrl.split(',')[1], branch: ghCfg().branch } });
-    if (r.ok || r.status === 422) await PhotoDB.put('up:' + id, 1); // 422 = 已經有
-    else throw new Error(`上傳相片失敗（${r.status}）`);
+    const r = await srvReq(`/api/photos/${id}`, { method: 'PUT', body: blob, json: false });
+    if (r.status === 401) throw new Error('密碼唔啱');
+    if (!r.ok) throw new Error(`上傳相片失敗（${r.status}）`);
+    await PhotoDB.put('up:' + id, 1);
   }
 }
-/** 將呢部機嘅修改上傳去 GitHub */
+/** 將呢部機嘅修改上傳 */
 async function pushSync() {
   if (!ghOn() || !navigator.onLine || sync.busy) return;
   sync.busy = true;
   syncStatus('上傳緊…');
   try {
     await uploadPhotos();
-    const cur = await ghGetData();
-    const st = syncState();
-    if (cur && st.sha && cur.sha !== st.sha) { sync.busy = false; return pullSync({ quiet: false }); }
-    const body = JSON.stringify({ app: 'trip-planner', version: 4, savedAt: new Date().toISOString(), trip }, null, 1);
-    const r = await ghReq(DATA_PATH, { method: 'PUT', body: { message: `App 更新行程 ${new Date().toISOString().slice(0, 16)}`, content: b64enc(body), branch: ghCfg().branch, ...(cur ? { sha: cur.sha } : {}) } });
-    if (r.status === 401 || r.status === 403) throw new Error('Token 冇權限或者已過期');
-    if (!r.ok) throw new Error(`GitHub 回應 ${r.status}`);
+    const r = await srvReq('/api/trip', { method: 'PUT', body: { baseRev: getRev(), trip } });
+    if (r.status === 409) {
+      sync.busy = false;
+      const cur = await r.json();
+      localStorage.setItem('srv-rev', '-1'); // 強制比較
+      return handleConflict(cur);
+    }
+    if (r.status === 401) throw new Error('密碼唔啱');
+    if (!r.ok) throw new Error(`伺服器回應 ${r.status}`);
     const j = await r.json();
-    setSyncState({ sha: j.content.sha });
-    localStorage.removeItem('gh-dirty');
-    syncStatus(`✓ 已上傳到 GitHub（${hhmm()}）`);
+    localStorage.setItem('srv-rev', j.rev);
+    localStorage.removeItem('srv-dirty');
+    syncStatus(`✓ 已儲存到雲端（${hhmm()}）`);
   } catch (e) {
     syncStatus('同步失敗：' + e.message + '（上網後會再試）');
   } finally { sync.busy = false; }
 }
+function handleConflict(cur) {
+  if (JSON.stringify(cur.trip) === JSON.stringify(trip)) { localStorage.setItem('srv-rev', cur.rev); localStorage.removeItem('srv-dirty'); return; }
+  if (confirm('另一部機啱啱改咗行程。\n「確定」＝用另一部機嘅版本（你呢次嘅修改可以撳「還原」攞返）\n「取消」＝用呢部機嘅版本覆蓋')) {
+    adoptRemote(cur);
+    syncStatus(`✓ 已下載最新內容（${hhmm()}）`);
+  } else {
+    localStorage.setItem('srv-rev', cur.rev);
+    pushSync();
+  }
+}
 function schedulePush() {
-  localStorage.setItem('gh-dirty', '1');
+  localStorage.setItem('srv-dirty', '1');
   clearTimeout(sync.timer);
-  if (ghOn()) { syncStatus('有未上傳嘅修改…'); sync.timer = setTimeout(pushSync, 3000); }
+  if (ghOn()) { syncStatus('有未上傳嘅修改…'); sync.timer = setTimeout(pushSync, 2000); }
+  else if (!sync.warned) { sync.warned = true; syncStatus('修改只存喺呢部機：去「資訊 → ☁️ 雲端同步」輸入密碼'); setTimeout(() => toast('修改未上雲端：去「資訊」輸入同步密碼'), 2600); }
 }
 function syncCardHtml() {
-  const c = ghCfg();
   return `<section class="card" id="sync">
-    <h2>☁️ GitHub 同步（手機、電腦一齊用）</h2>
-    <p class="muted" id="ghStatus">${esc(localStorage.getItem('gh-status') || (ghOn() ? '已設定' : '未設定：而家只係讀取 GitHub 上面嘅資料'))}</p>
-    <p class="muted">你喺 App 改嘅所有嘢同你加嘅相，會存去 GitHub repo 嘅 <code>data/</code> 資料夾。其他裝置打開 App 會自動攞到；我之後出新版 App 亦會用返呢份資料，唔會蓋走你嘅修改。</p>
-    <label class="field">GitHub Token（每部要改資料嘅裝置都要貼一次）
-      <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_…" value="${esc(c.token)}"></label>
-    <details class="adv"><summary>Repo 設定</summary>
-      <label class="field">Owner<input id="ghOwner" value="${esc(c.owner)}"></label>
-      <label class="field">Repo<input id="ghRepo" value="${esc(c.repo)}"></label>
-      <label class="field">Branch<input id="ghBranch" value="${esc(c.branch)}"></label>
+    <h2>☁️ 雲端同步（手機、電腦一齊用）</h2>
+    <p class="muted" id="ghStatus">${esc(localStorage.getItem('srv-status') || (ghOn() ? '已設定' : '未輸入密碼：可以睇雲端資料，但修改唔會上傳'))}</p>
+    <p class="muted">你喺 App 改嘅所有嘢同你加嘅相，會存喺你自己嘅伺服器（<code>${esc(srvBase())}</code>）。其他裝置打開 App 會自動攞到最新；之後出新版 App 亦會用返呢份資料。</p>
+    <label class="field">同步密碼（每部要改資料嘅裝置輸入一次）
+      <input id="srvKey" type="password" autocomplete="current-password" placeholder="VM 安裝時顯示嘅密碼" value="${esc(srvKey())}"></label>
+    <details class="adv"><summary>伺服器網址</summary>
+      <label class="field">網址<input id="srvUrl" inputmode="url" value="${esc(srvBase())}"></label>
     </details>
     <div class="row">
-      <button class="chip dark" data-act="gh-save">儲存並同步</button>
-      <button class="chip" data-act="gh-now">而家同步</button>
-      ${c.token ? '<button class="chip danger" data-act="gh-forget">移除 Token</button>' : ''}
+      <button class="chip dark" data-act="srv-save">儲存並同步</button>
+      <button class="chip" data-act="srv-now">而家同步</button>
+      ${srvKey() ? '<button class="chip danger" data-act="srv-forget">喺呢部機移除密碼</button>' : ''}
     </div>
-    <details class="adv"><summary>點樣攞 Token？（5 分鐘）</summary>
-      <ol class="plain">
-        <li>電腦登入 GitHub → 右上角頭像 → <b>Settings</b> → 左邊最底 <b>Developer settings</b> → <b>Personal access tokens → Fine-grained tokens</b> → <b>Generate new token</b>。</li>
-        <li>Token name：<i>trip app</i>；Expiration：揀 <b>90 days</b>（或者旅程完之後）。</li>
-        <li>Repository access：<b>Only select repositories</b> → 揀 <b>${esc(c.repo)}</b>。</li>
-        <li>Permissions → Repository permissions → <b>Contents：Read and write</b>。</li>
-        <li>撳 <b>Generate token</b>，複製（<code>github_pat_</code> 開頭），貼喺上面再撳「儲存並同步」。</li>
-      </ol>
-      <p class="hint">Token 只存喺呢部機。因為 repo 係公開（GitHub Pages 要求），你加嘅相亦會係公開檔案，唔好放護照、信用卡等敏感相片。</p>
-    </details>
   </section>`;
 }
 
+
+/* ---------- 地圖連結：iPhone 直接開 Google Maps App／Apple 地圖 ---------- */
+const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isGmaps = u => /^https:\/\/(www\.)?google\.[a-z.]+\/maps|^https:\/\/maps\.google\./.test(u);
+const MAP_APPS = { gapp: 'Google Maps App', apple: 'Apple 地圖', web: '網頁版 Google Maps' };
+function mapLink(url, app) {
+  if (app === 'gapp') return url.replace(/^https:\/\//, 'comgooglemapsurl://');
+  if (app !== 'apple') return url;
+  const u = new URL(url);
+  const q = k => u.searchParams.get(k) || '';
+  const flg = { walking: 'w', driving: 'd', transit: 'r' }[q('travelmode')] || 'r';
+  if (/\/maps\/search/.test(u.pathname)) return `https://maps.apple.com/?q=${enc(q('query'))}`;
+  if (/\/maps\/dir\/?$/.test(u.pathname) && q('destination')) return `https://maps.apple.com/?${q('origin') ? `saddr=${enc(q('origin'))}&` : ''}daddr=${enc(q('destination'))}&dirflg=${flg}`;
+  const stops = u.pathname.replace(/^\/maps\/dir\/?/, '').split('/').filter(Boolean).map(s => decodeURIComponent(s.replace(/\+/g, ' ')));
+  if (/\/maps\/dir\//.test(u.pathname) && stops.length >= 2) return `https://maps.apple.com/?saddr=${enc(stops[0])}&daddr=${stops.slice(1).map(enc).join('+to:')}&dirflg=${flg}`;
+  if (q('q') || q('query')) return `https://maps.apple.com/?q=${enc(q('q') || q('query'))}`;
+  return url;
+}
+function openMap(url, app) {
+  const target = mapLink(url, app);
+  if (target.startsWith('comgooglemapsurl:')) location.href = target;
+  else window.open(target, '_blank', 'noopener');
+}
+function chooseMapApp(url) {
+  openModal({
+    title: '用邊個 App 開地圖？',
+    body: `<div class="bigbtns one">
+        <button type="button" class="btn dark" data-app="gapp">Google Maps App（我有裝）</button>
+        <button type="button" class="btn" data-app="apple">Apple 地圖（iPhone 內置）</button>
+        <button type="button" class="btn" data-app="web">網頁版 Google Maps</button>
+      </div>
+      <label class="check"><input type="checkbox" id="mapRemember" checked> 記住我嘅選擇（可以喺「資訊」改）</label>
+      <p class="hint">如果撳「Open in app」會去 App Store，即係部機未裝 Google Maps App：揀 Apple 地圖或者網頁版就得。</p>`,
+    onOpen: form => form.querySelectorAll('[data-app]').forEach(b => {
+      b.onclick = () => {
+        if (form.querySelector('#mapRemember').checked) localStorage.setItem('map-app', b.dataset.app);
+        closeModal();
+        openMap(url, b.dataset.app);
+      };
+    }),
+  });
+}
 
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
@@ -1489,13 +1526,109 @@ function renderBookings() {
 }
 
 /* ---------- 日語 ---------- */
+/* ---------- 日語（可以自己加、改、刪；漢字上面有平假名，下面有羅馬拼音） ---------- */
+function ensurePhrases() {
+  if (Array.isArray(trip.phrases)) return false;
+  trip.phrases = PHRASES.map((g, gi) => ({ id: 'g' + gi, cat: g.cat, items: g.items.map(([ja, ro, zh], i) => ({ id: `q${gi}_${i}`, ja, ro, zh })) }));
+  return true;
+}
+const rdCache = (() => { try { return JSON.parse(localStorage.getItem('readings-cache') || '{}'); } catch { return {}; } })();
+const readingOf = ja => READINGS[ja] || rdCache[ja] || null;
+const rdPending = new Set();
+/** 冇預先準備嘅讀音：上網時問伺服器（pykakasi） */
+async function fetchReading(text) {
+  const r = await srvReq('/api/reading', { method: 'POST', body: { text } });
+  if (!r.ok) throw new Error(r.status === 501 ? '伺服器未裝自動讀音' : `伺服器回應 ${r.status}`);
+  const j = await r.json();
+  return { ruby: j.ruby, ro: j.romaji, kana: j.kana };
+}
+async function fillReadings(texts) {
+  const todo = texts.filter(t => t && !readingOf(t) && !rdPending.has(t) && /[぀-ヿ㐀-鿿]/.test(t));
+  if (!todo.length || !navigator.onLine) return;
+  todo.forEach(t => rdPending.add(t));
+  let got = 0;
+  for (const t of todo) {
+    try { rdCache[t] = await fetchReading(t); got++; } catch { break; }
+  }
+  if (got) { localStorage.setItem('readings-cache', JSON.stringify(rdCache)); if (ui.tab === 'phrases' && !$('#modal').open) render(); }
+}
+/** 漢字上面加平假名 */
+function rubyHtml(ja, ph = {}) {
+  if (ph.kana) return `<span class="kana" lang="ja">${esc(ph.kana)}</span>${esc(ja)}`;
+  const segs = ph.ruby || readingOf(ja)?.ruby;
+  if (!segs) return esc(ja);
+  return segs.map(([t, r]) => r ? `<ruby>${esc(t)}<rp>(</rp><rt>${esc(r)}</rt><rp>)</rp></ruby>` : esc(t)).join('');
+}
+const romajiOf = (ja, ph = {}) => ph.ro || readingOf(ja)?.ro || '';
+
 function renderPhrases() {
+  ensurePhrases();
+  const edit = ui.phrEdit;
   const places = [...new Map(allItems().filter(i => i.titleJa && i.type !== 'walk').map(i => [i.titleJa, i])).values()];
-  const row = (ja, zh, ro = '') => `<button class="phrase" data-act="speak" data-text="${esc(ja)}">
-      <div class="grow"><b lang="ja">${esc(ja)}</b>${ro ? `<span class="ro">${esc(ro)}</span>` : ''}<span class="zh">${esc(zh)}</span></div>${icon('sound')}</button>`;
-  return `<section class="pagehead"><h1>日語</h1><p class="muted">撳任何一句就會讀出嚟（用手機內置日文聲，冇網都得）。</p></section>
-    ${PHRASES.map(g => `<section class="card phr"><h2>${g.cat}</h2>${g.items.map(([ja, ro, zh]) => row(ja, zh, ro)).join('')}</section>`).join('')}
-    <section class="card phr"><h2>地點讀音</h2>${places.map(i => row(i.titleJa, i.title)).join('')}</section>`;
+  const row = (ja, zh, ph = {}, gid = '') => `<div class="phrase-wrap">
+    <button class="phrase" data-act="speak" data-text="${esc(ja)}">
+      <div class="grow"><b lang="ja">${rubyHtml(ja, ph)}</b>${romajiOf(ja, ph) ? `<span class="ro">${esc(romajiOf(ja, ph))}</span>` : ''}<span class="zh">${esc(zh)}</span></div>${icon('sound')}</button>
+    ${edit && ph.id ? `<span class="phr-ctl"><button class="chip" data-act="phr-edit" data-id="${ph.id}" data-g="${gid}">✎ 改</button><button class="chip danger" data-act="phr-del" data-id="${ph.id}" data-g="${gid}">🗑</button></span>` : ''}</div>`;
+  setTimeout(() => fillReadings([...trip.phrases.flatMap(g => g.items.filter(p => !p.kana && !p.ruby).map(p => p.ja)), ...places.map(i => i.titleJa)]), 50);
+  return `<section class="pagehead"><h1>日語</h1>
+      <p class="muted">撳任何一句就會讀出嚟（用手機內置日文聲，冇網都得）。漢字上面係平假名，下面係羅馬拼音。</p>
+      <div class="row"><button class="chip ${edit ? 'dark' : ''}" data-act="phr-mode">${edit ? '✓ 完成' : '✎ 加／改句子'}</button></div></section>
+    ${trip.phrases.map(g => `<section class="card phr"><h2>${edit ? `<span class="grow">${esc(g.cat)}</span><button class="chip" data-act="phr-cat" data-g="${g.id}">✎</button><button class="chip danger" data-act="phr-cat-del" data-g="${g.id}">🗑</button>` : esc(g.cat)}</h2>
+      ${g.items.map(p => row(p.ja, p.zh, p, g.id)).join('')}
+      ${edit ? `<button class="chip accent addphr" data-act="phr-add" data-g="${g.id}">＋ 加句子</button>` : ''}</section>`).join('')}
+    ${edit ? `<button class="btn" data-act="phr-cat-add">＋ 新分類</button>` : ''}
+    <section class="card phr"><h2>地點讀音</h2><p class="hint">地點名喺行程項目入面改（日文名）。</p>${places.map(i => row(i.titleJa, i.title)).join('')}</section>`;
+}
+
+function phraseForm(gid, pid) {
+  const g = trip.phrases.find(x => x.id === gid);
+  const p = pid ? g.items.find(x => x.id === pid) : { ja: '', zh: '', ro: '' };
+  const rd = p.ja ? readingOf(p.ja) : null;
+  let auto = { ruby: p.ruby || rd?.ruby || null, kana: p.kana || (p.ruby || rd?.ruby ? (p.ruby || rd.ruby).map(([t, r]) => r || t).join('') : ''), ro: p.ro || rd?.ro || '' };
+  const autoKana = auto.kana;
+  openModal({
+    title: pid ? '改句子' : `加句子（${g.cat}）`,
+    body: `<label>日文<textarea name="ja" rows="2" lang="ja" required>${esc(p.ja)}</textarea></label>
+      <label>中文意思<input name="zh" value="${esc(p.zh)}"></label>
+      <div class="row"><button type="button" class="chip dark" id="autoRd">↻ 自動產生讀音（要上網）</button></div>
+      <p class="phr-preview" lang="ja" id="rdPrev"></p>
+      <label>平假名讀音（可以自己改）<input name="kana" lang="ja" value="${esc(auto.kana)}"></label>
+      <label>羅馬拼音（可以自己改）<input name="ro" value="${esc(auto.ro)}"></label>
+      <p class="hint">儲存時冇讀音嘅話，上網時會自動補上。</p>`,
+    onOpen: form => {
+      const prev = () => { form.querySelector('#rdPrev').innerHTML = rubyHtml(form.ja.value.trim(), form.kana.value !== auto.kana ? { kana: form.kana.value } : { ruby: auto.ruby }); };
+      const gen = async () => {
+        const ja = form.ja.value.trim();
+        if (!ja) return;
+        const b = form.querySelector('#autoRd'); b.textContent = '產生緊…';
+        try {
+          const r = READINGS[ja] || await fetchReading(ja);
+          auto = { ruby: r.ruby || null, kana: r.kana || (r.ruby || []).map(([t, x]) => x || t).join(''), ro: r.ro };
+          form.kana.value = auto.kana; form.ro.value = auto.ro;
+        } catch (e) { toast('產生唔到讀音：' + e.message); }
+        b.textContent = '↻ 自動產生讀音（要上網）';
+        prev();
+      };
+      form.querySelector('#autoRd').onclick = gen;
+      form.ja.addEventListener('change', gen);
+      form.kana.addEventListener('input', prev);
+      prev();
+    },
+    onSubmit: fd => {
+      const ja = fd.get('ja').toString().trim();
+      if (!ja) return false;
+      const kana = fd.get('kana').toString().trim(), ro = fd.get('ro').toString().trim();
+      const np = { id: p.id || 'q' + uid(), ja, zh: fd.get('zh').toString().trim() };
+      if (ro) np.ro = ro;
+      if (kana && kana !== auto.kana) np.kana = kana;          // 自己改過讀音
+      else if (auto.ruby && !READINGS[ja]) np.ruby = auto.ruby; // 自動讀音一齊存，其他裝置唔使再問
+      commit(() => {
+        const gg = trip.phrases.find(x => x.id === gid);
+        const i = gg.items.findIndex(x => x.id === np.id);
+        if (i >= 0) gg.items[i] = np; else gg.items.push(np);
+      }, pid ? '已修改' : '已加入');
+    },
+  });
 }
 
 /* ---------- 資訊（日本） ---------- */
@@ -1561,6 +1694,12 @@ function renderInfo() {
     </div>
   </section>
   ${syncCardHtml()}
+  <section class="card">
+    <h2>🗺 地圖 App</h2>
+    <p class="muted">iPhone 撳地圖連結時用：${esc(MAP_APPS[localStorage.getItem('map-app')] || '每次問我')}</p>
+    <div class="row">${Object.entries(MAP_APPS).map(([k, v]) => `<button class="chip ${localStorage.getItem('map-app') === k ? 'dark' : ''}" data-act="map-app" data-id="${k}">${v}</button>`).join('')}
+      <button class="chip" data-act="map-app" data-id="">每次問我</button></div>
+  </section>
   <section class="card">
     <h2>💾 備份檔</h2>
     <p class="muted">冇設定 GitHub 同步嘅時候，可以用備份檔搬資料：「匯出備份」→ AirDrop／WhatsApp／電郵傳去另一部機 →「匯入備份」。</p>
@@ -1661,7 +1800,8 @@ function showTaxi(it) {
     body: `<div class="taxi">
       <p class="phrase-big" lang="ja">ここへ行ってください</p>
       <p class="muted">請帶我去呢度</p>
-      <div class="big" lang="ja">${esc(big)}</div>
+      <div class="big" lang="ja">${rubyHtml(big)}</div>
+      ${romajiOf(big) ? `<p class="muted">${esc(romajiOf(big))}</p>` : ''}
       ${!isT && it.address ? `<div class="addr" lang="ja">${esc(it.address)}</div>` : ''}
       <div class="row center">
         <button type="button" class="btn dark" data-act="speak" data-text="${esc(`${big}までお願いします`)}">${icon('sound')}讀出</button>
@@ -1753,16 +1893,31 @@ const actions = {
   'pic-hide': (id, el) => setPicHidden(id, el.dataset.key, true),
   'pic-unhide': (id, el) => setPicHidden(id, el.dataset.key, false),
   'pic-del': (id, el) => deletePic(id, el.dataset.key),
+  'pic-undelete': id => { commit(() => { delete findItem(id).item.picDeleted; }, '已還原預設相'); hydratePics($('#modal')); },
   'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')).then(() => $('#modal .pics.big')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); },
-  'gh-save': () => {
-    const v = s => ($(s)?.value || '').trim();
-    const c = { ...ghCfg(), token: v('#ghToken'), owner: v('#ghOwner') || GH_DEF.owner, repo: v('#ghRepo') || GH_DEF.repo, branch: v('#ghBranch') || GH_DEF.branch };
-    localStorage.setItem('gh-cfg', JSON.stringify(c));
-    syncStatus('同步緊…');
-    pullSync({ quiet: false }).then(() => { if (ui.tab === 'info' && !$('#modal').open) render(); });
+  'map-app': id => { if (id) localStorage.setItem('map-app', id); else localStorage.removeItem('map-app'); render(); },
+  'phr-mode': () => { ui.phrEdit = !ui.phrEdit; render(); },
+  'phr-add': (_, el) => phraseForm(el.dataset.g),
+  'phr-edit': (id, el) => phraseForm(el.dataset.g, id),
+  'phr-del': (id, el) => { if (!confirm('刪除呢句？')) return; commit(() => { const g = trip.phrases.find(x => x.id === el.dataset.g); g.items = g.items.filter(x => x.id !== id); }, '已刪除'); },
+  'phr-cat': (_, el) => { const g = trip.phrases.find(x => x.id === el.dataset.g); const n = prompt('分類名稱', g.cat); if (n && n.trim()) commit(() => { trip.phrases.find(x => x.id === el.dataset.g).cat = n.trim(); }); },
+  'phr-cat-del': (_, el) => { const g = trip.phrases.find(x => x.id === el.dataset.g); if (!confirm(`刪除「${g.cat}」分類同入面 ${g.items.length} 句？`)) return; commit(() => { trip.phrases = trip.phrases.filter(x => x.id !== el.dataset.g); }, '已刪除'); },
+  'phr-cat-add': () => { const n = prompt('新分類名稱（例如：購物）'); if (n && n.trim()) commit(() => { trip.phrases.push({ id: 'g' + uid(), cat: n.trim(), items: [] }); }, '已加分類'); },
+  'srv-save': async () => {
+    const key = ($('#srvKey')?.value || '').trim(), url = ($('#srvUrl')?.value || '').trim().replace(/\/+$/, '');
+    if (key) localStorage.setItem('srv-key', key); else localStorage.removeItem('srv-key');
+    if (url && url !== srvBase()) localStorage.setItem('srv-url', url);
+    syncStatus('檢查緊…');
+    try {
+      const p = await (await srvReq('/api/ping')).json();
+      if (key && !p.edit) return syncStatus('✗ 密碼唔啱');
+    } catch { return syncStatus('✗ 連唔到伺服器：' + srvBase()); }
+    await pullSync({ quiet: false });
+    if (isDirty()) await pushSync();
+    if (ui.tab === 'info' && !$('#modal').open) render();
   },
-  'gh-now': () => { syncStatus('同步緊…'); (isDirty() && ghOn() ? pushSync() : pullSync({ quiet: false })); },
-  'gh-forget': () => { if (!confirm('喺呢部機移除 GitHub Token？')) return; const c = ghCfg(); delete c.token; localStorage.setItem('gh-cfg', JSON.stringify({ owner: c.owner, repo: c.repo, branch: c.branch })); localStorage.removeItem('gh-status'); render(); },
+  'srv-now': () => { syncStatus('同步緊…'); (isDirty() && ghOn() ? pushSync() : pullSync({ quiet: false })); },
+  'srv-forget': () => { if (!confirm('喺呢部機移除同步密碼？')) return; localStorage.removeItem('srv-key'); localStorage.removeItem('srv-status'); render(); },
   copy: (_, el) => navigator.clipboard?.writeText(el.dataset.val).then(() => toast('已複製'), () => toast('複製唔到')),
   prefetch: () => { toast('下載緊相片…'); prefetchAll().then(() => toast('相片已存好，離線可睇')); },
   'offline-all': () => downloadOffline(),
@@ -1786,7 +1941,14 @@ const actions = {
 document.addEventListener('click', e => {
   // 資料入面嘅連結照常打開；改緊嘅輸入框唔理
   const link = e.target.closest('a[href]');
-  if (link && !link.dataset.act) return;
+  if (link && !link.dataset.act) {
+    if (isGmaps(link.href) && isIOS()) {
+      e.preventDefault();
+      const app = localStorage.getItem('map-app');
+      if (app) openMap(link.href, app); else chooseMapApp(link.href);
+    }
+    return;
+  }
   if (e.target.closest('.ef.editing textarea, .ef.editing .hint')) return;
   const el = e.target.closest('[data-act]');
   if (!el || !actions[el.dataset.act]) return;
@@ -1831,7 +1993,7 @@ function updateNet() {
 }
 window.addEventListener('online', () => { updateNet(); prefetchAll().then(() => { if (!$('#modal').open) render(); }); });
 window.addEventListener('offline', updateNet);
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 setInterval(() => { if (ui.tab === 'plan' && !$('#modal').open) render(); }, 60_000);
 
 /* ---------- boot ---------- */
@@ -1850,6 +2012,7 @@ if ((trip.seedVersion || 0) < SEED.seedVersion) {
   }));
   if (changed) save();
 })();
+ensurePhrases();
 $('#tripName').textContent = trip.name || '東京';
 save();
 updateNet();
@@ -1861,7 +2024,7 @@ if (!localStorage.getItem('trip-tiles-cleaned')) {
     .then(() => localStorage.setItem('trip-tiles-cleaned', '1')).catch(() => {});
 }
 window.addEventListener('online', loadWeather);
-// GitHub 同步：開 App、返回 App、重新上網都會攞最新
+// 雲端同步：開 App、返回 App、重新上網都會攞最新
 let lastPull = 0;
 const autoPull = () => { if (Date.now() - lastPull < 60_000) return; lastPull = Date.now(); pullSync(); };
 autoPull();
