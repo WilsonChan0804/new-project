@@ -1157,6 +1157,17 @@ async function pullSync({ quiet = true } = {}) {
   if (!r.ok) { if (!quiet) syncStatus('伺服器回應 ' + r.status); return; }
   const d = await r.json();
   if (!d?.trip?.days) return;
+  // 冇密碼（淨係睇）嘅裝置：永遠用伺服器最新版本，唔理本機改過乜（例如誤撳「還原」）
+  if (!ghOn()) {
+    localStorage.removeItem('srv-dirty');
+    if (JSON.stringify(trip) !== JSON.stringify(d.trip)) {
+      adoptRemote(d);
+      syncStatus(`✓ 已載入最新內容（${hhmm()}）`);
+      if (!quiet) toast('已載入最新行程');
+    } else localStorage.setItem('srv-rev', d.rev);
+    if (!quiet) syncStatus(`✓ 已經係最新（${hhmm()}）`);
+    return;
+  }
   if (d.rev === getRev()) {
     if (isDirty() && ghOn()) pushSync(); else if (!quiet) syncStatus(`✓ 已經係最新（${hhmm()}）`);
     return;
@@ -1226,10 +1237,9 @@ function handleConflict(cur) {
   }
 }
 function schedulePush() {
-  localStorage.setItem('srv-dirty', '1');
   clearTimeout(sync.timer);
-  if (ghOn()) { syncStatus('有未上傳嘅修改…'); sync.timer = setTimeout(pushSync, 2000); }
-  else if (!sync.warned) { sync.warned = true; syncStatus('修改只存喺呢部機：去「資訊 → ☁️ 雲端同步」輸入密碼'); setTimeout(() => toast('修改未上雲端：去「資訊」輸入同步密碼'), 2600); }
+  if (ghOn()) { localStorage.setItem('srv-dirty', '1'); syncStatus('有未上傳嘅修改…'); sync.timer = setTimeout(pushSync, 2000); }
+  else if (!sync.warned) { sync.warned = true; syncStatus('冇輸入密碼：修改只係暫時，下次打開會變返雲端最新版本'); setTimeout(() => toast('冇密碼：修改唔會儲存，下次打開會變返最新版本'), 2600); }
 }
 function syncCardHtml() {
   return `<section class="card" id="sync">
@@ -1244,6 +1254,7 @@ function syncCardHtml() {
     <div class="row">
       <button class="chip dark" data-act="srv-save">儲存並同步</button>
       <button class="chip" data-act="srv-now">而家同步</button>
+      <button class="chip" data-act="srv-reload">↻ 載入雲端最新版本</button>
       ${srvKey() ? '<button class="chip danger" data-act="srv-forget">喺呢部機移除密碼</button>' : ''}
     </div>
   </section>`;
@@ -1989,6 +2000,20 @@ const actions = {
     if (ui.tab === 'info' && !$('#modal').open) render();
   },
   'srv-now': () => { syncStatus('同步緊…'); (isDirty() && ghOn() ? pushSync() : pullSync({ quiet: false })); },
+  'srv-reload': async () => {
+    if (ghOn() && isDirty() && !confirm('呢部機有未上傳嘅修改，載入雲端版本會蓋走佢哋。繼續？')) return;
+    localStorage.removeItem('srv-dirty');
+    localStorage.setItem('srv-rev', '-1');
+    syncStatus('載入緊…');
+    try {
+      const r = await srvReq('/api/trip');
+      if (!r.ok) throw new Error('伺服器回應 ' + r.status);
+      adoptRemote(await r.json());
+      syncStatus(`✓ 已載入雲端最新版本（${hhmm()}）`);
+      toast('已載入最新行程');
+      render();
+    } catch (e) { syncStatus('載入唔到：' + e.message); }
+  },
   'srv-forget': () => { if (!confirm('喺呢部機移除同步密碼？')) return; localStorage.removeItem('srv-key'); localStorage.removeItem('srv-status'); render(); },
   copy: (_, el) => navigator.clipboard?.writeText(el.dataset.val).then(() => toast('已複製'), () => toast('複製唔到')),
   prefetch: () => { toast('下載緊相片…'); prefetchAll().then(() => toast('相片已存好，離線可睇')); },
