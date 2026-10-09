@@ -3136,12 +3136,27 @@ const DISP_KEY = "lwk-viewer:display";
 function readDisplay() {
   let d = {};
   try { d = JSON.parse(localStorage.getItem(DISP_KEY) || "{}"); } catch (e) {}
-  return { bg: d.bg || BG_SWATCHES[0], groundOn: d.groundOn !== false,
+  return { bg: d.bg || defaultBg(), groundOn: d.groundOn !== false,
            ground: d.ground || GROUND_SWATCHES[0], gridOn: d.gridOn !== false };
 }
+/* The background nobody chose follows the theme: light grey, or dark grey
+   in dark mode. A colour picked in the Display section stays. */
+const defaultBg = () => (document.documentElement.dataset.theme === "dark" ? BG_SWATCHES[4] : BG_SWATCHES[0]);
 function saveDisplay() {
-  try { localStorage.setItem(DISP_KEY, JSON.stringify(S.disp)); } catch (e) {}
+  const d = { ...S.disp };
+  if (d.bg === defaultBg()) delete d.bg;
+  try { localStorage.setItem(DISP_KEY, JSON.stringify(d)); } catch (e) {}
 }
+addEventListener("lwk-theme", () => {
+  if (!S.disp || !S.scene) return;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(DISP_KEY) || "{}"); } catch (e) {}
+  if (saved.bg) return;
+  S.disp.bg = defaultBg();
+  const el = document.getElementById("bg-color");
+  if (el) el.value = S.disp.bg;
+  applyBackground();
+});
 
 function groundY() {
   // The bottom of the model, so nothing hangs below the ground.

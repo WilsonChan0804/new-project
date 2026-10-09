@@ -26,6 +26,7 @@
 .asec-phone { --c: #64748b; --t: #f8fafc; }
 .asec-danger { --c: #dc2626; --t: #fff5f5; }
 .asec .table-wrap { background: var(--panel); border-radius: 8px; }
+:root[data-theme="dark"] .asec { --t: color-mix(in srgb, var(--c) 9%, var(--panel)); }
 /* adding people: search, filters, tick several */
 .addp-top { display: flex; gap: 6px; flex-wrap: wrap; }
 .addp-top input { flex: 1 1 220px; min-width: 160px; }
@@ -39,6 +40,9 @@
 #admin .addp-row .who b { font-weight: 600; }
 .addp-row:hover { background: #f5f8ff; }
 .addp-row.on { background: #eaf2ff; }
+:root[data-theme="dark"] .addp-row:hover { background: var(--panel-2); }
+:root[data-theme="dark"] .addp-row.on { background: #1c2a40; }
+:root[data-theme="dark"] .proj-list li .sub .nm { color: #f0b04d; }
 .addp-row .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .addp-row .who small { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .addp-empty { padding: 12px; font-size: 12px; color: var(--muted); }

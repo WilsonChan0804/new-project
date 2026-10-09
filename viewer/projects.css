@@ -14,17 +14,17 @@ table.pj .num { text-align: right; font-variant-numeric: tabular-nums; }
 .pj-vl { display: inline-flex; gap: 4px; }
 .pj-vl a { font-size: 11px; font-weight: 700; text-decoration: none; color: var(--accent-deep); border: 1px solid var(--accent); border-radius: 4px; padding: 0 5px; }
 .pj-vl a:hover { background: var(--accent-soft); }
-.pj-st { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #eef1f5; color: var(--ink-2); }
+.pj-st { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--line-soft); color: var(--ink-2); }
 .pj-st.st-active { background: #e7f7f0; color: #0b7a55; }
 .pj-st.st-on-hold { background: #fdeccb; color: #93590b; }
 .pj-st.st-tender { background: #e0ecff; color: #1d4ed8; }
-.pj-st.st-completed, .pj-st.st-archived { background: #eef1f5; color: var(--muted); }
+.pj-st.st-completed, .pj-st.st-archived { background: var(--line-soft); color: var(--muted); }
 .pj-ratio { display: inline-flex; align-items: center; gap: 6px; }
 .prog.wide { width: 80px; height: 7px; }
 .prog.wide i { background: var(--info); }
 .pj-tasks { max-width: 260px; }
 .pj-chip { display: inline-block; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;
-  background: #eef1f5; border-radius: 4px; padding: 0 6px; margin-right: 4px; font-size: 12px; color: var(--ink); text-decoration: none; }
+  background: var(--line-soft); border-radius: 4px; padding: 0 6px; margin-right: 4px; font-size: 12px; color: var(--ink); text-decoration: none; }
 .pj-chip.bad { background: #fde2e1; color: #b42318; }
 .pj-more { font-size: 11px; color: var(--muted); }
 .pj-chat { text-decoration: none; font-size: 15px; }
@@ -100,3 +100,10 @@ h4 .pd-edit { float: right; }
 table.pj th.pj-sort { cursor: pointer; user-select: none; white-space: nowrap; }
 table.pj th.pj-sort:hover { color: var(--ink); }
 table.pj th.pj-sort.on { color: var(--accent-ink); }
+
+/* Dark mode: tinted chips and notes above, the same hue on a dark ground,
+   and their dark text made light (theme.js; style.css :root[data-theme]). */
+:root[data-theme="dark"] .pj-st.st-active { background: #163b2b; color: #7ef1cb; }
+:root[data-theme="dark"] .pj-st.st-on-hold { background: #4a3a1c; color: #f1c07e; }
+:root[data-theme="dark"] .pj-st.st-tender { background: #16253b; }
+:root[data-theme="dark"] .pj-chip.bad { background: #3b1816; color: #ee8981; }

@@ -346,3 +346,13 @@ b.mention.me { background: #ede9fe; color: #6d28d9; border-radius: 3px; padding:
   .cb-b { width: 30px; }
   #c-linkbtn { display: none; }      /* also in + and by typing # ! $ % */
 }
+
+/* Dark mode: tinted chips and notes above, the same hue on a dark ground,
+   and their dark text made light (theme.js; style.css :root[data-theme]). */
+:root[data-theme="dark"] b.mention.me { background: #1d163b; }
+:root[data-theme="dark"] .c-fwd-body:not(:empty) { border-left: 3px solid #313e72; }
+:root[data-theme="dark"] .fw-prev { border-left: 3px solid #313e72; }
+:root[data-theme="dark"] .wa-l { background: #163b22; }
+:root[data-theme="dark"] .wa-n b { color: #80efe2; }
+:root[data-theme="dark"] .c-msg.lit { background: #4a411c; }
+:root[data-theme="dark"] .c-card.event.past:not(.cancelled) { border-left-color: #317249; }

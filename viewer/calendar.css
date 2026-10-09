@@ -23,8 +23,8 @@
 .cm-h span { padding: 6px 8px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
 .cm-g { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(104px, 1fr); }
 .cm-d { border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); padding: 4px 4px 6px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.cm-d.we { background: #fafbfc; }
-.cm-d.out { background: #f6f7f9; }
+.cm-d.we { background: var(--panel-2); }
+.cm-d.out { background: var(--panel-2); }
 .cm-d.out .cm-n { color: #b8c0ca; }
 .cm-n { font-size: 12px; font-weight: 700; color: var(--ink-2); align-self: flex-start; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
 .cm-d.today .cm-n { background: var(--accent); color: #fff; }
@@ -78,3 +78,16 @@
   #cal-outlook { padding: 4px 10px; font-size: 12px; }
   #cal-side { top: auto; bottom: 8px; right: 8px; left: 8px; width: auto; }
 }
+
+/* Dark mode: tinted chips and notes above, the same hue on a dark ground,
+   and their dark text made light (theme.js; style.css :root[data-theme]). */
+:root[data-theme="dark"] .ck.meeting { color: #84ebab; }
+:root[data-theme="dark"] .ck.task { color: #f1a07e; }
+:root[data-theme="dark"] .ck.issue { color: #ec8383; }
+:root[data-theme="dark"] .ce.meeting { background: #163b26; }
+:root[data-theme="dark"] .ce.meeting .ce-i { color: #84ebab; }
+:root[data-theme="dark"] .ce.task { background: #3b2816; }
+:root[data-theme="dark"] .ce.task .ce-i { color: #f1a07e; }
+:root[data-theme="dark"] .ce.issue { background: #3b1616; }
+:root[data-theme="dark"] .ce.issue .ce-i { color: #ec8383; }
+:root[data-theme="dark"] .ce.meeting.r-maybe { background: repeating-linear-gradient(135deg, #163b26, #163b26 6px, #1b3329 6px, #1b3329 12px); }

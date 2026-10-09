@@ -7,7 +7,7 @@ body.dash-page, body.admin-page { overflow: auto; height: auto; min-height: 100%
 .seg { display: inline-flex; border: 1px solid rgba(255,255,255,.45); border-radius: 8px; overflow: hidden; margin-right: 10px; }
 .seg-btn { color: #fff; text-decoration: none; padding: 5px 12px; font-size: 13px; font-weight: 600; }
 .seg-btn:hover { background: rgba(255,255,255,.15); }
-.seg-btn.on { background: #fff; color: var(--accent-deep); }
+.seg-btn.on { background: var(--panel); color: var(--accent-deep); }
 header select#d-project, header select#a-project { max-width: 320px; }
 
 #dash, #admin { max-width: 1400px; margin: 0 auto; padding: 14px 16px 40px; }
@@ -98,11 +98,11 @@ table.list td a:hover { color: var(--accent-deep); text-decoration: underline; }
 .form-row label.check input { min-width: 0; width: auto; }
 .pill { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); }
 .pill.admin { background: var(--accent-soft); border-color: #f6c79c; color: var(--accent-ink); }
-.pill.off { background: #f3f4f6; color: var(--muted); }
+.pill.off { background: var(--panel-2); color: var(--muted); }
 .notice { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: var(--radius); padding: 10px 12px; font-size: 12px; margin: 8px 0 12px; }
 .notice.ok { background: #ecfdf5; border-color: #a7f3d0; }
 .notice.bad { background: #fff5f4; border-color: #fecaca; }
-.notice code { font-size: 14px; font-weight: 700; background: #fff; padding: 2px 6px; border-radius: 4px; user-select: all; }
+.notice code { font-size: 14px; font-weight: 700; background: var(--panel); padding: 2px 6px; border-radius: 4px; user-select: all; }
 .proj-list li { cursor: pointer; padding: 8px 10px; border-radius: 6px; display: flex; justify-content: space-between; gap: 8px; }
 .proj-list { list-style: none; margin: 0; padding: 0; }
 .proj-list li:hover { background: var(--panel-2); }
@@ -118,7 +118,7 @@ td button { font-size: 11px; padding: 2px 8px; }
 .invite-actions .muted { font-size: 11px; }
 .inv-preview { margin-top: 8px; font-size: 12px; }
 .inv-preview summary { cursor: pointer; color: var(--accent-deep); }
-.inv-preview pre { white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 6px;
+.inv-preview pre { white-space: pre-wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
   padding: 10px; font: 12px/1.5 system-ui, sans-serif; max-height: 320px; overflow: auto; user-select: text; }
 button.danger { color: var(--bad); }
 
@@ -131,7 +131,7 @@ body.dash-page, body.admin-page { height: auto !important; overflow: visible !im
 body.dash-page { background: linear-gradient(180deg, #eef3fb 0, #f6f4fb 380px, var(--bg) 900px); }
 
 .kpi { position: relative; overflow: hidden; border: 1px solid color-mix(in srgb, var(--c) 22%, var(--line));
-  border-top: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--c) 13%, #fff) 0%, #fff 70%);
+  border-top: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--c) 13%, var(--panel)) 0%, var(--panel) 70%);
   padding: 12px 12px 10px; box-shadow: 0 1px 2px rgba(20,26,36,.05); }
 .kpi::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: var(--c); }
 .kpi .ic { position: absolute; right: 10px; top: 10px; width: 24px; height: 24px; border-radius: 50%;
@@ -139,8 +139,8 @@ body.dash-page { background: linear-gradient(180deg, #eef3fb 0, #f6f4fb 380px, v
   opacity: .9; }
 .kpi b { font-size: 26px; }
 .kpi .lab { font-size: 11px; color: var(--ink-2); font-weight: 600; }
-.kpi.bad { background: linear-gradient(140deg, #ffe4e1 0%, #fff 75%); }
-.kpi.warn { background: linear-gradient(140deg, #fff1d6 0%, #fff 75%); }
+.kpi.bad { background: linear-gradient(140deg, #ffe4e1 0%, var(--panel) 75%); }
+.kpi.warn { background: linear-gradient(140deg, #fff1d6 0%, var(--panel) 75%); }
 
 #dash .card { box-shadow: 0 1px 2px rgba(20,26,36,.05), 0 6px 18px rgba(20,26,36,.05); border-radius: 10px;
   position: relative; overflow: hidden; }
@@ -156,7 +156,7 @@ body.dash-page { background: linear-gradient(180deg, #eef3fb 0, #f6f4fb 380px, v
 #dash .grid.two > .card:nth-child(4) { --card-c: #e87ba4; }
 #dash .card.full { --card-c: #1baf7a; }
 #dash .card h3 { font-size: 14px; }
-.hbar .track { height: 14px; border-radius: 7px; background: #eef1f6; }
+.hbar .track { height: 14px; border-radius: 7px; background: var(--line-soft); }
 .hbar .track i { border-radius: 7px; }
 
 /* the weekly chart */
@@ -164,15 +164,15 @@ body.dash-page { background: linear-gradient(180deg, #eef3fb 0, #f6f4fb 380px, v
 .trend-wrap { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(170px, 1fr); gap: 18px; align-items: stretch; }
 .trend-plot { width: 100%; min-width: 0; }
 svg.trend { width: auto; height: auto; display: block; overflow: visible; }
-svg.trend .gl { stroke: #e7ebf1; stroke-dasharray: 3 4; }
-svg.trend .base { stroke: #c9d0da; }
+svg.trend .gl { stroke: var(--line); stroke-dasharray: 3 4; }
+svg.trend .base { stroke: var(--line-2); }
 svg.trend .ax { font: 11px system-ui, sans-serif; fill: var(--muted); }
 svg.trend .ax.now { fill: var(--ink); font-weight: 600; }
 svg.trend .val { font: 600 11px system-ui, sans-serif; fill: var(--ink-2); }
 svg.trend .band { fill: transparent; cursor: pointer; }
 svg.trend .band.on { fill: rgba(42,120,214,.07); }
 .trend-side { display: flex; flex-direction: column; justify-content: space-between; gap: 6px;
-  background: linear-gradient(160deg, #fff3ec, #fff 70%); border: 1px solid #fbd9c8; border-radius: 10px; padding: 10px 12px; }
+  background: linear-gradient(160deg, #fff3ec, var(--panel) 70%); border: 1px solid #fbd9c8; border-radius: 10px; padding: 10px 12px; }
 .hero { display: flex; flex-direction: column; }
 .hero b { font-size: 34px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
 .hero span { font-size: 12px; color: var(--ink-2); font-weight: 600; margin-top: 2px; }
@@ -180,7 +180,7 @@ svg.trend .band.on { fill: rgba(42,120,214,.07); }
 .hero small.up { color: #b42318; } .hero small.down { color: #067647; }
 .legend { gap: 16px; font-size: 12px; color: var(--ink-2); margin-top: 6px; }
 .legend i { width: 12px; height: 12px; border-radius: 3px; }
-.viz-tip { position: absolute; z-index: 5; pointer-events: none; background: #fff; border: 1px solid var(--line);
+.viz-tip { position: absolute; z-index: 5; pointer-events: none; background: var(--panel); border: 1px solid var(--line);
   border-radius: 8px; box-shadow: 0 6px 20px rgba(20,26,36,.14); padding: 8px 10px; font-size: 12px; min-width: 170px; }
 .viz-tip div { display: flex; align-items: center; gap: 6px; margin-top: 3px; color: var(--ink-2); }
 .viz-tip div b { margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -229,7 +229,7 @@ svg.trend .band.on { fill: rgba(42,120,214,.07); }
 .dev-tile .bad, tr.bad-row td { color: var(--bad, #c0392b); }
 #d-table tr[data-i] { cursor: pointer; }
 #d-table .sub { color: var(--muted, #888); font-size: 11px; }
-.dev-detail { max-height: 360px; overflow: auto; font-size: 11px; background: #f7f7f7; padding: 8px; border-radius: 6px; }
+.dev-detail { max-height: 360px; overflow: auto; font-size: 11px; background: var(--panel-2); padding: 8px; border-radius: 6px; }
 
 /* Team and discipline, edited in the members table */
 #a-members input.cell-team, #a-members input.cell-disc { width: 120px; font-size: 12px; padding: 3px 6px; }
@@ -246,6 +246,22 @@ th.sorted { color: var(--accent-deep, #c2570c); }
 /* how the project is published */
 .exp-table td { vertical-align: top; font-size: 12px; }
 .exp-table .sub { font-size: 11px; color: var(--muted, #6b7280); }
-.exp-log { max-height: 260px; overflow: auto; font-size: 11px; background: #f6f7f9; padding: 8px; border-radius: 6px; white-space: pre-wrap; }
+.exp-log { max-height: 260px; overflow: auto; font-size: 11px; background: var(--panel-2); padding: 8px; border-radius: 6px; white-space: pre-wrap; }
 .pill.ok { background: #dcfce7; color: #166534; }
 .pill.bad { background: #fee2e2; color: #991b1b; }
+
+/* Dark mode: tinted chips and notes above, the same hue on a dark ground,
+   and their dark text made light (theme.js; style.css :root[data-theme]). */
+:root[data-theme="dark"] td.warn { color: #eac185; }
+:root[data-theme="dark"] .pill.admin { border-color: #725031; }
+:root[data-theme="dark"] .notice { background: #162c3b; border: 1px solid #315c72; }
+:root[data-theme="dark"] .notice.ok { background: #163b2a; border-color: #317254; }
+:root[data-theme="dark"] .notice.bad { background: #3b1a16; border-color: #723131; }
+:root[data-theme="dark"] .hero small.up { color: #ee8981; }
+:root[data-theme="dark"] .hero small.down { color: #7ef1c1; }
+:root[data-theme="dark"] .pill.ok { background: #163b23; color: #8ae5ad; }
+:root[data-theme="dark"] .pill.bad { background: #3b1616; color: #ea8686; }
+:root[data-theme="dark"] body.dash-page { background: var(--bg); }
+:root[data-theme="dark"] .kpi.bad { background: linear-gradient(140deg, #3b1a17 0%, var(--panel) 75%); }
+:root[data-theme="dark"] .kpi.warn { background: linear-gradient(140deg, #3b2e16 0%, var(--panel) 75%); }
+:root[data-theme="dark"] .trend-side { background: linear-gradient(160deg, #33231a, var(--panel) 70%); border-color: #5a3a2a; }
