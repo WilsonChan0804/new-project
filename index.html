@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>東京 4 日</title>
   <meta name="description" content="東京 10/29–11/1 行程：離線可用">
-  <meta name="theme-color" content="#EFEEEA" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0E0E0D" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#EEF4E4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0F150D" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="東京">
@@ -17,10 +17,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="kappa.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="logo"></span><span id="tripName">東京</span></div>
+    <div class="brand"><button type="button" class="kp-btn" data-act="kappa" aria-label="叫河童仔出嚟" title="叫河童仔出嚟"><svg viewBox="18 14 164 134" aria-hidden="true"><g stroke="#3B1E0E" stroke-width="5" stroke-linejoin="round"><path d="M28 98 C28 54 60 36 100 36 C140 36 172 54 172 98 C172 130 142 144 100 144 C58 144 28 130 28 98 Z" fill="#6DB84B"/><g fill="#2E7D32"><path d="M66 44 L42 16 L80 38 Z"/><path d="M134 44 L158 16 L120 38 Z"/><path d="M66 42 L16 50 L66 60 Z"/><path d="M134 42 L184 50 L134 60 Z"/><path d="M68 48 L76 72 L92 50 Z"/><path d="M90 50 L100 74 L110 50 Z"/><path d="M108 50 L124 72 L132 48 Z"/></g><ellipse cx="100" cy="40" rx="40" ry="14" fill="#FFF4A6"/><path d="M68 112 L100 97 L132 112 L100 127 Z M68 112 H132" fill="#FFF4A6"/></g><circle cx="70" cy="90" r="7" fill="#3B1E0E"/><circle cx="130" cy="90" r="7" fill="#3B1E0E"/><ellipse cx="86" cy="35" rx="7" ry="3.5" fill="#fff"/></svg></button><span id="tripName">東京</span></div>
     <span id="netStatus" class="pill"></span>
     <button class="icon-btn" data-act="undo" title="還原上一步" aria-label="還原">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>
@@ -44,6 +45,7 @@
 
   <script src="trip-data.js"></script>
   <script src="readings.js"></script>
+  <script src="kappa.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -182,13 +182,29 @@ function linksFor(it, prevLoc) {
 
 /* ---------- 讀音（Web Speech，用手機內置日文聲） ---------- */
 function speak(text, lang = 'ja-JP') {
-  if (!('speechSynthesis' in window)) return toast('呢部機唔支援讀音');
+  const clean = text.replace(/[（(].*?[）)]/g, '').trim();
+  // 河童仔跟住讀音開合個嘴
+  const ph = (trip.phrases || []).flatMap(g => g.items).find(p => p.ja === text) || {};
+  const rd = readingOf(clean);
+  const kana = ph.kana || (ph.ruby || rd?.ruby || []).map(([t, r]) => r || t).join('') || rd?.kana || clean;
+  const talk = window.Kappa ? Kappa.say(clean, kana, rubyHtml(clean, ph), esc(romajiOf(clean, ph))) : null;
+  if (!('speechSynthesis' in window)) {
+    toast('呢部機唔支援讀音');
+    talk?.fail();
+    return;
+  }
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/[（(].*?[）)]/g, ''));
+  const u = new SpeechSynthesisUtterance(clean);
   u.lang = lang;
   u.rate = 0.85;
   const v = speechSynthesis.getVoices().find(v => v.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2)));
   if (v) u.voice = v;
+  if (talk) {
+    u.onstart = talk.start;
+    u.onend = talk.end;
+    u.onerror = e => (e.error === 'interrupted' || e.error === 'canceled' ? null : talk.fail());
+    u.onboundary = e => talk.boundary(e.charIndex / Math.max(1, clean.length));
+  }
   speechSynthesis.speak(u);
 }
 if ('speechSynthesis' in window) speechSynthesis.getVoices();
@@ -1895,6 +1911,7 @@ const actions = {
   'pic-del': (id, el) => deletePic(id, el.dataset.key),
   'pic-undelete': id => { commit(() => { delete findItem(id).item.picDeleted; }, '已還原預設相'); hydratePics($('#modal')); },
   'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')).then(() => $('#modal .pics.big')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); },
+  kappa: () => window.Kappa?.play(),
   'map-app': id => { if (id) localStorage.setItem('map-app', id); else localStorage.removeItem('map-app'); render(); },
   'phr-mode': () => { ui.phrEdit = !ui.phrEdit; render(); },
   'phr-add': (_, el) => phraseForm(el.dataset.g),

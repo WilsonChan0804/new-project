@@ -1,18 +1,18 @@
 /* =========================================================
-   簡潔、大字、圓角卡片、單一螢光綠點綴
+   簡潔、大字、圓角卡片；顏色跟河童仔：河童綠、碟仔奶油黃、啡色線條
    ========================================================= */
 :root {
-  --bg: #EFEEEA;
+  --bg: #EEF4E4;
   --surface: #FFFFFF;
-  --surface-2: #F5F4F0;
-  --ink: #121212;
-  --ink-2: #3A3936;
-  --muted: #77746D;
-  --line: #E3E1DB;
-  --accent: #D7F46A;
-  --accent-ink: #121212;
-  --dark: #161616;
-  --dark-ink: #F4F3EF;
+  --surface-2: #F4F8EC;
+  --ink: #2A1C10;
+  --ink-2: #4A3A2A;
+  --muted: #7B7864;
+  --line: #DCE6CC;
+  --accent: #A3DC72;
+  --accent-ink: #1E3A10;
+  --dark: #2F6B2A;
+  --dark-ink: #FFF8C8;
   --warn: #B4540A;
   --warn-soft: #FCEBD6;
   --danger: #C2321F;
@@ -22,16 +22,16 @@
   --t-hotel: #8F6BF0; --t-food: #F0643C; --t-sight: #2FA866; --t-shop: #DB5AA4; --t-other: #8A8780;
 
   --r-xl: 26px; --r-lg: 20px; --r: 14px;
-  --shadow: 0 1px 0 rgba(0,0,0,.02), 0 8px 24px -14px rgba(20,20,20,.18);
+  --shadow: 0 1px 0 rgba(0,0,0,.02), 0 8px 24px -14px rgba(40,70,20,.22);
   --font: "Manrope", "PingFang HK", "PingFang TC", "Noto Sans HK", "Noto Sans CJK TC", "Microsoft JhengHei", system-ui, sans-serif;
   --font-ja: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", var(--font);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0E0E0D; --surface: #1A1A19; --surface-2: #232321;
-    --ink: #F2F1EC; --ink-2: #D2D0C9; --muted: #9C998F; --line: #2D2C29;
-    --dark: #F2F1EC; --dark-ink: #121212;
+    --bg: #0F150D; --surface: #182116; --surface-2: #1F2A1C;
+    --ink: #EEF3E6; --ink-2: #CFD8C4; --muted: #96A08A; --line: #2C3A27;
+    --dark: #BFE59A; --dark-ink: #142410;
     --warn: #F2A44B; --warn-soft: #3A2A14; --danger: #FF7B6B;
     --shadow: none;
     color-scheme: dark;
