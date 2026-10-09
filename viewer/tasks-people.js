@@ -1,7 +1,7 @@
 /* People: the organisation (the accounts on this server), by team or
  * office, with what each person holds across every task list you can see. */
 
-import { esc, avatar, isOverdue, fmtDate } from "./tasks-util.js";
+import { esc, avatar, isOverdue, fmtDate, skeleton } from "./tasks-util.js";
 
 export async function render(T, el) {
   const S = T.S;
@@ -11,7 +11,7 @@ export async function render(T, el) {
     return;
   }
   if (!S.allTasks) {
-    el.innerHTML = `<p class="muted" style="padding:20px">Loading ...</p>`;
+    el.innerHTML = skeleton(6);
     try { S.allTasks = (await T.api("/api/tasks-mine?view=all")).tasks; } catch (e) { S.allTasks = []; }
     setTimeout(() => { S.allTasks = null; }, 60000);   // fresh again next time after a minute
   }

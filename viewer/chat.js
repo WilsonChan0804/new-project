@@ -24,7 +24,7 @@
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop, ic, pop } from "./tasks-util.js";
+import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop, ic, pop, skeleton } from "./tasks-util.js";
 import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 import { emojiPicker, QUICK } from "./emoji.js";
@@ -72,6 +72,7 @@ function forget(id) {
 /* ------------------------------------------------------------ loading */
 
 async function loadRooms() {
+  if (!$("#c-rooms").children.length) $("#c-rooms").innerHTML = skeleton(7, "Loading chats");
   const r = await api("/api/chat/rooms");
   C.rooms = r.rooms;
   C.joinable = r.joinable;
@@ -1359,7 +1360,7 @@ async function files() {
   if (!box.hidden && box.dataset.v === "f") { box.hidden = true; return; }
   box.hidden = false;
   box.dataset.v = "f";
-  box.innerHTML = `<p class="muted">Loading ...</p>`;
+  box.innerHTML = skeleton(4);
   const r = await api(`/api/chat/rooms/${C.room.id}/files`);
   box.innerHTML = `<div class="cp-h"><b>Files</b> <span class="muted">${r.files.length}</span><span class="spacer"></span><button class="ghost" data-x>&#10005;</button></div>`
     + (r.files.map((f) => `<div class="cp-f">${filesHtml([f])}<small class="muted">${esc(f.author)} · ${esc(ago(f.created_at))}</small></div>`).join("")

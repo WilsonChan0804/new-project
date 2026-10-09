@@ -8481,7 +8481,7 @@ function renderRefs() {
     const loaded = S.loaded.has(refKey(r));
     const on = r.status === "ready" && refPref(r, "on", r.on !== false);
     const st = r.status === "ready" ? "" : r.status === "failed"
-      ? `<div class="ref-bad">${r.stale ? `<b>Failed with an older converter - press Try again.</b> ` : ""}Not converted: ${escH(r.error || "")}${r.can_change && r.kind === "ifc" ? ` <button class="ghost ref-b" data-rf="retry">Try again</button>` : ""}</div>`
+      ? `<div class="ref-bad lwk-callout bad">${r.stale ? `<b>Failed with an older converter - press Try again.</b> ` : ""}Not converted: ${escH(r.error || "")}${r.can_change && r.kind === "ifc" ? ` <button class="ghost ref-b" data-rf="retry">Try again</button>` : ""}</div>`
       : `<div class="ref-prog"><i style="width:${r.progress || 0}%"></i></div><small class="muted">Converting on the server ... ${r.progress || 0}%</small>`;
     const what = [r.company, r.discipline, r.kind === "overlay" ? "from " + r.project : ""].filter(Boolean).join(" · ");
     h += `<div class="ref-row" data-ref="${escH(r.id)}">`

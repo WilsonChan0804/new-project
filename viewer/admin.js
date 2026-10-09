@@ -57,7 +57,7 @@ function memberDel(uid) {
 }
 
 function msg(html, kind) {
-  $("#a-msg").innerHTML = html ? `<div class="notice ${kind || ""}">${html}</div>` : "";
+  $("#a-msg").innerHTML = html ? `<div class="lwk-callout ${kind || "info"}">${html}</div>` : "";
   if (html) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 

@@ -13,7 +13,7 @@
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, modal, toast, ic, pop, closePop } from "./tasks-util.js";
+import { $, esc, modal, toast, ic, pop, closePop, skeleton } from "./tasks-util.js";
 import { taskForm } from "./chatcards.js";
 
 const K = {
@@ -49,7 +49,7 @@ async function load() {
   const [a, b] = range();
   K.from = iso(a);
   K.to = iso(b);
-  $("#cal-body").innerHTML = `<p class="muted cal-wait">Loading ...</p>`;
+  $("#cal-body").innerHTML = `<div class="cal-wait">${skeleton(6, "Loading the calendar")}</div>`;
   try {
     const r = await api(`/api/calendar?from=${K.from}&to=${K.to}`);
     K.entries = r.entries;

@@ -21,6 +21,7 @@ header select#d-project, header select#a-project { max-width: 320px; }
 .filters .spacer { flex: 1; }
 
 .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.kpis > .lwk-skel-wrap { grid-column: 1 / -1; }
 .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; border-top: 3px solid var(--line); }
 .kpi b { font-size: 24px; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -99,10 +100,8 @@ table.list td a:hover { color: var(--accent-deep); text-decoration: underline; }
 .pill { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); }
 .pill.admin { background: var(--accent-soft); border-color: #f6c79c; color: var(--accent-ink); }
 .pill.off { background: var(--panel-2); color: var(--muted); }
-.notice { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: var(--radius); padding: 10px 12px; font-size: 12px; margin: 8px 0 12px; }
-.notice.ok { background: #ecfdf5; border-color: #a7f3d0; }
-.notice.bad { background: #fff5f4; border-color: #fecaca; }
-.notice code { font-size: 14px; font-weight: 700; background: var(--panel); padding: 2px 6px; border-radius: 4px; user-select: all; }
+#a-msg .lwk-callout { margin: 8px 0 12px; font-size: 12px; }
+.lwk-callout code { font-size: 14px; font-weight: 700; background: var(--panel); padding: 2px 6px; border-radius: 4px; user-select: all; }
 .proj-list li { cursor: pointer; padding: 8px 10px; border-radius: 6px; display: flex; justify-content: space-between; gap: 8px; }
 .proj-list { list-style: none; margin: 0; padding: 0; }
 .proj-list li:hover { background: var(--panel-2); }
@@ -254,9 +253,6 @@ th.sorted { color: var(--accent-deep, #c2570c); }
    and their dark text made light (theme.js; style.css :root[data-theme]). */
 :root[data-theme="dark"] td.warn { color: #eac185; }
 :root[data-theme="dark"] .pill.admin { border-color: #725031; }
-:root[data-theme="dark"] .notice { background: #162c3b; border: 1px solid #315c72; }
-:root[data-theme="dark"] .notice.ok { background: #163b2a; border-color: #317254; }
-:root[data-theme="dark"] .notice.bad { background: #3b1a16; border-color: #723131; }
 :root[data-theme="dark"] .hero small.up { color: #ee8981; }
 :root[data-theme="dark"] .hero small.down { color: #7ef1c1; }
 :root[data-theme="dark"] .pill.ok { background: #163b23; color: #8ae5ad; }

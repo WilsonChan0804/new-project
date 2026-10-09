@@ -16,7 +16,7 @@
  */
 
 import { api, project } from "./nav.js";
-import { $, $$, esc, uid, today, isOverdue, PRI_RANK, avatar, modal, toast, pop, closePop, ago, fmtWhen } from "./tasks-util.js";
+import { $, $$, esc, uid, today, isOverdue, PRI_RANK, avatar, modal, toast, pop, closePop, ago, fmtWhen, skeleton } from "./tasks-util.js";
 import { makeLink } from "./filelinks.js";
 import * as ListView from "./tasks-list.js";
 import * as KanbanView from "./tasks-kanban.js";
@@ -448,7 +448,7 @@ async function loadQuick(view) {
   S.listId = "";
   setUrl();
   paintSide();
-  $("#t-view").innerHTML = `<p class="muted" style="padding:20px">Loading ...</p>`;
+  $("#t-view").innerHTML = skeleton(8);
   const r = await api("/api/tasks-mine?view=" + view);
   S.quickTasks = r.tasks;
   render();
@@ -541,7 +541,7 @@ function renderQuick(el) {
 }
 
 async function renderActivity(el, listId) {
-  el.innerHTML = `<p class="muted" style="padding:20px">Loading ...</p>`;
+  el.innerHTML = skeleton(8);
   const r = await api("/api/task-activity?limit=300" + (listId ? "&list=" + encodeURIComponent(listId) : ""));
   const names = Object.fromEntries(S.lists.map((l) => [l.id, l.title]));
   const say = (a) => {

@@ -37,6 +37,7 @@ const LWK_VERSION = "2026-10-03a";
 })();
 import { api, link, project, signOut, projectOptions, projectTwoStep } from "./nav.js";
 import { ISSUE_TYPES } from "./issuetypes.js";
+import { skeleton } from "./tasks-util.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? "" : s)
@@ -129,6 +130,7 @@ async function loadProjects() {
 
 async function loadData() {
   $("#d-msg").textContent = "Loading ...";
+  if (!$("#kpis").children.length) $("#kpis").innerHTML = skeleton(3, "Loading the dashboard");
   const [man, items, mem] = await Promise.all([
     fetch("/data/" + encodeURIComponent(project()) + "/manifest.json").then((r) => (r.ok ? r.json() : null)),
     api("/api/items?since=0"),

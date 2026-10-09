@@ -10,7 +10,7 @@
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, modal, toast, pop, closePop } from "./tasks-util.js";
+import { $, esc, modal, toast, pop, closePop, skeleton } from "./tasks-util.js";
 import * as Undo from "./undo.js";
 
 const F = {
@@ -91,6 +91,7 @@ async function openProject(reg, path) {
   lsSet("reg", reg);
   // the folders left open in the tree last time, in this project
   F.open = new Set([""].concat(lsGet("open:" + reg, [])));
+  $("#fo-list").innerHTML = skeleton(8, "Loading files");
   await Promise.all([loadTree(), loadQuick()]);
   await go(path || "");
 }
@@ -200,7 +201,7 @@ function paint() {
     $("#fo-up").disabled = $("#fo-newdir").disabled = F.mode === "folder" && F.locked;
     return;
   }
-  const note = F.mode === "folder" && F.locked ? `<div class="fo-locked">&#128274; ${esc(LOCKED)} The 3D models open on the 3D page.</div>` : "";
+  const note = F.mode === "folder" && F.locked ? `<div class="lwk-callout lock fo-locked">${esc(LOCKED)} The 3D models open on the 3D page.</div>` : "";
   $("#fo-up").disabled = $("#fo-newdir").disabled = F.mode === "folder" && F.locked;
   let h = note + `<div class="fo-head"><span></span><span>Name</span><span>${F.mode === "bin" ? "Deleted" : "Modified"}</span><span class="c-size">Size</span><span class="c-by">${F.mode === "bin" ? "Deleted by" : "Uploaded by"}</span><span></span></div>`;
   for (const e of F.items) {
@@ -519,7 +520,7 @@ async function showDoc(e, body) {
     await script(CDN.docx);
     body.innerHTML = `<div class="pv-doc"></div>`;
     await window.docx.renderAsync(buf, body.firstChild, null, { inWrapper: true, ignoreLastRenderedPageBreak: false });
-    body.insertAdjacentHTML("afterbegin", `<div class="pv-note">Simplified preview${!F.siteAdmin ? ""
+    body.insertAdjacentHTML("afterbegin", `<div class="pv-note lwk-callout">Simplified preview${!F.siteAdmin ? ""
       : F.officePreview ? " - the server could not convert it: " + esc(F.convertError || "")
       : " - for the exact look (and PowerPoint, .doc, .xls), install LibreOffice on the server: see the manual, Folders > Previews"}</div>`);
     const box = $("#fo-prev");

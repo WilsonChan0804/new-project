@@ -9,7 +9,7 @@
 
 import { api, keptCopy, keepCopy } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, people, avatar, fmtDate, toast, ic, pop, closePop, modal } from "./tasks-util.js";
+import { $, esc, people, avatar, fmtDate, toast, ic, pop, closePop, modal, skeleton } from "./tasks-util.js";
 
 /* What is kept about a project beyond its name (tasks.py INFO_KEYS), in order. */
 const INFO = [
@@ -184,7 +184,7 @@ async function openDetail(id) {
 
 function taskTree(p) {
   const groups = P.tree[p.id];
-  if (!groups) return `<p class="muted">Loading ...</p>`;
+  if (!groups) return skeleton(8, "Loading projects");
   if (!groups.length) return `<p class="muted td-none">No task list has a group for this project yet (Tasks &rarr; ... &rarr; Groups and projects).</p>`;
   const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
   const late = (t) => !t.done && t.due && t.due.slice(0, 10) < today;

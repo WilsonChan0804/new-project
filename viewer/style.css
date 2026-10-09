@@ -315,6 +315,7 @@ label.p select { width: auto; padding: 2px 4px; }
 .ref-b { font-size: 11px; padding: 2px 8px; }
 .ref-x { position: absolute; right: 4px; top: 4px; font-size: 15px; padding: 0 6px; }
 .ref-bad { color: var(--bad); font-size: 11px; margin-left: 23px; }
+div.ref-bad.lwk-callout { color: var(--ink-2); padding: 4px 8px; margin: 4px 0 4px 23px; }
 .ref-prog { height: 4px; background: var(--line); border-radius: 2px; margin: 4px 0 2px 23px; overflow: hidden; }
 .ref-prog i { display: block; height: 100%; background: var(--accent); }
 .ref-row > small.muted { margin-left: 23px; font-size: 11px; }

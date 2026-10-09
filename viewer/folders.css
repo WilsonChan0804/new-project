@@ -126,7 +126,7 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 #fo-prev .pv-doc { overflow: auto; background: var(--line-soft); }
 #fo-prev .pv-doc .docx-wrapper { padding: 10px 6px; background: transparent; align-items: center; }
 #fo-prev .pv-doc .docx-wrapper > section.docx { margin-bottom: 12px; flex: none; overflow: visible; }
-#fo-prev .pv-note { font-size: 11px; color: var(--muted); padding: 4px 10px; background: #fffbe6; }
+#fo-prev .pv-note { font-size: 11px; padding: 4px 10px; border-radius: 0; border-width: 0 0 1px 4px; }
 #fo-prev .pv-body:has(.pv-note) { flex-direction: column; }
 .pv-sheets { display: flex; flex-direction: column; overflow: hidden; background: var(--panel); }
 .pv-tabs { display: flex; gap: 2px; padding: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; flex: none; }
@@ -145,11 +145,9 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 #fo-prev .pv-body { touch-action: pan-x pan-y; }
 
 /* 00 BIM: the viewer's models and sheets, read-only */
-.fo-locked { margin: 8px 12px; padding: 8px 12px; border-radius: 8px; background: #fff6ec; border: 1px solid #f6d3b0;
-  color: var(--ink-2); font-size: 12px; }
+.fo-locked { margin: 8px 12px; font-size: 12px; }
 .fo-row.locked .nm { color: var(--ink); }
 .fo-bar button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* Dark mode: tinted chips and notes above, the same hue on a dark ground,
    and their dark text made light (theme.js; style.css :root[data-theme]). */
-:root[data-theme="dark"] .fo-locked { background: #3b2a16; border: 1px solid #725231; }
