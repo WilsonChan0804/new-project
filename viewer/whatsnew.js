@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-17", date: "10 Oct 2026",
+    items: [
+      "**Clash check** on the 3D page (left panel > Checks > Clash): set A against set B - in your own model, or against the consultants' models. Click a clash to see it, **Make issue** to raise it; run again to see what is **New** and what has **Gone**.",
+      "**Headroom** (Checks > Headroom): **Probe** a floor or a stair tread for the clear height above it, or **Scan** a floor - places under the limit show red on the floor.",
+    ],
+  },
+  {
     version: "2026-10-16", date: "9 Oct 2026",
     items: [
       "**Copy link** to a sheet, an issue, a project or an exact **3D view** (camera, section, floor) - the 🔗 buttons.",
