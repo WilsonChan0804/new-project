@@ -16,6 +16,7 @@
  * from its treads. What the viewer draws is what is measured.
  */
 import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
+import { saveCsv, fileName, reportTab, tabSay, writeReport, pictures } from "./checkexport.js";
 
 const WALK = /^(Floors|Stairs|Runs|Landings|Ramps|IFCSLAB|IFCSTAIR|IFCSTAIRFLIGHT|IFCRAMP|IFCRAMPFLIGHT)$/;
 const STAIRISH = /stair|runs|landing|ramp/i;
@@ -98,6 +99,9 @@ export function createHeadroom(ctx) {
   const isWalk = (k) => { const c = cfg(); return c.walk ? c.walk.includes(k) : WALK.test(k); };
   const isAbove = (k) => { const c = cfg(); return c.above ? c.above.includes(k) : ABOVE.test(k); };
 
+  // the colours: too low (chosen by each person), within 100 mm over, overhead
+  const lowCol = () => lsGet("col", "#e2453c");
+  const AMBER = "#f0a020";
   function progress(t) { const p = $("#head-prog"); p.hidden = !t; p.querySelector("span").textContent = t || ""; }
 
   /* ------------------------------------------------------------ probe */
@@ -314,7 +318,7 @@ export function createHeadroom(ctx) {
     const m = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide,
                                            polygonOffset: true, polygonOffsetFactor: -2 });
     const mesh = new THREE.InstancedMesh(g, m, pts.length);
-    const M = new THREE.Matrix4(), red = new THREE.Color(0xe2453c), amber = new THREE.Color(0xf0a020);
+    const M = new THREE.Matrix4(), red = new THREE.Color(lowCol()), amber = new THREE.Color(AMBER);
     pts.forEach((p, i) => {
       const lim = H.walk[p[5]] && H.walk[p[5]].stair ? stairLimit : limit;
       const s = p[7] * 0.86;
@@ -335,9 +339,23 @@ export function createHeadroom(ctx) {
     const res = H.res, list = $("#head-list"), sum = $("#head-sum");
     if (!res) { list.innerHTML = ""; sum.innerHTML = ""; return; }
     sum.innerHTML = `<div class="ck-when muted">${esc(res.scope)} · floors ${res.limit.toFixed(2)} m, stairs ${res.stairLimit.toFixed(2)} m${res.minSpace ? `, lower than ${res.minSpace.toFixed(1)} m left out` : ""} · ${res.checked} points</div>`
-      + `<div class="head-legend"><span class="it"><span class="sw red"></span> under the limit</span> <span class="it"><span class="sw amber"></span> within 100 mm over it</span>`
-      + ` <button class="ghost" id="head-clear" title="Take the coloured squares away">Clear</button></div>`;
+      + `<div class="head-legend"><label class="it" title="Colour of the places under the limit (kept in this browser)"><input type="color" id="head-col" value="${lowCol()}"> under the limit</label>`
+      + ` <span class="it"><span class="sw amber"></span> within 100 mm over it</span>`
+      + ` <button class="ghost" id="head-clear" title="Take the coloured squares away">Clear</button></div>`
+      + (res.zones.length ? `<div class="ck-export"><span class="muted">Export</span><button class="ghost" id="head-csv" title="A spreadsheet (CSV) of the places, for Excel">Spreadsheet</button>`
+        + `<button class="ghost" id="head-rep" title="A report with a picture of each place, to print or save as PDF">Report</button></div><div id="head-ask"></div>` : "");
     $("#head-clear").onclick = () => { clearDots(); H.res = null; paint(); };
+    $("#head-col").oninput = (ev) => { lsSet("col", ev.target.value); paintDots(); };
+    if (res.zones.length) {
+      $("#head-csv").onclick = exportCsv;
+      $("#head-rep").onclick = () => {
+        const a = $("#head-ask");
+        if (a.innerHTML) { a.innerHTML = ""; return; }
+        a.innerHTML = `<div class="ck-ask"><span class="muted">${res.zones.length} places in the report.</span>`
+          + `<button class="primary" data-pics="1" title="Each place shown and copied - about a second each">With pictures</button><button class="ghost" data-pics="0">Without</button></div>`;
+        a.onclick = (ev) => { const b = ev.target.closest("[data-pics]"); if (!b) return; a.innerHTML = ""; makeReport(b.dataset.pics === "1"); };
+      };
+    }
     if (!res.zones.length) { list.innerHTML = `<li class="muted ck-empty">All clear ${esc(res.scope)}.</li>`; return; }
     list.innerHTML = res.zones.map((z, i) => {
       const w = H.walk[z.walk], a = H.above[z.above];
@@ -355,9 +373,79 @@ export function createHeadroom(ctx) {
     const p = new THREE.Vector3(z.at[0], z.at[1], z.at[2]);
     ctx.focusAt(p, 4);
     const a = H.above[z.above], w = H.walk[z.walk];
-    if (a) await ctx.highlightMany([{ part: a.part, lid: a.lid }]);
+    const OVER = "#f28022";
+    await ctx.highlightMany(a ? [{ part: a.part, lid: a.lid }] : [], { a: OVER });
     const lim = w && w.stair ? H.res.stairLimit : H.res.limit;
     drawDim(p, p.clone().add(new THREE.Vector3(0, z.minH, 0)), `${(lim - z.minH).toFixed(2)} m short of ${lim.toFixed(2)} m`);
+    const nm = (e) => (e && e.label ? `${e.label.cat}${e.label.name ? " · " + e.label.name : ""}` : "");
+    ctx.legend(`<div class="cl-row"><span class="cl-sw" style="background:${OVER}"></span><b>Overhead</b> ${esc(nm(a))}</div>`
+      + `<div class="cl-row"><span class="cl-sw" style="background:${lowCol()}"></span>under ${lim.toFixed(2)} m · lowest ${z.minH.toFixed(2)} m</div>`
+      + `<div class="cl-row"><span class="cl-sw" style="background:${AMBER}"></span>within 100 mm over it</div>`);
+  }
+  /* Export: the places as a spreadsheet, or a report (pictures optional). */
+  const zoneRow = (z) => {
+    const w = H.walk[z.walk], a = H.above[z.above];
+    const lim = w && w.stair ? H.res.stairLimit : H.res.limit;
+    const p = ctx.toShared(new THREE.Vector3(z.at[0], z.at[1], z.at[2]));
+    return { w, a, lim, p, lv: ctx.levelAt(z.at[1] + 0.1) || "",
+             on: (w && w.label && w.label.cat) || (w && catLabel(w.cat)) || "", kind: w && w.stair ? "Stair / ramp" : "Floor" };
+  };
+  function exportCsv() {
+    const res = H.res;
+    if (!res || !res.zones.length) return;
+    const rows = res.zones.map((z, i) => {
+      const x = zoneRow(z), a = x.a && x.a.label ? x.a.label : {};
+      return [i + 1, x.lv, x.kind, x.on, z.minH.toFixed(3), x.lim.toFixed(2), (x.lim - z.minH).toFixed(3), z.area.toFixed(2),
+              a.model || "", a.cat || "", a.name || "", a.type || "", a.id || "", x.p[0], x.p[1], x.p[2]];
+    });
+    saveCsv(`${fileName(ctx.projectName())}-headroom-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["No", "Floor", "Where", "Standing on", "Lowest clear height m", "Limit m", "Short by m", "Area m2",
+       "Overhead model", "Overhead category", "Overhead name", "Overhead type", "Overhead id", "X mm (project)", "Y mm (project)", "Z mm (project)"], rows);
+    ctx.status(`${rows.length} places exported as a spreadsheet.`);
+  }
+  async function makeReport(withPics) {
+    const res = H.res, list = res.zones.slice();
+    const w = reportTab("Headroom report");
+    if (!w) { ctx.status("The browser blocked the report tab - allow pop-ups for this site and try again."); return; }
+    let imgs = [];
+    if (withPics) {
+      const v = ctx.viewNow();
+      H.stop = false;
+      $("#head-run").hidden = true; $("#head-stop").hidden = false;
+      try {
+        imgs = await pictures(list, (z) => look(z), () => ctx.shot(900), (t) => { progress(t); tabSay(w, t); }, () => H.stop, w);
+      } finally {
+        progress("");
+        $("#head-run").hidden = false; $("#head-stop").hidden = true;
+        clearProbe(); ctx.legend(null);
+        try { await ctx.highlightMany([]); } catch (e) {}
+        ctx.viewBack(v);
+      }
+    }
+    if (w.closed) return;
+    const by = new Map();
+    for (const z of list) {
+      const k = zoneRow(z).lv || "-";
+      if (!by.has(k)) by.set(k, { n: 0, area: 0, low: Infinity });
+      const g = by.get(k); g.n++; g.area += z.area; g.low = Math.min(g.low, z.minH);
+    }
+    const nm = (e) => (e && e.label ? `${e.label.model} - ${e.label.cat}${e.label.name ? " - " + e.label.name : ""}${e.label.id ? " - id " + e.label.id : ""}` : "");
+    writeReport(w, {
+      title: "Headroom report", project: ctx.projectName(), unit: "places",
+      sub: new Date().toLocaleString() + (ctx.author() ? " · prepared by " + ctx.author() : ""),
+      meta: [["Where", res.scope], ["Limits", `floors ${res.limit.toFixed(2)} m, stairs and ramps ${res.stairLimit.toFixed(2)} m`],
+        ["Left out", res.minSpace ? `spaces lower than ${res.minSpace.toFixed(1)} m (not used by people)` : "nothing"],
+        ["Measured", `${res.checked} points, ${new Date(res.at).toLocaleString()}`]],
+      table: { cols: ["Floor", "Places", "Area m²", "Lowest m"], rows: [...by.entries()].map(([k, g]) => [k, g.n, g.area.toFixed(1), g.low.toFixed(2)]) },
+      items: list.map((z, i) => {
+        const x = zoneRow(z);
+        return { head: `${z.minH.toFixed(2)} m · ${x.kind}${x.lv ? " · " + x.lv : ""}`, tag: `${(x.lim - z.minH).toFixed(2)} m short`,
+          img: imgs[i] || null,
+          rows: [["Standing on", x.on], ["Overhead", nm(x.a), "#f28022"], ["Limit", `${x.lim.toFixed(2)} m`],
+            ["Area under the limit", `${z.area.toFixed(1)} m²`, lowCol()], ["Where (project mm)", `X ${x.p[0]}, Y ${x.p[1]}, Z ${x.p[2]}`]] };
+      }),
+    });
+    ctx.status(`Headroom report ready in a new tab: ${list.length} places - Print / Save as PDF there.`);
   }
   async function makeIssue(z) {
     await look(z);

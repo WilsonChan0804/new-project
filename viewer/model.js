@@ -2027,14 +2027,15 @@ function initClash() {
     floorIndex: () => (S.floorIndex === undefined ? null : S.floorIndex),
     levelAt,
     elementInfo,
-    async highlightMany(els) {
+    async highlightMany(els, cols) {
       await clashUnlight();
-      // A orange, B blue - unless both are in one fast 3D model (one highlight colour there)
-      const blue = new THREE.Color(0x1e88e5);
+      // A orange, B blue (or the colours chosen) - unless both are in one
+      // fast 3D model (one highlight colour there)
+      const ca = new THREE.Color(cols && cols.a ? cols.a : PICK_COLOR), cb = new THREE.Color(cols && cols.b ? cols.b : 0x1e88e5);
       for (let i = 0; i < els.length; i++) {
         const { part, lid } = els[i];
         const shared = i > 0 && part.model.head && els[0].part.model.head === part.model.head;
-        try { await part.model.setColor([lid], i && !shared ? blue : PICK_COLOR); CLASH_LIT.push({ part, lid }); } catch (e) {}
+        try { await part.model.setColor([lid], i && !shared ? cb : ca); CLASH_LIT.push({ part, lid }); } catch (e) {}
       }
       if (els[0]) S.picked = { part: els[0].part, localId: els[0].lid };
       try { await S.fragments.update(true); } catch (e) {}
@@ -2092,6 +2093,34 @@ function initClash() {
     // whichever model the scene was started from
     toShared: (v) => sceneToSharedMM(v).map((n) => Math.round(n)),
     fromShared: (mm) => { try { return sharedToScene(mm); } catch (e) { return null; } },
+    // a picture of the view as it is now (a report), maxW pixels wide
+    async shot(maxW = 900) {
+      try { await S.fragments.update(true); } catch (e) {}
+      for (let i = 0; i < 3; i++) await new Promise((r) => requestAnimationFrame(r));
+      renderMain();
+      const src = S.renderer.domElement;
+      const c = document.createElement("canvas");
+      const k = Math.min(1, maxW / src.width);
+      c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+      c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", 0.8);
+    },
+    // the camera and section box now, and back to them
+    viewNow: () => currentView("report"),
+    viewBack: (v) => { try { restoreView(v); } catch (e) {} },
+    projectName: () => (S.manifest && S.manifest.source && S.manifest.source.title) || Store.currentProject() || "",
+    // a small key in a corner of the 3D view (html, or null: none)
+    legend(html) {
+      let el = document.getElementById("clash-legend");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "clash-legend";
+        el.className = "clash-legend";
+        document.getElementById("canvas-wrap").appendChild(el);
+      }
+      el.hidden = !html;
+      el.innerHTML = html || "";
+    },
     // the storey round p cut out, a window of 2 x half metres
     focusAt: (p, half = 6, lo = null, hi = null) => focusRoom(p, levelIndexAt(p.y + 0.1), half, lo, hi),
     sectionOff() {

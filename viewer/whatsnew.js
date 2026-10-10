@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-20", date: "11 Oct 2026",
+    items: [
+      "Clash check: a big run no longer stops silently - the panel says how many pairs and how long, with **Check them all** or **Choose floors instead**. The list now shows the clashes of the **place chosen** (whole model, floors, section box), with the rest one click away.",
+      "**Selection sets**: save a side of a rule (models, categories, a **name filter**) as a set shared with the project, and pick it in other rules. **All / None** for the models; each rule option explained under it.",
+      "Choose the **A and B colours**; a key in the 3D view says which element is A and which is B.",
+      "**Export** clashes and headroom places: a **spreadsheet** for Excel, or a **report** with a picture of each place to print or save as PDF.",
+    ],
+  },
+  {
     version: "2026-10-19", date: "11 Oct 2026",
     items: [
       "Clash check: **joins are not clashes** - walls through slabs, finishes and waterproofing under walls, landings into walls, beams into walls and columns. A duplicate, two walls overlapping side by side, or anything through a ceiling still is. (Rule > Leave out joins, on by default.)",

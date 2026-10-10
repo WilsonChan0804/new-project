@@ -2124,3 +2124,32 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 .head-cat-cols b { font-size: 11.5px; }
 .head-shared { font-size: 11px; margin: -2px 0 6px; }
 .chk-row[hidden] { display: none; }
+
+/* Checks, round 4: sets, name filter, option help, big runs, legend, export */
+.ck-setbar { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.ck-setbar select { flex: 1; min-width: 120px; font-size: 12px; }
+.ck-setbar button, .ck-cats-bar button { font-size: 11.5px; padding: 2px 8px; }
+.ck-cats-bar > span { align-self: center; font-size: 11.5px; margin-right: 2px; }
+.ck-q { display: flex; gap: 4px; margin-top: 6px; }
+.ck-q select { font-size: 12px; flex: none; width: auto; }
+.ck-q input { flex: 1; min-width: 0; font-size: 12px; }
+.ck-help { font-size: 11.5px; margin: -2px 0 6px 22px; line-height: 1.35; }
+.ck-over { border: 1px solid #f0a020; background: rgba(240, 160, 32, 0.1); border-radius: 6px; padding: 6px 8px; font-size: 12px; margin-bottom: 6px; }
+.ck-over .ck-acts { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+.ck-else { font-size: 11.5px; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ck-else button { font-size: 11px; padding: 1px 7px; }
+.ck-legend { display: grid; grid-template-columns: auto 1fr; gap: 2px 6px; align-items: center; font-size: 11.5px; margin-bottom: 4px; }
+.ck-legend label { display: inline-flex !important; flex-direction: row !important; gap: 4px; align-items: center; font-weight: 600; white-space: nowrap; }
+.ck-legend input[type=color], .head-legend input[type=color] { width: 22px !important; height: 18px; padding: 0; border: 1px solid var(--line, #ccc); border-radius: 3px; background: none; cursor: pointer; flex: none; }
+.ck-legend span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-export { display: flex; gap: 4px; align-items: center; font-size: 11.5px; margin-bottom: 6px; flex-wrap: wrap; }
+.ck-export button { font-size: 11px; padding: 1px 8px; }
+.ck-ask { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; font-size: 11.5px; margin-bottom: 6px; }
+.ck-ask button { font-size: 11px; padding: 2px 8px; }
+.clash-legend { position: absolute; left: 12px; bottom: 12px; z-index: 5; max-width: min(420px, 70%); background: var(--panel, #fff); color: var(--ink, #222);
+  border: 1px solid var(--line, #ddd); border-radius: 6px; padding: 6px 9px; font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.15); pointer-events: none; }
+.clash-legend[hidden] { display: none; }
+.clash-legend .cl-row { display: flex; gap: 6px; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clash-legend .cl-sw { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+.clash-legend .cl-sw.dot { background: #e2453c; border-radius: 50%; }
+.clash-legend .cl-note { font-size: 11px; opacity: 0.75; margin-left: 18px; }
