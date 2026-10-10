@@ -4089,7 +4089,7 @@ function renderList() {
   const shown = S.items.filter((it) => {
     // Issues raised in the model and saved views live on the 3D page.
     // 3D issues, saved views and project settings live on the 3D page.
-    if (it.placement === "3d" || it.placement === "view" || it.placement === "calibration") return false;
+    if (it.placement === "3d" || it.placement === "view" || it.placement === "calibration" || it.placement === "clashrule") return false;
     if (S.filter === "issue" && !it.issue) return false;
     if (S.filter === "comment" && it.issue) return false;
     // type and status: issues only (a comment has neither)
@@ -4105,7 +4105,7 @@ function renderList() {
   /* The total is counted within the current filter: with Issues selected
      it counts issues, not issues plus every comment on the drawings. */
   const pool = S.items.filter((it) =>
-    it.placement !== "3d" && it.placement !== "view" && it.placement !== "calibration").filter((it) =>
+    it.placement !== "3d" && it.placement !== "view" && it.placement !== "calibration" && it.placement !== "clashrule").filter((it) =>
     S.filter === "issue" ? !!it.issue
     : S.filter === "comment" ? !it.issue : true);
   $("#issue-total").textContent =
@@ -4931,7 +4931,7 @@ async function exportPdfVector(sheets, dpi, withReport) {
     out.addPage(page);
 
     const mine = S.items.filter((it) => it.sheet === sh.number
-      && it.placement !== "3d" && it.placement !== "view");
+      && it.placement !== "3d" && it.placement !== "view" && it.placement !== "clashrule");
     if (mine.length) {
       const editable = (document.getElementById("pdf-markups") || {}).value !== "flat";
       if (editable) {

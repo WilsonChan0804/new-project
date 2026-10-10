@@ -871,7 +871,7 @@ export async function createLwkModel(THREE, data, opts = {}) {
   const tileKey = (b, l) => uid + ":" + b.bi + ":" + l;
   const isRes = (b, l) => (l === 0 ? b.res0 : !!b.lod[l]);
   function installLevel(b, l, dec) {
-    if (disposed) return;
+    if (disposed || isRes(b, l)) return;          // here already (asked for twice)
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(dec.Q, dec.qs || 3, true));
     g.setAttribute("col", new THREE.BufferAttribute(dec.C, 1));
@@ -1822,6 +1822,20 @@ export async function createLwkModel(THREE, data, opts = {}) {
         return out;
       });
     },
+    /* Streamed models: the full pieces these elements are drawn in, fetched
+       now if they are not here (the clash check reads their triangles). */
+    async ensureGeometry(ids) {
+      if (!TILED) return;
+      const need = new Set();
+      for (const lid of ids) eachWhere(lid, (bi) => { const b = batches[bi]; if (!b.res0 && b.levels[0]) need.add(bi); });
+      for (const bi of need) {
+        const b = batches[bi];
+        if (b.res0 || disposed) continue;
+        const L = b.levels[0];
+        const raw = await TILED.fetch(L.o, L.n);
+        installLevel(b, 0, decodeTileLevel(raw));
+      }
+    },
     /* Where a cutting plane (world) passes through closed solids: line
        segments (world, 6 numbers each), for drawing the cut's outline.
        Only what is here in full; a slice at a time. */
@@ -1932,6 +1946,19 @@ export async function createLwkModel(THREE, data, opts = {}) {
       for (const [k, ids] of Object.entries(catIndex)) {
         if (res && res.length && !res.some((r) => r.test(k))) continue;
         out[k] = ids.slice();
+      }
+      return out;
+    },
+    /* The same by Revit category name (Ducts and Pipes apart). */
+    async getItemsOfRevitCategories() {
+      const out = {};
+      let n = 0;
+      for (const lid of lidsIter()) {
+        const e = elementOf(lid);
+        if (e === null || e === undefined) continue;
+        const k = head.cats[head.el.cat[e]] || "Other";
+        (out[k] = out[k] || []).push(lid);
+        if ((++n & 4095) === 0) await yieldIfLong();
       }
       return out;
     },

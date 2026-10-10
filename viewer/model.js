@@ -28,6 +28,7 @@ import { attachPalette } from "./palette.js";
 import * as Check from "./selfcheck.js";
 import { openIssue } from "./issuepanel.js";
 import { createMeasure } from "./measure3d.js";
+import { createClash } from "./clash.js";
 import { createArrows } from "./arrows3d.js";
 import { createQuality } from "./quality.js";
 import { createWalk } from "./walk.js";
@@ -2001,6 +2002,85 @@ function setMode(mode) {
   if (say[mode]) status(say[mode]);
 }
 
+/* ------------------------------------------------------------ clash check
+
+   The Checks section (clash.js): what it needs from the 3D page. */
+const CLASH_LIT = [];
+async function clashUnlight() {
+  await clearHighlight();
+  for (const { part, lid } of CLASH_LIT.splice(0)) { try { await restoreItem(part.model, lid); } catch (e) {} }
+}
+function initClash() {
+  if (S.clash || !$("#clash-box")) return;
+  S.clash = createClash({
+    THREE,
+    recs: () => [...S.loaded.values()],
+    modelLabel: (rec) => rec.ref ? rec.ref.name + (rec.ref.company ? " (" + rec.ref.company + ")" : "")
+      : shortModelName(rec.entry.name, (S.manifest && S.manifest.models) || []),
+    sectionPlanes: () => {
+      const sec = S.section;
+      return sec && sec.on && !sec.face ? sec.planes : null;
+    },
+    floorRows: () => S.floorRows || [],
+    floorIndex: () => (S.floorIndex === undefined ? null : S.floorIndex),
+    levelAt,
+    elementInfo,
+    async highlightMany(els) {
+      await clashUnlight();
+      // A orange, B blue - unless both are in one fast 3D model (one highlight colour there)
+      const blue = new THREE.Color(0x1e88e5);
+      for (let i = 0; i < els.length; i++) {
+        const { part, lid } = els[i];
+        const shared = i > 0 && part.model.head && els[0].part.model.head === part.model.head;
+        try { await part.model.setColor([lid], i && !shared ? blue : PICK_COLOR); CLASH_LIT.push({ part, lid }); } catch (e) {}
+      }
+      if (els[0]) S.picked = { part: els[0].part, localId: els[0].lid };
+      try { await S.fragments.update(true); } catch (e) {}
+      S.dirty = true;
+    },
+    async isolateMany(els) {
+      for (const rec of S.loaded.values()) for (const part of rec.parts) await setVisible(part, undefined, false);
+      for (const { part, lid } of els) await setVisible(part, [lid], true);
+      S.hidden = new Set(["*isolated*"]);
+      try { await S.fragments.update(true); } catch (e) {}
+      S.dirty = true;
+      updateVisButtons();
+    },
+    flyTo: (pos, target) => flyTo(pos, target),
+    viewDir: () => S.controls.target.clone().sub(S.camera.position).normalize(),
+    cameraDistance: () => S.camera.position.distanceTo(S.controls.target),
+    overlay: () => S.overlay,
+    redraw: () => { S.dirty = true; },
+    async makeIssue(point, el, pre) {
+      let guid = null, name = null;
+      if (el) {
+        try { guid = (await el.part.model.getGuidsByLocalIds([el.lid]))[0] || null; } catch (e) {}
+        const rec = recOfPart(el.part);
+        name = rec ? rec.entry.name : null;
+      }
+      openIssue3D(point, el ? { guid, name, part: el.part, localId: el.lid } : null);
+      $("#i3-title").value = pre.title || "";
+      $("#i3-desc").value = pre.description || "";
+      $("#i3-type").innerHTML = typeOptions(pre.type || "clash");
+      S.pending.clash = pre.clash || null;
+    },
+    items: () => S.items || [],
+    putItem,
+    uid,
+    author: () => Store.author(),
+    status,
+    selectIssue: (id) => selectIssue(id),
+    storeKey: (k) => "lwk-clash:" + (Store.currentProject() || "") + ":" + k,
+  });
+  if (S.clash) S.clash.refresh();
+  // Clash / Headroom
+  document.querySelectorAll(".chk-tabs [data-tab]").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".chk-tabs [data-tab]").forEach((x) => x.classList.toggle("active", x === b));
+    $("#clash-box").hidden = b.dataset.tab !== "clash";
+    $("#head-box").hidden = b.dataset.tab !== "head";
+  }));
+}
+
 /* ---------------------------------------------------------- saved views */
 
 /* A saved view is camera plus section box, stored on the server as an item
@@ -3272,6 +3352,9 @@ function wireDisplay() {
 async function clearHighlight() {
   const p = S.picked;
   S.picked = null;
+  // the other element of a clash shown, and its marker
+  for (const { part, lid } of CLASH_LIT.splice(0)) { try { await restoreItem(part.model, lid); } catch (e) {} }
+  if (S.clash) S.clash.clearMarker();
   if (!p || !p.part) return;
   try {
     await restoreItem(p.part.model, p.localId);
@@ -7158,6 +7241,8 @@ async function saveIssue3D() {
        picture's camera alone was kept before, so a sectioned issue opened
        on the outside of the building. */
     viewpoint_state: p.shot ? p.shot.state : null,
+    // made from a clash check: the pair of elements, so a later run knows it
+    clash: p.clash || undefined,
     snapshot: snapshot,
     snapshot_raw: snapshotRaw,
     markup: p.markup || [],
@@ -7542,6 +7627,7 @@ async function boot() {
     renderIssueList();
     renderViewList();
     renderDims();
+    if (S.clash) S.clash.itemsChanged();
   });
   await Store.start(connStatus);
 
@@ -7580,6 +7666,7 @@ async function boot() {
   renderViewList();
   renderModelList();
   loadFloors().catch((e) => showError("floors", e));
+  initClash();
   gotoFromUrl().catch((e) => { jumpVeil(false); showError("goto", e); });
   selectFromUrl().catch((e) => showError("select", e));
   elementsFromUrl().catch((e) => showError("elements", e));

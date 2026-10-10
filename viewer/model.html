@@ -134,6 +134,32 @@
         (green), edges (blue) and surfaces (grey) - a ring shows each snap. Esc drops a measurement.</div>
     </div>
 
+    <div class="panel-head">Checks</div>
+    <div class="pad" id="chk-panel">
+      <div class="chk-tabs">
+        <button id="chk-tab-clash" class="ghost active" data-tab="clash" title="Elements that overlap - in one model, or between models">Clash</button>
+        <button id="chk-tab-head" class="ghost" data-tab="head" title="Clear height above floors, stairs and ramps">Headroom</button>
+      </div>
+      <div id="clash-box" class="chk-box">
+        <div class="chk-row">
+          <select id="clash-rule" title="Clash rule: set A against set B" aria-label="Clash rule"></select>
+          <button id="clash-new" class="ghost" title="New clash rule">+</button>
+          <button id="clash-edit" class="ghost" title="Change this rule">&#9998;</button>
+          <button id="clash-del" class="ghost" title="Delete this rule">&#10005;</button>
+        </div>
+        <div class="chk-row">
+          <select id="clash-scope" title="Where to check" aria-label="Where to check">
+            <option value="all">Whole model</option><option value="box">Inside the section box</option></select>
+          <button id="clash-run" class="primary" title="Check now">Run</button>
+          <button id="clash-stop" class="ghost" hidden>Stop</button>
+        </div>
+        <div id="clash-prog" class="chk-prog" hidden><span></span></div>
+        <div id="clash-sum"></div>
+        <ul id="clash-list" class="clash-list"></ul>
+      </div>
+      <div id="head-box" class="chk-box" hidden></div>
+    </div>
+
     <div class="panel-head" style="display:flex;align-items:center;gap:6px">
       Elements <span class="spacer"></span>
       <button id="cat-all" class="ghost" style="font-size:11px" title="Show every category">Show all</button>

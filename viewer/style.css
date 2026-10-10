@@ -2040,3 +2040,57 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 :root[data-theme="dark"] #viewcube-bar button { background: rgba(27, 31, 38, .92); }
 :root[data-theme="dark"] #viewcube-bar button:hover { background: #3b2916; }
 :root[data-theme="dark"] #viewcube-bar button.active { background: #f28022; color: #fff; }
+
+/* ------------------------------------------------- Checks: clash and headroom (clash.js, headroom.js) */
+.chk-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.chk-tabs button { flex: 1; }
+.chk-row { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; }
+.chk-row select { flex: 1 1 auto; min-width: 0; font-size: 12px; }
+.chk-row button { flex: none; }
+.chk-prog[hidden] { display: none; }
+.chk-prog { font-size: 11.5px; color: var(--ink-2); padding: 4px 0; display: flex; gap: 6px; align-items: center; }
+.chk-prog::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--accent);
+  border-right-color: transparent; animation: chk-spin .8s linear infinite; flex: none; }
+@keyframes chk-spin { to { transform: rotate(360deg); } }
+.ck-when { font-size: 11px; margin: 2px 0 4px; }
+.ck-filt { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+.ck-filt button { font-size: 11px; padding: 2px 7px; }
+.ck-filt button b { font-weight: 700; margin-left: 2px; }
+.clash-list { list-style: none; margin: 0; padding: 0; max-height: 46vh; overflow-y: auto; }
+.ck-grp { font-size: 11.5px; padding: 6px 2px 2px; border-top: 1px solid var(--line-soft); }
+.ck-it { padding: 6px 6px 5px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; margin: 2px 0; }
+.ck-it:hover { background: var(--panel-2); }
+.ck-it.on { background: var(--accent-soft); border-color: var(--accent); }
+.ck-it.gone { opacity: .7; }
+.ck-l1 { font-size: 12px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.ck-l2 { font-size: 11.5px; color: var(--ink-2); margin-top: 1px; overflow-wrap: anywhere; }
+.ck-kind { font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 8px; color: #fff; background: #db2777; }
+.ck-kind.k-clearance { background: #d97706; }
+.ck-kind.k-inside { background: #7c3aed; }
+.ck-kind.k-cross { background: #64748b; }
+.ck-new { font-size: 10px; font-weight: 700; color: var(--accent-deep); }
+.ck-gone { font-size: 10px; font-weight: 700; color: var(--ok); }
+.ck-acts { display: none; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.ck-it.on .ck-acts { display: flex; }
+.ck-acts button { font-size: 11px; padding: 2px 7px; }
+.ck-empty { padding: 6px 2px; font-size: 12px; }
+.ck-dlg-back { position: fixed; inset: 0; background: rgba(20, 26, 36, .35); z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 12px; }
+.ck-dlg { background: var(--panel); color: var(--ink); border-radius: 10px; box-shadow: 0 16px 40px rgba(0, 0, 0, .3);
+  width: 680px; max-width: 100%; max-height: calc(100vh - 24px); overflow: auto; padding: 16px 18px; }
+.ck-dlg h3 { margin: 0 0 10px; font-size: 16px; }
+.ck-name { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); margin-bottom: 10px; }
+.ck-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ck-side { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0; min-width: 0; }
+.ck-side legend { font-weight: 700; font-size: 12px; padding: 0 4px; }
+.ck-side select { width: 100%; margin-bottom: 6px; }
+.ck-cats-bar { display: flex; gap: 4px; margin-bottom: 4px; }
+.ck-cats-bar input { flex: 1; min-width: 0; font-size: 12px; }
+.ck-cats { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; font-size: 12px; }
+.ck-cats label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.ck-cats label[hidden] { display: none; }
+.ck-opts { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0 4px; font-size: 12px; align-items: center; }
+.ck-opts input[type=number] { width: 70px; }
+.ck-chk { display: flex; gap: 6px; align-items: center; }
+.ck-note { font-size: 11.5px; margin: 6px 0 0; }
+.ck-foot { display: flex; gap: 6px; align-items: center; margin-top: 12px; }
+@media (max-width: 600px) { .ck-sides { grid-template-columns: 1fr; } }
