@@ -25,6 +25,14 @@ Every path a page sends is a path inside the project's folder ("Drawings/
 Arch/A-101.pdf"); it is resolved on the disk and refused unless it stays
 inside that folder - no "..", no hidden names, no links leading out.
 
+Versions, as a CDE keeps them: a file uploaded under a name already there
+can become its next version (the page asks: New version or Keep both).
+The one before is kept in a hidden .lwk-versions folder beside the bin,
+under the same path; the table "versions" says who, when and why. Any
+earlier one can be opened, downloaded or made current again (that is a
+new version too - nothing is lost). Moves and renames take the history
+along; a delete takes it to the bin, a restore brings it back.
+
 00 BIM: every project's folder starts with it. It is not on the disk: it
 shows what the viewer already holds for the project - its sheets (PDFs from
 Revit and the uploaded PDF sets) and its 3D models (opened on the 3D page;
@@ -42,12 +50,13 @@ import threading
 import time
 import uuid
 
-from fastapi import Header, HTTPException, Request
+from fastapi import Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 
 CORE = None
 _LOCK = threading.Lock()
 BIN = ".lwk-bin"
+VER = ".lwk-versions"
 MAX_UPLOAD = 2 * 1024 * 1024 * 1024
 BAD_NAME = re.compile(r'[\x00-\x1f<>:"/\\|?*]')
 RESERVED = {"con", "prn", "aux", "nul"} | {"com%d" % i for i in range(1, 10)} | {"lpt%d" % i for i in range(1, 10)}
@@ -67,6 +76,11 @@ CREATE TABLE IF NOT EXISTS pins (
 CREATE TABLE IF NOT EXISTS stars (
     reg TEXT NOT NULL, uid INTEGER NOT NULL, path TEXT NOT NULL, at TEXT NOT NULL,
     PRIMARY KEY (reg, uid, path)
+);
+CREATE TABLE IF NOT EXISTS versions (
+    reg TEXT NOT NULL, path TEXT NOT NULL, n INTEGER NOT NULL, uid INTEGER, name TEXT NOT NULL DEFAULT '',
+    at TEXT NOT NULL, size INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (reg, path, n)
 );
 CREATE TABLE IF NOT EXISTS bin (
     id TEXT PRIMARY KEY, reg TEXT NOT NULL, path TEXT NOT NULL, dir INTEGER NOT NULL DEFAULT 0,
@@ -180,12 +194,56 @@ def visible(name):
 def move_meta(d, reg, old, new):
     """A file or folder moved or renamed: its uploader, pin and stars go with it."""
     like_new = new.replace("%", r"\%").replace("_", r"\_") + "/%"
-    for t in ("uploads", "pins", "stars"):
+    for t in ("uploads", "pins", "stars", "versions"):
         # rows still at the new name belong to something no longer there (a
         # file deleted earlier keeps its rows for a restore): the moved one wins
         d.execute("DELETE FROM %s WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')" % t, (reg, new, like_new))
         d.execute("UPDATE %s SET path = ? || substr(path, ?) WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')" % t,
                   (new, len(old) + 1, reg, old, old.replace("%", r"\%").replace("_", r"\_") + "/%"))
+
+
+def ver_dir(root, rel):
+    """Where the earlier versions of the file at rel are kept."""
+    return os.path.join(root, VER, *rel.split("/"))
+
+
+def ver_file(root, rel, n):
+    return os.path.join(ver_dir(root, rel), "v%d%s" % (n, os.path.splitext(rel)[1].lower()))
+
+
+def move_versions(root, old_rel, new_rel):
+    """A file or folder moved: the kept versions under it go along."""
+    src = ver_dir(root, old_rel)
+    if not os.path.isdir(src):
+        return
+    dest = ver_dir(root, new_rel)
+    if os.path.isdir(dest):
+        shutil.rmtree(dest, ignore_errors=True)       # left by something no longer there
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    shutil.move(src, dest)
+
+
+def versions_of(d, reg, rel):
+    return d.execute("SELECT * FROM versions WHERE reg = ? AND path = ? ORDER BY n", (reg, rel)).fetchall()
+
+
+def keep_current(d, reg, root, rel, full):
+    """The file at rel is about to be replaced: keep it as a version.
+    Returns the number the next one gets."""
+    rows = versions_of(d, reg, rel)
+    if not rows:
+        # its first version: whoever uploaded it (or the file's own date)
+        up = d.execute("SELECT uid, name, at FROM uploads WHERE reg = ? AND path = ?", (reg, rel)).fetchone()
+        at = up["at"] if up else time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(os.path.getmtime(full)))
+        d.execute("INSERT INTO versions (reg, path, n, uid, name, at, size, note) VALUES (?,?,?,?,?,?,?,?)",
+                  (reg, rel, 1, up["uid"] if up else None, up["name"] if up else "", at, os.path.getsize(full), ""))
+        cur = 1
+    else:
+        cur = rows[-1]["n"]
+    dest = ver_file(root, rel, cur)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    shutil.move(full, dest)
+    return cur + 1
 
 
 # ------------------------------------------------------------ templates
@@ -292,6 +350,8 @@ def register(app, core):
         e = {"name": os.path.basename(full), "path": rel, "dir": isdir, "size": 0 if isdir else st.st_size,
              "mtime": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(st.st_mtime)),
              "pinned": rel in meta["pins"], "starred": rel in meta["stars"], "by": meta["by"].get(rel, "")}
+        if not isdir and meta.get("ver", {}).get(rel, 1) > 1:
+            e["ver"] = meta["ver"][rel]
         if isdir:
             try:
                 e["count"] = sum(1 for x in os.listdir(full) if visible(x))
@@ -304,9 +364,10 @@ def register(app, core):
             pins = set(r["path"] for r in d.execute("SELECT path FROM pins WHERE reg = ?", (reg,)))
             stars = set(r["path"] for r in d.execute("SELECT path FROM stars WHERE reg = ? AND uid = ?", (reg, uid)))
             ups = d.execute("SELECT path, uid, name FROM uploads WHERE reg = ?", (reg,)).fetchall()
+            vers = dict((r["path"], r["m"]) for r in d.execute("SELECT path, MAX(n) AS m FROM versions WHERE reg = ? GROUP BY path", (reg,)))
         nm = names()
         return {"pins": pins, "stars": stars, "by": dict((r["path"], nm.get(r["uid"], r["name"])) for r in ups),
-                "by_uid": dict((r["path"], r["uid"]) for r in ups)}
+                "by_uid": dict((r["path"], r["uid"]) for r in ups), "ver": vers}
 
     # ------------------------------------------------------------ 00 BIM
 
@@ -570,7 +631,7 @@ def register(app, core):
         return next((c for c in cands if c and os.path.isfile(c)), "")
 
     @app.get("/api/files/{reg}/preview")
-    async def file_preview(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
+    async def file_preview(request: Request, reg: str, path: str = "", v: int = 0, x_viewer_token: str = Header(default="")):
         """A Word, Excel or PowerPoint file as a PDF, to read in the page
         without downloading it. Made with LibreOffice on the server and kept
         (until the file changes) in <data>/preview_cache."""
@@ -579,6 +640,8 @@ def register(app, core):
         full = bim_file(row, root_of(reg), parts) if bim_parts(parts) else inside(root_of(reg), parts)
         if not full or not os.path.isfile(full):
             raise HTTPException(status_code=404, detail="That file is not there any more")
+        if v and not bim_parts(parts):
+            full = file_of_version(reg, root_of(reg), parts, v)
         if os.path.splitext(full)[1].lower() not in OFFICE:
             raise HTTPException(status_code=400, detail="Only Office files are turned into a preview")
         exe = soffice()
@@ -663,9 +726,10 @@ def register(app, core):
     # ------------------------------------------------------------ changes
 
     @app.post("/api/files/{reg}/upload")
-    async def file_upload(request: Request, reg: str, path: str = "", name: str = "",
-                          x_viewer_token: str = Header(default="")):
-        """The body is the file itself. A name already there gets " (2)"."""
+    async def file_upload(request: Request, reg: str, path: str = "", name: str = "", as_: str = Query("copy", alias="as"),
+                          note: str = "", x_viewer_token: str = Header(default="")):
+        """The body is the file itself. A name already there gets " (2)" -
+        or, with as=version, the file there becomes the version before."""
         w, _, _ = access(request, x_viewer_token, reg)
         root = root_of(reg)
         parts = clean_rel(path)
@@ -676,9 +740,12 @@ def register(app, core):
         folder = inside(root, parts + sub)
         if not os.path.isdir(folder):
             os.makedirs(folder)
-        nm = free_name(folder, nm)
+        as_version = as_ == "version" and os.path.isfile(os.path.join(folder, nm))
+        if not as_version:
+            nm = free_name(folder, nm)
         dest = os.path.join(folder, nm)
         tmp = os.path.join(folder, ".lwk-up-%s" % uuid.uuid4().hex[:10])
+        version = None
         size = 0
         try:
             with open(tmp, "wb") as f:
@@ -687,10 +754,18 @@ def register(app, core):
                     if size > MAX_UPLOAD:
                         raise HTTPException(status_code=413, detail="Files up to 2 GB")
                     f.write(chunk)
-            if os.path.exists(dest):
-                nm = free_name(folder, nm)
-                dest = os.path.join(folder, nm)
-            os.replace(tmp, dest)
+            if as_version and os.path.isfile(dest):
+                rel0 = rel_of(root, dest)
+                with Meta() as d:
+                    version = keep_current(d, reg, root, rel0, dest)
+                    os.replace(tmp, dest)
+                    d.execute("INSERT OR REPLACE INTO versions (reg, path, n, uid, name, at, size, note) VALUES (?,?,?,?,?,?,?,?)",
+                              (reg, rel0, version, w.uid, w.name, now_iso(), size, str(note or "")[:300]))
+            else:
+                if os.path.exists(dest):
+                    nm = free_name(folder, nm)
+                    dest = os.path.join(folder, nm)
+                os.replace(tmp, dest)
         finally:
             if os.path.exists(tmp):
                 os.remove(tmp)
@@ -701,7 +776,7 @@ def register(app, core):
             for i in range(len(sub)):
                 d.execute("INSERT OR IGNORE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
                           (reg, "/".join(parts + sub[:i + 1]), w.uid, w.name, now_iso()))
-        return {"path": rel, "name": nm, "size": size}
+        return {"path": rel, "name": nm, "size": size, "version": version}
 
     @app.post("/api/files/{reg}/mkdir")
     async def file_mkdir(request: Request, reg: str, x_viewer_token: str = Header(default="")):
@@ -741,6 +816,7 @@ def register(app, core):
         if old_rel == new_rel:
             return old_rel, new_rel
         os.rename(src, dest) if os.path.dirname(src) == parent else shutil.move(src, dest)
+        move_versions(root, old_rel, new_rel)
         with Meta() as d:
             move_meta(d, reg, old_rel, new_rel)
         return old_rel, new_rel
@@ -768,6 +844,150 @@ def register(app, core):
             old, new = do_move(reg, root, p, b.get("to") or "")
             done.append({"from": old, "path": new})
         return {"moved": done}
+
+    @app.post("/api/files/{reg}/copy")
+    async def file_copy(request: Request, reg: str, x_viewer_token: str = Header(default="")):
+        """{paths: [...], to: folder} - copies (a name taken there gets " (2)");
+        a copy starts its own history."""
+        w, _, _ = access(request, x_viewer_token, reg)
+        b = await body_of(request)
+        root = root_of(reg)
+        not_bim(b.get("to"))
+        parent = inside(root, clean_rel(b.get("to")))
+        if not os.path.isdir(parent):
+            raise HTTPException(status_code=404, detail="No such folder")
+        done = []
+        for p in (b.get("paths") or [])[:500]:
+            not_bim(p)
+            src = inside(root, clean_rel(p))
+            if src == root or not os.path.exists(src):
+                raise HTTPException(status_code=404, detail="That is not there any more")
+            if os.path.isdir(src) and (parent == src or parent.startswith(src + os.sep)):
+                raise HTTPException(status_code=400, detail="A folder cannot be copied into itself")
+            dest = os.path.join(parent, free_name(parent, os.path.basename(src)))
+            if os.path.isdir(src):
+                shutil.copytree(src, dest, ignore=lambda d, ns: [n for n in ns if not visible(n)])
+            else:
+                shutil.copy2(src, dest)
+            rel = rel_of(root, dest)
+            with Meta() as d:
+                d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)", (reg, rel, w.uid, w.name, now_iso()))
+                if os.path.isdir(dest):
+                    for dp, dns, fns in os.walk(dest):
+                        for n in dns + fns:
+                            d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
+                                      (reg, rel_of(root, os.path.join(dp, n)), w.uid, w.name, now_iso()))
+            done.append({"from": rel_of(root, src), "path": rel})
+        return {"copied": done}
+
+    # ------------------------------------------------------------ versions
+
+    def version_rows(reg, root, rel, full):
+        """Every version of a file, the current one last (one with no history: v1)."""
+        nm = names()
+        with Meta() as d:
+            rows = versions_of(d, reg, rel)
+            up = d.execute("SELECT uid, name, at FROM uploads WHERE reg = ? AND path = ?", (reg, rel)).fetchone()
+        if not rows:
+            st = os.stat(full)
+            return [{"n": 1, "by": (nm.get(up["uid"], up["name"]) if up else ""), "at": up["at"] if up else
+                     time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(st.st_mtime)), "size": st.st_size, "note": "", "current": True}]
+        last = rows[-1]["n"]
+        out = []
+        for r in rows:
+            cur = r["n"] == last
+            if not cur and not os.path.isfile(ver_file(root, rel, r["n"])):
+                continue                  # removed by an admin, or lost
+            out.append({"n": r["n"], "by": nm.get(r["uid"], r["name"]), "at": r["at"], "size": r["size"], "note": r["note"], "current": cur})
+        return out
+
+    def file_of_version(reg, root, parts, n):
+        rel = "/".join(parts)
+        full = inside(root, parts)
+        if not os.path.isfile(full):
+            raise HTTPException(status_code=404, detail="That file is not there any more")
+        with Meta() as d:
+            rows = versions_of(d, reg, rel)
+        if not n or not rows or n == rows[-1]["n"]:
+            return full
+        f = ver_file(root, rel, n)
+        if not os.path.isfile(f):
+            raise HTTPException(status_code=404, detail="That version is not kept any more")
+        return f
+
+    @app.get("/api/files/{reg}/versions")
+    async def file_versions(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
+        _, admin, _ = access(request, x_viewer_token, reg)
+        parts = clean_rel(path)
+        if bim_parts(parts):
+            return {"versions": [], "admin": admin}
+        root = root_of(reg)
+        full = inside(root, parts)
+        if not os.path.isfile(full):
+            raise HTTPException(status_code=404, detail="That file is not there any more")
+        return {"versions": list(reversed(version_rows(reg, root, "/".join(parts), full))), "admin": admin}
+
+    @app.get("/api/files/{reg}/version")
+    async def file_version(request: Request, reg: str, path: str = "", n: int = 0, download: int = 0,
+                           x_viewer_token: str = Header(default="")):
+        access(request, x_viewer_token, reg)
+        parts = clean_rel(path)
+        not_bim(path)
+        f = file_of_version(reg, root_of(reg), parts, n)
+        ext = os.path.splitext(parts[-1])[1].lower()
+        stem = os.path.splitext(parts[-1])[0]
+        r = FileResponse(f, filename="%s (v%d)%s" % (stem, n, ext) if n else parts[-1],
+                         content_disposition_type="inline" if ext in INLINE and not download else "attachment")
+        r.headers["Cache-Control"] = "private, no-cache"
+        r.headers["X-Content-Type-Options"] = "nosniff"
+        if ext == ".svg":
+            r.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'"
+        return r
+
+    @app.post("/api/files/{reg}/restore-version")
+    async def file_restore_version(request: Request, reg: str, x_viewer_token: str = Header(default="")):
+        """{path, n} - an earlier version made current again: it becomes the
+        next version (the one it replaces is kept)."""
+        w, _, _ = access(request, x_viewer_token, reg)
+        b = await body_of(request)
+        parts = clean_rel(b.get("path"))
+        not_bim(b.get("path"))
+        root = root_of(reg)
+        rel = "/".join(parts)
+        n = int(b.get("n") or 0)
+        src = file_of_version(reg, root, parts, n)
+        full = inside(root, parts)
+        if src == full:
+            raise HTTPException(status_code=400, detail="That is the current version already")
+        tmp = full + ".lwk-restore"
+        shutil.copy2(src, tmp)
+        with Meta() as d:
+            nxt = keep_current(d, reg, root, rel, full)
+            os.replace(tmp, full)
+            os.utime(full, None)
+            d.execute("INSERT OR REPLACE INTO versions (reg, path, n, uid, name, at, size, note) VALUES (?,?,?,?,?,?,?,?)",
+                      (reg, rel, nxt, w.uid, w.name, now_iso(), os.path.getsize(full), "v%d made current again" % n))
+            d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)", (reg, rel, w.uid, w.name, now_iso()))
+        return {"path": rel, "version": nxt}
+
+    @app.post("/api/files/{reg}/delete-version")
+    async def file_delete_version(request: Request, reg: str, x_viewer_token: str = Header(default="")):
+        """{path, n} - an earlier version removed for good (project admins)."""
+        access(request, x_viewer_token, reg, "admin")
+        b = await body_of(request)
+        parts = clean_rel(b.get("path"))
+        not_bim(b.get("path"))
+        root = root_of(reg)
+        rel = "/".join(parts)
+        n = int(b.get("n") or 0)
+        with Meta() as d:
+            rows = versions_of(d, reg, rel)
+            if not rows or n == rows[-1]["n"]:
+                raise HTTPException(status_code=400, detail="The current version cannot be removed - delete the file instead")
+            f = ver_file(root, rel, n)
+            if os.path.isfile(f):
+                os.remove(f)
+        return {"removed": n}
 
     def may_delete(w, admin, reg, root, full, meta_uid):
         if admin:
@@ -808,7 +1028,12 @@ def register(app, core):
             size = os.path.getsize(full) if not isdir else 0
             shutil.move(full, os.path.join(box, os.path.basename(full)))
             rel = rel_of(root, full)
+            # its kept versions go too (back with a restore)
+            if os.path.isdir(ver_dir(root, rel)):
+                shutil.move(ver_dir(root, rel), os.path.join(box, ".versions"))
             with Meta() as d:
+                d.execute("UPDATE versions SET path = ? || path WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')",
+                          ("~bin/%s/" % bid, reg, rel, rel.replace("%", r"\%").replace("_", r"\_") + "/%"))
                 d.execute("INSERT INTO bin (id, reg, path, dir, by_uid, by_name, at, size) VALUES (?,?,?,?,?,?,?,?)",
                           (bid, reg, rel, 1 if isdir else 0, w.uid, w.name, now_iso(), size))
                 # pins and stars are kept for a restore; uploaders too
@@ -850,12 +1075,25 @@ def register(app, core):
             nm = free_name(parent, parts[-1])
             dest = os.path.join(parent, nm)
             shutil.move(src, dest)
-            shutil.rmtree(box, ignore_errors=True)
             new_rel = rel_of(root, dest)
+            kept = os.path.join(box, ".versions")
+            if os.path.isdir(kept):
+                vd = ver_dir(root, new_rel)
+                if os.path.isdir(vd):
+                    shutil.rmtree(vd, ignore_errors=True)
+                os.makedirs(os.path.dirname(vd), exist_ok=True)
+                shutil.move(kept, vd)
+            shutil.rmtree(box, ignore_errors=True)
             with Meta() as d:
                 d.execute("DELETE FROM bin WHERE id = ?", (bid,))
                 if new_rel != r["path"]:
                     move_meta(d, reg, r["path"], new_rel)
+                # its history back (after move_meta: that clears rows at the new name)
+                pre = "~bin/%s/" % bid
+                d.execute("DELETE FROM versions WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')",
+                          (reg, new_rel, new_rel.replace("%", r"\%").replace("_", r"\_") + "/%"))
+                d.execute("UPDATE versions SET path = ? || substr(path, ?) WHERE reg = ? AND path LIKE ? ESCAPE '\\'",
+                          (new_rel, len(pre) + len(r["path"]) + 1, reg, pre.replace("_", r"\_") + "%"))
             out.append({"id": bid, "path": new_rel})
         return {"restored": out}
 

@@ -72,7 +72,7 @@ PART = [
     H3('View cube 同鏡頭'),
     UL([
         '撳 cube 嘅一個**面**睇嗰個方向，撳一條**邊**睇兩個面之間，撳一個**角**睇 isometric。拖個 cube 可以轉。下面個圈顯示北面。',
-        '屋仔掣返去 3D 全景。**Fit** 將所有載入咗嘅 model 放晒入畫面。',
+        '屋仔掣返去 3D 全景。Cube 下面有 **Walk**（睇「喺 model 入面行」）同 **Fit**，將所有載入咗嘅 model 放晒入畫面。',
         '**Perspective / Parallel** 轉投影方式（plan 永遠係 parallel）。',
         '**Set front：** 撳一幅牆話俾 cube 知呢棟樓邊面係「Front」；**World** 返去世界軸。',
     ]),
@@ -81,7 +81,7 @@ PART = [
         '**Floor plan** 下拉選單列出 **Whole building** 同由上至下每一層。',
         '揀一層就會由嗰層樓面以下 0.5 m 切到以上 1.2 m，再由上面直望落去，好似 Revit 嘅 plan 咁。',
         '**Page Up / Page Down** 上落一層；**Whole building** 返去成個 3D model。',
-        '**Drawing** 將嗰層嘅 plan sheet 鋪喺 model 上面，等你對比圖同 model。',
+        '**Plan overlay**（樓層清單旁邊）將嗰層嘅 plan sheet 鋪喺 model 上面，等你對比圖同 model。',
     ]),
     H3('Models panel'),
     UL([
@@ -91,6 +91,13 @@ PART = [
         '**Light mode (phones, tablets)** 只會喺你望緊嘅附近載入重複嘅標準層。手機同平板預設開咗。',
         '每個 panel 嘅標題（Models、Section、Measure 等等）撳一下就收埋，下次都會保持收埋。',
     ]),
+    P('左邊 panel 分做三組，每組一隻顏色，容易搵：'),
+    TABLE(['組', '顏色', '部分'], [
+        ['**Model**', '藍', 'Models、Elements、Model browser - 載入咗乜、入面有乜'],
+        ['**Tools**', '青綠', 'Section、Measure、Checks - 處理 model 嘅工具'],
+        ['**View**', '琥珀', 'Display、Saved views - 點樣顯示'],
+    ]),
+    P('3D 頂部只留低 **Navigate**、**Add issue** 同 **Measure**、樓層清單同 **Plan overlay**、🔗 連結同 **BCF ▾**。**Walk** 同 **Fit** 喺 view cube 下面；**Shaded / White / X-ray** 同 **Depth** 喺 **Display** 頂部；**Hide issues** 同 **Hide closed** 喺右邊 **Issues in 3D** 頂部。'),
     H2('3D：揀、搵同顯示'),
     P('撳任何元件就睇到佢係乜；用 Model browser 可以按名、type、樓層或者 property 搵元件。'),
     H3('Selection panel'),
@@ -115,7 +122,7 @@ PART = [
         ['**White**', '乾淨、冇顏色，啱 review 同截圖'],
         ['**X-ray**', '透過牆同樓板睇到入面'],
     ]),
-    P('**Display** panel 仲可以設定背景顏色、地面（開關同顏色）同 grid。'),
+    P('呢三個掣同 **Depth**（角落柔和陰影同邊線）喺 **Display** panel 頂部；呢個 panel 仲可以設定背景顏色、地面（開關同顏色）、grid 同深度陰影。'),
     H3('Saved views'),
     UL([
         '**Save**（或者右鍵 **Save view...**）會連名同縮圖儲存鏡頭、section 同隱藏咗嘅元件。Saved view 成個 project 都睇到。',

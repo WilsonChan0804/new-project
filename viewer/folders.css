@@ -151,3 +151,25 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 
 /* Dark mode: tinted chips and notes above, the same hue on a dark ground,
    and their dark text made light (theme.js; style.css :root[data-theme]). */
+
+/* versions: the badge, the list in the preview */
+.fo-ver { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 8px; font-size: 10.5px; font-weight: 700;
+  background: var(--accent-soft); color: var(--accent-ink); vertical-align: 1px; }
+.fo-ver.old { background: var(--line-soft); color: var(--ink-2, #555); }
+.pv-oldver { margin: 6px 10px; font-size: 12px; }
+.pv-vers { border-bottom: 1px solid var(--line); padding: 6px 10px 8px; max-height: 45%; overflow-y: auto; background: var(--panel); }
+.pv-vers-h { font-size: 12px; margin-bottom: 4px; }
+.pv-ver { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-radius: 6px; font-size: 12px; }
+.pv-ver.on { background: var(--accent-soft); }
+.pv-ver .fo-ver { margin-left: 0; }
+.pv-ver-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pv-ver-t small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-ver-a { display: flex; gap: 3px; flex: none; }
+.pv-ver-a .ghost { font-size: 11px; padding: 2px 7px; }
+.pv-ver-a .bad { color: #c0392b; }
+.fo-radio { display: flex !important; flex-direction: row !important; gap: 8px; align-items: flex-start; margin: 4px 0 8px; font-size: 13px; }
+.fo-radio input { width: auto !important; margin-top: 3px; }
+/* dragging: what will happen, by the pointer */
+.fo-dragbadge { position: fixed; z-index: 1000; pointer-events: none; background: var(--ink, #222); color: #fff; font-size: 12px;
+  padding: 4px 9px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.25); white-space: nowrap; }
+.fo-dragbadge[hidden] { display: none; }

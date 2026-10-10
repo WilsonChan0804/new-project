@@ -7904,7 +7904,7 @@ async function boot() {
        instead of taking a panel of their own. The buttons are moved, not
        rebuilt, so everything already wired to them keeps working. */
     const bar = S.cube.bar;
-    for (const id of ["pv-ortho", "pv-setalign", "pv-clearalign"]) {
+    for (const id of ["m-walk", "fit3d", "pv-ortho", "pv-setalign", "pv-clearalign"]) {
       const el = document.getElementById(id);
       if (el && bar) bar.appendChild(el);
     }
@@ -8067,6 +8067,10 @@ async function boot() {
         const pick = document.getElementById("bcf-frame-pick");
         if (pick) { pick.style.left = Math.min(innerWidth - 300, r.left) + "px"; pick.style.top = (r.bottom + 4) + "px"; }
       } },
+      "-",
+      // for checking where BCF lands in Revit (support)
+      { label: "Test topics: looking straight down", action: () => $("#top-test").click() },
+      { label: "Test topics: camera directions", action: () => $("#axis-test").click() },
     ]);
   });
   const bcfIn = document.getElementById("import-bcf-file");

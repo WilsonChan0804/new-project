@@ -33,6 +33,8 @@ const LOCKED = "00 BIM is kept by the viewer: its models and sheets can be opene
 const base = () => `/api/files/${encodeURIComponent(F.reg)}`;
 const post = (path, body) => api(base() + path, { method: "POST", body: JSON.stringify(body || {}) });
 const fileUrl = (p, dl) => `${base()}/file?path=${encodeURIComponent(p)}${dl ? "&download=1" : ""}`;
+// a file as listed, or one of its earlier versions (e._v)
+const urlOf = (e, dl) => (e._v ? `${base()}/version?path=${encodeURIComponent(e.path)}&n=${e._v}${dl ? "&download=1" : ""}` : fileUrl(e.path, dl));
 const parentOf = (p) => p.split("/").slice(0, -1).join("/");
 const nameOf = (p) => p.split("/").pop();
 
@@ -210,7 +212,7 @@ function paint() {
     const lock = e.locked ? `<span class="flags" title="${esc(LOCKED)}">&#128274;</span>` : "";
     h += `<div class="fo-row${F.sel.has(e.path) ? " sel" : ""}${e.dir && !e.locked ? " fo-drop-t" : ""}${e.locked ? " locked" : ""}" data-path="${esc(e.path)}" draggable="${!e.bin && !e.locked}"${e.bin ? ` data-bin="${esc(e.id)}"` : ""}>`
       + `<span class="ico">${iconOf(e)}</span>`
-      + `<span><span class="nm" data-open>${esc(e.name)}</span>${e.dir && e.count != null ? `<small class="muted"> ${e.count} item${e.count === 1 ? "" : "s"}</small>` : ""}${flags}${e.path === BIM ? lock : ""}${where}</span>`
+      + `<span><span class="nm" data-open>${esc(e.name)}</span>${e.ver ? `<span class="fo-ver" title="Version ${e.ver} - earlier ones under ⋯ > Versions">v${e.ver}</span>` : ""}${e.dir && e.count != null ? `<small class="muted"> ${e.count} item${e.count === 1 ? "" : "s"}</small>` : ""}${flags}${e.path === BIM ? lock : ""}${where}</span>`
       + `<span class="muted">${esc(when(e.bin ? e.at : e.mtime))}</span>`
       + `<span class="muted c-size">${e.dir ? "" : esc(size(e.size))}</span>`
       + `<span class="muted c-by">${esc(e.locked && !e.dir && !e.by ? "LWK Viewer" : e.by || "")}</span>`
@@ -235,7 +237,7 @@ function paintTree() {
     const ks = kids.get(p) || [];
     const open = F.open.has(p);
     return `<div class="fo-node${open ? " open" : ""}" data-node="${esc(p)}">`
-      + `<button class="fo-nl${isBim(p) ? "" : " fo-drop-t"}${F.mode === "folder" && F.path === p ? " on" : ""}" data-path="${esc(p)}">`
+      + `<button class="fo-nl${isBim(p) ? "" : " fo-drop-t"}${F.mode === "folder" && F.path === p ? " on" : ""}" data-path="${esc(p)}"${p && !isBim(p) ? ' draggable="true"' : ""}>`
       + `<span class="tw" data-tw>${ks.length ? "&#9654;" : ""}</span><span>${p === BIM ? "&#128274;" : "&#128193;"}</span><span class="nm">${esc(label)}</span></button>`
       + (ks.length && open ? `<div class="fo-kids">${ks.map((k) => node(k, nameOf(k))).join("")}</div>` : "")
       + `</div>`;
@@ -262,7 +264,7 @@ function openItem(e) {
 function preview(e) {
   const box = $("#fo-prev");
   const ext = extOf(e.name);
-  const url = fileUrl(e.path);
+  const url = urlOf(e);
   let body;
   const later = OFFICE.has(ext) || TEXT.has(ext) || ext === "csv" || (ext === "pdf" && TOUCH());
   // #view=FitH: the whole width of the page, landscape pages too
@@ -271,31 +273,81 @@ function preview(e) {
   else if (["mp4", "webm", "mov"].includes(ext)) body = `<video src="${esc(url)}" controls playsinline></video>`;
   else if (["mp3", "m4a", "wav"].includes(ext)) body = `<audio src="${esc(url)}" controls></audio>`;
   else body = `<img src="${esc(url)}" alt="${esc(e.name)}">`;
-  box.innerHTML = `<div class="pv-bar"><b title="${esc(e.path)}">${esc(e.name)}</b>`
+  const canVer = !e.dir && !e.locked && !isBim(e.path) && !e.nofile;
+  box.innerHTML = `<div class="pv-bar"><b title="${esc(e.path)}">${esc(e.name)}${e._v ? ` <span class="fo-ver old">v${e._v}</span>` : e.ver ? ` <span class="fo-ver">v${e.ver}</span>` : ""}</b>`
+    + (canVer ? `<button class="ghost" data-pv="ver" title="Earlier versions of this file: open, download or make current again">Versions</button>` : "")
     + (isPdf(e) ? `<button class="ghost" data-pv="sheets" title="Add its pages to a set on the Sheets page">To Sheets</button>` : "")
     + `<span class="pv-zoom" hidden><button class="ghost" data-pv="zo" title="Smaller">&minus;</button>`
     + `<button class="ghost pv-fit" data-pv="fit" title="Fit the page to the width">Fit</button>`
     + `<button class="ghost" data-pv="zi" title="Bigger">+</button></span>`
     + `<button class="ghost pv-wide" data-pv="wide" title="Wider: hide the folders and the file list (Esc)">&#10530;</button>`
     + `<a class="ghost btn" href="${esc(url)}" target="_blank" rel="noopener" title="Open in a new tab">&#8599;</a>`
-    + `<a class="ghost btn" href="${esc(fileUrl(e.path, true))}" title="Download">&#11015;</a>`
-    + `<button class="ghost" data-pv="x" title="Close">&times;</button></div><div class="pv-body">${body}</div><div class="pv-grip" title="Drag to make the preview wider"></div>`;
+    + `<a class="ghost btn" href="${esc(urlOf(e, true))}" title="Download">&#11015;</a>`
+    + `<button class="ghost" data-pv="x" title="Close">&times;</button></div>`
+    + (e._v ? `<div class="pv-oldver lwk-callout">An earlier version (v${e._v}) - not the current one. <a href="#" data-pv="cur">Back to the current one</a></div>` : "")
+    + `<div class="pv-vers" hidden></div><div class="pv-body">${body}</div><div class="pv-grip" title="Drag to make the preview wider"></div>`;
   box.hidden = false;
   box._zoom = null;
   if (lsGet("wide", false)) setWide(true, true);
   if (later) showDoc(e, box.querySelector(".pv-body")).catch((err) => {
     const b = box.querySelector(".pv-body");
-    if (b) b.innerHTML = `<div class="pv-none">${esc(err.message)}<br><a href="${esc(fileUrl(e.path, true))}">Download it</a></div>`;
+    if (b) b.innerHTML = `<div class="pv-none">${esc(err.message)}<br><a href="${esc(urlOf(e, true))}">Download it</a></div>`;
   });
   box.onclick = (ev) => {
     const b = ev.target.closest("[data-pv]");
     if (!b) return;
     if (b.dataset.pv === "x") closePreview();
+    if (b.dataset.pv === "ver") showVersions(e);
+    if (b.dataset.pv === "cur") { ev.preventDefault(); preview(Object.assign({}, e, { _v: 0 })); }
     if (b.dataset.pv === "sheets") toSheets(e);
     if (b.dataset.pv === "wide") setWide(!document.body.classList.contains("fo-wide"));
     if (b.dataset.pv === "fit") zoom(box, "fit");
     if (b.dataset.pv === "zi") zoomAbout(box, 1.15);
     if (b.dataset.pv === "zo") zoomAbout(box, 1 / 1.15);
+  };
+}
+
+/* The versions of the file in the preview: each with who, when, what
+   changed - open, download, make current again (and, for admins, remove). */
+async function showVersions(e) {
+  const box = $("#fo-prev"), panel = box.querySelector(".pv-vers");
+  if (!panel) return;
+  if (!panel.hidden) { panel.hidden = true; return; }
+  panel.hidden = false;
+  panel.innerHTML = `<div class="muted">Loading the versions ...</div>`;
+  let r;
+  try { r = await api(`${base()}/versions?path=${encodeURIComponent(e.path)}`); }
+  catch (err) { panel.innerHTML = `<div class="muted">${esc(err.message)}</div>`; return; }
+  const vs = r.versions || [];
+  panel.innerHTML = `<div class="pv-vers-h"><b>Versions</b> <span class="muted">${vs.length === 1 ? "only this one so far - upload a file of the same name and choose New version" : vs.length + " kept"}</span></div>`
+    + vs.map((v) => `<div class="pv-ver${v.current ? " cur" : ""}${e._v === v.n || (!e._v && v.current) ? " on" : ""}" data-n="${v.n}">`
+      + `<span class="fo-ver${v.current ? "" : " old"}">v${v.n}</span>`
+      + `<span class="pv-ver-t"><span>${v.current ? "<b>Current</b> · " : ""}${esc(when(v.at))}${v.by ? " · " + esc(v.by) : ""} · ${esc(size(v.size))}</span>`
+      + (v.note ? `<small class="muted">${esc(v.note)}</small>` : "") + `</span>`
+      + `<span class="pv-ver-a"><button class="ghost" data-v="open" title="Show this version here">Open</button>`
+      + `<a class="ghost btn" href="${esc(urlOf(Object.assign({}, e, { _v: v.current ? 0 : v.n }), true))}" title="Download this version">&#11015;</a>`
+      + (v.current ? "" : `<button class="ghost" data-v="cur" title="Make this the current version again (the current one is kept)">Make current</button>`)
+      + (!v.current && r.admin ? `<button class="ghost bad" data-v="del" title="Remove this version for good (project admins)">&times;</button>` : "")
+      + `</span></div>`).join("");
+  panel.onclick = async (ev) => {
+    const b = ev.target.closest("[data-v]");
+    if (!b) return;
+    const n = Number(b.closest("[data-n]").dataset.n);
+    const v = vs.find((x) => x.n === n);
+    if (b.dataset.v === "open") return preview(Object.assign({}, e, { _v: v.current ? 0 : n }));
+    if (b.dataset.v === "cur") {
+      try {
+        const res = await post("/restore-version", { path: e.path, n });
+        toast(`v${n} is current again (as v${res.version}) - nothing was lost`);
+        await afterChange();
+        preview(Object.assign({}, e, { _v: 0, ver: res.version }));
+      } catch (err) { toast(err.message, true); }
+    }
+    if (b.dataset.v === "del") {
+      if (!confirm(`Remove version ${n} of "${e.name}" for good?`)) return;
+      try { await post("/delete-version", { path: e.path, n }); panel.hidden = true; showVersions(e); }
+      catch (err) { toast(err.message, true); }
+    }
   };
 }
 
@@ -488,9 +540,9 @@ function script(src) {
 
 async function showDoc(e, body) {
   const ext = extOf(e.name);
-  if (ext === "pdf") return showPdf(body, fileUrl(e.path));
+  if (ext === "pdf") return showPdf(body, urlOf(e));
   if (TEXT.has(ext)) {
-    const t = await (await fetch(fileUrl(e.path))).text();
+    const t = await (await fetch(urlOf(e))).text();
     body.innerHTML = `<pre class="pv-text"></pre>`;
     body.firstChild.textContent = t.length > 2e6 ? t.slice(0, 2e6) + "\n..." : t;
     return;
@@ -498,7 +550,7 @@ async function showDoc(e, body) {
   F.convertError = "";
   if (OFFICE.has(ext)) {
     if (F.officePreview) body.innerHTML = `<div class="pv-none"><span class="pv-spin"></span>Opening ${esc(e.name)} ...<br><small>A big file takes a while the first time; it is quick after that.</small></div>`;
-    const res = await fetch(`${base()}/preview?path=${encodeURIComponent(e.path)}`, { headers: { "X-Viewer-Token": localStorage.getItem("lwk-viewer:token") || "" } });
+    const res = await fetch(`${base()}/preview?path=${encodeURIComponent(e.path)}${e._v ? "&v=" + e._v : ""}`, { headers: { "X-Viewer-Token": localStorage.getItem("lwk-viewer:token") || "" } });
     if (res.ok) {
       if (TOUCH()) return showPdf(body, await res.arrayBuffer());
       const u = URL.createObjectURL(await res.blob());
@@ -514,7 +566,7 @@ async function showDoc(e, body) {
     }
   }
   // no LibreOffice on the server: in the browser
-  const buf = await (await fetch(fileUrl(e.path))).arrayBuffer();
+  const buf = await (await fetch(urlOf(e))).arrayBuffer();
   if (ext === "docx") {
     await script(CDN.jszip);
     await script(CDN.docx);
@@ -599,10 +651,32 @@ async function move(paths, to) {
   try {
     const r = await post("/move", { paths, to });
     const moved = r.moved;
+    // the folder open (or open in the tree) was moved: follow it
+    for (const m of moved) {
+      const under = (x) => x === m.from || x.startsWith(m.from + "/");
+      if (F.mode === "folder" && under(F.path)) F.path = m.path + F.path.slice(m.from.length);
+      for (const o of [...F.open]) if (under(o)) { F.open.delete(o); F.open.add(m.path + o.slice(m.from.length)); }
+    }
     Undo.record({ label: `moved ${moved.length === 1 ? `"${nameOf(moved[0].from)}"` : moved.length + " items"}`,
       undo: async () => { for (const m of moved) await post("/move", { paths: [m.path], to: parentOf(m.from) }); await afterChange(); },
       redo: async () => { for (const m of moved) await post("/move", { paths: [m.from], to }); await afterChange(); } });
     toast(`Moved to ${to || (F.proj ? F.proj.name : "the top")}`);
+    await afterChange();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* Ctrl held while dropping: copies (a name taken there gets " (2)") */
+async function copy(paths, to) {
+  paths = paths.filter((p) => p !== to && !to.startsWith(p + "/"));
+  if (!paths.length) return;
+  try {
+    const r = await post("/copy", { paths, to });
+    const made = r.copied.map((c) => c.path);
+    let ids = [];
+    Undo.record({ label: `copied ${made.length === 1 ? `"${nameOf(made[0])}"` : made.length + " items"}`,
+      undo: async () => { ids = (await post("/delete", { paths: made })).deleted.map((d) => d.id); await afterChange(); },
+      redo: async () => { await post("/restore", { ids }); await afterChange(); } });
+    toast(`Copied to ${to || (F.proj ? F.proj.name : "the top")}`);
     await afterChange();
   } catch (e) { toast(e.message, true); }
 }
@@ -722,8 +796,27 @@ async function toSheets(e) {
 const queue = [];
 let uploading = false;
 
-function addUploads(files, to) {
-  for (const f of files) queue.push({ file: f, to, name: f.relPath || f.webkitRelativePath || f.name, pct: 0, state: "wait" });
+/* Files whose names are already in the folder: their next version (as a
+   CDE keeps them), or both kept (" (2)"). Asked once for the batch. */
+async function addUploads(files, to) {
+  const list = [...files].map((f) => ({ file: f, to, name: f.relPath || f.webkitRelativePath || f.name, pct: 0, state: "wait", as: "copy" }));
+  let have = null;
+  try {
+    const items = to === F.path && F.mode === "folder" ? F.items : (await api(`${base()}/list?path=${encodeURIComponent(to)}`)).items;
+    have = new Set(items.filter((i) => !i.dir).map((i) => i.name.toLowerCase()));
+  } catch (e) { have = null; }
+  const same = have ? list.filter((x) => !x.name.includes("/") && have.has(x.name.toLowerCase())) : [];
+  if (same.length) {
+    const f = await modal(same.length === 1 ? `"${same[0].name}" is already here` : `${same.length} files are already here`,
+      `<p class="muted" style="margin:0 0 8px;font-size:12px">${same.slice(0, 6).map((x) => esc(x.name)).join(", ")}${same.length > 6 ? " ..." : ""}</p>`
+      + `<label class="fo-radio"><input type="radio" name="how" value="version" checked> <span><b>New version</b><br><small class="muted">Same name and place; the one there now is kept as the version before (⋯ > Versions)</small></span></label>`
+      + `<label class="fo-radio"><input type="radio" name="how" value="copy"> <span><b>Keep both</b><br><small class="muted">The new one is called "name (2)"</small></span></label>`
+      + `<label>What changed (optional) <input name="note" maxlength="300" placeholder="e.g. Rev B - layout revised"></label>`, "Upload");
+    if (!f) return;
+    const how = f.how.value, note = f.note.value.trim();
+    for (const x of same) { x.as = how; x.note = note; }
+  }
+  for (const x of list) queue.push(x);
   paintProg();
   if (!uploading) runUploads();
 }
@@ -739,7 +832,7 @@ function paintProg() {
 function sendOne(x) {
   return new Promise((res) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${base()}/upload?path=${encodeURIComponent(x.to)}&name=${encodeURIComponent(x.name)}`);
+    xhr.open("POST", `${base()}/upload?path=${encodeURIComponent(x.to)}&name=${encodeURIComponent(x.name)}&as=${x.as || "copy"}${x.note ? "&note=" + encodeURIComponent(x.note) : ""}`);
     try { xhr.setRequestHeader("X-Viewer-Token", localStorage.getItem("lwk-viewer:token") || ""); } catch (e) {}
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
     xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) { x.pct = ev.loaded / ev.total * 100; paintProg(); } };
@@ -765,7 +858,13 @@ async function runUploads() {
     paintProg();
   }
   uploading = false;
-  const ok = batch.filter((b) => b.state === "done" && b.res);
+  const done = batch.filter((b) => b.state === "done" && b.res);
+  const vers = done.filter((b) => b.res.version);
+  const ok = done.filter((b) => !b.res.version);
+  if (vers.length) {
+    toast(vers.length === 1 ? `"${vers[0].res.name}" is now version ${vers[0].res.version}` : `${vers.length} files have a new version`);
+    if (!ok.length) await afterChange();
+  }
   if (ok.length) {
     const paths = ok.map((b) => b.res.path);
     let ids = [];
@@ -900,6 +999,7 @@ function itemMenu(e, x, y) {
     ...(e.dir ? [["newdir", "New folder here"]] : []),
     ["open", e.dir ? "Open" : PREVIEW.has(extOf(e.name)) ? "Preview" : "Download"],
     ...(e.dir ? [] : [["download", "Download"]]),
+    ...(e.dir || e.locked || isBim(e.path) ? [] : [["versions", e.ver ? `Versions (${e.ver})` : "Versions"]]),
     ...(isPdf(e) ? [["sheets", "Add to the Sheets page ..."]] : []),
     ["star", e.starred ? "Take the star off" : "Star (for me)"],
     ...(F.admin ? [["pin", e.pinned ? "Unpin" : "Pin for everyone"]] : []),
@@ -917,6 +1017,7 @@ function itemMenu(e, x, y) {
     if (k === "open") openItem(e);
     else if (k === "newdir") newFolder(e.path);
     else if (k === "download") location.href = fileUrl(e.path, true);
+    else if (k === "versions") { preview(e); showVersions(e); }
     else if (k === "sheets") toSheets(e);
     else if (k === "star") star(e, !e.starred);
     else if (k === "pin") pin(e, !e.pinned);
@@ -1023,17 +1124,58 @@ function wire() {
     else if (ev.key === "Backspace" && F.mode === "folder" && F.path) { ev.preventDefault(); go(parentOf(F.path)); }
   });
 
-  /* drag rows onto folders (the list, the tree, the path at the top) to move them */
-  let drag = null;
+  /* drag rows, or folders in the tree, onto folders (the list, the tree,
+     the path at the top) to move them - Ctrl held: copy. Hovering on a
+     closed folder in the tree opens it; near the tree's top or bottom it
+     scrolls. */
+  let drag = null, hoverAt = null, hoverT = 0;
+  const badge = document.createElement("div");
+  badge.className = "fo-dragbadge";
+  badge.hidden = true;
+  document.body.appendChild(badge);
+  const endDrag = () => {
+    drag = null; badge.hidden = true; clearTimeout(hoverT); hoverAt = null;
+    for (const x of document.querySelectorAll(".drop")) x.classList.remove("drop");
+  };
   document.addEventListener("dragstart", (ev) => {
-    const row = ev.target.closest && ev.target.closest(".fo-row");
-    if (!row || row.dataset.bin || row.classList.contains("locked")) return;
-    if (!F.sel.has(row.dataset.path)) { F.sel = new Set([row.dataset.path]); paintSel(); }
-    drag = [...F.sel];
-    ev.dataTransfer.effectAllowed = "move";
+    const node = ev.target.closest && ev.target.closest(".fo-nl[draggable=true]");
+    if (node) {
+      drag = [node.dataset.path];
+    } else {
+      const row = ev.target.closest && ev.target.closest(".fo-row");
+      if (!row || row.dataset.bin || row.classList.contains("locked")) return;
+      if (!F.sel.has(row.dataset.path)) { F.sel = new Set([row.dataset.path]); paintSel(); }
+      drag = [...F.sel];
+    }
+    ev.dataTransfer.effectAllowed = "copyMove";
     ev.dataTransfer.setData("text/x-lwk-files", JSON.stringify(drag));
   });
-  document.addEventListener("dragend", () => { drag = null; for (const x of document.querySelectorAll(".drop")) x.classList.remove("drop"); });
+  document.addEventListener("dragend", endDrag);
+  const copying = (ev) => ev.ctrlKey || ev.metaKey || ev.altKey;
+  function dragHelp(ev, tg) {
+    // the tree: open a closed folder after a moment, scroll at the edges
+    const tree = $("#fo-tree");
+    const r = tree.getBoundingClientRect();
+    if (ev.clientX >= r.left && ev.clientX <= r.right) {
+      if (ev.clientY < r.top + 28) tree.scrollTop -= 12;
+      else if (ev.clientY > r.bottom - 28) tree.scrollTop += 12;
+    }
+    const p = tg && tg.classList.contains("fo-nl") ? tg.dataset.path : null;
+    if (p !== hoverAt) {
+      clearTimeout(hoverT);
+      hoverAt = p;
+      if (p != null && !F.open.has(p)) hoverT = setTimeout(() => { F.open.add(p); paintTree(); }, 700);
+    }
+    // what will happen, by the pointer
+    if (drag && tg && !drag.includes(tg.dataset.path)) {
+      const to = tg.dataset.path;
+      badge.textContent = `${copying(ev) ? "Copy" : "Move"} ${drag.length === 1 ? `"${nameOf(drag[0])}"` : drag.length + " items"} to ${to ? nameOf(to) : (F.proj ? F.proj.name : "the top")}`
+        + (copying(ev) ? "" : "  (Ctrl: copy)");
+      badge.style.left = (ev.clientX + 14) + "px";
+      badge.style.top = (ev.clientY + 16) + "px";
+      badge.hidden = false;
+    } else badge.hidden = true;
+  }
   const target = (ev) => ev.target.closest && ev.target.closest(".fo-drop-t");
   let depth = 0;
   const dropBox = $("#fo-drop");
@@ -1049,7 +1191,12 @@ function wire() {
     const tg = target(ev);
     for (const x of document.querySelectorAll(".drop")) if (x !== tg) x.classList.remove("drop");
     if (drag) {
-      if (tg && !drag.includes(tg.dataset.path)) { ev.preventDefault(); tg.classList.add("drop"); }
+      dragHelp(ev, tg);
+      if (tg && !drag.includes(tg.dataset.path) && !drag.some((d) => tg.dataset.path.startsWith(d + "/"))) {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = copying(ev) ? "copy" : "move";
+        tg.classList.add("drop");
+      }
       return;
     }
     if (outside(ev)) {
@@ -1066,8 +1213,9 @@ function wire() {
     if (drag) {
       ev.preventDefault();
       const paths = drag;
-      drag = null;
-      if (tg) move(paths, tg.dataset.path);
+      const cp = copying(ev);
+      endDrag();
+      if (tg) (cp ? copy : move)(paths, tg.dataset.path);
       return;
     }
     if (!outside(ev)) return;

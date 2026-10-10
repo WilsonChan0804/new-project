@@ -31,28 +31,18 @@
     <button id="m-nav" class="active">Navigate</button>
     <button id="m-issue">Add issue</button>
     <button id="m-measure" class="ghost" data-icon="measure" title="Measure with snapping">Measure</button>
-    <button id="m-walk" class="ghost" data-icon="walk" title="Walk through the model at eye level: click a floor to stand on it, then W A S D or the arrow keys to move and drag to look around">Walk</button>
   </div>
-  <button id="pins-toggle" class="ghost" title="Show or hide the issue markers">Hide issues</button>
-  <button id="done-toggle" class="ghost" title="Hide resolved and closed issues in the model">&#10003; Hide closed</button>
-  <span id="display-modes" class="seg" title="How the model is drawn">
-    <button data-mode="shaded" class="ghost active">Shaded</button>
-    <button data-mode="white" class="ghost">White</button>
-    <button data-mode="xray" class="ghost">X-ray</button>
-  </span>
-  <button id="depth-toggle" class="ghost" title="Depth: soft shadows in corners and fine lines on edges">Depth</button>
   <label for="floor-select" class="flr-lab"
     title="Choose a floor to see it as a plan: the model is cut 1.2 m above that floor and viewed from above, like a Revit floor plan. Page Up / Page Down step between floors.">Floor plan</label>
   <select id="floor-select" title="Cut the model at this floor and look down (Page Up / Page Down to step)"
     style="width:auto;max-width:190px;font-size:12px;padding:3px 6px"></select>
   <button id="plan-draw" class="ghost" data-icon="sheet"
-    title="Lay the sheet's plan drawing - annotations, dimensions, tags - over this floor">Drawing</button>
+    title="Plan overlay: lay the sheet's plan drawing - annotations, dimensions, tags - over this floor">Plan overlay</button>
   <select id="plan-draw-pick" hidden title="More than one sheet shows this floor: choose which drawing"
     style="width:auto;max-width:200px;font-size:12px;padding:3px 6px"></select>
   <button id="top-test" class="ghost" title="Two topics looking straight down, one per coordinate frame - for checking BCF placement in Revit">Top test</button>
   <button id="axis-test" class="ghost" title="Axis test topics for checking BCF camera directions in Revit">Axis test</button>
   <div class="mode hdr-pair">
-    <button id="fit3d" class="ghost" title="Show the whole model">Fit</button>
     <button id="view-link" class="ghost" title="Copy a link to this exact view - camera, section, floor and display">&#128279;</button>
     <button id="bcf-menu" class="ghost" title="Issues as BCF: download for Revit or Navisworks, or bring them in">BCF &#9662;</button>
     <span id="bcf-pair" hidden>
@@ -66,7 +56,7 @@
 <div id="layout3d">
 
   <aside id="models">
-    <div class="panel-head">
+    <div class="panel-head" data-grp="model" data-cap="Model">
       Models <span id="model-count" class="muted"></span>
       <label class="row-check" style="margin-top:6px;font-size:11px"
         title="Place linked models by their Revit placement">
@@ -84,7 +74,29 @@
     <ul id="model-list"></ul>
     <div id="ref-panel" class="pad" hidden></div>
 
-    <div class="panel-head">Section</div>
+    <div class="panel-head" data-grp="model" style="display:flex;align-items:center;gap:6px">
+      Elements <span class="spacer"></span>
+      <button id="cat-all" class="ghost" style="font-size:11px" title="Show every category">Show all</button>
+    </div>
+    <ul id="cat-list" class="cat-list"></ul>
+
+    <div class="panel-head" data-grp="model" style="display:flex;align-items:center;gap:6px">
+      Model browser <span class="spacer"></span>
+      <span id="mb-count" class="muted" style="font-weight:400;font-size:11px"></span>
+    </div>
+    <div class="pad" id="mb-panel">
+      <input id="mb-search" type="search" placeholder="Search names, types, levels, properties ..."
+        title="Words match names, categories, families, types and levels; property:value (e.g. Fire Rating:2 hr) matches a property" style="width:100%;font-size:12px">
+      <div id="mb-actions" class="mb-actions" hidden>
+        <button id="mb-select" class="ghost">Select</button>
+        <button id="mb-isolate" class="ghost">Isolate</button>
+        <button id="mb-zoom" class="ghost">Zoom</button>
+        <span id="mb-what" class="muted"></span>
+      </div>
+      <ul id="mb-tree" class="mb-tree"></ul>
+    </div>
+
+    <div class="panel-head" data-grp="tools" data-cap="Tools">Section</div>
     <div class="pad" id="sec-panel">
       <div class="icon-row">
         <label class="ictog" data-icon="box" title="Turn the section box on or off - then drag the orange arrows on the model"><input type="checkbox" id="sec-on">Box</label>
@@ -115,7 +127,7 @@
       </div>
     </div>
 
-    <div class="panel-head">Measure</div>
+    <div class="panel-head" data-grp="tools">Measure</div>
     <div class="pad" id="meas-panel">
       <div class="icon-row">
         <button id="meas-distance" class="ghost active" data-icon="measure" title="Distance between two points">Distance</button>
@@ -134,7 +146,7 @@
         (green), edges (blue) and surfaces (grey) - a ring shows each snap. Esc drops a measurement.</div>
     </div>
 
-    <div class="panel-head">Checks</div>
+    <div class="panel-head" data-grp="tools">Checks</div>
     <div class="pad" id="chk-panel">
       <div class="chk-tabs">
         <button id="chk-tab-clash" class="ghost active" data-tab="clash" title="Elements that overlap - in one model, or between models">Clash</button>
@@ -165,30 +177,14 @@
       <div id="head-box" class="chk-box" hidden></div>
     </div>
 
-    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
-      Elements <span class="spacer"></span>
-      <button id="cat-all" class="ghost" style="font-size:11px" title="Show every category">Show all</button>
-    </div>
-    <ul id="cat-list" class="cat-list"></ul>
-
-    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
-      Model browser <span class="spacer"></span>
-      <span id="mb-count" class="muted" style="font-weight:400;font-size:11px"></span>
-    </div>
-    <div class="pad" id="mb-panel">
-      <input id="mb-search" type="search" placeholder="Search names, types, levels, properties ..."
-        title="Words match names, categories, families, types and levels; property:value (e.g. Fire Rating:2 hr) matches a property" style="width:100%;font-size:12px">
-      <div id="mb-actions" class="mb-actions" hidden>
-        <button id="mb-select" class="ghost">Select</button>
-        <button id="mb-isolate" class="ghost">Isolate</button>
-        <button id="mb-zoom" class="ghost">Zoom</button>
-        <span id="mb-what" class="muted"></span>
-      </div>
-      <ul id="mb-tree" class="mb-tree"></ul>
-    </div>
-
-    <div class="panel-head">Display</div>
+    <div class="panel-head" data-grp="view" data-cap="View">Display</div>
     <div class="pad" id="disp-panel">
+      <div class="disp-row disp-modes"><span id="display-modes" class="seg" title="How the model is drawn">
+        <button data-mode="shaded" class="ghost active">Shaded</button>
+        <button data-mode="white" class="ghost">White</button>
+        <button data-mode="xray" class="ghost">X-ray</button>
+      </span>
+      <button id="depth-toggle" class="ghost" title="Depth: soft shadows in corners and fine lines on edges">Depth</button></div>
       <div class="disp-row"><span class="muted">Background</span>
         <span class="swatches" id="bg-swatches"></span>
         <input type="color" id="bg-color" title="Any background colour"></div>
@@ -199,7 +195,7 @@
       <div class="disp-row"><label class="row-check" style="width:auto"
           title="Show or hide the grid under the model">
           <input type="checkbox" id="grid-on" checked> <span class="muted">Grid</span></label></div>
-      <div class="disp-sub" title="The Depth button in the header: soft shadow in corners, lines on edges">Depth shading</div>
+      <div class="disp-sub" title="The Depth button above: soft shadow in corners, lines on edges">Depth shading</div>
       <div class="disp-row"><span class="muted" style="width:56px">Shadow</span>
         <input type="range" id="dfx-ao" min="0" max="100" step="5" style="flex:1">
         <input type="color" id="dfx-ao-col" title="Shadow colour"></div>
@@ -209,7 +205,7 @@
       <div class="disp-row"><button id="dfx-reset" class="ghost" style="font-size:11px">Usual depth shading</button></div>
     </div>
 
-    <div class="panel-head" style="display:flex;align-items:center;gap:6px">
+    <div class="panel-head" data-grp="view" style="display:flex;align-items:center;gap:6px">
       Saved views
       <span class="spacer"></span>
       <button id="view-save" class="ghost" data-icon="camera" style="font-size:11px"
@@ -221,6 +217,8 @@
          the top bar do these jobs now. The projection and "front" controls
          are moved under the view cube at start-up. -->
     <div id="pv-legacy" hidden>
+      <button id="m-walk" class="ghost" data-icon="walk" title="Walk through the model at eye level: click a floor to stand on it, then W A S D or the arrow keys to move and drag to look around">Walk</button>
+      <button id="fit3d" class="ghost" data-icon="fit" title="Show the whole model">Fit</button>
       <button id="pv-top">Plan</button><button id="pv-front">Front</button>
       <button id="pv-back">Back</button><button id="pv-left">Left</button>
       <button id="pv-right">Right</button><button id="pv-iso">3D</button>
@@ -321,6 +319,9 @@
     <div class="panel-head" style="display:flex;align-items:center;gap:6px">Issues in 3D <span id="i3-count" class="muted"
       style="font-weight:400"></span>
 </div>
+    <div class="i3-togs"><span class="muted">In the model</span>
+      <button id="pins-toggle" class="ghost i3-tog" title="Show or hide the issue markers in the model">Hide issues</button>
+      <button id="done-toggle" class="ghost i3-tog" title="Hide resolved and closed issues in the model">&#10003; Hide closed</button></div>
     <div id="group-bar">
       Group
       <select id="i3-group">

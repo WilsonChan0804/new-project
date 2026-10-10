@@ -2153,3 +2153,32 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 .clash-legend .cl-sw { width: 12px; height: 12px; border-radius: 2px; flex: none; }
 .clash-legend .cl-sw.dot { background: #e2453c; border-radius: 50%; }
 .clash-legend .cl-note { font-size: 11px; opacity: 0.75; margin-left: 18px; }
+
+/* 3D: what left the header - display modes in Display, issue toggles in
+   the Issues head */
+.disp-modes { gap: 6px; flex-wrap: wrap; }
+.disp-modes .seg button, .disp-modes #depth-toggle { font-size: 12px; padding: 3px 10px; }
+.disp-modes #depth-toggle.active { background: var(--accent, #f28022); color: #fff; border-color: var(--accent, #f28022); }
+.i3-tog { font-size: 11px !important; padding: 2px 7px !important; font-weight: 400; white-space: nowrap; }
+.i3-tog.active { border-color: var(--accent, #f28022); }
+.disp-modes .seg { border-color: var(--line); }
+.disp-modes .seg button + button { border-left-color: var(--line); }
+.disp-modes .seg button.active { background: var(--accent, #f28022); color: #fff; }
+.i3-togs { display: flex; gap: 5px; align-items: center; padding: 6px 12px 0; font-size: 12px; flex-wrap: wrap; }
+.i3-togs .muted { margin-right: auto; }
+
+/* The left panel of the 3D page in three groups, each its colour: Model
+   (what is loaded and in it), Tools (section, measure, checks), View
+   (display, saved views). A bar on each heading; the group's name above
+   its first one. */
+:root { --grp-model: #2563eb; --grp-tools: #0d9488; --grp-view: #c2410c; }
+:root[data-theme="dark"] { --grp-model: #7aa7ff; --grp-tools: #4fd1c5; --grp-view: #f6a35c; }
+.panel-head[data-grp] { border-left: 4px solid var(--grp-c); }
+.panel-head[data-grp] .chev { color: var(--grp-c); }
+.panel-head[data-grp="model"] { --grp-c: var(--grp-model); }
+.panel-head[data-grp="tools"] { --grp-c: var(--grp-tools); }
+.panel-head[data-grp="view"] { --grp-c: var(--grp-view); }
+.panel-head[data-cap] { margin-top: 18px; }
+.panel-head[data-cap]::before { content: attr(data-cap); position: absolute; left: -4px; top: -16px; padding: 0 8px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--grp-c); }
+#models > .panel-head[data-cap]:first-child { margin-top: 14px; }

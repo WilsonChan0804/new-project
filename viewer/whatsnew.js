@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-21", date: "11 Oct 2026",
+    items: [
+      "3D: a **tidier header**. **Walk** and **Fit** are under the view cube; **Shaded / White / X-ray** and **Depth** at the top of **Display**; **Hide issues** and **Hide closed** at the top of **Issues in 3D**. **Drawing** is now **Plan overlay**.",
+      "The 3D left panel is in **three coloured groups**: **Model** (blue), **Tools** (teal) and **View** (amber).",
+      "Folders: **drag folders in the tree** too, hover on a closed folder to open it, hold **Ctrl** to copy.",
+      "Folders: **versions**. Upload a file of the same name and choose **New version**; **⋯ > Versions** opens, downloads or brings back an earlier one.",
+    ],
+  },
+  {
     version: "2026-10-20", date: "11 Oct 2026",
     items: [
       "Clash check: a big run no longer stops silently - the panel says how many pairs and how long, with **Check them all** or **Choose floors instead**. The list now shows the clashes of the **place chosen** (whole model, floors, section box), with the rest one click away.",
