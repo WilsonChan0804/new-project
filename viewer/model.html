@@ -147,11 +147,16 @@
           <button id="clash-edit" class="ghost" title="Change this rule">&#9998;</button>
           <button id="clash-del" class="ghost" title="Delete this rule">&#10005;</button>
         </div>
+        <div id="clash-info" class="ck-info muted"></div>
         <div class="chk-row">
           <select id="clash-scope" title="Where to check" aria-label="Where to check">
-            <option value="all">Whole model</option><option value="box">Inside the section box</option></select>
+            <option value="all">Whole model</option><option value="floors">Floors</option><option value="box">Inside the section box</option></select>
           <button id="clash-run" class="primary" title="Check now">Run</button>
           <button id="clash-stop" class="ghost" hidden>Stop</button>
+        </div>
+        <div class="chk-row ck-fr" id="clash-fr" hidden>
+          <span class="muted">from</span><select id="clash-from" aria-label="From floor"></select>
+          <span class="muted">to</span><select id="clash-to" aria-label="To floor"></select>
         </div>
         <div id="clash-prog" class="chk-prog" hidden><span></span></div>
         <div id="clash-sum"></div>

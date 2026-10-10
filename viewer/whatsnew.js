@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-18", date: "11 Oct 2026",
+    items: [
+      "Clash check: far fewer false alarms - layered walls and floors touching, and surfaces a millimetre apart, are no longer clashes. Open surfaces crossing each other only when the rule asks for it.",
+      "A clash rule can take **several models** on each side, or **All models**; check **Floors from ... to ...**. Clicking a clash cuts the storey round it with a **section box** (**Section off** to see all). **Hide under ... mm** filters the list without running again.",
+      "Headroom: **Look** draws the height where it is lowest; **Ignore lower than** (1.5 m) leaves out voids under WCs, benches and in ducts; **What counts** chooses the categories (furniture, WCs and fittings are not overhead). The settings are shared with the project.",
+    ],
+  },
+  {
     version: "2026-10-17", date: "10 Oct 2026",
     items: [
       "**Clash check** on the 3D page (left panel > Checks > Clash): set A against set B - in your own model, or against the consultants' models. Click a clash to see it, **Make issue** to raise it; run again to see what is **New** and what has **Gone**.",

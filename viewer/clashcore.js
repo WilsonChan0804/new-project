@@ -80,25 +80,30 @@ const boxAnd = (p, q) => [Math.max(p[0], q[0]), Math.max(p[1], q[1]), Math.max(p
 const boxEmpty = (b) => !(b[0] <= b[3] && b[1] <= b[4] && b[2] <= b[5]);
 const grow = (b, d) => [b[0] - d, b[1] - d, b[2] - d, b[3] + d, b[4] + d, b[5] + d];
 
-/* Each edge used an even number of times (after joining vertices that sit
-   within 0.1 mm): a closed surface, which has an inside. */
-export function isClosed(t) {
-  const q = (v) => Math.round(v * 1e4);
-  const key = (i) => q(t[i]) + "," + q(t[i + 1]) + "," + q(t[i + 2]);
-  const edges = new Map();
-  for (let i = 0; i < t.length; i += 9) {
-    const k = [key(i), key(i + 3), key(i + 6)];
-    if (k[0] === k[1] || k[1] === k[2] || k[0] === k[2]) continue;    // a sliver
-    for (let e = 0; e < 3; e++) {
-      const a = k[e], b = k[(e + 1) % 3];
-      const ek = a < b ? a + "|" + b : b + "|" + a;
-      edges.set(ek, (edges.get(ek) || 0) + 1);
+/* Is the surface closed (a solid, with an inside), and which way do its
+   faces point? A closed surface encloses the same signed volume whatever
+   point it is measured from; an open one does not. Unlike pairing edges,
+   this does not mind the way Revit triangulates each face on its own (a
+   corner of one face on the edge of the next) or positions stored to the
+   nearest millimetre or so, piece by piece. sign: 1 faces out, -1 in. */
+export function solidity(t) {
+  if (!t.length) return { closed: false, sign: 1 };
+  const b = boxOfTris(t);
+  const vol = (rx, ry, rz) => {
+    let v = 0;
+    for (let i = 0; i < t.length; i += 9) {
+      const ax = t[i] - rx, ay = t[i + 1] - ry, az = t[i + 2] - rz;
+      const bx = t[i + 3] - rx, by = t[i + 4] - ry, bz = t[i + 5] - rz;
+      const cx = t[i + 6] - rx, cy = t[i + 7] - ry, cz = t[i + 8] - rz;
+      v += ax * (by * cz - bz * cy) + ay * (bz * cx - bx * cz) + az * (bx * cy - by * cx);
     }
-  }
-  if (!edges.size) return false;
-  for (const n of edges.values()) if (n & 1) return false;
-  return true;
+    return v / 6;
+  };
+  const v1 = vol(b[0], b[1], b[2]), v2 = vol(b[3], b[4], b[5]);
+  const closed = Math.abs(v1) > 1e-9 && Math.abs(v1 - v2) <= 0.01 * Math.abs(v1) + 1e-9;
+  return { closed, sign: v1 >= 0 ? 1 : -1 };
 }
+export function isClosed(t) { return solidity(t).closed; }
 
 /* The triangles (indices) of t that touch box b. */
 function trisIn(t, b) {
@@ -136,7 +141,9 @@ function triCross(t1, i, t2, j, out) {
   const da0 = nbx * a0x + nby * a0y + nbz * a0z + db;
   const da1 = nbx * a1x + nby * a1y + nbz * a1z + db;
   const da2 = nbx * a2x + nby * a2y + nbz * a2z + db;
-  const e = 1e-6;
+  // within 2 mm of the other's plane is on it: touching, give or take how
+  // positions are stored (to about a millimetre)
+  const e = 0.002;
   if (!(Math.min(da0, da1, da2) < -e && Math.max(da0, da1, da2) > e)) return false;
   // plane of p
   ux = a1x - a0x; uy = a1y - a0y; uz = a1z - a0z; vx = a2x - a0x; vy = a2y - a0y; vz = a2z - a0z;
@@ -235,10 +242,13 @@ function crossings(A, B, r) {
 /* ----------------------------------------------------- inside and depth */
 
 /* Where a line along `axis` through (pu, pv) (the other two coordinates,
-   in order) crosses the triangles listed. */
-function lineHits(t, list, axis, pu, pv, out) {
+   in order) crosses the triangles listed (out), and which way: +1 going
+   in, -1 coming out (sg; from the way each triangle faces, times the
+   element's sign). */
+function lineHits(t, list, axis, pu, pv, out, sg, sign) {
   const u = axis === 0 ? 1 : 0, v = axis === 2 ? 1 : 2;
   out.length = 0;
+  if (sg) sg.length = 0;
   for (const i of list) {
     const au = t[i + u], av = t[i + v], bu = t[i + 3 + u], bv = t[i + 3 + v], cu = t[i + 6 + u], cv = t[i + 6 + v];
     const d = (bv - cv) * (au - cu) + (cu - bu) * (av - cv);
@@ -248,28 +258,62 @@ function lineHits(t, list, axis, pu, pv, out) {
     const l2 = ((cv - av) * (pu - cu) + (au - cu) * (pv - cv)) / d;
     if (l2 < 0 || l1 + l2 > 1) continue;
     out.push(l1 * t[i + axis] + l2 * t[i + 3 + axis] + (1 - l1 - l2) * t[i + 6 + axis]);
+    if (sg) {
+      // the triangle's normal along the line: against it, the line goes in
+      const n = (bu - au) * (cv - av) - (bv - av) * (cu - au);
+      const along = axis === 1 ? -n : n;           // (u, v, axis) is left-handed for Y
+      sg.push(along < 0 ? sign : -sign);
+    }
   }
-  out.sort((x, y) => x - y);
+  // in order along the line (a handful of hits: insertion sort, both lists)
+  for (let k = 1; k < out.length; k++) {
+    const x = out[k], g = sg ? sg[k] : 0;
+    let j = k - 1;
+    while (j >= 0 && out[j] > x) { out[j + 1] = out[j]; if (sg) sg[j + 1] = sg[j]; j--; }
+    out[j + 1] = x; if (sg) sg[j + 1] = g;
+  }
   // the same crossing found on two triangles (the line through their edge)
   let w = 0;
-  for (let k = 0; k < out.length; k++) if (!w || out[k] - out[w - 1] > 1e-7) out[w++] = out[k];
+  for (let k = 0; k < out.length; k++) {
+    if (w && out[k] - out[w - 1] <= 1e-7 && (!sg || sg[k] === sg[w - 1])) continue;
+    out[w] = out[k]; if (sg) sg[w] = sg[k]; w++;
+  }
   out.length = w;
+  if (sg) sg.length = w;
   return out;
 }
 
-/* Is point p inside the closed surface t? Lines along the three axes vote,
-   so a line grazing an edge cannot decide on its own. */
-export function inside(t, p) {
+/* The stretches of a line inside an element: from its crossings in order
+   and their directions, where the count of ins over outs is above 0 - so
+   the face two layers share (out of one, into the next) changes nothing. */
+function spans(hits, sg, out) {
+  out.length = 0;
+  let w = 0, start = 0;
+  for (let k = 0; k < hits.length; k++) {
+    const was = w;
+    w += sg[k];
+    if (was <= 0 && w > 0) {
+      // back in within 2 mm (layers stored a hair apart): one stretch
+      if (out.length && hits[k] - out[out.length - 1] < 0.002) start = out.splice(-2, 2)[0];
+      else start = hits[k];
+    } else if (was > 0 && w <= 0) out.push(start, hits[k]);
+  }
+  return out;
+}
+
+/* Is point p inside the closed surface t (facing sign)? Lines along the
+   three axes vote, so a line grazing an edge cannot decide on its own. */
+export function inside(t, p, sign = 1) {
   let yes = 0;
-  const hits = [];
+  const hits = [], sg = [];
   const all = [];
   for (let i = 0; i < t.length; i += 9) all.push(i);
   for (let axis = 0; axis < 3; axis++) {
     const u = axis === 0 ? 1 : 0, v = axis === 2 ? 1 : 2;
-    lineHits(t, all, axis, p[u] + 1.13e-6, p[v] - 0.71e-6, hits);
-    let before = 0;
-    for (const h of hits) if (h < p[axis]) before++;
-    if (before & 1) yes++;
+    lineHits(t, all, axis, p[u] + 1.13e-6, p[v] - 0.71e-6, hits, sg, sign);
+    let w = 0;
+    for (let k = 0; k < hits.length; k++) if (hits[k] < p[axis]) w += sg[k];
+    if (w > 0) yes++;
   }
   return yes >= 2;
 }
@@ -298,7 +342,7 @@ function runs(A, B, r, axis, step) {
     return cells;
   };
   const ca = cellsOf(A.tris, trisIn(A.tris, band)), cb = cellsOf(B.tris, trisIn(B.tris, band));
-  const ha = [], hb = [];
+  const ha = [], hb = [], ga = [], gb = [], sa = [], sb = [];
   let best = 0, wsum = 0, cx = 0, cy = 0, cz = 0;
   for (let i = 0; i < nu; i++) {
     // a little off the grid, so lines do not run along the model's own edges
@@ -307,14 +351,15 @@ function runs(A, B, r, axis, step) {
       const la = ca[i * nv + j], lb = cb[i * nv + j];
       if (la.length < 2 || lb.length < 2) continue;
       const pv = r[v] + (j + 0.5) * sv - sv * 0.0089;
-      lineHits(A.tris, la, axis, pu, pv, ha);
+      lineHits(A.tris, la, axis, pu, pv, ha, ga, A.sign);
       if (ha.length < 2) continue;
-      lineHits(B.tris, lb, axis, pu, pv, hb);
+      lineHits(B.tris, lb, axis, pu, pv, hb, gb, B.sign);
       if (hb.length < 2) continue;
-      // stretches inside each (pairs of crossings), then where both are
+      // stretches inside each, then where both are
+      spans(ha, ga, sa); spans(hb, gb, sb);
       let ia = 0, ib = 0;
-      while (ia + 1 < ha.length && ib + 1 < hb.length) {
-        const s0 = Math.max(ha[ia], hb[ib]), e = Math.min(ha[ia + 1], hb[ib + 1]);
+      while (ia + 1 < sa.length && ib + 1 < sb.length) {
+        const s0 = Math.max(sa[ia], sb[ib]), e = Math.min(sa[ia + 1], sb[ib + 1]);
         if (e > s0) {
           const L = e - s0;
           if (L > best) best = L;
@@ -322,7 +367,7 @@ function runs(A, B, r, axis, step) {
           const p = [0, 0, 0]; p[axis] = m; p[u] = pu; p[v] = pv;
           cx += p[0] * L; cy += p[1] * L; cz += p[2] * L; wsum += L;
         }
-        if (ha[ia + 1] < hb[ib + 1]) ia += 2; else ib += 2;
+        if (sa[ia + 1] < sb[ib + 1]) ia += 2; else ib += 2;
       }
     }
   }
@@ -381,7 +426,7 @@ function segSeg(p1, q1, p2, q2) {
 /* The nearest two elements come, if it is under `limit` (else Infinity),
    and the point midway. */
 function nearest(A, B, limit) {
-  const ra = trisIn(A.tris, grow(B.box, limit)), rb = trisIn(B.tris, grow(A.box, limit));
+  const ra = trisIn(A.tris, grow(B.tbox || B.box, limit)), rb = trisIn(B.tris, grow(A.tbox || A.box, limit));
   if (!ra.length || !rb.length) return null;
   let best = limit, at = null;
   const S = A.tris, T = B.tris;
@@ -420,25 +465,52 @@ function nearest(A, B, limit) {
 
 /* --------------------------------------------------------------- a pair */
 
+/* How far an open surface Q goes into the solid P: points over Q's
+   triangles near the region, those inside P, and the farthest of them from
+   P's surface. */
+function penetration(P, Q, r) {
+  const qt = trisIn(Q.tris, r), pt = trisIn(P.tris, grow(r, 0.5));
+  if (!qt.length || !pt.length) return 0;
+  const T = Q.tris, S = P.tris;
+  let best = 0, n = 0;
+  const per = Math.max(1, Math.floor(600 / qt.length));
+  for (const i of qt) {
+    const e = Math.max(Math.hypot(T[i + 3] - T[i], T[i + 4] - T[i + 1], T[i + 5] - T[i + 2]),
+                       Math.hypot(T[i + 6] - T[i], T[i + 7] - T[i + 1], T[i + 8] - T[i + 2]));
+    const k = Math.max(1, Math.min(per, Math.ceil(e / 0.05), 10));
+    for (let a = 0; a <= k; a++) for (let b = 0; a + b <= k; b++) {
+      const l1 = a / k, l2 = b / k, l3 = 1 - l1 - l2;
+      const p = [l1 * T[i] + l2 * T[i + 3] + l3 * T[i + 6], l1 * T[i + 1] + l2 * T[i + 4] + l3 * T[i + 7], l1 * T[i + 2] + l2 * T[i + 5] + l3 * T[i + 8]];
+      if (p[0] < r[0] || p[1] < r[1] || p[2] < r[2] || p[0] > r[3] || p[1] > r[4] || p[2] > r[5]) continue;
+      if (++n > 1500) return best;
+      if (!inside(S, p, P.sign)) continue;
+      let d = Infinity;
+      for (const j of pt) { const q = ptTri(p[0], p[1], p[2], S, j); if (q < d) d = q; }
+      if (d > best) best = d;
+    }
+  }
+  return best;
+}
+
 /* Judge one pair. opt: { tol (m, the overlap that counts), clear (m, the
-   gap wanted between them; 0 = not checked) }. Returns null (fine) or
-   { kind: "hard" | "inside" | "cross" | "clearance", depth, dist, point,
-     box }. */
+   gap wanted between them; 0 = not checked), open (true: report open
+   surfaces crossing each other, which have no depth) }. Returns null
+   (fine) or { kind: "hard" | "inside" | "cross" | "clearance", depth, dist,
+   point, box }. */
 export function judge(A, B, opt) {
   const tol = opt.tol || 0, clear = opt.clear || 0;
-  if (A.closed === undefined) A.closed = isClosed(A.tris);
-  if (B.closed === undefined) B.closed = isClosed(B.tris);
-  const r = boxAnd(A.box, B.box);
+  for (const X of [A, B]) {
+    if (X.closed === undefined) { const q = solidity(X.tris); X.closed = q.closed; X.sign = q.sign; }
+    // the box of the triangles themselves (the model's box can be a hair
+    // smaller: positions are stored rounded)
+    if (!X.tbox) X.tbox = boxOfTris(X.tris);
+  }
+  const r = grow(boxAnd(A.tbox, B.tbox), 0.005);
+  const mid = (b) => [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2];
   if (!boxEmpty(grow(r, 1e-6))) {
     const cr = crossings(A, B, grow(r, 1e-6));
     if (cr) {
-      if (!A.closed || !B.closed) {
-        const big = Math.max(cr.box[3] - cr.box[0], cr.box[4] - cr.box[1], cr.box[5] - cr.box[2]);
-        if (big >= Math.max(tol, 1e-3)) {
-          return { kind: "cross", depth: null, dist: 0, box: cr.box,
-                   point: [(cr.box[0] + cr.box[3]) / 2, (cr.box[1] + cr.box[4]) / 2, (cr.box[2] + cr.box[5]) / 2] };
-        }
-      } else {
+      if (A.closed && B.closed) {
         // the overlap lies round the crossings: measure it there
         const zone = boxAnd(grow(cr.box, Math.max(tol, 0.005)), r);
         const dims = [zone[3] - zone[0], zone[4] - zone[1], zone[5] - zone[2]];
@@ -450,24 +522,29 @@ export function judge(A, B, opt) {
           if (!centre && q.centre) centre = q.centre;
           if (depth < tol) break;
         }
-        if (depth >= tol && depth > 1e-4 && isFinite(depth)) {
-          return { kind: "hard", depth, dist: 0, box: cr.box,
-                   point: centre || [(cr.box[0] + cr.box[3]) / 2, (cr.box[1] + cr.box[4]) / 2, (cr.box[2] + cr.box[5]) / 2] };
-        }
-        if (!clear) return null;
+        if (depth >= tol && depth > 1e-4 && isFinite(depth)) return { kind: "hard", depth, dist: 0, box: cr.box, point: centre || mid(cr.box) };
+      } else if (A.closed || B.closed) {
+        // an open surface against a solid: how deep it goes in
+        const [P, Q] = A.closed ? [A, B] : [B, A];
+        const depth = penetration(P, Q, grow(cr.box, Math.max(tol, 0.01)));
+        if (depth >= tol && depth > 1e-4) return { kind: "hard", depth, dist: 0, box: cr.box, point: mid(cr.box), open: true };
+      } else if (opt.open) {
+        const big = Math.max(cr.box[3] - cr.box[0], cr.box[4] - cr.box[1], cr.box[5] - cr.box[2]);
+        if (big >= Math.max(tol, 1e-3)) return { kind: "cross", depth: null, dist: 0, box: cr.box, point: mid(cr.box) };
       }
+      if (!clear) return null;
     } else if (A.closed && B.closed) {
       // no crossing: one inside the other?
       const inBox = (p, q) => p[0] >= q[0] && p[1] >= q[1] && p[2] >= q[2] && p[3] <= q[3] && p[4] <= q[4] && p[5] <= q[5];
       for (const [X, Y] of [[A, B], [B, A]]) {
-        if (!inBox(X.box, grow(Y.box, 1e-6))) continue;
+        if (!inBox(X.tbox, grow(Y.tbox, 0.005))) continue;
         const p = [X.tris[0], X.tris[1], X.tris[2]];
         // a point a hair inside X, off its corner
-        const c = [(X.box[0] + X.box[3]) / 2, (X.box[1] + X.box[4]) / 2, (X.box[2] + X.box[5]) / 2];
+        const c = mid(X.tbox);
         const q = [p[0] + (c[0] - p[0]) * 1e-3, p[1] + (c[1] - p[1]) * 1e-3, p[2] + (c[2] - p[2]) * 1e-3];
-        if (inside(Y.tris, q)) {
-          const depth = Math.min(X.box[3] - X.box[0], X.box[4] - X.box[1], X.box[5] - X.box[2]);
-          if (depth >= tol) return { kind: "inside", depth, dist: 0, box: X.box.slice(), point: c };
+        if (inside(Y.tris, q, Y.sign)) {
+          const depth = Math.min(X.tbox[3] - X.tbox[0], X.tbox[4] - X.tbox[1], X.tbox[5] - X.tbox[2]);
+          if (depth >= tol) return { kind: "inside", depth, dist: 0, box: X.tbox.slice(), point: c };
         }
       }
     }

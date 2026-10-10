@@ -220,3 +220,56 @@ export function createGeo(ctx) {
 
   return { models, modelByKey, catsOf, elementsOf, trisOf, nameAll, find };
 }
+
+/* Where a check looks: the whole model, floors from ... to ..., or inside
+   the section box. sel: the kind select; from, to: the floor selects (their
+   row shown only for floors). get() -> { err } or { label, test(box) or
+   null, floors: [{ name, lo, hi }] (each floor's band, from its level to the
+   next one's), planes } */
+export function scopePicker(ctx, THREE, sel, from, to, row) {
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  function fill() {
+    const rows = ctx.floorRows();
+    const keepF = from.value, keepT = to.value;
+    const opts = rows.map((r, i) => `<option value="${i}">${esc(r.name)}</option>`).reverse().join("");
+    from.innerHTML = opts; to.innerHTML = opts;
+    const cur = ctx.floorIndex() != null && rows[ctx.floorIndex()] ? String(ctx.floorIndex()) : (rows.length ? "0" : "");
+    from.value = [...from.options].some((o) => o.value === keepF) ? keepF : cur;
+    to.value = [...to.options].some((o) => o.value === keepT) ? keepT : from.value;
+    sel.querySelector('option[value="floors"]').disabled = !rows.length;
+    if (!rows.length && sel.value === "floors") sel.value = "all";
+    row.hidden = sel.value !== "floors";
+  }
+  sel.addEventListener("change", fill);
+  sel.addEventListener("focus", fill);
+  from.addEventListener("change", () => { if (Number(to.value) < Number(from.value)) to.value = from.value; });
+  to.addEventListener("change", () => { if (Number(to.value) < Number(from.value)) from.value = to.value; });
+  function get() {
+    const v = sel.value;
+    if (v === "box") {
+      const planes = ctx.sectionPlanes();
+      if (!planes) return { err: "Turn the section box on first (Section > Box), or check floors or the whole model." };
+      const c = new THREE.Vector3();
+      return { label: "inside the section box", planes, floors: null, test: (b) => planes.every((p) => {
+        for (let i = 0; i < 8; i++) {
+          c.set(i & 1 ? b[3] : b[0], i & 2 ? b[4] : b[1], i & 4 ? b[5] : b[2]);
+          if (p.distanceToPoint(c) >= 0) return true;
+        }
+        return false;
+      }) };
+    }
+    if (v === "floors") {
+      const rows = ctx.floorRows();
+      let i = Number(from.value), j = Number(to.value);
+      if (!rows[i] || !rows[j]) return { err: "Those floors are not known any more." };
+      if (j < i) [i, j] = [j, i];
+      const floors = [];
+      for (let k = i; k <= j; k++) floors.push({ name: rows[k].name, lo: rows[k].y, hi: k + 1 < rows.length ? rows[k + 1].y : rows[k].y + 6 });
+      const lo = rows[i].y - 0.05, hi = j + 1 < rows.length ? rows[j + 1].y + 0.05 : Infinity;
+      return { label: i === j ? "on " + rows[i].name : `on ${rows[i].name} to ${rows[j].name}`, floors, lo, hi,
+               test: (b) => b[4] >= lo && b[1] <= hi };
+    }
+    return { label: "in the whole model", test: null, floors: null };
+  }
+  return { fill, get };
+}

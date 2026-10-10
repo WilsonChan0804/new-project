@@ -17,7 +17,7 @@
  * converted): quick everyday coordination, not a formal clash report.
  */
 import { pairs as boxPairs } from "./clashcore.js";
-import { createGeo, catLabel } from "./checkgeo.js";
+import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
 
 const OPENINGS = new Set(["Doors", "Windows", "Curtain Panels", "Curtain Wall Mullions",
   "IFCDOOR", "IFCWINDOW", "IFCPLATE", "IFCMEMBER", "IFCOPENINGELEMENT", "IFCDOORSTANDARDCASE", "IFCWINDOWSTANDARDCASE"]);
@@ -42,6 +42,18 @@ export function createClash(ctx) {
 
   const geo = createGeo(ctx);
   const models = geo.models, modelByKey = geo.modelByKey, catsOf = geo.catsOf;
+  // a side's models: ["*"] (every model loaded) or keys; rules from before
+  // had one model ({ model })
+  const sideKeys = (side) => (side.models && side.models.length ? side.models : side.model ? [side.model] : []);
+  const sideModels = (side) => {
+    const keys = sideKeys(side);
+    return keys.includes("*") ? models() : keys.map(modelByKey).filter(Boolean);
+  };
+  const sideText = (side) => {
+    const keys = sideKeys(side);
+    const ms = keys.includes("*") ? "all models" : keys.length === 1 ? ((modelByKey(keys[0]) || {}).label || keys[0]) : keys.length + " models";
+    return `${ms}: ${(side.cats || []).map(catLabel).slice(0, 3).join(", ")}${(side.cats || []).length > 3 ? " +" + (side.cats.length - 3) : ""}`;
+  };
 
   /* -------------------------------------------------------- the rules */
 
@@ -57,6 +69,9 @@ export function createClash(ctx) {
     $("#clash-del").disabled = !C.ruleId;
     const r = rule();
     C.result = r && r.last ? r.last : null;
+    $("#clash-info").innerHTML = r
+      ? `Shared with the project${r.author ? " · made by " + esc(r.author) : ""}<br>A: ${esc(sideText(r.a))}<br>B: ${esc(sideText(r.b))}`
+      : "Rules are shared with everyone on the project.";
     paint();
   }
   const rule = () => C.rules.find((r) => r.id === C.ruleId) || null;
@@ -67,19 +82,27 @@ export function createClash(ctx) {
     const isNew = !r;
     r = r ? JSON.parse(JSON.stringify(r)) : {
       id: ctx.uid(), placement: "clashrule", name: "", created_at: new Date().toISOString(), author: ctx.author(),
-      a: { model: ms[0].key, cats: [] }, b: { model: (ms.find((m) => m.rec.ref && m.key !== ms[0].key) || ms[0]).key, cats: [] },
-      tol_mm: 10, clear_mm: 0, skip_openings: true, ignored: [],
+      a: { models: [ms[0].key], cats: [] }, b: { models: [(ms.find((m) => m.rec.ref && m.key !== ms[0].key) || ms[0]).key], cats: [] },
+      tol_mm: 10, clear_mm: 0, skip_openings: true, open: false, ignored: [],
     };
+    for (const s of ["a", "b"]) { r[s] = { models: sideKeys(r[s]), cats: r[s].cats || [] }; }
     const side = async (s, title) => {
-      const m = modelByKey(r[s].model) || ms[0];
-      const cats = [...(await catsOf(m)).keys()].sort((x, y) => catLabel(x).localeCompare(catLabel(y)));
+      const keys = new Set(r[s].models);
+      const all = keys.has("*");
+      const chosen = all ? ms : ms.filter((m) => keys.has(m.key));
+      // the categories of the models ticked, by name (Ducts in every MEP link at once)
+      const names = new Set();
+      for (const m of chosen) for (const k of (await catsOf(m)).keys()) names.add(k);
+      const cats = [...names].sort((x, y) => catLabel(x).localeCompare(catLabel(y)));
       const on = new Set(r[s].cats || []);
       return `<fieldset class="ck-side" data-side="${s}"><legend>${title}</legend>`
-        + `<select data-model>${ms.map((x) => `<option value="${esc(x.key)}"${x.key === m.key ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`
+        + `<div class="ck-models"><label><input type="checkbox" data-allm${all ? " checked" : ""}> <b>All models</b></label>`
+        + ms.map((x) => `<label><input type="checkbox" data-m value="${esc(x.key)}"${all || keys.has(x.key) ? " checked" : ""}${all ? " disabled" : ""}> ${esc(x.label)}</label>`).join("")
+        + `</div>`
         + `<div class="ck-cats-bar"><button type="button" class="ghost" data-all>All</button><button type="button" class="ghost" data-none>None</button>`
         + `<input type="search" data-q placeholder="Filter"></div>`
         + `<div class="ck-cats">${cats.map((k) => `<label><input type="checkbox" value="${esc(k)}"${on.has(k) ? " checked" : ""}> ${esc(catLabel(k))}</label>`).join("")
-          || '<span class="muted">No elements in this model.</span>'}</div></fieldset>`;
+          || '<span class="muted">Tick a model above.</span>'}</div></fieldset>`;
     };
     const dlg = document.createElement("div");
     dlg.className = "ck-dlg-back";
@@ -89,7 +112,8 @@ export function createClash(ctx) {
         + `<div class="ck-sides">${await side("a", "Set A")}${await side("b", "Set B")}</div>`
         + `<div class="ck-opts"><label>Overlap that counts <input name="tol" type="number" min="0" max="500" step="1" value="${r.tol_mm}"> mm</label>`
         + `<label title="Also report elements that come closer than this without touching (0 = off)">Clearance <input name="clear" type="number" min="0" max="2000" step="5" value="${r.clear_mm}"> mm</label>`
-        + `<label class="ck-chk"><input name="skip" type="checkbox"${r.skip_openings !== false ? " checked" : ""}> Leave out doors and windows in their walls, floors and roofs</label></div>`
+        + `<label class="ck-chk"><input name="skip" type="checkbox"${r.skip_openings !== false ? " checked" : ""}> Leave out doors and windows in their walls, floors and roofs</label>`
+        + `<label class="ck-chk" title="Surfaces that are not closed solids have no inside, so how deep they cross cannot be measured: off, they are not reported against each other"><input name="open" type="checkbox"${r.open ? " checked" : ""}> Report open surfaces crossing each other (no depth)</label></div>`
         + `<p class="muted ck-note">Set A and B can be the same model: clashes inside it. Checks what the viewer draws - quick coordination, not a formal clash report.</p>`
         + `<div class="ck-foot"><span class="ck-msg bad"></span><span class="spacer"></span><button type="button" class="ghost" data-x>Cancel</button><button type="submit" class="primary">Save</button></div></form>`;
       wire();
@@ -99,12 +123,13 @@ export function createClash(ctx) {
       r.name = f.name.value.trim();
       for (const s of ["a", "b"]) {
         const fs = f.querySelector(`[data-side="${s}"]`);
-        r[s].model = fs.querySelector("[data-model]").value;
+        r[s].models = fs.querySelector("[data-allm]").checked ? ["*"] : [...fs.querySelectorAll("[data-m]:checked")].map((x) => x.value);
         r[s].cats = [...fs.querySelectorAll(".ck-cats input:checked")].map((x) => x.value);
       }
       r.tol_mm = Math.max(0, Math.min(500, Number(f.tol.value) || 0));
       r.clear_mm = Math.max(0, Math.min(2000, Number(f.clear.value) || 0));
       r.skip_openings = f.skip.checked;
+      r.open = f.open.checked;
     };
     let done;
     const ended = new Promise((res) => { done = res; });
@@ -113,7 +138,8 @@ export function createClash(ctx) {
       f.querySelector("[data-x]").onclick = () => { dlg.remove(); done(null); };
       f.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { dlg.remove(); done(null); } });
       for (const fs of f.querySelectorAll(".ck-side")) {
-        fs.querySelector("[data-model]").onchange = async () => { keep(); r[fs.dataset.side].cats = []; await draw(); };
+        // other models ticked: their categories listed, the ticks kept
+        fs.querySelector(".ck-models").onchange = async () => { keep(); await draw(); };
         fs.querySelector("[data-all]").onclick = () => fs.querySelectorAll(".ck-cats label:not([hidden]) input").forEach((x) => { x.checked = true; });
         fs.querySelector("[data-none]").onclick = () => fs.querySelectorAll(".ck-cats input").forEach((x) => { x.checked = false; });
         fs.querySelector("[data-q]").oninput = (ev) => {
@@ -125,6 +151,7 @@ export function createClash(ctx) {
         keep();
         const msg = f.querySelector(".ck-msg");
         if (!r.name) { msg.textContent = "Give it a name."; return false; }
+        if (!r.a.models.length || !r.b.models.length) { msg.textContent = "Tick at least one model on each side."; return false; }
         if (!r.a.cats.length || !r.b.cats.length) { msg.textContent = "Tick at least one category on each side."; return false; }
         dlg.remove(); done(r); return false;
       };
@@ -135,8 +162,9 @@ export function createClash(ctx) {
     const got = await ended;
     if (!got) return;
     // a changed rule starts afresh: its old result asked a different question
-    const same = !isNew && JSON.stringify([got.a, got.b, got.tol_mm, got.clear_mm, got.skip_openings])
-      === JSON.stringify([rule().a, rule().b, rule().tol_mm, rule().clear_mm, rule().skip_openings]);
+    const old = rule();
+    const sig = (x) => JSON.stringify([sideKeys(x.a), x.a.cats, sideKeys(x.b), x.b.cats, x.tol_mm, x.clear_mm, x.skip_openings, !!x.open]);
+    const same = !isNew && old && sig(got) === sig(old);
     if (!same) got.last = null;
     got.updated_at = new Date().toISOString();
     if (!(await ctx.putItem(got))) return;
@@ -154,52 +182,27 @@ export function createClash(ctx) {
 
   /* ------------------------------------------------------- the scope */
 
-  function scopeTest() {
-    const v = $("#clash-scope").value;
-    if (v === "box") {
-      const planes = ctx.sectionPlanes();
-      if (!planes) return { err: "Turn the section box on first (Section > Box), or check the whole model." };
-      const c = new THREE.Vector3();
-      return { label: "inside the section box", test: (b) => planes.every((p) => {
-        for (let i = 0; i < 8; i++) {
-          c.set(i & 1 ? b[3] : b[0], i & 2 ? b[4] : b[1], i & 4 ? b[5] : b[2]);
-          if (p.distanceToPoint(c) >= 0) return true;
-        }
-        return false;
-      }) };
-    }
-    if (v.startsWith("f:")) {
-      const rows = ctx.floorRows(), i = Number(v.slice(2));
-      const r = rows[i];
-      if (!r) return { err: "That floor is not known any more." };
-      const lo = r.y - 0.05, hi = i + 1 < rows.length ? rows[i + 1].y + 0.05 : Infinity;
-      return { label: "on " + r.name, test: (b) => b[4] >= lo && b[1] <= hi, lo, hi };
-    }
-    return { label: "in the whole model", test: null };
-  }
-  function fillScope() {
-    const sel = $("#clash-scope"), was = sel.value;
-    const rows = ctx.floorRows();
-    sel.innerHTML = `<option value="all">Whole model</option><option value="box">Inside the section box</option>`
-      + rows.map((r, i) => `<option value="f:${i}">Floor: ${esc(r.name)}</option>`).reverse().join("");
-    sel.value = [...sel.options].some((o) => o.value === was) ? was
-      : (ctx.floorIndex() != null && rows[ctx.floorIndex()] ? "f:" + ctx.floorIndex() : "all");
-  }
+  const scope = scopePicker(ctx, THREE, $("#clash-scope"), $("#clash-from"), $("#clash-to"), $("#clash-fr"));
+  const scopeTest = () => scope.get();
+  const fillScope = () => scope.fill();
 
   /* -------------------------------------------------- the elements' data */
 
   const E = new Map();          // "partId:lid" -> { part, lid, cat, box }
   const ekey = (part, lid) => part.id + ":" + lid;
 
-  async function setOf(side, sc) {
-    const m = modelByKey(side.model);
-    if (!m) throw new Error(`The model "${side.model}" is not loaded here - turn it on in the Models panel first.`);
+  async function setOf(side, sc, which) {
+    const ms = sideModels(side);
+    if (!ms.length) throw new Error(`None of the models of ${which} is loaded here - turn them on in the Models panel first.`);
     const out = [];
-    await geo.elementsOf(m, side.cats, sc.test, (el) => {
-      const key = ekey(el.part, el.lid);
-      if (!E.has(key)) E.set(key, el);
-      out.push(key);
-    }, () => C.stop, progress);
+    for (const m of ms) {
+      await geo.elementsOf(m, side.cats, sc.test, (el) => {
+        const key = ekey(el.part, el.lid);
+        if (!E.has(key)) E.set(key, el);
+        out.push(key);
+      }, () => C.stop, progress);
+      if (C.stop) break;
+    }
     return [...new Set(out)];
   }
 
@@ -276,9 +279,10 @@ export function createClash(ctx) {
     const t0 = performance.now();
     E.clear();
     try {
-      const a = await setOf(r.a, sc);
-      const sameSet = r.a.model === r.b.model && JSON.stringify([...r.a.cats].sort()) === JSON.stringify([...r.b.cats].sort());
-      const b = sameSet ? a : await setOf(r.b, sc);
+      const a = await setOf(r.a, sc, "set A");
+      const keysOf = (side) => sideModels(side).map((m) => m.key).sort().join("|");
+      const sameSet = keysOf(r.a) === keysOf(r.b) && JSON.stringify([...r.a.cats].sort()) === JSON.stringify([...r.b.cats].sort());
+      const b = sameSet ? a : await setOf(r.b, sc, "set B");
       if (C.stop) throw new Error("Stopped.");
       const tol = (r.tol_mm || 0) / 1000, clear = (r.clear_mm || 0) / 1000;
       progress(`Comparing ${a.length} with ${b.length} elements ...`);
@@ -308,7 +312,7 @@ export function createClash(ctx) {
       for (const [x, y] of cand) { left.set(x, (left.get(x) || 0) + 1); left.set(y, (left.get(y) || 0) + 1); }
       const sent = new Set();
       const found = [];
-      const opt = { tol, clear };
+      const opt = { tol, clear, open: !!r.open };
       for (let i = 0; i < cand.length; i += CHUNK) {
         if (C.stop) throw new Error("Stopped.");
         const chunk = cand.slice(i, i + CHUNK);
@@ -388,8 +392,10 @@ export function createClash(ctx) {
     const okSave = await ctx.putItem(saved);
     progress("");
     paint();
-    const n = Object.values(now).filter((c) => c.state !== "gone" && !c.ignored).length;
+    const live = Object.values(now).filter((c) => c.state !== "gone" && !c.ignored);
+    const n = live.filter(inScope).length, elsewhere = live.length - n;
     ctx.status(`${r.name}: ${n} clash${n === 1 ? "" : "es"} ${sc.label}`
+      + (elsewhere ? ` (${elsewhere} elsewhere, kept from earlier runs)` : "")
       + (nNew ? `, ${nNew} new` : "") + (nGone ? `, ${nGone} gone since last time` : "")
       + ` (${stats.pairs} pairs checked in ${(stats.ms / 1000).toFixed(1)} s)` + (okSave ? "." : " - the result could not be saved."));
   }
@@ -433,14 +439,24 @@ export function createClash(ctx) {
     const live = all.filter((c) => c.state !== "gone" && !c.ignored);
     const cnt = { all: live.length, new: live.filter((c) => c.state === "new").length,
                   gone: all.filter((c) => c.state === "gone").length, ignored: all.filter((c) => c.ignored && c.state !== "gone").length };
+    // a quick filter on how deep, and the order (kept per rule, on this device)
+    const r0 = rule();
+    let hide = 0, order = "level";
+    try { hide = Number(localStorage.getItem(ctx.storeKey("hide:" + (r0 && r0.id)))) || 0; order = localStorage.getItem(ctx.storeKey("order")) || "level"; } catch (e) {}
+    const shallow = (c) => hide > 0 && c.depth_mm != null && c.depth_mm < hide;
+    const nHidden = all.filter((c) => c.state !== "gone" && !c.ignored && shallow(c)).length;
     sum.innerHTML = `<div class="ck-when muted">${[new Date(res.at).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }), res.by, res.scope].filter(Boolean).map(esc).join(" · ")}</div>`
+      + `<div class="ck-tools"><label title="Leave out overlaps shallower than this (without running again)">Hide under <input type="number" id="clash-hide" min="0" max="500" step="5" value="${hide || ""}" placeholder="0"> mm</label>`
+      + `<select id="clash-order" title="Order of the list"><option value="level"${order === "level" ? " selected" : ""}>By floor</option><option value="depth"${order === "depth" ? " selected" : ""}>Deepest first</option></select>`
+      + `${nHidden ? ` <span class="muted">${nHidden} hidden</span>` : ""}</div>`
       + `<div class="ck-filt">${[["all", "Open", cnt.all], ["new", "New", cnt.new], ["gone", "Gone", cnt.gone], ["ignored", "Not an issue", cnt.ignored]]
         .map(([k, l, n]) => `<button class="ghost${C.filter === k ? " active" : ""}" data-f="${k}">${l} <b>${n}</b></button>`).join("")}</div>`;
     const pick = all.filter((c) => C.filter === "gone" ? c.state === "gone"
       : C.filter === "ignored" ? c.ignored && c.state !== "gone"
-      : C.filter === "new" ? c.state === "new" && !c.ignored
-      : c.state !== "gone" && !c.ignored);
-    pick.sort((x, y) => String(x.level).localeCompare(String(y.level)) || (y.depth_mm || 0) - (x.depth_mm || 0));
+      : C.filter === "new" ? c.state === "new" && !c.ignored && !shallow(c)
+      : c.state !== "gone" && !c.ignored && !shallow(c));
+    const deep = (c) => (c.depth_mm != null ? c.depth_mm : c.kind === "clearance" ? -1 : 0);
+    pick.sort((x, y) => order === "depth" ? deep(y) - deep(x) : String(x.level).localeCompare(String(y.level)) || deep(y) - deep(x));
     C.shown = pick;
     if (!pick.length) {
       list.innerHTML = `<li class="muted ck-empty">${C.filter === "all" ? "No clashes " + esc(res.scope || "") + "." : "None."}</li>`;
@@ -458,11 +474,12 @@ export function createClash(ctx) {
         + (iss ? `<button class="ghost" data-act="issue" title="Open its issue">Issue ${iss.issue && iss.issue.number ? "#" + iss.issue.number : ""} · ${esc((iss.issue && iss.issue.status) || "Open")}</button>`
           : c.state !== "gone" ? `<button class="ghost" data-act="make" title="Raise a Clash issue here, with a picture">Make issue</button>` : "")
         + (c.state !== "gone" ? `<button class="ghost" data-act="only" title="Show only these two elements">Only these</button>` : "")
+        + `<button class="ghost" data-act="secoff" title="Take the section box away: the whole model again">Section off</button>`
         + (c.state !== "gone" ? `<button class="ghost" data-act="ign" title="${c.ignored ? "Count it again" : "Not an issue: leave it out of the list next time too"}">${c.ignored ? "Count again" : "Not an issue"}</button>` : "")
         + `</div></li>`;
     };
     let h = "";
-    if (C.filter === "gone") h = pick.map(row).join("");
+    if (C.filter === "gone" || order === "depth") h = pick.map(row).join("");
     else {
       for (const g of groups(pick)) {
         if (g.length === 1) { h += row(g[0]); continue; }
@@ -497,24 +514,19 @@ export function createClash(ctx) {
     const els = [A, B].filter(Boolean);
     await ctx.highlightMany(els);
     if (only && els.length) await ctx.isolateMany(els);
-    await frame(c);
+    await look(c);
     putMarker(c.point);
     const twoCol = A && B && !(A.part.model.head && A.part.model.head === B.part.model.head);
     ctx.status(`${KIND[c.kind] || c.kind} ${amount(c)}${c.level ? " on " + c.level : ""}: ${c.a.cat}${c.a.name ? " " + c.a.name : ""}${twoCol ? " (orange)" : ""} x ${c.b.cat}${c.b.name ? " " + c.b.name : ""}${twoCol ? " (blue)" : ""}`
-      + (only ? " - only these two shown; Show all brings everything back." : "."));
+      + (only ? " - only these two shown; Show all brings everything back." : " - cut out round it; Section off shows the whole model."));
     return { A, B };
   }
-  /* Looking at a clash: from where the view looks now, turned a little
-     downwards, far enough back to see both elements round it. */
-  async function frame(c) {
+  /* A clash inside the building: the storey cut out round it (a section
+     box a few metres across), looked at from above at an angle. */
+  async function look(c) {
     const p = new THREE.Vector3(...c.point);
-    const d = Math.max(4, Math.min(25, (c.size || 1) * 1.6 + 3));
-    const v = ctx.viewDir();
-    v.y = 0;
-    if (v.lengthSq() < 1e-6) v.set(1, 0, 1);
-    v.normalize();
-    const dir = new THREE.Vector3(v.x * 0.8, -0.6, v.z * 0.8).normalize();
-    await ctx.flyTo(p.clone().addScaledVector(dir, -d), p);
+    const half = Math.max(1.5, Math.min(6, (c.size || 1) * 0.75 + 1));
+    ctx.focusAt(p, half);
   }
   async function makeIssue(c) {
     const { A } = await show(c, false);
@@ -554,6 +566,14 @@ export function createClash(ctx) {
   $("#clash-run").onclick = () => run();
   $("#clash-stop").onclick = () => { C.stop = true; };
   $("#clash-scope").onfocus = fillScope;
+  $("#clash-sum").onchange = (ev) => {
+    const r = rule();
+    try {
+      if (ev.target.id === "clash-hide") localStorage.setItem(ctx.storeKey("hide:" + (r && r.id)), String(Math.max(0, Number(ev.target.value) || 0)));
+      if (ev.target.id === "clash-order") localStorage.setItem(ctx.storeKey("order"), ev.target.value);
+    } catch (e) {}
+    paint();
+  };
   $("#clash-sum").onclick = (ev) => {
     const b = ev.target.closest("[data-f]");
     if (!b) return;
@@ -574,7 +594,8 @@ export function createClash(ctx) {
     if (a === "issue") { const it = issueOf(c.key); if (it) ctx.selectIssue(it.id); return; }
     if (a === "ign") return toggleIgnore(c);
     if (a === "only") return show(c, true);
-    if (c.state === "gone") { await frame(c); putMarker(c.point); return; }
+    if (a === "secoff") { ctx.sectionOff(); ctx.status("Section box off: the whole model."); return; }
+    if (c.state === "gone") { await look(c); putMarker(c.point); return; }
     return show(c, false);
   };
 
@@ -594,5 +615,8 @@ export function createClash(ctx) {
     // for a test: run the selected rule and wait
     async runNow() { await run(); return C.result; },
     get result() { return C.result; },
+    // support: the elements of the last run and their triangles
+    debugEls: () => [...E.entries()].map(([k, e]) => ({ k, cat: e.cat, box: e.box, lid: e.lid, part: e.part.id })),
+    async debugTris(keys) { return (await trisOf(keys)).map((x) => ({ k: x.k, tris: Array.from(x.tris), box: x.box })); },
   };
 }

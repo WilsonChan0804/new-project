@@ -2110,3 +2110,17 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 .head-legend .it { white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }
 .ck-cats label, .ck-chk, .head-models label { justify-content: flex-start !important; text-align: left; flex-direction: row !important; width: auto; }
 .ck-cats input[type=checkbox], .ck-chk input[type=checkbox], .head-models input[type=checkbox] { width: auto !important; flex: none; margin: 0; }
+.ck-info { font-size: 11px; margin: -2px 0 6px; line-height: 1.4; }
+.ck-fr select { flex: 1 1 0; }
+.ck-tools { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11.5px; margin-bottom: 4px; }
+.ck-tools input { width: 54px; font-size: 11.5px; }
+.ck-tools select { font-size: 11.5px; }
+.ck-models { display: flex; flex-direction: column; gap: 1px; font-size: 12px; max-height: 120px; overflow-y: auto; margin-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft); padding-bottom: 6px; }
+.ck-models label { display: flex; gap: 6px; align-items: center; justify-content: flex-start !important; flex-direction: row !important; }
+.ck-models input[type=checkbox] { width: auto !important; flex: none; margin: 0; }
+.head-cat-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0; }
+.head-cat-cols > div > div { max-height: 180px; overflow-y: auto; font-size: 11.5px; }
+.head-cat-cols b { font-size: 11.5px; }
+.head-shared { font-size: 11px; margin: -2px 0 6px; }
+.chk-row[hidden] { display: none; }

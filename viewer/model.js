@@ -2088,7 +2088,18 @@ function initClash() {
       renderDims();
       status(`${label} kept as a dimension for everyone (Measure > Dimensions).`);
     },
-    focusAt: (p) => focusRoom(p, levelIndexAt(p.y + 0.1)),
+    // the storey round p cut out, a window of 2 x half metres
+    focusAt: (p, half = 6, lo = null, hi = null) => focusRoom(p, levelIndexAt(p.y + 0.1), half, lo, hi),
+    sectionOff() {
+      const sec = S.section;
+      if (!sec || !sec.on) return;
+      resetSection();
+      sec.on = false;
+      sec.face = null;
+      document.getElementById("sec-on").checked = false;
+      applySection();
+      S.dirty = true;
+    },
   };
   S.clash = createClash(ctx);
   S.head = createHeadroom(ctx);
@@ -5389,6 +5400,8 @@ function selectionFromBrowser() {
 window.LWK3D = Object.assign(window.LWK3D || {}, {
   // the model checks (support and tests)
   headroom: () => (S.head ? S.head.debug() : null),
+  sectionOn: () => !!(S.section && S.section.on),
+  clash: () => S.clash,
   selectedElements: () => (S.selEls || []).filter((x) => x.id || x.uid),
   // where each loaded model sits in the scene (support and tests)
   extents: () => [...S.loaded].map(([k, rec]) => [k, rec.parts.map((p) => {
@@ -6914,12 +6927,12 @@ async function updateDrawing() {
    of the floor above - the whole room height, not a 1.2 m plan cut - and
    about 12 m across, centred on the point, in the box's own frame. The
    camera stands off a corner, in perspective, looking in. */
-function focusRoom(p, idx) {
+function focusRoom(p, idx, half = 6, lo = null, hi = null) {
   const rows = S.floorRows || [];
   const here = idx >= 0 ? rows[idx] : null;
   const above = idx >= 0 ? rows[idx + 1] : null;
-  const yLo = (here ? here.y : p.y) - 0.4;
-  const yHi = above ? above.y - 0.1 : (here ? here.y : p.y) + 3.6;
+  const yLo = lo != null ? lo : (here ? here.y : p.y) - 0.4;
+  const yHi = hi != null ? hi : above ? above.y - 0.1 : (here ? here.y : p.y) + 3.6;
 
   const sec = S.section;
   sec.on = true;
@@ -6942,7 +6955,6 @@ function focusRoom(p, idx) {
     lmin.min(q); lmax.max(q);
   }
   const pl = p.clone().sub(pivot).applyMatrix4(toLocal);
-  const half = 6;
   const pct = (v, lo, hi) => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
   document.getElementById("sx0").value = pct(pl.x - half, lmin.x, lmax.x);
   document.getElementById("sx1").value = pct(pl.x + half, lmin.x, lmax.x);
@@ -6959,8 +6971,10 @@ function focusRoom(p, idx) {
 
   if (S.ortho) setOrtho(false);
   const a = viewAlignDeg() * Math.PI / 180;
-  const back = new THREE.Vector3(7, 0, 9).applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
-  const eye = p.clone().add(back).add(new THREE.Vector3(0, 6.5, 0));
+  // a small window: closer in
+  const k = Math.max(0.35, half / 6);
+  const back = new THREE.Vector3(7 * k, 0, 9 * k).applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
+  const eye = p.clone().add(back).add(new THREE.Vector3(0, 6.5 * k, 0));
   S.camera.up.set(0, 1, 0);
   S.camera.position.copy(eye);
   S.controls.target.copy(p);
@@ -7653,6 +7667,7 @@ async function boot() {
     renderViewList();
     renderDims();
     if (S.clash) S.clash.itemsChanged();
+    if (S.head) S.head.itemsChanged();
   });
   await Store.start(connStatus);
 

@@ -15,7 +15,7 @@
  * Measured vertically from where people stand; a stair's headroom is read
  * from its treads. What the viewer draws is what is measured.
  */
-import { createGeo, catLabel } from "./checkgeo.js";
+import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
 
 const WALK = /^(Floors|Stairs|Runs|Landings|Ramps|IFCSLAB|IFCSTAIR|IFCSTAIRFLIGHT|IFCRAMP|IFCRAMPFLIGHT)$/;
 const STAIRISH = /stair|runs|landing|ramp/i;
@@ -27,6 +27,7 @@ const ABOVE = new RegExp("^(Floors|Roofs|Roof Soffits|Ceilings|Structural Framin
   + "|IFCLIGHTFIXTURE|IFCENERGYCONVERSIONDEVICE|IFCUNITARYEQUIPMENT|IFCFLOWMOVINGDEVICE|IFCFLOWCONTROLLER|IFCDUCTSILENCER"
   + "|IFCFIRESUPPRESSIONTERMINAL)$");
 const MAX_TRIS = 6e6;            // triangles sent to one scan
+const CFG_ID = "checkcfg-headroom"; // the project's headroom settings (one item, shared)
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 export function createHeadroom(ctx) {
@@ -45,22 +46,57 @@ export function createHeadroom(ctx) {
     <div class="head-lims">
       <label title="Clear height wanted over floors">Floors <input id="head-lim" type="number" min="1" max="6" step="0.05"> m</label>
       <label title="Clear height wanted over stair treads, landings and ramps">Stairs, ramps <input id="head-lim-st" type="number" min="1" max="6" step="0.05"> m</label>
+      <label title="On floors, lower than this is not a space people use - under a WC, a bench, in a duct or a ceiling void: not reported. Stairs and ramps are always checked.">Ignore lower than <input id="head-min" type="number" min="0" max="3" step="0.1"> m</label>
     </div>
     <details class="head-models"><summary>Models counted</summary><div id="head-mlist"></div></details>
+    <details class="head-models head-cats"><summary>What counts</summary>
+      <div class="head-cat-cols"><div><b>Stood on</b><div id="head-walk"></div></div><div><b>Overhead</b><div id="head-above"></div></div></div>
+      <button class="ghost" id="head-cat-reset" type="button" title="Back to the usual categories">Usual categories</button>
+    </details>
+    <div class="head-shared muted">Settings shared with the project</div>
     <div class="chk-row">
-      <select id="head-scope" title="Where to scan" aria-label="Where to scan"><option value="all">Whole model</option></select>
+      <select id="head-scope" title="Where to scan" aria-label="Where to scan"><option value="all">Whole model</option><option value="floors">Floors</option><option value="box">Inside the section box</option></select>
       <button id="head-run" class="primary" title="Measure the clear height all over">Scan</button>
       <button id="head-stop" class="ghost" hidden>Stop</button>
     </div>
+    <div class="chk-row ck-fr" id="head-fr" hidden>
+      <span class="muted">from</span><select id="head-from" aria-label="From floor"></select>
+      <span class="muted">to</span><select id="head-to" aria-label="To floor"></select>
+    </div>
     <div id="head-prog" class="chk-prog" hidden><span></span></div>
+    <div id="head-dim"></div>
     <div id="head-sum"></div>
     <ul id="head-list" class="clash-list"></ul>`;
   const $ = (s) => box.querySelector(s);
-  $("#head-lim").value = lsGet("lim", 2.3);
-  $("#head-lim-st").value = lsGet("limst", 2.0);
-  const limits = () => ({ limit: Math.max(0.5, Number($("#head-lim").value) || 2.3), stairLimit: Math.max(0.5, Number($("#head-lim-st").value) || 2.0) });
-  $("#head-lim").onchange = () => { lsSet("lim", limits().limit); paintDots(); };
-  $("#head-lim-st").onchange = () => { lsSet("limst", limits().stairLimit); paintDots(); };
+  /* The settings: one item for the project (everyone scans the same way);
+     a copy in this browser for someone who can only look. */
+  const DEF = { lim: 2.3, limst: 2.0, minSpace: 1.5, off: [], walk: null, above: null };
+  function cfg() {
+    const it = (ctx.items() || []).find((x) => x.id === CFG_ID && !x.deleted);
+    return Object.assign({}, DEF, lsGet("cfg", {}), it && it.cfg ? it.cfg : {});
+  }
+  let saveT = null;
+  function saveCfg(patch) {
+    const c = Object.assign(cfg(), patch);
+    lsSet("cfg", c);
+    clearTimeout(saveT);
+    saveT = setTimeout(() => {
+      ctx.putItem({ id: CFG_ID, placement: "checkcfg", cfg: c, author: ctx.author(), updated_at: new Date().toISOString() })
+        .then((ok) => { $(".head-shared").textContent = ok ? "Settings shared with the project" : "Settings kept in this browser (view only)"; });
+    }, 500);
+  }
+  function showCfg() {
+    const c = cfg();
+    $("#head-lim").value = c.lim; $("#head-lim-st").value = c.limst; $("#head-min").value = c.minSpace;
+  }
+  showCfg();
+  const limits = () => ({ limit: Math.max(0.5, Number($("#head-lim").value) || 2.3), stairLimit: Math.max(0.5, Number($("#head-lim-st").value) || 2.0),
+                          minSpace: Math.max(0, Number($("#head-min").value) || 0) });
+  $("#head-lim").onchange = () => { saveCfg({ lim: limits().limit }); paintDots(); };
+  $("#head-lim-st").onchange = () => { saveCfg({ limst: limits().stairLimit }); paintDots(); };
+  $("#head-min").onchange = () => { saveCfg({ minSpace: limits().minSpace }); };
+  const isWalk = (k) => { const c = cfg(); return c.walk ? c.walk.includes(k) : WALK.test(k); };
+  const isAbove = (k) => { const c = cfg(); return c.above ? c.above.includes(k) : ABOVE.test(k); };
 
   function progress(t) { const p = $("#head-prog"); p.hidden = !t; p.querySelector("span").textContent = t || ""; }
 
@@ -71,6 +107,8 @@ export function createHeadroom(ctx) {
     ctx.overlay().remove(H.probe.group);
     H.probe.group.traverse((o) => { if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } if (o.geometry) o.geometry.dispose(); });
     H.probe = null;
+    const d = $("#head-dim");
+    if (d) d.innerHTML = "";
     ctx.redraw();
   }
   async function probeAt(ev) {
@@ -81,6 +119,16 @@ export function createHeadroom(ctx) {
     clearProbe();
     if (!up || !up.point) { ctx.status("Nothing above this point within 40 m: open to the sky."); return; }
     const q = up.point.clone();
+    const h = q.y - p.y;
+    const { limit, stairLimit } = limits();
+    const verdict = h < stairLimit ? `under the ${stairLimit.toFixed(2)} m stair limit` : h < limit ? `under the ${limit.toFixed(2)} m floor limit (enough for a stair)` : "enough";
+    drawDim(p, q, verdict);
+    ctx.status(`Clear height ${h.toFixed(3)} m here - ${verdict}. Keep makes it a dimension for everyone; Esc or Probe again to stop.`);
+  }
+  /* A clear height drawn in the model: a line from where one stands to what
+     is overhead, its height on it, and Keep (a dimension for everyone). */
+  function drawDim(p, q, verdict) {
+    clearProbe();
     const h = q.y - p.y;
     const { limit, stairLimit } = limits();
     const col = h < stairLimit ? 0xe2453c : h < limit ? 0xd97706 : 0x0e9f6e;
@@ -95,18 +143,15 @@ export function createHeadroom(ctx) {
     const lab = ctx.dimLabel(h.toFixed(3) + " m");
     lab.position.copy(p).add(q).multiplyScalar(0.5);
     g.add(lab);
+    g.userData.headDim = h;
     ctx.overlay().add(g);
-    H.probe = { group: g, a: p, b: q, h };
+    H.probe = { group: g, a: p.clone(), b: q.clone(), h };
     ctx.redraw();
-    const verdict = h < stairLimit ? `under the ${stairLimit.toFixed(2)} m stair limit` : h < limit ? `under the ${limit.toFixed(2)} m floor limit (enough for a stair)` : "enough";
-    ctx.status(`Clear height ${h.toFixed(3)} m here - ${verdict}. Keep makes it a dimension for everyone; Esc or Probe again to stop.`);
-    $("#head-sum").innerHTML = `<div class="head-probe-res"><b>${h.toFixed(3)} m</b> <span class="muted">${esc(verdict)}</span> <button class="ghost" id="head-keep">Keep</button></div>`
-      + ($("#head-sum").dataset.keep ? "" : "");
+    $("#head-dim").innerHTML = `<div class="head-probe-res"><b>${h.toFixed(3)} m</b> <span class="muted">${esc(verdict || "")}</span> <button class="ghost" id="head-keep" title="Keep this height as a dimension in the model, for everyone">Keep</button></div>`;
     $("#head-keep").onclick = async () => {
       if (!H.probe) return;
       await ctx.keepDim(H.probe.a, H.probe.b, "Headroom " + H.probe.h.toFixed(3) + " m");
       clearProbe();
-      $("#head-keep").remove();
     };
   }
   $("#head-probe").onclick = () => {
@@ -117,47 +162,53 @@ export function createHeadroom(ctx) {
 
   /* ------------------------------------------------------------- scan */
 
-  function fillScope() {
-    const sel = $("#head-scope"), was = sel.value;
-    const rows = ctx.floorRows();
-    sel.innerHTML = `<option value="all">Whole model</option><option value="box">Inside the section box</option>`
-      + rows.map((r, i) => `<option value="f:${i}">Floor: ${esc(r.name)}</option>`).reverse().join("");
-    sel.value = [...sel.options].some((o) => o.value === was) ? was
-      : (ctx.floorIndex() != null && rows[ctx.floorIndex()] ? "f:" + ctx.floorIndex() : (rows.length ? "f:0" : "all"));
-  }
+  const scopeP = scopePicker(ctx, THREE, $("#head-scope"), $("#head-from"), $("#head-to"), $("#head-fr"));
+  const fillScope = () => scopeP.fill();
   function fillModels() {
-    const off = new Set(lsGet("off", []));
+    const off = new Set(cfg().off || []);
     $("#head-mlist").innerHTML = geo.models().map((m) =>
       `<label class="row-check"><input type="checkbox" value="${esc(m.key)}"${off.has(m.key) ? "" : " checked"}> ${esc(m.label)}</label>`).join("")
       || '<span class="muted">No model loaded.</span>';
   }
   $("#head-mlist").onchange = () => {
-    lsSet("off", [...$("#head-mlist").querySelectorAll("input:not(:checked)")].map((x) => x.value));
+    saveCfg({ off: [...$("#head-mlist").querySelectorAll("input:not(:checked)")].map((x) => x.value) });
   };
   $("#head-scope").onfocus = fillScope;
   box.querySelector(".head-models").addEventListener("toggle", fillModels);
 
+  // standing heights looked at: the floors' levels (just under), or all
   function scope() {
-    const v = $("#head-scope").value;
-    if (v.startsWith("f:")) {
-      const rows = ctx.floorRows(), i = Number(v.slice(2)), r = rows[i];
-      if (!r) return { err: "That floor is not known any more." };
-      // standing from just under this level to just under the next
-      const yLo = r.y - 0.4, yHi = i + 1 < rows.length ? rows[i + 1].y - 0.4 : r.y + 6;
-      return { label: "on " + r.name, yLo, yHi, test: (b) => b[4] >= yLo && b[1] <= yHi + 6 };
-    }
-    if (v === "box") {
-      const planes = ctx.sectionPlanes();
-      if (!planes) return { err: "Turn the section box on first (Section > Box), or scan a floor." };
-      const c = new THREE.Vector3();
-      const inside = (b) => planes.every((p) => {
-        for (let i = 0; i < 8; i++) { c.set(i & 1 ? b[3] : b[0], i & 2 ? b[4] : b[1], i & 4 ? b[5] : b[2]); if (p.distanceToPoint(c) >= 0) return true; }
-        return false;
-      });
-      return { label: "inside the section box", yLo: -Infinity, yHi: Infinity, test: inside, planes };
-    }
-    return { label: "in the whole model", yLo: -Infinity, yHi: Infinity, test: null };
+    const sc = scopeP.get();
+    if (sc.err) return sc;
+    if (sc.floors) { sc.yLo = sc.floors[0].lo - 0.4; sc.yHi = sc.floors[sc.floors.length - 1].hi - 0.4; }
+    else { sc.yLo = -Infinity; sc.yHi = Infinity; }
+    return sc;
   }
+
+  /* What counts: the categories of the models counted, stood on and
+     overhead. */
+  async function fillCats() {
+    const off = new Set(cfg().off || []);
+    const names = new Set();
+    for (const m of geo.models().filter((x) => !off.has(x.key))) for (const k of (await geo.catsOf(m)).keys()) names.add(k);
+    const cats = [...names].sort((x, y) => catLabel(x).localeCompare(catLabel(y)));
+    const list = (test, side) => cats.map((k) => `<label><input type="checkbox" data-side="${side}" value="${esc(k)}"${test(k) ? " checked" : ""}> ${esc(catLabel(k))}</label>`).join("")
+      || '<span class="muted">No model counted.</span>';
+    $("#head-walk").innerHTML = list(isWalk, "walk");
+    $("#head-above").innerHTML = list(isAbove, "above");
+  }
+  box.querySelector(".head-cats").addEventListener("toggle", (ev) => { if (ev.target.open) fillCats(); });
+  box.querySelector(".head-cats").addEventListener("change", (ev) => {
+    const side = ev.target.dataset && ev.target.dataset.side;
+    if (!side) return;
+    // every category listed, as ticked (one not listed - a model not loaded - keeps its default)
+    const ticked = [...box.querySelectorAll(`#head-${side} input:checked`)].map((x) => x.value);
+    const shown = new Set([...box.querySelectorAll(`#head-${side} input`)].map((x) => x.value));
+    const was = cfg()[side] || null;
+    const keep = was ? was.filter((k) => !shown.has(k)) : [];
+    saveCfg({ [side]: [...new Set([...keep, ...ticked])] });
+  });
+  $("#head-cat-reset").onclick = () => { saveCfg({ walk: null, above: null }); setTimeout(fillCats, 50); };
 
   function worker() {
     if (H.worker !== null) return H.worker;
@@ -180,7 +231,7 @@ export function createHeadroom(ctx) {
     if (H.running) return;
     const sc = scope();
     if (sc.err) { ctx.status(sc.err); return; }
-    const off = new Set(lsGet("off", []));
+    const off = new Set(cfg().off || []);
     const ms = geo.models().filter((m) => !off.has(m.key));
     if (!ms.length) { ctx.status("Tick a model under Models counted."); return; }
     H.running = true; H.stop = false;
@@ -191,14 +242,14 @@ export function createHeadroom(ctx) {
       const walk = [], above = [], seen = new Map();
       for (const m of ms) {
         const cats = [...(await geo.catsOf(m)).keys()];
-        const want = cats.filter((k) => WALK.test(k) || ABOVE.test(k));
+        const want = cats.filter((k) => isWalk(k) || isAbove(k));
         await geo.elementsOf(m, want, sc.test, (el) => {
           const key = el.part.id + ":" + el.lid;
           if (seen.has(key)) return;
           el.k = key;
           seen.set(key, el);
-          if (WALK.test(el.cat) && el.box[4] >= sc.yLo && el.box[1] <= sc.yHi) { el.stair = STAIRISH.test(el.cat); walk.push(el); }
-          if (ABOVE.test(el.cat) && el.box[4] >= sc.yLo) above.push(el);
+          if (isWalk(el.cat) && el.box[4] >= sc.yLo && el.box[1] <= sc.yHi) { el.stair = STAIRISH.test(el.cat); walk.push(el); }
+          if (isAbove(el.cat) && el.box[4] >= sc.yLo) above.push(el);
         }, () => H.stop, progress);
         if (H.stop) throw new Error("Stopped.");
       }
@@ -216,8 +267,8 @@ export function createHeadroom(ctx) {
       }
       const W = walk.filter((e) => e.tris), A = above.filter((e) => e.tris);
       progress(`Measuring over ${W.length} floors, stairs and ramps ...`);
-      const { limit, stairLimit } = limits();
-      const res = await scanThere(W, A, { step: 0.25, stairStep: 0.2, fine: 0.1, limit, stairLimit, yLo: sc.yLo, yHi: sc.yHi, maxH: 6 });
+      const { limit, stairLimit, minSpace } = limits();
+      const res = await scanThere(W, A, { step: 0.25, stairStep: 0.2, fine: 0.1, limit, stairLimit, minSpace, yLo: sc.yLo, yHi: sc.yHi, maxH: 6 });
       // a section box: only what stands inside it
       if (sc.planes) {
         const v = new THREE.Vector3();
@@ -227,7 +278,7 @@ export function createHeadroom(ctx) {
       H.walk = W; H.above = A;
       for (const e of all) e.tris = null;          // let the triangles go
       await geo.nameAll([...new Set(res.zones.flatMap((z) => [W[z.walk], A[z.above]].filter(Boolean)))]);
-      H.res = Object.assign(res, { scope: sc.label, at: new Date().toISOString(), limit, stairLimit, ms: performance.now() - t0 });
+      H.res = Object.assign(res, { scope: sc.label, at: new Date().toISOString(), limit, stairLimit, minSpace, ms: performance.now() - t0 });
       paintDots();
       paint();
       const nf = res.zones.length;
@@ -283,7 +334,7 @@ export function createHeadroom(ctx) {
   function paint() {
     const res = H.res, list = $("#head-list"), sum = $("#head-sum");
     if (!res) { list.innerHTML = ""; sum.innerHTML = ""; return; }
-    sum.innerHTML = `<div class="ck-when muted">${esc(res.scope)} · floors ${res.limit.toFixed(2)} m, stairs ${res.stairLimit.toFixed(2)} m · ${res.checked} points</div>`
+    sum.innerHTML = `<div class="ck-when muted">${esc(res.scope)} · floors ${res.limit.toFixed(2)} m, stairs ${res.stairLimit.toFixed(2)} m${res.minSpace ? `, lower than ${res.minSpace.toFixed(1)} m left out` : ""} · ${res.checked} points</div>`
       + `<div class="head-legend"><span class="it"><span class="sw red"></span> under the limit</span> <span class="it"><span class="sw amber"></span> within 100 mm over it</span>`
       + ` <button class="ghost" id="head-clear" title="Take the coloured squares away">Clear</button></div>`;
     $("#head-clear").onclick = () => { clearDots(); H.res = null; paint(); };
@@ -298,11 +349,15 @@ export function createHeadroom(ctx) {
         + `<div class="ck-acts"><button class="ghost" data-act="look">Look</button><button class="ghost" data-act="make">Make issue</button></div></li>`;
     }).join("");
   }
+  /* A place: the storey cut out round it, what is overhead coloured, and
+     its height drawn where it is lowest. */
   async function look(z) {
     const p = new THREE.Vector3(z.at[0], z.at[1], z.at[2]);
-    ctx.focusAt(p);
-    const a = H.above[z.above];
+    ctx.focusAt(p, 4);
+    const a = H.above[z.above], w = H.walk[z.walk];
     if (a) await ctx.highlightMany([{ part: a.part, lid: a.lid }]);
+    const lim = w && w.stair ? H.res.stairLimit : H.res.limit;
+    drawDim(p, p.clone().add(new THREE.Vector3(0, z.minH, 0)), `${(lim - z.minH).toFixed(2)} m short of ${lim.toFixed(2)} m`);
   }
   async function makeIssue(z) {
     await look(z);
@@ -333,7 +388,9 @@ export function createHeadroom(ctx) {
 
   return {
     probeAt,
-    refresh() { fillScope(); fillModels(); },
+    refresh() { fillScope(); fillModels(); showCfg(); },
+    // the shared settings changed (someone else): shown, unless being typed in
+    itemsChanged() { if (!box.contains(document.activeElement)) showCfg(); },
     leave() { clearProbe(); },
     get result() { return H.res; },
     // support and tests: what the last scan used
