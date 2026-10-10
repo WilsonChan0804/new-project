@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-19", date: "11 Oct 2026",
+    items: [
+      "Clash check: **joins are not clashes** - walls through slabs, finishes and waterproofing under walls, landings into walls, beams into walls and columns. A duplicate, two walls overlapping side by side, or anything through a ceiling still is. (Rule > Leave out joins, on by default.)",
+      "A clash opens where its two elements are now, even when the result was saved in another session.",
+      "Headroom: **Ignore lower than** now applies to stairs and ramps too.",
+    ],
+  },
+  {
     version: "2026-10-18", date: "11 Oct 2026",
     items: [
       "Clash check: far fewer false alarms - layered walls and floors touching, and surfaces a millimetre apart, are no longer clashes. Open surfaces crossing each other only when the rule asks for it.",

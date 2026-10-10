@@ -87,7 +87,7 @@ const grow = (b, d) => [b[0] - d, b[1] - d, b[2] - d, b[3] + d, b[4] + d, b[5] +
    corner of one face on the edge of the next) or positions stored to the
    nearest millimetre or so, piece by piece. sign: 1 faces out, -1 in. */
 export function solidity(t) {
-  if (!t.length) return { closed: false, sign: 1 };
+  if (!t.length) return { closed: false, sign: 1, vol: 0 };
   const b = boxOfTris(t);
   const vol = (rx, ry, rz) => {
     let v = 0;
@@ -101,7 +101,7 @@ export function solidity(t) {
   };
   const v1 = vol(b[0], b[1], b[2]), v2 = vol(b[3], b[4], b[5]);
   const closed = Math.abs(v1) > 1e-9 && Math.abs(v1 - v2) <= 0.01 * Math.abs(v1) + 1e-9;
-  return { closed, sign: v1 >= 0 ? 1 : -1 };
+  return { closed, sign: v1 >= 0 ? 1 : -1, vol: Math.abs(v1) };
 }
 export function isClosed(t) { return solidity(t).closed; }
 
@@ -343,7 +343,8 @@ function runs(A, B, r, axis, step) {
   };
   const ca = cellsOf(A.tris, trisIn(A.tris, band)), cb = cellsOf(B.tris, trisIn(B.tris, band));
   const ha = [], hb = [], ga = [], gb = [], sa = [], sb = [];
-  let best = 0, wsum = 0, cx = 0, cy = 0, cz = 0;
+  let best = 0, wsum = 0, cx = 0, cy = 0, cz = 0, vol = 0;
+  const ob = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
   for (let i = 0; i < nu; i++) {
     // a little off the grid, so lines do not run along the model's own edges
     const pu = r[u] + (i + 0.5) * su + su * 0.0137;
@@ -363,6 +364,12 @@ function runs(A, B, r, axis, step) {
         if (e > s0) {
           const L = e - s0;
           if (L > best) best = L;
+          vol += L * su * sv;
+          // the overlap's extent (its two ends on this line)
+          for (const w of [s0, e]) {
+            const q = [0, 0, 0]; q[axis] = w; q[u] = pu; q[v] = pv;
+            for (let d = 0; d < 3; d++) { if (q[d] < ob[d]) ob[d] = q[d]; if (q[d] > ob[3 + d]) ob[3 + d] = q[d]; }
+          }
           const m = (s0 + e) / 2;
           const p = [0, 0, 0]; p[axis] = m; p[u] = pu; p[v] = pv;
           cx += p[0] * L; cy += p[1] * L; cz += p[2] * L; wsum += L;
@@ -371,7 +378,7 @@ function runs(A, B, r, axis, step) {
       }
     }
   }
-  return { best, centre: wsum ? [cx / wsum, cy / wsum, cz / wsum] : null };
+  return { best, vol, obox: ob, centre: wsum ? [cx / wsum, cy / wsum, cz / wsum] : null };
 }
 
 /* ------------------------------------------------------- nearest distance */
@@ -465,6 +472,47 @@ function nearest(A, B, limit) {
 
 /* --------------------------------------------------------------- a pair */
 
+/* A point well inside solid X: the middle of where a line through the
+   middle of its box runs inside it (an L-shaped element's box middle can
+   be outside it). */
+function innerPoint(X) {
+  const all = [];
+  for (let i = 0; i < X.tris.length; i += 9) all.push(i);
+  const c = [(X.tbox[0] + X.tbox[3]) / 2, (X.tbox[1] + X.tbox[4]) / 2, (X.tbox[2] + X.tbox[5]) / 2];
+  const h = [], g = [], sp = [];
+  for (let axis = 0; axis < 3; axis++) {
+    const u = axis === 0 ? 1 : 0, v = axis === 2 ? 1 : 2;
+    lineHits(X.tris, all, axis, c[u] + 1.13e-5, c[v] - 0.71e-5, h, g, X.sign);
+    spans(h, g, sp);
+    let best = -1, at = 0;
+    for (let k = 0; k + 1 < sp.length; k += 2) if (sp[k + 1] - sp[k] > best) { best = sp[k + 1] - sp[k]; at = (sp[k] + sp[k + 1]) / 2; }
+    if (best > 0) { const p = c.slice(); p[axis] = at; p[u] += 1.13e-5; p[v] -= 0.71e-5; return p; }
+  }
+  return null;
+}
+
+/* Walls, floors, columns, beams, stairs meeting - a join - or a real
+   clash? A join's overlap is long in one direction at most: a wall through
+   a slab (wall thickness x slab thickness x the wall's length), a finish
+   under a wall, a beam into a column, a landing into a wall. A clash's is a
+   sheet (two walls side by side, overlapping along their length) or most of
+   one of them (a duplicate). From the overlap's volume, its depth (the
+   thinnest way through) and its length (corner to corner), its middle size
+   is volume / (depth x length): small for a join, whichever way the
+   building turns. */
+function isJoin(A, B, r, depth) {
+  const small = Math.min(A.vol || 0, B.vol || 0);
+  if (!(small > 0)) return false;
+  const step = Math.max(Math.max(r[3] - r[0], r[5] - r[2]) / 16, 0.005);
+  const q = runs(A, B, r, 1, step);
+  if (!(q.vol > 0)) return true;
+  if (q.vol >= 0.8 * small) return false;               // most of one: a duplicate
+  const o = q.obox;
+  const len = Math.hypot(o[3] - o[0] + step, o[4] - o[1], o[5] - o[2] + step);
+  const mid = q.vol / (Math.max(depth, 1e-3) * Math.max(len, 1e-3));
+  return mid <= Math.max(0.25 * len, 0.75);
+}
+
 /* How far an open surface Q goes into the solid P: points over Q's
    triangles near the region, those inside P, and the farthest of them from
    P's surface. */
@@ -500,7 +548,7 @@ function penetration(P, Q, r) {
 export function judge(A, B, opt) {
   const tol = opt.tol || 0, clear = opt.clear || 0;
   for (const X of [A, B]) {
-    if (X.closed === undefined) { const q = solidity(X.tris); X.closed = q.closed; X.sign = q.sign; }
+    if (X.closed === undefined) { const q = solidity(X.tris); X.closed = q.closed; X.sign = q.sign; X.vol = q.vol; }
     // the box of the triangles themselves (the model's box can be a hair
     // smaller: positions are stored rounded)
     if (!X.tbox) X.tbox = boxOfTris(X.tris);
@@ -522,7 +570,13 @@ export function judge(A, B, opt) {
           if (!centre && q.centre) centre = q.centre;
           if (depth < tol) break;
         }
-        if (depth >= tol && depth > 1e-4 && isFinite(depth)) return { kind: "hard", depth, dist: 0, box: cr.box, point: centre || mid(cr.box) };
+        if (depth >= tol && depth > 1e-4 && isFinite(depth)) {
+          // walls, floors, beams ... meeting: a join, unless one is mostly in the other
+          if (opt.join && isJoin(A, B, r, depth)) return null;
+          return { kind: "hard", depth, dist: 0, box: cr.box, point: centre || mid(cr.box) };
+        }
+      } else if (opt.join) {
+        // fabric with an open surface: no volume to weigh - taken as a join
       } else if (A.closed || B.closed) {
         // an open surface against a solid: how deep it goes in
         const [P, Q] = A.closed ? [A, B] : [B, A];
@@ -538,10 +592,8 @@ export function judge(A, B, opt) {
       const inBox = (p, q) => p[0] >= q[0] && p[1] >= q[1] && p[2] >= q[2] && p[3] <= q[3] && p[4] <= q[4] && p[5] <= q[5];
       for (const [X, Y] of [[A, B], [B, A]]) {
         if (!inBox(X.tbox, grow(Y.tbox, 0.005))) continue;
-        const p = [X.tris[0], X.tris[1], X.tris[2]];
-        // a point a hair inside X, off its corner
         const c = mid(X.tbox);
-        const q = [p[0] + (c[0] - p[0]) * 1e-3, p[1] + (c[1] - p[1]) * 1e-3, p[2] + (c[2] - p[2]) * 1e-3];
+        const q = innerPoint(X) || c;
         if (inside(Y.tris, q, Y.sign)) {
           const depth = Math.min(X.tbox[3] - X.tbox[0], X.tbox[4] - X.tbox[1], X.tbox[5] - X.tbox[2]);
           if (depth >= tol) return { kind: "inside", depth, dist: 0, box: X.tbox.slice(), point: c };

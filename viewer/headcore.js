@@ -141,8 +141,9 @@ export function scan(walk, above, opt) {
           }
         }
         if (covered || !(best < maxH)) continue;    // covered, or open above
-        // lower than anyone uses on a floor (under a WC, a bench, in a duct or a void): not a space
-        if (opt.minSpace && !w.stair && best < opt.minSpace) continue;    // (a stair or ramp: always)
+        // lower than anyone uses (under a WC, a bench, in a duct or a void, the
+        // end of a stair running in under the floor above): not a space
+        if (opt.minSpace && best < opt.minSpace) continue;
         const lim = w.stair ? opt.stairLimit : opt.limit;
         const flag = best < lim ? 1 : best < lim + 0.1 ? 2 : 0;
         if (flag) pts.push([x, y0, z, best, flag, wi, who, s]);

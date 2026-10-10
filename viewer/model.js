@@ -2088,6 +2088,10 @@ function initClash() {
       renderDims();
       status(`${label} kept as a dimension for everyone (Measure > Dimensions).`);
     },
+    // project (shared) millimetres and back: what is kept stays right
+    // whichever model the scene was started from
+    toShared: (v) => sceneToSharedMM(v).map((n) => Math.round(n)),
+    fromShared: (mm) => { try { return sharedToScene(mm); } catch (e) { return null; } },
     // the storey round p cut out, a window of 2 x half metres
     focusAt: (p, half = 6, lo = null, hi = null) => focusRoom(p, levelIndexAt(p.y + 0.1), half, lo, hi),
     sectionOff() {

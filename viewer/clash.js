@@ -23,6 +23,14 @@ const OPENINGS = new Set(["Doors", "Windows", "Curtain Panels", "Curtain Wall Mu
   "IFCDOOR", "IFCWINDOW", "IFCPLATE", "IFCMEMBER", "IFCOPENINGELEMENT", "IFCDOORSTANDARDCASE", "IFCWINDOWSTANDARDCASE"]);
 const HOSTS = new Set(["Walls", "Floors", "Roofs", "Ceilings", "Curtain Systems",
   "IFCWALL", "IFCWALLSTANDARDCASE", "IFCCURTAINWALL", "IFCSLAB", "IFCROOF", "IFCCOVERING"]);
+/* The building's fabric: two of these overlapping where they meet (a wall
+   through a slab, a finish under a wall, a beam into a column) is a join,
+   not a clash - unless the rule says otherwise (clashcore isJoin). */
+// (not ceilings: a beam or a duct down through a ceiling is a real clash)
+const FABRIC = new Set(["Walls", "Floors", "Roofs", "Columns", "Structural Columns", "Structural Framing",
+  "Structural Foundations", "Stairs", "Runs", "Landings", "Ramps", "Railings", "Curtain Panels", "Curtain Wall Mullions",
+  "IFCWALL", "IFCWALLSTANDARDCASE", "IFCCURTAINWALL", "IFCSLAB", "IFCROOF", "IFCCOLUMN", "IFCBEAM",
+  "IFCMEMBER", "IFCPLATE", "IFCFOOTING", "IFCPILE", "IFCSTAIR", "IFCSTAIRFLIGHT", "IFCRAMP", "IFCRAMPFLIGHT", "IFCRAILING"]);
 const MAX_PAIRS = 30000;           // boxes that touch; more: ask for a smaller scope
 const CHUNK = 120;                 // pairs judged per round trip
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -83,7 +91,7 @@ export function createClash(ctx) {
     r = r ? JSON.parse(JSON.stringify(r)) : {
       id: ctx.uid(), placement: "clashrule", name: "", created_at: new Date().toISOString(), author: ctx.author(),
       a: { models: [ms[0].key], cats: [] }, b: { models: [(ms.find((m) => m.rec.ref && m.key !== ms[0].key) || ms[0]).key], cats: [] },
-      tol_mm: 10, clear_mm: 0, skip_openings: true, open: false, ignored: [],
+      tol_mm: 10, clear_mm: 0, skip_openings: true, skip_joins: true, open: false, ignored: [],
     };
     for (const s of ["a", "b"]) { r[s] = { models: sideKeys(r[s]), cats: r[s].cats || [] }; }
     const side = async (s, title) => {
@@ -113,6 +121,7 @@ export function createClash(ctx) {
         + `<div class="ck-opts"><label>Overlap that counts <input name="tol" type="number" min="0" max="500" step="1" value="${r.tol_mm}"> mm</label>`
         + `<label title="Also report elements that come closer than this without touching (0 = off)">Clearance <input name="clear" type="number" min="0" max="2000" step="5" value="${r.clear_mm}"> mm</label>`
         + `<label class="ck-chk"><input name="skip" type="checkbox"${r.skip_openings !== false ? " checked" : ""}> Leave out doors and windows in their walls, floors and roofs</label>`
+        + `<label class="ck-chk" title="Walls, floors, roofs, columns, beams and stairs overlap where they meet in the exported models (a wall through a slab, a finish under a wall, a beam into a wall or a column): not clashes. A duplicate, two walls overlapping side by side, or anything through a ceiling still are."><input name="joins" type="checkbox"${r.skip_joins !== false ? " checked" : ""}> Leave out joins between walls, floors, roofs, columns, beams and stairs</label>`
         + `<label class="ck-chk" title="Surfaces that are not closed solids have no inside, so how deep they cross cannot be measured: off, they are not reported against each other"><input name="open" type="checkbox"${r.open ? " checked" : ""}> Report open surfaces crossing each other (no depth)</label></div>`
         + `<p class="muted ck-note">Set A and B can be the same model: clashes inside it. Checks what the viewer draws - quick coordination, not a formal clash report.</p>`
         + `<div class="ck-foot"><span class="ck-msg bad"></span><span class="spacer"></span><button type="button" class="ghost" data-x>Cancel</button><button type="submit" class="primary">Save</button></div></form>`;
@@ -130,6 +139,7 @@ export function createClash(ctx) {
       r.clear_mm = Math.max(0, Math.min(2000, Number(f.clear.value) || 0));
       r.skip_openings = f.skip.checked;
       r.open = f.open.checked;
+      r.skip_joins = f.joins.checked;
     };
     let done;
     const ended = new Promise((res) => { done = res; });
@@ -163,7 +173,7 @@ export function createClash(ctx) {
     if (!got) return;
     // a changed rule starts afresh: its old result asked a different question
     const old = rule();
-    const sig = (x) => JSON.stringify([sideKeys(x.a), x.a.cats, sideKeys(x.b), x.b.cats, x.tol_mm, x.clear_mm, x.skip_openings, !!x.open]);
+    const sig = (x) => JSON.stringify([sideKeys(x.a), x.a.cats, sideKeys(x.b), x.b.cats, x.tol_mm, x.clear_mm, x.skip_openings, !!x.open, x.skip_joins !== false]);
     const same = !isNew && old && sig(got) === sig(old);
     if (!same) got.last = null;
     got.updated_at = new Date().toISOString();
@@ -236,9 +246,10 @@ export function createClash(ctx) {
     if (!inline) inline = { judge: (await import("./clashcore.js")).judge, els: new Map() };
     for (const e of els) inline.els.set(e.k, e);
     const out = [];
-    for (const [n, a, b] of ps) {
+    const optJ = Object.assign({}, opt, { join: true });
+    for (const [n, a, b, j] of ps) {
       const A = inline.els.get(a), B = inline.els.get(b);
-      out.push([n, A && B ? inline.judge(A, B, opt) : null]);
+      out.push([n, A && B ? inline.judge(A, B, j ? optJ : opt) : null]);
       if (out.length % 10 === 0) await new Promise((r) => setTimeout(r, 0));
     }
     return out;
@@ -319,7 +330,9 @@ export function createClash(ctx) {
         const fresh = [...new Set(chunk.flat())].filter((k) => !sent.has(k));
         const els = await trisOf(fresh);
         for (const e of els) sent.add(e.k);
-        const out = await judgeThere(els, chunk.map((p, n) => [i + n, p[0], p[1]]), opt);
+        const joins = r.skip_joins !== false;
+        const out = await judgeThere(els, chunk.map((p, n) => [i + n, p[0], p[1],
+          joins && FABRIC.has(E.get(p[0]).cat) && FABRIC.has(E.get(p[1]).cat)]), opt);
         for (const [n, res] of out || []) if (res) found.push({ a: cand[n][0], b: cand[n][1], res });
         // let go of what no later pair needs
         const drop = [];
@@ -357,6 +370,9 @@ export function createClash(ctx) {
         key, kind: f.res.kind, depth_mm: f.res.depth != null ? Math.round(f.res.depth * 1000) : null,
         dist_mm: f.res.kind === "clearance" ? Math.round(f.res.dist * 1000) : null,
         point: f.res.point.map((v) => +v.toFixed(3)),
+        // and in the project's coordinates: the scene's origin follows the
+        // first model loaded, which another session may load differently
+        point_shared_mm: ctx.toShared(new THREE.Vector3(...f.res.point)),
         // how big the place is (to frame it)
         size: f.res.box ? +Math.hypot(f.res.box[3] - f.res.box[0], f.res.box[4] - f.res.box[1], f.res.box[5] - f.res.box[2]).toFixed(2) : null,
         level: ctx.levelAt(f.res.point[1]) || "",
@@ -367,7 +383,8 @@ export function createClash(ctx) {
     // compared with the last run: what is new, and what has gone (within what was checked this time)
     const prev = (r.last && r.last.clashes) || {};
     const inScope = (c) => !sc.test || (() => {
-      const p = c.point;
+      const f = c.point_shared_mm ? ctx.fromShared(c.point_shared_mm) : null;
+      const p = f ? f.toArray() : c.point;
       return sc.test([p[0], p[1], p[2], p[0], p[1], p[2]]);
     })();
     let nNew = 0, nGone = 0;
@@ -491,6 +508,26 @@ export function createClash(ctx) {
 
   /* ------------------------------------------------------- showing one */
 
+  /* Where a clash is now: between its two elements as loaded (the middle
+     of where their boxes meet), else its point in project coordinates,
+     else (results from before) the scene point it was found at. */
+  async function placeOf(c) {
+    const [A, B] = [await partLidOf(c.key.split("~")[0]), await partLidOf(c.key.split("~")[1])];
+    if (A && B) {
+      try {
+        const [ba] = await A.part.model.getBoxes([A.lid]), [bb] = await B.part.model.getBoxes([B.lid]);
+        if (ba && bb && !ba.isEmpty() && !bb.isEmpty()) {
+          const i = ba.clone().intersect(bb);
+          const p = (i.isEmpty() ? ba.clone().union(bb) : i).getCenter(new THREE.Vector3());
+          // the found point, if it lies where they meet (it is the better spot)
+          const f = c.point_shared_mm ? ctx.fromShared(c.point_shared_mm) : null;
+          return { p: f && !i.isEmpty() && i.clone().expandByScalar(0.05).containsPoint(f) ? f : p, A, B };
+        }
+      } catch (e) { /* below */ }
+    }
+    if (c.point_shared_mm) { const f = ctx.fromShared(c.point_shared_mm); if (f) return { p: f, A, B }; }
+    return { p: new THREE.Vector3(...c.point), A, B };
+  }
   async function partLidOf(id) {
     for (const e of E.values()) if (e.id === id) return e;
     return geo.find(id);         // a saved result: as loaded now
@@ -510,12 +547,14 @@ export function createClash(ctx) {
     ctx.redraw();
   }
   async function show(c, only) {
-    const A = await partLidOf(c.key.split("~")[0]), B = await partLidOf(c.key.split("~")[1]);
+    const { p: at, A, B } = await placeOf(c);
+    c._at = at;
+    C.shownAt = at.toArray();
     const els = [A, B].filter(Boolean);
     await ctx.highlightMany(els);
     if (only && els.length) await ctx.isolateMany(els);
     await look(c);
-    putMarker(c.point);
+    putMarker(at.toArray());
     const twoCol = A && B && !(A.part.model.head && A.part.model.head === B.part.model.head);
     ctx.status(`${KIND[c.kind] || c.kind} ${amount(c)}${c.level ? " on " + c.level : ""}: ${c.a.cat}${c.a.name ? " " + c.a.name : ""}${twoCol ? " (orange)" : ""} x ${c.b.cat}${c.b.name ? " " + c.b.name : ""}${twoCol ? " (blue)" : ""}`
       + (only ? " - only these two shown; Show all brings everything back." : " - cut out round it; Section off shows the whole model."));
@@ -524,7 +563,7 @@ export function createClash(ctx) {
   /* A clash inside the building: the storey cut out round it (a section
      box a few metres across), looked at from above at an angle. */
   async function look(c) {
-    const p = new THREE.Vector3(...c.point);
+    const p = c._at || (await placeOf(c)).p;
     const half = Math.max(1.5, Math.min(6, (c.size || 1) * 0.75 + 1));
     ctx.focusAt(p, half);
   }
@@ -532,7 +571,7 @@ export function createClash(ctx) {
     const { A } = await show(c, false);
     const r = rule();
     const lines = (s, e) => `${s}: ${e.model} - ${e.cat}${e.name ? " - " + e.name : ""}${e.type && e.type !== e.name ? " (" + e.type + ")" : ""}${e.id ? " - id " + e.id : ""}`;
-    await ctx.makeIssue(new THREE.Vector3(...c.point), A, {
+    await ctx.makeIssue(c._at || new THREE.Vector3(...c.point), A, {
       title: `Clash: ${c.a.cat} x ${c.b.cat}${c.level ? " (" + c.level + ")" : ""}`.slice(0, 120),
       description: [lines("A", c.a), lines("B", c.b),
         `${KIND[c.kind] || c.kind} ${amount(c)} - clash rule "${r ? r.name : ""}", ${new Date().toLocaleDateString()}`].join("\n"),
@@ -595,7 +634,7 @@ export function createClash(ctx) {
     if (a === "ign") return toggleIgnore(c);
     if (a === "only") return show(c, true);
     if (a === "secoff") { ctx.sectionOff(); ctx.status("Section box off: the whole model."); return; }
-    if (c.state === "gone") { await look(c); putMarker(c.point); return; }
+    if (c.state === "gone") { c._at = (await placeOf(c)).p; await look(c); putMarker(c._at.toArray()); return; }
     return show(c, false);
   };
 
@@ -615,6 +654,7 @@ export function createClash(ctx) {
     // for a test: run the selected rule and wait
     async runNow() { await run(); return C.result; },
     get result() { return C.result; },
+    get shownAt() { return C.shownAt || null; },
     // support: the elements of the last run and their triangles
     debugEls: () => [...E.entries()].map(([k, e]) => ({ k, cat: e.cat, box: e.box, lid: e.lid, part: e.part.id })),
     async debugTris(keys) { return (await trisOf(keys)).map((x) => ({ k: x.k, tris: Array.from(x.tris), box: x.box })); },

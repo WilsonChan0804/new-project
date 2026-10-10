@@ -46,7 +46,7 @@ export function createHeadroom(ctx) {
     <div class="head-lims">
       <label title="Clear height wanted over floors">Floors <input id="head-lim" type="number" min="1" max="6" step="0.05"> m</label>
       <label title="Clear height wanted over stair treads, landings and ramps">Stairs, ramps <input id="head-lim-st" type="number" min="1" max="6" step="0.05"> m</label>
-      <label title="On floors, lower than this is not a space people use - under a WC, a bench, in a duct or a ceiling void: not reported. Stairs and ramps are always checked.">Ignore lower than <input id="head-min" type="number" min="0" max="3" step="0.1"> m</label>
+      <label title="Lower than this is not a space people use - under a WC or a bench, in a duct or a ceiling void, where a stair runs in under the floor above: not reported">Ignore lower than <input id="head-min" type="number" min="0" max="3" step="0.1"> m</label>
     </div>
     <details class="head-models"><summary>Models counted</summary><div id="head-mlist"></div></details>
     <details class="head-models head-cats"><summary>What counts</summary>

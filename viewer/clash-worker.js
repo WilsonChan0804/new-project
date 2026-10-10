@@ -14,11 +14,13 @@ self.onmessage = (ev) => {
     els.clear();
   } else if (m.type === "judge") {
     const out = [];
-    for (const [n, a, b] of m.pairs) {
+    // a pair's 4th item: both are walls, floors, beams ... (joins left out)
+    const optJ = Object.assign({}, m.opt, { join: true });
+    for (const [n, a, b, j] of m.pairs) {
       const A = els.get(a), B = els.get(b);
       if (!A || !B) { out.push([n, null, "missing"]); continue; }
       let r = null, err = null;
-      try { r = judge(A, B, m.opt); } catch (e) { err = String(e && e.message || e); }
+      try { r = judge(A, B, j ? optJ : m.opt); } catch (e) { err = String(e && e.message || e); }
       out.push([n, r, err]);
     }
     self.postMessage({ type: "judged", id: m.id, out });
