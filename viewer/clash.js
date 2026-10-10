@@ -17,6 +17,7 @@
  * converted): quick everyday coordination, not a formal clash report.
  */
 import { pairs as boxPairs } from "./clashcore.js";
+import { createGeo, catLabel } from "./checkgeo.js";
 
 const OPENINGS = new Set(["Doors", "Windows", "Curtain Panels", "Curtain Wall Mullions",
   "IFCDOOR", "IFCWINDOW", "IFCPLATE", "IFCMEMBER", "IFCOPENINGELEMENT", "IFCDOORSTANDARDCASE", "IFCWINDOWSTANDARDCASE"]);
@@ -27,31 +28,7 @@ const CHUNK = 120;                 // pairs judged per round trip
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const isRule = (it) => it && it.placement === "clashrule" && !it.deleted;
 
-/* IFC classes by the names people use; Revit category names as they are. */
-const IFC_NAMES = {
-  IFCWALL: "Walls", IFCWALLSTANDARDCASE: "Walls", IFCCURTAINWALL: "Curtain walls", IFCSLAB: "Slabs and floors",
-  IFCROOF: "Roofs", IFCBEAM: "Beams", IFCCOLUMN: "Columns", IFCMEMBER: "Members (bracing, mullions)", IFCPLATE: "Plates and panels",
-  IFCFOOTING: "Footings", IFCPILE: "Piles", IFCDOOR: "Doors", IFCWINDOW: "Windows", IFCSTAIR: "Stairs",
-  IFCSTAIRFLIGHT: "Stair flights", IFCRAMP: "Ramps", IFCRAMPFLIGHT: "Ramp flights", IFCRAILING: "Railings",
-  IFCCOVERING: "Coverings (ceilings, finishes)", IFCBUILDINGELEMENTPROXY: "Other elements (proxy)",
-  IFCFURNISHINGELEMENT: "Furniture", IFCFURNITURE: "Furniture", IFCCHIMNEY: "Chimneys", IFCSHADINGDEVICE: "Shading devices",
-  IFCREINFORCINGBAR: "Reinforcing bars", IFCTRANSPORTELEMENT: "Lifts and escalators",
-  IFCFLOWSEGMENT: "Ducts, pipes and trays", IFCDUCTSEGMENT: "Ducts", IFCPIPESEGMENT: "Pipes",
-  IFCCABLECARRIERSEGMENT: "Cable trays", IFCCABLESEGMENT: "Cables", IFCFLOWFITTING: "Fittings",
-  IFCDUCTFITTING: "Duct fittings", IFCPIPEFITTING: "Pipe fittings", IFCCABLECARRIERFITTING: "Cable tray fittings",
-  IFCFLOWTERMINAL: "Terminals", IFCAIRTERMINAL: "Air terminals", IFCSANITARYTERMINAL: "Sanitary fittings",
-  IFCLIGHTFIXTURE: "Light fixtures", IFCFIRESUPPRESSIONTERMINAL: "Sprinklers", IFCFLOWCONTROLLER: "Valves and dampers",
-  IFCVALVE: "Valves", IFCDAMPER: "Dampers", IFCFLOWMOVINGDEVICE: "Pumps and fans", IFCPUMP: "Pumps", IFCFAN: "Fans",
-  IFCENERGYCONVERSIONDEVICE: "Plant", IFCUNITARYEQUIPMENT: "Plant units", IFCFLOWSTORAGEDEVICE: "Tanks",
-  IFCDISTRIBUTIONELEMENT: "Distribution elements", IFCDISTRIBUTIONFLOWELEMENT: "Distribution elements",
-  IFCDISTRIBUTIONCONTROLELEMENT: "Controls", IFCELECTRICAPPLIANCE: "Electrical appliances", IFCOUTLET: "Outlets",
-  IFCSWITCHINGDEVICE: "Switches", IFCELECTRICDISTRIBUTIONBOARD: "Distribution boards", IFCDUCTSILENCER: "Silencers",
-};
-export function catLabel(k) {
-  if (!/^IFC[A-Z]+$/.test(k)) return k;
-  const n = IFC_NAMES[k] || (k.charAt(3) + k.slice(4).toLowerCase());
-  return n + " (IFC)";
-}
+export { catLabel };
 
 export function createClash(ctx) {
   const { THREE } = ctx;
@@ -63,46 +40,8 @@ export function createClash(ctx) {
 
   /* ------------------------------------------------------- the models */
 
-  // what can be picked: every model here, by a name that stays the same
-  function models() {
-    const out = [];
-    for (const rec of ctx.recs()) {
-      if (!rec.parts || !rec.parts.length) continue;
-      // a consultant's model by its name and company: the same rule follows
-      // its next version (uploaded afresh, with a new id)
-      const key = (rec.ref ? "ref:" + (rec.ref.name || "") + "/" + (rec.ref.company || "") : rec.entry.name).replace(/[|~]/g, "-");
-      out.push({ key, label: ctx.modelLabel(rec), rec, lwk: !!rec.lwk });
-    }
-    return out;
-  }
-  const modelByKey = (k) => models().find((m) => m.key === k) || null;
-
-  // the categories of a model: Revit names for the fast 3D, IFC classes otherwise
-  async function catsOf(m) {
-    if (m.rec._clashCats) return m.rec._clashCats;
-    const out = new Map();     // category -> [{ part, lids }]
-    for (const part of m.rec.parts) {
-      let by = {};
-      try {
-        if (part.model.getItemsOfRevitCategories) by = await part.model.getItemsOfRevitCategories();
-        else {
-          // an IFC: only the classes that are drawn (not units, properties ...)
-          let geo = null;
-          try { geo = new Set(await part.model.getItemsWithGeometryCategories()); } catch (e) { geo = null; }
-          const all = await part.model.getItemsOfCategories([/.*/]);
-          for (const [k, lids] of Object.entries(all || {})) if (!geo || geo.has(k)) by[k] = lids;
-        }
-      } catch (e) { by = {}; }
-      for (const [k, lids] of Object.entries(by || {})) {
-        if (!lids || !lids.length || /^IFC(SPACE|OPENINGELEMENT|ANNOTATION|GRID|SITE|BUILDING|BUILDINGSTOREY|PROJECT)$/.test(k)
-          || k === "Rooms" || k === "Areas") continue;
-        if (!out.has(k)) out.set(k, []);
-        out.get(k).push({ part, lids });
-      }
-    }
-    m.rec._clashCats = out;
-    return out;
-  }
+  const geo = createGeo(ctx);
+  const models = geo.models, modelByKey = geo.modelByKey, catsOf = geo.catsOf;
 
   /* -------------------------------------------------------- the rules */
 
@@ -255,91 +194,20 @@ export function createClash(ctx) {
   async function setOf(side, sc) {
     const m = modelByKey(side.model);
     if (!m) throw new Error(`The model "${side.model}" is not loaded here - turn it on in the Models panel first.`);
-    const cats = await catsOf(m);
     const out = [];
-    for (const k of side.cats) {
-      for (const { part, lids } of cats.get(k) || []) {
-        for (let i = 0; i < lids.length; i += 4000) {
-          if (C.stop) return out;
-          const ids = lids.slice(i, i + 4000);
-          let bx = [];
-          try { bx = await part.model.getBoxes(ids); } catch (e) { bx = []; }
-          ids.forEach((lid, j) => {
-            const b = bx[j];
-            if (!b || b.isEmpty()) return;
-            const a = [b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z];
-            if (sc.test && !sc.test(a)) return;
-            const key = ekey(part, lid);
-            if (!E.has(key)) E.set(key, { part, lid, cat: k, box: a, model: m });
-            out.push(key);
-          });
-          progress(`Reading ${m.label}: ${catLabel(k)} ...`);
-        }
-      }
-    }
+    await geo.elementsOf(m, side.cats, sc.test, (el) => {
+      const key = ekey(el.part, el.lid);
+      if (!E.has(key)) E.set(key, el);
+      out.push(key);
+    }, () => C.stop, progress);
     return [...new Set(out)];
   }
 
-  /* World triangles of elements. A fragments model may hand back the
-     element's own placement only: its object's placement is put on top
-     when the triangles would otherwise sit away from the element's box
-     (worked out once per model part). */
-  async function trisOf(list) {
-    const byPart = new Map();
-    for (const k of list) {
-      const e = E.get(k);
-      if (!byPart.has(e.part)) byPart.set(e.part, []);
-      byPart.get(e.part).push(k);
-    }
+  // the triangles of these elements (keys), for the worker
+  async function trisOf(keys) {
+    const t = await geo.trisOf(keys.map((k) => E.get(k)));
     const out = [];
-    const M = new THREE.Matrix4();
-    for (const [part, keys] of byPart) {
-      const lids = keys.map((k) => E.get(k).lid);
-      try { if (part.model.ensureGeometry) await part.model.ensureGeometry(lids); } catch (e) {}
-      let geo = [];
-      try { geo = await part.model.getItemsGeometry(lids); } catch (e) { geo = []; }
-      keys.forEach((k, i) => {
-        const g = geo[i] || [];
-        let n = 0;
-        for (const md of g) if (md && md.positions) n += md.indices ? md.indices.length : md.positions.length / 3;
-        if (!n) return;
-        const build = (pre) => {
-          const t = new Float32Array(n * 3);
-          let o = 0;
-          for (const md of g) {
-            if (!md || !md.positions) continue;
-            M.copy(md.transform || new THREE.Matrix4());
-            if (pre) M.premultiply(pre);
-            const e = M.elements, P = md.positions, I = md.indices;
-            const cnt = I ? I.length : P.length / 3;
-            for (let q = 0; q < cnt; q++) {
-              const v = (I ? I[q] : q) * 3, x = P[v], y = P[v + 1], z = P[v + 2];
-              t[o++] = e[0] * x + e[4] * y + e[8] * z + e[12];
-              t[o++] = e[1] * x + e[5] * y + e[9] * z + e[13];
-              t[o++] = e[2] * x + e[6] * y + e[10] * z + e[14];
-            }
-          }
-          return t;
-        };
-        const el = E.get(k);
-        if (part._clashPre === undefined) {
-          // which of the two lands on the element's box
-          const off = (t) => {
-            let mx = [Infinity, Infinity, Infinity], Mx = [-Infinity, -Infinity, -Infinity];
-            for (let q = 0; q < t.length; q += 3) for (let d = 0; d < 3; d++) { mx[d] = Math.min(mx[d], t[q + d]); Mx[d] = Math.max(Mx[d], t[q + d]); }
-            return Math.abs(mx[0] - el.box[0]) + Math.abs(mx[1] - el.box[1]) + Math.abs(mx[2] - el.box[2])
-              + Math.abs(Mx[0] - el.box[3]) + Math.abs(Mx[1] - el.box[4]) + Math.abs(Mx[2] - el.box[5]);
-          };
-          const plain = build(null);
-          part.object.updateMatrixWorld(true);
-          const W = part.object.matrixWorld.clone();
-          const withW = build(W);
-          part._clashPre = part.model.head || off(plain) <= off(withW) ? null : W;
-        }
-        const t = build(part._clashPre);
-        out.push({ k, tris: t, box: el.box });
-      });
-    }
+    keys.forEach((k, i) => { if (t[i]) out.push({ k, tris: t[i], box: E.get(k).box }); });
     return out;
   }
 
@@ -395,38 +263,8 @@ export function createClash(ctx) {
     p.querySelector("span").textContent = t || "";
   }
 
-  /* A clash's name: the pair of elements, the same from one run to the
-     next. Worked out for all the elements found at once - one question per
-     model, not two per element. */
-  async function nameAll(keys) {
-    const byPart = new Map();
-    for (const k of keys) {
-      const e = E.get(k);
-      if (e.id) continue;
-      if (!byPart.has(e.part)) byPart.set(e.part, []);
-      byPart.get(e.part).push(e);
-    }
-    for (const [part, els] of byPart) {
-      const lids = els.map((e) => e.lid);
-      let guids = [], data = [];
-      if (!part.model.head) {
-        try { guids = await part.model.getGuidsByLocalIds(lids); } catch (err) { guids = []; }
-        try { data = await part.model.getItemsData(lids, { attributesDefault: true }); } catch (err) { data = []; }
-      }
-      const cnt = part.model.elementCountForId;
-      els.forEach((e, i) => {
-        const guid = guids[i] || null;
-        const info = ctx.elementInfo(part, e.lid, guid) || {};
-        const d = data[i] || {};
-        const copy = cnt != null && e.lid >= cnt ? "@" + e.lid : "";
-        e.info = info;
-        e.guid = guid;
-        e.id = e.model.key + "|" + (info.revit_id || guid || "l" + e.lid) + copy + (part.idx ? "#" + part.idx : "");
-        const name = info.name || info.family || (d.Name && d.Name.value) || (d.ObjectType && d.ObjectType.value) || "";
-        e.label = { model: e.model.label, cat: catLabel(e.cat), name, id: info.revit_id || guid || "", type: info.type || "" };
-      });
-    }
-  }
+  // a clash's name: the pair of elements' ids (checkgeo nameAll)
+  const nameAll = (keys) => geo.nameAll(keys.map((k) => E.get(k)));
 
   async function run() {
     const r = rule();
@@ -637,28 +475,8 @@ export function createClash(ctx) {
   /* ------------------------------------------------------- showing one */
 
   async function partLidOf(id) {
-    // the element of an id (model|revit id|...) as loaded now
-    const [mk, rest] = id.split("|");
-    const m = modelByKey(mk);
-    if (!m) return null;
     for (const e of E.values()) if (e.id === id) return e;
-    // not from this run (a saved result): look it up
-    const bare = rest.replace(/#\d+$/, "").replace(/@\d+$/, "");
-    const pidx = /#(\d+)$/.test(rest) ? Number(rest.match(/#(\d+)$/)[1]) : 0;
-    const copy = /@(\d+)/.test(rest) ? Number(rest.match(/@(\d+)/)[1]) : null;
-    const part = m.rec.parts[pidx] || m.rec.parts[0];
-    if (copy != null) return { part, lid: copy };
-    if (part.model.head && /^\d+$/.test(bare)) {
-      const ids = part.model.head.el.id;
-      for (let e = 0; e < ids.length; e++) if (String(ids[e]) === bare) {
-        const lids = part.model.lidsOfElements([e]);
-        if (lids.length) return { part, lid: lids[0] };
-      }
-      return null;
-    }
-    if (/^l\d+$/.test(bare)) return { part, lid: Number(bare.slice(1)) };
-    try { const l = (await part.model.getLocalIdsByGuids([bare]))[0]; if (l != null) return { part, lid: l }; } catch (e) {}
-    return null;
+    return geo.find(id);         // a saved result: as loaded now
   }
   function putMarker(p) {
     if (C.marker) { ctx.overlay().remove(C.marker); C.marker.geometry.dispose(); C.marker.material.dispose(); C.marker = null; }

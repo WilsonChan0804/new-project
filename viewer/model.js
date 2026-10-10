@@ -29,6 +29,7 @@ import * as Check from "./selfcheck.js";
 import { openIssue } from "./issuepanel.js";
 import { createMeasure } from "./measure3d.js";
 import { createClash } from "./clash.js";
+import { createHeadroom } from "./headroom.js";
 import { createArrows } from "./arrows3d.js";
 import { createQuality } from "./quality.js";
 import { createWalk } from "./walk.js";
@@ -1979,7 +1980,7 @@ function setMode(mode) {
   S.mode = mode;
   const map = {
     nav: "#m-nav", issue: "#m-issue", face: "#sec-face", align: "#sec-align",
-    measure: "#m-measure",
+    measure: "#m-measure", headroom: "#head-probe",
   };
   if (mode !== "measure" && S.measure) S.measure.clear();
   if (mode !== "face" && mode !== "align") hideFacePreview();
@@ -1998,6 +1999,7 @@ function setMode(mode) {
     measure: "Click two points. They snap to corners, midpoints and edges.",
     viewalign: "Click a wall to set which way Front faces.",
     calibrate: "Click the top of a floor slab whose level you know.",
+    headroom: "Click a floor, a stair tread or a landing: the clear height above it.",
   };
   if (say[mode]) status(say[mode]);
 }
@@ -2012,7 +2014,7 @@ async function clashUnlight() {
 }
 function initClash() {
   if (S.clash || !$("#clash-box")) return;
-  S.clash = createClash({
+  const ctx = {
     THREE,
     recs: () => [...S.loaded.values()],
     modelLabel: (rec) => rec.ref ? rec.ref.name + (rec.ref.company ? " (" + rec.ref.company + ")" : "")
@@ -2071,13 +2073,33 @@ function initClash() {
     status,
     selectIssue: (id) => selectIssue(id),
     storeKey: (k) => "lwk-clash:" + (Store.currentProject() || "") + ":" + k,
-  });
+    // headroom
+    pickAt: (ev) => pickAt(ev),
+    rayHit: (o, d, max) => rayHit(o, d, max),
+    mode: () => S.mode,
+    setMode: (m) => setMode(m),
+    dimLabel: (t) => dimLabel(t),
+    async keepDim(a, b, label) {
+      await putItem({ id: uid(), placement: "dim3d", author: Store.author(), created_at: new Date().toISOString(),
+                      a_mm: [toMM(a.x), toMM(a.y), toMM(a.z)], b_mm: [toMM(b.x), toMM(b.y), toMM(b.z)], label });
+      S.dimsOn = true;
+      const on = document.getElementById("dims-on");
+      if (on) on.checked = true;
+      renderDims();
+      status(`${label} kept as a dimension for everyone (Measure > Dimensions).`);
+    },
+    focusAt: (p) => focusRoom(p, levelIndexAt(p.y + 0.1)),
+  };
+  S.clash = createClash(ctx);
+  S.head = createHeadroom(ctx);
   if (S.clash) S.clash.refresh();
   // Clash / Headroom
   document.querySelectorAll(".chk-tabs [data-tab]").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll(".chk-tabs [data-tab]").forEach((x) => x.classList.toggle("active", x === b));
     $("#clash-box").hidden = b.dataset.tab !== "clash";
     $("#head-box").hidden = b.dataset.tab !== "head";
+    if (b.dataset.tab === "head" && S.head) S.head.refresh();
+    if (b.dataset.tab !== "head" && S.mode === "headroom") setMode("nav");
   }));
 }
 
@@ -5241,6 +5263,7 @@ async function onPickInner(ev) {
   if (S.mode === "measure") { await measureClick(ev); return; }
   if (S.mode === "viewalign") { await alignViewsToFace(ev); return; }
   if (S.mode === "calibrate") { await calibrateAt(ev); return; }
+  if (S.mode === "headroom") { if (S.head) await S.head.probeAt(ev); return; }
 
   /* Picking goes through a worker and takes a moment. Without a visible
      response the click feels ignored, so the cursor changes immediately
@@ -5364,6 +5387,8 @@ function selectionFromBrowser() {
   return out;
 }
 window.LWK3D = Object.assign(window.LWK3D || {}, {
+  // the model checks (support and tests)
+  headroom: () => (S.head ? S.head.debug() : null),
   selectedElements: () => (S.selEls || []).filter((x) => x.id || x.uid),
   // where each loaded model sits in the scene (support and tests)
   extents: () => [...S.loaded].map(([k, rec]) => [k, rec.parts.map((p) => {
@@ -7894,6 +7919,11 @@ async function boot() {
   addEventListener("keydown", (ev) => {
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((ev.target && ev.target.tagName) || "")) return;
     // Esc while measuring: the measurement being taken is dropped
+    if (ev.key === "Escape" && S.mode === "headroom") {
+      setMode("nav");
+      if (S.head) S.head.leave();
+      return;
+    }
     if (ev.key === "Escape" && S.mode === "measure" && S.measure && S.measure.cancel()) {
       S.dirty = true; S.needsRender = true;
       status("Measurement cancelled - click a first point to start again.");

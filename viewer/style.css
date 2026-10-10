@@ -2094,3 +2094,19 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 .ck-note { font-size: 11.5px; margin: 6px 0 0; }
 .ck-foot { display: flex; gap: 6px; align-items: center; margin-top: 12px; }
 @media (max-width: 600px) { .ck-sides { grid-template-columns: 1fr; } }
+.head-hint { font-size: 11px; }
+.head-lims { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; margin: 2px 0 6px; color: var(--ink-2); }
+.head-lims input { width: 58px; }
+.head-models { font-size: 12px; margin: 0 0 6px; }
+.head-models summary { cursor: pointer; color: var(--ink-2); }
+.head-models label { display: flex; gap: 6px; align-items: center; margin: 2px 0; }
+.head-probe-res { font-size: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 2px 0 6px; }
+.head-legend { font-size: 11px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; color: var(--ink-2); }
+.head-legend .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.head-legend .sw.red { background: #e2453c; }
+.head-legend .sw.amber { background: #f0a020; }
+.head-legend button { margin-left: auto; font-size: 11px; padding: 1px 7px; }
+.ck-kind.k-head { background: #e2453c; }
+.head-legend .it { white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }
+.ck-cats label, .ck-chk, .head-models label { justify-content: flex-start !important; text-align: left; flex-direction: row !important; width: auto; }
+.ck-cats input[type=checkbox], .ck-chk input[type=checkbox], .head-models input[type=checkbox] { width: auto !important; flex: none; margin: 0; }

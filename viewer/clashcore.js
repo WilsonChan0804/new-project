@@ -276,35 +276,49 @@ export function inside(t, p) {
 
 /* Along `axis`, over a grid of lines spanning region r in the other two
    directions: the longest stretch any line spends inside both A and B,
-   and the middle of the overlap (weighted). */
+   and the middle of the overlap (weighted). Each line meets only the
+   triangles over its own cell. */
 function runs(A, B, r, axis, step) {
   const u = axis === 0 ? 1 : 0, v = axis === 2 ? 1 : 2;
   const lu = r[3 + u] - r[u], lv = r[3 + v] - r[v];
-  const nu = Math.max(1, Math.min(48, Math.ceil(lu / step))), nv = Math.max(1, Math.min(48, Math.ceil(lv / step)));
+  const nu = Math.max(1, Math.min(16, Math.ceil(lu / step))), nv = Math.max(1, Math.min(16, Math.ceil(lv / step)));
   const su = lu / nu, sv = lv / nv;
-  // only the triangles the lines can meet (the whole length of each line)
   const band = [-Infinity, -Infinity, -Infinity, Infinity, Infinity, Infinity];
   band[u] = r[u]; band[3 + u] = r[3 + u]; band[v] = r[v]; band[3 + v] = r[3 + v];
-  const ta = trisIn(A.tris, band), tb = trisIn(B.tris, band);
+  // the triangles over each cell of the lines' grid
+  const cellsOf = (t, list) => {
+    const cells = Array.from({ length: nu * nv }, () => []);
+    for (const i of list) {
+      const iu0 = Math.max(0, Math.floor((Math.min(t[i + u], t[i + 3 + u], t[i + 6 + u]) - r[u]) / su));
+      const iu1 = Math.min(nu - 1, Math.floor((Math.max(t[i + u], t[i + 3 + u], t[i + 6 + u]) - r[u]) / su));
+      const iv0 = Math.max(0, Math.floor((Math.min(t[i + v], t[i + 3 + v], t[i + 6 + v]) - r[v]) / sv));
+      const iv1 = Math.min(nv - 1, Math.floor((Math.max(t[i + v], t[i + 3 + v], t[i + 6 + v]) - r[v]) / sv));
+      for (let a = iu0; a <= iu1; a++) for (let b = iv0; b <= iv1; b++) cells[a * nv + b].push(i);
+    }
+    return cells;
+  };
+  const ca = cellsOf(A.tris, trisIn(A.tris, band)), cb = cellsOf(B.tris, trisIn(B.tris, band));
   const ha = [], hb = [];
   let best = 0, wsum = 0, cx = 0, cy = 0, cz = 0;
   for (let i = 0; i < nu; i++) {
     // a little off the grid, so lines do not run along the model's own edges
     const pu = r[u] + (i + 0.5) * su + su * 0.0137;
     for (let j = 0; j < nv; j++) {
+      const la = ca[i * nv + j], lb = cb[i * nv + j];
+      if (la.length < 2 || lb.length < 2) continue;
       const pv = r[v] + (j + 0.5) * sv - sv * 0.0089;
-      lineHits(A.tris, ta, axis, pu, pv, ha);
+      lineHits(A.tris, la, axis, pu, pv, ha);
       if (ha.length < 2) continue;
-      lineHits(B.tris, tb, axis, pu, pv, hb);
+      lineHits(B.tris, lb, axis, pu, pv, hb);
       if (hb.length < 2) continue;
       // stretches inside each (pairs of crossings), then where both are
       let ia = 0, ib = 0;
       while (ia + 1 < ha.length && ib + 1 < hb.length) {
-        const s = Math.max(ha[ia], hb[ib]), e = Math.min(ha[ia + 1], hb[ib + 1]);
-        if (e > s) {
-          const L = e - s;
+        const s0 = Math.max(ha[ia], hb[ib]), e = Math.min(ha[ia + 1], hb[ib + 1]);
+        if (e > s0) {
+          const L = e - s0;
           if (L > best) best = L;
-          const m = (s + e) / 2;
+          const m = (s0 + e) / 2;
           const p = [0, 0, 0]; p[axis] = m; p[u] = pu; p[v] = pv;
           cx += p[0] * L; cy += p[1] * L; cz += p[2] * L; wsum += L;
         }
