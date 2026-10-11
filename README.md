@@ -45,6 +45,13 @@ The Tokyo trip (29/10–1/11) lives in `trip-data.js`. The `XL` block holds the 
 - **Edit in place:** tap any text in an item's details (活動, 交通, 備註, URL, 地址, 營業時間, Tabelog, 菜單, 時刻表, 其他連結, 後備方案…) or a day's title or notes, change it, then tap 儲存 (save). Ctrl/⌘+Enter saves on a computer. Every URL in any text becomes a clickable link.
 - **Photos:** every item has 加相 (add photo). On a computer, drag any photo with the mouse to reorder it. On a phone, tap ⇄ 排次序／隱藏 (reorder/hide), then hold and drag with your finger. That mode also has 🙈 隱藏 (hide, can be undone with 👁 顯示) and 🗑 刪除 (delete, for your own photos). The photo viewer has the same buttons.
 - **Japanese (日語) tab:** tap ✎ 加／改句子 to add, edit or delete phrases and categories. Furigana appears above kanji, with rōmaji underneath. Readings for the built-in phrases and place names are in `readings.js`. For new phrases, the server generates them with pykakasi, and you can correct them by hand.
+- **Location (📍 地點, or 🚉 出發 / 🏁 到達 for transport):** this single field drives both the Google Maps routes and the offline map. Tap 改位置 (change location) to set it in any of these ways:
+  - type a place name or address in Chinese, Japanese or English
+  - paste a Google Maps share link (the server expands `maps.app.goo.gl` links) or coordinates
+  - tap the map
+  - use GPS
+
+  After you save, the app offers to update related data too: the title, the previous or next leg, and a reminder to check 交通 (transport). If you change a title so it no longer matches the location, the app asks whether to update the location.
 - **Map links on iPhone:** the first time you tap a map link, the app asks whether to open Google Maps App (`comgooglemapsurl://`), Apple Maps, or the web version. You can change this in 資訊 (Info).
 
 ## Server (your own VM): one copy of the data for every device

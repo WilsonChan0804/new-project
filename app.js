@@ -135,7 +135,7 @@ const mq = s => MAPQ[s] || s || '';
 /** 呢項行程完咗之後人喺邊 —— 用嚟計下一項嘅路線起點 */
 function locOf(it) {
   if (!it) return '';
-  if (TRANSPORT.has(it.type)) return mq(it.to);
+  if (TRANSPORT.has(it.type)) return it.toLL ? llStr(it.toLL) : mq(it.to);
   if (it.lat != null && it.lon != null) return `${it.lat},${it.lon}`;   // 你喺地圖修正過嘅位置
   if (it.addrSet && it.address) return it.address;                      // 你喺 App 改過嘅地址
   return it.mapQuery || mq(it.place) || it.address || '';
@@ -174,15 +174,16 @@ function linksFor(it, prevLoc) {
   } else {
     const mode = t === 'walk' ? 'walking' : 'transit';
     let dest = destOf(it);
-    let origin = TRANSPORT.has(t) ? (mq(it.from) || prevLoc) : prevLoc;
+    let origin = TRANSPORT.has(t) ? (it.fromLL ? llStr(it.fromLL) : (mq(it.from) || prevLoc)) : prevLoc;
     if (t === 'walk') {
       // 步行：前後嗰站你改過位置（地址／大頭針）就跟住用
       const f = findItem(it.id);
       const prev = f && f.list.slice(0, f.index).reverse().find(x => x.type !== 'walk');
       const next = f && f.list.slice(f.index + 1).find(x => x.type !== 'walk');
       const userLoc = x => x && !TRANSPORT.has(x.type) && ((x.lat != null && x.lon != null) || (x.addrSet && x.address));
-      if (userLoc(prev)) origin = locOf(prev);
+      if (userLoc(prev) || prev?.toLL) origin = locOf(prev);
       if (userLoc(next)) dest = locOf(next);
+      else if (next?.fromLL) dest = llStr(next.fromLL);
     }
     if (origin && origin !== dest) add('上一站 → 呢度', gmapDir(origin, dest, mode), 'accent', 'route');
     add('我嘅位置 → 呢度', gmapDir('', dest, mode), origin && origin !== dest ? '' : 'accent', 'navigate');
@@ -484,8 +485,8 @@ async function placePt(it) {
   return firstGeo([typeof it.geo === 'string' && cleanAddr(it.geo), cleanAddr(it.address), it.address, (it.titleJa || '').split(/[（(・]/)[0], it.place]);
 }
 const stationPt = s => s && FIXED_LL[s] ? Promise.resolve(ll(FIXED_LL[s])) : firstGeo([s, s && mq(s)]);
-const startPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? stationPt(it.from) : placePt(it);
-const endPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? stationPt(it.to) : placePt(it);
+const startPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? (it.fromLL ? Promise.resolve(ll(it.fromLL)) : stationPt(it.from)) : placePt(it);
+const endPt = it => it.type === 'walk' ? null : TRANSPORT.has(it.type) ? (it.toLL ? Promise.resolve(ll(it.toLL)) : stationPt(it.to)) : placePt(it);
 
 /** 計呢項嘅地圖：起點 a（上一站）、終點 b（呢度）、路線 */
 async function mapGeom(list, idx) {
@@ -498,8 +499,8 @@ async function mapGeom(list, idx) {
     a = (prevReal && await endPt(prevReal)) || await stationPt(it.from);
     b = (nextReal && await startPt(nextReal)) || await stationPt(it.to);
   } else if (TRANSPORT.has(it.type)) {
-    a = await stationPt(it.from);
-    b = await stationPt(it.to);
+    a = await startPt(it);
+    b = await endPt(it);
   } else {
     a = prevReal ? await endPt(prevReal) : null;
     b = await placePt(it);
@@ -647,7 +648,11 @@ async function drawItemMap(id) {
 }
 function setItemLatLon(id, lat, lon) {
   mapState.pin = false;
-  commit(() => { const it = findItem(id).item; if (lat == null) { delete it.lat; delete it.lon; } else { it.lat = +lat.toFixed(6); it.lon = +lon.toFixed(6); } },
+  commit(() => {
+    const it = findItem(id).item;
+    if (TRANSPORT.has(it.type)) { if (lat == null) delete it.toLL; else it.toLL = [+lat.toFixed(6), +lon.toFixed(6)]; return; }
+    if (lat == null) { delete it.lat; delete it.lon; delete it.locName; } else { it.lat = +lat.toFixed(6); it.lon = +lon.toFixed(6); }
+  },
     lat == null ? '已還原自動位置' : '已儲存呢度嘅位置');
   mapState.fitted = false;
   $('#pinpanel-' + id)?.setAttribute('hidden', '');
@@ -903,6 +908,7 @@ function saveEdit(el) {
   const { kind, id, field } = el.dataset;
   if (field === 'title' && !v) return toast('標題唔可以留空');
   const sheetOpen = $('#modal').open && kind === 'item';
+  const oldTitle = kind === 'item' && field === 'title' ? findItem(id).item.title : null;
   const scroll = $('#modal .modal-body')?.scrollTop || 0;
   commit(() => {
     const obj = kind === 'day' ? findDay(id) : findItem(id).item;
@@ -914,6 +920,7 @@ function saveEdit(el) {
     }
   }, '已儲存');
   if (sheetOpen) { openItem(id); requestAnimationFrame(() => { const b = $('#modal .modal-body'); if (b) b.scrollTop = scroll; }); }
+  if (oldTitle != null) setTimeout(() => checkTitleVsLoc(id, oldTitle), 300);
 }
 function cancelEdit(el) {
   const kind = el.dataset.kind, id = el.dataset.id;
@@ -1335,6 +1342,243 @@ function chooseMapApp(url) {
   });
 }
 
+/* =========================================================
+   位置：每項只有一個「地圖用緊」嘅位置（📍 地點，或者 🚉 出發／🏁 到達）
+   Google Maps 路線同離線地圖都用佢。改位置可以：打地名／地址（中日英）、
+   貼 Google Maps 分享連結、貼座標、喺地圖上撳、或者用 GPS。
+   ========================================================= */
+const normName = s => (s || '').replace(/[\s　,，.。・]/g, '').replace(/(駅|站|station|えき)$/i, '').toLowerCase();
+const sameName = (a, ...bs) => { const x = normName(a); return !!x && bs.some(b => { const y = normName(b); return y && (x.includes(y) || y.includes(x)); }); };
+const llStr = a => `${a[0]},${a[1]}`;
+
+/** 地圖用緊乜嘢位置、來源 */
+function locInfo(it, which) {
+  if (which === 'from' || which === 'to') {
+    const name = nameOf(it[which], it[which + 'Zh']) || '（未有）';
+    return { name, src: it[which + 'LL'] ? '你揀嘅位置' : '預設車站', set: !!it[which + 'LL'] };
+  }
+  if (it.lat != null && it.lon != null) return { name: it.locName || `${it.lat}, ${it.lon}`, src: '你揀嘅位置', set: true };
+  if (it.addrSet && it.address) return { name: it.address, src: '你改嘅地址', set: true };
+  return { name: it.mapQuery || mq(it.place) || it.address || it.titleJa || it.title, src: '預設', set: false };
+}
+function locRowsHtml(it) {
+  if (it.type === 'flight') return '';
+  if (it.type === 'walk') return '<p class="hint">步行路線會跟前後兩站嘅位置自動計。</p>';
+  const row = (which, label) => {
+    const i = locInfo(it, which);
+    return `<div class="locrow"><span class="ef-k">${label}</span><div class="grow"><b>${esc(i.name)}</b><small class="${i.set ? 'mine' : ''}">${i.src}</small></div>
+      <button type="button" class="chip" data-act="loc-pick" data-id="${it.id}" data-which="${which}">${icon('edit')}改位置</button></div>`;
+  };
+  return `<div class="locrows">${TRANSPORT.has(it.type) ? row('from', '🚉 出發') + row('to', '🏁 到達') : row('place', '📍 地點')}
+    <p class="hint">Google Maps 路線同離線地圖都係用呢度嘅位置。</p></div>`;
+}
+
+/** 搜尋地點：GSI（日本地址）＋ Nominatim（中／日／英地名） */
+async function searchPlaces(q) {
+  if (!navigator.onLine) throw new Error('搜尋要上網（冇網可以喺地圖上撳）');
+  const [n, g] = await Promise.all([
+    fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=jp&namedetails=1&accept-language=zh-TW,ja,en&q=${enc(q)}`)
+      .then(r => r.json()).then(j => j.map(x => ({ lat: +x.lat, lon: +x.lon, name: x.namedetails?.['name:zh'] || x.namedetails?.['name:zh-Hant'] || x.name || q, ja: x.namedetails?.['name:ja'] || x.namedetails?.name || x.name || q, addr: x.display_name || '' }))).catch(() => []),
+    fetch(GSI_URL(q)).then(r => r.json()).then(j => (j || []).slice(0, 4).map(f => ({ lat: +f.geometry.coordinates[1], lon: +f.geometry.coordinates[0], name: f.properties?.title || q, ja: f.properties?.title || q, addr: f.properties?.title || '' }))).catch(() => []),
+  ]);
+  const all = [...n, ...g].filter(c => isFinite(c.lat) && isFinite(c.lon));
+  const out = [];
+  for (const c of [...all.filter(okPt), ...all.filter(c => !okPt(c))]) if (!out.some(o => distM(o, c) < 60)) out.push(c);
+  return out.slice(0, 8);
+}
+/** Google Maps 網址 → 座標／地名 */
+function parseGmapsUrl(url) {
+  let u; try { u = new URL(url); } catch { return {}; }
+  const d = decodeURIComponent(u.href);
+  let m = d.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || d.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  const q = u.searchParams.get('q') || u.searchParams.get('query') || u.searchParams.get('destination') || u.searchParams.get('daddr') || '';
+  if (!m) m = q.match(/^\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/);
+  const pm = u.pathname.match(/\/place\/([^/]+)/);
+  const name = pm ? decodeURIComponent(pm[1]).replace(/\+/g, ' ') : (q && !m ? q : '');
+  return m ? { lat: +m[1], lon: +m[2], name } : { name };
+}
+/** 用戶輸入（座標／連結／地名／地址）→ 候選位置 */
+async function parseLocInput(s) {
+  s = (s || '').trim();
+  if (!s) return [];
+  let url = (s.match(/https?:\/\/\S+/) || [])[0];
+  const c = !url && parseLatLon(s);
+  if (c) return [{ ...c, name: `${c.lat}, ${c.lon}`, ja: '', addr: '' }];
+  if (url) {
+    if (/goo\.gl|g\.co\/|maps\.app/.test(url)) {
+      const r = await srvReq('/api/resolve', { method: 'POST', body: { url } }).catch(() => null);
+      if (!r?.ok) throw new Error('解唔到短連結（要上網）。可以喺 Google Maps 撳「分享」→「複製連結」再試，或者直接打地名。');
+      url = (await r.json()).url;
+    }
+    const p = parseGmapsUrl(url);
+    const label = p.name || s.replace(url, '').trim().split('\n')[0];
+    if (p.lat != null) return [{ lat: p.lat, lon: p.lon, name: label || `${p.lat}, ${p.lon}`, ja: label || '', addr: '' }];
+    if (label) return searchPlaces(label);
+    throw new Error('呢條連結搵唔到位置');
+  }
+  return searchPlaces(s);
+}
+async function curPointOf(it, which) {
+  try { return which === 'from' ? await startPt(it) : which === 'to' ? await endPt(it) : await placePt(it); } catch { return null; }
+}
+
+function openLocPicker(id, which, prefill = '') {
+  const it = findItem(id).item;
+  const isT = which !== 'place';
+  const userSet = locInfo(it, which).set;
+  let chosen = null, pmap = null, marker = null;
+  openModal({
+    title: which === 'from' ? '改出發位置' : which === 'to' ? '改到達位置／目的地' : '改地點位置',
+    cls: 'locpick',
+    submitLabel: '儲存位置',
+    body: `<p class="hint">而家：<b>${esc(locInfo(it, which).name)}</b>（${locInfo(it, which).src}）</p>
+      <div class="locsearch"><textarea id="locQ" rows="2" placeholder="打地名或地址（中文／日文／英文），或者貼 Google Maps 分享連結、座標">${esc(prefill)}</textarea>
+        <button type="button" class="chip dark" id="locGo">${icon('map')}搵</button></div>
+      <div id="locRes" class="locres"></div>
+      <div class="omap pickmap"><div class="leaf"></div></div>
+      <p class="hint" id="locHint">亦可以直接喺地圖上撳正確位置（冇網都得）。</p>
+      <div class="row"><button type="button" class="chip" id="locMe">📍 用我而家位置</button>
+        ${userSet ? '<button type="button" class="chip" id="locReset">↺ 還原預設位置</button>' : ''}</div>
+      <label class="field">顯示名稱<input id="locName" placeholder="例如：皇居"></label>
+      ${!isT ? '<label class="check"><input type="checkbox" id="locAddr" checked> 同時將「地址」改做搜尋結果嘅地址</label>' : ''}`,
+    onOpen: async form => {
+      const res = form.querySelector('#locRes'), hint = form.querySelector('#locHint'), nameIn = form.querySelector('#locName');
+      const pick = c => {
+        chosen = c;
+        if (!nameIn.dataset.touched) nameIn.value = c.name || '';
+        hint.textContent = `已揀：${c.name || ''}（${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}）——撳「儲存位置」`;
+        if (pmap) { marker?.remove(); marker = L.marker([c.lat, c.lon]).addTo(pmap); pmap.setView([c.lat, c.lon], Math.max(pmap.getZoom(), 16)); }
+      };
+      nameIn.addEventListener('input', () => { nameIn.dataset.touched = '1'; if (chosen) chosen.name = nameIn.value.trim() || chosen.name; });
+      const go = async () => {
+        const q = form.querySelector('#locQ').value;
+        if (!q.trim()) return;
+        res.innerHTML = '<p class="hint">搵緊…</p>';
+        try {
+          const list = await parseLocInput(q);
+          if (!list.length) { res.innerHTML = '<p class="hint">搵唔到，試下其他寫法（例如日文名、英文名或者地址）。</p>'; return; }
+          res.innerHTML = list.map((c, i) => `<button type="button" class="locopt" data-i="${i}"><b>${esc(c.name)}</b>${c.ja && c.ja !== c.name ? ` <span lang="ja">${esc(c.ja)}</span>` : ''}<small>${esc(c.addr || `${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}`)}${okPt(c) ? '' : ' ⚠️ 唔喺東京一帶'}</small></button>`).join('');
+          res.querySelectorAll('.locopt').forEach(b => { b.onclick = () => { res.querySelectorAll('.locopt').forEach(x => x.classList.toggle('on', x === b)); pick(list[+b.dataset.i]); }; });
+          res.querySelector('.locopt').click();
+        } catch (e) { res.innerHTML = `<p class="hint warn">${esc(e.message)}</p>`; }
+      };
+      form.querySelector('#locGo').onclick = go;
+      form.querySelector('#locQ').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go(); } });
+      form.querySelector('#locMe').onclick = () => {
+        if (!navigator.geolocation) return toast('呢部機唔支援定位');
+        hint.textContent = '搵緊你嘅位置…';
+        navigator.geolocation.getCurrentPosition(p => pick({ lat: p.coords.latitude, lon: p.coords.longitude, name: nameIn.value || '我嘅位置', ja: '', addr: '' }), () => { hint.textContent = '攞唔到位置——請容許「定位」權限'; }, { enableHighAccuracy: true, timeout: 20000 });
+      };
+      form.querySelector('#locReset')?.addEventListener('click', () => { closeModal(); resetLoc(id, which); });
+      try {
+        await loadLeaflet();
+        const start = await curPointOf(it, which);
+        pmap = L.map(form.querySelector('.pickmap .leaf'), { maxZoom: 19, minZoom: 5 });
+        pmap.attributionControl.setPrefix(false);
+        offlineTileLayer().addTo(pmap);
+        pmap.setView(start ? [start.lat, start.lon] : [35.6812, 139.7671], start ? 16 : 12);
+        if (start) L.circleMarker([start.lat, start.lon], { radius: 7, color: '#fff', weight: 3, fillColor: '#8a8780', fillOpacity: 1 }).bindTooltip('而家', { permanent: true, direction: 'right', className: 'omap-tip' }).addTo(pmap);
+        pmap.on('click', e => pick({ lat: e.latlng.lat, lon: e.latlng.lng, name: nameIn.value.trim() || '地圖上揀嘅位置', ja: '', addr: '' }));
+        setTimeout(() => pmap.invalidateSize(), 80);
+        $('#modal').addEventListener('close', () => pmap?.remove(), { once: true });
+      } catch { form.querySelector('.pickmap').hidden = true; }
+      if (prefill) go();
+    },
+    onSubmit: () => {
+      if (!chosen) { toast('請先揀一個位置（搜尋結果、地圖上撳或者 GPS）'); return false; }
+      const name = $('#locName')?.value.trim();
+      if (name) chosen.name = name;
+      const addr = !!$('#locAddr')?.checked;
+      setTimeout(() => applyLoc(id, which, chosen, { addr }), 0);
+    },
+  });
+}
+
+function resetLoc(id, which) {
+  commit(() => {
+    const it = findItem(id).item;
+    if (which === 'place') { delete it.lat; delete it.lon; delete it.locName; delete it.addrSet; }
+    else delete it[which + 'LL'];
+  }, '已還原預設位置');
+  openItem(id);
+}
+
+/** 儲存新位置，然後提議一齊更新相關資料（標題、上／下一項、交通） */
+function applyLoc(id, which, c, { addr }) {
+  const f0 = findItem(id), it0 = f0.item;
+  const oldZh = which === 'place' ? '' : nameOf(it0[which], it0[which + 'Zh']);
+  const oldJa = which === 'place' ? '' : it0[which];
+  const P = n => +(+n).toFixed(6);
+  commit(() => {
+    const it = findItem(id).item;
+    if (which === 'place') {
+      it.lat = P(c.lat); it.lon = P(c.lon); it.locName = c.name;
+      if (addr && c.addr) { it.address = c.addr; it.addrSet = true; }
+    } else {
+      it[which + 'LL'] = [P(c.lat), P(c.lon)];
+      it[which] = c.ja || c.name;
+      it[which + 'Zh'] = c.name;
+    }
+  }, '已更新位置');
+  const f = findItem(id), it = f.item, list = f.list, newName = c.name;
+  const sug = [];
+  const swapSide = (title, side, name) => {
+    const m = (title || '').match(/^(.*?)\s*(→|->|➡)\s*(.*)$/);
+    if (!m) return null;
+    return side === 'from' ? `${name} → ${m[3]}` : `${m[1]} → ${name}`;
+  };
+  if (which !== 'place') {
+    const t = swapSide(it.title, which, newName);
+    if (t && t !== it.title) sug.push({ label: `標題改做「${t}」`, run: x => { x.item.title = t; } });
+    const nb = which === 'to' ? list[f.index + 1] : list[f.index - 1];
+    const side = which === 'to' ? 'from' : 'to';
+    if (nb && TRANSPORT.has(nb.type) && nb.type !== 'flight') {
+      const nbT = swapSide(nb.title, side, newName);
+      sug.push({ label: `${which === 'to' ? '下' : '上'}一項「${nb.title}」${which === 'to' ? '改做由' : '改做去'}「${newName}」${which === 'to' ? '出發' : ''}`,
+        run: () => { const y = findItem(nb.id).item; y[side] = c.ja || c.name; y[side + 'Zh'] = c.name; y[side + 'LL'] = [P(c.lat), P(c.lon)]; if (nbT) y.title = nbT; } });
+    }
+    if (it.xTransport && sameName(oldZh, it.xTransport) || it.xTransport && sameName(oldJa, it.xTransport))
+      sug.push({ label: `⚠️ 記得睇下「交通」：${it.xTransport}`, info: true });
+  } else {
+    if (it.titleJa && !sameName(newName, it.titleJa, it.title)) sug.push({ label: `日文名「${it.titleJa}」可能要改`, info: true });
+  }
+  if (!sug.length) return openItem(id);
+  openModal({
+    title: '要唔要一齊更新？',
+    submitLabel: '套用',
+    body: `<p class="hint">位置已經改做「${esc(newName)}」。以下資料可能都要跟住改：</p>
+      ${sug.map((s, i) => s.info ? `<p class="sug info">${esc(s.label)}</p>` : `<label class="check sug"><input type="checkbox" name="s${i}" checked> ${esc(s.label)}</label>`).join('')}`,
+    onSubmit: fd => {
+      const todo = sug.filter((s, i) => !s.info && fd.get('s' + i));
+      if (todo.length) commit(() => { const x = findItem(id); todo.forEach(s => s.run(x)); }, '已一齊更新');
+      setTimeout(() => openItem(id), 0);
+    },
+  });
+  $('#modal').querySelectorAll('[data-close]').forEach(b => { b.onclick = () => { $('#modal').close(); openItem(id); }; });
+}
+
+/** 改咗標題但地圖位置唔對：問用戶要唔要改位置 */
+function checkTitleVsLoc(id, oldTitle) {
+  const it = findItem(id)?.item;
+  if (!it || it.title === oldTitle) return;
+  if (TRANSPORT.has(it.type) && it.type !== 'flight' && it.type !== 'walk') {
+    const m = it.title.match(/^(.*?)\s*(?:→|->|➡)\s*(.*)$/);
+    if (!m) return;
+    const [, A, B] = m;
+    if (B && !sameName(B, it.to, it.toZh, mq(it.to))) {
+      if (confirm(`標題寫去「${B}」，但地圖嘅目的地仲係「${nameOf(it.to, it.toZh)}」。\n要唔要而家改目的地位置？`)) setTimeout(() => openLocPicker(id, 'to', B), 0);
+    } else if (A && !sameName(A, it.from, it.fromZh, mq(it.from))) {
+      if (confirm(`標題寫由「${A}」出發，但地圖嘅出發站仲係「${nameOf(it.from, it.fromZh)}」。\n要唔要而家改出發位置？`)) setTimeout(() => openLocPicker(id, 'from', A), 0);
+    }
+  } else if (!TRANSPORT.has(it.type)) {
+    const core = s => (s || '').replace(/^[^：:]*[：:]/, '').trim();
+    const a = core(oldTitle), b = core(it.title);
+    const common = [...b].filter(ch => a.includes(ch)).length;
+    if (b && common < Math.min(a.length, b.length) / 2 && confirm(`標題改咗做「${it.title}」，但地圖位置仲係「${locInfo(it, 'place').name}」。\n要唔要而家改位置？`))
+      setTimeout(() => openLocPicker(id, 'place', b), 0);
+  }
+}
+
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
 const ui = { tab: 'plan', day: null };
@@ -1532,24 +1776,15 @@ function openItem(id) {
     <table class="tt"><tr><th>開出</th><th>到達</th><th>班次</th><th></th></tr>${it.timetable.map((r, i) => `<tr class="${r.note ? 'pick' : ''} ${i === nextIdx ? 'nextrow' : ''}"><td><b>${esc(r.dep)}</b></td><td>${esc(r.arr || '')}</td><td>${esc(r.name || '')}</td><td>${esc(r.note || '')}${i === nextIdx ? ' 下一班' : ''}</td></tr>`).join('')}</table>
     ${E('timetableNote', '備註')}${E('timetableUrl', '官方時刻表網址')}</section>` : '';
   const map = it.type === 'flight' ? '' : `<section class="sec"><h4>${icon('map')}地圖（離線可用）</h4>
+    ${locRowsHtml(it)}
     <div class="omap" data-map="${id}"><div class="leaf"></div>
       <button type="button" class="omap-full" data-act="map-full" aria-label="全螢幕">⤢</button></div>
     <p class="hint omap-info" id="omap-info-${id}">載入緊…</p>
     <div class="row">
       <button type="button" class="chip" data-act="locate" data-id="${id}">${icon('navigate')}我喺邊（GPS）</button>
-      <button type="button" class="chip" data-act="pin-fix" data-id="${id}">${icon('edit')}修正位置</button>
+      ${it.type === 'walk' ? '' : `<button type="button" class="chip" data-act="loc-pick" data-id="${id}" data-which="${TRANSPORT.has(it.type) ? 'to' : 'place'}">${icon('edit')}改位置</button>`}
     </div>
-    <div class="pinpanel" id="pinpanel-${id}" hidden>
-      <p class="hint">位置唔啱？揀一個方法：</p>
-      <div class="row">
-        <button type="button" class="chip dark" data-act="pin-tap" data-id="${id}">👆 喺地圖上撳</button>
-        <button type="button" class="chip" data-act="pin-me" data-id="${id}">📍 用我而家位置</button>
-        ${it.lat != null ? `<button type="button" class="chip" data-act="pin-reset" data-id="${id}">還原自動位置</button>` : ''}
-      </div>
-      <label class="pinpaste">或者貼上 Google Maps 座標（例如 35.66551, 139.77064）
-        <span class="row"><input id="pinval-${id}" inputmode="decimal" placeholder="35.66551, 139.77064"><button type="button" class="chip dark" data-act="pin-paste" data-id="${id}">儲存</button></span></label>
-      <p class="hint">Google Maps 攞座標：長按地點 → 落咗紅色大頭針 → 向上掃，撳座標就會複製。</p>
-    </div></section>`;
+</section>`;
   const taxiable = it.titleJa || it.address || (isT && it.to && it.type !== 'walk');
   openModal({
     title: `${it.time || ''} ${TYPES[it.type] || ''}`,
@@ -1816,12 +2051,15 @@ function renderInfo() {
 /* ---------- modal ---------- */
 function openModal({ title, body, submitLabel = '儲存', onSubmit, onOpen, cls = '' }) {
   const dlg = $('#modal');
+  const keepToast = TOAST_EL.parentNode === dlg;
+  if (keepToast) document.body.appendChild(TOAST_EL); // 換內容前先救返提示
   dlg.className = cls;
   dlg.innerHTML = `<form class="modal-form" novalidate>
     <header><h2>${esc(title)}</h2><button type="button" class="icon-btn" data-close aria-label="關閉">${icon('x')}</button></header>
     <div class="modal-body">${body}</div>
     ${onSubmit ? `<footer><button type="button" class="btn" data-close>取消</button><button type="submit" class="btn dark">${esc(submitLabel)}</button></footer>` : ''}
   </form>`;
+  if (keepToast) dlg.appendChild(TOAST_EL);
   const form = dlg.querySelector('form');
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -1839,6 +2077,7 @@ const closeModal = () => $('#modal').open && $('#modal').close();
 
 function editItem(id) {
   const it = findItem(id).item;
+  const oldTitle0 = it.title;
   const oldEnd = it.end;
   const f = (name, label, attrs = '') => `<label>${label}<input name="${name}" value="${esc(it[name] || '')}" ${attrs}></label>`;
   const ta = (name, label, rows = 2) => `<label>${label}<textarea name="${name}" rows="${rows}">${esc(it[name] || '')}</textarea></label>`;
@@ -1874,6 +2113,7 @@ function editItem(id) {
         const delta = toMin(cur.item.end) - toMin(oldEnd);
         if (delta) shiftFrom(cur.list, cur.index + 1, delta);
       }
+      setTimeout(() => checkTitleVsLoc(id, oldTitle0), 300);
     }, '已儲存'),
   });
 }
@@ -1966,8 +2206,11 @@ async function importTrip(file) {
 
 /* ---------- toast ---------- */
 let toastTimer;
+const TOAST_EL = document.getElementById('toast');
 function toast(msg, withUndo = false) {
-  const el = $('#toast');
+  const el = TOAST_EL;
+  const host = document.querySelector('dialog[open]') || document.body; // 彈出視窗開住都要睇到
+  if (el.parentNode !== host) host.appendChild(el);
   el.innerHTML = `<span>${esc(msg)}</span>${withUndo ? `<button data-act="undo">還原</button>` : ''}`;
   el.classList.add('show');
   clearTimeout(toastTimer);
@@ -2046,7 +2289,8 @@ const actions = {
   'xlsx-import': () => $('#xlsxInput').click(),
   locate: id => startLocate(id),
   'map-full': (_, el) => { const box = el.closest('.omap'); box.classList.toggle('full'); el.textContent = box.classList.contains('full') ? '✕' : '⤢'; setTimeout(() => mapState.map?.invalidateSize(), 60); },
-  'pin-fix': id => { const p = $('#pinpanel-' + id); if (p) p.hidden = !p.hidden; },
+  'loc-pick': (id, el) => openLocPicker(id, el.dataset.which || 'place'),
+  'pin-fix': (id) => openLocPicker(id, TRANSPORT.has(findItem(id).item.type) ? 'to' : 'place'),
   'pin-tap': id => { mapState.pin = true; toast('撳地圖上正確嘅位置'); drawItemMap(id); },
   'pin-me': id => {
     if (!navigator.geolocation) return toast('呢部機唔支援定位');

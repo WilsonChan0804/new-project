@@ -171,6 +171,21 @@ def reading(text):
     return {'ruby': merged, 'kana': ''.join(h for _, h in toks), 'romaji': romaji.strip()}
 
 
+RESOLVE_HOSTS = re.compile(r'^(maps\.app\.goo\.gl|goo\.gl|g\.co|(www\.|maps\.)?google\.(com(\.[a-z]{2})?|co\.[a-z]{2}|[a-z]{2}))$')
+
+
+def resolve_link(url):
+    """Google Maps 分享短連結 → 完整網址（入面有座標或地名）"""
+    host = urlparse(url).hostname or ''
+    if not url.startswith('https://') or not RESOLVE_HOSTS.match(host):
+        return None
+    req = Request(url, headers={'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)', 'Accept-Language': 'zh-HK,ja;q=0.8'})
+    with urlopen(req, timeout=10) as r:
+        final = r.geturl()
+    host2 = urlparse(final).hostname or ''
+    return final if RESOLVE_HOSTS.match(host2) else None
+
+
 def translate(text):
     """中文／廣東話 → 日文。先試 Google Translate（識廣東話），唔得就用 MyMemory。"""
     ua = {'User-Agent': 'Mozilla/5.0 trip-app'}
@@ -321,6 +336,15 @@ class H(BaseHTTPRequestHandler):
                 return self.send(400, {'error': '格式唔啱'})
             r = reading(text)
             return self.send(200, r) if r else self.send(501, {'error': '伺服器未裝 pykakasi'})
+        if path == '/api/resolve':
+            if not self.can_view():
+                return self.deny()
+            try:
+                url = json.loads(self.body(4000)).get('url', '').strip()
+                final = resolve_link(url)
+            except Exception:
+                final = None
+            return self.send(200, {'url': final}) if final else self.send(400, {'error': '解唔到呢條連結'})
         if path == '/api/translate':
             if not self.can_edit():
                 return self.deny()
