@@ -173,14 +173,21 @@ export function createHeadroom(ctx) {
 
   const scopeP = scopePicker(ctx, THREE, $("#head-scope"), $("#head-from"), $("#head-to"), $("#head-fr"));
   const fillScope = () => scopeP.fill();
+  // the consultant models counted too (loaded when scanning): on unless turned off
+  const consOn = () => cfg().cons !== false;
   function fillModels() {
     const off = new Set(cfg().off || []);
-    $("#head-mlist").innerHTML = geo.models().map((m) =>
-      `<label class="row-check"><input type="checkbox" value="${esc(m.key)}"${off.has(m.key) ? "" : " checked"}> ${esc(m.label)}</label>`).join("")
-      || '<span class="muted">No model loaded.</span>';
+    const cons = ctx.consultants() || [];
+    const away = cons.filter((c) => !c.loaded);
+    $("#head-mlist").innerHTML = (cons.length ? `<label class="row-check" title="Count the consultants' IFC models too - those not loaded here are loaded when you scan"><input type="checkbox" data-cons${consOn() ? " checked" : ""}> <b>Include consultant models</b></label>` : "")
+      + (geo.models().map((m) =>
+        `<label class="row-check"><input type="checkbox" value="${esc(m.key)}"${off.has(m.key) || (m.rec.ref && !consOn()) ? "" : " checked"}${m.rec.ref && !consOn() ? " disabled" : ""}> ${esc(m.label)}</label>`).join("")
+      || '<span class="muted">No model loaded.</span>')
+      + (consOn() ? away.map((c) => `<label class="row-check muted"><input type="checkbox" checked disabled> ${esc(c.label)} <span class="muted">(not loaded - loaded when scanning)</span></label>`).join("") : "");
   }
-  $("#head-mlist").onchange = () => {
-    saveCfg({ off: [...$("#head-mlist").querySelectorAll("input:not(:checked)")].map((x) => x.value) });
+  $("#head-mlist").onchange = (ev) => {
+    if (ev.target.matches("[data-cons]")) { saveCfg({ cons: ev.target.checked }); fillModels(); return; }
+    saveCfg({ off: [...$("#head-mlist").querySelectorAll("input[value]:not(:checked):not(:disabled)")].map((x) => x.value) });
   };
   $("#head-scope").onfocus = fillScope;
   box.querySelector(".head-models").addEventListener("toggle", fillModels);
@@ -241,7 +248,13 @@ export function createHeadroom(ctx) {
     const sc = scope();
     if (sc.err) { ctx.status(sc.err); return; }
     const off = new Set(cfg().off || []);
-    const ms = geo.models().filter((m) => !off.has(m.key));
+    // the consultants' models: loaded first when they count
+    if (consOn() && (ctx.consultants() || []).some((c) => !c.loaded)) {
+      try { await ctx.ensureRefs(["*cons"], progress); } catch (e) { ctx.status("Could not load a consultant model: " + (e.message || e)); }
+      progress("");
+      fillModels();
+    }
+    const ms = geo.models().filter((m) => !off.has(m.key) && !(m.rec.ref && !consOn()));
     if (!ms.length) { ctx.status("Tick a model under Models counted."); return; }
     H.running = true; H.stop = false;
     $("#head-run").hidden = true; $("#head-stop").hidden = false;
@@ -360,6 +373,27 @@ export function createHeadroom(ctx) {
     };
   }
   const ignored = () => new Set(cfg().ignored || []);
+  /* Views kept for places (Save view), in one item for the project. */
+  const VIEWS_ID = "headroom-views";
+  const viewsItem = () => (ctx.items() || []).find((x) => x.id === VIEWS_ID && !x.deleted) || null;
+  const viewOf = (pl) => {
+    const sv = H.view ? saved().find((x) => x.id === H.view) : null;
+    return (sv && sv.result && sv.result.views && sv.result.views[pl.key]) || ((viewsItem() || {}).views || {})[pl.key] || null;
+  };
+  async function saveViewFor(pl, on) {
+    const v = on ? Object.assign(ctx.viewNow(), { name: "Headroom view" }) : null;
+    const views = Object.assign({}, (viewsItem() || {}).views || {});
+    if (v) views[pl.key] = v; else delete views[pl.key];
+    const ok = await ctx.putItem({ id: VIEWS_ID, placement: "checkcfg", views, deleted: false, updated_at: new Date().toISOString() });
+    const sv = H.view ? saved().find((x) => x.id === H.view) : null;
+    if (sv && sv.result) {
+      const sviews = Object.assign({}, sv.result.views || {});
+      if (v) sviews[pl.key] = v; else delete sviews[pl.key];
+      await ctx.putItem(Object.assign({}, sv, { result: Object.assign({}, sv.result, { views: sviews }) }));
+    }
+    paint();
+    if (ok) ctx.status(on ? "View kept for this place: it opens there for everyone, and its issue uses it." : "The kept view is forgotten.");
+  }
   const whereOf = (pl) => (pl.at_mm && ctx.fromShared(pl.at_mm)) || new THREE.Vector3(pl.at[0], pl.at[1], pl.at[2]);
   const underText = (pl) => (pl.a ? `${pl.a.cat}${pl.a.name ? " · " + pl.a.name : ""}` : "");
   const when = (x) => new Date(x).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -417,11 +451,14 @@ export function createHeadroom(ctx) {
     list.innerHTML = pick.map((pl, i) => {
       const iss = issueOf(pl.key), isOff = ign.has(pl.key);
       return `<li class="ck-it${H.on === pl.key ? " on" : ""}" data-n="${i}"><div class="ck-l1"><span class="ck-kind k-head">${pl.minH.toFixed(2)} m</span>`
-        + ` <span class="muted">${pl.stair ? "stair / ramp" : "floor"} · limit ${pl.lim.toFixed(2)}</span> <span class="muted">${esc(pl.level)}</span></div>`
+        + ` <span class="muted">${pl.stair ? "stair / ramp" : "floor"} · limit ${pl.lim.toFixed(2)}</span> <span class="muted">${esc(pl.level)}</span>`
+        + `${viewOf(pl) ? ' <span class="ck-view" title="A view is kept for this place: it opens there, and its issue uses it">📷 view</span>' : ""}</div>`
         + `<div class="ck-l2">under ${esc(underText(pl))} <span class="muted">· ${pl.area.toFixed(1)} m²</span></div>`
         + `<div class="ck-acts"><button class="ghost" data-act="look">Look</button>`
         + (iss ? `<button class="ghost" data-act="issue" title="Open its issue">Issue ${iss.issue && iss.issue.number ? "#" + iss.issue.number : ""} · ${esc((iss.issue && iss.issue.status) || "Open")}</button>`
           : isOff ? "" : `<button class="ghost" data-act="make">Make issue</button>`)
+        + `<button class="ghost" data-act="saveview" title="Keep the view as it is now (camera, section box, what is hidden) for this place - its issue and everyone after you use it">Save view</button>`
+        + (viewOf(pl) ? `<button class="ghost" data-act="clearview" title="Forget the view kept for this place">Clear view</button>` : "")
         + `<button class="ghost" data-act="ign" title="${isOff ? "Count it again" : "Not an issue: left out of the list on every scan"}">${isOff ? "Count again" : "Not an issue"}</button></div></li>`;
     }).join("");
   }
@@ -449,7 +486,8 @@ export function createHeadroom(ctx) {
     const r = H.live;
     const it = { id: ctx.uid(), placement: "headroomresult", name: name.trim().slice(0, 120), at: new Date().toISOString(), by: ctx.myName(),
                  result: { scope: r.scope, at: r.at, limit: r.limit, stairLimit: r.stairLimit, minSpace: r.minSpace, checked: r.checked,
-                           places: (r.places || []).slice(0, 2500) } };
+                           places: (r.places || []).slice(0, 2500),
+                           views: Object.fromEntries(Object.entries((viewsItem() || {}).views || {}).filter(([k]) => (r.places || []).some((pl) => pl.key === k))) } };
     if (await ctx.putItem(it)) { H.view = it.id; paint(); ctx.status(`Result saved as "${it.name}" - everyone on the project can open it under Headroom.`); }
   }
   async function deleteResult() {
@@ -469,7 +507,8 @@ export function createHeadroom(ctx) {
      its height drawn where it is lowest. */
   async function look(pl) {
     const p = whereOf(pl);
-    ctx.focusAt(p, 4);
+    const v = viewOf(pl);
+    if (v) ctx.viewBack(v); else ctx.focusAt(p, 4);
     const OVER = "#f28022";
     const a = pl.aid ? await geo.find(pl.aid) : null;
     await ctx.highlightMany(a ? [a] : [], { a: OVER });
@@ -550,6 +589,9 @@ export function createHeadroom(ctx) {
       status: "Open",
       due_date: dueIn(3),
       headroom: { key: pl.key, minH: pl.minH, lim: pl.lim },
+      // the height, drawn again whenever the issue's view is opened
+      dims: [{ a_mm: ctx.sceneMM(whereOf(pl)), b_mm: ctx.sceneMM(whereOf(pl).add(new THREE.Vector3(0, pl.minH, 0))),
+               label: `${pl.minH.toFixed(3)} m (${(pl.lim - pl.minH).toFixed(2)} m short)` }],
     };
   }
   const issueAt = (pl) => { const p = whereOf(pl); return p.clone().add(new THREE.Vector3(0, Math.min(pl.minH, 1.5), 0)); };
@@ -597,6 +639,8 @@ export function createHeadroom(ctx) {
     const a = act && act.dataset.act;
     if (a === "make") return makeIssue(pl);
     if (a === "ign") return toggleIgnore(pl);
+    if (a === "saveview") return saveViewFor(pl, true);
+    if (a === "clearview") return saveViewFor(pl, false);
     if (a === "issue") { const it = issueOf(pl.key); if (it) ctx.selectIssue(it.id); return; }
     return look(pl);
   };
@@ -608,8 +652,9 @@ export function createHeadroom(ctx) {
     itemsChanged() {
       if (!box.contains(document.activeElement)) showCfg();
       if (H.running) return;
-      const sig = JSON.stringify((ctx.items() || []).filter((it) => it && (isSaved(it) || it.headroom || it.id === CFG_ID))
-        .map((it) => [it.id, it.deleted, it.issue && it.issue.status, it.issue && it.issue.number, it.cfg && (it.cfg.ignored || []).length]));
+      const sig = JSON.stringify((ctx.items() || []).filter((it) => it && (isSaved(it) || it.headroom || it.id === CFG_ID || it.id === VIEWS_ID))
+        .map((it) => [it.id, it.deleted, it.issue && it.issue.status, it.issue && it.issue.number, it.cfg && (it.cfg.ignored || []).length,
+                      Object.keys(it.views || (it.result && it.result.views) || {}).length]));
       if (sig === H.sig) return;
       H.sig = sig;
       paint();

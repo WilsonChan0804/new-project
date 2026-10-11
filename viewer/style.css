@@ -2258,3 +2258,27 @@ body.props-off #props { display: none !important; }
   .ck-foot { margin: 12px -14px 0; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); bottom: 0; }
   .ck-foot button { min-height: 40px; padding: 8px 20px; font-size: 15px; }
 }
+
+/* The 3D page's header: the page links, the project, what a click does,
+   then Search, the bell, + Task and the profile at the top right (as on
+   every page); the floor plan and its drawing, the view link and BCF on a
+   row of their own below. */
+body:has(> #layout3d) > header .hdr-row2 {
+  order: 99; flex: 1 0 100%; display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap;
+}
+body:has(> #layout3d) > header .hdr-row2 .flr-lab { display: inline; margin-left: 0; }
+body:has(> #layout3d) > header #project { display: none; }
+body:has(> #layout3d) > header #lwk-nav { margin-left: auto; }
+@media (max-width: 700px) {
+  body:has(> #layout3d) > header .hdr-row2 .flr-lab { display: none; }
+}
+@media (max-width: 1700px) {
+  body:has(> #layout3d) > header .two-proj { max-width: 200px; }
+  body:has(> #layout3d) > header .two-part { max-width: 130px; }
+  body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
+}
+@media (max-width: 1300px) {
+  body:has(> #layout3d) > header .two-proj { max-width: 150px; }
+  body:has(> #layout3d) > header .two-part { max-width: 100px; }
+}
+.ck-view { font-size: 10px; color: var(--muted); white-space: nowrap; }

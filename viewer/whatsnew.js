@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-26", date: "12 Oct 2026",
+    items: [
+      "3D header: **Floor plan** sits with Plan overlay, the view link and BCF on the second row; **Search, the bell and + Task** are at the top right, as on the other pages.",
+      "Clash and headroom: **Save view** on a clash or a place keeps the view as you have set it (turned, section box adjusted). It opens there for everyone, its issue (or Raise issues for all) uses it, and a saved result keeps it.",
+      "A headroom issue keeps its **height dimension**: it is drawn again whenever the issue's view is opened.",
+      "Clash rules: **All LWK BIM models** beside All consultant models. Headroom: **Include consultant models** (on) - those not loaded are loaded when you scan.",
+    ],
+  },
+  {
     version: "2026-10-25", date: "12 Oct 2026",
     items: [
       "Clash and headroom: **Raise issues for all** - one issue for each place listed that is not \"Not an issue\", named **Clash issue 001** / **Headroom issue 001**, with the elements, the place and the amount written in, **due in 3 working days** (Mon-Fri, Hong Kong holidays left out); an optional Assign to. Make issue fills the same in.",

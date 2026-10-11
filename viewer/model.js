@@ -2069,6 +2069,9 @@ function initClash() {
         const rec = recOfPart(el.part);
         name = rec ? rec.entry.name : null;
       }
+      // the view just set (a kept view, a section box) drawn before its picture
+      try { await S.fragments.update(true); } catch (e) {}
+      for (let i = 0; i < 3; i++) await new Promise((r) => requestAnimationFrame(r));
       openIssue3D(point, el ? { guid, name, part: el.part, localId: el.lid } : null);
       $("#i3-title").value = pre.title || "";
       $("#i3-desc").value = pre.description || "";
@@ -2076,6 +2079,7 @@ function initClash() {
       if (pre.due_date) $("#i3-due").value = pre.due_date;
       S.pending.clash = pre.clash || null;
       S.pending.headroom = pre.headroom || null;
+      S.pending.dims = pre.dims || null;
     },
     /* The same issue, saved straight away (no dialog): the view as it is
        now is its picture. */
@@ -2091,7 +2095,7 @@ function initClash() {
       for (let i = 0; i < 3; i++) await new Promise((r) => requestAnimationFrame(r));
       renderMain();
       const p = { point: point.clone(), hit: el ? { guid, name, part: el.part, localId: el.lid } : null, level: levelAt(point.y),
-                  shot: captureViewpoint(), markup: [], clash: pre.clash || null, headroom: pre.headroom || null };
+                  shot: captureViewpoint(), markup: [], clash: pre.clash || null, headroom: pre.headroom || null, dims: pre.dims || null };
       const item = await buildIssue3D(p, pre);
       const ok = await putItem(item);
       if (ok) { refreshPins(); renderIssueList(); }
@@ -2152,6 +2156,8 @@ function initClash() {
     // project (shared) millimetres and back: what is kept stays right
     // whichever model the scene was started from
     toShared: (v) => sceneToSharedMM(v).map((n) => Math.round(n)),
+    // scene millimetres, as dimensions keep them
+    sceneMM: (v) => [toMM(v.x), toMM(v.y), toMM(v.z)],
     fromShared: (mm) => { try { return sharedToScene(mm); } catch (e) { return null; } },
     // a picture of the view as it is now (a report), maxW pixels wide
     async shot(maxW = 900) {
@@ -3288,6 +3294,31 @@ function renderDims() {
     g.add(lab);
   }
   g.visible = S.dimsOn !== false;
+  // the dimensions of the issue being looked at (orange), always shown
+  for (const d of S.issueDims || []) {
+    const a = new THREE.Vector3(...d.a_mm.map(fromMM)), b = new THREE.Vector3(...d.b_mm.map(fromMM));
+    const og = new THREE.Group();
+    const mat = new THREE.LineBasicMaterial({ color: 0xf28022, depthTest: false });
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat);
+    line.renderOrder = 997;
+    og.add(line);
+    for (const p of [a, b]) {
+      const tick = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshBasicMaterial({ color: 0xf28022, depthTest: false }));
+      tick.position.copy(p);
+      tick.renderOrder = 997;
+      og.add(tick);
+    }
+    const lab = dimLabel(d.label || (a.distanceTo(b)).toFixed(3) + " m");
+    lab.position.copy(a).add(b).multiplyScalar(0.5);
+    og.add(lab);
+    og.userData.issueDim = true;
+    g.add(og);
+  }
+  if ((S.issueDims || []).length && S.dimsOn === false) {
+    // the kept dimensions hidden: the issue's own still show
+    g.visible = true;
+    g.children.forEach((c) => { c.visible = !!c.userData.issueDim; });
+  }
   S.dimGroup = g;
   S.overlay.add(g);
   const n = document.getElementById("dim-count");
@@ -5495,6 +5526,12 @@ window.LWK3D = Object.assign(window.LWK3D || {}, {
   headroom: () => (S.head ? S.head.debug() : null),
   sectionOn: () => !!(S.section && S.section.on),
   clash: () => S.clash,
+  // the camera in scene mm (tests), and put somewhere
+  cam: () => ({ p: [toMM(S.camera.position.x), toMM(S.camera.position.y), toMM(S.camera.position.z)],
+                t: [toMM(S.controls.target.x), toMM(S.controls.target.y), toMM(S.controls.target.z)] }),
+  setCam: (p, t) => { S.camera.position.set(...p.map(fromMM)); S.controls.target.set(...t.map(fromMM)); S.controls.update(); S.dirty = true; },
+  issueDims: () => (S.issueDims || []).length,
+  goToIssue: (id) => { const it = (S.items || []).find((x) => x.id === id); if (it) goToIssueView(it); },
   selectedElements: () => (S.selEls || []).filter((x) => x.id || x.uid),
   // where each loaded model sits in the scene (support and tests)
   extents: () => [...S.loaded].map(([k, rec]) => [k, rec.parts.map((p) => {
@@ -6315,6 +6352,9 @@ function applyViewState(st) {
    a click in the list, "Show in view" and ?select= links alike. */
 function goToIssueView(it) {
   if (S.walk && (S.walk.on || S.walk.picking)) S.walk.stop();
+  // its dimensions (a headroom height) shown with it
+  S.issueDims = (it && it.dims) || [];
+  renderDims();
   const vp = it.viewpoint;
   const st = it.viewpoint_state || (vp && vp.state) || null;
   if (st) applyViewState(st);
@@ -7400,6 +7440,8 @@ async function buildIssue3D(p, f) {
     clash: p.clash || undefined,
     // made from a headroom scan: the place, so the scan knows it
     headroom: p.headroom || undefined,
+    // dimensions shown with the issue's view (a headroom height)
+    dims: p.dims && p.dims.length ? p.dims : undefined,
     snapshot: snapshot,
     snapshot_raw: snapshotRaw,
     markup: p.markup || [],

@@ -83,13 +83,14 @@ export function createClash(ctx) {
     if (keys.includes("*")) return models();
     const out = keys.map(modelByKey).filter(Boolean);
     if (keys.includes("*cons")) for (const m of models()) if (m.rec.ref && !out.includes(m)) out.push(m);
+    if (keys.includes("*lwk")) for (const m of models()) if (!m.rec.ref && !out.includes(m)) out.push(m);
     return out;
   };
   const consLabel = (k) => { const c = (ctx.consultants() || []).find((x) => x.key === k); return c ? c.label : k.replace(/^ref:/, ""); };
   const sideText = (side0) => {
     const side = resolve(side0);
     const keys = sideKeys(side);
-    const one = (k) => (k === "*cons" ? "all consultant models" : (modelByKey(k) || {}).label || consLabel(k));
+    const one = (k) => (k === "*cons" ? "all consultant models" : k === "*lwk" ? "all LWK BIM models" : (modelByKey(k) || {}).label || consLabel(k));
     const ms = keys.includes("*") ? "all models" : keys.length === 1 ? one(keys[0]) : keys.length + " models";
     return `${side.setName ? "set \u201c" + side.setName + "\u201d - " : ""}${ms}: ${(side.cats || []).map(catLabel).slice(0, 3).join(", ")}${(side.cats || []).length > 3 ? " +" + (side.cats.length - 3) : ""}`
       + (side.q ? ` (name ${side.qmode === "not" ? "without" : "with"} \u201c${side.q}\u201d)` : "");
@@ -117,6 +118,13 @@ export function createClash(ctx) {
     paint();
   }
   const rule = () => C.rules.find((r) => r.id === C.ruleId) || null;
+  /* A view kept for a clash (Save view): its saved result's first, then
+     the rule's - issues raised there and the report pictures use it. */
+  const viewOf = (c) => {
+    const sv = C.view ? (ctx.items() || []).find((x) => x.id === C.view) : null;
+    const r = rule();
+    return (sv && sv.result && sv.result.views && sv.result.views[c.key]) || (r && r.views && r.views[c.key]) || null;
+  };
   // the results kept of a rule (Save result), newest first
   const savedOf = (r) => (r ? (ctx.items() || []).filter((it) => isSaved(it) && it.rule === r.id)
     .sort((a, b) => String(b.at).localeCompare(String(a.at))) : []);
@@ -139,9 +147,10 @@ export function createClash(ctx) {
     const side = async (s, title) => {
       const keys = new Set(r[s].models);
       const all = keys.has("*");
-      const allCons = keys.has("*cons");
+      const allCons = keys.has("*cons"), allLwk = keys.has("*lwk");
       const ms = models();
-      const chosen = all ? ms : ms.filter((m) => keys.has(m.key) || (allCons && m.rec.ref));
+      const byAll = (m) => (allCons && m.rec.ref) || (allLwk && !m.rec.ref);
+      const chosen = all ? ms : ms.filter((m) => keys.has(m.key) || byAll(m));
       // consultant models of the project not loaded here: ticking one loads it
       const away = (ctx.consultants() || []).filter((c) => !c.loaded);
       // the categories of the models ticked, by name (Ducts in every MEP link at once)
@@ -157,8 +166,9 @@ export function createClash(ctx) {
         + `<button type="button" class="ghost" data-delset${r[s].set ? "" : " disabled"} title="Delete this set (rules using it keep its selection)">Delete set</button></div>`
         + `<div class="ck-cats-bar"><span class="muted">Models</span><button type="button" class="ghost" data-mall>All</button><button type="button" class="ghost" data-mnone>None</button></div>`
         + `<div class="ck-models"><label><input type="checkbox" data-allm${all ? " checked" : ""}> <b>All models</b></label>`
+        + `<label title="Every model of our own (Revit and IFC), not the consultants'"><input type="checkbox" data-alll${allLwk ? " checked" : ""}${all ? " disabled" : ""}> <b>All LWK BIM models</b></label>`
         + ((ctx.consultants() || []).length ? `<label title="Every consultant IFC of the project - those not loaded are loaded when the rule runs"><input type="checkbox" data-allc${allCons ? " checked" : ""}${all ? " disabled" : ""}> <b>All consultant models</b></label>` : "")
-        + ms.map((x) => `<label><input type="checkbox" data-m value="${esc(x.key)}"${all || keys.has(x.key) || (allCons && x.rec.ref) ? " checked" : ""}${all || (allCons && x.rec.ref) ? " disabled" : ""}> ${esc(x.label)}</label>`).join("")
+        + ms.map((x) => `<label><input type="checkbox" data-m value="${esc(x.key)}"${all || keys.has(x.key) || byAll(x) ? " checked" : ""}${all || byAll(x) ? " disabled" : ""}> ${esc(x.label)}</label>`).join("")
         + away.map((c) => `<label class="ck-away" title="A consultant IFC not loaded on this page: ticking it loads it"><input type="checkbox" data-load value="${esc(c.key)}"${all || allCons ? " checked disabled" : ""}> ${esc(c.label)} <span class="muted">(consultant IFC - not loaded)</span></label>`).join("")
         + `</div>`
         + `<div class="ck-cats-bar"><button type="button" class="ghost" data-all>All</button><button type="button" class="ghost" data-none>None</button>`
@@ -192,9 +202,9 @@ export function createClash(ctx) {
       r.name = f.name.value.trim();
       for (const s of ["a", "b"]) {
         const fs = f.querySelector(`[data-side="${s}"]`);
-        const ac = fs.querySelector("[data-allc]");
+        const ac = fs.querySelector("[data-allc]"), al = fs.querySelector("[data-alll]");
         r[s].models = fs.querySelector("[data-allm]").checked ? ["*"]
-          : [...(ac && ac.checked ? ["*cons"] : []), ...[...fs.querySelectorAll("[data-m]:checked:not(:disabled)")].map((x) => x.value)];
+          : [...(al && al.checked ? ["*lwk"] : []), ...(ac && ac.checked ? ["*cons"] : []), ...[...fs.querySelectorAll("[data-m]:checked:not(:disabled)")].map((x) => x.value)];
         // categories not listed now (their model unticked) stay as they were
         const listed = new Set([...fs.querySelectorAll(".ck-cats input")].map((x) => x.value));
         r[s].cats = [...new Set([...(r[s].cats || []).filter((k) => !listed.has(k)),
@@ -239,7 +249,7 @@ export function createClash(ctx) {
         try { await ctx.ensureRefs(["*cons"], (t) => { pre.textContent = t; }); } catch (e) { ctx.status(e.message); }
         const ours = models().filter((m) => !m.rec.ref);
         const allCats = async (list) => { const n = new Set(); for (const m of list) for (const k of (await catsOf(m)).keys()) n.add(k); return [...n]; };
-        r.a = { models: ours.map((m) => m.key), cats: await allCats(ours), q: "", qmode: "has", set: null };
+        r.a = { models: ["*lwk"], cats: await allCats(ours), q: "", qmode: "has", set: null };
         r.b = { models: ["*cons"], cats: await allCats(models().filter((m) => m.rec.ref)), q: "", qmode: "has", set: null };
         if (!r.name) r.name = "Our models x consultant models";
         await draw();
@@ -714,13 +724,16 @@ export function createClash(ctx) {
       return `<li class="ck-it${c.state === "new" ? " new" : ""}${c.state === "gone" ? " gone" : ""}${c.key === C.onKey ? " on" : ""}" data-n="${n}">`
         + `<div class="ck-l1"><span class="ck-kind k-${c.kind}">${KIND[c.kind] || c.kind}</span> <b>${esc(amount(c))}</b>`
         + `${c.level ? ` <span class="muted">${esc(c.level)}</span>` : ""}`
-        + `${c.state === "new" ? ' <span class="ck-new">New</span>' : ""}${c.state === "gone" ? ' <span class="ck-gone">Gone</span>' : ""}</div>`
+        + `${c.state === "new" ? ' <span class="ck-new">New</span>' : ""}${c.state === "gone" ? ' <span class="ck-gone">Gone</span>' : ""}`
+        + `${viewOf(c) ? ' <span class="ck-view" title="A view is kept for this clash: it opens there, and its issue uses it">📷 view</span>' : ""}</div>`
         + `<div class="ck-l2">${esc(c.a.cat)}${c.a.name ? " · " + esc(c.a.name) : ""} <span class="muted">x</span> ${esc(c.b.cat)}${c.b.name ? " · " + esc(c.b.name) : ""}</div>`
         + `<div class="ck-acts">`
         + (iss ? `<button class="ghost" data-act="issue" title="Open its issue">Issue ${iss.issue && iss.issue.number ? "#" + iss.issue.number : ""} · ${esc((iss.issue && iss.issue.status) || "Open")}</button>`
           : c.state !== "gone" ? `<button class="ghost" data-act="make" title="Raise a Clash issue here, with a picture">Make issue</button>` : "")
         + (c.state !== "gone" ? `<button class="ghost" data-act="only" title="Show only these two elements">Only these</button>` : "")
         + `<button class="ghost" data-act="secoff" title="Take the section box away: the whole model again">Section off</button>`
+        + (c.state !== "gone" ? `<button class="ghost" data-act="saveview" title="Keep the view as it is now (camera, section box, what is hidden) for this clash - its issue and everyone after you use it">Save view</button>` : "")
+        + (viewOf(c) ? `<button class="ghost" data-act="clearview" title="Forget the view kept for this clash">Clear view</button>` : "")
         + (c.state !== "gone" ? `<button class="ghost" data-act="ign" title="${c.ignored ? "Count it again" : "Not an issue: leave it out of the list next time too"}">${c.ignored ? "Count again" : "Not an issue"}</button>` : "")
         + `</div></li>`;
     };
@@ -799,6 +812,8 @@ export function createClash(ctx) {
   /* A clash inside the building: the storey cut out round it (a section
      box a few metres across), looked at from above at an angle. */
   async function look(c) {
+    const v = viewOf(c);
+    if (v) { ctx.viewBack(v); return; }
     const p = c._at || (await placeOf(c)).p;
     const half = Math.max(1.5, Math.min(6, (c.size || 1) * 0.75 + 1));
     ctx.focusAt(p, half);
@@ -868,7 +883,8 @@ export function createClash(ctx) {
     const name = prompt("Name of this result", `${r.name} - ${new Date().toLocaleDateString()}`);
     if (!name || !name.trim()) return;
     const it = { id: ctx.uid(), placement: "clashresult", rule: r.id, rule_name: r.name, name: name.trim().slice(0, 120),
-                 at: new Date().toISOString(), by: ctx.myName(), result: r.last };
+                 at: new Date().toISOString(), by: ctx.myName(),
+                 result: Object.assign({}, r.last, { views: Object.fromEntries(Object.entries(r.views || {}).filter(([k]) => r.last.clashes && r.last.clashes[k])) }) };
     if (await ctx.putItem(it)) { C.view = it.id; loadRules(); ctx.status(`Result saved as "${it.name}" - everyone on the project can open it under the rule.`); }
   }
   async function deleteResult() {
@@ -877,6 +893,24 @@ export function createClash(ctx) {
     await ctx.putItem(Object.assign({}, it, { deleted: true }));
     C.view = "";
     loadRules();
+  }
+  /* Save view / Clear view: kept on the rule for everyone (and in a saved
+     result being looked at). */
+  async function saveViewFor(c, on) {
+    const r = rule();
+    if (!r) return;
+    const v = on ? Object.assign(ctx.viewNow(), { name: "Clash view" }) : null;
+    const views = Object.assign({}, r.views || {});
+    if (v) views[c.key] = v; else delete views[c.key];
+    const ok = await ctx.putItem(Object.assign({}, r, { views }));
+    const sv = C.view ? (ctx.items() || []).find((x) => x.id === C.view) : null;
+    if (sv && sv.result) {
+      const sviews = Object.assign({}, sv.result.views || {});
+      if (v) sviews[c.key] = v; else delete sviews[c.key];
+      await ctx.putItem(Object.assign({}, sv, { result: Object.assign({}, sv.result, { views: sviews }) }));
+    }
+    loadRules();
+    if (ok) ctx.status(on ? "View kept for this clash: it opens there for everyone, and its issue uses it." : "The kept view is forgotten: the clash opens framed by itself again.");
   }
   async function toggleIgnore(c) {
     const r = rule();
@@ -1054,6 +1088,8 @@ export function createClash(ctx) {
     if (a === "make") return makeIssue(c);
     if (a === "issue") { const it = issueOf(c.key); if (it) ctx.selectIssue(it.id); return; }
     if (a === "ign") return toggleIgnore(c);
+    if (a === "saveview") return saveViewFor(c, true);
+    if (a === "clearview") return saveViewFor(c, false);
     if (a === "only") return show(c, true);
     if (a === "secoff") { ctx.sectionOff(); ctx.status("Section box off: the whole model."); return; }
     if (c.state === "gone") { c._at = (await placeOf(c)).p; await look(c); putMarker(c._at.toArray()); return; }
@@ -1066,7 +1102,7 @@ export function createClash(ctx) {
     itemsChanged() {
       if (C.running) return;
       const sig = JSON.stringify((ctx.items() || []).filter((it) => it && (it.placement === "clashrule" || it.placement === "clashset" || it.placement === "clashresult" || it.clash))
-        .map((it) => [it.id, it.deleted, it.updated_at, it.rev, it.last && it.last.at, (it.ignored || []).length,
+        .map((it) => [it.id, it.deleted, it.updated_at, it.rev, it.last && it.last.at, (it.ignored || []).length, Object.keys(it.views || (it.result && it.result.views) || {}).length,
                       it.issue && it.issue.status, it.issue && it.issue.number]));
       if (sig === C.sig) return;
       C.sig = sig;

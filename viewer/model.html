@@ -32,24 +32,26 @@
     <button id="m-issue">Add issue</button>
     <button id="m-measure" class="ghost" data-icon="measure" title="Measure with snapping">Measure</button>
   </div>
-  <label for="floor-select" class="flr-lab"
-    title="Choose a floor to see it as a plan: the model is cut 1.2 m above that floor and viewed from above, like a Revit floor plan. Page Up / Page Down step between floors.">Floor plan</label>
-  <select id="floor-select" title="Cut the model at this floor and look down (Page Up / Page Down to step)"
-    style="width:auto;max-width:190px;font-size:12px;padding:3px 6px"></select>
-  <button id="plan-draw" class="ghost" data-icon="sheet"
-    title="Plan overlay: lay the sheet's plan drawing - annotations, dimensions, tags - over this floor">Plan overlay</button>
-  <select id="plan-draw-pick" hidden title="More than one sheet shows this floor: choose which drawing"
-    style="width:auto;max-width:200px;font-size:12px;padding:3px 6px"></select>
-  <button id="top-test" class="ghost" title="Two topics looking straight down, one per coordinate frame - for checking BCF placement in Revit">Top test</button>
-  <button id="axis-test" class="ghost" title="Axis test topics for checking BCF camera directions in Revit">Axis test</button>
-  <div class="mode hdr-pair">
-    <button id="view-link" class="ghost" title="Copy a link to this exact view - camera, section, floor and display">&#128279;</button>
-    <button id="bcf-menu" class="ghost" title="Issues as BCF: download for Revit or Navisworks, or bring them in">BCF &#9662;</button>
-    <span id="bcf-pair" hidden>
-    <button id="export-bcf" class="ghost" title="Download the 3D issues as BCF for Revit or Navisworks">Export BCF</button>
-    <button id="import-bcf" class="ghost" title="Read a .bcfzip from Revit, Navisworks, Solibri or ACC as 3D issues">Import BCF</button>
-    </span>
-    <input id="import-bcf-file" type="file" accept=".bcf,.bcfzip,application/zip" hidden>
+  <div class="hdr-row2">
+    <label for="floor-select" class="flr-lab"
+      title="Choose a floor to see it as a plan: the model is cut 1.2 m above that floor and viewed from above, like a Revit floor plan. Page Up / Page Down step between floors.">Floor plan</label>
+    <select id="floor-select" title="Cut the model at this floor and look down (Page Up / Page Down to step)"
+      style="width:auto;max-width:190px;font-size:12px;padding:3px 6px"></select>
+    <button id="plan-draw" class="ghost" data-icon="sheet"
+      title="Plan overlay: lay the sheet's plan drawing - annotations, dimensions, tags - over this floor">Plan overlay</button>
+    <select id="plan-draw-pick" hidden title="More than one sheet shows this floor: choose which drawing"
+      style="width:auto;max-width:200px;font-size:12px;padding:3px 6px"></select>
+    <button id="top-test" class="ghost" title="Two topics looking straight down, one per coordinate frame - for checking BCF placement in Revit">Top test</button>
+    <button id="axis-test" class="ghost" title="Axis test topics for checking BCF camera directions in Revit">Axis test</button>
+    <div class="mode hdr-pair">
+      <button id="view-link" class="ghost" title="Copy a link to this exact view - camera, section, floor and display">&#128279;</button>
+      <button id="bcf-menu" class="ghost" title="Issues as BCF: download for Revit or Navisworks, or bring them in">BCF &#9662;</button>
+      <span id="bcf-pair" hidden>
+      <button id="export-bcf" class="ghost" title="Download the 3D issues as BCF for Revit or Navisworks">Export BCF</button>
+      <button id="import-bcf" class="ghost" title="Read a .bcfzip from Revit, Navisworks, Solibri or ACC as 3D issues">Import BCF</button>
+      </span>
+      <input id="import-bcf-file" type="file" accept=".bcf,.bcfzip,application/zip" hidden>
+    </div>
   </div>
 </header>
 
