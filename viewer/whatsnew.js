@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-23", date: "11 Oct 2026",
+    items: [
+      "3D: with a section box on, **Fit** frames what is inside the box, not the whole model far away.",
+      "Chat: each project's channel has **its own colour** and initials; its topics take the same colour.",
+      "Phones: Save and Cancel in dialogs (clash rules and others) stay in sight at the bottom, clear of the rounded corners. The profile menu opens inside the window wherever the button is.",
+    ],
+  },
+  {
     version: "2026-10-22", date: "11 Oct 2026",
     items: [
       "**One profile button** at the top right of every page: Work offline, Admin, Account, Theme and Sign out. The connection and Offline show by themselves only when something needs saying.",

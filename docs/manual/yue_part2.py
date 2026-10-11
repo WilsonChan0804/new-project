@@ -62,7 +62,7 @@ PART = [
     P('**Chat** 會打開 Messenger：團隊嘅對話，就喺佢哋講緊嘅工作隔籬。'),
     LABEL('Chat 嘅種類'),
     TABLE(['Chat', '係乜'], [
-        ['Project channel', '每個 project 一個，project 所有人都喺入面。新 task、指派、完成、task 留言同新開或者改咗嘅 issue 會用卡片貼入嚟'],
+        ['Project channel', '每個 project 一個，有自己嘅顏色同縮寫（入面嘅 topic 用同一隻顏色）。project 所有人都喺入面。新 task、指派、完成、task 留言同新開或者改咗嘅 issue 會用卡片貼入嚟'],
         ['Topic', 'Project channel 入面講一樣嘢嘅分台（例如 Facade、MEP coordination、Site visits）。會列喺 channel 下面，亦會喺 channel 名下面做 tab 顯示：**# General** 就係 channel 本身'],
         ['Group', '任何一班人，由開 group 嘅人改名'],
         ['Direct message', '兩個人'],

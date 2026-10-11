@@ -77,8 +77,13 @@ function toggleMenu(header, chip) {
     + (P.signout ? `<hr><button data-me="signout" role="menuitem" class="me-out">Sign out</button>` : "");
   document.body.appendChild(m);
   const r = chip.getBoundingClientRect();
+  // under the button, kept inside the window wherever the header put it
+  // (a narrow window wraps the header: it may be at the left of a second row)
+  const w = m.offsetWidth || 270;
   m.style.top = (r.bottom + 6) + "px";
-  m.style.right = Math.max(6, innerWidth - r.right) + "px";
+  m.style.left = Math.max(6, Math.min(innerWidth - w - 6, r.right - w)) + "px";
+  m.style.maxHeight = Math.max(200, innerHeight - r.bottom - 16) + "px";
+  m.style.overflowY = "auto";
   const close = () => { m.remove(); document.removeEventListener("pointerdown", away, true); document.removeEventListener("keydown", esc_, true); };
   const away = (ev) => { if (!m.contains(ev.target) && ev.target !== chip && !chip.contains(ev.target)) close(); };
   const esc_ = (ev) => { if (ev.key === "Escape") close(); };

@@ -1949,6 +1949,13 @@ async function fitAll() {
     return;
   }
   fitAll._tries = 0;
+  /* A section box on: what is inside it (where it meets the models) is
+     framed - not the whole model far away around it. */
+  const sec = S.section;
+  if (sec && sec.on && !sec.face && sec.cutBox && !sec.cutBox.isEmpty()) {
+    const inBox = box.clone().intersect(sec.cutBox);
+    box.copy(inBox.isEmpty() ? sec.cutBox : inBox);
+  }
 
   const size = box.getSize(new THREE.Vector3());
   const centre = box.getCenter(new THREE.Vector3());
@@ -5929,6 +5936,9 @@ function applySection() {
   put(sec.planes[3], new V(0, 1, 0), new V(lc.x, y0, lc.z));
 
   S.renderer.clippingPlanes = sec.planes;
+  // where the box is now, in the world (Fit frames this, not the whole model)
+  sec.cutBox = new THREE.Box3();
+  for (let k = 0; k < 8; k++) sec.cutBox.expandByPoint(world(new V(k & 1 ? x1 : x0, k & 2 ? y1 : y0, k & 4 ? z1 : z0)));
 
   /* The outline, drawn in the box's own frame so it sits exactly on the
      cut. NOT a Box3Helper: that class recomputes its own position and

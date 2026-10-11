@@ -105,10 +105,31 @@ function setPeople(list) {
   C.byUid = Object.fromEntries(C.people.map((p) => [p.uid, p]));
 }
 
+/* Each project its own colour (handed out in turn over the projects), and its
+   initials: channels of different projects are told apart at a glance.
+   Its topics take the project's colour. */
+const PJ_COLOURS = ["#e8590c", "#1971c2", "#2f9e44", "#9c36b5", "#c2255c", "#0c8599", "#5f3dc4", "#b08900", "#d9480f", "#364fc7", "#087f5b", "#a61e4d"];
+export function projectColour(id) {
+  // in turn over the projects (by id), so up to 12 never share a colour;
+  // one not in the list (yet): from its id
+  const ids = Object.keys(C.projects || {}).sort();
+  const i = ids.indexOf(String(id));
+  if (i >= 0) return PJ_COLOURS[i % PJ_COLOURS.length];
+  let h = 0;
+  for (const ch of String(id || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return PJ_COLOURS[h % PJ_COLOURS.length];
+}
+function projectInitials(r) {
+  const p = C.projects[r.project] || {};
+  const n = String(p.short || p.code || p.name || r.title || "P").trim();
+  const words = n.split(/[\s·\-_/]+/).filter(Boolean);
+  const t = words.length > 1 ? words[0][0] + words[1][0] : n.slice(0, 2);
+  return t.toUpperCase();
+}
 function roomIcon(r) {
   if (r.kind === "dm") return avatar({ name: r.title }, 34);
-  if (r.kind === "project") return `<span class="c-ico pj">P</span>`;
-  if (r.kind === "topic") return `<span class="c-ico tp">#</span>`;
+  if (r.kind === "project") return `<span class="c-ico pj" style="background:${projectColour(r.project)}" title="${esc((C.projects[r.project] || {}).name || r.title)}">${esc(projectInitials(r))}</span>`;
+  if (r.kind === "topic") return `<span class="c-ico tp" style="background:${projectColour(r.project)}">#</span>`;
   if (r.kind === "task") return `<span class="c-ico tk">&#10003;</span>`;
   return `<span class="c-ico gr">&#128101;</span>`;
 }

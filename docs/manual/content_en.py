@@ -174,7 +174,7 @@ DOC = [
     P('**Chat** opens the Messenger: the team\'s conversations, next to the work they are about.'),
     LABEL('Kinds of chat'),
     TABLE(['Chat', 'What it is'], [
-        ['Project channel', 'One per project. Everyone on the project is in it. New tasks, assignments, completions, task comments and new or changed issues are posted into it as cards'],
+        ['Project channel', 'One per project, with its own colour and initials (its topics take the same colour). Everyone on the project is in it. New tasks, assignments, completions, task comments and new or changed issues are posted into it as cards'],
         ['Topic', 'A sub-channel of a project channel for one subject (Facade, MEP coordination, Site visits). Listed under its channel, and as tabs under the channel\'s name: **# General** is the channel itself'],
         ['Group', 'Any group of people, named by whoever starts it'],
         ['Direct message', 'Two people'],
@@ -353,7 +353,7 @@ DOC = [
     H3('View cube and camera'),
     UL([
         'Click a **face** of the cube for that view, an **edge** for the view between two faces, a **corner** for an isometric view. Drag the cube to orbit. The ring under it shows north.',
-        'The house button returns to the 3D overview. Under the cube: **Walk** (see Walking through the model) and **Fit**, which frames all loaded models.',
+        'The house button returns to the 3D overview. Under the cube: **Walk** (see Walking through the model) and **Fit**, which frames all loaded models - or, with a section box on, what is inside the box.',
         '**Perspective / Parallel** switches the projection (plans are always parallel).',
         '**Set front:** click a wall to tell the cube which way is "Front" for this building; **World** goes back to the world axes.',
     ]),

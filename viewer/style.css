@@ -2188,7 +2188,7 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
    sight only while they have something to say. */
 header.has-me #lwk-nav .who, header.has-me #lwk-nav a[href*="admin.html"],
 header.has-me #lwk-nav [id$="signout"], header.has-me #conn.ok, header.has-me #off-btn:not(.on) { display: none !important; }
-.me-chip { position: relative; flex: none; width: 32px; height: 32px; padding: 0 !important; border-radius: 50%;
+.me-chip { position: relative; flex: none; margin-left: auto !important; width: 32px; height: 32px; padding: 0 !important; border-radius: 50%;
   border: 2px solid rgba(255,255,255,.85); background: rgba(255,255,255,.18); color: #fff; cursor: pointer; margin-left: 4px; }
 .me-chip:hover { background: rgba(255,255,255,.32); }
 .me-av { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
@@ -2244,3 +2244,17 @@ body.props-off #props { display: none !important; }
 .flt-pop .cal-kinds.in-flt { display: flex; flex-direction: column; gap: 6px; }
 .flt-reset { align-self: flex-start; font-size: 11.5px; padding: 2px 8px; }
 .flt-reset[hidden] { display: none; }
+
+/* Check dialogs on a phone: inside the screen's safe area (rounded corners,
+   the home bar), measured on the visible height (dvh: iOS's 100vh runs
+   under its toolbars), with Cancel / Save kept in sight at the bottom. */
+.ck-dlg-back { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+  max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.ck-dlg { max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+.ck-foot { position: sticky; bottom: -16px; background: var(--panel); margin: 12px -18px -16px; padding: 10px 18px 14px;
+  border-top: 1px solid var(--line-soft); z-index: 1; }
+@media (max-width: 600px) {
+  .ck-dlg { padding: 14px 14px 0; }
+  .ck-foot { margin: 12px -14px 0; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); bottom: 0; }
+  .ck-foot button { min-height: 40px; padding: 8px 20px; font-size: 15px; }
+}

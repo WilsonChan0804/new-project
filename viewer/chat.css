@@ -356,3 +356,4 @@ b.mention.me { background: #ede9fe; color: #6d28d9; border-radius: 3px; padding:
 :root[data-theme="dark"] .wa-n b { color: #80efe2; }
 :root[data-theme="dark"] .c-msg.lit { background: #4a411c; }
 :root[data-theme="dark"] .c-card.event.past:not(.cancelled) { border-left-color: #317249; }
+.c-ico.pj { font-size: 13px; letter-spacing: .02em; }

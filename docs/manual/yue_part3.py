@@ -73,7 +73,7 @@ PART = [
     H3('View cube 同鏡頭'),
     UL([
         '撳 cube 嘅一個**面**睇嗰個方向，撳一條**邊**睇兩個面之間，撳一個**角**睇 isometric。拖個 cube 可以轉。下面個圈顯示北面。',
-        '屋仔掣返去 3D 全景。Cube 下面有 **Walk**（睇「喺 model 入面行」）同 **Fit**，將所有載入咗嘅 model 放晒入畫面。',
+        '屋仔掣返去 3D 全景。Cube 下面有 **Walk**（睇「喺 model 入面行」）同 **Fit**，將所有載入咗嘅 model 放晒入畫面 - 開咗 section box 就只係放 box 入面嘅嘢。',
         '**Perspective / Parallel** 轉投影方式（plan 永遠係 parallel）。',
         '**Set front：** 撳一幅牆話俾 cube 知呢棟樓邊面係「Front」；**World** 返去世界軸。',
     ]),
