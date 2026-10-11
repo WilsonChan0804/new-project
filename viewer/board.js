@@ -25,6 +25,7 @@ import { esc, uid, clone, clamp, round1, col, STICKY_COLORS, INK_COLORS, SHAPE_F
 import { createSync } from "./board-sync.js";
 import * as mind from "./board-mind.js";
 import { TEMPLATES, makeTemplate, templateThumb } from "./board-templates.js";
+import { lwkBimWorkflow } from "./board-bimwf.js";
 import { remap, statusColor } from "./board-export.js";
 import { initExtra } from "./board-extra.js";
 
@@ -417,6 +418,8 @@ function renderObj(o) {
   el.style.fontSize = fs ? fs + "px" : "";
   el.style.fontWeight = o.bold === undefined ? "" : o.bold ? "700" : "400";
   el.style.textAlign = o.align || "";
+  // a note or shape centres its text block: one short line set left or right goes there too
+  el.style.justifyContent = o.align === "left" ? "flex-start" : o.align === "right" ? "flex-end" : "";
   if (o.t === "sticky") {
     el.style.background = fill;
     el.style.color = col(o.color, isDark(fill) ? "#ffffff" : "#1f2430");
@@ -2408,6 +2411,7 @@ async function loadBoards() {
   A.boards = data.boards || [];
   A.role = data.role;
   A.canEdit = !!data.can_edit;
+  A.workflowSeeded = data.workflow_seeded !== false;
   A.accounts = !!data.accounts;
   if (data.name) A.name = data.name;
   document.body.classList.toggle("readonly", !A.canEdit);
@@ -2447,6 +2451,34 @@ function tplCards(host, onPick) {
   };
 }
 
+/* The "LWK BIM Workflow" board (board-bimwf.js), with its pictures, which
+   the server keeps and hands out as snapshot paths. Every project gets one
+   the first time someone who can edit opens its Board page (the server
+   makes sure it is only once); New board > LWK BIM Workflow adds another. */
+async function workflowObjects() {
+  let images = null;
+  try { images = (await api("/api/boards/workflow/assets")).images; } catch (e) {}
+  const sel = $("#b-project");
+  const opt = sel && sel.selectedOptions ? sel.selectedOptions[0] : null;
+  return lwkBimWorkflow({ number: project(), name: opt ? opt.textContent.trim() : "" }, images);
+}
+async function makeWorkflow(title, force) {
+  return api("/api/boards/workflow", { method: "POST",
+    body: JSON.stringify({ title: title || "LWK BIM Workflow", by: A.name, force: !!force, objects: await workflowObjects() }) });
+}
+async function seedWorkflow() {
+  if (A.workflowSeeded || !A.canEdit) return null;
+  try {
+    const res = await makeWorkflow("LWK BIM Workflow", false);
+    A.workflowSeeded = true;
+    if (res.board) await loadBoards();
+    return res.board ? res.board.id : null;
+  } catch (e) {
+    toast("Could not make the LWK BIM Workflow board: " + e.message);
+    return null;
+  }
+}
+
 function openNewDialog(tpl) {
   if (!A.canEdit) return;
   const back = $("#bd-new-back");
@@ -2463,7 +2495,8 @@ function openNewDialog(tpl) {
     const title = $("#nb-title").value.trim() || (chosen === "blank" ? "Untitled board" : t.name);
     $("#nb-go").disabled = true;
     try {
-      const res = await api("/api/boards", { method: "POST", body: JSON.stringify({ title, by: A.name, objects: makeTemplate(chosen) }) });
+      const res = chosen === "bimwf" ? await makeWorkflow(title, true)
+        : await api("/api/boards", { method: "POST", body: JSON.stringify({ title, by: A.name, objects: makeTemplate(chosen) }) });
       close();
       await loadBoards();
       await openBoard(res.board.id, true);
@@ -2801,9 +2834,10 @@ async function main() {
 
   await loadBoards();
   const asked = new URLSearchParams(location.search).get("board");
+  const made = await seedWorkflow();
   let last = null;
   try { last = localStorage.getItem(lastKey()); } catch (e) {}
-  const bid = asked || (A.boards.find((b) => b.id === last) ? last : A.boards.length ? A.boards[0].id : null);
+  const bid = asked || made || (A.boards.find((b) => b.id === last) ? last : A.boards.length ? A.boards[0].id : null);
   if (bid) await openBoard(bid, false); else showHome();
 }
 

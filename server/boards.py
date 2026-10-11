@@ -34,6 +34,9 @@ import re
 import sqlite3
 import threading
 import time
+import hashlib
+import shutil
+import struct
 import uuid
 
 from fastapi import HTTPException, Request, Header
@@ -63,6 +66,10 @@ CREATE TABLE IF NOT EXISTS objects (
     PRIMARY KEY (board, id)
 );
 CREATE INDEX IF NOT EXISTS idx_objects_rev ON objects(board, rev);
+CREATE TABLE IF NOT EXISTS meta (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL DEFAULT ''
+);
 """
 
 # Limits. A board is notes and diagrams, not a file store: pictures go
@@ -87,6 +94,14 @@ _LOCKS = {}                       # db path -> lock
 _LOCKS_GUARD = threading.Lock()
 _READY = set()                    # db paths whose schema has been checked
 PRESENCE = {}                     # (project, board) -> {client id: {...}}
+
+# The "LWK BIM Workflow" board every project starts with (viewer/board-bimwf.js
+# builds it; this keeps it to once per project). Its pictures and the blank
+# audit spreadsheet are kept beside this file.
+TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+WORKFLOW_PICS = os.path.join(TEMPLATES_DIR, "bim_workflow")
+AUDIT_XLSX = os.path.join(TEMPLATES_DIR, "LWK_BIM_Audit_Checklist.xlsx")
+AUDIT_DEST = ("BIM QA", "LWK BIM Audit Checklist.xlsx")
 
 
 def now_iso():
@@ -185,6 +200,28 @@ def check_object(o):
     if len(text.encode("utf-8")) > MAX_OBJECT:
         raise HTTPException(status_code=413, detail="One object is too large (%d kB at most)" % (MAX_OBJECT // 1024))
     return oid, text
+
+
+def png_size(path):
+    """(width, height) of a PNG, from its header."""
+    with open(path, "rb") as f:
+        head = f.read(24)
+    if head[:8] != b"\x89PNG\r\n\x1a\n":
+        return 0, 0
+    return struct.unpack(">II", head[16:24])
+
+
+def workflow_state(db):
+    """Whether this project has had its workflow board. A project that had
+    boards before there was one is counted as having it: it is not given one
+    unasked (New board > LWK BIM Workflow adds it)."""
+    r = db.execute("SELECT value FROM meta WHERE key = 'workflow'").fetchone()
+    if r:
+        return True
+    if db.execute("SELECT 1 FROM boards LIMIT 1").fetchone():
+        db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('workflow', 'had boards')")
+        return True
+    return False
 
 
 def register(app, core):
@@ -317,8 +354,9 @@ def register(app, core):
                 b["can_delete"] = can_delete(w, role, r)
                 b["here"] = len(presence_list(pid, r["id"]))
                 out.append(b)
+            seeded = workflow_state(db)
         return {"boards": out, "role": role, "can_edit": core.RANK[role] >= core.RANK["member"],
-                "name": w.name, "accounts": core.accounts_on()}
+                "name": w.name, "accounts": core.accounts_on(), "workflow_seeded": seeded}
 
     @app.post("/api/boards")
     async def boards_create(request: Request, x_viewer_token: str = Header(default=""),
@@ -345,6 +383,96 @@ def register(app, core):
             out = board_row(r, len(objects))
         out["can_delete"] = True
         return {"board": out}
+
+    # ------------------------------------------------------------ workflow board
+
+    def copy_audit(pid, w):
+        """The blank audit spreadsheet into the Folders of each project that
+        shows this one (Projects page), unless one of that name is there.
+        Returns the Folders paths written."""
+        done = []
+        try:
+            import files
+            import tasks
+            if not os.path.isfile(AUDIT_XLSX) or files.CORE is None:
+                return done
+            regs = tasks.reg_ids_for_viewer(core, pkey(pid))
+            for reg in regs:
+                root = files.root_of(reg)
+                folder = os.path.join(root, AUDIT_DEST[0])
+                dest = os.path.join(folder, AUDIT_DEST[1])
+                if os.path.exists(dest):
+                    continue
+                if not os.path.isdir(folder):
+                    os.makedirs(folder)
+                shutil.copyfile(AUDIT_XLSX, dest)
+                rel = files.rel_of(root, dest)
+                with files.Meta() as d:
+                    d.execute("INSERT OR IGNORE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
+                              (reg, files.rel_of(root, folder), w.uid, w.name or "", now_iso()))
+                    d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
+                              (reg, rel, w.uid, w.name or "", now_iso()))
+                done.append({"reg": reg, "path": rel})
+        except Exception as ex:          # Folders not set up: the board still comes
+            print("workflow audit copy: %s" % ex)
+        return done
+
+    @app.get("/api/boards/workflow/assets")
+    async def workflow_assets(request: Request, x_viewer_token: str = Header(default=""),
+                              x_project: str = Header(default="")):
+        """The workflow board's pictures, as snapshot paths (a board only
+        refers to pictures by those). Copied in once, named by their
+        content, so asking again costs nothing and makes no copies."""
+        access(request, "member", x_viewer_token, x_project)
+        out = {}
+        if os.path.isdir(WORKFLOW_PICS):
+            for n in sorted(os.listdir(WORKFLOW_PICS)):
+                if not n.endswith(".png"):
+                    continue
+                src = os.path.join(WORKFLOW_PICS, n)
+                with open(src, "rb") as f:
+                    h = hashlib.sha1(f.read()).hexdigest()
+                name = h + ".png"
+                dest = os.path.join(core.CFG["snapshots"], name)
+                if not os.path.exists(dest):
+                    tmp = dest + ".tmp"
+                    shutil.copyfile(src, tmp)
+                    os.replace(tmp, dest)
+                wd, ht = png_size(src)
+                out[n[:-4]] = {"src": "/snapshots/" + name, "w": wd, "h": ht}
+        return {"images": out}
+
+    @app.post("/api/boards/workflow")
+    async def workflow_create(request: Request, x_viewer_token: str = Header(default=""),
+                              x_project: str = Header(default="")):
+        """The project's workflow board, made from the objects the page
+        built - once: whoever comes second (two people opening the Board
+        page together) is told it is there already. force: make another
+        (New board > LWK BIM Workflow)."""
+        w, role, pid = access(request, "member", x_viewer_token, x_project)
+        body = await read_json(request)
+        title = clean_text(body.get("title"), MAX_TITLE) or "LWK BIM Workflow"
+        objects = body.get("objects") or []
+        force = bool(body.get("force"))
+        if not isinstance(objects, list) or len(objects) > MAX_OBJECTS:
+            raise HTTPException(status_code=400, detail="Too many objects for one board")
+        by = person(w, body)
+        with db_for(pid) as db:
+            if not force and workflow_state(db):
+                return {"board": None, "seeded": True}
+            n = db.execute("SELECT COUNT(*) AS n FROM boards WHERE deleted = 0").fetchone()["n"]
+            if n >= MAX_BOARDS:
+                raise HTTPException(status_code=413, detail="This project has %d boards already - delete some first" % n)
+            bid = "b" + uuid.uuid4().hex[:15]
+            t = now_iso()
+            db.execute("INSERT INTO boards (id, title, rev, deleted, created_by, created_uid, created_at, updated_by, updated_at) "
+                       "VALUES (?, ?, 0, 0, ?, ?, ?, ?, ?)", (bid, title, by, w.uid, t, by, t))
+            write_objects(db, bid, by, objects, [], new_board=True)
+            db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('workflow', ?)", (bid,))
+            r = db.execute("SELECT * FROM boards WHERE id = ?", (bid,)).fetchone()
+            out = board_row(r, len(objects))
+        out["can_delete"] = True
+        return {"board": out, "seeded": True, "audit": copy_audit(pid, w)}
 
     @app.patch("/api/boards/{bid}")
     async def boards_rename(bid: str, request: Request, x_viewer_token: str = Header(default=""),

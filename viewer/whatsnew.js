@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-24", date: "11 Oct 2026",
+    items: [
+      "Board: every project starts with an **LWK BIM Workflow** board - roles, work stages, the workflow charts (setup, modelling, review, SAM, clash, GBP), CDE states, QA/QC and the BIM audit checklist - as the project's own copy to change. A blank **audit checklist Excel** is put in Folders > BIM QA.",
+      "A project that already has boards adds it with **New board** > **LWK BIM Workflow**.",
+      "Board: a single line in a shape set to the left (or right) now sits there.",
+    ],
+  },
+  {
     version: "2026-10-23", date: "11 Oct 2026",
     items: [
       "3D: with a section box on, **Fit** frames what is inside the box, not the whole model far away.",

@@ -7,6 +7,7 @@
  */
 
 import { uid, STICKY_COLORS, BRANCH_COLORS } from "./board-util.js";
+import { lwkBimWorkflow } from "./board-bimwf.js";
 
 let Z = 0;
 const z = () => ++Z;
@@ -107,6 +108,8 @@ function notes() {
 
 export const TEMPLATES = [
   { id: "blank", name: "Blank", hint: "An empty canvas", make: () => [] },
+  // its pictures come from the server: board.js makes it (workflowObjects)
+  { id: "bimwf", name: "LWK BIM Workflow", hint: "Roles, stages, workflow, CDE, QA/QC and the audit checklist", make: () => lwkBimWorkflow({}, null) },
   { id: "mindmap", name: "Mind map", hint: "A central topic and its branches", make: mindmap },
   { id: "brainstorm", name: "Brainstorm", hint: "A grid of sticky notes", make: brainstorm },
   { id: "swot", name: "SWOT", hint: "Strengths, weaknesses, opportunities, threats", make: swot },
@@ -140,6 +143,10 @@ export function templateThumb(id) {
     kanban: R(7, 5, 20, 42, "#f7f8fa", line) + R(30, 5, 20, 42, "#f7f8fa", line) + R(53, 5, 20, 42, "#f7f8fa", line)
       + R(9, 8, 16, 8, STICKY_COLORS[0]) + R(9, 18, 16, 8, STICKY_COLORS[0]) + R(9, 28, 16, 8, STICKY_COLORS[0])
       + R(32, 8, 16, 8, STICKY_COLORS[5]) + R(55, 8, 16, 8, STICKY_COLORS[7]),
+    bimwf: R(6, 5, 20, 9, "#2b7bd6") + R(30, 5, 20, 9, "#7bb83a") + R(54, 5, 20, 9, "#3e9e91")
+      + R(6, 20, 20, 12, "#d8e7f8", line) + R(30, 20, 20, 12, "#e5f3d3", line) + R(54, 20, 20, 12, "#d6efeb", line)
+      + `<path d="M26 26h4M50 26h4" stroke="#5b6472" stroke-width="1.2"/>`
+      + [0, 1, 2, 3, 4, 5].map((i) => R(6 + i * 11.6, 38, 9, 9, ["#dbe7f5", "#f6e7bd", "#e0eed2", "#fbe0cf", "#e1e6f6", "#e5e7eb"][i])).join(""),
     notes: R(8, 4, 26, 3, "#1f2430") + R(8, 11, 30, 16, "#fff", line) + R(42, 11, 30, 16, "#fff8f1", line)
       + R(8, 30, 30, 17, "#fff", line) + R(42, 30, 30, 17, "#fff", line)
       + `<path d="M11 16h18M11 20h14M45 16h18M45 20h12M11 36h20M45 36h16" stroke="#9aa3af" stroke-width="1"/>`,
