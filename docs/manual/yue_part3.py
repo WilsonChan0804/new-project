@@ -79,7 +79,7 @@ PART = [
     ]),
     H3('樓層'),
     UL([
-        '**Floor plan** 下拉選單（喺 3D 頁頂第二行，同 **Plan overlay**、視圖連結同 **BCF** 一齊）列出 **Whole building** 同由上至下每一層。**Search**、鈴同 **+ Task** 喺右上角，同其他頁一樣。',
+        '**Floor plan** 下拉選單（喺 3D 頁頂，同 **Navigate / Add issue / Measure**、**Plan overlay**、視圖連結同 **BCF** 一齊 - 闊嘅視窗全部排一行，窄啲就排喺第二行）列出 **Whole building** 同由上至下每一層。**Search**、鈴同 **+ Task** 喺右上角，同其他頁一樣。',
         '揀一層就會由嗰層樓面以下 0.5 m 切到以上 1.2 m，再由上面直望落去，好似 Revit 嘅 plan 咁。',
         '**Page Up / Page Down** 上落一層；**Whole building** 返去成個 3D model。',
         '**Plan overlay**（樓層清單旁邊）將嗰層嘅 plan sheet 鋪喺 model 上面，等你對比圖同 model。',

@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-27", date: "12 Oct 2026",
+    items: [
+      "3D header: **one line** on a wide window (links, project, Navigate / Add issue / Measure, Floor plan, Plan overlay, link, BCF, then Search, the bell, + Task and your profile at the right) and **never more than two** on a smaller one - the tools go down a line, with the project drop-downs on a small window.",
+    ],
+  },
+  {
     version: "2026-10-26", date: "12 Oct 2026",
     items: [
       "3D header: **Floor plan** sits with Plan overlay, the view link and BCF on the second row; **Search, the bell and + Task** are at the top right, as on the other pages.",

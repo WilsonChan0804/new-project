@@ -2259,26 +2259,42 @@ body.props-off #props { display: none !important; }
   .ck-foot button { min-height: 40px; padding: 8px 20px; font-size: 15px; }
 }
 
-/* The 3D page's header: the page links, the project, what a click does,
-   then Search, the bell, + Task and the profile at the top right (as on
-   every page); the floor plan and its drawing, the view link and BCF on a
-   row of their own below. */
-body:has(> #layout3d) > header .hdr-row2 {
-  order: 99; flex: 1 0 100%; display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap;
-}
-body:has(> #layout3d) > header .hdr-row2 .flr-lab { display: inline; margin-left: 0; }
+/* The 3D page's header, in one line when the window is wide enough:
+     links · project ▾ model ▾ · Navigate/Add issue/Measure · Floor plan ▾
+     Plan overlay · link · BCF · Search, bell, + Task, profile
+   and in two lines otherwise (never three): the tools move down a line,
+   and on a smaller window the project drop-downs go with them. */
+body:has(> #layout3d) > header .hdr-row2 { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 1 auto; }
+body:has(> #layout3d) > header .hdr-row2 .flr-lab { display: inline; margin-left: 4px; }
+body:has(> #layout3d) > header .hdr-brk { display: none; }
 body:has(> #layout3d) > header #project { display: none; }
 body:has(> #layout3d) > header #lwk-nav { margin-left: auto; }
+body:has(> #layout3d) > header #floor-select { max-width: 130px !important; }
+/* Plan overlay: its icon (the name is in the tooltip) */
+body:has(> #layout3d) > header #plan-draw .lab { display: none; }
+body:has(> #layout3d) > header #plan-draw { padding: 0.36em 0.5em; }
+body:has(> #layout3d) > header .two-proj { max-width: 230px; }
+body:has(> #layout3d) > header .two-part { max-width: 150px; }
+body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
+@media (min-width: 701px) {
+  body:has(> #layout3d) > header { flex-wrap: wrap; overflow: visible; }
+  body:has(> #layout3d) > header > * { flex: 0 1 auto; }
+  body:has(> #layout3d) > header .spacer { flex: 1 1 0; }
+}
+@media (min-width: 701px) and (max-width: 1799px) {
+  body:has(> #layout3d) > header .hdr-row2 { order: 99; flex: 1 0 100%; flex-wrap: wrap; }
+}
+@media (min-width: 701px) and (max-width: 1199px) {
+  body:has(> #layout3d) > header #lwk-nav, body:has(> #layout3d) > header #lwk-me { order: 10; }
+  body:has(> #layout3d) > header .hdr-brk { display: block; order: 50; flex: 1 0 100%; height: 0; }
+  body:has(> #layout3d) > header .two-wrap { order: 60; }
+  body:has(> #layout3d) > header .hdr-row2 { order: 70; flex: 0 1 auto; }
+  body:has(> #layout3d) > header .spacer { display: none; }
+  body:has(> #layout3d) > header .page-links button { padding: 0.36em 0.55em; }
+  body:has(> #layout3d) > header .two-proj { max-width: 190px; }
+  body:has(> #layout3d) > header .two-part { max-width: 120px; }
+}
 @media (max-width: 700px) {
   body:has(> #layout3d) > header .hdr-row2 .flr-lab { display: none; }
-}
-@media (max-width: 1700px) {
-  body:has(> #layout3d) > header .two-proj { max-width: 200px; }
-  body:has(> #layout3d) > header .two-part { max-width: 130px; }
-  body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
-}
-@media (max-width: 1300px) {
-  body:has(> #layout3d) > header .two-proj { max-width: 150px; }
-  body:has(> #layout3d) > header .two-part { max-width: 100px; }
 }
 .ck-view { font-size: 10px; color: var(--muted); white-space: nowrap; }

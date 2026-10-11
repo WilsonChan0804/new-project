@@ -369,7 +369,7 @@ DOC = [
     ]),
     H3('Floors'),
     UL([
-        'The **Floor plan** drop-down (second row of the 3D header, with **Plan overlay**, the view link and **BCF**) lists **Whole building** and every level from the top down. **Search**, the bell and **+ Task** are at the top right, as on every page.',
+        'The **Floor plan** drop-down (in the 3D header with **Navigate / Add issue / Measure**, **Plan overlay**, the view link and **BCF** - all on one line on a wide window, on the second line on a smaller one) lists **Whole building** and every level from the top down. **Search**, the bell and **+ Task** are at the top right, as on every page.',
         'Picking a level cuts the model from 0.5 m below to 1.2 m above that floor and looks straight down, like a Revit plan.',
         '**Page Up / Page Down** step up and down; **Whole building** returns to the full 3D model.',
         "**Plan overlay** (beside the floor list) lays that floor's plan sheet over the model, so you can compare drawing and model.",

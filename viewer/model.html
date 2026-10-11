@@ -27,12 +27,13 @@
   <div id="project" class="muted"></div>
   <select id="proj-switch" hidden title="Switch project"></select>
   <div id="conn" class="conn" title="Connection to the server">offline</div>
-  <div class="mode" title="What clicking does">
-    <button id="m-nav" class="active">Navigate</button>
-    <button id="m-issue">Add issue</button>
-    <button id="m-measure" class="ghost" data-icon="measure" title="Measure with snapping">Measure</button>
-  </div>
+  <div class="hdr-brk" aria-hidden="true"></div>
   <div class="hdr-row2">
+    <div class="mode" title="What clicking does">
+      <button id="m-nav" class="active">Navigate</button>
+      <button id="m-issue">Add issue</button>
+      <button id="m-measure" class="ghost" data-icon="measure" title="Measure with snapping">Measure</button>
+    </div>
     <label for="floor-select" class="flr-lab"
       title="Choose a floor to see it as a plan: the model is cut 1.2 m above that floor and viewed from above, like a Revit floor plan. Page Up / Page Down step between floors.">Floor plan</label>
     <select id="floor-select" title="Cut the model at this floor and look down (Page Up / Page Down to step)"
