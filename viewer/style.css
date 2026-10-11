@@ -2273,10 +2273,10 @@ body:has(> #layout3d) > header #floor-select { max-width: 130px !important; }
 /* Plan overlay: its icon (the name is in the tooltip) */
 body:has(> #layout3d) > header #plan-draw .lab { display: none; }
 body:has(> #layout3d) > header #plan-draw { padding: 0.36em 0.5em; }
-body:has(> #layout3d) > header .two-proj { max-width: 230px; }
-body:has(> #layout3d) > header .two-part { max-width: 150px; }
 body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
 @media (min-width: 701px) {
+  body:has(> #layout3d) > header .two-proj { max-width: 230px; }
+  body:has(> #layout3d) > header .two-part { max-width: 150px; }
   body:has(> #layout3d) > header { flex-wrap: wrap; overflow: visible; }
   body:has(> #layout3d) > header > * { flex: 0 1 auto; }
   body:has(> #layout3d) > header .spacer { flex: 1 1 0; }
