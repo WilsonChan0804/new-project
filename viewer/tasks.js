@@ -18,6 +18,7 @@
 import { api, project } from "./nav.js";
 import { $, $$, esc, uid, today, isOverdue, PRI_RANK, avatar, modal, toast, pop, closePop, ago, fmtWhen, skeleton } from "./tasks-util.js";
 import { makeLink } from "./filelinks.js";
+import { makeFilter } from "./filterbtn.js";
 import * as ListView from "./tasks-list.js";
 import * as KanbanView from "./tasks-kanban.js";
 import * as GanttView from "./tasks-gantt.js";
@@ -934,6 +935,19 @@ function wire() {
   $("#f-group").onchange = (ev) => { S.groupBy = ev.target.value; ls.set("groupBy", S.groupBy); render(); };
   S.sort = ls.get("sort", "custom"); $("#f-sort").value = S.sort;
   S.groupBy = ls.get("groupBy", "group"); $("#f-group").value = S.groupBy;
+  /* Which tasks, whose, how urgent - and the order - behind one Filter button */
+  const row = (t, el) => { const l = document.createElement("label"); l.className = "flt-row"; l.append(t, el); return l; };
+  for (const id of ["#f-status", "#f-owner", "#f-pri"]) $(id).dataset.flt = "1";
+  const sortL = $("#f-sort").closest("label"), groupL = $("#f-group").closest("label");
+  T.filterBtn = makeFilter({
+    before: $("#t-cols"),
+    title: "Which tasks: status, owner, priority - and their order",
+    groups: [
+      { title: "Show", els: [row("Tasks", $("#f-status")), row("Owner", $("#f-owner")), row("Priority", $("#f-pri"))] },
+      { title: "Order", els: [sortL, groupL] },
+    ],
+    count: () => ($("#f-status").value !== "all") + !!$("#f-owner").value + !!$("#f-pri").value,
+  });
   T.saveCollapsed = () => ls.set("collapsed:" + S.listId, [...S.collapsed]);
 }
 

@@ -340,6 +340,19 @@ function wireFilters() {
   $("#f-dismissed").onchange = (e) => { F.dismissed = e.target.checked; render(); };
   $("#d-refresh").onclick = () => loadData().catch(showError);
   $("#d-csv").onclick = exportCsv;
+  $("#d-bcf").onclick = exportBcf;
+  // Export ▾: Report, Spreadsheet, BCF
+  const em = $("#d-export-menu"), eb = $("#d-export");
+  eb.onclick = (ev) => {
+    ev.stopPropagation();
+    em.hidden = !em.hidden;
+    const r = eb.getBoundingClientRect();
+    em.style.top = (r.bottom + 4) + "px";
+    em.style.left = Math.max(6, Math.min(innerWidth - 276, r.right - 270)) + "px";
+  };
+  em.addEventListener("click", () => setTimeout(() => { em.hidden = true; }, 100));
+  document.addEventListener("pointerdown", (ev) => { if (!em.hidden && !em.contains(ev.target) && ev.target !== eb) em.hidden = true; });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") em.hidden = true; });
   $("#d-report").onclick = () => {
     // The report shows exactly what the filters show here.
     sessionStorage.setItem("lwk-report:" + project(), JSON.stringify(filtered().map((i) => i.id)));
@@ -671,6 +684,19 @@ function drawTrend() {
 }
 
 /* ----------------------------------------------------------------- CSV */
+
+/* The issues in the filter as BCF (bcf.js, the same as the 3D page's). */
+async function exportBcf() {
+  const ids = new Set(filtered().map((i) => i.id));
+  const items = D.items.filter((it) => ids.has(it.id));
+  try {
+    const { buildBcf, download } = await import("./bcf.js");
+    const name = (D.manifest && D.manifest.source && D.manifest.source.title) || project() || "issues";
+    const r = await buildBcf(items, name);
+    download(r.blob, `${String(name).replace(/[^\w.-]/g, "_")}-${new Date().toISOString().slice(0, 10)}.bcfzip`);
+    $("#d-updated").textContent = `BCF: ${r.count} issue(s), ${r.withCamera} with a camera, ${r.withSnapshot} with a picture`;
+  } catch (e) { $("#d-updated").textContent = "BCF: " + (e.message || e); }
+}
 
 function exportCsv() {
   const cols = ["No", "Title", "Type", "Priority", "Status", "Assigned to", "Office", "Team", "Due", "Raised",

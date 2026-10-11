@@ -73,23 +73,24 @@
       <div class="tools" id="tools"></div>
       <div class="spacer"></div>
       <button id="sheet-link" class="ghost" title="Copy a link to this sheet">&#128279;</button>
-      <button id="show-markups" class="ghost"
-        title="Hide all markups">&#128065;</button>
-      <button id="hide-done" class="ghost" title="Hide resolved and closed issues on the drawing">&#10003; Hide closed</button>
-      <button id="split-toggle" class="ghost"
-        title="Read a second sheet alongside this one">&#9707; Split</button>
-      <button id="links-toggle" class="ghost active"
-        title="Section marks, callouts and elevation markers as links to their sheets">&#8599; Links</button>
       <button id="links-back" class="ghost" hidden title="Back to the sheet you came from"></button>
-      <button id="cmp-toggle" class="ghost"
-        title="Compare this sheet with an earlier version: red is removed, green is added">&#8646; Compare</button>
-      <button id="sync-toggle" class="ghost"
-        title="The model beside the sheet: click a plan to go there in 3D, and see where you are in 3D on the sheet">&#9635; 2D + 3D</button>
+      <span class="view-wrap">
+      <button id="view-menu-btn" class="ghost" aria-haspopup="menu" title="Split, Compare, 2D + 3D and sheet links">View &#9662;<i class="vm-dot" hidden></i></button>
+      <div id="view-menu" class="view-pop" hidden role="menu">
+        <button id="split-toggle" class="ghost"
+          title="Read a second sheet alongside this one">&#9707; Split<small>A second sheet alongside this one</small></button>
+        <button id="cmp-toggle" class="ghost"
+          title="Compare this sheet with an earlier version: red is removed, green is added">&#8646; Compare<small>With an earlier version: red removed, green added</small></button>
+        <button id="sync-toggle" class="ghost"
+          title="The model beside the sheet: click a plan to go there in 3D, and see where you are in 3D on the sheet">&#9635; 2D + 3D<small>The model beside the sheet, in step</small></button>
+        <button id="links-toggle" class="ghost active"
+          title="Section marks, callouts and elevation markers as links to their sheets">&#8599; Links<small>Section marks and callouts go to their sheets</small></button>
+      </div></span>
       <span class="sep"></span>
       <button id="undo" class="ghost" disabled title="Undo (Ctrl+Z)">&#8630;</button>
       <button id="redo" class="ghost" disabled title="Redo (Ctrl+Y)">&#8631;</button>
       <span class="sep"></span>
-      <label class="p" title="Drawing scale for Measure, Area and Angle. Leave blank to use the scale recorded for the viewport.">1:
+      <label class="p" id="scale-lab" title="Drawing scale for Measure, Area and Angle. Leave blank to use the scale recorded for the viewport.">1:
         <input id="meas-scale" type="number" min="1" step="1"
           placeholder="auto" style="width:60px">
       </label>
@@ -278,6 +279,10 @@
       <span class="spacer"></span>
       <span id="issue-total" class="muted" style="font-weight:400"></span>
     </div>
+    <div class="i3-togs"><span class="muted">On the drawing</span>
+      <button id="show-markups" class="ghost i3-tog"
+        title="Hide all markups">&#128065; Markups</button>
+      <button id="hide-done" class="ghost i3-tog" title="Hide resolved and closed issues on the drawing">&#10003; Hide closed</button></div>
     <div id="group-bar">
       Group
       <select id="group-by">

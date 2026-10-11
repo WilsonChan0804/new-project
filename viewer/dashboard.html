@@ -67,8 +67,13 @@
     <span class="spacer"></span>
     <span id="d-updated" class="muted"></span>
     <button id="d-refresh" class="ghost" title="Fetch the latest">Refresh</button>
-    <button id="d-csv" title="Every issue in the current filter, for Excel">Export CSV</button>
-    <button id="d-report" title="A printable report of the issues in the current filter, with pictures - save it as PDF">Report</button>
+    <span class="view-wrap">
+      <button id="d-export" title="The issues in the current filter: a report, a spreadsheet or BCF">Export &#9662;</button>
+      <div id="d-export-menu" class="view-pop" hidden role="menu">
+        <button id="d-report" class="ghost" title="A printable report of the issues in the current filter, with pictures - save it as PDF">Report<small>With pictures - print or save as PDF</small></button>
+        <button id="d-csv" class="ghost" title="Every issue in the current filter, for Excel">Spreadsheet (CSV)<small>Every issue in the filter, for Excel</small></button>
+        <button id="d-bcf" class="ghost" title="The issues in the current filter as BCF, for Revit, Navisworks or Solibri">BCF<small>For Revit, Navisworks, Solibri</small></button>
+      </div></span>
   </section>
 
   <section class="card full dtasks" id="d-tasks" hidden></section>

@@ -15,6 +15,7 @@ import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, modal, toast, ic, pop, closePop, skeleton } from "./tasks-util.js";
 import { taskForm } from "./chatcards.js";
+import { makeFilter } from "./filterbtn.js";
 
 const K = {
   view: matchMedia("(max-width: 700px)").matches ? "list" : "month",
@@ -251,6 +252,12 @@ function wire() {
       paint();
     };
   }
+  // what is shown: behind one Filter button (counts what is left out)
+  const kinds = $("#cal-kinds");
+  for (const c of kinds.querySelectorAll("input")) c.dataset.flt = "1";
+  kinds.classList.add("in-flt");
+  makeFilter({ before: $("#cal-view"), title: "Meetings, my tasks, my issues", groups: [{ title: "Show", els: [kinds] }],
+               count: () => [...kinds.querySelectorAll("input")].filter((x) => !x.checked).length });
   $("#cal-outlook").onclick = outlook;
   $("#cal-new").onclick = () => newEvent();
   $("#cal-body").addEventListener("contextmenu", (ev) => {

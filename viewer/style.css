@@ -2182,3 +2182,65 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 .panel-head[data-cap]::before { content: attr(data-cap); position: absolute; left: -4px; top: -16px; padding: 0 8px;
   font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--grp-c); }
 #models > .panel-head[data-cap]:first-child { margin-top: 14px; }
+
+/* The profile menu (profile.js): Admin, Account, Sign out, who and the
+   connection behind one button. The connection chip and Offline stay in
+   sight only while they have something to say. */
+header.has-me #lwk-nav .who, header.has-me #lwk-nav a[href*="admin.html"],
+header.has-me #lwk-nav [id$="signout"], header.has-me #conn.ok, header.has-me #off-btn:not(.on) { display: none !important; }
+.me-chip { position: relative; flex: none; width: 32px; height: 32px; padding: 0 !important; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.85); background: rgba(255,255,255,.18); color: #fff; cursor: pointer; margin-left: 4px; }
+.me-chip:hover { background: rgba(255,255,255,.32); }
+.me-av { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+.me-dot { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #f28022; }
+.me-dot.on { background: #22c55e; } .me-dot.wait { background: #f0a020; } .me-dot.off { background: #9ca3af; }
+.me-menu { position: fixed; z-index: 3000; width: 270px; background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 6px; font-size: 13px; }
+.me-menu .me-head { display: flex; gap: 10px; align-items: center; padding: 8px 8px 10px; border-bottom: 1px solid var(--line-soft); margin-bottom: 4px; }
+.me-menu .me-head > div { display: flex; flex-direction: column; min-width: 0; }
+.me-menu .me-head small { color: var(--ink-2); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-menu .me-av.big { width: 38px; height: 38px; flex: none; border-radius: 50%; background: var(--accent, #f28022); color: #fff; font-size: 14px; }
+.me-st { display: inline-flex; align-items: center; gap: 5px; }
+.me-st i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; }
+.me-st.wait i { background: #f0a020; } .me-st.off i { background: #9ca3af; }
+.me-menu > button { display: flex; flex-direction: column; align-items: flex-start; width: 100%; text-align: left; border: 0; background: none;
+  padding: 7px 10px; border-radius: 6px; font: inherit; color: inherit; cursor: pointer; }
+.me-menu > button small { color: var(--ink-2); font-size: 11.5px; }
+.me-menu > button:hover { background: var(--line-soft); }
+.me-menu .me-out { color: #c0392b; font-weight: 600; }
+.me-menu hr { border: 0; border-top: 1px solid var(--line-soft); margin: 4px 0; }
+.me-theme { display: flex; align-items: center; gap: 4px; padding: 6px 10px; }
+.me-theme span { flex: 1; color: var(--ink-2); font-size: 12px; }
+.me-theme button { font-size: 11.5px; padding: 2px 8px; border: 1px solid var(--line); background: none; border-radius: 6px; color: inherit; cursor: pointer; }
+.me-theme button.on { background: var(--accent, #f28022); border-color: var(--accent, #f28022); color: #fff; }
+
+/* Sheets: the markup properties only while drawing or editing; View ▾ */
+body.props-off #props { display: none !important; }
+#scale-lab[hidden] { display: none !important; }
+.view-wrap { position: relative; display: inline-flex; }
+#view-menu-btn { position: relative; }
+#view-menu-btn .vm-dot { position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent, #f28022); }
+#view-menu-btn .vm-dot[hidden] { display: none; }
+.view-pop { position: fixed; z-index: 60; width: 270px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; box-shadow: 0 6px 22px rgba(0,0,0,.16); padding: 4px; display: flex; flex-direction: column; gap: 2px; }
+.view-pop[hidden] { display: none; }
+.view-pop > button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%; padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+.view-pop > button small { color: var(--ink-2); font-size: 11px; font-weight: 400; }
+.view-pop > button.active { background: var(--accent-soft); border-color: var(--accent); }
+#items .i3-togs { padding: 6px 12px; }
+
+/* One Filter button (filterbtn.js) on Tasks and Calendar */
+.flt-wrap { position: relative; display: inline-flex; }
+.flt-btn { white-space: nowrap; }
+.flt-btn .flt-i { margin-right: 4px; opacity: .7; }
+.flt-btn.active { border-color: var(--accent, #f28022); color: var(--accent-ink, #b45309); background: var(--accent-soft, #fff3e6); }
+.flt-pop { position: fixed; z-index: 80; min-width: 240px; background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 8px; box-shadow: 0 6px 22px rgba(0,0,0,.16); padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
+.flt-pop[hidden] { display: none; }
+.flt-sec { display: flex; flex-direction: column; gap: 6px; }
+.flt-h { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.flt-row, .flt-pop label.tb-l { display: flex !important; flex-direction: row !important; align-items: center; justify-content: space-between; gap: 10px; }
+.flt-row select, .flt-pop label.tb-l select { width: 150px !important; }
+.flt-pop .cal-kinds.in-flt { display: flex; flex-direction: column; gap: 6px; }
+.flt-reset { align-self: flex-start; font-size: 11.5px; padding: 2px 8px; }
+.flt-reset[hidden] { display: none; }

@@ -94,7 +94,7 @@ PART = [
     H2('離線工作'),
     P('喺地盤冇訊號嘅時候，下載咗落部機嘅 project 照樣用得：sheet、3D model、issue 同 markup。'),
     OL([
-        '有網絡嗰陣，打開個 project，撳頂部嘅 **Offline**，再撳 **Download for offline**。下載會顯示進度，斷咗可以繼續。',
+        '有網絡嗰陣，打開個 project，喺右上角個人選單揀 **Work offline ...**，再撳 **Download for offline**。下載會顯示進度，斷咗可以繼續。',
         '冇網絡嗰陣，頂部會寫 **Offline - copy of <日期>**。可以睇 sheet 同 model、開同回覆 issue、畫 markup。',
         '離線做嘅改動會喺部機度等（**N changes waiting**），網絡返嚟就會自己 upload（**All changes uploaded**）。',
     ]),

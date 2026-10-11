@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-22", date: "11 Oct 2026",
+    items: [
+      "**One profile button** at the top right of every page: Work offline, Admin, Account, Theme and Sign out. The connection and Offline show by themselves only when something needs saying.",
+      "Sheets: **View ▾** holds Split, Compare, 2D + 3D and Links; the markup properties appear only while drawing or editing a markup; **👁 Markups** and **Hide closed** are at the top of the issue list, as on 3D.",
+      "Tasks and Calendar: one **Filter** button (\"Filter · 2\") instead of a row of drop-downs.",
+      "Dashboard: **Export ▾** - Report, Spreadsheet, and now **BCF** of the issues the filters show.",
+    ],
+  },
+  {
     version: "2026-10-21", date: "11 Oct 2026",
     items: [
       "3D: a **tidier header**. **Walk** and **Fit** are under the view cube; **Shaded / White / X-ray** and **Depth** at the top of **Display**; **Hide issues** and **Hide closed** at the top of **Issues in 3D**. **Drawing** is now **Plan overlay**.",

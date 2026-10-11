@@ -32,7 +32,7 @@ PART = [
         '**Kanban：** 一行行卡片；拖張卡去另一行。成塊 board 跟視窗咁高，所以左右嘅 scroll bar 永遠喺畫面底，唔使拉到最底先見到；**Shift + 滑鼠轆**、拖 board 嘅空位，或者兩邊嘅 **‹ ›** 掣都可以左右捲。',
         '**Gantt：** 時間線上面嘅橫條；拖成條，或者拖佢兩頭改日期。每次改之前會彈出 **Change the dates?** 問你：**Save** 先會儲存，**Cancel** 條 bar 就返原位（剔 **Don\'t ask again today**，呢部機今日就唔再問）。圖例會解釋啲顏色；milestone 係金色。',
         '**Dashboard：** 總數、完成、未完成同過咗期，按負責人、按 project、平均用幾耐同就快到期。**Activities：** 所有改動，邊個改。',
-        '可以按負責人同優先次序篩選、排序、**Group by**，同用 **Customize** 揀顯示邊啲欄。每個 list 可以有自己嘅欄（人、選項、文字、日期、數字），例如 Modelers 同 Project Manager。',
+        '**Filter ▾**（搜尋格旁邊）入面有：邊啲 task（全部、未完成、完成咗、過期、我嘅）、負責人同優先次序，仲有排序（**Sort**、**Group by**）；掣上面會講設咗幾多個篩選（「Filter · 2」），**Clear filters** 還原。用 **Customize** 揀顯示邊啲欄。每個 list 可以有自己嘅欄（人、選項、文字、日期、數字），例如 Modelers 同 Project Manager。',
     ]),
     H3('一個 task'),
     UL([
@@ -112,7 +112,7 @@ PART = [
     P('**右撳某一日**（手機㩒住）可以喺嗰日加 **event**（全日）、**meeting**（10:00 開始，揀邀請邊個 chat）或者一個嗰日到期嘅 **task**。'),
     P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日，同**派咗俾你嘅 issue** 嘅到期日。'),
     UL([
-        '電腦係月曆，手機係清單（**Month** / **List**）。剔格可以顯示或者隱藏會議、task 同 issue。**‹ ›** 同 **Today** 轉月份；手機可以掃。',
+        '電腦係月曆，手機係清單（**Month** / **List**）。**Filter ▾** 可以顯示或者隱藏會議、task 同 issue（會講隱藏咗幾多樣）。**‹ ›** 同 **Today** 轉月份；手機可以掃。',
         '撳一項睇詳情，再打開個 chat、task 或者 issue。回覆會議要喺佢個 chat 入面。',
         '**+ Event：** 揀一個 chat，活動表格就喺嗰度打開，chat 入面所有人都會被邀請。',
         '**Add to Outlook：** **Open in Outlook on this PC** 會令 Outlook 訂閱你嘅日曆（揀 **Yes**），或者 copy 個地址，用 Outlook 嘅 **Add calendar > From Internet**。之後 Outlook 會喺你自己嘅日曆隔籬顯示，並自己更新。Outlook 網頁版同手機版要 viewer 喺互聯網上連得到先得。',

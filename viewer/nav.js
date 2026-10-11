@@ -8,6 +8,7 @@
  * a Viewer, and offers the project's members as assignees.
  */
 
+import { installProfile } from "./profile.js";
 import "./theme.js";                       // light / dark, before anything is drawn
 import { installSearch } from "./search.js";
 import { startNotify } from "./notify.js";
@@ -17,7 +18,7 @@ import { checkWhatsNew } from "./whatsnew.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-21";
+const LWK_VERSION = "2026-10-22";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -540,6 +541,8 @@ export async function projectOptions(current, fallback) {
 
 // the search on every page (search.js): its button goes into #lwk-nav
 if (document.querySelector("header")) installSearch();
+// Admin, Account, Sign out, Offline and who is signed in: one menu (profile.js)
+if (document.querySelector("header")) installProfile();
 
 /* Project first, then its model or sheet set: the one long drop-down
    (every project with its parts under it) shown as two. They are built

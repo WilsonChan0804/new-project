@@ -23,6 +23,7 @@ PART = [
         ['Undo / redo', 'Ctrl+Z / Ctrl+Y', '兩隻手指 tap / 三隻手指 tap'],
     ]),
     H3('Sheet 有用嘅工具'),
+    P('**Split**、**Compare**、**2D + 3D** 同 **Links** 喺 sheet 工具列嘅 **View ▾** 入面（View 上面有粒點即係 Split、Compare 或者 2D + 3D 開緊）。Markup 屬性列（layer、線、填色、文字、字型）只會喺揀咗畫圖工具或者揀咗 markup 嗰陣出現，**1:** 比例只會喺 Measure、Dimension、Area 同 Angle 出現 - 其餘時間將位留俾張圖。**👁 Markups** 同 **Hide closed** 喺右邊 issue 清單頂部，同 3D 版一樣。'),
     UL([
         '**Split** 喺隔籬打開第二張 sheet，有自己嘅 zoom。',
         '**Links** 將 section 標記、callout 同 elevation 標記變成連去佢哋 sheet 嘅連結；**← back** 返去。',
@@ -43,7 +44,7 @@ PART = [
         '**Style bar：** Layer、線／填色／文字顏色、Opacity、Weight（紙上 mm）、線 Type、Font、Size（字高 mm）、Align。',
         '**改 markup：** 揀一個 markup 就可以搬、改大細或者改樣式；R / Shift+R 轉 90°；Ctrl+C / Ctrl+V copy 同貼（貼去另一張 sheet 會喺同一個位置）；Delete 刪除。',
         '**Comment 定 Issue：** 頂部嘅 **Comment / Issue** 掣決定畫完 markup 之後做乜。喺 **Issue** 模式會即刻彈出 **Raise issue** 視窗。Comment 之後都可以用 **Issue** 或者右鍵 **Raise issue** 變成 issue。',
-        '**Layer：** markup 放喺 layer 上面（預設「General」）。Admin 可以鎖 layer 或者唔俾某啲人睇到。眼仔掣會隱藏所有 markup。',
+        '**Layer：** markup 放喺 layer 上面（預設「General」）。Admin 可以鎖 layer 或者唔俾某啲人睇到。issue 清單頂部嘅 **👁 Markups** 會隱藏所有 markup。',
     ]),
     H3('Export'),
     UL([

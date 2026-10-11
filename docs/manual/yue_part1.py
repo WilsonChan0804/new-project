@@ -88,9 +88,9 @@ PART = [
     P('Dashboard 係 project 嘅 issue 計分板：幾多個未完成、幾多個過咗期、喺邊個手上，同埋今個星期有乜改變。'),
     LABEL('四圍行'),
     UL([
-        '每一版頂部都係同一排、同一個位置嘅頁面：**Projects**、**Sheets**、**3D**、**Board**、**Tasks**、**Chat**（有未讀訊息數目）同 **Dashboard**。右邊有：**Search** 放大鏡、**+ Task**（喺 Sheets 同 3D：將而家呢張 sheet 或者 3D 視圖放落 task）、**Admin**（只有 admin 見到）、**Account** 同 **Sign out**。手機上面呢排可以打橫碌。',
+        '每一版頂部都係同一排、同一個位置嘅頁面：**Projects**、**Sheets**、**3D**、**Board**、**Tasks**、**Chat**（有未讀訊息數目）同 **Dashboard**。右邊有：**Search** 放大鏡、鈴、**+ Task**（喺 Sheets 同 3D：將而家呢張 sheet 或者 3D 視圖放落 task）同**你嘅個人掣**（你個名嘅縮寫，有網絡時有粒綠點）。撳佢會見到 **Work offline ...**、**Admin**（只有 admin 見到）、**Account**（密碼）、**Theme**（Light、Dark、Auto）同 **Sign out**。手機上面呢排可以打橫碌。',
         '**Project 下拉選單**（Sheets、3D、Board、Dashboard）會列出 Projects 版嘅 project 名，例如「SKW · HKA-P-01681-ARC」。由幾個 model 組成嘅 project，例如 MOS Site 1 同 Site 2，會變成一組，下面列出佢嘅各部分。',
-        '連線標籤會顯示 **online - 你個名**、**N waiting to save**（斷咗線；你嘅改動排緊隊，有返線就會送出）或者 **offline**。有改動等緊儲存嘅時候唔好 reload：排緊隊嘅嘢只會保留到你離開嗰版為止。',
+        '連線標籤只會喺有嘢要講嗰陣出現：**N waiting to save**（斷咗線；你嘅改動排緊隊，有返線就會送出）或者 **offline**。有改動等緊儲存嘅時候唔好 reload：排緊隊嘅嘢只會保留到你離開嗰版為止。',
     ]),
     LABEL('Dashboard 顯示乜'),
     TABLE(['部分', '話俾你知'], [
@@ -102,7 +102,7 @@ PART = [
         ['清單', '**Overdue**、**Due in the next 14 days**、**Recently changed**、**Going quiet**（14 日或以上冇郁過）'],
     ]),
     UL([
-        '**Export CSV** 會下載篩選咗嘅 issue 俾 Excel 用。**Report** 會打開一份有相、可以列印嘅 issue 報告。',
+        '**Export ▾** 會攞篩選緊嘅 issue：**Report**（有相、可以列印或者儲存做 PDF 嘅報告）、**Spreadsheet (CSV)** 俾 Excel，或者 **BCF** 俾 Revit、Navisworks 或 Solibri。',
         '呢版每 2 分鐘自動更新；撳 **Refresh** 即刻更新。',
         '**呢個 project 嘅 task：** 如果呢個 project 喺 Projects 版上面，Dashboard 亦會顯示佢喺每個團隊 list 入面嘅 task：未完成、過咗期，同埋做咗幾多個 sub-task。',
     ]),

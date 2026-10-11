@@ -806,6 +806,7 @@ function drawMarquee(m) {
 function redraw(target) {
   // A second pane (split view) draws the same markups into its own layer.
   const svg = target || $("#overlay");
+  if (!target) { try { propsShown(); } catch (e) {} }
   // Hiding markups is a view setting, not a change: the records are
   // untouched and the toolbar keeps saying so.
   if (S.hideMarkups) {
@@ -5276,12 +5277,27 @@ function exportAll() {
 
 /* ---------------------------------------------------------------- wire */
 
+/* The markup properties (colour, fill, layer, line, text) only while a
+   drawing tool is in hand or markups are selected; the scale only for the
+   measuring tools. The rest of the time the drawing gets the room. */
+const MEASURE_TOOLS = new Set(["measure", "dimension", "area", "angle"]);
+function propsShown() {
+  const k = toolOf(S.tool).kind;
+  const drawing = ["drag2", "free", "poly", "click"].includes(k) && S.tool !== "snip";
+  const on = drawing || (S.sel && S.sel.length > 0) || S.tool === "match";
+  document.body.classList.toggle("props-off", !on);
+  const selMeasure = (S.sel || []).some((id) => { const it = S.items.find((x) => x.id === id); return it && MEASURE_TOOLS.has(it.type); });
+  const sc = document.getElementById("scale-lab");
+  if (sc) sc.hidden = !(MEASURE_TOOLS.has(S.tool) || selMeasure);
+}
+
 function setTool(id) {
   if (INK.pending.length) flushInk();
   if (S.endPoly && id !== S.tool) S.endPoly();
   S.tool = id;
   document.querySelectorAll("#tools button").forEach((b) =>
     b.classList.toggle("active", b.dataset.tool === id));
+  propsShown();
   const k = toolOf(id).kind;
   const ov = $("#overlay");
   ov.style.pointerEvents = k === "pan" || k === "textsel" ? "none" : "auto";
@@ -5402,6 +5418,32 @@ function wireChrome() {
     copyLink("index.html?project=" + encodeURIComponent(Store.currentProject() || "") + "&sheet=" + encodeURIComponent(S.sheet.number),
       "sheet " + S.sheet.number);
   });
+  /* View ▾: Split, Compare, 2D + 3D and Links in one menu. The buttons are
+     the same ones as before, moved into it; a dot on View says one of the
+     first three is on. */
+  const vm = $("#view-menu"), vmb = $("#view-menu-btn");
+  if (vm && vmb) {
+    const shut = () => { vm.hidden = true; vmb.classList.remove("open"); };
+    vmb.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      vm.hidden = !vm.hidden;
+      vmb.classList.toggle("open", !vm.hidden);
+      // fixed, under the button (the toolbar scrolls sideways and would cut it)
+      const r = vmb.getBoundingClientRect();
+      vm.style.top = (r.bottom + 4) + "px";
+      vm.style.left = Math.max(6, Math.min(innerWidth - 276, r.right - 270)) + "px";
+    });
+    vm.addEventListener("click", () => setTimeout(shut, 120));
+    document.addEventListener("pointerdown", (ev) => { if (!vm.hidden && !vm.contains(ev.target) && !vmb.contains(ev.target)) shut(); });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") shut(); });
+    const dot = () => {
+      const on = ["#split-toggle", "#cmp-toggle", "#sync-toggle"].filter((x) => $(x) && $(x).classList.contains("active"));
+      vmb.querySelector(".vm-dot").hidden = !on.length;
+      vmb.classList.toggle("active", !!on.length);
+    };
+    new MutationObserver(dot).observe(vm, { subtree: true, attributes: true, attributeFilter: ["class"] });
+    dot();
+  }
   $("#show-markups").addEventListener("click", () => {
     S.hideMarkups = !S.hideMarkups;
     $("#show-markups").classList.toggle("active", !S.hideMarkups);

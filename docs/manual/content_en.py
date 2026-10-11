@@ -90,9 +90,9 @@ DOC = [
     P("The Dashboard is the project's issue scoreboard: how many are open, overdue, who holds them and what changed this week."),
     LABEL('Getting around'),
     UL([
-        'The top bar on every page has the same pages in the same place: **Projects**, **Sheets**, **3D**, **Board**, **Tasks**, **Chat** (with the number of unread messages) and **Dashboard**. On the right: the **Search** magnifier, **+ Task** (on Sheets and 3D: keeps this sheet or 3D view on a task), **Admin** (admins only), **Account** and **Sign out**. On a phone the top bar scrolls sideways.',
+        'The top bar on every page has the same pages in the same place: **Projects**, **Sheets**, **3D**, **Board**, **Tasks**, **Chat** (with the number of unread messages) and **Dashboard**. On the right: the **Search** magnifier, the bell, **+ Task** (on Sheets and 3D: keeps this sheet or 3D view on a task) and **your profile button** (your initials, with a green dot when online). Click it for **Work offline ...**, **Admin** (admins only), **Account** (your password), **Theme** (Light, Dark, Auto) and **Sign out**. On a phone the top bar scrolls sideways.',
         'The **project drop-down** (Sheets, 3D, Board, Dashboard) lists the project names from the Projects page, e.g. "SKW · HKA-P-01681-ARC". A project made of several models, such as MOS Site 1 and Site 2, appears as a group with its parts under it.',
-        'The connection chip shows **online - your name**, **N waiting to save** (the connection dropped; your changes are queued and sent when it returns), or **offline**. Do not reload the page while changes are waiting: the queue is kept only until you leave the page.',
+        'The connection chip appears only when there is something to say: **N waiting to save** (the connection dropped; your changes are queued and sent when it returns), or **offline**. Do not reload the page while changes are waiting: the queue is kept only until you leave the page.',
     ]),
     LABEL('What the Dashboard shows'),
     TABLE(['Part', 'What it tells you'], [
@@ -104,7 +104,7 @@ DOC = [
         ['Lists', '**Overdue**, **Due in the next 14 days**, **Recently changed**, **Going quiet** (untouched for 14 days or more)'],
     ]),
     UL([
-        '**Export CSV** downloads the filtered issues for Excel. **Report** opens a printable issue report with pictures.',
+        '**Export ▾** takes the issues the filters show: **Report** (a printable report with pictures - save it as PDF), **Spreadsheet (CSV)** for Excel, or **BCF** for Revit, Navisworks or Solibri.',
         'The page refreshes itself every 2 minutes; **Refresh** updates it now.',
         '**Tasks of this project:** when the project is on the Projects page, the Dashboard also shows its tasks from every team\'s list: open, overdue and sub-tasks done.',
     ]),
@@ -144,7 +144,7 @@ DOC = [
         '**Kanban:** cards in columns; drag a card to another column. The board fills the window, so the sideways scroll bar is always at the bottom of the screen; **Shift + mouse wheel**, dragging an empty part of the board, or the **‹ ›** buttons at its edges also scroll it.',
         '**Gantt:** bars on a timeline; drag a bar, or drag its ends to change the dates. Each change asks **Change the dates?** first: **Save** keeps it, **Cancel** puts the bar back (tick **Don\'t ask again today** to skip the question on this device). The legend explains the colours; milestones are gold.',
         '**Dashboard:** total, completed, incomplete and overdue, by owner, by project, average duration and due soon. **Activities:** everything that changed, by whom.',
-        'Filter by owner and priority, sort, **Group by**, and **Customize** which columns show. Lists can have their own columns (person, select, text, date, number), for example Modelers and Project Manager.',
+        '**Filter ▾** (beside the search) holds which tasks (all, not done, done, overdue, mine), owner and priority, and the order (**Sort**, **Group by**); it says how many filters are set ("Filter · 2"), and **Clear filters** resets them. **Customize** which columns show. Lists can have their own columns (person, select, text, date, number), for example Modelers and Project Manager.',
     ]),
     H3('A task'),
     UL([
@@ -224,7 +224,7 @@ DOC = [
     P('**Right-click a day** (hold it on a phone) to add on that day an **event** (all day), a **meeting** (from 10:00, choose the chat to invite) or a **task** due that day.'),
     P('**Calendar** shows what is coming up for you, by date: **meetings** sent in the Messenger (with your reply), **your tasks** on their due dates and **issues assigned to you** on their due dates.'),
     UL([
-        'A month on a computer, a list on a phone (**Month** / **List**). The tick boxes show or hide meetings, tasks and issues. **‹ ›** and **Today** move through the months; on a phone, swipe.',
+        'A month on a computer, a list on a phone (**Month** / **List**). **Filter ▾** shows or hides meetings, tasks and issues (it says how many are left out). **‹ ›** and **Today** move through the months; on a phone, swipe.',
         'Click an entry for its details, then open the chat, the task or the issue. Replies to a meeting are made in its chat.',
         '**+ Event:** choose a chat; the event form opens there, so everyone in it is invited.',
         '**Add to Outlook:** **Open in Outlook on this PC** subscribes Outlook to your calendar (choose **Yes**), or copy the address and use Outlook\'s **Add calendar > From Internet**. Outlook then shows the entries beside your own calendar and updates them by itself. Outlook on the web and on phones can only reach it when the viewer is reachable from the internet.',
@@ -303,6 +303,7 @@ DOC = [
         ['Undo / redo', 'Ctrl+Z / Ctrl+Y', 'Two-finger tap / three-finger tap'],
     ]),
     H3('Useful sheet tools'),
+    P('**Split**, **Compare**, **2D + 3D** and **Links** are under **View ▾** in the sheet toolbar (a dot on View says Split, Compare or 2D + 3D is on). The markup properties bar (layer, line, fill, text, font) shows only while a drawing tool is in hand or markups are selected, and the **1:** scale only with Measure, Dimension, Area and Angle - the rest of the time the drawing gets the room. **👁 Markups** and **Hide closed** are at the top of the issue list on the right, as on the 3D page.'),
     UL([
         '**Split** opens a second sheet beside the first, with its own zoom.',
         '**Links** turns section marks, callouts and elevation markers into links to their sheets; **← back** returns.',
@@ -323,7 +324,7 @@ DOC = [
         '**Style bar:** Layer, Line / Fill / Text colour, Opacity, Weight (paper mm), line Type, Font, Size (text height in mm), Align.',
         '**Editing:** select a markup to move, resize or restyle it; R / Shift+R rotate it 90°; Ctrl+C / Ctrl+V copy and paste (paste on another sheet lands at the same spot); Delete removes it.',
         '**Comment or Issue:** the **Comment / Issue** switch in the top bar decides what happens when you finish a markup. In **Issue** mode the **Raise issue** window opens straight away. A comment can be turned into an issue later with **Issue** or right-click **Raise issue**.',
-        '**Layers:** markups sit on layers (default "General"). Admins can lock a layer or hide it from some people. The eye button hides all markups.',
+        '**Layers:** markups sit on layers (default "General"). Admins can lock a layer or hide it from some people. **👁 Markups** at the top of the issue list hides all markups.',
     ]),
     H3('Exporting'),
     UL([
@@ -588,7 +589,7 @@ DOC = [
     H3('Finding issues'),
     UL([
         '**Sheets:** the right panel lists **All / Issues / Comments**, grouped by Sheet, Status, Assigned to, Raised by, View, Issue type or Markup type, with a **Search** box. Right-click an entry to open it, show it on the sheet or in 3D, or change its status.',
-        '**3D:** **Issues in 3D** groups by Status, Floor, Issue type, Assigned to, Raised by or Model. **Sheet issues** also shows issues raised on sheets as diamonds in the model. **Hide issues** (at the top of the panel) hides the pins, and **Hide closed** hides resolved and closed ones (nothing is deleted).',
+        '**3D:** **Issues in 3D** groups by Status, Floor, Issue type, Assigned to, Raised by or Model. **Sheet issues** also shows issues raised on sheets as diamonds in the model. **Hide issues** (at the top of the panel; on Sheets, **👁 Markups**) hides the pins, and **Hide closed** hides resolved and closed ones (nothing is deleted).',
         '**Dashboard:** filters, overdue lists and the responsibility table (see Dashboard and projects).',
     ]),
     H3('BCF: issues with Revit, Navisworks and others'),
@@ -624,7 +625,7 @@ DOC = [
     H2('Working offline'),
     P('On site with no signal, a project downloaded to the device keeps working: sheets, the 3D model, issues and markups.'),
     OL([
-        'With a connection, open the project and press **Offline** in the top bar, then **Download for offline**. The download shows its progress and can be continued if it stops.',
+        'With a connection, open the project and choose **Work offline ...** in your profile menu (top right), then **Download for offline**. The download shows its progress and can be continued if it stops.',
         'Without a connection the top bar says **Offline - copy of <date>**. Look at sheets and the model, raise and answer issues, draw markups.',
         'Changes made offline wait on the device (**N changes waiting**) and upload by themselves when the connection is back (**All changes uploaded**).',
     ]),
