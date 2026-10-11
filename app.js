@@ -136,7 +136,15 @@ const mq = s => MAPQ[s] || s || '';
 function locOf(it) {
   if (!it) return '';
   if (TRANSPORT.has(it.type)) return mq(it.to);
+  if (it.lat != null && it.lon != null) return `${it.lat},${it.lon}`;   // 你喺地圖修正過嘅位置
+  if (it.addrSet && it.address) return it.address;                      // 你喺 App 改過嘅地址
   return it.mapQuery || mq(it.place) || it.address || '';
+}
+/** 地址改咗：之後地圖同路線都用新地址（舊嘅大頭針作廢） */
+function addressChanged(it, oldAddr) {
+  if ((it.address || '') === (oldAddr || '')) return;
+  if (it.address) it.addrSet = true; else delete it.addrSet;
+  delete it.lat; delete it.lon;
 }
 /** 呢項行程嘅目的地（Google Maps 用） */
 const destOf = it => locOf(it) || it.titleJa || it.title;
@@ -165,8 +173,17 @@ function linksFor(it, prevLoc) {
     if (no && !no.includes('待填')) add('航班狀態', `https://www.flightradar24.com/data/flights/${enc(no.toLowerCase())}`, 'accent', 'flight');
   } else {
     const mode = t === 'walk' ? 'walking' : 'transit';
-    const dest = destOf(it);
-    const origin = TRANSPORT.has(t) ? (mq(it.from) || prevLoc) : prevLoc;
+    let dest = destOf(it);
+    let origin = TRANSPORT.has(t) ? (mq(it.from) || prevLoc) : prevLoc;
+    if (t === 'walk') {
+      // 步行：前後嗰站你改過位置（地址／大頭針）就跟住用
+      const f = findItem(it.id);
+      const prev = f && f.list.slice(0, f.index).reverse().find(x => x.type !== 'walk');
+      const next = f && f.list.slice(f.index + 1).find(x => x.type !== 'walk');
+      const userLoc = x => x && !TRANSPORT.has(x.type) && ((x.lat != null && x.lon != null) || (x.addrSet && x.address));
+      if (userLoc(prev)) origin = locOf(prev);
+      if (userLoc(next)) dest = locOf(next);
+    }
     if (origin && origin !== dest) add('上一站 → 呢度', gmapDir(origin, dest, mode), 'accent', 'route');
     add('我嘅位置 → 呢度', gmapDir('', dest, mode), origin && origin !== dest ? '' : 'accent', 'navigate');
     if (!TRANSPORT.has(t)) add('地圖', gmapSearch(dest), '', 'map');
@@ -461,6 +478,7 @@ async function firstGeo(qs) {
 }
 async function placePt(it) {
   if (it.lat != null && it.lon != null) return { lat: it.lat, lon: it.lon };        // 你自己修正過
+  if (it.addrSet && it.address) { const p = await firstGeo([cleanAddr(it.address), it.address]); if (p) return p; } // 你改過地址
   if (Array.isArray(it.geo)) return ll(it.geo);
   if (FIXED_LL[it.place]) return ll(FIXED_LL[it.place]);
   return firstGeo([typeof it.geo === 'string' && cleanAddr(it.geo), cleanAddr(it.address), it.address, (it.titleJa || '').split(/[（(・]/)[0], it.place]);
@@ -889,7 +907,11 @@ function saveEdit(el) {
   commit(() => {
     const obj = kind === 'day' ? findDay(id) : findItem(id).item;
     if (FIELD_IO[field]) FIELD_IO[field].set(obj, v);
-    else if (v || field === 'ref') obj[field] = v; else delete obj[field];
+    else {
+      const old = obj[field];
+      if (v || field === 'ref') obj[field] = v; else delete obj[field];
+      if (field === 'address' && kind === 'item') addressChanged(obj, old);
+    }
   }, '已儲存');
   if (sheetOpen) { openItem(id); requestAnimationFrame(() => { const b = $('#modal .modal-body'); if (b) b.scrollTop = scroll; }); }
 }
@@ -1841,11 +1863,13 @@ function editItem(id) {
       ${isHM(it.end) ? `<label class="check"><input type="checkbox" name="push" checked> 改結束時間時，之後嘅行程跟住移</label>` : ''}`,
     onSubmit: fd => commit(() => {
       const cur = findItem(id);
+      const oldAddr = cur.item.address;
       for (const k of ['time', 'end', 'title', 'xNote', 'xTransport', 'xUrl', 'titleJa', 'number', 'ref', 'address', 'url', 'notes']) {
         if (!fd.has(k)) continue;
         const v = fd.get(k).toString().trim();
         if (v || (k === 'ref' && 'ref' in cur.item)) cur.item[k] = v; else delete cur.item[k];
       }
+      addressChanged(cur.item, oldAddr);
       if (fd.get('push') && isHM(oldEnd) && isHM(cur.item.end)) {
         const delta = toMin(cur.item.end) - toMin(oldEnd);
         if (delta) shiftFrom(cur.list, cur.index + 1, delta);
