@@ -2029,6 +2029,13 @@ function renderInfo() {
   </section>
   ${syncCardHtml()}
   <section class="card">
+    <h2>🥒 河童仔</h2>
+    <p class="muted">河童仔會隨機走出嚟講兩句（按時間、天氣同下一站揀動作同對白）。撳佢個對話框可以聽日文讀音。</p>
+    <div class="row"><button class="chip ${localStorage.getItem('kp-auto') !== 'off' ? 'dark' : ''}" data-act="kp-auto" data-id="on">隨機出現：開</button>
+      <button class="chip ${localStorage.getItem('kp-auto') === 'off' ? 'dark' : ''}" data-act="kp-auto" data-id="off">關</button>
+      <button class="chip" data-act="kp-show">叫佢出嚟</button></div>
+  </section>
+  <section class="card">
     <h2>🗺 地圖</h2>
     <p class="muted">Google Maps 地名語言：</p>
     <div class="row">${Object.entries(MAP_LANGS).map(([k, v]) => `<button class="chip ${mapLang() === k ? 'dark' : ''}" data-act="map-lang" data-id="${k}">${v}</button>`).join('')}</div>
@@ -2244,6 +2251,8 @@ const actions = {
   'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')).then(() => $('#modal .pics.big')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); },
   kappa: () => window.Kappa?.play(),
   'pics-scroll': (_, el) => { const box = el.parentElement.querySelector('.pics'); const t = box.querySelector('.pic'); box.scrollBy({ left: +el.dataset.dir * Math.max(120, (t?.offsetWidth || 150) + 8), behavior: 'smooth' }); },
+  'kp-auto': id => { localStorage.setItem('kp-auto', id); render(); },
+  'kp-show': () => window.Kappa?.play(),
   'map-lang': id => { localStorage.setItem('map-lang', id); render(); },
   'map-app': id => { if (id) localStorage.setItem('map-app', id); else localStorage.removeItem('map-app'); render(); },
   'phr-mode': () => { ui.phrEdit = !ui.phrEdit; render(); },
@@ -2385,6 +2394,13 @@ const MIGRATIONS = [
   trip.seedVersion = Math.max(trip.seedVersion || 0, SEED.seedVersion || 0);
 })();
 ensurePhrases();
+// 河童仔揀場景用：下一站、會唔會落雨
+if (window.Kappa) Kappa.context = () => {
+  const day = trip.days.find(d => d.date === todayStr());
+  const now = nowHM();
+  const next = day?.items.find(i => i.status !== 'done' && i.type !== 'walk' && (!isHM(i.time) || i.time >= now));
+  return { next: next ? next.title : '', rain: /雨/.test($('#wx')?.textContent || '') };
+};
 $('#tripName').textContent = trip.name || '東京';
 save();
 updateNet();

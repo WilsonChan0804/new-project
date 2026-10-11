@@ -8,12 +8,14 @@
     <g class="kp-water"><ellipse cx="100" cy="212" rx="96" ry="16" fill="#3FB6F5"/>
       <path d="M40 212 q12 6 26 0 M120 214 q14 6 30 0 M80 220 q12 4 26 0" stroke="#0A84D6" stroke-width="3" fill="none" stroke-linecap="round"/>
       <g class="kp-drops" fill="#3FB6F5" stroke="none"><path d="M18 170 q-8 14 2 18 q10 -2 -2 -18z"/><path d="M182 168 q8 14 -2 18 q-10 -2 2 -18z"/><path d="M34 150 q-6 10 1 13 q8 -2 -1 -13z"/><path d="M166 150 q6 10 -1 13 q-8 -2 1 -13z"/></g></g>
+    <g class="kp-slot kp-slot-back"></g>
     <g class="kp-all" stroke="${OL}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+      <g class="kp-shell"><ellipse cx="112" cy="162" rx="50" ry="46" fill="#2E6B2A"/><path d="M134 122 l26 30 M150 150 l-14 40 M128 196 l30 -30" fill="none" stroke-width="3"/></g>
       <!-- 手：喺身體後面伸出嚟，膊頭位藏喺身體入面，轉動時好自然 -->
       <g class="kp-arm kp-armL"><path d="M74 146 Q52 158 32 178" fill="none" stroke-width="23"/><path d="M74 146 Q52 158 32 178" fill="none" stroke="#6DB84B" stroke-width="15"/>
-        <path d="M26 176 l-3 5 M31 182 l-2 6" stroke-width="3"/></g>
+        <path d="M26 176 l-3 5 M31 182 l-2 6" stroke-width="3"/><g class="kp-slot kp-slot-hL" transform="translate(30 182)"></g></g>
       <g class="kp-arm kp-armR"><path d="M126 146 Q148 158 168 178" fill="none" stroke-width="23"/><path d="M126 146 Q148 158 168 178" fill="none" stroke="#6DB84B" stroke-width="15"/>
-        <path d="M174 176 l3 5 M169 182 l2 6" stroke-width="3"/></g>
+        <path d="M174 176 l3 5 M169 182 l2 6" stroke-width="3"/><g class="kp-slot kp-slot-hR" transform="translate(170 182)"></g></g>
       <g class="kp-feet" fill="#6DB84B"><path d="M70 196 q-4 12 6 14 l14 0 q4 -8 -2 -14z"/><path d="M130 196 q4 12 -6 14 l-14 0 q-4 -8 2 -14z"/></g>
       <path class="kp-bodyshape" d="M60 126 C50 160 54 202 100 204 C146 202 150 160 140 126 Z" fill="#6DB84B"/>
       <circle class="kp-belly" cx="100" cy="170" r="24" fill="#FFF4A6" stroke="none"/>
@@ -25,13 +27,17 @@
         <g class="kp-eyes kp-eyes-dot" fill="${OL}" stroke="none"><circle cx="70" cy="90" r="6.5"/><circle cx="130" cy="90" r="6.5"/></g>
         <g class="kp-eyes kp-eyes-happy" fill="none"><path d="M60 92 q10 -12 20 0"/><path d="M120 92 q10 -12 20 0"/></g>
         <g class="kp-eyes kp-eyes-squint" fill="none"><path d="M62 82 l14 8 l-14 8"/><path d="M138 82 l-14 8 l14 8"/></g>
+        <g class="kp-eyes kp-eyes-sleep" fill="none"><path d="M60 88 q10 9 20 0"/><path d="M120 88 q10 9 20 0"/></g>
+        <g class="kp-eyes kp-eyes-angry"><circle cx="70" cy="92" r="6" fill="${OL}" stroke="none"/><circle cx="130" cy="92" r="6" fill="${OL}" stroke="none"/><path d="M56 74 l24 10 M144 74 l-24 10" fill="none"/></g>
         <g class="kp-beak">
           <ellipse class="kp-mouth" cx="100" cy="112" rx="22" ry="13" fill="#FF7F86"/>
           <path class="kp-lower" d="M68 112 L100 112 L132 112 L100 127 Z" fill="#FFF4A6"/>
           <path class="kp-upper" d="M68 112 L100 97 L132 112 Z" fill="#FFF4A6"/>
         </g>
+        <g class="kp-slot kp-slot-head"></g>
       </g>
     </g>
+    <g class="kp-slot kp-slot-front"></g>
   </svg>`;
 
   // 假名 → 母音（決定個嘴嘅形狀）
@@ -57,10 +63,7 @@
     return out;
   }
 
-  const LINES = ['こんにちは！一緒に東京を楽しもう！|你好！一齊玩轉東京！', 'きゅうりが大好き！|我最鍾意青瓜！', '水分補給を忘れずに！|記得飲水呀！', 'さあ、出発！|出發喇！',
-    '迷ったら僕に聞いてね！|蕩失路就問我啦！', '雨でも大丈夫！|落雨都唔怕！', 'いただきます！|開動喇！'];
-  const MOVES = ['dance', 'wave', 'splash', 'cheer', 'hop'];
-
+  const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let el, stage, bubble, timer = null, hideTimer = null, seqTimer = null, lastMove = '';
   function build() {
     if (el) return;
@@ -71,6 +74,7 @@
     el = stage.querySelector('.kp');
     bubble = stage.querySelector('.kp-bubble');
     el.addEventListener('click', e => { e.stopPropagation(); if (!stage.classList.contains('talking')) play(); });
+    bubble.addEventListener('click', e => { e.stopPropagation(); if (current && !stage.classList.contains('talking') && window.speak) { const t = current.ja; current = null; window.speak(t); } });
     stage.addEventListener('click', e => { if (e.target === stage) hide(); });
     // 眨眼
     setInterval(() => { if (!stage.classList.contains('on')) return; el.classList.add('blink'); setTimeout(() => el.classList.remove('blink'), 160); }, 3200);
@@ -91,24 +95,45 @@
   }
   function hide(delay = 0) {
     clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => { if (!stage) return; stage.classList.remove('on', 'talking'); bubble.hidden = true; el.dataset.move = ''; }, delay);
+    hideTimer = setTimeout(() => { if (!stage) return; stage.classList.remove('on', 'talking'); bubble.hidden = true; setTimeout(() => { if (!stage.classList.contains('on')) setScene(null); }, 600); }, delay);
   }
-  /** 撳按鈕：走出嚟做隨機動作同講句嘢 */
-  function play(move) {
-    show();
-    stopTalk();
-    const pool = MOVES.filter(m => m !== lastMove);
-    move = move || pool[Math.floor(Math.random() * pool.length)];
-    lastMove = move;
+  /* ---------- 場景：動作＋道具＋表情＋對白 ---------- */
+  let current = null, lastScene = '';
+  function setScene(sc) {
+    const slots = { back: '', front: '', head: '', hL: '', hR: '' };
+    if (sc) for (const k of Object.keys(slots)) slots[k] = sc[k] || '';
+    for (const [k, html] of Object.entries(slots)) {
+      const s = el.querySelector('.kp-slot-' + k);
+      // 拎喺手嘅嘢：抵消隻手嘅角度，保持企直
+      const counter = k === 'hL' ? -(sc?.aL || 0) : k === 'hR' ? -(sc?.aR || 0) : 0;
+      s.innerHTML = html ? (counter ? `<g transform="rotate(${counter})">${html}</g>` : html) : '';
+    }
+    el.style.setProperty('--aL', (sc?.aL || 0) + 'deg');
+    el.style.setProperty('--aR', (sc?.aR || 0) + 'deg');
+    el.dataset.anim = sc?.anim || '';
+    el.classList.toggle('no-feet', !!sc?.hideFeet);
+    stage.classList.toggle('tall', !!sc?.tall);
     el.dataset.move = '';
     void el.offsetWidth; // 重新開始動畫
-    el.dataset.move = move;
-    face(move === 'wave' ? 'dot' : move === 'dance' || move === 'splash' ? 'squint' : 'happy');
-    const [ja, zh] = LINES[Math.floor(Math.random() * LINES.length)].split('|');
-    talkAnim(ja, null, 2600);
-    bubble.innerHTML = `<b lang="ja">${ja}</b><span>${zh}</span>`;
+    el.dataset.move = sc ? (sc.move || 'scene') : '';
+    if (sc?.face) face(sc.face);
+  }
+  const ctx = () => { try { return window.Kappa?.context?.() || {}; } catch { return {}; } };
+  /** 撳按鈕（或者隨機）：走出嚟做一個場景，講配合動作嘅說話 */
+  function play(id) {
+    show();
+    stopTalk();
+    const S = window.KAPPA_SCENES;
+    const c = ctx();
+    const sc = (id && S.SCENES.find(s => s.id === id)) || S.pickScene(c, lastScene);
+    lastScene = sc.id;
+    setScene(sc);
+    const [ja, kana, zh] = S.pickLine(sc, c);
+    current = { ja };
+    talkAnim(kana || ja, null, Math.max(1400, (kana || ja).length * 170));
+    bubble.innerHTML = `<b lang="ja">${escH(ja)}</b><span>${escH(zh)}</span><small class="kp-tap">🔊 撳呢度聽日文</small>`;
     bubble.hidden = false;
-    hide(5200);
+    hide(Math.max(5600, zh.length * 260));
   }
   function stopTalk() { clearTimeout(seqTimer); setMouth('_'); stage?.classList.remove('talking'); }
   /** 跟住音節開合個嘴；ms＝預計總長度 */
@@ -135,6 +160,7 @@
     clearTimeout(hideTimer);
     stopTalk();
     stage.classList.add('talking');
+    setScene(null);
     el.dataset.move = 'talk';
     face('dot');
     const list = morae(kana || text);
@@ -227,5 +253,18 @@
     setTimeout(() => o.remove(), 3400);
   }
 
-  window.Kappa = { play, say, hide, morae, attachBuddy, placeBuddy, celebrate };
+  /* ---------- 隨機出現：每隔一陣自己走出嚟（可以喺「資訊」關） ---------- */
+  let lastAct = Date.now();
+  ['scroll', 'pointerdown', 'keydown'].forEach(t => addEventListener(t, () => { lastAct = Date.now(); }, { passive: true }));
+  const autoOn = () => { try { return localStorage.getItem('kp-auto') !== 'off'; } catch { return true; } };
+  function autoTick() {
+    setTimeout(autoTick, 45000 + Math.random() * 75000);
+    if (!autoOn() || document.visibilityState !== 'visible' || document.querySelector('dialog[open], .kp-party')) return;
+    if (stage?.classList.contains('on') || Date.now() - lastAct < 2500) return;
+    play();
+  }
+  setTimeout(() => { if (autoOn() && !document.querySelector('dialog[open]')) play(new Date().getHours() < 11 && new Date().getHours() >= 5 ? 'morning' : undefined); }, 3500);
+  setTimeout(autoTick, 40000 + Math.random() * 40000);
+
+  window.Kappa = { play, say, hide, morae, attachBuddy, placeBuddy, celebrate, context: null };
 })();
