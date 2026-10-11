@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-25", date: "12 Oct 2026",
+    items: [
+      "Clash and headroom: **Raise issues for all** - one issue for each place listed that is not \"Not an issue\", named **Clash issue 001** / **Headroom issue 001**, with the elements, the place and the amount written in, **due in 3 working days** (Mon-Fri, Hong Kong holidays left out); an optional Assign to. Make issue fills the same in.",
+      "**Save result**: keep a clash or headroom result under a name for everyone on the project - as many as you like; pick one under the rule (or under Headroom) to look at it again.",
+      "Clash rules can check **against the consultant IFC models** - ticked even when not loaded (they load when the rule runs), or all at once with **Our models x consultant models**.",
+      "Headroom: **Not an issue** is kept with the project and holds on every scan, as for clashes.",
+      "Every export (spreadsheet, BCF, markup PDF, board picture) offers **Save to Folders** after the download; reports (clash, headroom, issue report) have **Save to Folders (PDF)**. They go to Folders > 00 BIM > Exports. The **weekly report** is kept in 00 BIM > Weekly dashboard every week, and from Dashboard > Export.",
+    ],
+  },
+  {
     version: "2026-10-24", date: "11 Oct 2026",
     items: [
       "Board: every project starts with an **LWK BIM Workflow** board - roles, work stages, the workflow charts (setup, modelling, review, SAM, clash, GBP), CDE states, QA/QC and the BIM audit checklist - as the project's own copy to change. A blank **audit checklist Excel** is put in Folders > BIM QA.",

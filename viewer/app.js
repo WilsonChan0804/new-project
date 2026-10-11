@@ -4990,7 +4990,7 @@ async function exportPdf() {
   if (await pdfLib()) {
     try {
       const r = await exportPdfVector(sheets, dpi, withReport);
-      download(r.blob, r.title.replace(/[^\w-]+/g, "_") + "-markup.pdf");
+      download(r.blob, r.title.replace(/[^\w-]+/g, "_") + "-markup.pdf", "Markups");
       status(`PDF exported: ${sheets.length} sheet(s) with the original drawing kept`
         + (r.issues ? `, plus a report of ${r.issues} issue(s)` : "")
         + `, ${(r.blob.size / 1048576).toFixed(1)} MB.`);
@@ -5016,7 +5016,7 @@ async function exportPdf() {
   const title = (S.manifest.source && S.manifest.source.title) || "Sheets";
   const blob = buildPdf(pages, { title: title + " - marked up",
                                  author: Store.author() });
-  download(blob, title.replace(/[^\w-]+/g, "_") + "-markup.pdf");
+  download(blob, title.replace(/[^\w-]+/g, "_") + "-markup.pdf", "Markups");
   status(`PDF exported: ${pages.length} sheet(s), ${(blob.size / 1048576).toFixed(1)} MB.`);
 }
 
@@ -5249,7 +5249,7 @@ async function exportBcf() {
     status("Building BCF ...");
     const name = (S.manifest.source && S.manifest.source.title) || "issues";
     const r = await buildBcf(S.items, name);
-    download(r.blob, `${name.replace(/[^\w.-]/g, "_")}.bcfzip`);
+    download(r.blob, `${name.replace(/[^\w.-]/g, "_")}.bcfzip`, "BCF");
     status(`Exported ${r.count} issue(s): ${r.withCamera} with a camera `
       + `(${r.withDerivedCamera} derived from a sheet viewport), `
       + `${r.withSnapshot} with a snapshot`

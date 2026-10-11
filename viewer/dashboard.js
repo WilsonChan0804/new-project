@@ -341,6 +341,13 @@ function wireFilters() {
   $("#d-refresh").onclick = () => loadData().catch(showError);
   $("#d-csv").onclick = exportCsv;
   $("#d-bcf").onclick = exportBcf;
+  $("#d-weekly").onclick = async () => {
+    $("#d-updated").textContent = "Keeping the weekly report in Folders ...";
+    try {
+      const r = await api("/api/digest/save", { method: "POST", body: "{}" });
+      $("#d-updated").textContent = "Weekly report kept in Folders: " + r.saved.map((x) => x.path).join(", ");
+    } catch (e) { $("#d-updated").textContent = "Weekly report: " + (e.message || e); }
+  };
   // Export ▾: Report, Spreadsheet, BCF
   const em = $("#d-export-menu"), eb = $("#d-export");
   eb.onclick = (ev) => {
@@ -693,7 +700,7 @@ async function exportBcf() {
     const { buildBcf, download } = await import("./bcf.js");
     const name = (D.manifest && D.manifest.source && D.manifest.source.title) || project() || "issues";
     const r = await buildBcf(items, name);
-    download(r.blob, `${String(name).replace(/[^\w.-]/g, "_")}-${new Date().toISOString().slice(0, 10)}.bcfzip`);
+    download(r.blob, `${String(name).replace(/[^\w.-]/g, "_")}-${new Date().toISOString().slice(0, 10)}.bcfzip`, "BCF");
     $("#d-updated").textContent = `BCF: ${r.count} issue(s), ${r.withCamera} with a camera, ${r.withSnapshot} with a picture`;
   } catch (e) { $("#d-updated").textContent = "BCF: " + (e.message || e); }
 }
@@ -709,11 +716,13 @@ function exportCsv() {
   ].map(q).join(",")));
   // A byte-order mark, so Excel reads accented and Chinese names correctly.
   const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const name = `${project()}-issues-${new Date().toISOString().slice(0, 10)}.csv`;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `${project()}-issues-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  import("./tofolders.js").then((m) => m.offerSave(blob, name, "Issues")).catch(() => {});
 }
 
 /* ------------------------------------------------------------------ go */

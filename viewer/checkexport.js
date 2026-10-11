@@ -18,8 +18,9 @@ export function csvText(cols, rows) {
   const q = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
   return "﻿" + [cols.map(q).join(",")].concat(rows.map((r) => r.map(q).join(","))).join("\r\n");
 }
-export function saveCsv(name, cols, rows) {
-  download(new Blob([csvText(cols, rows)], { type: "text/csv;charset=utf-8" }), name);
+// folder: offered to be kept in Folders > 00 BIM > Exports > <folder> too
+export function saveCsv(name, cols, rows, folder) {
+  download(new Blob([csvText(cols, rows)], { type: "text/csv;charset=utf-8" }), name, folder);
 }
 export const fileName = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim().slice(0, 80) || "export";
 
@@ -73,7 +74,7 @@ export function writeReport(w, rep) {
     .foot { color: #999; margin-top: 18px; font-size: 11px; }
     @media print { body { background: #fff; } .bar { display: none; } .doc { box-shadow: none; margin: 0; padding: 0; max-width: none; } }
   </style></head><body>
-  <div class="bar"><button onclick="print()">Print / Save as PDF</button><span>${esc((rep.items || []).length)} ${esc(rep.unit || "items")}</span></div>
+  <div class="bar"><button onclick="print()">Print / Save as PDF</button>${rep.folder ? `<button id="save-folders" title="Keep this report as a PDF in Folders > 00 BIM > Exports > ${esc(rep.folder)}">Save to Folders (PDF)</button>` : ""}<span>${esc((rep.items || []).length)} ${esc(rep.unit || "items")}</span></div>
   <div class="doc"><h1>${esc(rep.title)}${rep.project ? ` · <span>${esc(rep.project)}</span>` : ""}</h1>
   <div class="sub">${esc(rep.sub || "")}</div>
   <table class="meta">${meta}</table>${table}${items || '<p class="sub">Nothing to report.</p>'}
@@ -81,6 +82,10 @@ export function writeReport(w, rep) {
   w.document.open();
   w.document.write(html);
   w.document.close();
+  if (rep.folder) {
+    const name = `${fileName(rep.project || "")}-${fileName(rep.title)}-${new Date().toISOString().slice(0, 10)}.html`;
+    import("./tofolders.js").then((m) => m.reportSaveButton(w.document, w.document.getElementById("save-folders"), name, rep.folder)).catch(() => {});
+  }
 }
 
 /* A picture of each item: show(item) puts it on screen; shot() copies the

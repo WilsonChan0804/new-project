@@ -110,7 +110,7 @@ PART = [
     UL([
         '**Email**（server 設定好 email 嘅話）：有人將你設做 task 負責人、喺 task 或者 chat @mention 你、或者你 follow 緊嘅 task 有新留言或者完成咗，都會 email 你；每日仲會收到一封，列出聽日到期同已經過咗期嘅 task。',
         '**Teams：** 如果 admin 已經連接咗 project 嘅 Teams channel，issue 開咗、指派咗、改狀態或者限期、或者有新留言，都會貼去嗰度。留言入面嘅 @mention 會變成 Teams 嘅 mention。',
-        '每星期嘅總結可以貼去同一個 Teams channel（預設係星期一）。',
+        '每星期嘅總結可以貼去同一個 Teams channel（預設係星期一）。同一個星期嘅報告每星期嗰個時間都會以 PDF 存入 project 嘅 Folders **00 BIM > Weekly dashboard**（有冇 Teams 都會）；**Dashboard > Export > Weekly report to Folders** 可以即刻存一份。',
         '**Messenger：** project 嘅 channel 會用卡片顯示新 task、指派、完成同留言，同埋新開或者改咗嘅 issue。',
     ]),
 ]

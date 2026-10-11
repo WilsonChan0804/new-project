@@ -425,12 +425,14 @@ export async function buildBcf(items, project) {
   };
 }
 
-export function download(blob, name) {
+/* folder: offer to keep a copy in the project's Folders too (tofolders.js) */
+export function download(blob, name, folder) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  if (folder) import("./tofolders.js").then((m) => m.offerSave(blob, name, folder)).catch(() => {});
 }
 
 

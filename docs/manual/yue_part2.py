@@ -168,6 +168,7 @@ PART = [
     ]),
     P('**Folders** 將每個 project 嘅檔案放喺 server 上面一個 folder，好似 ACC Docs 或者共用 drive 咁。喺左上角揀 project。'),
     P('**00 BIM**（🔒，永遠排第一）放住 viewer 已有嘅嘢，自動更新：**2D Sheets**（由 Revit 出嘅 sheet，用編號同名稱命名，同埋喺 Sheets 頁上載嘅 PDF set）同 **3D Models**（喺 3D 頁打開；IFC 檔案 - IFC project 同顧問 model - 可以下載）。Project 入面所有人都可以打開同下載，但冇人可以加、改名、搬或者刪。有幾個部分嘅 project，每部分一個 folder。'),
+    P('**匯出存入 Folders：** 任何匯出下載完（碰撞或淨高 spreadsheet、Dashboard spreadsheet、BCF、加咗 markup 嘅 PDF、board 圖片或備份），底部會有條 bar 提供 **Save to Folders**；報告（碰撞、淨高、issue report）喺 Print 旁邊有 **Save to Folders (PDF)** - 由 server 整 PDF。佢哋存喺 **00 BIM > Exports > Clash / Headroom / Issues / BCF / Markups / Board**，每週報告存喺 **00 BIM > Weekly dashboard**，記低係邊個存。同 00 BIM 其他嘢一樣，喺嗰度唔可以改名或者刪除（要改就下載一份）。同名嘅檔案會加「(2)」。'),
     UL([
         '**瀏覽：** 左邊嘅 folder 樹、頂部嘅路徑，或者 **Search this project\'s files** 搜尋。雙擊 folder 打開；撳 PDF、相或者片就預覽。',
         '**上載：** 將檔案，甚至成個 folder 拖落版面（或者拖落清單入面某個 folder），或者撳 **Upload**。**+ Folder** 開新 folder。',

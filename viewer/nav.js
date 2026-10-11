@@ -18,7 +18,7 @@ import { checkWhatsNew } from "./whatsnew.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-10-24";
+const LWK_VERSION = "2026-10-25";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -284,7 +284,7 @@ function sendToTask() {
    suggestions once something is typed, and not at all on an iPhone. The
    box still accepts a typed name, for someone outside the project. */
 let MEMBERS = [];
-const ASSIGN_INPUTS = "#f-assignee, #detail-assignee, #i3-assignee";
+const ASSIGN_INPUTS = "#f-assignee, #detail-assignee, #i3-assignee, .ck-assign";
 
 function wireMemberPicker() {
   if (wireMemberPicker.done) return;

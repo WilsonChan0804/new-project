@@ -261,7 +261,8 @@ export function canvasBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 }
 
-export function download(blob, name) {
+/* folder: offer to keep a copy in the project's Folders too (tofolders.js) */
+export function download(blob, name, folder) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
@@ -269,6 +270,7 @@ export function download(blob, name) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  if (folder) import("./tofolders.js").then((m) => m.offerSave(blob, name, folder)).catch(() => {});
 }
 
 export const safeName = (s) => String(s || "board").replace(/[^\w一-鿿 .-]+/g, "_").trim().slice(0, 60) || "board";

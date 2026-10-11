@@ -17,6 +17,7 @@
  */
 import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
 import { saveCsv, fileName, reportTab, tabSay, writeReport, pictures } from "./checkexport.js";
+import { dueIn, nextNumber, numberText, elementLine, xyzText } from "./checkissue.js";
 
 const WALK = /^(Floors|Stairs|Runs|Landings|Ramps|IFCSLAB|IFCSTAIR|IFCSTAIRFLIGHT|IFCRAMP|IFCRAMPFLIGHT)$/;
 const STAIRISH = /stair|runs|landing|ramp/i;
@@ -36,7 +37,11 @@ export function createHeadroom(ctx) {
   const box = document.getElementById("head-box");
   if (!box) return null;
   const geo = createGeo(ctx);
-  const H = { probe: null, dots: null, zones: [], walk: [], above: [], running: false, stop: false, worker: null, res: null };
+  const H = { probe: null, dots: null, zones: [], walk: [], above: [], running: false, stop: false, worker: null, res: null,
+              live: null /* this scan */, view: "" /* "" this scan, else a saved result's id */, filter: "open" };
+  const isSaved = (it) => it && it.placement === "headroomresult" && !it.deleted;
+  const saved = () => (ctx.items() || []).filter(isSaved).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const issueOf = (key) => (ctx.items() || []).find((it) => it.headroom && it.headroom.key === key && !it.deleted) || null;
   const lsKey = (k) => ctx.storeKey("head:" + k);
   const lsGet = (k, d) => { try { const v = localStorage.getItem(lsKey(k)); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(lsKey(k), JSON.stringify(v)); } catch (e) {} };
@@ -283,6 +288,8 @@ export function createHeadroom(ctx) {
       for (const e of all) e.tris = null;          // let the triangles go
       await geo.nameAll([...new Set(res.zones.flatMap((z) => [W[z.walk], A[z.above]].filter(Boolean)))]);
       H.res = Object.assign(res, { scope: sc.label, at: new Date().toISOString(), limit, stairLimit, minSpace, ms: performance.now() - t0 });
+      H.res.places = res.zones.map((z) => placeOf(z, H.res));
+      H.live = H.res; H.view = "";
       paintDots();
       paint();
       const nf = res.zones.length;
@@ -335,76 +342,159 @@ export function createHeadroom(ctx) {
 
   /* ------------------------------------------------------------- zones */
 
+  /* A place under the limit, as kept and shared: what it is over and under
+     by their ids (the same from one scan to the next), where it is in the
+     project's coordinates. Its key - the two elements and where, to half a
+     metre - is how "Not an issue" and its issue find it again. */
+  function placeOf(z, res) {
+    const w = H.walk[z.walk], a = H.above[z.above];
+    const at_mm = ctx.toShared(new THREE.Vector3(z.at[0], z.at[1], z.at[2]));
+    const stair = !!(w && w.stair);
+    const wid = (w && w.id) || "", aid = (a && a.id) || "";
+    return {
+      key: [wid, aid, ...at_mm.map((v) => Math.round(v / 500))].join("~"),
+      minH: z.minH, area: z.area, at: z.at, at_mm, stair, lim: stair ? res.stairLimit : res.limit,
+      level: ctx.levelAt(z.at[1] + 0.1) || "",
+      on: (w && w.label && w.label.cat) || (w && catLabel(w.cat)) || "", wid, aid,
+      a: a && a.label ? Object.assign({}, a.label) : null, consultant: !!(a && a.model && a.model.rec.ref),
+    };
+  }
+  const ignored = () => new Set(cfg().ignored || []);
+  const whereOf = (pl) => (pl.at_mm && ctx.fromShared(pl.at_mm)) || new THREE.Vector3(pl.at[0], pl.at[1], pl.at[2]);
+  const underText = (pl) => (pl.a ? `${pl.a.cat}${pl.a.name ? " · " + pl.a.name : ""}` : "");
+  const when = (x) => new Date(x).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
   function paint() {
-    const res = H.res, list = $("#head-list"), sum = $("#head-sum");
-    if (!res) { list.innerHTML = ""; sum.innerHTML = ""; return; }
-    sum.innerHTML = `<div class="ck-when muted">${esc(res.scope)} · floors ${res.limit.toFixed(2)} m, stairs ${res.stairLimit.toFixed(2)} m${res.minSpace ? `, lower than ${res.minSpace.toFixed(1)} m left out` : ""} · ${res.checked} points</div>`
-      + `<div class="head-legend"><label class="it" title="Colour of the places under the limit (kept in this browser)"><input type="color" id="head-col" value="${lowCol()}"> under the limit</label>`
-      + ` <span class="it"><span class="sw amber"></span> within 100 mm over it</span>`
-      + ` <button class="ghost" id="head-clear" title="Take the coloured squares away">Clear</button></div>`
-      + (res.zones.length ? `<div class="ck-export"><span class="muted">Export</span><button class="ghost" id="head-csv" title="A spreadsheet (CSV) of the places, for Excel">Spreadsheet</button>`
+    const list = $("#head-list"), sum = $("#head-sum");
+    const kept = saved();
+    const sv = kept.find((x) => x.id === H.view);
+    if (H.view && !sv) H.view = "";
+    const res = H.res = sv ? sv.result : H.live;
+    const top = H.live || kept.length ? `<div class="ck-results"><select id="head-view" title="Which result is listed: this scan, or one that was saved">`
+      + `<option value="">${H.live ? "This scan · " + esc(when(H.live.at)) : "No scan here yet"}</option>`
+      + kept.map((x) => `<option value="${esc(x.id)}"${x.id === H.view ? " selected" : ""}>${esc(x.name)}</option>`).join("") + `</select>`
+      + (H.view ? (sv && ((sv.by || sv.author) === ctx.myName() || ctx.isAdmin()) ? `<button class="ghost" id="head-delres" title="Delete this saved result">Delete</button>` : "")
+        : H.live ? `<button class="ghost" id="head-saveres" title="Keep this result under a name, for everyone on the project">Save result</button>` : "")
+      + `</div>` + (sv ? `<div class="ck-when muted">Saved by ${esc(sv.by || sv.author || "")} · ${esc(when(sv.at))}</div>` : "") : "";
+    if (!res) { list.innerHTML = ""; sum.innerHTML = top; wireTop(); return; }
+    const ign = ignored();
+    const places = res.places || [];
+    const open = places.filter((pl) => !ign.has(pl.key)), off = places.filter((pl) => ign.has(pl.key));
+    const pick = H.filter === "ignored" ? off : open;
+    H.shown = pick;
+    const toRaise = open.filter((pl) => !issueOf(pl.key));
+    H.toRaise = toRaise;
+    sum.innerHTML = top + `<div class="ck-when muted">${esc(res.scope)} · floors ${res.limit.toFixed(2)} m, stairs ${res.stairLimit.toFixed(2)} m${res.minSpace ? `, lower than ${res.minSpace.toFixed(1)} m left out` : ""} · ${res.checked} points</div>`
+      + (H.view ? "" : `<div class="head-legend"><label class="it" title="Colour of the places under the limit (kept in this browser)"><input type="color" id="head-col" value="${lowCol()}"> under the limit</label>`
+        + ` <span class="it"><span class="sw amber"></span> within 100 mm over it</span>`
+        + ` <button class="ghost" id="head-clear" title="Take the coloured squares away">Clear</button></div>`)
+      + (places.length ? `<div class="ck-filt"><button class="ghost${H.filter === "open" ? " active" : ""}" data-hf="open">Open <b>${open.length}</b></button>`
+        + `<button class="ghost${H.filter === "ignored" ? " active" : ""}" data-hf="ignored">Not an issue <b>${off.length}</b></button></div>` : "")
+      + (toRaise.length ? `<div class="ck-raise">` + (H.asking
+        ? `<span>Raise <b>${toRaise.length}</b> issue${toRaise.length === 1 ? "" : "s"}, due ${esc(dueIn(3))}</span>`
+          + `<input class="ck-assign" id="head-assign" placeholder="Assign to (optional)" autocomplete="off">`
+          + `<button class="primary" data-hr="go">Raise</button><button class="ghost" data-hr="no">Cancel</button>`
+        : `<button class="ghost" data-hr="ask" title="An issue for each place listed that is not 'Not an issue' and has no issue yet">Raise issues for all <b>${toRaise.length}</b></button>`) + `</div>` : "")
+      + (pick.length ? `<div class="ck-export"><span class="muted">Export</span><button class="ghost" id="head-csv" title="A spreadsheet (CSV) of the places, for Excel">Spreadsheet</button>`
         + `<button class="ghost" id="head-rep" title="A report with a picture of each place, to print or save as PDF">Report</button></div><div id="head-ask"></div>` : "");
-    $("#head-clear").onclick = () => { clearDots(); H.res = null; paint(); };
-    $("#head-col").oninput = (ev) => { lsSet("col", ev.target.value); paintDots(); };
-    if (res.zones.length) {
+    wireTop();
+    if (!H.view) {
+      $("#head-clear").onclick = () => { clearDots(); H.live = H.res = null; paint(); };
+      $("#head-col").oninput = (ev) => { lsSet("col", ev.target.value); paintDots(); };
+    }
+    if (pick.length) {
       $("#head-csv").onclick = exportCsv;
       $("#head-rep").onclick = () => {
         const a = $("#head-ask");
         if (a.innerHTML) { a.innerHTML = ""; return; }
-        a.innerHTML = `<div class="ck-ask"><span class="muted">${res.zones.length} places in the report.</span>`
+        a.innerHTML = `<div class="ck-ask"><span class="muted">${pick.length} places in the report.</span>`
           + `<button class="primary" data-pics="1" title="Each place shown and copied - about a second each">With pictures</button><button class="ghost" data-pics="0">Without</button></div>`;
         a.onclick = (ev) => { const b = ev.target.closest("[data-pics]"); if (!b) return; a.innerHTML = ""; makeReport(b.dataset.pics === "1"); };
       };
     }
-    if (!res.zones.length) { list.innerHTML = `<li class="muted ck-empty">All clear ${esc(res.scope)}.</li>`; return; }
-    list.innerHTML = res.zones.map((z, i) => {
-      const w = H.walk[z.walk], a = H.above[z.above];
-      const lim = w && w.stair ? res.stairLimit : res.limit;
-      const under = a && a.label ? `${a.label.cat}${a.label.name ? " · " + a.label.name : ""}` : "";
-      return `<li class="ck-it${H.on === i ? " on" : ""}" data-n="${i}"><div class="ck-l1"><span class="ck-kind k-head">${z.minH.toFixed(2)} m</span>`
-        + ` <span class="muted">${w && w.stair ? "stair / ramp" : "floor"} · limit ${lim.toFixed(2)}</span> <span class="muted">${esc(ctx.levelAt(z.at[1] + 0.1) || "")}</span></div>`
-        + `<div class="ck-l2">under ${esc(under)} <span class="muted">· ${z.area.toFixed(1)} m²</span></div>`
-        + `<div class="ck-acts"><button class="ghost" data-act="look">Look</button><button class="ghost" data-act="make">Make issue</button></div></li>`;
+    if (!places.length) { list.innerHTML = `<li class="muted ck-empty">All clear ${esc(res.scope)}.</li>`; return; }
+    if (!pick.length) { list.innerHTML = `<li class="muted ck-empty">None.</li>`; return; }
+    list.innerHTML = pick.map((pl, i) => {
+      const iss = issueOf(pl.key), isOff = ign.has(pl.key);
+      return `<li class="ck-it${H.on === pl.key ? " on" : ""}" data-n="${i}"><div class="ck-l1"><span class="ck-kind k-head">${pl.minH.toFixed(2)} m</span>`
+        + ` <span class="muted">${pl.stair ? "stair / ramp" : "floor"} · limit ${pl.lim.toFixed(2)}</span> <span class="muted">${esc(pl.level)}</span></div>`
+        + `<div class="ck-l2">under ${esc(underText(pl))} <span class="muted">· ${pl.area.toFixed(1)} m²</span></div>`
+        + `<div class="ck-acts"><button class="ghost" data-act="look">Look</button>`
+        + (iss ? `<button class="ghost" data-act="issue" title="Open its issue">Issue ${iss.issue && iss.issue.number ? "#" + iss.issue.number : ""} · ${esc((iss.issue && iss.issue.status) || "Open")}</button>`
+          : isOff ? "" : `<button class="ghost" data-act="make">Make issue</button>`)
+        + `<button class="ghost" data-act="ign" title="${isOff ? "Count it again" : "Not an issue: left out of the list on every scan"}">${isOff ? "Count again" : "Not an issue"}</button></div></li>`;
     }).join("");
+  }
+  function wireTop() {
+    const v = $("#head-view");
+    if (v) v.onchange = () => { H.view = v.value; H.filter = "open"; paint(); };
+    const s = $("#head-saveres");
+    if (s) s.onclick = saveResult;
+    const d = $("#head-delres");
+    if (d) d.onclick = deleteResult;
+  }
+  $("#head-sum").addEventListener("click", (ev) => {
+    const f = ev.target.closest("[data-hf]");
+    if (f) { H.filter = f.dataset.hf; paint(); return; }
+    const r = ev.target.closest("[data-hr]");
+    if (!r) return;
+    if (r.dataset.hr === "ask") { H.asking = true; paint(); const i = $("#head-assign"); if (i) i.focus(); }
+    else if (r.dataset.hr === "no") { H.asking = false; paint(); }
+    else { const i = $("#head-assign"); raiseAll(i ? i.value.trim() : ""); }
+  });
+  async function saveResult() {
+    if (!H.live) return;
+    const name = prompt("Name of this result", `Headroom ${H.live.scope} - ${new Date().toLocaleDateString()}`);
+    if (!name || !name.trim()) return;
+    const r = H.live;
+    const it = { id: ctx.uid(), placement: "headroomresult", name: name.trim().slice(0, 120), at: new Date().toISOString(), by: ctx.myName(),
+                 result: { scope: r.scope, at: r.at, limit: r.limit, stairLimit: r.stairLimit, minSpace: r.minSpace, checked: r.checked,
+                           places: (r.places || []).slice(0, 2500) } };
+    if (await ctx.putItem(it)) { H.view = it.id; paint(); ctx.status(`Result saved as "${it.name}" - everyone on the project can open it under Headroom.`); }
+  }
+  async function deleteResult() {
+    const it = saved().find((x) => x.id === H.view);
+    if (!it || !confirm(`Delete the saved result "${it.name}"?`)) return;
+    await ctx.putItem(Object.assign({}, it, { deleted: true }));
+    H.view = "";
+    paint();
+  }
+  function toggleIgnore(pl) {
+    const ign = ignored();
+    if (ign.has(pl.key)) ign.delete(pl.key); else ign.add(pl.key);
+    saveCfg({ ignored: [...ign] });
+    paint();
   }
   /* A place: the storey cut out round it, what is overhead coloured, and
      its height drawn where it is lowest. */
-  async function look(z) {
-    const p = new THREE.Vector3(z.at[0], z.at[1], z.at[2]);
+  async function look(pl) {
+    const p = whereOf(pl);
     ctx.focusAt(p, 4);
-    const a = H.above[z.above], w = H.walk[z.walk];
     const OVER = "#f28022";
-    await ctx.highlightMany(a ? [{ part: a.part, lid: a.lid }] : [], { a: OVER });
-    const lim = w && w.stair ? H.res.stairLimit : H.res.limit;
-    drawDim(p, p.clone().add(new THREE.Vector3(0, z.minH, 0)), `${(lim - z.minH).toFixed(2)} m short of ${lim.toFixed(2)} m`);
-    const nm = (e) => (e && e.label ? `${e.label.cat}${e.label.name ? " · " + e.label.name : ""}` : "");
-    ctx.legend(`<div class="cl-row"><span class="cl-sw" style="background:${OVER}"></span><b>Overhead</b> ${esc(nm(a))}</div>`
-      + `<div class="cl-row"><span class="cl-sw" style="background:${lowCol()}"></span>under ${lim.toFixed(2)} m · lowest ${z.minH.toFixed(2)} m</div>`
+    const a = pl.aid ? await geo.find(pl.aid) : null;
+    await ctx.highlightMany(a ? [a] : [], { a: OVER });
+    drawDim(p, p.clone().add(new THREE.Vector3(0, pl.minH, 0)), `${(pl.lim - pl.minH).toFixed(2)} m short of ${pl.lim.toFixed(2)} m`);
+    ctx.legend(`<div class="cl-row"><span class="cl-sw" style="background:${OVER}"></span><b>Overhead</b> ${esc(underText(pl))}</div>`
+      + `<div class="cl-row"><span class="cl-sw" style="background:${lowCol()}"></span>under ${pl.lim.toFixed(2)} m · lowest ${pl.minH.toFixed(2)} m</div>`
       + `<div class="cl-row"><span class="cl-sw" style="background:${AMBER}"></span>within 100 mm over it</div>`);
+    return a;
   }
-  /* Export: the places as a spreadsheet, or a report (pictures optional). */
-  const zoneRow = (z) => {
-    const w = H.walk[z.walk], a = H.above[z.above];
-    const lim = w && w.stair ? H.res.stairLimit : H.res.limit;
-    const p = ctx.toShared(new THREE.Vector3(z.at[0], z.at[1], z.at[2]));
-    return { w, a, lim, p, lv: ctx.levelAt(z.at[1] + 0.1) || "",
-             on: (w && w.label && w.label.cat) || (w && catLabel(w.cat)) || "", kind: w && w.stair ? "Stair / ramp" : "Floor" };
-  };
+  /* Export: the places listed as a spreadsheet, or a report (pictures optional). */
   function exportCsv() {
-    const res = H.res;
-    if (!res || !res.zones.length) return;
-    const rows = res.zones.map((z, i) => {
-      const x = zoneRow(z), a = x.a && x.a.label ? x.a.label : {};
-      return [i + 1, x.lv, x.kind, x.on, z.minH.toFixed(3), x.lim.toFixed(2), (x.lim - z.minH).toFixed(3), z.area.toFixed(2),
-              a.model || "", a.cat || "", a.name || "", a.type || "", a.id || "", x.p[0], x.p[1], x.p[2]];
+    const list = H.shown || [];
+    if (!list.length) return;
+    const rows = list.map((pl, i) => {
+      const a = pl.a || {}, p = pl.at_mm || [];
+      return [i + 1, pl.level, pl.stair ? "Stair / ramp" : "Floor", pl.on, pl.minH.toFixed(3), pl.lim.toFixed(2), (pl.lim - pl.minH).toFixed(3), pl.area.toFixed(2),
+              a.model || "", a.cat || "", a.name || "", a.type || "", a.id || "", p[0], p[1], p[2]];
     });
     saveCsv(`${fileName(ctx.projectName())}-headroom-${new Date().toISOString().slice(0, 10)}.csv`,
       ["No", "Floor", "Where", "Standing on", "Lowest clear height m", "Limit m", "Short by m", "Area m2",
-       "Overhead model", "Overhead category", "Overhead name", "Overhead type", "Overhead id", "X mm (project)", "Y mm (project)", "Z mm (project)"], rows);
+       "Overhead model", "Overhead category", "Overhead name", "Overhead type", "Overhead id", "X mm (project)", "Y mm (project)", "Z mm (project)"], rows, "Headroom");
     ctx.status(`${rows.length} places exported as a spreadsheet.`);
   }
   async function makeReport(withPics) {
-    const res = H.res, list = res.zones.slice();
+    const res = H.res, list = (H.shown || []).slice();
     const w = reportTab("Headroom report");
     if (!w) { ctx.status("The browser blocked the report tab - allow pop-ups for this site and try again."); return; }
     let imgs = [];
@@ -413,7 +503,7 @@ export function createHeadroom(ctx) {
       H.stop = false;
       $("#head-run").hidden = true; $("#head-stop").hidden = false;
       try {
-        imgs = await pictures(list, (z) => look(z), () => ctx.shot(900), (t) => { progress(t); tabSay(w, t); }, () => H.stop, w);
+        imgs = await pictures(list, (pl) => look(pl), () => ctx.shot(900), (t) => { progress(t); tabSay(w, t); }, () => H.stop, w);
       } finally {
         progress("");
         $("#head-run").hidden = false; $("#head-stop").hidden = true;
@@ -424,63 +514,111 @@ export function createHeadroom(ctx) {
     }
     if (w.closed) return;
     const by = new Map();
-    for (const z of list) {
-      const k = zoneRow(z).lv || "-";
+    for (const pl of list) {
+      const k = pl.level || "-";
       if (!by.has(k)) by.set(k, { n: 0, area: 0, low: Infinity });
-      const g = by.get(k); g.n++; g.area += z.area; g.low = Math.min(g.low, z.minH);
+      const g = by.get(k); g.n++; g.area += pl.area; g.low = Math.min(g.low, pl.minH);
     }
-    const nm = (e) => (e && e.label ? `${e.label.model} - ${e.label.cat}${e.label.name ? " - " + e.label.name : ""}${e.label.id ? " - id " + e.label.id : ""}` : "");
     writeReport(w, {
-      title: "Headroom report", project: ctx.projectName(), unit: "places",
+      title: "Headroom report", project: ctx.projectName(), unit: "places", folder: "Headroom",
       sub: new Date().toLocaleString() + (ctx.author() ? " · prepared by " + ctx.author() : ""),
       meta: [["Where", res.scope], ["Limits", `floors ${res.limit.toFixed(2)} m, stairs and ramps ${res.stairLimit.toFixed(2)} m`],
         ["Left out", res.minSpace ? `spaces lower than ${res.minSpace.toFixed(1)} m (not used by people)` : "nothing"],
         ["Measured", `${res.checked} points, ${new Date(res.at).toLocaleString()}`]],
       table: { cols: ["Floor", "Places", "Area m²", "Lowest m"], rows: [...by.entries()].map(([k, g]) => [k, g.n, g.area.toFixed(1), g.low.toFixed(2)]) },
-      items: list.map((z, i) => {
-        const x = zoneRow(z);
-        return { head: `${z.minH.toFixed(2)} m · ${x.kind}${x.lv ? " · " + x.lv : ""}`, tag: `${(x.lim - z.minH).toFixed(2)} m short`,
+      items: list.map((pl, i) => {
+        const p = pl.at_mm || [], iss = issueOf(pl.key);
+        return { head: `${pl.minH.toFixed(2)} m · ${pl.stair ? "Stair / ramp" : "Floor"}${pl.level ? " · " + pl.level : ""}`, tag: `${(pl.lim - pl.minH).toFixed(2)} m short`,
           img: imgs[i] || null,
-          rows: [["Standing on", x.on], ["Overhead", nm(x.a), "#f28022"], ["Limit", `${x.lim.toFixed(2)} m`],
-            ["Area under the limit", `${z.area.toFixed(1)} m²`, lowCol()], ["Where (project mm)", `X ${x.p[0]}, Y ${x.p[1]}, Z ${x.p[2]}`]] };
+          rows: [["Standing on", pl.on], ["Overhead", pl.a ? elementLine(pl.a) : "", "#f28022"], ["Limit", `${pl.lim.toFixed(2)} m`],
+            ["Area under the limit", `${pl.area.toFixed(1)} m²`, lowCol()], ["Where (project mm)", `X ${p[0]}, Y ${p[1]}, Z ${p[2]}`],
+            ...(iss && iss.issue ? [["Issue", `#${iss.issue.number || ""} · ${iss.issue.status || "Open"}`]] : [])] };
       }),
     });
     ctx.status(`Headroom report ready in a new tab: ${list.length} places - Print / Save as PDF there.`);
   }
-  async function makeIssue(z) {
-    await look(z);
-    const w = H.walk[z.walk], a = H.above[z.above];
-    const lim = w && w.stair ? H.res.stairLimit : H.res.limit;
-    const lv = ctx.levelAt(z.at[1] + 0.1);
-    const under = a && a.label ? `${a.label.cat}${a.label.name ? " - " + a.label.name : ""}` : "an element";
-    const at = new THREE.Vector3(z.at[0], z.at[1] + Math.min(z.minH, 1.5), z.at[2]);
-    await ctx.makeIssue(at, a ? { part: a.part, lid: a.lid } : null, {
-      title: `Headroom ${z.minH.toFixed(2)} m${w && w.stair ? " on the stair" : ""}${lv ? " (" + lv + ")" : ""} - ${lim.toFixed(2)} m wanted`.slice(0, 120),
-      description: [`Clear height ${z.minH.toFixed(3)} m under ${under}${a && a.label && a.label.id ? " (id " + a.label.id + ")" : ""}, over ${(w && w.label && w.label.cat) || (w && catLabel(w.cat)) || "the floor"}.`,
-        `About ${z.area.toFixed(1)} m² under ${lim.toFixed(2)} m. Headroom scan, ${new Date().toLocaleDateString()}.`].join("\n"),
-      type: a && a.model && a.model.rec.ref ? "coordination" : "design",
-    });
+  // what an issue from a place says: "Headroom issue 003 - 2.05 m under Ducts (L1)"
+  function issueFields(pl, n) {
+    return {
+      title: `Headroom issue ${numberText(n)} - ${pl.minH.toFixed(2)} m under ${pl.a ? pl.a.cat : "an element"}${pl.stair ? " on the stair" : ""}${pl.level ? " (" + pl.level + ")" : ""}`.slice(0, 120),
+      description: [`Clear height ${pl.minH.toFixed(3)} m, ${pl.lim.toFixed(2)} m wanted (${(pl.lim - pl.minH).toFixed(3)} m short)${pl.level ? " on " + pl.level : ""}.`,
+        "Overhead: " + (pl.a ? elementLine(pl.a) : "an element"), "Standing on: " + (pl.on || (pl.stair ? "a stair / ramp" : "the floor")),
+        `About ${pl.area.toFixed(1)} m² under ${pl.lim.toFixed(2)} m.`,
+        xyzText(pl.at_mm) ? "Where: " + xyzText(pl.at_mm) : "",
+        `Headroom scan ${H.res && H.res.scope ? H.res.scope + ", " : ""}${new Date().toLocaleDateString()}.`].filter(Boolean).join("\n"),
+      type: pl.consultant ? "coordination" : "design",
+      status: "Open",
+      due_date: dueIn(3),
+      headroom: { key: pl.key, minH: pl.minH, lim: pl.lim },
+    };
+  }
+  const issueAt = (pl) => { const p = whereOf(pl); return p.clone().add(new THREE.Vector3(0, Math.min(pl.minH, 1.5), 0)); };
+  async function makeIssue(pl) {
+    const a = await look(pl);
+    await ctx.makeIssue(issueAt(pl), a, issueFields(pl, nextNumber(ctx.items(), "Headroom issue")));
+  }
+  async function raiseAll(assign) {
+    const list = (H.toRaise || []).slice();
+    if (!list.length || H.running) return;
+    H.running = true; H.stop = false; H.asking = false;
+    $("#head-run").hidden = true; $("#head-stop").hidden = false;
+    const v = ctx.viewNow();
+    let n = nextNumber(ctx.items(), "Headroom issue"), made = 0;
+    try {
+      for (const pl of list) {
+        if (H.stop) break;
+        if (issueOf(pl.key)) continue;
+        progress(`Raising issue ${made + 1} of ${list.length} ...`);
+        const a = await look(pl);
+        const f = issueFields(pl, n);
+        if (assign) f.assigned_to = assign;
+        if (await ctx.createIssue(issueAt(pl), a, f)) { made++; n++; }
+      }
+    } finally {
+      progress("");
+      H.running = false;
+      $("#head-run").hidden = false; $("#head-stop").hidden = true;
+      clearProbe(); ctx.legend(null);
+      try { await ctx.highlightMany([]); } catch (e) {}
+      ctx.viewBack(v);
+      paint();
+    }
+    ctx.status(`${made} headroom issue${made === 1 ? "" : "s"} raised, due ${dueIn(3)}${assign ? ", assigned to " + assign : ""}${made < list.length ? " (" + (list.length - made) + " not raised)" : ""}.`);
   }
   $("#head-list").onclick = async (ev) => {
     const li = ev.target.closest(".ck-it");
     if (!li) return;
-    const i = Number(li.dataset.n), z = H.res && H.res.zones[i];
-    if (!z) return;
-    H.on = i;
+    const pl = (H.shown || [])[Number(li.dataset.n)];
+    if (!pl) return;
+    H.on = pl.key;
     box.querySelectorAll("#head-list .ck-it.on").forEach((x) => x.classList.remove("on"));
     li.classList.add("on");
     const act = ev.target.closest("[data-act]");
-    if (act && act.dataset.act === "make") return makeIssue(z);
-    return look(z);
+    const a = act && act.dataset.act;
+    if (a === "make") return makeIssue(pl);
+    if (a === "ign") return toggleIgnore(pl);
+    if (a === "issue") { const it = issueOf(pl.key); if (it) ctx.selectIssue(it.id); return; }
+    return look(pl);
   };
 
   return {
     probeAt,
     refresh() { fillScope(); fillModels(); showCfg(); },
     // the shared settings changed (someone else): shown, unless being typed in
-    itemsChanged() { if (!box.contains(document.activeElement)) showCfg(); },
+    itemsChanged() {
+      if (!box.contains(document.activeElement)) showCfg();
+      if (H.running) return;
+      const sig = JSON.stringify((ctx.items() || []).filter((it) => it && (isSaved(it) || it.headroom || it.id === CFG_ID))
+        .map((it) => [it.id, it.deleted, it.issue && it.issue.status, it.issue && it.issue.number, it.cfg && (it.cfg.ignored || []).length]));
+      if (sig === H.sig) return;
+      H.sig = sig;
+      paint();
+    },
     leave() { clearProbe(); },
     get result() { return H.res; },
+    get shown() { return H.shown || []; },
+    async raiseAllNow(assign) { paint(); await raiseAll(assign || ""); },
+    ignoreNow(i) { const pl = (H.shown || [])[i]; if (pl) toggleIgnore(pl); },
     // support and tests: what the last scan used
     debug: () => ({ walk: H.walk.map((e) => [e.model.key, e.cat, e.box.map((v) => +v.toFixed(2))]),
                     above: H.above.map((e) => [e.model.key, e.cat, e.box.map((v) => +v.toFixed(2))]),

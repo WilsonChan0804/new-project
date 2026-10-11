@@ -302,6 +302,75 @@ def read_json(path):
         return None
 
 
+EXPORT_FOLDERS = ("Clash", "Headroom", "Issues", "BCF", "Markups", "Board", "Dashboard")
+_CONVERT = threading.Lock()
+
+
+def soffice():
+    """LibreOffice, when the server has it: LWK_SOFFICE, the PATH, or
+    where its Windows installer puts it."""
+    cands = [os.environ.get("LWK_SOFFICE") or "", shutil.which("soffice") or "", shutil.which("libreoffice") or "",
+             r"C:\Program Files\LibreOffice\program\soffice.exe",
+             r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+             "/usr/bin/soffice", "/usr/lib/libreoffice/program/soffice"]
+    return next((c for c in cands if c and os.path.isfile(c)), "")
+
+
+def html_to_pdf(html):
+    """A web page (bytes, pictures inside as data: URLs) as a PDF, made by
+    LibreOffice; None when it is not there or cannot do it."""
+    exe = soffice()
+    if not exe:
+        return None
+    cache = os.path.join(CORE.CFG["data"], "preview_cache")
+    work = os.path.join(cache, "h-" + uuid.uuid4().hex[:12])
+    with _CONVERT:
+        os.makedirs(work, exist_ok=True)
+        try:
+            src = os.path.join(work, "in.html")
+            with open(src, "wb") as f:
+                f.write(html)
+            import subprocess
+            subprocess.run([exe, "--headless", "--norestore", "-env:UserInstallation=file:///" +
+                            os.path.join(cache, "profile").replace("\\", "/").lstrip("/"),
+                            "--convert-to", "pdf:writer_web_pdf_Export", "--outdir", work, src],
+                           capture_output=True, timeout=300)
+            made = os.path.join(work, "in.pdf")
+            if os.path.isfile(made) and os.path.getsize(made) > 0:
+                with open(made, "rb") as f:
+                    return f.read()
+            return None
+        except Exception as ex:
+            print("html to pdf: %s" % ex, flush=True)
+            return None
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+
+async def to_pdf_async(html):
+    import asyncio
+    return await asyncio.get_event_loop().run_in_executor(None, html_to_pdf, html)
+
+
+def keep_file(reg, folder_parts, name, data, uid, who):
+    """A file the viewer makes, put in a project's folder (a name already
+    there: "name (2)"), with who put it there. Returns its path."""
+    root = root_of(reg)
+    folder = inside(root, clean_rel("/".join(folder_parts)))
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+    nm = free_name(folder, clean_name(name))
+    dest = os.path.join(folder, nm)
+    tmp = os.path.join(folder, ".lwk-up-%s" % uuid.uuid4().hex[:10])
+    with open(tmp, "wb") as f:
+        f.write(data)
+    os.replace(tmp, dest)
+    rel = rel_of(root, dest)
+    with Meta() as d:
+        d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)", (reg, rel, uid, who, now_iso()))
+    return rel
+
+
 def register(app, core):
     global CORE
     CORE = core
@@ -619,16 +688,43 @@ def register(app, core):
     # ------------------------------------------------------------ Office files, read in the page
 
     OFFICE = {".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".rtf", ".pps", ".ppsx"}
-    _CONVERT = threading.Lock()
 
-    def soffice():
-        """LibreOffice, when the server has it: LWK_SOFFICE, the PATH, or
-        where its Windows installer puts it."""
-        cands = [os.environ.get("LWK_SOFFICE") or "", shutil.which("soffice") or "", shutil.which("libreoffice") or "",
-                 r"C:\Program Files\LibreOffice\program\soffice.exe",
-                 r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
-                 "/usr/bin/soffice", "/usr/lib/libreoffice/program/soffice"]
-        return next((c for c in cands if c and os.path.isfile(c)), "")
+    # ------------------------------------------------------------ from the viewer
+
+    @app.post("/api/files/for-viewer/save")
+    async def save_for_viewer(request: Request, name: str = "", folder: str = "", pdf: int = 0, reg: str = "",
+                              x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """An export from a viewer page (a report, a spreadsheet, BCF, a
+        markup PDF, a board picture) kept in the project's Folders, under
+        00 BIM/Exports/<folder>. The body is the file; pdf=1 with a web
+        page: made into a PDF here (LibreOffice), or kept as the page when
+        that cannot be done."""
+        w, _ = core.require_project(request, x_project, "member", x_viewer_token)
+        pid = "default" if core.CFG["single"] else x_project
+        regs = tasks.reg_ids_for_viewer(core, pid)
+        if reg:
+            if reg not in regs:
+                raise HTTPException(status_code=404, detail="That project does not show this model")
+            regs = [reg]
+        if not regs:
+            raise HTTPException(status_code=409, detail="This project has no Folders yet - add it on the Projects page "
+                                "(with this model as one of its parts) to keep exports there")
+        if folder not in EXPORT_FOLDERS:
+            raise HTTPException(status_code=400, detail="Unknown export folder")
+        nm = clean_name(name)
+        raw = await request.body()
+        if len(raw) > 200 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Too big to keep from here (200 MB at most)")
+        note = ""
+        if pdf:
+            made = await to_pdf_async(raw)
+            if made:
+                raw, nm = made, os.path.splitext(nm)[0] + ".pdf"
+            else:
+                nm = os.path.splitext(nm)[0] + ".html"
+                note = "Kept as a web page: the server could not make a PDF of it"
+        out = keep_file(regs[0], [BIM, "Exports", folder], nm, raw, w.uid, w.name or "")
+        return {"reg": regs[0], "path": out, "name": out.split("/")[-1], "note": note}
 
     @app.get("/api/files/{reg}/preview")
     async def file_preview(request: Request, reg: str, path: str = "", v: int = 0, x_viewer_token: str = Header(default="")):

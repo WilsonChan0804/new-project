@@ -19,6 +19,7 @@
 import { pairs as boxPairs } from "./clashcore.js";
 import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
 import { saveCsv, fileName, reportTab, tabSay, writeReport, pictures } from "./checkexport.js";
+import { dueIn, nextNumber, numberText, elementLine, xyzText } from "./checkissue.js";
 
 const OPENINGS = new Set(["Doors", "Windows", "Curtain Panels", "Curtain Wall Mullions",
   "IFCDOOR", "IFCWINDOW", "IFCPLATE", "IFCMEMBER", "IFCOPENINGELEMENT", "IFCDOORSTANDARDCASE", "IFCWINDOWSTANDARDCASE"]);
@@ -39,6 +40,7 @@ const CHUNK = 120;                 // pairs judged per round trip
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const isRule = (it) => it && it.placement === "clashrule" && !it.deleted;
 const isSet = (it) => it && it.placement === "clashset" && !it.deleted;
+const isSaved = (it) => it && it.placement === "clashresult" && !it.deleted;
 const COLS = { a: "#f28022", b: "#1e88e5" };      // A and B, unless chosen (per person)
 /* A side's name filter: words (comma between) in the name, type or family. */
 export function nameMatch(side, label) {
@@ -54,7 +56,8 @@ export { catLabel };
 export function createClash(ctx) {
   const { THREE } = ctx;
   const C = { rules: [], ruleId: null, running: false, stop: false, result: null, shown: [], marker: null, worker: null,
-              filter: "all", elsewhere: false, msg: null, over: null, force: false };
+              filter: "all", elsewhere: false, msg: null, over: null, force: false,
+              view: "" /* "" the latest run, else a saved result's id */ };
   const $ = (s) => document.querySelector(s);
   const box = $("#clash-box");
   if (!box) return null;
@@ -74,14 +77,20 @@ export function createClash(ctx) {
     const st = setById(side.set);
     return st ? { models: st.models || [], cats: st.cats || [], q: st.q || "", qmode: st.qmode || "has", set: st.id, setName: st.name } : side;
   };
+  // "*": every model loaded; "*cons": every consultant model (loaded when the rule runs)
   const sideModels = (side) => {
     const keys = sideKeys(side);
-    return keys.includes("*") ? models() : keys.map(modelByKey).filter(Boolean);
+    if (keys.includes("*")) return models();
+    const out = keys.map(modelByKey).filter(Boolean);
+    if (keys.includes("*cons")) for (const m of models()) if (m.rec.ref && !out.includes(m)) out.push(m);
+    return out;
   };
+  const consLabel = (k) => { const c = (ctx.consultants() || []).find((x) => x.key === k); return c ? c.label : k.replace(/^ref:/, ""); };
   const sideText = (side0) => {
     const side = resolve(side0);
     const keys = sideKeys(side);
-    const ms = keys.includes("*") ? "all models" : keys.length === 1 ? ((modelByKey(keys[0]) || {}).label || keys[0]) : keys.length + " models";
+    const one = (k) => (k === "*cons" ? "all consultant models" : (modelByKey(k) || {}).label || consLabel(k));
+    const ms = keys.includes("*") ? "all models" : keys.length === 1 ? one(keys[0]) : keys.length + " models";
     return `${side.setName ? "set \u201c" + side.setName + "\u201d - " : ""}${ms}: ${(side.cats || []).map(catLabel).slice(0, 3).join(", ")}${(side.cats || []).length > 3 ? " +" + (side.cats.length - 3) : ""}`
       + (side.q ? ` (name ${side.qmode === "not" ? "without" : "with"} \u201c${side.q}\u201d)` : "");
   };
@@ -99,17 +108,22 @@ export function createClash(ctx) {
     $("#clash-edit").disabled = $("#clash-run").disabled = !C.ruleId;
     $("#clash-del").disabled = !C.ruleId;
     const r = rule();
-    C.result = r && r.last ? r.last : null;
+    const sv = savedOf(r).find((x) => x.id === C.view);
+    if (!sv) C.view = "";
+    C.result = sv ? sv.result : r && r.last ? r.last : null;
     $("#clash-info").innerHTML = r
       ? `Shared with the project${r.author ? " · made by " + esc(r.author) : ""}<br>A: ${esc(sideText(r.a))}<br>B: ${esc(sideText(r.b))}`
       : "Rules are shared with everyone on the project.";
     paint();
   }
   const rule = () => C.rules.find((r) => r.id === C.ruleId) || null;
+  // the results kept of a rule (Save result), newest first
+  const savedOf = (r) => (r ? (ctx.items() || []).filter((it) => isSaved(it) && it.rule === r.id)
+    .sort((a, b) => String(b.at).localeCompare(String(a.at))) : []);
   const selSig = (x) => JSON.stringify([[...sideKeys(x)].sort(), [...(x.cats || [])].sort(), x.q || "", x.q ? x.qmode || "has" : ""]);
 
   async function editRule(r) {
-    const ms = models();
+    let ms = models();
     if (!ms.length) { ctx.status("Load a model first."); return; }
     const isNew = !r;
     r = r ? JSON.parse(JSON.stringify(r)) : {
@@ -125,7 +139,11 @@ export function createClash(ctx) {
     const side = async (s, title) => {
       const keys = new Set(r[s].models);
       const all = keys.has("*");
-      const chosen = all ? ms : ms.filter((m) => keys.has(m.key));
+      const allCons = keys.has("*cons");
+      const ms = models();
+      const chosen = all ? ms : ms.filter((m) => keys.has(m.key) || (allCons && m.rec.ref));
+      // consultant models of the project not loaded here: ticking one loads it
+      const away = (ctx.consultants() || []).filter((c) => !c.loaded);
       // the categories of the models ticked, by name (Ducts in every MEP link at once)
       const names = new Set();
       for (const m of chosen) for (const k of (await catsOf(m)).keys()) names.add(k);
@@ -139,7 +157,9 @@ export function createClash(ctx) {
         + `<button type="button" class="ghost" data-delset${r[s].set ? "" : " disabled"} title="Delete this set (rules using it keep its selection)">Delete set</button></div>`
         + `<div class="ck-cats-bar"><span class="muted">Models</span><button type="button" class="ghost" data-mall>All</button><button type="button" class="ghost" data-mnone>None</button></div>`
         + `<div class="ck-models"><label><input type="checkbox" data-allm${all ? " checked" : ""}> <b>All models</b></label>`
-        + ms.map((x) => `<label><input type="checkbox" data-m value="${esc(x.key)}"${all || keys.has(x.key) ? " checked" : ""}${all ? " disabled" : ""}> ${esc(x.label)}</label>`).join("")
+        + ((ctx.consultants() || []).length ? `<label title="Every consultant IFC of the project - those not loaded are loaded when the rule runs"><input type="checkbox" data-allc${allCons ? " checked" : ""}${all ? " disabled" : ""}> <b>All consultant models</b></label>` : "")
+        + ms.map((x) => `<label><input type="checkbox" data-m value="${esc(x.key)}"${all || keys.has(x.key) || (allCons && x.rec.ref) ? " checked" : ""}${all || (allCons && x.rec.ref) ? " disabled" : ""}> ${esc(x.label)}</label>`).join("")
+        + away.map((c) => `<label class="ck-away" title="A consultant IFC not loaded on this page: ticking it loads it"><input type="checkbox" data-load value="${esc(c.key)}"${all || allCons ? " checked disabled" : ""}> ${esc(c.label)} <span class="muted">(consultant IFC - not loaded)</span></label>`).join("")
         + `</div>`
         + `<div class="ck-cats-bar"><button type="button" class="ghost" data-all>All</button><button type="button" class="ghost" data-none>None</button>`
         + `<input type="search" data-q placeholder="Filter"></div>`
@@ -153,6 +173,7 @@ export function createClash(ctx) {
     const draw = async () => {
       dlg.innerHTML = `<form class="ck-dlg" onsubmit="return false"><h3>${isNew ? "New clash rule" : "Clash rule"}</h3>`
         + `<label class="ck-name">Name <input name="name" required maxlength="80" value="${esc(r.name)}" placeholder="e.g. Ceilings x Beams"></label>`
+        + ((ctx.consultants() || []).length ? `<div class="ck-preset"><button type="button" class="ghost" data-preset="cons" title="Set A: our models, Set B: every consultant IFC - every category on both sides">Our models x consultant models</button></div>` : "")
         + `<div class="ck-sides">${await side("a", "Set A")}${await side("b", "Set B")}</div>`
         + `<div class="ck-opts"><label>Overlap that counts <input name="tol" type="number" min="0" max="500" step="1" value="${r.tol_mm}"> mm</label>`
         + `<label title="Also report elements that come closer than this without touching (0 = off)">Clearance <input name="clear" type="number" min="0" max="2000" step="5" value="${r.clear_mm}"> mm</label>`
@@ -171,7 +192,9 @@ export function createClash(ctx) {
       r.name = f.name.value.trim();
       for (const s of ["a", "b"]) {
         const fs = f.querySelector(`[data-side="${s}"]`);
-        r[s].models = fs.querySelector("[data-allm]").checked ? ["*"] : [...fs.querySelectorAll("[data-m]:checked")].map((x) => x.value);
+        const ac = fs.querySelector("[data-allc]");
+        r[s].models = fs.querySelector("[data-allm]").checked ? ["*"]
+          : [...(ac && ac.checked ? ["*cons"] : []), ...[...fs.querySelectorAll("[data-m]:checked:not(:disabled)")].map((x) => x.value)];
         // categories not listed now (their model unticked) stay as they were
         const listed = new Set([...fs.querySelectorAll(".ck-cats input")].map((x) => x.value));
         r[s].cats = [...new Set([...(r[s].cats || []).filter((k) => !listed.has(k)),
@@ -209,10 +232,38 @@ export function createClash(ctx) {
       const f = dlg.querySelector("form");
       f.querySelector("[data-x]").onclick = () => { dlg.remove(); done(null); };
       f.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { dlg.remove(); done(null); } });
+      const pre = f.querySelector("[data-preset]");
+      if (pre) pre.onclick = async () => {
+        keep();
+        pre.disabled = true; pre.textContent = "Loading the consultant models ...";
+        try { await ctx.ensureRefs(["*cons"], (t) => { pre.textContent = t; }); } catch (e) { ctx.status(e.message); }
+        const ours = models().filter((m) => !m.rec.ref);
+        const allCats = async (list) => { const n = new Set(); for (const m of list) for (const k of (await catsOf(m)).keys()) n.add(k); return [...n]; };
+        r.a = { models: ours.map((m) => m.key), cats: await allCats(ours), q: "", qmode: "has", set: null };
+        r.b = { models: ["*cons"], cats: await allCats(models().filter((m) => m.rec.ref)), q: "", qmode: "has", set: null };
+        if (!r.name) r.name = "Our models x consultant models";
+        await draw();
+      };
       for (const fs of f.querySelectorAll(".ck-side")) {
         const s = fs.dataset.side;
+        // a consultant model not loaded: loaded, then ticked
+        fs.querySelectorAll("[data-load]").forEach((x) => { x.onchange = async (ev) => {
+          ev.stopPropagation();
+          keep();
+          x.disabled = true;
+          try { await ctx.ensureRefs([x.value], (t) => ctx.status(t)); r[s].models = [...new Set([...r[s].models, x.value])]; }
+          catch (e) { ctx.status(e.message); }
+          await draw();
+        }; });
+        const ac = fs.querySelector("[data-allc]");
+        if (ac) ac.onchange = async (ev) => {
+          ev.stopPropagation();
+          keep();
+          if (ac.checked) { try { await ctx.ensureRefs(["*cons"], (t) => ctx.status(t)); } catch (e) { ctx.status(e.message); } }
+          await draw();
+        };
         // other models ticked: their categories listed, the ticks kept
-        fs.querySelector(".ck-models").onchange = async () => { keep(); await draw(); };
+        fs.querySelector(".ck-models").onchange = async (ev) => { if (ev.target.matches("[data-load], [data-allc]")) return; keep(); await draw(); };
         fs.querySelector("[data-mall]").onclick = async () => { keep(); r[s].models = ["*"]; r[s].set = null; await draw(); };
         fs.querySelector("[data-mnone]").onclick = async () => { keep(); r[s].models = []; r[s].set = null; await draw(); };
         fs.querySelector("[data-set]").onchange = async (ev) => {
@@ -370,8 +421,15 @@ export function createClash(ctx) {
     if (sc.err) { ctx.status(sc.err); C.msg = sc.err; paint(); return; }
     // the sides as they pick now (a saved set may have changed)
     const r = Object.assign({}, r0, { a: resolve(r0.a), b: resolve(r0.b) });
+    // consultant models it names but not loaded on this page: loaded first
+    const refKeys = [...sideKeys(r.a), ...sideKeys(r.b)].filter((k) => k === "*cons" || (k.startsWith("ref:") && !modelByKey(k)));
+    if (refKeys.length) {
+      try { await ctx.ensureRefs(refKeys, progress); } catch (e) { ctx.status("Could not load a consultant model: " + (e.message || e)); }
+      progress("");
+    }
     const force = C.force;
     C.force = false; C.over = null; C.msg = null;
+    C.view = "";
     C.running = true; C.stop = false;
     $("#clash-run").hidden = true; $("#clash-stop").hidden = false;
     const t0 = performance.now();
@@ -580,6 +638,18 @@ export function createClash(ctx) {
         + `<div class="ck-acts">${C.over.hard ? "" : '<button class="primary" data-over="all">Check them all</button>'}`
         + `<button class="ghost" data-over="floors">Choose floors instead</button></div></div>`;
     } else if (C.msg) top = `<div class="ck-over">${esc(C.msg)}</div>`;
+    // the results: the latest run, or one kept (Save result)
+    const kept = savedOf(r0);
+    if (r0 && (r0.last || kept.length)) {
+      const when = (x) => new Date(x).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      const sv = kept.find((x) => x.id === C.view);
+      top = `<div class="ck-results"><select id="clash-view" title="Which result is listed: the latest run, or one that was saved">`
+        + `<option value="">Latest run${r0.last ? " · " + esc(when(r0.last.at)) : ""}</option>`
+        + kept.map((x) => `<option value="${esc(x.id)}"${x.id === C.view ? " selected" : ""}>${esc(x.name)}</option>`).join("") + `</select>`
+        + (C.view ? (sv && ((sv.by || sv.author) === ctx.myName() || ctx.isAdmin()) ? `<button class="ghost" data-delres title="Delete this saved result">Delete</button>` : "")
+          : r0.last ? `<button class="ghost" data-saveres title="Keep this result under a name, for everyone on the project">Save result</button>` : "")
+        + `</div>` + (sv ? `<div class="ck-when muted">Saved by ${esc(sv.by || sv.author || "")} · ${esc(when(sv.at))}</div>` : "") + top;
+    }
     if (!res) {
       sum.innerHTML = top + (r0 && !top ? `<span class="muted">Not run yet. Choose where and press Run.</span>` : "");
       list.innerHTML = "";
@@ -592,6 +662,9 @@ export function createClash(ctx) {
     const label = sc.err ? "" : sc.label;
     const ran = (res.runs && res.runs[label]) || (res.scope === label ? { at: res.at, by: res.by } : null);
     const all = Object.values(res.clashes || {});
+    // "Not an issue" is the rule's: it holds for every run and every saved result
+    const ign = new Set((r0 && r0.ignored) || []);
+    for (const c of all) c.ignored = ign.has(c.key) || undefined;
     const inHere = all.filter(here);
     const view = C.elsewhere ? all : inHere;
     const liveOf = (xs) => xs.filter((c) => c.state !== "gone" && !c.ignored);
@@ -620,6 +693,7 @@ export function createClash(ctx) {
       + `${nHidden ? ` <span class="muted">${nHidden} hidden</span>` : ""}</div>`
       + `<div class="ck-filt">${[["all", "Open", cnt.all], ["new", "New", cnt.new], ["gone", "Gone", cnt.gone], ["ignored", "Not an issue", cnt.ignored]]
         .map(([k, l, n]) => `<button class="ghost${C.filter === k ? " active" : ""}" data-f="${k}">${l} <b>${n}</b></button>`).join("")}</div>`
+      + raiseRow(view.filter((c) => c.state !== "gone" && !c.ignored && !shallow(c) && !issueOf(c.key)))
       + `<div class="ck-export"><span class="muted">Export the list</span><button class="ghost" data-exp="csv" title="A spreadsheet (CSV) of the clashes listed, for Excel">Spreadsheet</button>`
       + `<button class="ghost" data-exp="report" title="A report with a picture of each clash, to print or save as PDF">Report</button></div>`;
     const pick = view.filter((c) => C.filter === "gone" ? c.state === "gone"
@@ -729,17 +803,80 @@ export function createClash(ctx) {
     const half = Math.max(1.5, Math.min(6, (c.size || 1) * 0.75 + 1));
     ctx.focusAt(p, half);
   }
+  // what an issue from a clash says: "Clash issue 007 - Ducts x Beams (L2)"
+  function issueFields(c, n) {
+    const r = rule();
+    return {
+      title: `Clash issue ${numberText(n)} - ${c.a.cat} x ${c.b.cat}${c.level ? " (" + c.level + ")" : ""}`.slice(0, 120),
+      description: [`${KIND[c.kind] || c.kind} ${amount(c)}${c.level ? " on " + c.level : ""}.`,
+        "A: " + elementLine(c.a), "B: " + elementLine(c.b),
+        xyzText(c.point_shared_mm) ? "Where: " + xyzText(c.point_shared_mm) : "",
+        `Clash rule "${r ? r.name : ""}", found ${new Date(c.first_at || Date.now()).toLocaleDateString()}.`].filter(Boolean).join("\n"),
+      type: "clash",
+      status: "Open",
+      due_date: dueIn(3),
+      clash: { key: c.key, rule: r ? r.id : null, kind: c.kind, depth_mm: c.depth_mm, dist_mm: c.dist_mm },
+    };
+  }
   async function makeIssue(c) {
     const { A } = await show(c, false);
+    await ctx.makeIssue(c._at || new THREE.Vector3(...c.point), A, issueFields(c, nextNumber(ctx.items(), "Clash issue")));
+  }
+  /* "Raise issues for all": every clash listed that is open, not "Not an
+     issue" and has no issue yet - each shown, its picture taken, saved. */
+  function raiseRow(list) {
+    C.toRaise = list;
+    if (!list.length) return "";
+    return `<div class="ck-raise">` + (C.asking
+      ? `<span>Raise <b>${list.length}</b> issue${list.length === 1 ? "" : "s"}, due ${esc(dueIn(3))}</span>`
+        + `<input class="ck-assign" id="clash-assign" placeholder="Assign to (optional)" autocomplete="off">`
+        + `<button class="primary" data-raise="go">Raise</button><button class="ghost" data-raise="no">Cancel</button>`
+      : `<button class="ghost" data-raise="ask" title="An issue for each clash listed that is open, not 'Not an issue' and has no issue yet">Raise issues for all <b>${list.length}</b></button>`)
+      + `</div>`;
+  }
+  async function raiseAll(assign) {
+    const list = (C.toRaise || []).slice();
+    if (!list.length || C.running) return;
+    C.running = true; C.stop = false; C.asking = false;
+    $("#clash-run").hidden = true; $("#clash-stop").hidden = false;
+    const v = ctx.viewNow();
+    let n = nextNumber(ctx.items(), "Clash issue"), made = 0;
+    try {
+      for (const c of list) {
+        if (C.stop) break;
+        if (issueOf(c.key)) continue;
+        progress(`Raising issue ${made + 1} of ${list.length} ...`);
+        const { A } = await show(c, false);
+        const f = issueFields(c, n);
+        if (assign) f.assigned_to = assign;
+        if (await ctx.createIssue(c._at || new THREE.Vector3(...c.point), A, f)) { made++; n++; }
+      }
+    } finally {
+      progress("");
+      C.running = false;
+      $("#clash-run").hidden = false; $("#clash-stop").hidden = true;
+      try { await clashOff(); } catch (e) {}
+      ctx.viewBack(v);
+      paint();
+    }
+    ctx.status(`${made} clash issue${made === 1 ? "" : "s"} raised, due ${dueIn(3)}${assign ? ", assigned to " + assign : ""}${made < list.length ? " (" + (list.length - made) + " not raised)" : ""}.`);
+  }
+  /* Results kept under a name, for everyone on the project. */
+  async function saveResult() {
     const r = rule();
-    const lines = (s, e) => `${s}: ${e.model} - ${e.cat}${e.name ? " - " + e.name : ""}${e.type && e.type !== e.name ? " (" + e.type + ")" : ""}${e.id ? " - id " + e.id : ""}`;
-    await ctx.makeIssue(c._at || new THREE.Vector3(...c.point), A, {
-      title: `Clash: ${c.a.cat} x ${c.b.cat}${c.level ? " (" + c.level + ")" : ""}`.slice(0, 120),
-      description: [lines("A", c.a), lines("B", c.b),
-        `${KIND[c.kind] || c.kind} ${amount(c)} - clash rule "${r ? r.name : ""}", ${new Date().toLocaleDateString()}`].join("\n"),
-      type: "clash",
-      clash: { key: c.key, rule: r ? r.id : null, kind: c.kind, depth_mm: c.depth_mm, dist_mm: c.dist_mm },
-    });
+    if (!r || !r.last) return;
+    const name = prompt("Name of this result", `${r.name} - ${new Date().toLocaleDateString()}`);
+    if (!name || !name.trim()) return;
+    const it = { id: ctx.uid(), placement: "clashresult", rule: r.id, rule_name: r.name, name: name.trim().slice(0, 120),
+                 at: new Date().toISOString(), by: ctx.myName(), result: r.last };
+    if (await ctx.putItem(it)) { C.view = it.id; loadRules(); ctx.status(`Result saved as "${it.name}" - everyone on the project can open it under the rule.`); }
+  }
+  async function deleteResult() {
+    const it = (ctx.items() || []).find((x) => x.id === C.view);
+    if (!it || !confirm(`Delete the saved result "${it.name}"?`)) return;
+    await ctx.putItem(Object.assign({}, it, { deleted: true }));
+    C.view = "";
+    loadRules();
   }
   async function toggleIgnore(c) {
     const r = rule();
@@ -748,7 +885,7 @@ export function createClash(ctx) {
     if (ign.has(c.key)) ign.delete(c.key); else ign.add(c.key);
     c.ignored = ign.has(c.key) || undefined;
     const last = r.last ? Object.assign({}, r.last) : null;
-    if (last && last.clashes && last.clashes[c.key]) last.clashes = Object.assign({}, last.clashes, { [c.key]: c });
+    if (last && last.clashes && last.clashes[c.key]) last.clashes = Object.assign({}, last.clashes, { [c.key]: Object.assign({}, last.clashes[c.key], { ignored: c.ignored }) });
     await ctx.putItem(Object.assign({}, r, { ignored: [...ign], last }));
     loadRules();
   }
@@ -769,7 +906,7 @@ export function createClash(ctx) {
     });
     saveCsv(`${fileName(ctx.projectName())}-clashes-${fileName(r.name)}-${new Date().toISOString().slice(0, 10)}.csv`,
       ["No", "Status", "Kind", "Overlap mm", "Gap mm", "Floor", "A model", "A category", "A name", "A type", "A id",
-       "B model", "B category", "B name", "B type", "B id", "X mm (project)", "Y mm (project)", "Z mm (project)", "First found", "Found when checking", "Issue"], rows);
+       "B model", "B category", "B name", "B type", "B id", "X mm (project)", "Y mm (project)", "Z mm (project)", "First found", "Found when checking", "Issue"], rows, "Clash");
     ctx.status(`${rows.length} clashes exported as a spreadsheet.`);
   }
   /* The report: asks with or without pictures (each about a second), opens
@@ -821,7 +958,7 @@ export function createClash(ctx) {
     }
     const side = (e) => `${e.model} - ${e.cat}${e.name ? " - " + e.name : ""}${e.type && e.type !== e.name ? " (" + e.type + ")" : ""}${e.id ? " - id " + e.id : ""}`;
     writeReport(w, {
-      title: "Clash report", project: ctx.projectName(), unit: "clashes",
+      title: "Clash report", project: ctx.projectName(), unit: "clashes", folder: "Clash",
       sub: new Date().toLocaleString() + (ctx.author() ? " · prepared by " + ctx.author() : ""),
       meta: [["Rule", r.name], ["A", sideText(r.a)], ["B", sideText(r.b)],
         ["Settings", `overlap that counts ${r.tol_mm} mm, clearance ${r.clear_mm} mm${r.skip_openings !== false ? ", doors and windows in their hosts left out" : ""}${r.skip_joins !== false ? ", joins left out" : ""}${r.open ? ", open surfaces crossing reported" : ""}`],
@@ -852,6 +989,7 @@ export function createClash(ctx) {
     C.ruleId = ev.target.value || null;
     try { localStorage.setItem(ctx.storeKey("rule"), C.ruleId || ""); } catch (e) {}
     C.filter = "all";
+    C.view = "";
     loadRules();
   };
   $("#clash-new").onclick = () => editRule(null);
@@ -866,11 +1004,18 @@ export function createClash(ctx) {
       if (ev.target.id === "clash-hide") localStorage.setItem(ctx.storeKey("hide:" + (r && r.id)), String(Math.max(0, Number(ev.target.value) || 0)));
       if (ev.target.id === "clash-order") localStorage.setItem(ctx.storeKey("order"), ev.target.value);
     } catch (e) {}
+    if (ev.target.id === "clash-view") { C.view = ev.target.value; C.filter = "all"; loadRules(); return; }
+    if (ev.target.id === "clash-assign") return;
     paint();
   };
   $("#clash-sum").onclick = (ev) => {
-    const t = ev.target.closest("[data-f], [data-else], [data-over], [data-exp]");
+    const t = ev.target.closest("[data-f], [data-else], [data-over], [data-exp], [data-raise], [data-saveres], [data-delres]");
     if (!t) return;
+    if (t.hasAttribute("data-saveres")) return saveResult();
+    if (t.hasAttribute("data-delres")) return deleteResult();
+    if (t.dataset.raise === "ask") { C.asking = true; paint(); const i = $("#clash-assign"); if (i) i.focus(); return; }
+    if (t.dataset.raise === "no") { C.asking = false; paint(); return; }
+    if (t.dataset.raise === "go") { const i = $("#clash-assign"); return raiseAll(i ? i.value.trim() : ""); }
     if (t.dataset.f) C.filter = t.dataset.f;
     else if (t.hasAttribute("data-else")) C.elsewhere = !C.elsewhere;
     else if (t.dataset.over === "all") { C.force = true; run(); return; }
@@ -920,7 +1065,7 @@ export function createClash(ctx) {
     // drawn again only when a rule or a clash issue changed (sync comes often)
     itemsChanged() {
       if (C.running) return;
-      const sig = JSON.stringify((ctx.items() || []).filter((it) => it && (it.placement === "clashrule" || it.placement === "clashset" || it.clash))
+      const sig = JSON.stringify((ctx.items() || []).filter((it) => it && (it.placement === "clashrule" || it.placement === "clashset" || it.placement === "clashresult" || it.clash))
         .map((it) => [it.id, it.deleted, it.updated_at, it.rev, it.last && it.last.at, (it.ignored || []).length,
                       it.issue && it.issue.status, it.issue && it.issue.number]));
       if (sig === C.sig) return;
@@ -930,6 +1075,9 @@ export function createClash(ctx) {
     clearMarker() { putMarker(null); C.lit = null; ctx.legend(null); },
     // for a test: run the selected rule and wait
     async runNow() { await run(); return C.result; },
+    // for a test: raise the issues listed, without asking
+    async raiseAllNow(assign) { paint(); await raiseAll(assign || ""); },
+    get view() { return C.view; },
     get result() { return C.result; },
     get shownAt() { return C.shownAt || null; },
     // a test: how many pairs before asking

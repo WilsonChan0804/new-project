@@ -2929,6 +2929,89 @@ async def send_digest(request: Request, x_viewer_token: str = Header(default="")
     return {"ok": True}
 
 
+def digest_html(pid, d):
+    """The weekly numbers as a page to keep (made into a PDF in Folders)."""
+    import html as H
+    e = lambda s: H.escape(str(s if s is not None else ""))
+    items = [it for it in store_for(pid).all_items()[1] if it.get("issue") and not it.get("deleted")]
+    done = ("Resolved", "Closed", "Not an issue")
+    open_ = [it for it in items if it["issue"].get("status") not in done]
+    clash = sum(1 for it in open_ if it.get("clash"))
+    head = sum(1 for it in open_ if it.get("headroom"))
+    by_type = {}
+    for it in open_:
+        k = it["issue"].get("type") or "general"
+        by_type[k] = by_type.get(k, 0) + 1
+    today = time.strftime("%d %b %Y", time.gmtime(time.time() + 8 * 3600))
+    title = project_title(pid)
+
+    def rows(lst):
+        return "".join("<tr><td>#%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (
+            e(o["number"] or "?"), e(o["title"]), e(o["assigned_to"] or "-"), e(o["due_date"] or "-"), e(o["status"]))
+            for o in lst) or "<tr><td colspan=5>None.</td></tr>"
+    facts = [("Raised this week", d["raised"]), ("Closed this week", d["closed"]), ("Open now", d["open"]),
+             ("Overdue", d["overdue"]), ("Clash issues open", clash), ("Headroom issues open", head)]
+    return ("<!doctype html><html><head><meta charset='utf-8'><title>Weekly issues - %s</title><style>"
+            "body{font:11pt Arial,sans-serif;color:#222;margin:18mm}h1{font-size:18pt;margin:0}h1 span{color:#f28022}"
+            ".sub{color:#666;margin:4px 0 14px}table{border-collapse:collapse;width:100%%;margin:6px 0 14px}"
+            "td,th{border:1px solid #ccc;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f2f2f2}"
+            "h2{font-size:13pt;margin:14px 0 4px}</style></head><body>"
+            "<h1>Weekly issues - <span>%s</span></h1><div class='sub'>%s · the last %d days · LWK Viewer</div>"
+            "<table>%s</table>"
+            "<h2>Open by person</h2><table><tr><th>Person</th><th>Open</th></tr>%s</table>"
+            "<h2>Open by type</h2><table><tr><th>Type</th><th>Open</th></tr>%s</table>"
+            "<h2>Overdue</h2><table><tr><th>No</th><th>Issue</th><th>Assigned to</th><th>Due</th><th>Status</th></tr>%s</table>"
+            "<h2>Raised this week</h2><table><tr><th>No</th><th>Issue</th><th>Assigned to</th><th>Due</th><th>Status</th></tr>%s</table>"
+            "</body></html>") % (
+        e(title), e(title), e(today), d["days"],
+        "".join("<tr><th>%s</th><td>%s</td></tr>" % (e(k), e(v)) for k, v in facts),
+        "".join("<tr><td>%s</td><td>%d</td></tr>" % (e(k), n) for k, n in d["by_person"]) or "<tr><td colspan=2>None.</td></tr>",
+        "".join("<tr><td>%s</td><td>%d</td></tr>" % (e(k.capitalize()), n) for k, n in sorted(by_type.items(), key=lambda kv: -kv[1]))
+        or "<tr><td colspan=2>None.</td></tr>",
+        rows(d["overdue_list"]), rows(d["raised_list"]))
+
+
+def project_title(pid):
+    try:
+        with open(os.path.join(project_root_for(pid), "manifest.json"), encoding="utf-8") as f:
+            return (json.load(f).get("source") or {}).get("title") or pid
+    except Exception:
+        return pid
+
+
+def save_weekly(pid, who_uid=None, who="LWK Viewer"):
+    """This week's numbers kept in the project's Folders: 00 BIM/Weekly
+    dashboard/<date> Weekly issues - <project>.pdf (a web page when the
+    server cannot make PDFs). Returns the paths written."""
+    import files as F
+    import tasks as T
+    regs = T.reg_ids_for_viewer(sys.modules[__name__], pid)
+    if not regs or F.CORE is None:
+        return []
+    page = digest_html(pid, digest_for(pid)).encode("utf-8")
+    data = F.html_to_pdf(page)
+    ext = ".pdf" if data else ".html"
+    name = "%s Weekly issues - %s%s" % (time.strftime("%Y-%m-%d", time.gmtime(time.time() + 8 * 3600)),
+                                        re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "-", project_title(pid))[:80], ext)
+    out = []
+    for reg in regs:
+        out.append({"reg": reg, "path": F.keep_file(reg, [F.BIM, "Weekly dashboard"], name, data or page, who_uid, who)})
+    return out
+
+
+@app.post("/api/digest/save")
+async def save_digest(request: Request, x_viewer_token: str = Header(default=""),
+                      x_project: str = Header(default="")):
+    w, _ = require_project(request, x_project, "member", x_viewer_token)
+    pid = "default" if CFG["single"] else x_project
+    import asyncio
+    out = await asyncio.get_event_loop().run_in_executor(None, lambda: save_weekly(pid, w.uid, w.name or "LWK Viewer"))
+    if not out:
+        raise HTTPException(status_code=409, detail="This project has no Folders yet - add it on the Projects page "
+                            "(with this model as one of its parts) to keep the weekly report there")
+    return {"saved": out}
+
+
 def digest_loop():
     """Every 20 minutes: is it digest time for a project that has not had
     this week's yet?"""
@@ -2948,6 +3031,18 @@ def digest_loop():
                         due_reminders(pid, CFG.get("base_url") or "")
                 except Exception as ex:
                     print("due reminders %s: %s" % (pid, ex))
+                # the weekly report into Folders, on the digest day and hour (Teams or not)
+                try:
+                    wday = (ACC.setting(pid, "digest_day") or "mon").lower()
+                    whour = int(ACC.setting(pid, "digest_hour") or 9)
+                    wl = time.gmtime(time.time() + float(ACC.setting(pid, "digest_tz") or 8) * 3600)
+                    wk = time.strftime("%G-W%V", wl)
+                    if wday in DIGEST_DAYS and DIGEST_DAYS[wl.tm_wday] == wday and wl.tm_hour >= whour \
+                            and ACC.setting(pid, "weekly_saved") != wk:
+                        ACC.set_setting(pid, "weekly_saved", wk)
+                        save_weekly(pid)
+                except Exception as ex:
+                    print("weekly report %s: %s" % (pid, ex))
                 url = ACC.setting(pid, "teams_webhook")
                 day = (ACC.setting(pid, "digest_day") or "mon").lower()
                 if not url or day not in DIGEST_DAYS:

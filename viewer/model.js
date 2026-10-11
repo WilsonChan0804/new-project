@@ -48,6 +48,7 @@ import { initPanels, initVGrip, foldSections } from "./panels.js";
 import { copyLink } from "./share.js";
 import { createAO } from "./ao.js";
 import { copyIds, showInRevit, wireElementBlocks } from "./revit.js";
+import { me as navMe } from "./nav.js";
 
 /* Fragments geometry is in METRES. The Revit exporter writes millimetres
    everywhere - manifest paper_to_model, link transforms, issue positions -
@@ -2072,9 +2073,61 @@ function initClash() {
       $("#i3-title").value = pre.title || "";
       $("#i3-desc").value = pre.description || "";
       $("#i3-type").innerHTML = typeOptions(pre.type || "clash");
+      if (pre.due_date) $("#i3-due").value = pre.due_date;
       S.pending.clash = pre.clash || null;
+      S.pending.headroom = pre.headroom || null;
+    },
+    /* The same issue, saved straight away (no dialog): the view as it is
+       now is its picture. */
+    async createIssue(point, el, pre) {
+      let guid = null, name = null;
+      if (el) {
+        try { guid = (await el.part.model.getGuidsByLocalIds([el.lid]))[0] || null; } catch (e) {}
+        const rec = recOfPart(el.part);
+        name = rec ? rec.entry.name : null;
+      }
+      // the view settled (what was just shown is drawn) before its picture
+      try { await S.fragments.update(true); } catch (e) {}
+      for (let i = 0; i < 3; i++) await new Promise((r) => requestAnimationFrame(r));
+      renderMain();
+      const p = { point: point.clone(), hit: el ? { guid, name, part: el.part, localId: el.lid } : null, level: levelAt(point.y),
+                  shot: captureViewpoint(), markup: [], clash: pre.clash || null, headroom: pre.headroom || null };
+      const item = await buildIssue3D(p, pre);
+      const ok = await putItem(item);
+      if (ok) { refreshPins(); renderIssueList(); }
+      return ok ? item : null;
+    },
+    /* The project's consultant models (refs), loaded or not, by the key a
+       clash rule names them with (checkgeo models()). */
+    consultants: () => RF.list.filter((r) => r.kind !== "host" && r.status === "ready").map((r) => ({
+      key: ("ref:" + (r.name || "") + "/" + (r.company || "")).replace(/[|~]/g, "-"),
+      label: r.name + (r.company ? " (" + r.company + ")" : ""), loaded: S.loaded.has(refKey(r)), id: r.id })),
+    /* Load these consultant models (keys as above; "*cons": all of them),
+       turned on as if ticked in the Models panel. */
+    async ensureRefs(keys, say) {
+      const want = new Set(keys || []);
+      const all = want.has("*cons");
+      let n = 0;
+      for (const r of RF.list) {
+        if (r.kind === "host" || r.status !== "ready" || S.loaded.has(refKey(r))) continue;
+        const key = ("ref:" + (r.name || "") + "/" + (r.company || "")).replace(/[|~]/g, "-");
+        if (!all && !want.has(key)) continue;
+        if (say) say(`Loading ${r.name} ...`);
+        refSet(r, "on", true);
+        await loadRef(r);
+        n++;
+      }
+      if (n) renderRefs();
+      return n;
     },
     items: () => S.items || [],
+    // the name of the person signed in (the server writes it as "author")
+    myName: () => { const m = navMe() || {}; return (m.user && m.user.name) || Store.author() || ""; },
+    // a project admin (or a site admin): may delete what others saved
+    isAdmin: () => {
+      const m = navMe() || {};
+      return !m.accounts || !!m.site_admin || (m.projects || {})[Store.currentProject ? Store.currentProject() : ""] === "admin";
+    },
     putItem,
     uid,
     author: () => Store.author(),
@@ -7289,7 +7342,27 @@ async function saveIssue3D() {
 
   $("#i3-save").disabled = true;
   status("Saving ...");
+  const item = await buildIssue3D(p, {
+    title, type: $("#i3-type").value || "general", description: $("#i3-desc").value.trim(),
+    status: $("#i3-status").value, priority: $("#i3-priority").value,
+    assigned_to: $("#i3-assignee").value.trim(), due_date: $("#i3-due").value || null,
+  });
+  S.lastIssueType = item.issue.type;
+  const ok = await putItem(item);
+  $("#i3-save").disabled = false;
+  if (!ok) return;
 
+  S.pending = null;
+  $("#i3-back").hidden = true;
+  status("Issue saved and shared.");
+  refreshPins();
+  renderIssueList();
+}
+
+/* The record of a 3D issue: from the dialog (saveIssue3D) or made without
+   one (the model checks' "Raise issues for all"). p: the pending place
+   (point, hit, level, shot, markup); f: the issue's fields. */
+async function buildIssue3D(p, f) {
   /* The picture is uploaded first and the record keeps only its path.
      Holding the data URL in the record is what used to fill the browser's
      storage after a dozen issues. */
@@ -7305,7 +7378,7 @@ async function saveIssue3D() {
     snapshot = null;
   }
 
-  const item = {
+  return {
     id: uid(),
     placement: "3d",
     model_mm: [toMM(p.point.x), toMM(p.point.y), toMM(p.point.z)],
@@ -7325,17 +7398,19 @@ async function saveIssue3D() {
     viewpoint_state: p.shot ? p.shot.state : null,
     // made from a clash check: the pair of elements, so a later run knows it
     clash: p.clash || undefined,
+    // made from a headroom scan: the place, so the scan knows it
+    headroom: p.headroom || undefined,
     snapshot: snapshot,
     snapshot_raw: snapshotRaw,
     markup: p.markup || [],
     issue: {
-      guid: uid(), title: title,
-      type: $("#i3-type").value || "general",
-      description: $("#i3-desc").value.trim(),
-      status: $("#i3-status").value,
-      priority: $("#i3-priority").value,
-      assigned_to: $("#i3-assignee").value.trim(),
-      due_date: $("#i3-due").value || null,
+      guid: uid(), title: f.title,
+      type: f.type || "general",
+      description: f.description || "",
+      status: f.status || "Open",
+      priority: f.priority || "Normal",
+      assigned_to: f.assigned_to || "",
+      due_date: f.due_date || null,
       created_at: new Date().toISOString(),
       author: Store.author(),
       // Worked out from where it was placed - nobody has to type it.
@@ -7343,17 +7418,6 @@ async function saveIssue3D() {
     },
     level: p.level || null,
   };
-
-  S.lastIssueType = item.issue.type;
-  const ok = await putItem(item);
-  $("#i3-save").disabled = false;
-  if (!ok) return;
-
-  S.pending = null;
-  $("#i3-back").hidden = true;
-  status("Issue saved and shared.");
-  refreshPins();
-  renderIssueList();
 }
 
 /* How the 3D issue list is arranged. Status first, because the question a
@@ -8039,7 +8103,7 @@ async function boot() {
       status("Building BCF ...");
       const name = (S.manifest.source && S.manifest.source.title) || "issues";
       const r = await buildBcf(S.items, name);
-      download(r.blob, `${name.replace(/[^\w.-]/g, "_")}.bcfzip`);
+      download(r.blob, `${name.replace(/[^\w.-]/g, "_")}.bcfzip`, "BCF");
       status(`Exported ${r.count} issue(s): ${r.withCamera} with a camera `
         + `(${r.withDerivedCamera} derived from a sheet viewport), `
         + `${r.withSnapshot} with a snapshot`

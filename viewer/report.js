@@ -230,6 +230,8 @@ async function main() {
   await load();
   for (const id of ["#r-group", "#r-pics", "#r-comments", "#r-history"]) $(id).onchange = render;
   $("#r-print").onclick = () => window.print();
+  import("./tofolders.js").then((m) => m.reportSaveButton(document, $("#r-folders"),
+    `${project()}-issue-report-${new Date().toISOString().slice(0, 10)}.html`, "Issues")).catch(() => {});
   await render();
 }
 

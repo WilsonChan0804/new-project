@@ -365,7 +365,7 @@ export function initExtra(app) {
       const blob = await canvasBlob(canvas);
       if (!blob) throw new Error("the picture is too large for this device");
       X.lastExport = { w: canvas.width, h: canvas.height, bytes: blob.size, canvas };
-      download(blob, safeName(A.board.title) + (selectionOnly ? "-selection" : "") + ".png");
+      download(blob, safeName(A.board.title) + (selectionOnly ? "-selection" : "") + ".png", "Board");
       app.toast("Picture saved (" + canvas.width + " x " + canvas.height + ")", 2500);
       return X.lastExport;
     } catch (e) {
@@ -380,7 +380,7 @@ export function initExtra(app) {
     const data = await exportJson(A.board.title, A.sync.snapshot());
     const text = JSON.stringify(data);
     X.lastJson = data;
-    download(new Blob([text], { type: "application/json" }), safeName(A.board.title) + ".board.json");
+    download(new Blob([text], { type: "application/json" }), safeName(A.board.title) + ".board.json", "Board");
     app.toast("Backup saved - bring it back with Import a backup", 3000);
     return data;
   };
