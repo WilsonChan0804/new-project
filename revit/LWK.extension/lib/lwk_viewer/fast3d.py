@@ -40,6 +40,7 @@ when someone asks for an element's properties.
 __version__ = "2026-10-09a"
 
 import gzip
+from lwk_viewer.compat import id_int, new_id
 import io
 import json
 import math
@@ -380,7 +381,7 @@ def describe(doc, el, rec):
     if t is not None:
         rec["type"] = _safe(lambda: t.Name, "")
         rec["family"] = _safe(lambda: t.FamilyName, "")
-        rec["type_id"] = _safe(lambda: t.Id.IntegerValue)
+        rec["type_id"] = _safe(lambda: id_int(t.Id))
     lid = _safe(lambda: el.LevelId)
     lv = _safe(lambda: doc.GetElement(lid)) if lid is not None else None
     if lv is not None:
@@ -438,11 +439,11 @@ def write_props(writer, folder, probe=None, limit_s=900):
             cut = True
             break
         from Autodesk.Revit.DB import ElementId
-        el = _safe(lambda: doc.GetElement(ElementId(rec["id"])))
+        el = _safe(lambda: doc.GetElement(new_id(rec["id"])))
         elems.append(params_of(el) if el is not None else {})
         tid = rec.get("type_id")
         if tid is not None and str(tid) not in types:
-            t = _safe(lambda: doc.GetElement(ElementId(tid)))
+            t = _safe(lambda: doc.GetElement(new_id(tid)))
             types[str(tid)] = params_of(t) if t is not None else {}
     data = {"el": elems, "type_id": [r.get("type_id") for r in writer.el], "types": types,
             "complete": not cut}
@@ -585,7 +586,7 @@ class Run(object):
             for g, _ in s["copies"]:
                 for m in G.all_members(w.doc, g):
                     w.skip.add(m)
-                w.skip.add(g.Id.IntegerValue)
+                w.skip.add(id_int(g.Id))
             n_copies += len(s["copies"])
         if shared:
             self.probe.info("fast3d", "'%s': %d typical group(s), %d copies placed by transform (%s)"
@@ -603,7 +604,7 @@ class Run(object):
     def element_begin(self, eid):
         from Autodesk.Revit.DB import RenderNodeAction
         w = self.w
-        i = eid.IntegerValue
+        i = id_int(eid)
         if i in w.skip:
             w.stats["elements_skipped"] += 1
             self.el = None

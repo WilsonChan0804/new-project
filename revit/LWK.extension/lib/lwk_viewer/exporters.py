@@ -26,6 +26,7 @@ from lwk_viewer import groups as GROUPS
 
 from Autodesk.Revit.DB import (IFCExportOptions, IFCVersion, ElementId,
                                FilteredElementCollector)
+from lwk_viewer.compat import id_int, new_id
 from System.Collections.Generic import List
 
 # Warnings about missing API members are logged once per session, not once
@@ -353,7 +354,7 @@ def export_link_ifcs(doc, folder, probe, schema="IFC4", progress=None,
             rec["model_path"] = link_model_path(doc, li, ld, probe)
         try:
             rec["instances"].append({
-                "instance_id": li.Id.IntegerValue,
+                "instance_id": id_int(li.Id),
                 "name": li.Name,
                 "transform": _xform_mm(li.GetTotalTransform()),
             })
@@ -977,7 +978,7 @@ def _federated_link_info(doc, probe, exclude=None, quiet=False):
     parts, seen = [], set()
     skipped_unloaded, skipped_bad = 0, 0
     for inst in FilteredElementCollector(doc).OfClass(RevitLinkInstance):
-        if exclude and inst.Id.IntegerValue in exclude:
+        if exclude and id_int(inst.Id) in exclude:
             continue
         if inst.GetLinkDocument() is None:
             skipped_unloaded += 1
@@ -1013,12 +1014,12 @@ def _repeated_links(doc, skip=None, min_count=2):
     from Autodesk.Revit.DB import FilteredElementCollector, RevitLinkInstance
     groups = {}
     for inst in FilteredElementCollector(doc).OfClass(RevitLinkInstance):
-        if skip and inst.Id.IntegerValue in skip:
+        if skip and id_int(inst.Id) in skip:
             continue
         ld = inst.GetLinkDocument()
         if ld is None:
             continue
-        key = inst.GetTypeId().IntegerValue
+        key = id_int(inst.GetTypeId())
         groups.setdefault(key, {"doc": ld, "instances": []})["instances"].append(inst)
     return [g for g in groups.values() if len(g["instances"]) >= min_count]
 
@@ -1059,7 +1060,7 @@ def _host_geometry_ids(doc, probe):
             cat = el.Category
             if cat is None or cat.CategoryType != CategoryType.Model:
                 continue
-            if cat.Id.IntegerValue in keep:
+            if id_int(cat.Id) in keep:
                 continue
             if el.get_BoundingBox(None) is None:
                 continue
@@ -1102,8 +1103,8 @@ def export_link_via_host(doc, inst, folder, stem, probe, schema):
         # every other link out of the export
         from Autodesk.Revit.DB import RevitLinkInstance
         info, n = _federated_link_info(doc, probe, exclude=set(
-            i.Id.IntegerValue for i in FilteredElementCollector(doc).OfClass(RevitLinkInstance)
-            if i.Id.IntegerValue != inst.Id.IntegerValue), quiet=True)
+            id_int(i.Id) for i in FilteredElementCollector(doc).OfClass(RevitLinkInstance)
+            if id_int(i.Id) != id_int(inst.Id)), quiet=True)
         if not n:
             probe.warn("ifc", "'%s': this placement cannot be exported through the host "
                               "(not loaded, or scaled)" % stem)
@@ -1366,7 +1367,7 @@ def export_ifc_merged(doc, folder, name, probe, schema="IFC2x3", instanced_out=N
             tr = inst.GetTotalTransform()
             o = tr.Origin
             recs.append({
-                "instance_id": inst.Id.IntegerValue,
+                "instance_id": id_int(inst.Id),
                 "transform": {
                     "origin": [o.X * 304.8, o.Y * 304.8, o.Z * 304.8],
                     "basis_x": [tr.BasisX.X, tr.BasisX.Y, tr.BasisX.Z],
@@ -1376,7 +1377,7 @@ def export_ifc_merged(doc, folder, name, probe, schema="IFC2x3", instanced_out=N
                 "mirrored": bool(tr.HasReflection),
                 "bbox_mm": _bbox_mm(inst),
             })
-            exclude.add(inst.Id.IntegerValue)
+            exclude.add(id_int(inst.Id))
         if instanced_out is not None and route == "host":
             # Already in the host's coordinates, placed by Revit: the viewer
             # applies nothing (bbox_mm still lets light mode load it lazily).

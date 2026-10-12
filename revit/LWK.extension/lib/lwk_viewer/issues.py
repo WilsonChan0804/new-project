@@ -33,6 +33,7 @@ titleblock's lower-left corner (the PDF page corner), and anchor.model_mm
 where the view maps them into the model.
 """
 import io
+from lwk_viewer.compat import id_int, new_id
 import json
 import os
 
@@ -1141,9 +1142,9 @@ def place_clouds(doc, issues):
         if sheet is None:
             skipped += 1
             continue
-        if sheet.Id.IntegerValue not in origins:
-            origins[sheet.Id.IntegerValue] = paper_origin(doc, sheet, _Quiet())[0]
-        (x0, y0), (x1, y1) = cloud_rect(origins[sheet.Id.IntegerValue], iss.points_mm)
+        if id_int(sheet.Id) not in origins:
+            origins[id_int(sheet.Id)] = paper_origin(doc, sheet, _Quiet())[0]
+        (x0, y0), (x1, y1) = cloud_rect(origins[id_int(sheet.Id)], iss.points_mm)
         # clockwise: Revit draws the arcs on the left of the direction of
         # travel, so this way round they bulge outward like a hand-drawn cloud
         # (anticlockwise they pointed inward)

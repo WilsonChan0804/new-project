@@ -30,6 +30,7 @@ import os
 
 from Autodesk.Revit.DB import (FilteredElementCollector, ElementId, Group,
                                BuiltInCategory, Transform, XYZ)
+from lwk_viewer.compat import id_int, new_id
 
 FT = 304.8
 MIN_MEMBERS = 5          # groups smaller than this are not worth a file
@@ -206,7 +207,7 @@ def all_members(doc, g, out=None):
     """Every element in a group, nested groups opened up, as integer ids."""
     out = set() if out is None else out
     for mid in g.GetMemberIds():
-        i = mid.IntegerValue
+        i = id_int(mid)
         if i in out:
             continue
         out.add(i)
@@ -236,13 +237,13 @@ def find_shared(doc, probe=None, min_members=MIN_MEMBERS):
     by_type = {}
     for g in FilteredElementCollector(doc).OfClass(Group):
         try:
-            if cat is not None and (g.Category is None or g.Category.Id.IntegerValue != cat):
+            if cat is not None and (g.Category is None or id_int(g.Category.Id) != cat):
                 continue                       # detail groups
             if g.GroupId is not None and g.GroupId != ElementId.InvalidElementId:
                 continue                       # nested: travels with its parent
         except Exception:
             continue
-        by_type.setdefault(g.GetTypeId().IntegerValue, []).append(g)
+        by_type.setdefault(id_int(g.GetTypeId()), []).append(g)
 
     out = []
     why = {"types": 0, "no position": 0, "too small": 0, "member count differs": 0,
@@ -255,7 +256,7 @@ def find_shared(doc, probe=None, min_members=MIN_MEMBERS):
         def z_of(g):
             p = _loc_point(g)
             return p.Z if p is not None else 0.0
-        insts.sort(key=lambda g: (z_of(g), g.Id.IntegerValue))
+        insts.sort(key=lambda g: (z_of(g), id_int(g.Id)))
         ref = None
         for g in insts:
             if _loc_point(g) is not None and g.get_BoundingBox(None) is not None:
@@ -340,11 +341,11 @@ def worth_it(doc, min_members=MIN_MEMBERS):
     counts = {}
     try:
         for g in FilteredElementCollector(doc).OfClass(Group):
-            if cat is not None and (g.Category is None or g.Category.Id.IntegerValue != cat):
+            if cat is not None and (g.Category is None or id_int(g.Category.Id) != cat):
                 continue
             if g.GroupId is not None and g.GroupId != ElementId.InvalidElementId:
                 continue
-            k = g.GetTypeId().IntegerValue
+            k = id_int(g.GetTypeId())
             if k not in counts:
                 counts[k] = [0, len(list(g.GetMemberIds()))]
             counts[k][0] += 1
@@ -367,7 +368,7 @@ def delete_many(doc, ids, chunk=800):
         part = ids[k:k + chunk]
         lst = List[ElementId]()
         for i in part:
-            lst.Add(i if isinstance(i, ElementId) else ElementId(i))
+            lst.Add(i if isinstance(i, ElementId) else new_id(i))
         st = SubTransaction(doc)
         st.Start()
         try:
@@ -406,7 +407,7 @@ def everything_but(doc, keep_ids):
     col = FilteredElementCollector(doc).WhereElementIsNotElementType().WhereElementIsViewIndependent()
     for el in col:
         try:
-            i = el.Id.IntegerValue
+            i = id_int(el.Id)
             if i in keep_ids or isinstance(el, RevitLinkInstance):
                 continue
             nested = el.GroupId is not None and el.GroupId != ElementId.InvalidElementId
@@ -416,7 +417,7 @@ def everything_but(doc, keep_ids):
                 out.append(el.Id)              # a whole other group
                 continue
             c = el.Category
-            if c is None or c.CategoryType != CategoryType.Model or c.Id.IntegerValue in keep_cats:
+            if c is None or c.CategoryType != CategoryType.Model or id_int(c.Id) in keep_cats:
                 continue
             if el.get_BoundingBox(None) is None:
                 continue
@@ -480,17 +481,17 @@ def group_view(d, keep, box, probe=None):
     hide = set()
     for el in FilteredElementCollector(d, v.Id).WhereElementIsNotElementType():
         try:
-            i = el.Id.IntegerValue
+            i = id_int(el.Id)
             if i in keep:
                 continue
             c = el.Category
             if c is None or c.CategoryType != CategoryType.Model:
                 continue
             top = _top_group(d, el)
-            if top.Id.IntegerValue in keep:
+            if id_int(top.Id) in keep:
                 continue
             if top is not el:
-                hide.add(top.Id.IntegerValue)      # a whole other group
+                hide.add(id_int(top.Id))      # a whole other group
                 continue
             if el.CanBeHidden(v):
                 hide.add(i)
@@ -500,7 +501,7 @@ def group_view(d, keep, box, probe=None):
     for k in range(0, len(ids), 500):
         lst = List[ElementId]()
         for i in ids[k:k + 500]:
-            lst.Add(ElementId(i))
+            lst.Add(new_id(i))
         try:
             v.HideElements(lst)
         except Exception:
@@ -580,7 +581,7 @@ def export_shared(d, folder, name, probe, export_fn):
     for k, s in enumerate(shared):
         stem = "%s__g%d" % (name, k + 1)
         keep = set(s["members"])
-        keep.add(s["ref"].Id.IntegerValue)
+        keep.add(id_int(s["ref"].Id))
 
         prep_group = _group_prep(d, keep, s["box"], name, s["name"], probe)
         t1 = time.time()
@@ -592,8 +593,8 @@ def export_shared(d, folder, name, probe, export_fn):
         ident = Transform.Identity
         records.append({
             "group": s["name"], "file": path,
-            "copies": [{"id": s["ref"].Id.IntegerValue, "rel": xform_dict(ident)}]
-                      + [{"id": g.Id.IntegerValue, "rel": xform_dict(rel)} for g, rel in s["copies"]],
+            "copies": [{"id": id_int(s["ref"].Id), "rel": xform_dict(ident)}]
+                      + [{"id": id_int(g.Id), "rel": xform_dict(rel)} for g, rel in s["copies"]],
             "box_ft": s["box"],
         })
         probe.info("groups", "'%s': group '%s' (%d copies) written in %.1f min (%.1f MB)"
@@ -622,8 +623,8 @@ def _units(d, shared):
     its height and weight, in a fixed order."""
     skip = set()
     for s in shared:
-        skip.add(s["ref"].Id.IntegerValue)
-        skip.update(g.Id.IntegerValue for g, _ in s["copies"])
+        skip.add(id_int(s["ref"].Id))
+        skip.update(id_int(g.Id) for g, _ in s["copies"])
     out = []
     for eid in everything_but(d, skip):
         el = d.GetElement(eid)
@@ -633,7 +634,7 @@ def _units(d, shared):
         z = (bb.Min.Z + bb.Max.Z) / 2.0 if bb is not None else 0.0
         w = len(all_members(d, el)) if isinstance(el, Group) else 1
         box = ((bb.Min.X, bb.Min.Y, bb.Min.Z), (bb.Max.X, bb.Max.Y, bb.Max.Z)) if bb else None
-        out.append((round(z, 2), eid.IntegerValue, w, box))
+        out.append((round(z, 2), id_int(eid), w, box))
     out.sort(key=lambda u: (u[0], u[1]))
     return out
 
@@ -697,7 +698,7 @@ def export_part(d, folder, name, probe, export_fn, part, parts, share=True):
                   if any(j % parts == part - 1 for j in range(len(shared))) else ""))
 
     keep = set(u[1] for u in mine)
-    drop = [ElementId(u[1]) for u in units if u[1] not in keep]
+    drop = [new_id(u[1]) for u in units if u[1] not in keep]
     for s in shared:
         drop.append(s["ref"].Id)
         drop.extend(g.Id for g, _ in s["copies"])
@@ -723,7 +724,7 @@ def export_part(d, folder, name, probe, export_fn, part, parts, share=True):
             continue
         gstem = "%s__g%d" % (name, j + 1)
         gkeep = set(s["members"])
-        gkeep.add(s["ref"].Id.IntegerValue)
+        gkeep.add(id_int(s["ref"].Id))
 
         prep_group = _group_prep(d, gkeep, s["box"], name, s["name"], probe)
         t1 = time.time()
@@ -733,8 +734,8 @@ def export_part(d, folder, name, probe, export_fn, part, parts, share=True):
             continue
         records.append({
             "group": s["name"], "file": os.path.basename(gp),
-            "copies": [{"id": s["ref"].Id.IntegerValue, "rel": xform_dict(Transform.Identity)}]
-                      + [{"id": g.Id.IntegerValue, "rel": xform_dict(rel)} for g, rel in s["copies"]],
+            "copies": [{"id": id_int(s["ref"].Id), "rel": xform_dict(Transform.Identity)}]
+                      + [{"id": id_int(g.Id), "rel": xform_dict(rel)} for g, rel in s["copies"]],
             "box_ft": s["box"],
         })
         probe.info("groups", "'%s': group '%s' written in %.1f min" % (name, s["name"], (time.time() - t1) / 60.0))

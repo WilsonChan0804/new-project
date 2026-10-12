@@ -42,6 +42,7 @@ if _LIB:
 for _m in [k for k in list(sys.modules) if k == "lwk_viewer" or k.startswith("lwk_viewer.")]:
     del sys.modules[_m]
 from lwk_viewer import issues as L
+from lwk_viewer.compat import new_id
 
 XAML = u"""
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -959,7 +960,7 @@ def go_to(uiapp, i, plan, user, say):
         return
 
     if plan:
-        view = doc.GetElement(ElementId(int(i.view_id))) if i.view_id else None
+        view = doc.GetElement(new_id(i.view_id)) if i.view_id else None
         if view is None:
             say("The view '%s' is not in this model." % (i.view_name or i.view_id))
             return

@@ -10,6 +10,7 @@ from Autodesk.Revit.DB import (
     FilteredElementCollector, BuiltInCategory, BuiltInParameter,
     ViewSheet, Viewport, ViewPlan, CategoryType, XYZ, Curve
 )
+from lwk_viewer.compat import id_int, new_id
 
 from lwk_viewer import geom
 from lwk_viewer.probe import Probe
@@ -321,16 +322,16 @@ def view_areas(doc, view, mapping, rooms=False, elements=None, rect=None):
                 pass
             scheme_id = None
             try:
-                scheme_id = a.AreaScheme.Id.IntegerValue
+                scheme_id = id_int(a.AreaScheme.Id)
             except Exception:
                 pass
             out.append({
-                "uid": a.UniqueId, "id": a.Id.IntegerValue,
+                "uid": a.UniqueId, "id": id_int(a.Id),
                 "kind": "room" if rooms else "area",
                 "number": a.Number or "", "name": name,
                 "area_m2": _area_m2(a),
                 "scheme": scheme, "level": level,
-                "view_id": view.Id.IntegerValue,
+                "view_id": id_int(view.Id),
                 "loops": loops, "label": label,
                 # every parameter with a value, for the viewer's Properties
                 "params": _area_params(a),
@@ -428,7 +429,7 @@ def _area_pvals(a):
                 else:
                     continue
                 if v:
-                    out[p.Id.IntegerValue] = _cell_norm(v)
+                    out[id_int(p.Id)] = _cell_norm(v)
             except Exception:
                 continue
     except Exception:
@@ -482,7 +483,7 @@ def sheet_schedules(doc, sheet, origin_ft, areas):
             if sch is None:
                 continue
             try:
-                cat = sch.Definition.CategoryId.IntegerValue
+                cat = id_int(sch.Definition.CategoryId)
             except Exception:
                 cat = None
             if cat == int(BuiltInCategory.OST_Areas):
@@ -532,7 +533,7 @@ def sheet_schedules(doc, sheet, origin_ft, areas):
                         heads.add(_cell_norm(f.ColumnHeading))
                         pid = None
                         try:
-                            pid = f.ParameterId.IntegerValue
+                            pid = id_int(f.ParameterId)
                         except Exception:
                             pid = None
                         col_pid.append(pid)
@@ -544,7 +545,7 @@ def sheet_schedules(doc, sheet, origin_ft, areas):
                 continue
             full_pool = pool
             try:
-                sid = sch.Definition.AreaSchemeId.IntegerValue
+                sid = id_int(sch.Definition.AreaSchemeId)
                 if sid > 0 and kind == "area":
                     pool = [a for a in pool if a.get("_scheme_id") in (None, sid)]
             except Exception:
@@ -557,7 +558,7 @@ def sheet_schedules(doc, sheet, origin_ft, areas):
                     try:
                         if str(flt.FilterType) != "Equal":
                             continue
-                        fpid = dfn.GetField(flt.FieldId).ParameterId.IntegerValue
+                        fpid = id_int(dfn.GetField(flt.FieldId).ParameterId)
                         if flt.IsStringValue:
                             want = _cell_norm(flt.GetStringValue())
                         elif flt.IsElementIdValue:
@@ -711,7 +712,7 @@ def sheet_schedules(doc, sheet, origin_ft, areas):
                     unlinked.append(" | ".join(t for t in cells if t))
             hs.sort()
             out.append({
-                "name": sch.Name, "id": sch.Id.IntegerValue,
+                "name": sch.Name, "id": id_int(sch.Id),
                 "rect_mm": [round(x0, 2), round(y0, 2), round(x1, 2), round(y1, 2)],
                 "row_h_mm": round(hs[len(hs) // 2], 2) if hs else None,
                 "split": split,
@@ -756,7 +757,7 @@ def view_mark_boxes(doc, view, mapping, rect):
 def build_sheet(doc, sheet, probe):
     origin_ft, size = paper_origin(doc, sheet, probe)
     rec = {
-        "element_id": sheet.Id.IntegerValue,
+        "element_id": id_int(sheet.Id),
         "unique_id": sheet.UniqueId,
         "number": sheet.SheetNumber,
         "name": sheet.Name,
@@ -772,7 +773,7 @@ def build_sheet(doc, sheet, probe):
         from Autodesk.Revit.DB import ScheduleSheetInstance
         for ssi in FilteredElementCollector(doc, sheet.Id).OfClass(ScheduleSheetInstance):
             sch = doc.GetElement(ssi.ScheduleId)
-            if sch is not None and sch.Definition.CategoryId.IntegerValue == int(BuiltInCategory.OST_Rooms):
+            if sch is not None and id_int(sch.Definition.CategoryId) == int(BuiltInCategory.OST_Rooms):
                 want_rooms = True
                 break
     except Exception:
@@ -786,8 +787,8 @@ def build_sheet(doc, sheet, probe):
             continue
 
         entry = {
-            "element_id": vpid.IntegerValue,
-            "view_id": view.Id.IntegerValue,
+            "element_id": id_int(vpid),
+            "view_id": id_int(view.Id),
             "view_unique_id": view.UniqueId,
             "view_name": view.Name,
             "view_type": str(view.ViewType),
@@ -846,7 +847,7 @@ def build_sheet(doc, sheet, probe):
         except Exception as ex:
             entry["unmappable_reason"] = "transform failed: %s" % ex
             probe.error(sheet.SheetNumber,
-                        "viewport %s failed: %s" % (vpid.IntegerValue, ex))
+                        "viewport %s failed: %s" % (id_int(vpid), ex))
             rec["viewports"].append(entry)
             continue
 
@@ -894,9 +895,9 @@ def build_sheet(doc, sheet, probe):
         for ssi in FilteredElementCollector(doc, sheet.Id).OfClass(ScheduleSheetInstance):
             sch = doc.GetElement(ssi.ScheduleId)
             try:
-                if sch is None or sch.Definition.CategoryId.IntegerValue != int(BuiltInCategory.OST_Areas):
+                if sch is None or id_int(sch.Definition.CategoryId) != int(BuiltInCategory.OST_Areas):
                     continue
-                sid = sch.Definition.AreaSchemeId.IntegerValue
+                sid = id_int(sch.Definition.AreaSchemeId)
             except Exception:
                 continue
             if sid > 0 and sid not in have_schemes:
@@ -908,13 +909,13 @@ def build_sheet(doc, sheet, probe):
             for sid in wanted:
                 for view, mapping, rect in plan_vps:
                     try:
-                        lid = view.GenLevel.Id.IntegerValue
+                        lid = id_int(view.GenLevel.Id)
                     except Exception:
                         continue
                     els = []
                     for a in all_areas:
                         try:
-                            if a.AreaScheme.Id.IntegerValue == sid and a.LevelId.IntegerValue == lid:
+                            if id_int(a.AreaScheme.Id) == sid and id_int(a.LevelId) == lid:
                                 els.append(a)
                         except Exception:
                             continue
@@ -1008,14 +1009,14 @@ def build_elements(doc, probe, categories=None):
         cat = el.Category
         if cat is None or cat.CategoryType != CategoryType.Model:
             continue
-        if categories and cat.Id.IntegerValue not in categories:
+        if categories and id_int(cat.Id) not in categories:
             continue
         try:
             lvl = doc.GetElement(el.LevelId) if el.LevelId is not None else None
         except Exception:
             lvl = None
         out.append({
-            "element_id": el.Id.IntegerValue,
+            "element_id": id_int(el.Id),
             "unique_id": el.UniqueId,
             "ifc_guid": ifc_guid(doc, el),
             "category": cat.Name,
@@ -1206,7 +1207,7 @@ def levels(doc, probe):
             z = lv.ProjectElevation * FT_MM
         except Exception:
             z = lv.Elevation * FT_MM
-        rec = {"name": _element_name(lv) or lv.Name, "id": lv.Id.IntegerValue,
+        rec = {"name": _element_name(lv) or lv.Name, "id": id_int(lv.Id),
                "elevation_internal_mm": round(z, 1)}
         try:
             rec["elevation_param_mm"] = round(lv.Elevation * FT_MM, 1)
@@ -1253,7 +1254,7 @@ def _placement_key(inst, ld):
     except Exception:
         title = ""
     if not title:
-        title = "type:%d" % inst.GetTypeId().IntegerValue
+        title = "type:%d" % id_int(inst.GetTypeId())
     return (title,
             round(o.X * FT_MM), round(o.Y * FT_MM), round(o.Z * FT_MM),
             round(tr.BasisX.X, 4), round(tr.BasisX.Y, 4), round(tr.BasisX.Z, 4),
@@ -1280,7 +1281,7 @@ def duplicate_link_placements(doc):
             ld = None
         if ld is None:
             continue
-        insts.append((inst.Id.IntegerValue, inst, ld))
+        insts.append((id_int(inst.Id), inst, ld))
     insts.sort(key=lambda r: r[0])
     seen, dups = {}, {}
     for iid, inst, ld in insts:
@@ -1331,8 +1332,8 @@ def link_instances(doc, probe):
             except Exception:
                 name = ""
         out.append({
-            "instance_id": inst.Id.IntegerValue,
-            "link": name or ("link %d" % inst.Id.IntegerValue),
+            "instance_id": id_int(inst.Id),
+            "link": name or ("link %d" % id_int(inst.Id)),
             "loaded": ld is not None,
             "origin_mm": [round(o.X * FT_MM, 1), round(o.Y * FT_MM, 1), round(o.Z * FT_MM, 1)],
             "basis_x": [bx.X, bx.Y, bx.Z],
@@ -1340,10 +1341,10 @@ def link_instances(doc, probe):
             "basis_z": [bz.X, bz.Y, bz.Z],
             "mirrored": bool(tr.HasReflection),
         })
-        if inst.Id.IntegerValue in dups:
+        if id_int(inst.Id) in dups:
             # Kept in the table (it IS in the Revit model) but marked, and
             # left out of the IFC and the viewer's placements.
-            out[-1]["duplicate_of"] = dups[inst.Id.IntegerValue]
+            out[-1]["duplicate_of"] = dups[id_int(inst.Id)]
 
     # Say, per linked model, how many times it is placed and over what
     # heights: a repeated typical floor shows up here at a glance.

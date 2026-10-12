@@ -40,6 +40,7 @@ if EXT_ROOT:
         sys.path.insert(0, _lib)
 
 from Autodesk.Revit.DB import FilteredElementCollector, RevitLinkInstance
+from lwk_viewer.compat import id_int, new_id
 
 FT_MM = 304.8
 doc = revit.doc
@@ -117,7 +118,7 @@ def main():
             continue
 
         rec["instances"].append({
-            "instance_id": li.Id.IntegerValue,
+            "instance_id": id_int(li.Id),
             "name": li.Name,
             "identity": is_identity(x),
             "transform": x,
