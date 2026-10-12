@@ -40,7 +40,8 @@ PART = [
     UL([
         '喺清單撳一個 issue（或者 3D 入面佢支 pin）打開佢。喺 3D，視圖會返去開 issue 嗰個人見到嘅樣：同一個眼位同方向、section box 連佢嘅角度（或者 section plane）、隱藏咗嘅元件、平行定透視，同 floor plan。**Show in view** 同 issue 連結都一樣。',
         '**喺 Revit**（LWK Issues > **Go to**）：用 viewer 普通鏡頭、或者行緊（walk）時開嘅 issue，會喺一個透視鏡頭視圖 **LWK Issue - <你> (camera)** 由同一個眼位打開，連埋同一個 section box，唔再係由外面睇成棟樓。',
-        '喺 issue 視窗：改標題同欄位、**Add photo**（地盤相，可以一次加幾張），喺 **Add a comment** 寫低再撳 **Comment**。打 **@** 可以 mention project 成員。',
+        '喺 issue 視窗：改標題同欄位、**Add photo**（地盤相，可以一次加幾張），喺 **Discussion** 寫低再撳 **Post**。打 **@** 可以 mention project 成員。',
+        '**討論入面加相**（Sheets 同 3D 一樣）：Post 旁邊嘅 **📷 Photo** 揀相 - 用手機或者 iPad 可以即刻影 - 或者喺訊息格 **Ctrl+V** 貼截圖，或者將相片檔拖入去。相會喺格下面等住（✕ 拎走一張），撳 **Post** 就同訊息一齊出；淨係相冇字都得。大張相會先縮細（1920 px）。喺討論撳一張相可以睇大圖（← → 下一張，**Esc** 關）。Issue report 會喺訊息下面顯示呢啲相。',
         '**Show in view** 返去嗰個位；**Show in 3D** 喺嗰度打開 3D 版。',
         '**Not an issue** 會連一個人人睇到嘅原因閂咗佢；同一個掣可以重開。',
         '**Delete** 會幫所有人刪除。Member 只可以刪自己嘅 issue；project admin 刪得任何一個。',

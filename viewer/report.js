@@ -128,7 +128,7 @@ function issueHtml(it) {
   const t = TYPE.get(iss.type) || { label: iss.type || "General" };
   const pics = $("#r-pics").checked;
   const late = overdue(it);
-  const comments = (iss.comments || []).filter((c) => c && (c.text || "").trim());
+  const comments = (iss.comments || []).filter((c) => c && !c.deleted && ((c.text || "").trim() || (c.images || []).length));
   const hist = iss.history || [];
   return `<div class="issue" data-id="${esc(it.id)}">
     <div class="head"><span class="num">#${esc(iss.number || "?")}</span>
@@ -149,7 +149,8 @@ function issueHtml(it) {
       ${pics ? `<div class="pic" data-pic="${esc(it.id)}"><div class="cap">loading picture ...</div></div>` : ""}
     </div>
     ${$("#r-comments").checked && comments.length ? `<div class="comments">${comments.map((c) =>
-      `<div class="c"><div class="who">${esc(c.author || "")} · ${esc(fmt(c.at || c.date || c.created_at))}</div>${esc(c.text)}</div>`).join("")}</div>` : ""}
+      `<div class="c"><div class="who">${esc(c.author || "")} · ${esc(fmt(c.at || c.date || c.created_at))}</div>${esc(c.text || "")}`
+      + (pics && (c.images || []).length ? `<div class="cimgs">${c.images.map((s) => `<img src="${esc(s)}" alt="">`).join("")}</div>` : "") + `</div>`).join("")}</div>` : ""}
     ${$("#r-history").checked && hist.length ? `<div class="hist">${hist.map((h) =>
       `${esc(fmt(h.at))} ${esc(h.by || "")}: ${h.event === "created" ? "raised" : h.event === "comment" ? "commented"
         : esc(h.field) + " " + esc(h.from || "-") + " → " + esc(h.to || "-")}`).join(" · ")}</div>` : ""}

@@ -487,6 +487,9 @@ def _comment_key(c):
     return c.get("id") or "%s|%s|%s" % (c.get("author") or "", c.get("at") or "", (c.get("text") or "")[:80])
 
 
+SNAP_PATH = re.compile(r"^/snapshots/[0-9a-f]{8,40}\.(jpg|png)$")
+
+
 def merge_comments(old, new, w):
     """The discussion on an issue is a conversation: two people answering
     at once must both be kept. What the browser sends is merged with what
@@ -513,6 +516,12 @@ def merge_comments(old, new, w):
             continue
         if w.user:
             c["author"] = w.name          # who wrote it is the server's to say
+        if "images" in c:
+            # photos in the discussion: pictures uploaded here, nothing else
+            imgs = c.get("images") if isinstance(c.get("images"), list) else []
+            c["images"] = [s for s in imgs if isinstance(s, str) and SNAP_PATH.match(s)][:10]
+            if not c["images"]:
+                del c["images"]
         by_key[k] = c
         out.append(c)
     out.sort(key=lambda c: c.get("at") or "")
@@ -623,7 +632,10 @@ def teams_events(prev, item):
         ev.append("due " + iss["due_date"])
     if len(iss.get("comments") or []) > len(piss.get("comments") or []):
         c = (iss.get("comments") or [])[-1] or {}
-        ev.append("new comment: \"%s\"" % str(c.get("text") or "")[:140])
+        n_img = len(c.get("images") or [])
+        txt = str(c.get("text") or "")[:140]
+        pics = "%d photo%s" % (n_img, "" if n_img == 1 else "s") if n_img else ""
+        ev.append("new comment: \"%s\"%s" % (txt, " (" + pics + ")" if pics and txt else "") if txt else "new comment: (%s)" % (pics or "empty"))
     return ev
 
 

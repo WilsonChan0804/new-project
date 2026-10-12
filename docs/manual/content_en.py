@@ -587,7 +587,8 @@ DOC = [
     UL([
         'Click an issue in the list (or its pin in 3D) to open it. In 3D the view goes back to exactly what the author saw: the same eye and direction, the section box with its turn (or the section plane), hidden elements, parallel or perspective view and the floor plan. **Show in view** and links to the issue do the same.',
         '**In Revit** (LWK Issues > **Go to**): an issue seen through the viewer\'s normal camera, or raised while walking, opens in a perspective camera view **LWK Issue - <you> (camera)** from the same eye, with the same section box, not a view of the whole building from outside.',
-        'In the issue window: edit the title and fields, **Add photo** (site photos, several at once), and write in **Add a comment** then press **Comment**. Type **@** to mention a project member.',
+        'In the issue window: edit the title and fields, **Add photo** (site photos, several at once), and write in **Discussion** then press **Post**. Type **@** to mention a project member.',
+        '**Photos in the discussion** (Sheets and 3D alike): **📷 Photo** beside Post picks pictures - on a phone or iPad it can take one with the camera - or paste a screenshot (**Ctrl+V**) into the message box, or drop picture files on it. They wait under the box (✕ leaves one out) and go with the message when you **Post**; a message can be photos alone. Large photos are made smaller (1920 px) first. Click a photo in the discussion to see it large (← → for the next, **Esc** to close). The issue report shows them under the message.',
         '**Show in view** returns to the spot; **Show in 3D** opens the 3D page there.',
         '**Not an issue** closes it with a reason that everyone can read; the same button reopens it.',
         '**Delete** removes it for everyone. Members can delete only their own issues; project admins can delete any.',

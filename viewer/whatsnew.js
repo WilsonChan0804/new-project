@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-28", date: "12 Oct 2026",
+    items: [
+      "Issues (Sheets and 3D): **photos in the Discussion** - **📷 Photo** beside Post (or the camera on a phone / iPad), paste a screenshot with **Ctrl+V**, or drop pictures on the message box. Click a photo to see it large; the issue report shows them too.",
+    ],
+  },
+  {
     version: "2026-10-27", date: "12 Oct 2026",
     items: [
       "3D header: **one line** on a wide window (links, project, Navigate / Add issue / Measure, Floor plan, Plan overlay, link, BCF, then Search, the bell, + Task and your profile at the right) and **never more than two** on a smaller one - the tools go down a line, with the project drop-downs on a small window.",

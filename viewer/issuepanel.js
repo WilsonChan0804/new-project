@@ -94,8 +94,11 @@ export function ensureDialog() {
           <div id="detail-comments"></div>
           <div id="disc-replying" class="disc-replying" hidden></div>
           <div class="detail-add disc-compose">
-            <textarea id="detail-newc" rows="2" placeholder="Write to everyone on this issue - a question, an answer, an update. @name to tell someone. Ctrl+Enter to post."></textarea>
+            <textarea id="detail-newc" rows="2" placeholder="Write to everyone on this issue - a question, an answer, an update. @name to tell someone. Paste or drop photos. Ctrl+Enter to post."></textarea>
+            <div id="disc-pending" class="disc-pending" hidden></div>
             <div class="disc-actions">
+              <button id="disc-photo" class="ghost" type="button" title="Add photos to this message: pick pictures, or take one with the camera on a phone or iPad. You can also paste a screenshot (Ctrl+V) or drop pictures here.">&#128247; Photo</button>
+              <input id="disc-photo-file" type="file" accept="image/*" multiple hidden>
               <label class="row-check" title="A query waits for an answer: it shows as open until someone replies and it is marked answered">
                 <input type="checkbox" id="disc-query"> Query</label>
               <button id="detail-addc">Post</button>
@@ -124,6 +127,73 @@ export function ensureDialog() {
     const x = document.getElementById("detail-close");
     if (x) { ev.preventDefault(); x.click(); }
   });
+}
+
+/* ------------------------------------------------ photos in the discussion */
+
+const MAX_PHOTOS = 10;
+const MAX_SIDE = 1920;
+
+/* A picture as a data URL for upload: at most 1920 px on its longest side
+   (JPEG); a small PNG screenshot is kept as it is. */
+async function shrinkPhoto(file) {
+  const asUrl = (blob) => new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(new Error("could not read it"));
+    fr.readAsDataURL(blob);
+  });
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch (e) { bmp = null; }
+  if (!bmp) {
+    // a browser that cannot decode it here: sent as it is if the server takes it
+    if (/^image\/(png|jpe?g)$/.test(file.type)) return asUrl(file);
+    throw new Error("not a picture this browser can read");
+  }
+  const k = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height));
+  if (k === 1 && file.type === "image/png" && file.size < 1024 * 1024) return asUrl(file);
+  if (k === 1 && file.type === "image/jpeg" && file.size < 1.5 * 1024 * 1024) return asUrl(file);
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(bmp.width * k));
+  c.height = Math.max(1, Math.round(bmp.height * k));
+  const g = c.getContext("2d");
+  g.fillStyle = "#ffffff";
+  g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  if (bmp.close) bmp.close();
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
+/* A message's photos, large: arrows (or the keyboard) step between them. */
+function showPhotos(list, i, caption) {
+  if (!list.length) return;
+  let at = Math.max(0, Math.min(list.length - 1, i));
+  const v = document.createElement("div");
+  v.id = "photo-view";
+  v.setAttribute("role", "dialog");
+  v.setAttribute("aria-label", "Photo");
+  const draw = () => {
+    v.innerHTML = `<button class="pv-x" type="button" aria-label="Close">&#10005;</button>`
+      + (list.length > 1 ? `<button class="pv-prev" type="button" aria-label="Previous">&#8249;</button><button class="pv-next" type="button" aria-label="Next">&#8250;</button>` : "")
+      + `<img src="${esc(list[at])}" alt="">`
+      + `<div class="pv-bar"><span>${esc(caption || "")}${list.length > 1 ? ` · ${at + 1} of ${list.length}` : ""}</span>`
+      + `<a href="${esc(list[at])}" target="_blank" rel="noopener">Open original</a></div>`;
+    v.querySelector(".pv-x").onclick = close;
+    const pr = v.querySelector(".pv-prev"), nx = v.querySelector(".pv-next");
+    if (pr) pr.onclick = (ev) => { ev.stopPropagation(); step(-1); };
+    if (nx) nx.onclick = (ev) => { ev.stopPropagation(); step(1); };
+  };
+  const step = (d) => { at = (at + d + list.length) % list.length; draw(); };
+  const key = (ev) => {
+    if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); close(); }
+    else if (ev.key === "ArrowRight") step(1);
+    else if (ev.key === "ArrowLeft") step(-1);
+  };
+  function close() { v.remove(); removeEventListener("keydown", key, true); }
+  v.onclick = (ev) => { if (ev.target === v) close(); };
+  addEventListener("keydown", key, true);
+  draw();
+  document.body.appendChild(v);
 }
 
 /* A comment with its @names picked out. */
@@ -283,7 +353,9 @@ export function openIssue(item, opts) {
         : `<span class="q-badge">${answers.length ? "Query - replied" : "Query - awaiting reply"}</span>`;
       return `<div class="cmt${q ? " query" : ""}${c.author && c.author === me ? " mine" : ""}" style="margin-left:${Math.min(depth, 4) * 18}px">`
         + `<div class="cmt-h"><b>${esc(c.author || "?")}</b>${badge}<span class="spacer"></span><span>${esc(when(c.at))}</span></div>`
-        + `<div class="cmt-t">${linkify(mentionHtml(c.text, c.mentions))}</div>`
+        + (c.text ? `<div class="cmt-t">${linkify(mentionHtml(c.text, c.mentions))}</div>` : "")
+        + (Array.isArray(c.images) && c.images.length ? `<div class="cmt-imgs">${c.images.map((src, i) =>
+          `<img src="${esc(src)}" alt="Photo ${i + 1}" loading="lazy" data-cimg="${esc(cid(c))}" data-ci="${i}">`).join("")}</div>` : "")
         + `<div class="cmt-a"><button class="ghost linkish" data-reply="${esc(cid(c))}">Reply</button>`
         + (q && !c.resolved ? `<button class="ghost linkish" data-resolve="${esc(cid(c))}">Mark answered</button>` : "")
         + (q && c.resolved ? `<button class="ghost linkish" data-reopen="${esc(cid(c))}">Reopen query</button>` : "")
@@ -312,6 +384,10 @@ export function openIssue(item, opts) {
       c.resolved_at = on ? new Date().toISOString() : null;
       renderComments();
       await opts.onSave(collect());
+    };
+    for (const im of box.querySelectorAll("[data-cimg]")) im.onclick = () => {
+      const c = find(im.dataset.cimg);
+      if (c) showPhotos(c.images || [], Number(im.dataset.ci) || 0, `${c.author || ""} · ${when(c.at)}`);
     };
     for (const b of box.querySelectorAll("[data-resolve]")) b.onclick = () => flag(b.dataset.resolve, true);
     for (const b of box.querySelectorAll("[data-reopen]")) b.onclick = () => flag(b.dataset.reopen, false);
@@ -458,18 +534,75 @@ export function openIssue(item, opts) {
     await opts.onSave(collect());
   };
 
+  /* Photos for the next message: picked, pasted or dropped; made smaller
+     here (a phone photo is several MB) and uploaded when it is posted. */
+  let pending = [];
+  const renderPending = () => {
+    const box = $("#disc-pending");
+    box.hidden = !pending.length;
+    box.innerHTML = pending.map((p, i) => `<div class="dp-cell"><img src="${p.url}" alt=""><button type="button" data-dp="${i}" title="Leave this photo out">&#10005;</button></div>`).join("");
+    for (const b of box.querySelectorAll("[data-dp]")) b.onclick = () => { pending.splice(Number(b.dataset.dp), 1); renderPending(); };
+  };
+  const addPhotos = async (files) => {
+    const imgs = Array.from(files || []).filter((f) => f && /^image\//.test(f.type));
+    for (const f of imgs) {
+      if (pending.length >= MAX_PHOTOS) { alert(`${MAX_PHOTOS} photos at most in one message.`); break; }
+      try { pending.push({ url: await shrinkPhoto(f) }); } catch (e) { alert("Could not read " + (f.name || "the picture") + ": " + e.message); }
+    }
+    renderPending();
+    return imgs.length;
+  };
+  renderPending();
+  $("#disc-photo").onclick = () => $("#disc-photo-file").click();
+  $("#disc-photo-file").onchange = async (ev) => { await addPhotos(ev.target.files); ev.target.value = ""; };
+  $("#detail-newc").onpaste = (ev) => {
+    const files = Array.from((ev.clipboardData && ev.clipboardData.items) || []).filter((x) => x.kind === "file").map((x) => x.getAsFile()).filter(Boolean);
+    if (files.some((f) => /^image\//.test(f.type))) { ev.preventDefault(); addPhotos(files); }
+  };
+  const compose = document.querySelector("#detail-back .disc-compose");
+  compose.ondragover = (ev) => {
+    if (!ev.dataTransfer || ![...(ev.dataTransfer.types || [])].includes("Files")) return;
+    ev.preventDefault();
+    compose.classList.add("drop-on");
+  };
+  compose.ondragleave = (ev) => { if (!compose.contains(ev.relatedTarget)) compose.classList.remove("drop-on"); };
+  compose.ondrop = (ev) => {
+    compose.classList.remove("drop-on");
+    if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
+    ev.preventDefault();
+    addPhotos(ev.dataTransfer.files);
+  };
+
   $("#detail-addc").onclick = async () => {
     const t = $("#detail-newc").value.trim();
-    if (!t) return;
+    if (!t && !pending.length) return;
+    const btn = $("#detail-addc");
+    let images = [];
+    if (pending.length) {
+      if (!opts.onUpload) { alert("Photos cannot be added here."); return; }
+      btn.disabled = true;
+      btn.textContent = "Posting ...";
+      try {
+        for (const p of pending) { const path = await opts.onUpload(p.url); if (path) images.push(path); }
+      } catch (e) {
+        alert("The photos could not be sent (" + e.message + ") - your message is kept, try Post again.");
+        btn.disabled = false; btn.textContent = "Post";
+        return;
+      }
+      btn.disabled = false; btn.textContent = "Post";
+    }
     const named = (window.LWKMentions && window.LWKMentions.mentionsIn(t)) || [];
     const c = { id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
                 author: opts.author || "?", text: t, at: new Date().toISOString() };
+    if (images.length) c.images = images;
     if (named.length) c.mentions = named;
     if (replyTo) c.reply_to = replyTo;
     if ($("#disc-query").checked) c.kind = "query";
     iss.comments.push(c);
     $("#detail-newc").value = "";
     $("#disc-query").checked = false;
+    pending = [];
+    renderPending();
     replyTo = null;
     $("#disc-replying").hidden = true;
     renderComments();
@@ -510,7 +643,7 @@ export function openIssue(item, opts) {
           o.resolved = c.resolved; o.resolved_by = c.resolved_by; o.deleted = c.deleted; changed = true;
         }
       }
-      const sig = iss.comments.map((c) => cid(c) + (c.resolved ? "r" : "") + (c.deleted ? "d" : "")).join(",");
+      const sig = iss.comments.map((c) => cid(c) + (c.resolved ? "r" : "") + (c.deleted ? "d" : "") + ((c.images || []).length || "")).join(",");
       if (sig !== openIssue._sig) { openIssue._sig = sig; changed = true; }
       if (changed) {
         iss.comments.sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));

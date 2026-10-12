@@ -42,3 +42,7 @@ h2.group { font-size: 15px; border-bottom: 2px solid var(--accent); padding-bott
   main { max-width: none; margin: 0; } .page { box-shadow: none; padding: 0; margin: 0 0 6mm; }
   .cover { page-break-after: always; } h2.group { page-break-before: always; } h2.group.first { page-break-before: auto; }
 }
+
+/* photos posted in the discussion */
+.comments .cimgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.comments .cimgs img { width: calc((100% - 12px) / 3); max-height: 60mm; object-fit: cover; border: 1px solid #ddd; border-radius: 3px; }
