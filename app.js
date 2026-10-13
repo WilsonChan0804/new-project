@@ -1148,7 +1148,7 @@ async function viewPics(id, start) {
       };
       document.addEventListener('keydown', key);
 
-      // 手指：兩指縮放（放手後保持）、一指拖動、雙撳放大／還原、未放大時左右掃轉相
+      // 手指：兩指縮放（放手後保持）、一指拖動、雙撳還原原大、未放大時左右掃轉相
       const pts = new Map();
       let g0 = null, lastTap = 0, lastTapXY = null;
       const mid = () => { const a = [...pts.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
@@ -1191,7 +1191,7 @@ async function viewPics(id, start) {
           if (!g.moved && dt < 300) {
             const now = Date.now();
             if (now - lastTap < 320 && lastTapXY && Math.hypot(e.clientX - lastTapXY.x, e.clientY - lastTapXY.y) < 40) {
-              if (s > 1.01) reset(); else zoomAt(2.5, e.clientX, e.clientY, true);
+              if (s > 1.01) reset();   // 雙撳：還原原大
               lastTap = 0;
             } else { lastTap = now; lastTapXY = { x: e.clientX, y: e.clientY }; }
           }
@@ -1550,6 +1550,7 @@ function openLocPicker(id, which, prefill = '') {
         navigator.geolocation.getCurrentPosition(p => pick({ lat: p.coords.latitude, lon: p.coords.longitude, name: nameIn.value || '我嘅位置', ja: '', addr: '' }), () => { hint.textContent = '攞唔到位置——請容許「定位」權限'; }, { enableHighAccuracy: true, timeout: 20000 });
       };
       form.querySelector('#locReset')?.addEventListener('click', () => { closeModal(); resetLoc(id, which); });
+      if (prefill) go();   // 先搜尋，唔使等地圖載入
       try {
         await loadLeaflet();
         const start = await curPointOf(it, which);
@@ -1559,10 +1560,10 @@ function openLocPicker(id, which, prefill = '') {
         pmap.setView(start ? [start.lat, start.lon] : [35.6812, 139.7671], start ? 16 : 12);
         if (start) L.circleMarker([start.lat, start.lon], { radius: 7, color: '#fff', weight: 3, fillColor: '#8a8780', fillOpacity: 1 }).bindTooltip('而家', { permanent: true, direction: 'right', className: 'omap-tip' }).addTo(pmap);
         pmap.on('click', e => pick({ lat: e.latlng.lat, lon: e.latlng.lng, name: nameIn.value.trim() || '地圖上揀嘅位置', ja: '', addr: '' }));
+        if (chosen) { marker = L.marker([chosen.lat, chosen.lon]).addTo(pmap); pmap.setView([chosen.lat, chosen.lon], 16); }
         setTimeout(() => pmap.invalidateSize(), 80);
         $('#modal').addEventListener('close', () => pmap?.remove(), { once: true });
       } catch { form.querySelector('.pickmap').hidden = true; }
-      if (prefill) go();
     },
     onSubmit: () => {
       if (!chosen) { toast('請先揀一個位置（搜尋結果、地圖上撳或者 GPS）'); return false; }
@@ -1621,13 +1622,22 @@ function applyLoc(id, which, c, { addr }) {
       sug.push({ label: `⚠️ 記得睇下「交通」：${it.xTransport}`, info: true });
   } else {
     if (it.titleJa && !sameName(newName, it.titleJa, it.title)) sug.push({ label: `日文名「${it.titleJa}」可能要改`, info: true });
+    // 前後嘅交通／步行：標題「A → B」跟住改
+    const nb = [[list[f.index - 1], 'to'], [list[f.index + 1], 'from']];
+    for (const [x, side] of nb) {
+      if (!x || !TRANSPORT.has(x.type) || x.type === 'flight') continue;
+      const t = swapSide(x.title, side, newName);
+      if (!t || t === x.title) continue;
+      sug.push({ label: `${side === 'to' ? '上' : '下'}一項「${x.title}」改做「${t}」`, off: !it.added,
+        run: () => { const y = findItem(x.id).item; y.title = t; if (y.type === 'walk') { y[side] = c.ja || c.name; y[side + 'Zh'] = c.name; } } });
+    }
   }
   if (!sug.length) return openItem(id);
   openModal({
     title: '要唔要一齊更新？',
     submitLabel: '套用',
     body: `<p class="hint">位置已經改做「${esc(newName)}」。以下資料可能都要跟住改：</p>
-      ${sug.map((s, i) => s.info ? `<p class="sug info">${esc(s.label)}</p>` : `<label class="check sug"><input type="checkbox" name="s${i}" checked> ${esc(s.label)}</label>`).join('')}`,
+      ${sug.map((s, i) => s.info ? `<p class="sug info">${esc(s.label)}</p>` : `<label class="check sug"><input type="checkbox" name="s${i}" ${s.off ? '' : 'checked'}> ${esc(s.label)}</label>`).join('')}`,
     onSubmit: fd => {
       const todo = sug.filter((s, i) => !s.info && fd.get('s' + i));
       if (todo.length) commit(() => { const x = findItem(id); todo.forEach(s => s.run(x)); }, '已一齊更新');
@@ -1763,6 +1773,55 @@ function openFx() {
   });
 }
 
+/* =========================================================
+   喺兩項行程中間加一項：名稱、類型、時間（預設 30 分鐘）、位置
+   之後嘅項目自動推後；前後兩項同全日 Google Maps 路線會跟新位置更新
+   ========================================================= */
+const insBtn = (dayId, index) => `<button type="button" class="ins" data-act="ins" data-day="${dayId}" data-i="${index}" aria-label="喺度加一項"><span>＋</span><em>喺度加一項</em></button>`;
+function addItemForm(dayId, index) {
+  const day = trip.days.find(d => d.id === dayId);
+  if (!day) return;
+  const prev = day.items[index - 1], next = day.items[index];
+  // 預設開始時間：上一項完結；冇就用下一項開始
+  const start = isHM(prev?.end) ? prev.end : isHM(prev?.time) ? fromMin(toMin(prev.time) + (durOf(prev) || 30)) : isHM(next?.time) ? next.time : '12:00';
+  const types = [['sight', '景點'], ['food', '食飯'], ['shop', '購物'], ['other', '其他'], ['hotel', '酒店'], ['train', '交通（電車／巴士）']];
+  openModal({
+    title: `加一項（${prev ? `「${prev.title}」之後` : '當日第一項'}）`,
+    submitLabel: '加入',
+    body: `<label>名稱<input name="title" required placeholder="例如：皇居東御苑"></label>
+      <label>類型<select name="type">${types.map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
+      <div class="grid2">
+        <label>開始<input type="time" name="time" value="${start}"></label>
+        <label>需時（分鐘）<input name="dur" type="number" min="5" step="5" value="30" inputmode="numeric"></label>
+      </div>
+      <label>位置（地名、地址或 Google Maps 連結；中日英都得）<input name="loc" placeholder="例如：皇居、東京都千代田区千代田1-1"></label>
+      <label>備註<textarea name="xNote" rows="2"></textarea></label>
+      ${next ? `<label class="check"><input type="checkbox" name="push" checked> 之後嘅項目（由「${esc(next.title)}」開始）推後同樣時間</label>` : ''}
+      <p class="hint">加入之後會叫你喺地圖確認準確位置；時間之後可以用「修改」或者「延遲」再調整。</p>`,
+    onSubmit: fd => {
+      const title = fd.get('title').toString().trim();
+      if (!title) { toast('請填名稱'); return false; }
+      const type = fd.get('type').toString();
+      const time = isHM(fd.get('time')) ? fd.get('time').toString() : start;
+      const dur = Math.max(5, parseInt(fd.get('dur'), 10) || 30);
+      const loc = fd.get('loc').toString().trim();
+      const it = { id: 'u' + uid(), type, title, time, end: fromMin(Math.min(1439, toMin(time) + dur)), status: 'planned', added: true };
+      const note = fd.get('xNote').toString().trim();
+      if (note) it.xNote = note;
+      const isUrl = /https?:\/\//.test(loc);
+      if (TRANSPORT.has(type)) { if (loc && !isUrl) { it.to = loc; it.toZh = loc; } }
+      else if (loc && !isUrl) { it.address = loc; it.addrSet = true; }
+      commit(() => {
+        const d = trip.days.find(x => x.id === dayId);
+        d.items.splice(index, 0, it);
+        if (fd.get('push')) shiftFrom(d.items, index + 1, dur);
+      }, `已加入「${title}」`);
+      // 即刻揀準確位置（前後路線同全日路線會跟住更新）
+      setTimeout(() => openLocPicker(it.id, TRANSPORT.has(type) ? 'to' : 'place', loc || title), 0);
+    },
+  });
+}
+
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
 const ui = { tab: 'plan', day: null };
@@ -1841,8 +1900,10 @@ function renderPlan() {
   let prevLoc = '';
   const now = nowHM();
   const nextId = isToday ? (day.items.find(i => i.status !== 'done' && (!isHM(i.end) || i.end > now)) || {}).id : null;
-  day.items.forEach(it => {
+  items += insBtn(day.id, 0);
+  day.items.forEach((it, i) => {
     items += renderItem(it, prevLoc, it.id === nextId);
+    items += insBtn(day.id, i + 1);
     if (locOf(it)) prevLoc = locOf(it);
   });
 
@@ -2441,6 +2502,7 @@ const actions = {
   kappa: () => window.Kappa?.play(),
   'pics-scroll': (_, el) => { const box = el.parentElement.querySelector('.pics'); const t = box.querySelector('.pic'); box.scrollBy({ left: +el.dataset.dir * Math.max(120, (t?.offsetWidth || 150) + 8), behavior: 'smooth' }); },
   fx: () => openFx(),
+  ins: (_, el) => addItemForm(el.dataset.day, +el.dataset.i),
   'kp-auto': id => { localStorage.setItem('kp-auto', id); render(); },
   'kp-show': () => window.Kappa?.play(),
   'map-lang': id => { localStorage.setItem('map-lang', id); render(); },

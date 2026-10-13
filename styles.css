@@ -469,3 +469,13 @@ rt { font-size: .5em; font-weight: 600; color: var(--muted); letter-spacing: 0; 
 .fx-extra { min-height: 18px; font-size: 13px; color: var(--dark); font-weight: 700; }
 .fx-q { margin: 6px 0; }
 .price .hkd { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-align: right; }
+
+/* ---------- 喺中間加一項 ---------- */
+.ins { display: flex; align-items: center; gap: 8px; margin: -4px 0 -4px 72px; padding: 0; height: 22px; border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; opacity: .55; }
+.ins::before, .ins::after { content: ""; flex: 1; border-top: 1.5px dashed var(--line); }
+.ins span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); font-weight: 800; font-size: 14px; line-height: 1; }
+.ins em { font-style: normal; font-size: 12px; font-weight: 700; display: none; }
+.ins:hover, .ins:focus-visible { opacity: 1; color: var(--dark); }
+.ins:hover em, .ins:focus-visible em { display: inline; }
+.ins:hover span { border-color: var(--dark); background: var(--accent); color: var(--accent-ink); }
+.modal-body select { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
