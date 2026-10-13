@@ -288,15 +288,21 @@ dialog::backdrop { background: rgba(10,10,10,.5); }
 .taxi .addr { font-size: 19px; font-weight: 600; margin-bottom: 18px; overflow-wrap: anywhere; }
 .taxi-modal { width: min(720px, calc(100vw - 16px)); }
 
-.viewer-modal { width: min(960px, calc(100vw - 16px)); }
-.viewer { position: relative; background: #000; border-radius: var(--r-lg); overflow: hidden; margin-bottom: 12px; }
-.viewer img { width: 100%; max-height: 70dvh; object-fit: contain; display: block; }
-.viewer .nav {
-  position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%;
-  border: 0; background: rgba(255,255,255,.85); color: #111; display: grid; place-items: center; cursor: pointer;
-}
-.viewer .nav.l { left: 10px; } .viewer .nav.r { right: 10px; }
-.viewer .cap { color: #ddd; font-size: 12px; padding: 8px 12px; background: #111; }
+/* 相片：全螢幕、可以兩指放大（放手後保持）、拖動、雙撳 */
+#modal.viewer-modal { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border-radius: 0; background: #000; color: #fff; }
+#modal.viewer-modal .modal-form { height: 100dvh; max-height: none; position: relative; }
+#modal.viewer-modal .modal-form > header { position: absolute; top: 0; left: 0; right: 0; z-index: 3; padding: calc(10px + env(safe-area-inset-top)) 12px 10px 16px; background: linear-gradient(rgba(0,0,0,.7), transparent); transition: opacity .2s; }
+#modal.viewer-modal .modal-form > header h2 { color: #eee; }
+#modal.viewer-modal .modal-form > header .icon-btn { background: rgba(255,255,255,.15); color: #fff; border-color: transparent; }
+#modal.viewer-modal .modal-body { padding: 0; height: 100%; overflow: hidden; position: relative; }
+.vstage { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+.vstage img { width: 100%; height: 100%; object-fit: contain; transform-origin: center center; will-change: transform; -webkit-user-drag: none; }
+.viewer-modal .nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.18); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.viewer-modal .nav.l { left: 10px; } .viewer-modal .nav.r { right: 10px; }
+.vbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 14px 12px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(0,0,0,.75)); transition: opacity .2s; }
+.vbar .cap { color: #ddd; font-size: 12px; margin-bottom: 8px; }
+.vbar .btn { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.2); }
+.viewer-modal .zoomed .nav { opacity: 0; pointer-events: none; }
 
 #toast {
   position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
@@ -450,3 +456,16 @@ rt { font-size: .5em; font-weight: 600; color: var(--muted); letter-spacing: 0; 
 .locpick .modal-body > * + * { margin-top: 8px; }
 .sug { display: block; margin: 8px 0; font-size: 15px; }
 .sug.info { color: var(--warn); font-weight: 700; font-size: 14px; }
+
+/* ---------- 匯率 ---------- */
+.icon-btn.fx-btn { width: auto; padding: 0 10px; font-weight: 800; font-size: 13px; letter-spacing: -.02em; }
+.fx-rate { font-size: 15px; line-height: 1.5; }
+.fx-rate small { color: var(--muted); font-size: 12px; }
+.fx-box { position: relative; background: var(--surface-2); border-radius: var(--r); padding: 12px 14px 2px; margin: 10px 0 6px; }
+.fx-in { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.fx-in b { font-size: 22px; color: var(--ink); min-width: 46px; }
+.modal-body .fx-in input { font-size: 28px !important; font-weight: 800; padding: 8px 12px; text-align: right; }
+.fx-swap { position: absolute; right: 18px; top: 50%; transform: translateY(-60%); border: 0; background: none; color: var(--muted); font-size: 18px; pointer-events: none; }
+.fx-extra { min-height: 18px; font-size: 13px; color: var(--dark); font-weight: 700; }
+.fx-q { margin: 6px 0; }
+.price .hkd { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-align: right; }

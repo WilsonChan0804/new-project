@@ -1097,37 +1097,117 @@ async function viewPics(id, start) {
   const all = await orderedPics(it);
   if (!all.length) return;
   let i = Math.min(Math.max(0, start || 0), all.length - 1);
-  const show = async form => {
-    const p = all[i];
-    form.querySelector('.viewer img').src = (await photoURL(p.key)) || '';
-    form.querySelector('.viewer .cap').textContent = `${i + 1}／${all.length} · ${p.cap}`;
-  };
   openModal({
     title: it.title,
     cls: 'viewer-modal',
-    body: `<div class="viewer"><img alt="">
-        ${all.length > 1 ? `<button type="button" class="nav l" aria-label="上一張">${icon('left')}</button><button type="button" class="nav r" aria-label="下一張">${icon('right')}</button>` : ''}
-        <p class="cap"></p></div>
-      <div class="row"><button type="button" class="btn" id="hidePic">🙈 隱藏</button><button type="button" class="btn danger" id="delPic">🗑 刪除</button><button type="button" class="btn" data-act="open" data-id="${id}">返去詳情</button></div>`,
+    body: `<div class="vstage"><img alt="" draggable="false"></div>
+      ${all.length > 1 ? `<button type="button" class="nav l" aria-label="上一張">${icon('left')}</button><button type="button" class="nav r" aria-label="下一張">${icon('right')}</button>` : ''}
+      <div class="vbar"><p class="cap"></p>
+        <div class="row"><button type="button" class="btn" id="zoomReset">↺ 原大</button><button type="button" class="btn" id="hidePic">🙈 隱藏</button><button type="button" class="btn danger" id="delPic">🗑 刪除</button><button type="button" class="btn" data-act="open" data-id="${id}">返去詳情</button></div></div>`,
     onOpen: form => {
-      const go = step => { i = (i + step + all.length) % all.length; show(form); };
+      const stage = form.querySelector('.vstage'), img = stage.querySelector('img');
+      // 縮放狀態：s＝放大倍數，tx／ty＝移動（以畫面中心計）
+      let s = 1, tx = 0, ty = 0;
+      const MAX = 8;
+      const apply = (anim = false) => {
+        img.style.transition = anim ? 'transform .22s ease-out' : 'none';
+        img.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+        form.classList.toggle('zoomed', s > 1.01);
+      };
+      const clamp = () => {
+        const r = stage.getBoundingClientRect();
+        const w = img.clientWidth || r.width, h = img.clientHeight || r.height;
+        const mx = Math.max(0, (w * s - r.width) / 2), my = Math.max(0, (h * s - r.height) / 2);
+        tx = Math.min(mx, Math.max(-mx, tx)); ty = Math.min(my, Math.max(-my, ty));
+      };
+      const reset = (anim = true) => { s = 1; tx = 0; ty = 0; apply(anim); };
+      /** 以畫面上某一點做中心放大縮細 */
+      const zoomAt = (ns, cx, cy, anim = false) => {
+        const r = stage.getBoundingClientRect();
+        const qx = cx - r.left - r.width / 2, qy = cy - r.top - r.height / 2;
+        ns = Math.min(MAX, Math.max(1, ns));
+        tx = qx - (ns / s) * (qx - tx); ty = qy - (ns / s) * (qy - ty); s = ns;
+        if (s <= 1) { tx = 0; ty = 0; }
+        clamp(); apply(anim);
+      };
+      const show = async () => {
+        const p = all[i];
+        reset(false);
+        img.src = (await photoURL(p.key)) || '';
+        form.querySelector('.cap').textContent = `${i + 1}／${all.length} · ${p.cap}`;
+      };
+      const go = step => { if (all.length > 1) { i = (i + step + all.length) % all.length; show(); } };
       form.querySelector('.nav.l')?.addEventListener('click', () => go(-1));
       form.querySelector('.nav.r')?.addEventListener('click', () => go(1));
-      // 電腦：鍵盤左右鍵轉相
-      const key = e => { if (!form.isConnected) return document.removeEventListener('keydown', key); if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1); };
-      if (all.length > 1) document.addEventListener('keydown', key);
-      let x0 = null;
-      const v = form.querySelector('.viewer');
-      v.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
-      v.addEventListener('touchend', e => {
-        if (x0 == null) return;
-        const dx = e.changedTouches[0].clientX - x0;
-        if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
-        x0 = null;
+      form.querySelector('#zoomReset').onclick = () => reset();
+      const key = e => {
+        if (!form.isConnected) return document.removeEventListener('keydown', key);
+        if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1);
+        else if (e.key === '+' || e.key === '=') zoomAt(s * 1.5, innerWidth / 2, innerHeight / 2, true);
+        else if (e.key === '-') zoomAt(s / 1.5, innerWidth / 2, innerHeight / 2, true);
+      };
+      document.addEventListener('keydown', key);
+
+      // 手指：兩指縮放（放手後保持）、一指拖動、雙撳放大／還原、未放大時左右掃轉相
+      const pts = new Map();
+      let g0 = null, lastTap = 0, lastTapXY = null;
+      const mid = () => { const a = [...pts.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
+      const begin = () => {
+        if (pts.size === 2) { const m = mid(); g0 = { type: 'pinch', s, tx, ty, m, r: stage.getBoundingClientRect() }; }
+        else if (pts.size === 1) { const p = [...pts.values()][0]; g0 = { type: 'pan', tx, ty, x: p.x, y: p.y, t: Date.now(), moved: false }; }
+        else g0 = null;
+      };
+      stage.addEventListener('pointerdown', e => { stage.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); begin(); });
+      stage.addEventListener('pointermove', e => {
+        if (!pts.has(e.pointerId) || !g0) return;
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (g0.type === 'pinch' && pts.size === 2) {
+          const m = mid(), r = g0.r;
+          const ns = Math.min(MAX, Math.max(.6, g0.s * m.d / g0.m.d));
+          const q0x = g0.m.x - r.left - r.width / 2, q0y = g0.m.y - r.top - r.height / 2;
+          const qx = m.x - r.left - r.width / 2, qy = m.y - r.top - r.height / 2;
+          tx = qx - (ns / g0.s) * (q0x - g0.tx); ty = qy - (ns / g0.s) * (q0y - g0.ty); s = ns;
+          apply();
+        } else if (g0.type === 'pan') {
+          const dx = e.clientX - g0.x, dy = e.clientY - g0.y;
+          if (Math.hypot(dx, dy) > 6) g0.moved = true;
+          if (s > 1.01) { tx = g0.tx + dx; ty = g0.ty + dy; clamp(); apply(); }
+          else img.style.transform = `translateX(${dx * .6}px)`; // 未放大：跟手少少，放手先轉相
+        }
       });
+      const end = e => {
+        if (!pts.has(e.pointerId)) return;
+        const g = g0;
+        pts.delete(e.pointerId);
+        if (g?.type === 'pinch') {
+          if (s < 1) reset(); else { clamp(); apply(true); }  // 放手後保持放大倍數
+          begin();
+          return;
+        }
+        if (g?.type === 'pan') {
+          const dx = e.clientX - g.x, dt = Date.now() - g.t;
+          if (s <= 1.01 && g.moved && Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+          else if (s <= 1.01) apply(true);
+          if (!g.moved && dt < 300) {
+            const now = Date.now();
+            if (now - lastTap < 320 && lastTapXY && Math.hypot(e.clientX - lastTapXY.x, e.clientY - lastTapXY.y) < 40) {
+              if (s > 1.01) reset(); else zoomAt(2.5, e.clientX, e.clientY, true);
+              lastTap = 0;
+            } else { lastTap = now; lastTapXY = { x: e.clientX, y: e.clientY }; }
+          }
+        }
+        g0 = null;
+        begin();
+      };
+      stage.addEventListener('pointerup', end);
+      stage.addEventListener('pointercancel', end);
+      // 電腦：滑鼠轆放大縮細、撳住拖動
+      stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(s * Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY); }, { passive: false });
+      // 阻止 iPhone 成頁放大
+      ['gesturestart', 'gesturechange'].forEach(t => stage.addEventListener(t, e => e.preventDefault()));
       form.querySelector('#hidePic').onclick = () => { setPicHidden(id, all[i].key, true); openItem(id); };
       form.querySelector('#delPic').onclick = () => { if (deletePic(id, all[i].key)) openItem(id); };
-      show(form);
+      show();
     },
   });
 }
@@ -1579,6 +1659,110 @@ function checkTitleVsLoc(id, oldTitle) {
   }
 }
 
+/* =========================================================
+   匯率：港幣 ⇄ 日圓。上網時自動更新，冇網用上次嘅匯率
+   ========================================================= */
+const FX_DEFAULT = 19;   // 冇網又未攞過匯率時嘅估算（1 港幣 ≈ 19 日圓）
+const fxGet = () => { try { return JSON.parse(localStorage.getItem('fx') || 'null'); } catch { return null; } };
+const fxRate = () => { const f = fxGet(); return f?.custom || f?.rate || FX_DEFAULT; };   // 1 HKD = ? JPY
+async function fxRefresh(force = false) {
+  const f = fxGet();
+  if (!navigator.onLine || (!force && f?.at && Date.now() - f.at < 6 * 3600e3)) return f;
+  const tries = [
+    ['https://open.er-api.com/v6/latest/HKD', j => j?.rates?.JPY],
+    ['https://api.frankfurter.app/latest?from=HKD&to=JPY', j => j?.rates?.JPY],
+  ];
+  for (const [url, pick] of tries) {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      const v = +pick(await r.json());
+      if (v > 5 && v < 60) {
+        const nf = { ...(f || {}), rate: v, at: Date.now(), src: new URL(url).hostname };
+        localStorage.setItem('fx', JSON.stringify(nf));
+        return nf;
+      }
+    } catch { /* 試下一個 */ }
+  }
+  return f;
+}
+const fmtJPY = n => '¥' + Math.round(n).toLocaleString('en-US');
+const fmtHKD = n => 'HK$' + (n >= 100 ? Math.round(n).toLocaleString('en-US') : n.toFixed(1));
+/** 「約 ¥1,080 起」／「¥1,000–1,999」→「≈ HK$57」／「≈ HK$53–105」 */
+function hkdHint(str) {
+  const m = String(str || '').match(/¥\s?([\d,]+)(?:\s*[–~〜-]\s*¥?\s?([\d,]+))?/);
+  if (!m) return '';
+  const r = fxRate(), a = +m[1].replace(/,/g, '') / r, b = m[2] ? +m[2].replace(/,/g, '') / r : null;
+  return `≈ ${fmtHKD(a)}${b ? '–' + fmtHKD(b).replace('HK$', '') : ''}`;
+}
+
+function openFx() {
+  const f = fxGet() || {};
+  const fee = +(localStorage.getItem('fx-fee') || 0);
+  openModal({
+    title: '💴 匯率換算',
+    cls: 'fx-modal',
+    body: `<p class="fx-rate" id="fxRate"></p>
+      <div class="fx-box">
+        <label>日圓 JPY<span class="fx-in"><b>¥</b><input id="fxJ" inputmode="decimal" autocomplete="off" placeholder="0"></span></label>
+        <button type="button" class="fx-swap" aria-hidden="true" tabindex="-1">⇅</button>
+        <label>港幣 HKD<span class="fx-in"><b>HK$</b><input id="fxH" inputmode="decimal" autocomplete="off" placeholder="0"></span></label>
+      </div>
+      <p class="fx-extra" id="fxExtra"></p>
+      <div class="row fx-q">${[100, 500, 1000, 3000, 5000, 10000].map(n => `<button type="button" class="chip" data-j="${n}">¥${n.toLocaleString()}</button>`).join('')}</div>
+      <div class="row fx-q">${[50, 100, 200, 500, 1000].map(n => `<button type="button" class="chip" data-h="${n}">HK$${n}</button>`).join('')}</div>
+      <label class="check"><input type="checkbox" id="fxTax"> 價錢未連稅：加 10% 消費稅（食物外賣 8%）</label>
+      <label class="field">信用卡／找換手續費 %<input id="fxFee" inputmode="decimal" value="${fee || ''}" placeholder="0（例如 1.95）"></label>
+      <div class="row"><button type="button" class="chip" id="fxUpd">🔄 更新匯率</button><button type="button" class="chip" id="fxSet">✎ 自訂匯率</button>${f.custom ? '<button type="button" class="chip" id="fxAuto">用返網上匯率</button>' : ''}</div>`,
+    onOpen: form => {
+      const J = form.querySelector('#fxJ'), H = form.querySelector('#fxH'), extra = form.querySelector('#fxExtra');
+      const num = v => +String(v).replace(/[^\d.]/g, '') || 0;
+      const k = () => (1 + num(form.querySelector('#fxFee').value) / 100);   // 手續費
+      const tax = () => form.querySelector('#fxTax').checked ? 1.1 : 1;
+      let last = 'J';
+      const showRate = () => {
+        const g = fxGet() || {}, r = fxRate();
+        const when = g.at ? new Date(g.at) : null;
+        form.querySelector('#fxRate').innerHTML = `1 港幣 = <b>${r.toFixed(2)}</b> 日圓 · ¥100 = <b>HK$${(100 / r).toFixed(2)}</b><br><small>${g.custom ? '自訂匯率' : when ? `更新：${when.getMonth() + 1}/${when.getDate()} ${pad(when.getHours())}:${pad(when.getMinutes())}（${esc(g.src || '')}）` : '估算匯率（上網後會自動更新）'}</small>`;
+      };
+      const calc = () => {
+        const r = fxRate();
+        if (last === 'J') {
+          const y = num(J.value);
+          H.value = y ? (y * tax() / r * k()).toFixed(y * tax() / r * k() >= 100 ? 0 : 1) : '';
+          extra.textContent = y && (tax() > 1 || k() > 1) ? `${tax() > 1 ? `連稅 ${fmtJPY(y * 1.1)}` : ''}${k() > 1 ? `${tax() > 1 ? ' · ' : ''}已計手續費 ${((k() - 1) * 100).toFixed(2)}%` : ''}` : '';
+        } else {
+          const h = num(H.value);
+          J.value = h ? Math.round(h / k() * r / tax()) : '';
+          extra.textContent = h && tax() > 1 ? `即係未連稅價錢；連稅 ${fmtJPY(h / k() * r)}` : '';
+        }
+      };
+      J.addEventListener('input', () => { last = 'J'; calc(); });
+      H.addEventListener('input', () => { last = 'H'; calc(); });
+      form.querySelector('#fxTax').addEventListener('change', calc);
+      form.querySelector('#fxFee').addEventListener('input', e => { localStorage.setItem('fx-fee', num(e.target.value)); calc(); });
+      form.querySelectorAll('[data-j]').forEach(b => { b.onclick = () => { J.value = b.dataset.j; last = 'J'; calc(); }; });
+      form.querySelectorAll('[data-h]').forEach(b => { b.onclick = () => { H.value = b.dataset.h; last = 'H'; calc(); }; });
+      form.querySelector('#fxUpd').onclick = async () => {
+        if (!navigator.onLine) return toast('要上網先更新到');
+        const g = fxGet(); if (g?.custom) { delete g.custom; localStorage.setItem('fx', JSON.stringify(g)); }
+        const nf = await fxRefresh(true);
+        toast(nf?.rate ? '匯率已更新' : '更新唔到，用緊上次嘅匯率');
+        showRate(); calc();
+      };
+      form.querySelector('#fxSet').onclick = () => {
+        const v = parseFloat(prompt('1 港幣 = 幾多日圓？（例如兌換店牌價）', fxRate().toFixed(2)));
+        if (!(v > 5 && v < 60)) return;
+        localStorage.setItem('fx', JSON.stringify({ ...(fxGet() || {}), custom: v }));
+        openFx();
+      };
+      form.querySelector('#fxAuto')?.addEventListener('click', () => { const g = fxGet(); delete g.custom; localStorage.setItem('fx', JSON.stringify(g)); openFx(); });
+      showRate();
+      fxRefresh().then(() => { if (form.isConnected) { showRate(); calc(); } });
+      setTimeout(() => J.focus(), 80);
+    },
+  });
+}
+
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
 const ui = { tab: 'plan', day: null };
@@ -1762,14 +1946,14 @@ function openItem(id) {
       <div class="score"><b>${esc(tb.rating)}</b><small>Tabelog</small></div>
       <div class="grow">
         <p class="tbname" lang="ja">${esc(tb.name)}</p>
-        <p class="hint">${esc(tb.reviews)} 則評價 · 預算 ${esc(tb.budget)}</p>
+        <p class="hint">${esc(tb.reviews)} 則評價 · 預算 ${esc(tb.budget)}${hkdHint(tb.budget) ? `（${hkdHint(tb.budget)}）` : ''}</p>
         <ul>${(tb.summary || []).map(s => `<li>${linkify(s)}</li>`).join('')}</ul>
         ${tb.url ? `<a class="chip tabelog" href="${esc(normUrl(tb.url))}" target="_blank" rel="noopener">${icon('ext')}開 Tabelog 頁面</a>` : ''}
       </div></div>`).join('')}
     <p class="hint">評分及摘要係 2026 年 10 月整理，離線都睇到；最新評分以 Tabelog 為準。</p></section>` : '';
   const addMore = [!it.tabelog?.length && !isT ? E('tbText', '＋ Tabelog 食評', { compact: true }) : '', !it.menu && !isT ? E('menuText', '＋ 菜單', { compact: true }) : '', !it.timetable?.length && isT && it.type !== 'walk' ? E('ttText', '＋ 時刻表', { compact: true }) : ''].join('');
   const menu = it.menu ? `<section class="sec"><h4>${icon('food')}菜單及推介${it.menu.url ? ` <a href="${esc(normUrl(it.menu.url))}" target="_blank" rel="noopener">完整菜單</a>` : ''}${E('menuText', '改', { compact: true })}</h4>
-    <ul class="menu">${(it.menu.items || []).map(m => `<li><div class="grow"><b>${m.star ? '⭐ ' : ''}${esc(m.name)}</b>${m.ja ? `<span class="mja" lang="ja">${esc(m.ja)}${speakBtn(m.ja, 'sm')}</span>` : ''}${m.desc ? `<small>${linkify(m.desc)}</small>` : ''}</div>${m.price ? `<span class="price">${esc(m.price)}</span>` : ''}</li>`).join('')}</ul>
+    <ul class="menu">${(it.menu.items || []).map(m => `<li><div class="grow"><b>${m.star ? '⭐ ' : ''}${esc(m.name)}</b>${m.ja ? `<span class="mja" lang="ja">${esc(m.ja)}${speakBtn(m.ja, 'sm')}</span>` : ''}${m.desc ? `<small>${linkify(m.desc)}</small>` : ''}</div>${m.price ? `<span class="price">${esc(m.price)}${hkdHint(m.price) ? `<small class="hkd">${hkdHint(m.price)}</small>` : ''}</span>` : ''}</li>`).join('')}</ul>
     ${E('menuTips', '貼士')}${E('menuUrl', '完整菜單網址')}</section>` : '';
   const nextIdx = f.day.date === todayStr() && it.timetable ? it.timetable.findIndex(r => r.dep >= nowHM()) : -1;
   const tt = it.timetable?.length ? `<section class="sec"><h4>${icon('clock')}時刻表${it.timetableUrl ? ` <a href="${esc(normUrl(it.timetableUrl))}" target="_blank" rel="noopener">官方全日</a>` : ''}${E('ttText', '改', { compact: true })}</h4>
@@ -2027,6 +2211,11 @@ function renderInfo() {
       <button class="chip" data-act="xlsx-import">${icon('table')}匯入 Excel</button>
     </div>
   </section>
+  <section class="card">
+    <h2>💴 匯率換算</h2>
+    <p class="muted">1 港幣 ≈ ${fxRate().toFixed(2)} 日圓 · ¥1,000 ≈ HK$${(1000 / fxRate()).toFixed(0)}（頂部「¥」掣隨時用得，冇網用上次匯率）</p>
+    <div class="row"><button class="chip dark" data-act="fx">打開換算</button></div>
+  </section>
   ${syncCardHtml()}
   <section class="card">
     <h2>🥒 河童仔</h2>
@@ -2251,6 +2440,7 @@ const actions = {
   'pic-arrange': id => { ui.arrange = ui.arrange === id ? null : id; hydratePics($('#modal')).then(() => $('#modal .pics.big')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); },
   kappa: () => window.Kappa?.play(),
   'pics-scroll': (_, el) => { const box = el.parentElement.querySelector('.pics'); const t = box.querySelector('.pic'); box.scrollBy({ left: +el.dataset.dir * Math.max(120, (t?.offsetWidth || 150) + 8), behavior: 'smooth' }); },
+  fx: () => openFx(),
   'kp-auto': id => { localStorage.setItem('kp-auto', id); render(); },
   'kp-show': () => window.Kappa?.play(),
   'map-lang': id => { localStorage.setItem('map-lang', id); render(); },
@@ -2412,6 +2602,8 @@ if (!localStorage.getItem('trip-tiles-cleaned')) {
     .then(() => localStorage.setItem('trip-tiles-cleaned', '1')).catch(() => {});
 }
 window.addEventListener('online', loadWeather);
+fxRefresh();
+window.addEventListener('online', () => fxRefresh());
 // 雲端同步：開 App、返回 App、重新上網都會攞最新
 let lastPull = 0;
 const autoPull = () => { if (Date.now() - lastPull < 60_000) return; lastPull = Date.now(); pullSync(); };
