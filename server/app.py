@@ -3913,6 +3913,13 @@ try:
 except Exception as _ex:
     print("cad not loaded: %s" % _ex)
 
+# SBD (sbd_api.py, sbd/): PNAP APP-152 permeability from the Revit masses.
+try:
+    import sbd_api
+    sbd_api.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("sbd not loaded: %s" % _ex)
+
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.
 try:

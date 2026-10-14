@@ -11,4 +11,5 @@ layout:
   - ExportLink
   - ExportTransforms
   - LVCheck
+  - SBDExport
   - TestRepeatedLinks

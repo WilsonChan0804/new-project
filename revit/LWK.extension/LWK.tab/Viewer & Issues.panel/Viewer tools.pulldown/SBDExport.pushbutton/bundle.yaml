@@ -1,0 +1,8 @@
+title: |-
+  SBD
+  Export
+tooltip: >-
+  SBD (PNAP APP-152) from 3D: sends the model's Mass elements and the site boundary to the LWK Viewer, which works out
+  the permeability (P), separating distances (S1/S2/S3) and air corridors for the Low, Middle and High zones - see
+  Checks > SBD on the 3D page.
+author: Wilson Chan

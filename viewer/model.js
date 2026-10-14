@@ -30,6 +30,7 @@ import { openIssue } from "./issuepanel.js";
 import { createMeasure } from "./measure3d.js";
 import { createClash } from "./clash.js";
 import { createHeadroom } from "./headroom.js";
+import { createSbd } from "./sbd.js";
 import { createArrows } from "./arrows3d.js";
 import { createQuality } from "./quality.js";
 import { createWalk } from "./walk.js";
@@ -2158,6 +2159,9 @@ function initClash() {
     toShared: (v) => sceneToSharedMM(v).map((n) => Math.round(n)),
     // scene millimetres, as dimensions keep them
     sceneMM: (v) => [toMM(v.x), toMM(v.y), toMM(v.z)],
+    // Revit internal metres (Z-up) -> the scene, for a model published from Revit
+    internalToScene: () => { const f = lwkFrame(); return f ? f.base : null; },
+    target: () => S.controls.target.clone(),
     fromShared: (mm) => { try { return sharedToScene(mm); } catch (e) { return null; } },
     // a picture of the view as it is now (a report), maxW pixels wide
     async shot(maxW = 900) {
@@ -2202,13 +2206,16 @@ function initClash() {
   };
   S.clash = createClash(ctx);
   S.head = createHeadroom(ctx);
+  S.sbd = createSbd(ctx);
   if (S.clash) S.clash.refresh();
   // Clash / Headroom
   document.querySelectorAll(".chk-tabs [data-tab]").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll(".chk-tabs [data-tab]").forEach((x) => x.classList.toggle("active", x === b));
     $("#clash-box").hidden = b.dataset.tab !== "clash";
     $("#head-box").hidden = b.dataset.tab !== "head";
+    $("#sbd-box").hidden = b.dataset.tab !== "sbd";
     if (b.dataset.tab === "head" && S.head) S.head.refresh();
+    if (b.dataset.tab === "sbd" && S.sbd) S.sbd.refresh();
     if (b.dataset.tab !== "head" && S.mode === "headroom") setMode("nav");
   }));
 }

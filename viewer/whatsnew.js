@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-03", date: "14 Oct 2026",
+    items: [
+      "3D > Checks > **SBD** (PNAP APP-152): the permeability **P**, the separating distances **S1 / S2 / S3** and the **air corridors**, worked out from the building **masses** sent from Revit (**LWK > Viewer tools > SBD Export**). Each zone - **Low (0-20 m), Middle (20-60 m), High (60 m+)** - is cut from the masses, so a podium + tower scheme is assessed as it is. A table with the controlling and required P, the street canyon **U** (Case 1), a **Plan** of each zone (gaps green / red, pinch points, corridors), the masses in **3D**, **Save** results, **Make issue** and a **Report** (Save to Folders).",
+    ],
+  },
+  {
     version: "2026-11-02", date: "14 Oct 2026",
     items: [
       "Sheets > **Set ▾**: the actions are now clear buttons (Select sheets, Rename set, Archive set, and **Delete set** in red); archived sets have a **Bring back** button.",
