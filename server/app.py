@@ -3499,6 +3499,29 @@ def read_imported(root):
         return []
 
 
+def live_imported(root):
+    """The imported sheets shown: those of an archived set are kept, hidden."""
+    return [s for s in read_imported(root) if not s.get("archived")]
+
+
+def drop_unused_pdfs(root, before, after):
+    """A PDF in imported/ that no sheet uses any more goes too (one PDF can
+    hold several sheets, one per page)."""
+    used = {s.get("pdf") for s in after}
+    for rel in {s.get("pdf") for s in before} - used:
+        rel = str(rel or "")
+        if not rel.startswith("imported/") or ".." in rel or "/" in rel[len("imported/"):]:
+            continue
+        try:
+            os.remove(os.path.join(root, "imported", rel[len("imported/"):]))
+        except OSError:
+            pass
+
+
+def clean_set_name(v):
+    return re.sub(r"[\x00-\x1f\x7f]+", " ", str(v or "")).strip()[:60]
+
+
 def write_imported(root, sheets):
     """Written beside manifest.json, never into it. Re-exporting from Revit
     rewrites the manifest from scratch; sheets kept in it would vanish on
@@ -3546,7 +3569,7 @@ async def import_sheets(request: Request, x_viewer_token: str = Header(default="
     incoming = body.get("sheets") or []
     # The set the drawings go in: their own entry in the Sheets page's
     # drop-down, apart from the sheets published from Revit.
-    set_name = re.sub(r"[\x00-\x1f\x7f]+", " ", str(body.get("set") or "")).strip()[:60] or "Uploaded PDFs"
+    set_name = clean_set_name(body.get("set")) or "Uploaded PDFs"
     have = read_imported(root)
     taken = {s.get("number") for s in have}
     try:
@@ -3586,7 +3609,98 @@ async def remove_imported(request: Request, number: str,
     if len(keep) == len(have):
         raise HTTPException(status_code=404, detail="No imported sheet " + number)
     write_imported(root, keep)
+    drop_unused_pdfs(root, have, keep)
     return {"removed": number}
+
+
+@app.post("/api/import/sheets/delete")
+async def remove_imported_many(request: Request, x_viewer_token: str = Header(default=""),
+                               x_project: str = Header(default="")):
+    """Several imported sheets at once (the Sheets list's Select)."""
+    require_project(request, x_project, "member", x_viewer_token)
+    root = project_root_for(x_project)
+    body = await request.json() or {}
+    numbers = {str(n) for n in (body.get("numbers") or []) if n is not None}
+    have = read_imported(root)
+    keep = [s for s in have if s.get("number") not in numbers]
+    write_imported(root, keep)
+    drop_unused_pdfs(root, have, keep)
+    return {"removed": len(have) - len(keep)}
+
+
+@app.get("/api/import/sets")
+async def imported_sets(request: Request, x_viewer_token: str = Header(default=""),
+                        x_project: str = Header(default="")):
+    """The sets of imported sheets, archived ones too: [{set, sheets, archived}]."""
+    require_project(request, x_project, "viewer", x_viewer_token)
+    root = project_root_for(x_project)
+    out = {}
+    for s in read_imported(root):
+        k = s.get("set") or "Uploaded PDFs"
+        e = out.setdefault(k, {"set": k, "sheets": 0, "archived": True})
+        e["sheets"] += 1
+        e["archived"] = e["archived"] and bool(s.get("archived"))
+    return {"sets": sorted(out.values(), key=lambda e: e["set"].lower())}
+
+
+async def _set_body(request, x_viewer_token, x_project):
+    require_project(request, x_project, "member", x_viewer_token)
+    root = project_root_for(x_project)
+    body = await request.json() or {}
+    name = clean_set_name(body.get("set") or body.get("from"))
+    have = read_imported(root)
+    if not name or not any((s.get("set") or "Uploaded PDFs") == name for s in have):
+        raise HTTPException(status_code=404, detail="No set called %s" % (name or "(none)"))
+    return root, body, name, have
+
+
+@app.post("/api/import/sets/rename")
+async def rename_set(request: Request, x_viewer_token: str = Header(default=""),
+                     x_project: str = Header(default="")):
+    root, body, name, have = await _set_body(request, x_viewer_token, x_project)
+    to = clean_set_name(body.get("to"))
+    if not to:
+        raise HTTPException(status_code=400, detail="Give the set a name.")
+    if to != name and any((s.get("set") or "Uploaded PDFs") == to for s in have):
+        raise HTTPException(status_code=409, detail="There is already a set called %s." % to)
+    n = 0
+    for s in have:
+        if (s.get("set") or "Uploaded PDFs") == name:
+            s["set"] = to
+            n += 1
+    write_imported(root, have)
+    return {"set": to, "sheets": n}
+
+
+@app.post("/api/import/sets/archive")
+async def archive_set(request: Request, x_viewer_token: str = Header(default=""),
+                      x_project: str = Header(default="")):
+    """Archive (or bring back) a set: its sheets leave the Sheets page and
+    Folders, but nothing is deleted - PDFs, markups and issues stay."""
+    root, body, name, have = await _set_body(request, x_viewer_token, x_project)
+    on = body.get("archived", True) is not False
+    n = 0
+    for s in have:
+        if (s.get("set") or "Uploaded PDFs") == name:
+            if on:
+                s["archived"] = True
+            else:
+                s.pop("archived", None)
+            n += 1
+    write_imported(root, have)
+    return {"set": name, "archived": on, "sheets": n}
+
+
+@app.post("/api/import/sets/delete")
+async def delete_set(request: Request, x_viewer_token: str = Header(default=""),
+                     x_project: str = Header(default="")):
+    """Delete a set: its sheets and their PDFs. Markups and issues made on
+    them stay in the project."""
+    root, body, name, have = await _set_body(request, x_viewer_token, x_project)
+    keep = [s for s in have if (s.get("set") or "Uploaded PDFs") != name]
+    write_imported(root, keep)
+    drop_unused_pdfs(root, have, keep)
+    return {"set": name, "removed": len(have) - len(keep)}
 
 
 @app.api_route("/data/{path:path}", methods=["GET", "HEAD"])
@@ -3626,7 +3740,7 @@ async def get_data(path: str, request: Request):
             raise HTTPException(status_code=422, detail=(
                 "manifest.json of this project is empty or damaged - "
                 "the export did not finish. Export it again."))
-        extra = read_imported(root)
+        extra = live_imported(root)
         if extra:
             man["sheets"] = list(man.get("sheets") or []) + extra
         # which fast 3D models the server has cut into streamed tiles (made

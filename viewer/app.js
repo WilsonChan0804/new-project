@@ -3972,7 +3972,17 @@ function renderSheets() {
           + `<button class="ghost ext-del" title="Remove this imported sheet">&#10005;</button></div>`
         : `<div class="tags">${mapped}/${vps.length} mapped`
           + (s.pdf ? "" : " &middot; no PDF") + "</div>");
-    li.addEventListener("click", () => openSheet(s));
+    if (PICK.on && s.external) {
+      li.classList.add("can-pick");
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.className = "pick"; cb.checked = PICK.sel.has(s.number);
+      cb.setAttribute("aria-label", "Select " + s.number);
+      li.querySelector(".num").prepend(cb);
+    }
+    li.addEventListener("click", (ev) => {
+      if (PICK.on) { if (s.external) pickRow(s, list, ev.shiftKey); return; }
+      openSheet(s);
+    });
     // pointing at a sheet starts reading its PDF (computers)
     if (s.pdf) li.addEventListener("mouseenter", () => {
       if (IS_IOS_EARLY() || slowLine() || drawMode() === "tiles") return;
@@ -3987,6 +3997,167 @@ function renderSheets() {
     });
     ul.appendChild(li);
   }
+  ul.classList.toggle("picking", PICK.on);
+  pickPaint(list);
+}
+
+/* Select several imported sheets (Select in the Sheets heading), shift-click
+   for a run of them, and delete them together. Revit sheets cannot be
+   picked: they come back with the next publish anyway. */
+const PICK = { on: false, sel: new Set(), last: null };
+
+function pickRow(s, list, range) {
+  const ext = list.filter((x) => x.external);
+  if (range && PICK.last) {
+    const a = ext.findIndex((x) => x.number === PICK.last), b = ext.findIndex((x) => x.number === s.number);
+    if (a >= 0 && b >= 0) {
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) PICK.sel.add(ext[i].number);
+      PICK.last = s.number;
+      renderSheets();
+      return;
+    }
+  }
+  if (PICK.sel.has(s.number)) PICK.sel.delete(s.number); else PICK.sel.add(s.number);
+  PICK.last = s.number;
+  renderSheets();
+}
+
+function pickPaint(list) {
+  const any = list.some((x) => x.external);
+  const btn = document.getElementById("sheet-pick");
+  if (btn) { btn.hidden = !any; btn.classList.toggle("active", PICK.on); }
+  if (!any && PICK.on) { PICK.on = false; PICK.sel.clear(); }
+  const bar = document.getElementById("pick-bar");
+  if (!bar) return;
+  bar.hidden = !PICK.on;
+  for (const n of [...PICK.sel]) if (!list.some((x) => x.number === n)) PICK.sel.delete(n);
+  document.getElementById("pick-count").textContent = PICK.sel.size + " selected";
+  document.getElementById("pick-del").disabled = !PICK.sel.size;
+  document.getElementById("pick-del").textContent = PICK.sel.size ? "Delete " + PICK.sel.size : "Delete";
+}
+
+async function deletePicked() {
+  const nums = [...PICK.sel];
+  if (!nums.length) return;
+  const n = S.items.filter((it) => nums.includes(it.sheet)).length;
+  if (!confirm(`Delete ${nums.length} imported sheet(s)?`
+      + (n ? `\n\n${n} markup(s) on them stay in the project but will have no sheet to show on.` : ""))) return;
+  const res = await fetch("/api/import/sheets/delete", { method: "POST",
+    headers: Object.assign({ "Content-Type": "application/json" }, Store.authHeaders()), body: JSON.stringify({ numbers: nums }) });
+  if (!res.ok) { status("Could not delete the sheets."); return; }
+  const out = await res.json();
+  PICK.sel.clear();
+  await reloadManifest();
+  if (!setSheets().length) showSet("");
+  status(`${out.removed} sheet(s) deleted.`);
+}
+
+/* Set ▾: rename, archive or delete the set of imported sheets shown, and
+   the archived sets to bring back. Archived: hidden from the Sheets page
+   and Folders, nothing deleted. */
+async function setCall(path, body) {
+  const res = await fetch(path, { method: "POST",
+    headers: Object.assign({ "Content-Type": "application/json" }, Store.authHeaders()), body: JSON.stringify(body) });
+  let data = null;
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error((data && data.detail) || "HTTP " + res.status);
+  return data;
+}
+
+async function paintSetMenu() {
+  const m = document.getElementById("set-menu");
+  const imported = !!S.set;
+  const n = setSheets().length;
+  m.innerHTML = (imported
+    ? `<div class="sm-head">${esc(S.set)} &middot; ${n} sheet(s)</div>`
+      + `<button class="ghost" data-sm="rename">Rename set ...<small>Give this set of imported sheets another name</small></button>`
+      + `<button class="ghost" data-sm="archive">Archive set<small>Hide it from Sheets and Folders; nothing is deleted</small></button>`
+      + `<button class="ghost" data-sm="delete">Delete set ...<small>Its sheets and PDFs; markups and issues stay</small></button>`
+    : `<div class="sm-empty">The sheets from Revit are not a set to rename or delete. Choose a set of imported PDFs in the drop-down above for those.</div>`)
+    + `<div class="sm-head">Archived sets</div><div id="sm-arch" class="sm-empty">Looking ...</div>`;
+  try {
+    const res = await fetch("/api/import/sets", { headers: Store.authHeaders() });
+    const sets = ((await res.json()).sets || []).filter((x) => x.archived);
+    const box = document.getElementById("sm-arch");
+    if (!box) return;
+    if (!sets.length) { box.textContent = "None."; return; }
+    box.className = "";
+    box.innerHTML = sets.map((x) => `<div class="sm-row"><span title="${esc(x.set).replace(/"/g, "&quot;")}">${esc(x.set)} <small class="muted">(${x.sheets})</small></span>`
+      + `<button class="ghost sm" data-restore="${esc(x.set).replace(/"/g, "&quot;")}">Bring back</button></div>`).join("");
+  } catch (e) {
+    const box = document.getElementById("sm-arch");
+    if (box) box.textContent = "Could not read them: " + e.message;
+  }
+}
+
+async function setAction(what, name) {
+  const cur = S.set;
+  try {
+    if (what === "rename") {
+      const to = (prompt(`New name for the set "${cur}":`, cur) || "").trim();
+      if (!to || to === cur) return;
+      await setCall("/api/import/sets/rename", { from: cur, to });
+      await reloadManifest(); showSet(to, true);
+      status(`Set renamed to "${to}".`);
+    } else if (what === "archive") {
+      if (!confirm(`Archive the set "${cur}"?\n\nIts ${setSheets().length} sheet(s) leave the Sheets page and Folders. Nothing is deleted: bring it back any time from Set ▾ > Archived sets.`)) return;
+      await setCall("/api/import/sets/archive", { set: cur, archived: true });
+      await reloadManifest(); showSet("");
+      status(`Set "${cur}" archived.`);
+    } else if (what === "delete") {
+      const nums = setSheets().map((x) => x.number);
+      const n = S.items.filter((it) => nums.includes(it.sheet)).length;
+      if (!confirm(`Delete the set "${cur}" and its ${nums.length} sheet(s)?\n\nThe PDFs are deleted.`
+          + (n ? ` ${n} markup(s) on them stay in the project but will have no sheet to show on.` : "")
+          + "\n\nTo only hide it, use Archive instead.")) return;
+      await setCall("/api/import/sets/delete", { set: cur });
+      await reloadManifest(); showSet("");
+      status(`Set "${cur}" deleted.`);
+    } else if (what === "restore") {
+      await setCall("/api/import/sets/archive", { set: name, archived: false });
+      await reloadManifest(); showSet(name);
+      status(`Set "${name}" is back.`);
+    }
+  } catch (e) {
+    status("Not done: " + e.message);
+  }
+}
+
+function wireSetTools() {
+  const pb = document.getElementById("sheet-pick");
+  if (pb) pb.addEventListener("click", () => { PICK.on = !PICK.on; PICK.sel.clear(); PICK.last = null; renderSheets(); });
+  const all = document.getElementById("pick-all");
+  if (all) all.addEventListener("click", () => {
+    const ext = setSheets().filter((x) => x.external);
+    if (PICK.sel.size === ext.length) PICK.sel.clear(); else ext.forEach((x) => PICK.sel.add(x.number));
+    renderSheets();
+  });
+  const del = document.getElementById("pick-del");
+  if (del) del.addEventListener("click", deletePicked);
+  const done = document.getElementById("pick-done");
+  if (done) done.addEventListener("click", () => { PICK.on = false; PICK.sel.clear(); renderSheets(); });
+  const m = document.getElementById("set-menu"), b = document.getElementById("set-menu-btn");
+  if (!m || !b) return;
+  document.body.appendChild(m);       // above the drawing (the side panel is its own layer)
+  const shut = () => { m.hidden = true; b.classList.remove("open"); };
+  b.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (!m.hidden) { shut(); return; }
+    m.hidden = false; b.classList.add("open");
+    const r = b.getBoundingClientRect();
+    m.style.top = (r.bottom + 4) + "px";
+    m.style.left = Math.max(6, Math.min(innerWidth - 286, r.left)) + "px";
+    paintSetMenu();
+  });
+  m.addEventListener("click", (ev) => {
+    const a = ev.target.closest("[data-sm], [data-restore]");
+    if (!a) return;
+    shut();
+    if (a.dataset.restore) setAction("restore", a.dataset.restore);
+    else setAction(a.dataset.sm);
+  });
+  document.addEventListener("pointerdown", (ev) => { if (!m.hidden && !m.contains(ev.target) && !b.contains(ev.target)) shut(); });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") shut(); });
 }
 
 /* How the list is arranged. Sheet first, because that is how a set of
@@ -5418,6 +5589,7 @@ function wireChrome() {
     copyLink("index.html?project=" + encodeURIComponent(Store.currentProject() || "") + "&sheet=" + encodeURIComponent(S.sheet.number),
       "sheet " + S.sheet.number);
   });
+  wireSetTools();
   /* View ▾: Split, Compare, 2D + 3D and Links in one menu. The buttons are
      the same ones as before, moved into it; a dot on View says one of the
      first three is on. */

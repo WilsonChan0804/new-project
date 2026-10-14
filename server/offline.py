@@ -97,7 +97,7 @@ def register(app, core):
 
         # ---- sheets: the PDF, and the server's picture tiles of each page
         sheets, seen_pdf = [], {}
-        for sh in list(man.get("sheets") or []) + list(core.read_imported(root)):
+        for sh in list(man.get("sheets") or []) + list(core.live_imported(root)):
             rel = str(sh.get("pdf") or "").replace("\\", "/")
             if not rel:
                 continue

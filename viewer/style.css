@@ -1113,7 +1113,8 @@ button.danger:hover:not(:disabled) { background: #fdece8; border-color: #f2b8aa;
 /* A Viewer changes nothing; the server refuses it anyway, so the tools go. */
 body.role-viewer #tools, body.role-viewer #mode-issue, body.role-viewer #mode-comment,
 body.role-viewer #a-paste, body.role-viewer #m-issue, body.role-viewer #detail-save,
-body.role-viewer #detail-delete { display: none !important; }
+body.role-viewer #detail-delete, body.role-viewer #sheet-pick, body.role-viewer #set-menu-btn,
+body.role-viewer .ext-del { display: none !important; }
 
 /* --------------------------------------------- tablet markup (GoodNotes) */
 #overlay { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -2319,3 +2320,16 @@ body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
   color: #e5e7eb; font-size: 12.5px; }
 #photo-view .pv-bar a { color: #ffb070; }
 @media (max-width: 700px) { #photo-view img { max-width: 100vw; max-height: calc(100vh - 120px); } }
+
+/* imported sheet sets: Select several, and the Set menu */
+#sheets .panel-head .sm { padding: 1px 7px; font-size: 12px; }
+#pick-bar { display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 12px; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+#pick-bar[hidden] { display: none; }
+#pick-bar .danger:not(:disabled) { color: #fff; background: #c2410c; border-color: #c2410c; }
+#sheet-list li .pick { margin: 0 6px 0 0; vertical-align: middle; }
+#sheet-list.picking li:not(.can-pick) { opacity: .45; }
+#set-menu { width: 280px; }
+#set-menu .sm-head { padding: 6px 10px 2px; font-size: 11px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; }
+#set-menu .sm-row { display: flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 13px; }
+#set-menu .sm-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#set-menu .sm-empty { padding: 4px 10px 8px; font-size: 12px; color: var(--ink-2); }

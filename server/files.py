@@ -477,6 +477,8 @@ def register(app, core):
                         {"full": full, "kind": "sheet", "open": ""})
             imp = read_json(os.path.join(root, "imported_sheets.json")) or {}
             for sh in imp.get("sheets") or []:
+                if sh.get("archived"):
+                    continue                     # an archived set: hidden, kept
                 full = under(sh.get("pdf"))
                 if full and full not in seen:
                     seen.add(full)
