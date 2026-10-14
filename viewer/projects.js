@@ -23,12 +23,13 @@ function when(t) {
 function go(id) {
   // a set of uploaded PDFs on the Sheets page: "<project>\u0001<set>"
   const [pid, set] = String(id).split("\u0001");
+  const was = Store.currentProject();
   Store.setProject(pid);
   const url = new URL(location.href);
   url.searchParams.set("project", pid);
   if (set) url.searchParams.set("set", set);
   else url.searchParams.delete("set");
-  if (pid !== Store.currentProject() || set !== undefined) url.searchParams.delete("sheet");
+  if (pid !== was || set !== undefined) { url.searchParams.delete("sheet"); url.searchParams.delete("select"); }
   location.href = url.toString();
 }
 
@@ -43,6 +44,7 @@ export async function ensureProject() {
   // The old single-project server has exactly one, called "default".
   if (data.single) {
     if (Store.currentProject() !== "default") Store.setProject("default");
+    Store.pinProject("default");
     fillSwitcher(list, "default");
     return "default";
   }
@@ -50,6 +52,7 @@ export async function ensureProject() {
   const cur = Store.currentProject();
   if (cur && list.some((p) => p.id === cur)) {
     Store.setProject(cur);
+    Store.pinProject(cur);
     fillSwitcher(list, cur);
     return cur;
   }

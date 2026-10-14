@@ -21,8 +21,10 @@ function token() {
   try { return localStorage.getItem("lwk-viewer:token") || ""; } catch (e) { return ""; }
 }
 function project() {
+  // this tab's project first (store.js currentProject), the last one used only for a new tab
   const q = new URLSearchParams(location.search).get("project");
-  if (q) return q;
+  if (q) { try { sessionStorage.setItem("lwk-viewer:tab-project", q); } catch (e) {} return q; }
+  try { const t = sessionStorage.getItem("lwk-viewer:tab-project"); if (t) return t; } catch (e) {}
   try { return localStorage.getItem("lwk-viewer:project") || ""; } catch (e) { return ""; }
 }
 function header(init, name) {

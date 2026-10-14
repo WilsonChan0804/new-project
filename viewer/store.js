@@ -62,6 +62,7 @@ const S = {
   online: false,
   lastError: null,
   scope: "",
+  project: "",
   seq: 0,
   full: false,                  // a complete list has come from the server since this page opened
   hydrated: false,              // the page opened with a copy from the device
@@ -82,15 +83,37 @@ const S = {
    so the next visit starts where the last one left off. Every request
    carries it; the server keeps each project's issues apart. */
 const PROJECT_KEY = "lwk-viewer:project";
+/* The project of this tab. localStorage is shared by every tab, so it is
+   only the starting point for a new tab: once a tab has its project it keeps
+   it (in the URL and in this tab's sessionStorage), and another tab opening
+   another project can no longer send this tab's issues there. */
+const TAB_KEY = "lwk-viewer:tab-project";
 
 export function currentProject() {
   const q = new URLSearchParams(location.search).get("project");
-  if (q) return q;
+  if (q) {
+    try { sessionStorage.setItem(TAB_KEY, q); } catch (e) {}
+    return q;
+  }
+  try { const t = sessionStorage.getItem(TAB_KEY); if (t) return t; } catch (e) {}
   try { return localStorage.getItem(PROJECT_KEY) || ""; } catch (e) { return ""; }
 }
 
 export function setProject(id) {
   try { localStorage.setItem(PROJECT_KEY, id); } catch (e) {}
+  try { sessionStorage.setItem(TAB_KEY, id); } catch (e) {}
+}
+
+/* Put the project in the address (without reloading), so this tab, a
+   refresh and a copied link all stay on it. */
+export function pinProject(id) {
+  if (!id) return;
+  try {
+    const url = new URL(location.href);
+    if (url.searchParams.get("project") === id) return;
+    url.searchParams.set("project", id);
+    history.replaceState(history.state, "", url.toString());
+  } catch (e) {}
 }
 
 /* Where this project's files are served from. */
@@ -186,7 +209,8 @@ const USER_KEY = "lwk-offline:user";
 function headers() {
   const h = { "Content-Type": "application/json" };
   if (S.token) h["X-Viewer-Token"] = S.token;
-  const p = currentProject();
+  // the project this page loaded (hydrate), never one chosen in another tab since
+  const p = S.project || currentProject();
   if (p) h["X-Project"] = p;
   return h;
 }
@@ -927,7 +951,8 @@ export async function uploadSnapshot(dataUrl) {
 /* What was kept on the device for this person and project: shown at once,
    before (or without) the server's answer. */
 async function hydrate() {
-  S.scope = userKey() + "|" + (currentProject() || "default");
+  S.project = currentProject();
+  S.scope = userKey() + "|" + (S.project || "default");
   if (!(await DB.available())) { S.volatile = true; return; }
   const [items, queue, notices] = await Promise.all([
     DB.allIn("items", S.scope), DB.allIn("queue", S.scope), DB.kvGet("notices|" + S.scope)]);

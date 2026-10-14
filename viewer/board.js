@@ -2782,6 +2782,9 @@ async function loadProjects() {
     history.replaceState(null, "", "board.html?project=" + encodeURIComponent(want));
   } else {
     try { localStorage.setItem("lwk-viewer:project", want); } catch (e) {}
+    // keep this tab on its project (another tab may open another one)
+    const u = new URL(location.href);
+    if (u.searchParams.get("project") !== want) { u.searchParams.set("project", want); history.replaceState(history.state, "", u.toString()); }
   }
   sel.onchange = () => {
     localStorage.setItem("lwk-viewer:project", sel.value);

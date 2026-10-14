@@ -37,8 +37,10 @@ const TOKEN_KEY = "lwk-viewer:token";
 const PROJECT_KEY = "lwk-viewer:project";
 
 export function project() {
+  // this tab's project first (store.js currentProject), the last one used only for a new tab
   const q = new URLSearchParams(location.search).get("project");
-  if (q) return q;
+  if (q) { try { sessionStorage.setItem("lwk-viewer:tab-project", q); } catch (e) {} return q; }
+  try { const t = sessionStorage.getItem("lwk-viewer:tab-project"); if (t) return t; } catch (e) {}
   try { return localStorage.getItem(PROJECT_KEY) || ""; } catch (e) { return ""; }
 }
 
