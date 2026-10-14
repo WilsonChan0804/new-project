@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-06", date: "15 Oct 2026",
+    items: [
+      "SBD **Plan ... > Elevation**: each zone's elevational projection on its own Plane X and Plane Y (Fig B10 / B11), drawn from the masses - the IS (the gaps that count, and open to above over a lower building), the **PE** (a void through the building ≥ 3 m x 3 m) and P = (IS + PE) / (W x H), with the working as in the BD sample case. PE counts up to 1/3 of the required P; IS alone must reach 2/3 of it.",
+      "SBD **Low zone exemption**: the portion ≤ 1/3 H (6.67 m) is disregarded - hatched on the elevation, not IS, and left out of the footprints and of Lp.",
+      "SBD **Case 1 per zone**: U (canyon area / its length) and Lp (the facade projected on the street) for the podium in the Low zone and the towers in the Middle and High zones, against 5U. A site under 2 ha is checked on Plane X; Plane Y is shown for information.",
+    ],
+  },
+  {
     version: "2026-11-05", date: "15 Oct 2026",
     items: [
       "SBD now runs **the SBD panel's own engine** (Check & Comply, 27/08) on each zone's footprints: corridors that bend up to 15° and return, S1 as each side region's **Area / Depth** (the working is shown in the Plan), Plane Y at the best angle within **75-105°** of Plane X in every zone, and in the Middle and High zones **Plane X turned to the angle that gives the most P** (to the degree).",

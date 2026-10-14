@@ -217,5 +217,44 @@ class StreetSlabs(unittest.TestCase):
         self.assertAlmostEqual(b["U_m"], 35.0, places=2)
 
 
+class BdSampleCase(unittest.TestCase):
+    """APP-152's sample case (BD): site 80 x 24 m on a 15 m street; a 15 m
+    podium (its 7.5 m ends only 6 m high) and a 78 m tower 4 m back, on a
+    5 m void (podium garden) 13 m wide at 15-20 m."""
+
+    @classmethod
+    def setUpClass(cls):
+        d = {"site": [[0, 0], [80, 0], [80, 24], [0, 24]], "ground_z": 0.0, "street_axis": [[0, -7.5], [80, -7.5]],
+             "masses": [mass("Podium", box(7.5, 0, 0, 72.5, 24, 15), box(0, 0, 0, 7.5, 24, 6), box(72.5, 0, 0, 80, 24, 6)),
+                        mass("Tower", box(30, 4, 20, 62, 16, 78), box(43, 4, 15, 62, 16, 20))],
+             "streets": [{"name": "Street", "centreline": [[-10, -7.5], [90, -7.5]], "opposite": [[-10, -15], [90, -15]], "width_m": 15}]}
+        cls.r = engine.run(d)
+        cls.z = {z["zone"]: z for z in cls.r["zones"]}
+
+    def test_lp_and_required_p(self):
+        self.assertAlmostEqual(self.r["lp"]["projected_m"], 80.0, places=2)     # full site coverage
+        self.assertEqual(self.r["required_p"], 20.0)
+        self.assertIsNone(self.r["required_p_y"])                               # under 2 ha: Plane X only
+
+    def test_low_zone_elevation(self):
+        e = self.z["LOW"]["axis1"]["elev"]
+        self.assertAlmostEqual(e["exempt_m"], 20 / 3.0, places=2)              # <= 1/3 H disregarded
+        self.assertAlmostEqual(e["pe_area_m2"], 65.0, places=1)                 # 13 m x 5 m
+        # the two 7.5 m ends (13.33 m high) and the 22.5 m podium garden (5 m)
+        # as in the sample; the 10.5 m podium roof right of the tower also
+        kinds = sorted((round(q[0], 1), round(q[1], 1), q[4]) for q in e["rects"] if q[4] in ("is", "sky", "pe"))
+        self.assertEqual(kinds, [(0.0, 7.5, "is"), (7.5, 30.0, "sky"), (30.0, 43.0, "pe"), (62.0, 72.5, "sky"), (72.5, 80.0, "is")])
+        self.assertAlmostEqual(e["P_pe"], 65 / 1600.0 * 100, places=2)
+
+    def test_case1_per_zone(self):
+        c = {x["zone"]: x["buildings"][0] for x in self.r["case1"]}
+        self.assertAlmostEqual(c["LOW"]["U_m"], 15.0, places=2)                 # U_p
+        self.assertAlmostEqual(c["LOW"]["Lp_m"], 65.0, places=2)                # 80 - 7.5 x 2
+        self.assertTrue(c["LOW"]["pass"])                                       # 65 < 75
+        self.assertAlmostEqual(c["MIDDLE"]["U_m"], 19.0, places=2)              # U_T
+        self.assertAlmostEqual(c["MIDDLE"]["Lp_m"], 32.0, places=2)
+        self.assertAlmostEqual(c["HIGH"]["Lp_max_m"], 95.0, places=2)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -5,7 +5,8 @@
     tries every 30 deg; here 15 deg steps, then 3 deg, then 1 deg round the
     best), Plane Y at 75-105 deg from X in every zone (the panel's
     optimize_plane_y);
-  - the S1 side regions' working (Area / Depth) kept for the plan.
+  - the S1 side regions' working (Area / Depth) kept for the plan;
+  - S1 / S3 passed 1 mm short of 7.5 m (the area / depth arithmetic).
 
 Revit's XYZ and Line are the stand-ins in addin/Autodesk/Revit/DB.py; the
 panel's console output is kept as the run's log.
@@ -27,6 +28,13 @@ with contextlib.redirect_stdout(_LOG):
     from sbd_geom_separation import rotate_axis_xy   # noqa: E402
 
 ZONE_LOW = P.ZONE_LOW
+
+# A setback drawn at exactly 7.5 m measures 7.4997 m by area / depth (the
+# side region's polygon arithmetic): the panel then fails it. 1 mm is let go.
+import sbd_geom_separation as _G          # noqa: E402
+_S1_FT = (_G.MIN_S1_M - 0.001) / _G.FEET_TO_METERS
+for _mod in (P, _G):
+    _mod.MIN_S1_FT = _S1_FT
 PLANE_Y_MIN, PLANE_Y_MAX = P.PLANE_Y_ANGLE_MIN, P.PLANE_Y_ANGLE_MAX
 
 

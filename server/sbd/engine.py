@@ -21,6 +21,7 @@ from . import geom
 from .geom import FEET_TO_METERS
 from . import addin_engine as A
 from . import footprint as F
+from . import elevation as E
 
 P = A.P          # the SBD panel's sbd_permeability (addin/, unchanged)
 
@@ -193,46 +194,60 @@ def _axis_out(r, site_pts):
     }
 
 
-def case1(data, low_inside):
-    """Design Requirement (1), street canyon: U = canyon area / length along
-    the centreline, Lp_max = 5 U (Fig B7), per building and street, from the
-    Low zone footprints. Stations every 0.5 m along the centreline: the
-    canyon width there runs perpendicular to it from the building's facade
-    (within 30 m of the centreline) to the opposite site boundary."""
+def case1(data, zone_inside):
+    """Design Requirement (1), street canyon (Fig B7), per zone: U = canyon
+    area / its length along the centreline, Lp_max = 5 U. Stations every
+    0.5 m along the centreline: the canyon width there runs perpendicular to
+    it from the building's facade (within 30 m of the centreline) to the
+    opposite site boundary. Lp is the building's facade projected on the
+    street (the BD sample: podium 80 m, tower 32 m); in the Low zone the
+    portion <= 1/3 H is left out (zone_inside holds its footprints above it).
+    zone_inside: [(zone, [footprints])]."""
     out = []
-    if not data.get("streets") or not low_inside:
+    if not data.get("streets"):
         return out
-    groups = _buildings(low_inside)
     sx, sy = _centroid(data["site"])
-    for st in data["streets"]:
-        cl = st.get("centreline") or []
-        opp = st.get("opposite") or []
-        if len(cl) < 2 or len(opp) < 2:
+    for zname, inside in zone_inside:
+        if not inside:
             continue
-        per = []
-        for gi, loops in enumerate(groups):
-            width_sum = 0.0
-            n = 0
-            for (px, py, nx, ny) in _stations(cl, CASE1_STEP_M):
-                # the subject side: towards the site
-                if (sx - px) * nx + (sy - py) * ny < 0:
-                    nx, ny = -nx, -ny
-                hits = [h for h in (_ray_hit(px, py, nx, ny, l) for l in loops) if h is not None]
-                df = min(hits) if hits else None
-                if df is None or df > CASE1_REACH_M:
-                    continue
-                do = _ray_hit_line(px, py, -nx, -ny, opp)
-                if do is None:
-                    continue
-                width_sum += df + do
-                n += 1
-            if not n:
+        groups = _buildings(inside)
+        for st in data["streets"]:
+            cl = st.get("centreline") or []
+            opp = st.get("opposite") or []
+            if len(cl) < 2 or len(opp) < 2:
                 continue
-            L = n * CASE1_STEP_M
-            U = width_sum * CASE1_STEP_M / L
-            per.append({"building": gi + 1, "name": loops[0].get("name", ""), "U_m": round(U, 3), "L_m": round(L, 2),
-                        "Lp_m": round(L, 2), "Lp_max_m": round(5 * U, 2), "pass": L <= 5 * U + 1e-6})
-        out.append({"street": st.get("name") or "Street %d" % (len(out) + 1), "buildings": per})
+            dx, dy = cl[-1][0] - cl[0][0], cl[-1][1] - cl[0][1]
+            dl = math.hypot(dx, dy) or 1.0
+            dx, dy = dx / dl, dy / dl
+            per = []
+            for gi, loops in enumerate(groups):
+                width_sum, n, near = 0.0, 0, []
+                for (px, py, nx, ny) in _stations(cl, CASE1_STEP_M):
+                    # the subject side: towards the site
+                    if (sx - px) * nx + (sy - py) * ny < 0:
+                        nx, ny = -nx, -ny
+                    hits = [h for h in (_ray_hit(px, py, nx, ny, l) for l in loops) if h is not None]
+                    df = min(hits) if hits else None
+                    if df is None or df > CASE1_REACH_M:
+                        continue
+                    do = _ray_hit_line(px, py, -nx, -ny, opp)
+                    if do is None:
+                        continue
+                    width_sum += df + do
+                    near.append(df)
+                    n += 1
+                if not n:
+                    continue
+                L = n * CASE1_STEP_M
+                U = width_sum * CASE1_STEP_M / L
+                us = [p[0] * dx + p[1] * dy for l in loops for p in l["loop"]]
+                lp = max(us) - min(us)
+                per.append({"building": gi + 1, "name": loops[0].get("name", ""), "U_m": round(U, 3), "L_m": round(L, 2),
+                            "area_m2": round(width_sum * CASE1_STEP_M, 1), "setback_m": round(min(near) - (st.get("width_m") or 0) / 2.0, 2)
+                            if st.get("width_m") else None,
+                            "Lp_m": round(lp, 2), "Lp_max_m": round(5 * U, 2), "pass": lp <= 5 * U + 1e-6})
+            if per:
+                out.append({"zone": zname, "street": st.get("name") or "Street %d" % (data["streets"].index(st) + 1), "buildings": per})
     return out
 
 
@@ -350,26 +365,37 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
                             % (low["name"], abs(low["base_m"]), "above" if low["base_m"] > 0 else "below", g,
                                ", " + data["ground_source"] if data.get("ground_source") else ""))
     tallest = max([h["top_m"] for h in heights] or [20.0])
-    zone_fp = [(name, z0, z1) + zone_footprints(data, z0, z1) for (name, z0, z1) in (zones or ZONES)]
+    # the Low zone's portion <= 1/3 H is disregarded (the BD sample case):
+    # its plan footprints start at H / 3, so a low podium edge does not close
+    # a setback, and its elevation shows that band hatched
+    exempt_of = {name: ((z1 - z0) / 3.0 if name == "LOW" and z1 is not None else 0.0) for (name, z0, z1) in (zones or ZONES)}
+    zone_fp = [(name, z0, z1) + zone_footprints(data, z0 + exempt_of[name], z1) for (name, z0, z1) in (zones or ZONES)]
     loops_of = {}
     for name, z0, z1, inside, other in zone_fp:
         loops = [geom.ensure_loop_ccw([_pt(p) for p in f["loop"]]) for f in inside]
         if corridor_poly:
             loops = P.filter_buildings_outside_corridor(loops, corridor_poly)
         loops_of[name] = loops
-    # Lp (Table 1): the Low zone's buildings projected on Plane X (Axis 1);
-    # the add-in's figure (shorter side of one building) kept beside it
-    low_loops = loops_of.get("LOW") or []
+    # Lp (Table 1): the Low zone's buildings, all of them (the BD sample:
+    # the podium with full site coverage, 80 m), projected on Plane X
+    # (Axis 1); the add-in's figure (shorter side of one building) kept beside it
+    low_loops = []
+    for name, z0, z1 in (zones or ZONES):
+        if name == "LOW":
+            low_loops = [geom.ensure_loop_ccw([_pt(p) for p in f["loop"]]) for f in zone_footprints(data, z0, z1)[0]]
     lp = {"addin_m": round(lp_addin_m(low_loops), 2) if low_loops else 0.0,
           "projected_m": round(sum(hi - lo for lo, hi in P._blocked_intervals(low_loops, a)) * M, 2) if low_loops else 0.0}
     req_p = A.required_p(site_area, lp["projected_m"], tallest)
+    # Table 1 per plane: a site under 2 ha is checked on Plane X only (the BD
+    # sample case); 2 ha and over, Plane X 20 % and Plane Y 25 / 33.3 %
+    req_x, req_y = P.get_required_p_planes(site_area, lp["projected_m"], tallest)
+    if site_area < 20000.0:
+        req_y = None
+    fails = []
     out_zones, all_p, log = [], [], []
-    low_inside = []
     for name, z0, z1, inside, other in zone_fp:
-        if name == "LOW":
-            low_inside = inside
         loops = loops_of[name]
-        z = {"zone": name, "z0": z0, "z1": z1, "footprints": [{"loop": [[round(x, 3), round(y, 3)] for x, y in f["loop"]],
+        z = {"zone": name, "z0": z0, "z1": z1, "exempt_m": round(exempt_of[name], 3), "footprints": [{"loop": [[round(x, 3), round(y, 3)] for x, y in f["loop"]],
              "name": f.get("name"), "z": round(f["z"] - g, 2)} for f in inside],
              "others": [[[round(x, 3), round(y, 3)] for x, y in f["loop"]] for f in other], "assessed": bool(loops)}
         if loops:
@@ -380,12 +406,31 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
             z["axis2"] = _axis_out(zr["axis2"], site_pts)
             z["plane_x_deg"] = round(float(zr.get("plane_x_angle_deg") or 0.0), 1)
             z["plane_y_deg"] = round(float(zr.get("plane_y_angle_deg") or 90.0), 1)
-            z["P"] = round(min(zr["axis1"]["P"], zr["axis2"]["P"]), 2)
-            all_p += [zr["axis1"]["P"], zr["axis2"]["P"]]
+            # the elevational projection on each plane: IS and PE as areas
+            top = z1 if z1 is not None else tallest
+            z["P_plan"] = round(min(zr["axis1"]["P"], zr["axis2"]["P"]), 2)
+            ps = []
+            for key, rq in (("axis1", req_x), ("axis2", req_y)):
+                ao = z[key]
+                el = None
+                if top > z0 + 1e-6:
+                    el = E.zone_elevation(data["masses"], g, data["site"], ao["axis"], ao["site_lo_m"], ao["site_hi_m"], z0, top,
+                                          [(gp["lo_m"], gp["hi_m"]) for gp in ao["gaps"] if gp["qualifies"]], rq or req_x, exempt_of[name])
+                ao["elev"] = el
+                pv = el["P"] if el else ao["P"]
+                ao["P_zone"] = round(pv, 2)
+                ao["required_p"] = rq
+                if rq is not None:
+                    ps.append(pv)
+                    ok = pv >= rq - 1e-9 and (not el or el["is_min_ok"] is not False)
+                    ao["pass"] = ok
+                    if not ok:
+                        fails.append("%s %s" % (name, "Plane X" if key == "axis1" else "Plane Y"))
+            z["P"] = round(min(ps or [z["axis1"]["P_zone"]]), 2)
+            all_p += ps or [z["axis1"]["P_zone"]]
             z["corridors"] = [{"polygon": gp["corridor"], "width_m": gp["distance_m"], "qualifies": gp["qualifies"],
                                "bend_deg": gp.get("bend_deg", 0.0)} for gp in z["axis1"]["gaps"] if gp.get("corridor")]
         out_zones.append(z)
-    req_new = req_p
     req_old = A.required_p(site_area, lp["addin_m"], tallest)
     ctrl = min(all_p) if all_p else None
     return {
@@ -393,9 +438,9 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         "axis": {"source": axis_src, "axis1": [round(a.X, 6), round(a.Y, 6)], "axis2": [round(b.X, 6), round(b.Y, 6)]},
         "site": [[round(p[0], 3), round(p[1], 3)] for p in data["site"]], "site_area_m2": round(site_area, 2),
         "zones": out_zones, "controlling_p": None if ctrl is None else round(ctrl, 2),
-        "lp": lp, "required_p": req_new, "required_p_addin": req_old,
-        "pass": None if ctrl is None or req_new is None else ctrl >= req_new - 1e-9,
-        "case1": case1(data, low_inside),
+        "lp": lp, "required_p": req_x, "required_p_y": req_y, "required_p_addin": req_old, "fails": fails,
+        "pass": None if ctrl is None or req_x is None else not fails,
+        "case1": case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp]),
         "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
                      "outline": s.get("outline") or []} for s in data.get("streets") or []],
         "ground_z": data.get("ground_z"), "ground_source": data.get("ground_source") or "",

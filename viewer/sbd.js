@@ -108,6 +108,73 @@ export function zoneSvg(res, zone, axisKey, opt) {
   return s + `</svg>`;
 }
 
+/* A zone's elevational projection on one plane (Fig B10 / B11, the BD
+ * sample case): the buildings, the IS (in the gaps that count, and open to
+ * above over a lower building), the PE (voids >= 3 m x 3 m) and, in the Low
+ * zone, the portion <= 1/3 H disregarded. */
+const ELEV_KIND = {
+  bldg: { fill: "#94a3b8", label: "building" },
+  exempt: { fill: "url(#H)", label: "Low zone portion ≤ 1/3 H, disregarded" },
+  is: { fill: "url(#D)", label: "IS" },
+  sky: { fill: "url(#D)", label: "IS (open to above)" },
+  pe: { fill: "url(#G)", label: "PE" },
+  open: { fill: "#fff", label: "open, not counted" },
+};
+export function elevSvg(res, zone, axisKey, opt) {
+  opt = opt || {};
+  const z = (res.zones || []).find((x) => x.zone === zone);
+  const e = z && z[axisKey] && z[axisKey].elev;
+  if (!e) return "";
+  const fs = Math.max(e.W_m, e.H_m * 2) / 55;
+  const L = fs * 11, T = fs * 3.5, Bm = fs * 4.5, R = fs * 2;
+  const VW = L + e.W_m + R, VH = T + e.H_m + Bm;
+  const id = "e" + Math.random().toString(36).slice(2, 8);
+  const X = (u) => (L + u).toFixed(3), Y = (h) => (T + e.H_m - h).toFixed(3);
+  const fill = (k) => (ELEV_KIND[k] || ELEV_KIND.open).fill.replace(/url\(#(\w)\)/, `url(#${id}$1)`);
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW.toFixed(2)} ${VH.toFixed(2)}" class="sbd-svg"${opt.w ? ` width="${opt.w}" height="${Math.round(opt.w * VH / VW)}"` : ""} font-family="system-ui,sans-serif">`
+    + `<defs><pattern id="${id}H" width="${fs * 0.8}" height="${fs * 0.8}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="100%" height="100%" fill="#cbd5e1"/><line x1="0" y1="0" x2="0" y2="${fs * 0.8}" stroke="#334155" stroke-width="${fs / 6}"/></pattern>`
+    + `<pattern id="${id}D" width="${fs * 0.7}" height="${fs * 0.7}" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="#dcfce7"/><circle cx="${fs * 0.35}" cy="${fs * 0.35}" r="${fs / 9}" fill="#15803d"/></pattern>`
+    + `<pattern id="${id}G" width="${fs * 0.8}" height="${fs * 0.8}" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="#dbeafe"/><path d="M0 0H${fs * 0.8}M0 0V${fs * 0.8}" stroke="#1d4ed8" stroke-width="${fs / 10}"/></pattern></defs>`
+    + `<rect width="100%" height="100%" fill="#fff"/>`;
+  for (const [u0, u1, h0, h1, k] of e.rects) {
+    s += `<rect x="${X(u0)}" y="${Y(h1)}" width="${(u1 - u0).toFixed(3)}" height="${(h1 - h0).toFixed(3)}" fill="${fill(k)}" stroke="${k === "bldg" ? "#475569" : "none"}" stroke-width="${fs / 14}"/>`;
+  }
+  // the counted parts' sizes
+  for (const [u0, u1, h0, h1, k] of e.rects) {
+    if (!["is", "sky", "pe"].includes(k) || u1 - u0 < fs * 3 || h1 - h0 < fs * 1.2) continue;
+    s += `<text x="${X((u0 + u1) / 2)}" y="${Y((h0 + h1) / 2 - fs * 0.35)}" font-size="${fs * 0.85}" text-anchor="middle" fill="${k === "pe" ? "#1e3a8a" : "#14532d"}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${k === "pe" ? "PE" : "IS"} ${f1(u1 - u0)} x ${f1(h1 - h0)}</text>`;
+  }
+  // the zone frame (dashed red, as in the sample), its levels and W
+  s += `<rect x="${X(0)}" y="${Y(e.H_m)}" width="${e.W_m}" height="${e.H_m}" fill="none" stroke="#dc2626" stroke-width="${fs / 8}" stroke-dasharray="${fs} ${fs / 2}"/>`;
+  s += `<line x1="${X(-fs)}" y1="${Y(0)}" x2="${X(e.W_m + fs)}" y2="${Y(0)}" stroke="#dc2626" stroke-width="${fs / 5}"/>`;
+  const lev = (h, t) => `<text x="${X(-fs * 0.6)}" y="${(Number(Y(h)) + fs * 0.35).toFixed(2)}" font-size="${fs * 0.9}" text-anchor="end" fill="#0f172a">${t}</text>`;
+  s += lev(0, `${f1(e.z0)} m${e.z0 ? "" : " (Level 0)"}`) + lev(e.H_m, `${f1(e.z0 + e.H_m)} m`);
+  if (e.exempt_m) s += lev(e.exempt_m, `1/3 H ${f2(e.exempt_m)}`);
+  const yb = T + e.H_m + fs * 2.2;
+  s += `<line x1="${X(0)}" y1="${yb}" x2="${X(e.W_m)}" y2="${yb}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
+    + `<line x1="${X(0)}" y1="${yb - fs / 2}" x2="${X(0)}" y2="${yb + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/><line x1="${X(e.W_m)}" y1="${yb - fs / 2}" x2="${X(e.W_m)}" y2="${yb + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
+    + `<text x="${X(e.W_m / 2)}" y="${yb - fs * 0.3}" font-size="${fs}" text-anchor="middle" fill="#0f172a">W ${f2(e.W_m)} m</text>`
+    + `<text x="${X(e.W_m / 2)}" y="${yb + fs * 1.4}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569">Projected facade through ${axisKey === "axis1" ? "Projection Plane X" : "Projection Plane Y"} · H ${f2(e.H_m)} m</text>`
+    + `<text x="${X(0)}" y="${T - fs}" font-size="${fs * 1.1}" fill="#0f172a" font-weight="600">${esc(ZONE_LABEL[zone] || zone)} · P = ${f2(e.P_is)} % IS + ${f2(e.P_pe)} % PE = ${f2(e.P)} %</text>`;
+  return s + `</svg>`;
+}
+
+/* The working of a zone's elevation, as rows [label, text]. */
+function elevWorking(e, req) {
+  const parts = e.parts.filter((p) => p.kind !== "pe");
+  const pes = e.parts.filter((p) => p.kind === "pe");
+  const rows = [
+    ["Zone area", `W x H = ${f2(e.W_m)} x ${f2(e.H_m)} = ${f1(e.zone_area_m2)} m²`],
+    ["IS area", (parts.length ? parts.map((p) => `${f1(p.w_m)} x ${f1(p.h_m)}`).join(" + ") + " = " : "") + `${f1(e.is_area_m2)} m²`],
+    ["P by the IS", `${f1(e.is_area_m2)} / ${f1(e.zone_area_m2)} = ${f2(e.P_is)} %` + (req ? ` (IS alone must reach 2/3 x ${f1(req)} = ${f2(req * 2 / 3)} %: ${e.is_min_ok ? "OK" : "NOT OK"})` : "")],
+    ["PE area", pes.length ? pes.map((p) => `${f1(p.w_m)} x ${f1(p.h_m)}`).join(" + ") + ` = ${f1(e.pe_area_m2)} m²` : "none (a void through the building, ≥ 3 m wide and high)"],
+  ];
+  if (e.pe_area_m2) rows.push(["P by the PE", `${f1(e.pe_used_m2)} / ${f1(e.zone_area_m2)} = ${f2(e.P_pe)} %` + (e.pe_cap_m2 != null ? ` (up to 1/3 x ${f1(req)} = ${f2(req / 3)} %${e.pe_used_m2 < e.pe_area_m2 - 0.01 ? ", the rest not counted" : ", all accountable"})` : "")]);
+  rows.push(["P", `${f2(e.P_is)} + ${f2(e.P_pe)} = ${f2(e.P)} %` + (req ? ` (required ${f1(req)} %: ${e.P >= req - 1e-9 && e.is_min_ok !== false ? "OK" : "NOT OK"})` : "")]);
+  if (e.exempt_m) rows.push(["Low zone", `the portion ≤ 1/3 H (${f2(e.exempt_m)} m) is disregarded: not IS, and left out of the footprints and Lp`]);
+  return rows;
+}
+
 /* An SVG as a PNG data URL (for the report). */
 function svgPng(svg, w) {
   return new Promise((resolve) => {
@@ -146,13 +213,13 @@ export function createSbd(ctx) {
       <button id="sbd-del" class="ghost" title="Delete this saved result" hidden>&#10005;</button></div>
     <div id="sbd-sum"></div>
     <div class="chk-row sbd-acts">
-      <button id="sbd-plan" class="ghost" title="The plan of each zone: the gaps, the pinch points and the air corridors">Plan ...</button>
+      <button id="sbd-plan" class="ghost" title="The plan and the elevations of each zone: the gaps, the air corridors, IS and PE">Plan ...</button>
       <label class="row-check" style="width:auto" title="The masses and the zone limits in the model"><input type="checkbox" id="sbd-3d"> 3D</label>
       <button id="sbd-issue" class="ghost" title="An issue for what fails">Make issue</button>
       <button id="sbd-report" class="ghost" title="A report: the table and a plan of each zone (Print / Save to Folders)">Report</button>
       <button id="sbd-remove" class="ghost danger" title="Remove the masses sent from Revit, this result and the masses' model in the 3D (saved results stay)">Remove ...</button>
     </div>
-    <div class="muted hint">From the building masses: in Revit, <b>LWK > Viewer tools > SBD Export</b>. P, S1/S2/S3 and the air corridors follow the SBD panel's rules, for each zone's own footprints.</div>`;
+    <div class="muted hint">From the building masses: in Revit, <b>LWK > Viewer tools > SBD Export</b>. P, S1/S2/S3 and the air corridors follow the SBD panel's rules, for each zone's own footprints; P is taken on each zone's elevation (IS + PE).</div>`;
   const $ = (s) => box.querySelector(s);
   const cur = () => (B.view ? B.viewRes : B.res);
 
@@ -179,18 +246,20 @@ export function createSbd(ctx) {
       $("#sbd-ang").hidden = $("#sbd-axis").value !== "angle";
     }
     if (!r.ok) { $("#sbd-sum").innerHTML = `<div class="bad">${(r.warnings || []).map(esc).join("<br>")}</div>`; return; }
+    const pz = (a) => (a.P_zone != null ? a.P_zone : a.P);
+    const cell = (a) => `<td class="n ${a.pass === false ? "bad" : ""}${a.required_p == null && a.pass == null && r.required_p != null ? " muted" : ""}" title="${a.elev ? `Elevation: IS ${f2(a.elev.P_is)} % + PE ${f2(a.elev.P_pe)} % · on plan IS / W ${f1(a.P)} %` : ""}${a.required_p == null && r.required_p != null ? " - for information (a site under 2 ha is checked on Plane X)" : ""}">${f1(pz(a))}`;
     const rows = r.zones.map((z) => `<tr><td><span class="sbd-dot" style="background:${ZONE_COLOR[z.zone]}"></span>${esc(ZONE_LABEL[z.zone] || z.zone)}</td>`
-      + (z.assessed ? `<td class="n">${f1(z.axis1.P)}<small class="muted sbd-ang">${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + Math.round(z.plane_x_deg) + "°" : ""}</small></td><td class="n">${f1(z.axis2.P)}<small class="muted sbd-ang">${z.plane_y_deg != null ? Math.round(z.plane_y_deg) + "°" : ""}</small></td><td class="n">${z.axis1.gaps.filter((g) => g.qualifies).length}/${z.axis1.gaps.length}</td>`
+      + (z.assessed ? `${cell(z.axis1)}<small class="muted sbd-ang">${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + Math.round(z.plane_x_deg) + "°" : ""}</small></td>${cell(z.axis2)}<small class="muted sbd-ang">${z.plane_y_deg != null ? Math.round(z.plane_y_deg) + "°" : ""}</small></td><td class="n">${z.axis1.gaps.filter((g) => g.qualifies).length}/${z.axis1.gaps.length}</td>`
         : `<td colspan="3" class="muted">no building</td>`) + `</tr>`).join("");
     const ok = r.pass;
     $("#sbd-sum").innerHTML = `
-      <div class="sbd-verdict ${ok == null ? "" : ok ? "ok" : "bad"}">P = <b>${f1(r.controlling_p)} %</b>${r.required_p != null ? ` · required ${f1(r.required_p)} %` : " · no P required (Table 1)"}`
+      <div class="sbd-verdict ${ok == null ? "" : ok ? "ok" : "bad"}">P = <b>${f1(r.controlling_p)} %</b>${r.required_p != null ? ` · required ${f1(r.required_p)} %${r.required_p_y != null ? ` (Plane Y ${f1(r.required_p_y)} %)` : ""}` : " · no P required (Table 1)"}`
         + `${ok == null ? "" : ok ? " · <b>PASS</b>" : " · <b>FAIL</b>"}</div>
-      <table class="sbd-t"><tr><th>Zone</th><th class="n" title="Axis 1 (best of ±15° and both sides)">P1 %</th><th class="n" title="Axis 2 (at right angles)">P2 %</th><th class="n" title="Gaps that count / all gaps on Axis 1">gaps</th></tr>${rows}</table>
+      <table class="sbd-t"><tr><th>Zone</th><th class="n" title="Projection Plane X: (IS + PE) / (W x H) on the zone's elevation; its angle from the street small">P X %</th><th class="n" title="Projection Plane Y, 75-105° from X">P Y %</th><th class="n" title="Gaps that count / all gaps on Axis 1">gaps</th></tr>${rows}</table>
       <div class="muted sbd-lp">Site ${f1(r.site_area_m2)} m² · Lp ${f1(r.lp.projected_m)} m (projected, all buildings)`
         + `${r.required_p !== r.required_p_addin ? ` <span class="bad" title="The SBD panel takes the shorter side of one building (${f1(r.lp.addin_m)} m), which gives a different required P - confirm the reading of APP-152">· add-in Lp ${f1(r.lp.addin_m)} m</span>` : ""}</div>`
-      + ((r.case1 || []).length ? `<table class="sbd-t"><tr><th>Street (Case 1)</th><th class="n">U m</th><th class="n">Lp m</th><th class="n">5U m</th></tr>`
-        + r.case1.flatMap((s) => s.buildings.map((b) => `<tr><td>${esc(s.street)}${s.buildings.length > 1 ? " · " + b.building : ""}</td><td class="n">${f1(b.U_m)}</td><td class="n ${b.pass ? "" : "bad"}">${f1(b.Lp_m)}</td><td class="n">${f1(b.Lp_max_m)}</td></tr>`)).join("") + `</table>` : "")
+      + ((r.case1 || []).length ? `<table class="sbd-t"><tr><th title="Design Requirement (1): Lp ≤ 5 U, per zone">Case 1</th><th class="n" title="Canyon area / its length along the street">U m</th><th class="n" title="The facade projected on the street (Low zone: above 1/3 H)">Lp m</th><th class="n">5U m</th></tr>`
+        + r.case1.flatMap((s) => s.buildings.map((b) => `<tr title="${esc(`${s.street}: U = ${f1(b.area_m2)} m² / ${f1(b.L_m)} m = ${f2(b.U_m)} m${b.setback_m != null ? `, facade ${f1(b.setback_m)} m back from the street` : ""}; Lp ${f1(b.Lp_m)} m ${b.pass ? "≤" : ">"} 5U ${f1(b.Lp_max_m)} m`)}"><td>${s.zone ? `<span class="sbd-dot" style="background:${ZONE_COLOR[s.zone]}"></span>` : ""}${esc(s.street)}${b.name ? " · " + esc(b.name) : s.buildings.length > 1 ? " · " + b.building : ""}</td><td class="n">${f1(b.U_m)}</td><td class="n ${b.pass ? "" : "bad"}">${f1(b.Lp_m)}</td><td class="n">${f1(b.Lp_max_m)}</td></tr>`)).join("") + `</table>` : "")
       + ((r.warnings || []).length ? `<div class="bad sbd-warn">${r.warnings.map(esc).join("<br>")}</div>` : "")
       + (B.view ? `<div class="muted">Saved ${esc((cur().saved_at || "").replace("T", " ").slice(0, 16))} by ${esc(cur().saved_by || "")}</div>` : `<div class="muted">Run ${esc((r.run_at || "").replace("T", " ").slice(0, 16))}${r.run_by ? " · " + esc(r.run_by) : ""}</div>`);
     if (B.three) show3d(true);
@@ -273,24 +342,37 @@ export function createSbd(ctx) {
     const r = cur();
     if (!r || !r.ok) return;
     const zones = r.zones.filter((z) => z.assessed);
-    let zone = (zones.find((z) => z.P === r.controlling_p) || zones[0] || {}).zone, axisKey = "axis1";
+    let zone = (zones.find((z) => z.P === r.controlling_p) || zones[0] || {}).zone, axisKey = "axis1", view = "plan";
     const back = document.createElement("div");
     back.className = "sbd-back";
-    back.innerHTML = `<div class="sbd-win" role="dialog" aria-label="SBD plan">
-      <div class="sbd-wh"><b>SBD plan</b><span class="sbd-ztabs">${r.zones.map((z) => `<button class="ghost" data-z="${z.zone}"${z.assessed ? "" : " disabled"}>${esc(ZONE_LABEL[z.zone] || z.zone)}${z.assessed ? ` · ${f1(z.P)}%` : ""}</button>`).join("")}</span>
-        <span class="sbd-ztabs"><button class="ghost" data-a="axis1">Axis 1</button><button class="ghost" data-a="axis2">Axis 2</button></span>
+    back.innerHTML = `<div class="sbd-win" role="dialog" aria-label="SBD plan and elevations">
+      <div class="sbd-wh"><span class="sbd-ztabs"><button class="ghost" data-v="plan">Plan</button><button class="ghost" data-v="elev" title="The zone's elevational projection on the plane: IS, PE and P by area">Elevation</button></span><span class="sbd-ztabs">${r.zones.map((z) => `<button class="ghost" data-z="${z.zone}"${z.assessed ? "" : " disabled"}>${esc(ZONE_LABEL[z.zone] || z.zone)}${z.assessed ? ` · ${f1(z.P)}%` : ""}</button>`).join("")}</span>
+        <span class="sbd-ztabs"><button class="ghost" data-a="axis1" title="Projection Plane X (Axis 1)">Plane X</button><button class="ghost" data-a="axis2" title="Projection Plane Y (Axis 2)">Plane Y</button></span>
         <span class="spacer"></span><button class="ghost" data-x title="Close">&#10005;</button></div>
       <div class="sbd-wb"><div class="sbd-plan"></div><div class="sbd-gaps"></div></div>
-      <div class="sbd-legend muted"><span class="sw" style="background:#16a34a55;border-color:#16a34a"></span>a gap that counts <span class="sw" style="background:#dc262655;border-color:#dc2626"></span>does not (too narrow, or blocked)
+      <div class="sbd-legend muted" data-l="elev"><span class="sw" style="background:#94a3b8"></span>building <span class="sw" style="background:radial-gradient(#15803d 30%,#dcfce7 35%);background-size:6px 6px"></span>IS (a gap that counts, or open to above ≥ 7.5 m wide)
+        <span class="sw" style="background:#dbeafe;border-color:#1d4ed8"></span>PE (a void ≥ 3 m x 3 m) <span class="sw" style="background:repeating-linear-gradient(45deg,#334155 0 2px,#cbd5e1 2px 5px)"></span>Low zone ≤ 1/3 H, disregarded <span class="sw dash" style="border-color:#dc2626"></span>the zone</div>
+      <div class="sbd-legend muted" data-l="plan"><span class="sw" style="background:#16a34a55;border-color:#16a34a"></span>a gap that counts <span class="sw" style="background:#dc262655;border-color:#dc2626"></span>does not (too narrow, or blocked)
         <span class="sw" style="background:#47556999"></span>this zone's buildings <span class="sw dash"></span>air corridor ≥ 15 m <span class="sw" style="background:#f28022"></span>axis
         <span class="sw" style="background:#e2e8f0;border-color:#94a3b8"></span>street, its centreline and the opposite boundary</div></div>`;
     document.body.appendChild(back);
     const draw = () => {
       back.querySelectorAll("[data-z]").forEach((b) => b.classList.toggle("active", b.dataset.z === zone));
       back.querySelectorAll("[data-a]").forEach((b) => b.classList.toggle("active", b.dataset.a === axisKey));
-      back.querySelector(".sbd-plan").innerHTML = zoneSvg(r, zone, axisKey);
+      back.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("active", b.dataset.v === view));
+      back.querySelectorAll("[data-l]").forEach((b) => { b.hidden = b.dataset.l !== view; });
       const z = r.zones.find((x) => x.zone === zone);
       const ax = z && z[axisKey];
+      if (view === "elev") {
+        const e = ax && ax.elev;
+        const req = ax && (ax.required_p != null ? ax.required_p : null);
+        back.querySelector(".sbd-plan").innerHTML = e ? elevSvg(r, zone, axisKey) : `<div class="muted">No elevation in this result - run it again.</div>`;
+        back.querySelector(".sbd-gaps").innerHTML = e ? `<div class="sbd-ptot">P = ${f2(e.P)} %<br><span class="muted">(IS + PE) / (W x H) on ${axisKey === "axis1" ? "Plane X" : "Plane Y"}${req == null && r.required_p != null ? " - for information: a site under 2 ha is checked on Plane X" : ""}</span></div>`
+          + `<table class="sbd-t">${elevWorking(e, req != null ? req : r.required_p).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>`
+          + `<div class="muted sbd-note">IS: in a gap that counts on plan (S1, S3 ≥ 7.5 m; S2 ≥ 15 m), at least 2/3 of the zone's height, or open to above over a lower building (with the IS beside it ≥ 7.5 m wide). PE: a void through the building ≥ 3 m wide and high; it counts up to 1/3 of the required P. Low zone: the portion ≤ 1/3 H is disregarded. On plan (IS / W): ${f1(ax.P)} %.</div>` : "";
+        return;
+      }
+      back.querySelector(".sbd-plan").innerHTML = zoneSvg(r, zone, axisKey);
       const planes = z && z.plane_x_deg != null ? `Plane X ${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + f1(z.plane_x_deg) + "° from the street" : "along the street"} · Plane Y ${f1(z.plane_y_deg)}° from X` : "";
       back.querySelector(".sbd-gaps").innerHTML = ax ? `<div class="sbd-ptot">P = ${f1(ax.P)} %<br><span class="muted">IS ${f2(ax.IS_m)} m / W ${f2(ax.W_m)} m${ax.sweep_deg ? ` · plane side turned ${ax.sweep_deg}°` : ""}</span>${planes ? `<br><span class="muted">${esc(planes)}</span>` : ""}</div>`
         + `<table class="sbd-t"><tr><th>Gap</th><th class="n">S m</th><th></th></tr>` + ax.gaps.map((g) => {
@@ -309,6 +391,7 @@ export function createSbd(ctx) {
       if (!b) return;
       if (b.dataset.z) zone = b.dataset.z;
       if (b.dataset.a) axisKey = b.dataset.a;
+      if (b.dataset.v) view = b.dataset.v;
       draw();
     });
     document.addEventListener("keydown", function k(ev) { if (ev.key === "Escape") { back.remove(); document.removeEventListener("keydown", k); } });
@@ -359,9 +442,11 @@ export function createSbd(ctx) {
     const lines = [];
     for (const z of r.zones.filter((x) => x.assessed)) {
       const bad = z.axis1.gaps.filter((g) => !g.qualifies);
-      lines.push(`${ZONE_LABEL[z.zone] || z.zone}: P ${f1(z.axis1.P)} % (Axis 1), ${f1(z.axis2.P)} % (Axis 2)`
+      const pz = (a) => (a.P_zone != null ? a.P_zone : a.P);
+      lines.push(`${ZONE_LABEL[z.zone] || z.zone}: P ${f1(pz(z.axis1))} % (Plane X), ${f1(pz(z.axis2))} % (Plane Y)`
         + (bad.length ? ` - not counted: ${bad.map((g) => `${g.type === "FAIL" ? "blocked gap" : g.type} ${f2(gapM(g))} m`).join(", ")}` : ""));
     }
+    for (const c of r.case1 || []) for (const b of c.buildings) if (!b.pass) lines.push(`Case 1, ${ZONE_LABEL[c.zone] || c.zone || ""} ${c.street}: Lp ${f1(b.Lp_m)} m > 5U ${f1(b.Lp_max_m)} m (U ${f2(b.U_m)} m)`);
     return lines;
   }
   $("#sbd-issue").onclick = async () => {
@@ -394,6 +479,8 @@ export function createSbd(ctx) {
           rows: [["Gaps", `${f2(ax.IS_m)} m of ${f2(ax.W_m)} m${ax.sweep_deg ? ` (axis turned ${ax.sweep_deg}°)` : ""}`],
             ...ax.gaps.map((g) => [g.type === "FAIL" ? "Blocked" : g.type, `${f2(gapM(g))} m - ${g.qualifies ? "counts" : "does not count"}`, g.qualifies ? "#16a34a" : "#dc2626"]),
             ...((z.corridors || []).length ? [["Air corridors", z.corridors.map((c) => f1(c.width_m) + " m").join(", ")]] : [])] });
+        if (ax.elev) items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · elevation on ${k === "axis1" ? "Plane X" : "Plane Y"}`, tag: `P ${f2(ax.elev.P)} %`, tagColor: ZONE_COLOR[z.zone],
+          img: await svgPng(elevSvg(r, z.zone, k), 1400), rows: elevWorking(ax.elev, ax.required_p != null ? ax.required_p : r.required_p) });
       }
     }
     writeReport(w, {
@@ -404,7 +491,9 @@ export function createSbd(ctx) {
         ["Lp (projected, all buildings)", `${f1(r.lp.projected_m)} m`], ["Axis 1", r.axis.source === "street" ? "along the street line" : r.axis.source === "pca" ? "the site's main direction" : "at a set angle"],
         ["Masses", B.model ? `${B.model.masses.length}, from ${B.model.model || "Revit"} (${(B.model.at || "").slice(0, 10)})` : ""],
         ...((r.warnings || []).length ? [["Warnings", r.warnings.join(" / ")]] : [])],
-      table: { cols: ["Zone", "P Axis 1 %", "P Axis 2 %"], rows: r.zones.map((z) => [ZONE_LABEL[z.zone] || z.zone, z.assessed ? f1(z.axis1.P) : "-", z.assessed ? f1(z.axis2.P) : "-"]) },
+      table: { cols: ["Zone", "P Plane X %", "P Plane Y %", "Case 1: Lp / 5U m"], rows: r.zones.map((z) => [ZONE_LABEL[z.zone] || z.zone,
+        z.assessed ? f1(z.axis1.P_zone != null ? z.axis1.P_zone : z.axis1.P) : "-", z.assessed ? f1(z.axis2.P_zone != null ? z.axis2.P_zone : z.axis2.P) : "-",
+        (r.case1 || []).filter((c) => c.zone === z.zone).flatMap((c) => c.buildings.map((b) => `${f1(b.Lp_m)} / ${f1(b.Lp_max_m)}${b.pass ? "" : " FAIL"}`)).join(", ") || "-"]) },
       items,
     });
     ctx.status("SBD report ready in a new tab - Print / Save as PDF there, or Save to Folders.");
