@@ -35,6 +35,7 @@ function style() {
   .cad .cad-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
   .cad button{font:inherit;border-radius:7px;padding:6px 12px;border:1px solid var(--line,#cbd5e1);background:var(--panel,#fff);color:inherit;cursor:pointer}
   .cad button.pri{background:#f28022;border-color:#f28022;color:#fff;font-weight:700}
+  .cad button.pri.danger-btn{background:#dc2626;border-color:#dc2626}
   .cad ul{margin:6px 0;padding-left:18px}`;
   document.head.appendChild(s);
 }
@@ -281,6 +282,29 @@ export async function pdfImportDialog({ file, pages, stem, sets, set, project, f
       if (!prefix) { alert("Give the sheet a number."); return; }
       resolve({ prefix, set: d.querySelector(".pi-set").value.trim().slice(0, 60), keep: keep.target() });
     };
+  });
+  d.remove();
+  return r;
+}
+
+/* Set ▾ > Delete set: what goes, and the files kept in Folders - kept or
+   deleted too (to the Folders bin). files: [{name, folder, project}].
+   -> "keep" | "files" | null (cancelled) */
+export async function deleteSetDialog({ set, sheets, markups, files }) {
+  const d = dialog(`<h3>Delete the set ${esc(set)}?</h3>
+    <div>Its ${sheets} sheet(s) and their PDFs are deleted.${markups ? ` The ${markups} markup(s) on them stay in the project but will have no sheet to show on.` : ""}
+      To only hide the set, use <b>Archive set</b> instead.</div>
+    ${files.length ? `<div style="margin-top:10px"><b>Files kept in Folders (${files.length})</b> - delete them too?</div>
+      <div class="cad-files">${files.map((f) => `<label style="display:block"><b>${esc(f.name)}</b><br><small class="muted">${esc([f.project, f.folder].filter(Boolean).join(" · "))}</small></label>`).join("")}</div>
+      <div class="muted" style="font-size:12px">Deleted files go to the Folders bin (Folders > Bin), where they can be restored.</div>`
+      : `<div class="muted" style="margin-top:8px">No files of this set are kept in Folders.</div>`}
+    <div class="cad-foot" style="flex-wrap:wrap"><button type="button" data-a="cancel">Cancel</button>
+      ${files.length ? `<button type="button" data-a="keep">Delete the set, keep the files</button>
+        <button type="button" class="pri danger-btn" data-a="files">Delete the set and its files</button>`
+        : `<button type="button" class="pri danger-btn" data-a="keep">Delete set</button>`}</div>`);
+  const r = await new Promise((resolve) => {
+    d.querySelectorAll("[data-a]").forEach((b) => { b.onclick = () => resolve(b.dataset.a === "cancel" ? null : b.dataset.a); });
+    d.addEventListener("keydown", (ev) => { if (ev.key === "Escape") resolve(null); });
   });
   d.remove();
   return r;

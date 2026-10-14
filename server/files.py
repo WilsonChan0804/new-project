@@ -385,6 +385,69 @@ def keep_file(reg, folder_parts, name, data, uid, who):
     return rel
 
 
+def to_bin(reg, root, full, w):
+    """Move a file or folder of a Folders project to its bin (restorable
+    from Folders > Bin). -> its bin id."""
+    bid = uuid.uuid4().hex[:16]
+    box = os.path.join(root, BIN, bid)
+    os.makedirs(box)
+    isdir = os.path.isdir(full)
+    size = os.path.getsize(full) if not isdir else 0
+    shutil.move(full, os.path.join(box, os.path.basename(full)))
+    rel = rel_of(root, full)
+    # its kept versions go too (back with a restore)
+    if os.path.isdir(ver_dir(root, rel)):
+        shutil.move(ver_dir(root, rel), os.path.join(box, ".versions"))
+    with Meta() as d:
+        d.execute("UPDATE versions SET path = ? || path WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')",
+                  ("~bin/%s/" % bid, reg, rel, rel.replace("%", r"\%").replace("_", r"\_") + "/%"))
+        d.execute("INSERT INTO bin (id, reg, path, dir, by_uid, by_name, at, size) VALUES (?,?,?,?,?,?,?,?)",
+                  (bid, reg, rel, 1 if isdir else 0, w.uid, w.name, now_iso(), size))
+    return bid
+
+
+# The files an import on the Sheets page kept in Folders, by set - so that
+# deleting the set can offer to delete them too. In the viewer project's
+# folder: {"files": [{set, reg, path, kind}]}
+KEPT = "imported_kept.json"
+_KEPT_LOCK = threading.Lock()
+
+
+def kept_read(vroot):
+    d = read_json(os.path.join(vroot, KEPT)) or {}
+    return [x for x in d.get("files") or [] if isinstance(x, dict)]
+
+
+def kept_write(vroot, rows):
+    p = os.path.join(vroot, KEPT)
+    tmp = p + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"files": rows}, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, p)
+
+
+def set_key(v):
+    return re.sub(r"[\x00-\x1f\x7f]+", " ", str(v or "")).strip()[:60]
+
+
+def kept_rename(vroot, frm, to):
+    """Rename a set in the record (the files stay where they are)."""
+    rows = kept_read(vroot)
+    if not rows:
+        return
+    for x in rows:
+        if x.get("set") == frm:
+            x["set"] = to
+    kept_write(vroot, rows)
+
+
+def kept_forget(vroot, name):
+    rows = kept_read(vroot)
+    keep = [x for x in rows if x.get("set") != name]
+    if len(keep) != len(rows):
+        kept_write(vroot, keep)
+
+
 def register(app, core):
     global CORE
     CORE = core
@@ -785,7 +848,98 @@ def register(app, core):
         if len(raw) > MAX_UPLOAD:
             raise HTTPException(status_code=413, detail="Files up to 2 GB")
         out = keep_file(target, parts, nm, raw, w.uid, w.name or "")
+        if set_key(set):
+            try:
+                vroot = core.project_root_for("default" if core.CFG["single"] else x_project)
+                with _KEPT_LOCK:
+                    rows = kept_read(vroot)
+                    rows.append({"set": set_key(set), "reg": target, "path": out, "kind": "cad" if kind == "cad" else "pdf"})
+                    kept_write(vroot, rows)
+            except Exception:
+                pass
         return {"reg": target, "path": out, "name": out.split("/")[-1]}
+
+    def kept_of(request, x_project, x_viewer_token, name):
+        """The files kept in Folders for a set that the person can open:
+        recorded at import, and (kept before the record) those in
+        00 BIM/Import/PDF|CAD/<set>. -> (who, viewer root, [{reg, path, full, name, folder, project}])"""
+        w, linked, _ = viewer_reg(request, x_project, x_viewer_token)
+        vroot = core.project_root_for("default" if core.CFG["single"] else x_project)
+        want = [(x.get("reg"), x.get("path")) for x in kept_read(vroot) if x.get("set") == name]
+        if linked:
+            lroot = root_of(linked, make=False)
+            for sub in ("PDF", "CAD"):
+                folder = os.path.join(lroot, BIM, "Import", sub, bim_name(name)) if lroot else ""
+                if folder and os.path.isdir(folder):
+                    for f in sorted(os.listdir(folder)):
+                        if visible(f) and os.path.isfile(os.path.join(folder, f)):
+                            want.append((linked, "/".join([BIM, "Import", sub, bim_name(name), f])))
+        out, seen, names, ok = [], set(), {}, {}
+        for reg, path in want:
+            if not reg or not path or (reg, path) in seen:
+                continue
+            seen.add((reg, path))
+            if reg not in ok:
+                try:
+                    can_open(core, w, reg)
+                    ok[reg] = True
+                    _, row = tasks.project_people(core, reg)
+                    names[reg] = (row["short"] or row["name"]) if row else reg
+                except HTTPException:
+                    ok[reg] = False
+            if not ok[reg]:
+                continue
+            root = root_of(reg, make=False)
+            try:
+                full = inside(root, clean_rel(path))
+            except HTTPException:
+                continue
+            if full == root or not os.path.isfile(full):
+                continue
+            parts = path.split("/")
+            out.append({"reg": reg, "path": path, "full": full, "name": parts[-1], "folder": " / ".join(parts[:-1]),
+                        "project": names.get(reg, "")})
+        return w, vroot, out
+
+    @app.get("/api/files/for-viewer/kept")
+    async def kept_for_viewer(request: Request, set: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """The files kept in Folders for a set of imported sheets."""
+        _, _, files = kept_of(request, x_project, x_viewer_token, set_key(set))
+        return {"files": [{k: v for k, v in f.items() if k != "full"} for f in files]}
+
+    @app.post("/api/files/for-viewer/kept-delete")
+    async def kept_delete_for_viewer(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """{set} - its files kept in Folders go to the Folders bin (they can
+        be restored there); emptied Import/<set> folders go."""
+        core.require_project(request, x_project, "member", x_viewer_token)
+        b = await body_of(request)
+        name = set_key(b.get("set"))
+        if not name:
+            raise HTTPException(status_code=400, detail="Which set?")
+        w, vroot, files = kept_of(request, x_project, x_viewer_token, name)
+        out, skipped = [], []
+        for f in files:
+            root = root_of(f["reg"])
+            if not f["path"].lower().startswith((BIM + "/").lower()):
+                # a folder chosen at import: as Folders' Delete (who uploaded it, or an admin)
+                with Meta() as d:
+                    ups = dict((r["path"], r["uid"]) for r in d.execute("SELECT path, uid FROM uploads WHERE reg = ?", (f["reg"],)))
+                if not may_delete(w, tasks.project_admin(core, w, f["reg"]), f["reg"], root, f["full"], ups):
+                    skipped.append(f["path"])
+                    continue
+            to_bin(f["reg"], root, f["full"], w)
+            out.append({"reg": f["reg"], "path": f["path"]})
+            parent = os.path.dirname(f["full"])
+            # an emptied 00 BIM/Import/PDF|CAD/<set> folder goes too
+            if f["path"].lower().startswith((BIM + "/Import/").lower()) and len(f["path"].split("/")) == 5:
+                try:
+                    if not [x for x in os.listdir(parent) if visible(x)]:
+                        shutil.rmtree(parent, ignore_errors=True)
+                except OSError:
+                    pass
+        with _KEPT_LOCK:
+            kept_forget(vroot, name)
+        return {"deleted": out, "skipped": skipped}
 
     @app.get("/api/files/{reg}/preview")
     async def file_preview(request: Request, reg: str, path: str = "", v: int = 0, x_viewer_token: str = Header(default="")):
@@ -1178,22 +1332,8 @@ def register(app, core):
             if not may_delete(w, admin, reg, root, full, ups):
                 raise HTTPException(status_code=403, detail="Only the person who uploaded %s, or a project admin, can delete it"
                                     % os.path.basename(full))
-            bid = uuid.uuid4().hex[:16]
-            box = os.path.join(root, BIN, bid)
-            os.makedirs(box)
-            isdir = os.path.isdir(full)
-            size = os.path.getsize(full) if not isdir else 0
-            shutil.move(full, os.path.join(box, os.path.basename(full)))
             rel = rel_of(root, full)
-            # its kept versions go too (back with a restore)
-            if os.path.isdir(ver_dir(root, rel)):
-                shutil.move(ver_dir(root, rel), os.path.join(box, ".versions"))
-            with Meta() as d:
-                d.execute("UPDATE versions SET path = ? || path WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')",
-                          ("~bin/%s/" % bid, reg, rel, rel.replace("%", r"\%").replace("_", r"\_") + "/%"))
-                d.execute("INSERT INTO bin (id, reg, path, dir, by_uid, by_name, at, size) VALUES (?,?,?,?,?,?,?,?)",
-                          (bid, reg, rel, 1 if isdir else 0, w.uid, w.name, now_iso(), size))
-                # pins and stars are kept for a restore; uploaders too
+            bid = to_bin(reg, root, full, w)
             out.append({"id": bid, "path": rel})
         return {"deleted": out}
 

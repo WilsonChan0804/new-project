@@ -3675,6 +3675,11 @@ async def rename_set(request: Request, x_viewer_token: str = Header(default=""),
             s["set"] = to
             n += 1
     write_imported(root, have)
+    try:
+        import files as _files
+        _files.kept_rename(root, name, to)        # the files kept in Folders stay where they are
+    except Exception:
+        pass
     return {"set": to, "sheets": n}
 
 
@@ -3706,6 +3711,11 @@ async def delete_set(request: Request, x_viewer_token: str = Header(default=""),
     keep = [s for s in have if (s.get("set") or "Uploaded PDFs") != name]
     write_imported(root, keep)
     drop_unused_pdfs(root, have, keep)
+    try:
+        import files as _files
+        _files.kept_forget(root, name)            # (its files in Folders: kept-delete, when chosen)
+    except Exception:
+        pass
     return {"set": name, "removed": len(have) - len(keep)}
 
 

@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-02", date: "14 Oct 2026",
+    items: [
+      "Sheets > **Set ▾**: the actions are now clear buttons (Select sheets, Rename set, Archive set, and **Delete set** in red); archived sets have a **Bring back** button.",
+      "**Delete set** now asks about the set's **files kept in Folders** (the PDFs / CAD files kept at import): **Delete the set, keep the files** or **Delete the set and its files** - those go to the Folders bin, where they can be restored.",
+      "The header fits **one row** on a full-screen window on every page: the project and model / sheet-set drop-downs are shorter (the full name is in their tooltip) and Search, the bell, + Task and your profile stay on the same row.",
+    ],
+  },
+  {
     version: "2026-11-01", date: "14 Oct 2026",
     items: [
       "Sheets > Files > **A CAD drawing**: **xrefs are found by themselves**. Choose only the drawing(s): the xrefs they use are taken from the files or the **folder on this PC** you chose (only the ones needed are sent), then from the project's **Folders** (any folder) - and only what is still missing is asked for: **Choose files ...**, **Choose a folder ...** or **Make the sheets without them**. No need to bind the xrefs first.",

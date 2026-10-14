@@ -2276,13 +2276,13 @@ body:has(> #layout3d) > header #plan-draw .lab { display: none; }
 body:has(> #layout3d) > header #plan-draw { padding: 0.36em 0.5em; }
 body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
 @media (min-width: 701px) {
-  body:has(> #layout3d) > header .two-proj { max-width: 230px; }
-  body:has(> #layout3d) > header .two-part { max-width: 150px; }
+  body:has(> #layout3d) > header .two-proj { max-width: 180px; }
+  body:has(> #layout3d) > header .two-part { max-width: 140px; }
   body:has(> #layout3d) > header { flex-wrap: wrap; overflow: visible; }
   body:has(> #layout3d) > header > * { flex: 0 1 auto; }
   body:has(> #layout3d) > header .spacer { flex: 1 1 0; }
 }
-@media (min-width: 701px) and (max-width: 1799px) {
+@media (min-width: 701px) and (max-width: 1719px) {
   body:has(> #layout3d) > header .hdr-row2 { order: 99; flex: 1 0 100%; flex-wrap: wrap; }
 }
 @media (min-width: 701px) and (max-width: 1199px) {
@@ -2335,8 +2335,66 @@ body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
 #set-menu .sm-row { display: flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 13px; }
 #set-menu .sm-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #set-menu .sm-empty { padding: 4px 10px 8px; font-size: 12px; color: var(--ink-2); }
+/* the Set menu's actions: real buttons (a border, an icon, a hover) */
+#set-menu { width: 330px; padding: 6px; gap: 5px; }
+#set-menu .sm-act { flex-direction: row; align-items: center; gap: 10px; padding: 7px 10px; cursor: pointer;
+  border: 1px solid var(--line-2, #cbd2db); border-radius: 8px; background: var(--panel); color: var(--ink);
+  box-shadow: 0 1px 0 rgba(0,0,0,.04); transition: background .12s, border-color .12s; }
+#set-menu .sm-act:hover, #set-menu .sm-act:focus-visible { background: var(--accent-soft, #fff3e6); border-color: var(--accent); outline: none; }
+#set-menu .sm-act .sm-i { flex: 0 0 auto; display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center;
+  border-radius: 6px; background: var(--panel-2); color: var(--ink-2); }
+#set-menu .sm-act .sm-t { display: flex; flex-direction: column; min-width: 0; }
+#set-menu .sm-act b { font-weight: 600; font-size: 13px; }
+#set-menu .sm-act small { color: var(--ink-2); font-size: 11px; font-weight: 400; }
+#set-menu .sm-act.danger { border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+#set-menu .sm-act.danger b, #set-menu .sm-act.danger .sm-i { color: var(--bad); }
+#set-menu .sm-act.danger .sm-i { background: color-mix(in srgb, var(--bad) 12%, transparent); }
+#set-menu .sm-act.danger:hover { background: color-mix(in srgb, var(--bad) 9%, var(--panel)); border-color: var(--bad); }
+#set-menu .sm-sep { height: 1px; background: var(--line); margin: 2px; }
+#set-menu .sm-row { padding: 4px 6px; }
+#set-menu .sm-back { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 3px 9px; font-size: 12px;
+  border: 1px solid var(--accent); color: var(--accent-ink, #b45309); background: var(--panel); border-radius: 6px; cursor: pointer; }
+#set-menu .sm-back:hover { background: var(--accent-soft, #fff3e6); }
 /* the Sheets heading: the set's name gives way to Select and Set */
 #sheets .panel-head .set-chip { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #sheets .panel-head .sm, #sheets .panel-head .view-wrap { flex: none; white-space: nowrap; }
 #sheets .panel-head .spacer { min-width: 2px; }
 #sheets .panel-head { overflow: hidden; }
+
+/* One row on a computer (2026-11-02): the project and the model / sheet
+   set drop-downs are short (the full name is in their tooltip), the
+   project's name is not repeated beside them, and the Search button
+   shows only its icon on smaller screens - so Search, the bell, + Task and
+   the profile stay on the same row as the page links. (The 3D page keeps
+   its tools on a row of their own below 1800 px.) */
+header:has(.two-wrap) #project { display: none; }
+header select.two-proj { max-width: 200px; }
+header select.two-part { max-width: 180px; }
+@media (min-width: 1100px) {
+  body:has(> #layout) > header { flex-wrap: nowrap; }
+  body:has(> #layout) > header > * { flex-shrink: 0; }
+  body:has(> #layout) > header .spacer { flex: 1 1 0; min-width: 4px; }
+  body:has(> #layout) > header .two-wrap { flex-shrink: 1; min-width: 0; }
+}
+@media (max-width: 1599px) {
+  header #lwk-search-btn .lab { display: none; }
+  header select.two-proj { max-width: 170px; }
+  header select.two-part { max-width: 150px; }
+}
+@media (max-width: 1399px) {
+  header select.two-proj { max-width: 140px; }
+  header select.two-part { max-width: 120px; }
+  body:has(> #layout) > header .page-links button { padding: 0.36em 0.55em; }
+}
+@media (min-width: 1720px) {
+  body:has(> #layout3d) > header { flex-wrap: nowrap; }
+  body:has(> #layout3d) > header > * { flex-shrink: 0; }
+  body:has(> #layout3d) > header .spacer { flex: 1 1 0; min-width: 4px; }
+  body:has(> #layout3d) > header .two-wrap { flex-shrink: 1; min-width: 0; }
+  body:has(> #layout3d) > header .hdr-row2 { flex-wrap: nowrap; }
+}
+@media (min-width: 1720px) and (max-width: 1919px) {
+  body:has(> #layout3d) > header .flr-lab { display: none; }
+}
+body:has(> #layout3d) > header .two-wrap { margin-right: 4px; }
+header .flr-lab { white-space: nowrap; }

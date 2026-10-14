@@ -20,7 +20,7 @@ import * as Tele from "./telemetry.js";
 import { makeTilePage, tileStats } from "./sheettiles.js";
 import { initPanels, initSplitter, initVGrip } from "./panels.js";
 import { copyLink } from "./share.js";
-import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile } from "./cadimport.js";
+import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile, deleteSetDialog } from "./cadimport.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
@@ -4067,12 +4067,15 @@ async function paintSetMenu() {
   const m = document.getElementById("set-menu");
   const imported = !!S.set;
   const n = setSheets().length;
+  const act = (k, icon, label, hint, cls) => `<button type="button" class="sm-act${cls ? " " + cls : ""}" data-sm="${k}">`
+    + `<span class="sm-i">${iconSvg(icon, 16) || ""}</span><span class="sm-t"><b>${label}</b><small>${hint}</small></span></button>`;
   m.innerHTML = (imported
     ? `<div class="sm-head">${esc(S.set)} &middot; ${n} sheet(s)</div>`
-      + `<button class="ghost" data-sm="pick">Select sheets ...<small>Tick several of them, then delete them together</small></button>`
-      + `<button class="ghost" data-sm="rename">Rename set ...<small>Give this set of imported sheets another name</small></button>`
-      + `<button class="ghost" data-sm="archive">Archive set<small>Hide it from Sheets and Folders; nothing is deleted</small></button>`
-      + `<button class="ghost" data-sm="delete">Delete set ...<small>Its sheets and PDFs; markups and issues stay</small></button>`
+      + act("pick", "select", "Select sheets ...", "Tick several of them, then delete them together")
+      + act("rename", "text", "Rename set ...", "Give this set of imported sheets another name")
+      + act("archive", "box", "Archive set", "Hide it from Sheets and Folders; nothing is deleted")
+      + `<div class="sm-sep"></div>`
+      + act("delete", "trash", "Delete set ...", "Its sheets and PDFs; you choose about the files in Folders", "danger")
     : `<div class="sm-empty">The sheets from Revit are not a set to rename or delete. Choose a set of imported PDFs in the drop-down above for those.</div>`)
     + `<div class="sm-head">Archived sets</div><div id="sm-arch" class="sm-empty">Looking ...</div>`;
   try {
@@ -4083,7 +4086,7 @@ async function paintSetMenu() {
     if (!sets.length) { box.textContent = "None."; return; }
     box.className = "";
     box.innerHTML = sets.map((x) => `<div class="sm-row"><span title="${esc(x.set).replace(/"/g, "&quot;")}">${esc(x.set)} <small class="muted">(${x.sheets})</small></span>`
-      + `<button class="ghost sm" data-restore="${esc(x.set).replace(/"/g, "&quot;")}">Bring back</button></div>`).join("");
+      + `<button type="button" class="sm-back" data-restore="${esc(x.set).replace(/"/g, "&quot;")}">${iconSvg("undo", 13) || ""} Bring back</button></div>`).join("");
   } catch (e) {
     const box = document.getElementById("sm-arch");
     if (box) box.textContent = "Could not read them: " + e.message;
@@ -4108,12 +4111,20 @@ async function setAction(what, name) {
     } else if (what === "delete") {
       const nums = setSheets().map((x) => x.number);
       const n = S.items.filter((it) => nums.includes(it.sheet)).length;
-      if (!confirm(`Delete the set "${cur}" and its ${nums.length} sheet(s)?\n\nThe PDFs are deleted.`
-          + (n ? ` ${n} markup(s) on them stay in the project but will have no sheet to show on.` : "")
-          + "\n\nTo only hide it, use Archive instead.")) return;
+      let files = [];
+      try {
+        const r = await fetch("/api/files/for-viewer/kept?" + new URLSearchParams({ set: cur }), { headers: Store.authHeaders() });
+        if (r.ok) files = (await r.json()).files || [];
+      } catch (e) {}
+      const how = await deleteSetDialog({ set: cur, sheets: nums.length, markups: n, files });
+      if (!how) return;
+      let binned = null;
+      if (how === "files" && files.length) binned = await setCall("/api/files/for-viewer/kept-delete", { set: cur });
       await setCall("/api/import/sets/delete", { set: cur });
       await reloadManifest(); showSet("");
-      status(`Set "${cur}" deleted.`);
+      status(`Set "${cur}" deleted.` + (binned ? ` ${binned.deleted.length} file(s) moved to the Folders bin (Folders > Bin to restore).`
+        + (binned.skipped && binned.skipped.length ? ` ${binned.skipped.length} not deleted (only who uploaded them, or a project admin, can).` : "")
+        : files.length ? ` Its ${files.length} file(s) in Folders are kept.` : ""));
     } else if (what === "restore") {
       await setCall("/api/import/sets/archive", { set: name, archived: false });
       await reloadManifest(); showSet(name);
@@ -4145,7 +4156,7 @@ function wireSetTools() {
     m.hidden = false; b.classList.add("open");
     const r = b.getBoundingClientRect();
     m.style.top = (r.bottom + 4) + "px";
-    m.style.left = Math.max(6, Math.min(innerWidth - 286, r.left)) + "px";
+    m.style.left = Math.max(6, Math.min(innerWidth - 336, r.left)) + "px";
     paintSetMenu();
   });
   m.addEventListener("click", (ev) => {
