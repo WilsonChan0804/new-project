@@ -17,6 +17,9 @@ const ZONE_LABEL = { LOW: "Low (0-20 m)", MIDDLE: "Middle (20-60 m)", HIGH: "Hig
 const ZONE_COLOR = { LOW: "#f59e0b", MIDDLE: "#3b82f6", HIGH: "#8b5cf6" };
 const f1 = (v) => (v == null ? "-" : Number(v).toFixed(1));
 const f2 = (v) => (v == null ? "-" : Number(v).toFixed(2));
+// a gap's S value: as measured (side region's Area / Depth, the corridor's
+// width, S2 / S3) - the projected width only for a blocked gap
+const gapM = (g) => (g.type === "FAIL" || g.type === "OPEN" || !g.distance_m ? g.width_m : g.distance_m);
 
 async function api(path, opts) {
   const r = await fetch(path, Object.assign({ headers: Object.assign({ "Content-Type": "application/json" }, Store.authHeaders()) }, opts || {}));
@@ -58,24 +61,38 @@ export function zoneSvg(res, zone, axisKey, opt) {
     }
     if (st.opposite && st.opposite.length > 1) s += `<polyline points="${poly(st.opposite)}" fill="none" stroke="#0f172a" stroke-width="${fs / 8}"/>`;
   }
-  // the gaps: strips across the site, green when they count, red when not
+  // the gaps: strips across the site (faint: the projection), green when
+  // they count, red when not; the S1 side regions (Area / Depth) and the S2
+  // corridors are drawn over them as measured
   if (ax) {
-    s += `<g clip-path="url(#${id})">` + ax.gaps.map((g) => `<polygon points="${poly(g.strip)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity=".22" stroke="${g.qualifies ? "#16a34a" : "#dc2626"}" stroke-width="${fs / 12}"/>`).join("") + `</g>`;
+    const measured = (g) => (g.side && ax.sides && ax.sides[g.side]) || g.corridor;
+    s += `<g clip-path="url(#${id})">` + ax.gaps.map((g) => `<polygon points="${poly(g.strip)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity="${measured(g) ? ".07" : ".22"}" stroke="${g.qualifies ? "#16a34a" : "#dc2626"}" stroke-width="${fs / 14}" stroke-dasharray="${measured(g) ? `${fs / 3} ${fs / 4}` : "none"}"/>`).join("") + `</g>`;
+    for (const k of ["left", "right"]) {
+      const sd = ax.sides && ax.sides[k];
+      if (!sd || !sd.polygon || sd.polygon.length < 3) continue;
+      const g = ax.gaps.find((x) => x.side === k);
+      const ok = g ? g.qualifies : sd.avg_m >= 7.5;
+      s += `<polygon points="${poly(sd.polygon)}" fill="${ok ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${ok ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
+    }
+    for (const g of ax.gaps) {
+      if (g.corridor && g.corridor.length > 2) s += `<polygon points="${poly(g.corridor)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${g.qualifies ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
+    }
   }
   // the neighbours' buildings, and this zone's
   s += (z.others || []).map((l) => `<polygon points="${poly(l)}" fill="url(#${id}h)" stroke="#94a3b8" stroke-width="${fs / 12}"/>`).join("");
   s += z.footprints.map((f) => `<polygon points="${poly(f.loop)}" fill="#475569" fill-opacity=".55" stroke="#1e293b" stroke-width="${fs / 10}"/>`).join("");
-  // the air corridors found (15 m or more)
-  s += (z.corridors || []).map((c) => `<polygon points="${poly(c.polygon)}" fill="none" stroke="#2563eb" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
+  // the air corridors (dashed blue outline over the measured band)
+  s += ((ax && ax.gaps.filter((g) => g.corridor).map((g) => ({ polygon: g.corridor }))) || z.corridors || []).map((c) => `<polygon points="${poly(c.polygon)}" fill="none" stroke="#2563eb" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
   if (ax) {
     for (const g of ax.gaps) {
       if (g.pinch) {
         const [a, b] = g.pinch;
         s += `<line x1="${(a[0] - x0).toFixed(3)}" y1="${(y1 - a[1]).toFixed(3)}" x2="${(b[0] - x0).toFixed(3)}" y2="${(y1 - b[1]).toFixed(3)}" stroke="${g.pass ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 6}"/>`;
       }
-      // the label at the strip's middle, on the site's side nearest the axis start
-      const c = g.strip.reduce((m, p) => [m[0] + p[0] / 4, m[1] + p[1] / 4], [0, 0]);
-      const t = `${g.type === "FAIL" ? "blocked" : g.type} ${f1(g.type === "S2" || g.type === "S3" ? g.distance_m : g.width_m)} m`;
+      // the label in the middle of what was measured (side region, corridor or strip)
+      const shape = (g.side && ax.sides && ax.sides[g.side] && ax.sides[g.side].polygon) || g.corridor || g.strip;
+      const c = shape.reduce((m, p) => [m[0] + p[0] / shape.length, m[1] + p[1] / shape.length], [0, 0]);
+      const t = `${g.type === "FAIL" ? "blocked" : g.type} ${f1(gapM(g))} m`;
       s += `<text x="${(c[0] - x0).toFixed(2)}" y="${(y1 - c[1]).toFixed(2)}" font-size="${fs}" text-anchor="middle" fill="${g.qualifies ? "#14532d" : "#7f1d1d"}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${esc(t)}</text>`;
     }
     // Axis: the direction the gaps are measured along
@@ -133,6 +150,7 @@ export function createSbd(ctx) {
       <label class="row-check" style="width:auto" title="The masses and the zone limits in the model"><input type="checkbox" id="sbd-3d"> 3D</label>
       <button id="sbd-issue" class="ghost" title="An issue for what fails">Make issue</button>
       <button id="sbd-report" class="ghost" title="A report: the table and a plan of each zone (Print / Save to Folders)">Report</button>
+      <button id="sbd-remove" class="ghost danger" title="Remove the masses sent from Revit, this result and the masses' model in the 3D (saved results stay)">Remove ...</button>
     </div>
     <div class="muted hint">From the building masses: in Revit, <b>LWK > Viewer tools > SBD Export</b>. P, S1/S2/S3 and the air corridors follow the SBD panel's rules, for each zone's own footprints.</div>`;
   const $ = (s) => box.querySelector(s);
@@ -153,6 +171,7 @@ export function createSbd(ctx) {
         + `<br>zones from ${f2(m.ground_z)} m${m.ground_source ? ` (${esc(m.ground_source)})` : ""}${(m.streets || []).length ? ` · ${m.streets.length} street(s)` : ""}`
       : `No masses yet. In Revit: model the buildings as <b>Masses</b>, then <b>LWK > Viewer tools > SBD Export</b>.`;
     for (const b of box.querySelectorAll("#sbd-run, #sbd-save, #sbd-plan, #sbd-3d, #sbd-issue, #sbd-report")) b.disabled = !r || !r.ok;
+    $("#sbd-remove").disabled = !m && !B.res;
     if (!r) { $("#sbd-sum").innerHTML = ""; return; }
     if (r.options && !B.view) {
       $("#sbd-axis").value = r.options.axis || "street";
@@ -161,7 +180,7 @@ export function createSbd(ctx) {
     }
     if (!r.ok) { $("#sbd-sum").innerHTML = `<div class="bad">${(r.warnings || []).map(esc).join("<br>")}</div>`; return; }
     const rows = r.zones.map((z) => `<tr><td><span class="sbd-dot" style="background:${ZONE_COLOR[z.zone]}"></span>${esc(ZONE_LABEL[z.zone] || z.zone)}</td>`
-      + (z.assessed ? `<td class="n">${f1(z.axis1.P)}</td><td class="n">${f1(z.axis2.P)}</td><td class="n">${z.axis1.gaps.filter((g) => g.qualifies).length}/${z.axis1.gaps.length}</td>`
+      + (z.assessed ? `<td class="n">${f1(z.axis1.P)}<small class="muted sbd-ang">${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + Math.round(z.plane_x_deg) + "°" : ""}</small></td><td class="n">${f1(z.axis2.P)}<small class="muted sbd-ang">${z.plane_y_deg != null ? Math.round(z.plane_y_deg) + "°" : ""}</small></td><td class="n">${z.axis1.gaps.filter((g) => g.qualifies).length}/${z.axis1.gaps.length}</td>`
         : `<td colspan="3" class="muted">no building</td>`) + `</tr>`).join("");
     const ok = r.pass;
     $("#sbd-sum").innerHTML = `
@@ -226,6 +245,19 @@ export function createSbd(ctx) {
     paintSaved();
     paint();
   };
+  $("#sbd-remove").onclick = async () => {
+    if (!B.model && !B.res) return;
+    if (!confirm("Remove the SBD masses sent from Revit, the latest result and the masses' model in the 3D?\n\nSaved results stay. Send the masses again with SBD Export.")) return;
+    try {
+      const r = await api("/api/sbd", { method: "DELETE" });
+      show3d(false);
+      $("#sbd-3d").checked = false;
+      B.model = null; B.res = null; B.view = "";
+      paintSaved();
+      paint();
+      ctx.status(`SBD removed${r.removed_models ? " - and its model in the 3D (reload the page to take it off the Models list)" : ""}.`);
+    } catch (e) { ctx.status("Not removed: " + e.message); }
+  };
   $("#sbd-del").onclick = async () => {
     const s = B.saved.find((x) => x.id === B.view);
     if (!s || !confirm(`Delete the saved result "${s.name}"?`)) return;
@@ -259,10 +291,17 @@ export function createSbd(ctx) {
       back.querySelector(".sbd-plan").innerHTML = zoneSvg(r, zone, axisKey);
       const z = r.zones.find((x) => x.zone === zone);
       const ax = z && z[axisKey];
-      back.querySelector(".sbd-gaps").innerHTML = ax ? `<div class="sbd-ptot">P = ${f1(ax.P)} %<br><span class="muted">gaps ${f1(ax.IS_m)} m of ${f1(ax.W_m)} m${ax.sweep_deg ? ` · axis turned ${ax.sweep_deg}°` : ""}</span></div>`
-        + `<table class="sbd-t"><tr><th>Gap</th><th class="n">m</th><th></th></tr>` + ax.gaps.map((g) => `<tr><td>${esc(g.type === "FAIL" ? "blocked" : g.type)}</td>`
-          + `<td class="n">${f2(g.type === "S2" || g.type === "S3" ? g.distance_m : g.width_m)}</td><td class="${g.qualifies ? "ok" : "bad"}">${g.qualifies ? "counts" : "no"}${g.threshold_m ? ` <span class="muted">(${g.threshold_m} m)</span>` : ""}${g.encroach_m != null ? ` <span class="bad">${f2(g.encroach_m)} m to the boundary</span>` : ""}</td></tr>`).join("") + `</table>`
-          + ((z.corridors || []).length ? `<div class="muted">Air corridors: ${z.corridors.map((c) => f1(c.width_m) + " m").join(", ")}</div>` : "") : "";
+      const planes = z && z.plane_x_deg != null ? `Plane X ${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + f1(z.plane_x_deg) + "° from the street" : "along the street"} · Plane Y ${f1(z.plane_y_deg)}° from X` : "";
+      back.querySelector(".sbd-gaps").innerHTML = ax ? `<div class="sbd-ptot">P = ${f1(ax.P)} %<br><span class="muted">IS ${f2(ax.IS_m)} m / W ${f2(ax.W_m)} m${ax.sweep_deg ? ` · plane side turned ${ax.sweep_deg}°` : ""}</span>${planes ? `<br><span class="muted">${esc(planes)}</span>` : ""}</div>`
+        + `<table class="sbd-t"><tr><th>Gap</th><th class="n">S m</th><th></th></tr>` + ax.gaps.map((g) => {
+          const sd = g.side && ax.sides && ax.sides[g.side];
+          const how = sd ? `S1 (${g.side === "left" ? "left" : "right"} side) = A / D = ${f1(sd.area_m2)} m² / ${f2(sd.depth_m)} m = ${f2(sd.avg_m)} m${sd.angle_deg ? `, edge at ${f1(sd.angle_deg)}°` : ""}`
+            : g.corridor ? `S2 corridor ${f2(g.distance_m)} m wide${g.bend_deg ? `, bends ${f1(g.bend_deg)}°` : ", straight"}`
+            : g.type === "S3" ? `S3 = A / D = ${f1(g.area_m2)} m² / ${f2(g.depth_m)} m` : g.type === "S1" ? "S1 projected width" : g.type === "S2" ? "S2 nearest distance between the buildings" : "";
+          return `<tr><td>${esc(g.type === "FAIL" ? "blocked" : g.type)}</td><td class="n">${f2(gapM(g))}</td><td class="${g.qualifies ? "ok" : "bad"}">${g.qualifies ? "counts" : "no"}${g.threshold_m ? ` <span class="muted">(${g.threshold_m} m)</span>` : ""}${g.encroach_m != null ? ` <span class="bad">${f2(g.encroach_m)} m to the boundary</span>` : ""}</td></tr>`
+            + (how ? `<tr class="sbd-how"><td colspan="3">${esc(how)}</td></tr>` : "");
+        }).join("") + `</table>`
+          + `<div class="muted sbd-note">P = IS / W x 100 %, IS = the S widths that count (S1, S3 ≥ 7.5 m; S2 ≥ 15 m). Corridors may turn up to 15° and return; each side region's edge follows the outer building corners (≤ 15°) - the panel's rules.</div>` : "";
     };
     back.addEventListener("click", (ev) => {
       const b = ev.target.closest("button");
@@ -321,7 +360,7 @@ export function createSbd(ctx) {
     for (const z of r.zones.filter((x) => x.assessed)) {
       const bad = z.axis1.gaps.filter((g) => !g.qualifies);
       lines.push(`${ZONE_LABEL[z.zone] || z.zone}: P ${f1(z.axis1.P)} % (Axis 1), ${f1(z.axis2.P)} % (Axis 2)`
-        + (bad.length ? ` - not counted: ${bad.map((g) => `${g.type === "FAIL" ? "blocked gap" : g.type} ${f2(g.type === "S2" || g.type === "S3" ? g.distance_m : g.width_m)} m`).join(", ")}` : ""));
+        + (bad.length ? ` - not counted: ${bad.map((g) => `${g.type === "FAIL" ? "blocked gap" : g.type} ${f2(gapM(g))} m`).join(", ")}` : ""));
     }
     return lines;
   }
@@ -353,7 +392,7 @@ export function createSbd(ctx) {
         items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · ${k === "axis1" ? "Axis 1" : "Axis 2"}`, tag: `P ${f1(ax.P)} %`, tagColor: ZONE_COLOR[z.zone],
           img: await svgPng(zoneSvg(r, z.zone, k), 1400),
           rows: [["Gaps", `${f2(ax.IS_m)} m of ${f2(ax.W_m)} m${ax.sweep_deg ? ` (axis turned ${ax.sweep_deg}°)` : ""}`],
-            ...ax.gaps.map((g) => [g.type === "FAIL" ? "Blocked" : g.type, `${f2(g.type === "S2" || g.type === "S3" ? g.distance_m : g.width_m)} m - ${g.qualifies ? "counts" : "does not count"}`, g.qualifies ? "#16a34a" : "#dc2626"]),
+            ...ax.gaps.map((g) => [g.type === "FAIL" ? "Blocked" : g.type, `${f2(gapM(g))} m - ${g.qualifies ? "counts" : "does not count"}`, g.qualifies ? "#16a34a" : "#dc2626"]),
             ...((z.corridors || []).length ? [["Air corridors", z.corridors.map((c) => f1(c.width_m) + " m").join(", ")]] : [])] });
       }
     }

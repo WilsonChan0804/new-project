@@ -19,9 +19,10 @@ import time
 from .xyz import XYZ
 from . import geom
 from .geom import FEET_TO_METERS
-from . import permeability as P
-from . import corridor as C
+from . import addin_engine as A
 from . import footprint as F
+
+P = A.P          # the SBD panel's sbd_permeability (addin/, unchanged)
 
 FT = 1.0 / FEET_TO_METERS        # metres -> feet
 M = FEET_TO_METERS               # feet -> metres
@@ -140,7 +141,8 @@ def _hull(pts):
 
 
 def _axis_out(r, site_pts):
-    """One axis' result in metres, with drawable strips for each gap."""
+    """One axis' result in metres, with what the plan draws: each gap's
+    strip, the S1 side regions (Area / Depth) and the S2 corridors."""
     ax = r["axis"]
     av = P.orthogonal_axis(ax)
     ref = P.site_centroid(site_pts)
@@ -152,26 +154,42 @@ def _axis_out(r, site_pts):
         rv = ref.X * av.X + ref.Y * av.Y
         return [_xy(q) for q in (a + av * (v_lo - rv), b + av * (v_lo - rv), b + av * (v_hi - rv), a + av * (v_hi - rv))]
 
+    sides = {}
+    for k, sd in (r.get("sides") or {}).items():
+        sides[k] = {"avg_m": round(sd.get("avg_width_m", 0.0), 3), "area_m2": round(sd.get("area_m2", 0.0), 2),
+                    "depth_m": round(sd.get("D_m", 0.0), 3), "angle_deg": round(sd.get("angle_deg", 0.0), 1),
+                    "polygon": [_xy(q) for q in (sd.get("region_polygon") or [])]}
     gaps = []
     for g in r.get("all_gap_results") or []:
         ms = g.get("measurement") or {}
         e = {"lo_m": round(g["gap_lo"] * M, 3), "hi_m": round(g["gap_hi"] * M, 3), "width_m": round(g["width_ft"] * M, 3),
              "qualifies": bool(g.get("qualifies")), "type": ms.get("type", ""), "distance_m": round(ms.get("distance_m", 0.0), 3),
              "pass": bool(ms.get("pass")), "threshold_m": ms.get("threshold_m"), "strip": strip(g["gap_lo"], g["gap_hi"])}
+        if ms.get("from_side_region"):
+            e["side_region"] = True
         if ms.get("vertex_a") is not None and ms.get("vertex_b") is not None:
             e["pinch"] = [_xy(ms["vertex_a"]), _xy(ms["vertex_b"])]
+        if ms.get("corridor_polygon"):
+            e["corridor"] = [_xy(q) for q in ms["corridor_polygon"]]
+            e["bend_deg"] = round(ms.get("articulated_deg", 0.0), 1)
         if ms.get("encroach_ft") is not None:
             e["encroach_m"] = round(ms["encroach_ft"] * M, 3)
         if ms.get("type") == "S3":
             e["area_m2"] = round(ms.get("area_m2", 0.0), 2)
             e["depth_m"] = round(ms.get("depth_m", 0.0), 3)
         gaps.append(e)
+    # which side region a setback is: the first gap is "left", the last "right"
+    s1 = [g for g in gaps if g["type"] == "S1"]
+    if s1 and "left" in sides and s1[0]["lo_m"] <= min(g["lo_m"] for g in gaps) + 1e-6:
+        s1[0]["side"] = "left"
+    if s1 and "right" in sides and s1[-1]["hi_m"] >= max(g["hi_m"] for g in gaps) - 1e-6:
+        s1[-1]["side"] = "right"
     return {
         "P": round(r["P"], 2), "W_m": round(r["W"] * M, 3), "IS_m": round(r["IS"] * M, 3),
         "sweep_deg": r.get("sweep_angle", 0), "axis": [round(ax.X, 6), round(ax.Y, 6)],
         "site_lo_m": round(r.get("site_lo", 0) * M, 3), "site_hi_m": round(r.get("site_hi", 0) * M, 3),
         "blocked_m": [[round(a * M, 3), round(b * M, 3)] for a, b in r.get("merged") or []],
-        "ref": _xy(ref), "gaps": gaps,
+        "ref": _xy(ref), "gaps": gaps, "sides": sides,
     }
 
 
@@ -312,43 +330,66 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
     if data.get("corridor") and len(data["corridor"]) >= 2:
         corridor_poly = P.offset_polyline_both_sides([_pt(p) for p in data["corridor"]], 7.5 * FT)
     site_area = geom.polygon_area_2d(site_pts) * M * M
-    out_zones, all_p = [], []
-    lp = {"addin_m": 0.0, "projected_m": 0.0}
-    low_inside = []
-    for (name, z0, z1) in (zones or ZONES):
-        inside, other = zone_footprints(data, z0, z1)
-        if name == "LOW":
-            low_inside = inside
+    g = float(data.get("ground_z") or 0.0)
+    # the masses' heights above the zones' ground: said, so a model on the
+    # wrong level (or a ground taken from the wrong slab) shows at once
+    heights = []
+    for m in data.get("masses") or []:
+        if not m.get("verts"):
+            continue
+        zs = [v[2] for v in m["verts"]]
+        heights.append({"name": m.get("name") or m.get("id"), "base_m": round(min(zs) - g, 2), "top_m": round(max(zs) - g, 2)})
+    # the lowest mass should stand on the zones' ground (towers on a podium
+    # start higher, rightly): if none does, the ground or the masses' level
+    # is wrong and every zone is shifted
+    if heights:
+        low = min(heights, key=lambda h: h["base_m"])
+        if abs(low["base_m"]) > 1.0:
+            warnings.append("The lowest mass (%s) starts %.2f m %s the zones' ground (%.2f m%s), so every zone is shifted by that much. "
+                            "Check the street slab level, or choose the Level the buildings stand on in SBD Export."
+                            % (low["name"], abs(low["base_m"]), "above" if low["base_m"] > 0 else "below", g,
+                               ", " + data["ground_source"] if data.get("ground_source") else ""))
+    tallest = max([h["top_m"] for h in heights] or [20.0])
+    zone_fp = [(name, z0, z1) + zone_footprints(data, z0, z1) for (name, z0, z1) in (zones or ZONES)]
+    loops_of = {}
+    for name, z0, z1, inside, other in zone_fp:
         loops = [geom.ensure_loop_ccw([_pt(p) for p in f["loop"]]) for f in inside]
         if corridor_poly:
             loops = P.filter_buildings_outside_corridor(loops, corridor_poly)
+        loops_of[name] = loops
+    # Lp (Table 1): the Low zone's buildings projected on Plane X (Axis 1);
+    # the add-in's figure (shorter side of one building) kept beside it
+    low_loops = loops_of.get("LOW") or []
+    lp = {"addin_m": round(lp_addin_m(low_loops), 2) if low_loops else 0.0,
+          "projected_m": round(sum(hi - lo for lo, hi in P._blocked_intervals(low_loops, a)) * M, 2) if low_loops else 0.0}
+    req_p = A.required_p(site_area, lp["projected_m"], tallest)
+    out_zones, all_p, log = [], [], []
+    low_inside = []
+    for name, z0, z1, inside, other in zone_fp:
+        if name == "LOW":
+            low_inside = inside
+        loops = loops_of[name]
         z = {"zone": name, "z0": z0, "z1": z1, "footprints": [{"loop": [[round(x, 3), round(y, 3)] for x, y in f["loop"]],
-             "name": f.get("name"), "z": round(f["z"], 3)} for f in inside],
+             "name": f.get("name"), "z": round(f["z"] - g, 2)} for f in inside],
              "others": [[[round(x, 3), round(y, 3)] for x, y in f["loop"]] for f in other], "assessed": bool(loops)}
         if loops:
-            r = P.assess_zone(name, site_pts, site_pts, loops, a, b)
-            z["axis1"] = _axis_out(r["axis1"], site_pts)
-            z["axis2"] = _axis_out(r["axis2"], site_pts)
-            z["P"] = round(min(r["axis1"]["P"], r["axis2"]["P"]), 2)
-            all_p += [r["axis1"]["P"], r["axis2"]["P"]]
-            ax1 = r["axis1"]["axis"]
-            try:
-                cs = C.compute_wind_corridors(site_pts, loops, ax1, P.orthogonal_axis(ax1))
-            except Exception as e:      # the corridor search is advisory
-                cs = []
-                warnings.append("Air corridor search failed in the %s zone: %s" % (name, e))
-            z["corridors"] = [{"polygon": _loop_xy(c["polygon"]), "width_m": round(c["width_m"], 2), "qualifies": c["qualifies"]} for c in cs]
-            if name == "LOW":
-                lp["addin_m"] = round(lp_addin_m(loops), 2)
-                # Lp: the buildings' length projected on Projection Plane X
-                # (Axis 1 itself, not the swept angle), all buildings together
-                lp["projected_m"] = round(sum(hi - lo for lo, hi in P._blocked_intervals(loops, a)) * M, 2)
+            zr, text = A.assess(name, site_pts, loops, a, req_p=req_p, tallest_m=tallest)
+            log.append("== %s ==" % name)
+            log += text.splitlines()
+            z["axis1"] = _axis_out(zr["axis1"], site_pts)
+            z["axis2"] = _axis_out(zr["axis2"], site_pts)
+            z["plane_x_deg"] = round(float(zr.get("plane_x_angle_deg") or 0.0), 1)
+            z["plane_y_deg"] = round(float(zr.get("plane_y_angle_deg") or 90.0), 1)
+            z["P"] = round(min(zr["axis1"]["P"], zr["axis2"]["P"]), 2)
+            all_p += [zr["axis1"]["P"], zr["axis2"]["P"]]
+            z["corridors"] = [{"polygon": gp["corridor"], "width_m": gp["distance_m"], "qualifies": gp["qualifies"],
+                               "bend_deg": gp.get("bend_deg", 0.0)} for gp in z["axis1"]["gaps"] if gp.get("corridor")]
         out_zones.append(z)
-    req_new = P.get_required_p(site_area, lp["projected_m"])
-    req_old = P.get_required_p(site_area, lp["addin_m"])
+    req_new = req_p
+    req_old = A.required_p(site_area, lp["addin_m"], tallest)
     ctrl = min(all_p) if all_p else None
     return {
-        "ok": True, "version": 1, "warnings": warnings, "log": list(geom.LOG[-200:]),
+        "ok": True, "version": 2, "warnings": warnings, "log": log[-400:], "heights": heights, "tallest_m": tallest,
         "axis": {"source": axis_src, "axis1": [round(a.X, 6), round(a.Y, 6)], "axis2": [round(b.X, 6), round(b.Y, 6)]},
         "site": [[round(p[0], 3), round(p[1], 3)] for p in data["site"]], "site_area_m2": round(site_area, 2),
         "zones": out_zones, "controlling_p": None if ctrl is None else round(ctrl, 2),

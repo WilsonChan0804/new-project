@@ -130,6 +130,27 @@ def _sig(loop):
     return tuple(pts)
 
 
+def components(tris):
+    """The mesh's separate solids: groups of triangles joined by shared
+    points (one in-place mass can hold a podium and towers as separate
+    forms; each is cut on its own, so one inside another is not a hole)."""
+    parent = {}
+
+    def find(a):
+        while parent.setdefault(a, a) != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    for a, b, c in tris:
+        ra, rb, rc = find(a), find(b), find(c)
+        parent[rb] = ra
+        parent[find(rc)] = ra
+    groups = {}
+    for t in tris:
+        groups.setdefault(find(t[0]), []).append(t)
+    return list(groups.values())
+
+
 def mass_footprints(mass, z0, z1):
     """[{"loop": [(x, y)], "z": height}] of one mass in the band."""
     verts = mass["verts"]
@@ -137,13 +158,15 @@ def mass_footprints(mass, z0, z1):
     if not verts or not tris:
         return []
     out, seen = [], set()
-    for z in heights(verts, z0, z1):
-        for f in holes_removed([{"loop": l, "z": z} for l in _section(verts, tris, z)]):
-            s = _sig(f["loop"])
-            if s in seen:
-                continue
-            seen.add(s)
-            out.append(f)
+    for part in components(tris):
+        pv = [verts[i] for t in part for i in t]
+        for z in heights(pv, z0, z1):
+            for f in holes_removed([{"loop": l, "z": z} for l in _section(verts, part, z)]):
+                s = _sig(f["loop"])
+                if s in seen:
+                    continue
+                seen.add(s)
+                out.append(f)
     return out
 
 

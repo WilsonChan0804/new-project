@@ -133,14 +133,25 @@ ground, ground_source = None, ""
 street_level = SE.mean_level([f for f, st in made], site) if made else None
 levels = sorted(FilteredElementCollector(doc).OfClass(Level).ToElements(), key=lambda l: l.Elevation)
 names = ["%s (%.2f m)" % (l.Name, l.Elevation * SE.FT_M) for l in levels]
+# where the masses start (the lowest point of all of them)
+mass_base = min(v[2] for m in masses for v in m["mesh"].verts) if masses else None
 if street_level is not None:
-    pick = forms.alert("The zones are measured from the street level: %.2f m (the mean top level of the street slabs "
-                       "near the site).\n\nUse it, or choose a Level instead?" % street_level, title="SBD Export",
-                       options=["Use %.2f m (street slabs)" % street_level, "Choose a Level ..."])
+    msg = ("The zones are measured from the street level: %.2f m (the mean top level of the street slabs "
+           "near the site)." % street_level)
+    opts = ["Use %.2f m (street slabs)" % street_level]
+    if mass_base is not None and abs(mass_base - street_level) > 1.0:
+        msg += ("\n\nThe masses start at %.2f m - %.2f m %s it, so every zone would be shifted by that much "
+                "(a 10 m podium would count in the Middle zone). Is the street slab at the right level?"
+                % (mass_base, abs(mass_base - street_level), "above" if mass_base > street_level else "below"))
+        opts.append("Use %.2f m (where the masses start)" % mass_base)
+    opts.append("Choose a Level ...")
+    pick = forms.alert(msg + "\n\nWhich level are the zones measured from?", title="SBD Export", options=opts)
     if not pick:
         script.exit()
-    if pick.startswith("Use"):
+    if pick.startswith("Use") and "street slabs" in pick:
         ground, ground_source = street_level, "the street slabs"
+    elif pick.startswith("Use"):
+        ground, ground_source = mass_base, "the masses' base"
 if ground is None:
     g = forms.SelectFromList.show(names, title="SBD Export - zones measured from (the site's ground, e.g. mean street level)",
                                   button_name="Use this level") if names else None

@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-"""S1 / S2 / S3 separating-distance geometry (PNAP APP-152, Fig B12/B14).
-
-From the SBD panel's lib/sbd_geom_separation.py; only the imports differ."""
+"""S1 / S2 / S3 separating-distance geometry (PNAP APP-152, Fig B12/B14)."""
 
 import math
-from .xyz import XYZ
+from Autodesk.Revit.DB import XYZ, Line
 
-from .geom import (
+from sbd_geom_base import (
     FEET_TO_METERS, polygon_area_2d, project_polygon_onto_axis,
     segment_segment_intersection,
 )
@@ -142,7 +140,15 @@ def measure_s3(gap_polygon_pts, boundary_pts, axis):
   Also enforces 3 m encroachment rule on boundary.
     """
     area = polygon_area_2d(gap_polygon_pts)
-    _, depth = project_polygon_onto_axis(gap_polygon_pts, axis)
+    # EXTENT, not the max coordinate. project_polygon_onto_axis returns
+    # (min, max); unpacking as `_, depth` took the absolute position of the
+    # far edge in project coordinates, so S3 = Area/Depth was divided by a
+    # number that depends on where the site sits relative to the project
+    # origin -- huge (S3 -> 0, automatic FAIL) on a site far from origin,
+    # negative if the site straddles the origin on this axis. Every other
+    # caller in the codebase does hi - lo.
+    _d_lo, _d_hi = project_polygon_onto_axis(gap_polygon_pts, axis)
+    depth = _d_hi - _d_lo
     if depth < 1e-9:
         return {
             "type": "S3", "distance_ft": 0.0, "distance_m": 0.0,
@@ -231,19 +237,12 @@ def continuity_check(gap_lo, gap_hi, axis_u, axis_v, site_pts, building_loops,
     if v_hi - v_lo < 1e-9:
         return True
 
-    # FIX (server, 2026-11): the add-in sampled the gap's two EDGES too
-    # (t = gap_lo and gap_hi), which are the corners of the buildings either
-    # side - every ray there touched a building, so every internal gap
-    # failed. Rays now run strictly inside the gap, and only buildings that
-    # reach INTO the gap count.
-    w = gap_hi - gap_lo
-    loops_in_gap = loops_overlapping_interval(building_loops, gap_lo + w * 1e-3, gap_hi - w * 1e-3, axis_u, tol=-1e-6)
+    loops_in_gap = loops_overlapping_interval(building_loops, gap_lo, gap_hi, axis_u)
     if not loops_in_gap:
         return True
 
-    n = max(n_samples, 2)
-    for i in range(n):
-        t = gap_lo + w * (i + 0.5) / float(n)
+    for i in range(max(n_samples, 2)):
+        t = gap_lo + (gap_hi - gap_lo) * i / float(max(n_samples - 1, 1))
         origin = axis_scalar_to_point(t, axis_u, ref_pt)
         seg_lo = axis_scalar_to_point(v_lo, axis_v, origin)
         seg_hi = axis_scalar_to_point(v_hi, axis_v, origin)

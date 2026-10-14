@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-05", date: "15 Oct 2026",
+    items: [
+      "SBD now runs **the SBD panel's own engine** (Check & Comply, 27/08) on each zone's footprints: corridors that bend up to 15° and return, S1 as each side region's **Area / Depth** (the working is shown in the Plan), Plane Y at the best angle within **75-105°** of Plane X in every zone, and in the Middle and High zones **Plane X turned to the angle that gives the most P** (to the degree).",
+      "The masses sent by SBD Export are also **a model in the project's 3D** (SBD masses, in the Models list - on and off, transparency, move); **Remove ...** in Checks > SBD takes away the masses, the result and that model.",
+      "SBD warns when the masses do not start at the zones' ground (a 10 m podium would count in the Middle zone); SBD Export compares the street slabs' level with where the masses start and offers either.",
+    ],
+  },
+  {
     version: "2026-11-04", date: "14 Oct 2026",
     items: [
       "SBD Export reads the **streets from Floor slabs**: model each street as a Floor whose type name has **Street** in it (kerb to kerb). Its **centreline**, its far side (the **opposite boundary** for Case 1 U) and its level are taken from it; Axis 1 runs along the longest street frontage, and the zones are measured from the **street level** (the slabs' mean level near the site) - no lines to pick and no floor levels needed. The SBD plan draws the streets.",

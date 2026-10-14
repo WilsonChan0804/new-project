@@ -20,6 +20,7 @@ import uuid
 from fastapi import HTTPException, Request, Header
 
 from sbd import engine
+from sbd.ifcwrite import masses_ifc
 
 MAX_MODEL = 200 * 1024 * 1024
 SAFE = re.compile(r"^[0-9a-f]{8,32}$")
@@ -97,6 +98,54 @@ def clean_model(data):
     }
 
 
+def masses_ref(core, pid, model, who, uid):
+    """The masses as a model in this project's 3D (a consultant-style model,
+    refs.py): the one made by an earlier export is replaced."""
+    import refs as R
+    root = core.project_root_for(pid)
+    folder = os.path.join(root, "refs")
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+    old = [r for r in R.read_refs(root) if r.get("sbd")]
+    rid = uuid.uuid4().hex[:12]
+    src = os.path.join(folder, rid + ".ifc")
+    with open(src, "w", encoding="ascii", errors="replace") as f:
+        f.write(masses_ifc(model["masses"], "SBD masses - " + (model.get("model") or "Revit"), who))
+    r = {"id": rid, "kind": "ifc", "sbd": True, "name": ("SBD masses - " + (model.get("model") or "Revit"))[:80],
+         "company": "", "discipline": "SBD", "source_file": "sbd-masses.ifc",
+         "ifc": "refs/%s.ifc" % rid, "fragments": "refs/%s.frag" % rid, "format": "frag",
+         "status": "waiting", "progress": 0, "error": "", "mb": None, "ifc_mb": round(os.path.getsize(src) / 1048576.0, 2),
+         # the masses are on the exporting Revit model's internal origin
+         "placement": R.placement_of({"mode": "internal"}), "opacity": 0.6, "on": True,
+         "by": who, "by_uid": uid, "at": R.now_iso()}
+    with R._LOCK:
+        refs = [x for x in R.read_refs(root) if not x.get("sbd")]
+        refs.append(r)
+        R.write_refs(root, refs)
+    for o in old:
+        for ext in (".ifc", ".frag", ".frag.part"):
+            q = os.path.join(folder, o["id"] + ext)
+            if os.path.isfile(q):
+                os.remove(q)
+    R.convert(core, root, pid, rid, src, os.path.join(folder, rid + ".frag"))
+    return rid
+
+
+def drop_masses_ref(core, pid):
+    import refs as R
+    root = core.project_root_for(pid)
+    with R._LOCK:
+        refs = R.read_refs(root)
+        old = [r for r in refs if r.get("sbd")]
+        R.write_refs(root, [r for r in refs if not r.get("sbd")])
+    for o in old:
+        for ext in (".ifc", ".frag", ".frag.part"):
+            q = os.path.join(root, "refs", o["id"] + ext)
+            if os.path.isfile(q):
+                os.remove(q)
+    return len(old)
+
+
 def register(app, core):
 
     def run_and_keep(pid, model, opts, who):
@@ -124,8 +173,23 @@ def register(app, core):
         _write(os.path.join(_dir(core, x_project), "model.json"), model)
         prev = _read(os.path.join(_dir(core, x_project), "result.json")) or {}
         r = run_and_keep(x_project, model, prev.get("options") or {}, w.name or "")
+        try:
+            masses_ref(core, x_project, model, w.name or "", w.uid)       # the masses in the 3D
+        except Exception as e:
+            core.bg_log("%s: SBD masses not added to the 3D: %s" % (x_project, e))
         return {"ok": r.get("ok"), "controlling_p": r.get("controlling_p"), "required_p": r.get("required_p"),
                 "pass": r.get("pass"), "warnings": r.get("warnings"), "masses": len(model["masses"])}
+
+    @app.delete("/api/sbd")
+    async def sbd_delete(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """Remove the masses sent from Revit, the result and the masses' model
+        in the 3D (saved results stay)."""
+        core.require_project(request, x_project, "member", x_viewer_token)
+        d = _dir(core, x_project)
+        for f in ("model.json", "result.json"):
+            if os.path.isfile(os.path.join(d, f)):
+                os.remove(os.path.join(d, f))
+        return {"removed_models": drop_masses_ref(core, x_project)}
 
     @app.get("/api/sbd")
     async def sbd_get(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):

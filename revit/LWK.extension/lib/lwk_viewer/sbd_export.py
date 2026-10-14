@@ -35,6 +35,11 @@ class Mesh(object):
         self.tris = []
         self._idx = {}
 
+    def new_part(self):
+        """Points are shared within a solid only: two forms of one mass that
+        touch (a tower on a podium) stay separate solids for the server."""
+        self._idx = {}
+
     def point(self, x, y, z):
         k = (int(round(x / POINT_KEY_M)), int(round(y / POINT_KEY_M)), int(round(z / POINT_KEY_M)))
         i = self._idx.get(k)
@@ -266,6 +271,7 @@ def mass_meshes(doc):
                 if isinstance(g, Solid):
                     if g.Volume <= 1e-9:
                         continue
+                    mesh.new_part()
                     for face in g.Faces:
                         m = face.Triangulate()
                         for i in range(m.NumTriangles):
