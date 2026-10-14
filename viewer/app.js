@@ -21,6 +21,7 @@ import { makeTilePage, tileStats } from "./sheettiles.js";
 import { initPanels, initSplitter, initVGrip } from "./panels.js";
 import { copyLink } from "./share.js";
 import { offerKeep } from "./folderpick.js";
+import { importCad } from "./cadimport.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
@@ -5655,6 +5656,17 @@ function wireChrome() {
     const f = ev.target.files && ev.target.files[0];
     ev.target.value = "";
     importPdf(f).catch((e) => showError("import pdf", e));
+  });
+  $("#import-cad").addEventListener("change", (ev) => {
+    const fs = [...(ev.target.files || [])];
+    ev.target.value = "";
+    importCad(fs, { headers: () => Store.authHeaders(), done: async (set, nums) => {
+      await reloadManifest();
+      showSet(set, true);
+      const first = S.manifest.sheets.find((s) => nums[0] && s.number === nums[0]);
+      if (first) openSheet(first);
+      status(`${nums.length} sheet(s) made from the CAD drawings, in "${set}".`);
+    } }).catch((e) => showError("import cad", e));
   });
   $("#export-json").addEventListener("click", exportComments);
   $("#import-json").addEventListener("change", importComments);

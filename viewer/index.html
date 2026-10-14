@@ -37,6 +37,7 @@
     <button id="import-pdf-btn" class="ghost" data-icon="upload"
       title="Add a PDF drawing made outside Revit to the sheet list">PDF</button>
     <input id="import-pdf" type="file" accept="application/pdf,.pdf" hidden>
+    <input id="import-cad" type="file" accept=".dwg,.dxf,.zip" multiple hidden>
     <span class="hdr-sep"></span>
     <button id="export-json" class="ghost" data-icon="download"
       title="Download all comments and issues as a JSON file">JSON</button>
@@ -370,6 +371,7 @@
       <div>
         <div class="files-title">Bring in</div>
         <button data-go="import-pdf-btn"><b>A PDF drawing</b><span>made outside Revit, added to the sheet list</span></button>
+        <button data-go="import-cad"><b>A CAD drawing (DWG / DXF)</b><span>its layouts become sheets; send its xrefs with it (or a .zip)</span></button>
         <button data-go="import-btn"><b>Comments and issues (JSON)</b><span>from a file downloaded here before</span></button>
         <button data-go="bcf-3d"><b>Issues from BCF</b><span>opens the 3D page, where they are placed in the model</span></button>
       </div>

@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-30", date: "14 Oct 2026",
+    items: [
+      "Sheets: **Files > A CAD drawing (DWG / DXF)** - send a drawing with its xrefs (or a .zip): **each layout becomes a sheet** of a new set, with its viewports at their scale, the xrefs drawn in, Chinese text, hatches and dimensions; black lines as plotted, or the drawing's colours. DWG needs the ODA File Converter on the server (the server's admin installs it once); DXF works straight away.",
+    ],
+  },
+  {
     version: "2026-10-29", date: "14 Oct 2026",
     items: [
       "Fixed: with two projects open in two browser tabs, an issue raised in one could be saved into the other project. Each tab now keeps its own project (it shows in the address).",

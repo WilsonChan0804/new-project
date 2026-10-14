@@ -3570,6 +3570,12 @@ async def import_sheets(request: Request, x_viewer_token: str = Header(default="
     # The set the drawings go in: their own entry in the Sheets page's
     # drop-down, apart from the sheets published from Revit.
     set_name = clean_set_name(body.get("set")) or "Uploaded PDFs"
+    return {"added": add_imported(root, set_name, incoming)}
+
+
+def add_imported(root, set_name, incoming):
+    """Sheets [{number, name, pdf, page}] into a set of imported sheets
+    (the Sheets page's PDF import, and CAD drawings made into PDF)."""
     have = read_imported(root)
     taken = {s.get("number") for s in have}
     try:
@@ -3595,7 +3601,7 @@ async def import_sheets(request: Request, x_viewer_token: str = Header(default="
         have.append(rec)
         added.append(rec)
     write_imported(root, have)
-    return {"added": added}
+    return added
 
 
 @app.delete("/api/import/sheets/{number}")
@@ -3889,6 +3895,13 @@ try:
     calendar_feed.register(app, sys.modules[__name__])
 except Exception as _ex:
     print("calendar not loaded: %s" % _ex)
+
+# CAD drawings (cad.py): DWG / DXF layouts made into sheets.
+try:
+    import cad
+    cad.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("cad not loaded: %s" % _ex)
 
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.

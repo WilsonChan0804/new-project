@@ -248,6 +248,20 @@ Each project's files, in a folder on the server (the VM's drive, a network share
 
 Data: `<data>/files_meta.db` (uploader, pins, stars, bin), `<data>/files_roots.json`, `<data>/folder_templates.json`.
 
+### CAD drawings on the Sheets page (server/cad.py, cad_dxf.py, cad_render.py, cad_pdf.py)
+
+**Files > A CAD drawing (DWG / DXF)** sends a drawing with its xrefs (or a .zip). Each layout becomes a sheet of a new set: its paper space, and in each viewport the model at the viewport's scale, clipped, with the layers frozen in that viewport left out. Blocks, xrefs, dimensions, hatches (solid and pattern), text, MTEXT, leaders and multileaders, line weights and line types are drawn; black lines as plotted, or the drawing's colours. 3D views, solids, images and OLE objects are not drawn; fonts are Helvetica and the server's Chinese font.
+
+What the server needs:
+
+- **DWG:** the free **ODA File Converter** (Open Design Alliance, opendesign.com > Guest files > ODA File Converter), which turns DWG into DXF. DXF files need nothing.
+  - **Windows server:** run its installer; it is found in `C:\Program Files\ODA\ODAFileConverter <version>\`.
+  - **Linux server (Ubuntu):** the **Linux x64 DEB (Qt6)** download, then `sudo apt install ./ODAFileConverter_QT6_lnxX64_*.deb xvfb` (it is a desktop program: the server runs it in a virtual screen with `xvfb-run`). Ubuntu 22 and later may also need `sudo ln -s /usr/lib/x86_64-linux-gnu/libxcb-util.so.1 /usr/lib/x86_64-linux-gnu/libxcb-util.so.0`.
+  - Found as `ODAFileConverter` on the PATH, in its install folder, or set `LWK_ODA` to the program.
+- **Chinese text:** a TrueType Chinese font. Linux: `sudo apt install fonts-wqy-zenhei`. Windows: Microsoft JhengHei / MingLiU (already there). Or set `LWK_CAD_FONT` to a .ttf / .ttc with TrueType outlines.
+- `GET /api/import/cad/tools` says what the server found (`oda`, `xvfb`, `font`).
+
+
 ## Consultant models in 3D (IFC)
 
 Ask consultants for **IFC** (IFC 2x3 or IFC4). SketchUp, Revit, Tekla, ArchiCAD and Rhino all export it.
