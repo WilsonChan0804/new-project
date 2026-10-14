@@ -10,4 +10,5 @@ layout:
   - ExportJobs
   - ExportLink
   - ExportTransforms
+  - LVCheck
   - TestRepeatedLinks
