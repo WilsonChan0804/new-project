@@ -247,7 +247,9 @@ PART = [
     H3('SBD（PNAP APP-152）'),
     P('Checks > **SBD** 會由 Revit model 嘅建築 **mass** 計算設計要求 (2) - 通風度 **P** 同分隔距離 **S1 / S2 / S3** - 同設計要求 (1) 街道峽谷 **U**。唔使畫 Filled Region，亦唔使每個區揀嘢：每個高度區都係由 mass 切出嚟。'),
     UL([
-        '**喺 Revit：** 每座建築（平台、塔樓）用 **Mass** 建模（Massing & Site > In-Place Mass，或者 Mass family）。然後 **LWK > Viewer tools > SBD Export**：揀地盤界線（Property Line，或者揀線 - 要喺 10 mm 內閉合）、量度高度區嘅樓層（地盤地面，例如平均街道水平），同埋（可選）每條街：佢嘅**中線**同**對面地盤嘅界線**（第一條街嘅中線就係 Axis 1，Projection Plane X）。Mass 會送去 viewer 即刻計算；Revit 視窗都會顯示結果。',
+        '**喺 Revit 要建乜：** 每座建築（平台、塔樓）用 **Mass**（Massing & Site > In-Place Mass，或者 Mass family）；**地盤界線**用 Property Line（或者喺 10 mm 內閉合嘅線）；每條**街用一塊 Floor**，類型名有 **Street**（例如 *SBD Street*），由街道界線畫到街道界線，喺街道嘅高度（佢嘅 **Mark** 會做街名）。唔使開晒啲樓層 - 高度由 mass 嚟。',
+        '**由街道樓板讀乜：** 佢嘅**中線**（兩條長邊嘅正中，轉彎都跟）、佢嘅**遠邊** = 對面地盤嘅界線（Case 1 U 用）同佢嘅**高度**。Axis 1（Projection Plane X）沿住同地盤相接最長嗰條街。高度區由**街道水平**量起 = 地盤附近街道樓板嘅平均頂面高度（按面積）；都可以改揀一個 Level。唔係長條形嘅樓板（路口）會唔計 - 改為揀佢嘅中線同對面界線嘅線。',
+        '**LWK > Viewer tools > SBD Export：** 揀地盤界線，剔走唔係對住地盤嘅街，接受街道水平（或者揀 Level），mass 就會送去 viewer 即刻計算；Revit 視窗都會顯示結果，連每條街嘅長度、闊度同高度。',
         '**高度區：** **Low（0-20 m）、Middle（20-60 m）、High（60 m 以上）**。每個區嘅建築係 mass 喺嗰個區入面嘅高度嘅外框，所以平台 + 塔樓方案嘅 Middle 區係塔樓 - 唔係平台。冇建築嘅區唔會計。地盤界線外面嘅 mass（隔籬）會用斜線顯示，唔計。',
         '**表：** 每個區 Axis 1 嘅 P（±15° 同平面兩邊最好嗰個，跟 Fig B14）同 Axis 2（垂直）嘅 P、計到嘅空隙、**控制 P**（最低嗰個）對 Table 1 嘅**要求 P**（由地盤面積同 Lp），同 PASS / FAIL。Lp 係所有建築投影喺 Axis 1 嘅長度；如果 SBD panel 嘅 Lp（一座建築嘅短邊）會得出另一個要求 P，兩個都會顯示。**Case 1：** 每條街 U = 峽谷面積 / 沿中線長度（由中線 30 m 內嘅外牆到對面界線）、Lp 同 5U。',
         '**Axis 1** 可以沿街道線、地盤主方向，或者一個角度；**Run** 再計。**Save** 儲存結果俾所有人睇；列表顯示儲存咗嘅結果（打開嚟比較，✕ 刪除）。',

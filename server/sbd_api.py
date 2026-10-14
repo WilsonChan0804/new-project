@@ -76,13 +76,22 @@ def clean_model(data):
     streets = []
     for s in data.get("streets") or []:
         if isinstance(s, dict):
-            streets.append({"name": str(s.get("name") or "")[:80], "centreline": line(s.get("centreline")) or [],
-                            "opposite": line(s.get("opposite")) or []})
+            e = {"name": str(s.get("name") or "")[:80], "centreline": line(s.get("centreline")) or [],
+                 "opposite": line(s.get("opposite")) or []}
+            if s.get("outline"):
+                e["outline"] = line(s.get("outline")) or []       # a street slab's outline
+            for k in ("level", "length_m", "width_m"):
+                try:
+                    if s.get(k) is not None:
+                        e[k] = float(s[k])
+                except (TypeError, ValueError):
+                    pass
+            streets.append(e)
     return {
         "version": 1, "units": "m",
         "project": str(data.get("project") or "")[:200], "model": str(data.get("model") or "")[:200],
         "by": str(data.get("by") or "")[:120], "at": str(data.get("at") or "")[:40],
-        "ground_z": float(data.get("ground_z") or 0.0),
+        "ground_z": float(data.get("ground_z") or 0.0), "ground_source": str(data.get("ground_source") or "")[:80],
         "site": site, "masses": masses, "street_axis": line(data.get("street_axis")),
         "streets": streets, "corridor": line(data.get("corridor")),
     }

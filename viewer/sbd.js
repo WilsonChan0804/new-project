@@ -31,7 +31,8 @@ export function zoneSvg(res, zone, axisKey, opt) {
   opt = opt || {};
   const z = (res.zones || []).find((x) => x.zone === zone);
   if (!z) return "";
-  const pts = [...res.site, ...z.footprints.flatMap((f) => f.loop)];
+  const streets = res.streets || [];
+  const pts = [...res.site, ...z.footprints.flatMap((f) => f.loop), ...streets.flatMap((s) => (s.outline && s.outline.length ? s.outline : s.centreline))];
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
   const pad = Math.max(x1 - x0, y1 - y0) * 0.08 + 4;
@@ -47,6 +48,16 @@ export function zoneSvg(res, zone, axisKey, opt) {
     + `<pattern id="${id}h" width="${fs}" height="${fs}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${fs}" stroke="#94a3b8" stroke-width="${fs / 8}"/></pattern></defs>`
     + `<rect width="100%" height="100%" fill="#fff"/>`
     + `<polygon points="${poly(res.site)}" fill="#f8fafc" stroke="#0f172a" stroke-width="${fs / 6}" stroke-dasharray="${fs} ${fs / 3}"/>`;
+  // the streets: the slab, its centreline (dash-dot) and the opposite boundary
+  for (const st of streets) {
+    if (st.outline && st.outline.length) s += `<polygon points="${poly(st.outline)}" fill="#e2e8f0" stroke="#94a3b8" stroke-width="${fs / 12}"/>`;
+    if (st.centreline && st.centreline.length > 1) {
+      s += `<polyline points="${poly(st.centreline)}" fill="none" stroke="#64748b" stroke-width="${fs / 10}" stroke-dasharray="${fs} ${fs / 3} ${fs / 6} ${fs / 3}"/>`;
+      const m = st.centreline[Math.floor(st.centreline.length / 2)];
+      s += `<text x="${(m[0] - x0).toFixed(2)}" y="${(y1 - m[1] - fs * 0.4).toFixed(2)}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569" font-style="italic">${esc(st.name || "")}</text>`;
+    }
+    if (st.opposite && st.opposite.length > 1) s += `<polyline points="${poly(st.opposite)}" fill="none" stroke="#0f172a" stroke-width="${fs / 8}"/>`;
+  }
   // the gaps: strips across the site, green when they count, red when not
   if (ax) {
     s += `<g clip-path="url(#${id})">` + ax.gaps.map((g) => `<polygon points="${poly(g.strip)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity=".22" stroke="${g.qualifies ? "#16a34a" : "#dc2626"}" stroke-width="${fs / 12}"/>`).join("") + `</g>`;
@@ -139,7 +150,7 @@ export function createSbd(ctx) {
     const m = B.model;
     $("#sbd-src").innerHTML = m
       ? `${m.masses.length} mass(es) from <b>${esc(m.model || "Revit")}</b>, ${esc((m.at || m.uploaded_at || "").replace("T", " ").slice(0, 16))}${m.by ? " · " + esc(m.by) : ""}`
-        + `<br>zones from ${f2(m.ground_z)} m${(m.streets || []).length ? ` · ${m.streets.length} street(s)` : ""}`
+        + `<br>zones from ${f2(m.ground_z)} m${m.ground_source ? ` (${esc(m.ground_source)})` : ""}${(m.streets || []).length ? ` · ${m.streets.length} street(s)` : ""}`
       : `No masses yet. In Revit: model the buildings as <b>Masses</b>, then <b>LWK > Viewer tools > SBD Export</b>.`;
     for (const b of box.querySelectorAll("#sbd-run, #sbd-save, #sbd-plan, #sbd-3d, #sbd-issue, #sbd-report")) b.disabled = !r || !r.ok;
     if (!r) { $("#sbd-sum").innerHTML = ""; return; }
@@ -239,7 +250,8 @@ export function createSbd(ctx) {
         <span class="spacer"></span><button class="ghost" data-x title="Close">&#10005;</button></div>
       <div class="sbd-wb"><div class="sbd-plan"></div><div class="sbd-gaps"></div></div>
       <div class="sbd-legend muted"><span class="sw" style="background:#16a34a55;border-color:#16a34a"></span>a gap that counts <span class="sw" style="background:#dc262655;border-color:#dc2626"></span>does not (too narrow, or blocked)
-        <span class="sw" style="background:#47556999"></span>this zone's buildings <span class="sw dash"></span>air corridor ≥ 15 m <span class="sw" style="background:#f28022"></span>axis</div></div>`;
+        <span class="sw" style="background:#47556999"></span>this zone's buildings <span class="sw dash"></span>air corridor ≥ 15 m <span class="sw" style="background:#f28022"></span>axis
+        <span class="sw" style="background:#e2e8f0;border-color:#94a3b8"></span>street, its centreline and the opposite boundary</div></div>`;
     document.body.appendChild(back);
     const draw = () => {
       back.querySelectorAll("[data-z]").forEach((b) => b.classList.toggle("active", b.dataset.z === zone));

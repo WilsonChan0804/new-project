@@ -355,5 +355,8 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         "lp": lp, "required_p": req_new, "required_p_addin": req_old,
         "pass": None if ctrl is None or req_new is None else ctrl >= req_new - 1e-9,
         "case1": case1(data, low_inside),
+        "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
+                     "outline": s.get("outline") or []} for s in data.get("streets") or []],
+        "ground_z": data.get("ground_z"), "ground_source": data.get("ground_source") or "",
         "ms": int((time.time() - t0) * 1000),
     }

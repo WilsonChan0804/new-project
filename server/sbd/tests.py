@@ -120,5 +120,58 @@ class Case1(unittest.TestCase):
         self.assertTrue(b["pass"])
 
 
+def _addin():
+    """The add-in's sbd_export (its street helpers need no Revit)."""
+    import importlib.util
+    import os
+    p = os.path.join(os.path.dirname(__file__), "..", "..", "revit", "LWK.extension", "lib", "lwk_viewer", "sbd_export.py")
+    spec = importlib.util.spec_from_file_location("sbd_export", p)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+class StreetSlabs(unittest.TestCase):
+    def setUp(self):
+        self.S = _addin()
+
+    def test_straight_street(self):
+        # a 12 m wide street along y = -16 .. -4 (centreline y = -10)
+        loop = [(-20, -16), (140, -16), (140, -4), (-20, -4)]
+        cl, a, b = self.S.strip_centreline(loop)
+        self.assertTrue(all(abs(p[1] + 10) < 1e-6 for p in cl))
+        self.assertAlmostEqual(min(p[0] for p in cl), -20, places=6)
+        self.assertAlmostEqual(max(p[0] for p in cl), 140, places=6)
+        near, far = self.S.near_far(a, b, [tuple(p) for p in SITE])
+        self.assertTrue(all(abs(p[1] + 16) < 1e-6 for p in far))
+
+    def test_bent_street(self):
+        # an L: 10 m wide, along x then up y; the centreline follows the bend
+        loop = [(0, 0), (100, 0), (100, 80), (90, 80), (90, 10), (0, 10)]
+        cl, a, b = self.S.strip_centreline(loop)
+        ends = sorted([cl[0], cl[-1]])                           # either way round
+        self.assertAlmostEqual(ends[0][0], 0, places=6)          # the middle of the x leg's end
+        self.assertAlmostEqual(ends[0][1], 5, places=6)
+        self.assertAlmostEqual(ends[1][0], 95, places=6)         # the middle of the y leg's end
+        self.assertAlmostEqual(ends[1][1], 80, places=6)
+        self.assertTrue(any(p[0] > 90 and p[1] > 20 for p in cl))
+
+    def test_mean_level(self):
+        a = {"loop": [(0, -20), (50, -20), (50, -8), (0, -8)], "z": 4.0, "area": 600}
+        b = {"loop": [(50, -20), (100, -20), (100, -8), (50, -8)], "z": 5.0, "area": 600}
+        far = {"loop": [(0, -900), (50, -900), (50, -888), (0, -888)], "z": 50.0, "area": 600}
+        self.assertAlmostEqual(self.S.mean_level([a, b, far], [tuple(p) for p in SITE]), 4.5)
+
+    def test_street_slab_gives_the_same_u(self):
+        # the street of Case1.test_canyon_u, as a slab from y = -20 to 0
+        site = [tuple(p) for p in SITE]
+        st = self.S.street_from_floor({"name": "Main St", "loop": [(-10, -20), (110, -20), (110, 0), (-10, 0)], "z": 0.0}, site)
+        self.assertAlmostEqual(st["width_m"], 20.0, places=2)
+        d = {"site": SITE, "street_axis": self.S.frontage_axis([st], site), "streets": [st],
+             "masses": [mass("A", box(10, 15, 0, 40, 45, 30))]}
+        b = engine.run(d)["case1"][0]["buildings"][0]
+        self.assertAlmostEqual(b["U_m"], 35.0, places=2)
+
+
 if __name__ == "__main__":
     unittest.main()

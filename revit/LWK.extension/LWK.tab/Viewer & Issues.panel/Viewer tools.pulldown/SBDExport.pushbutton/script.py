@@ -86,28 +86,68 @@ if gap is not None and gap > SE.CLOSE_TOL_M:
                        title="SBD Export", yes=True, no=True):
         script.exit()
 
-# 3. the zones' ground level
-levels = sorted(FilteredElementCollector(doc).OfClass(Level).ToElements(), key=lambda l: l.Elevation)
-names = ["%s (%.2f m)" % (l.Name, l.Elevation * SE.FT_M) for l in levels]
-g = forms.SelectFromList.show(names, title="SBD Export - zones measured from (the site's ground, e.g. mean street level)",
-                              button_name="Use this level") if names else None
-ground = levels[names.index(g)].Elevation * SE.FT_M if g else 0.0
-
-# 4. the street (optional): its direction is Projection Plane X; its centreline + the opposite boundary give Case 1 U
+# 3. the streets: Floors of a "Street" type (kerb to kerb). Each gives its
+# centreline, the opposite site's boundary (its far side) and its level.
 street_axis = None
 streets = []
-while forms.alert("Add a street?\n\nPick its CENTRELINE, then the OPPOSITE site's boundary across it. The first street's "
-                  "centreline is also Projection Plane X (Axis 1) of the permeability check.",
-                  title="SBD Export", yes=True, no=True):
-    cl = SE.curves_polyline(pick_lines("Select the street CENTRELINE, then Finish"))
-    if not cl or len(cl) < 2:
-        break
-    op = SE.curves_polyline(pick_lines("Select the OPPOSITE site boundary across the street, then Finish")) or []
-    nm = forms.ask_for_string(default="Street %d" % (len(streets) + 1), prompt="Name of the street", title="SBD Export") or ""
-    streets.append({"name": nm, "centreline": [[round(x, 4), round(y, 4)] for x, y in cl],
-                    "opposite": [[round(x, 4), round(y, 4)] for x, y in op]})
-    if street_axis is None:
-        street_axis = [[round(cl[0][0], 4), round(cl[0][1], 4)], [round(cl[-1][0], 4), round(cl[-1][1], 4)]]
+slabs = SE.street_floors(doc)
+made = []
+for f in slabs:
+    st = SE.street_from_floor(f, site)
+    if st:
+        made.append((f, st))
+    else:
+        out.print_md("- Street slab **%s** is not a strip (two long sides, two ends) - left out; pick its lines instead." % f["name"])
+if made:
+    labels = ["%s - %.0f m long, %.1f m wide, level %.2f m" % (st["name"], st["length_m"], st["width_m"], st["level"]) for f, st in made]
+    try:            # all ticked to start with: untick a street not fronting the site
+        items = [forms.TemplateListItem(lab, checked=True) for lab in labels]
+    except Exception:
+        items = labels
+    chosen = forms.SelectFromList.show(items, title="SBD Export - the streets (Floors of a 'Street' type)", multiselect=True,
+                                       button_name="Use the ticked streets")
+    if chosen is None:
+        script.exit()
+    made = [m for m, lab in zip(made, labels) if lab in chosen]
+    streets = [st for f, st in made]
+if not streets and forms.alert("No street slabs used.\n\nModel each street as a Floor whose type name has 'Street' in it "
+                               "(kerb to kerb) - or pick its centreline and the opposite boundary now?",
+                               title="SBD Export", options=["Pick lines now", "No street"]) == "Pick lines now":
+    while True:
+        cl = SE.curves_polyline(pick_lines("Select the street CENTRELINE, then Finish"))
+        if not cl or len(cl) < 2:
+            break
+        op = SE.curves_polyline(pick_lines("Select the OPPOSITE site boundary across the street, then Finish")) or []
+        nm = forms.ask_for_string(default="Street %d" % (len(streets) + 1), prompt="Name of the street", title="SBD Export") or ""
+        streets.append({"name": nm, "centreline": [[round(x, 4), round(y, 4)] for x, y in cl],
+                        "opposite": [[round(x, 4), round(y, 4)] for x, y in op]})
+        if not forms.alert("Add another street?", title="SBD Export", yes=True, no=True):
+            break
+# Axis 1 (Projection Plane X): along the street fronting the site the longest
+if streets:
+    street_axis = SE.frontage_axis(streets, site) or [streets[0]["centreline"][0], streets[0]["centreline"][-1]]
+
+# 4. the zones' ground: the street level (the street slabs' mean top level,
+# by area, near the site) - or a Level chosen
+ground, ground_source = None, ""
+street_level = SE.mean_level([f for f, st in made], site) if made else None
+levels = sorted(FilteredElementCollector(doc).OfClass(Level).ToElements(), key=lambda l: l.Elevation)
+names = ["%s (%.2f m)" % (l.Name, l.Elevation * SE.FT_M) for l in levels]
+if street_level is not None:
+    pick = forms.alert("The zones are measured from the street level: %.2f m (the mean top level of the street slabs "
+                       "near the site).\n\nUse it, or choose a Level instead?" % street_level, title="SBD Export",
+                       options=["Use %.2f m (street slabs)" % street_level, "Choose a Level ..."])
+    if not pick:
+        script.exit()
+    if pick.startswith("Use"):
+        ground, ground_source = street_level, "the street slabs"
+if ground is None:
+    g = forms.SelectFromList.show(names, title="SBD Export - zones measured from (the site's ground, e.g. mean street level)",
+                                  button_name="Use this level") if names else None
+    if g:
+        ground, ground_source = levels[names.index(g)].Elevation * SE.FT_M, "Level " + levels[names.index(g)].Name
+    else:
+        ground, ground_source = 0.0, "0.00 (no level chosen)"
 
 # 5. the project on the viewer, then send
 settings = L.load_settings()
@@ -131,7 +171,7 @@ try:
 except Exception:
     pass
 data = SE.build(site, masses, ground, street_axis, streets, project=pid, model=doc.Title, by=me,
-                at=time.strftime("%Y-%m-%dT%H:%M:%S"))
+                at=time.strftime("%Y-%m-%dT%H:%M:%S"), ground_source=ground_source)
 # a copy beside the model's temp files, to send to a colleague if needed
 keep = os.path.join(os.environ.get("TEMP", os.path.expanduser("~")), "sbd-%s.json" % pid)
 try:
@@ -145,8 +185,11 @@ except Exception as ex:
     script.exit()
 
 out.print_md("## SBD Export")
-out.print_md("**%d mass(es)**, site boundary of %d points, zones from %.2f m, %d street(s) - sent to **%s**." %
-             (len(masses), len(site), ground, len(streets), pid))
+out.print_md("**%d mass(es)**, site boundary of %d points, zones from %.2f m (%s), %d street(s) - sent to **%s**." %
+             (len(masses), len(site), ground, ground_source, len(streets), pid))
+for st in streets:
+    if "length_m" in st:
+        out.print_md("- Street **%s**: %.1f m long, %.1f m wide, level %.2f m" % (st["name"], st["length_m"], st["width_m"], st["level"]))
 cp, rp = r.get("controlling_p"), r.get("required_p")
 out.print_md("Controlling P: **%s** %%   Required: **%s** %%   %s" % (
     "-" if cp is None else "%.2f" % cp, "-" if rp is None else "%.0f" % rp,
