@@ -7,6 +7,8 @@
  * (server/cad.py). This window shows how far it is and what came of it.
  */
 
+import { keepRow, keepImported } from "./folderpick.js";
+
 const esc = (s) => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -90,8 +92,12 @@ export async function importCad(files, opts) {
     <div class="cad-files">${list.map((f) => `<label><input type="checkbox" value="${esc(f.name)}"${list.length === 1 || !guessXref(f.name) ? " checked" : ""}> ${esc(f.name)}<small>${f.mb} MB</small></label>`).join("")}</div>
     <label class="cad-row">Set (its entry in the drop-down)<input type="text" class="cad-set" maxlength="60" value="${esc(stem(list.find((f) => !guessXref(f.name))?.name || list[0].name))}"></label>
     <label class="cad-chk"><input type="checkbox" class="cad-mono" checked> Black lines, as plotted (untick for the drawing's colours)</label>
+    <div class="cad-keep"></div>
     ${tools.font ? "" : `<div class="muted">Note: the server has no Chinese font for drawings yet, so Chinese text may show as boxes (it is still found by search).</div>`}
     <div class="cad-foot"><button type="button" class="cad-no">Cancel</button><button type="button" class="pri cad-go">Make sheets</button></div>`);
+  const keep = keepRow(choose.querySelector(".cad-keep"), { kind: "cad", project: opts.project,
+    setName: () => choose.querySelector(".cad-set").value });
+  choose.querySelector(".cad-set").addEventListener("input", () => keep.repaint());
   const pick = await new Promise((resolve) => {
     choose.querySelector(".cad-no").onclick = () => resolve(null);
     choose.querySelector(".cad-go").onclick = () => {
@@ -100,6 +106,7 @@ export async function importCad(files, opts) {
       resolve({ drawings, set: choose.querySelector(".cad-set").value.trim() || "CAD drawings", mono: choose.querySelector(".cad-mono").checked });
     };
   });
+  const keepTo = keep.target();
   choose.remove();
   if (!pick) return;
   // 3. made on the server: progress, then the result
@@ -120,13 +127,22 @@ export async function importCad(files, opts) {
     prog.querySelector(".cad-bar i").style.width = (j.progress || 0) + "%";
     if (j.status === "done" || j.status === "failed") break;
   }
+  // the files sent, kept in Folders (from here: the server does not keep them)
+  let kept = null;
+  if (keepTo.mode !== "none") {
+    prog.querySelector(".cad-msg").textContent = "Keeping the CAD files in Folders ...";
+    kept = await keepImported(keepTo, files, { kind: "cad", project: opts.project, setName: pick.set });
+  }
   const rep = (j.report || []).map((r) => `<li><b>${esc(r.file)}</b>: `
     + (r.error ? `<span class="bad">${esc(r.error)}</span>`
       : `${r.sheets.length} sheet(s) - ${esc(r.sheets.join(", "))}`
         + (r.missing_xrefs && r.missing_xrefs.length ? `<br><span class="bad">Xrefs not sent (drawn without them): ${esc(r.missing_xrefs.join(", "))}</span>` : "")
         + (r.left_out && Object.keys(r.left_out).length ? `<br><span class="muted">Not drawn: ${esc(Object.entries(r.left_out).map(([k, v]) => `${k} (${v})`).join(", "))}</span>` : ""))
     + `</li>`).join("");
+  prog.querySelector(".cad-msg").textContent = j.message || "";
   prog.querySelector(".cad-out").innerHTML = `<ul>${rep}</ul>`
+    + (kept && kept.kept.length ? `<div>The ${kept.kept.length} CAD file(s) are kept in Folders: <a href="${esc(kept.href)}" target="_blank" rel="noopener">${esc(kept.label)}</a></div>` : "")
+    + (kept && kept.errors.length ? `<div class="bad">Not kept in Folders: ${esc(kept.errors.join("; "))}</div>` : "")
     + (j.status === "done" ? `<div class="muted">Fonts are drawn with a standard font, complex line types as plain dashes. For the exact look, publish a PDF from AutoCAD and import that.</div>` : "");
   const btn = prog.querySelector(".cad-close");
   btn.disabled = false;
@@ -136,3 +152,32 @@ export async function importCad(files, opts) {
   prog.remove();
   if (j.status === "done" && opts.done) opts.done(j.set, j.sheets || []);
 }
+
+/* The window of Files > A PDF drawing: the sheet number (prefix for a PDF
+   of several pages), the set, and where the PDF is kept in Folders.
+   -> { prefix, set, keep } or null. */
+export async function pdfImportDialog({ file, pages, stem, sets, set, project }) {
+  const d = dialog(`<h3>Import ${esc(file.name)}</h3>
+    <div class="muted">${pages === 1 ? "One page: it becomes one sheet." : `${pages} pages: each becomes a sheet, numbered after the prefix.`}</div>
+    <label class="cad-row">${pages === 1 ? "Sheet number" : "Sheet number prefix"}<input type="text" class="pi-prefix" maxlength="40" value="${esc(stem.slice(0, 24))}"></label>
+    <label class="cad-row">Set (its entry in the drop-down at the top)<input type="text" class="pi-set" maxlength="60" list="pi-sets" value="${esc(set)}">
+      <datalist id="pi-sets">${(sets || []).map((x) => `<option value="${esc(x)}">`).join("")}</datalist></label>
+    <div class="pi-keep"></div>
+    <div class="cad-foot"><button type="button" class="cad-no">Cancel</button><button type="button" class="pri cad-go">Import</button></div>`);
+  const keep = keepRow(d.querySelector(".pi-keep"), { kind: "pdf", project, setName: () => d.querySelector(".pi-set").value });
+  d.querySelector(".pi-set").addEventListener("input", () => keep.repaint());
+  setTimeout(() => d.querySelector(".pi-prefix").select(), 30);
+  const r = await new Promise((resolve) => {
+    d.querySelector(".cad-no").onclick = () => resolve(null);
+    d.addEventListener("keydown", (ev) => { if (ev.key === "Escape") resolve(null); if (ev.key === "Enter" && ev.target.tagName === "INPUT") d.querySelector(".cad-go").click(); });
+    d.querySelector(".cad-go").onclick = () => {
+      const prefix = d.querySelector(".pi-prefix").value.trim();
+      if (!prefix) { alert("Give the sheet a number."); return; }
+      resolve({ prefix, set: d.querySelector(".pi-set").value.trim().slice(0, 60), keep: keep.target() });
+    };
+  });
+  d.remove();
+  return r;
+}
+
+export { keepImported };

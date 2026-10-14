@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-31", date: "14 Oct 2026",
+    items: [
+      "Sheets: importing a PDF or CAD drawings now asks everything in **one window** - sheet number, set and **where the file is kept in Folders**: by default **00 BIM > Import > PDF** (or **CAD**) **> the set's name**, or **Change folder ...** for any other folder, or **Don't keep a copy**. The choice is remembered. The CAD files (DWG / DXF and xrefs) are kept there too.",
+    ],
+  },
+  {
     version: "2026-10-30", date: "14 Oct 2026",
     items: [
       "Sheets: **Files > A CAD drawing (DWG / DXF)** - send a drawing with its xrefs (or a .zip): **each layout becomes a sheet** of a new set, with its viewports at their scale, the xrefs drawn in, Chinese text, hatches and dimensions; black lines as plotted, or the drawing's colours. DWG needs the ODA File Converter on the server (the server's admin installs it once); DXF works straight away.",

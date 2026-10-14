@@ -194,3 +194,86 @@ export function offerKeep(blob, name, project, what) {
   bar.querySelector("[data-x]").onclick = () => bar.remove();
   bar.querySelector("[data-keep]").onclick = () => { clearTimeout(t); bar.remove(); saveToFoldersFlow(blob, name, { project }); };
 }
+
+/* ------------------------------------------------------------ imports
+   The "Keep in Folders" line of the Sheets page's import windows (a PDF,
+   CAD drawings): by default 00 BIM / Import / PDF (or CAD) / <set>;
+   Change ... for any other folder; Don't keep a copy. Remembered per
+   project and kind. */
+
+const KEEP = "lwk-viewer:import-keep:";
+
+function viewerHeaders(project, json) {
+  const h = headers(json);
+  if (project) h["X-Project"] = project;
+  return h;
+}
+
+/* el: an element to fill. -> { target(), ready } where target() is
+   { mode: "default" | "folder" | "none", reg, path, label }. */
+export function keepRow(el, { kind, project, setName }) {
+  const key = KEEP + (project || "") + ":" + kind;
+  let st = { mode: "default" };
+  try { st = JSON.parse(localStorage.getItem(key) || "null") || st; } catch (e) {}
+  let where = { reg: null, name: "" };
+  const sub = kind === "cad" ? "CAD" : "PDF";
+  const save = () => { try { localStorage.setItem(key, JSON.stringify(st)); } catch (e) {} };
+  const paint = () => {
+    const set = (setName() || "").trim();
+    let what;
+    if (st.mode === "none") what = `<i>Not kept</i> - the file is only used for the sheets`;
+    else if (st.mode === "folder") what = `<b>${esc(st.label || st.path || "(top)")}</b>`;
+    else if (!where.reg) what = `<span style="color:#b91c1c">This model is not in a Folders project yet, so the file cannot be kept there (Projects page: add the model to a project).</span>`;
+    else what = `<b>${esc(where.name)} / 00 BIM / Import / ${sub}${set ? " / " + esc(set) : ""}</b>`;
+    el.innerHTML = `<div style="font-weight:600;font-size:12px;margin:8px 0 4px">Keep the ${kind === "cad" ? "CAD files" : "PDF"} in Folders</div>`
+      + `<div style="font-size:12.5px;margin-bottom:6px">${what}</div>`
+      + `<div style="display:flex;gap:6px;flex-wrap:wrap">`
+      + `<button type="button" data-k="change">Change folder ...</button>`
+      + (st.mode !== "default" ? `<button type="button" data-k="default">00 BIM / Import / ${sub}</button>` : "")
+      + (st.mode !== "none" ? `<button type="button" data-k="none">Don't keep a copy</button>` : "")
+      + `</div>`;
+  };
+  el.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-k]");
+    if (!b) return;
+    if (b.dataset.k === "change") {
+      const t = await pickFolder({ title: "Keep the imported " + (kind === "cad" ? "CAD files" : "PDF") + " in", project });
+      if (t) { st = { mode: "folder", reg: t.reg, path: t.path, label: t.label }; save(); }
+    } else {
+      st = { mode: b.dataset.k };
+      save();
+    }
+    paint();
+  });
+  const ready = fetch("/api/files/for-viewer/where", { headers: viewerHeaders(project) })
+    .then((r) => r.ok ? r.json() : { reg: null }).then((w) => { where = w || where; paint(); }, () => paint());
+  paint();
+  return { target: () => Object.assign({}, st, { linked: where }), repaint: paint, ready };
+}
+
+/* Keep the files where keepRow says. -> { kept: [{name, path, reg}], errors: [text], label, href } */
+export async function keepImported(target, files, { kind, project, setName }) {
+  const out = { kept: [], errors: [], label: "", href: "" };
+  if (!target || target.mode === "none") return out;
+  for (const f of files) {
+    const q = new URLSearchParams({ kind, name: f.name, set: setName || "" });
+    if (target.mode === "folder") { q.set("path", target.path || ""); q.set("reg", target.reg || ""); }
+    try {
+      const r = await fetch("/api/files/for-viewer/import?" + q.toString(), {
+        method: "POST", body: f, headers: Object.assign(viewerHeaders(project), { "Content-Type": f.type || "application/octet-stream" }) });
+      let d = null;
+      try { d = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error((d && d.detail) || "HTTP " + r.status);
+      out.kept.push(d);
+    } catch (e) {
+      out.errors.push(f.name + ": " + e.message);
+    }
+  }
+  if (out.kept.length) {
+    const p = out.kept[0];
+    const dir = p.path.split("/").slice(0, -1).join("/");
+    out.label = dir;
+    out.href = "folders.html?" + new URLSearchParams({ reg: p.reg, path: dir }).toString();
+  }
+  return out;
+}

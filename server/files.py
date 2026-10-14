@@ -728,6 +728,51 @@ def register(app, core):
         out = keep_file(regs[0], [BIM, "Exports", folder], nm, raw, w.uid, w.name or "")
         return {"reg": regs[0], "path": out, "name": out.split("/")[-1], "note": note}
 
+    def viewer_reg(request, x_project, x_viewer_token):
+        """(who, the Folders project this viewer project is in, its name)."""
+        w, _ = core.require_project(request, x_project, "member", x_viewer_token)
+        pid = "default" if core.CFG["single"] else x_project
+        regs = tasks.reg_ids_for_viewer(core, pid)
+        if not regs:
+            return w, None, ""
+        _, row = tasks.project_people(core, regs[0])
+        return w, regs[0], (row["short"] or row["name"]) if row else ""
+
+    @app.get("/api/files/for-viewer/where")
+    async def where_for_viewer(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """The Folders project an import on this viewer project is kept in."""
+        w, reg, name = viewer_reg(request, x_project, x_viewer_token)
+        return {"reg": reg, "name": name}
+
+    @app.post("/api/files/for-viewer/import")
+    async def import_for_viewer(request: Request, kind: str = "pdf", name: str = "", set: str = "", path: str = "",
+                                reg: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """A file imported on the Sheets page (a PDF, a DWG / DXF and its
+        xrefs) kept in Folders: by default in 00 BIM/Import/PDF or CAD/<set>
+        (written by the viewer only, as Exports are), or in a folder the
+        person chose (path; not in 00 BIM). The body is the file."""
+        w, linked, _ = viewer_reg(request, x_project, x_viewer_token)
+        nm = clean_name(name)
+        if path:
+            target = reg or linked
+            if not target:
+                raise HTTPException(status_code=409, detail="Choose a project in Folders to keep it in")
+            w2, _, _ = access(request, x_viewer_token, target)
+            parts = clean_rel(path)
+            not_bim(parts)
+        else:
+            if not linked:
+                raise HTTPException(status_code=409, detail="This model is not in a Folders project yet - on the Projects page, "
+                                    "add it to a project (as one of its parts) to keep imported files there")
+            target = linked
+            sub = "CAD" if kind == "cad" else "PDF"
+            parts = [BIM, "Import", sub] + ([bim_name(set)] if str(set or "").strip() else [])
+        raw = await request.body()
+        if len(raw) > MAX_UPLOAD:
+            raise HTTPException(status_code=413, detail="Files up to 2 GB")
+        out = keep_file(target, parts, nm, raw, w.uid, w.name or "")
+        return {"reg": target, "path": out, "name": out.split("/")[-1]}
+
     @app.get("/api/files/{reg}/preview")
     async def file_preview(request: Request, reg: str, path: str = "", v: int = 0, x_viewer_token: str = Header(default="")):
         """A Word, Excel or PowerPoint file as a PDF, to read in the page

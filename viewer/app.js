@@ -20,8 +20,7 @@ import * as Tele from "./telemetry.js";
 import { makeTilePage, tileStats } from "./sheettiles.js";
 import { initPanels, initSplitter, initVGrip } from "./panels.js";
 import { copyLink } from "./share.js";
-import { offerKeep } from "./folderpick.js";
-import { importCad } from "./cadimport.js";
+import { importCad, pdfImportDialog, keepImported } from "./cadimport.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
@@ -5274,18 +5273,12 @@ async function importPdf(file) {
   }
 
   const stem = file.name.replace(/\.pdf$/i, "");
-  const prefix = prompt(
-    pages === 1 ? "Sheet number for this drawing:"
-      : `This PDF has ${pages} pages. Each becomes a sheet.\n`
-        + "Sheet number prefix (pages are numbered after it):",
-    stem.slice(0, 24));
-  if (prefix === null) return;
   const have = setNames();
-  let set = prompt("Which set do these drawings go in? They get their own entry in the drop-down at the top, "
-    + "apart from the sheets from Revit.\n\nType a new name for a new set"
-    + (have.length ? ", or one of: " + have.join(", ") : "") + ".", S.set || have[0] || PDF_SET);
-  if (set === null) return;
-  set = set.trim().slice(0, 60) || PDF_SET;
+  // one window: sheet number, set, and where the PDF is kept in Folders
+  const pick = await pdfImportDialog({ file, pages, stem, sets: have, set: S.set || have[0] || PDF_SET, project: Store.currentProject() });
+  if (!pick) return;
+  const prefix = pick.prefix;
+  const set = pick.set || PDF_SET;
 
   status(`Uploading ${file.name} ...`);
   const res = await fetch("/api/import/pdf?name=" + encodeURIComponent(file.name), {
@@ -5319,8 +5312,13 @@ async function importPdf(file) {
   const added = (await reg.json()).added || [];
   await reloadManifest();
   status(`Imported ${added.length} sheet(s) from ${file.name} into "${set}".`);
-  // and, if wanted, a copy in the project's Folders (a folder chosen there)
-  offerKeep(file, file.name, Store.currentProject(), `Imported ${added.length} sheet(s) from ${file.name}`);
+  // the PDF kept in Folders, where the window said (00 BIM / Import / PDF by default)
+  if (pick.keep.mode !== "none") {
+    keepImported(pick.keep, [file], { kind: "pdf", project: Store.currentProject(), setName: set }).then((k) => {
+      if (k.kept.length) status(`Imported ${added.length} sheet(s) from ${file.name} into "${set}"; the PDF is kept in Folders: ${k.label}.`);
+      else if (k.errors.length) status("Imported, but not kept in Folders: " + k.errors.join("; "));
+    });
+  }
   showSet(set, true);
   const first = S.manifest.sheets.find((s) => added[0] && s.number === added[0].number);
   if (first) openSheet(first);
@@ -5660,7 +5658,7 @@ function wireChrome() {
   $("#import-cad").addEventListener("change", (ev) => {
     const fs = [...(ev.target.files || [])];
     ev.target.value = "";
-    importCad(fs, { headers: () => Store.authHeaders(), done: async (set, nums) => {
+    importCad(fs, { headers: () => Store.authHeaders(), project: Store.currentProject(), done: async (set, nums) => {
       await reloadManifest();
       showSet(set, true);
       const first = S.manifest.sheets.find((s) => nums[0] && s.number === nums[0]);
