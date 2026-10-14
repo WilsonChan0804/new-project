@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-10-29", date: "14 Oct 2026",
+    items: [
+      "Fixed: with two projects open in two browser tabs, an issue raised in one could be saved into the other project. Each tab now keeps its own project (it shows in the address).",
+      "Calendar: **Holidays** shows the public holidays of **Hong Kong** and / or **the Philippines**. **+ Leave** (or right-click a day, or drag across days) adds your annual leave, with the working days counted. **Groups**: the people in a calendar group see each other's leave.",
+      "Sheets: **Set ▾** beside the sheet list renames, **archives** (hidden, nothing deleted - brought back from the same menu) or deletes a set of imported PDFs, and **Select sheets** deletes several imported sheets at once.",
+      "**Keep a copy in Folders**: after importing a PDF on the Sheets page, and from the folder button on any file or picture sent in the Messenger or a task - choose the project and folder (or make a new one).",
+    ],
+  },
+  {
     version: "2026-10-28", date: "12 Oct 2026",
     items: [
       "Issues (Sheets and 3D): **photos in the Discussion** - **📷 Photo** beside Post (or the camera on a phone / iPad), paste a screenshot with **Ctrl+V**, or drop pictures on the message box. Click a photo to see it large; the issue report shows them too.",

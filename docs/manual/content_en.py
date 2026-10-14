@@ -239,6 +239,18 @@ DOC = [
         '**Add to Outlook:** **Open in Outlook on this PC** subscribes Outlook to your calendar (choose **Yes**), or copy the address and use Outlook\'s **Add calendar > From Internet**. Outlook then shows the entries beside your own calendar and updates them by itself. Outlook on the web and on phones can only reach it when the viewer is reachable from the internet.',
         'The address is yours alone: **Make a new address** if it was shared by mistake (the old one stops working).',
     ]),
+    H3('Public holidays'),
+    UL([
+        '**Holidays ▾** shows the public holidays of **Hong Kong** and / or **the Philippines** on the calendar (tick either or both; remembered for you). The 2026 and 2027 lists are built in (Hong Kong: Government Gazette; Philippines: Proclamations No. 1006 and 1427, regular holidays and special non-working days).',
+        'A site admin adds later years and dates proclaimed late (the Philippine Eid\'l Fitr and Eid\'l Adha): **Holidays ▾ > Edit the list**, one a line, e.g. *2028-01-01 New Year\'s Day*.',
+    ]),
+    H3('Annual leave and calendar groups'),
+    UL([
+        '**+ Leave**, **right-click a day > Add leave**, or **drag across days** in the month: from and to, the type (annual, sick, other), a half day (AM / PM, for one day) and a note. The form counts the working days (weekends and the ticked holidays left out; Hong Kong when none is ticked).',
+        'Your leave shows on your calendar and on the calendars of the people who share a **calendar group** with you; theirs shows on yours. Click a leave for its details; **Remove this leave** takes your own away.',
+        '**Groups:** **+ New group**, a name and its people (anyone can make one; you are in it). The person who made a group (or a site admin) edits or deletes it; the others can **Leave group**. **Filter ▾ > Leave of** shows the leave of one group only.',
+        'Outlook (Add to Outlook) gets your own leave, not your colleagues\'.',
+    ]),
     H2('Notifications and the app'),
     P('New chat messages reach you without reloading any page, and the viewer can be installed as an app.'),
     UL([
@@ -302,6 +314,9 @@ DOC = [
         '**Search all sheets** finds sheet numbers, names and any words printed on the drawings (room names, notes, grid labels). Matches are highlighted on the sheet. The first search on a project can take a moment while the drawings are read.',
         '**Page Down / Page Up** go to the next or previous sheet.',
         'To add an outside PDF (a consultant drawing, a sketch), use the **PDF** upload button and name its **set** (e.g. "Uploaded PDFs" or "Consultant 2026-10"). Each set is its own entry in the drop-down at the top, under the project\'s title, apart from the sheets from Revit. Its sheets show "Imported 2D only" and can be removed with their **✕**.',
+        'After a PDF is imported, **Keep a copy in Folders ...** puts the file in the project\'s Folders too: choose the project and the folder (or **+ New folder**). The folder is remembered for next time.',
+        '**Set ▾** (beside the sheet list, on a set of imported PDFs): **Select sheets** - tick several (shift-click for a run) and **Delete** them together; **Rename set**; **Archive set** - it leaves the Sheets page and Folders, nothing is deleted, and **Set ▾ > Archived sets > Bring back** restores it; **Delete set** - its sheets and their PDFs. Markups and issues on deleted sheets stay in the project.',
+        'Each browser tab keeps its own project (it shows in the address), so two projects can be open side by side and each issue is saved in its own.',
     ]),
     H3('Moving around a sheet'),
     TABLE(['Action', 'Mouse', 'iPad / touch'], [

@@ -127,6 +127,18 @@ PART = [
         '**Add to Outlook：** **Open in Outlook on this PC** 會令 Outlook 訂閱你嘅日曆（揀 **Yes**），或者 copy 個地址，用 Outlook 嘅 **Add calendar > From Internet**。之後 Outlook 會喺你自己嘅日曆隔籬顯示，並自己更新。Outlook 網頁版同手機版要 viewer 喺互聯網上連得到先得。',
         '個地址係你自己嘅：唔小心分享咗就撳 **Make a new address**（舊嗰個會停用）。',
     ]),
+    H3('公眾假期'),
+    UL([
+        '**Holidays ▾** 喺日曆顯示**香港**同／或者**菲律賓**嘅公眾假期（剔一個或者兩個；會記住）。2026 同 2027 年嘅已經內置（香港：憲報；菲律賓：Proclamation No. 1006 同 1427，regular holidays 同 special non-working days）。',
+        'Site admin 可以加之後年份同遲啲先公佈嘅日子（菲律賓嘅 Eid\'l Fitr 同 Eid\'l Adha）：**Holidays ▾ > Edit the list**，一行一個，例如 *2028-01-01 New Year\'s Day*。',
+    ]),
+    H3('年假同日曆群組'),
+    UL([
+        '**+ Leave**、**右撳某一日 > Add leave**，或者喺月曆**拖過幾日**：由邊日到邊日、類別（年假、病假、其他）、半日（AM／PM，只限一日）同備註。表格會計工作天（星期六日同剔咗嘅假期唔計；冇剔就用香港假期）。',
+        '你嘅假期會喺你同埋同你喺同一個**日曆群組**嘅人嘅日曆出現；佢哋嘅都會喺你嘅出現。撳一個假期睇詳情；**Remove this leave** 可以刪走你自己嘅。',
+        '**Groups：** **+ New group**，改名同揀人（人人都開得；你自己一定喺入面）。開群組嘅人（或者 site admin）可以改或者刪；其他人可以 **Leave group**。**Filter ▾ > Leave of** 只顯示某一個群組嘅假期。',
+        'Outlook（Add to Outlook）只會有你自己嘅假期，唔會有同事嘅。',
+    ]),
     H2('通知同 app'),
     P('有新訊息唔使 refresh 都會通知你，viewer 仲可以裝成一個 app。'),
     UL([

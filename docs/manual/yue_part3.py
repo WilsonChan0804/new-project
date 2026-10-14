@@ -12,6 +12,9 @@ PART = [
         '**Search all sheets** 搵 sheet 編號、名，同埋圖上面印住嘅任何字（房名、note、grid 編號）。搵到嘅會喺 sheet 上面 highlight。一個 project 第一次搜尋可能要等一陣，因為要讀晒啲圖。',
         '**Page Down / Page Up** 去下一張或者上一張 sheet。',
         '要加外面嘅 PDF（顧問嘅圖、草圖），用 **PDF** upload 掣，再改個 **set** 名（例如「Uploaded PDFs」或者「Consultant 2026-10」）。每個 set 喺頂部 drop-down 入面、project 標題下面自己一項，同 Revit 嘅 sheet 分開。佢啲 sheet 會顯示「Imported 2D only」，撳 **✕** 就可以移除。',
+        '匯入 PDF 之後，**Keep a copy in Folders ...** 可以將個檔案都放一份入 project 嘅 Folders：揀 project 同 folder（或者 **+ New folder**）。下次會記得揀過邊個 folder。',
+        '**Set ▾**（sheet 清單旁邊，揀咗一個匯入 PDF 嘅 set 時）：**Select sheets** - 剔幾張（shift-click 揀一連串）一次過 **Delete**；**Rename set** 改名；**Archive set** 封存 - 喺 Sheets 頁同 Folders 收埋，乜都唔會刪，**Set ▾ > Archived sets > Bring back** 攞返出嚟；**Delete set** 刪除 - 連佢啲 sheet 同 PDF。刪咗嘅 sheet 上面嘅 markup 同 issue 會留喺 project。',
+        '每個瀏覽器分頁會記住自己嘅 project（網址入面見到），所以可以兩個 project 並排開，每個 issue 都會存入自己嗰個 project。',
     ]),
     H3('喺 sheet 上面移動'),
     TABLE(['動作', '滑鼠', 'iPad / 觸控'], [

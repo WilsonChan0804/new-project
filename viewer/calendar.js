@@ -559,11 +559,17 @@ async function start() {
     return;
   }
   wire();
-  try { K.holExtra = await api("/api/holidays"); } catch (e) { K.holExtra = {}; }
-  await loadGroups();
   const day = new URLSearchParams(location.search).get("day");
   if (day && /^\d{4}-\d{2}-\d{2}$/.test(day)) K.at = fromIso(day);
+  // holidays added by an admin and my groups come alongside, not before
+  const extra = api("/api/holidays").then((h) => { K.holExtra = h || {}; }, () => {});
+  loadGroups();
   await load();
+  await extra;
+  if (Object.keys(K.holExtra.hk || {}).length || Object.keys(K.holExtra.ph || {}).length) {
+    K.entries = K.entries.filter((e) => e.kind !== "holiday").concat(holidayEntries());
+    paint();
+  }
 }
 
 start().catch((e) => { const m = $("#cal-body"); if (m) m.innerHTML = `<p class="bad" style="padding:16px">${esc(e.message)}</p>`; });
