@@ -9,6 +9,11 @@
  * and shows it beside your Outlook calendar, kept up to date by itself.
  * + Event makes the event in a chat, so the people in it are invited and
  * can reply.
+ *
+ * Holidays shows the public holidays of Hong Kong and / or the Philippines
+ * (holidays.js, plus what a site admin added). + Leave (or right-click a
+ * day, or drag across days) puts your annual leave in; the people who share
+ * a calendar group with you (Groups) see it, and you see theirs.
  */
 
 import { api } from "./nav.js";
@@ -16,18 +21,25 @@ import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, modal, toast, ic, pop, closePop, skeleton } from "./tasks-util.js";
 import { taskForm } from "./chatcards.js";
 import { makeFilter } from "./filterbtn.js";
+import { REGIONS, merged } from "./holidays.js";
 
 const K = {
   view: matchMedia("(max-width: 700px)").matches ? "list" : "month",
   at: new Date(),             // a day in the month shown
-  kinds: new Set(["meeting", "task", "issue"]),
+  kinds: new Set(["meeting", "task", "issue", "leave"]),
   entries: [], from: "", to: "",
+  hol: { hk: false, ph: false },     // the holidays shown (Holidays button)
+  holExtra: {},                       // added by a site admin (server)
+  group: "",                          // leave of: "" every group of mine, or one group
+  groups: [],
 };
 try {
   const v = localStorage.getItem("lwk-viewer:cal-view");
   if (v === "month" || v === "list") K.view = v;
   const k = JSON.parse(localStorage.getItem("lwk-viewer:cal-kinds") || "null");
-  if (Array.isArray(k)) K.kinds = new Set(k);
+  if (Array.isArray(k)) { K.kinds = new Set(k); if (!localStorage.getItem("lwk-viewer:cal-kinds-leave")) K.kinds.add("leave"); }
+  const h = JSON.parse(localStorage.getItem("lwk-viewer:cal-hol") || "null");
+  if (h && typeof h === "object") K.hol = { hk: !!h.hk, ph: !!h.ph };
 } catch (e) {}
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -53,7 +65,7 @@ async function load() {
   $("#cal-body").innerHTML = `<div class="cal-wait">${skeleton(6, "Loading the calendar")}</div>`;
   try {
     const r = await api(`/api/calendar?from=${K.from}&to=${K.to}`);
-    K.entries = r.entries;
+    K.entries = r.entries.concat(holidayEntries());
   } catch (e) {
     $("#cal-body").innerHTML = `<p class="bad" style="padding:16px">${esc(e.message)}</p>`;
     return;
@@ -61,7 +73,37 @@ async function load() {
   paint();
 }
 
-const shown = () => K.entries.filter((e) => K.kinds.has(e.kind));
+const shown = () => K.entries.filter((e) => e.kind === "holiday" ? K.hol[e.region]
+  : e.kind === "leave" ? K.kinds.has("leave") && (e.mine || !K.group || (e.groups || []).includes(K.group))
+  : K.kinds.has(e.kind));
+
+/* Public holidays in the days shown, for the regions ticked (both are made;
+   shown() picks). */
+function holidayEntries() {
+  const out = [];
+  for (const reg of Object.keys(REGIONS)) {
+    const list = merged(reg, K.holExtra);
+    for (const [d, name] of Object.entries(list)) {
+      if (d < K.from || d > K.to) continue;
+      out.push({ kind: "holiday", region: reg, id: `h-${reg}-${d}`, title: `${REGIONS[reg].short} · ${name}`,
+        start: d, end: d, all_day: true, from: REGIONS[reg].name + " public holiday", url: "#" });
+    }
+  }
+  return out;
+}
+
+/* Working days from a to b: not weekends, not the holidays of the regions
+   ticked under Holidays (Hong Kong when none is). */
+function workingDays(a, b) {
+  const regs = Object.keys(K.hol).filter((r) => K.hol[r]);
+  const hol = new Set();
+  for (const r of regs.length ? regs : ["hk"]) for (const d of Object.keys(merged(r, K.holExtra))) hol.add(d);
+  let n = 0;
+  for (let d = fromIso(a); iso(d) <= b; d.setDate(d.getDate() + 1)) {
+    if (d.getDay() !== 0 && d.getDay() !== 6 && !hol.has(iso(d))) n++;
+  }
+  return { n, regs: regs.length ? regs : ["hk"] };
+}
 
 /* on this day (an event over several days shows on each) */
 const onDay = (e, day) => e.start.slice(0, 10) <= day && (e.end || e.start).slice(0, 10) >= day;
@@ -73,9 +115,9 @@ function timeOf(e) {
 }
 
 function chip(e, long) {
-  const cls = `ce ${e.kind}${e.done ? " done" : ""}${e.cancelled ? " cancelled" : ""}${e.reply ? " r-" + e.reply : ""}`;
+  const cls = `ce ${e.kind}${e.region ? " " + e.region : ""}${e.mine ? " mine" : ""}${e.done ? " done" : ""}${e.cancelled ? " cancelled" : ""}${e.reply ? " r-" + e.reply : ""}`;
   const t = timeOf(e);
-  const icon = { meeting: "calendar", task: "task", issue: "flag" }[e.kind];
+  const icon = { meeting: "calendar", task: "task", issue: "flag", leave: "user", holiday: "calendar" }[e.kind];
   return `<a class="${cls}" href="${esc(e.url)}" data-id="${esc(e.id)}" title="${esc(e.title + (e.from ? " - " + e.from : ""))}">`
     + `<span class="ce-i">${ic(icon, 12)}</span>`
     + (t ? `<b class="ce-t">${esc(t)}</b>` : "")
@@ -98,14 +140,15 @@ function paint() {
     const day = iso(d);
     const es = list.filter((e) => onDay(e, day));
     const more = es.length > 4 ? es.length - 3 : 0;
-    h += `<div class="cm-d${d.getMonth() !== month ? " out" : ""}${day === t ? " today" : ""}${[0, 6].includes(d.getDay()) ? " we" : ""}" data-day="${day}">`
+    const hol = es.some((e) => e.kind === "holiday");
+    h += `<div class="cm-d${d.getMonth() !== month ? " out" : ""}${day === t ? " today" : ""}${[0, 6].includes(d.getDay()) ? " we" : ""}${hol ? " hol" : ""}" data-day="${day}">`
       + `<span class="cm-n">${d.getDate()}</span>`
       + (more ? es.slice(0, 3) : es).map((e) => chip(e)).join("")
       + (more ? `<button type="button" class="cm-more" data-day="${day}">+${more} more</button>` : "")
       + `</div>`;
   }
   h += `</div></div>`;
-  if (!list.length) h += `<p class="muted cal-none">Nothing in ${esc(title)} for you${K.kinds.size < 3 ? " (with these filters)" : ""}.</p>`;
+  if (!list.length) h += `<p class="muted cal-none">Nothing in ${esc(title)} for you${K.kinds.size < 4 ? " (with these filters)" : ""}.</p>`;
   $("#cal-body").innerHTML = h;
 }
 
@@ -124,7 +167,7 @@ function paintList(list, onlyDay) {
   $("#cal-body").innerHTML = `<div class="cl">` + (keys.map((k) => `<div class="cl-day${k === t ? " today" : ""}${k < t ? " past" : ""}" data-day="${k}">`
     + `<div class="cl-h"><b>${esc(fromIso(k).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }))}</b>${k === t ? ` <span class="cl-today">Today</span>` : ""}</div>`
     + days[k].map((e) => chip(e, true)).join("") + `</div>`).join("")
-    || `<p class="muted cal-none">Nothing this month for you${K.kinds.size < 3 ? " (with these filters)" : ""}.</p>`) + `</div>`;
+    || `<p class="muted cal-none">Nothing this month for you${K.kinds.size < 4 ? " (with these filters)" : ""}.</p>`) + `</div>`;
 }
 
 /* The details of one entry, beside the calendar (Open goes to it). */
@@ -135,7 +178,8 @@ function details(e) {
     ? `${fromIso(e.start).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })} · ${timeOf(e)}`
     : fromIso(e.start).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })
       + (e.end && e.end.slice(0, 10) !== e.start.slice(0, 10) ? " - " + fromIso(e.end).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "");
-  const say = { meeting: "Meeting", task: e.done ? "Task (done)" : "Task due", issue: "Issue due" }[e.kind];
+  const say = { meeting: "Meeting", task: e.done ? "Task (done)" : "Task due", issue: "Issue due",
+    leave: e.type || "Leave", holiday: "Public holiday" }[e.kind];
   const reply = { yes: "You are going", maybe: "You said maybe", no: "You can't go" }[e.reply] || (e.kind === "meeting" ? "Not answered yet" : "");
   box.innerHTML = `<div class="cs-h"><span class="ce-dot ${e.kind}"></span><b>${esc(say)}</b><span class="spacer"></span><button class="ghost" data-x>${ic("close")}</button></div>`
     + `<h3>${e.cancelled ? "<s>" : ""}${esc(e.title)}${e.cancelled ? "</s> <span class='bad'>cancelled</span>" : ""}</h3>`
@@ -145,8 +189,21 @@ function details(e) {
     + (e.from ? `<div class="cs-r muted">${esc(e.from)}${e.by ? " · from " + esc(e.by) : ""}</div>` : "")
     + (reply ? `<div class="cs-r"><b>${esc(reply)}</b>${e.going ? ` <span class="muted">· ${e.going} going</span>` : ""}</div>` : "")
     + (e.notes ? `<div class="cs-notes">${esc(e.notes)}</div>` : "")
-    + `<a class="primary cs-open" href="${esc(e.url)}">${e.kind === "meeting" ? "Open in the chat (reply there)" : e.kind === "task" ? "Open the task" : "Show the issue"}</a>`;
-  box.onclick = (ev) => { if (ev.target.closest("[data-x]")) box.hidden = true; };
+    + (e.kind === "leave"
+      ? `<div class="cs-r muted">${workingDays(e.start, e.end).n} working day(s)${e.half ? " · half a day (" + esc(e.half.toUpperCase()) + ")" : ""}</div>`
+        + (e.mine ? `<button type="button" class="ghost cs-del" data-del>Remove this leave</button>` : "")
+      : e.kind === "holiday" ? ""
+      : `<a class="primary cs-open" href="${esc(e.url)}">${e.kind === "meeting" ? "Open in the chat (reply there)" : e.kind === "task" ? "Open the task" : "Show the issue"}</a>`);
+  box.onclick = async (ev) => {
+    if (ev.target.closest("[data-x]")) box.hidden = true;
+    if (ev.target.closest("[data-del]")) {
+      if (!confirm("Remove this leave?")) return;
+      try { await api("/api/calendar/leave/" + encodeURIComponent(e.leave_id), { method: "DELETE" }); } catch (er) { return toast(er.message, true); }
+      box.hidden = true;
+      toast("Leave removed");
+      load();
+    }
+  };
 }
 
 /* ------------------------------------------------------------ Outlook */
@@ -220,7 +277,8 @@ function dayMenu(day, x, y) {
     `<div class="muted" style="padding:4px 8px;font-size:11px">${esc(label)}</div>`
     + `<div class="po-row" data-k="event">Add event (all day)</div>`
     + `<div class="po-row" data-k="meeting">Add meeting</div>`
-    + `<div class="po-row" data-k="task">Add task due this day</div>`, 220);
+    + `<div class="po-row" data-k="task">Add task due this day</div>`
+    + `<div class="po-row" data-k="leave">Add leave</div>`, 220);
   el.onclick = (ev) => {
     const r = ev.target.closest("[data-k]");
     if (!r) return;
@@ -228,7 +286,169 @@ function dayMenu(day, x, y) {
     if (r.dataset.k === "event") newEvent(day);
     if (r.dataset.k === "meeting") newEvent(day, "10:00", "Meeting");
     if (r.dataset.k === "task") newTask(day);
+    if (r.dataset.k === "leave") newLeave(day);
   };
+}
+
+
+/* ------------------------------------------------------------ holidays */
+
+function holidaysPop(anchor) {
+  const admin = K.me && K.me.site_admin;
+  const el = pop(anchor, `<div class="muted" style="padding:4px 8px;font-size:11px">Public holidays on the calendar</div>`
+    + Object.entries(REGIONS).map(([k, r]) => `<label class="po-row hol-row"><input type="checkbox" data-reg="${k}"${K.hol[k] ? " checked" : ""}> ${esc(r.name)}</label>`).join("")
+    + (admin ? `<div class="po-row" data-edit>Edit the list ... <small class="muted">(next year, Eid'l Fitr ...)</small></div>` : ""), 240);
+  el.addEventListener("change", (ev) => {
+    const c = ev.target.closest("[data-reg]");
+    if (!c) return;
+    K.hol[c.dataset.reg] = c.checked;
+    try { localStorage.setItem("lwk-viewer:cal-hol", JSON.stringify(K.hol)); } catch (e) {}
+    holBtn();
+    paint();
+  });
+  el.addEventListener("click", (ev) => { if (ev.target.closest("[data-edit]")) { closePop(); editHolidays(); } });
+}
+
+function holBtn() {
+  const b = $("#cal-hol");
+  if (!b) return;
+  const on = Object.keys(K.hol).filter((k) => K.hol[k]).map((k) => REGIONS[k].short);
+  b.innerHTML = "Holidays" + (on.length ? ` <b>· ${on.join(" + ")}</b>` : "") + " &#9662;";
+  b.classList.toggle("active", !!on.length);
+}
+
+/* A site admin adds dates (one a line: 2028-01-01 New Year's Day), or takes
+   a built-in one away ("2027-03-29 -"). */
+async function editHolidays() {
+  const txt = (reg) => Object.entries((K.holExtra || {})[reg] || {}).sort().map(([d, n]) => d + " " + n).join("\n");
+  const f = await modal("Public holidays - added dates", `<p class="muted" style="font-size:12px;margin-top:0">The lists for 2026 and 2027 are built in.
+      Add next year's here when they are published, and the Philippine Eid'l Fitr / Eid'l Adha once proclaimed.
+      One a line: <code>2028-01-01 New Year's Day</code>. <code>2027-03-29 -</code> takes a built-in date away.</p>
+    <label>Hong Kong<textarea name="hk" rows="6">${esc(txt("hk"))}</textarea></label>
+    <label>Philippines<textarea name="ph" rows="6">${esc(txt("ph"))}</textarea></label>`, "Save");
+  if (!f) return;
+  const parse = (t) => {
+    const o = {};
+    for (const line of t.split(/\n/)) {
+      const m = /^\s*(\d{4}-\d{2}-\d{2})\s+(.+?)\s*$/.exec(line);
+      if (m) o[m[1]] = m[2];
+    }
+    return o;
+  };
+  try {
+    K.holExtra = await api("/api/holidays", { method: "PUT", body: JSON.stringify({ hk: parse(f.hk.value), ph: parse(f.ph.value) }) });
+    toast("Holiday list saved");
+    load();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ------------------------------------------------------------ leave */
+
+async function newLeave(a, b) {
+  a = a || today();
+  b = b && b >= a ? b : a;
+  const f0 = modal("Add leave", `<div class="lv-row"><label>From<input type="date" name="start" value="${a}" required></label>
+      <label>To<input type="date" name="end" value="${b}" required></label></div>
+    <div class="lv-row"><label>Type<select name="type"><option>Annual leave</option><option>Sick leave</option><option>Other leave</option></select></label>
+      <label>Half day<select name="half"><option value="">No - whole day(s)</option><option value="am">Morning (AM)</option><option value="pm">Afternoon (PM)</option></select></label></div>
+    <label>Note <small class="muted">(optional)</small><input name="note" maxlength="200" placeholder="e.g. back on Monday; urgent: call Peter"></label>
+    <p class="muted lv-count" style="font-size:12px"></p>
+    <p class="muted" style="font-size:11px">Seen by you and the people in your calendar groups (Groups).</p>`, "Add leave");
+  const form = document.querySelector(".t-modal");
+  const count = () => {
+    const s = form.start.value, e = form.end.value || s;
+    const half = form.half;
+    half.disabled = s !== e;
+    if (s !== e) half.value = "";
+    if (!s) return;
+    const w = workingDays(s, e < s ? s : e);
+    form.querySelector(".lv-count").textContent = (half.value ? "Half a working day" : `${w.n} working day(s)`)
+      + ` - weekends and ${w.regs.map((r) => REGIONS[r].name).join(" / ")} holidays left out`;
+  };
+  form.addEventListener("input", count);
+  form.addEventListener("change", count);
+  count();
+  const f = await f0;
+  if (!f) return;
+  try {
+    await api("/api/calendar/leave", { method: "POST", body: JSON.stringify({ start: f.start.value, end: f.end.value || f.start.value,
+      type: f.type.value, half: f.half.value, note: f.note.value }) });
+  } catch (e) { return toast(e.message, true); }
+  toast("Leave added");
+  load();
+}
+
+/* ------------------------------------------------------------ groups */
+
+async function loadGroups() {
+  try { K.groups = (await api("/api/calendar/groups")).groups || []; } catch (e) { K.groups = []; }
+  const sel = $("#cal-lgroup");
+  if (!sel) return;
+  const cur = K.group;
+  sel.innerHTML = `<option value="">All my groups</option>` + K.groups.map((g) => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("");
+  sel.value = K.groups.some((g) => g.id === cur) ? cur : "";
+  K.group = sel.value;
+}
+
+async function groupsDialog() {
+  await loadGroups();
+  const list = K.groups.length ? K.groups.map((g) => `<div class="gp-row" data-g="${esc(g.id)}"><div class="gp-main"><b>${esc(g.name)}</b>`
+      + `<small class="muted">${g.members.length} people: ${esc(g.members.map((m) => m.name).join(", "))}</small></div>`
+      + (g.can_edit ? `<button type="button" class="ghost" data-gedit>Edit</button><button type="button" class="ghost" data-gdel>Delete</button>`
+        : `<button type="button" class="ghost" data-gquit>Leave group</button>`) + `</div>`).join("")
+    : `<p class="muted" style="font-size:13px">No groups yet. Make one for your team: its people see each other's leave.</p>`;
+  const p = modal("Calendar groups", `<p class="muted" style="font-size:12px;margin-top:0">The people in a group see each other's leave on their calendars.</p>
+    <div class="gp-list">${list}</div><button type="button" class="ghost" data-gnew>+ New group</button>`, "Done");
+  const form = document.querySelector(".t-modal");
+  form.querySelector("[data-x]").hidden = true;
+  form.addEventListener("click", async (ev) => {
+    const row = ev.target.closest("[data-g]");
+    const g = row && K.groups.find((x) => x.id === row.dataset.g);
+    let act = null;
+    if (ev.target.closest("[data-gnew]")) act = () => editGroup(null);
+    else if (g && ev.target.closest("[data-gedit]")) act = () => editGroup(g);
+    else if (g && ev.target.closest("[data-gdel]")) act = async () => {
+      if (!confirm(`Delete the group "${g.name}"? Its people stop seeing each other's leave through it.`)) return false;
+      await api("/api/calendar/groups/" + g.id, { method: "DELETE" });
+      return true;
+    };
+    else if (g && ev.target.closest("[data-gquit]")) act = async () => {
+      if (!confirm(`Leave the group "${g.name}"?`)) return false;
+      await api("/api/calendar/groups/" + g.id + "/leave-group", { method: "POST" });
+      return true;
+    };
+    if (!act) return;
+    form.closest(".t-modal-back").remove();
+    try { await act(); } catch (e) { toast(e.message, true); }
+    await loadGroups();
+    load();
+    groupsDialog();
+  });
+  await p;
+}
+
+async function editGroup(g) {
+  let ppl = [];
+  try { ppl = (await api("/api/people")).people || []; } catch (e) {}
+  const me = K.me && K.me.user;
+  const have = new Set(g ? g.members.map((m) => m.uid) : me ? [me.id] : []);
+  ppl.sort((a, b) => (have.has(b.uid) - have.has(a.uid)) || a.name.localeCompare(b.name));
+  const p = modal(g ? "Edit group" : "New calendar group", `<label>Name<input name="name" maxlength="60" required value="${esc(g ? g.name : "")}" placeholder="e.g. BIM team"></label>
+    <label>People <input type="search" class="gp-find" placeholder="Find a person"></label>
+    <div class="gp-people">${ppl.map((x) => `<label class="gp-p" data-n="${esc((x.name + " " + (x.office || "") + " " + (x.team || "")).toLowerCase())}">`
+      + `<input type="checkbox" value="${x.uid}"${have.has(x.uid) ? " checked" : ""}> ${esc(x.name)} <small class="muted">${esc([x.office, x.team].filter(Boolean).join(" · "))}</small></label>`).join("")}</div>`, g ? "Save" : "Make group");
+  const form = document.querySelector(".t-modal");
+  form.querySelector(".gp-find").addEventListener("input", (ev) => {
+    const q = ev.target.value.trim().toLowerCase();
+    for (const l of form.querySelectorAll(".gp-p")) l.hidden = !!q && !l.dataset.n.includes(q);
+  });
+  const f = await p;
+  if (!f) return false;
+  const members = [...f.querySelectorAll(".gp-p input:checked")].map((c) => Number(c.value));
+  const body = JSON.stringify({ name: f.name.value, members });
+  await api(g ? "/api/calendar/groups/" + g.id : "/api/calendar/groups", { method: g ? "PUT" : "POST", body });
+  toast(g ? "Group saved" : "Group made");
+  return true;
 }
 
 /* ------------------------------------------------------------ wiring */
@@ -248,7 +468,7 @@ function wire() {
     c.checked = K.kinds.has(c.value);
     c.onchange = () => {
       if (c.checked) K.kinds.add(c.value); else K.kinds.delete(c.value);
-      try { localStorage.setItem("lwk-viewer:cal-kinds", JSON.stringify([...K.kinds])); } catch (e) {}
+      try { localStorage.setItem("lwk-viewer:cal-kinds", JSON.stringify([...K.kinds])); localStorage.setItem("lwk-viewer:cal-kinds-leave", "1"); } catch (e) {}
       paint();
     };
   }
@@ -256,8 +476,42 @@ function wire() {
   const kinds = $("#cal-kinds");
   for (const c of kinds.querySelectorAll("input")) c.dataset.flt = "1";
   kinds.classList.add("in-flt");
-  makeFilter({ before: $("#cal-view"), title: "Meetings, my tasks, my issues", groups: [{ title: "Show", els: [kinds] }],
-               count: () => [...kinds.querySelectorAll("input")].filter((x) => !x.checked).length });
+  const lg = $("#cal-lgroup-wrap");
+  const gsel = $("#cal-lgroup");
+  gsel.dataset.flt = "1";
+  gsel.onchange = () => { K.group = gsel.value; paint(); };
+  makeFilter({ before: $("#cal-view"), title: "Meetings, my tasks, my issues, leave", groups: [{ title: "Show", els: [kinds] }, { title: "Leave of", els: [lg] }],
+               count: () => [...kinds.querySelectorAll("input")].filter((x) => !x.checked).length + (gsel.value ? 1 : 0) });
+  lg.hidden = false;
+  $("#cal-hol").onclick = (ev) => { ev.stopPropagation(); holidaysPop(ev.currentTarget); };
+  holBtn();
+  $("#cal-groups").onclick = groupsDialog;
+  $("#cal-leave").onclick = () => newLeave(today());
+  // drag across days (month view): leave on those days
+  let dragA = null;
+  $("#cal-body").addEventListener("pointerdown", (ev) => {
+    const d = ev.target.closest(".cm-d");
+    dragA = d && ev.button === 0 && !ev.target.closest(".ce, .cm-more") && ev.pointerType === "mouse" ? d.dataset.day : null;
+  });
+  $("#cal-body").addEventListener("pointerover", (ev) => {
+    if (!dragA || !(ev.buttons & 1)) return;
+    const d = ev.target.closest(".cm-d");
+    if (!d) return;
+    const [x, y] = [dragA, d.dataset.day].sort();
+    for (const c of document.querySelectorAll(".cm-d")) c.classList.toggle("drag", c.dataset.day >= x && c.dataset.day <= y && x !== y);
+  });
+  document.addEventListener("pointerup", (ev) => {
+    const a = dragA;
+    dragA = null;
+    const marked = document.querySelectorAll(".cm-d.drag");
+    for (const c of marked) c.classList.remove("drag");
+    if (!a) return;
+    const d = ev.target.closest && ev.target.closest(".cm-d");
+    if (d && d.dataset.day !== a) {
+      const [x, y] = [a, d.dataset.day].sort();
+      newLeave(x, y);
+    }
+  });
   $("#cal-outlook").onclick = outlook;
   $("#cal-new").onclick = () => newEvent();
   $("#cal-body").addEventListener("contextmenu", (ev) => {
@@ -305,6 +559,10 @@ async function start() {
     return;
   }
   wire();
+  try { K.holExtra = await api("/api/holidays"); } catch (e) { K.holExtra = {}; }
+  await loadGroups();
+  const day = new URLSearchParams(location.search).get("day");
+  if (day && /^\d{4}-\d{2}-\d{2}$/.test(day)) K.at = fromIso(day);
   await load();
 }
 

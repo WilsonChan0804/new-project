@@ -12,6 +12,14 @@ GET /api/calendar/feed                           your calendar's address
 POST /api/calendar/feed                          a new address (the old stops)
 GET /cal/<key>.ics                               the same as an iCalendar feed
 
+  leave     annual leave (and sick / other days off): your own, and that of
+            the people who share a calendar group with you
+GET/POST /api/calendar/groups, PUT/DELETE /api/calendar/groups/<id>
+                                                 calendar groups: who sees whose leave
+POST /api/calendar/leave, DELETE /api/calendar/leave/<id>
+GET /api/holidays, PUT /api/holidays             public holidays added by a site admin
+                                                 (the built-in lists are in viewer/holidays.js)
+
 The feed is what links it to Outlook: Outlook (Add calendar > From
 internet / Subscribe, or the webcal:// link) reads it every few hours and
 shows it beside your own calendar. The key in the address is the only
@@ -57,6 +65,67 @@ def _save_keys(core, keys):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(keys, f)
     os.replace(tmp, p)
+
+
+def _json_path(core, name):
+    return os.path.join(core.CFG["data"], name)
+
+
+def _load(core, name, default):
+    try:
+        with open(_json_path(core, name), encoding="utf-8") as f:
+            v = json.load(f)
+            return v if isinstance(v, type(default)) else default
+    except Exception:
+        return default
+
+
+def _save(core, name, value):
+    p = _json_path(core, name)
+    tmp = p + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(value, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, p)
+
+
+GROUPS = "calendar_groups.json"     # [{id, name, owner, members: [uid]}]
+LEAVE = "leave.json"                # [{id, uid, start, end, half, type, note, at}]
+HOLIDAYS = "holidays.json"          # {"hk": {date: name}, "ph": {date: name}}
+LEAVE_TYPES = ("Annual leave", "Sick leave", "Other leave")
+
+
+def my_groups(core, uid):
+    return [g for g in _load(core, GROUPS, []) if uid in (g.get("members") or [])]
+
+
+def _leave(core, w, start, end, others=True):
+    """Days off between start and end: mine, and (others) those of the
+    people in my calendar groups, each with the groups we share."""
+    shared = {}                     # uid -> [group id]
+    if others:
+        for g in my_groups(core, w.uid):
+            for u in g.get("members") or []:
+                if u != w.uid:
+                    shared.setdefault(u, []).append(g["id"])
+    out = []
+    for r in _load(core, LEAVE, []):
+        u = r.get("uid")
+        if u != w.uid and u not in shared:
+            continue
+        if r.get("end", "") < start or r.get("start", "") > end:
+            continue
+        user = core.ACC.get(u) if hasattr(core, "ACC") else None
+        name = (user or {}).get("name") or "?"
+        half = r.get("half") or ""
+        what = r.get("type") or "Annual leave"
+        out.append({
+            "kind": "leave", "id": "l-" + r["id"], "leave_id": r["id"],
+            "title": ("%s - %s" % (name, what)) + (" (%s)" % half.upper() if half else ""),
+            "start": r["start"], "end": r["end"], "all_day": True, "half": half, "type": what,
+            "notes": r.get("note") or "", "from": name, "uid": u, "mine": u == w.uid,
+            "groups": shared.get(u, []), "url": "calendar.html?day=" + r["start"],
+        })
+    return out
 
 
 def feed_key(core, uid, new=False):
@@ -194,8 +263,9 @@ def _issues(core, w, start, end):
     return out
 
 
-def entries(core, w, start, end):
-    out = _meetings(w, start, end) + _tasks(core, w, start, end) + _issues(core, w, start, end)
+def entries(core, w, start, end, others=True):
+    out = (_meetings(w, start, end) + _tasks(core, w, start, end) + _issues(core, w, start, end)
+           + _leave(core, w, start, end, others))
     out.sort(key=lambda e: (e["start"], e["kind"] != "meeting", e["title"].lower()))
     return out
 
@@ -233,7 +303,7 @@ def ics(entries_, base, name):
              "METHOD:PUBLISH", "X-WR-CALNAME:" + _esc(name), "X-PUBLISHED-TTL:PT1H",
              "REFRESH-INTERVAL;VALUE=DURATION:PT1H"]
     for e in entries_:
-        what = {"meeting": "", "task": "Task: ", "issue": "Issue: "}[e["kind"]]
+        what = {"meeting": "", "task": "Task: ", "issue": "Issue: ", "leave": ""}.get(e["kind"], "")
         if e["kind"] == "meeting" and not e["all_day"]:
             end = e["end"] if e["end"] > e["start"] else None
             when = ["DTSTART:" + _utc(e["start"], e.get("tz")),
@@ -303,6 +373,163 @@ def register(app, core):
         w = me(request, x_viewer_token)
         return feed_info(request, w.uid, new=True)
 
+    # ---------------------------------------------- calendar groups
+
+    def site_admin(w):
+        try:
+            return bool(w.site_admin)
+        except Exception:
+            return False
+
+    def people_ids(core_, ids):
+        out = []
+        for u in ids or []:
+            try:
+                u = int(u)
+            except (TypeError, ValueError):
+                continue
+            user = core_.ACC.get(u)
+            if user and user.get("active") and u not in out:
+                out.append(u)
+        return out
+
+    def group_view(g, w):
+        mem = []
+        for u in g.get("members") or []:
+            user = core.ACC.get(u) or {}
+            mem.append({"uid": u, "name": user.get("name") or "?", "office": user.get("office") or ""})
+        return {"id": g["id"], "name": g.get("name") or "", "owner": g.get("owner"),
+                "members": mem, "can_edit": g.get("owner") == w.uid or site_admin(w)}
+
+    @app.get("/api/calendar/groups")
+    async def groups_list(request: Request, x_viewer_token: str = Header(default="")):
+        """My calendar groups (all of them for a site admin)."""
+        w = me(request, x_viewer_token)
+        gs = _load(core, GROUPS, [])
+        mine = [g for g in gs if w.uid in (g.get("members") or []) or g.get("owner") == w.uid or site_admin(w)]
+        return {"groups": [group_view(g, w) for g in mine]}
+
+    @app.post("/api/calendar/groups")
+    async def groups_new(request: Request, x_viewer_token: str = Header(default="")):
+        w = me(request, x_viewer_token)
+        body = await request.json() or {}
+        name = str(body.get("name") or "").strip()[:60]
+        if not name:
+            raise HTTPException(status_code=400, detail="Give the group a name.")
+        members = people_ids(core, body.get("members"))
+        if w.uid not in members:
+            members.insert(0, w.uid)
+        g = {"id": secrets.token_hex(6), "name": name, "owner": w.uid, "members": members}
+        with _LOCK:
+            gs = _load(core, GROUPS, [])
+            gs.append(g)
+            _save(core, GROUPS, gs)
+        return group_view(g, w)
+
+    def editable(gid, w):
+        gs = _load(core, GROUPS, [])
+        g = next((x for x in gs if x.get("id") == gid), None)
+        if not g:
+            raise HTTPException(status_code=404, detail="No such group")
+        if g.get("owner") != w.uid and not site_admin(w):
+            raise HTTPException(status_code=403, detail="Only the person who made the group (or a site admin) can change it.")
+        return gs, g
+
+    @app.put("/api/calendar/groups/{gid}")
+    async def groups_edit(gid: str, request: Request, x_viewer_token: str = Header(default="")):
+        w = me(request, x_viewer_token)
+        body = await request.json() or {}
+        with _LOCK:
+            gs, g = editable(gid, w)
+            if "name" in body:
+                name = str(body.get("name") or "").strip()[:60]
+                if name:
+                    g["name"] = name
+            if "members" in body:
+                g["members"] = people_ids(core, body.get("members"))
+            _save(core, GROUPS, gs)
+        return group_view(g, w)
+
+    @app.delete("/api/calendar/groups/{gid}")
+    async def groups_delete(gid: str, request: Request, x_viewer_token: str = Header(default="")):
+        w = me(request, x_viewer_token)
+        with _LOCK:
+            gs, g = editable(gid, w)
+            _save(core, GROUPS, [x for x in gs if x is not g])
+        return {"deleted": gid}
+
+    @app.post("/api/calendar/groups/{gid}/leave-group")
+    async def groups_quit(gid: str, request: Request, x_viewer_token: str = Header(default="")):
+        """Leave a group someone else made."""
+        w = me(request, x_viewer_token)
+        with _LOCK:
+            gs = _load(core, GROUPS, [])
+            g = next((x for x in gs if x.get("id") == gid), None)
+            if not g:
+                raise HTTPException(status_code=404, detail="No such group")
+            g["members"] = [u for u in g.get("members") or [] if u != w.uid]
+            _save(core, GROUPS, gs)
+        return {"left": gid}
+
+    # ---------------------------------------------- leave
+
+    @app.post("/api/calendar/leave")
+    async def leave_new(request: Request, x_viewer_token: str = Header(default="")):
+        w = me(request, x_viewer_token)
+        body = await request.json() or {}
+        a, b = str(body.get("start") or ""), str(body.get("end") or body.get("start") or "")
+        if not (DAY.match(a) and DAY.match(b)):
+            raise HTTPException(status_code=400, detail="Give the first and last day (YYYY-MM-DD).")
+        if b < a:
+            a, b = b, a
+        half = body.get("half") if body.get("half") in ("am", "pm") and a == b else ""
+        what = body.get("type") if body.get("type") in LEAVE_TYPES else "Annual leave"
+        r = {"id": secrets.token_hex(6), "uid": w.uid, "start": a, "end": b, "half": half, "type": what,
+             "note": str(body.get("note") or "").strip()[:200], "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        with _LOCK:
+            rows = _load(core, LEAVE, [])
+            rows.append(r)
+            _save(core, LEAVE, rows)
+        return {"leave": r}
+
+    @app.delete("/api/calendar/leave/{lid}")
+    async def leave_delete(lid: str, request: Request, x_viewer_token: str = Header(default="")):
+        w = me(request, x_viewer_token)
+        with _LOCK:
+            rows = _load(core, LEAVE, [])
+            r = next((x for x in rows if x.get("id") == lid), None)
+            if not r:
+                raise HTTPException(status_code=404, detail="No such leave")
+            if r.get("uid") != w.uid and not site_admin(w):
+                raise HTTPException(status_code=403, detail="Only your own leave can be removed.")
+            _save(core, LEAVE, [x for x in rows if x is not r])
+        return {"deleted": lid}
+
+    # ---------------------------------------------- public holidays added by an admin
+
+    @app.get("/api/holidays")
+    async def holidays_get(request: Request, x_viewer_token: str = Header(default="")):
+        me(request, x_viewer_token)
+        h = _load(core, HOLIDAYS, {})
+        return {"hk": h.get("hk") or {}, "ph": h.get("ph") or {}}
+
+    @app.put("/api/holidays")
+    async def holidays_put(request: Request, x_viewer_token: str = Header(default="")):
+        """Next year's dates, or a holiday proclaimed late (Eid'l Fitr and
+        Eid'l Adha in the Philippines): added over the built-in lists. A name
+        "-" takes a built-in date away."""
+        w = me(request, x_viewer_token)
+        if not site_admin(w):
+            raise HTTPException(status_code=403, detail="Only a site admin can change the holiday list.")
+        body = await request.json() or {}
+        out = {}
+        for reg in ("hk", "ph"):
+            d = body.get(reg) or {}
+            out[reg] = {k: str(v).strip()[:80] for k, v in d.items() if DAY.match(str(k)) and str(v).strip()} if isinstance(d, dict) else {}
+        with _LOCK:
+            _save(core, HOLIDAYS, out)
+        return out
+
     @app.get("/cal/{key}.ics")
     async def feed_ics(request: Request, key: str):
         uid = uid_of_key(core, key)
@@ -313,6 +540,7 @@ def register(app, core):
         t = time.time()
         start = time.strftime("%Y-%m-%d", time.gmtime(t - 60 * 86400))
         end = time.strftime("%Y-%m-%d", time.gmtime(t + 365 * 86400))
-        body = ics(entries(core, w, start, end), base_url(request), "LWK Viewer - " + (user.get("name") or ""))
+        # your own leave only: Outlook shows the calendar to whoever you share it with
+        body = ics(entries(core, w, start, end, others=False), base_url(request), "LWK Viewer - " + (user.get("name") or ""))
         return Response(content=body, media_type="text/calendar; charset=utf-8",
                         headers={"Cache-Control": "no-cache"})
