@@ -1,0 +1,196 @@
+/* Choose a folder in Folders (any project you can open, any folder but the
+ * read-only 00 BIM) and keep a file there. Used after a PDF is imported on
+ * the Sheets page and for any file sent in the Messenger or a task
+ * ("Save to Folders").
+ *
+ *   pickFolder({ title, project, file })  -> { reg, path, label } or null
+ *   keepIn(target, blob, name)            -> { reg, path, name }
+ *   saveToFoldersFlow(blob, name, opts)   both, with the result shown
+ *
+ * The last folder chosen is remembered per viewer project (or once for
+ * the Messenger), so the next file goes to the same place in one click.
+ */
+
+const esc = (s) => String(s == null ? "" : s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const BIM = "00 BIM";
+const LAST = "lwk-viewer:keep-folder:";
+
+function headers(json) {
+  const h = {};
+  if (json) h["Content-Type"] = "application/json";
+  try { const t = localStorage.getItem("lwk-viewer:token"); if (t) h["X-Viewer-Token"] = t; } catch (e) {}
+  return h;
+}
+async function get(path) {
+  const r = await fetch(path, { headers: headers() });
+  let d = null;
+  try { d = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((d && d.detail) || "HTTP " + r.status);
+  return d;
+}
+
+function style() {
+  if (document.getElementById("fp-style")) return;
+  const s = document.createElement("style");
+  s.id = "fp-style";
+  s.textContent = `.fp-back{position:fixed;inset:0;z-index:2147483100;background:rgba(20,26,36,.38);display:flex;align-items:center;justify-content:center;padding:12px}
+  .fp{background:var(--panel,#fff);color:var(--ink,#1f2937);border-radius:12px;box-shadow:0 12px 40px rgba(20,26,36,.3);width:min(460px,100%);max-height:calc(100vh - 24px);display:flex;flex-direction:column;font:13px system-ui,sans-serif}
+  .fp h3{margin:0;padding:14px 16px 6px;font-size:16px}
+  .fp .fp-file{padding:0 16px 8px;color:var(--ink-2,#64748b);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fp label{display:flex;flex-direction:column;gap:4px;padding:0 16px 8px;font-weight:600;font-size:12px}
+  .fp select{font:inherit;padding:5px 6px}
+  .fp-tree{margin:0 16px;border:1px solid var(--line,#e2e8f0);border-radius:8px;overflow:auto;min-height:160px;max-height:46vh}
+  .fp-tree div{padding:5px 8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fp-tree div:hover{background:var(--panel-2,#f1f5f9)}
+  .fp-tree div.on{background:var(--accent-soft,#fff1e6);box-shadow:inset 3px 0 0 var(--accent,#f28022);font-weight:600}
+  .fp-foot{display:flex;gap:8px;align-items:center;padding:12px 16px}
+  .fp-foot .sp{flex:1}
+  .fp button{font:inherit;border-radius:7px;padding:6px 12px;border:1px solid var(--line,#cbd5e1);background:var(--panel,#fff);color:inherit;cursor:pointer}
+  .fp button.pri{background:#f28022;border-color:#f28022;color:#fff;font-weight:700}
+  .fp button:disabled{opacity:.5;cursor:default}
+  .fp .fp-msg{padding:0 16px;color:#b91c1c;font-size:12px;min-height:0}`;
+  document.head.appendChild(s);
+}
+
+/* The Folders projects I can open; the ones linked to this viewer project first. */
+async function projects(viewerProject) {
+  const d = await get("/api/files/projects");
+  const list = d.projects || [];
+  const linked = list.filter((p) => viewerProject && (p.parts || []).includes(viewerProject));
+  return { list: linked.concat(list.filter((p) => !linked.includes(p))), linked };
+}
+
+export async function pickFolder({ title, project, file } = {}) {
+  style();
+  let ps;
+  try { ps = await projects(project); } catch (e) { alert("Folders could not be read: " + e.message); return null; }
+  if (!ps.list.length) { alert("You have no project in Folders to keep it in."); return null; }
+  let last = null;
+  try { last = JSON.parse(localStorage.getItem(LAST + (project || "chat")) || "null"); } catch (e) {}
+  let reg = (last && ps.list.some((p) => p.id === last.reg) ? last.reg : (ps.linked[0] || ps.list[0]).id);
+  let at = last && last.reg === reg ? last.path || "" : "";
+  let folders = [];
+  return await new Promise((resolve) => {
+    const back = document.createElement("div");
+    back.className = "fp-back";
+    back.innerHTML = `<div class="fp" role="dialog" aria-modal="true"><h3>${esc(title || "Keep in Folders")}</h3>`
+      + (file ? `<div class="fp-file">${esc(file)}</div>` : "")
+      + `<label>Project<select class="fp-proj">${ps.list.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}${ps.linked.includes(p) ? " (this project)" : ""}</option>`).join("")}</select></label>`
+      + `<label style="padding-bottom:4px">Folder</label><div class="fp-tree" role="listbox"></div><div class="fp-msg"></div>`
+      + `<div class="fp-foot"><button type="button" class="fp-new">+ New folder</button><span class="sp"></span>`
+      + `<button type="button" class="fp-no">Cancel</button><button type="button" class="pri fp-ok">Keep it here</button></div></div>`;
+    document.body.appendChild(back);
+    const $ = (s) => back.querySelector(s);
+    const end = (v) => { back.remove(); resolve(v); };
+    const name = () => (ps.list.find((p) => p.id === reg) || {}).name || "";
+    const paint = () => {
+      $(".fp-tree").innerHTML = [""].concat(folders).map((f) => {
+        const depth = f ? f.split("/").length : 0;
+        return `<div data-f="${esc(f)}" class="${f === at ? "on" : ""}" style="padding-left:${8 + depth * 14}px">&#128193; ${esc(f ? f.split("/").pop() : name() + " (top)")}</div>`;
+      }).join("");
+      const on = $(".fp-tree .on");
+      if (on) on.scrollIntoView({ block: "nearest" });
+    };
+    const load = async () => {
+      $(".fp-tree").innerHTML = `<div style="color:#94a3b8">Reading the folders ...</div>`;
+      try {
+        const d = await get("/api/files/" + encodeURIComponent(reg) + "/tree");
+        folders = (d.folders || []).filter((f) => f !== BIM && !f.startsWith(BIM + "/")).sort((a, b) => a.localeCompare(b));
+      } catch (e) { folders = []; $(".fp-msg").textContent = e.message; }
+      if (at && !folders.includes(at)) at = "";
+      paint();
+    };
+    $(".fp-proj").value = reg;
+    $(".fp-proj").onchange = () => { reg = $(".fp-proj").value; at = ""; load(); };
+    $(".fp-tree").onclick = (ev) => { const d = ev.target.closest("[data-f]"); if (!d) return; at = d.dataset.f; paint(); };
+    $(".fp-tree").ondblclick = (ev) => { if (ev.target.closest("[data-f]")) $(".fp-ok").click(); };
+    $(".fp-new").onclick = async () => {
+      const nm = (prompt(`New folder in ${at || name() + " (top)"}:`) || "").trim();
+      if (!nm) return;
+      try {
+        const r = await fetch("/api/files/" + encodeURIComponent(reg) + "/mkdir", { method: "POST", headers: headers(true), body: JSON.stringify({ path: at, name: nm }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.detail || "HTTP " + r.status);
+        folders.push(d.path); folders.sort((a, b) => a.localeCompare(b));
+        at = d.path;
+        paint();
+      } catch (e) { $(".fp-msg").textContent = e.message; }
+    };
+    $(".fp-no").onclick = () => end(null);
+    back.addEventListener("pointerdown", (ev) => { if (ev.target === back) end(null); });
+    back.addEventListener("keydown", (ev) => { if (ev.key === "Escape") end(null); });
+    $(".fp-ok").onclick = () => {
+      try { localStorage.setItem(LAST + (project || "chat"), JSON.stringify({ reg, path: at })); } catch (e) {}
+      end({ reg, path: at, label: name() + (at ? " / " + at : "") });
+    };
+    load().then(() => $(".fp-ok").focus());
+  });
+}
+
+/* Put the file there (a name already there gets " (2)"). */
+export async function keepIn(target, blob, name) {
+  const q = new URLSearchParams({ path: target.path || "", name });
+  const r = await fetch("/api/files/" + encodeURIComponent(target.reg) + "/upload?" + q.toString(), {
+    method: "POST", body: blob, headers: Object.assign(headers(), { "Content-Type": blob.type || "application/octet-stream" }) });
+  let d = null;
+  try { d = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((d && d.detail) || "HTTP " + r.status);
+  return Object.assign({ reg: target.reg }, d);
+}
+
+export function foldersUrl(reg, path) {
+  const parts = String(path || "").split("/");
+  const nm = parts.pop();
+  return "folders.html?" + new URLSearchParams({ reg, path: parts.join("/"), open: nm }).toString();
+}
+
+/* Choose, keep, and say where (a small bar with Open). blob may be a
+   function giving it (fetched only once a folder is chosen). */
+export async function saveToFoldersFlow(blob, name, opts = {}) {
+  const t = await pickFolder({ title: opts.title || "Keep a copy in Folders", project: opts.project, file: name });
+  if (!t) return null;
+  try {
+    const b = typeof blob === "function" ? await blob() : blob;
+    const r = await keepIn(t, b, name);
+    note(`Kept in Folders: <b>${esc(t.label.split(" / ")[0])} / ${esc(r.path)}</b>`, foldersUrl(t.reg, r.path));
+    return r;
+  } catch (e) {
+    note("Not kept: " + esc(e.message));
+    return null;
+  }
+}
+
+function note(html, href) {
+  let bar = document.getElementById("fp-bar");
+  if (bar) bar.remove();
+  bar = document.createElement("div");
+  bar.id = "fp-bar";
+  bar.setAttribute("role", "status");
+  bar.style.cssText = "position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:2147483000;display:flex;gap:10px;align-items:center;"
+    + "max-width:min(560px,calc(100vw - 24px));padding:8px 12px;border-radius:8px;background:#2b3342;color:#fff;font:12.5px system-ui,sans-serif;box-shadow:0 6px 24px rgba(20,26,36,.28)";
+  bar.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${html}</span>`
+    + (href ? `<a href="${esc(href)}" target="_blank" rel="noopener" style="color:#fff;background:#f28022;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap">Open</a>` : "")
+    + `<button type="button" aria-label="Close" style="background:none;border:0;color:#fff;cursor:pointer">&#10005;</button>`;
+  document.body.appendChild(bar);
+  bar.querySelector("button").onclick = () => bar.remove();
+  setTimeout(() => bar.remove(), 12000);
+}
+
+/* After an import on the Sheets page: "Imported x. [Keep a copy in Folders]". */
+export function offerKeep(blob, name, project, what) {
+  let bar = document.getElementById("fp-bar");
+  if (bar) bar.remove();
+  bar = document.createElement("div");
+  bar.id = "fp-bar";
+  bar.setAttribute("role", "status");
+  bar.style.cssText = "position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:2147483000;display:flex;gap:10px;align-items:center;"
+    + "max-width:min(560px,calc(100vw - 24px));padding:8px 12px;border-radius:8px;background:#2b3342;color:#fff;font:12.5px system-ui,sans-serif;box-shadow:0 6px 24px rgba(20,26,36,.28)";
+  bar.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${esc(what || "Imported " + name)}</span>`
+    + `<button type="button" data-keep style="font:inherit;border:1px solid #f28022;background:#f28022;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap">Keep a copy in Folders ...</button>`
+    + `<button type="button" data-x aria-label="Close" style="background:none;border:0;color:#fff;cursor:pointer">&#10005;</button>`;
+  document.body.appendChild(bar);
+  const t = setTimeout(() => bar.remove(), 15000);
+  bar.querySelector("[data-x]").onclick = () => bar.remove();
+  bar.querySelector("[data-keep]").onclick = () => { clearTimeout(t); bar.remove(); saveToFoldersFlow(blob, name, { project }); };
+}

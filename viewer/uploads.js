@@ -8,6 +8,8 @@
 const esc = (s) => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+import { saveToFoldersFlow } from "./folderpick.js";
+
 export const MAX = 50 * 1024 * 1024;
 
 function headers() {
@@ -42,19 +44,21 @@ export function size(n) {
 const ICON = { pdf: "PDF", dwg: "DWG", rvt: "RVT", xlsx: "XLS", xls: "XLS", docx: "DOC", doc: "DOC", zip: "ZIP", pptx: "PPT", ifc: "IFC" };
 
 /* Attachments as shown under a message or a comment: pictures as
-   thumbnails (click: full size), other files as chips. */
+   thumbnails (click: full size), other files as chips. Each has a folder
+   button: keep a copy of it in Folders (folderpick.js). */
+const keepBtn = (f) => `<button type="button" class="up-keep" data-keep-url="${esc(f.url)}" data-keep-name="${esc(f.name)}" title="Keep a copy in Folders ...">&#128193;</button>`;
 export function filesHtml(files) {
   if (!files || !files.length) return "";
   const pics = files.filter((f) => (f.mime || "").startsWith("image/"));
   const vids = files.filter((f) => (f.mime || "").startsWith("video/"));
   const rest = files.filter((f) => !(f.mime || "").startsWith("image/") && !(f.mime || "").startsWith("video/"));
   return `<div class="up-files">`
-    + pics.map((f) => `<a class="up-pic" href="${esc(f.url)}" target="_blank" title="${esc(f.name)}"><img src="${esc(f.url)}" alt="${esc(f.name)}" loading="lazy"></a>`).join("")
-    + vids.map((f) => `<div class="up-vid"><video src="${esc(f.url)}" controls preload="metadata" playsinline></video><small>${esc(f.name)} · ${esc(size(f.size || 0))}</small></div>`).join("")
+    + pics.map((f) => `<span class="up-w"><a class="up-pic" href="${esc(f.url)}" target="_blank" title="${esc(f.name)}"><img src="${esc(f.url)}" alt="${esc(f.name)}" loading="lazy"></a>${keepBtn(f)}</span>`).join("")
+    + vids.map((f) => `<div class="up-vid up-w"><video src="${esc(f.url)}" controls preload="metadata" playsinline></video><small>${esc(f.name)} · ${esc(size(f.size || 0))}</small>${keepBtn(f)}</div>`).join("")
     + rest.map((f) => {
       const ext = (f.name.split(".").pop() || "").toLowerCase();
-      return `<a class="up-file" href="${esc(f.url)}" target="_blank" title="Open / download"><span class="up-ext">${esc(ICON[ext] || ext.toUpperCase().slice(0, 4) || "FILE")}</span>`
-        + `<span class="up-n">${esc(f.name)}</span><small>${esc(size(f.size || 0))}</small></a>`;
+      return `<span class="up-w"><a class="up-file" href="${esc(f.url)}" target="_blank" title="Open / download"><span class="up-ext">${esc(ICON[ext] || ext.toUpperCase().slice(0, 4) || "FILE")}</span>`
+        + `<span class="up-n">${esc(f.name)}</span><small>${esc(size(f.size || 0))}</small></a>${keepBtn(f)}</span>`;
     }).join("")
     + `</div>`;
 }
@@ -106,6 +110,26 @@ export function catchFiles(el, take) {
 .up-pend.bad small { color: var(--bad, #e2453c); }
 .up-pend button { padding: 0 4px !important; font-size: 10px; }
 .up-drop { outline: 2px dashed var(--accent, #f28022); outline-offset: -2px; }
+.up-w { position: relative; display: inline-flex; align-items: flex-start; }
+.up-keep { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; padding: 0 !important; border-radius: 50%;
+  border: 1px solid var(--line, #e2e6ec); background: var(--panel, #fff); font-size: 11px; line-height: 20px; cursor: pointer;
+  opacity: 0; transition: opacity .12s; box-shadow: 0 1px 4px rgba(20,26,36,.15); }
+.up-w:hover .up-keep, .up-keep:focus-visible { opacity: 1; }
+@media (hover: none) { .up-keep { opacity: .9; } }
 `;
   document.head.appendChild(st);
 })();
+
+/* the folder button on an attachment: choose a folder, keep a copy there */
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest && ev.target.closest("[data-keep-url]");
+  if (!b) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const url = b.dataset.keepUrl;
+  saveToFoldersFlow(async () => {
+    const r = await fetch(url, { headers: headers() });
+    if (!r.ok) throw new Error("the file could not be read (HTTP " + r.status + ")");
+    return await r.blob();
+  }, b.dataset.keepName || "file");
+}, true);

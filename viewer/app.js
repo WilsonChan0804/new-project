@@ -20,6 +20,7 @@ import * as Tele from "./telemetry.js";
 import { makeTilePage, tileStats } from "./sheettiles.js";
 import { initPanels, initSplitter, initVGrip } from "./panels.js";
 import { copyLink } from "./share.js";
+import { offerKeep } from "./folderpick.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
@@ -4024,8 +4025,6 @@ function pickRow(s, list, range) {
 
 function pickPaint(list) {
   const any = list.some((x) => x.external);
-  const btn = document.getElementById("sheet-pick");
-  if (btn) { btn.hidden = !any; btn.classList.toggle("active", PICK.on); }
   if (!any && PICK.on) { PICK.on = false; PICK.sel.clear(); }
   const bar = document.getElementById("pick-bar");
   if (!bar) return;
@@ -4033,7 +4032,7 @@ function pickPaint(list) {
   for (const n of [...PICK.sel]) if (!list.some((x) => x.number === n)) PICK.sel.delete(n);
   document.getElementById("pick-count").textContent = PICK.sel.size + " selected";
   document.getElementById("pick-del").disabled = !PICK.sel.size;
-  document.getElementById("pick-del").textContent = PICK.sel.size ? "Delete " + PICK.sel.size : "Delete";
+  document.getElementById("pick-del").textContent = PICK.sel.size ? `Delete (${PICK.sel.size})` : "Delete";
 }
 
 async function deletePicked() {
@@ -4070,6 +4069,7 @@ async function paintSetMenu() {
   const n = setSheets().length;
   m.innerHTML = (imported
     ? `<div class="sm-head">${esc(S.set)} &middot; ${n} sheet(s)</div>`
+      + `<button class="ghost" data-sm="pick">Select sheets ...<small>Tick several of them, then delete them together</small></button>`
       + `<button class="ghost" data-sm="rename">Rename set ...<small>Give this set of imported sheets another name</small></button>`
       + `<button class="ghost" data-sm="archive">Archive set<small>Hide it from Sheets and Folders; nothing is deleted</small></button>`
       + `<button class="ghost" data-sm="delete">Delete set ...<small>Its sheets and PDFs; markups and issues stay</small></button>`
@@ -4092,6 +4092,7 @@ async function paintSetMenu() {
 
 async function setAction(what, name) {
   const cur = S.set;
+  if (what === "pick") { PICK.on = true; PICK.sel.clear(); PICK.last = null; renderSheets(); return; }
   try {
     if (what === "rename") {
       const to = (prompt(`New name for the set "${cur}":`, cur) || "").trim();
@@ -4124,8 +4125,6 @@ async function setAction(what, name) {
 }
 
 function wireSetTools() {
-  const pb = document.getElementById("sheet-pick");
-  if (pb) pb.addEventListener("click", () => { PICK.on = !PICK.on; PICK.sel.clear(); PICK.last = null; renderSheets(); });
   const all = document.getElementById("pick-all");
   if (all) all.addEventListener("click", () => {
     const ext = setSheets().filter((x) => x.external);
@@ -5319,6 +5318,8 @@ async function importPdf(file) {
   const added = (await reg.json()).added || [];
   await reloadManifest();
   status(`Imported ${added.length} sheet(s) from ${file.name} into "${set}".`);
+  // and, if wanted, a copy in the project's Folders (a folder chosen there)
+  offerKeep(file, file.name, Store.currentProject(), `Imported ${added.length} sheet(s) from ${file.name}`);
   showSet(set, true);
   const first = S.manifest.sheets.find((s) => added[0] && s.number === added[0].number);
   if (first) openSheet(first);
