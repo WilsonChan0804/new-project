@@ -248,7 +248,7 @@ function wire(T, box, t) {
     if (!ed) return;
     if (k === "done") return T.toggleDone(t);
     if (k === "delete") return T.remove(t.id);
-    if (k === "owners") return pickPeople(a, t.owners, T.people(), (v) => T.save(t.id, { owners: v }));
+    if (k === "owners") return pickPeople(a, t.owners, T.members(), (v) => T.save(t.id, { owners: v }), T.people());
     if (k === "start" || k === "due") return pickDate(a, t[k], (v) => T.save(t.id, { [k]: v }));
     if (k === "priority") return pickOne(a, PRIORITIES, t.priority, (v) => T.save(t.id, { priority: v }));
     if (k === "group") return pickOne(a, T.groups().map((g) => ({ value: g.id, label: esc(g.title) + (g.project ? ` <small class="muted">${esc(g.project)}</small>` : "") })),
@@ -256,7 +256,7 @@ function wire(T, box, t) {
     if (k.startsWith("f:")) {
       const f = T.S.fields.get(k.slice(2));
       const set = (v) => T.save(t.id, { vals: { [f.id]: v } });
-      if (f.type === "person") return pickPeople(a, t.vals[f.id] || [], T.people(), set);
+      if (f.type === "person") return pickPeople(a, t.vals[f.id] || [], T.members(), set, T.people());
       if (isMethod(f)) return pickOne(a, METHOD_OPTS, t.vals[f.id] || "OR", set);
       if (f.type === "select") return pickOne(a, [""].concat(f.options), t.vals[f.id] || "", set);
       if (f.type === "date") return pickDate(a, t.vals[f.id], set);

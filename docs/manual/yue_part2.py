@@ -36,6 +36,7 @@ PART = [
     ]),
     H3('一個 task'),
     UL([
+        '**Owners**（同 list 嘅人欄）只會列出 **task list 嘅成員**；清單最底嘅 **Show everyone** 可以加其他人。用右上角 **Members** 加人入 list。',
         '撳一個 task 打開佢嘅視窗：標題、**Owners**、開始同到期 **Dates**、**Group**、**Priority** 同 list 自己嘅欄。**Mark complete** 就完成。',
         '**完成方式（Completion method）：** **OR** = 任何一個負責人完成就算完成；**AND** = 每個負責人都要完成自己嗰部分。',
         '**Sub-task：** 喺 **+ Add sub-task** 打字再按 Enter。好似 Lark 咁，sub-task 下面可以再有 sub-task，最多 5 層：打開個 sub-task 喺佢入面加，或者喺 List 撳行尾出現嘅 **+**。將一個 task 拖去另一個 task 標題嘅右半邊放手，就變成佢嘅 sub-task。刪一個 task 會連佢下面所有嘢一齊刪（**Ctrl+Z** 可以全部攞返）。',
@@ -99,7 +100,7 @@ PART = [
     UL([
         '**Poll（投票）：** 一條問題，2 至 10 個選擇；想嘅話剔 **Allow more than one answer**、**Anonymous** 或者揀截止日期。撳一個選擇就投票，再撳就取消。寫嘅人可以 **Close poll**（亦可以重開）。',
         '**Event（活動）：** 標題、日期、時間（或者 **All day**）、地點同 Teams 連結。Chat 入面所有人都會收到邀請（mail 設定好嘅話仲會有 email），可以答 **Going**、**Maybe** 或者 **Can\'t go**。**Add to calendar (.ics)** 可以放入 Outlook、Google 或者手機日曆。寫嘅人可以 **Change** 或者 **Cancel event**；chat 會收到通知。',
-        '**Task：** 揀 task list 同 group（呢個 project 嘅排先）、負責人（呢個 chat 嘅人排先）、到期日同優先次序。Task 會放入個 list，佢張卡片會出現喺 chat。喺任何訊息撳 ⋯ More > **Make a task** 都一樣，訊息會變成描述，@mention 咗嘅人做負責人，仲有條連結返去嗰條訊息。',
+        '**Task：** 揀 task list 同 group（呢個 project 嘅排先）、負責人（揀咗嗰個 list 嘅成員；**Show everyone** 睇其他人）、到期日同優先次序。Task 會放入個 list，佢張卡片會出現喺 chat。喺任何訊息撳 ⋯ More > **Make a task** 都一樣，訊息會變成描述，@mention 咗嘅人做負責人，仲有條連結返去嗰條訊息。',
     ]),
     LABEL('一條訊息'),
     UL([
@@ -119,9 +120,9 @@ PART = [
     ]),
     H2('Calendar 日曆'),
     P('**右撳某一日**（手機㩒住）可以喺嗰日加 **event**（全日）、**meeting**（10:00 開始，揀邀請邊個 chat）或者一個嗰日到期嘅 **task**。'),
-    P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日，同**派咗俾你嘅 issue** 嘅到期日。'),
+    P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日 - 連你負責嘅 task 下面嘅 **sub-task**（任何一層，會寫 **Sub-task of ...**）- 同**派咗俾你嘅 issue** 嘅到期日。'),
     UL([
-        '電腦係月曆，手機係清單（**Month** / **List**）。**Filter ▾** 可以顯示或者隱藏會議、task 同 issue（會講隱藏咗幾多樣）。**‹ ›** 同 **Today** 轉月份；手機可以掃。',
+        '電腦係月曆，手機係清單（**Month** / **List**）。**Filter ▾** 可以顯示或者隱藏會議、task 同 issue（會講隱藏咗幾多樣），**Week starts on: Monday / Sunday** 揀最左邊一欄係星期一定星期日（會記住）。**‹ ›** 同 **Today** 轉月份；手機可以掃。',
         '撳一項睇詳情，再打開個 chat、task 或者 issue。回覆會議要喺佢個 chat 入面。',
         '**+ Event：** 揀一個 chat，活動表格就喺嗰度打開，chat 入面所有人都會被邀請。',
         '**Add to Outlook：** **Open in Outlook on this PC** 會令 Outlook 訂閱你嘅日曆（揀 **Yes**），或者 copy 個地址，用 Outlook 嘅 **Add calendar > From Internet**。之後 Outlook 會喺你自己嘅日曆隔籬顯示，並自己更新。Outlook 網頁版同手機版要 viewer 喺互聯網上連得到先得。',

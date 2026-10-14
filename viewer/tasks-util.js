@@ -184,9 +184,13 @@ export function pop(anchor, html, width) {
 }
 
 /* Choose people: the organisation's accounts, or a typed name when the
-   server runs without accounts. Calls done(list) on every change. */
-export function pickPeople(anchor, chosen, everyone, done) {
+   server runs without accounts. Calls done(list) on every change.
+   With more (everyone), the list offers `everyone` first (a task list's
+   members) and a Show everyone row for the rest. */
+export function pickPeople(anchor, chosen, everyone, done, more) {
   let sel = (chosen || []).slice();
+  if (more && !everyone.length) { everyone = more; more = null; }
+  if (more && more.length <= everyone.length) more = null;
   const key = (p) => (p.uid != null ? "u" + p.uid : "n" + (p.name || "").toLowerCase());
   const el = pop(anchor, `<input class="pp-q" placeholder="Search people${everyone.length ? "" : " or type a name, Enter"}">`
     + `<div class="pp-list"></div>`, 280);
@@ -201,7 +205,14 @@ export function pickPeople(anchor, chosen, everyone, done) {
       `<label class="pp-row"><input type="checkbox" data-k="${esc(key(p))}"${have.has(key(p)) ? " checked" : ""}>`
       + `${avatar(p)}<b>${esc(p.name)}</b><small>${esc([p.team, p.office].filter(Boolean).join(" · "))}</small></label>`).join("")
       || `<div class="muted pp-empty">${everyone.length ? "Nobody matches" : "Type a name and press Enter"}</div>`;
+    if (more) box.insertAdjacentHTML("beforeend", `<button type="button" class="pp-all">Show everyone (${more.length}) - not only the list's members</button>`);
   };
+  box.addEventListener("click", (ev) => {
+    if (!ev.target.closest(".pp-all")) return;
+    everyone = more; more = null;
+    paint();
+    q.focus();
+  });
   const all = () => everyone.concat(sel);
   box.addEventListener("change", (ev) => {
     const k = ev.target.dataset.k;

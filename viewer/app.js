@@ -20,7 +20,7 @@ import * as Tele from "./telemetry.js";
 import { makeTilePage, tileStats } from "./sheettiles.js";
 import { initPanels, initSplitter, initVGrip } from "./panels.js";
 import { copyLink } from "./share.js";
-import { importCad, pdfImportDialog, keepImported } from "./cadimport.js";
+import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile } from "./cadimport.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
@@ -5259,7 +5259,7 @@ function showTextLayer(on) {
    survey - added to the project. Every page becomes its own sheet. Such a
    sheet has no viewports, so markups and issues on it work normally but
    stay 2D: there is nothing to tie a point on it to the model. */
-async function importPdf(file) {
+async function importPdf(file, how) {
   if (!file) return;
   let pages = 1, labels = null;
   try {
@@ -5275,7 +5275,8 @@ async function importPdf(file) {
   const stem = file.name.replace(/\.pdf$/i, "");
   const have = setNames();
   // one window: sheet number, set, and where the PDF is kept in Folders
-  const pick = await pdfImportDialog({ file, pages, stem, sets: have, set: S.set || have[0] || PDF_SET, project: Store.currentProject() });
+  const pick = await pdfImportDialog({ file, pages, stem, sets: have, set: S.set || have[0] || PDF_SET, project: Store.currentProject(),
+    fromFolders: !!(how && how.fromFolders) });
   if (!pick) return;
   const prefix = pick.prefix;
   const set = pick.set || PDF_SET;
@@ -5649,7 +5650,27 @@ function wireChrome() {
   $("#export-pdf").addEventListener("click", () => { $("#pdf-back").hidden = false; });
   $("#pdf-go").addEventListener("click", () => exportPdf().catch((e) => showError("pdf", e)));
   $("#pdf-cancel").addEventListener("click", () => { $("#pdf-back").hidden = true; });
-  $("#import-pdf-btn").addEventListener("click", () => $("#import-pdf").click());
+  // A PDF drawing: from this PC (the usual picker) or from Folders
+  $("#import-pdf-btn").addEventListener("click", async () => {
+    const src = await chooseSource("pdf", Store.currentProject());
+    if (!src) return;
+    try {
+      if (src.files) { for (const f of src.files) await importPdf(f); return; }
+      for (let i = 0; i < src.folders.paths.length; i++) {
+        status(`Reading ${src.folders.names[i]} from Folders ...`);
+        const f = await folderFile(src.folders.reg, src.folders.paths[i], src.folders.names[i]);
+        await importPdf(f, { fromFolders: true });
+      }
+    } catch (e) { showError("import pdf", e); }
+  });
+  const cadOpts = () => ({ headers: () => Store.authHeaders(), project: Store.currentProject(), done: async (set, nums) => {
+    await reloadManifest();
+    showSet(set, true);
+    const first = S.manifest.sheets.find((s) => nums[0] && s.number === nums[0]);
+    if (first) openSheet(first);
+    status(`${nums.length} sheet(s) made from the CAD drawings, in "${set}".`);
+  } });
+  $("#import-cad-btn").addEventListener("click", () => importCad(null, cadOpts()).catch((e) => showError("import cad", e)));
   $("#import-pdf").addEventListener("change", (ev) => {
     const f = ev.target.files && ev.target.files[0];
     ev.target.value = "";
@@ -5658,13 +5679,7 @@ function wireChrome() {
   $("#import-cad").addEventListener("change", (ev) => {
     const fs = [...(ev.target.files || [])];
     ev.target.value = "";
-    importCad(fs, { headers: () => Store.authHeaders(), project: Store.currentProject(), done: async (set, nums) => {
-      await reloadManifest();
-      showSet(set, true);
-      const first = S.manifest.sheets.find((s) => nums[0] && s.number === nums[0]);
-      if (first) openSheet(first);
-      status(`${nums.length} sheet(s) made from the CAD drawings, in "${set}".`);
-    } }).catch((e) => showError("import cad", e));
+    importCad(fs, cadOpts()).catch((e) => showError("import cad", e));
   });
   $("#export-json").addEventListener("click", exportComments);
   $("#import-json").addEventListener("change", importComments);

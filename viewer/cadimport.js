@@ -7,7 +7,7 @@
  * (server/cad.py). This window shows how far it is and what came of it.
  */
 
-import { keepRow, keepImported } from "./folderpick.js";
+import { keepRow, keepImported, pickFolderFiles, folderFile } from "./folderpick.js";
 
 const esc = (s) => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -48,10 +48,52 @@ function dialog(html) {
   return back;
 }
 
-/* files: a FileList / array. opts: { headers(), done(setName) } */
+/* Where the files come from: this PC (files, or a whole folder) or the
+   viewer's Folders. -> { files: [File] } | { folders: {reg, paths, names} } | null */
+const isCad = (n) => /\.(dwg|dxf|zip)$/i.test(n);
+function pickLocal(folder, accept) {
+  return new Promise((resolve) => {
+    const i = document.createElement("input");
+    i.type = "file";
+    i.multiple = true;
+    if (folder) i.webkitdirectory = true; else i.accept = accept;
+    i.style.display = "none";
+    document.body.appendChild(i);
+    i.onchange = () => { const f = [...(i.files || [])]; i.remove(); resolve(f); };
+    i.addEventListener("cancel", () => { i.remove(); resolve([]); });
+    i.click();
+  });
+}
+
+export async function chooseSource(kind, project) {
+  const cad = kind === "cad";
+  const d = dialog(`<h3>${cad ? "Import CAD drawings" : "Import a PDF drawing"}</h3>
+    <div class="muted">Where are the ${cad ? "drawings" : "PDFs"}?</div>
+    <div class="cad-foot" style="justify-content:flex-start;flex-wrap:wrap">
+      <button type="button" data-s="files">${cad ? "Files on this PC ..." : "From this PC ..."}</button>
+      ${cad ? `<button type="button" data-s="folder">A folder on this PC ...</button>` : ""}
+      <button type="button" data-s="folders">From Folders ...</button></div>
+    ${cad ? `<div class="muted" style="margin-top:6px">A folder: the drawings in it and its sub-folders are listed; only the drawings you tick and the xrefs they use are sent.</div>` : ""}
+    <div class="cad-foot"><button type="button" class="cad-no">Cancel</button></div>`);
+  const how = await new Promise((resolve) => {
+    d.querySelector(".cad-no").onclick = () => resolve(null);
+    d.querySelectorAll("[data-s]").forEach((b) => { b.onclick = () => resolve(b.dataset.s); });
+  });
+  d.remove();
+  if (!how) return null;
+  if (how === "folders") {
+    const r = await pickFolderFiles({ title: cad ? "CAD drawings in Folders" : "PDF drawings in Folders", project,
+      exts: cad ? [".dwg", ".dxf"] : [".pdf"] });
+    return r ? { folders: r } : null;
+  }
+  const fs = await pickLocal(how === "folder", cad ? ".dwg,.dxf,.zip" : "application/pdf,.pdf");
+  const ok = fs.filter((f) => cad ? isCad(f.name) : /\.pdf$/i.test(f.name));
+  if (!ok.length) { if (fs.length) alert(cad ? "There is no DWG or DXF file in that." : "Choose PDF files."); return null; }
+  return { files: ok };
+}
+
+/* opts: { headers(), project, done(setName, sheets), source? } */
 export async function importCad(files, opts) {
-  files = [...(files || [])].filter((f) => /\.(dwg|dxf|zip)$/i.test(f.name));
-  if (!files.length) { alert("Choose DWG or DXF files (or a .zip of them)."); return; }
   const H = opts.headers;
   const api = async (path, init) => {
     const r = await fetch(path, Object.assign({}, init || {}, { headers: Object.assign({}, H(), (init && init.headers) || {}) }));
@@ -60,87 +102,148 @@ export async function importCad(files, opts) {
     if (!r.ok) throw new Error((d && d.detail) || "HTTP " + r.status);
     return d;
   };
+  let src = files && files.length ? { files: [...files].filter((f) => isCad(f.name)) } : await chooseSource("cad", opts.project);
+  if (!src) return;
+  const stemKey = (n) => String(n || "").replace(/\\/g, "/").split("/").pop().replace(/\.[^.]+$/, "").trim().toLowerCase();
+  const pool = new Map();                  // stem key -> File (this PC: what may be sent when needed)
+  const addPool = (fs) => { for (const f of fs) if (/\.(dwg|dxf)$/i.test(f.name) && !pool.has(stemKey(f.name))) pool.set(stemKey(f.name), f); };
+  if (src.files) addPool(src.files);
   let tools = {};
   try { tools = await api("/api/import/cad/tools"); } catch (e) {}
-  if (files.some((f) => /\.dwg$/i.test(f.name)) && tools.oda === false) {
+  const names = src.files ? src.files.map((f) => f.webkitRelativePath || f.name) : src.folders.names;
+  if (names.some((n) => /\.dwg$/i.test(n)) && tools.oda === false) {
     alert("This server cannot read DWG files yet: the ODA File Converter is not installed on it (the server's admin installs it - see the manual).\n\nDXF files can be imported now: in AutoCAD, Save As > DXF.");
     return;
   }
-  // 1. send them
-  const up = dialog(`<h3>Importing CAD drawings</h3><div class="muted cad-msg">Sending ...</div><div class="cad-bar"><i></i></div>`);
-  let job = "", list = [];
-  try {
-    for (let i = 0; i < files.length; i++) {
-      up.querySelector(".cad-msg").textContent = `Sending ${files[i].name} (${i + 1} of ${files.length}) ...`;
-      up.querySelector(".cad-bar i").style.width = Math.round(100 * i / files.length) + "%";
-      const r = await api(`/api/import/cad/file?${new URLSearchParams({ job, name: files[i].name })}`, {
-        method: "POST", body: files[i], headers: { "Content-Type": "application/octet-stream" } });
-      job = r.job; list = r.files;
-    }
-  } catch (e) {
-    up.remove();
-    alert("Not sent: " + e.message);
-    return;
-  }
-  up.remove();
-  if (!list.length) { alert("There was no DWG or DXF file in that."); return; }
-  // 2. which are drawings, the set, black or colour
-  const stem = (n) => n.replace(/\.[^.]+$/, "");
-  const guessXref = (n) => /(^|[-_ ])(x|xr|xref|bg|base|grid|title|tb|border)([-_ .]|$)/i.test(stem(n));
+  // 1. which are drawings, the set, black or colour, where the files are kept
+  const stem = (n) => n.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
+  const guessXref = (n) => /(^|\/)[^/]*x-?ref[^/]*\//i.test(n) || /(^|[-_ ])(x|xr|xref|bg|base|grid|title|tb|border)([-_ .]|$)/i.test(stem(n)) || /^x[_ -]/i.test(stem(n));
+  const rows = names.map((n, i) => ({ n, i, zip: /\.zip$/i.test(n) }));
+  const many = rows.length > 12;
   const choose = dialog(`<h3>CAD drawings</h3>
-    <div class="muted">Tick the drawings to make into sheets (each layout becomes a sheet). Leave the <b>xrefs</b> unticked: they are drawn inside the drawings that use them.</div>
-    <div class="cad-files">${list.map((f) => `<label><input type="checkbox" value="${esc(f.name)}"${list.length === 1 || !guessXref(f.name) ? " checked" : ""}> ${esc(f.name)}<small>${f.mb} MB</small></label>`).join("")}</div>
-    <label class="cad-row">Set (its entry in the drop-down)<input type="text" class="cad-set" maxlength="60" value="${esc(stem(list.find((f) => !guessXref(f.name))?.name || list[0].name))}"></label>
+    <div class="muted">Tick the drawings to make into sheets (each layout becomes a sheet). <b>Xrefs</b> need no tick: the ones a drawing uses are found by themselves - among these files, then in the project's Folders.</div>
+    ${many ? `<input type="search" class="cad-find" placeholder="Find a drawing" style="width:100%;margin-top:6px">` : ""}
+    <div class="cad-files">${rows.map((r) => `<label data-n="${esc(r.n.toLowerCase())}"><input type="checkbox" value="${r.i}"${r.zip || rows.length === 1 || (!guessXref(r.n) && !many) ? " checked" : ""}> ${esc(r.n)}</label>`).join("")}</div>
+    <label class="cad-row">Set (its entry in the drop-down)<input type="text" class="cad-set" maxlength="60" value="${esc(stem((rows.find((r) => !guessXref(r.n)) || rows[0]).n))}"></label>
     <label class="cad-chk"><input type="checkbox" class="cad-mono" checked> Black lines, as plotted (untick for the drawing's colours)</label>
     <div class="cad-keep"></div>
     ${tools.font ? "" : `<div class="muted">Note: the server has no Chinese font for drawings yet, so Chinese text may show as boxes (it is still found by search).</div>`}
     <div class="cad-foot"><button type="button" class="cad-no">Cancel</button><button type="button" class="pri cad-go">Make sheets</button></div>`);
-  const keep = keepRow(choose.querySelector(".cad-keep"), { kind: "cad", project: opts.project,
-    setName: () => choose.querySelector(".cad-set").value });
-  choose.querySelector(".cad-set").addEventListener("input", () => keep.repaint());
+  const find = choose.querySelector(".cad-find");
+  if (find) find.oninput = () => { const q = find.value.trim().toLowerCase(); for (const l of choose.querySelectorAll(".cad-files label")) l.hidden = !!q && !l.dataset.n.includes(q); };
+  const keepEl = choose.querySelector(".cad-keep");
+  let keep = null;
+  if (src.files) {
+    keep = keepRow(keepEl, { kind: "cad", project: opts.project, setName: () => choose.querySelector(".cad-set").value });
+    choose.querySelector(".cad-set").addEventListener("input", () => keep.repaint());
+  } else {
+    keepEl.innerHTML = `<div class="muted" style="margin-top:6px">These drawings are already in Folders: nothing more is kept.</div>`;
+  }
   const pick = await new Promise((resolve) => {
     choose.querySelector(".cad-no").onclick = () => resolve(null);
     choose.querySelector(".cad-go").onclick = () => {
-      const drawings = [...choose.querySelectorAll(".cad-files input:checked")].map((c) => c.value);
-      if (!drawings.length) { alert("Tick at least one drawing."); return; }
-      resolve({ drawings, set: choose.querySelector(".cad-set").value.trim() || "CAD drawings", mono: choose.querySelector(".cad-mono").checked });
+      const idx = [...choose.querySelectorAll(".cad-files input:checked")].map((c) => Number(c.value));
+      if (!idx.length) { alert("Tick at least one drawing."); return; }
+      resolve({ idx, set: choose.querySelector(".cad-set").value.trim() || "CAD drawings", mono: choose.querySelector(".cad-mono").checked });
     };
   });
-  const keepTo = keep.target();
+  const keepTo = keep ? keep.target() : { mode: "none" };
   choose.remove();
   if (!pick) return;
-  // 3. made on the server: progress, then the result
-  const prog = dialog(`<h3>Making sheets</h3><div class="cad-msg">Starting ...</div><div class="cad-bar"><i></i></div><div class="cad-out"></div>
+  // 2. send the drawings ticked (or copy them from Folders)
+  const prog = dialog(`<h3>Making sheets</h3><div class="cad-msg">Sending ...</div><div class="cad-bar"><i></i></div><div class="cad-out"></div>
     <div class="cad-foot"><button type="button" class="cad-close" disabled>Working ...</button></div>`);
+  const msg = (t, pc) => { prog.querySelector(".cad-msg").textContent = t; if (pc != null) prog.querySelector(".cad-bar i").style.width = pc + "%"; };
+  const fail = (t) => { prog.remove(); alert(t); };
+  let job = "";
+  const sent = [];                          // Files sent from this PC (kept in Folders afterwards)
+  const send = async (fs) => {
+    for (let i = 0; i < fs.length; i++) {
+      msg(`Sending ${fs[i].name} (${i + 1} of ${fs.length}) ...`, Math.round(30 * i / fs.length));
+      const r = await api(`/api/import/cad/file?${new URLSearchParams({ job, name: fs[i].name })}`, {
+        method: "POST", body: fs[i], headers: { "Content-Type": "application/octet-stream" } });
+      job = r.job;
+      sent.push(fs[i]);
+    }
+  };
+  let drawings;
   try {
-    await api("/api/import/cad/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ job }, pick)) });
-  } catch (e) {
-    prog.remove();
-    alert("Not started: " + e.message);
-    return;
+    if (src.files) {
+      const chosen = pick.idx.map((i) => src.files[i]);
+      await send(chosen);
+      drawings = chosen.filter((f) => !/\.zip$/i.test(f.name)).map((f) => f.name);
+      if (chosen.some((f) => /\.zip$/i.test(f.name))) drawings = null;      // a zip: every drawing in it
+    } else {
+      msg("Copying the drawings from Folders ...", 10);
+      const r = await api("/api/import/cad/from-folders", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reg: src.folders.reg, paths: pick.idx.map((i) => src.folders.paths[i]) }) });
+      job = r.job;
+      drawings = pick.idx.map((i) => src.folders.names[i]);
+    }
+  } catch (e) { return fail("Not sent: " + e.message); }
+  // 3. read them and fill in the xrefs: from what was chosen on this PC, from Folders (on the server), then by asking
+  const poll = async (want) => {
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 1000));
+      let j;
+      try { j = await api("/api/import/cad/" + job); } catch (e) { continue; }
+      if (j.message) msg(j.message);
+      if (want.includes(j.status) || j.status === "failed") return j;
+    }
+  };
+  let j = null, askedOut = false, folders = false;    // the files chosen on this PC first, then Folders
+  for (let round = 0; round < 16; round++) {
+    try {
+      await api("/api/import/cad/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job, drawings, folders }) });
+    } catch (e) { return fail("Not read: " + e.message); }
+    msg("Reading the drawings ...", 35);
+    j = await poll(["scanned"]);
+    if (j.status === "failed") return fail(j.message || "The drawings could not be read.");
+    const need = j.needed || [];
+    if (!need.length) break;
+    const have = need.map((n) => pool.get(stemKey(n))).filter(Boolean).filter((f) => !sent.includes(f));
+    if (have.length) { try { await send(have); } catch (e) { return fail("Not sent: " + e.message); } continue; }
+    if (!folders) { folders = true; continue; }
+    if (askedOut) break;
+    // still missing: ask
+    prog.hidden = true;
+    const a = dialog(`<h3>Xrefs to find</h3>
+      <div class="muted">The drawings use ${need.length} xref(s) that are not among the files chosen${j.from_folders && j.from_folders.length ? ` (${j.from_folders.length} found in Folders)` : " nor in the project's Folders"}:</div>
+      <ul>${need.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
+      <div class="cad-foot" style="justify-content:flex-start;flex-wrap:wrap">
+        <button type="button" data-a="files">Choose files ...</button><button type="button" data-a="folder">Choose a folder ...</button>
+        <button type="button" data-a="without">Make the sheets without them</button></div>
+      <div class="cad-foot"><button type="button" data-a="cancel">Cancel</button></div>`);
+    const ans = await new Promise((resolve) => a.querySelectorAll("[data-a]").forEach((b) => { b.onclick = () => resolve(b.dataset.a); }));
+    a.remove();
+    prog.hidden = false;
+    if (ans === "cancel") { prog.remove(); return; }
+    if (ans === "without") { askedOut = true; break; }
+    const more = await pickLocal(ans === "folder", ".dwg,.dxf");
+    addPool(more);
+    if (src.files) src.files.push(...more.filter((f) => /\.(dwg|dxf)$/i.test(f.name)));
   }
-  let j = null;
-  for (;;) {
-    await new Promise((r) => setTimeout(r, 1200));
-    try { j = await api("/api/import/cad/" + job); } catch (e) { continue; }
-    prog.querySelector(".cad-msg").textContent = j.message || "";
-    prog.querySelector(".cad-bar i").style.width = (j.progress || 0) + "%";
-    if (j.status === "done" || j.status === "failed") break;
-  }
-  // the files sent, kept in Folders (from here: the server does not keep them)
+  // 4. make the sheets
+  try {
+    await api("/api/import/cad/run", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job, drawings: drawings || undefined, set: pick.set, mono: pick.mono }) });
+  } catch (e) { return fail("Not started: " + e.message); }
+  j = await poll(["done"]);
+  // the files sent from this PC, kept in Folders (the server does not keep them)
   let kept = null;
-  if (keepTo.mode !== "none") {
-    prog.querySelector(".cad-msg").textContent = "Keeping the CAD files in Folders ...";
-    kept = await keepImported(keepTo, files, { kind: "cad", project: opts.project, setName: pick.set });
+  if (keepTo.mode !== "none" && sent.length) {
+    msg("Keeping the CAD files in Folders ...");
+    kept = await keepImported(keepTo, sent, { kind: "cad", project: opts.project, setName: pick.set });
   }
   const rep = (j.report || []).map((r) => `<li><b>${esc(r.file)}</b>: `
     + (r.error ? `<span class="bad">${esc(r.error)}</span>`
       : `${r.sheets.length} sheet(s) - ${esc(r.sheets.join(", "))}`
-        + (r.missing_xrefs && r.missing_xrefs.length ? `<br><span class="bad">Xrefs not sent (drawn without them): ${esc(r.missing_xrefs.join(", "))}</span>` : "")
+        + (r.missing_xrefs && r.missing_xrefs.length ? `<br><span class="bad">Xrefs not found (drawn without them): ${esc(r.missing_xrefs.join(", "))}</span>` : "")
         + (r.left_out && Object.keys(r.left_out).length ? `<br><span class="muted">Not drawn: ${esc(Object.entries(r.left_out).map(([k, v]) => `${k} (${v})`).join(", "))}</span>` : ""))
     + `</li>`).join("");
-  prog.querySelector(".cad-msg").textContent = j.message || "";
+  msg(j.message || "", 100);
   prog.querySelector(".cad-out").innerHTML = `<ul>${rep}</ul>`
+    + (j.from_folders && j.from_folders.length ? `<div class="muted">Xrefs taken from Folders: ${esc(j.from_folders.join(", "))}</div>` : "")
     + (kept && kept.kept.length ? `<div>The ${kept.kept.length} CAD file(s) are kept in Folders: <a href="${esc(kept.href)}" target="_blank" rel="noopener">${esc(kept.label)}</a></div>` : "")
     + (kept && kept.errors.length ? `<div class="bad">Not kept in Folders: ${esc(kept.errors.join("; "))}</div>` : "")
     + (j.status === "done" ? `<div class="muted">Fonts are drawn with a standard font, complex line types as plain dashes. For the exact look, publish a PDF from AutoCAD and import that.</div>` : "");
@@ -156,7 +259,7 @@ export async function importCad(files, opts) {
 /* The window of Files > A PDF drawing: the sheet number (prefix for a PDF
    of several pages), the set, and where the PDF is kept in Folders.
    -> { prefix, set, keep } or null. */
-export async function pdfImportDialog({ file, pages, stem, sets, set, project }) {
+export async function pdfImportDialog({ file, pages, stem, sets, set, project, fromFolders }) {
   const d = dialog(`<h3>Import ${esc(file.name)}</h3>
     <div class="muted">${pages === 1 ? "One page: it becomes one sheet." : `${pages} pages: each becomes a sheet, numbered after the prefix.`}</div>
     <label class="cad-row">${pages === 1 ? "Sheet number" : "Sheet number prefix"}<input type="text" class="pi-prefix" maxlength="40" value="${esc(stem.slice(0, 24))}"></label>
@@ -164,7 +267,10 @@ export async function pdfImportDialog({ file, pages, stem, sets, set, project })
       <datalist id="pi-sets">${(sets || []).map((x) => `<option value="${esc(x)}">`).join("")}</datalist></label>
     <div class="pi-keep"></div>
     <div class="cad-foot"><button type="button" class="cad-no">Cancel</button><button type="button" class="pri cad-go">Import</button></div>`);
-  const keep = keepRow(d.querySelector(".pi-keep"), { kind: "pdf", project, setName: () => d.querySelector(".pi-set").value });
+  // a PDF taken from Folders is there already: nothing more to keep
+  const keep = fromFolders ? { target: () => ({ mode: "none" }), repaint() {} }
+    : keepRow(d.querySelector(".pi-keep"), { kind: "pdf", project, setName: () => d.querySelector(".pi-set").value });
+  if (fromFolders) d.querySelector(".pi-keep").innerHTML = `<div class="muted" style="margin-top:6px">From Folders: it stays where it is there.</div>`;
   d.querySelector(".pi-set").addEventListener("input", () => keep.repaint());
   setTimeout(() => d.querySelector(".pi-prefix").select(), 30);
   const r = await new Promise((resolve) => {
@@ -180,4 +286,4 @@ export async function pdfImportDialog({ file, pages, stem, sets, set, project })
   return r;
 }
 
-export { keepImported };
+export { keepImported, pickFolderFiles, folderFile };

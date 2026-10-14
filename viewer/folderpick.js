@@ -277,3 +277,78 @@ export async function keepImported(target, files, { kind, project, setName }) {
   }
   return out;
 }
+
+/* Pick files that are already in Folders (Sheets page imports "From
+   Folders"): one Folders project, browse its folders, tick files of the
+   given kinds. -> { reg, paths: [...], names: [...] } or null. */
+export async function pickFolderFiles({ title, project, exts }) {
+  style();
+  let ps;
+  try { ps = await projects(project); } catch (e) { alert("Folders could not be read: " + e.message); return null; }
+  if (!ps.list.length) { alert("You have no project in Folders."); return null; }
+  let reg = (ps.linked[0] || ps.list[0]).id;
+  let at = "";
+  try { const l = JSON.parse(localStorage.getItem(LAST + "pick:" + (project || "")) || "null"); if (l && ps.list.some((p) => p.id === l.reg)) { reg = l.reg; at = l.path || ""; } } catch (e) {}
+  const chosen = new Map();               // path -> name
+  const okExt = (n) => exts.some((x) => n.toLowerCase().endsWith(x));
+  return await new Promise((resolve) => {
+    const back = document.createElement("div");
+    back.className = "fp-back";
+    back.innerHTML = `<div class="fp" role="dialog" aria-modal="true"><h3>${esc(title || "Choose from Folders")}</h3>`
+      + `<label>Project<select class="fp-proj">${ps.list.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}${ps.linked.includes(p) ? " (this project)" : ""}</option>`).join("")}</select></label>`
+      + `<div class="fp-file fp-crumb"></div><div class="fp-tree fp-files" role="listbox"></div><div class="fp-msg"></div>`
+      + `<div class="fp-foot"><span class="fp-count" style="font-size:12px;color:var(--ink-2,#64748b)"></span><span class="sp"></span>`
+      + `<button type="button" class="fp-no">Cancel</button><button type="button" class="pri fp-ok" disabled>Use these</button></div></div>`;
+    document.body.appendChild(back);
+    const $ = (s) => back.querySelector(s);
+    const end = (v) => { back.remove(); resolve(v); };
+    const count = () => {
+      $(".fp-count").textContent = chosen.size ? chosen.size + " chosen" : "";
+      $(".fp-ok").disabled = !chosen.size;
+    };
+    const load = async () => {
+      $(".fp-crumb").innerHTML = `<a href="#" data-up="">${esc((ps.list.find((p) => p.id === reg) || {}).name || "")}</a>`
+        + (at ? at.split("/").map((p, i, a) => ` / <a href="#" data-up="${esc(a.slice(0, i + 1).join("/"))}">${esc(p)}</a>`).join("") : "");
+      $(".fp-files").innerHTML = `<div style="color:#94a3b8">Reading ...</div>`;
+      let items = [];
+      try {
+        items = (await get("/api/files/" + encodeURIComponent(reg) + "/list?path=" + encodeURIComponent(at))).items || [];
+        $(".fp-msg").textContent = "";
+      } catch (e) { $(".fp-msg").textContent = e.message; }
+      const dirs = items.filter((i) => i.dir), fls = items.filter((i) => !i.dir && okExt(i.name));
+      $(".fp-files").innerHTML = (at ? `<div data-open="${esc(at.split("/").slice(0, -1).join("/"))}">&#8617; ..</div>` : "")
+        + dirs.map((i) => `<div data-open="${esc(i.path)}">&#128193; ${esc(i.name)}</div>`).join("")
+        + fls.map((i) => `<label style="display:flex;gap:8px;align-items:center;padding:5px 8px;cursor:pointer"><input type="checkbox" data-pick="${esc(i.path)}" data-name="${esc(i.name)}"${chosen.has(i.path) ? " checked" : ""} style="width:auto;margin:0"> ${esc(i.name)}</label>`).join("")
+        + (!dirs.length && !fls.length ? `<div style="color:#94a3b8">No ${exts.join(" / ")} files here.</div>` : "");
+    };
+    $(".fp-proj").value = reg;
+    $(".fp-proj").onchange = () => { reg = $(".fp-proj").value; at = ""; chosen.clear(); count(); load(); };
+    back.addEventListener("click", (ev) => {
+      const o = ev.target.closest("[data-open]");
+      if (o) { at = o.dataset.open; load(); return; }
+      const u = ev.target.closest("[data-up]");
+      if (u) { ev.preventDefault(); at = u.dataset.up; load(); }
+    });
+    back.addEventListener("change", (ev) => {
+      const c = ev.target.closest("[data-pick]");
+      if (!c) return;
+      if (c.checked) chosen.set(c.dataset.pick, c.dataset.name); else chosen.delete(c.dataset.pick);
+      count();
+    });
+    $(".fp-no").onclick = () => end(null);
+    back.addEventListener("keydown", (ev) => { if (ev.key === "Escape") end(null); });
+    $(".fp-ok").onclick = () => {
+      try { localStorage.setItem(LAST + "pick:" + (project || ""), JSON.stringify({ reg, path: at })); } catch (e) {}
+      end({ reg, paths: [...chosen.keys()], names: [...chosen.values()] });
+    };
+    load();
+  });
+}
+
+/* A file in Folders as a File (to import it as if chosen on this PC). */
+export async function folderFile(reg, path, name) {
+  const r = await fetch("/api/files/" + encodeURIComponent(reg) + "/file?path=" + encodeURIComponent(path), { headers: headers() });
+  if (!r.ok) throw new Error(name + ": HTTP " + r.status);
+  const b = await r.blob();
+  return new File([b], name, { type: b.type || "application/octet-stream" });
+}

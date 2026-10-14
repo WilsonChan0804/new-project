@@ -352,6 +352,20 @@ async def to_pdf_async(html):
     return await asyncio.get_event_loop().run_in_executor(None, html_to_pdf, html)
 
 
+def can_open(core, w, reg):
+    """The folder of a Folders project the person is one of (or an admin
+    of) - for other modules (cad.py). Raises otherwise."""
+    import tasks
+    if not SAFE_ID.match(reg or ""):
+        raise HTTPException(status_code=404, detail="No such project")
+    uids, row = tasks.project_people(core, reg)
+    if row is None:
+        raise HTTPException(status_code=404, detail="No such project")
+    if not tasks.project_admin(core, w, reg) and w.uid not in uids:
+        raise HTTPException(status_code=403, detail="You are not one of this project's people")
+    return root_of(reg)
+
+
 def keep_file(reg, folder_parts, name, data, uid, who):
     """A file the viewer makes, put in a project's folder (a name already
     there: "name (2)"), with who put it there. Returns its path."""

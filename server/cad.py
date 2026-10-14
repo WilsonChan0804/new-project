@@ -38,7 +38,8 @@ import cad_pdf
 import cad_render
 
 _RUN = threading.Semaphore(1)        # one drawing set at a time
-SAFE = re.compile(r"[^A-Za-z0-9._ ()+-]+")
+# only what a file name cannot hold is changed (long CAD names with & ( ) - stay)
+UNSAFE = re.compile(r'[\x00-\x1f<>:"/\\|?*]+')
 
 
 def find_oda():
@@ -77,9 +78,129 @@ def oda_convert(oda, src_dir, name, out_dir, timeout=900):
 
 
 def clean(name):
+    """A file name to keep: its folder dropped, unusable characters made
+    "_", and a very long name shortened in its stem - never its extension."""
     name = os.path.basename(str(name or "").replace("\\", "/"))
-    name = SAFE.sub("_", name).strip(" .")[:120]
+    name = UNSAFE.sub("_", name).strip(" .")
+    stem, ext = os.path.splitext(name)
+    if len(name.encode("utf-8")) > 200:
+        while len((stem + ext).encode("utf-8")) > 200:
+            stem = stem[:-1]
+        name = stem.rstrip(" .") + ext
     return name or "drawing.dwg"
+
+
+def stem_key(name):
+    """How an xref is matched to a file: its name without folder or
+    extension, any case."""
+    return os.path.splitext(os.path.basename(str(name or "").replace("\\", "/")))[0].strip().lower()
+
+
+def convert_one(oda, src_path, out_path, timeout=900):
+    """One DWG -> DXF, through a plain temporary name so that nothing in
+    the real name ([ ] & spaces, length) can trouble the converter."""
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix="lwk-oda-")
+    try:
+        i, o = os.path.join(tmp, "in"), os.path.join(tmp, "out")
+        os.makedirs(i); os.makedirs(o)
+        try:
+            os.link(src_path, os.path.join(i, "f.dwg"))
+        except OSError:
+            shutil.copyfile(src_path, os.path.join(i, "f.dwg"))
+        if not oda_convert(oda, i, "f.dwg", o, timeout):
+            return False
+        shutil.move(os.path.join(o, "f.dxf"), out_path)
+        return True
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def ensure_converted(src, out, names=None, progress=None):
+    """DXF for each DWG / DXF in src (or the names given) in out, made
+    once. -> the names that could not be converted."""
+    os.makedirs(out, exist_ok=True)
+    have = sorted(f for f in os.listdir(src) if os.path.splitext(f)[1].lower() in (".dwg", ".dxf"))
+    todo = [f for f in have if names is None or f in names]
+    failed = []
+    oda = None
+    for k, f in enumerate(todo):
+        dest = os.path.join(out, os.path.splitext(f)[0] + ".dxf")
+        if os.path.isfile(dest):
+            continue
+        if f.lower().endswith(".dxf"):
+            shutil.copyfile(os.path.join(src, f), dest)
+            continue
+        oda = oda or find_oda()
+        if progress:
+            progress(k, len(todo), f)
+        if not oda or not convert_one(oda, os.path.join(src, f), dest):
+            failed.append(f)
+    return failed
+
+
+def xref_names(dxf_path):
+    """The files a drawing references as xrefs (their names, as written)."""
+    try:
+        doc = cad_dxf.read(dxf_path)
+    except Exception:
+        return []
+    out = []
+    for b in doc.blocks.values():
+        if b.is_xref:
+            nm = os.path.basename((b.xref or (b.name + ".dwg")).replace("\\", "/"))
+            if nm and nm not in out:
+                out.append(nm)
+    return out
+
+
+def folders_roots(core, pid, w=None):
+    """The folders (on the server) of the Folders projects this model is
+    in - with w, only those the person can open."""
+    try:
+        import files
+        import tasks
+        regs = tasks.reg_ids_for_viewer(core, pid)
+    except Exception:
+        return []
+    out = []
+    for r in regs:
+        try:
+            if w is not None:
+                files.can_open(core, w, r)
+            out.append((r, files.root_of(r, make=False)))
+        except Exception:
+            continue
+    return out
+
+
+def find_in_folders(core, pid, keys, limit=60000, w=None):
+    """{stem key: full path} for the files named like keys (.dwg / .dxf)
+    anywhere in the model's Folders projects (the newest copy of each)."""
+    found = {}
+    keys = set(keys)
+    seen = 0
+    for reg, root in folders_roots(core, pid, w):
+        if not root or not os.path.isdir(root):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [x for x in dirnames if not x.startswith(".")]
+            for f in filenames:
+                seen += 1
+                if seen > limit:
+                    return found
+                if os.path.splitext(f)[1].lower() not in (".dwg", ".dxf"):
+                    continue
+                k = stem_key(f)
+                if k in keys:
+                    full = os.path.join(dirpath, f)
+                    try:
+                        t = os.path.getmtime(full)
+                    except OSError:
+                        continue
+                    if k not in found or t > found[k][1]:      # several copies: the newest
+                        found[k] = (full, t)
+    return {k: v[0] for k, v in found.items()}
 
 
 def sheet_number(stem, layout):
@@ -141,7 +262,6 @@ def register(app, core):
                 if size > 1024 * 1048576:
                     raise HTTPException(status_code=413, detail="Files up to 1 GB")
                 f.write(chunk)
-        files = []
         if ext == ".zip":
             try:
                 with zipfile.ZipFile(dest) as z:
@@ -154,11 +274,116 @@ def register(app, core):
             except zipfile.BadZipFile:
                 raise HTTPException(status_code=400, detail="%s is not a readable .zip" % nm)
             os.remove(dest)
-        for f in sorted(os.listdir(src)):
-            if os.path.splitext(f)[1].lower() in (".dwg", ".dxf"):
-                files.append({"name": f, "mb": round(os.path.getsize(os.path.join(src, f)) / 1048576.0, 1)})
-        write_job(d, status="uploading", files=files)
-        return {"job": job, "files": files}
+        files_ = list_src(src)
+        write_job(d, status="uploading", files=files_)
+        return {"job": job, "files": files_}
+
+    def list_src(src):
+        return [{"name": f, "mb": round(os.path.getsize(os.path.join(src, f)) / 1048576.0, 1)}
+                for f in sorted(os.listdir(src)) if os.path.splitext(f)[1].lower() in (".dwg", ".dxf")]
+
+    @app.post("/api/import/cad/from-folders")
+    async def cad_from_folders(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """Drawings already in Folders into an import (copied on the
+        server: nothing is downloaded or sent again)."""
+        w, _ = core.require_project(request, x_project, "member", x_viewer_token)
+        root = core.project_root_for(x_project)
+        body = await request.json() or {}
+        import files
+        reg = str(body.get("reg") or "")
+        froot = files.can_open(core, w, reg)
+        job = body.get("job") or uuid.uuid4().hex[:12]
+        d = job_dir(root, job)
+        src = os.path.join(d, "src")
+        os.makedirs(src, exist_ok=True)
+        for p in body.get("paths") or []:
+            full = files.inside(froot, files.clean_rel(p))
+            if not os.path.isfile(full) or os.path.splitext(full)[1].lower() not in (".dwg", ".dxf"):
+                raise HTTPException(status_code=400, detail="%s: not a DWG or DXF file in Folders" % p)
+            shutil.copyfile(full, os.path.join(src, clean(os.path.basename(full))))
+        files_ = list_src(src)
+        write_job(d, status="uploading", files=files_)
+        return {"job": job, "files": files_}
+
+    @app.post("/api/import/cad/scan")
+    async def cad_scan(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """Reads the drawings (DWG -> DXF) and lists the xrefs they need -
+        and the xrefs' own. Those found in the model's Folders are copied
+        in by themselves; the rest are listed for the page to send."""
+        core.require_project(request, x_project, "member", x_viewer_token)
+        root = core.project_root_for(x_project)
+        body = await request.json() or {}
+        d = job_dir(root, body.get("job"))
+        src = os.path.join(d, "src")
+        if not os.path.isdir(src):
+            raise HTTPException(status_code=404, detail="Send the files first")
+        have = [f["name"] for f in list_src(src)]
+        drawings = [clean(x) for x in (body.get("drawings") or []) if clean(x) in have] or have
+        if any(f.lower().endswith(".dwg") for f in have) and not find_oda():
+            raise HTTPException(status_code=400, detail="The server has no ODA File Converter, so it cannot read DWG files. "
+                                "Ask the server's admin to install it - or send DXF files.")
+        use_folders = body.get("folders", True) is not False
+        pid = x_project
+        w = core.who(request, x_viewer_token)
+        write_job(d, status="scanning", progress=0, message="Reading the drawings ...", drawings=drawings)
+
+        def run():
+            with _RUN:
+                try:
+                    scan_job(d, src, drawings, pid, use_folders, w)
+                except Exception as e:
+                    write_job(d, status="failed", message="Not read: %s" % e)
+        threading.Thread(target=run, daemon=True).start()
+        return {"job": os.path.basename(d)}
+
+    def scan_job(d, src, drawings, pid, use_folders, w):
+        """Round by round: read (convert) the files of this round, collect
+        their xrefs; those not sent are looked for in Folders (one search
+        a round) and read in the next round, as are those sent."""
+        out = os.path.join(d, "dxf")
+        j = read_job(d)
+        xr = j.get("xrefs") or {}             # file -> its xref names
+        from_folders = list(j.get("from_folders") or [])
+        failed = set(j.get("failed") or [])
+        done, needed, searched = set(), {}, set()
+        queue = list(dict.fromkeys(drawings))
+        rounds = 0
+        while queue and rounds < 8:
+            rounds += 1
+            write_job(d, status="scanning", message="Reading %d drawing(s) ..." % len(queue))
+            failed |= set(ensure_converted(src, out, queue, progress=lambda k, n, f: write_job(
+                d, status="scanning", message="Reading %s (%d of %d) ..." % (f, k + 1, n))))
+            local = {stem_key(x): x for x in os.listdir(src) if os.path.splitext(x)[1].lower() in (".dwg", ".dxf")}
+            nxt, missing = [], {}
+            for f in queue:
+                done.add(f)
+                dxf = os.path.join(out, os.path.splitext(f)[0] + ".dxf")
+                if f not in xr and os.path.isfile(dxf):
+                    xr[f] = xref_names(dxf)
+                for nm in xr.get(f, []):
+                    k = stem_key(nm)
+                    if k in local:
+                        nxt.append(local[k])
+                    else:
+                        missing[k] = nm
+            if missing and use_folders:
+                look = [k for k in missing if k not in searched]
+                searched.update(look)
+                if look:
+                    write_job(d, status="scanning", message="Looking for %d xref(s) in Folders ..." % len(look))
+                    for k, hit in find_in_folders(core, pid, look, w=w).items():
+                        nm2 = clean(os.path.basename(hit))
+                        shutil.copyfile(hit, os.path.join(src, nm2))
+                        from_folders.append(os.path.basename(hit))
+                        nxt.append(nm2)
+                        missing.pop(k, None)
+            needed.update(missing)
+            queue = [x for x in dict.fromkeys(nxt) if x not in done]
+        # an xref found later is not needed any more
+        have = {stem_key(x) for x in os.listdir(src)}
+        needed = {k: v for k, v in needed.items() if k not in have}
+        write_job(d, status="scanned", message="", xrefs=xr, needed=sorted(needed.values(), key=str.lower),
+                  from_folders=from_folders, failed=sorted(failed), files=list_src(src))
 
     @app.post("/api/import/cad/run")
     async def cad_run(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
@@ -170,7 +395,11 @@ def register(app, core):
         if not os.path.isdir(src):
             raise HTTPException(status_code=404, detail="Send the files first")
         have = [f for f in os.listdir(src) if os.path.splitext(f)[1].lower() in (".dwg", ".dxf")]
-        drawings = [clean(x) for x in (body.get("drawings") or []) if clean(x) in have] or have
+        drawings = [clean(x) for x in (body.get("drawings") or []) if clean(x) in have]
+        if not drawings:
+            # none named (a .zip): the files no other file uses as an xref
+            used = {stem_key(n) for names in (read_job(d).get("xrefs") or {}).values() for n in names}
+            drawings = [f for f in have if stem_key(f) not in used] or have
         set_name = core.clean_set_name(body.get("set")) or "CAD drawings"
         mono = body.get("mono", True) is not False
         if any(f.lower().endswith(".dwg") for f in have) and not find_oda():
@@ -202,26 +431,17 @@ def register(app, core):
         t0 = time.time()
         out = os.path.join(d, "dxf")
         os.makedirs(out, exist_ok=True)
-        # 1. DWG -> DXF (every file: the xrefs too)
-        dwgs = [f for f in have if f.lower().endswith(".dwg")]
-        failed = []
-        if dwgs:
-            oda = find_oda()
-            for k, f in enumerate(dwgs):
-                write_job(d, status="converting", progress=int(40 * k / len(dwgs)), message="Reading %s (%d of %d) ..." % (f, k + 1, len(dwgs)))
-                if not oda_convert(oda, src, f, out):
-                    failed.append(f)
-        for f in have:
-            if f.lower().endswith(".dxf"):
-                shutil.copyfile(os.path.join(src, f), os.path.join(out, f))
+        # 1. DWG -> DXF (every file: the xrefs too; those read by the scan are not read again)
+        failed = ensure_converted(src, out, progress=lambda k, n, f: write_job(
+            d, status="converting", progress=int(40 * k / max(1, n)), message="Reading %s (%d of %d) ..." % (f, k + 1, n)))
         by_stem = {}
         for f in os.listdir(out):
             if f.lower().endswith(".dxf"):
-                by_stem[os.path.splitext(f)[0].lower()] = os.path.join(out, f)
+                by_stem[stem_key(f)] = os.path.join(out, f)
         cache = {}
 
         def xref(path):
-            stem = os.path.splitext(os.path.basename(str(path).replace("\\", "/")))[0].lower()
+            stem = stem_key(path)
             p = by_stem.get(stem)
             if not p:
                 return None

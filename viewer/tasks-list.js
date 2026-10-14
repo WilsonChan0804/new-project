@@ -148,12 +148,12 @@ function wire(T, el, buckets) {
     if (!c || !T.canEdit()) return T.openTask(t.id);
     const k = c.dataset.col;
     if (k === "priority") return pickOne(c, PRIORITIES, t.priority, (v) => T.save(t.id, { priority: v }));
-    if (k === "owners") return pickPeople(c, t.owners, T.people(), (v) => T.save(t.id, { owners: v }));
+    if (k === "owners") return pickPeople(c, t.owners, T.members(), (v) => T.save(t.id, { owners: v }), T.people());
     if (k === "start" || k === "due") return pickDate(c, t[k], (v) => T.save(t.id, { [k]: v }));
     if (k.startsWith("f:")) {
       const f = T.S.fields.get(k.slice(2));
       const set = (v) => T.save(t.id, { vals: { [f.id]: v } });
-      if (f.type === "person") return pickPeople(c, t.vals[f.id] || [], T.people(), set);
+      if (f.type === "person") return pickPeople(c, t.vals[f.id] || [], T.members(), set, T.people());
       if (isMethod(f)) return pickOne(c, METHOD_OPTS, t.vals[f.id] || "OR", set);
       if (f.type === "select") return pickOne(c, [""].concat(f.options), t.vals[f.id] || "", set);
       if (f.type === "date") return pickDate(c, t.vals[f.id], set);

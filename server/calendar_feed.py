@@ -191,33 +191,71 @@ def _meetings(w, start, end):
 
 
 def _tasks(core, w, start, end):
-    """Tasks this person owns that are due in the window."""
+    """Tasks due in the window that this person owns - or that sit below
+    (sub-tasks, at any level) a task they own: the owners of a task see
+    its sub-tasks' due dates too."""
     out = []
     try:
         import tasks as T
     except Exception:
         return out
+    mine = lambda raw: any(p.get("uid") == w.uid for p in _owners(raw))
     try:
         with T.Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
             rows = d.execute("SELECT t.*, l.title AS list_title, g.title AS group_title FROM tasks t "
                              "JOIN lists l ON l.id = t.list_id AND l.deleted = 0 "
                              "LEFT JOIN groups g ON g.id = t.group_id "
-                             "WHERE t.deleted = 0 AND t.due != '' AND substr(t.due, 1, 10) BETWEEN ? AND ? "
-                             "AND t.owners LIKE ?", (start, end, '%"uid": ' + str(w.uid) + '%')).fetchall()
+                             "WHERE t.deleted = 0 AND t.due != '' AND substr(t.due, 1, 10) BETWEEN ? AND ?",
+                             (start, end)).fetchall()
+            par = {}                  # id -> (title, owners json, parent_id) of the tasks above
+
+            def up(pid):
+                if pid not in par:
+                    x = d.execute("SELECT title, owners, parent_id FROM tasks WHERE id = ? AND deleted = 0", (pid,)).fetchone()
+                    par[pid] = (x["title"], x["owners"], x["parent_id"]) if x else None
+                return par[pid]
+            picked = []
+            for r in rows:
+                parent = ""
+                if mine(r["owners"]):
+                    ok = True
+                    if r["parent_id"] and up(r["parent_id"]):
+                        parent = up(r["parent_id"])[0] or "Untitled task"
+                else:
+                    ok, pid, depth = False, r["parent_id"], 0
+                    while pid and depth < 5:
+                        x = up(pid)
+                        if not x:
+                            break
+                        if not parent:
+                            parent = x[0] or "Untitled task"
+                        if mine(x[1]):
+                            ok = True
+                            break
+                        pid, depth = x[2], depth + 1
+                if ok:
+                    picked.append((r, parent))
     except Exception:
         return out
-    for r in rows:
+    for r, parent in picked:
         t = T.task_row(r)
-        if not any(p.get("uid") == w.uid for p in t["owners"]):
-            continue
         out.append({
             "kind": "task", "id": "t-" + t["id"], "title": t["title"] or "Untitled task",
             "start": t["due"][:10], "end": t["due"][:10], "all_day": True, "done": t["done"],
             "from": "%s / %s" % (r["list_title"] or "", r["group_title"] or ""),
+            "parent": parent,
             "priority": t["priority"],
             "url": "tasks.html?list=%s&task=%s" % (t["list_id"], t["id"]),
         })
     return out
+
+
+def _owners(raw):
+    try:
+        v = json.loads(raw or "[]")
+        return v if isinstance(v, list) else []
+    except Exception:
+        return []
 
 
 _ISS = {}        # project -> (rev, [issues with a due date])

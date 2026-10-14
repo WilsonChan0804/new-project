@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-01", date: "14 Oct 2026",
+    items: [
+      "Sheets > Files > **A CAD drawing**: **xrefs are found by themselves**. Choose only the drawing(s): the xrefs they use are taken from the files or the **folder on this PC** you chose (only the ones needed are sent), then from the project's **Folders** (any folder) - and only what is still missing is asked for: **Choose files ...**, **Choose a folder ...** or **Make the sheets without them**. No need to bind the xrefs first.",
+      "Sheets > Files: a PDF or CAD drawing can now be taken **From Folders ...** (a file already in the project's Folders, e.g. 01 Incoming) - or as before from this PC, and for CAD also **A folder on this PC ...**.",
+      "Fixed: a CAD file with a very long name (or with & in it) was refused.",
+      "Tasks: the **Owner** drop-down (and person columns) lists the **task list's members** - **Show everyone** at the bottom for anyone else.",
+      "Calendar: the owners of a task also see the due dates of its **sub-tasks** (at any level) - the entry says **Sub-task of ...**. And **Filter > Week starts on: Sunday** (or Monday) for the leftmost column.",
+    ],
+  },
+  {
     version: "2026-10-31", date: "14 Oct 2026",
     items: [
       "Sheets: importing a PDF or CAD drawings now asks everything in **one window** - sheet number, set and **where the file is kept in Folders**: by default **00 BIM > Import > PDF** (or **CAD**) **> the set's name**, or **Change folder ...** for any other folder, or **Don't keep a copy**. The choice is remembered. The CAD files (DWG / DXF and xrefs) are kept there too.",

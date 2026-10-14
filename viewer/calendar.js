@@ -32,6 +32,7 @@ const K = {
   holExtra: {},                       // added by a site admin (server)
   group: "",                          // leave of: "" every group of mine, or one group
   groups: [],
+  weekStart: 1,                       // the leftmost day: 1 Monday, 0 Sunday
 };
 try {
   const v = localStorage.getItem("lwk-viewer:cal-view");
@@ -40,6 +41,7 @@ try {
   if (Array.isArray(k)) { K.kinds = new Set(k); if (!localStorage.getItem("lwk-viewer:cal-kinds-leave")) K.kinds.add("leave"); }
   const h = JSON.parse(localStorage.getItem("lwk-viewer:cal-hol") || "null");
   if (h && typeof h === "object") K.hol = { hk: !!h.hk, ph: !!h.ph };
+  if (localStorage.getItem("lwk-viewer:cal-week") === "0") K.weekStart = 0;
 } catch (e) {}
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -47,14 +49,16 @@ const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate(
 const today = () => iso(new Date());
 const fromIso = (s) => new Date(s.slice(0, 10) + "T00:00");
 
-/* The days the view covers: whole weeks round the month (Monday first). */
+/* The days the view covers: whole weeks round the month (Monday or
+   Sunday first). */
+const col = (d) => (d.getDay() - K.weekStart + 7) % 7;      // 0 = the leftmost column
 function range() {
   const first = new Date(K.at.getFullYear(), K.at.getMonth(), 1);
   const start = new Date(first);
-  start.setDate(1 - ((first.getDay() + 6) % 7));
+  start.setDate(1 - col(first));
   const last = new Date(K.at.getFullYear(), K.at.getMonth() + 1, 0);
   const end = new Date(last);
-  end.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
+  end.setDate(last.getDate() + (6 - col(last)));
   return K.view === "month" ? [start, end] : [new Date(first), last];
 }
 
@@ -118,11 +122,11 @@ function chip(e, long) {
   const cls = `ce ${e.kind}${e.region ? " " + e.region : ""}${e.mine ? " mine" : ""}${e.done ? " done" : ""}${e.cancelled ? " cancelled" : ""}${e.reply ? " r-" + e.reply : ""}`;
   const t = timeOf(e);
   const icon = { meeting: "calendar", task: "task", issue: "flag", leave: "user", holiday: "calendar" }[e.kind];
-  return `<a class="${cls}" href="${esc(e.url)}" data-id="${esc(e.id)}" title="${esc(e.title + (e.from ? " - " + e.from : ""))}">`
+  return `<a class="${cls}" href="${esc(e.url)}" data-id="${esc(e.id)}" title="${esc(e.title + (e.parent ? " - sub-task of " + e.parent : "") + (e.from ? " - " + e.from : ""))}">`
     + `<span class="ce-i">${ic(icon, 12)}</span>`
     + (t ? `<b class="ce-t">${esc(t)}</b>` : "")
     + `<span class="ce-n">${esc(e.title)}</span>`
-    + (long ? `<small class="ce-f">${esc([e.from, e.where].filter(Boolean).join(" · "))}</small>` : "")
+    + (long ? `<small class="ce-f">${esc([e.parent ? "Sub-task of " + e.parent : "", e.from, e.where].filter(Boolean).join(" · "))}</small>` : "")
     + `</a>`;
 }
 
@@ -135,7 +139,7 @@ function paint() {
   const [a, b] = range();
   const t = today();
   const month = K.at.getMonth();
-  let h = `<div class="cm"><div class="cm-h">` + ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => `<span>${d}</span>`).join("") + `</div><div class="cm-g">`;
+  let h = `<div class="cm"><div class="cm-h">` + (K.weekStart === 0 ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]).map((d) => `<span>${d}</span>`).join("") + `</div><div class="cm-g">`;
   for (let d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
     const day = iso(d);
     const es = list.filter((e) => onDay(e, day));
@@ -186,6 +190,7 @@ function details(e) {
     + `<div class="cs-r">${ic("calendar", 14)} ${esc(when)}</div>`
     + (e.where ? `<div class="cs-r">${esc(e.where)}</div>` : "")
     + (e.link ? `<div class="cs-r"><a href="${esc(e.link)}" target="_blank" rel="noopener">Join online</a></div>` : "")
+    + (e.parent ? `<div class="cs-r">Sub-task of <b>${esc(e.parent)}</b></div>` : "")
     + (e.from ? `<div class="cs-r muted">${esc(e.from)}${e.by ? " · from " + esc(e.by) : ""}</div>` : "")
     + (reply ? `<div class="cs-r"><b>${esc(reply)}</b>${e.going ? ` <span class="muted">· ${e.going} going</span>` : ""}</div>` : "")
     + (e.notes ? `<div class="cs-notes">${esc(e.notes)}</div>` : "")
@@ -480,7 +485,18 @@ function wire() {
   const gsel = $("#cal-lgroup");
   gsel.dataset.flt = "1";
   gsel.onchange = () => { K.group = gsel.value; paint(); };
-  makeFilter({ before: $("#cal-view"), title: "Meetings, my tasks, my issues, leave", groups: [{ title: "Show", els: [kinds] }, { title: "Leave of", els: [lg] }],
+  // the week's first day (not a filter: Clear filters leaves it)
+  const wk = document.createElement("label");
+  wk.className = "cal-wk";
+  wk.innerHTML = `<select id="cal-week"><option value="1">Monday</option><option value="0">Sunday</option></select>`;
+  const wsel = wk.querySelector("select");
+  wsel.value = String(K.weekStart);
+  wsel.onchange = () => {
+    K.weekStart = wsel.value === "0" ? 0 : 1;
+    try { localStorage.setItem("lwk-viewer:cal-week", String(K.weekStart)); } catch (e) {}
+    load();
+  };
+  makeFilter({ before: $("#cal-view"), title: "Meetings, my tasks, my issues, leave", groups: [{ title: "Show", els: [kinds] }, { title: "Leave of", els: [lg] }, { title: "Week starts on", els: [wk] }],
                count: () => [...kinds.querySelectorAll("input")].filter((x) => !x.checked).length + (gsel.value ? 1 : 0) });
   lg.hidden = false;
   $("#cal-hol").onclick = (ev) => { ev.stopPropagation(); holidaysPop(ev.currentTarget); };

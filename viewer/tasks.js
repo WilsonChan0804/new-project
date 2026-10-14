@@ -56,6 +56,12 @@ export const T = {
   canEdit: () => S.role === "owner" || S.role === "editor",
   isOwner: () => S.role === "owner",
   people: () => S.people,
+  /* the people of the list open (its members): who the owner and person
+     drop-downs offer first; [] when the list has none (then everyone) */
+  members() {
+    const ids = new Set(((S.list && S.list.members) || []).map((m) => m.uid));
+    return S.people.filter((p) => ids.has(p.uid));
+  },
   groups: () => [...S.groups.values()].sort((a, b) => a.sort - b.sort || a.title.localeCompare(b.title)),
   fields: () => [...S.fields.values()].sort((a, b) => a.sort - b.sort),
   task: (id) => S.tasks.get(id),

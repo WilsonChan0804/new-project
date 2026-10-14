@@ -195,10 +195,16 @@ export async function taskForm(ctx, prefill) {
   };
   form.list.onchange = fill;
   fill();
-  form.querySelector(".tf-owners").onclick = (ev) => pickPeople(ev.currentTarget, owners, ppl, (v) => {
+  // the chosen list's members first; Show everyone for the rest
+  const listPeople = () => {
+    const l = lists.find((x) => x.id === form.list.value) || lists[0];
+    const ids = new Set((l.members || []).map((m) => m.uid));
+    return ppl.filter((x) => ids.has(x.uid));
+  };
+  form.querySelector(".tf-owners").onclick = (ev) => pickPeople(ev.currentTarget, owners, listPeople(), (v) => {
     owners = v;
     form.querySelector(".tf-owners").innerHTML = ownersHtml();
-  });
+  }, ppl);
   const f = await p;
   if (!f) return null;
   const title = f.title.value.trim();
