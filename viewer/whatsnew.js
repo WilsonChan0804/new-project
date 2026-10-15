@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-13", date: "16 Oct 2026",
+    items: [
+      "SBD side regions **worked out exactly** (report 5): the piece **nearest the projection plane**, corners on the site boundary, and beside a street the part up to the centreline only along the frontage, between lines through its two corners **parallel to the plane**.",
+      "SBD **air corridors keep their width** where they turn (the far edge square to the turned edge); the faint projection strips are gone.",
+      "SBD **Design Requirement (1)**: a facade set back beyond 30 m gives the canyon in **parts** - U = (A(a) + A(b)) / (L(a) + L(b)), Lp the parts added (Fig B7); a building not abutting a street has **Lp = the shorter side** of its smallest rectangle; the 30 m offset is a dashed line; street labels clear of the canyons.",
+      "SBD **plan level in every zone**, and every table, plan, elevation and report page says which level was used. **SBD Export (Revit)** no longer asks for the ground (Level 0 comes from the lowest street), and streets may be Floor types named **Street, Road, Lane or Path**.",
+    ],
+  },
+  {
     version: "2026-11-12", date: "16 Oct 2026",
     items: [
       "SBD **without Revit**: Checks > SBD > **CAD template** gives a DXF with the layers to draw on (SBD-SITE, SBD-STREET-<name>, SBD-MASS); draw the site, streets and masses in AutoCAD, SketchUp, Rhino ... and **Import CAD model ...** (DXF or DWG) - assessed exactly as a model from Revit.",

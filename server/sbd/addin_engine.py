@@ -145,38 +145,32 @@ def _street_for_side(site_pts, axis_u, axis_v, side):
 
 
 def _side_one(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
-    """The panel's side region with an edge that turns once, its inner edge
-    (u, v) kept, and the edge chosen (u1, v1, tan) found from it. Next to a
-    street, the region runs on to the street's centreline."""
-    del _REC[:]
-    _TRIED.clear()
-    W._edge_u_at_v = _edge_once
-    st = _street_for_side(site_pts, axis_u, axis_v, side) if not k.get("street_cl_points") else None
-    if st:
-        k["street_cl_points"] = st[0]
-        _CL_MAX[0] = st[1] + 3.0 / FEET_TO_METERS
-    try:
-        r = _side(site_pts, building_loops, axis_u, axis_v, side, *a, **k)
-    finally:
-        W._edge_u_at_v = _edge_u
-        _CL_MAX[0] = 0.0
-    if r is not None and st:
-        r["street_cl"] = True
-    if r and len(_REC) >= 2:
-        chain = _REC[-2]
-        r["inner_uv"] = chain
-        r["axes"] = (axis_u, axis_v)
-        # the candidate the drawn edge follows (where the region is not cut by
-        # the boundary, the chain lies on it)
-        best = None
-        for (u1, v1, t) in _TRIED:
-            hit = sum(1 for (u, v) in chain if abs((u1 if v <= v1 else u1 + t * (v - v1)) - u) < 1e-3)
-            if best is None or hit > best[0]:
-                best = (hit, (u1, v1, t))
-        if best and best[0] >= 2:
-            r["edge_param"] = best[1]
-    del _REC[:]
-    return r
+    """One side region, exactly (sideregion.py): the inner edge turns once,
+    the region is the piece nearest the plane, and beside a street it runs on
+    to the street's centreline between lines through the frontage's corners
+    parallel to the plane. The panel's dict, with the edge chosen
+    (edge_param), the inner chain (inner_uv) and the axes."""
+    from . import sideregion as SR
+    uv = lambda p: (p.X * axis_u.X + p.Y * axis_u.Y, p.X * axis_v.X + p.Y * axis_v.Y)
+    site = [uv(p) for p in site_pts]
+    hulls = []
+    for lp in building_loops:
+        if lp and len(lp) >= 3:
+            h = W._convex_hull_uv([W.to_uv(p, axis_u, axis_v) for p in lp])
+            if h and len(h) >= 3:
+                hulls.append([(q.u, q.v) for q in h])
+    if len(site) < 3 or not hulls:
+        return None
+    sts = [([uv(p) for p in pts], hw + 3.0 / FEET_TO_METERS) for pts, hw in STREETS]
+    r = SR.side_region(site, hulls, side, sts)
+    if not r:
+        return None
+    M_ = FEET_TO_METERS
+    poly = [W.uv_to_point(u, v, axis_u, axis_v, 0.0) for u, v in r["polygon"]]
+    return {"area_m2": r["area_ft2"] * M_ * M_, "D_m": r["D_ft"] * M_, "avg_width_m": r["S_ft"] * M_,
+            "angle_deg": r["angle_deg"], "side": side, "region_polygon": poly,
+            "inner_uv": r["inner"], "edge_param": r["edge"], "axes": (axis_u, axis_v),
+            "street_cl": r["to_cl"], "ext_uv": r["ext"]}
 
 
 _NEAR = {}

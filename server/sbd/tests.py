@@ -229,9 +229,9 @@ class Case1(unittest.TestCase):
              "masses": [mass("A", box(10, 25, 0, 40, 45, 30))]}
         c = engine.run(d)["case1"][0]
         self.assertEqual(c["buildings"], [])
-        # its Lp is still found and drawn (dashed) against the nearest street
+        # its Lp: the shorter side of its smallest bounding rectangle (report 5)
         self.assertEqual(c["others"][0]["building"], "B1")
-        self.assertAlmostEqual(c["others"][0]["Lp_m"], 30.0, places=2)
+        self.assertAlmostEqual(c["others"][0]["Lp_m"], 20.0, places=2)
         self.assertTrue(any("Main St" in n and "not applicable" in n and "35.000" in n for n in c["notes"]))
 
 
@@ -249,6 +249,12 @@ def _addin():
 class StreetSlabs(unittest.TestCase):
     def setUp(self):
         self.S = _addin()
+
+    def test_street_type_names(self):
+        for nm in ("SBD Street", "Main Road 150", "Back lane", "Footpath", "ROAD"):
+            self.assertTrue(self.S.is_street_type(nm), nm)
+        for nm in ("Generic 200", "Podium slab", ""):
+            self.assertFalse(self.S.is_street_type(nm), nm)
 
     def test_straight_street(self):
         # a 12 m wide street along y = -16 .. -4 (centreline y = -10)
@@ -574,6 +580,86 @@ class CadModel(unittest.TestCase):
         self.assertEqual(sorted(e.type for e in doc.model_ents()), ["CIRCLE", "HATCH", "LINE", "LWPOLYLINE", "TEXT"])
         self.assertIn("SBD-IS", doc.layers)
         self.assertIn("\\U+00B2", text)
+
+class Report5(unittest.TestCase):
+    """Wilson's 5th report: exact side regions (the street part between the
+    frontage's corners, parallel to the plane; the piece nearest the plane),
+    constant-width corridors, DR(1) canyons in parts, short-side Lp."""
+
+    def test_extension_from_the_frontage_corners(self):
+        from . import sideregion as SR
+        # the site's east boundary faces a street only from v = 20 to 50
+        site = [(0, 0), (100, 0), (100, 20), (100, 50), (90, 50), (90, 60), (0, 60)]
+        cl = [(110, -10), (110, 70)]
+        ext = SR.extension(site, cl, 10.0 + 3.0, "right")
+        self.assertEqual(len(ext), 1)
+        vs = sorted(set(round(p[1], 6) for p in ext[0]))
+        self.assertEqual((vs[0], vs[-1]), (0.0, 50.0) if vs[0] == 0.0 else (20.0, 50.0))
+        # the ends are lines of constant v through the corners
+        for v in (vs[0], vs[-1]):
+            us = sorted(p[0] for p in ext[0] if abs(p[1] - v) < 1e-9)
+            self.assertAlmostEqual(us[-1], 110.0, places=6)
+
+    def test_region_corners_on_the_boundary(self):
+        from . import sideregion as SR
+        site = [(0, 0), (100, 0), (100, 60), (0, 60)]
+        hull = [[(40, 10), (70, 10), (80, 50), (40, 50)]]          # a sloping east face
+        r = SR.side_region(site, hull, "right")
+        self.assertIsNotNone(r)
+        for u, v in r["polygon"]:
+            on = abs(u - 100) < 1e-6 or abs(v) < 1e-6 or abs(v - 60) < 1e-6 or \
+                any(abs(u - ue) < 1e-6 for ue in [r["edge"][0] if v <= r["edge"][1] else r["edge"][0] + r["edge"][2] * (v - r["edge"][1])])
+            self.assertTrue(on, (u, v))
+        self.assertAlmostEqual(r["S_ft"], r["area_ft2"] / r["D_ft"], places=9)
+
+    def test_the_piece_nearest_the_plane(self):
+        from . import sideregion as SR
+        # a notch splits the east strip: a small piece near the plane (v 0-10)
+        # and a larger one beyond (v 20-60) - the near one is the region
+        site = [(0, 0), (100, 0), (100, 10), (60, 10), (60, 20), (100, 20), (100, 60), (0, 60)]
+        hull = [[(30, 25), (75, 25), (75, 60), (30, 60)]]
+        r = SR.side_region(site, hull, "right")
+        self.assertLess(max(v for _, v in r["polygon"]), 10.0 + 1e-6)
+
+    def test_corridor_width_constant(self):
+        from . import nearedge as N
+        ue, uf, ms = N.corridor_edges((0.0, 10.0, 40.0, 0.2, 15.0, None, None))
+        import math
+        n = (1 / math.sqrt(1.04), -0.2 / math.sqrt(1.04))   # the angled leg's normal
+        for v in (0.0, 5.0, 45.0, 60.0):
+            self.assertAlmostEqual(uf(v) - ue(v), 15.0, places=6)          # perpendicular legs
+        for v in (15.0, 25.0, 35.0):
+            # the distance from a point on the near edge to the far edge's line
+            p = (ue(v), v)
+            q = (uf(v + 1), v + 1)
+            self.assertAlmostEqual((q[0] - p[0]) * n[0] + (q[1] - p[1]) * n[1], 15.0, places=6)
+
+    def test_recessed_facade_two_canyons(self):
+        # one block whose middle is set back beyond 30 m: two canyon parts
+        st = [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}]
+        m = mass("A", box(10, 15, 0, 30, 45, 30), box(30, 25, 0, 50, 45, 30), box(50, 15, 0, 70, 45, 30))
+        c = engine.run({"site": SITE, "streets": st, "masses": [m]})["case1"][0]
+        b = c["buildings"][0]
+        parts = b["streets"][0]["parts"]
+        self.assertEqual([p["tag"] for p in parts], ["a", "b"])
+        self.assertAlmostEqual(sum(p["L_m"] for p in parts), 40.0, delta=0.6)
+        self.assertAlmostEqual(b["U_m"], 35.0, delta=0.3)                    # (Aa + Ab) / (La + Lb)
+        self.assertAlmostEqual(b["Lp_m"], 40.0, delta=0.6)                   # the two parts' projections
+
+    def test_not_abutting_lp_is_the_short_side(self):
+        st = [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}]
+        import math
+        c_, s_ = math.cos(math.radians(20)), math.sin(math.radians(20))
+        m = box(30, 30, 0, 60, 45, 30)
+        m["verts"] = [[45 + (v[0] - 45) * c_ - (v[1] - 37.5) * s_, 37.5 + (v[0] - 45) * s_ + (v[1] - 37.5) * c_, v[2]] for v in m["verts"]]
+        c = engine.run({"site": SITE, "streets": st, "masses": [mass("A", m)]})["case1"][0]
+        self.assertAlmostEqual(c["others"][0]["Lp_m"], 15.0, places=2)
+        self.assertAlmostEqual(c["others"][0]["long_m"], 30.0, places=2)
+
+    def test_plan_levels_for_every_zone(self):
+        d = {"site": SITE, "masses": [mass("T", box(20, 20, 0, 80, 40, 100))]}
+        r = engine.run(d)
+        self.assertTrue(all(len(z["levels"]) >= 1 for z in r["zones"] if z["assessed"]))
 
 if __name__ == "__main__":
     unittest.main()

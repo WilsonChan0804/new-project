@@ -104,13 +104,13 @@ if made:
         items = [forms.TemplateListItem(lab, checked=True) for lab in labels]
     except Exception:
         items = labels
-    chosen = forms.SelectFromList.show(items, title="SBD Export - the streets (Floors of a 'Street' type)", multiselect=True,
+    chosen = forms.SelectFromList.show(items, title="SBD Export - the streets (Floors of a Street / Road / Lane / Path type)", multiselect=True,
                                        button_name="Use the ticked streets")
     if chosen is None:
         script.exit()
     made = [m for m, lab in zip(made, labels) if lab in chosen]
     streets = [st for f, st in made]
-if not streets and forms.alert("No street slabs used.\n\nModel each street as a Floor whose type name has 'Street' in it "
+if not streets and forms.alert("No street slabs used.\n\nModel each street as a Floor whose type name has Street, Road, Lane or Path in it "
                                "(kerb to kerb) - or pick its centreline and the opposite boundary now?",
                                title="SBD Export", options=["Pick lines now", "No street"]) == "Pick lines now":
     while True:
@@ -127,38 +127,17 @@ if not streets and forms.alert("No street slabs used.\n\nModel each street as a 
 if streets:
     street_axis = SE.frontage_axis(streets, site) or [streets[0]["centreline"][0], streets[0]["centreline"][-1]]
 
-# 4. the zones' ground: the street level (the street slabs' mean top level,
-# by area, near the site) - or a Level chosen
-ground, ground_source = None, ""
-street_level = SE.mean_level([f for f, st in made], site) if made else None
-levels = sorted(FilteredElementCollector(doc).OfClass(Level).ToElements(), key=lambda l: l.Elevation)
-names = ["%s (%.2f m)" % (l.Name, l.Elevation * SE.FT_M) for l in levels]
-# where the masses start (the lowest point of all of them)
+# 4. the zones' ground (Level 0) - not asked: the viewer takes the mean
+# level of each street and uses the lowest street abutting the site (B(P)R
+# Level Zero). Without streets, the masses' base.
 mass_base = min(v[2] for m in masses for v in m["mesh"].verts) if masses else None
+street_level = SE.mean_level([f for f, st in made], site) if made else None
 if street_level is not None:
-    msg = ("The zones are measured from the street level: %.2f m (the mean top level of the street slabs "
-           "near the site)." % street_level)
-    opts = ["Use %.2f m (street slabs)" % street_level]
-    if mass_base is not None and abs(mass_base - street_level) > 1.0:
-        msg += ("\n\nThe masses start at %.2f m - %.2f m %s it, so every zone would be shifted by that much "
-                "(a 10 m podium would count in the Middle zone). Is the street slab at the right level?"
-                % (mass_base, abs(mass_base - street_level), "above" if mass_base > street_level else "below"))
-        opts.append("Use %.2f m (where the masses start)" % mass_base)
-    opts.append("Choose a Level ...")
-    pick = forms.alert(msg + "\n\nWhich level are the zones measured from?", title="SBD Export", options=opts)
-    if not pick:
-        script.exit()
-    if pick.startswith("Use") and "street slabs" in pick:
-        ground, ground_source = street_level, "the street slabs"
-    elif pick.startswith("Use"):
-        ground, ground_source = mass_base, "the masses' base"
-if ground is None:
-    g = forms.SelectFromList.show(names, title="SBD Export - zones measured from (the site's ground, e.g. mean street level)",
-                                  button_name="Use this level") if names else None
-    if g:
-        ground, ground_source = levels[names.index(g)].Elevation * SE.FT_M, "Level " + levels[names.index(g)].Name
-    else:
-        ground, ground_source = 0.0, "0.00 (no level chosen)"
+    ground, ground_source = street_level, "the street slabs"
+elif mass_base is not None:
+    ground, ground_source = mass_base, "the masses' base"
+else:
+    ground, ground_source = 0.0, "0.00"
 
 # 5. the project on the viewer, then send
 settings = L.load_settings()

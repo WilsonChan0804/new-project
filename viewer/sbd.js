@@ -51,7 +51,13 @@ function canyonWorking(b, bi) {
   const st = b.streets || [];
   st.forEach((r, j) => {
     const L = canyonLetter(bi, j, st.length);
-    rows.push([`U${L}`, `Street Canyon Area ${L} / Length ${L} (${r.street}) = ${f3(r.area_m2)} m² / ${f3(r.L_m)} m = ${f3(r.U_m)} m`]);
+    const ps = r.parts || [];
+    if (ps.length > 1) {
+      // Fig B7: U = (A(a) + A(b)) / (L(a) + L(b))
+      const nm = (q) => `${L}(${q.tag})`;
+      rows.push([`U${L}`, `(Street Canyon Area ${ps.map(nm).join(" + ")}) / (Length ${ps.map(nm).join(" + ")}) (${r.street}) = (${ps.map((q) => f3(q.area_m2)).join(" + ")}) m² / (${ps.map((q) => f3(q.L_m)).join(" + ")}) m = ${f3(r.area_m2)} / ${f3(r.L_m)} = ${f3(r.U_m)} m`]);
+      rows.push([`Lp${L}`, `${ps.map((q) => `Lp${nm(q)}`).join(" + ")} = ${ps.map((q) => f3(q.Lp_m)).join(" + ")}${Math.abs(ps.reduce((t, q) => t + q.Lp_m, 0) - r.Lp_m) > 0.001 ? ` + the facade between the group's buildings` : ""} = ${f3(r.Lp_m)} m`]);
+    } else rows.push([`U${L}`, `Street Canyon Area ${L} / Length ${L} (${r.street}) = ${f3(r.area_m2)} m² / ${f3(r.L_m)} m = ${f3(r.U_m)} m`]);
   });
   const ci = Math.max(0, st.findIndex((r) => r.street === b.ctrl_street));
   const Lc = canyonLetter(bi, ci, st.length);
@@ -65,7 +71,7 @@ function canyonWorking(b, bi) {
 // the buildings that do not abut a street, and the spacings between them
 function canyonExtra(c) {
   return [...(c.spacing || []).map((sp) => [`${sp.a} - ${sp.b}`, `${f3(sp.d_m)} m apart: ${sp.grouped ? "under 15 m, one group for Lp" : "15 m or more, separate"}`]),
-    ...(c.others || []).map((o) => [`${o.building}`, `Lp ${f3(o.Lp_m)} m - ${f3(o.nearest_m)} m from the centreline of ${o.street} (over 30 m): not abutting a street`])];
+    ...(c.others || []).map((o) => [`${o.building}`, `Lp ${f3(o.Lp_m)} m - the shorter side of its smallest bounding rectangle (${f3(o.Lp_m)} x ${f3(o.long_m != null ? o.long_m : o.Lp_m)} m); ${f3(o.nearest_m)} m from the centreline of ${o.street} (over 30 m): not abutting a street`])];
 }
 // a round length for a scale bar about a quarter of w
 function niceLen(w) {
@@ -141,6 +147,8 @@ async function api(path, opts) {
   return d;
 }
 
+// the plan level a zone was assessed at
+const levelOf = (z) => (z && z.plan_level != null ? `plan at +${f3(z.plan_level)}` : "plan: all levels (worst)");
 // which side the plane is on: both side regions are measured from it
 function nearText(ax) {
   const sd = Object.values((ax && ax.sides) || {});
@@ -193,6 +201,23 @@ export function zoneSvg(res, zone, axisKey, opt) {
   const P = (p) => `${(p[0] - x0).toFixed(3)},${(y1 - p[1]).toFixed(3)}`;
   const D = (p) => [p[0] - x0, y1 - p[1]];          // plan -> drawing
   const poly = (loop) => loop.map(P).join(" ");
+  // what a street's labels should keep clear of (on the canyon view): the
+  // canyons, the Lp rectangles and the buildings
+  const busyPts = opt.canyon ? [...c1z.flatMap((c) => c.buildings.flatMap((b) => (b.streets || []).flatMap((r) => [...(r.canyon || []).flat(), ...(r.lp_rect || [])]))),
+    ...z.footprints.flatMap((f) => f.loop)] : [];
+  // along a line (u from a to b, point(u)): the spot farthest from them, in view
+  const clearSpot = (ua, ub, point, avoid) => {
+    let best = null;
+    for (let i = 0; i <= 24; i++) {
+      const u = ua + (ub - ua) * i / 24;
+      const q = point(u);
+      if (q[0] < x0 || q[0] > x1 || q[1] < y0 || q[1] > y1) continue;
+      let d = Math.min(1e9, ...busyPts.map((p) => Math.hypot(p[0] - q[0], p[1] - q[1])));
+      if (avoid != null) d = Math.min(d, Math.abs(u - avoid) * 0.5 + 0.01);
+      if (!best || d > best[1]) best = [u, d];
+    }
+    return best ? best[0] : (ua + ub) / 2;
+  };
   const fs = Math.max(W, H) / 60;          // label size in metres
   const LB = makeLabels(fs, W, H);
   const id = "c" + Math.random().toString(36).slice(2, 8);
@@ -250,7 +275,15 @@ export function zoneSvg(res, zone, axisKey, opt) {
       });
       const inView = cl.filter((p) => p[0] > x0 + fs && p[0] < x1 - fs && p[1] > y0 + fs && p[1] < y1 - fs);
       const ms = inView.length ? inView : cl;
-      const m = ms[Math.floor(ms.length / 2)], mn = ms[Math.min(ms.length - 1, Math.floor(ms.length / 2) + 1)] || m;
+      let mi = Math.floor(ms.length / 2);
+      if (busyPts.length) {
+        let bd = -1;
+        for (let i = 1; i < ms.length - 1; i += Math.max(1, Math.floor(ms.length / 30))) {
+          const d = Math.min(1e9, ...busyPts.map((p) => Math.hypot(p[0] - ms[i][0], p[1] - ms[i][1])));
+          if (d > bd) { bd = d; mi = i; }
+        }
+      }
+      const m = ms[mi], mn = ms[Math.min(ms.length - 1, mi + 1)] || m;
       let ang = Math.atan2(-(mn[1] - m[1]), mn[0] - m[0]) * 180 / Math.PI;
       if (ang > 90) ang -= 180;
       if (ang < -90) ang += 180;
@@ -274,7 +307,7 @@ export function zoneSvg(res, zone, axisKey, opt) {
   // corridors are drawn over them as measured
   if (ax) {
     const measured = (g) => (g.side && ax.sides && ax.sides[g.side]) || g.corridor;
-    s += `<g clip-path="url(#${id})">` + ax.gaps.map((g) => `<polygon points="${poly(g.strip)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity="${measured(g) ? ".07" : ".22"}" stroke="${g.qualifies ? "#16a34a" : "#dc2626"}" stroke-width="${fs / 14}" stroke-dasharray="${measured(g) ? `${fs / 3} ${fs / 4}` : "none"}"/>`).join("") + `</g>`;
+    s += `<g clip-path="url(#${id})">` + ax.gaps.filter((g) => !measured(g)).map((g) => `<polygon points="${poly(g.strip)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity="${measured(g) ? ".07" : ".22"}" stroke="${g.qualifies ? "#16a34a" : "#dc2626"}" stroke-width="${fs / 14}" stroke-dasharray="${measured(g) ? `${fs / 3} ${fs / 4}` : "none"}"/>`).join("") + `</g>`;
     for (const k of ["left", "right"]) {
       const sd = ax.sides && ax.sides[k];
       if (!sd || !sd.polygon || sd.polygon.length < 3) continue;
@@ -283,18 +316,20 @@ export function zoneSvg(res, zone, axisKey, opt) {
       // the band (its inner edge carried past the site), clipped to the site:
       // the hatch runs to the boundary; next to a street, the region runs on
       // to the street's centreline
-      s += `<polygon data-l="${ok ? "SBD-IS" : "SBD-NOT"}" data-cad-points="${poly(sd.polygon)}" points="${poly(sd.band || sd.polygon)}"${sd.band ? ` clip-path="url(#${id})"` : ""} fill="${ok ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${ok ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
-      if (sd.to_cl) s += `<polygon class="sbd-tocl" data-l="-" points="${poly(sd.polygon)}" fill="${ok ? "#16a34a" : "#dc2626"}" fill-opacity=".22" stroke="${ok ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 12}" stroke-dasharray="${fs / 2} ${fs / 4}"/>`;
+      // the region exactly as measured: to the site boundary, and beside a
+      // street on to its centreline (between lines through the frontage's
+      // corners, parallel to the plane)
+      s += `<polygon class="sbd-side${sd.to_cl ? " sbd-tocl" : ""}" data-l="${ok ? "SBD-IS" : "SBD-NOT"}" points="${poly(sd.polygon)}" fill="${ok ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${ok ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
     }
     for (const g of ax.gaps) {
-      if (g.corridor && g.corridor.length > 2) s += `<polygon data-l="${g.qualifies ? "SBD-IS" : "SBD-NOT"}" data-cad-points="${poly(g.corridor)}" points="${poly(g.band || g.corridor)}"${g.band ? ` clip-path="url(#${id})"` : ""} fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${g.qualifies ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
+      if (g.corridor && g.corridor.length > 2) s += `<polygon data-l="${g.qualifies ? "SBD-IS" : "SBD-NOT"}" points="${poly(g.ring || g.band || g.corridor)}"${!g.ring && g.band ? ` clip-path="url(#${id})"` : ""} fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${g.qualifies ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
     }
   }
   // the neighbours' buildings, and this zone's
   s += (z.others || []).map((l) => `<polygon data-l="SBD-BLDG-OTHER" points="${poly(l)}" fill="url(#${id}h)" stroke="#94a3b8" stroke-width="${fs / 12}"/>`).join("");
   s += z.footprints.map((f) => `<polygon data-l="SBD-BLDG" points="${poly(f.loop)}" fill="#475569" fill-opacity=".55" stroke="#1e293b" stroke-width="${fs / 10}"/>`).join("");
   // the air corridors (dashed blue outline over the measured band)
-  s += ((ax && ax.gaps.filter((g) => g.corridor).map((g) => ({ polygon: g.band || g.corridor, band: !!g.band }))) || []).map((c) => `<polygon data-l="SBD-CORRIDOR" points="${poly(c.polygon)}"${c.band ? ` clip-path="url(#${id})"` : ""} fill="none" stroke="#2563eb" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
+  s += ((ax && ax.gaps.filter((g) => g.corridor).map((g) => ({ polygon: g.ring || g.band || g.corridor, band: !g.ring && !!g.band }))) || []).map((c) => `<polygon data-l="SBD-CORRIDOR" points="${poly(c.polygon)}"${c.band ? ` clip-path="url(#${id})"` : ""} fill="none" stroke="#2563eb" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
   // the buildings' names (the same on the elevations)
   for (const b of z.buildings || []) LB.add({ x: b.at[0] - x0, y: y1 - b.at[1], t: b.label, size: fs * 1.1, title: b.name || "", fill: "#fff", attrs: `font-weight="700" stroke="#1e293b" stroke-width="${fs / 6}" paint-order="stroke"`, prio: 9 });
   // a dimension line a-e (plan metres), with ticks; its text through the placer
@@ -469,37 +504,63 @@ export function zoneSvg(res, zone, axisKey, opt) {
         const col = b.pass ? "#15803d" : "#dc2626";
         (b.streets || []).forEach((r, j) => {
           const L = canyonLetter(bi, j, b.streets.length);
-          for (const pg of r.canyon || []) s += `<polygon data-l="SBD-CANYON" points="${poly(pg)}" fill="${col}" fill-opacity=".3" stroke="${col}" stroke-width="${fs / 12}"/>`;
-          for (const f of r.facade || []) s += `<polyline data-l="SBD-CANYON" points="${poly(f)}" fill="none" stroke="${col}" stroke-width="${fs / 4}"/>`;
-          const pg = (r.canyon || [])[0];
-          if (pg) {
-            const ct = D(pg.reduce((m, p) => [m[0] + p[0] / pg.length, m[1] + p[1] / pg.length], [0, 0]));
-            LB.add({ x: ct[0], y: ct[1] - fs * 0.5, t: `STREET CANYON AREA ${L}`, size: fs * 0.85, fill: "#7f1d1d", attrs: HALO(fs), prio: 7 });
-            LB.add({ x: ct[0], y: ct[1] + fs * 0.6, t: `= ${f3(r.area_m2)} m²`, size: fs * 0.85, fill: "#7f1d1d", attrs: HALO(fs), prio: 7 });
+          // each part of the canyon (a facade set back beyond 30 m between
+          // two parts makes two: Fig B7 A2(a), A2(b)), with its area, its
+          // Length and its Actual Lp
+          const parts = r.parts || [{ tag: "", canyon: (r.canyon || [])[0], facade: (r.facade || [])[0], area_m2: r.area_m2, L_m: r.L_m, Lp_m: r.Lp_m, lp_line: r.lp_line, len_line: r.len_line }];
+          for (const q of parts) {
+            const nm = L + (q.tag ? `(${q.tag})` : "");
+            if (q.canyon) s += `<polygon data-l="SBD-CANYON" points="${poly(q.canyon)}" fill="${col}" fill-opacity=".3" stroke="${col}" stroke-width="${fs / 12}"/>`;
+            if (q.facade && q.facade.length > 1) s += `<polyline data-l="SBD-CANYON" points="${poly(q.facade)}" fill="none" stroke="${col}" stroke-width="${fs / 4}"/>`;
+            if (q.canyon) {
+              const ct = D(q.canyon.reduce((m, p) => [m[0] + p[0] / q.canyon.length, m[1] + p[1] / q.canyon.length], [0, 0]));
+              LB.add({ x: ct[0], y: ct[1] - fs * 0.5, t: `STREET CANYON AREA ${nm}`, size: fs * 0.85, fill: "#7f1d1d", attrs: HALO(fs), prio: 7 });
+              LB.add({ x: ct[0], y: ct[1] + fs * 0.6, t: `= ${f3(q.area_m2)} m²`, size: fs * 0.85, fill: "#7f1d1d", attrs: HALO(fs), prio: 7 });
+            }
+            if (q.lp_line) s += dim(q.lp_line[0], q.lp_line[1], `ACTUAL Lp${nm} = ${f3(q.Lp_m)} m`, "#b91c1c", "sbd-dim sbd-lpdim", 6);
+            if (q.len_line) s += dim(q.len_line[0], q.len_line[1], `LENGTH ${nm} = ${f3(q.L_m)} m`, "#b91c1c", "sbd-dim sbd-lendim", 6);
           }
-          if (r.lp_line) s += dim(r.lp_line[0], r.lp_line[1], `ACTUAL Lp${L} = ${f3(r.Lp_m)} m`, "#b91c1c", "sbd-dim sbd-lpdim", 6);
-          if (r.len_line) s += dim(r.len_line[0], r.len_line[1], `LENGTH ${L} = ${f3(r.L_m)} m`, "#b91c1c", "sbd-dim sbd-lendim", 6);
           if (r.width_dim) s += dim(r.width_dim[0], r.width_dim[1], `${f3(r.width_dim[2])} m`, "#b91c1c", "sbd-dim", 2);
           if (r.lp_rect) s += `<polygon class="sbd-lprect" data-l="SBD-LP" points="${poly(r.lp_rect)}" fill="none" stroke="#b91c1c" stroke-width="${fs / 8}" stroke-dasharray="${fs * 0.6} ${fs * 0.35}"/>`;
         });
       });
-      // the buildings not within 30 m of a street: their Lp rectangle, faint
-      // (their figures are in the table)
-      for (const o of c.others || []) s += `<polygon class="sbd-lprect sbd-na" data-l="SBD-LP" points="${poly(o.lp_rect)}" fill="none" stroke="#94a3b8" stroke-width="${fs / 12}" stroke-dasharray="${fs * 0.6} ${fs * 0.35}"/>`;
+      // the buildings not within 30 m of a street: their smallest bounding
+      // rectangle, and Lp = its shorter side, dimensioned along it
+      for (const o of c.others || []) {
+        s += `<polygon class="sbd-lprect sbd-na" data-l="SBD-LP" points="${poly(o.lp_rect)}" fill="none" stroke="#64748b" stroke-width="${fs / 12}" stroke-dasharray="${fs * 0.6} ${fs * 0.35}"/>`;
+        if (o.lp_side) {
+          // the dimension just outside the rectangle, beside its short side
+          const rc = o.lp_rect.reduce((m, p) => [m[0] + p[0] / 4, m[1] + p[1] / 4], [0, 0]);
+          const [p0, p1] = o.lp_side;
+          const mid = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
+          const out = [mid[0] - rc[0], mid[1] - rc[1]];
+          const ol = Math.hypot(out[0], out[1]) || 1;
+          const k = fs * 1.4 / ol;
+          s += dim([p0[0] + out[0] * k, p0[1] + out[1] * k], [p1[0] + out[0] * k, p1[1] + out[1] * k], `${o.building} Lp = ${f3(o.Lp_m)} m`, "#475569", "sbd-dim sbd-lpdim-na", 5);
+        }
+      }
       // the clear distance between neighbouring buildings: under 15 m they
       // are one group for Lp
       for (const sp of c.spacing || []) s += dim(sp.p, sp.q, `${f3(sp.d_m)} m ${sp.grouped ? "< 15 m: one group" : "≥ 15 m"}`, sp.grouped ? "#b45309" : "#475569", "sbd-dim sbd-spdim", 5);
     }
-    // each street: 30 m from its centreline (a short mark and its
-    // dimension, no long line), and its average width
+    // each street leg: the 30 m offset from its centreline as a dashed line
+    // across the site, its 30 m dimension and the street's width - both where
+    // the drawing is clear of the canyons
     for (const lg of res.street_legs || []) {
-      const c0 = lg.centreline[Math.floor(lg.centreline.length / 3)];
-      const e = [c0[0] + lg.normal[0] * 30, c0[1] + lg.normal[1] * 30];
-      const dd = lg.dir, k = fs * 3;
-      const [a, b] = [[e[0] - dd[0] * k, e[1] - dd[1] * k], [e[0] + dd[0] * k, e[1] + dd[1] * k]].map(D);
-      s += `<line class="sbd-30" x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${b[0].toFixed(2)}" y2="${b[1].toFixed(2)}" stroke="#2563eb" stroke-width="${fs / 8}"/>`;
-      s += dim(c0, e, "30 m", "#2563eb", "sbd-dim sbd-30dim", 4);
-      if (lg.width_dim) s += dim(lg.width_dim[0], lg.width_dim[1], `${f3(lg.width_dim[2])} m wide`, "#475569", "sbd-dim sbd-wdim", 4);
+      const dd = lg.dir, nn = lg.normal;
+      const c0p = lg.centreline[0];
+      const us = res.site.map((p) => (p[0] - c0p[0]) * dd[0] + (p[1] - c0p[1]) * dd[1]);
+      const ua = Math.min(...us) - 10, ub = Math.max(...us) + 10;
+      const at = (u, w) => [c0p[0] + dd[0] * u + nn[0] * w, c0p[1] + dd[1] * u + nn[1] * w];
+      const [a, b] = [at(ua, 30), at(ub, 30)].map(D);
+      s += `<line class="sbd-30" data-l="SBD-DIM" x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${b[0].toFixed(2)}" y2="${b[1].toFixed(2)}" stroke="#2563eb" stroke-width="${fs / 10}" stroke-dasharray="${fs * 0.9} ${fs * 0.45}"/>`;
+      const u0 = clearSpot(ua + 10, ub - 10, (u) => at(u, 15));
+      s += dim(at(u0, 0), at(u0, 30), "30 m", "#2563eb", "sbd-dim sbd-30dim", 4);
+      if (lg.width_dim) {
+        const w = lg.width_dim[2];
+        const u1 = clearSpot(ua + 10, ub - 10, (u) => at(u, 0), u0);
+        s += dim(at(u1, -w / 2), at(u1, w / 2), `${f3(w)} m wide`, "#475569", "sbd-dim sbd-wdim", 4);
+      }
     }
   }
   // the scale bar: 0 - half - a round length about a quarter of the drawing
@@ -594,7 +655,7 @@ export function elevSvg(res, zone, axisKey, opt) {
     + `<line x1="${X(0)}" y1="${yw - fs / 2}" x2="${X(0)}" y2="${yw + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/><line x1="${X(e.W_m)}" y1="${yw - fs / 2}" x2="${X(e.W_m)}" y2="${yw + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
     + `<text x="${X(e.W_m / 2)}" y="${yw - fs * 0.3}" font-size="${fs}" text-anchor="middle" fill="#0f172a">W ${f2(e.W_m)} m</text>`
     + `<text x="${X(e.W_m / 2)}" y="${yw + fs * 1.4}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569">Deformed elevation on ${axisKey === "axis1" ? "Projection Plane X" : "Projection Plane Y"} · H ${f2(e.H_m)} m</text>`
-    + `<text x="${X(0)}" y="${fs * 1.6}" font-size="${fs * 1.1}" fill="#0f172a" font-weight="600">${esc(ZONE_LABEL[zone] || zone)}${z.plan_level != null ? ` (plan at +${f3(z.plan_level)})` : ""} · P = ${f2(e.P_is)} % IS + ${f2(e.P_pe)} % PE = ${f2(e.P)} %</text>`;
+    + `<text x="${X(0)}" y="${fs * 1.6}" font-size="${fs * 1.1}" fill="#0f172a" font-weight="600">${esc(ZONE_LABEL[zone] || zone)} (${levelOf(z)}) · P = ${f2(e.P_is)} % IS + ${f2(e.P_pe)} % PE = ${f2(e.P)} %</text>`;
   return s + LB.render() + `</svg>`;
 }
 
@@ -858,7 +919,7 @@ export function createSbd(ctx) {
     if (!r.ok) { $("#sbd-sum").innerHTML = `<div class="bad">${(r.warnings || []).map(esc).join("<br>")}</div>`; return; }
     const pz = (a) => (a.P_zone != null ? a.P_zone : a.P);
     const cell = (a) => `<td class="n ${a.pass === false ? "bad" : ""}${a.required_p == null && a.pass == null && r.required_p != null ? " muted" : ""}" title="${a.elev ? `Elevation: IS ${f2(a.elev.P_is)} % + PE ${f2(a.elev.P_pe)} % · on plan IS / W ${f1(a.P)} %` : ""}${a.required_p == null && r.required_p != null ? " - for information (a site under 2 ha is checked on Plane X)" : ""}">${f1(pz(a))}`;
-    const rows = r.zones.map((z) => `<tr><td><span class="sbd-dot" style="background:${ZONE_COLOR[z.zone]}"></span>${esc(ZONE_LABEL[z.zone] || z.zone)}${z.plan_level != null ? ` <small class="muted" title="Plan level chosen">@+${f3(z.plan_level)}</small>` : ""}</td>`
+    const rows = r.zones.map((z) => `<tr><td><span class="sbd-dot" style="background:${ZONE_COLOR[z.zone]}"></span>${esc(ZONE_LABEL[z.zone] || z.zone)} <small class="muted sbd-pl" title="The plan level the zone was assessed at">${z.plan_level != null ? `@+${f3(z.plan_level)}` : "all levels"}</small></td>`
       + (z.assessed ? `${cell(z.axis1)}<small class="muted sbd-ang">${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + Math.round(z.plane_x_deg) + "°" : ""}</small></td>${cell(z.axis2)}<small class="muted sbd-ang">${z.plane_y_deg != null ? Math.round(z.plane_y_deg) + "°" : ""}</small></td><td class="n">${z.axis1.gaps.filter((g) => g.qualifies).length}/${z.axis1.gaps.length}</td>`
         : `<td colspan="3" class="muted">no building</td>`) + `</tr>`).join("");
     const ok = r.pass;
@@ -883,7 +944,7 @@ export function createSbd(ctx) {
   // the masses keep one shape
   function paintLevels(r) {
     const el = $("#sbd-levels");
-    const zs = (r.zones || []).filter((z) => z.assessed && (z.levels || []).length > 1);
+    const zs = (r.zones || []).filter((z) => z.assessed && (z.levels || []).length >= 1);
     el.hidden = !zs.length || !!B.view;
     if (el.hidden) { el.innerHTML = ""; return; }
     el.innerHTML = `<span class="muted">Plan level</span>` + zs.map((z) => `<label class="sbd-lv">${esc((ZONE_LABEL[z.zone] || z.zone).split(" ")[0])}
@@ -1028,7 +1089,7 @@ export function createSbd(ctx) {
       }
       back.querySelector(".sbd-plan").innerHTML = zoneSvg(r, zone, axisKey);
       zoomable(back.querySelector(".sbd-plan"));
-      const planes = z && z.plane_x_deg != null ? `Plane X ${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + f1(z.plane_x_deg) + "° from the street" : "along the street"} · Plane Y ${f1(z.plane_y_deg)}° from X` : "";
+      const planes = z && z.plane_x_deg != null ? `Plane X ${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + f1(z.plane_x_deg) + "° from the street" : "along the street"} · Plane Y ${f1(z.plane_y_deg)}° from X · ${levelOf(z)}` : "";
       back.querySelector(".sbd-gaps").innerHTML = ax ? `<div class="sbd-ptot">P = ${f1(ax.P_zone != null ? ax.P_zone : ax.P)} %<br><span class="muted">on the elevation · on plan IS ${f2(ax.IS_m)} m / W ${f2(ax.W_m)} m = ${f1(ax.P)} %${ax.sweep_deg ? ` · plane side turned ${ax.sweep_deg}°` : ""}</span>${planes ? `<br><span class="muted">${esc(planes)}</span>` : ""}</div>`
         + `<table class="sbd-t"><tr><th>Gap</th><th class="n">S m</th><th></th></tr>` + (() => {
           const num = gapNums(ax);
@@ -1180,15 +1241,15 @@ export function createSbd(ctx) {
       for (const k of ["axis1", "axis2"]) {
         const ax = z[k];
         const num = gapNums(ax);
-        items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · plan${z.plan_level != null ? ` at +${f3(z.plan_level)}` : ""}, ${PLANE_NAME[k]}`, tag: `P ${f2(ax.P_zone != null ? ax.P_zone : ax.P)} %`, tagColor: ZONE_COLOR[z.zone],
+        items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · ${levelOf(z)}, ${PLANE_NAME[k]}`, tag: `P ${f2(ax.P_zone != null ? ax.P_zone : ax.P)} %`, tagColor: ZONE_COLOR[z.zone],
           img: await svgPng(zoneSvg(r, z.zone, k), 2000), big: true,
           rows: [["Planes", `Plane X ${f3(z.plane_x_deg)}° from the street · Plane Y ${f3(z.plane_y_deg)}° from Plane X` + nearText(ax)],
-            ...(z.plan_level != null ? [["Plan level", `+${f3(z.plan_level)} (chosen): the masses cut at this height for the plan; the elevation is the true 3D`]] : []),
+            ["Plan level", z.plan_level != null ? `+${f3(z.plan_level)} (chosen): the masses cut at this height for the plan; the elevation is the true 3D` : "all levels (worst): every height in the zone; the elevation is the true 3D"],
             ...ax.gaps.map((g, i) => [num.get(i), g, i]).sort((p, q) => Number(p[0].slice(1)) - Number(q[0].slice(1)))
               .map(([nm, g]) => [`${nm} (${gapKind(g)})`, `${gapHow(g, ax, nm)} - ${g.qualifies ? "counts" : `does not count (min ${g.threshold_m || 7.5} m)`}`, g.qualifies ? "#16a34a" : "#dc2626"]),
             ...((ax.edge || []).length ? [["Along the plane (W)", ax.edge.map((it) => it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.s_m)}` : `${it.label} ${f3(it.hi - it.lo)}`).join(" + ") + ` = ${f3(ax.edge.reduce((t, it) => t + (it.kind === "gap" ? it.s_m : it.hi - it.lo), 0))} m`]] : []),
             ...(k === "axis1" && (z.tried || []).length > 1 ? [["Planes tried", z.tried.map((t) => `X ${f3(t.x_deg)}° / Y ${f3(t.y_deg)}°: P X ${f2(t.P_x)} %, P Y ${f2(t.P_y)} %${t.chosen ? " (used)" : ""}`).join("; ")]] : [])] });
-        if (ax.elev) items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · elevation on ${k === "axis1" ? "Plane X" : "Plane Y"}`, tag: `P ${f2(ax.elev.P)} %`, tagColor: ZONE_COLOR[z.zone],
+        if (ax.elev) items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · elevation on ${k === "axis1" ? "Plane X" : "Plane Y"} (${levelOf(z)})`, tag: `P ${f2(ax.elev.P)} %`, tagColor: ZONE_COLOR[z.zone],
           img: await svgPng(elevSvg(r, z.zone, k), 2000), big: true, rows: elevWorking(ax.elev, ax.required_p != null ? ax.required_p : r.required_p, ax) });
       }
     }
@@ -1219,7 +1280,7 @@ export function createSbd(ctx) {
         ["Level 0", levelText(r)],
         ["Masses", B.model ? `${B.model.masses.length}, from ${B.model.model || "Revit"} (${(B.model.at || "").slice(0, 10)})` : ""],
         ...((r.warnings || []).length ? [["Warnings", r.warnings.join(" / ")]] : [])],
-      table: { cols: ["Zone", "P Plane X %", "P Plane Y %", "Case 1: Lp / 5U m"], rows: r.zones.map((z) => [ZONE_LABEL[z.zone] || z.zone,
+      table: { cols: ["Zone", "Plan level", "P Plane X %", "P Plane Y %", "Case 1: Lp / 5U m"], rows: r.zones.map((z) => [ZONE_LABEL[z.zone] || z.zone, z.assessed ? (z.plan_level != null ? `+${f3(z.plan_level)}` : "all levels (worst)") : "-",
         z.assessed ? f1(z.axis1.P_zone != null ? z.axis1.P_zone : z.axis1.P) : "-", z.assessed ? f1(z.axis2.P_zone != null ? z.axis2.P_zone : z.axis2.P) : "-",
         (r.case1 || []).filter((c) => c.zone === z.zone).flatMap((c) => c.buildings.map((b) => `${f1(b.Lp_m)} / ${f1(b.Lp_max_m)}${b.pass ? "" : " FAIL"}`)).join(", ") || "-"]) },
       items,

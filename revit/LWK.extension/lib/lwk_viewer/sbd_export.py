@@ -85,7 +85,7 @@ def chain(segments, tol=CLOSE_TOL_M):
 
 
 # ------------------------------------------------- streets from Floor slabs
-# A street is a Floor of a type named "... Street ...", drawn from street
+# A street is a Floor of a type named "... Street / Road / Lane / Path ...", drawn from street
 # boundary to street boundary. Its outline is a strip: two long sides and
 # two short ends. The centreline is half-way between the long sides; the
 # side away from the site is the opposite site's boundary (Case 1 U).
@@ -308,15 +308,24 @@ def _type_name(doc, el):
             return ""
 
 
-def street_floors(doc, word="street"):
+STREET_WORDS = ("street", "road", "lane", "path")
+
+
+def is_street_type(type_name, words=STREET_WORDS):
+    """A Floor type for a street: its name has street, road, lane or path in it."""
+    t = (type_name or "").lower()
+    return any(w in t for w in words)
+
+
+def street_floors(doc, words=STREET_WORDS):
     """[{"id", "name", "loop", "z", "area"}] of the Floors whose type name has
-    "street" in it: the outline of each top face (metres), its mean level
-    and its area."""
+    street, road, lane or path in it: the outline of each top face (metres),
+    its mean level and its area."""
     from Autodesk.Revit.DB import FilteredElementCollector, Floor, HostObjectUtils
     out = []
     for fl in FilteredElementCollector(doc).OfClass(Floor).WhereElementIsNotElementType():
         tn = _type_name(doc, fl)
-        if word not in tn.lower():
+        if not is_street_type(tn, words):
             continue
         try:
             refs = HostObjectUtils.GetTopFaces(fl)

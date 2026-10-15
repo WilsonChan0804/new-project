@@ -12,6 +12,8 @@ Also here: each band as a polygon running past the site, for the plan to
 draw clipped to the site, so a hatch always reaches the boundary.
 """
 
+import math
+
 from . import addin_engine as A
 from .geom import FEET_TO_METERS
 
@@ -59,14 +61,37 @@ def _vrange(poly, au, av):
     return (min(vs), max(vs)) if vs else (None, None)
 
 
-def corridor_band(poly, site_uv):
-    """An S2 corridor's band (u, v) ring, feet: the edge (perpendicular,
-    angled, perpendicular) and its offset, from where it leaves the site
-    to where it leaves it again."""
-    u1, v1, v2, t, w, au, av = poly.band
+def corridor_edges(band):
+    """A corridor's two edges as functions of v (feet): the near edge
+    (perpendicular, angled, perpendicular) and the far edge - the near edge
+    offset by the width ALONG ITS NORMAL, as the panel measures it, mitred at
+    the bends: so the corridor is as wide where it turns as elsewhere.
+    -> (ue, uf, breaks)."""
+    u1, v1, v2, t, w, au, av = band
 
     def ue(v):
         return u1 if v <= v1 else u1 + t * (min(v, v2) - v1)
+    if abs(t) < 1e-12 or v2 <= v1 + 1e-9:
+        return ue, (lambda v: ue(v) + w), []
+    k = math.sqrt(1.0 + t * t)
+    m1 = v1 - w * (k - 1.0) / t          # where the far edge turns (the mitres)
+    m2 = v2 - w * (k - 1.0) / t
+    ua = lambda v: u1 + t * (v - v1) + w * k
+
+    def uf(v):
+        if v <= m1:
+            return u1 + w
+        if v >= m2:
+            return ue(v2) + w
+        return ua(v)
+    return ue, uf, [m1, m2]
+
+
+def corridor_band(poly, site_uv):
+    """An S2 corridor's band (u, v) ring, feet: its two edges, each on to
+    where it leaves the site, past the site (the near-edge partition)."""
+    u1, v1, v2, t, w, au, av = poly.band
+    ue, uf, ms = corridor_edges(poly.band)
     p0, p1 = _vrange(poly, au, av)
     if p0 is None:
         p0, p1 = min(q[1] for q in site_uv), max(q[1] for q in site_uv)
@@ -74,11 +99,72 @@ def corridor_band(poly, site_uv):
     # edges leave the site at different depths): both corners on the boundary
     inset = 0.02 * (1 if w > 0 else -1)
     a_lo, a_hi = _reach(site_uv, p0, p1, lambda v: ue(v) + inset)
-    b_lo, b_hi = _reach(site_uv, p0, p1, lambda v: ue(v) + w - inset)
+    b_lo, b_hi = _reach(site_uv, p0, p1, lambda v: uf(v) - inset)
     va = [a_lo] + [v for v in (v1, v2) if a_lo < v < a_hi] + [a_hi]
-    vb = [b_lo] + [v for v in (v1, v2) if b_lo < v < b_hi] + [b_hi]
+    vb = [b_lo] + [v for v in ms if b_lo < v < b_hi] + [b_hi]
     left = [(ue(v), v) for v in va]
-    right = [(ue(v) + w, v) for v in reversed(vb)]
+    right = [(uf(v), v) for v in reversed(vb)]
+    return left + right
+
+
+def corridor_ring(poly, site_uv):
+    """The corridor as drawn: between its two edges and inside the site (the
+    piece the panel found it in), exactly - its ends on the boundary. (u, v)
+    ring, feet, or None."""
+    from .sideregion import _spans
+    u1, v1, v2, t, w, au, av = poly.band
+    ue, uf, ms = corridor_edges(poly.band)
+    p0, p1 = _vrange(poly, au, av)
+    if p0 is None:
+        return None
+    lo_e = lambda v: min(ue(v), uf(v))
+    hi_e = lambda v: max(ue(v), uf(v))
+    vs = {p0, p1, v1, v2} | set(ms)
+    from .sideregion import _cross
+    k = math.sqrt(1.0 + t * t)
+    pieces = [(u1, v1, 0.0), (u1, v1, t), (ue(v2), v2, 0.0), (u1 + w, v1, 0.0), (u1 + w * k, v1, t), (ue(v2) + w, v2, 0.0)]
+    for a_, b_ in zip(site_uv, site_uv[1:] + site_uv[:1]):
+        vs.add(a_[1])
+        # where each edge line crosses this boundary edge: the ends' corners
+        for pc in pieces:
+            c = _cross(pc, a_, b_)
+            if c is not None:
+                vs.add(c)
+    # the crossings: bisect each station gap where an end changes side
+    vlo, vhi = min(q[1] for q in site_uv), max(q[1] for q in site_uv)
+    base = sorted(v for v in vs if vlo - 1e-9 <= v <= vhi + 1e-9)
+    dense = []
+    for a, b in zip(base, base[1:]):
+        n = max(1, int((b - a) / 2.0))
+        dense += [a + (b - a) * i / n for i in range(n)]
+    dense.append(base[-1])
+
+    def iv(v):
+        sp = _spans(site_uv, v)
+        a, b = lo_e(v), hi_e(v)
+        m = (a + b) / 2.0
+        for s0, s1 in sp:
+            if s0 - 1e-6 <= m <= s1 + 1e-6 or (s0 < b and s1 > a):
+                lo, hi = max(a, s0), min(b, s1)
+                if hi - lo > 1e-3:
+                    return lo, hi
+        return None
+    runs, cur = [], []
+    for v in dense:
+        r = iv(v)
+        if r:
+            cur.append((v, r))
+        elif cur:
+            runs.append(cur)
+            cur = []
+    if cur:
+        runs.append(cur)
+    if not runs:
+        return None
+    mid = (p0 + p1) / 2.0
+    run = min(runs, key=lambda r: 0 if r[0][0] <= mid <= r[-1][0] else min(abs(r[0][0] - mid), abs(r[-1][0] - mid)))
+    left = [(r[0], v) for v, r in run]
+    right = [(r[1], v) for v, r in reversed(run)]
     return left + right
 
 
@@ -114,7 +200,7 @@ def side_band(sd, site_uv):
             return None
         ue = lambda v: min(inner, key=lambda q: abs(q[1] - v))[0]
     iu = ue((p0 + p1) / 2.0)
-    out = -1.0 if cu < iu else 1.0
+    out = {"left": -1.0, "right": 1.0}.get(sd.get("side")) or (-1.0 if cu < iu else 1.0)
     v_lo, v_hi = _reach(site_uv, p0, p1, lambda v: ue(v) + out * 1.0)
     edge = side_edge(sd, v_lo, v_hi)[0] if got else [(ue(v_lo), v_lo), (ue(v_hi), v_hi)]
     u_far = (min(q[0] for q in site_uv) - REACH_FT) if out < 0 else (max(q[0] for q in site_uv) + REACH_FT)
