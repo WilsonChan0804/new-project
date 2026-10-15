@@ -190,10 +190,21 @@ def _meetings(w, start, end):
     return out
 
 
+def _owns_below(d, tid, mine, depth=0):
+    """True when the person owns a sub-task of task tid (any level, up to 5)."""
+    if depth >= 5:
+        return False
+    for x in d.execute("SELECT id, owners FROM tasks WHERE parent_id = ? AND deleted = 0", (tid,)).fetchall():
+        if mine(x["owners"]) or _owns_below(d, x["id"], mine, depth + 1):
+            return True
+    return False
+
+
 def _tasks(core, w, start, end):
     """Tasks due in the window that this person owns - or that sit below
     (sub-tasks, at any level) a task they own: the owners of a task see
-    its sub-tasks' due dates too."""
+    its sub-tasks' due dates too - or that hold a sub-task they own: the
+    task's own due date shows beside its sub-tasks'."""
     out = []
     try:
         import tasks as T
@@ -233,6 +244,8 @@ def _tasks(core, w, start, end):
                             ok = True
                             break
                         pid, depth = x[2], depth + 1
+                if not ok and _owns_below(d, r["id"], mine):
+                    ok = True         # a task whose sub-tasks are this person's: its own due date shows too
                 if ok:
                     picked.append((r, parent))
     except Exception:

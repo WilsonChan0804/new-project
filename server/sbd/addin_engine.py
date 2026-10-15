@@ -73,14 +73,41 @@ W._dp_simplify = _dp_rec
 _side = W.side_average_width
 
 
+_edge_u = W._edge_u_at_v
+_TRIED = set()
+
+
+def _edge_once(v, u1, v1, v2, tan_t):
+    """A side region's edge turns ONCE: perpendicular to the plane, then at
+    its angle (<= 15 deg) on to the end - it does not return (Wilson,
+    report 3). The corridors keep the panel's bend-and-return."""
+    _TRIED.add((u1, v1, tan_t))
+    return u1 if v <= v1 else u1 + tan_t * (v - v1)
+
+
 def side_average_width(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
-    """The panel's side region, with its inner edge (u, v) kept: the
-    region's ring is that edge plus the boundary (its last two chains)."""
+    """The panel's side region with an edge that turns once, its inner edge
+    (u, v) kept, and the edge chosen (u1, v1, tan) found from it."""
     del _REC[:]
-    r = _side(site_pts, building_loops, axis_u, axis_v, side, *a, **k)
+    _TRIED.clear()
+    W._edge_u_at_v = _edge_once
+    try:
+        r = _side(site_pts, building_loops, axis_u, axis_v, side, *a, **k)
+    finally:
+        W._edge_u_at_v = _edge_u
     if r and len(_REC) >= 2:
-        r["inner_uv"] = _REC[-2]
+        chain = _REC[-2]
+        r["inner_uv"] = chain
         r["axes"] = (axis_u, axis_v)
+        # the candidate the drawn edge follows (where the region is not cut by
+        # the boundary, the chain lies on it)
+        best = None
+        for (u1, v1, t) in _TRIED:
+            hit = sum(1 for (u, v) in chain if abs((u1 if v <= v1 else u1 + t * (v - v1)) - u) < 1e-3)
+            if best is None or hit > best[0]:
+                best = (hit, (u1, v1, t))
+        if best and best[0] >= 2:
+            r["edge_param"] = best[1]
     del _REC[:]
     return r
 

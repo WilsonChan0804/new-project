@@ -224,7 +224,9 @@ def zone_elevation(masses, ground, items, z0, z1, ax, req_p=None, exempt=0.0):
     for it in items:
         if it["kind"] == "gap":
             w = max(float(it["s_m"] or 0.0), 0.0)
-            k = "is" if it["pass"] else "nis"
+            # a gap that counts is IS; one that does not reach its S but is
+            # >= 3 m wide is a permeable element (PE); narrower, not counted
+            k = "is" if it["pass"] else "pe" if w >= PE_MIN - EPS else "nis"
             col = [("exempt" if ex_top is not None and zb <= ex_top + EPS else k) for za, zb in rows]
             pieces.append((x, x + w, [(w, w, col)], it))
         else:

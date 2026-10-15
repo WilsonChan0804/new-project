@@ -128,7 +128,10 @@ function css() {
 .lwk-np h4 { display: flex; align-items: center; }
 .lwk-np .lnk { margin-left: auto; border: 0 !important; background: none !important; color: var(--accent-deep, #d1660e) !important; font-size: 11px !important; padding: 0 !important; }
 .np-list { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; }
-.np-it { display: flex; gap: 8px; padding: 6px; border-radius: 6px; text-decoration: none; color: inherit; }
+.np-row { display: flex; align-items: flex-start; gap: 2px; }
+.np-ck { flex: none; display: flex; align-items: center; padding: 9px 2px 0 2px; cursor: pointer; }
+.np-ck input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent, #f28022); cursor: pointer; }
+.np-it { flex: 1; min-width: 0; display: flex; gap: 8px; padding: 6px; border-radius: 6px; text-decoration: none; color: inherit; }
 .np-it:hover { background: rgba(242,128,34,.1); }
 .np-it.new { background: rgba(242,128,34,.08); }
 .np-it.new b { color: var(--accent-deep, #d1660e); }
@@ -193,8 +196,9 @@ async function recentHtml() {
   const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const when = (a) => { const d = new Date(a); return isNaN(d) ? "" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
   return `<section><h4>For you ${r.unread ? `<button class="lnk" data-np="readall">Mark all read</button>` : ""}</h4><div class="np-list">`
-    + r.items.slice(0, 20).map((x) => `<a class="np-it${x.read ? "" : " new"}" href="${esc(x.url)}" data-in="${esc(x.id)}">`
-      + `<span class="np-k">${KIND_ICON[x.kind] || "&#8226;"}</span><span class="np-t"><b>${esc(x.title)}</b><small>${esc(x.body)}</small><small class="muted">${esc(when(x.at))}</small></span></a>`).join("")
+    + r.items.slice(0, 20).map((x) => `<div class="np-row"><label class="np-ck" title="${x.read ? "Read - untick to mark unread" : "Mark read"}"><input type="checkbox" data-rd="${esc(x.id)}"${x.read ? " checked" : ""} aria-label="Read"></label>`
+      + `<a class="np-it${x.read ? "" : " new"}" href="${esc(x.url)}" data-in="${esc(x.id)}">`
+      + `<span class="np-k">${KIND_ICON[x.kind] || "&#8226;"}</span><span class="np-t"><b>${esc(x.title)}</b><small>${esc(x.body)}</small><small class="muted">${esc(when(x.at))}</small></span></a></div>`).join("")
     + `</div></section>`;
 }
 
@@ -267,6 +271,20 @@ async function paintPanel() {
     catch (e) { alert(e.message); }
   };
   panel.onclick = async (ev) => {
+    // the checkbox: read / unread without opening it
+    const ck = ev.target.closest("input[data-rd]");
+    if (ck) {
+      const read = ck.checked;
+      const a = ck.closest(".np-row").querySelector(".np-it");
+      a.classList.toggle("new", !read);
+      ck.parentElement.title = read ? "Read - untick to mark unread" : "Mark read";
+      try {
+        const r = await call("/api/chat/inbox/read", { method: "POST", body: JSON.stringify({ ids: [ck.dataset.rd], read }) });
+        if (r && r.unread != null) { N.inbox = r.unread; paintBell(); }
+      } catch (e) { ck.checked = !read; a.classList.toggle("new", read); }
+      return;
+    }
+    if (ev.target.closest(".np-ck")) return;
     const it = ev.target.closest("[data-in]");
     if (it) { call("/api/chat/inbox/read", { method: "POST", body: JSON.stringify({ ids: [it.dataset.in] }) }).catch(() => {}); return; }
     const b = ev.target.closest("[data-np]");

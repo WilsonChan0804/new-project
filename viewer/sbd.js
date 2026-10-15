@@ -81,10 +81,15 @@ export function zoneSvg(res, zone, axisKey, opt) {
   const z = (res.zones || []).find((x) => x.zone === zone);
   if (!z) return "";
   const streets = res.streets || [];
-  const pts = [...res.site, ...z.footprints.flatMap((f) => f.loop), ...streets.flatMap((s) => (s.outline && s.outline.length ? s.outline : s.centreline))];
+  // the drawing is the site and its buildings (and the canyons): the
+  // streets run on beyond its edge, cut off
+  const c1z = (res.case1 || []).filter((x) => x.zone === zone);
+  const pts = [...res.site, ...z.footprints.flatMap((f) => f.loop),
+    ...(opt.canyon ? c1z.flatMap((c) => c.buildings.flatMap((b) => (b.streets || []).flatMap((r) => [...(r.canyon || []).flat(), ...(r.lp_line || []), ...(r.len_line || [])])))
+      .concat((res.street_legs || []).flatMap((lg) => lg.offset30 || [])) : [])];
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const pad = Math.max(x1 - x0, y1 - y0) * 0.14 + 6;      // room for the near edge's dimensions
+  const pad = Math.max(x1 - x0, y1 - y0) * 0.16 + 8;      // room for the near edge's dimensions and the axes
   x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
   const W = x1 - x0, H = y1 - y0;
   const P = (p) => `${(p[0] - x0).toFixed(3)},${(y1 - p[1]).toFixed(3)}`;
@@ -102,8 +107,34 @@ export function zoneSvg(res, zone, axisKey, opt) {
     if (st.outline && st.outline.length) s += `<polygon points="${poly(st.outline)}" fill="#e2e8f0" stroke="#94a3b8" stroke-width="${fs / 12}"/>`;
     if (st.centreline && st.centreline.length > 1) {
       s += `<polyline points="${poly(st.centreline)}" fill="none" stroke="#64748b" stroke-width="${fs / 10}" stroke-dasharray="${fs} ${fs / 3} ${fs / 6} ${fs / 3}"/>`;
-      const m = st.centreline[Math.floor(st.centreline.length / 2)];
-      s += `<text x="${(m[0] - x0).toFixed(2)}" y="${(y1 - m[1] - fs * 0.4).toFixed(2)}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569" font-style="italic">℄ ${esc(st.name || "Street")}</text>`;
+      // its name along it (clear of the line), the centre-line symbol at
+      // its end, and the mean street level - Level 0 of the assessment
+      // the centreline as drawn, cut to the drawing (densified: a long
+      // straight street is two far-away points)
+      const cl = [];
+      st.centreline.forEach((p, i) => {
+        const q = st.centreline[i + 1];
+        if (!q) { cl.push(p); return; }
+        const n = Math.max(1, Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) / (fs / 2)));
+        for (let k = 0; k < n; k++) cl.push([p[0] + (q[0] - p[0]) * k / n, p[1] + (q[1] - p[1]) * k / n]);
+      });
+      const inView = cl.filter((p) => p[0] > x0 + fs && p[0] < x1 - fs && p[1] > y0 + fs && p[1] < y1 - fs);
+      const ms = inView.length ? inView : cl;
+      const m = ms[Math.floor(ms.length / 2)], mn = ms[Math.min(ms.length - 1, Math.floor(ms.length / 2) + 1)] || m;
+      let ang = Math.atan2(-(mn[1] - m[1]), mn[0] - m[0]) * 180 / Math.PI;
+      if (ang > 90) ang -= 180;
+      if (ang < -90) ang += 180;
+      const nrm = [Math.sin(ang * Math.PI / 180), Math.cos(ang * Math.PI / 180)];
+      const tx = (m[0] - x0) + nrm[0] * fs * 0.8, ty = (y1 - m[1]) + nrm[1] * fs * 0.8;
+      s += `<text class="sbd-stname" x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569" font-style="italic" transform="rotate(${ang.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})">${esc(st.name || "Street")}</text>`;
+      if (res.ground_z != null) {
+        const lx = (m[0] - x0) - nrm[0] * fs * 1.2, ly = (y1 - m[1]) - nrm[1] * fs * 1.2;
+        s += `<text class="sbd-msl" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" font-size="${fs * 0.7}" text-anchor="middle" fill="#0f766e" transform="rotate(${ang.toFixed(2)} ${lx.toFixed(2)} ${ly.toFixed(2)})">Mean street level +${f3(res.ground_z)} (Level 0)</text>`;
+      }
+      const end = ms[ms.length - 1], pre = ms[Math.max(0, ms.length - 2)];
+      const dl = Math.hypot(end[0] - pre[0], end[1] - pre[1]) || 1;
+      const ex = end[0] - x0 + (end[0] - pre[0]) / dl * fs * 0.2, ey = y1 - end[1] - (end[1] - pre[1]) / dl * fs * 0.2;
+      s += `<text class="sbd-cl" x="${ex.toFixed(2)}" y="${ey.toFixed(2)}" font-size="${fs * 1.3}" text-anchor="middle" dominant-baseline="middle" fill="#475569" stroke="#fff" stroke-width="${fs / 6}" paint-order="stroke">℄</text>`;
     }
     if (st.opposite && st.opposite.length > 1) s += `<polyline points="${poly(st.opposite)}" fill="none" stroke="#0f172a" stroke-width="${fs / 8}"/>`;
   }
@@ -204,6 +235,12 @@ export function zoneSvg(res, zone, axisKey, opt) {
         const out = (Math.min(...us) + Math.max(...us)) / 2 < mid ? Math.min(...us) - fs * 1.5 : Math.max(...us) + fs * 1.5;
         const P2 = (u, v) => [u * ax.axis[0] + v * avv[0], u * ax.axis[1] + v * avv[1]];
         s += dim(P2(out, Math.min(...vs)), P2(out, Math.max(...vs)), `L${k} = ${f3(sd.depth_m)} m`, col, "sbd-dim sbd-ldim");
+        // witness lines from the region's two ends to the dimension
+        for (const vEnd of [Math.min(...vs), Math.max(...vs)]) {
+          const q = uv[vs.indexOf(vEnd)];
+          const [a, e] = [P2(q[0], q[1]), P2(out, vEnd)].map((p) => [p[0] - x0, y1 - p[1]]);
+          s += `<line class="sbd-wit" x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${e[0].toFixed(2)}" y2="${e[1].toFixed(2)}" stroke="${col}" stroke-width="${fs / 16}" stroke-dasharray="${fs / 4} ${fs / 6}"/>`;
+        }
       }
       // the turn (any angle 0-15°): an arc from the perpendicular
       const deg = g.corridor ? g.bend_deg : sd ? sd.angle_deg : null;
@@ -228,7 +265,7 @@ export function zoneSvg(res, zone, axisKey, opt) {
         const col = it.kind === "gap" ? (it.pass ? "#15803d" : "#b91c1c") : "#334155";
         s += line(at(it.lo, v), at(it.hi, v), col, fs / 5);
         const m = at((it.lo + it.hi) / 2, v + sg * fs * 0.9);
-        const txt = it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.s_m)}${it.pass ? "" : " ✗"} (proj ${f3(it.hi - it.lo)})` : `${it.label} ${f3(it.hi - it.lo)}`;
+        const txt = it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.s_m)}${it.pass ? "" : " ✗"}` : `${it.label} ${f3(it.hi - it.lo)}`;
         s += `<text x="${m[0].toFixed(2)}" y="${m[1].toFixed(2)}" font-size="${fs * 0.75}" text-anchor="middle" dominant-baseline="middle" fill="${col}" transform="rotate(${deg.toFixed(2)} ${m[0].toFixed(2)} ${m[1].toFixed(2)})" stroke="#fff" stroke-width="${fs / 6}" paint-order="stroke">${esc(txt)}</text>`;
       }
       s += `</g>`;
@@ -273,8 +310,23 @@ export function zoneSvg(res, zone, axisKey, opt) {
           if (r.lp_line) s += dim(r.lp_line[0], r.lp_line[1], `ACTUAL Lp${L} = ${f3(r.Lp_m)} m`, "#b91c1c", "sbd-dim sbd-lpdim");
           if (r.len_line) s += dim(r.len_line[0], r.len_line[1], `LENGTH ${L} = ${f3(r.L_m)} m`, "#b91c1c", "sbd-dim sbd-lendim");
           if (r.width_dim) s += dim(r.width_dim[0], r.width_dim[1], `${f3(r.width_dim[2])} m`, "#b91c1c", "sbd-dim");
+          if (r.lp_rect) s += `<polygon class="sbd-lprect" points="${poly(r.lp_rect)}" fill="none" stroke="#b91c1c" stroke-width="${fs / 8}" stroke-dasharray="${fs * 0.6} ${fs * 0.35}"/>`;
         });
       });
+      // the buildings not within 30 m of a street: their Lp all the same
+      for (const o of c.others || []) {
+        s += `<polygon class="sbd-lprect" points="${poly(o.lp_rect)}" fill="none" stroke="#64748b" stroke-width="${fs / 8}" stroke-dasharray="${fs * 0.6} ${fs * 0.35}"/>`;
+        const q = o.lp_rect;
+        s += dim(q[3], q[2], `${o.building} Lp = ${f3(o.Lp_m)} m (${f3(o.nearest_m)} m from ℄ > 30 m)`, "#475569", "sbd-dim sbd-lpdim-na");
+      }
+    }
+    // each street: its 30 m line from the centreline, and its average width
+    for (const lg of res.street_legs || []) {
+      const [a, e] = lg.offset30;
+      s += `<line class="sbd-30" x1="${(a[0] - x0).toFixed(2)}" y1="${(y1 - a[1]).toFixed(2)}" x2="${(e[0] - x0).toFixed(2)}" y2="${(y1 - e[1]).toFixed(2)}" stroke="#2563eb" stroke-width="${fs / 8}" stroke-dasharray="${fs * 0.5} ${fs * 0.3}"/>`;
+      const c0 = lg.centreline[Math.floor(lg.centreline.length / 3)];
+      s += dim(c0, [c0[0] + lg.normal[0] * 30, c0[1] + lg.normal[1] * 30], "30 m", "#2563eb", "sbd-dim sbd-30dim");
+      if (lg.width_dim) s += dim(lg.width_dim[0], lg.width_dim[1], `${lg.name}: ${f3(lg.width_dim[2])} m wide`, "#475569", "sbd-dim sbd-wdim");
     }
   }
   // the scale bar: 0 - half - a round length about a quarter of the drawing
@@ -322,11 +374,12 @@ export function elevSvg(res, zone, axisKey, opt) {
     s += `<rect x="${X(u0)}" y="${Y(h1)}" width="${(u1 - u0).toFixed(3)}" height="${(h1 - h0).toFixed(3)}" fill="${fill(k)}" stroke="${k === "bldg" ? "#475569" : k === "nis" ? "#dc2626" : "none"}" stroke-width="${fs / 14}"/>`;
   }
   // the counted parts, numbered IS1, IS2 ... (PE1 ...) with their sizes
-  for (const [i, [u0, u1, h0, h1, k]] of isParts(e).entries()) {
+  for (const g of isGroups(e)) {
+    const [u0, u1, h0, h1] = g.box;
     if (u1 - u0 < fs * 2 || h1 - h0 < fs * 1.2) continue;
-    const nm = (k === "pe" ? "PE" : "IS") + (i + 1);
-    s += `<text x="${X((u0 + u1) / 2)}" y="${Y((h0 + h1) / 2 + fs * 0.2)}" font-size="${fs * 0.8}" text-anchor="middle" fill="${k === "pe" ? "#1e3a8a" : "#14532d"}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${nm}</text>`
-      + `<text x="${X((u0 + u1) / 2)}" y="${Y((h0 + h1) / 2 - fs * 0.9)}" font-size="${fs * 0.65}" text-anchor="middle" fill="${k === "pe" ? "#1e3a8a" : "#14532d"}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${f3(u1 - u0)} x ${f3(h1 - h0)}</text>`;
+    const col = g.pe ? "#1e3a8a" : "#14532d";
+    s += `<text x="${X((u0 + u1) / 2)}" y="${Y((h0 + h1) / 2 + fs * 0.2)}" font-size="${fs * 0.8}" text-anchor="middle" fill="${col}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${g.name}</text>`
+      + `<text x="${X((u0 + u1) / 2)}" y="${Y((h0 + h1) / 2 - fs * 0.9)}" font-size="${fs * 0.65}" text-anchor="middle" fill="${col}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${g.how}</text>`;
   }
   // the buildings' profile: each step of their tops dimensioned above the
   // zone, and its height
@@ -335,10 +388,10 @@ export function elevSvg(res, zone, axisKey, opt) {
     const yp = T - fs * 2.4;
     const tk = (x) => `<line x1="${X(x)}" y1="${yp - fs / 2}" x2="${X(x)}" y2="${yp + fs / 2}" stroke="#1d4ed8" stroke-width="${fs / 10}"/>`;
     s += `<g class="sbd-prof"><line x1="${X(prof[0][0])}" y1="${yp}" x2="${X(prof[prof.length - 1][1])}" y2="${yp}" stroke="#1d4ed8" stroke-width="${fs / 10}"/>`;
-    for (const [a, b, h] of prof) {
+    for (const [a, b, h, hLow] of prof) {
       s += tk(a) + tk(b) + `<line x1="${X(a)}" y1="${yp}" x2="${X(a)}" y2="${Y(h)}" stroke="#1d4ed8" stroke-width="${fs / 20}" stroke-dasharray="${fs / 3} ${fs / 4}"/>`
-        + (b - a >= fs * 2.5 ? `<text x="${X((a + b) / 2)}" y="${yp - fs * 0.35}" font-size="${fs * 0.7}" text-anchor="middle" fill="#1d4ed8">${f3(b - a)}</text>` : "")
-        + `<text x="${X((a + b) / 2)}" y="${Number(Y(h)) + fs * 1.1}" font-size="${fs * 0.65}" text-anchor="middle" fill="#0f172a">h ${f3(h)}</text>`;
+        + (b - a >= fs * 2.5 ? `<text x="${X((a + b) / 2)}" y="${yp - fs * 0.35}" font-size="${fs * 0.7}" text-anchor="middle" fill="#1d4ed8">${f3(b - a)}${hLow != null ? " (sloped)" : ""}</text>` : "")
+        + `<text x="${X((a + b) / 2)}" y="${Number(Y(h)) + fs * 1.1}" font-size="${fs * 0.65}" text-anchor="middle" fill="#0f172a">h ${hLow != null ? `${f3(hLow)} - ${f3(h)}` : f3(h)}</text>`;
     }
     s += tk(prof[prof.length - 1][1]) + `</g>`;
   }
@@ -357,7 +410,7 @@ export function elevSvg(res, zone, axisKey, opt) {
   for (const it of e.items || []) {
     const col = it.kind === "gap" ? (it.pass ? "#15803d" : "#b91c1c") : "#334155";
     s += tick(it.x0) + tick(it.x1)
-      + `<text x="${X((it.x0 + it.x1) / 2)}" y="${yb - fs * 0.35}" font-size="${fs * 0.8}" text-anchor="middle" fill="${col}" stroke="#fff" stroke-width="${fs / 6}" paint-order="stroke">${esc(it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.w_m)}${it.pass ? "" : " ✗"}` : `${it.label} ${f3(it.w_m)}`)}</text>`;
+      + `<text x="${X((it.x0 + it.x1) / 2)}" y="${yb - fs * 0.35}" font-size="${fs * 0.8}" text-anchor="middle" fill="${col}" stroke="#fff" stroke-width="${fs / 6}" paint-order="stroke">${esc(it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.w_m)}${it.pass ? "" : it.w_m >= 3 ? " (PE)" : " ✗"}` : `${it.label} ${f3(it.w_m)}`)}</text>`;
   }
   const yw = yb + fs * 2.4;
   s += `<line x1="${X(0)}" y1="${yw}" x2="${X(e.W_m)}" y2="${yw}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
@@ -366,6 +419,41 @@ export function elevSvg(res, zone, axisKey, opt) {
     + `<text x="${X(e.W_m / 2)}" y="${yw + fs * 1.4}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569">Deformed elevation on ${axisKey === "axis1" ? "Projection Plane X" : "Projection Plane Y"} · H ${f2(e.H_m)} m</text>`
     + `<text x="${X(0)}" y="${fs * 1.6}" font-size="${fs * 1.1}" fill="#0f172a" font-weight="600">${esc(ZONE_LABEL[zone] || zone)} · P = ${f2(e.P_is)} % IS + ${f2(e.P_pe)} % PE = ${f2(e.P)} %</text>`;
   return s + `</svg>`;
+}
+
+/* The IS and PE areas of an elevation, each a connected region (a sloped
+ * face's thin steps make one): {name, pe, area, box, how, rects}, left to
+ * right, numbered IS1, IS2 ... and PE1 ... */
+function isGroups(e) {
+  const r = isParts(e);
+  const cls = (q) => (q[4] === "pe" ? "pe" : "is");
+  const par = r.map((_, i) => i);
+  const find = (i) => { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
+  const T = 1e-3;
+  for (let i = 0; i < r.length; i++) {
+    for (let j = i + 1; j < r.length; j++) {
+      const a = r[i], b = r[j];
+      if (cls(a) !== cls(b)) continue;
+      const side = (Math.abs(a[1] - b[0]) < T || Math.abs(b[1] - a[0]) < T) && Math.min(a[3], b[3]) - Math.max(a[2], b[2]) > T;
+      const stack = (Math.abs(a[3] - b[2]) < T || Math.abs(b[3] - a[2]) < T) && Math.min(a[1], b[1]) - Math.max(a[0], b[0]) > T;
+      if (side || stack) par[find(i)] = find(j);
+    }
+  }
+  const m = new Map();
+  r.forEach((q, i) => { const k = find(i); if (!m.has(k)) m.set(k, []); m.get(k).push(q); });
+  const gs = [...m.values()].map((qs) => {
+    const box = [Math.min(...qs.map((q) => q[0])), Math.max(...qs.map((q) => q[1])), Math.min(...qs.map((q) => q[2])), Math.max(...qs.map((q) => q[3]))];
+    const area = qs.reduce((t, q) => t + (q[1] - q[0]) * (q[3] - q[2]), 0);
+    const bw = box[1] - box[0], bh = box[3] - box[2];
+    const how = qs.length === 1 ? `${f3(bw)} x ${f3(bh)}`
+      : Math.abs(area - bw * bh) < 1e-6 * (1 + bw * bh) ? `${f3(bw)} x ${f3(bh)}`
+      : Math.abs(area - bw * bh / 2) < 0.12 * bw * bh ? `½ x ${f3(bw)} x ${f3(bh)} (triangle)`
+      : `${f3(area)} m² (stepped)`;
+    return { pe: cls(qs[0]) === "pe", area, box, how, rects: qs };
+  }).sort((a, b) => a.box[0] - b.box[0] || a.box[2] - b.box[2]);
+  let ni = 0, np = 0;
+  for (const g of gs) g.name = g.pe ? "PE" + (++np) : "IS" + (++ni);
+  return gs;
 }
 
 /* The IS / PE rectangles of an elevation, left to right. */
@@ -385,27 +473,43 @@ function profile(e) {
     if (last && Math.abs(last[1] - xs[i]) < 1e-6 && Math.abs(last[2] - top) < 1e-6) last[1] = xs[i + 1];
     else out.push([xs[i], xs[i + 1], top]);
   }
-  return out.filter((p) => p[1] - p[0] > 1e-3);
+  // steps narrower than 0.5 m (a sloped face cut into rows) are one sloped step
+  const merged = [];
+  for (const p of out.filter((q) => q[1] - q[0] > 1e-3)) {
+    const last = merged[merged.length - 1];
+    if (p[1] - p[0] < 0.5 && last && last.thin && Math.abs(last[1] - p[0]) < 1e-6) {
+      last[1] = p[1];
+      last[2] = Math.max(last[2], p[2]);
+      last[3] = Math.min(last[3], p[2]);
+    } else {
+      const q = [p[0], p[1], p[2], p[1] - p[0] < 0.5 ? p[2] : null];
+      q.thin = p[1] - p[0] < 0.5;
+      merged.push(q);
+    }
+  }
+  return merged.map((q) => (q.thin && Math.abs(q[2] - q[3]) > 1e-6 ? [q[0], q[1], q[2], q[3]] : [q[0], q[1], q[2], null]));
 }
 
 /* The working of a zone's elevation, as rows [label, text]. */
 function elevWorking(e, req, ax) {
-  const ip = isParts(e);
-  const parts = ip.map((q, i) => ({ n: "IS" + (i + 1), w_m: q[1] - q[0], h_m: q[3] - q[2], kind: q[4] })).filter((p) => p.kind !== "pe");
-  const pes = ip.map((q, i) => ({ n: "PE" + (i + 1), w_m: q[1] - q[0], h_m: q[3] - q[2], kind: q[4] })).filter((p) => p.kind === "pe");
+  const gs = isGroups(e);
+  const parts = gs.filter((g) => !g.pe), pes = gs.filter((g) => g.pe);
   const num = gapNums(ax);
   const its = e.items || [];
   const bad = its.filter((i) => i.kind === "gap" && !i.pass);
   const rows = [
     ...(its.length ? [["W", its.map((i) => `${f3(i.w_m)} (${i.kind === "gap" ? num.get(i.gap) || i.label : i.label})`).join(" + ") + ` = ${f3(e.W_m)} m`]] : []),
     ["Zone area", `W x H = ${f2(e.W_m)} x ${f2(e.H_m)} = ${f1(e.zone_area_m2)} m²`],
-    ["IS area", (parts.length ? parts.map((p) => p.n).join(" + ") + " = " + parts.map((p) => `(${f3(p.w_m)} x ${f3(p.h_m)})`).join(" + ") + " = " : "") + `${f3(e.is_area_m2)} m²`],
+    ["IS area", (parts.length ? parts.map((p) => p.name).join(" + ") + " = " + parts.map((p) => `(${p.how})`).join(" + ") + " = " : "") + `${f3(e.is_area_m2)} m²`],
     ["P by the IS", `${f1(e.is_area_m2)} / ${f1(e.zone_area_m2)} = ${f2(e.P_is)} %` + (req ? ` (IS alone must reach 2/3 x ${f1(req)} = ${f2(req * 2 / 3)} %: ${e.is_min_ok ? "OK" : "NOT OK"})` : "")],
-    ["PE area", pes.length ? pes.map((p) => `${f1(p.w_m)} x ${f1(p.h_m)}`).join(" + ") + ` = ${f1(e.pe_area_m2)} m²` : "none (a void through the building, ≥ 3 m wide and high)"],
+    ["PE area", pes.length ? pes.map((p) => p.name).join(" + ") + " = " + pes.map((p) => `(${p.how})`).join(" + ") + ` = ${f3(e.pe_area_m2)} m²`
+      + (bad.some((i) => i.w_m >= 3) ? ` - incl. the gaps under their S but ≥ 3 m wide: ${bad.filter((i) => i.w_m >= 3).map((i) => `${num.get(i.gap) || i.label} ${f3(i.w_m)}`).join(", ")}` : "")
+      : "none (a void through the building, or a gap under its S, ≥ 3 m wide and high)"],
   ];
   if (e.pe_area_m2) rows.push(["P by the PE", `${f1(e.pe_used_m2)} / ${f1(e.zone_area_m2)} = ${f2(e.P_pe)} %` + (e.pe_cap_m2 != null ? ` (up to 1/3 x ${f1(req)} = ${f2(req / 3)} %${e.pe_used_m2 < e.pe_area_m2 - 0.01 ? ", the rest not counted" : ", all accountable"})` : "")]);
   rows.push(["P", `${f2(e.P_is)} + ${f2(e.P_pe)} = ${f2(e.P)} %` + (req ? ` (required ${f1(req)} %: ${e.P >= req - 1e-9 && e.is_min_ok !== false ? "OK" : "NOT OK"})` : "")]);
-  if (bad.length) rows.push(["Not counted", bad.map((i) => `${num.get(i.gap) || i.label} ${f3(i.w_m)} m (${{ S1: "setback", S2: "between buildings", S3: "angled boundary" }[i.label] || i.label}, below ${i.label === "S2" ? 15 : 7.5} m${i.label === "blocked" ? ", blocked" : ""})`).join(", ")]);
+  const badN = bad.filter((i) => i.w_m < 3);
+  if (badN.length) rows.push(["Not counted", badN.map((i) => `${num.get(i.gap) || i.label} ${f3(i.w_m)} m (${{ S1: "setback", S2: "between buildings", S3: "angled boundary" }[i.label] || i.label}, under 3 m, below ${i.label === "S2" ? 15 : 7.5} m${i.label === "blocked" ? ", blocked" : ""})`).join(", ")]);
   if (e.exempt_m) rows.push(["Low zone", `the portion ≤ 1/3 H (${f2(e.exempt_m)} m) is disregarded: not IS, and left out of the footprints and Lp`]);
   return rows;
 }
@@ -792,14 +896,14 @@ export function createSbd(ctx) {
         const ax = z[k];
         const num = gapNums(ax);
         items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · plan, ${k === "axis1" ? "Projection Plane X (Axis 1)" : "Projection Plane Y (Axis 2)"}`, tag: `P ${f2(ax.P_zone != null ? ax.P_zone : ax.P)} %`, tagColor: ZONE_COLOR[z.zone],
-          img: await svgPng(zoneSvg(r, z.zone, k), 1400),
+          img: await svgPng(zoneSvg(r, z.zone, k), 2000), big: true,
           rows: [["Planes", `Plane X ${f3(z.plane_x_deg)}° from the street · Plane Y ${f3(z.plane_y_deg)}° from Plane X`],
             ...ax.gaps.map((g, i) => [num.get(i), g, i]).sort((p, q) => Number(p[0].slice(1)) - Number(q[0].slice(1)))
               .map(([nm, g]) => [`${nm} (${gapKind(g)})`, `${gapHow(g, ax, nm)} - ${g.qualifies ? "counts" : `does not count (min ${g.threshold_m || 7.5} m)`}`, g.qualifies ? "#16a34a" : "#dc2626"]),
-            ...((ax.edge || []).length ? [["Near edge (projected)", ax.edge.map((it) => `${it.kind === "gap" ? num.get(it.gap) || it.label : it.label} ${f3(it.hi - it.lo)}`).join(" + ") + ` = ${f3(ax.edge.reduce((t, it) => t + it.hi - it.lo, 0))} m`]] : []),
+            ...((ax.edge || []).length ? [["Along the plane (W)", ax.edge.map((it) => it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.s_m)}` : `${it.label} ${f3(it.hi - it.lo)}`).join(" + ") + ` = ${f3(ax.edge.reduce((t, it) => t + (it.kind === "gap" ? it.s_m : it.hi - it.lo), 0))} m`]] : []),
             ...(k === "axis1" && (z.tried || []).length > 1 ? [["Planes tried", z.tried.map((t) => `X ${f3(t.x_deg)}° / Y ${f3(t.y_deg)}°: P X ${f2(t.P_x)} %, P Y ${f2(t.P_y)} %${t.chosen ? " (used)" : ""}`).join("; ")]] : [])] });
         if (ax.elev) items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · elevation on ${k === "axis1" ? "Plane X" : "Plane Y"}`, tag: `P ${f2(ax.elev.P)} %`, tagColor: ZONE_COLOR[z.zone],
-          img: await svgPng(elevSvg(r, z.zone, k), 1400), rows: elevWorking(ax.elev, ax.required_p != null ? ax.required_p : r.required_p, ax) });
+          img: await svgPng(elevSvg(r, z.zone, k), 2000), big: true, rows: elevWorking(ax.elev, ax.required_p != null ? ax.required_p : r.required_p, ax) });
       }
     }
     // Design Requirement (1) - Lp of building(s) abutting a street (GB081)
@@ -812,7 +916,7 @@ export function createSbd(ctx) {
         const bs = cs.flatMap((c) => c.buildings);
         items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · Design Requirement (1) - Lp of building(s) abutting a street`,
           tag: !bs.length ? "not applicable" : bs.every((b) => b.pass) ? "Lp ≤ 5U" : "Lp > 5U", tagColor: ZONE_COLOR[z.zone],
-          img: await svgPng(zoneSvg(r, z.zone, null, { canyon: true }), 1400),
+          img: await svgPng(zoneSvg(r, z.zone, null, { canyon: true }), 2000), big: true,
           rows: [...cs.flatMap((c) => c.buildings.flatMap((b, bi) => canyonWorking(b, bi).map(([k, v], i) => [`${i ? "" : b.building + " · "}${k}`, v, k === "Result" ? (b.pass ? "#16a34a" : "#dc2626") : undefined]))),
             ...cs.flatMap((c) => (c.notes || []).map((n) => ["Note", n]))] });
       }

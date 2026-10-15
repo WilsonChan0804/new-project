@@ -187,12 +187,35 @@ class Case1(unittest.TestCase):
         self.assertAlmostEqual(b["Lp_max_m"], 5 * min(us.values()), places=2)
         self.assertAlmostEqual(b["Lp_m"], 35.0, places=2)     # the longer projection (on Main St)
 
+    def test_l_shaped_street(self):
+        # one street turning the site's corner: along y = -10, then up x = 110
+        cl = [[-10, -10], [110, -10], [110, 70]]
+        opp = [[-10, -20], [120, -20], [120, 70]]
+        d = {"site": SITE, "street_axis": [cl[0], cl[-1]],          # the export's chord: diagonal
+             "streets": [{"name": "Corner Rd", "centreline": cl, "opposite": opp, "width_m": 20}],
+             "masses": [mass("A", box(60, 15, 0, 95, 45, 30))]}
+        r = engine.run(d)
+        # Plane X along the leg fronting the site the longest (the long one, along x)
+        ax = r["zones"][0]["axis1"]["axis"]
+        self.assertAlmostEqual(abs(ax[0]), 1.0, places=3)
+        self.assertEqual([lg["name"] for lg in r["street_legs"]], ["Corner Rd (leg 1)", "Corner Rd (leg 2)"])
+        b = r["case1"][0]["buildings"][0]
+        legs = {x["street"]: x for x in b["streets"]}
+        self.assertEqual(set(legs), {"Corner Rd (leg 1)", "Corner Rd (leg 2)"})
+        self.assertAlmostEqual(legs["Corner Rd (leg 1)"]["Lp_m"], 35.0, places=2)     # along x
+        self.assertAlmostEqual(legs["Corner Rd (leg 2)"]["Lp_m"], 30.0, places=2)     # along y
+        self.assertAlmostEqual(b["U_m"], min(x["U_m"] for x in b["streets"]), places=3)
+        self.assertTrue(all(len(x["lp_rect"]) == 4 for x in b["streets"]))
+
     def test_too_far_is_a_note(self):
         d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
              "streets": [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}],
              "masses": [mass("A", box(10, 25, 0, 40, 45, 30))]}
         c = engine.run(d)["case1"][0]
         self.assertEqual(c["buildings"], [])
+        # its Lp is still found and drawn (dashed) against the nearest street
+        self.assertEqual(c["others"][0]["building"], "B1")
+        self.assertAlmostEqual(c["others"][0]["Lp_m"], 30.0, places=2)
         self.assertTrue(any("Main St" in n and "not applicable" in n and "35.000" in n for n in c["notes"]))
 
 
@@ -307,11 +330,13 @@ class DeformedElevation(unittest.TestCase):
         cls.r = engine.run(d)
         cls.z = {z["zone"]: z for z in cls.r["zones"]}
 
-    def test_failed_s2_is_not_is(self):
+    def test_failed_s2_is_pe_not_is(self):
         e = self.z["LOW"]["axis1"]["elev"]
         s2 = [i for i in e["items"] if i["label"] == "S2"]
         self.assertTrue(s2 and not s2[0]["pass"])
-        self.assertTrue(any(q[4] == "nis" and abs((q[1] - q[0]) - s2[0]["s_m"]) < 0.01 for q in e["rects"]))
+        # 14 m < 15 m: not IS, but a permeable element (>= 3 m wide)
+        self.assertTrue(any(q[4] == "pe" and abs((q[1] - q[0]) - s2[0]["s_m"]) < 0.01 for q in e["rects"]))
+        self.assertAlmostEqual(e["pe_area_m2"], s2[0]["s_m"] * (e["H_m"] - e["exempt_m"]), delta=0.5)
         # IS = the two side setbacks only, over the zone's height
         sides = sum(i["w_m"] for i in e["items"] if i["kind"] == "gap" and i["pass"])
         self.assertAlmostEqual(e["is_area_m2"], sides * (e["H_m"] - e["exempt_m"]), delta=0.5)
@@ -337,16 +362,36 @@ class DeformedElevation(unittest.TestCase):
         self.assertGreater(len(self.z["MIDDLE"]["tried"]), 1)
         self.assertEqual(sum(1 for t in self.z["MIDDLE"]["tried"] if t.get("chosen")), 1)
 
-    def test_bands_run_past_the_site(self):
-        ys = [p[1] for p in SITE]
+    def test_side_edge_turns_once(self):
+        # every side region's edge: perpendicular, then at most one turn
+        n = 0
+        for zn in ("LOW", "MIDDLE"):
+            for k in ("axis1", "axis2"):
+                for sd in self.z[zn][k]["sides"].values():
+                    e = sd.get("edge")
+                    if not e:
+                        continue
+                    n += 1
+                    self.assertLessEqual(len(e), 3)
+                    self.assertLessEqual(abs(sd["angle_deg"]), 15.0 + 1e-6)
+        self.assertGreater(n, 0)
+
+    def test_bands_reach_the_boundary_no_further(self):
+        # each band covers its region (the panel's) and runs on to the site
+        # boundary - at most a step past where it leaves the site
         for zn in ("LOW", "MIDDLE"):
             for k in ("axis1", "axis2"):
                 ao = self.z[zn][k]
-                for b in [g["band"] for g in ao["gaps"] if g.get("band")] + [s["band"] for s in ao["sides"].values() if s.get("band")]:
-                    vs = [p[0] * -ao["axis"][1] + p[1] * ao["axis"][0] for p in b]
-                    sv = [p[0] * -ao["axis"][1] + p[1] * ao["axis"][0] for p in SITE]
-                    self.assertLess(min(vs), min(sv) - 10)
-                    self.assertGreater(max(vs), max(sv) + 10)
+                av = (-ao["axis"][1], ao["axis"][0])
+                vv = lambda pts: [p[0] * av[0] + p[1] * av[1] for p in pts]
+                pairs = [(g["band"], g["corridor"]) for g in ao["gaps"] if g.get("band")] + \
+                        [(s["band"], s["polygon"]) for s in ao["sides"].values() if s.get("band")]
+                sv = vv(SITE)
+                for band, poly in pairs:
+                    self.assertLessEqual(min(vv(band)), min(vv(poly)) + 1e-6)
+                    self.assertGreaterEqual(max(vv(band)), max(vv(poly)) - 1e-6)
+                    self.assertGreater(min(vv(band)), min(sv) - 2.0)
+                    self.assertLess(max(vv(band)), max(sv) + 2.0)
 
 
 if __name__ == "__main__":

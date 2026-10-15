@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-10", date: "16 Oct 2026",
+    items: [
+      "SBD: an **L-shaped street** is taken leg by leg (Plane X along the leg fronting the site the longest; Design Requirement (1) per leg); a side region's edge **turns once**; a gap under its S but **≥ 3 m wide counts as PE**; a sloped face's steps are **one area** (triangle or stepped); one Lp everywhere.",
+      "SBD drawings: the street's name along it, **℄** at its end, the **mean street level**; the Street canyon view adds each building's **Lp rectangle** (also beyond 30 m), the **30 m line** and the street's width; the hatches stop at the boundary (a piece beyond is not drawn); the report's drawings are cropped and larger, with the S values along the plane.",
+      "**Notifications:** a box beside each item under the bell marks it read or unread without opening it. **Calendar:** a task whose sub-tasks are yours shows its own due date too. **Phone:** on the 3D page the tools row has its own light strip and no longer overlaps the header buttons.",
+    ],
+  },
+  {
     version: "2026-11-09", date: "15 Oct 2026",
     items: [
       "SBD **Design Requirement (1) - Lp of building(s) abutting a street**, drawn as GB081: a building counts when any part is within 30 m of the street's centreline; its canyon runs over its whole projected length (STREET CANYON AREA, ACTUAL Lp, LENGTH, width), U = Area / Length, the smaller U of two streets controls, Max Lp = 5U - with the calculation on the drawing's side and a page per zone in the report (or why it does not apply).",

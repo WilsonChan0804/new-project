@@ -48,7 +48,7 @@ export function writeReport(w, rep) {
     + rep.table.rows.map((r) => `<tr>${r.map((v, i) => `<td${i ? ' class="n"' : ""}>${esc(v)}</td>`).join("")}</tr>`).join("") + `</table>` : "";
   const items = (rep.items || []).map((it, n) => `<div class="it">`
     + `<div class="hd"><span class="no">${n + 1}</span>${it.tag ? `<span class="tag" style="background:${esc(it.tagColor || "#e2453c")}">${esc(it.tag)}</span>` : ""}<b>${esc(it.head)}</b></div>`
-    + `<div class="bd">${it.img ? `<img src="${it.img}" alt="">` : ""}`
+    + `<div class="bd">${it.img ? `<img src="${it.img}" alt=""${it.big ? ' class="big"' : ""}>` : ""}`
     + `<table class="kv">${(it.rows || []).map(([k, v, sw]) => `<tr><th>${sw ? `<span class="sw" style="background:${esc(sw)}"></span>` : ""}${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")}</table></div></div>`).join("");
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(rep.title)}</title><style>
     @page { size: A4; margin: 14mm; }
@@ -68,6 +68,7 @@ export function writeReport(w, rep) {
     .tag { color: #fff; border-radius: 10px; padding: 1px 8px; font-size: 11px; font-weight: 600; }
     .bd { padding: 8px 10px; }
     .bd img { width: 100%; max-height: 95mm; object-fit: contain; display: block; margin-bottom: 6px; background: #eee; }
+    .bd img.big { max-height: 215mm; background: #fff; }
     table.kv th { text-align: left; color: #555; font-weight: 600; width: 26%; padding: 2px 6px 2px 0; vertical-align: top; }
     table.kv td { padding: 2px 0; word-break: break-word; }
     .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }

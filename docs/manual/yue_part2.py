@@ -120,7 +120,7 @@ PART = [
     ]),
     H2('Calendar 日曆'),
     P('**右撳某一日**（手機㩒住）可以喺嗰日加 **event**（全日）、**meeting**（10:00 開始，揀邀請邊個 chat）或者一個嗰日到期嘅 **task**。'),
-    P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日 - 連你負責嘅 task 下面嘅 **sub-task**（任何一層，會寫 **Sub-task of ...**）- 同**派咗俾你嘅 issue** 嘅到期日。'),
+    P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日 - 連你負責嘅 task 下面嘅 **sub-task**（任何一層，會寫 **Sub-task of ...**），同埋下面有你嘅 sub-task 嘅 task（佢自己嘅到期日會同 sub-task 一齊顯示）- 同**派咗俾你嘅 issue** 嘅到期日。'),
     UL([
         '電腦係月曆，手機係清單（**Month** / **List**）。**Filter ▾** 可以顯示或者隱藏會議、task 同 issue（會講隱藏咗幾多樣），**Week starts on: Monday / Sunday** 揀最左邊一欄係星期一定星期日（會記住）。**‹ ›** 同 **Today** 轉月份；手機可以掃。',
         '撳一項睇詳情，再打開個 chat、task 或者 issue。回覆會議要喺佢個 chat 入面。',
@@ -146,7 +146,7 @@ PART = [
         '**開住任何一版 viewer 嘅時候**（任何一版、背景嘅分頁，或者個 app）：新訊息會喺 Windows、Mac 同 Android 彈通知；撳一下就打開嗰個 chat 去到嗰條訊息。你睇緊嗰個 chat 就唔會彈。分頁標題會顯示未讀數，例如 **(3) LWK Viewer**，app 個 icon 都會有。',
         '**頂部嘅鈴**：撳 **Turn on notifications**（瀏覽器會問一次），再揀 **Every message**（所有訊息）、**@mentions and direct messages**（只係 @你 同私訊）或者 **Nothing**（唔通知）。',
         '**某個 chat 靜音：** Chat info > **Mute notifications**。靜咗音嘅 chat 有人 @你 都照通知。',
-        '**唔止訊息：** 有 task 派咗俾你、有人喺 task 或者 issue 度 @你、有 issue 派咗俾你或者你嘅 query 有人答、你嘅 task 就快到期，都會通知你。鈴入面嘅 **For you** 清單列出最近嘅（紅色數字係未睇嘅）；撳一項就打開，**Mark all read** 清咗個數字。',
+        '**唔止訊息：** 有 task 派咗俾你、有人喺 task 或者 issue 度 @你、有 issue 派咗俾你或者你嘅 query 有人答、你嘅 task 就快到期，都會通知你。鈴入面嘅 **For you** 清單列出最近嘅（紅色數字係未睇嘅）；撳一項就打開，**Mark all read** 清咗個數字。**每項旁邊個格**可以剔做已讀、或者取消剔做返未讀，唔使打開。',
         '**裝 app：** 鈴 > **Install the app**（Edge、Chrome），或者網址列右邊嘅安裝 icon。Android：選單 > **Add to Home screen**。iPhone／iPad：Safari > 分享 > **加至主畫面**。App 會用自己嘅視窗打開，右撳 icon 有 Chat、Tasks、Calendar、Folders 同 Projects 捷徑。',
         '**冇開任何一版都收到（push）：** 鈴 > **Turn on for this device**。要用 viewer 嘅 **https** 地址開先得（問你嘅 admin）。之後就算 app 閂咗，部手機或者電腦都會收到訊息。',
         '**iPhone／iPad：** 先喺 Safari > 分享 > **加至主畫面**，再由主畫面個 icon 打開；然後喺鈴度開通知、撳 **Turn on for this device**，再撳 **Send a test**。收唔到嘅話，會講埋原因（例如 server 連唔到 Apple）。Server 更新之後，請關一次再開一次 push。',

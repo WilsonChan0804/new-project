@@ -2441,3 +2441,23 @@ header .flr-lab { white-space: nowrap; }
 .sbd-zoom { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 4px; }
 .sbd-zoom button { min-width: 30px; padding: 3px 8px; background: var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
 .sbd-verdict small { font-weight: 400; }
+/* The 3D page on a phone: the tools row is a light strip of its own in the
+   header (its buttons read on it), kept whole and swiped sideways with the
+   header - never squeezed over the search, bell, help and + Task. */
+@media (max-width: 700px), (max-height: 500px) {
+  body:has(> #layout3d) > header .hdr-row2 { background: var(--panel, #fff); color: var(--ink, #1f2937); border-radius: 8px;
+    padding: 2px 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+  body:has(> #layout3d) > header .hdr-row2 > * { flex: 0 0 auto; }
+  body:has(> #layout3d) > header .hdr-row2 button:not(.active):not(.primary),
+  body:has(> #layout3d) > header .hdr-row2 select { color: var(--ink, #1f2937) !important; background: var(--panel-2, #f3f4f6) !important;
+    border-color: var(--line, #e2e6ec) !important; }
+  body:has(> #layout3d) > header .hdr-row2 button:disabled { opacity: .45; }
+}
+/* a phone on its side: the header's second line is part of the header
+   (its orange behind it), not spilt over the model */
+@media (min-width: 701px) and (max-height: 500px) {
+  body:has(> #layout3d) > header { height: auto; }
+}
+@media (max-width: 700px) {
+  body:has(> #layout3d) > header .hdr-row2 { flex: 0 0 auto; min-width: max-content; }
+}

@@ -176,8 +176,13 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
                     "depth_m": round(sd.get("D_m", 0.0), 3), "angle_deg": round(sd.get("angle_deg", 0.0), 1),
                     "polygon": [_xy(q) for q in (sd.get("region_polygon") or [])]}
         side_band[k] = N.side_band(sd, site_uv) if sd.get("inner_uv") else None
-        if sd.get("inner_uv"):
-            sides[k]["edge"] = N.to_xy_m(A._dp(sorted(sd["inner_uv"], key=lambda q: q[1])), ax, av)
+        if sd.get("region_polygon"):
+            p0, p1 = N._vrange(sd["region_polygon"], ax, av)
+            got = N.side_edge(sd, p0, p1)
+            if got:
+                sides[k]["edge"] = N.to_xy_m(got[0], ax, av)      # perpendicular, then turned once
+            elif sd.get("inner_uv"):
+                sides[k]["edge"] = N.to_xy_m(A._dp(sorted(sd["inner_uv"], key=lambda q: q[1])), ax, av)
         if side_band[k]:
             sides[k]["band"] = N.to_xy_m(side_band[k], ax, av)
     gaps = []
@@ -279,7 +284,86 @@ def _nearest(loops, cl):
     return best
 
 
-def case1(data, zone_inside, a=None):
+LEG_BEND_DEG = 20.0
+
+
+def _legs(cl):
+    """A centreline in straight legs: a new leg where it has turned more than
+    20 deg from where the leg began (an L-shaped street is two legs)."""
+    legs, cur = [], [cl[0]]
+    d0 = None
+    for p, q in zip(cl, cl[1:]):
+        L = math.hypot(q[0] - p[0], q[1] - p[1])
+        if L < 1e-9:
+            continue
+        d = math.atan2(q[1] - p[1], q[0] - p[0])
+        if d0 is None:
+            d0 = d
+        turn = abs((math.degrees(d - d0) + 180.0) % 360.0 - 180.0)
+        if turn > LEG_BEND_DEG and len(cur) >= 2:
+            legs.append(cur)
+            cur, d0 = [p], d
+        cur.append(q)
+    if len(cur) >= 2:
+        legs.append(cur)
+    return [l for l in legs if math.hypot(l[-1][0] - l[0][0], l[-1][1] - l[0][1]) > 1.0] or [cl]
+
+
+def street_legs(data):
+    """Each street, leg by leg: {name, centreline, opposite, width_m,
+    dir, normal (towards the site), offset30 (the 30 m line), width_dim}."""
+    out = []
+    if not data.get("site"):
+        return out
+    sx, sy = _centroid(data["site"])
+    for si, st in enumerate(data.get("streets") or []):
+        cl, opp = st.get("centreline") or [], st.get("opposite") or []
+        if len(cl) < 2 or len(opp) < 2:
+            continue
+        legs = _legs(cl)
+        for li, leg in enumerate(legs):
+            dx, dy = leg[-1][0] - leg[0][0], leg[-1][1] - leg[0][1]
+            dl = math.hypot(dx, dy) or 1.0
+            dx, dy = dx / dl, dy / dl
+            nx, ny = -dy, dx
+            mx, my = (leg[0][0] + leg[-1][0]) / 2.0, (leg[0][1] + leg[-1][1]) / 2.0
+            if (sx - mx) * nx + (sy - my) * ny < 0:
+                nx, ny = -nx, -ny
+            w = st.get("width_m")
+            name = (st.get("name") or "Street %d" % (si + 1)) + (" (leg %d)" % (li + 1) if len(legs) > 1 else "")
+            out.append({"name": name, "street": st.get("name") or "", "centreline": leg, "opposite": opp, "width_m": w,
+                        "dir": [dx, dy], "normal": [nx, ny],
+                        "offset30": [[round(p[0] + nx * CASE1_REACH_M, 3), round(p[1] + ny * CASE1_REACH_M, 3)] for p in (leg[0], leg[-1])],
+                        "width_dim": [[round(mx - nx * w / 2.0, 3), round(my - ny * w / 2.0, 3)],
+                                      [round(mx + nx * w / 2.0, 3), round(my + ny * w / 2.0, 3)], round(w, 3)] if w else None})
+    return out
+
+
+def _frontage(legs, site):
+    """The leg fronting the site the longest (its length within 30 m of the
+    site boundary): Plane X of the Low zone runs along it."""
+    best = None
+    for lg in legs:
+        cl = lg["centreline"]
+        front = 0.0
+        for p, q in zip(cl, cl[1:]):
+            m = ((p[0] + q[0]) / 2.0, (p[1] + q[1]) / 2.0)
+            if min(_dist_to_polyline(m, [site[k], site[(k + 1) % len(site)]]) for k in range(len(site))) <= CASE1_REACH_M:
+                front += math.hypot(q[0] - p[0], q[1] - p[1])
+        if best is None or front > best[0]:
+            best = (front, lg)
+    return best[1] if best and best[0] > 0 else None
+
+
+def _lp_rect(pts, d, n):
+    """The building's Lp along the street (d) by its depth (n): its corners."""
+    us = [p[0] * d[0] + p[1] * d[1] for p in pts]
+    ws = [p[0] * n[0] + p[1] * n[1] for p in pts]
+    u0, u1, w0, w1 = min(us), max(us), min(ws), max(ws)
+    return [[round(u * d[0] + w * n[0], 3), round(u * d[1] + w * n[1], 3)] for u, w in ((u0, w0), (u1, w0), (u1, w1), (u0, w1))], u1 - u0
+
+
+def case1(data, zone_inside, a=None, legs=None):
     """Design Requirement (1), Lp of building(s) abutting a street (Fig B7,
     GB081), per zone. A building (or group) abuts a street when ANY part of
     it is within 30 m of the street's centreline; then over its whole
@@ -291,7 +375,7 @@ def case1(data, zone_inside, a=None):
     portion <= 1/3 H is left out (zone_inside holds its footprints above it).
     zone_inside: [(zone, [footprints])] -> [{zone, buildings, notes}]."""
     out = []
-    streets = [s for s in data.get("streets") or [] if len(s.get("centreline") or []) >= 2 and len(s.get("opposite") or []) >= 2]
+    streets = legs if legs is not None else street_legs(data)
     if not streets:
         return out
     a = a or XYZ(1, 0, 0)
@@ -305,15 +389,13 @@ def case1(data, zone_inside, a=None):
         for label, loops in named:
             rows = []
             for si, st in enumerate(streets):
-                name = st.get("name") or "Street %d" % (si + 1)
+                name = st["name"]
                 cl, opp = st["centreline"], st["opposite"]
                 near = _nearest(loops, cl)
                 near_of[(si, label)] = near
                 if near > CASE1_REACH_M:
                     continue
-                dx, dy = cl[-1][0] - cl[0][0], cl[-1][1] - cl[0][1]
-                dl = math.hypot(dx, dy) or 1.0
-                dx, dy = dx / dl, dy / dl
+                dx, dy = st["dir"]
                 pts = [p for l in loops for p in l["loop"]]
                 us = [p[0] * dx + p[1] * dy for p in pts]
                 u0, u1 = min(us), max(us)
@@ -349,7 +431,8 @@ def case1(data, zone_inside, a=None):
                 w_opp = min(min(q[0] * nx0 + q[1] * ny0 for q in r[1]) for r in runs) - 3.0   # beyond the opposite boundary: Length
                 line = lambda w: [[round(u * dx + w * nx0, 3), round(u * dy + w * ny0, 3)] for u in (u0, u1)]
                 f, o, wd = mid[len(mid) // 4]          # a typical width, clear of the area's label
-                rows.append({"street": name, "U_m": round(U, 3), "area_m2": round(width_sum * CASE1_STEP_M, 3), "L_m": round(L, 3),
+                rect, _ = _lp_rect(pts, st["dir"], st["normal"])
+                rows.append({"street": name, "lp_rect": rect, "U_m": round(U, 3), "area_m2": round(width_sum * CASE1_STEP_M, 3), "L_m": round(L, 3),
                              "Lp_m": round(u1 - u0, 3), "nearest_m": round(near, 3),
                              "setback_m": round(near - (st.get("width_m") or 0) / 2.0, 3) if st.get("width_m") else None,
                              "canyon": [r[0] + list(reversed(r[1])) for r in runs if len(r[0]) >= 2],
@@ -362,14 +445,24 @@ def case1(data, zone_inside, a=None):
             per.append(dict(ctrl, building=label, name=", ".join(sorted(set(l.get("name") or "" for l in loops))),
                             streets=rows, ctrl_street=ctrl["street"], Lp_m=round(lp, 3), Lp_max_m=round(5 * ctrl["U_m"], 3),
                             **{"pass": lp <= 5 * ctrl["U_m"] + 1e-6}))
+        # the buildings that do not abut a street: their Lp all the same,
+        # against the nearest street (drawn dashed)
+        others = []
+        for label, loops in named:
+            if any(b["building"] == label for b in per):
+                continue
+            si = min(range(len(streets)), key=lambda i: near_of.get((i, label), 1e9))
+            rect, lpv = _lp_rect([p for l in loops for p in l["loop"]], streets[si]["dir"], streets[si]["normal"])
+            others.append({"building": label, "street": streets[si]["name"], "nearest_m": round(near_of.get((si, label), 0), 3),
+                           "Lp_m": round(lpv, 3), "lp_rect": rect})
         for si, st in enumerate(streets):
-            name = st.get("name") or "Street %d" % (si + 1)
+            name = st["name"]
             if not any(r["street"] == name for b in per for r in b["streets"]):
                 d = min([near_of.get((si, lab), 1e9) for lab, _ in named] or [1e9])
                 notes.append("%s: no building within %.0f m of the centreline (nearest %.3f m) - Design Requirement (1) not applicable"
                              % (name, CASE1_REACH_M, d))
         if per or notes:
-            out.append({"zone": zname, "buildings": per, "notes": notes})
+            out.append({"zone": zname, "buildings": per, "notes": notes, "others": others})
     return out
 
 
@@ -449,7 +542,9 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
     site_pts = [_pt(p) for p in data["site"]]
     site_pts = geom.ensure_loop_ccw(site_pts)
     # the projection axis (Axis 1, along Projection Plane X)
-    street = data.get("street_axis")
+    legs = street_legs(data)
+    front = _frontage(legs, data["site"]) if legs else None
+    street = [front["centreline"][0], front["centreline"][-1]] if front else data.get("street_axis")
     if axis == "street" and street and len(street) >= 2:
         a = XYZ(street[-1][0] - street[0][0], street[-1][1] - street[0][1], 0).Normalize()
         axis_src = "street"
@@ -506,7 +601,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         if name == "LOW":
             low_loops = [geom.ensure_loop_ccw([_pt(p) for p in f["loop"]]) for f in zone_footprints(data, z0, z1)[0]]
     lp = {"addin_m": round(lp_addin_m(low_loops), 2) if low_loops else 0.0,
-          "projected_m": round(sum(hi - lo for lo, hi in P._blocked_intervals(low_loops, a)) * M, 2) if low_loops else 0.0}
+          "projected_m": round(sum(hi - lo for lo, hi in P._blocked_intervals(low_loops, a)) * M, 3) if low_loops else 0.0}
     req_p = A.required_p(site_area, lp["projected_m"], tallest)
     # Table 1 per plane: a site under 2 ha is checked on Plane X only (the BD
     # sample case); 2 ha and over, Plane X 20 % and Plane Y 25 / 33.3 %
@@ -538,7 +633,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
             for c in zr["candidates"]:
                 pack = {}
                 for key, rq in (("axis1", req_x), ("axis2", req_y)):
-                    ao = _axis_out(c[key], site_pts, bldgs, data.get("streets"))
+                    ao = _axis_out(c[key], site_pts, bldgs, [front] if front else data.get("streets"))
                     el = None
                     if top > z0 + 1e-6:
                         el = E.zone_elevation(data["masses"], g, ao["edge"], z0, top, ao["axis"], rq or req_x, exempt_of[name])
@@ -580,7 +675,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         out_zones.append(z)
     req_old = A.required_p(site_area, lp["addin_m"], tallest)
     ctrl = min(all_p) if all_p else None
-    c1 = case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp], a)
+    c1 = case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp], a, legs)
     return {
         "ok": True, "version": 2, "warnings": warnings, "log": log[-400:], "heights": heights, "tallest_m": tallest,
         "axis": {"source": axis_src, "axis1": [round(a.X, 6), round(a.Y, 6)], "axis2": [round(b.X, 6), round(b.Y, 6)]},
@@ -588,7 +683,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         "zones": out_zones, "controlling_p": None if ctrl is None else round(ctrl, 2),
         "lp": lp, "required_p": req_x, "required_p_y": req_y, "required_p_addin": req_old, "fails": fails,
         "pass": None if ctrl is None or req_x is None else not fails,
-        "case1": c1,
+        "case1": c1, "street_legs": [{k: v for k, v in lg.items() if k not in ("opposite",)} for lg in legs],
         "case1_pass": None if not any(c["buildings"] for c in c1) else all(b["pass"] for c in c1 for b in c["buildings"]),
         "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
                      "outline": s.get("outline") or []} for s in data.get("streets") or []],

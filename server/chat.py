@@ -1403,17 +1403,20 @@ def register(app, core):
 
     @app.post("/api/chat/inbox/read")
     async def inbox_read(request: Request, x_viewer_token: str = Header(default="")):
-        """{ids: ["in12", ...]} or {all: true}."""
+        """{ids: ["in12", ...]} or {all: true}; {ids, read: false} marks
+        them unread again (the checkbox in the bell panel)."""
         w = me(request, x_viewer_token)
         body = await read_json(request)
+        flag = 0 if body.get("read") is False else 1
         with db() as d:
             if body.get("all"):
-                d.execute("UPDATE inbox SET read = 1 WHERE uid = ?", (w.uid,))
+                d.execute("UPDATE inbox SET read = ? WHERE uid = ?", (flag, w.uid))
             else:
                 ids = [int(str(x)[2:]) for x in (body.get("ids") or [])[:200] if str(x).startswith("in") and str(x)[2:].isdigit()]
                 for i in ids:
-                    d.execute("UPDATE inbox SET read = 1 WHERE uid = ? AND id = ?", (w.uid, i))
-        return {"ok": True}
+                    d.execute("UPDATE inbox SET read = ? WHERE uid = ? AND id = ?", (flag, w.uid, i))
+            unseen = d.execute("SELECT COUNT(*) AS n FROM inbox WHERE uid = ? AND read = 0", (w.uid,)).fetchone()["n"]
+        return {"ok": True, "unread": unseen}
 
     @app.get("/api/chat/notify-settings")
     async def notify_get(request: Request, x_viewer_token: str = Header(default="")):
