@@ -147,13 +147,14 @@ try:
 except Exception as ex:
     forms.alert("Cannot reach the viewer server: %s\n\nSign in with LWK Issues first." % ex, title="SBD Export")
     script.exit()
-want = (settings.get("doc_projects") or {}).get(doc.Title)
-labels = ["%s - %s" % (p["id"], p.get("name") or "") for p in projects]
-pre = [x for x in labels if want and x.startswith(want + " - ")]
-lab = pre[0] if pre else forms.SelectFromList.show(labels, title="SBD Export - which viewer project", button_name="Send")
+labels, ids = SE.project_choices(projects, (settings.get("doc_projects") or {}).get(doc.Title))
+# always asked: an SBD Export replaces the project's SBD model, so it never
+# goes silently to the project LWK Issues last used with this file
+lab = forms.SelectFromList.show(labels, title="SBD Export - which viewer project", button_name="Send")
 if not lab:
     script.exit()
-pid = projects[labels.index(lab)]["id"]
+pid = ids[labels.index(lab)]
+pname = [p.get("name") or "" for p in projects if p["id"] == pid][0]
 
 me = ""
 try:
@@ -173,10 +174,16 @@ try:
 except Exception as ex:
     forms.alert("Not sent: %s" % ex, title="SBD Export")
     script.exit()
+# remembered for this file: listed first next time (and LWK Issues opens on it)
+try:
+    settings.setdefault("doc_projects", {})[doc.Title] = pid
+    L.save_settings(settings)
+except Exception:
+    pass
 
 out.print_md("## SBD Export")
-out.print_md("**%d mass(es)**, site boundary of %d points, zones from %.2f m (%s), %d street(s) - sent to **%s**." %
-             (len(masses), len(site), ground, ground_source, len(streets), pid))
+out.print_md("**%d mass(es)**, site boundary of %d points, zones from %.2f m (%s), %d street(s) - sent to **%s%s**." %
+             (len(masses), len(site), ground, ground_source, len(streets), pid, " - " + pname if pname else ""))
 for st in streets:
     if "length_m" in st:
         out.print_md("- Street **%s**: %.1f m long, %.1f m wide, level %.2f m" % (st["name"], st["length_m"], st["width_m"], st["level"]))

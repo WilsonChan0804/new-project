@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-16", date: "16 Oct 2026",
+    items: [
+      "**SBD Export (Revit)** now asks **which viewer project** every time - it used to send straight to the project LWK Issues last used with the Revit file. That project is listed first, marked \"last used with this model\"; the result says the project's name too. (Update the add-in.)",
+    ],
+  },
+  {
     version: "2026-11-15", date: "16 Oct 2026",
     items: [
       "SBD side regions (report 7): where a region narrows to a point at the site boundary, the hatch now runs **right to the boundary's corner** - the last little piece was being cut off square, which showed as the corner \"not following the boundary\". A short step in the boundary beside a street (or a sliver between the boundary and the slab) no longer splits or stops the part up to the street's centreline. The air corridor's ends sit exactly on the boundary.",

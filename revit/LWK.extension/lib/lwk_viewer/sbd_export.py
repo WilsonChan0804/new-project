@@ -237,6 +237,15 @@ def frontage_axis(streets, site, reach=30.0):
     return [cl[0], cl[-1]]
 
 
+def project_choices(projects, last=None):
+    """The viewer projects to choose from: (labels, ids), the one last used
+    with this Revit file first and marked."""
+    rows = [(p["id"], "%s - %s" % (p["id"], p.get("name") or "")) for p in projects]
+    first = [r for r in rows if last and r[0] == last]
+    rows = [(i, l + "   (last used with this model)") for i, l in first] + [r for r in rows if r not in first]
+    return [l for _, l in rows], [i for i, _ in rows]
+
+
 def build(site, masses, ground_z, street_axis=None, streets=None, project="", model="", by="", at="",
           ground_source=""):
     return {

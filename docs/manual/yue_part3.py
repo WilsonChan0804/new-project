@@ -257,7 +257,7 @@ PART = [
     LABEL('步驟'),
     OL([
         '喺 Revit 打開 model，檢查 mass、Property Line 同街道樓板（3D 視圖：mass 企喺街道水平）。',
-        '**LWK > Viewer tools > SBD Export。** 揀地盤界線；剔走唔係對住地盤嘅街；需要嘅話揀 viewer 嘅 project。唔會再問地面：Level 0 係同地盤相鄰最低嗰條街嘅平均水平（每條街用自己樓板嘅高度）；冇街就用 mass 嘅底。',
+        '**LWK > Viewer tools > SBD Export。** 揀地盤界線；剔走唔係對住地盤嘅街；揀 **viewer 嘅 project** - 每次都會問（一次 export 會取代嗰個 project 嘅 SBD model），上次同呢個 Revit 檔用過嘅 project 排第一。唔會再問地面：Level 0 係同地盤相鄰最低嗰條街嘅平均水平（每條街用自己樓板嘅高度）；冇街就用 mass 嘅底。',
         'Mass 會送去 viewer 即刻計算；Revit 視窗會顯示 P、要求 P 同每條街。Mass 亦會出現喺 project 嘅 3D，叫 **SBD masses - (model)**。',
         '喺 viewer 打開 model 嘅 **3D** 頁 > **Checks > SBD**。**Run** 再計（plane 自動搵）；**Plan ...** 顯示每個區嘅平面同立面連計算；**Save**、**Make issue** 同 **Report** 保存結果。',
         '改咗設計之後，再做一次 **SBD Export** - 會取代 mass 同結果（儲存咗嘅結果會留低）。',
@@ -289,7 +289,7 @@ PART = [
     UL([
         '**喺 Revit 要建乜：** 每座建築（平台、塔樓）用 **Mass**（Massing & Site > In-Place Mass，或者 Mass family）；**地盤界線**用 Property Line（或者喺 10 mm 內閉合嘅線）；每條**街用一塊 Floor**，類型名有 **Street**、**Road**、**Lane** 或者 **Path**（例如 *SBD Street*），由街道界線畫到街道界線，喺街道嘅高度（佢嘅**類型名**會做街名）。唔使開晒啲樓層 - 高度由 mass 嚟。',
         '**由街道樓板讀乜：** 佢嘅**中線**（兩條長邊嘅正中，轉彎都跟）、佢嘅**遠邊** = 對面地盤嘅界線（Case 1 U 用）同佢嘅**高度**。Axis 1（Projection Plane X）沿住同地盤相接最長嗰條街。高度區由**街道水平**量起 = 地盤附近街道樓板嘅平均頂面高度（按面積）；都可以改揀一個 Level。唔係長條形嘅樓板（路口）會唔計 - 改為揀佢嘅中線同對面界線嘅線。',
-        '**LWK > Viewer tools > SBD Export：** 揀地盤界線，剔走唔係對住地盤嘅街，接受街道水平（或者揀 Level），mass 就會送去 viewer 即刻計算；Revit 視窗都會顯示結果，連每條街嘅長度、闊度同高度。',
+        '**LWK > Viewer tools > SBD Export：** 揀地盤界線，剔走唔係對住地盤嘅街，揀 viewer 嘅 project，mass 就會送去 viewer 即刻計算；Revit 視窗都會顯示結果，連每條街嘅長度、闊度同高度。',
         '**高度區：** **Low（0-20 m）、Middle（20-60 m）、High（60 m 以上）**。每個區嘅建築係 mass 喺嗰個區入面嘅高度嘅外框，所以平台 + 塔樓方案嘅 Middle 區係塔樓 - 唔係平台。冇建築嘅區唔會計。地盤界線外面嘅 mass（隔籬）會用斜線顯示，唔計。',
         '**表：** 每個區 Plane X 同 Plane Y 嘅 P（區立面上嘅 (IS + PE) / (W x H)，下面有 plane 嘅角度）、計到嘅空隙、**控制 P**（最低嗰個）對 Table 1 嘅**要求 P**（由地盤面積同 Lp），同 PASS / FAIL。Lp 係所有建築投影喺 Axis 1 嘅長度；如果 SBD panel 嘅 Lp（一座建築嘅短邊）會得出另一個要求 P，兩個都會顯示。**Case 1：** 每條街 U = 峽谷面積 / 沿中線長度（由中線 30 m 內嘅外牆到對面界線）、Lp 同 5U。',
         '**Run** 再計（投影 plane 自動搵 - 見下面）。**Save** 儲存結果俾所有人睇；列表顯示儲存咗嘅結果（打開嚟比較，✕ 刪除）。',
@@ -297,7 +297,7 @@ PART = [
         '**3D** 會喺 model 上面畫出 mass 同地盤喺地面、20 m 同 60 m（LWK Publish 發佈嘅 model）。**Make issue** 開一個 issue 寫低結果同唔計嘅嘢；**Report** 整一份有表同每個區每條軸平面嘅報告，可以列印或者 **Save to Folders (PDF)**（00 BIM > Exports > SBD）。',
         '計算用 SBD panel 自己嘅引擎（Check & Comply > Shared.scripts，27/08），每個區用自己嘅外框：**S1** 係每邊側面區域嘅平均闊度 **面積 / 深度**（邊線跟住建築外角，最多 15°）- Plan 會列出計算，例如 *S1 (left side) = A / D = 706.9 m² / 70.83 m = 9.98 m*；**S2** 風道可以轉最多 15° 再轉返；斜邊界用 **S3** = A / D。每個區嘅 **Plane Y** 會喺 Plane X 嘅 **75-105°** 之間揀最好嘅角度；**Middle 同 High** 區嘅 **Plane X** 仲會轉去令 P 最大嘅角度（先 15° 一步，再準到 1°，最好嘅幾個用完整規則再確認）；Low 區 Plane X 沿住街。表入面每個區嘅 P 下面會顯示角度。',
         '**3D 入面嘅 SBD mass：** 每次 SBD Export 都會將啲 mass 放入 project 嘅 3D 做一個 model（Models 列表入面嘅 **SBD masses - (model)**：可以開關、透明度、移動，同顧問 model 一樣；放喺 export 嗰個 model 嘅 internal origin）。Checks > SBD 嘅 **Remove ...** 會刪走 mass、最新結果同嗰個 model（儲存咗嘅結果會留低）。',
-        '**高度：** 高度區由 SBD Export 揀嘅地面量起。如果最低嗰個 mass 唔係由嗰度開始，Checks > SBD 會提你（否則 10 m 高嘅平台會計咗入 Middle 區）；SBD Export 會比較街道樓板嘅高度同 mass 開始嘅高度，俾你揀其中一個，或者揀 Level。',
+        '**高度：** 高度區由 Level 0 量起（同地盤相鄰最低嗰條街；冇街就用 mass 嘅底）。如果最低嗰個 mass 唔係由嗰度開始，Checks > SBD 會提你（否則 10 m 高嘅平台會計咗入 Middle 區）。',
         '**立面（Plan ... > Elevation）：** 每個區喺佢自己嘅 Plane X 同 Plane Y 上面嘅立面投影（Fig B10 / B11），由 mass 畫出：建築、**IS**（綠點：平面計到嘅空隙，至少有區高度嘅 2/3，同埋矮啲嘅建築上面向天開放嘅位 - 例如平台天台 - 連旁邊嘅 IS 闊 7.5 m 或以上先計）、**PE**（藍格：穿過建築、闊同高都至少 3 m 嘅空位）同區嘅框（紅色虛線）。計算跟 BD 樣本個案咁列：區面積 W x H、IS 面積、IS 嘅 P、PE 面積、PE 嘅 P，同 P = IS + PE。PE 最多計要求 P 嘅 1/3，IS 自己要達到要求 P 嘅 2/3。表入面嘅 P 就係呢個 P（平面嘅 IS / W 寫喺計算下面）。',
         '**Low 區豁免：** Low 區 1/3 H（6.67 m）或以下嘅部分唔計 - 喺立面用斜線顯示，唔當 IS，亦唔計入嗰個區嘅外框同 Lp（6 m 高嘅平台邊唔會封住後移位）。Table 1 嘅 Lp（使唔使計 P）仍然用 Low 區所有建築。',
         '**每個區嘅 Case 1：** U = 峽谷面積 / 沿中線長度，Lp = 外牆投影喺街上嘅長度；Low 區係平台（1/3 H 以上），Middle 同 High 區係塔樓；Lp 唔可以超過 5U（BD 樣本：U = 15 m，5U = 75 m，Lp = 80 - 7.5 x 2 = 65 m；塔樓 U = 15 + 4 = 19 m，5U = 95 m，Lp = 32 m）。**Plane Y：** 少過 2 公頃嘅地盤只查 Plane X；Plane Y 顯示做參考（灰色）。2 公頃或以上，Plane X 要 20 %，Plane Y 要 25 %（有建築高過 60 m 就要 33.3 %）。',
