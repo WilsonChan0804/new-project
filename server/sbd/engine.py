@@ -252,7 +252,7 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
         else:
             mem = owner.get(n, [])
             edge.append({"kind": "shadow", "label": "+".join(l for l, _ in mem) or "-", "lo": round(a * M, 3), "hi": round(b * M, 3),
-                         "members": [l for _, ls in mem for l in ls]})
+                         "members": [l for _, ls in mem for l in ls], "names": [[l, ls] for l, ls in mem]})
     # a stretch of the near edge at either end with no building in front of
     # it lies beyond the end's side region: it is that setback's, not a
     # building's shadow (no "-" in W)
@@ -383,41 +383,36 @@ def _frontage(legs, site):
     return best[1] if best and best[0] > 0 else None
 
 
-def _min_rect(pts):
-    """The smallest-area rectangle round the points (its sides along a hull
-    edge): (corners, shorter side, longer side, the shorter side's ends)."""
+def _lp_notional(pts):
+    """Lp of a building or group (APP-152 Fig B3): the notional rectangle
+    round it, turned to the angle that gives the SMALLEST longer side, and
+    Lp = that longer side ("As L2 > L1, Lp = L1"). -> (corners, longer
+    side, shorter side, angle deg, the longer side's two ends)."""
     hull = _hull([XYZ(p[0], p[1], 0) for p in pts])
-    hp = [(q.X, q.Y) for q in hull] or [tuple(p) for p in pts]
-    best = None
-    for i in range(len(hp)):
-        a, b = hp[i], hp[(i + 1) % len(hp)]
-        L = math.hypot(b[0] - a[0], b[1] - a[1])
-        if L < 1e-9:
-            continue
-        d = ((b[0] - a[0]) / L, (b[1] - a[1]) / L)
+    hp = [(q.X, q.Y) for q in hull] or [tuple(p[:2]) for p in pts]
+
+    def box(t):
+        d = (math.cos(t), math.sin(t))
         n = (-d[1], d[0])
         us = [q[0] * d[0] + q[1] * d[1] for q in hp]
         ws = [q[0] * n[0] + q[1] * n[1] for q in hp]
-        area = (max(us) - min(us)) * (max(ws) - min(ws))
-        if best is None or area < best[0] - 1e-9:
-            best = (area, d, n, min(us), max(us), min(ws), max(ws))
-    if best is None:
-        rect, lp = _lp_rect(pts, (1.0, 0.0), (0.0, 1.0))
-        return rect, lp, lp, rect[:2]
-    _, d, n, u0, u1, w0, w1 = best
+        return max(max(us) - min(us), max(ws) - min(ws)), d, n, min(us), max(us), min(ws), max(ws)
+    # the rectangle lies flush with the building (a side along a hull edge -
+    # Fig B3's two notional rectangles); of these, the smallest longer side
+    # (a long block turned 45 deg would give a shorter "Lp" than its length)
+    ts = [0.0]
+    for i in range(len(hp)):
+        a, b = hp[i], hp[(i + 1) % len(hp)]
+        if math.hypot(b[0] - a[0], b[1] - a[1]) > 1e-9:
+            ts.append(math.atan2(b[1] - a[1], b[0] - a[0]) % (math.pi / 2.0))
+    best = min((box(t) + (t,) for t in ts), key=lambda q: (round(q[0], 9), q[-1]))
+    _, d, n, u0, u1, w0, w1, t = best
     P = lambda u, w: [round(u * d[0] + w * n[0], 3), round(u * d[1] + w * n[1], 3)]
     rect = [P(u0, w0), P(u1, w0), P(u1, w1), P(u0, w1)]
     lu, lw = u1 - u0, w1 - w0
-    side = [P(u0, w0), P(u0, w1)] if lw <= lu else [P(u0, w0), P(u1, w0)]
-    return rect, min(lu, lw), max(lu, lw), side
-
-
-def _lp_rect(pts, d, n):
-    """The building's Lp along the street (d) by its depth (n): its corners."""
-    us = [p[0] * d[0] + p[1] * d[1] for p in pts]
-    ws = [p[0] * n[0] + p[1] * n[1] for p in pts]
-    u0, u1, w0, w1 = min(us), max(us), min(ws), max(ws)
-    return [[round(u * d[0] + w * n[0], 3), round(u * d[1] + w * n[1], 3)] for u, w in ((u0, w0), (u1, w0), (u1, w1), (u0, w1))], u1 - u0
+    side = [P(u0, w0), P(u1, w0)] if lu >= lw else [P(u0, w0), P(u0, w1)]
+    ang = math.degrees(math.atan2(side[1][1] - side[0][1], side[1][0] - side[0][0])) % 180.0
+    return rect, max(lu, lw), min(lu, lw), ang, side
 
 
 GROUP_GAP_M = 15.0                # buildings closer than this: one group for Lp (Fig B7)
@@ -578,7 +573,6 @@ def case1(data, zone_inside, a=None, legs=None):
                                  % (name, label, CASE1_REACH_M, near))
                     continue
                 nx0, ny0 = nside
-                w_far = max(p[0] * nx0 + p[1] * ny0 for l in loops_all for p in l["loop"]) + 3.0      # beyond the building: Actual Lp
                 w_opp = min(min(q[0] * nx0 + q[1] * ny0 for q in pp["opp"]) for pp in parts) - 3.0   # beyond the opposite boundary: Length
                 line = lambda ua, ub, w: [[round(u * dx + w * nx0, 3), round(u * dy + w * ny0, 3)] for u in (ua, ub)]
                 out_parts = []
@@ -586,36 +580,31 @@ def case1(data, zone_inside, a=None, legs=None):
                     Lk = len(pp["u"]) * CASE1_STEP_M
                     ua, ub = min(pp["u"]) - CASE1_STEP_M / 2.0, max(pp["u"]) + CASE1_STEP_M / 2.0
                     out_parts.append({"tag": "abcdefghijklmnopqrstuvwxyz"[i] if len(parts) > 1 else "",
-                                      "area_m2": round(sum(pp["width"]) * CASE1_STEP_M, 3), "L_m": round(Lk, 3), "Lp_m": round(ub - ua, 3),
+                                      "area_m2": round(sum(pp["width"]) * CASE1_STEP_M, 3), "L_m": round(Lk, 3),
                                       "canyon": pp["facade"] + list(reversed(pp["opp"])) if len(pp["facade"]) >= 2 else None,
-                                      "facade": pp["facade"], "lp_line": line(ua, ub, w_far), "len_line": line(ua, ub, w_opp)})
+                                      "facade": pp["facade"], "len_line": line(ua, ub, w_opp)})
                 A_ = sum(q["area_m2"] for q in out_parts)
                 L = sum(q["L_m"] for q in out_parts)
                 U = A_ / L
                 mid = [(f, o, w) for pp in parts for f, o, w in zip(pp["facade"], pp["opp"], pp["width"])]
                 f, o, wd = mid[len(mid) // 4]          # a typical width, clear of the area's label
-                rect, _ = _lp_rect(pts, st["dir"], st["normal"])
-                # Lp: the parts' facades projected; between two buildings of a
-                # group (under 15 m apart) the facade counts as continuous
-                lp_sum = sum(q["Lp_m"] for q in out_parts)
-                for pa, pb in zip(parts, parts[1:]):
-                    if pa["who"][-1] != pb["who"][0]:
-                        lp_sum += max(0.0, (min(pb["u"]) - CASE1_STEP_M / 2.0) - (max(pa["u"]) + CASE1_STEP_M / 2.0))
-                rows.append({"street": name, "lp_rect": rect, "U_m": round(U, 3), "area_m2": round(A_, 3), "L_m": round(L, 3),
-                             "Lp_m": round(lp_sum, 3), "nearest_m": round(near, 3),
+                rows.append({"street": name, "U_m": round(U, 3), "area_m2": round(A_, 3), "L_m": round(L, 3),
+                             "nearest_m": round(near, 3),
                              "setback_m": round(near - (st.get("width_m") or 0) / 2.0, 3) if st.get("width_m") else None,
                              "parts": out_parts,
                              "canyon": [q["canyon"] for q in out_parts if q["canyon"]],
                              "facade": [q["facade"] for q in out_parts if len(q["facade"]) >= 2],
-                             "lp_line": out_parts[0]["lp_line"] if len(out_parts) == 1 else None,
                              "len_line": out_parts[0]["len_line"] if len(out_parts) == 1 else None,
                              "width_dim": [f, o, round(wd, 3)]})
             if not rows:
                 continue
             ctrl = min(rows, key=lambda r: r["U_m"])
-            lp = max(r["Lp_m"] for r in rows)
+            # Lp: the building's (or group's) notional rectangle, turned to
+            # give the smallest longer side - its longer side (Fig B3)
+            rect, lp, short, ang, side = _lp_notional([p for l in loops_all for p in l["loop"]])
             per.append(dict(ctrl, building=label, members=members, name=", ".join(sorted(set(l.get("name") or "" for l in loops_all))),
                             streets=rows, ctrl_street=ctrl["street"], Lp_m=round(lp, 3), Lp_max_m=round(5 * ctrl["U_m"], 3),
+                            short_m=round(short, 3), lp_rect=rect, lp_side=side, lp_angle_deg=round(ang, 2),
                             **{"pass": lp <= 5 * ctrl["U_m"] + 1e-6}))
         # the buildings that do not abut a street: their Lp all the same,
         # against the nearest street (drawn dashed)
@@ -624,11 +613,13 @@ def case1(data, zone_inside, a=None, legs=None):
             if any(b["building"] == label for b in per):
                 continue
             si = min(range(len(streets)), key=lambda i: near_of.get((i, label), 1e9))
-            # not abutting a street: Lp = the shorter side of its smallest
-            # bounding rectangle (the SBD panel's Case 2; Wilson, report 5)
-            rect, short, long_, side_pts = _min_rect([p for l in loops for p in l["loop"]])
+            # not abutting a street: Lp the same way - the longer side of its
+            # notional rectangle, turned to give the smallest (Fig B3;
+            # Wilson, report 8)
+            rect, long_, short, ang, side_pts = _lp_notional([p for l in loops for p in l["loop"]])
             others.append({"building": label, "street": streets[si]["name"], "nearest_m": round(near_of.get((si, label), 0), 3),
-                           "Lp_m": round(short, 3), "long_m": round(long_, 3), "lp_rect": rect, "lp_side": side_pts})
+                           "Lp_m": round(long_, 3), "short_m": round(short, 3), "lp_rect": rect, "lp_side": side_pts,
+                           "lp_angle_deg": round(ang, 2)})
         for si, st in enumerate(streets):
             name = st["name"]
             if not any(r["street"] == name for b in per for r in b["streets"]):
@@ -886,6 +877,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
                         el = E.zone_elevation(data["masses"], g, ao["edge"], z0, top, ao["axis"], rq or req_x, exempt_of[name])
                     for it in ao["edge"]:
                         it.pop("members", None)
+                        it.pop("names", None)
                     ao["elev"] = el
                     ao["P_zone"] = round(el["P"] if el else ao["P"], 2)
                     ao["required_p"] = rq

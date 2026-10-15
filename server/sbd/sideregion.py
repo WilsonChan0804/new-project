@@ -269,16 +269,20 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
         return (ends[0], ends[1])
 
     def interval(v):
-        """From the edge to the outer limit of the piece of the (extended)
-        site the edge stands in - nothing where the edge is outside it, and
-        never a separate piece further out."""
+        """The (extended) site outward of the edge's line, the piece nearest
+        it: from the edge where the edge stands in the site - and the whole
+        piece where the edge has left the site inward of it, so the region
+        runs on to the site's corner beyond the edge's exit (Wilson, report
+        8). Nothing where the edge is outward of the site."""
         e = ue(v)
-        for a, b in _merged(polys, v):
-            if a - 1e-9 <= e <= b + 1e-9:
-                return (e, b) if s > 0 else (a, e)
-        return None
+        sp = _merged(polys, v)
+        if s > 0:
+            out = [(a, b) for a, b in sp if b > e + 1e-9]
+            return (max(out[0][0], e), out[0][1]) if out else None
+        out = [(a, b) for a, b in sp if a < e - 1e-9]
+        return (out[-1][0], min(out[-1][1], e)) if out else None
 
-    runs, cur = [], None
+    runs, cur, last = [], None, None
     for va, vb in zip(vs, vs[1:]):
         if vb - va < 1e-9:
             continue
@@ -291,6 +295,13 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
                 runs.append(cur)
                 cur = None
             continue
+        # the same piece as the segment before (they meet at this station),
+        # or a separate one: a new run
+        if cur is not None and (abs(last[0] - va) > 1e-9 or
+                                min(last[1][1], ia[1]) < max(last[1][0], ia[0]) - 1e-6):
+            runs.append(cur)
+            cur = None
+        last = (vb, ib)
         if cur is None:
             cur = {"area": 0.0, "v0": va, "v1": vb, "inner": [], "outer": []}
         cur["area"] += ((ia[1] - ia[0]) + (ib[1] - ib[0])) / 2.0 * (vb - va)

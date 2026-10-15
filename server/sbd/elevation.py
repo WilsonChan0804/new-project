@@ -85,11 +85,30 @@ def sections(masses, g, z):
             continue
         for part in F.components(tris):
             for loop in F._section(verts, part, g + z):
-                cx = sum(p[0] for p in loop) / len(loop)
-                cy = sum(p[1] for p in loop) / len(loop)
+                cx, cy = _inner_point(loop)
                 out.append((loop, cx, cy))
     _SECTIONS[key] = out
     return out
+
+
+def _inner_point(loop):
+    """A point inside the loop (which footprint it belongs to is asked of
+    this point): the middle of the widest span across its mid height - the
+    corners' average can lie outside (between a Y-shaped tower's arms)."""
+    ys = [p[1] for p in loop]
+    y = (min(ys) + max(ys)) / 2.0
+    xs = []
+    n = len(loop)
+    for i in range(n):
+        (x1, y1), (x2, y2) = loop[i][:2], loop[(i + 1) % n][:2]
+        if (y1 > y) != (y2 > y):
+            xs.append(x1 + (y - y1) * (x2 - x1) / (y2 - y1))
+    xs.sort()
+    spans = [(xs[k], xs[k + 1]) for k in range(0, len(xs) - 1, 2)]
+    if not spans:
+        return sum(p[0] for p in loop) / n, sum(ys) / n
+    a, b = max(spans, key=lambda q: q[1] - q[0])
+    return (a + b) / 2.0, y
 
 
 def _blocked(masses, g, z, ax, keep):
@@ -142,7 +161,8 @@ def _group_cells(masses, g, ax, rows, z1, top, members, exempt_top):
                 row.append("o")
         kind.append(row)
     # open to above: an open cell with only open cells over it (and nothing
-    # of the group above the zone)
+    # of the group above the zone - APP-152's sample: the podium garden
+    # under the tower is PE)
     for c, (ua, ub) in enumerate(cols):
         sky = not _inside(0.5 * (ua + ub), over)
         for r in range(len(rows) - 1, -1, -1):
@@ -237,10 +257,20 @@ def zone_elevation(masses, ground, items, z0, z1, ax, req_p=None, exempt=0.0):
                 span = (cols[-1][1] - cols[0][0]) if cols else 0.0
                 f = w / span if span > EPS else 0.0
                 cc = [(b - a, (b - a) * f, [kind[r][c] for r in range(len(rows))]) for c, (a, b) in enumerate(cols)]
+                # each building's mark (B1, B2 ...) over the middle of its own
+                # columns: its plan projected, placed as the silhouette is
+                marks = []
+                for lab, ls in it.get("names") or []:
+                    us = [p[0] * ax[0] + p[1] * ax[1] for l in ls for p in l]
+                    if us and cols:
+                        lo_, hi_ = max(min(us), cols[0][0]), min(max(us), cols[-1][1])
+                        if hi_ > lo_:
+                            marks.append({"label": lab, "x": round(x + ((lo_ + hi_) / 2.0 - cols[0][0]) * f, 3)})
+                it = dict(it, marks=marks)
             else:
                 cc = [(w, w, [("exempt" if ex_top is not None and zb <= ex_top + EPS else "open") for za, zb in rows])]
             pieces.append((x, x + w, cc, it))
-        out_items.append(dict({k: v for k, v in it.items() if k != "members"}, x0=round(x, 3), x1=round(x + w, 3),
+        out_items.append(dict({k: v for k, v in it.items() if k not in ("members", "names")}, x0=round(x, 3), x1=round(x + w, 3),
                               w_m=round(w, 3), plan_w_m=round(it["hi"] - it["lo"], 3)))
         x += w
     Wd = x

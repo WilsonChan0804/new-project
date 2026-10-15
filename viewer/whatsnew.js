@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-17", date: "16 Oct 2026",
+    items: [
+      "SBD (report 8): a side region now runs on to the **site's corner** where its turned edge leaves the site through the far boundary - all the site outward of the edge's line. A tower with a Y- or U-shaped plan is no longer left out of the elevations, and every building block is marked **B1, B2 ...** on them.",
+      "SBD **Design Requirement (1): Lp = the longer side of the notional rectangle** round the building or group, lying flush with it and turned to the side that gives the smaller Lp (Fig B3) - for every building, abutting a street or not. The canyon still gives U = (A(a) + A(b)) / (L(a) + L(b)); the rectangle and its Lp are drawn on the Street canyon view.",
+    ],
+  },
+  {
     version: "2026-11-16", date: "16 Oct 2026",
     items: [
       "**SBD Export (Revit)** now asks **which viewer project** every time - it used to send straight to the project LWK Issues last used with the Revit file. That project is listed first, marked \"last used with this model\"; the result says the project's name too. (Update the add-in.)",

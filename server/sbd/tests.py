@@ -4,6 +4,7 @@
     python3 -m sbd.tests       (from server/)
 """
 
+import math
 import unittest
 
 from . import engine, footprint
@@ -171,11 +172,12 @@ class Case1(unittest.TestCase):
              "streets": [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}],
              "masses": [mass("A", box(10, 15, 0, 25, 45, 30), box(25, 30, 0, 70, 45, 30))]}
         b = engine.run(d)["case1"][0]["buildings"][0]
-        self.assertAlmostEqual(b["Lp_m"], 15.0, places=2)
         self.assertAlmostEqual(b["L_m"], 15.0, delta=0.6)
         self.assertAlmostEqual(b["U_m"], 35.0, delta=0.3)
-        # its Lp rectangle stops at the 30 m line (y = 20)
-        self.assertLessEqual(max(p[1] for p in b["lp_rect"]), 20.0 + 1e-6)
+        # Lp: the whole building's notional rectangle, its longer side (Fig
+        # B3; Wilson, report 8) - 60 x 30 m
+        self.assertAlmostEqual(b["Lp_m"], 60.0, places=2)
+        self.assertAlmostEqual(b["short_m"], 30.0, places=2)
 
     def test_buildings_under_15m_apart_are_one_group(self):
         st = [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}]
@@ -218,10 +220,10 @@ class Case1(unittest.TestCase):
         b = r["case1"][0]["buildings"][0]
         legs = {x["street"]: x for x in b["streets"]}
         self.assertEqual(set(legs), {"Corner Rd (leg 1)", "Corner Rd (leg 2)"})
-        self.assertAlmostEqual(legs["Corner Rd (leg 1)"]["Lp_m"], 35.0, places=2)     # along x
-        self.assertAlmostEqual(legs["Corner Rd (leg 2)"]["Lp_m"], 30.0, places=2)     # along y
         self.assertAlmostEqual(b["U_m"], min(x["U_m"] for x in b["streets"]), places=3)
-        self.assertTrue(all(len(x["lp_rect"]) == 4 for x in b["streets"]))
+        # one Lp for the building on every leg: its notional rectangle 35 x 30
+        self.assertAlmostEqual(b["Lp_m"], 35.0, places=2)
+        self.assertEqual(len(b["lp_rect"]), 4)
 
     def test_too_far_is_a_note(self):
         d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
@@ -229,9 +231,9 @@ class Case1(unittest.TestCase):
              "masses": [mass("A", box(10, 25, 0, 40, 45, 30))]}
         c = engine.run(d)["case1"][0]
         self.assertEqual(c["buildings"], [])
-        # its Lp: the shorter side of its smallest bounding rectangle (report 5)
+        # its Lp: the longer side of its notional rectangle (Fig B3, report 8)
         self.assertEqual(c["others"][0]["building"], "B1")
-        self.assertAlmostEqual(c["others"][0]["Lp_m"], 20.0, places=2)
+        self.assertAlmostEqual(c["others"][0]["Lp_m"], 30.0, places=2)
         self.assertTrue(any("Main St" in n and "not applicable" in n and "35.000" in n for n in c["notes"]))
 
 
@@ -334,7 +336,7 @@ class BdSampleCase(unittest.TestCase):
         # the canyon drawn is the canyon measured: its area = U x L
         low = c["LOW"]
         self.assertAlmostEqual(sum(abs(footprint.area(p)) for p in low["canyon"]), low["area_m2"], delta=low["area_m2"] * 0.02)
-        self.assertAlmostEqual(abs(low["lp_line"][1][0] - low["lp_line"][0][0]), 65.0, places=2)
+        self.assertAlmostEqual(math.dist(*low["lp_side"]), 65.0, places=2)
         self.assertTrue(self.r["case1_pass"])
 
 
@@ -686,17 +688,18 @@ class Report5(unittest.TestCase):
         self.assertEqual([p["tag"] for p in parts], ["a", "b"])
         self.assertAlmostEqual(sum(p["L_m"] for p in parts), 40.0, delta=0.6)
         self.assertAlmostEqual(b["U_m"], 35.0, delta=0.3)                    # (Aa + Ab) / (La + Lb)
-        self.assertAlmostEqual(b["Lp_m"], 40.0, delta=0.6)                   # the two parts' projections
+        self.assertAlmostEqual(b["Lp_m"], 60.0, places=2)                    # the block's notional rectangle (Fig B3)
 
-    def test_not_abutting_lp_is_the_short_side(self):
+    def test_not_abutting_lp_is_the_notional_long_side(self):
         st = [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}]
         import math
         c_, s_ = math.cos(math.radians(20)), math.sin(math.radians(20))
         m = box(30, 30, 0, 60, 45, 30)
         m["verts"] = [[45 + (v[0] - 45) * c_ - (v[1] - 37.5) * s_, 37.5 + (v[0] - 45) * s_ + (v[1] - 37.5) * c_, v[2]] for v in m["verts"]]
         c = engine.run({"site": SITE, "streets": st, "masses": [mass("A", m)]})["case1"][0]
-        self.assertAlmostEqual(c["others"][0]["Lp_m"], 15.0, places=2)
-        self.assertAlmostEqual(c["others"][0]["long_m"], 30.0, places=2)
+        # turned 20 deg: the rectangle turns with it - 30 x 15, Lp 30 (report 8)
+        self.assertAlmostEqual(c["others"][0]["Lp_m"], 30.0, places=2)
+        self.assertAlmostEqual(c["others"][0]["short_m"], 15.0, places=2)
 
     def test_plan_levels_for_every_zone(self):
         d = {"site": SITE, "masses": [mass("T", box(20, 20, 0, 80, 40, 100))]}
@@ -758,6 +761,74 @@ class Report6(unittest.TestCase):
                 for p in side:
                     cr = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
                     self.assertLess(abs(cr) / max(1e-9, math.hypot(b[0] - a[0], b[1] - a[1])), 0.05)
+
+
+class Report8(unittest.TestCase):
+    """Wilson's 8th report: the hatch on to the site's corner beyond the
+    edge's exit, a Y-shaped tower kept in the elevation, the buildings'
+    marks, Lp = the notional rectangle's longer side (Fig B3)."""
+
+    def test_region_runs_on_to_the_corner(self):
+        from . import sideregion as SR
+        # the far boundary v = 80 + u/5: the edge u = 60 leaves the site at
+        # v = 92, but the site goes on to its corner (100, 100) outward of it
+        site = [(0, 0), (100, 0), (100, 100), (0, 80)]
+        r = SR.side_region(site, [[(40, 10), (60, 10), (60, 50), (40, 50)]], "right")
+        self.assertAlmostEqual(r["area_ft2"], 40 * 92 + 160.0, places=6)
+        self.assertAlmostEqual(r["D_ft"], 100.0, places=6)
+        self.assertTrue(any(abs(p[0] - 100) < 1e-6 and abs(p[1] - 100) < 1e-6 for p in r["polygon"]))
+
+    def test_inner_point_of_a_u_shape(self):
+        from . import elevation as E
+        u = [(0, 0), (30, 0), (30, 30), (20, 30), (20, 10), (10, 10), (10, 30), (0, 30)]
+        x, y = E._inner_point(u)
+        self.assertTrue(footprint.point_in(x, y, u))
+        # the corners' average lies in the notch, outside
+        self.assertFalse(footprint.point_in(sum(p[0] for p in u) / 8.0, sum(p[1] for p in u) / 8.0, u))
+
+    def test_u_shaped_tower_in_the_elevation(self):
+        # a U-shaped tower: still drawn (its cut kept by a point inside it)
+        u = [(30, 20), (70, 20), (70, 50), (60, 50), (60, 30), (40, 30), (40, 50), (30, 50)]
+        verts = [[x, y, 0] for x, y in u] + [[x, y, 100] for x, y in u]
+        n = len(u)
+        tris = []
+        for i in range(1, n - 1):
+            tris.append([0, i + 1, i]); tris.append([n, n + i, n + i + 1])
+        for i in range(n):
+            j = (i + 1) % n
+            tris.append([i, j, n + j]); tris.append([i, n + j, n + i])
+        r = engine.run({"site": SITE, "masses": [{"id": "U", "name": "U", "verts": verts, "tris": tris}]})
+        hi = [z for z in r["zones"] if z["zone"] == "HIGH"][0]
+        for k in ("axis1", "axis2"):
+            kinds = set(q[4] for q in hi[k]["elev"]["rects"])
+            self.assertIn("bldg", kinds, k)
+
+    def test_marks_on_the_shadows(self):
+        st = [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}]
+        d = {"site": SITE, "streets": st, "masses": [mass("A", box(10, 20, 0, 40, 40, 30)), mass("B", box(45, 20, 0, 75, 40, 30))]}
+        z = engine.run(d)["zones"][0]
+        marks = [m["label"] for it in z["axis1"]["elev"]["items"] for m in it.get("marks") or []]
+        self.assertEqual(sorted(marks), ["B1", "B2"])
+        self.assertNotIn("names", z["axis1"]["edge"][0])
+
+    def test_lp_notional(self):
+        rect, lp, short, ang, side = engine._lp_notional([(0, 0), (75, 0), (75, 20), (0, 20)])
+        self.assertAlmostEqual(lp, 75.0, places=6)              # a long block: its length, never turned 45 deg
+        self.assertAlmostEqual(short, 20.0, places=6)
+        self.assertAlmostEqual(math.dist(*side), 75.0, places=3)
+        # Fig B2: a block with two corners cut away - still its 75 m rectangle
+        lp2 = engine._lp_notional([(0, 0), (50, 0), (50, 10), (75, 10), (75, 30), (20, 30), (20, 25), (0, 25)])[1]
+        self.assertAlmostEqual(lp2, 75.0, places=6)
+        # Fig B3: two parts, one turned - the flush rectangle with the
+        # smaller longer side is taken
+        c, s_ = math.cos(math.radians(40)), math.sin(math.radians(40))
+        oval = [(30 + 30 * c * math.cos(t) - 12 * s_ * math.sin(t), 60 + 30 * s_ * math.cos(t) + 12 * c * math.sin(t))
+                for t in [k * math.pi / 18 for k in range(36)]]
+        chev = [(0, 0), (25, 12), (50, 0), (50, 10), (25, 22), (0, 10)]
+        rect3, lp3, short3, ang3, side3 = engine._lp_notional(oval + chev)
+        xs, ys = [p[0] for p in oval + chev], [p[1] for p in oval + chev]
+        self.assertLessEqual(lp3, max(max(xs) - min(xs), max(ys) - min(ys)) + 1e-6)
+        self.assertAlmostEqual(lp3, max(math.dist(rect3[0], rect3[1]), math.dist(rect3[1], rect3[2])), places=3)
 
 
 class Report7(unittest.TestCase):
