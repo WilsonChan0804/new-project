@@ -2073,6 +2073,22 @@ function initClash() {
       S.dirty = true;
       return gone.length;
     },
+    // the SBD masses' model in the 3D (each SBD Export adds it): shown or
+    // hidden with Checks > SBD's 3D box
+    sbdRefsShown() {
+      return RF.list.some((x) => (x.sbd || /^SBD masses/.test(x.name || "")) && (S.loaded.has(refKey(x)) || (x.status === "ready" && refPref(x, "on", x.on !== false))));
+    },
+    async showSbdRefs(on) {
+      for (const r of RF.list.filter((x) => x.sbd || /^SBD masses/.test(x.name || ""))) {
+        refSet(r, "on", !!on);
+        try {
+          if (on && r.status === "ready") { if (!S.loaded.has(refKey(r))) await loadRef(r); }
+          else if (S.loaded.has(refKey(r))) await unloadModel(refKey(r));
+        } catch (e) { status(e.message); }
+      }
+      renderRefs();
+      S.dirty = true;
+    },
     async makeIssue(point, el, pre) {
       let guid = null, name = null;
       if (el) {

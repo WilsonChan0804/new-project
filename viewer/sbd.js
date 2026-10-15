@@ -642,7 +642,9 @@ export function elevSvg(res, zone, axisKey, opt) {
     s += `<g class="sbd-prof"><line x1="${X(prof[0][0])}" y1="${yp}" x2="${X(prof[prof.length - 1][1])}" y2="${yp}" stroke="#1d4ed8" stroke-width="${fs / 10}"/>`;
     for (const [a, b, h, hLow] of prof) {
       s += tk(a) + tk(b) + `<line x1="${X(a)}" y1="${yp}" x2="${X(a)}" y2="${Y(h)}" stroke="#1d4ed8" stroke-width="${fs / 20}" stroke-dasharray="${fs / 3} ${fs / 4}"/>`
-        + (b - a >= fs * 2.5 ? `<text x="${X((a + b) / 2)}" y="${yp - fs * 0.35}" font-size="${fs * 0.7}" text-anchor="middle" fill="#1d4ed8">${f3(b - a)}${hLow != null ? " (sloped)" : ""}</text>` : "");
+        + (b - a >= fs * 2.5 ? `<text class="sbd-profw" x="${X((a + b) / 2)}" y="${yp - fs * 0.35}" font-size="${fs * 0.7}" text-anchor="middle" fill="#1d4ed8">${f3(b - a)}${hLow != null ? " (sloped)" : ""}</text>` : "");
+      // a narrow step's width too, placed clear of its neighbours
+      if (b - a < fs * 2.5 && b - a >= 0.5) LB.add({ x: Number(X((a + b) / 2)), y: yp - fs * 0.35, t: f3(b - a), size: fs * 0.6, fill: "#1d4ed8", attrs: HALO(fs) + ' class="sbd-profw"', prio: 6, along: false });
       LB.add({ x: Number(X((a + b) / 2)), y: Number(Y(h)) + fs * 1.1, t: `h ${hLow != null ? `${f3(hLow)} - ${f3(h)}` : f3(h)}`, size: fs * 0.65, fill: "#0f172a", attrs: HALO(fs), prio: 7 });
     }
     s += tk(prof[prof.length - 1][1]) + `</g>`;
@@ -871,7 +873,7 @@ export function createSbd(ctx) {
     <div id="sbd-sum"></div>
     <div class="chk-row sbd-acts">
       <button id="sbd-plan" class="ghost" title="The plan and the elevations of each zone: the gaps, the air corridors, IS and PE">Plan ...</button>
-      <label class="row-check" style="width:auto" title="The masses and the zone limits in the model"><input type="checkbox" id="sbd-3d"> 3D</label>
+      <label class="row-check" style="width:auto" title="The SBD masses (their model in the 3D) and the zone limits - untick to hide them"><input type="checkbox" id="sbd-3d"> 3D</label>
       <button id="sbd-issue" class="ghost" title="An issue for what fails">Make issue</button>
       <button id="sbd-report" class="ghost" title="A report: the table and a plan of each zone (Print / Save to Folders)">Report</button>
       <span class="sbd-cadwrap"><button id="sbd-cad" class="ghost" title="Every plan, elevation and street canyon as a CAD drawing (DXF or DWG), one layer per kind (SBD-IS, SBD-PE, SBD-BLDG ...), in metres">CAD ...</button>
@@ -986,6 +988,8 @@ export function createSbd(ctx) {
     }
     paintSaved();
     paint();
+    // ticked while the SBD masses' model is in the 3D
+    if (B.model && ctx.sbdRefsShown && ctx.sbdRefsShown()) $("#sbd-3d").checked = true;
   }
 
   // the procedure and requirements: the Help, at SBD
@@ -1237,7 +1241,13 @@ export function createSbd(ctx) {
     B.three = g;
     ctx.redraw();
   }
-  $("#sbd-3d").onchange = () => show3d($("#sbd-3d").checked);
+  // the box shows or hides everything of the SBD in the 3D: the outline and
+  // zone limits, and the SBD masses' model each export adds
+  $("#sbd-3d").onchange = async () => {
+    const on = $("#sbd-3d").checked;
+    show3d(on);
+    if (ctx.showSbdRefs) await ctx.showSbdRefs(on);
+  };
 
   /* ------------------------------------------------------------ issue + report */
   function failText(r) {

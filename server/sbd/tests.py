@@ -831,6 +831,28 @@ class Report8(unittest.TestCase):
         self.assertAlmostEqual(lp3, max(math.dist(rect3[0], rect3[1]), math.dist(rect3[1], rect3[2])), places=3)
 
 
+class Report8b(unittest.TestCase):
+    """TKO, page 3: at a shadow's ends, columns whose building is all within
+    the disregarded <= 1/3 H are the open space beside the setback - IS
+    with it (horizontally), not 'open'."""
+
+    def test_end_columns_join_the_setback(self):
+        from . import elevation as E
+        m = mass("A", box(10, 0, 0, 16, 30, 5), box(16, 0, 0, 22, 30, 10), box(22, 0, 0, 78, 30, 20),
+                 box(78, 0, 0, 84, 30, 10), box(84, 0, 0, 90, 30, 5))
+        sq = [[10, 0], [90, 0], [90, 30], [10, 30]]
+        items = [{"kind": "gap", "label": "S1", "s_m": 10.0, "pass": True, "need_m": 7.5, "lo": 0, "hi": 10},
+                 {"kind": "shadow", "label": "B1", "lo": 10, "hi": 90, "members": [sq], "names": [["B1", [sq]]]},
+                 {"kind": "gap", "label": "S2", "s_m": 2.0, "pass": False, "need_m": 7.5, "lo": 90, "hi": 92}]
+        e = E.zone_elevation([m], 0.0, items, 0.0, 20.0, (1.0, 0.0), 20.0, 20 / 3.0)
+        kinds = {(round(q[0], 3), round(q[1], 3), round(q[2], 3)): q[4] for q in e["rects"]}
+        self.assertEqual(kinds[(10.0, 16.0, 6.667)], "sky")      # beside S1, above the disregarded part
+        self.assertEqual(kinds[(16.0, 22.0, 10.0)], "sky")       # over the 10 m step
+        self.assertEqual(kinds[(84.0, 90.0, 6.667)], "sky")      # with S2 (2 m): 14 m >= 7.5 m
+        self.assertEqual(kinds[(90.0, 92.0, 6.667)], "is")
+        self.assertNotIn("open", set(kinds.values()))
+
+
 class Report7(unittest.TestCase):
     """Wilson's 7th report: the hatch's corners on the site boundary (a
     region tapering to a point is not cut short), a small jog of the

@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-18", date: "16 Oct 2026",
+    items: [
+      "SBD elevations: at a building's ends, the open space above a part that lies wholly in the disregarded 1/3 H (and over the lower step beside it) now joins the side setback's **IS** - it was left white. Every step of the buildings' profile has its width written.",
+      "Checks > SBD: the **3D** box now hides the **SBD masses** model too (not only the outline and zone limits), and is ticked while that model shows.",
+    ],
+  },
+  {
     version: "2026-11-17", date: "16 Oct 2026",
     items: [
       "SBD (report 8): a side region now runs on to the **site's corner** where its turned edge leaves the site through the far boundary - all the site outward of the edge's line. A tower with a Y- or U-shaped plan is no longer left out of the elevations, and every building block is marked **B1, B2 ...** on them.",

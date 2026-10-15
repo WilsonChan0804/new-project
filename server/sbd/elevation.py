@@ -170,9 +170,16 @@ def _group_cells(masses, g, ax, rows, z1, top, members, exempt_top):
                 kind[r][c] = "sky" if sky else "enc"
             elif kind[r][c] != "exempt":
                 sky = False
-        # open from bottom to top (between two buildings of the group, not a
-        # gap that counts on plan): open, not IS
-        if not any(kind[r][c] == "bldg" for r in range(len(rows))):
+    # open from bottom to top BETWEEN two buildings of the group (not a gap
+    # that counts on plan): open, not IS. A column at the shadow's end, with
+    # no building beyond it (the building there only <= 1/3 H, disregarded),
+    # is the open space beside the setback: it stays sky, and joins the
+    # setback's IS horizontally (Wilson, TKO report)
+    has_b = [any(kind[r][c] == "bldg" for r in range(len(rows))) for c in range(len(cols))]
+    first = next((c for c in range(len(cols)) if has_b[c]), None)
+    last = next((c for c in range(len(cols) - 1, -1, -1) if has_b[c]), None)
+    for c in range(len(cols)):
+        if first is not None and first < c < last and not has_b[c]:
             for r in range(len(rows)):
                 if kind[r][c] == "sky":
                     kind[r][c] = "open"
