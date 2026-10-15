@@ -99,6 +99,10 @@ def clean_model(data):
         "ground_z": float(data.get("ground_z") or 0.0), "ground_source": str(data.get("ground_source") or "")[:80],
         "site": site, "masses": masses, "street_axis": line(data.get("street_axis")),
         "streets": streets, "corridor": line(data.get("corridor")),
+        # a CAD model kept as drawn, or (frame "internal") on the Revit
+        # model's origin - as an export from Revit always is
+        "source": "cad" if data.get("source") == "cad" else "revit",
+        "frame": "internal" if data.get("frame") == "internal" or data.get("source") != "cad" else "drawn",
     }
 
 
@@ -242,13 +246,34 @@ def register(app, core):
         return {"ok": r.get("ok"), "controlling_p": r.get("controlling_p"), "required_p": r.get("required_p"),
                 "pass": r.get("pass"), "warnings": r.get("warnings"), "masses": len(model["masses"])}
 
+    def project_frame(pid):
+        """The project's internal -> shared transforms (its 3D's lwk_frame),
+        or None."""
+        from sbd.cadmodel import frame_of
+        try:
+            with open(os.path.join(core.project_root_for(pid), "manifest.json"), encoding="utf-8") as f:
+                return frame_of(json.load(f))
+        except Exception:
+            return None
+
     @app.get("/api/sbd/template.dxf")
-    async def sbd_template():
-        """The CAD template: the layers to draw the SBD model on (the same
-        for everyone - no project needed)."""
+    async def sbd_template(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """The CAD template: the layers to draw the SBD model on. For a
+        project with an SBD model, its site boundary and streets are in it,
+        at shared (survey) coordinates when the project's 3D says how;
+        otherwise an example."""
         from sbd.cadmodel import template_dxf
-        return Response(content=template_dxf().encode("ascii", "replace"), media_type="application/dxf",
-                        headers={"Content-Disposition": 'attachment; filename="SBD model template.dxf"'})
+        model, frame, name = None, None, "SBD model template.dxf"
+        if x_project:
+            core.require_project(request, x_project, "member", x_viewer_token)
+            model = _read(os.path.join(_dir(core, x_project), "model.json"))
+            if model:
+                frame = project_frame(x_project)
+                name = "SBD model template - %s.dxf" % re.sub(r"[^A-Za-z0-9 _.-]", "", x_project)[:40]
+        dxf = template_dxf(model, frame, x_project if model else "")
+        return Response(content=dxf.encode("ascii", "replace"), media_type="application/dxf",
+                        headers={"Content-Disposition": 'attachment; filename="%s"' % name,
+                                 "X-SBD-Template": ("shared" if frame else "model") if model else "example"})
 
     @app.post("/api/sbd/cad-model")
     async def sbd_cad_model(request: Request, name: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
@@ -281,7 +306,7 @@ def register(app, core):
                 doc = cad_dxf.read(dxf)
             except Exception as e:
                 raise HTTPException(status_code=422, detail="Not a DXF the viewer can read: %s" % e)
-            data, probs = read_model(doc, project=x_project, by=w.name or "")
+            data, probs = read_model(doc, project=x_project, by=w.name or "", frame=project_frame(x_project))
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
         if not data:

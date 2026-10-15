@@ -66,6 +66,16 @@ def _cl_u(cl, v, near):
             c = u1 if abs(v2 - v1) < 1e-12 else u1 + (v - v1) * (u2 - u1) / (v2 - v1)
             if best is None or abs(c - near) < abs(best - near):
                 best = c
+    lo, hi = (min(p[1] for p in cl), max(p[1] for p in cl)) if cl else (0, 0)
+    if best is None and len(cl) >= 2 and not (lo <= v <= hi):
+        # a centreline ending just short of the frontage: its end segment
+        # carried on (up to 10 m)
+        for (u1, v1), (u2, v2) in ((cl[0], cl[1]), (cl[-1], cl[-2])):
+            if abs(v2 - v1) < 1e-9 or abs(v - v1) > 10.0 / 0.3048 or abs(v - v1) > abs(v - v2):
+                continue
+            c = u1 + (v - v1) * (u2 - u1) / (v2 - v1)
+            if best is None or abs(c - near) < abs(best - near):
+                best = c
     return best
 
 
@@ -95,10 +105,6 @@ def extension(site, cl, reach, side, outline=None, gap=None):
     site's outer limit on this side and the street is just outward of it:
     the street's slab (outline) within `gap` of it - or, with no outline,
     the centreline within `reach`."""
-    """The street's part up to its centreline, beside the boundary that faces
-    it: [(u, v) polygons]. A boundary edge faces the street when it is the
-    site's outer limit on this side and the centreline is outward of it
-    within `reach` (half the street's width + 3 m)."""
     s = 1.0 if side == "right" else -1.0
     n = len(site)
     facing = []
@@ -110,34 +116,40 @@ def extension(site, cl, reach, side, outline=None, gap=None):
             # it: the street is not across this side's outward direction
             facing.append(None)
             continue
-        ok = True
-        for t in (0.0, 0.5, 1.0):
-            u = a[0] + (b[0] - a[0]) * t
-            v = a[1] + (b[1] - a[1]) * t
-            vv = v + (1e-4 if t == 0.0 else -1e-4 if t == 1.0 else 0.0) * (1 if b[1] > a[1] else -1)
+        # sampled along the edge: most of it must face the street - a short
+        # jog of the boundary near a corner, or a sliver between the boundary
+        # and the slab (under `gap`), is passed over (Wilson, report 7)
+        g = gap or 0.0
+        good = tot = 0
+        for t in (0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95):
+            tot += 1
+            vv = a[1] + (b[1] - a[1]) * t
             sp = _spans(site, vv)
             if not sp:
-                ok = False
-                break
+                continue
             lim = sp[-1][1] if s > 0 else sp[0][0]
-            uu = a[0] + (b[0] - a[0]) * ((vv - a[1]) / (b[1] - a[1]))
-            if abs(uu - lim) > 1e-3:
-                ok = False
-                break
+            uu = a[0] + (b[0] - a[0]) * t
+            if (lim - uu) * s < -1e-3 or (lim - uu) * s > max(1e-3, g):
+                continue                      # not the outer limit here
             c = _cl_u(cl, vv, uu)
             if c is None or (c - uu) * s <= 0:
-                ok = False
-                break
+                continue
             if outline and len(outline) >= 3:
                 # the slab just outward of the edge, and its centreline across it
-                if not _near_poly((uu + s * (gap or 0.0) * 0.5, vv), outline, gap or 0.0) or \
-                        abs(c - uu) > 1.6 * (reach + (gap or 0.0)):
-                    ok = False
-                    break
+                if not _near_poly((lim + s * g * 0.5, vv), outline, g) or \
+                        abs(c - uu) > 1.6 * (reach + g):
+                    continue
             elif abs(c - uu) > reach:
-                ok = False
-                break
-        facing.append(i if ok else None)
+                continue
+            good += 1
+        facing.append(i if good * 3 >= tot * 2 else None)
+    # a short jog (under `gap`) between two facing edges is part of the
+    # frontage: one extension, no sliver left between two
+    for i in range(n):
+        if facing[i] is None and facing[i - 1] is not None and facing[(i + 1) % n] is not None:
+            a, b = site[i], site[(i + 1) % n]
+            if math.hypot(b[0] - a[0], b[1] - a[1]) <= max(gap or 0.0, 1e-6):
+                facing[i] = i
     # contiguous facing edges -> chains of site points
     chains, cur = [], []
     for k in range(n + 1):
@@ -156,8 +168,13 @@ def extension(site, cl, reach, side, outline=None, gap=None):
         chains.pop()
     out = []
     for ch in chains:
-        ch = sorted(ch, key=lambda p: p[1])
-        va, vb = ch[0][1], ch[-1][1]
+        if ch[-1][1] < ch[0][1]:
+            ch = list(reversed(ch))           # the boundary's own order, low v first
+        va, vb = min(p[1] for p in ch), max(p[1] for p in ch)
+        if ch[0][1] > va:
+            ch = [(ch[0][0], va)] + ch        # a jog back past the end: square it off
+        if ch[-1][1] < vb:
+            ch = ch + [(ch[-1][0], vb)]
         if vb - va < 1e-6:
             continue
         mid = [p for p in cl if va < p[1] < vb]
@@ -243,7 +260,13 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
                 if got is not None:
                     break
             ends.append(got if got is not None else x)
-        return (ends[0], ends[1]) if ends[1] >= ends[0] else None
+        if ends[1] < ends[0]:
+            # a region tapering to a point here (a corner on the boundary)
+            if ends[0] - ends[1] > 1e-4:
+                return None
+            m = (ends[0] + ends[1]) / 2.0
+            ends = [m, m]
+        return (ends[0], ends[1])
 
     def interval(v):
         """From the edge to the outer limit of the piece of the (extended)
@@ -261,7 +284,9 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
             continue
         im = interval((va + vb) / 2.0)
         ia, ib = _at(va, im, (va + vb) / 2.0), _at(vb, im, (va + vb) / 2.0)
-        if not (ia and ib and im) or min(ia[1] - ia[0], ib[1] - ib[0], im[1] - im[0]) < MIN_W:
+        # only the middle's width decides: a piece tapering to a point at a
+        # station (the edge meeting the boundary) is part of the region
+        if not (ia and ib and im) or im[1] - im[0] < MIN_W:
             if cur:
                 runs.append(cur)
                 cur = None

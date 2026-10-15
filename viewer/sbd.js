@@ -862,7 +862,7 @@ export function createSbd(ctx) {
       <button id="sbd-remove" class="ghost danger" title="Remove the masses sent from Revit, this result and the masses' model in the 3D (saved results stay)">Remove ...</button>
     </div>
     <div class="chk-row sbd-cadin"><span class="muted" title="Draw the site, the streets and the building masses on the template's layers in AutoCAD, SketchUp, Rhino ..., then import it: the same check as from Revit">No Revit?</span>
-      <a href="/api/sbd/template.dxf" download="SBD model template.dxf" class="sbd-tpl" title="A DXF with the layers to draw on (SBD-SITE, SBD-STREET-&lt;name&gt;, SBD-MASS) and the rules">CAD template</a>
+      <a href="/api/sbd/template.dxf" download="SBD model template.dxf" class="sbd-tpl" title="A DXF with the layers to draw on (SBD-SITE, SBD-STREET-&lt;name&gt;, SBD-MASS) and the rules - with this project's SBD model, its site boundary and streets in place, at shared (survey) coordinates when the project's 3D says how">CAD template</a>
       <button id="sbd-cadin" class="ghost" title="A DXF (or DWG) drawn on the template's layers: it becomes this project's SBD model and its masses in the 3D">Import CAD model ...</button>
       <input type="file" id="sbd-cadfile" accept=".dxf,.dwg" hidden></div>
     <div class="muted hint"><a href="#" class="sbd-howto">How to prepare the model ...</a> From the building masses: in Revit, <b>LWK > Viewer tools > SBD Export</b>. P, S1/S2/S3 and the air corridors follow the SBD panel's rules, for each zone's own footprints; P is taken on each zone's elevation (IS + PE).</div>`;
@@ -1126,6 +1126,25 @@ export function createSbd(ctx) {
   }
   $("#sbd-plan").onclick = planWindow;
   // a model drawn in CAD (the template's layers)
+  // the template: with this project's site and streets in place
+  $(".sbd-tpl").onclick = async (ev) => {
+    ev.preventDefault();
+    try {
+      const r = await fetch("/api/sbd/template.dxf", { headers: Store.authHeaders() });
+      if (!r.ok) { let m = "HTTP " + r.status; try { m = (await r.json()).detail || m; } catch (e) {} throw new Error(m); }
+      const kind = r.headers.get("X-SBD-Template") || "example";
+      const name = ((r.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/) || [])[1] || "SBD model template.dxf";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(await r.blob());
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      ctx.status(kind === "shared" ? `${name}: the site boundary and streets at shared (survey) coordinates`
+        : kind === "model" ? `${name}: the site boundary and streets in the SBD model's coordinates (this project's 3D does not say where shared coordinates are)`
+        : `${name}: an example to draw over (no SBD model in this project yet)`);
+    } catch (e) { ctx.status(`The CAD template was not made: ${e.message}`); }
+  };
   $("#sbd-cadin").onclick = () => $("#sbd-cadfile").click();
   $("#sbd-cadfile").onchange = async () => {
     const f = $("#sbd-cadfile").files[0];

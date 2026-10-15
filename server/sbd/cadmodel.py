@@ -29,23 +29,91 @@ SITE, STREET, MASS = "SBD-SITE", "SBD-STREET-", "SBD-MASS"
 UNIT_SCALE = {1: 0.0254, 2: 0.3048, 4: 0.001, 5: 0.01, 6: 1.0}
 
 
-# ------------------------------------------------------------ the template
-def template_dxf():
-    """The template: the layers, an example of each and the rules."""
+# A template made from a project's own SBD model at shared (survey)
+# coordinates carries this note, so its drawing is brought back to the
+# Revit model's internal origin on import (as the masses in the 3D are).
+SHARED_MARK = "LWK-SBD-FRAME: SHARED"
+
+
+def frame_of(manifest):
+    """The project's internal -> shared transform (the 3D export's
+    lwk_frame, 3 x 4 row-major, mm) as a function of (x, y, z) metres, with
+    its inverse: (fwd, inv) - or None."""
+    try:
+        r = [float(x) for x in ((manifest or {}).get("lwk_frame") or {}).get("internal_to_shared_mm") or []]
+    except (TypeError, ValueError):
+        return None
+    if len(r) != 12:
+        return None
+    R = [r[0:3], r[4:7], r[8:11]]
+    t = [r[3] / 1000.0, r[7] / 1000.0, r[11] / 1000.0]
+    det = (R[0][0] * (R[1][1] * R[2][2] - R[1][2] * R[2][1]) - R[0][1] * (R[1][0] * R[2][2] - R[1][2] * R[2][0])
+           + R[0][2] * (R[1][0] * R[2][1] - R[1][1] * R[2][0]))
+    if abs(det) < 1e-9:
+        return None
+    # the inverse of R (adjugate / det)
+    I = [[(R[(j + 1) % 3][(i + 1) % 3] * R[(j + 2) % 3][(i + 2) % 3] - R[(j + 1) % 3][(i + 2) % 3] * R[(j + 2) % 3][(i + 1) % 3]) / det
+          for j in range(3)] for i in range(3)]
+
+    def fwd(x, y, z=0.0):
+        return tuple(R[i][0] * x + R[i][1] * y + R[i][2] * z + t[i] for i in range(3))
+
+    def inv(x, y, z=0.0):
+        q = (x - t[0], y - t[1], z - t[2])
+        return tuple(I[i][0] * q[0] + I[i][1] * q[1] + I[i][2] * q[2] for i in range(3))
+    return fwd, inv
+
+
+def template_dxf(model=None, frame=None, project=""):
+    """The template: the layers, an example of each and the rules - or, with
+    the project's SBD model, its site boundary and streets in place (at
+    shared coordinates when the project's frame is known)."""
     d = Dxf()
     d.layer(SITE, 7)
-    d.layer(STREET + "Main Street", 8)
-    d.layer(STREET + "Side Street", 9)
     d.layer(MASS, 30)
     d.layer("SBD-NOTE", 2)
-    # an example: a 60 x 40 m site on two streets, a podium and a tower
-    d.poly(SITE, [(0, 0), (60, 0), (60, 40), (0, 40)], closed=True)
-    d.poly(STREET + "Main Street", [(-20, -20), (80, -20), (80, 0), (-20, 0)], closed=True, elevation=0.0)
-    d.poly(STREET + "Side Street", [(60, 0), (75, 0), (75, 60), (60, 60)], closed=True, elevation=0.5)
-    d.poly(MASS, [(5, 5), (55, 5), (55, 35), (5, 35)], closed=True, elevation=0.0, thickness=15.0)
-    d.poly(MASS, [(10, 10), (30, 10), (30, 30), (10, 30)], closed=True, elevation=15.0, thickness=65.0)
-    rules = [
-        "SBD MODEL TEMPLATE (PNAP APP-152) - LWK Viewer. Draw in metres, on these layers; delete the example.",
+    site = (model or {}).get("site") or []
+    shared = False
+    if len(site) >= 3:
+        # the model's own coordinates: a Revit export is on the model's
+        # internal origin; a CAD model kept as drawn has no frame to undo
+        to = lambda x, y, z=0.0: (x, y, z)
+        if frame and (model.get("source") != "cad" or model.get("frame") == "internal"):
+            to, shared = frame[0], True
+        d.poly(SITE, [to(x, y)[:2] for x, y in site], closed=True)
+        names = set()
+        for st in model.get("streets") or []:
+            ol = st.get("outline") or []
+            if len(ol) < 3:
+                continue
+            nm = (st.get("name") or "Street").replace("/", " ")[:60]
+            if nm not in names:
+                d.layer(STREET + nm, 8 + len(names) % 2)
+                names.add(nm)
+            z = float(st.get("level") or 0.0)
+            pts = [to(x, y, z) for x, y in ol]
+            d.poly(STREET + nm, [p[:2] for p in pts], closed=True, elevation=round(sum(p[2] for p in pts) / len(pts), 4))
+        xs = [to(x, y)[0] for x, y in site]
+        ys = [to(x, y)[1] for x, y in site]
+        x0, y0 = min(xs), min(ys) - 40
+        rules = [
+            "SBD MODEL TEMPLATE (PNAP APP-152) - LWK Viewer%s. Draw in metres, on these layers." % (" - " + project if project else ""),
+            ("The site boundary and the streets are the project's own, at SHARED (survey) coordinates and levels (mPD):"
+             if shared else "The site boundary and the streets are the project's own (the SBD model's coordinates):"),
+            "  keep them where they are; draw the buildings around them.",
+        ]
+    else:
+        d.layer(STREET + "Main Street", 8)
+        d.layer(STREET + "Side Street", 9)
+        # an example: a 60 x 40 m site on two streets, a podium and a tower
+        d.poly(SITE, [(0, 0), (60, 0), (60, 40), (0, 40)], closed=True)
+        d.poly(STREET + "Main Street", [(-20, -20), (80, -20), (80, 0), (-20, 0)], closed=True, elevation=0.0)
+        d.poly(STREET + "Side Street", [(60, 0), (75, 0), (75, 60), (60, 60)], closed=True, elevation=0.5)
+        d.poly(MASS, [(5, 5), (55, 5), (55, 35), (5, 35)], closed=True, elevation=0.0, thickness=15.0)
+        d.poly(MASS, [(10, 10), (30, 10), (30, 30), (10, 30)], closed=True, elevation=15.0, thickness=65.0)
+        x0, y0 = 0, -30
+        rules = ["SBD MODEL TEMPLATE (PNAP APP-152) - LWK Viewer. Draw in metres, on these layers; delete the example."]
+    rules += [
         "SBD-SITE: the site boundary, ONE closed polyline.",
         "SBD-STREET-<street name>: each street's slab as a closed polyline, its ELEVATION = the street's mean level.",
         "  One layer per street: SBD-STREET-Main Street, SBD-STREET-Side Street ... (the name after the dash is used).",
@@ -54,8 +122,10 @@ def template_dxf():
         "  stacked for a podium and a tower; or 3D faces, polyface meshes or MESH. 3DSOLID: CONVTOMESH first.",
         "Explode blocks. Level 0 is the lowest street abutting the site. Then: Viewer > 3D > Checks > SBD > Import CAD model.",
     ]
+    if shared:
+        rules.append(SHARED_MARK + " (keep this note: the drawing is brought back to the Revit model's origin on import)")
     for i, t in enumerate(rules):
-        d.text("SBD-NOTE", (0, -30 - i * 2.2), 1.2, t)
+        d.text("SBD-NOTE", (x0, y0 - i * 2.2), 1.2, t)
     return d.write()
 
 
@@ -215,9 +285,12 @@ def _weld(V, T, tol=0.001):
     return out, [t for t in tris if len(set(t)) == 3]
 
 
-def read_model(doc, project="", by=""):
-    """A DXF (cad_dxf.read) -> (sbd.json dict, [problems])."""
+def read_model(doc, project="", by="", frame=None):
+    """A DXF (cad_dxf.read) -> (sbd.json dict, [problems]). frame: the
+    project's (internal -> shared, back) transforms (frame_of): a drawing
+    from a template at shared coordinates is brought back with it."""
     probs = []
+    marked = False
     units = int(float(doc.hv("$INSUNITS", default="6") or 6))
     k = UNIT_SCALE.get(units, 1.0)
     sites, floors, masses = [], [], {}
@@ -225,6 +298,9 @@ def read_model(doc, project="", by=""):
         lay = (e.get(8) or "").strip()
         up = lay.upper()
         if not up.startswith("SBD-"):
+            continue
+        if e.type in ("TEXT", "MTEXT") and SHARED_MARK in (e.get(1) or ""):
+            marked = True
             continue
         if e.type == "INSERT":
             probs.append("Layer %s: a block - explode it (blocks are not read)." % lay)
@@ -278,6 +354,21 @@ def read_model(doc, project="", by=""):
     if not sites:
         probs.insert(0, "No site boundary: draw ONE closed polyline on layer SBD-SITE.")
         return None, probs
+    back = None
+    if marked and frame:
+        back = frame[1]
+    elif marked:
+        probs.append("The drawing is at shared coordinates, but this project's 3D (its Revit export) is not here "
+                     "to bring it back to the model's origin: kept as drawn.")
+    if back:
+        sites = [[back(x, y)[:2] for x, y in l] for l in sites]
+        for f in floors:
+            q = [back(x, y, f["z"]) for x, y in f["loop"]]
+            f["loop"] = [p[:2] for p in q]
+            f["z"] = sum(p[2] for p in q) / len(q)
+        for key in list(masses):
+            V, T = masses[key]
+            masses[key] = ([list(back(*v)) for v in V], T)
     if len(sites) > 1:
         probs.append("%d closed polylines on SBD-SITE: the largest is the site." % len(sites))
     site = max(sites, key=lambda l: abs(S.loop_area(l)))
@@ -304,4 +395,6 @@ def read_model(doc, project="", by=""):
     data = {"version": 1, "units": "m", "project": project, "model": "CAD model", "by": by, "at": "",
             "ground_z": round(ground, 4), "ground_source": src, "site": [[round(x, 4), round(y, 4)] for x, y in site],
             "masses": out_masses, "streets": sts, "street_axis": None, "corridor": None, "source": "cad"}
+    if back:
+        data["frame"] = "internal"         # as a Revit export: on the model's origin
     return data, probs

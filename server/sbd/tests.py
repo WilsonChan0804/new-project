@@ -495,11 +495,18 @@ class Report4(unittest.TestCase):
                     self.assertEqual(z[k]["near"]["low"], nl.pop())
 
 
+def _merge_dxf(a, b):
+    """The entities of DXF b added to DXF a (both from dxfwrite)."""
+    import re
+    ents = re.search(r"\nENTITIES\r?\n(.*?)\n  0\r?\nENDSEC", b, re.S).group(1)
+    return re.sub(r"(\nENTITIES\r?\n)", lambda m: m.group(1) + ents + "\n", a, count=1)
+
+
 class CadModel(unittest.TestCase):
     """The SBD model drawn in CAD (the template's layers) and the drawings
     written back as DXF."""
 
-    def _read(self, text):
+    def _read(self, text, frame=None):
         import os
         import tempfile
         import cad_dxf
@@ -509,9 +516,44 @@ class CadModel(unittest.TestCase):
         try:
             with open(path, "w", newline="") as f:
                 f.write(text)
-            return cadmodel.read_model(cad_dxf.read(path))
+            return cadmodel.read_model(cad_dxf.read(path), frame=frame)
         finally:
             os.remove(path)
+
+    def test_template_at_shared_coordinates(self):
+        # the project's site and streets at shared coordinates (HK1980-like:
+        # turned 30 deg, 836 km E, 818 km N, +4.5 mPD) - and back on import
+        import math
+        from . import cadmodel
+        c, s_ = math.cos(math.radians(30)), math.sin(math.radians(30))
+        man = {"lwk_frame": {"internal_to_shared_mm": [c, -s_, 0, 836000000.0, s_, c, 0, 818000000.0, 0, 0, 1, 4500.0]}}
+        fr = cadmodel.frame_of(man)
+        st = [{"name": "Main Street", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]],
+               "outline": [[-10, -20], [110, -20], [110, 0], [-10, 0]], "level": 0.5}]
+        model = {"site": SITE, "streets": st, "masses": [], "source": "revit"}
+        dxf = cadmodel.template_dxf(model, fr, "P1")
+        self.assertIn(cadmodel.SHARED_MARK, dxf)
+        x, y, _ = fr[0](SITE[1][0], SITE[1][1])
+        self.assertIn("%.4f" % x, dxf.replace(" ", ""))
+        # a mass drawn at shared coordinates beside the site
+        d = cadmodel.Dxf()
+        d.layer(cadmodel.MASS, 30)
+        loop = [fr[0](px, py)[:2] for px, py in [(20, 10), (60, 10), (60, 40), (20, 40)]]
+        d.poly(cadmodel.MASS, loop, closed=True, elevation=4.5 + 0.0, thickness=30.0)
+        got, probs = self._read(_merge_dxf(dxf, d.write()), fr)
+        self.assertEqual(got["frame"], "internal")
+        for (a, b), (p, q) in zip(got["site"], SITE):
+            self.assertAlmostEqual(a, p, places=3)
+            self.assertAlmostEqual(b, q, places=3)
+        zs = [v[2] for v in got["masses"][0]["verts"]]
+        self.assertAlmostEqual(min(zs), 0.0, places=3)
+        self.assertAlmostEqual(got["streets"][0]["level"], 0.5, places=3)
+        xs = [v[0] for v in got["masses"][0]["verts"]]
+        self.assertAlmostEqual(min(xs), 20.0, places=3)
+        # no frame known: kept as drawn, with a note
+        got2, probs2 = self._read(dxf)
+        self.assertNotIn("frame", got2)
+        self.assertTrue(any("shared coordinates" in p for p in probs2))
 
     def test_template_reads_back(self):
         from . import cadmodel
@@ -716,6 +758,57 @@ class Report6(unittest.TestCase):
                 for p in side:
                     cr = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
                     self.assertLess(abs(cr) / max(1e-9, math.hypot(b[0] - a[0], b[1] - a[1])), 0.05)
+
+
+class Report7(unittest.TestCase):
+    """Wilson's 7th report: the hatch's corners on the site boundary (a
+    region tapering to a point is not cut short), a small jog of the
+    boundary next to a street passed over."""
+
+    def test_region_tapers_to_the_boundary(self):
+        from . import sideregion as SR
+        # the left boundary u = v/2 meets the edge u = 40 at v = 80: the
+        # region is the whole triangle-ended piece, area = 40*80 - 80*80/4
+        site = [(0, 0), (100, 0), (100, 100), (50, 100)]
+        r = SR.side_region(site, [[(40, 30), (60, 30), (60, 60), (40, 60)]], "left")
+        self.assertAlmostEqual(r["area_ft2"], 1600.0, places=6)
+        self.assertAlmostEqual(r["D_ft"], 80.0, places=6)
+        tip = max(r["polygon"], key=lambda p: p[1])
+        self.assertAlmostEqual(tip[0], 40.0, places=6)
+        self.assertAlmostEqual(tip[1], 80.0, places=6)
+
+    def test_small_jog_is_one_frontage(self):
+        from . import sideregion as SR
+        # a 1 ft step in the boundary facing the street: one extension
+        site = [(0, 0), (100, 0), (100, 40), (101, 40), (101, 60), (0, 60)]
+        cl = [(120, -10), (120, 70)]
+        slab = [(101, -10), (140, -10), (140, 70), (101, 70)]
+        ext = SR.extension(site, cl, 25.0, "right", slab, 3.0)
+        self.assertEqual(len(ext), 1)
+        self.assertAlmostEqual(min(p[1] for p in ext[0]), 0.0, places=6)
+        self.assertAlmostEqual(max(p[1] for p in ext[0]), 60.0, places=6)
+
+    def test_corridor_ring_ends_exactly_on_the_boundary(self):
+        from . import nearedge as NE
+
+        class B(object):
+            band = (40.0, 0.0, 100.0, 0.1, 20.0, None, None, True)
+        keep = NE._vrange
+        NE._vrange = lambda poly, au, av: (0.0, 100.0)
+        try:
+            site = [(0, 0), (100, 0), (100, 100), (0, 80)]
+            ring = NE.corridor_ring(B(), site)
+        finally:
+            NE._vrange = keep
+        import math
+        # every point inside or on the site (the top edge v = 80 + u/5)
+        for u, v in ring:
+            self.assertTrue(-1e-6 <= u <= 100 + 1e-6 and -1e-6 <= v <= 80 + u * 0.2 + 1e-6, (u, v))
+        # each edge line's far end exactly on the slanted top edge
+        for off in (0.0, 20.0 * math.sqrt(1.01)):
+            on = [p for p in ring if abs(p[0] - (40 + 0.1 * p[1] + off)) < 1e-6]
+            u, v = max(on, key=lambda p: p[1])
+            self.assertAlmostEqual(v, 80 + u * 0.2, places=6)
 
 if __name__ == "__main__":
     unittest.main()

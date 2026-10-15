@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-15", date: "16 Oct 2026",
+    items: [
+      "SBD side regions (report 7): where a region narrows to a point at the site boundary, the hatch now runs **right to the boundary's corner** - the last little piece was being cut off square, which showed as the corner \"not following the boundary\". A short step in the boundary beside a street (or a sliver between the boundary and the slab) no longer splits or stops the part up to the street's centreline. The air corridor's ends sit exactly on the boundary.",
+      "**CAD template** with this project's own **site boundary and streets**, at **shared (survey) coordinates** and mPD levels when the project's 3D says where they are; draw the masses around them and import - the drawing is brought back to the Revit model's origin, so the masses line up in the 3D.",
+    ],
+  },
+  {
     version: "2026-11-14", date: "16 Oct 2026",
     items: [
       "SBD side regions (report 6): the inner edge always **starts square to the plane** at a building corner and turns there only, so the corners of the hatch are exact again; a street beside the site is found by its **slab** (any name - Street, Road, Lane, Path), so a renamed or set-back street still extends the region to its centreline, and only across the street.",

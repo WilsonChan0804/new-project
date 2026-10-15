@@ -138,14 +138,11 @@ def corridor_ring(poly, site_uv):
             c = _cross(pc, a_, b_)
             if c is not None:
                 vs.add(c)
-    # the crossings: bisect each station gap where an end changes side
+    # exact: between stations each end is the edge line or one boundary
+    # edge, followed exactly to the station (corners on the boundary)
     vlo, vhi = min(q[1] for q in site_uv), max(q[1] for q in site_uv)
     base = sorted(v for v in vs if vlo - 1e-9 <= v <= vhi + 1e-9)
-    dense = []
-    for a, b in zip(base, base[1:]):
-        n = max(1, int((b - a) / 2.0))
-        dense += [a + (b - a) * i / n for i in range(n)]
-    dense.append(base[-1])
+    edges = list(zip(site_uv, site_uv[1:] + site_uv[:1]))
 
     def iv(v):
         sp = _spans(site_uv, v)
@@ -157,14 +154,35 @@ def corridor_ring(poly, site_uv):
                 if hi - lo > 1e-3:
                     return lo, hi
         return None
+
+    def follow(x, vm, v, line):
+        if abs(x - line(vm)) < 1e-7:
+            return line(v)
+        for a_, b_ in edges:
+            if (a_[1] - vm) * (b_[1] - vm) > 0 or abs(b_[1] - a_[1]) < 1e-12:
+                continue
+            k_ = (b_[0] - a_[0]) / (b_[1] - a_[1])
+            if abs(a_[0] + (vm - a_[1]) * k_ - x) < 1e-6:
+                return a_[0] + (v - a_[1]) * k_
+        return x
+
     runs, cur = [], []
-    for v in dense:
-        r = iv(v)
-        if r:
-            cur.append((v, r))
-        elif cur:
-            runs.append(cur)
-            cur = []
+    for va, vb in zip(base, base[1:]):
+        if vb - va < 1e-9:
+            continue
+        vm = (va + vb) / 2.0
+        r = iv(vm)
+        if not r:
+            if cur:
+                runs.append(cur)
+                cur = []
+            continue
+        for v in (va, vb):
+            lo, hi = follow(r[0], vm, v, lo_e), follow(r[1], vm, v, hi_e)
+            if hi < lo:
+                lo = hi = (lo + hi) / 2.0
+            if not cur or abs(cur[-1][0] - v) > 1e-9:
+                cur.append((v, (lo, hi)))
     if cur:
         runs.append(cur)
     if not runs:
