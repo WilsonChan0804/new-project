@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-14", date: "16 Oct 2026",
+    items: [
+      "SBD side regions (report 6): the inner edge always **starts square to the plane** at a building corner and turns there only, so the corners of the hatch are exact again; a street beside the site is found by its **slab** (any name - Street, Road, Lane, Path), so a renamed or set-back street still extends the region to its centreline, and only across the street.",
+      "SBD **air corridors are one straight band** of constant width from end to end.",
+      "SBD **Design Requirement (1)**: a facade **recessed more than 30 m in the middle** splits the canyon into parts A(a), A(b) ... measured to the real facade (the 30 m line is never taken as a facade); U = (A(a) + A(b)) / (L(a) + L(b)), Lp = Lp(a) + Lp(b) (Fig B7).",
+    ],
+  },
+  {
     version: "2026-11-13", date: "16 Oct 2026",
     items: [
       "SBD side regions **worked out exactly** (report 5): the piece **nearest the projection plane**, corners on the site boundary, and beside a street the part up to the centreline only along the frontage, between lines through its two corners **parallel to the plane**.",

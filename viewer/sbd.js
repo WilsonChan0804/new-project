@@ -307,7 +307,7 @@ export function zoneSvg(res, zone, axisKey, opt) {
   // corridors are drawn over them as measured
   if (ax) {
     const measured = (g) => (g.side && ax.sides && ax.sides[g.side]) || g.corridor;
-    s += `<g clip-path="url(#${id})">` + ax.gaps.filter((g) => !measured(g)).map((g) => `<polygon points="${poly(g.strip)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity="${measured(g) ? ".07" : ".22"}" stroke="${g.qualifies ? "#16a34a" : "#dc2626"}" stroke-width="${fs / 14}" stroke-dasharray="${measured(g) ? `${fs / 3} ${fs / 4}` : "none"}"/>`).join("") + `</g>`;
+    s += `<g clip-path="url(#${id})">` + ax.gaps.filter((g) => !measured(g) && !(["S1", "S3"].includes(g.type) && Object.keys(ax.sides || {}).length)).map((g) => `<polygon points="${poly(g.strip)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity="${measured(g) ? ".07" : ".22"}" stroke="${g.qualifies ? "#16a34a" : "#dc2626"}" stroke-width="${fs / 14}" stroke-dasharray="${measured(g) ? `${fs / 3} ${fs / 4}` : "none"}"/>`).join("") + `</g>`;
     for (const k of ["left", "right"]) {
       const sd = ax.sides && ax.sides[k];
       if (!sd || !sd.polygon || sd.polygon.length < 3) continue;

@@ -661,5 +661,61 @@ class Report5(unittest.TestCase):
         r = engine.run(d)
         self.assertTrue(all(len(z["levels"]) >= 1 for z in r["zones"] if z["assessed"]))
 
+class Report6(unittest.TestCase):
+    """Wilson's 6th report: side region edges square to the plane first, the
+    street part found from the slab, the recess on a skewed street, the
+    straight corridor."""
+
+    def test_edge_starts_square_to_the_plane(self):
+        from . import sideregion as SR
+        for e in SR.candidates([[(40, 10), (70, 10), (80, 50), (40, 50)]], "right", 0.0):
+            u1, v1, t = e
+            # any turn is at a building corner, never from the plane on
+            self.assertTrue(t == 0.0 or v1 > 0.0, e)
+
+    def test_street_found_by_its_slab(self):
+        from . import sideregion as SR
+        site = [(0, 0), (100, 0), (100, 60), (0, 60)]
+        # the slab starts 2 m off the boundary; the centreline is 22 m away -
+        # more than half the width + 3 m, but the slab is there
+        cl = [(122, -10), (122, 70)]
+        slab = [(102, -10), (142, -10), (142, 70), (102, 70)]
+        # (a centreline-only test with a 10 m reach misses it)
+        self.assertEqual(SR.extension(site, cl, 10.0, "right"), [])
+        ext = SR.extension(site, cl, 20.0 + 3.0, "right", slab, 3.0)
+        self.assertEqual(len(ext), 1)
+        self.assertAlmostEqual(max(p[0] for p in ext[0]), 122.0, places=6)
+
+    def test_recess_on_a_skewed_street(self):
+        # the centreline slopes 4 m over its length; the facade's middle is set
+        # back beyond 30 m: still two canyon parts, not one cut at "30 m"
+        st = [{"name": "Main St", "centreline": [[-10, -10], [110, -14]], "opposite": [[-10, -20], [110, -24]]}]
+        m = mass("A", box(10, 15, 0, 30, 45, 30), box(30, 28, 0, 50, 45, 30), box(50, 15, 0, 70, 45, 30))
+        c = engine.run({"site": SITE, "streets": st, "masses": [m]})["case1"][0]
+        parts = c["buildings"][0]["streets"][0]["parts"]
+        self.assertEqual([p["tag"] for p in parts], ["a", "b"])
+
+    def test_corridor_is_one_straight_band(self):
+        import math
+        c, s_ = math.cos(math.radians(8)), math.sin(math.radians(8))
+
+        def rbox(x0, y0, x1, y1):
+            m = box(x0, y0, 0, x1, y1, 80)
+            m["verts"] = [[50 + (v[0] - 50) * c - (v[1] - 30) * s_, 30 + (v[0] - 50) * s_ + (v[1] - 30) * c, v[2]] for v in m["verts"]]
+            return m
+        d = {"site": SITE, "masses": [mass("A", rbox(10, 10, 35, 50)), mass("B", rbox(55, 10, 85, 50))]}
+        z = engine.run(d)["zones"][1]
+        cor = [g for k in ("axis1", "axis2") for g in z[k]["gaps"] if g.get("ring")]
+        self.assertTrue(cor)
+        for g in cor:
+            ring = g["ring"]
+            # a straight band: its two long sides each lie on one line
+            n = len(ring) // 2
+            for side in (ring[:n], ring[n:]):
+                a, b = side[0], side[-1]
+                for p in side:
+                    cr = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+                    self.assertLess(abs(cr) / max(1e-9, math.hypot(b[0] - a[0], b[1] - a[1])), 0.05)
+
 if __name__ == "__main__":
     unittest.main()

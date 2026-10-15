@@ -253,6 +253,18 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
             mem = owner.get(n, [])
             edge.append({"kind": "shadow", "label": "+".join(l for l, _ in mem) or "-", "lo": round(a * M, 3), "hi": round(b * M, 3),
                          "members": [l for _, ls in mem for l in ls]})
+    # a stretch of the near edge at either end with no building in front of
+    # it lies beyond the end's side region: it is that setback's, not a
+    # building's shadow (no "-" in W)
+    for end in (0, -1):
+        if len(edge) >= 2 and edge[end]["kind"] == "shadow" and not edge[end].get("members"):
+            nb = edge[1] if end == 0 else edge[-2]
+            if nb["kind"] == "gap":
+                if end == 0:
+                    nb["lo"] = edge[0]["lo"]
+                else:
+                    nb["hi"] = edge[-1]["hi"]
+                edge.pop(end)
     sv = [q[1] for q in site_uv]
     return {
         "P": round(r["P"], 2), "W_m": round(r["W"] * M, 3), "IS_m": round(r["IS"] * M, 3),
@@ -347,7 +359,7 @@ def street_legs(data):
                 nx, ny = -nx, -ny
             w = st.get("width_m")
             name = (st.get("name") or "Street %d" % (si + 1)) + (" (leg %d)" % (li + 1) if len(legs) > 1 else "")
-            out.append({"name": name, "street": st.get("name") or "", "centreline": leg, "opposite": opp, "width_m": w, "level": st.get("level"),
+            out.append({"name": name, "street": st.get("name") or "", "centreline": leg, "opposite": opp, "width_m": w, "level": st.get("level"), "outline": st.get("outline") or [],
                         "dir": [dx, dy], "normal": [nx, ny],
                         "offset30": [[round(p[0] + nx * CASE1_REACH_M, 3), round(p[1] + ny * CASE1_REACH_M, 3)] for p in (leg[0], leg[-1])],
                         "width_dim": [[round(mx - nx * w / 2.0, 3), round(my - ny * w / 2.0, 3)],
@@ -541,7 +553,9 @@ def case1(data, zone_inside, a=None, legs=None):
                         continue
                     if (sx - px) * nx + (sy - py) * ny < 0:          # the subject side: towards the site
                         nx, ny = -nx, -ny
-                    hits = [(h, l.get("_m")) for h, l in ((_ray_hit(px, py, nx, ny, l), l) for l in loops) if h is not None]
+                    # the ray meets the building's REAL outline (not cut at 30 m:
+                    # a cut line is not a facade), within 30 m of this station
+                    hits = [(h, l.get("_m")) for h, l in ((_ray_hit(px, py, nx, ny, l), l) for l in loops_all) if h is not None]
                     do = _ray_hit_line(px, py, -nx, -ny, opp)
                     if not hits or do is None:
                         continue
@@ -564,7 +578,7 @@ def case1(data, zone_inside, a=None, legs=None):
                                  % (name, label, CASE1_REACH_M, near))
                     continue
                 nx0, ny0 = nside
-                w_far = max(p[0] * nx0 + p[1] * ny0 for p in pts) + 3.0      # beyond the building: Actual Lp
+                w_far = max(p[0] * nx0 + p[1] * ny0 for l in loops_all for p in l["loop"]) + 3.0      # beyond the building: Actual Lp
                 w_opp = min(min(q[0] * nx0 + q[1] * ny0 for q in pp["opp"]) for pp in parts) - 3.0   # beyond the opposite boundary: Length
                 line = lambda ua, ub, w: [[round(u * dx + w * nx0, 3), round(u * dy + w * ny0, 3)] for u in (ua, ub)]
                 out_parts = []
@@ -773,7 +787,8 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
     b = P.orthogonal_axis(a)
     # a side region next to a street runs on to its centreline
     A._NEAR.clear()
-    A.STREETS[:] = [([_pt(p) for p in lg["centreline"]], (lg.get("width_m") or 0.0) / 2.0 * FT) for lg in legs if lg.get("width_m")]
+    A.STREETS[:] = [([_pt(p) for p in lg["centreline"]], (lg.get("width_m") or 0.0) / 2.0 * FT, [_pt(p) for p in lg.get("outline") or []])
+                    for lg in legs if lg.get("width_m") or lg.get("outline")]
     # an optional notional corridor (Fig B13-B14): buildings in it are left out
     corridor_poly = None
     if data.get("corridor") and len(data["corridor"]) >= 2:
@@ -915,7 +930,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
         "zones": out_zones, "controlling_p": None if ctrl is None else round(ctrl, 2),
         "lp": lp, "required_p": req_x, "required_p_y": req_y, "required_p_addin": req_old, "fails": fails,
         "pass": None if ctrl is None or req_x is None else not fails,
-        "case1": c1, "street_legs": [{k: v for k, v in lg.items() if k not in ("opposite",)} for lg in legs],
+        "case1": c1, "street_legs": [{k: v for k, v in lg.items() if k not in ("opposite", "outline")} for lg in legs],
         "case1_pass": None if not any(c["buildings"] for c in c1) else all(b["pass"] for c in c1 for b in c["buildings"]),
         "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
                      "outline": s.get("outline") or [], "level": s.get("level"), "label": s.get("label") or s.get("name") or ""}

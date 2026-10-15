@@ -67,7 +67,13 @@ def corridor_edges(band):
     offset by the width ALONG ITS NORMAL, as the panel measures it, mitred at
     the bends: so the corridor is as wide where it turns as elsewhere.
     -> (ue, uf, breaks)."""
-    u1, v1, v2, t, w, au, av = band
+    u1, v1, v2, t, w, au, av = band[:7]
+    if len(band) > 7 and band[7]:
+        # one straight band (Wilson, reports 5-6): both edges straight, the
+        # far one offset square to it - the same width end to end
+        k = math.sqrt(1.0 + t * t)
+        ue_s = lambda v: u1 + t * (v - v1)
+        return ue_s, (lambda v: ue_s(v) + w * k), []
 
     def ue(v):
         return u1 if v <= v1 else u1 + t * (min(v, v2) - v1)
@@ -90,7 +96,7 @@ def corridor_edges(band):
 def corridor_band(poly, site_uv):
     """An S2 corridor's band (u, v) ring, feet: its two edges, each on to
     where it leaves the site, past the site (the near-edge partition)."""
-    u1, v1, v2, t, w, au, av = poly.band
+    u1, v1, v2, t, w, au, av = poly.band[:7]
     ue, uf, ms = corridor_edges(poly.band)
     p0, p1 = _vrange(poly, au, av)
     if p0 is None:
@@ -112,7 +118,8 @@ def corridor_ring(poly, site_uv):
     piece the panel found it in), exactly - its ends on the boundary. (u, v)
     ring, feet, or None."""
     from .sideregion import _spans
-    u1, v1, v2, t, w, au, av = poly.band
+    u1, v1, v2, t, w, au, av = poly.band[:7]
+    straight = len(poly.band) > 7 and poly.band[7]
     ue, uf, ms = corridor_edges(poly.band)
     p0, p1 = _vrange(poly, au, av)
     if p0 is None:
@@ -122,7 +129,8 @@ def corridor_ring(poly, site_uv):
     vs = {p0, p1, v1, v2} | set(ms)
     from .sideregion import _cross
     k = math.sqrt(1.0 + t * t)
-    pieces = [(u1, v1, 0.0), (u1, v1, t), (ue(v2), v2, 0.0), (u1 + w, v1, 0.0), (u1 + w * k, v1, t), (ue(v2) + w, v2, 0.0)]
+    pieces = [(u1, v1, t), (u1 + w * k, v1, t)] if straight else \
+        [(u1, v1, 0.0), (u1, v1, t), (ue(v2), v2, 0.0), (u1 + w, v1, 0.0), (u1 + w * k, v1, t), (ue(v2) + w, v2, 0.0)]
     for a_, b_ in zip(site_uv, site_uv[1:] + site_uv[:1]):
         vs.add(a_[1])
         # where each edge line crosses this boundary edge: the ends' corners

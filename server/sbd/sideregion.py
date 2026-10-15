@@ -69,7 +69,32 @@ def _cl_u(cl, v, near):
     return best
 
 
-def extension(site, cl, reach, side):
+def _near_poly(q, poly, tol):
+    """q inside the polygon, or within tol of its outline."""
+    inside = False
+    n = len(poly)
+    for i in range(n):
+        (u1, v1), (u2, v2) = poly[i], poly[(i + 1) % n]
+        if (v1 > q[1]) != (v2 > q[1]) and q[0] < u1 + (q[1] - v1) * (u2 - u1) / (v2 - v1):
+            inside = not inside
+    if inside:
+        return True
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        L2 = dx * dx + dy * dy
+        k = 0.0 if L2 < 1e-12 else max(0.0, min(1.0, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / L2))
+        if math.hypot(q[0] - a[0] - k * dx, q[1] - a[1] - k * dy) <= tol:
+            return True
+    return False
+
+
+def extension(site, cl, reach, side, outline=None, gap=None):
+    """The street's part up to its centreline, beside the boundary that faces
+    it: [(u, v) polygons]. A boundary edge faces the street when it is the
+    site's outer limit on this side and the street is just outward of it:
+    the street's slab (outline) within `gap` of it - or, with no outline,
+    the centreline within `reach`."""
     """The street's part up to its centreline, beside the boundary that faces
     it: [(u, v) polygons]. A boundary edge faces the street when it is the
     site's outer limit on this side and the centreline is outward of it
@@ -79,8 +104,11 @@ def extension(site, cl, reach, side):
     facing = []
     for i in range(n):
         a, b = site[i], site[(i + 1) % n]
-        if abs(b[1] - a[1]) < 1e-9:
-            facing.append(None)              # along the plane: no depth to extend
+        L = math.hypot(b[0] - a[0], b[1] - a[1])
+        if abs(b[1] - a[1]) < 1e-9 or abs(b[1] - a[1]) / L < 0.64:
+            # along the plane (no depth), or running more along u than across
+            # it: the street is not across this side's outward direction
+            facing.append(None)
             continue
         ok = True
         for t in (0.0, 0.5, 1.0):
@@ -97,7 +125,16 @@ def extension(site, cl, reach, side):
                 ok = False
                 break
             c = _cl_u(cl, vv, uu)
-            if c is None or (c - uu) * s <= 0 or abs(c - uu) > reach:
+            if c is None or (c - uu) * s <= 0:
+                ok = False
+                break
+            if outline and len(outline) >= 3:
+                # the slab just outward of the edge, and its centreline across it
+                if not _near_poly((uu + s * (gap or 0.0) * 0.5, vv), outline, gap or 0.0) or \
+                        abs(c - uu) > 1.6 * (reach + (gap or 0.0)):
+                    ok = False
+                    break
+            elif abs(c - uu) > reach:
                 ok = False
                 break
         facing.append(i if ok else None)
@@ -209,16 +246,13 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
         return (ends[0], ends[1]) if ends[1] >= ends[0] else None
 
     def interval(v):
+        """From the edge to the outer limit of the piece of the (extended)
+        site the edge stands in - nothing where the edge is outside it, and
+        never a separate piece further out."""
         e = ue(v)
-        sp = _merged(polys, v)
-        if s > 0:
-            for a, b in sp:
-                if b > e + 1e-9:
-                    return max(a, e), b
-        else:
-            for a, b in reversed(sp):
-                if a < e - 1e-9:
-                    return a, min(b, e)
+        for a, b in _merged(polys, v):
+            if a - 1e-9 <= e <= b + 1e-9:
+                return (e, b) if s > 0 else (a, e)
         return None
 
     runs, cur = [], None
@@ -269,9 +303,10 @@ def _clean(chain):
 
 
 def candidates(hulls, side, v_lo):
-    """The inner edges to try, (u1, v1, t): perpendicular through each outer
-    corner, and through each pair of corners (clamped to 15 deg) - turned
-    once, at the lower of the two corners, or from the plane on."""
+    """The inner edges to try, (u1, v1, t): perpendicular to the plane through
+    each outer corner; and perpendicular from the plane up to a corner, then
+    turned there towards another corner further from the plane (clamped to
+    15 deg) - the edge always starts square to the plane and turns once."""
     s = 1.0 if side == "right" else -1.0
     corners = [q for h in hulls for q in h]
     # the outward silhouette: a corner nothing lies beyond at its depth
@@ -283,16 +318,10 @@ def candidates(hulls, side, v_lo):
     for c1 in sil:
         out.add((round(c1[0], 6), round(v_lo, 6), 0.0))
         for c2 in sil:
-            dv = c2[1] - c1[1]
-            if abs(dv) < 1e-6:
-                continue
-            t = max(-TAN_MAX, min(TAN_MAX, (c2[0] - c1[0]) / dv))
-            lo = c1 if c1[1] < c2[1] else c2
-            # through the lower corner, turned there
-            ulo = c1[0] + t * (lo[1] - c1[1])
-            out.add((round(ulo, 6), round(lo[1], 6), round(t, 9)))
-            # angled from the plane on, through c1
-            out.add((round(c1[0] - t * (c1[1] - v_lo), 6), round(v_lo, 6), round(t, 9)))
+            if c2[1] <= c1[1] + 1e-6:
+                continue                      # turn at c1 towards a corner beyond it
+            t = max(-TAN_MAX, min(TAN_MAX, (c2[0] - c1[0]) / (c2[1] - c1[1])))
+            out.add((round(c1[0], 6), round(c1[1], 6), round(t, 9)))
     return sorted(out)
 
 
@@ -304,8 +333,10 @@ def side_region(site, hulls, side, streets=None):
     v_lo = min(p[1] for p in site)
     v_hi = max(p[1] for p in site)
     ext = []
-    for cl, reach in streets or []:
-        ext += extension(site, cl, reach, side)
+    for st in streets or []:
+        cl, reach = st[0], st[1]
+        outline = st[2] if len(st) > 2 else None
+        ext += extension(site, cl, reach, side, outline, 3.0 / 0.3048)
     best = None
     for e in candidates(hulls, side, v_lo):
         r = region(site, ext, hulls, side, e, v_lo, v_hi)

@@ -54,9 +54,31 @@ class Band(list):
 _build_band = W.build_corridor_band_polygon
 
 
+# An air corridor is ONE STRAIGHT band of constant width from one end to the
+# other (Wilson, reports 5 and 6): its edge through the corner it was found
+# at, at its angle (<= 15 deg), the whole depth - not perpendicular, turned
+# and back. The panel's candidates are straightened where the width is
+# measured (so the width is the straight band's) and where the band is built.
+_band_from_edge0 = W._band_from_edge
+
+
+def _straight(u1, v1, tan_t, v_lo):
+    return u1 + tan_t * (v_lo - v1)
+
+
+def _band_from_edge(u1, v1, v2, tan_t, own_uv, other_uv, toward, v_lo, v_hi, *a, **k):
+    return _band_from_edge0(_straight(u1, v1, tan_t, v_lo), v_lo, v_hi, tan_t, own_uv, other_uv, toward, v_lo, v_hi, *a, **k)
+
+
+W._band_from_edge = _band_from_edge
+
+
 def _band_polygon(u1, v1, v2, tan_t, width, toward, site_uv, axis_u, axis_v, elev):
+    vlo = min(p.v for p in site_uv) if site_uv else v1
+    vhi = max(p.v for p in site_uv) if site_uv else v2
+    u1, v1, v2 = _straight(u1, v1, tan_t, vlo), vlo, vhi
     poly = Band(_build_band(u1, v1, v2, tan_t, width, toward, site_uv, axis_u, axis_v, elev))
-    poly.band = (u1, v1, v2, tan_t, width * (1.0 if toward > 0 else -1.0), axis_u, axis_v)
+    poly.band = (u1, v1, v2, tan_t, width * (1.0 if toward > 0 else -1.0), axis_u, axis_v, True)     # straight
     return poly
 
 
@@ -117,7 +139,8 @@ def _street_for_side(site_pts, axis_u, axis_v, side):
     uv = [W.to_uv(p, axis_u, axis_v) for p in site_pts]
     v_lo, v_hi = min(q.v for q in uv), max(q.v for q in uv)
     best = None
-    for pts, hw in STREETS:
+    for st_ in STREETS:
+        pts, hw = st_[0], st_[1]
         cl = [W.to_uv(p, axis_u, axis_v) for p in pts]
         du, dv = cl[-1].u - cl[0].u, cl[-1].v - cl[0].v
         L = (du * du + dv * dv) ** 0.5
@@ -161,7 +184,7 @@ def _side_one(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
                 hulls.append([(q.u, q.v) for q in h])
     if len(site) < 3 or not hulls:
         return None
-    sts = [([uv(p) for p in pts], hw + 3.0 / FEET_TO_METERS) for pts, hw in STREETS]
+    sts = [([uv(p) for p in st[0]], st[1] + 3.0 / FEET_TO_METERS, [uv(p) for p in st[2]] if len(st) > 2 else None) for st in STREETS]
     r = SR.side_region(site, hulls, side, sts)
     if not r:
         return None
@@ -184,7 +207,8 @@ def _street_near(site_pts, axis_u, axis_v):
     vs = [p.X * axis_v.X + p.Y * axis_v.Y for p in site_pts]
     v_lo, v_hi = min(vs), max(vs)
     best = None
-    for pts, hw in STREETS:
+    for st_ in STREETS:
+        pts = st_[0]
         du = (pts[-1].X - pts[0].X) * axis_u.X + (pts[-1].Y - pts[0].Y) * axis_u.Y
         dv = (pts[-1].X - pts[0].X) * axis_v.X + (pts[-1].Y - pts[0].Y) * axis_v.Y
         L = (du * du + dv * dv) ** 0.5
