@@ -163,17 +163,33 @@ class Case1(unittest.TestCase):
         self.assertAlmostEqual(b["Lp_m"], 30.0, places=0)
         self.assertTrue(b["pass"])
 
-    def test_any_part_within_30m_counts_the_whole_length(self):
+    def test_only_the_part_within_30m_counts(self):
         # an L-shaped block: one wing 25 m from the centreline, the rest 40 m
-        # away - it abuts the street, over its whole projected span (60 m)
+        # away - it abuts the street, but only the part within 30 m of the
+        # centreline counts (Wilson, report 4): the wing, 15 m
         d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
              "streets": [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}],
              "masses": [mass("A", box(10, 15, 0, 25, 45, 30), box(25, 30, 0, 70, 45, 30))]}
         b = engine.run(d)["case1"][0]["buildings"][0]
-        self.assertAlmostEqual(b["Lp_m"], 60.0, places=2)
-        self.assertAlmostEqual(b["L_m"], 60.0, delta=0.6)
-        # U: 15 m at 35 m wide, 45 m at 50 m wide
-        self.assertAlmostEqual(b["U_m"], (15 * 35 + 45 * 50) / 60.0, delta=0.3)
+        self.assertAlmostEqual(b["Lp_m"], 15.0, places=2)
+        self.assertAlmostEqual(b["L_m"], 15.0, delta=0.6)
+        self.assertAlmostEqual(b["U_m"], 35.0, delta=0.3)
+        # its Lp rectangle stops at the 30 m line (y = 20)
+        self.assertLessEqual(max(p[1] for p in b["lp_rect"]), 20.0 + 1e-6)
+
+    def test_buildings_under_15m_apart_are_one_group(self):
+        st = [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}]
+        near = {"site": SITE, "street_axis": [[0, 0], [100, 0]], "streets": st,
+                "masses": [mass("A", box(10, 5, 0, 30, 25, 30)), mass("B", box(40, 5, 0, 60, 25, 30))]}
+        c = engine.run(near)["case1"][0]
+        self.assertEqual([b["building"] for b in c["buildings"]], ["B1+B2"])
+        self.assertAlmostEqual(c["buildings"][0]["Lp_m"], 50.0, places=2)
+        self.assertTrue(c["spacing"][0]["grouped"])
+        self.assertAlmostEqual(c["spacing"][0]["d_m"], 10.0, places=3)
+        far = dict(near, masses=[mass("A", box(10, 5, 0, 30, 25, 30)), mass("B", box(50, 5, 0, 70, 25, 30))])
+        c = engine.run(far)["case1"][0]
+        self.assertEqual(sorted(b["building"] for b in c["buildings"]), ["B1", "B2"])
+        self.assertFalse(c["spacing"][0]["grouped"])
 
     def test_two_streets_the_smaller_u_controls(self):
         d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
@@ -393,6 +409,171 @@ class DeformedElevation(unittest.TestCase):
                     self.assertGreater(min(vv(band)), min(sv) - 2.0)
                     self.assertLess(max(vv(band)), max(sv) + 2.0)
 
+class Report4(unittest.TestCase):
+    """Wilson's 4th report: Level 0, side regions to the street centreline,
+    IS / PE taken horizontally, one near edge for both side regions."""
+    MAIN = {"name": "Main", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]], "width_m": 20,
+            "outline": [[-10, 0], [110, 0], [110, -20], [-10, -20]]}
+
+    def test_level_zero_is_the_lowest_street(self):
+        east = {"name": "Main", "centreline": [[110, -10], [110, 70]], "opposite": [[120, -10], [120, 70]], "width_m": 20,
+                "outline": [[100, -10], [120, -10], [120, 70], [100, 70]], "level": 0.0}
+        far = {"name": "Far", "centreline": [[-200, 0], [-200, 60]], "opposite": [[-210, 0], [-210, 60]], "width_m": 20,
+               "outline": [[-210, 0], [-190, 0], [-190, 60], [-210, 60]], "level": -5.0}
+        d = {"site": SITE, "ground_z": 0.75, "ground_source": "the street slabs",
+             "streets": [dict(self.MAIN, level=0.75), east, far], "masses": [mass("A", box(20, 20, 0, 80, 40, 30))]}
+        r = engine.run(d)
+        self.assertEqual(r["ground_z"], 0.0)                  # the lower street; the far one is not abutting
+        self.assertEqual(r["level0"]["street"], "Main (2)")   # same name: its own street
+        self.assertEqual([s["level"] for s in r["streets"]], [0.75, 0.0, -5.0])
+        # a Level chosen in the export stays
+        r = engine.run(dict(d, ground_source="Level L1"))
+        self.assertEqual(r["ground_z"], 0.75)
+
+    def test_side_region_next_to_a_street_runs_to_its_centreline(self):
+        base = {"site": SITE, "streets": [self.MAIN], "masses": [mass("A", box(20, 20, 0, 85, 40, 30))]}
+        east = {"name": "East", "centreline": [[110, -10], [110, 70]], "opposite": [[120, -10], [120, 70]], "width_m": 20,
+                "outline": [[100, -10], [120, -10], [120, 70], [100, 70]]}
+        side = lambda r: max(r["zones"][0]["axis1"]["sides"].values(), key=lambda s: s["polygon"][0][0] if s["polygon"] else 0)
+        a = side(engine.run(base))
+        b = side(engine.run(dict(base, streets=[self.MAIN, east])))
+        self.assertFalse(a["to_cl"])
+        self.assertTrue(b["to_cl"])
+        self.assertAlmostEqual(a["avg_m"], 15.0, delta=0.3)
+        self.assertAlmostEqual(b["avg_m"], 25.0, delta=0.3)     # on to x = 110
+        self.assertLessEqual(max(p[0] for p in b["polygon"]), 110.0 + 1e-3)
+
+    def test_gap_joined_with_the_sky_beside_it(self):
+        # A 0-20 m, B 0-14 m, 5 m apart: the gap is short of 15 m (PE) below
+        # 14 m, but over B it opens on to the sky - 5 + 40 + 5 m wide: IS
+        d = {"site": SITE, "streets": [self.MAIN],
+             "masses": [mass("A", box(5, 20, 0, 50, 40, 20)), mass("B", box(55, 20, 0, 95, 40, 14))]}
+        z = engine.run(d)["zones"][0]
+        e = z["axis1"]["elev"]
+        gap = [i for i in e["items"] if i["kind"] == "gap" and i["label"] == "S2"]
+        self.assertTrue(gap, e["items"])
+        g = gap[0]
+        self.assertAlmostEqual(g["joined"]["z_from"], 14.0, delta=0.01)
+        is_ = [q for q in e["rects"] if q[4] == "is" and q[0] >= g["x0"] - 1e-6 and q[1] <= g["x1"] + 1e-6]
+        pe = [q for q in e["rects"] if q[4] == "pe" and q[0] >= g["x0"] - 1e-6 and q[1] <= g["x1"] + 1e-6]
+        self.assertAlmostEqual(min(q[2] for q in is_), 14.0, delta=0.01)
+        self.assertAlmostEqual(max(q[3] for q in pe), 14.0, delta=0.01)
+
+    def test_plan_level_per_zone(self):
+        # a podium 0-14 m over the whole block, 14-20 m only its west half:
+        # at +17 m the plan sees the half, so a setback opens east of it
+        d = {"site": SITE, "streets": [self.MAIN],
+             "masses": [mass("P", box(5, 15, 0, 95, 45, 14), box(5, 15, 14, 50, 45, 20))]}
+        lv = engine.zone_levels(d)["LOW"]
+        self.assertEqual([(q["from"], q["to"]) for q in lv], [(6.667, 14.0), (14.0, 20.0)])
+        a = engine.run(d)["zones"][0]
+        b = engine.run(d, levels={"LOW": 17.0})["zones"][0]
+        self.assertIsNone(a["plan_level"])
+        self.assertEqual(b["plan_level"], 17.0)
+        wa = max(s["avg_m"] for s in a["axis1"]["sides"].values())
+        wb = max(s["avg_m"] for s in b["axis1"]["sides"].values())
+        self.assertAlmostEqual(wa, 5.0, delta=0.3)
+        self.assertAlmostEqual(wb, 50.0, delta=0.5)
+
+    def test_one_near_edge_for_both_side_regions(self):
+        d = {"site": [[10, 0], [75, 0], [75, 160], [0, 160], [2, 115], [-6, 100], [-6, 45]],
+             "masses": [mass("A", box(12, 10, 0, 65, 120, 20)), mass("T", box(20, 40, 20, 40, 70, 70))]}
+        r = engine.run(d)
+        for z in r["zones"]:
+            for k in ("axis1", "axis2"):
+                if not z.get(k):
+                    continue
+                nl = set(s.get("near_low") for s in z[k]["sides"].values() if "near_low" in s)
+                self.assertLessEqual(len(nl), 1)
+                if nl:
+                    self.assertEqual(z[k]["near"]["low"], nl.pop())
+
+
+class CadModel(unittest.TestCase):
+    """The SBD model drawn in CAD (the template's layers) and the drawings
+    written back as DXF."""
+
+    def _read(self, text):
+        import os
+        import tempfile
+        import cad_dxf
+        from . import cadmodel
+        fd, path = tempfile.mkstemp(suffix=".dxf")
+        os.close(fd)
+        try:
+            with open(path, "w", newline="") as f:
+                f.write(text)
+            return cadmodel.read_model(cad_dxf.read(path))
+        finally:
+            os.remove(path)
+
+    def test_template_reads_back(self):
+        from . import cadmodel
+        d, probs = self._read(cadmodel.template_dxf())
+        self.assertEqual(probs, [])
+        self.assertEqual(len(d["masses"]), 2)
+        self.assertEqual(sorted(s["name"] for s in d["streets"]), ["Main Street", "Side Street"])
+        self.assertEqual(d["ground_z"], 0.0)                      # the lower street
+        r = engine.run(d)
+        self.assertTrue(r["ok"])
+        self.assertEqual([z["assessed"] for z in r["zones"]], [True, True, True])
+
+    def test_same_result_as_from_revit(self):
+        # the two-block site of DeformedElevation: extrusions on SBD-MASS, the
+        # second block as 3D faces on its own layer, in millimetres
+        from .dxfwrite import Dxf
+        K = 1000.0
+        d = Dxf()
+        d.poly("SBD-SITE", [(x * K, y * K) for x, y in SITE], closed=True)
+        d.poly("SBD-STREET-Main", [(-10 * K, 0), (110 * K, 0), (110 * K, -20 * K), (-10 * K, -20 * K)], closed=True)
+        d.poly("SBD-MASS", [(15 * K, 20 * K), (43 * K, 20 * K), (43 * K, 40 * K), (15 * K, 40 * K)], closed=True, thickness=30 * K)
+        m = box(57, 20, 0, 85, 40, 30)
+        v = [[c * K for c in p] for p in m["verts"]]
+        for a, b, c in m["tris"]:
+            d.face("SBD-MASS-B", v[a], v[b], v[c])
+        text = d.write().replace("$INSUNITS\r\n 70\r\n6", "$INSUNITS\r\n 70\r\n4")
+        model, probs = self._read(text)
+        self.assertEqual(probs, [])
+        ref = engine.run({"site": SITE, "streets": [{"name": "Main", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]], "width_m": 20}],
+                          "masses": [mass("A", box(15, 20, 0, 43, 40, 30)), mass("B", box(57, 20, 0, 85, 40, 30))]})
+        got = engine.run(model)
+        self.assertEqual([z.get("P") for z in got["zones"]], [z.get("P") for z in ref["zones"]])
+        self.assertEqual(len(got["case1"]), len(ref["case1"]))
+        self.assertEqual(got["ground_z"], 0.0)
+
+    def test_problems_are_said(self):
+        from .dxfwrite import Dxf
+        d = Dxf()
+        d.poly("SBD-MASS", [(0, 0), (5, 0), (5, 5)], closed=True)
+        model, probs = self._read(d.write())
+        self.assertIsNone(model)
+        self.assertTrue(any("SBD-SITE" in p for p in probs))
+        d.poly("SBD-SITE", [(0, 0), (50, 0), (50, 50), (0, 50)], closed=True)
+        model, probs = self._read(d.write())
+        self.assertTrue(any("Thickness" in p for p in probs))
+
+    def test_drawings_as_dxf(self):
+        import os
+        import tempfile
+        import cad_dxf
+        import sbd_api
+        text = sbd_api.cad_file([{"t": "pl", "l": "SBD-SITE", "p": [[0, 0], [10, 0], [10, 5]], "closed": True},
+                                 {"t": "fill", "l": "SBD-IS", "c": 0x16a34a, "a": 0.3, "p": [[0, 0], [5, 0], [5, 5]]},
+                                 {"t": "text", "l": "SBD-TEXT", "p": [1, 1], "h": 1, "s": "S1 = 7.500 m²", "r": 30, "a": "c", "v": "m"},
+                                 {"t": "line", "l": "SBD-DIM", "p": [[0, 0], [1, 1]]}, {"t": "circle", "l": "SBD-DIM", "p": [0, 0], "r": 1},
+                                 {"t": "bogus"}, {"t": "line", "l": "SBD-DIM", "p": [[0, 0]]}])
+        fd, path = tempfile.mkstemp(suffix=".dxf")
+        os.close(fd)
+        try:
+            with open(path, "w", newline="") as f:
+                f.write(text)
+            doc = cad_dxf.read(path)
+        finally:
+            os.remove(path)
+        self.assertEqual(doc.version, "AC1015")
+        self.assertEqual(sorted(e.type for e in doc.model_ents()), ["CIRCLE", "HATCH", "LINE", "LWPOLYLINE", "TEXT"])
+        self.assertIn("SBD-IS", doc.layers)
+        self.assertIn("\\U+00B2", text)
 
 if __name__ == "__main__":
     unittest.main()

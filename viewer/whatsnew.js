@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-12", date: "16 Oct 2026",
+    items: [
+      "SBD **without Revit**: Checks > SBD > **CAD template** gives a DXF with the layers to draw on (SBD-SITE, SBD-STREET-<name>, SBD-MASS); draw the site, streets and masses in AutoCAD, SketchUp, Rhino ... and **Import CAD model ...** (DXF or DWG) - assessed exactly as a model from Revit.",
+      "SBD **to CAD**: **CAD ...** saves every plan, elevation and street canyon as a **DXF** or **DWG**, a layer per kind (SBD-IS, SBD-PE, SBD-BLDG, SBD-DIM ...); in the Plan window, the drawing shown, a plan in the model's own coordinates.",
+      "SBD **plan level**: a zone whose podium changes shape has a **Plan level** menu - All levels (worst), or the plan taken at one height; the elevation stays the true 3D.",
+      "SBD rules (report 4): **Level 0** = the lowest street, each street with its own mean level; a side region next to a street runs on to its **centreline**; both side regions from **one projection plane**; **IS and PE taken horizontally** (a gap short of its S joins the sky over the building beside it); DR(1) counts only the part **within 30 m**, groups buildings **under 15 m apart**, each street with its own U.",
+      "SBD drawings: **Projection Plane X / Y**, no overlapping text, the planes' symbol and the scale bar where the drawing is empty, the near edge's dimensions always in view; the street canyon without the corridor outline and long 30 m lines, with the buildings' spacing. **Remove ...** now takes the masses' model off the 3D at once.",
+    ],
+  },
+  {
     version: "2026-11-10", date: "16 Oct 2026",
     items: [
       "SBD: an **L-shaped street** is taken leg by leg (Plane X along the leg fronting the site the longest; Design Requirement (1) per leg); a side region's edge **turns once**; a gap under its S but **≥ 3 m wide counts as PE**; a sloped face's steps are **one area** (triangle or stepped); one Lp everywhere.",

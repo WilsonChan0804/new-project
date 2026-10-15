@@ -86,13 +86,16 @@ def _self_intersects(loop):
     return False
 
 
-def zone_footprints(data, z0, z1):
-    """{"site": [loops of buildings on the site], "other": [loops outside]} (metres)."""
+def zone_footprints(data, z0, z1, at=None):
+    """{"site": [loops of buildings on the site], "other": [loops outside]}
+    (metres). at: one plan level (relative to the ground) instead of every
+    height in the band."""
     g = float(data.get("ground_z") or 0.0)
     site = data["site"]
     inside, other = [], []
     for m in data.get("masses") or []:
-        for f in F.mass_footprints(m, g + z0, None if z1 is None else g + z1):
+        fps = F.mass_footprints_at(m, g + at) if at is not None else F.mass_footprints(m, g + z0, None if z1 is None else g + z1)
+        for f in fps:
             cx, cy = _centroid(f["loop"])
             f = dict(f, mass=m.get("id"), name=m.get("name") or "")
             (inside if F.point_in(cx, cy, site) else other).append(f)
@@ -172,17 +175,24 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
     site_uv = N._site_uv(site_pts, ax, av)
     sides, side_band = {}, {}
     for k, sd in (r.get("sides") or {}).items():
-        sides[k] = {"avg_m": round(sd.get("avg_width_m", 0.0), 3), "area_m2": round(sd.get("area_m2", 0.0), 2),
+        sides[k] = {"to_cl": bool(sd.get("street_cl")), "avg_m": round(sd.get("avg_width_m", 0.0), 3), "area_m2": round(sd.get("area_m2", 0.0), 2),
                     "depth_m": round(sd.get("D_m", 0.0), 3), "angle_deg": round(sd.get("angle_deg", 0.0), 1),
                     "polygon": [_xy(q) for q in (sd.get("region_polygon") or [])]}
-        side_band[k] = N.side_band(sd, site_uv) if sd.get("inner_uv") else None
+        # the region was measured from the plane on one side (near_low): its
+        # own (u, v) has v reversed when the plane is on the high-v side
+        su, sv_ = sd.get("axes") or (ax, av)
+        flip = (sv_.X * av.X + sv_.Y * av.Y) < 0
+        sb = N.side_band(sd, N._site_uv(site_pts, su, sv_)) if sd.get("inner_uv") else None
+        side_band[k] = [(u, -v) for u, v in sb] if (sb and flip) else sb
+        if "near_low" in sd:
+            sides[k]["near_low"] = bool(sd["near_low"])
         if sd.get("region_polygon"):
-            p0, p1 = N._vrange(sd["region_polygon"], ax, av)
+            p0, p1 = N._vrange(sd["region_polygon"], su, sv_)
             got = N.side_edge(sd, p0, p1)
             if got:
-                sides[k]["edge"] = N.to_xy_m(got[0], ax, av)      # perpendicular, then turned once
+                sides[k]["edge"] = N.to_xy_m(got[0], su, sv_)      # perpendicular, then turned once
             elif sd.get("inner_uv"):
-                sides[k]["edge"] = N.to_xy_m(A._dp(sorted(sd["inner_uv"], key=lambda q: q[1])), ax, av)
+                sides[k]["edge"] = N.to_xy_m(A._dp(sorted(sd["inner_uv"], key=lambda q: q[1])), su, sv_)
         if side_band[k]:
             sides[k]["band"] = N.to_xy_m(side_band[k], ax, av)
     gaps = []
@@ -216,7 +226,11 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
     # the near edge: each gap's band (its strip when it has none), walked
     bands = [g.pop("_band", None) or (side_band.get(g.get("side")) if g.get("side") else None)
              or N.strip_band(g["lo_m"] * FT, g["hi_m"] * FT, site_uv) for g in gaps]
-    low, gruns, sruns = N.partition(site_pts, bands, ax, av, N.near_side(site_pts, ax, av, streets),
+    # the near edge: the side both side regions were measured from, else the
+    # street's side
+    nl = [v["near_low"] for v in sides.values() if "near_low" in v]
+    near = nl[0] if nl else N.near_side(site_pts, ax, av, streets)
+    low, gruns, sruns = N.partition(site_pts, bands, ax, av, near,
                                     sum(b - a for a, b in r.get("merged") or []))
     events = sorted([(a, b, "gap", i) for a, b, i in gruns] + [(a, b, "shadow", None) for a, b in sruns])
     owner = {}
@@ -232,7 +246,7 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
             g = gaps[i]
             t = "blocked" if g["type"] == "FAIL" else "open" if g["type"] == "OPEN" else g["type"]
             edge.append({"kind": "gap", "label": t, "s_m": g["width_m"] if g["type"] in ("FAIL", "OPEN") or not g["distance_m"] else g["distance_m"],
-                         "pass": g["qualifies"], "gap": i, "lo": round(a * M, 3), "hi": round(b * M, 3), "bend_deg": g.get("bend_deg")})
+                         "pass": g["qualifies"], "need_m": 15.0 if g["type"] == "S2" else 7.5, "gap": i, "lo": round(a * M, 3), "hi": round(b * M, 3), "bend_deg": g.get("bend_deg")})
         else:
             mem = owner.get(n, [])
             edge.append({"kind": "shadow", "label": "+".join(l for l, _ in mem) or "-", "lo": round(a * M, 3), "hi": round(b * M, 3),
@@ -331,7 +345,7 @@ def street_legs(data):
                 nx, ny = -nx, -ny
             w = st.get("width_m")
             name = (st.get("name") or "Street %d" % (si + 1)) + (" (leg %d)" % (li + 1) if len(legs) > 1 else "")
-            out.append({"name": name, "street": st.get("name") or "", "centreline": leg, "opposite": opp, "width_m": w,
+            out.append({"name": name, "street": st.get("name") or "", "centreline": leg, "opposite": opp, "width_m": w, "level": st.get("level"),
                         "dir": [dx, dy], "normal": [nx, ny],
                         "offset30": [[round(p[0] + nx * CASE1_REACH_M, 3), round(p[1] + ny * CASE1_REACH_M, 3)] for p in (leg[0], leg[-1])],
                         "width_dim": [[round(mx - nx * w / 2.0, 3), round(my - ny * w / 2.0, 3)],
@@ -363,6 +377,81 @@ def _lp_rect(pts, d, n):
     return [[round(u * d[0] + w * n[0], 3), round(u * d[1] + w * n[1], 3)] for u, w in ((u0, w0), (u1, w0), (u1, w1), (u0, w1))], u1 - u0
 
 
+GROUP_GAP_M = 15.0                # buildings closer than this: one group for Lp (Fig B7)
+
+
+def _clip_half(loop, n, wmax):
+    """The part of a loop with p . n <= wmax (Sutherland-Hodgman)."""
+    out = []
+    m = len(loop)
+    for i in range(m):
+        p, q = loop[i], loop[(i + 1) % m]
+        wp, wq = p[0] * n[0] + p[1] * n[1], q[0] * n[0] + q[1] * n[1]
+        if wp <= wmax:
+            out.append(p)
+        if (wp <= wmax) != (wq <= wmax):
+            t = (wmax - wp) / (wq - wp)
+            out.append([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t])
+    return out if len(out) >= 3 and abs(F.area(out)) > 0.01 else None
+
+
+def _gap_pts(la, lb):
+    """The clear distance between two buildings' outlines -> (d, p, q)."""
+    best = (1e9, None, None)
+    for A_, B_ in ((la, lb), (lb, la)):
+        for l in A_:
+            for p in l:
+                for k in B_:
+                    for i in range(len(k)):
+                        a, b = k[i], k[(i + 1) % len(k)]
+                        dx, dy = b[0] - a[0], b[1] - a[1]
+                        L2 = dx * dx + dy * dy
+                        t = 0.0 if L2 < 1e-12 else max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2))
+                        q = (a[0] + dx * t, a[1] + dy * t)
+                        d = math.hypot(p[0] - q[0], p[1] - q[1])
+                        if d < best[0]:
+                            best = (d, p, q) if A_ is la else (d, q, p)
+    return best
+
+
+def _groups(named):
+    """Buildings closer than 15 m are one group for Lp: [(label, [footprints],
+    [member labels])], and the spacings between neighbours (to draw)."""
+    n = len(named)
+    par = list(range(n))
+
+    def f(i):
+        while par[i] != i:
+            par[i] = par[par[i]]
+            i = par[i]
+        return i
+    spacing = []
+    for i in range(n):
+        best = None
+        for j in range(n):
+            if i == j:
+                continue
+            d, p, q = _gap_pts([l["loop"] for l in named[i][1]], [l["loop"] for l in named[j][1]])
+            if d < GROUP_GAP_M:
+                par[f(i)] = f(j)
+            if best is None or d < best[0]:
+                best = (d, j, p, q)
+        if best and best[2] is not None:
+            key = tuple(sorted((named[i][0], named[best[1]][0])))
+            if not any(tuple(sorted((x["a"], x["b"]))) == key for x in spacing):
+                spacing.append({"a": named[i][0], "b": named[best[1]][0], "d_m": round(best[0], 3),
+                                "p": [round(best[2][0], 3), round(best[2][1], 3)], "q": [round(best[3][0], 3), round(best[3][1], 3)],
+                                "grouped": best[0] < GROUP_GAP_M})
+    out = {}
+    for i in range(n):
+        out.setdefault(f(i), []).append(i)
+    groups = []
+    for idx in sorted(out.values(), key=lambda g: g[0]):
+        labs = [named[i][0] for i in idx]
+        groups.append(("+".join(labs), [l for i in idx for l in named[i][1]], labs))
+    return groups, spacing
+
+
 def case1(data, zone_inside, a=None, legs=None):
     """Design Requirement (1), Lp of building(s) abutting a street (Fig B7,
     GB081), per zone. A building (or group) abuts a street when ANY part of
@@ -384,18 +473,29 @@ def case1(data, zone_inside, a=None, legs=None):
         if not inside:
             continue
         per, notes = [], []
-        named = _named(inside, a)
+        named, spacing = _groups(_named(inside, a))
         near_of = {}
-        for label, loops in named:
+        for label, loops_all, members in named:
             rows = []
             for si, st in enumerate(streets):
                 name = st["name"]
                 cl, opp = st["centreline"], st["opposite"]
-                near = _nearest(loops, cl)
+                near = _nearest(loops_all, cl)
                 near_of[(si, label)] = near
                 if near > CASE1_REACH_M:
                     continue
                 dx, dy = st["dir"]
+                # only the part of the building(s) within 30 m of the
+                # centreline counts (Wilson, report 4)
+                nvec = st["normal"]
+                wcl = min(p[0] * nvec[0] + p[1] * nvec[1] for p in cl)
+                loops = []
+                for l in loops_all:
+                    c = _clip_half(l["loop"], nvec, wcl + CASE1_REACH_M)
+                    if c:
+                        loops.append(dict(l, loop=c))
+                if not loops:
+                    continue
                 pts = [p for l in loops for p in l["loop"]]
                 us = [p[0] * dx + p[1] * dy for p in pts]
                 u0, u1 = min(us), max(us)
@@ -423,6 +523,9 @@ def case1(data, zone_inside, a=None, legs=None):
                     mid.append((f, o, df + do))
                     last = k
                 if not n:
+                    notes.append("%s: %s is within %.0f m of the centreline (%.3f m) but no street canyon was measured - "
+                                 "check the street's opposite boundary covers the building's frontage"
+                                 % (name, label, CASE1_REACH_M, near))
                     continue
                 L = n * CASE1_STEP_M
                 U = width_sum * CASE1_STEP_M / L
@@ -442,13 +545,13 @@ def case1(data, zone_inside, a=None, legs=None):
                 continue
             ctrl = min(rows, key=lambda r: r["U_m"])
             lp = max(r["Lp_m"] for r in rows)
-            per.append(dict(ctrl, building=label, name=", ".join(sorted(set(l.get("name") or "" for l in loops))),
+            per.append(dict(ctrl, building=label, members=members, name=", ".join(sorted(set(l.get("name") or "" for l in loops_all))),
                             streets=rows, ctrl_street=ctrl["street"], Lp_m=round(lp, 3), Lp_max_m=round(5 * ctrl["U_m"], 3),
                             **{"pass": lp <= 5 * ctrl["U_m"] + 1e-6}))
         # the buildings that do not abut a street: their Lp all the same,
         # against the nearest street (drawn dashed)
         others = []
-        for label, loops in named:
+        for label, loops, _m in named:
             if any(b["building"] == label for b in per):
                 continue
             si = min(range(len(streets)), key=lambda i: near_of.get((i, label), 1e9))
@@ -458,11 +561,13 @@ def case1(data, zone_inside, a=None, legs=None):
         for si, st in enumerate(streets):
             name = st["name"]
             if not any(r["street"] == name for b in per for r in b["streets"]):
-                d = min([near_of.get((si, lab), 1e9) for lab, _ in named] or [1e9])
+                d = min([near_of.get((si, lab), 1e9) for lab, _, _m in named] or [1e9])
+                if d <= CASE1_REACH_M:
+                    continue                  # said above: no canyon measured
                 notes.append("%s: no building within %.0f m of the centreline (nearest %.3f m) - Design Requirement (1) not applicable"
                              % (name, CASE1_REACH_M, d))
         if per or notes:
-            out.append({"zone": zname, "buildings": per, "notes": notes, "others": others})
+            out.append({"zone": zname, "buildings": per, "notes": notes, "others": others, "spacing": spacing})
     return out
 
 
@@ -533,12 +638,64 @@ def _ray_hit_line(px, py, dx, dy, pl):
     return best
 
 
-def run(data, axis="street", angle_deg=0.0, zones=None):
+def level_zero(data):
+    """Level 0: "the mean street level on which the site abuts or, where the
+    site abuts streets having different levels, the mean level of the lower
+    or lowest street" (B(P)R). Each street keeps its own mean level (its
+    slab's); when the export took the ground from the street slabs, Level 0
+    is the lowest street abutting the site (within 30 m). A Level chosen in
+    the export stays. Streets of the same name get (2), (3) ... so each is
+    its own street in Case 1."""
+    data = dict(data)
+    seen, streets = {}, []
+    for st in data.get("streets") or []:
+        st = dict(st)
+        nm = st.get("name") or "Street"
+        seen[nm] = seen.get(nm, 0) + 1
+        st["label"] = nm
+        if seen[nm] > 1:
+            st["name"] = "%s (%d)" % (nm, seen[nm])
+        streets.append(st)
+    data["streets"] = streets
+    src = (data.get("ground_source") or "").lower()
+    site = data.get("site") or []
+    lv = []
+    for st in streets:
+        if st.get("level") is None or not site:
+            continue
+        pts = st.get("outline") or st.get("centreline") or []
+        d = min([_dist_to_polyline(p, site + site[:1]) for p in pts] or [1e9])
+        if d <= CASE1_REACH_M:
+            lv.append((float(st["level"]), st.get("name") or ""))
+    if lv and ("street" in src or data.get("ground_z") is None):
+        z, nm = min(lv)
+        data["ground_z"] = z
+        data["level0"] = {"z": round(z, 3), "street": nm,
+                          "streets": [{"name": n, "level": round(v, 3)} for v, n in lv],
+                          "rule": "lowest street" if len(set(round(v, 3) for v, _ in lv)) > 1 else "the street"}
+        data["ground_source"] = "the mean level of %s (%s street)" % (nm, "the lowest" if len(lv) > 1 else "the")
+    return data
+
+
+def zone_levels(data, zones=None):
+    """Each zone's plan levels: the height bands over which no mass changes
+    shape (relative to the ground), with the height a level cuts at."""
+    g = float(data.get("ground_z") or 0.0)
+    out = {}
+    for name, z0, z1 in (zones or ZONES):
+        ex = (z1 - z0) / 3.0 if name == "LOW" and z1 is not None else 0.0
+        bands = F.shape_bands(data.get("masses") or [], g + z0 + ex, None if z1 is None else g + z1)
+        out[name] = [{"from": round(a - g, 3), "to": round(b - g, 3), "z": round((a + b) / 2.0 - g, 3)} for a, b in bands]
+    return out
+
+
+def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
     t0 = time.time()
     del geom.LOG[:]
     warnings = check_input(data)
     if not data.get("site") or len(data["site"]) < 3:
         return {"ok": False, "warnings": warnings}
+    data = level_zero(data)
     site_pts = [_pt(p) for p in data["site"]]
     site_pts = geom.ensure_loop_ccw(site_pts)
     # the projection axis (Axis 1, along Projection Plane X)
@@ -557,6 +714,9 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         if axis == "street":
             warnings.append("No street line in the export: Axis 1 is the site's main direction (PCA).")
     b = P.orthogonal_axis(a)
+    # a side region next to a street runs on to its centreline
+    A._NEAR.clear()
+    A.STREETS[:] = [([_pt(p) for p in lg["centreline"]], (lg.get("width_m") or 0.0) / 2.0 * FT) for lg in legs if lg.get("width_m")]
     # an optional notional corridor (Fig B13-B14): buildings in it are left out
     corridor_poly = None
     if data.get("corridor") and len(data["corridor"]) >= 2:
@@ -587,8 +747,22 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
     # a setback, and its elevation shows that band hatched
     exempt_of = {name: ((z1 - z0) / 3.0 if name == "LOW" and z1 is not None else 0.0) for (name, z0, z1) in (zones or ZONES)}
     zone_fp = [(name, z0, z1) + zone_footprints(data, z0 + exempt_of[name], z1) for (name, z0, z1) in (zones or ZONES)]
-    loops_of = {}
+    # a plan level chosen for a zone: its plan (gaps, side regions,
+    # corridors) from the masses cut at that one height - the podium's shape
+    # differs level to level; the elevation stays the true 3D, so what
+    # blocks at other heights still blocks. Case 1 keeps the whole band.
+    levels = {k: v for k, v in (levels or {}).items() if v is not None}
+    lv_of = zone_levels(data, zones)
+    plan_fp = []
     for name, z0, z1, inside, other in zone_fp:
+        at = levels.get(name)
+        if at is not None:
+            hi = z1 if z1 is not None else tallest
+            at = min(max(float(at), z0 + exempt_of[name] + 0.01), hi - 0.01)
+            inside, other = zone_footprints(data, z0, z1, at=at)
+        plan_fp.append((name, z0, z1, inside, other, at))
+    loops_of = {}
+    for name, z0, z1, inside, other, _at in plan_fp:
         loops = [geom.ensure_loop_ccw([_pt(p) for p in f["loop"]]) for f in inside]
         if corridor_poly:
             loops = P.filter_buildings_outside_corridor(loops, corridor_poly)
@@ -610,9 +784,10 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         req_y = None
     fails = []
     out_zones, all_p, log = [], [], []
-    for name, z0, z1, inside, other in zone_fp:
+    for name, z0, z1, inside, other, at in plan_fp:
         loops = loops_of[name]
-        z = {"zone": name, "z0": z0, "z1": z1, "exempt_m": round(exempt_of[name], 3), "footprints": [{"loop": [[round(x, 3), round(y, 3)] for x, y in f["loop"]],
+        z = {"zone": name, "z0": z0, "z1": z1, "exempt_m": round(exempt_of[name], 3),
+             "plan_level": None if at is None else round(at, 3), "levels": lv_of.get(name) or [], "footprints": [{"loop": [[round(x, 3), round(y, 3)] for x, y in f["loop"]],
              "name": f.get("name"), "z": round(f["z"] - g, 2)} for f in inside],
              "others": [[[round(x, 3), round(y, 3)] for x, y in f["loop"]] for f in other], "assessed": bool(loops)}
         if loops:
@@ -686,7 +861,8 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         "case1": c1, "street_legs": [{k: v for k, v in lg.items() if k not in ("opposite",)} for lg in legs],
         "case1_pass": None if not any(c["buildings"] for c in c1) else all(b["pass"] for c in c1 for b in c["buildings"]),
         "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
-                     "outline": s.get("outline") or []} for s in data.get("streets") or []],
-        "ground_z": data.get("ground_z"), "ground_source": data.get("ground_source") or "",
+                     "outline": s.get("outline") or [], "level": s.get("level"), "label": s.get("label") or s.get("name") or ""}
+                    for s in data.get("streets") or []],
+        "ground_z": data.get("ground_z"), "ground_source": data.get("ground_source") or "", "level0": data.get("level0"),
         "ms": int((time.time() - t0) * 1000),
     }

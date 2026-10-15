@@ -170,6 +170,35 @@ def mass_footprints(mass, z0, z1):
     return out
 
 
+def mass_footprints_at(mass, z):
+    """[{"loop", "z"}] of one mass cut at the one height z (a plan level)."""
+    verts = mass["verts"]
+    tris = mass["tris"]
+    if not verts or not tris:
+        return []
+    out = []
+    for part in components(tris):
+        zs = [verts[i][2] for t in part for i in t]
+        if min(zs) < z < max(zs):
+            out += holes_removed([{"loop": l, "z": z} for l in _section(verts, part, z)])
+    return out
+
+
+def shape_bands(masses, z0, z1):
+    """The height bands inside [z0, z1] over which no mass changes its plan
+    shape: [(lo, hi)] (the plan levels a zone can be assessed at)."""
+    cuts = {z0}
+    top = z0
+    for m in masses:
+        for v in m.get("verts") or []:
+            top = max(top, v[2])
+            if z0 + 0.05 < v[2] < (z1 if z1 is not None else 1e9) - 0.05:
+                cuts.add(v[2])
+    cuts.add(z1 if z1 is not None else top)
+    cuts = sorted(cuts)
+    return [(a, b) for a, b in zip(cuts, cuts[1:]) if b - a >= 0.1]
+
+
 def point_in(x, y, loop):
     inside = False
     n = len(loop)

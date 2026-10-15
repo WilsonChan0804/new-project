@@ -2063,6 +2063,16 @@ function initClash() {
     cameraDistance: () => S.camera.position.distanceTo(S.controls.target),
     overlay: () => S.overlay,
     redraw: () => { S.dirty = true; },
+    // the SBD masses' model (removed on the server): off the scene and the
+    // Models list at once, no reload needed
+    async dropSbdRefs() {
+      const gone = RF.list.filter((x) => x.sbd || /^SBD masses/.test(x.name || ""));
+      for (const r of gone) if (S.loaded.has(refKey(r))) await unloadModel(refKey(r));
+      RF.list = RF.list.filter((x) => !gone.includes(x));
+      renderRefs();
+      S.dirty = true;
+      return gone.length;
+    },
     async makeIssue(point, el, pre) {
       let guid = null, name = null;
       if (el) {

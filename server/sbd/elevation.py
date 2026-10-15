@@ -226,7 +226,7 @@ def zone_elevation(masses, ground, items, z0, z1, ax, req_p=None, exempt=0.0):
             w = max(float(it["s_m"] or 0.0), 0.0)
             # a gap that counts is IS; one that does not reach its S but is
             # >= 3 m wide is a permeable element (PE); narrower, not counted
-            k = "is" if it["pass"] else "pe" if w >= PE_MIN - EPS else "nis"
+            k = "gis" if it["pass"] else "gpe" if w >= PE_MIN - EPS else "gnis"
             col = [("exempt" if ex_top is not None and zb <= ex_top + EPS else k) for za, zb in rows]
             pieces.append((x, x + w, [(w, w, col)], it))
         else:
@@ -253,29 +253,52 @@ def zone_elevation(masses, ground, items, z0, z1, ax, req_p=None, exempt=0.0):
         for wt, wd, kinds in cc:
             flat.append([cx, cx + wd, wt, list(kinds), pi])
             cx += wd
-    # open to above: IS when the run (true width, with the IS beside it) >= MIN_S
-    has = lambda c, k: k in flat[c][3]
+    # IS and PE are taken HORIZONTALLY (Wilson, report 4): row by row, a run
+    # of open cells - gaps and open-to-above cells over the buildings beside
+    # them - is IS where its true width reaches the requirement (the widest
+    # of its gaps': S1 7.5 m, a corridor 15 m; 7.5 m with no gap). So a gap
+    # short of its S is IS where it opens on to the sky over a lower
+    # building beside it, and the rest of it stays PE (>= 3 m) or is not
+    # counted.
+    OPEN = ("sky", "gis", "gpe", "gnis")
+    need = {}
+    for pi, (x0, x1, cc, it) in enumerate(pieces):
+        if it["kind"] == "gap":
+            need[pi] = float(it.get("need_m") or MIN_S)
     n = len(flat)
-    c = 0
-    while c < n:
-        if not has(c, "sky"):
-            c += 1
-            continue
-        e = c
-        while e + 1 < n and has(e + 1, "sky"):
-            e += 1
-        w = sum(flat[i][2] for i in range(c, e + 1))
-        i = c - 1
-        while i >= 0 and has(i, "is"):
-            w += flat[i][2]
-            i -= 1
-        i = e + 1
-        while i < n and has(i, "is"):
-            w += flat[i][2]
-            i += 1
-        for i in range(c, e + 1):
-            flat[i][3] = [("skyis" if w >= MIN_S - EPS else "open") if k == "sky" else k for k in flat[i][3]]
-        c = e + 1
+    joins = {}
+    for r in range(len(rows)):
+        c = 0
+        while c < n:
+            if flat[c][3][r] not in OPEN:
+                c += 1
+                continue
+            e = c
+            while e + 1 < n and flat[e + 1][3][r] in OPEN:
+                e += 1
+            w = sum(flat[i][2] for i in range(c, e + 1))
+            gaps = [flat[i][4] for i in range(c, e + 1) if flat[i][3][r] in ("gis", "gpe", "gnis")]
+            req = max([need.get(g, MIN_S) for g in gaps] or [MIN_S])
+            has_is = any(flat[i][3][r] == "gis" for i in range(c, e + 1))
+            ok = w >= req - EPS or has_is
+            for i in range(c, e + 1):
+                k = flat[i][3][r]
+                if k == "sky":
+                    flat[i][3][r] = "skyis" if ok else "open"
+                elif k == "gis":
+                    flat[i][3][r] = "is"
+                elif k in ("gpe", "gnis"):
+                    if ok:
+                        flat[i][3][r] = "is"
+                        j = joins.setdefault(flat[i][4], {"run_m": 0.0, "h0": rows[r][0], "h1": rows[r][1], "need_m": req})
+                        j["run_m"] = max(j["run_m"], w)
+                        j["h0"], j["h1"] = min(j["h0"], rows[r][0]), max(j["h1"], rows[r][1])
+                    else:
+                        flat[i][3][r] = "pe" if k == "gpe" else "nis"
+            c = e + 1
+    for pi, j in joins.items():
+        out_items[pi]["joined"] = {"run_m": round(j["run_m"], 3), "z_from": round(j["h0"] - z0, 3),
+                                   "z_to": round(j["h1"] - z0, 3), "need_m": j["need_m"]}
     # areas (drawn widths) and the rectangles to draw
     area = {}
     rects = []

@@ -58,11 +58,11 @@ def find_oda():
     return None
 
 
-def oda_convert(oda, src_dir, name, out_dir, timeout=900):
-    """One DWG -> DXF (ACAD2018). True when the DXF is there (the
-    converter's exit code says little: on Linux it often 'crashes' after
-    a good conversion)."""
-    cmd = [oda, src_dir, out_dir, "ACAD2018", "DXF", "0", "1", name]
+def oda_convert(oda, src_dir, name, out_dir, timeout=900, fmt="DXF"):
+    """One DWG -> DXF (ACAD2018), or (fmt "DWG") a DXF -> DWG. True when
+    the output is there (the converter's exit code says little: on Linux it
+    often 'crashes' after a good conversion)."""
+    cmd = [oda, src_dir, out_dir, "ACAD2018", fmt, "0", "1", name]
     if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
         xr = shutil.which("xvfb-run")
         if xr:
@@ -74,7 +74,23 @@ def oda_convert(oda, src_dir, name, out_dir, timeout=900):
     except OSError:
         return False
     stem = os.path.splitext(name)[0]
-    return os.path.isfile(os.path.join(out_dir, stem + ".dxf"))
+    return os.path.isfile(os.path.join(out_dir, stem + "." + fmt.lower()))
+
+
+def dxf_to_dwg(oda, dxf_path, dwg_path, timeout=300):
+    """A DXF -> DWG (AutoCAD 2018), through a plain temporary name."""
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix="lwk-oda-")
+    try:
+        i, o = os.path.join(tmp, "in"), os.path.join(tmp, "out")
+        os.makedirs(i); os.makedirs(o)
+        shutil.copyfile(dxf_path, os.path.join(i, "f.dxf"))
+        if not oda_convert(oda, i, "f.dxf", o, timeout, fmt="DWG"):
+            return False
+        shutil.move(os.path.join(o, "f.dwg"), dwg_path)
+        return True
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def clean(name):

@@ -70,10 +70,15 @@ def corridor_band(poly, site_uv):
     p0, p1 = _vrange(poly, au, av)
     if p0 is None:
         p0, p1 = min(q[1] for q in site_uv), max(q[1] for q in site_uv)
-    v_lo, v_hi = _reach(site_uv, p0, p1, lambda v: ue(v) + w / 2.0)
-    vs = [v_lo] + [v for v in (v1, v2) if v_lo < v < v_hi] + [v_hi]
-    left = [(ue(v), v) for v in vs]
-    right = [(ue(v) + w, v) for v in reversed(vs)]
+    # each edge on to its own first exit (with a sloping boundary the two
+    # edges leave the site at different depths): both corners on the boundary
+    inset = 0.02 * (1 if w > 0 else -1)
+    a_lo, a_hi = _reach(site_uv, p0, p1, lambda v: ue(v) + inset)
+    b_lo, b_hi = _reach(site_uv, p0, p1, lambda v: ue(v) + w - inset)
+    va = [a_lo] + [v for v in (v1, v2) if a_lo < v < a_hi] + [a_hi]
+    vb = [b_lo] + [v for v in (v1, v2) if b_lo < v < b_hi] + [b_hi]
+    left = [(ue(v), v) for v in va]
+    right = [(ue(v) + w, v) for v in reversed(vb)]
     return left + right
 
 

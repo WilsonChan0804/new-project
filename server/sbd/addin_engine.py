@@ -26,6 +26,8 @@ with contextlib.redirect_stdout(_LOG):
     import sbd_permeability as P          # noqa: E402
     import sbd_wind_corridor as W         # noqa: E402
     from sbd_geom_separation import rotate_axis_xy   # noqa: E402
+    from sbd_geom_separation import FEET_TO_METERS   # noqa: E402
+    from Autodesk.Revit.DB import XYZ   # noqa: E402
 
 ZONE_LOW = P.ZONE_LOW
 
@@ -85,16 +87,81 @@ def _edge_once(v, u1, v1, v2, tan_t):
     return u1 if v <= v1 else u1 + tan_t * (v - v1)
 
 
-def side_average_width(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
+# Streets for the side regions: a side region next to a street (not a
+# common boundary) reaches on to the street's centreline (Wilson, report 4).
+# [(centreline points, feet XYZ, half the street's width, feet)] - set by the
+# engine for each run.
+STREETS = []
+_cl_at = W._polyline_u_at_v
+_CL_MAX = [0.0]
+
+
+def _cl_u_at_v(cl_uv, v, near_u):
+    """The centreline at depth v - only where the site boundary there faces
+    the street (the centreline within half its width and 3 m of it); a
+    common boundary at the same depth stays the region's edge."""
+    u = _cl_at(cl_uv, v, near_u)
+    if u is None or abs(u - near_u) > _CL_MAX[0]:
+        return None
+    return u
+
+
+W._polyline_u_at_v = _cl_u_at_v
+
+
+def _street_for_side(site_pts, axis_u, axis_v, side):
+    """The street leg alongside this side region (outward of the site in u,
+    running along v), or None -> (points, half width ft)."""
+    if not STREETS or len(site_pts) < 3:
+        return None
+    uv = [W.to_uv(p, axis_u, axis_v) for p in site_pts]
+    v_lo, v_hi = min(q.v for q in uv), max(q.v for q in uv)
+    best = None
+    for pts, hw in STREETS:
+        cl = [W.to_uv(p, axis_u, axis_v) for p in pts]
+        du, dv = cl[-1].u - cl[0].u, cl[-1].v - cl[0].v
+        L = (du * du + dv * dv) ** 0.5
+        if L < 1e-6 or abs(dv) / L < 0.64:            # runs within 50 deg of the side
+            continue
+        n = out = 0
+        dense = []
+        for a_, b_ in zip(cl, cl[1:]):
+            k_ = max(1, int(((b_.u - a_.u) ** 2 + (b_.v - a_.v) ** 2) ** 0.5 / 6.0))
+            dense += [W._UV(a_.u + (b_.u - a_.u) * i / float(k_), a_.v + (b_.v - a_.v) * i / float(k_), None) for i in range(k_)]
+        for q in dense + cl[-1:]:
+            if not (v_lo <= q.v <= v_hi):
+                continue
+            spans = W._loop_u_intervals_at_v(uv, q.v)
+            if not spans:
+                continue
+            n += 1
+            if (side == "left" and q.u < spans[0][0]) or (side == "right" and q.u > spans[-1][1]):
+                out += 1
+        if n and out * 2 >= n:
+            ov = min(v_hi, max(c.v for c in cl)) - max(v_lo, min(c.v for c in cl))
+            if best is None or ov > best[0]:
+                best = (ov, pts, hw)
+    return (best[1], best[2]) if best else None
+
+
+def _side_one(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
     """The panel's side region with an edge that turns once, its inner edge
-    (u, v) kept, and the edge chosen (u1, v1, tan) found from it."""
+    (u, v) kept, and the edge chosen (u1, v1, tan) found from it. Next to a
+    street, the region runs on to the street's centreline."""
     del _REC[:]
     _TRIED.clear()
     W._edge_u_at_v = _edge_once
+    st = _street_for_side(site_pts, axis_u, axis_v, side) if not k.get("street_cl_points") else None
+    if st:
+        k["street_cl_points"] = st[0]
+        _CL_MAX[0] = st[1] + 3.0 / FEET_TO_METERS
     try:
         r = _side(site_pts, building_loops, axis_u, axis_v, side, *a, **k)
     finally:
         W._edge_u_at_v = _edge_u
+        _CL_MAX[0] = 0.0
+    if r is not None and st:
+        r["street_cl"] = True
     if r and len(_REC) >= 2:
         chain = _REC[-2]
         r["inner_uv"] = chain
@@ -110,6 +177,68 @@ def side_average_width(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
             r["edge_param"] = best[1]
     del _REC[:]
     return r
+
+
+_NEAR = {}
+
+
+def _street_near(site_pts, axis_u, axis_v):
+    """+1 when a street runs along the plane on the low-v side of the site,
+    -1 on the high-v side, 0 when none does."""
+    if not STREETS or len(site_pts) < 3:
+        return 0
+    vs = [p.X * axis_v.X + p.Y * axis_v.Y for p in site_pts]
+    v_lo, v_hi = min(vs), max(vs)
+    best = None
+    for pts, hw in STREETS:
+        du = (pts[-1].X - pts[0].X) * axis_u.X + (pts[-1].Y - pts[0].Y) * axis_u.Y
+        dv = (pts[-1].X - pts[0].X) * axis_v.X + (pts[-1].Y - pts[0].Y) * axis_v.Y
+        L = (du * du + dv * dv) ** 0.5
+        if L < 1e-6 or abs(du) / L < 0.64:
+            continue
+        mv = sum(p.X * axis_v.X + p.Y * axis_v.Y for p in pts) / len(pts)
+        d, sgn = (v_lo - mv, 1) if mv < v_lo else (mv - v_hi, -1) if mv > v_hi else (None, 0)
+        if d is not None and (best is None or d < best[0]):
+            best = (d, sgn)
+    return best[1] if best else 0
+
+
+def side_average_width(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
+    """Both side regions are measured from ONE projection plane (Wilson,
+    report 4): their edges run perpendicular from the plane's side (the
+    near edge) and turn once away from it. The plane on the street's side
+    when a street runs along it; otherwise both sides are tried and the one
+    giving the wider qualifying side regions is kept, for both ends.
+    The result says which: "near_low" (the plane on the low-v side)."""
+    key = (round(axis_u.X, 6), round(axis_u.Y, 6), len(site_pts), len(building_loops),
+           round(sum(p.X + 2 * p.Y for l in building_loops for p in l), 3), bool(a or k))
+    got = _NEAR.get(key)
+    if got is None:
+        if len(_NEAR) > 400:
+            _NEAR.clear()
+        neg = XYZ(-axis_v.X, -axis_v.Y, 0)
+        force = _street_near(site_pts, axis_u, axis_v)
+        opts = {}
+        for low, av in ((True, axis_v), (False, neg)):
+            if force and (force > 0) != low:
+                continue
+            res = {}
+            for sd in ("left", "right"):
+                try:
+                    res[sd] = _side_one(site_pts, building_loops, axis_u, av, sd, *a, **k)
+                except Exception as e:
+                    P.debug_print("  [Side {}] not worked out: {}".format(sd, e))
+                    res[sd] = None
+                if res[sd] is not None:
+                    res[sd]["near_low"] = low
+            opts[low] = res
+
+        def score(res):
+            w = [(r or {}).get("avg_width_m") or 0.0 for r in res.values()]
+            return (sum(x for x in w if x >= _G.MIN_S1_M - 0.001), sum(w))
+        got = max(opts.values(), key=score)
+        _NEAR[key] = got
+    return got.get(side)
 
 
 W.side_average_width = side_average_width
