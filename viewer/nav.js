@@ -11,6 +11,7 @@
 import { installProfile } from "./profile.js";
 import "./theme.js";                       // light / dark, before anything is drawn
 import { installSearch } from "./search.js";
+import { installHelp } from "./help.js";
 import { startNotify } from "./notify.js";
 import { checkWhatsNew } from "./whatsnew.js";
 
@@ -18,7 +19,7 @@ import { checkWhatsNew } from "./whatsnew.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-11-06";
+const LWK_VERSION = "2026-11-07";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -543,6 +544,8 @@ export async function projectOptions(current, fallback) {
 
 // the search on every page (search.js): its button goes into #lwk-nav
 if (document.querySelector("header")) installSearch();
+// the Help (the manual, searchable): ? beside the search, and F1 (help.js)
+if (document.querySelector("header")) installHelp();
 // Admin, Account, Sign out, Offline and who is signed in: one menu (profile.js)
 if (document.querySelector("header")) installProfile();
 

@@ -38,6 +38,58 @@ for _mod in (P, _G):
 PLANE_Y_MIN, PLANE_Y_MAX = P.PLANE_Y_ANGLE_MIN, P.PLANE_Y_ANGLE_MAX
 
 
+# The bands behind the drawn shapes. The panel draws a corridor or a side
+# region by sampling depths across the site, so at a notch in the boundary
+# its end stops short. The band itself (the corridor's edge with its bend,
+# the side region's inner edge) is kept here, and the plan draws it clipped
+# to the site, so the hatch runs to the boundary.
+class Band(list):
+    """A drawn polygon (the panel's) that knows its band: (u1, v1, v2,
+    tan_t, w) with the axes, feet."""
+    band = None
+
+
+_build_band = W.build_corridor_band_polygon
+
+
+def _band_polygon(u1, v1, v2, tan_t, width, toward, site_uv, axis_u, axis_v, elev):
+    poly = Band(_build_band(u1, v1, v2, tan_t, width, toward, site_uv, axis_u, axis_v, elev))
+    poly.band = (u1, v1, v2, tan_t, width * (1.0 if toward > 0 else -1.0), axis_u, axis_v)
+    return poly
+
+
+W.build_corridor_band_polygon = _band_polygon
+
+_REC = []
+_dp = W._dp_simplify
+
+
+def _dp_rec(chain, *a, **k):
+    _REC.append(list(chain))
+    return _dp(chain, *a, **k)
+
+
+W._dp_simplify = _dp_rec
+_side = W.side_average_width
+
+
+def side_average_width(site_pts, building_loops, axis_u, axis_v, side, *a, **k):
+    """The panel's side region, with its inner edge (u, v) kept: the
+    region's ring is that edge plus the boundary (its last two chains)."""
+    del _REC[:]
+    r = _side(site_pts, building_loops, axis_u, axis_v, side, *a, **k)
+    if r and len(_REC) >= 2:
+        r["inner_uv"] = _REC[-2]
+        r["axes"] = (axis_u, axis_v)
+    del _REC[:]
+    return r
+
+
+W.side_average_width = side_average_width
+P.side_average_width = side_average_width
+CANDIDATES = []
+
+
 def _score(site_pts, loops, base_axis, x_deg, req_p):
     """Fast (projection only) ranking of one Plane X angle, with its best
     Plane Y: the lower of the two P values."""
@@ -90,6 +142,7 @@ def optimize_zone_planes(zone_name, site_pts, boundary_pts, building_loops, base
         score = min(r1.get("P", 0.0), r2.get("P", 0.0))
         P.debug_print("  [P/S] Zone {} X={:+.0f} deg confirmed: P_x={:.1f}% P_y={:.1f}% (Y={:.0f} deg)".format(
             zone_name, d, r1.get("P", 0.0), r2.get("P", 0.0), r2.get("plane_y_angle_deg", 90.0)))
+        CANDIDATES.append({"x_deg": d, "y_deg": r2.get("plane_y_angle_deg", 90.0), "axis1": r1, "axis2": r2})
         if best_full is None or score > best_full[0] + 1e-9:
             best_full = (score, d, r1, r2, axis_y, ax_x)
     _, x_deg, r1, r2, axis_y, ax_x = best_full
@@ -103,14 +156,20 @@ P.optimize_zone_planes = optimize_zone_planes
 
 
 def assess(zone_name, site_pts, loops, base_axis, req_p=None, tallest_m=20.0):
-    """One zone, its own footprints -> (zone result, log text)."""
+    """One zone, its own footprints -> (zone result, log text). The zone
+    result's "candidates" are the plane pairs confirmed in full (the Low
+    zone: its one pair along the street), each with its side regions: the
+    caller picks among them by the P it reports."""
     buf = io.StringIO()
+    del CANDIDATES[:]
     with contextlib.redirect_stdout(buf):
         zr = P.assess_zone(zone_name, site_pts, site_pts, loops, base_axis, axis_secondary=None,
                            lock_axis_x=(zone_name == ZONE_LOW), req_p=req_p, tallest_m=tallest_m)
-        for key in ("axis1", "axis2"):
-            r = zr.get(key)
-            if not r or not r.get("axis"):
+        cands = list(CANDIDATES) or [{"x_deg": zr.get("plane_x_angle_deg") or 0.0,
+                                      "y_deg": zr.get("plane_y_angle_deg"), "axis1": zr["axis1"], "axis2": zr["axis2"]}]
+        zr["candidates"] = cands
+        for r in [c[k] for c in cands for k in ("axis1", "axis2")]:
+            if not r or not r.get("axis") or "sides" in r:
                 continue
             au = r["axis"]
             av = P.orthogonal_axis(au)

@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-07", date: "15 Oct 2026",
+    items: [
+      "**Help** on every page: the **?** beside the search (or **F1**, or Help in your profile menu) opens the user manual inside the viewer - search it, browse the contents, in English or 粵語. It opens at the page you are on, and is updated with the manual at each release.",
+      "SBD **elevations follow the plan** (the SBD panel's deformed elevation): each gap is drawn at its S value and each building group at its width on the site's near edge, with the same dimension chain on both - a gap that does not count (e.g. S2 under 15 m) is hatched red, not IS. W = the S values + the shadows.",
+      "SBD **plan**: the corridors and side regions run to the site boundary; each label gives the turn (any angle 0-15°); a dimension chain along the near edge shows each gap's projected width and the buildings' shadows (B1, B2 ...).",
+      "SBD **planes found automatically**: the Low zone along the street, the Middle and High zones at the pair giving the most P (the Plan lists the pairs tried). **How to prepare the model ...** in Checks > SBD opens the procedure and requirements.",
+    ],
+  },
+  {
     version: "2026-11-06", date: "15 Oct 2026",
     items: [
       "SBD **Plan ... > Elevation**: each zone's elevational projection on its own Plane X and Plane Y (Fig B10 / B11), drawn from the masses - the IS (the gaps that count, and open to above over a lower building), the **PE** (a void through the building ≥ 3 m x 3 m) and P = (IS + PE) / (W x H), with the working as in the BD sample case. PE counts up to 1/3 of the required P; IS alone must reach 2/3 of it.",

@@ -73,6 +73,7 @@ function toggleMenu(header, chip) {
     + (P.off ? `<button data-me="off" role="menuitem">Work offline ...<small>Keep this project on this device; what is waiting to upload</small></button>` : "")
     + (P.admin ? `<button data-me="admin" role="menuitem">Admin<small>People and project members</small></button>` : "")
     + `<button data-me="account" role="menuitem">Account<small>Your password</small></button>`
+    + `<button data-me="help" role="menuitem">Help<small>How to use the viewer - searchable (F1)</small></button>`
     + `<div class="me-theme"><span>Theme</span>${["light", "dark", "auto"].map((k) => `<button data-theme="${k}" class="${theme === k ? "on" : ""}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>`
     + (P.signout ? `<hr><button data-me="signout" role="menuitem" class="me-out">Sign out</button>` : "");
   document.body.appendChild(m);
@@ -102,6 +103,7 @@ function toggleMenu(header, chip) {
     close();
     if (k === "off" && P.off) P.off.click();
     if (k === "admin" && P.admin) location.href = P.admin.href;
+    if (k === "help") import("./help.js").then((h) => h.openHelp());
     if (k === "account") location.href = P.account ? P.account.href : "admin.html#account";
     if (k === "signout" && P.signout) P.signout.click();
   });

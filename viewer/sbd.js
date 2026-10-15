@@ -38,7 +38,7 @@ export function zoneSvg(res, zone, axisKey, opt) {
   const pts = [...res.site, ...z.footprints.flatMap((f) => f.loop), ...streets.flatMap((s) => (s.outline && s.outline.length ? s.outline : s.centreline))];
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const pad = Math.max(x1 - x0, y1 - y0) * 0.08 + 4;
+  const pad = Math.max(x1 - x0, y1 - y0) * 0.14 + 6;      // room for the near edge's dimensions
   x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
   const W = x1 - x0, H = y1 - y0;
   const P = (p) => `${(p[0] - x0).toFixed(3)},${(y1 - p[1]).toFixed(3)}`;
@@ -72,17 +72,21 @@ export function zoneSvg(res, zone, axisKey, opt) {
       if (!sd || !sd.polygon || sd.polygon.length < 3) continue;
       const g = ax.gaps.find((x) => x.side === k);
       const ok = g ? g.qualifies : sd.avg_m >= 7.5;
-      s += `<polygon points="${poly(sd.polygon)}" fill="${ok ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${ok ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
+      // the band (its inner edge carried past the site), clipped to the site:
+      // the hatch runs to the boundary
+      s += `<polygon points="${poly(sd.band || sd.polygon)}"${sd.band ? ` clip-path="url(#${id})"` : ""} fill="${ok ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${ok ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
     }
     for (const g of ax.gaps) {
-      if (g.corridor && g.corridor.length > 2) s += `<polygon points="${poly(g.corridor)}" fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${g.qualifies ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
+      if (g.corridor && g.corridor.length > 2) s += `<polygon points="${poly(g.band || g.corridor)}"${g.band ? ` clip-path="url(#${id})"` : ""} fill="${g.qualifies ? "#16a34a" : "#dc2626"}" fill-opacity=".28" stroke="${g.qualifies ? "#15803d" : "#b91c1c"}" stroke-width="${fs / 8}"/>`;
     }
   }
   // the neighbours' buildings, and this zone's
   s += (z.others || []).map((l) => `<polygon points="${poly(l)}" fill="url(#${id}h)" stroke="#94a3b8" stroke-width="${fs / 12}"/>`).join("");
   s += z.footprints.map((f) => `<polygon points="${poly(f.loop)}" fill="#475569" fill-opacity=".55" stroke="#1e293b" stroke-width="${fs / 10}"/>`).join("");
   // the air corridors (dashed blue outline over the measured band)
-  s += ((ax && ax.gaps.filter((g) => g.corridor).map((g) => ({ polygon: g.corridor }))) || z.corridors || []).map((c) => `<polygon points="${poly(c.polygon)}" fill="none" stroke="#2563eb" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
+  s += ((ax && ax.gaps.filter((g) => g.corridor).map((g) => ({ polygon: g.band || g.corridor, band: !!g.band }))) || z.corridors || []).map((c) => `<polygon points="${poly(c.polygon)}"${c.band ? ` clip-path="url(#${id})"` : ""} fill="none" stroke="#2563eb" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
+  // the buildings' names (the same on the elevations)
+  s += (z.buildings || []).map((b) => `<text x="${(b.at[0] - x0).toFixed(2)}" y="${(y1 - b.at[1]).toFixed(2)}" font-size="${fs * 1.1}" font-weight="700" text-anchor="middle" fill="#fff" stroke="#1e293b" stroke-width="${fs / 6}" paint-order="stroke"><title>${esc(b.name || "")}</title>${esc(b.label)}</text>`).join("");
   if (ax) {
     for (const g of ax.gaps) {
       if (g.pinch) {
@@ -92,8 +96,32 @@ export function zoneSvg(res, zone, axisKey, opt) {
       // the label in the middle of what was measured (side region, corridor or strip)
       const shape = (g.side && ax.sides && ax.sides[g.side] && ax.sides[g.side].polygon) || g.corridor || g.strip;
       const c = shape.reduce((m, p) => [m[0] + p[0] / shape.length, m[1] + p[1] / shape.length], [0, 0]);
-      const t = `${g.type === "FAIL" ? "blocked" : g.type} ${f1(gapM(g))} m`;
+      // the turn: a corridor's bend, a side region's edge (any angle 0-15°)
+      const turn = g.corridor ? g.bend_deg : g.side && ax.sides && ax.sides[g.side] ? ax.sides[g.side].angle_deg : null;
+      const t = `${g.type === "FAIL" ? "blocked" : g.type} ${f1(gapM(g))} m${turn != null ? ` · ${f1(Math.abs(turn))}°` : ""}`;
       s += `<text x="${(c[0] - x0).toFixed(2)}" y="${(y1 - c[1]).toFixed(2)}" font-size="${fs}" text-anchor="middle" fill="${g.qualifies ? "#14532d" : "#7f1d1d"}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${esc(t)}</text>`;
+    }
+    // the near edge (the street side): the gaps and the buildings' shadows
+    // as Plane X sees them - the widths the elevation is laid out with
+    if (ax.near && (ax.edge || []).length) {
+      const av = [-ax.axis[1], ax.axis[0]];
+      const sg = ax.near.low ? -1 : 1;
+      const v = ax.near.v_m + sg * fs * 2.4;
+      const at = (u, vv) => [u * ax.axis[0] + vv * av[0] - x0, y1 - (u * ax.axis[1] + vv * av[1])];
+      let deg = Math.atan2(-ax.axis[1], ax.axis[0]) * 180 / Math.PI;
+      if (deg > 90) deg -= 180;
+      if (deg < -90) deg += 180;
+      const line = (p, q, c, w) => `<line x1="${p[0].toFixed(2)}" y1="${p[1].toFixed(2)}" x2="${q[0].toFixed(2)}" y2="${q[1].toFixed(2)}" stroke="${c}" stroke-width="${w}"/>`;
+      s += `<g class="sbd-dims">` + line(at(ax.edge[0].lo, v), at(ax.edge[ax.edge.length - 1].hi, v), "#0f172a", fs / 12);
+      for (const it of ax.edge) {
+        for (const u of [it.lo, it.hi]) s += line(at(u, v - sg * fs * 0.5), at(u, v + sg * fs * 0.5), "#0f172a", fs / 12);
+        const col = it.kind === "gap" ? (it.pass ? "#15803d" : "#b91c1c") : "#334155";
+        s += line(at(it.lo, v), at(it.hi, v), col, fs / 5);
+        const m = at((it.lo + it.hi) / 2, v + sg * fs * 0.9);
+        const txt = it.kind === "gap" ? `${it.label} ${f1(it.s_m)}${it.pass ? "" : " ✗"} (proj ${f1(it.hi - it.lo)})` : `${it.label} ${f1(it.hi - it.lo)}`;
+        s += `<text x="${m[0].toFixed(2)}" y="${m[1].toFixed(2)}" font-size="${fs * 0.75}" text-anchor="middle" dominant-baseline="middle" fill="${col}" transform="rotate(${deg.toFixed(2)} ${m[0].toFixed(2)} ${m[1].toFixed(2)})" stroke="#fff" stroke-width="${fs / 6}" paint-order="stroke">${esc(txt)}</text>`;
+      }
+      s += `</g>`;
     }
     // Axis: the direction the gaps are measured along
     const ctr = res.site.reduce((m, p) => [m[0] + p[0] / res.site.length, m[1] + p[1] / res.site.length], [0, 0]);
@@ -118,6 +146,7 @@ const ELEV_KIND = {
   is: { fill: "url(#D)", label: "IS" },
   sky: { fill: "url(#D)", label: "IS (open to above)" },
   pe: { fill: "url(#G)", label: "PE" },
+  nis: { fill: "url(#N)", label: "a gap that does not count" },
   open: { fill: "#fff", label: "open, not counted" },
 };
 export function elevSvg(res, zone, axisKey, opt) {
@@ -126,7 +155,7 @@ export function elevSvg(res, zone, axisKey, opt) {
   const e = z && z[axisKey] && z[axisKey].elev;
   if (!e) return "";
   const fs = Math.max(e.W_m, e.H_m * 2) / 55;
-  const L = fs * 11, T = fs * 3.5, Bm = fs * 4.5, R = fs * 2;
+  const L = fs * 11, T = fs * 3.5, Bm = fs * 7, R = fs * 2;
   const VW = L + e.W_m + R, VH = T + e.H_m + Bm;
   const id = "e" + Math.random().toString(36).slice(2, 8);
   const X = (u) => (L + u).toFixed(3), Y = (h) => (T + e.H_m - h).toFixed(3);
@@ -134,10 +163,11 @@ export function elevSvg(res, zone, axisKey, opt) {
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW.toFixed(2)} ${VH.toFixed(2)}" class="sbd-svg"${opt.w ? ` width="${opt.w}" height="${Math.round(opt.w * VH / VW)}"` : ""} font-family="system-ui,sans-serif">`
     + `<defs><pattern id="${id}H" width="${fs * 0.8}" height="${fs * 0.8}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="100%" height="100%" fill="#cbd5e1"/><line x1="0" y1="0" x2="0" y2="${fs * 0.8}" stroke="#334155" stroke-width="${fs / 6}"/></pattern>`
     + `<pattern id="${id}D" width="${fs * 0.7}" height="${fs * 0.7}" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="#dcfce7"/><circle cx="${fs * 0.35}" cy="${fs * 0.35}" r="${fs / 9}" fill="#15803d"/></pattern>`
+    + `<pattern id="${id}N" width="${fs * 0.8}" height="${fs * 0.8}" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="100%" height="100%" fill="#fff"/><line x1="0" y1="0" x2="0" y2="${fs * 0.8}" stroke="#dc2626" stroke-width="${fs / 8}"/></pattern>`
     + `<pattern id="${id}G" width="${fs * 0.8}" height="${fs * 0.8}" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="#dbeafe"/><path d="M0 0H${fs * 0.8}M0 0V${fs * 0.8}" stroke="#1d4ed8" stroke-width="${fs / 10}"/></pattern></defs>`
     + `<rect width="100%" height="100%" fill="#fff"/>`;
   for (const [u0, u1, h0, h1, k] of e.rects) {
-    s += `<rect x="${X(u0)}" y="${Y(h1)}" width="${(u1 - u0).toFixed(3)}" height="${(h1 - h0).toFixed(3)}" fill="${fill(k)}" stroke="${k === "bldg" ? "#475569" : "none"}" stroke-width="${fs / 14}"/>`;
+    s += `<rect x="${X(u0)}" y="${Y(h1)}" width="${(u1 - u0).toFixed(3)}" height="${(h1 - h0).toFixed(3)}" fill="${fill(k)}" stroke="${k === "bldg" ? "#475569" : k === "nis" ? "#dc2626" : "none"}" stroke-width="${fs / 14}"/>`;
   }
   // the counted parts' sizes
   for (const [u0, u1, h0, h1, k] of e.rects) {
@@ -150,11 +180,21 @@ export function elevSvg(res, zone, axisKey, opt) {
   const lev = (h, t) => `<text x="${X(-fs * 0.6)}" y="${(Number(Y(h)) + fs * 0.35).toFixed(2)}" font-size="${fs * 0.9}" text-anchor="end" fill="#0f172a">${t}</text>`;
   s += lev(0, `${f1(e.z0)} m${e.z0 ? "" : " (Level 0)"}`) + lev(e.H_m, `${f1(e.z0 + e.H_m)} m`);
   if (e.exempt_m) s += lev(e.exempt_m, `1/3 H ${f2(e.exempt_m)}`);
+  // the dimensions: each gap at its S value, each shadow at its width on
+  // the near edge - the numbers on the plan - then W, their sum
   const yb = T + e.H_m + fs * 2.2;
-  s += `<line x1="${X(0)}" y1="${yb}" x2="${X(e.W_m)}" y2="${yb}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
-    + `<line x1="${X(0)}" y1="${yb - fs / 2}" x2="${X(0)}" y2="${yb + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/><line x1="${X(e.W_m)}" y1="${yb - fs / 2}" x2="${X(e.W_m)}" y2="${yb + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
-    + `<text x="${X(e.W_m / 2)}" y="${yb - fs * 0.3}" font-size="${fs}" text-anchor="middle" fill="#0f172a">W ${f2(e.W_m)} m</text>`
-    + `<text x="${X(e.W_m / 2)}" y="${yb + fs * 1.4}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569">Projected facade through ${axisKey === "axis1" ? "Projection Plane X" : "Projection Plane Y"} · H ${f2(e.H_m)} m</text>`
+  const tick = (x) => `<line x1="${X(x)}" y1="${yb - fs / 2}" x2="${X(x)}" y2="${yb + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/>`;
+  s += `<line x1="${X(0)}" y1="${yb}" x2="${X(e.W_m)}" y2="${yb}" stroke="#0f172a" stroke-width="${fs / 10}"/>`;
+  for (const it of e.items || []) {
+    const col = it.kind === "gap" ? (it.pass ? "#15803d" : "#b91c1c") : "#334155";
+    s += tick(it.x0) + tick(it.x1)
+      + `<text x="${X((it.x0 + it.x1) / 2)}" y="${yb - fs * 0.35}" font-size="${fs * 0.8}" text-anchor="middle" fill="${col}" stroke="#fff" stroke-width="${fs / 6}" paint-order="stroke">${esc(it.kind === "gap" ? `${it.label} ${f1(it.w_m)}${it.pass ? "" : " ✗"}` : `${it.label} ${f1(it.w_m)}`)}</text>`;
+  }
+  const yw = yb + fs * 2.4;
+  s += `<line x1="${X(0)}" y1="${yw}" x2="${X(e.W_m)}" y2="${yw}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
+    + `<line x1="${X(0)}" y1="${yw - fs / 2}" x2="${X(0)}" y2="${yw + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/><line x1="${X(e.W_m)}" y1="${yw - fs / 2}" x2="${X(e.W_m)}" y2="${yw + fs / 2}" stroke="#0f172a" stroke-width="${fs / 10}"/>`
+    + `<text x="${X(e.W_m / 2)}" y="${yw - fs * 0.3}" font-size="${fs}" text-anchor="middle" fill="#0f172a">W ${f2(e.W_m)} m</text>`
+    + `<text x="${X(e.W_m / 2)}" y="${yw + fs * 1.4}" font-size="${fs * 0.9}" text-anchor="middle" fill="#475569">Deformed elevation on ${axisKey === "axis1" ? "Projection Plane X" : "Projection Plane Y"} · H ${f2(e.H_m)} m</text>`
     + `<text x="${X(0)}" y="${T - fs}" font-size="${fs * 1.1}" fill="#0f172a" font-weight="600">${esc(ZONE_LABEL[zone] || zone)} · P = ${f2(e.P_is)} % IS + ${f2(e.P_pe)} % PE = ${f2(e.P)} %</text>`;
   return s + `</svg>`;
 }
@@ -163,7 +203,10 @@ export function elevSvg(res, zone, axisKey, opt) {
 function elevWorking(e, req) {
   const parts = e.parts.filter((p) => p.kind !== "pe");
   const pes = e.parts.filter((p) => p.kind === "pe");
+  const its = e.items || [];
+  const bad = its.filter((i) => i.kind === "gap" && !i.pass);
   const rows = [
+    ...(its.length ? [["W", its.map((i) => `${f1(i.w_m)} (${i.label})`).join(" + ") + ` = ${f2(e.W_m)} m`]] : []),
     ["Zone area", `W x H = ${f2(e.W_m)} x ${f2(e.H_m)} = ${f1(e.zone_area_m2)} m²`],
     ["IS area", (parts.length ? parts.map((p) => `${f1(p.w_m)} x ${f1(p.h_m)}`).join(" + ") + " = " : "") + `${f1(e.is_area_m2)} m²`],
     ["P by the IS", `${f1(e.is_area_m2)} / ${f1(e.zone_area_m2)} = ${f2(e.P_is)} %` + (req ? ` (IS alone must reach 2/3 x ${f1(req)} = ${f2(req * 2 / 3)} %: ${e.is_min_ok ? "OK" : "NOT OK"})` : "")],
@@ -171,6 +214,7 @@ function elevWorking(e, req) {
   ];
   if (e.pe_area_m2) rows.push(["P by the PE", `${f1(e.pe_used_m2)} / ${f1(e.zone_area_m2)} = ${f2(e.P_pe)} %` + (e.pe_cap_m2 != null ? ` (up to 1/3 x ${f1(req)} = ${f2(req / 3)} %${e.pe_used_m2 < e.pe_area_m2 - 0.01 ? ", the rest not counted" : ", all accountable"})` : "")]);
   rows.push(["P", `${f2(e.P_is)} + ${f2(e.P_pe)} = ${f2(e.P)} %` + (req ? ` (required ${f1(req)} %: ${e.P >= req - 1e-9 && e.is_min_ok !== false ? "OK" : "NOT OK"})` : "")]);
+  if (bad.length) rows.push(["Not counted", bad.map((i) => `${i.label} ${f1(i.w_m)} m (below ${i.label === "S2" ? 15 : 7.5} m${i.label === "blocked" ? ", blocked" : ""})`).join(", ")]);
   if (e.exempt_m) rows.push(["Low zone", `the portion ≤ 1/3 H (${f2(e.exempt_m)} m) is disregarded: not IS, and left out of the footprints and Lp`]);
   return rows;
 }
@@ -202,11 +246,8 @@ export function createSbd(ctx) {
   box.innerHTML = `
     <div id="sbd-src" class="muted sbd-src">Reading ...</div>
     <div class="chk-row sbd-opts">
-      <label class="muted" for="sbd-axis">Axis 1</label>
-      <select id="sbd-axis" title="Projection Plane X: the direction the gaps are measured along">
-        <option value="street">along the street line</option><option value="pca">the site's main direction</option><option value="angle">at an angle ...</option></select>
-      <input id="sbd-ang" type="number" step="1" min="-180" max="180" title="Degrees from the model's X axis" hidden>
-      <button id="sbd-run" class="primary" title="Assess again with these settings">Run</button>
+      <span class="muted sbd-auto" title="Low zone: Plane X along the street (BD sample case). Middle and High: the Plane X angle giving the most P is found. Plane Y: the best angle within 75-105° of X in every zone.">Planes: found automatically</span>
+      <button id="sbd-run" class="primary" title="Assess the masses again">Run</button>
     </div>
     <div class="chk-row"><select id="sbd-saved" title="Saved results" aria-label="Saved results"></select>
       <button id="sbd-save" class="ghost" title="Keep this result (everyone on the project sees it)">Save</button>
@@ -219,7 +260,7 @@ export function createSbd(ctx) {
       <button id="sbd-report" class="ghost" title="A report: the table and a plan of each zone (Print / Save to Folders)">Report</button>
       <button id="sbd-remove" class="ghost danger" title="Remove the masses sent from Revit, this result and the masses' model in the 3D (saved results stay)">Remove ...</button>
     </div>
-    <div class="muted hint">From the building masses: in Revit, <b>LWK > Viewer tools > SBD Export</b>. P, S1/S2/S3 and the air corridors follow the SBD panel's rules, for each zone's own footprints; P is taken on each zone's elevation (IS + PE).</div>`;
+    <div class="muted hint"><a href="#" class="sbd-howto">How to prepare the model ...</a> From the building masses: in Revit, <b>LWK > Viewer tools > SBD Export</b>. P, S1/S2/S3 and the air corridors follow the SBD panel's rules, for each zone's own footprints; P is taken on each zone's elevation (IS + PE).</div>`;
   const $ = (s) => box.querySelector(s);
   const cur = () => (B.view ? B.viewRes : B.res);
 
@@ -236,15 +277,10 @@ export function createSbd(ctx) {
     $("#sbd-src").innerHTML = m
       ? `${m.masses.length} mass(es) from <b>${esc(m.model || "Revit")}</b>, ${esc((m.at || m.uploaded_at || "").replace("T", " ").slice(0, 16))}${m.by ? " · " + esc(m.by) : ""}`
         + `<br>zones from ${f2(m.ground_z)} m${m.ground_source ? ` (${esc(m.ground_source)})` : ""}${(m.streets || []).length ? ` · ${m.streets.length} street(s)` : ""}`
-      : `No masses yet. In Revit: model the buildings as <b>Masses</b>, then <b>LWK > Viewer tools > SBD Export</b>.`;
+      : `No masses yet. In Revit: model the buildings as <b>Masses</b>, then <b>LWK > Viewer tools > SBD Export</b>. <a href="#" class="sbd-howto">How to prepare the model ...</a>`;
     for (const b of box.querySelectorAll("#sbd-run, #sbd-save, #sbd-plan, #sbd-3d, #sbd-issue, #sbd-report")) b.disabled = !r || !r.ok;
     $("#sbd-remove").disabled = !m && !B.res;
     if (!r) { $("#sbd-sum").innerHTML = ""; return; }
-    if (r.options && !B.view) {
-      $("#sbd-axis").value = r.options.axis || "street";
-      $("#sbd-ang").value = r.options.angle_deg || 0;
-      $("#sbd-ang").hidden = $("#sbd-axis").value !== "angle";
-    }
     if (!r.ok) { $("#sbd-sum").innerHTML = `<div class="bad">${(r.warnings || []).map(esc).join("<br>")}</div>`; return; }
     const pz = (a) => (a.P_zone != null ? a.P_zone : a.P);
     const cell = (a) => `<td class="n ${a.pass === false ? "bad" : ""}${a.required_p == null && a.pass == null && r.required_p != null ? " muted" : ""}" title="${a.elev ? `Elevation: IS ${f2(a.elev.P_is)} % + PE ${f2(a.elev.P_pe)} % · on plan IS / W ${f1(a.P)} %` : ""}${a.required_p == null && r.required_p != null ? " - for information (a site under 2 ha is checked on Plane X)" : ""}">${f1(pz(a))}`;
@@ -279,13 +315,19 @@ export function createSbd(ctx) {
     paint();
   }
 
-  $("#sbd-axis").onchange = () => { $("#sbd-ang").hidden = $("#sbd-axis").value !== "angle"; };
+  // the procedure and requirements: the Help, at SBD
+  box.addEventListener("click", (ev) => {
+    const a = ev.target.closest(".sbd-howto");
+    if (!a) return;
+    ev.preventDefault();
+    import("./help.js").then((h) => h.openHelp({ topic: "sbd" }));
+  });
   $("#sbd-run").onclick = async () => {
     if (B.busy) return;
     B.busy = true;
     $("#sbd-run").textContent = "Running ...";
     try {
-      B.res = await api("/api/sbd/run", { method: "POST", body: JSON.stringify({ axis: $("#sbd-axis").value, angle_deg: Number($("#sbd-ang").value) || 0 }) });
+      B.res = await api("/api/sbd/run", { method: "POST", body: JSON.stringify({ axis: "street" }) });
       B.view = "";
       paintSaved();
       paint();
@@ -374,7 +416,7 @@ export function createSbd(ctx) {
       }
       back.querySelector(".sbd-plan").innerHTML = zoneSvg(r, zone, axisKey);
       const planes = z && z.plane_x_deg != null ? `Plane X ${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + f1(z.plane_x_deg) + "° from the street" : "along the street"} · Plane Y ${f1(z.plane_y_deg)}° from X` : "";
-      back.querySelector(".sbd-gaps").innerHTML = ax ? `<div class="sbd-ptot">P = ${f1(ax.P)} %<br><span class="muted">IS ${f2(ax.IS_m)} m / W ${f2(ax.W_m)} m${ax.sweep_deg ? ` · plane side turned ${ax.sweep_deg}°` : ""}</span>${planes ? `<br><span class="muted">${esc(planes)}</span>` : ""}</div>`
+      back.querySelector(".sbd-gaps").innerHTML = ax ? `<div class="sbd-ptot">P = ${f1(ax.P_zone != null ? ax.P_zone : ax.P)} %<br><span class="muted">on the elevation · on plan IS ${f2(ax.IS_m)} m / W ${f2(ax.W_m)} m = ${f1(ax.P)} %${ax.sweep_deg ? ` · plane side turned ${ax.sweep_deg}°` : ""}</span>${planes ? `<br><span class="muted">${esc(planes)}</span>` : ""}</div>`
         + `<table class="sbd-t"><tr><th>Gap</th><th class="n">S m</th><th></th></tr>` + ax.gaps.map((g) => {
           const sd = g.side && ax.sides && ax.sides[g.side];
           const how = sd ? `S1 (${g.side === "left" ? "left" : "right"} side) = A / D = ${f1(sd.area_m2)} m² / ${f2(sd.depth_m)} m = ${f2(sd.avg_m)} m${sd.angle_deg ? `, edge at ${f1(sd.angle_deg)}°` : ""}`
@@ -383,7 +425,11 @@ export function createSbd(ctx) {
           return `<tr><td>${esc(g.type === "FAIL" ? "blocked" : g.type)}</td><td class="n">${f2(gapM(g))}</td><td class="${g.qualifies ? "ok" : "bad"}">${g.qualifies ? "counts" : "no"}${g.threshold_m ? ` <span class="muted">(${g.threshold_m} m)</span>` : ""}${g.encroach_m != null ? ` <span class="bad">${f2(g.encroach_m)} m to the boundary</span>` : ""}</td></tr>`
             + (how ? `<tr class="sbd-how"><td colspan="3">${esc(how)}</td></tr>` : "");
         }).join("") + `</table>`
-          + `<div class="muted sbd-note">P = IS / W x 100 %, IS = the S widths that count (S1, S3 ≥ 7.5 m; S2 ≥ 15 m). Corridors may turn up to 15° and return; each side region's edge follows the outer building corners (≤ 15°) - the panel's rules.</div>` : "";
+          + ((ax.edge || []).length ? `<table class="sbd-t sbd-edge"><tr><th title="Along the site's edge nearest the plane (the street side)">Near edge</th><th class="n" title="Projected on the plane">proj m</th><th class="n" title="Drawn on the elevation: a gap at its S value, a shadow at its projected width">elev m</th></tr>`
+            + ax.edge.map((it) => `<tr><td class="${it.kind === "gap" ? (it.pass ? "ok" : "bad") : ""}">${esc(it.label)}${it.kind === "gap" && it.bend_deg != null ? ` <span class="muted">${f1(Math.abs(it.bend_deg))}°</span>` : ""}</td><td class="n">${f2(it.hi - it.lo)}</td><td class="n">${f2(it.kind === "gap" ? it.s_m : it.hi - it.lo)}</td></tr>`).join("") + `</table>` : "")
+          + ((z.tried || []).length > 1 ? `<table class="sbd-t sbd-tried"><tr><th title="The plane pairs assessed in full; the one giving the most P is used">Planes tried</th><th class="n">P X %</th><th class="n">P Y %</th></tr>`
+            + z.tried.map((t) => `<tr${t.chosen ? ' class="sbd-chosen"' : ""}><td>X ${t.x_deg > 0 ? "+" : ""}${f1(t.x_deg)}° · Y ${f1(t.y_deg)}°${t.chosen ? " ✓" : ""}</td><td class="n">${f1(t.P_x)}</td><td class="n">${f1(t.P_y)}</td></tr>`).join("") + `</table>` : "")
+          + `<div class="muted sbd-note">IS = the S widths that count (S1, S3 ≥ 7.5 m; S2 ≥ 15 m). Corridors may turn any angle up to 15° and return; each side region's edge follows the outer building corners (≤ 15°) - the panel's rules. The near edge's widths are what Plane X sees: a turned corridor makes the shadows beside it wider or narrower.</div>` : "";
     };
     back.addEventListener("click", (ev) => {
       const b = ev.target.closest("button");

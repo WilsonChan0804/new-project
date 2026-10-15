@@ -91,7 +91,7 @@ class Permeability(unittest.TestCase):
         r = engine.run(d)
         low, mid, high = r["zones"]
         self.assertLess(low["P"], mid["P"])
-        self.assertGreaterEqual(min(mid["axis1"]["P"], mid["axis2"]["P"]), 40.0)
+        self.assertGreaterEqual(mid["P"], 40.0)
         self.assertTrue(75 <= mid["plane_y_deg"] <= 105)
         self.assertTrue(high["assessed"])
         self.assertEqual(r["controlling_p"], low["P"])
@@ -254,6 +254,62 @@ class BdSampleCase(unittest.TestCase):
         self.assertAlmostEqual(c["MIDDLE"]["U_m"], 19.0, places=2)              # U_T
         self.assertAlmostEqual(c["MIDDLE"]["Lp_m"], 32.0, places=2)
         self.assertAlmostEqual(c["HIGH"]["Lp_max_m"], 95.0, places=2)
+
+
+class DeformedElevation(unittest.TestCase):
+    """The elevation is laid out from the plan: each gap at its S value,
+    each building group at its width on the near edge (the street side)."""
+
+    @classmethod
+    def setUpClass(cls):
+        # two blocks 14 m apart (S2 < 15 m: not IS); the Low zone keeps
+        # Plane X along the street
+        d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
+             "streets": [{"name": "Main", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]], "width_m": 20}],
+             "masses": [mass("A", box(15, 20, 0, 43, 40, 30)), mass("B", box(57, 20, 0, 85, 40, 30))]}
+        cls.r = engine.run(d)
+        cls.z = {z["zone"]: z for z in cls.r["zones"]}
+
+    def test_failed_s2_is_not_is(self):
+        e = self.z["LOW"]["axis1"]["elev"]
+        s2 = [i for i in e["items"] if i["label"] == "S2"]
+        self.assertTrue(s2 and not s2[0]["pass"])
+        self.assertTrue(any(q[4] == "nis" and abs((q[1] - q[0]) - s2[0]["s_m"]) < 0.01 for q in e["rects"]))
+        # IS = the two side setbacks only, over the zone's height
+        sides = sum(i["w_m"] for i in e["items"] if i["kind"] == "gap" and i["pass"])
+        self.assertAlmostEqual(e["is_area_m2"], sides * (e["H_m"] - e["exempt_m"]), delta=0.5)
+
+    def test_widths_follow_the_plan(self):
+        for zn in ("LOW", "MIDDLE"):
+            for k in ("axis1", "axis2"):
+                ao = self.z[zn][k]
+                e = ao["elev"]
+                for it in e["items"]:
+                    if it["kind"] == "gap":
+                        g = ao["gaps"][it["gap"]]
+                        self.assertAlmostEqual(it["w_m"], g["distance_m"] or g["width_m"], places=2)
+                    else:
+                        self.assertAlmostEqual(it["w_m"], it["hi"] - it["lo"], places=2)
+                self.assertAlmostEqual(e["W_m"], sum(i["w_m"] for i in e["items"]), places=2)
+        names = [i["label"] for i in self.z["LOW"]["axis1"]["edge"] if i["kind"] == "shadow"]
+        self.assertEqual(names, ["B1", "B2"])
+
+    def test_low_zone_along_the_street_others_tried(self):
+        self.assertEqual(self.z["LOW"]["plane_x_deg"], 0.0)
+        self.assertEqual(len(self.z["LOW"]["tried"]), 1)
+        self.assertGreater(len(self.z["MIDDLE"]["tried"]), 1)
+        self.assertEqual(sum(1 for t in self.z["MIDDLE"]["tried"] if t.get("chosen")), 1)
+
+    def test_bands_run_past_the_site(self):
+        ys = [p[1] for p in SITE]
+        for zn in ("LOW", "MIDDLE"):
+            for k in ("axis1", "axis2"):
+                ao = self.z[zn][k]
+                for b in [g["band"] for g in ao["gaps"] if g.get("band")] + [s["band"] for s in ao["sides"].values() if s.get("band")]:
+                    vs = [p[0] * -ao["axis"][1] + p[1] * ao["axis"][0] for p in b]
+                    sv = [p[0] * -ao["axis"][1] + p[1] * ao["axis"][0] for p in SITE]
+                    self.assertLess(min(vs), min(sv) - 10)
+                    self.assertGreater(max(vs), max(sv) + 10)
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ from .geom import FEET_TO_METERS
 from . import addin_engine as A
 from . import footprint as F
 from . import elevation as E
+from . import nearedge as N
 
 P = A.P          # the SBD panel's sbd_permeability (addin/, unchanged)
 
@@ -141,9 +142,22 @@ def _hull(pts):
     return [XYZ(x, y, 0) for x, y in lower[:-1] + upper[:-1]]
 
 
-def _axis_out(r, site_pts):
+def _angle(a, b, period=180.0):
+    """The angle from direction a to direction b (degrees), in
+    (-period / 2, period / 2]: a plane has no sense, so 180 deg is 0."""
+    ax, ay = (a.X, a.Y) if hasattr(a, "X") else a
+    bx, by = (b.X, b.Y) if hasattr(b, "X") else b
+    d = math.degrees(math.atan2(ax * by - ay * bx, ax * bx + ay * by))
+    d = (d + period / 2.0) % period - period / 2.0
+    return period / 2.0 if abs(d + period / 2.0) < 1e-9 else d
+
+
+def _axis_out(r, site_pts, bldgs=None, streets=None):
     """One axis' result in metres, with what the plan draws: each gap's
-    strip, the S1 side regions (Area / Depth) and the S2 corridors."""
+    strip, the S1 side regions (Area / Depth) and the S2 corridors (each
+    with its band, to draw clipped to the site), and the near edge: the
+    gaps and the building groups' shadows along it (nearedge.py).
+    bldgs: [(label, [loops m])] the zone's buildings."""
     ax = r["axis"]
     av = P.orthogonal_axis(ax)
     ref = P.site_centroid(site_pts)
@@ -155,11 +169,15 @@ def _axis_out(r, site_pts):
         rv = ref.X * av.X + ref.Y * av.Y
         return [_xy(q) for q in (a + av * (v_lo - rv), b + av * (v_lo - rv), b + av * (v_hi - rv), a + av * (v_hi - rv))]
 
-    sides = {}
+    site_uv = N._site_uv(site_pts, ax, av)
+    sides, side_band = {}, {}
     for k, sd in (r.get("sides") or {}).items():
         sides[k] = {"avg_m": round(sd.get("avg_width_m", 0.0), 3), "area_m2": round(sd.get("area_m2", 0.0), 2),
                     "depth_m": round(sd.get("D_m", 0.0), 3), "angle_deg": round(sd.get("angle_deg", 0.0), 1),
                     "polygon": [_xy(q) for q in (sd.get("region_polygon") or [])]}
+        side_band[k] = N.side_band(sd, site_uv) if sd.get("inner_uv") else None
+        if side_band[k]:
+            sides[k]["band"] = N.to_xy_m(side_band[k], ax, av)
     gaps = []
     for g in r.get("all_gap_results") or []:
         ms = g.get("measurement") or {}
@@ -173,6 +191,9 @@ def _axis_out(r, site_pts):
         if ms.get("corridor_polygon"):
             e["corridor"] = [_xy(q) for q in ms["corridor_polygon"]]
             e["bend_deg"] = round(ms.get("articulated_deg", 0.0), 1)
+            if getattr(ms["corridor_polygon"], "band", None):
+                e["_band"] = N.corridor_band(ms["corridor_polygon"], site_uv)
+                e["band"] = N.to_xy_m(e["_band"], ax, av)
         if ms.get("encroach_ft") is not None:
             e["encroach_m"] = round(ms["encroach_ft"] * M, 3)
         if ms.get("type") == "S3":
@@ -185,12 +206,38 @@ def _axis_out(r, site_pts):
         s1[0]["side"] = "left"
     if s1 and "right" in sides and s1[-1]["hi_m"] >= max(g["hi_m"] for g in gaps) - 1e-6:
         s1[-1]["side"] = "right"
+    # the near edge: each gap's band (its strip when it has none), walked
+    bands = [g.pop("_band", None) or (side_band.get(g.get("side")) if g.get("side") else None)
+             or N.strip_band(g["lo_m"] * FT, g["hi_m"] * FT, site_uv) for g in gaps]
+    low, gruns, sruns = N.partition(site_pts, bands, ax, av, N.near_side(site_pts, ax, av, streets),
+                                    sum(b - a for a, b in r.get("merged") or []))
+    events = sorted([(a, b, "gap", i) for a, b, i in gruns] + [(a, b, "shadow", None) for a, b in sruns])
+    owner = {}
+    for label, loops in bldgs or []:
+        us = [(p[0] * ax.X + p[1] * ax.Y) * FT for l in loops for p in l]
+        lo, hi = min(us), max(us)
+        best = max(((min(hi, b) - max(lo, a), n) for n, (a, b, kind, i) in enumerate(events) if kind == "shadow"), default=None)
+        if best is not None and best[0] > -1e9:
+            owner.setdefault(best[1], []).append((label, loops))
+    edge = []
+    for n, (a, b, kind, i) in enumerate(events):
+        if kind == "gap":
+            g = gaps[i]
+            t = "blocked" if g["type"] == "FAIL" else "open" if g["type"] == "OPEN" else g["type"]
+            edge.append({"kind": "gap", "label": t, "s_m": g["width_m"] if g["type"] in ("FAIL", "OPEN") or not g["distance_m"] else g["distance_m"],
+                         "pass": g["qualifies"], "gap": i, "lo": round(a * M, 3), "hi": round(b * M, 3), "bend_deg": g.get("bend_deg")})
+        else:
+            mem = owner.get(n, [])
+            edge.append({"kind": "shadow", "label": "+".join(l for l, _ in mem) or "-", "lo": round(a * M, 3), "hi": round(b * M, 3),
+                         "members": [l for _, ls in mem for l in ls]})
+    sv = [q[1] for q in site_uv]
     return {
         "P": round(r["P"], 2), "W_m": round(r["W"] * M, 3), "IS_m": round(r["IS"] * M, 3),
         "sweep_deg": r.get("sweep_angle", 0), "axis": [round(ax.X, 6), round(ax.Y, 6)],
         "site_lo_m": round(r.get("site_lo", 0) * M, 3), "site_hi_m": round(r.get("site_hi", 0) * M, 3),
         "blocked_m": [[round(a * M, 3), round(b * M, 3)] for a, b in r.get("merged") or []],
         "ref": _xy(ref), "gaps": gaps, "sides": sides,
+        "near": {"low": bool(low), "v_m": round((min(sv) if low else max(sv)) * M, 3)}, "edge": edge,
     }
 
 
@@ -402,24 +449,51 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
             zr, text = A.assess(name, site_pts, loops, a, req_p=req_p, tallest_m=tallest)
             log.append("== %s ==" % name)
             log += text.splitlines()
-            z["axis1"] = _axis_out(zr["axis1"], site_pts)
-            z["axis2"] = _axis_out(zr["axis2"], site_pts)
-            z["plane_x_deg"] = round(float(zr.get("plane_x_angle_deg") or 0.0), 1)
-            z["plane_y_deg"] = round(float(zr.get("plane_y_angle_deg") or 90.0), 1)
-            # the elevational projection on each plane: IS and PE as areas
+            # the zone's buildings, named along the street (B1, B2 ...) - the
+            # same names on the plan and the elevations
+            bl = sorted(_buildings(inside), key=lambda ls: sum((p[0] * a.X + p[1] * a.Y) for l in ls for p in l["loop"])
+                        / max(1, sum(len(l["loop"]) for l in ls)))
+            bldgs = [("B%d" % (i + 1), [l["loop"] for l in ls]) for i, ls in enumerate(bl)]
+            z["buildings"] = [{"label": lab, "at": [round(sum(p[0] for l in ls for p in l) / sum(len(l) for l in ls), 2),
+                                                    round(sum(p[1] for l in ls for p in l) / sum(len(l) for l in ls), 2)],
+                               "name": ", ".join(sorted(set(f.get("name") or "" for f in inside if any(f["loop"] is l for l in ls))))}
+                              for lab, ls in bldgs]
             top = z1 if z1 is not None else tallest
-            z["P_plan"] = round(min(zr["axis1"]["P"], zr["axis2"]["P"]), 2)
+            # each plane pair the engine confirmed: its deformed elevations;
+            # the pair giving the most P (as reported) wins
+            tried, best = [], None
+            for c in zr["candidates"]:
+                pack = {}
+                for key, rq in (("axis1", req_x), ("axis2", req_y)):
+                    ao = _axis_out(c[key], site_pts, bldgs, data.get("streets"))
+                    el = None
+                    if top > z0 + 1e-6:
+                        el = E.zone_elevation(data["masses"], g, ao["edge"], z0, top, ao["axis"], rq or req_x, exempt_of[name])
+                    for it in ao["edge"]:
+                        it.pop("members", None)
+                    ao["elev"] = el
+                    ao["P_zone"] = round(el["P"] if el else ao["P"], 2)
+                    ao["required_p"] = rq
+                    pack[key] = ao
+                px, py = pack["axis1"]["P_zone"], pack["axis2"]["P_zone"]
+                score = (min(px, py), px) if req_y is not None else (px, py)
+                x_deg = _angle(a, pack["axis1"]["axis"])
+                y_deg = abs(_angle(pack["axis1"]["axis"], pack["axis2"]["axis"], 180.0))
+                tried.append({"x_deg": round(x_deg, 1), "y_deg": round(y_deg, 1), "P_x": px, "P_y": py})
+                if best is None or score > best[0]:
+                    best = (score, pack, x_deg, y_deg, len(tried) - 1)
+            _, pack, x_deg, y_deg, bi = best
+            tried[bi]["chosen"] = True
+            z["tried"] = tried
+            z["axis1"], z["axis2"] = pack["axis1"], pack["axis2"]
+            z["plane_x_deg"] = round(x_deg, 1)
+            z["plane_y_deg"] = round(y_deg, 1)
+            z["P_plan"] = round(min(z["axis1"]["P"], z["axis2"]["P"]), 2)
             ps = []
             for key, rq in (("axis1", req_x), ("axis2", req_y)):
                 ao = z[key]
-                el = None
-                if top > z0 + 1e-6:
-                    el = E.zone_elevation(data["masses"], g, data["site"], ao["axis"], ao["site_lo_m"], ao["site_hi_m"], z0, top,
-                                          [(gp["lo_m"], gp["hi_m"]) for gp in ao["gaps"] if gp["qualifies"]], rq or req_x, exempt_of[name])
-                ao["elev"] = el
-                pv = el["P"] if el else ao["P"]
-                ao["P_zone"] = round(pv, 2)
-                ao["required_p"] = rq
+                el = ao["elev"]
+                pv = ao["P_zone"]
                 if rq is not None:
                     ps.append(pv)
                     ok = pv >= rq - 1e-9 and (not el or el["is_min_ok"] is not False)
