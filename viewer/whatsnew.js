@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-09", date: "15 Oct 2026",
+    items: [
+      "SBD **Design Requirement (1) - Lp of building(s) abutting a street**, drawn as GB081: a building counts when any part is within 30 m of the street's centreline; its canyon runs over its whole projected length (STREET CANYON AREA, ACTUAL Lp, LENGTH, width), U = Area / Length, the smaller U of two streets controls, Max Lp = 5U - with the calculation on the drawing's side and a page per zone in the report (or why it does not apply).",
+      "SBD drawings: gaps numbered **S1, S2, S3 ...** along the plane, each side region's **A1 / L1**, angle symbols on every turned edge and between Axis 1 and 2, a scale bar, **℄** with the street's name (the Floor's type name), the elevation's building profile dimensioned with heights, IS numbered, levels with the model's levels, and every number to 3 decimals. The report shows the calculation under each plan.",
+    ],
+  },
+  {
     version: "2026-11-08", date: "15 Oct 2026",
     items: [
       "SBD **Street canyon** check (Design Requirement 1): **Plan ... > Street canyon** draws each building's canyon, U and Lp along the street, zone by zone, with the working (U = area / length, Lp ≤ 5U); the summary gives its own PASS / FAIL, and the report and issues include it.",

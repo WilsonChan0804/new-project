@@ -163,6 +163,38 @@ class Case1(unittest.TestCase):
         self.assertAlmostEqual(b["Lp_m"], 30.0, places=0)
         self.assertTrue(b["pass"])
 
+    def test_any_part_within_30m_counts_the_whole_length(self):
+        # an L-shaped block: one wing 25 m from the centreline, the rest 40 m
+        # away - it abuts the street, over its whole projected span (60 m)
+        d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
+             "streets": [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}],
+             "masses": [mass("A", box(10, 15, 0, 25, 45, 30), box(25, 30, 0, 70, 45, 30))]}
+        b = engine.run(d)["case1"][0]["buildings"][0]
+        self.assertAlmostEqual(b["Lp_m"], 60.0, places=2)
+        self.assertAlmostEqual(b["L_m"], 60.0, delta=0.6)
+        # U: 15 m at 35 m wide, 45 m at 50 m wide
+        self.assertAlmostEqual(b["U_m"], (15 * 35 + 45 * 50) / 60.0, delta=0.3)
+
+    def test_two_streets_the_smaller_u_controls(self):
+        d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
+             "streets": [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]},
+                         {"name": "Side St", "centreline": [[105, -10], [105, 70]], "opposite": [[110, -10], [110, 70]]}],
+             "masses": [mass("A", box(60, 15, 0, 95, 45, 30))]}
+        b = engine.run(d)["case1"][0]["buildings"][0]
+        us = {r["street"]: r["U_m"] for r in b["streets"]}
+        self.assertEqual(set(us), {"Main St", "Side St"})
+        self.assertEqual(b["ctrl_street"], min(us, key=us.get))
+        self.assertAlmostEqual(b["Lp_max_m"], 5 * min(us.values()), places=2)
+        self.assertAlmostEqual(b["Lp_m"], 35.0, places=2)     # the longer projection (on Main St)
+
+    def test_too_far_is_a_note(self):
+        d = {"site": SITE, "street_axis": [[0, 0], [100, 0]],
+             "streets": [{"name": "Main St", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]]}],
+             "masses": [mass("A", box(10, 25, 0, 40, 45, 30))]}
+        c = engine.run(d)["case1"][0]
+        self.assertEqual(c["buildings"], [])
+        self.assertTrue(any("Main St" in n and "not applicable" in n and "35.000" in n for n in c["notes"]))
+
 
 def _addin():
     """The add-in's sbd_export (its street helpers need no Revit)."""

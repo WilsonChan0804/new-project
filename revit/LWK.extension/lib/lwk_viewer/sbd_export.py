@@ -341,13 +341,7 @@ def street_floors(doc, word="street"):
                 if len(pts) >= 3 and (best is None or abs(loop_area(pts)) > abs(loop_area(best[0]))):
                     best = (pts, zs)
             if best:
-                name = tn
-                try:
-                    mark = fl.LookupParameter("Mark")
-                    if mark and mark.AsString():
-                        name = mark.AsString()
-                except Exception:
-                    pass
+                name = tn          # the street's name: the Floor's type name (e.g. "Yeung Fan Lane North Street")
                 out.append({"id": str(fl.Id.IntegerValue if hasattr(fl.Id, "IntegerValue") else fl.Id.Value),
                             "name": name, "loop": best[0], "z": sum(best[1]) / len(best[1]),
                             "area": abs(loop_area(best[0]))})

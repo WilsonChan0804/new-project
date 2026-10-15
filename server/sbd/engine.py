@@ -176,6 +176,8 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
                     "depth_m": round(sd.get("D_m", 0.0), 3), "angle_deg": round(sd.get("angle_deg", 0.0), 1),
                     "polygon": [_xy(q) for q in (sd.get("region_polygon") or [])]}
         side_band[k] = N.side_band(sd, site_uv) if sd.get("inner_uv") else None
+        if sd.get("inner_uv"):
+            sides[k]["edge"] = N.to_xy_m(A._dp(sorted(sd["inner_uv"], key=lambda q: q[1])), ax, av)
         if side_band[k]:
             sides[k]["band"] = N.to_xy_m(side_band[k], ax, av)
     gaps = []
@@ -241,76 +243,133 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
     }
 
 
-def case1(data, zone_inside):
-    """Design Requirement (1), street canyon (Fig B7), per zone: U = canyon
-    area / its length along the centreline, Lp_max = 5 U. Stations every
-    0.5 m along the centreline: the canyon width there runs perpendicular to
-    it from the building's facade (within 30 m of the centreline) to the
-    opposite site boundary. Lp is the building's facade projected on the
-    street (the BD sample: podium 80 m, tower 32 m); in the Low zone the
+def _named(inside, a):
+    """The zone's buildings (footprints whose boxes touch), named B1, B2 ...
+    in order along the street: [(label, [footprints])]."""
+    bl = sorted(_buildings(inside), key=lambda ls: sum((p[0] * a.X + p[1] * a.Y) for l in ls for p in l["loop"])
+                / max(1, sum(len(l["loop"]) for l in ls)))
+    return [("B%d" % (i + 1), ls) for i, ls in enumerate(bl)]
+
+
+def _dist_to_polyline(p, pl):
+    best = None
+    for i in range(len(pl) - 1):
+        ax, ay = pl[i]
+        bx, by = pl[i + 1]
+        dx, dy = bx - ax, by - ay
+        L2 = dx * dx + dy * dy
+        t = 0.0 if L2 < 1e-12 else max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / L2))
+        d = math.hypot(p[0] - ax - t * dx, p[1] - ay - t * dy)
+        best = d if best is None else min(best, d)
+    return best if best is not None else 1e9
+
+
+def _nearest(loops, cl):
+    """The nearest a building comes to the centreline (its outline sampled
+    every metre)."""
+    best = 1e9
+    for l in loops:
+        pts = l["loop"]
+        for i in range(len(pts)):
+            p, q = pts[i], pts[(i + 1) % len(pts)]
+            n = max(1, int(math.hypot(q[0] - p[0], q[1] - p[1])))
+            for k in range(n + 1):
+                t = k / float(n)
+                best = min(best, _dist_to_polyline((p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t), cl))
+    return best
+
+
+def case1(data, zone_inside, a=None):
+    """Design Requirement (1), Lp of building(s) abutting a street (Fig B7,
+    GB081), per zone. A building (or group) abuts a street when ANY part of
+    it is within 30 m of the street's centreline; then over its whole
+    projected span on that street, stations every 0.5 m along the
+    centreline measure the canyon from its facade to the opposite site
+    boundary: Length = the span, U = canyon area / Length. With several
+    streets the controlling U is the smallest; Lp (the facade projected on
+    the street, the longest) must not exceed 5 x U. In the Low zone the
     portion <= 1/3 H is left out (zone_inside holds its footprints above it).
-    zone_inside: [(zone, [footprints])]."""
+    zone_inside: [(zone, [footprints])] -> [{zone, buildings, notes}]."""
     out = []
-    if not data.get("streets"):
+    streets = [s for s in data.get("streets") or [] if len(s.get("centreline") or []) >= 2 and len(s.get("opposite") or []) >= 2]
+    if not streets:
         return out
+    a = a or XYZ(1, 0, 0)
     sx, sy = _centroid(data["site"])
     for zname, inside in zone_inside:
         if not inside:
             continue
-        groups = _buildings(inside)
-        for st in data["streets"]:
-            cl = st.get("centreline") or []
-            opp = st.get("opposite") or []
-            if len(cl) < 2 or len(opp) < 2:
-                continue
-            dx, dy = cl[-1][0] - cl[0][0], cl[-1][1] - cl[0][1]
-            dl = math.hypot(dx, dy) or 1.0
-            dx, dy = dx / dl, dy / dl
-            per = []
-            for gi, loops in enumerate(groups):
-                width_sum, n, near = 0.0, 0, []
-                runs, cur, last = [], None, None      # the canyon, drawn: facade and opposite points per run
-                nside = None
+        per, notes = [], []
+        named = _named(inside, a)
+        near_of = {}
+        for label, loops in named:
+            rows = []
+            for si, st in enumerate(streets):
+                name = st.get("name") or "Street %d" % (si + 1)
+                cl, opp = st["centreline"], st["opposite"]
+                near = _nearest(loops, cl)
+                near_of[(si, label)] = near
+                if near > CASE1_REACH_M:
+                    continue
+                dx, dy = cl[-1][0] - cl[0][0], cl[-1][1] - cl[0][1]
+                dl = math.hypot(dx, dy) or 1.0
+                dx, dy = dx / dl, dy / dl
+                pts = [p for l in loops for p in l["loop"]]
+                us = [p[0] * dx + p[1] * dy for p in pts]
+                u0, u1 = min(us), max(us)
+                width_sum, n, runs, cur, last, nside, mid = 0.0, 0, [], None, None, None, []
                 for k, (px, py, nx, ny) in enumerate(_stations(cl, CASE1_STEP_M)):
-                    # the subject side: towards the site
-                    if (sx - px) * nx + (sy - py) * ny < 0:
+                    if not (u0 - 1e-9 <= px * dx + py * dy <= u1 + 1e-9):
+                        continue
+                    if (sx - px) * nx + (sy - py) * ny < 0:          # the subject side: towards the site
                         nx, ny = -nx, -ny
                     hits = [h for h in (_ray_hit(px, py, nx, ny, l) for l in loops) if h is not None]
-                    df = min(hits) if hits else None
-                    if df is None or df > CASE1_REACH_M:
-                        continue
                     do = _ray_hit_line(px, py, -nx, -ny, opp)
-                    if do is None:
+                    if not hits or do is None:
                         continue
+                    df = min(hits)
                     width_sum += df + do
-                    near.append(df)
                     n += 1
                     nside = nside or (nx, ny)
                     if cur is None or last != k - 1:
                         cur = ([], [])
                         runs.append(cur)
-                    cur[0].append([round(px + nx * df, 3), round(py + ny * df, 3)])
-                    cur[1].append([round(px - nx * do, 3), round(py - ny * do, 3)])
+                    f = [round(px + nx * df, 3), round(py + ny * df, 3)]
+                    o = [round(px - nx * do, 3), round(py - ny * do, 3)]
+                    cur[0].append(f)
+                    cur[1].append(o)
+                    mid.append((f, o, df + do))
                     last = k
                 if not n:
                     continue
                 L = n * CASE1_STEP_M
                 U = width_sum * CASE1_STEP_M / L
-                pts = [p for l in loops for p in l["loop"]]
-                us = [p[0] * dx + p[1] * dy for p in pts]
-                lp = max(us) - min(us)
-                # Lp drawn along the street, just in front of the building
                 nx0, ny0 = nside
-                w = min(p[0] * nx0 + p[1] * ny0 for p in pts) - 2.0
-                lp_line = [[round(u * dx + w * nx0, 3), round(u * dy + w * ny0, 3)] for u in (min(us), max(us))]
-                per.append({"building": gi + 1, "name": loops[0].get("name", ""), "U_m": round(U, 3), "L_m": round(L, 2),
-                            "area_m2": round(width_sum * CASE1_STEP_M, 1), "setback_m": round(min(near) - (st.get("width_m") or 0) / 2.0, 2)
-                            if st.get("width_m") else None,
-                            "Lp_m": round(lp, 2), "Lp_max_m": round(5 * U, 2), "pass": lp <= 5 * U + 1e-6,
-                            "canyon": [f + list(reversed(o)) for f, o in runs if len(f) >= 2],
-                            "facade": [f for f, o in runs if len(f) >= 2], "lp_line": lp_line})
-            if per:
-                out.append({"zone": zname, "street": st.get("name") or "Street %d" % (data["streets"].index(st) + 1), "buildings": per})
+                w_far = max(p[0] * nx0 + p[1] * ny0 for p in pts) + 3.0      # beyond the building: Actual Lp
+                w_opp = min(min(q[0] * nx0 + q[1] * ny0 for q in r[1]) for r in runs) - 3.0   # beyond the opposite boundary: Length
+                line = lambda w: [[round(u * dx + w * nx0, 3), round(u * dy + w * ny0, 3)] for u in (u0, u1)]
+                f, o, wd = mid[len(mid) // 4]          # a typical width, clear of the area's label
+                rows.append({"street": name, "U_m": round(U, 3), "area_m2": round(width_sum * CASE1_STEP_M, 3), "L_m": round(L, 3),
+                             "Lp_m": round(u1 - u0, 3), "nearest_m": round(near, 3),
+                             "setback_m": round(near - (st.get("width_m") or 0) / 2.0, 3) if st.get("width_m") else None,
+                             "canyon": [r[0] + list(reversed(r[1])) for r in runs if len(r[0]) >= 2],
+                             "facade": [r[0] for r in runs if len(r[0]) >= 2],
+                             "lp_line": line(w_far), "len_line": line(w_opp), "width_dim": [f, o, round(wd, 3)]})
+            if not rows:
+                continue
+            ctrl = min(rows, key=lambda r: r["U_m"])
+            lp = max(r["Lp_m"] for r in rows)
+            per.append(dict(ctrl, building=label, name=", ".join(sorted(set(l.get("name") or "" for l in loops))),
+                            streets=rows, ctrl_street=ctrl["street"], Lp_m=round(lp, 3), Lp_max_m=round(5 * ctrl["U_m"], 3),
+                            **{"pass": lp <= 5 * ctrl["U_m"] + 1e-6}))
+        for si, st in enumerate(streets):
+            name = st.get("name") or "Street %d" % (si + 1)
+            if not any(r["street"] == name for b in per for r in b["streets"]):
+                d = min([near_of.get((si, lab), 1e9) for lab, _ in named] or [1e9])
+                notes.append("%s: no building within %.0f m of the centreline (nearest %.3f m) - Design Requirement (1) not applicable"
+                             % (name, CASE1_REACH_M, d))
+        if per or notes:
+            out.append({"zone": zname, "buildings": per, "notes": notes})
     return out
 
 
@@ -467,9 +526,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
             log += text.splitlines()
             # the zone's buildings, named along the street (B1, B2 ...) - the
             # same names on the plan and the elevations
-            bl = sorted(_buildings(inside), key=lambda ls: sum((p[0] * a.X + p[1] * a.Y) for l in ls for p in l["loop"])
-                        / max(1, sum(len(l["loop"]) for l in ls)))
-            bldgs = [("B%d" % (i + 1), [l["loop"] for l in ls]) for i, ls in enumerate(bl)]
+            bldgs = [(lab, [l["loop"] for l in ls]) for lab, ls in _named(inside, a)]
             z["buildings"] = [{"label": lab, "at": [round(sum(p[0] for l in ls for p in l) / sum(len(l) for l in ls), 2),
                                                     round(sum(p[1] for l in ls for p in l) / sum(len(l) for l in ls), 2)],
                                "name": ", ".join(sorted(set(f.get("name") or "" for f in inside if any(f["loop"] is l for l in ls))))}
@@ -523,7 +580,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         out_zones.append(z)
     req_old = A.required_p(site_area, lp["addin_m"], tallest)
     ctrl = min(all_p) if all_p else None
-    c1 = case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp])
+    c1 = case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp], a)
     return {
         "ok": True, "version": 2, "warnings": warnings, "log": log[-400:], "heights": heights, "tallest_m": tallest,
         "axis": {"source": axis_src, "axis1": [round(a.X, 6), round(a.Y, 6)], "axis2": [round(b.X, 6), round(b.Y, 6)]},
@@ -532,7 +589,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         "lp": lp, "required_p": req_x, "required_p_y": req_y, "required_p_addin": req_old, "fails": fails,
         "pass": None if ctrl is None or req_x is None else not fails,
         "case1": c1,
-        "case1_pass": None if not c1 else all(b["pass"] for c in c1 for b in c["buildings"]),
+        "case1_pass": None if not any(c["buildings"] for c in c1) else all(b["pass"] for c in c1 for b in c["buildings"]),
         "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
                      "outline": s.get("outline") or []} for s in data.get("streets") or []],
         "ground_z": data.get("ground_z"), "ground_source": data.get("ground_source") or "",
