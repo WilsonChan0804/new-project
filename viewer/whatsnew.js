@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-08", date: "15 Oct 2026",
+    items: [
+      "SBD **Street canyon** check (Design Requirement 1): **Plan ... > Street canyon** draws each building's canyon, U and Lp along the street, zone by zone, with the working (U = area / length, Lp ≤ 5U); the summary gives its own PASS / FAIL, and the report and issues include it.",
+      "SBD drawings **zoom**: the wheel or a pinch zooms, a drag pans, + / - / Fit (or double-click) at the bottom right - on the plan, the elevations and the street canyon.",
+    ],
+  },
+  {
     version: "2026-11-07", date: "15 Oct 2026",
     items: [
       "**Help** on every page: the **?** beside the search (or **F1**, or Help in your profile menu) opens the user manual inside the viewer - search it, browse the contents, in English or 粵語. It opens at the page you are on, and is updated with the manual at each release.",

@@ -269,7 +269,9 @@ def case1(data, zone_inside):
             per = []
             for gi, loops in enumerate(groups):
                 width_sum, n, near = 0.0, 0, []
-                for (px, py, nx, ny) in _stations(cl, CASE1_STEP_M):
+                runs, cur, last = [], None, None      # the canyon, drawn: facade and opposite points per run
+                nside = None
+                for k, (px, py, nx, ny) in enumerate(_stations(cl, CASE1_STEP_M)):
                     # the subject side: towards the site
                     if (sx - px) * nx + (sy - py) * ny < 0:
                         nx, ny = -nx, -ny
@@ -283,16 +285,30 @@ def case1(data, zone_inside):
                     width_sum += df + do
                     near.append(df)
                     n += 1
+                    nside = nside or (nx, ny)
+                    if cur is None or last != k - 1:
+                        cur = ([], [])
+                        runs.append(cur)
+                    cur[0].append([round(px + nx * df, 3), round(py + ny * df, 3)])
+                    cur[1].append([round(px - nx * do, 3), round(py - ny * do, 3)])
+                    last = k
                 if not n:
                     continue
                 L = n * CASE1_STEP_M
                 U = width_sum * CASE1_STEP_M / L
-                us = [p[0] * dx + p[1] * dy for l in loops for p in l["loop"]]
+                pts = [p for l in loops for p in l["loop"]]
+                us = [p[0] * dx + p[1] * dy for p in pts]
                 lp = max(us) - min(us)
+                # Lp drawn along the street, just in front of the building
+                nx0, ny0 = nside
+                w = min(p[0] * nx0 + p[1] * ny0 for p in pts) - 2.0
+                lp_line = [[round(u * dx + w * nx0, 3), round(u * dy + w * ny0, 3)] for u in (min(us), max(us))]
                 per.append({"building": gi + 1, "name": loops[0].get("name", ""), "U_m": round(U, 3), "L_m": round(L, 2),
                             "area_m2": round(width_sum * CASE1_STEP_M, 1), "setback_m": round(min(near) - (st.get("width_m") or 0) / 2.0, 2)
                             if st.get("width_m") else None,
-                            "Lp_m": round(lp, 2), "Lp_max_m": round(5 * U, 2), "pass": lp <= 5 * U + 1e-6})
+                            "Lp_m": round(lp, 2), "Lp_max_m": round(5 * U, 2), "pass": lp <= 5 * U + 1e-6,
+                            "canyon": [f + list(reversed(o)) for f, o in runs if len(f) >= 2],
+                            "facade": [f for f, o in runs if len(f) >= 2], "lp_line": lp_line})
             if per:
                 out.append({"zone": zname, "street": st.get("name") or "Street %d" % (data["streets"].index(st) + 1), "buildings": per})
     return out
@@ -507,6 +523,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         out_zones.append(z)
     req_old = A.required_p(site_area, lp["addin_m"], tallest)
     ctrl = min(all_p) if all_p else None
+    c1 = case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp])
     return {
         "ok": True, "version": 2, "warnings": warnings, "log": log[-400:], "heights": heights, "tallest_m": tallest,
         "axis": {"source": axis_src, "axis1": [round(a.X, 6), round(a.Y, 6)], "axis2": [round(b.X, 6), round(b.Y, 6)]},
@@ -514,7 +531,8 @@ def run(data, axis="street", angle_deg=0.0, zones=None):
         "zones": out_zones, "controlling_p": None if ctrl is None else round(ctrl, 2),
         "lp": lp, "required_p": req_x, "required_p_y": req_y, "required_p_addin": req_old, "fails": fails,
         "pass": None if ctrl is None or req_x is None else not fails,
-        "case1": case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp]),
+        "case1": c1,
+        "case1_pass": None if not c1 else all(b["pass"] for c in c1 for b in c["buildings"]),
         "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
                      "outline": s.get("outline") or []} for s in data.get("streets") or []],
         "ground_z": data.get("ground_z"), "ground_source": data.get("ground_source") or "",

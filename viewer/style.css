@@ -2437,3 +2437,7 @@ header .flr-lab { white-space: nowrap; }
 .sbd-edge td, .sbd-tried td { font-size: 11px; }
 .sbd-chosen td { font-weight: 700; }
 #lwk-help-btn { display: inline-flex; align-items: center; }
+.sbd-plan { position: relative; overflow: hidden; }
+.sbd-zoom { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 4px; }
+.sbd-zoom button { min-width: 30px; padding: 3px 8px; background: var(--panel); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.sbd-verdict small { font-weight: 400; }

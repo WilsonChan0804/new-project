@@ -254,6 +254,11 @@ class BdSampleCase(unittest.TestCase):
         self.assertAlmostEqual(c["MIDDLE"]["U_m"], 19.0, places=2)              # U_T
         self.assertAlmostEqual(c["MIDDLE"]["Lp_m"], 32.0, places=2)
         self.assertAlmostEqual(c["HIGH"]["Lp_max_m"], 95.0, places=2)
+        # the canyon drawn is the canyon measured: its area = U x L
+        low = c["LOW"]
+        self.assertAlmostEqual(sum(abs(footprint.area(p)) for p in low["canyon"]), low["area_m2"], delta=low["area_m2"] * 0.02)
+        self.assertAlmostEqual(abs(low["lp_line"][1][0] - low["lp_line"][0][0]), 65.0, places=2)
+        self.assertTrue(self.r["case1_pass"])
 
 
 class DeformedElevation(unittest.TestCase):

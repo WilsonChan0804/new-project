@@ -131,6 +131,34 @@ export function zoneSvg(res, zone, axisKey, opt) {
       + `<defs><marker id="${id}a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f28022"/></marker></defs>`
       + `<text x="${(e[0] - x0).toFixed(2)}" y="${(y1 - e[1] - fs * 0.6).toFixed(2)}" font-size="${fs}" fill="#c2410c" text-anchor="middle" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">${axisKey === "axis1" ? "Axis 1" : "Axis 2"}${ax.sweep_deg ? ` (${ax.sweep_deg > 0 ? "+" : ""}${ax.sweep_deg}°)` : ""}</text>`;
   }
+  // Design Requirement (1): the street canyon of each building facing a
+  // street in this zone, its facade, and Lp along the street
+  if (opt.canyon) {
+    for (const c of (res.case1 || []).filter((x) => x.zone === zone)) {
+      for (const b of c.buildings) {
+        const col = b.pass ? "#2563eb" : "#dc2626";
+        for (const pg of b.canyon || []) s += `<polygon points="${poly(pg)}" fill="${col}" fill-opacity=".18" stroke="${col}" stroke-width="${fs / 12}"/>`;
+        for (const f of b.facade || []) s += `<polyline points="${poly(f)}" fill="none" stroke="${col}" stroke-width="${fs / 4}"/>`;
+        const pg = (b.canyon || [])[0];
+        if (pg) {
+          const ct = pg.reduce((m, p) => [m[0] + p[0] / pg.length, m[1] + p[1] / pg.length], [0, 0]);
+          s += `<text x="${(ct[0] - x0).toFixed(2)}" y="${(y1 - ct[1]).toFixed(2)}" font-size="${fs}" text-anchor="middle" fill="${col}" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">U ${f1(b.U_m)} m</text>`;
+        }
+        if (b.lp_line) {
+          const [a, e] = b.lp_line.map((p) => [p[0] - x0, y1 - p[1]]);
+          const L = Math.hypot(e[0] - a[0], e[1] - a[1]) || 1;
+          const tx = -(e[1] - a[1]) / L * fs * 0.5, ty = (e[0] - a[0]) / L * fs * 0.5;
+          let deg = Math.atan2(e[1] - a[1], e[0] - a[0]) * 180 / Math.PI;
+          if (deg > 90) deg -= 180;
+          if (deg < -90) deg += 180;
+          const m = [(a[0] + e[0]) / 2 - tx * 1.8, (a[1] + e[1]) / 2 - ty * 1.8];
+          s += `<g class="sbd-lpdim"><line x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${e[0].toFixed(2)}" y2="${e[1].toFixed(2)}" stroke="${col}" stroke-width="${fs / 8}"/>`
+            + [a, e].map((p) => `<line x1="${(p[0] - tx).toFixed(2)}" y1="${(p[1] - ty).toFixed(2)}" x2="${(p[0] + tx).toFixed(2)}" y2="${(p[1] + ty).toFixed(2)}" stroke="${col}" stroke-width="${fs / 8}"/>`).join("")
+            + `<text x="${m[0].toFixed(2)}" y="${m[1].toFixed(2)}" font-size="${fs * 0.85}" text-anchor="middle" dominant-baseline="middle" fill="${col}" transform="rotate(${deg.toFixed(2)} ${m[0].toFixed(2)} ${m[1].toFixed(2)})" stroke="#fff" stroke-width="${fs / 5}" paint-order="stroke">Lp ${f1(b.Lp_m)} ${b.pass ? "≤" : ">"} 5U ${f1(b.Lp_max_m)}</text></g>`;
+        }
+      }
+    }
+  }
   // a 10 m scale bar
   s += `<g><line x1="${fs}" y1="${H - fs}" x2="${fs + 10}" y2="${H - fs}" stroke="#0f172a" stroke-width="${fs / 5}"/><text x="${fs + 5}" y="${H - fs * 1.4}" font-size="${fs * 0.8}" text-anchor="middle">10 m</text></g>`;
   return s + `</svg>`;
@@ -219,6 +247,67 @@ function elevWorking(e, req) {
   return rows;
 }
 
+/* Zoom and pan a drawing: the wheel (or a pinch) zooms at the pointer,
+ * a drag pans, a double-click (or Fit) shows it all; + and - buttons. */
+function zoomable(host) {
+  const svg = host && host.querySelector("svg");
+  if (!svg || !svg.viewBox || !svg.viewBox.baseVal) return;
+  const b = svg.viewBox.baseVal;
+  const base = [b.x, b.y, b.width, b.height];
+  let v = base.slice();
+  const set = () => svg.setAttribute("viewBox", v.map((n) => n.toFixed(3)).join(" "));
+  const at = (cx, cy) => {
+    const r = svg.getBoundingClientRect();
+    const k = Math.min(r.width / v[2], r.height / v[3]) || 1;
+    return [v[0] + (cx - (r.left + (r.width - v[2] * k) / 2)) / k, v[1] + (cy - (r.top + (r.height - v[3] * k) / 2)) / k, k];
+  };
+  const zoom = (f, cx, cy) => {
+    f = Math.max(base[2] / 40 / v[2], Math.min(base[2] * 2 / v[2], f));
+    const [x, y] = at(cx, cy);
+    v = [x - (x - v[0]) * f, y - (y - v[1]) * f, v[2] * f, v[3] * f];
+    set();
+  };
+  const mid = () => { const r = svg.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  svg.style.touchAction = "none";
+  svg.style.cursor = "grab";
+  svg.addEventListener("wheel", (ev) => { ev.preventDefault(); zoom(Math.pow(1.0015, ev.deltaY), ev.clientX, ev.clientY); }, { passive: false });
+  const pts = new Map();
+  let pinch = 0;
+  svg.addEventListener("pointerdown", (ev) => { pts.set(ev.pointerId, [ev.clientX, ev.clientY]); svg.setPointerCapture(ev.pointerId); svg.style.cursor = "grabbing"; });
+  svg.addEventListener("pointermove", (ev) => {
+    const old = pts.get(ev.pointerId);
+    if (!old) return;
+    if (pts.size === 1) {
+      const k = at(ev.clientX, ev.clientY)[2];
+      v[0] -= (ev.clientX - old[0]) / k;
+      v[1] -= (ev.clientY - old[1]) / k;
+      set();
+    }
+    pts.set(ev.pointerId, [ev.clientX, ev.clientY]);
+    if (pts.size === 2) {
+      const [p, q] = [...pts.values()];
+      const d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+      if (pinch) zoom(pinch / d, (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+      pinch = d;
+    }
+  });
+  const up = (ev) => { pts.delete(ev.pointerId); pinch = 0; if (!pts.size) svg.style.cursor = "grab"; };
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", up);
+  svg.addEventListener("dblclick", () => { v = base.slice(); set(); });
+  host.querySelector(".sbd-zoom")?.remove();
+  const bar = document.createElement("div");
+  bar.className = "sbd-zoom";
+  bar.innerHTML = `<button class="ghost" data-zm="in" title="Zoom in (or the wheel)">+</button><button class="ghost" data-zm="out" title="Zoom out">&minus;</button><button class="ghost" data-zm="fit" title="Show it all (or double-click)">Fit</button>`;
+  bar.addEventListener("click", (ev) => {
+    const k = ev.target.closest("[data-zm]");
+    if (!k) return;
+    ev.stopPropagation();
+    if (k.dataset.zm === "fit") { v = base.slice(); set(); } else zoom(k.dataset.zm === "in" ? 1 / 1.5 : 1.5, ...mid());
+  });
+  host.appendChild(bar);
+}
+
 /* An SVG as a PNG data URL (for the report). */
 function svgPng(svg, w) {
   return new Promise((resolve) => {
@@ -290,7 +379,9 @@ export function createSbd(ctx) {
     const ok = r.pass;
     $("#sbd-sum").innerHTML = `
       <div class="sbd-verdict ${ok == null ? "" : ok ? "ok" : "bad"}">P = <b>${f1(r.controlling_p)} %</b>${r.required_p != null ? ` · required ${f1(r.required_p)} %${r.required_p_y != null ? ` (Plane Y ${f1(r.required_p_y)} %)` : ""}` : " · no P required (Table 1)"}`
-        + `${ok == null ? "" : ok ? " · <b>PASS</b>" : " · <b>FAIL</b>"}</div>
+        + `${ok == null ? "" : ok ? " · <b>PASS</b>" : " · <b>FAIL</b>"}<small class="muted"> (2) permeability</small></div>`
+      + (r.case1_pass != null ? `<div class="sbd-verdict ${r.case1_pass ? "ok" : "bad"}" title="Design Requirement (1): each building's Lp along the street ≤ 5 x the canyon's U, in each zone">Street canyon: Lp ≤ 5U${r.case1_pass ? " · <b>PASS</b>" : ` · <b>FAIL</b> (${r.case1.flatMap((c) => c.buildings.filter((b) => !b.pass).map((b) => `${c.zone} ${b.name || b.building}`)).join(", ")})`}<small class="muted"> (1) street canyon</small></div>` : "")
+      + `
       <table class="sbd-t"><tr><th>Zone</th><th class="n" title="Projection Plane X: (IS + PE) / (W x H) on the zone's elevation; its angle from the street small">P X %</th><th class="n" title="Projection Plane Y, 75-105° from X">P Y %</th><th class="n" title="Gaps that count / all gaps on Axis 1">gaps</th></tr>${rows}</table>
       <div class="muted sbd-lp">Site ${f1(r.site_area_m2)} m² · Lp ${f1(r.lp.projected_m)} m (projected, all buildings)`
         + `${r.required_p !== r.required_p_addin ? ` <span class="bad" title="The SBD panel takes the shorter side of one building (${f1(r.lp.addin_m)} m), which gives a different required P - confirm the reading of APP-152">· add-in Lp ${f1(r.lp.addin_m)} m</span>` : ""}</div>`
@@ -388,7 +479,7 @@ export function createSbd(ctx) {
     const back = document.createElement("div");
     back.className = "sbd-back";
     back.innerHTML = `<div class="sbd-win" role="dialog" aria-label="SBD plan and elevations">
-      <div class="sbd-wh"><span class="sbd-ztabs"><button class="ghost" data-v="plan">Plan</button><button class="ghost" data-v="elev" title="The zone's elevational projection on the plane: IS, PE and P by area">Elevation</button></span><span class="sbd-ztabs">${r.zones.map((z) => `<button class="ghost" data-z="${z.zone}"${z.assessed ? "" : " disabled"}>${esc(ZONE_LABEL[z.zone] || z.zone)}${z.assessed ? ` · ${f1(z.P)}%` : ""}</button>`).join("")}</span>
+      <div class="sbd-wh"><span class="sbd-ztabs"><button class="ghost" data-v="plan">Plan</button><button class="ghost" data-v="elev" title="The zone's elevational projection on the plane: IS, PE and P by area">Elevation</button>${(r.case1 || []).length ? `<button class="ghost" data-v="canyon" title="Design Requirement (1): the street canyon U and Lp, for each zone">Street canyon</button>` : ""}</span><span class="sbd-ztabs">${r.zones.map((z) => `<button class="ghost" data-z="${z.zone}"${z.assessed ? "" : " disabled"}>${esc(ZONE_LABEL[z.zone] || z.zone)}${z.assessed ? ` · ${f1(z.P)}%` : ""}</button>`).join("")}</span>
         <span class="sbd-ztabs"><button class="ghost" data-a="axis1" title="Projection Plane X (Axis 1)">Plane X</button><button class="ghost" data-a="axis2" title="Projection Plane Y (Axis 2)">Plane Y</button></span>
         <span class="spacer"></span><button class="ghost" data-x title="Close">&#10005;</button></div>
       <div class="sbd-wb"><div class="sbd-plan"></div><div class="sbd-gaps"></div></div>
@@ -405,16 +496,35 @@ export function createSbd(ctx) {
       back.querySelectorAll("[data-l]").forEach((b) => { b.hidden = b.dataset.l !== view; });
       const z = r.zones.find((x) => x.zone === zone);
       const ax = z && z[axisKey];
+      back.querySelectorAll("[data-a]").forEach((b) => { b.hidden = view === "canyon"; });
+      if (view === "canyon") {
+        back.querySelector(".sbd-plan").innerHTML = zoneSvg(r, zone, null, { canyon: true });
+        zoomable(back.querySelector(".sbd-plan"));
+        const cs = (r.case1 || []).filter((c) => c.zone === zone);
+        back.querySelector(".sbd-gaps").innerHTML = `<div class="sbd-ptot">Street canyon<br><span class="muted">Design Requirement (1): Lp ≤ 5 U, ${esc(ZONE_LABEL[zone] || zone)}</span></div>`
+          + (cs.length ? cs.map((c) => c.buildings.map((b) => `<table class="sbd-t"><tr><th colspan="2">${esc(c.street)} · ${esc(b.name || "building " + b.building)}</th></tr>`
+            + [["U", `canyon area / length = ${f1(b.area_m2)} m² / ${f1(b.L_m)} m = ${f2(b.U_m)} m`],
+              ...(b.setback_m != null ? [["Facade", `${f2(b.setback_m)} m back from the street`]] : []),
+              ["Lp", `${f2(b.Lp_m)} m (the facade projected on the street${zone === "LOW" ? ", above 1/3 H" : ""})`],
+              ["5U", `5 x ${f2(b.U_m)} = ${f2(b.Lp_max_m)} m`],
+              ["Result", `Lp ${f2(b.Lp_m)} ${b.pass ? "≤" : ">"} ${f2(b.Lp_max_m)} m: ${b.pass ? "OK" : "NOT OK"}`]]
+              .map(([k, v]) => `<tr><td>${esc(k)}</td><td class="${k === "Result" ? (b.pass ? "ok" : "bad") : ""}">${esc(v)}</td></tr>`).join("") + `</table>`).join("")).join("")
+            : `<p class="muted">No building in this zone faces a street within 30 m.</p>`)
+          + `<div class="muted sbd-note">U = the canyon's area / its length along the street: from the building's facade (within 30 m of the centreline) to the opposite site boundary, every 0.5 m. Lp = the building's facade projected on the street; in the Low zone the portion ≤ 1/3 H is left out. Fig B7 and the BD sample case.</div>`;
+        return;
+      }
       if (view === "elev") {
         const e = ax && ax.elev;
         const req = ax && (ax.required_p != null ? ax.required_p : null);
         back.querySelector(".sbd-plan").innerHTML = e ? elevSvg(r, zone, axisKey) : `<div class="muted">No elevation in this result - run it again.</div>`;
+        zoomable(back.querySelector(".sbd-plan"));
         back.querySelector(".sbd-gaps").innerHTML = e ? `<div class="sbd-ptot">P = ${f2(e.P)} %<br><span class="muted">(IS + PE) / (W x H) on ${axisKey === "axis1" ? "Plane X" : "Plane Y"}${req == null && r.required_p != null ? " - for information: a site under 2 ha is checked on Plane X" : ""}</span></div>`
           + `<table class="sbd-t">${elevWorking(e, req != null ? req : r.required_p).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>`
           + `<div class="muted sbd-note">IS: in a gap that counts on plan (S1, S3 ≥ 7.5 m; S2 ≥ 15 m), at least 2/3 of the zone's height, or open to above over a lower building (with the IS beside it ≥ 7.5 m wide). PE: a void through the building ≥ 3 m wide and high; it counts up to 1/3 of the required P. Low zone: the portion ≤ 1/3 H is disregarded. On plan (IS / W): ${f1(ax.P)} %.</div>` : "";
         return;
       }
       back.querySelector(".sbd-plan").innerHTML = zoneSvg(r, zone, axisKey);
+      zoomable(back.querySelector(".sbd-plan"));
       const planes = z && z.plane_x_deg != null ? `Plane X ${z.plane_x_deg ? (z.plane_x_deg > 0 ? "+" : "") + f1(z.plane_x_deg) + "° from the street" : "along the street"} · Plane Y ${f1(z.plane_y_deg)}° from X` : "";
       back.querySelector(".sbd-gaps").innerHTML = ax ? `<div class="sbd-ptot">P = ${f1(ax.P_zone != null ? ax.P_zone : ax.P)} %<br><span class="muted">on the elevation · on plan IS ${f2(ax.IS_m)} m / W ${f2(ax.W_m)} m = ${f1(ax.P)} %${ax.sweep_deg ? ` · plane side turned ${ax.sweep_deg}°` : ""}</span>${planes ? `<br><span class="muted">${esc(planes)}</span>` : ""}</div>`
         + `<table class="sbd-t"><tr><th>Gap</th><th class="n">S m</th><th></th></tr>` + ax.gaps.map((g) => {
@@ -529,11 +639,18 @@ export function createSbd(ctx) {
           img: await svgPng(elevSvg(r, z.zone, k), 1400), rows: elevWorking(ax.elev, ax.required_p != null ? ax.required_p : r.required_p) });
       }
     }
+    for (const z of r.zones) {
+      const cs = (r.case1 || []).filter((c) => c.zone === z.zone);
+      if (!cs.length) continue;
+      items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · street canyon (Design Requirement 1)`, tag: cs.every((c) => c.buildings.every((b) => b.pass)) ? "Lp ≤ 5U" : "Lp > 5U", tagColor: ZONE_COLOR[z.zone],
+        img: await svgPng(zoneSvg(r, z.zone, null, { canyon: true }), 1400),
+        rows: cs.flatMap((c) => c.buildings.map((b) => [`${c.street} · ${b.name || b.building}`, `U = ${f1(b.area_m2)} / ${f1(b.L_m)} = ${f2(b.U_m)} m · Lp ${f2(b.Lp_m)} m ${b.pass ? "≤" : ">"} 5U ${f2(b.Lp_max_m)} m`, b.pass ? "#16a34a" : "#dc2626"])) });
+    }
     writeReport(w, {
       title: "SBD report (PNAP APP-152)", project: ctx.projectName(), unit: "zone plans", folder: "SBD",
       sub: new Date().toLocaleString() + (ctx.author() ? " · prepared by " + ctx.author() : ""),
       meta: [["Controlling P", `${f1(r.controlling_p)} %`], ["Required P (Table 1)", r.required_p != null ? `${f1(r.required_p)} %` : "none"],
-        ["Result", r.pass == null ? "-" : r.pass ? "PASS" : "FAIL"], ["Site area", `${f1(r.site_area_m2)} m²`],
+        ["Result", r.pass == null ? "-" : r.pass ? "PASS" : "FAIL"], ["Street canyon (Lp ≤ 5U)", r.case1_pass == null ? "-" : r.case1_pass ? "PASS" : "FAIL"], ["Site area", `${f1(r.site_area_m2)} m²`],
         ["Lp (projected, all buildings)", `${f1(r.lp.projected_m)} m`], ["Axis 1", r.axis.source === "street" ? "along the street line" : r.axis.source === "pca" ? "the site's main direction" : "at a set angle"],
         ["Masses", B.model ? `${B.model.masses.length}, from ${B.model.model || "Revit"} (${(B.model.at || "").slice(0, 10)})` : ""],
         ...((r.warnings || []).length ? [["Warnings", r.warnings.join(" / ")]] : [])],
