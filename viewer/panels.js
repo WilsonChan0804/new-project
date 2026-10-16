@@ -311,7 +311,14 @@ export function initFlexColumns({ row, cols, key }) {
     if (c.tab) c.tab.style.left = (c.side === "l" ? edge : edge - 20) + "px";
   }
 
+  // what apply() depends on besides the stored state: the observers below
+  // re-apply only when it changes, so apply's own class changes can never
+  // start a loop (the columns blinked when they did)
+  const sig = () => narrow() + "|" + items.map((c) => [!!(c.off && c.off()), shown(c)].join()).join("|");
+  let last = "";
+
   function apply() {
+    last = sig();
     for (const c of items) {
       const off = narrow() || (c.off && c.off());
       const folded = !!(!narrow() && c.fold && c.s.hid && !c.s.pin);
@@ -379,7 +386,7 @@ export function initFlexColumns({ row, cols, key }) {
   }
   apply();
   addEventListener("resize", () => requestAnimationFrame(apply));
-  const mo = new MutationObserver(() => requestAnimationFrame(apply));
+  const mo = new MutationObserver(() => requestAnimationFrame(() => { if (sig() !== last) apply(); }));
   mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
   for (const c of items) mo.observe(c.el, { attributes: true, attributeFilter: ["hidden", "class"] });
   if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(apply)).observe(row);
