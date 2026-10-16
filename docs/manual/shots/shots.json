@@ -1138,6 +1138,1665 @@
      "yue": "打開佢嘅 Sheets、3D、Chat、Dashboard、Folders"
     }
    ]
+  },
+  {
+   "id": "sheet-view-menu",
+   "url": "index.html?project={project}",
+   "ready": "#sheet-list li",
+   "prep": [
+    {
+     "click": "#sheet-list li"
+    },
+    {
+     "wait": 2000
+    },
+    {
+     "click": "#view-menu-btn"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "clip": {
+    "sel": "#view-menu",
+    "pad": [
+     50,
+     60,
+     10,
+     10
+    ]
+   },
+   "marks": [
+    {
+     "sel": "#view-menu-btn",
+     "en": "View: the menu below",
+     "yue": "View：下面嘅選單"
+    },
+    {
+     "sel": "#split-toggle",
+     "en": "Split: a second sheet beside this one",
+     "yue": "Split：喺旁邊開第二張圖",
+     "at": "r"
+    },
+    {
+     "sel": "#cmp-toggle",
+     "en": "Compare: with an earlier version - red removed, green added",
+     "yue": "Compare：同較早版本比較 - 紅色係刪咗，綠色係加咗",
+     "at": "r"
+    },
+    {
+     "sel": "#sync-toggle",
+     "en": "2D + 3D: the model beside the sheet, in step",
+     "yue": "2D + 3D：model 喺圖則旁邊，一齊郁",
+     "at": "r"
+    },
+    {
+     "sel": "#links-toggle",
+     "en": "Links: section marks and callouts open their sheets",
+     "yue": "Links：剖面符號同索引會打開相關嘅圖",
+     "at": "r"
+    }
+   ]
+  },
+  {
+   "id": "sheet-split",
+   "image": "user/sheet-split.png",
+   "marks": [
+    {
+     "rect": [
+      1472,
+      86,
+      72,
+      32
+     ],
+     "en": "View > Split",
+     "yue": "View > Split"
+    },
+    {
+     "rect": [
+      258,
+      165,
+      700,
+      830
+     ],
+     "en": "The sheet you opened",
+     "yue": "你打開嘅圖則"
+    },
+    {
+     "rect": [
+      983,
+      176,
+      205,
+      28
+     ],
+     "en": "The second sheet: pick any sheet of the project",
+     "yue": "第二張圖：揀 project 入面任何一張"
+    },
+    {
+     "rect": [
+      1196,
+      176,
+      190,
+      28
+     ],
+     "en": "Zoom the second sheet on its own: -, +, Fit",
+     "yue": "獨立縮放第二張圖：-、+、Fit"
+    },
+    {
+     "rect": [
+      970,
+      215,
+      700,
+      640
+     ],
+     "en": "The second sheet",
+     "yue": "第二張圖",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      1632,
+      176,
+      28,
+      28
+     ],
+     "en": "Close the split",
+     "yue": "關閉分割",
+     "at": "r"
+    }
+   ]
+  },
+  {
+   "id": "sheet-compare",
+   "image": "user/sheet-compare.png",
+   "marks": [
+    {
+     "rect": [
+      334,
+      175,
+      242,
+      28
+     ],
+     "en": "Compare with: an earlier upload of this sheet, another sheet, or a PDF",
+     "yue": "比較對象：呢張圖較早上載嘅版本、另一張圖，或者一個 PDF"
+    },
+    {
+     "rect": [
+      583,
+      175,
+      188,
+      28
+     ],
+     "en": "Changes, Earlier or Current",
+     "yue": "顯示改動、較早版本或者現時版本"
+    },
+    {
+     "rect": [
+      776,
+      177,
+      244,
+      22
+     ],
+     "en": "Red: removed; green: added; grey: unchanged",
+     "yue": "紅色：刪咗；綠色：加咗；灰色：冇改",
+     "at": "b"
+    },
+    {
+     "rect": [
+      1030,
+      175,
+      142,
+      28
+     ],
+     "en": "Step through the changed areas",
+     "yue": "逐個改動位置睇"
+    },
+    {
+     "rect": [
+      1182,
+      177,
+      76,
+      22
+     ],
+     "en": "Outline: a box round each changed area",
+     "yue": "Outline：每個改動位置加框"
+    },
+    {
+     "rect": [
+      1262,
+      177,
+      306,
+      22
+     ],
+     "en": "What it was compared with",
+     "yue": "同邊個版本比較",
+     "at": "b"
+    },
+    {
+     "rect": [
+      262,
+      212,
+      1390,
+      775
+     ],
+     "en": "The drawing, coloured by the changes",
+     "yue": "張圖，按改動上色",
+     "at": "l"
+    },
+    {
+     "rect": [
+      1632,
+      175,
+      26,
+      26
+     ],
+     "en": "Close Compare",
+     "yue": "關閉 Compare",
+     "at": "b"
+    }
+   ]
+  },
+  {
+   "id": "sheet-2d3d",
+   "image": "user/sheet-2d3d.png",
+   "marks": [
+    {
+     "rect": [
+      698,
+      296,
+      86,
+      64
+     ],
+     "en": "You: where you stand, and the way you look",
+     "yue": "You：你企喺邊、望緊邊個方向"
+    },
+    {
+     "rect": [
+      1003,
+      174,
+      86,
+      28
+     ],
+     "en": "Stand there: click the plan to stand at that point",
+     "yue": "Stand there：撳平面圖就企去嗰點"
+    },
+    {
+     "rect": [
+      1091,
+      174,
+      62,
+      28
+     ],
+     "en": "Look at: click the plan to turn to that point",
+     "yue": "Look at：撳平面圖就轉身望去嗰點",
+     "at": "b"
+    },
+    {
+     "rect": [
+      1159,
+      174,
+      78,
+      28
+     ],
+     "en": "Walk through the model",
+     "yue": "喺 model 入面行"
+    },
+    {
+     "rect": [
+      1244,
+      174,
+      62,
+      28
+     ],
+     "en": "Follow: the plan keeps you in view as you move",
+     "yue": "Follow：你郁嘅時候平面圖跟住你",
+     "at": "b"
+    },
+    {
+     "rect": [
+      1327,
+      174,
+      62,
+      28
+     ],
+     "en": "Issue: raise an issue at a point in the 3D",
+     "yue": "Issue：喺 3D 某一點開 issue"
+    },
+    {
+     "rect": [
+      1399,
+      174,
+      128,
+      28
+     ],
+     "en": "Issues: show the pins; Depth: depth shading",
+     "yue": "Issues：顯示 issue 釘；Depth：深度陰影",
+     "at": "b"
+    },
+    {
+     "rect": [
+      975,
+      218,
+      375,
+      22
+     ],
+     "en": "What the mode does (walking: W A S D, drag to look)",
+     "yue": "而家模式嘅說明（行：W A S D，拖動嚟望）",
+     "at": "b"
+    },
+    {
+     "rect": [
+      1594,
+      216,
+      64,
+      26
+     ],
+     "en": "Open the full 3D page; close",
+     "yue": "打開完整 3D 頁；關閉",
+     "at": "b"
+    },
+    {
+     "rect": [
+      977,
+      262,
+      74,
+      26
+     ],
+     "en": "Models: which to show",
+     "yue": "Models：顯示邊啲 model",
+     "at": "b"
+    },
+    {
+     "rect": [
+      1050,
+      300,
+      520,
+      640
+     ],
+     "en": "The model, in step with the plan",
+     "yue": "Model，同平面圖同步",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      975,
+      955,
+      125,
+      40
+     ],
+     "en": "Walking: Stop to end the walk",
+     "yue": "Walking：撳 Stop 停止行"
+    }
+   ]
+  },
+  {
+   "id": "issue-new",
+   "url": "index.html?project={project}",
+   "ready": "#sheet-list li",
+   "prep": [
+    {
+     "click": "#sheet-list li"
+    },
+    {
+     "wait": 2000
+    },
+    {
+     "click": "#mode-issue"
+    },
+    {
+     "click": "button[data-tool=cloud]"
+    },
+    {
+     "drag": [
+      600,
+      400,
+      760,
+      500
+     ]
+    },
+    {
+     "waitFor": "#f-title"
+    },
+    {
+     "wait": 800
+    }
+   ],
+   "clip": "#dialog",
+   "marks": [
+    {
+     "sel": "#dialog .tpl-pick",
+     "en": "Template: fill the issue from a saved one",
+     "yue": "Template：用已儲存嘅範本填 issue"
+    },
+    {
+     "sel": "#dialog .tpl-save",
+     "en": "Save as template: keep this one for the project",
+     "yue": "Save as template：將呢個儲存做 project 範本"
+    },
+    {
+     "sel": "#f-title",
+     "en": "Title",
+     "yue": "標題"
+    },
+    {
+     "sel": "#f-desc",
+     "en": "Description",
+     "yue": "描述"
+    },
+    {
+     "sel": "#f-type",
+     "en": "Type: General, Design, Coordination, Clash ...",
+     "yue": "類型：General、Design、Coordination、Clash ..."
+    },
+    {
+     "sel": "#f-assignee",
+     "en": "Assign to: a name or e-mail",
+     "yue": "指派：名或者 email"
+    },
+    {
+     "sel": "#f-due",
+     "en": "Due date",
+     "yue": "到期日"
+    },
+    {
+     "sel": "#f-status",
+     "en": "Status",
+     "yue": "狀態"
+    },
+    {
+     "sel": "#f-priority",
+     "en": "Priority",
+     "yue": "優先"
+    },
+    {
+     "sel": "#f-anchor",
+     "en": "Where it is: the sheet, the view and the point in the model",
+     "yue": "位置：圖則、視圖同 model 入面嗰點"
+    },
+    {
+     "sel": "#f-save",
+     "en": "Save issue (Cancel drops it)",
+     "yue": "Save issue（Cancel 取消）"
+    }
+   ]
+  },
+  {
+   "id": "model-tools",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "size": [
+    1440,
+    1100
+   ],
+   "storage": {
+    "lwk.panels.model": "{\"l\":{\"w\":430}}"
+   },
+   "prep": [
+    {
+     "click": "#chk-tab-clash"
+    },
+    {
+     "wait": 800
+    },
+    {
+     "eval": "for (const e of document.querySelectorAll('#models *')) if (getComputedStyle(e).position === 'sticky') e.style.position = 'static'; const m = document.querySelector('#models'), h = document.querySelector('#sec-panel').previousElementSibling; m.scrollTop += h.getBoundingClientRect().top - m.getBoundingClientRect().top"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "clip": {
+    "sel": "#models",
+    "bottom": "#chk-panel"
+   },
+   "marks": [
+    {
+     "sel": "label.ictog:has(#sec-on)",
+     "en": "Box: a section box round the model - drag its orange arrows",
+     "yue": "Box：model 嘅剖面盒 - 拖橙色箭咀"
+    },
+    {
+     "sel": "#sec-face",
+     "en": "Plane: click a face to cut there",
+     "yue": "Plane：撳一個面就喺嗰度切"
+    },
+    {
+     "sel": "#sec-align",
+     "en": "Align, Flip, Reset the cut",
+     "yue": "Align、Flip、Reset 切面"
+    },
+    {
+     "sel": "#sec-poche",
+     "en": "Solid fill on the cut; plan look for floor plans",
+     "yue": "切面實心填色；平面圖用平面樣式"
+    },
+    {
+     "sel": "#meas-distance",
+     "en": "Measure: Distance, Angle, Area",
+     "yue": "量度：距離、角度、面積"
+    },
+    {
+     "sel": "#meas-ortho",
+     "en": "Straight: along X, Y or Z only",
+     "yue": "Straight：只沿 X、Y 或 Z 量"
+    },
+    {
+     "sel": "#meas-undo",
+     "en": "Undo, Clear; Keep makes a dimension that stays",
+     "yue": "Undo、Clear；Keep 將量度留低做尺寸"
+    },
+    {
+     "sel": "#dims-on",
+     "en": "Show the kept dimensions",
+     "yue": "顯示留低嘅尺寸"
+    },
+    {
+     "sel": "#chk-tab-clash",
+     "en": "Checks: Clash, Headroom, SBD",
+     "yue": "檢查：Clash、Headroom、SBD"
+    },
+    {
+     "sel": "#clash-rule",
+     "en": "The clash rule to run",
+     "yue": "要行嘅 clash 規則"
+    },
+    {
+     "sel": "#clash-new",
+     "en": "+ a new rule; ✎ edit; ✕ delete",
+     "yue": "+ 新規則；✎ 修改；✕ 刪除"
+    },
+    {
+     "sel": "#clash-scope",
+     "en": "Where: whole model, floors, or inside the section box",
+     "yue": "範圍：成個 model、某幾層，或者剖面盒入面"
+    },
+    {
+     "sel": "#clash-run",
+     "en": "Run",
+     "yue": "執行"
+    }
+   ]
+  },
+  {
+   "id": "clash-rule",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "prep": [
+    {
+     "click": "#chk-tab-clash"
+    },
+    {
+     "click": "#clash-new"
+    },
+    {
+     "waitFor": ".ck-dlg"
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "clip": ".ck-dlg",
+   "marks": [
+    {
+     "sel": "label.ck-name",
+     "en": "Name the rule",
+     "yue": "規則名稱"
+    },
+    {
+     "sel": "fieldset.ck-side",
+     "en": "Set A: the models and categories on one side",
+     "yue": "Set A：一邊嘅 model 同類別"
+    },
+    {
+     "sel": "fieldset.ck-side",
+     "en": "Set B: what A is checked against (A and B can be the same model)",
+     "yue": "Set B：同 A 比較嘅（A 同 B 可以係同一個 model）",
+     "nth": 1
+    },
+    {
+     "sel": "fieldset.ck-side [data-set]",
+     "en": "A saved set of models and categories; Save as set",
+     "yue": "已儲存嘅 model 同類別組合；Save as set"
+    },
+    {
+     "sel": "fieldset.ck-side .ck-models",
+     "en": "The models: ours and the consultants'",
+     "yue": "Model：我哋同顧問嘅"
+    },
+    {
+     "sel": "fieldset.ck-side .ck-cats",
+     "en": "Categories (All / None)",
+     "yue": "類別（All / None）"
+    },
+    {
+     "sel": "fieldset.ck-side .ck-q",
+     "en": "Name has / has not: only some elements",
+     "yue": "名稱包含 / 唔包含：只揀部分構件"
+    },
+    {
+     "sel": ".ck-opts",
+     "en": "Overlap that counts; clearance round A",
+     "yue": "幾多重疊先計；A 周圍嘅淨空距離"
+    },
+    {
+     "sel": "label.ck-chk",
+     "en": "Leave out doors and windows in their walls",
+     "yue": "唔計門窗喺佢哋嘅牆入面"
+    },
+    {
+     "sel": "label.ck-chk",
+     "en": "Leave out the joins Revit cleans up",
+     "yue": "唔計 Revit 自動清理嘅接駁位",
+     "nth": 1
+    },
+    {
+     "sel": "label.ck-chk",
+     "en": "Open surfaces crossing each other",
+     "yue": "開放面互相交叉",
+     "nth": 2
+    },
+    {
+     "sel": ".ck-foot",
+     "en": "Save the rule (shared with the project)",
+     "yue": "儲存規則（同成個 project 共用）"
+    }
+   ]
+  },
+  {
+   "id": "clash-results",
+   "image": "user/clash-results.png",
+   "marks": [
+    {
+     "rect": [
+      10,
+      202,
+      352,
+      28
+     ],
+     "en": "Floors from ... to ...",
+     "yue": "由邊層到邊層"
+    },
+    {
+     "rect": [
+      12,
+      238,
+      348,
+      32
+     ],
+     "en": "The latest run, or a saved result",
+     "yue": "最新結果，或者已儲存嘅結果"
+    },
+    {
+     "rect": [
+      18,
+      278,
+      96,
+      22
+     ],
+     "en": "Save result: keep this run",
+     "yue": "Save result：保存呢次結果",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      356,
+      350,
+      42
+     ],
+     "en": "Set A and B, and their colours in the model",
+     "yue": "Set A 同 B，同佢哋喺 model 嘅顏色"
+    },
+    {
+     "rect": [
+      12,
+      404,
+      130,
+      30
+     ],
+     "en": "Hide clashes smaller than",
+     "yue": "隱藏細過呢個數嘅 clash",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      443,
+      348,
+      30
+     ],
+     "en": "Group the list: by floor, category ...",
+     "yue": "清單分組：按樓層、類別 ..."
+    },
+    {
+     "rect": [
+      12,
+      477,
+      300,
+      28
+     ],
+     "en": "Open, New since the last run, Gone, Not an issue",
+     "yue": "未處理、上次之後新增、已消失、唔係問題",
+     "at": "r"
+    },
+    {
+     "rect": [
+      18,
+      515,
+      154,
+      24
+     ],
+     "en": "Raise issues for all of them",
+     "yue": "全部開 issue",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      545,
+      222,
+      22
+     ],
+     "en": "Export the list: spreadsheet, report",
+     "yue": "匯出清單：試算表、報告",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      603,
+      334,
+      112
+     ],
+     "en": "A clash: inside or overlap, depth, floor; Make issue, Only these, Section off, Save view, Not an issue",
+     "yue": "一個 clash：inside 或 overlap、深度、樓層；Make issue、Only these、Section off、Save view、Not an issue",
+     "at": "r"
+    },
+    {
+     "rect": [
+      700,
+      330,
+      640,
+      420
+     ],
+     "en": "The clash in the model, cut out round it",
+     "yue": "Model 入面嘅 clash，周圍切開咗",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      403,
+      866,
+      240,
+      92
+     ],
+     "en": "What the colours are",
+     "yue": "顏色代表乜",
+     "at": "r"
+    },
+    {
+     "rect": [
+      392,
+      978,
+      700,
+      24
+     ],
+     "en": "What is shown; Section off shows the whole model",
+     "yue": "而家顯示緊乜；Section off 顯示成個 model",
+     "at": "r"
+    }
+   ]
+  },
+  {
+   "id": "headroom",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "size": [
+    1440,
+    1100
+   ],
+   "storage": {
+    "lwk.panels.model": "{\"l\":{\"w\":430}}"
+   },
+   "prep": [
+    {
+     "click": "#chk-tab-head"
+    },
+    {
+     "wait": 800
+    },
+    {
+     "eval": "for (const d of document.querySelectorAll('#chk-panel details')) d.open = true"
+    },
+    {
+     "eval": "for (const e of document.querySelectorAll('#models *')) if (getComputedStyle(e).position === 'sticky') e.style.position = 'static'; const m = document.querySelector('#models'), h = document.querySelector('#chk-panel').previousElementSibling; m.scrollTop += h.getBoundingClientRect().top - m.getBoundingClientRect().top"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "clip": {
+    "sel": "#models",
+    "bottom": "#head-box"
+   },
+   "marks": [
+    {
+     "sel": "#chk-tab-head",
+     "en": "Checks > Headroom",
+     "yue": "檢查 > Headroom"
+    },
+    {
+     "sel": "#head-probe",
+     "en": "Probe: click a floor or a tread for the height to what is above",
+     "yue": "Probe：撳地台或者梯級，睇到上面嘅高度"
+    },
+    {
+     "sel": "#head-lim",
+     "en": "The least height over floors, and over stairs and ramps",
+     "yue": "地台上面、樓梯同斜道上面嘅最少高度"
+    },
+    {
+     "sel": "#head-min",
+     "en": "Ignore lower than: leave out low things (a desk, a sill)",
+     "yue": "唔理低過呢個高度嘅嘢（枱、窗台）"
+    },
+    {
+     "sel": "#head-mlist",
+     "en": "Models counted",
+     "yue": "計算嘅 model"
+    },
+    {
+     "sel": "#head-walk",
+     "en": "Stood on: what you stand on",
+     "yue": "Stood on：你企喺上面嘅嘢"
+    },
+    {
+     "sel": "#head-above",
+     "en": "Overhead: what counts above you",
+     "yue": "Overhead：頭頂上計算嘅嘢"
+    },
+    {
+     "sel": "#head-cat-reset",
+     "en": "Usual categories",
+     "yue": "常用類別"
+    },
+    {
+     "sel": "#head-scope",
+     "en": "Where: whole model, floors, or inside the section box",
+     "yue": "範圍：成個 model、某幾層，或者剖面盒入面"
+    },
+    {
+     "sel": "#head-run",
+     "en": "Scan",
+     "yue": "掃描"
+    }
+   ]
+  },
+  {
+   "id": "headroom-results",
+   "image": "user/headroom-results.png",
+   "marks": [
+    {
+     "rect": [
+      12,
+      302,
+      348,
+      36
+     ],
+     "en": "Scan the whole model or chosen floors",
+     "yue": "掃描成個 model 或者揀咗嘅樓層"
+    },
+    {
+     "rect": [
+      12,
+      349,
+      246,
+      24
+     ],
+     "en": "The probe: the height found; Keep makes it a dimension",
+     "yue": "Probe 結果：量到嘅高度；Keep 留低做尺寸",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      384,
+      348,
+      32
+     ],
+     "en": "This scan, or a saved result; Save result",
+     "yue": "今次掃描，或者已儲存嘅結果；Save result"
+    },
+    {
+     "rect": [
+      12,
+      496,
+      342,
+      20
+     ],
+     "en": "Red: under the limit; orange: within 100 mm over it",
+     "yue": "紅色：低過限制；橙色：只係高過 100 mm 以內",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      520,
+      170,
+      28
+     ],
+     "en": "Open, Not an issue",
+     "yue": "未處理、唔係問題",
+     "at": "r"
+    },
+    {
+     "rect": [
+      18,
+      559,
+      144,
+      24
+     ],
+     "en": "Raise issues for all of them",
+     "yue": "全部開 issue",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      589,
+      194,
+      22
+     ],
+     "en": "Export: spreadsheet, report",
+     "yue": "匯出：試算表、報告",
+     "at": "r"
+    },
+    {
+     "rect": [
+      12,
+      786,
+      348,
+      82
+     ],
+     "en": "A low spot: height, limit, floor, what is above; Look, Make issue, Save view, Not an issue",
+     "yue": "一個低位：高度、限制、樓層、上面係乜；Look、Make issue、Save view、Not an issue",
+     "at": "r"
+    },
+    {
+     "rect": [
+      890,
+      360,
+      280,
+      290
+     ],
+     "en": "The low area in red, with the height",
+     "yue": "紅色係低過限制嘅範圍，連高度",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      403,
+      885,
+      210,
+      76
+     ],
+     "en": "What the colours are",
+     "yue": "顏色代表乜",
+     "at": "r"
+    }
+   ]
+  },
+  {
+   "id": "model-display",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "size": [
+    1440,
+    1100
+   ],
+   "storage": {
+    "lwk.panels.model": "{\"l\":{\"w\":430}}"
+   },
+   "prep": [
+    {
+     "eval": "for (const e of document.querySelectorAll('#models *')) if (getComputedStyle(e).position === 'sticky') e.style.position = 'static'; const m = document.querySelector('#models'), h = document.querySelector('#disp-panel').previousElementSibling; m.scrollTop += h.getBoundingClientRect().top - m.getBoundingClientRect().top"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "clip": {
+    "sel": "#models",
+    "top": "#disp-panel",
+    "bottom": "#view-save",
+    "pad": [
+     36,
+     0,
+     0,
+     0
+    ]
+   },
+   "marks": [
+    {
+     "sel": "#display-modes",
+     "en": "Shaded, White or X-ray",
+     "yue": "Shaded、White 或者 X-ray"
+    },
+    {
+     "sel": "#depth-toggle",
+     "en": "Depth: depth shading",
+     "yue": "Depth：深度陰影"
+    },
+    {
+     "sel": "#bg-swatches",
+     "en": "Background colour",
+     "yue": "背景顏色"
+    },
+    {
+     "sel": "#ground-on",
+     "en": "Ground and its colour",
+     "yue": "地面同佢嘅顏色"
+    },
+    {
+     "sel": "#grid-on",
+     "en": "Grid",
+     "yue": "格網"
+    },
+    {
+     "sel": "#dfx-ao",
+     "en": "Depth shading: shadow and edges, their colours",
+     "yue": "深度陰影：陰影同邊線，同佢哋嘅顏色"
+    },
+    {
+     "sel": "#dfx-reset",
+     "en": "Usual depth shading",
+     "yue": "還原深度陰影"
+    },
+    {
+     "sel": "#view-save",
+     "en": "Saved views: Save keeps the camera, section and what is shown",
+     "yue": "Saved views：Save 會記住鏡頭、剖面同顯示嘅嘢"
+    }
+   ]
+  },
+  {
+   "id": "model-floorplan",
+   "image": "user/model-floorplan.png",
+   "marks": [
+    {
+     "rect": [
+      1306,
+      43,
+      120,
+      28
+     ],
+     "en": "Floor plan: cut the model at a floor",
+     "yue": "Floor plan：喺某一層切開 model"
+    },
+    {
+     "rect": [
+      1432,
+      43,
+      30,
+      28
+     ],
+     "en": "Plan overlay: lay the floor's sheet on the cut",
+     "yue": "Plan overlay：將嗰層嘅圖則疊喺切面上",
+     "at": "b"
+    },
+    {
+     "rect": [
+      1468,
+      43,
+      154,
+      28
+     ],
+     "en": "Which drawing",
+     "yue": "用邊張圖",
+     "at": "b"
+    },
+    {
+     "rect": [
+      630,
+      370,
+      720,
+      410
+     ],
+     "en": "The drawing over the cut, with its annotations and dimensions",
+     "yue": "疊喺切面上嘅圖，連註釋同尺寸",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      392,
+      978,
+      500,
+      24
+     ],
+     "en": "Which drawing is shown",
+     "yue": "而家顯示緊邊張圖",
+     "at": "r"
+    }
+   ]
+  },
+  {
+   "id": "issue-3d",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "prep": [
+    {
+     "click": "#chk-tab-sbd"
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "eval": "document.querySelector('#sbd-issue').scrollIntoView()"
+    },
+    {
+     "click": "#sbd-issue"
+    },
+    {
+     "waitFor": "#i3-dlg"
+    },
+    {
+     "wait": 1500
+    }
+   ],
+   "clip": "#i3-dlg",
+   "marks": [
+    {
+     "sel": "#i3-dlg .tpl-pick",
+     "en": "Template; Save as template",
+     "yue": "範本；Save as template"
+    },
+    {
+     "sel": "#i3-title",
+     "en": "Title (filled in from the check)",
+     "yue": "標題（由檢查自動填）"
+    },
+    {
+     "sel": "#i3-type",
+     "en": "Type",
+     "yue": "類型"
+    },
+    {
+     "sel": "#i3-desc",
+     "en": "Description (filled in from the check)",
+     "yue": "描述（由檢查自動填）"
+    },
+    {
+     "sel": "#i3-assignee",
+     "en": "Assign to; due date",
+     "yue": "指派；到期日"
+    },
+    {
+     "sel": "#i3-status",
+     "en": "Status and priority",
+     "yue": "狀態同優先"
+    },
+    {
+     "sel": "#i3-anchor",
+     "en": "Where it is in the model",
+     "yue": "喺 model 嘅位置"
+    },
+    {
+     "sel": "#i3-thumb",
+     "en": "The snapshot of the view",
+     "yue": "視圖截圖"
+    },
+    {
+     "sel": "#i3-markup",
+     "en": "Mark up the snapshot: cloud, arrow, text ...",
+     "yue": "喺截圖上畫：雲線、箭咀、文字 ..."
+    },
+    {
+     "sel": "#i3-save",
+     "en": "Save issue",
+     "yue": "Save issue"
+    }
+   ]
+  },
+  {
+   "id": "sbd-report",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "popup": true,
+   "prep": [
+    {
+     "click": "#chk-tab-sbd"
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "eval": "document.querySelector('#sbd-report').scrollIntoView()"
+    },
+    {
+     "click": "#sbd-report"
+    }
+   ],
+   "marks": [
+    {
+     "rect": [
+      24,
+      10,
+      143,
+      31
+     ],
+     "en": "Print / Save as PDF",
+     "yue": "列印 / 儲存做 PDF",
+     "at": "b"
+    },
+    {
+     "rect": [
+      179,
+      10,
+      159,
+      31
+     ],
+     "en": "Save to Folders (PDF): into the project's folder",
+     "yue": "Save to Folders (PDF)：存入 project 嘅資料夾",
+     "at": "b"
+    },
+    {
+     "rect": [
+      346,
+      12,
+      94,
+      26
+     ],
+     "en": "How many zone drawings",
+     "yue": "有幾多張高度區圖",
+     "at": "r"
+    },
+    {
+     "rect": [
+      361,
+      118,
+      720,
+      324
+     ],
+     "en": "The result: P against the required P, Lp against 5U, site, planes, Level 0",
+     "yue": "結果：P 對比要求、Lp 對比 5U、地盤、投影面、Level 0",
+     "at": "l"
+    },
+    {
+     "rect": [
+      361,
+      455,
+      720,
+      106
+     ],
+     "en": "Each zone: plan level, P on Plane X and Y, Case 1",
+     "yue": "每個高度區：平面高度、Plane X 同 Y 嘅 P、Case 1",
+     "at": "l"
+    },
+    {
+     "rect": [
+      361,
+      573,
+      720,
+      280
+     ],
+     "en": "Every zone's plans and elevations, with the working",
+     "yue": "每個高度區嘅平面同立面，連計算",
+     "at": "l"
+    }
+   ]
+  },
+  {
+   "id": "profile-menu",
+   "url": "index.html?project={project}",
+   "ready": "#sheet-list li",
+   "prep": [
+    {
+     "click": "#lwk-me"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "clip": [
+    1100,
+    0,
+    340,
+    440
+   ],
+   "marks": [
+    {
+     "sel": "#lwk-me",
+     "en": "Your picture: opens this menu",
+     "yue": "你嘅頭像：打開呢個選單",
+     "at": "l"
+    },
+    {
+     "sel": "[data-me=off]",
+     "en": "Work offline: keep this project on the device",
+     "yue": "離線工作：將呢個 project 存喺呢部機",
+     "at": "l"
+    },
+    {
+     "sel": "[data-me=admin]",
+     "en": "Admin: people and project members",
+     "yue": "Admin：人同 project 成員",
+     "at": "l"
+    },
+    {
+     "sel": "[data-me=account]",
+     "en": "Account: your password",
+     "yue": "Account：你嘅密碼",
+     "at": "l"
+    },
+    {
+     "sel": "[data-me=help]",
+     "en": "Help (F1)",
+     "yue": "Help (F1)",
+     "at": "l"
+    },
+    {
+     "sel": "#lwk-me-menu [data-theme=light]",
+     "en": "Theme: Light, Dark, Auto",
+     "yue": "主題：淺色、深色、自動",
+     "at": "l"
+    },
+    {
+     "sel": "[data-me=signout]",
+     "en": "Sign out",
+     "yue": "登出",
+     "at": "l"
+    }
+   ]
+  },
+  {
+   "id": "bell",
+   "image": "user/bell.png",
+   "k": 1,
+   "marks": [
+    {
+     "rect": [
+      14,
+      84,
+      338,
+      312
+     ],
+     "en": "For you: tasks given to you, @mentions, issues assigned to you - tick to mark read",
+     "yue": "For you：派俾你嘅 task、@ 你、指派俾你嘅 issue - 剔咗就當睇咗",
+     "at": "l"
+    },
+    {
+     "rect": [
+      270,
+      88,
+      84,
+      20
+     ],
+     "en": "Mark all read",
+     "yue": "全部標記已讀",
+     "at": "b"
+    },
+    {
+     "rect": [
+      14,
+      408,
+      300,
+      60
+     ],
+     "en": "Chat notifications in this browser",
+     "yue": "呢個瀏覽器嘅 chat 通知",
+     "at": "l"
+    },
+    {
+     "rect": [
+      14,
+      480,
+      338,
+      178
+     ],
+     "en": "Tell me about: every message, @mentions only, or nothing",
+     "yue": "通知我：每個訊息、只係 @ 我，或者乜都唔通知",
+     "at": "l"
+    },
+    {
+     "rect": [
+      14,
+      668,
+      322,
+      72
+     ],
+     "en": "Push when no page is open; Send a test",
+     "yue": "冇開頁面都推送；Send a test 試吓",
+     "at": "l"
+    },
+    {
+     "rect": [
+      14,
+      758,
+      300,
+      50
+     ],
+     "en": "The app: install it for its own window and badge",
+     "yue": "App：安裝之後有自己嘅視窗同數字標記",
+     "at": "l"
+    },
+    {
+     "rect": [
+      14,
+      822,
+      338,
+      88
+     ],
+     "en": "Look: Light, Dark, Auto",
+     "yue": "外觀：淺色、深色、自動",
+     "at": "l"
+    },
+    {
+     "rect": [
+      14,
+      932,
+      184,
+      22
+     ],
+     "en": "What's new in the viewer",
+     "yue": "Viewer 有咩新嘢",
+     "at": "l"
+    }
+   ]
+  },
+  {
+   "id": "tasks-kanban",
+   "url": "tasks.html?list={list}",
+   "ready": "#t-tabs button",
+   "prep": [
+    {
+     "click": "[data-view=kanban]"
+    },
+    {
+     "wait": 1200
+    }
+   ],
+   "clip": [
+    220,
+    40,
+    820,
+    700
+   ],
+   "marks": [
+    {
+     "sel": "[data-view=kanban]",
+     "en": "Kanban: the tasks as cards, a column per group",
+     "yue": "Kanban：task 變成卡，每個 group 一欄"
+    },
+    {
+     "rect": [
+      236,
+      150,
+      264,
+      48
+     ],
+     "en": "A group, with its Sheets and Dashboard",
+     "yue": "一個 group，連佢嘅 Sheets 同 Dashboard",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      244,
+      210,
+      246,
+      142
+     ],
+     "en": "A card: tick, dates, owner, sub-tasks, issues, comments, priority - click to open; drag to another column",
+     "yue": "一張卡：剔、日期、負責人、sub-task、issue、comment、優先 - 撳打開；拖去另一欄",
+     "at": "r"
+    },
+    {
+     "sel": "input.kb-new",
+     "en": "+ New task in this column",
+     "yue": "喺呢欄加 task",
+     "nth": 1
+    }
+   ]
+  },
+  {
+   "id": "tasks-gantt",
+   "url": "tasks.html?list={list}",
+   "ready": "#t-tabs button",
+   "prep": [
+    {
+     "click": "[data-view=gantt]"
+    },
+    {
+     "wait": 1200
+    }
+   ],
+   "clip": [
+    220,
+    40,
+    1220,
+    540
+   ],
+   "marks": [
+    {
+     "sel": "[data-view=gantt]",
+     "en": "Gantt: the tasks on a timeline",
+     "yue": "Gantt：task 喺時間軸上"
+    },
+    {
+     "sel": "[data-z=week]",
+     "en": "Zoom: Day, Week, Month",
+     "yue": "縮放：日、星期、月"
+    },
+    {
+     "sel": ".gt-today",
+     "en": "Today: back to today",
+     "yue": "Today：返去今日"
+    },
+    {
+     "rect": [
+      232,
+      186,
+      870,
+      22
+     ],
+     "en": "What the bars and marks mean",
+     "yue": "每種條同符號嘅意思",
+     "at": "b"
+    },
+    {
+     "rect": [
+      222,
+      296,
+      296,
+      30
+     ],
+     "en": "A task, its owner - click to open",
+     "yue": "一個 task 同負責人 - 撳打開",
+     "at": "l"
+    },
+    {
+     "rect": [
+      714,
+      298,
+      368,
+      22
+     ],
+     "en": "A bar: drag it to move the dates, drag an end to change one",
+     "yue": "一條 bar：拖成條改日期，拖一端改開始或者完結",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      884,
+      214,
+      14,
+      350
+     ],
+     "en": "Today",
+     "yue": "今日",
+     "at": "tr"
+    }
+   ]
+  },
+  {
+   "id": "tasks-dashboard",
+   "url": "tasks.html?list={list}",
+   "ready": "#t-tabs button",
+   "prep": [
+    {
+     "click": "[data-view=dash]"
+    },
+    {
+     "wait": 1500
+    }
+   ],
+   "clip": [
+    220,
+    40,
+    1220,
+    820
+   ],
+   "marks": [
+    {
+     "sel": "[data-view=dash]",
+     "en": "Dashboard: the list in numbers",
+     "yue": "Dashboard：用數字睇成個 list"
+    },
+    {
+     "sel": "#dd-group",
+     "en": "Group and period; count sub-tasks or not",
+     "yue": "Group 同時段；計唔計 sub-task"
+    },
+    {
+     "rect": [
+      236,
+      163,
+      1188,
+      105
+     ],
+     "en": "Total, completed, incomplete, overdue",
+     "yue": "總數、完成、未完成、過期",
+     "at": "l"
+    },
+    {
+     "rect": [
+      236,
+      281,
+      588,
+      196
+     ],
+     "en": "By completion status",
+     "yue": "按完成狀態"
+    },
+    {
+     "rect": [
+      836,
+      281,
+      588,
+      196
+     ],
+     "en": "By overdue status",
+     "yue": "按過期狀態",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      236,
+      490,
+      588,
+      218
+     ],
+     "en": "By assignee - click a name for their tasks",
+     "yue": "按負責人 - 撳個名睇佢嘅 task"
+    },
+    {
+     "rect": [
+      836,
+      490,
+      588,
+      218
+     ],
+     "en": "Average time from start to completion",
+     "yue": "由開始到完成嘅平均日數",
+     "at": "tr"
+    },
+    {
+     "rect": [
+      836,
+      720,
+      588,
+      140
+     ],
+     "en": "Completed per week",
+     "yue": "每星期完成數量",
+     "at": "tr"
+    }
+   ]
   }
  ]
 }

@@ -30,6 +30,7 @@ PART = [
         ['Undo / redo', 'Ctrl+Z / Ctrl+Y', '兩隻手指 tap / 三隻手指 tap'],
     ]),
     H3('Sheet 有用嘅工具'),
+    SHOT('sheet-view-menu'),
     P('**Split**、**Compare**、**2D + 3D** 同 **Links** 喺 sheet 工具列嘅 **View ▾** 入面（View 上面有粒點即係 Split、Compare 或者 2D + 3D 開緊）。Markup 屬性列（layer、線、填色、文字、字型）只會喺揀咗畫圖工具或者揀咗 markup 嗰陣出現，**1:** 比例只會喺 Measure、Dimension、Area 同 Angle 出現 - 其餘時間將位留俾張圖。**👁 Markups** 同 **Hide closed** 喺右邊 issue 清單頂部，同 3D 版一樣。'),
     UL([
         '**Split** 喺隔籬打開第二張 sheet，有自己嘅 zoom。',
@@ -37,6 +38,9 @@ PART = [
         '**Compare** 顯示同一張 sheet 之前 upload 嘅版本、另一張 sheet，或者你電腦入面一個 PDF 有乜唔同：紅色 = 刪咗，綠色 = 加咗。**N / Shift+N** 喺改動之間跳。',
         '**2D + 3D** 喺 sheet 隔籬打開 3D model。揀 **Stand there** 或者 **Look at**，然後撳 plan：3D 視圖就會去嗰個位。Plan 上面有個「你喺度」標記跟住 3D 鏡頭；剔 **Follow** 就會一直睇住佢，你喺唔同樓層之間行嘅時候會自動轉 plan。只有 plan view 有用，section 同 elevation 唔得。',
     ]),
+    SHOT('sheet-split'),
+    SHOT('sheet-compare'),
+    SHOT('sheet-2d3d'),
     H3('Markup 工具'),
     SHOT('markup-tools'),
     TABLE(['類別', '工具'], [
@@ -93,6 +97,7 @@ PART = [
         '**Page Up / Page Down** 上落一層；**Whole building** 返去成個 3D model。',
         '**Plan overlay**（樓層清單旁邊）將嗰層嘅 plan sheet 鋪喺 model 上面，等你對比圖同 model。',
     ]),
+    SHOT('model-floorplan'),
     H3('Models panel'),
     UL([
         '每個 model（主 model 同每個 link）一個剔格。唔剔就會隱藏個 model，慳返記憶體；**All on / All off** 一齊開關，視圖唔會變。',
@@ -127,6 +132,7 @@ PART = [
         'Browser 用喺 fast 3D 格式 publish 嘅 model（即係正常 Publish to Viewer 出嚟嘅）。',
     ]),
     H3('Display'),
+    SHOT('model-display'),
     TABLE(['模式', '用嚟'], [
         ['**Shaded**', '正常睇，用 model 自己嘅顏色'],
         ['**White**', '乾淨、冇顏色，啱 review 同截圖'],
@@ -142,6 +148,7 @@ PART = [
     H2('Section box、section plane 同 floor plan'),
     P('用 section box 將棟樓一部分切開，用 section plane 沿住任何一個面切；切到嘅實體會顯示橙色 hatch，好似圖則咁。'),
     H3('Section 工具'),
+    SHOT('model-tools'),
     TABLE(['掣', '做乜'], [
         ['**Box**（剔）', '開 section box，圍住成個 project'],
         ['**Plane**', '撳一個面：model 就喺嗰個面切開'],
@@ -200,6 +207,7 @@ PART = [
     H2('碰撞同淨高檢查'),
     P('3D 版左邊 panel 嘅 **Checks** 會搵出撞埋一齊嘅元件，同埋淨高唔夠嘅地方 - 喺 project 自己嘅 model 入面，亦可以同一齊 load 咗嘅顧問 model 比。佢檢查嘅係 viewer 畫出嚟嘅嘢（Revit medium detail、IFC 轉換後嘅樣）：用嚟日常快速協調，唔係正式嘅 clash report。'),
     H3('碰撞（Clash）：一條規則，然後 Run'),
+    SHOT('clash-rule'),
     OL([
         '喺 Models panel load 你要嘅 model（顧問嘅 IFC、疊加另一個 project）。',
         'Checks > **Clash** > **+**。俾條規則一個名，揀 **Set A** 同 **Set B**：每邊剔一個或者多個 model（或者 **All models**，之後先 load 嘅 link 都會計埋）同要檢查嘅類別 - 例如建築 model 嘅 *Ceilings* 對結構 model 嘅 *Beams*，或者所有建築 link 嘅 *Walls* 對所有機電 link 嘅 *Ducts* 同 *Pipes*。A 同 B 可以係同一啲 model：即係檢查佢哋自己入面嘅碰撞。model 上面嘅 **All** / **None** 一次過剔晒或者唔剔晒。**Name has** / **Name has not** 只保留名、type 或者 family 有（或者冇）呢啲字嘅元件 - 例如 *Name has not: Finish*（幾個字之間用逗號：任何一個都算）。',
@@ -236,7 +244,9 @@ PART = [
         '**Export the list**：**Spreadsheet** 將列出嘅碰撞儲存做 CSV 檔俾 Excel 用（狀態、種類、深度、樓層、兩個元件同佢哋嘅 id、project 座標位置、issue）。**Report** 喺新分頁開一份報告 - **With pictures** 會逐個顯示並影低每個碰撞（每個大約一秒；**Stop** 停），**Without** 即刻出 - 然後 **Print / Save as PDF**，或者 **Save to Folders (PDF)** 存入 project 嘅 Folders。如果瀏覽器擋咗個分頁，請容許呢個網站彈出視窗。',
         'publish 咗新版或者顧問送咗新 model 之後**再 Run**：每個碰撞會標 **New**、仍然存在，或者 **Gone**。已經冇咗嘅碰撞仍然會顯示佢個 issue，方便關閉。',
     ]),
+    SHOT('clash-results'),
     H3('淨高（Headroom）'),
+    SHOT('headroom'),
     UL([
         '**Probe：** Checks > **Headroom** > **Probe**，然後撳一塊樓板、一級梯級或者平台。會有條線垂直向上去到上面第一樣嘢，顯示高度 - 低過樓梯限制係紅色，低過樓面限制係橙色，夠高係綠色。**Keep** 會儲存做所有人睇到嘅尺寸。**Esc** 停。',
         '**Scan：** 設定限制（**Floors** 預設 2.30 m；**Stairs, ramps** 預設 2.00 m；**Ignore lower than** 預設 1.5 m - 矮過呢個嘅空間唔係人用嘅：坐廁或者長櫈下面、管道或者天花槽入面、樓梯伸入上一層樓板底嘅位置），揀樓層（由 ... 到 ...）或者 section box 入面，然後撳 **Scan**。樓面、樓梯、平台同斜道會以 0.25 m 網格量度（樓梯 0.2 m，窄嘅風喉、喉管同樑下面更密），量到上面嘅嘢：樓板、天花、樑、上面嘅樓梯、風喉、喉管、線槽、機電設備。',
@@ -247,6 +257,7 @@ PART = [
         '**Include consultant models**（喺 Models counted 入面，預設開）：顧問嘅 IFC model 都會計，頁面未載入嘅會喺 scan 嗰陣載入。',
         '鋪喺樓板上面嘅地台面層、企喺樓面上嘅樓梯，唔會當做頭頂嘅嘢。高度係由人企嘅位置垂直量（樓梯就由梯級量）。',
     ]),
+    SHOT('headroom-results'),
     H3('SBD：點樣準備 model 同送去 viewer'),
     P('Checks > **SBD** 需要 Revit 提供乜，同埋將 mass 送去 viewer 嘅步驟。全部由 model 讀出嚟 - 唔使每個區人手畫嘢。'),
     LABEL('要求'),
@@ -324,6 +335,7 @@ PART = [
         '**CAD 輸出：** **CAD ...** > **DXF**（或者 **DWG**，由 server 嘅 ODA File Converter 整）會 save 晒所有平面、立面同街道峽谷，每個區一行，每張有標題；Plan 視窗嘅 **DXF / DWG** 只 save 而家見到嗰張，平面用 model 本身嘅坐標（可以疊落地盤圖）。一種嘢一個 layer - SBD-SITE、SBD-STREET、SBD-BLDG、SBD-IS、SBD-PE、SBD-NOT、SBD-CANYON、SBD-LP、SBD-DIM、SBD-TEXT ... - 單位係米。',
         '**縮放：** 喺 Plan、Elevation 同 Street canyon 視圖，用滑鼠轆（或者兩指）喺指標位置縮放，拖動移動，右下角有 **+**、**-** 同 **Fit**（或者雙擊）。',
     ]),
+    SHOT('sbd-report'),
     H2('喺 model 入面行'),
     P('Walk 模式將你放喺棟樓入面眼睛嘅高度，跟住樓板、樓梯同斜路行。'),
     P('**開始：** 撳 **Walk**，然後撳一塊樓板（撳牆會將你放喺牆前面嘅樓板）。或者右鍵撳一個位揀 **Walk from here**。開始行會熄 floor plan 同 section box。'),

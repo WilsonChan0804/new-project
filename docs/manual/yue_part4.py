@@ -21,6 +21,7 @@ PART = [
     H2('Issue 同 BCF'),
     P('Issue 係一個 markup 或者 3D 嘅一點，有標題、類型、負責人、到期日同對話；server 會幫佢編號（#N），同一個 issue 會喺 Sheets、3D、Dashboard 同 Revit 出現。'),
     H3('開 issue'),
+    SHOT('issue-new'),
     TABLE(['喺邊', '點做'], [
         ['喺 sheet 上面', '將頂部轉做 **Issue** 再畫 markup；或者揀一個 markup 撳 **Issue**；或者右鍵撳佢揀 **Raise issue**。會自動夾一張清晰嘅圖則截圖：直接由 PDF 用大約 200 dpi 畫出嚟，唔受你放大幾多或者電腦嘅速度設定影響。'],
         ['喺 3D', '撳 **Add issue**，然後撳個位（iPad：㩒住）。鏡頭、section 同隱藏咗嘅元件會一齊儲存，仲會夾一張截圖。**Mark up snapshot** 俾你喺張相上面畫嘢（cloud、箭咀、文字等等）。'],
@@ -36,6 +37,7 @@ PART = [
         ['**Priority**', 'Low、Normal（預設）、High、Critical'],
         ['**Template**', '載入一套儲存咗嘅欄位；**Save as template** 將而家嘅分享俾成個 project'],
     ]),
+    SHOT('issue-3d'),
     H3('跟進 issue'),
     UL([
         '喺清單撳一個 issue（或者 3D 入面佢支 pin）打開佢。喺 3D，視圖會返去開 issue 嗰個人見到嘅樣：同一個眼位同方向、section box 連佢嘅角度（或者 section plane）、隱藏咗嘅元件、平行定透視，同 floor plan。**Show in view** 同 issue 連結都一樣。',

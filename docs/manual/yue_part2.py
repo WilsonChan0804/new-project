@@ -37,6 +37,9 @@ PART = [
         '**Dashboard：** 總數、完成、未完成同過咗期，按負責人、按 project、平均用幾耐同就快到期。**Activities：** 所有改動，邊個改。',
         '**Filter ▾**（搜尋格旁邊）入面有：邊啲 task（全部、未完成、完成咗、過期、我嘅）、負責人同優先次序，仲有排序（**Sort**、**Group by**）；掣上面會講設咗幾多個篩選（「Filter · 2」），**Clear filters** 還原。用 **Customize** 揀顯示邊啲欄。每個 list 可以有自己嘅欄（人、選項、文字、日期、數字），例如 Modelers 同 Project Manager。',
     ]),
+    SHOT('tasks-kanban'),
+    SHOT('tasks-gantt'),
+    SHOT('tasks-dashboard'),
     H3('一個 task'),
     SHOT('task-detail'),
     UL([
@@ -149,6 +152,7 @@ PART = [
         'Outlook（Add to Outlook）只會有你自己嘅假期，唔會有同事嘅。',
     ]),
     H2('通知同 app'),
+    SHOT('bell'),
     P('有新訊息唔使 refresh 都會通知你，viewer 仲可以裝成一個 app。'),
     UL([
         '**開住任何一版 viewer 嘅時候**（任何一版、背景嘅分頁，或者個 app）：新訊息會喺 Windows、Mac 同 Android 彈通知；撳一下就打開嗰個 chat 去到嗰條訊息。你睇緊嗰個 chat 就唔會彈。分頁標題會顯示未讀數，例如 **(3) LWK Viewer**，app 個 icon 都會有。',
@@ -160,6 +164,7 @@ PART = [
         '**iPhone／iPad：** 先喺 Safari > 分享 > **加至主畫面**，再由主畫面個 icon 打開；然後喺鈴度開通知、撳 **Turn on for this device**，再撳 **Send a test**。收唔到嘅話，會講埋原因（例如 server 連唔到 Apple）。Server 更新之後，請關一次再開一次 push。',
     ]),
     H2('外觀、連結同新功能'),
+    SHOT('profile-menu'),
     P('幾樣小嘢，等你喺 viewer 入面易啲搵路，又易啲同人分享。'),
     UL([
         '**深色模式（Dark mode）：** 鈴 > **Look** > **Dark**。**Auto** 跟你部電腦或者手機（佢設咗夜晚轉深色就跟住轉）；**Light** 係平時嘅樣。每部電腦、每部手機各自記住。圖則、PDF、文件預覽同白板會保持白色（當係紙）；3D 背景會變深灰，除非你喺 Display 揀咗自己嘅顏色。',

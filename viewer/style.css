@@ -177,6 +177,9 @@ aside {
   border-bottom: 1px solid var(--line);
   position: sticky; top: 0; background: var(--panel); z-index: 2;
 }
+/* the 3D Models heading holds its own controls, so it is too tall to stick:
+   the shorter headings stuck over it left its lower part showing */
+#models > .panel-head:first-child { position: relative; }
 #filter-tabs { display: flex; gap: 4px; }
 #filter-tabs button { font-size: 12px; padding: 3px 8px; font-weight: 400; }
 

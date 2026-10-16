@@ -38,7 +38,7 @@ DOC = [
     ]),
     H2('Before you start'),
     P("You need an account, a supported browser and the viewer's web address; nothing is installed on your computer."),
-    P("**The pictures:** each page's chapter starts with a screenshot in which every panel, button and choice has a red number; the list under it says what each number does. They come from a demo project, so your names and drawings will differ. In Help, click a picture to see it full size."),
+    P("**The pictures:** each page's chapter starts with a screenshot in which every panel, button and choice has a red number; the list under it says what each number does. Most come from a demo project and a few from a live one, so your names and drawings will differ. In Help, click a picture to see it full size."),
     LABEL('Your account'),
     UL([
         'An admin creates your account and sends you an invitation with a **temporary password**.',
@@ -152,6 +152,9 @@ DOC = [
         '**Dashboard:** total, completed, incomplete and overdue, by owner, by project, average duration and due soon. **Activities:** everything that changed, by whom.',
         '**Filter ▾** (beside the search) holds which tasks (all, not done, done, overdue, mine), owner and priority, and the order (**Sort**, **Group by**); it says how many filters are set ("Filter · 2"), and **Clear filters** resets them. **Customize** which columns show. Lists can have their own columns (person, select, text, date, number), for example Modelers and Project Manager.',
     ]),
+    SHOT('tasks-kanban'),
+    SHOT('tasks-gantt'),
+    SHOT('tasks-dashboard'),
     H3('A task'),
     SHOT('task-detail'),
     UL([
@@ -264,6 +267,7 @@ DOC = [
         'Outlook (Add to Outlook) gets your own leave, not your colleagues\'.',
     ]),
     H2('Notifications and the app'),
+    SHOT('bell'),
     P('New chat messages reach you without reloading any page, and the viewer can be installed as an app.'),
     UL([
         '**While a viewer page is open** (any page, a tab in the background, or the app): new messages show as notifications on Windows, Mac and Android; a click opens the chat at the message. The chat you are looking at stays quiet. The tab title shows the unread count, e.g. **(3) LWK Viewer**, and so does the app\'s icon.',
@@ -275,6 +279,7 @@ DOC = [
         '**iPhone and iPad:** first add the viewer to the Home Screen (Safari > Share > **Add to Home Screen**) and open it from there; then in the bell turn on notifications and **Turn on for this device**, and press **Send a test**. If it does not arrive, the message says why (for example the server cannot reach Apple). After a server update, turn push off and on again once.',
     ]),
     H2('Look, links and what\'s new'),
+    SHOT('profile-menu'),
     P('Small things that make the viewer easier to find your way around and to share.'),
     UL([
         '**Dark mode:** the bell > **Look** > **Dark**. **Auto** follows your computer or phone (dark at night if it is set so); **Light** is the usual look. It is kept on each computer or phone. Drawings, PDFs, document previews and the whiteboard stay white, as paper; the 3D background turns dark grey unless you picked a colour in Display.',
@@ -346,6 +351,7 @@ DOC = [
         ['Undo / redo', 'Ctrl+Z / Ctrl+Y', 'Two-finger tap / three-finger tap'],
     ]),
     H3('Useful sheet tools'),
+    SHOT('sheet-view-menu'),
     P('**Split**, **Compare**, **2D + 3D** and **Links** are under **View ▾** in the sheet toolbar (a dot on View says Split, Compare or 2D + 3D is on). The markup properties bar (layer, line, fill, text, font) shows only while a drawing tool is in hand or markups are selected, and the **1:** scale only with Measure, Dimension, Area and Angle - the rest of the time the drawing gets the room. **👁 Markups** and **Hide closed** are at the top of the issue list on the right, as on the 3D page.'),
     UL([
         '**Split** opens a second sheet beside the first, with its own zoom.',
@@ -353,6 +359,9 @@ DOC = [
         '**Compare** shows what changed against an earlier upload of the same sheet, another sheet, or a PDF from your computer: red = removed, green = added. **N / Shift+N** jump between changes.',
         '**2D + 3D** opens the 3D model beside the sheet. Choose **Stand there** or **Look at**, then click a plan: the 3D view goes to that spot. A "you are here" marker on the plan follows the 3D camera; tick **Follow** to keep it in view and switch plans as you walk between floors. Only plan views take part, not sections or elevations.',
     ]),
+    SHOT('sheet-split'),
+    SHOT('sheet-compare'),
+    SHOT('sheet-2d3d'),
     H3('Markup tools'),
     SHOT('markup-tools'),
     TABLE(['Group', 'Tools'], [
@@ -409,6 +418,7 @@ DOC = [
         '**Page Up / Page Down** step up and down; **Whole building** returns to the full 3D model.',
         "**Plan overlay** (beside the floor list) lays that floor's plan sheet over the model, so you can compare drawing and model.",
     ]),
+    SHOT('model-floorplan'),
     H3('Models panel'),
     UL([
         'One tick box per model (the host model and each link). Untick to hide a model and free memory; **All on / All off** switch them together and keep your view.',
@@ -443,6 +453,7 @@ DOC = [
         'The browser works with models published in the fast 3D format (the normal Publish to Viewer output).',
     ]),
     H3('Display'),
+    SHOT('model-display'),
     TABLE(['Mode', 'Use it for'], [
         ['**Shaded**', "Normal viewing with the model's own colours"],
         ['**White**', 'A clean, colour-free look for reviews and screenshots'],
@@ -458,6 +469,7 @@ DOC = [
     H2('Section box, section plane and floor plans'),
     P('Use the section box to cut a part of the building open, and a section plane to cut along any surface; cut solids show an orange hatch, as on a drawing.'),
     H3('Section tools'),
+    SHOT('model-tools'),
     TABLE(['Button', 'What it does'], [
         ['**Box** (tick)', 'Turns the section box on, fitted round the whole project'],
         ['**Plane**', 'Click a surface: the model is cut on that face'],
@@ -516,6 +528,7 @@ DOC = [
     H2('Clash and headroom checks'),
     P('The **Checks** section of the 3D page\'s left panel finds elements that run into each other, and places where the clear height is too low - in the project\'s own model and against the consultants\' models loaded with it. It checks what the viewer draws (Revit at medium detail, the IFC as converted): quick everyday coordination, not a formal clash report.'),
     H3('Clash: a rule, then Run'),
+    SHOT('clash-rule'),
     OL([
         'Load the models you want in the Models panel (a consultant\'s IFC, another project overlaid).',
         'Checks > **Clash** > **+**. Name the rule, and choose **Set A** and **Set B**: on each side tick one or more models (or **All models**, which also takes in links loaded later) and the categories to check - for example *Ceilings* in the architectural model against *Beams* in the structural one, or *Walls* in every architectural link against *Ducts* and *Pipes* in every MEP link. A and B can be the same models: clashes inside them. **All** / **None** above the models tick or untick them all at once. **Name has** / **Name has not** keeps only elements with (or without) those words in their name, type or family - for example *Name has not: Finish* (a comma between words: any of them).',
@@ -552,7 +565,9 @@ DOC = [
         '**Export the list**: **Spreadsheet** saves the clashes listed as a CSV file for Excel (status, kind, depth, floor, both elements with their ids, where in project coordinates, the issue). **Report** opens a report in a new tab - **With pictures** shows and pictures each clash in turn (about a second each; **Stop** ends it), **Without** is immediate - then **Print / Save as PDF**, or **Save to Folders (PDF)** to keep it in the project\'s Folders. Allow pop-ups for the site if the browser blocks the tab.',
         '**Run again** after a new publish or a new consultant model: each clash is marked **New**, still there, or **Gone**. A clash that has gone still shows its issue, so it can be closed.',
     ]),
+    SHOT('clash-results'),
     H3('Headroom'),
+    SHOT('headroom'),
     UL([
         '**Probe:** Checks > **Headroom** > **Probe**, then click a floor, a stair tread or a landing. A line goes straight up to the first thing above, with its height - red under the stair limit, amber under the floor limit, green otherwise. **Keep** saves it as a dimension for everyone. **Esc** stops.',
         '**Scan:** set the limits (**Floors**, default 2.30 m; **Stairs, ramps**, default 2.00 m; **Ignore lower than**, default 1.5 m - a lower space is not one people use: under a WC or a bench, in a duct or a ceiling void, where a stair runs in under the floor above), choose the floors (from ... to ...) or inside the section box, then **Scan**. Floors, stairs, landings and ramps are measured on a 0.25 m grid (0.2 m on stairs, finer under narrow ducts, pipes and beams) up to what is overhead: slabs, ceilings, beams, stairs above, ducts, pipes, trays, equipment.',
@@ -563,6 +578,7 @@ DOC = [
         '**Include consultant models** (under Models counted, on by default): the consultants\' IFC models count too - those not loaded on the page are loaded when you scan.',
         'A floor finish laid on a slab, or a stair standing on a floor, is not counted as overhead. Height is measured vertically from where people stand (on a stair, from the treads).',
     ]),
+    SHOT('headroom-results'),
     H3('SBD: how to prepare the model and send it'),
     P('What Checks > **SBD** needs from Revit, and the steps to get the masses to the viewer. Everything is read from the model - nothing is drawn by hand for each zone.'),
     LABEL('Requirements'),
@@ -640,6 +656,7 @@ DOC = [
         '**CAD export:** **CAD ...** > **DXF** (or **DWG**, made on the server by the ODA File Converter) saves every plan, elevation and street canyon, a row per zone, each titled; in the Plan window **DXF / DWG** saves the drawing shown, a plan in the model\'s own coordinates (it lies over the site plan). One layer per kind - SBD-SITE, SBD-STREET, SBD-BLDG, SBD-IS, SBD-PE, SBD-NOT, SBD-CANYON, SBD-LP, SBD-DIM, SBD-TEXT ... - in metres.',
         '**Zoom:** in the Plan, Elevation and Street canyon views, the mouse wheel (or a pinch) zooms at the pointer, a drag pans, and **+**, **-** and **Fit** (or a double-click) are at the bottom right.',
     ]),
+    SHOT('sbd-report'),
     H2('Walking through the model'),
     P('Walk mode puts you at eye level inside the building, following floors, stairs and ramps.'),
     P('**Start:** click **Walk**, then click a floor (clicking a wall places you on the floor in front of it). Or right-click a spot and choose **Walk from here**. Walking turns off the floor plan and section box.'),
@@ -680,6 +697,7 @@ DOC = [
     H2('Issues and BCF'),
     P('An issue is a markup or a 3D point with a title, type, owner, due date and a conversation; it is numbered by the server (#N) and the same issue appears on Sheets, in 3D, on the Dashboard and in Revit.'),
     H3('Raising an issue'),
+    SHOT('issue-new'),
     TABLE(['Where', 'How'], [
         ['On a sheet', 'Switch the top bar to **Issue** and draw a markup; or select a markup and press **Issue**; or right-click it and choose **Raise issue**. A sharp picture of the drawing is attached automatically: it is drawn from the PDF itself at about 200 dpi, whatever the zoom or the speed settings of your computer.'],
         ['In 3D', 'Click **Add issue**, then click the spot (on iPad: long press). The camera, section and hidden elements are saved with it, and a snapshot is attached. **Mark up snapshot** lets you draw on the picture (clouds, arrows, text and more).'],
@@ -695,6 +713,7 @@ DOC = [
         ['**Priority**', 'Low, Normal (default), High, Critical'],
         ['**Template**', 'Load a saved set of fields; **Save as template** shares the current one with the project'],
     ]),
+    SHOT('issue-3d'),
     H3('Working an issue'),
     UL([
         'Click an issue in the list (or its pin in 3D) to open it. In 3D the view goes back to exactly what the author saw: the same eye and direction, the section box with its turn (or the section plane), hidden elements, parallel or perspective view and the floor plan. **Show in view** and links to the issue do the same.',

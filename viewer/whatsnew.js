@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-22", date: "17 Oct 2026",
+    items: [
+      "**Help and the user manual: 19 more numbered pictures** - the View menu, Split, Compare and 2D + 3D on Sheets; raising an issue (2D and 3D); the 3D Section, Measure, Display and Floor plan; Clash (the rule and the results), Headroom (the settings and the results) and the SBD report; the bell and your profile menu; and the Kanban, Gantt and Dashboard views of a task list.",
+      "3D: the **Models** heading (with Light mode and All on / All off) no longer stays stuck at the top of the left panel over the other sections as you scroll.",
+    ],
+  },
+  {
     version: "2026-11-21", date: "16 Oct 2026",
     items: [
       "Tasks, Folders and Chat: the side columns no longer blink - since 2026-11-19 the page kept redrawing them many times a second.",
