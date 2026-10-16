@@ -4,6 +4,7 @@ from blocks import *
 
 PART = [
     H2('Sheets：2D 圖則'),
+    SHOT('sheets'),
     P('Sheets 版顯示每張 publish 咗嘅 sheet，係真正嘅 PDF，搜尋得到，即刻可以 markup；markup 自己會儲存，冇 Save 掣。'),
     H3('搵 sheet'),
     UL([
@@ -37,6 +38,7 @@ PART = [
         '**2D + 3D** 喺 sheet 隔籬打開 3D model。揀 **Stand there** 或者 **Look at**，然後撳 plan：3D 視圖就會去嗰個位。Plan 上面有個「你喺度」標記跟住 3D 鏡頭；剔 **Follow** 就會一直睇住佢，你喺唔同樓層之間行嘅時候會自動轉 plan。只有 plan view 有用，section 同 elevation 唔得。',
     ]),
     H3('Markup 工具'),
+    SHOT('markup-tools'),
     TABLE(['類別', '工具'], [
         ['形狀', 'Rect、Circle、Line、Arrow、Cloud、Polyline、Polygon'],
         ['手寫', 'Pen（一筆畫完之後停定唔郁，就會變成直線、圓或者長方形）、Highlighter'],
@@ -59,6 +61,7 @@ PART = [
         '**BCF** export sheet 嘅 issue 俾 Revit 或 Navisworks（睇「Issue 同 BCF」）。',
     ]),
     H2('3D：四圍睇'),
+    SHOT('model'),
     P('3D 版嘅滑鼠用法同大部分 BIM viewer 一樣：右掣轉、中間掣 pan、轆 zoom、左掣揀。'),
     H3('滑鼠、觸控同鍵盤'),
     TABLE(['動作', '滑鼠', 'iPad / iPhone'], [
@@ -285,6 +288,8 @@ PART = [
         '改咗之後再 import 一次 - 會取代 model 同結果（儲存咗嘅結果會留低）。',
     ]),
     H3('SBD（PNAP APP-152）'),
+    SHOT('model-sbd'),
+    SHOT('sbd-plan'),
     P('Checks > **SBD** 會由 Revit model 嘅建築 **mass** 計算設計要求 (2) - 通風度 **P** 同分隔距離 **S1 / S2 / S3** - 同設計要求 (1) 街道峽谷 **U**。唔使畫 Filled Region，亦唔使每個區揀嘢：每個高度區都係由 mass 切出嚟。'),
     UL([
         '**喺 Revit 要建乜：** 每座建築（平台、塔樓）用 **Mass**（Massing & Site > In-Place Mass，或者 Mass family）；**地盤界線**用 Property Line（或者喺 10 mm 內閉合嘅線）；每條**街用一塊 Floor**，類型名有 **Street**、**Road**、**Lane** 或者 **Path**（例如 *SBD Street*），由街道界線畫到街道界線，喺街道嘅高度（佢嘅**類型名**會做街名）。唔使開晒啲樓層 - 高度由 mass 嚟。',

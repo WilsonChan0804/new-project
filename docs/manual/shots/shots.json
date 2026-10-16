@@ -1,0 +1,1143 @@
+{
+ "shots": [
+  {
+   "id": "header",
+   "url": "index.html?project={project}",
+   "ready": "#sheet-list li",
+   "clip": [
+    0,
+    0,
+    1440,
+    64
+   ],
+   "marks": [
+    {
+     "rect": [
+      104,
+      6,
+      500,
+      30
+     ],
+     "en": "The pages: Projects, Sheets, 3D, Board, Tasks, Chat (red: unread), Calendar, Folders, Dashboard",
+     "yue": "各頁：Projects、Sheets、3D、Board、Tasks、Chat（紅色數字：未讀）、Calendar、Folders、Dashboard"
+    },
+    {
+     "sel": "select.two-proj",
+     "en": "The project you are working in",
+     "yue": "你而家用緊嘅 project"
+    },
+    {
+     "sel": "select.two-part",
+     "en": "Which part of the project (its model and sheets, or another part)",
+     "yue": "project 嘅邊部分（model 同圖則，或者其他部分）"
+    },
+    {
+     "sel": "#mode-comment",
+     "en": "Comment: what you draw is a comment",
+     "yue": "Comment：畫嘅嘢係 comment"
+    },
+    {
+     "sel": "#mode-issue",
+     "en": "Issue: what you draw is an issue (numbered, with status and owner)",
+     "yue": "Issue：畫嘅嘢係 issue（有編號、狀態同負責人）"
+    },
+    {
+     "sel": "#files-btn",
+     "en": "Files: download PDFs, import PDF / CAD, BCF, export",
+     "yue": "Files：下載 PDF、匯入 PDF / CAD、BCF、匯出"
+    },
+    {
+     "sel": "#lwk-search-btn",
+     "en": "Search everything (Ctrl+K)",
+     "yue": "搜尋全部 (Ctrl+K)"
+    },
+    {
+     "sel": "#lwk-help-btn",
+     "en": "Help - this manual, searchable",
+     "yue": "Help - 呢本手冊，可以搜尋"
+    },
+    {
+     "sel": "#lwk-bell",
+     "en": "Notifications",
+     "yue": "通知"
+    },
+    {
+     "sel": "#lwk-send-task",
+     "en": "+ Task: give someone a task",
+     "yue": "+ Task：派 task 俾人"
+    },
+    {
+     "sel": "#lwk-me",
+     "en": "Your profile: name, password, dark mode, sign out",
+     "yue": "你嘅資料：名、密碼、深色模式、登出"
+    }
+   ]
+  },
+  {
+   "id": "sheets",
+   "url": "index.html?project={project}",
+   "ready": "#sheet-list li",
+   "prep": [
+    {
+     "click": "#sheet-list li"
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "marks": [
+    {
+     "sel": "#sheet-list",
+     "en": "The sheets - click one to open it",
+     "yue": "圖則清單 - 撳一張打開"
+    },
+    {
+     "sel": "#sheet-find",
+     "en": "Search sheet numbers, names and the words on the drawings",
+     "yue": "搜尋圖號、圖名同圖上嘅字"
+    },
+    {
+     "sel": "#set-menu-btn",
+     "en": "Sheet sets: pick several, rename, archive, delete",
+     "yue": "圖則組：揀幾張、改名、封存、刪除"
+    },
+    {
+     "sel": "#tools",
+     "en": "The mark-up tools (next picture)",
+     "yue": "Mark-up 工具（下一張圖）"
+    },
+    {
+     "sel": "#view-menu-btn",
+     "en": "View: split, compare two versions, sync, links between sheets",
+     "yue": "View：分割、比較兩個版本、同步、圖則之間嘅連結"
+    },
+    {
+     "sel": "#undo",
+     "en": "Undo / redo",
+     "yue": "復原 / 重做"
+    },
+    {
+     "sel": "#zoom-label",
+     "en": "Rotate, zoom out / in, Fit",
+     "yue": "旋轉、縮小 / 放大、Fit"
+    },
+    {
+     "sel": "#page",
+     "en": "The sheet, with its issues and comments - click one to open it",
+     "yue": "圖則，連 issue 同 comment - 撳一個打開",
+     "at": "tl"
+    },
+    {
+     "sel": "#filter-tabs",
+     "en": "All / Issues / Comments",
+     "yue": "全部 / Issues / Comments"
+    },
+    {
+     "sel": "#show-markups",
+     "en": "Show or hide the mark-ups on the drawing",
+     "yue": "顯示或隱藏圖上嘅 mark-up"
+    },
+    {
+     "sel": "#hide-done",
+     "en": "Hide closed issues",
+     "yue": "隱藏已關閉嘅 issue"
+    },
+    {
+     "sel": "#group-by",
+     "en": "Group the list by sheet, status, person ...",
+     "yue": "按圖則、狀態、人 ... 分組"
+    },
+    {
+     "sel": "#item-search",
+     "en": "Search the issues and comments",
+     "yue": "搜尋 issue 同 comment"
+    },
+    {
+     "sel": "#filter-bar",
+     "en": "Filter by type and status; sort",
+     "yue": "按類型同狀態篩選；排序"
+    },
+    {
+     "sel": "#item-list > li",
+     "en": "An issue: number, title, who, when, status - click to open it",
+     "yue": "一個 issue：編號、標題、邊個、幾時、狀態 - 撳一下打開",
+     "nth": 1
+    },
+    {
+     "sel": "#sheet-link",
+     "en": "Copy a link to this sheet",
+     "yue": "複製呢張圖嘅連結"
+    }
+   ]
+  },
+  {
+   "id": "markup-tools",
+   "url": "index.html?project={project}",
+   "ready": "#sheet-list li",
+   "prep": [
+    {
+     "click": "#sheet-list li"
+    },
+    {
+     "wait": 1500
+    }
+   ],
+   "clip": {
+    "sel": "#tools",
+    "pad": [
+     0,
+     0,
+     30,
+     0
+    ]
+   },
+   "marks": [
+    {
+     "sel": "button[data-tool=select]",
+     "en": "Select (V): pick, move and change mark-ups",
+     "yue": "揀選 (V)：揀、搬同改 mark-up",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=pan]",
+     "en": "Pan (H): move the sheet",
+     "yue": "移動 (H)：拖動張圖",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=rect]",
+     "en": "Rectangle (B)",
+     "yue": "長方形 (B)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=ellipse]",
+     "en": "Circle (O)",
+     "yue": "圓形 (O)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=line]",
+     "en": "Line (L)",
+     "yue": "直線 (L)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=arrow]",
+     "en": "Arrow (A)",
+     "yue": "箭咀 (A)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=cloud]",
+     "en": "Cloud (C) - the usual issue mark",
+     "yue": "雲線 (C) - 最常用嚟標 issue",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=cloudpoly]",
+     "en": "Cloud, free shape (Shift+C)",
+     "yue": "自由形雲線 (Shift+C)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=polyline]",
+     "en": "Polyline (P)",
+     "yue": "多段線 (P)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=polygon]",
+     "en": "Polygon (G)",
+     "yue": "多邊形 (G)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=pen]",
+     "en": "Pen (F): freehand",
+     "yue": "筆 (F)：手繪",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=highlight]",
+     "en": "Highlighter (I)",
+     "yue": "螢光筆 (I)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=text]",
+     "en": "Text (T)",
+     "yue": "文字 (T)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=textbox]",
+     "en": "Text box (X)",
+     "yue": "文字框 (X)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=callout]",
+     "en": "Callout (K): text with a leader",
+     "yue": "引線標註 (K)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=stamp]",
+     "en": "Stamp (S): Approved, Rejected ...",
+     "yue": "印章 (S)：Approved、Rejected ...",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=measure]",
+     "en": "Measure (M): a length, at the sheet's scale",
+     "yue": "量度 (M)：按圖則比例量長度",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=dimension]",
+     "en": "Dimension (D)",
+     "yue": "尺寸線 (D)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=snip]",
+     "en": "Snip (Q): a picture of part of the sheet",
+     "yue": "截圖 (Q)：截取部分圖則",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=selecttext]",
+     "en": "Select text (Y) on the drawing",
+     "yue": "揀選圖上文字 (Y)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=area]",
+     "en": "Area (E)",
+     "yue": "面積 (E)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=angle]",
+     "en": "Angle (U)",
+     "yue": "角度 (U)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=eraser]",
+     "en": "Eraser (W)",
+     "yue": "擦膠 (W)",
+     "at": "below"
+    },
+    {
+     "sel": "button[data-tool=match]",
+     "en": "Match properties (J): copy one mark-up's look to others",
+     "yue": "套用格式 (J)：將一個 mark-up 嘅樣式抄去其他",
+     "at": "below"
+    },
+    {
+     "sel": "#keys-btn",
+     "en": "Keyboard shortcuts",
+     "yue": "快捷鍵",
+     "at": "below"
+    }
+   ]
+  },
+  {
+   "id": "model",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "marks": [
+    {
+     "sel": "#m-nav",
+     "en": "Navigate: orbit, pan and zoom the model",
+     "yue": "Navigate：轉動、移動、縮放 model"
+    },
+    {
+     "sel": "#m-issue",
+     "en": "Add issue: click the model to place an issue",
+     "yue": "Add issue：撳 model 放一個 issue"
+    },
+    {
+     "sel": "#m-measure",
+     "en": "Measure with snapping",
+     "yue": "量度（會鎖點）"
+    },
+    {
+     "sel": "#floor-select",
+     "en": "Floor plan: cut the model at a floor",
+     "yue": "樓層平面：喺某層切開 model"
+    },
+    {
+     "sel": "#plan-draw",
+     "en": "Plan overlay: lay the sheet over the model",
+     "yue": "平面疊圖：將圖則疊喺 model 上"
+    },
+    {
+     "sel": "#view-link",
+     "en": "Copy a link to this view",
+     "yue": "複製呢個視圖嘅連結"
+    },
+    {
+     "sel": "#bcf-menu",
+     "en": "BCF: exchange issues with Revit, Navisworks ...",
+     "yue": "BCF：同 Revit、Navisworks ... 交換 issue"
+    },
+    {
+     "sel": "#model-list",
+     "en": "The project's models - tick to show",
+     "yue": "Project 嘅 model - 剔選顯示"
+    },
+    {
+     "sel": "#ref-panel",
+     "en": "Consultant models (IFC) and other projects laid over",
+     "yue": "顧問 model (IFC) 同疊加其他 project"
+    },
+    {
+     "sel": "#cat-list",
+     "en": "Elements: show or hide each category",
+     "yue": "構件：顯示或隱藏每個類別"
+    },
+    {
+     "sel": "#mb-panel",
+     "en": "Model browser: find, select, isolate, zoom to elements",
+     "yue": "Model browser：搵、揀、單獨顯示、放大構件"
+    },
+    {
+     "sel": "#viewcube",
+     "en": "The view cube: click a face; Home for the overview",
+     "yue": "視圖方塊：撳一面；Home 返總覽"
+    },
+    {
+     "sel": "#viewcube-bar",
+     "en": "Walk, Fit, Perspective / Orthographic, Set front, World",
+     "yue": "Walk、Fit、透視 / 正投影、Set front、World"
+    },
+    {
+     "sel": "#inspect-body",
+     "en": "Selection: the clicked element's properties; Isolate, Hide, Show all",
+     "yue": "Selection：撳中構件嘅屬性；Isolate、Hide、Show all"
+    },
+    {
+     "sel": "#pins-toggle",
+     "en": "Show or hide the issue pins in the model",
+     "yue": "顯示或隱藏 model 入面嘅 issue 釘"
+    },
+    {
+     "sel": "#i3-list",
+     "en": "Issues in 3D: the list, with filters",
+     "yue": "3D 入面嘅 issue：清單同篩選"
+    }
+   ]
+  },
+  {
+   "id": "model-sbd",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "size": [
+    1440,
+    1300
+   ],
+   "storage": {
+    "lwk.panels.model": "{\"l\":{\"w\":430}}"
+   },
+   "prep": [
+    {
+     "click": "#chk-tab-sbd"
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "eval": "for (const e of document.querySelectorAll('#models *')) if (getComputedStyle(e).position === 'sticky') e.style.position = 'static'; const m=document.querySelector('#models'), h=document.querySelector('#chk-panel').previousElementSibling; m.scrollTop += h.getBoundingClientRect().top - m.getBoundingClientRect().top"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "clip": {
+    "sel": "#models",
+    "bottom": "#sbd-cadin"
+   },
+   "marks": [
+    {
+     "sel": "#chk-tab-sbd",
+     "en": "Checks > SBD (Clash and Headroom beside it)",
+     "yue": "Checks > SBD（旁邊有 Clash 同 Headroom）"
+    },
+    {
+     "sel": "#sbd-run",
+     "en": "Run the check again",
+     "yue": "再計一次"
+    },
+    {
+     "sel": "#sbd-levels",
+     "en": "Plan level for each zone (all levels, or one height)",
+     "yue": "每個區嘅平面高度（全部，或者某一個高度）"
+    },
+    {
+     "sel": "#sbd-saved",
+     "en": "Latest run, or a saved result; Save keeps this one",
+     "yue": "最新結果，或者已儲存嘅；Save 保存呢個"
+    },
+    {
+     "sel": ".sbd-verdict",
+     "en": "Permeability: P against the required P - PASS or FAIL",
+     "yue": "透風度：P 對比要求 - PASS 或 FAIL"
+    },
+    {
+     "sel": ".sbd-verdict",
+     "en": "Design Requirement (1): Lp against 5U",
+     "yue": "設計要求 (1)：Lp 對比 5U",
+     "nth": 1
+    },
+    {
+     "sel": ".sbd-t",
+     "en": "P on Plane X and Y per zone - red: does not comply, green: complies",
+     "yue": "每個區 Plane X 同 Y 嘅 P - 紅色：唔符合，綠色：符合"
+    },
+    {
+     "sel": ".sbd-legend",
+     "en": "What the colours mean",
+     "yue": "顏色嘅意思"
+    },
+    {
+     "sel": "#sbd-plan",
+     "en": "Plan ...: plans, elevations and street canyons of each zone",
+     "yue": "Plan ...：每個區嘅平面、立面同街道峽谷"
+    },
+    {
+     "sel": "#sbd-3d",
+     "en": "3D: show or hide the SBD masses and zone limits in the model",
+     "yue": "3D：喺 model 顯示或隱藏 SBD mass 同高度區界線",
+     "box": true
+    },
+    {
+     "sel": "#sbd-issue",
+     "en": "Make issue: an issue for what fails",
+     "yue": "Make issue：為唔合格嘅地方開 issue"
+    },
+    {
+     "sel": "#sbd-report",
+     "en": "Report: every zone's plan and working, to print",
+     "yue": "Report：每個區嘅平面同計算，可以列印"
+    },
+    {
+     "sel": "#sbd-cad",
+     "en": "CAD ...: every drawing as DXF or DWG",
+     "yue": "CAD ...：所有圖輸出 DXF 或 DWG"
+    },
+    {
+     "sel": "#sbd-remove",
+     "en": "Remove the masses and the result",
+     "yue": "刪除 mass 同結果"
+    },
+    {
+     "sel": ".sbd-tpl",
+     "en": "CAD template: draw the model in CAD (no Revit)",
+     "yue": "CAD template：用 CAD 畫 model（冇 Revit 都得）"
+    },
+    {
+     "sel": "#sbd-cadin",
+     "en": "Import CAD model: the drawing becomes the SBD model",
+     "yue": "Import CAD model：張圖變成 SBD model"
+    }
+   ]
+  },
+  {
+   "id": "sbd-plan",
+   "url": "model.html?project={project}",
+   "ready": "#model-list li",
+   "wait": 6000,
+   "prep": [
+    {
+     "click": "#chk-tab-sbd"
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "eval": "document.querySelector('#sbd-plan').scrollIntoView()"
+    },
+    {
+     "click": "#sbd-plan"
+    },
+    {
+     "waitFor": ".sbd-win svg"
+    },
+    {
+     "wait": 800
+    }
+   ],
+   "clip": ".sbd-win",
+   "marks": [
+    {
+     "sel": "[data-v=plan]",
+     "en": "Plan / Elevation / Street canyon",
+     "yue": "平面 / 立面 / 街道峽谷"
+    },
+    {
+     "sel": "[data-a=axis1]",
+     "en": "Projection Plane X or Y",
+     "yue": "投影面 X 或 Y"
+    },
+    {
+     "sel": "[data-z=LOW]",
+     "en": "The zones, each with its P",
+     "yue": "各高度區，連 P"
+    },
+    {
+     "sel": "[data-cadv=dxf]",
+     "en": "This drawing as DXF or DWG",
+     "yue": "呢張圖輸出 DXF 或 DWG"
+    },
+    {
+     "sel": "[data-x]",
+     "en": "Close",
+     "yue": "關閉"
+    },
+    {
+     "sel": ".sbd-plan",
+     "en": "The drawing: gaps S1, S2 ... hatched, the planes, dimensions",
+     "yue": "圖：S1、S2 ... 空隙加陰影、投影面、尺寸",
+     "at": "tl"
+    },
+    {
+     "sel": ".sbd-gaps",
+     "en": "The working: each gap's area, depth and S",
+     "yue": "計算：每個空隙嘅面積、深度同 S"
+    },
+    {
+     "sel": "[data-zm=fit]",
+     "en": "Zoom in / out, Fit",
+     "yue": "放大 / 縮小、Fit"
+    }
+   ]
+  },
+  {
+   "id": "board",
+   "url": "board.html?project={project}",
+   "ready": "#bd-tools",
+   "wait": 2500,
+   "marks": [
+    {
+     "sel": "#bd-menu",
+     "en": "Boards: all the project's boards, new board, templates",
+     "yue": "Boards：project 所有白板、新白板、範本"
+    },
+    {
+     "sel": "#bd-title",
+     "en": "The board's name",
+     "yue": "白板名稱"
+    },
+    {
+     "sel": "#bd-people",
+     "en": "Who is on the board now",
+     "yue": "而家邊個喺白板"
+    },
+    {
+     "sel": "#bd-search-btn",
+     "en": "Find text on the board",
+     "yue": "搵白板上嘅字"
+    },
+    {
+     "sel": "#bd-timer-btn",
+     "en": "A countdown for everyone",
+     "yue": "大家一齊睇嘅倒數計時"
+    },
+    {
+     "sel": "#bd-present",
+     "en": "Present: frame by frame",
+     "yue": "Present：逐個框展示"
+    },
+    {
+     "sel": "#bd-export",
+     "en": "Export: picture, PDF, backup",
+     "yue": "Export：圖片、PDF、備份"
+    },
+    {
+     "sel": "[data-tool=select]",
+     "en": "Select and move; move the board",
+     "yue": "揀選同移動；拖動白板"
+    },
+    {
+     "sel": "[data-tool=sticky]",
+     "en": "Sticky note, text, shape, connector, mind map, pen",
+     "yue": "便條、文字、形狀、連接線、思維圖、筆"
+    },
+    {
+     "sel": "[data-tool=frame]",
+     "en": "Frame, picture, card linked to an issue or a sheet",
+     "yue": "框、圖片、連去 issue 或圖則嘅卡"
+    },
+    {
+     "sel": "[data-tool=undo]",
+     "en": "Undo / redo",
+     "yue": "復原 / 重做"
+    },
+    {
+     "rect": [
+      380,
+      355,
+      680,
+      245
+     ],
+     "en": "The board: double-click to write",
+     "yue": "白板：雙擊寫字",
+     "at": "tl"
+    },
+    {
+     "sel": "#bd-zoom",
+     "en": "Overview map, zoom, Fit",
+     "yue": "總覽地圖、縮放、Fit"
+    }
+   ]
+  },
+  {
+   "id": "tasks",
+   "url": "tasks.html?list={list}",
+   "ready": ".tl-row[data-id]",
+   "marks": [
+    {
+     "sel": "[data-quick=owned]",
+     "en": "Owned, Subscribed, Activities: your tasks",
+     "yue": "Owned、Subscribed、Activities：你嘅 task"
+    },
+    {
+     "sel": "[data-quick=all]",
+     "en": "Quick access: all, created, assigned, completed",
+     "yue": "快速篩選：全部、你開嘅、派俾人嘅、完成咗"
+    },
+    {
+     "sel": "#t-lists",
+     "en": "The task lists (+ makes one)",
+     "yue": "Task list（+ 開新嘅）"
+    },
+    {
+     "sel": "[data-mode=people]",
+     "en": "People: everyone's tasks",
+     "yue": "People：每個人嘅 task"
+    },
+    {
+     "sel": "#t-tabs",
+     "en": "List, Kanban, Gantt, Dashboard, Activities",
+     "yue": "List、Kanban、Gantt、Dashboard、Activities"
+    },
+    {
+     "sel": "#t-share",
+     "en": "Members of the list",
+     "yue": "List 成員"
+    },
+    {
+     "sel": "#t-new",
+     "en": "+ New task (▾: import)",
+     "yue": "+ New task（▾：匯入）"
+    },
+    {
+     "sel": "#f-q",
+     "en": "Search tasks",
+     "yue": "搜尋 task"
+    },
+    {
+     "sel": "#t-bar .flt-btn",
+     "en": "Filter: status, owner, priority, sort, group by",
+     "yue": "Filter：狀態、負責人、優先、排序、分組"
+    },
+    {
+     "sel": "#t-cols",
+     "en": "Customize the columns",
+     "yue": "自訂欄位"
+    },
+    {
+     "sel": ".tl-head .tl-sortable[data-sort=priority]",
+     "en": "Click a heading to sort (▲ ▼)",
+     "yue": "撳欄頭排序 (▲ ▼)"
+    },
+    {
+     "sel": ".tl-gh",
+     "en": "A group (a project): fold it, open its sheets and dashboard",
+     "yue": "一個 group（project）：收埋、打開佢嘅圖則同 dashboard"
+    },
+    {
+     "sel": ".tl-row[data-id] .tick",
+     "en": "Tick to complete",
+     "yue": "剔咗就完成"
+    },
+    {
+     "sel": ".tl-row[data-id] .tl-t",
+     "en": "The title - click to open the task",
+     "yue": "標題 - 撳一下打開 task"
+    },
+    {
+     "sel": ".tl-row[data-id] [data-col=owners]",
+     "en": "Edit any cell where it stands",
+     "yue": "任何格都可以直接改"
+    }
+   ]
+  },
+  {
+   "id": "task-detail",
+   "url": "tasks.html?list={list}",
+   "ready": ".tl-row[data-id]",
+   "prep": [
+    {
+     "click": ".tl-row[data-id] .tl-t"
+    },
+    {
+     "waitFor": "#t-detail .td-top"
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "clip": "#t-detail",
+   "marks": [
+    {
+     "sel": ".td-done",
+     "en": "Mark complete",
+     "yue": "標記完成"
+    },
+    {
+     "sel": "[data-act=prev]",
+     "en": "Previous / next task (K / J)",
+     "yue": "上一個 / 下一個 task (K / J)"
+    },
+    {
+     "sel": "[data-act=follow]",
+     "en": "Follow: e-mails when it changes",
+     "yue": "Follow：有改動會收 email"
+    },
+    {
+     "sel": "[data-act=share]",
+     "en": "Share to a chat",
+     "yue": "分享去 chat"
+    },
+    {
+     "sel": "[data-act=copy]",
+     "en": "Copy a link to the task",
+     "yue": "複製 task 連結"
+    },
+    {
+     "sel": "[data-act=delete]",
+     "en": "Delete (Ctrl+Z brings it back)",
+     "yue": "刪除（Ctrl+Z 攞返）"
+    },
+    {
+     "sel": ".td-title",
+     "en": "The title",
+     "yue": "標題"
+    },
+    {
+     "sel": "[data-act=owners]",
+     "en": "Owners, dates, group, priority and the list's own fields",
+     "yue": "負責人、日期、group、優先同 list 自己嘅欄"
+    },
+    {
+     "sel": ".td-desc",
+     "en": "Description",
+     "yue": "描述"
+    },
+    {
+     "sel": ".td-subs",
+     "en": "Sub-tasks",
+     "yue": "Sub-task"
+    },
+    {
+     "sel": "[data-act=linkissue]",
+     "en": "Linked issues, sheets, 3D views and files",
+     "yue": "連結嘅 issue、圖則、3D 視圖同檔案"
+    }
+   ]
+  },
+  {
+   "id": "chat",
+   "url": "messenger.html",
+   "ready": "#c-rooms .cr",
+   "marks": [
+    {
+     "sel": "#c-q",
+     "en": "Search chats (Enter: search the messages)",
+     "yue": "搜尋 chat（Enter：搜尋訊息）"
+    },
+    {
+     "sel": "#c-new",
+     "en": "New chat: a message to someone, or a group",
+     "yue": "新 chat：私訊或者 group"
+    },
+    {
+     "sel": "#c-rooms .cr",
+     "en": "Project channels - one per project",
+     "yue": "Project channel - 每個 project 一個"
+    },
+    {
+     "sel": "#c-rooms .cr",
+     "en": "Groups and direct messages",
+     "yue": "Group 同私訊",
+     "nth": 1
+    },
+    {
+     "sel": "#c-rooms .cr",
+     "en": "Task discussions",
+     "yue": "Task 討論",
+     "nth": 2
+    },
+    {
+     "sel": "#c-links",
+     "en": "Open the project, its sheets or 3D",
+     "yue": "打開 project、圖則或者 3D"
+    },
+    {
+     "sel": "#c-files-btn",
+     "en": "Files sent in the chat",
+     "yue": "Chat 入面嘅檔案"
+    },
+    {
+     "sel": "#c-members-btn",
+     "en": "Members",
+     "yue": "成員"
+    },
+    {
+     "sel": "#c-topics",
+     "en": "Topics: sub-channels for one subject",
+     "yue": "Topic：單一題目嘅子 channel"
+    },
+    {
+     "sel": "#c-msgs",
+     "en": "The messages",
+     "yue": "訊息",
+     "at": "tl"
+    },
+    {
+     "sel": "#c-text",
+     "en": "Write: @ person, # task, ! issue, $ sheet, % 3D view",
+     "yue": "寫訊息：@ 人、# task、! issue、$ 圖則、% 3D 視圖"
+    },
+    {
+     "sel": "#c-fmtbar",
+     "en": "Bold, lists, quote, link, code",
+     "yue": "粗體、列表、引用、連結、程式碼"
+    },
+    {
+     "sel": "#c-emoji",
+     "en": "Emoji, mention, link, files, poll / event / task",
+     "yue": "表情、提及、連結、檔案、投票 / 活動 / task"
+    },
+    {
+     "sel": "#c-send",
+     "en": "Send (Enter)",
+     "yue": "傳送 (Enter)"
+    }
+   ]
+  },
+  {
+   "id": "calendar",
+   "url": "calendar.html",
+   "ready": "#cal-body",
+   "marks": [
+    {
+     "sel": "#cal-today",
+     "en": "Previous / Today / Next month",
+     "yue": "上個月 / 今日 / 下個月"
+    },
+    {
+     "sel": "#cal-title",
+     "en": "The month shown",
+     "yue": "顯示緊嘅月份"
+    },
+    {
+     "sel": "#cal-hol",
+     "en": "Public holidays (HK, PH ...)",
+     "yue": "公眾假期（香港、菲律賓 ...）"
+    },
+    {
+     "sel": "#cal-groups",
+     "en": "Groups: see a team's leave and meetings",
+     "yue": "Groups：睇一個團隊嘅假期同會議"
+    },
+    {
+     "sel": "#cal-leave",
+     "en": "+ Leave",
+     "yue": "+ 請假"
+    },
+    {
+     "sel": "#cal-view",
+     "en": "Month or List",
+     "yue": "月曆或清單"
+    },
+    {
+     "sel": "#cal-new",
+     "en": "+ Event: a meeting",
+     "yue": "+ Event：會議"
+    },
+    {
+     "sel": "#cal-outlook",
+     "en": "Add to Outlook: the calendar in Outlook",
+     "yue": "Add to Outlook：喺 Outlook 睇呢個日曆"
+    },
+    {
+     "sel": "a.ce.task",
+     "en": "Your tasks on their due dates - click to open",
+     "yue": "你嘅 task 喺到期日 - 撳一下打開"
+    }
+   ]
+  },
+  {
+   "id": "folders",
+   "url": "folders.html?project={project}",
+   "ready": "#fo-list .fo-row",
+   "marks": [
+    {
+     "sel": "#fo-proj",
+     "en": "The project",
+     "yue": "Project"
+    },
+    {
+     "sel": "[data-q=pinned]",
+     "en": "Pinned, Starred, Recent, Recently deleted",
+     "yue": "釘選、星號、最近、最近刪除"
+    },
+    {
+     "sel": "#fo-tree",
+     "en": "The folders (drag files here to move them)",
+     "yue": "資料夾（拖檔案嚟搬）"
+    },
+    {
+     "sel": "#fo-side-open",
+     "en": "Hide or show the folders",
+     "yue": "隱藏或顯示資料夾"
+    },
+    {
+     "sel": "#fo-crumbs",
+     "en": "Where you are",
+     "yue": "而家喺邊"
+    },
+    {
+     "sel": "#fo-search",
+     "en": "Search this project's files",
+     "yue": "搜尋呢個 project 嘅檔案"
+    },
+    {
+     "sel": "#fo-newdir",
+     "en": "+ Folder",
+     "yue": "+ 資料夾"
+    },
+    {
+     "sel": "#fo-up",
+     "en": "Upload (or drop files on the page)",
+     "yue": "上載（或者拖檔案入頁面）"
+    },
+    {
+     "sel": "#fo-list .fo-head",
+     "en": "Click a heading to sort",
+     "yue": "撳欄頭排序"
+    },
+    {
+     "sel": "#fo-list .fo-row",
+     "en": "The locked 00 BIM folder: the sheets and models from Revit",
+     "yue": "鎖住嘅 00 BIM：由 Revit 嚟嘅圖則同 model"
+    },
+    {
+     "sel": "#fo-list .fo-dots",
+     "en": "More: rename, move, versions, pin, star, delete",
+     "yue": "更多：改名、搬、版本、釘選、星號、刪除",
+     "nth": 2
+    }
+   ]
+  },
+  {
+   "id": "dashboard",
+   "url": "dashboard.html?project={project}",
+   "ready": "#kpis",
+   "wait": 2500,
+   "marks": [
+    {
+     "sel": "#f-range",
+     "en": "Closed within",
+     "yue": "幾耐內關閉"
+    },
+    {
+     "sel": "#f-type",
+     "en": "Type, assignee, office, team, discipline",
+     "yue": "類型、負責人、辦公室、團隊、專業"
+    },
+    {
+     "sel": "#f-mine",
+     "en": "Only mine",
+     "yue": "只睇自己"
+    },
+    {
+     "sel": "#d-export",
+     "en": "Export: report, CSV, BCF, weekly summary",
+     "yue": "Export：報告、CSV、BCF、每週摘要"
+    },
+    {
+     "sel": "#d-tasks",
+     "en": "The project's tasks",
+     "yue": "Project 嘅 task"
+    },
+    {
+     "sel": "#digest",
+     "en": "This week: raised, closed, open, overdue",
+     "yue": "今個星期：新開、關閉、未完、過期"
+    },
+    {
+     "sel": "#kpis",
+     "en": "The issue counts - click one to see them",
+     "yue": "Issue 數字 - 撳一個睇清單"
+    },
+    {
+     "sel": "#c-trend",
+     "en": "Raised and closed by week",
+     "yue": "每星期新開同關閉"
+    }
+   ]
+  },
+  {
+   "id": "projects",
+   "url": "projects.html",
+   "ready": "#t-view",
+   "clip": [
+    0,
+    0,
+    1440,
+    290
+   ],
+   "marks": [
+    {
+     "sel": "#pj-q",
+     "en": "Search projects or people",
+     "yue": "搜尋 project 或者人"
+    },
+    {
+     "sel": "#pj-status",
+     "en": "Status: Active, On hold, Completed, Archived",
+     "yue": "狀態：Active、On hold、Completed、Archived"
+    },
+    {
+     "sel": "#pj-sort",
+     "en": "Sort (or click a heading)",
+     "yue": "排序（或者撳欄頭）"
+    },
+    {
+     "sel": "#pj-manage",
+     "en": "Manage projects (admins)",
+     "yue": "管理 project（admin）"
+    },
+    {
+     "sel": "#t-view .pj-row, #t-view tr",
+     "en": "A project: click its name for its page",
+     "yue": "一個 project：撳名打開佢嘅頁",
+     "nth": 1
+    },
+    {
+     "sel": "#t-view .pj-vl",
+     "en": "Open its Sheets, 3D, Chat, Dashboard, Folders",
+     "yue": "打開佢嘅 Sheets、3D、Chat、Dashboard、Folders"
+    }
+   ]
+  }
+ ]
+}

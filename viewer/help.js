@@ -90,6 +90,10 @@ function css() {
 #lwk-help table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 12px; }
 #lwk-help td, #lwk-help th { border: 1px solid var(--line, #e2e6ec); padding: 3px 6px; text-align: left; vertical-align: top; }
 #lwk-help ul, #lwk-help ol { padding-left: 20px; } #lwk-help li { margin: 3px 0; }
+#lwk-help figure.shot { margin: 8px 0 14px; }
+#lwk-help figure.shot img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line, #e2e6ec); border-radius: 6px; cursor: zoom-in; }
+#lwk-help figure.shot ol { font-size: 12px; margin: 6px 0 0; padding-left: 26px; }
+#lwk-help figure.shot li { margin: 1px 0; } #lwk-help figure.shot li::marker { color: #e11d48; font-weight: 700; }
 #lwk-help .hp-r { display: block; padding: 8px 6px; border-bottom: 1px solid var(--line-soft, #eef0f3); cursor: pointer; text-decoration: none; color: inherit; }
 #lwk-help .hp-r:hover { background: var(--hover, rgba(242, 128, 34, .08)); }
 #lwk-help .hp-r small { display: block; color: var(--muted, #6b7480); }
@@ -163,6 +167,8 @@ export async function openHelp(opt) {
       + `<div class="hp-body"></div><div class="hp-foot"><a data-hp="toc">Contents</a><a data-hp="news">What's new</a></div>`;
     document.body.appendChild(el);
     el.addEventListener("click", (ev) => {
+      const im = ev.target.closest("figure.shot img");         // the picture full size
+      if (im) { window.open(im.src, "_blank", "noopener"); return; }
       const a = ev.target.closest("[data-id],[data-l],[data-hp],.hp-x");
       if (!a) return;
       if (a.classList.contains("hp-x")) { el.remove(); return; }

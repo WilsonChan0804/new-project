@@ -36,6 +36,7 @@ PART = [
     ]),
     H2('開始之前'),
     P('你需要一個 account、一個支援嘅瀏覽器同 viewer 嘅網址；電腦唔使裝任何嘢。'),
+    P('**啲圖點睇：**每個頁面嘅章節開頭都有一張截圖，每個 panel、按鈕同選項都有紅色編號；圖下面嘅清單講每個編號做乜。截圖嚟自一個示範 project，所以名同圖則會同你嘅唔一樣。喺 Help 入面，撳一下張圖就可以睇原尺寸。'),
     LABEL('你嘅 account'),
     UL([
         'Admin 會幫你開 account，再寄邀請俾你，入面有一個**臨時密碼**。',
@@ -69,6 +70,7 @@ PART = [
     ]),
     P('圍住呢個流程：實際工作喺 **Tasks** 安排（可以由 issue 開 task，task 做完會幫手關 issue），喺 **Messenger** 討論（每個 project 有一個 channel，task 同 issue 更新會出喺度），再用 **Search** 搵返。**Projects** 版就將每個 job 串埋一齊。'),
     H2('快速上手：頭十分鐘'),
+    SHOT('header'),
     P('登入、打開一張 sheet、喺 3D 睇返同一個位，再開一個測試 issue。'),
     OL([
         '**登入。** 打開 viewer 網址，輸入 email 同密碼，到時跟指示改咗個臨時密碼佢。',
@@ -85,6 +87,7 @@ PART = [
         '**做完記得刪除測試 issue 同 task：** issue 喺佢嘅詳情視窗撳 **Delete**，task 喺佢嘅視窗撳垃圾桶掣。',
     ]),
     H2('Dashboard 同 project'),
+    SHOT('dashboard'),
     P('Dashboard 係 project 嘅 issue 計分板：幾多個未完成、幾多個過咗期、喺邊個手上，同埋今個星期有乜改變。'),
     LABEL('四圍行'),
     UL([

@@ -305,7 +305,7 @@ export function initFlexColumns({ row, cols, key }) {
 
   function place(c) {
     const rr = row.getBoundingClientRect(), er = c.el.getBoundingClientRect();
-    const folded = c.fold && c.s.hid && !c.s.pin;
+    const folded = !!(c.fold && c.s.hid && !c.s.pin);
     const edge = c.side === "l" ? (folded ? er.left - rr.left : er.right - rr.left) : er.left - rr.left;
     c.grip.style.left = (edge - 3) + "px";
     if (c.tab) c.tab.style.left = (c.side === "l" ? edge : edge - 20) + "px";
@@ -314,7 +314,7 @@ export function initFlexColumns({ row, cols, key }) {
   function apply() {
     for (const c of items) {
       const off = narrow() || (c.off && c.off());
-      const folded = !narrow() && c.fold && c.s.hid && !c.s.pin;
+      const folded = !!(!narrow() && c.fold && c.s.hid && !c.s.pin);
       c.el.classList.toggle("folded", folded);
       if (narrow()) c.el.style.width = "";
       else if (folded) c.el.style.width = "0px";

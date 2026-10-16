@@ -4,6 +4,7 @@ from blocks import *
 
 PART = [
     H2('Projects 項目'),
+    SHOT('projects'),
     P('**排序：** project 按狀態排 - **Active** 先，跟住 **On hold**、**Completed**、**Archived** - 同一狀態再按名排。Projects 版同所有 project 選單（Sheets、3D、Board、Dashboard、Folders、Messenger）都用呢個次序。喺 Projects 版撳欄目標題（Project、Status、Tasks、Completion、Overdue、Issues）或者用 **Sort** 可以轉其他排法；再撳一次就倒轉。會記住你嘅選擇。'),
     P('Sheets、3D、Board 同 Dashboard 頂部嘅 project 選單分開兩個：先揀 **project**（名 · 編號），再揀**佢嘅 model 或者 sheet set**（例如 Site 1／Site 2，或者 Sheets 版嘅「Revit sheets」同每個上載咗嘅 PDF set）。'),
     P('喺 project 嘅資料欄，**Project information** 可以記低 project no.、client、地址、建築類型、地盤面積、GFA、層數、階段、開始同完成日期同簡介（**Edit**，project owner 同 admin 先改得）。撳或者拖一張相落資料欄頂部，就可以俾個 project 一張**相**，清單入面都會見到。'),
@@ -25,6 +26,7 @@ PART = [
     H2('Tasks 工作'),
     P('**Tasks** 係團隊嘅 task list，取代 Lark Tasks，同圖則、model 同 issue 連埋一齊。'),
     H3('List、group 同睇法'),
+    SHOT('tasks'),
     UL([
         '**Task list** 屬於一個團隊（例如 LWK-MANILA）。List 入面嘅 **group** 通常就係各個 job（SKW、Kai Tak 2A3 ...）。連咗 project 嘅 group 會有 **Project**、**Sheets** 同 **Dashboard** 掣；喺 **...** > **Groups and projects** 連接。',
         '左邊嘅**快速存取**：**Owned**（自己未完成嘅 task）、**Subscribed**、**All**、**Created**、**Assigned**（你派俾人嘅）同 **Completed**，跨晒所有你睇得到嘅 list。**People** 按團隊、office 或者公司顯示成個機構，同每個人未完成同過咗期嘅 task。',
@@ -36,6 +38,7 @@ PART = [
         '**Filter ▾**（搜尋格旁邊）入面有：邊啲 task（全部、未完成、完成咗、過期、我嘅）、負責人同優先次序，仲有排序（**Sort**、**Group by**）；掣上面會講設咗幾多個篩選（「Filter · 2」），**Clear filters** 還原。用 **Customize** 揀顯示邊啲欄。每個 list 可以有自己嘅欄（人、選項、文字、日期、數字），例如 Modelers 同 Project Manager。',
     ]),
     H3('一個 task'),
+    SHOT('task-detail'),
     UL([
         '**Owners**（同 list 嘅人欄）只會列出 **task list 嘅成員**；清單最底嘅 **Show everyone** 可以加其他人。用右上角 **Members** 加人入 list。',
         '撳一個 task 打開佢嘅視窗：標題、**Owners**、開始同到期 **Dates**、**Group**、**Priority** 同 list 自己嘅欄。**Mark complete** 就完成。',
@@ -59,6 +62,7 @@ PART = [
         '再 import 同一個 export 會更新啲 task，唔會重複加。未有 account 嘅人名會照保留；account 開好之後用 **...** > **Match names to accounts**。',
     ]),
     H2('Board 白板'),
+    SHOT('board'),
     P('**Board** 係每個 project 一塊共用白板，好似 Miro 咁：便利貼、文字、形狀、連接線、mind map、相同 frame，仲有範本可以由頭開始。Project 入面所有人會即時見到改動。喺頂部揀 project；用 board 清單開新、改名、複製或者刪除 board。'),
     LABEL('LWK BIM Workflow board'),
     P('每個 project 一開始就有一塊叫 **LWK BIM Workflow** 嘅 board：公司嘅 BIM 工作流程，係呢個 project 自己嘅一份，可以按 project 需要改。第一個有權改嘢嘅人打開呢個 project 嘅 Board 頁，佢就會自動整出嚟。'),
@@ -70,6 +74,7 @@ PART = [
         '入面全部都係普通 board 內容：搬、改色、加、刪都得。刪咗呢塊 board 唔會自己再出返嚟。',
     ]),
     H2('Messenger 訊息'),
+    SHOT('chat'),
     P('拖對話列表或者詳情面板嘅邊可以調闊窄；列表邊上嘅小標籤可以釘住，或者 - 唔釘 - 收埋列表，令對話闊啲（同 Sheets 同 3D 頁一樣）。'),
     P('**Chat** 會打開 Messenger：團隊嘅對話，就喺佢哋講緊嘅工作隔籬。'),
     LABEL('Chat 嘅種類'),
@@ -121,6 +126,7 @@ PART = [
         '同 WhatsApp 之間冇自動雙向同步。',
     ]),
     H2('Calendar 日曆'),
+    SHOT('calendar'),
     P('**右撳某一日**（手機㩒住）可以喺嗰日加 **event**（全日）、**meeting**（10:00 開始，揀邀請邊個 chat）或者一個嗰日到期嘅 **task**。'),
     P('**Calendar** 按日期顯示你就嚟要做嘅嘢：Messenger 入面發嘅**會議**（連你嘅回覆）、**你嘅 task** 嘅到期日 - 連你負責嘅 task 下面嘅 **sub-task**（任何一層，會寫 **Sub-task of ...**），同埋下面有你嘅 sub-task 嘅 task（佢自己嘅到期日會同 sub-task 一齊顯示）- 同**派咗俾你嘅 issue** 嘅到期日。'),
     UL([
@@ -173,6 +179,7 @@ PART = [
         '喺輸入框打緊字嘅時候，Ctrl+Z 照舊還原打字。Sheets 同 3D 版嘅 markup 有自己嘅 undo。',
     ]),
     H2('Folders 檔案夾'),
+    SHOT('folders'),
     P('喺左邊 folder 樹右撳一個 folder（或者用 folder 嘅 ⋯），可以 **New folder here**（喺度開新 folder）、改名、**Move to ...**、加星、Pin、copy 連結同刪除。'),
     P('**唔使下載都睇到：** 撳 PDF、相、片、文字檔，或者 **Word、Excel、PowerPoint**，就會喺清單隔籬打開。Server 裝咗 LibreOffice（問你嘅 admin）嘅話，Office 檔案會同喺 Office 入面一模一樣；未裝就用簡單啲嘅方式顯示 Word 同 Excel，PowerPoint 要下載。'),
     UL([

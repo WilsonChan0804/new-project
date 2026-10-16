@@ -38,6 +38,7 @@ DOC = [
     ]),
     H2('Before you start'),
     P("You need an account, a supported browser and the viewer's web address; nothing is installed on your computer."),
+    P("**The pictures:** each page's chapter starts with a screenshot in which every panel, button and choice has a red number; the list under it says what each number does. They come from a demo project, so your names and drawings will differ. In Help, click a picture to see it full size."),
     LABEL('Your account'),
     UL([
         'An admin creates your account and sends you an invitation with a **temporary password**.',
@@ -71,6 +72,7 @@ DOC = [
     ]),
     P('Around this loop, the work itself is planned in **Tasks** (a task can be made from an issue and closes it when done), discussed in **Messenger** (each project has a channel where task and issue updates appear) and found again with **Search**. The **Projects** page ties each job together.'),
     H2('Quick start: your first ten minutes'),
+    SHOT('header'),
     P('Sign in, open a sheet, look at the same place in 3D, and raise one test issue.'),
     OL([
         '**Sign in.** Open the viewer address, enter your email and password, and change the temporary password when asked.',
@@ -87,6 +89,7 @@ DOC = [
         '**Delete your test issue and task** when you are done: the issue from its detail window (**Delete**), the task from its window (the bin button).',
     ]),
     H2('Dashboard and projects'),
+    SHOT('dashboard'),
     P("The Dashboard is the project's issue scoreboard: how many are open, overdue, who holds them and what changed this week."),
     LABEL('Getting around'),
     UL([
@@ -116,6 +119,7 @@ DOC = [
         "**Messenger:** the project's channel shows new tasks, assignments, completions and comments, and new or changed issues, as cards.",
     ]),
     H2('Projects'),
+    SHOT('projects'),
     P('**Order:** projects are listed by status - **Active** first, then **On hold**, **Completed** and **Archived** - and by name within each. The Projects page and every project drop-down (Sheets, 3D, Board, Dashboard, Folders, Messenger) use this order. On the Projects page, click a column heading (Project, Status, Tasks, Completion, Overdue, Issues) or use **Sort** to order the list another way; click again to reverse it. Your choice is remembered.'),
     P('The project drop-down at the top of Sheets, 3D, Board and Dashboard is two: first the **project** (name · code), then **its model or sheet set** (for example Site 1 / Site 2, or on Sheets "Revit sheets" and each uploaded PDF set).'),
     P('In a project\'s panel, **Project information** keeps the project no., client, address, building type, site area, GFA, storeys, stage, start and completion dates and a description (**Edit**, for the project\'s owners and admins). Click or drop a picture at the top of the panel to give the project a **picture**; it also shows in the list.'),
@@ -137,6 +141,7 @@ DOC = [
     H2('Tasks'),
     P('**Tasks** are the team\'s task lists, in place of Lark Tasks, linked to the drawings, the model and the issues.'),
     H3('Lists, groups and views'),
+    SHOT('tasks'),
     UL([
         '**Task lists** belong to a team (for example LWK-MANILA). Inside a list the **groups** are usually the jobs (SKW, Kai Tak 2A3 ...). A group linked to a project shows **Project**, **Sheets** and **Dashboard** buttons; link them in **...** > **Groups and projects**.',
         '**Quick access** on the left: **Owned** (open tasks that are yours), **Subscribed**, **All**, **Created**, **Assigned** (by you to others) and **Completed**, across every list you can see. **People** shows the organisation by team, office or company, with each person\'s open and overdue tasks.',
@@ -148,6 +153,7 @@ DOC = [
         '**Filter ▾** (beside the search) holds which tasks (all, not done, done, overdue, mine), owner and priority, and the order (**Sort**, **Group by**); it says how many filters are set ("Filter · 2"), and **Clear filters** resets them. **Customize** which columns show. Lists can have their own columns (person, select, text, date, number), for example Modelers and Project Manager.',
     ]),
     H3('A task'),
+    SHOT('task-detail'),
     UL([
         '**Owners** (and the list\'s person columns) list the **task list\'s members**; **Show everyone** at the bottom of the list adds anyone else. Add people to the list with **Members** (top right).',
         'Click a task to open its window: title, **Owners**, start and due **Dates**, **Group**, **Priority** and the list\'s own columns. **Mark complete** finishes it.',
@@ -171,6 +177,7 @@ DOC = [
         'Importing the same export again updates the tasks instead of adding them twice. Names with no account yet are kept as names; once the accounts exist, use **...** > **Match names to accounts**.',
     ]),
     H2('Board'),
+    SHOT('board'),
     P('**Board** is a shared whiteboard for each project, in the manner of Miro: sticky notes, text, shapes, connectors, mind maps, pictures and frames, with templates to start from. Everyone on the project sees changes as they are made. Pick the project at the top; use the board list to make, rename, copy or delete boards.'),
     LABEL('The LWK BIM Workflow board'),
     P("Every project starts with a board called **LWK BIM Workflow**: the company's BIM workflow as the project's own copy, to change to suit the project. It is made the first time someone who can edit opens the project's Board page."),
@@ -182,6 +189,7 @@ DOC = [
         'Everything on it is ordinary board content: move, recolour, add or delete anything. Deleting the board does not bring it back by itself.',
     ]),
     H2('Messenger'),
+    SHOT('chat'),
     P('**Chat** opens the Messenger: the team\'s conversations, next to the work they are about.'),
     P('Drag the edge of the chat list or of the details panel to size it; the small tab on the list\'s edge pins it, or - unpinned - folds it away for a wider conversation (as on the Sheets and 3D pages).'),
     LABEL('Kinds of chat'),
@@ -233,6 +241,7 @@ DOC = [
         'There is no automatic two-way link with WhatsApp.',
     ]),
     H2('Calendar'),
+    SHOT('calendar'),
     P('**Right-click a day** (hold it on a phone) to add on that day an **event** (all day), a **meeting** (from 10:00, choose the chat to invite) or a **task** due that day.'),
     P('**Calendar** shows what is coming up for you, by date: **meetings** sent in the Messenger (with your reply), **your tasks** on their due dates - with the **sub-tasks** (at any level) of the tasks you own, which say **Sub-task of ...**, and the tasks whose sub-tasks are yours (their own due date beside the sub-tasks\') - and **issues assigned to you** on their due dates.'),
     UL([
@@ -285,6 +294,7 @@ DOC = [
         'While you type in a box, Ctrl+Z undoes the typing as usual. The Sheets and 3D pages keep their own undo for markups.',
     ]),
     H2('Folders'),
+    SHOT('folders'),
     P('Right-click a folder in the tree on the left (or use ⋯ on a folder) for **New folder here**, **Rename**, **Move to ...**, **Star**, **Pin**, **Copy link** and **Delete**.'),
     P('**Reading documents without downloading:** click a PDF, picture, video, text file, or a **Word, Excel or PowerPoint** file and it opens beside the list. Office files look exactly as in Office when LibreOffice is installed on the server (ask your admin); without it, Word and Excel are shown in a simpler way and PowerPoint has to be downloaded.'),
     UL([
@@ -310,6 +320,7 @@ DOC = [
         'Files put into the project\'s folder on the server some other way (for example from Windows Explorer) show up here too.',
     ]),
     H2('Sheets (2D)'),
+    SHOT('sheets'),
     P('The Sheets page shows every published sheet as the real PDF, searchable and ready for markup; markups save by themselves, there is no Save button.'),
     H3('Finding a sheet'),
     UL([
@@ -343,6 +354,7 @@ DOC = [
         '**2D + 3D** opens the 3D model beside the sheet. Choose **Stand there** or **Look at**, then click a plan: the 3D view goes to that spot. A "you are here" marker on the plan follows the 3D camera; tick **Follow** to keep it in view and switch plans as you walk between floors. Only plan views take part, not sections or elevations.',
     ]),
     H3('Markup tools'),
+    SHOT('markup-tools'),
     TABLE(['Group', 'Tools'], [
         ['Shapes', 'Rect, Circle, Line, Arrow, Cloud, Polyline, Polygon'],
         ['Freehand', 'Pen (hold still at the end of a stroke to snap it to a line, circle or rectangle), Highlighter'],
@@ -365,6 +377,7 @@ DOC = [
         '**BCF** exports the sheet issues for Revit or Navisworks (see Issues and BCF).',
     ]),
     H2('3D: moving around'),
+    SHOT('model'),
     P('The 3D page uses the same mouse as most BIM viewers: right button orbits, middle button pans, wheel zooms, left button picks.'),
     H3('Mouse, touch and keys'),
     TABLE(['Action', 'Mouse', 'iPad / iPhone'], [
@@ -591,6 +604,8 @@ DOC = [
         'After a change, import the drawing again - it replaces the model and the result (saved results stay).',
     ]),
     H3('SBD (PNAP APP-152)'),
+    SHOT('model-sbd'),
+    SHOT('sbd-plan'),
     P('Checks > **SBD** assesses Design Requirement (2) - the permeability **P** and the separating distances **S1 / S2 / S3** - and Design Requirement (1), the street canyon **U**, from the building **masses** of the Revit model. No Filled Regions are drawn and nothing is picked per zone: each height zone is cut from the masses.'),
     UL([
         '**In Revit - what to model:** each building (podium, towers) as a **Mass** (Massing & Site > In-Place Mass, or a Mass family); the **site boundary** as a Property Line (or lines that close within 10 mm); and each **street as a Floor** whose type name has **Street** in it (e.g. *SBD Street*), drawn from street boundary to street boundary, at the street\'s level (its **type name** is used as the street\'s name). No floor levels are needed - the heights come from the masses.',

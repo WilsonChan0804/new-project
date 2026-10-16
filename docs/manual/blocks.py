@@ -13,3 +13,4 @@ def OL(items): return ("OL", list(items))  # numbered, starting at 1
 def TABLE(head, rows): return ("TABLE", list(head), [list(r) for r in rows])
 def IMG(): return ("IMG",)                 # the workflow picture of the original
 def BLANK(): return ("BLANK",)
+def SHOT(i): return ("SHOT", i)            # a screenshot with numbered marks (shots/spec.py), then its legend

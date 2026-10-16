@@ -15,6 +15,7 @@ import html
 import importlib
 import os
 import re
+import struct
 import sys
 import zipfile
 
@@ -68,6 +69,54 @@ def table(head, rows):
     return x + "</w:tbl>"
 
 
+# ---------------------------------------------------------------- the pictures
+# SHOT blocks: docs/manual/img/<id>.jpg, made by shots/shoot.mjs, with the
+# numbered legend from shots/spec.py.
+IMG_DIR = os.path.join(HERE, "img")
+TEXT_W, MAX_H = 5943600, 7315200          # EMU: the text width (6.5"), at most 8" high
+sys.path.insert(0, os.path.join(HERE, "shots"))
+import spec as SHOTS                       # noqa: E402
+
+
+def jpeg_size(path):
+    """(width, height) in pixels from the JPEG's frame header."""
+    with open(path, "rb") as f:
+        d = f.read()
+    i = 2
+    while i < len(d):
+        if d[i] != 0xFF:
+            i += 1
+            continue
+        mk = d[i + 1]
+        if mk in (0xC0, 0xC1, 0xC2):
+            return struct.unpack(">H", d[i + 7:i + 9])[0], struct.unpack(">H", d[i + 5:i + 7])[0]
+        i += 2 + struct.unpack(">H", d[i + 2:i + 4])[0]
+    raise ValueError("no JPEG size in " + path)
+
+
+def shot_xml(picture, sid, rid, pid, lang):
+    w, h = jpeg_size(os.path.join(IMG_DIR, sid + ".jpg"))
+    cx = min(TEXT_W, w * 9525)             # 96 dpi, no larger than the page
+    cy = cx * h // w
+    if cy > MAX_H:
+        cy, cx = MAX_H, MAX_H * w // h
+    descr = esc(sid)
+    x = picture.replace('r:embed="rId3"', 'r:embed="%s"' % rid)
+    x = re.sub(r'cx="\d+" cy="\d+"', 'cx="%d" cy="%d"' % (cx, cy), x)
+    x = re.sub(r'<wp:docPr id="\d+" name="[^"]*" descr="[^"]*"/>', '<wp:docPr id="%d" name="shot%d" descr="%s"/>' % (pid, pid, descr), x)
+    x = re.sub(r'<pic:cNvPr id="\d+" name="[^"]*" descr="[^"]*"/>', '<pic:cNvPr id="%d" name="shot%d" descr="%s"/>' % (pid, pid, descr), x)
+    return x.replace("<w:pPr></w:pPr>", '<w:pPr><w:keepNext/><w:spacing w:before="120" w:after="60"/></w:pPr>', 1)
+
+
+def num_xml(n, numbered):
+    """A list instance; numbered lists start again at 1 (Word and LibreOffice
+    otherwise carry the count on from the last list of the same kind)."""
+    if not numbered:
+        return '<w:num w:numId="%d"><w:abstractNumId w:val="0"/></w:num>' % n
+    return ('<w:num w:numId="%d"><w:abstractNumId w:val="1"/>'
+            '<w:lvlOverride w:ilvl="0"><w:startOverride w:val="1"/></w:lvlOverride></w:num>' % n)
+
+
 def build(content, out, lang):
     z = zipfile.ZipFile(TEMPLATE)
     doc = z.read("word/document.xml").decode("utf-8")
@@ -79,6 +128,7 @@ def build(content, out, lang):
     abstracts = numbering[:numbering.index("<w:num ")]          # the two list kinds: 0 bullets, 1 numbers
 
     body, nums, n = [], [], 0
+    media = []                                                 # (rId, file id)
     for b in content.DOC:
         k = b[0]
         if k in ("H1", "H2", "H3"):
@@ -89,12 +139,19 @@ def build(content, out, lang):
             body.append(para("**" + b[1] + "**"))
         elif k in ("UL", "OL"):
             n += 1
-            nums.append('<w:num w:numId="%d"><w:abstractNumId w:val="%d"/></w:num>' % (n, 1 if k == "OL" else 0))
+            nums.append(num_xml(n, k == "OL"))
             body.extend(para(t, "ListParagraph", n) for t in b[1])
         elif k == "TABLE":
             body.append(table(b[1], b[2]))
         elif k == "IMG":
             body.append(picture)
+        elif k == "SHOT":
+            rid = "rIdShot%d" % (len(media) + 1)
+            media.append((rid, b[1]))
+            body.append(shot_xml(picture, b[1], rid, 100 + len(media), lang))
+            n += 1
+            nums.append(num_xml(n, True))
+            body.extend(para(t, "ListParagraph", n) for _, t in SHOTS.legend(b[1], lang))
         elif k == "BLANK":
             body.append("<w:p><w:pPr></w:pPr></w:p>")
         else:
@@ -109,6 +166,15 @@ def build(content, out, lang):
                 data = document.encode("utf-8")
             elif item.filename == "word/numbering.xml":
                 data = numbering_out.encode("utf-8")
+            elif item.filename == "word/_rels/document.xml.rels":
+                rels = "".join('<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" '
+                               'Target="media/shot-%s.jpg"/>' % (rid, sid) for rid, sid in media)
+                data = data.decode("utf-8").replace("</Relationships>", rels + "</Relationships>").encode("utf-8")
+            elif item.filename == "[Content_Types].xml":
+                t = data.decode("utf-8")
+                if 'Extension="jpg"' not in t:
+                    t = t.replace('<Default Extension="png"', '<Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="png"', 1)
+                data = t.encode("utf-8")
             elif item.filename == "word/styles.xml" and lang == "yue":
                 s = data.decode("utf-8")
                 s = s.replace('w:eastAsia="Calibri"', 'w:eastAsia="Microsoft JhengHei"', 1)
@@ -121,6 +187,8 @@ def build(content, out, lang):
                     s = re.sub(r"<dc:title>.*?</dc:title>", "<dc:title>%s</dc:title>" % esc(title), s)
                 data = s.encode("utf-8")
             o.writestr(item, data)
+        for sid in sorted({sid for _, sid in media}):
+            o.write(os.path.join(IMG_DIR, sid + ".jpg"), "word/media/shot-%s.jpg" % sid)
     print("wrote", out, "-", len(content.DOC), "blocks")
 
 
@@ -137,7 +205,7 @@ def _inline(t):
     return re.sub(r"(?<![\w*])\*([^*\n]+?)\*(?![\w*])", r"<i>\1</i>", t)
 
 
-def help_sections(content):
+def help_sections(content, lang="en"):
     """[{id, ch, h, html}]: id s1, s2 ... in heading order (the same in
     every language), ch the chapter (H2), h the section's own heading."""
     out, cur, ch, n = [], None, "", 0
@@ -159,6 +227,9 @@ def help_sections(content):
         elif k in ("UL", "OL"):
             tag = "ul" if k == "UL" else "ol"
             cur["html"] += "<%s>%s</%s>" % (tag, "".join("<li>%s</li>" % _inline(i) for i in b[1]), tag)
+        elif k == "SHOT":
+            cur["html"] += ('<figure class="shot"><img src="help-img/%s.jpg" alt="" loading="lazy"><ol>%s</ol></figure>'
+                            % (b[1], "".join("<li>%s</li>" % _inline(t) for _, t in SHOTS.legend(b[1], lang))))
         elif k == "TABLE":
             cur["html"] += "<table><tr>%s</tr>%s</table>" % ("".join("<th>%s</th>" % _inline(h) for h in b[1]),
                                                             "".join("<tr>%s</tr>" % "".join("<td>%s</td>" % _inline(c) for c in r) for r in b[2]))
@@ -169,7 +240,7 @@ def help_js():
     import json
     data = {}
     for mod, lang in (("content_en", "en"), ("content_yue", "yue")):
-        data[lang] = help_sections(importlib.import_module(mod))
+        data[lang] = help_sections(importlib.import_module(mod), lang)
     return ("// Generated by docs/manual/build_manual.py from the manual - do not edit.\n"
             "export const HELP = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n")
 

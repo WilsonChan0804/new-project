@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-20", date: "16 Oct 2026",
+    items: [
+      "**Help and the user manual: pictures with numbers.** Each page (Projects, Dashboard, Tasks, Board, Chat, Calendar, Folders, Sheets, the markup tools, 3D, Checks > SBD and its drawings) now has a screenshot with every panel and button numbered, and a list saying what each number does. In Help, click a picture to see it full size.",
+      "Tasks, Folders and Chat: a side column no longer folds by itself after the window is resized.",
+    ],
+  },
+  {
     version: "2026-11-19", date: "16 Oct 2026",
     items: [
       "**Tasks:** click a column heading (Priority, Owner, Start, Due ...) to sort - ▲, ▼, then the list's own order. The task panel's buttons wrap instead of running off the side, so **Delete** is always in view.",
