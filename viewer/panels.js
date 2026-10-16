@@ -285,3 +285,103 @@ export function foldSections(heads, key, nameOf) {
     apply();
   });
 }
+
+/* The same for a page laid out as a flex row (Tasks, Chat, Folders): each
+   column sized by dragging its inner edge (double-click: usual width); a
+   column given `fold` also gets the pin / fold tab. A column the page has
+   hidden, or switched to its own narrow mode (`off`), shows no grip.
+   row: the flex row; cols: [{ el, side: "l" | "r", fold, off }]; key: page. */
+export function initFlexColumns({ row, cols, key }) {
+  if (!row || !cols) return null;
+  const st = load(key);
+  if (getComputedStyle(row).position === "static") row.style.position = "relative";
+  const narrow = () => innerWidth <= 900 || drawerMode();
+  const items = cols.filter((c) => c.el).map((c, i) => {
+    const id = c.el.id || "c" + i;
+    st[id] = Object.assign({ pin: true, hid: false }, st[id]);
+    return Object.assign({ id, s: st[id], grip: null, tab: null }, c);
+  });
+  const shown = (c) => !c.el.hidden && getComputedStyle(c.el).display !== "none";
+
+  function place(c) {
+    const rr = row.getBoundingClientRect(), er = c.el.getBoundingClientRect();
+    const folded = c.fold && c.s.hid && !c.s.pin;
+    const edge = c.side === "l" ? (folded ? er.left - rr.left : er.right - rr.left) : er.left - rr.left;
+    c.grip.style.left = (edge - 3) + "px";
+    if (c.tab) c.tab.style.left = (c.side === "l" ? edge : edge - 20) + "px";
+  }
+
+  function apply() {
+    for (const c of items) {
+      const off = narrow() || (c.off && c.off());
+      const folded = !narrow() && c.fold && c.s.hid && !c.s.pin;
+      c.el.classList.toggle("folded", folded);
+      if (narrow()) c.el.style.width = "";
+      else if (folded) c.el.style.width = "0px";
+      else if (off || !c.s.w) c.el.style.width = "";
+      else c.el.style.width = Math.max(MIN, Math.min(c.s.w, innerWidth * 0.6)) + "px";
+      const vis = !narrow() && shown(c);
+      c.grip.hidden = !vis || off || folded;
+      if (c.tab) {
+        c.tab.hidden = narrow() || (!vis && !folded) || (c.off && c.off());
+        const pin = c.tab.querySelector(".pnl-pin"), tri = c.tab.querySelector(".pnl-tri");
+        pin.classList.toggle("on", c.s.pin);
+        pin.title = c.s.pin ? "Pinned: this column stays. Unpin to be able to fold it away" : "Pin this column so it always stays";
+        tri.hidden = c.s.pin;
+        tri.textContent = folded ? (c.side === "l" ? "▶" : "◀") : (c.side === "l" ? "◀" : "▶");
+        tri.title = folded ? "Show this column" : "Fold this column away";
+        c.tab.classList.toggle("folded", folded);
+      }
+      if (!c.grip.hidden || (c.tab && !c.tab.hidden)) place(c);
+    }
+  }
+
+  for (const c of items) {
+    const g = document.createElement("div");
+    g.className = "pnl-grip pnl-" + c.side;
+    g.title = "Drag to size this column (double-click: usual width)";
+    row.appendChild(g);
+    c.grip = g;
+    if (c.fold) {
+      const t = document.createElement("div");
+      t.className = "pnl-tab pnl-" + c.side;
+      t.innerHTML = `<button type="button" class="pnl-pin" aria-label="Pin">\u{1F4CC}</button><button type="button" class="pnl-tri" aria-label="Fold"></button>`;
+      row.appendChild(t);
+      c.tab = t;
+      t.querySelector(".pnl-pin").addEventListener("click", () => { c.s.pin = !c.s.pin; if (c.s.pin) c.s.hid = false; save(key, st); apply(); kick(); });
+      t.querySelector(".pnl-tri").addEventListener("click", () => { c.s.hid = !c.s.hid; save(key, st); apply(); kick(); });
+    }
+    g.addEventListener("dblclick", () => { delete c.s.w; save(key, st); apply(); kick(); });
+    g.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      g.setPointerCapture(e.pointerId);
+      g.classList.add("drag");
+      document.body.classList.add("pnl-dragging");
+      const x0 = e.clientX, w0 = c.el.getBoundingClientRect().width;
+      const move = (ev) => {
+        const dx = ev.clientX - x0;
+        c.s.w = Math.round(Math.max(MIN, Math.min(innerWidth * 0.6, c.side === "l" ? w0 + dx : w0 - dx)));
+        apply();
+      };
+      const up = () => {
+        g.removeEventListener("pointermove", move);
+        g.removeEventListener("pointerup", up);
+        g.removeEventListener("pointercancel", up);
+        g.classList.remove("drag");
+        document.body.classList.remove("pnl-dragging");
+        save(key, st); kick();
+      };
+      g.addEventListener("pointermove", move);
+      g.addEventListener("pointerup", up);
+      g.addEventListener("pointercancel", up);
+    });
+  }
+  apply();
+  addEventListener("resize", () => requestAnimationFrame(apply));
+  const mo = new MutationObserver(() => requestAnimationFrame(apply));
+  mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  for (const c of items) mo.observe(c.el, { attributes: true, attributeFilter: ["hidden", "class"] });
+  if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(apply)).observe(row);
+  return { apply, state: st };
+}

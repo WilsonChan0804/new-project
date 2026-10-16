@@ -29,6 +29,7 @@ PART = [
         '**Task list** 屬於一個團隊（例如 LWK-MANILA）。List 入面嘅 **group** 通常就係各個 job（SKW、Kai Tak 2A3 ...）。連咗 project 嘅 group 會有 **Project**、**Sheets** 同 **Dashboard** 掣；喺 **...** > **Groups and projects** 連接。',
         '左邊嘅**快速存取**：**Owned**（自己未完成嘅 task）、**Subscribed**、**All**、**Created**、**Assigned**（你派俾人嘅）同 **Completed**，跨晒所有你睇得到嘅 list。**People** 按團隊、office 或者公司顯示成個機構，同每個人未完成同過咗期嘅 task。',
         '**List：** 分組嘅表。直接喺度改；撳 ▸ 打開 sub-task；拖住一行可以排次序或者搬去另一個 group。有連住 issue 嘅 task 會顯示 **#2 open**，全部 issue 解決咗就變 **#✓**。',
+        '**按欄頭排序：** 撳任何欄頭（Task title、Priority、Owner、Start、Due ...）- ▲ 由細到大，再撳 ▼ 由大到細，再撳返 list 原本次序；空白嘅排最後，sub-task 都會排，會記住你嘅揀法。拖側欄或者 task 面板嘅邊可以調闊窄（雙擊邊：還原）；task 面板嘅掣（包括 Delete）一定會見到。',
         '**Kanban：** 一行行卡片；拖張卡去另一行。成塊 board 跟視窗咁高，所以左右嘅 scroll bar 永遠喺畫面底，唔使拉到最底先見到；**Shift + 滑鼠轆**、拖 board 嘅空位，或者兩邊嘅 **‹ ›** 掣都可以左右捲。',
         '**Gantt：** 時間線上面嘅橫條；拖成條，或者拖佢兩頭改日期。每次改之前會彈出 **Change the dates?** 問你：**Save** 先會儲存，**Cancel** 條 bar 就返原位（剔 **Don\'t ask again today**，呢部機今日就唔再問）。圖例會解釋啲顏色；milestone 係金色。',
         '**Dashboard：** 總數、完成、未完成同過咗期，按負責人、按 project、平均用幾耐同就快到期。**Activities：** 所有改動，邊個改。',
@@ -69,6 +70,7 @@ PART = [
         '入面全部都係普通 board 內容：搬、改色、加、刪都得。刪咗呢塊 board 唔會自己再出返嚟。',
     ]),
     H2('Messenger 訊息'),
+    P('拖對話列表或者詳情面板嘅邊可以調闊窄；列表邊上嘅小標籤可以釘住，或者 - 唔釘 - 收埋列表，令對話闊啲（同 Sheets 同 3D 頁一樣）。'),
     P('**Chat** 會打開 Messenger：團隊嘅對話，就喺佢哋講緊嘅工作隔籬。'),
     LABEL('Chat 嘅種類'),
     TABLE(['Chat', '係乜'], [
@@ -190,6 +192,7 @@ PART = [
         '**版本（Versions）：** 上載一個 folder 入面已經有同名嘅檔案，頁面會問：**New version**（同名同位置；原本嗰個保留做上一個版本）或者 **Keep both**（「name (2)」）。可以寫低改咗乜（例如 *Rev B - layout revised*）。有版本嘅檔案名旁邊會顯示 **v2**、**v3** ...。**⋯ > Versions**（或者預覽入面嘅 **Versions**）列出晒所有版本 - 邊個、幾時、改咗乜 - 可以 **Open**（喺預覽顯示，並註明係舊版本）、**⬇** 下載同 **Make current**，將舊版本攞返做最新版本（乜都唔會冇咗）。Project admin 可以用 **✕** 刪走舊版本。搬、改名、刪除同還原檔案，佢嘅版本都會跟住。',
         '**Pinned** 係 project admin 幫大家 pin 嘅重要文件；**Starred** 係你自己加星嘅。**Recent** 列出最新嘅檔案。',
         '**刪除：** 上載嗰個人，或者 project admin。刪咗嘅嘢會去 **Recently deleted**，可以放返原位；**Ctrl+Z** 都可以即刻攞返。',
+        '**排序同欄位：** 撳 **Name**、**Modified**、**Size** 或者 **Uploaded by** 排序（▲、▼，再撳還原；資料夾排先）。拖資料夾樹或者預覽嘅邊可以調闊窄。',
         '**Folder 範本（project admin）：** 右上 ⋯ > **Save these folders as a template**，將呢個 project 嘅 folder 結構（唔包檔案）用個名儲起。喺另一個 project 用 **Lay out folders from a template**，就會開返佢未有嘅 folder；乜都唔會刪。',
         '**放去 Sheets 版：** PDF 嘅 ⋯ > **Add to the Sheets page**，每一頁變成一張 sheet，放喺自己一個 set（揀 set 名同 sheet 編號），即刻可以 markup 同開 issue。',
         '用其他方法（例如 Windows Explorer）放入 server 上面嗰個 folder 嘅檔案，呢度都會見到。',

@@ -20,6 +20,7 @@ import { $, $$, esc, uid, today, isOverdue, PRI_RANK, avatar, modal, toast, pop,
 import { makeLink } from "./filelinks.js";
 import { makeFilter } from "./filterbtn.js";
 import * as ListView from "./tasks-list.js";
+import { initFlexColumns } from "./panels.js";
 import * as KanbanView from "./tasks-kanban.js";
 import * as GanttView from "./tasks-gantt.js";
 import * as DashView from "./tasks-dash.js";
@@ -894,6 +895,12 @@ function wire() {
     else if (a.dataset.mode) { flush(); S.mode = a.dataset.mode; S.listId = ""; S.list = null; setUrl(); paintSide(); render(); }
   };
   $("#t-side-toggle").onclick = () => document.body.classList.toggle("side-off");
+  // the side bar and the task's panel: sized by dragging their edges
+  try {
+    initFlexColumns({ row: $("#t-app"), key: "tasks", cols: [
+      { el: $("#t-side"), side: "l", off: () => document.body.classList.contains("side-off") },
+      { el: $("#t-detail"), side: "r" }] });
+  } catch (e) { console.warn("panels", e); }
   $("#t-side-open").onclick = () => document.body.classList.toggle("side-open");
   // a phone: choosing something in the drawer closes it; so does a tap beside it
   $("#t-side").addEventListener("click", (ev) => { if (ev.target.closest(".ts-item")) document.body.classList.remove("side-open"); });

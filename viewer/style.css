@@ -2419,6 +2419,27 @@ header .flr-lab { white-space: nowrap; }
 .sbd-t th { color: var(--ink-2); font-weight: 600; }
 .sbd-t .n { text-align: right; font-variant-numeric: tabular-nums; }
 .sbd-t .ok { color: #15803d; } .sbd-t .bad, .sbd-lp .bad { color: var(--bad); }
+/* a number that complies / does not: a coloured chip, so a failure stands out */
+.sbd-t td.n.ok, .sbd-t td.n.bad { font-weight: 700; }
+.sbd-t td.n.bad { color: #fff; background: var(--bad); border-radius: 4px; box-shadow: inset 0 0 0 2px var(--panel); }
+.sbd-t td.n.ok { background: color-mix(in srgb, #16a34a 12%, var(--panel)); border-radius: 4px; box-shadow: inset 0 0 0 2px var(--panel); }
+.sbd-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--muted); margin: 2px 0 6px; }
+.sbd-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.sbd-legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.sbd-legend .sw.ok { background: color-mix(in srgb, #16a34a 30%, var(--panel)); border: 1px solid #16a34a; }
+.sbd-legend .sw.bad { background: var(--bad); }
+.sbd-legend .sw.info { background: var(--panel-2); border: 1px solid var(--line); }
+/* the panel's actions: real buttons, not links */
+.sbd-acts button.ghost, .sbd-cadin button.ghost, .sbd-cadin a.sbd-tpl, .sbd-acts .row-check {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; font-size: 12px;
+  color: var(--ink); text-decoration: none; box-shadow: 0 1px 1px rgba(20,26,36,.06); cursor: pointer; }
+.sbd-acts button.ghost:hover:not(:disabled), .sbd-cadin button.ghost:hover:not(:disabled), .sbd-cadin a.sbd-tpl:hover, .sbd-acts .row-check:hover {
+  border-color: var(--accent); background: var(--accent-soft); }
+.sbd-acts button.ghost:disabled { opacity: .5; cursor: default; }
+.sbd-acts button.danger { color: var(--bad); }
+.sbd-acts button.danger:hover:not(:disabled) { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 9%, var(--panel)); }
+.sbd-acts .row-check { display: inline-flex; align-items: center; gap: 4px; }
+.sbd-cadin a.sbd-tpl { display: inline-block; }
 .sbd-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .sbd-lp, .sbd-warn { font-size: 11px; margin: 4px 0; }
 .sbd-acts { flex-wrap: wrap; gap: 4px; }

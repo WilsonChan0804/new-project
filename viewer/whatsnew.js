@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-19", date: "16 Oct 2026",
+    items: [
+      "**Tasks:** click a column heading (Priority, Owner, Start, Due ...) to sort - ▲, ▼, then the list's own order. The task panel's buttons wrap instead of running off the side, so **Delete** is always in view.",
+      "**Folders:** sort by Name, Modified, Size or Uploaded by the same way (folders stay first).",
+      "**Tasks, Folders and Chat:** drag a side column's edge to size it, as on Sheets and 3D; in Chat, the list's tab pins it or folds it away.",
+      "**Checks > SBD:** a P or Lp that does not comply now sits on solid red (one that does on green), with a legend under the table; the actions look like buttons.",
+    ],
+  },
+  {
     version: "2026-11-18", date: "16 Oct 2026",
     items: [
       "SBD elevations: at a building's ends, the open space above a part that lies wholly in the disregarded 1/3 H (and over the lower step beside it) now joins the side setback's **IS** - it was left white. Every step of the buildings' profile has its width written.",

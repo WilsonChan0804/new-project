@@ -12,6 +12,7 @@ import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, modal, toast, pop, closePop, skeleton } from "./tasks-util.js";
 import * as Undo from "./undo.js";
+import { initFlexColumns } from "./panels.js";
 
 const F = {
   projects: [], siteAdmin: false, reg: "", proj: null,
@@ -205,8 +206,13 @@ function paint() {
   }
   const note = F.mode === "folder" && F.locked ? `<div class="lwk-callout lock fo-locked">${esc(LOCKED)} The 3D models open on the 3D page.</div>` : "";
   $("#fo-up").disabled = $("#fo-newdir").disabled = F.mode === "folder" && F.locked;
-  let h = note + `<div class="fo-head"><span></span><span>Name</span><span>${F.mode === "bin" ? "Deleted" : "Modified"}</span><span class="c-size">Size</span><span class="c-by">${F.mode === "bin" ? "Deleted by" : "Uploaded by"}</span><span></span></div>`;
-  for (const e of F.items) {
+  const so = sortState();
+  const hd = (k, name, cls) => {
+    const on = so && so.k === k;
+    return `<span class="fo-sortable${cls ? " " + cls : ""}${on ? " sorted" : ""}" data-sort="${k}" title="Sort by ${esc(name)}${on ? (so.dir === "desc" ? " (descending - click again for the usual order)" : " (ascending - click again for descending)") : ""}">${esc(name)} <span class="fo-sort">${on ? (so.dir === "desc" ? "&#9660;" : "&#9650;") : "&#8661;"}</span></span>`;
+  };
+  let h = note + `<div class="fo-head"><span></span>${hd("name", "Name")}${hd("when", F.mode === "bin" ? "Deleted" : "Modified")}${hd("size", "Size", "c-size")}${hd("by", F.mode === "bin" ? "Deleted by" : "Uploaded by", "c-by")}<span></span></div>`;
+  for (const e of sortItems(F.items)) {
     const where = elsewhere && parentOf(e.path) ? `<span class="fo-where">${esc(parentOf(e.path))}</span>` : "";
     const flags = (e.pinned ? `<span class="flags" title="Pinned for everyone">&#128204;</span>` : "") + (e.starred ? `<span class="flags" title="Starred">&#11088;</span>` : "");
     const lock = e.locked ? `<span class="flags" title="${esc(LOCKED)}">&#128274;</span>` : "";
@@ -220,6 +226,34 @@ function paint() {
   }
   list.innerHTML = h;
 }
+
+/* Sorting by a heading: ascending, descending, then the usual order.
+   Folders stay before files. Kept in this browser. */
+function sortState() {
+  try { return JSON.parse(localStorage.getItem("lwk.folders.sort") || "null"); } catch (e) { return null; }
+}
+function sortItems(items) {
+  const so = sortState();
+  if (!so || !so.k) return items;
+  const d = so.dir === "desc" ? -1 : 1;
+  const val = (e) => so.k === "name" ? String(e.name || "").toLowerCase()
+    : so.k === "when" ? (e.bin ? e.at : e.mtime) || null
+    : so.k === "size" ? (e.dir ? null : e.size == null ? null : e.size)
+    : String((e.locked && !e.dir && !e.by ? "LWK Viewer" : e.by) || "").toLowerCase() || null;
+  return items.map((e, i) => [e, val(e), i]).sort((a, b) => {
+    if (!!a[0].dir !== !!b[0].dir) return a[0].dir ? -1 : 1;
+    if (a[1] == null || b[1] == null) return a[1] == null && b[1] == null ? a[2] - b[2] : a[1] == null ? 1 : -1;
+    return (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : a[2] - b[2]) * d;
+  }).map((x) => x[0]);
+}
+document.addEventListener("click", (ev) => {
+  const h = ev.target.closest && ev.target.closest("#fo-list .fo-head [data-sort]");
+  if (!h) return;
+  const k = h.dataset.sort, so = sortState();
+  const nx = !so || so.k !== k ? { k, dir: "asc" } : so.dir === "asc" ? { k, dir: "desc" } : null;
+  try { nx ? localStorage.setItem("lwk.folders.sort", JSON.stringify(nx)) : localStorage.removeItem("lwk.folders.sort"); } catch (e) {}
+  paint();
+});
 
 /* the selection only: rows stay as they are (a double click needs that) */
 function paintSel() {
@@ -1057,6 +1091,12 @@ function wire() {
   });
   // phone: the folders slide in; a computer: the folder column is hidden or shown (remembered)
   $("#fo-side-open").onclick = () => (PHONE() ? document.body.classList.toggle("fo-side-open") : setSide(!document.body.classList.contains("fo-side-hidden")));
+  // the folder tree and the preview: sized by dragging their edges
+  try {
+    initFlexColumns({ row: $("#fo"), key: "folders", cols: [
+      { el: $("#fo-side"), side: "l", off: () => document.body.classList.contains("fo-side-hidden") },
+      { el: $("#fo-prev"), side: "r" }] });
+  } catch (e) { console.warn("panels", e); }
   setSide(lsGet("sideHidden", false));
   pinch($("#fo-prev"));
   // a phone: a tap beside the folders drawer closes it
@@ -1100,8 +1140,9 @@ function wire() {
     if (ev.target.closest("[data-open]") && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey) return openItem(e);
     if (ev.ctrlKey || ev.metaKey) { F.sel.has(e.path) ? F.sel.delete(e.path) : F.sel.add(e.path); }
     else if (ev.shiftKey && F.last) {
-      const a = F.items.findIndex((i) => i.path === F.last), b = F.items.indexOf(e);
-      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) F.sel.add(F.items[i].path);
+      const shown = sortItems(F.items);       // the order on screen
+      const a = shown.findIndex((i) => i.path === F.last), b = shown.indexOf(e);
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) F.sel.add(shown[i].path);
     } else F.sel = new Set([e.path]);
     F.last = e.path;
     paintSel();

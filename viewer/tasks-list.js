@@ -2,7 +2,7 @@
  * under an arrow, every cell editable where it stands. */
 
 import { METHOD_OPTS, isMethod } from "./tasks-util.js";
-import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, pickPeople, pickOne, pickDate, PRIORITIES } from "./tasks-util.js";
+import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, pickPeople, pickOne, pickDate, PRIORITIES, PRI_RANK } from "./tasks-util.js";
 import { badge } from "./filelinks.js";
 
 /* A group that is a project: straight to its page, sheets and issues dashboard. */
@@ -59,7 +59,7 @@ function cell(T, t, c) {
 }
 
 function row(T, t, cols, depth) {
-  const kids = T.children(t.id);
+  const kids = sortTasks(T, T.children(t.id));
   const open = T.S.expanded.has(t.id);
   const meta = [
     kids.length ? `<span class="tl-m" title="Sub-tasks">&#8627; ${kids.filter((k) => k.done).length}/${kids.length}</span>` : "",
@@ -87,13 +87,62 @@ function row(T, t, cols, depth) {
   return h;
 }
 
+/* Sorting by a column (the header's arrows): ascending, descending, then
+   back to the list's own order. Kept in this browser. */
+const SORT_KEY = "lwk.tasks.sort";
+function sortState() {
+  try { return JSON.parse(localStorage.getItem(SORT_KEY) || "null"); } catch (e) { return null; }
+}
+function setSort(v) {
+  try { v ? localStorage.setItem(SORT_KEY, JSON.stringify(v)) : localStorage.removeItem(SORT_KEY); } catch (e) {}
+}
+// the value a task sorts by in a column (null: empty, always last)
+function sortVal(T, t, k) {
+  const first = (ps) => (ps && ps[0] ? String(ps[0].name || "").toLowerCase() : null);
+  if (k === "title") return String(t.title || "").toLowerCase();
+  if (k === "priority") return t.priority ? PRI_RANK[t.priority] || 0 : null;
+  if (k === "owners") return first(t.owners);
+  if (k === "subscribers") return t.subscribers && t.subscribers.length ? t.subscribers.length : null;
+  if (k === "start" || k === "due") return t[k] || null;
+  if (k === "progress") { const p = T.progressOf(t.id); return p.total ? p.done / p.total : null; }
+  if (k === "creator") return t.created_by ? String(t.created_by).toLowerCase() : null;
+  if (k === "created") return t.created_at || null;
+  if (k === "completed") return t.done && t.completed_at ? t.completed_at : null;
+  if (k === "updated") return t.updated_at || null;
+  if (k === "links") return t.links.length || null;
+  if (k.startsWith("f:")) {
+    const v = t.vals[k.slice(2)];
+    if (v == null || v === "") return null;
+    if (Array.isArray(v)) return first(v);
+    return typeof v === "number" || typeof v === "boolean" ? Number(v) : String(v).toLowerCase();
+  }
+  return null;
+}
+export function sortTasks(T, list) {
+  const so = sortState();
+  if (!so || !so.k) return list;
+  const d = so.dir === "desc" ? -1 : 1;
+  return list.map((t, i) => [t, sortVal(T, t, so.k), i]).sort((a, b) => {
+    if (a[1] == null || b[1] == null) return a[1] == null && b[1] == null ? a[2] - b[2] : a[1] == null ? 1 : -1;
+    return (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : a[2] - b[2]) * d;
+  }).map((x) => x[0]);
+}
+function headCell(k, name, cls) {
+  const so = sortState();
+  const on = so && so.k === k;
+  const arrow = on ? (so.dir === "desc" ? "&#9660;" : "&#9650;") : "&#8661;";
+  return `<div class="tl-c tl-sortable${cls ? " " + cls : ""}${on ? " sorted" : ""}" data-sort="${esc(k)}" title="Sort by ${esc(name)}${on ? (so.dir === "desc" ? " (descending - click again for the list's own order)" : " (ascending - click again for descending)") : ""}">`
+    + `${esc(name)} <span class="tl-sort">${arrow}</span></div>`;
+}
+
 export function render(T, el) {
   const S = T.S;
   const cols = columns(T);
   const tpl = `minmax(320px, 1fr) ` + cols.map((c) => c.w + "px").join(" ");
   const buckets = T.buckets(T.visible());
+  for (const b of buckets) b.tasks = sortTasks(T, b.tasks);
   let h = `<div class="tl" style="--cols:${tpl}">`
-    + `<div class="tl-row tl-head"><div class="tl-c tl-title">Task title</div>${cols.map((c) => `<div class="tl-c">${esc(c.name)}</div>`).join("")}</div>`;
+    + `<div class="tl-row tl-head">${headCell("title", "Task title", "tl-title")}${cols.map((c) => headCell(c.k, c.name)).join("")}</div>`;
   for (const b of buckets) {
     if (S.groupBy !== "group" && !b.tasks.length && b.key !== "_") continue;
     const shut = S.collapsed.has(b.key);
@@ -122,6 +171,12 @@ function wire(T, el, buckets) {
   const S = T.S;
   const bucketOf = (key) => buckets.find((b) => b.key === key);
   el.onclick = (ev) => {
+    const sh = ev.target.closest(".tl-head [data-sort]");
+    if (sh) {
+      const k = sh.dataset.sort, so = sortState();
+      setSort(!so || so.k !== k ? { k, dir: "asc" } : so.dir === "asc" ? { k, dir: "desc" } : null);
+      return render(T, el);
+    }
     const act = ev.target.closest("[data-act]");
     const rowEl = ev.target.closest(".tl-row[data-id]");
     const t = rowEl && T.task(rowEl.dataset.id);

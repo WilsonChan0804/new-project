@@ -27,6 +27,7 @@ import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop, ic, pop, skeleton } from "./tasks-util.js";
 import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
+import { initFlexColumns } from "./panels.js";
 import { emojiPicker, QUICK } from "./emoji.js";
 import * as Undo from "./undo.js";
 import { toWhatsApp, parseWhatsApp, readExport, waText } from "./whatsapp.js";
@@ -1568,6 +1569,12 @@ function wire() {
     if (b) { C.pend.splice(Number(b.dataset.unpend), 1); paintPend(); }
   };
   $("#c-back").onclick = () => $("#c-app").classList.remove("in-room");
+  // the chat list (sized, pinned or folded away) and the details panel
+  try {
+    initFlexColumns({ row: $("#c-app"), key: "chat", cols: [
+      { el: $("#c-side"), side: "l", fold: true },
+      { el: $("#c-right"), side: "r" }] });
+  } catch (e) { console.warn("panels", e); }
   $("#c-members-btn").onclick = () => info();
   $("#c-head .ch-title").onclick = () => { if (C.room && C.room.kind !== "dm") info(); };
   $("#c-rooms").addEventListener("contextmenu", (ev) => {

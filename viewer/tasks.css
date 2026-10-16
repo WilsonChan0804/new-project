@@ -97,6 +97,17 @@ b.mention { color: var(--accent-deep); }
 .tl-title { display: flex; align-items: center; gap: 6px; position: sticky; left: 0; z-index: 1; background: var(--panel);
   overflow: hidden; box-shadow: 1px 0 0 var(--line-soft); }
 .tl-head .tl-title { z-index: 3; }
+/* sortable headings: click for ascending, again for descending, again for the list's own order */
+.tl-head .tl-sortable { cursor: pointer; user-select: none; gap: 4px; }
+.tl-head .tl-sortable:hover { color: var(--ink); background: var(--panel-2); }
+.tl-head .tl-sort { font-size: 10px; opacity: .45; }
+.tl-head .tl-sortable:hover .tl-sort { opacity: .8; }
+.tl-head .tl-sortable.sorted { color: var(--accent); font-weight: 600; }
+.tl-head .tl-sortable.sorted .tl-sort { opacity: 1; }
+/* the task's header: wraps rather than pushing Delete out of sight */
+#t-detail { min-width: 0; overflow-x: hidden; container-type: inline-size; }
+.td-top { flex-wrap: wrap; row-gap: 4px; }
+@container (max-width: 560px) { .td-top .lab { display: none; } }
 .tl-row[data-id]:hover .tl-title { background: var(--panel-2); }
 .tl-row.sel .tl-title { background: var(--accent-soft); }
 .tl-t { cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 0 1 auto; }

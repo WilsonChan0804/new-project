@@ -173,3 +173,10 @@ body.fo-wide #fo:has(#fo-prev:not([hidden])) > #fo-main { display: none; }
 .fo-dragbadge { position: fixed; z-index: 1000; pointer-events: none; background: var(--ink, #222); color: #fff; font-size: 12px;
   padding: 4px 9px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.25); white-space: nowrap; }
 .fo-dragbadge[hidden] { display: none; }
+
+/* sortable headings */
+.fo-head .fo-sortable { cursor: pointer; user-select: none; }
+.fo-head .fo-sortable:hover { color: var(--ink); }
+.fo-head .fo-sort { font-size: 10px; opacity: .45; }
+.fo-head .fo-sortable.sorted { color: var(--accent); font-weight: 600; }
+.fo-head .fo-sortable.sorted .fo-sort { opacity: 1; }
