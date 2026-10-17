@@ -25,7 +25,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-10-15"
+__version__ = "2026-11-23"
 
 import io
 import json
@@ -50,6 +50,14 @@ DEFAULT_RULES = {
     # the flat: the area number up to its last "-" (A1-3 -> A1); or "param:<name>"
     "flat_from": "number_prefix",
     "probe_mm": [200, 500, 900],     # how far inside a window the room is looked for
+    # Rooms mode: the yes/no parameters that mark a room as one the check applies to (either one),
+    # and the parameters that say which flat and which block a room belongs to
+    "room_flags": ["UFA_Y/N", "UFS_Y/N"],
+    "flat_param": "BUD-GBP-Common-Premises_ID",
+    "block_param": "BUD-GBP-Common-Premises_Location",
+    # a wide panel is looked at every sample_step_mm across its width: a curtain wall
+    # that runs past more than one room gives each room its share
+    "sample_step_mm": 300, "max_samples": 12,
 }
 
 # words in an area's name -> its use. First match wins; "BAL" and the like are no room.
@@ -161,26 +169,42 @@ def point_in_loops(x, y, loops):
     return inside
 
 
+def _bbox(loops):
+    xs = [p[0] for l in loops for p in l]
+    ys = [p[1] for l in loops for p in l]
+    return (min(xs), min(ys), max(xs), max(ys))
+
+
 def area_at(x, y, areas):
     for a in areas:
+        b = a.get("bbox")
+        if b is None:
+            b = a["bbox"] = _bbox(a["loops"])
+        if x < b[0] or x > b[2] or y < b[1] or y > b[3]:
+            continue
         if point_in_loops(x, y, a["loops"]):
             return a
     return None
 
 
-def serving_room(item, areas, probe_mm):
-    """The room an element serves: the area just inside it that has a use.
-    -> (area or None, note). Looks a little way to both sides of the element;
-    a room on both sides (an internal door) or on neither (a balcony only)
-    is no window of a room."""
-    x, y, z = item["pos"]
-    nx, ny = item["n"]
+def _k(a):
+    """What tells one room from another (ids repeat between a model and its links)."""
+    return a.get("key") or a.get("uid") or a["id"]
+
+
+def _level_rooms(areas, z):
     elevs = sorted(set(a["level_mm"] for a in areas))
     lv = None
     for e in elevs:
         if e <= z + 300:
             lv = e
-    here = [a for a in areas if a["level_mm"] == lv] if lv is not None else []
+    return [a for a in areas if a["level_mm"] == lv] if lv is not None else []
+
+
+def _serve_at(x, y, nx, ny, here, probe_mm):
+    """The room with a use just inside the point on one side or the other of
+    the element. -> (area or None, note). A room on both sides (an internal
+    door) or on neither (a balcony only) is no window of a room."""
     found = []
     for sign in (1, -1):
         hit = None
@@ -190,12 +214,45 @@ def serving_room(item, areas, probe_mm):
                 break
         if hit and use_of(hit["name"]):
             found.append(hit)
-    ids = set(a["id"] for a in found)
+    ids = set(_k(a) for a in found)
     if len(ids) == 1:
         return found[0], ""
     if len(ids) > 1:
         return None, "between two rooms"
     return None, "no room beside it"
+
+
+def serving_room(item, areas, probe_mm):
+    """The room an element serves (one point: its centre). -> (area or None, note)."""
+    x, y, z = item["pos"]
+    nx, ny = item["n"]
+    return _serve_at(x, y, nx, ny, _level_rooms(areas, z), probe_mm)
+
+
+def serving_rooms(item, areas, probe_mm, step_mm=300, max_samples=12):
+    """The rooms an element serves and the share of it each gets. A panel wider
+    than a step is looked at across its width, so a curtain wall running past two
+    rooms is split between them. -> ([(area, share)], note); the shares add to
+    less than 1 where part of it faces no room."""
+    x, y, z = item["pos"]
+    nx, ny = item["n"]
+    here = _level_rooms(areas, z)
+    w = item.get("w_mm") or 0
+    n = 1 if w <= step_mm * 1.5 else min(int(max_samples), max(2, int(round(w / float(step_mm)))))
+    tx, ty = -ny, nx
+    counts, area_of, whys = {}, {}, {}
+    for i in range(n):
+        off = 0.0 if n == 1 else ((i + 0.5) / n - 0.5) * w
+        a, why = _serve_at(x + tx * off, y + ty * off, nx, ny, here, probe_mm)
+        if a is None:
+            whys[why] = whys.get(why, 0) + 1
+        else:
+            counts[_k(a)] = counts.get(_k(a), 0) + 1
+            area_of[_k(a)] = a
+    if not counts:
+        return [], (sorted(whys.items(), key=lambda kv: -kv[1])[0][0] if whys else "no room beside it")
+    note = "only part of it faces a room" if sum(counts.values()) < n else ""
+    return [(area_of[k], c / float(n)) for k, c in sorted(counts.items())], note
 
 
 # --- the table ---------------------------------------------------------------
@@ -217,8 +274,9 @@ def build(areas, items, types, rules=None):
         u = use_of(a["name"])
         if not u or u not in uses:
             continue
-        rooms[a["id"]] = {
-            "flat": flat_of(a["number"], rules.get("flat_from", "number_prefix")),
+        rooms[_k(a)] = {
+            "flat": a.get("flat") or flat_of(a["number"], rules.get("flat_from", "number_prefix")),
+            "block": a.get("block", ""),
             "number": a["number"], "name": a["name"], "use": u, "level": a.get("level", ""),
             "area_m2": a["area_m2"], "id": a["id"], "uid": a.get("uid", ""),
             "req_light": a["area_m2"] * uses[u][0], "req_open": a["area_m2"] * uses[u][1],
@@ -229,9 +287,11 @@ def build(areas, items, types, rules=None):
     for it in items:
         tc = type_counts.setdefault(it["key"], {"cat": it["cat"], "count": 0})
         tc["count"] += 1
-        a, why = serving_room(it, areas, probe)
-        if a is None or a["id"] not in rooms:
-            unmatched.append({"id": it["id"], "uid": it.get("uid", ""), "key": it["key"], "why": why or "no room beside it"})
+        hits, why = serving_rooms(it, areas, probe, rules.get("sample_step_mm", 300), rules.get("max_samples", 12))
+        hits = [(a, sh) for a, sh in hits if _k(a) in rooms]
+        if not hits:
+            unmatched.append({"id": it["id"], "uid": it.get("uid", ""), "key": it["key"], "why": why or "no room beside it",
+                              "source": it.get("source", "")})
             continue
         info = type_info(it["key"], types)
         frac = it.get("fraction_override")
@@ -241,30 +301,32 @@ def build(areas, items, types, rules=None):
         else:
             confirmed = True
         nominal = (it["w_mm"] / 1000.0) * (it["h_mm"] / 1000.0) if it.get("w_mm") and it.get("h_mm") else None
-        bd = nominal * gf if nominal is not None else None
-        meas = it.get("glass_m2")
-        rooms[a["id"]]["windows"].append({
-            "id": it["id"], "uid": it.get("uid", ""), "key": it["key"], "mark": it.get("mark", ""), "cat": it["cat"],
-            "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"),
-            "light_bd": bd, "light_meas": meas,
-            "open_bd": (bd * frac) if (bd is not None and frac is not None) else None,
-            "open_meas": (meas * frac) if (meas is not None and frac is not None) else None,
-            "operation": info["operation"], "fraction": frac, "confirmed": confirmed,
-        })
+        for a, share in hits:
+            bd = nominal * gf * share if nominal is not None else None
+            meas = it.get("glass_m2") * share if it.get("glass_m2") is not None else None
+            rooms[_k(a)]["windows"].append({
+                "id": it["id"], "uid": it.get("uid", ""), "key": it["key"], "mark": it.get("mark", ""), "cat": it["cat"],
+                "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"), "share": round(share, 3), "source": it.get("source", ""),
+                "light_bd": bd, "light_meas": meas,
+                "open_bd": (bd * frac) if (bd is not None and frac is not None) else None,
+                "open_meas": (meas * frac) if (meas is not None and frac is not None) else None,
+                "operation": info["operation"], "fraction": frac, "confirmed": confirmed,
+            })
 
     # a bath / kitchen with no window of its own goes with the living room of its flat
+    fk = lambda r: (r["block"], r["level"], r["flat"])
     living = {}
     for r in rooms.values():
         if r["use"] == "LIV":
-            living.setdefault(r["flat"], r)
+            living.setdefault(fk(r), r)
     for r in list(rooms.values()):
-        if r["use"] in rules.get("merge_into_living", []) and not r["windows"] and r["flat"] in living:
-            host = living[r["flat"]]
+        if r["use"] in rules.get("merge_into_living", []) and not r["windows"] and fk(r) in living:
+            host = living[fk(r)]
             host["merged"].append(r)
             r["merged_into"] = host["number"]
 
     rows = []
-    for r in sorted(rooms.values(), key=lambda q: (q["level"], q["flat"], q["number"])):
+    for r in sorted(rooms.values(), key=lambda q: (q["block"], q["level"], q["flat"], q["number"])):
         if r.get("merged_into"):
             rows.append(_row(r, rules, merged=True))
             continue
@@ -296,6 +358,8 @@ def _row(r, rules, merged=False):
             status, need = "NO WINDOW", False
             notes.append("no window or panel found for this room")
         else:
+            if any(w.get("share", 1) < 1 for w in ws):
+                notes.append("a panel runs past this room: its share is counted (see Windows / panels)")
             if any(w["fraction"] is None for w in ws):
                 need = True
                 notes.append("a window type has no openable fraction yet")
@@ -313,7 +377,7 @@ def _row(r, rules, merged=False):
             if pl_m is not None and pl_bd is not None and abs(pl_m - pl_bd) > 0.05 * max(pl_bd, 0.001):
                 notes.append("measured glass %.3f m2 differs from width x height x %d%% (%.3f m2)" % (pl_m, round(rules.get("glazing_factor", 0.8) * 100), pl_bd))
     return {
-        "flat": r["flat"], "level": r["level"], "number": r["number"], "name": r["name"], "use": r["use"],
+        "flat": r["flat"], "block": r.get("block", ""), "level": r["level"], "number": r["number"], "name": r["name"], "use": r["use"],
         "area_m2": _r3(r["area_m2"]),
         "with": [{"number": g["number"], "name": g["name"], "area_m2": _r3(g["area_m2"])} for g in r["merged"]],
         "req_light": _r3(req_l), "req_open": _r3(req_o),
@@ -338,16 +402,17 @@ def _csv(v):
 
 
 def write_csv(path, rows):
-    head = [u"Flat", u"Level", u"Room", u"Name", u"Use", u"Area m2", u"Required lighting m2", u"Provided lighting m2 (W x H x 80%)",
+    head = [u"Block", u"Flat", u"Level", u"Room", u"Name", u"Use", u"Area m2", u"Required lighting m2", u"Provided lighting m2 (W x H x 80%)",
             u"Provided lighting m2 (measured glass)", u"Required openable m2", u"Provided openable m2 (W x H x 80%)",
             u"Provided openable m2 (measured glass)", u"Status", u"Windows / panels", u"Notes"]
     lines = [u",".join(_csv(h) for h in head)]
     for r in rows:
-        ws = u"; ".join(u"%s %s x %s" % (w.get("mark") or w["key"], int(w["w_mm"] or 0), int(w["h_mm"] or 0)) for w in r["windows"])
+        ws = u"; ".join(u"%s %s x %s%s" % (w.get("mark") or w["key"], int(w["w_mm"] or 0), int(w["h_mm"] or 0),
+                                          (u" (%d%%)" % round(w.get("share", 1) * 100)) if w.get("share", 1) < 1 else u"") for w in r["windows"])
         name = r["name"]
         if r["with"]:
             name += u" + " + u" + ".join(w["name"] for w in r["with"])
-        cells = [r["flat"], r["level"], r["number"], name, r["use"], r["area_m2"], r["req_light"], r["prov_light_bd"],
+        cells = [r.get("block", ""), r["flat"], r["level"], r["number"], name, r["use"], r["area_m2"], r["req_light"], r["prov_light_bd"],
                  r["prov_light_meas"], r["req_open"], r["prov_open_bd"], r["prov_open_meas"], r["status"], ws, u"; ".join(r["notes"])]
         lines.append(u",".join(_csv(c) for c in cells))
     with io.open(path, "w", encoding="utf-8-sig", newline=u"") as f:
@@ -366,6 +431,125 @@ def write_json(path, rows, unmatched, type_counts):
 def area_scheme_names(doc):
     from Autodesk.Revit.DB import FilteredElementCollector, AreaScheme
     return sorted(s.Name for s in FilteredElementCollector(doc).OfClass(AreaScheme))
+
+
+def link_sources(doc, include_links=True):
+    """The models to read: [(label, document, transform to this model or None)].
+    This model first, then each loaded linked model (one entry per placed instance)."""
+    out = [(doc.Title, doc, None)]
+    if not include_links:
+        return out
+    from Autodesk.Revit.DB import FilteredElementCollector, RevitLinkInstance
+    for inst in FilteredElementCollector(doc).OfClass(RevitLinkInstance):
+        try:
+            ld = inst.GetLinkDocument()
+            if ld is None:
+                continue
+            out.append((u"%s (link)" % ld.Title, ld, inst.GetTotalTransform()))
+        except Exception:
+            continue
+    return out
+
+
+def _tp(tf, p):
+    """A point in mm in this model's coordinates."""
+    q = tf.OfPoint(p) if tf is not None else p
+    return (q.X * FT_MM, q.Y * FT_MM, q.Z * FT_MM)
+
+
+def level_bands(doc, selected_mm, include_links=True):
+    """For each chosen floor elevation (mm) the band [from, to) of heights that belong to it:
+    up to the next level of this model or of any link."""
+    from Autodesk.Revit.DB import FilteredElementCollector, Level
+    elevs = set()
+    for label, d, tf in link_sources(doc, include_links):
+        dz = (tf.Origin.Z * FT_MM) if tf is not None else 0.0
+        for lv in FilteredElementCollector(d).OfClass(Level):
+            elevs.add(round(lv.Elevation * FT_MM + dz, 0))
+    elevs = sorted(elevs)
+    bands = []
+    for e in selected_mm:
+        above = [x for x in elevs if x > e + 500]
+        bands.append((e - 300.0, above[0] if above else e + 6000.0))
+    return bands
+
+
+def _flag_state(el, names):
+    """True / False from the yes-no parameters that mark a room for the check; None when the
+    room has none of them."""
+    seen = False
+    for n in names:
+        try:
+            p = el.LookupParameter(n)
+        except Exception:
+            p = None
+        if p is None:
+            continue
+        seen = True
+        try:
+            if p.HasValue and p.AsInteger() == 1:
+                return True
+        except Exception:
+            pass
+    return False if seen else None
+
+
+def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
+    """The placed Rooms to check, with their boundary loops in mm (in this model's
+    coordinates, also for rooms of a linked model). A room is taken when one of the
+    yes-no parameters in rules["room_flags"] is ticked; a project without those
+    parameters gives every room and the names decide. -> (rooms, skipped) where
+    skipped lists the names of ticked rooms that are no lighting / ventilation room."""
+    from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, BuiltInParameter,
+                                   SpatialElementBoundaryOptions)
+    from lwk_viewer.compat import id_int
+    rules = rules or DEFAULT_RULES
+    flags = rules.get("room_flags", [])
+    opt = SpatialElementBoundaryOptions()
+    out, skipped = [], {}
+    for label, d, tf in link_sources(doc, include_links):
+        dz = (tf.Origin.Z * FT_MM) if tf is not None else 0.0
+        for r in FilteredElementCollector(d).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType():
+            try:
+                if r.Area is None or r.Area <= 0 or r.Location is None:
+                    continue
+                if _flag_state(r, flags) is False:
+                    continue
+                lvl = r.Level
+                lev_mm = (lvl.Elevation * FT_MM + dz) if lvl is not None else 0.0
+                if level_elevs and not any(abs(lev_mm - e) <= 150 for e in level_elevs):
+                    continue
+                name = ""
+                try:
+                    name = r.get_Parameter(BuiltInParameter.ROOM_NAME).AsString() or ""
+                except Exception:
+                    pass
+                if not use_of(name):
+                    skipped[name] = skipped.get(name, 0) + 1
+                    continue
+                loops = []
+                for loop in r.GetBoundarySegments(opt) or []:
+                    pts = []
+                    for seg in loop:
+                        for p in seg.GetCurve().Tessellate():
+                            q = _tp(tf, p)[:2]
+                            if not pts or pts[-1] != q:
+                                pts.append(q)
+                    if len(pts) > 1 and pts[0] == pts[-1]:
+                        pts.pop()
+                    if len(pts) >= 3:
+                        loops.append(pts)
+                if not loops:
+                    continue
+                out.append({"id": id_int(r.Id), "uid": r.UniqueId, "key": u"%s|%s" % (label, r.UniqueId),
+                            "number": r.Number or "", "name": name, "source": label,
+                            "area_m2": round(r.Area * SQFT_M2 + 1e-9, 3), "loops": loops,
+                            "flat": _text_param(r, rules.get("flat_param", "")),
+                            "block": _text_param(r, rules.get("block_param", "")),
+                            "level": lvl.Name if lvl is not None else "", "level_mm": lev_mm})
+            except Exception:
+                continue
+    return out, sorted(skipped.items())
 
 
 def collect_areas(doc, scheme_name, level_names=None):
@@ -522,78 +706,83 @@ def _glass_m2(doc, el, n):
     return round(total[0] * SQFT_M2, 3) if found[0] else None
 
 
-def collect_items(doc, level_names=None, measure=True):
-    """Windows, glazed doors and curtain panels with where they are, their
-    size and measured glass."""
-    from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter
+def collect_items(doc, bands=None, measure=True, include_links=True):
+    """Windows, glazed doors and curtain panels of this model and its linked models,
+    where they are (in this model's coordinates), their size and measured glass.
+    bands: the [from, to) heights (mm) of the floors being checked, or None."""
+    from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter, XYZ
     from lwk_viewer.compat import id_int
     cats = [("Windows", BuiltInCategory.OST_Windows), ("Doors", BuiltInCategory.OST_Doors),
             ("Curtain panels", BuiltInCategory.OST_CurtainWallPanels)]
     out = []
-    for cname, bic in cats:
-        for el in FilteredElementCollector(doc).OfCategory(bic).WhereElementIsNotElementType():
-            try:
-                if _text_param(el, "LWK_LV_Exclude").lower() in ("1", "yes", "true"):
-                    continue
-                n = _facing(el)
-                if n is None:
-                    continue
-                bb = el.get_BoundingBox(None)
-                if bb is None:
-                    continue
+    for label, d, tf in link_sources(doc, include_links):
+        for cname, bic in cats:
+            for el in FilteredElementCollector(d).OfCategory(bic).WhereElementIsNotElementType():
                 try:
-                    p = el.Location.Point
-                    pos = (p.X * FT_MM, p.Y * FT_MM, (bb.Min.Z + bb.Max.Z) / 2.0 * FT_MM)
-                except Exception:
-                    pos = ((bb.Min.X + bb.Max.X) / 2.0 * FT_MM, (bb.Min.Y + bb.Max.Y) / 2.0 * FT_MM, (bb.Min.Z + bb.Max.Z) / 2.0 * FT_MM)
-                if level_names:
+                    if _text_param(el, "LWK_LV_Exclude").lower() in ("1", "yes", "true"):
+                        continue
+                    n_local = _facing(el)
+                    if n_local is None:
+                        continue
+                    bb = el.get_BoundingBox(None)
+                    if bb is None:
+                        continue
                     try:
-                        if doc.GetElement(el.LevelId).Name not in level_names and cname != "Curtain panels":
+                        p = el.Location.Point
+                        pos = _tp(tf, XYZ(p.X, p.Y, (bb.Min.Z + bb.Max.Z) / 2.0))
+                    except Exception:
+                        pos = _tp(tf, XYZ((bb.Min.X + bb.Max.X) / 2.0, (bb.Min.Y + bb.Max.Y) / 2.0, (bb.Min.Z + bb.Max.Z) / 2.0))
+                    if bands and not any(lo <= pos[2] < hi for lo, hi in bands):
+                        continue
+                    n = n_local
+                    if tf is not None:
+                        v = tf.OfVector(XYZ(n_local[0], n_local[1], 0))
+                        m = (v.X * v.X + v.Y * v.Y) ** 0.5
+                        if m < 1e-9:
                             continue
-                    except Exception:
-                        pass
-                w = _param_d(el, ("FAMILY_WIDTH_PARAM", "CURTAIN_WALL_PANELS_WIDTH", "DOOR_WIDTH"),
-                             ("Width", "Rough Width"))
-                h = _param_d(el, ("FAMILY_HEIGHT_PARAM", "CURTAIN_WALL_PANELS_HEIGHT", "DOOR_HEIGHT"),
-                             ("Height", "Rough Height"))
-                if w is None or h is None:
-                    # from the box: along the wall, and the height
-                    ex = abs(bb.Max.X - bb.Min.X) * FT_MM
-                    ey = abs(bb.Max.Y - bb.Min.Y) * FT_MM
-                    along = abs(n[0]) * ey + abs(n[1]) * ex      # extent across the facing direction
-                    w = w or along
-                    h = h or abs(bb.Max.Z - bb.Min.Z) * FT_MM
-                fam = tname = ""
-                try:
-                    sym = el.Symbol
-                    fam, tname = sym.FamilyName, sym.get_Parameter(BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
-                except Exception:
+                        n = (v.X / m, v.Y / m)
+                    w = _param_d(el, ("FAMILY_WIDTH_PARAM", "CURTAIN_WALL_PANELS_WIDTH", "DOOR_WIDTH"),
+                                 ("Width", "Rough Width"))
+                    h = _param_d(el, ("FAMILY_HEIGHT_PARAM", "CURTAIN_WALL_PANELS_HEIGHT", "DOOR_HEIGHT"),
+                                 ("Height", "Rough Height"))
+                    if w is None or h is None:
+                        # from the box: along the wall, and the height
+                        ex = abs(bb.Max.X - bb.Min.X) * FT_MM
+                        ey = abs(bb.Max.Y - bb.Min.Y) * FT_MM
+                        along = abs(n_local[0]) * ey + abs(n_local[1]) * ex      # extent across the facing direction
+                        w = w or along
+                        h = h or abs(bb.Max.Z - bb.Min.Z) * FT_MM
+                    fam = tname = ""
                     try:
-                        t = doc.GetElement(el.GetTypeId())
-                        fam, tname = t.FamilyName, t.Name
+                        sym = el.Symbol
+                        fam, tname = sym.FamilyName, sym.get_Parameter(BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
+                    except Exception:
+                        try:
+                            t = d.GetElement(el.GetTypeId())
+                            fam, tname = t.FamilyName, t.Name
+                        except Exception:
+                            pass
+                    key = u"%s : %s" % (fam, tname)
+                    mark = ""
+                    try:
+                        t = d.GetElement(el.GetTypeId())
+                        mark = _text_param(t, "Type Mark")
                     except Exception:
                         pass
-                key = u"%s : %s" % (fam, tname)
-                mark = ""
-                try:
-                    t = doc.GetElement(el.GetTypeId())
-                    mark = _text_param(t, "Type Mark")
+                    glass = _glass_m2(d, el, n_local) if measure else None
+                    if cname == "Doors" and glass is None and not re.search(r"glass|glaz|sliding|folding|balcony", key, re.I):
+                        continue
+                    ov = _text_param(el, "LWK_LV_Openable")
+                    frac = None
+                    if ov:
+                        try:
+                            frac = float(ov.replace("%", "")) / (100.0 if "%" in ov else 1.0)
+                        except Exception:
+                            frac = None
+                    out.append({"id": id_int(el.Id), "uid": el.UniqueId, "cat": cname, "key": key, "mark": mark, "source": label,
+                                "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac})
                 except Exception:
-                    pass
-                glass = _glass_m2(doc, el, n) if measure else None
-                if cname == "Doors" and glass is None and not re.search(r"glass|glaz|sliding|folding|balcony", key, re.I):
                     continue
-                ov = _text_param(el, "LWK_LV_Openable")
-                frac = None
-                if ov:
-                    try:
-                        frac = float(ov.replace("%", "")) / (100.0 if "%" in ov else 1.0)
-                    except Exception:
-                        frac = None
-                out.append({"id": id_int(el.Id), "uid": el.UniqueId, "cat": cname, "key": key, "mark": mark,
-                            "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac})
-            except Exception:
-                continue
     return out
 
 
@@ -612,7 +801,7 @@ def write_back(doc, rows, names=None):
         for r in rows:
             for w in r["windows"]:
                 el = doc.GetElement(w["uid"])
-                if el is None:
+                if el is None:        # an element of a linked model cannot be written from here
                     continue
                 vals = {names["room"]: r["number"], names["room_name"]: r["name"], names["flat"]: r["flat"],
                         names["glazing"]: w.get("light_bd"), names["open"]: w.get("open_bd")}
