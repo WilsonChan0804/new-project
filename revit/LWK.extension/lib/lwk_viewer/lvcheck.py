@@ -25,7 +25,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-11-23"
+__version__ = "2026-11-24"
 
 import io
 import json
@@ -50,6 +50,9 @@ DEFAULT_RULES = {
     # the flat: the area number up to its last "-" (A1-3 -> A1); or "param:<name>"
     "flat_from": "number_prefix",
     "probe_mm": [200, 500, 900],     # how far inside a window the room is looked for
+    # a single opening's own glazing figure above this (m2) cannot be a real domestic
+    # window - flag the room instead of trusting it (OK or NOT OK) on a bad reading
+    "implausible_light_m2": 15.0,
     # Rooms mode: the yes/no parameters that mark a room as one the check applies to (either one),
     # and the parameters that say which flat and which block a room belongs to
     "room_flags": ["UFA_Y/N", "UFS_Y/N"],
@@ -350,6 +353,12 @@ def _row(r, rules, merged=False):
     pl_m, po_m = _sum(ws, "light_meas"), _sum(ws, "open_meas")
     notes = []
     need = False
+    cap = rules.get("implausible_light_m2", 15.0)
+    too_big = [w for w in ws if (w.get("light_bd") or 0) > cap or (w.get("light_meas") or 0) > cap]
+    if too_big:
+        need = True
+        notes.append("%s looks too large for one window/panel (%.1f m2) - check its Width/Height parameters in Revit"
+                     % (too_big[0].get("mark") or too_big[0]["key"], max(too_big[0].get("light_bd") or 0, too_big[0].get("light_meas") or 0)))
     if merged:
         status = "WITH " + r["merged_into"]
         pl_bd = po_bd = pl_m = po_m = None
@@ -419,9 +428,19 @@ def write_csv(path, rows):
         f.write(u"\r\n".join(lines) + u"\r\n")
 
 
+def _json_default(o):
+    """Anything json does not know by itself (a boxed .NET Int64 from IronPython
+    prints as a Python long but its json module still rejects it) - plain int,
+    else text."""
+    try:
+        return int(o)
+    except Exception:
+        return u"%s" % o
+
+
 def write_json(path, rows, unmatched, type_counts):
     d = {"schema": "lwk.lv/1", "version": __version__, "rooms": rows, "unmatched": unmatched, "types": type_counts}
-    txt = json.dumps(d, ensure_ascii=True, indent=1)
+    txt = json.dumps(d, ensure_ascii=True, indent=1, default=_json_default)
     with io.open(path, "w", encoding="utf-8") as f:
         f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
 
@@ -594,9 +613,27 @@ def collect_areas(doc, scheme_name, level_names=None):
     return out
 
 
+def _is_length_param(p):
+    """True only for a genuine Length parameter (Revit stores its value in feet).
+    A custom "Number" parameter of the same name stores the real mm value as
+    entered, with no unit conversion - the same check units.py._spec() uses."""
+    try:
+        d = p.Definition
+        try:
+            tid = (d.GetDataType().TypeId or "").lower()      # Revit 2022+
+            return ":length-" in tid or tid.endswith(":length")
+        except Exception:
+            pass
+        return str(d.UnitType) == "UT_Length"                  # older Revit
+    except Exception:
+        return False
+
+
 def _param_d(el, bips=(), names=()):
-    """A length parameter in mm: built-in ones first, then by name on the
-    instance and on its type."""
+    """A length in mm: built-in ones first (always a true Length parameter, so
+    always feet -> mm), then by name on the instance and on its type (a custom
+    parameter there may be a plain Number already holding the mm value, not a
+    Length - only convert when it truly is one)."""
     from Autodesk.Revit.DB import BuiltInParameter, StorageType
     holders = [el]
     try:
@@ -617,7 +654,8 @@ def _param_d(el, bips=(), names=()):
             try:
                 p = h.LookupParameter(n)
                 if p is not None and p.HasValue and p.StorageType == StorageType.Double and p.AsDouble() > 0:
-                    return p.AsDouble() * FT_MM
+                    v = p.AsDouble()
+                    return v * FT_MM if _is_length_param(p) else v
             except Exception:
                 pass
     return None

@@ -108,25 +108,34 @@ if todo:
         i = LV.type_info(k, types)
         labels.append("%s   [%s, %d]   %s" % (k, counts[k]["cat"], counts[k]["count"],
                                               ("guess: %s" % i["operation"]) if i["fraction"] is not None else "not known"))
-    chosen = forms.SelectFromList.show(
-        labels, multiselect=True, title="Confirm how these types open (tick the ones that open the same way)",
-        button_name="Set how they open")
-    while chosen:
-        ops = ["%s  (%d%%)" % (o, int(f * 100)) for o, f in LV.OPERATIONS] + ["Other fraction ..."]
-        op = forms.SelectFromList.show(ops, title="How do these %d types open?" % len(chosen), button_name="Confirm")
-        if op:
-            if op.startswith("Other"):
-                txt = forms.ask_for_string(default="0.5", prompt="Openable part of the glazing area (0 to 1):", title="Light & Vent")
-                try:
-                    name, frac = "Other", min(1.0, max(0.0, float(txt)))
-                except Exception:
-                    break
-            else:
-                name, frac = [(o, f) for o, f in LV.OPERATIONS if op.startswith(o)][0]
-            for lab in chosen:
-                types[todo[labels.index(lab)]] = {"operation": name, "fraction": frac, "confirmed": True}
-            LV.save_types(types)
-        break
+    # answered batch by batch - a mixed set of types may need different answers (some 50%,
+    # some 100% ...), so this keeps asking for whatever is still unconfirmed until none is left
+    remaining = list(todo)
+    rem_labels = list(labels)
+    OTHER = "Other fraction ..."
+    op_labels = ["%d%% open  (%s)" % (int(f * 100), o) for o, f in LV.OPERATIONS]
+    while remaining:
+        chosen = forms.SelectFromList.show(
+            rem_labels, multiselect=True, title="Confirm how these types open (tick the ones that open the same way; "
+            "pick more than one batch if types need different answers)", button_name="Set how they open")
+        if not chosen:
+            break
+        op = forms.SelectFromList.show(op_labels + [OTHER], title="How do these %d types open?" % len(chosen), button_name="Confirm")
+        if not op:
+            continue
+        if op == OTHER:
+            txt = forms.ask_for_string(default="0.5", prompt="Openable part of the glazing area (0 to 1):", title="Light & Vent")
+            try:
+                name, frac = "Other", min(1.0, max(0.0, float(txt)))
+            except Exception:
+                continue
+        else:
+            name, frac = LV.OPERATIONS[op_labels.index(op)]
+        for lab in chosen:
+            types[remaining[rem_labels.index(lab)]] = {"operation": name, "fraction": frac, "confirmed": True}
+        LV.save_types(types)
+        remaining = [k for k, lab in zip(remaining, rem_labels) if lab not in chosen]
+        rem_labels = [lab for lab in rem_labels if lab not in chosen]
     rows, unmatched, counts = LV.build(areas, items, types, rules)
 
 # 4. show it

@@ -2,6 +2,7 @@
 """Tests of the parts of the lighting and ventilation check that need no Revit:
     python3 -m unittest discover -s revit/tests -v
 """
+import json
 import os
 import sys
 import unittest
@@ -98,6 +99,68 @@ class Table(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "OK")
         rows, _, _ = LV.build([liv], [item(2000, w=800, h=1000)], TYPES)    # 0.64 m2
         self.assertEqual(rows[0]["status"], "NOT OK")
+
+
+class JsonSafe(unittest.TestCase):
+    def test_a_value_the_stock_encoder_rejects_still_serializes(self):
+        class WeirdInt(object):
+            """stands in for a boxed .NET Int64, which IronPython shows with
+            Python 2's long repr but whose json module still rejects"""
+            def __int__(self):
+                return 544042
+            def __repr__(self):
+                return "544042L"
+        room = {"id": WeirdInt(), "uid": "u", "flat": "A1", "block": "", "level": "5/F", "number": "1",
+                "name": "LIV/DIN", "use": "LIV", "area_m2": 10.0, "with": [], "req_light": 1.0, "req_open": 0.5,
+                "prov_light_bd": None, "prov_open_bd": None, "prov_light_meas": None, "prov_open_meas": None,
+                "status": "NEEDS DATA", "notes": [], "windows": []}
+        import tempfile, os as _os
+        fd, path = tempfile.mkstemp(suffix=".json")
+        _os.close(fd)
+        try:
+            LV.write_json(path, [room], [], {})
+            with open(path) as f:
+                data = json.load(f)
+            self.assertEqual(data["rooms"][0]["id"], 544042)
+        finally:
+            _os.remove(path)
+
+
+class LengthVsNumberParameter(unittest.TestCase):
+    """_param_d needs live Revit, so this exercises the same length-vs-number decision
+    through a fake parameter object, the way units.py._spec() is also shaped."""
+
+    class FakeDef(object):
+        def __init__(self, is_length):
+            self._is_length = is_length
+
+        def GetDataType(self):
+            class T(object):
+                TypeId = "autodesk.spec.aec:length-2.0.0" if self._is_length else "autodesk.spec:number-2.0.0"
+            return T()
+
+    class FakeParam(object):
+        def __init__(self, is_length):
+            self.Definition = LengthVsNumberParameter.FakeDef(is_length)
+
+    def test_a_length_parameter_is_recognised(self):
+        self.assertTrue(LV._is_length_param(self.FakeParam(True)))
+
+    def test_a_number_parameter_is_not(self):
+        self.assertFalse(LV._is_length_param(self.FakeParam(False)))
+
+
+class ImplausibleOpening(unittest.TestCase):
+    def test_a_window_far_too_big_for_one_opening_forces_needs_data(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
+        rows, _, _ = LV.build([liv], [item(2000, w=12000, h=12000)], TYPES)   # 12 x 12 x 0.8 = 115.2 m2
+        self.assertEqual(rows[0]["status"], "NEEDS DATA")
+        self.assertTrue(any("too large for one window" in n for n in rows[0]["notes"]))
+
+    def test_an_ordinary_window_is_unaffected(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
+        rows, _, _ = LV.build([liv], [item(2000, w=2000, h=1500)], TYPES)
+        self.assertFalse(any("too large" in n for n in rows[0]["notes"]))
 
 
 if __name__ == "__main__":
