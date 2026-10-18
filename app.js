@@ -1895,6 +1895,96 @@ function testGPS() {
   }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
 }
 
+/* =========================================================
+   全日離線地圖：當日所有地點（編號）＋步行路線＋電車示意線＋GPS
+   全部用已下載嘅圖塊同路線，冇網都睇到
+   ========================================================= */
+async function dayGeoms(day) {
+  const out = [];
+  for (let i = 0; i < day.items.length; i++) {
+    const it = day.items[i];
+    if (it.type === 'flight') continue;
+    const g = await mapGeom(day.items, i).catch(() => null);
+    if (g) out.push({ it, g });
+  }
+  return out;
+}
+async function openDayMap(dayId) {
+  const day = trip.days.find(d => d.id === dayId);
+  if (!day) return;
+  openModal({
+    title: `${day.date.slice(5).replace('-', '/')} 全日離線地圖`,
+    cls: 'daymap-modal',
+    body: `<div class="omap daymap"><div class="leaf"></div></div>
+      <p class="hint" id="dayInfo">載入緊…</p>
+      <div class="row"><button type="button" class="chip" id="dayMe">${icon('navigate')}我喺邊（GPS）</button></div>
+      <p class="hint">藍色實線＝步行路線；灰色虛線＝電車／巴士（示意）。撳編號睇係邊一站。</p>`,
+    onOpen: async form => {
+      try { await loadLeaflet(); } catch (e) { form.querySelector('#dayInfo').textContent = e.message; return; }
+      const map = L.map(form.querySelector('.daymap .leaf'), { maxZoom: 19, minZoom: 5 });
+      map.attributionControl.setPrefix(false);
+      offlineTileLayer().addTo(map);
+      map.setView([35.6812, 139.7671], 12);
+      $('#modal').addEventListener('close', () => { if (watch != null) navigator.geolocation.clearWatch(watch); map.remove(); }, { once: true });
+      const geos = await dayGeoms(day);
+      if (!form.isConnected) return;
+      const pts = [];
+      let n = 0, last = null;
+      for (const { it, g } of geos) {
+        if (g.route) L.polyline(g.route, { color: '#1a73e8', weight: 5, opacity: .85 }).addTo(map);
+        else if (g.a && g.b && distM(g.a, g.b) > 30) L.polyline([[g.a.lat, g.a.lon], [g.b.lat, g.b.lon]], { color: '#8a8780', weight: 3, dashArray: '6 8' }).addTo(map);
+        if (it.type === 'walk' || !g.b || (last && distM(last, g.b) < 25)) continue;
+        last = g.b;
+        n++;
+        L.marker([g.b.lat, g.b.lon], { icon: L.divIcon({ className: 'daypin', html: `<b>${n}</b>`, iconSize: [26, 26], iconAnchor: [13, 13] }) })
+          .bindPopup(`<b>${n}. ${esc(it.time || '')} ${esc(it.title)}</b><br><button type="button" class="chip" data-act="open" data-id="${it.id}">詳情</button>`).addTo(map);
+        pts.push([g.b.lat, g.b.lon]);
+      }
+      if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 16 });
+      setTimeout(() => map.invalidateSize(), 60);
+      form.querySelector('#dayInfo').textContent = pts.length ? `共 ${pts.length} 個地點。兩指放大縮小。` : '未有座標——上網時喺「資訊」撳「下載離線資料」。';
+      let watch = null, me = null;
+      form.querySelector('#dayMe').onclick = () => {
+        if (!navigator.geolocation) return toast('呢部機唔支援定位');
+        if (watch != null) navigator.geolocation.clearWatch(watch);
+        let first = true;
+        watch = navigator.geolocation.watchPosition(p => {
+          const ll = [p.coords.latitude, p.coords.longitude];
+          if (!me) me = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 3, fillColor: '#1a73e8', fillOpacity: 1 }).bindTooltip('你', { permanent: true, direction: 'left', className: 'omap-tip' }).addTo(map);
+          else me.setLatLng(ll);
+          if (first) { first = false; map.setView(ll, Math.max(map.getZoom(), 16)); }
+        }, () => toast('攞唔到位置——請容許「定位」權限'), { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 });
+      };
+    },
+  });
+}
+
+/* ---------- 匯出 KML：所有地點＋步行路線（Google My Maps、Organic Maps 等都開到） ---------- */
+async function exportKML() {
+  toast('準備緊地圖檔…');
+  const x = s => esc(s);
+  let body = '';
+  for (const day of trip.days) {
+    const geos = await dayGeoms(day);
+    let pm = '';
+    let n = 0;
+    for (const { it, g } of geos) {
+      if (g.route) pm += `<Placemark><name>${x(`${it.time || ''} ${it.title}`)}</name><styleUrl>#walk</styleUrl><LineString><tessellate>1</tessellate><coordinates>${g.route.map(([la, lo]) => `${lo},${la}`).join(' ')}</coordinates></LineString></Placemark>\n`;
+      if (it.type === 'walk' || !g.b) continue;
+      n++;
+      pm += `<Placemark><name>${x(`${n}. ${it.time || ''} ${it.title}`)}</name><description>${x([it.titleJa, it.address, it.xNote, it.xTransport].filter(Boolean).join('\n'))}</description><Point><coordinates>${g.b.lon},${g.b.lat}</coordinates></Point></Placemark>\n`;
+    }
+    body += `<Folder><name>${x(`${day.date} ${day.title || ''}`)}</name>\n${pm}</Folder>\n`;
+  }
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(trip.name || '東京行程')}</name>
+<Style id="walk"><LineStyle><color>ffe8731a</color><width>5</width></LineStyle></Style>\n${body}</Document></kml>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }));
+  a.download = `tokyo-trip-${todayStr()}.kml`;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('已匯出 KML 地圖檔');
+}
+
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
 const ui = { tab: 'plan', day: null };
@@ -1988,6 +2078,7 @@ function renderPlan() {
       ${ef('day', day.id, 'notes', '', day.notes || '', { ph: '撳呢度加當日備註' })}
       <div class="row">
         ${routeUrl ? `<a class="chip dark" href="${routeUrl}" target="_blank" rel="noopener">${icon('route')}全日路線</a>` : ''}
+        <button type="button" class="chip" data-act="daymap" data-id="${day.id}">${icon('map')}全日離線地圖</button>
       </div>
       <div class="wxbar">
         <a class="chip" href="${ACCU_URL}" target="_blank" rel="noopener">${icon('cloud')}天氣</a>
@@ -2329,7 +2420,9 @@ function renderInfo() {
     <p class="muted" id="picStatus">檢查緊相片…</p>
     <p class="muted" id="mapStatus"></p>
     <div class="row"><button class="chip dark" data-act="offline-all">${icon('download')}下載離線資料（相片＋地圖＋步行路線）</button>
-      <button class="chip" data-act="gps-test">📍 測試 GPS</button></div>
+      <button class="chip" data-act="gps-test">📍 測試 GPS</button>
+      <button class="chip" data-act="kml">${icon('download')}匯出地圖檔（KML）</button></div>
+    <p class="hint">Google Maps 唔可以匯入或者離線儲存步行／電車路線。離線睇路線請用每日嘅「全日離線地圖」。KML 檔可以：① 電腦開 Google My Maps 匯入，喺 Google Maps App「已儲存 → 地圖」睇（要上網）；② 匯入 Organic Maps 等離線地圖 App，冇網都可以步行導航。</p>
     <p class="hint">新版下載範圍大咗、放大到街道級（大約 5,000–6,000 格，約 60–100MB，用 Wi-Fi 下載幾分鐘）。冇下載到嘅位置會用模糊少少嘅放大圖頂住，唔會再出現空白。</p>
     <ul class="plain">
       <li>上網時打開一次，再「加到主畫面」—— 之後冇網都開到。</li>
@@ -2577,6 +2670,8 @@ const actions = {
   kappa: () => window.Kappa?.play(),
   'pics-scroll': (_, el) => { const box = el.parentElement.querySelector('.pics'); const t = box.querySelector('.pic'); box.scrollBy({ left: +el.dataset.dir * Math.max(120, (t?.offsetWidth || 150) + 8), behavior: 'smooth' }); },
   fx: () => openFx(),
+  daymap: id => openDayMap(id),
+  kml: () => exportKML(),
   ins: (_, el) => addItemForm(el.dataset.day, +el.dataset.i),
   'kp-auto': id => { localStorage.setItem('kp-auto', id); render(); },
   'kp-show': () => window.Kappa?.play(),

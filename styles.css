@@ -480,3 +480,9 @@ rt { font-size: .5em; font-weight: 600; color: var(--muted); letter-spacing: 0; 
 .ins:hover span { border-color: var(--dark); background: var(--accent); color: var(--accent-ink); }
 .modal-body select { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 .tile-zoomed { filter: saturate(.9); }
+
+/* ---------- 全日離線地圖 ---------- */
+.omap.daymap { height: min(62dvh, 560px); }
+.daypin { display: grid; place-items: center; border-radius: 50%; background: #e8452c; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); color: #fff; font: 800 12px/1 system-ui, sans-serif; }
+.daypin b { display: block; }
+.leaflet-popup-content .chip { margin-top: 6px; }
