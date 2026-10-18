@@ -17,9 +17,16 @@ def room(key, number, name, x0, x1, y0=0, y1=4000, level="5/F", flat="A1", block
             "loops": [[(x0, y0), (x1, y0), (x1, y1), (x0, y1)]]}
 
 
-def item(x, w=1500, y=4000, key="W", cat="Windows", h=1500, n=(0, 1), z=1500, glass=None):
+def item(x, w=1500, y=4000, key="W", cat="Windows", h=1500, n=(0, 1), z=1500, glass=None, glaze_exact=None, open_exact=None):
     return {"id": 1, "uid": "u" + key, "cat": cat, "key": key, "mark": "", "pos": (x, y, z), "n": n,
-            "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": None}
+            "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": None,
+            "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact}
+
+
+def door(x, y, n, z=1500):
+    """A plain door between two rooms, for the adjacency-based compensation tests.
+    n is the facing direction across the door (either room is "either side")."""
+    return {"id": 9, "uid": "d%s-%s" % (x, y), "pos": (x, y, z), "n": n}
 
 
 TYPES = {"W": {"operation": "Casement", "fraction": 1.0, "confirmed": True}}
@@ -73,9 +80,9 @@ class Table(unittest.TestCase):
         br = room("br", "A1-2", "BR1", 4000, 8000)
         rows, unmatched, _ = LV.build([liv, br], [item(4000, w=3000, h=2000, cat="Curtain panels", key="W")], TYPES)
         by = dict((r["number"], r) for r in rows)
-        # 3.0 x 2.0 x 80% = 4.8 m2 on the whole, half to each room
-        self.assertAlmostEqual(by["A1-1"]["prov_light_bd"], 2.4, places=2)
-        self.assertAlmostEqual(by["A1-2"]["prov_light_bd"], 2.4, places=2)
+        # 3.0 x 2.0 x 70% = 4.2 m2 on the whole, half to each room
+        self.assertAlmostEqual(by["A1-1"]["prov_light_bd"], 2.1, places=2)
+        self.assertAlmostEqual(by["A1-2"]["prov_light_bd"], 2.1, places=2)
         self.assertEqual(unmatched, [])
         self.assertTrue(any("runs past" in n for n in by["A1-1"]["notes"]))
 
@@ -84,20 +91,76 @@ class Table(unittest.TestCase):
         rows, _, _ = LV.build([liv], [item(2000)], TYPES)
         self.assertEqual((rows[0]["block"], rows[0]["flat"]), ("Tower 1", "T1-5F-A"))
 
-    def test_bath_without_window_goes_with_the_living_room_of_its_own_flat_and_floor_only(self):
+    def test_bath_without_window_goes_with_the_room_its_door_leads_to_in_its_own_flat_and_floor_only(self):
         a_liv = room("l5", "A-1", "LIV/DIN", 0, 4000, flat="A", level="5/F")
         a_bath = room("b5", "A-3", "BATH", 4000, 6000, flat="A", level="5/F")
         b_bath = room("b6", "A-3", "BATH", 4000, 6000, flat="A", level="6/F", level_mm=3000.0)
-        rows, _, _ = LV.build([a_liv, a_bath, b_bath], [item(2000)], TYPES)
+        a_door = door(4000, 2000, (1, 0))
+        rows, _, _ = LV.build([a_liv, a_bath, b_bath], [item(2000)], TYPES, doors=[a_door])
         by = dict(((r["level"], r["number"]), r) for r in rows)
-        self.assertTrue(by[("5/F", "A-3")]["status"].startswith("WITH"))
+        self.assertEqual(by[("5/F", "A-3")]["status"], "WITH A-1")
         self.assertFalse(by[("6/F", "A-3")]["status"].startswith("WITH"))
+
+    def test_a_bath_with_an_insufficient_window_still_relays_through_its_door(self):
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000)
+        bath = room("bath", "A-3", "BATH", 4000, 6000, y1=2000)   # 8 m2: needs 0.8 m2 light and open
+        a_door = door(4000, 1000, (1, 0))
+        rows, _, _ = LV.build([liv, bath], [item(5000, w=400, h=500, y=2000)], TYPES, doors=[a_door])  # 0.2 x 0.25 x 0.7 = 0.035 m2 - not enough
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-3"]["status"], "WITH A-1")
+
+    def test_relays_into_whichever_room_the_door_actually_leads_to_not_always_liv(self):
+        kit = room("kit", "A-2", "O.KIT", 0, 4000)
+        bath = room("bath", "A-3", "BATH", 4000, 6000)
+        a_door = door(4000, 2000, (1, 0))
+        rows, _, _ = LV.build([kit, bath], [item(2000)], TYPES, doors=[a_door])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-3"]["status"], "WITH A-2")
+
+    def test_two_equally_valid_neighbours_are_flagged_instead_of_guessed(self):
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000, y0=0, y1=4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 8000, y0=0, y1=4000)
+        bath = room("bath", "A-3", "BATH", 0, 8000, y0=4000, y1=6000)
+        d1 = door(2000, 4000, (0, 1))
+        d2 = door(6000, 4000, (0, 1))
+        rows, _, _ = LV.build([liv, kit, bath], [item(4000, y=5000)], TYPES, doors=[d1, d2])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-3"]["status"], "NEEDS DATA")
+        self.assertTrue(any("more than one room" in n for n in by["A-3"]["notes"]))
+
+    def test_no_door_found_leaves_the_room_as_is(self):
+        bath = room("bath", "A-3", "BATH", 0, 4000)
+        rows, _, _ = LV.build([bath], [], TYPES, doors=[])
+        self.assertEqual(rows[0]["status"], "NO WINDOW")
+        self.assertTrue(any("no door-connected room" in n for n in rows[0]["notes"]))
 
     def test_ok_and_not_ok(self):
         liv = room("liv", "A1-1", "LIV/DIN", 0, 4000, y1=4000)      # 16 m2: needs 1.6 m2 light, 1 m2 open
-        rows, _, _ = LV.build([liv], [item(2000, w=2000, h=1500)], TYPES)   # 2 x 1.5 x 0.8 = 2.4 m2
+        rows, _, _ = LV.build([liv], [item(2000, w=2000, h=1500)], TYPES)   # 2 x 1.5 x 0.7 = 2.1 m2
         self.assertEqual(rows[0]["status"], "OK")
-        rows, _, _ = LV.build([liv], [item(2000, w=800, h=1000)], TYPES)    # 0.64 m2
+        rows, _, _ = LV.build([liv], [item(2000, w=800, h=1000)], TYPES)    # 0.8 x 1.0 x 0.7 = 0.56 m2
+        self.assertEqual(rows[0]["status"], "NOT OK")
+
+    def test_the_glazing_ratio_is_point_seven_not_point_eight(self):
+        self.assertEqual(LV.DEFAULT_RULES["glazing_factor"], 0.7)
+
+    def test_a_family_s_own_glazing_and_openable_dimensions_are_used_when_present(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)    # 16 m2: needs 1.6 m2 light, 1 m2 open
+        # width x height x 0.7 alone would be 2 x 1.5 x 0.7 = 2.1 m2, openable 2.1 x 1.0 = 2.1 m2 -
+        # but the family's own GBP_Glazing_*/GBP_Openable_* say otherwise
+        rows, _, _ = LV.build([liv], [item(2000, w=2000, h=1500, glaze_exact=1.65, open_exact=0.4)], TYPES)
+        self.assertAlmostEqual(rows[0]["prov_light_bd"], 1.65, places=2)
+        self.assertAlmostEqual(rows[0]["prov_open_bd"], 0.4, places=2)
+        self.assertEqual(rows[0]["status"], "NOT OK")   # openable 0.4 < 1 m2 required
+        self.assertTrue(any("GBP_Glazing" in n for n in rows[0]["notes"]))
+
+    def test_measured_glass_decides_ok_not_ok_over_the_nominal_figure(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)    # needs 1.6 m2 light, 1 m2 open
+        # nominal (2 x 1.5 x 0.7 = 2.1 m2) would pass, but the measured glass (the curtain
+        # wall's opaque upstand/spandrel excluded) is less than what's required
+        rows, _, _ = LV.build([liv], [item(2000, w=2000, h=1500, glass=1.2)], TYPES)
+        self.assertAlmostEqual(rows[0]["prov_light_bd"], 2.1, places=2)
+        self.assertAlmostEqual(rows[0]["prov_light_meas"], 1.2, places=2)
         self.assertEqual(rows[0]["status"], "NOT OK")
 
 

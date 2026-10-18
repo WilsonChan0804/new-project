@@ -96,9 +96,10 @@ if not areas:
         script.exit()
 bands = LV.level_bands(doc, level_elevs, use_links) if level_elevs else None
 items = LV.collect_items(doc, bands, True, use_links)
+doors = LV.collect_doors(doc, bands, use_links)
 types = LV.load_types()
 
-rows, unmatched, counts = LV.build(areas, items, types, rules)
+rows, unmatched, counts = LV.build(areas, items, types, rules, doors)
 
 # 3. the types still to confirm
 todo = sorted(k for k in counts if not LV.type_info(k, types)["confirmed"])
@@ -136,7 +137,7 @@ if todo:
         LV.save_types(types)
         remaining = [k for k, lab in zip(remaining, rem_labels) if lab not in chosen]
         rem_labels = [lab for lab in rem_labels if lab not in chosen]
-    rows, unmatched, counts = LV.build(areas, items, types, rules)
+    rows, unmatched, counts = LV.build(areas, items, types, rules, doors)
 
 # 4. show it
 out.print_md("### Lighting and ventilation - %s%s" % (source_label, (", " + levels[0]) if levels else ""))
@@ -144,16 +145,18 @@ out.print_md("%d rooms, %d windows / panels read (%s)." % (len(areas), len(items
 if skipped:
     out.print_md("Ticked rooms the check does not assess (no lighting / ventilation use in the name): " + ", ".join("%s x%d" % kv for kv in skipped))
 out.print_md("Required: lighting = area x 1/10, openable = area x 1/16 (the sheet's ratios - the AP confirms them against B(P)R 30 / APP-130). "
-             "Provided: width x height x 80%, the measured glass beside it. A bath or kitchen with no window of its own is counted with its living room.")
+             "Provided: the measured glass decides OK / NOT OK; width x height x 70% (or a family's own GBP_Glazing_*/GBP_Openable_* dimensions) "
+             "is shown beside it as a reference only. A bath or kitchen with no window of its own, or one that isn't enough, is counted with "
+             "whichever room its door leads to.")
 table = []
 for r in rows:
     nm = r["name"] + ("".join(" + " + w["name"] for w in r["with"]))
     f = lambda v: "" if v is None else "%.3f" % v
-    table.append([r["block"], r["flat"], r["number"], nm, f(r["area_m2"]), f(r["req_light"]), f(r["prov_light_bd"]), f(r["prov_light_meas"]),
-                  f(r["req_open"]), f(r["prov_open_bd"]), r["status"], "; ".join(r["notes"])])
+    table.append([r["block"], r["flat"], r["number"], nm, f(r["area_m2"]), f(r["req_light"]), f(r["prov_light_meas"]), f(r["prov_light_bd"]),
+                  f(r["req_open"]), f(r["prov_open_meas"]), r["status"], "; ".join(r["notes"])])
 out.print_table(table_data=table, title="Rooms",
-                columns=["Block", "Flat", "Room", "Name", "Area m2", "Req. lighting", "Prov. lighting (W x H x 80%)", "Prov. lighting (measured)",
-                         "Req. openable", "Prov. openable", "Status", "Notes"])
+                columns=["Block", "Flat", "Room", "Name", "Area m2", "Req. lighting", "Prov. lighting (measured)", "Prov. lighting (W x H x ratio)",
+                         "Req. openable", "Prov. openable (measured)", "Status", "Notes"])
 bad = [r for r in rows if r["status"] in ("NOT OK", "NEEDS DATA", "NO WINDOW")]
 out.print_md("**%d rooms: %d OK, %d not OK, %d need data, %d without a window.** %d windows / panels were not given to a room."
              % (len(rows), len([r for r in rows if r["status"] == "OK"]), len([r for r in rows if r["status"] == "NOT OK"]),

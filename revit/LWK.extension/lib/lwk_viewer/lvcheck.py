@@ -9,15 +9,21 @@ UFA scheme, the required lighting area (room x 1/10) and openable area
   - each window, balcony door and curtain panel is given to the room it
     serves by its position on the plan (a point just inside it, tested on the
     area's boundary);
-  - lighting: width x height x 80 % ("BD standard", as the sheet) and, beside
-    it, the glass measured from the model - the Revit geometry with a
-    transparent material, so the frame is left out;
+  - lighting: the glass measured from the model (the Revit geometry with a
+    transparent material, so the frame - and an opaque curtain-wall upstand
+    or spandrel - is left out) decides OK / NOT OK; width x height x 70 %
+    ("BD standard", as the sheet) is kept beside it only as a secondary,
+    reference figure. A family with its own GBP_Glazing_*/GBP_Openable_*
+    dimensions uses those exact figures instead of the ratio;
   - openable: Revit does not know which panel opens, so each window / panel
     TYPE is classified once (fixed, casement, sliding ...) and its openable
     fraction kept in a settings file for the AP to confirm. A type not yet
-    confirmed shows the room as "needs data", never as a pass.
+    confirmed shows the room as "needs data", never as a pass;
+  - a bathroom / kitchen with no window of its own, or one that isn't enough,
+    is counted together with whichever room its door actually leads to (not
+    assumed to always be the flat's living room).
 
-The ratios, the 80 % and the openable fractions are the practice of the
+The ratios, the 70 % and the openable fractions are the practice of the
 sheet, not read from the regulation: they are in DEFAULT_RULES and the
 settings file, for the AP to confirm against B(P)R 30 and APP-130.
 
@@ -25,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-11-24"
+__version__ = "2026-11-25"
 
 import io
 import json
@@ -36,7 +42,8 @@ FT_MM = 304.8
 SQFT_M2 = 0.09290304
 
 DEFAULT_RULES = {
-    "glazing_factor": 0.8,          # nominal width x height x this = glazing area ("BD standard")
+    "glazing_factor": 0.7,          # nominal width x height x this = glazing area ("BD standard"), when
+                                     # a window has no GBP_Glazing_Width/Height of its own to use instead
     "uses": {                       # use: [lighting ratio, openable ratio]
         "LIV": [0.1, 0.0625],       # living / dining
         "BED": [0.1, 0.0625],       # bedrooms, studies
@@ -44,9 +51,10 @@ DEFAULT_RULES = {
         "BATH": [0.1, 0.1],         # bathrooms and lavatories (the sheet: 1/10 of the bath)
         "STO": [0.1, 0.0625],       # stores
     },
-    # a room of these uses with no window of its own is counted with the
-    # living room of its flat ("cum. BATH", "cum. OPEN KIT" on the sheet)
-    "merge_into_living": ["BATH", "KIT"],
+    # a room of these uses whose own window is missing or not enough is counted together with
+    # whichever room its door leads to ("cum. BATH", "cum. OPEN KIT" on the sheet) - found from the
+    # model's own doors, not assumed to be the flat's living room
+    "merge_if_insufficient": ["BATH", "KIT"],
     # the flat: the area number up to its last "-" (A1-3 -> A1); or "param:<name>"
     "flat_from": "number_prefix",
     "probe_mm": [200, 500, 900],     # how far inside a window the room is looked for
@@ -225,6 +233,41 @@ def _serve_at(x, y, nx, ny, here, probe_mm):
     return None, "no room beside it"
 
 
+def _rooms_each_side(x, y, nx, ny, here, probe_mm):
+    """Unlike _serve_at (which drops a point with a room on each side as
+    "between two rooms"), this is for exactly that case: a door between two
+    rooms. -> (room_on_plus_side, room_on_minus_side), either may be None."""
+    sides = []
+    for sign in (1, -1):
+        hit = None
+        for d in probe_mm:
+            hit = area_at(x + sign * nx * d, y + sign * ny * d, here)
+            if hit:
+                break
+        sides.append(hit if (hit and use_of(hit["name"])) else None)
+    return sides[0], sides[1]
+
+
+def door_adjacent_rooms(doors, areas, probe_mm):
+    """key -> set(key, ...) of the rooms found immediately either side of a door,
+    from every door given (an interior door between two UFA rooms makes an edge
+    both ways; a door with no room, or the same room, on one side adds nothing)."""
+    adj = {}
+    for dr in doors:
+        x, y, z = dr["pos"]
+        nx, ny = dr["n"]
+        here = _level_rooms(areas, z)
+        a, b = _rooms_each_side(x, y, nx, ny, here, probe_mm)
+        if a is None or b is None:
+            continue
+        ka, kb = _k(a), _k(b)
+        if ka == kb:
+            continue
+        adj.setdefault(ka, set()).add(kb)
+        adj.setdefault(kb, set()).add(ka)
+    return adj
+
+
 def serving_room(item, areas, probe_mm):
     """The room an element serves (one point: its centre). -> (area or None, note)."""
     x, y, z = item["pos"]
@@ -264,11 +307,15 @@ def _r3(v):
     return None if v is None else round(v + 1e-9, 3)
 
 
-def build(areas, items, types, rules=None):
+def build(areas, items, types, rules=None, doors=None):
     """Rooms with what their windows give. items: elements with pos, n, key,
-    mark, cat, w_mm, h_mm, glass_m2. -> (rows, unmatched, type_counts)"""
+    mark, cat, w_mm, h_mm, glass_m2 (and, optionally, glaze_m2_exact /
+    open_m2_exact from a family's own GBP_Glazing_*/GBP_Openable_* dimensions).
+    doors: elements with pos, n (any OST_Doors instance, glazed or not), used
+    only to find which room a windowless/insufficient bathroom or kitchen
+    should be counted with. -> (rows, unmatched, type_counts)"""
     rules = rules or DEFAULT_RULES
-    gf = float(rules.get("glazing_factor", 0.8))
+    gf = float(rules.get("glazing_factor", 0.7))
     uses = rules.get("uses", {})
     probe = rules.get("probe_mm", [200, 500, 900])
 
@@ -278,6 +325,7 @@ def build(areas, items, types, rules=None):
         if not u or u not in uses:
             continue
         rooms[_k(a)] = {
+            "_key": _k(a),
             "flat": a.get("flat") or flat_of(a["number"], rules.get("flat_from", "number_prefix")),
             "block": a.get("block", ""),
             "number": a["number"], "name": a["name"], "use": u, "level": a.get("level", ""),
@@ -303,30 +351,55 @@ def build(areas, items, types, rules=None):
             frac = info["fraction"]
         else:
             confirmed = True
-        nominal = (it["w_mm"] / 1000.0) * (it["h_mm"] / 1000.0) if it.get("w_mm") and it.get("h_mm") else None
+        glaze_exact = it.get("glaze_m2_exact")
+        if glaze_exact is not None:
+            nominal_light = glaze_exact
+        elif it.get("w_mm") and it.get("h_mm"):
+            nominal_light = (it["w_mm"] / 1000.0) * (it["h_mm"] / 1000.0) * gf
+        else:
+            nominal_light = None
+        open_exact = it.get("open_m2_exact")
+        if open_exact is not None:
+            nominal_open = open_exact
+        elif nominal_light is not None and frac is not None:
+            nominal_open = nominal_light * frac
+        else:
+            nominal_open = None
         for a, share in hits:
-            bd = nominal * gf * share if nominal is not None else None
+            bd = nominal_light * share if nominal_light is not None else None
+            op_bd = nominal_open * share if nominal_open is not None else None
             meas = it.get("glass_m2") * share if it.get("glass_m2") is not None else None
             rooms[_k(a)]["windows"].append({
                 "id": it["id"], "uid": it.get("uid", ""), "key": it["key"], "mark": it.get("mark", ""), "cat": it["cat"],
                 "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"), "share": round(share, 3), "source": it.get("source", ""),
                 "light_bd": bd, "light_meas": meas,
-                "open_bd": (bd * frac) if (bd is not None and frac is not None) else None,
+                "open_bd": op_bd,
                 "open_meas": (meas * frac) if (meas is not None and frac is not None) else None,
                 "operation": info["operation"], "fraction": frac, "confirmed": confirmed,
+                "exact_dims": glaze_exact is not None or open_exact is not None,
             })
 
-    # a bath / kitchen with no window of its own goes with the living room of its flat
+    # a bath / kitchen whose own window is missing or not enough goes with whichever
+    # room its door leads to (same flat, same floor) - found from the model's doors,
+    # not assumed to be the flat's living room
     fk = lambda r: (r["block"], r["level"], r["flat"])
-    living = {}
-    for r in rooms.values():
-        if r["use"] == "LIV":
-            living.setdefault(fk(r), r)
+    adj = door_adjacent_rooms(doors, areas, probe) if doors else {}
     for r in list(rooms.values()):
-        if r["use"] in rules.get("merge_into_living", []) and not r["windows"] and fk(r) in living:
-            host = living[fk(r)]
+        if r["use"] not in rules.get("merge_if_insufficient", []):
+            continue
+        own = _own_provision(r, rules)
+        if own["status"] not in ("NOT OK", "NO WINDOW"):
+            continue    # OK needs no compensation; NEEDS DATA is a data problem, not left to guess a relay for
+        neighbours = adj.get(r["_key"], set())
+        candidates = [rooms[k] for k in neighbours if k in rooms and k != r["_key"] and fk(rooms[k]) == fk(r)]
+        if len(candidates) == 1:
+            host = candidates[0]
             host["merged"].append(r)
             r["merged_into"] = host["number"]
+        elif len(candidates) > 1:
+            r["merge_ambiguous"] = sorted(c["number"] for c in candidates)
+        else:
+            r["merge_unavailable"] = True
 
     rows = []
     for r in sorted(rooms.values(), key=lambda q: (q["block"], q["level"], q["flat"], q["number"])):
@@ -344,11 +417,17 @@ def _sum(ws, k):
     return sum(vals)
 
 
-def _row(r, rules, merged=False):
-    group = [r] + r["merged"]
+def _own_provision(r, rules, req_l=None, req_o=None):
+    """This room's own windows only, against its own requirement (ignoring any
+    merge): the nominal (secondary) and measured (primary) figures, notes, and
+    a status of OK / NOT OK / NO WINDOW / NEEDS DATA. Measured glass decides
+    OK / NOT OK when a window's glass could be measured; nominal width x
+    height x ratio (or a family's own GBP_Glazing_*/GBP_Openable_* figure) is
+    the fallback for a window whose glass could not be measured, and is
+    always reported too, as the sheet's traditional reference column."""
     ws = r["windows"]
-    req_l = sum(g["req_light"] for g in group)
-    req_o = sum(g["req_open"] for g in group)
+    req_l = r["req_light"] if req_l is None else req_l
+    req_o = r["req_open"] if req_o is None else req_o
     pl_bd, po_bd = _sum(ws, "light_bd"), _sum(ws, "open_bd")
     pl_m, po_m = _sum(ws, "light_meas"), _sum(ws, "open_meas")
     notes = []
@@ -359,32 +438,50 @@ def _row(r, rules, merged=False):
         need = True
         notes.append("%s looks too large for one window/panel (%.1f m2) - check its Width/Height parameters in Revit"
                      % (too_big[0].get("mark") or too_big[0]["key"], max(too_big[0].get("light_bd") or 0, too_big[0].get("light_meas") or 0)))
+    if any(w.get("exact_dims") for w in ws):
+        notes.append("uses the family's own GBP_Glazing_*/GBP_Openable_* dimensions where available")
+    if not ws:
+        status, need = "NO WINDOW", False
+        notes.append("no window or panel found for this room")
+    else:
+        if any(w.get("share", 1) < 1 for w in ws):
+            notes.append("a panel runs past this room: its share is counted (see Windows / panels)")
+        if any(w["fraction"] is None for w in ws):
+            need = True
+            notes.append("a window type has no openable fraction yet")
+        elif any(not w["confirmed"] for w in ws):
+            need = True
+            notes.append("openable fraction of a type not yet confirmed")
+        primary_l = pl_m if pl_m is not None else pl_bd
+        primary_o = po_m if po_m is not None else po_bd
+        if primary_l is None or primary_o is None:
+            need = True
+        ok_l = primary_l is not None and primary_l + 1e-9 >= req_l
+        ok_o = primary_o is not None and primary_o + 1e-9 >= req_o
+        if need:
+            status = "NEEDS DATA"
+        else:
+            status = "OK" if (ok_l and ok_o) else "NOT OK"
+        if pl_m is not None and pl_bd is not None and abs(pl_m - pl_bd) > 0.05 * max(pl_bd, 0.001):
+            notes.append("measured glass %.3f m2 differs from width x height x %d%% (%.3f m2)" % (pl_m, round(rules.get("glazing_factor", 0.7) * 100), pl_bd))
+    return {"pl_bd": pl_bd, "po_bd": po_bd, "pl_m": pl_m, "po_m": po_m, "status": status, "notes": notes}
+
+
+def _row(r, rules, merged=False):
+    group = [r] + r["merged"]
+    req_l = sum(g["req_light"] for g in group)
+    req_o = sum(g["req_open"] for g in group)
+    own = _own_provision(r, rules, req_l, req_o)
+    pl_bd, po_bd, pl_m, po_m, status, notes = own["pl_bd"], own["po_bd"], own["pl_m"], own["po_m"], own["status"], own["notes"]
     if merged:
         status = "WITH " + r["merged_into"]
         pl_bd = po_bd = pl_m = po_m = None
-    else:
-        if not ws:
-            status, need = "NO WINDOW", False
-            notes.append("no window or panel found for this room")
-        else:
-            if any(w.get("share", 1) < 1 for w in ws):
-                notes.append("a panel runs past this room: its share is counted (see Windows / panels)")
-            if any(w["fraction"] is None for w in ws):
-                need = True
-                notes.append("a window type has no openable fraction yet")
-            elif any(not w["confirmed"] for w in ws):
-                need = True
-                notes.append("openable fraction of a type not yet confirmed")
-            if po_bd is None:
-                need = True
-            ok_l = pl_bd is not None and pl_bd + 1e-9 >= req_l
-            ok_o = po_bd is not None and po_bd + 1e-9 >= req_o
-            if need:
-                status = "NEEDS DATA"
-            else:
-                status = "OK" if (ok_l and ok_o) else "NOT OK"
-            if pl_m is not None and pl_bd is not None and abs(pl_m - pl_bd) > 0.05 * max(pl_bd, 0.001):
-                notes.append("measured glass %.3f m2 differs from width x height x %d%% (%.3f m2)" % (pl_m, round(rules.get("glazing_factor", 0.8) * 100), pl_bd))
+    elif r.get("merge_ambiguous"):
+        status = "NEEDS DATA"
+        notes.append("more than one room beside its door could take this room's area (%s) - not merged, decide by hand"
+                     % ", ".join(r["merge_ambiguous"]))
+    elif r.get("merge_unavailable") and status in ("NOT OK", "NO WINDOW"):
+        notes.append("no door-connected room found to compensate into")
     return {
         "flat": r["flat"], "block": r.get("block", ""), "level": r["level"], "number": r["number"], "name": r["name"], "use": r["use"],
         "area_m2": _r3(r["area_m2"]),
@@ -393,7 +490,7 @@ def _row(r, rules, merged=False):
         "prov_light_bd": _r3(pl_bd), "prov_open_bd": _r3(po_bd),
         "prov_light_meas": _r3(pl_m), "prov_open_meas": _r3(po_m),
         "status": status, "notes": notes, "uid": r["uid"], "id": r["id"],
-        "windows": [dict((k, (_r3(v) if isinstance(v, float) else v)) for k, v in w.items()) for w in ws],
+        "windows": [dict((k, (_r3(v) if isinstance(v, float) else v)) for k, v in w.items()) for w in r["windows"]],
     }
 
 
@@ -411,9 +508,10 @@ def _csv(v):
 
 
 def write_csv(path, rows):
-    head = [u"Block", u"Flat", u"Level", u"Room", u"Name", u"Use", u"Area m2", u"Required lighting m2", u"Provided lighting m2 (W x H x 80%)",
-            u"Provided lighting m2 (measured glass)", u"Required openable m2", u"Provided openable m2 (W x H x 80%)",
-            u"Provided openable m2 (measured glass)", u"Status", u"Windows / panels", u"Notes"]
+    head = [u"Block", u"Flat", u"Level", u"Room", u"Name", u"Use", u"Area m2", u"Required lighting m2",
+            u"Provided lighting m2 (measured glass - primary)", u"Provided lighting m2 (nominal, W x H x ratio - reference)",
+            u"Required openable m2", u"Provided openable m2 (measured glass - primary)",
+            u"Provided openable m2 (nominal, W x H x ratio - reference)", u"Status", u"Windows / panels", u"Notes"]
     lines = [u",".join(_csv(h) for h in head)]
     for r in rows:
         ws = u"; ".join(u"%s %s x %s%s" % (w.get("mark") or w["key"], int(w["w_mm"] or 0), int(w["h_mm"] or 0),
@@ -421,8 +519,8 @@ def write_csv(path, rows):
         name = r["name"]
         if r["with"]:
             name += u" + " + u" + ".join(w["name"] for w in r["with"])
-        cells = [r.get("block", ""), r["flat"], r["level"], r["number"], name, r["use"], r["area_m2"], r["req_light"], r["prov_light_bd"],
-                 r["prov_light_meas"], r["req_open"], r["prov_open_bd"], r["prov_open_meas"], r["status"], ws, u"; ".join(r["notes"])]
+        cells = [r.get("block", ""), r["flat"], r["level"], r["number"], name, r["use"], r["area_m2"], r["req_light"], r["prov_light_meas"],
+                 r["prov_light_bd"], r["req_open"], r["prov_open_meas"], r["prov_open_bd"], r["status"], ws, u"; ".join(r["notes"])]
         lines.append(u",".join(_csv(c) for c in cells))
     with io.open(path, "w", encoding="utf-8-sig", newline=u"") as f:
         f.write(u"\r\n".join(lines) + u"\r\n")
@@ -783,6 +881,14 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                                  ("Width", "Rough Width"))
                     h = _param_d(el, ("FAMILY_HEIGHT_PARAM", "CURTAIN_WALL_PANELS_HEIGHT", "DOOR_HEIGHT"),
                                  ("Height", "Rough Height"))
+                    # a family's own GBP_Glazing_*/GBP_Openable_* dimensions, where present, are the
+                    # family author's real glazing/openable figures - more accurate than width x height x ratio
+                    gw = _param_d(el, (), ("GBP_Glazing Width", "GBP_Glazing_Width"))
+                    gh = _param_d(el, (), ("GBP_Glazing Height", "GBP_Glazing_Height"))
+                    glaze_exact = (gw / 1000.0) * (gh / 1000.0) if gw and gh else None
+                    ow = _param_d(el, (), ("GBP_Openable Width", "GBP_Openable_Width"))
+                    oh = _param_d(el, (), ("GBP_Openable Height", "GBP_Openable_Height"))
+                    open_exact = (ow / 1000.0) * (oh / 1000.0) if ow and oh else None
                     if w is None or h is None:
                         # from the box: along the wall, and the height
                         ex = abs(bb.Max.X - bb.Min.X) * FT_MM
@@ -818,9 +924,46 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                         except Exception:
                             frac = None
                     out.append({"id": id_int(el.Id), "uid": el.UniqueId, "cat": cname, "key": key, "mark": mark, "source": label,
-                                "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac})
+                                "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac,
+                                "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact})
                 except Exception:
                     continue
+    return out
+
+
+def collect_doors(doc, bands=None, include_links=True):
+    """Every door (glazed or not) of this model and its linked models, with just
+    its position and facing - enough to tell which two rooms it connects, for the
+    windowless/insufficient-bathroom compensation. bands as in collect_items."""
+    from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, XYZ
+    from lwk_viewer.compat import id_int
+    out = []
+    for label, d, tf in link_sources(doc, include_links):
+        for el in FilteredElementCollector(d).OfCategory(BuiltInCategory.OST_Doors).WhereElementIsNotElementType():
+            try:
+                n_local = _facing(el)
+                if n_local is None:
+                    continue
+                bb = el.get_BoundingBox(None)
+                if bb is None:
+                    continue
+                try:
+                    p = el.Location.Point
+                    pos = _tp(tf, XYZ(p.X, p.Y, (bb.Min.Z + bb.Max.Z) / 2.0))
+                except Exception:
+                    pos = _tp(tf, XYZ((bb.Min.X + bb.Max.X) / 2.0, (bb.Min.Y + bb.Max.Y) / 2.0, (bb.Min.Z + bb.Max.Z) / 2.0))
+                if bands and not any(lo <= pos[2] < hi for lo, hi in bands):
+                    continue
+                n = n_local
+                if tf is not None:
+                    v = tf.OfVector(XYZ(n_local[0], n_local[1], 0))
+                    m = (v.X * v.X + v.Y * v.Y) ** 0.5
+                    if m < 1e-9:
+                        continue
+                    n = (v.X / m, v.Y / m)
+                out.append({"id": id_int(el.Id), "uid": el.UniqueId, "pos": pos, "n": n})
+            except Exception:
+                continue
     return out
 
 
