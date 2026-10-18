@@ -99,41 +99,44 @@ items = LV.collect_items(doc, bands, True, use_links)
 doors = LV.collect_doors(doc, bands, use_links)
 types = LV.load_types()
 
-# 2b. leave out anything that shouldn't count as a window/door of a room (a balcony
-# grille, a service door ...) - the AP's own call, remembered for next time; works
-# even on an element the model can't be edited to tick LWK_LV_Exclude on (a linked,
-# not-editable element)
+# 2b. leave out a whole TYPE that shouldn't count as a window/door of a room (a
+# balcony grille, a service door ...) - a project can have thousands of elements
+# but only a handful of distinct families/types, and a type like that is normally
+# used the same way everywhere it occurs. The AP's own call, remembered for next
+# time; works even where the model can't be edited to tick LWK_LV_Exclude on an
+# element (a linked, not-editable element)
 excludes = LV.load_excludes()
 all_items = items + doors
+by_type = {}
+for it in all_items:
+    t = by_type.setdefault(it.get("key") or "(no type)", {"mark": it.get("mark", ""), "cat": it.get("cat", "Doors"), "count": 0})
+    t["count"] += 1
 
 
-def _label(it):
-    dims = "%d x %d" % (int(it.get("w_mm") or 0), int(it.get("h_mm") or 0)) if it.get("w_mm") else ""
-    return "%s   id %s   [%s]   %s %s   %s" % (it.get("mark") or it.get("key") or "(door)", it["id"],
-                                               it.get("cat", "Doors"), it.get("key", ""), dims, it.get("source", ""))
+def _type_label(key):
+    t = by_type[key]
+    return "%s   [%s, %d]   %s" % (key, t["cat"], t["count"], ("mark " + t["mark"]) if t["mark"] else "")
 
 
-if forms.alert("Leave any window, door or curtain panel out of this check (e.g. a balcony grille "
-               "that is not really a window)?", title="Light & Vent", yes=True, no=True):
-    excluded_now = [it for it in all_items if it["uid"] in excludes]
-    if excluded_now and forms.alert("%d element(s) are currently left out. Put any of them back in?" % len(excluded_now),
+if forms.alert("Leave any whole window/door/panel TYPE out of this check (e.g. a balcony grille "
+               "door type that is not really a window)?", title="Light & Vent", yes=True, no=True):
+    excluded_now = sorted(k for k in by_type if k in excludes)
+    if excluded_now and forms.alert("%d type(s) are currently left out. Put any of them back in?" % len(excluded_now),
                                     title="Light & Vent", yes=True, no=True):
-        excl_labels = [_label(it) for it in excluded_now]
-        back_in = forms.SelectFromList.show(excl_labels, multiselect=True,
-                                            title="Put these back into the check", button_name="Put back in")
+        back_in = forms.SelectFromList.show([_type_label(k) for k in excluded_now], multiselect=True,
+                                            title="Put these types back into the check", button_name="Put back in")
         if back_in:
-            excludes -= set(it["uid"] for it, lab in zip(excluded_now, excl_labels) if lab in back_in)
-    available = [it for it in all_items if it["uid"] not in excludes]
-    avail_labels = [_label(it) for it in available]
-    pick = forms.SelectFromList.show(avail_labels, multiselect=True,
-                                     title="Tick any to leave out of this check", button_name="Leave these out")
+            excludes -= set(k for k in excluded_now if _type_label(k) in back_in)
+    available = sorted(k for k in by_type if k not in excludes)
+    pick = forms.SelectFromList.show([_type_label(k) for k in available], multiselect=True,
+                                     title="Tick any TYPES to leave out of this check", button_name="Leave these types out")
     if pick:
-        excludes |= set(it["uid"] for it, lab in zip(available, avail_labels) if lab in pick)
+        excludes |= set(k for k in available if _type_label(k) in pick)
     LV.save_excludes(excludes)
 
 if excludes:
-    items = [it for it in items if it["uid"] not in excludes]
-    doors = [d for d in doors if d["uid"] not in excludes]
+    items = [it for it in items if it.get("key") not in excludes]
+    doors = [d for d in doors if d.get("key") not in excludes]
 
 rows, unmatched, counts = LV.build(areas, items, types, rules, doors)
 

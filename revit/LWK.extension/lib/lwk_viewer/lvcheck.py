@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-11-26"
+__version__ = "2026-11-27"
 
 import io
 import json
@@ -156,12 +156,17 @@ def excludes_path():
 
 
 def load_excludes(path=None):
-    """Elements left out of the check by hand (a balcony grille, a service
-    door ...) - the AP's own judgement, not something geometry or a material
-    can tell on its own. Keyed by UniqueId, so it works across linked models
-    and does not need write access to the element itself (the LWK_LV_Exclude
-    parameter, checked in collect_items/collect_doors, is the other way to do
-    this when the element's own model can be edited). -> set(uid, ...)"""
+    """Window / door / panel TYPES (family : type name, the same "key" the type
+    table uses) left out of the check by hand - a balcony grille or a service
+    door that reads as a window or glazed door to the check but is not one, the
+    AP's own judgement rather than something geometry or a material can tell on
+    its own. By type, not by individual element: a project can have thousands
+    of elements but only a handful of distinct families/types, and a type like
+    a balcony's grille door is normally used the same way everywhere it occurs.
+    Works across linked models and does not need write access to the element
+    itself (the LWK_LV_Exclude parameter, checked in collect_items/collect_doors,
+    is the other way to do this, instance by instance, when the element's own
+    model can be edited). -> set(key, ...)"""
     path = path or excludes_path()
     try:
         with io.open(path, "r", encoding="utf-8") as f:
@@ -803,6 +808,29 @@ def _text_param(el, name):
     return ""
 
 
+def _type_key(el, d, BuiltInParameter):
+    """The type of an element, the same "key" the type table and the exclude
+    list use: "family : type name". -> (key, mark)"""
+    fam = tname = ""
+    try:
+        sym = el.Symbol
+        fam, tname = sym.FamilyName, sym.get_Parameter(BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
+    except Exception:
+        try:
+            t = d.GetElement(el.GetTypeId())
+            fam, tname = t.FamilyName, t.Name
+        except Exception:
+            pass
+    key = u"%s : %s" % (fam, tname)
+    mark = ""
+    try:
+        t = d.GetElement(el.GetTypeId())
+        mark = _text_param(t, "Type Mark")
+    except Exception:
+        pass
+    return key, mark
+
+
 def _facing(el):
     """The horizontal direction the element faces (out of the building for a
     window); from the instance, else from its host wall."""
@@ -930,23 +958,7 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                         along = abs(n_local[0]) * ey + abs(n_local[1]) * ex      # extent across the facing direction
                         w = w or along
                         h = h or abs(bb.Max.Z - bb.Min.Z) * FT_MM
-                    fam = tname = ""
-                    try:
-                        sym = el.Symbol
-                        fam, tname = sym.FamilyName, sym.get_Parameter(BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
-                    except Exception:
-                        try:
-                            t = d.GetElement(el.GetTypeId())
-                            fam, tname = t.FamilyName, t.Name
-                        except Exception:
-                            pass
-                    key = u"%s : %s" % (fam, tname)
-                    mark = ""
-                    try:
-                        t = d.GetElement(el.GetTypeId())
-                        mark = _text_param(t, "Type Mark")
-                    except Exception:
-                        pass
+                    key, mark = _type_key(el, d, BuiltInParameter)
                     glass = _glass_m2(d, el, n_local) if measure else None
                     if cname == "Doors" and glass is None and not re.search(r"glass|glaz|sliding|folding|balcony", key, re.I):
                         continue
@@ -966,10 +978,12 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
 
 
 def collect_doors(doc, bands=None, include_links=True):
-    """Every door (glazed or not) of this model and its linked models, with just
-    its position and facing - enough to tell which two rooms it connects, for the
-    windowless/insufficient-bathroom compensation. bands as in collect_items."""
-    from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, XYZ
+    """Every door (glazed or not) of this model and its linked models, with its
+    position and facing - enough to tell which two rooms it connects, for the
+    windowless/insufficient-bathroom compensation - and its type (key, mark),
+    so a type can be left out of the check the same way as in collect_items.
+    bands as in collect_items."""
+    from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter, XYZ
     from lwk_viewer.compat import id_int
     out = []
     for label, d, tf in link_sources(doc, include_links):
@@ -995,7 +1009,8 @@ def collect_doors(doc, bands=None, include_links=True):
                     if m < 1e-9:
                         continue
                     n = (v.X / m, v.Y / m)
-                out.append({"id": id_int(el.Id), "uid": el.UniqueId, "pos": pos, "n": n})
+                key, mark = _type_key(el, d, BuiltInParameter)
+                out.append({"id": id_int(el.Id), "uid": el.UniqueId, "pos": pos, "n": n, "key": key, "mark": mark})
             except Exception:
                 continue
     return out
