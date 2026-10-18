@@ -479,3 +479,4 @@ rt { font-size: .5em; font-weight: 600; color: var(--muted); letter-spacing: 0; 
 .ins:hover em, .ins:focus-visible em { display: inline; }
 .ins:hover span { border-color: var(--dark); background: var(--accent); color: var(--accent-ink); }
 .modal-body select { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.tile-zoomed { filter: saturate(.9); }

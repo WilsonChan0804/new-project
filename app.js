@@ -356,13 +356,13 @@ async function downloadOffline() {
   toast('下載緊離線資料，請保持 App 開住…');
   await prefetchAll();
   const r = await prefetchMaps(msg => { const el = $('#mapStatus'); if (el) el.textContent = msg; });
-  if (r.done >= r.total) localStorage.setItem('trip-maps4-at', String(Date.now()));
+  if (r.done >= r.total) localStorage.setItem('trip-maps5-at', String(Date.now()));
   updatePicStatus();
   toast(r.done >= r.total ? `離線資料已下載好（地圖 ${r.total} 格）` : '下載未完成——上網後再撳一次會繼續');
 }
 async function updatePicStatus() {
   const ms = $('#mapStatus');
-  if (ms) { const t = +localStorage.getItem('trip-maps4-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
+  if (ms) { const t = +localStorage.getItem('trip-maps5-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
   const el = $('#picStatus');
   if (!el) return;
   const items = allItems().filter(hasPicConf);
@@ -420,7 +420,7 @@ const TILE_SOURCES = [
   (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
 ];
 const TILE_PREFIX = 'tile2:';
-const MAX_CACHE_Z = 17; // 下載到 17 級；再放大會用 17 級放大顯示
+const MAX_CACHE_Z = 18; // 下載到 18 級；再放大會用 18 級放大顯示
 // 日本國土地理院（GSI）地址搜尋：日文地址準確到街區；搵唔到先用 OpenStreetMap Nominatim
 const GSI_URL = q => `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${enc(q)}`;
 const NOMI_URL = q => `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=jp&accept-language=ja&q=${enc(q)}`;
@@ -508,7 +508,7 @@ async function mapGeom(list, idx) {
   if (!b && !a) return null;
   let route = null, walking = false;
   if (a && b && distM(a, b) > 30) {
-    walking = !TRANSPORT.has(it.type) && distM(a, b) < 2500 || (it.type === 'walk' && distM(a, b) < 3000);
+    walking = !TRANSPORT.has(it.type) && distM(a, b) < 4000 || (it.type === 'walk' && distM(a, b) < 5000);
     if (walking) route = await footRoute(a, b);
   }
   return { a, b, route, walking };
@@ -573,22 +573,27 @@ function loadLeaflet() {
     document.head.appendChild(s);
   });
 }
+const blobImage = b => new Promise((res, rej) => { const u = URL.createObjectURL(b), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = () => { URL.revokeObjectURL(u); rej(); }; im.src = u; });
 function offlineTileLayer() {
   const Layer = L.GridLayer.extend({
     createTile(c, done) {
-      const img = document.createElement('img');
-      img.alt = '';
-      getTile(c.z, c.x, c.y, true).then(b => {
-        if (!b) { img.className = 'tile-missing'; done(null, img); return; }
-        img.onload = () => done(null, img);
-        img.onerror = () => done(null, img);
-        img.src = URL.createObjectURL(b);
-      });
-      return img;
+      // 用 canvas 畫：冇呢一級嘅圖塊，就攞已下載嘅上幾級圖塊放大（唔會出現空白格）
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 512;
+      (async () => {
+        let b = await getTile(c.z, c.x, c.y, true), dz = 0;
+        while (!b && dz < 9 && c.z - dz > 5) { dz++; b = await PhotoDB.get(`${TILE_PREFIX}${c.z - dz}/${c.x >> dz}/${c.y >> dz}`).catch(() => null); }
+        if (!b) { cv.classList.add('tile-missing'); return done(null, cv); }
+        const im = await blobImage(b);
+        const g = cv.getContext('2d');
+        if (!dz) g.drawImage(im, 0, 0, 512, 512);
+        else { const n = 1 << dz, sub = 256 / n; g.imageSmoothingQuality = 'high'; g.drawImage(im, (c.x & (n - 1)) * sub, (c.y & (n - 1)) * sub, sub, sub, 0, 0, 512, 512); cv.classList.add('tile-zoomed'); }
+        done(null, cv);
+      })().catch(() => done(null, cv));
+      return cv;
     },
   });
   const layer = new Layer({ maxNativeZoom: MAX_CACHE_Z, maxZoom: 19, minZoom: 5, tileSize: 256, attribution: '© Esri · © OpenStreetMap' });
-  layer.on('tileunload', e => { if (e.tile.src?.startsWith('blob:')) URL.revokeObjectURL(e.tile.src); });
   return layer;
 }
 const mapState = { map: null, id: null, layers: null, watch: null, pin: false };
@@ -641,6 +646,7 @@ async function drawItemMap(id) {
   setTimeout(() => map.invalidateSize(), 50);
   const lines = [];
   if (apart) lines.push(`${g.walking ? '步行' : '直線'}距離約 ${distStr(g.route ? routeLen(g.route) : distM(g.a, g.b))}${g.route ? '（步行路線）' : ''}`);
+  if (apart && !g.route) lines.push(TRANSPORT.has(f.item.type) && f.item.type !== 'walk' ? '🚃 電車／巴士只畫直線示意（離線冇鐵路路線），跟站名同指示牌行' : navigator.onLine ? '步行路線載入唔到' : '未下載步行路線——上網時撳「下載離線資料」');
   if (ui.me && g?.b) lines.push(`你而家距離「呢度」${distStr(distM(ui.me, g.b))}，向${bearingName(ui.me, g.b)}行`);
   if (f.item.lat != null) lines.push('📍 用緊你修正嘅位置');
   if (mapState.pin) lines.push('👆 撳地圖上正確嘅位置');
@@ -685,17 +691,21 @@ async function wantedTiles(onProgress) {
     for (let x = x1; x <= x2; x++) for (let y = y1; y <= y2; y++) want.add(`${z}/${x}/${y}`);
   };
   const around = (p, z, m) => { const dLat = m / 111000, dLon = m / (111000 * Math.cos(p.lat * Math.PI / 180)); addBox(p.lat - dLat, p.lon - dLon, p.lat + dLat, p.lon + dLon, z); };
-  const R = { 14: 700, 15: 450, 16: 280, 17: 160 };
-  for (const z of [11, 12]) addBox(35.63, 139.68, 35.73, 139.80, z);
+  // 每個地點周圍：越近越清楚（18 級＝睇到條街同出口）
+  const R = { 15: 900, 16: 550, 17: 330, 18: 160 };
+  for (const z of [11, 12, 13]) addBox(35.62, 139.66, 35.74, 139.82, z);   // 東京市中心總覽
+  addBox(35.64, 139.69, 35.72, 139.80, 14);
   for (const z of [12, 13]) addBox(35.76, 140.37, 35.78, 140.40, z);
   let done = 0;
   for (const [list, i] of jobs) {
     const g = await mapGeom(list, i).catch(() => null);
-    for (const p of [g?.a, g?.b].filter(okPt)) for (const z of [14, 15, 16, 17]) around(p, z, R[z]);
-    if (g?.route && g.route.length) for (const z of [15, 16]) { const la = g.route.map(r => r[0]), lo = g.route.map(r => r[1]); addBox(Math.min(...la), Math.min(...lo), Math.max(...la), Math.max(...lo), z); }
+    for (const p of [g?.a, g?.b].filter(okPt)) for (const z of [15, 16, 17, 18]) around(p, z, R[z]);
+    // 步行路線沿途
+    if (g?.route && g.route.length) for (const z of [15, 16, 17]) g.route.filter((_, k) => k % 6 === 0).forEach(([la, lo]) => around({ lat: la, lon: lo }, z, z === 17 ? 150 : 250));
     onProgress?.(`搵緊地點及路線 ${++done}／${jobs.length}`);
   }
-  return [...want].slice(0, 3000);
+  // 先下載闊範圍（細），再下載近距離，超過上限就停
+  return [...want].sort((p, q) => +p.split('/')[0] - +q.split('/')[0]).slice(0, 6000);
 }
 /** 下載地圖：6 格同時下載；已經下載過嘅會跳過，所以中途停咗下次會由停低嗰度繼續 */
 async function prefetchMaps(onProgress) {
@@ -1822,6 +1832,55 @@ function addItemForm(dayId, index) {
   });
 }
 
+/* ---------- 冇網時撳地圖連結：Google Maps 網頁開唔到，畀其他選擇 ---------- */
+function offlineMapChoice(url, itemId) {
+  openModal({
+    title: '冇網絡：點樣睇地圖？',
+    body: `<p class="hint">Google Maps 網頁版要上網先用得。冇網可以揀：</p>
+      <div class="bigbtns one">
+        ${itemId ? `<button type="button" class="btn dark" data-o="inapp">🗺 App 內離線地圖（位置、步行路線、GPS）</button>` : ''}
+        <button type="button" class="btn" data-o="apple">🍎 Apple 地圖（預先下載咗「東京」離線地圖就有路線）</button>
+        <button type="button" class="btn" data-o="gapp">Google Maps App（預先下載咗離線地圖可以睇位置）</button>
+      </div>
+      <details class="adv"><summary>出發前點樣下載離線地圖？</summary>
+        <ul class="plain">
+          <li><b>Apple 地圖（建議，iOS 17 或以上）</b>：打開「地圖」→ 撳右下角頭像 →「離線地圖」→「下載新地圖」→ 搜尋「東京」→ 拉大範圍包埋成田機場 → 下載。離線都可以搵地方、步行、駕車同公共交通路線。</li>
+          <li><b>Google Maps App</b>：打開 Google Maps → 撳右上角頭像 →「離線地圖」→「選取自己的地圖」→ 框住東京 → 下載。離線可以睇位置同駕車路線（冇步行／電車路線）。</li>
+        </ul></details>`,
+    onOpen: form => form.querySelectorAll('[data-o]').forEach(b => {
+      b.onclick = () => {
+        const o = b.dataset.o;
+        if (o === 'inapp') { openItem(itemId); setTimeout(() => $('#modal .omap')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 400); return; }
+        closeModal();
+        openMap(url, o);
+      };
+    }),
+  });
+}
+/** 喺香港都可以試：睇下手機 GPS 攞唔攞到位置（冇網都得） */
+function testGPS() {
+  if (!navigator.geolocation) return toast('呢部機唔支援定位');
+  toast('搵緊你嘅位置…（第一次會問你准唔准用定位）');
+  navigator.geolocation.getCurrentPosition(p => {
+    const me = { lat: p.coords.latitude, lon: p.coords.longitude };
+    const tokyo = { lat: 35.6812, lon: 139.7671 };
+    openModal({
+      title: '📍 GPS 測試',
+      body: `<p>✓ 攞到你嘅位置：<b>${me.lat.toFixed(5)}, ${me.lon.toFixed(5)}</b>（誤差約 ${Math.round(p.coords.accuracy)} 米）</p>
+        <p class="muted">距離東京站 ${distStr(distM(me, tokyo))}。</p>
+        <ul class="plain"><li>GPS 用手機本身嘅定位晶片，<b>冇網都用得</b>（開飛航模式都得，只要「定位服務」開咗）。</li>
+          <li>去到日本，喺每項「詳情」撳「我喺邊（GPS）」，離線地圖會顯示藍點、距離同方向。</li>
+          <li>如果攞唔到：iPhone「設定」→「私隱與保安」→「定位服務」→ 開啟；再搵 Safari（或者呢個 App）→「使用 App 期間」＋「精確位置」。</li></ul>`,
+    });
+  }, err => {
+    openModal({
+      title: '📍 GPS 測試',
+      body: `<p class="hint warn">攞唔到位置（${esc(err.message || err.code)}）。</p>
+        <p>請檢查：iPhone「設定」→「私隱與保安」→「定位服務」→ 開啟；再搵「Safari 網站」→「使用 App 期間」，同埋開「精確位置」。之後再試。</p>`,
+    });
+  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+}
+
 /* ---------- state ---------- */
 let trip = load() || freshSeed();
 const ui = { tab: 'plan', day: null };
@@ -2255,7 +2314,9 @@ function renderInfo() {
     <h2>📴 離線資料</h2>
     <p class="muted" id="picStatus">檢查緊相片…</p>
     <p class="muted" id="mapStatus"></p>
-    <div class="row"><button class="chip dark" data-act="offline-all">${icon('download')}下載離線資料（相片＋地圖＋步行路線）</button></div>
+    <div class="row"><button class="chip dark" data-act="offline-all">${icon('download')}下載離線資料（相片＋地圖＋步行路線）</button>
+      <button class="chip" data-act="gps-test">📍 測試 GPS</button></div>
+    <p class="hint">新版下載範圍大咗、放大到街道級（大約 5,000–6,000 格，約 60–100MB，用 Wi-Fi 下載幾分鐘）。冇下載到嘅位置會用模糊少少嘅放大圖頂住，唔會再出現空白。</p>
     <ul class="plain">
       <li>上網時打開一次，再「加到主畫面」—— 之後冇網都開到。</li>
       <li>每項「詳情」入面有<b>離線地圖</b>：上一站 → 呢度嘅位置同步行路線；撳「顯示我嘅位置」用 GPS（冇網都得）睇距離同方向。</li>
@@ -2505,6 +2566,7 @@ const actions = {
   ins: (_, el) => addItemForm(el.dataset.day, +el.dataset.i),
   'kp-auto': id => { localStorage.setItem('kp-auto', id); render(); },
   'kp-show': () => window.Kappa?.play(),
+  'gps-test': () => testGPS(),
   'map-lang': id => { localStorage.setItem('map-lang', id); render(); },
   'map-app': id => { if (id) localStorage.setItem('map-app', id); else localStorage.removeItem('map-app'); render(); },
   'phr-mode': () => { ui.phrEdit = !ui.phrEdit; render(); },
@@ -2570,6 +2632,7 @@ document.addEventListener('click', e => {
   if (link && !link.dataset.act) {
     if (isGmaps(link.href)) {
       e.preventDefault();
+      if (!navigator.onLine) return offlineMapChoice(link.href, link.closest('[id^="item-"]')?.id.slice(5) || $('#modal[open] .omap[data-map]')?.dataset.map);
       const app = isIOS() ? localStorage.getItem('map-app') : 'web';
       if (app) openMap(link.href, app); else chooseMapApp(link.href);
     }
