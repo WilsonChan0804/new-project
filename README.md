@@ -52,7 +52,7 @@ The Tokyo trip (29/10–1/11) lives in `trip-data.js`. The `XL` block holds the 
   - use GPS
 
   After you save, the app offers to update related data too: the title, the previous or next leg, and a reminder to check 交通 (transport). If you change a title so it no longer matches the location, the app asks whether to update the location.
-- **Map links on iPhone:** the first time you tap a map link, the app asks whether to open Google Maps App (`comgooglemapsurl://`), Apple Maps, or the web version. You can change this in 資訊 (Info).
+- **Map links on iPhone:** they open straight in the Google Maps app using its own `comgooglemaps://` links, for directions (transit or walking) and searches. If the app isn't installed, the web version opens instead. When offline, you choose between the Google Maps app (download a Tokyo offline area before the trip) and the in-app offline map.
 
 ## Server (your own VM): one copy of the data for every device
 `server/trip_server.py` uses only the Python standard library. It serves the app and stores:

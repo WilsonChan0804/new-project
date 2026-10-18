@@ -1383,7 +1383,7 @@ function syncCardHtml() {
 /* ---------- 地圖連結：iPhone 直接開 Google Maps App／Apple 地圖 ---------- */
 const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isGmaps = u => /^https:\/\/(www\.)?google\.[a-z.]+\/maps|^https:\/\/maps\.google\./.test(u);
-const MAP_APPS = { gapp: 'Google Maps App', apple: 'Apple 地圖', web: '網頁版 Google Maps' };
+const MAP_APPS = { gapp: 'Google Maps App（建議）', web: '網頁版 Google Maps' };
 const MAP_LANGS = { 'zh-TW': '中文', ja: '日本語', en: 'English' };
 const mapLang = () => localStorage.getItem('map-lang') || 'zh-TW';
 /** Google Maps 網址加語言（hl），地名會用中文／日文顯示 */
@@ -1395,10 +1395,20 @@ function withLang(url) {
 }
 function mapLink(url, app) {
   url = withLang(url);
-  if (app === 'gapp') return url.replace(/^https:\/\//, 'comgooglemapsurl://');
-  if (app !== 'apple') return url;
   const u = new URL(url);
   const q = k => u.searchParams.get(k) || '';
+  if (app === 'gapp') {
+    // iPhone Google Maps App 自己嘅連結格式（直接開 App，路線同搜尋最穩陣）
+    const mode = { walking: 'walking', driving: 'driving', transit: 'transit' }[q('travelmode')] || 'transit';
+    if (/\/maps\/dir\/?$/.test(u.pathname) && q('destination'))
+      return `comgooglemaps://?${q('origin') ? `saddr=${enc(q('origin'))}&` : ''}daddr=${enc(q('destination'))}&directionsmode=${mode}`;
+    if (/\/maps\/search/.test(u.pathname) && q('query')) {
+      const ll = q('query').match(/^\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/);
+      return ll ? `comgooglemaps://?q=${ll[1]},${ll[2]}&center=${ll[1]},${ll[2]}&zoom=17` : `comgooglemaps://?q=${enc(q('query'))}`;
+    }
+    return url.replace(/^https:\/\//, 'comgooglemapsurl://');   // 多站路線等：交畀 App 解讀 Google Maps 網址
+  }
+  if (app !== 'apple') return url;
   const flg = { walking: 'w', driving: 'd', transit: 'r' }[q('travelmode')] || 'r';
   if (/\/maps\/search/.test(u.pathname)) return `https://maps.apple.com/?q=${enc(q('query'))}`;
   if (/\/maps\/dir\/?$/.test(u.pathname) && q('destination')) return `https://maps.apple.com/?${q('origin') ? `saddr=${enc(q('origin'))}&` : ''}daddr=${enc(q('destination'))}&dirflg=${flg}`;
@@ -1409,8 +1419,11 @@ function mapLink(url, app) {
 }
 function openMap(url, app) {
   const target = mapLink(url, app);
-  if (target.startsWith('comgooglemapsurl:')) location.href = target;
-  else window.open(target, '_blank', 'noopener');
+  if (/^comgooglemaps(url)?:/.test(target)) {
+    location.href = target;
+    // 部機未裝 Google Maps App：1.5 秒後仲喺度就改開網頁版
+    setTimeout(() => { if (document.visibilityState === 'visible' && navigator.onLine) window.open(withLang(url), '_blank', 'noopener'); }, 1500);
+  } else window.open(target, '_blank', 'noopener');
 }
 function chooseMapApp(url) {
   openModal({
@@ -1836,23 +1849,24 @@ function addItemForm(dayId, index) {
 function offlineMapChoice(url, itemId) {
   openModal({
     title: '冇網絡：點樣睇地圖？',
-    body: `<p class="hint">Google Maps 網頁版要上網先用得。冇網可以揀：</p>
-      <div class="bigbtns one">
-        ${itemId ? `<button type="button" class="btn dark" data-o="inapp">🗺 App 內離線地圖（位置、步行路線、GPS）</button>` : ''}
-        <button type="button" class="btn" data-o="apple">🍎 Apple 地圖（預先下載咗「東京」離線地圖就有路線）</button>
-        <button type="button" class="btn" data-o="gapp">Google Maps App（預先下載咗離線地圖可以睇位置）</button>
+    body: `<div class="bigbtns one">
+        <button type="button" class="btn dark" data-o="gapp">Google Maps App（要預先下載離線地圖）</button>
+        ${itemId ? `<button type="button" class="btn" data-o="inapp">🗺 App 內離線地圖（位置、步行路線、GPS）</button>` : ''}
       </div>
-      <details class="adv"><summary>出發前點樣下載離線地圖？</summary>
-        <ul class="plain">
-          <li><b>Apple 地圖（建議，iOS 17 或以上）</b>：打開「地圖」→ 撳右下角頭像 →「離線地圖」→「下載新地圖」→ 搜尋「東京」→ 拉大範圍包埋成田機場 → 下載。離線都可以搵地方、步行、駕車同公共交通路線。</li>
-          <li><b>Google Maps App</b>：打開 Google Maps → 撳右上角頭像 →「離線地圖」→「選取自己的地圖」→ 框住東京 → 下載。離線可以睇位置同駕車路線（冇步行／電車路線）。</li>
-        </ul></details>`,
+      <p class="hint">Google Maps App 離線時可以睇位置、搜尋已下載範圍內嘅地方同駕車路線；<b>步行同電車路線要上網</b>——冇網時用「App 內離線地圖」睇步行路線同你嘅 GPS 位置。</p>
+      <details class="adv" open><summary>出發前喺 Google Maps App 下載東京離線地圖</summary>
+        <ol class="plain">
+          <li>用 Wi-Fi 打開 Google Maps App，撳右上角頭像。</li>
+          <li>撳「離線地圖」→「選取自己的地圖」。</li>
+          <li>拉個框包住東京市中心（築地、上野、新宿、代官山、中目黑）；成田機場另外再下載一個。</li>
+          <li>撳「下載」。地圖會保留一年，App 會自動更新。</li>
+        </ol></details>`,
     onOpen: form => form.querySelectorAll('[data-o]').forEach(b => {
       b.onclick = () => {
         const o = b.dataset.o;
         if (o === 'inapp') { openItem(itemId); setTimeout(() => $('#modal .omap')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 400); return; }
         closeModal();
-        openMap(url, o);
+        openMap(url, 'gapp');
       };
     }),
   });
@@ -2351,9 +2365,9 @@ function renderInfo() {
     <p class="muted">Google Maps 地名語言：</p>
     <div class="row">${Object.entries(MAP_LANGS).map(([k, v]) => `<button class="chip ${mapLang() === k ? 'dark' : ''}" data-act="map-lang" data-id="${k}">${v}</button>`).join('')}</div>
     <p class="hint">用 Google Maps App 嘅話，App 會跟手機設定：iPhone「設定」→「Google Maps」→「語言」揀中文或日文。</p>
-    <p class="muted">iPhone 撳地圖連結時用：${esc(MAP_APPS[localStorage.getItem('map-app')] || '每次問我')}</p>
-    <div class="row">${Object.entries(MAP_APPS).map(([k, v]) => `<button class="chip ${localStorage.getItem('map-app') === k ? 'dark' : ''}" data-act="map-app" data-id="${k}">${v}</button>`).join('')}
-      <button class="chip" data-act="map-app" data-id="">每次問我</button></div>
+    <p class="muted">iPhone 撳地圖連結時用：${esc(MAP_APPS[localStorage.getItem('map-app') || 'gapp'] || 'Google Maps App')}</p>
+    <div class="row">${Object.entries(MAP_APPS).map(([k, v]) => `<button class="chip ${(localStorage.getItem('map-app') || 'gapp') === k ? 'dark' : ''}" data-act="map-app" data-id="${k}">${v}</button>`).join('')}</div>
+    <p class="hint">出發前記得喺 Google Maps App 下載東京離線地圖：頭像 →「離線地圖」→「選取自己的地圖」。</p>
   </section>
   <section class="card">
     <h2>💾 備份檔</h2>
@@ -2633,8 +2647,8 @@ document.addEventListener('click', e => {
     if (isGmaps(link.href)) {
       e.preventDefault();
       if (!navigator.onLine) return offlineMapChoice(link.href, link.closest('[id^="item-"]')?.id.slice(5) || $('#modal[open] .omap[data-map]')?.dataset.map);
-      const app = isIOS() ? localStorage.getItem('map-app') : 'web';
-      if (app) openMap(link.href, app); else chooseMapApp(link.href);
+      const app = isIOS() ? (localStorage.getItem('map-app') || 'gapp') : 'web';   // iPhone 預設直接開 Google Maps App
+      openMap(link.href, app);
     }
     return;
   }
