@@ -213,6 +213,25 @@ class LengthVsNumberParameter(unittest.TestCase):
         self.assertFalse(LV._is_length_param(self.FakeParam(False)))
 
 
+class Excludes(unittest.TestCase):
+    """load_excludes/save_excludes: a hand-picked list of element UniqueIds left
+    out of the check (a balcony grille, a service door ...), independent of any
+    Revit parameter - so it works even on an element in a non-editable link."""
+
+    def test_round_trips_and_defaults_to_empty(self):
+        import tempfile, os as _os
+        fd, path = tempfile.mkstemp(suffix=".json")
+        _os.close(fd)
+        _os.remove(path)
+        try:
+            self.assertEqual(LV.load_excludes(path), set())
+            LV.save_excludes({"uid-a", "uid-b"}, path)
+            self.assertEqual(LV.load_excludes(path), {"uid-a", "uid-b"})
+        finally:
+            if _os.path.exists(path):
+                _os.remove(path)
+
+
 class ImplausibleOpening(unittest.TestCase):
     def test_a_window_far_too_big_for_one_opening_forces_needs_data(self):
         liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)

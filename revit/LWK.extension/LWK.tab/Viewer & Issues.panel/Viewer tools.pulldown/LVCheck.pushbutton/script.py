@@ -99,6 +99,42 @@ items = LV.collect_items(doc, bands, True, use_links)
 doors = LV.collect_doors(doc, bands, use_links)
 types = LV.load_types()
 
+# 2b. leave out anything that shouldn't count as a window/door of a room (a balcony
+# grille, a service door ...) - the AP's own call, remembered for next time; works
+# even on an element the model can't be edited to tick LWK_LV_Exclude on (a linked,
+# not-editable element)
+excludes = LV.load_excludes()
+all_items = items + doors
+
+
+def _label(it):
+    dims = "%d x %d" % (int(it.get("w_mm") or 0), int(it.get("h_mm") or 0)) if it.get("w_mm") else ""
+    return "%s   id %s   [%s]   %s %s   %s" % (it.get("mark") or it.get("key") or "(door)", it["id"],
+                                               it.get("cat", "Doors"), it.get("key", ""), dims, it.get("source", ""))
+
+
+if forms.alert("Leave any window, door or curtain panel out of this check (e.g. a balcony grille "
+               "that is not really a window)?", title="Light & Vent", yes=True, no=True):
+    excluded_now = [it for it in all_items if it["uid"] in excludes]
+    if excluded_now and forms.alert("%d element(s) are currently left out. Put any of them back in?" % len(excluded_now),
+                                    title="Light & Vent", yes=True, no=True):
+        excl_labels = [_label(it) for it in excluded_now]
+        back_in = forms.SelectFromList.show(excl_labels, multiselect=True,
+                                            title="Put these back into the check", button_name="Put back in")
+        if back_in:
+            excludes -= set(it["uid"] for it, lab in zip(excluded_now, excl_labels) if lab in back_in)
+    available = [it for it in all_items if it["uid"] not in excludes]
+    avail_labels = [_label(it) for it in available]
+    pick = forms.SelectFromList.show(avail_labels, multiselect=True,
+                                     title="Tick any to leave out of this check", button_name="Leave these out")
+    if pick:
+        excludes |= set(it["uid"] for it, lab in zip(available, avail_labels) if lab in pick)
+    LV.save_excludes(excludes)
+
+if excludes:
+    items = [it for it in items if it["uid"] not in excludes]
+    doors = [d for d in doors if d["uid"] not in excludes]
+
 rows, unmatched, counts = LV.build(areas, items, types, rules, doors)
 
 # 3. the types still to confirm

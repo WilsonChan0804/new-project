@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-11-25"
+__version__ = "2026-11-26"
 
 import io
 import json
@@ -144,6 +144,40 @@ def save_types(types, path=None):
         os.makedirs(folder)
     tmp = path + ".part"
     txt = json.dumps(types, ensure_ascii=True, indent=1, sort_keys=True)
+    with io.open(tmp, "w", encoding="utf-8") as f:
+        f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
+    if os.path.exists(path):
+        os.remove(path)
+    os.rename(tmp, path)
+
+
+def excludes_path():
+    return os.path.join(os.environ.get("APPDATA", "."), "LWK", "lv_excludes.json")
+
+
+def load_excludes(path=None):
+    """Elements left out of the check by hand (a balcony grille, a service
+    door ...) - the AP's own judgement, not something geometry or a material
+    can tell on its own. Keyed by UniqueId, so it works across linked models
+    and does not need write access to the element itself (the LWK_LV_Exclude
+    parameter, checked in collect_items/collect_doors, is the other way to do
+    this when the element's own model can be edited). -> set(uid, ...)"""
+    path = path or excludes_path()
+    try:
+        with io.open(path, "r", encoding="utf-8") as f:
+            d = json.load(f)
+        return set(d) if isinstance(d, list) else set()
+    except Exception:
+        return set()
+
+
+def save_excludes(excludes, path=None):
+    path = path or excludes_path()
+    folder = os.path.dirname(path)
+    if folder and not os.path.isdir(folder):
+        os.makedirs(folder)
+    tmp = path + ".part"
+    txt = json.dumps(sorted(excludes), ensure_ascii=True, indent=1)
     with io.open(tmp, "w", encoding="utf-8") as f:
         f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
     if os.path.exists(path):
