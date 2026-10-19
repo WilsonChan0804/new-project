@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-11-28"
+__version__ = "2026-11-29"
 
 import io
 import json
@@ -553,7 +553,8 @@ def write_csv(path, rows):
             u"Provided openable m2 (nominal, W x H x ratio - reference)", u"Status", u"Windows / panels", u"Notes"]
     lines = [u",".join(_csv(h) for h in head)]
     for r in rows:
-        ws = u"; ".join(u"%s %s x %s%s" % (w.get("mark") or w["key"], int(w["w_mm"] or 0), int(w["h_mm"] or 0),
+        ws = u"; ".join(u"%s%s x %s mm%s" % ((u"mark %s: " % w["mark"]) if w.get("mark") else u"%s: " % w["key"],
+                                           int(w["w_mm"] or 0), int(w["h_mm"] or 0),
                                           (u" (%d%%)" % round(w.get("share", 1) * 100)) if w.get("share", 1) < 1 else u"") for w in r["windows"])
         name = r["name"]
         if r["with"]:

@@ -232,6 +232,29 @@ class Excludes(unittest.TestCase):
                 _os.remove(path)
 
 
+class CsvWindowsColumn(unittest.TestCase):
+    """A window's own Type Mark (e.g. "28") must never read like a count of
+    how many of that window there are - write_csv labels it "mark 28: ...",
+    not "28 ..." (which one physical window with mark "28" made 1940 x 2550
+    look like "28 of them" - a real cause of confusion, not a modelling bug)."""
+
+    def test_a_numeric_mark_is_not_mistaken_for_a_count(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
+        rows, _, _ = LV.build([liv], [item(2000, w=1940, h=2550, key="K")], TYPES)
+        rows[0]["windows"][0]["mark"] = "28"
+        import tempfile, os as _os
+        fd, path = tempfile.mkstemp(suffix=".csv")
+        _os.close(fd)
+        try:
+            LV.write_csv(path, rows)
+            with open(path, "rb") as f:
+                text = f.read().decode("utf-8-sig")
+            self.assertIn(u"mark 28: 1940 x 2550 mm", text)
+            self.assertNotIn(u",28 1940", text)
+        finally:
+            _os.remove(path)
+
+
 class ReportManifest(unittest.TestCase):
     """build_report_manifest: the Revit-free half of the per-element elevation
     report (lvreport.py adds the image using geometry this manifest does not
