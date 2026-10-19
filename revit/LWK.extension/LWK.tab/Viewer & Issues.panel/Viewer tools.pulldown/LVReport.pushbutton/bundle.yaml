@@ -1,6 +1,0 @@
-title: |-
-  Light & Vent
-  Diagrams
-tooltip: >-
-  A program-drawn schematic of every window/curtain-wall run the Light & Vent check used - a rectangle per sub-panel at its own width/height/sill height, coloured by fixed/openable/not yet confirmed, the floor-to-floor height, and the inferred excluded zones above/below the glazing. Not a real Revit view export - fast across a whole tower. Run lv_diagram_pdf.py afterwards for one PDF.
-author: Wilson Chan

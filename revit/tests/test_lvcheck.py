@@ -216,6 +216,59 @@ class LengthVsNumberParameter(unittest.TestCase):
         self.assertFalse(LV._is_length_param(self.FakeParam(False)))
 
 
+class FuzzyParamName(unittest.TestCase):
+    """_param_d_like needs live Revit for the real thing, so this exercises the
+    name-matching and the length-vs-number decision through fake Element/
+    Parameter objects."""
+
+    class FakeDef(object):
+        def __init__(self, name, is_length):
+            self.Name = name
+            self._is_length = is_length
+
+        def GetDataType(self):
+            class T(object):
+                TypeId = "autodesk.spec.aec:length-2.0.0" if self._is_length else "autodesk.spec:number-2.0.0"
+            return T()
+
+    class FakeParam(object):
+        def __init__(self, name, value, is_length=False):
+            self.Definition = FuzzyParamName.FakeDef(name, is_length)
+            self._value = value
+            self.HasValue = True
+            self.StorageType = "Double"
+
+        def AsDouble(self):
+            return self._value
+
+    class FakeElement(object):
+        def __init__(self, params):
+            self.Parameters = params
+
+            class Doc(object):
+                def GetElement(self_inner, type_id):
+                    return None
+            self.Document = Doc()
+
+        def GetTypeId(self):
+            return None
+
+    def test_finds_a_parameter_by_what_its_name_contains_regardless_of_spelling(self):
+        for name in ("GBP_Openable_Width", "GBP Openable Width", "GBP-OpenableWidth", "openable width (mm)"):
+            el = self.FakeElement([self.FakeParam(name, 612.5)])
+            self.assertAlmostEqual(LV._param_d_like(el, ("openable", "width")), 612.5, places=2)
+
+    def test_a_parameter_missing_one_of_the_keywords_does_not_match(self):
+        el = self.FakeElement([self.FakeParam("GBP_Glazing_Width", 2600.0)])
+        self.assertIsNone(LV._param_d_like(el, ("openable", "width")))
+
+    def test_a_length_parameter_is_converted_a_number_one_is_not(self):
+        el = self.FakeElement([self.FakeParam("GBP_Openable_Width", 2.0, is_length=True)])
+        self.assertAlmostEqual(LV._param_d_like(el, ("openable", "width")), 2.0 * LV.FT_MM, places=1)
+        el2 = self.FakeElement([self.FakeParam("GBP_Openable_Width", 612.5, is_length=False)])
+        self.assertAlmostEqual(LV._param_d_like(el2, ("openable", "width")), 612.5, places=2)
+
+
 class Excludes(unittest.TestCase):
     """load_excludes/save_excludes: a hand-picked list of element UniqueIds left
     out of the check (a balcony grille, a service door ...), independent of any

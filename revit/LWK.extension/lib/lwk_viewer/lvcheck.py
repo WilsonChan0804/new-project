@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-12-01"
+__version__ = "2026-12-02"
 
 import io
 import json
@@ -549,9 +549,9 @@ def _csv(v):
 
 def write_csv(path, rows):
     head = [u"Block", u"Flat", u"Level", u"Room", u"Name", u"Use", u"Area m2", u"Required lighting m2",
-            u"Provided lighting m2 (measured glass - primary)", u"Provided lighting m2 (nominal, W x H x ratio - reference)",
-            u"Required openable m2", u"Provided openable m2 (measured glass - primary)",
-            u"Provided openable m2 (nominal, W x H x ratio - reference)", u"Status", u"Windows / panels", u"Notes"]
+            u"Provided lighting m2 (measured glass)",
+            u"Required openable m2", u"Provided openable m2 (measured glass)",
+            u"Status", u"Windows / panels", u"Notes"]
     lines = [u",".join(_csv(h) for h in head)]
     for r in rows:
         ws = u"; ".join(u"%s%s x %s mm%s" % ((u"mark %s: " % w["mark"]) if w.get("mark") else u"%s: " % w["key"],
@@ -561,7 +561,7 @@ def write_csv(path, rows):
         if r["with"]:
             name += u" + " + u" + ".join(w["name"] for w in r["with"])
         cells = [r.get("block", ""), r["flat"], r["level"], r["number"], name, r["use"], r["area_m2"], r["req_light"], r["prov_light_meas"],
-                 r["prov_light_bd"], r["req_open"], r["prov_open_meas"], r["prov_open_bd"], r["status"], ws, u"; ".join(r["notes"])]
+                 r["req_open"], r["prov_open_meas"], r["status"], ws, u"; ".join(r["notes"])]
         lines.append(u",".join(_csv(c) for c in cells))
     with io.open(path, "w", encoding="utf-8-sig", newline=u"") as f:
         f.write(u"\r\n".join(lines) + u"\r\n")
@@ -819,6 +819,42 @@ def _param_d(el, bips=(), names=()):
     return None
 
 
+def _norm_name(s):
+    return u"".join(ch for ch in (s or u"").lower() if ch.isalnum())
+
+
+def _param_d_like(el, keywords):
+    """A length in mm, found by what a parameter's name CONTAINS rather than
+    an exact match - a family author can name a parameter "GBP_Openable_Width",
+    "GBP Openable Width", "GBP-OpenableWidth" ... and all of these should be
+    found the same way, on the instance or on its type. keywords: every one
+    of these (already lower-case, no spaces/underscores) must appear in the
+    parameter's own name, normalised the same way, for it to match."""
+    holders = [el]
+    try:
+        t = el.Document.GetElement(el.GetTypeId())
+        if t is not None:
+            holders.append(t)
+    except Exception:
+        pass
+    for h in holders:
+        try:
+            params = list(h.Parameters)
+        except Exception:
+            continue
+        for p in params:
+            try:
+                name = _norm_name(p.Definition.Name if p.Definition else u"")
+                if not all(kw in name for kw in keywords):
+                    continue
+                if p.HasValue and str(p.StorageType) == "Double" and p.AsDouble() > 0:
+                    v = p.AsDouble()
+                    return v * FT_MM if _is_length_param(p) else v
+            except Exception:
+                continue
+    return None
+
+
 def _text_param(el, name):
     try:
         p = el.LookupParameter(name)
@@ -852,25 +888,38 @@ def _type_key(el, d, BuiltInParameter):
     return key, mark
 
 
-def _facing(el):
+def _facing(el, prefer_host=False):
     """The horizontal direction the element faces (out of the building for a
-    window); from the instance, else from its host wall."""
-    for attr in ("FacingOrientation",):
-        try:
-            v = getattr(el, attr)
-            if v is not None and (abs(v.X) + abs(v.Y)) > 1e-6:
+    window); from the instance, else from its host wall - or the other way
+    round when prefer_host is set.
+
+    A curtain panel's own FacingOrientation is not reliable the same way a
+    window's is: an operable sub-type (an openable vent/sash panel, as
+    opposed to a plain fixed panel) can report a direction tied to its own
+    opening geometry rather than the façade's true outward normal, while the
+    plain panels right beside it in the same wall fall back to the host
+    wall's orientation and so all read one consistent direction. Mixing one
+    inconsistent reading into a run throws off the along-wall projection
+    every item in that run is placed by (collect_items passes
+    prefer_host=True for Curtain panels for exactly this reason)."""
+    order = ("host", "instance") if prefer_host else ("instance", "host")
+    for source in order:
+        if source == "instance":
+            try:
+                v = el.FacingOrientation
+                if v is not None and (abs(v.X) + abs(v.Y)) > 1e-6:
+                    m = (v.X * v.X + v.Y * v.Y) ** 0.5
+                    return (v.X / m, v.Y / m)
+            except Exception:
+                pass
+        else:
+            try:
+                v = el.Host.Orientation
                 m = (v.X * v.X + v.Y * v.Y) ** 0.5
-                return (v.X / m, v.Y / m)
-        except Exception:
-            pass
-    try:
-        h = el.Host
-        v = h.Orientation
-        m = (v.X * v.X + v.Y * v.Y) ** 0.5
-        if m > 1e-9:
-            return (v.X / m, v.Y / m)
-    except Exception:
-        pass
+                if m > 1e-9:
+                    return (v.X / m, v.Y / m)
+            except Exception:
+                pass
     return None
 
 
@@ -940,7 +989,7 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                 try:
                     if _text_param(el, "LWK_LV_Exclude").lower() in ("1", "yes", "true"):
                         continue
-                    n_local = _facing(el)
+                    n_local = _facing(el, prefer_host=(cname == "Curtain panels"))
                     if n_local is None:
                         continue
                     bb = el.get_BoundingBox(None)
@@ -967,13 +1016,15 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                                  ("Width", "Rough Width"))
                     h = _param_d(el, ("FAMILY_HEIGHT_PARAM", "CURTAIN_WALL_PANELS_HEIGHT", "DOOR_HEIGHT"),
                                  ("Height", "Rough Height"))
-                    # a family's own GBP_Glazing_*/GBP_Openable_* dimensions, where present, are the
-                    # family author's real glazing/openable figures - more accurate than width x height x ratio
-                    gw = _param_d(el, (), ("GBP_Glazing Width", "GBP_Glazing_Width"))
-                    gh = _param_d(el, (), ("GBP_Glazing Height", "GBP_Glazing_Height"))
+                    # a family's own glazing/openable dimensions, where present, are the family
+                    # author's real figures - more accurate than width x height x ratio. Found by what
+                    # the parameter's name CONTAINS ("glazing"+"width", "openable"+"height", ...), not an
+                    # exact name, since the underscores/spaces/capitalisation are not consistent family to family
+                    gw = _param_d_like(el, ("glazing", "width"))
+                    gh = _param_d_like(el, ("glazing", "height"))
                     glaze_exact = (gw / 1000.0) * (gh / 1000.0) if gw and gh else None
-                    ow = _param_d(el, (), ("GBP_Openable Width", "GBP_Openable_Width"))
-                    oh = _param_d(el, (), ("GBP_Openable Height", "GBP_Openable_Height"))
+                    ow = _param_d_like(el, ("openable", "width"))
+                    oh = _param_d_like(el, ("openable", "height"))
                     open_exact = (ow / 1000.0) * (oh / 1000.0) if ow and oh else None
                     if w is None or h is None:
                         # from the box: along the wall, and the height

@@ -13,11 +13,16 @@ the Areas of an area scheme.
 
 Revit does not know which panel opens, so each window / panel type is
 confirmed once (fixed, casement, sliding ...); until it is, the room reads
-NEEDS DATA, never OK."""
+NEEDS DATA, never OK.
+
+Saves the table (CSV + JSON) and, on request, a window area schedule plus a
+program-drawn schematic of every window/curtain-wall run, as one PDF - built
+straight after saving, with no separate command to run by hand."""
 __title__ = "Light &\nVent"
 __author__ = "LWK BIM"
 
 import os
+import subprocess
 import sys
 
 from pyrevit import forms, revit, script
@@ -41,6 +46,7 @@ if _LIB:
 for _m in [k for k in list(sys.modules) if k == "lwk_viewer" or k.startswith("lwk_viewer.")]:
     del sys.modules[_m]
 from lwk_viewer import lvcheck as LV
+from lwk_viewer import lvreport as LR
 
 doc = revit.doc
 out = script.get_output()
@@ -184,17 +190,16 @@ out.print_md("%d rooms, %d windows / panels read (%s)." % (len(areas), len(items
 if skipped:
     out.print_md("Ticked rooms the check does not assess (no lighting / ventilation use in the name): " + ", ".join("%s x%d" % kv for kv in skipped))
 out.print_md("Required: lighting = area x 1/10, openable = area x 1/16 (the sheet's ratios - the AP confirms them against B(P)R 30 / APP-130). "
-             "Provided: the measured glass decides OK / NOT OK; width x height x 70% (or a family's own GBP_Glazing_*/GBP_Openable_* dimensions) "
-             "is shown beside it as a reference only. A bath or kitchen with no window of its own, or one that isn't enough, is counted with "
-             "whichever room its door leads to.")
+             "Provided: the measured glass (the actual glazing/openable area found in the model). "
+             "A bath or kitchen with no window of its own, or one that isn't enough, is counted with whichever room its door leads to.")
 table = []
 for r in rows:
     nm = r["name"] + ("".join(" + " + w["name"] for w in r["with"]))
     f = lambda v: "" if v is None else "%.3f" % v
-    table.append([r["block"], r["flat"], r["number"], nm, f(r["area_m2"]), f(r["req_light"]), f(r["prov_light_meas"]), f(r["prov_light_bd"]),
+    table.append([r["block"], r["flat"], r["number"], nm, f(r["area_m2"]), f(r["req_light"]), f(r["prov_light_meas"]),
                   f(r["req_open"]), f(r["prov_open_meas"]), r["status"], "; ".join(r["notes"])])
 out.print_table(table_data=table, title="Rooms",
-                columns=["Block", "Flat", "Room", "Name", "Area m2", "Req. lighting", "Prov. lighting (measured)", "Prov. lighting (W x H x ratio)",
+                columns=["Block", "Flat", "Room", "Name", "Area m2", "Req. lighting", "Prov. lighting (measured)",
                          "Req. openable", "Prov. openable (measured)", "Status", "Notes"])
 bad = [r for r in rows if r["status"] in ("NOT OK", "NEEDS DATA", "NO WINDOW")]
 out.print_md("**%d rooms: %d OK, %d not OK, %d need data, %d without a window.** %d windows / panels were not given to a room."
@@ -209,6 +214,32 @@ if path:
     LV.write_csv(path, rows)
     LV.write_json(os.path.splitext(path)[0] + ".json", rows, unmatched, counts)
     out.print_md("Saved **%s** (and the same as .json)." % path)
+
+    # 5b. the window area schedule + a program-drawn schematic of every window/curtain-wall
+    # run, as one PDF - built right away, no separate step to run by hand
+    if forms.alert("Also create the window area schedule and schematic diagrams (PDF)?",
+                   title="Light & Vent", yes=True, no=True):
+        manifest_path = os.path.splitext(path)[0] + "_diagrams.json"
+        diagrams, n = LR.export_report(doc, items, rows, level_elevs, use_links, manifest_path)
+        out.print_md("%d diagram(s) (one per room x wall run) saved to **%s**." % (n, manifest_path))
+        pdf_script = os.path.join(_LIB, "lwk_viewer", "lv_diagram_pdf.py") if _LIB else None
+        pdf_path = None
+        if pdf_script and os.path.isfile(pdf_script):
+            for py in ("python", "python3", "py"):
+                try:
+                    proc = subprocess.Popen([py, pdf_script, manifest_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    out_bytes, err_bytes = proc.communicate()
+                    if proc.returncode == 0:
+                        pdf_path = os.path.splitext(manifest_path)[0] + ".pdf"
+                        break
+                except Exception:
+                    continue
+        if pdf_path and os.path.isfile(pdf_path):
+            out.print_md("**Saved %s.**" % pdf_path)
+        else:
+            out.print_md("Could not build the PDF automatically (Python and `pip install reportlab` are needed on this "
+                         "machine, once). The diagram data is saved - once Python/reportlab are set up, run:\n\n"
+                         "```\npython \"%s\" \"%s\"\n```" % (pdf_script or "lv_diagram_pdf.py", manifest_path))
 
 if rows and forms.alert("Write each window's room, glazing and openable area into its parameters?\n\n"
                         "Needs the shared parameters LWK_LV_Room, LWK_LV_Room_Name, LWK_LV_Flat, LWK_LV_Glazing_m2, "

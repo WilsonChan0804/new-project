@@ -10,7 +10,7 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "LWK.extension", "lib", "lwk_viewer"))
 
 try:
     import lv_diagram_pdf as DP
@@ -55,6 +55,20 @@ class BuildPdf(unittest.TestCase):
         with open(out_path, "rb") as f:
             head = f.read(5)
         self.assertEqual(head, b"%PDF-")
+        self.assertGreater(os.path.getsize(out_path), 1000)
+
+    def test_a_schedule_page_is_added_when_rooms_are_given(self):
+        rooms = [{"block": "TWR1", "level": "4/F", "flat": "A1", "number": "2", "name": "LIV", "use": "LIV",
+                 "area_m2": 10.522, "req_light": 1.052, "req_open": 0.658, "prov_light_meas": 4.116,
+                 "prov_open_meas": 4.116, "status": "OK"},
+                {"block": "TWR1", "level": "4/F", "flat": "A1", "number": "200", "name": "O.KIT", "use": "KIT",
+                 "area_m2": 3.513, "req_light": 0.351, "req_open": 0.22, "prov_light_meas": 0.0,
+                 "prov_open_meas": 0.0, "status": "NO WINDOW"}]
+        with open(self.manifest_path, "w") as f:
+            json.dump({"schema": "lwk.lv.diagram/1", "diagrams": [_diagram("2")], "rooms": rooms}, f)
+        out_path, n = DP.build_pdf(self.manifest_path)
+        self.assertEqual(n, 1)
+        self.assertTrue(os.path.isfile(out_path))
         self.assertGreater(os.path.getsize(out_path), 1000)
 
     def test_an_unconfirmed_rect_and_no_gaps_do_not_crash(self):

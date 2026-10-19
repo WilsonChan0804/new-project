@@ -25,6 +25,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
+from reportlab.platypus import Table, TableStyle
 
 PAGE_SIZE = landscape(A4)
 MARGIN = 18 * mm
@@ -33,6 +34,13 @@ DIM_LANE = 16 * mm   # width reserved on the right for the floor-to-floor dimens
 COLOR_FIXED = colors.HexColor("#f5e400")
 COLOR_OPENABLE = colors.HexColor("#5be8c8")
 COLOR_UNCONFIRMED = colors.HexColor("#cfcfcf")
+
+STATUS_COLORS = {
+    "OK": colors.HexColor("#bdf5c9"),
+    "NOT OK": colors.HexColor("#ffc4c4"),
+    "NEEDS DATA": colors.HexColor("#ffe6a3"),
+    "NO WINDOW": colors.HexColor("#e2e2e2"),
+}
 
 
 def _fmt(v):
@@ -144,11 +152,9 @@ def _summary_box(c, x, y_top, box_w, d):
     if d.get("area_m2") is not None:
         lines.append(u"Room area = %s m2" % _fmt(d["area_m2"]))
     lines.append(u"Required lighting = %s m2" % _fmt(d.get("req_light")))
-    lines.append(u"Provided lighting = %s m2 (measured)" % _fmt(d.get("prov_light_meas")))
-    lines.append(u"  (%s m2 nominal, W x H x ratio)" % _fmt(d.get("prov_light_bd")))
+    lines.append(u"Provided lighting = %s m2 (measured glass)" % _fmt(d.get("prov_light_meas")))
     lines.append(u"Required openable = %s m2" % _fmt(d.get("req_open")))
-    lines.append(u"Provided openable = %s m2 (measured)" % _fmt(d.get("prov_open_meas")))
-    lines.append(u"  (%s m2 nominal, W x H x ratio)" % _fmt(d.get("prov_open_bd")))
+    lines.append(u"Provided openable = %s m2 (measured glass)" % _fmt(d.get("prov_open_meas")))
     lines.append(u"Status: %s" % d.get("status", ""))
     line_h = 4.6 * mm
     box_h = line_h * len(lines) + 5 * mm
@@ -203,12 +209,60 @@ def _legend(c, x, y):
         c.drawString(x + 7 * mm, ry + 0.5 * mm, label)
 
 
+SCHEDULE_HEADER = [u"Block", u"Flat", u"Level", u"Room", u"Name", u"Use", u"U.F.A.\nm2", u"Req.\nLight m2",
+                   u"Prov.\nLight m2", u"Req.\nOpen m2", u"Prov.\nOpen m2", u"Status"]
+SCHEDULE_COLS_MM = [14, 14, 12, 12, 26, 12, 16, 16, 18, 16, 18, 20]
+ROWS_PER_PAGE = 34
+
+
+def _schedule_pages(c, rooms):
+    """The window area schedule, one row per room, grouped/sorted the same way
+    as the table - a summary page up front so a reviewer never has to open the
+    CSV just to see which rooms pass. Coloured by status, like the firm's own
+    reference sheet highlights its own key columns."""
+    if not rooms:
+        return
+    rooms = sorted(rooms, key=lambda r: (r.get("block", ""), r.get("level", ""), r.get("flat", ""), r.get("number", "")))
+    w, h = PAGE_SIZE
+    avail_w = w - 2 * MARGIN
+    col_widths = [x * mm for x in SCHEDULE_COLS_MM]
+    for start in range(0, len(rooms), ROWS_PER_PAGE):
+        chunk = rooms[start:start + ROWS_PER_PAGE]
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(MARGIN, h - MARGIN + 4 * mm, u"Window area schedule" + (u" (cont'd)" if start else u""))
+        data = [SCHEDULE_HEADER]
+        style = [
+            ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 7.5),
+            ("FONT", (0, 1), (-1, -1), "Helvetica", 7),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a3fb0")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (6, 0), (-1, -1), "CENTER"),
+        ]
+        for i, r in enumerate(chunk, start=1):
+            data.append([
+                r.get("block", ""), r.get("flat", ""), r.get("level", ""), r.get("number", ""), r.get("name", ""), r.get("use", ""),
+                _fmt(r.get("area_m2")), _fmt(r.get("req_light")), _fmt(r.get("prov_light_meas")),
+                _fmt(r.get("req_open")), _fmt(r.get("prov_open_meas")), r.get("status", ""),
+            ])
+            style.append(("BACKGROUND", (11, i), (11, i), STATUS_COLORS.get(r.get("status"), colors.white)))
+            if r.get("merged_into"):
+                style.append(("TEXTCOLOR", (0, i), (-1, i), colors.HexColor("#666666")))
+        t = Table(data, colWidths=col_widths, repeatRows=1)
+        t.setStyle(TableStyle(style))
+        tw, th = t.wrapOn(c, avail_w, h - 2 * MARGIN)
+        t.drawOn(c, MARGIN, h - MARGIN - th)
+        c.showPage()
+
+
 def build_pdf(manifest_path, out_path=None):
     with open(manifest_path, "r") as f:
         data = json.load(f)
     diagrams = data.get("diagrams", [])
     out_path = out_path or os.path.splitext(manifest_path)[0] + ".pdf"
     c = canvas.Canvas(out_path, pagesize=PAGE_SIZE)
+    _schedule_pages(c, data.get("rooms", []))
     diagrams = sorted(diagrams, key=lambda d: (d.get("block", ""), d.get("level", ""), d.get("flat", ""), d.get("number", "")))
     for d in diagrams:
         _draw_page(c, d)

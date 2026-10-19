@@ -34,13 +34,17 @@ def export_report(doc, items, rows, level_elevs, include_links, out_path):
             floor_to_floor[key] = by_level_mm.get(r.get("level_mm", 0.0), 3000.0)
 
     diagrams = LD.build_diagrams(rows, items, floor_to_floor)
-    _write(out_path, diagrams)
+    schedule = [{"block": r.get("block", ""), "level": r["level"], "flat": r["flat"], "number": r["number"],
+                "name": r["name"], "use": r["use"], "area_m2": r["area_m2"], "req_light": r["req_light"],
+                "req_open": r["req_open"], "prov_light_meas": r["prov_light_meas"], "prov_open_meas": r["prov_open_meas"],
+                "status": r["status"], "merged_into": r.get("merged_into")} for r in rows]
+    _write(out_path, diagrams, schedule)
     return diagrams, len(diagrams)
 
 
-def _write(out_path, diagrams):
+def _write(out_path, diagrams, schedule):
     import io
     import json
-    txt = json.dumps({"schema": "lwk.lv.diagram/1", "diagrams": diagrams}, ensure_ascii=True, indent=1)
+    txt = json.dumps({"schema": "lwk.lv.diagram/1", "diagrams": diagrams, "rooms": schedule}, ensure_ascii=True, indent=1)
     with io.open(out_path, "w", encoding="utf-8") as f:
         f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
