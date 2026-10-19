@@ -1,0 +1,6 @@
+title: |-
+  Light & Vent
+  Elevations
+tooltip: >-
+  An annotated elevation image of every window, door and curtain panel the Light & Vent check used, labelled with the same numbers as its row in the table (nominal, measured, GBP dimensions if the family has them, which room(s) it serves). Exports PNGs and a manifest; run lv_report_pdf.py afterwards to turn them into one PDF.
+author: Wilson Chan

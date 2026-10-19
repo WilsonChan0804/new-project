@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-11-27"
+__version__ = "2026-11-28"
 
 import io
 import json
@@ -578,6 +578,44 @@ def _json_default(o):
 def write_json(path, rows, unmatched, type_counts):
     d = {"schema": "lwk.lv/1", "version": __version__, "rooms": rows, "unmatched": unmatched, "types": type_counts}
     txt = json.dumps(d, ensure_ascii=True, indent=1, default=_json_default)
+    with io.open(path, "w", encoding="utf-8") as f:
+        f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
+
+
+def build_report_manifest(items, rows):
+    """One entry per window/door/curtain-panel element that actually ended up
+    in the table (collect_items' own output, plus the room(s) each one serves,
+    from build()'s rows - an element can be in more than one room when it runs
+    past more than one, per its own share there). No Revit, no geometry: this
+    is the metadata half of the elevation report (lvreport.py's export_report
+    adds the image using the item's pos/n, which this manifest does not carry,
+    since it is also the half written to the JSON manifest for the offline PDF
+    step). -> [entry, ...], each entry a plain dict (JSON-safe)."""
+    by_uid = {}
+    for it in items:
+        by_uid[it["uid"]] = {
+            "id": it["id"], "uid": it["uid"], "cat": it["cat"], "key": it["key"], "mark": it.get("mark") or "",
+            "source": it.get("source", ""), "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"),
+            "glaze_m2_exact": it.get("glaze_m2_exact"), "open_m2_exact": it.get("open_m2_exact"),
+            "image": None, "rooms": [],
+        }
+    for r in rows:
+        for w in r.get("windows", []):
+            e = by_uid.get(w.get("uid"))
+            if e is None:
+                continue
+            e["rooms"].append({
+                "block": r.get("block", ""), "flat": r["flat"], "level": r["level"], "number": r["number"],
+                "name": r["name"], "status": r["status"], "share": w.get("share"),
+                "light_bd": w.get("light_bd"), "light_meas": w.get("light_meas"),
+                "open_bd": w.get("open_bd"), "open_meas": w.get("open_meas"), "exact_dims": w.get("exact_dims", False),
+            })
+    return [e for e in by_uid.values() if e["rooms"]]
+
+
+def write_report_manifest(path, manifest):
+    txt = json.dumps({"schema": "lwk.lv.report/1", "version": __version__, "elements": manifest},
+                     ensure_ascii=True, indent=1, default=_json_default)
     with io.open(path, "w", encoding="utf-8") as f:
         f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
 
