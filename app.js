@@ -356,13 +356,13 @@ async function downloadOffline() {
   toast('下載緊離線資料，請保持 App 開住…');
   await prefetchAll();
   const r = await prefetchMaps(msg => { const el = $('#mapStatus'); if (el) el.textContent = msg; });
-  if (r.done >= r.total) localStorage.setItem('trip-maps5-at', String(Date.now()));
+  if (r.done >= r.total) localStorage.setItem('trip-maps6-' + TILE_PREFIX, String(Date.now()));
   updatePicStatus();
   toast(r.done >= r.total ? `離線資料已下載好（地圖 ${r.total} 格）` : '下載未完成——上網後再撳一次會繼續');
 }
 async function updatePicStatus() {
   const ms = $('#mapStatus');
-  if (ms) { const t = +localStorage.getItem('trip-maps5-at'); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
+  if (ms) { const t = +localStorage.getItem('trip-maps6-' + TILE_PREFIX); ms.textContent = t ? `✓ 地圖及路線已下載（${new Date(t).getMonth() + 1}/${new Date(t).getDate()}）` : '地圖及路線：未下載'; }
   const el = $('#picStatus');
   if (!el) return;
   const items = allItems().filter(hasPicConf);
@@ -415,11 +415,16 @@ function wxText(day) {
 /* ---------- 離線地圖（Leaflet）：可以放大縮小、拖動；圖塊下載一次之後冇網都用到 ---------- */
 // 地圖圖塊：Esri World Street Map（免 API key）；載入唔到就用 OpenStreetMap。
 // （CARTO 由 2026 年 9 月起要 API key，冇 key 只會俾「API KEY REQUIRED」水印圖。）
-const TILE_SOURCES = [
-  (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`,
-  (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
-];
-const TILE_PREFIX = 'tile2:';
+// 地圖語言：日文（國土地理院「地理院地図」，漢字地名，預設）或者英文（Esri）
+const TILE_SETS = {
+  ja: { prefix: 'tile3:', label: '日文漢字（地理院地圖）', attr: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a> · © OpenStreetMap',
+    src: [(z, x, y) => `https://cyberjapandata.gsi.go.jp/xyz/std/${z}/${x}/${y}.png`, (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`] },
+  en: { prefix: 'tile2:', label: '英文（Esri）', attr: '© Esri · © OpenStreetMap',
+    src: [(z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`, (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`] },
+};
+const TILE_SET = TILE_SETS[localStorage.getItem('map-tiles')] || TILE_SETS.ja;
+const TILE_SOURCES = TILE_SET.src;
+const TILE_PREFIX = TILE_SET.prefix;
 const MAX_CACHE_Z = 18; // 下載到 18 級；再放大會用 18 級放大顯示
 // 日本國土地理院（GSI）地址搜尋：日文地址準確到街區；搵唔到先用 OpenStreetMap Nominatim
 const GSI_URL = q => `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${enc(q)}`;
@@ -573,6 +578,9 @@ function loadLeaflet() {
     document.head.appendChild(s);
   });
 }
+/* Organic Maps（開源、離線導航）連結 */
+const omPoint = (p, name) => `om://map?v=1&ll=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&n=${enc(name || '')}`;
+const omRoute = (a, an, b, bn, type = 'pedestrian') => `om://route?sll=${a.lat.toFixed(6)},${a.lon.toFixed(6)}&saddr=${enc(an || '')}&dll=${b.lat.toFixed(6)},${b.lon.toFixed(6)}&daddr=${enc(bn || '')}&type=${type}`;
 const blobImage = b => new Promise((res, rej) => { const u = URL.createObjectURL(b), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = () => { URL.revokeObjectURL(u); rej(); }; im.src = u; });
 function offlineTileLayer() {
   const Layer = L.GridLayer.extend({
@@ -593,7 +601,7 @@ function offlineTileLayer() {
       return cv;
     },
   });
-  const layer = new Layer({ maxNativeZoom: MAX_CACHE_Z, maxZoom: 19, minZoom: 5, tileSize: 256, attribution: '© Esri · © OpenStreetMap' });
+  const layer = new Layer({ maxNativeZoom: MAX_CACHE_Z, maxZoom: 19, minZoom: 5, tileSize: 256, attribution: TILE_SET.attr });
   return layer;
 }
 const mapState = { map: null, id: null, layers: null, watch: null, pin: false };
@@ -651,6 +659,12 @@ async function drawItemMap(id) {
   if (f.item.lat != null) lines.push('📍 用緊你修正嘅位置');
   if (mapState.pin) lines.push('👆 撳地圖上正確嘅位置');
   if (g) info.textContent = lines.join(' · ') || '兩指放大縮小、拖動睇周圍。';
+  const om = $('#omlinks-' + id);
+  if (om && g?.b) {
+    const prevIt = f.list.slice(0, f.index).reverse().find(x => x.type !== 'walk' && x.type !== 'flight');
+    om.innerHTML = (apart && g.a ? `<a class="chip accent" href="${omRoute(g.a, prevIt ? (TRANSPORT.has(prevIt.type) ? nameOf(prevIt.to, prevIt.toZh) : prevIt.title) : '上一站', g.b, f.item.title, g.walking || distM(g.a, g.b) < 5000 ? 'pedestrian' : 'transit')}">🍃 Organic Maps 步行導航（離線）</a>` : '')
+      + `<a class="chip" href="${omPoint(g.b, f.item.title)}">🍃 喺 Organic Maps 睇</a>`;
+  }
 }
 function setItemLatLon(id, lat, lon) {
   mapState.pin = false;
@@ -1937,7 +1951,7 @@ async function openDayMap(dayId) {
         last = g.b;
         n++;
         L.marker([g.b.lat, g.b.lon], { icon: L.divIcon({ className: 'daypin', html: `<b>${n}</b>`, iconSize: [26, 26], iconAnchor: [13, 13] }) })
-          .bindPopup(`<b>${n}. ${esc(it.time || '')} ${esc(it.title)}</b><br><button type="button" class="chip" data-act="open" data-id="${it.id}">詳情</button>`).addTo(map);
+          .bindPopup(`<b>${n}. ${esc(it.time || '')} ${esc(it.title)}</b><br><button type="button" class="chip" data-act="open" data-id="${it.id}">詳情</button> <a class="chip" href="${omPoint(g.b, it.title)}">🍃 Organic Maps</a>`).addTo(map);
         pts.push([g.b.lat, g.b.lon]);
       }
       if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 16 });
@@ -2189,6 +2203,7 @@ function openItem(id) {
     <div class="omap" data-map="${id}"><div class="leaf"></div>
       <button type="button" class="omap-full" data-act="map-full" aria-label="全螢幕">⤢</button></div>
     <p class="hint omap-info" id="omap-info-${id}">載入緊…</p>
+    <div class="row omlinks" id="omlinks-${id}"></div>
     <div class="row">
       <button type="button" class="chip" data-act="locate" data-id="${id}">${icon('navigate')}我喺邊（GPS）</button>
       ${it.type === 'walk' ? '' : `<button type="button" class="chip" data-act="loc-pick" data-id="${id}" data-which="${TRANSPORT.has(it.type) ? 'to' : 'place'}">${icon('edit')}改位置</button>`}
@@ -2461,6 +2476,17 @@ function renderInfo() {
     <p class="muted">iPhone 撳地圖連結時用：${esc(MAP_APPS[localStorage.getItem('map-app') || 'gapp'] || 'Google Maps App')}</p>
     <div class="row">${Object.entries(MAP_APPS).map(([k, v]) => `<button class="chip ${(localStorage.getItem('map-app') || 'gapp') === k ? 'dark' : ''}" data-act="map-app" data-id="${k}">${v}</button>`).join('')}</div>
     <p class="hint">出發前記得喺 Google Maps App 下載東京離線地圖：頭像 →「離線地圖」→「選取自己的地圖」。</p>
+    <p class="muted" style="margin-top:12px">App 內離線地圖嘅文字：</p>
+    <div class="row">${Object.entries(TILE_SETS).map(([k, s]) => `<button class="chip ${TILE_SET === s ? 'dark' : ''}" data-act="map-tiles" data-id="${k}">${s.label}</button>`).join('')}</div>
+    <p class="hint">轉咗之後要再撳一次「下載離線資料」。</p>
+    <details class="adv"><summary>🍃 後備：Organic Maps（開源、離線步行導航）設定</summary>
+      <ol class="plain">
+        <li>App Store 安裝「Organic Maps」（免費、開源、冇廣告）。</li>
+        <li>用 Wi-Fi 打開，搜尋「Tokyo」→ 下載東京同千葉（成田）嘅地圖。</li>
+        <li><b>改中文：</b>iPhone「設定」→「App」→「Organic Maps」→「語言」揀「繁體中文」。地圖上有中文名嘅地方會顯示中文，冇就顯示日文漢字。</li>
+        <li><b>唔要英文拼音：</b>Organic Maps →「設定」→ 關閉「轉寫成拉丁字母」（Transliteration）。</li>
+        <li>喺呢個 App 每項「詳情」嘅地圖下面撳「🍃 Organic Maps 步行導航（離線）」，就會由上一站開始導航；或者撳「🍃 喺 Organic Maps 睇」，再喺 Organic Maps 撳「路線」由你而家位置出發。</li>
+      </ol></details>
   </section>
   <section class="card">
     <h2>💾 備份檔</h2>
@@ -2676,6 +2702,7 @@ const actions = {
   'kp-auto': id => { localStorage.setItem('kp-auto', id); render(); },
   'kp-show': () => window.Kappa?.play(),
   'gps-test': () => testGPS(),
+  'map-tiles': id => { localStorage.setItem('map-tiles', id); location.reload(); },
   'map-lang': id => { localStorage.setItem('map-lang', id); render(); },
   'map-app': id => { if (id) localStorage.setItem('map-app', id); else localStorage.removeItem('map-app'); render(); },
   'phr-mode': () => { ui.phrEdit = !ui.phrEdit; render(); },
