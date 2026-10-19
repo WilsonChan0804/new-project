@@ -17,10 +17,13 @@ def room(key, number, name, x0, x1, y0=0, y1=4000, level="5/F", flat="A1", block
             "loops": [[(x0, y0), (x1, y0), (x1, y1), (x0, y1)]]}
 
 
-def item(x, w=1500, y=4000, key="W", cat="Windows", h=1500, n=(0, 1), z=1500, glass=None, glaze_exact=None, open_exact=None):
+def item(x, w=1500, y=4000, key="W", cat="Windows", h=1500, n=(0, 1), z=1500, glass=None, glaze_exact=None, open_exact=None,
+        bottom_mm=None, top_mm=None):
     return {"id": 1, "uid": "u" + key, "cat": cat, "key": key, "mark": "", "pos": (x, y, z), "n": n,
             "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": None,
-            "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact}
+            "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
+            "bottom_mm": z - h / 2.0 if bottom_mm is None else bottom_mm,
+            "top_mm": z + h / 2.0 if top_mm is None else top_mm}
 
 
 def door(x, y, n, z=1500):
@@ -251,47 +254,6 @@ class CsvWindowsColumn(unittest.TestCase):
                 text = f.read().decode("utf-8-sig")
             self.assertIn(u"mark 28: 1940 x 2550 mm", text)
             self.assertNotIn(u",28 1940", text)
-        finally:
-            _os.remove(path)
-
-
-class ReportManifest(unittest.TestCase):
-    """build_report_manifest: the Revit-free half of the per-element elevation
-    report (lvreport.py adds the image using geometry this manifest does not
-    carry)."""
-
-    def test_one_entry_per_element_with_the_rooms_it_serves(self):
-        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
-        br = room("br", "A1-2", "BR1", 4000, 8000)
-        shared = item(4000, w=3000, h=2000, cat="Curtain panels", key="W", glass=3.0)
-        rows, _, _ = LV.build([liv, br], [shared], TYPES)
-        manifest = LV.build_report_manifest([shared], rows)
-        self.assertEqual(len(manifest), 1)
-        e = manifest[0]
-        self.assertEqual(e["uid"], "uW")
-        self.assertEqual(sorted(r["number"] for r in e["rooms"]), ["A1-1", "A1-2"])
-        self.assertAlmostEqual(sum(r["share"] for r in e["rooms"]), 1.0, places=2)
-
-    def test_an_item_not_matched_to_any_room_is_left_out(self):
-        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
-        far_away = item(20000)
-        rows, _, _ = LV.build([liv], [far_away], TYPES)
-        manifest = LV.build_report_manifest([far_away], rows)
-        self.assertEqual(manifest, [])
-
-    def test_manifest_round_trips_through_json(self):
-        import tempfile, os as _os
-        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
-        rows, _, _ = LV.build([liv], [item(2000)], TYPES)
-        manifest = LV.build_report_manifest([item(2000)], rows)
-        fd, path = tempfile.mkstemp(suffix=".json")
-        _os.close(fd)
-        try:
-            LV.write_report_manifest(path, manifest)
-            with open(path) as f:
-                data = json.load(f)
-            self.assertEqual(len(data["elements"]), 1)
-            self.assertEqual(data["elements"][0]["rooms"][0]["number"], "A1-1")
         finally:
             _os.remove(path)
 

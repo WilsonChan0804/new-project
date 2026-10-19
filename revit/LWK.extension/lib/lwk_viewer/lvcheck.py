@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-11-29"
+__version__ = "2026-11-30"
 
 import io
 import json
@@ -367,7 +367,7 @@ def build(areas, items, types, rules=None, doors=None):
             "_key": _k(a),
             "flat": a.get("flat") or flat_of(a["number"], rules.get("flat_from", "number_prefix")),
             "block": a.get("block", ""),
-            "number": a["number"], "name": a["name"], "use": u, "level": a.get("level", ""),
+            "number": a["number"], "name": a["name"], "use": u, "level": a.get("level", ""), "level_mm": a.get("level_mm", 0.0),
             "area_m2": a["area_m2"], "id": a["id"], "uid": a.get("uid", ""),
             "req_light": a["area_m2"] * uses[u][0], "req_open": a["area_m2"] * uses[u][1],
             "windows": [], "merged": [], "notes": [],
@@ -522,7 +522,8 @@ def _row(r, rules, merged=False):
     elif r.get("merge_unavailable") and status in ("NOT OK", "NO WINDOW"):
         notes.append("no door-connected room found to compensate into")
     return {
-        "flat": r["flat"], "block": r.get("block", ""), "level": r["level"], "number": r["number"], "name": r["name"], "use": r["use"],
+        "flat": r["flat"], "block": r.get("block", ""), "level": r["level"], "level_mm": r.get("level_mm", 0.0),
+        "number": r["number"], "name": r["name"], "use": r["use"],
         "area_m2": _r3(r["area_m2"]),
         "with": [{"number": g["number"], "name": g["name"], "area_m2": _r3(g["area_m2"])} for g in r["merged"]],
         "req_light": _r3(req_l), "req_open": _r3(req_o),
@@ -583,44 +584,6 @@ def write_json(path, rows, unmatched, type_counts):
         f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
 
 
-def build_report_manifest(items, rows):
-    """One entry per window/door/curtain-panel element that actually ended up
-    in the table (collect_items' own output, plus the room(s) each one serves,
-    from build()'s rows - an element can be in more than one room when it runs
-    past more than one, per its own share there). No Revit, no geometry: this
-    is the metadata half of the elevation report (lvreport.py's export_report
-    adds the image using the item's pos/n, which this manifest does not carry,
-    since it is also the half written to the JSON manifest for the offline PDF
-    step). -> [entry, ...], each entry a plain dict (JSON-safe)."""
-    by_uid = {}
-    for it in items:
-        by_uid[it["uid"]] = {
-            "id": it["id"], "uid": it["uid"], "cat": it["cat"], "key": it["key"], "mark": it.get("mark") or "",
-            "source": it.get("source", ""), "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"),
-            "glaze_m2_exact": it.get("glaze_m2_exact"), "open_m2_exact": it.get("open_m2_exact"),
-            "image": None, "rooms": [],
-        }
-    for r in rows:
-        for w in r.get("windows", []):
-            e = by_uid.get(w.get("uid"))
-            if e is None:
-                continue
-            e["rooms"].append({
-                "block": r.get("block", ""), "flat": r["flat"], "level": r["level"], "number": r["number"],
-                "name": r["name"], "status": r["status"], "share": w.get("share"),
-                "light_bd": w.get("light_bd"), "light_meas": w.get("light_meas"),
-                "open_bd": w.get("open_bd"), "open_meas": w.get("open_meas"), "exact_dims": w.get("exact_dims", False),
-            })
-    return [e for e in by_uid.values() if e["rooms"]]
-
-
-def write_report_manifest(path, manifest):
-    txt = json.dumps({"schema": "lwk.lv.report/1", "version": __version__, "elements": manifest},
-                     ensure_ascii=True, indent=1, default=_json_default)
-    with io.open(path, "w", encoding="utf-8") as f:
-        f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
-
-
 # --- reading Revit -----------------------------------------------------------
 
 def area_scheme_names(doc):
@@ -652,21 +615,40 @@ def _tp(tf, p):
     return (q.X * FT_MM, q.Y * FT_MM, q.Z * FT_MM)
 
 
-def level_bands(doc, selected_mm, include_links=True):
-    """For each chosen floor elevation (mm) the band [from, to) of heights that belong to it:
-    up to the next level of this model or of any link."""
+def _level_elevations(doc, include_links=True):
+    """Every level's elevation (mm, host coordinates), this model's and every
+    linked model's, sorted."""
     from Autodesk.Revit.DB import FilteredElementCollector, Level
     elevs = set()
     for label, d, tf in link_sources(doc, include_links):
         dz = (tf.Origin.Z * FT_MM) if tf is not None else 0.0
         for lv in FilteredElementCollector(d).OfClass(Level):
             elevs.add(round(lv.Elevation * FT_MM + dz, 0))
-    elevs = sorted(elevs)
+    return sorted(elevs)
+
+
+def level_bands(doc, selected_mm, include_links=True):
+    """For each chosen floor elevation (mm) the band [from, to) of heights that belong to it:
+    up to the next level of this model or of any link."""
+    elevs = _level_elevations(doc, include_links)
     bands = []
     for e in selected_mm:
         above = [x for x in elevs if x > e + 500]
         bands.append((e - 300.0, above[0] if above else e + 6000.0))
     return bands
+
+
+def floor_to_floor_mm(doc, selected_mm, include_links=True):
+    """For each chosen floor elevation (mm), the height (mm) up to the next
+    level above it - for the elevation diagrams, which need the real
+    floor-to-floor height, not level_bands' own margin-padded band. A level
+    with nothing above it (the top floor) falls back to 3000mm."""
+    elevs = _level_elevations(doc, include_links)
+    out = []
+    for e in selected_mm:
+        above = [x for x in elevs if x > e + 500]
+        out.append((above[0] - e) if above else 3000.0)
+    return out
 
 
 def _flag_state(el, names):
@@ -964,13 +946,16 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                     bb = el.get_BoundingBox(None)
                     if bb is None:
                         continue
+                    cx, cy = (bb.Min.X + bb.Max.X) / 2.0, (bb.Min.Y + bb.Max.Y) / 2.0
                     try:
                         p = el.Location.Point
                         pos = _tp(tf, XYZ(p.X, p.Y, (bb.Min.Z + bb.Max.Z) / 2.0))
                     except Exception:
-                        pos = _tp(tf, XYZ((bb.Min.X + bb.Max.X) / 2.0, (bb.Min.Y + bb.Max.Y) / 2.0, (bb.Min.Z + bb.Max.Z) / 2.0))
+                        pos = _tp(tf, XYZ(cx, cy, (bb.Min.Z + bb.Max.Z) / 2.0))
                     if bands and not any(lo <= pos[2] < hi for lo, hi in bands):
                         continue
+                    bottom_mm = _tp(tf, XYZ(cx, cy, bb.Min.Z))[2]
+                    top_mm = _tp(tf, XYZ(cx, cy, bb.Max.Z))[2]
                     n = n_local
                     if tf is not None:
                         v = tf.OfVector(XYZ(n_local[0], n_local[1], 0))
@@ -1010,7 +995,8 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                             frac = None
                     out.append({"id": id_int(el.Id), "uid": el.UniqueId, "cat": cname, "key": key, "mark": mark, "source": label,
                                 "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac,
-                                "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact})
+                                "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
+                                "bottom_mm": bottom_mm, "top_mm": top_mm})
                 except Exception:
                     continue
     return out

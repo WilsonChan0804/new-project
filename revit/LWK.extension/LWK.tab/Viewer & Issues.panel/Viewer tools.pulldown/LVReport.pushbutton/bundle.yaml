@@ -1,6 +1,6 @@
 title: |-
   Light & Vent
-  Elevations
+  Diagrams
 tooltip: >-
-  An annotated elevation image of every window, door and curtain panel the Light & Vent check used, labelled with the same numbers as its row in the table (nominal, measured, GBP dimensions if the family has them, which room(s) it serves). Exports PNGs and a manifest; run lv_report_pdf.py afterwards to turn them into one PDF.
+  A program-drawn schematic of every window/curtain-wall run the Light & Vent check used - a rectangle per sub-panel at its own width/height/sill height, coloured by fixed/openable/not yet confirmed, the floor-to-floor height, and the inferred excluded zones above/below the glazing. Not a real Revit view export - fast across a whole tower. Run lv_diagram_pdf.py afterwards for one PDF.
 author: Wilson Chan
