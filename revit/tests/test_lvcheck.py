@@ -18,10 +18,11 @@ def room(key, number, name, x0, x1, y0=0, y1=4000, level="5/F", flat="A1", block
 
 
 def item(x, w=1500, y=4000, key="W", cat="Windows", h=1500, n=(0, 1), z=1500, glass=None, glaze_exact=None, open_exact=None,
-        bottom_mm=None, top_mm=None):
+        bottom_mm=None, top_mm=None, open_w_mm=None, open_h_mm=None):
     return {"id": 1, "uid": "u" + key, "cat": cat, "key": key, "mark": "", "pos": (x, y, z), "n": n,
             "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": None,
             "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
+            "open_w_mm": open_w_mm, "open_h_mm": open_h_mm,
             "bottom_mm": z - h / 2.0 if bottom_mm is None else bottom_mm,
             "top_mm": z + h / 2.0 if top_mm is None else top_mm}
 
@@ -131,11 +132,21 @@ class Table(unittest.TestCase):
         self.assertEqual(by["A-3"]["status"], "NEEDS DATA")
         self.assertTrue(any("more than one room" in n for n in by["A-3"]["notes"]))
 
+    def test_an_open_kitchen_with_no_door_merges_into_the_room_it_touches(self):
+        # an open-plan kitchen: no door at all between it and the living room, just a shared
+        # boundary (a room-separation line in the model, not a wall) - door_adjacent_rooms finds
+        # nothing here since there is no door, so this needs the boundary fallback
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 8000)
+        rows, _, _ = LV.build([liv, kit], [item(2000)], TYPES, doors=[])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-2"]["status"], "WITH A-1")
+
     def test_no_door_found_leaves_the_room_as_is(self):
         bath = room("bath", "A-3", "BATH", 0, 4000)
         rows, _, _ = LV.build([bath], [], TYPES, doors=[])
         self.assertEqual(rows[0]["status"], "NO WINDOW")
-        self.assertTrue(any("no door-connected room" in n for n in rows[0]["notes"]))
+        self.assertTrue(any("no door- or boundary-connected room" in n for n in rows[0]["notes"]))
 
     def test_ok_and_not_ok(self):
         liv = room("liv", "A1-1", "LIV/DIN", 0, 4000, y1=4000)      # 16 m2: needs 1.6 m2 light, 1 m2 open
@@ -267,6 +278,27 @@ class FuzzyParamName(unittest.TestCase):
         self.assertAlmostEqual(LV._param_d_like(el, ("openable", "width")), 2.0 * LV.FT_MM, places=1)
         el2 = self.FakeElement([self.FakeParam("GBP_Openable_Width", 612.5, is_length=False)])
         self.assertAlmostEqual(LV._param_d_like(el2, ("openable", "width")), 612.5, places=2)
+
+    def test_gbp_dims_mm_finds_all_four_in_one_pass_over_the_parameters(self):
+        # a project with thousands of panels made four full parameter scans each when this
+        # looked up glazing/openable width/height one at a time - _gbp_dims_mm must find all
+        # four from a single list of parameters, not rescan it four times
+        seen = []
+
+        class CountingParams(list):
+            def __iter__(self):
+                seen.append(1)
+                return list.__iter__(self)
+
+        el = self.FakeElement(CountingParams([
+            self.FakeParam("GBP_Glazing_Width", 2600.0),
+            self.FakeParam("GBP_Glazing_Height", 2600.0),
+            self.FakeParam("GBP_Openable_Width", 2550.0),
+            self.FakeParam("GBP_Openable_Height", 612.5),
+        ]))
+        gw, gh, ow, oh = LV._gbp_dims_mm(el)
+        self.assertEqual((gw, gh, ow, oh), (2600.0, 2600.0, 2550.0, 612.5))
+        self.assertEqual(len(seen), 1)
 
 
 class Excludes(unittest.TestCase):

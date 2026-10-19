@@ -120,6 +120,31 @@ class Colour(unittest.TestCase):
         self.assertEqual(colours["UNK"], "unconfirmed")
 
 
+class PartialOpenable(unittest.TestCase):
+    def test_a_smaller_openable_sub_size_is_drawn_as_its_own_centred_rectangle(self):
+        # a "2-panels" family: 2600 x 2600 overall glazing, but only a 2550 x 612.5 leaf of it
+        # actually opens (GBP_Openable_Width/Height) - the base rect should read as glazing (not
+        # coloured as if the whole thing opens), with the real openable portion inset, centred
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        panel = item(2000, w=2600, h=2600, key="TWO", open_exact=1.561725, open_w_mm=2550.0, open_h_mm=612.5)
+        rows, _, _ = LV.build([liv], [panel], TYPES)
+        diagrams = LD.build_diagrams(rows, [panel], {("", "5/F"): 3000.0})
+        rect = diagrams[0]["rects"][0]
+        self.assertEqual(rect["color"], "fixed")
+        self.assertIsNotNone(rect["open_rect"])
+        self.assertAlmostEqual(rect["open_rect"]["width"], 2550.0, places=1)
+        self.assertAlmostEqual(rect["open_rect"]["height"], 612.5, places=1)
+        self.assertAlmostEqual(rect["open_rect"]["left"], (2600.0 - 2550.0) / 2.0, places=1)
+        self.assertAlmostEqual(rect["open_rect"]["bottom"], (2600.0 - 612.5) / 2.0, places=1)
+
+    def test_no_openable_sub_size_means_no_inset(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        panel = item(2000, w=1500, h=1500, key="ONE")
+        rows, _, _ = LV.build([liv], [panel], TYPES)
+        diagrams = LD.build_diagrams(rows, [panel], {("", "5/F"): 3000.0})
+        self.assertIsNone(diagrams[0]["rects"][0]["open_rect"])
+
+
 class RoomSummary(unittest.TestCase):
     def test_the_room_s_own_numbers_are_carried_onto_the_diagram(self):
         liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)   # 16 m2

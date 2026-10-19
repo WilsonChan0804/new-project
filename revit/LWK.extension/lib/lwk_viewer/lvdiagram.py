@@ -106,13 +106,24 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
             height = it["top_mm"] - it["bottom_mm"]
         height = height or 0.0
         center = _along(it["pos"], n_ref)
+        # a family can give its own openable sub-size (GBP_Openable_Width/Height) smaller than
+        # its overall glazing - a "2-panels" unit where only one leaf opens, say. Drawn as its own
+        # rectangle, centred within the glazing, rather than colouring the whole panel as openable
+        # when only part of it is - the base rectangle is the glazing colour in that case, and the
+        # inset carries the openable colour instead
+        open_w, open_h = w.get("open_w_mm"), w.get("open_h_mm")
+        open_rect = None
+        if open_w and open_h:
+            open_rect = {"left": max(0.0, (width - open_w) / 2.0), "bottom": max(0.0, (height - open_h) / 2.0),
+                        "width": min(open_w, width), "height": min(open_h, height)}
         rects.append({
             "left": center - width / 2.0, "width": width,
             "bottom": it["bottom_mm"] - level_mm, "height": height,
-            "color": _color_for(w), "mark": w.get("mark") or "", "key": w.get("key", ""),
+            "color": "fixed" if open_rect else _color_for(w), "mark": w.get("mark") or "", "key": w.get("key", ""),
             "light_bd": w.get("light_bd"), "light_meas": w.get("light_meas"),
             "open_bd": w.get("open_bd"), "open_meas": w.get("open_meas"),
             "share": w.get("share"), "exact_dims": w.get("exact_dims", False),
+            "open_rect": open_rect,
         })
     base = min(r["left"] for r in rects)
     for r in rects:

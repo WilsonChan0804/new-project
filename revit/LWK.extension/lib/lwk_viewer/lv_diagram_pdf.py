@@ -122,6 +122,15 @@ def _draw_page(c, d):
         c.setStrokeColor(colors.black)
         c.setLineWidth(0.6)
         c.rect(x0, y0, rw, rh, stroke=1, fill=1)
+        # the family's own openable sub-size (e.g. one leaf of a two-panel unit) drawn as its own
+        # rectangle onto the glazing, rather than colouring the whole panel as openable
+        orect = r.get("open_rect")
+        if orect:
+            c.setFillColor(COLOR_OPENABLE)
+            c.setStrokeColor(colors.black)
+            c.setLineWidth(0.5)
+            c.rect(x0 + orect["left"] * scale, y0 + orect["bottom"] * scale,
+                  orect["width"] * scale, orect["height"] * scale, stroke=1, fill=1)
         c.setFillColor(colors.black)
         label = u"%s x %s" % (int(r["width"]), int(r["height"]))
         if rw > 18 * mm and rh > 6 * mm:

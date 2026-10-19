@@ -307,6 +307,44 @@ def door_adjacent_rooms(doors, areas, probe_mm):
     return adj
 
 
+def boundary_adjacent_rooms(area, areas, probe_mm, step_mm=600.0):
+    """Rooms directly touching `area`'s own boundary - an open-plan kitchen
+    with no door at all to its living room, only a room-separation line, so
+    there is no door for door_adjacent_rooms to find. Walks area's own loops,
+    sampling every step_mm along each edge and probing both perpendicular
+    directions (one of the two is simply back into `area` itself, from
+    whichever way the loop winds - harmless, just not a match). -> set(key,
+    ...) of neighbouring rooms, computed lazily for just this one room (not a
+    whole-floor adjacency graph) since it is only needed as a fallback when a
+    room has no door-connected neighbour."""
+    here = _level_rooms(areas, area["level_mm"])
+    ak = _k(area)
+    found = set()
+    for loop in area["loops"]:
+        n = len(loop)
+        for i in range(n):
+            x1, y1 = loop[i]
+            x2, y2 = loop[(i + 1) % n]
+            length = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+            if length < 1.0:
+                continue
+            dx, dy = (x2 - x1) / length, (y2 - y1) / length
+            perp = (-dy, dx)
+            steps = max(1, int(round(length / step_mm)))
+            for s in range(steps):
+                t = (s + 0.5) / steps
+                mx, my = x1 + dx * length * t, y1 + dy * length * t
+                for sign in (1, -1):
+                    hit = None
+                    for d in probe_mm:
+                        hit = area_at(mx + sign * perp[0] * d, my + sign * perp[1] * d, here)
+                        if hit:
+                            break
+                    if hit is not None and _k(hit) != ak and use_of(hit["name"]):
+                        found.add(_k(hit))
+    return found
+
+
 def serving_room(item, areas, probe_mm):
     """The room an element serves (one point: its centre). -> (area or None, note)."""
     x, y, z = item["pos"]
@@ -416,6 +454,12 @@ def build(areas, items, types, rules=None, doors=None):
                 "open_meas": (meas * frac) if (meas is not None and frac is not None) else None,
                 "operation": info["operation"], "fraction": frac, "confirmed": confirmed,
                 "exact_dims": glaze_exact is not None or open_exact is not None,
+                # the family's own openable sub-size, when it has one (e.g. a "2-panels" family
+                # whose GBP_Openable_Width/Height cover only one of its two leaves) - so the diagram
+                # can draw the real openable portion as its own rectangle within the glazing, rather
+                # than colouring the whole panel as if all of it opened
+                "open_w_mm": it.get("open_w_mm") if open_exact is not None else None,
+                "open_h_mm": it.get("open_h_mm") if open_exact is not None else None,
             })
 
     # a bath / kitchen whose own window is missing or not enough goes with whichever
@@ -423,6 +467,7 @@ def build(areas, items, types, rules=None, doors=None):
     # not assumed to be the flat's living room
     fk = lambda r: (r["block"], r["level"], r["flat"])
     adj = door_adjacent_rooms(doors, areas, probe) if doors else {}
+    area_by_key = dict((_k(a), a) for a in areas)
     for r in list(rooms.values()):
         if r["use"] not in rules.get("merge_if_insufficient", []):
             continue
@@ -430,6 +475,10 @@ def build(areas, items, types, rules=None, doors=None):
         if own["status"] not in ("NOT OK", "NO WINDOW"):
             continue    # OK needs no compensation; NEEDS DATA is a data problem, not left to guess a relay for
         neighbours = adj.get(r["_key"], set())
+        if not neighbours and r["_key"] in area_by_key:
+            # no door at all (an open-plan kitchen, say) - fall back to whatever room its own
+            # boundary directly touches (a room-separation line, not a wall)
+            neighbours = boundary_adjacent_rooms(area_by_key[r["_key"]], areas, probe)
         candidates = [rooms[k] for k in neighbours if k in rooms and k != r["_key"] and fk(rooms[k]) == fk(r)]
         if len(candidates) == 1:
             host = candidates[0]
@@ -520,7 +569,7 @@ def _row(r, rules, merged=False):
         notes.append("more than one room beside its door could take this room's area (%s) - not merged, decide by hand"
                      % ", ".join(r["merge_ambiguous"]))
     elif r.get("merge_unavailable") and status in ("NOT OK", "NO WINDOW"):
-        notes.append("no door-connected room found to compensate into")
+        notes.append("no door- or boundary-connected room found to compensate into")
     return {
         "flat": r["flat"], "block": r.get("block", ""), "level": r["level"], "level_mm": r.get("level_mm", 0.0),
         "number": r["number"], "name": r["name"], "use": r["use"],
@@ -829,7 +878,24 @@ def _param_d_like(el, keywords):
     "GBP Openable Width", "GBP-OpenableWidth" ... and all of these should be
     found the same way, on the instance or on its type. keywords: every one
     of these (already lower-case, no spaces/underscores) must appear in the
-    parameter's own name, normalised the same way, for it to match."""
+    parameter's own name, normalised the same way, for it to match.
+
+    One keyword-set at a time, scanning the element's own Parameters fresh
+    each call - fine for a one-off lookup, but collect_items needs four of
+    these (glazing/openable x width/height) on every window/door/panel, which
+    on a project with thousands of them made four full parameter scans each,
+    not one: see _gbp_dims_mm, which finds all four in a single pass."""
+    found = _scan_params_like(el, (keywords,))
+    return found[0]
+
+
+def _scan_params_like(el, keyword_sets):
+    """found[i] is the first value (mm) whose parameter name contains every
+    keyword in keyword_sets[i], scanning the element's (and its type's) own
+    Parameters exactly once regardless of how many keyword-sets are asked
+    for - the whole reason this exists instead of calling _param_d_like once
+    per set, which would re-scan from scratch each time."""
+    found = [None] * len(keyword_sets)
     holders = [el]
     try:
         t = el.Document.GetElement(el.GetTypeId())
@@ -837,22 +903,39 @@ def _param_d_like(el, keywords):
             holders.append(t)
     except Exception:
         pass
+    remaining = set(range(len(keyword_sets)))
     for h in holders:
+        if not remaining:
+            break
         try:
             params = list(h.Parameters)
         except Exception:
             continue
         for p in params:
+            if not remaining:
+                break
             try:
-                name = _norm_name(p.Definition.Name if p.Definition else u"")
-                if not all(kw in name for kw in keywords):
+                if not (p.HasValue and str(p.StorageType) == "Double" and p.AsDouble() > 0):
                     continue
-                if p.HasValue and str(p.StorageType) == "Double" and p.AsDouble() > 0:
-                    v = p.AsDouble()
-                    return v * FT_MM if _is_length_param(p) else v
+                name = _norm_name(p.Definition.Name if p.Definition else u"")
             except Exception:
                 continue
-    return None
+            for i in list(remaining):
+                if all(kw in name for kw in keyword_sets[i]):
+                    try:
+                        v = p.AsDouble()
+                        found[i] = v * FT_MM if _is_length_param(p) else v
+                        remaining.discard(i)
+                    except Exception:
+                        pass
+    return found
+
+
+def _gbp_dims_mm(el):
+    """(glaze_w, glaze_h, open_w, open_h) in mm, each None if the family has no
+    matching parameter - one parameter scan for all four, see _scan_params_like."""
+    return tuple(_scan_params_like(el, (("glazing", "width"), ("glazing", "height"),
+                                        ("openable", "width"), ("openable", "height"))))
 
 
 def _text_param(el, name):
@@ -1019,12 +1102,11 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                     # a family's own glazing/openable dimensions, where present, are the family
                     # author's real figures - more accurate than width x height x ratio. Found by what
                     # the parameter's name CONTAINS ("glazing"+"width", "openable"+"height", ...), not an
-                    # exact name, since the underscores/spaces/capitalisation are not consistent family to family
-                    gw = _param_d_like(el, ("glazing", "width"))
-                    gh = _param_d_like(el, ("glazing", "height"))
+                    # exact name, since the underscores/spaces/capitalisation are not consistent family to
+                    # family - all four in one parameter scan (_gbp_dims_mm), not four separate ones: with
+                    # thousands of panels on a tower, four full scans each was the slow part of a run
+                    gw, gh, ow, oh = _gbp_dims_mm(el)
                     glaze_exact = (gw / 1000.0) * (gh / 1000.0) if gw and gh else None
-                    ow = _param_d_like(el, ("openable", "width"))
-                    oh = _param_d_like(el, ("openable", "height"))
                     open_exact = (ow / 1000.0) * (oh / 1000.0) if ow and oh else None
                     if w is None or h is None:
                         # from the box: along the wall, and the height
@@ -1047,6 +1129,7 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                     out.append({"id": id_int(el.Id), "uid": el.UniqueId, "cat": cname, "key": key, "mark": mark, "source": label,
                                 "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac,
                                 "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
+                                "open_w_mm": ow, "open_h_mm": oh,
                                 "bottom_mm": bottom_mm, "top_mm": top_mm})
                 except Exception:
                     continue
