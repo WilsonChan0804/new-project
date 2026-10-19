@@ -53,20 +53,47 @@ out = script.get_output()
 
 rules = LV.DEFAULT_RULES
 
-# 1. the floors
+# 1. the floors - always asked, never silently skipped: the active view often has no
+# level of its own (a 3D view, sheet, schedule, legend - exactly what's likely to be open
+# when launching this from a dashboard view), which must not fall through to "every level
+# in the project" with no confirmation on a tower that can have 40+ of them
+from Autodesk.Revit.DB import FilteredElementCollector, Level
+
 level_elevs, levels = None, None
 try:
     lv = doc.ActiveView.GenLevel
 except Exception:
     lv = None
+
+all_levels = sorted(FilteredElementCollector(doc).OfClass(Level).WhereElementIsNotElementType().ToElements(),
+                    key=lambda l: l.Elevation)
+
+options = []
 if lv is not None:
-    pick = forms.alert("Check which floors?", title="Light & Vent",
-                       options=["This floor only (%s)" % lv.Name, "All floors"])
-    if not pick:
+    options.append("This floor only (%s)" % lv.Name)
+options.append("Pick floors...")
+options.append("All floors (%d)" % len(all_levels))
+pick = forms.alert("Check which floors?", title="Light & Vent", options=options)
+if not pick:
+    script.exit()
+if pick.startswith("This"):
+    levels = [lv.Name]
+    level_elevs = [lv.Elevation * LV.FT_MM]
+elif pick.startswith("Pick"):
+    chosen = forms.SelectFromList.show([l.Name for l in all_levels], multiselect=True,
+                                       title="Which floors?", button_name="Use these floors")
+    if not chosen:
         script.exit()
-    if pick.startswith("This"):
-        levels = [lv.Name]
-        level_elevs = [lv.Elevation * LV.FT_MM]
+    chosen = set(chosen)
+    levels = [l.Name for l in all_levels if l.Name in chosen]
+    level_elevs = [l.Elevation * LV.FT_MM for l in all_levels if l.Name in chosen]
+    if not levels:
+        script.exit()
+elif len(all_levels) > 10:
+    if not forms.alert("This will scan all %d floors across the whole project - on a model this "
+                       "size it can take a long time. Continue?" % len(all_levels),
+                       title="Light & Vent", yes=True, no=True):
+        script.exit()
 
 use_links = forms.alert("Read the windows and curtain panels from where?", title="Light & Vent",
                         options=["This model and the loaded linked models", "This model only"])
