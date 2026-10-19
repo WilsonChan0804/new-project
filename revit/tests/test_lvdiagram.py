@@ -144,6 +144,16 @@ class PartialOpenable(unittest.TestCase):
         diagrams = LD.build_diagrams(rows, [panel], {("", "5/F"): 3000.0})
         self.assertIsNone(diagrams[0]["rects"][0]["open_rect"])
 
+    def test_the_family_s_own_offset_is_used_instead_of_centring_when_it_has_one(self):
+        # an asymmetric "2-panels" unit: 1940 wide overall, a 970mm-wide openable leaf that
+        # actually sits flush to the right (offset 970), not centred (which would read 485)
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        panel = item(2000, w=1940, h=2600, key="TWO", open_exact=1.616, open_w_mm=970.0, open_h_mm=2600.0,
+                    open_left_mm=970.0)
+        rows, _, _ = LV.build([liv], [panel], TYPES)
+        diagrams = LD.build_diagrams(rows, [panel], {("", "5/F"): 3000.0})
+        self.assertAlmostEqual(diagrams[0]["rects"][0]["open_rect"]["left"], 970.0, places=1)
+
 
 class RoomSummary(unittest.TestCase):
     def test_the_room_s_own_numbers_are_carried_onto_the_diagram(self):
@@ -156,6 +166,22 @@ class RoomSummary(unittest.TestCase):
         self.assertEqual(d["status"], rows[0]["status"])
         self.assertAlmostEqual(d["req_light"], rows[0]["req_light"], places=3)
         self.assertAlmostEqual(d["prov_light_bd"], rows[0]["prov_light_bd"], places=3)
+
+
+class MergedRoomWindows(unittest.TestCase):
+    def test_the_living_room_s_diagram_also_draws_the_merged_open_kitchen_s_own_window(self):
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 8000)
+        liv_window = item(2000, w=1000, h=1500, key="LIVWIN")
+        kit_window = item(5000, w=1000, h=1500, key="KITWIN", glaze_exact=0.1)   # not enough - merges
+        types = dict(TYPES, LIVWIN=TYPES["FIX"], KITWIN=TYPES["FIX"])
+        rows, _, _ = LV.build([liv, kit], [liv_window, kit_window], types, doors=[])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-2"]["status"], "WITH A-1")
+        diagrams = LD.build_diagrams(rows, [liv_window, kit_window], {("", "5/F"): 3000.0})
+        liv_diagrams = [d for d in diagrams if d["number"] == "A-1"]
+        marks = set(r["key"] for d in liv_diagrams for r in d["rects"])
+        self.assertEqual(marks, {"LIVWIN", "KITWIN"})
 
 
 class SharedPanel(unittest.TestCase):

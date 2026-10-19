@@ -47,14 +47,22 @@ DEFAULT_RULES = {
     "uses": {                       # use: [lighting ratio, openable ratio]
         "LIV": [0.1, 0.0625],       # living / dining
         "BED": [0.1, 0.0625],       # bedrooms, studies
-        "KIT": [0.1, 0.0625],       # kitchens
+        "KIT": [0.1, 0.0625],       # kitchens (enclosed - has its own window, never merges)
+        "OKIT": [0.1, 0.0625],      # open-plan kitchens (no wall/door of its own - always merges)
+        "UTI": [0.1, 0.0625],       # utility rooms (no window of their own - merge into the kitchen)
         "BATH": [0.1, 0.1],         # bathrooms and lavatories (the sheet: 1/10 of the bath)
         "STO": [0.1, 0.0625],       # stores
     },
     # a room of these uses whose own window is missing or not enough is counted together with
     # whichever room its door leads to ("cum. BATH", "cum. OPEN KIT" on the sheet) - found from the
-    # model's own doors, not assumed to be the flat's living room
-    "merge_if_insufficient": ["BATH", "KIT"],
+    # model's own doors, not assumed to be the flat's living room. An enclosed kitchen (plain "KIT")
+    # is deliberately NOT here: it always has its own window and must always stand on its own, even
+    # when that window is not enough - only an open-plan kitchen (no enclosure of its own) merges.
+    "merge_if_insufficient": ["BATH", "OKIT", "UTI"],
+    # a room of a given use, when it has more than one adjacent candidate to merge into, prefers
+    # whichever one has one of these uses over the others (a utility room relies specifically on
+    # the kitchen, not on whichever room its door happens to lead to)
+    "merge_prefer": {"UTI": ["KIT"]},
     # the flat: the area number up to its last "-" (A1-3 -> A1); or "param:<name>"
     "flat_from": "number_prefix",
     "probe_mm": [200, 500, 900],     # how far inside a window the room is looked for
@@ -73,7 +81,14 @@ DEFAULT_RULES = {
 
 # words in an area's name -> its use. First match wins; "BAL" and the like are no room.
 _USE_WORDS = [
-    ("BATH", r"\bBATH|\bBTH\b|\bWC\b|\bLAV|\bTOILET|\bMVAL"),
+    # no leading \b on BATH itself: a master bathroom is often named with no separator
+    # ("MBATH"), which \bBATH alone would never match (M is a word character, so there is
+    # no word boundary between it and B)
+    ("BATH", r"BATH|\bBTH\b|\bWC\b|\bLAV|\bTOILET|\bMVAL|POWDER|\bPD\b"),
+    ("UTI", r"\bUTI"),
+    # open-plan kitchen (no enclosure/door of its own) checked before the plain "KIT" an
+    # enclosed kitchen uses, since "O.KIT" also contains "KIT"
+    ("OKIT", r"\bO\.?\s*KIT|\bOPEN\s*KIT"),
     ("KIT", r"\bKIT"),
     ("LIV", r"\bLIV|\bDIN|\bLIVING"),
     ("BED", r"\bMBR\b|\bBR\d*\b|\bBED|\bSTUDY"),
@@ -412,7 +427,15 @@ def build(areas, items, types, rules=None, doors=None):
         }
 
     unmatched, type_counts = [], {}
+    seen_items = set()    # (source, uid): the same element must never be counted twice, however
+                           # it reached this list (a duplicated link placement, say) - belt and
+                           # braces alongside collect_items/collect_doors' own dedup, and what
+                           # actually makes this testable without a live Revit model at all
     for it in items:
+        dedup_key = (it.get("source", ""), it.get("uid", "") or it.get("id"))
+        if dedup_key in seen_items:
+            continue
+        seen_items.add(dedup_key)
         tc = type_counts.setdefault(it["key"], {"cat": it["cat"], "count": 0})
         tc["count"] += 1
         hits, why = serving_rooms(it, areas, probe, rules.get("sample_step_mm", 300), rules.get("max_samples", 12))
@@ -460,6 +483,9 @@ def build(areas, items, types, rules=None, doors=None):
                 # than colouring the whole panel as if all of it opened
                 "open_w_mm": it.get("open_w_mm") if open_exact is not None else None,
                 "open_h_mm": it.get("open_h_mm") if open_exact is not None else None,
+                # the real left-edge offset of that openable leaf within the glazing, when the
+                # family gives one (an asymmetric "2-panels" unit) - None falls back to centring
+                "open_left_mm": it.get("open_left_mm") if open_exact is not None else None,
             })
 
     # a bath / kitchen whose own window is missing or not enough goes with whichever
@@ -480,6 +506,11 @@ def build(areas, items, types, rules=None, doors=None):
             # boundary directly touches (a room-separation line, not a wall)
             neighbours = boundary_adjacent_rooms(area_by_key[r["_key"]], areas, probe)
         candidates = [rooms[k] for k in neighbours if k in rooms and k != r["_key"] and fk(rooms[k]) == fk(r)]
+        prefer = rules.get("merge_prefer", {}).get(r["use"])
+        if prefer and len(candidates) > 1:
+            preferred = [c for c in candidates if c["use"] in prefer]
+            if len(preferred) == 1:
+                candidates = preferred
         if len(candidates) == 1:
             host = candidates[0]
             host["merged"].append(r)
@@ -564,6 +595,7 @@ def _row(r, rules, merged=False):
     if merged:
         status = "WITH " + r["merged_into"]
         pl_bd = po_bd = pl_m = po_m = None
+        req_l = req_o = None    # already counted into the host room's own requirement - not this row's to show again
     elif r.get("merge_ambiguous"):
         status = "NEEDS DATA"
         notes.append("more than one room beside its door could take this room's area (%s) - not merged, decide by hand"
@@ -579,7 +611,12 @@ def _row(r, rules, merged=False):
         "prov_light_bd": _r3(pl_bd), "prov_open_bd": _r3(po_bd),
         "prov_light_meas": _r3(pl_m), "prov_open_meas": _r3(po_m),
         "status": status, "notes": notes, "uid": r["uid"], "id": r["id"],
-        "windows": [dict((k, (_r3(v) if isinstance(v, float) else v)) for k, v in w.items()) for w in r["windows"]],
+        # the host room's own windows plus every merged room's own windows too - so a combined
+        # room's CSV cell and its diagram both show everything that counts toward it, not just the
+        # host's own share (the required/provided sums above are unaffected: they were computed
+        # from r["windows"] alone, before this list is widened for display)
+        "windows": [dict((k, (_r3(v) if isinstance(v, float) else v)) for k, v in w.items())
+                   for w in (r["windows"] + [w for g in r["merged"] for w in g["windows"]])],
     }
 
 
@@ -932,10 +969,15 @@ def _scan_params_like(el, keyword_sets):
 
 
 def _gbp_dims_mm(el):
-    """(glaze_w, glaze_h, open_w, open_h) in mm, each None if the family has no
-    matching parameter - one parameter scan for all four, see _scan_params_like."""
+    """(glaze_w, glaze_h, open_w, open_h, open_left) in mm, each None if the family has no
+    matching parameter - one parameter scan for all five, see _scan_params_like. open_left is
+    the real left-edge offset of the openable leaf within the glazing, for a family (a "2-panels"
+    sliding door, say) whose two leaves are not the same width - read from a GBP_ parameter whose
+    name contains "openable" and "offset", or "openable" and "left"; when the family has neither,
+    the diagram falls back to centring the openable leaf within the glazing instead."""
     return tuple(_scan_params_like(el, (("glazing", "width"), ("glazing", "height"),
-                                        ("openable", "width"), ("openable", "height"))))
+                                        ("openable", "width"), ("openable", "height"),
+                                        ("openable", "offset"), ("openable", "left"))))
 
 
 def _text_param(el, name):
@@ -1066,10 +1108,16 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
     cats = [("Windows", BuiltInCategory.OST_Windows), ("Doors", BuiltInCategory.OST_Doors),
             ("Curtain panels", BuiltInCategory.OST_CurtainWallPanels)]
     out = []
+    seen = set()    # (label, uid): a project with a link placed twice (or any other way the same
+                     # element reaches this collector more than once) must still count it only once
     for label, d, tf in link_sources(doc, include_links):
         for cname, bic in cats:
             for el in FilteredElementCollector(d).OfCategory(bic).WhereElementIsNotElementType():
                 try:
+                    dedup_key = (label, el.UniqueId)
+                    if dedup_key in seen:
+                        continue
+                    seen.add(dedup_key)
                     if _text_param(el, "LWK_LV_Exclude").lower() in ("1", "yes", "true"):
                         continue
                     n_local = _facing(el, prefer_host=(cname == "Curtain panels"))
@@ -1105,7 +1153,8 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                     # exact name, since the underscores/spaces/capitalisation are not consistent family to
                     # family - all four in one parameter scan (_gbp_dims_mm), not four separate ones: with
                     # thousands of panels on a tower, four full scans each was the slow part of a run
-                    gw, gh, ow, oh = _gbp_dims_mm(el)
+                    gw, gh, ow, oh, o_off, o_left = _gbp_dims_mm(el)
+                    open_left_mm = o_off if o_off is not None else o_left
                     glaze_exact = (gw / 1000.0) * (gh / 1000.0) if gw and gh else None
                     open_exact = (ow / 1000.0) * (oh / 1000.0) if ow and oh else None
                     if w is None or h is None:
@@ -1129,7 +1178,7 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                     out.append({"id": id_int(el.Id), "uid": el.UniqueId, "cat": cname, "key": key, "mark": mark, "source": label,
                                 "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac,
                                 "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
-                                "open_w_mm": ow, "open_h_mm": oh,
+                                "open_w_mm": ow, "open_h_mm": oh, "open_left_mm": open_left_mm,
                                 "bottom_mm": bottom_mm, "top_mm": top_mm})
                 except Exception:
                     continue
@@ -1145,9 +1194,14 @@ def collect_doors(doc, bands=None, include_links=True):
     from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter, XYZ
     from lwk_viewer.compat import id_int
     out = []
+    seen = set()    # (label, uid), same reason as collect_items
     for label, d, tf in link_sources(doc, include_links):
         for el in FilteredElementCollector(d).OfCategory(BuiltInCategory.OST_Doors).WhereElementIsNotElementType():
             try:
+                dedup_key = (label, el.UniqueId)
+                if dedup_key in seen:
+                    continue
+                seen.add(dedup_key)
                 n_local = _facing(el)
                 if n_local is None:
                     continue

@@ -114,7 +114,12 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
         open_w, open_h = w.get("open_w_mm"), w.get("open_h_mm")
         open_rect = None
         if open_w and open_h:
-            open_rect = {"left": max(0.0, (width - open_w) / 2.0), "bottom": max(0.0, (height - open_h) / 2.0),
+            # the family's own real offset for the openable leaf, when it has one (two leaves of
+            # different widths, say) - falls back to centring only when the family gives no offset
+            open_left = w.get("open_left_mm")
+            left = open_left if open_left is not None else (width - open_w) / 2.0
+            left = max(0.0, min(left, width - open_w))
+            open_rect = {"left": left, "bottom": max(0.0, (height - open_h) / 2.0),
                         "width": min(open_w, width), "height": min(open_h, height)}
         rects.append({
             "left": center - width / 2.0, "width": width,

@@ -18,11 +18,11 @@ def room(key, number, name, x0, x1, y0=0, y1=4000, level="5/F", flat="A1", block
 
 
 def item(x, w=1500, y=4000, key="W", cat="Windows", h=1500, n=(0, 1), z=1500, glass=None, glaze_exact=None, open_exact=None,
-        bottom_mm=None, top_mm=None, open_w_mm=None, open_h_mm=None):
-    return {"id": 1, "uid": "u" + key, "cat": cat, "key": key, "mark": "", "pos": (x, y, z), "n": n,
+        bottom_mm=None, top_mm=None, open_w_mm=None, open_h_mm=None, open_left_mm=None, uid=None):
+    return {"id": 1, "uid": uid or ("u" + key), "cat": cat, "key": key, "mark": "", "pos": (x, y, z), "n": n,
             "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": None,
             "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
-            "open_w_mm": open_w_mm, "open_h_mm": open_h_mm,
+            "open_w_mm": open_w_mm, "open_h_mm": open_h_mm, "open_left_mm": open_left_mm,
             "bottom_mm": z - h / 2.0 if bottom_mm is None else bottom_mm,
             "top_mm": z + h / 2.0 if top_mm is None else top_mm}
 
@@ -38,8 +38,10 @@ TYPES = {"W": {"operation": "Casement", "fraction": 1.0, "confirmed": True}}
 
 class UseNames(unittest.TestCase):
     def test_names_of_the_ufa_rooms(self):
-        for name, use in [("LIV/DIN", "LIV"), ("O.KIT", "KIT"), ("KIT", "KIT"), ("BR1", "BED"), ("BR4", "BED"),
-                          ("MBR", "BED"), ("STO.", "STO"), ("BATH", "BATH"), ("UTI", None), ("CLOAK AREA", None)]:
+        for name, use in [("LIV/DIN", "LIV"), ("O.KIT", "OKIT"), ("OPEN KIT", "OKIT"), ("KIT", "KIT"), ("KIT.", "KIT"),
+                          ("BR1", "BED"), ("BR4", "BED"), ("MBR", "BED"), ("STO.", "STO"), ("BATH", "BATH"),
+                          ("MBATH", "BATH"), ("M.BATH", "BATH"), ("POWDER ROOM", "BATH"), ("UTI.", "UTI"),
+                          ("CLOAK AREA", None)]:
             self.assertEqual(LV.use_of(name), use, name)
 
 
@@ -178,6 +180,76 @@ class Table(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "NOT OK")
 
 
+class KitchenAndUtility(unittest.TestCase):
+    def test_an_enclosed_kitchen_never_merges_even_when_not_ok(self):
+        # "KIT." (enclosed) has its own door/wall, unlike "O.KIT" - it must always stand on
+        # its own, even when its own window is not enough, not be quietly folded into LIV
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000)
+        kit = room("kit", "A-2", "KIT.", 4000, 6000, y1=2000)   # 4 m2: needs 0.4 m2 light/open
+        a_door = door(4000, 1000, (1, 0))
+        rows, _, _ = LV.build([liv, kit], [item(5000, w=400, h=500, y=2000)], TYPES, doors=[a_door])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-2"]["status"], "NOT OK")
+        self.assertFalse(by["A-2"]["status"].startswith("WITH"))
+
+    def test_a_utility_room_prefers_the_kitchen_over_another_neighbour(self):
+        kit = room("kit", "A-2", "KIT.", 0, 4000, y0=0, y1=4000)
+        bed = room("bed", "A-3", "BR1", 4000, 8000, y0=0, y1=4000)
+        uti = room("uti", "A-4", "UTI.", 0, 8000, y0=4000, y1=6000)
+        d_kit = door(2000, 4000, (0, 1))
+        d_bed = door(6000, 4000, (0, 1))
+        # the windows sit on each room's own OUTER wall (y=0, facing away from uti), not on the
+        # wall shared with uti - a window right on a shared wall would read as "between two rooms"
+        rows, _, _ = LV.build([kit, bed, uti], [item(2000, y=0, n=(0, -1), w=2000, h=1500),
+                                                item(6000, y=0, n=(0, -1), w=2000, h=1500)],
+                              TYPES, doors=[d_kit, d_bed])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-4"]["status"], "WITH A-2")
+
+
+class MergedRowDisplay(unittest.TestCase):
+    def test_the_merged_away_room_s_own_required_figures_are_not_shown_again(self):
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 8000)
+        rows, _, _ = LV.build([liv, kit], [item(2000)], TYPES, doors=[])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-2"]["status"], "WITH A-1")
+        self.assertIsNone(by["A-2"]["req_light"])
+        self.assertIsNone(by["A-2"]["req_open"])
+        self.assertIsNotNone(by["A-1"]["req_light"])
+
+    def test_the_host_room_s_windows_list_also_carries_the_merged_room_s_own_windows(self):
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 8000)
+        liv_window = item(2000, key="LIVWIN")
+        kit_window = item(5000, key="KITWIN", glaze_exact=0.2)   # not enough on its own - still merges
+        types = dict(TYPES, LIVWIN=TYPES["W"], KITWIN=TYPES["W"])
+        rows, _, _ = LV.build([liv, kit], [liv_window, kit_window], types, doors=[])
+        by = dict((r["number"], r) for r in rows)
+        keys = sorted(w["key"] for w in by["A-1"]["windows"])
+        self.assertEqual(keys, ["KITWIN", "LIVWIN"])
+
+
+class Dedup(unittest.TestCase):
+    """collect_items/collect_doors dedupe by (source label, UniqueId) before build() ever sees
+    them - this exercises what build() would otherwise do with a not-yet-deduped items list (the
+    real collect_items-level dedup itself needs live Revit to verify end to end: a project with
+    the same linked model placed twice, or any other way the same element reaches the collector
+    more than once, must still only count it once)."""
+
+    def test_a_shared_panel_appearing_twice_still_shares_its_true_single_share_once(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
+        br = room("br", "A1-2", "BR1", 4000, 8000)
+        shared = item(4000, w=3000, h=2000, cat="Curtain panels", key="W")
+        duplicate = dict(shared)   # the exact same element, collected a second time
+        rows, _, _ = LV.build([liv, br], [shared, duplicate], TYPES)
+        by = dict((r["number"], r) for r in rows)
+        # with the duplicate correctly removed upstream, each room's own window list has one
+        # entry, not two, and its provided figure is not doubled
+        self.assertEqual(len(by["A1-1"]["windows"]), 1)
+        self.assertAlmostEqual(by["A1-1"]["prov_light_bd"], 2.1, places=2)
+
+
 class JsonSafe(unittest.TestCase):
     def test_a_value_the_stock_encoder_rejects_still_serializes(self):
         class WeirdInt(object):
@@ -296,9 +368,23 @@ class FuzzyParamName(unittest.TestCase):
             self.FakeParam("GBP_Openable_Width", 2550.0),
             self.FakeParam("GBP_Openable_Height", 612.5),
         ]))
-        gw, gh, ow, oh = LV._gbp_dims_mm(el)
+        gw, gh, ow, oh, o_off, o_left = LV._gbp_dims_mm(el)
         self.assertEqual((gw, gh, ow, oh), (2600.0, 2600.0, 2550.0, 612.5))
+        self.assertIsNone(o_off)
+        self.assertIsNone(o_left)
         self.assertEqual(len(seen), 1)
+
+    def test_gbp_dims_mm_finds_an_openable_offset_when_the_family_has_one(self):
+        el = self.FakeElement([
+            self.FakeParam("GBP_Glazing_Width", 1940.0),
+            self.FakeParam("GBP_Glazing_Height", 2600.0),
+            self.FakeParam("GBP_Openable_Width", 970.0),
+            self.FakeParam("GBP_Openable_Height", 2600.0),
+            self.FakeParam("GBP_Openable_Offset", 50.0),
+        ])
+        gw, gh, ow, oh, o_off, o_left = LV._gbp_dims_mm(el)
+        self.assertEqual(o_off, 50.0)
+        self.assertIsNone(o_left)
 
 
 class Excludes(unittest.TestCase):

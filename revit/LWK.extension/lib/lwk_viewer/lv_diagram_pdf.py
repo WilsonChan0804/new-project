@@ -129,8 +129,14 @@ def _draw_page(c, d):
             c.setFillColor(COLOR_OPENABLE)
             c.setStrokeColor(colors.black)
             c.setLineWidth(0.5)
-            c.rect(x0 + orect["left"] * scale, y0 + orect["bottom"] * scale,
-                  orect["width"] * scale, orect["height"] * scale, stroke=1, fill=1)
+            ox2, oy2 = x0 + orect["left"] * scale, y0 + orect["bottom"] * scale
+            ow2, oh2 = orect["width"] * scale, orect["height"] * scale
+            c.rect(ox2, oy2, ow2, oh2, stroke=1, fill=1)
+            if ow2 > 12 * mm and oh2 > 5 * mm:
+                c.setFillColor(colors.black)
+                c.setFont("Helvetica", 6)
+                c.drawCentredString(ox2 + ow2 / 2.0, oy2 + oh2 / 2.0,
+                                    u"%s x %s" % (int(orect["width"]), int(orect["height"])))
         c.setFillColor(colors.black)
         label = u"%s x %s" % (int(r["width"]), int(r["height"]))
         if rw > 18 * mm and rh > 6 * mm:
