@@ -67,13 +67,16 @@ def _v_dimension(c, x, y0, y1, label):
     c.restoreState()
 
 
+RIGHT_COL = 82 * mm   # legend + room summary + per-panel table, so nothing needs hand-copying from the diagram
+
+
 def _draw_page(c, d):
     w, h = PAGE_SIZE
     c.setFont("Helvetica-Bold", 13)
     title = u"%s %s   %s %s   %s" % (d.get("block", ""), d.get("flat", ""), d.get("level", ""), d.get("number", ""), d.get("name", ""))
     c.drawString(MARGIN, h - MARGIN + 2 * mm, title[:120])
 
-    avail_w = w - 2 * MARGIN - DIM_LANE - 66 * mm   # right-hand room for the dimension lane + legend
+    avail_w = w - 2 * MARGIN - DIM_LANE - RIGHT_COL   # right-hand room for the dimension lane + legend/summary/table
     avail_h = h - 2 * MARGIN - 10 * mm
     scale = _scale_for(d, avail_w, avail_h)
     ox, oy = MARGIN, MARGIN
@@ -124,7 +127,60 @@ def _draw_page(c, d):
     # floor-to-floor height dimension
     _v_dimension(c, right_x + 6 * mm, floor_y, f2f_top, u"floor to floor height  %d mm" % int(d["floor_to_floor_mm"]))
 
-    _legend(c, w - 62 * mm, h - MARGIN - 6 * mm)
+    rx = w - RIGHT_COL + 2 * mm
+    ry = h - MARGIN - 6 * mm
+    _legend(c, rx, ry)
+    ry -= 32 * mm
+    ry -= _summary_box(c, rx, ry, RIGHT_COL - 6 * mm, d)
+    ry -= 6 * mm
+    _panel_table(c, rx, ry, d.get("rects", []))
+
+
+def _summary_box(c, x, y_top, box_w, d):
+    """The room's own required/provided numbers, straight from the table (the
+    same figures that would otherwise have to be copied in by hand) - returns
+    the box height used, so the caller can stack the panel table below it."""
+    lines = []
+    if d.get("area_m2") is not None:
+        lines.append(u"Room area = %s m2" % _fmt(d["area_m2"]))
+    lines.append(u"Required lighting = %s m2" % _fmt(d.get("req_light")))
+    lines.append(u"Provided lighting = %s m2 (measured)" % _fmt(d.get("prov_light_meas")))
+    lines.append(u"  (%s m2 nominal, W x H x ratio)" % _fmt(d.get("prov_light_bd")))
+    lines.append(u"Required openable = %s m2" % _fmt(d.get("req_open")))
+    lines.append(u"Provided openable = %s m2 (measured)" % _fmt(d.get("prov_open_meas")))
+    lines.append(u"  (%s m2 nominal, W x H x ratio)" % _fmt(d.get("prov_open_bd")))
+    lines.append(u"Status: %s" % d.get("status", ""))
+    line_h = 4.6 * mm
+    box_h = line_h * len(lines) + 5 * mm
+    c.setStrokeColor(colors.HexColor("#1a3fb0"))
+    c.setLineWidth(1.1)
+    c.rect(x, y_top - box_h, box_w, box_h, stroke=1, fill=0)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica", 7.5)
+    ty = y_top - 4.5 * mm
+    for ln in lines:
+        c.drawString(x + 3 * mm, ty, ln)
+        ty -= line_h
+    return box_h
+
+
+def _panel_table(c, x, y_top, rects):
+    c.setFont("Helvetica-Bold", 7.5)
+    c.drawString(x, y_top, u"Panels in this run")
+    y = y_top - 4.5 * mm
+    c.setFont("Courier", 6)
+    c.drawString(x, y, u"mark      W x H mm   light(ms/nom)  open(ms/nom)")
+    y -= 3.4 * mm
+    for r in sorted(rects, key=lambda r: r["left"]):
+        label = (r.get("mark") or r.get("key", ""))[:9]
+        line = u"%-9s %4d x %-4d %5s/%-5s %5s/%-5s" % (
+            label, int(r["width"]), int(r["height"]),
+            _fmt(r.get("light_meas")), _fmt(r.get("light_bd")),
+            _fmt(r.get("open_meas")), _fmt(r.get("open_bd")))
+        c.drawString(x, y, line)
+        y -= 3.2 * mm
+        if y < MARGIN:
+            break
 
 
 def _legend(c, x, y):

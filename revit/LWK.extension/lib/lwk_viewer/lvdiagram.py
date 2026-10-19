@@ -50,36 +50,62 @@ def _color_for(w):
     return "fixed" if frac == 0 else "openable"
 
 
+def _run_direction(group):
+    """One shared facing direction for a whole run, instead of trusting each
+    item's own n individually: two items of the same physical wall can read
+    very slightly different FacingOrientation values (a family that reports
+    the direction its sash swings open, say, rather than the frame's true
+    outward normal, next to a plain panel that falls back to its host wall's
+    own orientation) - using each item's own n to project its position along
+    the wall then disagrees between items on the very same wall, which is
+    exactly what misplaces one of them sideways. Averaging and renormalising
+    settles everything in the run onto one consistent direction."""
+    sx = sum(it["n"][0] for _w, it in group)
+    sy = sum(it["n"][1] for _w, it in group)
+    m = (sx * sx + sy * sy) ** 0.5
+    return (sx / m, sy / m) if m > 1e-9 else group[0][1]["n"]
+
+
 def _group_runs(geo_ws):
     """geo_ws: [(window_dict, item_dict), ...], all from the same room. ->
-    [[(window_dict, item_dict), ...], ...], one list per wall run."""
+    [(n_ref, [(window_dict, item_dict), ...]), ...], one per wall run, each
+    with the one facing direction every item in it is laid out against."""
     by_dir = {}
     for w, it in geo_ws:
         by_dir.setdefault(_n_key(it["n"]), []).append((w, it))
     runs = []
     for group in by_dir.values():
-        group.sort(key=lambda wi: _along(wi[1]["pos"], wi[1]["n"]))
+        n_ref = _run_direction(group)
+        group.sort(key=lambda wi: _along(wi[1]["pos"], n_ref))
         current = [group[0]]
         for i in range(1, len(group)):
             _prev_w, prev_it = group[i - 1]
             _cur_w, cur_it = group[i]
-            prev_edge = _along(prev_it["pos"], prev_it["n"]) + (prev_it.get("w_mm") or 0.0) / 2.0
-            cur_edge = _along(cur_it["pos"], cur_it["n"]) - (cur_it.get("w_mm") or 0.0) / 2.0
+            prev_edge = _along(prev_it["pos"], n_ref) + (prev_it.get("w_mm") or 0.0) / 2.0
+            cur_edge = _along(cur_it["pos"], n_ref) - (cur_it.get("w_mm") or 0.0) / 2.0
             if cur_edge - prev_edge > GAP_MM:
-                runs.append(current)
+                runs.append((n_ref, current))
                 current = []
             current.append(group[i])
-        runs.append(current)
+        runs.append((n_ref, current))
     return runs
 
 
-def _build_one(room, run, floor_to_floor_mm):
+def _build_one(room, n_ref, run, floor_to_floor_mm):
     level_mm = room.get("level_mm", 0.0)
     rects = []
     for w, it in run:
         width = it.get("w_mm") or 0.0
-        height = (it["top_mm"] - it["bottom_mm"]) if (it.get("top_mm") is not None and it.get("bottom_mm") is not None) else (it.get("h_mm") or 0.0)
-        center = _along(it["pos"], it["n"])
+        # the element's own Height parameter (h_mm) is what the table's own light/open figures
+        # are computed from - draw that, not the bounding box's own top-bottom span, which can
+        # disagree with it (a sash that reads larger than its Height parameter in the model, a
+        # frame that extends past the glazed height, ...) and would draw a rectangle whose own
+        # numbers do not match the row it belongs to
+        height = it.get("h_mm")
+        if height is None and it.get("top_mm") is not None and it.get("bottom_mm") is not None:
+            height = it["top_mm"] - it["bottom_mm"]
+        height = height or 0.0
+        center = _along(it["pos"], n_ref)
         rects.append({
             "left": center - width / 2.0, "width": width,
             "bottom": it["bottom_mm"] - level_mm, "height": height,
@@ -103,6 +129,12 @@ def _build_one(room, run, floor_to_floor_mm):
         "block": room.get("block", ""), "level": room.get("level", ""), "flat": room.get("flat", ""),
         "number": room.get("number", ""), "name": room.get("name", ""),
         "floor_to_floor_mm": floor_to_floor_mm, "width_mm": width_total,
+        # the room's own summary, straight from build()'s row - so the page carries the same
+        # required/provided numbers as the table, with nothing to hand-copy or re-derive
+        "area_m2": room.get("area_m2"), "status": room.get("status", ""),
+        "req_light": room.get("req_light"), "req_open": room.get("req_open"),
+        "prov_light_bd": room.get("prov_light_bd"), "prov_light_meas": room.get("prov_light_meas"),
+        "prov_open_bd": room.get("prov_open_bd"), "prov_open_meas": room.get("prov_open_meas"),
         "rects": rects, "gaps": gaps,
     }
 
@@ -124,6 +156,6 @@ def build_diagrams(rows, items, floor_to_floor_mm):
         if not geo_ws:
             continue
         f2f = floor_to_floor_mm.get((r.get("block", ""), r["level"]), 3000.0)
-        for run in _group_runs(geo_ws):
-            diagrams.append(_build_one(r, run, f2f))
+        for n_ref, run in _group_runs(geo_ws):
+            diagrams.append(_build_one(r, n_ref, run, f2f))
     return diagrams

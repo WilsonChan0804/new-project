@@ -23,6 +23,8 @@ def _diagram(number, name=u"LIV"):
     return {
         "block": "TWR1", "level": "4/F", "flat": "A1", "number": number, "name": name,
         "floor_to_floor_mm": 3000.0, "width_mm": 3400.0,
+        "area_m2": 10.522, "status": "OK", "req_light": 1.052, "req_open": 0.658,
+        "prov_light_bd": 11.31, "prov_light_meas": 4.116, "prov_open_bd": 2.378, "prov_open_meas": 4.116,
         "rects": [
             {"left": 0.0, "width": 1940.0, "bottom": 400.0, "height": 2150.0, "color": "fixed",
              "mark": "28", "key": "CTP-SLD-ARC-Parametric Array_Type2 : 2-Panels",
