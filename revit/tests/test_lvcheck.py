@@ -627,3 +627,44 @@ class DuplicateFlags(unittest.TestCase):
         readings = []
         self.assertEqual(LV._flag_hits(r, self.FLAGS, readings), (True, []))
         self.assertEqual(readings, ["UFA_Y/N=No", "UFS_Y/N=No", "Window Calculation=No"])
+
+
+class OpenKitchen(unittest.TestCase):
+    def test_an_open_kitchen_is_never_merged_into_the_bathroom_off_it(self):
+        # LIV | O.KIT | M.BATH in a row: the kitchen has a door to the bath (behind a wall) and
+        # one to the living room - with no separation-line data at all, the bath is still never
+        # a host, so the kitchen goes with the LIV instead of being flagged as ambiguous
+        liv = room("liv", "A-1", "LIV/DIN", 0, 4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 6000)
+        bath = room("bath", "A-3", "M.BATH", 6000, 8000)
+        d1, d2 = door(4000, 2000, (1, 0)), door(6000, 2000, (1, 0))
+        rows, _, _ = LV.build([liv, kit, bath], [item(2000), item(7000, w=600)], TYPES, doors=[d1, d2])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-2"]["status"], "WITH A-1")
+
+    def test_the_room_across_an_open_edge_wins_over_a_door(self):
+        # BR | O.KIT | LIV: a door from the kitchen to the bedroom, but the kitchen's edge to the
+        # living room is a room-separation line (no wall) - it is the living room it is open to
+        br = room("br", "A-4", "BR1", 0, 4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 6000)
+        liv = room("liv", "A-1", "LIV/DIN", 6000, 10000)
+        kit["open_edges"] = [[(6000, 0), (6000, 4000)]]
+        rows, _, _ = LV.build([br, kit, liv], [item(2000), item(8000)], TYPES, doors=[door(4000, 2000, (1, 0))])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-2"]["status"], "WITH A-1")
+
+    def test_boundary_adjacency_along_given_edges_only(self):
+        br = room("br", "A-4", "BR1", 0, 4000)
+        kit = room("kit", "A-2", "O.KIT", 4000, 6000)
+        liv = room("liv", "A-1", "LIV/DIN", 6000, 10000)
+        found = LV.boundary_adjacent_rooms(kit, [br, kit, liv], [150, 300], edges=[[(6000, 0), (6000, 4000)]])
+        self.assertEqual(found, set(["liv"]))
+
+    def test_a_bath_is_never_merged_into_another_bath(self):
+        br = room("br", "A-4", "BR1", 0, 4000)
+        bath = room("bath", "A-3", "BATH", 4000, 6000)
+        bath2 = room("bath2", "A-5", "M.BATH", 6000, 8000)
+        d1, d2 = door(4000, 2000, (1, 0)), door(6000, 2000, (1, 0))
+        rows, _, _ = LV.build([br, bath, bath2], [item(2000), item(7000, w=600)], TYPES, doors=[d1, d2])
+        by = dict((r["number"], r) for r in rows)
+        self.assertEqual(by["A-3"]["status"], "WITH A-4")

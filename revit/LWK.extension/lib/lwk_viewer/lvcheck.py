@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-12-04"
+__version__ = "2026-12-05"
 
 import io
 import json
@@ -62,7 +62,14 @@ DEFAULT_RULES = {
     # a room of a given use, when it has more than one adjacent candidate to merge into, prefers
     # whichever one has one of these uses over the others (a utility room relies specifically on
     # the kitchen, not on whichever room its door happens to lead to)
-    "merge_prefer": {"UTI": ["KIT"]},
+    "merge_prefer": {"UTI": ["KIT"], "OKIT": ["LIV"]},
+    # an open-plan room (no wall of its own on one side, only a room-separation line) merges
+    # first with whatever room is across that open edge - a door in one of its walls (a bathroom
+    # opening off the kitchen, say) is only looked at when it has no open edge to anything
+    "merge_open_plan": ["OKIT"],
+    # rooms of these uses never take another room's area - a bathroom, store or utility room is
+    # never what a kitchen or bathroom beside it is "counted with"
+    "merge_never_into": ["BATH", "STO", "UTI"],
     # the flat: the area number up to its last "-" (A1-3 -> A1); or "param:<name>"
     "flat_from": "number_prefix",
     "probe_mm": [200, 500, 900],     # how far inside a window the room is looked for
@@ -333,7 +340,7 @@ def door_adjacent_rooms(doors, areas, probe_mm):
     return adj
 
 
-def boundary_adjacent_rooms(area, areas, probe_mm, step_mm=600.0):
+def boundary_adjacent_rooms(area, areas, probe_mm, step_mm=600.0, edges=None):
     """Rooms directly touching `area`'s own boundary - an open-plan kitchen
     with no door at all to its living room, only a room-separation line, so
     there is no door for door_adjacent_rooms to find. Walks area's own loops,
@@ -342,13 +349,16 @@ def boundary_adjacent_rooms(area, areas, probe_mm, step_mm=600.0):
     whichever way the loop winds - harmless, just not a match). -> set(key,
     ...) of neighbouring rooms, computed lazily for just this one room (not a
     whole-floor adjacency graph) since it is only needed as a fallback when a
-    room has no door-connected neighbour."""
+    room has no door-connected neighbour. edges, when given, are the only
+    segments walked (open polylines - an open-plan room's own room-separation
+    lines), instead of its whole closed boundary."""
     here = _level_rooms(areas, area["level_mm"])
     ak = _k(area)
     found = set()
-    for loop in area["loops"]:
+    paths = [(loop, True) for loop in area["loops"]] if edges is None else [(e, False) for e in edges]
+    for loop, closed in paths:
         n = len(loop)
-        for i in range(n):
+        for i in range(n if closed else n - 1):
             x1, y1 = loop[i]
             x2, y2 = loop[(i + 1) % n]
             length = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
@@ -549,7 +559,15 @@ def build(areas, items, types, rules=None, doors=None):
         own = _own_provision(r, rules)
         if own["status"] not in ("NOT OK", "NO WINDOW"):
             continue    # OK needs no compensation; NEEDS DATA is a data problem, not left to guess a relay for
-        neighbours = adj.get(r["_key"], set())
+        neighbours = set()
+        if r["use"] in rules.get("merge_open_plan", []) and r["_key"] in area_by_key and area_by_key[r["_key"]].get("open_edges"):
+            # an open-plan room: whatever is across its own open (wall-less) edges comes first
+            neighbours = boundary_adjacent_rooms(area_by_key[r["_key"]], areas, door_probe,
+                                                 edges=area_by_key[r["_key"]]["open_edges"])
+            neighbours = set(k for k in neighbours if k in rooms
+                             and rooms[k]["use"] not in rules.get("merge_never_into", []))
+        if not neighbours:
+            neighbours = adj.get(r["_key"], set())
         if not neighbours and r["_key"] in area_by_key:
             # no door at all (an open-plan kitchen, say) - fall back to whatever room its own
             # boundary directly touches (a room-separation line, not a wall)
@@ -557,7 +575,9 @@ def build(areas, items, types, rules=None, doors=None):
             # boundary has essentially no gap at all, so a deep probe here risks the same
             # tunnel-through mistake as a door's
             neighbours = boundary_adjacent_rooms(area_by_key[r["_key"]], areas, door_probe)
-        candidates = [rooms[k] for k in neighbours if k in rooms and k != r["_key"] and fk(rooms[k]) == fk(r)]
+        never = rules.get("merge_never_into", [])
+        candidates = [rooms[k] for k in neighbours if k in rooms and k != r["_key"] and fk(rooms[k]) == fk(r)
+                      and rooms[k]["use"] not in never]
         prefer = rules.get("merge_prefer", {}).get(r["use"])
         if prefer and len(candidates) > 1:
             preferred = [c for c in candidates if c["use"] in prefer]
@@ -901,6 +921,19 @@ def _flag_state(el, names):
     return True if ticked else (False if seen else None)
 
 
+def _is_separation(d, seg, sep_cat):
+    """Whether a room boundary segment is a room-separation line (an open edge, no wall) rather
+    than a wall, column or anything else that really encloses the room."""
+    if sep_cat is None:
+        return False
+    try:
+        from lwk_viewer.compat import id_int
+        el = d.GetElement(seg.ElementId)
+        return el is not None and el.Category is not None and id_int(el.Category.Id) == sep_cat
+    except Exception:
+        return False
+
+
 # how many rooms each flag parameter let in, on the last collect_rooms() run - for the output
 flag_counts = {}
 
@@ -919,6 +952,10 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
     rules = rules or DEFAULT_RULES
     flags = rules.get("room_flags", [])
     opt = SpatialElementBoundaryOptions()
+    try:
+        sep_cat = int(BuiltInCategory.OST_RoomSeparationLines)
+    except Exception:
+        sep_cat = None
     out, skipped, dropped = [], {}, []
     flag_counts.clear()
     for label, d, tf in link_sources(doc, include_links):
@@ -963,12 +1000,14 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
                     else:
                         skipped[name] = skipped.get(name, 0) + 1
                         continue
-                loops = []
+                loops, open_edges = [], []
                 for loop in r.GetBoundarySegments(opt) or []:
                     pts = []
                     for seg in loop:
-                        for p in seg.GetCurve().Tessellate():
-                            q = _tp(tf, p)[:2]
+                        seg_pts = [_tp(tf, p)[:2] for p in seg.GetCurve().Tessellate()]
+                        if _is_separation(d, seg, sep_cat) and len(seg_pts) >= 2:
+                            open_edges.append(seg_pts)
+                        for q in seg_pts:
                             if not pts or pts[-1] != q:
                                 pts.append(q)
                     if len(pts) > 1 and pts[0] == pts[-1]:
@@ -984,7 +1023,7 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
                             "flat": _text_param(r, rules.get("flat_param", "")),
                             "block": _text_param(r, rules.get("block_param", "")),
                             "level": lvl.Name if lvl is not None else "", "level_mm": lev_mm,
-                            "use_hint": use_hint, "notes": notes})
+                            "use_hint": use_hint, "notes": notes, "open_edges": open_edges})
             except Exception as ex:
                 drop(u"error reading it: %s" % ex)
                 continue
