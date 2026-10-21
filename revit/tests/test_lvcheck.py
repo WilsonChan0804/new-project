@@ -18,13 +18,15 @@ def room(key, number, name, x0, x1, y0=0, y1=4000, level="5/F", flat="A1", block
 
 
 def item(x, w=1500, y=4000, key="W", cat="Windows", h=1500, n=(0, 1), z=1500, glass=None, glaze_exact=None, open_exact=None,
-        bottom_mm=None, top_mm=None, open_w_mm=None, open_h_mm=None, open_left_mm=None, uid=None):
+        bottom_mm=None, top_mm=None, open_w_mm=None, open_h_mm=None, open_left_mm=None, uid=None,
+        glaze_w_mm=None, glaze_h_mm=None, glass_diag=None):
     return {"id": 1, "uid": uid or ("u" + key), "cat": cat, "key": key, "mark": "", "pos": (x, y, z), "n": n,
             "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": None,
             "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
+            "glaze_w_mm": glaze_w_mm, "glaze_h_mm": glaze_h_mm,
             "open_w_mm": open_w_mm, "open_h_mm": open_h_mm, "open_left_mm": open_left_mm,
             "bottom_mm": z - h / 2.0 if bottom_mm is None else bottom_mm,
-            "top_mm": z + h / 2.0 if top_mm is None else top_mm}
+            "top_mm": z + h / 2.0 if top_mm is None else top_mm, "glass_diag": glass_diag}
 
 
 def door(x, y, n, z=1500):
@@ -289,6 +291,20 @@ class Dedup(unittest.TestCase):
         # entry, not two, and its provided figure is not doubled
         self.assertEqual(len(by["A1-1"]["windows"]), 1)
         self.assertAlmostEqual(by["A1-1"]["prov_light_bd"], 2.1, places=2)
+
+
+class GlassDiagnostic(unittest.TestCase):
+    def test_materials_seen_but_not_read_as_glass_are_reported_when_nothing_could_be_measured(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
+        w = item(2000, w=2000, h=1500, key="EXT", glass_diag=[u"Kitchen Frame [Metal]"])
+        rows, _, _ = LV.build([liv], [w], TYPES)
+        self.assertTrue(any("Kitchen Frame" in n for n in rows[0]["notes"]))
+
+    def test_no_note_when_the_family_gives_its_own_exact_glazing_size_anyway(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
+        w = item(2000, w=2000, h=1500, key="EXT", glaze_exact=1.5, glass_diag=[u"Kitchen Frame [Metal]"])
+        rows, _, _ = LV.build([liv], [w], TYPES)
+        self.assertFalse(any("Kitchen Frame" in n for n in rows[0]["notes"]))
 
 
 class JsonSafe(unittest.TestCase):

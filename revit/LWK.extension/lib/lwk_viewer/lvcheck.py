@@ -493,6 +493,17 @@ def build(areas, items, types, rules=None, doors=None):
                 "operation": info["operation"], "fraction": frac, "confirmed": confirmed,
                 "assumed_full_open": assumed_full_open,
                 "exact_dims": glaze_exact is not None or open_exact is not None,
+                # the family's own glazing-only size, when it has one, smaller than its overall
+                # structural size (w_mm/h_mm) - so the diagram can draw the real glass extent
+                # inset within the full opening, the gap between them read as the frame
+                "glaze_w_mm": it.get("glaze_w_mm") if glaze_exact is not None else None,
+                "glaze_h_mm": it.get("glaze_h_mm") if glaze_exact is not None else None,
+                # when the glass could not be measured from the geometry at all (falling back to
+                # the nominal width x height figure, frame included) and no family-given exact
+                # glazing size saves it either, the outward-facing materials seen but not read as
+                # glass - so the AP can tell, from the check's own output, which material in the
+                # family to rename or add a keyword for, instead of guessing
+                "glass_diag": it.get("glass_diag") if (meas is None and glaze_exact is None) else None,
                 # the family's own openable sub-size, when it has one (e.g. a "2-panels" family
                 # whose GBP_Openable_Width/Height cover only one of its two leaves) - so the diagram
                 # can draw the real openable portion as its own rectangle within the glazing, rather
@@ -581,6 +592,11 @@ def _own_provision(r, rules, req_l=None, req_o=None):
         notes.append("uses the family's own GBP_Glazing_*/GBP_Openable_* dimensions where available")
     if any(w.get("assumed_full_open") for w in ws):
         notes.append("no openable size or type found for a window/panel - assumed the whole glazing opens")
+    diag_marks = [(w.get("mark") or w["key"], w["glass_diag"]) for w in ws if w.get("glass_diag")]
+    if diag_marks:
+        mk, mats = diag_marks[0]
+        notes.append("%s: glass could not be measured (reading its full width x height instead) - "
+                    "outward-facing materials found: %s" % (mk, u"; ".join(mats[:4])))
     if not ws:
         status, need = "NO WINDOW", False
         notes.append("no window or panel found for this room")
@@ -1087,11 +1103,19 @@ def _facing(el, prefer_host=False):
     return None
 
 
-def _glass_m2(doc, el, n):
+def _glass_m2(doc, el, n, diag=None):
     """The glass of an element measured from its geometry: the faces turned
     to its facing direction whose material is transparent (or whose solid is
     in a Glass subcategory). One side of each pane is counted. None when no
-    glass is found."""
+    glass is found.
+
+    diag: when given (a list), every outward-facing solid face that did NOT
+    read as glass gets its material's name/class appended - so a project
+    whose glazing material isn't named "glass"/"glaz" and has neither
+    Transparency nor MaterialClass set can still be told, from the check's
+    own output, which material it should look at (rename, or add a keyword
+    for) instead of reading the whole structural opening as if it had no
+    glass at all."""
     from Autodesk.Revit.DB import Options, ViewDetailLevel, GeometryInstance, Solid, PlanarFace
     opt = Options()
     opt.DetailLevel = ViewDetailLevel.Fine
@@ -1132,9 +1156,21 @@ def _glass_m2(doc, el, n):
                     if not isinstance(f, PlanarFace):
                         continue
                     nv = f.FaceNormal
-                    if nv.X * n[0] + nv.Y * n[1] > 0.9 and glassy(f, g):
+                    if nv.X * n[0] + nv.Y * n[1] <= 0.9:
+                        continue
+                    if glassy(f, g):
                         total[0] += f.Area
                         found[0] = True
+                    elif diag is not None:
+                        try:
+                            m = doc.GetElement(f.MaterialElementId)
+                            name = (getattr(m, "Name", u"") or u"(no material)") if m is not None else u"(no material)"
+                            cls = (getattr(m, "MaterialClass", u"") or u"") if m is not None else u""
+                            rec = u"%s%s" % (name, u" [%s]" % cls if cls else u"")
+                            if rec not in diag:
+                                diag.append(rec)
+                        except Exception:
+                            pass
     try:
         geo = el.get_Geometry(opt)
         if geo is not None:
@@ -1221,7 +1257,8 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                         w = w or along
                         h = h or abs(bb.Max.Z - bb.Min.Z) * FT_MM
                     key, mark = _type_key(el, d, BuiltInParameter)
-                    glass = _glass_m2(d, el, n_local) if measure else None
+                    glass_diag = [] if measure else None
+                    glass = _glass_m2(d, el, n_local, diag=glass_diag) if measure else None
                     if cname == "Doors" and glass is None and not re.search(r"glass|glaz|sliding|folding|balcony", key, re.I):
                         continue
                     ov = _text_param(el, "LWK_LV_Openable")
@@ -1234,8 +1271,9 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                     out.append({"id": id_int(el.Id), "uid": el.UniqueId, "cat": cname, "key": key, "mark": mark, "source": label,
                                 "pos": pos, "n": n, "w_mm": w, "h_mm": h, "glass_m2": glass, "fraction_override": frac,
                                 "glaze_m2_exact": glaze_exact, "open_m2_exact": open_exact,
+                                "glaze_w_mm": gw, "glaze_h_mm": gh,
                                 "open_w_mm": ow, "open_h_mm": oh, "open_left_mm": open_left_mm,
-                                "bottom_mm": bottom_mm, "top_mm": top_mm})
+                                "bottom_mm": bottom_mm, "top_mm": top_mm, "glass_diag": glass_diag})
                 except Exception:
                     continue
     return out

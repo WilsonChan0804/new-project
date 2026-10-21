@@ -113,6 +113,21 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
             height = it["top_mm"] - it["bottom_mm"]
         height = height or 0.0
         center = _along(it["pos"], n_ref)
+        # a family can give its own glazing-only size (GBP_Glazing_Width/Height) smaller than its
+        # overall structural size - the gap between them is the frame/mullion the glass sits in.
+        # Drawn as its own rectangle, centred within the full opening (the family gives no offset
+        # for this one, unlike the openable leaf below), with the outer rect recoloured to "frame"
+        # so the margin reads as solid, not glazing
+        glaze_w, glaze_h = w.get("glaze_w_mm"), w.get("glaze_h_mm")
+        glaze_rect = None
+        if glaze_w and glaze_h and (glaze_w < width - 1.0 or glaze_h < height - 1.0):
+            glaze_rect = {"left": max(0.0, (width - glaze_w) / 2.0), "bottom": max(0.0, (height - glaze_h) / 2.0),
+                         "width": min(glaze_w, width), "height": min(glaze_h, height)}
+        # the glazing's own local extent (the glaze_rect above, when there is one - otherwise the
+        # full panel) is what the openable leaf below is sized/centred against, since an openable
+        # sub-size is a fraction of the GLASS, not of the surrounding frame
+        gw0, gh0 = (glaze_rect["width"], glaze_rect["height"]) if glaze_rect else (width, height)
+        gx0, gy0 = (glaze_rect["left"], glaze_rect["bottom"]) if glaze_rect else (0.0, 0.0)
         # a family can give its own openable sub-size (GBP_Openable_Width/Height) smaller than
         # its overall glazing - a "2-panels" unit where only one leaf opens, say. Drawn as its own
         # rectangle, centred within the glazing, rather than colouring the whole panel as openable
@@ -122,19 +137,23 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
         open_rect = None
         if open_w and open_h:
             # the family's own real offset for the openable leaf, when it has one (two leaves of
-            # different widths, say) - falls back to centring only when the family gives no offset
+            # different widths, say) - falls back to centring only when the family gives no offset.
+            # The offset is relative to the glazing's own origin, same as the centred fallback,
+            # then shifted into the outer rect's own coordinates (gx0/gy0)
             open_left = w.get("open_left_mm")
-            left = open_left if open_left is not None else (width - open_w) / 2.0
-            left = max(0.0, min(left, width - open_w))
-            open_rect = {"left": left, "bottom": max(0.0, (height - open_h) / 2.0),
-                        "width": min(open_w, width), "height": min(open_h, height)}
+            left = open_left if open_left is not None else (gw0 - open_w) / 2.0
+            left = gx0 + max(0.0, min(left, gw0 - open_w))
+            open_rect = {"left": left, "bottom": gy0 + max(0.0, (gh0 - open_h) / 2.0),
+                        "width": min(open_w, gw0), "height": min(open_h, gh0)}
+        color = "frame" if glaze_rect else ("fixed" if open_rect else _color_for(w))
         rects.append({
             "left": center - width / 2.0, "width": width,
             "bottom": it["bottom_mm"] - level_mm, "height": height,
-            "color": "fixed" if open_rect else _color_for(w), "mark": w.get("mark") or "", "key": w.get("key", ""),
+            "color": color, "mark": w.get("mark") or "", "key": w.get("key", ""),
             "light_bd": w.get("light_bd"), "light_meas": w.get("light_meas"),
             "open_bd": w.get("open_bd"), "open_meas": w.get("open_meas"),
             "share": w.get("share"), "exact_dims": w.get("exact_dims", False),
+            "glaze_rect": glaze_rect, "glaze_color": _color_for(w) if glaze_rect else None,
             "open_rect": open_rect,
         })
     base = min(r["left"] for r in rects)

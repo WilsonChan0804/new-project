@@ -124,6 +124,26 @@ def _draw_page(c, d):
         c.setStrokeColor(colors.black)
         c.setLineWidth(0.6)
         c.rect(x0, y0, rw, rh, stroke=1, fill=1)
+        # the family's own glazing-only size, when its overall structural size is bigger - the
+        # margin left around this (still drawn, in "frame" colour, as the outer rect above) is
+        # the frame/mullion the glass sits in, not more glazing
+        grect = r.get("glaze_rect")
+        label_cx, label_cy = x0 + rw / 2.0, y0 + rh / 2.0
+        if grect:
+            c.setFillColor(colour_by_name.get(r.get("glaze_color"), COLOR_UNCONFIRMED))
+            c.setStrokeColor(colors.black)
+            c.setLineWidth(0.5)
+            gx2, gy2 = x0 + grect["left"] * scale, y0 + grect["bottom"] * scale
+            gw2, gh2 = grect["width"] * scale, grect["height"] * scale
+            c.rect(gx2, gy2, gw2, gh2, stroke=1, fill=1)
+            label_cx, label_cy = gx2 + gw2 / 2.0, gy2 + gh2 / 2.0
+            # the outer rect's own (structural) size moves up near its top edge, since the
+            # centre now carries the glazing-only size instead
+            if rw > 18 * mm and rh > 6 * mm:
+                c.setFillColor(colors.black)
+                c.setFont("Helvetica", 6)
+                c.drawCentredString(x0 + rw / 2.0, y0 + rh - 7,
+                                    u"frame %s x %s" % (int(r["width"]), int(r["height"])))
         # the family's own openable sub-size (e.g. one leaf of a two-panel unit) drawn as its own
         # rectangle onto the glazing, rather than colouring the whole panel as openable
         orect = r.get("open_rect")
@@ -140,14 +160,15 @@ def _draw_page(c, d):
                 c.drawCentredString(ox2 + ow2 / 2.0, oy2 + oh2 / 2.0,
                                     u"%s x %s" % (int(orect["width"]), int(orect["height"])))
         c.setFillColor(colors.black)
-        label = u"%s x %s" % (int(r["width"]), int(r["height"]))
+        label = u"%s x %s" % (int(r["width"]), int(r["height"])) if not grect else \
+            u"%s x %s" % (int(grect["width"]), int(grect["height"]))
         if rw > 18 * mm and rh > 6 * mm:
             c.setFont("Helvetica", 7)
-            c.drawCentredString(x0 + rw / 2.0, y0 + rh / 2.0, label)
+            c.drawCentredString(label_cx, label_cy, label)
         mark = r.get("mark") or r.get("key", "")
         if mark and rh > 10 * mm:
             c.setFont("Helvetica-Oblique", 6)
-            c.drawCentredString(x0 + rw / 2.0, y0 + rh / 2.0 - 8, mark[:24])
+            c.drawCentredString(label_cx, label_cy - 8, mark[:24])
 
     # floor-to-floor height dimension
     _v_dimension(c, right_x + 6 * mm, floor_y, f2f_top, u"floor to floor height  %d mm" % int(d["floor_to_floor_mm"]))

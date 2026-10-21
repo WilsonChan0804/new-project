@@ -178,6 +178,45 @@ class PartialOpenable(unittest.TestCase):
         self.assertAlmostEqual(diagrams[0]["rects"][0]["open_rect"]["left"], 970.0, places=1)
 
 
+class GlazeVsFrame(unittest.TestCase):
+    def test_a_smaller_glazing_size_is_drawn_inset_with_the_margin_as_frame(self):
+        # an extrusion-built family whose overall structural opening (2000 x 1800) is bigger
+        # than its own glazing (1800 x 1600) - the 100mm margin all round is the frame
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        panel = item(2000, w=2000, h=1800, key="EXT", glaze_exact=2.88, glaze_w_mm=1800.0, glaze_h_mm=1600.0)
+        rows, _, _ = LV.build([liv], [panel], TYPES)
+        diagrams = LD.build_diagrams(rows, [panel], {("", "5/F"): 3000.0})
+        rect = diagrams[0]["rects"][0]
+        self.assertEqual(rect["color"], "frame")
+        self.assertAlmostEqual(rect["glaze_rect"]["width"], 1800.0, places=1)
+        self.assertAlmostEqual(rect["glaze_rect"]["height"], 1600.0, places=1)
+        self.assertAlmostEqual(rect["glaze_rect"]["left"], 100.0, places=1)
+        self.assertAlmostEqual(rect["glaze_rect"]["bottom"], 100.0, places=1)
+
+    def test_an_openable_leaf_is_sized_against_the_glazing_not_the_frame(self):
+        # the openable leaf's own size is close to the full glazing (1800 x 1600), not the
+        # bigger structural opening (2000 x 1800) - it must be centred/clamped against the
+        # glazing's own extent, not overflow past it relative to the outer frame
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        panel = item(2000, w=2000, h=1800, key="EXT", glaze_exact=2.88, glaze_w_mm=1800.0, glaze_h_mm=1600.0,
+                    open_exact=2.16, open_w_mm=1500.0, open_h_mm=1400.0)
+        rows, _, _ = LV.build([liv], [panel], TYPES)
+        diagrams = LD.build_diagrams(rows, [panel], {("", "5/F"): 3000.0})
+        rect = diagrams[0]["rects"][0]
+        orect = rect["open_rect"]
+        self.assertAlmostEqual(orect["width"], 1500.0, places=1)
+        # centred within the glazing (left=100, width=1800): 100 + (1800-1500)/2 = 250
+        self.assertAlmostEqual(orect["left"], 250.0, places=1)
+        self.assertAlmostEqual(orect["bottom"], 100.0 + (1600.0 - 1400.0) / 2.0, places=1)
+
+    def test_no_glazing_size_smaller_than_structural_means_no_frame_inset(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        panel = item(2000, w=1500, h=1500, key="ONE")
+        rows, _, _ = LV.build([liv], [panel], TYPES)
+        diagrams = LD.build_diagrams(rows, [panel], {("", "5/F"): 3000.0})
+        self.assertIsNone(diagrams[0]["rects"][0]["glaze_rect"])
+
+
 class RoomSummary(unittest.TestCase):
     def test_the_room_s_own_numbers_are_carried_onto_the_diagram(self):
         liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)   # 16 m2
