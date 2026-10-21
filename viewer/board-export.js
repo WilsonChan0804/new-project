@@ -10,8 +10,7 @@ import { col, isDark, route, arrowHead, penPath, unionBox, uid, clone } from "./
 import { forest, branchPath } from "./board-mind.js";
 
 const FONT = '"Segoe UI", system-ui, -apple-system, sans-serif';
-const STATUS_COLORS = { "Open": "#e2453c", "In progress": "#e8a13a", "Resolved": "#3b82f6",
-                        "Closed": "#0e9f6e", "Not an issue": "#9ca3af" };
+const STATUS_COLORS = { "Open": "#e8a13a", "In progress": "#3b82f6", "Resolved": "#0e9f6e", "Closed": "#0b6b4c", "Not an issue": "#9ca3af" };
 export const statusColor = (s) => STATUS_COLORS[s] || "#9aa3af";
 
 /* Break text into lines no wider than maxW. Words are kept whole when they

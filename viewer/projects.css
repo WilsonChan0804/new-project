@@ -15,10 +15,11 @@ table.pj .num { text-align: right; font-variant-numeric: tabular-nums; }
 .pj-vl a { font-size: 11px; font-weight: 700; text-decoration: none; color: var(--accent-deep); border: 1px solid var(--accent); border-radius: 4px; padding: 0 5px; }
 .pj-vl a:hover { background: var(--accent-soft); }
 .pj-st { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--line-soft); color: var(--ink-2); }
-.pj-st.st-active { background: #e7f7f0; color: #0b7a55; }
+.pj-st.st-active { background: #e0ecff; color: #1d4ed8; }
 .pj-st.st-on-hold { background: #fdeccb; color: #93590b; }
-.pj-st.st-tender { background: #e0ecff; color: #1d4ed8; }
-.pj-st.st-completed, .pj-st.st-archived { background: var(--line-soft); color: var(--muted); }
+.pj-st.st-tender { background: #ede9fe; color: #5b21b6; }
+.pj-st.st-completed { background: #e7f7f0; color: #0b7a55; }
+.pj-st.st-archived { background: var(--line-soft); color: var(--muted); }
 .pj-ratio { display: inline-flex; align-items: center; gap: 6px; }
 .prog.wide { width: 80px; height: 7px; }
 .prog.wide i { background: var(--info); }
@@ -103,7 +104,7 @@ table.pj th.pj-sort.on { color: var(--accent-ink); }
 
 /* Dark mode: tinted chips and notes above, the same hue on a dark ground,
    and their dark text made light (theme.js; style.css :root[data-theme]). */
-:root[data-theme="dark"] .pj-st.st-active { background: #163b2b; color: #7ef1cb; }
+:root[data-theme="dark"] .pj-st.st-active { background: #16253b; color: #9cc3ff; }
 :root[data-theme="dark"] .pj-st.st-on-hold { background: #4a3a1c; color: #f1c07e; }
 :root[data-theme="dark"] .pj-st.st-tender { background: #16253b; }
 :root[data-theme="dark"] .pj-chip.bad { background: #3b1816; color: #ee8981; }

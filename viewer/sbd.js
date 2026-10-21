@@ -12,6 +12,7 @@ import * as Store from "./store.js";
 import { reportTab, tabSay, writeReport } from "./checkexport.js";
 import { dueIn, nextNumber, numberText } from "./checkissue.js";
 import { layout as cadLayout, downloadCad } from "./sbddxf.js";
+import { dayTime } from "./dates.js";
 
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const ZONE_LABEL = { LOW: "Low (0-20 m)", MIDDLE: "Middle (20-60 m)", HIGH: "High (60 m +)" };
@@ -1322,7 +1323,7 @@ export function createSbd(ctx) {
     }
     writeReport(w, {
       title: "SBD report (PNAP APP-152)", project: ctx.projectName(), unit: "zone plans", folder: "SBD",
-      sub: new Date().toLocaleString() + (ctx.author() ? " · prepared by " + ctx.author() : ""),
+      sub: dayTime(new Date(), true) + (ctx.author() ? " · prepared by " + ctx.author() : ""),
       meta: [["Controlling P", `${f1(r.controlling_p)} %`], ["Required P (Table 1)", r.required_p != null ? `${f1(r.required_p)} %` : "none"],
         ["Result", r.pass == null ? "-" : r.pass ? "PASS" : "FAIL"], ["Design Requirement (1) Lp ≤ 5U", r.case1_pass == null ? ((r.streets || []).length ? "not applicable" : "-") : r.case1_pass ? "PASS" : "FAIL"], ["Site area", `${f1(r.site_area_m2)} m²`],
         ["Lp (projected, all buildings)", `${f1(r.lp.projected_m)} m`], ["Planes", "found automatically (Low zone: Plane X along the street)"],

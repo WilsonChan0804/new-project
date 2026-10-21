@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-11-25";
+const LWK_VERSION = "2026-11-26";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -38,6 +38,7 @@ const LWK_VERSION = "2026-11-25";
 import { api, link, project, signOut, projectOptions, projectTwoStep } from "./nav.js";
 import { ISSUE_TYPES } from "./issuetypes.js";
 import { skeleton } from "./tasks-util.js";
+import { day, dayTime, ago as dateAgo, overdueBy } from "./dates.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? "" : s)
@@ -45,8 +46,7 @@ const esc = (s) => String(s == null ? "" : s)
 
 const DAY = 86400000;
 const CLOSED = new Set(["Resolved", "Closed"]);
-const STATUS_COLORS = { "Open": "#e2453c", "In progress": "#e8a13a", "Resolved": "#3b82f6",
-                        "Closed": "#0e9f6e", "Not an issue": "#9ca3af" };
+const STATUS_COLORS = { "Open": "#e8a13a", "In progress": "#3b82f6", "Resolved": "#0e9f6e", "Closed": "#0b6b4c", "Not an issue": "#9ca3af" };
 const PRIORITY_ORDER = ["Critical", "High", "Normal", "Low"];
 const PRIORITY_COLORS = { Critical: "#b91c1c", High: "#f28022", Normal: "#6b7280", Low: "#9ca3af" };
 const TYPE = new Map(ISSUE_TYPES.map((t) => [t.id, t]));
@@ -142,7 +142,9 @@ async function loadData() {
   D.fetched = new Date();
   D.issues = D.items.filter((it) => it.issue).map(toIssue);
   $("#d-msg").textContent = "";
-  $("#d-updated").textContent = "as of " + D.fetched.toLocaleTimeString();
+  $("#d-updated").textContent = "Updated " + dateAgo(D.fetched);
+  const pt = (man && man.source && man.source.title) || project();
+  $("#d-sub").textContent = pt + " · issues and tasks";
   fillFilters();
   render();
   loadDigest().catch(() => {});
@@ -168,7 +170,7 @@ async function loadExports() {
   }
   const names = Array.from(new Set(Object.keys(ex).concat(Array.from(bySrc.keys())))).filter((n) => n || bySrc.size === 1);
   if (!names.length) { box.textContent = "Nothing published yet."; return; }
-  const when = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+  const when = (iso) => { return dayTime(iso); };
   const models = (D.manifest && D.manifest.models) || [];
   let html = `<div class="table-wrap"><table class="exp-table"><thead><tr><th>Revit file</th><th>Sends</th><th>In the viewer now</th>`
     + `<th>Night export</th><th>Last upload</th><th></th></tr></thead><tbody>`;
@@ -226,9 +228,9 @@ async function loadDigest() {
   const people = (d.by_person || []).map(([k, n]) => `${esc(k)} <b>${n}</b>`).join(" &middot; ");
   const od = (d.overdue_list || []).map((o) =>
     `<li><a href="${issueLink({ id: o.id, sheet: o.sheet, is3d: !o.sheet })}">#${o.number || "?"} ${esc(o.title)}</a>`
-    + ` <span class="muted">${esc(o.assigned_to || "unassigned")}, due ${esc(o.due_date)}</span></li>`).join("");
+    + ` <span class="muted">${esc(o.assigned_to || "unassigned")}, ${esc(overdueBy(o.due_date))}</span></li>`).join("");
   $("#dg-body").innerHTML = `<div class="dg-nums">`
-    + `<span><b>${d.raised}</b> raised</span><span><b>${d.closed}</b> closed</span>`
+    + `<span><b>${d.raised}</b> raised</span><span title="Became Resolved or Closed in the last 7 days"><b>${d.closed}</b> resolved</span>`
     + `<span><b>${d.open}</b> open</span><span class="${d.overdue ? "bad" : ""}"><b>${d.overdue}</b> overdue</span></div>`
     + (people ? `<div class="dg-people">Open by person: ${people}</div>` : "")
     + (od ? `<div class="dg-od"><b>Overdue</b><ul>${od}</ul></div>` : "");
@@ -292,7 +294,7 @@ const F = { range: 90, type: "", assignee: "", office: "", team: "", disc: "", m
 
 function fillFilters() {
   const types = [...new Set(D.issues.map((i) => i.type))];
-  $("#f-type").innerHTML = `<option value="">All types</option>` + types
+  $("#f-type").innerHTML = `<option value="">All</option>` + types
     .map((t) => `<option value="${esc(t)}">${esc((TYPE.get(t) || { label: t }).label)}</option>`).join("");
   const people = [...new Set(D.issues.map((i) => i.assignee))].sort();
   $("#f-assignee").innerHTML = `<option value="">Everyone</option>` + people
@@ -302,7 +304,7 @@ function fillFilters() {
     .map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join("");
   $("#f-office").closest("label").hidden = !offices.length;
   // the people's team and discipline (Admin page), when they have been set
-  for (const [id, key, all] of [["#f-team", "team", "All teams"], ["#f-disc", "discipline", "All disciplines"]]) {
+  for (const [id, key, all] of [["#f-team", "team", "All teams"], ["#f-disc", "discipline", "All"]]) {
     const vals = [...new Set(D.members.map((m) => m[key]).filter(Boolean))].sort();
     $(id).innerHTML = `<option value="">${all}</option>` + vals.map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join("");
     $(id).closest("label").hidden = !vals.length;
@@ -339,6 +341,16 @@ function wireFilters() {
   $("#f-mine").onchange = (e) => { F.mine = e.target.checked; render(); };
   $("#f-dismissed").onchange = (e) => { F.dismissed = e.target.checked; render(); };
   $("#d-refresh").onclick = () => loadData().catch(showError);
+  // the less-used filters stay out of the way until asked for
+  const more = $("#f-more"), extra = $("#f-extra");
+  const paintMore = () => {
+    const n = [F.office, F.team, F.dismissed].filter(Boolean).length;
+    more.textContent = extra.hidden ? (n ? `More filters (${n})` : "More filters") : "Fewer filters";
+    more.setAttribute("aria-expanded", String(!extra.hidden));
+  };
+  more.onclick = () => { extra.hidden = !extra.hidden; paintMore(); };
+  for (const id of ["#f-office", "#f-team", "#f-dismissed"]) $(id).addEventListener("change", paintMore);
+  paintMore();
   $("#d-csv").onclick = exportCsv;
   $("#d-bcf").onclick = exportBcf;
   $("#d-weekly").onclick = async () => {
@@ -371,7 +383,7 @@ function wireFilters() {
 
 const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 const days = (a, b) => Math.floor((b - a) / DAY);
-const fmtDate = (d) => (d ? d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "2-digit" }) : "");
+const fmtDate = (d) => (d ? day(d) : "");
 
 function render() {
   const list = filtered();
@@ -386,21 +398,33 @@ function render() {
     ? closedList.reduce((s, i) => s + Math.max(0, days(i.created, i.closed)), 0) / closedList.length : 0;
   const count = (st) => list.filter((i) => i.status === st).length;
 
-  const kpi = (label, value, cls, hint, color, icon) =>
-    `<div class="kpi ${cls || ""}" style="--c:${color}" title="${esc(hint || "")}">`
-    + `<span class="ic">${icon}</span><b>${value}</b><span class="lab">${label}</span></div>`;
-  $("#kpis").innerHTML = [
-    kpi("Issues", list.length, "", "All issues in the current filter", "#2a78d6", "&#9776;"),
-    kpi("Open", count("Open"), "st-open", "", STATUS_COLORS["Open"], "&#9679;"),
-    kpi("In progress", count("In progress"), "st-prog", "", STATUS_COLORS["In progress"], "&#9680;"),
-    kpi("Resolved", count("Resolved"), "st-res", "", STATUS_COLORS["Resolved"], "&#10003;"),
-    kpi("Closed", count("Closed"), "st-closed", "", STATUS_COLORS["Closed"], "&#10004;"),
-    kpi("Overdue", overdue.length, overdue.length ? "bad" : "", "Open with a due date before today", "#e2453c", "!"),
-    kpi("Due in 7 days", dueSoon.length, dueSoon.length ? "warn" : "", "", "#e8a13a", "&#9200;"),
-    kpi("Unassigned", open.filter((i) => i.assignee === UNASSIGNED).length, "", "Open issues nobody holds", "#4a3aa7", "?"),
-    kpi("Avg days open", avgOpen.toFixed(0), "", "Age of the issues still open", "#e87ba4", "&#8987;"),
-    kpi("Avg days to close", closedList.length ? avgClose.toFixed(0) : "-", "", "Raised to resolved/closed", "#1baf7a", "&#8635;"),
-  ].join("");
+  const periodLabel = F.range ? ({ 7: "last 7 days", 30: "last 30 days", 90: "last 90 days", 365: "last 12 months" }[F.range] || `last ${F.range} days`) : "any time";
+  const raisedIn = list.filter((i) => !F.range || Date.now() - i.created.getTime() <= F.range * DAY).length;
+  const oldOpen = open.filter((i) => Date.now() - i.created.getTime() > 28 * DAY).length;
+  const worst = overdue.length ? Math.max(...overdue.map((i) => days(i.due, t0))) : 0;
+  // four numbers that matter, and the rest on one quiet line - zeros dimmed
+  const tile = (label, value, unit, sub, subCls, hint) =>
+    `<div class="kpi4${value === 0 || value === "0" ? " zero" : ""}" title="${esc(hint || "")}"><span class="lab">${label}</span>`
+    + `<b>${value}${unit ? `<small>${unit}</small>` : ""}</b><span class="sub ${subCls || ""}">${sub}</span></div>`;
+  const unassigned = open.filter((i) => i.assignee === UNASSIGNED).length;
+  const minor = (label, n, hint) => `<span class="${n ? "" : "zero"}" title="${esc(hint || "")}">${label} <b>${n}</b></span>`;
+  $("#kpis").innerHTML = `<div class="kpi4-row">`
+    + tile("Open issues", open.length, "", oldOpen ? `&#9650; ${oldOpen} raised more than 4 weeks ago` : "None older than 4 weeks", oldOpen ? "warn" : "ok",
+      "Open or in progress (not resolved, closed or dismissed)")
+    + tile("Overdue", overdue.length, "", overdue.length ? `Oldest ${worst} day${worst === 1 ? "" : "s"} overdue` : "Nothing overdue", overdue.length ? "bad" : "ok",
+      "Open, with a due date before today")
+    + tile(`Resolved · ${periodLabel}`, closedList.length, "", `of ${raisedIn} raised`, "",
+      "Became Resolved or Closed in the period (both count: Closed is a resolved issue the raiser has signed off)")
+    + tile("Avg. time to resolve", closedList.length ? Math.round(avgClose) : "-", closedList.length ? (Math.round(avgClose) === 1 ? "day" : "days") : "",
+      open.length ? `Open issues average ${Math.round(avgOpen)} day${Math.round(avgOpen) === 1 ? "" : "s"} old` : "No open issues", "",
+      "Raised to resolved, for the issues resolved in the period")
+    + `</div><div class="kpi-minor">`
+    + minor("In progress", count("In progress"), "Someone is working on it")
+    + minor("Due in 7 days", dueSoon.length, "Open, due within the next week")
+    + minor("Unassigned", unassigned, "Open issues nobody holds")
+    + minor("Resolved, awaiting sign-off", count("Resolved"), "Status Resolved - not yet Closed by the raiser")
+    + minor("Closed", count("Closed"), "Status Closed - resolved and signed off")
+    + `</div>`;
 
   trendChart(list);
   donut("#c-status", ["Open", "In progress", "Resolved", "Closed"].concat(F.dismissed ? ["Not an issue"] : [])
@@ -588,7 +612,7 @@ function trendChart(list) {
     el.innerHTML = `<div class="trend-wrap">
         <div class="trend-main"><div class="trend-plot" id="tr-cols"></div>
           <div class="legend"><span><i style="background:${C_RAISED}"></i>Raised</span>
-          <span><i style="background:${C_CLOSED}"></i>Closed</span></div></div>
+          <span><i style="background:${C_CLOSED}"></i>Resolved (or closed)</span></div></div>
         <div class="trend-side"><div class="hero"><b id="tr-open">0</b><span>open now</span>
           <small id="tr-delta"></small></div><div class="trend-plot small" id="tr-area"></div></div>
       </div><div class="viz-tip" id="tr-tip" hidden></div>`;
@@ -605,7 +629,7 @@ function trendChart(list) {
   drawTrend();
 }
 
-const shortDay = (d) => d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+const shortDay = (d) => day(d);
 
 function drawTrend() {
   const rows = _trendRows;
@@ -640,7 +664,7 @@ function drawTrend() {
     }
   });
   box.innerHTML = `<svg width="${Wpx}" height="${Hpx}" viewBox="0 0 ${Wpx} ${Hpx}" class="trend" role="img"
-    aria-label="Issues raised and closed per week, last 12 weeks">${svg}</svg>`;
+    aria-label="Issues raised and resolved per week, last 12 weeks">${svg}</svg>`;
 
   // the open total: its own small area chart, same weeks
   const sw = Math.max(160, Math.floor(side.clientWidth)), sh = 110, sT = 12, sB = 18, sL = 6, sR = 30;
@@ -673,7 +697,7 @@ function drawTrend() {
     svgEl.querySelectorAll(".band").forEach((b) => b.classList.toggle("on", +b.dataset.k === k));
     tip.innerHTML = `<b>Week of ${shortDay(r.w)}</b>
       <div><i style="background:${C_RAISED}"></i>Raised <b>${r.raised}</b></div>
-      <div><i style="background:${C_CLOSED}"></i>Closed <b>${r.closed}</b></div>
+      <div><i style="background:${C_CLOSED}"></i>Resolved <b>${r.closed}</b></div>
       <div><i style="background:${C_OPEN}"></i>Open at week end <b>${r.open}</b></div>`;
     tip.hidden = false;
     const host = $("#c-trend").getBoundingClientRect();
@@ -756,6 +780,8 @@ async function main() {
   projectTasks().catch(() => {});
   // Keep it current while it is left open on a screen in the office.
   setInterval(() => { if (!document.hidden) loadData().catch(() => {}); }, 120000);
+  // "Updated 2 min ago" stays true between refreshes
+  setInterval(() => { if (D.fetched) $("#d-updated").textContent = "Updated " + dateAgo(D.fetched); }, 30000);
 }
 
 main().catch(showError);
@@ -785,7 +811,7 @@ async function projectTasks() {
       + open.slice(0, 12).map((t) => `<a class="dt-row" href="tasks.html?list=${esc(t.list_id)}&task=${esc(t.id)}"><span class="t">${esc(t.title || "Untitled")}</span>`
         + ((t.children || []).length ? `<small>${t.children.filter((k) => k.done).length}/${t.children.length} sub-tasks</small>` : "")
         + `<small>${esc((t.owners || []).map((p) => p.name).join(", "))}</small>`
-        + (t.due ? `<small class="${t.due.slice(0, 10) < today ? "late" : ""}">due ${esc(t.due.slice(0, 10))}</small>` : "") + `</a>`).join("")
+        + (t.due ? `<small class="${t.due.slice(0, 10) < today ? "late" : ""}">${esc(t.due.slice(0, 10) < today ? overdueBy(t.due.slice(0, 10)) : "due " + day(t.due.slice(0, 10)))}</small>` : `<small class="nodue">No due date</small>`) + `</a>`).join("")
       + (open.length > 12 ? `<div class="dt-g">and ${open.length - 12} more open</div>` : "")
       : `<p class="muted" style="font-size:12px">No task list has a group for this project yet. In Tasks: ... &rarr; Groups and projects.</p>`);
 }

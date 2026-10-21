@@ -498,10 +498,10 @@ div.ref-bad.lwk-callout { color: var(--ink-2); padding: 4px 8px; margin: 4px 0 4
   display: inline-block; border-radius: 999px; padding: 1px 8px;
   font-size: 10px; font-weight: 600; line-height: 1.6;
 }
-.chip.open { background: #fff1e3; color: var(--accent-deep); }
+.chip.open { background: #fdeccb; color: #93590b; }
 .chip.progress { background: #e6f0ff; color: #1d5fd0; }
 .chip.resolved { background: #e3f6ee; color: #0a7a55; }
-.chip.closed { background: var(--line-soft); color: var(--muted); }
+.chip.closed { background: #e3f1ea; color: #2f6b52; }
 .chip.comment { background: var(--line-soft); color: var(--muted); }
 .who { font-size: 10px; color: var(--muted); }
 .empty-note { padding: 18px 14px; color: var(--muted); font-size: 12px; }
@@ -1473,7 +1473,7 @@ body.drawers #layout3d {
 }
 body.drawers #stage3d { grid-column: 1; grid-row: 1; min-height: 0; }
 body.drawers #models, body.drawers #inspect {
-  position: fixed; top: var(--hdr-h, 44px); bottom: 0; z-index: 70;
+  position: fixed; top: var(--drawer-top, 100px); bottom: 0; z-index: 70;
   width: min(320px, 86vw); max-height: none !important; overflow-y: auto;
   background: var(--panel); border: 0; box-shadow: 0 0 24px rgba(20,26,36,.25);
   transition: transform .2s ease; -webkit-overflow-scrolling: touch;
@@ -1482,7 +1482,7 @@ body.drawers #models { left: 0; transform: translateX(-105%); }
 body.drawers #inspect { right: 0; transform: translateX(105%); }
 body.drawers #models.open, body.drawers #inspect.open { transform: none; }
 body.drawers #drawer-scrim:not([hidden]) {
-  display: block; position: fixed; left: 0; right: 0; bottom: 0; top: var(--hdr-h, 44px);
+  display: block; position: fixed; left: 0; right: 0; bottom: 0; top: var(--drawer-top, 100px);
   z-index: 65; background: rgba(20,26,36,.22);
 }
 body.drawers #drawer-btns {
@@ -1514,7 +1514,7 @@ body.drawers2d #layout {
 }
 body.drawers2d #stage { grid-column: 1; grid-row: 1; min-height: 0; }
 body.drawers2d #sheets, body.drawers2d #items {
-  position: fixed; top: var(--hdr-h, 44px); bottom: 0; z-index: 70;
+  position: fixed; top: var(--drawer-top, 100px); bottom: 0; z-index: 70;
   width: min(330px, 86vw); max-height: none !important; overflow-y: auto;
   background: var(--panel); border: 0; box-shadow: 0 0 24px rgba(20,26,36,.25);
   transition: transform .2s ease; display: flex; flex-direction: column;
@@ -1531,7 +1531,7 @@ body.drawers2d #item-list .grp-head { display: flex; }
 body.drawers2d #drawer-btns { display: flex; gap: 6px; position: absolute; left: 8px; top: 8px; z-index: 25; }
 body.drawers2d #drawer-btns #dr-items { margin-left: 4px; }
 body.drawers2d #drawer-scrim:not([hidden]) {
-  display: block; position: fixed; left: 0; right: 0; bottom: 0; top: var(--hdr-h, 44px);
+  display: block; position: fixed; left: 0; right: 0; bottom: 0; top: var(--drawer-top, 100px);
   z-index: 65; background: rgba(20,26,36,.22);
 }
 body.drawers2d #scroll { padding-top: 48px; }

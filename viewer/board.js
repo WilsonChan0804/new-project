@@ -165,6 +165,47 @@ function fitAll() {
   if (b) fitBox(b, 1); else { A.view = { x: stageRect().width / 2, y: stageRect().height / 2, s: 1 }; applyView(); }
 }
 
+/* The first look at a board nobody has opened here yet: its content as wide
+   as the screen at a size that can be read (never below 35%), from the top
+   - not the whole board shrunk to a few percent. */
+function fitStart() {
+  const b = unionBox(Array.from(O().values()).map(objBox).filter(Boolean));
+  const r = stageRect();
+  if (!b || !r.width) return fitAll();
+  const s = clamp(Math.min((r.width - 120) / Math.max(b.w, 1), 1), 0.35, 1);
+  if ((r.height - 80) / Math.max(b.h, 1) >= s) return fitAll();
+  A.view.s = s;
+  A.view.x = r.width / 2 - (b.x + b.w / 2) * s;
+  A.view.y = 40 - (b.y - 30) * s;
+  applyView();
+}
+
+/* Frames in reading order (top row first, left to right), to jump to. */
+function framesList(anchor) {
+  const fr = Array.from(O().values()).filter((o) => o.t === "frame")
+    .sort((a, b) => (Math.abs(a.y - b.y) < Math.min(a.h, b.h) / 2 ? a.x - b.x : a.y - b.y));
+  let box = document.getElementById("bd-frames");
+  if (box) { box.remove(); return; }
+  box = document.createElement("div");
+  box.id = "bd-frames";
+  box.innerHTML = `<div class="bf-h">Frames <small>${fr.length}</small></div>`
+    + (fr.length ? fr.map((f, i) => `<button type="button" data-f="${esc(f.id)}"><span class="bf-n">${i + 1}</span>${esc(f.text || "Frame " + (i + 1))}</button>`).join("")
+      : `<p class="muted">No frames on this board. A frame (F) around each part makes it a section you can jump to - and a slide when presenting.</p>`);
+  document.body.appendChild(box);
+  const r = anchor.getBoundingClientRect();
+  box.style.right = Math.max(8, innerWidth - r.right) + "px";
+  box.style.bottom = (innerHeight - r.top + 8) + "px";
+  box.onclick = (ev) => {
+    const b = ev.target.closest("[data-f]");
+    if (!b) return;
+    const f = O().get(b.dataset.f);
+    if (f) fitBox({ x: f.x, y: f.y - 30, w: f.w, h: f.h + 30 }, 1.5, 40);
+  };
+  setTimeout(() => document.addEventListener("pointerdown", function off(ev) {
+    if (!box.contains(ev.target) && ev.target !== anchor) { box.remove(); document.removeEventListener("pointerdown", off); }
+  }), 0);
+}
+
 const viewKey = () => "lwk-board:view:" + project() + ":" + (A.board ? A.board.id : "");
 let viewTimer = 0;
 function saveViewSoon() {
@@ -2621,7 +2662,7 @@ async function openBoard(bid, push) {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(viewKey()) || "null"); } catch (e) {}
   if (saved && isFinite(saved.x) && isFinite(saved.y) && saved.s > 0) { A.view = { x: saved.x, y: saved.y, s: clamp(saved.s, 0.05, 4) }; applyView(); }
-  else fitAll();
+  else fitStart();
   setTool("select");
   select([]);
   showPeople([]);
@@ -2678,6 +2719,7 @@ function wireChrome() {
   $("#z-in").onclick = () => zoomCenter(1.25);
   $("#z-out").onclick = () => zoomCenter(0.8);
   $("#z-fit").onclick = fitAll;
+  $("#z-frames").onclick = (ev) => framesList(ev.currentTarget);
   $("#z-100").onclick = () => { const r = stageRect(); zoomAt(r.width / 2, r.height / 2, 1 / A.view.s); };
 
   // pictures: the file picker, and files dropped on the board

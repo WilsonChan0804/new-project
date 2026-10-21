@@ -12,6 +12,7 @@
 
 import { api } from "./nav.js";
 import { esc, modal, toast, pickPeople, ic } from "./tasks-util.js";
+import { wday } from "./dates.js";
 
 /* ------------------------------------------------------------ poll */
 
@@ -92,7 +93,7 @@ export async function pollForm() {
 const pad = (n) => String(n).padStart(2, "0");
 function dayText(d) {
   const x = new Date(d + "T00:00");
-  return isNaN(x) ? d : x.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  return isNaN(x) ? d : wday(x);
 }
 export function whenText(c) {
   if (c.all_day) return dayText(c.start.slice(0, 10)) + (c.end.slice(0, 10) !== c.start.slice(0, 10) ? " - " + dayText(c.end.slice(0, 10)) : "") + " · all day";

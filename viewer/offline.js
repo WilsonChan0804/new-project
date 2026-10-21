@@ -36,6 +36,7 @@
 
 import * as Store from "./store.js";
 import * as DB from "./idb.js";
+import { dayTime } from "./dates.js";
 
 const CDN_CACHE = "lwk-cdn-v1";
 const API_CACHE = "lwk-api-v1";
@@ -74,11 +75,7 @@ function size(n) {
   return (n / 1073741824).toFixed(1) + " GB";
 }
 function when(t, long) {
-  const d = new Date(t);
-  if (isNaN(d)) return "";
-  const o = { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" };
-  if (long || d.getFullYear() !== new Date().getFullYear()) o.year = "numeric";
-  return d.toLocaleString(undefined, o);
+  return dayTime(t, long);
 }
 const plural = (n, one, many) => n + " " + (n === 1 ? one : (many || one + "s"));
 

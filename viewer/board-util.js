@@ -1,3 +1,4 @@
+import { ago as dateAgo } from "./dates.js";
 /* Small things the board's modules share: escaping, ids, colours, icons
  * and the geometry of connectors.
  *
@@ -60,14 +61,7 @@ export function initials(name) {
 }
 
 export function ago(iso, now) {
-  const t = Date.parse(iso || "");
-  if (!t) return "";
-  const s = Math.max(0, ((now || Date.now()) - t) / 1000);
-  if (s < 45) return "just now";
-  if (s < 3600) return Math.round(s / 60) + " min ago";
-  if (s < 86400) return Math.round(s / 3600) + " h ago";
-  if (s < 86400 * 14) return Math.round(s / 86400) + " d ago";
-  return new Date(t).toLocaleDateString();
+  return dateAgo(iso, now);
 }
 
 /* ---------------------------------------------------------------- icons */

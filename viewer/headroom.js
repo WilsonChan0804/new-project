@@ -18,6 +18,7 @@
 import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
 import { saveCsv, fileName, reportTab, tabSay, writeReport, pictures } from "./checkexport.js";
 import { dueIn, nextNumber, numberText, elementLine, xyzText } from "./checkissue.js";
+import { day, dayTime } from "./dates.js";
 
 const WALK = /^(Floors|Stairs|Runs|Landings|Ramps|IFCSLAB|IFCSTAIR|IFCSTAIRFLIGHT|IFCRAMP|IFCRAMPFLIGHT)$/;
 const STAIRISH = /stair|runs|landing|ramp/i;
@@ -396,7 +397,7 @@ export function createHeadroom(ctx) {
   }
   const whereOf = (pl) => (pl.at_mm && ctx.fromShared(pl.at_mm)) || new THREE.Vector3(pl.at[0], pl.at[1], pl.at[2]);
   const underText = (pl) => (pl.a ? `${pl.a.cat}${pl.a.name ? " · " + pl.a.name : ""}` : "");
-  const when = (x) => new Date(x).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const when = (x) => dayTime(x);
 
   function paint() {
     const list = $("#head-list"), sum = $("#head-sum");
@@ -481,7 +482,7 @@ export function createHeadroom(ctx) {
   });
   async function saveResult() {
     if (!H.live) return;
-    const name = prompt("Name of this result", `Headroom ${H.live.scope} - ${new Date().toLocaleDateString()}`);
+    const name = prompt("Name of this result", `Headroom ${H.live.scope} - ${day(new Date())}`);
     if (!name || !name.trim()) return;
     const r = H.live;
     const it = { id: ctx.uid(), placement: "headroomresult", name: name.trim().slice(0, 120), at: new Date().toISOString(), by: ctx.myName(),
@@ -560,10 +561,10 @@ export function createHeadroom(ctx) {
     }
     writeReport(w, {
       title: "Headroom report", project: ctx.projectName(), unit: "places", folder: "Headroom",
-      sub: new Date().toLocaleString() + (ctx.author() ? " · prepared by " + ctx.author() : ""),
+      sub: dayTime(new Date(), true) + (ctx.author() ? " · prepared by " + ctx.author() : ""),
       meta: [["Where", res.scope], ["Limits", `floors ${res.limit.toFixed(2)} m, stairs and ramps ${res.stairLimit.toFixed(2)} m`],
         ["Left out", res.minSpace ? `spaces lower than ${res.minSpace.toFixed(1)} m (not used by people)` : "nothing"],
-        ["Measured", `${res.checked} points, ${new Date(res.at).toLocaleString()}`]],
+        ["Measured", `${res.checked} points, ${dayTime(res.at)}`]],
       table: { cols: ["Floor", "Places", "Area m²", "Lowest m"], rows: [...by.entries()].map(([k, g]) => [k, g.n, g.area.toFixed(1), g.low.toFixed(2)]) },
       items: list.map((pl, i) => {
         const p = pl.at_mm || [], iss = issueOf(pl.key);
@@ -584,7 +585,7 @@ export function createHeadroom(ctx) {
         "Overhead: " + (pl.a ? elementLine(pl.a) : "an element"), "Standing on: " + (pl.on || (pl.stair ? "a stair / ramp" : "the floor")),
         `About ${pl.area.toFixed(1)} m² under ${pl.lim.toFixed(2)} m.`,
         xyzText(pl.at_mm) ? "Where: " + xyzText(pl.at_mm) : "",
-        `Headroom scan ${H.res && H.res.scope ? H.res.scope + ", " : ""}${new Date().toLocaleDateString()}.`].filter(Boolean).join("\n"),
+        `Headroom scan ${H.res && H.res.scope ? H.res.scope + ", " : ""}${day(new Date())}.`].filter(Boolean).join("\n"),
       type: pl.consultant ? "coordination" : "design",
       status: "Open",
       due_date: dueIn(3),

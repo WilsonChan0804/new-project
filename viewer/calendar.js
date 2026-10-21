@@ -22,6 +22,7 @@ import { $, esc, modal, toast, ic, pop, closePop, skeleton } from "./tasks-util.
 import { taskForm } from "./chatcards.js";
 import { makeFilter } from "./filterbtn.js";
 import { REGIONS, merged } from "./holidays.js";
+import { day, wday } from "./dates.js";
 
 const K = {
   view: matchMedia("(max-width: 700px)").matches ? "list" : "month",
@@ -36,7 +37,7 @@ const K = {
 };
 try {
   const v = localStorage.getItem("lwk-viewer:cal-view");
-  if (v === "month" || v === "list") K.view = v;
+  if (v === "month" || v === "list" || v === "week") K.view = v;
   const k = JSON.parse(localStorage.getItem("lwk-viewer:cal-kinds") || "null");
   if (Array.isArray(k)) { K.kinds = new Set(k); if (!localStorage.getItem("lwk-viewer:cal-kinds-leave")) K.kinds.add("leave"); }
   const h = JSON.parse(localStorage.getItem("lwk-viewer:cal-hol") || "null");
@@ -59,8 +60,17 @@ function range() {
   const last = new Date(K.at.getFullYear(), K.at.getMonth() + 1, 0);
   const end = new Date(last);
   end.setDate(last.getDate() + (6 - col(last)));
+  if (K.view === "week") {
+    const ws = new Date(K.at.getFullYear(), K.at.getMonth(), K.at.getDate() - col(K.at));
+    return [ws, new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 6)];
+  }
   return K.view === "month" ? [start, end] : [new Date(first), last];
 }
+const stepBy = (n) => {
+  K.at = K.view === "week" ? new Date(K.at.getFullYear(), K.at.getMonth(), K.at.getDate() + 7 * n)
+    : new Date(K.at.getFullYear(), K.at.getMonth() + n, 1);
+  load();
+};
 
 async function load() {
   const [a, b] = range();
@@ -125,17 +135,20 @@ function chip(e, long) {
   return `<a class="${cls}" href="${esc(e.url)}" data-id="${esc(e.id)}" title="${esc(e.title + (e.parent ? " - sub-task of " + e.parent : "") + (e.from ? " - " + e.from : ""))}">`
     + `<span class="ce-i">${ic(icon, 12)}</span>`
     + (t ? `<b class="ce-t">${esc(t)}</b>` : "")
-    + `<span class="ce-n">${esc(e.title)}</span>`
+    + `<span class="ce-n">${e.kind === "issue" ? "<b>Due:</b> " : ""}${esc(e.title)}</span>`
     + (long ? `<small class="ce-f">${esc([e.parent ? "Sub-task of " + e.parent : "", e.from, e.where].filter(Boolean).join(" · "))}</small>` : "")
     + `</a>`;
 }
 
 function paint() {
-  const title = K.at.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  let title = K.at.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  if (K.view === "week") { const [wa, wb] = range(); title = `${day(wa)} – ${day(wb, true)}`; }
   $("#cal-title").textContent = title;
   for (const b of document.querySelectorAll("#cal-view button")) b.classList.toggle("on", b.dataset.v === K.view);
+  paintLegend();
   const list = shown();
   if (K.view === "list") return paintList(list);
+  if (K.view === "week") return paintWeek(list);
   const [a, b] = range();
   const t = today();
   const month = K.at.getMonth();
@@ -156,6 +169,35 @@ function paint() {
   $("#cal-body").innerHTML = h;
 }
 
+/* One week, every entry of each day shown (no "+3 more"). */
+function paintWeek(list) {
+  const [a] = range();
+  const t = today();
+  let h = `<div class="cw">`;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(a.getFullYear(), a.getMonth(), a.getDate() + i);
+    const k = iso(d);
+    const es = list.filter((e) => onDay(e, k));
+    h += `<div class="cw-d${k === t ? " today" : ""}${[0, 6].includes(d.getDay()) ? " we" : ""}${es.some((e) => e.kind === "holiday") ? " hol" : ""}" data-day="${k}">`
+      + `<div class="cw-h"><span>${esc(wday(d).split(" ")[0])}</span><b class="cm-n">${d.getDate()}</b></div>`
+      + es.map((e) => chip(e, true)).join("") + `</div>`;
+  }
+  $("#cal-body").innerHTML = h + `</div>`;
+}
+
+/* The colours, which are also the switches: click one to hide or show it. */
+const LEGEND = [["meeting", "Meetings"], ["task", "My tasks"], ["issue", "My issues"], ["leave", "Leave"], ["holiday", "Holidays"]];
+function paintLegend() {
+  const box = $("#cal-legend");
+  if (!box) return;
+  const anyHol = Object.values(K.hol).some(Boolean);
+  box.innerHTML = LEGEND.map(([k, label]) => {
+    const on = k === "holiday" ? anyHol : K.kinds.has(k);
+    return `<button type="button" class="lg-k ${k}${on ? " on" : ""}" data-k="${k}" aria-pressed="${on}" title="${on ? "Hide" : "Show"} ${esc(label.toLowerCase())}">`
+      + `<span class="ce-dot ${k}"></span>${esc(label)}</button>`;
+  }).join("");
+}
+
 function paintList(list, onlyDay) {
   const days = {};
   for (const e of list) {
@@ -169,7 +211,7 @@ function paintList(list, onlyDay) {
   const t = today();
   const keys = Object.keys(days).sort();
   $("#cal-body").innerHTML = `<div class="cl">` + (keys.map((k) => `<div class="cl-day${k === t ? " today" : ""}${k < t ? " past" : ""}" data-day="${k}">`
-    + `<div class="cl-h"><b>${esc(fromIso(k).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }))}</b>${k === t ? ` <span class="cl-today">Today</span>` : ""}</div>`
+    + `<div class="cl-h"><b>${esc(wday(fromIso(k), true))}</b>${k === t ? ` <span class="cl-today">Today</span>` : ""}</div>`
     + days[k].map((e) => chip(e, true)).join("") + `</div>`).join("")
     || `<p class="muted cal-none">Nothing this month for you${K.kinds.size < 4 ? " (with these filters)" : ""}.</p>`) + `</div>`;
 }
@@ -179,9 +221,9 @@ function details(e) {
   const box = $("#cal-side");
   box.hidden = false;
   const when = e.kind === "meeting" && !e.all_day
-    ? `${fromIso(e.start).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })} · ${timeOf(e)}`
-    : fromIso(e.start).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })
-      + (e.end && e.end.slice(0, 10) !== e.start.slice(0, 10) ? " - " + fromIso(e.end).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "");
+    ? `${wday(fromIso(e.start))} · ${timeOf(e)}`
+    : wday(fromIso(e.start))
+      + (e.end && e.end.slice(0, 10) !== e.start.slice(0, 10) ? " - " + day(fromIso(e.end)) : "");
   const say = { meeting: "Meeting", task: e.done ? "Task (done)" : "Task due", issue: "Issue due",
     leave: e.type || "Leave", holiday: "Public holiday" }[e.kind];
   const reply = { yes: "You are going", maybe: "You said maybe", no: "You can't go" }[e.reply] || (e.kind === "meeting" ? "Not answered yet" : "");
@@ -277,7 +319,7 @@ async function newTask(day) {
 
 /* Right-click (or hold on a phone) a day: add an event, a meeting or a task on it. */
 function dayMenu(day, x, y) {
-  const label = new Date(day + "T12:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  const label = wday(day);
   const el = pop({ getBoundingClientRect: () => ({ left: x, right: x, top: y, bottom: y }) },
     `<div class="muted" style="padding:4px 8px;font-size:11px">${esc(label)}</div>`
     + `<div class="po-row" data-k="event">Add event (all day)</div>`
@@ -459,9 +501,42 @@ async function editGroup(g) {
 /* ------------------------------------------------------------ wiring */
 
 function wire() {
-  $("#cal-prev").onclick = () => { K.at = new Date(K.at.getFullYear(), K.at.getMonth() - 1, 1); load(); };
-  $("#cal-next").onclick = () => { K.at = new Date(K.at.getFullYear(), K.at.getMonth() + 1, 1); load(); };
+  $("#cal-prev").onclick = () => stepBy(-1);
+  $("#cal-next").onclick = () => stepBy(1);
+  // the legend switches kinds on and off (the same as the Filter's ticks)
+  $("#cal-legend").onclick = (ev) => {
+    const b = ev.target.closest("[data-k]");
+    if (!b) return;
+    const k = b.dataset.k;
+    if (k === "holiday") {
+      const anyHol = Object.values(K.hol).some(Boolean);
+      if (anyHol) { K.holPrev = Object.assign({}, K.hol); for (const r of Object.keys(K.hol)) K.hol[r] = false; }
+      else K.hol = Object.assign({ hk: true, ph: false }, K.holPrev || {});
+      try { localStorage.setItem("lwk-viewer:cal-hol", JSON.stringify(K.hol)); } catch (e) {}
+      holBtn();
+      return paint();
+    }
+    const c = document.querySelector(`#cal-kinds input[value="${k}"]`);
+    if (c) { c.checked = !c.checked; c.dispatchEvent(new Event("change")); }
+  };
+  // + New: one button for everything that can be added
+  $("#cal-add").onclick = (ev) => {
+    const el = pop(ev.currentTarget, `<div class="po-row" data-k="event">Event</div><div class="po-row" data-k="meeting">Meeting</div>`
+      + `<div class="po-row" data-k="task">Task</div><div class="po-row" data-k="leave">Leave</div>`, 180);
+    el.onclick = (e2) => {
+      const r = e2.target.closest("[data-k]");
+      if (!r) return;
+      closePop();
+      const d = today();
+      if (r.dataset.k === "event") newEvent();
+      if (r.dataset.k === "meeting") newEvent(d, "10:00", "Meeting");
+      if (r.dataset.k === "task") newTask(d);
+      if (r.dataset.k === "leave") newLeave(d);
+    };
+  };
   $("#cal-today").onclick = () => { K.at = new Date(); load(); };
+  addEventListener("keydown", (ev) => { if (ev.target.closest("input, textarea, select")) return;
+    if (ev.key === "ArrowLeft" && ev.altKey) stepBy(-1); if (ev.key === "ArrowRight" && ev.altKey) stepBy(1); });
   $("#cal-view").onclick = (ev) => {
     const b = ev.target.closest("[data-v]");
     if (!b) return;

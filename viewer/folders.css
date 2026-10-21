@@ -2,7 +2,7 @@
 
 #fo [hidden], #fo-prog[hidden] { display: none !important; }
 
-#fo { display: flex; flex-direction: row; height: calc(100% - 46px); background: var(--panel); position: relative; }
+#fo { display: flex; flex-direction: row; height: calc(100% - var(--hdr-h, 56px)); background: var(--panel); position: relative; }
 #fo-side { width: 250px; flex: none; border-right: 1px solid var(--line); background: var(--panel-2); display: flex; flex-direction: column;
   padding: 10px 8px; gap: 6px; overflow: hidden; }
 #fo-proj { width: 100%; font-weight: 600; }

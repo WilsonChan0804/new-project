@@ -20,6 +20,7 @@ import { elementsOf, elementsBlock, wireElementBlocks } from "./revit.js";
 import { issueLink } from "./goto.js";
 import { copyLink } from "./share.js";
 import * as Store from "./store.js";
+import { dayTime } from "./dates.js";
 
 const STATUSES = ["Open", "In progress", "Resolved", "Closed"];
 const CLOSED = ["Resolved", "Closed"];
@@ -32,7 +33,7 @@ const esc = (s) => String(s == null ? "" : s)
 const when = (iso) => {
   if (!iso) return "";
   const d = new Date(iso);
-  return isNaN(d) ? iso : d.toLocaleString();
+  return isNaN(d) ? iso : dayTime(d);
 };
 
 function options(list, current) {

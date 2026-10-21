@@ -27,6 +27,7 @@ import * as DashView from "./tasks-dash.js";
 import * as PeopleView from "./tasks-people.js";
 import * as Detail from "./tasks-detail.js";
 import * as Undo from "./undo.js";
+import { wday } from "./dates.js";
 
 const LS = "lwk-tasks:";
 const ls = {
@@ -41,7 +42,7 @@ const S = {
   mode: "list",               // list | quick | people | activity
   quick: "owned", quickTasks: [],
   view: ls.get("view", "list"),
-  filter: { q: "", status: "all", owner: "", pri: "" },
+  filter: { q: "", status: "open", owner: "", pri: "" },
   sort: "custom", groupBy: "group",
   collapsed: new Set(), expanded: new Set(), hidden: new Set(),
   openId: "",
@@ -538,6 +539,7 @@ function paintHead() {
 }
 
 function render() {
+  if (T.paintDone) T.paintDone();
   paintHead();
   const el = $("#t-view");
   if (S.mode !== "list" && !$("#t-detail").hidden) {
@@ -601,7 +603,7 @@ async function renderActivity(el, listId) {
   let day = "";
   el.innerHTML = `<div class="t-act">` + (r.activity.map((a) => {
     const d = a.at.slice(0, 10);
-    const head = d !== day ? `<h4>${esc(new Date(a.at).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }))}</h4>` : "";
+    const head = d !== day ? `<h4>${esc(wday(a.at, true))}</h4>` : "";
     day = d;
     const detail = a.event === "changed" && a.field !== "description"
       ? ` <span class="muted">${esc(a.old || "-")} &rarr; </span>${esc(a.new || "-")}`
@@ -976,7 +978,26 @@ function wire() {
   $("#t-share").onclick = editMembers;
   $("#t-cols").onclick = editFields;
   $("#f-q").oninput = (ev) => { S.filter.q = ev.target.value; render(); };
-  $("#f-status").onchange = (ev) => { S.filter.status = ev.target.value; render(); };
+  // done tasks out of the way unless asked for (remembered)
+  S.filter.status = ls.get("status", "open");
+  $("#f-status").value = S.filter.status;
+  const doneBtn = $("#t-showdone");
+  const paintDone = () => {
+    const n = [...S.tasks.values()].filter((t) => t.done && !t.parent_id).length;
+    const showing = S.filter.status === "all" || S.filter.status === "done";
+    doneBtn.textContent = showing ? "Hide done" : `Show done${n ? " (" + n + ")" : ""}`;
+    doneBtn.setAttribute("aria-pressed", String(showing));
+  };
+  T.paintDone = paintDone;
+  doneBtn.onclick = () => {
+    S.filter.status = S.filter.status === "open" ? "all" : "open";
+    $("#f-status").value = S.filter.status;
+    ls.set("status", S.filter.status);
+    paintDone();
+    if (T.filterBtn && T.filterBtn.update) T.filterBtn.update();
+    render();
+  };
+  $("#f-status").onchange = (ev) => { S.filter.status = ev.target.value; ls.set("status", S.filter.status); paintDone(); render(); };
   $("#f-owner").onchange = (ev) => { S.filter.owner = ev.target.value; render(); };
   $("#f-pri").onchange = (ev) => { S.filter.pri = ev.target.value; render(); };
   $("#f-sort").onchange = (ev) => { S.sort = ev.target.value; ls.set("sort", S.sort); render(); };
@@ -994,7 +1015,7 @@ function wire() {
       { title: "Show", els: [row("Tasks", $("#f-status")), row("Owner", $("#f-owner")), row("Priority", $("#f-pri"))] },
       { title: "Order", els: [sortL, groupL] },
     ],
-    count: () => ($("#f-status").value !== "all") + !!$("#f-owner").value + !!$("#f-pri").value,
+    count: () => !["all", "open"].includes($("#f-status").value) + !!$("#f-owner").value + !!$("#f-pri").value,
   });
   T.saveCollapsed = () => ls.set("collapsed:" + S.listId, [...S.collapsed]);
 }

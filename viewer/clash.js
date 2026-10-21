@@ -20,6 +20,7 @@ import { pairs as boxPairs } from "./clashcore.js";
 import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
 import { saveCsv, fileName, reportTab, tabSay, writeReport, pictures } from "./checkexport.js";
 import { dueIn, nextNumber, numberText, elementLine, xyzText } from "./checkissue.js";
+import { day, dayTime } from "./dates.js";
 
 const OPENINGS = new Set(["Doors", "Windows", "Curtain Panels", "Curtain Wall Mullions",
   "IFCDOOR", "IFCWINDOW", "IFCPLATE", "IFCMEMBER", "IFCOPENINGELEMENT", "IFCDOORSTANDARDCASE", "IFCWINDOWSTANDARDCASE"]);
@@ -651,7 +652,7 @@ export function createClash(ctx) {
     // the results: the latest run, or one kept (Save result)
     const kept = savedOf(r0);
     if (r0 && (r0.last || kept.length)) {
-      const when = (x) => new Date(x).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      const when = (x) => dayTime(x);
       const sv = kept.find((x) => x.id === C.view);
       top = `<div class="ck-results"><select id="clash-view" title="Which result is listed: the latest run, or one that was saved">`
         + `<option value="">Latest run${r0.last ? " · " + esc(when(r0.last.at)) : ""}</option>`
@@ -687,7 +688,7 @@ export function createClash(ctx) {
     try { hide = Number(localStorage.getItem(ctx.storeKey("hide:" + (r0 && r0.id)))) || 0; order = localStorage.getItem(ctx.storeKey("order")) || "level"; } catch (e) {}
     const shallow = (c) => hide > 0 && c.depth_mm != null && c.depth_mm < hide;
     const nHidden = view.filter((c) => c.state !== "gone" && !c.ignored && shallow(c)).length;
-    const when = (x) => new Date(x.at).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const when = (x) => dayTime(x.at);
     const col = colours();
     sum.innerHTML = top
       + `<div class="ck-when muted">${ran ? [when(ran), ran.by, label + (ran.partial ? " (stopped part way)" : "")].filter(Boolean).map(esc).join(" · ")
@@ -826,7 +827,7 @@ export function createClash(ctx) {
       description: [`${KIND[c.kind] || c.kind} ${amount(c)}${c.level ? " on " + c.level : ""}.`,
         "A: " + elementLine(c.a), "B: " + elementLine(c.b),
         xyzText(c.point_shared_mm) ? "Where: " + xyzText(c.point_shared_mm) : "",
-        `Clash rule "${r ? r.name : ""}", found ${new Date(c.first_at || Date.now()).toLocaleDateString()}.`].filter(Boolean).join("\n"),
+        `Clash rule "${r ? r.name : ""}", found ${day(c.first_at || Date.now())}.`].filter(Boolean).join("\n"),
       type: "clash",
       status: "Open",
       due_date: dueIn(3),
@@ -880,7 +881,7 @@ export function createClash(ctx) {
   async function saveResult() {
     const r = rule();
     if (!r || !r.last) return;
-    const name = prompt("Name of this result", `${r.name} - ${new Date().toLocaleDateString()}`);
+    const name = prompt("Name of this result", `${r.name} - ${day(new Date())}`);
     if (!name || !name.trim()) return;
     const it = { id: ctx.uid(), placement: "clashresult", rule: r.id, rule_name: r.name, name: name.trim().slice(0, 120),
                  at: new Date().toISOString(), by: ctx.myName(),
@@ -993,11 +994,11 @@ export function createClash(ctx) {
     const side = (e) => `${e.model} - ${e.cat}${e.name ? " - " + e.name : ""}${e.type && e.type !== e.name ? " (" + e.type + ")" : ""}${e.id ? " - id " + e.id : ""}`;
     writeReport(w, {
       title: "Clash report", project: ctx.projectName(), unit: "clashes", folder: "Clash",
-      sub: new Date().toLocaleString() + (ctx.author() ? " · prepared by " + ctx.author() : ""),
+      sub: dayTime(new Date(), true) + (ctx.author() ? " · prepared by " + ctx.author() : ""),
       meta: [["Rule", r.name], ["A", sideText(r.a)], ["B", sideText(r.b)],
         ["Settings", `overlap that counts ${r.tol_mm} mm, clearance ${r.clear_mm} mm${r.skip_openings !== false ? ", doors and windows in their hosts left out" : ""}${r.skip_joins !== false ? ", joins left out" : ""}${r.open ? ", open surfaces crossing reported" : ""}`],
         ["Where", C.elsewhere ? "everywhere checked" : (sc.err ? "" : sc.label)],
-        ["Last run", res.at ? [new Date(res.at).toLocaleString(), res.by, res.scope].filter(Boolean).join(" · ") : ""],
+        ["Last run", res.at ? [dayTime(res.at), res.by, res.scope].filter(Boolean).join(" · ") : ""],
         ["Listed", `${list.length} (${({ all: "open", new: "new", gone: "gone", ignored: "not an issue" })[C.filter]})`]],
       table: { cols: ["Floor", "Clashes", "New", "Deepest mm"], rows: [...by.entries()].map(([k, g]) => [k, g.n, g.nw, g.deep || ""]) },
       items: list.map((c, i) => {
@@ -1007,7 +1008,7 @@ export function createClash(ctx) {
           tagColor: c.kind === "clearance" ? "#d97706" : "#e2453c", img: imgs[i] || null,
           rows: [["A", side(c.a), col.a], ["B", side(c.b), col.b],
             ["Where (project mm)", p.length ? `X ${p[0]}, Y ${p[1]}, Z ${p[2]}` : ""],
-            ["First found", c.first_at ? new Date(c.first_at).toLocaleDateString() : ""],
+            ["First found", c.first_at ? day(c.first_at) : ""],
             ...(iss && iss.issue ? [["Issue", `#${iss.issue.number || ""} · ${iss.issue.status || "Open"}`]] : [])],
         };
       }),

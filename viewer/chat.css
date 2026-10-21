@@ -1,6 +1,6 @@
 /* Messenger page - on top of tasks.css (avatars, pop-ups, modals). */
 
-#c-app { display: flex; height: calc(100% - 46px); background: var(--panel); }
+#c-app { display: flex; height: calc(100% - var(--hdr-h, 56px)); background: var(--panel); }
 
 /* ------------------------------------------------ chat list */
 #c-side { width: 300px; flex: none; border-right: 1px solid var(--line); background: var(--panel-2); display: flex; flex-direction: column; }
@@ -110,7 +110,7 @@ b.mention.me { background: #ede9fe; color: #6d28d9; border-radius: 3px; padding:
   #c-side { width: 100%; }
   #c-app.in-room #c-side { display: none; }
   #c-app:not(.in-room) #c-main { display: none; }
-  #c-right { position: fixed; right: 0; top: 46px; bottom: 0; z-index: 20; }
+  #c-right { position: fixed; right: 0; top: var(--hdr-h, 56px); bottom: 0; z-index: 20; }
 }
 
 /* buttons drawn with icons */

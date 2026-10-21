@@ -1,6 +1,6 @@
 /* Calendar page - on top of tasks.css (modals, toasts, avatars). */
 
-#cal { display: flex; flex-direction: column; height: calc(100% - 46px); background: var(--panel); position: relative; }
+#cal { display: flex; flex-direction: column; height: calc(100% - var(--hdr-h, 56px)); background: var(--panel); position: relative; }
 .cal-top { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .cal-nav { display: flex; align-items: center; gap: 4px; }
 .cal-nav button { font-size: 18px; padding: 2px 10px; }

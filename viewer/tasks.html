@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="dash.css">
 <link rel="stylesheet" href="tasks.css">
+<link rel="stylesheet" href="shell.css">
 <link rel="manifest" href="app.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -83,6 +84,7 @@
     <div id="t-bar" hidden>
       <span class="tb-new"><button id="t-new" class="primary">+ New task</button><button id="t-new-more" class="primary" title="More">&#9662;</button></span>
       <input id="f-q" type="search" placeholder="Search tasks" autocomplete="off">
+      <button type="button" id="t-showdone" class="ghost fchip-lite" title="Done tasks are hidden - show them too">Show done</button>
       <select id="f-status" title="Which tasks">
         <option value="all">All tasks</option>
         <option value="open">Not done</option>

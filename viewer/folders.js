@@ -13,6 +13,7 @@ import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, modal, toast, pop, closePop, skeleton } from "./tasks-util.js";
 import * as Undo from "./undo.js";
 import { initFlexColumns } from "./panels.js";
+import { ago as dateAgo, dayTime } from "./dates.js";
 
 const F = {
   projects: [], siteAdmin: false, reg: "", proj: null,
@@ -64,10 +65,7 @@ function size(n) {
 }
 // date and time, e.g. "8 Oct 2026 14:32"
 function when(iso) {
-  const d = new Date(iso);
-  if (!iso || isNaN(d)) return "";
-  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " "
-    + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+  return dateAgo(iso);
 }
 
 /* ------------------------------------------------------------ loading */
@@ -200,7 +198,9 @@ function paint() {
       search: ["Nothing found", "Names are searched, in every folder of this project."],
     }[F.mode];
     if (F.mode === "folder" && F.locked) msg[0] = "Nothing here yet", msg[1] = "The project's sheets and 3D models show here once they are exported from Revit (or uploaded on the Sheets page).";
-    list.innerHTML = `<div class="fo-empty"><b>${esc(msg[0])}</b>${esc(msg[1])}</div>`;
+    const acts = F.mode === "folder" && !F.locked
+      ? `<div class="fo-empty-acts"><button class="primary" data-act="up">Upload files</button><button data-act="newdir">+ New folder</button></div>` : "";
+    list.innerHTML = `<div class="fo-empty${acts ? " fo-dropzone" : ""}"><b>${esc(msg[0])}</b>${esc(msg[1])}${acts}</div>`;
     $("#fo-up").disabled = $("#fo-newdir").disabled = F.mode === "folder" && F.locked;
     return;
   }
@@ -217,14 +217,29 @@ function paint() {
     const flags = (e.pinned ? `<span class="flags" title="Pinned for everyone">&#128204;</span>` : "") + (e.starred ? `<span class="flags" title="Starred">&#11088;</span>` : "");
     const lock = e.locked ? `<span class="flags" title="${esc(LOCKED)}">&#128274;</span>` : "";
     h += `<div class="fo-row${F.sel.has(e.path) ? " sel" : ""}${e.dir && !e.locked ? " fo-drop-t" : ""}${e.locked ? " locked" : ""}" data-path="${esc(e.path)}" draggable="${!e.bin && !e.locked}"${e.bin ? ` data-bin="${esc(e.id)}"` : ""}>`
-      + `<span class="ico">${iconOf(e)}</span>`
-      + `<span><span class="nm" data-open>${esc(e.name)}</span>${e.ver ? `<span class="fo-ver" title="Version ${e.ver} - earlier ones under ⋯ > Versions">v${e.ver}</span>` : ""}${e.dir && e.count != null ? `<small class="muted"> ${e.count} item${e.count === 1 ? "" : "s"}</small>` : ""}${flags}${e.path === BIM ? lock : ""}${where}</span>`
-      + `<span class="muted">${esc(when(e.bin ? e.at : e.mtime))}</span>`
-      + `<span class="muted c-size">${e.dir ? "" : esc(size(e.size))}</span>`
-      + `<span class="muted c-by">${esc(e.locked && !e.dir && !e.by ? "LWK Viewer" : e.by || "")}</span>`
+      + `<span class="ico"${e.path === BIM ? ` title="Restricted · kept by the viewer (BIM). ${esc(LOCKED)}"` : ""}>${iconOf(e)}</span>`
+      + `<span class="fo-nmcell"><span class="nm" data-open title="${esc(e.name)}">${esc(e.name)}</span>${e.ver ? `<span class="fo-ver" title="Version ${e.ver} - earlier ones under ⋯ > Versions">v${e.ver}</span>` : ""}${flags}${e.path === BIM ? `<span class="fo-acc" title="${esc(LOCKED)}">Restricted · BIM</span>` : ""}${quickOpen(e)}${where}</span>`
+      + `<span class="muted" title="${esc(dayTime(e.bin ? e.at : e.mtime))}">${esc(when(e.bin ? e.at : e.mtime) || "—")}</span>`
+      + `<span class="muted c-size">${e.dir ? (e.count != null ? `${e.count} item${e.count === 1 ? "" : "s"}` : "—") : esc(size(e.size))}</span>`
+      + `<span class="muted c-by">${esc(e.locked && !e.dir && !e.by ? "LWK Viewer" : e.by || "—")}</span>`
       + `<button class="fo-dots" data-dots title="More">&#8943;</button></div>`;
   }
+  // the space under the list: drop files there (or click) to upload here
+  if (F.mode === "folder" && !F.locked) {
+    h += `<div class="fo-dropzone" data-act="up" title="Upload into ${esc(F.path || (F.proj ? F.proj.name : ""))}">`
+      + `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>`
+      + `<div><b>Drop files here</b> to upload to ${esc(nameOf(F.path) || (F.proj ? F.proj.name : "this folder"))}</div>`
+      + `<small>or click to choose files</small></div>`;
+  }
   list.innerHTML = h;
+}
+
+/* A model or a PDF opens straight in 3D or Sheets from its row. */
+function quickOpen(e) {
+  if (e.dir || e.bin) return "";
+  if (e.open && (e.nofile || e.kind === "model")) return `<a class="fo-qo" href="${esc(e.open)}" title="Open this model on the 3D page">Open in 3D</a>`;
+  if (extOf(e.name) === "pdf") return `<button type="button" class="fo-qo" data-qo-sheets title="Add this PDF to the Sheets page and open it there">Open in Sheets</button>`;
+  return "";
 }
 
 /* Sorting by a heading: ascending, descending, then the usual order.
@@ -272,7 +287,7 @@ function paintTree() {
     const open = F.open.has(p);
     return `<div class="fo-node${open ? " open" : ""}" data-node="${esc(p)}">`
       + `<button class="fo-nl${isBim(p) ? "" : " fo-drop-t"}${F.mode === "folder" && F.path === p ? " on" : ""}" data-path="${esc(p)}"${p && !isBim(p) ? ' draggable="true"' : ""}>`
-      + `<span class="tw" data-tw>${ks.length ? "&#9654;" : ""}</span><span>${p === BIM ? "&#128274;" : "&#128193;"}</span><span class="nm">${esc(label)}</span></button>`
+      + `<span class="tw" data-tw>${ks.length ? "&#9654;" : ""}</span><span>${p === BIM ? "&#128274;" : "&#128193;"}</span><span class="nm" title="${esc(label)}">${esc(label)}</span></button>`
       + (ks.length && open ? `<div class="fo-kids">${ks.map((k) => node(k, nameOf(k))).join("")}</div>` : "")
       + `</div>`;
   };
@@ -1108,6 +1123,23 @@ function wire() {
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && document.body.classList.contains("fo-wide") && !document.querySelector(".t-modal")) setWide(false);
   });
+  // the folder tree's right edge: drag to make it wider (remembered)
+  const side = $("#fo-side");
+  const sw = lsGet("sideW", 0);
+  if (sw) side.style.width = sw + "px";
+  const sg = document.createElement("div");
+  sg.className = "fo-side-grip";
+  sg.title = "Drag to make the folders wider or narrower";
+  side.appendChild(sg);
+  sg.addEventListener("pointerdown", (ev) => {
+    if (PHONE()) return;
+    ev.preventDefault();
+    const x0 = ev.clientX, w0 = side.offsetWidth;
+    const move = (m) => { side.style.width = Math.min(560, Math.max(180, w0 + m.clientX - x0)) + "px"; };
+    const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); lsSet("sideW", side.offsetWidth); };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+  });
   // the preview's left edge: drag to make it wider (remembered)
   const prev = $("#fo-prev");
   const pw = lsGet("prevW", 0);
@@ -1133,9 +1165,14 @@ function wire() {
   const list = $("#fo-list");
   const itemOf = (row) => row && F.items.find((i) => i.path === row.dataset.path);
   list.addEventListener("click", (ev) => {
+    const act = ev.target.closest("[data-act]");
+    if (act && act.dataset.act === "up") return $("#fo-file").click();
+    if (act && act.dataset.act === "newdir") return newFolder();
     const row = ev.target.closest(".fo-row");
     if (!row) { F.sel.clear(); paintSel(); return; }
     const e = itemOf(row);
+    if (ev.target.closest("[data-qo-sheets]")) return toSheets(e);
+    if (ev.target.closest("a.fo-qo")) return;
     if (ev.target.closest("[data-dots]")) { const r = ev.target.getBoundingClientRect(); return itemMenu(e, r.left - 200, r.bottom); }
     if (ev.target.closest("[data-open]") && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey) return openItem(e);
     if (ev.ctrlKey || ev.metaKey) { F.sel.has(e.path) ? F.sel.delete(e.path) : F.sel.add(e.path); }

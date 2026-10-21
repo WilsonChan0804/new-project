@@ -14,12 +14,13 @@ import { installSearch } from "./search.js";
 import { installHelp } from "./help.js";
 import { startNotify } from "./notify.js";
 import { checkWhatsNew } from "./whatsnew.js";
+import { installHeader } from "./header.js";
 
 
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-11-25";
+const LWK_VERSION = "2026-11-26";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -542,6 +543,8 @@ export async function projectOptions(current, fallback) {
   }
 }
 
+// one header layout on every page: logo, project picker, tabs, then search / bell / help / you
+if (document.querySelector("header")) installHeader({ api, project, link });
 // the search on every page (search.js): its button goes into #lwk-nav
 if (document.querySelector("header")) installSearch();
 // the Help (the manual, searchable): ? beside the search, and F1 (help.js)

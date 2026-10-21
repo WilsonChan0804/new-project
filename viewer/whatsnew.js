@@ -6,6 +6,19 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-26", date: "21 Oct 2026",
+    items: [
+      "**One header on every page.** The project you are in is always top left, beside the logo - click it to switch project. Then the pages (Projects, Dashboard, Sheets, 3D, Board, Tasks, Chat, Calendar, Folders), and Search, notifications, help and your profile always at the right. On Sheets and 3D the page's own tools (Comment / Issue, Files, Navigate, Measure, Floor plan ...) are on a toolbar just under it.",
+      "**Dates are written one way everywhere:** \"7 Oct\" this year, \"7 Oct 2025\" for an older one, and \"2 h ago\" for recent activity.",
+      "**Each colour means one thing:** amber is open, blue is in progress (or information, like holidays), green is resolved or done, red is overdue. Orange is only the LWK brand and the main button.",
+      "**Dashboard:** four key numbers (Open, Overdue, Resolved in the period, Average time to resolve) with the rest on one quiet line, filters as one row of chips (office, team and dismissed issues under More filters), \"Resolved\" used everywhere instead of a mix of closed / resolved, \"41 days overdue\" instead of a date, and \"Updated 2 min ago\" that refreshes by itself.",
+      "**Folders:** the column shows how many items a folder holds, one lock with an explanation on 00 BIM, a drop area for uploads (and Upload / New folder buttons in an empty folder), Open in 3D / Open in Sheets on a model's or a PDF's row, full names on hover, and the folder tree can be made wider by dragging its edge.",
+      "**Calendar:** one + New button (event, meeting, task, leave), Sync to Outlook as a quiet button, a colour legend that also switches each kind on and off, \"Due:\" on issues, and a new Week view.",
+      "**Board:** a board you open for the first time is shown at a readable size from its top, and Frames (bottom right) lists its sections to jump to.",
+      "**Tasks:** done tasks are hidden until you click Show done. **Sheets:** the markup tools are in families (shapes, clouds, drawing, text, measuring, more) - each shows the one you used last, the arrow beside it the rest. **Chat:** a pasted screenshot is named after when it was taken, not \"image.png\".",
+    ],
+  },
+  {
     version: "2026-11-25", date: "21 Oct 2026",
     items: [
       "**Tasks:** unticking a task you ticked by mistake now puts its old percent back, and changing a 100% task to a lower number unticks it again. Tasks that were already ticked done now show 100%.",

@@ -71,10 +71,20 @@ export function pendingHtml(list) {
     + `<button type="button" class="ghost" data-unpend="${i}" title="Remove">&#10005;</button></span>`).join("");
 }
 
+/* A pasted screenshot comes as "image.png": it gets a name that says what
+   and when, so the card in the chat (and Folders) can be told apart. */
+function named(f) {
+  if (!/^(image|pasted|blob)(\.\w+)?$/i.test(f.name || "") || typeof File === "undefined") return f;
+  const d = new Date(), p = (n) => String(n).padStart(2, "0");
+  const ext = ((f.type || "").split("/")[1] || "png").replace("jpeg", "jpg");
+  const nm = `Screenshot ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}.${p(d.getSeconds())}.${ext}`;
+  try { return new File([f], nm, { type: f.type }); } catch (e) { return f; }
+}
+
 /* Paste and drop onto an element: calls take(fileList). */
 export function catchFiles(el, take) {
   el.addEventListener("paste", (ev) => {
-    const fs = Array.from((ev.clipboardData && ev.clipboardData.files) || []);
+    const fs = Array.from((ev.clipboardData && ev.clipboardData.files) || []).map(named);
     if (fs.length) { ev.preventDefault(); take(fs); }
   });
   el.addEventListener("dragover", (ev) => {

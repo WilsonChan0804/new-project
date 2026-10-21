@@ -10,14 +10,13 @@
  * nothing from the previous job survives into the next.
  */
 import * as Store from "./store.js";
+import { day } from "./dates.js";
 
 const esc = (s) => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function when(t) {
-  const d = new Date(t * 1000);
-  return isNaN(d) ? "" : d.toLocaleDateString(undefined,
-    { day: "numeric", month: "short", year: "numeric" });
+  return day(t);
 }
 
 function go(id) {

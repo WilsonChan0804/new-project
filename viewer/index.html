@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>LWK Viewer</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="shell.css">
 <link rel="manifest" href="app.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -304,9 +305,9 @@
       <input type="search" id="item-search" placeholder="Search">
     </div>
     <div id="filter-bar">
-      <select id="flt-type" title="Only issues of this type"><option value="">All types</option></select>
+      <select id="flt-type" title="Only issues of this type"><option value="">Type: all</option></select>
       <select id="flt-status" title="Only issues with this status">
-        <option value="">All status</option><option value="open-any">Open or in progress</option>
+        <option value="">Status: all</option><option value="open-any">Open or in progress</option>
         <option value="Open">Open</option><option value="In progress">In progress</option>
         <option value="Resolved">Resolved</option><option value="Closed">Closed</option>
         <option value="done-any">Resolved or closed</option><option value="query">With an open query</option>

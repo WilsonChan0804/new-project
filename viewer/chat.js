@@ -34,6 +34,7 @@ import { toWhatsApp, parseWhatsApp, readExport, waText } from "./whatsapp.js";
 import { formatHtml, plainText, formatKey } from "./chatfmt.js";
 import { RichBox } from "./richbox.js";
 import { pollHtml, eventHtml, pollForm, eventForm, taskForm, vote, closePoll, rsvp } from "./chatcards.js";
+import { day, time, wday } from "./dates.js";
 
 const C = {
   me: null, uid: null, people: [], byUid: {}, rooms: [], joinable: [], threads: [], projects: {},
@@ -182,8 +183,8 @@ function short(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return "";
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (d.toDateString() === today.toDateString()) return time(d);
+  return day(d);
 }
 
 /* ------------------------------------------------------------ a room */
@@ -646,7 +647,7 @@ function paintMsgs(toBottom) {
     const d = new Date(m.created_at).toDateString();
     if (d !== day) {
       day = d;
-      h += `<div class="c-day"><span>${esc(new Date(m.created_at).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }))}</span></div>`;
+      h += `<div class="c-day"><span>${esc(wday(m.created_at, true))}</span></div>`;
       return void (h += msgHtml(m, null));
     }
     h += msgHtml(m, C.msgs[i - 1]);

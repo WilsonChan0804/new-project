@@ -14,15 +14,15 @@
 
 import { api, project } from "./nav.js";
 import { ISSUE_TYPES } from "./issuetypes.js";
+import { day, dayTime } from "./dates.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const STATUS_COLORS = { "Open": "#e2453c", "In progress": "#e8a13a", "Resolved": "#3b82f6",
-                        "Closed": "#0e9f6e", "Not an issue": "#9ca3af" };
+const STATUS_COLORS = { "Open": "#e8a13a", "In progress": "#3b82f6", "Resolved": "#0e9f6e", "Closed": "#0b6b4c", "Not an issue": "#9ca3af" };
 const TYPE = new Map(ISSUE_TYPES.map((t) => [t.id, t]));
 const MM_PT = 72 / 25.4;
-const fmt = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
+const fmt = (d) => (d ? day(d, true) : "");
 
 const R = { man: null, items: [], issues: [], me: null, pdfs: new Map() };
 
@@ -179,7 +179,7 @@ async function render() {
   const kpi = (l, v, c) => `<div class="kpi ${c || ""}"><b>${v}</b><span>${l}</span></div>`;
   let html = `<section class="page cover">
     <h1>Issue report · <span>${esc(title)}</span></h1>
-    <div class="sub">${esc(new Date().toLocaleString())}${who ? " · prepared by " + esc(who) : ""} ·
+    <div class="sub">${esc(dayTime(new Date(), true))}${who ? " · prepared by " + esc(who) : ""} ·
       ${R.fromDashboard ? "issues as filtered on the dashboard" : "all open issues"}</div>
     <div class="kpis">${kpi("Issues", list.length)}${kpi("Open", count("Open"))}${kpi("In progress", count("In progress"))}
       ${kpi("Resolved", count("Resolved"))}${kpi("Closed", count("Closed"))}

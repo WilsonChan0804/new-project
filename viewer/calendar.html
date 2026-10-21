@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="dash.css">
 <link rel="stylesheet" href="tasks.css">
 <link rel="stylesheet" href="calendar.css">
+<link rel="stylesheet" href="shell.css">
 <link rel="modulepreload" href="calendar.js">
 <link rel="modulepreload" href="nav.js">
 <link rel="modulepreload" href="pagekit.js">
@@ -59,13 +60,15 @@
     <label id="cal-lgroup-wrap" class="cal-lgroup" hidden>Show the leave of <select id="cal-lgroup"><option value="">All my groups</option></select></label>
     <button class="ghost" id="cal-hol" title="Show the public holidays of Hong Kong and / or the Philippines">Holidays &#9662;</button>
     <button class="ghost" id="cal-groups" title="Calendar groups: the people in a group see each other's leave">Groups</button>
-    <button class="ghost" id="cal-leave" title="Add your annual leave (or right-click a day, or drag across days)">+ Leave</button>
+    <button class="ghost" id="cal-leave" hidden title="Add your annual leave (or right-click a day, or drag across days)">+ Leave</button>
     <div class="seg-sw" id="cal-view">
-      <button data-v="month" class="on">Month</button><button data-v="list">List</button>
+      <button data-v="month" class="on">Month</button><button data-v="week">Week</button><button data-v="list">List</button>
     </div>
-    <button class="ghost" id="cal-new" title="Events are made in a chat, so everyone in it is invited">+ Event</button>
-    <button class="primary" id="cal-outlook" title="See this calendar in Outlook">Add to Outlook</button>
+    <button class="ghost" id="cal-new" hidden title="Events are made in a chat, so everyone in it is invited">+ Event</button>
+    <button class="ghost" id="cal-outlook" title="See this calendar in Outlook (it keeps itself up to date)">Sync to Outlook</button>
+    <button class="primary" id="cal-add" title="Add an event, a meeting, a task or leave (or right-click a day)">+ New &#9662;</button>
   </div>
+  <div class="cal-legend" id="cal-legend" aria-label="Show or hide"></div>
   <div id="cal-body"></div>
   <aside id="cal-side" hidden></aside>
 </main>

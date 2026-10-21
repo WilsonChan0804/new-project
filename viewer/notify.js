@@ -16,6 +16,7 @@
 
 import { showWhatsNew } from "./whatsnew.js";
 import { setTheme, themeHtml } from "./theme.js";
+import { ago as dateAgo } from "./dates.js";
 
 const TOKEN_KEY = "lwk-viewer:token";
 const SEEN_KEY = "lwk-viewer:notified";
@@ -194,7 +195,7 @@ async function recentHtml() {
   try { r = await call("/api/chat/inbox"); } catch (e) { return ""; }
   if (!r.items.length) return `<section><h4>For you</h4><span class="muted">Tasks given to you, @mentions on tasks and issues, issues assigned to you - they show here.</span></section>`;
   const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const when = (a) => { const d = new Date(a); return isNaN(d) ? "" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+  const when = (a) => { return dateAgo(a); };
   return `<section><h4>For you ${r.unread ? `<button class="lnk" data-np="readall">Mark all read</button>` : ""}</h4><div class="np-list">`
     + r.items.slice(0, 20).map((x) => `<div class="np-row"><label class="np-ck" title="${x.read ? "Read - untick to mark unread" : "Mark read"}"><input type="checkbox" data-rd="${esc(x.id)}"${x.read ? " checked" : ""} aria-label="Read"></label>`
       + `<a class="np-it${x.read ? "" : " new"}" href="${esc(x.url)}" data-in="${esc(x.id)}">`

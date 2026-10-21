@@ -6,6 +6,7 @@
 <title>LWK Viewer - Dashboard</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="shell.css">
 <style>
 .dtasks h3 a { font-size: 11px; font-weight: 600; color: var(--accent-deep); margin-left: 8px; text-decoration: none; }
 .dt-k { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
@@ -48,25 +49,11 @@
 </header>
 
 <main id="dash">
-  <section class="filters">
-    <label title="Open issues always show; closed ones only if closed in this period">Closed within
-      <select id="f-range">
-        <option value="0">Any time</option>
-        <option value="7">Last 7 days</option>
-        <option value="30">Last 30 days</option>
-        <option value="90" selected>Last 90 days</option>
-        <option value="365">Last 12 months</option>
-      </select></label>
-    <label>Type <select id="f-type"><option value="">All types</option></select></label>
-    <label>Assigned to <select id="f-assignee"><option value="">Everyone</option></select></label>
-    <label>Office <select id="f-office"><option value="">All offices</option></select></label>
-    <label>Team <select id="f-team"><option value="">All teams</option></select></label>
-    <label>Discipline <select id="f-disc"><option value="">All disciplines</option></select></label>
-    <label class="check"><input type="checkbox" id="f-mine"> Only mine</label>
-    <label class="check"><input type="checkbox" id="f-dismissed"> Include "not an issue"</label>
+  <div class="dash-head">
+    <div><h1>Dashboard</h1><div class="muted" id="d-sub">Issues and tasks of this project</div></div>
     <span class="spacer"></span>
-    <span id="d-updated" class="muted"></span>
-    <button id="d-refresh" class="ghost" title="Fetch the latest">Refresh</button>
+    <span id="d-updated" class="muted live"></span>
+    <button id="d-refresh" class="ghost" hidden title="Fetch the latest">Refresh</button>
     <span class="view-wrap">
       <button id="d-export" title="The issues in the current filter: a report, a spreadsheet or BCF">Export &#9662;</button>
       <div id="d-export-menu" class="view-pop" hidden role="menu">
@@ -75,9 +62,29 @@
         <button id="d-bcf" class="ghost" title="The issues in the current filter as BCF, for Revit, Navisworks or Solibri">BCF<small>For Revit, Navisworks, Solibri</small></button>
         <button id="d-weekly" class="ghost" title="This week's numbers as a PDF in Folders > 00 BIM > Weekly dashboard (it is also kept there every week by itself)">Weekly report to Folders<small>PDF in 00 BIM > Weekly dashboard</small></button>
       </div></span>
+  </div>
+  <section class="filters chips">
+    <label class="fchip" title="Open issues always show; resolved ones only if resolved in this period">Resolved within
+      <select id="f-range">
+        <option value="0">Any time</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90" selected>Last 90 days</option>
+        <option value="365">Last 12 months</option>
+      </select></label>
+    <label class="fchip">Type <select id="f-type"><option value="">All</option></select></label>
+    <label class="fchip">Assigned to <select id="f-assignee"><option value="">Everyone</option></select></label>
+    <label class="fchip">Discipline <select id="f-disc"><option value="">All</option></select></label>
+    <label class="fchip check"><input type="checkbox" id="f-mine"> Only mine</label>
+    <button type="button" id="f-more" class="fchip more" aria-expanded="false">More filters</button>
+    <span id="f-extra" hidden>
+      <label class="fchip">Office <select id="f-office"><option value="">All offices</option></select></label>
+      <label class="fchip">Team <select id="f-team"><option value="">All teams</option></select></label>
+      <label class="fchip check" title="Issues someone marked as not an issue are left out unless this is on"><input type="checkbox" id="f-dismissed"> Show dismissed issues</label>
+    </span>
   </section>
 
-  <section class="card full dtasks" id="d-tasks" hidden></section>
+  <section class="kpis" id="kpis"></section>
 
   <section class="digest" id="digest" hidden>
     <div class="dg-head"><b>This week</b> <span class="muted">last 7 days</span>
@@ -86,11 +93,9 @@
     <div id="dg-body"></div>
   </section>
 
-  <section class="kpis" id="kpis"></section>
-
   <section class="grid">
     <div class="card wide">
-      <h3>Raised and closed, by week <small>last 12 weeks, with the open total</small></h3>
+      <h3>Issues raised and resolved, by week <small>last 12 weeks, with the open total</small></h3>
       <div id="c-trend" class="chart"></div>
     </div>
     <div class="card">
@@ -110,6 +115,8 @@
       <div id="c-where" class="chart"></div>
     </div>
   </section>
+
+  <section class="card full dtasks" id="d-tasks" hidden></section>
 
   <section class="card full">
     <h3>Responsibility <small>who holds what - click a row to filter</small></h3>

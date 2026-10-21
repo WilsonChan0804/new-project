@@ -8,6 +8,7 @@
 
 import { uid, STICKY_COLORS, BRANCH_COLORS } from "./board-util.js";
 import { lwkBimWorkflow } from "./board-bimwf.js";
+import { day } from "./dates.js";
 
 let Z = 0;
 const z = () => ++Z;
@@ -83,7 +84,7 @@ function kanban() {
 
 function notes() {
   const W = 400, G = 20;
-  const d = new Date().toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  const d = day(new Date(), true);
   const out = [text(-W - G / 2, -400, "Meeting notes", 28, 500, true),
                text(-W - G / 2, -356, d + "  -  who was there:", 14, 600)];
   const boxes = [["Agenda", "1. \n2. \n3. ", 0, 0, 240],

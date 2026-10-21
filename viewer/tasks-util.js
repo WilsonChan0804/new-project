@@ -1,3 +1,4 @@
+import * as D from "./dates.js";
 /* Small pieces every Tasks view uses: escaping, dates, avatars, pills and
  * the person / option pickers. */
 
@@ -25,25 +26,13 @@ export function daysBetween(a, b) {
 }
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export function fmtDate(ymd, withYear) {
-  if (!ymd) return "";
-  const y = ymd.slice(0, 4), m = Number(ymd.slice(5, 7)), d = Number(ymd.slice(8, 10));
-  const showYear = withYear || y !== today().slice(0, 4);
-  return `${MON[m - 1]} ${d}` + (showYear ? `, ${y}` : "");
+  return ymd ? D.day(String(ymd).slice(0, 10), withYear) : "";
 }
 export function fmtWhen(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return D.dayTime(iso) || (iso || "");
 }
 export function ago(iso) {
-  const s = (Date.now() - Date.parse(iso)) / 1000;
-  if (!(s >= 0)) return "";
-  if (s < 60) return "just now";
-  if (s < 3600) return Math.floor(s / 60) + " min ago";
-  if (s < 86400) return Math.floor(s / 3600) + " h ago";
-  if (s < 86400 * 30) return Math.floor(s / 86400) + " d ago";
-  return fmtWhen(iso);
+  return D.ago(iso);
 }
 
 export const isOverdue = (t) => !t.done && t.due && t.due.slice(0, 10) < today();

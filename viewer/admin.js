@@ -15,7 +15,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-11-25";
+const LWK_VERSION = "2026-11-26";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -29,13 +29,13 @@ const LWK_VERSION = "2026-11-25";
 import { api, link, project, signOut } from "./nav.js";
 import { avatar } from "./tasks-util.js";
 import { foldSections } from "./panels.js";
+import { day, dayTime } from "./dates.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const ROLE_LABEL = { admin: "Project admin", publisher: "Publisher", member: "Member", viewer: "Viewer" };
-const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined,
-  { day: "numeric", month: "short", year: "numeric" }) : "never");
+const fmt = (iso) => (iso ? day(iso) : "never");
 
 const A = { me: null, projects: [], users: [], pid: "", members: [], regs: [], reg: "", part: "", regCreate: false };
 
@@ -355,9 +355,7 @@ const EVENT_LABEL = { loaded: "loaded", leave: "left", hidden: "put away", crash
 const isPhone = (r) => r.device && /iPhone|iPad|Android/.test(r.device.kind || "");
 const isBad = (r) => r.event === "crash" || r.event === "context-lost";
 
-const fmtDT = (iso) => { const d = new Date(iso); return isNaN(d) ? String(iso || "") :
-  d.toLocaleDateString(undefined, { day: "numeric", month: "short" }) + " "
-  + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }); };
+const fmtDT = (iso) => dayTime(iso) || String(iso || "");
 
 async function loadDevices() {
   try {
@@ -441,7 +439,7 @@ function renderPublishJobs() {
   const dups = all.filter((j) => j.duplicate).length;
   $("#pj-count").innerHTML = `${rows.length} of ${all.length}`
     + (dups ? ` - <span class="pill bad">${dups} line(s): same model published at night from more than one PC</span>` : "");
-  const when = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+  const when = (iso) => { return dayTime(iso); };
   const t = $("#pj-table");
   if (!rows.length) {
     t.innerHTML = `<tr><td class="muted">${all.length ? "Nothing matches." : "No PC has reported any publish settings yet - they appear after the next Publish, night export or Save settings in Revit (extension 2026-10-03a or later)."}</td></tr>`;
@@ -533,9 +531,7 @@ async function loadTaskLists() {
 function fmtWhen(w) {
   const m = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/.exec(w || "");
   if (!m) return w || "";
-  const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
-  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
-    + " " + m[4] + ":" + m[5];
+  return dayTime(new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
 }
 
 async function deleteProject() {

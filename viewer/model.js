@@ -7780,7 +7780,8 @@ function setupDrawers() {
     const on = mq.matches || EMBED;
     document.body.classList.toggle("drawers", on);
     if (!on) close();
-    if (hdr) document.documentElement.style.setProperty("--hdr-h", (EMBED ? 0 : hdr.offsetHeight) + "px");
+    const pb = document.getElementById("page-bar");
+    if (hdr) document.documentElement.style.setProperty("--drawer-top", (EMBED ? 0 : pb ? Math.round(pb.getBoundingClientRect().bottom) : hdr.offsetHeight) + "px");
     requestAnimationFrame(() => dispatchEvent(new Event("resize")));
   };
   if (mq.addEventListener) mq.addEventListener("change", apply); else mq.addListener(apply);

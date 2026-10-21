@@ -1,3 +1,4 @@
+import { dayTime } from "./dates.js";
 /* Sheet version compare - the overlay Bluebeam and ACC call "compare".
  *
  * The sheet on screen (current) and an earlier PDF of it are rendered at
@@ -70,8 +71,7 @@ export function createCompare(ctx) {
   const when = (iso) => {
     const d = new Date(iso);
     if (isNaN(d)) return iso;
-    return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
-      + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    return dayTime(d);
   };
 
   function fillSources() {

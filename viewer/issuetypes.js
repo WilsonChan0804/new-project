@@ -1,3 +1,4 @@
+import { day } from "./dates.js";
 /* Issue types.
  *
  * One list, used by the form, the list grouping, the pins on the sheet and
@@ -39,9 +40,5 @@ export function typeOptions(selected) {
 /* A date written the way a register reads it: day, short month, year.
    The ISO timestamp stays in the record; this is only for display. */
 export function shortDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d)) return "";
-  return d.toLocaleDateString(undefined,
-    { day: "numeric", month: "short", year: "numeric" });
+  return day(iso);
 }

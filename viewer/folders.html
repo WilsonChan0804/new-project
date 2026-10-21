@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="dash.css">
 <link rel="stylesheet" href="tasks.css">
 <link rel="stylesheet" href="folders.css">
+<link rel="stylesheet" href="shell.css">
 <link rel="modulepreload" href="folders.js">
 <link rel="modulepreload" href="nav.js">
 <link rel="modulepreload" href="pagekit.js">
@@ -44,10 +45,10 @@
   <aside id="fo-side">
     <select id="fo-proj" title="Project"></select>
     <nav class="fo-quick">
-      <button data-q="pinned">&#128204; Pinned <small id="fo-n-pinned"></small></button>
-      <button data-q="starred">&#11088; Starred <small id="fo-n-starred"></small></button>
-      <button data-q="recent">&#128337; Recent</button>
-      <button data-q="bin">&#128465; Recently deleted</button>
+      <button data-q="pinned"><span class="fo-qi" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4h6l-1 6 4 4H6l4-4z M12 14v6"/></svg></span>Pinned <small id="fo-n-pinned"></small></button>
+      <button data-q="starred"><span class="fo-qi" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></span>Starred <small id="fo-n-starred"></small></button>
+      <button data-q="recent"><span class="fo-qi" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>Recent</button>
+      <button data-q="bin"><span class="fo-qi" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>Recently deleted</button>
     </nav>
     <div class="fo-treehead">Folders</div>
     <div id="fo-tree"></div>

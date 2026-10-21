@@ -5474,12 +5474,75 @@ function propsShown() {
   if (sc) sc.hidden = !(MEASURE_TOOLS.has(S.tool) || selMeasure);
 }
 
+/* The markup tools in families, one button each: the family's last-used tool
+   shows, the caret beside it lists the rest. Every tool keeps its own button
+   (and key), only hidden while another of its family is the one shown. */
+const TOOL_GROUPS = [
+  ["Shapes", ["rect", "ellipse", "line", "arrow", "polyline", "polygon"]],
+  ["Clouds", ["cloud", "cloudpoly"]],
+  ["Draw", ["pen", "highlight"]],
+  ["Text", ["text", "textbox", "callout"]],
+  ["Measure", ["measure", "dimension", "area", "angle"]],
+  ["More tools", ["snip", "selecttext", "eraser", "match"]],
+];
+function groupTools(tw) {
+  for (const [name, ids] of TOOL_GROUPS) {
+    const btns = ids.map((id) => tw.querySelector(`[data-tool="${id}"]`)).filter(Boolean);
+    if (!btns.length) continue;
+    const g = document.createElement("span");
+    g.className = "tgrp";
+    g.dataset.group = name;
+    btns[0].before(g);
+    for (const b of btns) g.appendChild(b);
+    const car = document.createElement("button");
+    car.type = "button";
+    car.className = "tg-caret";
+    car.title = name + ": " + btns.map((b) => toolOf(b.dataset.tool).label).join(", ");
+    car.setAttribute("aria-label", name);
+    car.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>`;
+    g.appendChild(car);
+    let cur = "";
+    try { cur = localStorage.getItem("lwk-sheets:tg:" + name) || ""; } catch (e) {}
+    showInGroup(g, ids.includes(cur) ? cur : ids[0]);
+    car.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      let pop = document.getElementById("tg-pop");
+      if (pop) { const same = pop.dataset.group === name; pop.remove(); if (same) return; }
+      pop = document.createElement("div");
+      pop.id = "tg-pop";
+      pop.dataset.group = name;
+      pop.innerHTML = btns.map((b) => `<button type="button" data-pick="${b.dataset.tool}" class="${b.dataset.tool === S.tool ? "on" : ""}">`
+        + `<span class="tg-ic">${b.innerHTML}</span><span>${esc(toolOf(b.dataset.tool).label)}</span></button>`).join("");
+      document.body.appendChild(pop);
+      const r = g.getBoundingClientRect();
+      pop.style.left = Math.min(innerWidth - pop.offsetWidth - 8, r.left) + "px";
+      pop.style.top = (r.bottom + 4) + "px";
+      pop.onclick = (e2) => {
+        const p = e2.target.closest("[data-pick]");
+        if (!p) return;
+        pop.remove();
+        setTool(p.dataset.pick);
+      };
+      setTimeout(() => document.addEventListener("pointerdown", function off(e3) {
+        if (!pop.contains(e3.target)) { pop.remove(); document.removeEventListener("pointerdown", off); }
+      }), 0);
+    });
+  }
+}
+function showInGroup(g, id) {
+  for (const b of g.querySelectorAll("[data-tool]")) b.classList.toggle("tg-hide", b.dataset.tool !== id);
+  try { localStorage.setItem("lwk-sheets:tg:" + g.dataset.group, id); } catch (e) {}
+}
+
 function setTool(id) {
   if (INK.pending.length) flushInk();
   if (S.endPoly && id !== S.tool) S.endPoly();
   S.tool = id;
   document.querySelectorAll("#tools button").forEach((b) =>
     b.classList.toggle("active", b.dataset.tool === id));
+  // the tool's family shows it
+  const inG = document.querySelector(`#tools .tgrp [data-tool="${id}"]`);
+  if (inG) showInGroup(inG.closest(".tgrp"), id);
   propsShown();
   const k = toolOf(id).kind;
   const ov = $("#overlay");
@@ -5540,6 +5603,7 @@ function wireChrome() {
   kb.textContent = "\u2328";
   kb.addEventListener("click", openShortcuts);
   tw.appendChild(kb);
+  groupTools(tw);
   labelToolKeys();
   S.toolChipQuiet = true;           // no name flash on opening the page
   setTool("select");
@@ -5888,8 +5952,10 @@ function setupDrawers2d() {
     document.body.classList.toggle("drawers", on);
     document.body.classList.toggle("drawers2d", on);
     if (!on) close();
-    const top = (hdr ? hdr.offsetHeight : 44);
-    document.documentElement.style.setProperty("--hdr-h", top + "px");
+    // the drawers open under the header and the page's own toolbar row
+    const pb = document.getElementById("page-bar");
+    const top = pb ? Math.round(pb.getBoundingClientRect().bottom) : (hdr ? hdr.offsetHeight : 44);
+    document.documentElement.style.setProperty("--drawer-top", top + "px");
     requestAnimationFrame(() => { dispatchEvent(new Event("resize")); if (S.page) fit(); });
   };
   if (mq.addEventListener) mq.addEventListener("change", apply); else mq.addListener(apply);
