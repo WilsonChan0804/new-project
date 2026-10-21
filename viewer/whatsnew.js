@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-24", date: "21 Oct 2026",
+    items: [
+      "**Tasks:** typing 100% complete now auto-ticks the task done, and ticking a task done now auto-fills its percent to 100% - the two stay in sync instead of drifting apart.",
+      "**Gantt:** a task's bar now shows a hatched fill for however much of it is done, so progress is visible on the chart itself, not just in the list.",
+      "**Tasks list:** column widths can now be dragged to resize from a column's header edge, and the list remembers your widths for next time.",
+    ],
+  },
+  {
     version: "2026-11-23", date: "21 Oct 2026",
     items: [
       "**Tasks:** a task or sub-task can now have a percent complete (0-100), entered from the list or its own panel. A task with sub-tasks shows the average of all of them instead (an untouched sub-task counts as 0%) - 2 of 5 sub-tasks at 50% and 100% makes the parent 30%, not 75%. The bar's colour says how fresh the number is (green today, amber a few days, grey if nobody has touched it in a while), and it shows who last set it and when.",

@@ -101,8 +101,12 @@ export function render(T, el) {
         + `<span class="gt-lab" style="left:${x(e) + px + 8}px">${ms ? "<b>Milestone</b> · " : ""}${esc(t.title)}</span>`;
     }
     const w = Math.max(px, (daysBetween(s, e) + 1) * px);
+    // completion, inside the bar itself - a done bar is already solid green, so this is only
+    // worth drawing on one still in progress (including one sitting at 0%, drawn empty)
+    const pct = t.done ? null : T.percentOf(t.id);
+    const fill = pct == null ? "" : `<i class="gt-fill" style="width:${Math.round(w * pct / 100)}px"></i>`;
     return `<span class="gt-bar k-${kind}${t.done ? " done" : ""}" data-id="${esc(t.id)}" style="left:${x(s)}px;width:${w}px;--c:${col}" `
-      + `title="${esc(tip)}"><b class="gt-h l"></b><em>${esc(w > 80 ? t.title : "")}</em><b class="gt-h r"></b></span>`
+      + `title="${esc(tip)}">${fill}<b class="gt-h l"></b><em>${esc(w > 80 ? t.title : "")}</em><b class="gt-h r"></b></span>`
       + (w <= 80 ? `<span class="gt-lab" style="left:${x(s) + w + 6}px">${esc(t.title)}</span>` : "");
   };
 

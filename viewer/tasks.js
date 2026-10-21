@@ -233,6 +233,11 @@ const copy = (v) => (v === undefined ? "" : JSON.parse(JSON.stringify(v)));
 function save(id, patch) {
   const t = S.tasks.get(id);
   if (!t || !T.canEdit()) return;
+  // done and percent complete track each other: reaching 100% is being done, and being
+  // ticked done is reaching 100% - whichever one the patch sets drives the other, so both
+  // land in the same save (and the same Undo step) rather than two separate ones
+  if (patch.percent === 100 && !patch.done && !t.done) patch.done = true;
+  else if (patch.done === true && !("percent" in patch) && t.percent !== 100) patch.percent = 100;
   if (!Undo.replaying()) {
     // the old values of exactly the fields changed: Ctrl+Z saves them back
     const old = {};
@@ -984,6 +989,15 @@ function wire() {
   });
   T.saveCollapsed = () => ls.set("collapsed:" + S.listId, [...S.collapsed]);
 }
+
+/* The Tasks list view's own column widths, dragged by hand and kept per list, the same way
+   saveCollapsed() above keeps which groups are folded. */
+T.colWidths = () => ls.get("colw:" + S.listId, {});
+T.setColWidth = (k, px) => {
+  const w = T.colWidths();
+  w[k] = Math.round(px);
+  ls.set("colw:" + S.listId, w);
+};
 
 /* The same sign-in the dashboard and boards use. */
 async function ensureSignedIn() {

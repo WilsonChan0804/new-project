@@ -25,8 +25,12 @@ export function columns(T) {
   cols.push({ k: "subscribers", name: "Subscribers", w: 150 }, { k: "creator", name: "Creator", w: 130 },
     { k: "created", name: "Created on", w: 130 }, { k: "completed", name: "Completed on", w: 130 },
     { k: "updated", name: "Updated on", w: 130 }, { k: "links", name: "Links & files", w: 120 });
+  const saved = T.colWidths();
+  for (const c of cols) if (saved[c.k]) c.w = saved[c.k];
   return cols.filter((c) => !S.hidden.has(c.k));
 }
+
+const MIN_COL_W = 60;
 
 function cell(T, t, c) {
   if (c.k === "priority") return priorityPill(t.priority);
@@ -134,11 +138,12 @@ export function sortTasks(T, list) {
     return (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : a[2] - b[2]) * d;
   }).map((x) => x[0]);
 }
-function headCell(k, name, cls) {
+function headCell(k, name, cls, resizable) {
   const so = sortState();
   const on = so && so.k === k;
   const arrow = on ? (so.dir === "desc" ? "&#9660;" : "&#9650;") : "&#8661;";
   return `<div class="tl-c tl-sortable${cls ? " " + cls : ""}${on ? " sorted" : ""}" data-sort="${esc(k)}" title="Sort by ${esc(name)}${on ? (so.dir === "desc" ? " (descending - click again for the list's own order)" : " (ascending - click again for descending)") : ""}">`
+    + (resizable ? `<b class="tl-grip" data-grip="${esc(k)}" title="Drag to resize"></b>` : "")
     + `${esc(name)} <span class="tl-sort">${arrow}</span></div>`;
 }
 
@@ -149,7 +154,7 @@ export function render(T, el) {
   const buckets = T.buckets(T.visible());
   for (const b of buckets) b.tasks = sortTasks(T, b.tasks);
   let h = `<div class="tl" style="--cols:${tpl}">`
-    + `<div class="tl-row tl-head">${headCell("title", "Task title", "tl-title")}${cols.map((c) => headCell(c.k, c.name)).join("")}</div>`;
+    + `<div class="tl-row tl-head">${headCell("title", "Task title", "tl-title")}${cols.map((c) => headCell(c.k, c.name, "", true)).join("")}</div>`;
   for (const b of buckets) {
     if (S.groupBy !== "group" && !b.tasks.length && b.key !== "_") continue;
     const shut = S.collapsed.has(b.key);
@@ -172,6 +177,41 @@ export function render(T, el) {
   el.innerHTML = h;
   el.scrollTop = scroll;
   wire(T, el, buckets);
+  wireResize(T, el, cols);
+}
+
+/* Drag a header cell's own grip to resize just that column - every row picks up the new width
+   at once, since they all read the same --cols custom property from their shared ancestor. */
+function wireResize(T, el, cols) {
+  const tl = el.querySelector(".tl");
+  if (!tl) return;
+  for (const grip of el.querySelectorAll("[data-grip]")) {
+    grip.onpointerdown = (ev) => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const k = grip.dataset.grip;
+      const c = cols.find((x) => x.k === k);
+      if (!c) return;
+      grip.setPointerCapture(ev.pointerId);
+      grip.classList.add("drag");
+      const x0 = ev.clientX, w0 = c.w;
+      const move = (e) => {
+        c.w = Math.max(MIN_COL_W, Math.round(w0 + (e.clientX - x0)));
+        tl.style.setProperty("--cols", `minmax(320px, 1fr) ` + cols.map((x) => x.w + "px").join(" "));
+      };
+      const up = () => {
+        grip.classList.remove("drag");
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        grip.removeEventListener("pointercancel", up);
+        T.setColWidth(k, c.w);
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+      grip.addEventListener("pointercancel", up);
+    };
+  }
 }
 
 function wire(T, el, buckets) {

@@ -95,8 +95,12 @@ b.mention { color: var(--accent-deep); }
 .tl-row[data-id]:hover { background: var(--panel-2); }
 .tl-row.sel { background: var(--accent-soft) !important; }
 .tl-head { position: sticky; top: 0; z-index: 2; background: var(--panel); color: var(--muted); font-size: 12px; min-height: 32px; }
-.tl-c { padding: 4px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default; }
+.tl-c { padding: 4px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default; position: relative; }
 .tl-row[data-id] .tl-c[data-col] { cursor: pointer; }
+/* drag handle at a header cell's right edge, for resizing that one column */
+.tl-grip { position: absolute; top: 0; right: -4px; bottom: 0; width: 8px; cursor: col-resize; z-index: 4; }
+.tl-grip::after { content: ""; position: absolute; top: 4px; bottom: 4px; left: 3px; width: 2px; background: var(--line); border-radius: 1px; }
+.tl-grip:hover::after, .tl-grip.drag::after { background: var(--accent); }
 .tl-row[data-id] .tl-c[data-col]:hover { background: var(--line-soft); }
 /* the title column stays put when the table scrolls sideways: it needs its
    own ground, or the cells scrolling under it show through */
@@ -211,6 +215,10 @@ b.mention { color: var(--accent-deep); }
 .gt-bar.done { opacity: .85; }
 .gt-bar.k-open { background: linear-gradient(90deg, var(--c) 55%, color-mix(in srgb, var(--c) 25%, transparent)); }
 .gt-bar.k-none { background: color-mix(in srgb, var(--c) 14%, transparent); border: 1.5px dashed var(--c); color: var(--ink); box-shadow: none; }
+/* how much of the bar is actually done, as a hatched overlay from its left edge - a done bar
+   is already solid green, so this only ever appears on one still in progress */
+.gt-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px 0 0 5px;
+  background: repeating-linear-gradient(135deg, rgba(255,255,255,.4) 0 4px, rgba(255,255,255,.12) 4px 8px); }
 .gt-ms.gold { background: #eab308; border: 2px solid #a16207; width: 16px; height: 16px; top: 9px; box-shadow: 0 0 0 3px rgba(234,179,8,.25); }
 .gt-legend { padding: 4px 16px 8px; border-bottom: 1px solid var(--line-soft); }
 .gt-leg { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11px; color: var(--ink-2); }
