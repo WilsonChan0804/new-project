@@ -38,6 +38,14 @@ def door(x, y, n, z=1500):
 TYPES = {"W": {"operation": "Casement", "fraction": 1.0, "confirmed": True}}
 
 
+class RoomFlags(unittest.TestCase):
+    def test_window_calculation_lets_a_room_in_without_ufa_or_ufs(self):
+        # a bathroom/powder/utility room is commonly ticked No for both UFA_Y/N and UFS_Y/N (it
+        # isn't counted toward either), but still needs its own L&V checked - a separate
+        # "Window Calculation" tick lets it in without having to touch UFA/UFS at all
+        self.assertIn("Window Calculation", LV.DEFAULT_RULES["room_flags"])
+
+
 class UseNames(unittest.TestCase):
     def test_names_of_the_ufa_rooms(self):
         for name, use in [("LIV/DIN", "LIV"), ("O.KIT", "OKIT"), ("OPEN KIT", "OKIT"), ("KIT", "KIT"), ("KIT.", "KIT"),

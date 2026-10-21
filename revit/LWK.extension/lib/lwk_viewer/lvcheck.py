@@ -78,7 +78,11 @@ DEFAULT_RULES = {
     "implausible_light_m2": 15.0,
     # Rooms mode: the yes/no parameters that mark a room as one the check applies to (either one),
     # and the parameters that say which flat and which block a room belongs to
-    "room_flags": ["UFA_Y/N", "UFS_Y/N"],
+    # "Window Calculation" lets a room be checked without being counted as UFA/UFS at all - a
+    # bathroom, powder room or utility room is commonly ticked No for both of those, but still
+    # needs its own lighting/ventilation checked (and, if its own window is not enough, merged
+    # into a dependent room the same way an UFA/UFS room would be)
+    "room_flags": ["UFA_Y/N", "UFS_Y/N", "Window Calculation"],
     "flat_param": "BUD-GBP-Common-Premises_ID",
     "block_param": "BUD-GBP-Common-Premises_Location",
     # a wide panel is looked at every sample_step_mm across its width: a curtain wall
