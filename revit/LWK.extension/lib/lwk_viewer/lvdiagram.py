@@ -20,6 +20,23 @@ gets a separate diagram in each room, each showing only its own portion.
 """
 
 GAP_MM = 600.0   # along a wall, consecutive items more than this apart are a separate run
+MAX_FRAME_MM = 200.0
+MIN_MULLION_MM = 40.0
+
+
+def _frame_margin(width, height, glass_m2):
+    """The uniform frame width m around a window whose measured glass is smaller than its overall
+    width x height: (w - 2m)(h - 2m) = glass. None when the glass fills (nearly) all of it."""
+    if not glass_m2 or width <= 0 or height <= 0:
+        return None
+    g = glass_m2 * 1e6
+    if g >= 0.97 * width * height:
+        return None
+    disc = (width + height) ** 2 - 4.0 * (width * height - g)
+    if disc < 0:
+        return None
+    m = ((width + height) - disc ** 0.5) / 4.0
+    return min(MAX_FRAME_MM, max(0.0, m)) or None
 
 
 def _tangent(n):
@@ -121,6 +138,14 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
         if glaze_w and glaze_h and (glaze_w < width - 1.0 or glaze_h < height - 1.0):
             glaze_rect = {"left": max(0.0, (width - glaze_w) / 2.0), "bottom": max(0.0, (height - glaze_h) / 2.0),
                          "width": min(glaze_w, width), "height": min(glaze_h, height)}
+        elif w.get("cat") in ("Windows", "Doors") and w.get("light_meas"):
+            # no glazing size from the family (or one that could not be right): the frame is
+            # whatever the measured glass leaves of the overall size, as an even margin all round
+            # - so a window or sliding door shows its frame the same as one whose family says
+            share = w.get("share") or 1.0
+            m = _frame_margin(width, height, w["light_meas"] / share)
+            if m:
+                glaze_rect = {"left": m, "bottom": m, "width": width - 2 * m, "height": height - 2 * m}
         # the glazing's own local extent (the glaze_rect above, when there is one - otherwise the
         # full panel) is what the openable leaf below is sized/centred against, since an openable
         # sub-size is a fraction of the GLASS, not of the surrounding frame
@@ -145,6 +170,14 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
             left = gx0 + max(0.0, min(left, gw0 - open_w))
             open_rect = {"left": left, "bottom": gy0 + max(0.0, (gh0 - open_h) / 2.0),
                         "width": min(open_w, gw0), "height": min(open_h, gh0)}
+        # between a leaf and the fixed glass beside it, the meeting stile / mullion - as wide as the
+        # frame round it (at least MIN_MULLION_MM), at the leaf's inner edge
+        mullion_rects = []
+        if open_rect and open_rect["width"] < gw0 - 1.0:
+            bar = max(MIN_MULLION_MM, glaze_rect["left"] if glaze_rect else 0.0)
+            at_left = open_rect["left"] - gx0 > 1.0
+            x = (open_rect["left"] - bar / 2.0) if at_left else (open_rect["left"] + open_rect["width"] - bar / 2.0)
+            mullion_rects.append({"left": max(gx0, x), "bottom": gy0, "width": bar, "height": gh0})
         color = "frame" if glaze_rect else ("fixed" if open_rect else _color_for(w))
         rects.append({
             "left": center - width / 2.0, "width": width,
@@ -153,8 +186,10 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
             "light_bd": w.get("light_bd"), "light_meas": w.get("light_meas"),
             "open_bd": w.get("open_bd"), "open_meas": w.get("open_meas"),
             "share": w.get("share"), "exact_dims": w.get("exact_dims", False),
-            "glaze_rect": glaze_rect, "glaze_color": _color_for(w) if glaze_rect else None,
-            "open_rect": open_rect,
+            # under an openable leaf, the rest of the glass is the fixed part
+            "glaze_rect": glaze_rect,
+            "glaze_color": (("fixed" if open_rect else _color_for(w)) if glaze_rect else None),
+            "open_rect": open_rect, "mullion_rects": mullion_rects,
         })
     base = min(r["left"] for r in rects)
     for r in rects:

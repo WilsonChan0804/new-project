@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-12-03"
+__version__ = "2026-12-04"
 
 import io
 import json
@@ -727,8 +727,9 @@ def _json_default(o):
         return u"%s" % o
 
 
-def write_json(path, rows, unmatched, type_counts):
-    d = {"schema": "lwk.lv/1", "version": __version__, "rooms": rows, "unmatched": unmatched, "types": type_counts}
+def write_json(path, rows, unmatched, type_counts, dropped_rooms=None):
+    d = {"schema": "lwk.lv/1", "version": __version__, "rooms": rows, "unmatched": unmatched, "types": type_counts,
+         "dropped_rooms": dropped_rooms or []}
     txt = json.dumps(d, ensure_ascii=True, indent=1, default=_json_default)
     with io.open(path, "w", encoding="utf-8") as f:
         f.write(txt if isinstance(txt, type(u"")) else txt.decode("ascii"))
@@ -806,46 +807,90 @@ def _norm_flag(s):
 
 
 def _flag_value(p):
-    """True / False from a yes-no (or Yes/No text) parameter; None when it has no value."""
+    """True / False from a yes-no (or Yes/No text) parameter; None when it has no value. Read by
+    the parameter's own storage type - never decided by an exception."""
     try:
         if not p.HasValue:
             return None
     except Exception:
         return None
+    st = ""
     try:
-        return p.AsInteger() == 1 if p.AsString() is None else (p.AsString() or "").strip().lower() in ("yes", "y", "1", "true")
+        st = str(p.StorageType)
     except Exception:
+        pass
+    if st.endswith("Integer"):
         try:
             return p.AsInteger() == 1
         except Exception:
-            return None
-
-
-def _flag_hits(el, names):
-    """(seen, ticked): whether the room has any of the flag parameters at all, and which of them
-    (by their rules name) are ticked. Looked up by exact name first, then by a normalised name
-    (case, spaces and underscores ignored), so "Window Calculation", "Window_Calculation" and
-    "WINDOW CALCULATION" all count - an exact-name miss used to read as "not ticked"."""
-    seen, ticked, by_norm = False, [], None
-    for n in names:
+            pass
+    if st.endswith("String"):
         try:
-            p = el.LookupParameter(n)
+            return (p.AsString() or "").strip().lower() in ("yes", "y", "1", "true")
         except Exception:
-            p = None
-        if p is None:
-            if by_norm is None:
-                by_norm = {}
-                try:
-                    for q in el.Parameters:
-                        by_norm.setdefault(_norm_flag(q.Definition.Name), q)
-                except Exception:
-                    pass
-            p = by_norm.get(_norm_flag(n))
-        if p is None:
+            pass
+    try:
+        v = p.AsValueString()
+        if v is not None:
+            return v.strip().lower() in ("yes", "y", "1", "true", u"\u662f")
+    except Exception:
+        pass
+    try:
+        return p.AsInteger() == 1
+    except Exception:
+        return None
+
+
+def _flag_params(el, n, by_norm):
+    """Every parameter of el that is the flag n: all with exactly that name (a model can carry two
+    - a shared and a project parameter of the same name - and LookupParameter only ever returns
+    the first, which may be the empty one), plus any whose normalised name matches."""
+    found = []
+    try:
+        for q in el.GetParameters(n) or []:
+            found.append(q)
+    except Exception:
+        try:
+            q = el.LookupParameter(n)
+            if q is not None:
+                found.append(q)
+        except Exception:
+            pass
+    for q in by_norm.get(_norm_flag(n), []):
+        if not any(q is f for f in found):
+            found.append(q)
+    return found
+
+
+def _by_norm(el):
+    out = {}
+    try:
+        for q in el.Parameters:
+            out.setdefault(_norm_flag(q.Definition.Name), []).append(q)
+    except Exception:
+        pass
+    return out
+
+
+def _flag_hits(el, names, readings=None):
+    """(seen, ticked): whether the room has any of the flag parameters at all, and which of them
+    (by their rules name) are ticked - ticked when ANY parameter of that name reads Yes. Matched by
+    exact name and by a normalised one (case, spaces and underscores ignored). readings, when a
+    list is given, gets one "name=Yes/No (n params)" per flag, for the output."""
+    seen, ticked = False, []
+    norm = _by_norm(el)
+    for n in names:
+        ps = _flag_params(el, n, norm)
+        if not ps:
             continue
         seen = True
-        if _flag_value(p):
+        vals = [_flag_value(q) for q in ps]
+        on = any(vals)
+        if on:
             ticked.append(n)
+        if readings is not None:
+            readings.append(u"%s=%s%s" % (n, "Yes" if on else ("No" if any(v is False for v in vals) else "empty"),
+                                          (" (%d params)" % len(ps)) if len(ps) > 1 else ""))
     return seen, ticked
 
 
@@ -864,36 +909,49 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
     """The placed Rooms to check, with their boundary loops in mm (in this model's
     coordinates, also for rooms of a linked model). A room is taken when one of the
     yes-no parameters in rules["room_flags"] is ticked; a project without those
-    parameters gives every room and the names decide. -> (rooms, skipped) where
-    skipped lists the names of ticked rooms that are no lighting / ventilation room."""
+    parameters gives every room and the names decide. -> (rooms, skipped, dropped) where
+    skipped lists the names of ticked rooms that are no lighting / ventilation room, and
+    dropped every other room left out, with why - so a room that should be in never just
+    silently vanishes from the table."""
     from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, BuiltInParameter,
                                    SpatialElementBoundaryOptions)
     from lwk_viewer.compat import id_int
     rules = rules or DEFAULT_RULES
     flags = rules.get("room_flags", [])
     opt = SpatialElementBoundaryOptions()
-    out, skipped = [], {}
+    out, skipped, dropped = [], {}, []
     flag_counts.clear()
     for label, d, tf in link_sources(doc, include_links):
         dz = (tf.Origin.Z * FT_MM) if tf is not None else 0.0
         for r in FilteredElementCollector(d).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType():
+            name = ""
+            try:
+                name = r.get_Parameter(BuiltInParameter.ROOM_NAME).AsString() or ""
+            except Exception:
+                pass
+
+            def drop(why):
+                try:
+                    num = r.Number or ""
+                    lvn = r.Level.Name if r.Level is not None else ""
+                except Exception:
+                    num, lvn = "", ""
+                dropped.append({"name": name, "number": num, "level": lvn, "source": label, "why": why,
+                                "use": use_of(name)})
             try:
                 if r.Area is None or r.Area <= 0 or r.Location is None:
-                    continue
-                seen, ticked = _flag_hits(r, flags)
+                    continue    # unplaced / unenclosed: not a room at all
+                readings = []
+                seen, ticked = _flag_hits(r, flags, readings)
                 if seen and not ticked:
+                    drop(u"not ticked: " + u", ".join(readings))
                     continue
                 for n in ticked:
                     flag_counts[n] = flag_counts.get(n, 0) + 1
                 lvl = r.Level
                 lev_mm = (lvl.Elevation * FT_MM + dz) if lvl is not None else 0.0
                 if level_elevs and not any(abs(lev_mm - e) <= 150 for e in level_elevs):
-                    continue
-                name = ""
-                try:
-                    name = r.get_Parameter(BuiltInParameter.ROOM_NAME).AsString() or ""
-                except Exception:
-                    pass
+                    continue    # another floor: not one asked for
                 use_hint, notes = None, []
                 if not use_of(name):
                     if ticked and all(_norm_flag(n) == "windowcalculation" for n in ticked):
@@ -918,6 +976,7 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
                     if len(pts) >= 3:
                         loops.append(pts)
                 if not loops:
+                    drop("no room boundary")
                     continue
                 out.append({"id": id_int(r.Id), "uid": r.UniqueId, "key": u"%s|%s" % (label, r.UniqueId),
                             "number": r.Number or "", "name": name, "source": label,
@@ -926,9 +985,10 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
                             "block": _text_param(r, rules.get("block_param", "")),
                             "level": lvl.Name if lvl is not None else "", "level_mm": lev_mm,
                             "use_hint": use_hint, "notes": notes})
-            except Exception:
+            except Exception as ex:
+                drop(u"error reading it: %s" % ex)
                 continue
-    return out, sorted(skipped.items())
+    return out, sorted(skipped.items()), dropped
 
 
 def collect_areas(doc, scheme_name, level_names=None):

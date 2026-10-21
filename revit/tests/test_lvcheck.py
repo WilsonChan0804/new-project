@@ -576,3 +576,54 @@ class UseHint(unittest.TestCase):
         rows, _, _ = LV.build([r], [], TYPES)
         self.assertEqual(rows[0]["use"], "BATH")
         self.assertIn("taken as a bathroom", rows[0]["notes"])
+
+
+class _Param(object):
+    def __init__(self, name, val, storage="Integer", has=True):
+        self.Definition = type("D", (), {"Name": name})()
+        self.HasValue, self._v, self.StorageType = has, val, storage
+
+    def AsInteger(self):
+        if self.StorageType != "Integer":
+            raise ValueError("not an integer")
+        return self._v
+
+    def AsString(self):
+        return self._v if self.StorageType == "String" else None
+
+    def AsValueString(self):
+        return None
+
+
+class _Room2(object):
+    def __init__(self, params):
+        self.Parameters = params
+
+    def GetParameters(self, n):
+        return [p for p in self.Parameters if p.Definition.Name == n]
+
+    def LookupParameter(self, n):
+        return next(iter(self.GetParameters(n)), None)
+
+
+class DuplicateFlags(unittest.TestCase):
+    FLAGS = ["UFA_Y/N", "UFS_Y/N", "Window Calculation"]
+
+    def test_a_second_parameter_of_the_same_name_that_is_ticked_counts(self):
+        # the bathroom's case: UFA/UFS unticked, and two "Window Calculation" parameters - the
+        # first one LookupParameter finds is empty, the ticked one is the second
+        r = _Room2([_Param("UFA_Y/N", 0), _Param("UFS_Y/N", 0), _Param("Window Calculation", 0, has=False),
+                    _Param("Window Calculation", 1)])
+        readings = []
+        self.assertEqual(LV._flag_hits(r, self.FLAGS, readings), (True, ["Window Calculation"]))
+        self.assertIn("Window Calculation=Yes (2 params)", readings)
+
+    def test_a_yes_no_text_parameter_counts(self):
+        r = _Room2([_Param("UFA_Y/N", 0), _Param("Window Calculation", "Yes", storage="String")])
+        self.assertEqual(LV._flag_hits(r, self.FLAGS)[1], ["Window Calculation"])
+
+    def test_the_readings_say_what_was_read_when_nothing_is_ticked(self):
+        r = _Room2([_Param("UFA_Y/N", 0), _Param("UFS_Y/N", 0), _Param("Window Calculation", 0)])
+        readings = []
+        self.assertEqual(LV._flag_hits(r, self.FLAGS, readings), (True, []))
+        self.assertEqual(readings, ["UFA_Y/N=No", "UFS_Y/N=No", "Window Calculation=No"])

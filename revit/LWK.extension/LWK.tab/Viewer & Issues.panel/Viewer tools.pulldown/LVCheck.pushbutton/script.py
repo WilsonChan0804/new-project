@@ -103,7 +103,7 @@ use_links = use_links.startswith("This model and")
 
 # 2. the rooms: Rooms ticked UFA / UFS, else the Areas of an area scheme
 out.print_md("### Light & Vent - reading the model ...")
-areas, skipped = LV.collect_rooms(doc, level_elevs, rules, use_links)
+areas, skipped, dropped = LV.collect_rooms(doc, level_elevs, rules, use_links)
 scheme = None
 source_label = "Rooms ticked " + " / ".join(rules["room_flags"])
 if not areas:
@@ -122,7 +122,7 @@ if not areas:
     if not scheme:
         script.exit()
     areas = LV.collect_areas(doc, scheme, levels)
-    skipped = []
+    skipped, dropped = [], []
     source_label = "Areas of " + scheme
     if not areas:
         forms.alert("No placed areas of the scheme '%s' were found%s." % (scheme, " on " + levels[0] if levels else ""), title="Light & Vent")
@@ -216,6 +216,15 @@ out.print_md("### Lighting and ventilation - %s%s" % (source_label, (", " + leve
 out.print_md("%d rooms, %d windows / panels read (%s)." % (len(areas), len(items), ", ".join(sorted(set(i["source"] for i in items))) or "none"))
 out.print_md("Light & Vent %s. Rooms let in by each tick: %s." % (LV.__version__, ", ".join(
     "%s %d" % (n, LV.flag_counts.get(n, 0)) for n in rules.get("room_flags", [])) or "none"))
+# rooms on these floors that look like L&V rooms (or carry a tick at all) but were left out - with
+# what Revit actually returned for each tick, so a room that should be in is never just missing
+shown = [x for x in dropped if x["use"] or "=Yes" in x["why"] or "error" in x["why"] or "boundary" in x["why"]]
+if shown:
+    out.print_md("**Not checked (%d room%s), and why:**" % (len(shown), "" if len(shown) == 1 else "s"))
+    for x in shown[:30]:
+        out.print_md("- %s %s (%s, %s): %s" % (x["number"], x["name"] or "(no name)", x["level"], x["source"], x["why"]))
+    if len(shown) > 30:
+        out.print_md("- ... %d more in the JSON (dropped_rooms)" % (len(shown) - 30))
 if skipped:
     out.print_md("Ticked rooms the check does not assess (no lighting / ventilation use in the name): " + ", ".join("%s x%d" % kv for kv in skipped))
 out.print_md("Required: lighting = area x 1/10, openable = area x 1/16 (the sheet's ratios - the AP confirms them against B(P)R 30 / APP-130). "
@@ -241,7 +250,7 @@ if unmatched:
 path = forms.save_file(file_ext="csv", default_name="light_and_ventilation.csv", title="Save the table")
 if path:
     LV.write_csv(path, rows)
-    LV.write_json(os.path.splitext(path)[0] + ".json", rows, unmatched, counts)
+    LV.write_json(os.path.splitext(path)[0] + ".json", rows, unmatched, counts, dropped)
     out.print_md("Saved **%s** (and the same as .json)." % path)
 
     # 5b. the window area schedule + a program-drawn schematic of every window/curtain-wall

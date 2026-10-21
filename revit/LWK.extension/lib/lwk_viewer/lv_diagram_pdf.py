@@ -166,6 +166,12 @@ def _draw_page(c, d):
                 c.setFont("Helvetica", 6)
                 c.drawCentredString(ox2 + ow2 / 2.0, oy2 + oh2 / 2.0,
                                     u"%s x %s" % (int(orect["width"]), int(orect["height"])))
+        for mr in r.get("mullion_rects") or []:
+            c.setFillColor(COLOR_FRAME)
+            c.setStrokeColor(colors.black)
+            c.setLineWidth(0.4)
+            c.rect(x0 + mr["left"] * scale, y0 + mr["bottom"] * scale, mr["width"] * scale, mr["height"] * scale,
+                   stroke=1, fill=1)
         c.setFillColor(colors.black)
         label = u"%s x %s" % (int(r["width"]), int(r["height"])) if not grect else \
             u"%s x %s" % (int(grect["width"]), int(grect["height"]))

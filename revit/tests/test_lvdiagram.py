@@ -294,3 +294,38 @@ class SystemPanels(unittest.TestCase):
         a, b = item(1000, w=1000, key="W", uid="a"), item(2200, w=1000, key="W", uid="b")
         rows, _, _ = LV.build([liv], [a, b], TYPES)
         self.assertEqual(LD.build_diagrams(rows, [a, b], {("", "5/F"): 3000.0})[0]["frames"], [])
+
+
+class SlidingDoorFrame(unittest.TestCase):
+    def _slider(self, glass=4.116):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        d = item(2000, w=1940, h=2550, key="SLD", glass=glass, open_exact=2.378, open_w_mm=932.5, open_h_mm=2550.0)
+        rows, _, _ = LV.build([liv], [d], {"SLD": {"operation": "Sliding", "fraction": 0.5, "confirmed": True}})
+        return LD.build_diagrams(rows, [d], {("", "5/F"): 3300.0})[0]["rects"][0]
+
+    def test_the_slider_gets_a_frame_from_its_measured_glass(self):
+        r = self._slider()
+        self.assertEqual(r["color"], "frame")
+        m = r["glaze_rect"]["left"]
+        self.assertAlmostEqual((1940 - 2 * m) * (2550 - 2 * m) / 1e6, 4.116, places=3)
+        self.assertGreater(m, 80.0)
+        self.assertLess(m, 110.0)
+
+    def test_the_glass_beside_the_leaf_is_fixed_and_a_mullion_sits_between(self):
+        r = self._slider()
+        self.assertEqual(r["glaze_color"], "fixed")
+        self.assertEqual(len(r["mullion_rects"]), 1)
+        mr = r["mullion_rects"][0]
+        leaf_right = r["open_rect"]["left"] + r["open_rect"]["width"]
+        self.assertAlmostEqual(mr["left"] + mr["width"] / 2.0, leaf_right, places=1)
+        self.assertAlmostEqual(mr["height"], r["glaze_rect"]["height"], places=1)
+
+    def test_glass_filling_the_whole_window_means_no_frame(self):
+        r = self._slider(glass=1.94 * 2.55)
+        self.assertIsNone(r["glaze_rect"])
+
+    def test_a_curtain_panel_never_gets_a_frame_from_its_glass(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        p = item(2000, w=1000, h=2000, key="P", cat="Curtain panels", glass=1.0)
+        rows, _, _ = LV.build([liv], [p], {"P": {"operation": "Fixed", "fraction": 0.0, "confirmed": True}})
+        self.assertIsNone(LD.build_diagrams(rows, [p], {("", "5/F"): 3000.0})[0]["rects"][0]["glaze_rect"])
