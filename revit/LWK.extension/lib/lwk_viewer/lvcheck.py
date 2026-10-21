@@ -66,6 +66,13 @@ DEFAULT_RULES = {
     # the flat: the area number up to its last "-" (A1-3 -> A1); or "param:<name>"
     "flat_from": "number_prefix",
     "probe_mm": [200, 500, 900],     # how far inside a window the room is looked for
+    # how far inside a DOOR the rooms either side of it are looked for - kept short on purpose:
+    # a door's own reveal is shallow (unlike a window's probe, which has to reach past a deep
+    # frame), and the room beside a door is often a corridor too narrow to have its own UFA/UFS
+    # tick (so it was never collected as a room at all) - probing as far as a window's 900mm can
+    # tunnel straight through a narrow corridor and land in whatever real room happens to be on
+    # its far side, wrongly reading as if the door opened directly into it
+    "door_probe_mm": [150, 300],
     # a single opening's own glazing figure above this (m2) cannot be a real domestic
     # window - flag the room instead of trusting it (OK or NOT OK) on a bad reading
     "implausible_light_m2": 15.0,
@@ -501,7 +508,8 @@ def build(areas, items, types, rules=None, doors=None):
     # room its door leads to (same flat, same floor) - found from the model's doors,
     # not assumed to be the flat's living room
     fk = lambda r: (r["block"], r["level"], r["flat"])
-    adj = door_adjacent_rooms(doors, areas, probe) if doors else {}
+    door_probe = rules.get("door_probe_mm", [150, 300])
+    adj = door_adjacent_rooms(doors, areas, door_probe) if doors else {}
     area_by_key = dict((_k(a), a) for a in areas)
     for r in list(rooms.values()):
         if r["use"] not in rules.get("merge_if_insufficient", []):
@@ -513,7 +521,10 @@ def build(areas, items, types, rules=None, doors=None):
         if not neighbours and r["_key"] in area_by_key:
             # no door at all (an open-plan kitchen, say) - fall back to whatever room its own
             # boundary directly touches (a room-separation line, not a wall)
-            neighbours = boundary_adjacent_rooms(area_by_key[r["_key"]], areas, probe)
+            # the same short probe as door_adjacent_rooms, not the window one: an open-plan
+            # boundary has essentially no gap at all, so a deep probe here risks the same
+            # tunnel-through mistake as a door's
+            neighbours = boundary_adjacent_rooms(area_by_key[r["_key"]], areas, door_probe)
         candidates = [rooms[k] for k in neighbours if k in rooms and k != r["_key"] and fk(rooms[k]) == fk(r)]
         prefer = rules.get("merge_prefer", {}).get(r["use"])
         if prefer and len(candidates) > 1:

@@ -121,6 +121,16 @@ class Colour(unittest.TestCase):
         self.assertEqual(colours["OPEN"], "openable")
         self.assertEqual(colours["UNK"], "openable")
 
+    def test_a_system_panel_is_coloured_as_frame_not_glazing(self):
+        # Revit's generic, un-glazed curtain panel family ("System Panel") is a mullion-cover/
+        # solid infill piece, not a window - it must read as frame/solid, not mixed in with the
+        # fixed/openable glazing colours even though build() still gives it a nominal light figure
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        mullion = item(1000, w=25, h=250, key="System Panel : 50mm")
+        rows, _, _ = LV.build([liv], [mullion], TYPES)
+        diagrams = LD.build_diagrams(rows, [mullion], {("", "5/F"): 3000.0})
+        self.assertEqual(diagrams[0]["rects"][0]["color"], "frame")
+
     def test_exact_glazing_dims_with_no_type_classification_is_still_unconfirmed(self):
         # the one case "unconfirmed" (grey) can still happen: a family gives its own exact
         # glazing size, so there's real data to show, but no openable size or type to say how

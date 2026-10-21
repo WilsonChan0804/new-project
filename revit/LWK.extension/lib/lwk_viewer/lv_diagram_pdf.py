@@ -34,6 +34,7 @@ DIM_LANE = 16 * mm   # width reserved on the right for the floor-to-floor dimens
 COLOR_FIXED = colors.HexColor("#f5e400")
 COLOR_OPENABLE = colors.HexColor("#5be8c8")
 COLOR_UNCONFIRMED = colors.HexColor("#cfcfcf")
+COLOR_FRAME = colors.HexColor("#8a8f98")
 
 STATUS_COLORS = {
     "OK": colors.HexColor("#bdf5c9"),
@@ -114,7 +115,8 @@ def _draw_page(c, d):
         c.setDash()
 
     # each sub-panel
-    colour_by_name = {"fixed": COLOR_FIXED, "openable": COLOR_OPENABLE, "unconfirmed": COLOR_UNCONFIRMED}
+    colour_by_name = {"fixed": COLOR_FIXED, "openable": COLOR_OPENABLE, "unconfirmed": COLOR_UNCONFIRMED,
+                     "frame": COLOR_FRAME}
     for r in d.get("rects", []):
         x0, y0 = X(r["left"]), Y(r["bottom"])
         rw, rh = r["width"] * scale, r["height"] * scale
@@ -153,7 +155,7 @@ def _draw_page(c, d):
     rx = w - RIGHT_COL + 2 * mm
     ry = h - MARGIN - 6 * mm
     _legend(c, rx, ry)
-    ry -= 32 * mm
+    ry -= 39 * mm
     ry -= _summary_box(c, rx, ry, RIGHT_COL - 6 * mm, d)
     ry -= 6 * mm
     _panel_table(c, rx, ry, d.get("rects", []))
@@ -206,7 +208,8 @@ def _panel_table(c, x, y_top, rects):
 
 def _legend(c, x, y):
     rows = [(COLOR_FIXED, u"fixed glazing", False), (COLOR_OPENABLE, u"openable glazing", False),
-            (COLOR_UNCONFIRMED, u"not yet confirmed", False), (None, u"excluded from win. area cal.", True)]
+            (COLOR_UNCONFIRMED, u"not yet confirmed", False), (COLOR_FRAME, u"frame / mullion cover (not glazing)", False),
+            (None, u"excluded from win. area cal.", True)]
     c.setFont("Helvetica", 8)
     for i, (fill, label, dashed) in enumerate(rows):
         ry = y - i * 7 * mm

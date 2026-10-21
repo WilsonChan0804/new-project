@@ -44,6 +44,13 @@ def _n_key(n, tol=0.05):
 
 
 def _color_for(w):
+    # a curtain wall's own solid infill/mullion-cover panels (Revit's generic, un-glazed
+    # "System Panel" family, left as the system default unless swapped for a glazed type) are not
+    # a window at all - drawn as their own "frame/solid" colour rather than mixed in with real
+    # glazing, so the mullion pattern around a real panel reads the same as the hand-drawn
+    # reference (a solid fill, not a glazing colour)
+    if "system panel" in (w.get("key") or "").lower():
+        return "frame"
     frac = w.get("fraction")
     if frac is None:
         return "unconfirmed"

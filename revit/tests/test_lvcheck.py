@@ -204,6 +204,23 @@ class AssumedFullOpen(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "NEEDS DATA")
 
 
+class DoorProbeDepth(unittest.TestCase):
+    def test_a_door_does_not_tunnel_through_a_narrow_corridor_into_the_room_beyond(self):
+        # BR1 (0-2000) -- door at 2000 -- an unnamed 400mm corridor (2000-2400, never collected
+        # as a room at all, since it has no recognised use) -- O.KIT (2400-6400). The door really
+        # only opens onto the corridor, not into O.KIT - a probe deep enough to reach past the
+        # corridor (900mm, the window probe) would wrongly read it as opening straight into O.KIT
+        br1 = room("br1", "A-2", "BR1", 0, 2000)
+        kit = room("kit", "A-3", "O.KIT", 2400, 6400)
+        a_door = door(2000, 1000, (1, 0))
+        rows, _, _ = LV.build([br1, kit], [], TYPES, doors=[a_door])
+        by = dict((r["number"], r) for r in rows)
+        # O.KIT has no window and no real door- or boundary-connected neighbour within reach -
+        # it must NOT merge into BR1 (the old, deeper probe's false reading)
+        self.assertNotEqual(by["A-3"]["status"], "WITH A-2")
+        self.assertFalse(by["A-3"]["status"].startswith("WITH"))
+
+
 class KitchenAndUtility(unittest.TestCase):
     def test_an_enclosed_kitchen_never_merges_even_when_not_ok(self):
         # "KIT." (enclosed) has its own door/wall, unlike "O.KIT" - it must always stand on
