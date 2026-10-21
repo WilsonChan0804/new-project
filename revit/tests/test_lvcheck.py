@@ -180,6 +180,30 @@ class Table(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "NOT OK")
 
 
+class AssumedFullOpen(unittest.TestCase):
+    def test_no_openable_data_at_all_assumes_the_whole_glazing_opens(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)   # 16 m2: needs 1.6 m2 light, 1 m2 open
+        # key "UNKNOWN" has no TYPES entry and guess_operation can't classify it from its name,
+        # and it has no GBP_Openable_* dims either - nothing at all to go on
+        rows, _, _ = LV.build([liv], [item(2000, w=2000, h=1500, key="UNKNOWN")], {})
+        w = rows[0]["windows"][0]
+        self.assertEqual(w["fraction"], 1.0)
+        self.assertTrue(w["confirmed"])
+        self.assertAlmostEqual(rows[0]["prov_open_bd"], rows[0]["prov_light_bd"], places=3)
+        self.assertTrue(any("assumed the whole glazing opens" in n for n in rows[0]["notes"]))
+        self.assertNotEqual(rows[0]["status"], "NEEDS DATA")
+
+    def test_a_guessed_but_unconfirmed_type_is_unaffected(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
+        # "CASEMENT" is guessed (fraction 1.0) but not confirmed - still needs the AP's say-so,
+        # the assumed-full-open rule must not quietly wave that through
+        rows, _, _ = LV.build([liv], [item(2000, w=2000, h=1500, key="CASEMENT WINDOW")], {})
+        w = rows[0]["windows"][0]
+        self.assertFalse(w["confirmed"])
+        self.assertFalse(w.get("assumed_full_open"))
+        self.assertEqual(rows[0]["status"], "NEEDS DATA")
+
+
 class KitchenAndUtility(unittest.TestCase):
     def test_an_enclosed_kitchen_never_merges_even_when_not_ok(self):
         # "KIT." (enclosed) has its own door/wall, unlike "O.KIT" - it must always stand on

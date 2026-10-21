@@ -451,6 +451,14 @@ def build(areas, items, types, rules=None, doors=None):
             frac = info["fraction"]
         else:
             confirmed = True
+        open_exact_known = it.get("open_m2_exact") is not None
+        assumed_full_open = False
+        if frac is None and not open_exact_known:
+            # nothing at all to go on for how much of this opens - no family-given openable
+            # size, no confirmed type, not even a guess from its name - rather than block the
+            # room on a type the AP would otherwise have to confirm, assume the whole glazing
+            # opens (flagged below so the row still says this is an assumption, not a reading)
+            frac, confirmed, assumed_full_open = 1.0, True, True
         glaze_exact = it.get("glaze_m2_exact")
         if glaze_exact is not None:
             nominal_light = glaze_exact
@@ -476,6 +484,7 @@ def build(areas, items, types, rules=None, doors=None):
                 "open_bd": op_bd,
                 "open_meas": (meas * frac) if (meas is not None and frac is not None) else None,
                 "operation": info["operation"], "fraction": frac, "confirmed": confirmed,
+                "assumed_full_open": assumed_full_open,
                 "exact_dims": glaze_exact is not None or open_exact is not None,
                 # the family's own openable sub-size, when it has one (e.g. a "2-panels" family
                 # whose GBP_Openable_Width/Height cover only one of its two leaves) - so the diagram
@@ -559,6 +568,8 @@ def _own_provision(r, rules, req_l=None, req_o=None):
                      % (too_big[0].get("mark") or too_big[0]["key"], max(too_big[0].get("light_bd") or 0, too_big[0].get("light_meas") or 0)))
     if any(w.get("exact_dims") for w in ws):
         notes.append("uses the family's own GBP_Glazing_*/GBP_Openable_* dimensions where available")
+    if any(w.get("assumed_full_open") for w in ws):
+        notes.append("no openable size or type found for a window/panel - assumed the whole glazing opens")
     if not ws:
         status, need = "NO WINDOW", False
         notes.append("no window or panel found for this room")
@@ -1013,6 +1024,23 @@ def _type_key(el, d, BuiltInParameter):
     return key, mark
 
 
+def _panel_origin(el):
+    """(x, y) of a curtain panel family instance's own placement origin, in the
+    document's own coordinates (not yet transformed by a link) - the centre of
+    the panel as the family was placed, unlike its bounding box, which an
+    openable panel's swing/opening symbolics can inflate well past the panel
+    itself (see collect_items). None when no transform is available."""
+    for getter in ("GetTransform", "Transform"):
+        try:
+            t = getattr(el, getter)
+            t = t() if callable(t) else t
+            if t is not None and t.Origin is not None:
+                return (t.Origin.X, t.Origin.Y)
+        except Exception:
+            continue
+    return None
+
+
 def _facing(el, prefer_host=False):
     """The horizontal direction the element faces (out of the building for a
     window); from the instance, else from its host wall - or the other way
@@ -1065,6 +1093,12 @@ def _glass_m2(doc, el, n):
             m = doc.GetElement(face.MaterialElementId)
             if m is not None:
                 if (m.Transparency or 0) > 0 or re.search(r"glass|glaz", (m.Name or ""), re.I):
+                    return True
+                # the Material Browser's own "Class" field (Material.MaterialClass, Revit 2021+) -
+                # a signal independent of how the author happened to name the material, for a
+                # family (built from extrusions with different materials per part, say) whose
+                # glazing material isn't named "glass"/"glaz" and has no Transparency value set
+                if re.search(r"glass", getattr(m, "MaterialClass", u"") or u"", re.I):
                     return True
         except Exception:
             pass
@@ -1127,11 +1161,22 @@ def collect_items(doc, bands=None, measure=True, include_links=True):
                     if bb is None:
                         continue
                     cx, cy = (bb.Min.X + bb.Max.X) / 2.0, (bb.Min.Y + bb.Max.Y) / 2.0
-                    try:
-                        p = el.Location.Point
-                        pos = _tp(tf, XYZ(p.X, p.Y, (bb.Min.Z + bb.Max.Z) / 2.0))
-                    except Exception:
+                    panel_origin = _panel_origin(el) if cname == "Curtain panels" else None
+                    if panel_origin is not None:
+                        # an openable curtain panel's bounding box is inflated by its own swing/
+                        # opening symbolics, which can push the box centre into a neighbouring
+                        # cell entirely - mislocating it in the diagram and, since this same point
+                        # is what serving_rooms probes from, attributing it to the wrong room. The
+                        # family is placed with its origin at the panel's own centre, so that is
+                        # the reliable point to use, ahead of Location.Point and the bounding box
+                        cx, cy = panel_origin
                         pos = _tp(tf, XYZ(cx, cy, (bb.Min.Z + bb.Max.Z) / 2.0))
+                    else:
+                        try:
+                            p = el.Location.Point
+                            pos = _tp(tf, XYZ(p.X, p.Y, (bb.Min.Z + bb.Max.Z) / 2.0))
+                        except Exception:
+                            pos = _tp(tf, XYZ(cx, cy, (bb.Min.Z + bb.Max.Z) / 2.0))
                     if bands and not any(lo <= pos[2] < hi for lo, hi in bands):
                         continue
                     bottom_mm = _tp(tf, XYZ(cx, cy, bb.Min.Z))[2]

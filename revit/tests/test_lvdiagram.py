@@ -107,17 +107,30 @@ class Layout(unittest.TestCase):
 
 
 class Colour(unittest.TestCase):
-    def test_fixed_openable_and_unconfirmed_are_told_apart(self):
+    def test_fixed_openable_and_unknown_type_assumed_open_are_told_apart(self):
         liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
         fixed = item(1000, w=1000, key="FIX")
         openable = item(2200, w=1000, key="OPEN")
+        # no type classification at all, and no GBP openable size either - lvcheck.build()
+        # assumes the whole glazing opens in this case, rather than leaving it unconfirmed
         unknown = item(3400, w=1000, key="UNK")
         rows, _, _ = LV.build([liv], [fixed, openable, unknown], TYPES)
         diagrams = LD.build_diagrams(rows, [fixed, openable, unknown], {("", "5/F"): 3000.0})
         colours = dict((r["mark"] or r["key"], r["color"]) for r in diagrams[0]["rects"])
         self.assertEqual(colours["FIX"], "fixed")
         self.assertEqual(colours["OPEN"], "openable")
-        self.assertEqual(colours["UNK"], "unconfirmed")
+        self.assertEqual(colours["UNK"], "openable")
+
+    def test_exact_glazing_dims_with_no_type_classification_is_still_unconfirmed(self):
+        # the one case "unconfirmed" (grey) can still happen: a family gives its own exact
+        # glazing size, so there's real data to show, but no openable size or type to say how
+        # much of it opens - unlike an ordinary window with nothing at all, this one is not
+        # silently assumed to be fully open, since the family clearly knows its own figures
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        unconfirmed = item(1000, w=1000, key="EXACT", glaze_exact=0.7, open_exact=0.5)
+        rows, _, _ = LV.build([liv], [unconfirmed], TYPES)
+        diagrams = LD.build_diagrams(rows, [unconfirmed], {("", "5/F"): 3000.0})
+        self.assertEqual(diagrams[0]["rects"][0]["color"], "unconfirmed")
 
 
 class PartialOpenable(unittest.TestCase):
