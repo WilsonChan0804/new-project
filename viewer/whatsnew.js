@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-23", date: "21 Oct 2026",
+    items: [
+      "**Tasks:** a task or sub-task can now have a percent complete (0-100), entered from the list or its own panel. A task with sub-tasks shows the average of all of them instead (an untouched sub-task counts as 0%) - 2 of 5 sub-tasks at 50% and 100% makes the parent 30%, not 75%. The bar's colour says how fresh the number is (green today, amber a few days, grey if nobody has touched it in a while), and it shows who last set it and when.",
+    ],
+  },
+  {
     version: "2026-11-22", date: "17 Oct 2026",
     items: [
       "**Help and the user manual: 19 more numbered pictures** - the View menu, Split, Compare and 2D + 3D on Sheets; raising an issue (2D and 3D); the 3D Section, Measure, Display and Floor plan; Clash (the rule and the results), Headroom (the settings and the results) and the SBD report; the bell and your profile menu; and the Kanban, Gantt and Dashboard views of a task list.",

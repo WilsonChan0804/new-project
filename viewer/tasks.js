@@ -95,8 +95,11 @@ export const T = {
       const t = T.task(id);
       return t && t.percent != null ? t.percent : null;
     }
-    const vals = k.map((c) => T.percentOf(c.id)).filter((v) => v != null);
-    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+    // every direct sub-task counts, not just the ones someone has set a percent on yet - a
+    // sub-task nobody has touched is 0% done, same as if it were typed in, so 2 of 5 sub-tasks
+    // at 50% and 100% (the rest untouched) makes the parent (50+100)/5 = 30%, not (50+100)/2
+    const sum = k.reduce((a, c) => a + (T.percentOf(c.id) || 0), 0);
+    return Math.round(sum / k.length);
   },
   everyOwner() {
     const m = new Map();
