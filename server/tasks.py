@@ -181,6 +181,10 @@ MIGRATIONS = (
     ("comments", "edited_at", "TEXT NOT NULL DEFAULT ''"),  # changed by its writer after posting
     ("projects", "info", "TEXT NOT NULL DEFAULT '{}'"),    # project no., address, client, GFA ... (INFO_KEYS)
     ("projects", "thumb", "TEXT NOT NULL DEFAULT ''"),     # its picture, <data>/project_thumbs/<file>
+    ("tasks", "percent", "INTEGER"),                       # 0-100, NULL until someone sets it
+    ("tasks", "percent_by", "TEXT NOT NULL DEFAULT ''"),   # who last set it
+    ("tasks", "percent_uid", "INTEGER"),
+    ("tasks", "percent_at", "TEXT NOT NULL DEFAULT ''"),   # when - only touched when the value itself changes
 )
 
 # What the Projects page keeps about a project, beyond its name and code.
@@ -202,10 +206,10 @@ LIST_ROLES = {"viewer": 1, "editor": 2, "owner": 3}
 LINK_KINDS = ("issue", "sheet", "view3d", "onedrive", "sharepoint", "acc", "url")
 # What a patch may set. Everything else is the server's to say.
 PATCHABLE = ("group_id", "parent_id", "title", "description", "done", "priority", "start",
-             "due", "owners", "vals", "links", "sort")
+             "due", "owners", "vals", "links", "sort", "percent")
 # Fields worth a line in the activity feed.
 TRACKED = ("title", "done", "priority", "start", "due", "owners", "group_id", "parent_id",
-           "description", "vals", "links")
+           "description", "vals", "links", "percent")
 
 _LOCK = threading.Lock()
 _READY = set()
@@ -446,7 +450,9 @@ def task_row(r):
             "sort": r["sort"], "comment_count": r["comment_count"], "rev": r["rev"], "ext_id": r["ext_id"] or "",
             "created_by": r["created_by"] or "", "created_uid": r["created_uid"],
             "created_at": r["created_at"] or "",
-            "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or ""}
+            "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or "",
+            "percent": r["percent"], "percent_by": r["percent_by"] or "",
+            "percent_uid": r["percent_uid"], "percent_at": r["percent_at"] or ""}
 
 
 def short(field, v):
@@ -1288,7 +1294,7 @@ def register(app, core):
                 new = dict(cur) if cur else {
                     "group_id": "", "parent_id": "", "title": "", "description": "", "done": False,
                     "priority": "", "start": "", "due": "", "owners": [], "vals": {}, "links": [],
-                    "sort": time.time(), "subscribers": []}
+                    "sort": time.time(), "subscribers": [], "percent": None}
                 for k in PATCHABLE:
                     if k not in p:
                         continue
@@ -1305,6 +1311,11 @@ def register(app, core):
                         v = clean_date(v)
                     elif k == "owners":
                         v = clean_people(v)
+                    elif k == "percent":
+                        try:
+                            v = None if v is None else max(0, min(100, int(round(float(v)))))
+                        except (TypeError, ValueError):
+                            v = new.get("percent")
                     elif k == "vals":
                         merged = dict(new.get("vals") or {})
                         if isinstance(v, dict):
@@ -1351,6 +1362,11 @@ def register(app, core):
                     completed_at = t
                 elif not new["done"]:
                     completed_at = ""
+                percent_by = (cur or {}).get("percent_by") or ""
+                percent_uid = (cur or {}).get("percent_uid")
+                percent_at = (cur or {}).get("percent_at") or ""
+                if new.get("percent") != (cur or {}).get("percent"):
+                    percent_by, percent_uid, percent_at = by, w.uid, t
                 subs = list(new.get("subscribers") or [])
                 # the people on a task follow it, as in Lark
                 for pp in new["owners"]:
@@ -1361,11 +1377,13 @@ def register(app, core):
                 if cur:
                     d.execute(
                         "UPDATE tasks SET group_id=?, parent_id=?, title=?, description=?, done=?, completed_at=?, "
-                        "priority=?, start=?, due=?, owners=?, vals=?, links=?, subscribers=?, sort=?, rev=?, "
+                        "priority=?, start=?, due=?, owners=?, vals=?, links=?, subscribers=?, sort=?, "
+                        "percent=?, percent_by=?, percent_uid=?, percent_at=?, rev=?, "
                         "updated_by=?, updated_at=? WHERE id=?",
                         (new["group_id"], new["parent_id"], new["title"], new["description"], int(new["done"]),
                          completed_at, new["priority"], new["start"], new["due"], json.dumps(new["owners"]),
-                         json.dumps(new["vals"]), json.dumps(new["links"]), json.dumps(subs), new["sort"], rev,
+                         json.dumps(new["vals"]), json.dumps(new["links"]), json.dumps(subs), new["sort"],
+                         new.get("percent"), percent_by, percent_uid, percent_at, rev,
                          by, t, tid))
                     for f in TRACKED:
                         if cur.get(f) != new.get(f):
@@ -1396,13 +1414,15 @@ def register(app, core):
                     d.execute("UPDATE lists SET next_number = next_number + 1 WHERE id = ?", (lid,))
                     d.execute(
                         "INSERT INTO tasks (id, list_id, group_id, parent_id, number, title, description, done, "
-                        "completed_at, priority, start, due, owners, vals, links, subscribers, sort, rev, "
+                        "completed_at, priority, start, due, owners, vals, links, subscribers, sort, "
+                        "percent, percent_by, percent_uid, percent_at, rev, "
                         "created_by, created_uid, created_at, updated_by, updated_at) "
-                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (tid, lid, new["group_id"], new["parent_id"], num, new["title"], new["description"],
                          int(new["done"]), completed_at, new["priority"], new["start"], new["due"],
                          json.dumps(new["owners"]), json.dumps(new["vals"]), json.dumps(new["links"]),
-                         json.dumps(subs), new["sort"], rev, by, w.uid, t, by, t))
+                         json.dumps(subs), new["sort"], new.get("percent"), percent_by, percent_uid, percent_at,
+                         rev, by, w.uid, t, by, t))
                     log(d, lid, tid, new["title"], by, "created")
                     if new["owners"]:
                         events.append(("owner", dict(new, id=tid, list_id=lid), new["owners"]))

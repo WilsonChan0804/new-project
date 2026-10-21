@@ -146,6 +146,25 @@ export function progress(done, total) {
   return `<span class="prog" title="${done} of ${total} sub-tasks done"><i style="width:${pct}%"></i></span>`;
 }
 
+/* How long ago a percent-complete value was last touched, bucketed into the same "fresh / aging /
+   stale" story ago() already tells in words - used to colour the bar so anyone glancing at the
+   list can tell a stale number from one updated today, without reading the tooltip. */
+export function percentBucket(at) {
+  if (!at) return "none";
+  const s = (Date.now() - Date.parse(at)) / 1000;
+  if (!(s >= 0)) return "none";
+  if (s < 86400) return "fresh";
+  if (s < 86400 * 3) return "aging";
+  return "stale";
+}
+
+export function percentBar(pct, at, by) {
+  const bucket = pct == null ? "none" : percentBucket(at);
+  const title = pct == null ? "No percent set yet"
+    : `${pct}%` + (by ? ` - last set by ${by}` : "") + (at ? ` (${fmtWhen(at)})` : "");
+  return `<span class="prog p-${bucket}" title="${esc(title)}"><i style="width:${pct || 0}%"></i></span>`;
+}
+
 /* ------------------------------------------------------------ pop-ups */
 
 let POP = null;

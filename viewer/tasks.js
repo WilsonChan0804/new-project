@@ -85,6 +85,19 @@ export const T = {
     const k = T.children(id);
     return { done: k.filter((t) => t.done).length, total: k.length };
   },
+  /* a task's own effective percent complete: a plain average of its direct sub-tasks' own
+     effective percent (recursing, so a grandparent averages its children's already-averaged
+     numbers), or its own typed-in percent when it has none - null when neither exists, so a
+     task nobody has touched yet is told apart from one genuinely at 0% */
+  percentOf(id) {
+    const k = T.children(id);
+    if (!k.length) {
+      const t = T.task(id);
+      return t && t.percent != null ? t.percent : null;
+    }
+    const vals = k.map((c) => T.percentOf(c.id)).filter((v) => v != null);
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  },
   everyOwner() {
     const m = new Map();
     for (const t of S.tasks.values()) for (const p of t.owners) m.set(p.uid != null ? "u" + p.uid : "n" + p.name, p);
@@ -233,6 +246,11 @@ function save(id, patch) {
   Object.assign(t, patch);
   if (patch.vals) t.vals = Object.assign({}, t.vals, patch.vals);
   if ("done" in patch) t.completed_at = patch.done ? new Date().toISOString() : "";
+  if ("percent" in patch) {
+    t.percent_at = new Date().toISOString();
+    t.percent_by = (S.me || {}).name || "";
+    t.percent_uid = (S.me || {}).uid != null ? S.me.uid : null;
+  }
   const p = pending.get(id) || { id };
   for (const [k, v] of Object.entries(patch)) p[k] = k === "vals" ? Object.assign({}, p.vals || {}, v) : v;
   pending.set(id, p);
@@ -695,7 +713,7 @@ T.registry = registry;
 
 async function editFields() {
   const cols = [["priority", "Priority"], ["owners", "Owner"], ["start", "Start"], ["due", "Due"], ["progress", "Sub-task progress"],
-    ["completed", "Completed on"], ["subscribers", "Subscribers"], ["creator", "Creator"], ["created", "Created on"],
+    ["percent", "% complete"], ["completed", "Completed on"], ["subscribers", "Subscribers"], ["creator", "Creator"], ["created", "Created on"],
     ["updated", "Updated on"], ["links", "Links & files"]];
   const row = (f) => `<div class="eg-row" data-id="${esc(f.id || "")}"><input class="ef-n" value="${esc(f.name)}" placeholder="Column name">`
     + `<select class="ef-t">${["person", "select", "text", "date", "number", "check"].map((t) => `<option${t === f.type ? " selected" : ""}>${t}</option>`).join("")}</select>`

@@ -4,7 +4,7 @@
 
 import { formatHtml } from "./chatfmt.js";
 import { METHOD_OPTS, isMethod, ic } from "./tasks-util.js";
-import { $, esc, avatar, people, fmtDate, fmtWhen, ago, isOverdue, priorityPill, pickPeople, pickOne, pickDate, PRIORITIES, toast, modal } from "./tasks-util.js";
+import { $, esc, avatar, people, fmtDate, fmtWhen, ago, isOverdue, priorityPill, percentBar, pickPeople, pickOne, pickDate, PRIORITIES, toast, modal } from "./tasks-util.js";
 import { chip, makeLink, classify, linkify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 import { elementsBlock, wireElementBlocks } from "./revit.js";
@@ -60,6 +60,16 @@ function row(label, html, act) {
   return `<div class="td-r"><span class="td-l">${label}</span><div class="td-v${act ? " act" : ""}" ${act ? `data-act="${act}"` : ""}>${html}</div></div>`;
 }
 
+function percentRow(T, t, kids) {
+  const pct = T.percentOf(t.id);
+  const bar = `${percentBar(pct, t.percent_at, t.percent_by)}<span>${pct == null ? "" : pct + "%"}</span>`;
+  if (kids.length) return `${bar} <small class="muted">average of ${kids.length} sub-task${kids.length === 1 ? "" : "s"}</small>`;
+  if (pct == null || !t.percent_by) return bar;
+  // who last touched it, and when - the same avatar + relative-time + exact-time-tooltip
+  // template the comment list already uses, so this reads the same way elsewhere in the app
+  return `${bar}<div class="td-pby">${avatar({ name: t.percent_by })}<span class="muted" title="${esc(fmtWhen(t.percent_at))}">${esc(t.percent_by)} ${esc(ago(t.percent_at))}</span></div>`;
+}
+
 function issueUrl(l) {
   return l.url || `index.html?project=${encodeURIComponent(l.project)}&select=${encodeURIComponent(l.ref)}`;
 }
@@ -106,6 +116,7 @@ function paint(T) {
       ${row("&#9776; Group", `${esc(T.S.list.title)} / <b>${esc(g ? g.title : "-")}</b>`
         + (g && g.project ? ` <a class="td-proj" href="index.html?project=${encodeURIComponent(g.project)}">${esc(g.project)}</a>` : ""), ed && !parent && "group")}
       ${row("&#9873; Priority", priorityPill(t.priority), ed && "priority")}
+      ${row("% complete", percentRow(T, t, kids), kids.length ? "" : (ed && "percent"))}
       ${T.fields().map((f) => {
         const v = t.vals[f.id];
         const shown = f.type === "person" ? (people(v, 6) || `<span class="muted">Add</span>`)
@@ -124,6 +135,7 @@ function paint(T) {
       <div class="td-subs">${kids.map((k) => `<div class="td-sub${k.done ? " done" : ""}" data-id="${esc(k.id)}">`
         + `<button class="tick${k.done ? " on" : ""}" data-act="subdone"></button><span class="td-st" data-open="${esc(k.id)}">${esc(k.title || "Untitled")}</span>`
         + (T.children(k.id).length ? `<span class="td-subn muted" data-open="${esc(k.id)}" title="Sub-tasks">${T.progressOf(k.id).done} / ${T.children(k.id).length}</span>` : "")
+        + percentBar(T.percentOf(k.id), k.percent_at, k.percent_by)
         + `<span class="spacer"></span>${k.due ? `<small class="${isOverdue(k) ? "bad" : "muted"}">${esc(fmtDate(k.due))}</small>` : ""}${people(k.owners, 2)}</div>`).join("")}</div>
       ${ed && canSub ? `<input class="td-newsub" placeholder="+ Add sub-task, Enter">` : ""}` : ""}
 
@@ -251,6 +263,14 @@ function wire(T, box, t) {
     if (k === "owners") return pickPeople(a, t.owners, T.members(), (v) => T.save(t.id, { owners: v }), T.people());
     if (k === "start" || k === "due") return pickDate(a, t[k], (v) => T.save(t.id, { [k]: v }));
     if (k === "priority") return pickOne(a, PRIORITIES, t.priority, (v) => T.save(t.id, { priority: v }));
+    if (k === "percent") {
+      const v = prompt("Percent complete (0-100)", t.percent == null ? "" : t.percent);
+      if (v === null) return;
+      if (v.trim() === "") return T.save(t.id, { percent: null });
+      const n = Number(v);
+      if (!isNaN(n)) T.save(t.id, { percent: Math.max(0, Math.min(100, Math.round(n))) });
+      return;
+    }
     if (k === "group") return pickOne(a, T.groups().map((g) => ({ value: g.id, label: esc(g.title) + (g.project ? ` <small class="muted">${esc(g.project)}</small>` : "") })),
       t.group_id, (v) => T.save(t.id, { group_id: v }));
     if (k.startsWith("f:")) {

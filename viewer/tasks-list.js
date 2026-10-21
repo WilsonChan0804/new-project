@@ -2,7 +2,7 @@
  * under an arrow, every cell editable where it stands. */
 
 import { METHOD_OPTS, isMethod } from "./tasks-util.js";
-import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, pickPeople, pickOne, pickDate, PRIORITIES, PRI_RANK } from "./tasks-util.js";
+import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, percentBar, pickPeople, pickOne, pickDate, PRIORITIES, PRI_RANK } from "./tasks-util.js";
 import { badge } from "./filelinks.js";
 
 /* A group that is a project: straight to its page, sheets and issues dashboard. */
@@ -19,7 +19,7 @@ export function columns(T) {
   const cols = [
     { k: "priority", name: "Priority", w: 92 }, { k: "owners", name: "Owner", w: 150 },
     { k: "start", name: "Start", w: 90 }, { k: "due", name: "Due", w: 100 },
-    { k: "progress", name: "Sub-tasks", w: 112 },
+    { k: "progress", name: "Sub-tasks", w: 112 }, { k: "percent", name: "% complete", w: 112 },
   ];
   for (const f of T.fields()) cols.push({ k: "f:" + f.id, name: f.name, w: f.type === "person" ? 150 : f.type === "check" ? 90 : 120, field: f });
   cols.push({ k: "subscribers", name: "Subscribers", w: 150 }, { k: "creator", name: "Creator", w: 130 },
@@ -36,6 +36,12 @@ function cell(T, t, c) {
   if (c.k === "progress") {
     const p = T.progressOf(t.id);
     return p.total ? progress(p.done, p.total) + ` <small class="muted">${p.done}/${p.total}</small>` : `<span class="muted">-</span>`;
+  }
+  if (c.k === "percent") {
+    const pct = T.percentOf(t.id);
+    const leaf = !T.children(t.id).length;
+    return percentBar(pct, t.percent_at, t.percent_by) + (pct == null ? "" : ` <small class="muted">${pct}%</small>`)
+      + (leaf && pct == null ? ` <span class="muted add">+</span>` : "");
   }
   if (c.k === "completed") return t.done && t.completed_at ? `<small>${esc(fmtWhen(t.completed_at))}</small>` : "";
   if (c.k === "subscribers") return people(t.subscribers, 4);
@@ -105,6 +111,7 @@ function sortVal(T, t, k) {
   if (k === "subscribers") return t.subscribers && t.subscribers.length ? t.subscribers.length : null;
   if (k === "start" || k === "due") return t[k] || null;
   if (k === "progress") { const p = T.progressOf(t.id); return p.total ? p.done / p.total : null; }
+  if (k === "percent") return T.percentOf(t.id);
   if (k === "creator") return t.created_by ? String(t.created_by).toLowerCase() : null;
   if (k === "created") return t.created_at || null;
   if (k === "completed") return t.done && t.completed_at ? t.completed_at : null;
@@ -205,6 +212,15 @@ function wire(T, el, buckets) {
     if (k === "priority") return pickOne(c, PRIORITIES, t.priority, (v) => T.save(t.id, { priority: v }));
     if (k === "owners") return pickPeople(c, t.owners, T.members(), (v) => T.save(t.id, { owners: v }), T.people());
     if (k === "start" || k === "due") return pickDate(c, t[k], (v) => T.save(t.id, { [k]: v }));
+    if (k === "percent") {
+      if (T.children(t.id).length) return;   // an aggregate of its sub-tasks, not typed in here
+      const v = prompt("Percent complete (0-100)", t.percent == null ? "" : t.percent);
+      if (v === null) return;
+      if (v.trim() === "") return T.save(t.id, { percent: null });
+      const n = Number(v);
+      if (!isNaN(n)) T.save(t.id, { percent: Math.max(0, Math.min(100, Math.round(n))) });
+      return;
+    }
     if (k.startsWith("f:")) {
       const f = T.S.fields.get(k.slice(2));
       const set = (v) => T.save(t.id, { vals: { [f.id]: v } });
