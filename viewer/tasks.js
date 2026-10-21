@@ -91,10 +91,9 @@ export const T = {
      task nobody has touched yet is told apart from one genuinely at 0% */
   percentOf(id) {
     const k = T.children(id);
-    if (!k.length) {
-      const t = T.task(id);
-      return t && t.percent != null ? t.percent : null;
-    }
+    const t = T.task(id);
+    if (t && t.done) return 100;
+    if (!k.length) return t && t.percent != null ? t.percent : null;
     // every direct sub-task counts, not just the ones someone has set a percent on yet - a
     // sub-task nobody has touched is 0% done, same as if it were typed in, so 2 of 5 sub-tasks
     // at 50% and 100% (the rest untouched) makes the parent (50+100)/5 = 30%, not (50+100)/2
@@ -233,11 +232,21 @@ const copy = (v) => (v === undefined ? "" : JSON.parse(JSON.stringify(v)));
 function save(id, patch) {
   const t = S.tasks.get(id);
   if (!t || !T.canEdit()) return;
-  // done and percent complete track each other: reaching 100% is being done, and being
-  // ticked done is reaching 100% - whichever one the patch sets drives the other, so both
-  // land in the same save (and the same Undo step) rather than two separate ones
-  if (patch.percent === 100 && !patch.done && !t.done) patch.done = true;
-  else if (patch.done === true && !("percent" in patch) && t.percent !== 100) patch.percent = 100;
+  // done and percent complete track each other, both ways, in the same save (and Undo step):
+  // ticking done fills 100% and remembers the number it replaced, so an accidental tick undone
+  // by unticking puts that number back; typing 100% ticks done, typing less unticks it again
+  const pctIn = "percent" in patch, doneIn = "done" in patch;
+  if (doneIn && !pctIn && !!patch.done !== !!t.done) {
+    if (patch.done) {
+      if (t.percent !== 100) { patch.percent_prev = t.percent == null ? null : t.percent; patch.percent = 100; }
+    } else if (t.percent === 100) {
+      patch.percent = t.percent_prev == null ? null : t.percent_prev;
+      patch.percent_prev = null;
+    }
+  } else if (pctIn && !doneIn) {
+    if (patch.percent === 100 && !t.done) { patch.done = true; patch.percent_prev = t.percent == null ? null : t.percent; }
+    else if (patch.percent !== 100 && t.done) { patch.done = false; patch.percent_prev = null; }
+  }
   if (!Undo.replaying()) {
     // the old values of exactly the fields changed: Ctrl+Z saves them back
     const old = {};

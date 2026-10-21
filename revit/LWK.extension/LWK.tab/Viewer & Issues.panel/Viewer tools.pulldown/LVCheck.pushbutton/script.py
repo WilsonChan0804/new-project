@@ -214,6 +214,8 @@ if todo:
 # 4. show it
 out.print_md("### Lighting and ventilation - %s%s" % (source_label, (", " + levels[0]) if levels else ""))
 out.print_md("%d rooms, %d windows / panels read (%s)." % (len(areas), len(items), ", ".join(sorted(set(i["source"] for i in items))) or "none"))
+out.print_md("Light & Vent %s. Rooms let in by each tick: %s." % (LV.__version__, ", ".join(
+    "%s %d" % (n, LV.flag_counts.get(n, 0)) for n in rules.get("room_flags", [])) or "none"))
 if skipped:
     out.print_md("Ticked rooms the check does not assess (no lighting / ventilation use in the name): " + ", ".join("%s x%d" % kv for kv in skipped))
 out.print_md("Required: lighting = area x 1/10, openable = area x 1/16 (the sheet's ratios - the AP confirms them against B(P)R 30 / APP-130). "

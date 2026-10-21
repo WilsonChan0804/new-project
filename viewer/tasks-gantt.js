@@ -29,6 +29,7 @@ function colourOf(t) {
 
 const LEGEND = `<span class="gt-leg">`
   + `<span><i class="lg-bar" style="--c:#3b82f6"></i>Planned (colour of the first owner)</span>`
+  + `<span><i class="lg-bar fill" style="--c:#3b82f6"></i>Hatched part = % complete</span>`
   + `<span><i class="lg-bar" style="--c:${DONE}"></i>Done</span>`
   + `<span><i class="lg-bar" style="--c:#e2453c"></i>Overdue</span>`
   + `<span><i class="lg-bar open" style="--c:#6366f1"></i>Start date only</span>`

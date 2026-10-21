@@ -185,6 +185,7 @@ MIGRATIONS = (
     ("tasks", "percent_by", "TEXT NOT NULL DEFAULT ''"),   # who last set it
     ("tasks", "percent_uid", "INTEGER"),
     ("tasks", "percent_at", "TEXT NOT NULL DEFAULT ''"),   # when - only touched when the value itself changes
+    ("tasks", "percent_prev", "INTEGER"),                  # the percent before ticking done filled it to 100
 )
 
 # What the Projects page keeps about a project, beyond its name and code.
@@ -206,7 +207,7 @@ LIST_ROLES = {"viewer": 1, "editor": 2, "owner": 3}
 LINK_KINDS = ("issue", "sheet", "view3d", "onedrive", "sharepoint", "acc", "url")
 # What a patch may set. Everything else is the server's to say.
 PATCHABLE = ("group_id", "parent_id", "title", "description", "done", "priority", "start",
-             "due", "owners", "vals", "links", "sort", "percent")
+             "due", "owners", "vals", "links", "sort", "percent", "percent_prev")
 # Fields worth a line in the activity feed.
 TRACKED = ("title", "done", "priority", "start", "due", "owners", "group_id", "parent_id",
            "description", "vals", "links", "percent")
@@ -260,6 +261,8 @@ class Db(object):
                 # a project from before it could hold several models: its one viewer project
                 for r in self.db.execute("SELECT id, viewer FROM projects WHERE viewer != '' AND viewers = '[]'").fetchall():
                     self.db.execute("UPDATE projects SET viewers = ? WHERE id = ?", (json.dumps([r[1]]), r[0]))
+                # a task ticked done before percent complete existed: done is 100%
+                self.db.execute("UPDATE tasks SET percent = 100 WHERE done = 1 AND (percent IS NULL OR percent < 100)")
                 self.db.commit()
                 _READY.add(self.path)
         except Exception:
@@ -452,7 +455,8 @@ def task_row(r):
             "created_at": r["created_at"] or "",
             "updated_by": r["updated_by"] or "", "updated_at": r["updated_at"] or "",
             "percent": r["percent"], "percent_by": r["percent_by"] or "",
-            "percent_uid": r["percent_uid"], "percent_at": r["percent_at"] or ""}
+            "percent_uid": r["percent_uid"], "percent_at": r["percent_at"] or "",
+            "percent_prev": r["percent_prev"]}
 
 
 def short(field, v):
@@ -1311,11 +1315,11 @@ def register(app, core):
                         v = clean_date(v)
                     elif k == "owners":
                         v = clean_people(v)
-                    elif k == "percent":
+                    elif k in ("percent", "percent_prev"):
                         try:
                             v = None if v is None else max(0, min(100, int(round(float(v)))))
                         except (TypeError, ValueError):
-                            v = new.get("percent")
+                            v = new.get(k)
                     elif k == "vals":
                         merged = dict(new.get("vals") or {})
                         if isinstance(v, dict):
@@ -1428,6 +1432,8 @@ def register(app, core):
                         events.append(("owner", dict(new, id=tid, list_id=lid), new["owners"]))
                     elif not new["parent_id"]:
                         events.append(("created", dict(new, id=tid, list_id=lid), []))
+                if "percent_prev" in p:
+                    d.execute("UPDATE tasks SET percent_prev = ? WHERE id = ?", (new.get("percent_prev"), tid))
                 if "links" in p:
                     sync_issue_links(d, tid, new["links"])
                 if cur and cur["group_id"] != new["group_id"]:

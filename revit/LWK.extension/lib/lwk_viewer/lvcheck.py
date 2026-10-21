@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-12-02"
+__version__ = "2026-12-03"
 
 import io
 import json
@@ -95,7 +95,7 @@ _USE_WORDS = [
     # no leading \b on BATH itself: a master bathroom is often named with no separator
     # ("MBATH"), which \bBATH alone would never match (M is a word character, so there is
     # no word boundary between it and B)
-    ("BATH", r"BATH|\bBTH\b|\bWC\b|\bLAV|\bTOILET|\bMVAL|POWDER|\bPD\b"),
+    ("BATH", r"BATH|\bBTH\b|\bWC\b|\bLAV|\bTOILET|\bMVAL|POWDER|\bPOW\b|\bPD\b|SHOWER|\bSHR\b"),
     ("UTI", r"\bUTI"),
     # open-plan kitchen (no enclosure/door of its own) checked before the plain "KIT" an
     # enclosed kitchen uses, since "O.KIT" also contains "KIT"
@@ -134,7 +134,7 @@ OPERATIONS = [
 
 _GUESS = [
     (r"FIXED|FIX\b|STATIC|NON.?OPEN", "Fixed", 0.0),
-    (r"SLID", "Sliding (one of two leaves)", 0.5),
+    (r"SLID|\bSLD\b|-SLD-", "Sliding (one of two leaves)", 0.5),
     (r"FOLD", "Folding / bi-fold (opens fully)", 1.0),
     (r"CASEMENT|TOP.?HUNG|AWNING|PROJECT|PIVOT|TILT|OPENABLE|VENT|WINDOW PANEL", "Casement / top hung / projecting (opens fully)", 1.0),
 ]
@@ -424,7 +424,7 @@ def build(areas, items, types, rules=None, doors=None):
 
     rooms = {}
     for a in areas:
-        u = use_of(a["name"])
+        u = use_of(a["name"]) or a.get("use_hint")
         if not u or u not in uses:
             continue
         rooms[_k(a)] = {
@@ -434,7 +434,7 @@ def build(areas, items, types, rules=None, doors=None):
             "number": a["number"], "name": a["name"], "use": u, "level": a.get("level", ""), "level_mm": a.get("level_mm", 0.0),
             "area_m2": a["area_m2"], "id": a["id"], "uid": a.get("uid", ""),
             "req_light": a["area_m2"] * uses[u][0], "req_open": a["area_m2"] * uses[u][1],
-            "windows": [], "merged": [], "notes": [],
+            "windows": [], "merged": [], "notes": list(a.get("notes") or []),
         }
 
     unmatched, type_counts = [], {}
@@ -471,6 +471,12 @@ def build(areas, items, types, rules=None, doors=None):
             # opens (flagged below so the row still says this is an assumption, not a reading)
             frac, confirmed, assumed_full_open = 1.0, True, True
         glaze_exact = it.get("glaze_m2_exact")
+        implausible_glaze = False
+        if glaze_exact is not None and it.get("w_mm") and it.get("h_mm") and (
+                (it.get("glaze_w_mm") or 0) > it["w_mm"] + 1.0 or (it.get("glaze_h_mm") or 0) > it["h_mm"] + 1.0):
+            # a glazing size bigger than the element itself cannot be real (a GBP parameter left
+            # at a family default, say) - fall back to the element's own size instead of trusting it
+            glaze_exact, implausible_glaze = None, True
         if glaze_exact is not None:
             nominal_light = glaze_exact
         elif it.get("w_mm") and it.get("h_mm"):
@@ -478,6 +484,15 @@ def build(areas, items, types, rules=None, doors=None):
         else:
             nominal_light = None
         open_exact = it.get("open_m2_exact")
+        # the family's own openable size, as a share of its glazing: what part of the MEASURED
+        # glass opens (a two-leaf slider whose GBP openable size is one leaf opens about half of
+        # it, whatever its type was once confirmed as)
+        open_ratio = None
+        if open_exact is not None:
+            gross = glaze_exact if glaze_exact is not None else (
+                (it["w_mm"] / 1000.0) * (it["h_mm"] / 1000.0) if it.get("w_mm") and it.get("h_mm") else None)
+            if gross:
+                open_ratio = min(1.0, open_exact / gross)
         if open_exact is not None:
             nominal_open = open_exact
         elif nominal_light is not None and frac is not None:
@@ -493,7 +508,9 @@ def build(areas, items, types, rules=None, doors=None):
                 "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"), "share": round(share, 3), "source": it.get("source", ""),
                 "light_bd": bd, "light_meas": meas,
                 "open_bd": op_bd,
-                "open_meas": (meas * frac) if (meas is not None and frac is not None) else None,
+                "open_meas": (meas * open_ratio) if (meas is not None and open_ratio is not None)
+                else (meas * frac) if (meas is not None and frac is not None) else None,
+                "implausible_glaze": implausible_glaze,
                 "operation": info["operation"], "fraction": frac, "confirmed": confirmed,
                 "assumed_full_open": assumed_full_open,
                 "exact_dims": glaze_exact is not None or open_exact is not None,
@@ -594,6 +611,10 @@ def _own_provision(r, rules, req_l=None, req_o=None):
                      % (too_big[0].get("mark") or too_big[0]["key"], max(too_big[0].get("light_bd") or 0, too_big[0].get("light_meas") or 0)))
     if any(w.get("exact_dims") for w in ws):
         notes.append("uses the family's own GBP_Glazing_*/GBP_Openable_* dimensions where available")
+    bad_glaze = [w for w in ws if w.get("implausible_glaze")]
+    if bad_glaze:
+        notes.append("%s: its GBP glazing size is bigger than the element itself - ignored, its own size used instead"
+                     % (bad_glaze[0].get("mark") or bad_glaze[0]["key"]))
     if any(w.get("assumed_full_open") for w in ws):
         notes.append("no openable size or type found for a window/panel - assumed the whole glazing opens")
     diag_marks = [(w.get("mark") or w["key"], w["glass_diag"]) for w in ws if w.get("glass_diag")]
@@ -634,6 +655,7 @@ def _row(r, rules, merged=False):
     req_o = sum(g["req_open"] for g in group)
     own = _own_provision(r, rules, req_l, req_o)
     pl_bd, po_bd, pl_m, po_m, status, notes = own["pl_bd"], own["po_bd"], own["pl_m"], own["po_m"], own["status"], own["notes"]
+    notes = list(r.get("notes") or []) + notes
     if merged:
         status = "WITH " + r["merged_into"]
         pl_bd = po_bd = pl_m = po_m = None
@@ -779,24 +801,63 @@ def floor_to_floor_mm(doc, selected_mm, include_links=True):
     return out
 
 
-def _flag_state(el, names):
-    """True / False from the yes-no parameters that mark a room for the check; None when the
-    room has none of them."""
-    seen = False
+def _norm_flag(s):
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def _flag_value(p):
+    """True / False from a yes-no (or Yes/No text) parameter; None when it has no value."""
+    try:
+        if not p.HasValue:
+            return None
+    except Exception:
+        return None
+    try:
+        return p.AsInteger() == 1 if p.AsString() is None else (p.AsString() or "").strip().lower() in ("yes", "y", "1", "true")
+    except Exception:
+        try:
+            return p.AsInteger() == 1
+        except Exception:
+            return None
+
+
+def _flag_hits(el, names):
+    """(seen, ticked): whether the room has any of the flag parameters at all, and which of them
+    (by their rules name) are ticked. Looked up by exact name first, then by a normalised name
+    (case, spaces and underscores ignored), so "Window Calculation", "Window_Calculation" and
+    "WINDOW CALCULATION" all count - an exact-name miss used to read as "not ticked"."""
+    seen, ticked, by_norm = False, [], None
     for n in names:
         try:
             p = el.LookupParameter(n)
         except Exception:
             p = None
         if p is None:
+            if by_norm is None:
+                by_norm = {}
+                try:
+                    for q in el.Parameters:
+                        by_norm.setdefault(_norm_flag(q.Definition.Name), q)
+                except Exception:
+                    pass
+            p = by_norm.get(_norm_flag(n))
+        if p is None:
             continue
         seen = True
-        try:
-            if p.HasValue and p.AsInteger() == 1:
-                return True
-        except Exception:
-            pass
-    return False if seen else None
+        if _flag_value(p):
+            ticked.append(n)
+    return seen, ticked
+
+
+def _flag_state(el, names):
+    """True / False from the yes-no parameters that mark a room for the check; None when the
+    room has none of them."""
+    seen, ticked = _flag_hits(el, names)
+    return True if ticked else (False if seen else None)
+
+
+# how many rooms each flag parameter let in, on the last collect_rooms() run - for the output
+flag_counts = {}
 
 
 def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
@@ -812,14 +873,18 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
     flags = rules.get("room_flags", [])
     opt = SpatialElementBoundaryOptions()
     out, skipped = [], {}
+    flag_counts.clear()
     for label, d, tf in link_sources(doc, include_links):
         dz = (tf.Origin.Z * FT_MM) if tf is not None else 0.0
         for r in FilteredElementCollector(d).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType():
             try:
                 if r.Area is None or r.Area <= 0 or r.Location is None:
                     continue
-                if _flag_state(r, flags) is False:
+                seen, ticked = _flag_hits(r, flags)
+                if seen and not ticked:
                     continue
+                for n in ticked:
+                    flag_counts[n] = flag_counts.get(n, 0) + 1
                 lvl = r.Level
                 lev_mm = (lvl.Elevation * FT_MM + dz) if lvl is not None else 0.0
                 if level_elevs and not any(abs(lev_mm - e) <= 150 for e in level_elevs):
@@ -829,9 +894,17 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
                     name = r.get_Parameter(BuiltInParameter.ROOM_NAME).AsString() or ""
                 except Exception:
                     pass
+                use_hint, notes = None, []
                 if not use_of(name):
-                    skipped[name] = skipped.get(name, 0) + 1
-                    continue
+                    if ticked and all(_norm_flag(n) == "windowcalculation" for n in ticked):
+                        # ticked only for "Window Calculation" (a bath, powder room ... never counted
+                        # as UFA/UFS) under a name the check does not know: taken as a bathroom
+                        # rather than silently dropped
+                        use_hint = "BATH"
+                        notes.append("name not recognised - taken as a bathroom because it is ticked Window Calculation")
+                    else:
+                        skipped[name] = skipped.get(name, 0) + 1
+                        continue
                 loops = []
                 for loop in r.GetBoundarySegments(opt) or []:
                     pts = []
@@ -851,7 +924,8 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
                             "area_m2": round(r.Area * SQFT_M2 + 1e-9, 3), "loops": loops,
                             "flat": _text_param(r, rules.get("flat_param", "")),
                             "block": _text_param(r, rules.get("block_param", "")),
-                            "level": lvl.Name if lvl is not None else "", "level_mm": lev_mm})
+                            "level": lvl.Name if lvl is not None else "", "level_mm": lev_mm,
+                            "use_hint": use_hint, "notes": notes})
             except Exception:
                 continue
     return out, sorted(skipped.items())

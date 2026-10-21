@@ -31,6 +31,14 @@ export function columns(T) {
 }
 
 const MIN_COL_W = 60;
+const MIN_TITLE_W = 120;
+
+/* The grid's column template: the title column at its dragged width, else as wide as the room
+   allows - but never more than 45% of a phone's screen, so the other columns stay in sight */
+function template(T, cols) {
+  const tw = T.colWidths().title;
+  return (tw ? tw + "px" : "minmax(min(320px, 45vw), 1fr)") + " " + cols.map((c) => c.w + "px").join(" ");
+}
 
 function cell(T, t, c) {
   if (c.k === "priority") return priorityPill(t.priority);
@@ -150,11 +158,11 @@ function headCell(k, name, cls, resizable) {
 export function render(T, el) {
   const S = T.S;
   const cols = columns(T);
-  const tpl = `minmax(320px, 1fr) ` + cols.map((c) => c.w + "px").join(" ");
+  const tpl = template(T, cols);
   const buckets = T.buckets(T.visible());
   for (const b of buckets) b.tasks = sortTasks(T, b.tasks);
   let h = `<div class="tl" style="--cols:${tpl}">`
-    + `<div class="tl-row tl-head">${headCell("title", "Task title", "tl-title")}${cols.map((c) => headCell(c.k, c.name, "", true)).join("")}</div>`;
+    + `<div class="tl-row tl-head">${headCell("title", "Task title", "tl-title", true)}${cols.map((c) => headCell(c.k, c.name, "", true)).join("")}</div>`;
   for (const b of buckets) {
     if (S.groupBy !== "group" && !b.tasks.length && b.key !== "_") continue;
     const shut = S.collapsed.has(b.key);
@@ -191,14 +199,17 @@ function wireResize(T, el, cols) {
       ev.preventDefault();
       ev.stopPropagation();
       const k = grip.dataset.grip;
-      const c = cols.find((x) => x.k === k);
+      const isTitle = k === "title";
+      const c = isTitle ? { k, w: grip.parentElement.getBoundingClientRect().width } : cols.find((x) => x.k === k);
       if (!c) return;
       grip.setPointerCapture(ev.pointerId);
       grip.classList.add("drag");
       const x0 = ev.clientX, w0 = c.w;
+      const rest = () => cols.map((x) => x.w + "px").join(" ");
       const move = (e) => {
-        c.w = Math.max(MIN_COL_W, Math.round(w0 + (e.clientX - x0)));
-        tl.style.setProperty("--cols", `minmax(320px, 1fr) ` + cols.map((x) => x.w + "px").join(" "));
+        c.w = Math.max(isTitle ? MIN_TITLE_W : MIN_COL_W, Math.round(w0 + (e.clientX - x0)));
+        const tw = isTitle ? c.w : T.colWidths().title;
+        tl.style.setProperty("--cols", (tw ? tw + "px" : "minmax(min(320px, 45vw), 1fr)") + " " + rest());
       };
       const up = () => {
         grip.classList.remove("drag");
@@ -218,6 +229,7 @@ function wire(T, el, buckets) {
   const S = T.S;
   const bucketOf = (key) => buckets.find((b) => b.key === key);
   el.onclick = (ev) => {
+    if (ev.target.closest("[data-grip]")) return;   // the end of a resize drag, not a sort
     const sh = ev.target.closest(".tl-head [data-sort]");
     if (sh) {
       const k = sh.dataset.sort, so = sortState();

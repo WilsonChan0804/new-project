@@ -51,6 +51,8 @@ class UseNames(unittest.TestCase):
         for name, use in [("LIV/DIN", "LIV"), ("O.KIT", "OKIT"), ("OPEN KIT", "OKIT"), ("KIT", "KIT"), ("KIT.", "KIT"),
                           ("BR1", "BED"), ("BR4", "BED"), ("MBR", "BED"), ("STO.", "STO"), ("BATH", "BATH"),
                           ("MBATH", "BATH"), ("M.BATH", "BATH"), ("POWDER ROOM", "BATH"), ("UTI.", "UTI"),
+                          ("POW", "BATH"), ("POW.", "BATH"), ("SHOWER", "BATH"), ("LAV.", "BATH"), ("TOILET", "BATH"),
+                          ("WC", "BATH"),
                           ("CLOAK AREA", None)]:
             self.assertEqual(LV.use_of(name), use, name)
 
@@ -509,3 +511,68 @@ class ImplausibleOpening(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class _P(object):
+    def __init__(self, name, val):
+        self.Definition = type("D", (), {"Name": name})()
+        self.HasValue, self._v = True, val
+
+    def AsInteger(self):
+        return self._v
+
+    def AsString(self):
+        return None
+
+
+class _Room(object):
+    def __init__(self, params):
+        self.Parameters = [_P(n, v) for n, v in params]
+
+    def LookupParameter(self, n):
+        return next((p for p in self.Parameters if p.Definition.Name == n), None)
+
+
+class FlagLookup(unittest.TestCase):
+    FLAGS = ["UFA_Y/N", "UFS_Y/N", "Window Calculation"]
+
+    def test_a_differently_spelt_window_calculation_tick_still_counts(self):
+        r = _Room([("UFA_Y/N", 0), ("UFS_Y/N", 0), ("WINDOW_CALCULATION", 1)])
+        self.assertEqual(LV._flag_hits(r, self.FLAGS), (True, ["Window Calculation"]))
+        self.assertTrue(LV._flag_state(r, self.FLAGS))
+
+    def test_all_unticked_is_out(self):
+        r = _Room([("UFA_Y/N", 0), ("UFS_Y/N", 0), ("Window Calculation", 0)])
+        self.assertIs(LV._flag_state(r, self.FLAGS), False)
+
+    def test_no_flag_parameters_at_all(self):
+        self.assertIsNone(LV._flag_state(_Room([]), self.FLAGS))
+
+
+class SlidingDoor(unittest.TestCase):
+    def test_sld_in_the_type_name_guesses_sliding(self):
+        self.assertEqual(LV.guess_operation("CTP-SLD-ARC-Parametric Array_Type2 : 2-Panels")[1], 0.5)
+
+    def test_the_family_s_openable_leaf_decides_the_measured_openable(self):
+        # a 1940 x 2550 two-leaf slider whose type was once confirmed as opening fully, but whose
+        # own GBP openable size is one 932.5 x 2550 leaf, and whose GBP glazing size (2900 x 3900)
+        # is bigger than the door itself - that glazing size is ignored, and only the leaf's share
+        # of the measured glass counts as openable
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        d = item(2000, w=1940, h=2550, key="SLD", glass=4.116, glaze_exact=11.31, glaze_w_mm=2900.0, glaze_h_mm=3900.0,
+                 open_exact=2.378, open_w_mm=932.5, open_h_mm=2550.0)
+        rows, _, _ = LV.build([liv], [d], {"SLD": {"operation": "Casement", "fraction": 1.0, "confirmed": True}})
+        w = rows[0]["windows"][0]
+        self.assertAlmostEqual(w["open_meas"], 4.116 * 2.378 / (1.94 * 2.55), places=2)
+        self.assertAlmostEqual(w["light_bd"], 1.94 * 2.55 * 0.7, places=2)
+        self.assertIsNone(w["glaze_w_mm"])
+        self.assertTrue(any("bigger than the element" in n for n in rows[0]["notes"]))
+
+
+class UseHint(unittest.TestCase):
+    def test_a_room_with_a_use_hint_is_checked_under_that_use(self):
+        r = room("x", "A1-9", "MYSTERY", 0, 2000)
+        r["use_hint"], r["notes"] = "BATH", ["taken as a bathroom"]
+        rows, _, _ = LV.build([r], [], TYPES)
+        self.assertEqual(rows[0]["use"], "BATH")
+        self.assertIn("taken as a bathroom", rows[0]["notes"])

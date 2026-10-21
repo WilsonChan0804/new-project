@@ -144,7 +144,7 @@ class Colour(unittest.TestCase):
 
 
 class PartialOpenable(unittest.TestCase):
-    def test_a_smaller_openable_sub_size_is_drawn_as_its_own_centred_rectangle(self):
+    def test_a_smaller_openable_sub_size_is_drawn_as_its_own_rectangle_at_the_left_end(self):
         # a "2-panels" family: 2600 x 2600 overall glazing, but only a 2550 x 612.5 leaf of it
         # actually opens (GBP_Openable_Width/Height) - the base rect should read as glazing (not
         # coloured as if the whole thing opens), with the real openable portion inset, centred
@@ -157,7 +157,8 @@ class PartialOpenable(unittest.TestCase):
         self.assertIsNotNone(rect["open_rect"])
         self.assertAlmostEqual(rect["open_rect"]["width"], 2550.0, places=1)
         self.assertAlmostEqual(rect["open_rect"]["height"], 612.5, places=1)
-        self.assertAlmostEqual(rect["open_rect"]["left"], (2600.0 - 2550.0) / 2.0, places=1)
+        # no offset from the family: the leaf sits at the left end (a slider's / side-hung sash's place)
+        self.assertAlmostEqual(rect["open_rect"]["left"], 0.0, places=1)
         self.assertAlmostEqual(rect["open_rect"]["bottom"], (2600.0 - 612.5) / 2.0, places=1)
 
     def test_no_openable_sub_size_means_no_inset(self):
@@ -205,8 +206,8 @@ class GlazeVsFrame(unittest.TestCase):
         rect = diagrams[0]["rects"][0]
         orect = rect["open_rect"]
         self.assertAlmostEqual(orect["width"], 1500.0, places=1)
-        # centred within the glazing (left=100, width=1800): 100 + (1800-1500)/2 = 250
-        self.assertAlmostEqual(orect["left"], 250.0, places=1)
+        # at the glazing's own left edge (left=100), not the frame's
+        self.assertAlmostEqual(orect["left"], 100.0, places=1)
         self.assertAlmostEqual(orect["bottom"], 100.0 + (1600.0 - 1400.0) / 2.0, places=1)
 
     def test_no_glazing_size_smaller_than_structural_means_no_frame_inset(self):
@@ -259,3 +260,37 @@ class SharedPanel(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SystemPanels(unittest.TestCase):
+    def test_a_glazed_system_panel_is_glazing_not_frame(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        p = item(2000, w=1175, h=2200, key="System Panel : 50mm", cat="Curtain panels", glass=2.585)
+        rows, _, _ = LV.build([liv], [p], {"System Panel : 50mm": {"operation": "Fixed", "fraction": 0.0, "confirmed": True}})
+        d = LD.build_diagrams(rows, [p], {("", "5/F"): 3300.0})
+        self.assertEqual(d[0]["rects"][0]["color"], "fixed")
+
+    def test_a_system_panel_with_no_glass_is_frame(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        p = item(2000, w=1175, h=2200, key="System Panel : 50mm", cat="Curtain panels", glass=0.0)
+        rows, _, _ = LV.build([liv], [p], {"System Panel : 50mm": {"operation": "Fixed", "fraction": 0.0, "confirmed": True}})
+        d = LD.build_diagrams(rows, [p], {("", "5/F"): 3300.0})
+        self.assertEqual(d[0]["rects"][0]["color"], "frame")
+
+    def test_the_gaps_between_curtain_panels_are_filled_as_mullions(self):
+        # two panels with a 50mm mullion gap between them, one transom gap above - the frame
+        # box covers both panels' overall extent, so the gaps read as mullion
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        a = item(1000, w=1000, h=2000, key="P", cat="Curtain panels", glass=2.0, uid="a", bottom_mm=0.0, top_mm=2000.0)
+        b = item(2050, w=1000, h=2000, key="P", cat="Curtain panels", glass=2.0, uid="b", bottom_mm=0.0, top_mm=2000.0)
+        rows, _, _ = LV.build([liv], [a, b], {"P": {"operation": "Fixed", "fraction": 0.0, "confirmed": True}})
+        d = LD.build_diagrams(rows, [a, b], {("", "5/F"): 3300.0})[0]
+        self.assertEqual(len(d["frames"]), 1)
+        self.assertAlmostEqual(d["frames"][0]["width"], 2050.0, places=1)
+        self.assertAlmostEqual(d["frames"][0]["height"], 2000.0, places=1)
+
+    def test_separate_windows_get_no_mullion_fill(self):
+        liv = room("liv", "A1-1", "LIV/DIN", 0, 8000)
+        a, b = item(1000, w=1000, key="W", uid="a"), item(2200, w=1000, key="W", uid="b")
+        rows, _, _ = LV.build([liv], [a, b], TYPES)
+        self.assertEqual(LD.build_diagrams(rows, [a, b], {("", "5/F"): 3000.0})[0]["frames"], [])

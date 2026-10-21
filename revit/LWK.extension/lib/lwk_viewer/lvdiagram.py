@@ -44,12 +44,10 @@ def _n_key(n, tol=0.05):
 
 
 def _color_for(w):
-    # a curtain wall's own solid infill/mullion-cover panels (Revit's generic, un-glazed
-    # "System Panel" family, left as the system default unless swapped for a glazed type) are not
-    # a window at all - drawn as their own "frame/solid" colour rather than mixed in with real
-    # glazing, so the mullion pattern around a real panel reads the same as the hand-drawn
-    # reference (a solid fill, not a glazing colour)
-    if "system panel" in (w.get("key") or "").lower():
+    # Revit's generic "System Panel" can be either solid or glazed (a model can use it for every
+    # glass pane of its curtain walls) - only one with no glass measured in it is solid infill,
+    # drawn in the frame colour; a glazed one is glazing like any other panel
+    if "system panel" in (w.get("key") or "").lower() and not w.get("light_meas"):
         return "frame"
     frac = w.get("fraction")
     if frac is None:
@@ -140,8 +138,10 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
             # different widths, say) - falls back to centring only when the family gives no offset.
             # The offset is relative to the glazing's own origin, same as the centred fallback,
             # then shifted into the outer rect's own coordinates (gx0/gy0)
+            # with no offset from the family, the leaf sits at the glazing's left end - where one
+            # leaf of a slider or a side-hung sash is - rather than straddling the middle
             open_left = w.get("open_left_mm")
-            left = open_left if open_left is not None else (gw0 - open_w) / 2.0
+            left = open_left if open_left is not None else 0.0
             left = gx0 + max(0.0, min(left, gw0 - open_w))
             open_rect = {"left": left, "bottom": gy0 + max(0.0, (gh0 - open_h) / 2.0),
                         "width": min(open_w, gw0), "height": min(open_h, gh0)}
@@ -149,7 +149,7 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
         rects.append({
             "left": center - width / 2.0, "width": width,
             "bottom": it["bottom_mm"] - level_mm, "height": height,
-            "color": color, "mark": w.get("mark") or "", "key": w.get("key", ""),
+            "color": color, "mark": w.get("mark") or "", "key": w.get("key", ""), "cat": w.get("cat", ""),
             "light_bd": w.get("light_bd"), "light_meas": w.get("light_meas"),
             "open_bd": w.get("open_bd"), "open_meas": w.get("open_meas"),
             "share": w.get("share"), "exact_dims": w.get("exact_dims", False),
@@ -167,6 +167,15 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
     if floor_to_floor_mm - highest_top > 1.0:
         gaps.append({"bottom": highest_top, "height": floor_to_floor_mm - highest_top})
     width_total = max(r["left"] + r["width"] for r in rects)
+    # the curtain wall's mullions/transoms are not elements the check reads, but they sit in the
+    # gaps between its panels - the panels' own overall extent, filled in the frame colour behind
+    # them, shows those gaps as mullions (separate windows in a wall are not joined up this way)
+    cw = [r for r in rects if r.get("cat") == "Curtain panels"]
+    frames = []
+    if len(cw) > 1:
+        fl, fb = min(r["left"] for r in cw), min(r["bottom"] for r in cw)
+        fr, ft = max(r["left"] + r["width"] for r in cw), max(r["bottom"] + r["height"] for r in cw)
+        frames.append({"left": fl, "bottom": fb, "width": fr - fl, "height": ft - fb})
     return {
         "block": room.get("block", ""), "level": room.get("level", ""), "flat": room.get("flat", ""),
         "number": room.get("number", ""), "name": room.get("name", ""),
@@ -177,7 +186,7 @@ def _build_one(room, n_ref, run, floor_to_floor_mm):
         "req_light": room.get("req_light"), "req_open": room.get("req_open"),
         "prov_light_bd": room.get("prov_light_bd"), "prov_light_meas": room.get("prov_light_meas"),
         "prov_open_bd": room.get("prov_open_bd"), "prov_open_meas": room.get("prov_open_meas"),
-        "rects": rects, "gaps": gaps,
+        "rects": rects, "gaps": gaps, "frames": frames,
     }
 
 

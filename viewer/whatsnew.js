@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-25", date: "21 Oct 2026",
+    items: [
+      "**Tasks:** unticking a task you ticked by mistake now puts its old percent back, and changing a 100% task to a lower number unticks it again. Tasks that were already ticked done now show 100%.",
+      "**Tasks list:** the Task title column can be resized too. On a phone it now takes at most about half the screen, so the other columns stay in view.",
+      "**Gantt:** the hatched \"% complete\" part of a bar is much easier to see, and it has its own entry in the legend.",
+    ],
+  },
+  {
     version: "2026-11-24", date: "21 Oct 2026",
     items: [
       "**Tasks:** typing 100% complete now auto-ticks the task done, and ticking a task done now auto-fills its percent to 100% - the two stay in sync instead of drifting apart.",

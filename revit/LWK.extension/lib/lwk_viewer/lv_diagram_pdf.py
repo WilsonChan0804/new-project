@@ -114,6 +114,13 @@ def _draw_page(c, d):
         c.rect(ox, Y(g["bottom"]), d["width_mm"] * scale, g["height"] * scale, stroke=1, fill=0)
         c.setDash()
 
+    # the curtain wall's mullions: its panels' overall extent in the frame colour, behind them
+    for f in d.get("frames", []):
+        c.setFillColor(COLOR_FRAME)
+        c.setStrokeColor(colors.black)
+        c.setLineWidth(0.6)
+        c.rect(X(f["left"]), Y(f["bottom"]), f["width"] * scale, f["height"] * scale, stroke=1, fill=1)
+
     # each sub-panel
     colour_by_name = {"fixed": COLOR_FIXED, "openable": COLOR_OPENABLE, "unconfirmed": COLOR_UNCONFIRMED,
                      "frame": COLOR_FRAME}
@@ -229,7 +236,7 @@ def _panel_table(c, x, y_top, rects):
 
 def _legend(c, x, y):
     rows = [(COLOR_FIXED, u"fixed glazing", False), (COLOR_OPENABLE, u"openable glazing", False),
-            (COLOR_UNCONFIRMED, u"not yet confirmed", False), (COLOR_FRAME, u"frame / mullion cover (not glazing)", False),
+            (COLOR_UNCONFIRMED, u"not yet confirmed", False), (COLOR_FRAME, u"frame / mullion (not glazing)", False),
             (None, u"excluded from win. area cal.", True)]
     c.setFont("Helvetica", 8)
     for i, (fill, label, dashed) in enumerate(rows):
