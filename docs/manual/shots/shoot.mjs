@@ -22,9 +22,11 @@ for (const o of OUTS) fs.mkdirSync(o, { recursive: true });
 
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 1440, height: 860 }, deviceScaleFactor: 1 });
+// the session cookie too: the model and sheet files are read with it, not the header
+await ctx.addCookies([{ name: "lwk_token", value: st.token, url: B }]);
 const p = await ctx.newPage();
 const errs = [];
-p.on("pageerror", (e) => errs.push(e.message));
+p.on("pageerror", (e) => errs.push(e.message + " @ " + p.url() + " " + (e.stack || "").split("\n")[1]));
 await p.goto(B + "/index.html");
 await p.evaluate(([t, pid]) => {
   localStorage.clear();

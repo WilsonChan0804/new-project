@@ -50,6 +50,7 @@ import { copyLink } from "./share.js";
 import { createAO } from "./ao.js";
 import { copyIds, showInRevit, wireElementBlocks } from "./revit.js";
 import { me as navMe } from "./nav.js";
+import { installV3Bar } from "./v3bar.js";
 
 /* Fragments geometry is in METRES. The Revit exporter writes millimetres
    everywhere - manifest paper_to_model, link transforms, issue positions -
@@ -7743,7 +7744,7 @@ function connStatus(ok, err) {
    strip in the middle, and on a phone held upright the list of models was
    cut off above the view. */
 function setupDrawers() {
-  const mq = matchMedia("(max-width: 900px), (max-height: 500px)");
+  const mq = matchMedia("(max-width: 1100px), (max-height: 500px)");
   const wrap = document.getElementById("canvas-wrap");
   const models = document.getElementById("models"), inspect = document.getElementById("inspect");
   if (!wrap || !models || !inspect) return;
@@ -7781,7 +7782,7 @@ function setupDrawers() {
     document.body.classList.toggle("drawers", on);
     if (!on) close();
     const pb = document.getElementById("page-bar");
-    if (hdr) document.documentElement.style.setProperty("--drawer-top", (EMBED ? 0 : pb ? Math.round(pb.getBoundingClientRect().bottom) : hdr.offsetHeight) + "px");
+    if (hdr) document.documentElement.style.setProperty("--drawer-top", (EMBED ? 0 : pb && pb.offsetParent ? Math.round(pb.getBoundingClientRect().bottom) : hdr.offsetHeight) + "px");
     requestAnimationFrame(() => dispatchEvent(new Event("resize")));
   };
   if (mq.addEventListener) mq.addEventListener("change", apply); else mq.addListener(apply);
@@ -8053,17 +8054,12 @@ async function boot() {
     /* Projection and "front" live under the cube, where views are chosen,
        instead of taking a panel of their own. The buttons are moved, not
        rebuilt, so everything already wired to them keeps working. */
-    const bar = S.cube.bar;
-    for (const id of ["m-walk", "fit3d", "pv-ortho", "pv-setalign", "pv-clearalign"]) {
-      const el = document.getElementById(id);
-      if (el && bar) bar.appendChild(el);
-    }
-    const lab = document.getElementById("pv-align");
-    if (lab && bar) {
-      const note = document.createElement("div");
-      note.className = "vc-note";
-      note.append("Front: ", lab);
-      bar.appendChild(note);
+    // as in the template: one floating toolbar at the bottom of the view and chips at its
+    // top left (v3bar.js) - the cube keeps only its own Home
+    if (new URLSearchParams(location.search).get("embed") !== "1") installV3Bar(document.getElementById("canvas-wrap"));
+    else {
+      const bar = S.cube.bar;
+      for (const id of ["m-walk", "fit3d", "pv-ortho"]) { const el = document.getElementById(id); if (el && bar) bar.appendChild(el); }
     }
   } catch (e) { showError("view cube", e); }
   document.getElementById("cat-all").addEventListener("click", () => {

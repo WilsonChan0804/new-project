@@ -49,8 +49,10 @@ export function initPanels({ layout, left, right, key }) {
     return Math.round(w) || 220;
   }
 
+  // folded: put away by hand (unpinned and hidden), or empty and not opened by hand since
+  const isFolded = (s) => (s.st.hid && !s.st.pin) || (!!s.empty && !s.st.keepOpen);
   function widthOf(s) {
-    if (s.st.hid && !s.st.pin) return FOLD;
+    if (isFolded(s)) return FOLD;
     return s.st.w ? Math.max(MIN, Math.min(s.st.w, innerWidth * 0.45)) : null;
   }
 
@@ -67,7 +69,7 @@ export function initPanels({ layout, left, right, key }) {
       layout.style.gridTemplateColumns = `${L}px minmax(0, 1fr) ${R}px`;
     }
     for (const [k, s] of Object.entries(side)) {
-      const folded = s.st.hid && !s.st.pin;
+      const folded = isFolded(s);
       s.el.classList.toggle("folded", folded);
       s.grip.hidden = folded;
       s.tab.hidden = false;
@@ -75,7 +77,7 @@ export function initPanels({ layout, left, right, key }) {
       const pin = s.tab.querySelector(".pnl-pin"), tri = s.tab.querySelector(".pnl-tri");
       pin.classList.toggle("on", s.st.pin);
       pin.title = s.st.pin ? "Pinned: this column stays. Unpin to be able to fold it away" : "Pin this column so it always stays";
-      tri.hidden = s.st.pin;
+      tri.hidden = s.st.pin && !s.empty;
       const openGlyph = k === "l" ? "◀" : "▶", closedGlyph = k === "l" ? "▶" : "◀";
       tri.textContent = folded ? closedGlyph : openGlyph;
       tri.title = folded ? "Show this column" : "Fold this column away";
@@ -85,7 +87,7 @@ export function initPanels({ layout, left, right, key }) {
 
   function place(k, s) {
     const lr = layout.getBoundingClientRect(), er = s.el.getBoundingClientRect();
-    const folded = s.st.hid && !s.st.pin;
+    const folded = isFolded(s);
     const edge = k === "l" ? (folded ? 0 : er.right - lr.left) : (folded ? lr.width : er.left - lr.left);
     s.grip.style.left = (edge - 3) + "px";
     s.tab.style.left = (k === "l" ? edge : edge - 20) + "px";
@@ -108,7 +110,12 @@ export function initPanels({ layout, left, right, key }) {
       save(key, st); apply(); kick();
     });
     t.querySelector(".pnl-tri").addEventListener("click", () => {
-      s.st.hid = !s.st.hid;
+      if (s.empty) {
+        // an empty column folded by itself: opening it by hand keeps it open from now on
+        const open = !s.st.keepOpen || isFolded(s);
+        s.st.keepOpen = open;
+        if (open) s.st.hid = false;
+      } else s.st.hid = !s.st.hid;
       save(key, st); apply(); kick();
     });
     g.addEventListener("dblclick", () => { delete s.st.w; save(key, st); apply(); kick(); });
@@ -145,7 +152,14 @@ export function initPanels({ layout, left, right, key }) {
   // the drawers switch on and off with the window's shape
   new MutationObserver(() => apply()).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   if (window.ResizeObserver) new ResizeObserver(() => { for (const [k, s] of Object.entries(side)) if (!drawerMode()) place(k, s); }).observe(layout);
-  return { apply, state: st };
+  /* A column with nothing in it folds itself away (the edge tab brings it back). */
+  function autoFold(k, empty) {
+    const s = side[k];
+    if (!s || !!s.empty === !!empty) return;
+    s.empty = !!empty;
+    apply(); kick();
+  }
+  return { apply, state: st, autoFold };
 }
 
 /* row: the flex row holding the main pane first; panes: the second halves

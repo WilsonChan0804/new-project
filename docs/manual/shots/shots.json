@@ -8,43 +8,18 @@
     0,
     0,
     1440,
-    64
+    60
    ],
    "marks": [
     {
-     "rect": [
-      104,
-      6,
-      500,
-      30
-     ],
-     "en": "The pages: Projects, Sheets, 3D, Board, Tasks, Chat (red: unread), Calendar, Folders, Dashboard",
-     "yue": "各頁：Projects、Sheets、3D、Board、Tasks、Chat（紅色數字：未讀）、Calendar、Folders、Dashboard"
+     "sel": "#hd-proj",
+     "en": "The project you are in - click to switch project (the same place on every page)",
+     "yue": "你而家喺邊個 project - 撳一下轉 project（每一頁都喺同一個位）"
     },
     {
-     "sel": "select.two-proj",
-     "en": "The project you are working in",
-     "yue": "你而家用緊嘅 project"
-    },
-    {
-     "sel": "select.two-part",
-     "en": "Which part of the project (its model and sheets, or another part)",
-     "yue": "project 嘅邊部分（model 同圖則，或者其他部分）"
-    },
-    {
-     "sel": "#mode-comment",
-     "en": "Comment: what you draw is a comment",
-     "yue": "Comment：畫嘅嘢係 comment"
-    },
-    {
-     "sel": "#mode-issue",
-     "en": "Issue: what you draw is an issue (numbered, with status and owner)",
-     "yue": "Issue：畫嘅嘢係 issue（有編號、狀態同負責人）"
-    },
-    {
-     "sel": "#files-btn",
-     "en": "Files: download PDFs, import PDF / CAD, BCF, export",
-     "yue": "Files：下載 PDF、匯入 PDF / CAD、BCF、匯出"
+     "sel": "#hd-tabs",
+     "en": "The pages: Projects, Dashboard, Sheets, 3D, Board, Tasks, Chat (number: unread), Calendar, Folders",
+     "yue": "各頁：Projects、Dashboard、Sheets、3D、Board、Tasks、Chat（數字：未讀）、Calendar、Folders"
     },
     {
      "sel": "#lwk-search-btn",
@@ -52,19 +27,14 @@
      "yue": "搜尋全部 (Ctrl+K)"
     },
     {
-     "sel": "#lwk-help-btn",
-     "en": "Help - this manual, searchable",
-     "yue": "Help - 呢本手冊，可以搜尋"
-    },
-    {
      "sel": "#lwk-bell",
      "en": "Notifications",
      "yue": "通知"
     },
     {
-     "sel": "#lwk-send-task",
-     "en": "+ Task: give someone a task",
-     "yue": "+ Task：派 task 俾人"
+     "sel": "#lwk-help-btn",
+     "en": "Help - this manual, searchable",
+     "yue": "Help - 呢本手冊，可以搜尋"
     },
     {
      "sel": "#lwk-me",
@@ -98,13 +68,28 @@
     },
     {
      "sel": "#set-menu-btn",
-     "en": "Sheet sets: pick several, rename, archive, delete",
-     "yue": "圖則組：揀幾張、改名、封存、刪除"
+     "en": "Set: which sheets to show (from Revit, or an uploaded PDF set); rename, archive, delete a set",
+     "yue": "Set：顯示邊組圖則（Revit 嘅，或者上載嘅 PDF 組）；改名、封存、刪除一組"
     },
     {
      "sel": "#tools",
-     "en": "The mark-up tools (next picture)",
-     "yue": "Mark-up 工具（下一張圖）"
+     "en": "The mark-up tools, in families (next picture)",
+     "yue": "Mark-up 工具，按類分組（下一張圖）"
+    },
+    {
+     "sel": "#mode-comment",
+     "en": "Comment / + Issue: what you draw becomes a comment or an issue",
+     "yue": "Comment / + Issue：畫嘅嘢變成 comment 定 issue"
+    },
+    {
+     "sel": "#files-btn",
+     "en": "Files: download PDFs, import PDF / CAD, BCF, export",
+     "yue": "Files：下載 PDF、匯入 PDF / CAD、BCF、匯出"
+    },
+    {
+     "sel": "#lwk-send-task",
+     "en": "+ Task: keep this sheet on a task",
+     "yue": "+ Task：將呢張圖放落一個 task"
     },
     {
      "sel": "#view-menu-btn",
@@ -118,8 +103,8 @@
     },
     {
      "sel": "#zoom-label",
-     "en": "Rotate, zoom out / in, Fit",
-     "yue": "旋轉、縮小 / 放大、Fit"
+     "en": "Zoom: 100% is the sheet fitting the width; rotate, zoom out / in, Fit",
+     "yue": "縮放：100% 即係張圖啱啱夠闊；旋轉、縮小 / 放大、Fit"
     },
     {
      "sel": "#page",
@@ -205,141 +190,51 @@
      "at": "below"
     },
     {
-     "sel": "button[data-tool=rect]",
-     "en": "Rectangle (B)",
-     "yue": "長方形 (B)",
+     "sel": ".tgrp[data-group=\"Shapes\"]",
+     "en": "Shapes: rectangle, circle, line, arrow, polyline, polygon - the arrow beside lists them",
+     "yue": "形狀：長方形、圓形、直線、箭咀、多段線、多邊形 - 旁邊個箭咀列出全部",
      "at": "below"
     },
     {
-     "sel": "button[data-tool=ellipse]",
-     "en": "Circle (O)",
-     "yue": "圓形 (O)",
+     "sel": ".tgrp[data-group=\"Clouds\"]",
+     "en": "Clouds: the usual issue mark, or a free shape",
+     "yue": "雲線：最常用嚟標 issue，或者自由形",
      "at": "below"
     },
     {
-     "sel": "button[data-tool=line]",
-     "en": "Line (L)",
-     "yue": "直線 (L)",
+     "sel": ".tgrp[data-group=\"Draw\"]",
+     "en": "Pen and highlighter",
+     "yue": "筆同螢光筆",
      "at": "below"
     },
     {
-     "sel": "button[data-tool=arrow]",
-     "en": "Arrow (A)",
-     "yue": "箭咀 (A)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=cloud]",
-     "en": "Cloud (C) - the usual issue mark",
-     "yue": "雲線 (C) - 最常用嚟標 issue",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=cloudpoly]",
-     "en": "Cloud, free shape (Shift+C)",
-     "yue": "自由形雲線 (Shift+C)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=polyline]",
-     "en": "Polyline (P)",
-     "yue": "多段線 (P)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=polygon]",
-     "en": "Polygon (G)",
-     "yue": "多邊形 (G)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=pen]",
-     "en": "Pen (F): freehand",
-     "yue": "筆 (F)：手繪",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=highlight]",
-     "en": "Highlighter (I)",
-     "yue": "螢光筆 (I)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=text]",
-     "en": "Text (T)",
-     "yue": "文字 (T)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=textbox]",
-     "en": "Text box (X)",
-     "yue": "文字框 (X)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=callout]",
-     "en": "Callout (K): text with a leader",
-     "yue": "引線標註 (K)",
+     "sel": ".tgrp[data-group=\"Text\"]",
+     "en": "Text, text box, callout",
+     "yue": "文字、文字框、引線標註",
      "at": "below"
     },
     {
      "sel": "button[data-tool=stamp]",
-     "en": "Stamp (S): Approved, Rejected ...",
-     "yue": "印章 (S)：Approved、Rejected ...",
+     "en": "Stamp: Approved, Rejected ...",
+     "yue": "印章：Approved、Rejected ...",
      "at": "below"
     },
     {
-     "sel": "button[data-tool=measure]",
-     "en": "Measure (M): a length, at the sheet's scale",
-     "yue": "量度 (M)：按圖則比例量長度",
+     "sel": ".tgrp[data-group=\"Measure\"]",
+     "en": "Measure, dimension, area, angle - at the sheet's scale",
+     "yue": "量度、尺寸線、面積、角度 - 按圖則比例",
      "at": "below"
     },
     {
-     "sel": "button[data-tool=dimension]",
-     "en": "Dimension (D)",
-     "yue": "尺寸線 (D)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=snip]",
-     "en": "Snip (Q): a picture of part of the sheet",
-     "yue": "截圖 (Q)：截取部分圖則",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=selecttext]",
-     "en": "Select text (Y) on the drawing",
-     "yue": "揀選圖上文字 (Y)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=area]",
-     "en": "Area (E)",
-     "yue": "面積 (E)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=angle]",
-     "en": "Angle (U)",
-     "yue": "角度 (U)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=eraser]",
-     "en": "Eraser (W)",
-     "yue": "擦膠 (W)",
-     "at": "below"
-    },
-    {
-     "sel": "button[data-tool=match]",
-     "en": "Match properties (J): copy one mark-up's look to others",
-     "yue": "套用格式 (J)：將一個 mark-up 嘅樣式抄去其他",
+     "sel": ".tgrp[data-group=\"More tools\"]",
+     "en": "Snip, select text, eraser, match properties",
+     "yue": "截圖、揀選文字、擦膠、複製格式",
      "at": "below"
     },
     {
      "sel": "#keys-btn",
-     "en": "Keyboard shortcuts",
-     "yue": "快捷鍵",
+     "en": "Keyboard shortcuts: one key per tool",
+     "yue": "快捷鍵：每個工具一個鍵",
      "at": "below"
     }
    ]
@@ -351,24 +246,19 @@
    "wait": 6000,
    "marks": [
     {
-     "sel": "#m-nav",
-     "en": "Navigate: orbit, pan and zoom the model",
-     "yue": "Navigate：轉動、移動、縮放 model"
+     "sel": "#v3-chips .v3-floor",
+     "en": "Floor: cut the model at a floor, seen as a plan",
+     "yue": "樓層：喺某層切開 model，當平面睇"
     },
     {
-     "sel": "#m-issue",
-     "en": "Add issue: click the model to place an issue",
-     "yue": "Add issue：撳 model 放一個 issue"
+     "sel": "#pv-ortho",
+     "en": "Perspective or parallel view",
+     "yue": "透視或者平行投影"
     },
     {
-     "sel": "#m-measure",
-     "en": "Measure with snapping",
-     "yue": "量度（會鎖點）"
-    },
-    {
-     "sel": "#floor-select",
-     "en": "Floor plan: cut the model at a floor",
-     "yue": "樓層平面：喺某層切開 model"
+     "sel": "#v3-chips .v3-pins",
+     "en": "Issue pins: show or hide the issues on the model",
+     "yue": "Issue 釘：顯示或隱藏 model 上嘅 issue"
     },
     {
      "sel": "#plan-draw",
@@ -376,14 +266,45 @@
      "yue": "平面疊圖：將圖則疊喺 model 上"
     },
     {
-     "sel": "#view-link",
-     "en": "Copy a link to this view",
-     "yue": "複製呢個視圖嘅連結"
+     "sel": "#v3-more-btn",
+     "en": "More: copy a link to this view, BCF, set front / world, + Task",
+     "yue": "更多：複製視圖連結、BCF、設定正面 / 世界座標、+ Task"
     },
     {
-     "sel": "#bcf-menu",
-     "en": "BCF: exchange issues with Revit, Navisworks ...",
-     "yue": "BCF：同 Revit、Navisworks ... 交換 issue"
+     "sel": "#m-nav",
+     "en": "Orbit: turn, pan and zoom the model",
+     "yue": "轉動：轉、移、縮放 model",
+     "at": "above"
+    },
+    {
+     "sel": "#m-walk",
+     "en": "Walk through it at eye level",
+     "yue": "以眼睛高度行入去睇",
+     "at": "above"
+    },
+    {
+     "sel": "#fit3d",
+     "en": "Fit: the whole model",
+     "yue": "Fit：成個 model",
+     "at": "above"
+    },
+    {
+     "sel": "#v3-box",
+     "en": "Section box on or off",
+     "yue": "開關剖切盒",
+     "at": "above"
+    },
+    {
+     "sel": "#m-measure",
+     "en": "Measure with snapping",
+     "yue": "量度（會鎖點）",
+     "at": "above"
+    },
+    {
+     "sel": "#m-issue",
+     "en": "+ Add issue: click the model to place one",
+     "yue": "+ Add issue：撳 model 放一個",
+     "at": "above"
     },
     {
      "sel": "#model-list",
@@ -391,19 +312,9 @@
      "yue": "Project 嘅 model - 剔選顯示"
     },
     {
-     "sel": "#ref-panel",
-     "en": "Consultant models (IFC) and other projects laid over",
-     "yue": "顧問 model (IFC) 同疊加其他 project"
-    },
-    {
      "sel": "#cat-list",
      "en": "Elements: show or hide each category",
      "yue": "構件：顯示或隱藏每個類別"
-    },
-    {
-     "sel": "#mb-panel",
-     "en": "Model browser: find, select, isolate, zoom to elements",
-     "yue": "Model browser：搵、揀、單獨顯示、放大構件"
     },
     {
      "sel": "#viewcube",
@@ -411,19 +322,9 @@
      "yue": "視圖方塊：撳一面；Home 返總覽"
     },
     {
-     "sel": "#viewcube-bar",
-     "en": "Walk, Fit, Perspective / Orthographic, Set front, World",
-     "yue": "Walk、Fit、透視 / 正投影、Set front、World"
-    },
-    {
      "sel": "#inspect-body",
-     "en": "Selection: the clicked element's properties; Isolate, Hide, Show all",
-     "yue": "Selection：撳中構件嘅屬性；Isolate、Hide、Show all"
-    },
-    {
-     "sel": "#pins-toggle",
-     "en": "Show or hide the issue pins in the model",
-     "yue": "顯示或隱藏 model 入面嘅 issue 釘"
+     "en": "Selection: the clicked element's properties (one line until you click one)",
+     "yue": "Selection：撳中構件嘅屬性（未揀之前得一行）"
     },
     {
      "sel": "#i3-list",
@@ -936,46 +837,42 @@
    "id": "calendar",
    "url": "calendar.html",
    "ready": "#cal-body",
+   "wait": 3200,
    "marks": [
     {
      "sel": "#cal-today",
-     "en": "Previous / Today / Next month",
-     "yue": "上個月 / 今日 / 下個月"
+     "en": "Previous / Today / Next",
+     "yue": "上一頁 / 今日 / 下一頁"
     },
     {
      "sel": "#cal-title",
-     "en": "The month shown",
-     "yue": "顯示緊嘅月份"
-    },
-    {
-     "sel": "#cal-hol",
-     "en": "Public holidays (HK, PH ...)",
-     "yue": "公眾假期（香港、菲律賓 ...）"
+     "en": "The month (or week) shown",
+     "yue": "顯示緊嘅月份（或者星期）"
     },
     {
      "sel": "#cal-groups",
-     "en": "Groups: see a team's leave and meetings",
-     "yue": "Groups：睇一個團隊嘅假期同會議"
-    },
-    {
-     "sel": "#cal-leave",
-     "en": "+ Leave",
-     "yue": "+ 請假"
+     "en": "Groups: see a team's leave",
+     "yue": "Groups：睇一個團隊嘅假期"
     },
     {
      "sel": "#cal-view",
-     "en": "Month or List",
-     "yue": "月曆或清單"
-    },
-    {
-     "sel": "#cal-new",
-     "en": "+ Event: a meeting",
-     "yue": "+ Event：會議"
+     "en": "Month, Week or List",
+     "yue": "月、星期或清單"
     },
     {
      "sel": "#cal-outlook",
-     "en": "Add to Outlook: the calendar in Outlook",
-     "yue": "Add to Outlook：喺 Outlook 睇呢個日曆"
+     "en": "Sync to Outlook: this calendar in Outlook, kept up to date",
+     "yue": "Sync to Outlook：喺 Outlook 睇呢個日曆，會自己更新"
+    },
+    {
+     "sel": "#cal-add",
+     "en": "+ New: an event, a meeting, a task or leave",
+     "yue": "+ New：活動、會議、task 或者請假"
+    },
+    {
+     "sel": "#cal-legend",
+     "en": "Show: click a kind to hide or show it; Holidays ▾ chooses HK / PH",
+     "yue": "Show：撳一類嚟隱藏或顯示；Holidays ▾ 揀香港 / 菲律賓"
     },
     {
      "sel": "a.ce.task",
@@ -989,11 +886,6 @@
    "url": "folders.html?project={project}",
    "ready": "#fo-list .fo-row",
    "marks": [
-    {
-     "sel": "#fo-proj",
-     "en": "The project",
-     "yue": "Project"
-    },
     {
      "sel": "[data-q=pinned]",
      "en": "Pinned, Starred, Recent, Recently deleted",
@@ -1026,8 +918,13 @@
     },
     {
      "sel": "#fo-up",
-     "en": "Upload (or drop files on the page)",
-     "yue": "上載（或者拖檔案入頁面）"
+     "en": "Upload",
+     "yue": "上載"
+    },
+    {
+     "sel": "#fo-list .fo-dropzone",
+     "en": "Drop files here to upload into this folder (or click)",
+     "yue": "將檔案拖到呢度上載入呢個資料夾（或者撳）"
     },
     {
      "sel": "#fo-list .fo-head",
@@ -1055,18 +952,18 @@
    "marks": [
     {
      "sel": "#f-range",
-     "en": "Closed within",
-     "yue": "幾耐內關閉"
-    },
-    {
-     "sel": "#f-type",
-     "en": "Type, assignee, office, team, discipline",
-     "yue": "類型、負責人、辦公室、團隊、專業"
+     "en": "Filters as chips: resolved within, type, assigned to, discipline",
+     "yue": "篩選：幾耐內解決、類型、負責人、專業"
     },
     {
      "sel": "#f-mine",
      "en": "Only mine",
      "yue": "只睇自己"
+    },
+    {
+     "sel": "#f-more",
+     "en": "More filters: office, team, dismissed issues",
+     "yue": "更多篩選：辦公室、團隊、已撤銷嘅 issue"
     },
     {
      "sel": "#d-export",
@@ -1079,19 +976,24 @@
      "yue": "Project 嘅 task"
     },
     {
-     "sel": "#digest",
-     "en": "This week: raised, closed, open, overdue",
-     "yue": "今個星期：新開、關閉、未完、過期"
+     "sel": "#kpis",
+     "en": "Open, overdue, resolved in the period, average days to resolve",
+     "yue": "未完、過期、期內解決、平均幾多日解決"
     },
     {
-     "sel": "#kpis",
-     "en": "The issue counts - click one to see them",
-     "yue": "Issue 數字 - 撳一個睇清單"
+     "sel": "#digest",
+     "en": "This week: raised, resolved, open, overdue",
+     "yue": "今個星期：新開、解決、未完、過期"
     },
     {
      "sel": "#c-trend",
-     "en": "Raised and closed by week",
-     "yue": "每星期新開同關閉"
+     "en": "Raised and resolved by week",
+     "yue": "每星期新開同解決"
+    },
+    {
+     "sel": "#c-person",
+     "en": "Open issues by person and discipline",
+     "yue": "每人同每個專業嘅未完 issue"
     }
    ]
   },

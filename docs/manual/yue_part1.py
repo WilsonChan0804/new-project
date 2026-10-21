@@ -74,7 +74,7 @@ PART = [
     P('登入、打開一張 sheet、喺 3D 睇返同一個位，再開一個測試 issue。'),
     OL([
         '**登入。** 打開 viewer 網址，輸入 email 同密碼，到時跟指示改咗個臨時密碼佢。',
-        '**揀 project。** 用頂部嘅 project 名（如果你喺多過一個 project，會有下拉選單），或者喺 **Dashboard** 揀。',
+        '**揀 project。** 撳左上角嘅 project（每一版都喺同一個位），喺清單揀另一個；或者喺 **Projects** 版揀。',
         '**打開一張 sheet。** 喺 **Sheets** 撳左邊清單入面嘅 sheet，或者喺 **Search all sheets** 打房名、grid 或者 note。滾輪放大縮細，㩒住中鍵拖動，撳 **Fit** 睇成張圖。',
         '**去 3D。** 撳左上角嘅 **3D**。㩒住右鍵轉，㩒住中鍵移，滾輪放大縮細。Double-click 一個面就會 zoom 埋去。',
         '**睇一層。** 喺 **Floor plan** 下拉選單揀一層：model 會喺嗰層上面 1.2 m 切開，由上面望落去。**Page Up / Page Down** 上落一層；**Whole building** 返去 3D。',
@@ -91,13 +91,13 @@ PART = [
     P('Dashboard 係 project 嘅 issue 計分板：幾多個未完成、幾多個過咗期、喺邊個手上，同埋今個星期有乜改變。'),
     LABEL('四圍行'),
     UL([
-        '每一版頂部都係同一排、同一個位置嘅頁面：**Projects**、**Sheets**、**3D**、**Board**、**Tasks**、**Chat**（有未讀訊息數目）同 **Dashboard**。右邊有：**Search** 放大鏡、鈴、**+ Task**（喺 Sheets 同 3D：將而家呢張 sheet 或者 3D 視圖放落 task）同**你嘅個人掣**（你個名嘅縮寫，有網絡時有粒綠點）。撳佢會見到 **Work offline ...**、**Admin**（只有 admin 見到）、**Account**（密碼）、**Theme**（Light、Dark、Auto）同 **Sign out**。手機上面呢排可以打橫碌。',
-        '**Project 下拉選單**（Sheets、3D、Board、Dashboard）會列出 Projects 版嘅 project 名，例如「SKW · HKA-P-01681-ARC」。由幾個 model 組成嘅 project，例如 MOS Site 1 同 Site 2，會變成一組，下面列出佢嘅各部分。',
+        '每一版嘅頂部都一樣：個 logo，跟住係**你而家嘅 project**（左上角，有簡寫、名同編號 - 撳一下轉 project），再係各頁 **Projects**、**Dashboard**、**Sheets**、**3D**、**Board**、**Tasks**、**Chat**（有未讀訊息數目）、**Calendar** 同 **Folders**。右邊有：**Search**（Ctrl K）、鈴、**Help** 同**你嘅頭像**（你個名嘅簡寫，上線時有綠點）。撳頭像有 **Work offline ...**、**Admin**（只限 admin）、**Account**（密碼）、**Theme**（Light、Dark、Auto）同 **Sign out**。手機上面各頁可以左右掃。',
+        '**Project 選單**會列出 Projects 版嘅 project 名，例如「SKW · HKA-P-01681-ARC」。由幾個 model 組成嘅 project，例如 MOS Site 1 同 Site 2，會喺下面列出佢嘅部分。最底嘅 **All projects →** 打開 Projects 版。',
         '連線標籤只會喺有嘢要講嗰陣出現：**N waiting to save**（斷咗線；你嘅改動排緊隊，有返線就會送出）或者 **offline**。有改動等緊儲存嘅時候唔好 reload：排緊隊嘅嘢只會保留到你離開嗰版為止。',
     ]),
     LABEL('Dashboard 顯示乜'),
     TABLE(['部分', '話俾你知'], [
-        ['篩選', '**Closed within**（Any time 至 Last 12 months）、**Type**、**Assigned to**、**Office**、**Only mine**、**Include "not an issue"**'],
+        ['篩選', '一排 chip：**Resolved within**（Any time 至 Last 12 months）、**Type**、**Assigned to**、**Discipline**、**Only mine**；**More filters** 再有 **Office**、**Team** 同 **Show dismissed issues**'],
         ['今個星期', '今個星期開咗、關咗、未完成同過咗期嘅 issue，同埋每個人手上未完成嘅 issue；**Send to Teams** 會貼去 project channel'],
         ['總結數字', 'Issues、Open、In progress、Resolved、Closed、Overdue、7 日內到期、未指派、平均開咗幾多日、平均幾多日關'],
         ['圖表', '每星期開同關嘅數目（最近 12 個星期），按狀態、類型、優先次序、喺邊度開（sheet 或者 3D）同 office 分'],
@@ -106,7 +106,7 @@ PART = [
     ]),
     UL([
         '**Export ▾** 會攞篩選緊嘅 issue：**Report**（有相、可以列印或者儲存做 PDF 嘅報告）、**Spreadsheet (CSV)** 俾 Excel，或者 **BCF** 俾 Revit、Navisworks 或 Solibri。',
-        '呢版每 2 分鐘自動更新；撳 **Refresh** 即刻更新。',
+        '呢版每 2 分鐘自動更新；**Updated ... ago** 話你幾耐之前更新。四個主要數字係 **Open issues**、**Overdue**（最舊嗰個遲咗幾多日）、期內 **Resolved**（開咗幾多個入面）同 **Avg. time to resolve**；「Resolved」包括變咗 Resolved 或者 Closed 嘅 issue（Closed 即係開 issue 嘅人確認咗）。',
         '**呢個 project 嘅 task：** 如果呢個 project 喺 Projects 版上面，Dashboard 亦會顯示佢喺每個團隊 list 入面嘅 task：未完成、過咗期，同埋做咗幾多個 sub-task。',
     ]),
     LABEL('通知'),

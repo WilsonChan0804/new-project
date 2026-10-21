@@ -807,7 +807,7 @@ async function toSheets(e) {
     sets = [...new Set((m.sheets || []).filter((s) => s.set).map((s) => s.set))];
   } catch (err) {}
   const stem = e.name.replace(/\.pdf$/i, "");
-  const f = await modal("Add to the Sheets page", `<p class="muted" style="margin:0 0 8px;font-size:12px">Each page of <b>${esc(e.name)}</b> becomes a sheet, in a set of its own in the drop-down at the top of the Sheets page.</p>`
+  const f = await modal("Add to the Sheets page", `<p class="muted" style="margin:0 0 8px;font-size:12px">Each page of <b>${esc(e.name)}</b> becomes a sheet, in a set of its own, chosen under Set: in the Sheets list.</p>`
     + (parts.length > 1 ? `<label>Sheets of <select name="p">${parts.map((p) => `<option>${esc(p)}</option>`).join("")}</select></label>` : "")
     + `<label>Set <input name="s" list="fo-sets" value="${esc(sets[0] || "Uploaded PDFs")}" maxlength="60"></label><datalist id="fo-sets">${sets.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>`
     + `<label>Sheet number (pages are numbered after it) <input name="n" value="${esc(stem.slice(0, 24))}" maxlength="40"></label>`, "Add");

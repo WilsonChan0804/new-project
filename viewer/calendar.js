@@ -29,7 +29,7 @@ const K = {
   at: new Date(),             // a day in the month shown
   kinds: new Set(["meeting", "task", "issue", "leave"]),
   entries: [], from: "", to: "",
-  hol: { hk: false, ph: false },     // the holidays shown (Holidays button)
+  hol: { hk: true, ph: true },       // the holidays shown (Holidays chip)
   holExtra: {},                       // added by a site admin (server)
   group: "",                          // leave of: "" every group of mine, or one group
   groups: [],
@@ -135,7 +135,7 @@ function chip(e, long) {
   return `<a class="${cls}" href="${esc(e.url)}" data-id="${esc(e.id)}" title="${esc(e.title + (e.parent ? " - sub-task of " + e.parent : "") + (e.from ? " - " + e.from : ""))}">`
     + `<span class="ce-i">${ic(icon, 12)}</span>`
     + (t ? `<b class="ce-t">${esc(t)}</b>` : "")
-    + `<span class="ce-n">${e.kind === "issue" ? "<b>Due:</b> " : ""}${esc(e.title)}</span>`
+    + `<span class="ce-n">${e.kind === "issue" ? "Due · " : ""}${esc(e.title)}</span>`
     + (long ? `<small class="ce-f">${esc([e.parent ? "Sub-task of " + e.parent : "", e.from, e.where].filter(Boolean).join(" · "))}</small>` : "")
     + `</a>`;
 }
@@ -186,15 +186,18 @@ function paintWeek(list) {
 }
 
 /* The colours, which are also the switches: click one to hide or show it. */
-const LEGEND = [["meeting", "Meetings"], ["task", "My tasks"], ["issue", "My issues"], ["leave", "Leave"], ["holiday", "Holidays"]];
+const LEGEND = [["issue", "Issue due dates"], ["task", "Tasks"], ["holiday", "Holidays"], ["leave", "Team leave"], ["meeting", "Meetings"]];
 function paintLegend() {
   const box = $("#cal-legend");
   if (!box) return;
   const anyHol = Object.values(K.hol).some(Boolean);
-  box.innerHTML = LEGEND.map(([k, label]) => {
+  const regs = Object.keys(K.hol).filter((r) => K.hol[r]).map((r) => REGIONS[r].short);
+  box.innerHTML = `<span class="lg-show">Show</span>` + LEGEND.map(([k, label0]) => {
+    const label = k === "holiday" && regs.length ? label0 + " · " + regs.join(" + ") : label0;
     const on = k === "holiday" ? anyHol : K.kinds.has(k);
     return `<button type="button" class="lg-k ${k}${on ? " on" : ""}" data-k="${k}" aria-pressed="${on}" title="${on ? "Hide" : "Show"} ${esc(label.toLowerCase())}">`
-      + `<span class="ce-dot ${k}"></span>${esc(label)}</button>`;
+      + `<span class="ce-dot ${k}"></span>${esc(label)}`
+      + (k === "holiday" ? `<span class="lg-caret" data-hreg title="Which places' public holidays">&#9662;</span>` : "") + `</button>`;
   }).join("");
 }
 
@@ -352,6 +355,8 @@ function holidaysPop(anchor) {
     try { localStorage.setItem("lwk-viewer:cal-hol", JSON.stringify(K.hol)); } catch (e) {}
     holBtn();
     paint();
+    if (!K.from) return;
+    K.entries = K.entries.filter((x) => x.kind !== "holiday").concat(holidayEntries());
   });
   el.addEventListener("click", (ev) => { if (ev.target.closest("[data-edit]")) { closePop(); editHolidays(); } });
 }
@@ -505,6 +510,8 @@ function wire() {
   $("#cal-next").onclick = () => stepBy(1);
   // the legend switches kinds on and off (the same as the Filter's ticks)
   $("#cal-legend").onclick = (ev) => {
+    const hr = ev.target.closest("[data-hreg]");
+    if (hr) { ev.stopPropagation(); return holidaysPop(hr); }
     const b = ev.target.closest("[data-k]");
     if (!b) return;
     const k = b.dataset.k;

@@ -2704,9 +2704,17 @@ function takeBmp(key) {
   if (c) { _bmps.delete(key); _bmps.set(key, c); }
   return c || null;
 }
+/* The zoom as people read it: 100% is the sheet fitting the window's width
+   (the paper's own size in points says nothing on a screen). */
+function zoomText() {
+  if (!S.page) return Math.round(S.scale * 100) + "%";
+  const pct = Math.round(S.scale / fitScaleFor(S.page) * 100);
+  return pct + "%";
+}
 function fitScaleFor(page) {
   const v1 = page.getViewport({ scale: 1, rotation: 0 });
-  return Math.max(0.1, ($("#scroll").clientWidth - 40) / v1.width);
+  const sc = $("#scroll");
+  return sc ? Math.max(0.1, (sc.clientWidth - 40) / v1.width) : 1;
 }
 function previewUrl(sheet) {
   return "/api/sheet-preview?pdf=" + encodeURIComponent(sheet.pdf)
@@ -3360,7 +3368,7 @@ function preview() {
   setViewport();
   applyDisplaySize();
   redraw();
-  $("#zoom-label").textContent = Math.round(S.scale * 100) + "%";
+  $("#zoom-label").textContent = zoomText();
 }
 
 /* The whole-page picture is drawn ONCE per sheet (and turn), at a fixed
@@ -3385,7 +3393,7 @@ async function renderPage() {
   // the picture of this sheet is already there: only the sharp part is redrawn
   if (_rendered.page === S.page && _rendered.rotation === S.rotation) {
     _rendered.scale = S.scale;
-    $("#zoom-label").textContent = Math.round(S.scale * 100) + "%";
+    $("#zoom-label").textContent = zoomText();
     redraw();
     renderDetail();
     saveSheetViewSoon();
@@ -3438,7 +3446,7 @@ async function renderPage() {
   _rendered = { scale: S.scale, rotation: S.rotation, page: S.page };
   if (S.tool === "selecttext") buildTextLayer();
 
-  $("#zoom-label").textContent = Math.round(S.scale * 100) + "%";
+  $("#zoom-label").textContent = zoomText();
   redraw();
   saveSheetViewSoon();
 
@@ -3531,9 +3539,10 @@ function settle(delay) {
 }
 
 function fit() {
-  if (!S.page) return;                   // a sheet still on its way
+  const sc = $("#scroll");
+  if (!S.page || !sc) return;            // a sheet still on its way
   const v1 = S.page.getViewport({ scale: 1, rotation: S.rotation });
-  S.scale = Math.max(0.1, ($("#scroll").clientWidth - 40) / v1.width);
+  S.scale = Math.max(0.1, (sc.clientWidth - 40) / v1.width);
   renderPage();
 }
 
@@ -3922,7 +3931,7 @@ async function captureSheetSnapshot(item) {
 
 /* Sets of sheets. The sheets published from Revit are one set (""); PDFs
    uploaded from outside go in sets of their own ("Uploaded PDFs", or a
-   name given at upload), each its own entry in the header's drop-down, so
+   name given at upload), each its own entry under Set: in the sheet list, so
    they do not pile up under the drawings from the model. They stay in the
    same project: markups, issues, search and compare work across sets. */
 const PDF_SET = "Uploaded PDFs";
@@ -3952,6 +3961,8 @@ function showSet(name, keepSheet) {
 }
 
 function renderSheets() {
+  paintSetBtn();
+  if (S.panels && S.manifest) S.panels.autoFold("l", !S.manifest.sheets.length);
   const ul = $("#sheet-list"); ul.innerHTML = "";
   const list = setSheets();
   const tot = document.getElementById("sheet-total");
@@ -4063,20 +4074,36 @@ async function setCall(path, body) {
   return data;
 }
 
+/* The set button says which set is shown, as the template's "Set: Current". */
+function paintSetBtn() {
+  const b = document.getElementById("set-menu-btn");
+  if (!b || !S.manifest) return;
+  const many = setNames().length > 0;
+  b.innerHTML = `Set: <b>${esc(S.set || (many ? "Revit sheets" : "Current"))}</b> &#9662;`;
+  b.title = "Which set of sheets to show (the sheets from Revit or an uploaded PDF set) - and rename, archive or delete a set";
+}
+
 async function paintSetMenu() {
   const m = document.getElementById("set-menu");
   const imported = !!S.set;
   const n = setSheets().length;
   const act = (k, icon, label, hint, cls) => `<button type="button" class="sm-act${cls ? " " + cls : ""}" data-sm="${k}">`
     + `<span class="sm-i">${iconSvg(icon, 16) || ""}</span><span class="sm-t"><b>${label}</b><small>${hint}</small></span></button>`;
-  m.innerHTML = (imported
+  // which set the list shows: the sheets from Revit, or one of the uploaded PDF sets
+  const hasRevit = S.manifest && S.manifest.sheets.some((x) => !x.external);
+  const shows = (hasRevit ? [""] : []).concat(setNames());
+  const showRow = (name) => `<button type="button" class="sm-act sm-show${name === S.set ? " on" : ""}" data-show="${esc(name).replace(/"/g, "&quot;")}">`
+    + `<span class="sm-i">${name === S.set ? "&#10003;" : ""}</span><span class="sm-t"><b>${esc(name || "Revit sheets")}</b>`
+    + `<small>${S.manifest ? S.manifest.sheets.filter((x) => sheetSet(x) === name).length : 0} sheet(s)</small></span></button>`;
+  m.innerHTML = (shows.length > 1 ? `<div class="sm-head">Show</div>` + shows.map(showRow).join("") + `<div class="sm-sep"></div>` : "")
+    + (imported
     ? `<div class="sm-head">${esc(S.set)} &middot; ${n} sheet(s)</div>`
       + act("pick", "select", "Select sheets ...", "Tick several of them, then delete them together")
       + act("rename", "text", "Rename set ...", "Give this set of imported sheets another name")
       + act("archive", "box", "Archive set", "Hide it from Sheets and Folders; nothing is deleted")
       + `<div class="sm-sep"></div>`
       + act("delete", "trash", "Delete set ...", "Its sheets and PDFs; you choose about the files in Folders", "danger")
-    : `<div class="sm-empty">The sheets from Revit are not a set to rename or delete. Choose a set of imported PDFs in the drop-down above for those.</div>`)
+    : `<div class="sm-empty">${setNames().length ? "The sheets from Revit are not a set to rename or delete - show a set of uploaded PDFs (above) for that." : "No uploaded PDF sets yet: Files &#9662; &gt; PDF brings PDF drawings in as a set of their own."}</div>`)
     + `<div class="sm-head">Archived sets</div><div id="sm-arch" class="sm-empty">Looking ...</div>`;
   try {
     const res = await fetch("/api/import/sets", { headers: Store.authHeaders() });
@@ -4160,6 +4187,8 @@ function wireSetTools() {
     paintSetMenu();
   });
   m.addEventListener("click", (ev) => {
+    const sh = ev.target.closest("[data-show]");
+    if (sh) { shut(); showSet(sh.dataset.show); paintSetBtn(); return; }
     const a = ev.target.closest("[data-sm], [data-restore]");
     if (!a) return;
     shut();
@@ -4248,8 +4277,11 @@ function statusMatches(iss, f) {
   return stt === f;
 }
 
+const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "checkcfg"]);
 function renderList() {
   try { renderLayerPick(); } catch (e) {}
+  // no comments or issues on the drawings yet: the list folds away (its edge tab brings it back)
+  if (S.panels) S.panels.autoFold("r", !S.items.some((it) => !it.deleted && !NOT_HERE.has(it.placement)));
   const ul = $("#item-list");
   ul.innerHTML = "";
 
@@ -5910,7 +5942,7 @@ function connStatus(ok, err) {
    (buttons at the top left of the drawing, with the previous and next
    sheet beside them); choosing a sheet or an issue closes the list. */
 function setupDrawers2d() {
-  const mq = matchMedia("(max-width: 900px) and (orientation: portrait)");
+  const mq = matchMedia("(max-width: 1100px)");
   const row = document.getElementById("stage-row");
   const sheets = document.getElementById("sheets"), items = document.getElementById("items");
   if (!row || !sheets || !items) return;
@@ -5954,7 +5986,7 @@ function setupDrawers2d() {
     if (!on) close();
     // the drawers open under the header and the page's own toolbar row
     const pb = document.getElementById("page-bar");
-    const top = pb ? Math.round(pb.getBoundingClientRect().bottom) : (hdr ? hdr.offsetHeight : 44);
+    const top = pb && pb.offsetParent ? Math.round(pb.getBoundingClientRect().bottom) : (hdr ? hdr.offsetHeight : 44);
     document.documentElement.style.setProperty("--drawer-top", top + "px");
     requestAnimationFrame(() => { dispatchEvent(new Event("resize")); if (S.page) fit(); });
   };
@@ -5965,7 +5997,7 @@ function setupDrawers2d() {
 async function boot() {
   try { setupDrawers2d(); } catch (e) { console.warn("drawers", e); }
   try {
-    initPanels({ layout: document.getElementById("layout"), left: document.getElementById("sheets"), right: document.getElementById("items"), key: "sheets" });
+    S.panels = initPanels({ layout: document.getElementById("layout"), left: document.getElementById("sheets"), right: document.getElementById("items"), key: "sheets" });
     initSplitter({ row: document.getElementById("stage-row"), first: document.getElementById("scroll"), key: "sheets-split", modes: ["sync", "split"] });
   } catch (e) { console.warn("panels", e); }
   try { wireSheetFind(); } catch (e) { console.warn("find", e); }

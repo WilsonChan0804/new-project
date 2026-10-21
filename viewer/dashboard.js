@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-11-26";
+const LWK_VERSION = "2026-11-27";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -428,7 +428,7 @@ function render() {
 
   trendChart(list);
   donut("#c-status", ["Open", "In progress", "Resolved", "Closed"].concat(F.dismissed ? ["Not an issue"] : [])
-    .map((s) => ({ label: s, value: count(s), color: STATUS_COLORS[s] })));
+    .map((s) => ({ label: s, value: count(s), color: RING[s] })));
   bars("#c-type", tally(open, (i) => i.type).map(([k, v]) =>
     ({ label: (TYPE.get(k) || { label: k }).label, value: v, color: (TYPE.get(k) || {}).color || "#6b7280",
        onClick: () => { F.type = k; $("#f-type").value = k; render(); } })));
@@ -436,6 +436,13 @@ function render() {
     ({ label: p, value: open.filter((i) => i.priority === p).length, color: PRIORITY_COLORS[p] })));
   bars("#c-where", tally(open, (i) => i.where).slice(0, 10).map(([k, v]) =>
     ({ label: k, value: v, color: "#4a3aa7" })));
+  // beside the chart, as in the template: who holds the open issues, and which discipline
+  bars("#c-person", tally(open, (i) => i.assignee).slice(0, 8).map(([k, v]) =>
+    ({ label: k, value: v, onClick: () => { F.assignee = k; $("#f-assignee").value = k; render(); } })));
+  const discs = tally(open, (i) => i.discipline).filter(([k]) => k !== "-");
+  $(".pc-disc").hidden = $("#c-disc").hidden = !discs.length;
+  bars("#c-disc", discs.map(([k, v]) => ({ label: k, value: v, onClick: () => { F.disc = k; $("#f-disc").value = k; render(); } })));
+  $("#d-open3d").href = link("model.html");
   peopleTable(list, t0, soon);
   officeChart(open, t0);
 
@@ -543,13 +550,17 @@ function officeChart(open, t0) {
 
 /* -------------------------------------------------------------- charts */
 
+// every bar list in the one orange of the template, on a stone track
+const BAR = "#F08020";
+// the status ring in the template's stone ramp, open in orange
+const RING = { "Open": "#F08020", "In progress": "#a8a29e", "Resolved": "#57534e", "Closed": "#1c1917", "Not an issue": "#e7e5e4" };
 function bars(sel, data) {
   const el = $(sel);
   if (!data.length || !data.some((d) => d.value)) { el.innerHTML = `<p class="empty">Nothing to show.</p>`; return; }
   const max = Math.max(...data.map((d) => d.value), 1);
   el.innerHTML = `<div class="hbars">` + data.map((d, n) =>
     `<div class="hbar${d.onClick ? " click" : ""}" data-n="${n}"><span class="lab" title="${esc(d.label)}">${esc(d.label)}</span>`
-    + `<span class="track"><i style="width:${d.value / max * 100}%;background:${d.color}"></i></span>`
+    + `<span class="track"><i style="width:${d.value / max * 100}%;background:${BAR}"></i></span>`
     + `<span class="val">${d.value}${d.note ? `<small> ${esc(d.note)}</small>` : ""}</span></div>`).join("") + `</div>`;
   el.querySelectorAll(".hbar.click").forEach((row) => { row.onclick = data[+row.dataset.n].onClick; });
 }
@@ -589,7 +600,8 @@ function weekStart(d) {
    which squashed the dots and the dates), with the open total beside it as
    its own small area chart - a different quantity, so not on the same axis.
    Hover (or tap) a week for its numbers. */
-const C_RAISED = "#2a78d6", C_CLOSED = "#1baf7a", C_OPEN = "#eb6834";
+// the template's chart colours: orange for raised (and the open line), charcoal for resolved
+const C_RAISED = "#F08020", C_CLOSED = "#44403c", C_OPEN = "#F08020";
 let _trendRows = null, _trendObs = null;
 
 function trendChart(list) {

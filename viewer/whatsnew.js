@@ -6,6 +6,17 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-27", date: "21 Oct 2026",
+    items: [
+      "**Colours closer to the design:** warm grey backgrounds and lines on every page, and the Dashboard's charts in orange and charcoal. Your picture in the header is a clean circle again, and Search has its border back.",
+      "**Sheets:** uploaded PDF sets are back - choose them with **Set:** at the top of the sheet list (Revit sheets or each uploaded set). Comment / + Issue, Files and + Task are on the drawing's own toolbar, so there is no second row under the header. The zoom shows **100%** when the drawing just fits the width. An issue list with nothing in it folds away by itself (the tab at its edge brings it back, and it then stays open).",
+      "**3D:** one toolbar at the bottom of the model (Orbit, Walk, Fit, Section box, Measure, + Add issue) and chips at its top left (Floor, Perspective, Issue pins, Plan overlay, and ⋯ for the view link, BCF and + Task). The Selection panel stays one line until you pick something.",
+      "**Tablet and phone:** on a tablet the side panels of Sheets and 3D slide in from the side; on a phone the markup tools sit along the bottom and the panels rise from below.",
+      "**Calendar:** bordered buttons, Month / Week / List as one switch, and a **Show** legend with round colour dots (Issue due dates, Tasks, Holidays, Team leave, Meetings). The Holidays chip's ▾ chooses Hong Kong and / or Philippines. **Folders:** the drop area for uploads fills the space under the files.",
+      "**Help and manual** pictures retaken with the new header and toolbars.",
+    ],
+  },
+  {
     version: "2026-11-26", date: "21 Oct 2026",
     items: [
       "**One header on every page.** The project you are in is always top left, beside the logo - click it to switch project. Then the pages (Projects, Dashboard, Sheets, 3D, Board, Tasks, Chat, Calendar, Folders), and Search, notifications, help and your profile always at the right. On Sheets and 3D the page's own tools (Comment / Issue, Files, Navigate, Measure, Floor plan ...) are on a toolbar just under it.",

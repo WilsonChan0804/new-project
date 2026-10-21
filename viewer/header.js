@@ -104,6 +104,19 @@ export function installHeader({ api, project, link }) {
     header.after(bar);
     const conn = header.querySelector("#conn");
     if (conn) bar.appendChild(conn);
+    // Sheets, as in the template: Comment / + Issue, Files and + Task sit on the drawing's own
+    // toolbar; the extra row is kept (hidden) only for the drop-downs nothing shows any more
+    const tools = page === "sheets" && document.getElementById("tools");
+    if (tools) {
+      const acts = document.createElement("div");
+      acts.className = "tb-acts";
+      acts.id = "tb-acts";
+      const mode = bar.querySelector("#mode-comment");
+      if (mode) acts.appendChild(mode.closest(".mode"));
+      for (const sel of ["#files-btn", ".hdr-files", "#export-all"]) { const n = bar.querySelector(sel); if (n) acts.appendChild(n); }
+      tools.after(acts);
+      bar.classList.add("pb-hidden");
+    }
   }
 
   // the project picker's list: projects, and the parts of a project of several
@@ -209,7 +222,8 @@ export function installHeader({ api, project, link }) {
     // "+ Task" keeps the sheet or 3D view on a task: a page tool, so on the page's toolbar
     const bar = document.getElementById("page-bar");
     const st = document.getElementById("lwk-send-task");
-    if (bar && st && st.parentNode !== bar) { st.classList.add("pb-task"); bar.insertBefore(st, bar.querySelector("#conn")); }
+    const home = document.getElementById("tb-acts") || document.getElementById("v3-more-items") || bar;
+    if (home && st && st.parentNode !== home) { st.classList.add("pb-task"); if (home === bar) bar.insertBefore(st, bar.querySelector("#conn")); else home.appendChild(st); }
     // a project of one model / one sheet set: nothing to choose there
     for (const sel of document.querySelectorAll(".page-bar .two-part")) {
       const one = sel.options.length <= 1;

@@ -264,7 +264,7 @@ export async function pdfImportDialog({ file, pages, stem, sets, set, project, f
   const d = dialog(`<h3>Import ${esc(file.name)}</h3>
     <div class="muted">${pages === 1 ? "One page: it becomes one sheet." : `${pages} pages: each becomes a sheet, numbered after the prefix.`}</div>
     <label class="cad-row">${pages === 1 ? "Sheet number" : "Sheet number prefix"}<input type="text" class="pi-prefix" maxlength="40" value="${esc(stem.slice(0, 24))}"></label>
-    <label class="cad-row">Set (its entry in the drop-down at the top)<input type="text" class="pi-set" maxlength="60" list="pi-sets" value="${esc(set)}">
+    <label class="cad-row">Set (chosen under Set: in the Sheets list)<input type="text" class="pi-set" maxlength="60" list="pi-sets" value="${esc(set)}">
       <datalist id="pi-sets">${(sets || []).map((x) => `<option value="${esc(x)}">`).join("")}</datalist></label>
     <div class="pi-keep"></div>
     <div class="cad-foot"><button type="button" class="cad-no">Cancel</button><button type="button" class="pri cad-go">Import</button></div>`);

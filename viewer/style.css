@@ -1116,7 +1116,7 @@ button.danger:hover:not(:disabled) { background: #fdece8; border-color: #f2b8aa;
 /* A Viewer changes nothing; the server refuses it anyway, so the tools go. */
 body.role-viewer #tools, body.role-viewer #mode-issue, body.role-viewer #mode-comment,
 body.role-viewer #a-paste, body.role-viewer #m-issue, body.role-viewer #detail-save,
-body.role-viewer #detail-delete, body.role-viewer #set-menu-btn,
+body.role-viewer #detail-delete,
 body.role-viewer .ext-del { display: none !important; }
 
 /* --------------------------------------------- tablet markup (GoodNotes) */
