@@ -133,6 +133,11 @@ class DialogLog(object):
         # its only button is Close (TaskDialogResult.Close = 8): a note that a
         # DWG held ActiveX or proxy objects Revit cannot read (8 Oct test run)
         "TaskDialog_Elements_Lost_On_Import": (8, "a DWG with elements Revit cannot read: noted, closed"),
+        # "Do not warn about this updater again and continue working with the
+        # file" (1001), "Continue working with the file" (1002): either opens
+        # it without the missing add-in's updater; 1002 changes nothing kept
+        "TaskDialog_Missing_Third_Party_Updaters": (1002, "missing third-party updaters: continued without them"),
+        "TaskDialog_Missing_Third_Party_Updater": (1002, "missing third-party updaters: continued without them"),
     }
 
     # Dialogs with no id (DialogId ''), known by their words: the ones a

@@ -61,7 +61,9 @@ import datetime
 
 import System
 
-__version__ = "2026-10-07a"
+from lwk_viewer import dialogrules
+
+__version__ = "2026-12-01"
 
 BASE = os.path.join(os.environ.get("APPDATA", "."), "LWK")
 # The launcher before 2026-10-03 wrote this one flag and started one Revit.
@@ -898,7 +900,7 @@ exit /b 0
 # as far as PowerShell is concerned, so the execution policy does not apply,
 # and it no longer has to fit on one line of the .bat (8191 characters).
 _WATCH = u"""$ErrorActionPreference='SilentlyContinue'
-$VER='2026-10-08c'
+$VER='2026-11-31'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
 $A=[Windows.Automation.AutomationElement]; $S=[Windows.Automation.TreeScope]; $CT=[Windows.Automation.ControlType]
 $B=New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty,$CT::Button)
@@ -917,13 +919,15 @@ public delegate bool EnumProc(System.IntPtr h, System.IntPtr p);
 [System.Runtime.InteropServices.DllImport("user32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)] public static extern int GetClassName(System.IntPtr h, System.Text.StringBuilder s, int n);
 [System.Runtime.InteropServices.DllImport("user32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)] public static extern int GetWindowText(System.IntPtr h, System.Text.StringBuilder s, int n);
 [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool PostMessage(System.IntPtr h, uint m, System.IntPtr w, System.IntPtr l);
-static string Cls(System.IntPtr h) { var s = new System.Text.StringBuilder(256); GetClassName(h, s, 256); return s.ToString(); }
+public static string Cls(System.IntPtr h) { var s = new System.Text.StringBuilder(256); GetClassName(h, s, 256); return s.ToString(); }
 public static string Text(System.IntPtr h) { var s = new System.Text.StringBuilder(512); GetWindowText(h, s, 512); return s.ToString(); }
-public static System.Collections.Generic.List<System.IntPtr> Of(uint want) {
+// the process's dialogs: classic (#32770) and WPF (HwndWrapper[...]) top-level
+// windows, other than its main window
+public static System.Collections.Generic.List<System.IntPtr> Of(uint want, System.IntPtr main) {
   var l = new System.Collections.Generic.List<System.IntPtr>();
   EnumWindows(delegate(System.IntPtr h, System.IntPtr p) {
     uint pid; GetWindowThreadProcessId(h, out pid);
-    if (pid == want && IsWindowVisible(h) && Cls(h) == "#32770") l.Add(h);
+    if (pid == want && h != main && IsWindowVisible(h)) { var c = Cls(h); if (c == "#32770" || c.StartsWith("HwndWrapper")) l.Add(h); }
     return true; }, System.IntPtr.Zero);
   return l; }
 public static System.Collections.Generic.List<System.IntPtr> Buttons(System.IntPtr dlg) {
@@ -963,25 +967,46 @@ function AllButtons($w,$h){
   if($W32 -and $h){ foreach($bh in [LWK.Win]::Buttons($h)){ $n=Clean ([LWK.Win]::Text($bh)); if(-not ($out | Where-Object { $_[0] -eq $n })){ $out+=,@($n,'w32',$bh) } } }
   return ,$out
 }
+#LWK_NEVER#
+# a dialog no rule knows: its picture, once, beside dialogs.log
+$shots=0
+function Shot($w){
+  if($script:shots -ge 30){ return '' }
+  try {
+    Add-Type -AssemblyName System.Drawing
+    $r=$w.Current.BoundingRectangle; if($r.Width -lt 10 -or $r.Height -lt 10){ return '' }
+    $dir=Join-Path (Split-Path -Parent $log) 'dialogs'; New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $f=Join-Path $dir ((Get-Date -Format 'yyyyMMdd-HHmmss')+'-'+$env:YEAR+'.png')
+    $bm=New-Object Drawing.Bitmap ([int]$r.Width),([int]$r.Height)
+    $g=[Drawing.Graphics]::FromImage($bm); $g.CopyFromScreen([int]$r.X,[int]$r.Y,0,0,$bm.Size); $g.Dispose()
+    $bm.Save($f,[Drawing.Imaging.ImageFormat]::Png); $bm.Dispose(); $script:shots++
+    return ' (picture: '+$f+')'
+  } catch { return '' }
+}
 function Press($bs,$names){
-  foreach($n in $names){ foreach($b in $bs){ if($b[0] -eq $n){
+  foreach($n in $names){ if(Never $n){ continue }; foreach($b in $bs){ if($b[0] -eq $n){
     if($b[1] -eq 'uia'){ try { $b[2].GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); return $n+' (UIA)' } catch {} }
     else { if([LWK.Win]::Click($b[2])){ return $n+' (Windows)' } }
   } } }
   return $null
 }
-function Look($w,$h){
+function Look($w,$h,$wpf){
   $title=$w.Current.Name
+  $bs=AllButtons $w $h
+  if($wpf -and $bs.Count -eq 0){ return }
   $txt=(@($w.FindAll($S::Descendants,$X)) | ForEach-Object { $_.Current.Name }) -join ' '
   if($W32 -and $h -and -not $txt){ $txt=[LWK.Win]::Statics($h) }
-  $bs=AllButtons $w $h
   $ans=$null; $why=''; $orClose=$false
-  if($title -like '*Add-in Assembly Not Found*' -or $txt -like '*Failed to initialize the add-in*'){ $ans=@('Close','OK'); $why='an add-in that cannot load'; $orClose=$true }
+  # by the button's label first (dialogrules.py): an unsigned add-in, missing
+  # links, missing third-party updaters, information windows
+#LWK_RULES#
+  if($ans){ }
+  elseif($title -like '*Add-in Assembly Not Found*' -or $txt -like '*Failed to initialize the add-in*'){ $ans=@('Close','OK'); $why='an add-in that cannot load'; $orClose=$true }
   elseif($txt -match '[.]dll' -and $txt -match "(could not|couldn't|can't|cannot|can not|unable to|not found|failed|missing|not exist)"){ $ans=@('Close','OK'); $why='a missing DLL'; $orClose=$true }
   elseif($txt -like '*extents greater than*' -or ($txt -like '*Click OK to continue*' -and $txt -like '*import*')){ $ans=@('OK'); $why='a DWG partly out of range: imported, the far part cut off' }
   elseif($txt -like '*import from the Model space*'){ $ans=@('Yes'); $why='a DWG with an empty paper space: its model space imported' }
   elseif($title -like '*Lost on Import*' -or $txt -like '*were lost during import*' -or $txt -like '*cannot be imported*' -or $txt -like '*was out of range*'){ $ans=@('Close','OK'); $why='a DWG Revit cannot fully read: noted'; $orClose=$true }
-  elseif($bs.Count -eq 1){ $ans=@($bs[0][0]); $why='only one button, nothing to choose' }
+  elseif(-not $wpf -and $bs.Count -eq 1 -and -not (Never $bs[0][0])){ $ans=@($bs[0][0]); $why='only one button, nothing to choose' }
   $key=$title+'|'+$txt
   $script:nSeen++
   $names=(($bs | ForEach-Object { $_[0]+'/'+$_[1] }) -join ', ')
@@ -991,7 +1016,7 @@ function Look($w,$h){
     # a dialog that only says something, its button not found: closed as with its X (Esc)
     if($orClose -and $W32 -and $h -and -not $seen.ContainsKey('x|'+$key)){ $seen['x|'+$key]=1; if([LWK.Win]::Close($h)){ $script:nPressed++; Say ('closed (its X) - no button found ['+$names+'] ('+$why+') on: '+$title+' - '+$txt); return } }
   }
-  if(-not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt+' ['+$names+']') }
+  if(-not $seen.ContainsKey($key)){ $seen[$key]=1; Say ('seen, left for Revit or a person: '+$title+' - '+$txt+' ['+$names+']'+(Shot $w)) }
 }
 Say ('watching (watcher '+$VER+')'+$(if($W32){''}else{' WITHOUT the Windows window list ('+$why32+'): only dialogs under Revit''s main window'}))
 while(((Get-Date)-$t0).TotalSeconds -lt $lim){
@@ -1001,18 +1026,22 @@ while(((Get-Date)-$t0).TotalSeconds -lt $lim){
   foreach($p in $ps){
     if(-not $found.ContainsKey($p.Id)){ $found[$p.Id]=1; Say ('found Revit (process '+$p.Id+')') }
     if($W32){
-      foreach($h in [LWK.Win]::Of([uint32]$p.Id)){ $w=$A::FromHandle($h); if($w){ Look $w $h } }
+      foreach($h in [LWK.Win]::Of([uint32]$p.Id,$p.MainWindowHandle)){ $w=$A::FromHandle($h); if($w){ Look $w $h ([LWK.Win]::Cls($h) -ne '#32770') } }
     } else {
       $pc=New-Object Windows.Automation.PropertyCondition($A::ProcessIdProperty,$p.Id)
       foreach($w in $A::RootElement.FindAll($S::Children,$pc)){
-        if($w.Current.ClassName -eq '#32770'){ Look $w $null }
-        foreach($d in $w.FindAll($S::Children,$D)){ Look $d $null }
+        if($w.Current.ClassName -eq '#32770'){ Look $w $null $false }
+        elseif($w.Current.ClassName -like 'HwndWrapper*' -and $w.Current.NativeWindowHandle -ne [int]$p.MainWindowHandle){ Look $w $null $true }
+        foreach($d in $w.FindAll($S::Children,$D)){ Look $d $null $false }
       }
     }
   }
   Start-Sleep -Seconds 2
 }
 """
+
+
+_WATCH = _WATCH.replace(u"#LWK_RULES#", dialogrules.ps_rules()).replace(u"#LWK_NEVER#", dialogrules.ps_never())
 
 
 def watch_text():
