@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-02", date: "22 Oct 2026",
+    items: [
+      "**Fix - viewer Offline after 2026-12-01:** an SBD check (SBD Export from Revit, or Run) kept the server busy for minutes, so the viewer said Offline and publishing from Revit timed out. The check now runs in its own process, at lower priority, so the viewer and publishing carry on while it runs. It is also faster again, and a check that takes over 20 minutes is stopped with a message.",
+    ],
+  },
+  {
     version: "2026-12-01", date: "22 Oct 2026",
     items: [
       "**SBD side regions (TMTL496, 3rd review):** the street part runs exactly between the two points where the region's edge meets the site boundary, cut parallel to the plane at both ends. Past the last building corner the edge can also turn 15° away from the plane, so the region takes in more area where nothing stands in the way.",

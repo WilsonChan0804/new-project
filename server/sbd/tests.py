@@ -578,6 +578,30 @@ class AngledGaps(unittest.TestCase):
         self.assertEqual(engine._angled_gaps(site, [("B1", [a]), ("B2", [b])], (1.0, 0.0), known), [])
 
 
+class JobInItsOwnProcess(unittest.TestCase):
+    """A check runs as python -m sbd.job (the server keeps answering): the
+    same result as engine.run, and an error written, not raised."""
+
+    def test_round_trip(self):
+        import json, os, subprocess, sys, tempfile
+        d = {"site": SITE, "masses": [mass("A", box(5, 10, 0, 40, 50, 30)), mass("B", box(60, 10, 0, 95, 50, 30))]}
+        with tempfile.TemporaryDirectory() as t:
+            src, dst = os.path.join(t, "in.json"), os.path.join(t, "out.json")
+            with open(src, "w") as f:
+                json.dump({"model": d, "axis": "street"}, f)
+            here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            subprocess.run([sys.executable, "-m", "sbd.job", src, dst], cwd=here, check=True, timeout=300)
+            with open(dst) as f:
+                r = json.load(f)
+            want = engine.run(d)
+            self.assertEqual(r["controlling_p"], want["controlling_p"])
+            with open(src, "w") as f:
+                f.write("{not json")
+            subprocess.run([sys.executable, "-m", "sbd.job", src, dst], cwd=here, check=True, timeout=60)
+            with open(dst) as f:
+                self.assertIn("error", json.load(f))
+
+
 class OpeningsLevelByLevel(unittest.TestCase):
     """TMTL496, 3rd report: B4 (7.7 m high) between the towers blocks the
     Low zone's plan, but the opening above it is an air corridor from its

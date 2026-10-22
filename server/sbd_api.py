@@ -21,6 +21,8 @@ import json
 import os
 import re
 import shutil
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -32,6 +34,11 @@ from sbd import engine
 from sbd.ifcwrite import masses_ifc
 
 MAX_MODEL = 200 * 1024 * 1024
+# a check runs in its own process (sbd/job.py) for at most this long: the
+# server keeps answering meanwhile, and a model too big to check in time
+# says so instead of keeping a process busy for hours
+SBD_LIMIT_S = int(os.environ.get("SBD_LIMIT_S") or 20 * 60)
+HERE = os.path.dirname(os.path.abspath(__file__))
 SAFE = re.compile(r"^[0-9a-f]{8,32}$")
 
 
@@ -214,9 +221,61 @@ def clean_levels(lv):
 
 def register(app, core):
 
+    children = {}                       # project -> the check's process now running
+    stopped = set()
+
+    def run_job(pid, model, axis, angle_deg, levels):
+        """engine.run in its own process, lower priority; the result."""
+        d = _dir(core, pid)
+        tag = uuid.uuid4().hex[:8]
+        src, dst = os.path.join(d, "job-%s.in.json" % tag), os.path.join(d, "job-%s.out.json" % tag)
+        _write(src, {"model": model, "axis": axis, "angle_deg": angle_deg, "levels": levels})
+        kw = {}
+        if os.name == "nt":
+            kw["creationflags"] = 0x00004000 | 0x08000000      # BELOW_NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW
+        else:
+            kw["preexec_fn"] = lambda: os.nice(10)
+        p = subprocess.Popen([sys.executable, "-m", "sbd.job", src, dst], cwd=HERE,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, **kw)
+        children[pid] = p
+        try:
+            try:
+                _, err = p.communicate(timeout=SBD_LIMIT_S)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.communicate()
+                raise RuntimeError("the check took over %d min and was stopped - send the model (Checks > SBD > Model (JSON)) "
+                                   "for a look" % max(1, SBD_LIMIT_S // 60))
+            r = _read(dst)
+            if r is None:
+                if p in stopped:
+                    raise RuntimeError("the check was stopped: a newer export came")
+                raise RuntimeError("the check stopped without a result: %s" % ((err or b"").decode("utf-8", "replace")[-300:]))
+            if r.get("error"):
+                raise RuntimeError(r["error"])
+            return r
+        finally:
+            if children.get(pid) is p:
+                children.pop(pid, None)
+            stopped.discard(p)
+            for f in (src, dst, dst + ".tmp"):
+                try:
+                    os.remove(f)
+                except OSError:
+                    pass
+
+    def stop_running(pid):
+        p = children.get(pid)
+        if p and p.poll() is None:
+            stopped.add(p)
+            try:
+                p.kill()
+            except Exception:
+                pass
+
     def run_and_keep(pid, model, opts, who):
         lv = clean_levels(opts.get("levels"))
-        r = engine.run(model, axis=opts.get("axis") or "street", angle_deg=float(opts.get("angle_deg") or 0), levels=lv)
+        r = run_job(pid, model, opts.get("axis") or "street", float(opts.get("angle_deg") or 0), lv)
         r["options"] = {"axis": opts.get("axis") or "street", "angle_deg": float(opts.get("angle_deg") or 0), "levels": lv}
         r["run_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         r["run_by"] = who
@@ -271,6 +330,7 @@ def register(app, core):
         _write(os.path.join(_dir(core, pid), "model.json"), model)
         with guard:
             seq = seqs[pid] = seqs.get(pid, 0) + 1
+        stop_running(pid)                   # the latest export is the one shown
         _write(os.path.join(_dir(core, pid), "status.json"),
                {"state": "running", "seq": seq, "started": model["uploaded_at"], "by": w.name or ""})
         if background:

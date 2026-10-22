@@ -27,6 +27,7 @@ between, so its corners lie on the boundary.
 Units: feet (the panel's), (u, v) tuples.
 """
 
+import bisect
 import math
 
 TAN_MAX = math.tan(math.radians(15.0))
@@ -35,8 +36,24 @@ MIN_RUN = 1.0 / 0.3048   # a piece under 1 m deep is passed over
 EPS = 1e-7
 
 
+# _spans answers kept during one side_region() call (its polygons stay the
+# same, and its candidates ask at the same depths again and again)
+_SPAN_CACHE = None
+
+
 def _spans(poly, v):
     """Inside u-intervals of a polygon at depth v (even-odd)."""
+    if _SPAN_CACHE is not None:
+        got = _SPAN_CACHE.get((id(poly), v))
+        if got is not None and got[0] is poly:
+            return got[1]
+        r = _spans_of(poly, v)
+        _SPAN_CACHE[(id(poly), v)] = (poly, r)
+        return r
+    return _spans_of(poly, v)
+
+
+def _spans_of(poly, v):
     xs = []
     n = len(poly)
     for i in range(n):
@@ -329,6 +346,21 @@ def street_part(site, facing, side, v_entry, v_exit, carry=None):
     return out
 
 
+def _cuts_building(hulls, side, edge, v_lo, v_hi):
+    """A building pokes outward past the edge (u1, v1, t)."""
+    u1, v1, t = edge
+    s = 1.0 if side == "right" else -1.0
+    ue = lambda v: u1 if v <= v1 else u1 + t * (v - v1)
+    for h in hulls:
+        for q in h:
+            if (q[0] - ue(q[1])) * s > 0.05:
+                return True
+        for a, b in _spans(h, v1) if v_lo < v1 < v_hi else []:
+            if ((b if s > 0 else a) - ue(v1)) * s > 0.05:
+                return True
+    return False
+
+
 def region(site, ext, hulls, side, edge, v_lo, v_hi):
     """The region for one inner edge (u1, v1, t): (area, depth, inner chain,
     outer chain) of the run nearest the plane, or None (no region, or the
@@ -336,14 +368,8 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
     u1, v1, t = edge
     s = 1.0 if side == "right" else -1.0
     ue = lambda v: u1 if v <= v1 else u1 + t * (v - v1)
-    # a building may not poke outward past the edge
-    for h in hulls:
-        for q in h:
-            if (q[0] - ue(q[1])) * s > 0.05:
-                return None
-        for a, b in _spans(h, v1) if v_lo < v1 < v_hi else []:
-            if ((b if s > 0 else a) - ue(v1)) * s > 0.05:
-                return None
+    if _cuts_building(hulls, side, edge, v_lo, v_hi):
+        return None
     polys = [site] + list(ext)
     vs = {v_lo, v_hi}
     if v_lo < v1 < v_hi:
@@ -475,11 +501,20 @@ def candidates(hulls, side, v_lo):
     s = 1.0 if side == "right" else -1.0
     corners = [q for h in hulls for q in h]
     # the outward silhouette: a corner nothing lies beyond at its depth
+    byv = sorted(corners, key=lambda q: q[1])
+    vs = [q[1] for q in byv]
     sil = []
     for q in corners:
-        if not any((o[0] - q[0]) * s > 0.05 and abs(o[1] - q[1]) < 1e-6 for o in corners):
+        lo, hi = bisect.bisect_left(vs, q[1] - 1e-6), bisect.bisect_right(vs, q[1] + 1e-6)
+        if not any((o[0] - q[0]) * s > 0.05 and abs(o[1] - q[1]) < 1e-6 for o in byv[lo:hi]):
             sil.append(q)
     out = set()
+    # the last corner on each line square to the plane: where the edge may
+    # still turn the full 15 deg either way
+    last = {}
+    for c in sil:
+        k = round(c[0], 6)
+        last[k] = max(last.get(k, c[1]), c[1])
     for c1 in sil:
         out.add((round(c1[0], 6), round(v_lo, 6), 0.0))
         for c2 in sil:
@@ -487,15 +522,14 @@ def candidates(hulls, side, v_lo):
                 continue                      # turn at c1 towards a corner beyond it
             t = max(-TAN_MAX, min(TAN_MAX, (c2[0] - c1[0]) / (c2[1] - c1[1])))
             out.add((round(c1[0], 6), round(c1[1], 6), round(t, 9)))
-        # or straight on to a later corner on the same line (the far end of
+        # or straight on to the last corner on the same line (the far end of
         # the same building face) and turned there the full 15 deg either way
         # - round the last building the region may grow (Wilson, TMTL496:
         # "larger if the corridor turns later"); it still turns only at a
         # building corner, and an edge that cuts a building is refused
-        for c3 in sil:
-            if abs(c3[0] - c1[0]) < 1e-6 and c3[1] >= c1[1] - 1e-6:
-                out.add((round(c1[0], 6), round(c3[1], 6), round(TAN_MAX, 9)))
-                out.add((round(c1[0], 6), round(c3[1], 6), round(-TAN_MAX, 9)))
+        v3 = last[round(c1[0], 6)]
+        out.add((round(c1[0], 6), round(v3, 6), round(TAN_MAX, 9)))
+        out.add((round(c1[0], 6), round(v3, 6), round(-TAN_MAX, 9)))
     return sorted(out)
 
 
@@ -514,11 +548,29 @@ def side_region(site, hulls, side, streets=None):
         polys = extension(site, cl, reach, side, outline, 3.0 / 0.3048, [o for o in slabs if o is not outline])
         if polys:
             facing.append((cl, reach, polys))
+    global _SPAN_CACHE
+    _SPAN_CACHE = {}
+    try:
+        return _side_region(site, hulls, side, v_lo, v_hi, facing)
+    finally:
+        _SPAN_CACHE = None
+
+
+def _side_region(site, hulls, side, v_lo, v_hi, facing):
     best = None
+    parts = {}                   # the street part for each (entry, exit): many edges share one
     for e in candidates(hulls, side, v_lo):
+        if _cuts_building(hulls, side, e, v_lo, v_hi):
+            continue
         # the street part as this edge has it: between the two points where
         # the edge meets the site boundary
-        ext_e = street_part(site, facing, side, *edge_meets(site, e, v_lo, v_hi)) if facing else []
+        ext_e = []
+        if facing:
+            meets = edge_meets(site, e, v_lo, v_hi)
+            key = tuple(meets)
+            if key not in parts:
+                parts[key] = street_part(site, facing, side, *meets)
+            ext_e = parts[key]
         r = region(site, ext_e, hulls, side, e, v_lo, v_hi)
         if not r:
             continue
