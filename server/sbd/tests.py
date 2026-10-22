@@ -418,34 +418,67 @@ class GroupSpacing(unittest.TestCase):
 
 
 class OverlappingCorridors(unittest.TestCase):
-    """Two gaps side by side whose corridors overlap on plan count as one,
-    with the corridor turned least (TMTL496: S3 omitted for S2)."""
+    """Corridors overlapping on plan are one: the one that counts is kept,
+    of two that do not the one turned least (TMTL496, three marked cases);
+    beside the kept one it merges, apart from it its gap is omitted."""
+    site_uv = [(0.0, 0.0), (400.0, 0.0), (400.0, 300.0), (0.0, 300.0)]
 
-    def test_one_corridor_kept(self):
-        site_uv = [(0.0, 0.0), (400.0, 0.0), (400.0, 300.0), (0.0, 300.0)]
-        strip = lambda lo, hi: [[lo, 0], [hi, 0], [hi, 90], [lo, 90]]
-        a = {"lo_m": 50.0, "hi_m": 52.301, "width_m": 2.301, "type": "S2", "distance_m": 2.301, "qualifies": False,
-             "bend_deg": 7.9, "corridor": [[50, 0], [52.3, 0], [56, 90], [53.7, 90]], "strip": strip(50, 52.301)}
-        b = {"lo_m": 52.301, "hi_m": 65.334, "width_m": 13.033, "type": "S2", "distance_m": 13.033, "qualifies": True,
-             "bend_deg": 15.0, "corridor": [[51, 0], [64, 0], [88, 90], [75, 90]], "strip": strip(52.301, 65.334)}
-        c = {"lo_m": 120.0, "hi_m": 140.0, "width_m": 20.0, "type": "S2", "distance_m": 20.0, "qualifies": True,
-             "bend_deg": 0.0, "corridor": [[120, 0], [140, 0], [140, 90], [120, 90]], "strip": strip(120, 140)}
-        out, dropped = engine._one_corridor([a, b, c], site_uv)
+    @staticmethod
+    def gap(lo, hi, dist, bend, corridor, qualifies=None):
+        strip = [[lo, 0], [hi, 0], [hi, 90], [lo, 90]]
+        return {"lo_m": lo, "hi_m": hi, "width_m": round(hi - lo, 3), "type": "S2", "distance_m": dist,
+                "qualifies": dist >= 15.0 if qualifies is None else qualifies, "bend_deg": bend, "corridor": corridor, "strip": strip}
+
+    def test_report1_neither_counts_least_turned_kept(self):
+        a = self.gap(50.0, 52.301, 2.301, 7.9, [[50, 0], [52.3, 0], [56, 90], [53.7, 90]])
+        b = self.gap(52.301, 65.334, 13.033, 15.0, [[51, 0], [64, 0], [88, 90], [75, 90]])
+        c = self.gap(120.0, 140.0, 20.0, 0.0, [[120, 0], [140, 0], [140, 90], [120, 90]])
+        out, dropped = engine._one_corridor([a, b, c], self.site_uv)
         self.assertEqual(len(out), 2)
-        m = out[0]
-        self.assertEqual(m["bend_deg"], 7.9)                       # the one turned least
-        self.assertAlmostEqual(m["width_m"], 15.334, places=3)     # the whole opening along the plane
-        self.assertEqual(m["merged_with"]["distance_m"], 13.033)
-        self.assertAlmostEqual(dropped, 13.033 * engine.FT, places=6)
+        self.assertEqual(out[0]["bend_deg"], 7.9)                   # S2 kept, S3 omitted
+        self.assertAlmostEqual(out[0]["width_m"], 15.334, places=3)  # one opening along the plane
+        self.assertEqual(out[0]["merged_with"]["distance_m"], 13.033)
+        self.assertEqual(dropped, 0.0)
         self.assertEqual(out[1]["lo_m"], 120.0)
 
+    def test_p7_the_one_that_counts_kept(self):
+        a = self.gap(50.0, 65.188, 15.188, 15.0, [[50, 0], [65, 0], [89, 90], [74, 90]])
+        b = self.gap(65.188, 67.518, 2.330, 5.5, [[60, 0], [62.3, 0], [71, 90], [68.7, 90]])
+        out, dropped = engine._one_corridor([a, b], self.site_uv)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["distance_m"], 15.188)              # S2 kept, S3 omitted
+        self.assertTrue(out[0]["qualifies"])
+        self.assertAlmostEqual(out[0]["width_m"], 17.518, places=3)
+
+    def test_p11_apart_omitted_blocked(self):
+        # S3 (6.226 m, 15 deg) crosses S4 (15.315 m) on plan, with B3 between them along the plane
+        s3 = self.gap(80.0, 86.226, 6.226, 15.0, [[80, 0], [86, 0], [110, 90], [104, 90]])
+        s4 = self.gap(115.0, 130.315, 15.315, 9.4, [[115, 0], [130, 0], [115, 90], [100, 90]])
+        out, dropped = engine._one_corridor([s3, s4], self.site_uv)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0]["type"], "OMIT")
+        self.assertFalse(out[0]["qualifies"])
+        self.assertEqual(out[0]["omitted"]["by_distance_m"], 15.315)
+        self.assertTrue(out[1]["qualifies"])
+
     def test_apart_or_not_overlapping_stay(self):
-        site_uv = [(0.0, 0.0), (400.0, 0.0), (400.0, 300.0), (0.0, 300.0)]
         a = {"lo_m": 0, "hi_m": 20, "width_m": 20, "distance_m": 20, "qualifies": True, "bend_deg": 0,
              "corridor": [[0, 0], [20, 0], [20, 90], [0, 90]], "strip": []}
         b = dict(a, lo_m=20, hi_m=40, corridor=[[20.5, 0], [40, 0], [40, 90], [20.5, 90]])
-        out, dropped = engine._one_corridor([a, b], site_uv)
+        out, dropped = engine._one_corridor([a, b], self.site_uv)
         self.assertEqual((len(out), dropped), (2, 0.0))
+        self.assertFalse(any(g.get("omitted") for g in out))
+
+    def test_omitted_gap_gives_no_is(self):
+        from . import elevation as E
+        masses = [mass("A", box(0, 0, 0, 20, 10, 40)), mass("B", box(26, 0, 0, 46, 10, 40))]
+        items = lambda om: [{"kind": "shadow", "label": "A", "lo": 0.0, "hi": 20.0, "members": [[[0, 0], [20, 0], [20, 10], [0, 10]]]},
+                            {"kind": "gap", "label": "S2", "s_m": 6.0, "pass": False, "need_m": 15.0, "lo": 20.0, "hi": 26.0, "omitted": om},
+                            {"kind": "shadow", "label": "B", "lo": 26.0, "hi": 46.0, "members": [[[26, 0], [46, 0], [46, 10], [26, 10]]]}]
+        open_ = E.zone_elevation(masses, 0.0, items(False), 0.0, 40.0, (1.0, 0.0))
+        shut = E.zone_elevation(masses, 0.0, items(True), 0.0, 40.0, (1.0, 0.0))
+        self.assertGreater(open_["pe_area_m2"] + open_["is_area_m2"], 0.0)
+        self.assertEqual(shut["is_area_m2"] + shut["pe_area_m2"], 0.0)
 
 
 class JunctionCorner(unittest.TestCase):
@@ -510,6 +543,35 @@ class OneOffsetPerStreet(unittest.TestCase):
         self.assertTrue(any(abs(p[0] - 80) < 1e-6 and abs(p[1] - 20) < 1e-6 for p in line), line)
         self.assertTrue(any(abs(p[1] - 20) < 1e-6 and p[0] < 0 for p in line))
         self.assertTrue(any(abs(p[0] - 80) < 1e-6 and p[1] > 90 for p in line))
+
+
+class AngledGaps(unittest.TestCase):
+    """An opening at a turn the straight projection hides (TMTL496 p.11)."""
+
+    def test_band_at_a_turn_found(self):
+        # two long blocks whose shadows on the plane (along x) overlap, with a
+        # clear band 16 m wide between them at 10 deg
+        t = math.radians(10)
+        def block(c):
+            # 20 x 120 m, its long side along the band's direction
+            dx, dy = -math.sin(t), math.cos(t)
+            ex, ey = math.cos(t), math.sin(t)
+            return [(c[0] + ex * a + dx * b, c[1] + ey * a + dy * b) for a, b in ((-10, -60), (10, -60), (10, 60), (-10, 60))]
+        a = block((40, 60))
+        b = block((40 + 36 * math.cos(t), 60 + 36 * math.sin(t)))       # 36 between centres: 16 clear
+        site = [(-40, -20), (160, -20), (160, 140), (-40, 140)]
+        found = engine._angled_gaps(site, [("B1", [a]), ("B2", [b])], (1.0, 0.0), [])
+        best = max(found, key=lambda x: x["width_m"])
+        self.assertAlmostEqual(best["width_m"], 16.0, delta=0.05)
+        self.assertEqual(best["bend_deg"], 10.0)
+        self.assertTrue(best["counts"])
+
+    def test_known_gap_not_repeated(self):
+        a = [(0, 0), (20, 0), (20, 50), (0, 50)]
+        b = [(40, 0), (60, 0), (60, 50), (40, 50)]
+        site = [(-10, -10), (70, -10), (70, 60), (-10, 60)]
+        known = [{"strip": [[20, -10], [40, -10], [40, 60], [20, 60]]}]
+        self.assertEqual(engine._angled_gaps(site, [("B1", [a]), ("B2", [b])], (1.0, 0.0), known), [])
 
 
 class BdSampleCase(unittest.TestCase):

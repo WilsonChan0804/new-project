@@ -254,6 +254,8 @@ def zone_elevation(masses, ground, items, z0, z1, ax, req_p=None, exempt=0.0):
             # a gap that counts is IS; one that does not reach its S but is
             # >= 3 m wide is a permeable element (PE); narrower, not counted
             k = "gis" if it["pass"] else "gpe" if w >= PE_MIN - EPS else "gnis"
+            if it.get("omitted"):
+                k = "omit"           # an air corridor overlapping the one kept: blocked, no IS
             col = [("exempt" if ex_top is not None and zb <= ex_top + EPS else k) for za, zb in rows]
             pieces.append((x, x + w, [(w, w, col)], it))
         else:

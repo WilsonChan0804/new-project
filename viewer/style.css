@@ -2493,3 +2493,13 @@ header .flr-lab { white-space: nowrap; }
 @media (max-width: 700px) {
   body:has(> #layout3d) > header .hdr-row2 { flex: 0 0 auto; min-width: max-content; }
 }
+
+/* the Sheets list in groups (topics), folding; sheets hidden from the viewer (admins see them dimmed) */
+#sheet-list li.sg-head { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--panel-2);
+  border-bottom: 1px solid var(--line); font-size: 12px; cursor: pointer; position: sticky; top: 0; z-index: 1; }
+#sheet-list li.sg-head:hover { background: var(--line-soft, var(--panel-2)); }
+#sheet-list li.sg-head .sg-tri { width: 10px; color: var(--muted); flex: none; }
+#sheet-list li.sg-head .spacer { flex: 1; }
+#sheet-list li.sg-head .sg-more { padding: 0 6px; min-height: 0; line-height: 18px; }
+#sheet-list li.sg-hid b { color: var(--muted); font-weight: 600; }
+#sheet-list li.sheet-hidden { opacity: .5; }

@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-30", date: "22 Oct 2026",
+    items: [
+      "**Sheets in groups:** ☰ in the Sheets heading makes groups (topics - Plans, Elevations ...), by hand or from the sheet numbers; right-click a sheet > Move to ... Click a group's heading to fold it, or ⋯ > Show only this group. Project members make the groups; folding is your own.",
+      "**Hide sheets (admins):** right-click a sheet > Hide from the viewer. It stays hidden after the next publish from Revit; admins still see it, dimmed, under Hidden, to show it again.",
+      "**SBD:** air corridors that overlap are one - the one that counts is kept (else the one turned least); one apart from it is crossed out and its gap gives no IS. Openings at a turn that the straight projection hides are shown as angled gaps (A1 ...). Checks > SBD > Model (JSON) downloads the model as sent, to send for a check.",
+    ],
+  },
+  {
     version: "2026-11-29", date: "22 Oct 2026",
     items: [
       "**SBD (TMTL496 review):** a street's Floors that overlap or leave a small gap - a ramp beside a flat part - are joined end to end, so the whole street is used; Revit lists each street with the Floors and top faces it was made of. A street end drawn as two edges no longer swings the centreline across.",

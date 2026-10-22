@@ -8,6 +8,7 @@
                                 the status of a check still running
   POST /api/sbd/run             run again {axis, angle_deg, levels} (member)
   POST /api/sbd/cad             the drawings as DXF / DWG (?format=dxf|dwg)
+  GET  /api/sbd/model.json      the model as kept (to send for a check)
   GET  /api/sbd/template.dxf    the CAD template (no Revit: draw the model in CAD)
   POST /api/sbd/cad-model       that drawing back (DXF, or DWG via ODA) -> the model
   GET  /api/sbd/saved           saved results;  POST {name} keeps the current one
@@ -370,6 +371,20 @@ def register(app, core):
         if st and st.get("state") == "running" and st.get("seq") != seqs.get(x_project):
             st = {"state": "error", "detail": "The server restarted while the check ran - send the model again, or Run"}
         return {"model": _read(os.path.join(d, "model.json")), "result": _read(os.path.join(d, "result.json")), "status": st}
+
+    @app.get("/api/sbd/model.json")
+    async def sbd_model_file(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """The masses, site and streets last sent (as kept): to send to LWK
+        BIM when a result needs checking against the real model."""
+        core.require_project(request, x_project, "member", x_viewer_token)
+        p = os.path.join(_dir(core, x_project), "model.json")
+        if not os.path.isfile(p):
+            raise HTTPException(status_code=404, detail="No SBD model yet - in Revit, run SBD Export")
+        with open(p, "rb") as f:
+            data = f.read()
+        name = re.sub(r"[^A-Za-z0-9._-]+", "_", "sbd-model-%s" % x_project)[:80] + ".json"
+        return Response(content=data, media_type="application/json",
+                        headers={"Content-Disposition": 'attachment; filename="%s"' % name})
 
     @app.post("/api/sbd/run")
     async def sbd_run(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):

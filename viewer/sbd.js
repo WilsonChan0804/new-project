@@ -22,7 +22,7 @@ const f3 = (v) => (v == null ? "-" : Number(v).toFixed(3));
 const f1 = f3, f2 = f3;
 // a gap's S value: as measured (side region's Area / Depth, the corridor's
 // width, S2 / S3) - the projected width only for a blocked gap
-const gapM = (g) => (g.type === "FAIL" || g.type === "OPEN" || !g.distance_m ? g.width_m : g.distance_m);
+const gapM = (g) => (g.type === "FAIL" || g.type === "OPEN" || g.type === "OMIT" || !g.distance_m ? g.width_m : g.distance_m);
 // the gaps numbered S1, S2, S3 ... in order along the plane (as GB082):
 // gap index -> "S1"; its kind in words
 export function gapNums(ax) {
@@ -32,11 +32,17 @@ export function gapNums(ax) {
   ((ax && ax.gaps) || []).forEach((g, i) => { if (!m.has(i)) m.set(i, "S" + (++n)); });
   return m;
 }
-const gapKind = (g) => (g.side ? "side setback" : g.corridor ? "air corridor" : g.type === "FAIL" ? "blocked" : g.type === "OPEN" ? "open" : g.type === "S3" ? "angled boundary" : g.type === "S2" ? "between buildings" : "setback");
+const gapKind = (g) => (g.omitted ? "air corridor, omitted" : g.side ? "side setback" : g.corridor ? "air corridor" : g.type === "FAIL" ? "blocked" : g.type === "OPEN" ? "open" : g.type === "S3" ? "angled boundary" : g.type === "S2" ? "between buildings" : "setback");
 // the working of one gap, as the Plan and the report give it
 function gapHow(g, ax, num) {
   const sd = g.side && ax.sides && ax.sides[g.side];
   const k = num.slice(1);
+  if (g.omitted) {
+    // the corridor it overlaps, kept over it (the one that counts, else the one turned least)
+    const ki = (ax.gaps || []).findIndex((x) => !x.omitted && Math.abs(x.lo_m - g.omitted.by_lo_m) < 1e-6);
+    const kn = ki >= 0 ? gapNums(ax).get(ki) : null;
+    return `${num} = air corridor width ${f3(g.omitted.distance_m)} m${g.omitted.bend_deg ? `, turned ${f3(Math.abs(g.omitted.bend_deg))}°` : ""} - omitted: it overlaps ${kn || "the corridor"} (${f3(g.omitted.by_distance_m)} m), one corridor kept; its gap is taken as blocked`;
+  }
   if (sd) return `${num} = A${k} / L${k} = ${f3(sd.area_m2)} m² / ${f3(sd.depth_m)} m = ${f3(sd.avg_m)} m${sd.angle_deg ? `, edge turned ${f3(Math.abs(sd.angle_deg))}°` : ""}`;
   if (g.corridor) return `${num} = air corridor width ${f3(g.distance_m)} m${g.bend_deg ? `, turned ${f3(Math.abs(g.bend_deg))}°` : ", straight"}`
     + (g.merged_with ? ` (the overlapping corridor beside it, ${f3(g.merged_with.distance_m)} m${g.merged_with.bend_deg ? ` turned ${f3(Math.abs(g.merged_with.bend_deg))}°` : ""}, omitted: one corridor per opening)` : "");
@@ -45,6 +51,9 @@ function gapHow(g, ax, num) {
   if (g.type === "S2") return `${num} = nearest distance between the buildings ${f3(gapM(g))} m`;
   return `${num}: ${f3(gapM(g))} m, blocked`;
 }
+// an opening at a turn the straight projection does not show (Wilson, TMTL496 p.11)
+const angledText = (b) => `${f3(b.width_m)} m wide, turned ${f1(Math.abs(b.bend_deg))}° - not in the straight projection (the shadows on the plane overlap); `
+  + (b.counts ? "15 m or more: it would count as an air corridor - not yet added to P, check it (send the model JSON)" : "under 15 m: not an air corridor");
 // a canyon's name, as GB081: A, B ... per building, B1, B2 ... with streets
 const canyonLetter = (bi, j, n) => String.fromCharCode(65 + bi) + (n > 1 ? String(j + 1) : "");
 // Design Requirement (1) for one building, as GB081's calculation
@@ -330,7 +339,21 @@ export function zoneSvg(res, zone, axisKey, opt) {
   s += (z.others || []).map((l) => `<polygon data-l="SBD-BLDG-OTHER" points="${poly(l)}" fill="url(#${id}h)" stroke="#94a3b8" stroke-width="${fs / 12}"/>`).join("");
   s += z.footprints.map((f) => `<polygon data-l="SBD-BLDG" points="${poly(f.loop)}" fill="#475569" fill-opacity=".55" stroke="#1e293b" stroke-width="${fs / 10}"/>`).join("");
   // the air corridors (dashed blue outline over the measured band)
-  s += ((ax && ax.gaps.filter((g) => g.corridor).map((g) => ({ polygon: g.ring || g.band || g.corridor, band: !g.ring && !!g.band }))) || []).map((c) => `<polygon data-l="SBD-CORRIDOR" points="${poly(c.polygon)}"${c.band ? ` clip-path="url(#${id})"` : ""} fill="none" stroke="#2563eb" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
+  s += ((ax && ax.gaps.filter((g) => g.corridor).map((g) => ({ polygon: g.ring || g.band || g.corridor, band: !g.ring && !!g.band, omitted: !!g.omitted }))) || []).map((c) => `<polygon data-l="SBD-CORRIDOR" points="${poly(c.polygon)}"${c.band ? ` clip-path="url(#${id})"` : ""} fill="none" stroke="${c.omitted ? "#dc2626" : "#2563eb"}" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 3}"/>`).join("");
+  // an omitted corridor (it overlaps the one kept): crossed out, as Wilson marks it
+  for (const g of (ax && ax.gaps) || []) {
+    if (!g.omitted || !g.corridor) continue;
+    const pts = (g.ring || g.corridor).map(D);
+    const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length, r = fs * 1.6;
+    s += `<g class="sbd-omit" data-l="SBD-NOT"><line x1="${(cx - r).toFixed(2)}" y1="${(cy - r).toFixed(2)}" x2="${(cx + r).toFixed(2)}" y2="${(cy + r).toFixed(2)}" stroke="#dc2626" stroke-width="${fs / 5}"/>`
+      + `<line x1="${(cx - r).toFixed(2)}" y1="${(cy + r).toFixed(2)}" x2="${(cx + r).toFixed(2)}" y2="${(cy - r).toFixed(2)}" stroke="#dc2626" stroke-width="${fs / 5}"/></g>`;
+  }
+  // openings at a turn that the straight projection does not show: dashed amber
+  ((ax && ax.angled) || []).forEach((b, i) => {
+    s += `<polygon class="sbd-angled" data-l="SBD-CORRIDOR" points="${poly(b.polygon)}" clip-path="url(#${id})" fill="#f59e0b" fill-opacity="0.18" stroke="#d97706" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 4}"/>`;
+    const c = b.polygon.reduce((a, p) => [a[0] + p[0] / b.polygon.length, a[1] + p[1] / b.polygon.length], [0, 0]);
+    LB.add({ x: c[0] - x0, y: y1 - c[1], t: `A${i + 1} ${f3(b.width_m)} m, ${f1(Math.abs(b.bend_deg))}°`, size: fs * 0.8, fill: "#b45309", attrs: HALO(fs), prio: 4 });
+  });
   // the buildings' names (the same on the elevations)
   for (const b of z.buildings || []) LB.add({ x: b.at[0] - x0, y: y1 - b.at[1], t: b.label, size: fs * 1.1, title: b.name || "", fill: "#fff", attrs: `font-weight="700" stroke="#1e293b" stroke-width="${fs / 6}" paint-order="stroke"`, prio: 9 });
   // a dimension line a-e (plan metres), with ticks; its text through the placer
@@ -616,6 +639,7 @@ const ELEV_KIND = {
   sky: { fill: "url(#D)", label: "IS (open to above)" },
   pe: { fill: "url(#G)", label: "PE" },
   nis: { fill: "url(#N)", label: "a gap that does not count" },
+  omit: { fill: "#fee2e2", label: "an air corridor omitted (it overlaps the one kept): blocked" },
   open: { fill: "#fff", label: "open, not counted" },
 };
 export function elevSvg(res, zone, axisKey, opt) {
@@ -896,6 +920,7 @@ export function createSbd(ctx) {
       <button id="sbd-report" class="ghost" title="A report: the table and a plan of each zone (Print / Save to Folders)">Report</button>
       <span class="sbd-cadwrap"><button id="sbd-cad" class="ghost" title="Every plan, elevation and street canyon as a CAD drawing (DXF or DWG), one layer per kind (SBD-IS, SBD-PE, SBD-BLDG ...), in metres">CAD ...</button>
         <span class="sbd-cadmenu" hidden><button class="ghost" data-cad="dxf" title="AutoCAD and most CAD programs open a DXF">DXF</button><button class="ghost" data-cad="dwg" title="Made by the ODA File Converter on the server">DWG</button></span></span>
+      <button id="sbd-model-dl" class="ghost" title="The masses, site and streets last sent, as a JSON file - to send to LWK BIM when a result needs checking">Model (JSON)</button>
       <button id="sbd-remove" class="ghost danger" title="Remove the masses sent from Revit, this result and the masses' model in the 3D (saved results stay)">Remove ...</button>
     </div>
     <div class="chk-row sbd-cadin"><span class="muted" title="Draw the site, the streets and the building masses on the template's layers in AutoCAD, SketchUp, Rhino ..., then import it: the same check as from Revit">No Revit?</span>
@@ -952,6 +977,7 @@ export function createSbd(ctx) {
       : `No masses yet. In Revit: model the buildings as <b>Masses</b>, then <b>LWK > Viewer tools > SBD Export</b>. <a href="#" class="sbd-howto">How to prepare the model ...</a>`;
     for (const b of box.querySelectorAll("#sbd-run, #sbd-save, #sbd-plan, #sbd-3d, #sbd-issue, #sbd-report, #sbd-cad")) b.disabled = !r || !r.ok;
     $("#sbd-remove").disabled = !m && !B.res;
+    $("#sbd-model-dl").disabled = !m;
     if (!r) { $("#sbd-sum").innerHTML = ""; return; }
     if (!r.ok) { $("#sbd-sum").innerHTML = `<div class="bad">${(r.warnings || []).map(esc).join("<br>")}</div>`; return; }
     const pz = (a) => (a.P_zone != null ? a.P_zone : a.P);
@@ -1149,7 +1175,8 @@ export function createSbd(ctx) {
             const how = gapHow(g, ax, nm);
             return `<tr><td>${esc(nm)} <span class="muted">${esc(gapKind(g))}</span></td><td class="n">${f3(gapM(g))}</td><td class="${g.qualifies ? "ok" : "bad"}">${g.qualifies ? "counts" : "no"}${g.threshold_m ? ` <span class="muted">(${g.threshold_m} m)</span>` : ""}${g.encroach_m != null ? ` <span class="bad">${f3(g.encroach_m)} m to the boundary</span>` : ""}</td></tr>`
               + `<tr class="sbd-how"><td colspan="3">${esc(how)}</td></tr>`;
-          }).join("");
+          }).join("") + (ax.angled || []).map((b, i) => `<tr><td>A${i + 1} <span class="muted">angled gap</span></td><td class="n">${f3(b.width_m)}</td><td class="${b.counts ? "bad" : ""}">${b.counts ? "check" : "no"}</td></tr>`
+            + `<tr class="sbd-how"><td colspan="3">${esc(angledText(b))}</td></tr>`).join("");
         })() + `</table>`
           + ((ax.edge || []).length ? `<table class="sbd-t sbd-edge"><tr><th title="Along the site's edge nearest the plane (the street side)">Near edge</th><th class="n" title="Projected on the plane">proj m</th><th class="n" title="Drawn on the elevation: a gap at its S value, a shadow at its projected width">elev m</th></tr>`
             + ax.edge.map((it) => `<tr><td class="${it.kind === "gap" ? (it.pass ? "ok" : "bad") : ""}">${esc(it.kind === "gap" ? gapNums(ax).get(it.gap) || it.label : it.label)}${it.kind === "gap" && it.bend_deg != null ? ` <span class="muted">${f1(Math.abs(it.bend_deg))}°</span>` : ""}</td><td class="n">${f2(it.hi - it.lo)}</td><td class="n">${f2(it.kind === "gap" ? it.s_m : it.hi - it.lo)}</td></tr>`).join("") + `</table>` : "")
@@ -1215,6 +1242,18 @@ export function createSbd(ctx) {
       if ((d.problems || []).length) alert(`${f.name} was read, with these notes:\n\n- ` + d.problems.join("\n- "));
     } catch (e) { ctx.status(`${f.name} not read: ${e.message}`); alert(`${f.name} was not read:\n\n${e.message}`); }
     $("#sbd-cadin").disabled = false;
+  };
+  $("#sbd-model-dl").onclick = async () => {
+    try {
+      const r = await fetch("/api/sbd/model.json", { headers: Store.authHeaders() });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || "HTTP " + r.status);
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sbd-model-${Store.currentProject() || "project"}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    } catch (e) { alert("Not downloaded: " + e.message); }
   };
   $("#sbd-cad").onclick = async (ev) => {
     ev.stopPropagation();
@@ -1324,6 +1363,7 @@ export function createSbd(ctx) {
             ["Plan level", z.plan_level != null ? `+${f3(z.plan_level)} (chosen): the masses cut at this height for the plan; the elevation is the true 3D` : "all levels (worst): every height in the zone; the elevation is the true 3D"],
             ...ax.gaps.map((g, i) => [num.get(i), g, i]).sort((p, q) => Number(p[0].slice(1)) - Number(q[0].slice(1)))
               .map(([nm, g]) => [`${nm} (${gapKind(g)})`, `${gapHow(g, ax, nm)} - ${g.qualifies ? "counts" : `does not count (min ${g.threshold_m || 7.5} m)`}`, g.qualifies ? "#16a34a" : "#dc2626"]),
+            ...(ax.angled || []).map((b, i) => [`A${i + 1} (angled gap)`, angledText(b), b.counts ? "#b45309" : "#64748b"]),
             ...((ax.edge || []).length ? [["Along the plane (W)", ax.edge.map((it) => it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.s_m)}` : `${it.label} ${f3(it.hi - it.lo)}`).join(" + ") + ` = ${f3(ax.edge.reduce((t, it) => t + (it.kind === "gap" ? it.s_m : it.hi - it.lo), 0))} m`]] : []),
             ...(k === "axis1" && (z.tried || []).length > 1 ? [["Planes tried", z.tried.map((t) => `X ${f3(t.x_deg)}° / Y ${f3(t.y_deg)}°: P X ${f2(t.P_x)} %, P Y ${f2(t.P_y)} %${t.chosen ? " (used)" : ""}`).join("; ")]] : [])] });
         if (ax.elev) items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · elevation on ${k === "axis1" ? "Plane X" : "Plane Y"} (${levelOf(z)})`, tag: `P ${f2(ax.elev.P)} %`, tagColor: ZONE_COLOR[z.zone],

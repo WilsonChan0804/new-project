@@ -3476,6 +3476,122 @@ async def get_snapshot(name: str, request: Request):
 
 # -------------------------------------------------- export folder + app
 
+# ------------------------------------------------------ hidden and grouped sheets
+# Kept in <project>/sheet_meta.json, by sheet number, so a new publish from
+# Revit does not bring a hidden sheet back, nor undo the groups.
+#   {"hidden": {"<number>": {"by", "at"}},
+#    "groups": [{"id", "name", "set", "sheets": [numbers]}]}   in list order
+# Admins hide sheets (they still see them, marked); members make the groups.
+
+SHEET_META = "sheet_meta.json"
+_SM_LOCK = threading.Lock()
+
+
+def read_sheet_meta(root):
+    try:
+        with open(os.path.join(root, SHEET_META), encoding="utf-8") as f:
+            d = json.load(f) or {}
+    except (OSError, ValueError):
+        d = {}
+    hidden = d.get("hidden") if isinstance(d.get("hidden"), dict) else {}
+    groups = [g for g in d.get("groups") or [] if isinstance(g, dict) and g.get("id")]
+    return {"hidden": hidden, "groups": groups}
+
+
+def write_sheet_meta(root, meta):
+    tmp = os.path.join(root, SHEET_META + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, os.path.join(root, SHEET_META))
+
+
+def apply_sheet_meta(root, man, role):
+    """The manifest as this person sees it: hidden sheets left out (marked
+    for an admin), each sheet with its group's id."""
+    meta = read_sheet_meta(root)
+    if not meta["hidden"] and not meta["groups"]:
+        return man
+    of = {}
+    for g in meta["groups"]:
+        for n in g.get("sheets") or []:
+            of.setdefault(str(n), g["id"])
+    out = []
+    for sh in man.get("sheets") or []:
+        num = str(sh.get("number"))
+        if num in meta["hidden"]:
+            if role != "admin":
+                continue
+            sh = dict(sh, hidden=True)
+        if num in of:
+            sh = dict(sh, group=of[num])
+        out.append(sh)
+    man["sheets"] = out
+    man["sheet_groups"] = [{"id": g["id"], "name": g.get("name") or "", "set": g.get("set") or ""} for g in meta["groups"]]
+    return man
+
+
+@app.get("/api/sheet-meta")
+async def get_sheet_meta(request: Request, x_viewer_token: str = Header(default=""),
+                         x_project: str = Header(default="")):
+    _, role = require_project(request, x_project, "viewer", x_viewer_token)
+    meta = read_sheet_meta(project_root_for(x_project))
+    if role != "admin":
+        meta["hidden"] = {}
+    return dict(meta, can_hide=role == "admin", can_group=RANK[role] >= RANK["member"])
+
+
+@app.put("/api/sheet-meta/hidden")
+async def put_sheet_hidden(request: Request, x_viewer_token: str = Header(default=""),
+                           x_project: str = Header(default="")):
+    """{numbers: [...], hide: true|false} (admins)."""
+    w, _ = require_project(request, x_project, "admin", x_viewer_token)
+    body = await request.json() or {}
+    nums = [str(n)[:60] for n in (body.get("numbers") or []) if str(n).strip()][:2000]
+    if not nums:
+        raise HTTPException(status_code=400, detail="Which sheets?")
+    root = project_root_for(x_project)
+    with _SM_LOCK:
+        meta = read_sheet_meta(root)
+        for n in nums:
+            if body.get("hide", True):
+                meta["hidden"][n] = {"by": w.name or "", "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            else:
+                meta["hidden"].pop(n, None)
+        write_sheet_meta(root, meta)
+    return {"hidden": sorted(meta["hidden"])}
+
+
+@app.put("/api/sheet-meta/groups")
+async def put_sheet_groups(request: Request, x_viewer_token: str = Header(default=""),
+                           x_project: str = Header(default="")):
+    """{groups: [{id, name, set, sheets}]} in list order (members): the
+    whole list, as the Sheets page has it."""
+    require_project(request, x_project, "member", x_viewer_token)
+    body = await request.json() or {}
+    groups = body.get("groups")
+    if not isinstance(groups, list) or len(groups) > 100:
+        raise HTTPException(status_code=400, detail="groups: a list of at most 100")
+    seen, clean = set(), []
+    for g in groups:
+        if not isinstance(g, dict):
+            continue
+        gid = re.sub(r"[^A-Za-z0-9_-]", "", str(g.get("id") or ""))[:24] or uuid.uuid4().hex[:10]
+        name = str(g.get("name") or "").strip()[:60] or "Group"
+        sheets = []
+        for n in g.get("sheets") or []:
+            n = str(n)[:60]
+            if n and n not in seen:          # a sheet is in one group
+                seen.add(n)
+                sheets.append(n)
+        clean.append({"id": gid, "name": name, "set": str(g.get("set") or "")[:80], "sheets": sheets})
+    root = project_root_for(x_project)
+    with _SM_LOCK:
+        meta = read_sheet_meta(root)
+        meta["groups"] = clean
+        write_sheet_meta(root, meta)
+    return {"groups": clean}
+
+
 # ------------------------------------------------------ imported PDFs
 
 IMPORTED = "imported_sheets.json"
@@ -3730,16 +3846,16 @@ async def get_data(path: str, request: Request):
     question, and means a colleague needs nothing beyond a browser.
     """
     if CFG["single"]:
-        require_project(request, "default", "viewer")
         # The old one-project form: /data/<file>, or /data/default/<file>.
         rel = path[len("default/"):] if path.startswith("default/") else path
         root = CFG["single"]
+        _, data_role = require_project(request, "default", "viewer")
     else:
         pid, _, rel = path.partition("/")
         root = project_dir(pid)
         if not root:
             raise HTTPException(status_code=404, detail="No such project: " + pid)
-        require_project(request, pid, "viewer")
+        _, data_role = require_project(request, pid, "viewer")
 
     root = os.path.normpath(root)
     target = os.path.normpath(os.path.join(root, rel))
@@ -3761,6 +3877,8 @@ async def get_data(path: str, request: Request):
         extra = live_imported(root)
         if extra:
             man["sheets"] = list(man.get("sheets") or []) + extra
+        # sheets hidden by an admin, and the groups (topics) of the list
+        apply_sheet_meta(root, man, data_role)
         # which fast 3D models the server has cut into streamed tiles (made
         # after this very upload): phones and tablets stream those
         for m in man.get("models") or []:

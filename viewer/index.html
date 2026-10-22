@@ -60,11 +60,12 @@
     <div class="panel-head" style="display:flex;align-items:center;gap:6px">
       Sheets <span id="sheet-total" class="count-chip"></span> <span id="sheet-set" class="set-chip" hidden></span>
       <span class="spacer"></span>
+      <button id="sheet-groups-btn" class="ghost sm" aria-haspopup="menu" title="Groups: the sheets in topics - new group, groups from the sheet numbers, fold or show all" aria-label="Groups">&#9776;</button>
       <span class="view-wrap"><button id="set-menu-btn" class="ghost sm" aria-haspopup="menu" title="Rename, archive or delete this set of imported sheets; bring back an archived set">Set &#9662;</button>
       <div id="set-menu" class="view-pop" hidden role="menu"></div></span>
     </div>
     <div id="pick-bar" hidden><span id="pick-count">0 selected</span><span class="spacer"></span>
-      <button id="pick-all" class="ghost sm">All</button><button id="pick-del" class="ghost sm danger" disabled>Delete</button><button id="pick-done" class="ghost sm" title="Stop selecting" aria-label="Stop selecting">&#10005;</button></div>
+      <button id="pick-all" class="ghost sm">All</button><button id="pick-group" class="ghost sm" hidden disabled title="Move the chosen sheets to a group">Group &#9662;</button><button id="pick-hide" class="ghost sm" hidden disabled title="Hide the chosen sheets from the viewer (admins), or show hidden ones again">Hide</button><button id="pick-del" class="ghost sm danger" disabled>Delete</button><button id="pick-done" class="ghost sm" title="Stop selecting" aria-label="Stop selecting">&#10005;</button></div>
     <div class="sheet-find">
       <input type="search" id="sheet-find" placeholder="Search all sheets (numbers, names, words on the drawings)"
         title="Searches sheet numbers and names at once, and every word printed on every drawing (read the first time, then kept on the server)">

@@ -1,5 +1,6 @@
 import { attachTemplates } from "./templates.js";
 import * as Dates from "./dates.js";
+import * as SG from "./sheetgroups.js";
 import { smoothPath, simplify, recognize } from "./ink.js";
 import { buildBcf, download } from "./bcf.js";
 import * as Store from "./store.js";
@@ -3993,7 +3994,7 @@ function renderSheets() {
   if (tot) tot.textContent = list.length;
   const lab = document.getElementById("sheet-set");
   if (lab) { lab.textContent = S.set || ""; lab.hidden = !S.set; }
-  for (const s of list) {
+  const makeLi = (s) => {
     const vps = s.viewports || [];
     const mapped = vps.filter((v) => v.paper_to_model).length;
     const li = document.createElement("li");
@@ -4008,7 +4009,8 @@ function renderSheets() {
           + `<button class="ghost ext-del" title="Remove this imported sheet">&#10005;</button></div>`
         : `<div class="tags">${mapped}/${vps.length} mapped`
           + (s.pdf ? "" : " &middot; no PDF") + "</div>");
-    if (PICK.on && s.external) {
+    if (s.hidden) { li.classList.add("sheet-hidden"); li.title = "Hidden from the viewer (only admins see it) - right-click to show it again"; }
+    if (PICK.on && pickable(s)) {
       li.classList.add("can-pick");
       const cb = document.createElement("input");
       cb.type = "checkbox"; cb.className = "pick"; cb.checked = PICK.sel.has(s.number);
@@ -4016,9 +4018,11 @@ function renderSheets() {
       li.querySelector(".num").prepend(cb);
     }
     li.addEventListener("click", (ev) => {
-      if (PICK.on) { if (s.external) pickRow(s, list, ev.shiftKey); return; }
+      if (PICK.on) { if (pickable(s)) pickRow(s, list, ev.shiftKey); return; }
       openSheet(s);
     });
+    // members: move to a group; admins: hide from the viewer
+    li.addEventListener("contextmenu", (ev) => SG.sheetMenu(ev, s, PICK.on ? [...PICK.sel] : null));
     // pointing at a sheet starts reading its PDF (computers)
     if (s.pdf) li.addEventListener("mouseenter", () => {
       if (IS_IOS_EARLY() || slowLine() || drawMode() === "tiles") return;
@@ -4031,7 +4035,16 @@ function renderSheets() {
       ev.stopPropagation();
       removeImportedSheet(s);
     });
-    ul.appendChild(li);
+    return li;
+  };
+  // in its groups (topics), each folding, when the set has any - or the plain list
+  const secs = SG.sections(list);
+  if (!secs) for (const s of list) ul.appendChild(makeLi(s));
+  else {
+    for (const sec of secs) {
+      ul.appendChild(SG.head(sec, secs));
+      if (!SG.isFolded(sec.id)) for (const s of sec.sheets) ul.appendChild(makeLi(s));
+    }
   }
   ul.classList.toggle("picking", PICK.on);
   pickPaint(list);
@@ -4041,9 +4054,11 @@ function renderSheets() {
    for a run of them, and delete them together. Revit sheets cannot be
    picked: they come back with the next publish anyway. */
 const PICK = { on: false, sel: new Set(), last: null };
+// imported sheets (to delete); any sheet for whoever can group or hide them
+const pickable = (s) => !!s && (s.external || SG.canPick());
 
 function pickRow(s, list, range) {
-  const ext = list.filter((x) => x.external);
+  const ext = list.filter(pickable);
   if (range && PICK.last) {
     const a = ext.findIndex((x) => x.number === PICK.last), b = ext.findIndex((x) => x.number === s.number);
     if (a >= 0 && b >= 0) {
@@ -4059,19 +4074,25 @@ function pickRow(s, list, range) {
 }
 
 function pickPaint(list) {
-  const any = list.some((x) => x.external);
+  const any = list.some(pickable);
   if (!any && PICK.on) { PICK.on = false; PICK.sel.clear(); }
   const bar = document.getElementById("pick-bar");
   if (!bar) return;
   bar.hidden = !PICK.on;
   for (const n of [...PICK.sel]) if (!list.some((x) => x.number === n)) PICK.sel.delete(n);
   document.getElementById("pick-count").textContent = PICK.sel.size + " selected";
-  document.getElementById("pick-del").disabled = !PICK.sel.size;
-  document.getElementById("pick-del").textContent = PICK.sel.size ? `Delete (${PICK.sel.size})` : "Delete";
+  // Delete is for imported sheets; Group / Hide for any
+  const extSel = [...PICK.sel].filter((n) => list.some((x) => x.number === n && x.external)).length;
+  document.getElementById("pick-del").hidden = !list.some((x) => x.external);
+  document.getElementById("pick-del").disabled = !extSel;
+  document.getElementById("pick-del").textContent = extSel ? `Delete (${extSel})` : "Delete";
+  const pg = document.getElementById("pick-group"), ph = document.getElementById("pick-hide");
+  if (pg) { pg.hidden = !SG.canGroup(); pg.disabled = !PICK.sel.size; }
+  if (ph) { ph.hidden = !SG.canHide(); ph.disabled = !PICK.sel.size; }
 }
 
 async function deletePicked() {
-  const nums = [...PICK.sel];
+  const nums = [...PICK.sel].filter((n) => S.manifest.sheets.some((x) => x.number === n && x.external));
   if (!nums.length) return;
   const n = S.items.filter((it) => nums.includes(it.sheet)).length;
   if (!confirm(`Delete ${nums.length} imported sheet(s)?`
@@ -4189,7 +4210,7 @@ async function setAction(what, name) {
 function wireSetTools() {
   const all = document.getElementById("pick-all");
   if (all) all.addEventListener("click", () => {
-    const ext = setSheets().filter((x) => x.external);
+    const ext = setSheets().filter(pickable);
     if (PICK.sel.size === ext.length) PICK.sel.clear(); else ext.forEach((x) => PICK.sel.add(x.number));
     renderSheets();
   });
@@ -4197,6 +4218,25 @@ function wireSetTools() {
   if (del) del.addEventListener("click", deletePicked);
   const done = document.getElementById("pick-done");
   if (done) done.addEventListener("click", () => { PICK.on = false; PICK.sel.clear(); renderSheets(); });
+  // groups (topics) and hidden sheets
+  const startPick = () => { PICK.on = true; PICK.sel.clear(); PICK.last = null; renderSheets(); };
+  SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, status, startPick })
+    .then(() => { if (S.manifest) renderSheets(); });
+  const gb = document.getElementById("sheet-groups-btn");
+  if (gb) gb.addEventListener("click", (ev) => { ev.stopPropagation(); SG.groupsMenu(gb, setSheets()); });
+  const pg = document.getElementById("pick-group");
+  if (pg) pg.addEventListener("click", (ev) => {
+    const r = pg.getBoundingClientRect();
+    const s = S.manifest.sheets.find((x) => PICK.sel.has(x.number));
+    if (s) SG.sheetMenu({ preventDefault() {}, clientX: r.left, clientY: r.bottom + 4 }, s, [...PICK.sel]);
+    void ev;
+  });
+  const ph = document.getElementById("pick-hide");
+  if (ph) ph.addEventListener("click", async () => {
+    const nums = [...PICK.sel];
+    await SG.hide(nums, !nums.every((n) => (S.manifest.sheets.find((x) => x.number === n) || {}).hidden));
+    PICK.on = false; PICK.sel.clear(); renderSheets();
+  });
   const m = document.getElementById("set-menu"), b = document.getElementById("set-menu-btn");
   if (!m || !b) return;
   document.body.appendChild(m);       // above the drawing (the side panel is its own layer)
