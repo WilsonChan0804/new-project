@@ -578,6 +578,41 @@ class AngledGaps(unittest.TestCase):
         self.assertEqual(engine._angled_gaps(site, [("B1", [a]), ("B2", [b])], (1.0, 0.0), known), [])
 
 
+class CanyonOnAJoinedStreet(unittest.TestCase):
+    """TMTL496, B2: a turned block on a street whose centreline bends where
+    its Floors were joined (a ramp beside the flat road). The canyon is
+    measured square to the street's leg, over the block's whole span - not
+    askew along the kink, and not cut short by a 30 m line taken from the
+    street's nearest point."""
+
+    def test_square_to_the_leg(self):
+        t = math.radians(-25)
+        cx, cy, w, h = 35, 22, 40, 14
+        pts = [(cx + x * math.cos(t) - y * math.sin(t), cy + x * math.sin(t) + y * math.cos(t))
+               for x, y in ((-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2))]
+        v = [(x, y, 0) for x, y in pts] + [(x, y, 30) for x, y in pts]
+        tr = [(0, 2, 1), (0, 3, 2), (4, 5, 6), (4, 6, 7), (0, 1, 5), (0, 5, 4), (1, 2, 6), (1, 6, 5), (2, 3, 7), (2, 7, 6), (3, 0, 4), (3, 4, 7)]
+        m = {"id": "B2", "name": "B2", "verts": [list(p) for p in v], "tris": [list(x) for x in tr]}
+        site = [[0, 0], [120, 0], [120, 70], [0, 70]]
+        straight = [[-10, -10], [130, -10]]
+        bent = [[-10, -10], [20, -10], [45, -7], [130, -7]]            # joined slabs: a kink nearer the site, same leg
+        out = []
+        for cl in (straight, bent):
+            d = {"site": site, "masses": [m],
+                 "streets": [{"name": "K", "centreline": cl, "opposite": [[p[0], p[1] - 10] for p in cl], "width_m": 20}]}
+            b = engine.run(d)["case1"][0]["buildings"][0]
+            out.append(b)
+            leg = engine.street_legs(d)[0]
+            dx, dy = leg["dir"]
+            # every measured width runs square to the leg
+            part = b["streets"][0]["parts"][0]
+            n = len(part["facade"])
+            for f_, o in zip(part["facade"], reversed(part["canyon"][n:])):
+                self.assertAlmostEqual((f_[0] - o[0]) * dx + (f_[1] - o[1]) * dy, 0.0, delta=0.01)
+        # the kink brings the street nearer: the canyon is no shorter
+        self.assertGreaterEqual(out[1]["L_m"], out[0]["L_m"] - 0.5)
+
+
 class JobInItsOwnProcess(unittest.TestCase):
     """A check runs as python -m sbd.job (the server keeps answering): the
     same result as engine.run, and an error written, not raised."""

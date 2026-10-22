@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-04", date: "22 Oct 2026",
+    items: [
+      "**SBD street canyon (TMTL496, B2):** the canyon is measured square to the street again, over the block's whole frontage. A street joined from several Floors (a ramp beside the road) has a small bend in its centreline, which had turned the canyon askew and cut a turned block's canyon short.",
+    ],
+  },
+  {
     version: "2026-12-03", date: "22 Oct 2026",
     items: [
       "**The server keeps answering everyone:** publishing a model (unpacking hundreds of MB), reading pages' data, PDF and file work, CAD drawing and the sheet pictures now run beside the server's answers instead of in their way - one person's big upload or import no longer freezes the viewer for the others.",

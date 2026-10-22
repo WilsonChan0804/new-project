@@ -931,17 +931,13 @@ def case1(data, zone_inside, a=None, legs=None):
                     continue
                 dx, dy = st["dir"]
                 # only the part of the building(s) within 30 m of the
-                # centreline counts (Wilson, report 4)
-                nvec = st["normal"]
-                wcl = min(p[0] * nvec[0] + p[1] * nvec[1] for p in cl)
-                loops = []
-                for l in loops_all:
-                    c = _clip_half(l["loop"], nvec, wcl + CASE1_REACH_M)
-                    if c:
-                        loops.append(dict(l, loop=c))
-                if not loops:
-                    continue
-                pts = [p for l in loops for p in l["loop"]]
+                # centreline counts (Wilson, report 4): each station below
+                # counts where its ray meets the facade within 30 m, so the
+                # stations run over the whole building's span. (Cutting the
+                # building at 30 m from the street's nearest point first
+                # lost part of a turned block on a street whose centreline
+                # bends or is joined from several Floors - B2, TMTL496.)
+                pts = [p for l in loops_all for p in l["loop"]]
                 us = [p[0] * dx + p[1] * dy for p in pts]
                 u0, u1 = min(us), max(us)
                 # stations every 0.5 m along the centreline: a station counts
@@ -953,6 +949,11 @@ def case1(data, zone_inside, a=None, legs=None):
                 for k, (px, py, nx, ny) in enumerate(_stations(cl, CASE1_STEP_M)):
                     if not (u0 - 1e-9 <= px * dx + py * dy <= u1 + 1e-9):
                         continue
+                    # measured square to the leg (the street's direction), not
+                    # to the short piece of centreline the station is on: a
+                    # centreline joined from a ramp and a flat slab has kinks
+                    # that would turn the canyon askew
+                    nx, ny = -dy, dx
                     if (sx - px) * nx + (sy - py) * ny < 0:          # the subject side: towards the site
                         nx, ny = -nx, -ny
                     # the ray meets the building's REAL outline (not cut at 30 m:
