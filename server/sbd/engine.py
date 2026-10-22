@@ -252,6 +252,28 @@ def _band_poly(e, d, a1, b0, d0, d1):
             [b0 * e[0] + d1 * d[0], b0 * e[1] + d1 * d[1]], [a1 * e[0] + d1 * d[0], a1 * e[1] + d1 * d[1]]]
 
 
+def _clip_convex(subject, clip):
+    """subject (any simple polygon) cut to a convex polygon clip
+    (Sutherland-Hodgman): a band clipped to the site, as drawn."""
+    ccw = sum(clip[i][0] * clip[(i + 1) % len(clip)][1] - clip[(i + 1) % len(clip)][0] * clip[i][1] for i in range(len(clip))) > 0
+    out = [tuple(p) for p in subject]
+    for i in range(len(clip)):
+        a, b = clip[i], clip[(i + 1) % len(clip)]
+        side = lambda p: ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])) * (1 if ccw else -1)
+        src, out = out, []
+        for j in range(len(src)):
+            p, q = src[j], src[(j + 1) % len(src)]
+            sp, sq = side(p), side(q)
+            if sp >= 0:
+                out.append(p)
+            if (sp >= 0) != (sq >= 0):
+                t = sp / (sp - sq)
+                out.append((p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t))
+        if not out:
+            return []
+    return [[round(x, 3), round(y, 3)] for x, y in out]
+
+
 def _core(band):
     """The band's middle half across it (a band touching another's edge is
     not taken as overlapping it)."""
@@ -428,7 +450,9 @@ def _axis_out(r, site_pts, bldgs=None, streets=None, levels=None, z_base=None):
         gained += (width if q else 0.0) * FT - (g["distance_m"] if g["qualifies"] else 0.0) * FT
         g["widened"] = {"from_m": g["distance_m"], "from_bend_deg": g.get("bend_deg", 0.0), "from_qualifies": g["qualifies"]}
         g["distance_m"], g["bend_deg"], g["qualifies"], g["pass"] = round(width, 3), deg, q, q
-        g["corridor"] = g["ring"] = [[round(x, 3), round(y, 3)] for x, y in band]
+        g["corridor"] = [[round(x, 3), round(y, 3)] for x, y in band]
+        g["ring"] = _clip_convex(site_m, band) or g["corridor"]
+        g["band"] = [g["corridor"][k] for k in (0, 3, 2, 1)]       # its two edges, as the band of a corridor
         g["_band"] = uv_band((es[0], es[-1]), deg)
     gaps, dropped_is = _one_corridor(gaps, site_uv)
     dropped_is -= gained
@@ -457,7 +481,9 @@ def _axis_out(r, site_pts, bldgs=None, streets=None, levels=None, z_base=None):
         added.append(len(gaps))
         gaps.append({"lo_m": round(us[0], 3), "hi_m": round(us[-1], 3), "width_m": round(us[-1] - us[0], 3),
                      "qualifies": True, "type": "S2", "distance_m": o["width_m"], "pass": True, "threshold_m": 15.0,
-                     "strip": o["polygon"], "corridor": o["polygon"], "ring": o["polygon"], "bend_deg": o["bend_deg"],
+                     "strip": o["polygon"], "corridor": o["polygon"], "ring": _clip_convex(site_m, o["polygon"]) or o["polygon"],
+                     "band": [o["polygon"][k] for k in (0, 3, 2, 1)],
+                     "bend_deg": o["bend_deg"],
                      "found": "level" if o["z_from_m"] is not None else "turn", "z_from_m": o["z_from_m"],
                      "_band": uv_band(o["e_m"], o["bend_deg"])})
     # which side region a setback is: the first gap is "left", the last "right"
@@ -478,11 +504,20 @@ def _axis_out(r, site_pts, bldgs=None, streets=None, levels=None, z_base=None):
     events = sorted([(a, b, "gap", i) for a, b, i in gruns] + [(a, b, "shadow", None) for a, b in sruns])
     owner = {}
     runs_added = [(a, b) for a, b, i in gruns if i in added]
+    split = set()
     for label, loops in bldgs or []:
         us = [(p[0] * ax.X + p[1] * ax.Y) * FT for l in loops for p in l]
         lo, hi = min(us), max(us)
         # a lower building under an opening found above it: in the gap's column
         if any(a - 1e-6 <= lo and hi <= b + 1e-6 for a, b in runs_added):
+            continue
+        # a building the opening runs through (towers on one podium): its
+        # part on each side, each shadow drawn within its own run
+        over = [n for n, (a, b, kind, i) in enumerate(events) if kind == "shadow" and min(hi, b) - max(lo, a) > 1e-6]
+        if len(over) > 1 and any(lo < a and b < hi for a, b in runs_added):
+            for n in over:
+                owner.setdefault(n, []).append((label, loops))
+                split.add(n)
             continue
         best = max(((min(hi, b) - max(lo, a), n) for n, (a, b, kind, i) in enumerate(events) if kind == "shadow"), default=None)
         if best is not None and best[0] > -1e9:
@@ -499,6 +534,8 @@ def _axis_out(r, site_pts, bldgs=None, streets=None, levels=None, z_base=None):
             mem = owner.get(n, [])
             edge.append({"kind": "shadow", "label": "+".join(l for l, _ in mem) or "-", "lo": round(a * M, 3), "hi": round(b * M, 3),
                          "members": [l for _, ls in mem for l in ls], "names": [[l, ls] for l, ls in mem]})
+            if n in split:
+                edge[-1]["clip"] = [round(a * M, 3), round(b * M, 3)]
     # a stretch of the near edge at either end with no building in front of
     # it lies beyond the end's side region: it is that setback's, not a
     # building's shadow (no "-" in W)

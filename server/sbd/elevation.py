@@ -128,9 +128,10 @@ def _inside(u, iv):
     return False
 
 
-def _group_cells(masses, g, ax, rows, z1, top, members, exempt_top):
+def _group_cells(masses, g, ax, rows, z1, top, members, exempt_top, clip=None):
     """A shadow's true silhouette: (cols [(u0, u1)], kind[row][col]) for the
-    masses whose plan lies in one of the members (zone footprints)."""
+    masses whose plan lies in one of the members (zone footprints). clip:
+    (u0, u1) its run, when an opening runs through its building."""
     def keep(cx, cy):
         return any(F.point_in(cx, cy, l) for l in members)
     us = [p[0] * ax[0] + p[1] * ax[1] for l in members for p in l]
@@ -149,6 +150,8 @@ def _group_cells(masses, g, ax, rows, z1, top, members, exempt_top):
             cuts.update(c for c in (a, b) if lo < c < hi)
     cols = sorted(cuts)
     cols = [(a, b) for a, b in zip(cols, cols[1:]) if b - a > 1e-4]
+    if clip:
+        cols = [(max(a, clip[0]), min(b, clip[1])) for a, b in cols if min(b, clip[1]) - max(a, clip[0]) > 1e-4]
     kind = []
     for r, (za, zb) in enumerate(rows):
         row = []
@@ -265,7 +268,7 @@ def zone_elevation(masses, ground, items, z0, z1, ax, req_p=None, exempt=0.0):
         else:
             w = it["hi"] - it["lo"]
             if it.get("members"):
-                cols, kind = _group_cells(masses, ground, ax, rows, z1, top, it["members"], ex_top)
+                cols, kind = _group_cells(masses, ground, ax, rows, z1, top, it["members"], ex_top, it.get("clip"))
                 _pe(cols, rows, kind)
                 span = (cols[-1][1] - cols[0][0]) if cols else 0.0
                 f = w / span if span > EPS else 0.0

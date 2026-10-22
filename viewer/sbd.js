@@ -351,8 +351,7 @@ export function zoneSvg(res, zone, axisKey, opt) {
       + `<line x1="${(cx - r).toFixed(2)}" y1="${(cy + r).toFixed(2)}" x2="${(cx + r).toFixed(2)}" y2="${(cy - r).toFixed(2)}" stroke="#dc2626" stroke-width="${fs / 5}"/></g>`;
   }
   // openings at a turn that the straight projection does not show: dashed amber
-  ((ax && ax.angled) || []).forEach((b, i) => {
-    if (b.added) return;               // drawn as an air corridor
+  ((ax && ax.angled) || []).filter((b) => !b.added).forEach((b, i) => {
     s += `<polygon class="sbd-angled" data-l="SBD-CORRIDOR" points="${poly(b.polygon)}" clip-path="url(#${id})" fill="#f59e0b" fill-opacity="0.18" stroke="#d97706" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 4}"/>`;
     const c = b.polygon.reduce((a, p) => [a[0] + p[0] / b.polygon.length, a[1] + p[1] / b.polygon.length], [0, 0]);
     LB.add({ x: c[0] - x0, y: y1 - c[1], t: `A${i + 1} ${f3(b.width_m)} m, ${f1(Math.abs(b.bend_deg))}°`, size: fs * 0.8, fill: "#b45309", attrs: HALO(fs), prio: 4 });
@@ -1178,7 +1177,7 @@ export function createSbd(ctx) {
             const how = gapHow(g, ax, nm);
             return `<tr><td>${esc(nm)} <span class="muted">${esc(gapKind(g))}</span></td><td class="n">${f3(gapM(g))}</td><td class="${g.qualifies ? "ok" : "bad"}">${g.qualifies ? "counts" : "no"}${g.threshold_m ? ` <span class="muted">(${g.threshold_m} m)</span>` : ""}${g.encroach_m != null ? ` <span class="bad">${f3(g.encroach_m)} m to the boundary</span>` : ""}</td></tr>`
               + `<tr class="sbd-how"><td colspan="3">${esc(how)}</td></tr>`;
-          }).join("") + (ax.angled || []).map((b, i) => `<tr><td>A${i + 1} <span class="muted">${b.z_from_m != null ? "above a lower building" : "angled gap"}</span></td><td class="n">${f3(b.width_m)}</td><td class="${b.added ? "ok" : b.counts ? "bad" : ""}">${b.added ? "S2" : b.counts ? "check" : "no"}</td></tr>`
+          }).join("") + (ax.angled || []).filter((b) => !b.added).map((b, i) => `<tr><td>A${i + 1} <span class="muted">${b.z_from_m != null ? "above a lower building" : "angled gap"}</span></td><td class="n">${f3(b.width_m)}</td><td class="${b.added ? "ok" : b.counts ? "bad" : ""}">${b.added ? "S2" : b.counts ? "check" : "no"}</td></tr>`
             + `<tr class="sbd-how"><td colspan="3">${esc(angledText(b))}</td></tr>`).join("");
         })() + `</table>`
           + ((ax.edge || []).length ? `<table class="sbd-t sbd-edge"><tr><th title="Along the site's edge nearest the plane (the street side)">Near edge</th><th class="n" title="Projected on the plane">proj m</th><th class="n" title="Drawn on the elevation: a gap at its S value, a shadow at its projected width">elev m</th></tr>`
@@ -1366,7 +1365,7 @@ export function createSbd(ctx) {
             ["Plan level", z.plan_level != null ? `+${f3(z.plan_level)} (chosen): the masses cut at this height for the plan; the elevation is the true 3D` : "all levels (worst): every height in the zone; the elevation is the true 3D"],
             ...ax.gaps.map((g, i) => [num.get(i), g, i]).sort((p, q) => Number(p[0].slice(1)) - Number(q[0].slice(1)))
               .map(([nm, g]) => [`${nm} (${gapKind(g)})`, `${gapHow(g, ax, nm)} - ${g.qualifies ? "counts" : `does not count (min ${g.threshold_m || 7.5} m)`}`, g.qualifies ? "#16a34a" : "#dc2626"]),
-            ...(ax.angled || []).map((b, i) => [`A${i + 1} (angled gap)`, angledText(b), b.counts ? "#b45309" : "#64748b"]),
+            ...(ax.angled || []).filter((b) => !b.added).map((b, i) => [`A${i + 1} (angled gap)`, angledText(b), b.counts ? "#b45309" : "#64748b"]),
             ...((ax.edge || []).length ? [["Along the plane (W)", ax.edge.map((it) => it.kind === "gap" ? `${num.get(it.gap) || it.label} ${f3(it.s_m)}` : `${it.label} ${f3(it.hi - it.lo)}`).join(" + ") + ` = ${f3(ax.edge.reduce((t, it) => t + (it.kind === "gap" ? it.s_m : it.hi - it.lo), 0))} m`]] : []),
             ...(k === "axis1" && (z.tried || []).length > 1 ? [["Planes tried", z.tried.map((t) => `X ${f3(t.x_deg)}° / Y ${f3(t.y_deg)}°: P X ${f2(t.P_x)} %, P Y ${f2(t.P_y)} %${t.chosen ? " (used)" : ""}`).join("; ")]] : [])] });
         if (ax.elev) items.push({ head: `${ZONE_LABEL[z.zone] || z.zone} · elevation on ${k === "axis1" ? "Plane X" : "Plane Y"} (${levelOf(z)})`, tag: `P ${f2(ax.elev.P)} %`, tagColor: ZONE_COLOR[z.zone],

@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-01", date: "22 Oct 2026",
+    items: [
+      "**SBD side regions (TMTL496, 3rd review):** the street part runs exactly between the two points where the region's edge meets the site boundary, cut parallel to the plane at both ends. Past the last building corner the edge can also turn 15° away from the plane, so the region takes in more area where nothing stands in the way.",
+      "**SBD openings level by level:** an opening clear from some height up - over a low building between towers - is found at each plan level and counts as an air corridor (S2) from that height; on the elevation it is blocked below it and IS above. Openings at a turn of 15 m or more are now counted too. Hover a building's name on the plan for its top above Level 0.",
+      "**SBD corridors at their widest:** each air corridor is measured at the widest band through the same opening, turned up to 15°; one that reaches 15 m that way counts.",
+      "**Nightly export (Revit 2023-2026):** the watcher now also sees the newer (WPF) windows. It presses Load Once for an unsigned add-in, Ignore and continue opening the project for missing links, and Continue working with the file for missing updaters, and closes What's New windows. It never presses Cancel, Do Not Load or Always Load. A dialog it does not know is pictured in nightly\\dialogs. Save the schedule once on each PC to update it.",
+    ],
+  },
+  {
     version: "2026-11-30", date: "22 Oct 2026",
     items: [
       "**Sheets in groups:** ☰ in the Sheets heading makes groups (topics - Plans, Elevations ...), by hand or from the sheet numbers; right-click a sheet > Move to ... Click a group's heading to fold it, or ⋯ > Show only this group. Project members make the groups; folding is your own.",
