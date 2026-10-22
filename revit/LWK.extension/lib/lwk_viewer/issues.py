@@ -100,7 +100,7 @@ class Client(object):
         self.base = (base or "").rstrip("/")
         self.token = token or ""
 
-    def _request(self, method, path, body=None, project=""):
+    def _request(self, method, path, body=None, project="", timeout=20):
         url = self.base + path
         headers = {"Content-Type": "application/json"}
         if self.token:
@@ -112,21 +112,21 @@ class Client(object):
             from lwk_viewer import jsonio
             data = jsonio.dumps(body, indent=0)
         if _dotnet():
-            return self._dotnet(method, url, headers, data)
-        return self._urllib(method, url, headers, data)
+            return self._dotnet(method, url, headers, data, timeout)
+        return self._urllib(method, url, headers, data, timeout)
 
-    def _dotnet(self, method, url, headers, data):
+    def _dotnet(self, method, url, headers, data, timeout=20):
         """Any failure comes back as a ServerError with the reason in words:
         a connection refused while sending the body used to escape as a raw
         .NET exception, which a button handler swallowed - "Sign in" then
         simply did nothing."""
         try:
-            return self._dotnet_raw(method, url, headers, data)
+            return self._dotnet_raw(method, url, headers, data, timeout)
         except ServerError:
             raise
         except (ImportError, AttributeError):
             # .NET networking not reachable from this Python: use Python's own
-            return self._urllib(method, url, headers, data)
+            return self._urllib(method, url, headers, data, timeout)
         except Exception as ex:
             msg = getattr(ex, "Message", None) or str(ex)
             inner = getattr(ex, "InnerException", None)
@@ -134,7 +134,7 @@ class Client(object):
                 msg += " (%s)" % (getattr(inner, "Message", None) or inner)
             raise ServerError("Cannot reach %s: %s" % (self.base or "the server", msg))
 
-    def _dotnet_raw(self, method, url, headers, data):
+    def _dotnet_raw(self, method, url, headers, data, timeout=20):
         import System
         N = _net()
         HttpWebRequest, WebException = N.HttpWebRequest, N.WebException
@@ -142,7 +142,8 @@ class Client(object):
         from System.Text import Encoding
         req = HttpWebRequest.Create(url)
         req.Method = method
-        req.Timeout = 20000
+        req.Timeout = int(timeout * 1000)
+        req.ReadWriteTimeout = max(300000, int(timeout * 1000))
         req.ContentType = "application/json"
         for k, v in headers.items():
             if k.lower() != "content-type":
@@ -165,7 +166,7 @@ class Client(object):
         resp.Close()
         return self._decode(status, text)
 
-    def _urllib(self, method, url, headers, data):
+    def _urllib(self, method, url, headers, data, timeout=20):
         try:
             from urllib.request import Request, urlopen
             from urllib.error import HTTPError, URLError
@@ -175,7 +176,7 @@ class Client(object):
                       headers=headers)
         req.get_method = lambda: method
         try:
-            r = urlopen(req, timeout=20)
+            r = urlopen(req, timeout=timeout)
             return self._decode(r.getcode(), r.read().decode("utf-8"))
         except HTTPError as ex:
             return self._decode(ex.code, ex.read().decode("utf-8"))

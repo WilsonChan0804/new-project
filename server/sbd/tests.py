@@ -296,6 +296,64 @@ class StreetSlabs(unittest.TestCase):
         self.assertAlmostEqual(b["U_m"], 35.0, places=2)
 
 
+class StreetSlabMerge(unittest.TestCase):
+    """A street drawn as several slabs, or a sloped slab with a top face per
+    plane, is one street (SBD Export used to reject every piece)."""
+
+    def setUp(self):
+        self.S = _addin()
+        self.site = [tuple(p) for p in SITE]
+
+    def slab(self, loop, z=0.0, name="Kwun Chui Road"):
+        return {"name": name, "loop": loop, "z": z, "area": abs(self.S.loop_area(loop)), "faces": 1}
+
+    def test_two_slabs_one_street(self):
+        a = self.slab([(-10, -20), (50, -20), (50, 0), (-10, 0)], 1.0)
+        b = self.slab([(50, -20), (110, -20), (110, 0), (50, 0)], 2.0)
+        made, left = self.S.streets_from_slabs([a, b], self.site)
+        self.assertEqual(left, [])
+        self.assertEqual(len(made), 1)
+        g, st = made[0]
+        self.assertEqual(g["floors"], 2)
+        self.assertAlmostEqual(st["width_m"], 20.0, places=2)
+        self.assertAlmostEqual(st["length_m"], 120.0, places=1)
+        self.assertAlmostEqual(st["level"], 1.5, places=3)
+
+    def test_sloped_faces_merge(self):
+        # one slab, its top cut into 4 planes across and along the street
+        faces = [[(-10, -20), (40, -20), (40, -10), (-10, -10)], [(-10, -10), (40, -10), (40, 0), (-10, 0)],
+                 [(40, -20), (110, -20), (110, -10), (40, -10)], [(40, -10), (110, -10), (110, 0), (40, 0)]]
+        loop = self.S.merge_outlines(faces)
+        self.assertEqual(len(loop), 4)
+        self.assertAlmostEqual(abs(self.S.loop_area(loop)), 120 * 20, places=3)
+        st = self.S.street_from_floor({"name": "R", "loop": loop, "z": 0.0}, self.site)
+        self.assertAlmostEqual(st["width_m"], 20.0, places=2)
+
+    def test_partly_shared_edge(self):
+        # a piece meets the middle of a longer edge: the shared part goes
+        faces = [[(0, 0), (100, 0), (100, 10), (0, 10)], [(30, 10), (60, 10), (60, 12), (30, 12)]]
+        loop = self.S.merge_outlines(faces)
+        self.assertAlmostEqual(abs(self.S.loop_area(loop)), 1000 + 60, places=3)
+        self.assertEqual(len(loop), 8)
+
+    def test_not_a_strip_left_once(self):
+        # a roundabout drawn as two half slabs: not a strip - reported once, not per piece
+        ring = [(200 + 20 * math.cos(math.pi * k / 20), 200 + 20 * math.sin(math.pi * k / 20)) for k in range(40)]
+        a, b = self.slab(ring[:21]), self.slab(ring[20:] + [ring[0]])
+        made, left = self.S.streets_from_slabs([a, b], self.site)
+        self.assertEqual(made, [])
+        self.assertEqual(len(left), 1)
+        g, why = left[0]
+        self.assertEqual(g["floors"], 2)
+        self.assertIn("2 floors", why)
+
+    def test_other_streets_stay_apart(self):
+        a = self.slab([(-10, -20), (110, -20), (110, 0), (-10, 0)], name="A Street")
+        b = self.slab([(110, -20), (150, -20), (150, 0), (110, 0)], name="B Road")
+        made, left = self.S.streets_from_slabs([a, b], self.site)
+        self.assertEqual(sorted(st["name"] for g, st in made), ["A Street", "B Road"])
+
+
 class BdSampleCase(unittest.TestCase):
     """APP-152's sample case (BD): site 80 x 24 m on a 15 m street; a 15 m
     podium (its 7.5 m ends only 6 m high) and a 78 m tower 4 m back, on a

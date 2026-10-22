@@ -2,6 +2,7 @@
  * sub-tasks, what it is linked to (issues, sheets, 3D views, OneDrive and
  * ACC files), the discussion and the history. */
 
+import * as Clip from "./tasks-clip.js";
 import { formatHtml } from "./chatfmt.js";
 import { METHOD_OPTS, isMethod, ic } from "./tasks-util.js";
 import { $, esc, avatar, people, fmtDate, fmtWhen, ago, isOverdue, priorityPill, percentBar, pickPeople, pickOne, pickDate, PRIORITIES, toast, modal } from "./tasks-util.js";
@@ -103,6 +104,7 @@ function paint(T) {
       ${T.S.accounts ? `<button class="ghost icon-btn" data-act="follow" title="${following ? "Following - you get emails when it changes. Click to stop" : "Get emails when it changes or someone comments"}">${ic(following ? "bell" : "belloff")}<span class="lab">${following ? "Following" : "Follow"}</span></button>` : ""}
       <button class="ghost icon-btn" data-act="share" title="Send this task to a chat in the Messenger">${ic("share")}<span class="lab">Share</span></button>
       <button class="ghost" data-act="copy" title="Copy a link to this task">${ic("link")}</button>
+      <button class="ghost" data-act="copytask" title="Copy this task and its sub-tasks - then right-click another task or group to paste">${ic("copy")}</button>
       ${ed ? `<button class="ghost danger" data-act="delete" title="Delete task">${ic("trash")}</button>` : ""}
       <button class="ghost td-x" data-act="close" title="Close">${ic("close")}</button>
     </div>
@@ -251,6 +253,7 @@ function wire(T, box, t) {
       try { await navigator.clipboard.writeText(url); toast("Link copied"); } catch (e) { prompt("Link to this task", url); }
       return;
     }
+    if (k === "copytask") return Clip.copy(T, [t]);
     if (k === "follow") {
       const on = !(t.subscribers || []).some((s) => s.uid === T.me.uid);
       try { t.subscribers = (await T.api(`/api/tasks/${t.id}/subscribe`, { method: "POST", body: JSON.stringify({ on }) })).subscribers; paint(T); }

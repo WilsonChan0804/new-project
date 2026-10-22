@@ -1,4 +1,5 @@
 import { attachTemplates } from "./templates.js";
+import * as Dates from "./dates.js";
 import { smoothPath, simplify, recognize } from "./ink.js";
 import { buildBcf, download } from "./bcf.js";
 import * as Store from "./store.js";
@@ -3460,9 +3461,32 @@ async function renderPage() {
       + (pre ? " (drawn ahead)" : ""));
     S._openT0 = 0;
   }
-  status(`${S.sheet.number} - ${S.sheet.name}  |  `
+  const ver = sheetVersion(S.sheet);
+  status((ver ? ver + "  |  " : "") + `${S.sheet.number} - ${S.sheet.name}  |  `
     + `${S.pageMM[0].toFixed(0)} x ${S.pageMM[1].toFixed(0)} mm  |  `
     + `${mapped} mapped viewport(s)`);
+  $("#status").title = ver ? ver + " - the version of this sheet on the viewer" : "";
+}
+
+/* Which version of the sheet is on screen: when it was output from Revit
+   (or uploaded), and Revit's current revision as typed on the sheet. A
+   sheet published before sheets carried their own time shows the time of
+   its publish. */
+function sheetVersion(sh) {
+  if (!sh) return "";
+  if (sh.external) {
+    return sh.added_at ? `Uploaded ${Dates.dayTime(sh.added_at, true)}${sh.added_by ? " by " + sh.added_by : ""}` : "Uploaded PDF";
+  }
+  const m = S.manifest || {};
+  let out = "";
+  if (sh.exported_at) out = "Output " + Dates.dayTime(sh.exported_at, true);
+  else {
+    const at = (sh.source && m.parts && m.parts[sh.source]) || m.exported_at;
+    if (at) out = "Published " + Dates.dayTime(at, true);
+  }
+  if (sh.revision) out += (out ? " · " : "") + "Rev " + sh.revision + (sh.revision_date ? ` (${sh.revision_date})` : "");
+  else if (sh.issue_date) out += (out ? " · " : "") + "Issued " + sh.issue_date;
+  return out;
 }
 
 /* The sharp overlay: only the part of the page on screen (plus a margin

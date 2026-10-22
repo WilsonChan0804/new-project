@@ -4,6 +4,7 @@
 import { METHOD_OPTS, isMethod } from "./tasks-util.js";
 import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, percentBar, pickPeople, pickOne, pickDate, PRIORITIES, PRI_RANK } from "./tasks-util.js";
 import { badge } from "./filelinks.js";
+import * as Clip from "./tasks-clip.js";
 
 /* A group that is a project: straight to its page, sheets and issues dashboard. */
 export function groupLinks(b) {
@@ -88,7 +89,7 @@ function row(T, t, cols, depth) {
       ? `<span class="tl-m iss-open" title="Linked issues still open">#${t.issues_open} open</span>`
       : `<span class="tl-m iss-done" title="Its linked issues are all resolved">#&#10003;</span>`) : "",
   ].join("");
-  let h = `<div class="tl-row${t.done ? " done" : ""}${T.S.openId === t.id ? " sel" : ""}${depth ? " sub" : ""}" data-id="${esc(t.id)}"`
+  let h = `<div class="tl-row${t.done ? " done" : ""}${T.S.openId === t.id ? " sel" : ""}${T.S.picked.has(t.id) ? " picked" : ""}${depth ? " sub" : ""}" data-id="${esc(t.id)}"`
     + (T.canEdit() ? ` draggable="true"` : "") + `>`
     + `<div class="tl-c tl-title" style="padding-left:${8 + depth * 22}px">`
     + (kids.length ? `<button class="tl-exp ghost${open ? " open" : ""}" data-act="exp">&#9656;</button>` : `<span class="tl-exp"></span>`)
@@ -246,6 +247,11 @@ function wire(T, el, buckets) {
       return render(T, el);
     }
     if (!t) return;
+    // Ctrl / Shift-click chooses rows (to copy), it does not open them
+    if ((ev.ctrlKey || ev.metaKey || ev.shiftKey) && !(act && act.dataset.act !== "open")) {
+      ev.preventDefault();
+      if (Clip.pickClick(T, ev, t.id)) return;
+    } else if (!act || act.dataset.act === "open") Clip.pickClick(T, ev, t.id);
     if (act && act.dataset.act === "exp") {
       S.expanded.has(t.id) ? S.expanded.delete(t.id) : S.expanded.add(t.id);
       return render(T, el);
@@ -286,6 +292,14 @@ function wire(T, el, buckets) {
       return;
     }
     T.openTask(t.id);
+  };
+  /* right-click: copy, and paste as sub-tasks / below / into a group */
+  el.oncontextmenu = (ev) => {
+    if (ev.target.closest("input, textarea, a")) return;
+    const r = ev.target.closest(".tl-row[data-id]");
+    const g = ev.target.closest(".tl-group");
+    if (!r && !(g && ev.target.closest(".tl-gh"))) return;
+    Clip.menu(T, ev, r ? T.task(r.dataset.id) : null, g ? bucketOf(g.dataset.b) : null);
   };
   el.onkeydown = (ev) => {
     const inp = ev.target.closest(".tl-new");

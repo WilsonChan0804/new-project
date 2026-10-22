@@ -981,10 +981,12 @@ export function createSbd(ctx) {
   $("#sbd-levels").addEventListener("change", () => $("#sbd-run").click());
 
   async function load() {
+    let st = null;
     try {
       const d = await api("/api/sbd");
       B.model = d.model;
       B.res = d.result;
+      st = d.status || null;
       B.saved = (await api("/api/sbd/saved")).saved || [];
     } catch (e) {
       $("#sbd-src").textContent = "Not read: " + e.message;
@@ -992,6 +994,14 @@ export function createSbd(ctx) {
     }
     paintSaved();
     paint();
+    // masses just sent from Revit are assessed in the background: shown when done
+    clearTimeout(B.waitT);
+    if (st && st.state === "running") {
+      $("#sbd-src").textContent = `Assessing the masses sent${st.by ? " by " + st.by : ""} from Revit ... the result shows here when it is ready.`;
+      B.waitT = setTimeout(() => { if (box.isConnected) load(); }, 3000);
+    } else if (st && st.state === "error") {
+      $("#sbd-src").textContent = "The last check failed on the server: " + (st.detail || "") + " - press Run, or send the model again.";
+    }
     // ticked while the SBD masses' model is in the 3D
     if (B.model && ctx.sbdRefsShown && ctx.sbdRefsShown()) $("#sbd-3d").checked = true;
   }

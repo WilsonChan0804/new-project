@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-28", date: "22 Oct 2026",
+    items: [
+      "**Tasks: copy and paste.** Ctrl-click tasks to choose several (Shift-click for a range), press **Ctrl+C** or right-click > **Copy**, then right-click another task > **Paste as sub-tasks** or **Paste below**, or a group's heading > **Paste into**. Each copy brings its sub-tasks, owners, dates, priority, fields and links, and starts not done. It works between lists too, and one Ctrl+Z takes a paste back.",
+      "**Sheets:** the grey bar at the bottom now says which version you are looking at - when the sheet was output from Revit and its current revision (\"Output 21 Oct 2026, 14:05 · Rev C\"), or when a PDF was uploaded and by whom. Sheets published before this show the time of their publish.",
+      "**SBD Export (Revit):** a street drawn as several Floors, or a sloped Floor, is now one street instead of a warning for every piece. The model is sent at once and assessed on the viewer in the background, so a large podium no longer times out; Checks > SBD shows *Assessing ...* until the result is ready.",
+    ],
+  },
+  {
     version: "2026-11-27", date: "21 Oct 2026",
     items: [
       "**Colours closer to the design:** warm grey backgrounds and lines on every page, and the Dashboard's charts in orange and charcoal. Your picture in the header is a clean circle again, and Search has its border back.",

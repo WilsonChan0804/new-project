@@ -46,7 +46,7 @@ PART = [
         '**Owners**（同 list 嘅人欄）只會列出 **task list 嘅成員**；清單最底嘅 **Show everyone** 可以加其他人。用右上角 **Members** 加人入 list。',
         '撳一個 task 打開佢嘅視窗：標題、**Owners**、開始同到期 **Dates**、**Group**、**Priority** 同 list 自己嘅欄。**Mark complete** 就完成。',
         '**完成方式（Completion method）：** **OR** = 任何一個負責人完成就算完成；**AND** = 每個負責人都要完成自己嗰部分。',
-        '**Sub-task：** 喺 **+ Add sub-task** 打字再按 Enter。好似 Lark 咁，sub-task 下面可以再有 sub-task，最多 5 層：打開個 sub-task 喺佢入面加，或者喺 List 撳行尾出現嘅 **+**。將一個 task 拖去另一個 task 標題嘅右半邊放手，就變成佢嘅 sub-task。刪一個 task 會連佢下面所有嘢一齊刪（**Ctrl+Z** 可以全部攞返）。',
+        '**Sub-task：** 喺 **+ Add sub-task** 打字再按 Enter。好似 Lark 咁，sub-task 下面可以再有 sub-task，最多 5 層：打開個 sub-task 喺佢入面加，或者喺 List 撳行尾出現嘅 **+**。將一個 task 拖去另一個 task 標題嘅右半邊放手，就變成佢嘅 sub-task。刪一個 task 會連佢下面所有嘢一齊刪（**Ctrl+Z** 可以全部攞返）。 **複製同貼上 task：** Ctrl 撳幾行揀幾個（Shift 撳：揀一段），再按 **Ctrl+C** 或者右撳 > **Copy**（或者 task 面板入面嘅複製掣）。右撳另一個 task > **Paste as sub-tasks of ...** 或者 **Paste below ...**，又或者右撳組嘅標題 > **Paste into ...**（揀咗一個 task 時 **Ctrl+V** 就貼喺佢下面）。每個副本都帶埋佢嘅 sub-task、標題、描述、負責人、日期、優先次序、欄位同連結，而且由頭開始：未完成、冇百分比、冇留言。貼去另一個 list 都得；一下 **Ctrl+Z** 就成次貼上收返。',
         '**相連嘅 issue** 會顯示佢而家嘅狀態（Open、In progress、Resolved）。**+ Link an issue** 可以揀 project 嘅一個 issue。',
         '**檔案、sheet 同 3D 視圖：** 貼 OneDrive、SharePoint 或者 ACC 網址，或者喺 Sheets 或 3D 版撳 **+ Task**，將你睇緊嘅 sheet 或者視圖放落 task。放咗落 task 嘅 Revit 元件會顯示做 **Elements to change**。',
         '**留言：** @名 可以通知人；可以貼截圖或者夾檔案（每個最大 50 MB）。自己嘅留言有 **edit** 同 **delete**。',

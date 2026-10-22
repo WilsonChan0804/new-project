@@ -3563,17 +3563,17 @@ async def import_pdf(request: Request, name: str = "drawing.pdf",
 @app.post("/api/import/sheets")
 async def import_sheets(request: Request, x_viewer_token: str = Header(default=""),
                         x_project: str = Header(default="")):
-    require_project(request, x_project, "member", x_viewer_token)
+    w, _ = require_project(request, x_project, "member", x_viewer_token)
     root = project_root_for(x_project)
     body = await request.json() or {}
     incoming = body.get("sheets") or []
     # The set the drawings go in: their own entry in the Sheets page's
     # drop-down, apart from the sheets published from Revit.
     set_name = clean_set_name(body.get("set")) or "Uploaded PDFs"
-    return {"added": add_imported(root, set_name, incoming)}
+    return {"added": add_imported(root, set_name, incoming, by=w.name or "")}
 
 
-def add_imported(root, set_name, incoming):
+def add_imported(root, set_name, incoming, by=""):
     """Sheets [{number, name, pdf, page}] into a set of imported sheets
     (the Sheets page's PDF import, and CAD drawings made into PDF)."""
     have = read_imported(root)
@@ -3597,7 +3597,9 @@ def add_imported(root, set_name, incoming):
         taken.add(num)
         rec = {"number": num, "name": str(sh.get("name") or "")[:120],
                "pdf": pdf, "page": int(sh.get("page") or 1),
-               "external": True, "set": set_name, "viewports": []}
+               "external": True, "set": set_name, "viewports": [],
+               # which version: when and by whom (the Sheets page's status bar)
+               "added_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "added_by": by}
         have.append(rec)
         added.append(rec)
     write_imported(root, have)

@@ -91,13 +91,11 @@ if gap is not None and gap > SE.CLOSE_TOL_M:
 street_axis = None
 streets = []
 slabs = SE.street_floors(doc)
-made = []
-for f in slabs:
-    st = SE.street_from_floor(f, site)
-    if st:
-        made.append((f, st))
-    else:
-        out.print_md("- Street slab **%s** is not a strip (two long sides, two ends) - left out; pick its lines instead." % f["name"])
+# the slabs of one street (its type name) that touch are one street, its
+# top faces merged - a sloped or split road is not rejected piece by piece
+made, left = SE.streets_from_slabs(slabs, site)
+for g, why in left:
+    out.print_md("- Street slab **%s** (%s) is not a strip (two long sides, two ends) - left out; pick its lines instead." % (g["name"], why))
 if made:
     labels = ["%s - %.0f m long, %.1f m wide, level %.2f m" % (st["name"], st["length_m"], st["width_m"], st["level"]) for f, st in made]
     try:            # all ticked to start with: untick a street not fronting the site
@@ -110,17 +108,36 @@ if made:
         script.exit()
     made = [m for m, lab in zip(made, labels) if lab in chosen]
     streets = [st for f, st in made]
-if not streets and forms.alert("No street slabs used.\n\nModel each street as a Floor whose type name has Street, Road, Lane or Path in it "
-                               "(kerb to kerb) - or pick its centreline and the opposite boundary now?",
-                               title="SBD Export", options=["Pick lines now", "No street"]) == "Pick lines now":
+# a street slab that is not a strip: its lines picked instead, its name kept
+to_pick = [g["name"] for g, why in left]
+if to_pick:
+    ask = "%s %s not a strip, so %s left out.\n\nPick %s centreline and opposite boundary now?" % (
+        ", ".join(to_pick), "is" if len(to_pick) == 1 else "are", "it is" if len(to_pick) == 1 else "they are",
+        "its" if len(to_pick) == 1 else "each one's")
+    if forms.alert(ask, title="SBD Export", options=["Pick lines now", "Leave out"]) != "Pick lines now":
+        to_pick = []
+elif not streets and forms.alert("No street slabs used.\n\nModel each street as a Floor whose type name has Street, Road, Lane or Path in it "
+                                 "(kerb to kerb) - or pick its centreline and the opposite boundary now?",
+                                 title="SBD Export", options=["Pick lines now", "No street"]) == "Pick lines now":
+    to_pick = [None]
+if to_pick:
     while True:
-        cl = SE.curves_polyline(pick_lines("Select the street CENTRELINE, then Finish"))
+        known = to_pick.pop(0) if to_pick and to_pick[0] else None
+        lab = " of %s" % known if known else ""
+        cl = SE.curves_polyline(pick_lines("Select the CENTRELINE%s, then Finish" % lab))
         if not cl or len(cl) < 2:
             break
-        op = SE.curves_polyline(pick_lines("Select the OPPOSITE site boundary across the street, then Finish")) or []
-        nm = forms.ask_for_string(default="Street %d" % (len(streets) + 1), prompt="Name of the street", title="SBD Export") or ""
-        streets.append({"name": nm, "centreline": [[round(x, 4), round(y, 4)] for x, y in cl],
-                        "opposite": [[round(x, 4), round(y, 4)] for x, y in op]})
+        op = SE.curves_polyline(pick_lines("Select the OPPOSITE site boundary across%s, then Finish" % (" " + known if known else " the street"))) or []
+        nm = known or forms.ask_for_string(default="Street %d" % (len(streets) + 1), prompt="Name of the street", title="SBD Export") or ""
+        st = {"name": nm, "centreline": [[round(x, 4), round(y, 4)] for x, y in cl],
+              "opposite": [[round(x, 4), round(y, 4)] for x, y in op]}
+        slab = [g for g, why in left if g["name"] == known]
+        if slab:                           # its slab still gives its level
+            st["level"] = round(slab[0]["z"], 4)
+            made.append((slab[0], st))
+        streets.append(st)
+        if to_pick and to_pick[0]:
+            continue                       # the next street slab left out
         if not forms.alert("Add another street?", title="SBD Export", yes=True, no=True):
             break
 # Axis 1 (Projection Plane X): along the street fronting the site the longest
@@ -170,10 +187,36 @@ try:
 except Exception:
     keep = ""
 try:
-    r = client._request("POST", "/api/sbd/model", data, project=pid)
+    # a large model takes a while to upload: up to 5 minutes, not the usual 20 s
+    r = client._request("POST", "/api/sbd/model", data, project=pid, timeout=300)
 except Exception as ex:
-    forms.alert("Not sent: %s" % ex, title="SBD Export")
+    forms.alert("Not sent: %s%s" % (ex, "\n\nWhat would have been sent is kept in:\n" + keep if keep else ""), title="SBD Export")
     script.exit()
+# the server answers at once and assesses in the background: wait for it
+still = False
+if r.get("running"):
+    t0 = time.time()
+    still = True
+    with forms.ProgressBar(title="SBD Export - sent; the viewer is assessing the zones ...", cancellable=True) as pb:
+        while time.time() - t0 < 300:
+            if pb.cancelled:
+                break
+            pb.update_progress(min(95, int((time.time() - t0) / 3)), 100)
+            time.sleep(3)
+            try:
+                g = client._request("GET", "/api/sbd", project=pid)
+            except Exception:
+                continue                    # a busy moment: ask again
+            st = g.get("status") or {}
+            if st.get("state") == "done":
+                res = g.get("result") or {}
+                r = {"controlling_p": res.get("controlling_p"), "required_p": res.get("required_p"),
+                     "pass": res.get("pass"), "warnings": res.get("warnings")}
+                still = False
+                break
+            if st.get("state") == "error":
+                forms.alert("Sent, but the check failed on the server:\n\n%s" % st.get("detail", ""), title="SBD Export")
+                script.exit()
 # remembered for this file: listed first next time (and LWK Issues opens on it)
 try:
     settings.setdefault("doc_projects", {})[doc.Title] = pid
@@ -187,10 +230,13 @@ out.print_md("**%d mass(es)**, site boundary of %d points, zones from %.2f m (%s
 for st in streets:
     if "length_m" in st:
         out.print_md("- Street **%s**: %.1f m long, %.1f m wide, level %.2f m" % (st["name"], st["length_m"], st["width_m"], st["level"]))
+if still:
+    out.print_md("Sent - **still being assessed** on the viewer. Open the model's **3D** page > **Checks > SBD** in a minute for the result.")
 cp, rp = r.get("controlling_p"), r.get("required_p")
-out.print_md("Controlling P: **%s** %%   Required: **%s** %%   %s" % (
-    "-" if cp is None else "%.2f" % cp, "-" if rp is None else "%.0f" % rp,
-    "" if r.get("pass") is None else ("PASS" if r["pass"] else "**FAIL**")))
+if not still:
+    out.print_md("Controlling P: **%s** %%   Required: **%s** %%   %s" % (
+        "-" if cp is None else "%.2f" % cp, "-" if rp is None else "%.0f" % rp,
+        "" if r.get("pass") is None else ("PASS" if r["pass"] else "**FAIL**")))
 for w in r.get("warnings") or []:
     out.print_md("- %s" % w)
 out.print_md("Open the model's **3D** page on the viewer > **Checks > SBD** for the zones, gaps and corridors.")

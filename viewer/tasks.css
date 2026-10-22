@@ -94,6 +94,9 @@ b.mention { color: var(--accent-deep); }
 .tl-newrow, .tl-newsub { grid-template-columns: 1fr; }
 .tl-row[data-id]:hover { background: var(--panel-2); }
 .tl-row.sel { background: var(--accent-soft) !important; }
+/* rows chosen with Ctrl / Shift-click, to copy */
+.tl-row.picked, .tl-row.picked .tl-title { background: #e8f0fe !important; box-shadow: inset 3px 0 0 #3b82f6; }
+:root[data-theme="dark"] .tl-row.picked, :root[data-theme="dark"] .tl-row.picked .tl-title { background: #1e3a5f !important; }
 .tl-head { position: sticky; top: 0; z-index: 2; background: var(--panel); color: var(--muted); font-size: 12px; min-height: 32px; }
 .tl-c { padding: 4px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default; position: relative; }
 .tl-row[data-id] .tl-c[data-col] { cursor: pointer; }

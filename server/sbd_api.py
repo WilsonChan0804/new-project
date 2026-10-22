@@ -2,8 +2,10 @@
 """SBD (PNAP APP-152) on the server: the masses exported from Revit
 (sbd.json) and the assessment of them (sbd/engine.py).
 
-  POST /api/sbd/model           the add-in's export (member); runs the check
-  GET  /api/sbd                 what the page shows: the model and the result
+  POST /api/sbd/model           the add-in's export (member); answers at once,
+                                the check runs in the background (status.json)
+  GET  /api/sbd                 what the page shows: the model, the result and
+                                the status of a check still running
   POST /api/sbd/run             run again {axis, angle_deg, levels} (member)
   POST /api/sbd/cad             the drawings as DXF / DWG (?format=dxf|dwg)
   GET  /api/sbd/template.dxf    the CAD template (no Revit: draw the model in CAD)
@@ -18,10 +20,12 @@ import json
 import os
 import re
 import shutil
+import threading
 import time
 import uuid
 
 from fastapi import HTTPException, Request, Header, Response
+from starlette.concurrency import run_in_threadpool
 
 from sbd import engine
 from sbd.ifcwrite import masses_ifc
@@ -226,23 +230,52 @@ def register(app, core):
         if len(raw) > MAX_MODEL:
             raise HTTPException(status_code=413, detail="The export is over 200 MB - simplify the masses")
         try:
-            data = json.loads(raw.decode("utf-8"))
+            data = await run_in_threadpool(lambda: json.loads(raw.decode("utf-8")))
         except ValueError:
             raise HTTPException(status_code=400, detail="Not JSON")
-        return take_model(x_project, data, w)
+        # a podium and towers take longer to assess than the add-in waits for
+        # an answer: kept now, assessed in the background (GET /api/sbd)
+        return await run_in_threadpool(take_model, x_project, data, w, True)
 
-    def take_model(pid, data, w):
-        """A model (from Revit or from CAD): kept, assessed, its masses in the 3D."""
-        model = clean_model(data)
-        model["uploaded_by"] = w.name or ""
-        model["uploaded_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-        _write(os.path.join(_dir(core, pid), "model.json"), model)
-        prev = _read(os.path.join(_dir(core, pid), "result.json")) or {}
-        r = run_and_keep(pid, model, prev.get("options") or {}, w.name or "")
+    # one check at a time per project; the latest export is the one shown
+    locks, seqs, guard = {}, {}, threading.Lock()
+
+    def assess(pid, model, w, seq):
+        with guard:
+            lock = locks.setdefault(pid, threading.Lock())
+        with lock:
+            if seqs.get(pid) != seq:
+                return                      # a newer export came meanwhile: that one runs
+            try:
+                prev = _read(os.path.join(_dir(core, pid), "result.json")) or {}
+                r = run_and_keep(pid, model, prev.get("options") or {}, w.name or "")
+                st = {"state": "done", "seq": seq, "finished": time.strftime("%Y-%m-%dT%H:%M:%S"), "by": w.name or ""}
+            except Exception as e:
+                core.bg_log("%s: SBD check failed: %s" % (pid, e))
+                r, st = None, {"state": "error", "seq": seq, "detail": str(e)[:300], "by": w.name or ""}
+            if seqs.get(pid) == seq:
+                _write(os.path.join(_dir(core, pid), "status.json"), st)
         try:
             masses_ref(core, pid, model, w.name or "", w.uid)       # the masses in the 3D
         except Exception as e:
             core.bg_log("%s: SBD masses not added to the 3D: %s" % (pid, e))
+        return r
+
+    def take_model(pid, data, w, background=False):
+        """A model (from Revit or from CAD): kept, assessed, its masses in the
+        3D. In the background: answers at once, status.json says when done."""
+        model = clean_model(data)
+        model["uploaded_by"] = w.name or ""
+        model["uploaded_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        _write(os.path.join(_dir(core, pid), "model.json"), model)
+        with guard:
+            seq = seqs[pid] = seqs.get(pid, 0) + 1
+        _write(os.path.join(_dir(core, pid), "status.json"),
+               {"state": "running", "seq": seq, "started": model["uploaded_at"], "by": w.name or ""})
+        if background:
+            threading.Thread(target=assess, args=(pid, model, w, seq), daemon=True).start()
+            return {"ok": True, "running": True, "masses": len(model["masses"])}
+        r = assess(pid, model, w, seq) or {}
         return {"ok": r.get("ok"), "controlling_p": r.get("controlling_p"), "required_p": r.get("required_p"),
                 "pass": r.get("pass"), "warnings": r.get("warnings"), "masses": len(model["masses"])}
 
@@ -313,7 +346,7 @@ def register(app, core):
             raise HTTPException(status_code=422, detail=" ".join(probs))
         data["model"] = ("CAD: " + os.path.basename(name or "drawing"))[:80]
         data["at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-        out = take_model(x_project, data, w)
+        out = await run_in_threadpool(take_model, x_project, data, w)
         out["problems"] = probs
         out["streets"] = len(data["streets"])
         return out
@@ -324,7 +357,7 @@ def register(app, core):
         in the 3D (saved results stay)."""
         core.require_project(request, x_project, "member", x_viewer_token)
         d = _dir(core, x_project)
-        for f in ("model.json", "result.json"):
+        for f in ("model.json", "result.json", "status.json"):
             if os.path.isfile(os.path.join(d, f)):
                 os.remove(os.path.join(d, f))
         return {"removed_models": drop_masses_ref(core, x_project)}
@@ -333,7 +366,10 @@ def register(app, core):
     async def sbd_get(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         core.require_project(request, x_project, "viewer", x_viewer_token)
         d = _dir(core, x_project)
-        return {"model": _read(os.path.join(d, "model.json")), "result": _read(os.path.join(d, "result.json"))}
+        st = _read(os.path.join(d, "status.json"))
+        if st and st.get("state") == "running" and st.get("seq") != seqs.get(x_project):
+            st = {"state": "error", "detail": "The server restarted while the check ran - send the model again, or Run"}
+        return {"model": _read(os.path.join(d, "model.json")), "result": _read(os.path.join(d, "result.json")), "status": st}
 
     @app.post("/api/sbd/run")
     async def sbd_run(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
@@ -347,7 +383,7 @@ def register(app, core):
             ang = max(-180.0, min(180.0, float(body.get("angle_deg") or 0)))
         except (TypeError, ValueError):
             ang = 0.0
-        return run_and_keep(x_project, model, {"axis": axis, "angle_deg": ang, "levels": body.get("levels")}, w.name or "")
+        return await run_in_threadpool(run_and_keep, x_project, model, {"axis": axis, "angle_deg": ang, "levels": body.get("levels")}, w.name or "")
 
     @app.post("/api/sbd/cad")
     async def sbd_cad(request: Request, format: str = "dxf", name: str = "SBD", x_viewer_token: str = Header(default=""),

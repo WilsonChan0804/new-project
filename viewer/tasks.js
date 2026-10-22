@@ -27,6 +27,7 @@ import * as DashView from "./tasks-dash.js";
 import * as PeopleView from "./tasks-people.js";
 import * as Detail from "./tasks-detail.js";
 import * as Undo from "./undo.js";
+import * as Clip from "./tasks-clip.js";
 import { wday } from "./dates.js";
 
 const LS = "lwk-tasks:";
@@ -46,6 +47,7 @@ const S = {
   sort: "custom", groupBy: "group",
   collapsed: new Set(), expanded: new Set(), hidden: new Set(),
   openId: "",
+  picked: new Set(),          // rows chosen with Ctrl / Shift-click (copy and paste)
 };
 const pending = new Map();    // task id -> fields waiting to be sent
 let flushTimer = null, saving = false;
@@ -164,7 +166,7 @@ export const T = {
     }
     return [...out.values()];
   },
-  save, create, remove, openTask, render, ownerKey, flush, toggleDone,
+  save, create, createMany, remove, openTask, render, ownerKey, flush, toggleDone,
   /* every task in the order the open view lists them: a task, then its sub-tasks */
   sequence() {
     const out = [];
@@ -198,6 +200,7 @@ export const T = {
   },
 };
 window.LWKTasks = T;
+Clip.keys(T);              // Ctrl+C / Ctrl+V on chosen tasks
 
 function ownerKey(p) { return p.uid != null ? "u" + p.uid : "n" + (p.name || "").toLowerCase(); }
 
@@ -323,6 +326,35 @@ function create(fields) {
                   undo: () => deleteNow(id), redo: () => restoreNow(id) }, { separate: true });
   }
   return t;
+}
+
+/* Many new tasks at once (a paste): one save, one Undo step. rows are
+   whole tasks with their ids already given; tops are the ids Undo deletes
+   (a top's sub-tasks go with it). */
+function createMany(rows, tops, label) {
+  if (!T.canEdit() || !rows.length) return [];
+  const made = [];
+  for (const f of rows) {
+    const t = Object.assign({
+      id: uid(), list_id: S.listId, group_id: "", parent_id: "", number: null,
+      title: "", description: "", done: false, completed_at: "", priority: "", start: "", due: "",
+      owners: [], vals: {}, links: [], subscribers: [], sort: Date.now() / 1000, comment_count: 0,
+      created_by: S.me.name, created_uid: S.me.uid, created_at: new Date().toISOString(), fresh: true,
+    }, f);
+    S.tasks.set(t.id, t);
+    const p = { id: t.id };
+    for (const k of ["group_id", "parent_id", "title", "description", "done", "priority", "start", "due", "owners", "vals", "links", "sort"]) p[k] = t[k];
+    pending.set(t.id, p);
+    made.push(t);
+  }
+  render();
+  schedule(50);
+  if (!Undo.replaying()) {
+    Undo.record({ label, merge: false,
+                  undo: async () => { for (const id of tops) await deleteNow(id); },
+                  redo: async () => { for (const id of tops) await restoreNow(id); } }, { separate: true });
+  }
+  return made;
 }
 
 /* Delete and undelete without asking: what Undo and Redo use */

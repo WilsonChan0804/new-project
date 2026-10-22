@@ -754,6 +754,24 @@ def view_mark_boxes(doc, view, mapping, rect):
     return out
 
 
+def sheet_revision(sheet):
+    """{"revision", "revision_date", "issue_date"} of a sheet, as typed in
+    Revit (Current Revision, Current Revision Date, Sheet Issue Date); a
+    value that is not there is left out."""
+    from Autodesk.Revit.DB import BuiltInParameter
+    out = {}
+    for key, bip in (("revision", "SHEET_CURRENT_REVISION"), ("revision_date", "SHEET_CURRENT_REVISION_DATE"),
+                     ("issue_date", "SHEET_ISSUE_DATE")):
+        try:
+            p = sheet.get_Parameter(getattr(BuiltInParameter, bip))
+            v = (p.AsString() or "").strip() if p is not None else ""
+            if v:
+                out[key] = v[:40]
+        except Exception:
+            pass
+    return out
+
+
 def build_sheet(doc, sheet, probe):
     origin_ft, size = paper_origin(doc, sheet, probe)
     rec = {
@@ -765,7 +783,11 @@ def build_sheet(doc, sheet, probe):
         "paper": size or {},
         "paper_origin_source": "titleblock_bbox" if size else "sheet_origin",
         "viewports": [],
+        # which version this is: when it was output, and Revit's revision
+        # (shown in the Sheets page's status bar)
+        "exported_at": datetime.datetime.utcnow().isoformat() + "Z",
     }
+    rec.update(sheet_revision(sheet))
     # a room schedule on the sheet: its floor plans' rooms are read too, so
     # its rows light up rooms as an area schedule's light up areas
     want_rooms = False

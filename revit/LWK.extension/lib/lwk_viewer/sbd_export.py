@@ -16,7 +16,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) runs without Revit.
 """
 
-__version__ = "2026-11-03"
+__version__ = "2026-11-28"
 
 import math
 
@@ -207,6 +207,143 @@ def mean_level(floors, site, reach=30.0):
     return sum(f["z"] * f["area"] for f in near) / tot
 
 
+MERGE_TOL_M = 0.005        # outline points closer than 5 mm are one
+TOUCH_M = 0.05             # slabs of one street closer than this are one street
+
+
+def _simplify(loop, tol=0.001):
+    """Drop points lying on the line between their neighbours (a long side
+    cut where two faces met), so a strip's ends are whole edges again."""
+    pts = list(loop)
+    changed = True
+    while changed and len(pts) > 3:
+        changed = False
+        for i in range(len(pts)):
+            a, p, b = pts[i - 1], pts[i], pts[(i + 1) % len(pts)]
+            if _len(a, b) > 1e-9 and _seg_dist(p, a, b) < tol and _len(a, p) < _len(a, b) and _len(p, b) < _len(a, b):
+                del pts[i]
+                changed = True
+                break
+    return pts
+
+
+def merge_outlines(loops, tol=MERGE_TOL_M):
+    """One outline from pieces that share edges: the top faces of a sloped
+    or shape-edited street slab, or a street drawn as several slabs. The
+    edges two pieces share go; the rest is chained into loops and the
+    largest is the outline -> [(x, y)] or None."""
+    loops = [l for l in loops if l and len(l) >= 3]
+    if not loops:
+        return None
+    if len(loops) == 1:
+        return _simplify(loops[0])
+    # one point for points closer than tol
+    pts = []
+
+    def key(p):
+        for i, q in enumerate(pts):
+            if abs(q[0] - p[0]) <= tol and abs(q[1] - p[1]) <= tol:
+                return i
+        pts.append((p[0], p[1]))
+        return len(pts) - 1
+    edges = []
+    for l in loops:
+        ids = [key(p) for p in l]
+        edges += [(ids[i], ids[(i + 1) % len(ids)]) for i in range(len(ids)) if ids[i] != ids[(i + 1) % len(ids)]]
+    # an edge with another piece's corner on it is cut there, so a shared
+    # part of a longer edge cancels too
+    cut = []
+    for a, b in edges:
+        on = [i for i in range(len(pts)) if i not in (a, b) and _seg_dist(pts[i], pts[a], pts[b]) <= tol]
+        on.sort(key=lambda i: _len(pts[a], pts[i]))
+        chainp = [a] + on + [b]
+        cut += [(chainp[k], chainp[k + 1]) for k in range(len(chainp) - 1)]
+    count = {}
+    for a, b in cut:
+        k = (min(a, b), max(a, b))
+        count[k] = count.get(k, 0) + 1
+    outer = [(a, b) for a, b in cut if count[(min(a, b), max(a, b))] == 1]
+    # walk the remaining edges into loops
+    nxt = {}
+    for a, b in outer:
+        nxt.setdefault(a, []).append(b)
+    out = []
+    used = set()
+    for a, b in outer:
+        if (a, b) in used:
+            continue
+        ring, cur, prev = [a], b, a
+        used.add((a, b))
+        while cur != a and len(ring) <= len(outer):
+            ring.append(cur)
+            cands = [n for n in nxt.get(cur, []) if (cur, n) not in used]
+            if not cands:
+                break
+            n = cands[0]
+            used.add((cur, n))
+            prev, cur = cur, n
+        if cur == a and len(ring) >= 3:
+            out.append([pts[i] for i in ring])
+    if not out:
+        return None
+    best = max(out, key=lambda l: abs(loop_area(l)))
+    return _simplify(best)
+
+
+def group_streets(slabs, touch=TOUCH_M):
+    """Street slabs of one type name that touch are one street: their
+    outlines merged, their level the area-weighted mean. slabs: the records
+    of street_floors() -> [{"name", "loop", "z", "area", "floors", "faces",
+    "pieces"}]; "pieces" keeps the slabs, for when the merged outline is not
+    a strip but a slab on its own is."""
+    groups = []
+    for s in slabs:
+        mine = [g for g in groups if g["name"] == s["name"] and any(loop_gap(p["loop"], s["loop"]) <= touch for p in g["pieces"])]
+        if not mine:
+            groups.append({"name": s["name"], "pieces": [s]})
+            continue
+        g = mine[0]
+        g["pieces"].append(s)
+        for o in mine[1:]:                 # this slab joins two groups
+            g["pieces"] += o["pieces"]
+            groups.remove(o)
+    out = []
+    for g in groups:
+        ps = g["pieces"]
+        loop = merge_outlines([p["loop"] for p in ps]) if len(ps) > 1 else ps[0]["loop"]
+        area = sum(p["area"] for p in ps)
+        out.append({"name": g["name"], "loop": loop or ps[0]["loop"],
+                    "z": sum(p["z"] * p["area"] for p in ps) / area if area > 0 else ps[0]["z"],
+                    "area": area, "floors": len(ps), "faces": sum(p.get("faces", 1) for p in ps),
+                    "ids": [p.get("id") for p in ps], "pieces": ps})
+    return out
+
+
+def streets_from_slabs(slabs, site):
+    """The streets of the street slabs -> (made [(group, street)], left
+    [(group, reason)]). A street whose merged outline is not a strip falls
+    back to its slabs one by one; those that are strips are used."""
+    made, left = [], []
+    for g in group_streets(slabs):
+        st = street_from_floor(g, site)
+        if st:
+            made.append((g, st))
+            continue
+        ok = []
+        if g["floors"] > 1:
+            for k, p in enumerate(g["pieces"]):
+                one = street_from_floor(p, site)
+                if one:
+                    one["name"] = "%s (%d)" % (g["name"], len(ok) + 1)
+                    ok.append((dict(p, floors=1), one))
+        if ok:
+            made += ok
+        else:
+            left.append((g, "%d floor%s, %d face%s merged, %d corners" % (
+                g["floors"], "" if g["floors"] == 1 else "s", g["faces"], "" if g["faces"] == 1 else "s", len(g["loop"]))))
+    return made, left
+
+
 def street_from_floor(f, site):
     """A street for the export from a street slab: its centreline, its side
     away from the site (the opposite boundary) and its outline."""
@@ -327,9 +464,9 @@ def is_street_type(type_name, words=STREET_WORDS):
 
 
 def street_floors(doc, words=STREET_WORDS):
-    """[{"id", "name", "loop", "z", "area"}] of the Floors whose type name has
-    street, road, lane or path in it: the outline of each top face (metres),
-    its mean level and its area."""
+    """[{"id", "name", "loop", "z", "area", "faces"}] of the Floors whose type
+    name has street, road, lane or path in it: one per Floor - the outline of
+    its top (its top faces merged, metres), its mean level and its area."""
     from Autodesk.Revit.DB import FilteredElementCollector, Floor, HostObjectUtils
     out = []
     for fl in FilteredElementCollector(doc).OfClass(Floor).WhereElementIsNotElementType():
@@ -340,6 +477,7 @@ def street_floors(doc, words=STREET_WORDS):
             refs = HostObjectUtils.GetTopFaces(fl)
         except Exception:
             refs = []
+        faces = []                 # (outline, its mean level, area) of each top face
         for ref in refs:
             face = fl.GetGeometryObjectFromReference(ref)
             if face is None:
@@ -359,10 +497,16 @@ def street_floors(doc, words=STREET_WORDS):
                 if len(pts) >= 3 and (best is None or abs(loop_area(pts)) > abs(loop_area(best[0]))):
                     best = (pts, zs)
             if best:
-                name = tn          # the street's name: the Floor's type name (e.g. "Yeung Fan Lane North Street")
-                out.append({"id": str(fl.Id.IntegerValue if hasattr(fl.Id, "IntegerValue") else fl.Id.Value),
-                            "name": name, "loop": best[0], "z": sum(best[1]) / len(best[1]),
-                            "area": abs(loop_area(best[0]))})
+                faces.append((best[0], sum(best[1]) / len(best[1]), abs(loop_area(best[0]))))
+        if not faces:
+            continue
+        # a sloped or shape-edited slab has a top face per plane: one outline
+        loop = faces[0][0] if len(faces) == 1 else (merge_outlines([f[0] for f in faces]) or max(faces, key=lambda f: f[2])[0])
+        area = sum(f[2] for f in faces)
+        out.append({"id": str(fl.Id.IntegerValue if hasattr(fl.Id, "IntegerValue") else fl.Id.Value),
+                    "name": tn,            # the street's name: the Floor's type name (e.g. "Yeung Fan Lane North Street")
+                    "loop": loop, "z": sum(f[1] * f[2] for f in faces) / area if area > 0 else faces[0][1],
+                    "area": area, "faces": len(faces)})
     return out
 
 
