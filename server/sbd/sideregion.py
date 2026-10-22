@@ -58,8 +58,9 @@ def _merged(polys, v, tol=1e-6):
     return out
 
 
-def _cl_u(cl, v, near):
-    """The centreline's u at depth v (the crossing nearest `near`), or None."""
+def _cl_u(cl, v, near, carry=10.0 / 0.3048):
+    """The centreline's u at depth v (the crossing nearest `near`), or None.
+    A centreline ending short is carried on straight up to `carry`."""
     best = None
     for (u1, v1), (u2, v2) in zip(cl, cl[1:]):
         if (v1 <= v <= v2) or (v2 <= v <= v1):
@@ -69,9 +70,9 @@ def _cl_u(cl, v, near):
     lo, hi = (min(p[1] for p in cl), max(p[1] for p in cl)) if cl else (0, 0)
     if best is None and len(cl) >= 2 and not (lo <= v <= hi):
         # a centreline ending just short of the frontage: its end segment
-        # carried on (up to 10 m)
+        # carried on (up to 10 m, or `carry`)
         for (u1, v1), (u2, v2) in ((cl[0], cl[1]), (cl[-1], cl[-2])):
-            if abs(v2 - v1) < 1e-9 or abs(v - v1) > 10.0 / 0.3048 or abs(v - v1) > abs(v - v2):
+            if abs(v2 - v1) < 1e-9 or abs(v - v1) > carry or abs(v - v1) > abs(v - v2):
                 continue
             c = u1 + (v - v1) * (u2 - u1) / (v2 - v1)
             if best is None or abs(c - near) < abs(best - near):
@@ -99,27 +100,32 @@ def _near_poly(q, poly, tol):
     return False
 
 
-def extension(site, cl, reach, side, outline=None, gap=None):
+CORNER_CARRY = 30.0 / 0.3048   # a corner round a junction: the centreline carried this far
+
+
+def extension(site, cl, reach, side, outline=None, gap=None, others=None):
     """The street's part up to its centreline, beside the boundary that faces
     it: [(u, v) polygons]. A boundary edge faces the street when it is the
     site's outer limit on this side and the street is just outward of it:
     the street's slab (outline) within `gap` of it - or, with no outline,
-    the centreline within `reach`."""
+    the centreline within `reach`. A rounded or splayed corner next to the
+    frontage, round a junction, faces it too when a street's slab (this one
+    or another's - `others`) is just outward of it: its part up to this
+    street's centreline, carried on past its end (Wilson, TMTL496)."""
     s = 1.0 if side == "right" else -1.0
     n = len(site)
-    facing = []
-    for i in range(n):
+    g = gap or 0.0
+
+    def faces(i, slabs, carry, steep, corner=False):
         a, b = site[i], site[(i + 1) % n]
         L = math.hypot(b[0] - a[0], b[1] - a[1])
-        if abs(b[1] - a[1]) < 1e-9 or abs(b[1] - a[1]) / L < 0.64:
+        if abs(b[1] - a[1]) < 1e-9 or abs(b[1] - a[1]) / L < steep:
             # along the plane (no depth), or running more along u than across
             # it: the street is not across this side's outward direction
-            facing.append(None)
-            continue
+            return False
         # sampled along the edge: most of it must face the street - a short
         # jog of the boundary near a corner, or a sliver between the boundary
         # and the slab (under `gap`), is passed over (Wilson, report 7)
-        g = gap or 0.0
         good = tot = 0
         for t in (0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95):
             tot += 1
@@ -131,18 +137,39 @@ def extension(site, cl, reach, side, outline=None, gap=None):
             uu = a[0] + (b[0] - a[0]) * t
             if (lim - uu) * s < -1e-3 or (lim - uu) * s > max(1e-3, g):
                 continue                      # not the outer limit here
-            c = _cl_u(cl, vv, uu)
+            c = _cl_u(cl, vv, uu, carry)
             if c is None or (c - uu) * s <= 0:
                 continue
-            if outline and len(outline) >= 3:
+            if slabs and corner:
+                # round a corner: a street's slab somewhere between the
+                # boundary and the centreline (a pavement may lie between)
+                if abs(c - uu) > 1.6 * (reach + g) + CORNER_CARRY or \
+                        not any(_near_poly((lim + (c - lim) * k / 8.0, vv), sl, g) for k in range(1, 9) for sl in slabs):
+                    continue
+            elif slabs:
                 # the slab just outward of the edge, and its centreline across it
-                if not _near_poly((lim + s * g * 0.5, vv), outline, g) or \
+                if not any(_near_poly((lim + s * g * 0.5, vv), sl, g) for sl in slabs) or \
                         abs(c - uu) > 1.6 * (reach + g):
                     continue
             elif abs(c - uu) > reach:
                 continue
             good += 1
-        facing.append(i if good * 3 >= tot * 2 else None)
+        return good * 3 >= tot * 2
+    own = [outline] if outline and len(outline) >= 3 else []
+    facing = [i if faces(i, own, 10.0 / 0.3048, 0.64) else None for i in range(n)]
+    # round a corner next to the frontage (an arc, a splay), towards a
+    # junction: the pieces turning away still face the street - any street's
+    # slab just outward, this street's centreline carried on to them
+    allslabs = own + [o for o in others or [] if o and len(o) >= 3]
+    if allslabs and any(f is not None for f in facing):
+        grew = True
+        while grew:
+            grew = False
+            for i in range(n):
+                if facing[i] is None and (facing[i - 1] is not None or facing[(i + 1) % n] is not None) \
+                        and faces(i, allslabs, CORNER_CARRY, 0.2, True):
+                    facing[i] = i
+                    grew = True
     # a short jog (under `gap`) between two facing edges is part of the
     # frontage: one extension, no sliver left between two
     for i in range(n):
@@ -178,7 +205,7 @@ def extension(site, cl, reach, side, outline=None, gap=None):
         if vb - va < 1e-6:
             continue
         mid = [p for p in cl if va < p[1] < vb]
-        ca, cb = _cl_u(cl, va, ch[0][0]), _cl_u(cl, vb, ch[-1][0])
+        ca, cb = _cl_u(cl, va, ch[0][0], CORNER_CARRY), _cl_u(cl, vb, ch[-1][0], CORNER_CARRY)
         if ca is None or cb is None:
             continue
         far = [(ca, va)] + sorted(mid, key=lambda p: p[1]) + [(cb, vb)]
@@ -200,6 +227,21 @@ def _cross(edge_piece, a, b):
     return None
 
 
+def _clip_v(poly, v_max):
+    """The part of a polygon at v <= v_max (Sutherland-Hodgman)."""
+    out = []
+    n = len(poly)
+    for i in range(n):
+        p, q = poly[i], poly[(i + 1) % n]
+        pin, qin = p[1] <= v_max + 1e-12, q[1] <= v_max + 1e-12
+        if pin:
+            out.append(p)
+        if pin != qin and abs(q[1] - p[1]) > 1e-12:
+            k = (v_max - p[1]) / (q[1] - p[1])
+            out.append((p[0] + k * (q[0] - p[0]), v_max))
+    return out
+
+
 def region(site, ext, hulls, side, edge, v_lo, v_hi):
     """The region for one inner edge (u1, v1, t): (area, depth, inner chain,
     outer chain) of the run nearest the plane, or None (no region, or the
@@ -215,6 +257,25 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
         for a, b in _spans(h, v1) if v_lo < v1 < v_hi else []:
             if ((b if s > 0 else a) - ue(v1)) * s > 0.05:
                 return None
+    # the street beside the region counts only as far as the region reaches
+    # in the site: up to where its inner edge meets the site boundary, cut
+    # there parallel to the plane (Wilson, TMTL496 - Plane Y along So Kwun
+    # Wat Road)
+    if ext:
+        exits = []
+        m = len(site)
+        for i in range(m):
+            a, b = site[i], site[(i + 1) % m]
+            for k, piece in enumerate(((u1, v1, 0.0), (u1, v1, t))):
+                c = _cross(piece, a, b)
+                # each piece only where it applies: straight up to v1, turned after
+                if c is not None and ((k == 0 and c <= v1 + 1e-9) or (k == 1 and c >= v1 - 1e-9)):
+                    exits.append(c)
+        far = [c for c in exits if c > v_lo + 1e-6]
+        if far:
+            v_exit = max(far)
+            if v_exit < v_hi - 1e-6:
+                ext = [q for q in (_clip_v(e, v_exit) for e in ext) if len(q) >= 3]
     polys = [site] + list(ext)
     vs = {v_lo, v_hi}
     if v_lo < v1 < v_hi:
@@ -369,10 +430,11 @@ def side_region(site, hulls, side, streets=None):
     v_lo = min(p[1] for p in site)
     v_hi = max(p[1] for p in site)
     ext = []
+    slabs = [st[2] for st in streets or [] if len(st) > 2 and st[2]]
     for st in streets or []:
         cl, reach = st[0], st[1]
         outline = st[2] if len(st) > 2 else None
-        ext += extension(site, cl, reach, side, outline, 3.0 / 0.3048)
+        ext += extension(site, cl, reach, side, outline, 3.0 / 0.3048, [o for o in slabs if o is not outline])
     best = None
     for e in candidates(hulls, side, v_lo):
         r = region(site, ext, hulls, side, e, v_lo, v_hi)

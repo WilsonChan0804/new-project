@@ -38,7 +38,8 @@ function gapHow(g, ax, num) {
   const sd = g.side && ax.sides && ax.sides[g.side];
   const k = num.slice(1);
   if (sd) return `${num} = A${k} / L${k} = ${f3(sd.area_m2)} m² / ${f3(sd.depth_m)} m = ${f3(sd.avg_m)} m${sd.angle_deg ? `, edge turned ${f3(Math.abs(sd.angle_deg))}°` : ""}`;
-  if (g.corridor) return `${num} = air corridor width ${f3(g.distance_m)} m${g.bend_deg ? `, turned ${f3(Math.abs(g.bend_deg))}°` : ", straight"}`;
+  if (g.corridor) return `${num} = air corridor width ${f3(g.distance_m)} m${g.bend_deg ? `, turned ${f3(Math.abs(g.bend_deg))}°` : ", straight"}`
+    + (g.merged_with ? ` (the overlapping corridor beside it, ${f3(g.merged_with.distance_m)} m${g.merged_with.bend_deg ? ` turned ${f3(Math.abs(g.merged_with.bend_deg))}°` : ""}, omitted: one corridor per opening)` : "");
   if (g.type === "S3") return `${num} = A / D = ${f3(g.area_m2)} m² / ${f3(g.depth_m)} m = ${f3(g.distance_m)} m`;
   if (g.type === "S1") return `${num} = projected width ${f3(gapM(g))} m`;
   if (g.type === "S2") return `${num} = nearest distance between the buildings ${f3(gapM(g))} m`;
@@ -559,22 +560,38 @@ export function zoneSvg(res, zone, axisKey, opt) {
       // are one group for Lp
       for (const sp of c.spacing || []) s += dim(sp.p, sp.q, `${f3(sp.d_m)} m ${sp.grouped ? "< 15 m: one group" : "≥ 15 m"}`, sp.grouped ? "#b45309" : "#475569", "sbd-dim sbd-spdim", 5);
     }
-    // each street leg: the 30 m offset from its centreline as a dashed line
-    // across the site, its 30 m dimension and the street's width - both where
-    // the drawing is clear of the canyons
+    // each street: ONE 30 m offset from its whole centreline as a dashed line
+    // (not one per leg - Wilson, TMTL496), and on its longest leg the 30 m
+    // dimension and the street's width - both where the drawing is clear of
+    // the canyons
+    const offs = res.street_offsets || null;
+    for (const o of offs || []) {
+      s += `<polyline class="sbd-30" data-l="SBD-DIM" points="${o.line.map(D).map((p) => p[0].toFixed(2) + "," + p[1].toFixed(2)).join(" ")}" fill="none" stroke="#2563eb" stroke-width="${fs / 10}" stroke-dasharray="${fs * 0.9} ${fs * 0.45}"/>`;
+    }
+    const legLen = (lg) => Math.hypot(lg.centreline[lg.centreline.length - 1][0] - lg.centreline[0][0], lg.centreline[lg.centreline.length - 1][1] - lg.centreline[0][1]);
+    const longest = new Map();
     for (const lg of res.street_legs || []) {
+      const k = lg.street || lg.name;
+      if (!longest.has(k) || legLen(lg) > legLen(longest.get(k))) longest.set(k, lg);
+    }
+    for (const lg of res.street_legs || []) {
+      if (offs && longest.get(lg.street || lg.name) !== lg) continue;
       const dd = lg.dir, nn = lg.normal;
       const c0p = lg.centreline[0];
       const us = res.site.map((p) => (p[0] - c0p[0]) * dd[0] + (p[1] - c0p[1]) * dd[1]);
       const ua = Math.min(...us) - 10, ub = Math.max(...us) + 10;
       const at = (u, w) => [c0p[0] + dd[0] * u + nn[0] * w, c0p[1] + dd[1] * u + nn[1] * w];
       const [a, b] = [at(ua, 30), at(ub, 30)].map(D);
-      s += `<line class="sbd-30" data-l="SBD-DIM" x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${b[0].toFixed(2)}" y2="${b[1].toFixed(2)}" stroke="#2563eb" stroke-width="${fs / 10}" stroke-dasharray="${fs * 0.9} ${fs * 0.45}"/>`;
-      const u0 = clearSpot(ua + 10, ub - 10, (u) => at(u, 15));
+      // an older result has no street lines: its legs' lines, as before
+      if (!offs) s += `<line class="sbd-30" data-l="SBD-DIM" x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${b[0].toFixed(2)}" y2="${b[1].toFixed(2)}" stroke="#2563eb" stroke-width="${fs / 10}" stroke-dasharray="${fs * 0.9} ${fs * 0.45}"/>`;
+      const lo = Math.max(ua + 10, 0), hi = Math.min(ub - 10, legLen(lg));
+      // on the leg itself, where its 30 m line runs straight
+      const [da, db] = offs && hi - lo > 4 ? [lo, hi] : [ua + 10, ub - 10];
+      const u0 = clearSpot(da, db, (u) => at(u, 15));
       s += dim(at(u0, 0), at(u0, 30), "30 m", "#2563eb", "sbd-dim sbd-30dim", 4);
       if (lg.width_dim) {
         const w = lg.width_dim[2];
-        const u1 = clearSpot(ua + 10, ub - 10, (u) => at(u, 0), u0);
+        const u1 = clearSpot(da, db, (u) => at(u, 0), u0);
         s += dim(at(u1, -w / 2), at(u1, w / 2), `${f3(w)} m wide`, "#475569", "sbd-dim sbd-wdim", 4);
       }
     }

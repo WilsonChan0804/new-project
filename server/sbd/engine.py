@@ -155,6 +155,56 @@ def _angle(a, b, period=180.0):
     return period / 2.0 if abs(d + period / 2.0) < 1e-9 else d
 
 
+def _poly_overlap(a, b):
+    """Two polygons (xy) overlap: an edge of one crosses the other's, or one
+    has a corner inside the other."""
+    def inside(p, poly):
+        c, n = False, len(poly)
+        for i in range(n):
+            x1, y1 = poly[i]
+            x2, y2 = poly[(i + 1) % n]
+            if (y1 > p[1]) != (y2 > p[1]) and p[0] < x1 + (p[1] - y1) * (x2 - x1) / (y2 - y1):
+                c = not c
+        return c
+
+    def cross(p, q, r, t):
+        d = lambda a, b, c: (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+        return d(p, q, r) * d(p, q, t) < 0 and d(r, t, p) * d(r, t, q) < 0
+    if len(a) < 3 or len(b) < 3:
+        return False
+    if any(inside(p, b) for p in a) or any(inside(p, a) for p in b):
+        return True
+    return any(cross(a[i], a[(i + 1) % len(a)], b[j], b[(j + 1) % len(b)]) for i in range(len(a)) for j in range(len(b)))
+
+
+def _one_corridor(gaps, site_uv, touch_m=0.1):
+    """Two gaps side by side along the plane (no building between them, or
+    under 0.1 m) whose air corridors overlap on plan are one opening with
+    ONE corridor: the one turned least (Wilson, TMTL496 - S3 omitted for
+    S2). -> (gaps, the IS width given back, ft): a corridor that counted
+    and is dropped no longer adds to IS."""
+    out, dropped = [], 0.0
+    for g in gaps:
+        prev = out[-1] if out else None
+        if (prev is not None and prev.get("corridor") and g.get("corridor")
+                and g["lo_m"] - prev["hi_m"] <= touch_m and _poly_overlap(prev["corridor"], g["corridor"])):
+            keep, drop = sorted((prev, g), key=lambda x: (abs(x.get("bend_deg") or 0.0), -x["distance_m"]))
+            if drop["qualifies"]:
+                dropped += drop["distance_m"] * FT
+            m = dict(keep)
+            m["lo_m"], m["hi_m"] = prev["lo_m"], g["hi_m"]
+            m["width_m"] = round(m["hi_m"] - m["lo_m"], 3)
+            m["strip"] = prev["strip"][:1] + g["strip"][1:3] + prev["strip"][3:]
+            # the near edge: the whole opening is this one gap
+            m["_band"] = N.strip_band(m["lo_m"] * FT, m["hi_m"] * FT, site_uv)
+            m["merged_with"] = {"distance_m": drop["distance_m"], "bend_deg": drop.get("bend_deg"),
+                                "qualifies": drop["qualifies"]}
+            out[-1] = m
+            continue
+        out.append(g)
+    return out, dropped
+
+
 def _axis_out(r, site_pts, bldgs=None, streets=None):
     """One axis' result in metres, with what the plan draws: each gap's
     strip, the S1 side regions (Area / Depth) and the S2 corridors (each
@@ -219,6 +269,7 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
             e["area_m2"] = round(ms.get("area_m2", 0.0), 2)
             e["depth_m"] = round(ms.get("depth_m", 0.0), 3)
         gaps.append(e)
+    gaps, dropped_is = _one_corridor(gaps, site_uv)
     # which side region a setback is: the first gap is "left", the last "right"
     s1 = [g for g in gaps if g["type"] == "S1"]
     if s1 and "left" in sides and s1[0]["lo_m"] <= min(g["lo_m"] for g in gaps) + 1e-6:
@@ -267,7 +318,8 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
                 edge.pop(end)
     sv = [q[1] for q in site_uv]
     return {
-        "P": round(r["P"], 2), "W_m": round(r["W"] * M, 3), "IS_m": round(r["IS"] * M, 3),
+        "P": round((r["IS"] - dropped_is) / r["W"] * 100.0 if r["W"] > 1e-9 else r["P"], 2), "W_m": round(r["W"] * M, 3),
+        "IS_m": round((r["IS"] - dropped_is) * M, 3),
         "sweep_deg": r.get("sweep_angle", 0), "axis": [round(ax.X, 6), round(ax.Y, 6)],
         "site_lo_m": round(r.get("site_lo", 0) * M, 3), "site_hi_m": round(r.get("site_hi", 0) * M, 3),
         "blocked_m": [[round(a * M, 3), round(b * M, 3)] for a, b in r.get("merged") or []],
@@ -365,6 +417,92 @@ def street_legs(data):
                         "width_dim": [[round(mx - nx * w / 2.0, 3), round(my - ny * w / 2.0, 3)],
                                       [round(mx + nx * w / 2.0, 3), round(my + ny * w / 2.0, 3)], round(w, 3)] if w else None})
     return out
+
+
+def street_offsets(data, reach=CASE1_REACH_M):
+    """One 30 m line per street (not one per leg - Wilson, TMTL496): the
+    whole centreline offset `reach` towards the site, joined at its bends,
+    and run on straight past its ends over the site's extent plus 10 m.
+    -> [{"street", "line": [[x, y]], "longest": index of its longest leg}]"""
+    out = []
+    site = data.get("site") or []
+    if not site:
+        return out
+    sx, sy = _centroid(site)
+    for si, st in enumerate(data.get("streets") or []):
+        cl = [tuple(p) for p in st.get("centreline") or []]
+        pts = [cl[0]] if cl else []
+        for p in cl[1:]:
+            if math.hypot(p[0] - pts[-1][0], p[1] - pts[-1][1]) > 1e-6:
+                pts.append(p)
+        if len(pts) < 2:
+            continue
+        segs = []
+        for p, q in zip(pts, pts[1:]):
+            L = math.hypot(q[0] - p[0], q[1] - p[1])
+            segs.append(((q[0] - p[0]) / L, (q[1] - p[1]) / L, L))
+        # the site's side: where the site's centre is from the longest piece
+        k = max(range(len(segs)), key=lambda i: segs[i][2])
+        dx, dy, _ = segs[k]
+        side = 1.0 if (-dy) * (sx - pts[k][0]) + dx * (sy - pts[k][1]) >= 0 else -1.0
+        nrm = [(-d[1] * side, d[0] * side) for d in segs]
+        line = []
+        for i, p in enumerate(pts):
+            if i == 0 or i == len(pts) - 1:
+                n = nrm[0] if i == 0 else nrm[-1]
+                line.append((p[0] + n[0] * reach, p[1] + n[1] * reach))
+                continue
+            a, b = nrm[i - 1], nrm[i]
+            mx, my = a[0] + b[0], a[1] + b[1]
+            ml = math.hypot(mx, my)
+            if ml < 1e-6:
+                line.append((p[0] + b[0] * reach, p[1] + b[1] * reach))
+                continue
+            mx, my = mx / ml, my / ml
+            cosh = max(0.25, mx * a[0] + my * a[1])        # the mitre, kept sane at a sharp turn
+            line.append((p[0] + mx * reach / cosh, p[1] + my * reach / cosh))
+        # run on past the ends, over the site's extent plus 10 m
+        for end in (0, -1):
+            d = segs[0] if end == 0 else segs[-1]
+            ux, uy = (-d[0], -d[1]) if end == 0 else (d[0], d[1])
+            q = line[end]
+            beyond = max((p[0] - q[0]) * ux + (p[1] - q[1]) * uy for p in site)
+            ext = max(0.0, beyond) + 10.0
+            r = (q[0] + ux * ext, q[1] + uy * ext)
+            if end == 0:
+                line.insert(0, r)
+            else:
+                line.append(r)
+        out.append({"street": st.get("name") or "Street %d" % (si + 1),
+                    "line": [[round(x, 3), round(y, 3)] for x, y in _no_loops(line)]})
+    return out
+
+
+def _no_loops(line):
+    """An offset line crossing itself (inside a sharp bend) with the loop
+    cut out: it runs on from where it crosses."""
+    def hit(p, q, r, t):
+        d = (q[0] - p[0]) * (t[1] - r[1]) - (q[1] - p[1]) * (t[0] - r[0])
+        if abs(d) < 1e-12:
+            return None
+        a = ((r[0] - p[0]) * (t[1] - r[1]) - (r[1] - p[1]) * (t[0] - r[0])) / d
+        b = ((r[0] - p[0]) * (q[1] - p[1]) - (r[1] - p[1]) * (q[0] - p[0])) / d
+        if 0.0 < a < 1.0 and 0.0 < b < 1.0:
+            return (p[0] + a * (q[0] - p[0]), p[1] + a * (q[1] - p[1]))
+        return None
+    pts = list(line)
+    i = 0
+    while i < len(pts) - 3:
+        cut = None
+        for j in range(len(pts) - 2, i + 1, -1):
+            x = hit(pts[i], pts[i + 1], pts[j], pts[j + 1])
+            if x is not None:
+                cut = (j, x)
+                break
+        if cut:
+            pts = pts[:i + 1] + [cut[1]] + pts[cut[0] + 1:]
+        i += 1
+    return pts
 
 
 def _frontage(legs, site):
@@ -483,6 +621,40 @@ def _groups(named):
     out = {}
     for i in range(n):
         out.setdefault(f(i), []).append(i)
+    # two groups apart are dimensioned too, each to its nearest group (the
+    # shortest links joining them all): a building's nearest neighbour can be
+    # in its own group, and the gap between groups would show nowhere
+    # (Wilson, TMTL496: B3+B4 and B5+B6 with no B4 - B5)
+    roots = list(out)
+    if len(roots) > 1:
+        links = []
+        for ai in range(len(roots)):
+            for bi in range(ai + 1, len(roots)):
+                best = None
+                for i in out[roots[ai]]:
+                    for j in out[roots[bi]]:
+                        d, p, q = _gap_pts([l["loop"] for l in named[i][1]], [l["loop"] for l in named[j][1]])
+                        if p is not None and (best is None or d < best[0]):
+                            best = (d, i, j, p, q)
+                if best:
+                    links.append((best[0], ai, bi, best))
+        links.sort(key=lambda x: x[0])
+        joined = list(range(len(roots)))
+
+        def g(k):
+            while joined[k] != k:
+                joined[k] = joined[joined[k]]
+                k = joined[k]
+            return k
+        for d, ai, bi, (_, i, j, p, q) in links:
+            if g(ai) == g(bi):
+                continue
+            joined[g(ai)] = g(bi)
+            key = tuple(sorted((named[i][0], named[j][0])))
+            if not any(tuple(sorted((x["a"], x["b"]))) == key for x in spacing):
+                spacing.append({"a": named[i][0], "b": named[j][0], "d_m": round(d, 3),
+                                "p": [round(p[0], 3), round(p[1], 3)], "q": [round(q[0], 3), round(q[1], 3)],
+                                "grouped": False})
     groups = []
     for idx in sorted(out.values(), key=lambda g: g[0]):
         labs = [named[i][0] for i in idx]
@@ -923,6 +1095,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
         "lp": lp, "required_p": req_x, "required_p_y": req_y, "required_p_addin": req_old, "fails": fails,
         "pass": None if ctrl is None or req_x is None else not fails,
         "case1": c1, "street_legs": [{k: v for k, v in lg.items() if k not in ("opposite", "outline")} for lg in legs],
+        "street_offsets": street_offsets(data),
         "case1_pass": None if not any(c["buildings"] for c in c1) else all(b["pass"] for c in c1 for b in c["buildings"]),
         "streets": [{"name": s.get("name") or "", "centreline": s.get("centreline") or [], "opposite": s.get("opposite") or [],
                      "outline": s.get("outline") or [], "level": s.get("level"), "label": s.get("label") or s.get("name") or ""}

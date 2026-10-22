@@ -7,7 +7,7 @@
 import math
 import unittest
 
-from . import engine, footprint
+from . import engine, footprint, streets
 
 
 def box(x0, y0, z0, x1, y1, z1):
@@ -336,6 +336,53 @@ class StreetSlabMerge(unittest.TestCase):
         self.assertAlmostEqual(abs(self.S.loop_area(loop)), 1000 + 60, places=3)
         self.assertEqual(len(loop), 8)
 
+    def test_kinked_end_straight_centreline(self):
+        # the far end is two edges meeting at a point (a kink): the
+        # centreline must not swing across the street at that end
+        loop = [(0, 0), (100, 0), (104, 6), (100, 12), (0, 12)]
+        for S in (self.S, streets):
+            cl, a, b = S.strip_centreline(loop)
+            end = max((cl[0], cl[-1]), key=lambda p: p[0])
+            self.assertGreater(end[0], 99.0)
+            self.assertLess(abs(end[1] - 6.0), 0.6, end)
+            self.assertTrue(all(abs(p[1] - 6.0) < 0.6 for p in cl), [p for p in cl if abs(p[1] - 6.0) >= 0.6][:3])
+
+    def test_ramp_faces_with_small_mismatch(self):
+        # a shape-edited ramp: 6 triangles, each corner off by up to 1 mm
+        import random
+        rnd = random.Random(4)
+        j = lambda p: (p[0] + rnd.uniform(-0.001, 0.001), p[1] + rnd.uniform(-0.001, 0.001))
+        xs = [0, 40, 80, 120]
+        faces = []
+        for x0, x1 in zip(xs, xs[1:]):
+            faces.append([j((x0, 0)), j((x1, 0)), j((x1, 12))])
+            faces.append([j((x0, 0)), j((x1, 12)), j((x0, 12))])
+        loop = self.S.merge_outlines(faces)
+        self.assertAlmostEqual(abs(self.S.loop_area(loop)), 120 * 12, delta=2.0)
+        st = self.S.street_from_floor({"name": "R", "loop": loop, "z": 0.0}, self.site)
+        self.assertAlmostEqual(st["length_m"], 120.0, delta=0.5)
+
+    def test_overlapping_slabs_chained(self):
+        # a ramp Floor and a flat Floor overlapping by 0.2 m: the whole street
+        a = self.slab([(-10, -20), (50.2, -20), (50.2, 0), (-10, 0)], 3.0)
+        b = self.slab([(50, -20), (110, -20), (110, 0), (50, 0)], 1.0)
+        made, left = self.S.streets_from_slabs([a, b], self.site)
+        self.assertEqual((len(made), left), (1, []))
+        g, st = made[0]
+        self.assertEqual(st["name"], "Kwun Chui Road")
+        self.assertAlmostEqual(st["length_m"], 120.0, delta=0.5)
+        self.assertAlmostEqual(min(p[0] for p in st["centreline"]), -10, delta=0.01)
+        self.assertAlmostEqual(max(p[0] for p in st["centreline"]), 110, delta=0.01)
+        self.assertTrue(all(abs(p[1] + 10) < 1e-6 for p in st["centreline"]))
+        self.assertTrue(all(abs(p[1] + 20) < 1e-6 for p in st["opposite"]))    # the side away from the site
+
+    def test_slabs_with_small_gap(self):
+        a = self.slab([(-10, -20), (49.97, -20), (49.97, 0), (-10, 0)])
+        b = self.slab([(50, -20), (110, -20), (110, 0), (50, 0)])
+        made, left = self.S.streets_from_slabs([a, b], self.site)
+        self.assertEqual(len(made), 1)
+        self.assertAlmostEqual(made[0][1]["length_m"], 120.0, delta=0.5)
+
     def test_not_a_strip_left_once(self):
         # a roundabout drawn as two half slabs: not a strip - reported once, not per piece
         ring = [(200 + 20 * math.cos(math.pi * k / 20), 200 + 20 * math.sin(math.pi * k / 20)) for k in range(40)]
@@ -352,6 +399,117 @@ class StreetSlabMerge(unittest.TestCase):
         b = self.slab([(110, -20), (150, -20), (150, 0), (110, 0)], name="B Road")
         made, left = self.S.streets_from_slabs([a, b], self.site)
         self.assertEqual(sorted(st["name"] for g, st in made), ["A Street", "B Road"])
+
+
+class GroupSpacing(unittest.TestCase):
+    """Every gap between building groups is dimensioned, not only each
+    building's nearest neighbour (TMTL496: B4 - B5 was missing)."""
+
+    def test_pairs_apart(self):
+        sq = lambda x, y: {"loop": [(x, y), (x + 10, y), (x + 10, y + 10), (x, y + 10)]}
+        named = [("B3", [sq(0, 0)]), ("B4", [sq(12, 0)]), ("B5", [sq(42, 0)]), ("B6", [sq(54, 0)])]
+        groups, spacing = engine._groups(named)
+        self.assertEqual(sorted(g[0] for g in groups), ["B3+B4", "B5+B6"])
+        keys = {tuple(sorted((x["a"], x["b"]))): x for x in spacing}
+        self.assertIn(("B4", "B5"), keys)
+        self.assertAlmostEqual(keys[("B4", "B5")]["d_m"], 20.0, places=3)
+        self.assertFalse(keys[("B4", "B5")]["grouped"])
+        self.assertEqual(len(spacing), 3)
+
+
+class OverlappingCorridors(unittest.TestCase):
+    """Two gaps side by side whose corridors overlap on plan count as one,
+    with the corridor turned least (TMTL496: S3 omitted for S2)."""
+
+    def test_one_corridor_kept(self):
+        site_uv = [(0.0, 0.0), (400.0, 0.0), (400.0, 300.0), (0.0, 300.0)]
+        strip = lambda lo, hi: [[lo, 0], [hi, 0], [hi, 90], [lo, 90]]
+        a = {"lo_m": 50.0, "hi_m": 52.301, "width_m": 2.301, "type": "S2", "distance_m": 2.301, "qualifies": False,
+             "bend_deg": 7.9, "corridor": [[50, 0], [52.3, 0], [56, 90], [53.7, 90]], "strip": strip(50, 52.301)}
+        b = {"lo_m": 52.301, "hi_m": 65.334, "width_m": 13.033, "type": "S2", "distance_m": 13.033, "qualifies": True,
+             "bend_deg": 15.0, "corridor": [[51, 0], [64, 0], [88, 90], [75, 90]], "strip": strip(52.301, 65.334)}
+        c = {"lo_m": 120.0, "hi_m": 140.0, "width_m": 20.0, "type": "S2", "distance_m": 20.0, "qualifies": True,
+             "bend_deg": 0.0, "corridor": [[120, 0], [140, 0], [140, 90], [120, 90]], "strip": strip(120, 140)}
+        out, dropped = engine._one_corridor([a, b, c], site_uv)
+        self.assertEqual(len(out), 2)
+        m = out[0]
+        self.assertEqual(m["bend_deg"], 7.9)                       # the one turned least
+        self.assertAlmostEqual(m["width_m"], 15.334, places=3)     # the whole opening along the plane
+        self.assertEqual(m["merged_with"]["distance_m"], 13.033)
+        self.assertAlmostEqual(dropped, 13.033 * engine.FT, places=6)
+        self.assertEqual(out[1]["lo_m"], 120.0)
+
+    def test_apart_or_not_overlapping_stay(self):
+        site_uv = [(0.0, 0.0), (400.0, 0.0), (400.0, 300.0), (0.0, 300.0)]
+        a = {"lo_m": 0, "hi_m": 20, "width_m": 20, "distance_m": 20, "qualifies": True, "bend_deg": 0,
+             "corridor": [[0, 0], [20, 0], [20, 90], [0, 90]], "strip": []}
+        b = dict(a, lo_m=20, hi_m=40, corridor=[[20.5, 0], [40, 0], [40, 90], [20.5, 90]])
+        out, dropped = engine._one_corridor([a, b], site_uv)
+        self.assertEqual((len(out), dropped), (2, 0.0))
+
+
+class JunctionCorner(unittest.TestCase):
+    """TMTL496: the site's corner is rounded where its street meets another
+    at a junction - the street part beyond the round counts too, up to the
+    street's centreline (carried on past its slab's end)."""
+
+    def setUp(self):
+        import math as m
+        from . import sideregion as SR
+        self.SR = SR
+        # u across the street (east), v along it; the corner at (100, 60)
+        # rounded with a 15 radius: from (100, 45) round to (85, 60)
+        arc = [(85 + 15 * m.cos(m.radians(a)), 45 + 15 * m.sin(m.radians(a))) for a in range(0, 91, 10)]
+        self.site = [(0, 0), (100, 0)] + arc + [(0, 60)]
+        self.cl = [(110, -10), (110, 50)]                               # ends at the junction
+        self.slab = [(100, -10), (120, -10), (120, 50), (100, 50)]
+        # the other street, with the junction box, across the top
+        self.other = [(100, 50), (140, 50), (140, 80), (60, 80), (60, 60), (100, 60)]
+
+    def test_round_corner_counts(self):
+        alone = self.SR.extension(self.site, self.cl, 13.0, "right", self.slab, 3.0)
+        both = self.SR.extension(self.site, self.cl, 13.0, "right", self.slab, 3.0, [self.other])
+        top = lambda ext: max(p[1] for e in ext for p in e)
+        self.assertLess(top(alone), 53.0)
+        self.assertGreater(top(both), 55.0)           # on round the corner
+        area = lambda ext: sum(abs(sum(e[i][0] * e[(i + 1) % len(e)][1] - e[(i + 1) % len(e)][0] * e[i][1] for i in range(len(e)))) / 2 for e in ext)
+        self.assertGreater(area(both), area(alone) + 30.0)
+        # its far side is the street's centreline, carried on
+        self.assertTrue(all(abs(p[0] - 110.0) < 1e-6 for e in both for p in e if p[0] > 100.5))
+
+
+class SideRegionEndInStreet(unittest.TestCase):
+    """TMTL496 Plane Y: the street part of a side region ends where the
+    region's inner edge meets the site boundary, cut parallel to the plane."""
+
+    def test_cut_at_the_edge_exit(self):
+        from . import sideregion as SR
+        site = [(0, 0), (100, 0), (85, 60), (0, 60)]           # the frontage slants in
+        hull = [[(40, 10), (90, 10), (90, 30), (40, 30)]]       # the edge u = 90 leaves the site at v = 40
+        slab = [(100, 0), (120, 0), (105, 60), (85, 60)]
+        cl = [(110, -4), (95, 64)]
+        r = SR.side_region(site, hull, "right", [(cl, 13.0, slab)])
+        self.assertAlmostEqual(max(v for _, v in r["polygon"]), 40.0, places=6)
+        top = sorted(u for u, v in r["polygon"] if abs(v - 40.0) < 1e-6)
+        self.assertAlmostEqual(top[0], 90.0, places=6)           # from the exit point ...
+        self.assertAlmostEqual(top[-1], 110 - 15 * 44 / 68.0, places=6)   # ... parallel to the plane to the centreline
+        self.assertAlmostEqual(r["D_ft"], 40.0, places=6)
+
+
+class OneOffsetPerStreet(unittest.TestCase):
+    def test_l_street_one_line(self):
+        # an L street round two sides of the site: two legs, ONE 30 m line
+        d = {"site": [[0, 0], [100, 0], [100, 80], [0, 80]],
+             "streets": [{"name": "So Kwun Wat Road", "centreline": [[-20, -10], [110, -10], [110, 100]],
+                          "opposite": [[-20, -20], [120, -20], [120, 100]]}]}
+        self.assertEqual(len(engine.street_legs(d)), 2)
+        offs = engine.street_offsets(d)
+        self.assertEqual(len(offs), 1)
+        line = offs[0]["line"]
+        # 30 m in from both legs, meeting at the mitre (80, 20)
+        self.assertTrue(any(abs(p[0] - 80) < 1e-6 and abs(p[1] - 20) < 1e-6 for p in line), line)
+        self.assertTrue(any(abs(p[1] - 20) < 1e-6 and p[0] < 0 for p in line))
+        self.assertTrue(any(abs(p[0] - 80) < 1e-6 and p[1] > 90 for p in line))
 
 
 class BdSampleCase(unittest.TestCase):

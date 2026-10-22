@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-11-29", date: "22 Oct 2026",
+    items: [
+      "**SBD (TMTL496 review):** a street's Floors that overlap or leave a small gap - a ramp beside a flat part - are joined end to end, so the whole street is used; Revit lists each street with the Floors and top faces it was made of. A street end drawn as two edges no longer swings the centreline across.",
+      "**SBD side regions:** next to a street they now carry on round a rounded or splayed site corner towards a junction, up to the street's centreline, and their street part ends where the region's edge meets the site boundary (cut parallel to the plane).",
+      "**SBD drawings:** two air corridors side by side that overlap are one opening with one corridor (the one turned least; the other is noted as omitted); each street has one 30 m line instead of one per leg; and every gap between separate building groups is dimensioned (e.g. B4 - B5).",
+    ],
+  },
+  {
     version: "2026-11-28", date: "22 Oct 2026",
     items: [
       "**Tasks: copy and paste.** Ctrl-click tasks to choose several (Shift-click for a range), press **Ctrl+C** or right-click > **Copy**, then right-click another task > **Paste as sub-tasks** or **Paste below**, or a group's heading > **Paste into**. Each copy brings its sub-tasks, owners, dates, priority, fields and links, and starts not done. It works between lists too, and one Ctrl+Z takes a paste back.",

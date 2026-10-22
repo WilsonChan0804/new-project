@@ -16,7 +16,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) runs without Revit.
 """
 
-__version__ = "2026-11-28"
+__version__ = "2026-11-29"
 
 import math
 
@@ -120,6 +120,44 @@ def _at(ch, s):
     return ch[-1]
 
 
+def _trim_ends(a, b, width):
+    """A street's end drawn as two or more edges (a kink, a rounded kerb):
+    only one of them was taken as the end, the rest stayed at the start of a
+    long side and swung the centreline across. A side's first pieces that
+    run across the street (over 45 deg from it), up to the street's width
+    in all, go to the end instead (Wilson, TMTL496)."""
+    def start(a, b):
+        reach = 2.0 * width
+        pa, pb = _at(a, min(reach, _chain_len(a))), _at(b, min(reach, _chain_len(b)))
+        m0 = ((a[0][0] + b[0][0]) / 2.0, (a[0][1] + b[0][1]) / 2.0)
+        m1 = ((pa[0] + pb[0]) / 2.0, (pa[1] + pb[1]) / 2.0)
+        dl = _len(m0, m1)
+        if dl < 1e-9:
+            return a, b
+        dx, dy = (m1[0] - m0[0]) / dl, (m1[1] - m0[1]) / dl
+        out = []
+        for side in (a, b):
+            side = list(side)
+            dropped = 0.0
+            while len(side) > 2:
+                L = _len(side[0], side[1])
+                if L < 1e-9:
+                    side.pop(0)
+                    continue
+                c = ((side[1][0] - side[0][0]) * dx + (side[1][1] - side[0][1]) * dy) / L
+                if c >= math.cos(math.radians(45.0)) or dropped + L > width:
+                    break
+                dropped += L
+                side.pop(0)
+            out.append(side)
+        return out[0], out[1]
+    if width <= 0:
+        return a, b
+    a, b = start(a, b)
+    ra, rb = start(list(reversed(a)), list(reversed(b)))
+    return list(reversed(ra)), list(reversed(rb))
+
+
 def strip_sides(loop):
     """The two long sides of a strip outline -> (side_a, side_b), both
     running from the same end to the other; None when it is not a strip.
@@ -151,6 +189,7 @@ def strip_sides(loop):
     side_b.reverse()
     if len(side_a) < 2 or len(side_b) < 2:
         return None
+    side_a, side_b = _trim_ends(side_a, side_b, width)
     return side_a, side_b
 
 
@@ -207,7 +246,7 @@ def mean_level(floors, site, reach=30.0):
     return sum(f["z"] * f["area"] for f in near) / tot
 
 
-MERGE_TOL_M = 0.005        # outline points closer than 5 mm are one
+MERGE_TOL_M = 0.05         # outline points closer than 50 mm are one (faces of a shape-edited ramp, slabs drawn a little apart)
 TOUCH_M = 0.05             # slabs of one street closer than this are one street
 
 
@@ -319,6 +358,65 @@ def group_streets(slabs, touch=TOUCH_M):
     return out
 
 
+def chain_strips(pieces, site):
+    """One street from slabs that do not merge into one outline (they
+    overlap, or a gap is left between them - a ramp beside a flat part):
+    each slab's own strip, joined end to end in order. -> a street (as
+    street_from_floor gives) or None when a slab is not a strip."""
+    parts = []
+    for p in pieces:
+        r = strip_centreline(p["loop"])
+        if not r:
+            return None
+        cl, a, b = r
+        near, far = near_far(a, b, site)
+        parts.append([list(cl), list(near), list(far), p])
+    if not parts:
+        return None
+
+    def flip(pt):
+        pt[0].reverse(); pt[1].reverse(); pt[2].reverse()
+    chain = parts.pop(0)
+    cl, near, far = list(chain[0]), list(chain[1]), list(chain[2])
+    while parts:
+        # the slab with an end nearest either end of the chain so far
+        best = None
+        for i, pt in enumerate(parts):
+            for at_tail in (True, False):
+                end = cl[-1] if at_tail else cl[0]
+                for rev in (False, True):
+                    start = pt[0][-1] if rev else pt[0][0]
+                    if not at_tail:
+                        start = pt[0][0] if rev else pt[0][-1]
+                    d = _len(end, start)
+                    if best is None or d < best[0]:
+                        best = (d, i, at_tail, rev)
+        d, i, at_tail, rev = best
+        pt = parts.pop(i)
+        if rev:
+            flip(pt)
+        if at_tail:
+            # the part of the next slab overlapping the chain's end is left out
+            ex, ey = cl[-1][0] - cl[-2][0], cl[-1][1] - cl[-2][1]
+            keep = lambda q, base: (q[0] - base[0]) * ex + (q[1] - base[1]) * ey > 1e-6
+            cl += [q for q in pt[0] if keep(q, cl[-1])]
+            near += [q for q in pt[1] if keep(q, near[-1])]
+            far += [q for q in pt[2] if keep(q, far[-1])]
+        else:
+            ex, ey = cl[0][0] - cl[1][0], cl[0][1] - cl[1][1]
+            keep = lambda q, base: (q[0] - base[0]) * ex + (q[1] - base[1]) * ey > 1e-6
+            cl = [q for q in pt[0] if keep(q, cl[0])] + cl
+            near = [q for q in pt[1] if keep(q, near[0])] + near
+            far = [q for q in pt[2] if keep(q, far[0])] + far
+    rnd = lambda pts: [[round(x, 4), round(y, 4)] for x, y in pts]
+    area = sum(abs(loop_area(p["loop"])) for p in pieces)
+    zs = sum(p["z"] * abs(loop_area(p["loop"])) for p in pieces)
+    L = _chain_len(cl)
+    return {"name": pieces[0].get("name") or "Street", "centreline": rnd(cl), "opposite": rnd(far),
+            "outline": rnd(near + list(reversed(far))), "level": round(zs / area if area > 0 else pieces[0]["z"], 4),
+            "length_m": round(L, 2), "width_m": round(area / max(L, 1e-9), 2)}
+
+
 def streets_from_slabs(slabs, site):
     """The streets of the street slabs -> (made [(group, street)], left
     [(group, reason)]). A street whose merged outline is not a strip falls
@@ -326,6 +424,15 @@ def streets_from_slabs(slabs, site):
     made, left = [], []
     for g in group_streets(slabs):
         st = street_from_floor(g, site)
+        # slabs that touch but did not merge into one outline (it lost part of
+        # them): joined end to end instead, so no part of the street is lost
+        whole = abs(loop_area(g["loop"])) >= 0.97 * g["area"]
+        if g["floors"] > 1 and not (st and whole):
+            ch = chain_strips(g["pieces"], site)
+            if ch:
+                ch["name"] = g["name"]
+                made.append((g, ch))
+                continue
         if st:
             made.append((g, st))
             continue

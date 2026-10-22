@@ -97,7 +97,10 @@ made, left = SE.streets_from_slabs(slabs, site)
 for g, why in left:
     out.print_md("- Street slab **%s** (%s) is not a strip (two long sides, two ends) - left out; pick its lines instead." % (g["name"], why))
 if made:
-    labels = ["%s - %.0f m long, %.1f m wide, level %.2f m" % (st["name"], st["length_m"], st["width_m"], st["level"]) for f, st in made]
+    # what each street was made of, so a slab left out shows here
+    parts = lambda g: " (%d floor%s, %d top face%s)" % (g.get("floors", 1), "" if g.get("floors", 1) == 1 else "s",
+                                                      g.get("faces", 1), "" if g.get("faces", 1) == 1 else "s")
+    labels = ["%s - %.0f m long, %.1f m wide, level %.2f m%s" % (st["name"], st["length_m"], st["width_m"], st["level"], parts(f)) for f, st in made]
     try:            # all ticked to start with: untick a street not fronting the site
         items = [forms.TemplateListItem(lab, checked=True) for lab in labels]
     except Exception:
