@@ -41,6 +41,8 @@ import threading
 import time
 import uuid
 
+from starlette.concurrency import run_in_threadpool
+
 try:
     from fastapi import FastAPI, HTTPException, Request, Header
     from fastapi.responses import FileResponse, JSONResponse, Response
@@ -68,6 +70,7 @@ CFG = {
 ACC = None               # Accounts, opened in main()
 DB = None
 STORES = {}              # project id -> Store, opened on first use
+_STORES_LOCK = threading.Lock()
 
 app = FastAPI(title="LWK Viewer")
 
@@ -275,12 +278,16 @@ def store_for(pid):
         pid = "default"
     if not project_dir(pid):
         raise HTTPException(status_code=404, detail="No such project: %s" % pid)
-    if pid not in STORES:
-        folder = os.path.join(CFG["data"], "projects", pid)
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
-        STORES[pid] = Store(os.path.join(folder, "viewer.db"))
-    return STORES[pid]
+    st = STORES.get(pid)
+    if st is not None:
+        return st
+    with _STORES_LOCK:                 # pages are read on several threads: one Store a project
+        if pid not in STORES:
+            folder = os.path.join(CFG["data"], "projects", pid)
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
+            STORES[pid] = Store(os.path.join(folder, "viewer.db"))
+        return STORES[pid]
 
 
 def list_projects():
@@ -316,7 +323,7 @@ def list_projects():
 
 
 @app.get("/api/projects")
-async def projects(request: Request, x_viewer_token: str = Header(default="")):
+def projects(request: Request, x_viewer_token: str = Header(default="")):
     w = who(request, x_viewer_token)
     ps = list_projects()
     if accounts_on():
@@ -395,7 +402,7 @@ async def ping():
 # --------------------------------------------------------------- items
 
 @app.get("/api/items")
-async def get_items(request: Request, since: int = 0,
+def get_items(request: Request, since: int = 0,
                     x_viewer_token: str = Header(default=""),
                     x_project: str = Header(default="")):
     w, role = require_project(request, x_project, "viewer", x_viewer_token)
@@ -947,7 +954,7 @@ def need_accounts():
 
 
 @app.get("/api/me")
-async def me(request: Request, x_viewer_token: str = Header(default="")):
+def me(request: Request, x_viewer_token: str = Header(default="")):
     w = who(request, x_viewer_token)
     if not accounts_on():
         return {"accounts": False, "user": None, "site_admin": True, "projects": {}}
@@ -956,7 +963,7 @@ async def me(request: Request, x_viewer_token: str = Header(default="")):
 
 
 @app.get("/api/me/notify")
-async def my_notify(request: Request, x_viewer_token: str = Header(default="")):
+def my_notify(request: Request, x_viewer_token: str = Header(default="")):
     w = who(request, x_viewer_token)
     if not w.user:
         raise HTTPException(status_code=401, detail="Sign in first")
@@ -977,7 +984,7 @@ async def set_my_notify(request: Request, x_viewer_token: str = Header(default="
 
 
 @app.post("/api/admin/email-test")
-async def email_test(request: Request, x_viewer_token: str = Header(default="")):
+def email_test(request: Request, x_viewer_token: str = Header(default="")):
     w = who(request, x_viewer_token)
     if not w.site_admin:
         raise HTTPException(status_code=403, detail="Site admins only")
@@ -1010,7 +1017,7 @@ async def change_password(request: Request, x_viewer_token: str = Header(default
 
 
 @app.get("/api/members")
-async def project_members(request: Request, x_viewer_token: str = Header(default=""),
+def project_members(request: Request, x_viewer_token: str = Header(default=""),
                           x_project: str = Header(default="")):
     """The people on a project - for the assignee list and the dashboard."""
     w, role = require_project(request, x_project, "viewer", x_viewer_token)
@@ -1033,7 +1040,7 @@ def admin_projects(w):
 
 
 @app.get("/api/admin/users")
-async def admin_users(request: Request, x_viewer_token: str = Header(default="")):
+def admin_users(request: Request, x_viewer_token: str = Header(default="")):
     need_accounts()
     w = who(request, x_viewer_token)
     if not w.site_admin and not admin_projects(w):
@@ -1161,7 +1168,7 @@ def record_export_job(root, job):
 
 
 @app.get("/api/projects/{pid}/exports")
-async def project_exports(pid: str, request: Request, x_viewer_token: str = Header(default="")):
+def project_exports(pid: str, request: Request, x_viewer_token: str = Header(default="")):
     """How each Revit file feeding this project is exported - for anyone on
     the project to review (what is included, when it runs, how it went)."""
     require_project(request, pid, "viewer", x_viewer_token)
@@ -1260,7 +1267,7 @@ def _pj_visible(w):
 
 
 @app.get("/api/publish-jobs")
-async def publish_jobs_list(request: Request, project: str = "", x_viewer_token: str = Header(default="")):
+def publish_jobs_list(request: Request, project: str = "", x_viewer_token: str = Header(default="")):
     """Every auto-publish setting reported by the PCs, for the projects this
     person is on (a site admin: all). `duplicate` marks a model whose night
     export is on in more than one place."""
@@ -1323,7 +1330,7 @@ async def publish_jobs_delete(request: Request, key: str = "", x_viewer_token: s
 
 
 @app.get("/api/admin/projects")
-async def admin_project_list(request: Request, x_viewer_token: str = Header(default="")):
+def admin_project_list(request: Request, x_viewer_token: str = Header(default="")):
     need_accounts()
     w = who(request, x_viewer_token)
     counts = ACC.member_counts()
@@ -1332,7 +1339,7 @@ async def admin_project_list(request: Request, x_viewer_token: str = Header(defa
 
 
 @app.get("/api/admin/projects/{pid}/members")
-async def admin_members(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+def admin_members(request: Request, pid: str, x_viewer_token: str = Header(default="")):
     need_accounts()
     require_project(request, pid, "admin", x_viewer_token)
     return {"members": ACC.members(pid)}
@@ -1433,7 +1440,7 @@ async def post_telemetry(request: Request, x_viewer_token: str = Header(default=
 
 
 @app.get("/api/admin/telemetry")
-async def get_telemetry(request: Request, limit: int = 400, x_viewer_token: str = Header(default="")):
+def get_telemetry(request: Request, limit: int = 400, x_viewer_token: str = Header(default="")):
     w = who(request, x_viewer_token)
     if accounts_on() and not w.site_admin:
         raise HTTPException(status_code=403, detail="Only a site admin can see device reports")
@@ -1507,32 +1514,35 @@ async def admin_delete_project(request: Request, pid: str, x_viewer_token: str =
         body = await request.json() or {}
     except Exception:
         pass
-    # typed by the person, as a guard against the wrong row
-    if (body.get("confirm") or "") != pid:
-        raise HTTPException(status_code=400, detail="Type the project name to confirm")
-    src = project_dir(pid)
-    if not src:
-        raise HTTPException(status_code=404, detail="No such project: %s" % pid)
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        # typed by the person, as a guard against the wrong row
+        if (body.get("confirm") or "") != pid:
+            raise HTTPException(status_code=400, detail="Type the project name to confirm")
+        src = project_dir(pid)
+        if not src:
+            raise HTTPException(status_code=404, detail="No such project: %s" % pid)
 
-    when = time.strftime("%Y%m%d-%H%M%S")
-    dest = os.path.join(_trash_root(), "%s__%s" % (pid, when))
-    os.makedirs(dest)
-    _close_store(pid)
-    shutil.move(src, os.path.join(dest, "exports"))
-    data = os.path.join(CFG["data"], "projects", pid)
-    if os.path.isdir(data):
-        shutil.move(data, os.path.join(dest, "data"))
-    info = {"project": pid, "deleted_at": when, "deleted_by": w.name,
-            "rows": ACC.project_rows(pid)}
-    with open(os.path.join(dest, "deleted.json"), "w", encoding="utf-8") as f:
-        json.dump(info, f, indent=1)
-    ACC.drop_project(pid)
-    print("project deleted (moved to bin): %s by %s -> %s" % (pid, w.name, dest))
-    return {"deleted": pid, "bin": os.path.basename(dest)}
+        when = time.strftime("%Y%m%d-%H%M%S")
+        dest = os.path.join(_trash_root(), "%s__%s" % (pid, when))
+        os.makedirs(dest)
+        _close_store(pid)
+        shutil.move(src, os.path.join(dest, "exports"))
+        data = os.path.join(CFG["data"], "projects", pid)
+        if os.path.isdir(data):
+            shutil.move(data, os.path.join(dest, "data"))
+        info = {"project": pid, "deleted_at": when, "deleted_by": w.name,
+                "rows": ACC.project_rows(pid)}
+        with open(os.path.join(dest, "deleted.json"), "w", encoding="utf-8") as f:
+            json.dump(info, f, indent=1)
+        ACC.drop_project(pid)
+        print("project deleted (moved to bin): %s by %s -> %s" % (pid, w.name, dest))
+        return {"deleted": pid, "bin": os.path.basename(dest)}
+    return await run_in_threadpool(_rest)
 
 
 @app.get("/api/admin/deleted-projects")
-async def admin_deleted_projects(request: Request, x_viewer_token: str = Header(default="")):
+def admin_deleted_projects(request: Request, x_viewer_token: str = Header(default="")):
     need_accounts()
     w = who(request, x_viewer_token)
     if not w.site_admin:
@@ -1556,7 +1566,7 @@ async def admin_deleted_projects(request: Request, x_viewer_token: str = Header(
 
 
 @app.post("/api/admin/deleted-projects/{name}/restore")
-async def admin_restore_project(request: Request, name: str, x_viewer_token: str = Header(default="")):
+def admin_restore_project(request: Request, name: str, x_viewer_token: str = Header(default="")):
     need_accounts()
     w = who(request, x_viewer_token)
     if not w.site_admin:
@@ -1588,7 +1598,7 @@ async def admin_restore_project(request: Request, name: str, x_viewer_token: str
 # ------------------------------------------------- project settings
 
 @app.get("/api/admin/projects/{pid}/settings")
-async def get_project_settings(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+def get_project_settings(request: Request, pid: str, x_viewer_token: str = Header(default="")):
     need_accounts()
     require_project(request, pid, "admin", x_viewer_token)
     return {"teams_webhook": ACC.setting(pid, "teams_webhook"),
@@ -1618,7 +1628,7 @@ async def put_project_settings(request: Request, pid: str, x_viewer_token: str =
 
 
 @app.post("/api/admin/projects/{pid}/teams-test")
-async def teams_test(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+def teams_test(request: Request, pid: str, x_viewer_token: str = Header(default="")):
     need_accounts()
     w, _ = require_project(request, pid, "admin", x_viewer_token)
     url = ACC.setting(pid, "teams_webhook")
@@ -1782,7 +1792,7 @@ def keep_model_version(root, rel, dest, new_data):
 
 
 @app.get("/api/model-versions")
-async def get_model_versions(request: Request, file: str = "", x_viewer_token: str = Header(default=""),
+def get_model_versions(request: Request, file: str = "", x_viewer_token: str = Header(default=""),
                              x_project: str = Header(default="")):
     require_project(request, x_project, "viewer", x_viewer_token)
     rel = _safe_rel(file)
@@ -1817,11 +1827,13 @@ def _old_manifest(root):
     except OSError:
         return {}
     key = (p, st.st_mtime_ns, st.st_size)
-    if key not in _manifest_cache:
-        _manifest_cache.clear()
+    got = _manifest_cache.get(key)
+    if got is None:
         with open(p, encoding="utf-8") as f:
-            _manifest_cache[key] = json.load(f)
-    return _manifest_cache[key]
+            got = json.load(f)
+        _manifest_cache.clear()
+        _manifest_cache[key] = got
+    return got
 
 
 def list_versions(root, rel):
@@ -1846,7 +1858,7 @@ def list_versions(root, rel):
 
 
 @app.get("/api/versions")
-async def get_versions(request: Request, pdf: str = "",
+def get_versions(request: Request, pdf: str = "",
                        x_viewer_token: str = Header(default=""),
                        x_project: str = Header(default="")):
     """Earlier versions of one sheet PDF, newest first. `path` is relative
@@ -1959,8 +1971,36 @@ async def upload_export(request: Request, pid: str, x_viewer_token: str = Header
         async for chunk in request.stream():
             tmp.write(chunk)
         tmp.close()
+    except BaseException:
+        tmp.close()
+        try:
+            os.remove(tmp.name)
+        except OSError:
+            pass
+        raise
+    # unpacking an export (hundreds of MB) takes a while: on a thread, so
+    # the server keeps answering everyone else meanwhile
+    return await run_in_threadpool(_finish_upload, request, pid, x_viewer_token, root, keep, tmp.name)
+
+
+_UPLOAD_LOCKS = {}
+_UPLOAD_GUARD = threading.Lock()
+
+
+def _finish_upload(request, pid, x_viewer_token, root, keep, tmp_name):
+    """The rest of an upload, on a thread: one project's uploads one at a
+    time (each merges the project's manifest)."""
+    with _UPLOAD_GUARD:
+        lock = _UPLOAD_LOCKS.setdefault(root, threading.Lock())
+    with lock:
+        return _finish_upload_one(request, pid, x_viewer_token, root, keep, tmp_name)
+
+
+def _finish_upload_one(request, pid, x_viewer_token, root, keep, tmp_name):
+    import zipfile
+    try:
         written, manifest_bytes, part = [], None, None
-        with zipfile.ZipFile(tmp.name) as z:
+        with zipfile.ZipFile(tmp_name) as z:
             if "_job.json" in z.namelist():
                 # how this export was made (from which Revit file and PC, what
                 # it includes, the night schedule, the last log): kept for the
@@ -2059,12 +2099,13 @@ async def upload_export(request: Request, pid: str, x_viewer_token: str = Header
                 json.dump(merged, f, ensure_ascii=False)
             os.replace(os.path.join(root, "manifest.json.part"), os.path.join(root, "manifest.json"))
         every = sorted(set().union(*[set(v or []) for v in sources.values()])) if sources else keep
-        with open(rec_path, "w", encoding="utf-8") as f:
+        with open(rec_path + ".part", "w", encoding="utf-8") as f:
             json.dump({"files": every, "sources": sources,
                        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}, f)
+        os.replace(rec_path + ".part", rec_path)
     finally:
         try:
-            os.remove(tmp.name)
+            os.remove(tmp_name)
         except Exception:
             pass
     # the phone copies of the new models, made here in the background
@@ -2254,24 +2295,27 @@ async def put_exterior(request: Request, x_viewer_token: str = Header(default=""
     if not root:
         raise HTTPException(status_code=404, detail="No such project")
     body = await request.json() or {}
-    rel = str(body.get("file") or "").replace("\\", "/")
-    if not re.match(r"^fragments/[^/]+\.lwkm$", rel):
-        raise HTTPException(status_code=400, detail="file must be fragments/<name>.lwkm")
-    ext = body.get("ext") or []
-    if not isinstance(ext, list) or len(ext) > 5_000_000:
-        raise HTTPException(status_code=400, detail="ext must be a list of element numbers")
-    ext = [int(e) for e in ext if isinstance(e, int) and e >= 0]
-    out = os.path.join(root, *rel[:-5].split("/")) + ".ext.json"
-    if not os.path.isfile(os.path.join(root, *rel.split("/"))):
-        raise HTTPException(status_code=404, detail="No such model file")
-    tmp = out + ".part"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({"sig": str(body.get("sig") or ""), "ext": ext,
-                   "made": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                   "views": int(body.get("views") or 0),
-                   "rule": int(body.get("rule") or 1)}, f, separators=(",", ":"))
-    os.replace(tmp, out)
-    return {"ok": True, "count": len(ext)}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        rel = str(body.get("file") or "").replace("\\", "/")
+        if not re.match(r"^fragments/[^/]+\.lwkm$", rel):
+            raise HTTPException(status_code=400, detail="file must be fragments/<name>.lwkm")
+        ext = body.get("ext") or []
+        if not isinstance(ext, list) or len(ext) > 5_000_000:
+            raise HTTPException(status_code=400, detail="ext must be a list of element numbers")
+        ext = [int(e) for e in ext if isinstance(e, int) and e >= 0]
+        out = os.path.join(root, *rel[:-5].split("/")) + ".ext.json"
+        if not os.path.isfile(os.path.join(root, *rel.split("/"))):
+            raise HTTPException(status_code=404, detail="No such model file")
+        tmp = out + ".part"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"sig": str(body.get("sig") or ""), "ext": ext,
+                       "made": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                       "views": int(body.get("views") or 0),
+                       "rule": int(body.get("rule") or 1)}, f, separators=(",", ":"))
+        os.replace(tmp, out)
+        return {"ok": True, "count": len(ext)}
+    return await run_in_threadpool(_rest)
 
 
 # ------------------------------------------------ the phone's model file
@@ -2301,7 +2345,7 @@ def _mobile_paths(root, rel, rule):
 
 
 @app.get("/api/lwkm-mobile")
-async def check_lwkm_mobile(request: Request, file: str = "", project: str = "", rule: int = 1):
+def check_lwkm_mobile(request: Request, file: str = "", project: str = "", rule: int = 1):
     pid = "default" if CFG["single"] else project
     require_project(request, pid, "viewer")
     root = project_dir(pid)
@@ -2327,20 +2371,23 @@ async def put_lwkm_mobile(request: Request, file: str = "", rule: int = 1,
     if not os.path.isfile(src):
         raise HTTPException(status_code=404, detail="No such model file")
     data = await request.body()
-    if len(data) < 16 or len(data) > 400 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Bad size")
-    # the older copies of this model go
-    stem = os.path.basename(src)[:-5]
-    for side in os.listdir(os.path.dirname(src)):
-        if re.match(re.escape(stem) + r"\.mobile\d*\.lwkm$", side) and side != os.path.basename(out):
-            try:
-                os.remove(os.path.join(os.path.dirname(src), side))
-            except OSError:
-                pass
-    with open(out + ".part", "wb") as f:
-        f.write(data)
-    os.replace(out + ".part", out)
-    return {"ok": True, "bytes": len(data)}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        if len(data) < 16 or len(data) > 400 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Bad size")
+        # the older copies of this model go
+        stem = os.path.basename(src)[:-5]
+        for side in os.listdir(os.path.dirname(src)):
+            if re.match(re.escape(stem) + r"\.mobile\d*\.lwkm$", side) and side != os.path.basename(out):
+                try:
+                    os.remove(os.path.join(os.path.dirname(src), side))
+                except OSError:
+                    pass
+        with open(out + ".part", "wb") as f:
+            f.write(data)
+        os.replace(out + ".part", out)
+        return {"ok": True, "bytes": len(data)}
+    return await run_in_threadpool(_rest)
 
 
 # ------------------------------------------------------- sheet previews
@@ -2372,7 +2419,7 @@ def _preview_path(root, rel, page=1, ext="jpg"):
 
 
 @app.get("/api/sheet-preview")
-async def get_sheet_preview(request: Request, pdf: str = "", project: str = "", page: int = 1,
+def get_sheet_preview(request: Request, pdf: str = "", project: str = "", page: int = 1,
                             check: int = 0):
     pid = "default" if CFG["single"] else project
     require_project(request, pid, "viewer")
@@ -2400,21 +2447,24 @@ async def put_sheet_preview(request: Request, pdf: str = "", page: int = 1,
     if not out:
         raise HTTPException(status_code=400, detail="pdf must be sheets/<name>.pdf")
     data = await request.body()
-    if len(data) < 100 or len(data) > 12 * 1024 * 1024 or data[:2] != b"\xff\xd8":
-        raise HTTPException(status_code=400, detail="Expected a JPEG")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    # older pictures of the same sheet go
-    stem = os.path.basename(out).rsplit(".", 2)[0]
-    for old in os.listdir(os.path.dirname(out)):
-        if old.startswith(stem + ".") and old.endswith(".jpg") and old != os.path.basename(out):
-            try:
-                os.remove(os.path.join(os.path.dirname(out), old))
-            except OSError:
-                pass
-    with open(out + ".part", "wb") as f:
-        f.write(data)
-    os.replace(out + ".part", out)
-    return {"ok": True, "bytes": len(data)}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        if len(data) < 100 or len(data) > 12 * 1024 * 1024 or data[:2] != b"\xff\xd8":
+            raise HTTPException(status_code=400, detail="Expected a JPEG")
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        # older pictures of the same sheet go
+        stem = os.path.basename(out).rsplit(".", 2)[0]
+        for old in os.listdir(os.path.dirname(out)):
+            if old.startswith(stem + ".") and old.endswith(".jpg") and old != os.path.basename(out):
+                try:
+                    os.remove(os.path.join(os.path.dirname(out), old))
+                except OSError:
+                    pass
+        with open(out + ".part", "wb") as f:
+            f.write(data)
+        os.replace(out + ".part", out)
+        return {"ok": True, "bytes": len(data)}
+    return await run_in_threadpool(_rest)
 
 
 # ---------------------------------------------------- sheets as picture tiles
@@ -2438,36 +2488,12 @@ import zlib as _zlib
 import struct as _struct
 import collections as _collections
 
-SHEET_TILE = 512
-SHEET_TILE_MAX_PX = 110e6        # the sharpest level, in pixels (an A0 at ~250 dpi)
-SHEET_TILE_MAX_DPI = 300
-SHEET_TILE_VERSION = 1
 SHEETQ = {"q": _collections.deque(), "pending": set(), "thread": None, "cv": threading.Condition(),
           "working": None, "log": []}
 
 
-def _png(w, h, rows):
-    raw = b"".join(b"\x00" + r for r in rows)
-
-    def chunk(t, d):
-        c = _struct.pack(">I", len(d)) + t + d
-        return c + _struct.pack(">I", _zlib.crc32(t + d) & 0xffffffff)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", _struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
-            + chunk(b"IDAT", _zlib.compress(raw, 6)) + chunk(b"IEND", b""))
-
-
-def _tile_encoder():
-    try:
-        from PIL import Image  # noqa
-        import io
-
-        def enc(w, h, data):
-            buf = io.BytesIO()
-            Image.frombytes("RGB", (w, h), data).save(buf, "WEBP", quality=85, method=4)
-            return buf.getvalue()
-        return "webp", enc
-    except Exception:
-        return "png", None
+from sheettiles import SHEET_TILE, SHEET_TILE_MAX_PX, SHEET_TILE_MAX_DPI, SHEET_TILE_VERSION  # noqa: E402,F401
+import procjob  # noqa: E402
 
 
 def _tiles_paths(root, rel, page):
@@ -2477,95 +2503,11 @@ def _tiles_paths(root, rel, page):
     return pdf, base + ".json", base + ".stb"
 
 
-def _page_box(src, page):
-    out = subprocess.run(["pdfinfo", "-f", str(page), "-l", str(page), "-box", src],
-                         capture_output=True, text=True, timeout=120).stdout
-    m = re.search(r"Page\s+%d\s+CropBox:\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)" % page, out)
-    if not m:
-        m = re.search(r"Page\s+%d\s+MediaBox:\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)" % page, out)
-    if not m:
-        raise RuntimeError("pdfinfo gave no page size")
-    x0, y0, x1, y1 = (float(v) for v in m.groups())
-    r = re.search(r"Page\s+%d\s+rot:\s+(\d+)" % page, out)
-    rot = int(r.group(1)) % 360 if r else 0
-    w, h = abs(x1 - x0), abs(y1 - y0)
-    if rot in (90, 270):
-        w, h = h, w
-    return w, h
-
-
 def make_sheet_tiles(src, page, meta_path, bin_path):
-    import tempfile
-    t0 = time.time()
-    w_pt, h_pt = _page_box(src, page)
-    area_in = max(1e-6, (w_pt / 72.0) * (h_pt / 72.0))
-    top = min(SHEET_TILE_MAX_DPI, _math.sqrt(SHEET_TILE_MAX_PX / area_in))
-    dpis, d = [], top
-    while True:
-        dpis.append(d)
-        if max(w_pt, h_pt) / 72.0 * d <= 1600 or len(dpis) >= 7:
-            break
-        d /= 2.0
-    dpis.reverse()
-    fmt, enc = _tile_encoder()
-    T = SHEET_TILE
-    levels, offset, blanks, count = [], 0, 0, 0
-    with tempfile.TemporaryDirectory() as wd, open(bin_path + ".part", "wb") as out:
-        for dpi in dpis:
-            base = os.path.join(wd, "lv")
-            subprocess.run(["pdftoppm", "-f", str(page), "-l", str(page), "-r", "%.4f" % dpi,
-                            "-cropbox", "-singlefile", src, base],
-                           capture_output=True, timeout=3600, check=True)
-            with open(base + ".ppm", "rb") as f:
-                head = []
-                while len(head) < 4:
-                    line = f.readline()
-                    if not line:
-                        raise RuntimeError("short picture from pdftoppm")
-                    if line.startswith(b"#"):
-                        continue
-                    head += line.split()
-                if head[0] != b"P6":
-                    raise RuntimeError("unexpected picture from pdftoppm")
-                W, H = int(head[1]), int(head[2])
-                nx, ny = (W + T - 1) // T, (H + T - 1) // T
-                idx = []
-                for ty in range(ny):
-                    rn = min(T, H - ty * T)
-                    strip = f.read(rn * W * 3)
-                    for tx in range(nx):
-                        cw = min(T, W - tx * T)
-                        a = tx * T * 3
-                        rows = [strip[r * W * 3 + a: r * W * 3 + a + cw * 3] for r in range(rn)]
-                        tile = b"".join(rows)
-                        if not tile.strip(b"\xff"):
-                            idx.append(0)            # all white: nothing to fetch
-                            blanks += 1
-                            continue
-                        data = enc(cw, rn, tile) if enc else _png(cw, rn, rows)
-                        out.write(data)
-                        idx.append([offset, len(data)])
-                        offset += len(data)
-                        count += 1
-            os.remove(base + ".ppm")
-            levels.append({"dpi": round(dpi, 4), "px": [W, H], "nx": nx, "ny": ny, "tiles": idx})
-    os.replace(bin_path + ".part", bin_path)
-    meta = {"v": SHEET_TILE_VERSION, "w": w_pt, "h": h_pt, "tile": T, "fmt": fmt,
-            "bin": os.path.basename(bin_path), "bytes": offset, "pdf_bytes": os.path.getsize(src),
-            "levels": levels, "made_s": round(time.time() - t0, 1)}
-    with open(meta_path + ".part", "w", encoding="utf-8") as fm:
-        json.dump(meta, fm, separators=(",", ":"))
-    os.replace(meta_path + ".part", meta_path)
-    # the pictures of earlier versions of this sheet go
-    stem = os.path.basename(meta_path).rsplit(".", 4)[0]
-    d = os.path.dirname(meta_path)
-    for old in os.listdir(d):
-        if old.startswith(stem + ".") and ".stiles." in old and old not in (os.path.basename(meta_path), os.path.basename(bin_path)):
-            try:
-                os.remove(os.path.join(d, old))
-            except OSError:
-                pass
-    return count, blanks, offset, time.time() - t0
+    """sheettiles.make_sheet_tiles in its own process, at lower priority
+    (in this one if that cannot start)."""
+    r = procjob.run("sheettiles", "make_sheet_tiles", [src, page, meta_path, bin_path], timeout=3 * 3600)
+    return tuple(r)
 
 
 def sheet_words(src, page):
@@ -2705,7 +2647,7 @@ def queue_all_sheet_tiles(root, rels):
 
 
 @app.get("/api/sheet-tiles")
-async def get_sheet_tiles(request: Request, pdf: str = "", project: str = "", page: int = 1):
+def get_sheet_tiles(request: Request, pdf: str = "", project: str = "", page: int = 1):
     pid = "default" if CFG["single"] else project
     require_project(request, pid, "viewer")
     root = project_dir(pid)
@@ -2735,7 +2677,7 @@ async def get_sheet_tiles(request: Request, pdf: str = "", project: str = "", pa
 # to the pictures (_previews/<pdf>.p<page>.<size>-<time>.txt.json).
 
 @app.get("/api/sheet-text")
-async def get_sheet_text(request: Request, pdf: str = "", project: str = "", page: int = 1):
+def get_sheet_text(request: Request, pdf: str = "", project: str = "", page: int = 1):
     pid = "default" if CFG["single"] else project
     require_project(request, pid, "viewer")
     root = project_dir(pid)
@@ -2760,34 +2702,37 @@ async def put_sheet_text(request: Request, pdf: str = "", page: int = 1,
     if not out:
         raise HTTPException(status_code=400, detail="pdf must be sheets/<name>.pdf")
     data = await request.body()
-    if len(data) > 8 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Too large")
-    try:
-        body = json.loads(data.decode("utf-8"))
-        text = str(body.get("text") or "")
-    except Exception:
-        raise HTTPException(status_code=400, detail="Expected {text}")
-    try:
-        with open(out, encoding="utf-8") as f:
-            had = json.load(f)
-        if had.get("ocr") and len(text.strip()) < len((had.get("text") or "").strip()):
-            return {"ok": True, "kept": "ocr"}      # the server's reading of a scan stays
-        if had.get("words"):
-            return {"ok": True, "kept": "server"}   # read here, with where each word is
-    except (OSError, ValueError):
-        pass
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    stem = os.path.basename(out).rsplit(".", 3)[0]
-    for old in os.listdir(os.path.dirname(out)):
-        if old.startswith(stem + ".") and old.endswith(".txt.json") and old != os.path.basename(out):
-            try:
-                os.remove(os.path.join(os.path.dirname(out), old))
-            except OSError:
-                pass
-    with open(out + ".part", "w", encoding="utf-8") as f:
-        json.dump({"text": text}, f, ensure_ascii=False)
-    os.replace(out + ".part", out)
-    return {"ok": True, "chars": len(text)}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        if len(data) > 8 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Too large")
+        try:
+            body = json.loads(data.decode("utf-8"))
+            text = str(body.get("text") or "")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Expected {text}")
+        try:
+            with open(out, encoding="utf-8") as f:
+                had = json.load(f)
+            if had.get("ocr") and len(text.strip()) < len((had.get("text") or "").strip()):
+                return {"ok": True, "kept": "ocr"}      # the server's reading of a scan stays
+            if had.get("words"):
+                return {"ok": True, "kept": "server"}   # read here, with where each word is
+        except (OSError, ValueError):
+            pass
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        stem = os.path.basename(out).rsplit(".", 3)[0]
+        for old in os.listdir(os.path.dirname(out)):
+            if old.startswith(stem + ".") and old.endswith(".txt.json") and old != os.path.basename(out):
+                try:
+                    os.remove(os.path.join(os.path.dirname(out), old))
+                except OSError:
+                    pass
+        with open(out + ".part", "w", encoding="utf-8") as f:
+            json.dump({"text": text}, f, ensure_ascii=False)
+        os.replace(out + ".part", out)
+        return {"ok": True, "chars": len(text)}
+    return await run_in_threadpool(_rest)
 
 
 # ------------------------------------------------------- issue templates
@@ -2800,7 +2745,7 @@ TEMPLATES = "issue_templates.json"
 
 
 @app.get("/api/templates")
-async def get_templates(request: Request, x_viewer_token: str = Header(default=""),
+def get_templates(request: Request, x_viewer_token: str = Header(default=""),
                         x_project: str = Header(default="")):
     require_project(request, x_project, "viewer", x_viewer_token)
     root = project_dir("default" if CFG["single"] else x_project)
@@ -2916,7 +2861,7 @@ def digest_card(pid, d, base):
 
 
 @app.get("/api/digest")
-async def get_digest(request: Request, days: int = 7, x_viewer_token: str = Header(default=""),
+def get_digest(request: Request, days: int = 7, x_viewer_token: str = Header(default=""),
                      x_project: str = Header(default="")):
     require_project(request, x_project, "viewer", x_viewer_token)
     d = digest_for("default" if CFG["single"] else x_project, max(1, min(90, days)))
@@ -2925,7 +2870,7 @@ async def get_digest(request: Request, days: int = 7, x_viewer_token: str = Head
 
 
 @app.post("/api/digest/send")
-async def send_digest(request: Request, x_viewer_token: str = Header(default=""),
+def send_digest(request: Request, x_viewer_token: str = Header(default=""),
                       x_project: str = Header(default="")):
     require_project(request, x_project, "member", x_viewer_token)
     if not accounts_on():
@@ -3163,7 +3108,7 @@ _prep_asked = {}
 
 
 @app.post("/api/prepare")
-async def prepare_for_phones(request: Request, project: str = "", x_viewer_token: str = Header(default="")):
+def prepare_for_phones(request: Request, project: str = "", x_viewer_token: str = Header(default="")):
     """A phone or tablet found a model not prepared for it (no tiles yet):
     any member may ask for the background work, at most every ten minutes
     per project. The work skips what is already up to date."""
@@ -3183,7 +3128,7 @@ async def prepare_for_phones(request: Request, project: str = "", x_viewer_token
 
 
 @app.post("/api/admin/projects/{pid}/phone-copies")
-async def make_phone_copies(request: Request, pid: str, force: int = 0,
+def make_phone_copies(request: Request, pid: str, force: int = 0,
                             x_viewer_token: str = Header(default="")):
     require_project(request, pid, "admin", x_viewer_token)
     root = project_dir(pid)
@@ -3203,7 +3148,7 @@ async def make_phone_copies(request: Request, pid: str, force: int = 0,
 
 
 @app.get("/api/admin/background")
-async def background_log(request: Request, x_viewer_token: str = Header(default="")):
+def background_log(request: Request, x_viewer_token: str = Header(default="")):
     """What the background worker did lately (for the Admin page)."""
     if accounts_on():
         w = who(request, x_viewer_token)
@@ -3393,7 +3338,7 @@ def check_layer_edit(pid, w, role, prev, item):
 
 
 @app.get("/api/layers")
-async def get_layers(request: Request, x_viewer_token: str = Header(default=""),
+def get_layers(request: Request, x_viewer_token: str = Header(default=""),
                      x_project: str = Header(default="")):
     w, role = require_project(request, x_project, "viewer", x_viewer_token)
     st = layer_settings(x_project)
@@ -3449,22 +3394,25 @@ async def put_snapshot(request: Request,
     issues before saving began to fail silently.
     """
     body = await request.json()
-    url = (body or {}).get("data_url") or ""
-    m = re.match(r"^data:image/(png|jpe?g);base64,(.+)$", url, re.I)
-    if not m:
-        raise HTTPException(status_code=400,
-                            detail="Expected a png or jpeg data URL")
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        url = (body or {}).get("data_url") or ""
+        m = re.match(r"^data:image/(png|jpe?g);base64,(.+)$", url, re.I)
+        if not m:
+            raise HTTPException(status_code=400,
+                                detail="Expected a png or jpeg data URL")
 
-    ext = "png" if m.group(1).lower() == "png" else "jpg"
-    raw = base64.b64decode(m.group(2))
-    name = "%s.%s" % (uuid.uuid4().hex, ext)
-    with open(os.path.join(CFG["snapshots"], name), "wb") as f:
-        f.write(raw)
-    return {"path": "/snapshots/" + name, "bytes": len(raw)}
+        ext = "png" if m.group(1).lower() == "png" else "jpg"
+        raw = base64.b64decode(m.group(2))
+        name = "%s.%s" % (uuid.uuid4().hex, ext)
+        with open(os.path.join(CFG["snapshots"], name), "wb") as f:
+            f.write(raw)
+        return {"path": "/snapshots/" + name, "bytes": len(raw)}
+    return await run_in_threadpool(_rest)
 
 
 @app.get("/snapshots/{name}")
-async def get_snapshot(name: str, request: Request):
+def get_snapshot(name: str, request: Request):
     require_request(request)
     if not SAFE_NAME.match(name):
         raise HTTPException(status_code=400, detail="Bad name")
@@ -3531,7 +3479,7 @@ def apply_sheet_meta(root, man, role):
 
 
 @app.get("/api/sheet-meta")
-async def get_sheet_meta(request: Request, x_viewer_token: str = Header(default=""),
+def get_sheet_meta(request: Request, x_viewer_token: str = Header(default=""),
                          x_project: str = Header(default="")):
     _, role = require_project(request, x_project, "viewer", x_viewer_token)
     meta = read_sheet_meta(project_root_for(x_project))
@@ -3663,17 +3611,20 @@ async def import_pdf(request: Request, name: str = "drawing.pdf",
     require_project(request, x_project, "member", x_viewer_token)
     root = project_root_for(x_project)
     body = await request.body()
-    if not body.startswith(b"%PDF"):
-        raise HTTPException(status_code=400, detail="That file is not a PDF.")
-    folder = os.path.join(root, "imported")
-    if not os.path.isdir(folder):
-        os.makedirs(folder)
-    stem = SAFE_FILE.sub("_", os.path.splitext(os.path.basename(name))[0])[:60] or "drawing"
-    fname = "%s-%s.pdf" % (stem, uuid.uuid4().hex[:8])
-    with open(os.path.join(folder, fname), "wb") as f:
-        f.write(body)
-    queue_ocr(root, ["imported/" + fname])
-    return {"pdf": "imported/" + fname, "bytes": len(body)}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        if not body.startswith(b"%PDF"):
+            raise HTTPException(status_code=400, detail="That file is not a PDF.")
+        folder = os.path.join(root, "imported")
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        stem = SAFE_FILE.sub("_", os.path.splitext(os.path.basename(name))[0])[:60] or "drawing"
+        fname = "%s-%s.pdf" % (stem, uuid.uuid4().hex[:8])
+        with open(os.path.join(folder, fname), "wb") as f:
+            f.write(body)
+        queue_ocr(root, ["imported/" + fname])
+        return {"pdf": "imported/" + fname, "bytes": len(body)}
+    return await run_in_threadpool(_rest)
 
 
 @app.post("/api/import/sheets")
@@ -3682,11 +3633,14 @@ async def import_sheets(request: Request, x_viewer_token: str = Header(default="
     w, _ = require_project(request, x_project, "member", x_viewer_token)
     root = project_root_for(x_project)
     body = await request.json() or {}
-    incoming = body.get("sheets") or []
-    # The set the drawings go in: their own entry in the Sheets page's
-    # drop-down, apart from the sheets published from Revit.
-    set_name = clean_set_name(body.get("set")) or "Uploaded PDFs"
-    return {"added": add_imported(root, set_name, incoming, by=w.name or "")}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        incoming = body.get("sheets") or []
+        # The set the drawings go in: their own entry in the Sheets page's
+        # drop-down, apart from the sheets published from Revit.
+        set_name = clean_set_name(body.get("set")) or "Uploaded PDFs"
+        return {"added": add_imported(root, set_name, incoming, by=w.name or "")}
+    return await run_in_threadpool(_rest)
 
 
 def add_imported(root, set_name, incoming, by=""):
@@ -3723,7 +3677,7 @@ def add_imported(root, set_name, incoming, by=""):
 
 
 @app.delete("/api/import/sheets/{number}")
-async def remove_imported(request: Request, number: str,
+def remove_imported(request: Request, number: str,
                           x_viewer_token: str = Header(default=""),
                           x_project: str = Header(default="")):
     require_project(request, x_project, "member", x_viewer_token)
@@ -3744,16 +3698,19 @@ async def remove_imported_many(request: Request, x_viewer_token: str = Header(de
     require_project(request, x_project, "member", x_viewer_token)
     root = project_root_for(x_project)
     body = await request.json() or {}
-    numbers = {str(n) for n in (body.get("numbers") or []) if n is not None}
-    have = read_imported(root)
-    keep = [s for s in have if s.get("number") not in numbers]
-    write_imported(root, keep)
-    drop_unused_pdfs(root, have, keep)
-    return {"removed": len(have) - len(keep)}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        numbers = {str(n) for n in (body.get("numbers") or []) if n is not None}
+        have = read_imported(root)
+        keep = [s for s in have if s.get("number") not in numbers]
+        write_imported(root, keep)
+        drop_unused_pdfs(root, have, keep)
+        return {"removed": len(have) - len(keep)}
+    return await run_in_threadpool(_rest)
 
 
 @app.get("/api/import/sets")
-async def imported_sets(request: Request, x_viewer_token: str = Header(default=""),
+def imported_sets(request: Request, x_viewer_token: str = Header(default=""),
                         x_project: str = Header(default="")):
     """The sets of imported sheets, archived ones too: [{set, sheets, archived}]."""
     require_project(request, x_project, "viewer", x_viewer_token)
@@ -3782,23 +3739,26 @@ async def _set_body(request, x_viewer_token, x_project):
 async def rename_set(request: Request, x_viewer_token: str = Header(default=""),
                      x_project: str = Header(default="")):
     root, body, name, have = await _set_body(request, x_viewer_token, x_project)
-    to = clean_set_name(body.get("to"))
-    if not to:
-        raise HTTPException(status_code=400, detail="Give the set a name.")
-    if to != name and any((s.get("set") or "Uploaded PDFs") == to for s in have):
-        raise HTTPException(status_code=409, detail="There is already a set called %s." % to)
-    n = 0
-    for s in have:
-        if (s.get("set") or "Uploaded PDFs") == name:
-            s["set"] = to
-            n += 1
-    write_imported(root, have)
-    try:
-        import files as _files
-        _files.kept_rename(root, name, to)        # the files kept in Folders stay where they are
-    except Exception:
-        pass
-    return {"set": to, "sheets": n}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        to = clean_set_name(body.get("to"))
+        if not to:
+            raise HTTPException(status_code=400, detail="Give the set a name.")
+        if to != name and any((s.get("set") or "Uploaded PDFs") == to for s in have):
+            raise HTTPException(status_code=409, detail="There is already a set called %s." % to)
+        n = 0
+        for s in have:
+            if (s.get("set") or "Uploaded PDFs") == name:
+                s["set"] = to
+                n += 1
+        write_imported(root, have)
+        try:
+            import files as _files
+            _files.kept_rename(root, name, to)        # the files kept in Folders stay where they are
+        except Exception:
+            pass
+        return {"set": to, "sheets": n}
+    return await run_in_threadpool(_rest)
 
 
 @app.post("/api/import/sets/archive")
@@ -3807,17 +3767,20 @@ async def archive_set(request: Request, x_viewer_token: str = Header(default="")
     """Archive (or bring back) a set: its sheets leave the Sheets page and
     Folders, but nothing is deleted - PDFs, markups and issues stay."""
     root, body, name, have = await _set_body(request, x_viewer_token, x_project)
-    on = body.get("archived", True) is not False
-    n = 0
-    for s in have:
-        if (s.get("set") or "Uploaded PDFs") == name:
-            if on:
-                s["archived"] = True
-            else:
-                s.pop("archived", None)
-            n += 1
-    write_imported(root, have)
-    return {"set": name, "archived": on, "sheets": n}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        on = body.get("archived", True) is not False
+        n = 0
+        for s in have:
+            if (s.get("set") or "Uploaded PDFs") == name:
+                if on:
+                    s["archived"] = True
+                else:
+                    s.pop("archived", None)
+                n += 1
+        write_imported(root, have)
+        return {"set": name, "archived": on, "sheets": n}
+    return await run_in_threadpool(_rest)
 
 
 @app.post("/api/import/sets/delete")
@@ -3826,15 +3789,18 @@ async def delete_set(request: Request, x_viewer_token: str = Header(default=""),
     """Delete a set: its sheets and their PDFs. Markups and issues made on
     them stay in the project."""
     root, body, name, have = await _set_body(request, x_viewer_token, x_project)
-    keep = [s for s in have if (s.get("set") or "Uploaded PDFs") != name]
-    write_imported(root, keep)
-    drop_unused_pdfs(root, have, keep)
-    try:
-        import files as _files
-        _files.kept_forget(root, name)            # (its files in Folders: kept-delete, when chosen)
-    except Exception:
-        pass
-    return {"set": name, "removed": len(have) - len(keep)}
+    # the rest on a thread: the server keeps answering everyone meanwhile
+    def _rest():
+        keep = [s for s in have if (s.get("set") or "Uploaded PDFs") != name]
+        write_imported(root, keep)
+        drop_unused_pdfs(root, have, keep)
+        try:
+            import files as _files
+            _files.kept_forget(root, name)            # (its files in Folders: kept-delete, when chosen)
+        except Exception:
+            pass
+        return {"set": name, "removed": len(have) - len(keep)}
+    return await run_in_threadpool(_rest)
 
 
 @app.api_route("/data/{path:path}", methods=["GET", "HEAD"])
@@ -4167,6 +4133,11 @@ def main():
         assets.register(app, sys.modules[__name__])
     else:
         print("assets  : plain (--plain-assets)")
+
+    # How fast it answers (perf.py, Admin > Speed): outermost of all, so it
+    # times the whole answer as sent
+    import perf
+    perf.register(app, sys.modules[__name__])
 
     # Mounted last so the API routes above take precedence over index.html.
     app.mount("/", StaticFiles(directory=VIEWER_DIR, html=True), name="viewer")

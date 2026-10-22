@@ -39,6 +39,7 @@ import uuid
 from urllib.parse import urlencode
 
 from fastapi import HTTPException, Request, Header
+from starlette.concurrency import run_in_threadpool
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS counter (
@@ -974,7 +975,7 @@ def register(app, core):
     # ------------------------------------------------ people
 
     @app.get("/api/people")
-    async def people(request: Request, x_viewer_token: str = Header(default="")):
+    def people(request: Request, x_viewer_token: str = Header(default="")):
         """The organisation, for pickers and the People page. Contact
         details only - never roles on other projects or anything private."""
         w = core.who(request, x_viewer_token)
@@ -993,7 +994,7 @@ def register(app, core):
     # ------------------------------------------------ lists
 
     @app.get("/api/task-lists")
-    async def lists_get(request: Request, x_viewer_token: str = Header(default="")):
+    def lists_get(request: Request, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         today = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 8 * 3600))
         with db() as d:
@@ -1077,7 +1078,7 @@ def register(app, core):
         return {"ok": True}
 
     @app.get("/api/admin/task-lists")
-    async def lists_admin(request: Request, x_viewer_token: str = Header(default="")):
+    def lists_admin(request: Request, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         if not w.site_admin:
             raise HTTPException(status_code=403, detail="Site admins only")
@@ -1214,7 +1215,7 @@ def register(app, core):
     # ------------------------------------------------ tasks
 
     @app.get("/api/tasks")
-    async def tasks_get(request: Request, list: str = "", since: int = 0,
+    def tasks_get(request: Request, list: str = "", since: int = 0,
                         x_viewer_token: str = Header(default="")):
         """Everything in a list changed after `since` (0: all of it)."""
         w = core.who(request, x_viewer_token)
@@ -1553,7 +1554,7 @@ def register(app, core):
         return {"done": done, "skipped": skipped}
 
     @app.get("/api/tasks/{tid}")
-    async def task_one(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+    def task_one(request: Request, tid: str, x_viewer_token: str = Header(default="")):
         """One task with its comments and history, for the detail panel."""
         w = core.who(request, x_viewer_token)
         with db() as d:
@@ -1722,7 +1723,7 @@ def register(app, core):
         return {"tasks": out[:2000], "lists": {k: v[0]["title"] for k, v in lists.items()}}
 
     @app.get("/api/tasks-by-issue")
-    async def tasks_by_issue(request: Request, issue: str = "", project: str = "",
+    def tasks_by_issue(request: Request, issue: str = "", project: str = "",
                              x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         """The tasks pointing at one issue - for the issue window."""
         pid = project or x_project
@@ -1753,7 +1754,7 @@ def register(app, core):
             return visible_lists(d, w)
 
     @app.get("/api/task-activity")
-    async def task_activity(request: Request, list: str = "", limit: int = 200, before: int = 0,
+    def task_activity(request: Request, list: str = "", limit: int = 200, before: int = 0,
                             x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
@@ -2101,32 +2102,35 @@ def register(app, core):
         """The body is the picture (JPG, PNG, WebP or GIF, up to 8 MB)."""
         w = core.who(request, x_viewer_token)
         raw = await request.body()
-        if len(raw) > 8 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="A picture up to 8 MB")
-        ext = next((e for sig, e in IMG.items() if raw.startswith(sig)), None)
-        if not ext or (ext == "webp" and raw[8:12] != b"WEBP"):
-            raise HTTPException(status_code=400, detail="A JPG, PNG, WebP or GIF picture please")
-        with db() as d:
-            r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
-            if not r:
-                raise HTTPException(status_code=404, detail="No such project")
-            if not reg_can_edit(w, r):
-                raise HTTPException(status_code=403, detail="Only the project's owners or admins can change its picture")
-            folder = THUMBS()
-            if not os.path.isdir(folder):
-                os.makedirs(folder)
-            old = reg_thumb(r)
-            name = "%s-%s.%s" % (pid, uuid.uuid4().hex[:8], ext)
-            with open(os.path.join(folder, name), "wb") as f:
-                f.write(raw)
-            d.execute("UPDATE projects SET thumb = ?, rev = ? WHERE id = ?", (name, next_rev(d), pid))
-            row = d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
-        if old and os.path.basename(old) == old:
-            try:
-                os.remove(os.path.join(folder, old))
-            except OSError:
-                pass
-        return reg_row(row)
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            if len(raw) > 8 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="A picture up to 8 MB")
+            ext = next((e for sig, e in IMG.items() if raw.startswith(sig)), None)
+            if not ext or (ext == "webp" and raw[8:12] != b"WEBP"):
+                raise HTTPException(status_code=400, detail="A JPG, PNG, WebP or GIF picture please")
+            with db() as d:
+                r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
+                if not r:
+                    raise HTTPException(status_code=404, detail="No such project")
+                if not reg_can_edit(w, r):
+                    raise HTTPException(status_code=403, detail="Only the project's owners or admins can change its picture")
+                folder = THUMBS()
+                if not os.path.isdir(folder):
+                    os.makedirs(folder)
+                old = reg_thumb(r)
+                name = "%s-%s.%s" % (pid, uuid.uuid4().hex[:8], ext)
+                with open(os.path.join(folder, name), "wb") as f:
+                    f.write(raw)
+                d.execute("UPDATE projects SET thumb = ?, rev = ? WHERE id = ?", (name, next_rev(d), pid))
+                row = d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
+            if old and os.path.basename(old) == old:
+                try:
+                    os.remove(os.path.join(folder, old))
+                except OSError:
+                    pass
+            return reg_row(row)
+        return await run_in_threadpool(_rest)
 
     @app.delete("/api/registry/{pid}/thumb")
     async def reg_thumb_del(request: Request, pid: str, x_viewer_token: str = Header(default="")):
@@ -2147,7 +2151,7 @@ def register(app, core):
         return {"ok": True}
 
     @app.get("/api/registry/{pid}/thumb")
-    async def reg_thumb_get(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+    def reg_thumb_get(request: Request, pid: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
             r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
@@ -2182,7 +2186,7 @@ def register(app, core):
         return r
 
     @app.get("/api/registry/{rid}/members")
-    async def reg_members_get(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def reg_members_get(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
             r = reg_get(d, rid)
@@ -2503,62 +2507,65 @@ def register(app, core):
         if not reg_can_create(w):
             raise HTTPException(status_code=403, detail="Only project admins and site admins can add projects")
         body = await read_json(request)
-        rows = rows_from(body)
-        if len(rows) < 2:
-            raise HTTPException(status_code=400, detail="Nothing to import")
-        low = [str(h or "").strip().lower() for h in rows[0]]
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            rows = rows_from(body)
+            if len(rows) < 2:
+                raise HTTPException(status_code=400, detail="Nothing to import")
+            low = [str(h or "").strip().lower() for h in rows[0]]
 
-        def col(*names):
-            for n in names:
-                if n in low:
-                    return low.index(n)
-            return None
-        c = {"name": col("project", "project name", "name"), "code": col("code", "project code", "job number"),
-             "owner": col("owner", "owners", "project owner"), "team": col("group", "team"),
-             "folder": col("project folder", "folder", "link", "onedrive", "acc"), "status": col("status"),
-             "viewer": col("viewer", "viewer project")}
-        if c["name"] is None:
-            raise HTTPException(status_code=400, detail="No Project column found")
-        people = matcher()
-        projects = core.list_projects()
-        by, t = person(w, body), now_iso()
-        made = 0
-        with db() as d:
-            rev = next_rev(d)
-            have = dict((r["name"].lower(), r) for r in d.execute("SELECT * FROM projects WHERE deleted = 0"))
-            for i, r in enumerate(rows[1:]):
-                g = lambda k: (r[c[k]] if c[k] is not None and c[k] < len(r) else "")
-                name = clean_text(g("name"), 160)
-                if not name:
-                    continue
-                code, short = split_code(name)
-                code = clean_text(g("code"), 80) or code
-                folder = g("folder")
-                url = getattr(folder, "url", "") or (str(folder) if str(folder).startswith("http") else "")
-                label = str(folder).strip()
-                links = [{"kind": "url", "url": url,
-                          "title": "Project folder" if not label or label.startswith("http") else label}] if url else []
-                # "Viewer": one viewer project, or several ("MOS-S1; MOS-S2")
-                ids = set(p["id"] for p in projects)
-                vs = [v.strip() for v in re.split(r"[,;\n]+", str(g("viewer") or "")) if v.strip() in ids]
-                if not vs:
-                    vs = [p["id"] for p in projects if p["id"].lower() in (short.lower(), code.lower(), name.lower(), str(folder).strip().lower())
-                          or p["title"].lower() in (short.lower(), name.lower())][:1]
-                old = have.get(name.lower())
-                if old and not vs:
-                    vs = viewers_of(old)
-                pid = old["id"] if old else new_id()
-                d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, viewers, links, notes, sort, rev, "
-                          "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,?) "
-                          "ON CONFLICT(id) DO UPDATE SET code=excluded.code, owners=excluded.owners, team=excluded.team, "
-                          "status=excluded.status, viewer=excluded.viewer, viewers=excluded.viewers, "
-                          "links=excluded.links, rev=excluded.rev, updated_by=excluded.updated_by, updated_at=excluded.updated_at",
-                          (pid, code, name, short, json.dumps(people(g("owner"))), clean_text(g("team"), 80),
-                           clean_text(g("status"), 40) or "Active", vs[0] if vs else "", json.dumps(vs),
-                           json.dumps(clean_links(links)), i, rev, by, t, by, t))
-                link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone(), rev)
-                made += 1
-        return {"imported": made, "unmatched": sorted(people.missing)}
+            def col(*names):
+                for n in names:
+                    if n in low:
+                        return low.index(n)
+                return None
+            c = {"name": col("project", "project name", "name"), "code": col("code", "project code", "job number"),
+                 "owner": col("owner", "owners", "project owner"), "team": col("group", "team"),
+                 "folder": col("project folder", "folder", "link", "onedrive", "acc"), "status": col("status"),
+                 "viewer": col("viewer", "viewer project")}
+            if c["name"] is None:
+                raise HTTPException(status_code=400, detail="No Project column found")
+            people = matcher()
+            projects = core.list_projects()
+            by, t = person(w, body), now_iso()
+            made = 0
+            with db() as d:
+                rev = next_rev(d)
+                have = dict((r["name"].lower(), r) for r in d.execute("SELECT * FROM projects WHERE deleted = 0"))
+                for i, r in enumerate(rows[1:]):
+                    g = lambda k: (r[c[k]] if c[k] is not None and c[k] < len(r) else "")
+                    name = clean_text(g("name"), 160)
+                    if not name:
+                        continue
+                    code, short = split_code(name)
+                    code = clean_text(g("code"), 80) or code
+                    folder = g("folder")
+                    url = getattr(folder, "url", "") or (str(folder) if str(folder).startswith("http") else "")
+                    label = str(folder).strip()
+                    links = [{"kind": "url", "url": url,
+                              "title": "Project folder" if not label or label.startswith("http") else label}] if url else []
+                    # "Viewer": one viewer project, or several ("MOS-S1; MOS-S2")
+                    ids = set(p["id"] for p in projects)
+                    vs = [v.strip() for v in re.split(r"[,;\n]+", str(g("viewer") or "")) if v.strip() in ids]
+                    if not vs:
+                        vs = [p["id"] for p in projects if p["id"].lower() in (short.lower(), code.lower(), name.lower(), str(folder).strip().lower())
+                              or p["title"].lower() in (short.lower(), name.lower())][:1]
+                    old = have.get(name.lower())
+                    if old and not vs:
+                        vs = viewers_of(old)
+                    pid = old["id"] if old else new_id()
+                    d.execute("INSERT INTO projects (id, code, name, short, owners, team, status, viewer, viewers, links, notes, sort, rev, "
+                              "created_by, created_at, updated_by, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,?) "
+                              "ON CONFLICT(id) DO UPDATE SET code=excluded.code, owners=excluded.owners, team=excluded.team, "
+                              "status=excluded.status, viewer=excluded.viewer, viewers=excluded.viewers, "
+                              "links=excluded.links, rev=excluded.rev, updated_by=excluded.updated_by, updated_at=excluded.updated_at",
+                              (pid, code, name, short, json.dumps(people(g("owner"))), clean_text(g("team"), 80),
+                               clean_text(g("status"), 40) or "Active", vs[0] if vs else "", json.dumps(vs),
+                               json.dumps(clean_links(links)), i, rev, by, t, by, t))
+                    link_groups(d, d.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone(), rev)
+                    made += 1
+            return {"imported": made, "unmatched": sorted(people.missing)}
+        return await run_in_threadpool(_rest)
 
     @app.post("/api/task-lists/{lid}/groups/{gid}/reg")
     async def group_reg(request: Request, lid: str, gid: str, x_viewer_token: str = Header(default="")):
@@ -2781,10 +2788,13 @@ def register(app, core):
         that task, so the same export can be brought in again."""
         w = core.who(request, x_viewer_token)
         body = await read_json(request)
-        rows = rows_from(body)
-        with db() as d:
-            need_list(d, w, lid, "editor")
-            return do_import(d, w, lid, rows, person(w, body))
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            rows = rows_from(body)
+            with db() as d:
+                need_list(d, w, lid, "editor")
+                return do_import(d, w, lid, rows, person(w, body))
+        return await run_in_threadpool(_rest)
 
     @app.post("/api/task-lists/import")
     async def tasks_import_new(request: Request, x_viewer_token: str = Header(default="")):

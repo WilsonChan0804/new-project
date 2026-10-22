@@ -24,6 +24,7 @@ import json
 import os
 import re
 import shutil
+import collections
 import subprocess
 import sys
 import threading
@@ -32,10 +33,14 @@ import uuid
 import zipfile
 
 from fastapi import HTTPException, Request, Header
+from starlette.concurrency import run_in_threadpool
 
 import cad_dxf
 import cad_pdf
 import cad_render
+import procjob
+
+_Sheet = collections.namedtuple("_Sheet", "name")
 
 _RUN = threading.Semaphore(1)        # one drawing set at a time
 # only what a file name cannot hold is changed (long CAD names with & ( ) - stay)
@@ -227,6 +232,36 @@ def sheet_number(stem, layout):
     return "%s %s" % (stem, layout) if layout.lower() != "model" else stem
 
 
+def render_to_file(path, by_stem, mono, out_pdf):
+    """One drawing's layouts drawn as a PDF (out_pdf): {"sheets": [{name,
+    w, h}], "notes": what was left out}. Plain arguments and result, so it
+    runs in its own process (procjob.py) - drawing a big DWG is minutes of
+    work the server should not do between its answers."""
+    cache = {}
+
+    def xref(p):
+        stem = stem_key(p)
+        q = by_stem.get(stem)
+        if not q:
+            return None
+        if stem not in cache:
+            try:
+                cache[stem] = cad_dxf.read(q)
+            except Exception:
+                cache[stem] = None
+        return cache[stem]
+    notes = {}
+    doc = cad_dxf.read(path)
+    pdf, sheets = cad_render.render(doc, xref=xref, mono=mono, notes=notes)
+    for sh in sheets:
+        pdf.add_page(sh.w, sh.h, sh.content)
+    if sheets:
+        with open(out_pdf, "wb") as fo:
+            fo.write(pdf.bytes())
+    clean_notes = {k: (sorted(v) if isinstance(v, (set, frozenset)) else v) for k, v in notes.items()}
+    return {"sheets": [{"name": sh.name, "w": sh.w, "h": sh.h} for sh in sheets], "notes": clean_notes}
+
+
 def register(app, core):
 
     def job_dir(root, job):
@@ -251,7 +286,7 @@ def register(app, core):
         return j
 
     @app.get("/api/import/cad/tools")
-    async def cad_tools(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def cad_tools(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         core.require_project(request, x_project, "member", x_viewer_token)
         f = cad_pdf.cjk_font()
         return {"oda": bool(find_oda()), "xvfb": bool(shutil.which("xvfb-run")) or not sys.platform.startswith("linux"),
@@ -278,21 +313,24 @@ def register(app, core):
                 if size > 1024 * 1048576:
                     raise HTTPException(status_code=413, detail="Files up to 1 GB")
                 f.write(chunk)
-        if ext == ".zip":
-            try:
-                with zipfile.ZipFile(dest) as z:
-                    for info in z.infolist():
-                        inner = clean(info.filename)
-                        if info.is_dir() or os.path.splitext(inner)[1].lower() not in (".dwg", ".dxf"):
-                            continue
-                        with z.open(info) as fi, open(os.path.join(src, inner), "wb") as fo:
-                            shutil.copyfileobj(fi, fo)
-            except zipfile.BadZipFile:
-                raise HTTPException(status_code=400, detail="%s is not a readable .zip" % nm)
-            os.remove(dest)
-        files_ = list_src(src)
-        write_job(d, status="uploading", files=files_)
-        return {"job": job, "files": files_}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            if ext == ".zip":
+                try:
+                    with zipfile.ZipFile(dest) as z:
+                        for info in z.infolist():
+                            inner = clean(info.filename)
+                            if info.is_dir() or os.path.splitext(inner)[1].lower() not in (".dwg", ".dxf"):
+                                continue
+                            with z.open(info) as fi, open(os.path.join(src, inner), "wb") as fo:
+                                shutil.copyfileobj(fi, fo)
+                except zipfile.BadZipFile:
+                    raise HTTPException(status_code=400, detail="%s is not a readable .zip" % nm)
+                os.remove(dest)
+            files_ = list_src(src)
+            write_job(d, status="uploading", files=files_)
+            return {"job": job, "files": files_}
+        return await run_in_threadpool(_rest)
 
     def list_src(src):
         return [{"name": f, "mb": round(os.path.getsize(os.path.join(src, f)) / 1048576.0, 1)}
@@ -305,21 +343,24 @@ def register(app, core):
         w, _ = core.require_project(request, x_project, "member", x_viewer_token)
         root = core.project_root_for(x_project)
         body = await request.json() or {}
-        import files
-        reg = str(body.get("reg") or "")
-        froot = files.can_open(core, w, reg)
-        job = body.get("job") or uuid.uuid4().hex[:12]
-        d = job_dir(root, job)
-        src = os.path.join(d, "src")
-        os.makedirs(src, exist_ok=True)
-        for p in body.get("paths") or []:
-            full = files.inside(froot, files.clean_rel(p))
-            if not os.path.isfile(full) or os.path.splitext(full)[1].lower() not in (".dwg", ".dxf"):
-                raise HTTPException(status_code=400, detail="%s: not a DWG or DXF file in Folders" % p)
-            shutil.copyfile(full, os.path.join(src, clean(os.path.basename(full))))
-        files_ = list_src(src)
-        write_job(d, status="uploading", files=files_)
-        return {"job": job, "files": files_}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            import files
+            reg = str(body.get("reg") or "")
+            froot = files.can_open(core, w, reg)
+            job = body.get("job") or uuid.uuid4().hex[:12]
+            d = job_dir(root, job)
+            src = os.path.join(d, "src")
+            os.makedirs(src, exist_ok=True)
+            for p in body.get("paths") or []:
+                full = files.inside(froot, files.clean_rel(p))
+                if not os.path.isfile(full) or os.path.splitext(full)[1].lower() not in (".dwg", ".dxf"):
+                    raise HTTPException(status_code=400, detail="%s: not a DWG or DXF file in Folders" % p)
+                shutil.copyfile(full, os.path.join(src, clean(os.path.basename(full))))
+            files_ = list_src(src)
+            write_job(d, status="uploading", files=files_)
+            return {"job": job, "files": files_}
+        return await run_in_threadpool(_rest)
 
     @app.post("/api/import/cad/scan")
     async def cad_scan(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
@@ -329,28 +370,31 @@ def register(app, core):
         core.require_project(request, x_project, "member", x_viewer_token)
         root = core.project_root_for(x_project)
         body = await request.json() or {}
-        d = job_dir(root, body.get("job"))
-        src = os.path.join(d, "src")
-        if not os.path.isdir(src):
-            raise HTTPException(status_code=404, detail="Send the files first")
-        have = [f["name"] for f in list_src(src)]
-        drawings = [clean(x) for x in (body.get("drawings") or []) if clean(x) in have] or have
-        if any(f.lower().endswith(".dwg") for f in have) and not find_oda():
-            raise HTTPException(status_code=400, detail="The server has no ODA File Converter, so it cannot read DWG files. "
-                                "Ask the server's admin to install it - or send DXF files.")
-        use_folders = body.get("folders", True) is not False
-        pid = x_project
-        w = core.who(request, x_viewer_token)
-        write_job(d, status="scanning", progress=0, message="Reading the drawings ...", drawings=drawings)
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            d = job_dir(root, body.get("job"))
+            src = os.path.join(d, "src")
+            if not os.path.isdir(src):
+                raise HTTPException(status_code=404, detail="Send the files first")
+            have = [f["name"] for f in list_src(src)]
+            drawings = [clean(x) for x in (body.get("drawings") or []) if clean(x) in have] or have
+            if any(f.lower().endswith(".dwg") for f in have) and not find_oda():
+                raise HTTPException(status_code=400, detail="The server has no ODA File Converter, so it cannot read DWG files. "
+                                    "Ask the server's admin to install it - or send DXF files.")
+            use_folders = body.get("folders", True) is not False
+            pid = x_project
+            w = core.who(request, x_viewer_token)
+            write_job(d, status="scanning", progress=0, message="Reading the drawings ...", drawings=drawings)
 
-        def run():
-            with _RUN:
-                try:
-                    scan_job(d, src, drawings, pid, use_folders, w)
-                except Exception as e:
-                    write_job(d, status="failed", message="Not read: %s" % e)
-        threading.Thread(target=run, daemon=True).start()
-        return {"job": os.path.basename(d)}
+            def run():
+                with _RUN:
+                    try:
+                        scan_job(d, src, drawings, pid, use_folders, w)
+                    except Exception as e:
+                        write_job(d, status="failed", message="Not read: %s" % e)
+            threading.Thread(target=run, daemon=True).start()
+            return {"job": os.path.basename(d)}
+        return await run_in_threadpool(_rest)
 
     def scan_job(d, src, drawings, pid, use_folders, w):
         """Round by round: read (convert) the files of this round, collect
@@ -406,36 +450,39 @@ def register(app, core):
         w, _ = core.require_project(request, x_project, "member", x_viewer_token)
         root = core.project_root_for(x_project)
         body = await request.json() or {}
-        d = job_dir(root, body.get("job"))
-        src = os.path.join(d, "src")
-        if not os.path.isdir(src):
-            raise HTTPException(status_code=404, detail="Send the files first")
-        have = [f for f in os.listdir(src) if os.path.splitext(f)[1].lower() in (".dwg", ".dxf")]
-        drawings = [clean(x) for x in (body.get("drawings") or []) if clean(x) in have]
-        if not drawings:
-            # none named (a .zip): the files no other file uses as an xref
-            used = {stem_key(n) for names in (read_job(d).get("xrefs") or {}).values() for n in names}
-            drawings = [f for f in have if stem_key(f) not in used] or have
-        set_name = core.clean_set_name(body.get("set")) or "CAD drawings"
-        mono = body.get("mono", True) is not False
-        if any(f.lower().endswith(".dwg") for f in have) and not find_oda():
-            raise HTTPException(status_code=400, detail="The server has no ODA File Converter, so it cannot read DWG files. "
-                                "Ask the server's admin to install it - or send DXF files.")
-        write_job(d, status="waiting", progress=0, message="Waiting to start ...", drawings=drawings, set=set_name, by=w.name)
-        pid = x_project
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            d = job_dir(root, body.get("job"))
+            src = os.path.join(d, "src")
+            if not os.path.isdir(src):
+                raise HTTPException(status_code=404, detail="Send the files first")
+            have = [f for f in os.listdir(src) if os.path.splitext(f)[1].lower() in (".dwg", ".dxf")]
+            drawings = [clean(x) for x in (body.get("drawings") or []) if clean(x) in have]
+            if not drawings:
+                # none named (a .zip): the files no other file uses as an xref
+                used = {stem_key(n) for names in (read_job(d).get("xrefs") or {}).values() for n in names}
+                drawings = [f for f in have if stem_key(f) not in used] or have
+            set_name = core.clean_set_name(body.get("set")) or "CAD drawings"
+            mono = body.get("mono", True) is not False
+            if any(f.lower().endswith(".dwg") for f in have) and not find_oda():
+                raise HTTPException(status_code=400, detail="The server has no ODA File Converter, so it cannot read DWG files. "
+                                    "Ask the server's admin to install it - or send DXF files.")
+            write_job(d, status="waiting", progress=0, message="Waiting to start ...", drawings=drawings, set=set_name, by=w.name)
+            pid = x_project
 
-        def run():
-            with _RUN:
-                try:
-                    convert_job(core, root, pid, d, src, have, drawings, set_name, mono)
-                except Exception as e:
-                    core.bg_log("%s: CAD import failed: %s" % (pid, e))
-                    write_job(d, status="failed", message="Not done: %s" % e)
-        threading.Thread(target=run, daemon=True).start()
-        return {"job": os.path.basename(d)}
+            def run():
+                with _RUN:
+                    try:
+                        convert_job(core, root, pid, d, src, have, drawings, set_name, mono)
+                    except Exception as e:
+                        core.bg_log("%s: CAD import failed: %s" % (pid, e))
+                        write_job(d, status="failed", message="Not done: %s" % e)
+            threading.Thread(target=run, daemon=True).start()
+            return {"job": os.path.basename(d)}
+        return await run_in_threadpool(_rest)
 
     @app.get("/api/import/cad/{job}")
-    async def cad_job(request: Request, job: str, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def cad_job(request: Request, job: str, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         core.require_project(request, x_project, "member", x_viewer_token)
         root = core.project_root_for(x_project)
         j = read_job(job_dir(root, job))
@@ -454,20 +501,6 @@ def register(app, core):
         for f in os.listdir(out):
             if f.lower().endswith(".dxf"):
                 by_stem[stem_key(f)] = os.path.join(out, f)
-        cache = {}
-
-        def xref(path):
-            stem = stem_key(path)
-            p = by_stem.get(stem)
-            if not p:
-                return None
-            if stem not in cache:
-                try:
-                    cache[stem] = cad_dxf.read(p)
-                except Exception:
-                    cache[stem] = None
-            return cache[stem]
-
         # 2. each drawing: its layouts as pages
         added, report = [], []
         for k, f in enumerate(drawings):
@@ -477,23 +510,20 @@ def register(app, core):
             if not p:
                 report.append({"file": f, "error": "could not be read" + (" (the converter failed)" if f in failed else "")})
                 continue
-            notes = {}
-            try:
-                doc = cad_dxf.read(p)
-                pdf, sheets = cad_render.render(doc, xref=xref, mono=mono, notes=notes)
-            except Exception as e:
-                report.append({"file": f, "error": "could not be drawn: %s" % e})
-                continue
-            if not sheets:
-                report.append({"file": f, "error": "nothing to draw (no layouts and an empty model)"})
-                continue
-            for sh in sheets:
-                pdf.add_page(sh.w, sh.h, sh.content)
             fname = "%s-%s.pdf" % (re.sub(r"[^A-Za-z0-9._-]+", "_", stem)[:60] or "drawing", uuid.uuid4().hex[:8])
             folder = os.path.join(root, "imported")
             os.makedirs(folder, exist_ok=True)
-            with open(os.path.join(folder, fname), "wb") as fo:
-                fo.write(pdf.bytes())
+            try:
+                # drawn in its own process: the server keeps answering meanwhile
+                got = procjob.run("cad", "render_to_file", [p, by_stem, mono, os.path.join(folder, fname)], timeout=3600)
+            except Exception as e:
+                report.append({"file": f, "error": "could not be drawn: %s" % e})
+                continue
+            sheets = [_Sheet(x["name"]) for x in got["sheets"]]
+            notes = dict(got["notes"])
+            if not sheets:
+                report.append({"file": f, "error": "nothing to draw (no layouts and an empty model)"})
+                continue
             recs = core_.add_imported(root, set_name, [
                 {"number": sheet_number(stem, sh.name), "name": "%s - %s" % (stem, sh.name), "pdf": "imported/" + fname, "page": i + 1}
                 for i, sh in enumerate(sheets)])

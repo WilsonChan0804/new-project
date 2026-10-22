@@ -92,6 +92,7 @@
     <button data-tab="people" id="tab-people" hidden>People</button>
     <button data-tab="publish" id="tab-publish">Auto publish</button>
     <button data-tab="devices" id="tab-devices" hidden>Devices</button>
+    <button data-tab="speed" id="tab-speed" hidden>Speed</button>
     <button data-tab="account" id="tab-account">My account</button>
   </div>
 
@@ -354,6 +355,32 @@
       </div>
       <div class="table-wrap"><table id="d-table"></table></div>
       <pre id="d-detail" class="dev-detail" hidden></pre>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-speed" hidden>
+    <div class="card">
+      <h3>Speed <small>how fast the server answers, and how long pages take for the people using them</small></h3>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">Measured all the time, on the server. <b>Stalls</b> are moments the
+        server stopped answering everyone (as when it showed Offline): each says what it was busy with - send these to have
+        them fixed. <b>Pages</b> are the times people actually waited, from their own devices: "ready" is when the sheet or the
+        models were shown, else when the page's data had arrived.</p>
+      <div class="form-row" style="margin:8px 0">
+        <label>Over<select id="sp-days"><option value="1">today</option><option value="7" selected>the last 7 days</option>
+          <option value="30">the last 30 days</option></select></label>
+        <button id="sp-reload" class="ghost">Refresh</button>
+        <span id="sp-since" class="muted" style="font-size:12px"></span>
+      </div>
+      <div id="sp-days-t" class="table-wrap"></div>
+      <h4>Pages, as people waited</h4>
+      <div id="sp-pages" class="table-wrap"></div>
+      <h4>Stalls <small class="muted">the server not answering anyone</small></h4>
+      <div id="sp-stalls" class="table-wrap"></div>
+      <h4>Server answers <small class="muted">by total time spent, slowest first</small></h4>
+      <div id="sp-routes" class="table-wrap"></div>
+      <h4>Slow answers <small class="muted">over 2 s, latest first</small></h4>
+      <div id="sp-slow" class="table-wrap"></div>
+      <pre id="sp-detail" class="dev-detail" hidden></pre>
     </div>
   </section>
 

@@ -906,6 +906,7 @@ DOC = [
         '**People:** add accounts, **Reset password**, **Make / Remove site admin**, **Deactivate / Reactivate** (signs the person out everywhere), **Edit**, **Delete** (for accounts made by mistake).',
         '**Delete project ...:** type the project name to confirm. Models, sheets, issues, markups and members move to the bin on the server; **Restore** in the bin list puts everything back, as long as the name has not been reused.',
         '**Devices:** reports sent by the 3D page from each device: what loaded, peak memory, frame rate, stalls and crashes. Filter to crashes or to phones and tablets to see where the viewer struggles.',
+        '**Speed (site admins):** how fast the server answers and how long people wait, measured all the time. **Days**: answers, the typical and slowest times, and **stalls** - moments the server stopped answering everyone (as when the viewer showed Offline). Each stall says what the server was busy with: send it to have that part fixed. **Pages, as people waited**: each page\'s time until it was ready on people\'s own devices (the first sheet or the models shown), with its slowest data. **Server answers** and **Slow answers** (over 2 s) show which parts take the time. The chat\'s waiting-for-news requests are counted but not as slow.',
         '**Server:** email needs the server\'s LWK_SMTP_ settings. If a proxy in front of the server has trouble with the compressed, browser-kept files, start the server with --plain-assets (or set PLAIN_ASSETS=1 in run.bat).',
     ]),
     H2('Troubleshooting and FAQ'),

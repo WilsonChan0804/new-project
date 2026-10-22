@@ -51,6 +51,7 @@ import time
 import uuid
 
 from fastapi import Header, HTTPException, Query, Request
+from starlette.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 
 CORE = None
@@ -646,7 +647,7 @@ def register(app, core):
     # ------------------------------------------------------------ the folder
 
     @app.get("/api/files/projects")
-    async def file_projects(request: Request, x_viewer_token: str = Header(default="")):
+    def file_projects(request: Request, x_viewer_token: str = Header(default="")):
         """The projects whose folders I can open (for the page's picker)."""
         w = person(request, x_viewer_token)
         with tasks.Db(os.path.join(core.CFG["data"], "tasks.db")) as d:
@@ -661,7 +662,7 @@ def register(app, core):
         return {"projects": out, "site_admin": bool(w.site_admin), "office_preview": bool(soffice())}
 
     @app.get("/api/files/{reg}/list")
-    async def file_list(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
+    def file_list(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
         w, admin, row = access(request, x_viewer_token, reg)
         root = root_of(reg)
         parts = clean_rel(path)
@@ -694,7 +695,7 @@ def register(app, core):
                 "me": w.uid}
 
     @app.get("/api/files/{reg}/tree")
-    async def file_tree(request: Request, reg: str, x_viewer_token: str = Header(default="")):
+    def file_tree(request: Request, reg: str, x_viewer_token: str = Header(default="")):
         """Every folder, for the tree on the left."""
         _, _, row = access(request, x_viewer_token, reg)
         root = root_of(reg)
@@ -704,7 +705,7 @@ def register(app, core):
         return {"folders": bim + [f for f in real if f.lower() not in have], "locked": [BIM]}
 
     @app.get("/api/files/{reg}/quick")
-    async def file_quick(request: Request, reg: str, x_viewer_token: str = Header(default="")):
+    def file_quick(request: Request, reg: str, x_viewer_token: str = Header(default="")):
         """Pinned (for everyone), starred (mine) and the latest files."""
         w, admin, _ = access(request, x_viewer_token, reg)
         root = root_of(reg)
@@ -740,7 +741,7 @@ def register(app, core):
                 "recent": [entry(root, p, meta) for _, p in recent[:30]]}
 
     @app.get("/api/files/{reg}/search")
-    async def file_search(request: Request, reg: str, q: str = "", x_viewer_token: str = Header(default="")):
+    def file_search(request: Request, reg: str, q: str = "", x_viewer_token: str = Header(default="")):
         w, _, row = access(request, x_viewer_token, reg)
         words = [x for x in str(q or "").lower().split() if x][:5]
         if not words:
@@ -802,8 +803,11 @@ def register(app, core):
             else:
                 nm = os.path.splitext(nm)[0] + ".html"
                 note = "Kept as a web page: the server could not make a PDF of it"
-        out = keep_file(regs[0], [BIM, "Exports", folder], nm, raw, w.uid, w.name or "")
-        return {"reg": regs[0], "path": out, "name": out.split("/")[-1], "note": note}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            out = keep_file(regs[0], [BIM, "Exports", folder], nm, raw, w.uid, w.name or "")
+            return {"reg": regs[0], "path": out, "name": out.split("/")[-1], "note": note}
+        return await run_in_threadpool(_rest)
 
     def viewer_reg(request, x_project, x_viewer_token):
         """(who, the Folders project this viewer project is in, its name)."""
@@ -816,7 +820,7 @@ def register(app, core):
         return w, regs[0], (row["short"] or row["name"]) if row else ""
 
     @app.get("/api/files/for-viewer/where")
-    async def where_for_viewer(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def where_for_viewer(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         """The Folders project an import on this viewer project is kept in."""
         w, reg, name = viewer_reg(request, x_project, x_viewer_token)
         return {"reg": reg, "name": name}
@@ -845,19 +849,22 @@ def register(app, core):
             sub = "CAD" if kind == "cad" else "PDF"
             parts = [BIM, "Import", sub] + ([bim_name(set)] if str(set or "").strip() else [])
         raw = await request.body()
-        if len(raw) > MAX_UPLOAD:
-            raise HTTPException(status_code=413, detail="Files up to 2 GB")
-        out = keep_file(target, parts, nm, raw, w.uid, w.name or "")
-        if set_key(set):
-            try:
-                vroot = core.project_root_for("default" if core.CFG["single"] else x_project)
-                with _KEPT_LOCK:
-                    rows = kept_read(vroot)
-                    rows.append({"set": set_key(set), "reg": target, "path": out, "kind": "cad" if kind == "cad" else "pdf"})
-                    kept_write(vroot, rows)
-            except Exception:
-                pass
-        return {"reg": target, "path": out, "name": out.split("/")[-1]}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            if len(raw) > MAX_UPLOAD:
+                raise HTTPException(status_code=413, detail="Files up to 2 GB")
+            out = keep_file(target, parts, nm, raw, w.uid, w.name or "")
+            if set_key(set):
+                try:
+                    vroot = core.project_root_for("default" if core.CFG["single"] else x_project)
+                    with _KEPT_LOCK:
+                        rows = kept_read(vroot)
+                        rows.append({"set": set_key(set), "reg": target, "path": out, "kind": "cad" if kind == "cad" else "pdf"})
+                        kept_write(vroot, rows)
+                except Exception:
+                    pass
+            return {"reg": target, "path": out, "name": out.split("/")[-1]}
+        return await run_in_threadpool(_rest)
 
     def kept_of(request, x_project, x_viewer_token, name):
         """The files kept in Folders for a set that the person can open:
@@ -902,7 +909,7 @@ def register(app, core):
         return w, vroot, out
 
     @app.get("/api/files/for-viewer/kept")
-    async def kept_for_viewer(request: Request, set: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def kept_for_viewer(request: Request, set: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         """The files kept in Folders for a set of imported sheets."""
         _, _, files = kept_of(request, x_project, x_viewer_token, set_key(set))
         return {"files": [{k: v for k, v in f.items() if k != "full"} for f in files]}
@@ -913,33 +920,36 @@ def register(app, core):
         be restored there); emptied Import/<set> folders go."""
         core.require_project(request, x_project, "member", x_viewer_token)
         b = await body_of(request)
-        name = set_key(b.get("set"))
-        if not name:
-            raise HTTPException(status_code=400, detail="Which set?")
-        w, vroot, files = kept_of(request, x_project, x_viewer_token, name)
-        out, skipped = [], []
-        for f in files:
-            root = root_of(f["reg"])
-            if not f["path"].lower().startswith((BIM + "/").lower()):
-                # a folder chosen at import: as Folders' Delete (who uploaded it, or an admin)
-                with Meta() as d:
-                    ups = dict((r["path"], r["uid"]) for r in d.execute("SELECT path, uid FROM uploads WHERE reg = ?", (f["reg"],)))
-                if not may_delete(w, tasks.project_admin(core, w, f["reg"]), f["reg"], root, f["full"], ups):
-                    skipped.append(f["path"])
-                    continue
-            to_bin(f["reg"], root, f["full"], w)
-            out.append({"reg": f["reg"], "path": f["path"]})
-            parent = os.path.dirname(f["full"])
-            # an emptied 00 BIM/Import/PDF|CAD/<set> folder goes too
-            if f["path"].lower().startswith((BIM + "/Import/").lower()) and len(f["path"].split("/")) == 5:
-                try:
-                    if not [x for x in os.listdir(parent) if visible(x)]:
-                        shutil.rmtree(parent, ignore_errors=True)
-                except OSError:
-                    pass
-        with _KEPT_LOCK:
-            kept_forget(vroot, name)
-        return {"deleted": out, "skipped": skipped}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            name = set_key(b.get("set"))
+            if not name:
+                raise HTTPException(status_code=400, detail="Which set?")
+            w, vroot, files = kept_of(request, x_project, x_viewer_token, name)
+            out, skipped = [], []
+            for f in files:
+                root = root_of(f["reg"])
+                if not f["path"].lower().startswith((BIM + "/").lower()):
+                    # a folder chosen at import: as Folders' Delete (who uploaded it, or an admin)
+                    with Meta() as d:
+                        ups = dict((r["path"], r["uid"]) for r in d.execute("SELECT path, uid FROM uploads WHERE reg = ?", (f["reg"],)))
+                    if not may_delete(w, tasks.project_admin(core, w, f["reg"]), f["reg"], root, f["full"], ups):
+                        skipped.append(f["path"])
+                        continue
+                to_bin(f["reg"], root, f["full"], w)
+                out.append({"reg": f["reg"], "path": f["path"]})
+                parent = os.path.dirname(f["full"])
+                # an emptied 00 BIM/Import/PDF|CAD/<set> folder goes too
+                if f["path"].lower().startswith((BIM + "/Import/").lower()) and len(f["path"].split("/")) == 5:
+                    try:
+                        if not [x for x in os.listdir(parent) if visible(x)]:
+                            shutil.rmtree(parent, ignore_errors=True)
+                    except OSError:
+                        pass
+            with _KEPT_LOCK:
+                kept_forget(vroot, name)
+            return {"deleted": out, "skipped": skipped}
+        return await run_in_threadpool(_rest)
 
     @app.get("/api/files/{reg}/preview")
     async def file_preview(request: Request, reg: str, path: str = "", v: int = 0, x_viewer_token: str = Header(default="")):
@@ -1017,7 +1027,7 @@ def register(app, core):
         return r
 
     @app.get("/api/files/{reg}/file")
-    async def file_get(request: Request, reg: str, path: str = "", download: int = 0,
+    def file_get(request: Request, reg: str, path: str = "", download: int = 0,
                        x_viewer_token: str = Header(default="")):
         _, _, row = access(request, x_viewer_token, reg)
         parts = clean_rel(path)
@@ -1162,34 +1172,37 @@ def register(app, core):
         a copy starts its own history."""
         w, _, _ = access(request, x_viewer_token, reg)
         b = await body_of(request)
-        root = root_of(reg)
-        not_bim(b.get("to"))
-        parent = inside(root, clean_rel(b.get("to")))
-        if not os.path.isdir(parent):
-            raise HTTPException(status_code=404, detail="No such folder")
-        done = []
-        for p in (b.get("paths") or [])[:500]:
-            not_bim(p)
-            src = inside(root, clean_rel(p))
-            if src == root or not os.path.exists(src):
-                raise HTTPException(status_code=404, detail="That is not there any more")
-            if os.path.isdir(src) and (parent == src or parent.startswith(src + os.sep)):
-                raise HTTPException(status_code=400, detail="A folder cannot be copied into itself")
-            dest = os.path.join(parent, free_name(parent, os.path.basename(src)))
-            if os.path.isdir(src):
-                shutil.copytree(src, dest, ignore=lambda d, ns: [n for n in ns if not visible(n)])
-            else:
-                shutil.copy2(src, dest)
-            rel = rel_of(root, dest)
-            with Meta() as d:
-                d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)", (reg, rel, w.uid, w.name, now_iso()))
-                if os.path.isdir(dest):
-                    for dp, dns, fns in os.walk(dest):
-                        for n in dns + fns:
-                            d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
-                                      (reg, rel_of(root, os.path.join(dp, n)), w.uid, w.name, now_iso()))
-            done.append({"from": rel_of(root, src), "path": rel})
-        return {"copied": done}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            root = root_of(reg)
+            not_bim(b.get("to"))
+            parent = inside(root, clean_rel(b.get("to")))
+            if not os.path.isdir(parent):
+                raise HTTPException(status_code=404, detail="No such folder")
+            done = []
+            for p in (b.get("paths") or [])[:500]:
+                not_bim(p)
+                src = inside(root, clean_rel(p))
+                if src == root or not os.path.exists(src):
+                    raise HTTPException(status_code=404, detail="That is not there any more")
+                if os.path.isdir(src) and (parent == src or parent.startswith(src + os.sep)):
+                    raise HTTPException(status_code=400, detail="A folder cannot be copied into itself")
+                dest = os.path.join(parent, free_name(parent, os.path.basename(src)))
+                if os.path.isdir(src):
+                    shutil.copytree(src, dest, ignore=lambda d, ns: [n for n in ns if not visible(n)])
+                else:
+                    shutil.copy2(src, dest)
+                rel = rel_of(root, dest)
+                with Meta() as d:
+                    d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)", (reg, rel, w.uid, w.name, now_iso()))
+                    if os.path.isdir(dest):
+                        for dp, dns, fns in os.walk(dest):
+                            for n in dns + fns:
+                                d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
+                                          (reg, rel_of(root, os.path.join(dp, n)), w.uid, w.name, now_iso()))
+                done.append({"from": rel_of(root, src), "path": rel})
+            return {"copied": done}
+        return await run_in_threadpool(_rest)
 
     # ------------------------------------------------------------ versions
 
@@ -1227,7 +1240,7 @@ def register(app, core):
         return f
 
     @app.get("/api/files/{reg}/versions")
-    async def file_versions(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
+    def file_versions(request: Request, reg: str, path: str = "", x_viewer_token: str = Header(default="")):
         _, admin, _ = access(request, x_viewer_token, reg)
         parts = clean_rel(path)
         if bim_parts(parts):
@@ -1239,7 +1252,7 @@ def register(app, core):
         return {"versions": list(reversed(version_rows(reg, root, "/".join(parts), full))), "admin": admin}
 
     @app.get("/api/files/{reg}/version")
-    async def file_version(request: Request, reg: str, path: str = "", n: int = 0, download: int = 0,
+    def file_version(request: Request, reg: str, path: str = "", n: int = 0, download: int = 0,
                            x_viewer_token: str = Header(default="")):
         access(request, x_viewer_token, reg)
         parts = clean_rel(path)
@@ -1261,25 +1274,28 @@ def register(app, core):
         next version (the one it replaces is kept)."""
         w, _, _ = access(request, x_viewer_token, reg)
         b = await body_of(request)
-        parts = clean_rel(b.get("path"))
-        not_bim(b.get("path"))
-        root = root_of(reg)
-        rel = "/".join(parts)
-        n = int(b.get("n") or 0)
-        src = file_of_version(reg, root, parts, n)
-        full = inside(root, parts)
-        if src == full:
-            raise HTTPException(status_code=400, detail="That is the current version already")
-        tmp = full + ".lwk-restore"
-        shutil.copy2(src, tmp)
-        with Meta() as d:
-            nxt = keep_current(d, reg, root, rel, full)
-            os.replace(tmp, full)
-            os.utime(full, None)
-            d.execute("INSERT OR REPLACE INTO versions (reg, path, n, uid, name, at, size, note) VALUES (?,?,?,?,?,?,?,?)",
-                      (reg, rel, nxt, w.uid, w.name, now_iso(), os.path.getsize(full), "v%d made current again" % n))
-            d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)", (reg, rel, w.uid, w.name, now_iso()))
-        return {"path": rel, "version": nxt}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            parts = clean_rel(b.get("path"))
+            not_bim(b.get("path"))
+            root = root_of(reg)
+            rel = "/".join(parts)
+            n = int(b.get("n") or 0)
+            src = file_of_version(reg, root, parts, n)
+            full = inside(root, parts)
+            if src == full:
+                raise HTTPException(status_code=400, detail="That is the current version already")
+            tmp = full + ".lwk-restore"
+            shutil.copy2(src, tmp)
+            with Meta() as d:
+                nxt = keep_current(d, reg, root, rel, full)
+                os.replace(tmp, full)
+                os.utime(full, None)
+                d.execute("INSERT OR REPLACE INTO versions (reg, path, n, uid, name, at, size, note) VALUES (?,?,?,?,?,?,?,?)",
+                          (reg, rel, nxt, w.uid, w.name, now_iso(), os.path.getsize(full), "v%d made current again" % n))
+                d.execute("INSERT OR REPLACE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)", (reg, rel, w.uid, w.name, now_iso()))
+            return {"path": rel, "version": nxt}
+        return await run_in_threadpool(_rest)
 
     @app.post("/api/files/{reg}/delete-version")
     async def file_delete_version(request: Request, reg: str, x_viewer_token: str = Header(default="")):
@@ -1320,25 +1336,28 @@ def register(app, core):
         """{paths: [...]} - to the bin, from where they can be restored."""
         w, admin, _ = access(request, x_viewer_token, reg)
         b = await body_of(request)
-        root = root_of(reg)
-        with Meta() as d:
-            ups = dict((r["path"], r["uid"]) for r in d.execute("SELECT path, uid FROM uploads WHERE reg = ?", (reg,)))
-        out = []
-        for p in (b.get("paths") or [])[:500]:
-            not_bim(p)
-            full = inside(root, clean_rel(p))
-            if full == root or not os.path.exists(full):
-                continue
-            if not may_delete(w, admin, reg, root, full, ups):
-                raise HTTPException(status_code=403, detail="Only the person who uploaded %s, or a project admin, can delete it"
-                                    % os.path.basename(full))
-            rel = rel_of(root, full)
-            bid = to_bin(reg, root, full, w)
-            out.append({"id": bid, "path": rel})
-        return {"deleted": out}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            root = root_of(reg)
+            with Meta() as d:
+                ups = dict((r["path"], r["uid"]) for r in d.execute("SELECT path, uid FROM uploads WHERE reg = ?", (reg,)))
+            out = []
+            for p in (b.get("paths") or [])[:500]:
+                not_bim(p)
+                full = inside(root, clean_rel(p))
+                if full == root or not os.path.exists(full):
+                    continue
+                if not may_delete(w, admin, reg, root, full, ups):
+                    raise HTTPException(status_code=403, detail="Only the person who uploaded %s, or a project admin, can delete it"
+                                        % os.path.basename(full))
+                rel = rel_of(root, full)
+                bid = to_bin(reg, root, full, w)
+                out.append({"id": bid, "path": rel})
+            return {"deleted": out}
+        return await run_in_threadpool(_rest)
 
     @app.get("/api/files/{reg}/bin")
-    async def file_bin(request: Request, reg: str, x_viewer_token: str = Header(default="")):
+    def file_bin(request: Request, reg: str, x_viewer_token: str = Header(default="")):
         w, admin, _ = access(request, x_viewer_token, reg)
         with Meta() as d:
             rows = d.execute("SELECT * FROM bin WHERE reg = ? ORDER BY at DESC LIMIT 300", (reg,)).fetchall()
@@ -1350,49 +1369,52 @@ def register(app, core):
         """{ids: [...]} - back where they were (" (2)" if that name is taken now)."""
         w, admin, _ = access(request, x_viewer_token, reg)
         b = await body_of(request)
-        root = root_of(reg)
-        out = []
-        for bid in (b.get("ids") or [])[:500]:
-            if not SAFE_ID.match(str(bid)):
-                continue
-            with Meta() as d:
-                r = d.execute("SELECT * FROM bin WHERE id = ? AND reg = ?", (bid, reg)).fetchone()
-            if not r:
-                continue
-            if not admin and r["by_uid"] != w.uid:
-                raise HTTPException(status_code=403, detail="Only the person who deleted it, or a project admin, can restore it")
-            box = os.path.join(root, BIN, bid)
-            parts = clean_rel(r["path"])
-            src = os.path.join(box, parts[-1])
-            if not os.path.exists(src):
-                continue
-            parent = inside(root, parts[:-1])
-            if not os.path.isdir(parent):
-                os.makedirs(parent)
-            nm = free_name(parent, parts[-1])
-            dest = os.path.join(parent, nm)
-            shutil.move(src, dest)
-            new_rel = rel_of(root, dest)
-            kept = os.path.join(box, ".versions")
-            if os.path.isdir(kept):
-                vd = ver_dir(root, new_rel)
-                if os.path.isdir(vd):
-                    shutil.rmtree(vd, ignore_errors=True)
-                os.makedirs(os.path.dirname(vd), exist_ok=True)
-                shutil.move(kept, vd)
-            shutil.rmtree(box, ignore_errors=True)
-            with Meta() as d:
-                d.execute("DELETE FROM bin WHERE id = ?", (bid,))
-                if new_rel != r["path"]:
-                    move_meta(d, reg, r["path"], new_rel)
-                # its history back (after move_meta: that clears rows at the new name)
-                pre = "~bin/%s/" % bid
-                d.execute("DELETE FROM versions WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')",
-                          (reg, new_rel, new_rel.replace("%", r"\%").replace("_", r"\_") + "/%"))
-                d.execute("UPDATE versions SET path = ? || substr(path, ?) WHERE reg = ? AND path LIKE ? ESCAPE '\\'",
-                          (new_rel, len(pre) + len(r["path"]) + 1, reg, pre.replace("_", r"\_") + "%"))
-            out.append({"id": bid, "path": new_rel})
-        return {"restored": out}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            root = root_of(reg)
+            out = []
+            for bid in (b.get("ids") or [])[:500]:
+                if not SAFE_ID.match(str(bid)):
+                    continue
+                with Meta() as d:
+                    r = d.execute("SELECT * FROM bin WHERE id = ? AND reg = ?", (bid, reg)).fetchone()
+                if not r:
+                    continue
+                if not admin and r["by_uid"] != w.uid:
+                    raise HTTPException(status_code=403, detail="Only the person who deleted it, or a project admin, can restore it")
+                box = os.path.join(root, BIN, bid)
+                parts = clean_rel(r["path"])
+                src = os.path.join(box, parts[-1])
+                if not os.path.exists(src):
+                    continue
+                parent = inside(root, parts[:-1])
+                if not os.path.isdir(parent):
+                    os.makedirs(parent)
+                nm = free_name(parent, parts[-1])
+                dest = os.path.join(parent, nm)
+                shutil.move(src, dest)
+                new_rel = rel_of(root, dest)
+                kept = os.path.join(box, ".versions")
+                if os.path.isdir(kept):
+                    vd = ver_dir(root, new_rel)
+                    if os.path.isdir(vd):
+                        shutil.rmtree(vd, ignore_errors=True)
+                    os.makedirs(os.path.dirname(vd), exist_ok=True)
+                    shutil.move(kept, vd)
+                shutil.rmtree(box, ignore_errors=True)
+                with Meta() as d:
+                    d.execute("DELETE FROM bin WHERE id = ?", (bid,))
+                    if new_rel != r["path"]:
+                        move_meta(d, reg, r["path"], new_rel)
+                    # its history back (after move_meta: that clears rows at the new name)
+                    pre = "~bin/%s/" % bid
+                    d.execute("DELETE FROM versions WHERE reg = ? AND (path = ? OR path LIKE ? ESCAPE '\\')",
+                              (reg, new_rel, new_rel.replace("%", r"\%").replace("_", r"\_") + "/%"))
+                    d.execute("UPDATE versions SET path = ? || substr(path, ?) WHERE reg = ? AND path LIKE ? ESCAPE '\\'",
+                              (new_rel, len(pre) + len(r["path"]) + 1, reg, pre.replace("_", r"\_") + "%"))
+                out.append({"id": bid, "path": new_rel})
+            return {"restored": out}
+        return await run_in_threadpool(_rest)
 
     # ------------------------------------------------------------ pins and stars
 
@@ -1431,7 +1453,7 @@ def register(app, core):
     # ------------------------------------------------------------ templates
 
     @app.get("/api/files/templates")
-    async def tpl_list(request: Request, x_viewer_token: str = Header(default="")):
+    def tpl_list(request: Request, x_viewer_token: str = Header(default="")):
         person(request, x_viewer_token)
         return {"templates": [{"id": t["id"], "name": t["name"], "folders": t["folders"], "by": t.get("by", ""),
                                "at": t.get("at", "")} for t in read_templates()]}
@@ -1472,28 +1494,31 @@ def register(app, core):
         """{id, path}: make the template's folders (those missing) under path."""
         w, _, _ = access(request, x_viewer_token, reg, "admin")
         b = await body_of(request)
-        t = next((x for x in read_templates() if x["id"] == b.get("id")), None)
-        if not t:
-            raise HTTPException(status_code=404, detail="No such template")
-        root = root_of(reg)
-        base = clean_rel(b.get("path"))
-        not_bim(base)
-        made = 0
-        with Meta() as d:
-            for f in t["folders"]:
-                try:
-                    parts = base + clean_rel(f)
-                except HTTPException:
-                    continue
-                if bim_parts(parts):
-                    continue
-                full = inside(root, parts)
-                if not os.path.isdir(full):
-                    os.makedirs(full)
-                    made += 1
-                    d.execute("INSERT OR IGNORE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
-                              (reg, "/".join(parts), w.uid, w.name, now_iso()))
-        return {"made": made, "total": len(t["folders"])}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            t = next((x for x in read_templates() if x["id"] == b.get("id")), None)
+            if not t:
+                raise HTTPException(status_code=404, detail="No such template")
+            root = root_of(reg)
+            base = clean_rel(b.get("path"))
+            not_bim(base)
+            made = 0
+            with Meta() as d:
+                for f in t["folders"]:
+                    try:
+                        parts = base + clean_rel(f)
+                    except HTTPException:
+                        continue
+                    if bim_parts(parts):
+                        continue
+                    full = inside(root, parts)
+                    if not os.path.isdir(full):
+                        os.makedirs(full)
+                        made += 1
+                        d.execute("INSERT OR IGNORE INTO uploads (reg, path, uid, name, at) VALUES (?,?,?,?,?)",
+                                  (reg, "/".join(parts), w.uid, w.name, now_iso()))
+            return {"made": made, "total": len(t["folders"])}
+        return await run_in_threadpool(_rest)
 
     # ------------------------------------------------------------ to the Sheets page
 
@@ -1504,34 +1529,37 @@ def register(app, core):
         /api/import/sheets, as an upload on the Sheets page does)."""
         w, _, row = access(request, x_viewer_token, reg)
         b = await body_of(request)
-        pid = str(b.get("project") or "")
-        if pid not in tasks.viewers_of(row):
-            raise HTTPException(status_code=400, detail="That is not one of this project's sheet sets")
-        core.require_project(request, pid, "member", x_viewer_token)
-        not_bim(b.get("path"))
-        full = inside(root_of(reg), clean_rel(b.get("path")))
-        if not os.path.isfile(full) or not full.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only a PDF can go to the Sheets page")
-        with open(full, "rb") as f:
-            if f.read(5) != b"%PDF-":
-                raise HTTPException(status_code=400, detail="That file is not a PDF")
-        root = core.project_root_for(pid)
-        folder = os.path.join(root, "imported")
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
-        stem = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.splitext(os.path.basename(full))[0])[:60] or "drawing"
-        fname = "%s-%s.pdf" % (stem, uuid.uuid4().hex[:8])
-        shutil.copyfile(full, os.path.join(folder, fname))
-        try:
-            core.queue_ocr(root, ["imported/" + fname])
-        except Exception:
-            pass
-        return {"pdf": "imported/" + fname}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            pid = str(b.get("project") or "")
+            if pid not in tasks.viewers_of(row):
+                raise HTTPException(status_code=400, detail="That is not one of this project's sheet sets")
+            core.require_project(request, pid, "member", x_viewer_token)
+            not_bim(b.get("path"))
+            full = inside(root_of(reg), clean_rel(b.get("path")))
+            if not os.path.isfile(full) or not full.lower().endswith(".pdf"):
+                raise HTTPException(status_code=400, detail="Only a PDF can go to the Sheets page")
+            with open(full, "rb") as f:
+                if f.read(5) != b"%PDF-":
+                    raise HTTPException(status_code=400, detail="That file is not a PDF")
+            root = core.project_root_for(pid)
+            folder = os.path.join(root, "imported")
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
+            stem = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.splitext(os.path.basename(full))[0])[:60] or "drawing"
+            fname = "%s-%s.pdf" % (stem, uuid.uuid4().hex[:8])
+            shutil.copyfile(full, os.path.join(folder, fname))
+            try:
+                core.queue_ocr(root, ["imported/" + fname])
+            except Exception:
+                pass
+            return {"pdf": "imported/" + fname}
+        return await run_in_threadpool(_rest)
 
     # ------------------------------------------------------------ where (site admin)
 
     @app.get("/api/files/{reg}/root")
-    async def root_get(request: Request, reg: str, x_viewer_token: str = Header(default="")):
+    def root_get(request: Request, reg: str, x_viewer_token: str = Header(default="")):
         w, admin, _ = access(request, x_viewer_token, reg)
         p = read_roots().get(reg) or ""
         return {"path": p if w.site_admin else "", "default": default_root(reg) if w.site_admin else "",

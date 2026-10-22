@@ -402,7 +402,7 @@ def register(app, core):
         return str(request.base_url)
 
     @app.get("/api/calendar")
-    async def cal(request: Request, frm: str = "", to: str = "", x_viewer_token: str = Header(default="")):
+    def cal(request: Request, frm: str = "", to: str = "", x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         q = request.query_params
         start, end = window(q.get("from") or frm, q.get("to") or to)
@@ -414,7 +414,7 @@ def register(app, core):
         return {"url": url, "webcal": re.sub(r"^https?://", "webcal://", url)}
 
     @app.get("/api/calendar/feed")
-    async def feed(request: Request, x_viewer_token: str = Header(default="")):
+    def feed(request: Request, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         return feed_info(request, w.uid)
 
@@ -453,7 +453,7 @@ def register(app, core):
                 "members": mem, "can_edit": g.get("owner") == w.uid or site_admin(w)}
 
     @app.get("/api/calendar/groups")
-    async def groups_list(request: Request, x_viewer_token: str = Header(default="")):
+    def groups_list(request: Request, x_viewer_token: str = Header(default="")):
         """My calendar groups (all of them for a site admin)."""
         w = me(request, x_viewer_token)
         gs = _load(core, GROUPS, [])
@@ -559,7 +559,7 @@ def register(app, core):
     # ---------------------------------------------- public holidays added by an admin
 
     @app.get("/api/holidays")
-    async def holidays_get(request: Request, x_viewer_token: str = Header(default="")):
+    def holidays_get(request: Request, x_viewer_token: str = Header(default="")):
         me(request, x_viewer_token)
         h = _load(core, HOLIDAYS, {})
         return {"hk": h.get("hk") or {}, "ph": h.get("ph") or {}}
@@ -582,7 +582,7 @@ def register(app, core):
         return out
 
     @app.get("/cal/{key}.ics")
-    async def feed_ics(request: Request, key: str):
+    def feed_ics(request: Request, key: str):
         uid = uid_of_key(core, key)
         user = core.ACC.get(uid) if uid is not None and core.accounts_on() else None
         if not user or not user.get("active"):

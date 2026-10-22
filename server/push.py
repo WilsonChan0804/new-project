@@ -311,7 +311,7 @@ def register(app, core):
         return b
 
     @app.get("/api/push/key")
-    async def push_key(request: Request):
+    def push_key(request: Request):
         if not HAVE_CRYPTO:
             return {"key": "", "why": "The server needs the cryptography package (pip install cryptography)"}
         return {"key": keys()["pub"]}

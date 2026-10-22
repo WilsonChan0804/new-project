@@ -3420,6 +3420,7 @@ async function renderPage() {
     try {
       await _task.promise;
       if (PERF.cur) { PERF.cur.drawMs = performance.now() - tDraw; PERF.cur.basePx = off.width * off.height; }
+      try { if (window.lwkReady) window.lwkReady(); } catch (e) {}      // the first sheet shown: Admin > Speed (boot.js)
       // a drawing this slow is shown from the server's pictures next time
       if (!S.page.isTilePage && performance.now() - tDraw > 3000 && S.sheet) markSlowSheet(S.sheet.pdf);
     } catch (e) {

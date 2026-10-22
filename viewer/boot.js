@@ -13,7 +13,25 @@
  * hide a change.
  */
 
-const realFetch = window.fetch.bind(window);
+const nativeFetch = window.fetch.bind(window);
+const API_T = [];               // how long each data request took (Admin > Speed)
+let readyAt = 0;
+function realFetch(input, init) {
+  const t = performance.now();
+  const p = nativeFetch(input, init);
+  try {
+    const u = new URL(typeof input === "string" || input instanceof URL ? String(input) : input.url, location.href);
+    if (u.origin === location.origin && (u.pathname.startsWith("/api/") || u.pathname.startsWith("/data/"))
+        && !u.pathname.startsWith("/api/perf/") && u.pathname !== "/api/chat/sync") {
+      const done = () => {
+        const now = performance.now();
+        if (API_T.length < 300) API_T.push({ path: u.pathname.replace(/^\/data\/[^/]+\//, "/data/{project}/"), ms: Math.round(now - t), at: Math.round(t) });
+      };
+      p.then(done, () => {});
+    }
+  } catch (e) { /* never in the way */ }
+  return p;
+}
 const HOLD = new Map();          // key -> { at, p, early }
 const EARLY_MS = 10000;
 
@@ -141,4 +159,47 @@ function ask(path, opts) {
     ask("/api/people");
     ask("/api/chat/rooms");
   }
+})();
+
+/* How long this page took for the person opening it (Admin > Speed, the
+   server's perf.py): the first byte, the page loaded, and "ready" - when a
+   page says so (window.lwkReady(), the first sheet or the models shown), or
+   else when its data requests went quiet. Sent once, in the background. */
+window.lwkReady = function () { if (!readyAt) readyAt = performance.now(); };
+(function report() {
+  let sent = false;
+  const send = () => {
+    if (sent) return;
+    sent = true;
+    try {
+      const nav = (performance.getEntriesByType && performance.getEntriesByType("navigation")[0]) || {};
+      const load = nav.loadEventEnd || 0;
+      // the data the page asked for while it opened (up to a second after
+      // it loaded) all in - not the checks it then repeats every few seconds
+      const quiet = API_T.filter((a) => a.at <= (load || 5000) + 1000).reduce((m, a) => Math.max(m, a.at + a.ms), 0);
+      const ready = readyAt || Math.max(load, quiet) || performance.now();
+      const c = navigator.connection || {};
+      const ua = navigator.userAgent || "";
+      const body = {
+        page: (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "") || "index",
+        project: project(), token: token(),
+        ttfb_ms: Math.round(nav.responseStart || 0), dom_ms: Math.round(nav.domContentLoadedEventEnd || 0),
+        load_ms: Math.round(load), ready_ms: Math.round(ready),
+        how: readyAt ? "page said" : "data quiet",
+        cached: nav.transferSize === 0 || !!(navigator.serviceWorker && navigator.serviceWorker.controller),
+        net: { type: c.effectiveType || "", rtt: c.rtt, down: c.downlink },
+        device: /iPad|Tablet/.test(ua) ? "tablet" : /iPhone|Android.*Mobile/.test(ua) ? "phone" : /Android/.test(ua) ? "tablet" : "desktop",
+        api: API_T.filter((a) => a.at < 30000).sort((a, b) => b.ms - a.ms).slice(0, 8).map((a) => ({ path: a.path, ms: a.ms })),
+      };
+      if (!body.token) return;
+      const json = JSON.stringify(body);
+      if (!(navigator.sendBeacon && navigator.sendBeacon("/api/perf/client", new Blob([json], { type: "application/json" })))) {
+        nativeFetch("/api/perf/client", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: json }).catch(() => {});
+      }
+    } catch (e) { /* never in the way */ }
+  };
+  // after the page has settled (or when it is left sooner)
+  setTimeout(send, 25000);
+  addEventListener("pagehide", send);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") send(); });
 })();

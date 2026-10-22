@@ -41,6 +41,7 @@ import time
 import uuid
 
 from fastapi import HTTPException, Request, Header
+from starlette.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, Response
 
 SCHEMA = """
@@ -753,7 +754,7 @@ def register(app, core):
     # ------------------------------------------------------------ rooms
 
     @app.get("/api/chat/rooms")
-    async def rooms(request: Request, x_viewer_token: str = Header(default="")):
+    def rooms(request: Request, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         names = dict((k, v["name"]) for k, v in users().items())
         with db() as d:
@@ -891,39 +892,42 @@ def register(app, core):
         into other chats, marked as forwarded from where it was written."""
         w = me(request, x_viewer_token)
         body = await read_json(request)
-        note = clean_text(body.get("note"), MAX_TEXT, True).strip()
-        sent = []
-        with db() as d:
-            m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
-            if not m or not membership(d, m["room"], w.uid):
-                raise HTTPException(status_code=404, detail="No such message")
-            src = d.execute("SELECT * FROM rooms WHERE id = ?", (m["room"],)).fetchone()
-            for rid in (body.get("rooms") or [])[:20]:
-                if not isinstance(rid, str) or not SAFE_ID.match(rid):
-                    continue
-                r = d.execute("SELECT * FROM rooms WHERE id = ? AND deleted = 0", (rid,)).fetchone()
-                if not r or not membership(d, rid, w.uid):
-                    continue
-                # the files are shared, not copied: a new record in the new chat
-                fs = []
-                for f in json.loads(m["files"] or "[]"):
-                    old = d.execute("SELECT * FROM files WHERE id = ?", (f["id"],)).fetchone()
-                    if not old:
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            note = clean_text(body.get("note"), MAX_TEXT, True).strip()
+            sent = []
+            with db() as d:
+                m = d.execute("SELECT * FROM messages WHERE id = ? AND deleted = 0", (mid,)).fetchone()
+                if not m or not membership(d, m["room"], w.uid):
+                    raise HTTPException(status_code=404, detail="No such message")
+                src = d.execute("SELECT * FROM rooms WHERE id = ?", (m["room"],)).fetchone()
+                for rid in (body.get("rooms") or [])[:20]:
+                    if not isinstance(rid, str) or not SAFE_ID.match(rid):
                         continue
-                    fid = new_id()
-                    d.execute("INSERT INTO files (id, room, task, name, size, mime, uid, author, created_at, stored) "
-                              "VALUES (?,?,'',?,?,?,?,?,?,?)", (fid, rid, old["name"], old["size"], old["mime"],
-                                                               w.uid, w.name, now_iso(), old["stored"]))
-                    fs.append(file_meta(d.execute("SELECT * FROM files WHERE id = ?", (fid,)).fetchone()))
-                card = json.loads(m["card"]) if m["card"] else None
-                fwd = {"type": "forward", "from": m["author"] or "Update",
-                       "room": src["title"] if src["kind"] != "dm" else "a direct message", "at": m["created_at"],
-                       "inner": card}
-                if note:
-                    _insert(d, rid, w.uid, w.name, "text", body=note)
-                _insert(d, rid, w.uid, w.name, "text", body=m["body"], card=fwd, files=fs)
-                sent.append(rid)
-        return {"sent": sent}
+                    r = d.execute("SELECT * FROM rooms WHERE id = ? AND deleted = 0", (rid,)).fetchone()
+                    if not r or not membership(d, rid, w.uid):
+                        continue
+                    # the files are shared, not copied: a new record in the new chat
+                    fs = []
+                    for f in json.loads(m["files"] or "[]"):
+                        old = d.execute("SELECT * FROM files WHERE id = ?", (f["id"],)).fetchone()
+                        if not old:
+                            continue
+                        fid = new_id()
+                        d.execute("INSERT INTO files (id, room, task, name, size, mime, uid, author, created_at, stored) "
+                                  "VALUES (?,?,'',?,?,?,?,?,?,?)", (fid, rid, old["name"], old["size"], old["mime"],
+                                                                   w.uid, w.name, now_iso(), old["stored"]))
+                        fs.append(file_meta(d.execute("SELECT * FROM files WHERE id = ?", (fid,)).fetchone()))
+                    card = json.loads(m["card"]) if m["card"] else None
+                    fwd = {"type": "forward", "from": m["author"] or "Update",
+                           "room": src["title"] if src["kind"] != "dm" else "a direct message", "at": m["created_at"],
+                           "inner": card}
+                    if note:
+                        _insert(d, rid, w.uid, w.name, "text", body=note)
+                    _insert(d, rid, w.uid, w.name, "text", body=m["body"], card=fwd, files=fs)
+                    sent.append(rid)
+            return {"sent": sent}
+        return await run_in_threadpool(_rest)
 
     @app.post("/api/chat/rooms/{rid}/join")
     async def room_join(request: Request, rid: str, x_viewer_token: str = Header(default="")):
@@ -977,7 +981,7 @@ def register(app, core):
     # ------------------------------------------------------------ messages
 
     @app.get("/api/chat/rooms/{rid}/messages")
-    async def messages(request: Request, rid: str, before: int = 0, around: int = 0, at: str = "", limit: int = 60,
+    def messages(request: Request, rid: str, before: int = 0, around: int = 0, at: str = "", limit: int = 60,
                        x_viewer_token: str = Header(default="")):
         """The latest messages, those before seq `before`, or those around
         seq `around` / message `at` (a pinned message or a search hit) -
@@ -1155,7 +1159,7 @@ def register(app, core):
             return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.get("/api/chat/rooms/{rid}/pins")
-    async def pins(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def pins(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         """The pinned messages of a chat, the latest pinned first."""
         w = me(request, x_viewer_token)
         with db() as d:
@@ -1259,7 +1263,7 @@ def register(app, core):
             return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.get("/api/chat/messages/{mid}/event.ics")
-    async def event_ics(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def event_ics(request: Request, mid: str, x_viewer_token: str = Header(default="")):
         """The event for Outlook, Google or the phone's calendar."""
         w = core.who(request, x_viewer_token)      # the cookie, for a plain link
         with db() as d:
@@ -1393,7 +1397,7 @@ def register(app, core):
                 "inbox": unseen, "level": pref["level"], "muted": pref["muted"]}
 
     @app.get("/api/chat/inbox")
-    async def inbox_list(request: Request, x_viewer_token: str = Header(default="")):
+    def inbox_list(request: Request, x_viewer_token: str = Header(default="")):
         """The latest things that concerned me (under the bell)."""
         w = me(request, x_viewer_token)
         with db() as d:
@@ -1419,7 +1423,7 @@ def register(app, core):
         return {"ok": True, "unread": unseen}
 
     @app.get("/api/chat/notify-settings")
-    async def notify_get(request: Request, x_viewer_token: str = Header(default="")):
+    def notify_get(request: Request, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         with db() as d:
             return notify_prefs(d, w.uid)
@@ -1446,7 +1450,7 @@ def register(app, core):
             return p
 
     @app.get("/api/chat/unread")
-    async def unread(request: Request, x_viewer_token: str = Header(default="")):
+    def unread(request: Request, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         if w.uid is None:
             return {"total": 0, "mentions": 0}
@@ -1460,7 +1464,7 @@ def register(app, core):
         return {"total": r["n"] or 0, "mentions": r["m"] or 0}
 
     @app.get("/api/chat/search")
-    async def search(request: Request, q: str = "", x_viewer_token: str = Header(default="")):
+    def search(request: Request, q: str = "", x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         q = clean_text(q, 100)
         if len(q) < 2:
@@ -1473,7 +1477,7 @@ def register(app, core):
         return {"messages": [msg_row(r, w.uid) for r in rows]}
 
     @app.get("/api/chat/project-room")
-    async def project_room(request: Request, project: str = "", x_viewer_token: str = Header(default="")):
+    def project_room(request: Request, project: str = "", x_viewer_token: str = Header(default="")):
         """The channel of a register project, if it has one."""
         w = me(request, x_viewer_token)
         with db() as d:
@@ -1539,7 +1543,7 @@ def register(app, core):
             return file_meta(d.execute("SELECT * FROM files WHERE id = ?", (fid,)).fetchone())
 
     @app.get("/api/chat/files/{fid}/{name}")
-    async def download(request: Request, fid: str, name: str, x_viewer_token: str = Header(default="")):
+    def download(request: Request, fid: str, name: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)      # the cookie, for <img> and links
         with db() as d:
             f = d.execute("SELECT * FROM files WHERE id = ?", (fid,)).fetchone()
@@ -1558,7 +1562,7 @@ def register(app, core):
                             content_disposition_type="inline" if inline else "attachment")
 
     @app.get("/api/chat/rooms/{rid}/files")
-    async def room_files(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def room_files(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         with db() as d:
             get_room(d, rid)

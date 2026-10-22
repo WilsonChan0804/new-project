@@ -15,7 +15,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-02";
+const LWK_VERSION = "2026-12-03";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -195,7 +195,7 @@ async function signedIn() {
 /* ---------------------------------------------------------------- tabs */
 
 function show(tab) {
-  for (const t of ["projects", "people", "publish", "devices", "account"]) {
+  for (const t of ["projects", "people", "publish", "devices", "speed", "account"]) {
     $("#pane-" + t).hidden = t !== tab;
     $("#tab-" + t).classList.toggle("on", t === tab);
   }
@@ -411,6 +411,46 @@ function renderDevices() {
       const pre = $("#d-detail");
       pre.hidden = false;
       pre.textContent = JSON.stringify(all[+tr.dataset.i], null, 1);
+      pre.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+  });
+}
+
+/* ---------------------------------------------------------------- speed */
+
+/* The server's own timings (perf.py): days, pages as people waited, the
+   stalls (what the server was busy with), the routes and slow answers. */
+const secs = (ms) => ms == null ? "-" : ms >= 10000 ? Math.round(ms / 1000) + " s" : (ms / 1000).toFixed(ms >= 1000 ? 1 : 2) + " s";
+async function loadSpeed() {
+  let d;
+  try { d = await api("/api/admin/perf?days=" + $("#sp-days").value); }
+  catch (e) { msg(esc(e.message), "bad"); return; }
+  A.speed = d;
+  $("#sp-since").textContent = `measuring since ${fmtDT(d.since)} · ${d.server.cpus} CPU · Python ${d.server.python}`
+    + (d.running.length ? ` · now running: ${d.running.map((r) => r.route + " " + r.s + " s").join(", ")}` : "");
+  const tbl = (head, rows) => `<table><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("") || `<tr><td colspan="${head.length}" class="muted">Nothing yet</td></tr>`}</tbody></table>`;
+  $("#sp-days-t").innerHTML = tbl(["Day", "Answers", "Typical", "Slowest 5 %", "Over 2 s", "Errors", "Stalls", "Longest stall"],
+    d.days.map((x) => `<tr><td>${esc(x.day)}</td><td>${x.requests}</td><td>${secs(x.p50_ms)}</td><td>${secs(x.p95_ms)}</td>`
+      + `<td class="${x.slow ? "bad" : ""}">${x.slow}</td><td class="${x.errors ? "bad" : ""}">${x.errors}</td>`
+      + `<td class="${x.stalls ? "bad" : ""}">${x.stalls}</td><td>${x.stalls ? x.stall_max_s + " s" : "-"}</td></tr>`));
+  $("#sp-pages").innerHTML = tbl(["Page", "Opened", "Ready (typical)", "Ready (slowest 5 %)", "First byte", "Slowest data"],
+    d.pages.map((p) => `<tr><td>${esc(p.page)}</td><td>${p.n}</td><td>${secs(p.ready_p50_ms)}</td>`
+      + `<td class="${p.ready_p95_ms > 8000 ? "bad" : ""}">${secs(p.ready_p95_ms)}</td><td>${secs(p.ttfb_p50_ms)}</td>`
+      + `<td class="sub">${p.slow_api.map((a) => `${esc(a.path)} ${secs(a.avg_ms)}`).join("<br>")}</td></tr>`));
+  $("#sp-stalls").innerHTML = tbl(["When", "For", "Busy with", "Running then"],
+    d.stalls.map((x, i) => `<tr data-st="${i}" class="bad-row"><td>${esc(fmtDT(x.at))}</td><td>${x.s} s</td><td class="sub">${esc(x.doing || "?")}</td>`
+      + `<td class="sub">${esc([...(x.running || []), ...(x.finished_during || [])].map((r) => r.route + " (" + r.s + " s)").join(", "))}</td></tr>`));
+  $("#sp-routes").innerHTML = tbl(["Answer", "Count", "Typical", "Slowest 5 %", "Longest", "Time in all", "Sent", "Over 2 s"],
+    d.routes.map((r) => `<tr><td>${esc(r.route)}</td><td>${r.n}</td><td>${secs(r.p50_ms)}</td><td>${secs(r.p95_ms)}</td><td>${secs(r.max_ms)}</td>`
+      + `<td>${r.total_s} s</td><td>${r.kb >= 10240 ? Math.round(r.kb / 1024) + " MB" : r.kb + " kB"}</td><td class="${r.slow ? "bad" : ""}">${r.slow}</td></tr>`));
+  $("#sp-slow").innerHTML = tbl(["When", "Took", "Answer", "Project", "Sent"],
+    d.slow.map((x) => `<tr><td>${esc(fmtDT(x.at))}</td><td>${secs(x.ms)}</td><td>${esc(x.route)}<br><span class="sub">${esc(x.path)}</span></td>`
+      + `<td>${esc(x.project || "")}</td><td>${Math.round((x.bytes || 0) / 1024)} kB</td></tr>`));
+  $("#sp-stalls").querySelectorAll("tr[data-st]").forEach((tr) => {
+    tr.onclick = () => {
+      const pre = $("#sp-detail");
+      pre.hidden = false;
+      pre.textContent = JSON.stringify(d.stalls[+tr.dataset.st], null, 1);
       pre.scrollIntoView({ behavior: "smooth", block: "nearest" });
     };
   });
@@ -1115,7 +1155,7 @@ async function main() {
   wireAccount();
   const first = new URLSearchParams(location.search).get("first");
   if (first || (A.me.user && A.me.user.must_change)) {
-    for (const t of ["projects", "people", "devices", "publish"]) $("#tab-" + t).hidden = true;
+    for (const t of ["projects", "people", "devices", "speed", "publish"]) $("#tab-" + t).hidden = true;
     msg("Welcome. Please choose your own password to continue - the temporary one "
       + "goes in the first box.", "");
     show("account");
@@ -1124,6 +1164,10 @@ async function main() {
   $("#tab-people").hidden = !A.me.site_admin;
   $("#tab-devices").hidden = !A.me.site_admin;
   $("#tab-devices").addEventListener("click", () => loadDevices());
+  $("#tab-speed").hidden = !A.me.site_admin;
+  $("#tab-speed").addEventListener("click", () => loadSpeed());
+  $("#sp-reload").onclick = () => loadSpeed();
+  $("#sp-days").onchange = () => loadSpeed();
   $("#d-reload").onclick = () => loadDevices();
   $("#d-filter").onchange = () => renderDevices();
   wireProjects();
@@ -1139,6 +1183,7 @@ async function main() {
   const want = location.hash.replace("#", "");
   if (want === "people" && A.me.site_admin) { show("people"); renderPeople(); }
   else if (want === "devices" && A.me.site_admin) { show("devices"); loadDevices(); }
+  else if (want === "speed" && A.me.site_admin) { show("speed"); loadSpeed(); }
   else if (want === "publish") { show("publish"); loadPublishJobs(); }
   else if (want === "account") show("account");
   else show("projects");

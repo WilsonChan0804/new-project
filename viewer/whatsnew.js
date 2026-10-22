@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-03", date: "22 Oct 2026",
+    items: [
+      "**The server keeps answering everyone:** publishing a model (unpacking hundreds of MB), reading pages' data, PDF and file work, CAD drawing and the sheet pictures now run beside the server's answers instead of in their way - one person's big upload or import no longer freezes the viewer for the others.",
+      "**Admin > Speed (site admins):** how fast the server answers and how long each page takes on people's own devices, measured all the time; any moment the server stopped answering is listed with what it was busy with.",
+    ],
+  },
+  {
     version: "2026-12-02", date: "22 Oct 2026",
     items: [
       "**Fix - viewer Offline after 2026-12-01:** an SBD check (SBD Export from Revit, or Run) kept the server busy for minutes, so the viewer said Offline and publishing from Revit timed out. The check now runs in its own process, at lower priority, so the viewer and publishing carry on while it runs. It is also faster again, and a check that takes over 20 minutes is stopped with a message.",

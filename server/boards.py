@@ -326,15 +326,16 @@ def register(app, core):
     def presence_list(pid, bid, but=None):
         room = PRESENCE.get((pkey(pid), bid)) or {}
         t = time.time()
-        for cid in [c for c, p in room.items() if t - p["ts"] > PRESENCE_TTL]:
+        items = list(room.items())             # a copy: read on a thread while others join
+        for cid in [c for c, p in items if t - p["ts"] > PRESENCE_TTL]:
             room.pop(cid, None)
         return [{"cid": c, "name": p["name"], "x": p.get("x"), "y": p.get("y"), "ro": p.get("ro", False)}
-                for c, p in sorted(room.items()) if c != but]
+                for c, p in sorted(items) if c != but and t - p["ts"] <= PRESENCE_TTL]
 
     # ------------------------------------------------------------ boards
 
     @app.get("/api/boards")
-    async def boards_list(request: Request, x_viewer_token: str = Header(default=""),
+    def boards_list(request: Request, x_viewer_token: str = Header(default=""),
                           x_project: str = Header(default="")):
         w, role, pid = access(request, "viewer", x_viewer_token, x_project)
         with db_for(pid) as db:
@@ -418,7 +419,7 @@ def register(app, core):
         return done
 
     @app.get("/api/boards/workflow/assets")
-    async def workflow_assets(request: Request, x_viewer_token: str = Header(default=""),
+    def workflow_assets(request: Request, x_viewer_token: str = Header(default=""),
                               x_project: str = Header(default="")):
         """The workflow board's pictures, as snapshot paths (a board only
         refers to pictures by those). Copied in once, named by their
@@ -537,7 +538,7 @@ def register(app, core):
     # ----------------------------------------------------------- objects
 
     @app.get("/api/boards/{bid}/objects")
-    async def objects_get(bid: str, request: Request, since: int = 0,
+    def objects_get(bid: str, request: Request, since: int = 0,
                           x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         w, role, pid = access(request, "viewer", x_viewer_token, x_project)
         with db_for(pid) as db:

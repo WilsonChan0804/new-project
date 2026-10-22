@@ -351,7 +351,7 @@ def register(app, core):
             return None
 
     @app.get("/api/sbd/template.dxf")
-    async def sbd_template(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def sbd_template(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         """The CAD template: the layers to draw the SBD model on. For a
         project with an SBD model, its site boundary and streets are in it,
         at shared (survey) coordinates when the project's 3D says how;
@@ -424,7 +424,7 @@ def register(app, core):
         return {"removed_models": drop_masses_ref(core, x_project)}
 
     @app.get("/api/sbd")
-    async def sbd_get(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def sbd_get(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         core.require_project(request, x_project, "viewer", x_viewer_token)
         d = _dir(core, x_project)
         st = _read(os.path.join(d, "status.json"))
@@ -433,7 +433,7 @@ def register(app, core):
         return {"model": _read(os.path.join(d, "model.json")), "result": _read(os.path.join(d, "result.json")), "status": st}
 
     @app.get("/api/sbd/model.json")
-    async def sbd_model_file(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def sbd_model_file(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         """The masses, site and streets last sent (as kept): to send to LWK
         BIM when a result needs checking against the real model."""
         core.require_project(request, x_project, "member", x_viewer_token)
@@ -466,38 +466,41 @@ def register(app, core):
         """The SBD drawings as a DXF, or a DWG (the ODA File Converter)."""
         core.require_project(request, x_project, "viewer", x_viewer_token)
         raw = await request.body()
-        if len(raw) > 80 * 1048576:
-            raise HTTPException(status_code=413, detail="Too much to draw")
-        try:
-            ents = json.loads(raw.decode("utf-8")).get("ents") or []
-        except (ValueError, AttributeError):
-            raise HTTPException(status_code=400, detail="Not JSON")
-        text = cad_file(ents)
-        fname = (re.sub(r'[\x00-\x1f<>:"/\\|?*]+', "_", name).strip(" .") or "SBD")[:120]
-        if format == "dwg":
-            import cad as CAD
-            oda = CAD.find_oda()
-            if not oda:
-                raise HTTPException(status_code=501, detail="DWG needs the ODA File Converter on the server - take the DXF (AutoCAD opens it)")
-            import tempfile
-            tmp = tempfile.mkdtemp(prefix="lwk-sbdcad-")
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            if len(raw) > 80 * 1048576:
+                raise HTTPException(status_code=413, detail="Too much to draw")
             try:
-                src, dst = os.path.join(tmp, "a.dxf"), os.path.join(tmp, "a.dwg")
-                with open(src, "w", encoding="ascii", errors="replace", newline="") as f:
-                    f.write(text)
-                if not CAD.dxf_to_dwg(oda, src, dst):
-                    raise HTTPException(status_code=500, detail="The DWG could not be made - take the DXF")
-                with open(dst, "rb") as f:
-                    data = f.read()
-            finally:
-                shutil.rmtree(tmp, ignore_errors=True)
-            return Response(content=data, media_type="application/acad",
-                            headers={"Content-Disposition": 'attachment; filename="%s.dwg"' % fname.encode("ascii", "replace").decode()})
-        return Response(content=text.encode("ascii", "replace"), media_type="application/dxf",
-                        headers={"Content-Disposition": 'attachment; filename="%s.dxf"' % fname.encode("ascii", "replace").decode()})
+                ents = json.loads(raw.decode("utf-8")).get("ents") or []
+            except (ValueError, AttributeError):
+                raise HTTPException(status_code=400, detail="Not JSON")
+            text = cad_file(ents)
+            fname = (re.sub(r'[\x00-\x1f<>:"/\\|?*]+', "_", name).strip(" .") or "SBD")[:120]
+            if format == "dwg":
+                import cad as CAD
+                oda = CAD.find_oda()
+                if not oda:
+                    raise HTTPException(status_code=501, detail="DWG needs the ODA File Converter on the server - take the DXF (AutoCAD opens it)")
+                import tempfile
+                tmp = tempfile.mkdtemp(prefix="lwk-sbdcad-")
+                try:
+                    src, dst = os.path.join(tmp, "a.dxf"), os.path.join(tmp, "a.dwg")
+                    with open(src, "w", encoding="ascii", errors="replace", newline="") as f:
+                        f.write(text)
+                    if not CAD.dxf_to_dwg(oda, src, dst):
+                        raise HTTPException(status_code=500, detail="The DWG could not be made - take the DXF")
+                    with open(dst, "rb") as f:
+                        data = f.read()
+                finally:
+                    shutil.rmtree(tmp, ignore_errors=True)
+                return Response(content=data, media_type="application/acad",
+                                headers={"Content-Disposition": 'attachment; filename="%s.dwg"' % fname.encode("ascii", "replace").decode()})
+            return Response(content=text.encode("ascii", "replace"), media_type="application/dxf",
+                            headers={"Content-Disposition": 'attachment; filename="%s.dxf"' % fname.encode("ascii", "replace").decode()})
+        return await run_in_threadpool(_rest)
 
     @app.get("/api/sbd/saved")
-    async def sbd_saved(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def sbd_saved(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         core.require_project(request, x_project, "viewer", x_viewer_token)
         d = _dir(core, x_project, "saved")
         out = []
@@ -513,18 +516,21 @@ def register(app, core):
     async def sbd_save(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         w, _ = core.require_project(request, x_project, "member", x_viewer_token)
         body = await request.json() or {}
-        r = _read(os.path.join(_dir(core, x_project), "result.json"))
-        if not r:
-            raise HTTPException(status_code=404, detail="Nothing to save yet")
-        r["saved_name"] = str(body.get("name") or "").strip()[:80] or time.strftime("SBD %Y-%m-%d %H:%M")
-        r["saved_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-        r["saved_by"] = w.name or ""
-        sid = uuid.uuid4().hex[:12]
-        _write(os.path.join(_dir(core, x_project, "saved"), sid + ".json"), r)
-        return {"id": sid, "name": r["saved_name"]}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            r = _read(os.path.join(_dir(core, x_project), "result.json"))
+            if not r:
+                raise HTTPException(status_code=404, detail="Nothing to save yet")
+            r["saved_name"] = str(body.get("name") or "").strip()[:80] or time.strftime("SBD %Y-%m-%d %H:%M")
+            r["saved_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+            r["saved_by"] = w.name or ""
+            sid = uuid.uuid4().hex[:12]
+            _write(os.path.join(_dir(core, x_project, "saved"), sid + ".json"), r)
+            return {"id": sid, "name": r["saved_name"]}
+        return await run_in_threadpool(_rest)
 
     @app.get("/api/sbd/saved/{sid}")
-    async def sbd_saved_one(request: Request, sid: str, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def sbd_saved_one(request: Request, sid: str, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         core.require_project(request, x_project, "viewer", x_viewer_token)
         if not SAFE.match(sid):
             raise HTTPException(status_code=404, detail="No such result")

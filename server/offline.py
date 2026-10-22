@@ -59,7 +59,7 @@ def _entry(root, rel, use=None):
 def register(app, core):
 
     @app.get("/api/offline/shell")
-    async def offline_shell():
+    def offline_shell():
         files = []
         top = core.VIEWER_DIR
         for folder, dirs, names in os.walk(top):
@@ -81,7 +81,7 @@ def register(app, core):
                             headers={"Cache-Control": "no-store"})
 
     @app.get("/api/offline/plan")
-    async def offline_plan(request: Request, project: str = "",
+    def offline_plan(request: Request, project: str = "",
                            x_viewer_token: str = Header(default=""),
                            x_project: str = Header(default="")):
         pid = "default" if core.CFG["single"] else (project or x_project)

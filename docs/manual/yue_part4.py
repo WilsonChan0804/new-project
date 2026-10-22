@@ -226,6 +226,7 @@ PART = [
         '**People：** 加 account、**Reset password**、**Make / Remove site admin**、**Deactivate / Reactivate**（會喺所有地方 sign out 嗰個人）、**Edit**、**Delete**（整錯咗嘅 account 用）。',
         '**Delete project ...：** 打個 project 名確認。Model、sheet、issue、markup 同成員會搬去 server 嘅回收站；喺回收站清單撳 **Restore** 會全部放返，只要個名未被再用。',
         '**Devices：** 3D 版由每部裝置傳嚟嘅報告：載入咗乜、最高記憶體、frame rate、卡頓同 crash。篩選 crash 或者手機同平板，就知 viewer 喺邊度辛苦。',
+        '**Speed（網站管理員）：** 伺服器回應有幾快、用家要等幾耐，一直都喺度量度。**Days**：回應數量、一般同最慢嘅時間，同 **stalls（停頓）** - 伺服器停咗回應所有人嘅時刻（好似 viewer 顯示 Offline 嗰陣）。每次停頓都會講伺服器當時忙緊乜：傳俾我哋就可以修正嗰部分。**Pages, as people waited**：每個版喺用家自己部機上要幾耐先用得（第一張圖紙或者模型顯示咗），同佢最慢嘅資料。**Server answers** 同 **Slow answers**（超過 2 秒）顯示邊部分用咗時間。Chat 等緊新訊息嘅請求會計數，但唔當慢。',
         '**Server：** email 要 server 設定好 LWK_SMTP_。如果 server 前面嘅 proxy 處理唔到壓縮咗、瀏覽器保留嘅檔案，用 --plain-assets 開 server（或者喺 run.bat 設 PLAIN_ASSETS=1）。',
     ]),
     H2('解決問題同常見問題'),

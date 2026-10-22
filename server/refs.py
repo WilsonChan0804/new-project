@@ -32,6 +32,7 @@ import time
 import uuid
 
 from fastapi import Header, HTTPException, Request
+from starlette.concurrency import run_in_threadpool
 
 CORE = None
 _LOCK = threading.Lock()
@@ -165,7 +166,7 @@ def register(app, core):
         return role == "admin" or w.site_admin or (w.uid is not None and r.get("by_uid") == w.uid)
 
     @app.get("/api/refs")
-    async def refs_list(request: Request, x_viewer_token: str = Header(default="")):
+    def refs_list(request: Request, x_viewer_token: str = Header(default="")):
         w, role, pid, root = project(request, x_viewer_token)
         out = []
         for r in read_refs(root):
@@ -202,53 +203,59 @@ def register(app, core):
                     os.remove(src)
                     raise HTTPException(status_code=413, detail="IFC files up to 3 GB")
                 f.write(chunk)
-        if not head.lstrip().startswith(b"ISO-10303-21"):
-            os.remove(src)
-            raise HTTPException(status_code=400, detail="That is not an IFC file (it should start with ISO-10303-21)")
-        r = {"id": rid, "kind": "ifc", "name": clean(name, 80) or clean(os.path.splitext(file)[0], 80) or "Consultant model",
-             "company": clean(company, 80), "discipline": clean(discipline, 40), "source_file": clean(file, 160),
-             "ifc": "refs/%s.ifc" % rid, "fragments": "refs/%s.frag" % rid, "format": "frag",
-             "status": "waiting", "progress": 0, "error": "", "mb": None, "ifc_mb": round(size / 1048576.0, 1),
-             "placement": placement_of({}), "opacity": 1, "on": True,
-             "by": w.name or "", "by_uid": w.uid, "at": now_iso()}
-        with _LOCK:
-            refs = read_refs(root)
-            refs.append(r)
-            write_refs(root, refs)
-        convert(core, root, pid, rid, src, os.path.join(folder, rid + ".frag"))
-        return {"ref": r}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            if not head.lstrip().startswith(b"ISO-10303-21"):
+                os.remove(src)
+                raise HTTPException(status_code=400, detail="That is not an IFC file (it should start with ISO-10303-21)")
+            r = {"id": rid, "kind": "ifc", "name": clean(name, 80) or clean(os.path.splitext(file)[0], 80) or "Consultant model",
+                 "company": clean(company, 80), "discipline": clean(discipline, 40), "source_file": clean(file, 160),
+                 "ifc": "refs/%s.ifc" % rid, "fragments": "refs/%s.frag" % rid, "format": "frag",
+                 "status": "waiting", "progress": 0, "error": "", "mb": None, "ifc_mb": round(size / 1048576.0, 1),
+                 "placement": placement_of({}), "opacity": 1, "on": True,
+                 "by": w.name or "", "by_uid": w.uid, "at": now_iso()}
+            with _LOCK:
+                refs = read_refs(root)
+                refs.append(r)
+                write_refs(root, refs)
+            convert(core, root, pid, rid, src, os.path.join(folder, rid + ".frag"))
+            return {"ref": r}
+        return await run_in_threadpool(_rest)
 
     @app.post("/api/refs/overlay")
     async def refs_overlay(request: Request, x_viewer_token: str = Header(default="")):
         """{project, model, name}: another project's 3D model, overlaid here."""
         w, role, pid, root = project(request, x_viewer_token, "member")
         b = await request.json() or {}
-        src = str(b.get("project") or "")
-        if src == pid:
-            raise HTTPException(status_code=400, detail="That is this project's own model")
-        core.require_project(request, src, "viewer", x_viewer_token)
-        try:
-            with open(os.path.join(core.project_root_for(src), "manifest.json"), encoding="utf-8") as f:
-                man = json.load(f)
-        except Exception:
-            raise HTTPException(status_code=404, detail="That project has no 3D yet")
-        models = [m for m in man.get("models") or [] if m.get("name") == b.get("model")]
-        if not models:
-            raise HTTPException(status_code=404, detail="No such model in that project")
-        rid = uuid.uuid4().hex[:12]
-        r = {"id": rid, "kind": "overlay", "name": clean(b.get("name"), 80) or "%s · %s" % (src, models[0]["name"]),
-             "company": clean(b.get("company"), 80), "discipline": clean(b.get("discipline"), 40),
-             "project": src, "model": models[0]["name"], "status": "ready",
-             "placement": placement_of(b.get("placement") or {}), "opacity": 1, "on": True,
-             "by": w.name or "", "by_uid": w.uid, "at": now_iso()}
-        with _LOCK:
-            refs = read_refs(root)
-            refs.append(r)
-            write_refs(root, refs)
-        return {"ref": r}
+        # the rest on a thread: the server keeps answering everyone meanwhile
+        def _rest():
+            src = str(b.get("project") or "")
+            if src == pid:
+                raise HTTPException(status_code=400, detail="That is this project's own model")
+            core.require_project(request, src, "viewer", x_viewer_token)
+            try:
+                with open(os.path.join(core.project_root_for(src), "manifest.json"), encoding="utf-8") as f:
+                    man = json.load(f)
+            except Exception:
+                raise HTTPException(status_code=404, detail="That project has no 3D yet")
+            models = [m for m in man.get("models") or [] if m.get("name") == b.get("model")]
+            if not models:
+                raise HTTPException(status_code=404, detail="No such model in that project")
+            rid = uuid.uuid4().hex[:12]
+            r = {"id": rid, "kind": "overlay", "name": clean(b.get("name"), 80) or "%s · %s" % (src, models[0]["name"]),
+                 "company": clean(b.get("company"), 80), "discipline": clean(b.get("discipline"), 40),
+                 "project": src, "model": models[0]["name"], "status": "ready",
+                 "placement": placement_of(b.get("placement") or {}), "opacity": 1, "on": True,
+                 "by": w.name or "", "by_uid": w.uid, "at": now_iso()}
+            with _LOCK:
+                refs = read_refs(root)
+                refs.append(r)
+                write_refs(root, refs)
+            return {"ref": r}
+        return await run_in_threadpool(_rest)
 
     @app.get("/api/refs/sources")
-    async def refs_sources(request: Request, x_viewer_token: str = Header(default="")):
+    def refs_sources(request: Request, x_viewer_token: str = Header(default="")):
         """The other projects' 3D models I can open (for an overlay)."""
         w, role, pid, root = project(request, x_viewer_token)
         out = []
@@ -312,7 +319,7 @@ def register(app, core):
         return {"ok": True}
 
     @app.post("/api/refs/{rid}/convert")
-    async def refs_reconvert(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def refs_reconvert(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         """Try the conversion again (after installing the converter)."""
         w, role, pid, root = project(request, x_viewer_token, "member")
         r = next((x for x in read_refs(root) if x["id"] == rid), None)

@@ -8461,6 +8461,7 @@ async function boot() {
     if (jumpMode && !S.light) setTimeout(loadRestOfLinks, 4000);
   }
   S.perf.allReadyAt = performance.now();
+  try { if (window.lwkReady) window.lwkReady(); } catch (e) {}      // Admin > Speed (boot.js)
   renderPerf();
   Tele.note(`all models ready at ${(performance.now() / 1000).toFixed(1)} s`);
   if (S.notPrepared && S.notPrepared.length) {

@@ -402,5 +402,6 @@ How the pages open fast (server: `assets.py`, viewer: `boot.js`):
   - uvicorn speaks HTTP/1.1, so a browser opens 6 connections at most and a first visit to the Sheets page (about 50 files) waits in a queue.
   - If https comes from a proxy (Caddy, nginx, IIS, Azure Front Door), switch on HTTP/2 (and Brotli) there.
   - Repeat visits do not need it: their files come from the browser's cache.
+- **The server keeps answering** (`perf.py`, `procjob.py`): page data is read on threads; a publish upload is unpacked on a thread; SBD checks, CAD drawing and the sheet pictures run as separate, lower-priority processes. Admin > **Speed** shows each day's answer times, pages as people waited (from their devices, `boot.js`), and any **stall** - the server not answering for over a second - with the code it was busy in (`<data>/perf/`).
 - **Big PDFs:** a sheet set exported as one big PDF (hundreds of MB) is slow on every device. Let the server build the sheets' picture tiles after each export (*Performance* on the Sheets page), or export one PDF per sheet.
 - If a proxy in front of the server has trouble with this, start it with `--plain-assets` (or `set "PLAIN_ASSETS=1"` in run.bat) to serve the files as they are.
