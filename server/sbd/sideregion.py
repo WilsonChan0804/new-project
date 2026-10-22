@@ -47,7 +47,9 @@ def _spans(poly, v):
     return [(xs[k], xs[k + 1]) for k in range(0, len(xs) - 1, 2)]
 
 
-def _merged(polys, v, tol=1e-6):
+def _merged(polys, v, tol=1e-3):
+    """The spans of several polygons at depth v, joined where they touch
+    (within 0.3 mm: a street part built beside the boundary meets it)."""
     iv = sorted(s for p in polys for s in _spans(p, v))
     out = []
     for a, b in iv:
@@ -242,6 +244,91 @@ def _clip_v(poly, v_max):
     return out
 
 
+def edge_meets(site, edge, v_lo, v_hi):
+    """Where the region's inner edge meets the site boundary: (v_entry,
+    v_exit), the lowest and the highest such station (v_lo / v_hi when it
+    meets none). The street part of the region runs between the lines
+    through these two points parallel to the plane (Wilson, TMTL496)."""
+    u1, v1, t = edge
+    hits = []
+    m = len(site)
+    for i in range(m):
+        a, b = site[i], site[(i + 1) % m]
+        for k, piece in enumerate(((u1, v1, 0.0), (u1, v1, t))):
+            c = _cross(piece, a, b)
+            # each piece only where it applies: straight up to v1, turned after
+            if c is not None and ((k == 0 and c <= v1 + 1e-9) or (k == 1 and c >= v1 - 1e-9)):
+                hits.append(c)
+    hits = [c for c in hits if v_lo - 1e-9 <= c <= v_hi + 1e-9]
+    return (min(hits), max(hits)) if hits else (v_lo, v_hi)
+
+
+def _limit(site, v, s):
+    """The site's outer limit on the side s at depth v, or None."""
+    sp = _spans(site, v)
+    if not sp:
+        return None
+    return sp[-1][1] if s > 0 else sp[0][0]
+
+
+def street_part(site, facing, side, v_entry, v_exit, carry=None):
+    """The street beside a side region, as the region has it: from the
+    site's outer limit out to the street's centreline, over the stretch
+    between the two points where the region's inner edge meets the site
+    boundary - lines parallel to the plane at both ends, not the frontage's
+    own corners. facing: [(centreline, reach, [the frontage polygons
+    extension() found for it])]. Past a frontage's end it runs on (a corner
+    rounding away, a boundary slanting past the street's end) while the
+    centreline is still within the street's reach of the boundary, up to
+    `carry`. -> [(u, v) polygons]"""
+    s = 1.0 if side == "right" else -1.0
+    carry = CORNER_CARRY if carry is None else carry
+    eps = 1e-6
+    gap = 3.0 / 0.3048
+    out = []
+    for cl, reach, polys in facing:
+        for e in polys:
+            ea, eb = min(p[1] for p in e), max(p[1] for p in e)
+            lo, hi = max(v_entry, ea - carry), min(v_exit, eb + carry)
+            if hi - lo < 1e-6:
+                continue
+            vs = {lo, hi}
+            vs.update(p[1] for p in site if lo < p[1] < hi)
+            vs.update(p[1] for p in cl if lo < p[1] < hi)
+            rows = []                     # (v, inner u, outer u, ok)
+            for v in sorted(vs):
+                for vv in ((v,) if v in (lo, hi) else (v - eps, v + eps)):
+                    vq = min(max(vv, lo + eps), hi - eps)
+                    u = _limit(site, vq, s)
+                    c = None if u is None else _cl_u(cl, v, u, carry)
+                    ok = c is not None and (c - u) * s > 1e-6
+                    if ok and not (ea - 1e-6 <= v <= eb + 1e-6):
+                        # beyond the frontage: only while it is still the street
+                        ok = abs(c - u) <= 1.6 * (reach + gap)
+                    rows.append((v, u, c, ok))
+            # the run of good stations that holds the frontage itself
+            mid = (max(lo, ea) + min(hi, eb)) / 2.0
+            k = min(range(len(rows)), key=lambda i: abs(rows[i][0] - mid))
+            if not rows[k][3]:
+                continue
+            i0 = k
+            while i0 > 0 and rows[i0 - 1][3]:
+                i0 -= 1
+            i1 = k
+            while i1 < len(rows) - 1 and rows[i1 + 1][3]:
+                i1 += 1
+            run = rows[i0:i1 + 1]
+            if len(run) < 2:
+                continue
+            ring = []
+            for p in [(r[1], r[0]) for r in run] + [(r[2], r[0]) for r in reversed(run)]:
+                if not ring or abs(p[0] - ring[-1][0]) > 1e-9 or abs(p[1] - ring[-1][1]) > 1e-9:
+                    ring.append(p)
+            if len(ring) >= 3:
+                out.append(ring)
+    return out
+
+
 def region(site, ext, hulls, side, edge, v_lo, v_hi):
     """The region for one inner edge (u1, v1, t): (area, depth, inner chain,
     outer chain) of the run nearest the plane, or None (no region, or the
@@ -257,25 +344,6 @@ def region(site, ext, hulls, side, edge, v_lo, v_hi):
         for a, b in _spans(h, v1) if v_lo < v1 < v_hi else []:
             if ((b if s > 0 else a) - ue(v1)) * s > 0.05:
                 return None
-    # the street beside the region counts only as far as the region reaches
-    # in the site: up to where its inner edge meets the site boundary, cut
-    # there parallel to the plane (Wilson, TMTL496 - Plane Y along So Kwun
-    # Wat Road)
-    if ext:
-        exits = []
-        m = len(site)
-        for i in range(m):
-            a, b = site[i], site[(i + 1) % m]
-            for k, piece in enumerate(((u1, v1, 0.0), (u1, v1, t))):
-                c = _cross(piece, a, b)
-                # each piece only where it applies: straight up to v1, turned after
-                if c is not None and ((k == 0 and c <= v1 + 1e-9) or (k == 1 and c >= v1 - 1e-9)):
-                    exits.append(c)
-        far = [c for c in exits if c > v_lo + 1e-6]
-        if far:
-            v_exit = max(far)
-            if v_exit < v_hi - 1e-6:
-                ext = [q for q in (_clip_v(e, v_exit) for e in ext) if len(q) >= 3]
     polys = [site] + list(ext)
     vs = {v_lo, v_hi}
     if v_lo < v1 < v_hi:
@@ -419,6 +487,15 @@ def candidates(hulls, side, v_lo):
                 continue                      # turn at c1 towards a corner beyond it
             t = max(-TAN_MAX, min(TAN_MAX, (c2[0] - c1[0]) / (c2[1] - c1[1])))
             out.add((round(c1[0], 6), round(c1[1], 6), round(t, 9)))
+        # or straight on to a later corner on the same line (the far end of
+        # the same building face) and turned there the full 15 deg either way
+        # - round the last building the region may grow (Wilson, TMTL496:
+        # "larger if the corridor turns later"); it still turns only at a
+        # building corner, and an edge that cuts a building is refused
+        for c3 in sil:
+            if abs(c3[0] - c1[0]) < 1e-6 and c3[1] >= c1[1] - 1e-6:
+                out.add((round(c1[0], 6), round(c3[1], 6), round(TAN_MAX, 9)))
+                out.add((round(c1[0], 6), round(c3[1], 6), round(-TAN_MAX, 9)))
     return sorted(out)
 
 
@@ -429,24 +506,29 @@ def side_region(site, hulls, side, streets=None):
     streets: [(centreline [(u, v)], reach ft)] beside this side."""
     v_lo = min(p[1] for p in site)
     v_hi = max(p[1] for p in site)
-    ext = []
+    facing = []                  # (centreline, its frontage polygons) of each street facing this side
     slabs = [st[2] for st in streets or [] if len(st) > 2 and st[2]]
     for st in streets or []:
         cl, reach = st[0], st[1]
         outline = st[2] if len(st) > 2 else None
-        ext += extension(site, cl, reach, side, outline, 3.0 / 0.3048, [o for o in slabs if o is not outline])
+        polys = extension(site, cl, reach, side, outline, 3.0 / 0.3048, [o for o in slabs if o is not outline])
+        if polys:
+            facing.append((cl, reach, polys))
     best = None
     for e in candidates(hulls, side, v_lo):
-        r = region(site, ext, hulls, side, e, v_lo, v_hi)
+        # the street part as this edge has it: between the two points where
+        # the edge meets the site boundary
+        ext_e = street_part(site, facing, side, *edge_meets(site, e, v_lo, v_hi)) if facing else []
+        r = region(site, ext_e, hulls, side, e, v_lo, v_hi)
         if not r:
             continue
         # the largest area; of equal ones, the smaller turn
         if best is None or r[0] > best[1][0] * (1 + 1e-9) + 1e-9 or \
                 (abs(r[0] - best[1][0]) <= 1e-9 * max(1.0, r[0]) and abs(e[2]) < abs(best[0][2])):
-            best = (e, r)
+            best = (e, r, ext_e)
     if not best:
         return None
-    e, (area, depth, inner, outer) = best
+    e, (area, depth, inner, outer), ext = best
     # an edge whose turn comes after the region ends is straight in it
     if inner and e[1] >= max(p[1] for p in inner) - 1e-6:
         e = (e[0], e[1], 0.0)

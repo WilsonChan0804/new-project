@@ -522,11 +522,15 @@ class SideRegionEndInStreet(unittest.TestCase):
         slab = [(100, 0), (120, 0), (105, 60), (85, 60)]
         cl = [(110, -4), (95, 64)]
         r = SR.side_region(site, hull, "right", [(cl, 13.0, slab)])
-        self.assertAlmostEqual(max(v for _, v in r["polygon"]), 40.0, places=6)
-        top = sorted(u for u, v in r["polygon"] if abs(v - 40.0) < 1e-6)
-        self.assertAlmostEqual(top[0], 90.0, places=6)           # from the exit point ...
-        self.assertAlmostEqual(top[-1], 110 - 15 * 44 / 68.0, places=6)   # ... parallel to the plane to the centreline
-        self.assertAlmostEqual(r["D_ft"], 40.0, places=6)
+        v0, v1 = SR.edge_meets(site, r["edge"], 0.0, 60.0)
+        # nothing of the street beyond the line through the exit point
+        street = [p for p in r["polygon"] if p[0] > 100 - p[1] / 4.0 + 1e-6]
+        self.assertTrue(street)
+        self.assertLessEqual(max(v for _, v in street), v1 + 1e-6)
+        if v1 < 60.0 - 1e-6:
+            # ... and the line is parallel to the plane, out to the centreline
+            top = sorted(u for u, v in r["polygon"] if abs(v - v1) < 1e-6)
+            self.assertAlmostEqual(top[-1], 110 - 15 * (v1 + 4) / 68.0, places=6)
 
 
 class OneOffsetPerStreet(unittest.TestCase):
@@ -572,6 +576,39 @@ class AngledGaps(unittest.TestCase):
         site = [(-10, -10), (70, -10), (70, 60), (-10, 60)]
         known = [{"strip": [[20, -10], [40, -10], [40, 60], [20, 60]]}]
         self.assertEqual(engine._angled_gaps(site, [("B1", [a]), ("B2", [b])], (1.0, 0.0), known), [])
+
+
+class StreetPartBetweenEdgeMeets(unittest.TestCase):
+    """TMTL496 (third report): a side region's street part runs exactly
+    between the lines, parallel to the plane, through the two points where
+    its inner edge meets the site boundary - not from the frontage's own
+    corners (the blue X below, the yellow sliver above)."""
+
+    def run_(self, site):
+        from . import sideregion as SR
+        hull = [[(60, 30), (85, 30), (85, 70), (60, 70)]]
+        cl = [(110, -20), (110, 130)]
+        slab = [(100, -20), (120, -20), (120, 130), (100, 130)]
+        return SR.side_region(site, hull, "right", [(cl, 13.0, slab)])
+
+    def test_near_end_cut(self):
+        # the corner by the plane is cut off: the edge u = 85 enters the site at v = 5
+        r = self.run_([(0, 0), (80, 0), (100, 20), (100, 100), (0, 100)])
+        street = [p for p in r["polygon"] if p[0] > 100.0 + 1e-6]
+        self.assertTrue(street)
+        self.assertGreaterEqual(min(v for _, v in street), 5.0 - 1e-6)
+        self.assertTrue(any(abs(u - 110) < 1e-6 and abs(v - 5.0) < 1e-6 for u, v in r["polygon"]), r["polygon"])
+
+    def test_far_end_reaches_the_exit_line(self):
+        # the top slants up to the left: the edge u = 85 leaves the site at
+        # v = 91.5, above the frontage's top corner (100, 90)
+        from . import sideregion as SR
+        site = [(0, 0), (100, 0), (100, 90), (0, 100)]
+        r = self.run_(site)
+        v0, v1 = SR.edge_meets(site, r["edge"], 0.0, 100.0)
+        self.assertGreater(v1, 90.0)                              # above the frontage's top corner
+        self.assertAlmostEqual(max(v for _, v in r["polygon"]), v1, places=6)
+        self.assertTrue(any(abs(u - 110) < 1e-6 and abs(v - v1) < 1e-6 for u, v in r["polygon"]), r["polygon"])
 
 
 class BdSampleCase(unittest.TestCase):
@@ -725,8 +762,11 @@ class Report4(unittest.TestCase):
         b = side(engine.run(dict(base, streets=[self.MAIN, east])))
         self.assertFalse(a["to_cl"])
         self.assertTrue(b["to_cl"])
-        self.assertAlmostEqual(a["avg_m"], 15.0, delta=0.3)
-        self.assertAlmostEqual(b["avg_m"], 25.0, delta=0.3)     # on to x = 110
+        # 15 m beside the block, and past its far corner the edge turns 15
+        # deg over it (TMTL496, 3rd report: larger if it turns later):
+        # (15 x 60 + 20 x 20 tan 15 / 2) / 60
+        self.assertAlmostEqual(a["avg_m"], (900 + 200 * math.tan(math.radians(15))) / 60.0, delta=0.05)
+        self.assertGreater(b["avg_m"], 25.0 - 0.3)                # on to x = 110
         self.assertLessEqual(max(p[0] for p in b["polygon"]), 110.0 + 1e-3)
 
     def test_gap_joined_with_the_sky_beside_it(self):
@@ -758,8 +798,10 @@ class Report4(unittest.TestCase):
         self.assertEqual(b["plan_level"], 17.0)
         wa = max(s["avg_m"] for s in a["axis1"]["sides"].values())
         wb = max(s["avg_m"] for s in b["axis1"]["sides"].values())
-        self.assertAlmostEqual(wa, 5.0, delta=0.3)
-        self.assertAlmostEqual(wb, 50.0, delta=0.5)
+        # 5 m beside the podium, and past its far corner the edge turns 15
+        # deg over it (TMTL496, 3rd report): (5 x 60 + 15 x 15 tan 15 / 2) / 60
+        self.assertAlmostEqual(wa, (300 + 112.5 * math.tan(math.radians(15))) / 60.0, delta=0.05)
+        self.assertAlmostEqual(wb, (300 + 112.5 * math.tan(math.radians(15))) / 60.0 + 45.0, delta=0.05)
 
     def test_one_near_edge_for_both_side_regions(self):
         d = {"site": [[10, 0], [75, 0], [75, 160], [0, 160], [2, 115], [-6, 100], [-6, 45]],
@@ -1041,6 +1083,28 @@ class Report6(unittest.TestCase):
                     self.assertLess(abs(cr) / max(1e-9, math.hypot(b[0] - a[0], b[1] - a[1])), 0.05)
 
 
+class TurnAfterTheLastCorner(unittest.TestCase):
+    """TMTL496, 3rd report (p.10/12 S3): past the last building corner the
+    edge turns 15 deg over it, so the side region takes in more area."""
+
+    SITE = [(0, 0), (100, 0), (100, 100), (0, 100)]
+
+    def test_turns_down_after_the_last_corner(self):
+        from . import sideregion as SR
+        r = SR.side_region(self.SITE, [[(40, 0), (60, 0), (60, 50), (40, 50)]], "right")
+        self.assertEqual(r["edge"][:2], (60, 50))
+        self.assertAlmostEqual(r["edge"][2], -SR.TAN_MAX, places=6)
+        self.assertAlmostEqual(r["area_ft2"], 4000 + 0.5 * 50 * 50 * SR.TAN_MAX, places=3)
+
+    def test_the_turn_stops_at_a_building(self):
+        from . import sideregion as SR
+        # a block at u 50-58, v 80-90: the edge turns only as far as its corner
+        r = SR.side_region(self.SITE, [[(40, 0), (60, 0), (60, 50), (40, 50)],
+                                       [(50, 80), (58, 80), (58, 90), (50, 90)]], "right")
+        self.assertAlmostEqual(r["edge"][2], -0.05, places=6)
+        self.assertAlmostEqual(r["area_ft2"], 4000 + 0.5 * 50 * 50 * 0.05, places=3)
+
+
 class Report8(unittest.TestCase):
     """Wilson's 8th report: the hatch on to the site's corner beyond the
     edge's exit, a Y-shaped tower kept in the elevation, the buildings'
@@ -1051,7 +1115,8 @@ class Report8(unittest.TestCase):
         # the far boundary v = 80 + u/5: the edge u = 60 leaves the site at
         # v = 92, but the site goes on to its corner (100, 100) outward of it
         site = [(0, 0), (100, 0), (100, 100), (0, 80)]
-        r = SR.side_region(site, [[(40, 10), (60, 10), (60, 50), (40, 50)]], "right")
+        # (the building reaches the far boundary: no room to turn after it)
+        r = SR.side_region(site, [[(40, 10), (60, 10), (60, 92), (40, 88)]], "right")
         self.assertAlmostEqual(r["area_ft2"], 40 * 92 + 160.0, places=6)
         self.assertAlmostEqual(r["D_ft"], 100.0, places=6)
         self.assertTrue(any(abs(p[0] - 100) < 1e-6 and abs(p[1] - 100) < 1e-6 for p in r["polygon"]))
@@ -1141,7 +1206,8 @@ class Report7(unittest.TestCase):
         # the left boundary u = v/2 meets the edge u = 40 at v = 80: the
         # region is the whole triangle-ended piece, area = 40*80 - 80*80/4
         site = [(0, 0), (100, 0), (100, 100), (50, 100)]
-        r = SR.side_region(site, [[(40, 30), (60, 30), (60, 60), (40, 60)]], "left")
+        # (the building reaches the boundary: no room to turn after it)
+        r = SR.side_region(site, [[(40, 30), (60, 30), (60, 100), (50, 100), (40, 80)]], "left")
         self.assertAlmostEqual(r["area_ft2"], 1600.0, places=6)
         self.assertAlmostEqual(r["D_ft"], 80.0, places=6)
         tip = max(r["polygon"], key=lambda p: p[1])
