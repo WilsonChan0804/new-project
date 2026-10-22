@@ -226,57 +226,95 @@ def _one_corridor(gaps, site_uv, touch_m=0.1):
 
 ANGLED_MAX_DEG = 15
 ANGLED_MIN_M = 3.0
+REACH_M = 300.0
 
 
-def _angled_gaps(site, bldgs, ax, gaps):
-    """Openings through the site at an angle (up to 15 deg off square to the
-    plane) that the straight projection does not show - the buildings'
-    shadows on the plane overlap, but a clear band runs between them at a
-    turn (Wilson, TMTL496 p.11). Each is a band between two buildings'
-    outlines, the full depth of the site, at least 3 m wide (measured square
-    to the band), and not one of the gaps already found.
-    -> [{"polygon": [[x, y]] the band, "width_m", "bend_deg", "counts"}]"""
-    loops = [l for _, ls in bldgs for l in ls if len(l) >= 3]
-    if len(loops) < 2 or len(site) < 3:
+def _turned(ax, deg):
+    """Across a band turned deg off square to the plane (e) and along it (d)."""
+    t = math.radians(deg)
+    ex, ey = ax[0] * math.cos(t) - ax[1] * math.sin(t), ax[0] * math.sin(t) + ax[1] * math.cos(t)
+    return (ex, ey), (-ey, ex)
+
+
+def _merged_ivs(loops, e):
+    ivs = sorted((min(p[0] * e[0] + p[1] * e[1] for p in l), max(p[0] * e[0] + p[1] * e[1] for p in l)) for l in loops)
+    out = []
+    for a, b in ivs:
+        if out and a <= out[-1][1]:
+            out[-1] = (out[-1][0], max(out[-1][1], b))
+        else:
+            out.append((a, b))
+    return out
+
+
+def _band_poly(e, d, a1, b0, d0, d1):
+    return [[a1 * e[0] + d0 * d[0], a1 * e[1] + d0 * d[1]], [b0 * e[0] + d0 * d[0], b0 * e[1] + d0 * d[1]],
+            [b0 * e[0] + d1 * d[0], b0 * e[1] + d1 * d[1]], [a1 * e[0] + d1 * d[0], a1 * e[1] + d1 * d[1]]]
+
+
+def _core(band):
+    """The band's middle half across it (a band touching another's edge is
+    not taken as overlapping it)."""
+    mid = [[(band[0][0] + band[1][0]) / 2.0, (band[0][1] + band[1][1]) / 2.0],
+           [(band[2][0] + band[3][0]) / 2.0, (band[2][1] + band[3][1]) / 2.0]]
+    return [[mid[k // 2][0] + (band[k][0] - mid[k // 2][0]) * 0.5, mid[k // 2][1] + (band[k][1] - mid[k // 2][1]) * 0.5]
+            for k in range(4)]
+
+
+def _openings(site, levels, ax, deg):
+    """The clear bands at a turn of deg between the buildings, level by
+    level: a band clear of every building at its level and all those above
+    it. levels: [(z_from, [loops])] from the bottom up.
+    -> [(z_from, a1, b0, band polygon over the site's depth)]"""
+    e, d = _turned(ax, deg)
+    d0 = min(p[0] * d[0] + p[1] * d[1] for p in site)
+    d1 = max(p[0] * d[0] + p[1] * d[1] for p in site)
+    out, above = [], []
+    for z, loops in reversed(levels):
+        above = above + [l for l in loops if len(l) >= 3]
+        if len(above) < 2:
+            continue
+        m = _merged_ivs(above, e)
+        for (a0, a1), (b0, b1) in zip(m, m[1:]):
+            out.append((z, a1, b0, _band_poly(e, d, a1, b0, d0, d1)))
+    return out
+
+
+def _angled_gaps(site, bldgs, ax, gaps, levels=None, z_base=None):
+    """Openings through the site that the straight projection does not show,
+    each a band between two buildings, the full depth of the site, at least
+    3 m wide (measured square to the band), and not one of the gaps already
+    found:
+    - at a turn (up to 15 deg off square to the plane): the buildings'
+      shadows on the plane overlap, but a clear band runs between them at a
+      turn (Wilson, TMTL496 p.11);
+    - level by level (levels: [(z_from, [loops])] the zone's plan levels,
+      from the bottom up): a band clear from some height upward, over a
+      lower building that blocks it in the zone's plan (TMTL496, 3rd
+      report: B4, 7.7 m high, under the opening between the towers).
+    -> [{"polygon": [[x, y]] the band, "width_m", "bend_deg", "counts",
+         "z_from_m": the height it is clear from (None: all the zone)}]"""
+    if levels is None:
+        levels = [(z_base, [l for _, ls in bldgs for l in ls])]
+    if sum(len(ls) for _, ls in levels) < 2 or len(site) < 3:
         return []
+    z_base = levels[0][0] if z_base is None else z_base
     known = [g.get("corridor") or g.get("strip") for g in gaps if g.get("corridor") or g.get("strip")]
     found = []
     for deg in range(-ANGLED_MAX_DEG, ANGLED_MAX_DEG + 1):
-        if deg == 0:
-            continue
-        t = math.radians(deg)
-        # across the band (e) and along it (d): the plane's direction turned
-        ex, ey = ax[0] * math.cos(t) - ax[1] * math.sin(t), ax[0] * math.sin(t) + ax[1] * math.cos(t)
-        dx, dy = -ey, ex
-        pe = lambda p: p[0] * ex + p[1] * ey
-        pd = lambda p: p[0] * dx + p[1] * dy
-        ivs = sorted((min(pe(p) for p in l), max(pe(p) for p in l)) for l in loops)
-        merged = []
-        for a, b in ivs:
-            if merged and a <= merged[-1][1]:
-                merged[-1] = (merged[-1][0], max(merged[-1][1], b))
-            else:
-                merged.append((a, b))
-        d0, d1 = min(pd(p) for p in site), max(pd(p) for p in site)
-        for (a0, a1), (b0, b1) in zip(merged, merged[1:]):
+        for z, a1, b0, band in _openings(site, levels, ax, deg):
             w = b0 - a1
-            if w < ANGLED_MIN_M:
+            low = z is None or z <= z_base + 1e-6
+            if w < ANGLED_MIN_M or (deg == 0 and low):
                 continue
-            band = [[a1 * ex + d0 * dx, a1 * ey + d0 * dy], [b0 * ex + d0 * dx, b0 * ey + d0 * dy],
-                    [b0 * ex + d1 * dx, b0 * ey + d1 * dy], [a1 * ex + d1 * dx, a1 * ey + d1 * dy]]
-            # a little inside, so a band touching a found gap's edge is still new
-            mid = [[(band[0][0] + band[1][0]) / 2.0, (band[0][1] + band[1][1]) / 2.0],
-                   [(band[2][0] + band[3][0]) / 2.0, (band[2][1] + band[3][1]) / 2.0]]
-            core = [[mid[0][0] + (band[0][0] - mid[0][0]) * 0.5, mid[0][1] + (band[0][1] - mid[0][1]) * 0.5],
-                    [mid[0][0] + (band[1][0] - mid[0][0]) * 0.5, mid[0][1] + (band[1][1] - mid[0][1]) * 0.5],
-                    [mid[1][0] + (band[2][0] - mid[1][0]) * 0.5, mid[1][1] + (band[2][1] - mid[1][1]) * 0.5],
-                    [mid[1][0] + (band[3][0] - mid[1][0]) * 0.5, mid[1][1] + (band[3][1] - mid[1][1]) * 0.5]]
-            if any(_poly_overlap(core, k) for k in known):
+            if any(_poly_overlap(_core(band), k) for k in known):
                 continue
             found.append({"polygon": [[round(x, 3), round(y, 3)] for x, y in band], "width_m": round(w, 3),
-                          "bend_deg": float(deg), "counts": w >= 15.0 - 1e-9})
-    # one band per opening: of those overlapping, the widest (then the least turned)
-    found.sort(key=lambda b: (-b["width_m"], abs(b["bend_deg"])))
+                          "bend_deg": float(deg), "counts": w >= 15.0 - 1e-9,
+                          "z_from_m": None if low else round(z, 3), "e_m": [round(a1, 4), round(b0, 4)]})
+    # one band per opening: of those overlapping, one that counts, from the
+    # lowest level, the widest, then the least turned
+    found.sort(key=lambda b: (not b["counts"], b["z_from_m"] or -1e9, -b["width_m"], abs(b["bend_deg"])))
     out = []
     for b in found:
         if not any(_poly_overlap(b["polygon"], o["polygon"]) for o in out):
@@ -284,12 +322,30 @@ def _angled_gaps(site, bldgs, ax, gaps):
     return out
 
 
-def _axis_out(r, site_pts, bldgs=None, streets=None):
+def _widest(site, levels, ax, corridor, now_m):
+    """The widest clear band through a corridor's opening, turned up to 15
+    deg off square to the plane and clear at every level of the zone, when
+    wider than the corridor measured (Wilson, TMTL496 p.10/12: S2 12.455 m
+    "could be wider if the corridor turns"). -> (width, deg, band) or None"""
+    best = None
+    for deg in range(-ANGLED_MAX_DEG, ANGLED_MAX_DEG + 1):
+        for z, a1, b0, band in _openings(site, levels[:1] and [(levels[0][0], [l for _, ls in levels for l in ls])], ax, deg):
+            w = b0 - a1
+            if w <= now_m + 0.01 or not _poly_overlap(_core(band), corridor):
+                continue
+            if best is None or (w, -abs(deg)) > (best[0], -abs(best[1])):
+                best = (w, float(deg), band)
+    return best
+
+
+def _axis_out(r, site_pts, bldgs=None, streets=None, levels=None, z_base=None):
     """One axis' result in metres, with what the plan draws: each gap's
     strip, the S1 side regions (Area / Depth) and the S2 corridors (each
     with its band, to draw clipped to the site), and the near edge: the
     gaps and the building groups' shadows along it (nearedge.py).
-    bldgs: [(label, [loops m])] the zone's buildings."""
+    bldgs: [(label, [loops m])] the zone's buildings; levels: [(z_from,
+    [loops m])] the zone's plan levels from the bottom up (openings found
+    level by level and at a turn)."""
     ax = r["axis"]
     av = P.orthogonal_axis(ax)
     ref = P.site_centroid(site_pts)
@@ -348,7 +404,62 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
             e["area_m2"] = round(ms.get("area_m2", 0.0), 2)
             e["depth_m"] = round(ms.get("depth_m", 0.0), 3)
         gaps.append(e)
+    site_m = [_xy(q) for q in site_pts]
+    lv = levels or [(z_base, [l for _, ls in bldgs or [] for l in ls])]
+
+    def uv_band(e_m, deg, reach=REACH_M):
+        e, d = _turned((ax.X, ax.Y), deg)
+        dd = [p[0] * d[0] + p[1] * d[1] for p in site_m]
+        poly = _band_poly(e, d, e_m[0], e_m[1], min(dd) - reach, max(dd) + reach)
+        return [((x * ax.X + y * ax.Y) * FT, (x * av.X + y * av.Y) * FT) for x, y in poly]
+
+    # each corridor at its widest: the same opening turned up to 15 deg
+    gained = 0.0
+    for g in gaps:
+        if g["type"] != "S2" or not g.get("corridor"):
+            continue
+        w = _widest(site_m, lv, (ax.X, ax.Y), g["corridor"], g["distance_m"])
+        if not w:
+            continue
+        width, deg, band = w
+        e, _ = _turned((ax.X, ax.Y), deg)
+        es = sorted(p[0] * e[0] + p[1] * e[1] for p in band)
+        q = width >= 15.0 - 1e-9
+        gained += (width if q else 0.0) * FT - (g["distance_m"] if g["qualifies"] else 0.0) * FT
+        g["widened"] = {"from_m": g["distance_m"], "from_bend_deg": g.get("bend_deg", 0.0), "from_qualifies": g["qualifies"]}
+        g["distance_m"], g["bend_deg"], g["qualifies"], g["pass"] = round(width, 3), deg, q, q
+        g["corridor"] = g["ring"] = [[round(x, 3), round(y, 3)] for x, y in band]
+        g["_band"] = uv_band((es[0], es[-1]), deg)
     gaps, dropped_is = _one_corridor(gaps, site_uv)
+    dropped_is -= gained
+    # the openings the gap finder does not see (over a lower building, or at
+    # a turn): one that counts (15 m or more) is an air corridor - a gap on
+    # the near edge, IS from the height it is clear from
+    angled = _angled_gaps(site_m, bldgs or [], (ax.X, ax.Y), gaps, lv, z_base)
+    added = []
+    for o in angled:
+        if not o["counts"]:
+            continue
+        # gaps under 3 m inside it are part of it; a wider one (PE or IS at
+        # every height) is left as found, the opening over the lower
+        # building beside it taken horizontally in the elevation
+        inner = [k for k, g in enumerate(gaps) if (g.get("corridor") or g.get("strip"))
+                 and _poly_overlap(_core(g.get("corridor") or g["strip"]), o["polygon"])]
+        if any(gaps[k]["distance_m"] >= ANGLED_MIN_M or gaps[k]["width_m"] >= ANGLED_MIN_M for k in inner):
+            continue
+        for k in sorted(inner, reverse=True):
+            if gaps[k]["qualifies"]:
+                dropped_is += gaps[k]["distance_m"] * FT
+            del gaps[k]
+            added = [i - 1 if i > k else i for i in added]
+        us = sorted((x * ax.X + y * ax.Y) for x, y in o["polygon"])
+        o["added"] = True
+        added.append(len(gaps))
+        gaps.append({"lo_m": round(us[0], 3), "hi_m": round(us[-1], 3), "width_m": round(us[-1] - us[0], 3),
+                     "qualifies": True, "type": "S2", "distance_m": o["width_m"], "pass": True, "threshold_m": 15.0,
+                     "strip": o["polygon"], "corridor": o["polygon"], "ring": o["polygon"], "bend_deg": o["bend_deg"],
+                     "found": "level" if o["z_from_m"] is not None else "turn", "z_from_m": o["z_from_m"],
+                     "_band": uv_band(o["e_m"], o["bend_deg"])})
     # which side region a setback is: the first gap is "left", the last "right"
     s1 = [g for g in gaps if g["type"] == "S1"]
     if s1 and "left" in sides and s1[0]["lo_m"] <= min(g["lo_m"] for g in gaps) + 1e-6:
@@ -366,9 +477,13 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
                                     sum(b - a for a, b in r.get("merged") or []))
     events = sorted([(a, b, "gap", i) for a, b, i in gruns] + [(a, b, "shadow", None) for a, b in sruns])
     owner = {}
+    runs_added = [(a, b) for a, b, i in gruns if i in added]
     for label, loops in bldgs or []:
         us = [(p[0] * ax.X + p[1] * ax.Y) * FT for l in loops for p in l]
         lo, hi = min(us), max(us)
+        # a lower building under an opening found above it: in the gap's column
+        if any(a - 1e-6 <= lo and hi <= b + 1e-6 for a, b in runs_added):
+            continue
         best = max(((min(hi, b) - max(lo, a), n) for n, (a, b, kind, i) in enumerate(events) if kind == "shadow"), default=None)
         if best is not None and best[0] > -1e9:
             owner.setdefault(best[1], []).append((label, loops))
@@ -379,7 +494,7 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
             t = "blocked" if g["type"] == "FAIL" else "omitted" if g["type"] == "OMIT" else "open" if g["type"] == "OPEN" else g["type"]
             edge.append({"kind": "gap", "label": t, "s_m": g["width_m"] if g["type"] in ("FAIL", "OPEN", "OMIT") or not g["distance_m"] else g["distance_m"],
                          "pass": g["qualifies"], "need_m": 15.0 if g["type"] == "S2" else 7.5, "gap": i, "lo": round(a * M, 3), "hi": round(b * M, 3), "bend_deg": g.get("bend_deg"),
-                         "omitted": bool(g.get("omitted"))})
+                         "omitted": bool(g.get("omitted")), "z_from": g.get("z_from_m")})
         else:
             mem = owner.get(n, [])
             edge.append({"kind": "shadow", "label": "+".join(l for l, _ in mem) or "-", "lo": round(a * M, 3), "hi": round(b * M, 3),
@@ -397,7 +512,8 @@ def _axis_out(r, site_pts, bldgs=None, streets=None):
                     nb["hi"] = edge[-1]["hi"]
                 edge.pop(end)
     sv = [q[1] for q in site_uv]
-    angled = _angled_gaps([_xy(q) for q in site_pts], bldgs or [], (ax.X, ax.Y), gaps)
+    # the added corridors' IS: their runs on the near edge
+    dropped_is -= sum(b - a for a, b in runs_added)
     return {
         "P": round((r["IS"] - dropped_is) / r["W"] * 100.0 if r["W"] > 1e-9 else r["P"], 2), "W_m": round(r["W"] * M, 3),
         "IS_m": round((r["IS"] - dropped_is) * M, 3),
@@ -1059,6 +1175,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
                             % (low["name"], abs(low["base_m"]), "above" if low["base_m"] > 0 else "below", g,
                                ", " + data["ground_source"] if data.get("ground_source") else ""))
     tallest = max([h["top_m"] for h in heights] or [20.0])
+    top_of = {m.get("id"): round(max(v[2] for v in m["verts"]) - g, 2) for m in data.get("masses") or [] if m.get("verts")}
     # the Low zone's portion <= 1/3 H is disregarded (the BD sample case):
     # its plan footprints start at H / 3, so a low podium edge does not close
     # a setback, and its elevation shows that band hatched
@@ -1116,16 +1233,24 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
             bldgs = [(lab, [l["loop"] for l in ls]) for lab, ls in _named(inside, a)]
             z["buildings"] = [{"label": lab, "at": [round(sum(p[0] for l in ls for p in l) / sum(len(l) for l in ls), 2),
                                                     round(sum(p[1] for l in ls for p in l) / sum(len(l) for l in ls), 2)],
-                               "name": ", ".join(sorted(set(f.get("name") or "" for f in inside if any(f["loop"] is l for l in ls))))}
+                               "name": ", ".join(sorted(set(f.get("name") or "" for f in inside if any(f["loop"] is l for l in ls)))),
+                               # its top above Level 0: a building shown at a plan level above its top is a wrong ground
+                               "top_m": max([top_of.get(f.get("mass"), 0.0) for f in inside if any(f["loop"] is l for l in ls)] or [0.0])}
                               for lab, ls in bldgs]
             top = z1 if z1 is not None else tallest
+            # the zone's plan levels (bottom up), each cut at its middle: for
+            # the openings clear from some height upward
+            zlv = []
+            for la, lb in F.shape_bands(data.get("masses") or [], g + z0 + exempt_of[name], g + top)[:60]:
+                cut = zone_footprints(data, z0, z1, at=(la + lb) / 2.0 - g)[0]
+                zlv.append((round(la - g, 3), [f["loop"] for f in cut]))
             # each plane pair the engine confirmed: its deformed elevations;
             # the pair giving the most P (as reported) wins
             tried, best = [], None
             for c in zr["candidates"]:
                 pack = {}
                 for key, rq in (("axis1", req_x), ("axis2", req_y)):
-                    ao = _axis_out(c[key], site_pts, bldgs, [front] if front else data.get("streets"))
+                    ao = _axis_out(c[key], site_pts, bldgs, [front] if front else data.get("streets"), zlv or None, z0 + exempt_of[name])
                     el = None
                     if top > z0 + 1e-6:
                         el = E.zone_elevation(data["masses"], g, ao["edge"], z0, top, ao["axis"], rq or req_x, exempt_of[name])
@@ -1167,10 +1292,11 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
                                "bend_deg": gp.get("bend_deg", 0.0)} for gp in z["axis1"]["gaps"] if gp.get("corridor")]
             for key in ("axis1", "axis2"):
                 for ang in (z.get(key) or {}).get("angled") or []:
-                    if ang["counts"]:
-                        warnings.append("%s %s: an opening %.3f m wide at %.0f deg is not in the straight projection - it would count as an "
-                                        "air corridor but is not added to P yet; check it." % (name, "Plane X" if key == "axis1" else "Plane Y",
-                                                                                               ang["width_m"], abs(ang["bend_deg"])))
+                    if ang.get("added"):
+                        warnings.append("%s %s: an opening %.3f m wide%s%s, not in the straight projection, is taken as an air corridor (S2) "
+                                        "- check it." % (name, "Plane X" if key == "axis1" else "Plane Y", ang["width_m"],
+                                                         " at %.0f deg" % abs(ang["bend_deg"]) if ang["bend_deg"] else "",
+                                                         " from +%.2f m up" % ang["z_from_m"] if ang["z_from_m"] is not None else ""))
         out_zones.append(z)
     req_old = A.required_p(site_area, lp["addin_m"], tallest)
     ctrl = min(all_p) if all_p else None

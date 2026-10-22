@@ -256,7 +256,11 @@ def zone_elevation(masses, ground, items, z0, z1, ax, req_p=None, exempt=0.0):
             k = "gis" if it["pass"] else "gpe" if w >= PE_MIN - EPS else "gnis"
             if it.get("omitted"):
                 k = "omit"           # an air corridor overlapping the one kept: blocked, no IS
-            col = [("exempt" if ex_top is not None and zb <= ex_top + EPS else k) for za, zb in rows]
+            # an opening found above a lower building: blocked below the
+            # height it is clear from
+            zf = it.get("z_from")
+            col = [("exempt" if ex_top is not None and zb <= ex_top + EPS else
+                    "bldg" if zf is not None and zb <= zf + EPS else k) for za, zb in rows]
             pieces.append((x, x + w, [(w, w, col)], it))
         else:
             w = it["hi"] - it["lo"]

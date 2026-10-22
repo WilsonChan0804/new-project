@@ -578,6 +578,58 @@ class AngledGaps(unittest.TestCase):
         self.assertEqual(engine._angled_gaps(site, [("B1", [a]), ("B2", [b])], (1.0, 0.0), known), [])
 
 
+class OpeningsLevelByLevel(unittest.TestCase):
+    """TMTL496, 3rd report: B4 (7.7 m high) between the towers blocks the
+    Low zone's plan, but the opening above it is an air corridor from its
+    top up; a corridor is measured at its widest, turned up to 15 deg."""
+
+    MAIN = {"name": "Main", "centreline": [[-10, -10], [110, -10]], "opposite": [[-10, -20], [110, -20]], "width_m": 20,
+            "outline": [[-10, 0], [110, 0], [110, -20], [-10, -20]]}
+
+    def test_corridor_over_a_lower_building(self):
+        d = {"site": SITE, "streets": [self.MAIN],
+             "masses": [mass("A", box(5, 10, 0, 40, 50, 60)), mass("B", box(58, 10, 0, 95, 50, 60)),
+                        mass("C", box(41, 20, 0, 57, 40, 8))]}
+        z = engine.run(d)["zones"][0]
+        ao = z["axis1"]
+        s2 = [g for g in ao["gaps"] if g["type"] == "S2"]
+        self.assertEqual(len(s2), 1, ao["gaps"])           # the 1 m slits beside C are part of it
+        self.assertAlmostEqual(s2[0]["distance_m"], 18.0, places=3)
+        self.assertTrue(s2[0]["qualifies"])
+        self.assertAlmostEqual(s2[0]["z_from_m"], 8.0, places=3)
+        self.assertGreater(ao["P"], 0.0)
+        e = ao["elev"]
+        col = sorted((round(q[2], 2), round(q[3], 2), q[4]) for q in e["rects"] if abs(q[1] - q[0] - 18.0) < 1e-6)
+        self.assertEqual(col, [(6.67, 8.0, "bldg"), (8.0, 20.0, "is")])
+
+    def test_plan_level_above_a_low_mass(self):
+        d = {"site": SITE, "masses": [mass("A", box(5, 10, 0, 40, 50, 20)), mass("C", box(50, 20, 0, 70, 40, 8))]}
+        at = engine.zone_footprints(engine.level_zero(d), 0.0, 20.0, at=9.6)[0]
+        self.assertEqual([f["name"] for f in at], ["A"])
+
+    def test_widest_turn_through_the_opening(self):
+        # 13 m straight between A's corner (40, 30) and B's (53, 45.8): at a
+        # turn the band slips between them - 13 cos t + 15.8 sin t
+        a = [(5, 5), (40, 5), (40, 30), (5, 30)]
+        b = [(53, 45.8), (95, 45.8), (95, 58), (53, 58)]
+        strip = [[40, 0], [53, 0], [53, 60], [40, 60]]
+        w = engine._widest(SITE, [(20.0, [a, b])], (1.0, 0.0), strip, 13.0)
+        self.assertIsNotNone(w)
+        t = math.radians(15)
+        self.assertAlmostEqual(w[0], 13 * math.cos(t) + 15.8 * math.sin(t), places=3)
+        self.assertEqual(abs(w[1]), 15.0)
+        self.assertGreaterEqual(w[0], 15.0)
+
+    def test_widened_corridor_in_the_result(self):
+        d = {"site": SITE, "streets": [self.MAIN],
+             "masses": [mass("A", box(5, 5, 0, 40, 30, 60)), mass("B", box(53, 40, 0, 95, 58, 60))]}
+        ao = engine.run(d)["zones"][1]["axis1"]
+        s2 = [g for g in ao["gaps"] if g["type"] == "S2"][0]
+        self.assertIn("widened", s2)
+        self.assertGreater(s2["distance_m"], s2["widened"]["from_m"])
+        self.assertLessEqual(abs(s2["bend_deg"]), 15.0)
+
+
 class StreetPartBetweenEdgeMeets(unittest.TestCase):
     """TMTL496 (third report): a side region's street part runs exactly
     between the lines, parallel to the plane, through the two points where

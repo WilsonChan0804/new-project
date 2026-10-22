@@ -45,15 +45,17 @@ function gapHow(g, ax, num) {
   }
   if (sd) return `${num} = A${k} / L${k} = ${f3(sd.area_m2)} m² / ${f3(sd.depth_m)} m = ${f3(sd.avg_m)} m${sd.angle_deg ? `, edge turned ${f3(Math.abs(sd.angle_deg))}°` : ""}`;
   if (g.corridor) return `${num} = air corridor width ${f3(g.distance_m)} m${g.bend_deg ? `, turned ${f3(Math.abs(g.bend_deg))}°` : ", straight"}`
-    + (g.merged_with ? ` (the overlapping corridor beside it, ${f3(g.merged_with.distance_m)} m${g.merged_with.bend_deg ? ` turned ${f3(Math.abs(g.merged_with.bend_deg))}°` : ""}, omitted: one corridor per opening)` : "");
+    + (g.merged_with ? ` (the overlapping corridor beside it, ${f3(g.merged_with.distance_m)} m${g.merged_with.bend_deg ? ` turned ${f3(Math.abs(g.merged_with.bend_deg))}°` : ""}, omitted: one corridor per opening)` : "")
+    + (g.widened ? ` - at its widest through the opening (measured ${f3(g.widened.from_m)} m${g.widened.from_bend_deg ? ` at ${f3(Math.abs(g.widened.from_bend_deg))}°` : " straight"}${!g.widened.from_qualifies && g.qualifies ? ", which did not count" : ""})` : "")
+    + (g.found === "level" ? ` - clear from +${f3(g.z_from_m)} m up, over the lower building under it (blocked below)` : g.found === "turn" ? " - found at a turn: not in the straight projection" : "");
   if (g.type === "S3") return `${num} = A / D = ${f3(g.area_m2)} m² / ${f3(g.depth_m)} m = ${f3(g.distance_m)} m`;
   if (g.type === "S1") return `${num} = projected width ${f3(gapM(g))} m`;
   if (g.type === "S2") return `${num} = nearest distance between the buildings ${f3(gapM(g))} m`;
   return `${num}: ${f3(gapM(g))} m, blocked`;
 }
 // an opening at a turn the straight projection does not show (Wilson, TMTL496 p.11)
-const angledText = (b) => `${f3(b.width_m)} m wide, turned ${f1(Math.abs(b.bend_deg))}° - not in the straight projection (the shadows on the plane overlap); `
-  + (b.counts ? "15 m or more: it would count as an air corridor - not yet added to P, check it (send the model JSON)" : "under 15 m: not an air corridor");
+const angledText = (b) => `${f3(b.width_m)} m wide${b.bend_deg ? `, turned ${f1(Math.abs(b.bend_deg))}°` : ""}${b.z_from_m != null ? `, clear from +${f3(b.z_from_m)} m up` : ""} - not in the straight projection; `
+  + (b.added ? "15 m or more: taken as an air corridor (S2), in the gaps above" : b.counts ? "15 m or more, but a gap of 3 m or more lies in it: taken horizontally on the elevation" : "under 15 m: not an air corridor");
 // a canyon's name, as GB081: A, B ... per building, B1, B2 ... with streets
 const canyonLetter = (bi, j, n) => String.fromCharCode(65 + bi) + (n > 1 ? String(j + 1) : "");
 // Design Requirement (1) for one building, as GB081's calculation
@@ -350,12 +352,13 @@ export function zoneSvg(res, zone, axisKey, opt) {
   }
   // openings at a turn that the straight projection does not show: dashed amber
   ((ax && ax.angled) || []).forEach((b, i) => {
+    if (b.added) return;               // drawn as an air corridor
     s += `<polygon class="sbd-angled" data-l="SBD-CORRIDOR" points="${poly(b.polygon)}" clip-path="url(#${id})" fill="#f59e0b" fill-opacity="0.18" stroke="#d97706" stroke-width="${fs / 7}" stroke-dasharray="${fs / 2} ${fs / 4}"/>`;
     const c = b.polygon.reduce((a, p) => [a[0] + p[0] / b.polygon.length, a[1] + p[1] / b.polygon.length], [0, 0]);
     LB.add({ x: c[0] - x0, y: y1 - c[1], t: `A${i + 1} ${f3(b.width_m)} m, ${f1(Math.abs(b.bend_deg))}°`, size: fs * 0.8, fill: "#b45309", attrs: HALO(fs), prio: 4 });
   });
   // the buildings' names (the same on the elevations)
-  for (const b of z.buildings || []) LB.add({ x: b.at[0] - x0, y: y1 - b.at[1], t: b.label, size: fs * 1.1, title: b.name || "", fill: "#fff", attrs: `font-weight="700" stroke="#1e293b" stroke-width="${fs / 6}" paint-order="stroke"`, prio: 9 });
+  for (const b of z.buildings || []) LB.add({ x: b.at[0] - x0, y: y1 - b.at[1], t: b.label, size: fs * 1.1, title: (b.name || "") + (b.top_m != null ? `${b.name ? " · " : ""}top ${f2(b.top_m)} m above Level 0` : ""), fill: "#fff", attrs: `font-weight="700" stroke="#1e293b" stroke-width="${fs / 6}" paint-order="stroke"`, prio: 9 });
   // a dimension line a-e (plan metres), with ticks; its text through the placer
   const dim = (pa, pe, text, col, cls, prio) => {
     const [a, e] = [pa, pe].map(D);
@@ -1175,7 +1178,7 @@ export function createSbd(ctx) {
             const how = gapHow(g, ax, nm);
             return `<tr><td>${esc(nm)} <span class="muted">${esc(gapKind(g))}</span></td><td class="n">${f3(gapM(g))}</td><td class="${g.qualifies ? "ok" : "bad"}">${g.qualifies ? "counts" : "no"}${g.threshold_m ? ` <span class="muted">(${g.threshold_m} m)</span>` : ""}${g.encroach_m != null ? ` <span class="bad">${f3(g.encroach_m)} m to the boundary</span>` : ""}</td></tr>`
               + `<tr class="sbd-how"><td colspan="3">${esc(how)}</td></tr>`;
-          }).join("") + (ax.angled || []).map((b, i) => `<tr><td>A${i + 1} <span class="muted">angled gap</span></td><td class="n">${f3(b.width_m)}</td><td class="${b.counts ? "bad" : ""}">${b.counts ? "check" : "no"}</td></tr>`
+          }).join("") + (ax.angled || []).map((b, i) => `<tr><td>A${i + 1} <span class="muted">${b.z_from_m != null ? "above a lower building" : "angled gap"}</span></td><td class="n">${f3(b.width_m)}</td><td class="${b.added ? "ok" : b.counts ? "bad" : ""}">${b.added ? "S2" : b.counts ? "check" : "no"}</td></tr>`
             + `<tr class="sbd-how"><td colspan="3">${esc(angledText(b))}</td></tr>`).join("");
         })() + `</table>`
           + ((ax.edge || []).length ? `<table class="sbd-t sbd-edge"><tr><th title="Along the site's edge nearest the plane (the street side)">Near edge</th><th class="n" title="Projected on the plane">proj m</th><th class="n" title="Drawn on the elevation: a gap at its S value, a shadow at its projected width">elev m</th></tr>`
