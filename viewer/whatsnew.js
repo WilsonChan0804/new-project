@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-05", date: "23 Oct 2026",
+    items: [
+      "**Fix - Offline while sorting sheets:** moving sheets into groups or hiding them made the server rebuild a big project's whole sheet list each time, and after a few rounds it stopped answering and the viewer showed Offline. A move or hide now shows at once without reading the list again; the server keeps the list ready and adds the groups in a moment; and a slow answer no longer counts as \"no connection\".",
+      "**Faster for everyone on big projects:** the server's connection check no longer reads every project's sheet list (it ran every few seconds for each open page).",
+    ],
+  },
+  {
     version: "2026-12-04", date: "22 Oct 2026",
     items: [
       "**SBD street canyon (TMTL496, B2):** the canyon is measured square to the street again, over the block's whole frontage. A street joined from several Floors (a ramp beside the road) has a small bend in its centreline, which had turned the canyon askew and cut a turned block's canyon short.",

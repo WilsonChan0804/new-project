@@ -290,6 +290,9 @@ def store_for(pid):
         return STORES[pid]
 
 
+_PROJ_SUMMARY = {}           # project folder -> (manifest's mtime and size, title, sheets, models)
+
+
 def list_projects():
     if CFG["single"]:
         dirs = [("default", CFG["single"])]
@@ -303,19 +306,33 @@ def list_projects():
 
     out = []
     for pid, d in dirs:
-        title, sheets, models = pid, 0, 0
+        mp = os.path.join(d, "manifest.json")
         try:
-            with open(os.path.join(d, "manifest.json"), encoding="utf-8") as f:
-                m = json.load(f)
-            title = (m.get("source") or {}).get("title") or pid
-            sheets = len(m.get("sheets") or [])
-            models = len(m.get("models") or [])
-        except Exception:
-            # Listed, so it can be found - but saying what is wrong with it.
-            title = pid + " (manifest.json empty or damaged - export again)"
+            st = os.stat(mp)
+            sig = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            sig = None
+        # a project's title and counts, read again only when its manifest
+        # changes: every /api/ping (each open page, every few seconds) and
+        # the project list ask, and a big project's manifest is megabytes
+        got = _PROJ_SUMMARY.get(d)
+        if not got or got[0] != sig:
+            title, sheets, models = pid, 0, 0
+            try:
+                with open(mp, encoding="utf-8") as f:
+                    m = json.load(f)
+                title = (m.get("source") or {}).get("title") or pid
+                sheets = len(m.get("sheets") or [])
+                models = len(m.get("models") or [])
+            except Exception:
+                # Listed, so it can be found - but saying what is wrong with it.
+                title = pid + " (manifest.json empty or damaged - export again)"
+            got = (sig, title, sheets, models)
+            _PROJ_SUMMARY[d] = got
+        _, title, sheets, models = got
         out.append({
             "id": pid, "title": title, "sheets": sheets, "models": models,
-            "updated": os.path.getmtime(os.path.join(d, "manifest.json")),
+            "updated": (sig[0] / 1e9) if sig else 0.0,
         })
     # Most recently exported first: that is usually the one being opened.
     out.sort(key=lambda p: -p["updated"])
@@ -3804,7 +3821,7 @@ async def delete_set(request: Request, x_viewer_token: str = Header(default=""),
 
 
 @app.api_route("/data/{path:path}", methods=["GET", "HEAD"])
-async def get_data(path: str, request: Request):
+def get_data(path: str, request: Request):
     """Project files: manifest.json, fragments and sheet PDFs.
 
     The first part of the path names the project - /data/<project>/sheets/
@@ -3831,35 +3848,7 @@ async def get_data(path: str, request: Request):
         raise HTTPException(status_code=404, detail="Not found: " + path)
 
     if os.path.basename(target) == "manifest.json" and os.path.dirname(target) == root:
-        try:
-            with open(target, encoding="utf-8") as f:
-                man = json.load(f)
-        except ValueError:
-            # A 0-byte manifest from an export that failed half-way used to
-            # surface as a 500 and a stack trace, and a page with nothing on it.
-            raise HTTPException(status_code=422, detail=(
-                "manifest.json of this project is empty or damaged - "
-                "the export did not finish. Export it again."))
-        extra = live_imported(root)
-        if extra:
-            man["sheets"] = list(man.get("sheets") or []) + extra
-        # sheets hidden by an admin, and the groups (topics) of the list
-        apply_sheet_meta(root, man, data_role)
-        # which fast 3D models the server has cut into streamed tiles (made
-        # after this very upload): phones and tablets stream those
-        for m in man.get("models") or []:
-            try:
-                fr = m.get("fragments") or ""
-                if m.get("format") != "lwkm" or not fr.lower().endswith(".lwkm"):
-                    continue
-                src = os.path.join(root, *fr.split("/"))
-                tidx = src[:-5] + ".tidx"
-                m["tiles"] = bool(os.path.isfile(tidx) and os.path.isfile(src[:-5] + ".tbin")
-                                  and os.path.getmtime(tidx) >= os.path.getmtime(src) - 1)
-            except Exception:
-                pass
-        # Rebuilt per request (imported sheets are added in), so always fresh.
-        return JSONResponse(man, headers={"Cache-Control": "private, no-cache"})
+        return _manifest_answer(root, target, data_role, request)
 
     mime, _ = mimetypes.guess_type(target)
     if target.lower().endswith((".frag", ".lwkm", ".tidx", ".tbin", ".stb")):
@@ -3896,6 +3885,136 @@ async def get_data(path: str, request: Request):
         return Response(status_code=304, headers=headers)
     return FileResponse(target, media_type=mime or "application/octet-stream",
                         headers=headers)
+
+
+# The manifest as a page gets it: the export's manifest.json with the
+# imported sheets added, the hidden sheets and groups applied, and which 3D
+# models have streamed tiles. For a big project that is megabytes to read,
+# change and write out again - seconds. Every move of a sheet into a group
+# asked for it again (and the server answered nobody else meanwhile), so it
+# is built once per change and kept: per project and per kind of person
+# (admins see hidden sheets), with its gzip, until one of the files it is
+# made of changes.
+_MAN_CACHE = {}
+_MAN_LOCKS = {}
+_MAN_GUARD = threading.Lock()
+
+
+def _stat_sig(paths):
+    out = []
+    for p in paths:
+        try:
+            st = os.stat(p)
+            out.append((st.st_mtime_ns, st.st_size))
+        except OSError:
+            out.append(None)
+    return tuple(out)
+
+
+def _build_manifest(root, target, data_role):
+    """-> (the manifest, the model files its tile flags were read from)"""
+    try:
+        with open(target, encoding="utf-8") as f:
+            man = json.load(f)
+    except ValueError:
+        # A 0-byte manifest from an export that failed half-way used to
+        # surface as a 500 and a stack trace, and a page with nothing on it.
+        raise HTTPException(status_code=422, detail=(
+            "manifest.json of this project is empty or damaged - "
+            "the export did not finish. Export it again."))
+    extra = live_imported(root)
+    if extra:
+        man["sheets"] = list(man.get("sheets") or []) + extra
+    # (the sheets hidden by an admin and the groups are added per answer: _manifest_answer)
+    # which fast 3D models the server has cut into streamed tiles (made
+    # after this very upload): phones and tablets stream those
+    for m in man.get("models") or []:
+        try:
+            fr = m.get("fragments") or ""
+            if m.get("format") != "lwkm" or not fr.lower().endswith(".lwkm"):
+                continue
+            src = os.path.join(root, *fr.split("/"))
+            tidx = src[:-5] + ".tidx"
+            m["tiles"] = bool(os.path.isfile(tidx) and os.path.isfile(src[:-5] + ".tbin")
+                              and os.path.getmtime(tidx) >= os.path.getmtime(src) - 1)
+        except Exception:
+            pass
+    files = []
+    for m in man.get("models") or []:
+        fr = m.get("fragments") or ""
+        if fr.lower().endswith(".lwkm"):
+            src = os.path.join(root, *fr.split("/"))
+            files += [src, src[:-5] + ".tidx", src[:-5] + ".tbin"]
+    return man, files
+
+
+def _manifest_base(root, target):
+    """The manifest without the sheet groups and hidden marks, kept as each
+    sheet's own JSON (made once per publish or import): a move into a group
+    only splices a few bytes into those, rather than reading and writing out
+    megabytes again."""
+    key = root
+    base = _stat_sig([target, os.path.join(root, IMPORTED)])
+    c = _MAN_CACHE.get(key)
+    if c and c["base"] == base and c["files_sig"] == _stat_sig(c["files"]):
+        return c
+    man, files = _build_manifest(root, target, None)
+    sheets = man.pop("sheets", None) or []
+    man.pop("sheet_groups", None)
+    dump = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    c = {"base": base, "files": files, "files_sig": _stat_sig(files), "head": dump(man),
+         "numbers": [str(sh.get("number")) for sh in sheets], "frags": [dump(sh) for sh in sheets]}
+    _MAN_CACHE[key] = c
+    return c
+
+
+def _manifest_answer(root, target, data_role, request):
+    import gzip as _gzip
+    admin = data_role == "admin"
+    with _MAN_GUARD:
+        lock = _MAN_LOCKS.setdefault(root, threading.Lock())
+    with lock:                         # two pages asking at once: built once
+        c = _manifest_base(root, target)
+        meta = read_sheet_meta(root)
+        msig = (_stat_sig([os.path.join(root, SHEET_META)]), admin)
+        out = c.get("out", {}).get(admin)
+        if not out or out["msig"] != msig or out["base"] is not c["base"]:
+            frags = c["frags"]
+            if meta["hidden"] or meta["groups"]:
+                # as apply_sheet_meta: hidden sheets left out (marked for an
+                # admin), each sheet with its group's id
+                of = {}
+                for g in meta["groups"]:
+                    for n in g.get("sheets") or []:
+                        of.setdefault(str(n), g["id"])
+                frags = []
+                for num, fr in zip(c["numbers"], c["frags"]):
+                    add = b""
+                    if num in meta["hidden"]:
+                        if not admin:
+                            continue
+                        add += b',"hidden":true'
+                    if num in of:
+                        add += b',"group":' + json.dumps(of[num]).encode("utf-8")
+                    frags.append(fr[:-1] + add + b"}" if add else fr)
+                groups = [{"id": g["id"], "name": g.get("name") or "", "set": g.get("set") or ""} for g in meta["groups"]]
+                tail = b',"sheet_groups":' + json.dumps(groups, ensure_ascii=False).encode("utf-8")
+            else:
+                tail = b""
+            head = c["head"]
+            raw = head[:-1] + (b"," if len(head) > 2 else b"") + b'"sheets":[' + b",".join(frags) + b"]" + tail + b"}"
+            out = {"msig": msig, "base": c["base"], "body": raw,
+                   # big: the quick gzip (zlib works beside the server's answers)
+                   "gz": _gzip.compress(raw, 1 if len(raw) > 2000000 else 5) if len(raw) > 1400 else None,
+                   "etag": '"m%s"' % hashlib.sha1(raw).hexdigest()[:20]}
+            c.setdefault("out", {})[admin] = out
+    headers = {"Cache-Control": "private, no-cache", "ETag": out["etag"], "Vary": "Accept-Encoding"}
+    if etag_matches(request.headers.get("if-none-match", ""), out["etag"]):
+        return Response(status_code=304, headers=headers)
+    if out["gz"] is not None and "gzip" in (request.headers.get("accept-encoding") or ""):
+        headers["Content-Encoding"] = "gzip"
+        return Response(content=out["gz"], media_type="application/json", headers=headers)
+    return Response(content=out["body"], media_type="application/json", headers=headers)
 
 
 def etag_matches(header, etag):

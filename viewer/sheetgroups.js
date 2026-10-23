@@ -123,13 +123,33 @@ export function head(sec, secs) {
 
 /* ------------------------------------------------------------ changes */
 
-async function saveGroups(groups, note) {
-  try {
-    const d = await call("PUT", "/api/sheet-meta/groups", { groups });
-    M.groups = d.groups || [];
-    await CTX.reload();
-    if (note) CTX.status(note);
-  } catch (e) { CTX.status("Not saved: " + e.message); }
+/* A change shows at once (the list in memory is updated, nothing is read
+   again) and is saved behind it; quick changes are saved one after another,
+   each with the whole list, so the last one wins. Reading the whole sheet
+   list again after every move kept a big project's server busy for
+   seconds each time - after a few, the viewer showed Offline. */
+let saving = Promise.resolve();
+function saveGroups(groups, note) {
+  M.groups = groups;
+  show();
+  if (note) CTX.status(note);
+  saving = saving.then(async () => {
+    try {
+      const d = await call("PUT", "/api/sheet-meta/groups", { groups });
+      if (M.groups === groups) { M.groups = d.groups || groups; show(); }
+    } catch (e) {
+      CTX.status("Not saved: " + e.message + " - the list is shown as the server has it");
+      await load();
+      await CTX.reload();
+    }
+  });
+  return saving;
+}
+
+/* the groups and hidden sheets onto the sheet list already on the page */
+function show() {
+  if (CTX.apply) CTX.apply({ hidden: M.hidden, groups: M.groups });
+  else CTX.render();
 }
 
 const newId = () => (Date.now().toString(36) + Math.random().toString(36).slice(2, 6)).slice(0, 12);
@@ -196,8 +216,10 @@ export async function hide(numbers, on) {
   if (on && !confirm(`Hide ${numbers.length} sheet(s) from the viewer?\n\nNobody but admins sees them, and they stay hidden after the next publish from Revit. Admins find them under "Hidden from the viewer" to bring them back. Their markups and issues are kept.`)) return;
   try {
     await call("PUT", "/api/sheet-meta/hidden", { numbers, hide: on });
-    await load();
-    await CTX.reload();
+    const h = Object.assign({}, M.hidden);
+    for (const n of numbers) { if (on) h[String(n)] = { at: new Date().toISOString() }; else delete h[String(n)]; }
+    M.hidden = h;
+    show();
     CTX.status(`${numbers.length} sheet(s) ${on ? "hidden from the viewer" : "shown again"}.`);
   } catch (e) { CTX.status("Not done: " + e.message); }
 }

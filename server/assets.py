@@ -246,7 +246,11 @@ def register_json_gzip(app):
             body += chunk if isinstance(chunk, bytes) else chunk.encode("utf-8")
         # the headers as they were (two Set-Cookie stay two), the length new
         keep = [(k, v) for k, v in response.raw_headers if k.lower() not in (b"content-length", b"content-encoding")]
-        if len(body) >= 1400:
+        if len(body) >= 256 * 1024:
+            # a big answer: compressed on a thread, the server answering others meanwhile
+            body = await run_in_threadpool(gzip.compress, body, 5)
+            keep += [(b"content-encoding", b"gzip"), (b"vary", b"Accept-Encoding")]
+        elif len(body) >= 1400:
             body = gzip.compress(body, 5)
             keep += [(b"content-encoding", b"gzip"), (b"vary", b"Accept-Encoding")]
         out = Response(status_code=response.status_code)

@@ -353,7 +353,9 @@ async function apiFetch(event, url) {
     return net;
   } catch (e) {
     if (gaveUp(e)) return Response.error();
-    netFail();
+    // a slow answer is the server busy, not the connection gone: only the
+    // connection check itself (or a real network failure) says "offline"
+    if (!e.timeout || url.pathname === "/api/ping") netFail();
     if (have) return kept();
     return Response.error();
   }
@@ -439,7 +441,7 @@ async function dataFetch(event, url) {
     return net;
   } catch (e) {
     if (gaveUp(e)) return Response.error();
-    netFail();
+    if (!e.timeout) netFail();          // slow is busy, not offline
     if (copy) { pin(pkey, "copy"); return cut(copy, req, url); }
     return Response.error();
   }

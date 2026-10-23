@@ -3962,8 +3962,8 @@ async function captureSheetSnapshot(item) {
    same project: markups, issues, search and compare work across sets. */
 const PDF_SET = "Uploaded PDFs";
 const sheetSet = (s) => (s && s.external ? (s.set || PDF_SET) : "");
-const setNames = () => [...new Set(S.manifest.sheets.filter((s) => s.external).map(sheetSet))];
-const setSheets = () => S.manifest.sheets.filter((s) => sheetSet(s) === S.set);
+const setNames = () => [...new Set(((S.manifest && S.manifest.sheets) || []).filter((s) => s.external).map(sheetSet))];
+const setSheets = () => ((S.manifest && S.manifest.sheets) || []).filter((s) => sheetSet(s) === S.set);
 
 function pickSet(want) {
   const names = setNames();
@@ -4221,14 +4221,14 @@ function wireSetTools() {
   if (done) done.addEventListener("click", () => { PICK.on = false; PICK.sel.clear(); renderSheets(); });
   // groups (topics) and hidden sheets
   const startPick = () => { PICK.on = true; PICK.sel.clear(); PICK.last = null; renderSheets(); };
-  SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, status, startPick })
+  SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, apply: applySheetMeta, status, startPick })
     .then(() => { if (S.manifest) renderSheets(); });
   const gb = document.getElementById("sheet-groups-btn");
   if (gb) gb.addEventListener("click", (ev) => { ev.stopPropagation(); SG.groupsMenu(gb, setSheets()); });
   const pg = document.getElementById("pick-group");
   if (pg) pg.addEventListener("click", (ev) => {
     const r = pg.getBoundingClientRect();
-    const s = S.manifest.sheets.find((x) => PICK.sel.has(x.number));
+    const s = ((S.manifest && S.manifest.sheets) || []).find((x) => PICK.sel.has(x.number));
     if (s) SG.sheetMenu({ preventDefault() {}, clientX: r.left, clientY: r.bottom + 4 }, s, [...PICK.sel]);
     void ev;
   });
@@ -5445,14 +5445,41 @@ async function removeImportedSheet(s) {
 }
 
 async function reloadManifest() {
-  const res = await fetch(Store.dataUrl("manifest.json"), { cache: "no-store" });
-  S.manifest = await res.json();
+  // a failed answer (no connection, the server busy) keeps the list shown
+  let man = null;
+  try {
+    const res = await fetch(Store.dataUrl("manifest.json"), { cache: "no-store" });
+    if (res.ok) man = await res.json();
+  } catch (e) { man = null; }
+  if (!man || !Array.isArray(man.sheets)) {
+    status("The sheet list could not be read again just now - the one shown is kept. Try again in a moment.");
+    if (!S.manifest) return;
+  } else {
+    S.manifest = man;
+  }
   pickSet(S.set);
   sheetSets(setNames(), S.set, (n) => showSet(n));
   renderSheets();
   // The split pane's sheet list is built once; rebuild it next time.
   const sel = document.getElementById("split-sheet");
   if (sel) sel.innerHTML = "";
+}
+
+/* The sheet groups and hidden sheets (sheetgroups.js) onto the list already
+   here - as the server does when it sends the list (apply_sheet_meta). Only
+   admins hide sheets, and their list has the hidden ones in, marked. */
+function applySheetMeta(meta) {
+  if (!S.manifest || !Array.isArray(S.manifest.sheets)) return reloadManifest();
+  const of = new Map();
+  for (const g of meta.groups || []) for (const n of g.sheets || []) if (!of.has(String(n))) of.set(String(n), g.id);
+  const hid = meta.hidden || {};
+  for (const sh of S.manifest.sheets) {
+    const n = String(sh.number);
+    if (of.has(n)) sh.group = of.get(n); else delete sh.group;
+    if (Object.prototype.hasOwnProperty.call(hid, n)) sh.hidden = true; else delete sh.hidden;
+  }
+  S.manifest.sheet_groups = (meta.groups || []).map((g) => ({ id: g.id, name: g.name || "", set: g.set || "" }));
+  renderSheets();
 }
 
 /* ------------------------------------------------- comment interchange */
