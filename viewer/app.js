@@ -4024,6 +4024,36 @@ function renderSheets() {
     });
     // members: move to a group; admins: hide from the viewer
     li.addEventListener("contextmenu", (ev) => SG.sheetMenu(ev, s, PICK.on ? [...PICK.sel] : null));
+    // members: drag to put in order, or into another group (the ticked ones together)
+    if (SG.canGroup() && !s.hidden) {
+      li.draggable = true;
+      li.addEventListener("dragstart", (ev) => {
+        const nums = PICK.on && PICK.sel.has(s.number) ? [...PICK.sel] : [s.number];
+        DRAG.nums = nums;
+        ev.dataTransfer.effectAllowed = "move";
+        try { ev.dataTransfer.setData("text/plain", nums.join(",")); } catch (e) {}
+        li.classList.add("dragging");
+      });
+      li.addEventListener("dragend", () => { DRAG.nums = null; li.classList.remove("dragging"); clearDrop(); });
+    }
+    if (SG.canGroup()) {
+      li.addEventListener("dragover", (ev) => {
+        if (!DRAG.nums || s.hidden) return;
+        ev.preventDefault();
+        const r = li.getBoundingClientRect(), after = ev.clientY > r.top + r.height / 2;
+        clearDrop();
+        li.classList.add(after ? "drop-after" : "drop-before");
+      });
+      li.addEventListener("dragleave", () => li.classList.remove("drop-before", "drop-after"));
+      li.addEventListener("drop", (ev) => {
+        if (!DRAG.nums || s.hidden) return;
+        ev.preventDefault();
+        const after = li.classList.contains("drop-after");
+        clearDrop();
+        SG.dropSheets(DRAG.nums, s.number, after);
+        DRAG.nums = null;
+      });
+    }
     // pointing at a sheet starts reading its PDF (computers)
     if (s.pdf) li.addEventListener("mouseenter", () => {
       if (IS_IOS_EARLY() || slowLine() || drawMode() === "tiles") return;
@@ -4040,10 +4070,24 @@ function renderSheets() {
   };
   // in its groups (topics), each folding, when the set has any - or the plain list
   const secs = SG.sections(list);
-  if (!secs) for (const s of list) ul.appendChild(makeLi(s));
+  if (!secs) for (const s of SG.ordered(list)) ul.appendChild(makeLi(s));
   else {
     for (const sec of secs) {
-      ul.appendChild(SG.head(sec, secs));
+      const h = SG.head(sec, secs);
+      // a sheet dropped on a heading: to the end of that group (Hidden: hidden)
+      if (SG.canGroup()) {
+        h.addEventListener("dragover", (ev) => { if (DRAG.nums) { ev.preventDefault(); clearDrop(); h.classList.add("drop-into"); } });
+        h.addEventListener("dragleave", () => h.classList.remove("drop-into"));
+        h.addEventListener("drop", (ev) => {
+          if (!DRAG.nums) return;
+          ev.preventDefault();
+          clearDrop();
+          if (sec.kind === "hidden" && !SG.canHide()) return;
+          SG.dropOnSection(DRAG.nums, sec.id);
+          DRAG.nums = null;
+        });
+      }
+      ul.appendChild(h);
       if (!SG.isFolded(sec.id)) for (const s of sec.sheets) ul.appendChild(makeLi(s));
     }
   }
@@ -4055,6 +4099,12 @@ function renderSheets() {
    for a run of them, and delete them together. Revit sheets cannot be
    picked: they come back with the next publish anyway. */
 const PICK = { on: false, sel: new Set(), last: null };
+const DRAG = { nums: null };
+function clearDrop() {
+  for (const x of document.querySelectorAll("#sheet-list .drop-before, #sheet-list .drop-after, #sheet-list .drop-into"))
+    x.classList.remove("drop-before", "drop-after", "drop-into");
+}
+function stopPick() { PICK.on = false; PICK.sel.clear(); PICK.last = null; renderSheets(); }
 // imported sheets (to delete); any sheet for whoever can group or hide them
 const pickable = (s) => !!s && (s.external || SG.canPick());
 
@@ -4144,7 +4194,7 @@ async function paintSetMenu() {
   m.innerHTML = (shows.length > 1 ? `<div class="sm-head">Show</div>` + shows.map(showRow).join("") + `<div class="sm-sep"></div>` : "")
     + (imported
     ? `<div class="sm-head">${esc(S.set)} &middot; ${n} sheet(s)</div>`
-      + act("pick", "select", "Select sheets ...", "Tick several of them, then delete them together")
+      + act("pick", "select", "Move / hide sheets", "Tick several sheets, then move, hide or delete them together")
       + act("rename", "text", "Rename set ...", "Give this set of imported sheets another name")
       + act("archive", "box", "Archive set", "Hide it from Sheets and Folders; nothing is deleted")
       + `<div class="sm-sep"></div>`
@@ -4218,10 +4268,21 @@ function wireSetTools() {
   const del = document.getElementById("pick-del");
   if (del) del.addEventListener("click", deletePicked);
   const done = document.getElementById("pick-done");
-  if (done) done.addEventListener("click", () => { PICK.on = false; PICK.sel.clear(); renderSheets(); });
+  if (done) done.addEventListener("click", stopPick);
+  // Esc ends Move / hide sheets (a menu open closes first)
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape" || !PICK.on) return;
+    const m = document.querySelector("#ctxmenu:not([hidden])");
+    if (m) return;
+    stopPick();
+    status("Done moving / hiding sheets.");
+  });
   // groups (topics) and hidden sheets
   const startPick = () => { PICK.on = true; PICK.sel.clear(); PICK.last = null; renderSheets(); };
-  SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, apply: applySheetMeta, status, startPick })
+  // after a move or hide with sheets ticked: the choice is cleared, ready for the next
+  const afterAction = () => { if (PICK.on) { PICK.sel.clear(); PICK.last = null; renderSheets(); } };
+  SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, apply: applySheetMeta, status, startPick,
+            list: () => setSheets(), afterAction })
     .then(() => { if (S.manifest) renderSheets(); });
   const gb = document.getElementById("sheet-groups-btn");
   if (gb) gb.addEventListener("click", (ev) => { ev.stopPropagation(); SG.groupsMenu(gb, setSheets()); });
@@ -4236,7 +4297,6 @@ function wireSetTools() {
   if (ph) ph.addEventListener("click", async () => {
     const nums = [...PICK.sel];
     await SG.hide(nums, !nums.every((n) => (S.manifest.sheets.find((x) => x.number === n) || {}).hidden));
-    PICK.on = false; PICK.sel.clear(); renderSheets();
   });
   const m = document.getElementById("set-menu"), b = document.getElementById("set-menu-btn");
   if (!m || !b) return;

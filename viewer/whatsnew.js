@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-06", date: "23 Oct 2026",
+    items: [
+      "**Sorting sheets is easier:** ☰ > **Move / hide sheets** - tick sheets and use **Move to ▾** or **Hide** in a bar that stays at the top of the list; right-click a ticked sheet and all the ticked ones move. After each move the choice clears for the next; **Esc** or **Done** finishes.",
+      "**Sheets in your own order:** drag sheets into place (onto a group's heading: to its end), or right-click > Move up / Move down.",
+      "**Hidden is the recycle bin:** admins can delete a hidden sheet from the server for good (right-click it, or ⋯ > Delete all on the Hidden heading).",
+    ],
+  },
+  {
     version: "2026-12-05", date: "23 Oct 2026",
     items: [
       "**Fix - Offline while sorting sheets:** moving sheets into groups or hiding them made the server rebuild a big project's whole sheet list each time, and after a few rounds it stopped answering and the viewer showed Offline. A move or hide now shows at once without reading the list again; the server keeps the list ready and adds the groups in a moment; and a slow answer no longer counts as \"no connection\".",

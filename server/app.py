@@ -3460,7 +3460,12 @@ def read_sheet_meta(root):
         d = {}
     hidden = d.get("hidden") if isinstance(d.get("hidden"), dict) else {}
     groups = [g for g in d.get("groups") or [] if isinstance(g, dict) and g.get("id")]
-    return {"hidden": hidden, "groups": groups}
+    # deleted from the Hidden list (the recycle bin) for good: never shown
+    # again, not even after the next publish from Revit
+    deleted = d.get("deleted") if isinstance(d.get("deleted"), dict) else {}
+    # the order of the sheets not in a group, per set: [numbers]
+    order = d.get("order") if isinstance(d.get("order"), dict) else {}
+    return {"hidden": hidden, "groups": groups, "deleted": deleted, "order": order}
 
 
 def write_sheet_meta(root, meta):
@@ -3474,7 +3479,7 @@ def apply_sheet_meta(root, man, role):
     """The manifest as this person sees it: hidden sheets left out (marked
     for an admin), each sheet with its group's id."""
     meta = read_sheet_meta(root)
-    if not meta["hidden"] and not meta["groups"]:
+    if not meta["hidden"] and not meta["groups"] and not meta["deleted"]:
         return man
     of = {}
     for g in meta["groups"]:
@@ -3483,6 +3488,8 @@ def apply_sheet_meta(root, man, role):
     out = []
     for sh in man.get("sheets") or []:
         num = str(sh.get("number"))
+        if num in meta["deleted"]:
+            continue
         if num in meta["hidden"]:
             if role != "admin":
                 continue
@@ -3500,9 +3507,87 @@ def get_sheet_meta(request: Request, x_viewer_token: str = Header(default=""),
                          x_project: str = Header(default="")):
     _, role = require_project(request, x_project, "viewer", x_viewer_token)
     meta = read_sheet_meta(project_root_for(x_project))
+    meta.pop("deleted", None)
     if role != "admin":
         meta["hidden"] = {}
     return dict(meta, can_hide=role == "admin", can_group=RANK[role] >= RANK["member"])
+
+
+@app.put("/api/sheet-meta/order")
+async def put_sheet_order(request: Request, x_viewer_token: str = Header(default=""),
+                          x_project: str = Header(default="")):
+    """{set, numbers}: the order of a set's sheets that are not in a group
+    (members; a group's order is its own list)."""
+    require_project(request, x_project, "member", x_viewer_token)
+    body = await request.json() or {}
+    nums = [str(n)[:60] for n in (body.get("numbers") or []) if str(n).strip()][:20000]
+    name = str(body.get("set") or "")[:80]
+    root = project_root_for(x_project)
+    with _SM_LOCK:
+        meta = read_sheet_meta(root)
+        if nums:
+            meta["order"][name] = nums
+        else:
+            meta["order"].pop(name, None)
+        write_sheet_meta(root, meta)
+    return {"ok": True}
+
+
+@app.post("/api/sheet-meta/delete")
+def delete_hidden_sheets(request: Request, body: dict, x_viewer_token: str = Header(default=""),
+                         x_project: str = Header(default="")):
+    """{numbers}: hidden sheets deleted for good - the Hidden list is the
+    recycle bin (admins). An imported sheet goes with its PDF (when no
+    other sheet uses it); a sheet published from Revit is struck off for
+    good, its PDF removed, and stays off after the next publish."""
+    w, _ = require_project(request, x_project, "admin", x_viewer_token)
+    nums = {str(n)[:60] for n in (body.get("numbers") or []) if str(n).strip()}
+    root = project_root_for(x_project)
+    with _SM_LOCK:
+        meta = read_sheet_meta(root)
+        nums = {n for n in nums if n in meta["hidden"]}      # only from the bin
+        if not nums:
+            raise HTTPException(status_code=400, detail="Only hidden sheets can be deleted - hide them first")
+        # imported sheets: off the list, their PDFs with them
+        have = read_imported(root)
+        keep = [s for s in have if str(s.get("number")) not in nums]
+        if len(keep) != len(have):
+            write_imported(root, keep)
+            drop_unused_pdfs(root, have, keep)
+        imported = {str(s.get("number")) for s in have} & nums
+        # Revit sheets: struck off; their PDF goes when no sheet left uses it
+        try:
+            with open(os.path.join(root, "manifest.json"), encoding="utf-8") as f:
+                man_sheets = json.load(f).get("sheets") or []
+        except (OSError, ValueError):
+            man_sheets = []
+        gone = {n for n in nums - imported}
+        at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        for sh in man_sheets:
+            n = str(sh.get("number"))
+            if n in gone:
+                meta["deleted"][n] = {"by": w.name or "", "at": at, "name": sh.get("name") or "", "pdf": sh.get("pdf") or ""}
+        still = {sh.get("pdf") for sh in man_sheets if str(sh.get("number")) not in meta["deleted"]}
+        still |= {s.get("pdf") for s in keep}
+        removed_pdfs = 0
+        for n in gone:
+            rel = str((meta["deleted"].get(n) or {}).get("pdf") or "")
+            if rel and rel not in still and ".." not in rel:
+                p = os.path.normpath(os.path.join(root, *rel.split("/")))
+                if p.startswith(os.path.normpath(root) + os.sep) and os.path.isfile(p):
+                    try:
+                        os.remove(p)
+                        removed_pdfs += 1
+                    except OSError:
+                        pass
+        for n in nums:
+            meta["hidden"].pop(n, None)
+        for g in meta["groups"]:
+            g["sheets"] = [x for x in g.get("sheets") or [] if str(x) not in nums]
+        for k in list(meta["order"]):
+            meta["order"][k] = [x for x in meta["order"][k] if str(x) not in nums]
+        write_sheet_meta(root, meta)
+    return {"deleted": len(nums), "pdfs_removed": removed_pdfs}
 
 
 @app.put("/api/sheet-meta/hidden")
@@ -3980,7 +4065,7 @@ def _manifest_answer(root, target, data_role, request):
         out = c.get("out", {}).get(admin)
         if not out or out["msig"] != msig or out["base"] is not c["base"]:
             frags = c["frags"]
-            if meta["hidden"] or meta["groups"]:
+            if meta["hidden"] or meta["groups"] or meta["deleted"]:
                 # as apply_sheet_meta: hidden sheets left out (marked for an
                 # admin), each sheet with its group's id
                 of = {}
@@ -3990,6 +4075,8 @@ def _manifest_answer(root, target, data_role, request):
                 frags = []
                 for num, fr in zip(c["numbers"], c["frags"]):
                     add = b""
+                    if num in meta["deleted"]:
+                        continue
                     if num in meta["hidden"]:
                         if not admin:
                             continue
