@@ -458,7 +458,35 @@ def register(app, core):
             ang = max(-180.0, min(180.0, float(body.get("angle_deg") or 0)))
         except (TypeError, ValueError):
             ang = 0.0
-        return await run_in_threadpool(run_and_keep, x_project, model, {"axis": axis, "angle_deg": ang, "levels": body.get("levels")}, w.name or "")
+        opts = {"axis": axis, "angle_deg": ang, "levels": body.get("levels")}
+        if not body.get("background"):
+            return await run_in_threadpool(run_and_keep, x_project, model, opts, w.name or "")
+        # a big model takes minutes (TMTL496: about 3): the page is answered at
+        # once and asks GET /api/sbd until status.json says done, as after an
+        # export from Revit - no request held open that long
+        pid = x_project
+        with guard:
+            seq = seqs[pid] = seqs.get(pid, 0) + 1
+        stop_running(pid)
+        _write(os.path.join(_dir(core, pid), "status.json"),
+               {"state": "running", "seq": seq, "started": time.strftime("%Y-%m-%dT%H:%M:%S"), "by": w.name or "", "run": True})
+
+        def job():
+            with guard:
+                lock = locks.setdefault(pid, threading.Lock())
+            with lock:
+                if seqs.get(pid) != seq:
+                    return
+                try:
+                    run_and_keep(pid, model, opts, w.name or "")
+                    st = {"state": "done", "seq": seq, "finished": time.strftime("%Y-%m-%dT%H:%M:%S"), "by": w.name or ""}
+                except Exception as e:
+                    core.bg_log("%s: SBD run failed: %s" % (pid, e))
+                    st = {"state": "error", "seq": seq, "detail": str(e)[:300], "by": w.name or ""}
+                if seqs.get(pid) == seq:
+                    _write(os.path.join(_dir(core, pid), "status.json"), st)
+        threading.Thread(target=job, daemon=True).start()
+        return {"ok": True, "running": True}
 
     @app.post("/api/sbd/cad")
     async def sbd_cad(request: Request, format: str = "dxf", name: str = "SBD", x_viewer_token: str = Header(default=""),

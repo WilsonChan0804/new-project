@@ -3,7 +3,7 @@
  * LWK Issues in Revit used to start the browser with a link, and a browser
  * given a link always opens a new tab. Now Revit leaves a note on the
  * server for the person signed in; this page asks for notes every two
- * seconds, claims one (the first page to claim it wins, a page on screen
+ * seconds (three behind other tabs), claims one (the first page to claim it wins, a page on screen
  * before one in the background) and goes to the issue itself. Revit only
  * opens a new tab when no page of that person answers.
  */
@@ -35,7 +35,17 @@ export function startGoto(Store, show) {
       busy = false;
     }
   }
-  setInterval(tick, 2000);
+  // every 2 s while the page is on screen, every 3 s behind other tabs (it
+  // still answers Revit within its 5 s wait): a third fewer asks from the
+  // pages people leave open all day
+  let last = 0;
+  setInterval(() => {
+    const gap = document.visibilityState === "visible" ? 2000 : 3000;
+    if (Date.now() - last < gap - 100) return;
+    last = Date.now();
+    tick();
+  }, 1000);
+  last = Date.now();
   tick();
 }
 

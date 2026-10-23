@@ -1042,9 +1042,21 @@ export function createSbd(ctx) {
     // masses just sent from Revit are assessed in the background: shown when done
     clearTimeout(B.waitT);
     if (st && st.state === "running") {
-      $("#sbd-src").textContent = `Assessing the masses sent${st.by ? " by " + st.by : ""} from Revit ... the result shows here when it is ready.`;
+      $("#sbd-src").textContent = st.run
+        ? `Running${st.by ? " (" + st.by + ")" : ""} ... a big model takes a few minutes - the result shows here when it is ready; the rest of the viewer works meanwhile.`
+        : `Assessing the masses sent${st.by ? " by " + st.by : ""} from Revit ... the result shows here when it is ready.`;
+      $("#sbd-run").textContent = "Running ...";
+      B.waiting = true;
       B.waitT = setTimeout(() => { if (box.isConnected) load(); }, 3000);
-    } else if (st && st.state === "error") {
+      return;
+    }
+    if (B.waiting) {
+      // the check that was running has finished
+      B.waiting = false;
+      $("#sbd-run").textContent = "Run";
+      if (st && st.state === "done" && B.res) ctx.status(`SBD: P ${f1(B.res.controlling_p)} %${B.res.required_p != null ? " (required " + f1(B.res.required_p) + " %)" : ""}.`);
+    }
+    if (st && st.state === "error") {
       $("#sbd-src").textContent = "The last check failed on the server: " + (st.detail || "") + " - press Run, or send the model again.";
     }
     // ticked while the SBD masses' model is in the 3D
@@ -1059,18 +1071,16 @@ export function createSbd(ctx) {
     import("./help.js").then((h) => h.openHelp({ topic: "sbd" }));
   });
   $("#sbd-run").onclick = async () => {
-    if (B.busy) return;
+    if (B.busy || B.waiting) return;
     B.busy = true;
     $("#sbd-run").textContent = "Running ...";
     try {
-      B.res = await api("/api/sbd/run", { method: "POST", body: JSON.stringify({ axis: "street", levels: levelsChosen() }) });
+      // run on the server in the background; this page asks until it is done
+      await api("/api/sbd/run", { method: "POST", body: JSON.stringify({ axis: "street", levels: levelsChosen(), background: true }) });
       B.view = "";
-      paintSaved();
-      paint();
-      ctx.status(`SBD: P ${f1(B.res.controlling_p)} %${B.res.required_p != null ? " (required " + f1(B.res.required_p) + " %)" : ""}.`);
-    } catch (e) { ctx.status("SBD not run: " + e.message); }
+      await load();
+    } catch (e) { ctx.status("SBD not run: " + e.message); $("#sbd-run").textContent = "Run"; }
     B.busy = false;
-    $("#sbd-run").textContent = "Run";
   };
   $("#sbd-save").onclick = async () => {
     const name = prompt("Name this result:", "SBD " + new Date().toISOString().slice(0, 10));

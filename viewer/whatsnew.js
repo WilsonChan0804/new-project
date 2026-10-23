@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-07", date: "23 Oct 2026",
+    items: [
+      "**SBD Run in the background:** Run starts the check and the result shows by itself when ready (TMTL496 takes about 3 minutes) - no page waiting on one long answer.",
+      "**Fewer background checks:** a page left behind other tabs asks the server for Revit's \"show me\" every 3 s instead of every 2 s.",
+    ],
+  },
+  {
     version: "2026-12-06", date: "23 Oct 2026",
     items: [
       "**Sorting sheets is easier:** ☰ > **Move / hide sheets** - tick sheets and use **Move to ▾** or **Hide** in a bar that stays at the top of the list; right-click a ticked sheet and all the ticked ones move. After each move the choice clears for the next; **Esc** or **Done** finishes.",
