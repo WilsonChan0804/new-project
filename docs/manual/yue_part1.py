@@ -108,6 +108,7 @@ PART = [
         '**Export ▾** 會攞篩選緊嘅 issue：**Report**（有相、可以列印或者儲存做 PDF 嘅報告）、**Spreadsheet (CSV)** 俾 Excel，或者 **BCF** 俾 Revit、Navisworks 或 Solibri。',
         '呢版每 2 分鐘自動更新；**Updated ... ago** 話你幾耐之前更新。四個主要數字係 **Open issues**、**Overdue**（最舊嗰個遲咗幾多日）、期內 **Resolved**（開咗幾多個入面）同 **Avg. time to resolve**；「Resolved」包括變咗 Resolved 或者 Closed 嘅 issue（Closed 即係開 issue 嘅人確認咗）。',
         '**呢個 project 嘅 task：** 如果呢個 project 喺 Projects 版上面，Dashboard 亦會顯示佢喺每個團隊 list 入面嘅 task：未完成、過咗期，同埋做咗幾多個 sub-task。',
+        '**由你部機打開：** Dashboard 上次顯示嘅內容會留喺呢部機，即刻顯示；之後只會問 server 由上次到而家有改動嘅 issue。如果 server 冇回應，畫面會保留上次嘅版本，並會講明。',
     ]),
     LABEL('通知'),
     UL([

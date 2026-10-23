@@ -116,6 +116,13 @@ function ask(path, opts) {
   if (!t) return;
   const p = project();
   const pq = encodeURIComponent(p);
+  // the rev of the copy this page keeps on the device (nav.js keepBig): ask for what changed since
+  const keptRev = (name) => {
+    try {
+      const u = localStorage.getItem("lwk-viewer:keep:uid");
+      return (u && localStorage.getItem("lwk-viewer:keep:" + u + ":rev:" + name)) || "0";
+    } catch (e) { return "0"; }
+  };
   ask("/api/me");
   ask("/api/chat/unread");
   if (page === "index.html" || page === "model.html") {
@@ -134,7 +141,7 @@ function ask(path, opts) {
     ask("/api/registry?lite=1");
     if (p) {
       ask("/data/" + pq + "/manifest.json", { plain: true });
-      ask("/api/items?since=0");
+      ask("/api/items?since=" + keptRev("dash:" + p));
       ask("/api/members");
       ask("/api/digest?days=7");
       ask("/api/projects/" + pq + "/exports");
@@ -151,7 +158,7 @@ function ask(path, opts) {
     const q = new URLSearchParams(location.search);
     let list = q.get("list");
     if (!list) { try { list = JSON.parse(localStorage.getItem("lwk-tasks:list") || "null"); } catch (e) { list = null; } }
-    if (list && !q.get("mode") && !q.get("quick") && !q.get("attach")) ask("/api/tasks?list=" + encodeURIComponent(list) + "&since=0");
+    if (list && !q.get("mode") && !q.get("quick") && !q.get("attach")) ask("/api/tasks?list=" + encodeURIComponent(list) + "&since=" + keptRev("tasks:" + list));
   } else if (page === "projects.html") {
     ask("/api/registry");
     ask("/api/chat/rooms");

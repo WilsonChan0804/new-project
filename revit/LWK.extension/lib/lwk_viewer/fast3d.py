@@ -346,7 +346,12 @@ class DocWriter(object):
         head_bytes = b"LWKM" + struct.pack("<II", VERSION, len(js)) + b"\0" * 4
         try:
             with open(tmp, "wb") as raw:
-                gz = gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=5)
+                # no time in the gzip header: an unchanged model gives the
+                # same bytes, so the nightly upload does not send it again
+                try:
+                    gz = gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=5, mtime=0)
+                except TypeError:
+                    gz = gzip.GzipFile(fileobj=raw, mode="wb", compresslevel=5)
                 gz.write(head_bytes)
                 gz.write(js)
                 for part in bin_parts:

@@ -15,7 +15,7 @@
  * field, so two people editing one task rarely collide.
  */
 
-import { api, project } from "./nav.js";
+import { api, project, keptCopy, keepCopy, keptBig, keepBig, clearKeptBig } from "./nav.js";
 import { $, $$, esc, uid, today, isOverdue, PRI_RANK, avatar, modal, toast, pop, closePop, ago, fmtWhen, skeleton } from "./tasks-util.js";
 import { makeLink } from "./filelinks.js";
 import { makeFilter } from "./filterbtn.js";
@@ -464,8 +464,23 @@ function applyTask(r) {
 
 /* ------------------------------------------------------------ loading */
 
+/* The list as it was last time, kept on this device: shown at once, then
+   only what changed since is asked for (since=rev). */
+let _keepT = null;
+function keepList() {
+  clearTimeout(_keepT);
+  const id = S.listId, rev = S.rev;
+  if (!id || S.mode !== "list") return;
+  _keepT = setTimeout(() => {
+    if (S.listId !== id) return;
+    keepBig("tasks:" + id, { rev, list: S.list, role: S.role, groups: [...S.groups.values()], fields: [...S.fields.values()],
+                             tasks: [...S.tasks.values()], at: Date.now() }, S.me && S.me.uid);
+  }, 1500);
+}
+
 async function loadLists() {
   const r = await api("/api/task-lists");
+  keepCopy("task-lists", { lists: r.lists, site_admin: r.site_admin, accounts: r.accounts }, S.me && S.me.uid);
   S.lists = r.lists;
   S.siteAdmin = r.site_admin;
   S.accounts = r.accounts;
@@ -483,7 +498,26 @@ async function openList(id, keepView) {
   S.collapsed = new Set(ls.get("collapsed:" + id, []));
   ls.set("list", id);
   if (!keepView && S.view === "activity") S.view = "list";
-  await pull();
+  // last time's copy at once ...
+  const k = await keptBig("tasks:" + id);
+  if (k && k.list && k.list.id === id && S.listId === id) {
+    S.list = k.list; S.role = k.role;
+    for (const g of k.groups || []) S.groups.set(g.id, g);
+    for (const f of k.fields || []) S.fields.set(f.id, f);
+    for (const t of k.tasks || []) S.tasks.set(t.id, t);
+    S.rev = k.rev || 0;
+    setUrl();
+    paintSide();
+    render();
+  }
+  // ... then what changed since (everything, the first time)
+  try {
+    await pull();
+  } catch (e) {
+    if (!k) throw e;
+    toast("Shown as last time - the server did not answer just now");
+    return;
+  }
   setUrl();
   paintSide();
   render();
@@ -500,6 +534,7 @@ async function pull() {
   for (const t of r.tasks) applyTask(t);
   const changed = r.tasks.length || r.groups.length || r.fields.length;
   S.rev = r.rev;
+  if (changed || !_keepT) keepList();
   return changed;
 }
 
@@ -1111,6 +1146,8 @@ function headerLinks() {
     ev.preventDefault();
     try { await fetch("/api/logout", { method: "POST" }); } catch (e) {}
     try { localStorage.removeItem("lwk-viewer:token"); } catch (e) {}
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith("lwk-viewer:keep:")) localStorage.removeItem(k); } catch (e) {}
+    await clearKeptBig();
     location.href = "index.html";
   };
 }
@@ -1126,8 +1163,16 @@ async function start() {
   S.me = { uid: me.user ? me.user.id : null, name: me.user ? me.user.name : "", user: me.user, accounts: me.accounts,
     site_admin: me.site_admin, projects: me.projects };
   headerLinks();
-  try { const p = await api("/api/people"); S.people = p.people || []; } catch (e) { S.people = []; }
-  await loadLists();
+  // the lists and people as last time at once; the server's answers then
+  const kl = keptCopy("task-lists"), kp = keptCopy("task-people");
+  if (kl) { S.lists = kl.lists || []; S.siteAdmin = kl.site_admin; S.accounts = kl.accounts; paintSide(); }
+  if (kp) S.people = kp;
+  const fresh = (async () => {
+    try { const p = await api("/api/people"); S.people = p.people || []; keepCopy("task-people", S.people, S.me.uid); } catch (e) { if (!kp) S.people = []; }
+    await loadLists();
+  })();
+  if (!kl) await fresh;
+  else fresh.catch(() => {});
   const q = new URLSearchParams(location.search);
   if (q.get("attach")) {
     await attachFromViewer(q.get("attach"), q.get("title") || "");

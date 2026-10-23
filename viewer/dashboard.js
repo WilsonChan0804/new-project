@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-07";
+const LWK_VERSION = "2026-12-08";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -35,7 +35,7 @@ const LWK_VERSION = "2026-12-07";
     b.appendChild(s);
   }
 })();
-import { api, link, project, signOut, projectOptions, projectTwoStep } from "./nav.js";
+import { api, link, project, signOut, projectOptions, projectTwoStep, keptBig, keepBig } from "./nav.js";
 import { ISSUE_TYPES } from "./issuetypes.js";
 import { skeleton } from "./tasks-util.js";
 import { day, dayTime, ago as dateAgo, overdueBy } from "./dates.js";
@@ -52,7 +52,41 @@ const PRIORITY_COLORS = { Critical: "#b91c1c", High: "#f28022", Normal: "#6b7280
 const TYPE = new Map(ISSUE_TYPES.map((t) => [t.id, t]));
 const UNASSIGNED = "(unassigned)";
 
-const D = { manifest: null, items: [], members: [], me: null, issues: [], fetched: null };
+const D = { manifest: null, items: [], members: [], me: null, issues: [], fetched: null, rev: 0 };
+
+/* What the dashboard last showed is kept on this device (per account and
+   project): the next visit draws it at once, and the server is then asked
+   only for the issues changed since. */
+const dashKey = () => "dash:" + project();
+const K = { ex: null, pj: null, digest: null, ptasks: null };
+let keepT = 0;
+function keepDash() {
+  clearTimeout(keepT);
+  keepT = setTimeout(() => {
+    keepBig(dashKey(), { rev: D.rev, manifest: D.manifest, items: D.items, members: D.members, me: D.me,
+      fetched: D.fetched ? D.fetched.getTime() : null, ex: K.ex, pj: K.pj, digest: K.digest, ptasks: K.ptasks },
+      D.me && D.me.user ? D.me.user.id : null);
+  }, 1500);
+}
+
+async function showKept() {
+  const k = await keptBig(dashKey());
+  if (!k || !k.items) return false;
+  D.manifest = k.manifest; D.items = k.items; D.members = k.members || []; D.rev = k.rev || 0;
+  if (!D.me) D.me = k.me;
+  D.fetched = k.fetched ? new Date(k.fetched) : null;
+  D.issues = D.items.filter((it) => it.issue).map(toIssue);
+  K.ex = k.ex; K.pj = k.pj; K.digest = k.digest; K.ptasks = k.ptasks;
+  const pt = (D.manifest && D.manifest.source && D.manifest.source.title) || project();
+  $("#d-sub").textContent = pt + " · issues and tasks";
+  fillFilters();
+  render();
+  if (K.digest) drawDigest(K.digest);
+  if (K.ex) drawExports(K.ex, K.pj);
+  if (K.ptasks) drawProjectTasks(K.ptasks.reg, K.ptasks.tree);
+  if (D.fetched) $("#d-updated").textContent = "Updated " + dateAgo(D.fetched);
+  return true;
+}
 
 /* ------------------------------------------------------------ sign-in */
 
@@ -129,15 +163,25 @@ async function loadProjects() {
 }
 
 async function loadData() {
-  $("#d-msg").textContent = "Loading ...";
+  const shown = !!D.fetched;
+  if (!shown) $("#d-msg").textContent = "Loading ...";
   if (!$("#kpis").children.length) $("#kpis").innerHTML = skeleton(3, "Loading the dashboard");
-  const [man, items, mem] = await Promise.all([
+  const [man, items0, mem] = await Promise.all([
     fetch("/data/" + encodeURIComponent(project()) + "/manifest.json").then((r) => (r.ok ? r.json() : null)),
-    api("/api/items?since=0"),
+    api("/api/items?since=" + (D.rev || 0)),
     api("/api/members").catch(() => ({ members: [] })),
   ]);
+  let items = items0;
+  // the server's count went back (a restore): everything again
+  if (D.rev && (items.rev || 0) < D.rev) { D.rev = 0; D.items = []; items = await api("/api/items?since=0"); }
+  if (!D.rev) D.items = (items.items || []).filter((it) => !it.deleted);
+  else {
+    const by = new Map(D.items.map((it) => [it.id, it]));
+    for (const it of items.items || []) { if (it.deleted) by.delete(it.id); else by.set(it.id, it); }
+    D.items = Array.from(by.values());
+  }
+  D.rev = items.rev || 0;
   D.manifest = man;
-  D.items = (items.items || []).filter((it) => !it.deleted);
   D.members = mem.members || [];
   D.fetched = new Date();
   D.issues = D.items.filter((it) => it.issue).map(toIssue);
@@ -147,6 +191,7 @@ async function loadData() {
   $("#d-sub").textContent = pt + " · issues and tasks";
   fillFilters();
   render();
+  keepDash();
   loadDigest().catch(() => {});
   loadExports().catch(() => {});
 }
@@ -156,8 +201,16 @@ async function loadData() {
 async function loadExports() {
   const box = $("#exports-body");
   if (!box) return;
-  let ex = {};
+  let ex = {}, pj = null;
   try { ex = (await api("/api/projects/" + encodeURIComponent(project()) + "/exports")).exports || {}; } catch (e) { ex = {}; }
+  try { pj = (await api("/api/publish-jobs?project=" + encodeURIComponent(project()))).jobs || []; } catch (e) { pj = null; }   // an older server: no list
+  K.ex = ex; K.pj = pj; keepDash();
+  drawExports(ex, pj);
+}
+
+function drawExports(ex, pj) {
+  const box = $("#exports-body");
+  if (!box) return;
   const sheets = (D.manifest && D.manifest.sheets) || [];
   const bySrc = new Map();
   for (const sh of sheets) {
@@ -197,8 +250,7 @@ async function loadExports() {
   /* Every PC that has this project set up to publish (the table above keeps
      only the last upload of each file): a model published at night from two
      PCs is said here, with where to look. */
-  try {
-    const pj = (await api("/api/publish-jobs?project=" + encodeURIComponent(project()))).jobs || [];
+  if (pj) {
     const night = pj.filter((j) => j.nightly);
     const dup = pj.filter((j) => j.duplicate);
     if (dup.length) {
@@ -210,7 +262,7 @@ async function loadExports() {
       html += `<div class="sub" style="margin-top:6px">${night.length} night export(s) set for this project`
         + ` - <a href="admin.html#publish">all auto-publish settings</a></div>`;
     }
-  } catch (e) { /* an older server: no list */ }
+  }
   box.classList.remove("muted");
   box.innerHTML = html;
   for (const b of box.querySelectorAll(".exp-more")) b.onclick = () => {
@@ -222,6 +274,11 @@ async function loadExports() {
 /* The weekly summary (what Teams gets every week), and a button to send it now. */
 async function loadDigest() {
   const d = await api("/api/digest?days=7");
+  K.digest = d; keepDash();
+  drawDigest(d);
+}
+
+function drawDigest(d) {
   const box = $("#digest");
   box.hidden = false;
   const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
@@ -768,6 +825,8 @@ function showError(e) {
 }
 
 async function main() {
+  wireFilters();
+  const kept = await showKept().catch(() => false);   // from the device, before the server answers
   await ensureSignedIn();
   if (D.me.user && D.me.user.must_change) {
     location.href = "admin.html?first=1&next=" + encodeURIComponent(location.pathname + location.search) + "#account";
@@ -787,8 +846,10 @@ async function main() {
   if ($("#to-projects")) $("#to-projects").href = link("projects.html");
   if ($("#to-chat")) $("#to-chat").href = link("messenger.html");
   $("#to-admin").href = link("admin.html");
-  wireFilters();
-  await loadData();
+  if (kept) {
+    // drawn from the device; the server's answer follows
+    loadData().catch((e) => { $("#d-msg").textContent = "Shown as last time on this device - the server did not answer (" + (e.message || e) + ")."; });
+  } else await loadData();
   projectTasks().catch(() => {});
   // Keep it current while it is left open on a screen in the office.
   setInterval(() => { if (!document.hidden) loadData().catch(() => {}); }, 120000);
@@ -807,6 +868,13 @@ async function projectTasks() {
     .find((p) => (p.viewers || []).includes(project()) || p.viewer === project());
   if (!reg) return;
   const tree = (await api(`/api/registry/${encodeURIComponent(reg.id)}/tasks`)).groups || [];
+  K.ptasks = { reg, tree }; keepDash();
+  drawProjectTasks(reg, tree);
+}
+
+function drawProjectTasks(reg, tree0) {
+  const box = document.getElementById("d-tasks");
+  const tree = JSON.parse(JSON.stringify(tree0));   // the rows get links to their group below
   const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
   const all = tree.flatMap((g) => g.tasks.map((t) => Object.assign(t, { _g: g })));
   const open = all.filter((t) => !t.done);

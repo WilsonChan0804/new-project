@@ -144,7 +144,16 @@ export function createSync(opts) {
     if ((ups.length || dels.length) && opts.onRemote) opts.onRemote(ups, dels);
   }
 
-  async function load() {
+  /* kept: the board as it was last time on this device ({rev, objects,
+     meta}) - shown at once; the next poll (since that rev) brings what
+     changed. Without it, the whole board from the server. */
+  async function load(kept) {
+    if (kept && kept.rev && Array.isArray(kept.objects) && kept.meta && kept.meta.board) {
+      S.rev = kept.rev;
+      for (const o of kept.objects) S.objs.set(o.id, clean(o));
+      restore();
+      return Object.assign({}, kept.meta, { kept: true });
+    }
     const data = await api(path + "/objects?since=0");
     S.rev = data.rev;
     S.clockSkew = (data.now || Date.now()) - Date.now();
@@ -298,6 +307,7 @@ export function createSync(opts) {
   }
 
   return { S, load, start, stop, touch, flush, poll, strip,
+           keepable: () => ({ rev: S.rev, objects: Array.from(S.objs.values()) }),
            now: () => Date.now() + S.clockSkew,
            snapshot: () => Array.from(S.objs.values()).map((o) => clone(strip(o))) };
 }

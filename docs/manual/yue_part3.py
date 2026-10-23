@@ -107,6 +107,8 @@ PART = [
         'Model 隔籬嘅 **▸** 顯示佢嘅大細同副本數目，仲有 **Compare with previous export**，睇上次 publish 之後加咗、改咗或者刪咗乜。',
         '**Apply link transforms**（開咗）會將 link 放喺 Revit 入面嘅位置。',
         '**Light mode (phones, tablets)** 只會喺你望緊嘅附近載入重複嘅標準層。手機同平板預設開咗。',
+        '**分階段載入：** 主 model 一載入完就顯示，你即刻可以開工；其他 model 喺後面繼續載入，近你視角嘅先載（「Main model ready - N more model(s) loading behind it」）。',
+        '**Open with the main model only**（喺 list 下面，呢部機會記住）：打開時只載入主 model；其他 model 要你剔佢或者行近佢先會載入。網絡慢或者電腦記憶體少嘅時候好有用。',
         '每個 panel 嘅標題（Models、Section、Measure 等等）撳一下就收埋，下次都會保持收埋。',
     ]),
     P('左邊 panel 分做三組，每組一隻顏色，容易搵：'),

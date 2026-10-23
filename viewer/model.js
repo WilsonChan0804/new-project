@@ -8349,6 +8349,18 @@ async function boot() {
     });
   }
   $("#all-off").addEventListener("click", () => loadAll(false));
+  // On open: the main model only (the rest as the view comes near them, or ticked)
+  let openMain = false;
+  try { openMain = localStorage.getItem("lwk.open3d") === "main"; } catch (e) {}
+  const omBox = document.getElementById("open-main");
+  if (omBox) {
+    omBox.checked = openMain;
+    omBox.addEventListener("change", () => {
+      try { localStorage.setItem("lwk.open3d", omBox.checked ? "main" : "all"); } catch (e) {}
+      status(omBox.checked ? "From the next opening: the main model only; the others load as you come near them, or tick them."
+                           : "From the next opening: all models, the main one first.");
+    });
+  }
 
   /* Every model, every time. Remembering the last selection meant that
      arriving from a sheet ("Show in 3D") could open with the typical floors,
@@ -8378,6 +8390,8 @@ async function boot() {
   /* Host first; after that, if the sheet beside us (2D + 3D) or an issue
      has asked for a spot, the linked model round that spot next. */
   const queue = wanted.filter(Boolean);
+  const hasHost = queue.some((q) => q.role === "host");
+  let staged = false;
   while (queue.length) {
     let qi = 0;
     if (S.priorityMM && queue[0].role !== "host") {
@@ -8389,7 +8403,7 @@ async function boot() {
       });
     }
     const m = queue.splice(qi, 1)[0];
-    if ((S.light || jumpMode) && m.role === "link" && linkBox(m)) { S.lazyLinks.push(m); continue; }
+    if ((S.light || jumpMode || openMain) && m.role === "link" && linkBox(m)) { S.lazyLinks.push(m); continue; }
     if (m.format === "lwkm" && m.role === "link") {
       /* With phone copies the budget is what is actually built (triangles);
          without them, the size of the whole files. */
@@ -8419,6 +8433,23 @@ async function boot() {
        frame everything is measured in changed with it. */
     await new Promise((r) => setTimeout(r, 0));
     try { await box._loading; } catch (e) { /* reported by the handler */ }
+    /* In stages: once the main model is in, the view is placed and the page
+       is usable; the other disciplines follow behind it, nearest the view
+       first (Admin > Speed: the 3D page waited for every model). */
+    if (!staged && (m.role === "host" || !hasHost)) {
+      staged = true;
+      if (!jumpMode) {
+        const linked = viewFromUrl();
+        if (!(linked && restoreLastView(linked)) && !restoreLastView()) await fitAll();
+        S.viewPlaced = true;
+        try { S.priorityMM = sceneToInternalMM(S.controls.target); } catch (e) {}
+      }
+      S.perf.firstReadyAt = performance.now();
+      try { if (window.lwkReady) window.lwkReady(); } catch (e) {}      // Admin > Speed (boot.js)
+    }
+    if (staged && queue.length) {
+      status(`Main model ready - ${queue.length} more model(s) loading behind it; you can work meanwhile ...`);
+    }
   }
   S.modelsReady = true;
   S.leftOutN = leftOut.length;
@@ -8474,7 +8505,7 @@ async function boot() {
      whole building here is an animated move, and it would carry the view
      back out of the room it had just been placed in. */
   const uq = new URLSearchParams(location.search);
-  if (!uq.get("at") && !uq.get("select")) {
+  if (!uq.get("at") && !uq.get("select") && !S.viewPlaced) {
     // a link to a view (?view=) first, else where this person left it
     const linked = viewFromUrl();
     if (!(linked && restoreLastView(linked)) && !restoreLastView()) await fitAll();
@@ -9303,6 +9334,7 @@ function perfReport() {
   }
   if (!ms.length) lines.push("  (none loaded yet)");
   lines.push(`  Total ${mb(total)}; actually downloaded this time ${mb(fetched)}`);
+  if (P.firstReadyAt) lines.push(`  Main model shown at ${secs(P.firstReadyAt)}`);
   if (P.allReadyAt) lines.push(`  Everything ready at ${secs(P.allReadyAt)}`);
   if (S.notPrepared && S.notPrepared.length) {
     lines.push(`  Left out (not prepared for phones yet): ${S.notPrepared.join(", ")}`);

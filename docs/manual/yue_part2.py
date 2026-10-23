@@ -25,6 +25,7 @@ PART = [
     ]),
     H2('Tasks 工作'),
     P('**Tasks** 係團隊嘅 task list，取代 Lark Tasks，同圖則、model 同 issue 連埋一齊。'),
+    P('之前打開過嘅 list 會即刻由呢部機顯示，然後只由 server 攞上次之後嘅改動。好長嘅 group 會先顯示頭 150 個 task；向下碌（或者撳 **Show more**）就會出下一批。搜尋同篩選一樣會睇晒所有 task。'),
     H3('List、group 同睇法'),
     SHOT('tasks'),
     UL([
@@ -67,6 +68,7 @@ PART = [
     H2('Board 白板'),
     SHOT('board'),
     P('**Board** 係每個 project 一塊共用白板，好似 Miro 咁：便利貼、文字、形狀、連接線、mind map、相同 frame，仲有範本可以由頭開始。Project 入面所有人會即時見到改動。喺頂部揀 project；用 board 清單開新、改名、複製或者刪除 board。'),
+    P('之前打開過嘅 board 會即刻由呢部機顯示；之後其他人做嘅改動幾秒內就會到。Sign out 會清走留喺部機嘅版本（Board、Tasks、Dashboard）。'),
     LABEL('LWK BIM Workflow board'),
     P('每個 project 一開始就有一塊叫 **LWK BIM Workflow** 嘅 board：公司嘅 BIM 工作流程，係呢個 project 自己嘅一份，可以按 project 需要改。第一個有權改嘢嘅人打開呢個 project 嘅 Board 頁，佢就會自動整出嚟。'),
     UL([

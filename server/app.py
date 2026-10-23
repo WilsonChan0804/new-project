@@ -1714,25 +1714,13 @@ def _safe_rel(rel):
 VERSIONS_DIR = "_versions"
 # how many earlier versions of each sheet PDF are kept (LWK_KEEP_SHEET_VERSIONS)
 VERSIONS_KEEP = max(1, int(os.environ.get("LWK_KEEP_SHEET_VERSIONS", "12") or 12))
-_PDF_VOLATILE = [
-    re.compile(rb"/CreationDate\s*\([^)]*\)"),
-    re.compile(rb"/ModDate\s*\([^)]*\)"),
-    re.compile(rb"/ID\s*\[[^\]]*\]"),
-    re.compile(rb"<xmp:[A-Za-z]*Date>[^<]*</xmp:[A-Za-z]*Date>"),
-    re.compile(rb"<xmpMM:(?:Document|Instance)ID>[^<]*</xmpMM:(?:Document|Instance)ID>"),
-    re.compile(rb"xref\s[\s\S]*?trailer"),
-    re.compile(rb"startxref\s+\d+"),
-]
+import pdffp  # noqa: E402  the same fingerprint the add-in sends (pdffp.py)
 
 
 def pdf_fingerprint(data):
     """SHA-1 of a PDF without the parts that change on every export even
-    when the drawing does not: dates, document ids and the byte offsets
-    that follow from them. Revit stamps each PDF with the time it was
-    made, so a plain hash would call every nightly export a new version."""
-    for rx in _PDF_VOLATILE:
-        data = rx.sub(b"", data)
-    return hashlib.sha1(data).hexdigest()
+    when the drawing does not (pdffp.py)."""
+    return pdffp.fingerprint(data)
 
 
 def version_folder(root, rel):
@@ -1894,20 +1882,76 @@ def get_versions(request: Request, pdf: str = "",
 
 @app.post("/api/admin/projects/{pid}/upload-plan")
 async def upload_plan(request: Request, pid: str, x_viewer_token: str = Header(default="")):
-    """Step 1 of an upload: the exporter lists its files with their SHA-1;
-    the answer is which of them the server does not have yet. Drawings that
-    did not change are not sent again."""
+    """Step 1 of an upload: the exporter lists its files with their SHA-1
+    (and a PDF's fingerprint, "fp" - pdffp.py); the answer is which of them
+    the server does not have yet. Drawings that did not change are not
+    sent again - a PDF exported again with only its dates changed included."""
     root = _upload_target(request, pid, x_viewer_token)
     body = await request.json() or {}
-    need = []
-    for f in body.get("files") or []:
-        rel = _safe_rel(f.get("path"))
-        if not rel:
-            continue
-        p = os.path.join(root, *rel.split("/"))
-        if not (os.path.isfile(p) and os.path.getsize(p) == f.get("size") and _sha1(p) == f.get("sha1")):
+    return await run_in_threadpool(_upload_need, root, body.get("files") or [])
+
+
+UPLOAD_HASHES = ".upload_hashes.json"
+_HASH_LOCK = threading.Lock()
+
+
+def _upload_need(root, files):
+    """-> {"need": [paths], "same_drawing": n}. Each file's SHA-1 and PDF
+    fingerprint are kept in .upload_hashes.json by its size and date, so a
+    plan reads only the files that changed since the last one (not the
+    whole export, hundreds of MB, every night)."""
+    path = os.path.join(root, UPLOAD_HASHES)
+    with _HASH_LOCK:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                cache = json.load(fh) or {}
+        except (OSError, ValueError):
+            cache = {}
+        changed = False
+        need, same_drawing = [], 0
+        seen = set()
+        for f in files:
+            rel = _safe_rel(f.get("path"))
+            if not rel:
+                continue
+            seen.add(rel)
+            p = os.path.join(root, *rel.split("/"))
+            try:
+                st = os.stat(p)
+            except OSError:
+                need.append(rel)
+                continue
+            c = cache.get(rel)
+            if not c or c.get("size") != st.st_size or c.get("mtime") != st.st_mtime_ns:
+                c = {"size": st.st_size, "mtime": st.st_mtime_ns, "sha1": _sha1(p)}
+                cache[rel] = c
+                changed = True
+            if st.st_size == f.get("size") and c["sha1"] == f.get("sha1"):
+                continue
+            if f.get("fp") and rel.lower().endswith(".pdf"):
+                if "fp" not in c:
+                    try:
+                        c["fp"] = pdffp.fingerprint_file(p)
+                    except OSError:
+                        c["fp"] = ""
+                    changed = True
+                if c["fp"] and c["fp"] == f["fp"]:
+                    same_drawing += 1          # only its dates differ: the one here stays
+                    continue
             need.append(rel)
-    return {"need": need}
+        # files no longer in the export: forgotten
+        for rel in [k for k in cache if k not in seen]:
+            if not os.path.isfile(os.path.join(root, *rel.split("/"))):
+                cache.pop(rel, None)
+                changed = True
+        if changed:
+            try:
+                with open(path + ".part", "w", encoding="utf-8") as fh:
+                    json.dump(cache, fh, separators=(",", ":"))
+                os.replace(path + ".part", path)
+            except OSError:
+                pass
+    return {"need": need, "same_drawing": same_drawing}
 
 
 def _upload_source(man, part):

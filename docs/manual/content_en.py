@@ -110,6 +110,7 @@ DOC = [
         '**Export ▾** takes the issues the filters show: **Report** (a printable report with pictures - save it as PDF), **Spreadsheet (CSV)** for Excel, or **BCF** for Revit, Navisworks or Solibri.',
         'The page refreshes itself every 2 minutes; **Updated ... ago** says how fresh it is. "Resolved" counts issues that became Resolved or Closed (Closed is a resolved issue the raiser has signed off).',
         '**Tasks of this project:** when the project is on the Projects page, the Dashboard also shows its tasks from every team\'s list: open, overdue and sub-tasks done.',
+        '**Opens from your device:** what the Dashboard showed last time is kept on this device and shown at once; the server is then asked only for the issues changed since. If the server does not answer, the last copy stays on screen and the page says so.',
     ]),
     LABEL('Notifications'),
     UL([
@@ -140,6 +141,7 @@ DOC = [
     ]),
     H2('Tasks'),
     P('**Tasks** are the team\'s task lists, in place of Lark Tasks, linked to the drawings, the model and the issues.'),
+    P('A list you opened before shows at once from this device, then only what changed since comes from the server. A long group shows its first 150 tasks; the next ones appear as you scroll down (or click **Show more**). Search and filters always look at every task.'),
     H3('Lists, groups and views'),
     SHOT('tasks'),
     UL([
@@ -182,6 +184,7 @@ DOC = [
     H2('Board'),
     SHOT('board'),
     P('**Board** is a shared whiteboard for each project, in the manner of Miro: sticky notes, text, shapes, connectors, mind maps, pictures and frames, with templates to start from. Everyone on the project sees changes as they are made. Pick the project at the top; use the board list to make, rename, copy or delete boards.'),
+    P('A board you opened before shows at once from this device; changes made since then by others arrive within a few seconds. Signing out clears the copies kept on the device (Board, Tasks, Dashboard).'),
     LABEL('The LWK BIM Workflow board'),
     P("Every project starts with a board called **LWK BIM Workflow**: the company's BIM workflow as the project's own copy, to change to suit the project. It is made the first time someone who can edit opens the project's Board page."),
     UL([
@@ -428,6 +431,8 @@ DOC = [
         '**▸** beside a model shows its size and number of copies, and **Compare with previous export** to see what was added, changed or removed since the last publish.',
         '**Apply link transforms** (on) places links where they sit in Revit.',
         '**Light mode (phones, tablets)** loads repeated typical floors only near where you are looking. It is on by default on phones and tablets.',
+        '**In stages:** the main model shows as soon as it has loaded, and you can work at once; the other models keep loading behind it, the ones nearest your view first ("Main model ready - N more model(s) loading behind it").',
+        '**Open with the main model only** (under the list, remembered on this device): only the main model loads on opening; another model loads when you tick it or come near it. Useful on a slow connection or a computer with little memory.',
         'Every panel heading (Models, Section, Measure, and so on) folds away when clicked, and stays folded next time.',
     ]),
     P('The left panel is in three coloured groups, so a topic is quick to find:'),
@@ -864,6 +869,7 @@ DOC = [
         'Every workset of the model is opened by name and unloaded links are loaded. If a workset is still closed, or the 3D model comes out empty, the viewer **keeps the last good 3D model** (the sheets still go), and the log ends with **result FAILED** and the reason.',
         'Known dialogs are answered so the night is not stopped: a DWG with an empty paper space (Yes), a DWG with **extents greater than 1E9** (OK: it is imported without the far part), DWG import notes such as **Elements Lost on Import** (Close), **External Tools - Add-in Assembly Not Found** and any other add-in\'s **cannot find xxx.dll** message (Close), and any message that has only one button. Dialogs that come before the LWK tools load, or while a model opens, are answered by the launcher\'s watcher, which finds every window of that Revit. Every dialog is written to nightly\\dialogs.log. The launcher and its watcher are renewed by themselves the next time Revit is opened by hand after an update. Best: repair or remove the broken add-in on that PC.',
         '**Revit 2023-2026 (watcher 2026-11-31):** the launcher\'s watcher also sees the newer WPF windows, and presses by the button\'s label: **Load Once** for an unsigned add-in, **Ignore and continue opening the project** for missing links, **Continue working with the file** for missing third-party updaters, and Close on What\'s New and similar notices. It never presses **Cancel**, **Do Not Load** or **Always Load** - a progress window with only Cancel is left alone, so a model still opening is not stopped. A dialog it does not know is written to nightly\\dialogs.log with its picture in nightly\\dialogs\\ - send both, so a rule can be added. After this update, open **Auto-export** on each PC and **save the schedule once**: that writes the new launcher and watcher.',
+        '**Only changed files are sent (update 2026-12-08):** an unchanged 3D model gives the same file as the night before, and a sheet PDF whose drawing did not change (Revit stamps a new date into it each time) is recognised as the same - neither is uploaded again. The log says e.g. "upload: sending 6 of 108 file(s), 12.4 MB - the rest unchanged (40 sheet PDF(s) exported again with only their dates changed)". Update the add-in (LWK.extension) on the PC; the first night after the update still sends everything once.',
         '**Only what changed is published at night:** after opening a model, the night run reads the version of the model and of every linked model (Revit numbers each save). If none has been saved since the last publish, and the job\'s settings are the same, nothing is exported and the night log says **UNCHANGED**. A test run, Run Export by hand, a changed setting or an update of these tools always publishes. The model still has to be opened to read its version.',
         '**Time:** each Revit version may run for 3 hours (limit_hours in nightly_schedule.json); the versions run one after another (2023, then 2024, then 2025), and a version whose Revit is open on that PC is skipped that night. Start the night run early (e.g. 01:00), so every version finishes before people open Revit in the morning.',
     ]),

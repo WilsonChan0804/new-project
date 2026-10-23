@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-08", date: "23 Oct 2026",
+    items: [
+      "**3D opens in stages:** the main model shows as soon as it is in and you can work at once; the other disciplines keep loading behind it, the ones nearest your view first. To load only the main model, tick **Open with the main model only** under the Models list - the others then load when you tick them or come near them.",
+      "**Board, Tasks and Dashboard open from your device:** what you saw last time shows at once, and the server is asked only for what changed since. If the server does not answer, you still see your last copy (it says so). Signing out clears these copies.",
+      "**Long task lists in pages:** a group shows its first 150 tasks; the next ones appear as you scroll down (or with **Show more**). Search and filters still look at every task.",
+      "**Night export sends only what changed** (update the Revit add-in): an unchanged 3D model, and a sheet PDF whose drawing did not change (Revit re-stamps its date every time), are no longer uploaded each night. The log says e.g. \"sending 6 of 108 file(s)\". The first night after the update still sends everything once.",
+    ],
+  },
+  {
     version: "2026-12-07", date: "23 Oct 2026",
     items: [
       "**SBD Run in the background:** Run starts the check and the result shows by itself when ready (TMTL496 takes about 3 minutes) - no page waiting on one long answer.",

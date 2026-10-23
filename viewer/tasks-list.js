@@ -173,7 +173,12 @@ export function render(T, el) {
       + groupLinks(b)
       + `</div>`;
     if (!shut) {
-      h += b.tasks.map((t) => row(T, t, cols, 0)).join("");
+      // in pages: the first rows of a big group, more as the list is scrolled to them
+      const lim = PAGE.get(b.key) || PAGE_ROWS;
+      h += b.tasks.slice(0, lim).map((t) => row(T, t, cols, 0)).join("");
+      if (b.tasks.length > lim)
+        h += `<div class="tl-row tl-more" data-more="${esc(b.key)}"><div class="tl-c tl-title"><button class="ghost" data-more-btn="${esc(b.key)}">`
+          + `Show ${Math.min(PAGE_ROWS, b.tasks.length - lim)} more (${b.tasks.length - lim} not shown yet)</button></div></div>`;
       if (T.canEdit() && (S.groupBy === "group" ? !!b.group : true))
         h += `<div class="tl-row tl-newrow"><div class="tl-c tl-title"><input class="tl-new" data-b="${esc(b.key)}" placeholder="+ New task"></div></div>`;
     }
@@ -187,6 +192,27 @@ export function render(T, el) {
   el.scrollTop = scroll;
   wire(T, el, buckets);
   wireResize(T, el, cols);
+  wireMore(T, el);
+}
+
+/* A list of thousands of tasks is drawn a page at a time: the rest of a
+   group follows when its "Show more" row comes into view (or is clicked).
+   Search and the filters still look through every task. */
+const PAGE_ROWS = 150;
+const PAGE = new Map();          // group key -> rows shown
+let _moreObs = null;
+function wireMore(T, el) {
+  const more = (key) => {
+    PAGE.set(key, (PAGE.get(key) || PAGE_ROWS) + PAGE_ROWS);
+    render(T, el);
+  };
+  for (const b of el.querySelectorAll("[data-more-btn]")) b.onclick = (ev) => { ev.stopPropagation(); more(b.dataset.moreBtn); };
+  if (_moreObs) _moreObs.disconnect();
+  if (typeof IntersectionObserver === "undefined") return;
+  _moreObs = new IntersectionObserver((ents) => {
+    for (const e of ents) if (e.isIntersecting) { _moreObs.disconnect(); more(e.target.dataset.more); return; }
+  }, { root: null, rootMargin: "300px" });
+  for (const r of el.querySelectorAll("[data-more]")) _moreObs.observe(r);
 }
 
 /* Drag a header cell's own grip to resize just that column - every row picks up the new width

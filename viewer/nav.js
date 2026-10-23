@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-07";
+const LWK_VERSION = "2026-12-08";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -93,6 +93,37 @@ export function keepCopy(name, value, uid) {
   } catch (e) { /* full: the next visit simply waits for the server */ }
 }
 
+/* The same for bigger copies (a task list, a board, a dashboard's data):
+   in IndexedDB, per account, cleared on sign-out. null when there is none
+   (or no IndexedDB here: the page then simply waits for the server). */
+const BIG = "keep|";
+export async function keptBig(name) {
+  try {
+    const u = localStorage.getItem(KEEP + "uid");
+    if (!u) return null;
+    const idb = await import("./idb.js");
+    return await idb.kvGet(BIG + u + "|" + name);
+  } catch (e) { return null; }
+}
+export async function keepBig(name, value, uid) {
+  try {
+    if (uid) localStorage.setItem(KEEP + "uid", String(uid));
+    const u = localStorage.getItem(KEEP + "uid");
+    if (!u) return;
+    const idb = await import("./idb.js");
+    await idb.kvSet(BIG + u + "|" + name, value);
+    // the copy's rev where boot.js can read it at once: its early request
+    // then asks only for what changed since, as the page will
+    if (value && value.rev != null) localStorage.setItem(KEEP + u + ":rev:" + name, String(value.rev));
+  } catch (e) { /* no room: the next visit waits for the server */ }
+}
+export async function clearKeptBig() {
+  try {
+    const idb = await import("./idb.js");
+    for (const r of await idb.kvList(BIG)) await idb.kvDel(r.key);
+  } catch (e) {}
+}
+
 export const link = (page, extra) => {
   const p = project();
   const q = new URLSearchParams();
@@ -116,6 +147,7 @@ export async function signOut() {
   try {
     for (const k of Object.keys(localStorage)) if (k.startsWith("lwk-viewer:chat:") || k.startsWith(KEEP)) localStorage.removeItem(k);
   } catch (e) {}
+  await clearKeptBig();
   location.href = "index.html";
 }
 

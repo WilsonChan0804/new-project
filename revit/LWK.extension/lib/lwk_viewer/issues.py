@@ -265,8 +265,10 @@ class Client(object):
         return self._request("GET", "/data/%s/manifest.json" % _q(project))
 
     def upload_plan(self, project, files):
-        return self._request("POST", "/api/admin/projects/%s/upload-plan" % _q(project),
-                             {"files": files}).get("need", [])
+        """-> (the paths the server needs, how many PDFs it has the same
+        drawing of already - only their dates changed)."""
+        r = self._request("POST", "/api/admin/projects/%s/upload-plan" % _q(project), {"files": files})
+        return r.get("need", []), int(r.get("same_drawing") or 0)
 
     def upload_zip(self, project, zip_path):
         url = self.base + "/api/admin/projects/%s/upload" % _q(project)
@@ -384,7 +386,16 @@ def export_files(folder):
                 if not b:
                     break
                 h.update(b)
-        out.append({"path": rel, "size": os.path.getsize(p), "sha1": h.hexdigest()})
+        e = {"path": rel, "size": os.path.getsize(p), "sha1": h.hexdigest()}
+        if rel.lower().endswith(".pdf"):
+            # the drawing's own fingerprint (not its dates): an unchanged
+            # sheet exported again is not sent (pdffp.py, the server's too)
+            try:
+                from lwk_viewer import pdffp
+                e["fp"] = pdffp.fingerprint_file(p)
+            except Exception:
+                pass
+        out.append(e)
 
     if not os.path.isfile(os.path.join(folder, "manifest.json")):
         raise ServerError("No manifest.json in %s - export first" % folder)
@@ -409,11 +420,13 @@ def upload_export(client, folder, project, log=None, part=None, job=None):
     files = export_files(folder)
     total = sum(f["size"] for f in files)
     say("upload: %d files, %.1f MB in the export" % (len(files), total / 1048576.0))
-    need = set(client.upload_plan(project, files))
+    need, same = client.upload_plan(project, files)
+    need = set(need)
     need.add("manifest.json")
     send = [f for f in files if f["path"] in need]
-    say("upload: sending %d changed file(s), %.1f MB"
-        % (len(send), sum(f["size"] for f in send) / 1048576.0))
+    say("upload: sending %d of %d file(s), %.1f MB - the rest unchanged%s"
+        % (len(send), len(files), sum(f["size"] for f in send) / 1048576.0,
+           " (%d sheet PDF(s) exported again with only their dates changed)" % same if same else ""))
     fd, tmp = tempfile.mkstemp(suffix=".zip")
     os.close(fd)
     try:

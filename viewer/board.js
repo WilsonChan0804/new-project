@@ -19,7 +19,7 @@
  * picker, presenting and the timer are in board-extra.js.
  */
 
-import { api, link, project, signOut, projectOptions, projectTwoStep } from "./nav.js";
+import { api, link, project, signOut, projectOptions, projectTwoStep, keptCopy, keepCopy, keptBig, keepBig } from "./nav.js";
 import { esc, uid, clone, clamp, round1, col, STICKY_COLORS, INK_COLORS, SHAPE_FILLS, BRANCH_COLORS, isDark, personColor,
          initials, ago, icon, center, unionBox, boxesTouch, route, arrowHead, simplify, penPath } from "./board-util.js";
 import { createSync } from "./board-sync.js";
@@ -2447,8 +2447,37 @@ function showBoardMeta(b) {
 
 const lastKey = () => "lwk-board:last:" + project();
 
-async function loadBoards() {
+/* The board list and each board opened are kept on this device: the next
+   visit shows them at once, while the server is asked (and the board's
+   regular check brings only what changed since). */
+const myUid = () => (A.me && A.me.user ? A.me.user.id : null);
+const boardKey = (bid) => "board:" + project() + ":" + bid;
+let _keptRev = null;
+function keepBoard() {
+  const sync = A.sync;
+  if (!sync || !sync.keepable || !A.board) return;
+  const k = sync.keepable();
+  if (k.rev === _keptRev) return;
+  _keptRev = k.rev;
+  keepBig(boardKey(A.board.id), Object.assign(k, { meta: { board: A.board, can_edit: A.canEdit, name: A.name } }), myUid());
+}
+setInterval(keepBoard, 10000);
+addEventListener("pagehide", keepBoard);
+
+async function loadBoards(useKept) {
+  const key = "boards:" + project();
+  const k = useKept ? keptCopy(key) : null;
+  if (k) {
+    applyBoards(k);
+    api("/api/boards").then((d) => { keepCopy(key, d, myUid()); applyBoards(d); }).catch(() => {});
+    return A.boards;
+  }
   const data = await api("/api/boards");
+  keepCopy(key, data, myUid());
+  return applyBoards(data);
+}
+
+function applyBoards(data) {
   A.boards = data.boards || [];
   A.role = data.role;
   A.canEdit = !!data.can_edit;
@@ -2635,7 +2664,7 @@ async function openBoard(bid, push) {
   });
   let data;
   try {
-    data = await sync.load();
+    data = await sync.load(await keptBig(boardKey(bid)));
   } catch (e) {
     toast(e.status === 404 ? "That board does not exist (any more)." : "Could not open the board: " + e.message);
     showHome();
@@ -2877,7 +2906,7 @@ async function main() {
   if ($("#to-chat")) $("#to-chat").href = link("messenger.html");
   $("#to-admin").href = link("admin.html");
 
-  await loadBoards();
+  await loadBoards(true);
   const asked = new URLSearchParams(location.search).get("board");
   const made = await seedWorkflow();
   let last = null;
