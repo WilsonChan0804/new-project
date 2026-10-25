@@ -104,6 +104,7 @@
       <section class="hero" id="hero"></section>
       <section class="card status" id="status"></section>
       <section class="soft-card" id="today"></section>
+      <section class="card status" id="shop-card" hidden></section>
       <section>
         <div class="sec-head"><h2>Recent moments</h2><button class="link" data-go="moments">See all</button></div>
         <div class="recent" id="recent"></div>
@@ -170,8 +171,10 @@
         <h1 id="us-names"></h1>
         <p class="muted" id="us-days"></p>
       </header>
-      <div class="seg three" id="us-seg" role="tablist">
+      <div class="seg five" id="us-seg" role="tablist">
         <button type="button" class="on" data-pane="calendar">Calendar</button>
+        <button type="button" data-pane="shopping">Shopping</button>
+        <button type="button" data-pane="cat">Cat</button>
         <button type="button" data-pane="stickers">Stickers</button>
         <button type="button" data-pane="settings">Settings</button>
       </div>
@@ -197,6 +200,32 @@
             <div id="day-list"></div>
           </div>
         </div>
+      </div>
+
+      <div class="us-pane" data-pane="shopping" hidden>
+        <section class="soft-card">
+          <span class="kicker">From your checklist</span>
+          <span class="today-q">Turn the meal-plan photo into a shopping list</span>
+          <p class="sm muted">The photo is read on this device. Rows that start with a date (e.g. 20261018) become meals in your calendar.</p>
+          <div class="row">
+            <label class="inv-btn as-btn"><input id="shop-photo" type="file" accept="image/*" hidden>Scan photo</label>
+            <button type="button" class="pill-btn" id="shop-paste-btn">Paste text</button>
+          </div>
+          <div id="shop-progress" class="ocr-progress" hidden><span id="shop-progress-label">Starting…</span><div class="progress"><i id="shop-progress-bar"></i></div></div>
+          <form id="shop-paste" class="paste" hidden>
+            <textarea rows="5" placeholder="Paste the list here. Tip: on iPhone, open the photo, long-press the text, tap Select All → Copy (Live Text), then paste."></textarea>
+            <button class="pill-btn">Read text</button>
+          </form>
+        </section>
+        <div class="seg two" id="shop-seg" role="tablist">
+          <button type="button" class="on" data-m="list">Shopping list</button>
+          <button type="button" data-m="plan">Meal plan</button>
+        </div>
+        <div id="shop-body"></div>
+      </div>
+
+      <div class="us-pane" data-pane="cat" hidden>
+        <div id="pet-body"></div>
       </div>
 
       <div class="us-pane" data-pane="stickers" hidden>
@@ -315,7 +344,40 @@
     <button class="round player-close" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button>
   </dialog>
 
+  <!-- Cat profile -->
+  <dialog id="pet-form-dialog" class="sheet">
+    <form id="pet-form" class="sheet-form">
+      <header class="sheet-head"><button type="button" class="round outline" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button><h1 id="pet-form-title">Add your cat</h1><span class="spacer"></span></header>
+      <label class="field"><span>Name</span><input id="pf-name" required placeholder="e.g. Mochi"></label>
+      <label class="field"><span>Birthday (or adoption day)</span><input id="pf-birthday" type="date"></label>
+      <label class="field"><span>Vet</span><input id="pf-vet" placeholder="Clinic name & phone"></label>
+      <label class="field"><span>Notes</span><textarea id="pf-notes" rows="2" placeholder="Food brand, allergies, microchip number…"></textarea></label>
+      <button class="cta">Save</button>
+      <button type="button" class="pill-btn danger" id="pf-delete" hidden>Delete cat</button>
+    </form>
+  </dialog>
+
+  <!-- Cat diary entry -->
+  <dialog id="pet-log-dialog" class="sheet">
+    <form id="pet-log" class="sheet-form">
+      <header class="sheet-head"><button type="button" class="round outline" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button><h1 id="pl-title">Entry</h1><span class="spacer"></span></header>
+      <label class="field" id="pl-value-wrap"><span>Weight (kg)</span><input id="pl-value" type="number" step="0.01" min="0" inputmode="decimal" placeholder="4.2"></label>
+      <div class="row">
+        <label class="field grow"><span>Date</span><input id="pl-date" type="date"></label>
+        <label class="field grow"><span>Time</span><input id="pl-time" type="time"></label>
+      </div>
+      <label class="field" id="pl-due-wrap"><span>Next due (reminder on Home &amp; calendar)</span><input id="pl-due" type="date"></label>
+      <label class="field"><span>Note</span><textarea id="pl-note" rows="2"></textarea></label>
+      <div class="thumbs" id="pl-photo-view"></div>
+      <label class="pill-btn as-btn"><svg><use href="#i-camera"/></svg>Add photo<input id="pl-photo" type="file" accept="image/*" hidden></label>
+      <button class="cta">Save</button>
+      <button type="button" class="pill-btn danger" id="pl-delete" hidden>Delete entry</button>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" role="status"></div>
   <script src="app.js"></script>
+  <script src="shopping.js"></script>
+  <script src="pets.js"></script>
 </body>
 </html>

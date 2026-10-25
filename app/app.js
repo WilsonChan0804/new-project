@@ -1,9 +1,9 @@
 'use strict';
 
 // ---------- Storage (IndexedDB, on this device only) ----------
-const STORES = ['moments', 'events', 'chats', 'messages', 'stickers', 'settings'];
+const STORES = ['moments', 'events', 'chats', 'messages', 'stickers', 'settings', 'lists', 'meals', 'pets', 'petlogs'];
 const dbReady = new Promise((resolve, reject) => {
-  const req = indexedDB.open('moments-app', 2);
+  const req = indexedDB.open('moments-app', 3);
   req.onupgradeneeded = () => STORES.forEach(s => {
     if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s, { keyPath: 'id' });
   });
@@ -57,12 +57,15 @@ const PASTELS = [['#E7B8AC', '#4A1F28'], ['#C9D3C0', '#26331F'], ['#B9C7D9', '#2
 const pastel = id => PASTELS[[...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0) % PASTELS.length];
 const tileVars = id => { const [bg, fg] = pastel(id); return `--tile-bg:${bg};--tile-fg:${fg}`; };
 
-function toast(msg) {
+function toast(msg, action) {
   const t = $('#toast');
   t.textContent = msg;
+  t.onclick = action ? () => { t.classList.remove('show'); action.run(); } : null;
+  t.classList.toggle('actionable', !!action);
+  if (action) t.append(h('b', { textContent: action.label }));
   t.classList.add('show');
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => t.classList.remove('show'), 2200);
+  toast.timer = setTimeout(() => t.classList.remove('show'), action ? 4500 : 2200);
 }
 
 // Downscale photos so the library and backup files stay a sensible size.
@@ -241,10 +244,14 @@ function nextOccurrence(dateStr) {
   if (`${y}-${mm}-${dd}` < t) y++;
   return `${y}-${mm}-${dd}`;
 }
+// Other modules (shopping, pets) add their own calendar items and countdowns here.
+const calendarSources = [];
+const upcomingSources = [];
 async function upcoming() {
   const t = today();
   const events = await db.all('events');
   const list = [
+    ...(await Promise.all(upcomingSources.map(f => f()))).flat().filter(u => u.date >= t),
     ...settings.dates.map(d => ({ label: d.title, date: nextOccurrence(d.date) })),
     ...events.filter(e => e.date >= t).map(e => ({ label: e.title, date: e.date })),
   ];
@@ -715,7 +722,8 @@ $('#cal-today').onclick = () => { calMonth = new Date(); calMonth.setDate(1); se
 async function renderCalendar() {
   const [moments, events] = await Promise.all([getMoments(), db.all('events')]);
   const byDay = {};
-  const slot = k => (byDay[k] ||= { m: [], e: [], s: [] });
+  const slot = k => (byDay[k] ||= { m: [], e: [], s: [], x: [] });
+  (await Promise.all(calendarSources.map(f => f()))).flat().forEach(it => slot(it.date).x.push(it));
   moments.forEach(m => slot(m.date).m.push(m));
   events.forEach(e => slot(e.date).e.push(e));
   const year = calMonth.getFullYear();
@@ -735,12 +743,13 @@ async function renderCalendar() {
       photo && h('img', { src: photo, alt: '' }),
       h('span', { textContent: d.getDate() }),
       h('span', { className: 'marks' },
-        !photo && x?.m.length ? h('i') : null, x?.e.length ? h('i', { className: 'ev' }) : null, x?.s.length ? h('i', { className: 'sp' }) : null)));
+        !photo && x?.m.length ? h('i') : null, x?.e.length ? h('i', { className: 'ev' }) : null, x?.s.length ? h('i', { className: 'sp' }) : null,
+        [...new Set(x?.x.map(it => it.color) || [])].map(c => h('i', { style: `background:${c}` })))));
   }
   fill($('#cal-grid'), cells);
 
   $('#day-title').textContent = selectedDay === today() ? 'Today' : fmtDate(selectedDay, { weekday: 'long', month: 'long', day: 'numeric' });
-  const x = byDay[selectedDay] || { m: [], e: [], s: [] };
+  const x = byDay[selectedDay] || { m: [], e: [], s: [], x: [] };
   const items = [
     ...x.s.map(d => h('div', { className: 'item' }, h('i', { className: 'k', style: 'background:#C2603A' }),
       h('div', { className: 't' }, h('span', { textContent: d.title }), h('span', { className: 's', textContent: 'Special date' })))),
@@ -752,6 +761,7 @@ async function renderCalendar() {
     ...x.m.map(m => h('div', { className: 'item', style: 'cursor:pointer', onclick: () => openDetail(m) },
       m.photos[0] ? h('img', { src: m.photos[0], alt: '' }) : h('i', { className: 'k', style: 'background:var(--accent)' }),
       h('div', { className: 't' }, h('span', { textContent: caption(m) }), h('span', { className: 's', textContent: m.place || m.mood || 'Moment' })))),
+    ...x.x.sort((a, b) => (a.sort || '').localeCompare(b.sort || '')).map(it => it.render()),
   ];
   fill($('#day-list'), items.length ? items : [h('p', { className: 'sm muted', style: 'padding:12px 0', textContent: 'Nothing planned yet.' })]);
 }
@@ -960,14 +970,16 @@ async function importBackup(input) {
 $('#import').addEventListener('change', e => importBackup(e.target));
 
 // ---------- Boot ----------
-function refresh() { renderHome(); renderMoments(); renderCalendar(); renderChats(); renderStickers(); renderUs(); }
-(async () => {
+const renderers = [renderHome, renderMoments, renderCalendar, renderChats, renderStickers, renderUs];
+function refresh() { renderers.forEach(r => r()); }
+// Wait for the other scripts (shopping.js, pets.js) to register their renderers.
+document.addEventListener('DOMContentLoaded', async () => {
   applyTheme();
   settings = { ...settings, ...(await db.get('settings', 'main')) };
   $('#onboard').hidden = !!settings.me;
   refresh();
   drawSticker();
   receiveShare();
-})();
+});
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js');
