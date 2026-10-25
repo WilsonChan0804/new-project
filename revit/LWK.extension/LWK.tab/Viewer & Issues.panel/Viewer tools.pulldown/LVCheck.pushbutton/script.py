@@ -96,7 +96,10 @@ elif len(all_levels) > 10:
                        title="Light & Vent", yes=True, no=True):
         script.exit()
 
-use_links = forms.alert("Read the windows and curtain panels from where?", title="Light & Vent",
+# the rooms are always this model's own (the Calculation model: its rooms are the
+# ones whose areas count); only the windows and panels may also come from links
+use_links = forms.alert("Read the windows and curtain panels from where?\n\n(The rooms are always this model's own.)",
+                        title="Light & Vent",
                         options=["This model and the loaded linked models", "This model only"])
 if not use_links:
     script.exit()
@@ -104,7 +107,7 @@ use_links = use_links.startswith("This model and")
 
 # 2. the rooms: Rooms ticked UFA / UFS, else the Areas of an area scheme
 out.print_md("### Light & Vent - reading the model ...")
-areas, skipped, dropped = LV.collect_rooms(doc, level_elevs, rules, use_links)
+areas, skipped, dropped = LV.collect_rooms(doc, level_elevs, rules, False)
 scheme = None
 source_label = "Rooms ticked " + " / ".join(rules["room_flags"])
 if not areas:
@@ -249,6 +252,7 @@ if unmatched:
 
 # 5. keep it
 pdf_path = None
+manifest_path = None
 path = forms.save_file(file_ext="csv", default_name="light_and_ventilation.csv", title="Save the table")
 if path:
     LV.write_csv(path, rows)
@@ -315,6 +319,21 @@ if rows and forms.alert("Send the result to the viewer?\n\nThe rooms are drawn, 
             try:
                 r = client._request("POST", "/api/lv/report", data, project=pid, timeout=300)
                 msg = "Sent to the viewer: %d rooms." % len(rows)
+                # the window diagrams: made into a PDF on the server when this PC could not
+                # (no Python / reportlab here) - or made now, for the viewer, when not asked above
+                if not (pdf_path and os.path.isfile(pdf_path)):
+                    if not (manifest_path and os.path.isfile(manifest_path)) and forms.alert(
+                            "Also make the window schedule and diagrams for the viewer (the full report PDF)?",
+                            title="Light & Vent", yes=True, no=True):
+                        import tempfile
+                        manifest_path = os.path.join(tempfile.gettempdir(), "lwk_lv_%s_diagrams.json" % pid)
+                        LR.export_report(doc, items, rows, level_elevs, use_links, manifest_path)
+                    if manifest_path and os.path.isfile(manifest_path):
+                        import json as _json
+                        with open(manifest_path, "rb") as fh:
+                            dg = _json.loads(fh.read().decode("utf-8"))
+                        client._request("POST", "/api/lv/diagrams", dg, project=pid, timeout=300)
+                        msg += " The window diagrams are being made into the full report PDF on the server."
                 if pdf_path and os.path.isfile(pdf_path):
                     with open(pdf_path, "rb") as fh:
                         b64 = base64.b64encode(fh.read())

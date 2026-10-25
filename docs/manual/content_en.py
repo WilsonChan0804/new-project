@@ -675,7 +675,9 @@ DOC = [
     LABEL('In Revit'),
     UL([
         '**Calculation model:** **Light & Vent** as before, then answer **Yes** to *Send the result to the viewer?* and pick the viewer project. Each room goes with its outline, its windows and its result; the diagrams PDF (when made) goes too, and is also kept in Folders > 00 BIM > Exports > Light & Ventilation.',
-        '**Layout model:** publish its plan sheets **once with the updated add-in** (2026-12-10 or later). Each plan then carries where it sits in shared coordinates. Older plans show no rooms, and the legend says so.',
+        '**Layout model:** publish its plan sheets **once with the updated add-in** (2026-12-10 or later). Each plan then carries where it sits in shared coordinates. Until then, a plan sheet that also has a room schedule shows the rooms matched by **room number and name** to its own rooms; the legend says which plans still need publishing.',
+        '**Rooms** are always the Calculation model\'s own (since 2026-12-11); the windows and curtain panels can still come from its linked models. A linked model naming the same floor differently (5/F for 4/F) no longer adds its rooms.',
+        '**The full report:** if this PC cannot make the diagrams PDF (it needs Python and reportlab), the diagrams are sent and the server makes the PDF; if they were not made, Light & Vent offers to make them for the viewer.',
     ]),
     LABEL('On the sheets'),
     UL([
@@ -685,7 +687,8 @@ DOC = [
     ]),
     LABEL('The table and the Dashboard'),
     UL([
-        '**3D > Checks > Light & Vent:** every room, filtered by floor, flat and result (rooms to look at first). Click a row for its card, and **On the plan ...** opens the sheet with the room shown. **Table (CSV)** and **Diagrams (PDF)** download them.',
+        '**3D > Checks > Light & Vent:** every room, filtered by floor, flat and result (rooms to look at first). Click a row for its card: **Show in 3D** selects and zooms to its windows on the same page (nothing reloads); **Make issue (3D)** opens the 3D issue form there, filled in (at the room itself when its windows are not in the models shown); **Show on plan ...** opens the sheet with the room shown. When no plan shows it, the card says why (plans not published again yet, or no plan of that floor).',
+        '**Full report** (3D tab, the legend on the sheets, the Dashboard): every room\'s schedule by floor and flat, then each room\'s windows - **Print / Save as PDF**, or **Save to Folders** (Light & Ventilation, as a PDF). **Table (CSV)** and **Diagrams (PDF)** download the table and the diagrams.',
         '**Dashboard:** a Light & Ventilation card with the counts and the date of the last check.',
         'If the rooms land in the wrong place on the plans, the two models are not on the same shared coordinates: check with the BIM team (Manage > Coordinates in Revit).',
     ]),

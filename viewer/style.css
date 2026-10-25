@@ -1737,6 +1737,10 @@ body.pnl-dragging iframe, body.pnl-dragging canvas { pointer-events: none; }
 .lv-card td.ok { color: #15803d; font-weight: 600; } .lv-card td.bad { color: #b91c1c; font-weight: 600; }
 .lv-sub { margin-top: 6px; font-weight: 600; }
 .lv-wd summary { cursor: pointer; }
+.lv-why { margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(217, 119, 6, .1); color: #92400e; font-size: 11px; }
+.lv-acts { flex-wrap: wrap; }
+#lv-legend .lv-lg-acts { flex-basis: 100%; font-size: 11px; }
+.lv-dl .bad { color: #b91c1c; }
 .lv-notes { margin: 2px 0 0 16px; padding: 0; }
 .lv-acts { display: flex; gap: 6px; margin-top: 8px; }
 .lv-acts .btnlike { text-decoration: none; display: inline-flex; align-items: center; }

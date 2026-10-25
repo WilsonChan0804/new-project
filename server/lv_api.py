@@ -7,6 +7,9 @@
   POST /api/lv/pdf           the diagrams PDF {name, b64} (member): kept here
                              and in Folders > 00 BIM > Exports > Light & Ventilation
   GET  /api/lv/pdf           that PDF
+  POST /api/lv/diagrams      the window diagrams (lv_report_manifest.json) from a PC
+                             that could not make the PDF: made here (lv_diagram_pdf.py,
+                             a copy of the add-in's, in its own process)
 
 Kept in <project>/lv/: report.json, history/<time>.json (the last 10),
 diagrams.pdf. The rooms are drawn by the viewer on the plan sheets of the
@@ -17,6 +20,7 @@ import base64
 import json
 import os
 import re
+import threading
 import time
 
 from fastapi import HTTPException, Request, Header, Response
@@ -70,7 +74,8 @@ def summarise(rep):
     return {"report": True, "counts": counts(rooms), "rooms": len(rooms), "model": rep.get("model") or "",
             "by": rep.get("by") or "", "at": rep.get("at") or "", "sent_by": rep.get("sent_by") or "",
             "sent_at": rep.get("sent_at") or "", "levels": rep.get("levels") or [],
-            "placed": sum(1 for r in rooms if r.get("loops_sh")), "pdf": bool(rep.get("pdf"))}
+            "placed": sum(1 for r in rooms if r.get("loops_sh")), "pdf": bool(rep.get("pdf")),
+            "pdf_state": rep.get("pdf_state") or "", "pdf_error": rep.get("pdf_error") or ""}
 
 
 def clean(data):
@@ -100,6 +105,73 @@ def register(app, core):
             except OSError:
                 pass
         return summarise(data)
+
+    def keep_pdf(pid, pdf, name, uid, who):
+        """The diagrams PDF: kept here, noted on the report, and in Folders
+        (00 BIM > Exports > Light & Ventilation) when the project has them."""
+        d = _dir(core, pid)
+        tmp = os.path.join(d, "diagrams.pdf.tmp")
+        with open(tmp, "wb") as f:
+            f.write(pdf)
+        os.replace(tmp, os.path.join(d, "diagrams.pdf"))
+        rep = _read(os.path.join(d, "report.json"))
+        if rep is not None:
+            rep["pdf"] = {"name": name, "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "by": who}
+            rep.pop("pdf_state", None)
+            rep.pop("pdf_error", None)
+            _write(os.path.join(d, "report.json"), rep)
+        kept = None
+        try:
+            import files as F
+            import tasks
+            regs = tasks.reg_ids_for_viewer(core, "default" if core.CFG["single"] else pid)
+            if regs:
+                kept = F.keep_file(regs[0], [F.BIM, "Exports", "Light & Ventilation"], name, pdf, uid, who)
+        except Exception as ex:
+            print("lv: diagrams not kept in Folders: %s" % ex)
+        return kept
+
+    def note(pid, **kw):
+        p = os.path.join(_dir(core, pid), "report.json")
+        rep = _read(p)
+        if rep is not None:
+            rep.update(kw)
+            _write(p, rep)
+
+    def make_pdf(pid, src, uid, who):
+        """The diagrams JSON into the PDF, in its own process (reportlab)."""
+        import procjob
+        d = _dir(core, pid)
+        out = os.path.join(d, "diagrams-new.pdf")
+        try:
+            procjob.run("lv_diagram_pdf", "build_pdf", [src, out], timeout=1800)
+            with open(out, "rb") as f:
+                pdf = f.read()
+            os.remove(out)
+            keep_pdf(pid, pdf, "light_and_ventilation_diagrams.pdf", uid, who)
+        except Exception as ex:
+            msg = str(ex)
+            if "reportlab" in msg:
+                msg = "the server needs reportlab for the diagrams (pip install reportlab, then restart)"
+            note(pid, pdf_state="error", pdf_error=msg[-300:])
+
+    @app.post("/api/lv/diagrams")
+    async def lv_diagrams(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        w, _ = core.require_project(request, x_project, "member", x_viewer_token)
+        raw = await request.body()
+        if len(raw) > MAX_REPORT:
+            raise HTTPException(status_code=413, detail="The diagrams are over 80 MB")
+        try:
+            data = await run_in_threadpool(lambda: json.loads(raw.decode("utf-8")))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Not JSON")
+        if not isinstance(data, dict) or not isinstance(data.get("diagrams"), list):
+            raise HTTPException(status_code=400, detail="Send the diagrams file Light & Vent makes")
+        src = os.path.join(_dir(core, x_project), "diagrams.json")
+        await run_in_threadpool(_write, src, data)
+        note(x_project, pdf_state="making", pdf_error="")
+        threading.Thread(target=make_pdf, args=(x_project, src, w.uid, w.name or ""), daemon=True).start()
+        return {"ok": True, "making": True, "diagrams": len(data["diagrams"])}
 
     @app.post("/api/lv/report")
     async def lv_report(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
@@ -141,26 +213,7 @@ def register(app, core):
             name += ".pdf"
 
         def _rest():
-            d = _dir(core, x_project)
-            tmp = os.path.join(d, "diagrams.pdf.tmp")
-            with open(tmp, "wb") as f:
-                f.write(pdf)
-            os.replace(tmp, os.path.join(d, "diagrams.pdf"))
-            rep = _read(os.path.join(d, "report.json"))
-            if rep is not None:
-                rep["pdf"] = {"name": name, "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "by": w.name or ""}
-                _write(os.path.join(d, "report.json"), rep)
-            # and in Folders, where the project's other exports are
-            kept = None
-            try:
-                import files as F
-                import tasks
-                regs = tasks.reg_ids_for_viewer(core, "default" if core.CFG["single"] else x_project)
-                if regs:
-                    kept = F.keep_file(regs[0], [F.BIM, "Exports", "Light & Ventilation"], name, pdf, w.uid, w.name or "")
-            except Exception as ex:
-                print("lv: diagrams not kept in Folders: %s" % ex)
-            return {"ok": True, "folders": kept}
+            return {"ok": True, "folders": keep_pdf(x_project, pdf, name, w.uid, w.name or "")}
         return await run_in_threadpool(_rest)
 
     @app.get("/api/lv/pdf")

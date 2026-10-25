@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-10";
+const LWK_VERSION = "2026-12-11";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -918,5 +918,14 @@ function drawLv(sm) {
     + `<span><b>${c["NEEDS DATA"] || 0}</b>need data</span><span class="${c["NO WINDOW"] ? "bad" : ""}"><b>${c["NO WINDOW"] || 0}</b>no window</span>`
     + `<span><b>${c.merged || 0}</b>counted with another room</span></div>`
     + `<p class="muted" style="font-size:12px">On the plan sheets: <a href="${esc(link("index.html"))}">Sheets</a> &gt; View &gt; Light &amp; Vent`
-    + `${sm.pdf ? ` · <a href="/api/lv/pdf" target="_blank" rel="noopener">Diagrams (PDF)</a>` : ""}</p>`;
+    + ` · <a href="#" data-lv="report">Full report</a>`
+    + `${sm.pdf ? ` · <a href="#" data-lv="pdf">Diagrams (PDF)</a>` : ""}</p>`;
+  box.querySelector('[data-lv="report"]').onclick = async (ev) => {
+    ev.preventDefault();
+    const win = window.open("", "_blank");
+    const LVR = await import("./lv.js");
+    LVR.openReport(await LVR.loadReport(true), win);
+  };
+  const pd = box.querySelector('[data-lv="pdf"]');
+  if (pd) pd.onclick = async (ev) => { ev.preventDefault(); (await import("./lv.js")).openPdf(); };
 }

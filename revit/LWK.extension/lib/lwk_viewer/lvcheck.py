@@ -448,6 +448,7 @@ def build(areas, items, types, rules=None, doors=None):
             # where it is (this model's mm): sent to the viewer in shared coordinates
             # (sharedxy.add_shared), to be drawn on another model's plans
             "_loops": a.get("loops") or [], "_label": a.get("label"), "_z": a.get("z_mm"),
+            "_source": a.get("source", ""),
         }
 
     unmatched, type_counts = [], {}
@@ -700,6 +701,7 @@ def _row(r, rules, merged=False):
         "prov_light_meas": _r3(pl_m), "prov_open_meas": _r3(po_m),
         "status": status, "notes": notes, "uid": r["uid"], "id": r["id"],
         "merged_into_uid": r.get("merged_into_uid") if merged else None,
+        "source": r.get("_source", ""),
         # this model's mm, for sharedxy.add_shared (the viewer draws it on the layout plans)
         "loops_mm": [[[round(p[0], 1), round(p[1], 1)] for p in lp] for lp in r.get("_loops") or []],
         "label_mm": [round(r["_label"][0], 1), round(r["_label"][1], 1)] if r.get("_label") else None,

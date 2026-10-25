@@ -73,6 +73,9 @@ class Sharing(unittest.TestCase):
         self.assertEqual(r["loops_mm"], [[[0, 0], [5000, 0], [5000, 4000], [0, 4000]]])
         self.assertEqual(r["label_mm"], [2500.0, 2000.0])
         self.assertEqual(r["z_mm"], 31950.0)
+        self.assertEqual(r["source"], "")
+        liv["source"] = "TKO137-LWK-ZZ-ZZ-AR-BD_CAL"
+        self.assertEqual(LV.build([liv], [item(2000)], TYPES)[0][0]["source"], "TKO137-LWK-ZZ-ZZ-AR-BD_CAL")
         self.assertEqual(list(r["windows"][0]["pos"])[:2], [2000, 4000])
 
     def test_a_window_in_one_room(self):

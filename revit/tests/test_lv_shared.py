@@ -104,5 +104,12 @@ class CalcRoomOnLayoutPlan(unittest.TestCase):
         self.assertTrue(min(p[1] for p in u) < lab[1] < max(p[1] for p in u))
 
 
+class DiagramsOnTheServer(unittest.TestCase):
+    def test_server_has_the_same_code(self):
+        a = open(os.path.join(HERE, "..", "LWK.extension", "lib", "lwk_viewer", "lv_diagram_pdf.py"), "rb").read()
+        b = open(os.path.join(HERE, "..", "..", "server", "lv_diagram_pdf.py"), "rb").read()
+        self.assertEqual(a, b, "server/lv_diagram_pdf.py and the add-in's must be the same file")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -15,7 +15,7 @@
  *   sheetFor(manifest, r)   the sheet whose plan shows a room
  */
 
-import { api, project, link, keptBig, keepBig } from "./nav.js";
+import { api, project, link, keptBig, keepBig, headers } from "./nav.js";
 import { insideLoops } from "./areas.js";
 
 export const LEVEL_TOL_MM = 300;
@@ -74,18 +74,55 @@ function anchorOf(r) {
   return L.length ? [L.reduce((s, p) => s + p[0], 0) / L.length, L.reduce((s, p) => s + p[1], 0) / L.length] : null;
 }
 
-/* the plans of a sheet that show a room: [{vp, loops (paper mm), at}] */
-export function placements(sheet, r) {
+const nrm = (t) => String(t == null ? "" : t).replace(/\s+/g, " ").trim().toUpperCase();
+const centre = (L) => [L.reduce((s, p) => s + p[0], 0) / L.length, L.reduce((s, p) => s + p[1], 0) / L.length];
+
+/* the plans of a sheet that show a room: [{vp, loops (paper mm), at, via}].
+   A plan published with the updated add-in places the room exactly, by
+   shared coordinates ("shared"). An older plan has no such placement: then
+   the plan's own rooms (published on sheets with a room schedule) are
+   matched by room number + name ("name") - until the plans are published
+   again. only: just that viewport. */
+export function placements(sheet, r, only) {
   const out = [];
-  if (!r.loops_sh || !r.loops_sh.length) return out;
   const a = anchorOf(r);
-  for (const vp of (sheet && sheet.viewports) || []) {
-    if (!vp.shared_to_paper || !vp.paper_rect_mm || !onFloor(vp, r)) continue;
-    const at = a ? aff(vp.shared_to_paper, a[0], a[1]) : null;
-    if (!at || !inRect(vp.paper_rect_mm, at)) continue;
-    out.push({ vp, at, loops: r.loops_sh.map((L) => L.map((p) => aff(vp.shared_to_paper, p[0], p[1]))) });
+  for (const vp of only ? [only] : (sheet && sheet.viewports) || []) {
+    if (!vp.paper_rect_mm) continue;
+    if (vp.shared_to_paper) {
+      if (!r.loops_sh || !r.loops_sh.length || !onFloor(vp, r)) continue;
+      const at = a ? aff(vp.shared_to_paper, a[0], a[1]) : null;
+      if (!at || !inRect(vp.paper_rect_mm, at)) continue;
+      out.push({ vp, at, via: "shared", loops: r.loops_sh.map((L) => L.map((p) => aff(vp.shared_to_paper, p[0], p[1]))) });
+    } else {
+      const want = nrm(r.number) + "|" + nrm(r.name);
+      for (const ar of (sheet && sheet.areas) || []) {
+        if (ar.kind !== "room" || !(ar.loops || []).length || nrm(ar.number) + "|" + nrm(ar.name) !== want) continue;
+        if (ar.view_id != null && vp.view_id != null && ar.view_id !== vp.view_id) continue;
+        const at = ar.label || centre(ar.loops[0]);
+        if (!inRect(vp.paper_rect_mm, at)) continue;
+        out.push({ vp, at, via: "name", loops: ar.loops });
+      }
+    }
   }
   return out;
+}
+
+const mStr = (mm) => (mm >= 0 ? "+" : "") + (mm / 1000).toFixed(2) + " m";
+/* why a room is on no plan, in words */
+export function whyNot(manifest, r) {
+  const vps = ((manifest && manifest.sheets) || []).flatMap((sh) => sh.viewports || []);
+  const placed = vps.filter((vp) => vp.shared_to_paper);
+  if (!placed.length) {
+    return "No plan sheet is published with its shared-coordinate placement yet, and no room on the plans has this "
+      + "number and name. Publish the Layout model's plan sheets again with the updated add-in.";
+  }
+  if (!r.loops_sh || !r.loops_sh.length) return "This room was sent without its outline: run Light & Vent and send it again with the updated add-in.";
+  const lv = Array.from(new Set(placed.map((vp) => vp.level_sh_mm).filter((x) => x != null))).sort((x, y) => x - y);
+  if (r.level_sh_mm != null && !lv.some((z) => Math.abs(z - r.level_sh_mm) <= LEVEL_TOL_MM)) {
+    return `No plan of this floor is published: this room is at ${mStr(r.level_sh_mm)} (shared); the plans are at `
+      + lv.slice(0, 8).map(mStr).join(", ") + (lv.length > 8 ? " ..." : "") + ".";
+  }
+  return "The plans of this floor do not show this part of the building (or the two models are not on the same shared coordinates).";
 }
 
 /* the first sheet with a plan showing the room */
@@ -99,7 +136,10 @@ export const sheetUrl = (sh, r) => link("index.html", { sheet: sh.number, lv: r.
 
 /* ------------------------------------------------------------------ card */
 
-export function roomCard(r) {
+/* opts.page: "2d" (Sheets) or "3d"; opts.plan: the sheet showing it, or null; opts.why */
+export function roomCard(r, opts) {
+  opts = opts || {};
+  const is3d = opts.page === "3d";
   const res = result(r);
   const host = merged(r) && r._host;
   const kv = (k, v) => `<div class="kv"><span>${esc(k)}</span><b>${v}</b></div>`;
@@ -123,9 +163,15 @@ export function roomCard(r) {
     + (wins ? `<details class="lv-wd"${(r.windows || []).length > 6 ? "" : " open"}><summary class="lv-sub">Windows and panels: ${(r.windows || []).length} (m²)</summary>`
       + `<div class="lv-tw"><table class="lv-win"><tr><th>Mark</th><th>Type</th><th>Size</th><th>Opens</th><th>Glass</th><th>Open</th><th>Share</th></tr>${wins}</table></div></details>` : "")
     + ((r.notes || []).length ? `<div class="lv-sub">Notes</div><ul class="lv-notes">${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : "")
+    + (r.source ? kv("From", esc(r.source)) : "")
     + `<div class="lv-acts">`
-    + ((r.windows || []).some((w) => w.uid) ? `<a class="ghost btnlike" data-lv="3d" href="${esc(link("model.html", { elements: (r.windows || []).map((w) => w.uid).filter(Boolean).join(",") }))}">Show in 3D</a>` : "")
-    + `<button class="ghost" data-lv="issue">Make issue</button></div>`
+    + (is3d
+      ? `<button class="ghost" data-lv="show3d">Show in 3D</button><button class="ghost" data-lv="issue3d">Make issue (3D)</button>`
+        + (opts.plan ? `<button class="ghost" data-lv="plan">Show on plan ${esc(opts.plan.number)}</button>` : "")
+      : ((r.windows || []).some((w) => w.uid) ? `<a class="ghost btnlike" data-lv="3d" href="${esc(link("model.html", { elements: (r.windows || []).map((w) => w.uid).filter(Boolean).join(",") }))}">Show in 3D</a>` : "")
+        + `<button class="ghost" data-lv="issue">Make issue</button>`)
+    + `</div>`
+    + (is3d && !opts.plan && opts.why ? `<div class="lv-why">${esc(opts.why)}</div>` : "")
     + `</div></div>`;
 }
 
@@ -187,7 +233,9 @@ export function createLvSheets(ctx) {
     const w = Math.round(S.viewport.width), h = Math.round(S.viewport.height);
     svg.setAttribute("width", w); svg.setAttribute("height", h);
     svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-    const plans = (sh.viewports || []).filter((vp) => vp.shared_to_paper);
+    const plans = (sh.viewports || []).filter((vp) => vp.paper_rect_mm);
+    const placed = plans.filter((vp) => vp.shared_to_paper).length;
+    let byName = 0;
     let n = 0;
     plans.forEach((vp, k) => {
       // clipped to the viewport: a room never spills over another view
@@ -202,9 +250,10 @@ export function createLvSheets(ctx) {
       g.setAttribute("clip-path", `url(#lv-clip-${k})`);
       svg.appendChild(g);
       for (const r of L.rep.rooms || []) {
-        const pl = placements({ viewports: [vp] }, r)[0];
+        const pl = placements(sh, r, vp)[0];
         if (!pl) continue;
         n++;
+        if (pl.via === "name") byName++;
         L.drawn.push({ r, loops: pl.loops, at: pl.at });
         const p = document.createElementNS(svgNS, "path");
         p.setAttribute("d", path(pl.loops));
@@ -212,7 +261,7 @@ export function createLvSheets(ctx) {
         p.setAttribute("class", "lv-room" + (merged(r) ? " lv-merged" : "") + (L.cur === r ? " on" : ""));
         p.setAttribute("style", `--c:${colour(r)}`);
         g.appendChild(p);
-        for (const wd of r.windows || []) {
+        for (const wd of pl.via === "shared" ? r.windows || [] : []) {
           if (!wd.pos_sh) continue;
           const [x, y] = ctx.canvasFrom(...aff(vp.shared_to_paper, wd.pos_sh[0], wd.pos_sh[1]));
           const c = document.createElementNS(svgNS, "circle");
@@ -228,8 +277,17 @@ export function createLvSheets(ctx) {
     legend(`<b>Light &amp; Vent</b>` + sw("OK", "OK") + sw("NOT OK", "not OK") + sw("NEEDS DATA", "need data")
       + (c["NO WINDOW"] ? `<span><i style="background:${COL["NO WINDOW"]}"></i>${c["NO WINDOW"]} no window</span>` : "")
       + `<small>${esc(L.rep.model || "")}${L.rep.at ? " · " + esc(String(L.rep.at).replace("T", " ").slice(0, 16)) : ""}</small>`
-      + (!plans.length ? `<small class="bad">This sheet's plans have no shared-coordinate placement: publish it again with the updated add-in.</small>`
-        : !n ? `<small>No checked room on the floor of this sheet's plans.</small>` : `<small>${n} room(s) on this sheet - click one</small>`));
+      + (n ? `<small>${n} room(s) on this sheet - click one${byName ? ` (${byName} matched by room number and name)` : ""}</small>` : "")
+      + (plans.length && placed < plans.length
+        ? `<small class="bad">${placed ? `${plans.length - placed} of ${plans.length} plans` : "This sheet's plans"} have no shared-coordinate placement`
+          + `${byName ? " - rooms there are matched by number and name only" : ""}: publish the Layout model's sheets again with the updated add-in.</small>` : "")
+      + (!n && placed ? `<small>No checked room on the floor of this sheet's plans.</small>` : "")
+      + `<span class="lv-lg-acts"><a href="#" data-lv="report">Full report</a>${L.rep.pdf ? ` · <a href="#" data-lv="pdf">Diagrams (PDF)</a>` : ""}</span>`);
+    const lg = document.getElementById("lv-legend");
+    const rp = lg && lg.querySelector('[data-lv="report"]');
+    if (rp) rp.onclick = (ev) => { ev.preventDefault(); openReport(L.rep); };
+    const pd = lg && lg.querySelector('[data-lv="pdf"]');
+    if (pd) pd.onclick = (ev) => { ev.preventDefault(); openPdf(); };
   }
 
   function card(r) {
@@ -243,7 +301,7 @@ export function createLvSheets(ctx) {
     if (!box) return;
     if (!r) { box.hidden = true; box.innerHTML = ""; return; }
     box.hidden = false;
-    box.innerHTML = roomCard(r);
+    box.innerHTML = roomCard(r, { page: "2d" });
     box.querySelector('[data-lv="close"]').onclick = () => clear();
     const mk = box.querySelector('[data-lv="issue"]');
     if (mk) mk.onclick = () => {
@@ -314,6 +372,83 @@ export function createLvSheets(ctx) {
   return { init, draw, clickAt, clear, sheetOpened, get state() { return L; } };
 }
 
+/* ---------------------------------------------------------------- report */
+
+/* the diagrams PDF (made in Revit, or on the server): fetched with the
+   sign-in, opened in a new tab */
+export async function openPdf() {
+  const win = window.open("", "_blank");
+  try {
+    const res = await fetch("/api/lv/pdf", { headers: headers() });
+    if (!res.ok) {
+      let msg = "HTTP " + res.status;
+      try { msg = (await res.json()).detail || msg; } catch (e) {}
+      throw new Error(msg);
+    }
+    const url = URL.createObjectURL(await res.blob());
+    if (win) win.location.href = url; else location.href = url;
+  } catch (e) {
+    if (win) win.close();
+    alert("The diagrams PDF: " + e.message);
+  }
+}
+
+/* The full report as a page: the schedule of every room (by floor and
+   flat, coloured by result), then each room's windows. Print / Save as PDF,
+   or keep it in Folders. */
+export function reportHtml(rep) {
+  const c = counts(rep);
+  const rooms = (rep.rooms || []).slice().sort((a, b) => String(a.level).localeCompare(String(b.level))
+    || String(a.block).localeCompare(String(b.block)) || String(a.flat).localeCompare(String(b.flat)) || String(a.number).localeCompare(String(b.number), undefined, { numeric: true }));
+  const row = (r) => `<tr><td>${esc(r.level || "")}</td><td>${esc(r.block || "")}</td><td>${esc(r.flat || "")}</td><td>${esc(r.number || "")}</td>`
+    + `<td>${esc(r.name || "")}${(r.with || []).length ? " + " + esc(r.with.map((w) => w.name).join(" + ")) : ""}</td><td class="n">${f3(r.area_m2)}</td>`
+    + `<td class="n">${merged(r) ? "" : f3(r.req_light)}</td><td class="n">${merged(r) ? "" : f3(r.prov_light_meas)}</td><td class="n">${merged(r) ? "" : f3(r.prov_light_bd)}</td>`
+    + `<td class="n">${merged(r) ? "" : f3(r.req_open)}</td><td class="n">${merged(r) ? "" : f3(r.prov_open_meas)}</td><td class="n">${merged(r) ? "" : f3(r.prov_open_bd)}</td>`
+    + `<td style="color:${colour(r)};font-weight:600">${esc(r.status)}</td></tr>`;
+  const detail = (r) => !(r.windows || []).length && !(r.notes || []).length ? "" : `<div class="room"><h3><i style="background:${colour(r)}"></i>`
+    + `${esc([r.level, r.flat, r.number, r.name].filter(Boolean).join(" · "))} <span style="color:${colour(r)}">${esc(r.status)}</span></h3>`
+    + ((r.windows || []).length ? `<table><tr><th>Mark</th><th>Type</th><th>W × H mm</th><th>Opens</th><th>Glass m²</th><th>Openable m²</th><th>W×H×70%</th><th>Share</th><th>Model</th></tr>`
+      + r.windows.map((w) => `<tr><td>${esc(w.mark || "")}</td><td>${esc(w.key || "")}</td><td>${w.w_mm ? Math.round(w.w_mm) + " × " + Math.round(w.h_mm || 0) : ""}</td>`
+        + `<td>${esc(w.operation || "")}${w.confirmed === false ? " (to confirm)" : ""}</td><td class="n">${f3(w.light_meas)}</td><td class="n">${f3(w.open_meas)}</td>`
+        + `<td class="n">${f3(w.light_bd)}</td><td class="n">${w.share != null && w.share < 0.999 ? Math.round(w.share * 100) + "%" : ""}</td><td>${esc(w.source || "")}</td></tr>`).join("") + `</table>` : "")
+    + ((r.notes || []).length ? `<ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : "") + `</div>`;
+  const when = String(rep.at || "").replace("T", " ").slice(0, 16);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Light and Ventilation - ${esc(rep.model || "")}</title><style>
+body{font:11px/1.35 system-ui,Segoe UI,Arial,sans-serif;color:#222;margin:18px}h1{font-size:18px;margin:0 0 2px}h2{font-size:14px;margin:18px 0 6px}
+h3{font-size:12px;margin:12px 0 4px}h3 i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+table{border-collapse:collapse;width:100%;margin:4px 0}th,td{border:1px solid #ccc;padding:2px 4px;text-align:left;vertical-align:top}
+th{background:#f3f3f3}td.n{text-align:right;font-variant-numeric:tabular-nums}.k span{margin-right:16px}.k b{font-size:15px}
+.bar{position:sticky;top:0;background:#fff;padding:6px 0;border-bottom:1px solid #ddd;margin-bottom:8px}.bar button{margin-right:6px}
+.room{break-inside:avoid}@media print{.bar{display:none}body{margin:8mm}}</style></head><body>
+<div class="bar"><button onclick="print()">Print / Save as PDF</button><button id="keep">Save to Folders</button><span id="kept"></span></div>
+<h1>Light and ventilation</h1><div>${esc(rep.model || "")} · checked ${esc(when)}${rep.by ? " by " + esc(rep.by) : ""}${rep.levels && rep.levels.length ? " · floors: " + esc(rep.levels.join(", ")) : ""}</div>
+<p class="k"><span><b>${c.OK}</b> OK</span><span><b>${c["NOT OK"]}</b> not OK</span><span><b>${c["NEEDS DATA"]}</b> need data</span><span><b>${c["NO WINDOW"]}</b> no window</span><span><b>${c.merged}</b> counted with another room</span></p>
+<p>Required: lighting = room area x 1/10, openable = room area x 1/16. Provided: the glass measured in the model; W×H×70% beside it for reference.</p>
+<h2>Schedule</h2><table><tr><th>Floor</th><th>Block</th><th>Flat</th><th>Room</th><th>Name</th><th>Area m²</th><th>Req. lighting</th><th>Prov. lighting</th><th>W×H×70%</th>
+<th>Req. openable</th><th>Prov. openable</th><th>W×H×70%</th><th>Result</th></tr>${rooms.map(row).join("")}</table>
+<h2>Rooms and their windows</h2>${rooms.map(detail).join("")}</body></html>`;
+}
+
+/* win: a window opened beforehand (a pop-up opened after waiting for the
+   network is blocked) */
+export function openReport(rep, win) {
+  if (!rep) { if (win) win.close(); return; }
+  const html = reportHtml(rep);
+  win = win || window.open("", "_blank");
+  if (!win) { alert("Allow pop-ups for this site to open the report."); return; }
+  win.document.open(); win.document.write(html); win.document.close();
+  const btn = win.document.getElementById("keep");
+  if (btn) btn.onclick = async () => {
+    btn.disabled = true;
+    const out = win.document.getElementById("kept");
+    try {
+      const { saveToFolders } = await import("./tofolders.js");
+      const r = await saveToFolders(html, "Light_and_ventilation_" + String(rep.at || "").slice(0, 10) + ".html", "Light & Ventilation", { pdf: true });
+      out.textContent = " Kept in Folders: " + ((r && (r.path || r.name)) || "done");
+    } catch (e) { out.textContent = " Not kept: " + e.message; btn.disabled = false; }
+  };
+}
+
 /* ----------------------------------------------------------------- table */
 
 const ORDER = { "NOT OK": 0, "NO WINDOW": 1, "NEEDS DATA": 2, OK: 3 };
@@ -352,7 +487,9 @@ export function renderTable(box, rep, opts) {
     + `<div class="lv-f"><select data-f="status">${opt("bad", F.status, "Not OK, need data, no window")}${opt("", F.status, "All rooms")}${opt("OK", F.status, "OK only")}</select>`
     + `<select data-f="level">${opt("", F.level, "All floors")}${levels.map((l) => opt(l, F.level)).join("")}</select>`
     + `<select data-f="flat">${opt("", F.flat, "All flats")}${flats.map((l) => opt(l, F.flat)).join("")}</select></div>`
-    + `<div class="lv-dl"><a href="#" data-dl="csv">Table (CSV)</a>${rep.pdf ? ` · <a href="/api/lv/pdf" target="_blank" rel="noopener">Diagrams (PDF)</a>` : ""}</div>`
+    + `<div class="lv-dl"><a href="#" data-dl="report">Full report</a> · <a href="#" data-dl="csv">Table (CSV)</a>`
+    + `${rep.pdf ? ` · <a href="#" data-dl="pdf">Diagrams (PDF)</a>` : rep.pdf_state === "making" ? ` · <span class="muted">diagrams PDF being made ...</span>`
+      : rep.pdf_error ? ` · <span class="bad" title="${esc(rep.pdf_error)}">diagrams PDF not made</span>` : ""}</div>`
     + `<div class="table-wrap"><table class="lv-t"><thead><tr><th>Room</th><th>Flat</th><th>Floor</th><th>Light req / prov</th><th>Open req / prov</th><th>Result</th></tr></thead><tbody>`
     + list.map((r, i) => `<tr data-i="${i}"><td><span class="lv-dot" style="background:${colour(r)}"></span>${esc([r.number, r.name].filter(Boolean).join(" "))}</td>`
       + `<td>${esc(r.flat || "")}</td><td>${esc(r.level || "")}</td><td>${merged(r) ? "" : f3(r.req_light) + " / " + f3(r.prov_light_meas)}</td>`
@@ -367,5 +504,8 @@ export function renderTable(box, rep, opts) {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
+  box.querySelector('[data-dl="report"]').onclick = (ev) => { ev.preventDefault(); openReport(rep); };
+  const pd = box.querySelector('[data-dl="pdf"]');
+  if (pd) pd.onclick = (ev) => { ev.preventDefault(); openPdf(); };
   for (const tr of box.querySelectorAll("tbody tr")) tr.onclick = () => opts.onRow && opts.onRow(list[+tr.dataset.i]);
 }

@@ -351,7 +351,9 @@ PART = [
     LABEL('喺 Revit'),
     UL([
         '**Calculation model：** 照舊做 **Light & Vent**，之後喺 *Send the result to the viewer?* 揀 **Yes**，再揀 viewer project。每個房會連埋佢嘅輪廓、窗同結果一齊送出；diagrams PDF（如果有整）都會一齊送，亦會存喺 Folders > 00 BIM > Exports > Light & Ventilation。',
-        '**Layout model：** 用**更新咗嘅 add-in**（2026-12-10 或之後）**再發佈一次**平面圖 sheet。之後每張平面圖都會記住佢喺 shared coordinates 嘅位置。舊嘅平面圖唔會顯示房，圖例會講明。',
+        '**Layout model：** 用**更新咗嘅 add-in**（2026-12-10 或之後）**再發佈一次**平面圖 sheet。之後每張平面圖都會記住佢喺 shared coordinates 嘅位置。未再發佈之前，有房間表嘅平面圖 sheet 會用**房號同房名**對應佢自己嘅房去顯示；圖例會講明邊啲平面圖仲要再發佈。',
+        '**房**一律只取 Calculation model 自己嘅房（2026-12-11 起）；窗同幕牆板仍然可以來自佢嘅 link model。Link model 將同一層叫第二個名（例如 4/F 叫 5/F）唔會再加入佢嘅房。',
+        '**完整報告：** 如果呢部電腦整唔到 diagrams PDF（要有 Python 同 reportlab），diagrams 會送去 server 由 server 整 PDF；如果未整 diagrams，Light & Vent 會問你要唔要為 viewer 整。',
     ]),
     LABEL('喺 sheet 上面'),
     UL([
@@ -361,7 +363,8 @@ PART = [
     ]),
     LABEL('表格同 Dashboard'),
     UL([
-        '**3D > Checks > Light & Vent：** 列出所有房，可以按樓層、單位同結果篩選（先睇要處理嘅房）。撳一行會顯示卡片，**On the plan ...** 會打開嗰張 sheet 並顯示嗰個房。**Table (CSV)** 同 **Diagrams (PDF)** 可以下載。',
+        '**3D > Checks > Light & Vent：** 列出所有房，可以按樓層、單位同結果篩選（先睇要處理嘅房）。撳一行會顯示卡片：**Show in 3D** 會喺同一頁揀中並放大佢啲窗（唔會重新載入）；**Make issue (3D)** 會喺度打開已填好嘅 3D issue 表格（如果佢啲窗唔喺顯示緊嘅 model 入面，就會喺房嘅位置）；**Show on plan ...** 會打開嗰張 sheet 並顯示嗰個房。冇平面圖顯示到佢嘅時候，卡片會講原因（平面圖未再發佈，或者冇嗰層嘅平面圖）。',
+        '**Full report**（3D 分頁、sheet 上面嘅圖例、Dashboard）：按樓層同單位列出每個房嘅表，再列每個房嘅窗 - **Print / Save as PDF**，或者 **Save to Folders**（Light & Ventilation，存做 PDF）。**Table (CSV)** 同 **Diagrams (PDF)** 可以下載表格同 diagrams。',
         '**Dashboard：** 有一張 Light & Ventilation 卡，顯示數量同上次檢查日期。',
         '如果房喺平面圖上嘅位置唔啱，即係兩個 model 唔係用同一套 shared coordinates：請同 BIM team 檢查（Revit 嘅 Manage > Coordinates）。',
     ]),

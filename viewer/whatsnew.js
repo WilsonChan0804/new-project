@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-11", date: "25 Oct 2026",
+    items: [
+      "**Light & Vent on plans published before:** until the Layout model's plan sheets are published again with the updated add-in, a plan with a room schedule shows the rooms matched by room number and name. A room on no plan now says why (plans not published again yet, or no plan of that floor).",
+      "**Issues from 3D and 2D:** in 3D > Checks > Light & Vent, **Show in 3D** selects the room's windows on the same page (no reload - the panels and the view stay), **Make issue (3D)** raises it in 3D, **Show on plan** opens the sheet; on the sheets, **Make issue** raises it on the plan.",
+      "**Full report:** every room's schedule and windows, to print, save as PDF or keep in Folders - from the 3D tab, the sheets' legend and the Dashboard. The diagrams PDF is made on the server when the PC cannot make it.",
+      "**Rooms from the Calculation model only** (update the add-in): rooms of linked models - e.g. two linked rooms named 5/F on your 4/F - are no longer added; windows still come from the links.",
+    ],
+  },
+  {
     version: "2026-12-10", date: "25 Oct 2026",
     items: [
       "**Light & Ventilation on the plans:** the Revit Light & Vent check (in the Calculation model) can now be sent to the viewer. On the plan sheets - also those published from the Layout model, on the same shared coordinates - **View > Light & Vent** colours each room by its result; click one for its required and provided areas, its windows, and **Make issue**.",

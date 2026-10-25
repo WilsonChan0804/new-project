@@ -2232,6 +2232,7 @@ function initClash() {
       S.dirty = true;
     },
   };
+  S.chk = ctx;
   S.clash = createClash(ctx);
   S.head = createHeadroom(ctx);
   S.sbd = createSbd(ctx);
@@ -2269,17 +2270,36 @@ async function lvTab() {
       const sh = LVR.sheetFor(S.manifest, r);
       let note = box.querySelector(".lv-note");
       if (!note) { note = document.createElement("div"); note.className = "lv-note"; box.insertBefore(note, box.querySelector(".table-wrap")); }
-      note.innerHTML = LVR.roomCard(r);
-      const x = note.querySelector('[data-lv="close"]');
-      if (x) x.onclick = () => note.remove();
-      const mk = note.querySelector('[data-lv="issue"]');
-      if (sh) {
-        if (mk) { mk.textContent = "On the plan " + sh.number; mk.onclick = () => { location.href = LVR.sheetUrl(sh, r); }; }
-      } else if (mk) {
-        mk.disabled = true;
-        mk.title = "No plan sheet of this floor carries the shared-coordinate placement yet (publish the plans again with the updated add-in)";
-        mk.textContent = "No plan of this floor";
-      }
+      note.innerHTML = LVR.roomCard(r, { page: "3d", plan: sh, why: sh ? "" : LVR.whyNot(S.manifest, r) });
+      const btn = (k) => note.querySelector(`[data-lv="${k}"]`);
+      const uids = (r.windows || []).map((w) => w.uid).filter(Boolean);
+      const what = `${[r.number, r.name].filter(Boolean).join(" ")} windows`;
+      if (btn("close")) btn("close").onclick = () => note.remove();
+      // the room itself, by its shared coordinates: where its windows are not in the
+      // models shown here (or it has none)
+      const roomAt = () => (r.label_sh && r.level_sh_mm != null ? sharedToScene([r.label_sh[0], r.label_sh[1], r.level_sh_mm + 1200]) : null);
+      const goRoom = () => {
+        const c = roomAt();
+        if (!c) return null;
+        const dir = S.camera.position.clone().sub(S.controls.target).normalize();
+        flyTo(c.clone().add(dir.multiplyScalar(12)), c);
+        return c;
+      };
+      // in place: the panels and the view stay as they are, no page reload
+      if (btn("show3d")) btn("show3d").onclick = async () => {
+        const got = await showUids(uids, what);
+        if ((!got || got.box.isEmpty()) && goRoom()) status(`${[r.number, r.name].filter(Boolean).join(" ")}: its windows are not in the models shown here - this is where the room is.`);
+      };
+      if (btn("issue3d")) btn("issue3d").onclick = async () => {
+        const got = uids.length ? await showUids(uids, what) : null;
+        const t = LVR.issueText(r);
+        const pre = { title: t.title, description: t.description, type: "general" };
+        if (got && !got.box.isEmpty()) { S.chk.makeIssue(got.box.getCenter(new THREE.Vector3()), got.el, pre); return; }
+        const c = goRoom();
+        if (!c) { status("Neither its windows nor the room's place are known here - raise the issue on the plan."); return; }
+        setTimeout(() => S.chk.makeIssue(c, null, pre), 900);       // after the flight, for its picture
+      };
+      if (btn("plan")) btn("plan").onclick = () => { location.href = LVR.sheetUrl(sh, r); };
     },
   });
 }
@@ -3833,13 +3853,20 @@ async function mbIsolate() {
   status(`Isolated ${MB.pick.label}. Show all brings everything back.`);
   await mbZoom();
 }
-async function mbZoom(sets) {
+/* the box round picked elements, and the first of them as {part, lid} */
+async function mbBox(sets) {
   const box = new THREE.Box3();
+  let el = null;
   for (const { part, lids } of await mbLids(sets || (MB.pick && MB.pick.sets) || new Map())) {
+    if (!el && lids.length) el = { part, lid: lids[0] };
     const sample = lids.length > 4000 ? lids.filter((_, i) => i % Math.ceil(lids.length / 4000) === 0) : lids;
     const bx = await part.model.getBoxes(sample);
     for (const b of bx) if (b && !b.isEmpty()) box.union(b);
   }
+  return { box, el };
+}
+async function mbZoom(sets) {
+  const { box } = await mbBox(sets);
   if (box.isEmpty()) return;
   const c = box.getCenter(new THREE.Vector3());
   const r = Math.max(1.5, box.getSize(new THREE.Vector3()).length() / 2);
@@ -5634,9 +5661,14 @@ function wireSelectionButtons() {
 /* model.html?elements=<UniqueId or ElementId>,... : picked out and zoomed to. */
 async function elementsFromUrl() {
   const want = (new URLSearchParams(location.search).get("elements") || "").split(",").map((x) => x.trim()).filter(Boolean);
-  if (!want.length) return;
+  if (want.length) await showUids(want);
+}
+
+/* Revit elements by UniqueId (or element id): selected and zoomed to, here,
+   without reloading the page. -> {sets, box, el: {part, lid}} or null. */
+async function showUids(want, what) {
   for (let i = 0; i < 900 && !S.modelsReady; i++) await new Promise((r) => setTimeout(r, 200));
-  if (!mbRecs().length) { status("Finding Revit elements needs a model published by the LWK add-in (.lwkm)."); return; }
+  if (!mbRecs().length) { status("Finding Revit elements needs a model published by the LWK add-in (.lwkm)."); return null; }
   const keys = new Set(want);
   const sets = new Map();
   for (const rec of mbRecs()) {
@@ -5649,15 +5681,17 @@ async function elementsFromUrl() {
       }
     }
   }
-  if (!sets.size) { status("Those Revit elements are not in this model (changed or deleted since)."); return; }
-  MB.pick = { sets, label: want.length === 1 ? "the element" : want.length + " elements" };
+  if (!sets.size) { status(`${what || "Those Revit elements"}: not in the models loaded here (changed or deleted since, or in a model not shown).`); return null; }
+  MB.pick = { sets, label: what || (want.length === 1 ? "the element" : want.length + " elements") };
   await mbSelect();
   S.selEls = selectionFromBrowser();
+  const { box, el } = await mbBox(sets);
   await mbZoom(sets);
   const [rec, es] = [...sets.entries()][0];
   const info = elementOfRec(rec, [...es][0]);
   const found = [...sets.values()].reduce((n, x) => n + x.size, 0);
-  status(`${found} of ${want.length} element${want.length === 1 ? "" : "s"} found: ${info.category || ""} ${info.name || ""}`.trim());
+  status(`${what ? what + ": " : ""}${found} of ${want.length} element${want.length === 1 ? "" : "s"} found: ${info.category || ""} ${info.name || ""}`.trim());
+  return { sets, box, el };
 }
 
 function showSelection(modelName, hit, guid, extra) {
