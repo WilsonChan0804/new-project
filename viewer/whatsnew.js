@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-10", date: "25 Oct 2026",
+    items: [
+      "**Light & Ventilation on the plans:** the Revit Light & Vent check (in the Calculation model) can now be sent to the viewer. On the plan sheets - also those published from the Layout model, on the same shared coordinates - **View > Light & Vent** colours each room by its result; click one for its required and provided areas, its windows, and **Make issue**.",
+      "**3D > Checks > Light & Vent:** the whole table, filtered by floor, flat and result, with the CSV and the diagrams PDF; a row opens the room on its plan. The Dashboard shows the counts.",
+      "**In Revit:** update the add-in; publish the layout plans once with it, and answer Yes to *Send the result to the viewer?* after Light & Vent.",
+      "**Fix:** a click on empty paper on some sheets did nothing (an error stopped it), so an area or room could not be picked there.",
+    ],
+  },
+  {
     version: "2026-12-09", date: "25 Oct 2026",
     items: [
       "**SBD check about 5 times faster:** the search for the side regions (the slowest part, over 90 % of a big model's run) skips the edges that cut a building much sooner. The results are exactly the same as before; a test model with 12 stepped towers went from 128 s to 25 s.",

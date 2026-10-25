@@ -51,6 +51,7 @@ import { createAO } from "./ao.js";
 import { copyIds, showInRevit, wireElementBlocks } from "./revit.js";
 import { me as navMe } from "./nav.js";
 import { installV3Bar } from "./v3bar.js";
+import * as LVR from "./lv.js";
 
 /* Fragments geometry is in METRES. The Revit exporter writes millimetres
    everywhere - manifest paper_to_model, link transforms, issue positions -
@@ -2241,10 +2242,46 @@ function initClash() {
     $("#clash-box").hidden = b.dataset.tab !== "clash";
     $("#head-box").hidden = b.dataset.tab !== "head";
     $("#sbd-box").hidden = b.dataset.tab !== "sbd";
+    $("#lv-box").hidden = b.dataset.tab !== "lv";
+    if (b.dataset.tab === "lv") lvTab();
     if (b.dataset.tab === "head" && S.head) S.head.refresh();
     if (b.dataset.tab === "sbd" && S.sbd) S.sbd.refresh();
     if (b.dataset.tab !== "head" && S.mode === "headroom") setMode("nav");
   }));
+  // ?checks=lv (the Dashboard's Light & Vent card): that tab, open
+  if (new URLSearchParams(location.search).get("checks") === "lv" && $("#chk-tab-lv")) {
+    const head = $("#chk-panel") && $("#chk-panel").previousElementSibling;
+    if (head && head.classList.contains("collapsed")) head.click();
+    $("#chk-tab-lv").click();
+    setTimeout(() => { try { $("#chk-panel").scrollIntoView({ block: "start" }); } catch (e) {} }, 300);
+  }
+}
+
+/* Checks > Light & Vent: the Revit check's table; a row opens the plan
+   sheet showing the room (lv.js), or says no plan of its floor is there. */
+async function lvTab() {
+  const box = $("#lv-box");
+  if (!box) return;
+  if (!box.children.length) box.innerHTML = `<p class="muted" style="font-size:12px">Loading ...</p>`;
+  const rep = await LVR.loadReport();
+  LVR.renderTable(box, rep, {
+    onRow(r) {
+      const sh = LVR.sheetFor(S.manifest, r);
+      let note = box.querySelector(".lv-note");
+      if (!note) { note = document.createElement("div"); note.className = "lv-note"; box.insertBefore(note, box.querySelector(".table-wrap")); }
+      note.innerHTML = LVR.roomCard(r);
+      const x = note.querySelector('[data-lv="close"]');
+      if (x) x.onclick = () => note.remove();
+      const mk = note.querySelector('[data-lv="issue"]');
+      if (sh) {
+        if (mk) { mk.textContent = "On the plan " + sh.number; mk.onclick = () => { location.href = LVR.sheetUrl(sh, r); }; }
+      } else if (mk) {
+        mk.disabled = true;
+        mk.title = "No plan sheet of this floor carries the shared-coordinate placement yet (publish the plans again with the updated add-in)";
+        mk.textContent = "No plan of this floor";
+      }
+    },
+  });
 }
 
 /* ---------------------------------------------------------- saved views */

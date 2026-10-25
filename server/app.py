@@ -4256,6 +4256,13 @@ try:
 except Exception as _ex:
     print("sbd not loaded: %s" % _ex)
 
+# Light & Ventilation (lv_api.py): the Revit Light & Vent check's result, drawn on the plans.
+try:
+    import lv_api
+    lv_api.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("lv not loaded: %s" % _ex)
+
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.
 try:

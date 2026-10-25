@@ -1708,6 +1708,39 @@ body.pnl-dragging iframe, body.pnl-dragging canvas { pointer-events: none; }
 .area-row { position: absolute; cursor: pointer; border-radius: 2px; }
 .area-row:hover { background: rgba(242, 128, 34, .14); outline: 1px solid rgba(224, 102, 15, .6); }
 
+/* ------------------------------------------- Light & Vent on the plans (lv.js) */
+#lv-layer { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; }
+#lv-layer .lv-room { fill: var(--c); fill-opacity: .26; stroke: var(--c); stroke-width: 1.6; stroke-linejoin: round; }
+#lv-layer .lv-room.lv-merged { fill-opacity: .12; stroke-dasharray: 5 3; }
+#lv-layer .lv-room.on { fill-opacity: .42; stroke-width: 3.2; }
+#lv-layer .lv-win { fill: #fff; stroke: var(--c); stroke-width: 2; }
+#lv-legend { position: fixed; left: 12px; bottom: 40px; z-index: 30; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center;
+  max-width: min(520px, calc(100vw - 24px)); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+#lv-legend[hidden] { display: none; }
+#lv-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+#lv-legend small { flex-basis: 100%; color: var(--muted); }
+#lv-legend small.bad { color: #b91c1c; }
+#lv-info { border-bottom: 2px solid var(--accent); background: var(--panel); font-size: 11px; flex: 0 0 auto; max-height: 55vh; overflow-y: auto; overflow-x: hidden; }
+#lv-info[hidden] { display: none; }
+.lv-card .ai-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12px; }
+.lv-card .ai-head .spacer { flex: 1; }
+.lv-card .ai-body { padding: 0 10px 8px; }
+.lv-card .kv { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.lv-card .kv span { color: var(--muted); }
+.lv-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; flex: 0 0 auto; }
+.lv-st { font-weight: 600; }
+.lv-card .lv-tw { overflow-x: auto; max-width: 100%; }
+.lv-card table { width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 10.5px; }
+.lv-card td, .lv-card th { white-space: nowrap; }
+.lv-card th, .lv-card td { text-align: left; padding: 2px 4px; border-bottom: 1px solid var(--line); }
+.lv-card td.ok { color: #15803d; font-weight: 600; } .lv-card td.bad { color: #b91c1c; font-weight: 600; }
+.lv-sub { margin-top: 6px; font-weight: 600; }
+.lv-wd summary { cursor: pointer; }
+.lv-notes { margin: 2px 0 0 16px; padding: 0; }
+.lv-acts { display: flex; gap: 6px; margin-top: 8px; }
+.lv-acts .btnlike { text-decoration: none; display: inline-flex; align-items: center; }
+
 /* the new-issue window inside 2D + 3D: fits the half-width 3D pane */
 body.embed #i3-dlg { left: 8px !important; right: 8px !important; top: 8px !important; width: auto !important;
   max-width: none !important; max-height: calc(100vh - 16px); overflow: auto; }
@@ -2512,3 +2545,15 @@ header .flr-lab { white-space: nowrap; }
 #sheet-list li.sg-head .sg-more { padding: 0 6px; min-height: 0; line-height: 18px; }
 #sheet-list li.sg-hid b { color: var(--muted); font-weight: 600; }
 #sheet-list li.sheet-hidden { opacity: .5; }
+
+/* Checks > Light & Vent (lv.js renderTable) */
+.lv-k { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; }
+.lv-k b { font-size: 15px; }
+.lv-f { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.lv-f select { flex: 1 1 30%; min-width: 0; font-size: 11px; }
+.lv-dl { font-size: 11px; margin: 4px 0 6px; }
+.lv-t { width: 100%; border-collapse: collapse; font-size: 11px; }
+.lv-t th, .lv-t td { text-align: left; padding: 3px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.lv-t tbody tr { cursor: pointer; }
+.lv-t tbody tr:hover { background: var(--accent-soft, rgba(242, 128, 34, .1)); }
+.lv-note { border: 1px solid var(--line); border-radius: 6px; margin: 6px 0; font-size: 11px; }

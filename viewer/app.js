@@ -24,6 +24,7 @@ import { initPanels, initSplitter, initVGrip } from "./panels.js";
 import { copyLink } from "./share.js";
 import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile, deleteSetDialog } from "./cadimport.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
+import { createLvSheets } from "./lv.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -156,6 +157,26 @@ const AREAS = createAreas({
 window.SHEETS = window.SHEETS || {};
 window.SHEETS.AREAS = AREAS;
 
+/* Light & Vent (lv.js): the Calculation model's rooms on this sheet's plans,
+   coloured by their result. Make issue: a cloud round the room, as an issue. */
+const LV = createLvSheets({
+  S, $, status,
+  canvasFrom: (u, v) => canvasFrom(u, v),
+  zoomToPaper: (r) => zoomToPaper(r),
+  makeIssue(loops, txt) {
+    const pts = loops.flat();
+    if (!pts.length || !S.sheet) return;
+    const us = pts.map((p) => p[0]), vs = pts.map((p) => p[1]);
+    S.draft = newDraft("cloud", [[Math.min(...us), Math.min(...vs)], [Math.max(...us), Math.max(...vs)]]);
+    commitDraft((d) => {
+      openIssue(d);
+      $("#f-title").value = txt.title;
+      $("#f-desc").value = txt.description;
+    });
+  },
+});
+window.SHEETS.LV = LV;
+
 /* Scroll (without zooming) so a paper rectangle [x, y, w, h] mm is in view,
    when it is not already. */
 function revealPaper(r) {
@@ -190,6 +211,7 @@ function zoomToPaper(r) {
 
 function decorate(svg) {
   try { LINKS.draw(); } catch (e) { showError("links", e); }
+  try { LV.draw(); } catch (e) { showError("lv", e); }
   try { AREAS.draw(); } catch (e) { showError("areas", e); }
   try { CMP.decorate(svg); } catch (e) { showError("compare", e); }
   try { SYNC.drawHere(svg); } catch (e) { showError("sync3d", e); }
@@ -2369,12 +2391,14 @@ function wirePointer() {
       // as in CAD. Catching everything the box merely touches grabs half
       // the sheet on a dense drawing.
       const hit = S.items.filter((it) => it.sheet === S.sheet.number
-        && it.points_mm.every((q) => q[0] >= x0 && q[0] <= x1
+        && (it.points_mm || []).length && it.points_mm.every((q) => q[0] >= x0 && q[0] <= x1
                                     && q[1] >= y0 && q[1] <= y1))
         .map((it) => it.id);
       if (hit.length) select(hit, marquee.add, true);
       // a click (no box dragged) inside an area of an area plan lights it up
-      else if (x1 - x0 < 1.5 && y1 - y0 < 1.5) { try { AREAS.clickAt((x0 + x1) / 2, (y0 + y1) / 2); } catch (e) {} }
+      else if (x1 - x0 < 1.5 && y1 - y0 < 1.5) {
+        try { if (!LV.clickAt((x0 + x1) / 2, (y0 + y1) / 2)) AREAS.clickAt((x0 + x1) / 2, (y0 + y1) / 2); } catch (e) {}
+      }
       marquee = null;
       redraw();
     } else if (mode === "draw" && S.draft) {
@@ -2436,7 +2460,7 @@ function wirePointer() {
         status("Drawing cancelled.");
       }
     }
-    else if (ev.key === "Escape") { poly = null; S.draft = null; try { AREAS.clear(); } catch (e) {} select([], false); }
+    else if (ev.key === "Escape") { poly = null; S.draft = null; try { LV.clear(); AREAS.clear(); } catch (e) {} select([], false); }
     else if (ev.key === "Backspace" && poly && S.draft) {
       /* While a polyline is being drawn, Backspace takes back the last
          point rather than deleting whatever happens to be selected. The
@@ -3060,6 +3084,7 @@ async function openSheet(sheet) {
   // sheet's markups (layer rules, sync answers can arrive in between)
   S.sheet = sheet; S.sel = []; S.rotation = 0; S._restored = null; S.viewport = null;
   try { AREAS.sheetOpened(); } catch (e) {}
+  try { LV.sheetOpened(); } catch (e) {}
   _rendered = { scale: 0, rotation: -1, page: null };   // new page, bitmap is stale
   // the sheet being left lets go of its decoded pictures and fonts
   if (S.page) { const old = S.page; setTimeout(() => { if (old !== S.page) { try { old.cleanup(); } catch (e) {} } }, 0); }
@@ -6194,7 +6219,8 @@ async function boot() {
   for (const [name, fn] of [["chrome", wireChrome], ["pointer", wirePointer],
                             ["pan", wirePan], ["touch", wireTouch],
                             ["split", wireSplit], ["compare", CMP.wire],
-                            ["sync3d", SYNC.wire], ["links", LINKS.wire], ["perf", wireSheetPerf], ["files", wireFilesMenu]]) {
+                            ["sync3d", SYNC.wire], ["links", LINKS.wire], ["perf", wireSheetPerf], ["files", wireFilesMenu],
+                            ["lv", () => { LV.init().catch((e) => console.warn("lv", e)); }]]) {
     try { fn(); } catch (e) { showError("wire:" + name, e); }
   }
   Store.onChange(() => {

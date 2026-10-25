@@ -47,6 +47,7 @@ for _m in [k for k in list(sys.modules) if k == "lwk_viewer" or k.startswith("lw
     del sys.modules[_m]
 from lwk_viewer import lvcheck as LV
 from lwk_viewer import lvreport as LR
+from lwk_viewer import sharedxy as SX
 
 doc = revit.doc
 out = script.get_output()
@@ -247,6 +248,7 @@ if unmatched:
     out.print_md("Not given to a room: " + ", ".join("%s%s (%s)" % (u["id"], (" in " + u["source"]) if u.get("source") and "link" in u["source"] else "", u["why"]) for u in unmatched[:30]) + (" ..." if len(unmatched) > 30 else ""))
 
 # 5. keep it
+pdf_path = None
 path = forms.save_file(file_ext="csv", default_name="light_and_ventilation.csv", title="Save the table")
 if path:
     LV.write_csv(path, rows)
@@ -278,6 +280,59 @@ if path:
             out.print_md("Could not build the PDF automatically (Python and `pip install reportlab` are needed on this "
                          "machine, once). The diagram data is saved - once Python/reportlab are set up, run:\n\n"
                          "```\npython \"%s\" \"%s\"\n```" % (pdf_script or "lv_diagram_pdf.py", manifest_path))
+
+# 6. to the viewer: the rooms drawn on the plan sheets (of this model or of another
+# one on the same shared coordinates - the layout model), the table in Checks
+if rows and forms.alert("Send the result to the viewer?\n\nThe rooms are drawn, coloured by their result, on the plan sheets "
+                        "of the same floor - also sheets published from another model (the layout model) on the same "
+                        "shared coordinates.", title="Light & Vent", yes=True, no=True):
+    import base64
+    import time
+    from lwk_viewer import issues as L
+    from lwk_viewer import sbd_export as SE
+    settings = L.load_settings()
+    client = L.Client(settings.get("server", ""), settings.get("token", ""))
+    try:
+        projects = client.projects()
+    except Exception as ex:
+        projects = None
+        forms.alert("Cannot reach the viewer server: %s\n\nSign in with LWK Issues first." % ex, title="Light & Vent")
+    if projects is not None:
+        labels, ids = SE.project_choices(projects, (settings.get("doc_projects") or {}).get(doc.Title))
+        lab = forms.SelectFromList.show(labels, title="Light & Vent - which viewer project", button_name="Send")
+        if lab:
+            pid = ids[labels.index(lab)]
+            xf, how = SX.from_doc(doc)
+            SX.add_shared(rows, xf)
+            me = ""
+            try:
+                me = client.me().get("user", {}).get("name", "")
+            except Exception:
+                pass
+            data = {"schema": "lwk-lv/1", "version": LV.__version__, "model": doc.Title, "by": me,
+                    "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "shared": how,
+                    "levels": levels or [], "rooms": rows, "unmatched": unmatched, "types": counts, "dropped_rooms": dropped}
+            try:
+                r = client._request("POST", "/api/lv/report", data, project=pid, timeout=300)
+                msg = "Sent to the viewer: %d rooms." % len(rows)
+                if pdf_path and os.path.isfile(pdf_path):
+                    with open(pdf_path, "rb") as fh:
+                        b64 = base64.b64encode(fh.read())
+                    client._request("POST", "/api/lv/pdf", {"name": os.path.basename(pdf_path),
+                                    "b64": b64.decode("ascii") if hasattr(b64, "decode") else b64},
+                                    project=pid, timeout=300)
+                    msg += " The diagrams PDF is in Folders > 00 BIM > Exports > Light & Ventilation."
+                out.print_md("**%s** On the plan sheets: View > Light & Vent." % msg)
+                if how != "survey point":
+                    out.print_md("(The shared coordinates were taken without the survey point check - if the rooms land "
+                                 "in the wrong place on the plans, tell the BIM team.)")
+                try:
+                    settings.setdefault("doc_projects", {})[doc.Title] = pid
+                    L.save_settings(settings)
+                except Exception:
+                    pass
+            except Exception as ex:
+                forms.alert("Not sent: %s" % ex, title="Light & Vent")
 
 if rows and forms.alert("Write each window's room, glazing and openable area into its parameters?\n\n"
                         "Needs the shared parameters LWK_LV_Room, LWK_LV_Room_Name, LWK_LV_Flat, LWK_LV_Glazing_m2, "

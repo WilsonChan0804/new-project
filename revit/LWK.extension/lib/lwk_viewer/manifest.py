@@ -13,6 +13,7 @@ from Autodesk.Revit.DB import (
 from lwk_viewer.compat import id_int, new_id
 
 from lwk_viewer import geom
+from lwk_viewer import sharedxy
 from lwk_viewer.probe import Probe
 
 FT_MM = 304.8
@@ -884,6 +885,19 @@ def build_sheet(doc, sheet, probe):
                 entry["level_name"] = view.GenLevel.Name
         except Exception:
             pass
+        # a plan's shared -> paper transform: another model on the same shared
+        # coordinates (the Light & Vent check's Calculation model) is drawn on it
+        try:
+            if isinstance(view, ViewPlan) and entry.get("level_mm") is not None:
+                sm = _shared_of(doc)
+                if sm is not None:
+                    z = entry["level_mm"]
+                    near = (mapping["origin"][0], mapping["origin"][1])
+                    entry["shared_to_paper"] = sharedxy.shared_to_paper(
+                        sm, lambda p: geom.model_to_paper(mapping, p), z, near)
+                    entry["level_sh_mm"] = round(sharedxy.apply(sm, (near[0], near[1], z))[2], 1)
+        except Exception as ex_:
+            probe.info(sheet.SheetNumber, "'%s': no shared-coordinate placement: %s" % (view.Name, ex_))
         entry["calibration"] = calibration(doc, view, mapping, rect)
         entry["diagnostics"] = diag
         try:
@@ -1050,6 +1064,20 @@ def build_elements(doc, probe, categories=None):
         probe.warn("elements", "%d of %d elements have no IFC GUID"
                    % (missing, len(out)))
     return out
+
+
+_SHARED = {}
+
+
+def _shared_of(doc):
+    """This model's internal -> shared transform (mm), once per model."""
+    k = doc.PathName or doc.Title
+    if k not in _SHARED:
+        try:
+            _SHARED[k] = sharedxy.from_doc(doc)[0]
+        except Exception:
+            _SHARED[k] = None
+    return _SHARED[k]
 
 
 def project_location(doc, probe):

@@ -31,7 +31,7 @@ Everything that needs Revit is imported inside the function that uses it, so
 the rest (and its tests) run without Revit.
 """
 
-__version__ = "2026-12-05"
+__version__ = "2026-12-10"
 
 import io
 import json
@@ -445,6 +445,9 @@ def build(areas, items, types, rules=None, doors=None):
             "area_m2": a["area_m2"], "id": a["id"], "uid": a.get("uid", ""),
             "req_light": a["area_m2"] * uses[u][0], "req_open": a["area_m2"] * uses[u][1],
             "windows": [], "merged": [], "notes": list(a.get("notes") or []),
+            # where it is (this model's mm): sent to the viewer in shared coordinates
+            # (sharedxy.add_shared), to be drawn on another model's plans
+            "_loops": a.get("loops") or [], "_label": a.get("label"), "_z": a.get("z_mm"),
         }
 
     unmatched, type_counts = [], {}
@@ -515,7 +518,7 @@ def build(areas, items, types, rules=None, doors=None):
             meas = it.get("glass_m2") * share if it.get("glass_m2") is not None else None
             rooms[_k(a)]["windows"].append({
                 "id": it["id"], "uid": it.get("uid", ""), "key": it["key"], "mark": it.get("mark", ""), "cat": it["cat"],
-                "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"), "share": round(share, 3), "source": it.get("source", ""),
+                "pos": it.get("pos"), "w_mm": it.get("w_mm"), "h_mm": it.get("h_mm"), "share": round(share, 3), "source": it.get("source", ""),
                 "light_bd": bd, "light_meas": meas,
                 "open_bd": op_bd,
                 "open_meas": (meas * open_ratio) if (meas is not None and open_ratio is not None)
@@ -587,6 +590,7 @@ def build(areas, items, types, rules=None, doors=None):
             host = candidates[0]
             host["merged"].append(r)
             r["merged_into"] = host["number"]
+            r["merged_into_uid"] = host["uid"]
         elif len(candidates) > 1:
             r["merge_ambiguous"] = sorted(c["number"] for c in candidates)
         else:
@@ -695,6 +699,11 @@ def _row(r, rules, merged=False):
         "prov_light_bd": _r3(pl_bd), "prov_open_bd": _r3(po_bd),
         "prov_light_meas": _r3(pl_m), "prov_open_meas": _r3(po_m),
         "status": status, "notes": notes, "uid": r["uid"], "id": r["id"],
+        "merged_into_uid": r.get("merged_into_uid") if merged else None,
+        # this model's mm, for sharedxy.add_shared (the viewer draws it on the layout plans)
+        "loops_mm": [[[round(p[0], 1), round(p[1], 1)] for p in lp] for lp in r.get("_loops") or []],
+        "label_mm": [round(r["_label"][0], 1), round(r["_label"][1], 1)] if r.get("_label") else None,
+        "z_mm": None if r.get("_z") is None else round(r["_z"], 1),
         # the host room's own windows plus every merged room's own windows too - so a combined
         # room's CSV cell and its diagram both show everything that counts toward it, not just the
         # host's own share (the required/provided sums above are unaffected: they were computed
@@ -947,7 +956,7 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
     dropped every other room left out, with why - so a room that should be in never just
     silently vanishes from the table."""
     from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, BuiltInParameter,
-                                   SpatialElementBoundaryOptions)
+                                   SpatialElementBoundaryOptions, XYZ)
     from lwk_viewer.compat import id_int
     rules = rules or DEFAULT_RULES
     flags = rules.get("room_flags", [])
@@ -1017,9 +1026,17 @@ def collect_rooms(doc, level_elevs=None, rules=None, include_links=True):
                 if not loops:
                     drop("no room boundary")
                     continue
+                at, z_mm = None, None
+                try:
+                    at = _tp(tf, r.Location.Point)[:2]
+                    if lvl is not None:
+                        z_mm = _tp(tf, XYZ(0, 0, lvl.ProjectElevation))[2]
+                except Exception:
+                    pass
                 out.append({"id": id_int(r.Id), "uid": r.UniqueId, "key": u"%s|%s" % (label, r.UniqueId),
                             "number": r.Number or "", "name": name, "source": label,
                             "area_m2": round(r.Area * SQFT_M2 + 1e-9, 3), "loops": loops,
+                            "label": at, "z_mm": z_mm,
                             "flat": _text_param(r, rules.get("flat_param", "")),
                             "block": _text_param(r, rules.get("block_param", "")),
                             "level": lvl.Name if lvl is not None else "", "level_mm": lev_mm,
@@ -1063,8 +1080,15 @@ def collect_areas(doc, scheme_name, level_names=None):
                 name = a.get_Parameter(BuiltInParameter.ROOM_NAME).AsString() or ""
             except Exception:
                 pass
+            at = None
+            try:
+                p = a.Location.Point
+                at = (p.X * FT_MM, p.Y * FT_MM)
+            except Exception:
+                pass
             out.append({"id": id_int(a.Id), "uid": a.UniqueId, "number": a.Number or "", "name": name,
-                        "area_m2": round(a.Area * SQFT_M2 + 1e-9, 3), "loops": loops,
+                        "area_m2": round(a.Area * SQFT_M2 + 1e-9, 3), "loops": loops, "label": at,
+                        "z_mm": (lvl.ProjectElevation * FT_MM) if lvl is not None else None,
                         "level": lvl.Name if lvl is not None else "",
                         "level_mm": (lvl.Elevation * FT_MM) if lvl is not None else 0.0})
         except Exception:

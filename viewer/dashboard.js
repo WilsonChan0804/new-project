@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-09";
+const LWK_VERSION = "2026-12-10";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -58,13 +58,13 @@ const D = { manifest: null, items: [], members: [], me: null, issues: [], fetche
    project): the next visit draws it at once, and the server is then asked
    only for the issues changed since. */
 const dashKey = () => "dash:" + project();
-const K = { ex: null, pj: null, digest: null, ptasks: null };
+const K = { ex: null, pj: null, digest: null, ptasks: null, lv: null };
 let keepT = 0;
 function keepDash() {
   clearTimeout(keepT);
   keepT = setTimeout(() => {
     keepBig(dashKey(), { rev: D.rev, manifest: D.manifest, items: D.items, members: D.members, me: D.me,
-      fetched: D.fetched ? D.fetched.getTime() : null, ex: K.ex, pj: K.pj, digest: K.digest, ptasks: K.ptasks },
+      fetched: D.fetched ? D.fetched.getTime() : null, ex: K.ex, pj: K.pj, digest: K.digest, ptasks: K.ptasks, lv: K.lv },
       D.me && D.me.user ? D.me.user.id : null);
   }, 1500);
 }
@@ -76,7 +76,7 @@ async function showKept() {
   if (!D.me) D.me = k.me;
   D.fetched = k.fetched ? new Date(k.fetched) : null;
   D.issues = D.items.filter((it) => it.issue).map(toIssue);
-  K.ex = k.ex; K.pj = k.pj; K.digest = k.digest; K.ptasks = k.ptasks;
+  K.ex = k.ex; K.pj = k.pj; K.digest = k.digest; K.ptasks = k.ptasks; K.lv = k.lv;
   const pt = (D.manifest && D.manifest.source && D.manifest.source.title) || project();
   $("#d-sub").textContent = pt + " · issues and tasks";
   fillFilters();
@@ -84,6 +84,7 @@ async function showKept() {
   if (K.digest) drawDigest(K.digest);
   if (K.ex) drawExports(K.ex, K.pj);
   if (K.ptasks) drawProjectTasks(K.ptasks.reg, K.ptasks.tree);
+  if (K.lv) drawLv(K.lv);
   if (D.fetched) $("#d-updated").textContent = "Updated " + dateAgo(D.fetched);
   return true;
 }
@@ -851,6 +852,7 @@ async function main() {
     loadData().catch((e) => { $("#d-msg").textContent = "Shown as last time on this device - the server did not answer (" + (e.message || e) + ")."; });
   } else await loadData();
   projectTasks().catch(() => {});
+  lvSummary().catch(() => {});
   // Keep it current while it is left open on a screen in the office.
   setInterval(() => { if (!document.hidden) loadData().catch(() => {}); }, 120000);
   // "Updated 2 min ago" stays true between refreshes
@@ -894,4 +896,27 @@ function drawProjectTasks(reg, tree0) {
         + (t.due ? `<small class="${t.due.slice(0, 10) < today ? "late" : ""}">${esc(t.due.slice(0, 10) < today ? overdueBy(t.due.slice(0, 10)) : "due " + day(t.due.slice(0, 10)))}</small>` : `<small class="nodue">No due date</small>`) + `</a>`).join("")
       + (open.length > 12 ? `<div class="dt-g">and ${open.length - 12} more open</div>` : "")
       : `<p class="muted" style="font-size:12px">No task list has a group for this project yet. In Tasks: ... &rarr; Groups and projects.</p>`);
+}
+
+
+/* Light & Vent: the Revit check's last result for this project (lv_api.py). */
+async function lvSummary() {
+  const sm = await api("/api/lv?summary=1");
+  K.lv = sm; keepDash();
+  drawLv(sm);
+}
+
+function drawLv(sm) {
+  const box = document.getElementById("d-lv");
+  if (!box) return;
+  if (!sm || !sm.report) { box.hidden = true; return; }
+  const c = sm.counts || {};
+  box.hidden = false;
+  box.innerHTML = `<h3>Light &amp; Ventilation <small>${esc(sm.model || "")} · checked ${esc(dayTime(sm.at || sm.sent_at))}${sm.by ? " by " + esc(sm.by) : ""}</small>`
+    + `<a href="${esc(link("model.html", { checks: "lv" }))}">Table</a></h3>`
+    + `<div class="dt-k"><span><b>${c.OK || 0}</b>OK</span><span class="${c["NOT OK"] ? "bad" : ""}"><b>${c["NOT OK"] || 0}</b>not OK</span>`
+    + `<span><b>${c["NEEDS DATA"] || 0}</b>need data</span><span class="${c["NO WINDOW"] ? "bad" : ""}"><b>${c["NO WINDOW"] || 0}</b>no window</span>`
+    + `<span><b>${c.merged || 0}</b>counted with another room</span></div>`
+    + `<p class="muted" style="font-size:12px">On the plan sheets: <a href="${esc(link("index.html"))}">Sheets</a> &gt; View &gt; Light &amp; Vent`
+    + `${sm.pdf ? ` · <a href="/api/lv/pdf" target="_blank" rel="noopener">Diagrams (PDF)</a>` : ""}</p>`;
 }

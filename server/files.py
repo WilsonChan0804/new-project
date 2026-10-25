@@ -303,7 +303,7 @@ def read_json(path):
         return None
 
 
-EXPORT_FOLDERS = ("Clash", "Headroom", "SBD", "Issues", "BCF", "Markups", "Board", "Dashboard")
+EXPORT_FOLDERS = ("Clash", "Headroom", "SBD", "Light & Ventilation", "Issues", "BCF", "Markups", "Board", "Dashboard")
 _CONVERT = threading.Lock()
 
 

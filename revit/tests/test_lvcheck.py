@@ -63,6 +63,18 @@ class Sharing(unittest.TestCase):
         self.liv = room("liv", "A1-1", "LIV/DIN", 0, 4000)
         self.br = room("br", "A1-2", "BR1", 4000, 8000)
 
+    def test_rows_carry_where_the_room_is(self):
+        """For the viewer: the outline, label and level of each room, and
+        each window's position (this model's mm; sharedxy turns them shared)."""
+        liv = room("L", "101", "LIV/DIN", 0, 5000)
+        liv["label"], liv["z_mm"] = (2500.0, 2000.0), 31950.0
+        rows, _, _ = LV.build([liv], [item(2000)], TYPES)
+        r = rows[0]
+        self.assertEqual(r["loops_mm"], [[[0, 0], [5000, 0], [5000, 4000], [0, 4000]]])
+        self.assertEqual(r["label_mm"], [2500.0, 2000.0])
+        self.assertEqual(r["z_mm"], 31950.0)
+        self.assertEqual(list(r["windows"][0]["pos"])[:2], [2000, 4000])
+
     def test_a_window_in_one_room(self):
         hits, note = LV.serving_rooms(item(2000), [self.liv, self.br], [200, 500, 900])
         self.assertEqual([(a["number"], s) for a, s in hits], [("A1-1", 1.0)])
