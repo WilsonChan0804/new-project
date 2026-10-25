@@ -26,13 +26,14 @@ let activePet = null;
 let editingLog = null;
 let logPhoto = null;
 let diaryDays = 7;
+const openDays = new Set([today()]); // diary days shown entry by entry
 
 const petAge = birthday => {
   if (!birthday) return '';
   const months = Math.floor(daysBetween(birthday, today()) / 30.44);
   return months < 12 ? plural(months, 'month') + ' old' : plural(Math.floor(months / 12), 'year') + ' old';
 };
-const timeOf = at => new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const timeOf = at => new Date(at).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
 const ago = at => {
   const m = Math.round((Date.now() - at) / 60000);
   return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
@@ -61,7 +62,7 @@ $('#pet-form').addEventListener('submit', async e => {
 });
 $('#pf-delete').onclick = async () => {
   const id = $('#pet-form').dataset.id;
-  if (!confirm('Delete this cat and all of its diary entries?')) return;
+  if (!confirm(T('Delete this cat and all of its diary entries?'))) return;
   for (const l of (await db.all('petlogs')).filter(l => l.pet === id)) await db.del('petlogs', l.id);
   await db.del('pets', id);
   activePet = null;
@@ -180,10 +181,16 @@ async function renderPets() {
 
   fill(body,
     h('div', { className: 'chips pet-chips' },
-      pets.map(p => h('button', { className: 'chip' + (p.id === activePet ? ' on' : ''), textContent: `🐱 ${p.name}`, onclick: () => { activePet = p.id; renderPets(); } })),
+      pets.map(p => h('button', { className: 'chip pet-chip' + (p.id === activePet ? ' on' : ''), onclick: () => { activePet = p.id; renderPets(); } },
+        avatarEl(p.avatar || { emoji: '🐱', bg: pastel(p.id)[0] }, p.name, 'xs-av'), p.name)),
       h('button', { className: 'chip', textContent: '+ Add cat', onclick: () => openPetForm() })),
     h('section', { className: 'card pet-profile' },
-      h('div', { className: 'av pet-av', style: tileVars(pet.id).replace('--tile-bg', 'background').replace(';--tile-fg', ';color'), textContent: '🐱' }),
+      (() => {
+        const el = avatarEl(pet.avatar || { emoji: '🐱', bg: pastel(pet.id)[0] }, pet.name, 'pet-av editable');
+        el.title = 'Change picture';
+        el.onclick = () => openAvatarEditor(`${pet.name}'s picture`, pet.avatar, pet.name, async spec => { await db.put('pets', { ...pet, avatar: spec }); renderPets(); });
+        return el;
+      })(),
       h('div', { className: 't' },
         h('strong', { className: 'display', textContent: pet.name }),
         h('span', { className: 'sm muted', textContent: [petAge(pet.birthday), weight && `${weight.value} kg`].filter(Boolean).join(' · ') || 'Tap edit to add a birthday' }),
@@ -208,18 +215,28 @@ async function renderPets() {
       // Plain taps are counted; entries with details get their own line.
       const counts = {};
       d.logs.forEach(l => { counts[l.type] = (counts[l.type] || 0) + 1; });
-      const detailed = d.logs.filter(l => l.note || l.photo || l.value || l.due);
+      // Tap a day to see every entry, with edit and delete.
+      const open = openDays.has(d.date);
+      const shown = open ? d.logs : d.logs.filter(l => l.note || l.photo || l.value || l.due);
       return h('section', { className: 'pet-day' },
         h('h3', { textContent: dayLabel(d.date) }),
-        h('div', { className: 'card day-sum' },
-          h('div', { className: 'tally' }, PET_TYPES.filter(t => counts[t.id]).map(t => h('span', { title: t.label, textContent: `${t.emoji}${counts[t.id] > 1 ? ' ×' + counts[t.id] : ''}` }))),
-          detailed.map(l => h('div', { className: 'detail-row', onclick: () => openLogForm(ptype(l.type), l) },
+        h('div', { className: 'card day-sum' + (open ? ' open' : '') },
+          h('button', { className: 'tally', ariaExpanded: String(open), onclick: () => { open ? openDays.delete(d.date) : openDays.add(d.date); renderPets(); } },
+            PET_TYPES.filter(t => counts[t.id]).map(t => h('span', { title: t.label, textContent: `${t.emoji}${counts[t.id] > 1 ? ' ×' + counts[t.id] : ''}` })),
+            h('i', { className: 'more-hint', textContent: open ? 'Hide' : 'Edit' })),
+          shown.map(l => h('div', { className: 'detail-row', onclick: () => openLogForm(ptype(l.type), l) },
             h('span', { className: 'e', textContent: ptype(l.type).emoji }),
             h('div', { className: 'grow' },
               h('strong', { textContent: ptype(l.type).label + (l.value ? ` · ${l.value} kg` : '') }),
               (l.note || l.due) && h('div', { className: 'sm muted', textContent: [l.note, l.due && `Next due ${fmtDate(l.due, { day: 'numeric', month: 'short' })}`].filter(Boolean).join(' · ') })),
             l.photo && h('img', { src: l.photo, alt: '' }),
-            h('span', { className: 'sm muted', textContent: timeOf(l.at) })))));
+            h('span', { className: 'sm muted', textContent: timeOf(l.at) }),
+            open && roundBtn('trash', 'Delete entry', async e => {
+              e.stopPropagation();
+              await db.del('petlogs', l.id);
+              toast(`${ptype(l.type).label} deleted`, { label: 'Undo', run: async () => { await db.put('petlogs', l); refresh(); } });
+              refresh();
+            })))));
     }).concat(days.length > diaryDays ? [h('button', { className: 'pill-btn', textContent: 'Show earlier days', onclick: () => { diaryDays += 14; renderPets(); } })] : []) :
       h('p', { className: 'sm muted', textContent: `Tap a button above to start ${pet.name}'s diary.` }),
   );
@@ -243,10 +260,19 @@ calendarSources.push(async () => {
     render: () => h('div', { className: 'item' }, h('i', { className: 'k', style: `background:${PET_COLOR}` }),
       h('div', { className: 't' }, h('span', { textContent: `${ptype(l.type).emoji} ${ptype(l.type).label} due · ${name(l.pet)}` }), h('span', { className: 's', textContent: l.note || 'Reminder' }))),
   }));
-  return [...entries, ...dues];
+  const year = calMonth.getFullYear();
+  const birthdays = ps.filter(p => p.birthday).flatMap(p => [year - 1, year, year + 1].map(y => `${y}${p.birthday.slice(4)}`).filter(d => d >= p.birthday).map(date => ({
+    date, color: PET_COLOR, sort: '0',
+    render: () => h('div', { className: 'item' }, h('i', { className: 'k', style: `background:${PET_COLOR}` }),
+      h('div', { className: 't' }, h('span', { textContent: `🎂 ${p.name}'s birthday` }), h('span', { className: 's', textContent: `${+date.slice(0, 4) - +p.birthday.slice(0, 4)} years old` }))),
+  })));
+  return [...entries, ...dues, ...birthdays];
 });
 upcomingSources.push(async () => {
   const [ps, logs] = await Promise.all([db.all('pets'), db.all('petlogs')]);
-  return logs.filter(l => l.due).map(l => ({ label: `${ps.find(p => p.id === l.pet)?.name || 'Cat'}'s ${ptype(l.type).label.toLowerCase()}`, date: l.due }));
+  return [
+    ...logs.filter(l => l.due).map(l => ({ label: `${ps.find(p => p.id === l.pet)?.name || 'Cat'}'s ${ptype(l.type).label.toLowerCase()}`, date: l.due })),
+    ...ps.filter(p => p.birthday).map(p => ({ label: `${p.name}'s birthday 🎂`, date: nextOccurrence(p.birthday) })),
+  ];
 });
 renderers.push(renderPets);

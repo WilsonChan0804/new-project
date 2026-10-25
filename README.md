@@ -4,33 +4,38 @@ A private space for two: record moments, keep posts and links from other apps, p
 
 ## Run it
 
-```bash
-cd app
-python3 -m http.server 8000
-# open http://localhost:8000
-```
+Some features need the app to be served from a web address rather than opened as a file: photo scanning, the AI sticker cut-out and offline mode. Double-clicking `index.html` is not enough.
 
-To use it on iPhone, host the `app/` folder anywhere with HTTPS (e.g. GitHub Pages, Netlify, Cloudflare Pages), open it in Safari, then **Share → Add to Home Screen**.
+- **Windows:** double-click `app/Start Twofold (Windows).bat`. It starts a small local server with PowerShell (nothing to install) and opens the app. Keep the black window open while you use it.
+- **Mac:** double-click `app/Start Twofold (Mac).command` (uses `python3`).
+- **iPhone:** host the `app/` folder on any HTTPS address (e.g. GitHub Pages, Netlify), open it in Safari, then **Share → Add to Home Screen**.
+
+Data is stored per address. If you used the app as a file before, open the old copy, use **Download backup**, then **Restore backup** in the new one.
 
 ## What's in it
 
 | Screen | Features |
 | --- | --- |
-| First run | "A private space for just you two": enter your names and the date you got together, or restore a backup. |
-| Home | Greeting, a days-together card with the next countdown ("Plan it" opens the calendar), a card for sending your partner a heart nudge, today's moment prompt with a Capture button, and recent moments. |
-| Chat | Your partner's chat opens straight away. Quick replies, photos ("Save to Moments"), stickers, and other chats from the back arrow. **Messages are stored on this device only for now.** |
-| + New moment | Photo stage with Camera and Choose/Add more, a caption, mood chips, and link, place, date and albums. "Share after saving" opens WhatsApp, Instagram or Messages. |
-| Moments | All / Photos / Links / Loved filters, search, an "On this day" card, day-grouped photo tiles, a detail sheet with reactions and share/edit/delete, and a recap slideshow (▶). Links from Instagram, Threads, Facebook, Letterboxd, IMDb, Reddit, WhatsApp, YouTube, X, TikTok and Spotify are recognised. |
-| Us → Calendar | Photo days, plans, special dates, meals with their ingredients, and cat diary entries and reminders. Plans export as `.ics` files. |
-| Us → Shopping | Scan a photo of the meal-plan checklist (rows: `20261018` · dish · ingredients…), or paste its text. Check and fix what was read (unclear words are highlighted in orange, and fixes are remembered). You get a ticked-off shopping list in 2–3 columns, grouped by aisle, showing which days need each item. **Meal plan** mode shows each day's dish and ingredients and adds them to the calendar. |
-| Us → Cat | Cat diary inspired by Moggie, Meowow and Cat Buddy. One-tap logs (ate, drank, litter, nap, play, affection, grumpy, vomit), weight, medicine/vaccine/vet/grooming with next-due reminders, and photo diary entries. Trend notes compare this week with your cat's usual pattern (not a diagnosis). |
-| Us → Stickers / Settings | Sticker studio (circle, square, heart and cut-out shapes, outline, caption). Settings covers names, dates, Auto/Light/Dark appearance and backup. |
-
-The fonts (Bricolage Grotesque and Inter) are bundled in `app/fonts` under the SIL Open Font License, so the app also works offline.
+| First run | "A private space for just you two": names, together-since date, or restore a backup. Language toggle (English / 廣東話). |
+| Home | Greeting with both avatars, days-together card with the next countdown (anniversary, birthdays incl. the cat's, plans, vet reminders), a heart "nudge", today's moment prompt, a shopping card, and recent moments. |
+| Chat | Multi-line messages (Enter sends on a computer, Shift+Enter for a new line; the return key adds a line on phones; Chinese input methods are respected). Emoji panel, stickers by group, photos, videos, voice messages, speech-to-text (Cantonese / Mandarin / English). Tap a message to copy, edit, delete (with Undo) or save it to Moments. Select several messages (text, photos, videos, links) to make one moment. Quick replies you can edit, chat backgrounds (colours, patterns or your own photo), rename and delete chats. **Messages are stored on this device only for now.** |
+| + New moment | Several photos **and videos**, caption, mood, link/place/date/albums, optional share after saving. |
+| Moments | + button, filters, search, "On this day", day-grouped tiles (videos show a ▶), detail view with reactions, share, edit and delete. |
+| Us → Calendar | Photo days, plans, special dates, meals with ingredients, cat birthdays, cat diary entries and reminders. Plans export as `.ics` files. |
+| Us → Shopping | Scan the meal-plan checklist photo (or paste text), review and fix, then a 2–3 column shopping list and a meal plan saved to the calendar. |
+| Us → Cat | Cat profiles with their own picture, one-tap diary (tap a day to edit or delete entries), weight, meds/vaccine/vet/grooming with reminders, trend notes. **Cat break**: your cat clips take over the screen on demand (Alt+C), every N minutes, or when the computer is idle. "Pop out" floats it over other windows where the browser allows. |
+| Us → Stickers | ✨ AI "Select subject" cut-out, Erase/Restore brushes, magic wand, edge softness, die-cut outline in white/black/rose, caption, and sticker groups. Circle/square/heart shapes too. |
+| Us → Settings | Names and pictures (photo, emoji or sticker avatars), dates, language, appearance, backup. |
 
 ## Reading checklist photos
 
 The photo is read **on the device** by Tesseract (bundled in `app/vendor`, about 9 MB, downloaded the first time you scan). It finds the spreadsheet grid and reads each cell several ways. It then snaps misread words to a list of common Hong Kong grocery items and to your own past corrections. Small Chinese text is hard for Tesseract, so always check the orange boxes. On iPhone, Live Text is more accurate: open the photo, long-press the text, then **Select All → Copy**, and use **Paste text** in the app.
+
+## Limits
+
+- **Cat break** can only cover the Twofold window, because a web page can't lock the whole computer. It works while the app is open, and asks to show notifications so it can call you from another window. Idle detection across the whole computer works in Chrome and Edge (it asks for permission); other browsers only notice idleness inside the app.
+- **Speech-to-text** uses the browser's speech service: Chrome on a computer, or Safari. On iPhone, the keyboard's 🎤 key always works for Cantonese.
+- **Chatting with your partner** still needs an online sync service before messages reach the other phone.
 
 ## Where your data lives
 

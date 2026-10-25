@@ -78,9 +78,6 @@ function correctWord(raw, extraWords = []) {
 
 // ---------- OCR (Tesseract, bundled; runs on this device) ----------
 let ocrWorker = null;
-function loadScript(src) {
-  return new Promise((resolve, reject) => document.head.append(h('script', { src, onload: resolve, onerror: () => reject(new Error('Could not load ' + src)) })));
-}
 async function getOcr(onProgress) {
   if (!window.Tesseract) await loadScript('vendor/tesseract/tesseract.min.js');
   if (!ocrWorker) {
@@ -466,7 +463,7 @@ async function renderShopping() {
         h('div', { className: 'row' },
           roundBtn('share', 'Share list', () => nativeShare({ text: shareText(items) }), 'outline'),
           roundBtn('trash', 'Clear list', async () => {
-            if (!confirm('Clear this shopping list?')) return;
+            if (!confirm(T('Clear this shopping list?'))) return;
             await db.del('lists', 'current'); refresh();
           }, 'outline'))),
       h('div', { className: 'progress' }, h('i', { style: `width:${items.length ? (items.length - left) / items.length * 100 : 0}%` })),

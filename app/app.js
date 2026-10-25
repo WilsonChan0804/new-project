@@ -1,9 +1,9 @@
 'use strict';
 
 // ---------- Storage (IndexedDB, on this device only) ----------
-const STORES = ['moments', 'events', 'chats', 'messages', 'stickers', 'settings', 'lists', 'meals', 'pets', 'petlogs'];
+const STORES = ['moments', 'events', 'chats', 'messages', 'stickers', 'settings', 'lists', 'meals', 'pets', 'petlogs', 'media'];
 const dbReady = new Promise((resolve, reject) => {
-  const req = indexedDB.open('moments-app', 3);
+  const req = indexedDB.open('moments-app', 4);
   req.onupgradeneeded = () => STORES.forEach(s => {
     if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s, { keyPath: 'id' });
   });
@@ -25,7 +25,48 @@ const db = {
   del: (s, id) => tx(s, 'readwrite', st => st.delete(id)),
 };
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const getMoments = async () => (await db.all('moments')).map(m => ({ place: '', tags: [], photos: [], reactions: [], mood: '', ...m }));
+const getMoments = async () => (await db.all('moments')).map(m => ({ place: '', tags: [], photos: [], videos: [], reactions: [], mood: '', ...m }));
+
+// ---------- Media (videos, voice notes) kept as blobs ----------
+const mediaUrls = new Map();
+async function putMedia(blob, extra = {}) {
+  const id = uid();
+  await db.put('media', { id, blob, type: blob.type, created: Date.now(), ...extra });
+  return id;
+}
+async function mediaURL(id) {
+  if (!mediaUrls.has(id)) {
+    const m = await db.get('media', id);
+    if (!m) return '';
+    mediaUrls.set(id, URL.createObjectURL(m.blob));
+  }
+  return mediaUrls.get(id);
+}
+// A <video>/<audio> element whose source is loaded from the media store.
+function mediaEl(tag, id, props = {}) {
+  const el = h(tag, { controls: true, preload: 'metadata', playsInline: true, ...props });
+  mediaURL(id).then(u => { el.src = u; });
+  return el;
+}
+// First frame of a video as a small JPEG, for tiles and thumbnails.
+function videoPoster(blob) {
+  return new Promise(resolve => {
+    const v = h('video', { muted: true, playsInline: true, preload: 'auto' });
+    const url = URL.createObjectURL(blob);
+    const done = src => { URL.revokeObjectURL(url); resolve(src); };
+    v.onloadeddata = () => { v.currentTime = Math.min(0.5, (v.duration || 1) / 2); };
+    v.onseeked = () => {
+      const k = Math.min(1, 720 / Math.max(v.videoWidth, v.videoHeight));
+      const c = h('canvas', { width: Math.round(v.videoWidth * k) || 320, height: Math.round(v.videoHeight * k) || 240 });
+      c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+      done(c.toDataURL('image/jpeg', 0.8));
+    };
+    v.onerror = () => done('');
+    setTimeout(() => done(''), 8000);
+    v.src = url;
+  });
+}
+const thumbOf = m => m.photos?.[0] || m.videos?.[0]?.poster || '';
 
 // ---------- Helpers ----------
 const $ = sel => document.querySelector(sel);
@@ -48,7 +89,7 @@ const isoDate = d => d.toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
 const today = () => isoDate(new Date());
 const parseDate = s => new Date(s + 'T00:00');
 const daysBetween = (a, b) => Math.round((parseDate(b) - parseDate(a)) / DAY);
-const fmtDate = (s, opts = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) => parseDate(s).toLocaleDateString(undefined, opts);
+const fmtDate = (s, opts = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) => parseDate(s).toLocaleDateString(LOCALE, opts);
 const initial = name => (name || '?').trim().charAt(0).toUpperCase() || '?';
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -69,19 +110,39 @@ function toast(msg, action) {
 }
 
 // Downscale photos so the library and backup files stay a sensible size.
-function readImage(file, max = 1600) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const k = Math.min(1, max / Math.max(img.width, img.height));
-      const c = h('canvas', { width: Math.round(img.width * k), height: Math.round(img.height * k) });
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(img.src);
-      resolve(c.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
+// Tries createImageBitmap first (handles large photos and orientation), then a plain <img>.
+async function readImage(file, max = 1600) {
+  const toJpeg = (src, w, hgt) => {
+    const k = Math.min(1, max / Math.max(w, hgt));
+    const c = h('canvas', { width: Math.max(1, Math.round(w * k)), height: Math.max(1, Math.round(hgt * k)) });
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff'; // transparent PNGs would otherwise turn black as JPEG
+    x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(src, 0, 0, c.width, c.height);
+    const px = x.getImageData(0, 0, c.width, c.height).data;
+    let lit = 0;
+    for (let i = 0; i < px.length; i += 4 * 97) if (px[i] + px[i + 1] + px[i + 2] > 30) lit++;
+    return lit ? c.toDataURL('image/jpeg', 0.85) : null; // all black = drawing failed
+  };
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const out = toJpeg(bmp, bmp.width, bmp.height);
+    bmp.close?.();
+    if (out) return out;
+  } catch {}
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = url; });
+    const out = toJpeg(img, img.naturalWidth, img.naturalHeight);
+    if (out) return out;
+  } catch {} finally { URL.revokeObjectURL(url); }
+  const heic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+  toast(heic ? 'This browser cannot open HEIC photos. Use Safari, or export the photo as JPEG.' : `Could not open ${file.name}`);
+  throw new Error('unreadable image');
+}
+const isVideoFile = f => f.type.startsWith('video/') || /\.(mov|mp4|m4v|webm|3gp)$/i.test(f.name);
+function loadScript(src) {
+  return new Promise((resolve, reject) => document.head.append(h('script', { src, onload: resolve, onerror: () => reject(new Error('Could not load ' + src)) })));
 }
 async function dataUrlToFile(dataUrl, name) {
   const blob = await (await fetch(dataUrl)).blob();
@@ -151,8 +212,9 @@ function shareTargets(m) {
 }
 
 // Native share sheet (iPhone/Mac/Android/Windows): passes photos to Instagram, WhatsApp, Messages, AirDrop…
-async function nativeShare({ text = '', url = '', images = [] }) {
+async function nativeShare({ text = '', url = '', images = [], videos = [] }) {
   const files = await Promise.all(images.map((src, i) => dataUrlToFile(src, `moment-${i + 1}.${src.startsWith('data:image/png') ? 'png' : 'jpg'}`)));
+  for (const v of videos) { const m = await db.get('media', v.id); if (m) files.push(new File([m.blob], `video-${files.length + 1}.${(m.type.split('/')[1] || 'mp4').split(';')[0]}`, { type: m.type })); }
   const payload = { text: [text, url].filter(Boolean).join('\n') };
   if (files.length && navigator.canShare?.({ files })) payload.files = files;
   if (navigator.share) {
@@ -180,9 +242,91 @@ let settings = { id: 'main', me: '', them: '', since: '', dates: [] };
 let draftDates = [];
 const partner = () => settings.them || 'your person';
 
+// ---------- Avatars: photo, emoji on a colour, or initial ----------
+function avatarEl(spec, name, cls = '') {
+  const el = h('div', { className: `av ${cls}` });
+  if (spec?.photo) { el.classList.add('has-photo'); el.append(h('img', { src: spec.photo, alt: '' })); }
+  else if (spec?.emoji) { el.classList.add('emoji'); el.style.background = spec.bg || '#F7F1EA'; el.textContent = spec.emoji; }
+  else el.textContent = initial(name);
+  return el;
+}
 function avatar(who, extra = '') {
+  return avatarEl(settings.avatars?.[who], who === 'me' ? settings.me : settings.them, `${who} ${extra}`);
+}
+const AVATAR_EMOJI = ['🐱', '😺', '😸', '😻', '🐈', '🐈‍⬛', '🐾', '🐶', '🐰', '🐻', '🐼', '🦊', '🐯', '🐹', '🐧', '🐥', '👩', '👨', '🧑', '👧', '👦', '👩🏻', '👨🏻', '💁‍♀️', '🙋‍♂️', '🧕', '👸', '🤴', '😊', '😎', '🥰', '🤓', '❤️', '🌸', '🌻', '⭐', '🍓', '🍜', '☕', '🎧'];
+const AVATAR_BG = ['#E7B8AC', '#C9D3C0', '#B9C7D9', '#E5D3B3', '#D8C1D6', '#F0CDBF', '#C2415B', '#2A1E22', '#FFFFFF'];
+async function openAvatarEditor(title, spec, name, onSave) {
+  let mode = spec?.photo ? 'photo' : spec?.emoji ? 'emoji' : 'photo';
+  let emoji = spec?.emoji || '🐱', bg = spec?.bg || AVATAR_BG[0];
+  let img = null, zoom = 1, ox = 0, oy = 0;
+  if (spec?.photo) { img = new Image(); img.src = spec.photo; await img.decode().catch(() => {}); }
+  const cv = h('canvas', { width: 512, height: 512, className: 'av-canvas' });
+  const draw = () => {
+    const c = cv.getContext('2d');
+    c.clearRect(0, 0, 512, 512);
+    if (mode === 'emoji') {
+      c.fillStyle = bg; c.beginPath(); c.arc(256, 256, 256, 0, 7); c.fill();
+      c.font = '300px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(emoji, 256, 280);
+    } else if (img) {
+      c.save(); c.beginPath(); c.arc(256, 256, 256, 0, 7); c.clip();
+      const k = Math.max(512 / img.width, 512 / img.height) * zoom;
+      c.drawImage(img, 256 - img.width * k / 2 + ox, 256 - img.height * k / 2 + oy, img.width * k, img.height * k);
+      c.restore();
+    } else {
+      c.fillStyle = '#F7F1EA'; c.beginPath(); c.arc(256, 256, 256, 0, 7); c.fill();
+      c.fillStyle = '#75656A'; c.font = '600 40px Inter,sans-serif'; c.textAlign = 'center'; c.fillText(T('Choose a photo'), 256, 268);
+    }
+  };
+  // Drag to position the photo inside the circle.
+  let drag = null;
+  cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, ox, oy }; };
+  cv.onpointermove = e => { if (!drag || mode !== 'photo') return; const k = 512 / cv.getBoundingClientRect().width; ox = drag.ox + (e.clientX - drag.x) * k; oy = drag.oy + (e.clientY - drag.y) * k; draw(); };
+  cv.onpointerup = () => { drag = null; };
+  const file = h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    img = new Image(); img.src = await readImage(f, 1200); await img.decode(); zoom = 1; ox = oy = 0; mode = 'photo'; render();
+  } });
+  const stickers = await db.all('stickers');
+  const render = () => {
+    fill($('#sheet-body'),
+      h('h2', { className: 'sheet-title', textContent: title }),
+      h('div', { className: 'av-editor' }, cv,
+        h('div', { className: 'seg two' },
+          h('button', { type: 'button', className: mode === 'photo' ? 'on' : '', textContent: 'Photo', onclick: () => { mode = 'photo'; render(); } }),
+          h('button', { type: 'button', className: mode === 'emoji' ? 'on' : '', textContent: 'Emoji', onclick: () => { mode = 'emoji'; render(); } })),
+        mode === 'photo' ? [
+          h('div', { className: 'row' }, h('label', { className: 'pill-btn' }, file, icon('image'), img ? 'Change photo' : 'Choose photo'),
+            img && h('label', { className: 'field grow' }, h('span', { textContent: 'Zoom' }),
+              h('input', { type: 'range', min: 1, max: 4, step: 0.05, value: zoom, oninput: e => { zoom = +e.target.value; draw(); } }))),
+          stickers.length ? h('div', { className: 'field' }, h('span', { textContent: 'Or use a sticker' }),
+            h('div', { className: 'av-stickers' }, stickers.slice(0, 24).map(st => h('img', { src: st.src, alt: 'Sticker', onclick: async () => { img = new Image(); img.src = st.src; await img.decode(); zoom = 1; ox = oy = 0; draw(); } })))) : null,
+        ] : [
+          h('div', { className: 'emoji-grid' }, AVATAR_EMOJI.map(e => h('button', { type: 'button', className: e === emoji ? 'on' : '', textContent: e, onclick: () => { emoji = e; render(); } }))),
+          h('div', { className: 'swatches' }, AVATAR_BG.map(c => h('button', { type: 'button', className: c === bg ? 'on' : '', style: `background:${c}`, ariaLabel: c, onclick: () => { bg = c; render(); } }))),
+        ],
+        h('div', { className: 'row' },
+          h('button', { type: 'button', className: 'pill-btn', textContent: 'Use initial', onclick: async () => { await onSave(null); $('#sheet').close(); } }),
+          h('button', { type: 'button', className: 'cta grow', textContent: 'Save', onclick: async () => {
+            if (mode === 'photo' && !img) return toast('Choose a photo first');
+            const out = h('canvas', { width: 256, height: 256 });
+            out.getContext('2d').drawImage(cv, 0, 0, 256, 256);
+            await onSave(mode === 'emoji' ? { emoji, bg } : { photo: out.toDataURL('image/png') });
+            $('#sheet').close();
+          } }))));
+    draw();
+  };
+  render();
+  $('#sheet').showModal();
+}
+function editMyAvatar(who) {
   const name = who === 'me' ? settings.me : settings.them;
-  return h('div', { className: `av ${who} ${extra}`, textContent: initial(name) });
+  openAvatarEditor(who === 'me' ? 'Your picture' : `${name || 'Partner'}'s picture`, settings.avatars?.[who], name, async spec => {
+    settings.avatars = { ...settings.avatars, [who]: spec };
+    await db.put('settings', settings);
+    refresh();
+  });
 }
 
 bindSeg($('#ob-seg'), b => {
@@ -229,6 +373,7 @@ $('#s-date-add').onclick = () => {
   $('#s-date-title').value = $('#s-date-date').value = '';
   renderDraftDates();
 };
+$$('#s-lang button').forEach(b => { b.classList.toggle('on', b.dataset.v === LANG); b.onclick = () => setLanguage(b.dataset.v); });
 $('#settings-form').addEventListener('submit', async e => {
   e.preventDefault();
   settings = { ...settings, me: $('#s-me').value.trim(), them: $('#s-them').value.trim(), since: $('#s-since').value, dates: draftDates };
@@ -277,7 +422,7 @@ const promptToday = () => PROMPTS[Math.floor(Date.now() / DAY) % PROMPTS.length]
 async function renderHome() {
   const moments = await getMoments();
   const now = new Date(), hr = now.getHours();
-  $('#greet-time').textContent = `${now.toLocaleDateString(undefined, { weekday: 'long' })} ${hr < 12 ? 'morning' : hr < 18 ? 'afternoon' : 'evening'}`;
+  $('#greet-time').textContent = `${now.toLocaleDateString(LOCALE, { weekday: 'long' })} ${hr < 12 ? 'morning' : hr < 18 ? 'afternoon' : 'evening'}`;
   $('#greet').textContent = `Hi, ${settings.me || 'there'}`;
   fill($('#duo'), avatar('me'), settings.them && avatar('them'));
 
@@ -307,7 +452,7 @@ async function renderHome() {
       avatar('them'),
       h('div', { className: 't', style: 'cursor:pointer', onclick: () => go('chat') },
         h('strong', { textContent: `Send ${settings.them} some love` }),
-        h('span', { textContent: last ? `You: ${last.kind === 'text' ? last.body : last.kind} · ${new Date(last.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Tap the heart to send a nudge' })),
+        h('span', { textContent: last ? `You: ${last.kind === 'text' ? last.body : last.kind} · ${new Date(last.at).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })}` : 'Tap the heart to send a nudge' })),
       roundBtn('heart', `Send ${settings.them} a nudge`, async () => {
         const c = await partnerChat(true);
         await db.put('messages', { id: uid(), chat: c.id, kind: 'text', body: '❤️', at: Date.now() });
@@ -335,9 +480,10 @@ async function renderHome() {
   // Recent moments.
   const recent = [...moments].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created).slice(0, matchMedia('(min-width: 900px)').matches ? 4 : 3);
   fill($('#recent'), recent.length ? recent.map(m => {
-    const photo = m.photos[0];
+    const photo = thumbOf(m);
     return h('button', { className: 'tile' + (photo ? ' has-img' : ''), style: tileVars(m.id), onclick: () => openDetail(m) },
       photo && h('img', { src: photo, alt: '' }),
+      m.videos.length ? h('span', { className: 'play-badge' }, icon('play')) : null,
       h('span', { textContent: caption(m) }));
   }) : [h('p', { className: 'sm muted', style: 'grid-column:1/-1', textContent: 'Your moments will show up here. Tap + to share the first one.' })]);
 }
@@ -346,10 +492,13 @@ const caption = m => (m.text || '').split('\n')[0] || (m.link && detectSource(m.
 // ---------- Composer ----------
 const MOODS = ['Happy', 'Grateful', 'Missing you', 'Cozy', 'Adventurous'];
 let pendingPhotos = [];
+let pendingVideos = []; // { id?, blob?, poster }
 let editingId = null;
 let mood = '';
 
-function openComposer({ moment = null, photos = [], link = '', text = '', prompt = '', camera = false } = {}) {
+let composerSaved = null; // optional callback after saving (e.g. mark chat messages as saved)
+function openComposer({ moment = null, photos = [], videos = [], link = '', text = '', prompt = '', camera = false, tags = [], onSaved = null } = {}) {
+  composerSaved = onSaved;
   $('#composer').reset();
   editingId = moment?.id || null;
   $('#composer-title').textContent = moment ? 'Edit moment' : 'New moment';
@@ -358,10 +507,11 @@ function openComposer({ moment = null, photos = [], link = '', text = '', prompt
   $('#c-link').value = moment?.link ?? link;
   $('#c-place').value = moment?.place ?? '';
   $('#c-date').value = moment?.date ?? today();
-  $('#c-tags').value = (moment?.tags || []).map(t => '#' + t).join(' ');
-  $('#c-more').open = !!(moment?.link || moment?.place || moment?.tags?.length || link);
+  $('#c-tags').value = (moment?.tags || tags).map(t => '#' + t).join(' ');
+  $('#c-more').open = !!(moment?.link || moment?.place || moment?.tags?.length || link || tags.length);
   mood = moment?.mood || '';
   pendingPhotos = moment ? [...moment.photos] : photos;
+  pendingVideos = moment ? [...(moment.videos || [])] : videos;
   $('#c-stage').style.cssText = tileVars(editingId || 'new');
   renderMoods();
   renderStage();
@@ -371,6 +521,7 @@ function openComposer({ moment = null, photos = [], link = '', text = '', prompt
   if (camera && !pendingPhotos.length && matchMedia('(pointer: coarse)').matches) $('#c-camera').click();
 }
 $('#fab').onclick = () => openComposer();
+$('#m-add').onclick = () => openComposer();
 
 function renderMoods() {
   fill($('#c-moods'), MOODS.map(m => h('button', {
@@ -379,17 +530,33 @@ function renderMoods() {
   })));
 }
 function renderStage() {
-  $('#c-empty').hidden = pendingPhotos.length > 0;
-  $('#c-add-label').textContent = pendingPhotos.length ? '+ Add more' : 'Choose photos';
-  fill($('#c-photos-view'), pendingPhotos.map((src, i) => h('figure', {},
-    h('img', { src, alt: '' }),
-    pendingPhotos.length > 1 && h('span', { className: 'count', textContent: `${i + 1} / ${pendingPhotos.length}` }),
-    h('button', { type: 'button', ariaLabel: 'Remove photo', onclick: () => { pendingPhotos.splice(i, 1); renderStage(); } }, icon('x')))));
+  const total = pendingPhotos.length + pendingVideos.length;
+  $('#c-empty').hidden = total > 0;
+  $('#c-add-label').textContent = total ? '+ Add more' : 'Photos / videos';
+  const count = i => total > 1 && h('span', { className: 'count', textContent: `${i + 1} / ${total}` });
+  fill($('#c-photos-view'),
+    pendingPhotos.map((src, i) => h('figure', {},
+      h('img', { src, alt: '' }), count(i),
+      h('button', { type: 'button', ariaLabel: 'Remove photo', onclick: () => { pendingPhotos.splice(i, 1); renderStage(); } }, icon('x')))),
+    pendingVideos.map((v, i) => {
+      const vid = h('video', { controls: true, playsInline: true, preload: 'metadata', poster: v.poster || '' });
+      if (v.blob) vid.src = URL.createObjectURL(v.blob); else mediaURL(v.id).then(u => { vid.src = u; });
+      return h('figure', {}, vid, count(pendingPhotos.length + i),
+        h('button', { type: 'button', ariaLabel: 'Remove video', onclick: () => { pendingVideos.splice(i, 1); renderStage(); } }, icon('x')));
+    }));
 }
 async function addPhotos(e) {
-  for (const f of e.target.files) pendingPhotos.push(await readImage(f));
+  const files = [...e.target.files];
   e.target.value = '';
-  renderStage();
+  for (const f of files) {
+    try {
+      if (isVideoFile(f)) {
+        if (f.size > 300 * 1048576) { toast(`${f.name} is over 300 MB — please trim it first`); continue; }
+        pendingVideos.push({ blob: f, poster: await videoPoster(f) });
+      } else pendingPhotos.push(await readImage(f));
+    } catch {}
+    renderStage();
+  }
 }
 $('#c-photos').addEventListener('change', addPhotos);
 $('#c-camera').addEventListener('change', addPhotos);
@@ -408,8 +575,11 @@ $('#composer').addEventListener('submit', async e => {
   e.preventDefault();
   const text = $('#c-text').value.trim();
   const link = $('#c-link').value.trim() || extractUrl(text);
-  if (!text && !link && !pendingPhotos.length) return toast('Add a photo, a caption or a link');
+  if (!text && !link && !pendingPhotos.length && !pendingVideos.length) return toast('Add a photo, a video, a caption or a link');
   const existing = editingId && await db.get('moments', editingId);
+  const videos = [];
+  for (const v of pendingVideos) videos.push(v.id ? { id: v.id, poster: v.poster } : { id: await putMedia(v.blob, { kind: 'video' }), poster: v.poster });
+  for (const old of existing?.videos || []) if (!videos.some(v => v.id === old.id)) await db.del('media', old.id);
   const m = {
     ...existing,
     id: editingId || uid(),
@@ -420,11 +590,14 @@ $('#composer').addEventListener('submit', async e => {
     place: $('#c-place').value.trim(),
     tags: [...new Set(($('#c-tags').value.match(/[\w-]+/g) || []).map(t => t.toLowerCase()))],
     photos: pendingPhotos,
+    videos,
     reactions: existing?.reactions || [],
   };
   // Start the share first so it still counts as a direct response to the tap.
-  const shared = $('#c-share').checked ? nativeShare({ text: m.text, url: m.link, images: m.photos }) : null;
+  const shared = $('#c-share').checked ? nativeShare({ text: m.text, url: m.link, images: m.photos, videos }) : null;
   await db.put('moments', m);
+  await composerSaved?.(m);
+  composerSaved = null;
   $('#composer-dialog').close();
   toast(editingId ? 'Updated' : 'Saved to your moments');
   refresh();
@@ -473,16 +646,16 @@ async function renderMoments() {
   if (mem) {
     const yrs = +t.slice(0, 4) - +mem.date.slice(0, 4);
     const kicker = mem.date.slice(5) === t.slice(5) && yrs > 0 ? `On this day · ${plural(yrs, 'year')} ago` : `A memory · ${fmtDate(mem.date, { month: 'short', year: 'numeric' })}`;
-    fill($('#feature'), h('div', { className: 'thumb', style: tileVars(mem.id) }, mem.photos[0] && h('img', { src: mem.photos[0], alt: '' })),
+    fill($('#feature'), h('div', { className: 'thumb', style: tileVars(mem.id) }, thumbOf(mem) && h('img', { src: thumbOf(mem), alt: '' })),
       h('div', { className: 't' },
         h('span', { className: 'k', textContent: kicker }),
         h('span', { className: 'h', textContent: caption(mem) }),
-        h('span', { className: 'm', textContent: mem.photos.length ? plural(mem.photos.length, 'photo') : mem.place || 'Tap to open' })));
+        h('span', { className: 'm', textContent: [mem.photos.length && plural(mem.photos.length, 'photo'), mem.videos.length && plural(mem.videos.length, 'video')].filter(Boolean).join(' · ') || mem.place || 'Tap to open' })));
     $('#feature').onclick = () => openDetail(mem);
   } else fill($('#feature'));
 
   const list = moments.filter(m =>
-    (filter === 'all' || (filter === 'photos' && m.photos.length) || (filter === 'links' && m.link) || (filter === 'loved' && m.reactions.length)) &&
+    (filter === 'all' || (filter === 'photos' && (m.photos.length || m.videos.length)) || (filter === 'links' && m.link) || (filter === 'loved' && m.reactions.length)) &&
     (!q || [m.text, m.link, m.place, m.mood, detectSource(m.link)?.name, ...m.tags].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created);
 
@@ -492,15 +665,17 @@ async function renderMoments() {
     groups.at(-1).items.push(m);
   });
   fill($('#days'), groups.length ? groups.map(g => {
-    const photos = g.items.reduce((n, m) => n + m.photos.length, 0);
+    const photos = g.items.reduce((n, m) => n + m.photos.length + m.videos.length, 0);
     return h('section', { className: 'day' },
       h('div', { className: 'day-head' }, h('h2', { textContent: dayLabel(g.date) }),
         h('span', { className: 'sm muted', textContent: photos ? plural(photos, 'photo') : plural(g.items.length, 'moment') })),
       h('div', { className: 'grid2' }, g.items.map(m => {
-        const s = !m.photos.length && m.link && detectSource(m.link);
+        const th = thumbOf(m);
+        const s = !th && m.link && detectSource(m.link);
         return h('figure', { onclick: () => openDetail(m) },
-          h('div', { className: 'tile' + (m.photos[0] ? ' has-img' : ''), style: tileVars(m.id) },
-            m.photos[0] && h('img', { src: m.photos[0], alt: '', loading: 'lazy' }),
+          h('div', { className: 'tile' + (th ? ' has-img' : ''), style: tileVars(m.id) },
+            th && h('img', { src: th, alt: '', loading: 'lazy' }),
+            m.videos.length ? h('span', { className: 'play-badge' }, icon('play')) : null,
             m.reactions.length ? h('span', { className: 'by loved' }, icon('heart')) : h('span', { className: 'by', textContent: initial(settings.me) }),
             s && h('span', { className: 'src', textContent: s.name })),
           h('figcaption', { textContent: caption(m) }));
@@ -511,10 +686,12 @@ async function renderMoments() {
 function openDetail(m) {
   const s = detectSource(m.link);
   let carousel = null, dots = null;
-  if (m.photos.length) {
-    carousel = h('div', { className: 'carousel' }, m.photos.map(src => h('img', { src, alt: '' })));
-    if (m.photos.length > 1) {
-      dots = h('div', { className: 'dots' }, m.photos.map((_, i) => h('i', { className: i ? '' : 'on' })));
+  const slides = m.photos.length + m.videos.length;
+  if (slides) {
+    carousel = h('div', { className: 'carousel' }, m.photos.map(src => h('img', { src, alt: '' })),
+      m.videos.map(v => mediaEl('video', v.id, { poster: v.poster || '' })));
+    if (slides > 1) {
+      dots = h('div', { className: 'dots' }, Array.from({ length: slides }, (_, i) => h('i', { className: i ? '' : 'on' })));
       carousel.addEventListener('scroll', () => {
         const i = Math.round(carousel.scrollLeft / carousel.clientWidth);
         [...dots.children].forEach((d, j) => d.classList.toggle('on', i === j));
@@ -538,7 +715,7 @@ function openDetail(m) {
       h('span', { textContent: fmtDate(m.date) }),
       m.place && h('span', {}, icon('pin'), m.place),
       m.mood && h('span', { className: 'mood-pill', textContent: m.mood })),
-    m.text && h('p', { className: 'txt', textContent: m.text }),
+    m.text && h('p', { className: 'txt', textContent: m.text, translate: false }),
     s && h('a', { className: 'link-card', href: m.link, target: '_blank', rel: 'noopener' },
       h('span', { className: 'badge', style: `background:${s.color}`, textContent: s.name.slice(0, 2) }),
       h('span', { className: 'meta2' }, h('strong', { textContent: `Open in ${s.name}` }), h('span', { className: 'url', textContent: m.link }))),
@@ -548,14 +725,15 @@ function openDetail(m) {
     reacts,
     h('div', { className: 'actions' },
       act(h('span', { className: 'ico', style: 'background:var(--accent)' }, icon('share')), `Share${settings.them ? ` with ${settings.them}` : ''}… (WhatsApp, Instagram, Messages)`,
-        () => nativeShare({ text: m.text, url: m.link, images: m.photos })),
+        () => nativeShare({ text: m.text, url: m.link, images: m.photos, videos: m.videos })),
       shareTargets(m).map(([src, href]) => act(h('span', { className: 'ico', style: `background:${src.color}`, textContent: src.name.slice(0, 2) }),
         `Post to ${src.name}`, () => window.open(href, '_blank', 'noopener'))),
       h('hr'),
       act(h('span', { className: 'ico', style: 'background:#9A4A8C' }, icon('pen')), 'Edit', () => openComposer({ moment: m })),
       act(h('span', { className: 'ico', style: 'background:#D2384F' }, icon('trash')), 'Delete', async () => {
-        if (!confirm('Delete this moment?')) return;
+        if (!confirm(T('Delete this moment?'))) return;
         await db.del('moments', m.id);
+        for (const v of m.videos) await db.del('media', v.id);
         refresh();
       }, 'danger')),
   ));
@@ -596,105 +774,6 @@ function playSlides(slides) {
   show();
 }
 
-// ---------- Chat ----------
-// Messages are stored locally. Real-time delivery to the other person needs a server (see README).
-let activeChat = null;
-
-async function partnerChat(create = false) {
-  if (!settings.them) return null;
-  const chats = await db.all('chats');
-  let c = chats.find(x => x.id === settings.partnerChat) || chats.find(x => x.name === settings.them);
-  if (!c && create) {
-    c = { id: uid(), name: settings.them, created: Date.now() };
-    await db.put('chats', c);
-  }
-  if (c && settings.partnerChat !== c.id) {
-    settings.partnerChat = c.id;
-    if (c.name !== settings.them) { c.name = settings.them; await db.put('chats', c); }
-    await db.put('settings', settings);
-  }
-  return c;
-}
-async function enterChat() {
-  if (!activeChat) activeChat = (await partnerChat(true))?.id || null;
-  $('#chat-layout').classList.toggle('show-thread', !!activeChat);
-  renderChats();
-}
-$('#new-chat').addEventListener('submit', async e => {
-  e.preventDefault();
-  const chat = { id: uid(), name: $('#new-chat-name').value.trim(), created: Date.now() };
-  await db.put('chats', chat);
-  e.target.reset();
-  openChat(chat.id);
-});
-$('#chat-back').onclick = () => { $('#chat-layout').classList.remove('show-thread'); renderChats(); };
-function openChat(id) {
-  activeChat = id;
-  $('#chat-layout').classList.add('show-thread');
-  renderChats();
-}
-
-async function renderChats() {
-  const [chats, all] = await Promise.all([db.all('chats'), db.all('messages')]);
-  const last = {};
-  all.forEach(m => { if (!last[m.chat] || m.at > last[m.chat].at) last[m.chat] = m; });
-  chats.sort((a, b) => (last[b.id]?.at || b.created) - (last[a.id]?.at || a.created));
-
-  fill($('#chat-list'), chats.map(c => h('li', { className: c.id === activeChat ? 'active' : '', onclick: () => openChat(c.id) },
-    h('div', { className: 'av them', style: c.id === settings.partnerChat ? '' : tileVars(c.id).replace('--tile-bg', 'background').replace(';--tile-fg', ';color'), textContent: initial(c.name) }),
-    h('div', { className: 't' }, h('strong', { textContent: c.name }),
-      h('span', { className: 'last', textContent: !last[c.id] ? 'Say hi 👋' : last[c.id].kind === 'text' ? last[c.id].body : last[c.id].kind === 'sticker' ? 'Sticker' : 'Photo' })))));
-
-  const chat = chats.find(c => c.id === activeChat);
-  $('#chat-title').textContent = chat ? chat.name : 'Chat';
-  $('#chat-avatar').textContent = chat ? initial(chat.name) : '';
-  $('#msg-text').placeholder = chat ? `Message ${chat.name}` : 'Message';
-  const msgs = chat ? all.filter(m => m.chat === chat.id).sort((a, b) => a.at - b.at) : [];
-  let lastDay = '';
-  const nodes = [];
-  msgs.forEach(m => {
-    const day = isoDate(new Date(m.at));
-    if (day !== lastDay) nodes.push(h('span', { className: 'day-sep', textContent: day === today() ? 'Today' : fmtDate(day) }));
-    lastDay = day;
-    if (m.kind === 'text') nodes.push(h('div', { className: 'msg', textContent: m.body }));
-    else nodes.push(h('div', { className: 'msg-media' },
-      h('img', { src: m.body, alt: m.kind, className: m.kind }),
-      m.kind === 'photo' && h('div', { className: 'saved-row' }, m.saved ?
-        [h('span', { className: 'saved-chip', textContent: `♥ ${settings.me || 'You'}` }), h('span', { className: 'sm muted', textContent: 'Saved to Moments' })] :
-        h('button', { className: 'saved-chip', textContent: '♡ Save to Moments', onclick: () => saveMessagePhoto(m, chat) }))));
-  });
-  const lastMsg = msgs.at(-1);
-  if (lastMsg) nodes.push(h('span', { className: 'seen', textContent: `Sent ${new Date(lastMsg.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` }));
-  fill($('#messages'), nodes.length ? nodes : [h('p', { className: 'empty', textContent: chat ? `Say hi to ${chat.name} 👋` : 'Start a chat.' })]);
-  $('#messages').scrollTop = $('#messages').scrollHeight;
-}
-
-async function saveMessagePhoto(msg, chat) {
-  const m = { id: uid(), created: Date.now(), date: isoDate(new Date(msg.at)), text: `From our chat with ${chat.name}`, link: '', source: null,
-    place: '', tags: ['chat'], photos: [msg.body], reactions: ['❤️'], mood: '' };
-  await db.put('moments', m);
-  await db.put('messages', { ...msg, saved: m.id });
-  toast('Saved to Moments');
-  refresh();
-}
-async function sendMessage(kind, body) {
-  if (!activeChat) return toast('Start a chat first');
-  await db.put('messages', { id: uid(), chat: activeChat, kind, body, at: Date.now() });
-  renderChats();
-}
-$('#msg-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const text = $('#msg-text').value.trim();
-  if (text) sendMessage('text', text);
-  $('#msg-text').value = '';
-});
-$$('#quick-replies button').forEach(b => b.addEventListener('click', () => sendMessage('text', b.textContent)));
-$('#msg-photo').addEventListener('change', async e => {
-  if (e.target.files[0]) sendMessage('photo', await readImage(e.target.files[0], 1200));
-  e.target.value = '';
-});
-$('#toggle-tray').onclick = () => { $('#sticker-tray').hidden = !$('#sticker-tray').hidden; };
-
 // ---------- Us ----------
 bindSeg($('#us-seg'), b => $$('.us-pane').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.pane; }));
 function openUs(pane) { go('us'); pickSeg($('#us-seg'), 'data-pane', pane); }
@@ -705,7 +784,8 @@ function openCalendarOn(date) {
   openUs('calendar');
 }
 function renderUs() {
-  fill($('#us-duo'), avatar('me'), settings.them ? avatar('them') : h('div', { className: 'av plus' }, icon('plus')));
+  const tap = (el, who) => { el.onclick = () => editMyAvatar(who); el.title = 'Change picture'; el.classList.add('editable'); return el; };
+  fill($('#us-duo'), tap(avatar('me'), 'me'), settings.them ? tap(avatar('them'), 'them') : h('div', { className: 'av plus' }, icon('plus')));
   $('#us-names').textContent = settings.them ? `${settings.me} & ${settings.them}` : settings.me;
   const n = daysTogether();
   $('#us-days').textContent = n ? `${n.toLocaleString()} days together · since ${fmtDate(settings.since, { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Add your "together since" date in Settings';
@@ -730,9 +810,9 @@ async function renderCalendar() {
   const specials = [...settings.dates, ...(settings.since ? [{ title: 'Anniversary', date: settings.since }] : [])];
   specials.forEach(d => [year - 1, year, year + 1].forEach(y => { if (`${y}${d.date.slice(4)}` >= d.date) slot(y + d.date.slice(4)).s.push(d); }));
 
-  $('#cal-title').textContent = calMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  $('#cal-title').textContent = calMonth.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' });
   const start = new Date(calMonth); start.setDate(1 - ((start.getDay() + 6) % 7)); // weeks start Monday
-  const cells = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => h('div', { className: 'dow', textContent: d }));
+  const cells = Array.from({ length: 7 }, (_, i) => h('div', { className: 'dow', textContent: new Date(2024, 0, 1 + i).toLocaleDateString(LOCALE, { weekday: 'narrow' }) })); // 1 Jan 2024 was a Monday
   for (let i = 0; i < 42; i++) {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const key = isoDate(d);
@@ -784,168 +864,12 @@ function exportIcs(e) {
   download(`${e.title.slice(0, 30) || 'event'}.ics`, 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics));
 }
 
-// ---------- Sticker studio ----------
-const cv = $('#st-canvas');
-const ctx = cv.getContext('2d');
-const S = 512;
-const st = { img: null, x: 0, y: 0, seeds: [], shape: 'circle' };
-const ctrl = id => $('#st-' + id);
-
-function loadStickerPhoto(e) {
-  const f = e.target.files[0];
-  e.target.value = '';
-  if (!f) return;
-  const img = new Image();
-  img.onload = () => { st.img = img; st.x = 0; st.y = 0; st.seeds = []; ctrl('zoom').value = 1; drawSticker(); };
-  img.src = URL.createObjectURL(f);
-}
-ctrl('file').addEventListener('change', loadStickerPhoto);
-ctrl('camera').addEventListener('change', loadStickerPhoto);
-ctrl('shape').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-  ctrl('shape').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  st.shape = b.dataset.v;
-  st.seeds = [];
-  const cut = st.shape === 'cutout';
-  ctrl('tol-wrap').hidden = !cut;
-  ctrl('hint').textContent = cut ? 'Tap the background to erase it. Drag to move the photo.' : 'Drag the photo to position it.';
-  drawSticker();
-}));
-['zoom', 'outline', 'caption', 'tol'].forEach(id => ctrl(id).addEventListener('input', () => {
-  if (id === 'zoom') st.seeds = [];
-  drawSticker();
-}));
-ctrl('undo').onclick = () => { st.seeds.pop(); drawSticker(); };
-
-// Drag to pan; in cut-out mode a tap erases the connected background colour under the finger.
-let drag = null;
-cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, sx: st.x, sy: st.y, moved: false }; });
-cv.addEventListener('pointermove', e => {
-  if (!drag) return;
-  const k = S / cv.getBoundingClientRect().width;
-  const dx = (e.clientX - drag.x) * k, dy = (e.clientY - drag.y) * k;
-  if (Math.hypot(dx, dy) > 6) drag.moved = true;
-  if (drag.moved) { st.x = drag.sx + dx; st.y = drag.sy + dy; st.seeds = []; drawSticker(); }
-});
-cv.addEventListener('pointerup', e => {
-  if (drag && !drag.moved && st.shape === 'cutout' && st.img) {
-    const r = cv.getBoundingClientRect();
-    st.seeds.push([Math.floor((e.clientX - r.left) * S / r.width), Math.floor((e.clientY - r.top) * S / r.height)]);
-    drawSticker();
-  }
-  drag = null;
-});
-
-function shapePath(c, shape, pad) {
-  const w = S - pad * 2;
-  c.beginPath();
-  if (shape === 'circle') c.arc(S / 2, S / 2, w / 2, 0, Math.PI * 2);
-  else if (shape === 'rounded') c.roundRect(pad, pad, w, w, w * 0.18);
-  else if (shape === 'heart') {
-    const x = S / 2, top = pad + w * 0.28, bot = pad + w;
-    c.moveTo(x, bot);
-    c.bezierCurveTo(pad - w * 0.05, pad + w * 0.6, pad, pad - w * 0.05, x, top);
-    c.bezierCurveTo(S - pad, pad - w * 0.05, S - pad + w * 0.05, pad + w * 0.6, x, bot);
-  } else c.rect(pad, pad, w, w);
-}
-
-function floodErase(data, sx, sy, tol) {
-  const p0 = (sy * S + sx) * 4;
-  if (data[p0 + 3] === 0) return;
-  const [r0, g0, b0] = [data[p0], data[p0 + 1], data[p0 + 2]];
-  const seen = new Uint8Array(S * S);
-  const stack = [sy * S + sx];
-  while (stack.length) {
-    const i = stack.pop();
-    if (seen[i]) continue;
-    seen[i] = 1;
-    const p = i * 4;
-    if (data[p + 3] === 0 || Math.abs(data[p] - r0) + Math.abs(data[p + 1] - g0) + Math.abs(data[p + 2] - b0) > tol * 3) continue;
-    data[p + 3] = 0;
-    const x = i % S;
-    if (x > 0) stack.push(i - 1);
-    if (x < S - 1) stack.push(i + 1);
-    if (i >= S) stack.push(i - S);
-    if (i < S * S - S) stack.push(i + S);
-  }
-}
-
-function drawSticker() {
-  ctx.clearRect(0, 0, S, S);
-  ctrl('undo').hidden = !st.seeds.length;
-  ctrl('empty').hidden = !!st.img;
-  cv.parentElement.classList.toggle('loaded', !!st.img);
-  if (!st.img) return;
-  const outline = +ctrl('outline').value;
-  const text = ctrl('caption').value.trim();
-  const pad = outline + 8;
-
-  // 1. Photo, cover-fit, with pan and zoom.
-  const body = h('canvas', { width: S, height: S });
-  const b = body.getContext('2d');
-  const k = Math.max(S / st.img.width, S / st.img.height) * +ctrl('zoom').value;
-  const w = st.img.width * k, ht = st.img.height * k;
-  b.save();
-  if (st.shape !== 'cutout') { shapePath(b, st.shape, pad); b.clip(); }
-  b.drawImage(st.img, (S - w) / 2 + st.x, (S - ht) / 2 + st.y, w, ht);
-  b.restore();
-  if (st.shape === 'cutout' && st.seeds.length) {
-    const id = b.getImageData(0, 0, S, S);
-    st.seeds.forEach(([x, y]) => floodErase(id.data, x, y, +ctrl('tol').value));
-    b.putImageData(id, 0, 0);
-  }
-
-  // 2. White die-cut outline: stamp the silhouette in a ring around itself.
-  if (outline > 0) {
-    const sil = h('canvas', { width: S, height: S });
-    const sc = sil.getContext('2d');
-    sc.drawImage(body, 0, 0);
-    sc.globalCompositeOperation = 'source-in';
-    sc.fillStyle = '#fff';
-    sc.fillRect(0, 0, S, S);
-    for (let a = 0; a < 24; a++) {
-      const t = a / 24 * Math.PI * 2;
-      ctx.drawImage(sil, Math.cos(t) * outline, Math.sin(t) * outline);
-    }
-  }
-  ctx.drawImage(body, 0, 0);
-
-  // 3. Caption.
-  if (text) {
-    ctx.font = '700 64px "Bricolage Grotesque", "Arial Black", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = '#2A1E22';
-    ctx.fillStyle = '#fff';
-    ctx.strokeText(text, S / 2, S - 30, S - 40);
-    ctx.fillText(text, S / 2, S - 30, S - 40);
-  }
-}
-
-ctrl('save').onclick = async () => {
-  if (!st.img) return toast('Choose a photo first');
-  await db.put('stickers', { id: uid(), src: cv.toDataURL('image/png'), created: Date.now() });
-  toast('Sticker saved');
-  renderStickers();
-};
-
-async function renderStickers() {
-  const list = (await db.all('stickers')).sort((a, b) => b.created - a.created);
-  fill($('#st-library'), list.length ? list.map(s => h('figure', {},
-    h('img', { src: s.src, alt: 'Sticker' }),
-    h('div', { className: 'row' },
-      roundBtn('share', 'Share (e.g. to WhatsApp)', () => nativeShare({ images: [s.src] })),
-      roundBtn('download', 'Download PNG', () => download('sticker.png', s.src)),
-      roundBtn('trash', 'Delete', async () => { await db.del('stickers', s.id); renderStickers(); })))) :
-    [h('p', { className: 'sm muted', textContent: 'Stickers you make will appear here, ready to use in Chat.' })]);
-  fill($('#sticker-tray'), list.length ? list.map(s => h('img', { src: s.src, alt: 'Sticker', onclick: () => sendMessage('sticker', s.src) })) :
-    [h('p', { className: 'sm muted', textContent: 'No stickers yet. Make one in Us → Stickers.' })]);
-}
-
 // ---------- Backup to computer ----------
 $('#export').onclick = async () => {
-  const data = { app: 'moments', version: 2, exported: new Date().toISOString() };
-  for (const s of STORES) data[s] = await db.all(s);
+  const data = { app: 'moments', version: 3, exported: new Date().toISOString() };
+  // Videos and voice notes are blobs; store them as base64 text inside the backup.
+  const toDataURL = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+  for (const s of STORES) data[s] = await Promise.all((await db.all(s)).map(async it => it.blob instanceof Blob ? { ...it, blob: await toDataURL(it.blob), __blob: true } : it));
   const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
   download(`moments-backup-${today()}.json`, url);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -958,7 +882,10 @@ async function importBackup(input) {
     const data = JSON.parse(await f.text());
     if (data.app !== 'moments') throw new Error('not a backup from this app');
     let n = 0;
-    for (const s of STORES) for (const item of data[s] || []) { await db.put(s, item); n++; }
+    for (const s of STORES) for (let item of data[s] || []) {
+      if (item.__blob) { const { __blob, ...rest } = item; item = { ...rest, blob: await (await fetch(item.blob)).blob() }; }
+      await db.put(s, item); n++;
+    }
     settings = { ...settings, ...(await db.get('settings', 'main')) };
     $('#onboard').hidden = !!settings.me;
     toast(`Restored ${n} items`);
@@ -970,7 +897,7 @@ async function importBackup(input) {
 $('#import').addEventListener('change', e => importBackup(e.target));
 
 // ---------- Boot ----------
-const renderers = [renderHome, renderMoments, renderCalendar, renderChats, renderStickers, renderUs];
+const renderers = [renderHome, renderMoments, renderCalendar, renderUs];
 function refresh() { renderers.forEach(r => r()); }
 // Wait for the other scripts (shopping.js, pets.js) to register their renderers.
 document.addEventListener('DOMContentLoaded', async () => {
@@ -978,8 +905,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   settings = { ...settings, ...(await db.get('settings', 'main')) };
   $('#onboard').hidden = !!settings.me;
   refresh();
-  drawSticker();
   receiveShare();
+  $('#file-warning').hidden = location.protocol !== 'file:';
 });
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js');

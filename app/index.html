@@ -47,6 +47,11 @@
       <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
       <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L19 7"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
       <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
     </defs>
   </svg>
@@ -54,6 +59,7 @@
   <!-- First run: create your space -->
   <section id="onboard" class="onboard" hidden>
     <div class="onboard-inner">
+      <button type="button" class="lang-toggle" onclick="setLanguage(LANG === 'yue' ? 'en' : 'yue')" translate="no">中文 / EN</button>
       <div class="duo big">
         <div class="av me" id="ob-av">?</div>
         <div class="av plus"><svg><use href="#i-plus"/></svg></div>
@@ -84,6 +90,11 @@
       </div>
     </div>
   </section>
+
+  <div class="file-warning" id="file-warning" hidden>
+    <strong>Opened as a file.</strong> Photo scanning, cut-outs and offline mode need the app to run from a web address. Close this tab and double-click <b>Start Twofold</b> in the app folder instead.
+    <button type="button" class="round plain" aria-label="Dismiss" onclick="this.parentElement.hidden = true"><svg><use href="#i-x"/></svg></button>
+  </div>
 
   <nav class="tabs" aria-label="Main">
     <div class="brand"><img src="icon.svg" alt=""><span>Twofold</span></div>
@@ -125,20 +136,32 @@
             <div class="av sm-av them" id="chat-avatar"></div>
             <div class="grow"><strong class="display" id="chat-title">Chat</strong><span class="sub">Saved on this device</span></div>
             <button class="round plain" data-go="moments" aria-label="Shared photos"><svg><use href="#i-image"/></svg></button>
+            <button class="round plain" id="chat-menu" aria-label="Chat options"><svg><use href="#i-more"/></svg></button>
           </header>
-          <div id="messages"></div>
-          <div class="quick-replies" id="quick-replies">
-            <button type="button">Miss you</button>
-            <button type="button">Dinner tonight?</button>
-            <button type="button">On my way home</button>
-            <button type="button">❤️</button>
+          <div class="select-bar" id="select-bar" hidden>
+            <button type="button" class="round plain" id="select-cancel" aria-label="Cancel selection"><svg><use href="#i-x"/></svg></button>
+            <strong id="select-count">0 selected</strong>
+            <button type="button" class="pill-btn" id="select-delete" aria-label="Delete"><svg><use href="#i-trash"/></svg><span>Delete</span></button>
+            <button type="button" class="pill-btn accent" id="select-moment"><svg><use href="#i-heart"/></svg>Make a moment</button>
           </div>
-          <div id="sticker-tray" class="sticker-tray" hidden></div>
+          <div id="messages"></div>
+          <div class="quick-replies" id="quick-replies"></div>
+          <div class="chat-panel" id="chat-panel" hidden>
+            <div class="panel-tabs" id="panel-tabs"></div>
+            <div class="panel-body" id="panel-body"></div>
+          </div>
+          <div class="edit-bar" id="edit-bar" hidden><svg><use href="#i-pen"/></svg><span>Editing message</span><button type="button" class="round plain" id="edit-cancel" aria-label="Cancel edit"><svg><use href="#i-x"/></svg></button></div>
+          <div class="rec-bar" id="rec-bar" hidden>
+            <span class="rec-dot"></span><span id="rec-time">0:00</span><span class="grow muted sm">Recording voice message…</span>
+            <button type="button" class="pill-btn" id="rec-cancel">Cancel</button>
+            <button type="button" class="round accent" id="rec-send" aria-label="Send voice message"><svg><use href="#i-send"/></svg></button>
+          </div>
           <form id="msg-form" class="msg-bar">
-            <label class="round tint" aria-label="Send a photo"><svg><use href="#i-camera"/></svg><input id="msg-photo" type="file" accept="image/*" hidden></label>
-            <button type="button" class="round tint" id="toggle-tray" aria-label="Stickers"><svg><use href="#i-smile"/></svg></button>
-            <input id="msg-text" placeholder="Message" autocomplete="off" aria-label="Message">
-            <button class="round accent" aria-label="Send"><svg><use href="#i-send"/></svg></button>
+            <label class="round tint" aria-label="Send photos or videos"><svg><use href="#i-camera"/></svg><input id="msg-photo" type="file" accept="image/*,video/*" multiple hidden></label>
+            <button type="button" class="round tint" id="toggle-panel" aria-label="Emoji and stickers"><svg><use href="#i-smile"/></svg></button>
+            <textarea id="msg-text" rows="1" placeholder="Message" autocomplete="off" aria-label="Message" enterkeyhint="enter"></textarea>
+            <button type="button" class="round tint" id="mic-btn" aria-label="Voice message or speak to type"><svg><use href="#i-mic"/></svg></button>
+            <button class="round accent" id="send-btn" aria-label="Send"><svg><use href="#i-send"/></svg></button>
           </form>
         </div>
       </div>
@@ -150,6 +173,7 @@
         <h1>Our moments</h1>
         <div class="row">
           <button class="round outline" id="recap-play" aria-label="Play this month's recap"><svg><use href="#i-play"/></svg></button>
+          <button class="round accent" id="m-add" aria-label="New moment"><svg><use href="#i-plus"/></svg></button>
           <button class="round outline" id="search-toggle" aria-label="Search moments"><svg><use href="#i-search"/></svg></button>
         </div>
       </header>
@@ -226,47 +250,81 @@
 
       <div class="us-pane" data-pane="cat" hidden>
         <div id="pet-body"></div>
+        <section class="card catbreak-card" id="catbreak-card"></section>
       </div>
 
       <div class="us-pane" data-pane="stickers" hidden>
         <div class="studio">
-          <div class="stage">
+          <div class="stage" id="st-stage">
             <canvas id="st-canvas" width="512" height="512"></canvas>
             <div class="stage-empty" id="st-empty"><svg><use href="#i-image"/></svg><span>Your photo</span></div>
             <div class="glass-row">
               <label class="glass"><input id="st-camera" type="file" accept="image/*" capture="user" hidden>Camera</label>
               <label class="glass"><input id="st-file" type="file" accept="image/*" hidden>Choose photo</label>
             </div>
+            <div class="ai-busy" id="st-busy" hidden><span class="spinner"></span><span id="st-busy-label">Finding the subject…</span></div>
           </div>
           <div class="controls">
             <div class="field"><span>Shape</span>
               <div class="chips" id="st-shape">
-                <button type="button" class="chip on" data-v="circle">Circle</button>
+                <button type="button" class="chip on" data-v="cutout">✂️ Cut-out</button>
+                <button type="button" class="chip" data-v="circle">Circle</button>
                 <button type="button" class="chip" data-v="rounded">Square</button>
                 <button type="button" class="chip" data-v="heart">Heart</button>
-                <button type="button" class="chip" data-v="cutout">Cut-out</button>
               </div>
             </div>
+            <div class="cut-tools" id="st-cut-tools">
+              <button type="button" class="cta ai-btn" id="st-ai"><span>✨</span>Select subject (AI)</button>
+              <div class="seg four" id="st-tool">
+                <button type="button" class="on" data-t="move">Move</button>
+                <button type="button" data-t="erase">Erase</button>
+                <button type="button" data-t="restore">Restore</button>
+                <button type="button" data-t="wand">Wand</button>
+              </div>
+              <label class="field" id="st-brush-wrap"><span>Brush size</span><input id="st-brush" type="range" min="4" max="80" value="24"></label>
+              <label class="field" id="st-tol-wrap" hidden><span>Wand tolerance</span><input id="st-tol" type="range" min="5" max="120" value="40"></label>
+              <label class="field"><span>Edge softness</span><input id="st-feather" type="range" min="0" max="6" step="1" value="1"></label>
+            </div>
             <label class="field"><span>Zoom</span><input id="st-zoom" type="range" min="1" max="4" step="0.05" value="1"></label>
-            <label class="field"><span>Outline</span><input id="st-outline" type="range" min="0" max="30" value="14"></label>
-            <label class="field" id="st-tol-wrap" hidden><span>Erase strength</span><input id="st-tol" type="range" min="5" max="120" value="40"></label>
+            <div class="row">
+              <label class="field grow"><span>Outline</span><input id="st-outline" type="range" min="0" max="30" value="14"></label>
+              <div class="swatches small" id="st-outline-color">
+                <button type="button" class="on" style="background:#FFFFFF" data-c="#FFFFFF" aria-label="White outline"></button>
+                <button type="button" style="background:#2A1E22" data-c="#2A1E22" aria-label="Black outline"></button>
+                <button type="button" style="background:#C2415B" data-c="#C2415B" aria-label="Rose outline"></button>
+              </div>
+            </div>
             <label class="field"><span>Caption</span><input id="st-caption" maxlength="24" placeholder="e.g. miss u"></label>
+            <label class="field"><span>Group</span><input id="st-group" list="st-groups" placeholder="e.g. Mochi, Funny, Love"><datalist id="st-groups"></datalist></label>
             <p class="sm muted" id="st-hint">Drag the photo to position it.</p>
             <div class="row">
-              <button class="pill-btn" id="st-undo" hidden>Undo erase</button>
+              <button class="pill-btn" id="st-undo" hidden><svg><use href="#i-undo"/></svg>Undo</button>
               <button class="cta grow" id="st-save"><svg><use href="#i-heart"/></svg>Save sticker</button>
             </div>
           </div>
         </div>
         <div class="sec-head"><h2>My stickers</h2></div>
+        <div class="chips" id="st-filter"></div>
         <div id="st-library" class="sticker-grid"></div>
       </div>
 
       <div class="us-pane" data-pane="settings" hidden>
         <form id="settings-form" class="settings">
+          <div class="field"><span>Pictures</span>
+            <div class="row">
+              <button type="button" class="pill-btn" onclick="editMyAvatar('me')">Your picture</button>
+              <button type="button" class="pill-btn" onclick="editMyAvatar('them')">Partner's picture</button>
+            </div>
+          </div>
           <label class="field"><span>Your name</span><input id="s-me" required></label>
           <label class="field"><span>Partner or best friend</span><input id="s-them"></label>
           <label class="field"><span>Together since</span><input id="s-since" type="date"></label>
+          <div class="field"><span>Language</span>
+            <div class="seg two" id="s-lang">
+              <button type="button" data-v="en">English</button>
+              <button type="button" data-v="yue">廣東話</button>
+            </div>
+          </div>
           <div class="field"><span>Appearance</span>
             <div class="seg three" id="s-theme">
               <button type="button" data-v="auto">Auto</button>
@@ -307,10 +365,10 @@
       </header>
       <div class="stage photo-stage" id="c-stage">
         <div class="stage-photos" id="c-photos-view"></div>
-        <div class="stage-empty" id="c-empty"><svg><use href="#i-image"/></svg><span>Your photo</span></div>
+        <div class="stage-empty" id="c-empty"><svg><use href="#i-image"/></svg><span>Your photos &amp; videos</span></div>
         <div class="glass-row">
           <label class="glass"><input id="c-camera" type="file" accept="image/*" capture="environment" hidden>Camera</label>
-          <label class="glass"><input id="c-photos" type="file" accept="image/*" multiple hidden><span id="c-add-label">Choose photos</span></label>
+          <label class="glass"><input id="c-photos" type="file" accept="image/*,video/*" multiple hidden><span id="c-add-label">Photos / videos</span></label>
         </div>
       </div>
       <label class="field"><span>Caption</span><textarea id="c-text" rows="2" placeholder="What made this moment special?"></textarea></label>
@@ -332,6 +390,9 @@
       <button class="cta" id="c-submit"><svg><use href="#i-heart"/></svg><span>Save moment</span></button>
     </form>
   </dialog>
+
+  <!-- Generic action / options sheet -->
+  <dialog id="sheet" class="sheet"><div id="sheet-body"></div></dialog>
 
   <!-- Moment detail -->
   <dialog id="detail" class="sheet"><div id="detail-body"></div></dialog>
@@ -375,9 +436,27 @@
     </form>
   </dialog>
 
+  <!-- Cat break overlay -->
+  <div class="catbreak" id="catbreak" hidden>
+    <div class="cb-media" id="cb-media"></div>
+    <div class="cb-info">
+      <div class="cb-time" id="cb-time">5:00</div>
+      <div class="cb-msg" id="cb-msg">Time for a break</div>
+      <div class="cb-actions">
+        <button type="button" class="pill-btn" id="cb-pip">Pop out</button>
+        <button type="button" class="pill-btn" id="cb-more">+1 min</button>
+        <button type="button" class="pill-btn hold" id="cb-end"><i></i><span>Hold to end</span></button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status"></div>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
+  <script src="chat.js"></script>
+  <script src="stickers.js"></script>
   <script src="shopping.js"></script>
   <script src="pets.js"></script>
+  <script src="catbreak.js"></script>
 </body>
 </html>
