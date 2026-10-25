@@ -1,11 +1,12 @@
 {
-  "name": "Moments",
-  "short_name": "Moments",
+  "name": "Twofold",
+  "short_name": "Twofold",
+  "description": "A private space for your moments, chats and plans.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#faf7f2",
-  "theme_color": "#e85d3f",
+  "background_color": "#FFFCF7",
+  "theme_color": "#FFFCF7",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ],

@@ -1,6 +1,6 @@
-# Moments
+# Twofold
 
-A personal app to record moments, keep posts/links from other apps, plan your calendar, chat, and make stickers from photos. Works on computer and iPhone as an installable web app (PWA).
+A private space for two: record moments, keep posts and links from other apps, plan your calendar, chat, and make stickers from photos. The design follows the "Couple App UI" mock-ups, in light and dark mode. Works on computer and iPhone as an installable web app (PWA).
 
 ## Run it
 
@@ -14,17 +14,16 @@ To use it on iPhone, host the `app/` folder anywhere with HTTPS (e.g. GitHub Pag
 
 ## What's in it
 
-| Tab | Features |
+| Screen | Features |
 | --- | --- |
-| Home | "Days together" counter and countdowns to birthdays, anniversaries, plans and every 100-day milestone. Quick Snap / Write / Save a link / Sticker buttons. A question of the day (answers become moments). "On this day" memories from past years, with Shuffle. A monthly recap with stats, a photo collage and a story-style slideshow. |
-| Moments | A photo-first feed with swipeable photos, places, #albums and emoji reactions. Filter chips by photos, links, source app or album. Links from Instagram, Threads, Facebook, Letterboxd, IMDb, Reddit, WhatsApp, YouTube, X, TikTok and Spotify are recognised. The ••• menu shares through the system share sheet, posts to WhatsApp, Threads, Facebook, Reddit or X, and edits or deletes. |
-| Calendar | Days with photos show the photo itself. Plans and special dates are colour-coded. Plans export as `.ics` files for Apple, Google or Outlook Calendar. |
-| Chat | Chat list and conversation view with photos and your stickers. **Messages are stored on this device only for now.** |
-| Stickers | Turn a photo into a sticker: circle, square, heart, or cut-out (tap to erase the background, with undo), a white outline and a caption. Share stickers to WhatsApp as images or download them as PNG files. |
+| First run | "A private space for just you two": enter your names and the date you got together, or restore a backup. |
+| Home | Greeting, a days-together card with the next countdown ("Plan it" opens the calendar), a card for sending your partner a heart nudge, today's moment prompt with a Capture button, and recent moments. |
+| Chat | Your partner's chat opens straight away. Quick replies, photos ("Save to Moments"), stickers, and other chats from the back arrow. **Messages are stored on this device only for now.** |
+| + New moment | Photo stage with Camera and Choose/Add more, a caption, mood chips, and link, place, date and albums. "Share after saving" opens WhatsApp, Instagram or Messages. |
+| Moments | All / Photos / Links / Loved filters, search, an "On this day" card, day-grouped photo tiles, a detail sheet with reactions and share/edit/delete, and a recap slideshow (▶). Links from Instagram, Threads, Facebook, Letterboxd, IMDb, Reddit, WhatsApp, YouTube, X, TikTok and Spotify are recognised. |
+| Us | Calendar (photo days, plans, special dates, `.ics` export), Sticker studio (circle, square, heart and cut-out shapes, outline, caption), and Settings (names, dates, Auto/Light/Dark appearance, backup). |
 
-Settings (gear icon on Home) holds your names, the "together since" date, special dates, and backup/restore.
-
-Ideas adopted from similar apps: Between (day counter, special-date countdowns, private chat), Locket and Retro (photo-first sharing, recaps, resurfaced memories), and Amorly/Amourly (question of the day, shared journal).
+The fonts (Bricolage Grotesque and Inter) are bundled in `app/fonts` under the SIL Open Font License, so the app also works offline.
 
 ## Where your data lives
 

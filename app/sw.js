@@ -1,6 +1,6 @@
 // Offline cache for the app shell. User data lives in IndexedDB, not here.
-const CACHE = 'moments-v2';
-const SHELL = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'twofold-v1';
+const SHELL = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg', './fonts/bricolage-grotesque-latin.woff2', './fonts/inter-latin.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
