@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Moments</title>
+  <meta name="theme-color" content="#e85d3f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Moments">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Moments</h1>
+    <button class="ghost" id="open-backup" title="Backup to computer">⤓ Backup</button>
+  </header>
+
+  <main>
+    <!-- Timeline -->
+    <section id="view-timeline" class="view active">
+      <form id="composer" class="card">
+        <textarea id="c-text" rows="3" placeholder="What's the moment?"></textarea>
+        <input id="c-link" type="url" placeholder="Paste a link from Instagram, Threads, Facebook, Letterboxd, IMDb, Reddit…">
+        <div id="c-previews" class="thumbs"></div>
+        <div class="row">
+          <label class="ghost file-btn">📷 Photos<input id="c-photos" type="file" accept="image/*" multiple hidden></label>
+          <input id="c-date" type="date">
+          <input id="c-tags" placeholder="#tags">
+          <button type="submit" class="primary">Save</button>
+        </div>
+      </form>
+      <div class="row filters">
+        <input id="search" type="search" placeholder="Search moments">
+        <select id="filter-source"><option value="">All sources</option></select>
+      </div>
+      <div id="timeline"></div>
+    </section>
+
+    <!-- Calendar -->
+    <section id="view-calendar" class="view">
+      <div class="row cal-head">
+        <button class="ghost" id="cal-prev">‹</button>
+        <h2 id="cal-title"></h2>
+        <button class="ghost" id="cal-next">›</button>
+      </div>
+      <div id="cal-grid" class="cal-grid"></div>
+      <div class="card">
+        <h3 id="day-title">Pick a day</h3>
+        <form id="event-form" class="row">
+          <input id="ev-title" placeholder="Add an event…" required>
+          <input id="ev-time" type="time">
+          <button class="primary">Add</button>
+        </form>
+        <div id="day-list"></div>
+      </div>
+    </section>
+
+    <!-- Chat -->
+    <section id="view-chat" class="view">
+      <div class="chat-layout">
+        <aside class="card chats">
+          <form id="new-chat" class="row"><input id="new-chat-name" placeholder="New chat with…" required><button class="primary">+</button></form>
+          <ul id="chat-list"></ul>
+        </aside>
+        <div class="card thread">
+          <h3 id="chat-title">Select a chat</h3>
+          <div id="messages"></div>
+          <div id="sticker-tray" class="sticker-tray" hidden></div>
+          <form id="msg-form" class="row">
+            <button type="button" class="ghost" id="toggle-tray" title="Stickers">🙂</button>
+            <label class="ghost file-btn" title="Photo">📷<input id="msg-photo" type="file" accept="image/*" hidden></label>
+            <input id="msg-text" placeholder="Message" autocomplete="off">
+            <button class="primary">Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sticker maker -->
+    <section id="view-stickers" class="view">
+      <div class="card">
+        <h3>Make a sticker from a photo</h3>
+        <label class="ghost file-btn">Choose photo<input id="st-file" type="file" accept="image/*" hidden></label>
+        <div class="sticker-maker">
+          <canvas id="st-canvas" width="512" height="512"></canvas>
+          <div class="controls">
+            <label>Shape
+              <select id="st-shape"><option value="circle">Circle</option><option value="rounded">Rounded square</option><option value="heart">Heart</option><option value="cutout">Cut-out (tap to erase background)</option></select>
+            </label>
+            <label>Zoom <input id="st-zoom" type="range" min="1" max="4" step="0.05" value="1"></label>
+            <label>Outline <input id="st-outline" type="range" min="0" max="30" value="14"></label>
+            <label>Caption <input id="st-caption" maxlength="24" placeholder="LOL"></label>
+            <label id="st-tol-wrap" hidden>Erase tolerance <input id="st-tol" type="range" min="5" max="120" value="40"></label>
+            <p class="hint">Drag the photo to position it.</p>
+            <button class="primary" id="st-save">Save sticker</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>My stickers</h3>
+        <div id="st-library" class="sticker-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs">
+    <button data-view="timeline" class="active">🗂<span>Moments</span></button>
+    <button data-view="calendar">📅<span>Calendar</span></button>
+    <button data-view="chat">💬<span>Chat</span></button>
+    <button data-view="stickers">✨<span>Stickers</span></button>
+  </nav>
+
+  <dialog id="backup-dialog">
+    <form method="dialog">
+      <h3>Your data</h3>
+      <p>Everything is stored on this device only. Download a backup file to keep a copy on your computer, or restore one here.</p>
+      <div class="row">
+        <button type="button" class="primary" id="export">Download backup (.json)</button>
+        <label class="ghost file-btn">Restore backup<input id="import" type="file" accept="application/json" hidden></label>
+      </div>
+      <p id="storage-info" class="hint"></p>
+      <button class="ghost">Close</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
