@@ -1709,8 +1709,13 @@ body.pnl-dragging iframe, body.pnl-dragging canvas { pointer-events: none; }
 .area-row:hover { background: rgba(242, 128, 34, .14); outline: 1px solid rgba(224, 102, 15, .6); }
 
 /* ------------------------------------------- Light & Vent on the plans (lv.js) */
-#lv-layer { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; }
-#lv-layer .lv-room { fill: var(--c); fill-opacity: .26; stroke: var(--c); stroke-width: 1.6; stroke-linejoin: round; }
+/* multiply: the colour tints the paper and every line under it stays dark,
+   light halftone links included */
+#lv-layer { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; mix-blend-mode: multiply; }
+#lv-layer .lv-room { fill: var(--c); fill-opacity: .22; stroke: var(--c); stroke-width: 1.6; stroke-linejoin: round; }
+#lv-layer .lv-room.lv-outline { fill: none; stroke-width: 2; }
+#lv-layer .lv-room.lv-outline.on { fill: var(--c); fill-opacity: .12; stroke-width: 3.2; }
+#lv-layer .lv-dotmark { fill: var(--c); stroke: #fff; stroke-width: 1.5; }
 #lv-layer .lv-room.lv-merged { fill-opacity: .12; stroke-dasharray: 5 3; }
 #lv-layer .lv-room.on { fill-opacity: .42; stroke-width: 3.2; }
 #lv-layer .lv-win { fill: #fff; stroke: var(--c); stroke-width: 2; }
@@ -1718,6 +1723,10 @@ body.pnl-dragging iframe, body.pnl-dragging canvas { pointer-events: none; }
   border-radius: 8px; padding: 6px 10px; font-size: 11.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center;
   max-width: min(520px, calc(100vw - 24px)); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
 #lv-legend[hidden] { display: none; }
+#lv-legend .lv-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+#lv-legend .lv-seg button { border: 0; border-radius: 0; padding: 2px 8px; font-size: 11px; }
+#lv-legend .lv-seg button + button { border-left: 1px solid var(--line); }
+#lv-legend .lv-seg button.on { background: var(--accent); color: #fff; }
 #lv-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 #lv-legend small { flex-basis: 100%; color: var(--muted); }
 #lv-legend small.bad { color: #b91c1c; }
@@ -2551,6 +2560,9 @@ header .flr-lab { white-space: nowrap; }
 #sheet-list li.sheet-hidden { opacity: .5; }
 
 /* Checks > Light & Vent (lv.js renderTable) */
+.lv-go { margin: 0 0 8px; }
+.lv-go button { width: 100%; font-weight: 600; }
+.lv-go button small { font-weight: 400; opacity: .85; margin-left: 6px; }
 .lv-k { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; }
 .lv-k b { font-size: 15px; }
 .lv-f { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }

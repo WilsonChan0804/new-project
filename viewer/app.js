@@ -24,7 +24,7 @@ import { initPanels, initSplitter, initVGrip } from "./panels.js";
 import { copyLink } from "./share.js";
 import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile, deleteSetDialog } from "./cadimport.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
-import { createLvSheets } from "./lv.js";
+import { createLvSheets, missingLinks } from "./lv.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -3482,6 +3482,7 @@ async function renderPage() {
   if (FIND.hits.length) paintFind(false);
 
   const mapped = (S.sheet.viewports || []).filter((v) => v.paper_to_model).length;
+  const missing = missingLinks(S.sheet);       // linked models its plans were printed without
   if (S._openT0 && PERF.cur) { PERF.cur.onScreenMs = performance.now() - S._openT0; PERF.cur.drawnAhead = pre; }
   if (S._openT0) {
     console.info(`sheet ${S.sheet.number} on screen in ${Math.round(performance.now() - S._openT0)} ms`
@@ -3491,7 +3492,9 @@ async function renderPage() {
   const ver = sheetVersion(S.sheet);
   status((ver ? ver + "  |  " : "") + `${S.sheet.number} - ${S.sheet.name}  |  `
     + `${S.pageMM[0].toFixed(0)} x ${S.pageMM[1].toFixed(0)} mm  |  `
-    + `${mapped} mapped viewport(s)`);
+    + `${mapped} mapped viewport(s)`
+    + (missing.length ? `  |  Published without the linked model${missing.length > 1 ? "s" : ""} `
+      + missing.map((m) => `${m.name} (${m.why})`).join(", ") + " - its drawing is missing from this sheet" : ""));
   $("#status").title = ver ? ver + " - the version of this sheet on the viewer" : "";
 }
 

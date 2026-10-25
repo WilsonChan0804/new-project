@@ -898,6 +898,15 @@ def build_sheet(doc, sheet, probe):
                     entry["level_sh_mm"] = round(sharedxy.apply(sm, (near[0], near[1], z))[2], 1)
         except Exception as ex_:
             probe.info(sheet.SheetNumber, "'%s': no shared-coordinate placement: %s" % (view.Name, ex_))
+        try:
+            if isinstance(view, ViewPlan):
+                miss = links_missing(doc, view)
+                if miss:
+                    entry["links_missing"] = miss
+                    probe.warn(sheet.SheetNumber, "'%s' printed without %s" % (
+                        view.Name, ", ".join("%s (%s)" % (m["name"], m["why"]) for m in miss)))
+        except Exception as ex_:
+            probe.info(sheet.SheetNumber, "linked models of '%s' not checked: %s" % (view.Name, ex_))
         entry["calibration"] = calibration(doc, view, mapping, rect)
         entry["diagnostics"] = diag
         try:
@@ -1063,6 +1072,43 @@ def build_elements(doc, probe, categories=None):
     if missing:
         probe.warn("elements", "%d of %d elements have no IFC GUID"
                    % (missing, len(out)))
+    return out
+
+
+def links_missing(doc, view):
+    """The linked models a plan would show but is printed without: not
+    loaded, or placed in a workset that is closed on this PC. (A link hidden
+    in the view on purpose is not one: Revit does not show it either.)
+    -> [{name, why}]"""
+    from Autodesk.Revit.DB import FilteredElementCollector, RevitLinkInstance, RevitLinkType, BuiltInCategory
+    try:
+        cat = doc.Settings.Categories.get_Item(BuiltInCategory.OST_RvtLinks)
+        if cat is not None and view.GetCategoryHidden(cat.Id):
+            return []                       # no links shown in this view at all
+    except Exception:
+        pass
+    ws = doc.GetWorksetTable() if doc.IsWorkshared else None
+    out, seen = [], set()
+    for inst in FilteredElementCollector(doc).OfClass(RevitLinkInstance):
+        try:
+            if inst.IsHidden(view):
+                continue
+            typ = doc.GetElement(inst.GetTypeId())
+            name = (typ.Name if typ is not None else inst.Name) or ""
+            if name.lower().endswith(".rvt"):
+                name = name[:-4]
+            why = None
+            if typ is not None and not RevitLinkType.IsLoaded(doc, typ.Id):
+                why = "not loaded"
+            elif ws is not None:
+                w = ws.GetWorkset(inst.WorksetId)
+                if w is not None and not w.IsOpen:
+                    why = "closed workset"
+            if why and name not in seen:
+                seen.add(name)
+                out.append({"name": name, "why": why})
+        except Exception:
+            continue
     return out
 
 

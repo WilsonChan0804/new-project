@@ -71,7 +71,11 @@ def summarise(rep):
     if not rep:
         return {"report": False}
     rooms = rep.get("rooms") or []
+    by_tower = {}
+    for r in rooms:
+        by_tower.setdefault(r.get("block") or "", []).append(r)
     return {"report": True, "counts": counts(rooms), "rooms": len(rooms), "model": rep.get("model") or "",
+            "towers": dict((k, counts(v)) for k, v in sorted(by_tower.items()) if k),
             "by": rep.get("by") or "", "at": rep.get("at") or "", "sent_by": rep.get("sent_by") or "",
             "sent_at": rep.get("sent_at") or "", "levels": rep.get("levels") or [],
             "placed": sum(1 for r in rooms if r.get("loops_sh")), "pdf": bool(rep.get("pdf")),

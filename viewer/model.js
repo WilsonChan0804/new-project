@@ -2266,6 +2266,7 @@ async function lvTab() {
   if (!box.children.length) box.innerHTML = `<p class="muted" style="font-size:12px">Loading ...</p>`;
   const rep = await LVR.loadReport();
   LVR.renderTable(box, rep, {
+    manifest: S.manifest,
     onRow(r) {
       const sh = LVR.sheetFor(S.manifest, r);
       let note = box.querySelector(".lv-note");

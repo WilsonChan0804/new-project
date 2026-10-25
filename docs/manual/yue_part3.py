@@ -358,12 +358,13 @@ PART = [
     LABEL('喺 sheet 上面'),
     UL([
         '**View > Light & Vent** 會喺**同一層**嘅平面圖上將每個已檢查嘅房上色：綠色 **OK**、紅色 **NOT OK** / **NO WINDOW**、橙色 **NEEDS DATA**（有窗類型要確認）。同另一個房一齊計嘅房（例如廚房同客廳：*WITH 131*）會用嗰個房嘅顏色畫虛線。啲圓點係佢嘅窗同幕牆板。',
-        '左下角嘅圖例會顯示數量、model 同檢查時間。',
+        '左下角嘅圖例會顯示數量、model 同檢查時間，仲有一個開關：**Filled**（房間上色 - 圖則嘅線穿過顏色仍然清楚）、**Outline**（只有每個房嘅輪廓同一個結果顏色嘅圓點，圖則完全睇得清楚）或者 **Off**。呢部機會記住你嘅選擇。',
+        '**顏色下面冇圖則？** 如果發佈平面圖嗰陣有 link model（例如塔樓單位）未載入或者佢嘅 workset 關咗，sheet 嗰部分就冇圖：圖例同狀態列會列出嗰個 link。請喺載入晒 link、打開晒 workset 嘅情況下打開 Layout model，再發佈嗰張 sheet。',
         '**撳一個房**（Select 工具）：卡片會顯示面積、所需同提供嘅採光及可開啟面積（實量玻璃，旁邊係 闊 x 高 x 70 %）、每個窗（標記、類型、尺寸、開法、所佔比例）同備註。**Show in 3D** 會喺 model 顯示佢啲窗；**Make issue** 會喺房外面畫雲線並打開已填好嘅 issue 表格。**Esc** 清除。',
     ]),
     LABEL('表格同 Dashboard'),
     UL([
-        '**3D > Checks > Light & Vent：** 列出所有房，可以按樓層、單位同結果篩選（先睇要處理嘅房）。撳一行會顯示卡片：**Show in 3D** 會喺同一頁揀中並放大佢啲窗（唔會重新載入）；**Make issue (3D)** 會喺度打開已填好嘅 3D issue 表格（如果佢啲窗唔喺顯示緊嘅 model 入面，就會喺房嘅位置）；**Show on plan ...** 會打開嗰張 sheet 並顯示嗰個房。冇平面圖顯示到佢嘅時候，卡片會講原因（平面圖未再發佈，或者冇嗰層嘅平面圖）。',
+        '**3D > Checks > Light & Vent：** 最頂嘅 **Show on sheets** 會打開顯示最多所揀房間（樓層、座數、單位）嘅平面圖 sheet 並上色。表格有 **Tower** 一欄；列出所有房，可以按樓層、座數、單位同結果篩選（先睇要處理嘅房）。撳一行會顯示卡片：**Show in 3D** 會喺同一頁揀中並放大佢啲窗（唔會重新載入）；**Make issue (3D)** 會喺度打開已填好嘅 3D issue 表格（如果佢啲窗唔喺顯示緊嘅 model 入面，就會喺房嘅位置）；**Show on plan ...** 會打開嗰張 sheet 並顯示嗰個房。冇平面圖顯示到佢嘅時候，卡片會講原因（平面圖未再發佈，或者冇嗰層嘅平面圖）。',
         '**Full report**（3D 分頁、sheet 上面嘅圖例、Dashboard）：按樓層同單位列出每個房嘅表，再列每個房嘅窗 - **Print / Save as PDF**，或者 **Save to Folders**（Light & Ventilation，存做 PDF）。**Table (CSV)** 同 **Diagrams (PDF)** 可以下載表格同 diagrams。',
         '**Dashboard：** 有一張 Light & Ventilation 卡，顯示數量同上次檢查日期。',
         '如果房喺平面圖上嘅位置唔啱，即係兩個 model 唔係用同一套 shared coordinates：請同 BIM team 檢查（Revit 嘅 Manage > Coordinates）。',

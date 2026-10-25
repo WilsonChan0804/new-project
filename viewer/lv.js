@@ -125,6 +125,27 @@ export function whyNot(manifest, r) {
   return "The plans of this floor do not show this part of the building (or the two models are not on the same shared coordinates).";
 }
 
+/* the linked models a sheet's plans were printed without: [{name, why}] */
+export function missingLinks(sheet) {
+  const seen = new Map();
+  for (const vp of (sheet && sheet.viewports) || []) {
+    for (const m of vp.links_missing || []) if (!seen.has(m.name)) seen.set(m.name, m);
+  }
+  return Array.from(seen.values());
+}
+
+/* the sheet whose plans show the most of these rooms: {sheet, n}, or null */
+export function bestSheet(manifest, rooms) {
+  let best = null;
+  for (const sh of (manifest && manifest.sheets) || []) {
+    if (!(sh.viewports || []).some((vp) => vp.paper_rect_mm)) continue;
+    let n = 0;
+    for (const r of rooms) if (placements(sh, r).length) n++;
+    if (n && (!best || n > best.n)) best = { sheet: sh, n };
+  }
+  return best;
+}
+
 /* the first sheet with a plan showing the room */
 export function sheetFor(manifest, r) {
   for (const sh of (manifest && manifest.sheets) || []) if (placements(sh, r).length) return sh;
@@ -153,7 +174,7 @@ export function roomCard(r, opts) {
     + `<span class="lv-st" style="color:${colour(r)}">${esc(res || "")}</span><span class="spacer"></span>`
     + `<button class="ghost linkish" data-lv="close" title="Close (Esc)">&#10005;</button></div>`
     + `<div class="ai-body">`
-    + kv("Flat / level", esc([r.block, r.flat, r.level].filter(Boolean).join(" · ")))
+    + kv("Tower / flat / floor", esc([r.block, r.flat, r.level].filter(Boolean).join(" · ")))
     + kv("Area", r.area_m2 != null ? Number(r.area_m2).toFixed(3) + " m²" : "-")
     + (host ? kv("Counted with", esc(`${host.number} ${host.name || ""}`) + ` (${esc(host.status)})`) : "")
     + ((r.with || []).length ? kv("Counts with it", esc(r.with.map((w) => `${w.number} ${w.name}`).join(", "))) : "")
@@ -189,9 +210,14 @@ export function issueText(r) {
 
 export function createLvSheets(ctx) {
   const { S, $, status } = ctx;
-  const KEY = "lwk-viewer:lv-on";
-  const L = { on: false, rep: null, drawn: [], cur: null };
-  try { L.on = localStorage.getItem(KEY) === "1"; } catch (e) {}
+  const KEY = "lwk-viewer:lv-on", MODE = "lwk-viewer:lv-mode";
+  // on: View > Light & Vent; mode: how the rooms show - "fill", "outline" or "off"
+  // (the legend's switch, remembered on this device)
+  const L = { on: false, mode: "fill", rep: null, drawn: [], cur: null };
+  try {
+    L.on = localStorage.getItem(KEY) === "1";
+    L.mode = ["fill", "outline", "off"].includes(localStorage.getItem(MODE)) ? localStorage.getItem(MODE) : "fill";
+  } catch (e) {}
   const svgNS = "http://www.w3.org/2000/svg";
 
   function layer() {
@@ -237,7 +263,10 @@ export function createLvSheets(ctx) {
     const placed = plans.filter((vp) => vp.shared_to_paper).length;
     let byName = 0;
     let n = 0;
-    plans.forEach((vp, k) => {
+    const outline = L.mode === "outline";
+    // linked models the plans were printed without (not loaded / closed workset / hidden)
+    const missing = missingLinks(sh);
+    (L.mode === "off" ? [] : plans).forEach((vp, k) => {
       // clipped to the viewport: a room never spills over another view
       const r0 = vp.paper_rect_mm, a = ctx.canvasFrom(r0[0], r0[1]), b = ctx.canvasFrom(r0[0] + r0[2], r0[1] + r0[3]);
       const cp = document.createElementNS(svgNS, "clipPath");
@@ -258,9 +287,18 @@ export function createLvSheets(ctx) {
         const p = document.createElementNS(svgNS, "path");
         p.setAttribute("d", path(pl.loops));
         p.setAttribute("fill-rule", "evenodd");
-        p.setAttribute("class", "lv-room" + (merged(r) ? " lv-merged" : "") + (L.cur === r ? " on" : ""));
+        p.setAttribute("class", "lv-room" + (outline ? " lv-outline" : "") + (merged(r) ? " lv-merged" : "") + (L.cur === r ? " on" : ""));
         p.setAttribute("style", `--c:${colour(r)}`);
         g.appendChild(p);
+        if (outline && pl.at) {
+          // the room's result at its label, the drawing left uncovered
+          const [x, y] = ctx.canvasFrom(pl.at[0], pl.at[1]);
+          const d = document.createElementNS(svgNS, "circle");
+          d.setAttribute("cx", x.toFixed(1)); d.setAttribute("cy", y.toFixed(1)); d.setAttribute("r", 5);
+          d.setAttribute("class", "lv-dotmark");
+          d.setAttribute("style", `--c:${colour(r)}`);
+          g.appendChild(d);
+        }
         for (const wd of pl.via === "shared" ? r.windows || [] : []) {
           if (!wd.pos_sh) continue;
           const [x, y] = ctx.canvasFrom(...aff(vp.shared_to_paper, wd.pos_sh[0], wd.pos_sh[1]));
@@ -274,7 +312,16 @@ export function createLvSheets(ctx) {
     });
     const c = counts(L.rep);
     const sw = (k, lab) => `<span><i style="background:${COL[k]}"></i>${c[k]} ${lab}</span>`;
-    legend(`<b>Light &amp; Vent</b>` + sw("OK", "OK") + sw("NOT OK", "not OK") + sw("NEEDS DATA", "need data")
+    const seg = `<span class="lv-seg" role="group" aria-label="Room colours">`
+      + [["fill", "Filled"], ["outline", "Outline"], ["off", "Off"]].map(([k, lab]) =>
+        `<button class="ghost${L.mode === k ? " on" : ""}" data-mode="${k}" title="${k === "fill" ? "Rooms filled with their result colour"
+          : k === "outline" ? "Only the rooms' outlines and a dot: the drawing stays fully readable" : "No colours (the legend stays, to turn them on again)"}">${lab}</button>`).join("") + `</span>`;
+    if (L.mode === "off") {
+      legend(`<b>Light &amp; Vent</b>${seg}`);
+      wireLegend();
+      return;
+    }
+    legend(`<b>Light &amp; Vent</b>${seg}` + sw("OK", "OK") + sw("NOT OK", "not OK") + sw("NEEDS DATA", "need data")
       + (c["NO WINDOW"] ? `<span><i style="background:${COL["NO WINDOW"]}"></i>${c["NO WINDOW"]} no window</span>` : "")
       + `<small>${esc(L.rep.model || "")}${L.rep.at ? " · " + esc(String(L.rep.at).replace("T", " ").slice(0, 16)) : ""}</small>`
       + (n ? `<small>${n} room(s) on this sheet - click one${byName ? ` (${byName} matched by room number and name)` : ""}</small>` : "")
@@ -282,12 +329,27 @@ export function createLvSheets(ctx) {
         ? `<small class="bad">${placed ? `${plans.length - placed} of ${plans.length} plans` : "This sheet's plans"} have no shared-coordinate placement`
           + `${byName ? " - rooms there are matched by number and name only" : ""}: publish the Layout model's sheets again with the updated add-in.</small>` : "")
       + (!n && placed ? `<small>No checked room on the floor of this sheet's plans.</small>` : "")
+      + (missing.length ? `<small class="bad">Drawn without ${esc(missing.map((m) => m.name + " (" + m.why + ")").join(", "))} when published - `
+        + `publish the sheet again with the links loaded and their worksets open.</small>` : "")
       + `<span class="lv-lg-acts"><a href="#" data-lv="report">Full report</a>${L.rep.pdf ? ` · <a href="#" data-lv="pdf">Diagrams (PDF)</a>` : ""}</span>`);
+    wireLegend();
+  }
+
+  function wireLegend() {
     const lg = document.getElementById("lv-legend");
-    const rp = lg && lg.querySelector('[data-lv="report"]');
+    if (!lg) return;
+    for (const b of lg.querySelectorAll("[data-mode]")) b.onclick = () => setMode(b.dataset.mode);
+    const rp = lg.querySelector('[data-lv="report"]');
     if (rp) rp.onclick = (ev) => { ev.preventDefault(); openReport(L.rep); };
-    const pd = lg && lg.querySelector('[data-lv="pdf"]');
+    const pd = lg.querySelector('[data-lv="pdf"]');
     if (pd) pd.onclick = (ev) => { ev.preventDefault(); openPdf(); };
+  }
+
+  function setMode(m) {
+    L.mode = m;
+    try { localStorage.setItem(MODE, m); } catch (e) {}
+    if (m === "off") { L.cur = null; card(null); }
+    draw();
   }
 
   function card(r) {
@@ -346,11 +408,20 @@ export function createLvSheets(ctx) {
     t.hidden = !L.rep;
     t.classList.toggle("active", L.on && !!L.rep);
     t.addEventListener("click", () => setOn(!L.on));
-    // from the 3D table: ?lv=<room uid> - turned on, and that room shown
-    const want = new URLSearchParams(location.search).get("lv");
+    // from the 3D table: ?lv=<room uid> - turned on, and that room shown;
+    // ?lv=on - turned on (Show on sheets)
+    const q = new URLSearchParams(location.search), want = q.get("lv");
+    if (want) {
+      // used once: a reload keeps the colours as the person last set them
+      q.delete("lv");
+      try { history.replaceState(history.state, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash); } catch (e) {}
+    }
     if (want && L.rep) {
       L.on = true;
+      try { localStorage.setItem(KEY, "1"); } catch (e) {}
       t.classList.add("active");
+      if (L.mode === "off") L.mode = "fill";
+      if (want === "on") { draw(); return; }
       const r = L.rep._byUid.get(want);
       const go = () => {
         draw();
@@ -424,7 +495,7 @@ th{background:#f3f3f3}td.n{text-align:right;font-variant-numeric:tabular-nums}.k
 <h1>Light and ventilation</h1><div>${esc(rep.model || "")} · checked ${esc(when)}${rep.by ? " by " + esc(rep.by) : ""}${rep.levels && rep.levels.length ? " · floors: " + esc(rep.levels.join(", ")) : ""}</div>
 <p class="k"><span><b>${c.OK}</b> OK</span><span><b>${c["NOT OK"]}</b> not OK</span><span><b>${c["NEEDS DATA"]}</b> need data</span><span><b>${c["NO WINDOW"]}</b> no window</span><span><b>${c.merged}</b> counted with another room</span></p>
 <p>Required: lighting = room area x 1/10, openable = room area x 1/16. Provided: the glass measured in the model; W×H×70% beside it for reference.</p>
-<h2>Schedule</h2><table><tr><th>Floor</th><th>Block</th><th>Flat</th><th>Room</th><th>Name</th><th>Area m²</th><th>Req. lighting</th><th>Prov. lighting</th><th>W×H×70%</th>
+<h2>Schedule</h2><table><tr><th>Floor</th><th>Tower</th><th>Flat</th><th>Room</th><th>Name</th><th>Area m²</th><th>Req. lighting</th><th>Prov. lighting</th><th>W×H×70%</th>
 <th>Req. openable</th><th>Prov. openable</th><th>W×H×70%</th><th>Result</th></tr>${rooms.map(row).join("")}</table>
 <h2>Rooms and their windows</h2>${rooms.map(detail).join("")}</body></html>`;
 }
@@ -455,7 +526,7 @@ const ORDER = { "NOT OK": 0, "NO WINDOW": 1, "NEEDS DATA": 2, OK: 3 };
 
 export function csvOf(rep) {
   const q = (v) => { const s = v == null ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  const head = ["Block", "Flat", "Level", "Room", "Name", "Area m2", "Req. lighting", "Prov. lighting (measured)", "Prov. lighting (WxHx70%)",
+  const head = ["Tower", "Flat", "Level", "Room", "Name", "Area m2", "Req. lighting", "Prov. lighting (measured)", "Prov. lighting (WxHx70%)",
     "Req. openable", "Prov. openable (measured)", "Prov. openable (WxHx70%)", "Status", "Notes"];
   const rows = (rep.rooms || []).map((r) => [r.block, r.flat, r.level, r.number, r.name, r.area_m2, r.req_light, r.prov_light_meas, r.prov_light_bd,
     r.req_open, r.prov_open_meas, r.prov_open_bd, r.status, (r.notes || []).join("; ")]);
@@ -470,32 +541,46 @@ export function renderTable(box, rep, opts) {
       + `<b>Light &amp; Vent</b>, then <b>Send the result to the viewer</b>.</p>`;
     return;
   }
-  const F = box._lvF || (box._lvF = { level: "", flat: "", status: "bad" });
+  const F = box._lvF || (box._lvF = { level: "", tower: "", flat: "", status: "bad" });
   const rooms = rep.rooms || [];
   const levels = Array.from(new Set(rooms.map((r) => r.level).filter(Boolean))).sort();
-  const flats = Array.from(new Set(rooms.map((r) => r.flat).filter(Boolean))).sort();
+  const towers = Array.from(new Set(rooms.map((r) => r.block).filter(Boolean))).sort();
+  const flats = Array.from(new Set(rooms.filter((r) => !F.tower || r.block === F.tower).map((r) => r.flat).filter(Boolean))).sort();
+  // the floor / tower / flat chosen (whatever the result): what "Show on sheets" shows
+  const scope = rooms.filter((r) => (!F.level || r.level === F.level) && (!F.tower || r.block === F.tower) && (!F.flat || r.flat === F.flat));
+  const best = opts.manifest ? bestSheet(opts.manifest, scope) : null;
   const c = counts(rep);
   const opt = (v, cur, lab) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(lab || v)}</option>`;
-  const list = rooms.filter((r) => (!F.level || r.level === F.level) && (!F.flat || r.flat === F.flat)
-    && (F.status === "" || (F.status === "bad" ? result(r) !== "OK" : result(r) === F.status)))
+  const list = scope.filter((r) => F.status === "" || (F.status === "bad" ? result(r) !== "OK" : result(r) === F.status))
     .sort((a, b) => (ORDER[result(a)] ?? 9) - (ORDER[result(b)] ?? 9) || String(a.level).localeCompare(String(b.level))
-      || String(a.flat).localeCompare(String(b.flat)) || String(a.number).localeCompare(String(b.number)));
-  box.innerHTML = `<div class="lv-k"><span style="color:${COL.OK}"><b>${c.OK}</b> OK</span><span style="color:${COL["NOT OK"]}"><b>${c["NOT OK"]}</b> not OK</span>`
+      || String(a.block).localeCompare(String(b.block)) || String(a.flat).localeCompare(String(b.flat))
+      || String(a.number).localeCompare(String(b.number), undefined, { numeric: true }));
+  box.innerHTML = (opts.manifest ? `<div class="lv-go">${best
+      ? `<button class="primary" data-go="sheet" title="Open sheet ${esc(best.sheet.number)}: ${best.n} of these rooms coloured on its plan">Show on sheets &#9656; <small>${esc(best.sheet.number)} · ${best.n} room(s)</small></button>`
+      : `<button class="primary" disabled>Show on sheets &#9656;</button><div class="lv-why">${esc(scope.length ? whyNot(opts.manifest, scope[0]) : "No room matches.")}</div>`}</div>` : "")
+    + `<div class="lv-k"><span style="color:${COL.OK}"><b>${c.OK}</b> OK</span><span style="color:${COL["NOT OK"]}"><b>${c["NOT OK"]}</b> not OK</span>`
     + `<span style="color:${COL["NEEDS DATA"]}"><b>${c["NEEDS DATA"]}</b> need data</span><span style="color:${COL["NO WINDOW"]}"><b>${c["NO WINDOW"]}</b> no window</span>`
     + `<span class="muted"><b>${c.merged}</b> counted with another</span></div>`
     + `<div class="muted" style="font-size:11px;margin:2px 0 6px">${esc(rep.model || "")} · ${esc(String(rep.at || "").replace("T", " ").slice(0, 16))}${rep.by ? " · " + esc(rep.by) : ""}</div>`
     + `<div class="lv-f"><select data-f="status">${opt("bad", F.status, "Not OK, need data, no window")}${opt("", F.status, "All rooms")}${opt("OK", F.status, "OK only")}</select>`
     + `<select data-f="level">${opt("", F.level, "All floors")}${levels.map((l) => opt(l, F.level)).join("")}</select>`
+    + (towers.length ? `<select data-f="tower">${opt("", F.tower, "All towers")}${towers.map((l) => opt(l, F.tower)).join("")}</select>` : "")
     + `<select data-f="flat">${opt("", F.flat, "All flats")}${flats.map((l) => opt(l, F.flat)).join("")}</select></div>`
     + `<div class="lv-dl"><a href="#" data-dl="report">Full report</a> · <a href="#" data-dl="csv">Table (CSV)</a>`
     + `${rep.pdf ? ` · <a href="#" data-dl="pdf">Diagrams (PDF)</a>` : rep.pdf_state === "making" ? ` · <span class="muted">diagrams PDF being made ...</span>`
       : rep.pdf_error ? ` · <span class="bad" title="${esc(rep.pdf_error)}">diagrams PDF not made</span>` : ""}</div>`
-    + `<div class="table-wrap"><table class="lv-t"><thead><tr><th>Room</th><th>Flat</th><th>Floor</th><th>Light req / prov</th><th>Open req / prov</th><th>Result</th></tr></thead><tbody>`
+    + `<div class="table-wrap"><table class="lv-t"><thead><tr><th>Room</th><th>Tower</th><th>Flat</th><th>Floor</th><th>Light req / prov</th><th>Open req / prov</th><th>Result</th></tr></thead><tbody>`
     + list.map((r, i) => `<tr data-i="${i}"><td><span class="lv-dot" style="background:${colour(r)}"></span>${esc([r.number, r.name].filter(Boolean).join(" "))}</td>`
-      + `<td>${esc(r.flat || "")}</td><td>${esc(r.level || "")}</td><td>${merged(r) ? "" : f3(r.req_light) + " / " + f3(r.prov_light_meas)}</td>`
+      + `<td>${esc(r.block || "")}</td><td>${esc(r.flat || "")}</td><td>${esc(r.level || "")}</td><td>${merged(r) ? "" : f3(r.req_light) + " / " + f3(r.prov_light_meas)}</td>`
       + `<td>${merged(r) ? "" : f3(r.req_open) + " / " + f3(r.prov_open_meas)}</td><td style="color:${colour(r)}">${esc(r.status)}</td></tr>`).join("")
     + `</tbody></table></div>` + (list.length ? "" : `<p class="muted" style="font-size:12px">No room matches.</p>`);
-  for (const s of box.querySelectorAll("select[data-f]")) s.onchange = () => { F[s.dataset.f] = s.value; renderTable(box, rep, opts); };
+  for (const s of box.querySelectorAll("select[data-f]")) s.onchange = () => {
+    F[s.dataset.f] = s.value;
+    if (s.dataset.f === "tower") F.flat = "";
+    renderTable(box, rep, opts);
+  };
+  const go = box.querySelector('[data-go="sheet"]');
+  if (go) go.onclick = () => { location.href = link("index.html", { sheet: best.sheet.number, lv: "on" }); };
   box.querySelector('[data-dl="csv"]').onclick = (ev) => {
     ev.preventDefault();
     const a = document.createElement("a");

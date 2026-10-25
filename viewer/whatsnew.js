@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-12", date: "25 Oct 2026",
+    items: [
+      "**Light & Vent colours keep the drawing readable:** the colour now tints the paper and the plan's lines stay dark through it. The legend has a switch: **Filled**, **Outline** (just each room's outline and a result dot) or **Off** - remembered on this device.",
+      "**Show on sheets:** at the top of 3D > Checks > Light & Vent, opens the plan sheet showing the most of the rooms chosen, coloured.",
+      "**Tower column** in the Light & Vent table, with a tower filter; the Dashboard card counts per tower.",
+      "**Drawing missing under the colours:** a sheet published while a linked model was not loaded (or its workset closed) now says so - in the legend and the status bar - naming the link (update the add-in, then publish the sheet again with the links loaded).",
+    ],
+  },
+  {
     version: "2026-12-11", date: "25 Oct 2026",
     items: [
       "**Light & Vent on plans published before:** until the Layout model's plan sheets are published again with the updated add-in, a plan with a room schedule shows the rooms matched by room number and name. A room on no plan now says why (plans not published again yet, or no plan of that floor).",

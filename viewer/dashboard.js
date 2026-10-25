@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-11";
+const LWK_VERSION = "2026-12-12";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -917,6 +917,9 @@ function drawLv(sm) {
     + `<div class="dt-k"><span><b>${c.OK || 0}</b>OK</span><span class="${c["NOT OK"] ? "bad" : ""}"><b>${c["NOT OK"] || 0}</b>not OK</span>`
     + `<span><b>${c["NEEDS DATA"] || 0}</b>need data</span><span class="${c["NO WINDOW"] ? "bad" : ""}"><b>${c["NO WINDOW"] || 0}</b>no window</span>`
     + `<span><b>${c.merged || 0}</b>counted with another room</span></div>`
+    + (Object.keys(sm.towers || {}).length > 1 ? `<div class="dt-g">` + Object.entries(sm.towers).map(([t, k]) =>
+      `<b>${esc(t)}</b>: ${k.OK || 0} OK · <span class="${k["NOT OK"] ? "bad" : ""}">${k["NOT OK"] || 0} not OK</span> · `
+      + `${k["NEEDS DATA"] || 0} need data · ${k["NO WINDOW"] || 0} no window`).join("<br>") + `</div>` : "")
     + `<p class="muted" style="font-size:12px">On the plan sheets: <a href="${esc(link("index.html"))}">Sheets</a> &gt; View &gt; Light &amp; Vent`
     + ` · <a href="#" data-lv="report">Full report</a>`
     + `${sm.pdf ? ` · <a href="#" data-lv="pdf">Diagrams (PDF)</a>` : ""}</p>`;
