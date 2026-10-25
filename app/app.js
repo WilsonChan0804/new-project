@@ -243,6 +243,7 @@ let draftDates = [];
 const partner = () => settings.them || 'your person';
 
 // ---------- Avatars: photo, emoji on a colour, or initial ----------
+const myMember = () => settings.sync?.member || 'a'; // 'a' created the shared space, 'b' joined it
 function avatarEl(spec, name, cls = '') {
   const el = h('div', { className: `av ${cls}` });
   if (spec?.photo) { el.classList.add('has-photo'); el.append(h('img', { src: spec.photo, alt: '' })); }
@@ -331,13 +332,15 @@ function editMyAvatar(who) {
 
 bindSeg($('#ob-seg'), b => {
   $$('.ob-pane').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.pane; });
-  $('#ob-go').textContent = b.dataset.pane === 'fresh' ? 'Create our space' : 'Choose backup file';
+  $('#ob-go').textContent = T({ fresh: 'Create our space', join: 'Join', restore: 'Choose backup file' }[b.dataset.pane]);
   $('#ob-go').setAttribute('form', b.dataset.pane === 'fresh' ? 'ob-form' : '');
+  $('#ob-go').dataset.pane = b.dataset.pane;
 });
 $('#ob-go').addEventListener('click', e => {
   if ($('#ob-go').getAttribute('form')) return; // submits the form
   e.preventDefault();
-  $('#ob-import').click();
+  if ($('#ob-go').dataset.pane === 'join') joinSpace($('#ob-join').value);
+  else $('#ob-import').click();
 });
 $('#ob-me').addEventListener('input', () => { $('#ob-av').textContent = initial($('#ob-me').value); });
 $('#ob-form').addEventListener('submit', async e => {
@@ -452,10 +455,10 @@ async function renderHome() {
       avatar('them'),
       h('div', { className: 't', style: 'cursor:pointer', onclick: () => go('chat') },
         h('strong', { textContent: `Send ${settings.them} some love` }),
-        h('span', { textContent: last ? `You: ${last.kind === 'text' ? last.body : last.kind} · ${new Date(last.at).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })}` : 'Tap the heart to send a nudge' })),
+        h('span', { textContent: last ? `${(last.from || 'a') === myMember() ? 'You' : settings.them}: ${last.kind === 'text' ? last.body : last.kind} · ${new Date(last.at).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })}` : 'Tap the heart to send a nudge' })),
       roundBtn('heart', `Send ${settings.them} a nudge`, async () => {
         const c = await partnerChat(true);
-        await db.put('messages', { id: uid(), chat: c.id, kind: 'text', body: '❤️', at: Date.now() });
+        await db.put('messages', { id: uid(), chat: c.id, kind: 'text', body: '❤️', at: Date.now(), from: myMember() });
         toast(`Sent ${settings.them} a nudge`);
         renderHome();
       }, 'tint'));
@@ -589,6 +592,7 @@ $('#composer').addEventListener('submit', async e => {
     source: detectSource(link)?.id || null,
     place: $('#c-place').value.trim(),
     tags: [...new Set(($('#c-tags').value.match(/[\w-]+/g) || []).map(t => t.toLowerCase()))],
+    by: existing?.by || myMember(),
     photos: pendingPhotos,
     videos,
     reactions: existing?.reactions || [],
@@ -676,7 +680,7 @@ async function renderMoments() {
           h('div', { className: 'tile' + (th ? ' has-img' : ''), style: tileVars(m.id) },
             th && h('img', { src: th, alt: '', loading: 'lazy' }),
             m.videos.length ? h('span', { className: 'play-badge' }, icon('play')) : null,
-            m.reactions.length ? h('span', { className: 'by loved' }, icon('heart')) : h('span', { className: 'by', textContent: initial(settings.me) }),
+            m.reactions.length ? h('span', { className: 'by loved' }, icon('heart')) : h('span', { className: 'by', textContent: initial((m.by || 'a') === myMember() ? settings.me : settings.them) }),
             s && h('span', { className: 'src', textContent: s.name })),
           h('figcaption', { textContent: caption(m) }));
       })));

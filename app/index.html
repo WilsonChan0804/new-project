@@ -68,8 +68,9 @@
         <h1>A private space<br>for just you two</h1>
         <p>Keep your messages, photos and moments together. Nobody else can see inside.</p>
       </div>
-      <div class="seg two" id="ob-seg" role="tablist">
+      <div class="seg three" id="ob-seg" role="tablist">
         <button type="button" class="on" data-pane="fresh" role="tab">Start fresh</button>
+        <button type="button" data-pane="join" role="tab">Join partner</button>
         <button type="button" data-pane="restore" role="tab">Restore backup</button>
       </div>
       <form id="ob-form" class="ob-pane" data-pane="fresh">
@@ -77,6 +78,10 @@
         <label class="field"><span>Partner or best friend</span><input id="ob-them" placeholder="e.g. Leo"></label>
         <label class="field"><span>Together since (optional)</span><input id="ob-since" type="date"></label>
       </form>
+      <div class="ob-pane" data-pane="join" hidden>
+        <label class="field"><span>Invite link from your partner</span><input id="ob-join" placeholder="https://…/#join=…" autocomplete="off"></label>
+        <p class="sm muted">Opening the link on this phone works too.</p>
+      </div>
       <div class="ob-pane" data-pane="restore" hidden>
         <label class="dash-card">
           <span><span class="sm muted">Backup file</span><strong>Choose moments-backup.json</strong></span>
@@ -309,6 +314,7 @@
       </div>
 
       <div class="us-pane" data-pane="settings" hidden>
+        <section class="card sync-card" id="sync-card"></section>
         <form id="settings-form" class="settings">
           <div class="field"><span>Pictures</span>
             <div class="row">
@@ -458,5 +464,6 @@
   <script src="shopping.js"></script>
   <script src="pets.js"></script>
   <script src="catbreak.js"></script>
+  <script src="sync.js"></script>
 </body>
 </html>

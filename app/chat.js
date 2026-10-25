@@ -61,7 +61,6 @@ async function partnerChat(create = false) {
   }
   if (c && settings.partnerChat !== c.id) {
     settings.partnerChat = c.id;
-    if (c.name !== settings.them) { c.name = settings.them; await db.put('chats', c); }
     await db.put('settings', settings);
   }
   return c;
@@ -137,13 +136,13 @@ async function renderChats() {
 
   fill($('#chat-list'), chats.map(c => h('li', { className: c.id === activeChat ? 'active' : '' },
     chatAvatar(c),
-    h('div', { className: 't', onclick: () => openChat(c.id) }, h('strong', { textContent: c.name }), h('span', { className: 'last', textContent: preview(last[c.id]) })),
+    h('div', { className: 't', onclick: () => openChat(c.id) }, h('strong', { textContent: chatName(c) }), h('span', { className: 'last', textContent: preview(last[c.id]) })),
     roundBtn('more', `Options for ${c.name}`, () => chatMenu(c)))));
 
   const chat = chats.find(c => c.id === activeChat);
-  $('#chat-title').textContent = chat ? chat.name : 'Chat';
+  $('#chat-title').textContent = chat ? chatName(chat) : 'Chat';
   fill($('#chat-avatar'), chat ? chatAvatar(chat) : null);
-  $('#msg-text').placeholder = chat ? `Message ${chat.name}` : 'Message';
+  $('#msg-text').placeholder = chat ? `Message ${chatName(chat)}` : 'Message';
   $('#messages').style.cssText = chatBgCss(chat);
   $('#messages').classList.toggle('dark-bg', chat?.bg?.id === 'night' || !!chat?.bg?.photo);
   renderQuickReplies();
@@ -158,13 +157,15 @@ async function renderChats() {
     nodes.push(messageNode(m, chat));
   });
   const lastMsg = msgs.at(-1);
-  if (lastMsg) nodes.push(h('span', { className: 'seen', textContent: `Sent ${new Date(lastMsg.at).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })}` }));
+  if (lastMsg && (lastMsg.from || 'a') === myMember()) nodes.push(h('span', { className: 'seen', textContent: `Sent ${new Date(lastMsg.at).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })}` }));
   const box = $('#messages');
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-  fill(box, nodes.length ? nodes : [h('p', { className: 'empty', textContent: chat ? `Say hi to ${chat.name} 👋` : 'Start a chat.' })]);
+  fill(box, nodes.length ? nodes : [h('p', { className: 'empty', textContent: chat ? `Say hi to ${chatName(chat)} 👋` : 'Start a chat.' })]);
   if (atBottom || !renderChats.didScroll) box.scrollTop = box.scrollHeight;
   renderChats.didScroll = true;
 }
+// The partner chat always shows the other person's name (it's shared, so its stored name is the creator's view).
+const chatName = c => (c.id === settings.partnerChat && settings.them) || c.name;
 function chatAvatar(c) {
   if (c.id === settings.partnerChat) return avatar('them', 'sm-av');
   return h('div', { className: 'av', style: tileVars(c.id).replace('--tile-bg', 'background').replace(';--tile-fg', ';color'), textContent: initial(c.name) });
@@ -194,7 +195,8 @@ function messageNode(m, chat) {
           (m.kind === 'photo' || m.kind === 'video') && h('button', { className: 'saved-chip', textContent: '♡ Save to Moments', onclick: e => { e.stopPropagation(); messagesToMoment([m], chat); } }),
         time));
   }
-  const wrap = h('div', { className: 'msg-wrap' + (selecting?.has(m.id) ? ' selected' : '') + (selecting ? ' selecting' : '') }, selecting && h('span', { className: 'tick' }, icon('check')), body);
+  const mine = (m.from || 'a') === myMember();
+  const wrap = h('div', { className: 'msg-wrap' + (mine ? '' : ' theirs') + (selecting?.has(m.id) ? ' selected' : '') + (selecting ? ' selecting' : '') }, selecting && h('span', { className: 'tick' }, icon('check')), body);
   // Tap (or right-click) a message for options; in selection mode, tap toggles it.
   wrap.addEventListener('click', e => {
     if (selecting) { e.preventDefault(); selecting.has(m.id) ? selecting.delete(m.id) : selecting.add(m.id); updateSelect(); renderChats(); return; }
@@ -208,7 +210,7 @@ function messageNode(m, chat) {
 function messageMenu(m, chat) {
   openSheet(null, [
     m.kind === 'text' && { icon: 'copy', label: 'Copy', color: '#3C6E91', run: () => { navigator.clipboard?.writeText(m.body); toast('Copied'); } },
-    m.kind === 'text' && { icon: 'pen', label: 'Edit', color: '#9A4A8C', run: () => startEdit(m) },
+    m.kind === 'text' && (m.from || 'a') === myMember() && { icon: 'pen', label: 'Edit', color: '#9A4A8C', run: () => startEdit(m) },
     { icon: 'heart', label: 'Save to Moments', run: () => messagesToMoment([m], chat) },
     { icon: 'check', label: 'Select more…', color: '#5E8C4A', run: () => { startSelect(); selecting.add(m.id); updateSelect(); renderChats(); } },
     '-',
@@ -309,7 +311,7 @@ $('#msg-form').addEventListener('submit', async e => {
 
 async function sendMessage(kind, body, extra = {}) {
   if (!activeChat) return toast('Start a chat first');
-  await db.put('messages', { id: uid(), chat: activeChat, kind, body, at: Date.now(), ...extra });
+  await db.put('messages', { id: uid(), chat: activeChat, kind, body, at: Date.now(), from: myMember(), ...extra });
   renderChats.didScroll = false;
   renderChats();
   renderHome();

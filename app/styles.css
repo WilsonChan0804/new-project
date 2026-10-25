@@ -714,3 +714,14 @@ select { font: 15px Inter, sans-serif; color: var(--text); background: var(--sur
 .lang-toggle { position: absolute; top: calc(16px + env(safe-area-inset-top)); right: 20px; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 600; }
 .onboard-inner { position: relative; }
 :lang(zh-HK) body { font-family: Inter, "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", system-ui, sans-serif; }
+
+/* ---------- Sync ---------- */
+.sync-card { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.sync-card .sec-head { min-height: 0; }
+.sync-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.sync-dot.on { background: var(--online); }
+.sync-dot.err { background: #D2384F; }
+.msg-wrap.theirs .msg, .msg-wrap.theirs .msg-media { align-self: flex-start; align-items: flex-start; }
+.msg-wrap.theirs .msg:not(.big-emoji) { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 20px 20px 20px 6px; }
+.msg-wrap.theirs .msg-media img.photo, .msg-wrap.theirs .msg-media video.video { border-radius: 20px 20px 20px 6px; }
+.msg-wrap.theirs .msg-link { background: var(--soft); }

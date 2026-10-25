@@ -1,6 +1,6 @@
 // Offline cache for the app shell. User data lives in IndexedDB, not here.
-const CACHE = 'twofold-v3';
-const SHELL = ['./', './index.html', './styles.css', './i18n.js', './app.js', './chat.js', './stickers.js', './shopping.js', './pets.js', './catbreak.js', './manifest.webmanifest', './icon.svg', './fonts/bricolage-grotesque-latin.woff2', './fonts/inter-latin.woff2'];
+const CACHE = 'twofold-v4';
+const SHELL = ['./', './index.html', './styles.css', './i18n.js', './app.js', './chat.js', './stickers.js', './shopping.js', './pets.js', './catbreak.js', './sync.js', './manifest.webmanifest', './icon.svg', './fonts/bricolage-grotesque-latin.woff2', './fonts/inter-latin.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
@@ -14,7 +14,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).pathname.startsWith('/api/')) return;
   // The OCR engine (vendor/) is large, so it's cached the first time it's used rather than at install.
   if (new URL(e.request.url).pathname.includes('/vendor/')) {
     e.respondWith(caches.open(CACHE).then(c => c.match(e.request).then(hit => hit || fetch(e.request).then(res => { if (res.ok) c.put(e.request, res.clone()); return res; }))));

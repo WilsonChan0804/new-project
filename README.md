@@ -2,7 +2,24 @@
 
 A private space for two: record moments, keep posts and links from other apps, plan your calendar, chat, and make stickers from photos. The design follows the "Couple App UI" mock-ups, in light and dark mode. Works on computer and iPhone as an installable web app (PWA).
 
-## Run it
+## Put it online with Cloudflare (free) — recommended
+
+One Cloudflare Worker serves the app over https, so it works on iPhone and computers. The same Worker runs the encrypted sync relay that lets you and your partner share messages, moments, plans, the shopping list and the cat diary. It fits the Workers Free plan. No database needs creating: storage is a Durable Object with SQLite, set up on deploy.
+
+1. Create a free account at **dash.cloudflare.com**. The first time, it asks you to pick a `workers.dev` subdomain (e.g. `wilson`).
+2. Go to **Workers & Pages → Create → Import a repository**. Connect GitHub and allow access to this repository. The repo can stay private.
+3. Choose this repository. Set the **production branch** to the branch that has the app, keep the deploy command `npx wrangler deploy`, and leave the build command empty.
+4. Press **Deploy**. You get an address like `https://twofold.<your-subdomain>.workers.dev`.
+5. Open that address on your iPhone in Safari → **Share → Add to Home Screen**. Do the same on your partner's phone and on your computers.
+6. In **Us → Settings → Sync with your partner**, tap **Create our private space** and send the invite link to your partner (and to your own other devices). Opening the link joins the space.
+
+Every new commit to the branch redeploys automatically.
+
+**How the privacy works:** a random 256-bit key is created on the first device. From it, each device derives the space id, an access token and the AES-GCM key that encrypts every record and file before it leaves the device. The key is only ever in your devices and in the invite link (after the `#`, which browsers never send to the server). The relay stores encrypted data only. `MAX_SPACES` in `wrangler.toml` (default 2) stops strangers from creating spaces on your server.
+
+**Free-plan limits (checked October 2026):** 100,000 requests per day, and SQLite storage shared across Durable Objects (several GB). Big photos and videos are stored as encrypted 1 MB parts. A couple's daily use is far below these limits. Every device keeps a full copy, so if the server is ever unavailable the app keeps working and syncs again later.
+
+## Run it on your computer only
 
 Some features need the app to be served from a web address rather than opened as a file: photo scanning, the AI sticker cut-out and offline mode. Double-clicking `index.html` is not enough.
 
@@ -35,7 +52,7 @@ The photo is read **on the device** by Tesseract (bundled in `app/vendor`, about
 
 - **Cat break** can only cover the Twofold window, because a web page can't lock the whole computer. It works while the app is open, and asks to show notifications so it can call you from another window. Idle detection across the whole computer works in Chrome and Edge (it asks for permission); other browsers only notice idleness inside the app.
 - **Speech-to-text** uses the browser's speech service: Chrome on a computer, or Safari. On iPhone, the keyboard's 🎤 key always works for Cantonese.
-- **Chatting with your partner** still needs an online sync service before messages reach the other phone.
+- **Notifications on iPhone** for new messages need Web Push, which isn't set up yet. Messages arrive when the app is open.
 
 ## Where your data lives
 

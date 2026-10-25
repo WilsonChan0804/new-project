@@ -1,0 +1,25 @@
+# Twofold on Cloudflare: one Worker serves the app (static files in ./app) and a small
+# end-to-end-encrypted sync relay (Durable Objects with SQLite). Everything here fits the Workers Free plan.
+name = "twofold"
+main = "worker/index.js"
+compatibility_date = "2025-09-01"
+
+[assets]
+directory = "./app"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "SPACE"
+class_name = "Space"
+
+[[durable_objects.bindings]]
+name = "REGISTRY"
+class_name = "Registry"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Space", "Registry"]
+
+[vars]
+# How many private spaces this server allows. One space = one couple (all of your devices).
+MAX_SPACES = "2"

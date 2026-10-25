@@ -104,6 +104,21 @@ const YUE = {
   'Everything looks like their usual pattern this week.': '今個星期一切同平時差唔多。', 'Keep logging for two weeks and changes from their usual pattern will show here.': '持續記錄兩個星期，同平時唔同嘅地方就會喺度顯示。',
   'Tap edit to add a birthday': '㩒編輯加生日', 'e.g. Mochi': '例如：Mochi',
 
+  // Sync
+  '🔒 Sync with your partner': '🔒 同另一半同步', 'Create our private space': '建立我哋嘅私人空間', 'Join': '加入', 'Paste the invite link': '貼上邀請連結',
+  'Messages, moments, plans, the shopping list and the cat diary sync between both of your phones and computers. Everything is encrypted on your device first, so the server only ever stores scrambled data.': '訊息、回憶、行程、購物清單同貓貓日記會喺你哋嘅手機同電腦之間同步。所有嘢會先喺你部機加密，伺服器只會儲到亂碼。',
+  'Invite / add a device': '邀請／加裝置', 'Sync now': '即刻同步', 'Disconnect': '中斷連接', 'Synced': '已同步', 'Problem': '問題', 'Connecting…': '連接緊…',
+  'waiting to send': '個等緊傳送', 'items on the server': '項喺伺服器', 'You are': '你係', 'Invite your partner': '邀請另一半', 'Send the invite link': '傳送邀請連結',
+  'Copy link': '複製連結', 'Join our private Twofold space:': '加入我哋嘅 Twofold 私人空間：',
+  'Anyone with this link can read your space, so only send it to your partner (WhatsApp is fine — it is encrypted) or use it on your own devices.': '有呢條連結嘅人就可以睇到你哋嘅空間，所以只可以傳畀另一半（用 WhatsApp 冇問題，佢有加密），或者喺你自己嘅裝置用。',
+  'Who are you on this device?': '呢部機係邊個用？', 'Your messages and moments will show under this name.': '你嘅訊息同回憶會用呢個名顯示。', "I'm": '我係',
+  'The person who created the space': '建立空間嘅人', "I'm the partner who was invited": '我係被邀請嘅另一半', 'That invite link does not look right': '條邀請連結唔啱',
+  'This device is already connected': '呢部機已經連接咗', 'Could not join: ': '加入唔到：', 'Add your name to finish': '加埋你個名就完成', 'Connected — your space is syncing': '已連接——你哋嘅空間同步緊',
+  'Stop syncing on this device? Everything stays on this device, and you can join again with the invite link.': '喺呢部機停止同步？所有資料會留喺呢部機，之後可以用邀請連結再加入。',
+  'Sync needs your Twofold web address': '同步要用你嘅 Twofold 網址', 'Could not create the space': '建立唔到空間',
+  'Open Twofold from your Cloudflare address (…workers.dev) to turn on sync. See the README for the 5-minute setup.': '請用你嘅 Cloudflare 網址（…workers.dev）打開 Twofold 先開到同步。設定步驟睇 README，大約 5 分鐘。',
+  'Join partner': '加入另一半', 'Invite link from your partner': '另一半傳畀你嘅邀請連結', 'Opening the link on this phone works too.': '喺呢部手機直接開條連結都得。',
+
   // Cat break
   '🐱 Cat break': '🐱 貓貓小休', 'Call the cat': '叫貓貓出嚟', 'Your cat takes over the screen so you rest your eyes. Use your own videos or photos.': '貓貓會霸住個畫面，等你休息吓對眼。可以用你自己嘅影片或相片。',
   'Add clip': '加片段', 'Remove clip': '移除片段', 'Break length': '休息時間', 'Remind me every': '每隔幾耐提我', 'When idle for (screensaver)': '冇郁幾耐之後（屏幕保護）',
@@ -162,6 +177,8 @@ const YUE_PATTERNS = [
   [/^Using ([\d.]+) MB on this device\.$/, '呢部機用咗 $1 MB。'], [/^Add your "together since" date in Settings$/, '喺設定加入「一齊咗由幾時開始」'],
   [/^(.+) is over (\d+) MB.*$/, '$1 超過 $2 MB'], [/^Move to which group\? \((.*)\)$/, '移去邊個分類？（$1）'],
   [/^React (.+)$/, '回應 $1'],
+  [/^(\d+) waiting to send$/, '$1 個等緊傳送'], [/^([\d.]+) MB · (\d+) items on the server$/, '$1 MB · $2 項喺伺服器'],
+  [/^You are (.+)$/, '你係 $1'], [/^Synced (.+)$/, '已同步 $1'], [/^I'm (.+)$/, '我係 $1'], [/^Problem: (.+)$/, '問題：$1'],
 ];
 
 const trCache = new Map();
