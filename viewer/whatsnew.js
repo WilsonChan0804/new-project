@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-09", date: "25 Oct 2026",
+    items: [
+      "**SBD check about 5 times faster:** the search for the side regions (the slowest part, over 90 % of a big model's run) skips the edges that cut a building much sooner. The results are exactly the same as before; a test model with 12 stepped towers went from 128 s to 25 s.",
+      "**Where the time goes:** under an SBD result, **took ...** now says how long the check took and in which steps.",
+    ],
+  },
+  {
     version: "2026-12-08", date: "23 Oct 2026",
     items: [
       "**3D opens in stages:** the main model shows as soon as it is in and you can work at once; the other disciplines keep loading behind it, the ones nearest your view first. To load only the main model, tick **Open with the main model only** under the Models list - the others then load when you tick them or come near them.",

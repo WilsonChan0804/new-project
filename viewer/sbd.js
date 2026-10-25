@@ -34,6 +34,17 @@ export function gapNums(ax) {
 }
 const gapKind = (g) => (g.omitted ? "air corridor, omitted" : g.side ? "side setback" : g.corridor ? "air corridor" : g.type === "FAIL" ? "blocked" : g.type === "OPEN" ? "open" : g.type === "S3" ? "angled boundary" : g.type === "S2" ? "between buildings" : "setback");
 // the working of one gap, as the Plan and the report give it
+/* How long the check took, and in which steps (the engine's timing_ms):
+   where a slow model spends its time. */
+const STEP = { footprints: "footprints", lp: "Lp", plane_search: "plane search", elevations: "elevations", zones_other: "other", case1: "Case 1" };
+function runTook(r) {
+  if (!r.ms) return "";
+  const s = (ms) => (ms >= 10000 ? Math.round(ms / 1000) : (ms / 1000).toFixed(1)) + " s";
+  const t = r.timing_ms || {};
+  const parts = Object.keys(t).filter((k) => t[k] >= 100).sort((a, b) => t[b] - t[a]).map((k) => `${STEP[k] || k} ${s(t[k])}`);
+  return ` · took ${s(r.ms)}` + (parts.length ? ` <span title="Where the time went">(${esc(parts.join(", "))})</span>` : "");
+}
+
 function gapHow(g, ax, num) {
   const sd = g.side && ax.sides && ax.sides[g.side];
   const k = num.slice(1);
@@ -1003,7 +1014,7 @@ export function createSbd(ctx) {
       + `<div class="sbd-legend"><span><i class="sw ok"></i>complies</span><span><i class="sw bad"></i>does not comply (P below the required P, or Lp over 5U)</span>`
         + `${r.required_p != null && r.zones.some((z) => z.assessed && z.axis2.required_p == null) ? `<span><i class="sw info"></i>for information only</span>` : ""}</div>`
       + ((r.warnings || []).length ? `<div class="bad sbd-warn">${r.warnings.map(esc).join("<br>")}</div>` : "")
-      + (B.view ? `<div class="muted">Saved ${esc((cur().saved_at || "").replace("T", " ").slice(0, 16))} by ${esc(cur().saved_by || "")}</div>` : `<div class="muted">Run ${esc((r.run_at || "").replace("T", " ").slice(0, 16))}${r.run_by ? " · " + esc(r.run_by) : ""}</div>`);
+      + (B.view ? `<div class="muted">Saved ${esc((cur().saved_at || "").replace("T", " ").slice(0, 16))} by ${esc(cur().saved_by || "")}</div>` : `<div class="muted">Run ${esc((r.run_at || "").replace("T", " ").slice(0, 16))}${r.run_by ? " · " + esc(r.run_by) : ""}${runTook(r)}</div>`);
     paintLevels(r);
     if (B.three) show3d(true);
   }

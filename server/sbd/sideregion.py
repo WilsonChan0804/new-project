@@ -346,18 +346,31 @@ def street_part(site, facing, side, v_entry, v_exit, carry=None):
     return out
 
 
+# the corner that refused the last edge (per hull list): the edges come
+# sorted, and the next one is nearly always refused by the same corner, so it
+# is tried first - the answer is the same, found sooner
+_HIT = [None, None]
+
+
 def _cuts_building(hulls, side, edge, v_lo, v_hi):
     """A building pokes outward past the edge (u1, v1, t)."""
     u1, v1, t = edge
     s = 1.0 if side == "right" else -1.0
-    ue = lambda v: u1 if v <= v1 else u1 + t * (v - v1)
+    if _HIT[0] is hulls:
+        q = _HIT[1]
+        if ((q[0] - u1 if q[1] <= v1 else q[0] - u1 - t * (q[1] - v1)) * s) > 0.05:
+            return True
     for h in hulls:
         for q in h:
-            if (q[0] - ue(q[1])) * s > 0.05:
+            if ((q[0] - u1 if q[1] <= v1 else q[0] - u1 - t * (q[1] - v1)) * s) > 0.05:
+                _HIT[0], _HIT[1] = hulls, q
                 return True
-        for a, b in _spans(h, v1) if v_lo < v1 < v_hi else []:
-            if ((b if s > 0 else a) - ue(v1)) * s > 0.05:
-                return True
+    # no corner beyond it: a hull's side may still be, at the turn's depth
+    if v_lo < v1 < v_hi:
+        for h in hulls:
+            for a, b in _spans(h, v1):
+                if ((b if s > 0 else a) - u1) * s > 0.05:
+                    return True
     return False
 
 
@@ -515,13 +528,29 @@ def candidates(hulls, side, v_lo):
     for c in sil:
         k = round(c[0], 6)
         last[k] = max(last.get(k, c[1]), c[1])
+    rv_lo = round(v_lo, 6)
+    # the corners by depth: each turn looks only at the corners beyond it
+    far = sorted(sil, key=lambda q: q[1])
+    far_v = [q[1] for q in far]
+    add, rnd, T = out.add, round, TAN_MAX
+    rT, rnT = round(TAN_MAX, 9), round(-TAN_MAX, 9)
     for c1 in sil:
-        out.add((round(c1[0], 6), round(v_lo, 6), 0.0))
-        for c2 in sil:
-            if c2[1] <= c1[1] + 1e-6:
-                continue                      # turn at c1 towards a corner beyond it
-            t = max(-TAN_MAX, min(TAN_MAX, (c2[0] - c1[0]) / (c2[1] - c1[1])))
-            out.add((round(c1[0], 6), round(c1[1], 6), round(t, 9)))
+        ru, rv, cu, cv = rnd(c1[0], 6), rnd(c1[1], 6), c1[0], c1[1]
+        add((ru, rv_lo, 0.0))
+        hi = lo = False                       # the full turn either way, once added
+        for c2 in far[bisect.bisect_right(far_v, cv + 1e-6):]:
+            # turn at c1 towards a corner beyond it
+            t = (c2[0] - cu) / (c2[1] - cv)
+            if t > T:
+                if not hi:
+                    add((ru, rv, rT))
+                    hi = True
+            elif t < -T:
+                if not lo:
+                    add((ru, rv, rnT))
+                    lo = True
+            else:
+                add((ru, rv, rnd(t, 9)))
         # or straight on to the last corner on the same line (the far end of
         # the same building face) and turned there the full 15 deg either way
         # - round the last building the region may grow (Wilson, TMTL496:
@@ -550,6 +579,7 @@ def side_region(site, hulls, side, streets=None):
             facing.append((cl, reach, polys))
     global _SPAN_CACHE
     _SPAN_CACHE = {}
+    _HIT[0] = _HIT[1] = None
     try:
         return _side_region(site, hulls, side, v_lo, v_hi, facing)
     finally:

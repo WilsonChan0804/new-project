@@ -1161,6 +1161,13 @@ def zone_levels(data, zones=None):
 
 def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
     t0 = time.time()
+    # how long each step took (shown under the result): where a slow run spends its time
+    timing, lap = {}, [t0]
+
+    def took(key):
+        now = time.time()
+        timing[key] = timing.get(key, 0) + int((now - lap[0]) * 1000)
+        lap[0] = now
     del geom.LOG[:]
     warnings = check_input(data)
     if not data.get("site") or len(data["site"]) < 3:
@@ -1233,6 +1240,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
             at = min(max(float(at), z0 + exempt_of[name] + 0.01), hi - 0.01)
             inside, other = zone_footprints(data, z0, z1, at=at)
         plan_fp.append((name, z0, z1, inside, other, at))
+    took("footprints")
     loops_of = {}
     for name, z0, z1, inside, other, _at in plan_fp:
         loops = [geom.ensure_loop_ccw([_pt(p) for p in f["loop"]]) for f in inside]
@@ -1254,6 +1262,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
     req_x, req_y = P.get_required_p_planes(site_area, lp["projected_m"], tallest)
     if site_area < 20000.0:
         req_y = None
+    took("lp")
     fails = []
     out_zones, all_p, log = [], [], []
     for name, z0, z1, inside, other, at in plan_fp:
@@ -1264,6 +1273,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
              "others": [[[round(x, 3), round(y, 3)] for x, y in f["loop"]] for f in other], "assessed": bool(loops)}
         if loops:
             zr, text = A.assess(name, site_pts, loops, a, req_p=req_p, tallest_m=tallest)
+            took("plane_search")
             log.append("== %s ==" % name)
             log += text.splitlines()
             # the zone's buildings, named along the street (B1, B2 ...) - the
@@ -1306,6 +1316,7 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
                 tried.append({"x_deg": round(x_deg, 1), "y_deg": round(y_deg, 1), "P_x": px, "P_y": py})
                 if best is None or score > best[0]:
                     best = (score, pack, x_deg, y_deg, len(tried) - 1)
+            took("elevations")
             _, pack, x_deg, y_deg, bi = best
             tried[bi]["chosen"] = True
             z["tried"] = tried
@@ -1338,7 +1349,9 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
         out_zones.append(z)
     req_old = A.required_p(site_area, lp["addin_m"], tallest)
     ctrl = min(all_p) if all_p else None
+    took("zones_other")
     c1 = case1(data, [(name, inside) for name, z0, z1, inside, other in zone_fp], a, legs)
+    took("case1")
     return {
         "ok": True, "version": 2, "warnings": warnings, "log": log[-400:], "heights": heights, "tallest_m": tallest,
         "axis": {"source": axis_src, "axis1": [round(a.X, 6), round(a.Y, 6)], "axis2": [round(b.X, 6), round(b.Y, 6)]},
@@ -1353,5 +1366,5 @@ def run(data, axis="street", angle_deg=0.0, zones=None, levels=None):
                      "outline": s.get("outline") or [], "level": s.get("level"), "label": s.get("label") or s.get("name") or ""}
                     for s in data.get("streets") or []],
         "ground_z": data.get("ground_z"), "ground_source": data.get("ground_source") or "", "level0": data.get("level0"),
-        "ms": int((time.time() - t0) * 1000),
+        "ms": int((time.time() - t0) * 1000), "timing_ms": timing,
     }
