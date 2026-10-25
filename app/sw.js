@@ -1,5 +1,5 @@
 // Offline cache for the app shell. User data lives in IndexedDB, not here.
-const CACHE = 'moments-v1';
+const CACHE = 'moments-v2';
 const SHELL = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', e => {

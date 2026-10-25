@@ -16,10 +16,15 @@ To use it on iPhone, host the `app/` folder anywhere with HTTPS (e.g. GitHub Pag
 
 | Tab | Features |
 | --- | --- |
-| Moments | Text, photos, date, #tags, and a pasted link. Links from Instagram, Threads, Facebook, Letterboxd, IMDb, Reddit, WhatsApp, YouTube, X, TikTok and Spotify are recognised and labelled. Search and filter by source. Share through the phone/computer share sheet, or open WhatsApp, Threads, Facebook, Reddit or X with the post already filled in. |
-| Calendar | Month view showing moments and events. Add events and export them as `.ics` files for Apple, Google or Outlook Calendar. |
-| Chat | Chats with text, photos and your stickers. **Messages are stored on this device only for now.** |
-| Stickers | Turn a photo into a sticker: circle, rounded-square, heart, or cut-out (tap to erase the background), with a white outline and caption. Share stickers to WhatsApp as images or download them as PNG files. |
+| Home | "Days together" counter and countdowns to birthdays, anniversaries, plans and every 100-day milestone. Quick Snap / Write / Save a link / Sticker buttons. A question of the day (answers become moments). "On this day" memories from past years, with Shuffle. A monthly recap with stats, a photo collage and a story-style slideshow. |
+| Moments | A photo-first feed with swipeable photos, places, #albums and emoji reactions. Filter chips by photos, links, source app or album. Links from Instagram, Threads, Facebook, Letterboxd, IMDb, Reddit, WhatsApp, YouTube, X, TikTok and Spotify are recognised. The ••• menu shares through the system share sheet, posts to WhatsApp, Threads, Facebook, Reddit or X, and edits or deletes. |
+| Calendar | Days with photos show the photo itself. Plans and special dates are colour-coded. Plans export as `.ics` files for Apple, Google or Outlook Calendar. |
+| Chat | Chat list and conversation view with photos and your stickers. **Messages are stored on this device only for now.** |
+| Stickers | Turn a photo into a sticker: circle, square, heart, or cut-out (tap to erase the background, with undo), a white outline and a caption. Share stickers to WhatsApp as images or download them as PNG files. |
+
+Settings (gear icon on Home) holds your names, the "together since" date, special dates, and backup/restore.
+
+Ideas adopted from similar apps: Between (day counter, special-date countdowns, private chat), Locket and Retro (photo-first sharing, recaps, resurfaced memories), and Amorly/Amourly (question of the day, shared journal).
 
 ## Where your data lives
 
