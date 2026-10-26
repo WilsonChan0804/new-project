@@ -27,7 +27,7 @@ import { day, wday } from "./dates.js";
 const K = {
   view: matchMedia("(max-width: 700px)").matches ? "list" : "month",
   at: new Date(),             // a day in the month shown
-  kinds: new Set(["meeting", "task", "issue", "leave"]),
+  kinds: new Set(["meeting", "task", "issue", "query", "leave"]),
   entries: [], from: "", to: "",
   hol: { hk: true, ph: true },       // the holidays shown (Holidays chip)
   holExtra: {},                       // added by a site admin (server)
@@ -39,7 +39,11 @@ try {
   const v = localStorage.getItem("lwk-viewer:cal-view");
   if (v === "month" || v === "list" || v === "week") K.view = v;
   const k = JSON.parse(localStorage.getItem("lwk-viewer:cal-kinds") || "null");
-  if (Array.isArray(k)) { K.kinds = new Set(k); if (!localStorage.getItem("lwk-viewer:cal-kinds-leave")) K.kinds.add("leave"); }
+  if (Array.isArray(k)) {
+    K.kinds = new Set(k);
+    if (!localStorage.getItem("lwk-viewer:cal-kinds-leave")) K.kinds.add("leave");
+    if (!localStorage.getItem("lwk-viewer:cal-kinds-query")) K.kinds.add("query");     // new since the choice was kept
+  }
   const h = JSON.parse(localStorage.getItem("lwk-viewer:cal-hol") || "null");
   if (h && typeof h === "object") K.hol = { hk: !!h.hk, ph: !!h.ph };
   if (localStorage.getItem("lwk-viewer:cal-week") === "0") K.weekStart = 0;
@@ -131,11 +135,11 @@ function timeOf(e) {
 function chip(e, long) {
   const cls = `ce ${e.kind}${e.region ? " " + e.region : ""}${e.mine ? " mine" : ""}${e.done ? " done" : ""}${e.cancelled ? " cancelled" : ""}${e.reply ? " r-" + e.reply : ""}`;
   const t = timeOf(e);
-  const icon = { meeting: "calendar", task: "task", issue: "flag", leave: "user", holiday: "calendar" }[e.kind];
+  const icon = { meeting: "calendar", task: "task", issue: "flag", query: "flag", leave: "user", holiday: "calendar" }[e.kind];
   return `<a class="${cls}" href="${esc(e.url)}" data-id="${esc(e.id)}" title="${esc(e.title + (e.parent ? " - sub-task of " + e.parent : "") + (e.from ? " - " + e.from : ""))}">`
     + `<span class="ce-i">${ic(icon, 12)}</span>`
     + (t ? `<b class="ce-t">${esc(t)}</b>` : "")
-    + `<span class="ce-n">${e.kind === "issue" ? "Due · " : ""}${esc(e.title)}</span>`
+    + `<span class="ce-n">${e.kind === "issue" || e.kind === "query" ? "Due · " : ""}${esc(e.title)}</span>`
     + (long ? `<small class="ce-f">${esc([e.parent ? "Sub-task of " + e.parent : "", e.from, e.where].filter(Boolean).join(" · "))}</small>` : "")
     + `</a>`;
 }
@@ -186,7 +190,7 @@ function paintWeek(list) {
 }
 
 /* The colours, which are also the switches: click one to hide or show it. */
-const LEGEND = [["issue", "Issue due dates"], ["task", "Tasks"], ["holiday", "Holidays"], ["leave", "Team leave"], ["meeting", "Meetings"]];
+const LEGEND = [["issue", "Issue due dates"], ["query", "Query due dates"], ["task", "Tasks"], ["holiday", "Holidays"], ["leave", "Team leave"], ["meeting", "Meetings"]];
 function paintLegend() {
   const box = $("#cal-legend");
   if (!box) return;
@@ -243,7 +247,7 @@ function details(e) {
       ? `<div class="cs-r muted">${workingDays(e.start, e.end).n} working day(s)${e.half ? " · half a day (" + esc(e.half.toUpperCase()) + ")" : ""}</div>`
         + (e.mine ? `<button type="button" class="ghost cs-del" data-del>Remove this leave</button>` : "")
       : e.kind === "holiday" ? ""
-      : `<a class="primary cs-open" href="${esc(e.url)}">${e.kind === "meeting" ? "Open in the chat (reply there)" : e.kind === "task" ? "Open the task" : "Show the issue"}</a>`);
+      : `<a class="primary cs-open" href="${esc(e.url)}">${e.kind === "meeting" ? "Open in the chat (reply there)" : e.kind === "task" ? "Open the task" : e.kind === "query" ? "Open the query" : "Show the issue"}</a>`);
   box.onclick = async (ev) => {
     if (ev.target.closest("[data-x]")) box.hidden = true;
     if (ev.target.closest("[data-del]")) {
@@ -555,7 +559,7 @@ function wire() {
     c.checked = K.kinds.has(c.value);
     c.onchange = () => {
       if (c.checked) K.kinds.add(c.value); else K.kinds.delete(c.value);
-      try { localStorage.setItem("lwk-viewer:cal-kinds", JSON.stringify([...K.kinds])); localStorage.setItem("lwk-viewer:cal-kinds-leave", "1"); } catch (e) {}
+      try { localStorage.setItem("lwk-viewer:cal-kinds", JSON.stringify([...K.kinds])); localStorage.setItem("lwk-viewer:cal-kinds-leave", "1"); localStorage.setItem("lwk-viewer:cal-kinds-query", "1"); } catch (e) {}
       paint();
     };
   }

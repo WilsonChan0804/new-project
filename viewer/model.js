@@ -5621,6 +5621,15 @@ function selectionFromBrowser() {
   return out;
 }
 window.LWK3D = Object.assign(window.LWK3D || {}, {
+  /* "+ Query" (nav.js): the picture as seen, and the link to this exact view (?view=) */
+  async captureView() {
+    const vp = captureViewpoint();
+    let snapshot = "";
+    try { snapshot = await Store.uploadSnapshot(vp.image); } catch (e) { console.warn("query picture", e); }
+    const lv = S.floorRows && S.controls ? levelAt(S.controls.target.y) : null;
+    return { kind: "view3d", project: Store.currentProject() || "", url: viewLink(),
+             title: "3D view" + (lv ? " - " + lv : ""), snapshot: typeof snapshot === "string" ? snapshot : "" };
+  },
   // the model checks (support and tests)
   headroom: () => (S.head ? S.head.debug() : null),
   sectionOn: () => !!(S.section && S.section.on),

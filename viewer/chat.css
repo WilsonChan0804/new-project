@@ -74,6 +74,10 @@ b.mention.me { background: #ede9fe; color: #6d28d9; border-radius: 3px; padding:
 .c-card.task.ev-completed { border-left-color: var(--ok); }
 .c-card.task.ev-assigned { border-left-color: var(--accent); }
 .c-card.issue { border-left-color: var(--bad); }
+.c-card.query { border-left-color: #0284c7; }
+.c-card.query.st-closed { border-left-color: var(--ok); }
+.cc-snap { display: block; margin: 6px 0 2px; }
+.cc-snap img { display: block; max-width: 100%; max-height: 180px; border-radius: 6px; border: 1px solid var(--line); object-fit: cover; }
 .cc-h { display: flex; align-items: center; gap: 6px; font-size: 12px; }
 .cc-t { font-size: 14px; font-weight: 700; margin: 4px 0 2px; }
 .cc-x { font-size: 13px; color: var(--ink-2); white-space: pre-wrap; }

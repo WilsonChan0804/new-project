@@ -224,6 +224,8 @@ export function installHeader({ api, project, link }) {
     const st = document.getElementById("lwk-send-task");
     const home = document.getElementById("tb-acts") || document.getElementById("v3-more-items") || bar;
     if (home && st && st.parentNode !== home) { st.classList.add("pb-task"); if (home === bar) bar.insertBefore(st, bar.querySelector("#conn")); else home.appendChild(st); }
+    const sq = document.getElementById("lwk-send-query");
+    if (home && sq && sq.parentNode !== home) { sq.classList.add("pb-task"); if (home === bar) bar.insertBefore(sq, bar.querySelector("#conn")); else home.appendChild(sq); }
     // a project of one model / one sheet set: nothing to choose there
     for (const sel of document.querySelectorAll(".page-bar .two-part")) {
       const one = sel.options.length <= 1;

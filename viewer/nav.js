@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-12";
+const LWK_VERSION = "2026-12-13";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -215,6 +215,8 @@ async function afterSignIn() {
     nav.id = "lwk-nav";
     nav.innerHTML =
       `<a href="#" id="lwk-send-task" title="Keep this sheet or 3D view on a task (Tasks page)">+ Task</a>`
+      + (/(^|\/)(index|model)\.html$/.test(location.pathname) || /\/$/.test(location.pathname)
+        ? `<a href="#" id="lwk-send-query" title="Raise a query about what is on screen - or add this picture to an open query (Tasks > Queries)">+ Query</a>` : "")
       + (managesSomething && ME.accounts
         ? `<a href="${link("admin.html")}" title="People and project members">Admin</a>` : "")
       + (ME.user
@@ -252,6 +254,8 @@ async function afterSignIn() {
     setTimeout(startNotify, 400);
     const st = document.getElementById("lwk-send-task");
     if (st) st.onclick = (ev) => { ev.preventDefault(); sendToTask(); };
+    const sq = document.getElementById("lwk-send-query");
+    if (sq) sq.onclick = (ev) => { ev.preventDefault(); sendToQuery(sq); };
     const so = document.getElementById("lwk-signout");
     if (so) so.onclick = (ev) => { ev.preventDefault(); signOut(); };
   }
@@ -303,6 +307,36 @@ function viewLink() {
              title: "3D view" };
   }
   return { url: location.href, title: document.title };
+}
+
+/* "+ Query": a picture of the sheet / 3D view on screen with a link back to
+   that exact view, handed to Tasks > Queries (tasks-queries.js VIEW_KEY):
+   a new query with it, or added to an open one. */
+async function sendToQuery(btn) {
+  const cap = (window.SHEETS && window.SHEETS.captureView && window.SHEETS.S && window.SHEETS.S.sheet) ? window.SHEETS.captureView
+    : (window.LWK3D && window.LWK3D.captureView) ? window.LWK3D.captureView : null;
+  if (!cap) { alert("Open a sheet or the 3D model first."); return; }
+  const win = window.open("", "_blank");        // now: a pop-up opened after waiting is blocked
+  const was = btn.textContent;
+  btn.textContent = "Capturing ...";
+  try {
+    const v = await cap();
+    v.t = Date.now();
+    v.by = (ME && ME.user && ME.user.name) || "";
+    v.at = new Date().toISOString().slice(0, 16);
+    localStorage.setItem("lwk-viewer:query-view", JSON.stringify(v));
+    let reg = "";
+    try {
+      const ps = (await api("/api/queries/projects")).projects || [];
+      const hit = ps.find((p) => (p.viewers || []).includes(v.project));
+      reg = hit ? hit.id : "";
+    } catch (e) {}
+    const url = "tasks.html?" + new URLSearchParams(Object.assign({ mode: "queries", addview: "1" }, reg ? { reg } : {})).toString();
+    if (win) win.location.href = url; else location.href = url;
+  } catch (e) {
+    if (win) win.close();
+    alert("Could not capture the view: " + e.message);
+  } finally { btn.textContent = was; }
 }
 
 function sendToTask() {

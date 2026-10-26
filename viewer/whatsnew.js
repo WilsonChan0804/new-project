@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-13", date: "26 Oct 2026",
+    items: [
+      "**Queries** (Tasks > Queries): a register of questions per project, numbered Q-001, Q-002 ... Raise one to the people who should answer, with a due date and priority; they answer in the viewer, and the raiser closes it. Each query has its discussion (with files), history and linked tasks - **+ New task from this query** or **Link a task**.",
+      "**Pictures of the exact view:** on a sheet or in 3D, **+ Query** (next to + Task) captures what you see and adds it to a new or open query. A click on the picture opens the same sheet zoomed to the same area, or the 3D model at the same camera and section.",
+      "**Due dates in the Calendar** (My queries), **in Chat** - type **?** to link a query, or **+ > Query** to raise one there; a card is posted when a query is raised, answered or closed - a **Dashboard** tab (open, overdue, due soon, per person, per week), and **Report (PDF)**: the register and every query with its pictures, to print or keep in Folders > Queries.",
+    ],
+  },
+  {
     version: "2026-12-12", date: "25 Oct 2026",
     items: [
       "**Light & Vent colours keep the drawing readable:** the colour now tints the paper and the plan's lines stay dark through it. The legend has a switch: **Filled**, **Outline** (just each room's outline and a result dot) or **Off** - remembered on this device.",

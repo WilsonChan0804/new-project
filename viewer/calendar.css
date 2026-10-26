@@ -123,3 +123,11 @@
 :root[data-theme="dark"] .cm-d.hol { background: #182233; }
 :root[data-theme="dark"] .cm-d.drag { background: #2a1f45; }
 :root[data-theme="dark"] #cal-hol.active { color: #93c5fd; border-color: #3b82f6; }
+
+/* queries (queries.py): sky blue */
+.ck.query { color: #0369a1; }
+.ce.query { background: #eef7fd; border-color: #0284c7; } .ce.query .ce-i { color: #0369a1; }
+.ce-dot.query { background: #0284c7; }
+:root[data-theme="dark"] .ck.query { color: #7cc4ef; }
+:root[data-theme="dark"] .ce.query { background: #10283a; }
+:root[data-theme="dark"] .ce.query .ce-i { color: #7cc4ef; }

@@ -157,6 +157,49 @@ const AREAS = createAreas({
 window.SHEETS = window.SHEETS || {};
 window.SHEETS.AREAS = AREAS;
 
+/* "+ Query" (nav.js): the part of the sheet on screen - its picture, and a
+   link that opens this sheet zoomed to the same area (?area=). */
+window.SHEETS.captureView = async () => {
+  if (!S.sheet || !S.page) throw new Error("Open a sheet first");
+  const sc = $("#scroll").getBoundingClientRect(), P = $("#page").getBoundingClientRect();
+  const x0 = Math.max(sc.left, P.left) - P.left, x1 = Math.min(sc.right, P.right) - P.left;
+  const y0 = Math.max(sc.top, P.top) - P.top, y1 = Math.min(sc.bottom, P.bottom) - P.top;
+  if (x1 - x0 < 4 || y1 - y0 < 4) throw new Error("Scroll the sheet into view first");
+  const a = paperFrom(x0, y0), b = paperFrom(x1, y1);
+  const r = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])].map((n) => Math.round(n * 10) / 10);
+  let snapshot = "";
+  try {
+    const cv = $("#pdf");
+    const cr = cv.getBoundingClientRect();
+    const k = cv.width / (cr.width || 1);
+    const sx = (P.left + x0 - cr.left) * k, sy = (P.top + y0 - cr.top) * k, sw = (x1 - x0) * k, sh = (y1 - y0) * k;
+    const f = Math.min(1, 1600 / sw);
+    const out = document.createElement("canvas");
+    out.width = Math.max(1, Math.round(sw * f)); out.height = Math.max(1, Math.round(sh * f));
+    const g = out.getContext("2d");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, out.width, out.height);
+    g.drawImage(cv, sx, sy, sw, sh, 0, 0, out.width, out.height);
+    // the markups on top, as they are seen
+    const svg = $("#overlay");
+    if (svg) {
+      const img = new Image();
+      const xml = new XMLSerializer().serializeToString(svg);
+      await new Promise((res) => { img.onload = res; img.onerror = res; img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml); });
+      if (img.width) {
+        const sr = svg.getBoundingClientRect(), ks = img.width / (sr.width || 1);
+        g.drawImage(img, (P.left + x0 - sr.left) * ks, (P.top + y0 - sr.top) * ks, (x1 - x0) * ks, (y1 - y0) * ks, 0, 0, out.width, out.height);
+      }
+    }
+    snapshot = await Store.uploadSnapshot(out.toDataURL("image/jpeg", 0.85));
+  } catch (e) { console.warn("query picture", e); }
+  return {
+    kind: "sheet", project: Store.currentProject() || "", sheet: S.sheet.number,
+    title: "Sheet " + S.sheet.number + (S.sheet.name ? " - " + S.sheet.name : ""),
+    url: "index.html?" + new URLSearchParams({ project: Store.currentProject() || "", sheet: S.sheet.number, area: r.join(",") }).toString(),
+    snapshot: typeof snapshot === "string" ? snapshot : "",
+  };
+};
+
 /* Light & Vent (lv.js): the Calculation model's rooms on this sheet's plans,
    coloured by their result. Make issue: a cloud round the room, as an issue. */
 const LV = createLvSheets({
@@ -6261,6 +6304,12 @@ async function boot() {
     await openSheet(again);
     const li = document.querySelector(`#sheet-list li[data-num="${CSS.escape(again.number)}"]`);
     if (li) li.scrollIntoView({ block: "center" });
+  }
+  // A query's picture: ?area=u,v,w,h (paper mm) - the sheet zoomed to what was captured
+  const area = (new URLSearchParams(location.search).get("area") || "").split(",").map(Number);
+  if (area.length === 4 && area.every((n) => isFinite(n)) && area[2] > 0 && area[3] > 0) {
+    for (let i = 0; i < 80 && !(S.page && S.viewport); i++) await new Promise((r) => setTimeout(r, 150));
+    if (S.page) zoomToPaper(area);
   }
   // From the dashboard: ?select=<issue id> picks the issue out on its sheet
   // once the issues have arrived from the server.

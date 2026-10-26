@@ -417,8 +417,18 @@ function cardHtml(m) {
       + `<div class="cc-t">#${esc(c.number || "?")} ${esc(c.title)}</div>`
       + `<div class="cc-f">${c.assigned_to ? "Assigned to " + esc(c.assigned_to) : ""}${c.due ? " · Due " + esc(c.due) : ""}<span class="spacer"></span><a href="${esc(url)}">Show in viewer</a></div></div>`;
   }
+  if (c.type === "query") {
+    const say = { raised: "New query", answered: "Query answered", closed: "Query closed", reopened: "Query reopened" }[c.event] || "Query";
+    const url = `tasks.html?mode=queries&reg=${encodeURIComponent(c.reg || "")}&q=${encodeURIComponent(c.id || "")}`;
+    return `<div class="c-card query st-${esc(String(c.status || "").toLowerCase())}"><div class="cc-h">${badge("query")} <b>${esc(say)}</b> <span class="muted">${esc(c.status || "")}${c.raised_by ? " · by " + esc(c.raised_by) : ""}</span></div>`
+      + `<div class="cc-t">${esc(c.code || "")} ${esc(c.title || "")}</div>`
+      + (c.snapshot ? `<a class="cc-snap" href="${esc(url)}"><img src="${esc(c.snapshot)}" alt="" loading="lazy"></a>` : "")
+      + (c.text ? `<div class="cc-x">${c.event === "answered" ? "Answer: " : ""}${esc(c.text)}</div>` : "")
+      + `<div class="cc-f">${esc([c.to && c.to.length ? "To " + c.to.join(", ") : "", c.due ? "Due " + c.due : ""].filter(Boolean).join(" · "))}`
+      + `<span class="spacer"></span><a href="${esc(url)}">Open query</a></div></div>`;
+  }
   const ctx = { uid: C.uid, byUid: C.byUid };
-  if (m.pending && ["poll", "event", "task_ref"].includes(c.type)) return `<div class="c-card"><div class="cc-t">${esc(c.question || c.title || "")}</div></div>`;
+  if (m.pending && ["poll", "event", "task_ref", "query_ref"].includes(c.type)) return `<div class="c-card"><div class="cc-t">${esc(c.question || c.title || "")}</div></div>`;
   if (c.type === "poll") return pollHtml(m, ctx);
   if (c.type === "event") return eventHtml(m, ctx);
   return "";
@@ -606,7 +616,7 @@ function msgHtml(m, prev) {
   const reply = m.reply_to && C.msgs.find((x) => x.id === m.reply_to);
   const by = m.kind === "card" ? (m.author ? m.author + " · update" : "Update") : m.author;
   const wa = m.card && m.card.type === "whatsapp";
-  const own = m.card && ["poll", "event", "task", "task_ref"].includes(m.card.type);
+  const own = m.card && ["poll", "event", "task", "task_ref", "query", "query_ref"].includes(m.card.type);
   const inner = fwd ? (fwd.inner ? cardHtml({ card: fwd.inner }) : "") : m.kind === "card" || own ? cardHtml(m) : wa ? waHtml(m) : "";
   const shown = wa ? new Set((m.card.lines || []).map((l) => l.file).filter(Boolean)) : null;
   const files = shown ? (m.files || []).filter((f) => !shown.has(f.name)) : m.files;
@@ -759,7 +769,8 @@ function plusMenu() {
   const el = pop($("#c-plus"), `<div class="po-row" data-k="poll">${ic("poll")} Poll</div>`
     + `<div class="po-row" data-k="event">${ic("calendar")} Event / meeting</div>`
     + `<div class="po-row" data-k="task">${ic("task")} Task</div>`
-    + `<div class="po-row" data-k="link">${ic("hash")} Link a task, issue, sheet or 3D view</div>`, 260);
+    + `<div class="po-row" data-k="query">${badge("query")} Query</div>`
+    + `<div class="po-row" data-k="link">${ic("hash")} Link a task, query, issue, sheet or 3D view</div>`, 260);
   el.addEventListener("click", async (ev) => {
     const r = ev.target.closest(".po-row");
     if (!r) return;
@@ -767,6 +778,7 @@ function plusMenu() {
     if (r.dataset.k === "poll") { const c = await pollForm(); if (c) sendCard(c); }
     if (r.dataset.k === "event") { const c = await eventForm(); if (c) sendCard(c); }
     if (r.dataset.k === "task") sendTask();
+    if (r.dataset.k === "query") sendQuery();
     if (r.dataset.k === "link") linkMenu($("#c-plus"));
   });
 }
@@ -778,6 +790,51 @@ async function sendTask(prefill, body) {
   if (!C.room || C.room.id !== room.id) await openRoom(room.id);
   await sendCard({ type: "task_ref", task: t.task, title: (prefill && prefill.title) || "Task" }, [], body || "");
   toast("Task made");
+}
+
+/* + > Query: raises a query in a project (the channel's own first) and
+   sends its card here; the project's channel gets no second card. */
+async function sendQuery() {
+  const room = C.room;
+  let projects = [];
+  try { projects = (await api("/api/queries/projects")).projects || []; } catch (e) { toast(e.message, true); return; }
+  if (!projects.length) { toast("You are not in any project yet - ask a project admin to add you", true); return; }
+  const cur = (room && room.project && projects.some((p) => p.id === room.project)) ? room.project : (linkScope() && projects.some((p) => p.id === linkScope()) ? linkScope() : projects[0].id);
+  const due = new Date(Date.now() + 7 * 86400e3).toISOString().slice(0, 10);
+  const pr = modal("New query", `<label>Project <select name="reg">${projects.map((p) => `<option value="${esc(p.id)}"${p.id === cur ? " selected" : ""}>${esc(p.short || p.name)}</option>`).join("")}</select></label>`
+    + `<label>Title <input name="title" maxlength="300" required></label>`
+    + `<label>Question <textarea name="question" rows="4" maxlength="20000"></textarea></label>`
+    + `<label>To <div class="qf-to td-v act"></div></label>`
+    + `<div class="it-2"><label>Due <input type="date" name="due" value="${due}"></label>`
+    + `<label>Priority <select name="prio"><option>Normal</option><option>High</option><option>Urgent</option></select></label></div>`
+    + `<p class="muted" style="font-size:11px">The query goes into the project's register (Tasks > Queries), and a card for it into this chat. Add pictures of sheets or 3D views there.</p>`, "Raise the query");
+  const form = document.querySelector(".t-modal");
+  let people = [], to = [];
+  const toEl = form.querySelector(".qf-to");
+  const paintTo = () => { toEl.innerHTML = to.map((p) => esc(p.name)).join(", ") || `<span class="muted">nobody yet - choose</span>`; };
+  const loadPeople = async () => {
+    try { people = ((await api(`/api/queries?reg=${encodeURIComponent(form.reg.value)}`)).people || []).filter((p) => p.uid !== C.uid); } catch (e) { people = []; }
+    const ids = new Set(people.map((p) => p.uid));
+    to = to.filter((p) => ids.has(p.uid));
+    paintTo();
+  };
+  form.reg.onchange = loadPeople;
+  toEl.onclick = (ev) => pickPeople(ev.currentTarget, to, people, (v) => { to = v; paintTo(); });
+  paintTo();
+  loadPeople();
+  const f = await pr;
+  if (!f) return;
+  const title = f.title.value.trim();
+  if (!title) { toast("Give the query a title", true); return; }
+  const id = "q" + Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => b.toString(16).padStart(2, "0")).join("").slice(0, 19);
+  try {
+    await api("/api/queries", { method: "POST", body: JSON.stringify({ reg: f.reg.value, skip_chat: room ? room.id : "", queries: [{
+      id, title, question: f.question.value.trim(), due: f.due.value || "", priority: f.prio.value || "Normal",
+      to: to.map((p) => ({ uid: p.uid, name: p.name })) }] }) });
+  } catch (e) { toast("Could not raise the query: " + e.message, true); return; }
+  if (!C.room || C.room.id !== room.id) await openRoom(room.id);
+  await sendCard({ type: "query_ref", query: id, title }, [], "");
+  toast("Query raised");
 }
 
 /* More > Make a task: the words as its title and description, the people
@@ -807,10 +864,10 @@ async function sendCard(card, files, body) {
 }
 
 
-/* @ lists the people in this chat; # ! $ % the tasks, issues, sheets and 3D
+/* @ lists the people in this chat; # ? ! $ % the tasks, queries, issues, sheets and 3D
    of the project (all your projects outside a project channel). */
-const LINK_KINDS = { "#": "task", "!": "issue", "$": "sheet", "%": "model" };
-const LINK_SAY = { task: "tasks", issue: "issues", sheet: "sheets", model: "3D models or saved views" };
+const LINK_KINDS = { "#": "task", "?": "query", "!": "issue", "$": "sheet", "%": "model" };
+const LINK_SAY = { task: "tasks", query: "queries", issue: "issues", sheet: "sheets", model: "3D models or saved views" };
 let lsTimer = null, lsSeq = 0;
 
 /* a picked task, issue, sheet or view: a chip in the box, sent as [label](address) */
@@ -863,7 +920,7 @@ async function inlineLinks(sym, q) {
   let rows = [];
   try { rows = await searchLinks(kind, q, reg); } catch (e) { return; }
   // still the word being typed (not an older, shorter one)
-  const now = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(BOX.textBefore());
+  const now = /(^|\s)([#?!$%])([^\s#?!$%]{0,40})$/.exec(BOX.textBefore());
   if (seq !== lsSeq || !now || now[2] + now[3] !== token) return;
   BOX.saveRange();
   const where = reg ? ` in ${(C.projects[reg] || {}).short || (C.projects[reg] || {}).name || "this project"}` : "";
@@ -891,7 +948,7 @@ function wirePickers() {
   box.addEventListener("input", () => {
     const upto = BOX.textBefore();
     const m = /(^|\s)@([^\s@]{0,30})$/.exec(upto);
-    const lm = /(^|\s)([#!$%])([^\s#!$%]{0,40})$/.exec(upto);
+    const lm = /(^|\s)([#?!$%])([^\s#?!$%]{0,40})$/.exec(upto);
     clearTimeout(lsTimer);
     if (lm && C.room) {
       const q = lm[3];
@@ -954,7 +1011,7 @@ function kbNav(ev) {
    not remember the symbols). */
 function linkMenu(anchor) {
   BOX.saveRange();
-  const tabs = [["task", "# Task"], ["issue", "! Issue"], ["sheet", "$ Sheet"], ["model", "% 3D"]];
+  const tabs = [["task", "# Task"], ["query", "? Query"], ["issue", "! Issue"], ["sheet", "$ Sheet"], ["model", "% 3D"]];
   const cur = linkScope();
   const el = pop(anchor && anchor.nodeType ? anchor : $("#c-linkbtn"), `<label class="lk-ps">Project <select class="lk-psel">${scopeList().map(([id, n]) => `<option value="${esc(id)}"${id === cur ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`
     + `<div class="lk-tabs">${tabs.map(([k, l], i) => `<button type="button" class="ghost${i ? "" : " on"}" data-k="${k}">${l}</button>`).join("")}</div>`

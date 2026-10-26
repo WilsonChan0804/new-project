@@ -4256,6 +4256,13 @@ try:
 except Exception as _ex:
     print("sbd not loaded: %s" % _ex)
 
+# Queries (queries.py): questions raised on a project, answered by the team.
+try:
+    import queries
+    queries.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("queries not loaded: %s" % _ex)
+
 # Light & Ventilation (lv_api.py): the Revit Light & Vent check's result, drawn on the plans.
 try:
     import lv_api

@@ -314,9 +314,18 @@ def _issues(core, w, start, end):
     return out
 
 
+def _queries(core, w, start, end):
+    """Open queries due in the window, addressed to this person or raised by them."""
+    try:
+        import queries
+        return queries.calendar(core, w, start, end)
+    except Exception:
+        return []
+
+
 def entries(core, w, start, end, others=True):
     out = (_meetings(w, start, end) + _tasks(core, w, start, end) + _issues(core, w, start, end)
-           + _leave(core, w, start, end, others))
+           + _queries(core, w, start, end) + _leave(core, w, start, end, others))
     out.sort(key=lambda e: (e["start"], e["kind"] != "meeting", e["title"].lower()))
     return out
 
@@ -354,7 +363,7 @@ def ics(entries_, base, name):
              "METHOD:PUBLISH", "X-WR-CALNAME:" + _esc(name), "X-PUBLISHED-TTL:PT1H",
              "REFRESH-INTERVAL;VALUE=DURATION:PT1H"]
     for e in entries_:
-        what = {"meeting": "", "task": "Task: ", "issue": "Issue: ", "leave": ""}.get(e["kind"], "")
+        what = {"meeting": "", "task": "Task: ", "issue": "Issue: ", "query": "Query: ", "leave": ""}.get(e["kind"], "")
         if e["kind"] == "meeting" and not e["all_day"]:
             end = e["end"] if e["end"] > e["start"] else None
             when = ["DTSTART:" + _utc(e["start"], e.get("tz")),

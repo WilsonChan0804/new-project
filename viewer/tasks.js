@@ -25,6 +25,7 @@ import * as KanbanView from "./tasks-kanban.js";
 import * as GanttView from "./tasks-gantt.js";
 import * as DashView from "./tasks-dash.js";
 import * as PeopleView from "./tasks-people.js";
+import * as QueriesView from "./tasks-queries.js";
 import * as Detail from "./tasks-detail.js";
 import * as Undo from "./undo.js";
 import * as Clip from "./tasks-clip.js";
@@ -601,7 +602,7 @@ function paintHead() {
     $("#t-team").textContent = "";
     $("#t-title").textContent = S.mode === "quick" ? ({ owned: "Owned by me", subscribed: "Subscribed", all: "All tasks",
       created: "Created by me", assigned: "Assigned by me", completed: "Completed" })[S.quick]
-      : S.mode === "people" ? "People" : S.mode === "activity" ? "Activities" : "Tasks";
+      : S.mode === "people" ? "People" : S.mode === "activity" ? "Activities" : S.mode === "queries" ? "Queries" : "Tasks";
   }
 }
 
@@ -609,13 +610,20 @@ function render() {
   if (T.paintDone) T.paintDone();
   paintHead();
   const el = $("#t-view");
-  if (S.mode !== "list" && !$("#t-detail").hidden) {
+  // a query's panel stays only with the queries
+  if (S.mode !== "queries" && $("#t-detail").querySelector(".q-sec")) { $("#t-detail").hidden = true; $("#t-detail").innerHTML = ""; document.body.classList.remove("detail-on"); }
+  if (S.mode !== "list" && S.mode !== "queries" && !$("#t-detail").hidden) {
     $("#t-detail").hidden = true;
     document.body.classList.remove("detail-on");
     S.openId = "";
   }
   el.className = "v-" + (S.mode === "list" ? S.view : S.mode);
   if (S.mode === "people") return PeopleView.render(T, el);
+  if (S.mode === "queries") {
+    // the query panel on the right belongs to the queries; a task's closes
+    if (!$("#t-detail").hidden && !$("#t-detail").querySelector(".q-sec")) { $("#t-detail").hidden = true; document.body.classList.remove("detail-on"); S.openId = ""; }
+    return QueriesView.render(T, el, S.queriesOpen || {}).then(() => { S.queriesOpen = null; });
+  }
   if (S.mode === "activity") return renderActivity(el, "");
   if (S.mode === "quick") return renderQuick(el);
   if (!S.list) {
@@ -706,7 +714,7 @@ function setUrl() {
   if (p) q.set("project", p);
   if (S.mode === "list" && S.listId) q.set("list", S.listId);
   if (S.mode === "quick") q.set("quick", S.quick);
-  if (S.mode === "people" || S.mode === "activity") q.set("mode", S.mode);
+  if (S.mode === "people" || S.mode === "activity" || S.mode === "queries") q.set("mode", S.mode);
   if (S.openId && S.mode === "list") q.set("task", S.openId);
   history.replaceState(null, "", "tasks.html?" + q.toString());
 }
@@ -1178,6 +1186,12 @@ async function start() {
     await attachFromViewer(q.get("attach"), q.get("title") || "");
     return;
   }
+  queriesCount();
+  if (q.get("mode") === "queries") {
+    S.mode = "queries";
+    S.queriesOpen = { reg: q.get("reg") || "", q: q.get("q") || "" };
+    paintSide(); render(); return;
+  }
   if (q.get("mode") === "people" || q.get("mode") === "activity") { S.mode = q.get("mode"); paintSide(); render(); return; }
   if (q.get("quick")) return loadQuick(q.get("quick"));
   const want = q.get("list") || ls.get("list", "");
@@ -1187,6 +1201,15 @@ async function start() {
     if (q.get("task") && S.tasks.has(q.get("task"))) openTask(q.get("task"));
   } else render();
   try { $("#n-owned").textContent = (await api("/api/tasks-mine?view=owned")).tasks.length || ""; } catch (e) {}
+}
+
+/* the side bar's count: open queries to me, and answered ones I raised */
+async function queriesCount() {
+  try {
+    const r = await api("/api/queries/mine");
+    const n = (r.to_me || 0) + (r.to_close || 0);
+    $("#n-queries").textContent = n || "";
+  } catch (e) {}
 }
 
 start().catch((e) => {

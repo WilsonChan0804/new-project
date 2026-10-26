@@ -459,3 +459,60 @@ button svg.ic { pointer-events: none; }
     border-top: 1px solid var(--line-soft); }
   .t-modal-foot button { min-height: 40px; padding: 8px 18px; }
 }
+
+/* ------------------------------------------------ Queries (tasks-queries.js) */
+.v-queries { padding: 10px 16px 30px; }
+.q-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.q-bar .spacer { flex: 1; }
+.q-bar #q-q { flex: 1 1 200px; min-width: 0; }
+.q-tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.q-tabs button { border: 0; border-radius: 0; background: none; padding: 5px 12px; }
+.q-tabs button.on { background: var(--accent); color: #fff; }
+.q-k { font-size: 12px; color: var(--muted); }
+.q-k .bad, .q-due.bad, .td-v .bad { color: var(--bad); }
+.q-list { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.q-row { display: grid; grid-template-columns: 62px 1fr auto 86px 82px; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line-soft); cursor: pointer; }
+.q-row:last-child { border-bottom: 0; }
+.q-row:hover { background: var(--panel-2); }
+.q-row.on { background: var(--accent-soft, #fff1e6); }
+.q-code { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.q-t { min-width: 0; display: flex; flex-direction: column; }
+.q-t b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-t small, .q-m { color: var(--muted); font-size: 11.5px; }
+.q-m { display: flex; gap: 8px; }
+.q-due { font-size: 12px; text-align: right; }
+.q-chip { justify-self: end; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+.q-form { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 10px 12px; margin-bottom: 10px; }
+.q-fr { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.q-fr label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 2px; }
+.q-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
+.q-view { position: relative; width: 148px; }
+.q-view a { display: block; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel-2); }
+.q-view a:hover { border-color: var(--accent); }
+.q-view img { width: 100%; height: 96px; object-fit: cover; display: block; }
+.q-view .q-noimg { display: flex; height: 96px; align-items: center; justify-content: center; color: var(--muted); }
+.q-view small { display: block; padding: 3px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-view button { position: absolute; top: 2px; right: 2px; padding: 0 5px; background: rgba(255,255,255,.85); }
+.q-sec { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+.q-sec > b { font-size: 12.5px; }
+.q-sec textarea { width: 100%; }
+.q-text { white-space: pre-wrap; margin: 2px 0; }
+.q-tasks, .q-pick { display: flex; flex-direction: column; gap: 3px; }
+.q-task, .q-pick a { text-decoration: none; color: var(--ink); font-size: 12.5px; }
+.q-task small { color: var(--muted); }
+.q-c { border-bottom: 1px solid var(--line-soft); padding: 4px 0; font-size: 12.5px; }
+.q-c div { white-space: pre-wrap; }
+.q-hist { margin: 0; padding-left: 16px; font-size: 11.5px; }
+.q-dash .q-kpis { grid-template-columns: repeat(6, 1fr); }
+.q-dash .td-kpi.click { cursor: pointer; }
+.q-dash .td-kpi b { font-size: 32px; }
+.q-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.q-dash .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.q-dash .card h3 { margin: 0 0 8px; font-size: 13px; }
+.q-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 3px 0 8px; vertical-align: -1px; }
+@media (max-width: 900px) {
+  .q-dash .q-kpis { grid-template-columns: repeat(3, 1fr); }
+  .q-cards { grid-template-columns: 1fr; }
+  .q-row { grid-template-columns: 54px 1fr 74px; }
+  .q-row .q-m, .q-row .q-due { display: none; }
+}

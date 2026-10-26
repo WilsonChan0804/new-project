@@ -85,11 +85,11 @@ export function installV3Bar(wrap) {
   // ⋯ the rest: copy view link, BCF, front / world, + Task
   const more = document.createElement("span");
   more.className = "v3-more";
-  more.innerHTML = `<button type="button" class="v3-chip" id="v3-more-btn" aria-haspopup="menu" title="More: view link, BCF, front and world, + Task">${svg("more")}</button>`
+  more.innerHTML = `<button type="button" class="v3-chip" id="v3-more-btn" aria-haspopup="menu" title="More: view link, BCF, front and world, + Task, + Query">${svg("more")}</button>`
     + `<div id="v3-more-items" class="v3-menu" hidden role="menu"></div>`;
   chips.append(more);
   const items = more.querySelector("#v3-more-items");
-  for (const id of ["view-link", "bcf-menu", "bcf-pair", "import-bcf-file", "pv-setalign", "pv-clearalign", "lwk-send-task"]) {
+  for (const id of ["view-link", "bcf-menu", "bcf-pair", "import-bcf-file", "pv-setalign", "pv-clearalign", "lwk-send-task", "lwk-send-query"]) {
     const n = $(id);
     if (!n) continue;
     if (id === "view-link") { n.textContent = "Copy a link to this view"; }

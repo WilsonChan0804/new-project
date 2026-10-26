@@ -6,7 +6,7 @@ import { esc, today, addDays, daysBetween, isOverdue, fmtDate, people } from "./
 
 const C = { done: "#0e9f6e", open: "#f28022", over: "#e2453c", ok: "#3b82f6", bar: "#6366f1" };
 
-function donut(parts, centre, label) {
+export function donut(parts, centre, label) {
   const total = parts.reduce((s, p) => s + p.n, 0) || 1;
   let a = -Math.PI / 2, arcs = "";
   for (const p of parts) {
@@ -25,7 +25,7 @@ function donut(parts, centre, label) {
 }
 
 /* horizontal bars, optionally split in two (done | open) */
-function hbars(rows, opts) {
+export function hbars(rows, opts) {
   opts = opts || {};
   if (!rows.length) return `<div class="empty">Nothing yet.</div>`;
   const max = Math.max(...rows.map((r) => r.total)) || 1;

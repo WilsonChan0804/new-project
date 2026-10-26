@@ -1019,6 +1019,19 @@ def register(app, core):
             raise HTTPException(status_code=403, detail="You cannot open that task")
         return tc
 
+    def query_ref(w, c):
+        """{type: query_ref, query}: the query as a card, if the sender may open it."""
+        try:
+            import queries
+            card = queries.ref_card(core, w, c.get("query"))
+        except HTTPException:
+            raise
+        except Exception:
+            card = None
+        if not card:
+            raise HTTPException(status_code=403, detail="You cannot open that query")
+        return card
+
     @app.post("/api/chat/rooms/{rid}/messages")
     async def send(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         """{body, files: [file id], reply_to, card}. A card a person may send:
@@ -1028,7 +1041,8 @@ def register(app, core):
         body = await read_json(request)
         text = clean_text(body.get("body"), MAX_TEXT, True).strip()
         raw = body.get("card")
-        card = task_ref(w, raw) if isinstance(raw, dict) and raw.get("type") == "task_ref" else person_card(raw)
+        kind = raw.get("type") if isinstance(raw, dict) else None
+        card = task_ref(w, raw) if kind == "task_ref" else query_ref(w, raw) if kind == "query_ref" else person_card(raw)
         us = users()
         with db() as d:
             r = get_room(d, rid)
@@ -1489,9 +1503,17 @@ def register(app, core):
     # ------------------------------------------------------------ files
 
     def task_access(w, tid):
-        """The task's list role, through tasks.py."""
+        """The task's list role, through tasks.py - or, for a query
+        (queries.py, ids starting with q), the person's access to its project."""
         if tasks is None:
             return None
+        if isinstance(tid, str) and tid.startswith("q"):
+            try:
+                import queries
+                a = queries.query_access(core, w, tid)
+            except Exception:
+                a = None
+            return "editor" if a else None
         with tasks.Db(os.path.join(core.CFG["data"], "tasks.db")) as td:
             t = td.execute("SELECT list_id FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
             if not t:
@@ -1506,7 +1528,7 @@ def register(app, core):
                      x_viewer_token: str = Header(default="")):
         """The file itself is the request body (no form encoding), so a
         pasted screenshot goes up as it is. ?room= for a chat, ?task= for a
-        task comment."""
+        task comment (or a query's: its id)."""
         w = me(request, x_viewer_token)
         if room:
             with db() as d:

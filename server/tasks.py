@@ -163,6 +163,44 @@ CREATE TABLE IF NOT EXISTS projects (
     deleted     INTEGER NOT NULL DEFAULT 0,
     created_by TEXT, created_at TEXT, updated_by TEXT, updated_at TEXT
 );
+-- Queries (queries.py): questions raised on a register project, answered
+-- by the team, with pictures of the sheet / 3D view they are about.
+CREATE TABLE IF NOT EXISTS queries (
+    id          TEXT PRIMARY KEY,
+    reg         TEXT NOT NULL,
+    number      INTEGER NOT NULL,
+    title       TEXT NOT NULL DEFAULT '',
+    question    TEXT NOT NULL DEFAULT '',
+    status      TEXT NOT NULL DEFAULT 'Open',
+    priority    TEXT NOT NULL DEFAULT 'Normal',
+    raised_uid  INTEGER,
+    raised_by   TEXT NOT NULL DEFAULT '',
+    addressed   TEXT NOT NULL DEFAULT '[]',
+    due         TEXT NOT NULL DEFAULT '',
+    answer      TEXT NOT NULL DEFAULT '',
+    answered_by TEXT NOT NULL DEFAULT '',
+    answered_at TEXT NOT NULL DEFAULT '',
+    closed_at   TEXT NOT NULL DEFAULT '',
+    views       TEXT NOT NULL DEFAULT '[]',
+    task_ids    TEXT NOT NULL DEFAULT '[]',
+    history     TEXT NOT NULL DEFAULT '[]',
+    created_at  TEXT NOT NULL DEFAULT '',
+    updated_at  TEXT NOT NULL DEFAULT '',
+    updated_by  TEXT NOT NULL DEFAULT '',
+    rev         INTEGER NOT NULL DEFAULT 0,
+    deleted     INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_queries_reg ON queries(reg, rev);
+CREATE TABLE IF NOT EXISTS query_comments (
+    id          TEXT PRIMARY KEY,
+    query_id    TEXT NOT NULL,
+    uid         INTEGER,
+    author      TEXT NOT NULL DEFAULT '',
+    body        TEXT NOT NULL DEFAULT '',
+    files       TEXT NOT NULL DEFAULT '[]',
+    created_at  TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_query_comments ON query_comments(query_id, created_at);
 -- Members of a project that has no viewer project (no export yet). A
 -- project with a viewer project keeps its members in accounts.db, as before.
 CREATE TABLE IF NOT EXISTS reg_members (
@@ -2319,6 +2357,9 @@ def register(app, core):
         project; otherwise every project you can open."""
         w = core.who(request, x_viewer_token)
         ql = (q or "").strip().lower()[:60]
+        if kind == "query":
+            import queries
+            return {"rows": queries.search(core, w, ql, reg)}
         titles = dict((p["id"], p["title"]) for p in core.list_projects())
         with db() as d:
             ensure_registry(d)
