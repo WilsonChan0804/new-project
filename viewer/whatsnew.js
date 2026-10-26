@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-15", date: "26 Oct 2026",
+    items: [
+      "**Queries on the sheets and in 3D:** each picture of a query shows where it was taken - a badge on the sheet (with the area it showed), a pin in 3D, in the status colour. Click it for its card; **Delete marker** takes that picture off the query (the query stays). Deleting a query removes its markers.",
+      "**Right-click > Add to query here** on a sheet or in the model: the view, with its marker on the point you clicked. The right-hand column lists them (a **Queries** tab on Sheets, **Queries in 3D**), and **? Queries** / **Hide queries** and **Hide closed** hide them.",
+      "**Follow-up questions:** after an answer, anyone on the project can ask a follow-up (**+ Follow-up question** - the query opens again) and the people it is to answer it (**+ Answer**), as a conversation.",
+      "**Fuller task messages in chat:** a task card shows its progress bar and how many sub-tasks are done; a sub-task's card says which task it is under and how far that task is. A message is posted when a task passes 25, 50 or 75 %.",
+      "**Fix:** opening a query as a project member (not an admin) could freeze Tasks, Chat and Queries on the server until it was restarted - and the viewer then showed Offline. Restart the server after this update.",
+    ],
+  },
+  {
     version: "2026-12-14", date: "26 Oct 2026",
     items: [
       "**One query, several views:** **+ Query** on a sheet or in 3D now opens a small menu: a new query (type its subject) or one of the project's open queries - the one used last on top (**Add another to Q-...**). Choose **Stay here** to go on capturing the next sheet or 3D view, or **Open the query**. Anyone on the project can add pictures to a query.",

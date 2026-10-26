@@ -546,3 +546,13 @@ button svg.ic { pointer-events: none; }
   .q-row { grid-template-columns: 54px 1fr 74px; }
   .q-row .q-m, .q-row .q-due { display: none; }
 }
+
+/* a query's answer and the follow-ups after it */
+.q-bub { margin: 6px 0; padding: 6px 10px; border-radius: 8px; max-width: 92%; }
+.q-bub.question { background: rgba(242,128,34,.1); border-left: 3px solid #f28022; }
+.q-bub.answer { background: rgba(2,132,199,.09); border-left: 3px solid #0284c7; margin-left: auto; }
+.q-bub-h { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.q-bub textarea { width: 100%; }
+.q-conv .q-more button { font-weight: 600; }
+.q-reply { margin-top: 6px; }
+.q-reply textarea { width: 100%; }

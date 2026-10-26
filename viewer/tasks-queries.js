@@ -151,7 +151,7 @@ function listHtml(T, rows) {
   return `<div class="q-list">` + rows.map((q) => `<div class="q-row${q.id === Q.open ? " on" : ""}" data-q="${esc(q.id)}">`
     + `<span class="q-code">${esc(q.code)}</span>`
     + `<span class="q-t"><b>${esc(q.title || "Untitled query")}</b><small>${esc(q.raised_by)}${(q.to || []).length ? " → " + esc(q.to.map((p) => p.name).join(", ")) : ""}</small></span>`
-    + `<span class="q-m">${(q.views || []).length ? `<span title="Pictures of the sheet / 3D view">&#128247; ${q.views.length}</span>` : ""}${(q.tasks || []).length ? `<span title="Linked tasks">&#9745; ${q.tasks.length}</span>` : ""}</span>`
+    + `<span class="q-m">${(q.views || []).length ? `<span title="Pictures of the sheet / 3D view">&#128247; ${q.views.length}</span>` : ""}${(q.tasks || []).length ? `<span title="Linked tasks">&#9745; ${q.tasks.length}</span>` : ""}${(q.followups || []).length ? `<span title="Follow-up questions and answers">&#8635; ${q.followups.length}</span>` : ""}</span>`
     + `<span class="q-due${isOver(q) ? " bad" : ""}">${q.due ? esc(fmtDate(q.due)) : ""}</span>${chip(q)}</div>`).join("") + `</div>`;
 }
 
@@ -396,11 +396,8 @@ async function openDetail(T, id, quiet) {
     + `<div class="q-sec q-pics"><b>Pictures &amp; views</b> <small class="muted">a sheet / 3D picture opens that exact view; your own pictures open full size</small>`
     + `<div class="q-thumbs">${(q.views || []).map((v, i) => viewThumb(v, canEdit ? i : -1)).join("") || `<span class="muted">None yet. On a sheet or in 3D click <b>+ Query</b>; or add a picture of your own here.</span>`}</div>`
     + `<div class="q-fr">${addPicHtml()}<small class="muted">or paste a screenshot (Ctrl+V) / drop pictures on this panel</small></div></div>`
-    + `<div class="q-sec"><b>Answer</b>`
-    + (canAnswer && q.status !== "Closed" ? `<textarea data-ans rows="4" placeholder="The answer">${esc(q.answer)}</textarea>`
-      + `<div class="q-fr"><button class="primary" data-act="answer">${q.status === "Answered" ? "Update answer" : "Mark answered"}</button></div>`
-      : `<p class="q-text">${q.answer ? esc(q.answer) : `<span class="muted">Not answered yet.</span>`}</p>`)
-    + (q.answered_by ? `<small class="muted">by ${esc(q.answered_by)} · ${esc(fmtWhen(q.answered_at))}</small>` : "")
+    + `<div class="q-sec q-conv"><b>Answer &amp; follow-ups</b>`
+    + convHtml(q, canAnswer)
     + `<div class="q-fr">${canClose && q.status !== "Closed" ? `<button data-act="closeq">Close the query</button>` : ""}`
     + `${q.status === "Closed" && (canClose || to) ? `<button data-act="reopen">Reopen</button>` : ""}`
     + `${raiser || admin ? `<button class="ghost bad" data-act="delete">Delete</button>` : ""}</div></div>`
@@ -413,6 +410,33 @@ async function openDetail(T, id, quiet) {
     + `<div class="q-sec"><b>History</b><ul class="q-hist">${(q.history || []).slice().reverse().map((h) => `<li><small class="muted">${esc(fmtWhen(h.at))}</small> ${esc(h.by)} ${esc(h.event === "changed" ? "changed " + h.field : h.event)}</li>`).join("")}</ul></div>`
     + `</div>`;
   wireDetail(T, panel, q, { canEdit });
+}
+
+/* The answer and the conversation after it: follow-up questions (anyone on
+   the project) and their answers (the people it is to), as bubbles. */
+function convHtml(q, canAnswer) {
+  const fu = q.followups || [];
+  const bubble = (kind, text, by, at) => `<div class="q-bub ${kind}"><div class="q-bub-h">${kind === "question" ? "Follow-up" : "Answer"} · <b>${esc(by || "")}</b> <small>${esc(fmtWhen(at))}</small></div><div class="q-text">${esc(text)}</div></div>`;
+  let h = "";
+  if (!q.answer && !fu.length) {
+    h += canAnswer && q.status !== "Closed"
+      ? `<textarea data-ans rows="4" placeholder="The answer"></textarea><div class="q-fr"><button class="primary" data-act="answer">Mark answered</button></div>`
+      : `<p class="q-text"><span class="muted">Not answered yet.</span></p>`;
+  } else if (q.answer && !fu.length && canAnswer && q.status !== "Closed") {
+    // the first answer can still be put right until someone asks again
+    h += `<div class="q-bub answer"><div class="q-bub-h">Answer · <b>${esc(q.answered_by || "")}</b> <small>${esc(fmtWhen(q.answered_at))}</small></div>`
+      + `<textarea data-ans rows="3">${esc(q.answer)}</textarea><div class="q-fr"><button class="ghost" data-act="answer">Update answer</button></div></div>`;
+  } else if (q.answer) {
+    h += bubble("answer", q.answer, q.answered_by, q.answered_at);
+  }
+  for (const f of fu) h += bubble(f.kind, f.text, f.by, f.at);
+  const last = fu.length ? fu[fu.length - 1].kind : q.answer ? "answer" : "";
+  if (last) {
+    h += `<div class="q-fr q-more"><button type="button" data-act="followup">+ Follow-up question</button>`
+      + (canAnswer && last === "question" ? `<button type="button" class="primary" data-act="answer2">+ Answer</button>` : "") + `</div>`
+      + `<div class="q-reply" hidden><textarea rows="3"></textarea><div class="q-fr"><button type="button" class="primary" data-act="sendreply">Send</button><button type="button" class="ghost" data-act="cancelreply">Cancel</button></div></div>`;
+  }
+  return h;
 }
 
 function filesHtmlLazy(files) {
@@ -449,6 +473,30 @@ function wireDetail(T, panel, q, can) {
     const a = panel.querySelector("[data-ans]").value.trim();
     if (!a) { alert("Write the answer first."); return; }
     put({ answer: a, status: "Answered" });
+  };
+  // + Follow-up question / + Answer: one box for either
+  const reply = panel.querySelector(".q-reply");
+  let replyKind = "";
+  const openReply = (kind) => {
+    replyKind = kind;
+    reply.hidden = false;
+    const ta = reply.querySelector("textarea");
+    ta.placeholder = kind === "question" ? "Your follow-up question - the query is open again until it is answered" : "The answer";
+    act("sendreply").textContent = kind === "question" ? "Ask" : "Send answer";
+    ta.focus();
+  };
+  if (act("followup")) act("followup").onclick = () => openReply("question");
+  if (act("answer2")) act("answer2").onclick = () => openReply("answer");
+  if (act("cancelreply")) act("cancelreply").onclick = () => { reply.hidden = true; };
+  if (act("sendreply")) act("sendreply").onclick = async () => {
+    const text = reply.querySelector("textarea").value.trim();
+    if (!text) { alert("Write something first."); return; }
+    act("sendreply").disabled = true;
+    try {
+      const r = await T.api(`/api/queries/${q.id}/thread`, { method: "POST", body: JSON.stringify({ kind: replyKind, text }) });
+      Q.rows.set(r.query.id, r.query); Q.rev = Math.max(Q.rev, r.rev); keep(Q.reg);
+      await redraw();
+    } catch (e) { alert(e.message); act("sendreply").disabled = false; }
   };
   if (act("closeq")) act("closeq").onclick = () => put({ status: "Closed" });
   if (act("reopen")) act("reopen").onclick = () => put({ status: "Open" });
@@ -595,13 +643,15 @@ export function reportHtml(T, rows, project) {
     + `<div class="meta">Raised by ${esc(q.raised_by)} on ${esc((q.created_at || "").slice(0, 10))}${(q.to || []).length ? " · to " + esc(q.to.map((p) => p.name).join(", ")) : ""}${q.due ? " · due " + esc(q.due) : ""} · ${esc(q.priority)}</div>`
     + `<p><b>Question</b><br>${esc(q.question || "-").replace(/\n/g, "<br>")}</p>`
     + ((q.views || []).length ? `<div class="views">${q.views.map((v) => `<figure>${v.snapshot ? `<img src="${esc(v.snapshot)}">` : ""}<figcaption>${esc(v.title || (v.kind === "sheet" ? "Sheet" : "3D view"))}</figcaption></figure>`).join("")}</div>` : "")
-    + `<p><b>Answer</b>${q.answered_by ? ` <small>(${esc(q.answered_by)}, ${esc((q.answered_at || "").slice(0, 10))})</small>` : ""}<br>${q.answer ? esc(q.answer).replace(/\n/g, "<br>") : "<i>Not answered yet.</i>"}</p></div>`;
+    + `<p><b>Answer</b>${q.answered_by ? ` <small>(${esc(q.answered_by)}, ${esc((q.answered_at || "").slice(0, 10))})</small>` : ""}<br>${q.answer ? esc(q.answer).replace(/\n/g, "<br>") : "<i>Not answered yet.</i>"}</p>`
+    + (q.followups || []).map((f) => `<p class="fu ${f.kind}"><b>${f.kind === "question" ? "Follow-up question" : "Answer"}</b> <small>(${esc(f.by)}, ${esc((f.at || "").slice(0, 10))})</small><br>${esc(f.text).replace(/\n/g, "<br>")}</p>`).join("")
+    + `</div>`;
   return `<!doctype html><html><head><meta charset="utf-8"><title>Queries - ${esc(project)}</title><style>
 body{font:11px/1.4 system-ui,Segoe UI,Arial,sans-serif;color:#222;margin:18px}h1{font-size:18px;margin:0 0 2px}h2{font-size:14px;margin:18px 0 6px}
 table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:3px 5px;text-align:left;vertical-align:top}th{background:#f3f3f3}
 .q{break-inside:avoid;border-top:1px solid #ddd;padding-top:6px;margin-top:10px}.q h3{font-size:12.5px;margin:0}.q .st{font-size:11px;margin-left:6px}
 .meta{color:#666;margin:2px 0 4px}.views{display:flex;flex-wrap:wrap;gap:8px}.views figure{margin:0;width:230px}.views img{width:230px;border:1px solid #ccc}
-.views figcaption{font-size:10px;color:#555}.k span{margin-right:16px}.k b{font-size:15px}
+.views figcaption{font-size:10px;color:#555}.fu{margin-left:14px;padding-left:8px;border-left:3px solid #f28022}.fu.answer{border-left-color:#0284c7}.k span{margin-right:16px}.k b{font-size:15px}
 .bar{position:sticky;top:0;background:#fff;padding:6px 0;border-bottom:1px solid #ddd;margin-bottom:8px}.bar button{margin-right:6px}
 @media print{.bar{display:none}body{margin:8mm}}</style></head><body>
 <div class="bar"><button onclick="print()">Print / Save as PDF</button><button id="keep">Save to Folders</button><span id="kept"></span></div>

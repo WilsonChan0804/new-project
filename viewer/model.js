@@ -52,6 +52,7 @@ import { copyIds, showInRevit, wireElementBlocks } from "./revit.js";
 import { me as navMe } from "./nav.js";
 import { installV3Bar } from "./v3bar.js";
 import * as LVR from "./lv.js";
+import * as QV from "./queryviews.js";
 
 /* Fragments geometry is in METRES. The Revit exporter writes millimetres
    everywhere - manifest paper_to_model, link transforms, issue positions -
@@ -5325,6 +5326,11 @@ async function open3DMenu(ev, found) {
     onElement ? { label: "Add issue here", action: () => {
         openIssue3D(found.hit.point, { guid: found.guid, name: found.name, part: found.part, localId: found.hit.localId });
       } } : null,
+    { label: "Add to query here", action: () => {
+        if (!window.LWK_QUERY) { status("Queries are not available on this page."); return; }
+        const p = onElement ? found.hit.point : S.controls.target;
+        window.LWK_QUERY.addAt([toMM(p.x), toMM(p.y), toMM(p.z)], ev.clientX, ev.clientY);
+      } },
     onElement ? { label: "Section on this face", action: () => {
         setMode("face"); sectionFromFace(ev);
       } } : null,
@@ -5503,7 +5509,7 @@ async function onPickInner(ev) {
      response the click feels ignored, so the cursor changes immediately
      and only settles once the answer is back. */
   // a click on an issue pin opens that issue
-  if (S.mode !== "issue" && pinAtScreen(ev)) return;
+  if (S.mode !== "issue" && (pinAtScreen(ev) || queryPinAtScreen(ev))) return;
   const el = S.renderer.domElement;
   const cursorWas = el.style.cursor;
   el.style.cursor = "progress";
@@ -5622,13 +5628,16 @@ function selectionFromBrowser() {
 }
 window.LWK3D = Object.assign(window.LWK3D || {}, {
   /* "+ Query" (nav.js): the picture as seen, and the link to this exact view (?view=) */
-  async captureView() {
+  async captureView(pinMm) {
     const vp = captureViewpoint();
     let snapshot = "";
     try { snapshot = await Store.uploadSnapshot(vp.image); } catch (e) { console.warn("query picture", e); }
     const lv = S.floorRows && S.controls ? levelAt(S.controls.target.y) : null;
+    // its marker: the point right-clicked (scene mm), else what the camera looks at
+    const t = S.controls.target;
     return { kind: "view3d", project: Store.currentProject() || "", url: viewLink(),
-             title: "3D view" + (lv ? " - " + lv : ""), snapshot: typeof snapshot === "string" ? snapshot : "" };
+             title: "3D view" + (lv ? " - " + lv : ""), snapshot: typeof snapshot === "string" ? snapshot : "",
+             pin_mm: pinMm || [toMM(t.x), toMM(t.y), toMM(t.z)] };
   },
   // the model checks (support and tests)
   headroom: () => (S.head ? S.head.debug() : null),
@@ -7389,9 +7398,71 @@ function pinScale() {
 }
 
 function sizePins() {
-  if (!S.pins) return;
   const k = pinScale();
-  for (const p of S.pins.children) p.scale.setScalar(k);
+  for (const g of [S.pins, S.qpins]) if (g) for (const p of g.children) p.scale.setScalar(k * (p.userData.q ? 1.15 : 1));
+}
+
+/* The queries' pictures taken in 3D (queryviews.js): a pin each, in its
+   status colour, where it was pinned - drawn like the issue pins (a pale
+   copy that shows through the building, a solid one where it is in view). */
+function refreshQueryPins() {
+  if (!S.overlay) return;
+  if (S.qpins) S.overlay.remove(S.qpins);
+  S.qpins = null;
+  if (QV.hidden()) { S.dirty = true; return; }
+  const here = QV.all().filter((e) => e.kind === "view3d" && e.pin_mm && !(S.hideDone && e.status === "Closed"));
+  if (!here.length) { S.dirty = true; return; }
+  S.qpins = new THREE.Group();
+  S.qpins.name = "__qpins";
+  const geo = new THREE.OctahedronGeometry(1.1, 0);
+  for (const e of here) {
+    const hex = new THREE.Color(QV.colorOf(e)).getHex();
+    const pos = new THREE.Vector3(fromMM(e.pin_mm[0]), fromMM(e.pin_mm[1]), fromMM(e.pin_mm[2]));
+    const ghost = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: hex, depthTest: false, depthWrite: false, transparent: true, opacity: 0.3 }));
+    const solid = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: hex, depthTest: true, depthWrite: false, transparent: true, opacity: 1 }));
+    for (const m of [ghost, solid]) { m.position.copy(pos); m.userData.q = e.qid + "|" + e.i; }
+    ghost.renderOrder = 998; solid.renderOrder = 999;
+    const rim = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x0284c7, depthTest: true, depthWrite: false, side: THREE.BackSide }));
+    rim.scale.setScalar(1.3);
+    solid.add(rim);
+    S.qpins.add(ghost); S.qpins.add(solid);
+  }
+  S.overlay.add(S.qpins);
+  sizePins();
+  S.dirty = true;
+}
+
+/* The query pin under the pointer, its card opened. */
+function queryPinAtScreen(ev) {
+  if (!S.qpins || !S.qpins.children.length) return false;
+  const r = S.renderer.domElement.getBoundingClientRect();
+  const x = ev.clientX - r.left, y = ev.clientY - r.top;
+  const lim = ev.pointerType === "touch" ? 22 : 12;
+  let best = null, bd = lim;
+  const v = new THREE.Vector3();
+  for (const m of S.qpins.children) {
+    v.copy(m.position).project(S.camera);
+    if (v.z > 1 || v.z < -1) continue;
+    const d = Math.hypot((v.x + 1) / 2 * r.width - x, (1 - v.y) / 2 * r.height - y);
+    if (d < bd) { bd = d; best = m.userData.q; }
+  }
+  const e = best && QV.all().find((q) => q.qid + "|" + q.i === best);
+  if (!e) return false;
+  QV.openCard(e, ev.clientX, ev.clientY);
+  return true;
+}
+
+/* A query in the list: the view it was taken from, and its card. */
+function showQuery3D(e) {
+  try {
+    const v = JSON.parse(_unb64(new URL(e.url, location.href).searchParams.get("view") || ""));
+    if (v) restoreLastView(v);
+  } catch (err) { status("Could not open that view: " + err.message); }
+  S.dirty = true;
+  setTimeout(() => {
+    const r = S.renderer.domElement.getBoundingClientRect();
+    QV.openCard(e, r.left + r.width * 0.62, r.top + r.height * 0.25);
+  }, 300);
 }
 
 function issueDone3D(it) {
@@ -7407,13 +7478,13 @@ function setHideDone(on) {
     b.title = S.hideDone ? "Resolved and closed issues are hidden in the model - click to show them"
       : "Hide resolved and closed issues in the model (the list keeps them; use its status filter)";
   }
-  if (S.overlay) { try { refreshPins(); } catch (e) {} }
+  if (S.overlay) { try { refreshPins(); } catch (e) {} try { refreshQueryPins(); } catch (e) {} }
   S.needsRender = true;
 }
 
 function refreshPins() {
   if (S.pins) S.overlay.remove(S.pins);
-  if (S.hidePins) { S.pins = null; S.dirty = true; return; }
+  if (S.hidePins) { S.pins = null; S.dirty = true; try { refreshQueryPins(); } catch (e) {} return; }
   S.pins = new THREE.Group();
   S.pins.name = "__pins";
   S.overlay.add(S.pins);
@@ -7461,6 +7532,7 @@ function refreshPins() {
     S.pins.add(solid);
   });
   sizePins();
+  try { refreshQueryPins(); } catch (e) {}
 }
 
 function openIssue3D(point, hitInfo) {
@@ -7636,6 +7708,23 @@ function renderIssueList() {
     ? "(" + (shown.length === mine.length ? mine.length
              : shown.length + " of " + mine.length) + ")" : "";
 
+  // the queries' pictures taken in 3D (queryviews.js): their own group, first
+  const qrows = QV.hidden() || fType ? [] : QV.all().filter((e) => e.kind === "view3d" && QV.matches(e, q, fStatus));
+  if (qrows.length) {
+    const head = document.createElement("li");
+    head.className = "qv-head";
+    head.textContent = `Queries in 3D (${qrows.length})`;
+    ul.appendChild(head);
+    for (const e of qrows.slice().sort((a, b) => a.code.localeCompare(b.code))) {
+      const w = document.createElement("div");
+      w.innerHTML = QV.rowHtml(e);
+      const li = w.firstChild;
+      li.onclick = () => showQuery3D(e);
+      ul.appendChild(li);
+    }
+  }
+
+  if (!shown.length && qrows.length) return;
   if (!shown.length) {
     const li = document.createElement("li");
     li.className = "empty-note";
@@ -8226,6 +8315,21 @@ async function boot() {
                       : "Issue markers shown.");
   });
   document.getElementById("pins-toggle").classList.add("active");
+  const qt = document.getElementById("qpins-toggle");
+  if (qt) {
+    const paintQ = () => {
+      qt.classList.toggle("active", !QV.hidden());
+      qt.textContent = QV.hidden() ? "Show queries" : "Hide queries";
+    };
+    paintQ();
+    qt.addEventListener("click", () => {
+      QV.setHidden(!QV.hidden());
+      paintQ();
+      status(QV.hidden() ? "Query markers hidden. Nothing was deleted." : "Query markers shown.");
+    });
+  }
+  QV.onChange(() => { try { refreshQueryPins(); } catch (e) {} try { renderIssueList(); } catch (e) {} });
+  QV.load(Store.currentProject() || "");
   try { S.hideDone = localStorage.getItem("lwk.hideDone") === "1"; } catch (e) {}
   const dt = document.getElementById("done-toggle");
   if (dt) { dt.addEventListener("click", () => { setHideDone(!S.hideDone);

@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-14";
+const LWK_VERSION = "2026-12-15";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -312,23 +312,27 @@ function viewLink() {
 /* "+ Query": a picture of the sheet / 3D view on screen with a link back to
    that exact view, added to a new or an open query of the project
    (querypick.js: a menu under the button, then stay or open the query). */
-async function sendToQuery(btn) {
+async function sendToQuery(btn, pin, at) {
   const raw = (window.SHEETS && window.SHEETS.captureView && window.SHEETS.S && window.SHEETS.S.sheet) ? window.SHEETS.captureView
     : (window.LWK3D && window.LWK3D.captureView) ? window.LWK3D.captureView : null;
   if (!raw) { alert("Open a sheet or the 3D model first."); return; }
-  const cap = async () => Object.assign(await raw(), {
+  // pin: where the marker goes (the point right-clicked); none: the middle of the view
+  const cap = async () => Object.assign(await raw(pin), {
     by: (ME && ME.user && ME.user.name) || "", at: new Date().toISOString().slice(0, 16) });
   let pick = null;
   try { pick = (await import("./querypick.js")).pickQuery; } catch (e) {}
   if (!pick) { handQueryView(btn, cap); return; }
-  pick(btn, project(), cap, () => handQueryView(btn, cap));
+  pick(btn, project(), cap, () => handQueryView(btn, cap), at);
 }
+/* Right-click > Add to query here (Sheets, 3D): pin where it was clicked,
+   the menu at the pointer. */
+window.LWK_QUERY = { addAt: (pin, x, y) => sendToQuery(null, pin, { x, y }) };
 
 /* The view handed to Tasks > Queries (tasks-queries.js VIEW_KEY), which
    asks there: a new query with it, or an open one. */
 async function handQueryView(btn, cap) {
-  const was = btn.textContent;
-  btn.textContent = "Capturing ...";
+  const was = btn ? btn.textContent : "";
+  if (btn) btn.textContent = "Capturing ...";
   try {
     const v = await cap();
     v.t = Date.now();
@@ -343,7 +347,7 @@ async function handQueryView(btn, cap) {
     location.href = url;
   } catch (e) {
     alert("Could not capture the view: " + e.message);
-  } finally { btn.textContent = was; }
+  } finally { if (btn) btn.textContent = was; }
 }
 
 function sendToTask() {

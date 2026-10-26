@@ -16,6 +16,9 @@ since the last rev it holds.
   GET  /api/queries/{id}            one, with its discussion
   POST /api/queries/{id}/comments   {body, files}
   POST /api/queries/{id}/send       its card into the project's chat
+  POST /api/queries/{id}/thread     {kind: question|answer, text}: the conversation
+  POST /api/queries/{id}/views/remove {i, key}: a marker deleted on a sheet / in 3D
+  GET  /api/query-views?project=    the pictures of a viewer project, as markers
 
 Who: the project's people see and raise queries. The raiser, the people it
 is addressed to and the project's admins change it; the addressed and the
@@ -27,6 +30,7 @@ import os
 import re
 import threading
 import uuid
+from urllib.parse import unquote
 
 from fastapi import HTTPException, Request, Header
 from starlette.concurrency import run_in_threadpool
@@ -42,6 +46,10 @@ MAX_VIEWS = 30
 
 def db(core):
     return T.Db(os.path.join(core.CFG["data"], "tasks.db"))
+
+
+def _num(n):
+    return isinstance(n, (int, float)) and not isinstance(n, bool) and abs(n) < 1e12 and n == n
 
 
 def new_qid():
@@ -62,6 +70,7 @@ def row(r):
     q["views"] = _j(q["views"], [])
     q["tasks"] = _j(q.pop("task_ids", "[]"), [])
     q["history"] = _j(q["history"], [])
+    q["followups"] = _j(q.get("followups"), [])
     q["deleted"] = bool(q["deleted"])
     q["code"] = "Q-%03d" % (q["number"] or 0)
     return q
@@ -123,7 +132,19 @@ def card_of(q, event):
     return {"type": "query", "event": event, "reg": q["reg"], "id": q["id"], "code": q["code"],
             "title": q["title"] or "Untitled query", "status": q["status"], "due": q["due"] or "",
             "to": [p.get("name") for p in q.get("to") or []], "raised_by": q.get("raised_by") or "",
-            "snapshot": first["snapshot"] if first else "", "text": (q.get("answer") if event == "answered" else q.get("question") or "")[:300]}
+            "snapshot": first["snapshot"] if first else "", "text": card_text(q, event)[:300]}
+
+
+def card_text(q, event):
+    """The words on its chat card: the newest of the conversation that fits."""
+    fu = q.get("followups") or []
+    if event == "followup":
+        last = next((f for f in reversed(fu) if f["kind"] == "question"), None)
+        return last["text"] if last else ""
+    if event == "answered":
+        last = next((f for f in reversed(fu) if f["kind"] == "answer"), None)
+        return last["text"] if last else (q.get("answer") or "")
+    return q.get("question") or ""
 
 
 def ref_card(core, w, qid):
@@ -265,10 +286,38 @@ def register(app, core):
                     continue
             elif not kind or not re.match(r"^(index|model)\.html\?", url) or len(url) > 6000:
                 continue
-            out.append({"kind": kind, "url": url, "snapshot": snap, "project": T.clean_text(x.get("project"), 80),
-                        "title": T.clean_text(x.get("title"), 200), "sheet": T.clean_text(x.get("sheet"), 60),
-                        "at": T.clean_text(x.get("at"), 30), "by": T.clean_text(x.get("by"), 80)})
+            v = {"kind": kind, "url": url, "snapshot": snap, "project": T.clean_text(x.get("project"), 80),
+                 "title": T.clean_text(x.get("title"), 200), "sheet": T.clean_text(x.get("sheet"), 60),
+                 "at": T.clean_text(x.get("at"), 30), "by": T.clean_text(x.get("by"), 80)}
+            # where its marker goes: a point on the paper (mm) / in the model (scene mm)
+            pin = x.get("pin")
+            if kind == "sheet" and isinstance(pin, dict) and all(_num(pin.get(k)) for k in ("u", "v")):
+                v["pin"] = {"u": round(float(pin["u"]), 1), "v": round(float(pin["v"]), 1)}
+            pm = x.get("pin_mm")
+            if kind == "view3d" and isinstance(pm, list) and len(pm) == 3 and all(_num(n) for n in pm):
+                v["pin_mm"] = [round(float(n)) for n in pm]
+            out.append(v)
         return out[:MAX_VIEWS]
+
+    def own_views(old, new, w):
+        """Who added each picture: kept for the ones already there, this
+        person for the new ones (never what the browser says)."""
+        key = lambda v: (v.get("kind"), v.get("url"), v.get("snapshot"))
+        was = dict((key(v), v.get("uid")) for v in old)
+        for v in new:
+            k = key(v)
+            v["uid"] = was[k] if k in was else w.uid
+        return new
+
+    def reg_of(qid):
+        """The project of a live query (404 when there is none)."""
+        r = None
+        if isinstance(qid, str) and SAFE_Q.match(qid):
+            with db(core) as d:
+                r = d.execute("SELECT reg FROM queries WHERE id = ? AND deleted = 0", (qid,)).fetchone()
+        if not r:
+            raise HTTPException(status_code=404, detail="No such query (it may have been deleted)")
+        return r["reg"]
 
     def appends(old, new):
         """True when new is old with pictures added at the end."""
@@ -402,7 +451,7 @@ def register(app, core):
                 if "priority" in p:
                     change("priority", "priority", p["priority"] if p["priority"] in PRIORITIES else "Normal")
                 if "views" in p:
-                    change("views", "views", clean_views(p["views"]))
+                    change("views", "views", own_views(q["views"], clean_views(p["views"]), w))
                 if "tasks" in p:
                     change("tasks", "task_ids", clean_tasks(p["tasks"]), "tasks")
                 if "answer" in p:
@@ -464,11 +513,13 @@ def register(app, core):
         w = core.who(request, x_viewer_token)
         if not SAFE_Q.match(qid):
             raise HTTPException(status_code=404, detail="No such query")
+        # who may see it first: need() opens the database itself, and the
+        # database is not re-entrant (opening it inside would hang the server)
+        need(w, reg_of(qid))
         with db(core) as d:
             r = d.execute("SELECT * FROM queries WHERE id = ? AND deleted = 0", (qid,)).fetchone()
             if not r:
                 raise HTTPException(status_code=404, detail="No such query (it may have been deleted)")
-            need(w, r["reg"])
             cs = d.execute("SELECT * FROM query_comments WHERE query_id = ? ORDER BY created_at", (qid,)).fetchall()
             q = row(r)
             # the linked tasks, as they are now
@@ -535,3 +586,135 @@ def register(app, core):
         need(w, r["reg"])
         card(row(r), "shared", w.name or "")
         return {"ok": True}
+
+    @app.get("/api/query-views")
+    def q_onviews(request: Request, project: str = "", x_viewer_token: str = Header(default="")):
+        """The query pictures of a viewer project (sheets and 3D), each as a
+        marker: where it goes and what it belongs to. Image pictures have no
+        place on a drawing and are left out."""
+        w = core.who(request, x_viewer_token)
+        regs = [p for p in my_projects(core, w) if project and project in p["viewers"]]
+        if not regs:
+            return {"views": []}
+        admin = dict((p["id"], access(core, w, p["id"]) == "admin") for p in regs)
+        with db(core) as d:
+            rows = d.execute("SELECT * FROM queries WHERE deleted = 0 AND reg IN (%s) ORDER BY number"
+                             % ",".join("?" * len(regs)), [p["id"] for p in regs]).fetchall()
+        today = T.now_iso()[:10]
+        out = []
+        for r in rows:
+            q = row(r)
+            people = admin[q["reg"]] or q["raised_uid"] == w.uid or any(x.get("uid") == w.uid for x in q["to"])
+            for i, v in enumerate(q["views"]):
+                if v["kind"] not in ("sheet", "view3d") or (v.get("project") and v["project"] != project):
+                    continue
+                e = {"qid": q["id"], "reg": q["reg"], "code": q["code"], "title": q["title"] or "Untitled query",
+                     "status": q["status"], "due": q["due"] or "", "overdue": bool(q["status"] == "Open" and q["due"] and q["due"] < today),
+                     "to": [x.get("name") for x in q["to"]], "i": i, "kind": v["kind"], "url": v["url"],
+                     "snapshot": v.get("snapshot") or "", "view_title": v.get("title") or "", "by": v.get("by") or "",
+                     "key": "%s|%s|%s" % (v["kind"], v["url"], v.get("snapshot") or ""),
+                     "can_remove": bool(people or (v.get("uid") is not None and v.get("uid") == w.uid))}
+                if v["kind"] == "sheet":
+                    m = re.search(r"[?&]sheet=([^&]*)", v["url"])
+                    e["sheet"] = v.get("sheet") or (unquote(m.group(1)) if m else "")
+                    a = re.search(r"[?&]area=([^&]*)", v["url"])
+                    try:
+                        e["area"] = [float(n) for n in unquote(a.group(1)).split(",")][:4] if a else None
+                    except ValueError:
+                        e["area"] = None
+                    e["pin"] = v.get("pin") or ({"u": e["area"][0] + e["area"][2] / 2, "v": e["area"][1] + e["area"][3] / 2}
+                                                if e["area"] and len(e["area"]) == 4 else None)
+                    if not e["pin"]:
+                        continue
+                else:
+                    e["pin_mm"] = v.get("pin_mm")
+                    if not e["pin_mm"]:
+                        continue
+                out.append(e)
+        return {"views": out}
+
+    @app.post("/api/queries/{qid}/views/remove")
+    async def q_unview(request: Request, qid: str, x_viewer_token: str = Header(default="")):
+        """A marker deleted on a sheet / in 3D: its picture leaves the query;
+        the query itself stays."""
+        w = core.who(request, x_viewer_token)
+        body = await request.json()
+        return await run_in_threadpool(unview, w, qid, body if isinstance(body, dict) else {})
+
+    def unview(w, qid, body):
+        a = need(w, reg_of(qid))                     # before the database is opened: it is not re-entrant
+        with db(core) as d:
+            r = d.execute("SELECT * FROM queries WHERE id = ? AND deleted = 0", (qid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such query (it may have been deleted)")
+            q = row(r)
+            i = body.get("i")
+            if not isinstance(i, int) or not 0 <= i < len(q["views"]):
+                raise HTTPException(status_code=409, detail="That picture is no longer on the query - reload")
+            v = q["views"][i]
+            if body.get("key") != "%s|%s|%s" % (v["kind"], v["url"], v.get("snapshot") or ""):
+                raise HTTPException(status_code=409, detail="The query changed meanwhile - reload and try again")
+            people = a == "admin" or q["raised_uid"] == w.uid or any(x.get("uid") == w.uid for x in q["to"])
+            if not (people or (v.get("uid") is not None and v.get("uid") == w.uid)):
+                raise HTTPException(status_code=403, detail="Only who raised the query, who it is to, a project admin or who added the picture removes it")
+            views = q["views"][:i] + q["views"][i + 1:]
+            t, by = T.now_iso(), w.name or "Someone"
+            hist = q["history"] + [{"at": t, "by": by, "event": "changed", "field": "views",
+                                    "old": str(len(q["views"])), "new": str(len(views))}]
+            rev = T.next_rev(d)
+            d.execute("UPDATE queries SET views = ?, history = ?, updated_at = ?, updated_by = ?, rev = ? WHERE id = ?",
+                      (json.dumps(views), json.dumps(hist[-200:]), t, by, rev, qid))
+            out = row(d.execute("SELECT * FROM queries WHERE id = ?", (qid,)).fetchone())
+        return {"query": out, "rev": rev}
+
+    @app.post("/api/queries/{qid}/thread")
+    async def q_thread(request: Request, qid: str, x_viewer_token: str = Header(default="")):
+        """The conversation after the first answer: {kind: question|answer, text}.
+        Anyone on the project asks a follow-up (the query is open again);
+        the people it is to, or an admin, answer it."""
+        w = core.who(request, x_viewer_token)
+        body = await request.json()
+        return await run_in_threadpool(thread, w, qid, body if isinstance(body, dict) else {})
+
+    def thread(w, qid, body):
+        kind = body.get("kind")
+        text = T.clean_text(body.get("text"), 8000, True).strip()
+        if kind not in ("question", "answer"):
+            raise HTTPException(status_code=400, detail="A question or an answer")
+        if not text:
+            raise HTTPException(status_code=400, detail="Write something")
+        t, by = T.now_iso(), w.name or "Someone"
+        a = need(w, reg_of(qid))
+        with db(core) as d:
+            r = d.execute("SELECT * FROM queries WHERE id = ? AND deleted = 0", (qid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such query (it may have been deleted)")
+            q = row(r)
+            addressed = any(x.get("uid") == w.uid for x in q["to"])
+            if kind == "answer" and not (addressed or a == "admin"):
+                raise HTTPException(status_code=403, detail="Only the people it is addressed to (or a project admin) answer it")
+            first = kind == "answer" and not (q["answer"] or "").strip() and not q["followups"]
+            # the first answer is the query's answer; the rest is the conversation after it
+            fu = q["followups"] + ([] if first else [{"id": T.new_id(), "kind": kind, "text": text, "uid": w.uid, "by": by, "at": t}])
+            hist = q["history"] + [{"at": t, "by": by, "event": "follow-up" if kind == "question" else "answered"}]
+            sets = {"followups": json.dumps(fu[-200:]), "history": json.dumps(hist[-200:]), "updated_at": t, "updated_by": by}
+            if kind == "question":
+                sets.update({"status": "Open", "closed_at": ""})
+            else:
+                sets.update({"status": "Answered", "closed_at": ""})
+                if first:                      # the first answer; a later one stays in the conversation
+                    sets.update({"answer": text, "answered_by": by, "answered_at": t})
+            sets["rev"] = T.next_rev(d)
+            d.execute("UPDATE queries SET %s WHERE id = ?" % ", ".join("%s = ?" % k for k in sets), list(sets.values()) + [qid])
+            q = row(d.execute("SELECT * FROM queries WHERE id = ?", (qid,)).fetchone())
+        url = url_of(core, q)
+        label = "%s %s" % (q["code"], q["title"] or "Untitled query")
+        if kind == "question":
+            notify(q["to"] + [{"uid": q.get("raised_uid")}], "Follow-up question: " + label,
+                   "%s asked:\n%s" % (by, text), w.uid, url)
+            card(q, "followup", by)
+        else:
+            askers = [{"uid": q.get("raised_uid")}] + [{"uid": f["uid"]} for f in q["followups"] if f["kind"] == "question"]
+            notify(askers, "Answered: " + label, "%s answered:\n%s" % (by, text), w.uid, url)
+            card(q, "answered", by)
+        return {"query": q, "rev": sets["rev"]}

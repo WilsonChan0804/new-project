@@ -37,18 +37,20 @@ export function toast(html, ms) {
   return t;
 }
 
-/* btn: the + Query link; project: the viewer project; cap(): the view now;
-   fallback(): the old way (hand the view to Tasks) when no list can load. */
-export async function pickQuery(btn, project, cap, fallback) {
+/* btn: the + Query link (null from a right-click: at {x, y} places the
+   menu); project: the viewer project; cap(): the view now; fallback(): the
+   old way (hand the view to Tasks) when no list can load. Added: the
+   window hears "lwk-query-changed" (the markers on the page redraw). */
+export async function pickQuery(btn, project, cap, fallback, at) {
   if (OPEN) { close(); return; }
   // the menu shows at once; the queries fill it when they come
   const el = document.createElement("div");
   el.className = "qp";
   // in 3D's ⋯ menu: that menu closes, and this one comes under its button
-  const menu = btn.closest(".v3-menu");
+  const menu = btn && btn.closest(".v3-menu");
   if (menu) menu.hidden = true;
   const anchor = menu && document.getElementById("v3-more-btn") || btn;
-  const r = anchor.getBoundingClientRect();
+  const r = at ? { bottom: Math.min(at.y, window.innerHeight - 300), right: at.x + 340 } : anchor.getBoundingClientRect();
   el.style.top = Math.round(r.bottom + 6) + "px";
   el.style.maxHeight = Math.max(240, Math.round(window.innerHeight - r.bottom - 18)) + "px";
   el.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - 348, r.right - 340))) + "px";
@@ -93,8 +95,8 @@ export async function pickQuery(btn, project, cap, fallback) {
     // a tab opened now, while the click is fresh: one opened after waiting is blocked
     const win = after === "open" ? window.open("", "_blank") : null;
     close();
-    const was = btn.textContent;
-    btn.textContent = "Capturing ...";
+    const was = btn ? btn.textContent : "";
+    if (btn) btn.textContent = "Capturing ...";
     try {
       const v = await cap();
       let id = target.id, code = "", n = 1;
@@ -110,13 +112,14 @@ export async function pickQuery(btn, project, cap, fallback) {
         code = r.queries[0].code; n = views.length;
       }
       ss.set(LAST_KEY + reg, id);
+      try { window.dispatchEvent(new CustomEvent("lwk-query-changed", { detail: { id } })); } catch (e) {}
       const url = queryUrl(reg, id);
       if (win) win.location.href = url;
-      else toast(`Added to <b>${esc(code)}</b> (${n} picture${n > 1 ? "s" : ""}). Move to the next view and click <b>+ Query</b> again. <a href="${esc(url)}" target="_blank" rel="noopener">Open the query</a>`);
+      else toast(`Added to <b>${esc(code)}</b> (${n} picture${n > 1 ? "s" : ""}). Move to the next view and click <b>+ Query</b> (or right-click) again. <a href="${esc(url)}" target="_blank" rel="noopener">Open the query</a>`);
     } catch (e) {
       if (win) win.close();
       alert("Could not add the view: " + e.message);
-    } finally { btn.textContent = was; }
+    } finally { if (btn) btn.textContent = was; }
   };
   for (const b of el.querySelectorAll("[data-q]")) b.onclick = () => go({ id: b.dataset.q });
   el.querySelector(".qp-new").onsubmit = (ev) => {

@@ -225,6 +225,7 @@ MIGRATIONS = (
     ("tasks", "percent_uid", "INTEGER"),
     ("tasks", "percent_at", "TEXT NOT NULL DEFAULT ''"),   # when - only touched when the value itself changes
     ("tasks", "percent_prev", "INTEGER"),                  # the percent before ticking done filled it to 100
+    ("queries", "followups", "TEXT NOT NULL DEFAULT '[]'"),  # the conversation after the first answer (queries.py)
 )
 
 # What the Projects page keeps about a project, beyond its name and code.
@@ -818,6 +819,40 @@ def project_admin(core, w, reg):
         return False
 
 
+def sub_count(d, tid):
+    """{total, done} of the sub-tasks under a task, at every level."""
+    ids = descendants(d, tid)
+    done = 0
+    for i in range(0, len(ids), 500):
+        part = ids[i:i + 500]
+        done += d.execute("SELECT COUNT(*) AS n FROM tasks WHERE done = 1 AND id IN (%s)" % ",".join("?" * len(part)),
+                          part).fetchone()["n"]
+    return {"total": len(ids), "done": done}
+
+
+def task_context(d, t):
+    """For a chat card: the task's progress and its sub-tasks done, and for
+    a sub-task the tasks it is under (top first) and its parent's progress."""
+    pct = 100 if t.get("done") else t.get("percent")
+    out = {"percent": pct if isinstance(pct, int) else None, "subs": sub_count(d, t["id"]), "path": []}
+    pid, seen = t.get("parent_id") or "", set()
+    parent = None
+    while pid and pid not in seen and len(seen) < 10:
+        seen.add(pid)
+        r = d.execute("SELECT id, title, parent_id, done, percent FROM tasks WHERE id = ?", (pid,)).fetchone()
+        if not r:
+            break
+        if parent is None:
+            parent = r
+        out["path"].insert(0, r["title"] or "Untitled task")
+        pid = r["parent_id"] or ""
+    if parent is not None:
+        pp = 100 if parent["done"] else parent["percent"]
+        out["parent"] = {"id": parent["id"], "title": parent["title"] or "Untitled task",
+                         "percent": pp if isinstance(pp, int) else None, "subs": sub_count(d, parent["id"])}
+    return out
+
+
 def task_card(core, w, tid):
     """A task as a chat card (chat.py: a task someone sends in a message),
     only when this person may open it. None otherwise."""
@@ -833,10 +868,11 @@ def task_card(core, w, tid):
         t = task_row(r)
         g = d.execute("SELECT g.title, l.title AS list_title FROM lists l LEFT JOIN groups g ON g.id = ? "
                       "WHERE l.id = ?", (t.get("group_id") or "", t["list_id"])).fetchone()
-    return {"type": "task", "event": "shared", "list_id": t["list_id"], "task_id": t["id"],
+        ctx = task_context(d, t)
+    return dict({"type": "task", "event": "shared", "list_id": t["list_id"], "task_id": t["id"],
             "title": t.get("title") or "Untitled task", "group": (g["title"] if g else "") or "",
             "list": (g["list_title"] if g else "") or "", "due": t.get("due") or "", "done": bool(t.get("done")),
-            "owners": [p.get("name") for p in t.get("owners") or []], "text": (t.get("description") or "")[:300]}
+            "owners": [p.get("name") for p in t.get("owners") or []], "text": (t.get("description") or "")[:300]}, **ctx)
 
 
 def reg_ids_for_viewer(core, pid):
@@ -1004,11 +1040,16 @@ def register(app, core):
             return
         if not g or not g["reg"]:
             return
-        chat.post_card([g["reg"]], {
+        try:
+            with db() as d:
+                ctx = task_context(d, task)
+        except Exception:
+            ctx = {}
+        chat.post_card([g["reg"]], dict({
             "type": "task", "event": event, "list_id": task["list_id"], "task_id": task["id"],
             "title": task.get("title") or "Untitled task", "group": g["title"], "list": g["list_title"],
             "due": task.get("due") or "", "done": bool(task.get("done")),
-            "owners": [p.get("name") for p in task.get("owners") or []], "text": (text or "")[:300]}, by, skip)
+            "owners": [p.get("name") for p in task.get("owners") or []], "text": (text or "")[:300]}, **ctx), by, skip)
 
     # ------------------------------------------------ people
 
@@ -1450,6 +1491,10 @@ def register(app, core):
                         events.append(("owner", dict(new, id=tid, list_id=lid), added))
                     if new["done"] and not cur["done"]:
                         events.append(("done", dict(new, id=tid, list_id=lid), subs))
+                    # progress: a line in the chat when it passes 25, 50 or 75 %
+                    op, np_ = cur.get("percent") or 0, new.get("percent")
+                    if not new["done"] and isinstance(np_, int) and any(op < k <= np_ for k in (25, 50, 75)):
+                        events.append(("progress", dict(new, id=tid, list_id=lid), []))
                 else:
                     if old:   # was deleted: the id is not to be reused
                         raise HTTPException(status_code=409, detail="That task was deleted")
@@ -1505,8 +1550,9 @@ def register(app, core):
                     if x["open"]:
                         open_issues.append(dict(x, task_id=task["id"], task_title=task["title"]))
         for kind, task, who_ in events:
-            card(task, {"owner": "assigned", "done": "completed", "created": "created"}[kind], by,
-                 ", ".join(p["name"] for p in who_) if kind == "owner" else "",
+            card(task, {"owner": "assigned", "done": "completed", "created": "created", "progress": "progress"}[kind], by,
+                 ", ".join(p["name"] for p in who_) if kind == "owner"
+                 else "%d%% done" % task.get("percent") if kind == "progress" else "",
                  skip=body.get("chat_room") if kind == "created" and isinstance(body.get("chat_room"), str) else "")
             if kind == "created":
                 continue

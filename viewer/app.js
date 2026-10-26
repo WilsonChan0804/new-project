@@ -25,6 +25,7 @@ import { copyLink } from "./share.js";
 import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile, deleteSetDialog } from "./cadimport.js";
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 import { createLvSheets, missingLinks } from "./lv.js";
+import * as QV from "./queryviews.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -158,8 +159,9 @@ window.SHEETS = window.SHEETS || {};
 window.SHEETS.AREAS = AREAS;
 
 /* "+ Query" (nav.js): the part of the sheet on screen - its picture, and a
-   link that opens this sheet zoomed to the same area (?area=). */
-window.SHEETS.captureView = async () => {
+   link that opens this sheet zoomed to the same area (?area=). pin: the
+   paper point [u, v] its marker goes on (right-click); else the middle. */
+window.SHEETS.captureView = async (pin) => {
   if (!S.sheet || !S.page) throw new Error("Open a sheet first");
   const sc = $("#scroll").getBoundingClientRect(), P = $("#page").getBoundingClientRect();
   const x0 = Math.max(sc.left, P.left) - P.left, x1 = Math.min(sc.right, P.right) - P.left;
@@ -197,6 +199,7 @@ window.SHEETS.captureView = async () => {
     title: "Sheet " + S.sheet.number + (S.sheet.name ? " - " + S.sheet.name : ""),
     url: "index.html?" + new URLSearchParams({ project: Store.currentProject() || "", sheet: S.sheet.number, area: r.join(",") }).toString(),
     snapshot: typeof snapshot === "string" ? snapshot : "",
+    pin: pin ? { u: Math.round(pin[0] * 10) / 10, v: Math.round(pin[1] * 10) / 10 } : { u: Math.round((r[0] + r[2] / 2) * 10) / 10, v: Math.round((r[1] + r[3] / 2) * 10) / 10 },
   };
 };
 
@@ -252,7 +255,70 @@ function zoomToPaper(r) {
   settle(160);
 }
 
+/* The queries' pictures taken on this sheet (queryviews.js): the area each
+   showed, faint, and a badge where it was pinned. A click opens its card. */
+function drawQueries(svg) {
+  if (!S.sheet || !S.viewport || QV.hidden()) return;
+  const here = QV.all().filter((e) => e.kind === "sheet" && e.sheet === S.sheet.number && e.pin
+    && !(S.hideDone && e.status === "Closed"));
+  if (!here.length) return;
+  const g = svgEl("g", { class: "qv-layer" });
+  for (const e of here) {
+    const c = QV.colorOf(e);
+    if (e.area && e.area.length === 4) {
+      const a = canvasFrom(e.area[0], e.area[1]), b = canvasFrom(e.area[0] + e.area[2], e.area[1] + e.area[3]);
+      g.appendChild(svgEl("rect", { class: "qv-area", x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]),
+        width: Math.abs(b[0] - a[0]), height: Math.abs(b[1] - a[1]), fill: "none", stroke: c, "stroke-width": 1.2,
+        "stroke-dasharray": "6 4", opacity: 0.45, "pointer-events": "none" }));
+    }
+    const [x, y] = canvasFrom(e.pin.u, e.pin.v);
+    const m = svgEl("g", { class: "qv-badge", "data-qv": e.qid + "|" + e.i, transform: `translate(${x} ${y})`, style: "cursor:pointer" });
+    const label = e.code.replace(/^Q-0*/, "Q");
+    const w = 14 + label.length * 7.2;
+    m.appendChild(svgEl("rect", { x: -w / 2, y: -11, width: w, height: 22, rx: 11, fill: c, stroke: "#fff", "stroke-width": 2 }));
+    const t = svgEl("text", { x: 0, y: 4.5, "text-anchor": "middle", fill: "#fff", "font-size": 12, "font-weight": 700, "font-family": "system-ui, sans-serif" });
+    t.textContent = label;
+    m.appendChild(t);
+    const tip = svgEl("title", {});
+    tip.textContent = `${e.code} ${e.title} (${QV.sayStatus(e)})`;
+    m.appendChild(tip);
+    // the badge is not a markup: the drawing tools never see the press
+    m.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); if (ev.button === 0) QV.openCard(e, ev.clientX, ev.clientY); });
+    m.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      openMenu(ev.clientX, ev.clientY, [
+        { label: `Open ${e.code}`, action: () => window.open(QV.queryUrl(e), "_blank") },
+        { label: "Show its card", action: () => QV.openCard(e, ev.clientX, ev.clientY) },
+        "-",
+        { label: "Delete marker (the query stays)", danger: true, disabled: !e.can_remove, action: () => QV.remove(e) },
+      ]);
+    });
+    g.appendChild(m);
+  }
+  svg.appendChild(g);
+}
+
+/* Right-click > Add to query here: the view on screen, its marker on the
+   point clicked (nav.js asks which query). */
+function addQueryHere(ev) {
+  if (!window.LWK_QUERY) { status("Queries are not available on this page."); return; }
+  window.LWK_QUERY.addAt(eventPoint(ev), ev.clientX, ev.clientY);
+}
+
+/* A query in the list, or its badge: this sheet, zoomed to what it showed. */
+async function showQuery(e) {
+  const sh = S.manifest && S.manifest.sheets.find((x) => x.number === e.sheet);
+  if (sh && (!S.sheet || S.sheet.number !== e.sheet)) await openSheet(sh);
+  if (e.area && e.area.length === 4) zoomToPaper(e.area);
+  setTimeout(() => {
+    const b = document.querySelector(`.qv-badge[data-qv="${CSS.escape(e.qid + "|" + e.i)}"]`);
+    const r = b ? b.getBoundingClientRect() : null;
+    QV.openCard(e, r ? r.right : innerWidth / 2, r ? r.top : innerHeight / 3);
+  }, 400);
+}
+
 function decorate(svg) {
+  try { drawQueries(svg); } catch (e) { showError("queries", e); }
   try { LINKS.draw(); } catch (e) { showError("links", e); }
   try { LV.draw(); } catch (e) { showError("lv", e); }
   try { AREAS.draw(); } catch (e) { showError("areas", e); }
@@ -1953,6 +2019,7 @@ function wirePointer() {
       ...(anyGrouped ? [{ label: "Ungroup", key: "Ctrl+Shift+G", action: () => ungroupSelection() }] : []),
       { label: "Show in 3D", disabled: !(one && one.anchor && one.anchor.model_mm),
         action: () => show3D(one) },
+      { label: "Add to query here", action: () => addQueryHere(ev) },
       ...(n === 1 && one && ["text", "textbox", "callout"].indexOf(one.type) >= 0
         ? [{ label: "Edit text", key: "double-click", action: () => editText(one.id) }] : []),
       "-",
@@ -1975,6 +2042,8 @@ function wirePointer() {
         action: () => paste() },
       { label: "Select all on sheet", key: "Ctrl+A", disabled: !onSheet.length,
         action: () => select(onSheet.map((i) => i.id), false) },
+      "-",
+      { label: "Add to query here", action: () => addQueryHere(ev) },
       "-",
       { label: "Fit sheet", action: () => $("#zoom-fit").click() },
       { label: "Rotate sheet", action: () => $("#rotate").click() },
@@ -3126,6 +3195,7 @@ async function openSheet(sheet) {
   // the previous sheet's page and viewport must not be drawn on with this
   // sheet's markups (layer rules, sync answers can arrive in between)
   S.sheet = sheet; S.sel = []; S.rotation = 0; S._restored = null; S.viewport = null;
+  QV.load(Store.currentProject() || "");
   try { AREAS.sheetOpened(); } catch (e) {}
   try { LV.sheetOpened(); } catch (e) {}
   _rendered = { scale: 0, rotation: -1, page: null };   // new page, bitmap is stale
@@ -4496,7 +4566,25 @@ function renderList() {
   // is only the fallback for a server that does not yet.
   for (const it of S.items) if (it.issue) numbers.set(it.id, it.issue.number || ++n);
 
+  // the queries' pictures on the sheets (queryviews.js): their own group, first
+  const qrows = (S.filter === "all" || S.filter === "query") && !QV.hidden()
+    ? QV.all().filter((e) => e.kind === "sheet" && QV.matches(e, q, fStatus) && !fType) : [];
+  if (qrows.length) {
+    const head = document.createElement("li");
+    head.className = "qv-head";
+    head.textContent = `Queries on the sheets (${qrows.length})`;
+    ul.appendChild(head);
+    for (const e of qrows.slice().sort((a, b) => a.code.localeCompare(b.code))) {
+      const w = document.createElement("div");
+      w.innerHTML = QV.rowHtml(e).replace("</small>", ` · ${e.sheet}</small>`);
+      const li = w.firstChild;
+      li.onclick = () => showQuery(e);
+      ul.appendChild(li);
+    }
+  }
+
   const shown = S.items.filter((it) => {
+    if (S.filter === "query") return false;
     // Issues raised in the model and saved views live on the 3D page.
     // 3D issues, saved views and project settings live on the 3D page.
     if (it.placement === "3d" || it.placement === "view" || it.placement === "calibration" || it.placement === "clashrule" || it.placement === "clashset" || it.placement === "checkcfg") return false;
@@ -4521,6 +4609,19 @@ function renderList() {
   $("#issue-total").textContent =
     shown.length + (shown.length === pool.length ? "" : " of " + pool.length);
 
+  if (S.filter === "query") {
+    $("#issue-total").textContent = String(qrows.length);
+    if (!qrows.length) {
+      const li = document.createElement("li");
+      li.className = "empty-note";
+      li.textContent = QV.hidden() ? "Query markers are hidden - click ? Queries above to show them."
+        : "No query picture on these sheets. Right-click a sheet > Add to query here, or use + Query.";
+      ul.appendChild(li);
+    }
+    redraw();
+    return;
+  }
+  if (!shown.length && qrows.length) { redraw(); return; }
   if (!shown.length) {
     const li = document.createElement("li");
     li.className = "empty-note";
@@ -5957,6 +6058,20 @@ function wireChrome() {
                          : "Markups shown.");
   });
   $("#show-markups").classList.add("active");
+  const sq = $("#show-queries");
+  if (sq) {
+    const paintQ = () => {
+      sq.classList.toggle("active", !QV.hidden());
+      sq.title = QV.hidden() ? "Query markers hidden - click to show them" : "Hide the query markers on the drawing";
+    };
+    paintQ();
+    sq.addEventListener("click", () => {
+      QV.setHidden(!QV.hidden());
+      paintQ();
+      status(QV.hidden() ? "Query markers hidden. Nothing was deleted." : "Query markers shown.");
+    });
+  }
+  QV.onChange(() => { redraw(); try { renderList(); } catch (e) {} });
   const hd = $("#hide-done");
   if (hd) {
     try { S.hideDone = localStorage.getItem("lwk.hideDone") === "1"; } catch (e) {}

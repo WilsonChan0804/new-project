@@ -400,13 +400,27 @@ function mention(html) {
   return html;
 }
 
+/* A task's progress in its card: a thin bar, and its words. */
+const progBar = (p) => `<i class="cc-bar"><i style="width:${Math.max(0, Math.min(100, p))}%"></i></i>`;
+function progText(t) {
+  const bits = [];
+  if (t.percent != null) bits.push(t.percent + " %");
+  if (t.subs && t.subs.total) bits.push(`${t.subs.done} of ${t.subs.total} sub-tasks done`);
+  return esc(bits.join(" · ") || "no progress set");
+}
+
 function cardHtml(m) {
   const c = m.card || {};
   if (c.type === "task") {
-    const say = { created: "New task", assigned: "Assigned", completed: "Completed", comment: "New comment", reopened: "Reopened", shared: c.done ? "Task (done)" : "Task" }[c.event] || "Updated";
-    return `<div class="c-card task ev-${esc(c.event)}"><div class="cc-h">${badge("task")} <b>${esc(say)}</b> <span class="muted">${esc(c.list)} / ${esc(c.group)}</span></div>`
+    const say = { created: "New task", assigned: "Assigned", completed: "Completed", comment: "New comment", reopened: "Reopened", progress: "Progress", shared: c.done ? "Task (done)" : "Task" }[c.event] || "Updated";
+    const sub = c.path && c.path.length;
+    return `<div class="c-card task ev-${esc(c.event)}"><div class="cc-h">${badge("task")} <b>${esc(sub ? (say === "Task" ? "Sub-task" : say + " · sub-task") : say)}</b> <span class="muted">${esc(c.list)} / ${esc(c.group)}</span></div>`
+      + (sub ? `<div class="cc-path">Sub-task of <b>${c.path.map(esc).join(" › ")}</b>`
+        + (c.parent ? ` <span class="muted">· ${progText(c.parent)}</span>` : "") + `</div>` : "")
       + `<div class="cc-t">${esc(c.title)}</div>`
-      + (c.text ? `<div class="cc-x">${c.event === "assigned" ? "to " : ""}${esc(c.text)}</div>` : "")
+      + (c.text && c.event !== "progress" ? `<div class="cc-x">${c.event === "assigned" ? "to " : ""}${esc(c.text)}</div>` : "")
+      + (c.percent != null || (c.subs && c.subs.total) ? `<div class="cc-prog">${progBar(c.done ? 100 : c.percent || 0)}`
+        + `<span>${c.done ? "Done" : (c.percent || 0) + " %"}${c.subs && c.subs.total ? ` · sub-tasks <b>${c.subs.done} of ${c.subs.total}</b> done` : ""}</span></div>` : "")
       + `<div class="cc-f">${c.owners && c.owners.length ? "Owner: " + esc(c.owners.join(", ")) : c.event === "shared" ? "No owner yet" : ""}${c.due ? " · Due " + esc(c.due) : ""}`
       + `<span class="spacer"></span><a href="tasks.html?list=${esc(c.list_id)}&task=${esc(c.task_id)}">View task</a></div></div>`;
   }
@@ -418,12 +432,12 @@ function cardHtml(m) {
       + `<div class="cc-f">${c.assigned_to ? "Assigned to " + esc(c.assigned_to) : ""}${c.due ? " · Due " + esc(c.due) : ""}<span class="spacer"></span><a href="${esc(url)}">Show in viewer</a></div></div>`;
   }
   if (c.type === "query") {
-    const say = { raised: "New query", answered: "Query answered", closed: "Query closed", reopened: "Query reopened" }[c.event] || "Query";
+    const say = { raised: "New query", answered: "Query answered", closed: "Query closed", reopened: "Query reopened", followup: "Follow-up question" }[c.event] || "Query";
     const url = `tasks.html?mode=queries&reg=${encodeURIComponent(c.reg || "")}&q=${encodeURIComponent(c.id || "")}`;
     return `<div class="c-card query st-${esc(String(c.status || "").toLowerCase())}"><div class="cc-h">${badge("query")} <b>${esc(say)}</b> <span class="muted">${esc(c.status || "")}${c.raised_by ? " · by " + esc(c.raised_by) : ""}</span></div>`
       + `<div class="cc-t">${esc(c.code || "")} ${esc(c.title || "")}</div>`
       + (c.snapshot ? `<a class="cc-snap" href="${esc(url)}"><img src="${esc(c.snapshot)}" alt="" loading="lazy"></a>` : "")
-      + (c.text ? `<div class="cc-x">${c.event === "answered" ? "Answer: " : ""}${esc(c.text)}</div>` : "")
+      + (c.text ? `<div class="cc-x">${c.event === "answered" ? "Answer: " : c.event === "followup" ? "Asked: " : ""}${esc(c.text)}</div>` : "")
       + `<div class="cc-f">${esc([c.to && c.to.length ? "To " + c.to.join(", ") : "", c.due ? "Due " + c.due : ""].filter(Boolean).join(" · "))}`
       + `<span class="spacer"></span><a href="${esc(url)}">Open query</a></div></div>`;
   }
