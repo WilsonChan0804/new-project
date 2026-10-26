@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-14", date: "26 Oct 2026",
+    items: [
+      "**One query, several views:** **+ Query** on a sheet or in 3D now opens a small menu: a new query (type its subject) or one of the project's open queries - the one used last on top (**Add another to Q-...**). Choose **Stay here** to go on capturing the next sheet or 3D view, or **Open the query**. Anyone on the project can add pictures to a query.",
+      "**Pictures of your own in a query:** **+ Add picture** (site photos, screenshots, markups), or paste a screenshot (Ctrl+V) or drop pictures on the query. A click shows them full size, with ‹ › through the query's pictures.",
+      "**Queries stands out:** a blue button at the top of the Tasks side bar, with the open queries to you and how many are overdue.",
+      "**Offline, and why:** when the header says Offline, point at it: it now says whether the server did not answer (check the server window / run.bat, and tunnel.bat for an outside link) or is just busy. The server also stays quicker to answer while queries are saved.",
+    ],
+  },
+  {
     version: "2026-12-13", date: "26 Oct 2026",
     items: [
       "**Queries** (Tasks > Queries): a register of questions per project, numbered Q-001, Q-002 ... Raise one to the people who should answer, with a due date and priority; they answer in the viewer, and the raiser closes it. Each query has its discussion (with files), history and linked tasks - **+ New task from this query** or **Link a task**.",

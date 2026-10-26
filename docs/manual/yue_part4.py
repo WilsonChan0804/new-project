@@ -238,6 +238,7 @@ PART = [
         ['「You are not a member of this project」', '叫 project admin 加你'],
         ['我加唔到或者改唔到 issue', '你喺呢個 project 係 **Viewer**；叫 project admin 俾你做 Member'],
         ['「N waiting to save」', '你個網絡斷咗。留住個版唔好閂；網絡返嚟就會儲存'],
+        ['Header 顯示 **Offline**（或者 **Server busy**）', '將滑鼠放上去睇原因。**The server did not answer：** 喺 server 嗰部電腦檢查 server 個視窗仲開住（再開 **server\\run.bat**，每次更新之後都要），喺公司外面用連結就要開住 **tunnel.bat**；喺 server 部電腦開 http://127.0.0.1:8713/api/ping 應該有回應。**Server busy：** server 開住但答得太慢，會自己好返；成日咁就叫 admin 睇 **Admin > Performance**'],
         ['最新嘅 sheet 或者 model 唔見', 'Publish 可能仲做緊，或者 server 準備緊；等幾分鐘再 reload'],
         ['電腦上面 3D 好慢或者一頓頓', '唔剔唔使用嘅 model、用 floor plan、檢查 **While moving** 係「follow the frame rate」'],
         ['iPad 或者 iPhone 自己 reload 個版', '記憶體唔夠：開少啲 model、留喺一層、開住 **Light mode**；傳 Performance 報告'],

@@ -1209,6 +1209,11 @@ async function queriesCount() {
     const r = await api("/api/queries/mine");
     const n = (r.to_me || 0) + (r.to_close || 0);
     $("#n-queries").textContent = n || "";
+    const t = new Date().toISOString().slice(0, 10);
+    const over = (r.rows || []).filter((q) => q.status === "Open" && q.due && q.due < t).length;
+    const o = $("#n-queries-over");
+    o.hidden = !over;
+    o.textContent = over ? over + " overdue" : "";
   } catch (e) {}
 }
 

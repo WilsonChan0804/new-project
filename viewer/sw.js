@@ -59,9 +59,12 @@ const API_OK = /^\/api\/(ping|me|projects|members|layers|templates|sheet-tiles|s
 const API_ANY_PROJECT = /^\/api\/(ping|me|projects)$/;
 const CDN_OK = /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\//;
 
-const NET = { okAt: 0, failAt: 0 };
+/* why: "down" (no answer at all) or "slow" (the server too slow to start
+   answering) - sent with the kept answers (X-LWK-Offline), so the page can
+   say which it is */
+const NET = { okAt: 0, failAt: 0, why: "down" };
 const netOk = () => { NET.okAt = Date.now(); };
-const netFail = () => { NET.failAt = Date.now(); };
+const netFail = (e) => { NET.failAt = Date.now(); NET.why = e && e.timeout ? "slow" : "down"; };
 const looksDown = () => self.navigator.onLine === false
   || (NET.failAt > NET.okAt && Date.now() - NET.failAt < DOWN_MS);
 
@@ -285,7 +288,7 @@ async function shellFetch(event, url) {
     return net;
   } catch (e) {
     if (gaveUp(e)) return Response.error();
-    netFail();
+    netFail(e);
     if (online_only) return needsConnection(url);
     if (kept) { pin(cid, "set"); return kept; }
     if (nav) {
@@ -312,7 +315,7 @@ async function cdnFetch(event) {
 
 function offlineCopyOf(res, extra) {
   const h = new Headers(res.headers);
-  h.set("X-LWK-Offline", "1");
+  h.set("X-LWK-Offline", NET.why || "1");
   for (const k of Object.keys(extra || {})) h.set(k, extra[k]);
   return h;
 }
@@ -341,7 +344,7 @@ async function apiFetch(event, url) {
        draws the sheet from its PDF (which the copy always holds). */
     if (url.pathname === "/api/sheet-tiles" && !(await tilesKept(have, project))) {
       return new Response(JSON.stringify({ status: "offline", pdf_bytes: 0 }),
-        { status: 200, headers: { "Content-Type": "application/json", "X-LWK-Offline": "1" } });
+        { status: 200, headers: { "Content-Type": "application/json", "X-LWK-Offline": NET.why || "1" } });
     }
     return new Response(have.body, { status: 200, headers: offlineCopyOf(have) });
   };
@@ -355,7 +358,7 @@ async function apiFetch(event, url) {
     if (gaveUp(e)) return Response.error();
     // a slow answer is the server busy, not the connection gone: only the
     // connection check itself (or a real network failure) says "offline"
-    if (!e.timeout || url.pathname === "/api/ping") netFail();
+    if (!e.timeout || url.pathname === "/api/ping") netFail(e);
     if (have) return kept();
     return Response.error();
   }

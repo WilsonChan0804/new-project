@@ -407,7 +407,7 @@ SERVER_VERSION = "2026-10-08"
 
 
 @app.get("/api/ping")
-async def ping():
+def ping():
     """Unauthenticated, so the viewer can tell "server is down" apart from
     "passphrase is wrong" instead of showing one confusing message."""
     return {"ok": True, "version": SERVER_VERSION, "projects": len(list_projects()),

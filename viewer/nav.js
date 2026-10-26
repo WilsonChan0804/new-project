@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-13";
+const LWK_VERSION = "2026-12-14";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -310,20 +310,28 @@ function viewLink() {
 }
 
 /* "+ Query": a picture of the sheet / 3D view on screen with a link back to
-   that exact view, handed to Tasks > Queries (tasks-queries.js VIEW_KEY):
-   a new query with it, or added to an open one. */
+   that exact view, added to a new or an open query of the project
+   (querypick.js: a menu under the button, then stay or open the query). */
 async function sendToQuery(btn) {
-  const cap = (window.SHEETS && window.SHEETS.captureView && window.SHEETS.S && window.SHEETS.S.sheet) ? window.SHEETS.captureView
+  const raw = (window.SHEETS && window.SHEETS.captureView && window.SHEETS.S && window.SHEETS.S.sheet) ? window.SHEETS.captureView
     : (window.LWK3D && window.LWK3D.captureView) ? window.LWK3D.captureView : null;
-  if (!cap) { alert("Open a sheet or the 3D model first."); return; }
-  const win = window.open("", "_blank");        // now: a pop-up opened after waiting is blocked
+  if (!raw) { alert("Open a sheet or the 3D model first."); return; }
+  const cap = async () => Object.assign(await raw(), {
+    by: (ME && ME.user && ME.user.name) || "", at: new Date().toISOString().slice(0, 16) });
+  let pick = null;
+  try { pick = (await import("./querypick.js")).pickQuery; } catch (e) {}
+  if (!pick) { handQueryView(btn, cap); return; }
+  pick(btn, project(), cap, () => handQueryView(btn, cap));
+}
+
+/* The view handed to Tasks > Queries (tasks-queries.js VIEW_KEY), which
+   asks there: a new query with it, or an open one. */
+async function handQueryView(btn, cap) {
   const was = btn.textContent;
   btn.textContent = "Capturing ...";
   try {
     const v = await cap();
     v.t = Date.now();
-    v.by = (ME && ME.user && ME.user.name) || "";
-    v.at = new Date().toISOString().slice(0, 16);
     localStorage.setItem("lwk-viewer:query-view", JSON.stringify(v));
     let reg = "";
     try {
@@ -332,9 +340,8 @@ async function sendToQuery(btn) {
       reg = hit ? hit.id : "";
     } catch (e) {}
     const url = "tasks.html?" + new URLSearchParams(Object.assign({ mode: "queries", addview: "1" }, reg ? { reg } : {})).toString();
-    if (win) win.location.href = url; else location.href = url;
+    location.href = url;
   } catch (e) {
-    if (win) win.close();
     alert("Could not capture the view: " + e.message);
   } finally { btn.textContent = was; }
 }

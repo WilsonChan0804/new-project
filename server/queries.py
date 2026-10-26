@@ -29,6 +29,7 @@ import threading
 import uuid
 
 from fastapi import HTTPException, Request, Header
+from starlette.concurrency import run_in_threadpool
 
 import tasks as T
 
@@ -253,17 +254,26 @@ def register(app, core):
         for x in v if isinstance(v, list) else []:
             if not isinstance(x, dict):
                 continue
-            kind = x.get("kind") if x.get("kind") in ("sheet", "view3d") else None
+            kind = x.get("kind") if x.get("kind") in ("sheet", "view3d", "image") else None
             url = str(x.get("url") or "")
-            if not kind or not re.match(r"^(index|model)\.html\?", url) or len(url) > 6000:
-                continue
             snap = str(x.get("snapshot") or "")
             if snap and not re.match(r"^/snapshots/[0-9a-f]{8,64}\.(jpg|png)$", snap):
                 snap = ""
+            if kind == "image":
+                url = ""                  # a picture of its own (a screenshot, a file): only the picture
+                if not snap:
+                    continue
+            elif not kind or not re.match(r"^(index|model)\.html\?", url) or len(url) > 6000:
+                continue
             out.append({"kind": kind, "url": url, "snapshot": snap, "project": T.clean_text(x.get("project"), 80),
                         "title": T.clean_text(x.get("title"), 200), "sheet": T.clean_text(x.get("sheet"), 60),
                         "at": T.clean_text(x.get("at"), 30), "by": T.clean_text(x.get("by"), 80)})
         return out[:MAX_VIEWS]
+
+    def appends(old, new):
+        """True when new is old with pictures added at the end."""
+        key = lambda v: (v.get("kind"), v.get("url"), v.get("snapshot"))
+        return len(new) > len(old) and [key(v) for v in new[:len(old)]] == [key(v) for v in old]
 
     def clean_tasks(v):
         return [t for t in (v if isinstance(v, list) else []) if isinstance(t, str) and T.SAFE_ID.match(t)][:30]
@@ -320,6 +330,12 @@ def register(app, core):
             body = json.loads(raw.decode("utf-8") or "{}")
         except ValueError:
             raise HTTPException(status_code=400, detail="Not JSON")
+        # the rest on a thread: the database, the chat card and the inbox
+        # must not hold up everyone else's requests (a slow /api/ping reads
+        # as "offline" on every open page)
+        return await run_in_threadpool(save, w, body)
+
+    def save(w, body):
         reg = body.get("reg")
         a = need(w, reg)
         allowed = people_of(core, reg)
@@ -362,7 +378,11 @@ def register(app, core):
                                          "new": str(val if not isinstance(val, list) else len(val))[:200]})
                         sets[col] = json.dumps(val) if isinstance(val, list) else val
                         q[field] = val
-                if not can_edit and any(k in p for k in ("title", "question", "to", "due", "priority", "views", "tasks")):
+                # anyone on the project may add a picture (+ Query on a sheet / in
+                # 3D); only the people above remove or reorder them
+                adds_only = "views" in p and not can_edit and appends(q["views"], clean_views(p["views"]))
+                if not can_edit and any(k in p for k in ("title", "question", "to", "due", "priority", "tasks")
+                                        ) or ("views" in p and not can_edit and not adds_only):
                     raise HTTPException(status_code=403, detail="Only who raised it, who it is addressed to, or a project admin can change it")
                 if "title" in p:
                     change("title", "title", T.clean_text(p["title"], 200))
@@ -477,6 +497,9 @@ def register(app, core):
             body = json.loads((await request.body()).decode("utf-8") or "{}")
         except ValueError:
             raise HTTPException(status_code=400, detail="Not JSON")
+        return await run_in_threadpool(comment, w, qid, body)
+
+    def comment(w, qid, body):
         text = T.clean_text(body.get("body"), 8000, True).strip()
         files = [f for f in body.get("files") or [] if isinstance(f, str)][:20]
         if not text and not files:

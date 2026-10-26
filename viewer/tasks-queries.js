@@ -160,14 +160,23 @@ function listHtml(T, rows) {
 function newForm(T, el, view) {
   const box = el.querySelector("#q-newform");
   if (!box) return;
+  const pics = view ? [view] : [];
   box.innerHTML = `<form class="q-form" autocomplete="off"><b>New query</b>`
     + `<input name="title" placeholder="Subject (what is unclear)" required maxlength="200">`
-    + `<textarea name="question" rows="3" placeholder="The question"></textarea>`
-    + (view ? `<div class="q-thumbs">${viewThumb(view, -1)}</div>` : "")
+    + `<textarea name="question" rows="3" placeholder="The question - paste a screenshot (Ctrl+V) or drop pictures here"></textarea>`
+    + `<div class="q-thumbs"></div><div class="q-fr">${addPicHtml()}</div>`
     + `<div class="q-fr"><label>To ${peopleSelect("to")}</label><label>Due <input type="date" name="due" value="${addDays(today(), 7)}"></label>`
     + `<label>Priority <select name="priority"><option>Normal</option><option>High</option><option>Urgent</option></select></label></div>`
     + `<div class="q-fr"><button class="primary">Raise query</button><button type="button" class="ghost" data-cancel>Cancel</button></div></form>`;
   const f = box.querySelector("form");
+  const thumbs = f.querySelector(".q-thumbs");
+  const paint = () => {
+    thumbs.innerHTML = pics.map((v, i) => viewThumb(v, i)).join("");
+    for (const b of thumbs.querySelectorAll("[data-unview]")) b.onclick = (ev) => { ev.preventDefault(); pics.splice(+b.dataset.unview, 1); paint(); };
+    wirePics(thumbs, pics);
+  };
+  paint();
+  wireAddPic(T, f, async (vs) => { pics.push(...vs); paint(); });
   f.title.focus();
   f.querySelector("[data-cancel]").onclick = () => { box.innerHTML = ""; };
   f.onsubmit = async (ev) => {
@@ -175,7 +184,7 @@ function newForm(T, el, view) {
     const to = [...f.querySelectorAll("[name=to] option:checked")].map((o) => ({ uid: +o.value }));
     try {
       const q = await save(T, { id: newQid(), title: f.title.value.trim(), question: f.question.value, to, due: f.due.value,
-        priority: f.priority.value, views: view ? [view] : [] });
+        priority: f.priority.value, views: pics });
       box.innerHTML = "";
       Q.f.status = "active";
       draw(T, el);
@@ -192,12 +201,125 @@ function peopleSelect(name, chosen) {
 
 /* ------------------------------------------------------- views (pictures) */
 
+const KIND_SAY = { sheet: "Sheet", view3d: "3D view", image: "Picture" };
+const KIND_MARK = { sheet: "&#128196; ", view3d: "&#9635; ", image: "&#128444; " };
+
 function viewThumb(v, i) {
-  return `<span class="q-view" title="${esc(v.title || "")}">`
-    + `<a href="${esc(v.url)}" target="_blank" rel="noopener" title="Open this ${v.kind === "sheet" ? "sheet" : "3D view"} as it was captured">`
+  const pic = v.kind === "image";
+  return `<span class="q-view${pic ? " pic" : ""}" title="${esc(v.title || "")}">`
+    + (pic ? `<a href="${esc(v.snapshot)}" data-pic="${esc(v.snapshot)}" title="Show the picture full size">`
+      : `<a href="${esc(v.url)}" target="_blank" rel="noopener" title="Open this ${v.kind === "sheet" ? "sheet" : "3D view"} as it was captured">`)
     + (v.snapshot ? `<img src="${esc(v.snapshot)}" alt="" loading="lazy">` : `<span class="q-noimg">${v.kind === "sheet" ? "Sheet" : "3D"}</span>`)
-    + `<small>${v.kind === "sheet" ? "&#128196; " : "&#9635; "}${esc(v.title || (v.kind === "sheet" ? "Sheet" : "3D view"))}</small></a>`
+    + `<small>${KIND_MARK[v.kind] || ""}${esc(v.title || KIND_SAY[v.kind] || "View")}</small></a>`
     + (i >= 0 ? `<button type="button" class="ghost" data-unview="${i}" title="Remove this picture">&#10005;</button>` : "") + `</span>`;
+}
+
+/* --------------------------------------------------- pictures of your own */
+
+const addPicHtml = () => `<label class="q-addpic ghost" title="Add pictures: image files, or paste a screenshot (Ctrl+V), or drop them here">`
+  + `&#128444; + Add picture<input type="file" accept="image/*" multiple hidden></label>`;
+
+/* an image file as a JPEG at most 2000 px, kept on the server (/snapshots) */
+async function picView(T, file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error(file.name + " is not a picture the browser can read")); i.src = url; });
+    const k = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+    const g = c.getContext("2d");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(img, 0, 0, c.width, c.height);
+    const r = await T.api("/api/snapshots", { method: "POST", body: JSON.stringify({ data_url: c.toDataURL("image/jpeg", 0.88) }) });
+    return { kind: "image", title: (file.name || "Picture").replace(/\.[a-z0-9]{2,5}$/i, "").slice(0, 200), snapshot: r.path,
+      by: (T.me && T.me.name) || "", at: new Date().toISOString().slice(0, 16) };
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* + Add picture, paste and drop on `area` (paste on `pasteOn`, the area by
+   default): add(views) with the pictures made. Wiring the same element
+   again (the detail panel is drawn again on each change) replaces it. */
+function wireAddPic(T, area, add, pasteOn, when) {
+  const take = async (files) => {
+    const imgs = Array.from(files || []).filter((f) => (f.type || "").startsWith("image/"));
+    if (!imgs.length) return false;
+    const lab = area.querySelector(".q-addpic");
+    if (lab) lab.classList.add("busy");
+    try {
+      const vs = [];
+      for (const f of imgs) vs.push(await picView(T, f));
+      await add(vs);
+    } catch (e) { alert("Could not add the picture: " + e.message); }
+    finally { if (lab) lab.classList.remove("busy"); }
+    return true;
+  };
+  const inp = area.querySelector(".q-addpic input");
+  if (inp) inp.onchange = () => { take(inp.files); inp.value = ""; };
+  const inForm = (ev) => ev.target && ev.target.closest && ev.target.closest(".q-cform");     // a comment takes its own files
+  const h = {
+    paste: (ev) => {
+      if (inForm(ev) || !area.isConnected || area.hidden || (when && !when())) return;
+      const fs = Array.from((ev.clipboardData && ev.clipboardData.files) || []);
+      if (fs.some((f) => (f.type || "").startsWith("image/"))) { ev.preventDefault(); take(fs); }
+    },
+    dragover: (ev) => {
+      if (inForm(ev)) return;
+      if (ev.dataTransfer && Array.from(ev.dataTransfer.types || []).includes("Files")) { ev.preventDefault(); area.classList.add("q-drop"); }
+    },
+    dragleave: () => area.classList.remove("q-drop"),
+    drop: (ev) => {
+      area.classList.remove("q-drop");
+      if (inForm(ev)) return;
+      const fs = Array.from((ev.dataTransfer && ev.dataTransfer.files) || []);
+      if (fs.length) { ev.preventDefault(); take(fs); }
+    },
+  };
+  const old = area._qpic;
+  if (old) {
+    old.pasteOn.removeEventListener("paste", old.h.paste);
+    for (const k of ["dragover", "dragleave", "drop"]) area.removeEventListener(k, old.h[k]);
+  }
+  const po = pasteOn || area;
+  area._qpic = { h, pasteOn: po };
+  po.addEventListener("paste", h.paste);
+  for (const k of ["dragover", "dragleave", "drop"]) area.addEventListener(k, h[k]);
+}
+
+/* a click on a picture of your own: full size, ‹ › through the query's pictures */
+function wirePics(box, views) {
+  for (const a of box.querySelectorAll("[data-pic]")) a.onclick = (ev) => {
+    ev.preventDefault();
+    const list = views.filter((v) => v.snapshot);
+    lightbox(list, Math.max(0, list.findIndex((v) => v.snapshot === a.dataset.pic)));
+  };
+}
+
+function lightbox(list, i) {
+  const ov = document.createElement("div");
+  ov.className = "q-lb";
+  const show = () => {
+    const v = list[i];
+    ov.innerHTML = `<button class="q-lb-x" title="Close (Esc)">&#10005;</button>`
+      + (list.length > 1 ? `<button class="q-lb-p" title="Previous">&#8249;</button><button class="q-lb-n" title="Next">&#8250;</button>` : "")
+      + `<figure><img src="${esc(v.snapshot)}" alt=""><figcaption>${KIND_MARK[v.kind] || ""}${esc(v.title || KIND_SAY[v.kind] || "")}`
+      + (v.kind !== "image" && v.url ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">Open this ${v.kind === "sheet" ? "sheet" : "3D view"}</a>` : "")
+      + ` <small>${i + 1} / ${list.length}</small></figcaption></figure>`;
+    ov.querySelector(".q-lb-x").onclick = done;
+    if (list.length > 1) {
+      ov.querySelector(".q-lb-p").onclick = (e) => { e.stopPropagation(); i = (i + list.length - 1) % list.length; show(); };
+      ov.querySelector(".q-lb-n").onclick = (e) => { e.stopPropagation(); i = (i + 1) % list.length; show(); };
+    }
+  };
+  const key = (e) => {
+    if (e.key === "Escape") done();
+    else if (e.key === "ArrowLeft" && list.length > 1) { i = (i + list.length - 1) % list.length; show(); }
+    else if (e.key === "ArrowRight" && list.length > 1) { i = (i + 1) % list.length; show(); }
+  };
+  function done() { ov.remove(); document.removeEventListener("keydown", key, true); }
+  ov.onclick = (e) => { if (e.target === ov) done(); };
+  document.addEventListener("keydown", key, true);
+  document.body.appendChild(ov);
+  show();
 }
 
 function takeView() {
@@ -271,8 +393,9 @@ async function openDetail(T, id, quiet) {
     + row("Due", canEdit ? `<input type="date" data-f="due" value="${esc(q.due)}">${isOver(q) ? ` <span class="bad">overdue ${daysBetween(q.due, today())} day(s)</span>` : ""}` : esc(q.due ? fmtDate(q.due) : "-"))
     + row("Priority", canEdit ? `<select data-f="priority">${["Normal", "High", "Urgent"].map((p) => `<option${p === q.priority ? " selected" : ""}>${p}</option>`).join("")}</select>` : esc(q.priority))
     + `<div class="q-sec"><b>Question</b>` + (canEdit ? `<textarea data-f="question" rows="4">${esc(q.question)}</textarea>` : `<p class="q-text">${esc(q.question || "-")}</p>`) + `</div>`
-    + `<div class="q-sec"><b>Views</b> <small class="muted">a click opens the sheet / 3D view as it was captured</small>`
-    + `<div class="q-thumbs">${(q.views || []).map((v, i) => viewThumb(v, canEdit ? i : -1)).join("") || `<span class="muted">None yet. On a sheet or in 3D: share menu &gt; <b>Add to query</b>.</span>`}</div></div>`
+    + `<div class="q-sec q-pics"><b>Pictures &amp; views</b> <small class="muted">a sheet / 3D picture opens that exact view; your own pictures open full size</small>`
+    + `<div class="q-thumbs">${(q.views || []).map((v, i) => viewThumb(v, canEdit ? i : -1)).join("") || `<span class="muted">None yet. On a sheet or in 3D click <b>+ Query</b>; or add a picture of your own here.</span>`}</div>`
+    + `<div class="q-fr">${addPicHtml()}<small class="muted">or paste a screenshot (Ctrl+V) / drop pictures on this panel</small></div></div>`
     + `<div class="q-sec"><b>Answer</b>`
     + (canAnswer && q.status !== "Closed" ? `<textarea data-ans rows="4" placeholder="The answer">${esc(q.answer)}</textarea>`
       + `<div class="q-fr"><button class="primary" data-act="answer">${q.status === "Answered" ? "Update answer" : "Mark answered"}</button></div>`
@@ -306,6 +429,12 @@ function wireDetail(T, panel, q, can) {
   act("close").onclick = closeDetail;
   act("chat").onclick = async () => { try { await T.api(`/api/queries/${q.id}/send`, { method: "POST" }); act("chat").textContent = "Sent"; } catch (e) { alert(e.message); } };
   const put = async (patch) => { try { await save(T, Object.assign({ id: q.id }, patch)); await redraw(); } catch (e) { alert(e.message); await redraw(); } };
+  wirePics(panel, q.views || []);
+  // anyone on the project may add pictures (the server takes additions from everyone)
+  wireAddPic(T, panel, async (vs) => {
+    const cur = await T.api("/api/queries/" + q.id);            // as it is now: someone may have added one
+    await put({ views: (cur.views || []).concat(vs) });
+  }, document, () => Q.open === q.id && T.S.mode === "queries");
   if (can.canEdit) {
     for (const f of panel.querySelectorAll("[data-f]")) f.onchange = () => put({ [f.dataset.f]: f.value });
     const sel = panel.querySelector("select[name=to]");

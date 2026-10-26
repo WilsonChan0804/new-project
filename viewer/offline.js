@@ -574,15 +574,30 @@ async function checkUpdate(project) {
 /* What the header goes by. Once the page's store runs, its poll is the
    truth (it asks the server every five seconds); before that - the sign-in
    form, a page that could not start - one small request of our own. */
-const NETSTATE = { probe: null };
+const NETSTATE = { probe: null, why: "", whyAt: 0, asking: false };
 async function probe() {
-  if (navigator.onLine === false) { NETSTATE.probe = false; return false; }
+  NETSTATE.whyAt = Date.now();
+  if (navigator.onLine === false) { NETSTATE.probe = false; NETSTATE.why = "net"; return false; }
   try {
     const r = await fetch("/api/ping", { cache: "no-store" });
-    NETSTATE.probe = r.ok && !r.headers.get("X-LWK-Offline");
-  } catch (e) { NETSTATE.probe = false; }
+    const off = r.headers.get("X-LWK-Offline");
+    NETSTATE.probe = r.ok && !off;
+    // the service worker says why it answered from the copy: no answer, or too slow
+    NETSTATE.why = NETSTATE.probe ? "" : off === "slow" ? "slow" : "down";
+  } catch (e) { NETSTATE.probe = false; NETSTATE.why = "down"; }
   return NETSTATE.probe;
 }
+/* Offline: find out why (now and then), for the header's words. */
+function askWhy() {
+  if (NETSTATE.asking || Date.now() - NETSTATE.whyAt < 10000) return;
+  NETSTATE.asking = true;
+  probe().finally(() => { NETSTATE.asking = false; paint(); });
+}
+const WHY_SAY = {
+  slow: "The server is running but too busy to answer in time; it comes back by itself. If it lasts, an admin can look at Admin > Performance.",
+  down: "The server did not answer: check that it is running (server\\run.bat on the server PC, and tunnel.bat for a link from outside) and that this device is connected.",
+  net: "This device has no network connection.",
+};
 /* Has the store's first request to the server come back, one way or the other? */
 const decided = (st) => !!st.decided;
 function isOnline() {
@@ -653,6 +668,9 @@ function headline() {
       text = "Offline - no copy here";
       title = "No connection, and this project is not kept on this device.";
     }
+    if (NETSTATE.why === "slow") text = text.replace(/^Offline/, "Server busy");
+    if (WHY_SAY[NETSTATE.why]) title += " " + WHY_SAY[NETSTATE.why];
+    askWhy();
     const pill = text + (n ? " - " + n + " to upload" : "");
     if (n) { text += " - " + waiting; title += " " + plural(n, "change") + " will upload when the connection is back."; }
     return { cls: "is-off", icon: ICON_OFF, text, pill, short: n ? "Offline - " + n : "Offline", title };
