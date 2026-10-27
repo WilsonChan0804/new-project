@@ -202,7 +202,8 @@ PART = [
     TABLE(['角色', '可以'], [
         ['**Viewer**', '乜都睇得；唔可以加或者改 issue 同 comment'],
         ['**Member**', '開同改 issue 同 comment；只可以刪自己嘅'],
-        ['**Project admin**', 'Member 做得嘅全部，加上管理 project 成員、改或者刪任何嘢、無視 layer 鎖、upload model'],
+        ['**Publisher**', 'Member 做得嘅全部，加上由 Revit publish sheet 同 3D model（LWK tab > **Publish to Viewer**）'],
+        ['**Project admin**', 'Publisher 做得嘅全部，加上管理 project 成員、改或者刪任何嘢、無視 layer 鎖、upload model'],
         ['**Site admin**', '所有 project；加、停用同 reset account；開、刪同還原 project'],
     ]),
     P('每個 project 一定要留最少一個 project admin。'),
@@ -237,6 +238,7 @@ PART = [
         ['「Wrong email or password」', '檢查 email；叫 admin **Reset password**。試咗 10 次之後要等 15 分鐘'],
         ['「You are not a member of this project」', '叫 project admin 加你'],
         ['我加唔到或者改唔到 issue', '你喺呢個 project 係 **Viewer**；叫 project admin 俾你做 Member'],
+        ['Publish to Viewer 話「You need to be a Publisher or project admin」', '你喺嗰個 project 係 **Member**（或者 Viewer）。叫 project admin 開 **Admin**、揀個 project，喺成員表將你嘅角色改做 **Publisher**'],
         ['「N waiting to save」', '你個網絡斷咗。留住個版唔好閂；網絡返嚟就會儲存'],
         ['Header 顯示 **Offline**（或者 **Server busy**）', '將滑鼠放上去睇原因。**The server did not answer：** 喺 server 嗰部電腦檢查 server 個視窗仲開住（再開 **server\\run.bat**，每次更新之後都要），喺公司外面用連結就要開住 **tunnel.bat**；喺 server 部電腦開 http://127.0.0.1:8713/api/ping 應該有回應。**Server busy：** server 開住但答得太慢，會自己好返；成日咁就叫 admin 睇 **Admin > Performance**'],
         ['最新嘅 sheet 或者 model 唔見', 'Publish 可能仲做緊，或者 server 準備緊；等幾分鐘再 reload'],

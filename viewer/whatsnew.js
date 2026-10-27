@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-19", date: "27 Oct 2026",
+    items: [
+      "**Section box round an element (3D):** click an element and press **Section box** in the Selection panel, or right-click it > **Section box around this element** - the box closes round it with a little room, and the view moves there. In the Model browser, **Section box** does the same for a whole group.",
+      "**See-through:** make an element, its type, or its whole category see-through to look past it (right-click > **See-through: ...**, **See-through** in the Selection panel, or a group in the Model browser). A click goes through to what is behind; **Show all** or right-click > **Make all solid again** brings them back.",
+      "**Publishing from Revit needs the Publisher role:** a Member who gets \"You need to be a Publisher or project admin\" asks a project admin to set their role to **Publisher** (Admin > members). The manual now lists the role.",
+    ],
+  },
+  {
     version: "2026-12-18", date: "27 Oct 2026",
     items: [
       "**Fix:** a query picture taken on a sheet came out dark - with black blocks - where the sheet had comments, a compare result or the 3D position marker on it. They now keep their own colours (also when the picture is marked up). Pictures taken before stay as they are: take the view again with **+ Query**.",

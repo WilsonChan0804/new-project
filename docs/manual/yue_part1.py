@@ -42,7 +42,7 @@ PART = [
         'Admin 會幫你開 account，再寄邀請俾你，入面有一個**臨時密碼**。',
         '打開 viewer 網址，用你嘅 **Email** 同臨時密碼登入，跟住喺彈出嚟嘅 **My account** 版揀返自己嘅密碼（最少 8 個字）。',
         '每個瀏覽器會保持登入 30 日。15 分鐘內打錯 10 次密碼，登入會停 15 分鐘。',
-        '角色係逐個 project 設定：**Project admin**、**Member** 或者 **Viewer**（睇「俾 admin 嘅」）。Viewer 會見到一條橫額，話佢只可以睇同讀，唔改得任何嘢。',
+        '角色係逐個 project 設定：**Project admin**、**Publisher**、**Member** 或者 **Viewer**（睇「俾 admin 嘅」）。只有 Publisher 或者 project admin 先可以由 Revit publish。Viewer 會見到一條橫額，話佢只可以睇同讀，唔改得任何嘢。',
     ]),
     P('**Viewer 網址：**[寄出之前喺度貼上 viewer 網址]'),
     LABEL('瀏覽器同裝置'),

@@ -85,7 +85,7 @@ PART = [
     ]),
     P('用滑鼠嘅話，你一放手畫面就停喺嗰度；用手指會滑多少少，同其他平板 app 一樣。'),
     H3('右鍵選單'),
-    P('喺元件上面：**Set orbit centre here**、**Zoom to this element**、**Isolate**、**Hide**、**Show all**、**Walk from here**、**Add issue here**、**Section on this face**、**Square section box to this face**、**Turn section on/off**、**Measure**、**Save view...**、**Fit model**。喺空位：Show all、Turn section on/off、Measure、Save view...、Fit model。'),
+    P('喺元件上面：**Set orbit centre here**、**Zoom to this element**、**Isolate**、**Hide**、**Show all**、**Walk from here**、**Add issue here**、**Section box around this element**、**See-through**（呢個元件、佢個 type 或者成個 category）、**Make all solid again**、**Section on this face**、**Square section box to this face**、**Turn section on/off**、**Measure**、**Save view...**、**Fit model**。喺空位：Show all、Turn section on/off、Measure、Save view...、Fit model。'),
     H3('View cube 同鏡頭'),
     UL([
         '撳 cube 嘅一個**面**睇嗰個方向，撳一條**邊**睇兩個面之間，撳一個**角**睇 isometric。拖個 cube 可以轉。下面個圈顯示北面。',
@@ -175,6 +175,15 @@ PART = [
     UL([
         '右鍵撳一幅牆或者樓板：**Section on this face** 就喺嗰度切；**Square section box to this face** 將個 box 對正佢。',
         '右鍵撳空位：**Turn section on/off**。',
+        '**Section box 圍住一個元件：** 撳佢，再撳 Selection panel 嘅 **Section box**；或者右鍵 > **Section box around this element**。個 box 會圍住嗰個元件、四邊留少少位，視圖會飛過去。喺 **Model browser** 揀一組（category、type、樓層）再撳 **Section box**，就圍住成組。',
+    ]),
+    H3('半透明（See-through）元件'),
+    P('想睇穿牆、樓板或者天花又唔想收埋佢哋，就將佢哋變半透明：佢哋留喺原位、好似一塊淡色網，撳落去會穿過去揀後面嘅嘢。'),
+    UL([
+        '**一個元件：** 撳佢，再撳 Selection panel 嘅 **See-through**；或者右鍵 > **See-through: this element**。',
+        '**佢個 type 或者成個 category：** 右鍵 > **See-through: its type (n)** 或者 **See-through: all Walls (n)**（即係佢個 category 名）。',
+        '**自己揀一組：** 喺 **Model browser** 搜尋或者揀 category、type、樓層，再撳 **See-through**。',
+        'Selection panel 會數住有幾多個（**5 see-through**）。撳 **Show all**，或者右鍵 > **Make all solid again**，就變返實心。',
     ]),
     H2('喺 3D 量度'),
     P('每個量度點都會 snap 去真實嘅角、邊或者中點，個 label 會話你知係邊種，你就知個數信唔信得過。'),

@@ -392,10 +392,16 @@ export async function createLwkModel(THREE, data, opts = {}) {
     m.colorNode = T.Fn(() => {
       // hidden: left out altogether
       T.If(state.greaterThan(0.5).and(state.lessThan(1.5)), () => { T.Discard(); });
+      // see-through (state 3): two pixels in three left out, the rest paler - the
+      // building behind shows, with no sorting of see-through surfaces
+      T.If(state.greaterThan(2.5), () => {
+        T.If(T.mod(T.floor(T.screenCoordinate.x).add(T.floor(T.screenCoordinate.y)), 3.0).greaterThan(0.5), () => { T.Discard(); });
+      });
       const base = T.materialColor.mul(T.mix(T.vec3(1), vcol, useVC));
-      return T.select(state.greaterThan(1.5), pick, base);
+      const ghost = T.mix(base, T.vec3(0.86, 0.9, 0.95), 0.45);
+      return T.select(state.greaterThan(2.5), ghost, T.select(state.greaterThan(1.5), pick, base));
     })();
-    m.opacityNode = T.select(state.greaterThan(1.5), T.float(1), T.materialOpacity);
+    m.opacityNode = T.select(state.greaterThan(1.5).and(state.lessThan(2.5)), T.float(1), T.materialOpacity);
     const worldY = T.positionWorld.y;
     m.outputNode = T.Fn(() => {
       const out = T.vec4(T.output).toVar();
@@ -455,9 +461,11 @@ export async function createLwkModel(THREE, data, opts = {}) {
           flat varying float vCapIdx;
           varying float vWorldY;`)
         .replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>
-          if (vState > 0.5 && vState < 1.5) discard;`)
+          if (vState > 0.5 && vState < 1.5) discard;
+          if (vState > 2.5 && mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 3.0) > 0.5) discard;`)
         .replace("#include <color_fragment>", `#include <color_fragment>
-          if (vState > 1.5) { diffuseColor.rgb = pickColor; diffuseColor.a = 1.0; }`)
+          if (vState > 1.5 && vState < 2.5) { diffuseColor.rgb = pickColor; diffuseColor.a = 1.0; }
+          if (vState > 2.5) { diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.9, 0.95), 0.45); }`)
         .replace("#include <tonemapping_fragment>", `
           {
             // the inside of a cut solid: its far faces, seen from behind
@@ -1021,12 +1029,17 @@ export async function createLwkModel(THREE, data, opts = {}) {
       const b = batches[bi];
       const si = (k * b.cols + col) * 4;
       const cur = b.tex.data[si];
-      b.tex.data[si] = mask === "hide" ? (value ? (cur === 2 ? 2 : 1) : (cur === 1 ? 0 : cur))
-                                       : (value ? 2 : (cur === 2 ? 0 : cur));
+      // 0 shown, 1 hidden, 2 picked, 3 see-through; picked over see-through
+      // over shown, and a mark taken off falls back to see-through if set
+      const base = ghostState.has(lid) ? 3 : 0;
+      b.tex.data[si] = mask === "hide" ? (value ? (cur === 2 ? 2 : 1) : (cur === 1 ? base : cur))
+        : mask === "ghost" ? (value ? (cur === 0 ? 3 : cur) : (cur === 3 ? 0 : cur))
+        : (value ? 2 : (cur === 2 ? base : cur));
       b.dirty = true;
     });
   }
   const hiddenState = new Set();
+  const ghostState = new Set();
   const flush = () => {
     for (const b of batches) if (b.dirty) { b.tex.texture.needsUpdate = true; b.dirty = false; }
   };
@@ -1076,7 +1089,7 @@ export async function createLwkModel(THREE, data, opts = {}) {
         if (gb && !_r2.intersectsBox(gb)) continue;
         for (const [col, bx] of b.boxes) {
           const st = b.tex.data[(k * b.cols + col) * 4];
-          if (st === 1) continue;
+          if (st === 1 || st === 3) continue;     // hidden, or see-through: a click goes through to what is behind
           const t = _r2.intersectBox(bx, _hit);
           if (t === null) continue;
           cand.push([_r2.origin.distanceToSquared(_hit), bi, k, col]);
@@ -1915,6 +1928,21 @@ export async function createLwkModel(THREE, data, opts = {}) {
       flush();
     },
     async highlight(ids) { return model.setColor(ids); },
+    /* see-through: these elements faint, the model behind them seen */
+    async setGhost(ids, on) {
+      for (const lid of ids === undefined || ids === null ? allIds() : ids) {
+        if (on) ghostState.add(lid); else ghostState.delete(lid);
+        setState(lid, on, "ghost");
+      }
+      flush();
+    },
+    async resetGhost() {
+      const was = [...ghostState];
+      ghostState.clear();
+      for (const lid of was) setState(lid, false, "ghost");
+      flush();
+    },
+    ghostCount: () => ghostState.size,
     /* For the model browser: every drawn id of these elements (a typical
        floor's element is drawn once per copy), and the properties file. */
     lidsOfElements(els) {

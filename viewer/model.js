@@ -2515,16 +2515,141 @@ async function isolateSelected() {
 
 async function showAll() {
   await applyHidden(new Set());
+  await ghostOff(true);
   status("Everything shown.");
+}
+
+/* ------------------------------------------------------- see-through */
+
+/* Elements made see-through (faint, the model behind them seen, a click
+   goes through them): one element, its type or category, or a group from
+   the Model browser. The fast models draw it themselves (lwkm.js); other
+   models (IFC) by opacity. */
+S.ghosted = new Map();          // part -> Set(localId)
+async function ghostLids(groups, on) {
+  let n = 0;
+  for (const { part, lids } of groups) {
+    if (!part || !lids || !lids.length) continue;
+    const m = part.model;
+    try {
+      if (m.setGhost) await m.setGhost(lids, on);
+      else if (m.setOpacity) { if (on) await m.setOpacity(lids, 0.18); else await m.resetOpacity(lids); }
+      else continue;
+    } catch (e) { continue; }
+    let set = S.ghosted.get(part);
+    if (!set) S.ghosted.set(part, set = new Set());
+    for (const l of lids) { if (on) set.add(l); else set.delete(l); }
+    if (!set.size) S.ghosted.delete(part);
+    n += lids.length;
+  }
+  if (S.fragments) await S.fragments.update(true).catch(() => {});
+  S.dirty = true; S.needsRender = true;
+  updateVisButtons();
+  return n;
+}
+async function ghostOff(quiet) {
+  for (const [part, set] of S.ghosted) {
+    try {
+      if (part.model.resetGhost) await part.model.resetGhost();
+      else if (part.model.resetOpacity) await part.model.resetOpacity([...set]);
+    } catch (e) {}
+  }
+  S.ghosted.clear();
+  if (S.fragments) await S.fragments.update(true).catch(() => {});
+  S.dirty = true; S.needsRender = true;
+  updateVisButtons();
+  if (!quiet) status("Everything solid again.");
+}
+const ghostCount = () => [...S.ghosted.values()].reduce((t, x) => t + x.size, 0);
+
+/* The element right-clicked, with its type and category in the fast
+   model's index (Model browser): { rec, e, cat, type, sets }. */
+function elementGroups(part, lid) {
+  const rec = recOfPart(part);
+  if (!rec || !rec.lwk || !part.model.elementOfId) return null;
+  const e = part.model.elementOfId(lid);
+  if (e === null || e === undefined) return null;
+  const ix = mbIndex(rec);
+  for (const [cat, types] of ix.byCat) for (const [ft, els] of types) {
+    if (els.includes(e)) {
+      const all = new Set(); for (const a of types.values()) for (const x of a) all.add(x);
+      return { rec, e, cat, type: ft, typeSet: new Set(els), catSet: all };
+    }
+  }
+  return null;
+}
+async function ghostElements(rec, els, on, label) {
+  const part = rec.parts[0];
+  const n = await ghostLids([{ part, lids: part.model.lidsOfElements(els) }], on);
+  status(on ? `${label}: see-through (${n}). A click goes through it; Show all (or right-click > Make all solid) brings it back.`
+    : `${label}: solid again.`);
+}
+
+/* A section box round a box in the model, a little room around it, and
+   the camera brought to it (right-click an element > Section box around
+   it, or the Model browser's group). */
+function sectionAroundBox(tb, label) {
+  if (!tb || tb.isEmpty()) { status("Nothing to put a section box round."); return; }
+  const size = tb.getSize(new THREE.Vector3());
+  const t = tb.clone().expandByScalar(Math.max(0.3, Math.min(3, size.length() * 0.08)));
+  const sec = S.section;
+  sec.on = true;
+  sec.face = null;
+  if (S.arrows) S.arrows.clear();
+  sec.box = projectBox();
+  sec.box.union(t);
+  document.getElementById("sec-on").checked = true;
+  const b = sec.box;
+  const pct = (v, lo, hi) => Math.max(0, Math.min(100, (v - lo) / ((hi - lo) || 1) * 100));
+  document.getElementById("sh0").value = pct(t.min.y, b.min.y, b.max.y);
+  document.getElementById("sh1").value = pct(t.max.y, b.min.y, b.max.y);
+  // in plan, in the box's own frame (it turns about the vertical)
+  const rad = (Number(document.getElementById("srot").value) || 0) * Math.PI / 180;
+  const pivot = b.getCenter(new THREE.Vector3());
+  const toLocal = new THREE.Matrix4().makeRotationY(-rad);
+  const lo = new THREE.Vector3(Infinity, Infinity, Infinity), hi = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+  const tlo = lo.clone(), thi = hi.clone();
+  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
+    const q = new THREE.Vector3(x, y, z).sub(pivot).applyMatrix4(toLocal); lo.min(q); hi.max(q);
+  }
+  for (const x of [t.min.x, t.max.x]) for (const y of [t.min.y, t.max.y]) for (const z of [t.min.z, t.max.z]) {
+    const q = new THREE.Vector3(x, y, z).sub(pivot).applyMatrix4(toLocal); tlo.min(q); thi.max(q);
+  }
+  document.getElementById("sx0").value = pct(tlo.x, lo.x, hi.x);
+  document.getElementById("sx1").value = pct(thi.x, lo.x, hi.x);
+  document.getElementById("sy0").value = pct(tlo.z, lo.z, hi.z);
+  document.getElementById("sy1").value = pct(thi.z, lo.z, hi.z);
+  applySection();
+  const c = t.getCenter(new THREE.Vector3());
+  const r = Math.max(1.5, t.getSize(new THREE.Vector3()).length() / 2);
+  const dir = S.camera.position.clone().sub(S.controls.target).normalize();
+  flyTo(c.clone().add(dir.multiplyScalar(r * 2.2)), c);
+  status(`Section box round ${label}. Drag its arrows to adjust; Turn section off (right-click) to see everything.`);
+}
+async function sectionAroundElement(part, lid, label) {
+  // the whole element (a floor's element can be drawn as several pieces)
+  let lids = [lid];
+  try {
+    const rec = recOfPart(part);
+    if (rec && rec.lwk && part.model.elementOfId) {
+      const e = part.model.elementOfId(lid);
+      if (e !== null && e !== undefined) lids = part.model.lidsOfElements([e]);
+    }
+  } catch (err) {}
+  const box = new THREE.Box3();
+  try { for (const bx of await part.model.getBoxes(lids)) if (bx && !bx.isEmpty()) box.union(bx); } catch (err) {}
+  sectionAroundBox(box, label || "the element");
 }
 
 function updateVisButtons() {
   const n = S.hidden ? S.hidden.size : 0;
   const b = document.getElementById("vis-show");
   if (b) b.disabled = n === 0;
+  const g = S.ghosted ? ghostCount() : 0;
+  if (b && g) b.disabled = false;
   const c = document.getElementById("vis-count");
-  if (c) c.textContent = n && !S.hidden.has("*isolated*") ? `${n} hidden` :
-                         S.hidden.has("*isolated*") ? "isolated" : "";
+  if (c) c.textContent = [n && !S.hidden.has("*isolated*") ? `${n} hidden` : S.hidden.has("*isolated*") ? "isolated" : "",
+                          g ? `${g} see-through` : ""].filter(Boolean).join(" · ");
 }
 
 /* ------------------------------------------------------------ highlight */
@@ -3867,6 +3992,17 @@ async function mbBox(sets) {
   }
   return { box, el };
 }
+async function mbGhost() {
+  if (mbEmpty()) return;
+  await mbClearPicks();
+  const n = await ghostLids(await mbLids(MB.pick.sets), true);
+  status(`${MB.pick.label}: ${n} see-through. A click goes through them; Show all (or right-click > Make all solid again) brings them back.`);
+}
+async function mbSection() {
+  if (mbEmpty()) return;
+  const { box } = await mbBox();
+  sectionAroundBox(box, MB.pick.label);
+}
 async function mbZoom(sets) {
   const { box } = await mbBox(sets);
   if (box.isEmpty()) return;
@@ -3901,6 +4037,9 @@ function wireModelBrowser() {
   document.getElementById("mb-select").addEventListener("click", () => mbSelect().catch((e) => showError("browser", e)));
   document.getElementById("mb-isolate").addEventListener("click", () => mbIsolate().catch((e) => showError("browser", e)));
   document.getElementById("mb-zoom").addEventListener("click", () => mbZoom().catch((e) => showError("browser", e)));
+  const mg = document.getElementById("mb-ghost"), ms = document.getElementById("mb-section");
+  if (mg) mg.addEventListener("click", () => mbGhost().catch((e) => showError("browser", e)));
+  if (ms) ms.addEventListener("click", () => mbSection().catch((e) => showError("browser", e)));
 }
 
 
@@ -5315,10 +5454,23 @@ async function open3DMenu(ev, found) {
         S.camera.position.copy(found.hit.point).add(dir.multiplyScalar(6));
         S.controls.update(); S.dirty = true;
       } } : null,
+    onElement ? { label: "Section box around this element", action: () => sectionAroundElement(found.part, found.hit.localId, found.name || "the element") } : null,
     onElement ? "-" : null,
     onElement ? { label: "Isolate", action: () => isolateSelected() } : null,
     onElement ? { label: "Hide", action: () => hideSelected() } : null,
-    { label: "Show all", disabled: !hiddenCount, action: () => showAll() },
+    ...(onElement ? (() => {
+      const g = elementGroups(found.part, found.hit.localId);
+      const one = { label: "See-through: this element", action: async () => {
+        await clearHighlight();
+        if (g) await ghostElements(g.rec, [g.e], true, found.name || "The element");
+        else { await ghostLids([{ part: found.part, lids: [found.hit.localId] }], true); status("See-through. Show all brings it back."); }
+      } };
+      return g ? [one,
+        { label: `See-through: its type (${g.typeSet.size})`, action: async () => { await clearHighlight(); await ghostElements(g.rec, g.typeSet, true, g.type); } },
+        { label: `See-through: all ${g.cat} (${g.catSet.size})`, action: async () => { await clearHighlight(); await ghostElements(g.rec, g.catSet, true, g.cat); } }] : [one];
+    })() : []),
+    { label: "Make all solid again", disabled: !ghostCount(), action: () => ghostOff() },
+    { label: "Show all", disabled: !hiddenCount && !ghostCount(), action: () => showAll() },
     "-",
     onElement && !(S.walk && S.walk.on) ? { label: "Walk from here", action: () => {
         S.walk.startAt(found.hit.point, found.hit.normal);
@@ -8339,6 +8491,21 @@ async function boot() {
   document.getElementById("view-save").addEventListener("click", saveView);
   document.getElementById("vis-hide").addEventListener("click", hideSelected);
   document.getElementById("vis-isolate").addEventListener("click", isolateSelected);
+  // the element selected: a section box round it, or see-through
+  const vb = document.getElementById("vis-box"), vg = document.getElementById("vis-ghost");
+  if (vb) vb.addEventListener("click", () => {
+    const p = S.picked;
+    if (!p) { status("Select an element first (click it)."); return; }
+    sectionAroundElement(p.part, p.localId, "the selected element");
+  });
+  if (vg) vg.addEventListener("click", async () => {
+    const p = S.picked;
+    if (!p) { status("Select an element first (click it)."); return; }
+    const g = elementGroups(p.part, p.localId);
+    await clearHighlight();
+    if (g) await ghostElements(g.rec, [g.e], true, "The selected element");
+    else { await ghostLids([{ part: p.part, lids: [p.localId] }], true); status("See-through. Show all brings it back."); }
+  });
   document.getElementById("vis-show").addEventListener("click", showAll);
   updateVisButtons();
 
