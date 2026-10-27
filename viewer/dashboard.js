@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-17";
+const LWK_VERSION = "2026-12-18";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {

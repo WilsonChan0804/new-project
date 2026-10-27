@@ -140,6 +140,11 @@ function flatten(img, markup) {
     svg.setAttribute("width", c.width);
     svg.setAttribute("height", c.height);
     MK.redraw(svg, markup, c.width, c.height, null, null);
+    // the click targets under each mark (a fat "transparent" stroke) are not drawn:
+    // a browser that does not take "transparent" in a picture paints them black
+    for (const n of svg.querySelectorAll("[pointer-events]")) {
+      if (n.getAttribute("stroke") === "transparent" || n.getAttribute("fill") === "transparent") n.remove();
+    }
     const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml;charset=utf-8" }));
     const over = new Image();
     over.onload = () => { ctx.drawImage(over, 0, 0); URL.revokeObjectURL(url); resolve(c.toDataURL("image/jpeg", 0.88)); };

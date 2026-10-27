@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-18", date: "27 Oct 2026",
+    items: [
+      "**Fix:** a query picture taken on a sheet came out dark - with black blocks - where the sheet had comments, a compare result or the 3D position marker on it. They now keep their own colours (also when the picture is marked up). Pictures taken before stay as they are: take the view again with **+ Query**.",
+    ],
+  },
+  {
     version: "2026-12-17", date: "27 Oct 2026",
     items: [
       "**Mark up a query's pictures:** the ✎ on any picture of a query - a sheet or 3D view, or a photo / screenshot added to it - opens the same markup tools as an issue's snapshot (cloud, arrow, text, callout ...). The drawing can be changed again later. In the **+ Query** menu, **Mark up the picture first** draws on the view before it is added.",

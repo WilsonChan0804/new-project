@@ -185,10 +185,7 @@ window.SHEETS.captureView = async (pin) => {
     const svg = $("#overlay");
     if (svg) {
       const img = new Image();
-      // the markups as seen - not the queries' own badges
-      const copy = svg.cloneNode(true);
-      for (const n of copy.querySelectorAll(".qv-layer")) n.remove();
-      const xml = new XMLSerializer().serializeToString(copy);
+      const xml = new XMLSerializer().serializeToString(svgForImage(svg));
       await new Promise((res) => { img.onload = res; img.onerror = res; img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml); });
       if (img.width) {
         const sr = svg.getBoundingClientRect(), ks = img.width / (sr.width || 1);
@@ -239,6 +236,38 @@ function revealPaper(r) {
   sc.scrollLeft += (x0 + x1) / 2 - (R.left + R.right) / 2;
   sc.scrollTop += (y0 + y1) / 2 - (R.top + R.bottom) / 2;
   settle(160);
+}
+
+/* The overlay as a picture of what is seen. Drawn as an image, an SVG does
+   not see the page's stylesheet, so a shape coloured by a CSS class came
+   out with the SVG default - solid black - and a query picture of a sheet
+   with comments turned dark. Each shape gets its computed style written
+   on; the query badges and the selection handles are left out. */
+/* The invisible twin under each markup that makes it easy to click (a fat
+   "transparent" stroke): not part of the drawing, and painted black by a
+   browser that does not take "transparent" in a picture. */
+function dropClickTargets(root) {
+  for (const n of root.querySelectorAll("[pointer-events]")) {
+    if (n.getAttribute("stroke") === "transparent" || n.getAttribute("fill") === "transparent") n.remove();
+  }
+  for (const n of root.querySelectorAll('[fill="transparent"]')) n.setAttribute("fill", "none");
+  for (const n of root.querySelectorAll('[stroke="transparent"]')) n.setAttribute("stroke", "none");
+}
+const PIC_STYLE = ["fill", "fill-opacity", "stroke", "stroke-width", "stroke-opacity", "stroke-dasharray", "stroke-linecap",
+  "stroke-linejoin", "opacity", "font-family", "font-size", "font-weight", "font-style", "text-anchor", "mix-blend-mode", "display", "visibility"];
+function svgForImage(svg) {
+  const copy = svg.cloneNode(true);
+  copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const live = [svg, ...svg.querySelectorAll("*")], dup = [copy, ...copy.querySelectorAll("*")];
+  for (let i = 0; i < live.length && i < dup.length; i++) {
+    let cs = null;
+    try { cs = getComputedStyle(live[i]); } catch (e) {}
+    if (!cs) continue;
+    dup[i].setAttribute("style", PIC_STYLE.map((k) => `${k}:${cs.getPropertyValue(k)}`).join(";"));
+  }
+  for (const n of copy.querySelectorAll(".qv-layer, .handle, .selbox, .marquee")) n.remove();
+  dropClickTargets(copy);
+  return copy;
 }
 
 /* Zoom the main sheet so a paper rectangle [x, y, w, h] (mm) fills most of
