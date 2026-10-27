@@ -2,7 +2,7 @@
  * under an arrow, every cell editable where it stands. */
 
 import { METHOD_OPTS, isMethod } from "./tasks-util.js";
-import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, percentBar, pickPeople, pickOne, pickDate, PRIORITIES, PRI_RANK } from "./tasks-util.js";
+import { esc, avatar, people, fmtDate, fmtWhen, isOverdue, priorityPill, progress, percentBar, pickPeople, pickOne, pickDate, PRIORITIES, PRI_RANK, toast } from "./tasks-util.js";
 import { badge } from "./filelinks.js";
 import * as Clip from "./tasks-clip.js";
 
@@ -359,7 +359,7 @@ function wire(T, el, buckets) {
     ev.dataTransfer.setData("text/plain", dragId);
     r.classList.add("dragging");
   };
-  el.ondragend = () => { dragId = null; T.S.dragging = false; for (const x of el.querySelectorAll(".drop-before, .drop-in, .drop-nest, .dragging")) x.classList.remove("drop-before", "drop-in", "drop-nest", "dragging"); };
+  el.ondragend = () => { dragId = null; T.S.dragging = false; for (const x of el.querySelectorAll(".drop-before, .drop-in, .drop-nest, .drop-last, .dragging")) x.classList.remove("drop-before", "drop-in", "drop-nest", "drop-last", "dragging"); };
   /* dropped on the right half of a task's title: it becomes that task's
      sub-task (as in Lark), unless that makes a loop or goes too deep */
   const nestTarget = (ev, r) => {
@@ -375,16 +375,50 @@ function wire(T, el, buckets) {
     if (T.depth(par.id) + 1 + below(t.id) >= T.MAX_DEPTH) return null;
     return par;
   };
+  /* may the dragged task go under this one (no loop, not too deep)? */
+  const canUnder = (pid) => {
+    const t = T.task(dragId), par = T.task(pid);
+    if (!t || !par || pid === t.id) return false;
+    if (T.descendants(t.id).some((k) => k.id === pid)) return false;
+    const below = (id) => Math.max(0, ...T.children(id).map((k) => 1 + below(k.id)));
+    return T.depth(pid) + 1 + below(t.id) < T.MAX_DEPTH;
+  };
+  /* before a sub-task: a sub-task of the same task, just above it */
+  const subBefore = (r) => {
+    if (!r || !r.classList.contains("sub") || r.dataset.id === dragId) return null;
+    const o = T.task(r.dataset.id);
+    return o && o.parent_id && canUnder(o.parent_id) ? o : null;
+  };
+  /* on a task's "+ Add sub-task" line: its last sub-task */
+  const lastUnder = (ev) => {
+    const n = ev.target.closest(".tl-newsub");
+    const inp = n && n.querySelector(".tl-new[data-parent]");
+    return inp && canUnder(inp.dataset.parent) ? { n, pid: inp.dataset.parent } : null;
+  };
   el.ondragover = (ev) => {
     if (!dragId) return;
     const g = ev.target.closest(".tl-group");
     if (!g) return;
     ev.preventDefault();
-    for (const x of el.querySelectorAll(".drop-before, .drop-in, .drop-nest")) x.classList.remove("drop-before", "drop-in", "drop-nest");
+    for (const x of el.querySelectorAll(".drop-before, .drop-in, .drop-nest, .drop-last")) x.classList.remove("drop-before", "drop-in", "drop-nest", "drop-last");
     const r = ev.target.closest(".tl-row[data-id]");
-    if (nestTarget(ev, r)) r.classList.add("drop-nest");
+    const last = lastUnder(ev);
+    if (last) last.n.classList.add("drop-last");
+    else if (nestTarget(ev, r)) r.classList.add("drop-nest");
+    else if (subBefore(r)) r.classList.add("drop-before");
     else if (r && !r.classList.contains("sub") && r.dataset.id !== dragId) r.classList.add("drop-before");
     else g.classList.add("drop-in");
+  };
+  /* a sub-task of pid, before beforeId (or last) */
+  const moveUnder = (t, pid, beforeId) => {
+    const par = T.task(pid);
+    const sibs = T.children(pid).filter((k) => k.id !== t.id);
+    const i = beforeId ? sibs.findIndex((k) => k.id === beforeId) : sibs.length;
+    const prev = sibs[i - 1], next = sibs[i];
+    const sort = prev && next ? (prev.sort + next.sort) / 2 : prev ? prev.sort + 1 : next ? next.sort - 1 : 1;
+    T.S.expanded.add(pid);
+    if (sortState() && sortState().k && t.parent_id === pid) toast("Moved - the list is sorted by a column; click its heading until the arrows go to see your own order");
+    return T.save(t.id, { parent_id: pid, group_id: par.group_id, sort });
   };
   el.ondrop = (ev) => {
     if (!dragId) return;
@@ -394,6 +428,10 @@ function wire(T, el, buckets) {
     const t = T.task(dragId);
     const b = g && bucketOf(g.dataset.b);
     if (!t || !b) return;
+    const last = lastUnder(ev);
+    if (last) return moveUnder(t, last.pid, null);
+    const sib = !nestTarget(ev, r) && subBefore(r);
+    if (sib) return moveUnder(t, sib.parent_id, sib.id);
     const par = nestTarget(ev, r);
     if (par) {
       const last = T.children(par.id).reduce((m, k) => Math.max(m, k.sort), 0);

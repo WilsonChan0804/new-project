@@ -261,3 +261,23 @@ th.sorted { color: var(--accent-deep, #c2570c); }
 :root[data-theme="dark"] .kpi.bad { background: linear-gradient(140deg, #3b1a17 0%, var(--panel) 75%); }
 :root[data-theme="dark"] .kpi.warn { background: linear-gradient(140deg, #3b2e16 0%, var(--panel) 75%); }
 :root[data-theme="dark"] .trend-side { background: linear-gradient(160deg, #33231a, var(--panel) 70%); border-color: #5a3a2a; }
+
+/* the dashboard's scope: the whole project or a part, and my own dashboards */
+#d-scope { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; font-size: 12px; align-items: center; }
+#d-scope .ds-g { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.ds-chip { padding: 2px 10px; border: 1px solid var(--line); border-radius: 12px; color: inherit; text-decoration: none; background: var(--panel); }
+.ds-chip:hover { border-color: var(--accent); }
+.ds-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+#d-scope button { font-size: 12px; padding: 2px 8px; }
+.ds-back { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; }
+.ds-dlg { width: min(560px, calc(100vw - 32px)); max-height: 86vh; display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; background: var(--panel); color: var(--ink); border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.3); }
+.ds-dlg h3 { margin: 0; }
+.ds-name input { width: 100%; padding: 6px 8px; margin-top: 3px; }
+.ds-list { overflow: auto; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+.ds-p { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.ds-p:last-child { border-bottom: 0; }
+.ds-parts { display: flex; flex-direction: column; padding-left: 24px; font-size: 12px; }
+.ds-f { display: flex; justify-content: flex-end; gap: 8px; }
+h4.exp-part { margin: 10px 0 4px; font-size: 13px; }
+.dt-one + .dt-one { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+#c-part { margin-bottom: 14px; }

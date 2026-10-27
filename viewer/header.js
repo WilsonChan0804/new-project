@@ -138,8 +138,12 @@ export function installHeader({ api, project, link }) {
     pick.title = name ? `Project: ${name}${sub ? " · " + sub : ""} - click to switch` : "Choose a project";
     relink();
   };
+  // the Dashboard: a whole project of several parts, and my own dashboards, can be opened too
+  const onDash = /dashboard\.html$/.test(location.pathname);
+  let BOARDS = [];
   const load = async () => {
     try { CH = await api("/api/project-choices"); } catch (e) { CH = null; }
+    if (onDash) { try { BOARDS = (await api("/api/dashboards")).dashboards || []; } catch (e) { BOARDS = []; } }
     paint();
   };
   paint();
@@ -154,7 +158,7 @@ export function installHeader({ api, project, link }) {
   const go = (id) => {
     try { localStorage.setItem("lwk-viewer:project", id); sessionStorage.setItem("lwk-viewer:tab-project", id); } catch (e) {}
     const here = location.pathname.split("/").pop() || "index.html";
-    location.href = here + "?project=" + encodeURIComponent(id);
+    location.href = here + "?project=" + encodeURIComponent(id) + (onDash ? "&one=1" : "");
   };
 
   let menu = null;
@@ -172,17 +176,29 @@ export function installHeader({ api, project, link }) {
         if (p.parts.length === 1) {
           rows.push({ id: p.parts[0].id, name: p.name, sub: p.code || "", ini: initials(p.name), on: p.parts[0].id === cur, q: (p.name + " " + p.code + " " + p.full).toLowerCase() });
         } else {
-          rows.push({ head: p.name, sub: p.code || "", ini: initials(p.name), q: (p.name + " " + p.code + " " + p.full).toLowerCase() });
-          for (const x of p.parts) rows.push({ id: x.id, name: x.title, sub: "", part: true, on: x.id === cur, q: (p.name + " " + p.code + " " + x.title).toLowerCase() });
+          rows.push({ head: p.name, sub: onDash ? (p.code ? p.code + " · " : "") + "all parts together" : p.code || "", ini: initials(p.name), reg: onDash ? p.reg : "",
+            on: onDash && new URLSearchParams(location.search).get("reg") === p.reg, q: (p.name + " " + p.code + " " + p.full).toLowerCase() });
+          const whole = onDash && /[?&](reg|board)=/.test(location.search);
+          for (const x of p.parts) rows.push({ id: x.id, name: x.title, sub: "", part: true, on: x.id === cur && !whole, q: (p.name + " " + p.code + " " + x.title).toLowerCase() });
         }
+      }
+      if (onDash) {
+        const cur = new URLSearchParams(location.search).get("board");
+        rows.push({ head: "My dashboards", sub: "", q: "", plain: true });
+        for (const b of BOARDS) rows.push({ board: b.id, name: b.name, sub: b.parts.length + " part" + (b.parts.length === 1 ? "" : "s"), part: true, on: cur === b.id, q: b.name.toLowerCase() });
+        rows.push({ board: "+", name: "+ Combine projects …", sub: "", part: true, q: "combine" });
       }
       if (CH.others.length) {
         rows.push({ head: "Not on the Projects page", sub: "", q: "" , plain: true });
         for (const o of CH.others) rows.push({ id: o.id, name: o.title || o.id, sub: "", part: true, on: o.id === cur, q: (o.title + " " + o.id).toLowerCase() });
       }
     }
-    const row = (r) => r.head
+    const row = (r) => r.head && r.reg
+      ? `<button type="button" role="menuitem" class="hm-row hm-reg${r.on ? " on" : ""}" data-reg="${esc(r.reg)}" data-q="${esc(r.q)}"><span class="hd-pi">${esc(r.ini)}</span><span><b>${esc(r.head)}</b>${r.sub ? `<small>${esc(r.sub)}</small>` : ""}</span>${r.on ? `<span class="hm-tick">&#10003;</span>` : ""}</button>`
+      : r.head
       ? `<div class="hm-head${r.plain ? " plain" : ""}" data-q="${esc(r.q)}">${r.plain ? "" : `<span class="hd-pi">${esc(r.ini)}</span>`}<span><b>${esc(r.head)}</b>${r.sub ? `<small>${esc(r.sub)}</small>` : ""}</span></div>`
+      : r.board
+      ? `<button type="button" role="menuitem" class="hm-row part${r.on ? " on" : ""}" data-board="${esc(r.board)}" data-q="${esc(r.q)}"><span><b>${esc(r.name)}</b>${r.sub ? `<small>${esc(r.sub)}</small>` : ""}</span>${r.on ? `<span class="hm-tick">&#10003;</span>` : ""}</button>`
       : `<button type="button" role="menuitem" class="hm-row${r.part ? " part" : ""}${r.on ? " on" : ""}" data-id="${esc(r.id)}" data-q="${esc(r.q)}">`
         + (r.part ? "" : `<span class="hd-pi">${esc(r.ini)}</span>`)
         + `<span><b>${esc(r.name)}</b>${r.sub ? `<small>${esc(r.sub)}</small>` : ""}</span>${r.on ? `<span class="hm-tick">&#10003;</span>` : ""}</button>`;
@@ -206,7 +222,10 @@ export function installHeader({ api, project, link }) {
       const b = ev.target.closest(".hm-row");
       if (!b) return;
       close();
-      if (b.dataset.id !== project()) go(b.dataset.id);
+      if (b.dataset.reg) { location.href = "dashboard.html?reg=" + encodeURIComponent(b.dataset.reg); return; }
+      if (b.dataset.board === "+") { const n = document.querySelector("#d-scope .ds-new"); if (n) n.click(); return; }
+      if (b.dataset.board) { location.href = "dashboard.html?board=" + encodeURIComponent(b.dataset.board); return; }
+      if (onDash || b.dataset.id !== project()) go(b.dataset.id);
     };
     if (!CH) load().then(() => { if (menu) open(); });
   };

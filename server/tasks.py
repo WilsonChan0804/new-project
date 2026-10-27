@@ -201,6 +201,17 @@ CREATE TABLE IF NOT EXISTS query_comments (
     created_at  TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_query_comments ON query_comments(query_id, created_at);
+-- A person's own dashboards (dashboard.html?board=): several projects and
+-- / or their parts together. scope: [{"reg": id} | {"part": viewer project}]
+CREATE TABLE IF NOT EXISTS dashboards (
+    id          TEXT PRIMARY KEY,
+    uid         INTEGER NOT NULL,
+    name        TEXT NOT NULL DEFAULT '',
+    scope       TEXT NOT NULL DEFAULT '[]',
+    created_at  TEXT NOT NULL DEFAULT '',
+    updated_at  TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_dashboards_uid ON dashboards(uid);
 -- Members of a project that has no viewer project (no export yet). A
 -- project with a viewer project keeps its members in accounts.db, as before.
 CREATE TABLE IF NOT EXISTS reg_members (
@@ -2351,6 +2362,80 @@ def register(app, core):
         others = sorted([{"id": p["id"], "title": p["title"]} for p in mine if p["id"] not in used],
                         key=lambda x: (x["title"] or x["id"]).lower())
         return {"projects": out, "others": others}
+
+    # ------------------------------------------------ my dashboards
+
+    def my_boards(w):
+        """My dashboards, each with the viewer projects it shows now (a
+        project ticked as a whole brings the parts added to it later; a part
+        I can no longer open is left out)."""
+        if w.uid is None:
+            return []
+        mine = dict((p["id"], p["title"]) for p in core.list_projects() if core.role_in(w, p["id"]))
+        with db() as d:
+            regs = dict((r["id"], r) for r in d.execute("SELECT * FROM projects WHERE deleted = 0").fetchall())
+            rows = d.execute("SELECT * FROM dashboards WHERE uid = ? ORDER BY name COLLATE NOCASE", (w.uid,)).fetchall()
+        out = []
+        for r in rows:
+            try:
+                scope = json.loads(r["scope"] or "[]")
+            except ValueError:
+                scope = []
+            parts, rids = [], []
+            for x in scope if isinstance(scope, list) else []:
+                if not isinstance(x, dict):
+                    continue
+                if x.get("reg") in regs:
+                    rids.append(x["reg"])
+                    parts += [v for v in viewers_of(regs[x["reg"]]) if v in mine]
+                elif x.get("part") in mine:
+                    parts.append(x["part"])
+                    rids += [k for k, rr in regs.items() if x["part"] in viewers_of(rr)]
+            seen = set()
+            parts = [p for p in parts if not (p in seen or seen.add(p))]
+            out.append({"id": r["id"], "name": r["name"], "scope": scope,
+                        "parts": [{"id": p, "title": mine[p]} for p in parts], "regs": sorted(set(rids))})
+        return out
+
+    @app.get("/api/dashboards")
+    def boards_list(request: Request, x_viewer_token: str = Header(default="")):
+        return {"dashboards": my_boards(core.who(request, x_viewer_token))}
+
+    @app.post("/api/dashboards")
+    async def boards_save(request: Request, x_viewer_token: str = Header(default="")):
+        """{id?, name, scope}: make or change one of my dashboards."""
+        w = core.who(request, x_viewer_token)
+        if w.uid is None:
+            raise HTTPException(status_code=403, detail="Sign in with your account to keep dashboards")
+        body = await read_json(request)
+        name = clean_text(body.get("name"), 120) or "My dashboard"
+        scope = []
+        for x in body.get("scope") if isinstance(body.get("scope"), list) else []:
+            if isinstance(x, dict) and isinstance(x.get("reg"), str) and SAFE_ID.match(x["reg"]):
+                scope.append({"reg": x["reg"]})
+            elif isinstance(x, dict) and isinstance(x.get("part"), str) and core.role_in(w, x["part"]):
+                scope.append({"part": x["part"]})
+        if not scope:
+            raise HTTPException(status_code=400, detail="Tick at least one project")
+        bid = body.get("id") if isinstance(body.get("id"), str) and SAFE_ID.match(body.get("id") or "") else new_id()
+        t = now_iso()
+        with db() as d:
+            old = d.execute("SELECT uid FROM dashboards WHERE id = ?", (bid,)).fetchone()
+            if old and old["uid"] != w.uid:
+                raise HTTPException(status_code=403, detail="Not your dashboard")
+            if old:
+                d.execute("UPDATE dashboards SET name = ?, scope = ?, updated_at = ? WHERE id = ?", (name, json.dumps(scope[:60]), t, bid))
+            else:
+                d.execute("INSERT INTO dashboards (id, uid, name, scope, created_at, updated_at) VALUES (?,?,?,?,?,?)",
+                          (bid, w.uid, name, json.dumps(scope[:60]), t, t))
+        return {"id": bid, "dashboards": my_boards(w)}
+
+    @app.delete("/api/dashboards/{bid}")
+    def boards_delete(request: Request, bid: str, x_viewer_token: str = Header(default="")):
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            d.execute("DELETE FROM dashboards WHERE id = ? AND uid = ?", (bid, w.uid))
+        return {"dashboards": my_boards(w)}
 
     # ------------------------------------------------ links for the Messenger
 

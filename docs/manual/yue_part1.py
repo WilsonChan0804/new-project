@@ -93,6 +93,8 @@ PART = [
     UL([
         '每一版嘅頂部都一樣：個 logo，跟住係**你而家嘅 project**（左上角，有簡寫、名同編號 - 撳一下轉 project），再係各頁 **Projects**、**Dashboard**、**Sheets**、**3D**、**Board**、**Tasks**、**Chat**（有未讀訊息數目）、**Calendar** 同 **Folders**。右邊有：**Search**（Ctrl K）、鈴、**Help** 同**你嘅頭像**（你個名嘅簡寫，上線時有綠點）。撳頭像有 **Work offline ...**、**Admin**（只限 admin）、**Account**（密碼）、**Theme**（Light、Dark、Auto）同 **Sign out**。手機上面各頁可以左右掃。',
         '**Project 選單**會列出 Projects 版嘅 project 名，例如「SKW · HKA-P-01681-ARC」。由幾個 model 組成嘅 project，例如 MOS Site 1 同 Site 2，會喺下面列出佢嘅部分。最底嘅 **All projects →** 打開 Projects 版。',
+        '**成個 project 一個 dashboard：** 由幾個 model 或者 sheet set 組成嘅 project（例如 TKO 有 CAL 同 LAY）會開一個合埋所有部分嘅 dashboard：數字同圖表會加埋計，**Part** 篩選同 **Open issues by part** 分開每部分，**Where** 會寫明係邊部分（CAL · A102 ...），**How this project is published** 每部分一個表。標題下面嘅 **All parts** / **CAL** / **LAY** 可以轉去單一部分再轉返嚟。喺 Dashboard 嘅 project 選單，撳 project 名會開晒所有部分，撳某一部分就淨係開嗰部分。',
+        '**My dashboards－幾個 project 一齊睇：** **+ Combine projects …**（標題下面，或者 project 選單入面）可以整你自己嘅 dashboard：改個名，再剔 project（佢所有部分，連之後加嘅）或者單一部分。佢會幫你記住，喺任何電腦嘅 **My dashboards** 都見到；打開咗嘅時候隔籬有 **Edit** 同 **Delete**。可以印嘅 report 係逐部分嘅：先喺 Part 篩選揀一部分（試算表就全部都有，多一欄 Part）。',
         '連線標籤只會喺有嘢要講嗰陣出現：**N waiting to save**（斷咗線；你嘅改動排緊隊，有返線就會送出）或者 **offline**。有改動等緊儲存嘅時候唔好 reload：排緊隊嘅嘢只會保留到你離開嗰版為止。',
     ]),
     LABEL('Dashboard 顯示乜'),

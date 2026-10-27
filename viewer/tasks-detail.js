@@ -134,7 +134,8 @@ function paint(T) {
       <textarea class="td-desc" rows="3" placeholder="${ed ? "Add description" : ""}"${ed ? "" : " readonly"}>${esc(t.description)}</textarea>
 
       ${canSub || kids.length ? `<h4>Sub-tasks ${kids.length ? `<span class="muted">${kids.filter((k) => k.done).length} / ${kids.length}</span>` : ""}</h4>
-      <div class="td-subs">${kids.map((k) => `<div class="td-sub${k.done ? " done" : ""}" data-id="${esc(k.id)}">`
+      <div class="td-subs">${kids.map((k) => `<div class="td-sub${k.done ? " done" : ""}" data-id="${esc(k.id)}"${ed ? ` draggable="true" title="Drag to change the order"` : ""}>`
+        + (ed ? `<span class="td-grip" aria-hidden="true">&#8942;&#8942;</span>` : "")
         + `<button class="tick${k.done ? " on" : ""}" data-act="subdone"></button><span class="td-st" data-open="${esc(k.id)}">${esc(k.title || "Untitled")}</span>`
         + (T.children(k.id).length ? `<span class="td-subn muted" data-open="${esc(k.id)}" title="Sub-tasks">${T.progressOf(k.id).done} / ${T.children(k.id).length}</span>` : "")
         + percentBar(T.percentOf(k.id), k.percent_at, k.percent_by)
@@ -297,6 +298,41 @@ function wire(T, box, t) {
     if (k === "comment") return sendComment(T, t, box.querySelector(".td-newc"));
     if (k === "attach") return box.querySelector(".td-file").click();
   };
+  // the sub-tasks' order: drag one above another (or to the end of the list)
+  const subs = box.querySelector(".td-subs");
+  if (subs && subs.querySelector('[draggable="true"]')) {
+    let did = null;
+    const clear = () => { for (const x of subs.querySelectorAll(".drop-before, .drop-end")) x.classList.remove("drop-before", "drop-end"); subs.classList.remove("drop-end"); };
+    subs.ondragstart = (ev) => {
+      const r = ev.target.closest(".td-sub");
+      if (!r) return;
+      did = r.dataset.id;
+      ev.dataTransfer.effectAllowed = "move";
+      ev.dataTransfer.setData("text/plain", did);
+      r.classList.add("dragging");
+    };
+    subs.ondragend = () => { did = null; clear(); for (const x of subs.querySelectorAll(".dragging")) x.classList.remove("dragging"); };
+    subs.ondragover = (ev) => {
+      if (!did) return;
+      ev.preventDefault();
+      clear();
+      const r = ev.target.closest(".td-sub");
+      if (r && r.dataset.id !== did) r.classList.add("drop-before"); else if (!r) subs.classList.add("drop-end");
+    };
+    subs.ondrop = (ev) => {
+      if (!did) return;
+      ev.preventDefault();
+      const r = ev.target.closest(".td-sub");
+      const before = r && r.dataset.id !== did ? r.dataset.id : null;
+      if (r && !before) { clear(); return; }
+      const sibs = T.children(t.id).filter((k) => k.id !== did);
+      const i = before ? sibs.findIndex((k) => k.id === before) : sibs.length;
+      const prev = sibs[i - 1], next = sibs[i];
+      const sort = prev && next ? (prev.sort + next.sort) / 2 : prev ? prev.sort + 1 : next ? next.sort - 1 : 1;
+      clear();
+      T.save(did, { sort });
+    };
+  }
   const ns = box.querySelector(".td-newsub");
   if (ns) ns.onkeydown = (ev) => {
     if (ev.key !== "Enter" || !ns.value.trim()) return;

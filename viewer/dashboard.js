@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-15";
+const LWK_VERSION = "2026-12-16";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -52,18 +52,142 @@ const PRIORITY_COLORS = { Critical: "#b91c1c", High: "#f28022", Normal: "#6b7280
 const TYPE = new Map(ISSUE_TYPES.map((t) => [t.id, t]));
 const UNASSIGNED = "(unassigned)";
 
-const D = { manifest: null, items: [], members: [], me: null, issues: [], fetched: null, rev: 0 };
+const D = { manifest: null, items: [], members: [], me: null, issues: [], fetched: null, rev: 0,
+            revs: {}, byPart: {}, manifests: {}, memberBy: {} };
+
+/* What the dashboard shows: one part (a model / sheet set), a whole project
+   (all its parts - the default for a project of several), or one of my own
+   dashboards (several projects together). Set by the address:
+   ?project=<part>&one=1, ?reg=<project>, ?board=<id>. */
+const SC = { kind: "part", parts: [], regs: [], name: "", board: null, choices: null, boards: [], labels: {} };
+const multi = () => SC.parts.length > 1;
+const partLabel = (p) => SC.labels[p] || p;
+
+async function resolveScope() {
+  const q = new URLSearchParams(location.search);
+  try { SC.choices = await api("/api/project-choices"); } catch (e) { SC.choices = { projects: [], others: [] }; }
+  try { SC.boards = (await api("/api/dashboards")).dashboards || []; } catch (e) { SC.boards = []; }
+  const regOf = (pid) => SC.choices.projects.find((x) => x.parts.some((y) => y.id === pid));
+  const titles = {};
+  for (const x of SC.choices.projects) for (const y of x.parts) titles[y.id] = y.title;
+  for (const o of SC.choices.others) titles[o.id] = o.title;
+  const b = q.get("board") && SC.boards.find((x) => x.id === q.get("board"));
+  const r = q.get("reg") && SC.choices.projects.find((x) => x.reg === q.get("reg"));
+  if (b && b.parts.length) {
+    Object.assign(SC, { kind: "board", board: b, parts: b.parts.map((x) => x.id), regs: b.regs, name: b.name });
+  } else if (r) {
+    Object.assign(SC, { kind: "reg", parts: r.parts.map((x) => x.id), regs: [r.reg], name: r.name });
+  } else {
+    const own = regOf(project());
+    if (own && own.parts.length > 1 && !q.get("one")) Object.assign(SC, { kind: "reg", parts: own.parts.map((x) => x.id), regs: [own.reg], name: own.name });
+    else Object.assign(SC, { kind: "part", parts: [project()], regs: own ? [own.reg] : [], name: (own && own.name) || "" });
+  }
+  // a short name for each part: what tells it from the others (CAL, LAY)
+  const ts = SC.parts.map((p) => titles[p] || p);
+  for (const [i, p] of SC.parts.entries()) SC.labels[p] = shortName(ts[i], ts, SC.kind === "board" ? (regOf(p) || {}).name : "");
+  // the links of the page (Sheets, 3D ...) go to the first part
+  if (SC.parts[0] && SC.parts[0] !== project()) { try { sessionStorage.setItem("lwk-viewer:tab-project", SC.parts[0]); } catch (e) {} }
+}
+
+/* Under the title: the whole project or one of its parts, and my own
+   dashboards (several projects together) with + Combine projects. */
+function scopeBar() {
+  let bar = $("#d-scope");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "d-scope";
+    $("#d-sub").after(bar);
+  }
+  const own = SC.kind !== "board" && SC.choices.projects.find((x) => SC.regs.includes(x.reg) || x.parts.some((y) => y.id === SC.parts[0]));
+  const chip = (href, label, on, title) => `<a class="ds-chip${on ? " on" : ""}" href="${esc(href)}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</a>`;
+  let h = "";
+  if (own && own.parts.length > 1) {
+    const labs = {};
+    const ts = own.parts.map((x) => x.title);
+    for (const x of own.parts) labs[x.id] = shortName(x.title, ts, "");
+    h += `<span class="ds-g">${chip("dashboard.html?reg=" + encodeURIComponent(own.reg), "All parts", SC.kind === "reg", "Every model and sheet set of " + own.name + " together")}`
+      + own.parts.map((x) => chip("dashboard.html?project=" + encodeURIComponent(x.id) + "&one=1", labs[x.id], SC.kind === "part" && SC.parts[0] === x.id, x.title)).join("") + `</span>`;
+  }
+  h += `<span class="ds-g"><span class="muted">My dashboards:</span>`
+    + SC.boards.map((b) => chip("dashboard.html?board=" + encodeURIComponent(b.id), b.name, SC.kind === "board" && SC.board.id === b.id,
+      b.parts.map((x) => x.title).join(", "))).join("")
+    + `<button type="button" class="ghost ds-new" title="A dashboard of several projects together - kept for you on any device">+ Combine projects …</button>`
+    + (SC.kind === "board" ? `<button type="button" class="ghost ds-edit">Edit</button><button type="button" class="ghost ds-del">Delete</button>` : "")
+    + `</span>`;
+  bar.innerHTML = h;
+  bar.querySelector(".ds-new").onclick = () => boardDialog(null);
+  if (SC.kind === "board") {
+    bar.querySelector(".ds-edit").onclick = () => boardDialog(SC.board);
+    bar.querySelector(".ds-del").onclick = async () => {
+      if (!confirm(`Delete the dashboard "${SC.board.name}"? The projects themselves are not touched.`)) return;
+      try { await api("/api/dashboards/" + encodeURIComponent(SC.board.id), { method: "DELETE" }); } catch (e) { alert(e.message); return; }
+      location.href = "dashboard.html?project=" + encodeURIComponent(SC.parts[0] || project());
+    };
+  }
+}
+
+/* Make or change one of my dashboards: a name, and the projects (all of a
+   project's parts, now and later) or single parts it shows. */
+function boardDialog(b) {
+  const scope = (b && b.scope) || [];
+  const hasReg = (r) => scope.some((x) => x.reg === r);
+  const hasPart = (p) => scope.some((x) => x.part === p);
+  const back = document.createElement("div");
+  back.className = "ds-back";
+  const projs = SC.choices.projects.map((x) => `<div class="ds-p"><label><input type="checkbox" data-reg="${esc(x.reg)}"${hasReg(x.reg) ? " checked" : ""}> <b>${esc(x.name)}</b> <small class="muted">${esc(x.code || "")}</small></label>`
+    + (x.parts.length > 1 ? `<div class="ds-parts">` + x.parts.map((y) => `<label><input type="checkbox" data-part="${esc(y.id)}"${hasReg(x.reg) || hasPart(y.id) ? " checked" : ""}${hasReg(x.reg) ? " disabled" : ""}> ${esc(y.title)}</label>`).join("") + `</div>` : "")
+    + `</div>`).join("")
+    + (SC.choices.others.length ? `<div class="ds-p"><b class="muted">Not on the Projects page</b><div class="ds-parts">` + SC.choices.others.map((o) => `<label><input type="checkbox" data-part="${esc(o.id)}"${hasPart(o.id) ? " checked" : ""}> ${esc(o.title || o.id)}</label>`).join("") + `</div></div>` : "");
+  back.innerHTML = `<form class="ds-dlg"><h3>${b ? "Change the dashboard" : "Combine projects into one dashboard"}</h3>`
+    + `<label class="ds-name">Name <input name="name" maxlength="120" value="${esc(b ? b.name : "")}" placeholder="e.g. My HK projects" required></label>`
+    + `<p class="muted" style="font-size:12px;margin:4px 0">Tick a project for all its models and sheet sets (also ones added later), or only some of its parts.</p>`
+    + `<div class="ds-list">${projs}</div>`
+    + `<div class="ds-f"><button type="button" class="ghost" data-x>Cancel</button><button class="primary">${b ? "Save" : "Make the dashboard"}</button></div></form>`;
+  document.body.appendChild(back);
+  const f = back.querySelector("form");
+  // a whole project ticked: its parts ticked (and fixed)
+  for (const c of f.querySelectorAll("[data-reg]")) c.onchange = () => {
+    for (const y of c.closest(".ds-p").querySelectorAll("[data-part]")) { y.checked = c.checked || y.checked; y.disabled = c.checked; }
+  };
+  f.querySelector("[data-x]").onclick = () => back.remove();
+  f.name.focus();
+  f.onsubmit = async (ev) => {
+    ev.preventDefault();
+    const sc = [];
+    for (const c of f.querySelectorAll("[data-reg]:checked")) sc.push({ reg: c.dataset.reg });
+    for (const c of f.querySelectorAll("[data-part]:checked:not(:disabled)")) sc.push({ part: c.dataset.part });
+    if (!sc.length) { alert("Tick at least one project."); return; }
+    try {
+      const r = await api("/api/dashboards", { method: "POST", body: JSON.stringify({ id: b ? b.id : undefined, name: f.name.value.trim(), scope: sc }) });
+      location.href = "dashboard.html?board=" + encodeURIComponent(r.id);
+    } catch (e) { alert(e.message); }
+  };
+}
+
+/* "TKO137-LWK-ZZ-ZZ-AR-BD_CAL" among its sister parts: "CAL"; with the
+   project's name in front on a dashboard of several projects. */
+function shortName(t, all, proj) {
+  let s = t;
+  if (all.length > 1) {
+    let i = 0;
+    while (all.every((x) => x[i] === t[i]) && i < t.length) i++;
+    s = t.slice(i).replace(/^[-_ .]+/, "") || t;
+    if (s.length < 2) s = t;
+  }
+  if (s.length > 28) s = s.slice(0, 26) + "…";
+  return proj && proj !== s ? proj + (all.length > 1 ? " · " + s : "") : s;
+}
 
 /* What the dashboard last showed is kept on this device (per account and
-   project): the next visit draws it at once, and the server is then asked
+   scope): the next visit draws it at once, and the server is then asked
    only for the issues changed since. */
-const dashKey = () => "dash:" + project();
+const dashKey = () => "dash2:" + (SC.kind === "board" ? "b:" + SC.board.id : SC.kind === "reg" ? "r:" + SC.regs[0] : project());
 const K = { ex: null, pj: null, digest: null, ptasks: null, lv: null };
 let keepT = 0;
 function keepDash() {
   clearTimeout(keepT);
   keepT = setTimeout(() => {
-    keepBig(dashKey(), { rev: D.rev, manifest: D.manifest, items: D.items, members: D.members, me: D.me,
+    keepBig(dashKey(), { revs: D.revs, byPart: D.byPart, manifests: D.manifests, members: D.members, me: D.me,
       fetched: D.fetched ? D.fetched.getTime() : null, ex: K.ex, pj: K.pj, digest: K.digest, ptasks: K.ptasks, lv: K.lv },
       D.me && D.me.user ? D.me.user.id : null);
   }, 1500);
@@ -71,19 +195,19 @@ function keepDash() {
 
 async function showKept() {
   const k = await keptBig(dashKey());
-  if (!k || !k.items) return false;
-  D.manifest = k.manifest; D.items = k.items; D.members = k.members || []; D.rev = k.rev || 0;
+  if (!k || !k.byPart) return false;
+  D.byPart = k.byPart; D.revs = k.revs || {}; D.manifests = k.manifests || {}; D.members = k.members || [];
+  joinParts();
   if (!D.me) D.me = k.me;
   D.fetched = k.fetched ? new Date(k.fetched) : null;
   D.issues = D.items.filter((it) => it.issue).map(toIssue);
   K.ex = k.ex; K.pj = k.pj; K.digest = k.digest; K.ptasks = k.ptasks; K.lv = k.lv;
-  const pt = (D.manifest && D.manifest.source && D.manifest.source.title) || project();
-  $("#d-sub").textContent = pt + " · issues and tasks";
+  $("#d-sub").textContent = scopeTitle();
   fillFilters();
   render();
-  if (K.digest) drawDigest(K.digest);
-  if (K.ex) drawExports(K.ex, K.pj);
-  if (K.ptasks) drawProjectTasks(K.ptasks.reg, K.ptasks.tree);
+  if (K.digest && !multi()) drawDigest(K.digest);
+  if (K.ex) drawExports(K.ex);
+  if (K.ptasks) drawAllTasks(K.ptasks);
   if (K.lv) drawLv(K.lv);
   if (D.fetched) $("#d-updated").textContent = "Updated " + dateAgo(D.fetched);
   return true;
@@ -155,7 +279,12 @@ async function loadProjects() {
   sel.value = want;
   projectTwoStep(sel);           // project first, then its model
   localStorage.setItem("lwk-viewer:project", want);
-  history.replaceState(null, "", "dashboard.html?project=" + encodeURIComponent(want));
+  // the address keeps what is shown (a whole project, one of my dashboards)
+  const q = new URLSearchParams();
+  if (SC.kind === "board") q.set("board", SC.board.id);
+  else if (SC.kind === "reg") q.set("reg", SC.regs[0]);
+  else { q.set("project", want); if (new URLSearchParams(location.search).get("one")) q.set("one", "1"); }
+  history.replaceState(null, "", "dashboard.html?" + q.toString());
   sel.onchange = () => {
     localStorage.setItem("lwk-viewer:project", sel.value);
     location.href = "dashboard.html?project=" + encodeURIComponent(sel.value);
@@ -167,34 +296,61 @@ async function loadData() {
   const shown = !!D.fetched;
   if (!shown) $("#d-msg").textContent = "Loading ...";
   if (!$("#kpis").children.length) $("#kpis").innerHTML = skeleton(3, "Loading the dashboard");
-  const [man, items0, mem] = await Promise.all([
-    fetch("/data/" + encodeURIComponent(project()) + "/manifest.json").then((r) => (r.ok ? r.json() : null)),
-    api("/api/items?since=" + (D.rev || 0)),
-    api("/api/members").catch(() => ({ members: [] })),
-  ]);
-  let items = items0;
-  // the server's count went back (a restore): everything again
-  if (D.rev && (items.rev || 0) < D.rev) { D.rev = 0; D.items = []; items = await api("/api/items?since=0"); }
-  if (!D.rev) D.items = (items.items || []).filter((it) => !it.deleted);
-  else {
-    const by = new Map(D.items.map((it) => [it.id, it]));
-    for (const it of items.items || []) { if (it.deleted) by.delete(it.id); else by.set(it.id, it); }
-    D.items = Array.from(by.values());
-  }
-  D.rev = items.rev || 0;
-  D.manifest = man;
-  D.members = mem.members || [];
+  // every part of the scope, each with its own header (and its own count of changes)
+  const one = async (p) => {
+    const h = { headers: { "X-Project": p } };
+    const [man, items0, mem] = await Promise.all([
+      fetch("/data/" + encodeURIComponent(p) + "/manifest.json").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      api("/api/items?since=" + (D.revs[p] || 0), h),
+      api("/api/members", h).catch(() => ({ members: [] })),
+    ]);
+    let items = items0, rev = D.revs[p] || 0;
+    // the server's count went back (a restore): everything again
+    if (rev && (items.rev || 0) < rev) { rev = 0; items = await api("/api/items?since=0", h); }
+    let list = rev ? D.byPart[p] || [] : [];
+    if (!rev) list = (items.items || []).filter((it) => !it.deleted);
+    else {
+      const by = new Map(list.map((it) => [it.id, it]));
+      for (const it of items.items || []) { if (it.deleted) by.delete(it.id); else by.set(it.id, it); }
+      list = Array.from(by.values());
+    }
+    D.byPart[p] = list;
+    D.revs[p] = items.rev || 0;
+    D.manifests[p] = man;
+    D.memberBy[p] = mem.members || [];
+  };
+  const res = await Promise.allSettled(SC.parts.map(one));
+  if (res.every((r) => r.status === "rejected")) throw res[0].reason;
+  for (const p of Object.keys(D.byPart)) if (!SC.parts.includes(p)) delete D.byPart[p];
+  // the people of every part, once
+  const seen = new Map();
+  for (const p of SC.parts) for (const m of D.memberBy[p] || []) { const k = (m.email || m.name || "").toLowerCase(); if (!seen.has(k)) seen.set(k, m); }
+  D.members = Array.from(seen.values());
+  joinParts();
   D.fetched = new Date();
-  D.issues = D.items.filter((it) => it.issue).map(toIssue);
-  $("#d-msg").textContent = "";
+  $("#d-msg").textContent = res.some((r) => r.status === "rejected") ? "Some parts could not be loaded." : "";
   $("#d-updated").textContent = "Updated " + dateAgo(D.fetched);
-  const pt = (man && man.source && man.source.title) || project();
-  $("#d-sub").textContent = pt + " · issues and tasks";
+  $("#d-sub").textContent = scopeTitle();
   fillFilters();
   render();
   keepDash();
-  loadDigest().catch(() => {});
+  if (multi()) $("#digest").hidden = true; else loadDigest().catch(() => {});
   loadExports().catch(() => {});
+}
+
+/* The parts' issues as one list, each knowing its part. */
+function joinParts() {
+  D.items = [];
+  for (const p of SC.parts) for (const it of D.byPart[p] || []) D.items.push(Object.assign(it, { _p: p }));
+  D.manifest = D.manifests[SC.parts[0]] || null;
+  D.issues = D.items.filter((it) => it.issue).map(toIssue);
+}
+
+function scopeTitle() {
+  if (SC.kind === "board") return SC.name + " · " + SC.parts.length + " part" + (SC.parts.length === 1 ? "" : "s") + " · issues and tasks";
+  if (SC.kind === "reg" && multi()) return SC.name + " · all parts (" + SC.parts.map(partLabel).join(", ") + ") · issues and tasks";
+  const pt = (D.manifest && D.manifest.source && D.manifest.source.title) || project();
+  return pt + " · issues and tasks";
 }
 
 /* How the project is published: one row per Revit file (from what each
@@ -202,20 +358,33 @@ async function loadData() {
 async function loadExports() {
   const box = $("#exports-body");
   if (!box) return;
-  let ex = {}, pj = null;
-  try { ex = (await api("/api/projects/" + encodeURIComponent(project()) + "/exports")).exports || {}; } catch (e) { ex = {}; }
-  try { pj = (await api("/api/publish-jobs?project=" + encodeURIComponent(project()))).jobs || []; } catch (e) { pj = null; }   // an older server: no list
-  K.ex = ex; K.pj = pj; keepDash();
-  drawExports(ex, pj);
+  const one = async (p) => {
+    let ex = {}, pj = null;
+    try { ex = (await api("/api/projects/" + encodeURIComponent(p) + "/exports")).exports || {}; } catch (e) { ex = {}; }
+    try { pj = (await api("/api/publish-jobs?project=" + encodeURIComponent(p))).jobs || []; } catch (e) { pj = null; }   // an older server: no list
+    return { p, ex, pj };
+  };
+  const all = await Promise.all(SC.parts.map(one));
+  K.ex = all; K.pj = null; keepDash();
+  drawExports(all);
 }
 
-function drawExports(ex, pj) {
+/* One table per part (a project of several: each under its name). */
+function drawExports(all) {
   const box = $("#exports-body");
   if (!box) return;
-  const sheets = (D.manifest && D.manifest.sheets) || [];
+  if (!Array.isArray(all)) return;
+  if (all.length === 1) { drawExportsOf(box, all[0].ex, all[0].pj, D.manifests[all[0].p] || D.manifest); return; }
+  box.classList.remove("muted");
+  box.innerHTML = all.map((x, i) => `<h4 class="exp-part">${esc(partLabel(x.p))} <small class="muted">${esc(x.p)}</small></h4><div data-part="${i}"></div>`).join("");
+  all.forEach((x, i) => drawExportsOf(box.querySelector(`[data-part="${i}"]`), x.ex, x.pj, D.manifests[x.p]));
+}
+
+function drawExportsOf(box, ex, pj, man) {
+  const sheets = (man && man.sheets) || [];
   const bySrc = new Map();
   for (const sh of sheets) {
-    const k = sh.source || (D.manifest.source && D.manifest.source.title) || "";
+    const k = sh.source || (man.source && man.source.title) || "";
     if (!bySrc.has(k)) bySrc.set(k, { sheets: 0, areas: 0, rows: 0, numbers: [] });
     const b = bySrc.get(k);
     b.sheets++; b.numbers.push(sh.number);
@@ -225,7 +394,7 @@ function drawExports(ex, pj) {
   const names = Array.from(new Set(Object.keys(ex).concat(Array.from(bySrc.keys())))).filter((n) => n || bySrc.size === 1);
   if (!names.length) { box.textContent = "Nothing published yet."; return; }
   const when = (iso) => { return dayTime(iso); };
-  const models = (D.manifest && D.manifest.models) || [];
+  const models = (man && man.models) || [];
   let html = `<div class="table-wrap"><table class="exp-table"><thead><tr><th>Revit file</th><th>Sends</th><th>In the viewer now</th>`
     + `<th>Night export</th><th>Last upload</th><th></th></tr></thead><tbody>`;
   names.forEach((n, i) => {
@@ -302,8 +471,9 @@ function drawDigest(d) {
   };
 }
 
-function sheetName(num) {
-  const s = ((D.manifest && D.manifest.sheets) || []).find((x) => x.number === num);
+function sheetName(num, p) {
+  const man = (p && D.manifests[p]) || D.manifest;
+  const s = ((man && man.sheets) || []).find((x) => x.number === num);
   return s ? `${s.number} ${s.name || ""}`.trim() : num;
 }
 
@@ -331,12 +501,13 @@ function toIssue(it) {
   const assignee = (iss.assigned_to || "").trim() || UNASSIGNED;
   const m = assignee === UNASSIGNED ? null : memberByName(assignee);
   const due = iss.due_date ? new Date(iss.due_date + "T23:59:59") : null;
-  const where = it.sheet ? sheetName(it.sheet)
+  const where0 = it.sheet ? sheetName(it.sheet, it._p)
     : (it.placement === "3d" ? "3D model" : "Other");
+  const where = multi() ? partLabel(it._p) + " · " + where0 : where0;
   const lastBy = (iss.history && iss.history.length && iss.history[iss.history.length - 1].by)
     || it.updated_by || iss.author || it.author || "";
   return {
-    id: it.id, number: iss.number || null, sheet: it.sheet || null, is3d: it.placement === "3d",
+    id: it.id, project: it._p || project(), part: partLabel(it._p || project()), number: iss.number || null, sheet: it.sheet || null, is3d: it.placement === "3d",
     title: iss.title || "Issue", type: iss.type || "general",
     priority: iss.priority || "Normal", status, dismissed,
     open: !CLOSED.has(status) && !dismissed, created, updated, closed, due,
@@ -348,9 +519,24 @@ function toIssue(it) {
 
 /* ------------------------------------------------------------ filters */
 
-const F = { range: 90, type: "", assignee: "", office: "", team: "", disc: "", mine: false, dismissed: false };
+const F = { range: 90, type: "", assignee: "", office: "", team: "", disc: "", mine: false, dismissed: false, part: "" };
 
 function fillFilters() {
+  // a dashboard of several parts: which part
+  let pl = $("#f-part");
+  if (multi() && !pl) {
+    const lab = document.createElement("label");
+    lab.className = $("#f-type").closest("label").className;
+    lab.innerHTML = `Part <select id="f-part"></select>`;
+    $("#f-type").closest("label").before(lab);
+    pl = $("#f-part");
+    pl.onchange = (e) => { F.part = e.target.value; render(); };
+  }
+  if (pl) {
+    pl.closest("label").hidden = !multi();
+    pl.innerHTML = `<option value="">All parts</option>` + SC.parts.map((p) => `<option value="${esc(p)}">${esc(partLabel(p))}</option>`).join("");
+    pl.value = F.part;
+  }
   const types = [...new Set(D.issues.map((i) => i.type))];
   $("#f-type").innerHTML = `<option value="">All</option>` + types
     .map((t) => `<option value="${esc(t)}">${esc((TYPE.get(t) || { label: t }).label)}</option>`).join("");
@@ -379,6 +565,7 @@ function filtered() {
     if (!F.dismissed && i.dismissed) return false;
     // Open issues always count; closed ones only if closed in the period.
     if (F.range && !i.open && (!i.closed || now - i.closed.getTime() > F.range * DAY)) return false;
+    if (F.part && i.project !== F.part) return false;
     if (F.type && i.type !== F.type) return false;
     if (F.assignee && i.assignee !== F.assignee) return false;
     if (F.office && i.office !== F.office) return false;
@@ -431,6 +618,8 @@ function wireFilters() {
   document.addEventListener("pointerdown", (ev) => { if (!em.hidden && !em.contains(ev.target) && ev.target !== eb) em.hidden = true; });
   document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") em.hidden = true; });
   $("#d-report").onclick = () => {
+    if (multi() && !F.part) { alert("The printable report is per part: choose a part in the Part filter first (or use Spreadsheet for all of them)."); return; }
+    if (multi()) { sessionStorage.setItem("lwk-report:" + F.part, JSON.stringify(filtered().map((i) => i.id))); window.open(link("report.html", { project: F.part }), "_blank"); return; }
     // The report shows exactly what the filters show here.
     sessionStorage.setItem("lwk-report:" + project(), JSON.stringify(filtered().map((i) => i.id)));
     window.open(link("report.html"), "_blank");
@@ -495,6 +684,16 @@ function render() {
   bars("#c-where", tally(open, (i) => i.where).slice(0, 10).map(([k, v]) =>
     ({ label: k, value: v, color: "#4a3aa7" })));
   // beside the chart, as in the template: who holds the open issues, and which discipline
+  let cp = $("#c-part");
+  if (multi() && !cp) {
+    $("#c-person").previousElementSibling.insertAdjacentHTML("beforebegin", `<h3 class="pc-part">Open issues by part</h3><div id="c-part" class="chart"></div>`);
+    cp = $("#c-part");
+  }
+  if (cp) {
+    cp.hidden = $(".pc-part").hidden = !multi();
+    if (multi()) bars("#c-part", SC.parts.map((p) => ({ label: partLabel(p), value: open.filter((i) => i.project === p).length,
+      onClick: () => { F.part = F.part === p ? "" : p; $("#f-part").value = F.part; render(); } })));
+  }
   bars("#c-person", tally(open, (i) => i.assignee).slice(0, 8).map(([k, v]) =>
     ({ label: k, value: v, onClick: () => { F.assignee = k; $("#f-assignee").value = k; render(); } })));
   const discs = tally(open, (i) => i.discipline).filter(([k]) => k !== "-");
@@ -532,7 +731,8 @@ function describeLast(i) {
 }
 
 function issueLink(i) {
-  return i.is3d ? link("model.html", { select: i.id }) : link("index.html", { sheet: i.sheet, select: i.id });
+  const p = i.project || project();
+  return i.is3d ? link("model.html", { project: p, select: i.id }) : link("index.html", { project: p, sheet: i.sheet, select: i.id });
 }
 
 function fillList(sel, rows, fn, empty) {
@@ -800,17 +1000,17 @@ async function exportBcf() {
 }
 
 function exportCsv() {
-  const cols = ["No", "Title", "Type", "Priority", "Status", "Assigned to", "Office", "Team", "Due", "Raised",
-                "Raised by", "Updated", "Last change by", "Closed", "Where"];
+  const cols = (multi() ? ["Part"] : []).concat(["No", "Title", "Type", "Priority", "Status", "Assigned to", "Office", "Team", "Due", "Raised",
+                "Raised by", "Updated", "Last change by", "Closed", "Where"]);
   const q = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
   const iso = (d) => (d ? d.toISOString().slice(0, 10) : "");
-  const lines = [cols.map(q).join(",")].concat(filtered().map((i) => [
+  const lines = [cols.map(q).join(",")].concat(filtered().map((i) => (multi() ? [i.part] : []).concat([
     i.number || "", i.title, (TYPE.get(i.type) || { label: i.type }).label, i.priority, i.status, i.assignee, i.office, i.team,
     iso(i.due), iso(i.created), i.author, iso(i.updated), i.lastBy, iso(i.closed), i.where,
-  ].map(q).join(",")));
+  ]).map(q).join(",")));
   // A byte-order mark, so Excel reads accented and Chinese names correctly.
   const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
-  const name = `${project()}-issues-${new Date().toISOString().slice(0, 10)}.csv`;
+  const name = `${multi() ? String(SC.name || "projects").replace(/[^\w.-]+/g, "_") : project()}-issues-${new Date().toISOString().slice(0, 10)}.csv`;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
@@ -827,8 +1027,10 @@ function showError(e) {
 
 async function main() {
   wireFilters();
-  const kept = await showKept().catch(() => false);   // from the device, before the server answers
   await ensureSignedIn();
+  await resolveScope();
+  scopeBar();
+  const kept = await showKept().catch(() => false);   // from the device, before the server answers
   if (D.me.user && D.me.user.must_change) {
     location.href = "admin.html?first=1&next=" + encodeURIComponent(location.pathname + location.search) + "#account";
     return;
@@ -865,17 +1067,24 @@ main().catch(showError);
 /* The project's tasks - from every team's task list that has a group for
    it (Tasks page). Shown only when the project is on the Projects page. */
 async function projectTasks() {
+  const all = (await api("/api/registry?lite=1")).projects || [];
+  const regs = SC.regs.length ? all.filter((p) => SC.regs.includes(p.id))
+    : all.filter((p) => (p.viewers || []).includes(project()) || p.viewer === project()).slice(0, 1);
+  if (!regs.length) return;
+  const out = [];
+  for (const reg of regs) out.push({ reg, tree: (await api(`/api/registry/${encodeURIComponent(reg.id)}/tasks`)).groups || [] });
+  K.ptasks = out; keepDash();
+  drawAllTasks(out);
+}
+
+function drawAllTasks(list) {
   const box = document.getElementById("d-tasks");
-  const reg = ((await api("/api/registry?lite=1")).projects || [])
-    .find((p) => (p.viewers || []).includes(project()) || p.viewer === project());
-  if (!reg) return;
-  const tree = (await api(`/api/registry/${encodeURIComponent(reg.id)}/tasks`)).groups || [];
-  K.ptasks = { reg, tree }; keepDash();
-  drawProjectTasks(reg, tree);
+  if (!box || !Array.isArray(list) || !list.length) return;
+  box.hidden = false;
+  box.innerHTML = list.map((x) => `<div class="dt-one">${drawProjectTasks(x.reg, x.tree)}</div>`).join("");
 }
 
 function drawProjectTasks(reg, tree0) {
-  const box = document.getElementById("d-tasks");
   const tree = JSON.parse(JSON.stringify(tree0));   // the rows get links to their group below
   const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
   const all = tree.flatMap((g) => g.tasks.map((t) => Object.assign(t, { _g: g })));
@@ -885,8 +1094,7 @@ function drawProjectTasks(reg, tree0) {
   const subsDone = all.reduce((n, t) => n + (t.children || []).filter((k) => k.done).length, 0);
   const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   open.sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
-  box.hidden = false;
-  box.innerHTML = `<h3>Tasks <small>${esc(reg.short || reg.name)} - from the team task lists</small><a href="projects.html?p=${esc(reg.id)}">Project page</a></h3>`
+  return `<h3>Tasks <small>${esc(reg.short || reg.name)} - from the team task lists</small><a href="projects.html?p=${esc(reg.id)}">Project page</a></h3>`
     + (all.length ? `<div class="dt-k"><span><b>${all.length}</b>tasks</span><span><b>${all.length - open.length}</b>done</span>`
       + `<span class="${late.length ? "bad" : ""}"><b>${late.length}</b>overdue</span><span><b>${subsDone}/${subs}</b>sub-tasks done</span></div>`
       + tree.map((g) => `<div class="dt-g">${esc(g.list_title)} / <b>${esc(g.group.title)}</b> · <a href="tasks.html?list=${esc(g.list_id)}">open the list</a></div>`).join("")
@@ -901,7 +1109,23 @@ function drawProjectTasks(reg, tree0) {
 
 /* Light & Vent: the Revit check's last result for this project (lv_api.py). */
 async function lvSummary() {
-  const sm = await api("/api/lv?summary=1");
+  if (!multi()) {
+    const sm = await api("/api/lv?summary=1", { headers: { "X-Project": SC.parts[0] || project() } });
+    K.lv = sm; keepDash();
+    drawLv(sm);
+    return;
+  }
+  // several parts: the counts added up, a line per part that has a result
+  const got = await Promise.all(SC.parts.map((p) => api("/api/lv?summary=1", { headers: { "X-Project": p } }).then((sm) => [p, sm]).catch(() => [p, null])));
+  const have = got.filter(([, sm]) => sm && sm.report);
+  if (!have.length) { K.lv = null; drawLv(null); return; }
+  const counts = {}, towers = {};
+  for (const [p, sm] of have) {
+    for (const [k, n] of Object.entries(sm.counts || {})) counts[k] = (counts[k] || 0) + (n || 0);
+    towers[partLabel(p)] = sm.counts || {};
+  }
+  const last = have.map(([, sm]) => sm).sort((a, b) => String(b.at || b.sent_at || "").localeCompare(String(a.at || a.sent_at || "")))[0];
+  const sm = { report: true, multi: true, counts, towers, model: have.length + " part" + (have.length === 1 ? "" : "s"), at: last.at || last.sent_at, by: last.by };
   K.lv = sm; keepDash();
   drawLv(sm);
 }
@@ -921,8 +1145,9 @@ function drawLv(sm) {
       `<b>${esc(t)}</b>: ${k.OK || 0} OK · <span class="${k["NOT OK"] ? "bad" : ""}">${k["NOT OK"] || 0} not OK</span> · `
       + `${k["NEEDS DATA"] || 0} need data · ${k["NO WINDOW"] || 0} no window`).join("<br>") + `</div>` : "")
     + `<p class="muted" style="font-size:12px">On the plan sheets: <a href="${esc(link("index.html"))}">Sheets</a> &gt; View &gt; Light &amp; Vent`
-    + ` · <a href="#" data-lv="report">Full report</a>`
+    + (sm.multi ? ` · open one part for its full report` : ` · <a href="#" data-lv="report">Full report</a>`)
     + `${sm.pdf ? ` · <a href="#" data-lv="pdf">Diagrams (PDF)</a>` : ""}</p>`;
+  if (sm.multi) return;
   box.querySelector('[data-lv="report"]').onclick = async (ev) => {
     ev.preventDefault();
     const win = window.open("", "_blank");

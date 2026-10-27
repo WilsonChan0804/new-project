@@ -158,6 +158,7 @@ b.mention { color: var(--accent-deep); }
 .drop-before { box-shadow: inset 0 2px 0 var(--accent); }
 .tl-row.drop-nest { box-shadow: inset 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .drop-in { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 6px; }
+.tl-row.tl-newsub.drop-last { box-shadow: inset 0 2px 0 var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 
 /* quick access table */
 .tq { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -556,3 +557,11 @@ button svg.ic { pointer-events: none; }
 .q-conv .q-more button { font-weight: 600; }
 .q-reply { margin-top: 6px; }
 .q-reply textarea { width: 100%; }
+
+/* a task's sub-tasks: dragged into another order */
+.td-sub[draggable="true"] { cursor: grab; }
+.td-grip { color: var(--muted); font-size: 11px; letter-spacing: -3px; margin-right: 4px; opacity: 0; }
+.td-sub:hover .td-grip { opacity: .8; }
+.td-sub.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.td-subs.drop-end { box-shadow: inset 0 -2px 0 var(--accent); }
+.td-sub.dragging { opacity: .5; }

@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-16", date: "27 Oct 2026",
+    items: [
+      "**Arrange sub-tasks by dragging:** in Tasks > List, drag a sub-task above another one to change the order, or under another task; drop it on a task's **+ Add sub-task** line to make it that task's last sub-task, or above a top-level row to make it a task. In a task's panel, drag its sub-tasks (⋮⋮) into another order.",
+      "**One dashboard for a whole project:** a project of several models / sheet sets (e.g. TKO's CAL and LAY) now opens on one Dashboard of all its parts, with a **Part** filter, **Open issues by part** and a publishing table per part. **All parts / CAL / LAY** under the title switch to one part and back.",
+      "**My dashboards:** **+ Combine projects …** makes your own dashboard of several projects (or some of their parts) to follow together - kept for you on any device, under **My dashboards** in the Dashboard's project picker.",
+    ],
+  },
+  {
     version: "2026-12-15", date: "26 Oct 2026",
     items: [
       "**Queries on the sheets and in 3D:** each picture of a query shows where it was taken - a badge on the sheet (with the area it showed), a pin in 3D, in the status colour. Click it for its card; **Delete marker** takes that picture off the query (the query stays). Deleting a query removes its markers.",
