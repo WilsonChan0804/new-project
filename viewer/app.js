@@ -185,7 +185,10 @@ window.SHEETS.captureView = async (pin) => {
     const svg = $("#overlay");
     if (svg) {
       const img = new Image();
-      const xml = new XMLSerializer().serializeToString(svg);
+      // the markups as seen - not the queries' own badges
+      const copy = svg.cloneNode(true);
+      for (const n of copy.querySelectorAll(".qv-layer")) n.remove();
+      const xml = new XMLSerializer().serializeToString(copy);
       await new Promise((res) => { img.onload = res; img.onerror = res; img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml); });
       if (img.width) {
         const sr = svg.getBoundingClientRect(), ks = img.width / (sr.width || 1);

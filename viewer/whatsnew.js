@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-17", date: "27 Oct 2026",
+    items: [
+      "**Mark up a query's pictures:** the ✎ on any picture of a query - a sheet or 3D view, or a photo / screenshot added to it - opens the same markup tools as an issue's snapshot (cloud, arrow, text, callout ...). The drawing can be changed again later. In the **+ Query** menu, **Mark up the picture first** draws on the view before it is added.",
+      "**+ Sheet view / + 3D view** in a query and in the New query form: off to the sheets or the 3D model, with a bar saying which query you are adding views to - that query is offered first when you click **+ Query** there.",
+      "The New query form also takes pasted screenshots (Ctrl+V) and dropped pictures. A sheet's picture no longer shows the other queries' badges.",
+    ],
+  },
+  {
     version: "2026-12-16", date: "27 Oct 2026",
     items: [
       "**Arrange sub-tasks by dragging:** in Tasks > List, drag a sub-task above another one to change the order, or under another task; drop it on a task's **+ Add sub-task** line to make it that task's last sub-task, or above a top-level row to make it a task. In a task's panel, drag its sub-tasks (⋮⋮) into another order.",

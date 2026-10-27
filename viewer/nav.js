@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-16";
+const LWK_VERSION = "2026-12-17";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -327,6 +327,31 @@ async function sendToQuery(btn, pin, at) {
 /* Right-click > Add to query here (Sheets, 3D): pin where it was clicked,
    the menu at the pointer. */
 window.LWK_QUERY = { addAt: (pin, x, y) => sendToQuery(null, pin, { x, y }) };
+
+/* + Sheet view / + 3D view in a query (tasks-queries.js): while the views
+   are being added, a bar on the sheets / 3D page says to which query, and
+   leads back to it. */
+(function queryBar() {
+  if (!/(index|model)\.html$/.test(location.pathname)) return;
+  let q = null;
+  try { q = JSON.parse(sessionStorage.getItem("lwk-viewer:qadd") || "null"); } catch (e) {}
+  if (!q || !q.id) return;
+  const show = () => {
+    if (document.getElementById("qadd-bar")) return;
+    const b = document.createElement("div");
+    b.id = "qadd-bar";
+    b.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);top:62px;z-index:2500;display:flex;gap:10px;align-items:center;"
+      + "max-width:calc(100vw - 32px);padding:7px 12px;border-radius:8px;background:#0c4a6e;color:#fff;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25)";
+    const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    b.innerHTML = `<span>Adding views to <b>${esc(q.code)}</b> ${esc(q.title)} - go to the view, then <b>+ Query</b> (or right-click &gt; Add to query here).</span>`
+      + `<a href="${esc(q.back)}" style="color:#7dd3fc;font-weight:700;white-space:nowrap">Back to the query</a>`
+      + `<button type="button" title="Done adding views" style="background:none;border:0;color:#fff;cursor:pointer;font-size:15px">&#10005;</button>`;
+    b.querySelector("button").onclick = () => { try { sessionStorage.removeItem("lwk-viewer:qadd"); } catch (e) {} b.remove(); };
+    b.querySelector("a").onclick = () => { try { sessionStorage.removeItem("lwk-viewer:qadd"); } catch (e) {} };
+    document.body.appendChild(b);
+  };
+  if (document.body) show(); else addEventListener("DOMContentLoaded", show);
+})();
 
 /* The view handed to Tasks > Queries (tasks-queries.js VIEW_KEY), which
    asks there: a new query with it, or an open one. */

@@ -164,7 +164,7 @@ function newForm(T, el, view) {
   box.innerHTML = `<form class="q-form" autocomplete="off"><b>New query</b>`
     + `<input name="title" placeholder="Subject (what is unclear)" required maxlength="200">`
     + `<textarea name="question" rows="3" placeholder="The question - paste a screenshot (Ctrl+V) or drop pictures here"></textarea>`
-    + `<div class="q-thumbs"></div><div class="q-fr">${addPicHtml()}</div>`
+    + `<div class="q-thumbs"></div><div class="q-fr">${addPicHtml()}${addViewBtns()}<small class="muted">or paste a screenshot (Ctrl+V) / drop pictures here</small></div>`
     + `<div class="q-fr"><label>To ${peopleSelect("to")}</label><label>Due <input type="date" name="due" value="${addDays(today(), 7)}"></label>`
     + `<label>Priority <select name="priority"><option>Normal</option><option>High</option><option>Urgent</option></select></label></div>`
     + `<div class="q-fr"><button class="primary">Raise query</button><button type="button" class="ghost" data-cancel>Cancel</button></div></form>`;
@@ -173,23 +173,35 @@ function newForm(T, el, view) {
   const paint = () => {
     thumbs.innerHTML = pics.map((v, i) => viewThumb(v, i)).join("");
     for (const b of thumbs.querySelectorAll("[data-unview]")) b.onclick = (ev) => { ev.preventDefault(); pics.splice(+b.dataset.unview, 1); paint(); };
+    for (const b of thumbs.querySelectorAll("[data-mark]")) b.onclick = async (ev) => {
+      ev.preventDefault();
+      try { const v = await markView(T, pics[+b.dataset.mark]); if (v) { pics[+b.dataset.mark] = v; paint(); } } catch (e) { alert(e.message); }
+    };
     wirePics(thumbs, pics);
   };
   paint();
   wireAddPic(T, f, async (vs) => { pics.push(...vs); paint(); });
   f.title.focus();
   f.querySelector("[data-cancel]").onclick = () => { box.innerHTML = ""; };
+  const raise = async () => {
+    const to = [...f.querySelectorAll("[name=to] option:checked")].map((o) => ({ uid: +o.value }));
+    return save(T, { id: newQid(), title: f.title.value.trim(), question: f.question.value, to, due: f.due.value,
+      priority: f.priority.value, views: pics });
+  };
   f.onsubmit = async (ev) => {
     ev.preventDefault();
-    const to = [...f.querySelectorAll("[name=to] option:checked")].map((o) => ({ uid: +o.value }));
     try {
-      const q = await save(T, { id: newQid(), title: f.title.value.trim(), question: f.question.value, to, due: f.due.value,
-        priority: f.priority.value, views: pics });
+      const q = await raise();
       box.innerHTML = "";
       Q.f.status = "active";
       draw(T, el);
       openDetail(T, q.id);
     } catch (e) { alert(e.message); }
+  };
+  // + Sheet view / + 3D view: the query is raised first, then its views are added there
+  for (const b of f.querySelectorAll("[data-go]")) b.onclick = async (ev) => {
+    if (!f.title.value.trim()) { alert("Give the query its subject first - it is raised, then you add the views on the sheets / in 3D."); f.title.focus(); return; }
+    try { const q = await raise(); goAddViews(q, b.dataset.go, ev); } catch (e) { alert(e.message); }
   };
 }
 
@@ -211,8 +223,50 @@ function viewThumb(v, i) {
       : `<a href="${esc(v.url)}" target="_blank" rel="noopener" title="Open this ${v.kind === "sheet" ? "sheet" : "3D view"} as it was captured">`)
     + (v.snapshot ? `<img src="${esc(v.snapshot)}" alt="" loading="lazy">` : `<span class="q-noimg">${v.kind === "sheet" ? "Sheet" : "3D"}</span>`)
     + `<small>${KIND_MARK[v.kind] || ""}${esc(v.title || KIND_SAY[v.kind] || "View")}</small></a>`
+    + (i >= 0 && v.snapshot ? `<button type="button" class="ghost q-mk" data-mark="${i}" title="Mark up this picture (cloud, arrow, text ...)">&#9998;${(v.markup || []).length ? " " + v.markup.length : ""}</button>` : "")
     + (i >= 0 ? `<button type="button" class="ghost" data-unview="${i}" title="Remove this picture">&#10005;</button>` : "") + `</span>`;
 }
+
+/* A picture marked up (picedit.js): the drawing put on it, the picture as
+   taken and the drawing kept beside it, so it can be changed later. */
+async function markView(T, v) {
+  const { editPicture } = await import("./picedit.js");
+  const r = await editPicture(v.clean || v.snapshot, v.markup || []);
+  if (!r) return null;
+  if (!r.markup.length) return Object.assign({}, v, { snapshot: v.clean || v.snapshot, clean: undefined, markup: undefined });
+  const up = await T.api("/api/snapshots", { method: "POST", body: JSON.stringify({ data_url: r.image }) });
+  return Object.assign({}, v, { snapshot: up.path, clean: v.clean || v.snapshot, markup: r.markup });
+}
+
+/* + Sheet view / + 3D view: off to the project's sheets or model, where
+   + Query (or a right-click) adds the views to this query - it is the one
+   offered first there (querypick.js), and a bar says so. */
+function goAddViews(q, page, ev) {
+  const p = (Q.projects || []).find((x) => x.id === q.reg) || {};
+  const parts = p.viewers || [];
+  if (!parts.length) { alert("This project has no sheets or 3D model in the viewer yet."); return; }
+  const go = (part) => {
+    try {
+      sessionStorage.setItem("lwk-viewer:qpick-last:" + q.reg, q.id);
+      sessionStorage.setItem("lwk-viewer:qadd", JSON.stringify({ id: q.id, reg: q.reg, code: q.code, title: q.title || "", back: location.pathname.split("/").pop() + "?mode=queries&reg=" + q.reg + "&q=" + q.id }));
+    } catch (e) {}
+    location.href = page + "?project=" + encodeURIComponent(part);
+  };
+  if (parts.length === 1) { go(parts[0]); return; }
+  // a project of several parts: which one
+  const m = document.createElement("div");
+  m.className = "q-partpick";
+  m.innerHTML = `<b>Which part?</b>` + parts.map((x) => `<button type="button" data-p="${esc(x)}">${esc(x)}</button>`).join("");
+  document.body.appendChild(m);
+  const r = ev && ev.target ? ev.target.getBoundingClientRect() : { left: 200, bottom: 200 };
+  m.style.left = Math.max(8, Math.min(innerWidth - 280, r.left)) + "px";
+  m.style.top = Math.min(innerHeight - 40 - parts.length * 34, r.bottom + 4) + "px";
+  const off = (e) => { if (!m.contains(e.target)) { m.remove(); document.removeEventListener("pointerdown", off, true); } };
+  setTimeout(() => document.addEventListener("pointerdown", off, true), 0);
+  m.onclick = (e) => { const b = e.target.closest("[data-p]"); if (b) { m.remove(); go(b.dataset.p); } };
+}
+const addViewBtns = () => `<button type="button" class="ghost q-goview" data-go="index.html" title="Open the sheets: + Query (or right-click a sheet) adds the view you see to this query">&#128196; + Sheet view</button>`
+  + `<button type="button" class="ghost q-goview" data-go="model.html" title="Open the 3D model: + Query (or right-click the model) adds the view you see to this query">&#9635; + 3D view</button>`;
 
 /* --------------------------------------------------- pictures of your own */
 
@@ -395,7 +449,7 @@ async function openDetail(T, id, quiet) {
     + `<div class="q-sec"><b>Question</b>` + (canEdit ? `<textarea data-f="question" rows="4">${esc(q.question)}</textarea>` : `<p class="q-text">${esc(q.question || "-")}</p>`) + `</div>`
     + `<div class="q-sec q-pics"><b>Pictures &amp; views</b> <small class="muted">a sheet / 3D picture opens that exact view; your own pictures open full size</small>`
     + `<div class="q-thumbs">${(q.views || []).map((v, i) => viewThumb(v, canEdit ? i : -1)).join("") || `<span class="muted">None yet. On a sheet or in 3D click <b>+ Query</b>; or add a picture of your own here.</span>`}</div>`
-    + `<div class="q-fr">${addPicHtml()}<small class="muted">or paste a screenshot (Ctrl+V) / drop pictures on this panel</small></div></div>`
+    + `<div class="q-fr">${addPicHtml()}${addViewBtns()}<small class="muted">or paste a screenshot (Ctrl+V) / drop pictures on this panel; &#9998; marks up a picture</small></div></div>`
     + `<div class="q-sec q-conv"><b>Answer &amp; follow-ups</b>`
     + convHtml(q, canAnswer)
     + `<div class="q-fr">${canClose && q.status !== "Closed" ? `<button data-act="closeq">Close the query</button>` : ""}`
@@ -454,6 +508,20 @@ function wireDetail(T, panel, q, can) {
   act("chat").onclick = async () => { try { await T.api(`/api/queries/${q.id}/send`, { method: "POST" }); act("chat").textContent = "Sent"; } catch (e) { alert(e.message); } };
   const put = async (patch) => { try { await save(T, Object.assign({ id: q.id }, patch)); await redraw(); } catch (e) { alert(e.message); await redraw(); } };
   wirePics(panel, q.views || []);
+  for (const b of panel.querySelectorAll(".q-goview")) b.onclick = (ev) => goAddViews(q, b.dataset.go, ev);
+  for (const b of panel.querySelectorAll("[data-mark]")) b.onclick = async (ev) => {
+    ev.preventDefault();
+    const i = +b.dataset.mark, was = (q.views || [])[i];
+    try {
+      const v = await markView(T, was);
+      if (!v) return;
+      // as it is now (someone may have added a picture meanwhile): this one replaced
+      const cur = await T.api("/api/queries/" + q.id);
+      const same = (x) => x.kind === was.kind && x.url === was.url && x.snapshot === was.snapshot;
+      const views = (cur.views || []).map((x) => (same(x) ? v : x));
+      await put({ views });
+    } catch (e) { alert(e.message); }
+  };
   // anyone on the project may add pictures (the server takes additions from everyone)
   wireAddPic(T, panel, async (vs) => {
     const cur = await T.api("/api/queries/" + q.id);            // as it is now: someone may have added one

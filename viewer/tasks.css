@@ -565,3 +565,10 @@ button svg.ic { pointer-events: none; }
 .td-sub.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
 .td-subs.drop-end { box-shadow: inset 0 -2px 0 var(--accent); }
 .td-sub.dragging { opacity: .5; }
+
+/* a query's pictures: mark up, and + Sheet view / + 3D view */
+.q-view .q-mk { position: absolute; top: 2px; left: 2px; right: auto; padding: 0 6px; background: rgba(255,255,255,.9); color: #b45309; font-weight: 700; }
+.q-goview { border: 1px dashed var(--line); font-size: 12px; padding: 4px 10px; }
+.q-goview:hover { border-color: var(--accent); }
+.q-partpick { position: fixed; z-index: 3000; display: flex; flex-direction: column; gap: 4px; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18); font-size: 12px; }
+.q-partpick button { text-align: left; }

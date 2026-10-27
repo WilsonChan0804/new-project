@@ -289,6 +289,12 @@ def register(app, core):
             v = {"kind": kind, "url": url, "snapshot": snap, "project": T.clean_text(x.get("project"), 80),
                  "title": T.clean_text(x.get("title"), 200), "sheet": T.clean_text(x.get("sheet"), 60),
                  "at": T.clean_text(x.get("at"), 30), "by": T.clean_text(x.get("by"), 80)}
+            # marked up: the picture as it was taken, and the drawing (to change it again)
+            clean = str(x.get("clean") or "")
+            if snap and re.match(r"^/snapshots/[0-9a-f]{8,64}\.(jpg|png)$", clean):
+                mk = x.get("markup")
+                if isinstance(mk, list) and len(mk) <= 400 and len(json.dumps(mk)) <= 200000:
+                    v["clean"], v["markup"] = clean, mk
             # where its marker goes: a point on the paper (mm) / in the model (scene mm)
             pin = x.get("pin")
             if kind == "sheet" and isinstance(pin, dict) and all(_num(pin.get(k)) for k in ("u", "v")):
@@ -302,8 +308,9 @@ def register(app, core):
     def own_views(old, new, w):
         """Who added each picture: kept for the ones already there, this
         person for the new ones (never what the browser says)."""
-        key = lambda v: (v.get("kind"), v.get("url"), v.get("snapshot"))
+        key = lambda v: (v.get("kind"), v.get("url"), v.get("clean") or v.get("snapshot"))
         was = dict((key(v), v.get("uid")) for v in old)
+        was.update(((v.get("kind"), v.get("url"), v.get("snapshot")), v.get("uid")) for v in old)
         for v in new:
             k = key(v)
             v["uid"] = was[k] if k in was else w.uid

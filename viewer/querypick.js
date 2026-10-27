@@ -12,6 +12,7 @@ import { api } from "./nav.js";
 
 const AFTER_KEY = "lwk-viewer:qpick-after";        // "stay" | "open"
 const LAST_KEY = "lwk-viewer:qpick-last:";         // + reg: the query used last (this tab)
+const MARK_KEY = "lwk-viewer:qpick-mark";            // "1": mark the picture up before it is added
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const newQid = () => "q" + Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => b.toString(16).padStart(2, "0")).join("").slice(0, 19);
 const ss = { get: (k) => { try { return sessionStorage.getItem(k) || ""; } catch (e) { return ""; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} } };
@@ -77,6 +78,7 @@ export async function pickQuery(btn, project, cap, fallback, at) {
     + `<small>${esc(q.status)}${(q.views || []).length ? " · " + q.views.length + " picture" + (q.views.length > 1 ? "s" : "") : ""}</small></button>`;
   el.innerHTML = `<div class="qp-h">Add this view to a query</div>`
     + `<div class="qp-after">After adding: <button type="button" data-after="stay">Stay here</button><button type="button" data-after="open">Open the query</button></div>`
+    + `<label class="qp-mark"><input type="checkbox"${ls.get(MARK_KEY) === "1" ? " checked" : ""}> &#9998; Mark up the picture first (cloud, arrow, text ...)</label>`
     + (last ? `<button type="button" class="qp-row qp-last" data-q="${esc(last.id)}">&#10133; Add another to <b>${esc(last.code)}</b> <span>${esc(last.title || "")}</span></button>` : "")
     + `<form class="qp-new"><input name="title" placeholder="New query - its subject" maxlength="200" autocomplete="off"><button class="primary">Create</button></form>`
     + (rows.length ? `<input class="qp-q" type="search" placeholder="Find an open query" autocomplete="off"><div class="qp-list">${rows.map(rowHtml).join("")}</div>`
@@ -84,6 +86,8 @@ export async function pickQuery(btn, project, cap, fallback, at) {
   const paintAfter = () => { for (const b of el.querySelectorAll("[data-after]")) b.classList.toggle("on", b.dataset.after === after); };
   paintAfter();
   for (const b of el.querySelectorAll("[data-after]")) b.onclick = () => { after = b.dataset.after; ls.set(AFTER_KEY, after); paintAfter(); };
+  const markBox = el.querySelector(".qp-mark input");
+  markBox.onchange = () => ls.set(MARK_KEY, markBox.checked ? "1" : "0");
   const q = el.querySelector(".qp-q");
   if (q) q.oninput = () => {
     const s = q.value.trim().toLowerCase();
@@ -99,6 +103,15 @@ export async function pickQuery(btn, project, cap, fallback, at) {
     if (btn) btn.textContent = "Capturing ...";
     try {
       const v = await cap();
+      // marked up first (picedit.js): the picture as taken kept, to change the drawing later
+      if (ls.get(MARK_KEY) === "1" && v.snapshot) {
+        const { editPicture } = await import("./picedit.js");
+        const r = await editPicture(v.snapshot, []);
+        if (r && r.markup.length) {
+          const up = await api("/api/snapshots", { method: "POST", body: JSON.stringify({ data_url: r.image }) });
+          Object.assign(v, { clean: v.snapshot, snapshot: up.path, markup: r.markup });
+        }
+      }
       let id = target.id, code = "", n = 1;
       if (target.title != null) {
         id = newQid();
@@ -150,6 +163,7 @@ export async function pickQuery(btn, project, cap, fallback, at) {
 .qp-after { display: flex; gap: 4px; align-items: center; color: var(--muted, #777); font-size: 12px; }
 .qp-after button { padding: 2px 8px; border: 1px solid var(--line, #ccc); border-radius: 12px; background: none; color: inherit; font: inherit; cursor: pointer; }
 .qp-after button.on { background: #0284c7; border-color: #0284c7; color: #fff; }
+.qp-mark { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted, #777); cursor: pointer; }
 .qp-toast { position: fixed; z-index: 3001; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: min(560px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 8px;
   background: #0c4a6e; color: #fff; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 .qp-toast a { color: #7dd3fc; font-weight: 700; margin-left: 6px; }
