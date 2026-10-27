@@ -805,7 +805,7 @@ DOC = [
     H3('Finding issues'),
     UL([
         '**Sheets:** the right panel lists **All / Issues / Comments**, grouped by Sheet, Status, Assigned to, Raised by, View, Issue type or Markup type, with a **Search** box. Right-click an entry to open it, show it on the sheet or in 3D, or change its status.',
-        '**3D:** **Issues in 3D** groups by Status, Floor, Issue type, Assigned to, Raised by or Model. **Sheet issues** also shows issues raised on sheets as diamonds in the model. **Hide issues** (at the top of the panel; on Sheets, **👁 Markups**) hides the pins, and **Hide closed** hides resolved and closed ones (nothing is deleted).',
+        '**3D:** **Issues in 3D** groups by Status, Floor, Issue type, Assigned to, Raised by or Model. **Sheet issues** also shows issues raised on sheets as diamonds in the model. **Hide issues** (at the top of the panel; on Sheets, **👁 Markups**) hides the pins, and **Hide closed** hides resolved and closed ones (nothing is deleted) - on a sheet, with every markup grouped with that issue.',
         '**Dashboard:** filters, overdue lists and the responsibility table (see Dashboard and projects).',
     ]),
     H3('BCF: issues with Revit, Navisworks and others'),

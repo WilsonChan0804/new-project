@@ -61,7 +61,7 @@ PART = [
     H3('搵 issue'),
     UL([
         '**Sheets：** 右邊 panel 列出 **All / Issues / Comments**，可以按 Sheet、Status、Assigned to、Raised by、View、Issue type 或者 Markup type 分組，有 **Search** 格。右鍵撳一項可以打開、喺 sheet 或者 3D 顯示，或者改狀態。',
-        '**3D：** **Issues in 3D** 按 Status、Floor、Issue type、Assigned to、Raised by 或者 Model 分組。**Sheet issues** 會將喺 sheet 開嘅 issue 用菱形顯示喺 model 入面。**Hide issues**（panel 頂部）隱藏啲 pin，**Hide closed** 隱藏已解決同已關閉嘅（乜都冇刪）。',
+        '**3D：** **Issues in 3D** 按 Status、Floor、Issue type、Assigned to、Raised by 或者 Model 分組。**Sheet issues** 會將喺 sheet 開嘅 issue 用菱形顯示喺 model 入面。**Hide issues**（panel 頂部）隱藏啲 pin，**Hide closed** 隱藏已解決同已關閉嘅（乜都冇刪）- 喺 sheet 上面，連同同嗰個 issue group 埋一齊嘅所有 markup。',
         '**Dashboard：** 篩選、過咗期清單同責任表（睇「Dashboard 同 project」）。',
     ]),
     H3('BCF：同 Revit、Navisworks 等等交換 issue'),

@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-20", date: "27 Oct 2026",
+    items: [
+      "**Fix:** on a sheet, **Hide closed** hid only the one markup holding a closed group issue - the other markups of the group stayed. The whole group now hides (and comes back) together.",
+    ],
+  },
+  {
     version: "2026-12-19", date: "27 Oct 2026",
     items: [
       "**Section box round an element (3D):** click an element and press **Section box** in the Selection panel, or right-click it > **Section box around this element** - the box closes round it with a little room, and the view moves there. In the Model browser, **Section box** does the same for a whole group.",

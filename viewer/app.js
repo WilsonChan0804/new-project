@@ -4539,7 +4539,9 @@ function matchesSearch(it, q) {
    screen away from the drawing. */
 /* resolved, closed or marked not an issue: what "Hide closed" leaves out */
 function issueDone(it) {
-  const iss = it && it.issue;
+  if (!it) return false;
+  // a markup grouped with the one holding the group's issue goes with it
+  const iss = it.issue || (it.group && (groupMembers(it).find((x) => x.issue) || {}).issue);
   if (!iss) return false;
   return !!iss.dismissed || iss.status === "Resolved" || iss.status === "Closed";
 }
