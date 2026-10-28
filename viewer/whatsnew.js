@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-21", date: "28 Oct 2026",
+    items: [
+      "**Fix (phones and tablets):** on Sheets, **Set ▾** in the sheet list opened its menu behind the list, so another set of sheets could not be chosen. It now opens on top.",
+      "**Tasks > List on a phone:** the **Task title** column is narrower when the phone is upright and titles wrap onto two lines, so priority, owner, dates and the other columns have room. Drag its edge to widen it.",
+    ],
+  },
+  {
     version: "2026-12-20", date: "27 Oct 2026",
     items: [
       "**Fix:** on a sheet, **Hide closed** hid only the one markup holding a closed group issue - the other markups of the group stayed. The whole group now hides (and comes back) together.",

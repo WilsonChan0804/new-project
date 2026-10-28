@@ -467,6 +467,13 @@ button svg.ic { pointer-events: none; }
 
 /* On a phone: inside the safe area, Cancel / OK always in sight */
 @media (max-width: 600px) {
+  /* Tasks > List on a phone: a narrow title column whose text wraps to two lines */
+  .tl-title { gap: 4px; }
+  .tl-t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; flex: 1 1 auto; overflow-wrap: anywhere; }
+  .tl-title .tl-m { display: none; }
+  .tl-newrow .tl-title, .tl-newsub .tl-title { width: auto; }
+  .tl-row { min-height: 44px; }
+  .tl-c { padding: 4px 6px; }
   .t-modal-back { padding: max(12px, env(safe-area-inset-top)) 0 max(12px, env(safe-area-inset-bottom)); align-items: center; }
   .t-modal { max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding-bottom: 0; }
   .t-modal-foot { position: sticky; bottom: 0; background: var(--panel); margin: 14px -20px 0; padding: 10px 20px calc(12px + env(safe-area-inset-bottom));

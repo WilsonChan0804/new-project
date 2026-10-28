@@ -760,7 +760,7 @@ button.danger:hover:not(:disabled) { background: #fdece8; border-color: #f2b8aa;
 
 /* --------------------------------------------------- right-click menu */
 #ctxmenu {
-  position: fixed; z-index: 70; min-width: 196px; padding: 5px;
+  position: fixed; z-index: 240; min-width: 196px; padding: 5px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
   box-shadow: 0 10px 34px rgba(20,26,36,.18);
 }
@@ -2394,7 +2394,8 @@ body:has(> #layout3d) > header #lwk-search-btn .lab { display: none; }
 #set-menu .sm-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #set-menu .sm-empty { padding: 4px 10px 8px; font-size: 12px; color: var(--ink-2); }
 /* the Set menu's actions: real buttons (a border, an icon, a hover) */
-#set-menu { width: 330px; padding: 6px; gap: 5px; }
+#set-menu { width: min(330px, calc(100vw - 12px)); padding: 6px; gap: 5px; z-index: 230; overflow-y: auto; box-sizing: border-box; }
+/* above the sheet list: on a phone or tablet that is a drawer (z-index 70) the menu opened under */
 #set-menu .sm-act { flex-direction: row; align-items: center; gap: 10px; padding: 7px 10px; cursor: pointer;
   border: 1px solid var(--line-2, #cbd2db); border-radius: 8px; background: var(--panel); color: var(--ink);
   box-shadow: 0 1px 0 rgba(0,0,0,.04); transition: background .12s, border-color .12s; }

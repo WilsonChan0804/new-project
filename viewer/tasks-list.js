@@ -33,12 +33,19 @@ export function columns(T) {
 
 const MIN_COL_W = 60;
 const MIN_TITLE_W = 120;
+// a phone upright: the title column is narrow (its text wraps) and sub-tasks step in less
+const PHONE = matchMedia("(max-width: 600px)");
+const indent = () => (PHONE.matches ? 12 : 22);
 
-/* The grid's column template: the title column at its dragged width, else as wide as the room
-   allows - but never more than 45% of a phone's screen, so the other columns stay in sight */
+/* The title column's track: at its dragged width, else as wide as the room allows. On a
+   phone it stays narrow - it stays put while the rest scrolls under it, and took half the
+   screen - and a dragged width is held to 55% of the screen. */
+function titleTrack(tw) {
+  if (PHONE.matches) return tw ? `min(${tw}px, 55vw)` : "clamp(120px, 34vw, 150px)";
+  return tw ? tw + "px" : "minmax(min(320px, 45vw), 1fr)";
+}
 function template(T, cols) {
-  const tw = T.colWidths().title;
-  return (tw ? tw + "px" : "minmax(min(320px, 45vw), 1fr)") + " " + cols.map((c) => c.w + "px").join(" ");
+  return titleTrack(T.colWidths().title) + " " + cols.map((c) => c.w + "px").join(" ");
 }
 
 function cell(T, t, c) {
@@ -91,7 +98,7 @@ function row(T, t, cols, depth) {
   ].join("");
   let h = `<div class="tl-row${t.done ? " done" : ""}${T.S.openId === t.id ? " sel" : ""}${T.S.picked.has(t.id) ? " picked" : ""}${depth ? " sub" : ""}" data-id="${esc(t.id)}"`
     + (T.canEdit() ? ` draggable="true"` : "") + `>`
-    + `<div class="tl-c tl-title" style="padding-left:${8 + depth * 22}px">`
+    + `<div class="tl-c tl-title" style="padding-left:${8 + depth * indent()}px">`
     + (kids.length ? `<button class="tl-exp ghost${open ? " open" : ""}" data-act="exp">&#9656;</button>` : `<span class="tl-exp"></span>`)
     + `<button class="tick${t.done ? " on" : ""}" data-act="done" title="${t.done ? "Mark not done" : "Mark done"}"></button>`
     + `<span class="tl-t" data-act="open">${esc(t.title || "Untitled task")}</span>${meta}`
@@ -100,7 +107,7 @@ function row(T, t, cols, depth) {
     + `</div>`;
   if (open) {
     for (const k of kids) h += row(T, k, cols, depth + 1);
-    if (T.canEdit() && depth + 1 < T.MAX_DEPTH) h += `<div class="tl-row tl-newsub" style="--d:${depth + 1}"><div class="tl-c tl-title" style="padding-left:${8 + (depth + 1) * 22 + 22}px">`
+    if (T.canEdit() && depth + 1 < T.MAX_DEPTH) h += `<div class="tl-row tl-newsub" style="--d:${depth + 1}"><div class="tl-c tl-title" style="padding-left:${8 + (depth + 1) * indent() + 22}px">`
       + `<input class="tl-new" data-parent="${esc(t.id)}" placeholder="+ Add sub-task, Enter"></div></div>`;
   }
   return h;
@@ -236,7 +243,7 @@ function wireResize(T, el, cols) {
       const move = (e) => {
         c.w = Math.max(isTitle ? MIN_TITLE_W : MIN_COL_W, Math.round(w0 + (e.clientX - x0)));
         const tw = isTitle ? c.w : T.colWidths().title;
-        tl.style.setProperty("--cols", (tw ? tw + "px" : "minmax(min(320px, 45vw), 1fr)") + " " + rest());
+        tl.style.setProperty("--cols", titleTrack(tw) + " " + rest());
       };
       const up = () => {
         grip.classList.remove("drag");

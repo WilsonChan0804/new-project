@@ -4481,7 +4481,8 @@ function wireSetTools() {
     m.hidden = false; b.classList.add("open");
     const r = b.getBoundingClientRect();
     m.style.top = (r.bottom + 4) + "px";
-    m.style.left = Math.max(6, Math.min(innerWidth - 336, r.left)) + "px";
+    m.style.maxHeight = Math.max(160, innerHeight - r.bottom - 12) + "px";
+    m.style.left = Math.max(6, Math.min(innerWidth - (m.offsetWidth || 336) - 6, r.left)) + "px";
     paintSetMenu();
   });
   m.addEventListener("click", (ev) => {

@@ -53,7 +53,7 @@ PART = [
         '**檔案、sheet 同 3D 視圖：** 貼 OneDrive、SharePoint 或者 ACC 網址，或者喺 Sheets 或 3D 版撳 **+ Task**，將你睇緊嘅 sheet 或者視圖放落 task。放咗落 task 嘅 Revit 元件會顯示做 **Elements to change**。',
         '**留言：** @名 可以通知人；可以貼截圖或者夾檔案（每個最大 50 MB）。自己嘅留言有 **edit** 同 **delete**。',
         '**Follow** 之後 task 有改動會 email 你；**Share** 會傳去一個 chat；連結掣會 copy 佢嘅網址。',
-        '▲ ▼ 掣，或者 **K** / **J**，去上一個／下一個 task。手機上面撳 **Back** 返去清單。',
+        '▲ ▼ 掣，或者 **K** / **J**，去上一個／下一個 task。手機上面撳 **Back** 返去清單。手機直放嘅時候 **Task title** 一欄會窄啲、標題分兩行顯示，等其他欄有位；拖佢個邊可以拉闊（最多大約半個畫面）。',
     ]),
     H3('List 嘅成員'),
     UL([
