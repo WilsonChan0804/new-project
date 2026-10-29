@@ -51,6 +51,8 @@ import time
 import uuid
 
 from fastapi import Header, HTTPException, Query, Request
+
+import locks
 from starlette.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 
@@ -98,7 +100,7 @@ class Meta(object):
     """files_meta.db, one writer at a time."""
 
     def __enter__(self):
-        _LOCK.acquire()
+        locks.take(_LOCK, "folders")
         try:
             self.db = sqlite3.connect(os.path.join(CORE.CFG["data"], "files_meta.db"), timeout=10)
             self.db.row_factory = sqlite3.Row

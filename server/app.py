@@ -27,6 +27,7 @@ Access has two modes:
 """
 
 import argparse
+import asyncio
 import base64
 import hashlib
 import hmac
@@ -2217,13 +2218,27 @@ async def goto_put(request: Request, x_viewer_token: str = Header(default="")):
 
 
 @app.get("/api/goto")
-async def goto_poll(request: Request, after: int = -1, x_viewer_token: str = Header(default="")):
+async def goto_poll(request: Request, after: int = -1, wait: int = 0, x_viewer_token: str = Header(default="")):
+    """Is there an issue Revit wants shown? wait=N (up to 25): held open until
+    there is, or N seconds - one request a page every 25 s instead of every
+    2, and the answer within a moment of Revit asking. Memory only."""
     w = who(request, x_viewer_token)
     key = _goto_key(w)
+
+    def fresh(g):
+        return g and g["seq"] > after and not g["claimed"] and time.time() - g["ts"] <= GOTO_TTL
+
     GOTO_LIVE[key] = time.time()
+    if after >= 0 and wait > 0:
+        end = time.time() + min(25, wait)
+        while not fresh(GOTO.get(key)) and time.time() < end:
+            if await request.is_disconnected():
+                break
+            await asyncio.sleep(0.3)
+            GOTO_LIVE[key] = time.time()        # a page waiting here is a page open (page_open)
     g = GOTO.get(key)
     cur = g["seq"] if g else 0
-    if after < 0 or not g or g["seq"] <= after or g["claimed"] or time.time() - g["ts"] > GOTO_TTL:
+    if after < 0 or not fresh(g):
         return {"goto": None, "seq": cur}
     return {"goto": {k: g[k] for k in ("seq", "project", "id", "kind", "sheet")}, "seq": cur}
 

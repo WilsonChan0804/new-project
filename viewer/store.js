@@ -35,6 +35,9 @@
 import * as DB from "./idb.js";
 
 const POLL_MS = 5000;
+// a tab behind others (nothing of its own waiting to save) asks this often;
+// brought to the front it asks at once
+const HIDDEN_POLL_MS = 30000;
 const READ_MS = 15000;          // a request with no answer after this long counts as no connection
 const WRITE_MS = 30000;
 
@@ -998,14 +1001,18 @@ export async function start(onStatus) {
     await first;
   }
   if (S.timer) clearInterval(S.timer);
-  S.timer = setInterval(tick, POLL_MS);
+  S.timer = setInterval(() => {
+    if (document.hidden && !S.pending.size && Date.now() - (S.lastSync || 0) < HIDDEN_POLL_MS - 500) return;
+    tick();
+  }, POLL_MS);
 
   // No Background Sync on iOS Safari: the page itself notices the
   // connection coming back, and being brought to the front again.
   addEventListener("online", () => kick());
   addEventListener("offline", () => { S.online = false; emitState(); });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && (S.pending.size || !S.online)) kick();
+    if (document.visibilityState === "visible"
+        && (S.pending.size || !S.online || Date.now() - (S.lastSync || 0) > POLL_MS)) kick();
   });
   try {
     if (typeof BroadcastChannel !== "undefined") {

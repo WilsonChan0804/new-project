@@ -39,7 +39,9 @@ import shutil
 import struct
 import uuid
 
-from fastapi import HTTPException, Request, Header
+from fastapi import HTTPException, Request, Header, Depends
+
+import locks
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS boards (
@@ -126,7 +128,7 @@ class Db(object):
             self.lock = _LOCKS.setdefault(path, threading.Lock())
 
     def __enter__(self):
-        self.lock.acquire()
+        locks.take(self.lock, "boards")
         try:
             folder = os.path.dirname(self.path)
             if not os.path.isdir(folder):
@@ -262,6 +264,12 @@ def register(app, core):
             raise HTTPException(status_code=400, detail="Expected a JSON object")
         return body
 
+    async def json_body(request: Request):
+        """The request's JSON body, read on the event loop, so the route itself
+        can be a plain def: FastAPI runs it - and its database work - in the
+        threadpool, never on the loop that answers everyone."""
+        return await read_json(request)
+
     def person(w, body):
         """Who to write beside a change. With accounts the server knows; with
         the shared passphrase there are no people, so the browser's own
@@ -360,12 +368,11 @@ def register(app, core):
                 "name": w.name, "accounts": core.accounts_on(), "workflow_seeded": seeded}
 
     @app.post("/api/boards")
-    async def boards_create(request: Request, x_viewer_token: str = Header(default=""),
-                            x_project: str = Header(default="")):
+    def boards_create(request: Request, x_viewer_token: str = Header(default=""),
+                            x_project: str = Header(default=""), body: dict = Depends(json_body)):
         """A new board, optionally with its first objects (a template, an
         imported backup) so that it never exists half-made."""
         w, role, pid = access(request, "member", x_viewer_token, x_project)
-        body = await read_json(request)
         title = clean_text(body.get("title"), MAX_TITLE) or "Untitled board"
         objects = body.get("objects") or []
         if not isinstance(objects, list) or len(objects) > MAX_OBJECTS:
@@ -444,14 +451,13 @@ def register(app, core):
         return {"images": out}
 
     @app.post("/api/boards/workflow")
-    async def workflow_create(request: Request, x_viewer_token: str = Header(default=""),
-                              x_project: str = Header(default="")):
+    def workflow_create(request: Request, x_viewer_token: str = Header(default=""),
+                              x_project: str = Header(default=""), body: dict = Depends(json_body)):
         """The project's workflow board, made from the objects the page
         built - once: whoever comes second (two people opening the Board
         page together) is told it is there already. force: make another
         (New board > LWK BIM Workflow)."""
         w, role, pid = access(request, "member", x_viewer_token, x_project)
-        body = await read_json(request)
         title = clean_text(body.get("title"), MAX_TITLE) or "LWK BIM Workflow"
         objects = body.get("objects") or []
         force = bool(body.get("force"))
@@ -476,10 +482,9 @@ def register(app, core):
         return {"board": out, "seeded": True, "audit": copy_audit(pid, w)}
 
     @app.patch("/api/boards/{bid}")
-    async def boards_rename(bid: str, request: Request, x_viewer_token: str = Header(default=""),
-                            x_project: str = Header(default="")):
+    def boards_rename(bid: str, request: Request, x_viewer_token: str = Header(default=""),
+                            x_project: str = Header(default=""), body: dict = Depends(json_body)):
         w, role, pid = access(request, "member", x_viewer_token, x_project)
-        body = await read_json(request)
         title = clean_text(body.get("title"), MAX_TITLE)
         if not title:
             raise HTTPException(status_code=400, detail="A board needs a name")
@@ -493,7 +498,7 @@ def register(app, core):
             return {"board": dict(board_row(r), can_delete=can_delete(w, role, r))}
 
     @app.delete("/api/boards/{bid}")
-    async def boards_delete(bid: str, request: Request, x_viewer_token: str = Header(default=""),
+    def boards_delete(bid: str, request: Request, x_viewer_token: str = Header(default=""),
                             x_project: str = Header(default="")):
         w, role, pid = access(request, "member", x_viewer_token, x_project)
         with db_for(pid) as db:
@@ -509,10 +514,9 @@ def register(app, core):
         return {"deleted": bid}
 
     @app.post("/api/boards/{bid}/duplicate")
-    async def boards_duplicate(bid: str, request: Request, x_viewer_token: str = Header(default=""),
-                               x_project: str = Header(default="")):
+    def boards_duplicate(bid: str, request: Request, x_viewer_token: str = Header(default=""),
+                               x_project: str = Header(default=""), body: dict = Depends(json_body)):
         w, role, pid = access(request, "member", x_viewer_token, x_project)
-        body = await read_json(request)
         by = person(w, body)
         new = "b" + uuid.uuid4().hex[:15]
         t = now_iso()
@@ -552,13 +556,12 @@ def register(app, core):
                     "name": w.name, "now": int(time.time() * 1000)}
 
     @app.post("/api/boards/{bid}/objects")
-    async def objects_put(bid: str, request: Request, x_viewer_token: str = Header(default=""),
-                          x_project: str = Header(default="")):
+    def objects_put(bid: str, request: Request, x_viewer_token: str = Header(default=""),
+                          x_project: str = Header(default=""), body: dict = Depends(json_body)):
         """{"upsert": [object ...], "delete": [id ...], "by": "name"}
         Whole objects replace whole objects; nothing else on the board is
         touched. Answers the board's new revision."""
         w, role, pid = access(request, "member", x_viewer_token, x_project)
-        body = await read_json(request)
         upsert = body.get("upsert") or []
         delete = body.get("delete") or []
         if not isinstance(upsert, list) or not isinstance(delete, list):
@@ -571,14 +574,13 @@ def register(app, core):
         return {"rev": rev, "saved": len(upsert), "deleted": len(delete)}
 
     @app.post("/api/boards/{bid}/presence")
-    async def presence_post(bid: str, request: Request, x_viewer_token: str = Header(default=""),
-                            x_project: str = Header(default="")):
+    def presence_post(bid: str, request: Request, x_viewer_token: str = Header(default=""),
+                            x_project: str = Header(default=""), body: dict = Depends(json_body)):
         """The poll. "I am here, my cursor is there, I have seen revision N"
         -> who else is here, and what changed since N. One request does both
         so an open board costs one small round trip every couple of seconds.
         A Viewer may call it: it stores nothing."""
         w, role, pid = access(request, "viewer", x_viewer_token, x_project)
-        body = await read_json(request)
         cid = clean_text(body.get("cid"), 40)
         with db_for(pid) as db:
             r = get_board(db, bid)

@@ -40,7 +40,9 @@ import threading
 import time
 import uuid
 
-from fastapi import HTTPException, Request, Header
+from fastapi import HTTPException, Request, Header, Depends
+
+import locks
 from starlette.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, Response
 
@@ -157,7 +159,7 @@ class Db(object):
         self.path = path
 
     def __enter__(self):
-        _LOCK.acquire()
+        locks.take(_LOCK, "chat")
         try:
             if not os.path.isdir(os.path.dirname(self.path)):
                 os.makedirs(os.path.dirname(self.path))
@@ -643,6 +645,18 @@ def register(app, core):
             raise HTTPException(status_code=400, detail="Expected a JSON object")
         return body
 
+    async def json_body(request: Request):
+        """The request's JSON body, read on the event loop, so the route itself
+        can be a plain def: FastAPI runs it - and its database work - in the
+        threadpool, never on the loop that answers everyone."""
+        return await read_json(request)
+
+    def read_rev():
+        """The chats' revision, read once: the waiting requests then only
+        compare numbers in memory."""
+        with db() as d:
+            _REV[0] = max(_REV[0], d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"])
+
     def me(request, token):
         w = core.who(request, token)
         if w.uid is None:
@@ -771,11 +785,10 @@ def register(app, core):
         return {"rooms": out, "joinable": joinable, "me": w.uid}
 
     @app.post("/api/chat/rooms")
-    async def room_create(request: Request, x_viewer_token: str = Header(default="")):
+    def room_create(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{kind: "dm", user} | {kind: "group", title, members} | {kind: "project", project}
         | {kind: "topic", parent: project channel id, title, description}"""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         kind = body.get("kind")
         if kind not in KINDS:
             raise HTTPException(status_code=400, detail="kind: dm, group, project or topic")
@@ -845,9 +858,8 @@ def register(app, core):
                              dict((k, v["name"]) for k, v in us.items()))
 
     @app.patch("/api/chat/rooms/{rid}")
-    async def room_rename(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def room_rename(request: Request, rid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             r = get_room(d, rid)
             m = membership(d, rid, w.uid)
@@ -864,7 +876,7 @@ def register(app, core):
         return {"ok": True}
 
     @app.delete("/api/chat/rooms/{rid}")
-    async def room_delete(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def room_delete(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         """Gone for everyone. Who may: either person of a direct message, a
         group's admins, a project's admins for its channel and topics, and
         site admins (can_delete_room). A project channel takes its topics
@@ -930,7 +942,7 @@ def register(app, core):
         return await run_in_threadpool(_rest)
 
     @app.post("/api/chat/rooms/{rid}/join")
-    async def room_join(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def room_join(request: Request, rid: str, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         with db() as d:
             r = get_room(d, rid)
@@ -944,11 +956,10 @@ def register(app, core):
         return {"ok": True}
 
     @app.put("/api/chat/rooms/{rid}/members")
-    async def room_members(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def room_members(request: Request, rid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{add: [uid], remove: [uid]}. Anyone in a group or project chat may
         add people; removing others takes a chat admin; leaving is free."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         us = users()
         with db() as d:
             r = get_room(d, rid)
@@ -1033,12 +1044,11 @@ def register(app, core):
         return card
 
     @app.post("/api/chat/rooms/{rid}/messages")
-    async def send(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def send(request: Request, rid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{body, files: [file id], reply_to, card}. A card a person may send:
         {type: "whatsapp"} (messages copied or exported from WhatsApp),
         {type: "poll"}, {type: "event"} or {type: "task_ref", task}."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         text = clean_text(body.get("body"), MAX_TEXT, True).strip()
         raw = body.get("card")
         kind = raw.get("type") if isinstance(raw, dict) else None
@@ -1080,9 +1090,8 @@ def register(app, core):
         return m
 
     @app.patch("/api/chat/messages/{mid}")
-    async def edit(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def edit(request: Request, mid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         text = clean_text(body.get("body"), MAX_TEXT, True).strip()
         with db() as d:
             m = own_message(d, w, mid, "edit")
@@ -1092,7 +1101,7 @@ def register(app, core):
             return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.delete("/api/chat/messages/{mid}")
-    async def remove(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def remove(request: Request, mid: str, x_viewer_token: str = Header(default="")):
         """Only the person who sent it (not a chat admin, not a site admin)."""
         w = me(request, x_viewer_token)
         with db() as d:
@@ -1118,7 +1127,7 @@ def register(app, core):
                 d.execute("UPDATE messages SET kept = '' WHERE id = ?", (r["id"],))
 
     @app.post("/api/chat/messages/{mid}/restore")
-    async def restore(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def restore(request: Request, mid: str, x_viewer_token: str = Header(default="")):
         """Undo a delete: only the sender, within a day."""
         w = me(request, x_viewer_token)
         with db() as d:
@@ -1151,10 +1160,9 @@ def register(app, core):
         return m
 
     @app.post("/api/chat/messages/{mid}/pin")
-    async def pin(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def pin(request: Request, mid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{on: true|false}. Anyone in the chat; up to MAX_PINS a chat."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         on = bool(body.get("on", True))
         with db() as d:
             m = member_message(d, w, mid)
@@ -1191,11 +1199,10 @@ def register(app, core):
                   (json.dumps(dict((k, v) for k, v in a.items() if v)), next_rev(d), m["id"]))
 
     @app.post("/api/chat/messages/{mid}/vote")
-    async def vote(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def vote(request: Request, mid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{options: [option id]}: my answer to a poll (replaces my last
         one; [] takes it back)."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             m = member_message(d, w, mid)
             c = json.loads(m["card"] or "{}") or {}
@@ -1218,10 +1225,9 @@ def register(app, core):
             return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.post("/api/chat/messages/{mid}/close")
-    async def close_poll(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def close_poll(request: Request, mid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{closed: true|false}: the poll's writer stops (or reopens) the voting."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             m = own_message(d, w, mid, "close")
             c = json.loads(m["card"] or "{}") or {}
@@ -1234,10 +1240,9 @@ def register(app, core):
             return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.post("/api/chat/messages/{mid}/rsvp")
-    async def rsvp(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def rsvp(request: Request, mid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{value: yes | maybe | no | ""}: my reply to an event."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         v = body.get("value") or ""
         if v and v not in RSVP:
             raise HTTPException(status_code=400, detail="yes, maybe or no")
@@ -1255,11 +1260,10 @@ def register(app, core):
             return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.patch("/api/chat/messages/{mid}/event")
-    async def event_edit(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def event_edit(request: Request, mid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """The event's writer changes it ({title, start, ...} as when sent)
         or cancels it ({cancelled: true}). The chat is told."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             m = own_message(d, w, mid, "change")
             c = json.loads(m["card"] or "{}") or {}
@@ -1294,10 +1298,9 @@ def register(app, core):
                         headers={"Content-Disposition": 'attachment; filename="%s.ics"' % name})
 
     @app.post("/api/chat/messages/{mid}/react")
-    async def react(request: Request, mid: str, x_viewer_token: str = Header(default="")):
+    def react(request: Request, mid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{emoji}: add my reaction, or take it away when it is there."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         e = clean_text(body.get("emoji"), 16)
         if not e or re.search(r"[A-Za-z0-9<>&\"']", e):
             raise HTTPException(status_code=400, detail="Pick an emoji")
@@ -1324,9 +1327,8 @@ def register(app, core):
             return msg_row(d.execute("SELECT * FROM messages WHERE id = ?", (mid,)).fetchone(), w.uid)
 
     @app.post("/api/chat/rooms/{rid}/read")
-    async def read(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def read(request: Request, rid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             r = get_room(d, rid)
             seq = min(int(body.get("seq") or r["last_seq"]), r["last_seq"])
@@ -1342,25 +1344,28 @@ def register(app, core):
         w = me(request, x_viewer_token)
         if wait and since:
             if not _REV[0]:
-                with db() as d:
-                    _REV[0] = max(_REV[0], d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"])
+                await run_in_threadpool(read_rev)
             end = time.time() + max(1, min(30, wait))
             while _REV[0] <= since and time.time() < end:
                 if await request.is_disconnected():
                     return {"rev": since, "rooms": [], "messages": []}
                 await asyncio.sleep(0.2)
-        with db() as d:
-            rev = d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"]
-            if since >= rev:
-                return {"rev": rev, "rooms": [], "messages": []}
-            names = dict((k, v["name"]) for k, v in users().items())
-            rs = d.execute("SELECT r.* FROM rooms r JOIN room_members m ON m.room = r.id "
-                           "WHERE m.uid = ? AND r.rev > ?", (w.uid, since)).fetchall()
-            msgs = d.execute("SELECT x.* FROM messages x JOIN room_members m ON m.room = x.room "
-                             "WHERE m.uid = ? AND x.rev > ? ORDER BY x.rev LIMIT 500", (w.uid, since)).fetchall() if since else []
-            # a chat deleted since: just that, so the page takes it off its list
-            return {"rev": rev, "rooms": [{"id": r["id"], "deleted": True} if r["deleted"] else room_view(d, r, w, names) for r in rs],
-                    "messages": [msg_row(m, w.uid) for m in msgs]}
+
+        def _read():
+            with db() as d:
+                rev = d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"]
+                if since >= rev:
+                    return {"rev": rev, "rooms": [], "messages": []}
+                names = dict((k, v["name"]) for k, v in users().items())
+                rs = d.execute("SELECT r.* FROM rooms r JOIN room_members m ON m.room = r.id "
+                               "WHERE m.uid = ? AND r.rev > ?", (w.uid, since)).fetchall()
+                msgs = d.execute("SELECT x.* FROM messages x JOIN room_members m ON m.room = x.room "
+                                 "WHERE m.uid = ? AND x.rev > ? ORDER BY x.rev LIMIT 500", (w.uid, since)).fetchall() if since else []
+                # a chat deleted since: just that, so the page takes it off its list
+                return {"rev": rev, "rooms": [{"id": r["id"], "deleted": True} if r["deleted"] else room_view(d, r, w, names) for r in rs],
+                        "messages": [msg_row(m, w.uid) for m in msgs]}
+        # the database off the loop: it is the one that answers everyone
+        return await run_in_threadpool(_read)
 
     @app.get("/api/chat/notify")
     async def notify(request: Request, since: int = 0, wait: int = 0, x_viewer_token: str = Header(default="")):
@@ -1373,13 +1378,15 @@ def register(app, core):
             return {"rev": 0, "items": [], "total": 0, "mentions": 0, "level": "off"}
         if wait and since:
             if not _REV[0]:
-                with db() as d:
-                    _REV[0] = max(_REV[0], d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"])
+                await run_in_threadpool(read_rev)
             end = time.time() + max(1, min(30, wait))
             while _REV[0] <= since and time.time() < end:
                 if await request.is_disconnected():
                     return {"rev": since, "items": [], "same": True}
                 await asyncio.sleep(0.3)
+        return await run_in_threadpool(_notify_read, w, since)
+
+    def _notify_read(w, since):
         with db() as d:
             rev = d.execute("SELECT value FROM counter WHERE name = 'rev'").fetchone()["value"]
             pref = notify_prefs(d, w.uid)
@@ -1420,11 +1427,10 @@ def register(app, core):
         return {"items": [inbox_row(r) for r in rows], "unread": unseen}
 
     @app.post("/api/chat/inbox/read")
-    async def inbox_read(request: Request, x_viewer_token: str = Header(default="")):
+    def inbox_read(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{ids: ["in12", ...]} or {all: true}; {ids, read: false} marks
         them unread again (the checkbox in the bell panel)."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         flag = 0 if body.get("read") is False else 1
         with db() as d:
             if body.get("all"):
@@ -1443,10 +1449,9 @@ def register(app, core):
             return notify_prefs(d, w.uid)
 
     @app.post("/api/chat/notify-settings")
-    async def notify_set(request: Request, x_viewer_token: str = Header(default="")):
+    def notify_set(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{level: all | mentions | off} and/or {mute_room: id, on: true|false}."""
         w = me(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             p = notify_prefs(d, w.uid)
             if "level" in body:
@@ -1530,16 +1535,20 @@ def register(app, core):
         pasted screenshot goes up as it is. ?room= for a chat, ?task= for a
         task comment (or a query's: its id)."""
         w = me(request, x_viewer_token)
-        if room:
-            with db() as d:
-                get_room(d, room)
-                if not membership(d, room, w.uid):
-                    raise HTTPException(status_code=403, detail="You are not in this chat")
-        elif task:
-            if task_access(w, task) not in ("owner", "editor"):
-                raise HTTPException(status_code=403, detail="You cannot add to this task")
-        else:
-            raise HTTPException(status_code=400, detail="Send to a chat (room=) or a task (task=)")
+
+        def _may():
+            if room:
+                with db() as d:
+                    get_room(d, room)
+                    if not membership(d, room, w.uid):
+                        raise HTTPException(status_code=403, detail="You are not in this chat")
+            elif task:
+                if task_access(w, task) not in ("owner", "editor"):
+                    raise HTTPException(status_code=403, detail="You cannot add to this task")
+            else:
+                raise HTTPException(status_code=400, detail="Send to a chat (room=) or a task (task=)")
+        # the database (and the file write below) off the loop that answers everyone
+        await run_in_threadpool(_may)
         try:
             n = int(request.headers.get("content-length") or 0)
         except ValueError:
@@ -1557,12 +1566,15 @@ def register(app, core):
         fid = new_id()
         ext = re.sub(r"[^a-z0-9]", "", os.path.splitext(name)[1].lower())[:8]
         stored = fid + ("." + ext if ext else "")
-        with open(os.path.join(files_dir(), stored), "wb") as f:
-            f.write(data)
-        with db() as d:
-            d.execute("INSERT INTO files (id, room, task, name, size, mime, uid, author, created_at, stored) "
-                      "VALUES (?,?,?,?,?,?,?,?,?,?)", (fid, room, task, name, len(data), mime, w.uid, w.name, now_iso(), stored))
-            return file_meta(d.execute("SELECT * FROM files WHERE id = ?", (fid,)).fetchone())
+
+        def _keep():
+            with open(os.path.join(files_dir(), stored), "wb") as f:
+                f.write(data)
+            with db() as d:
+                d.execute("INSERT INTO files (id, room, task, name, size, mime, uid, author, created_at, stored) "
+                          "VALUES (?,?,?,?,?,?,?,?,?,?)", (fid, room, task, name, len(data), mime, w.uid, w.name, now_iso(), stored))
+                return file_meta(d.execute("SELECT * FROM files WHERE id = ?", (fid,)).fetchone())
+        return await run_in_threadpool(_keep)
 
     @app.get("/api/chat/files/{fid}/{name}")
     def download(request: Request, fid: str, name: str, x_viewer_token: str = Header(default="")):
@@ -1580,8 +1592,10 @@ def register(app, core):
         if not os.path.isfile(path):
             raise HTTPException(status_code=404, detail="The file is no longer on the server")
         inline = f["mime"].split("/")[0] in ("image", "video", "audio") or f["mime"] == "application/pdf"
+        # a file id never points at other content: the browser keeps its copy
         return FileResponse(path, media_type=f["mime"], filename=f["name"],
-                            content_disposition_type="inline" if inline else "attachment")
+                            content_disposition_type="inline" if inline else "attachment",
+                            headers={"Cache-Control": "private, max-age=31536000, immutable"})
 
     @app.get("/api/chat/rooms/{rid}/files")
     def room_files(request: Request, rid: str, x_viewer_token: str = Header(default="")):

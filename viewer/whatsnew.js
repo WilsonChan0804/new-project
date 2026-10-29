@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-22", date: "29 Oct 2026",
+    items: [
+      "**Faster and steadier server** (from last week's speed log): chat, tasks and boards no longer use their databases on the part of the server that answers everyone, so one stuck request cannot freeze the viewer for everybody again (as on 26 Oct). If a database is ever held for over 20 s, only that request says **The server is busy - try again**, and the server window says what held it.",
+      "**Show in viewer from Revit is quicker:** each open page now keeps one request waiting instead of asking every 2 seconds - the issue opens within a moment, with about a fifteenth of the requests.",
+      "Tabs in the background check for new markups every 30 s instead of every 5 s, and catch up as soon as you return to them. Files sent in chat are kept by the browser, so opening one again does not download it again.",
+      "**Restart the server after this update.**",
+    ],
+  },
+  {
     version: "2026-12-21", date: "28 Oct 2026",
     items: [
       "**Fix (phones and tablets):** on Sheets, **Set ▾** in the sheet list opened its menu behind the list, so another set of sheets could not be chosen. It now opens on top.",

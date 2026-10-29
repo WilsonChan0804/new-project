@@ -34,7 +34,7 @@ SAMPLE = 400              # durations kept per route and day, for the percentile
 FLUSH_S = 60
 # answers that wait on purpose (until there is news, up to ~25 s): counted,
 # but not as slow, and not in the figures of how long answers take
-WAITING = ("/api/chat/notify", "/api/chat/sync")
+WAITING = ("/api/chat/notify", "/api/chat/sync", "/api/goto")
 
 
 class Perf(object):
@@ -196,6 +196,8 @@ class Perf(object):
                 ms = a.get("ms")
                 if not p or not isinstance(ms, (int, float)):
                     continue
+                if p.split("?")[0] in WAITING:
+                    continue                   # waits on purpose: not what anyone waited for
                 s = st["slow_api"].setdefault(p, {"n": 0, "ms": 0.0, "max": 0.0})
                 s["n"] += 1
                 s["ms"] += ms

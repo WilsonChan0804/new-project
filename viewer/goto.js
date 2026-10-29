@@ -2,51 +2,47 @@
  *
  * LWK Issues in Revit used to start the browser with a link, and a browser
  * given a link always opens a new tab. Now Revit leaves a note on the
- * server for the person signed in; this page asks for notes every two
- * seconds (three behind other tabs), claims one (the first page to claim it wins, a page on screen
- * before one in the background) and goes to the issue itself. Revit only
- * opens a new tab when no page of that person answers.
+ * server for the person signed in; this page keeps one request waiting for
+ * it (the server answers the moment a note comes, or after 25 s, and the
+ * page asks again at once), claims it (the first page to claim it wins, a
+ * page on screen before one in the background) and goes to the issue
+ * itself. Revit only opens a new tab when no page of that person is waiting.
+ * It used to ask every two seconds: a third of a million requests a week.
  */
 
 export function startGoto(Store, show) {
   let seq = null;              // the first answer only sets where we start
-  let busy = false;
 
-  async function tick() {
-    if (busy || !Store.currentProject || !Store.api) return;
-    busy = true;
-    try {
-      const r = await Store.api("/api/goto?after=" + (seq === null ? -1 : seq));
-      if (seq === null) { seq = r.seq || 0; return; }
-      const g = r.goto;
-      seq = Math.max(seq, r.seq || 0);
-      if (!g) return;
-      // a page in the background lets one on screen claim it first
-      if (document.visibilityState !== "visible") await new Promise((res) => setTimeout(res, 1500));
-      const c = await Store.api("/api/goto/claim", {
-        method: "POST", body: JSON.stringify({ seq: g.seq }),
-      });
-      if (!c.ok) return;
-      try { window.focus(); } catch (e) {}
-      await show(g);
-    } catch (e) {
-      /* signed out or offline: the next tick tries again */
-    } finally {
-      busy = false;
-    }
+  async function once() {
+    const r = await Store.api("/api/goto?after=" + (seq === null ? -1 : seq) + (seq === null ? "" : "&wait=25"));
+    if (seq === null) { seq = r.seq || 0; return; }
+    const g = r.goto;
+    seq = Math.max(seq, r.seq || 0);
+    if (!g) return;
+    // a page in the background lets one on screen claim it first
+    if (document.visibilityState !== "visible") await new Promise((res) => setTimeout(res, 1500));
+    const c = await Store.api("/api/goto/claim", {
+      method: "POST", body: JSON.stringify({ seq: g.seq }),
+    });
+    if (!c.ok) return;
+    try { window.focus(); } catch (e) {}
+    await show(g);
   }
-  // every 2 s while the page is on screen, every 3 s behind other tabs (it
-  // still answers Revit within its 5 s wait): a third fewer asks from the
-  // pages people leave open all day
-  let last = 0;
-  setInterval(() => {
-    const gap = document.visibilityState === "visible" ? 2000 : 3000;
-    if (Date.now() - last < gap - 100) return;
-    last = Date.now();
-    tick();
-  }, 1000);
-  last = Date.now();
-  tick();
+  (async function loop() {
+    for (;;) {
+      if (!Store.currentProject || !Store.api) { await new Promise((res) => setTimeout(res, 2000)); continue; }
+      const t0 = Date.now();
+      try { await once(); }
+      catch (e) {
+        /* signed out or offline: try again a little later */
+        await new Promise((res) => setTimeout(res, 5000));
+        continue;
+      }
+      // an answer far sooner than the wait (an older server, or a proxy
+      // cutting it short): not a tight loop
+      if (Date.now() - t0 < 1000) await new Promise((res) => setTimeout(res, 1500));
+    }
+  })();
 }
 
 /* Where an issue lives, as a link: used when the page open is not the one

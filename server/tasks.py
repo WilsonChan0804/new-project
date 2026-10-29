@@ -38,7 +38,9 @@ import time
 import uuid
 from urllib.parse import urlencode
 
-from fastapi import HTTPException, Request, Header
+from fastapi import HTTPException, Request, Header, Depends
+
+import locks
 from starlette.concurrency import run_in_threadpool
 
 SCHEMA = """
@@ -292,7 +294,7 @@ class Db(object):
         self.path = path
 
     def __enter__(self):
-        _LOCK.acquire()
+        locks.take(_LOCK, "tasks")
         try:
             folder = os.path.dirname(self.path)
             if not os.path.isdir(folder):
@@ -936,6 +938,12 @@ def register(app, core):
             raise HTTPException(status_code=400, detail="Expected a JSON object")
         return body
 
+    async def json_body(request: Request):
+        """The request's JSON body, read on the event loop, so the route itself
+        can be a plain def: FastAPI runs it - and its database work - in the
+        threadpool, never on the loop that answers everyone."""
+        return await read_json(request)
+
     def person(w, body=None):
         return w.name or clean_text((body or {}).get("by"), 60) or "Someone"
 
@@ -1106,13 +1114,12 @@ def register(app, core):
                 "me": {"uid": w.uid, "name": w.name}}
 
     @app.post("/api/task-lists")
-    async def lists_create(request: Request, x_viewer_token: str = Header(default="")):
+    def lists_create(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = core.who(request, x_viewer_token)
         if core.accounts_on() and not w.site_admin:
             # anyone who is at least a member somewhere may start a list
             if not any(core.RANK.get(r, 0) >= core.RANK["member"] for r in core.ACC.memberships(w.uid).values()):
                 raise HTTPException(status_code=403, detail="Only project members can start a task list")
-        body = await read_json(request)
         title = clean_text(body.get("title"), 120) or "Untitled list"
         by, t = person(w, body), now_iso()
         lid = new_id()
@@ -1144,9 +1151,8 @@ def register(app, core):
         return {"id": lid}
 
     @app.patch("/api/task-lists/{lid}")
-    async def lists_patch(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+    def lists_patch(request: Request, lid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             row, _ = need_list(d, w, lid, "owner")
             title = clean_text(body.get("title"), 120) or row["title"]
@@ -1159,7 +1165,7 @@ def register(app, core):
         return {"ok": True}
 
     @app.delete("/api/task-lists/{lid}")
-    async def lists_delete(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+    def lists_delete(request: Request, lid: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
             need_list(d, w, lid, "owner")
@@ -1185,7 +1191,7 @@ def register(app, core):
         return {"lists": out}
 
     @app.post("/api/admin/task-lists/{lid}/restore")
-    async def lists_restore(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+    def lists_restore(request: Request, lid: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         if not w.site_admin:
             raise HTTPException(status_code=403, detail="Site admins only")
@@ -1194,10 +1200,9 @@ def register(app, core):
         return {"ok": True}
 
     @app.put("/api/task-lists/{lid}/members")
-    async def lists_members(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+    def lists_members(request: Request, lid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """The whole member list at once: [{uid, role}]."""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         ms = body.get("members")
         if not isinstance(ms, list):
             raise HTTPException(status_code=400, detail="members: a list of {uid, role}")
@@ -1225,10 +1230,9 @@ def register(app, core):
         return {"ok": True}
 
     @app.post("/api/task-lists/{lid}/groups")
-    async def groups_save(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+    def groups_save(request: Request, lid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """Add, rename, re-map, re-order or delete groups: {groups: [...]}."""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             need_list(d, w, lid, "editor")
             rev = next_rev(d)
@@ -1271,10 +1275,9 @@ def register(app, core):
         return {"rev": rev}
 
     @app.post("/api/task-lists/{lid}/fields")
-    async def fields_save(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+    def fields_save(request: Request, lid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """Custom columns (Modelers, Project Manager, Discipline ...)."""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             need_list(d, w, lid, "owner")
             rev = next_rev(d)
@@ -1359,12 +1362,11 @@ def register(app, core):
             t["issues_total"] = len(iss)
 
     @app.post("/api/tasks")
-    async def tasks_save(request: Request, x_viewer_token: str = Header(default="")):
+    def tasks_save(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{list, tasks: [patch, ...], deleted: [id, ...]}. A patch names a
         task by id and carries only the fields that changed; an id the
         server has never seen makes a new task."""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         lid = body.get("list")
         patches = body.get("tasks") or []
         dels = body.get("deleted") or []
@@ -1593,7 +1595,7 @@ def register(app, core):
         return {"issues": linked_issues(w, links)}
 
     @app.post("/api/tasks/{tid}/restore")
-    async def task_restore(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+    def task_restore(request: Request, tid: str, x_viewer_token: str = Header(default="")):
         """Undo a delete: the task and the sub-tasks deleted with it (the same
         revision) come back, with their links to issues."""
         w = core.who(request, x_viewer_token)
@@ -1623,12 +1625,11 @@ def register(app, core):
         return {"tasks": rows, "rev": rev}
 
     @app.post("/api/tasks/{tid}/close-issues")
-    async def task_close_issues(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+    def task_close_issues(request: Request, tid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{issues: [{project, id}], status: "Resolved"}: the issues this task
         links to, resolved through the viewer's own save (history, emails,
         chat cards), with a note naming the task."""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         status = body.get("status") if body.get("status") in ("Resolved", "Closed") else "Resolved"
         with db() as d:
             r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
@@ -1666,9 +1667,8 @@ def register(app, core):
         return {"task": task_row(r), "comments": cs, "activity": hist, "role": role}
 
     @app.post("/api/tasks/{tid}/comments")
-    async def task_comment(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+    def task_comment(request: Request, tid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         text = clean_text(body.get("body"), MAX_COMMENT, multiline=True).strip()
         # pictures and files sent with it were uploaded first (chat.py)
         files = []
@@ -1717,10 +1717,9 @@ def register(app, core):
         return {"id": cid, "author": by, "uid": w.uid, "body": text, "files": files, "created_at": t, "task": task}
 
     @app.patch("/api/tasks/{tid}/comments/{cid}")
-    async def task_comment_edit(request: Request, tid: str, cid: str, x_viewer_token: str = Header(default="")):
+    def task_comment_edit(request: Request, tid: str, cid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{body}: the writer changes their own comment."""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         text = clean_text(body.get("body"), MAX_COMMENT, multiline=True).strip()
         with db() as d:
             r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
@@ -1740,7 +1739,7 @@ def register(app, core):
                 "files": json.loads(c["files"] or "[]"), "created_at": c["created_at"], "edited_at": t}
 
     @app.delete("/api/tasks/{tid}/comments/{cid}")
-    async def task_comment_delete(request: Request, tid: str, cid: str, x_viewer_token: str = Header(default="")):
+    def task_comment_delete(request: Request, tid: str, cid: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
             r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
@@ -1756,11 +1755,10 @@ def register(app, core):
         return {"ok": True}
 
     @app.post("/api/tasks/{tid}/subscribe")
-    async def task_subscribe(request: Request, tid: str, x_viewer_token: str = Header(default="")):
+    def task_subscribe(request: Request, tid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = core.who(request, x_viewer_token)
         if w.uid is None:
             raise HTTPException(status_code=400, detail="Following a task needs accounts switched on")
-        body = await read_json(request)
         with db() as d:
             r = d.execute("SELECT * FROM tasks WHERE id = ? AND deleted = 0", (tid,)).fetchone()
             if not r:
@@ -2095,9 +2093,8 @@ def register(app, core):
         return {"projects": out, "can_create": reg_can_create(w)}
 
     @app.post("/api/registry")
-    async def reg_save(request: Request, x_viewer_token: str = Header(default="")):
+    def reg_save(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         by, t = person(w, body), now_iso()
         with db() as d:
             pid = body.get("id") if isinstance(body.get("id"), str) and SAFE_ID.match(body.get("id")) else None
@@ -2228,7 +2225,7 @@ def register(app, core):
         return await run_in_threadpool(_rest)
 
     @app.delete("/api/registry/{pid}/thumb")
-    async def reg_thumb_del(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+    def reg_thumb_del(request: Request, pid: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
             r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
@@ -2261,7 +2258,7 @@ def register(app, core):
         return resp
 
     @app.delete("/api/registry/{pid}")
-    async def reg_delete(request: Request, pid: str, x_viewer_token: str = Header(default="")):
+    def reg_delete(request: Request, pid: str, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
             r = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (pid,)).fetchone()
@@ -2288,11 +2285,10 @@ def register(app, core):
             return {"members": members_of(d, r), "viewer": r["viewer"], "viewers": viewers_of(r), "can_edit": reg_can_edit(w, r)}
 
     @app.put("/api/registry/{rid}/members")
-    async def reg_members_put(request: Request, rid: str, x_viewer_token: str = Header(default="")):
+    def reg_members_put(request: Request, rid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{uid, role} - a project without a viewer project. (One with a
         viewer project: Admin > Projects and members, as before.)"""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             r = reg_get(d, rid)
             if not reg_can_edit(w, r):
@@ -2311,7 +2307,7 @@ def register(app, core):
         return {"ok": True}
 
     @app.delete("/api/registry/{rid}/members/{uid}")
-    async def reg_members_del(request: Request, rid: str, uid: int, x_viewer_token: str = Header(default="")):
+    def reg_members_del(request: Request, rid: str, uid: int, x_viewer_token: str = Header(default="")):
         w = core.who(request, x_viewer_token)
         with db() as d:
             r = reg_get(d, rid)
@@ -2402,12 +2398,11 @@ def register(app, core):
         return {"dashboards": my_boards(core.who(request, x_viewer_token))}
 
     @app.post("/api/dashboards")
-    async def boards_save(request: Request, x_viewer_token: str = Header(default="")):
+    def boards_save(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """{id?, name, scope}: make or change one of my dashboards."""
         w = core.who(request, x_viewer_token)
         if w.uid is None:
             raise HTTPException(status_code=403, detail="Sign in with your account to keep dashboards")
-        body = await read_json(request)
         name = clean_text(body.get("name"), 120) or "My dashboard"
         scope = []
         for x in body.get("scope") if isinstance(body.get("scope"), list) else []:
@@ -2740,10 +2735,9 @@ def register(app, core):
         return await run_in_threadpool(_rest)
 
     @app.post("/api/task-lists/{lid}/groups/{gid}/reg")
-    async def group_reg(request: Request, lid: str, gid: str, x_viewer_token: str = Header(default="")):
+    def group_reg(request: Request, lid: str, gid: str, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """Link one group to a register project ({reg: id or ""})."""
         w = core.who(request, x_viewer_token)
-        body = await read_json(request)
         with db() as d:
             need_list(d, w, lid, "editor")
             g = d.execute("SELECT * FROM groups WHERE id = ? AND list_id = ?", (gid, lid)).fetchone()
@@ -2969,13 +2963,12 @@ def register(app, core):
         return await run_in_threadpool(_rest)
 
     @app.post("/api/task-lists/import")
-    async def tasks_import_new(request: Request, x_viewer_token: str = Header(default="")):
+    def tasks_import_new(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         """A whole Lark task list as a new list here, named after it."""
         w = core.who(request, x_viewer_token)
         if core.accounts_on() and not w.site_admin:
             if not any(core.RANK.get(r, 0) >= core.RANK["member"] for r in core.ACC.memberships(w.uid).values()):
                 raise HTTPException(status_code=403, detail="Only project members can start a task list")
-        body = await read_json(request)
         rows = rows_from(body)
         cols, _ = map_columns(rows[0] if rows else [])
         title = clean_text(body.get("title"), 120)
@@ -3005,7 +2998,7 @@ def register(app, core):
         return out
 
     @app.post("/api/task-lists/{lid}/relink")
-    async def tasks_relink(request: Request, lid: str, x_viewer_token: str = Header(default="")):
+    def tasks_relink(request: Request, lid: str, x_viewer_token: str = Header(default="")):
         """Names kept from an import, matched again to accounts (for people
         whose accounts were made after the import)."""
         w = core.who(request, x_viewer_token)
