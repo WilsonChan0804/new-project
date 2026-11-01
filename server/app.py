@@ -953,8 +953,16 @@ async def delete_item(request: Request, item_id: str,
     if accounts_on() and role != "admin":
         prev = st.get(item_id)
         if prev and prev.get("author_id") not in (None, w.uid):
-            raise HTTPException(status_code=403,
-                                detail="Only its author or a project admin can delete this")
+            # someone else's: a markup may go when its layer lets this person
+            # change it (Admin > Markup layers, "every member" by default);
+            # one holding an issue is a record - its author or an admin only
+            if prev.get("issue"):
+                raise HTTPException(status_code=403,
+                                    detail="It holds an issue: only whoever raised it or a project admin can delete it")
+            if not layer_can(x_project, w, role, _layer_of(prev), "edit"):
+                raise HTTPException(status_code=403,
+                                    detail='Drawn by %s on the layer "%s", which only some people can change'
+                                    % (prev.get("author") or "someone else", _layer_of(prev)))
     check_layer_edit(x_project, w, role, st.get(item_id), None)
     rev = st.delete(item_id)
     if rev is None:

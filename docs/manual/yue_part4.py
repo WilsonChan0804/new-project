@@ -46,7 +46,7 @@ PART = [
         '**討論入面加相**（Sheets 同 3D 一樣）：Post 旁邊嘅 **📷 Photo** 揀相 - 用手機或者 iPad 可以即刻影 - 或者喺訊息格 **Ctrl+V** 貼截圖，或者將相片檔拖入去。相會喺格下面等住（✕ 拎走一張），撳 **Post** 就同訊息一齊出；淨係相冇字都得。大張相會先縮細（1920 px）。喺討論撳一張相可以睇大圖（← → 下一張，**Esc** 關）。Issue report 會喺訊息下面顯示呢啲相。',
         '**Show in view** 返去嗰個位；**Show in 3D** 喺嗰度打開 3D 版。',
         '**Not an issue** 會連一個人人睇到嘅原因閂咗佢；同一個掣可以重開。',
-        '**Delete** 會幫所有人刪除。Member 只可以刪自己嘅 issue；project admin 刪得任何一個。',
+        '**Delete** 會幫所有人刪除。Member 只可以刪自己嘅 issue；project admin 刪得任何一個。（普通 markup 跟 layer 設定 - 睇「邊個刪得」。）',
         '**Revit element**（3D issue）：開 issue 嗰個元件，有 **Copy Revit IDs**、**Show in 3D** 同 **Show in Revit**。',
         '**Tasks：** 連住呢個 issue 嘅 task，有負責人同到期日。**+ New task from this issue** 開一個（睇「Issue 同 task 連埋一齊」）；**Send to chat** 將 issue 貼去一個 chat。',
         '將狀態改做 **Resolved** 或者 **Closed** 再撳 **Save**：如果 issue 嘅 task 仲未完成，viewer 會問你要唔要順手剔佢哋做完成。',
@@ -201,7 +201,7 @@ PART = [
     H3('角色'),
     TABLE(['角色', '可以'], [
         ['**Viewer**', '乜都睇得；唔可以加或者改 issue 同 comment'],
-        ['**Member**', '開同改 issue 同 comment；只可以刪自己嘅'],
+        ['**Member**', '開同改 issue 同 comment；刪自己嘅，同其他人喺所有 member 都可以改嘅 layer 上面嘅 markup（issue 只可以刪自己嘅）'],
         ['**Publisher**', 'Member 做得嘅全部，加上由 Revit publish sheet 同 3D model（LWK tab > **Publish to Viewer**）'],
         ['**Project admin**', 'Publisher 做得嘅全部，加上管理 project 成員、改或者刪任何嘢、無視 layer 鎖、upload model'],
         ['**Site admin**', '所有 project；加、停用同 reset account；開、刪同還原 project'],

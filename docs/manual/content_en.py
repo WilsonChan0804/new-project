@@ -404,7 +404,9 @@ DOC = [
     UL([
         '**Polyline / Polygon:** click the points, then press Enter, double-click or **✓ Finish**. Backspace removes the last point.',
         '**Style bar:** Layer, Line / Fill / Text colour, Opacity, Weight (paper mm), line Type, Font, Size (text height in mm), Align.',
-        '**Editing:** select a markup to move, resize or restyle it; R / Shift+R rotate it 90°; Ctrl+C / Ctrl+V copy and paste (paste on another sheet lands at the same spot); Delete removes it.',
+        '**Editing:** select a markup to move, resize or restyle it; R / Shift+R rotate it 90°; Ctrl+C / Ctrl+V copy and paste (paste on another sheet lands at the same spot); Delete removes it. A dimension or measurement is picked by clicking its number (or its lines).',
+        '**Snapping to the drawing:** Dimension, Measure, Area, Angle, Line, Arrow, Polyline, Polygon, Rect and Cloud snap to the sheet\'s own plotted lines - an orange mark says **Endpoint**, **Intersection**, **Midpoint** or **On line**. Dragging the points of these markups snaps too. Hold **Alt** to place a point freely; **View ▾ > Snap to drawing lines** turns it off. On a big sheet shown from the server\'s pictures, the lines are read in the background the first time ("Reading this drawing\'s lines for snapping ...").',
+        '**Who can delete:** your own markups; other people\'s markups on a layer you may change (every member, unless a project admin has set the layer otherwise); a markup that holds an **issue** only by whoever raised it or a project admin. The eraser and Delete leave the others in place and say why.',
         '**Comment or Issue:** the **Comment / + Issue** switch on the drawing\'s toolbar decides what happens when you finish a markup. In **Issue** mode the **Raise issue** window opens straight away. A comment can be turned into an issue later with **Issue** or right-click **Raise issue**.',
         '**Layers:** markups sit on layers (default "General"). Admins can lock a layer or hide it from some people. **👁 Markups** at the top of the issue list hides all markups.',
     ]),
@@ -790,7 +792,7 @@ DOC = [
         '**Photos in the discussion** (Sheets and 3D alike): **📷 Photo** beside Post picks pictures - on a phone or iPad it can take one with the camera - or paste a screenshot (**Ctrl+V**) into the message box, or drop picture files on it. They wait under the box (✕ leaves one out) and go with the message when you **Post**; a message can be photos alone. Large photos are made smaller (1920 px) first. Click a photo in the discussion to see it large (← → for the next, **Esc** to close). The issue report shows them under the message.',
         '**Show in view** returns to the spot; **Show in 3D** opens the 3D page there.',
         '**Not an issue** closes it with a reason that everyone can read; the same button reopens it.',
-        '**Delete** removes it for everyone. Members can delete only their own issues; project admins can delete any.',
+        '**Delete** removes it for everyone. Members can delete only their own issues; project admins can delete any. (Plain markups follow their layer - see Who can delete.)',
         '**Revit element** (3D issues): the element it was raised on, with **Copy Revit IDs**, **Show in 3D** and **Show in Revit**.',
         '**Tasks:** the tasks that point at this issue, with their owner and due date. **+ New task from this issue** makes one (see Issues and tasks together); **Send to chat** posts the issue into a chat.',
         'Setting the status to **Resolved** or **Closed** and pressing **Save**: if tasks on the issue are still open, the viewer offers to mark them done.',
@@ -945,7 +947,7 @@ DOC = [
     H3('Roles'),
     TABLE(['Role', 'Can'], [
         ['**Viewer**', 'Look at everything; cannot add or change issues or comments'],
-        ['**Member**', 'Raise and edit issues and comments; delete only their own'],
+        ['**Member**', 'Raise and edit issues and comments; delete their own, and other people\'s markups on layers every member may change (issues only their own)'],
         ['**Publisher**', 'Everything a member can, plus publish the sheets and the 3D model from Revit (LWK tab > **Publish to Viewer**)'],
         ['**Project admin**', "Everything a publisher can, plus manage the project's members, edit or delete anything, override layer locks, upload models"],
         ['**Site admin**', 'Every project; add, deactivate and reset accounts; create, delete and restore projects'],

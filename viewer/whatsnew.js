@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-23", date: "1 Nov 2026",
+    items: [
+      "**Snapping to the drawing:** dimensions, measurements, lines, arrows, polylines, rectangles and clouds snap to the sheet's own plotted lines - line ends, crossings, midpoints or a point along a line, shown by an orange mark. Hold **Alt** to place freely; **View > Snap to drawing lines** turns it off.",
+      "**Dimensions are easy to pick:** click a dimension's number (or its extension lines) to select it, then Delete. Measurements, areas and angles too.",
+      "**Fix:** **Snip** on big sheets (shown from the server's pictures, like TKO's) copied the sheet's top-left corner instead of the area dragged. It now copies the area.",
+      "**Erasing other people's markups** follows the layer: on a layer every member may change (the usual), any member can erase or delete anyone's markups; a markup holding an issue stays with whoever raised it or a project admin. When something cannot be erased, it stays and the page says why (it used to come back without a word). **Restart the server after this update.**",
+    ],
+  },
+  {
     version: "2026-12-22", date: "29 Oct 2026",
     items: [
       "**Faster and steadier server** (from last week's speed log): chat, tasks and boards no longer use their databases on the part of the server that answers everyone, so one stuck request cannot freeze the viewer for everybody again (as on 26 Oct). If a database is ever held for over 20 s, only that request says **The server is busy - try again**, and the server window says what held it.",

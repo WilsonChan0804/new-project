@@ -26,6 +26,7 @@ import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile, del
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 import { createLvSheets, missingLinks } from "./lv.js";
 import * as QV from "./queryviews.js";
+import { readLines } from "./sheetsnap.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -671,6 +672,7 @@ function render(item, opts) {
       fill: tc, "font-size": fs, "font-family": fontFamily(st.font),
       "text-anchor": "middle", "pointer-events": "none" });
     t.textContent = areaLabel(item.points_mm, item);
+    specs.push({ tag: "__node", node: labelHit(t, fs, st.font) });
     specs.push({ tag: "__node", node: t });
 
   } else if (item.type === "angle" && P.length > 1) {
@@ -681,6 +683,7 @@ function render(item, opts) {
         fill: tc, "font-size": fs, "font-family": fontFamily(st.font),
         "pointer-events": "none" });
       t.textContent = angleLabel(item.points_mm);
+      specs.push({ tag: "__node", node: labelHit(t, fs, st.font) });
       specs.push({ tag: "__node", node: t });
     }
 
@@ -727,12 +730,13 @@ function render(item, opts) {
 
     const thin = Object.assign({}, stroke, { "stroke-width": Math.max(0.6, w * 0.6),
                                              "stroke-dasharray": null });
+    // the extension lines pick the dimension too (a short one is mostly those)
     add("line", Object.assign({}, thin, {
       x1: at(A, sgn * gap)[0], y1: at(A, sgn * gap)[1],
-      x2: at(A, off + sgn * over)[0], y2: at(A, off + sgn * over)[1] }), null);
+      x2: at(A, off + sgn * over)[0], y2: at(A, off + sgn * over)[1] }), "stroke");
     add("line", Object.assign({}, thin, {
       x1: at(B, sgn * gap)[0], y1: at(B, sgn * gap)[1],
-      x2: at(B, off + sgn * over)[0], y2: at(B, off + sgn * over)[1] }), null);
+      x2: at(B, off + sgn * over)[0], y2: at(B, off + sgn * over)[1] }), "stroke");
     add("line", Object.assign({}, stroke, { "stroke-dasharray": null,
       x1: A2[0] - u[0] * over, y1: A2[1] - u[1] * over,
       x2: B2[0] + u[0] * over, y2: B2[1] + u[1] * over }), "stroke");
@@ -767,6 +771,7 @@ function render(item, opts) {
       transform: `rotate(${deg} ${lift[0]} ${lift[1]})`,
       "pointer-events": "none" });
     t.textContent = measureLabel(item.points_mm.slice(0, 2), item);
+    specs.push({ tag: "__node", node: labelHit(t, fs, st.font) });
     specs.push({ tag: "__node", node: t });
 
   } else if (item.type === "measure" && P.length > 1) {
@@ -873,6 +878,7 @@ function render(item, opts) {
       fill: tc, "font-size": fs, "font-family": fontFamily(st.font),
       "text-anchor": "middle", "pointer-events": "none" });
     t.textContent = measureLabel(item.points_mm, item);
+    g.appendChild(labelHit(t, fs, st.font));
     g.appendChild(t);
   }
 
@@ -888,6 +894,20 @@ function render(item, opts) {
     g.appendChild(n);
   }
   return g;
+}
+
+/* A click target behind a measurement's label: the number is where people
+   click to pick a dimension (the lines can be a hair wide), and text alone
+   only catches clicks on its glyphs. */
+function labelHit(t, fs, font) {
+  const x = +t.getAttribute("x"), y = +t.getAttribute("y");
+  const w = textWidth(t.textContent || "", fs, font) + fs * 0.6, h = fs * 1.3;
+  const a = t.getAttribute("text-anchor");
+  const x0 = a === "middle" ? x - w / 2 : a === "end" ? x - w : x - fs * 0.3;
+  const r = svgEl("rect", { x: x0, y: y - fs * 1.05, width: w, height: h,
+    fill: "transparent", stroke: "none", "pointer-events": "all" });
+  if (t.getAttribute("transform")) r.setAttribute("transform", t.getAttribute("transform"));
+  return r;
 }
 
 /* Measurement.
@@ -997,6 +1017,7 @@ function redraw(target) {
     svg.appendChild(render(it, { pin: pin }));
   }
   if (S.draft) svg.appendChild(render(S.draft, {}));
+  if (SNAP.mark) showSnap(SNAP.mark);
 
   const selItems = S.sel.map((id) => S.items.find((x) => x.id === id))
     // (an issue with no shape on the sheet - made from a task or the API - has no box to draw)
@@ -1377,14 +1398,41 @@ function persist(ids) {
   }
 }
 
+/* May this person delete it? As the server decides: a project admin, its
+   author, or - for a markup without an issue - anyone its layer lets change
+   it (Admin > Markup layers; "every member" unless set otherwise). */
+function mayDelete(it) {
+  const R = S.layerRules;
+  if (!it || !R || R.accounts === false || R.admin) return true;
+  const me = /^u(\d+)$/.exec(Store.userKey() || "");
+  if (it.author_id == null || (me && +me[1] === it.author_id)) return true;
+  if (it.issue) return false;
+  return layerEditable(layerOf(it));
+}
+
 function removeItems(ids) {
   if (!ids.length) return;
+  // what this person may not delete stays, and they are told why (the eraser
+  // used to fade it, the server refused, and it came back without a word)
+  const no = ids.map((id) => S.items.find((x) => x.id === id)).filter((it) => it && !mayDelete(it));
+  if (no.length) {
+    ids = ids.filter((id) => !no.some((n) => n.id === id));
+    const iss = no.find((n) => n.issue);
+    status(`${no.length} not deleted: ` + (iss
+      ? "an issue can only be deleted by whoever raised it or a project admin"
+      : `drawn by ${no[0].author || "someone else"} on the layer "${layerOf(no[0])}", which only some people can change`) + ".");
+    if (!ids.length) { redraw(); return; }
+  }
   remember(ids);
   S.items = S.items.filter((i) => ids.indexOf(i.id) < 0);
   S.sel = S.sel.filter((id) => ids.indexOf(id) < 0);
   redraw(); renderList();
-  Promise.all(ids.map((id) => Store.remove(id).catch(() => {})))
-    .then(() => { S.items = Store.all(); redraw(); renderList(); });
+  const refused = [];
+  Promise.all(ids.map((id) => Store.remove(id).catch((e) => { refused.push(e.message || "refused"); })))
+    .then(() => {
+      S.items = Store.all(); redraw(); renderList();
+      if (refused.length) status(`${refused.length} not deleted: ${refused[0]}`);
+    });
 }
 
 /* ------------------------------------------------------------- rotation */
@@ -1520,6 +1568,71 @@ function retakeSnapshots(items) {
       } catch (e) { status("Could not take a new snapshot: " + e.message); }
     }
   }, 50));
+}
+
+/* -------------------------------------------------------------- snapping */
+
+/* Dimensions, measurements and line shapes land on the drawing's own lines
+   (sheetsnap.js): an end, a crossing, a midpoint or a point along a line,
+   within 10 screen pixels. Alt places freely; View > Snap to drawing lines
+   turns it off. A sheet shown from the server's pictures reads its PDF for
+   this in the background, the first time a snapping tool is used on it. */
+const SNAP_TOOLS = new Set(["dimension", "measure", "area", "angle", "line", "arrow",
+  "polyline", "polygon", "rect", "cloud", "cloudpoly"]);
+const SNAP = { on: true, key: "", idx: null, mark: null };
+try { SNAP.on = localStorage.getItem("lwk.snap") !== "0"; } catch (e) {}
+
+function snapLines() {
+  if (!S.sheet || !S.page) return null;
+  const key = S.sheet.pdf + "|" + (S.sheet.page || 1);
+  if (SNAP.key === key) return SNAP.idx;
+  SNAP.key = key; SNAP.idx = null;
+  (async () => {
+    let page = S.page;
+    if (page.isTilePage) {
+      if (!page.loadPdfPage) return;
+      status("Reading this drawing's lines for snapping ...");
+      page = await page.loadPdfPage();
+    }
+    const idx = await readLines(page, page.view ? [page.view[0], page.view[1]] : [0, 0]);
+    if (SNAP.key !== key) return;                    // another sheet meanwhile
+    SNAP.idx = idx;
+    if (page !== S.page) status(`Snapping to this drawing's lines (${idx.count.toLocaleString()}).`);
+  })().catch((e) => { console.warn("snap lines", e); });
+  return null;
+}
+
+/* p (paper mm) moved onto the nearest line feature, when it applies */
+function snapPoint(p, ev, handleItem) {
+  const it = handleItem || null;
+  const tool = it ? it.type : S.tool;
+  // Alt: free; Shift: its 15 degree steps win
+  if (!SNAP.on || (ev && (ev.altKey || ev.shiftKey)) || !SNAP_TOOLS.has(tool) || !S.viewport) { if (SNAP.mark) showSnap(null); return p; }
+  const idx = snapLines();
+  if (!idx) { if (SNAP.mark) showSnap(null); return p; }
+  const r = idx.snap(p, 10 / pxPerMM());
+  showSnap(r);
+  return r ? r.p.slice() : p;
+}
+
+const SNAP_WORD = { end: "Endpoint", cross: "Intersection", mid: "Midpoint", on: "On line" };
+function showSnap(r) {
+  SNAP.mark = r;
+  const svg = $("#overlay");
+  let g = svg && svg.querySelector("#snapmark");
+  if (!r) { if (g) g.remove(); return; }
+  if (!g) { g = svgEl("g", { id: "snapmark", "pointer-events": "none" }); svg.appendChild(g); }
+  const [x, y] = canvasFrom(r.p[0], r.p[1]), k = 6;
+  const sh = r.kind === "end" ? `M${x - k} ${y - k}h${2 * k}v${2 * k}h${-2 * k}Z`
+    : r.kind === "mid" ? `M${x} ${y - k}L${x + k} ${y + k}L${x - k} ${y + k}Z`
+    : r.kind === "cross" ? `M${x - k} ${y - k}L${x + k} ${y + k}M${x + k} ${y - k}L${x - k} ${y + k}`
+    : `M${x - k} ${y - k}L${x + k} ${y - k}L${x - k} ${y + k}L${x + k} ${y + k}Z`;
+  g.innerHTML = "";
+  g.appendChild(svgEl("path", { d: sh, fill: "none", stroke: "#f28022", "stroke-width": 2 }));
+  const t = svgEl("text", { x: x + 10, y: y - 9, fill: "#b4530b", "font-size": 11,
+    "font-family": "Segoe UI, Arial, sans-serif", "paint-order": "stroke", stroke: "#fff", "stroke-width": 3 });
+  t.textContent = SNAP_WORD[r.kind] || "";
+  g.appendChild(t);
 }
 
 /* ------------------------------------------------------------ pointer */
@@ -1808,10 +1921,22 @@ async function snipRegion(item) {
   let scale = 300 / 72;
   const longest = Math.max(wmm, hmm) * MM_PT * scale;
   if (longest > 4000) scale *= 4000 / longest;          // keep the image manageable
-  const vp = S.page.getViewport({ scale: scale, rotation: 0 });
+  /* A big sheet shown from the server's pictures: its own PDF for a
+     print-sharp snip when that comes quickly, else the pictures. */
+  let page = S.page;
+  if (page.isTilePage && page.loadPdfPage) {
+    status("Snipping ...");
+    page = await Promise.race([page.loadPdfPage().catch(() => null),
+                               new Promise((r) => setTimeout(() => r(null), 4000))]) || S.page;
+  }
   const o = pageOrigin();
   // the snip's top-left corner (paper y runs up, so that is y1)
-  const [ax, ay] = vp.convertToViewportPoint(x0 * MM_PT + o[0], y1 * MM_PT + o[1]);
+  const [ax, ay] = page.getViewport({ scale: scale, rotation: 0 })
+    .convertToViewportPoint(x0 * MM_PT + o[0], y1 * MM_PT + o[1]);
+  /* The area is asked for by moving the viewport, not by a transform
+     handed to render(): the server's pictures ignore that, and every snip
+     of such a sheet came out as its top-left corner. */
+  const vp = page.getViewport({ scale: scale, rotation: 0, offsetX: -ax, offsetY: -ay });
   const W = Math.max(1, Math.round(wmm * MM_PT * scale));
   const H = Math.max(1, Math.round(hmm * MM_PT * scale));
   const c = document.createElement("canvas");
@@ -1820,8 +1945,7 @@ async function snipRegion(item) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
   status(`Snipping ${wmm.toFixed(0)} x ${hmm.toFixed(0)} mm at ${Math.round(scale * 72)} dpi ...`);
-  await S.page.render({ canvasContext: ctx, viewport: vp,
-                        transform: [1, 0, 0, 1, -ax, -ay] }).promise;
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
   await placeImage(c.toDataURL("image/png"), item.points_mm, true);
 }
 
@@ -2090,6 +2214,7 @@ function wirePointer() {
   });
   svg.addEventListener("pointerup", cancelLongPress);
   svg.addEventListener("pointercancel", cancelLongPress);
+  svg.addEventListener("pointerleave", () => { if (SNAP.mark) showSnap(null); });
 
   svg.addEventListener("pointerdown", (ev) => {
     if (!S.page) return;
@@ -2102,7 +2227,8 @@ function wirePointer() {
     /* Palm rejection: once an Apple Pencil has been used, a finger or the
        side of a hand no longer draws - it pans, as in GoodNotes. */
     if (S.penSeen && ev.pointerType === "touch" && DRAWING_KINDS.has(t.kind)) return;
-    const p = eventPoint(ev);
+    // a dimension, measurement or line shape starts on the drawing's own line
+    const p = t.kind === "drag2" || t.kind === "poly" ? snapPoint(eventPoint(ev), ev) : eventPoint(ev);
     /* A second press on the same text within a moment: change its words.
        (The page redraws between the two presses, so the browser's own
        double-click never arrives.) */
@@ -2393,7 +2519,16 @@ function wirePointer() {
 
   svg.addEventListener("pointermove", (ev) => {
     if (!S.page) return;
-    const p = eventPoint(ev);
+    let p = eventPoint(ev);
+    // snapping (sheetsnap.js): the point being placed or dragged, and the
+    // marker under the pointer while a snapping tool waits for its click
+    if ((poly && S.draft) || mode === "draw") p = snapPoint(p, ev);
+    else if (mode === "handle") {
+      const hi = S.items.find((x) => x.id === S.sel[0]);
+      // a dimension's third point is its offset: free
+      if (hi && !(hi.type === "dimension" && handle === 2)) p = snapPoint(p, ev, hi);
+    } else if (!mode && (toolOf(S.tool).kind === "drag2" || toolOf(S.tool).kind === "poly")) snapPoint(p, ev);
+    else if (SNAP.mark) showSnap(null);
 
     if (poly && S.draft) {
       S.draft.points_mm[S.draft.points_mm.length - 1] = p;
@@ -6060,6 +6195,17 @@ function wireChrome() {
   /* View ▾: Split, Compare, 2D + 3D and Links in one menu. The buttons are
      the same ones as before, moved into it; a dot on View says one of the
      first three is on. */
+  const snapBtn = $("#snap-toggle");
+  if (snapBtn) {
+    snapBtn.classList.toggle("active", SNAP.on);
+    snapBtn.addEventListener("click", () => {
+      SNAP.on = !SNAP.on;
+      try { localStorage.setItem("lwk.snap", SNAP.on ? "1" : "0"); } catch (e) {}
+      snapBtn.classList.toggle("active", SNAP.on);
+      showSnap(null);
+      status(SNAP.on ? "Snapping to the drawing's lines (hold Alt to place freely)." : "Snapping off: points go exactly where you click.");
+    });
+  }
   const vm = $("#view-menu"), vmb = $("#view-menu-btn");
   if (vm && vmb) {
     const shut = () => { vm.hidden = true; vmb.classList.remove("open"); };
