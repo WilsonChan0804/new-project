@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEFF3; --card:#FFFFFF; --ink:#16202E; --muted:#62717F;
+    --rule:#D6DBE2; --indigo:#2F4468;
+    --pos:#2E7D6B; --neg:#A8483F; --caut:#B0762A; --none:#9AA5B1;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font:400 16px/1.55 Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 96px}
+
+  /* ---- header ---- */
+  header{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:28px}
+  h1{font:800 26px/1.1 Archivo,sans-serif;letter-spacing:-.02em;margin:0;flex:1 1 200px}
+  h1 small{display:block;font:500 12px/1.5 'IBM Plex Mono',monospace;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  input,select,button{
+    font:500 14px Inter,sans-serif;border:1px solid var(--rule);
+    border-radius:var(--r);padding:10px 12px;background:var(--card);color:var(--ink)}
+  input{width:110px;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em}
+  button{background:var(--indigo);color:#fff;border-color:var(--indigo);cursor:pointer;padding:10px 18px}
+  button:hover{background:#243651}
+  button:disabled{opacity:.5;cursor:wait}
+  :focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+
+  /* ---- cards ---- */
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);
+    padding:22px 24px;margin-bottom:16px}
+  .eyebrow{font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+  h2{font:700 17px/1.3 Archivo,sans-serif;margin:0 0 4px;letter-spacing:-.01em}
+
+  /* ---- verdict ---- */
+  .verdict{font:800 clamp(30px,6vw,46px)/1 Archivo,sans-serif;
+    letter-spacing:-.03em;margin:0 0 12px}
+  .tone-positive{color:var(--pos)} .tone-negative{color:var(--neg)}
+  .tone-neutral{color:var(--caut)} .tone-unknown{color:var(--none)}
+  .lede{font-size:17px;margin:0 0 10px;max-width:60ch}
+  .sub{color:var(--muted);font-size:14.5px;margin:0;max-width:62ch}
+
+  /* ---- SIGNATURE: the evidence rail ---- */
+  .rail{display:flex;height:46px;border-radius:6px;overflow:hidden;
+    border:1px solid var(--rule);margin:4px 0 12px}
+  .seg{position:relative;transition:opacity .2s}
+  .seg span{position:absolute;inset:auto 0 5px;text-align:center;
+    font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.04em;
+    color:#fff;opacity:.85;overflow:hidden;white-space:nowrap;padding:0 2px}
+  .seg.missing{background:
+    repeating-linear-gradient(135deg,#E4E8ED 0 5px,#CFD6DE 5px 10px)}
+  .seg.missing span{color:var(--muted)}
+  .rail-note{font-size:13.5px;color:var(--muted);margin:0}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font:500 11px 'IBM Plex Mono',monospace;
+    letter-spacing:.05em;color:var(--muted);margin:12px 0 0}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;
+    margin-right:5px;vertical-align:-1px}
+
+  /* ---- component rows ---- */
+  .row{display:grid;grid-template-columns:1fr 132px;gap:14px;align-items:center;
+    padding:13px 0;border-top:1px solid var(--rule)}
+  .row:first-of-type{border-top:0}
+  .row h3{font:600 15px Inter,sans-serif;margin:0 0 1px}
+  .row p{margin:0;font-size:13.5px;color:var(--muted);max-width:52ch}
+  .meter{position:relative;height:7px;background:#E7EBF0;border-radius:4px;overflow:hidden}
+  .meter i{position:absolute;inset:0 auto 0 0;border-radius:4px;
+    width:0;transition:width .7s cubic-bezier(.2,.7,.3,1)}
+  .subs{margin-top:8px!important;display:flex;flex-wrap:wrap;gap:6px}
+  .subs span{font:500 11px 'IBM Plex Mono',monospace;background:#F2F5F8;
+    border:1px solid var(--rule);border-radius:20px;padding:3px 9px;color:var(--muted)}
+  .subs b{color:var(--ink);font-weight:500}
+  .subs i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+  .meter.na{background:repeating-linear-gradient(135deg,#E4E8ED 0 4px,#CFD6DE 4px 8px)}
+  .val{font:500 12px/1.4 'IBM Plex Mono',monospace;color:var(--muted);
+    display:flex;justify-content:space-between;margin-bottom:5px}
+
+  /* ---- scenarios ---- */
+  .scen{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:baseline;
+    padding:12px 0;border-top:1px solid var(--rule)}
+  .scen:first-of-type{border-top:0}
+  .scen b{font:600 15px Inter,sans-serif;display:block}
+  .scen p{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+  .odds{font:500 13px 'IBM Plex Mono',monospace;color:var(--ink);white-space:nowrap}
+  .summary{margin:16px 0 0;padding:14px 16px;background:#F4F6F9;
+    border-radius:8px;font-size:14.5px;border-left:3px solid var(--indigo)}
+
+  /* ---- for / against ---- */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:640px){.cols{grid-template-columns:1fr}
+    .row{grid-template-columns:1fr}}
+  ul{margin:0;padding-left:18px;font-size:14px}
+  li{margin-bottom:7px}
+  .cols h4{font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;
+    text-transform:uppercase;margin:0 0 10px}
+  .for h4{color:var(--pos)} .against h4{color:var(--neg)}
+
+  ol.steps{padding-left:20px;font-size:15px;margin:0}
+  ol.steps li{margin-bottom:9px}
+
+  .foot{font-size:13px;color:var(--muted)}
+  .foot table{width:100%;border-collapse:collapse;margin-top:6px}
+  .foot td{padding:5px 0;border-top:1px solid var(--rule);
+    font-family:'IBM Plex Mono',monospace;font-size:12px}
+  .foot td:last-child{text-align:right}
+  .warn{background:#FBF4E7;border:1px solid #E8D4AC;color:#6E4E12;
+    padding:12px 16px;border-radius:8px;font-size:14px;margin-bottom:16px}
+  .err{background:#FBEDEC;border:1px solid #E6C2BE;color:#7A2F28}
+  .hidden{display:none}
+  .skel{color:var(--muted);text-align:center;padding:48px 0;font-size:15px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Stock review<small>Investment decision engine</small></h1>
+  <div class="controls">
+    <input id="ticker" value="AAPL" aria-label="Ticker symbol" autocomplete="off">
+    <select id="horizon" aria-label="How long you would hold it">
+      <option value="21">Hold about 1 month</option>
+      <option value="63" selected>Hold about 3 months</option>
+      <option value="126">Hold about 6 months</option>
+      <option value="252">Hold about 1 year</option>
+    </select>
+    <button id="go">Review</button>
+  </div>
+</header>
+
+<div id="msg"></div>
+<div id="out" class="hidden"></div>
+<div id="skel" class="skel">Enter a ticker and press Review.</div>
+
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const BAND = {strong:'var(--pos)', mild:'var(--pos)', neutral:'var(--caut)',
+               mild_weak:'var(--neg)', weak:'var(--neg)', unknown:'var(--none)'};
+const esc = s => String(s??'').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function run(){
+  const t = $('#ticker').value.trim().toUpperCase();
+  if(!t) return;
+  $('#go').disabled = true;
+  $('#msg').innerHTML = '';
+  $('#out').classList.add('hidden');
+  $('#skel').classList.remove('hidden');
+  $('#skel').textContent = 'Gathering price history, company figures and news…';
+  try{
+    const r = await fetch(`/api/v1/stocks/${encodeURIComponent(t)}/analyze?horizon_days=${$('#horizon').value}&log=true`);
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.detail || 'Request failed');
+    render(d);
+  }catch(e){
+    $('#skel').classList.add('hidden');
+    $('#msg').innerHTML = `<div class="warn err"><strong>Could not complete the review.</strong><br>${esc(e.message)}</div>`;
+  }finally{ $('#go').disabled = false; }
+}
+
+function render(d){
+  const p = d.plain, w = d.weights_used || {}, parts = d.score_breakdown || {};
+  const all = p.components;
+
+  // ---- signature: evidence rail. Segment width = how much that measure counted.
+  const known = all.filter(c => c.score !== null);
+  const totalW = known.reduce((s,c) => s + (w[c.key]||0), 0) || 1;
+  const missingShare = 1 - (d.coverage ?? 0);
+  let rail = known.map(c => {
+    const pct = ((w[c.key]||0)/totalW) * (d.coverage ?? 1) * 100;
+    return `<div class="seg" style="width:${pct}%;background:${BAND[c.band]}"
+      title="${esc(c.label)} — ${c.score}/100, ${Math.round(pct)}% of the result">
+      <span>${pct > 9 ? esc(c.label) : ''}</span></div>`;
+  }).join('');
+  if(missingShare > 0.005){
+    rail += `<div class="seg missing" style="width:${missingShare*100}%"
+      title="Not measured"><span>${missingShare>0.12?'not measured':''}</span></div>`;
+  }
+
+  const missing = all.filter(c => c.score === null).map(c => c.label);
+  const railNote = missing.length
+    ? `Each block is one measure, sized by how much it counted. We could not measure <strong>${esc(missing.join(', '))}</strong>, so ${Math.round(missingShare*100)}% of the picture is blank.`
+    : `Each block is one measure, sized by how much it counted toward the result. Everything we look for was available.`;
+
+  const rows = all.map(c => `
+    <div class="row">
+      <div><h3>${esc(c.label)}</h3><p>${esc(c.question)} — ${esc(c.meaning)}</p>
+        ${(c.detail&&c.detail.length)?`<p class="subs">${c.detail.map(s=>
+          `<span><i style="background:${BAND[s.band]}"></i>${esc(s.label)} <b>${
+            s.score===null?'no data':s.score.toFixed(0)}</b></span>`).join('')}</p>`:''}
+      </div>
+      <div>
+        <div class="val"><span>${esc(c.verdict)}</span><span>${c.score===null?'—':c.score.toFixed(0)}</span></div>
+        <div class="meter ${c.score===null?'na':''}">
+          ${c.score===null?'':`<i data-w="${c.score}" style="background:${BAND[c.band]}"></i>`}
+        </div>
+      </div>
+    </div>`).join('');
+
+  const sc = p.scenarios;
+  const scenHtml = sc ? `
+    <div class="card">
+      <p class="eyebrow">What could happen over ${esc(sc.horizon)}</p>
+      ${sc.rows.map(r => `<div class="scen">
+          <div><b>${esc(r.title)}</b><p>${esc(r.sentence)}</p></div>
+          <div class="odds">${r.odds_pct}%</div>
+        </div>`).join('')}
+      <div class="summary">${esc(sc.summary)}</div>
+      ${sc.fx_note?`<p class="sub" style="margin-top:12px">${esc(sc.fx_note)}</p>`:''}
+      <p class="sub" style="margin-top:12px">Odds shown are the engine's rough guess, not a measured
+      frequency. The size of each move comes from how much this share price has actually
+      been bouncing around.</p>
+    </div>` : `<div class="card"><p class="eyebrow">What could happen</p>
+      <p class="sub">${esc(d.scenario_note || 'Not enough price history to estimate outcomes.')}</p></div>`;
+
+  const dq = d.data_quality || {};
+  $('#out').innerHTML = `
+    <div class="card">
+      <p class="eyebrow">${esc(d.name || d.ticker)} · ${esc(d.ticker)}${d.price?` · ${d.price.toFixed(2)}`:''}</p>
+      <p class="verdict tone-${esc(p.tone)}">${esc(p.action)}</p>
+      <p class="lede">${esc(p.headline)}</p>
+      <p class="sub"><strong>How much to trust this:</strong> ${esc(p.confidence_sentence)}</p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">What the result is built from</p>
+      <div class="rail">${rail}</div>
+      <p class="rail-note">${railNote}</p>
+      <p class="legend">
+        <span><i style="background:var(--pos)"></i>supports buying</span>
+        <span><i style="background:var(--caut)"></i>neutral</span>
+        <span><i style="background:var(--neg)"></i>argues against</span>
+        <span><i class="seg missing" style="background:repeating-linear-gradient(135deg,#E4E8ED 0 4px,#CFD6DE 4px 8px)"></i>not measured</span>
+      </p>
+    </div>
+
+    <div class="card"><p class="eyebrow">The eight things we checked</p>${rows}</div>
+
+    ${scenHtml}
+
+    <div class="card cols">
+      <div class="for"><h4>In favour</h4><ul>${
+        (d.reasons_for||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+      <div class="against"><h4>Against</h4><ul>${
+        (d.reasons_against||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">What to do with this</p>
+      <ol class="steps">${p.what_to_do.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
+    </div>
+
+    <div class="card foot">
+      <p class="eyebrow">Where the numbers came from</p>
+      <table>
+        <tr><td>Price history</td><td>${esc(dq.price_source||'—')} · ${dq.price_observations||0} days${dq.price_adjusted===false?' · NOT split-adjusted':''}</td></tr>
+        <tr><td>Company figures</td><td>${dq.fundamentals_ok?'Alpha Vantage':'unavailable'}</td></tr>
+        <tr><td>Company accounts (SEC filings)</td><td>${dq.filings_ok
+          ?`point-in-time · newest filing ${dq.filing_lag_days} days old`:'unavailable'}</td></tr>
+        <tr><td>Macro conditions</td><td>${dq.macro_ok?'FRED':'unavailable — no FRED key'}</td></tr>
+        <tr><td>News</td><td>${dq.news_ok?`${dq.news_articles} articles · ${dq.news_unique_events} distinct stories`:'unavailable'}</td></tr>
+        <tr><td>Market &amp; industry</td><td>${dq.market_regime_ok?'available':'unavailable'} / ${dq.sector_regime_ok?'available':'unavailable'}</td></tr>
+        <tr><td>Checked against real outcomes</td><td>no — see /api/v1/calibration/report</td></tr>
+      </table>
+      ${dq.price_warning?`<div class="warn" style="margin-top:14px">${esc(dq.price_warning)}</div>`:''}
+      <p style="margin-top:14px">${esc(p.caveat)}</p>
+    </div>`;
+
+  $('#skel').classList.add('hidden');
+  $('#out').classList.remove('hidden');
+  requestAnimationFrame(() =>
+    document.querySelectorAll('.meter i').forEach((el,i) =>
+      setTimeout(() => el.style.width = el.dataset.w + '%', 40*i)));
+}
+
+$('#go').addEventListener('click', run);
+$('#ticker').addEventListener('keydown', e => e.key === 'Enter' && run());
+</script>
+</body>
+</html>

@@ -1,0 +1,1315 @@
+{
+  "status": "ok",
+  "n_observations": 51436,
+  "n_dates": 261,
+  "n_effective": 17145,
+  "overlap_factor": 3.0,
+  "date_range": [
+    "2011-06-07",
+    "2026-06-03"
+  ],
+  "horizon_days": 63,
+  "information_coefficient": 0.0078,
+  "ic_std_error": 0.0136,
+  "ic_t_stat": 0.57,
+  "ic_significant": false,
+  "ic_sd_across_dates": 0.1268,
+  "ic_effective_dates": 87,
+  "ic_se_note": "Standard error uses 87 effective dates, not 261 calendar dates: a 63-day horizon sampled every 21 days means consecutive observations share most of their window.",
+  "share_of_dates_positive": 0.517,
+  "ic_by_date": [
+    {
+      "as_of": "2011-06-07",
+      "ic": 0.1204,
+      "n": 154
+    },
+    {
+      "as_of": "2011-06-28",
+      "ic": 0.0819,
+      "n": 154
+    },
+    {
+      "as_of": "2011-07-19",
+      "ic": 0.1453,
+      "n": 154
+    },
+    {
+      "as_of": "2011-08-09",
+      "ic": 0.0567,
+      "n": 154
+    },
+    {
+      "as_of": "2011-08-30",
+      "ic": 0.0176,
+      "n": 154
+    },
+    {
+      "as_of": "2011-09-20",
+      "ic": -0.0928,
+      "n": 154
+    },
+    {
+      "as_of": "2011-10-11",
+      "ic": -0.0111,
+      "n": 155
+    },
+    {
+      "as_of": "2011-11-01",
+      "ic": -0.0665,
+      "n": 155
+    },
+    {
+      "as_of": "2011-11-22",
+      "ic": -0.1041,
+      "n": 155
+    },
+    {
+      "as_of": "2011-12-13",
+      "ic": -0.1291,
+      "n": 155
+    },
+    {
+      "as_of": "2012-01-03",
+      "ic": -0.0548,
+      "n": 155
+    },
+    {
+      "as_of": "2012-01-24",
+      "ic": 0.1841,
+      "n": 155
+    },
+    {
+      "as_of": "2012-02-14",
+      "ic": 0.1129,
+      "n": 155
+    },
+    {
+      "as_of": "2012-03-06",
+      "ic": 0.0331,
+      "n": 155
+    },
+    {
+      "as_of": "2012-03-27",
+      "ic": 0.0343,
+      "n": 156
+    },
+    {
+      "as_of": "2012-04-17",
+      "ic": -0.0194,
+      "n": 156
+    },
+    {
+      "as_of": "2012-05-08",
+      "ic": 0.1387,
+      "n": 156
+    },
+    {
+      "as_of": "2012-05-29",
+      "ic": -0.0325,
+      "n": 156
+    },
+    {
+      "as_of": "2012-06-19",
+      "ic": -0.1792,
+      "n": 156
+    },
+    {
+      "as_of": "2012-07-10",
+      "ic": -0.0795,
+      "n": 156
+    },
+    {
+      "as_of": "2012-07-31",
+      "ic": -0.0119,
+      "n": 158
+    },
+    {
+      "as_of": "2012-08-21",
+      "ic": -0.004,
+      "n": 158
+    },
+    {
+      "as_of": "2012-09-11",
+      "ic": -0.0948,
+      "n": 158
+    },
+    {
+      "as_of": "2012-10-02",
+      "ic": -0.0911,
+      "n": 158
+    }
+  ],
+  "pooled_ic": -0.0541,
+  "pooled_vs_per_date_note": "Pooled IC (-0.054) differs from the per-date mean (+0.008) by -0.062. That gap is market timing, not stock ranking: the score tended to be high in periods that turned out badly. Only the per-date figure measures stock selection.",
+  "stability": {
+    "periods": [
+      {
+        "period": "2011-06-07 to 2016-05-17",
+        "n_dates": 87,
+        "mean_ic": -0.0002
+      },
+      {
+        "period": "2016-06-07 to 2021-05-18",
+        "n_dates": 87,
+        "mean_ic": -0.0102
+      },
+      {
+        "period": "2021-06-08 to 2026-05-19",
+        "n_dates": 87,
+        "mean_ic": 0.0337
+      }
+    ],
+    "ic_spread": 0.0439,
+    "verdict": "Sub-period ICs change sign (-0.010 to +0.034) but all sit close to zero. Consistent with there being no relationship at all, rather than a relationship that flips."
+  },
+  "score_buckets_cross_sectional": [
+    {
+      "bucket": "<40",
+      "n": 2397,
+      "mean_return_pct": 1.18,
+      "median_return_pct": -2.2,
+      "hit_rate": 0.446
+    },
+    {
+      "bucket": "40-50",
+      "n": 8363,
+      "mean_return_pct": 0.26,
+      "median_return_pct": -1.94,
+      "hit_rate": 0.45
+    },
+    {
+      "bucket": "50-60",
+      "n": 16082,
+      "mean_return_pct": -0.0,
+      "median_return_pct": -1.61,
+      "hit_rate": 0.453
+    },
+    {
+      "bucket": "60-70",
+      "n": 16641,
+      "mean_return_pct": -0.26,
+      "median_return_pct": -1.37,
+      "hit_rate": 0.457
+    },
+    {
+      "bucket": "70+",
+      "n": 7953,
+      "mean_return_pct": -0.07,
+      "median_return_pct": -1.24,
+      "hit_rate": 0.459
+    }
+  ],
+  "score_buckets_raw": [
+    {
+      "bucket": "<40",
+      "n": 2397,
+      "mean_return_pct": 8.58,
+      "median_return_pct": 4.39,
+      "hit_rate": 0.588
+    },
+    {
+      "bucket": "40-50",
+      "n": 8363,
+      "mean_return_pct": 6.55,
+      "median_return_pct": 4.11,
+      "hit_rate": 0.594
+    },
+    {
+      "bucket": "50-60",
+      "n": 16082,
+      "mean_return_pct": 5.25,
+      "median_return_pct": 3.83,
+      "hit_rate": 0.6
+    },
+    {
+      "bucket": "60-70",
+      "n": 16641,
+      "mean_return_pct": 3.49,
+      "median_return_pct": 2.58,
+      "hit_rate": 0.574
+    },
+    {
+      "bucket": "70+",
+      "n": 7953,
+      "mean_return_pct": 2.67,
+      "median_return_pct": 1.96,
+      "hit_rate": 0.561
+    }
+  ],
+  "bucket_note": "Read the cross-sectional table. The raw table pools dates, so a bucket populated mostly during one good quarter looks skilful when it is not.",
+  "mean_return_pct": 4.65,
+  "mean_benchmark_return_pct": 3.66,
+  "verdict": "Mean IC +0.008 +/- 0.014 (t=+0.57). INDISTINGUISHABLE FROM ZERO. The score orders stocks about as well as alphabetical order would. This is a genuine null, not a negative -- the composite is not backwards, it is uninformative. Check the component table: a flat composite can still contain parts that work.",
+  "warnings": [
+    "News is excluded: no free provider offers historical archives, so including it would be look-ahead bias.",
+    "Macro is excluded: FRED serves revised data, and the CPI print for a past month is not the number published at the time. Use ALFRED vintages before enabling it.",
+    "96 ticker(s) have no price history back to 2011-06-07 and contribute only from their listing date: ALLY, AMLX, AMPL, AMR, ANET, APPF, ARHS, ARX...."
+  ],
+  "how_to_read": "information_coefficient is the average per-date rank correlation between the score and what happened next: did the score order that morning's candidates correctly? Judge it against ic_std_error, not against zero. Then check stability -- an average that hides a sign flip between periods is a fitted regime, not an edge.",
+  "sample_adequacy": {
+    "names_per_date": 197,
+    "n_dates": 261,
+    "smallest_detectable_ic": 0.0089,
+    "adequate": true,
+    "verdict": "Wide enough to detect an effect down to about 0.009, which covers the range real equity signals occupy. A null result here is meaningful."
+  },
+  "universe": {
+    "name": "screen",
+    "requested": 250,
+    "with_usable_data": 248,
+    "survivorship_warning": "Survivorship bias: universe chosen in 2026 from companies that still exist in 2026. Firms that failed, were acquired, or dropped out of the index are absent, which flatters returns. Read the information coefficient, not the return figures. A clean test needs historical index membership, which is not free."
+  },
+  "attribution": {
+    "status": "ok",
+    "n_records": 51436,
+    "component_kinds": {
+      "market": "timing",
+      "sector": "ranking",
+      "fundamentals": "ranking",
+      "growth": "ranking",
+      "valuation": "ranking",
+      "technical": "ranking",
+      "money_flow": "ranking",
+      "news": "unmeasured"
+    },
+    "experimental_components": {
+      "growth_peer": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": -0.0077,
+        "sd": 0.092,
+        "t_stat": -0.78,
+        "t_threshold": 2.5,
+        "significant": false,
+        "share_of_dates_positive": 0.536,
+        "coverage": 0.824,
+        "reads": "Mean IC -0.008 \u2014 no measurable relationship with what happened next.",
+        "compared_to": "growth",
+        "ic_delta_vs_absolute": 0.0061,
+        "verdict": "Peer-normalising growth moves its IC from -0.014 to -0.008 (+0.006), t -1.21 -> -0.78. Neither version is significant, so this is noise moving around. Not a reason to change anything.",
+        "is_improvement": false
+      },
+      "quality_peer": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0164,
+        "sd": 0.0891,
+        "t_stat": 1.72,
+        "t_threshold": 2.5,
+        "significant": false,
+        "share_of_dates_positive": 0.575,
+        "coverage": 0.791,
+        "reads": "Mean IC +0.016 \u2014 no measurable relationship with what happened next.",
+        "compared_to": "fundamentals",
+        "ic_delta_vs_absolute": 0.011,
+        "verdict": "Peer-normalising fundamentals moves its IC from +0.005 to +0.016 (+0.011), t +0.60 -> +1.72. Neither version is significant, so this is noise moving around. Not a reason to change anything.",
+        "is_improvement": false
+      },
+      "risk_peer": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0075,
+        "sd": 0.0757,
+        "t_stat": 0.93,
+        "t_threshold": 2.5,
+        "significant": false,
+        "share_of_dates_positive": 0.552,
+        "coverage": 0.952,
+        "reads": "Mean IC +0.007 \u2014 no measurable relationship with what happened next."
+      },
+      "valuation_peer": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0415,
+        "sd": 0.1003,
+        "t_stat": 3.86,
+        "t_threshold": 2.5,
+        "significant": true,
+        "share_of_dates_positive": 0.674,
+        "coverage": 0.901,
+        "reads": "Mean IC +0.042 (t=+3.9) \u2014 helps, and the effect is consistent enough across dates to take seriously.",
+        "compared_to": "valuation",
+        "ic_delta_vs_absolute": 0.006,
+        "verdict": "Peer-normalising valuation moves its IC from +0.035 to +0.042 (+0.006), t +2.11 -> +3.86. Significant, but the peer version is no better than the absolute one. Adopt it only if you prefer it on reasoning rather than on this evidence.",
+        "is_improvement": false
+      }
+    },
+    "weight_audit": {
+      "ranking_weight": 0.75,
+      "timing_weight_diluting_the_ranking": 0.1,
+      "never_validated_weight": 0.15,
+      "note": "10% of the score comes from components that are identical for every stock on a given date and so cannot affect the ranking, and 15% from components absent from this test entirely. Only 75% of the weight was actually measured."
+    },
+    "composite": {
+      "n_dates": 261,
+      "n_effective_dates": 87,
+      "mean_ic": 0.0078,
+      "sd": 0.1268,
+      "t_stat": 0.57,
+      "t_threshold": 2.0,
+      "significant": false,
+      "share_of_dates_positive": 0.517
+    },
+    "components": {
+      "market": {
+        "n_dates": 0,
+        "mean_ic": null,
+        "sd": null,
+        "t_stat": null,
+        "significant": false,
+        "t_threshold": 2.64,
+        "kind": "timing",
+        "current_weight": 0.1,
+        "coverage": 1.0,
+        "timing": {
+          "n_dates": 261,
+          "effective_n": 87,
+          "ic": -0.2154,
+          "std_error": 0.108,
+          "t_stat": -2.0,
+          "reads": "Timing IC -0.215 (effective n~87, t~-2.0) -- no useful relationship with the market's own next move."
+        },
+        "reads": "Constant across stocks on any given date, so it cannot rank them \u2014 inside the composite this weight is pure dilution. Timing IC -0.215 (effective n~87, t~-2.0) -- no useful relationship with the market's own next move."
+      },
+      "sector": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": -0.0034,
+        "sd": 0.1432,
+        "t_stat": -0.22,
+        "t_threshold": 2.64,
+        "significant": false,
+        "share_of_dates_positive": 0.467,
+        "kind": "ranking",
+        "current_weight": 0.1,
+        "coverage": 0.971,
+        "reads": "Mean IC -0.003 \u2014 no measurable relationship with what happened next."
+      },
+      "fundamentals": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0054,
+        "sd": 0.0837,
+        "t_stat": 0.6,
+        "t_threshold": 2.64,
+        "significant": false,
+        "share_of_dates_positive": 0.494,
+        "kind": "ranking",
+        "current_weight": 0.15,
+        "coverage": 0.958,
+        "reads": "Mean IC +0.005 \u2014 no measurable relationship with what happened next."
+      },
+      "growth": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": -0.0138,
+        "sd": 0.106,
+        "t_stat": -1.21,
+        "t_threshold": 2.64,
+        "significant": false,
+        "share_of_dates_positive": 0.513,
+        "kind": "ranking",
+        "current_weight": 0.1,
+        "coverage": 0.854,
+        "reads": "Mean IC -0.014 \u2014 no measurable relationship with what happened next."
+      },
+      "valuation": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0355,
+        "sd": 0.1572,
+        "t_stat": 2.11,
+        "t_threshold": 2.64,
+        "significant": false,
+        "share_of_dates_positive": 0.563,
+        "kind": "ranking",
+        "current_weight": 0.1,
+        "coverage": 0.907,
+        "reads": "Mean IC +0.035 \u2014 no measurable relationship with what happened next."
+      },
+      "technical": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0086,
+        "sd": 0.1425,
+        "t_stat": 0.56,
+        "t_threshold": 2.64,
+        "significant": false,
+        "share_of_dates_positive": 0.563,
+        "kind": "ranking",
+        "current_weight": 0.2,
+        "coverage": 1.0,
+        "reads": "Mean IC +0.009 \u2014 no measurable relationship with what happened next."
+      },
+      "money_flow": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": -0.0054,
+        "sd": 0.1132,
+        "t_stat": -0.45,
+        "t_threshold": 2.64,
+        "significant": false,
+        "share_of_dates_positive": 0.54,
+        "kind": "ranking",
+        "current_weight": 0.1,
+        "coverage": 0.99,
+        "reads": "Mean IC -0.005 \u2014 no measurable relationship with what happened next."
+      },
+      "news": {
+        "n_dates": 0,
+        "mean_ic": null,
+        "sd": null,
+        "t_stat": null,
+        "significant": false,
+        "t_threshold": 2.64,
+        "kind": "unmeasured",
+        "current_weight": 0.15,
+        "coverage": 0.0,
+        "reads": "Never present in this backtest, so its weight has never been validated at all."
+      }
+    },
+    "redundant_pairs": [
+      {
+        "pair": [
+          "market",
+          "sector"
+        ],
+        "rank_correlation": 0.7166
+      }
+    ],
+    "multiple_testing": {
+      "components_tested": 6,
+      "t_threshold_used": 2.64,
+      "note": "6 ranking components tested at once. At the usual |t| > 2 bar the chance of at least one false positive somewhere in the table is roughly 26%, so the bar is raised accordingly."
+    },
+    "helping": [],
+    "hurting": [],
+    "candidates_not_significant": [
+      {
+        "component": "valuation",
+        "mean_ic": 0.0355,
+        "t_stat": 2.11
+      }
+    ],
+    "diagnosis": "Composite IC +0.008 and no individual component clears \u00b10.02. On this sample nothing measurable is happening in either direction. Before concluding the engine has no edge, widen the universe \u2014 ranking eight names per date cannot resolve an effect this size."
+  },
+  "signal_decomposition": {
+    "valuation": {
+      "status": "ok",
+      "component": "valuation",
+      "n_observations": 46661,
+      "median_cohort_size": 12,
+      "between_sector": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": -0.0122,
+        "sd": 0.3606,
+        "std_error": 0.0387,
+        "t_stat": -0.32,
+        "significant": false,
+        "share_of_dates_positive": 0.475,
+        "question": "Do cheap sectors beat expensive sectors?"
+      },
+      "within_sector": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0288,
+        "sd": 0.1353,
+        "std_error": 0.0145,
+        "t_stat": 1.98,
+        "significant": false,
+        "share_of_dates_positive": 0.567,
+        "question": "Inside a sector, does the cheaper company beat the dearer one?"
+      },
+      "interpretation": "Neither part is significant on its own (between -0.012 t=-0.32, within +0.029 t=+1.98). The headline valuation IC is not clearly attributable to either, which usually means it is weaker than the headline number suggests."
+    },
+    "score": {
+      "status": "ok",
+      "component": "score",
+      "n_observations": 51436,
+      "median_cohort_size": 12,
+      "between_sector": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.013,
+        "sd": 0.3644,
+        "std_error": 0.0391,
+        "t_stat": 0.33,
+        "significant": false,
+        "share_of_dates_positive": 0.513,
+        "question": "Do cheap sectors beat expensive sectors?"
+      },
+      "within_sector": {
+        "n_dates": 261,
+        "n_effective_dates": 87,
+        "mean_ic": 0.0004,
+        "sd": 0.1057,
+        "std_error": 0.0113,
+        "t_stat": 0.03,
+        "significant": false,
+        "share_of_dates_positive": 0.529,
+        "question": "Inside a sector, does the cheaper company beat the dearer one?"
+      },
+      "interpretation": "Neither part is significant on its own (between +0.013 t=+0.33, within +0.000 t=+0.03). The headline score IC is not clearly attributable to either, which usually means it is weaker than the headline number suggests."
+    }
+  },
+  "weight_fitting": {
+    "status": "ok",
+    "split_date": "2018-11-27",
+    "train": {
+      "n_records": 22283,
+      "component_ic": {
+        "sector": -0.0024,
+        "fundamentals": -0.0044,
+        "growth": -0.0111,
+        "valuation": 0.0297,
+        "technical": 0.0051,
+        "money_flow": 0.0013
+      },
+      "current_ic": 0.0035,
+      "fitted_ic": 0.0265
+    },
+    "test": {
+      "n_records": 29153,
+      "current_ic": 0.012,
+      "fitted_ic": 0.0425,
+      "note": "This is the only number worth reading. The train figures will always look good."
+    },
+    "current_weights": {
+      "market": 0.1,
+      "sector": 0.1,
+      "fundamentals": 0.15,
+      "growth": 0.1,
+      "valuation": 0.1,
+      "technical": 0.2,
+      "money_flow": 0.1,
+      "news": 0.15
+    },
+    "fitted_weights": {
+      "valuation": 0.8227,
+      "technical": 0.1413,
+      "money_flow": 0.036
+    },
+    "dropped": [
+      "market",
+      "sector",
+      "fundamentals",
+      "growth",
+      "news"
+    ],
+    "excluded_as_non_ranking": [
+      "market",
+      "news"
+    ],
+    "guidance": "Fitted weights score +0.043 versus +0.012 out of sample (+0.031). Suggested: valuation 82%, technical 14%, money_flow 4%. Treat this as a hypothesis, not a conclusion \u2014 re-run on a different universe and a different date range before changing WEIGHTS in decision.py."
+  },
+  "portfolio_simulation": {
+    "status": "ok",
+    "config": {
+      "top_n": 10,
+      "min_score": null,
+      "score_key": "score",
+      "sector_neutral": false,
+      "per_sector": null,
+      "holding_period_days": 63,
+      "non_overlapping_passes": 3,
+      "periods_per_pass": 87,
+      "cost_per_full_turnover_pct": 0.75
+    },
+    "strategy": {
+      "annualised_return_pct": 17.37,
+      "sharpe": 0.81,
+      "max_drawdown_pct": -35.31,
+      "hit_rate": 0.709,
+      "mean_period_return_pct": 4.719
+    },
+    "benchmark_equal_weight_universe": {
+      "annualised_return_pct": 17.74,
+      "sharpe": 0.99,
+      "max_drawdown_pct": -36.16,
+      "hit_rate": 0.77,
+      "mean_period_return_pct": 4.602
+    },
+    "average_turnover": 0.847,
+    "annual_cost_drag_pct": 2.54,
+    "sector_concentration": {
+      "sector_share_pct": {
+        "FINANCIALS": 30.5,
+        "TECHNOLOGY": 20.4,
+        "CONSUMER DEFENSIVE": 7.7,
+        "HEALTHCARE": 6.6,
+        "ENERGY": 6.5,
+        "INDUSTRIALS": 6.1,
+        "CONSUMER CYCLICAL": 5.7,
+        "MATERIALS": 4.5,
+        "COMMUNICATION SERVICES": 4.1,
+        "UTILITIES": 3.6,
+        "REAL ESTATE": 3.4,
+        "UNKNOWN": 0.9
+      },
+      "top_two_share_pct": 50.9,
+      "note": "Top two sectors are 51% of positions \u2014 noticeably concentrated. Worth checking against a sector-neutral version."
+    },
+    "recent_holdings": [
+      {
+        "as_of": "2026-04-07",
+        "n": 10,
+        "tickers": [
+          "APA",
+          "CF",
+          "CIEN",
+          "CSTM",
+          "REX",
+          "RLAY",
+          "SEDG",
+          "SMBC",
+          "TPC",
+          "UFCS"
+        ],
+        "sectors": {
+          "CONSUMER DEFENSIVE": 2,
+          "FINANCIALS": 2,
+          "TECHNOLOGY": 2,
+          "ENERGY": 1,
+          "MATERIALS": 1,
+          "INDUSTRIALS": 1,
+          "HEALTHCARE": 1
+        }
+      },
+      {
+        "as_of": "2026-04-28",
+        "n": 10,
+        "tickers": [
+          "AMKR",
+          "APA",
+          "ATLC",
+          "CSTM",
+          "HAFC",
+          "MRP",
+          "REX",
+          "SANM",
+          "TRST",
+          "UFCS"
+        ],
+        "sectors": {
+          "FINANCIALS": 4,
+          "TECHNOLOGY": 2,
+          "MATERIALS": 1,
+          "CONSUMER DEFENSIVE": 1,
+          "ENERGY": 1,
+          "REAL ESTATE": 1
+        }
+      },
+      {
+        "as_of": "2026-05-19",
+        "n": 10,
+        "tickers": [
+          "APA",
+          "ATLC",
+          "CF",
+          "NVGS",
+          "QRVO",
+          "REX",
+          "SANM",
+          "SEDG",
+          "TWLO",
+          "VLO"
+        ],
+        "sectors": {
+          "TECHNOLOGY": 4,
+          "ENERGY": 2,
+          "CONSUMER DEFENSIVE": 2,
+          "INDUSTRIALS": 1,
+          "FINANCIALS": 1
+        }
+      }
+    ],
+    "verdict": "Strategy +17.4%/yr versus +17.7%/yr for simply holding the whole universe equally weighted \u2014 behind by 0.4 points, with 2.5 points of that lost to turnover. Selecting cost money relative to not selecting.",
+    "caveats": [
+      "Positions are held for the full horizon so periods do not overlap. Fewer periods than the raw date count, but honest volatility.",
+      "Survivor-only universe: the benchmark is flattered and so is the strategy.",
+      "No slippage, no market impact, no tax. Costs are the round-trip figure from settings applied to whatever actually turned over.",
+      "Read the difference from the benchmark, never the strategy return alone."
+    ]
+  },
+  "portfolio_simulation_sector_neutral": {
+    "status": "ok",
+    "config": {
+      "top_n": 10,
+      "min_score": null,
+      "score_key": "score",
+      "sector_neutral": true,
+      "per_sector": 1,
+      "holding_period_days": 63,
+      "non_overlapping_passes": 3,
+      "periods_per_pass": 87,
+      "cost_per_full_turnover_pct": 0.75
+    },
+    "strategy": {
+      "annualised_return_pct": 14.44,
+      "sharpe": 0.74,
+      "max_drawdown_pct": -44.63,
+      "hit_rate": 0.72,
+      "mean_period_return_pct": 4.012
+    },
+    "benchmark_equal_weight_universe": {
+      "annualised_return_pct": 17.74,
+      "sharpe": 0.99,
+      "max_drawdown_pct": -36.16,
+      "hit_rate": 0.77,
+      "mean_period_return_pct": 4.602
+    },
+    "average_turnover": 0.795,
+    "annual_cost_drag_pct": 2.38,
+    "sector_concentration": {
+      "sector_share_pct": {
+        "ENERGY": 8.3,
+        "CONSUMER DEFENSIVE": 8.3,
+        "HEALTHCARE": 8.3,
+        "FINANCIALS": 8.3,
+        "MATERIALS": 8.3,
+        "TECHNOLOGY": 8.3,
+        "CONSUMER CYCLICAL": 8.3,
+        "INDUSTRIALS": 8.3,
+        "REAL ESTATE": 8.3,
+        "UTILITIES": 8.3,
+        "COMMUNICATION SERVICES": 8.3,
+        "UNKNOWN": 8.3
+      },
+      "top_two_share_pct": 16.6,
+      "note": "Reasonably spread; top two sectors are 17% of positions."
+    },
+    "recent_holdings": [
+      {
+        "as_of": "2026-04-07",
+        "n": 12,
+        "tickers": [
+          "APA",
+          "CSTM",
+          "EFOR",
+          "GCO",
+          "KNTK",
+          "OSW",
+          "PSTL",
+          "REX",
+          "RLAY",
+          "SEDG",
+          "SMBC",
+          "TPC"
+        ],
+        "sectors": {
+          "ENERGY": 1,
+          "CONSUMER DEFENSIVE": 1,
+          "TECHNOLOGY": 1,
+          "REAL ESTATE": 1,
+          "HEALTHCARE": 1,
+          "FINANCIALS": 1,
+          "MATERIALS": 1,
+          "INDUSTRIALS": 1,
+          "CONSUMER CYCLICAL": 1,
+          "UTILITIES": 1,
+          "COMMUNICATION SERVICES": 1,
+          "UNKNOWN": 1
+        }
+      },
+      {
+        "as_of": "2026-04-28",
+        "n": 12,
+        "tickers": [
+          "APA",
+          "CSTM",
+          "FOXA",
+          "HAFC",
+          "KNTK",
+          "LFST",
+          "MRP",
+          "NVGS",
+          "OPLN",
+          "REX",
+          "RHI",
+          "SANM"
+        ],
+        "sectors": {
+          "ENERGY": 1,
+          "CONSUMER DEFENSIVE": 1,
+          "TECHNOLOGY": 1,
+          "REAL ESTATE": 1,
+          "HEALTHCARE": 1,
+          "FINANCIALS": 1,
+          "MATERIALS": 1,
+          "INDUSTRIALS": 1,
+          "CONSUMER CYCLICAL": 1,
+          "UTILITIES": 1,
+          "COMMUNICATION SERVICES": 1,
+          "UNKNOWN": 1
+        }
+      },
+      {
+        "as_of": "2026-05-19",
+        "n": 12,
+        "tickers": [
+          "APA",
+          "ATLC",
+          "CSTM",
+          "DVA",
+          "FOXA",
+          "KNTK",
+          "NVGS",
+          "OPLN",
+          "QRVO",
+          "REX",
+          "RHI",
+          "WELL"
+        ],
+        "sectors": {
+          "ENERGY": 1,
+          "CONSUMER DEFENSIVE": 1,
+          "TECHNOLOGY": 1,
+          "REAL ESTATE": 1,
+          "HEALTHCARE": 1,
+          "FINANCIALS": 1,
+          "MATERIALS": 1,
+          "INDUSTRIALS": 1,
+          "CONSUMER CYCLICAL": 1,
+          "UTILITIES": 1,
+          "COMMUNICATION SERVICES": 1,
+          "UNKNOWN": 1
+        }
+      }
+    ],
+    "verdict": "Strategy +14.4%/yr versus +17.7%/yr for simply holding the whole universe equally weighted \u2014 behind by 3.3 points, with 2.4 points of that lost to turnover. Selecting cost money relative to not selecting.",
+    "caveats": [
+      "Positions are held for the full horizon so periods do not overlap. Fewer periods than the raw date count, but honest volatility.",
+      "Survivor-only universe: the benchmark is flattered and so is the strategy.",
+      "No slippage, no market impact, no tax. Costs are the round-trip figure from settings applied to whatever actually turned over.",
+      "Read the difference from the benchmark, never the strategy return alone."
+    ]
+  },
+  "event_study": {
+    "status": "ok",
+    "n_observations": 51436,
+    "n_with_any_event": 17840,
+    "counting": "Each filing counts once, at the first rebalance date that could see it. A 45-day window sampled every 21 days otherwise counts one filing two or three times.",
+    "n_baseline": 23375,
+    "hypotheses_declared": 8,
+    "hypotheses_testable": 7,
+    "t_threshold": 2.73,
+    "measure": "abnormal return = forward return minus the mean forward return of every other name on the same date",
+    "results": [
+      {
+        "hypothesis": "red_flags_combined",
+        "items": [
+          "1.03",
+          "2.04",
+          "2.06",
+          "3.01",
+          "4.01",
+          "4.02"
+        ],
+        "predicted": "negative",
+        "n_events": 230,
+        "n_effective_events": 77,
+        "mean_abnormal_return_pct": 4.718,
+        "median_abnormal_return_pct": -2.222,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 9.244,
+        "t_stat": 0.51,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": false,
+        "status": "ok",
+        "reads": "Mean abnormal return +4.72% over 230 occurrences (t = +0.51). Not distinguishable from the rest of the universe on the same dates."
+      },
+      {
+        "hypothesis": "non_reliance",
+        "items": [
+          "4.02"
+        ],
+        "predicted": "negative",
+        "n_events": 20,
+        "status": "insufficient_events",
+        "note": "Only 20 occurrences; 25 is the pre-declared minimum. No conclusion either way."
+      },
+      {
+        "hypothesis": "auditor_change",
+        "items": [
+          "4.01"
+        ],
+        "predicted": "negative",
+        "n_events": 82,
+        "n_effective_events": 27,
+        "mean_abnormal_return_pct": 2.854,
+        "median_abnormal_return_pct": 0.306,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 5.977,
+        "t_stat": 0.48,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": false,
+        "status": "ok",
+        "reads": "Mean abnormal return +2.85% over 82 occurrences (t = +0.48). Not distinguishable from the rest of the universe on the same dates."
+      },
+      {
+        "hypothesis": "impairment",
+        "items": [
+          "2.06"
+        ],
+        "predicted": "negative",
+        "n_events": 39,
+        "n_effective_events": 13,
+        "mean_abnormal_return_pct": -6.149,
+        "median_abnormal_return_pct": -5.57,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 3.664,
+        "t_stat": -1.68,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": false,
+        "status": "ok",
+        "reads": "Mean abnormal return -6.15% over 39 occurrences (t = -1.68). Not distinguishable from the rest of the universe on the same dates."
+      },
+      {
+        "hypothesis": "delisting_notice",
+        "items": [
+          "3.01"
+        ],
+        "predicted": "negative",
+        "n_events": 76,
+        "n_effective_events": 25,
+        "mean_abnormal_return_pct": 13.305,
+        "median_abnormal_return_pct": -2.373,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 26.989,
+        "t_stat": 0.49,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": false,
+        "status": "ok",
+        "reads": "Mean abnormal return +13.31% over 76 occurrences (t = +0.49). Not distinguishable from the rest of the universe on the same dates."
+      },
+      {
+        "hypothesis": "officer_departure",
+        "items": [
+          "5.02"
+        ],
+        "predicted": "negative",
+        "n_events": 4387,
+        "n_effective_events": 1462,
+        "mean_abnormal_return_pct": 0.299,
+        "median_abnormal_return_pct": -2.33,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 0.908,
+        "t_stat": 0.33,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": false,
+        "status": "ok",
+        "reads": "Mean abnormal return +0.30% over 4387 occurrences (t = +0.33). Not distinguishable from the rest of the universe on the same dates."
+      },
+      {
+        "hypothesis": "results_announced",
+        "items": [
+          "2.02"
+        ],
+        "predicted": "none",
+        "n_events": 8517,
+        "n_effective_events": 2839,
+        "mean_abnormal_return_pct": -0.468,
+        "median_abnormal_return_pct": -2.121,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 0.423,
+        "t_stat": -1.11,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.47% over 8517 occurrences (t = -1.11). Not distinguishable from the rest of the universe on the same dates."
+      },
+      {
+        "hypothesis": "material_agreement",
+        "items": [
+          "1.01"
+        ],
+        "predicted": "positive",
+        "n_events": 2303,
+        "n_effective_events": 768,
+        "mean_abnormal_return_pct": 0.133,
+        "median_abnormal_return_pct": -2.975,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 1.44,
+        "t_stat": 0.09,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": false,
+        "status": "ok",
+        "reads": "Mean abnormal return +0.13% over 2303 occurrences (t = +0.09). Not distinguishable from the rest of the universe on the same dates."
+      }
+    ],
+    "awaiting_confirmation": [
+      {
+        "hypothesis": "terminated_material_agreement",
+        "items": [
+          "1.02"
+        ],
+        "predicted": "negative",
+        "n_events": 282,
+        "n_effective_events": 94,
+        "mean_abnormal_return_pct": -0.172,
+        "median_abnormal_return_pct": -4.145,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 3.183,
+        "t_stat": -0.05,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": false,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.17% over 282 occurrences (t = -0.05). Not distinguishable from the rest of the universe on the same dates.",
+        "found_on": {
+          "universe": "diversified_60",
+          "period": "2011-06-03 to 2026-05-30",
+          "horizon_days": 63,
+          "result": "-2.94% abnormal, t = -3.08, n = 189"
+        },
+        "rationale": "Losing a material contract is an economically sensible negative. The engine's own item map already classifies 1.02 as negative \u2014 it was simply omitted from the pre-registered list, which is an oversight in the declaration rather than a finding.",
+        "is_confirmation": true,
+        "status_note": "Independent sample \u2014 this result counts."
+      }
+    ],
+    "exploratory": [
+      {
+        "hypothesis": "item_1.02",
+        "items": [
+          "1.02"
+        ],
+        "predicted": "none",
+        "n_events": 282,
+        "n_effective_events": 94,
+        "mean_abnormal_return_pct": -0.172,
+        "median_abnormal_return_pct": -4.145,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 3.183,
+        "t_stat": -0.05,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.17% over 282 occurrences (t = -0.05). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_2.01",
+        "items": [
+          "2.01"
+        ],
+        "predicted": "none",
+        "n_events": 285,
+        "n_effective_events": 95,
+        "mean_abnormal_return_pct": -0.861,
+        "median_abnormal_return_pct": -2.496,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 2.388,
+        "t_stat": -0.36,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.86% over 285 occurrences (t = -0.36). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_2.03",
+        "items": [
+          "2.03"
+        ],
+        "predicted": "none",
+        "n_events": 1217,
+        "n_effective_events": 406,
+        "mean_abnormal_return_pct": -0.873,
+        "median_abnormal_return_pct": -3.241,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 1.201,
+        "t_stat": -0.73,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.87% over 1217 occurrences (t = -0.73). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_2.05",
+        "items": [
+          "2.05"
+        ],
+        "predicted": "none",
+        "n_events": 82,
+        "n_effective_events": 27,
+        "mean_abnormal_return_pct": 16.415,
+        "median_abnormal_return_pct": -1.044,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 23.513,
+        "t_stat": 0.7,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return +16.41% over 82 occurrences (t = +0.70). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_3.02",
+        "items": [
+          "3.02"
+        ],
+        "predicted": "none",
+        "n_events": 246,
+        "n_effective_events": 82,
+        "mean_abnormal_return_pct": 1.439,
+        "median_abnormal_return_pct": -3.185,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 3.604,
+        "t_stat": 0.4,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return +1.44% over 246 occurrences (t = +0.40). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_3.03",
+        "items": [
+          "3.03"
+        ],
+        "predicted": "none",
+        "n_events": 138,
+        "n_effective_events": 46,
+        "mean_abnormal_return_pct": -2.459,
+        "median_abnormal_return_pct": -5.31,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 3.097,
+        "t_stat": -0.79,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -2.46% over 138 occurrences (t = -0.79). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_5.03",
+        "items": [
+          "5.03"
+        ],
+        "predicted": "none",
+        "n_events": 659,
+        "n_effective_events": 220,
+        "mean_abnormal_return_pct": 1.061,
+        "median_abnormal_return_pct": -3.949,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 3.461,
+        "t_stat": 0.31,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return +1.06% over 659 occurrences (t = +0.31). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_5.07",
+        "items": [
+          "5.07"
+        ],
+        "predicted": "none",
+        "n_events": 2089,
+        "n_effective_events": 696,
+        "mean_abnormal_return_pct": -0.852,
+        "median_abnormal_return_pct": -2.863,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 1.243,
+        "t_stat": -0.69,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.85% over 2089 occurrences (t = -0.69). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_7.01",
+        "items": [
+          "7.01"
+        ],
+        "predicted": "none",
+        "n_events": 5434,
+        "n_effective_events": 1811,
+        "mean_abnormal_return_pct": -0.346,
+        "median_abnormal_return_pct": -2.362,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 0.731,
+        "t_stat": -0.47,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.35% over 5434 occurrences (t = -0.47). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_8.01",
+        "items": [
+          "8.01"
+        ],
+        "predicted": "none",
+        "n_events": 4824,
+        "n_effective_events": 1608,
+        "mean_abnormal_return_pct": -0.02,
+        "median_abnormal_return_pct": -2.17,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 0.734,
+        "t_stat": -0.03,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.02% over 4824 occurrences (t = -0.03). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      },
+      {
+        "hypothesis": "item_9.01",
+        "items": [
+          "9.01"
+        ],
+        "predicted": "none",
+        "n_events": 15411,
+        "n_effective_events": 5137,
+        "mean_abnormal_return_pct": -0.174,
+        "median_abnormal_return_pct": -2.196,
+        "baseline_abnormal_return_pct": 0.236,
+        "std_error": 0.388,
+        "t_stat": -0.45,
+        "t_threshold": 2.73,
+        "significant": false,
+        "matches_prediction": null,
+        "status": "ok",
+        "reads": "Mean abnormal return -0.17% over 15411 occurrences (t = -0.45). Not distinguishable from the rest of the universe on the same dates.",
+        "exploratory": true,
+        "warning": "Not pre-registered. Reported for completeness only \u2014 a significant result here is what testing many things looks like, not evidence."
+      }
+    ],
+    "verdict": "None of the 7 testable hypotheses cleared |t| > 2.73. 8-K events do not predict abnormal returns on this sample. They remain useful as facts \u2014 an auditor resignation is worth reading about whether or not it is tradeable \u2014 but they should not enter a score.",
+    "confirmation_note": "`awaiting_confirmation` holds hypotheses found by exploration in an earlier run. They are not evidence, and cannot become evidence on the sample that produced them. Check `is_confirmation` on each: false means this run is a restatement, not a test.",
+    "preregistration_note": "8 hypotheses were declared in code before any result was seen, and the correction is applied to all of them rather than to the survivors. Anything under `exploratory` was not declared and does not count as evidence."
+  }
+}

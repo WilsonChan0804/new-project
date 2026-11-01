@@ -1,0 +1,16 @@
+# One ticker per line. Anything after # is ignored.
+# Around ten names is right: Alpha Vantage's free tier allows 25 calls a day
+# and each ticker costs two.
+#
+# Spread across sectors. Eight decisions on one company are one observation,
+# not eight, because their outcomes are the same outcome.
+AAPL      # technology
+JPM       # financials
+XOM       # energy
+JNJ       # healthcare
+WMT       # consumer defensive
+HD        # consumer cyclical
+CAT       # industrials
+NEE       # utilities
+LIN       # materials
+AMT       # real estate

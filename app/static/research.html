@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research — does the score work?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEFF3; --card:#FFF; --ink:#16202E; --muted:#62717F;
+    --rule:#D6DBE2; --indigo:#2F4468;
+    --pos:#2E7D6B; --neg:#A8483F; --caut:#B0762A; --none:#9AA5B1; --r:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font:400 16px/1.55 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:24px}
+  h1{font:800 26px/1.1 Archivo,sans-serif;letter-spacing:-.02em;margin:0;flex:1 1 220px}
+  h1 small{display:block;font:500 12px/1.5 'IBM Plex Mono',monospace;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+  select,button,input{font:500 14px Inter,sans-serif;border:1px solid var(--rule);
+    border-radius:var(--r);padding:10px 12px;background:var(--card);color:var(--ink)}
+  button{background:var(--indigo);color:#fff;border-color:var(--indigo);cursor:pointer;padding:10px 18px}
+  button:disabled{opacity:.5;cursor:wait}
+  :focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);
+    padding:22px 24px;margin-bottom:16px}
+  .eyebrow{font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+
+  /* ---- SIGNATURE: the interval, not the point ---- */
+  .ruler{position:relative;height:74px;margin:22px 0 8px}
+  .ruler .axis{position:absolute;top:38px;left:0;right:0;height:1px;background:var(--rule)}
+  .ruler .zero{position:absolute;top:22px;bottom:14px;width:1px;background:var(--ink);opacity:.45}
+  .ruler .band{position:absolute;top:30px;height:17px;border-radius:3px;
+    background:rgba(47,68,104,.16);border:1px solid rgba(47,68,104,.35)}
+  .ruler .pt{position:absolute;top:26px;width:3px;height:25px;background:var(--indigo);border-radius:2px}
+  .ruler .tick{position:absolute;top:52px;font:500 10px 'IBM Plex Mono',monospace;
+    color:var(--muted);transform:translateX(-50%)}
+  .ruler .lbl{position:absolute;top:2px;font:500 10px 'IBM Plex Mono',monospace;
+    letter-spacing:.06em;color:var(--muted);transform:translateX(-50%)}
+  .big{font:800 clamp(28px,5vw,40px)/1 Archivo,sans-serif;letter-spacing:-.03em;margin:0}
+  .pm{font:500 15px 'IBM Plex Mono',monospace;color:var(--muted);margin-left:8px}
+  .lede{font-size:16px;margin:10px 0 0;max-width:62ch}
+  .sub{color:var(--muted);font-size:14px;margin:8px 0 0;max-width:64ch}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);padding:0 8px 8px 0;font-weight:500}
+  td{padding:9px 8px 9px 0;border-top:1px solid var(--rule);
+    font-family:'IBM Plex Mono',monospace;font-size:13px}
+  td.name{font-family:Inter,sans-serif;font-size:14px}
+  .num{text-align:right}
+  .sig{color:var(--pos);font-weight:600}
+  .nosig{color:var(--none)}
+  .na{color:var(--none);font-style:italic;font-family:Inter,sans-serif}
+  .pill{display:inline-block;font:500 10px 'IBM Plex Mono',monospace;
+    padding:2px 7px;border-radius:20px;border:1px solid var(--rule);color:var(--muted)}
+  .warn{background:#FBF4E7;border:1px solid #E8D4AC;color:#6E4E12;
+    padding:12px 16px;border-radius:8px;font-size:14px;margin-top:14px}
+  .err{background:#FBEDEC;border-color:#E6C2BE;color:#7A2F28}
+  .hidden{display:none}
+  .skel{color:var(--muted);text-align:center;padding:48px 0;font-size:15px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Does the score work?<small>Research view — measured values only</small></h1>
+  <div>
+    <select id="universe">
+      <option value="diversified_60" selected>diversified_60</option>
+      <option value="starter_10">starter_10</option>
+    </select>
+    <select id="horizon">
+      <option value="21">21-day horizon</option>
+      <option value="63" selected>63-day horizon</option>
+      <option value="126">126-day horizon</option>
+    </select>
+    <select id="years">
+      <option value="3">3 years</option>
+      <option value="5">5 years</option>
+      <option value="10">10 years</option>
+      <option value="15" selected>15 years</option>
+      <option value="25">25 years — 2000, 2008, 2020, 2022</option>
+    </select>
+    <button id="go">Run backtest</button>
+  </div>
+</header>
+
+<div id="msg"></div>
+<div id="out" class="hidden"></div>
+<div id="skel" class="skel">
+  Nothing is shown until it is measured. Run a backtest to populate this page.
+</div>
+
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const f4 = v => v === null || v === undefined ? null : (v >= 0 ? '+' : '') + v.toFixed(4);
+
+async function run(){
+  $('#go').disabled = true;
+  $('#msg').innerHTML = '';
+  $('#out').classList.add('hidden');
+  $('#skel').classList.remove('hidden');
+  $('#skel').textContent = 'Replaying history under point-in-time constraints. '
+    + 'First run pulls prices and filings; later runs read the warehouse.';
+  try{
+    const r = await fetch('/api/v1/backtest', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        universe: $('#universe').value,
+        horizon_days: +$('#horizon').value,
+        years: +$('#years').value,
+        every_days: 21, fit_weights: true, simulate_portfolio: true })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.detail || 'Request failed');
+    if(d.status !== 'ok'){
+      $('#skel').classList.add('hidden');
+      $('#msg').innerHTML = `<div class="warn"><strong>Not enough data to measure
+        anything.</strong><br>${esc(d.message || d.status)}</div>`;
+      return;
+    }
+    render(d);
+  }catch(e){
+    $('#skel').classList.add('hidden');
+    $('#msg').innerHTML = `<div class="warn err"><strong>Backtest failed.</strong><br>${esc(e.message)}</div>`;
+  }finally{ $('#go').disabled = false; }
+}
+
+// The signature element: an interval on a ruler, never a bare point estimate.
+function ruler(ic, se){
+  const span = Math.max(0.12, Math.abs(ic) + 2.5 * (se || 0.02));
+  const x = v => 50 + 50 * (v / span);
+  const lo = ic - 2 * (se || 0), hi = ic + 2 * (se || 0);
+  const ticks = [-span, -span/2, 0, span/2, span];
+  return `<div class="ruler">
+    <div class="axis"></div>
+    <div class="zero" style="left:${x(0)}%"></div>
+    <div class="lbl" style="left:${x(0)}%">no skill</div>
+    <div class="band" style="left:${x(lo)}%;width:${Math.max(x(hi)-x(lo),0.6)}%"
+         title="95% interval ${lo.toFixed(4)} to ${hi.toFixed(4)}"></div>
+    <div class="pt" style="left:${x(ic)}%"></div>
+    ${ticks.map(t=>`<div class="tick" style="left:${x(t)}%">${t.toFixed(2)}</div>`).join('')}
+  </div>`;
+}
+
+function render(d){
+  const ic = d.information_coefficient, se = d.ic_std_error;
+  const sig = d.ic_significant;
+  const a = d.attribution || {};
+  const comps = a.components || {};
+  const exp = a.experimental_components || {};
+  const dec = (d.signal_decomposition || {}).valuation || {};
+
+  const row = (name, c) => {
+    if(!c) return '';
+    const kind = c.kind || 'ranking';
+    if(kind !== 'ranking' || c.mean_ic === null){
+      return `<tr><td class="name">${esc(name)}</td>
+        <td class="num na" colspan="3">${kind === 'timing'
+          ? 'same for every stock — cannot rank'
+          : 'not present in this test'}</td>
+        <td class="num">${(c.current_weight*100).toFixed(0)}%</td></tr>`;
+    }
+    return `<tr><td class="name">${esc(name)}</td>
+      <td class="num ${c.significant?'sig':'nosig'}">${f4(c.mean_ic)}</td>
+      <td class="num ${c.significant?'sig':'nosig'}">${c.t_stat>=0?'+':''}${c.t_stat}</td>
+      <td class="num">${c.significant ? 'yes' : 'no'}</td>
+      <td class="num">${(c.current_weight*100).toFixed(0)}%</td></tr>`;
+  };
+
+  const port = (label, p) => {
+    if(!p || p.status !== 'ok') return '';
+    const s = p.strategy, b = p.benchmark_equal_weight_universe;
+    const better = (s.sharpe ?? 0) > (b.sharpe ?? 0);
+    return `<tr><td class="name">${esc(label)}</td>
+      <td class="num">${s.annualised_return_pct}%</td>
+      <td class="num ${better?'sig':'nosig'}">${s.sharpe}</td>
+      <td class="num">${b.annualised_return_pct}%</td>
+      <td class="num">${b.sharpe}</td>
+      <td class="num ${better?'sig':'nosig'}">${better?'ahead':'behind'}</td></tr>`;
+  };
+
+  const audit = a.weight_audit || {};
+
+  $('#out').innerHTML = `
+    <div class="card">
+      <p class="eyebrow">Does the score rank stocks? — ${d.n_observations} observations,
+        ${d.n_dates} dates, ${d.n_effective} effective</p>
+      <p class="big">${f4(ic) ?? '—'}<span class="pm">± ${se ? se.toFixed(4) : '—'}</span></p>
+      ${ruler(ic, se)}
+      <p class="lede">${esc(d.verdict)}</p>
+      <p class="sub">The bar is the 95% interval. It is drawn rather than the number
+        alone because a point estimate without its uncertainty is the single easiest
+        way to read a result that is not there. If the bar covers "no skill", it does.</p>
+      ${d.sample_adequacy && !d.sample_adequacy.adequate
+        ? `<div class="warn">${esc(d.sample_adequacy.verdict)}</div>` : ''}
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Which components carry information</p>
+      <table>
+        <tr><th>Component</th><th class="num">IC</th><th class="num">t</th>
+            <th class="num">Significant</th><th class="num">Weight</th></tr>
+        ${Object.entries(comps).map(([k,c]) => row(k, c)).join('')}
+        ${Object.entries(exp).map(([k,c]) => `<tr><td class="name">${esc(k)}
+          <span class="pill">experimental</span></td>
+          <td class="num ${c.significant?'sig':'nosig'}">${f4(c.mean_ic)}</td>
+          <td class="num ${c.significant?'sig':'nosig'}">${c.t_stat>=0?'+':''}${c.t_stat}</td>
+          <td class="num">${c.significant?'yes':'no'}</td>
+          <td class="num na">—</td></tr>`).join('')}
+      </table>
+      <p class="sub">Significance uses |t| &gt; ${a.multiple_testing?.t_threshold_used ?? '2.0'},
+        raised from 2.0 because ${a.multiple_testing?.components_tested ?? 'several'}
+        components are tested at once. Testing many things at the usual bar finds a
+        false positive roughly one time in three.</p>
+      ${audit.note ? `<div class="warn">${esc(audit.note)}</div>` : ''}
+      ${a.diagnosis ? `<p class="lede" style="margin-top:14px">${esc(a.diagnosis)}</p>` : ''}
+    </div>
+
+    ${dec.status === 'ok' ? `<div class="card">
+      <p class="eyebrow">Where the valuation signal lives</p>
+      <table>
+        <tr><th>Question</th><th class="num">IC</th><th class="num">t</th><th class="num">Significant</th></tr>
+        <tr><td class="name">Do cheap sectors beat expensive sectors?</td>
+          <td class="num ${dec.between_sector.significant?'sig':'nosig'}">${f4(dec.between_sector.mean_ic)}</td>
+          <td class="num">${dec.between_sector.t_stat}</td>
+          <td class="num">${dec.between_sector.significant?'yes':'no'}</td></tr>
+        <tr><td class="name">Inside a sector, does the cheaper company win?</td>
+          <td class="num ${dec.within_sector.significant?'sig':'nosig'}">${f4(dec.within_sector.mean_ic)}</td>
+          <td class="num">${dec.within_sector.t_stat}</td>
+          <td class="num">${dec.within_sector.significant?'yes':'no'}</td></tr>
+      </table>
+      <p class="sub">Median sector cohort: ${dec.median_cohort_size ?? '—'} companies.</p>
+      <p class="lede" style="margin-top:12px">${esc(dec.interpretation)}</p>
+    </div>` : ''}
+
+    ${d.stability ? `<div class="card">
+      <p class="eyebrow">Does it hold across sub-periods</p>
+      <table>
+        <tr><th>Period</th><th class="num">Dates</th><th class="num">IC</th></tr>
+        ${d.stability.periods.map(p=>`<tr><td class="name">${esc(p.period)}</td>
+          <td class="num">${p.n_dates}</td><td class="num">${f4(p.mean_ic) ?? '—'}</td></tr>`).join('')}
+      </table>
+      <p class="lede" style="margin-top:12px">${esc(d.stability.verdict)}</p>
+    </div>` : ''}
+
+    <div class="card">
+      <p class="eyebrow">In money, against simply holding the universe</p>
+      <table>
+        <tr><th>Strategy</th><th class="num">Return</th><th class="num">Sharpe</th>
+            <th class="num">Bench ret</th><th class="num">Bench Sharpe</th><th class="num"></th></tr>
+        ${port('Full composite, top 10', d.portfolio_simulation)}
+        ${port('Peer valuation only', d.portfolio_simulation_valuation_peer_only)}
+        ${port('Sector-neutral, 1 per sector', d.portfolio_simulation_sector_neutral)}
+      </table>
+      <p class="sub">Read the Sharpe columns, not the returns. More return at the same
+        risk-adjusted ratio is more risk, not better selection.</p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">What this page will not show you</p>
+      <p class="sub">There is no field here for expected return, win rate, or
+        out-of-sample success. Those numbers do not exist for this engine, and a
+        layout with a slot for them would eventually get filled — that is how v1.4
+        came to report "+4.0% expected return" from a run where every single
+        component was missing. Every figure above is measured, carries its
+        uncertainty, and renders "not measured" as its own state rather than as a
+        blank or a zero.</p>
+      ${(d.warnings||[]).map(w=>`<p class="sub">• ${esc(w)}</p>`).join('')}
+    </div>`;
+
+  $('#skel').classList.add('hidden');
+  $('#out').classList.remove('hidden');
+}
+
+$('#go').addEventListener('click', run);
+</script>
+</body>
+</html>
