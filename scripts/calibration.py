@@ -20,8 +20,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.providers import prices  # noqa: E402
 from app.storage import db        # noqa: E402
+from app.storage import resolve as resolver  # noqa: E402
 
 
 def cmd_status():
@@ -69,26 +69,23 @@ def cmd_status():
 
 
 def cmd_resolve():
-    due = db.due_decisions()
+    resolved, failed, due = resolver.resolve_due()
     if not due:
         print("Nothing is past its horizon yet. Check back later.")
         return 0
 
-    print(f"{len(due)} decision(s) due.\n")
-    ok = failed = 0
-    for d in due:
-        try:
-            df, _ = prices.daily(d["ticker"])
-            exit_price = float(df.close.iloc[-1])
-            ret = db.record_outcome(d["id"], exit_price, d["entry_price"])
-            ok += 1
-            print(f"  {d['ticker']:<7}{d['action']:<18} "
-                  f"{d['entry_price']:.2f} -> {exit_price:.2f}   {ret:+.2f}%")
-        except Exception as exc:
-            failed += 1
-            print(f"  {d['ticker']:<7}FAILED  {str(exc)[:60]}")
+    print(f"{due} decision(s) due. Exit = last close on or before the due date; "
+          f"benchmark = {resolver.BENCHMARK}.\n")
+    for r in resolved:
+        bench = r["benchmark_return_pct"]
+        excess = "" if bench is None else f"   vs {resolver.BENCHMARK} {r['excess_return_pct']:+.2f}%"
+        print(f"  {r['ticker']:<7}{r['action']:<18} "
+              f"{r['entry_price']:.2f} -> {r['exit_price']:.2f}   "
+              f"{r['realised_return_pct']:+.2f}%{excess}")
+    for f in failed:
+        print(f"  {f['ticker']:<7}FAILED  {f['error'][:60]}")
 
-    print(f"\nresolved {ok}, failed {failed}")
+    print(f"\nresolved {len(resolved)}, failed {len(failed)}")
     print("Then:  python scripts\\calibration.py report")
     return 0
 
@@ -114,11 +111,28 @@ def cmd_report(bins):
 
     if r.get("by_action"):
         print("\nBY ACTION")
-        print(f"  {'action':<20}{'n':>5}{'mean ret':>10}{'hit rate':>10}")
+        print(f"  {'action':<20}{'n':>5}{'mean ret':>10}{'hit rate':>10}"
+              f"{'vs SPY':>10}{'beat SPY':>10}")
         for action, b in sorted(r["by_action"].items(),
                                 key=lambda x: -x[1]["mean_return_pct"]):
+            xs = b.get("mean_excess_vs_benchmark_pct")
+            bt = b.get("beat_benchmark_rate")
             print(f"  {action:<20}{b['n']:>5}{b['mean_return_pct']:>10.2f}"
-                  f"{b['hit_rate']:>10.3f}")
+                  f"{b['hit_rate']:>10.3f}"
+                  f"{('—' if xs is None else f'{xs:+.2f}'):>10}"
+                  f"{('—' if bt is None else f'{bt:.3f}'):>10}")
+        print("\n  If BUY/ACCUMULATE do not beat SPY here, the actions are not worth "
+              "trading on.")
+
+    ic = r.get("forward_rank_ic") or {}
+    print("\nFORWARD RANK IC  (does a higher score mean a better return, week by week?)")
+    if not ic.get("weeks"):
+        print(f"  {ic.get('note', 'not enough data')}")
+    else:
+        se = ic.get("overlap_adjusted_se")
+        print(f"  mean IC {ic['mean_ic']:+.4f} over {ic['weeks']} week(s)"
+              + (f", overlap-adjusted se {se:.4f}, t {ic['t_stat']:+.2f}" if se else ""))
+        print(f"  backtest said {ic['backtest_reference']}")
 
     print(f"\n{r['interpretation']}")
     if r["sample_size"] < 100:

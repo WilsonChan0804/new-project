@@ -81,6 +81,9 @@ def main():
     ap.add_argument("--horizon-days", type=int, default=63)
     ap.add_argument("--no-log", action="store_true",
                     help="Analyse without writing to the calibration log")
+    ap.add_argument("--min-gap-days", type=int, default=6,
+                    help="Skip logging a ticker already logged this recently "
+                         "(default 6, i.e. at most once a week). 0 disables.")
     args = ap.parse_args()
 
     if args.tickers:
@@ -109,6 +112,7 @@ def main():
 
     analyzer = StockAnalyzer()
     rows, flags = [], []
+    skipped = 0
 
     for i, ticker in enumerate(tickers, 1):
         try:
@@ -118,7 +122,11 @@ def main():
             continue
 
         decision_id = None
-        if not args.no_log and res.get("price") is not None:
+        recent = (db.recent_decision(ticker, args.min_gap_days)
+                  if args.min_gap_days > 0 and not args.no_log else None)
+        if recent:
+            skipped += 1
+        elif not args.no_log and res.get("price") is not None:
             try:
                 decision_id = db.log_decision(res)
                 feature_store.save(res, decision_id)
@@ -164,6 +172,10 @@ def main():
         print("\nNo red flags in recent filings.")
 
     logged = sum(1 for r in rows if r["id"])
+    if skipped:
+        print(f"\n{skipped} ticker(s) not logged: already logged in the last "
+              f"{args.min_gap_days} days. Re-running inside a week adds duplicates, "
+              "not evidence.")
     if logged:
         print(f"\n{logged} decision(s) logged. They resolve in about "
               f"{int(args.horizon_days * 1.45)} days.")

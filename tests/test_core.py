@@ -3503,3 +3503,118 @@ def test_calibration_report_counts_companies_not_rows():
         assert rep["sample_size"] == 11 and rep["effective_sample_size"] == 4
     finally:
         settings.db_path = saved
+
+
+# ===========================================================================
+# v3.9.2 — the forward test measures the right thing
+# ===========================================================================
+
+def _temp_db():
+    import tempfile
+    from app.config import settings
+    saved = settings.db_path
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as fh:
+        settings.db_path = fh.name
+    return saved
+
+
+def _log(ticker, score=60.0, action="WATCH"):
+    from app.storage import db
+    return db.log_decision({
+        "ticker": ticker, "action": action, "opportunity_score": score,
+        "confidence": 60.0, "coverage": 1.0, "price": 100.0,
+        "invalidation_price": 92.0, "engine_version": "3.9.2",
+        "score_breakdown": {},
+        "scenarios": [{"name": "Bull", "probability": 1 / 3}],
+        "scenario_diagnostics": {"horizon_days": 63,
+                                 "expected_return_pct_net": -2.0}})
+
+
+def test_resolver_exits_at_due_date_not_today_and_records_benchmark():
+    """Resolving late must not stretch the horizon, and a return without the
+    market's return beside it says nothing about the pick."""
+    import pandas as pd
+    from datetime import datetime, timedelta, timezone
+
+    from app.config import settings
+    from app.storage import db, resolve
+    saved = _temp_db()
+    try:
+        did = _log("AAPL")
+        created = datetime.now(timezone.utc) - timedelta(days=200)
+        due = created + timedelta(days=91)
+        with db.connect() as conn:
+            conn.execute("UPDATE decisions SET created_at=?, due_at=? WHERE id=?",
+                         (created.isoformat(), due.isoformat(), did))
+
+        dates = pd.date_range(created.date() - timedelta(days=5),
+                              datetime.now(timezone.utc).date(), freq="D")
+
+        def series(at_due, today):
+            close = [100.0 if d.date() <= created.date() else
+                     (at_due if d.date() <= due.date() else today) for d in dates]
+            return pd.DataFrame({"date": dates, "close": close})
+
+        frames = {"AAPL": series(110.0, 150.0), "SPY": series(104.0, 120.0)}
+        resolved, failed, n = resolve.resolve_due(fetch=lambda t: frames[t])
+        assert n == 1 and not failed
+        r = resolved[0]
+        assert abs(r["realised_return_pct"] - 10.0) < 1e-6, "exit is at due date"
+        assert abs(r["benchmark_return_pct"] - 4.0) < 1e-6
+        assert abs(r["excess_return_pct"] - 6.0) < 1e-6
+
+        rep = db.calibration_report(5)
+        assert rep["by_action"]["WATCH"]["mean_excess_vs_benchmark_pct"] == 6.0
+    finally:
+        settings.db_path = saved
+
+
+def test_outcomes_table_is_migrated_in_place():
+    """An engine.db from before the benchmark columns must keep its history."""
+    import sqlite3
+
+    from app.config import settings
+    from app.storage import db
+    saved = _temp_db()
+    try:
+        conn = sqlite3.connect(settings.db_path)
+        conn.execute("""CREATE TABLE outcomes (decision_id INTEGER PRIMARY KEY,
+            resolved_at TEXT NOT NULL, exit_price REAL NOT NULL,
+            realised_return_pct REAL NOT NULL, bullish_outcome INTEGER NOT NULL)""")
+        conn.execute("INSERT INTO outcomes VALUES (1, 'x', 1.0, 0.0, 0)")
+        conn.commit()
+        conn.close()
+        with db.connect() as c:
+            cols = {r["name"] for r in c.execute("PRAGMA table_info(outcomes)")}
+            assert {"benchmark_return_pct", "excess_return_pct"} <= cols
+            assert c.execute("SELECT COUNT(*) n FROM outcomes").fetchone()["n"] == 1
+    finally:
+        settings.db_path = saved
+
+
+def test_recent_decision_blocks_same_week_duplicates():
+    """A real log held three runs two minutes apart: thirty rows, ten observations."""
+    from app.config import settings
+    from app.storage import db
+    saved = _temp_db()
+    try:
+        assert db.recent_decision("AAPL", 6) is None
+        _log("AAPL")
+        assert db.recent_decision("aapl", 6) is not None
+        assert db.recent_decision("JPM", 6) is None
+    finally:
+        settings.db_path = saved
+
+
+def test_forward_rank_ic_sees_the_score_when_brier_cannot():
+    """With tilt 0 every p_bull is 1/3; only a rank test can see the score."""
+    from app.storage import db
+    rows = [{"created_at": "2026-09-07T10:00:00+00:00", "opportunity_score": s,
+             "realised_return_pct": s / 10.0, "excess_return_pct": s / 10.0 - 1}
+            for s in (40, 50, 60, 70, 80)]
+    ic = db.forward_rank_ic(rows)
+    assert ic["weeks"] == 1 and ic["mean_ic"] == 1.0
+
+    flipped = [dict(r, excess_return_pct=-r["excess_return_pct"]) for r in rows]
+    assert db.forward_rank_ic(flipped)["mean_ic"] == -1.0
+    assert db.forward_rank_ic(rows[:3])["weeks"] == 0

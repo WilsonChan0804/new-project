@@ -474,18 +474,12 @@ def backtest_universes():
 
 @app.post(PREFIX + "/calibration/resolve")
 def resolve():
-    """Close out every decision whose horizon has elapsed."""
-    due = db.due_decisions()
-    resolved, failed = [], []
-    for d in due:
-        try:
-            df, _ = prices.daily(d["ticker"])
-            exit_price = float(df.close.iloc[-1])
-            ret = db.record_outcome(d["id"], exit_price, d["entry_price"])
-            resolved.append({"id": d["id"], "ticker": d["ticker"], "realised_return_pct": ret})
-        except Exception as exc:
-            failed.append({"id": d["id"], "ticker": d["ticker"], "error": str(exc)})
-    return {"due": len(due), "resolved": resolved, "failed": failed}
+    """Close out every decision whose horizon has elapsed, priced at its due date
+    and measured against SPY over the same window."""
+    from .storage import resolve as resolver
+    resolved, failed, due = resolver.resolve_due()
+    return {"due": due, "benchmark": resolver.BENCHMARK,
+            "resolved": resolved, "failed": failed}
 
 
 @app.get(PREFIX + "/calibration/report")

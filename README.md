@@ -15,6 +15,35 @@ plain-English dashboard. The raw JSON API is still at `/docs`.
 
 See `ROADMAP.md` for where this stands against the full 35-point blueprint.
 
+## Running it forward (the only test left)
+
+Once a week, same day each week:
+
+    python scripts\watchlist.py
+
+Once a month:
+
+    python scripts\calibration.py resolve
+    python scripts\calibration.py report
+
+v3.9.2 fixed three things that would have spoiled that test:
+
+- **Duplicates.** A ticker already logged in the last 6 days is analysed but not
+  logged again (`--min-gap-days 0` to override). Three runs in two minutes are
+  one observation, not three.
+- **Exit date and stale prices.** A decision is now priced at the last close on or
+  before its due date, from fresh network data rather than the monthly warehouse,
+  so resolving late no longer stretches the horizon.
+- **No benchmark.** Every outcome records SPY over the same window. The report
+  shows excess return and beat-SPY rate by action, plus a **forward rank IC**
+  (score vs excess return, week by week). With `score_tilt_strength = 0` every
+  logged p_bull is 1/3, so the Brier score cannot see the score at all; the rank
+  IC and the by-action excess return are the tests that can.
+
+Decision rule worth writing down now, before the results exist: if after ~6
+months BUY/ACCUMULATE do not beat SPY and the forward IC is not clearly above
+zero, the actions are not something to trade on.
+
 A rebuild of v1.4 focused on one principle: **the engine must never emit a
 number it cannot defend.**
 
