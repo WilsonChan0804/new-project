@@ -114,12 +114,15 @@ def analyze(
     ticker: str,
     horizon_days: int = Query(None, ge=5, le=756,
                               description="Trading days. 21=1m, 63=3m, 126=6m, 252=1y"),
-    log: bool = Query(True, description="Write this decision to the calibration log"),
+    log: bool = Query(False, description="Write this decision to the calibration "
+                                         "log, tagged source='manual'. Off by default: "
+                                         "ad-hoc look-ups are not a systematic sample "
+                                         "and would muddy the forward test."),
 ):
     result = analyzer.analyze(ticker, horizon_days)
     if log and result.get("price") is not None:
         try:
-            result["decision_id"] = db.log_decision(result)
+            result["decision_id"] = db.log_decision(result, source="manual")
         except Exception as exc:
             result["log_error"] = str(exc)
         try:
@@ -422,27 +425,44 @@ def warehouse_coverage(gaps_for: str | None = None):
 @app.get(PREFIX + "/screen")
 def screen_results(
     limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     sector: str | None = None,
-    order: str = Query("score", pattern="^(score|valuation|sector_percentile)$"),
+    order: str = Query("score", pattern="^(score|valuation|sector_percentile|fundamentals|growth|dollar_volume)$"),
     ascending: bool = False,
     min_coverage: float = Query(0.0, ge=0.0, le=1.0),
     require_critical: bool = Query(
         True, description="Exclude names missing the components the backtest "
                           "found informative. Off puts the least-informed at the top."),
+    exclude_red_flags: bool = Query(
+        False, description="Drop names with an 8-K red flag in the last year: "
+                           "auditor change, restatement, impairment, delisting "
+                           "notice, bankruptcy, accelerated debt."),
+    min_sector_percentile: float | None = Query(None, ge=0, le=100),
+    min_dollar_volume: float | None = Query(None, ge=0),
+    q: str | None = Query(None, max_length=40, description="Ticker prefix or name"),
     run_id: int | None = None,
 ):
-    """Ranked results from the last completed universe screen.
+    """Ranked, filtered results from the last completed universe screen.
 
-    Populate it with `python scripts/screen_universe.py`. Sort by
-    sector_percentile to rank within industry rather than across the market —
-    the backtest found the composite's only real effect was between sectors, so
-    an overall ranking is largely a sector ordering in disguise.
+    Populate it with `python scripts/screen_universe.py --all`. Sort by
+    sector_percentile to rank within industry rather than across the market.
     """
     from .screener import store as screen_store
     return screen_store.results(run_id=run_id, sector=sector, limit=limit,
                                 order=order, ascending=ascending,
                                 min_coverage=min_coverage,
-                                require_critical=require_critical)
+                                require_critical=require_critical,
+                                exclude_red_flags=exclude_red_flags,
+                                min_sector_percentile=min_sector_percentile,
+                                min_dollar_volume=min_dollar_volume,
+                                query=q, offset=offset)
+
+
+@app.get(PREFIX + "/screen/status")
+def screen_status():
+    """Progress of the latest screen, and the sectors available to filter on."""
+    from .screener import store as screen_store
+    return {**screen_store.progress(), "sectors": screen_store.sectors()}
 
 
 @app.get(PREFIX + "/peers")
@@ -483,5 +503,22 @@ def resolve():
 
 
 @app.get(PREFIX + "/calibration/report")
-def report(bins: int = Query(5, ge=2, le=10)):
-    return db.calibration_report(bins)
+def report(bins: int = Query(5, ge=2, le=10),
+           source: str | None = Query(None, pattern="^(watchlist|screen)$")):
+    return db.calibration_report(bins, source)
+
+
+@app.get(PREFIX + "/calibration/status")
+def calibration_status():
+    """Counts for the dashboard: logged, resolved, due, and when the next ones mature."""
+    with db.connect() as conn:
+        by_source = {r["s"]: r["c"] for r in conn.execute(
+            "SELECT COALESCE(source,'watchlist') s, COUNT(*) c FROM decisions GROUP BY s")}
+        resolved = conn.execute("SELECT COUNT(*) c FROM outcomes").fetchone()["c"]
+        nxt = conn.execute(
+            "SELECT MIN(d.due_at) m FROM decisions d LEFT JOIN outcomes o "
+            "ON o.decision_id = d.id WHERE o.decision_id IS NULL").fetchone()["m"]
+        last = conn.execute("SELECT MAX(created_at) m FROM decisions").fetchone()["m"]
+    return {"logged": sum(by_source.values()), "by_source": by_source,
+            "resolved": resolved, "due_now": len(db.due_decisions()),
+            "next_due": nxt, "last_logged": last}

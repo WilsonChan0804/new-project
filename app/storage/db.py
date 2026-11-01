@@ -53,6 +53,12 @@ CREATE INDEX IF NOT EXISTS idx_due ON decisions(due_at);
 # Columns added after the first real logs existed. Added in place so an
 # existing engine.db keeps its history.
 _MIGRATIONS = {
+    "decisions": {
+        # 'watchlist' (full analysis, Alpha Vantage included) or 'screen'
+        # (whole-market, free data only). Kept apart in the report because they
+        # are different measurements of different-sized cross-sections.
+        "source": "TEXT",
+    },
     "outcomes": {
         "benchmark_return_pct": "REAL",
         "excess_return_pct": "REAL",
@@ -72,7 +78,7 @@ def connect():
     return conn
 
 
-def recent_decision(ticker: str, within_days: int):
+def recent_decision(ticker: str, within_days: int, source: str | None = None):
     """Most recent decision on ``ticker`` inside the last ``within_days``, or None.
 
     Used to stop the same company being logged several times in one week. Three
@@ -83,13 +89,14 @@ def recent_decision(ticker: str, within_days: int):
     with connect() as conn:
         row = conn.execute(
             "SELECT * FROM decisions WHERE ticker = ? AND created_at >= ? "
-            "ORDER BY created_at DESC LIMIT 1",
-            (ticker.upper(), since),
+            + ("AND COALESCE(source, 'watchlist') = ? " if source else "")
+            + "ORDER BY created_at DESC LIMIT 1",
+            (ticker.upper(), since) + ((source,) if source else ()),
         ).fetchone()
     return dict(row) if row else None
 
 
-def log_decision(result: dict) -> int:
+def log_decision(result: dict, source: str = "watchlist") -> int:
     """Persist one analysis. Returns the decision id."""
     now = datetime.now(timezone.utc)
     horizon = result["scenario_diagnostics"]["horizon_days"] if result.get("scenario_diagnostics") else settings.default_horizon_days
@@ -107,8 +114,8 @@ def log_decision(result: dict) -> int:
             """INSERT INTO decisions (created_at, ticker, horizon_days, due_at,
                    action, opportunity_score, confidence, coverage, p_bull,
                    expected_return_net_pct, entry_price, invalidation_price,
-                   components_json, engine_version)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   components_json, engine_version, source)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 now.isoformat(), result["ticker"], horizon, due.isoformat(),
                 result["action"], result.get("opportunity_score"),
@@ -116,10 +123,59 @@ def log_decision(result: dict) -> int:
                 diag.get("expected_return_pct_net"), result.get("price"),
                 result.get("invalidation_price"),
                 json.dumps(result.get("score_breakdown") or {}),
-                result.get("engine_version"),
+                result.get("engine_version"), source,
             ),
         )
         return int(cur.lastrowid)
+
+
+COMPONENTS = ("market", "sector", "fundamentals", "growth", "valuation",
+              "technical", "money_flow", "news")
+
+
+def log_screen_decisions(run_id: int, horizon_days: int = 63, min_gap_days: int = 6):
+    """Log every scored name in a finished screen as a forward-test decision.
+
+    This is what lets the forward test use the whole market instead of a
+    ten-name watchlist. A weekly cohort of two thousand names measures a rank
+    IC to roughly +/-0.02 per week; ten names cannot measure it at all.
+    Returns (logged, skipped_recent).
+    """
+    now = datetime.now(timezone.utc)
+    due = now + timedelta(days=int(horizon_days * 1.45))
+    since = (now - timedelta(days=min_gap_days)).isoformat()
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM screen_results WHERE run_id = ? AND score IS NOT NULL "
+            "AND price IS NOT NULL ORDER BY ticker", (run_id,)).fetchall()
+        recent = {r["ticker"] for r in conn.execute(
+            "SELECT DISTINCT ticker FROM decisions WHERE created_at >= ? "
+            "AND source = 'screen'", (since,)).fetchall()}
+        logged = skipped = 0
+        for r in rows:
+            if r["ticker"] in recent:
+                skipped += 1
+                continue
+            detail = json.loads(r["detail_json"] or "{}")
+            parts = {c: r[c] for c in ("fundamentals", "growth", "valuation",
+                                       "technical", "money_flow")}
+            conn.execute(
+                """INSERT INTO decisions (created_at, ticker, horizon_days, due_at,
+                       action, opportunity_score, confidence, coverage, p_bull,
+                       expected_return_net_pct, entry_price, invalidation_price,
+                       components_json, engine_version, source)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'screen')""",
+                (now.isoformat(), r["ticker"], horizon_days, due.isoformat(),
+                 detail.get("action") or "UNRATED", r["score"], r["confidence"],
+                 r["coverage"], None, None, r["price"], None,
+                 json.dumps(parts), settings_version()))
+            logged += 1
+    return logged, skipped
+
+
+def settings_version():
+    from ..config import VERSION
+    return VERSION
 
 
 def due_decisions():
@@ -177,7 +233,7 @@ def _spearman(xs, ys):
     return cov / (vx * vy) ** 0.5 if vx > 0 and vy > 0 else None
 
 
-def forward_rank_ic(rows, min_names: int = 5):
+def forward_rank_ic(rows, min_names: int = 5, key=None):
     """Does the score rank the names *within* each weekly run?
 
     This is the live version of the backtest's IC, and with
@@ -186,15 +242,17 @@ def forward_rank_ic(rows, min_names: int = 5):
     the score said. Cohorts are ISO weeks, the ranked quantity is excess return
     over the benchmark when available, and each week counts once.
     """
+    key = key or (lambda r: r.get("opportunity_score"))
     cohorts = {}
     for r in rows:
-        if r.get("opportunity_score") is None:
+        score = key(r)
+        if score is None:
             continue
         y, w, _ = datetime.fromisoformat(r["created_at"]).isocalendar()
         target = r.get("excess_return_pct")
         if target is None:
             target = r["realised_return_pct"]
-        cohorts.setdefault(f"{y}-W{w:02d}", []).append((r["opportunity_score"], target))
+        cohorts.setdefault(f"{y}-W{w:02d}", []).append((score, target))
 
     weekly = []
     for week, pts in sorted(cohorts.items()):
@@ -227,7 +285,28 @@ def forward_rank_ic(rows, min_names: int = 5):
     }
 
 
-def calibration_report(bins: int = 5):
+def component_ic(rows, min_names: int = 5):
+    """Forward rank IC for each component on its own.
+
+    The composite has been measured as uninformative, but the backtest left one
+    component, ``valuation``, persistently positive and never quite significant
+    (+0.036, t = 2.11 against a bar of 2.64). This is where that question gets
+    its out-of-sample answer: each component is ranked against excess return,
+    week by week, exactly as the composite is.
+    """
+    out = {}
+    for comp in COMPONENTS:
+        res = forward_rank_ic(rows, min_names,
+                              key=lambda r, c=comp: (r.get("components") or {}).get(c))
+        if res["weeks"]:
+            res.pop("weekly", None)
+            out[comp] = res
+    if not out:
+        return {"note": f"No component has a weekly cohort of {min_names}+ resolved names yet."}
+    return out
+
+
+def calibration_report(bins: int = 5, source: str | None = None):
     """Reliability table + Brier score.
 
     Brier score is the mean squared error of the probability forecasts. Lower
@@ -238,13 +317,22 @@ def calibration_report(bins: int = 5):
     with connect() as conn:
         rows = conn.execute(
             """SELECT d.ticker, d.created_at, d.p_bull, d.action, d.opportunity_score,
-                      d.confidence, o.realised_return_pct, o.bullish_outcome,
+                      d.confidence, d.components_json,
+                      COALESCE(d.source, 'watchlist') AS source,
+                      o.realised_return_pct, o.bullish_outcome,
                       o.benchmark_return_pct, o.excess_return_pct
-               FROM decisions d JOIN outcomes o ON o.decision_id = d.id
-               WHERE d.p_bull IS NOT NULL"""
+               FROM decisions d JOIN outcomes o ON o.decision_id = d.id"""
+            + ("" if source is None else " WHERE COALESCE(d.source, 'watchlist') = ?"),
+            () if source is None else (source,),
         ).fetchall()
 
     rows = [dict(r) for r in rows]
+    all_rows = rows
+    for r in rows:
+        try:
+            r["components"] = json.loads(r.pop("components_json") or "{}")
+        except (TypeError, ValueError):
+            r["components"] = {}
     if not rows:
         return {
             "status": "no_resolved_decisions",
@@ -263,13 +351,18 @@ def calibration_report(bins: int = 5):
     distinct_tickers = len({r["ticker"] for r in rows})
     effective = max(distinct_tickers, 1)
 
-    brier = sum((r["p_bull"] - r["bullish_outcome"]) ** 2 for r in rows) / len(rows)
-    baseline = sum((0.5 - r["bullish_outcome"]) ** 2 for r in rows) / len(rows)
+    # Brier needs a stated probability; screen decisions have none.
+    prob_rows = [r for r in rows if r["p_bull"] is not None]
+    if prob_rows:
+        brier = sum((r["p_bull"] - r["bullish_outcome"]) ** 2 for r in prob_rows) / len(prob_rows)
+        baseline = sum((0.5 - r["bullish_outcome"]) ** 2 for r in prob_rows) / len(prob_rows)
+    else:
+        brier = baseline = None
 
     table = []
     for i in range(bins):
         lo, hi = i / bins, (i + 1) / bins
-        bucket = [r for r in rows if lo <= r["p_bull"] < hi or (i == bins - 1 and r["p_bull"] == 1.0)]
+        bucket = [r for r in prob_rows if lo <= r["p_bull"] < hi or (i == bins - 1 and r["p_bull"] == 1.0)]
         if not bucket:
             continue
         table.append({
@@ -309,12 +402,17 @@ def calibration_report(bins: int = 5):
             "outcome, so the count that matters is the number of distinct "
             "companies, not the number of rows."
         ),
-        "brier_score": round(brier, 4),
-        "brier_baseline_always_50pct": round(baseline, 4),
-        "beats_coinflip": bool(brier < baseline),
+        "brier_score": None if brier is None else round(brier, 4),
+        "brier_baseline_always_50pct": None if baseline is None else round(baseline, 4),
+        "beats_coinflip": None if brier is None else bool(brier < baseline),
         "reliability_table": table,
         "by_action": by_action,
         "forward_rank_ic": forward_rank_ic(rows),
+        "forward_rank_ic_by_source": {
+            src: forward_rank_ic([r for r in all_rows if r["source"] == src])
+            for src in sorted({r["source"] for r in all_rows})
+        },
+        "forward_component_ic": component_ic(rows),
         "interpretation": (
             "If mean_predicted and actual_bullish_rate diverge, the probabilities "
             "are miscalibrated. If brier_score is not below "

@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS screen_results (
     sector_rank INTEGER,
     sector_percentile REAL,
     overall_percentile REAL,
+    red_flag_count INTEGER,
+    red_flags_text TEXT,
     detail_json TEXT,
     PRIMARY KEY (run_id, ticker)
 );
@@ -82,6 +84,48 @@ CREATE INDEX IF NOT EXISTS idx_screen_score ON screen_results(run_id, score DESC
 def init():
     with connect() as conn:
         conn.executescript(SCHEMA)
+        have = {r["name"] for r in conn.execute("PRAGMA table_info(screen_results)")}
+        for col, typ in (("red_flag_count", "INTEGER"), ("red_flags_text", "TEXT")):
+            if col not in have:
+                conn.execute(f"ALTER TABLE screen_results ADD COLUMN {col} {typ}")
+
+
+def sectors(run_id=None):
+    """Sector names present in a run, for the filter drop-down."""
+    run_id = run_id or latest_finished_id()
+    if run_id is None:
+        return []
+    return sorted(cohort_sizes(run_id))
+
+
+def latest_finished_id():
+    init()
+    with connect() as conn:
+        row = conn.execute("SELECT id FROM screen_runs WHERE finished_at IS NOT NULL "
+                           "ORDER BY id DESC LIMIT 1").fetchone()
+    return row["id"] if row else None
+
+
+def progress():
+    """What the most recent screen is doing, for the dashboard."""
+    init()
+    with connect() as conn:
+        run = conn.execute("SELECT * FROM screen_runs ORDER BY id DESC LIMIT 1").fetchone()
+        if not run:
+            return {"status": "never_run"}
+        run = dict(run)
+        counts = {r["status"]: r["c"] for r in conn.execute(
+            "SELECT status, COUNT(*) c FROM screen_progress WHERE run_id = ? "
+            "GROUP BY status", (run["id"],)).fetchall()}
+    done = sum(counts.values())
+    return {
+        "status": "finished" if run["finished_at"] else "running_or_interrupted",
+        "run_id": run["id"], "as_of_date": run["as_of_date"],
+        "started_at": run["started_at"], "finished_at": run["finished_at"],
+        "universe_size": run["universe_size"], "attempted": done,
+        "scored": counts.get("ok", 0), "illiquid": counts.get("illiquid", 0),
+        "no_data": counts.get("no_data", 0),
+    }
 
 
 def start_run(as_of, version, universe_size, params):
@@ -121,13 +165,17 @@ def record(run_id, row=None, ticker=None, status="ok", note=None):
                 """INSERT OR REPLACE INTO screen_results
                    (run_id, ticker, name, sector, price, dollar_volume, score,
                     coverage, confidence, valuation, fundamentals, growth,
-                    technical, money_flow, detail_json)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    technical, money_flow, red_flag_count, red_flags_text,
+                    detail_json)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (run_id, row["ticker"], row.get("name"), row.get("sector"),
                  row.get("price"), row.get("dollar_volume"), row.get("score"),
                  row.get("coverage"), row.get("confidence"), row.get("valuation"),
                  row.get("fundamentals"), row.get("growth"), row.get("technical"),
-                 row.get("money_flow"), json.dumps(row.get("detail") or {})))
+                 row.get("money_flow"),
+                 None if row.get("red_flags") is None else len(row["red_flags"]),
+                 "; ".join(row.get("red_flags") or []) or None,
+                 json.dumps(row.get("detail") or {})))
         conn.execute(
             "INSERT OR REPLACE INTO screen_progress (run_id, ticker, status, note) "
             "VALUES (?,?,?,?)",
@@ -190,7 +238,9 @@ def cohort_sizes(run_id):
 
 
 def results(run_id=None, sector=None, limit=50, order="score", ascending=False,
-            min_coverage=0.0, require_critical=True):
+            min_coverage=0.0, require_critical=True, exclude_red_flags=False,
+            min_sector_percentile=None, min_dollar_volume=None, query=None,
+            offset=0):
     init()
     with connect() as conn:
         if run_id is None:
@@ -220,7 +270,9 @@ def results(run_id=None, sector=None, limit=50, order="score", ascending=False,
         run = dict(run_row)
 
         col = {"score": "score", "valuation": "valuation",
-               "sector_percentile": "sector_percentile"}.get(order, "score")
+               "sector_percentile": "sector_percentile",
+               "fundamentals": "fundamentals", "growth": "growth",
+               "dollar_volume": "dollar_volume"}.get(order, "score")
         sql = (f"SELECT * FROM screen_results WHERE run_id = ? "
                f"AND score IS NOT NULL AND coverage >= ?")
         params = [run_id, min_coverage]
@@ -239,12 +291,28 @@ def results(run_id=None, sector=None, limit=50, order="score", ascending=False,
         if sector:
             sql += " AND sector = ?"
             params.append(sector.upper())
-        sql += f" ORDER BY {col} {'ASC' if ascending else 'DESC'} LIMIT ?"
-        params.append(limit)
+        if exclude_red_flags:
+            # Unknown (NULL) is kept: a failed lookup is not evidence of trouble.
+            sql += " AND COALESCE(red_flag_count, 0) = 0"
+        if min_sector_percentile is not None:
+            sql += " AND sector_percentile >= ?"
+            params.append(min_sector_percentile)
+        if min_dollar_volume is not None:
+            sql += " AND dollar_volume >= ?"
+            params.append(min_dollar_volume)
+        if query:
+            sql += " AND (ticker LIKE ? OR name LIKE ?)"
+            params += [f"{query.upper()}%", f"%{query}%"]
+        count_sql = sql.replace("SELECT *", "SELECT COUNT(*) c", 1)
+        matched = conn.execute(count_sql, params).fetchone()["c"]
+        sql += (f" ORDER BY {col} IS NULL, {col} {'ASC' if ascending else 'DESC'}"
+                " LIMIT ? OFFSET ?")
+        params += [limit, offset]
         rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
 
     for r in rows:
-        r.pop("detail_json", None)
+        detail = json.loads(r.pop("detail_json", None) or "{}")
+        r["action"] = detail.get("action")
 
     # How many names the critical filter removed, and why.
     with connect() as conn:
@@ -282,6 +350,7 @@ def results(run_id=None, sector=None, limit=50, order="score", ascending=False,
             "scored": total_scored,
             "excluded_missing_critical": missing_critical if require_critical else 0,
             "critical_components": critical,
+            "matched": matched,
             "shown": len(rows),
             "skipped_during_screen": skips,
             "note": (

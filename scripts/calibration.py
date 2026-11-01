@@ -90,16 +90,17 @@ def cmd_resolve():
     return 0
 
 
-def cmd_report(bins):
-    r = db.calibration_report(bins)
+def cmd_report(bins, source=None):
+    r = db.calibration_report(bins, source)
     if r.get("status") != "ok":
         print(r.get("message", r.get("status")))
         return 0
 
-    print(f"sample size {r['sample_size']}")
-    print(f"\nBrier score            {r['brier_score']}")
-    print(f"always-say-50% baseline {r['brier_baseline_always_50pct']}")
-    print(f"beats a coin flip       {r['beats_coinflip']}")
+    print(f"sample size {r['sample_size']}  ({r['distinct_tickers']} companies)")
+    if r.get("brier_score") is not None:
+        print(f"\nBrier score            {r['brier_score']}")
+        print(f"always-say-50% baseline {r['brier_baseline_always_50pct']}")
+        print(f"beats a coin flip       {r['beats_coinflip']}")
 
     if r.get("reliability_table"):
         print("\nRELIABILITY  (does 60% happen 60% of the time?)")
@@ -134,6 +135,25 @@ def cmd_report(bins):
               + (f", overlap-adjusted se {se:.4f}, t {ic['t_stat']:+.2f}" if se else ""))
         print(f"  backtest said {ic['backtest_reference']}")
 
+    by_src = r.get("forward_rank_ic_by_source") or {}
+    if len(by_src) > 1:
+        print("\n  by source:")
+        for src, v in by_src.items():
+            val = "—" if v.get("mean_ic") is None else f"{v['mean_ic']:+.4f}"
+            print(f"    {src:<10} IC {val}  over {v.get('weeks', 0)} week(s)")
+
+    comp = r.get("forward_component_ic") or {}
+    print("\nFORWARD IC BY COMPONENT  (which ingredient, if any, carries information?)")
+    if "note" in comp:
+        print(f"  {comp['note']}")
+    else:
+        print(f"  {'component':<14}{'mean IC':>9}{'t':>7}{'weeks':>7}")
+        for name, v in sorted(comp.items(), key=lambda x: -(x[1]['mean_ic'] or 0)):
+            t = "—" if v.get("t_stat") is None else f"{v['t_stat']:+.2f}"
+            print(f"  {name:<14}{v['mean_ic']:>+9.4f}{t:>7}{v['weeks']:>7}")
+        print("  valuation is the one to watch: positive in every backtest window, "
+              "never significant.\n  The bar for calling anything real is t > 2.64.")
+
     print(f"\n{r['interpretation']}")
     if r["sample_size"] < 100:
         print(f"\nWith {r['sample_size']} resolved decisions nothing here is "
@@ -146,12 +166,14 @@ def main():
     ap.add_argument("command", choices=["resolve", "report", "status"],
                     nargs="?", default="status")
     ap.add_argument("--bins", type=int, default=5)
+    ap.add_argument("--source", choices=["watchlist", "screen"], default=None,
+                    help="Report on one source only")
     args = ap.parse_args()
 
     if args.command == "resolve":
         return cmd_resolve()
     if args.command == "report":
-        return cmd_report(args.bins)
+        return cmd_report(args.bins, args.source)
     return cmd_status()
 
 

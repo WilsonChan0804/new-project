@@ -109,10 +109,17 @@ def choose_action(score, conf, coverage, reward_to_risk, parts=None):
             "This is a valid answer, not a failure."
         )
 
-    if reward_to_risk is not None and reward_to_risk <= 0 and score >= 68:
+    # v3.10: the expected-value gate now covers every buy-side action, not just
+    # scores of 68+. Before, a score of 64-67 with negative expected return after
+    # costs still came out ACCUMULATE: a recommendation to buy something the
+    # engine's own arithmetic said would lose money. With score_tilt_strength at
+    # 0 the expected return is always negative after costs, so in practice the
+    # engine no longer says BUY or ACCUMULATE at all. That is the honest output
+    # of a score measured as uninformative.
+    if reward_to_risk is not None and reward_to_risk <= 0 and score >= 64:
         return "WATCH", (
             "Score is constructive but expected value is negative after costs "
-            "over this horizon."
+            "over this horizon, so this is not a buy signal."
         )
 
     if score >= 72 and conf >= 70:

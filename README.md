@@ -15,6 +15,39 @@ plain-English dashboard. The raw JSON API is still at `/docs`.
 
 See `ROADMAP.md` for where this stands against the full 35-point blueprint.
 
+## v3.10: one screen, the whole market, run weekly
+
+**Interface.** <http://127.0.0.1:8000> is now one page with three tabs, in
+Chinese: ① screen the whole market, ② check one stock, ③ forward-test results.
+The backtest view and the raw API are still at `/research` and `/docs`.
+
+**Whole market.** `python scripts\screen_universe.py --all --log-forward`
+checks every SEC-listed ticker (~7-8k), drops illiquid ones (under $5M traded a
+day, or priced under $3), scores the rest on free data, and also records **8-K
+red flags** (auditor change, restatement, impairment, delisting notice,
+bankruptcy, accelerated debt). The screen tab filters by sector, within-sector
+rank and red flags. It makes no Alpha Vantage calls, so there is no daily limit.
+
+**Forward test on the whole market.** `--log-forward` logs every scored name,
+so the weekly cohort is thousands of names rather than ten. Decisions are tagged
+`screen`, `watchlist` or `manual` (dashboard look-ups no longer log unless you
+ask). The report adds **forward IC per component**: whether `valuation`, the
+one component that never quite died in the backtest, ranks returns out of
+sample.
+
+**Weekly schedule.** `scripts\weekly.py` runs resolve, whole-market screen,
+watchlist and report, and writes `logs\weekly-DATE.log`.
+`scripts\windows\install_weekly_task.bat` registers it with Windows Task
+Scheduler for Saturdays at 09:00.
+
+**Rule change.** BUY/ACCUMULATE now require positive expected value after
+costs at every score, not only at 68+. With `score_tilt_strength = 0` that
+means the engine no longer issues buy labels. Engine version 3.10.0 is stored
+on every decision, so the report can separate before and after.
+
+**Two external tools reviewed** in `docs/external-tools-review.md`. Adopted from
+TradingAgents: entry at the first close after the decision.
+
 ## Running it forward (the only test left)
 
 Once a week, same day each week:

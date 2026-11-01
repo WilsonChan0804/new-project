@@ -5,6 +5,8 @@ Shared by ``POST /api/v1/calibration/resolve`` and ``scripts/calibration.py``.
 Three things the earlier resolver got wrong, each of which would have biased the
 forward test that the whole project now rests on:
 
+0. **Entry.** Entry is the first close after the decision day (see
+   ``window_return``).
 1. **Wrong exit date.** It took the *latest* close, so a decision resolved two
    months late was scored over five months, not three. The exit is now the last
    close on or before ``due_at``.
@@ -47,10 +49,32 @@ def _close_on_or_before(df: pd.DataFrame, when: datetime):
     return float(df["close"].iloc[i]), dates.iloc[i]
 
 
+def _first_close_after(df: pd.DataFrame, when: datetime):
+    """First close dated strictly after the calendar day of ``when``."""
+    day = _naive(when).normalize()
+    dates = pd.to_datetime(df["date"])
+    if dates.dt.tz is not None:
+        dates = dates.dt.tz_convert(None)
+    mask = (dates.dt.normalize() > day).to_numpy()
+    if not mask.any():
+        return None, None
+    i = mask.nonzero()[0][0]
+    return float(df["close"].iloc[i]), dates.iloc[i]
+
+
 def window_return(df: pd.DataFrame, start: datetime, end: datetime):
-    """Percent return from the close on/before ``start`` to the close on/before ``end``."""
-    p0, d0 = _close_on_or_before(df, start)
+    """Percent return from the first close AFTER ``start`` to the close on/before ``end``.
+
+    Entering at the next close rather than the decision day's close is borrowed
+    from TradingAgents (v0.7): a decision made on a given day may have read
+    filings or prices from after that day's close, so the earliest price anyone
+    acting on it could actually get is the next one. It is the conservative
+    choice and it removes any same-day look-ahead.
+    """
+    p0, d0 = _first_close_after(df, start)
     p1, d1 = _close_on_or_before(df, end)
+    if d0 is not None and d1 is not None and d1 < d0:
+        return None
     if p0 is None or p1 is None or p0 <= 0:
         return None
     return {"entry": p0, "exit": p1, "entry_date": d0, "exit_date": d1,

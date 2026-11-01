@@ -122,7 +122,7 @@ def main():
             continue
 
         decision_id = None
-        recent = (db.recent_decision(ticker, args.min_gap_days)
+        recent = (db.recent_decision(ticker, args.min_gap_days, source="watchlist")
                   if args.min_gap_days > 0 and not args.no_log else None)
         if recent:
             skipped += 1

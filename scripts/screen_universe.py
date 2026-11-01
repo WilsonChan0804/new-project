@@ -3,6 +3,8 @@
     python scripts/screen_universe.py                 # ~1500 liquid names
     python scripts/screen_universe.py --limit 300     # quick trial
     python scripts/screen_universe.py --resume        # continue an interrupted run
+    python scripts/screen_universe.py --all --log-forward   # whole US market,
+                                                      # logged for the forward test
 
 The first run is slow — one SEC filings call and one price request per ticker,
 throttled to stay polite. Expect roughly 20-40 minutes for 1500 names. Both
@@ -33,6 +35,12 @@ def main():
     ap.add_argument("--min-dollar-volume", type=float, default=5_000_000,
                     help="Median daily turnover floor (default 5M)")
     ap.add_argument("--min-price", type=float, default=3.0)
+    ap.add_argument("--all", action="store_true",
+                    help="Every SEC-listed ticker (~7-8k before the liquidity "
+                         "filter). First run 1-3 hours; cached re-runs are faster.")
+    ap.add_argument("--log-forward", action="store_true",
+                    help="Log every scored name as a forward-test decision, so "
+                         "the calibration report measures the whole market.")
     ap.add_argument("--resume", action="store_true",
                     help="Continue the most recent unfinished run")
     ap.add_argument("--throttle", type=float, default=0.12)
@@ -41,6 +49,8 @@ def main():
                          "sample. Rarely what you want — it screens the front of "
                          "the alphabet, not the market.")
     args = ap.parse_args()
+    if args.all:
+        args.limit = 0
 
     as_of = date.today()
     print("Building candidate list from the SEC ticker file...")
@@ -109,6 +119,11 @@ def main():
         return 130
 
     summary = store.finalise(run_id)
+    if args.log_forward:
+        from app.storage import db
+        logged, skipped = db.log_screen_decisions(run_id)
+        print(f"\nForward test: logged {logged} names"
+              + (f", {skipped} skipped (already logged this week)" if skipped else ""))
     cohorts = store.cohort_sizes(run_id)
     median = sorted(cohorts.values())[len(cohorts) // 2] if cohorts else 0
 

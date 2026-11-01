@@ -3551,7 +3551,9 @@ def test_resolver_exits_at_due_date_not_today_and_records_benchmark():
                               datetime.now(timezone.utc).date(), freq="D")
 
         def series(at_due, today):
-            close = [100.0 if d.date() <= created.date() else
+            # Entry is the first close AFTER the decision day (TradingAgents
+            # convention), so the 100 must hold through the next day.
+            close = [100.0 if d.date() <= created.date() + timedelta(days=1) else
                      (at_due if d.date() <= due.date() else today) for d in dates]
             return pd.DataFrame({"date": dates, "close": close})
 
@@ -3618,3 +3620,134 @@ def test_forward_rank_ic_sees_the_score_when_brier_cannot():
     flipped = [dict(r, excess_return_pct=-r["excess_return_pct"]) for r in rows]
     assert db.forward_rank_ic(flipped)["mean_ic"] == -1.0
     assert db.forward_rank_ic(rows[:3])["weeks"] == 0
+
+
+# ===========================================================================
+# v3.10 — whole-market forward test, component IC, expected-value gate
+# ===========================================================================
+
+def test_negative_expected_value_never_comes_out_as_a_buy():
+    """A score of 64-67 used to return ACCUMULATE even when the engine's own
+    arithmetic said the trade lost money after costs."""
+    from app.analysis.decision import choose_action
+    parts = {"valuation": 70}
+    for score in (64, 66, 70, 80):
+        action, _ = choose_action(score, 80, 1.0, -0.05, parts)
+        assert action == "WATCH", score
+    assert choose_action(66, 80, 1.0, 0.10, parts)[0] == "ACCUMULATE"
+    assert choose_action(66, 80, 1.0, None, parts)[0] == "ACCUMULATE"
+
+
+def _seed_screen(rows):
+    from app.screener import store
+    from datetime import date
+    run = store.start_run(date.today(), "test", len(rows), {})
+    for r in rows:
+        store.record(run, row=r, ticker=r["ticker"])
+    store.finalise(run)
+    return run
+
+
+def _screen_row(t, score, val, sector="TECH", flags=None):
+    return {"ticker": t, "name": t + " Inc", "sector": sector, "price": 50.0,
+            "dollar_volume": 2e7, "score": score, "coverage": 0.6,
+            "confidence": 60, "valuation": val, "fundamentals": 55,
+            "growth": 50, "technical": 50, "money_flow": 50,
+            "red_flags": flags or [], "detail": {"action": "WATCH"}}
+
+
+def test_screen_filters_red_flags_percentile_and_search():
+    from app.config import settings
+    from app.screener import store
+    saved = _temp_db()
+    try:
+        run = _seed_screen([
+            _screen_row("AAA", 70, 80),
+            _screen_row("BBB", 65, 60, flags=["Changed auditor (2026-08-01)"]),
+            _screen_row("CCC", 55, 40),
+            _screen_row("DDD", 45, 30, sector="ENERGY"),
+        ])
+        all_ = store.results(run_id=run, limit=10)
+        assert all_["filtering"]["matched"] == 4
+        bbb = [r for r in all_["results"] if r["ticker"] == "BBB"][0]
+        assert bbb["red_flag_count"] == 1 and "auditor" in bbb["red_flags_text"]
+        assert bbb["action"] == "WATCH"
+
+        clean = store.results(run_id=run, limit=10, exclude_red_flags=True)
+        assert "BBB" not in [r["ticker"] for r in clean["results"]]
+
+        top = store.results(run_id=run, limit=10, min_sector_percentile=50,
+                            sector="TECH")
+        assert [r["ticker"] for r in top["results"]] == ["AAA", "BBB"]
+
+        assert [r["ticker"] for r in store.results(run_id=run, query="cc")["results"]] == ["CCC"]
+        page2 = store.results(run_id=run, limit=2, offset=2)
+        assert len(page2["results"]) == 2 and page2["filtering"]["matched"] == 4
+
+        assert store.progress()["scored"] == 4
+        assert store.sectors() == ["ENERGY", "TECH"]
+    finally:
+        settings.db_path = saved
+
+
+def test_whole_screen_is_logged_to_the_forward_test_once_a_week():
+    from app.config import settings
+    from app.storage import db
+    saved = _temp_db()
+    try:
+        run = _seed_screen([_screen_row(t, 50 + i, 50) for i, t in
+                            enumerate(["A1", "A2", "A3", "A4", "A5", "A6"])])
+        logged, skipped = db.log_screen_decisions(run)
+        assert (logged, skipped) == (6, 0)
+        assert db.log_screen_decisions(run) == (0, 6), "same week is skipped"
+
+        # A watchlist decision on the same ticker is a separate source.
+        assert db.recent_decision("A1", 6, source="watchlist") is None
+        assert db.recent_decision("A1", 6, source="screen") is not None
+        with db.connect() as conn:
+            row = dict(conn.execute("SELECT * FROM decisions LIMIT 1").fetchone())
+        assert row["source"] == "screen" and row["entry_price"] == 50.0
+        assert '"valuation": 50' in row["components_json"]
+    finally:
+        settings.db_path = saved
+
+
+def test_component_ic_finds_the_component_that_ranks():
+    """If valuation ranked returns and technical did not, the report must say so."""
+    from app.storage import db
+    rows = []
+    for week in ("2026-09-07", "2026-09-14"):
+        for i, ret in enumerate((-4, -2, 0, 2, 4, 6)):
+            rows.append({"created_at": week + "T10:00:00+00:00",
+                         "opportunity_score": 50, "realised_return_pct": ret,
+                         "excess_return_pct": ret,
+                         "components": {"valuation": 10 * i,
+                                        "technical": [3, 1, 4, 1, 5, 9][i]}})
+    comp = db.component_ic(rows)
+    assert comp["valuation"]["mean_ic"] == 1.0 and comp["valuation"]["weeks"] == 2
+    assert comp["technical"]["mean_ic"] < 0.9
+    assert "news" not in comp
+
+
+def test_report_includes_screen_rows_without_probabilities():
+    """Screen decisions carry no p_bull. They must still reach the rank IC."""
+    from app.config import settings
+    from app.storage import db
+    saved = _temp_db()
+    try:
+        run = _seed_screen([_screen_row(f"T{i}", 40 + 5 * i, 10 * i) for i in range(6)])
+        db.log_screen_decisions(run)
+        with db.connect() as conn:
+            ids = [(r["id"], int(r["ticker"][1:])) for r in
+                   conn.execute("SELECT id, ticker FROM decisions")]
+        for did, i in ids:
+            db.record_outcome(did, 50.0 + i, 50.0, benchmark_return_pct=1.0)
+        rep = db.calibration_report(5)
+        assert rep["status"] == "ok" and rep["sample_size"] == 6
+        assert rep["brier_score"] is None
+        assert rep["forward_rank_ic"]["mean_ic"] == 1.0
+        assert rep["forward_component_ic"]["valuation"]["mean_ic"] == 1.0
+        assert "screen" in rep["forward_rank_ic_by_source"]
+        assert db.calibration_report(5, source="watchlist")["status"] != "ok"
+    finally:
+        settings.db_path = saved

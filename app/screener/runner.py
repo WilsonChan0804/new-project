@@ -17,7 +17,9 @@ figure reports honestly.
 import time
 from datetime import date
 
+from ..analysis import events as events_mod
 from ..analysis import filings as filings_mod
+from ..analysis import scenarios as scenarios_mod
 from ..analysis.decision import choose_action, evaluate
 from ..analysis.features import merge_fundamentals, money_flow, technical
 from ..backtest.replay import valuation_pit
@@ -116,6 +118,17 @@ def score_ticker(ticker, as_of=None, min_dollar_volume=DEFAULT_MIN_DOLLAR_VOLUME
     except Exception:
         pass
 
+    # 8-K red flags: auditor change, restatement, impairment, delisting notice,
+    # bankruptcy, accelerated debt. One extra SEC request per liquid name. These
+    # are facts, not forecasts, which makes them the most useful whole-market
+    # filter this engine has.
+    red_flags = []
+    try:
+        ev = events_mod.classify(edgar.recent_filings(ticker), as_of)
+        red_flags = [f"{f['label']} ({f['filed']})" for f in ev.get("red_flags", [])]
+    except Exception:
+        red_flags = None   # unknown, not clean
+
     t = technical(df)
     mf = money_flow(df)
     val_score, val_inputs = (valuation_pit(facts, as_of, price)
@@ -135,8 +148,12 @@ def score_ticker(ticker, as_of=None, min_dollar_volume=DEFAULT_MIN_DOLLAR_VOLUME
     if ev["opportunity_score"] is None:
         return None, "no_data", "no scorable components"
 
+    # Same expected-value gate as the single-stock analysis, so the screen and
+    # the stock page never disagree on whether something is a buy.
+    _, diag = scenarios_mod.build(ev["opportunity_score"], t.get("vol_annualised"), 63)
+    rr = diag.get("reward_to_risk") if isinstance(diag, dict) else None
     action, _ = choose_action(ev["opportunity_score"], ev["confidence"],
-                              ev["coverage"], None, parts)
+                              ev["coverage"], rr, parts)
 
     return ({
         "ticker": ticker,
@@ -152,6 +169,7 @@ def score_ticker(ticker, as_of=None, min_dollar_volume=DEFAULT_MIN_DOLLAR_VOLUME
         "growth": merged["growth"],
         "technical": t.get("technical"),
         "money_flow": mf.get("money_flow"),
+        "red_flags": red_flags,
         "detail": {
             "action": action,
             "sic": profile.get("sic_description"),
