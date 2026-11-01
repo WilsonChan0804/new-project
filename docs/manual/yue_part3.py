@@ -56,6 +56,7 @@ PART = [
     ]),
     UL([
         '**Polyline / Polygon：** 撳啲點，然後按 Enter、double-click 或者 **✓ Finish**。Backspace 刪最後一點。',
+        '**Dimension、Measure、Line、Arrow：** 由第一點拖去第二點，或者撳第一點、再撳第二點（撳咗第一點之後按 Esc 取消）。',
         '**Style bar：** Layer、線／填色／文字顏色、Opacity、Weight（紙上 mm）、線 Type、Font、Size（字高 mm）、Align。',
         '**改 markup：** 揀一個 markup 就可以搬、改大細或者改樣式；R / Shift+R 轉 90°；Ctrl+C / Ctrl+V copy 同貼（貼去另一張 sheet 會喺同一個位置）；Delete 刪除。Dimension 或者量度撳佢個數字（或者佢啲線）就揀到。',
         '**Snap 去圖則嘅線：** Dimension、Measure、Area、Angle、Line、Arrow、Polyline、Polygon、Rect 同 Cloud 會 snap 去 sheet 本身印出嚟嘅線 - 橙色記號話你知係 **Endpoint**（端點）、**Intersection**（交點）、**Midpoint**（中點）定 **On line**（線上）。拖呢啲 markup 嘅點都會 snap。㩒住 **Alt** 就自由放；**View ▾ > Snap to drawing lines** 可以關。用伺服器圖片顯示嘅大 sheet，第一次會喺背景讀啲線（「Reading this drawing\'s lines for snapping ...」）。',

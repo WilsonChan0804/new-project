@@ -403,6 +403,7 @@ DOC = [
     ]),
     UL([
         '**Polyline / Polygon:** click the points, then press Enter, double-click or **✓ Finish**. Backspace removes the last point.',
+        '**Dimension, Measure, Line, Arrow:** drag from the first point to the second, or click the first point and then click the second (Esc cancels after the first click).',
         '**Style bar:** Layer, Line / Fill / Text colour, Opacity, Weight (paper mm), line Type, Font, Size (text height in mm), Align.',
         '**Editing:** select a markup to move, resize or restyle it; R / Shift+R rotate it 90°; Ctrl+C / Ctrl+V copy and paste (paste on another sheet lands at the same spot); Delete removes it. A dimension or measurement is picked by clicking its number (or its lines).',
         '**Snapping to the drawing:** Dimension, Measure, Area, Angle, Line, Arrow, Polyline, Polygon, Rect and Cloud snap to the sheet\'s own plotted lines - an orange mark says **Endpoint**, **Intersection**, **Midpoint** or **On line**. Dragging the points of these markups snaps too. Hold **Alt** to place a point freely; **View ▾ > Snap to drawing lines** turns it off. On a big sheet shown from the server\'s pictures, the lines are read in the background the first time ("Reading this drawing\'s lines for snapping ...").',

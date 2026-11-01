@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-24", date: "2 Nov 2026",
+    items: [
+      "**Fix:** **Snip** on big sheets shown from the server's pictures (e.g. KC017's) could still copy the wrong part of the sheet - often the title block - on drawings whose page does not start at the corner. It now copies exactly the area dragged. Snapping on those sheets lines up the same way.",
+      "**Dimension, Measure, Line and Arrow by two clicks:** click the first point, then the second (the line follows the pointer in between; Esc cancels). Dragging still works.",
+    ],
+  },
+  {
     version: "2026-12-23", date: "1 Nov 2026",
     items: [
       "**Snapping to the drawing:** dimensions, measurements, lines, arrows, polylines, rectangles and clouds snap to the sheet's own plotted lines - line ends, crossings, midpoints or a point along a line, shown by an orange mark. Hold **Alt** to place freely; **View > Snap to drawing lines** turns it off.",

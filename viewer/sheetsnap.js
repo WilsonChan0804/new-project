@@ -8,7 +8,7 @@
  * Kept in paper millimetres in a coarse grid, so finding the lines under the
  * pointer is quick on a sheet of a million strokes.
  *
- *   const idx = await readLines(page, origin)   // origin: page.view's [x0, y0]
+ *   const idx = await readLines(page, toMm)     // toMm(x, y): PDF user space -> paper mm [u, v]
  *   idx.snap([u, v], tolMm) -> { p: [u, v], kind } | null
  *   kind: "end" | "cross" | "mid" | "on"
  */
@@ -23,16 +23,26 @@ function mul(m, n) {               // m then n, as pdf.js Util.transform(n, m) r
           m[4] * n[0] + m[5] * n[2] + n[4], m[4] * n[1] + m[5] * n[3] + n[5]];
 }
 
-export async function readLines(page, origin) {
+/* The usual converter: the PDF's own frame less its CropBox corner, as the
+   sheets drawn from the PDF place markups (app.js paperFrom). */
+export const pdfFrame = (page) => (x, y) => [(x - page.view[0]) * PT_MM, (y - page.view[1]) * PT_MM];
+/* A sheet shown from the server's pictures: the sheet as displayed (origin
+   at the CropBox corner, turned upright by its /Rotate), which is the PDF
+   through its own default viewport; H: the displayed height in points. */
+export const shownFrame = (page, H) => {
+  const vp = page.getViewport({ scale: 1 });
+  return (x, y) => { const q = vp.convertToViewportPoint(x, y); return [q[0] * PT_MM, (H - q[1]) * PT_MM]; };
+};
+
+export async function readLines(page, toMm) {
   const OPS = pdfjsLib.OPS;
   const ol = await page.getOperatorList();
   const fn = ol.fnArray, args = ol.argsArray;
   const xs = [];                    // flat x1, y1, x2, y2 in mm
-  const o = origin || [0, 0];
+  const to = toMm || pdfFrame(page);
   let ctm = [1, 0, 0, 1, 0, 0];
   const stack = [];
-  const P = (x, y) => [((x * ctm[0] + y * ctm[2] + ctm[4]) - o[0]) * PT_MM,
-                       ((x * ctm[1] + y * ctm[3] + ctm[5]) - o[1]) * PT_MM];
+  const P = (x, y) => to(x * ctm[0] + y * ctm[2] + ctm[4], x * ctm[1] + y * ctm[3] + ctm[5]);
   const seg = (a, b) => {
     if (xs.length / 4 >= MAX_SEG) return;
     if (Math.abs(a[0] - b[0]) < 1e-4 && Math.abs(a[1] - b[1]) < 1e-4) return;

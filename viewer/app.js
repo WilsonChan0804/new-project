@@ -26,7 +26,7 @@ import { importCad, pdfImportDialog, keepImported, chooseSource, folderFile, del
 import { createAreas, pdfAreas, locateRows } from "./areas.js";
 import { createLvSheets, missingLinks } from "./lv.js";
 import * as QV from "./queryviews.js";
-import { readLines } from "./sheetsnap.js";
+import { readLines, pdfFrame, shownFrame } from "./sheetsnap.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -1588,13 +1588,15 @@ function snapLines() {
   if (SNAP.key === key) return SNAP.idx;
   SNAP.key = key; SNAP.idx = null;
   (async () => {
-    let page = S.page;
+    let page = S.page, toMm = null;
     if (page.isTilePage) {
       if (!page.loadPdfPage) return;
       status("Reading this drawing's lines for snapping ...");
+      const H = page.view[3];
       page = await page.loadPdfPage();
+      toMm = shownFrame(page, H);        // the pictures' frame, not the PDF's raw one
     }
-    const idx = await readLines(page, page.view ? [page.view[0], page.view[1]] : [0, 0]);
+    const idx = await readLines(page, toMm || pdfFrame(page));
     if (SNAP.key !== key) return;                    // another sheet meanwhile
     SNAP.idx = idx;
     if (page !== S.page) status(`Snapping to this drawing's lines (${idx.count.toLocaleString()}).`);
@@ -1922,21 +1924,27 @@ async function snipRegion(item) {
   const longest = Math.max(wmm, hmm) * MM_PT * scale;
   if (longest > 4000) scale *= 4000 / longest;          // keep the image manageable
   /* A big sheet shown from the server's pictures: its own PDF for a
-     print-sharp snip when that comes quickly, else the pictures. */
-  let page = S.page;
-  if (page.isTilePage && page.loadPdfPage) {
-    status("Snipping ...");
-    page = await Promise.race([page.loadPdfPage().catch(() => null),
-                               new Promise((r) => setTimeout(() => r(null), 4000))]) || S.page;
+     print-sharp snip when that comes quickly, else the pictures.
+     The pictures' sheet is the sheet as displayed - origin at its CropBox
+     corner, turned upright - which is exactly the PDF seen through its own
+     default viewport; the PDF's raw frame (its CropBox offset, unturned)
+     is not, and a snip read that way landed elsewhere on the sheet (the
+     title block). So a picture sheet's snip goes through that viewport. */
+  let vp, page = S.page;
+  if (page.isTilePage) {
+    const H = page.view[3];
+    const pdfPage = page.loadPdfPage ? await Promise.race([page.loadPdfPage().catch(() => null),
+      new Promise((r) => setTimeout(() => r(null), 4000))]) : null;
+    if (pdfPage) page = pdfPage;
+    // the area asked for by moving the viewport: the pictures ignore a transform handed to render()
+    vp = page.getViewport({ scale: scale, offsetX: -x0 * MM_PT * scale, offsetY: -(H - y1 * MM_PT) * scale });
+  } else {
+    const o = pageOrigin();
+    // the snip's top-left corner (paper y runs up, so that is y1)
+    const [ax, ay] = page.getViewport({ scale: scale, rotation: 0 })
+      .convertToViewportPoint(x0 * MM_PT + o[0], y1 * MM_PT + o[1]);
+    vp = page.getViewport({ scale: scale, rotation: 0, offsetX: -ax, offsetY: -ay });
   }
-  const o = pageOrigin();
-  // the snip's top-left corner (paper y runs up, so that is y1)
-  const [ax, ay] = page.getViewport({ scale: scale, rotation: 0 })
-    .convertToViewportPoint(x0 * MM_PT + o[0], y1 * MM_PT + o[1]);
-  /* The area is asked for by moving the viewport, not by a transform
-     handed to render(): the server's pictures ignore that, and every snip
-     of such a sheet came out as its top-left corner. */
-  const vp = page.getViewport({ scale: scale, rotation: 0, offsetX: -ax, offsetY: -ay });
   const W = Math.max(1, Math.round(wmm * MM_PT * scale));
   const H = Math.max(1, Math.round(hmm * MM_PT * scale));
   const c = document.createElement("canvas");
@@ -2089,6 +2097,10 @@ function editText(id) {
 function wirePointer() {
   const svg = $("#overlay");
   let mode = null, handle = -1, last = null, poly = null;
+  // Dimension, Measure, Line, Arrow placed by two clicks: the first click made the draft
+  let twoClick = false;
+  const TWO_CLICK = new Set(["dimension", "measure", "line", "arrow"]);
+  S.cancelTwoClick = () => { if (twoClick) { twoClick = false; mode = null; S.draft = null; redraw(); } };
   let marquee = null, rotPivot = null, rotLast = 0, gscale = null;
 
   svg.addEventListener("dblclick", (ev) => {
@@ -2229,6 +2241,20 @@ function wirePointer() {
     if (S.penSeen && ev.pointerType === "touch" && DRAWING_KINDS.has(t.kind)) return;
     // a dimension, measurement or line shape starts on the drawing's own line
     const p = t.kind === "drag2" || t.kind === "poly" ? snapPoint(eventPoint(ev), ev) : eventPoint(ev);
+    // the second click of a two-click dimension (or measure, line, arrow): done
+    if (twoClick) {
+      twoClick = false;
+      if (S.draft && S.draft.type === S.tool && ev.button === 0) {
+        ev.preventDefault();
+        S.draft.points_mm[1] = p;
+        mode = null;
+        const d = S.draft, a = d.points_mm[0];
+        if (Math.hypot(p[0] - a[0], p[1] - a[1]) < 1.2) { S.draft = null; redraw(); return; }
+        finishDrawing(d);
+        return;
+      }
+      mode = null; S.draft = null;
+    }
     /* A second press on the same text within a moment: change its words.
        (The page redraws between the two presses, so the browser's own
        double-click never arrives.) */
@@ -2683,7 +2709,13 @@ function wirePointer() {
     } else if (mode === "draw" && S.draft) {
       const a = S.draft.points_mm[0];
       const b = S.draft.points_mm[S.draft.points_mm.length - 1];
-      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1.2) {
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1.2 && TWO_CLICK.has(S.draft.type)) {
+        // a click, not a drag: the first point is down; the line follows the
+        // pointer until the second click (Esc drops it)
+        twoClick = true;
+        status("Click the second point (Esc to cancel).");
+        return;
+      } else if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1.2) {
         S.draft = null; redraw();       // stray click, not a markup
       } else {
         finishDrawing(S.draft);
@@ -2739,7 +2771,7 @@ function wirePointer() {
         status("Drawing cancelled.");
       }
     }
-    else if (ev.key === "Escape") { poly = null; S.draft = null; try { LV.clear(); AREAS.clear(); } catch (e) {} select([], false); }
+    else if (ev.key === "Escape") { poly = null; S.draft = null; if (twoClick) { twoClick = false; mode = null; redraw(); } try { LV.clear(); AREAS.clear(); } catch (e) {} select([], false); }
     else if (ev.key === "Backspace" && poly && S.draft) {
       /* While a polyline is being drawn, Backspace takes back the last
          point rather than deleting whatever happens to be selected. The
@@ -6063,6 +6095,7 @@ function showInGroup(g, id) {
 function setTool(id) {
   if (INK.pending.length) flushInk();
   if (S.endPoly && id !== S.tool) S.endPoly();
+  if (S.cancelTwoClick && id !== S.tool) S.cancelTwoClick();
   S.tool = id;
   document.querySelectorAll("#tools button").forEach((b) =>
     b.classList.toggle("active", b.dataset.tool === id));
