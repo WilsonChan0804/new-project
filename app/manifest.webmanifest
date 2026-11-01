@@ -2,7 +2,7 @@
   "name": "Twofold",
   "short_name": "Twofold",
   "description": "A private space for your moments, chats and plans.",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#FFFCF7",
@@ -11,7 +11,7 @@
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ],
   "share_target": {
-    "action": "./index.html",
+    "action": "./",
     "method": "GET",
     "params": { "title": "title", "text": "text", "url": "url" }
   }
