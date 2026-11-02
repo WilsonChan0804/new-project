@@ -140,14 +140,18 @@ def start_run(as_of, version, universe_size, params):
         return int(cur.lastrowid)
 
 
-def latest_unfinished(as_of):
-    """Resume support: a screen of thousands of names should survive a Ctrl-C."""
+def latest_unfinished(as_of, max_age_days: int = 3):
+    """Resume support: a screen of thousands of names should survive a Ctrl-C,
+    including one that is resumed the next morning."""
+    from datetime import date as _date, timedelta
     init()
+    oldest = str((as_of if isinstance(as_of, _date) else _date.fromisoformat(str(as_of)))
+                 - timedelta(days=max_age_days))
     with connect() as conn:
         row = conn.execute(
             """SELECT * FROM screen_runs
-               WHERE finished_at IS NULL AND as_of_date = ?
-               ORDER BY id DESC LIMIT 1""", (str(as_of),)).fetchone()
+               WHERE finished_at IS NULL AND as_of_date >= ?
+               ORDER BY id DESC LIMIT 1""", (oldest,)).fetchone()
     return dict(row) if row else None
 
 

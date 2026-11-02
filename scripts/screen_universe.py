@@ -21,6 +21,7 @@ import argparse
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,14 +37,21 @@ def main():
                     help="Median daily turnover floor (default 5M)")
     ap.add_argument("--min-price", type=float, default=3.0)
     ap.add_argument("--all", action="store_true",
-                    help="Every SEC-listed ticker (~7-8k before the liquidity "
-                         "filter). First run 1-3 hours; cached re-runs are faster.")
+                    help="Every exchange-listed US ticker (NYSE, Nasdaq, CBOE; about "
+                         "6-7k before the liquidity filter). Roughly 30-60 min.")
     ap.add_argument("--log-forward", action="store_true",
                     help="Log every scored name as a forward-test decision, so "
                          "the calibration report measures the whole market.")
     ap.add_argument("--resume", action="store_true",
                     help="Continue the most recent unfinished run")
-    ap.add_argument("--throttle", type=float, default=0.12)
+    ap.add_argument("--throttle", type=float, default=0.12,
+                    help="Unused since v3.10.1: SEC pacing is enforced in the "
+                         "EDGAR client. Kept so old commands still parse.")
+    ap.add_argument("--workers", type=int, default=8,
+                    help="Tickers checked in parallel (default 8)")
+    ap.add_argument("--include-otc", action="store_true",
+                    help="Also screen over-the-counter and unlisted tickers. "
+                         "Roughly doubles the run for very few liquid names.")
     ap.add_argument("--alphabetical", action="store_true",
                     help="Take the first N tickers by name instead of a random "
                          "sample. Rarely what you want — it screens the front of "
@@ -56,7 +64,8 @@ def main():
     print("Building candidate list from the SEC ticker file...")
     try:
         candidates = runner.candidate_tickers(limit=args.limit,
-                                             alphabetical=args.alphabetical)
+                                             alphabetical=args.alphabetical,
+                                             include_otc=args.include_otc)
     except Exception as exc:
         print(f"Could not fetch the SEC ticker list: {exc}")
         return 1
@@ -82,41 +91,46 @@ def main():
 
     counts = {"ok": 0, "illiquid": 0, "no_data": 0}
     started = time.time()
+    pending = [c["ticker"] for c in candidates if c["ticker"] not in done]
+    total = len(pending)
+    print(f"{total} to check with {args.workers} parallel workers "
+          f"(SEC requests stay under its 10-a-second limit)\n")
 
+    def work(ticker):
+        try:
+            return ticker, *runner.score_ticker(
+                ticker, as_of, args.min_dollar_volume, args.min_price)
+        except Exception as exc:
+            return ticker, None, "no_data", str(exc)[:80]
+
+    pool = ThreadPoolExecutor(max_workers=args.workers)
     try:
-        for i, c in enumerate(candidates, 1):
-            ticker = c["ticker"]
-            if ticker in done:
-                continue
-            try:
-                row, status, note = runner.score_ticker(
-                    ticker, as_of, args.min_dollar_volume, args.min_price)
-            except KeyboardInterrupt:
-                raise
-            except Exception as exc:
-                row, status, note = None, "no_data", str(exc)[:80]
-
+        futures = [pool.submit(work, t) for t in pending]
+        for i, fut in enumerate(as_completed(futures), 1):
+            ticker, row, status, note = fut.result()
             counts[status] = counts.get(status, 0) + 1
             store.record(run_id, row=row, ticker=ticker, status=status, note=note)
 
             if status == "ok":
                 sector = (row.get("sector") or "?")[:16]
-                print(f"[{i:>5}/{len(candidates)}] {ticker:<6} "
+                flags = f"  {len(row['red_flags'])} red flag(s)" if row.get("red_flags") else ""
+                print(f"[{i:>5}/{total}] {ticker:<6} "
                       f"score {row['score']:>5.1f}  cov {row['coverage']:.2f}  "
-                      f"{sector}")
-            elif i % 50 == 0:
-                rate = i / max(time.time() - started, 1)
-                left = (len(candidates) - i) / max(rate, 0.01) / 60
-                print(f"[{i:>5}/{len(candidates)}] ... {counts['ok']} scored, "
-                      f"~{left:.0f} min remaining")
-
-            runner.throttle(args.throttle)
+                      f"{sector}{flags}")
+            if i % 100 == 0:
+                elapsed = max(time.time() - started, 1)
+                left = (total - i) / (i / elapsed) / 60
+                print(f"[{i:>5}/{total}] ... {counts['ok']} scored, "
+                      f"{counts['illiquid']} illiquid, {counts['no_data']} no data, "
+                      f"{i / elapsed * 60:.0f}/min, ~{left:.0f} min remaining")
 
     except KeyboardInterrupt:
-        print(f"\nInterrupted. {counts['ok']} scored so far.")
-        print(f"Resume with:  python scripts/screen_universe.py --resume "
-              f"--limit {args.limit}")
+        pool.shutdown(wait=False, cancel_futures=True)
+        print(f"\nInterrupted. {counts['ok']} scored so far; progress is saved.")
+        print("Resume with:  python scripts\\screen_universe.py --resume "
+              + ("--all --log-forward" if args.limit == 0 else f"--limit {args.limit}"))
         return 130
+    pool.shutdown(wait=True)
 
     summary = store.finalise(run_id)
     if args.log_forward:

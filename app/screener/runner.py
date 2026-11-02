@@ -34,7 +34,11 @@ DEFAULT_MIN_PRICE = 3.0
 SKIP_SUFFIXES = ("-W", "-U", "-R", ".WS", ".U", ".RT")
 
 
-def candidate_tickers(limit=None, seed: int = 20260903, alphabetical: bool = False):
+LISTED_EXCHANGES = {"NASDAQ", "NYSE", "CBOE"}
+
+
+def candidate_tickers(limit=None, seed: int = 20260903, alphabetical: bool = False,
+                      include_otc: bool = False):
     """Every SEC-registered ticker, lightly cleaned and then SAMPLED.
 
     The first version sorted alphabetically and took ``out[:limit]``, so
@@ -48,8 +52,19 @@ def candidate_tickers(limit=None, seed: int = 20260903, alphabetical: bool = Fal
     so two runs of the same size cover the same names and can be compared.
     """
     universe = edgar.known_tickers()
+    # Over-the-counter and unlisted names are a third or more of the SEC file
+    # and nearly all fail the liquidity bar. Dropping them before fetching any
+    # prices is the single biggest saving in a whole-market screen.
+    exchanges = None
+    if not include_otc:
+        try:
+            exchanges = edgar.exchange_listing()
+        except Exception:
+            exchanges = None   # fall back to screening everything
     out = []
     for ticker, name in universe.items():
+        if exchanges is not None and (exchanges.get(ticker) or "").upper() not in LISTED_EXCHANGES:
+            continue
         if not ticker or not ticker.isascii():
             continue
         if any(ticker.endswith(sfx) for sfx in SKIP_SUFFIXES):
@@ -90,7 +105,11 @@ def score_ticker(ticker, as_of=None, min_dollar_volume=DEFAULT_MIN_DOLLAR_VOLUME
     as_of = as_of or date.today()
 
     try:
-        df, _meta = prices.daily(ticker)
+        # Yahoo only. The live analyzer falls back to Stooq and Alpha Vantage,
+        # but in a screen of thousands that fallback runs for every name Yahoo
+        # does not carry: Stooq can hang for its full timeout and Alpha Vantage
+        # burns the 25-a-day quota in the first minute.
+        df, _meta = prices.daily(ticker, sources=["yahoo"])
     except Exception as exc:
         return None, "no_data", f"price: {str(exc)[:80]}"
 

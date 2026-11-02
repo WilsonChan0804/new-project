@@ -3751,3 +3751,89 @@ def test_report_includes_screen_rows_without_probabilities():
         assert db.calibration_report(5, source="watchlist")["status"] != "ok"
     finally:
         settings.db_path = saved
+
+
+# ===========================================================================
+# v3.10.1 — a whole-market screen in under an hour, not thirty-five
+# ===========================================================================
+
+def test_candidates_skip_otc_and_unlisted(monkeypatch):
+    """A real run spent five hours on 1,408 names. Most of the SEC file is OTC."""
+    from app.providers import edgar
+    from app.screener import runner
+    monkeypatch.setattr(edgar, "known_tickers", lambda: {
+        "AAPL": "Apple", "JPM": "JPMorgan", "OTCX": "Shell Co", "NOEX": "Fund",
+        "CBX": "Cboe name"})
+    monkeypatch.setattr(edgar, "exchange_listing", lambda: {
+        "AAPL": "Nasdaq", "JPM": "NYSE", "OTCX": "OTC", "NOEX": None, "CBX": "CBOE"})
+    got = [c["ticker"] for c in runner.candidate_tickers()]
+    assert got == ["AAPL", "CBX", "JPM"]
+    assert len(runner.candidate_tickers(include_otc=True)) == 5
+
+    def boom():
+        raise RuntimeError("SEC down")
+    monkeypatch.setattr(edgar, "exchange_listing", boom)
+    assert len(runner.candidate_tickers()) == 5, "falls back to everything"
+
+
+def test_screen_prices_come_from_yahoo_only(monkeypatch):
+    """The analyzer's Stooq / Alpha Vantage fallback must not run per ticker in
+    a screen: Stooq can hang 30s and AV's 25-a-day quota is gone in a minute."""
+    from app.providers import prices
+    from app.screener import runner
+    seen = {}
+
+    def fake_daily(ticker, sources=None, **kw):
+        seen["sources"] = sources
+        raise prices.PriceError("no data")
+    monkeypatch.setattr(prices, "daily", fake_daily)
+    row, status, _ = runner.score_ticker("ZZZZ")
+    assert status == "no_data" and seen["sources"] == ["yahoo"]
+
+
+def test_sec_requests_are_paced_across_threads(monkeypatch):
+    import threading
+    import time as _t
+    from app.providers import edgar
+    calls = []
+    monkeypatch.setattr(edgar.requests, "get",
+                        lambda *a, **k: calls.append(_t.monotonic()))
+    edgar._sec_last[0] = 0.0
+    threads = [threading.Thread(target=edgar._sec_get, args=("u",)) for _ in range(6)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    calls.sort()
+    gaps = [b - a for a, b in zip(calls, calls[1:])]
+    assert len(calls) == 6 and min(gaps) >= edgar._SEC_MIN_INTERVAL * 0.9
+
+
+def test_parallel_screen_records_every_ticker(monkeypatch):
+    """Eight workers, slow fake network: all names recorded, far faster than serial."""
+    import sys
+    import time as _t
+    from app.config import settings
+    from app.screener import runner, store
+    saved = _temp_db()
+    try:
+        names = [f"T{i:03d}" for i in range(40)]
+        monkeypatch.setattr(runner, "candidate_tickers",
+                            lambda **k: [{"ticker": t, "name": t} for t in names])
+
+        def slow(ticker, *a, **k):
+            _t.sleep(0.05)
+            if ticker.endswith("7"):
+                return None, "illiquid", "thin"
+            return _screen_row(ticker, 50, 50), "ok", None
+        monkeypatch.setattr(runner, "score_ticker", slow)
+        monkeypatch.setattr(sys, "argv", ["screen_universe.py", "--all", "--workers", "8"])
+        from scripts import screen_universe
+        t0 = _t.time()
+        assert screen_universe.main() == 0
+        assert _t.time() - t0 < 40 * 0.05 * 0.6
+        p = store.progress()
+        assert p["status"] == "finished" and p["attempted"] == 40
+        assert p["illiquid"] == 4 and p["scored"] == 36
+    finally:
+        settings.db_path = saved

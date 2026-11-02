@@ -17,12 +17,16 @@ User-Agent, which comes from ``settings.sec_user_agent``.
 """
 from datetime import date, datetime, timedelta
 
+import threading
+import time
+
 import requests
 
 from ..config import settings
 from ..storage import cache
 
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
+EXCHANGE_URL = "https://www.sec.gov/files/company_tickers_exchange.json"
 FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 
 # XBRL tag names vary by filer and change over time, so each logical concept
@@ -77,6 +81,71 @@ def _headers():
     return {"User-Agent": settings.sec_user_agent, "Accept-Encoding": "gzip, deflate"}
 
 
+# SEC allows about ten requests a second per user. The screener now fetches in
+# parallel, so the limit is enforced here, across threads, rather than by a
+# sleep in the caller.
+_SEC_MIN_INTERVAL = 0.11
+_sec_lock = threading.Lock()
+_sec_last = [0.0]
+
+
+def _sec_get(url, timeout=30):
+    with _sec_lock:
+        wait = _sec_last[0] + _SEC_MIN_INTERVAL - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _sec_last[0] = time.monotonic()
+    return requests.get(url, headers=_headers(), timeout=timeout)
+
+
+_cik_map = None
+_cik_lock = threading.Lock()
+
+
+def _ticker_map():
+    """ticker -> (CIK, name), parsed once per process instead of on every lookup.
+
+    Built under a lock and published in one assignment, so a screener thread
+    can never see a half-filled map and wrongly report "no CIK".
+    """
+    global _cik_map
+    if _cik_map is not None:
+        return _cik_map
+    with _cik_lock:
+        if _cik_map is None:
+            data = cache.get("sec:tickers", 24 * 7)
+            if data is None:
+                r = _sec_get(TICKERS_URL)
+                r.raise_for_status()
+                data = r.json()
+                cache.put("sec:tickers", data)
+            built = {}
+            for row in data.values():
+                t = (row.get("ticker") or "").upper()
+                if t and t not in built:
+                    built[t] = (str(row["cik_str"]).zfill(10), row.get("title"))
+            _cik_map = built
+    return _cik_map
+
+
+def exchange_listing():
+    """ticker -> exchange ('Nasdaq', 'NYSE', 'CBOE', 'OTC' or None), cached a week.
+
+    Used by the screener to skip over-the-counter names before spending a price
+    request on each: thousands of SEC tickers are OTC shells, funds and
+    foreign ordinaries that almost never clear the liquidity bar.
+    """
+    data = cache.get("sec:tickers_exchange", 24 * 7)
+    if data is None:
+        r = _sec_get(EXCHANGE_URL)
+        r.raise_for_status()
+        data = r.json()
+        cache.put("sec:tickers_exchange", data)
+    fields = data.get("fields") or []
+    ti, ei = fields.index("ticker"), fields.index("exchange")
+    return {(row[ti] or "").upper(): row[ei] for row in data.get("data") or []}
+
+
 def _as_date(value) -> date:
     if isinstance(value, datetime):
         return value.date()
@@ -86,16 +155,8 @@ def _as_date(value) -> date:
 
 
 def find_cik(ticker: str):
-    data = cache.get("sec:tickers", 24 * 7)
-    if data is None:
-        r = requests.get(TICKERS_URL, headers=_headers(), timeout=30)
-        r.raise_for_status()
-        data = r.json()
-        cache.put("sec:tickers", data)
-    for row in data.values():
-        if (row.get("ticker") or "").upper() == ticker.upper():
-            return str(row["cik_str"]).zfill(10)
-    return None
+    hit = _ticker_map().get(ticker.upper())
+    return hit[0] if hit else None
 
 
 def company_facts(ticker: str):
@@ -106,7 +167,7 @@ def company_facts(ticker: str):
     key = f"edgar:facts:{cik}"
     data = cache.get(key, 24.0)
     if data is None:
-        r = requests.get(FACTS_URL.format(cik=cik), headers=_headers(), timeout=60)
+        r = _sec_get(FACTS_URL.format(cik=cik), timeout=60)
         if r.status_code == 404:
             raise EdgarError(f"No XBRL facts published for CIK {cik}")
         r.raise_for_status()
@@ -358,7 +419,7 @@ def known_tickers():
     """The SEC's ticker→CIK map, cached for a week. Free and keyless."""
     data = cache.get("sec:tickers", 24 * 7)
     if data is None:
-        r = requests.get(TICKERS_URL, headers=_headers(), timeout=30)
+        r = _sec_get(TICKERS_URL)
         r.raise_for_status()
         data = r.json()
         cache.put("sec:tickers", data)
@@ -529,7 +590,7 @@ def company_profile(ticker: str):
     key = f"edgar:submissions:{cik}"
     data = cache.get(key, 24 * 7)
     if data is None:
-        r = requests.get(SUBMISSIONS_URL.format(cik=cik), headers=_headers(), timeout=30)
+        r = _sec_get(SUBMISSIONS_URL.format(cik=cik))
         r.raise_for_status()
         payload = r.json()
         data = {k: payload.get(k) for k in
@@ -574,7 +635,7 @@ def recent_filings(ticker: str, forms=("8-K",), limit: int = 60):
     key = f"edgar:filings:{cik}"
     data = cache.get(key, 6.0)
     if data is None:
-        r = requests.get(SUBMISSIONS_URL.format(cik=cik), headers=_headers(), timeout=30)
+        r = _sec_get(SUBMISSIONS_URL.format(cik=cik))
         r.raise_for_status()
         recent = (r.json().get("filings") or {}).get("recent") or {}
         data = {k: recent.get(k, []) for k in
