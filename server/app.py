@@ -137,6 +137,36 @@ def user_from_token(tok):
         return None
 
 
+def token_problem(tok):
+    """Why a sign-in is not accepted, in words: the Revit add-in keeps its
+    sign-in for a year, and "Sign in first" alone at the end of a publish
+    said nothing of what to do about it."""
+    if not tok:
+        return "no sign-in was sent"
+    try:
+        kind, uid, ver, exp, sig = tok.split(".")
+        payload = "u.%s.%s.%s" % (uid, ver, exp)
+        good = hmac.new(CFG["secret"], payload.encode("ascii"), hashlib.sha256).hexdigest()[:40]
+        if kind != "u" or not hmac.compare_digest(sig, good):
+            return "it was made by another server, or this server's data folder was replaced"
+        if int(exp) < time.time():
+            return "it ran out on %s" % time.strftime("%d %b %Y", time.localtime(int(exp)))
+        u = ACC.get(int(uid))
+        if not u:
+            return "the account no longer exists"
+        if not u["active"]:
+            return "the account is switched off"
+        if int(ver) != u["pw_ver"]:
+            return "the password was changed (or reset) since"
+    except Exception:
+        return "it is not a sign-in this server made"
+    return "it is not accepted"
+
+
+def signin_first(tok):
+    return HTTPException(status_code=401, detail="Sign in first: " + token_problem(tok))
+
+
 def token_ok(token):
     if accounts_on():
         return user_from_token(token) is not None
@@ -171,7 +201,7 @@ def who(request, header_token=""):
     if accounts_on():
         u = user_from_token(tok)
         if not u:
-            raise HTTPException(status_code=401, detail="Sign in first")
+            raise signin_first(tok)
         return Who(u)
     if not token_ok(tok):
         raise HTTPException(status_code=401, detail="Bad or missing token")
@@ -214,7 +244,7 @@ def require_request(request, header_token=""):
 def require_token(token):
     if accounts_on():
         if not user_from_token(token):
-            raise HTTPException(status_code=401, detail="Sign in first")
+            raise signin_first(token)
         return
     if not CFG["passphrase"]:
         return                      # no passphrase configured: open server

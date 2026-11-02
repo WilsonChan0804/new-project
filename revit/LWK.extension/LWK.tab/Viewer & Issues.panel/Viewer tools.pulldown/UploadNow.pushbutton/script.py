@@ -68,6 +68,7 @@ try:
 except LI.ServerError as ex:
     out.print_md("**Upload failed:** %s" % ex)
     if ex.status == 401:
-        out.print_md("Your sign-in has expired - sign in again in LWK Issues.")
+        out.print_md("The server no longer accepts your sign-in (%s): sign in again "
+                     "(LWK tab > Publish > Change ..., or LWK Issues), then Upload now again." % LI.signin_reason(ex))
     elif ex.status == 403:
         out.print_md("You need to be a Publisher or project admin of this project (or a site admin for a new one).")

@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-25", date: "2 Nov 2026",
+    items: [
+      "**Publishing from Revit checks your sign-in first:** if the server no longer accepts it (most often: your password was changed or reset since you signed in in Revit), **Publish** says so - and why - before exporting anything, instead of ending a long export with \"Sign in first\". The Publish window shows it too: **Sign in ...** again there. An export that was refused at the upload is kept: **Viewer tools > Upload now** sends it without exporting again. Update the add-in and restart the server.",
+    ],
+  },
+  {
     version: "2026-12-24", date: "2 Nov 2026",
     items: [
       "**Fix:** **Snip** on big sheets shown from the server's pictures (e.g. KC017's) could still copy the wrong part of the sheet - often the title block - on drawings whose page does not start at the corner. It now copies exactly the area dragged. Snapping on those sheets lines up the same way.",

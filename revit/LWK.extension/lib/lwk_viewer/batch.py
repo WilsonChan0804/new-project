@@ -995,7 +995,12 @@ def upload_job(job, probe, summary=None):
                          job=summary)
         return True
     except Exception as ex:
-        probe.warn("upload", "upload to the viewer server failed: %s" % ex)
+        if getattr(ex, "status", 0) == 401:
+            from lwk_viewer import issues as LI
+            probe.warn("upload", "refused: %s. The export is kept in %s: %s."
+                       % (LI.signin_reason(ex), job.get("folder"), LI.REFUSED_HELP))
+        else:
+            probe.warn("upload", "upload to the viewer server failed: %s" % ex)
         return False
 
 

@@ -458,6 +458,33 @@ def upload_export(client, folder, project, log=None, part=None, job=None):
     return res
 
 
+def signin_reason(ex):
+    """The server's words for a refused sign-in ("Sign in first: the
+    password was changed since") without the prefix."""
+    msg = str(ex or "")
+    return msg.split(":", 1)[1].strip() if msg.lower().startswith("sign in first:") else (msg or "refused")
+
+
+def check_signin(client):
+    """(ok, reason): is the saved sign-in still accepted? Asked before a
+    publish exports anything - a refused sign-in used to show only at the
+    upload, minutes later. A server that cannot be reached is not a refusal:
+    (True, "") then, and the export goes ahead (Upload now sends it later)."""
+    if not (client and client.token):
+        return False, "not signed in"
+    try:
+        client.me()
+        return True, ""
+    except ServerError as ex:
+        if ex.status == 401:
+            return False, signin_reason(ex)
+        return True, ""
+
+
+REFUSED_HELP = ("sign in again (LWK tab > Publish > Change ..., or LWK Issues), then "
+                "Viewer tools > Upload now - the export is kept, no need to export again")
+
+
 def upload_settings():
     """Server and sign-in saved by LWK Issues (one sign-in serves both)."""
     st = load_settings()

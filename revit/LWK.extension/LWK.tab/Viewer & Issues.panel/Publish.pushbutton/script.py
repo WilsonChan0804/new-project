@@ -137,10 +137,20 @@ class PublishWindow(forms.WPFWindow):
         server, token = LI.upload_settings()
         self.server = server
         self.token = token
-        self.server_text.Text = (server + ("   (signed in)" if token else "   (not signed in)")) if server \
-            else "not set - Sign in first"
-        self.signin_btn.Content = "Change ..." if token else "Sign in ..."
+        self.signin_ok = bool(server and token)
+        why = ""
         if server and token:
+            # saved is not the same as accepted: a changed password, say,
+            # was only found at the upload, after the whole export
+            self.signin_ok, why = LI.check_signin(LI.Client(server, token))
+        self.server_text.Text = (server + ("   (signed in)" if self.signin_ok else
+                                           "   (sign-in no longer accepted - sign in again)" if token else
+                                           "   (not signed in)")) if server \
+            else "not set - Sign in first"
+        self.signin_btn.Content = "Change ..." if self.signin_ok else "Sign in ..."
+        if token and not self.signin_ok:
+            self.status_text.Text = "The viewer server does not accept your sign-in (%s): click Sign in ... again." % why
+        if server and token and self.signin_ok:
             try:
                 names = [p.get("id") for p in LI.Client(server, token).projects() if p.get("id")]
                 cur = self.project_box.Text
@@ -263,7 +273,7 @@ class PublishWindow(forms.WPFWindow):
                     self.status_text.Text = "Choose the sheets first."
                     return
                 mode = "list"
-        if publishing and self.upload.IsChecked and not (self.server and self.token):
+        if publishing and self.upload.IsChecked and not (self.server and self.token and getattr(self, "signin_ok", True)):
             self.status_text.Text = "Sign in to the viewer server first (or untick 'Send to the viewer server')."
             return
         t = (self.night_time.Text or "01:00").strip()

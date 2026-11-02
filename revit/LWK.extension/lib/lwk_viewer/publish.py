@@ -137,6 +137,15 @@ def run(doc, uiapp, opt, echo):
     summary = []
     ok = True
     try:
+        # 0. the sign-in, before minutes of exporting: a refused one used to
+        #    show only at the upload, at the very end
+        if opt.get("upload"):
+            server, token = LI.upload_settings()
+            good, why = LI.check_signin(LI.Client(server, token)) if (server and token) else (False, "not signed in")
+            if not good:
+                probe.error("upload", "the viewer server does not accept your sign-in (%s). Sign in again "
+                            "(LWK tab > Publish > Change ...) and publish again - nothing was exported." % why)
+                return False, summary, None
         jobs = batch.load_jobs()
         job = build_job(doc, jobs, opt)
 
@@ -199,10 +208,18 @@ def run(doc, uiapp, opt, echo):
                 probe.warn("upload", "not signed in to the viewer server: sign in in this window, then publish again")
                 ok = False
             else:
-                LI.upload_export(LI.Client(server, token), folder, opt["project"],
-                                 lambda t: probe.info("upload", t),
-                                 part={"source": doc.Title} if opt.get("part") else None,
-                                 job=batch.job_summary(job, probe, ok=ok, how="publish"))
+                try:
+                    LI.upload_export(LI.Client(server, token), folder, opt["project"],
+                                     lambda t: probe.info("upload", t),
+                                     part={"source": doc.Title} if opt.get("part") else None,
+                                     job=batch.job_summary(job, probe, ok=ok, how="publish"))
+                except LI.ServerError as ex:
+                    if ex.status != 401:
+                        raise
+                    # refused at the end after all: the export is on disk
+                    probe.error("upload", "refused: %s. The export is kept in %s: %s."
+                                % (LI.signin_reason(ex), folder, LI.REFUSED_HELP))
+                    return False, summary, None
                 summary.append("uploaded to '%s'" % opt["project"])
                 page = "model.html" if (opt.get("do3d") and not opt.get("dosheets")) else "index.html"
                 url = "%s/%s?project=%s" % (server.rstrip("/"), page, opt["project"])
