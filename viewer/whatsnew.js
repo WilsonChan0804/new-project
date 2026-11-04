@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-26", date: "4 Nov 2026",
+    items: [
+      "**Rename an imported sheet:** the **✎** beside an imported sheet in the sheet list changes its number and name. Its markups, issues and query pictures go with it.",
+      "**The scale from the title block:** on an imported drawing (CAD or PDF) without mapped views, measurements use the scale its title block states (\"SCALE 1:100\", \"比例 1:200\") - the **1:** box shows **auto 1:100** and a measurement says \"(1:100 from title block)\". Type a scale to use another. A sheet of details with several scales says which it saw.",
+      "**Publishing from Revit says plainly what was sent:** how many of the model's sheets the publish chose (and by which sheet set or list), how many PDFs changed and were sent, and how many were the same drawing as on the viewer (not sent again - the viewer keeps showing them). Update the add-in.",
+      "Faster: the query markers on open sheets are checked without re-reading every query when nothing changed; turning on notifications on a device no longer pauses the server. Restart the server after this update.",
+    ],
+  },
+  {
     version: "2026-12-25", date: "2 Nov 2026",
     items: [
       "**Publishing from Revit checks your sign-in first:** if the server no longer accepts it (most often: your password was changed or reset since you signed in in Revit), **Publish** says so - and why - before exporting anything, instead of ending a long export with \"Sign in first\". The Publish window shows it too: **Sign in ...** again there. An export that was refused at the upload is kept: **Viewer tools > Upload now** sends it without exporting again. Update the add-in and restart the server.",

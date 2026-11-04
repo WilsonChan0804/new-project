@@ -464,10 +464,24 @@ def pick_sheets(doc, job, probe=None):
             probe.warn("sheets", "%d sheet(s) in the list no longer exist: %s"
                        % (len(missing), ", ".join(missing[:10])))
         want = set(wanted)
+        every = len(sheets)
         sheets = [s for s in sheets if s.SheetNumber in want]
     elif mode == "prefix":
         pre = [p.strip().upper() for p in (job.get("sheet_prefix") or "").split(",") if p.strip()]
+        every = len(sheets)
         sheets = [s for s in sheets if any(s.SheetNumber.upper().startswith(w) for w in pre)]
+    else:
+        every = len(sheets)
+    if probe:
+        # said plainly: "3 of 15 drawings" was taken for a failed upload
+        how = {"list": "the sheet list '%s'" % (job.get("sheet_list") or "saved with this job"),
+               "set": "the Revit sheet set '%s'" % (job.get("sheet_set") or ""),
+               "prefix": "sheet numbers starting with %s" % (job.get("sheet_prefix") or "")}.get(mode)
+        if how and len(sheets) < every:
+            probe.info("sheets", "%d of this model's %d sheet(s), chosen by %s - the others are not published "
+                       "(Publish window > Sheets to change this)" % (len(sheets), every, how))
+        else:
+            probe.info("sheets", "all %d of this model's sheet(s)" % len(sheets))
     return sorted(sheets, key=lambda s: s.SheetNumber)
 
 

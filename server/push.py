@@ -33,6 +33,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from starlette.concurrency import run_in_threadpool
+
 from fastapi import Header, HTTPException, Request
 
 try:
@@ -330,27 +332,34 @@ def register(app, core):
                 raise ValueError()
         except Exception:
             raise HTTPException(status_code=400, detail="Not a push subscription")
-        c = _db()
-        try:
-            c.execute("INSERT OR REPLACE INTO subs (endpoint, uid, p256dh, auth, agent, created_at) VALUES (?,?,?,?,?,?)",
-                      (ep, w.uid, k["p256dh"], k["auth"], (request.headers.get("user-agent") or "")[:200],
-                       time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())))
-            c.commit()
-            n = c.execute("SELECT COUNT(*) FROM subs WHERE uid = ?", (w.uid,)).fetchone()[0]
-        finally:
-            c.close()
-        return {"ok": True, "devices": n}
+        agent = (request.headers.get("user-agent") or "")[:200]
+
+        def _keep():
+            # the database off the loop that answers everyone (a 3 s stall on 4 Nov)
+            c = _db()
+            try:
+                c.execute("INSERT OR REPLACE INTO subs (endpoint, uid, p256dh, auth, agent, created_at) VALUES (?,?,?,?,?,?)",
+                          (ep, w.uid, k["p256dh"], k["auth"], agent,
+                           time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())))
+                c.commit()
+                return c.execute("SELECT COUNT(*) FROM subs WHERE uid = ?", (w.uid,)).fetchone()[0]
+            finally:
+                c.close()
+        return {"ok": True, "devices": await run_in_threadpool(_keep)}
 
     @app.delete("/api/push/subscribe")
     async def push_unsubscribe(request: Request, x_viewer_token: str = Header(default="")):
         w = me(request, x_viewer_token)
         b = await body_of(request)
-        c = _db()
-        try:
-            c.execute("DELETE FROM subs WHERE endpoint = ? AND uid = ?", (str(b.get("endpoint") or ""), w.uid))
-            c.commit()
-        finally:
-            c.close()
+
+        def _drop():
+            c = _db()
+            try:
+                c.execute("DELETE FROM subs WHERE endpoint = ? AND uid = ?", (str(b.get("endpoint") or ""), w.uid))
+                c.commit()
+            finally:
+                c.close()
+        await run_in_threadpool(_drop)
         return {"ok": True}
 
     @app.post("/api/push/test")

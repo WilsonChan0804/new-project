@@ -33,6 +33,7 @@ import uuid
 from urllib.parse import unquote
 
 from fastapi import HTTPException, Request, Header
+from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 import tasks as T
@@ -109,6 +110,29 @@ def query_access(core, w, qid):
     with db(core) as d:
         r = d.execute("SELECT reg FROM queries WHERE id = ? AND deleted = 0", (qid,)).fetchone()
     return access(core, w, r["reg"]) if r else None
+
+
+def rename_sheet_refs(core, viewer_project, old, new):
+    """An imported sheet renumbered (app.py): the query pictures of it follow."""
+    from urllib.parse import quote
+    n = 0
+    with db(core) as d:
+        for r in d.execute("SELECT id, views FROM queries WHERE deleted = 0").fetchall():
+            views = _j(r["views"], [])
+            hit = False
+            for v in views:
+                if v.get("kind") != "sheet" or (v.get("project") and v["project"] != viewer_project):
+                    continue
+                m = re.search(r"([?&]sheet=)([^&]*)", v.get("url") or "")
+                if v.get("sheet") == old or (m and unquote(m.group(2)) == old):
+                    v["sheet"] = new
+                    if m:
+                        v["url"] = v["url"][:m.start(2)] + quote(new, safe="") + v["url"][m.end(2):]
+                    hit = True
+            if hit:
+                d.execute("UPDATE queries SET views = ?, rev = ? WHERE id = ?", (json.dumps(views), T.next_rev(d), r["id"]))
+                n += 1
+    return n
 
 
 def my_projects(core, w):
@@ -604,10 +628,19 @@ def register(app, core):
         if not regs:
             return {"views": []}
         admin = dict((p["id"], access(core, w, p["id"]) == "admin") for p in regs)
-        with db(core) as d:
-            rows = d.execute("SELECT * FROM queries WHERE deleted = 0 AND reg IN (%s) ORDER BY number"
-                             % ",".join("?" * len(regs)), [p["id"] for p in regs]).fetchall()
         today = T.now_iso()[:10]
+        ids = [p["id"] for p in regs]
+        with db(core) as d:
+            # every open sheet asks every 20 s: the same answer as last time
+            # costs a count, not the whole list (Admin > Speed: the most time of all)
+            c = d.execute("SELECT COUNT(*) AS n, MAX(rev) AS r FROM queries WHERE reg IN (%s)"
+                          % ",".join("?" * len(ids)), ids).fetchone()
+            import hashlib
+            tag = '"qv%s"' % hashlib.sha1(repr((project, w.uid, sorted(admin.items()), c["n"], c["r"], today)).encode()).hexdigest()[:20]
+            if tag in (request.headers.get("if-none-match") or ""):
+                return Response(status_code=304, headers={"ETag": tag, "Cache-Control": "private, no-cache"})
+            rows = d.execute("SELECT * FROM queries WHERE deleted = 0 AND reg IN (%s) ORDER BY number"
+                             % ",".join("?" * len(ids)), ids).fetchall()
         out = []
         for r in rows:
             q = row(r)
@@ -638,7 +671,7 @@ def register(app, core):
                     if not e["pin_mm"]:
                         continue
                 out.append(e)
-        return {"views": out}
+        return JSONResponse({"views": out}, headers={"ETag": tag, "Cache-Control": "private, no-cache"})
 
     @app.post("/api/queries/{qid}/views/remove")
     async def q_unview(request: Request, qid: str, x_viewer_token: str = Header(default="")):

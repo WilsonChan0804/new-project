@@ -45,6 +45,10 @@ def offenders(path):
                 continue                      # a nested function: run elsewhere (threadpool)
             if isinstance(ch, (ast.With, ast.AsyncWith)) and _opens_db(ch):
                 out.append("%s:%d %s" % (os.path.basename(path), ch.lineno, fn.name))
+            # a database opened by a call, not a with: c = _db(), sqlite3.connect(...)
+            if isinstance(ch, ast.Call) and ast.unparse(ch.func).split(".")[-1] in ("_db", "connect") \
+                    and ast.unparse(ch.func) not in ("self.connect",):
+                out.append("%s:%d %s" % (os.path.basename(path), ch.lineno, fn.name))
             walk(ch, fn)
 
     for n in ast.walk(tree):

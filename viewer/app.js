@@ -27,6 +27,7 @@ import { createAreas, pdfAreas, locateRows } from "./areas.js";
 import { createLvSheets, missingLinks } from "./lv.js";
 import * as QV from "./queryviews.js";
 import { readLines, pdfFrame, shownFrame } from "./sheetsnap.js";
+import { scaleFromWords } from "./titlescale.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -927,7 +928,33 @@ function activeScale(mid, item) {
   if (manual && manual > 0) return { scale: manual, from: "set" };
   const r = mid && resolve(mid[0], mid[1]);
   if (r) return { scale: Number(r.scale), from: "viewport" };
+  // an imported drawing has no viewports: the scale its title block states
+  const t = S.titleScale;
+  if (t && t.sheet === (S.sheet && S.sheet.number) && t.scale) return { scale: t.scale, from: "title" };
   return null;
+}
+
+/* The open sheet's title-block scale, read once per sheet in the background;
+   the 1: box says what it found. Revit sheets keep their viewports' scales. */
+async function loadTitleScale(sheet) {
+  if (!sheet) return;
+  const box = document.getElementById("meas-scale");
+  const want = sheet.number;
+  S.titleScale = { sheet: want, scale: null };
+  if (box) { box.placeholder = "auto"; box.title = "Leave empty to use the view's own scale (or the title block's)"; }
+  const words = await wordsFor(sheet).catch(() => null);
+  if (!S.sheet || S.sheet.number !== want || !words || !S.pageMM) return;
+  const r = scaleFromWords(words, S.pageMM[0] * MM_PT, S.pageMM[1] * MM_PT);
+  S.titleScale = { sheet: want, scale: r.scale, all: r.all };
+  if (box) {
+    if (r.scale) {
+      box.placeholder = "auto 1:" + r.scale;
+      box.title = `The title block says 1:${r.scale}: measurements outside a mapped view use it. Type another scale to override.`;
+    } else if (r.several) {
+      box.title = `The title block shows ${r.all.map((n) => "1:" + n).join(" and ")} - type the one for the view you measure.`;
+    }
+  }
+  if (r.scale) redraw();
 }
 
 const fmtLen = (mm) => mm >= 1000 ? (mm / 1000).toFixed(2) + " m"
@@ -937,7 +964,8 @@ function measureLabel(pts, item) {
   const d = Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]);
   const mid = [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2];
   const s = activeScale(mid, item);
-  if (s) return fmtLen(d * s.scale) + (item && item.scale ? "  (1:" + item.scale + ")" : "");
+  if (s) return fmtLen(d * s.scale) + (item && item.scale ? "  (1:" + item.scale + ")"
+    : s.from === "title" ? "  (1:" + s.scale + " from title block)" : "");
   return d.toFixed(1) + " mm (paper - set a scale)";
 }
 
@@ -956,7 +984,8 @@ function areaLabel(pts, item) {
   if (!s) return paper.toFixed(0) + " mm2 (paper - set a scale)";
   const mm2 = paper * s.scale * s.scale;
   const m2 = mm2 / 1e6;
-  return m2 >= 0.01 ? m2.toFixed(2) + " m\u00B2" : mm2.toFixed(0) + " mm\u00B2";
+  const how = s.from === "title" && !(item && item.scale) ? "  (1:" + s.scale + " from title block)" : "";
+  return (m2 >= 0.01 ? m2.toFixed(2) + " m\u00B2" : mm2.toFixed(0) + " mm\u00B2") + how;
 }
 
 /* Angle at the middle point. Scale is irrelevant: it does not change
@@ -3450,6 +3479,7 @@ async function openSheet(sheet) {
   // where you were on this sheet last time (coming back from 3D, or later)
   if (!restoreSheetView(sheet)) fit();
   followViews(sheet).catch((e) => console.warn("followViews", e));
+  loadTitleScale(sheet).catch((e) => console.warn("title scale", e));
   prefetchNeighbours();
   if (FIND.q) markFind(); else clearFindMarks();
 }
@@ -4347,6 +4377,7 @@ function renderSheets() {
         // because issues raised on it will be 2D only.
         ? `<div class="tags"><span class="ext-tag">Imported</span> 2D only`
           + (s.page > 1 ? ` &middot; page ${s.page}` : "")
+          + `<button class="ghost ext-ren" title="Rename this imported sheet (number and name)">&#9998;</button>`
           + `<button class="ghost ext-del" title="Remove this imported sheet">&#10005;</button></div>`
         : `<div class="tags">${mapped}/${vps.length} mapped`
           + (s.pdf ? "" : " &middot; no PDF") + "</div>");
@@ -4401,6 +4432,8 @@ function renderSheets() {
       if (m && (m.pdf_bytes || 0) > 6e6) return;     // shown from pictures: no need
       getDoc(s.pdf).catch(() => {});
     });
+    const ren = li.querySelector(".ext-ren");
+    if (ren) ren.addEventListener("click", (ev) => { ev.stopPropagation(); renameImportedSheet(s); });
     const del = li.querySelector(".ext-del");
     if (del) del.addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -5876,6 +5909,31 @@ async function removeImportedSheet(s) {
   if (!res.ok) { status("Could not remove " + s.number); return; }
   await reloadManifest();
   status(s.number + " removed.");
+}
+
+/* An imported sheet's number and name. A new number takes its markups,
+   issues and query pictures along (the server moves them). */
+async function renameImportedSheet(s) {
+  const num = prompt(`Sheet number for "${s.number}":`, s.number);
+  if (num === null) return;
+  const name = prompt(`Sheet name for ${num.trim() || s.number}:`, s.name || "");
+  if (name === null) return;
+  const to = num.trim() || s.number;
+  if (to === s.number && name === (s.name || "")) return;
+  let r;
+  try {
+    const res = await fetch("/api/import/sheets/rename", { method: "POST",
+      headers: Object.assign({ "content-type": "application/json" }, Store.authHeaders()),
+      body: JSON.stringify({ number: s.number, to_number: to, name }) });
+    r = await res.json().catch(() => ({}));
+    if (!res.ok) { status("Not renamed: " + (r.detail || "HTTP " + res.status)); return; }
+  } catch (e) { status("Not renamed: " + e.message); return; }
+  await reloadManifest();
+  try { await Store.syncNow(); S.items = Store.all(); } catch (e) {}
+  const again = ((S.manifest && S.manifest.sheets) || []).find((x) => x.number === r.number);
+  if (again && S.sheet && S.sheet.number === s.number) openSheet(again);
+  else { renderSheets(); redraw(); }
+  status(`Renamed to ${r.number}${r.name ? " - " + r.name : ""}` + (r.moved ? ` (${r.moved} markup(s) moved with it)` : "") + ".");
 }
 
 async function reloadManifest() {

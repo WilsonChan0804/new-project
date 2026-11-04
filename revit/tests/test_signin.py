@@ -47,5 +47,18 @@ class CheckSignin(unittest.TestCase):
         self.assertEqual(LI.check_signin(FakeClient("")), (False, "not signed in"))
 
 
+class SheetSummary(unittest.TestCase):
+    FILES = [{"path": "manifest.json"}] + [{"path": "sheets/A%03d.pdf" % i} for i in range(1, 16)]
+
+    def test_some_unchanged(self):
+        t = LI.sheet_summary(self.FILES, {"sheets/A001.pdf", "sheets/A002.pdf", "sheets/A003.pdf", "manifest.json"})
+        self.assertTrue(t.startswith("3 sheet PDF(s) changed and sent; 12 the same drawing"), t)
+        self.assertIn("nothing is lost", t)
+
+    def test_all_changed(self):
+        t = LI.sheet_summary(self.FILES, {f["path"] for f in self.FILES})
+        self.assertEqual(t, "all 15 sheet PDF(s) are new or changed, all sent")
+
+
 if __name__ == "__main__":
     unittest.main()

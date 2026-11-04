@@ -2193,8 +2193,12 @@ def _finish_upload_one(request, pid, x_viewer_token, root, keep, tmp_name):
                 os.remove(p)
                 removed += 1
         sources[source] = keep
+        counts = None
         if new_man is not None:
             merged = _merge_manifest(root, new_man, source, bool(part))
+            # what the viewer now shows, for the add-in's report: this upload's
+            # sheets and the project's sheets in all
+            counts = {"sent": len(new_man.get("sheets") or []), "total": len(merged.get("sheets") or [])}
             with open(os.path.join(root, "manifest.json.part"), "w", encoding="utf-8") as f:
                 json.dump(merged, f, ensure_ascii=False)
             os.replace(os.path.join(root, "manifest.json.part"), os.path.join(root, "manifest.json"))
@@ -2218,7 +2222,7 @@ def _finish_upload_one(request, pid, x_viewer_token, root, keep, tmp_name):
         # and every sheet drawn as pictures, for big drawings and slow lines
         queue_all_sheet_tiles(root, pdfs)
     return {"written": len(written), "removed": removed,
-            "manifest": manifest_bytes is not None, "project": pid,
+            "manifest": manifest_bytes is not None, "project": pid, "sheets": counts,
             "phone_copies": bool(node_bin()) and any(w.lower().endswith(".lwkm") for w in written)}
 
 
@@ -3888,6 +3892,56 @@ def remove_imported(request: Request, number: str,
     write_imported(root, keep)
     drop_unused_pdfs(root, have, keep)
     return {"removed": number}
+
+
+@app.post("/api/import/sheets/rename")
+async def rename_imported(request: Request, x_viewer_token: str = Header(default=""),
+                          x_project: str = Header(default="")):
+    """{number, to_number, name}: an imported sheet's number and name. A new
+    number takes the sheet's markups and issues, and the query pictures of
+    it, along: they name the sheet by its number."""
+    w, role = require_project(request, x_project, "member", x_viewer_token)
+    root = project_root_for(x_project)
+    body = await request.json() or {}
+
+    def _rest():
+        old = str(body.get("number") or "")
+        new = re.sub(r"[\x00-\x1f\x7f]+", " ", str(body.get("to_number") or old)).strip()[:40]
+        name = re.sub(r"[\x00-\x1f\x7f]+", " ", str(body.get("name") if body.get("name") is not None else "")).strip()[:200]
+        if not new:
+            raise HTTPException(status_code=400, detail="Give the sheet a number.")
+        have = read_imported(root)
+        hit = next((s for s in have if s.get("number") == old), None)
+        if not hit:
+            raise HTTPException(status_code=404, detail="No imported sheet " + old)
+        if new != old:
+            taken = {s.get("number") for s in have if s is not hit}
+            try:
+                with open(os.path.join(root, "manifest.json"), encoding="utf-8") as f:
+                    taken |= {s.get("number") for s in json.load(f).get("sheets", [])}
+            except Exception:
+                pass
+            if new in taken:
+                raise HTTPException(status_code=409, detail="There is already a sheet %s." % new)
+        hit["number"] = new
+        if body.get("name") is not None:
+            hit["name"] = name
+        write_imported(root, have)
+        moved = 0
+        if new != old:
+            st = store_for(x_project)
+            for it in st.all_items()[1]:
+                if it.get("sheet") == old and not it.get("deleted"):
+                    it = dict(it, sheet=new)
+                    st.put(it)
+                    moved += 1
+            try:
+                import queries as _q
+                _q.rename_sheet_refs(sys.modules[__name__], x_project, old, new)
+            except Exception as ex:
+                print("rename sheet: query pictures not updated: %s" % ex)
+        return {"number": new, "name": hit.get("name") or "", "moved": moved}
+    return await run_in_threadpool(_rest)
 
 
 @app.post("/api/import/sheets/delete")

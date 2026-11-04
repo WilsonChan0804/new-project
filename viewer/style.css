@@ -883,7 +883,7 @@ button.danger:hover:not(:disabled) { background: #fdece8; border-color: #f2b8aa;
 
 .ext-tag { display: inline-block; padding: 0 6px; border-radius: 999px;
   background: #e6f0ff; color: #1d5fd0; font-size: 10px; font-weight: 600; }
-.ext-del { padding: 0 5px; margin-left: 4px; font-size: 10px; line-height: 16px; }
+.ext-del, .ext-ren { padding: 0 5px; margin-left: 4px; font-size: 10px; line-height: 16px; }
 
 /* ------------------------------------------------ selectable PDF text */
 /* The minimum of pdf.js's own text-layer rules: transparent words placed
@@ -1117,7 +1117,7 @@ button.danger:hover:not(:disabled) { background: #fdece8; border-color: #f2b8aa;
 body.role-viewer #tools, body.role-viewer #mode-issue, body.role-viewer #mode-comment,
 body.role-viewer #a-paste, body.role-viewer #m-issue, body.role-viewer #detail-save,
 body.role-viewer #detail-delete,
-body.role-viewer .ext-del { display: none !important; }
+body.role-viewer .ext-del, body.role-viewer .ext-ren { display: none !important; }
 
 /* --------------------------------------------- tablet markup (GoodNotes) */
 #overlay { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }

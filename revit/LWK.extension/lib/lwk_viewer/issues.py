@@ -427,6 +427,7 @@ def upload_export(client, folder, project, log=None, part=None, job=None):
     say("upload: sending %d of %d file(s), %.1f MB - the rest unchanged%s"
         % (len(send), len(files), sum(f["size"] for f in send) / 1048576.0,
            " (%d sheet PDF(s) exported again with only their dates changed)" % same if same else ""))
+    say("upload: " + sheet_summary(files, need))
     fd, tmp = tempfile.mkstemp(suffix=".zip")
     os.close(fd)
     try:
@@ -455,7 +456,26 @@ def upload_export(client, folder, project, log=None, part=None, job=None):
             pass
     say("upload: done - %s written, %s removed, project '%s'"
         % (res.get("written"), res.get("removed"), res.get("project")))
+    sh = res.get("sheets") or {}
+    if sh:
+        say("upload: the viewer project '%s' now shows %d sheet(s): the %d from this upload%s"
+            % (res.get("project"), sh.get("total", 0), sh.get("sent", 0),
+               (" and %d kept from before (other Revit files, imported PDFs, or sheets not chosen this time)"
+                % (sh.get("total", 0) - sh.get("sent", 0))) if sh.get("total", 0) > sh.get("sent", 0) else ""))
     return res
+
+
+def sheet_summary(files, need):
+    """The sheet PDFs of an upload in words: which were sent, and which the
+    viewer already has (the same drawing) - "3 of 15 sent" read as 12 lost."""
+    pdfs = [f["path"] for f in files if f["path"].lower().startswith("sheets/") and f["path"].lower().endswith(".pdf")]
+    sent = [p for p in pdfs if p in need]
+    if not pdfs:
+        return "no sheet PDFs in this export"
+    if len(sent) == len(pdfs):
+        return "all %d sheet PDF(s) are new or changed, all sent" % len(pdfs)
+    return ("%d sheet PDF(s) changed and sent; %d the same drawing as the viewer already has "
+            "(not sent - the viewer keeps showing them, nothing is lost)" % (len(sent), len(pdfs) - len(sent)))
 
 
 def signin_reason(ex):

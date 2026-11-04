@@ -238,6 +238,7 @@ PART = [
         ['「Wrong email or password」', '檢查 email；叫 admin **Reset password**。試咗 10 次之後要等 15 分鐘'],
         ['「You are not a member of this project」', '叫 project admin 加你'],
         ['我加唔到或者改唔到 issue', '你喺呢個 project 係 **Viewer**；叫 project admin 俾你做 Member'],
+        ['Publish 只上載咗部分 sheet', '睇 Publish log 嘅 **sheets:** 同 **upload:** 幾行。「3 of this model\'s 15 sheet(s), chosen by ...」：Publish 視窗嘅 **Sheets** 揀法（sheet set、list 或者 prefix）只揀咗嗰幾張 - 喺嗰度改。「12 the same drawing as the viewer already has」：嗰啲冇改過，所以唔會再上載；viewer 照樣顯示佢哋'],
         ['Publish 話伺服器「does not accept your sign-in」（或者最尾出「Sign in first」）', '訊息入面有原因 - 通常係你喺 Revit sign in 之後改過或者 reset 咗密碼。**LWK tab > Publish > Change ...** 重新 sign in。如果已經 export 咗，用 **Viewer tools > Upload now** 上載就得 - 唔使再 export'],
         ['Publish to Viewer 話「You need to be a Publisher or project admin」', '你喺嗰個 project 係 **Member**（或者 Viewer）。叫 project admin 開 **Admin**、揀個 project，喺成員表將你嘅角色改做 **Publisher**'],
         ['「N waiting to save」', '你個網絡斷咗。留住個版唔好閂；網絡返嚟就會儲存'],
