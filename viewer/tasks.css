@@ -506,6 +506,18 @@ button svg.ic { pointer-events: none; }
 .q-form { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 10px 12px; margin-bottom: 10px; }
 .q-fr { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
 .q-fr label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 2px; }
+/* who a comment came from (BD, FSD ...), and the comments of a pasted letter */
+.q-src { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .02em; padding: 0 6px; margin-right: 6px; border-radius: 4px;
+  color: #1f3864; background: #d9e1f2; vertical-align: 1px; }
+.q-srcrow input:not([type=date]) { min-width: 150px; }
+.q-letter textarea[name=text] { font: 12.5px/1.45 var(--mono, ui-monospace, Consolas, monospace); }
+.q-letter-list { display: flex; flex-direction: column; gap: 4px; max-height: 340px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.q-li { display: grid; grid-template-columns: auto 36px 1fr; gap: 6px; align-items: start; font-size: 12.5px; padding: 4px; border-radius: 4px; }
+.q-li:hover { background: var(--hover, rgba(127,127,127,.08)); }
+.q-li-n { font-weight: 700; color: var(--muted); text-align: right; padding-top: 3px; }
+.q-li > span:last-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.q-li input[data-title] { width: 100%; font-weight: 600; }
+.q-li small { white-space: pre-wrap; overflow-wrap: anywhere; }
 .q-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
 .q-view { position: relative; width: 148px; }
 .q-view a { display: block; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel-2); }

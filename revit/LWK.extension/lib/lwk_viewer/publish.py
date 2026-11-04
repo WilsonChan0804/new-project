@@ -155,7 +155,9 @@ def run(doc, uiapp, opt, echo):
             probe.info("publish", "'%s' -> %s: %s%s" % (
                 doc.Title, opt["project"], ("%d sheet(s)" % len(sheets)) if opt.get("dosheets") else "no sheets",
                 ", 3D model" if opt.get("do3d") else ""))
-            data = manifest.build(doc, sheets, probe, with_elements=bool(opt.get("dosheets")))
+            data = manifest.build(doc, sheets, probe, with_elements=bool(opt.get("dosheets")),
+                                  routes=job.get("route_plans", True) is not False)
+            manifest.write_routes(folder, data)
             if sheets:
                 if exporters.pdf_available(doc):
                     by_number = dict((s["number"], s) for s in data["sheets"])

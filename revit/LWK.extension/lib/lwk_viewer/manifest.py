@@ -773,7 +773,7 @@ def sheet_revision(sheet):
     return out
 
 
-def build_sheet(doc, sheet, probe):
+def build_sheet(doc, sheet, probe, routes=True):
     origin_ft, size = paper_origin(doc, sheet, probe)
     rec = {
         "element_id": id_int(sheet.Id),
@@ -803,6 +803,7 @@ def build_sheet(doc, sheet, probe):
         pass
 
     plan_vps = []                # (view, mapping, rect) of the plans, for other schemes' areas
+    route_vps = []               # (viewport id, view, mapping, rect) of the floor plans: the Route tool's cut
     for vpid in sheet.GetAllViewports():
         vp = doc.GetElement(vpid)
         view = doc.GetElement(vp.ViewId)
@@ -920,6 +921,8 @@ def build_sheet(doc, sheet, probe):
             entry["mark_boxes"] = []
         if isinstance(view, ViewPlan) and str(view.ViewType) in ("AreaPlan", "FloorPlan"):
             plan_vps.append((view, mapping, rect))
+        if routes and isinstance(view, ViewPlan) and str(view.ViewType) == "FloorPlan":
+            route_vps.append((id_int(vpid), view, mapping, rect))
         if spatial:
             try:
                 if str(view.ViewType) == "AreaPlan":
@@ -929,6 +932,19 @@ def build_sheet(doc, sheet, probe):
             except Exception as ex:
                 probe.info(sheet.SheetNumber, "areas of '%s' not read: %s" % (view.Name, ex))
         rec["viewports"].append(entry)
+
+    # the floor plans cut for the Route tool (write_routes puts them in a file)
+    if route_vps:
+        try:
+            from lwk_viewer import planroute
+            cut = planroute.sheet_routes(doc, route_vps, probe, sheet.SheetNumber)
+            if cut:
+                rec["_route"] = cut
+                for e in rec["viewports"]:
+                    if str(e.get("element_id")) in cut:
+                        e["route"] = True
+        except Exception as ex_:
+            probe.info(sheet.SheetNumber, "route plans not cut: %s" % ex_)
 
     # An area schedule of a scheme with no area plan on this sheet (the
     # concession areas, say, scheduled beside the GFA plan): its areas are
@@ -1535,7 +1551,7 @@ def _optional(fn, doc, probe, default):
         return default
 
 
-def build(doc, sheets, probe, with_elements=True):
+def build(doc, sheets, probe, with_elements=True, routes=True):
     elements = build_elements(doc, probe) if with_elements else []
     if with_elements and len(elements) < 5000:
         probe.warn("scope", "only %d model elements found in this document. "
@@ -1562,9 +1578,31 @@ def build(doc, sheets, probe, with_elements=True):
         "height_samples": _optional(height_samples, doc, probe, []),
         "element_categories": category_counts(elements),
         "elements": elements,
-        "sheets": [build_sheet(doc, s, probe) for s in sheets],
+        "sheets": [build_sheet(doc, s, probe, routes) for s in sheets],
         "probe": probe.records,
     }
+
+
+def write_routes(folder, data):
+    """The floor plans' cuts (planroute.py) out of the sheets, each into
+    sheets/<name>.route.json beside its PDF; the sheet keeps its name."""
+    import os
+    import re
+    from lwk_viewer import jsonio, planroute
+    d = os.path.join(folder, "sheets")
+    for s in data.get("sheets") or []:
+        r = s.pop("_route", None)
+        if not r:
+            continue
+        if not os.path.isdir(d):
+            os.makedirs(d)
+        stem = re.sub(r"[^\w.-]+", "_", s.get("number") or "sheet").strip("_") or "sheet"
+        fn = "%s_%s.route.json" % (stem, (s.get("unique_id") or "")[-8:].replace("-", "") or "x")
+        jsonio.write_atomic(os.path.join(d, fn), {
+            "version": 1, "sheet": s.get("number"), "exported_at": s.get("exported_at"),
+            "categories": [c for c, _ in planroute.CATEGORIES], "blocking": list(planroute.BLOCKING),
+            "viewports": r}, indent=0)
+        s["route"] = "sheets/" + fn
 
 
 

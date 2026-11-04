@@ -42,6 +42,7 @@ const PATHS = {
   selecttext: "M9 4h6M12 4v16M9 20h6M5 9l-2 3 2 3M19 9l2 3-2 3",
   area: "M4 5h16v14H4zM8 9l8 6M8 15l8-6",
   angle: "M4 19h16M4 19L16 7M9 19a5 5 0 00-1.5-3.6",
+  route: "M5 18a2 2 0 1 0 0.01 0M5 16V9h7v6h5V7M14 9l3-3 3 3",
   eraser: "M8 18H5l-2-2 9-9 6 6-5 5zM14 18h6",
 
   fit: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5",
@@ -84,7 +85,7 @@ const CATEGORY = {
   rect: "shape", ellipse: "shape", cloud: "shape", cloudpoly: "shape", polygon: "shape",
   line: "line", arrow: "line", polyline: "line", pen: "line",
   text: "text", textbox: "text", callout: "text", stamp: "shape",
-  measure: "data", dimension: "data", snip: "view", selecttext: "text", area: "data", angle: "data", filter: "data", model: "data", sheet: "data",
+  measure: "data", dimension: "data", snip: "view", selecttext: "text", area: "data", angle: "data", route: "data", filter: "data", model: "data", sheet: "data",
   link: "data", export: "data", undo: "data", reset: "data",
   eraser: "erase", trash: "erase", close: "erase",
   fit: "view", section: "view", plane: "view", align: "view",

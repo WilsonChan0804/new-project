@@ -28,6 +28,7 @@ import { createLvSheets, missingLinks } from "./lv.js";
 import * as QV from "./queryviews.js";
 import { readLines, pdfFrame, shownFrame } from "./sheetsnap.js";
 import { scaleFromWords } from "./titlescale.js";
+import { createRoute } from "./route.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -85,6 +86,7 @@ const TOOLS = [
   { id: "selecttext", label: "Select text", kind: "textsel" },
   { id: "area",     label: "Area",     kind: "poly"  },
   { id: "angle",    label: "Angle",    kind: "poly"  },
+  { id: "route",    label: "Route distance", kind: "poly" },
   { id: "eraser",   label: "Eraser",   kind: "erase" },
   { id: "match",    label: "Match properties", kind: "match" },
 ];
@@ -204,6 +206,14 @@ window.SHEETS.captureView = async (pin) => {
     pin: pin ? { u: Math.round(pin[0] * 10) / 10, v: Math.round(pin[1] * 10) / 10 } : { u: Math.round((r[0] + r[2] / 2) * 10) / 10, v: Math.round((r[1] + r[3] / 2) * 10) / 10 },
   };
 };
+
+/* Route distance (route.js): travel distance, dead ends ... the shortest way
+   round the plan's walls, or the total of the points clicked. */
+const ROUTE = createRoute({
+  S, Store, status: (m) => status(m),
+  redraw: () => redraw(), putItem: (it) => putItem(it),
+  activeScale: (mid, item) => activeScale(mid, item),
+});
 
 /* Light & Vent (lv.js): the Calculation model's rooms on this sheet's plans,
    coloured by their result. Make issue: a cloud round the room, as an issue. */
@@ -676,6 +686,37 @@ function render(item, opts) {
     specs.push({ tag: "__node", node: labelHit(t, fs, st.font) });
     specs.push({ tag: "__node", node: t });
 
+  } else if (item.type === "route" && P.length > 1) {
+    // the legs as found (a leg still being looked for: straight and dashed)
+    const legs = ROUTE.legsOf(item);
+    const L = ROUTE.label(item);
+    const col = L.state === "over" || L.state === "fail" ? "#d32f2f" : L.state === "ok" ? "#2e7d32" : st.color;
+    const all = [];
+    legs.forEach((l, i) => {
+      const Q = l.pts.map((p) => canvasFrom(p[0], p[1]));
+      all.push(...(i ? Q.slice(1) : Q));
+      add("polyline", Object.assign({}, stroke, { stroke: col,
+        "stroke-dasharray": l.pending || l.failed ? `${w * 3} ${w * 2.5}` : stroke["stroke-dasharray"],
+        points: Q.map((p) => p.join(",")).join(" ") }), "stroke");
+    });
+    // the start (a filled dot), the points it passes (rings), the end (an arrow)
+    const r0 = Math.max(3.5, w * 2.2);
+    add("circle", { cx: P[0][0], cy: P[0][1], r: r0, fill: col, stroke: "#fff", "stroke-width": 1.2 }, "all");
+    for (let i = 1; i < P.length - 1; i++) add("circle", { cx: P[i][0], cy: P[i][1], r: r0 * 0.8, fill: "#fff", stroke: col, "stroke-width": Math.max(1.2, w) }, "all");
+    if (all.length > 1) {
+      const b = all[all.length - 1], a = all[all.length - 2];
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]), hd = Math.max(9, w * 5);
+      add("path", { fill: col, stroke: "none", d: `M ${b[0]} ${b[1]} L ${b[0] - hd * Math.cos(ang - .4)} ${b[1] - hd * Math.sin(ang - .4)}`
+        + ` L ${b[0] - hd * Math.cos(ang + .4)} ${b[1] - hd * Math.sin(ang + .4)} Z` }, "all");
+    }
+    const e = P[P.length - 1];
+    const t = svgEl("text", { x: e[0] + 10, y: e[1] - 8, fill: L.state ? col : tc, "font-size": fs, "font-weight": 600,
+      "font-family": fontFamily(st.font), "pointer-events": "none", "paint-order": "stroke", stroke: "#ffffff",
+      "stroke-width": Math.max(2, fs * 0.22), "stroke-linejoin": "round" });
+    t.textContent = L.text;
+    specs.push({ tag: "__node", node: labelHit(t, fs, st.font) });
+    specs.push({ tag: "__node", node: t });
+
   } else if (item.type === "angle" && P.length > 1) {
     add("polyline", Object.assign({}, stroke,
       { points: P.map((p) => p.join(",")).join(" ") }), "stroke");
@@ -1085,7 +1126,10 @@ function redraw(target) {
         const segs = closed ? P.length : P.length - 1;
         for (let i = 0; i < segs; i++) {
           const a0 = P[i], b0 = P[(i + 1) % P.length];
-          const mx = (a0[0] + b0[0]) / 2, my = (a0[1] + b0[1]) / 2;
+          let mx = (a0[0] + b0[0]) / 2, my = (a0[1] + b0[1]) / 2;
+          // a route's +: halfway along the leg as found, not across the wall
+          const rm = it.type === "route" && ROUTE.legMid(it, i);
+          if (rm) [mx, my] = canvasFrom(rm[0], rm[1]);
           svg.appendChild(svgEl("rect", { class: "midhandle", "data-seg": i,
             x: mx - 3.5, y: my - 3.5, width: 7, height: 7 }));
         }
@@ -1181,7 +1225,7 @@ function placeSelbar(allPx) {
 
 /* ----------------------------------------------------------- selection */
 
-const MEASURE_TYPES = ["measure", "area", "angle", "dimension"];
+const MEASURE_TYPES = ["measure", "area", "angle", "dimension", "route"];
 
 /* Typed geometry.
  *
@@ -1343,6 +1387,7 @@ function select(ids, add, byDrag) {
      press has the menu instead (it offered the same actions twice). */
   S.selByDrag = !!byDrag && S.sel.length > 0;
   redraw(); renderList();
+  ROUTE.paintPanel();
 }
 
 /* ------------------------------------------------------------ undo/redo */
@@ -1424,7 +1469,9 @@ function syncUndoButtons() {
 function persist(ids) {
   for (const id of ids) {
     const it = S.items.find((x) => x.id === id);
-    if (it) putItem(it);
+    // a route whose points moved: its legs looked for again, then saved
+    if (it && it.type === "route" && ROUTE.stale(it)) ROUTE.changed(it);
+    else if (it) putItem(it);
   }
 }
 
@@ -1474,7 +1521,7 @@ function removeItems(ids) {
    points themselves. */
 const BOXY = new Set(["rect", "ellipse", "cloud", "textbox", "text", "image"]);
 // Shapes whose points can be inserted and removed individually.
-const VERTEX_EDIT = new Set(["polyline", "polygon", "cloudpoly", "area", "line", "arrow"]);
+const VERTEX_EDIT = new Set(["polyline", "polygon", "cloudpoly", "area", "line", "arrow", "route"]);
 
 function centreOf(pts) {
   let x = 0, y = 0;
@@ -1608,7 +1655,7 @@ function retakeSnapshots(items) {
    turns it off. A sheet shown from the server's pictures reads its PDF for
    this in the background, the first time a snapping tool is used on it. */
 const SNAP_TOOLS = new Set(["dimension", "measure", "area", "angle", "line", "arrow",
-  "polyline", "polygon", "rect", "cloud", "cloudpoly"]);
+  "polyline", "polygon", "rect", "cloud", "cloudpoly", "route"]);
 const SNAP = { on: true, key: "", idx: null, mark: null };
 try { SNAP.on = localStorage.getItem("lwk.snap") !== "0"; } catch (e) {}
 
@@ -2115,6 +2162,11 @@ function finishDrawing(item) {
     const s = activeScale(centreOf(item.points_mm), null);
     if (s) item.scale = s.scale;
   }
+  if (item.type === "route") {
+    ROUTE.stamp(item);
+    commitDraft((made) => { ROUTE.changed(made); if (S.mode === "issue") openIssue(made); });
+    return;
+  }
   const needsText = ["text", "textbox", "callout"].indexOf(item.type) >= 0;
   if (needsText) {
     askText((body) => {
@@ -2454,6 +2506,18 @@ function wirePointer() {
     if (t.kind === "poly") {
       $("#poly-finish").hidden = false;
       if (poly && nearFirst(p)) {           // p is already in paper mm
+        endPoly();
+        return;
+      }
+      /* A double-click ends it. The browser's own dblclick never comes:
+         the drawing is redrawn between the two clicks, so they land on
+         different elements - the second quick click on the same spot is
+         the double-click. */
+      const now = performance.now();
+      const lastDown = S.polyLastDown;
+      S.polyLastDown = { t: now, x: ev.clientX, y: ev.clientY };
+      if (poly && S.draft && lastDown && now - lastDown.t < 400 && Math.hypot(ev.clientX - lastDown.x, ev.clientY - lastDown.y) < 6) {
+        S.polyLastDown = null;
         endPoly();
         return;
       }
@@ -2890,7 +2954,7 @@ const DEFAULT_KEYS = {
   select: "v", pan: "h", rect: "b", ellipse: "o", line: "l", arrow: "a", cloud: "c",
   cloudpoly: "shift+c", polyline: "p", polygon: "g", pen: "f", highlight: "i",
   text: "t", textbox: "x", callout: "k", stamp: "s", measure: "m", dimension: "d",
-  snip: "q", selecttext: "y", area: "e", angle: "u", eraser: "w", match: "j",
+  snip: "q", selecttext: "y", area: "e", angle: "u", eraser: "w", match: "j", route: "shift+m",
 };
 const RESERVED_KEYS = new Set(["r", "shift+r", "n", "shift+n", "delete", "backspace", "enter", "escape",
   "pageup", "pagedown", " ", "shift+ ", "tab", "shift+tab"]);
@@ -3502,6 +3566,7 @@ async function openSheet(sheet) {
   if (!restoreSheetView(sheet)) fit();
   followViews(sheet).catch((e) => console.warn("followViews", e));
   loadTitleScale(sheet).catch((e) => console.warn("title scale", e));
+  ROUTE.loadPlan(sheet).catch((e) => console.warn("route plan", e));
   prefetchNeighbours();
   if (FIND.q) markFind(); else clearFindMarks();
 }
@@ -5599,6 +5664,7 @@ function pdfLabel(it) {
   if (it.type === "dimension") return measureLabel(pts.slice(0, 2), it);
   if (it.type === "area") return areaLabel(pts, it);
   if (it.type === "angle") return angleLabel(pts);
+  if (it.type === "route") return ROUTE.label(it).text;
   return "";
 }
 
@@ -6101,7 +6167,7 @@ function exportAll() {
 /* The markup properties (colour, fill, layer, line, text) only while a
    drawing tool is in hand or markups are selected; the scale only for the
    measuring tools. The rest of the time the drawing gets the room. */
-const MEASURE_TOOLS = new Set(["measure", "dimension", "area", "angle"]);
+const MEASURE_TOOLS = new Set(["measure", "dimension", "area", "angle", "route"]);
 function propsShown() {
   const k = toolOf(S.tool).kind;
   const drawing = ["drag2", "free", "poly", "click"].includes(k) && S.tool !== "snip";
@@ -6110,6 +6176,7 @@ function propsShown() {
   const selMeasure = (S.sel || []).some((id) => { const it = S.items.find((x) => x.id === id); return it && MEASURE_TOOLS.has(it.type); });
   const sc = document.getElementById("scale-lab");
   if (sc) sc.hidden = !(MEASURE_TOOLS.has(S.tool) || selMeasure);
+  ROUTE.paintPanel();
 }
 
 /* The markup tools in families, one button each: the family's last-used tool
@@ -6120,7 +6187,7 @@ const TOOL_GROUPS = [
   ["Clouds", ["cloud", "cloudpoly"]],
   ["Draw", ["pen", "highlight"]],
   ["Text", ["text", "textbox", "callout"]],
-  ["Measure", ["measure", "dimension", "area", "angle"]],
+  ["Measure", ["measure", "dimension", "area", "angle", "route"]],
   ["More tools", ["snip", "selecttext", "eraser", "match"]],
 ];
 function groupTools(tw) {

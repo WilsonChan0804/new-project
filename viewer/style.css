@@ -2574,3 +2574,28 @@ header .flr-lab { white-space: nowrap; }
 .lv-t tbody tr { cursor: pointer; }
 .lv-t tbody tr:hover { background: var(--accent-soft, rgba(242, 128, 34, .1)); }
 .lv-note { border: 1px solid var(--line); border-radius: 6px; margin: 6px 0; font-size: 11px; }
+
+/* Route distance (route.js): the panel while the tool is in hand or a route is chosen */
+#route-panel { position: fixed; right: 14px; top: 118px; z-index: 210; width: 300px; max-width: calc(100vw - 28px);
+  background: var(--panel, #fff); border: 1px solid var(--line, #d9dde3); border-radius: 10px; box-shadow: 0 8px 28px rgba(20,26,36,.18);
+  padding: 10px 12px; font-size: 12.5px; display: flex; flex-direction: column; gap: 7px; color: var(--ink, #1f2430); }
+#route-panel[hidden] { display: none; }
+#route-panel .rp-h { display: flex; flex-direction: column; gap: 2px; }
+#route-panel .rp-h b { font-size: 13.5px; }
+#route-panel .rp-len { font-weight: 700; font-size: 14px; }
+#route-panel .rp-len.ok { color: #2e7d32; }
+#route-panel .rp-len.over, #route-panel .rp-len.fail { color: #d32f2f; }
+#route-panel .rp-r { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+#route-panel label { justify-content: flex-start; margin: 0; }
+#route-panel .rp-r label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+#route-panel input[type=radio], #route-panel input[type=checkbox] { margin: 0; flex: none; width: auto; min-width: 0; height: auto; padding: 0; }
+#route-panel input[type=number] { width: 64px; }
+#route-panel .rp-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; max-height: 180px; overflow: auto;
+  border-top: 1px solid var(--line, #e5e7eb); padding-top: 6px; }
+#route-panel .rp-cats[hidden] { display: none; }
+#route-panel .rp-cats label { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+#route-panel .rp-sub, #route-panel .rp-clear { grid-column: 1 / -1; }
+#route-panel .rp-sub small { color: var(--muted, #6b7480); }
+#route-panel .rp-note { color: #8a5a00; background: #fff6e0; border-radius: 6px; padding: 6px 8px; font-size: 12px; }
+#route-panel .rp-tip { color: var(--muted, #6b7480); font-size: 11.5px; }
+@media (max-width: 700px) { #route-panel { top: auto; bottom: 70px; right: 8px; left: 8px; width: auto; } }

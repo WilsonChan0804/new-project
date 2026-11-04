@@ -104,6 +104,7 @@ PART = [
         ['總結數字', 'Issues、Open、In progress、Resolved、Closed、Overdue、7 日內到期、未指派、平均開咗幾多日、平均幾多日關'],
         ['圖表', '每星期開同關嘅數目（最近 12 個星期），按狀態、類型、優先次序、喺邊度開（sheet 或者 3D）同 office 分'],
         ['責任表', '每個負責人手上未完成、進行中、過咗期同就快到期嘅數目，最舊嘅未完成 issue 同最後活動；撳一行就會篩選'],
+        ['Closed loop 閉環', 'Issue → task → 改好（Resolved）→ 開 issue 嘅人覆檢（Closed）：顯示緊嘅 issue 每一步有幾多、幾多個**等緊覆檢**、**平均幾多日覆檢**（Resolved 到 Closed）、幾多個**覆檢唔過要重開**，同埋幾多個未完又**冇 task**；下面列出等緊覆檢嘅 issue，等得最耐嗰個排第一'],
         ['清單', '**Overdue**、**Due in the next 14 days**、**Recently changed**、**Going quiet**（14 日或以上冇郁過）'],
     ]),
     UL([

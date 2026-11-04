@@ -542,7 +542,8 @@ def export_open_doc(doc, job, probe, manifest, exporters, progress=None):
         [w for w, on in (("sheets", do_sheets), ("the 3D model", do3d)) if on] or ["nothing"]))
     sheets = pick_sheets(doc, job, probe) if do_sheets else []
     probe.info("sheets", "%d sheets selected" % len(sheets))
-    data = manifest.build(doc, sheets, probe)
+    data = manifest.build(doc, sheets, probe, routes=job.get("route_plans", True) is not False)
+    manifest.write_routes(folder, data)
     for s in data.get("sheets") or []:
         s.setdefault("source", doc.Title)
     probe.info("time", "reading the model took %.1f min" % ((time.time() - t0) / 60.0))

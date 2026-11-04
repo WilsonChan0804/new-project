@@ -46,6 +46,7 @@ PART = [
         '**討論入面加相**（Sheets 同 3D 一樣）：Post 旁邊嘅 **📷 Photo** 揀相 - 用手機或者 iPad 可以即刻影 - 或者喺訊息格 **Ctrl+V** 貼截圖，或者將相片檔拖入去。相會喺格下面等住（✕ 拎走一張），撳 **Post** 就同訊息一齊出；淨係相冇字都得。大張相會先縮細（1920 px）。喺討論撳一張相可以睇大圖（← → 下一張，**Esc** 關）。Issue report 會喺訊息下面顯示呢啲相。',
         '**Show in view** 返去嗰個位；**Show in 3D** 喺嗰度打開 3D 版。',
         '**Not an issue** 會連一個人人睇到嘅原因閂咗佢；同一個掣可以重開。',
+        '**覆檢（Re-check）：** issue 變咗 **Resolved** 之後，開 issue 嘅人打開 issue 會喺頂部見到 **Re-check**：**Fixed - close it** 就閂咗佢；**Not fixed - reopen** 會問仲有乜未改好，將佢改返做 Open、寫入討論，再通知負責嘅人。Issue 變 Resolved 嗰陣會通知開 issue 嘅人，每週報告亦會點埋有幾多個等緊覆檢。',
         '**Delete** 會幫所有人刪除。Member 只可以刪自己嘅 issue；project admin 刪得任何一個。（普通 markup 跟 layer 設定 - 睇「邊個刪得」。）',
         '**Revit element**（3D issue）：開 issue 嗰個元件，有 **Copy Revit IDs**、**Show in 3D** 同 **Show in Revit**。',
         '**Tasks：** 連住呢個 issue 嘅 task，有負責人同到期日。**+ New task from this issue** 開一個（睇「Issue 同 task 連埋一齊」）；**Send to chat** 將 issue 貼去一個 chat。',

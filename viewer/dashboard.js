@@ -24,7 +24,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-27";
+const LWK_VERSION = "2026-12-28";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -53,7 +53,7 @@ const TYPE = new Map(ISSUE_TYPES.map((t) => [t.id, t]));
 const UNASSIGNED = "(unassigned)";
 
 const D = { manifest: null, items: [], members: [], me: null, issues: [], fetched: null, rev: 0,
-            revs: {}, byPart: {}, manifests: {}, memberBy: {} };
+            revs: {}, byPart: {}, manifests: {}, memberBy: {}, links: {} };
 
 /* What the dashboard shows: one part (a model / sheet set), a whole project
    (all its parts - the default for a project of several), or one of my own
@@ -303,6 +303,8 @@ async function loadData() {
       fetch("/data/" + encodeURIComponent(p) + "/manifest.json").then((r) => (r.ok ? r.json() : null)).catch(() => null),
       api("/api/items?since=" + (D.revs[p] || 0), h),
       api("/api/members", h).catch(() => ({ members: [] })),
+      // which issues have a task (the closed loop); an older server has no such answer
+      api("/api/issue-task-links?project=" + encodeURIComponent(p), h).then((r) => { D.links[p] = r.issues || {}; }).catch(() => {}),
     ]);
     let items = items0, rev = D.revs[p] || 0;
     // the server's count went back (a restore): everything again
@@ -504,6 +506,12 @@ function toIssue(it) {
   const where0 = it.sheet ? sheetName(it.sheet, it._p)
     : (it.placement === "3d" ? "3D model" : "Other");
   const where = multi() ? partLabel(it._p) + " · " + where0 : where0;
+  // the loop: resolved -> re-checked (closed), or reopened (not fixed)
+  const sh = (iss.history || []).filter((e) => e.field === "status");
+  const resolvedAt = (sh.filter((e) => e.to === "Resolved").pop() || {}).at || null;
+  const closedAt = (sh.filter((e) => e.to === "Closed").pop() || {}).at || null;
+  const reopened = sh.filter((e) => CLOSED.has(e.from) && !CLOSED.has(e.to)).length;
+  const lk = (D.links[it._p || project()] || {})[it.id] || null;
   const lastBy = (iss.history && iss.history.length && iss.history[iss.history.length - 1].by)
     || it.updated_by || iss.author || it.author || "";
   return {
@@ -514,6 +522,8 @@ function toIssue(it) {
     assignee, office: m ? (m.office || "-") : (assignee === UNASSIGNED ? "-" : "?"),
     team: m ? (m.team || "-") : "-", discipline: m ? (m.discipline || "-") : "-",
     author: iss.author || it.author || "", where, lastBy, history: iss.history || [],
+    resolvedAt: resolvedAt ? new Date(resolvedAt) : null, closedAt: closedAt ? new Date(closedAt) : null, reopened,
+    tasks: lk ? lk.tasks : 0, tasksOpen: lk ? lk.open : 0,
   };
 }
 
@@ -702,6 +712,7 @@ function render() {
   $("#d-open3d").href = link("model.html");
   peopleTable(list, t0, soon);
   officeChart(open, t0);
+  loopCard(list, t0);
 
   const row = (i, extra) => `<tr data-id="${esc(i.id)}"><td><a href="${issueLink(i)}">${i.number ? "#" + i.number + " " : ""}${esc(i.title)}</a>`
     + `<div class="sub">${esc(i.where)} · ${esc(i.assignee)}</div></td>${extra}</tr>`;
@@ -716,6 +727,50 @@ function render() {
   fillList("#t-stale", open.filter((i) => Date.now() - i.updated.getTime() > 14 * DAY)
     .sort((a, b) => a.updated - b.updated),
     (i) => row(i, `<td class="num">${days(i.updated, Date.now())} d</td>`), "Nothing has gone quiet.");
+}
+
+/* The closed loop: issue -> task -> put right (Resolved) -> re-checked by
+   whoever raised it (Closed), or reopened when it was not fixed. */
+function loopCard(list, t0) {
+  const box = $("#d-loop");
+  if (!box) return;
+  const live = list.filter((i) => !i.dismissed);
+  if (!live.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const linksKnown = SC.parts.some((p) => D.links[p]);
+  const withTask = live.filter((i) => i.tasks > 0);
+  const resolved = live.filter((i) => i.status === "Resolved" || i.status === "Closed");
+  const closed = live.filter((i) => i.status === "Closed");
+  const waiting = live.filter((i) => i.status === "Resolved");
+  const reopened = live.filter((i) => i.reopened > 0);
+  const noTask = live.filter((i) => i.open && !i.tasks);
+  // days from resolved to signed off, for the issues re-checked and closed
+  const rc = closed.filter((i) => i.resolvedAt && i.closedAt && i.closedAt >= i.resolvedAt);
+  const avgRc = rc.length ? rc.reduce((s, i) => s + (i.closedAt - i.resolvedAt) / DAY, 0) / rc.length : null;
+  const pc = (n) => (live.length ? Math.round((n / live.length) * 100) : 0);
+  const step = (label, n, sub, color) => `<div class="loop-step"><div class="loop-bar"><i style="width:${pc(n)}%;background:${color}"></i></div>`
+    + `<b>${n}</b><span>${label}</span><small>${pc(n)}%${sub ? " · " + sub : ""}</small></div>`;
+  const fig = (label, v, hint, cls) => `<div class="loop-fig ${cls || ""}" title="${esc(hint)}"><b>${v}</b><span>${label}</span></div>`;
+  const row = (i, extra) => `<tr data-id="${esc(i.id)}"><td><a href="${issueLink(i)}">${i.number ? "#" + i.number + " " : ""}${esc(i.title)}</a>`
+    + `<div class="sub">${esc(i.where)} · raised by ${esc(i.author || "?")} · held by ${esc(i.assignee)}</div></td>${extra}</tr>`;
+  const waitDays = (i) => (i.resolvedAt ? days(i.resolvedAt, t0.getTime() + DAY - 1) : null);
+  box.innerHTML = `<h3>Closed loop <small>issue &rarr; task &rarr; put right &rarr; re-checked by whoever raised it &rarr; closed</small></h3>`
+    + `<div class="loop">`
+    + step("raised", live.length, "", "#94a3b8")
+    + (linksKnown ? step("with a task", withTask.length, "", "#4a3aa7") : "")
+    + step("put right (resolved)", resolved.length, "", "#0284c7")
+    + step("re-checked &amp; closed", closed.length, "", "#0e9f6e")
+    + `</div><div class="loop-figs">`
+    + fig("waiting for re-check", waiting.length, "Resolved, not yet checked and closed by whoever raised it", waiting.length ? "warn" : "")
+    + fig("avg. days to re-check", avgRc == null ? "-" : (Math.round(avgRc * 10) / 10), "From Resolved to Closed, for the issues re-checked")
+    + fig("reopened - not fixed", reopened.length + (resolved.length + reopened.length ? ` <small>${Math.round((reopened.length / Math.max(1, resolved.length + reopened.length)) * 100)}%</small>` : ""),
+      "Issues once marked Resolved or Closed, then reopened: the fix did not hold", reopened.length ? "bad" : "")
+    + (linksKnown ? fig("open with no task", noTask.length, "Open issues nobody has made a task of yet", noTask.length ? "warn" : "") : "")
+    + `</div><div class="table-wrap"><table class="list" id="t-recheck">`
+    + (waiting.length ? waiting.sort((a, b) => (a.resolvedAt || 0) - (b.resolvedAt || 0)).slice(0, 30)
+      .map((i) => row(i, `<td class="num${waitDays(i) > 7 ? " bad" : ""}">${waitDays(i) == null ? "" : waitDays(i) + " d"}<div class="sub">waiting</div></td>`)).join("")
+      : `<tr><td class="empty">Nothing waiting for a re-check.</td></tr>`)
+    + `</table></div>`;
 }
 
 function describeLast(i) {

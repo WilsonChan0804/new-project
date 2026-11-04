@@ -40,6 +40,8 @@ import tasks as T
 
 STATUSES = ("Open", "Answered", "Closed")
 PRIORITIES = ("Normal", "High", "Urgent")
+# who a comment came from (the comment-response schedule groups by it)
+SOURCES = ("", "BD", "FSD", "Client", "Consultant", "Contractor", "Internal", "Other")
 SAFE_Q = re.compile(r"^q[0-9a-f]{8,30}$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_VIEWS = 30
@@ -461,7 +463,8 @@ def register(app, core):
                 # anyone on the project may add a picture (+ Query on a sheet / in
                 # 3D); only the people above remove or reorder them
                 adds_only = "views" in p and not can_edit and appends(q["views"], clean_views(p["views"]))
-                if not can_edit and any(k in p for k in ("title", "question", "to", "due", "priority", "tasks")
+                if not can_edit and any(k in p for k in ("title", "question", "to", "due", "priority", "tasks",
+                                                         "source", "source_ref", "source_date", "location")
                                         ) or ("views" in p and not can_edit and not adds_only):
                     raise HTTPException(status_code=403, detail="Only who raised it, who it is addressed to, or a project admin can change it")
                 if "title" in p:
@@ -479,6 +482,17 @@ def register(app, core):
                     if due and not DATE.match(due):
                         raise HTTPException(status_code=400, detail="Due: a date please (YYYY-MM-DD)")
                     change("due", "due", due)
+                if "source" in p:
+                    change("source", "source", p["source"] if p["source"] in SOURCES else "Other")
+                if "source_ref" in p:
+                    change("source_ref", "source_ref", T.clean_text(p["source_ref"], 120))
+                if "source_date" in p:
+                    sd = str(p["source_date"] or "")[:10]
+                    if sd and not DATE.match(sd):
+                        raise HTTPException(status_code=400, detail="Letter date: a date please (YYYY-MM-DD)")
+                    change("source_date", "source_date", sd)
+                if "location" in p:
+                    change("location", "location", T.clean_text(p["location"], 300))
                 if "priority" in p:
                     change("priority", "priority", p["priority"] if p["priority"] in PRIORITIES else "Normal")
                 if "views" in p:
@@ -521,6 +535,21 @@ def register(app, core):
                 d.execute("UPDATE queries SET deleted = 1, rev = ?, updated_at = ?, updated_by = ? WHERE id = ?", (rev, t, by, qid))
         # tell the people concerned, and the project's chat
         fresh = dict((q["id"], q) for q in out)
+        letter = body.get("letter") if isinstance(body.get("letter"), dict) else None
+        if letter:
+            # comments from one letter, raised together: one notice per person, no chat card each
+            raised = [fresh.get(q["id"], q) for q, ev, _ in events if ev == "raised"]
+            events = [e for e in events if e[1] != "raised"]
+            people = {}
+            for q in raised:
+                for x in q["to"]:
+                    people.setdefault(x["uid"], []).append(q)
+            what = " ".join(x for x in (str(letter.get("source") or ""), "letter",
+                                        str(letter.get("ref") or "")) if x).strip()
+            for u, qs in people.items():
+                notify([{"uid": u}], "%d comment%s for you (%s)" % (len(qs), "" if len(qs) == 1 else "s", what[:120]),
+                       "%s entered the comments of %s:\n%s" % (by, what[:120], "\n".join(
+                           "%s %s" % (q["code"], q["title"]) for q in qs[:30])), w.uid, url_of(core, qs[0]))
         for q, ev, who in events:
             q = fresh.get(q["id"], q)
             url = url_of(core, q)
@@ -538,6 +567,27 @@ def register(app, core):
             if ev in ("raised", "answered", "closed"):
                 card(q, ev, by, skip=str(body.get("skip_chat") or ""))
         return {"queries": out, "rev": rev}
+
+    @app.get("/api/queries/export.xlsx")
+    def q_export(request: Request, reg: str = "", ids: str = "", filters: str = "", today: str = "",
+                 x_viewer_token: str = Header(default="")):
+        """The comment-response schedule (query_xlsx.py) of the queries shown."""
+        import query_xlsx
+        w = core.who(request, x_viewer_token)
+        need(w, reg)
+        with db(core) as d:
+            rows = [row(r) for r in d.execute("SELECT * FROM queries WHERE reg = ? AND deleted = 0", (reg,)).fetchall()]
+            p = d.execute("SELECT * FROM projects WHERE id = ?", (reg,)).fetchone()
+        want = set(x for x in ids.split(",") if SAFE_Q.match(x)) if ids else None
+        if want is not None:
+            rows = [q for q in rows if q["id"] in want]
+        proj = {"name": (p["name"] if p else "") or "Project", "short": (p["short"] if p else "") or "",
+                "code": (p["code"] if p else "") or ""}
+        day = today if DATE.match(today or "") else T.now_iso()[:10]
+        data = query_xlsx.schedule(proj, rows, day, T.clean_text(filters, 200))
+        fn = "Comment-Response_%s_%s.xlsx" % (re.sub(r"[^\w-]+", "_", proj["code"] or proj["short"] or proj["name"]).strip("_") or "project", day)
+        return Response(content=data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": 'attachment; filename="%s"' % fn, "Cache-Control": "no-store"})
 
     @app.get("/api/queries/{qid}")
     def q_one(request: Request, qid: str, x_viewer_token: str = Header(default="")):

@@ -816,7 +816,11 @@ def personal_targets(pid, prev, item, actor="", with_uid=False):
             add(q.get("author") or "", "%s replied to you" % (c.get("author") or "someone"))
     st, pst = iss.get("status") or "Open", piss.get("status") or "Open"
     if piss and st != pst and st in ("Resolved", "Closed"):
-        add(iss.get("author") or "", "the issue you raised is now %s" % st)
+        add(iss.get("author") or "", "the issue you raised is now %s - please re-check it" % st if st == "Resolved"
+            else "the issue you raised is now %s" % st)
+    if piss and pst in ("Resolved", "Closed") and st not in ("Resolved", "Closed") and not iss.get("dismissed"):
+        # re-checked and not fixed: whoever holds it is told
+        add(iss.get("assigned_to") or "", "re-checked and not fixed - reopened by %s" % (iss.get("updated_by") or "the raiser"))
     return out if with_uid else [o[:3] for o in out]
 
 
@@ -2948,8 +2952,17 @@ def digest_for(pid, days=7):
                 "assigned_to": i.get("assigned_to") or "", "due_date": i.get("due_date") or "",
                 "status": i.get("status") or "Open", "sheet": it.get("sheet") or ""}
     overdue.sort(key=lambda it: it["issue"].get("due_date") or "")
+    # the closed loop: resolved, waiting for whoever raised it to re-check
+    recheck = {}
+    for it in items:
+        i = it["issue"]
+        if i.get("status") == "Resolved" and not i.get("dismissed"):
+            k = i.get("author") or it.get("author") or "?"
+            recheck[k] = recheck.get(k, 0) + 1
     return {"project": pid, "days": days, "raised": len(raised), "closed": len(closed),
             "open": len(open_), "overdue": len(overdue),
+            "recheck": sum(recheck.values()),
+            "recheck_by": sorted(recheck.items(), key=lambda kv: -kv[1])[:8],
             "by_person": sorted(by_person.items(), key=lambda kv: -kv[1])[:6],
             "overdue_list": [brief(it) for it in overdue[:8]],
             "raised_list": [brief(it) for it in sorted(raised, key=lambda it: it.get("created_at") or "", reverse=True)[:8]]}
@@ -2959,12 +2972,15 @@ def digest_card(pid, d, base):
     title = "Weekly issues - %s" % pid
     facts = [{"title": k, "value": str(v)} for k, v in (
         ("Raised this week", d["raised"]), ("Closed this week", d["closed"]),
-        ("Open now", d["open"]), ("Overdue", d["overdue"]))]
+        ("Open now", d["open"]), ("Overdue", d["overdue"]), ("Waiting for re-check", d.get("recheck", 0)))]
     body = [{"type": "TextBlock", "text": title, "weight": "Bolder", "size": "Medium", "wrap": True},
             {"type": "FactSet", "facts": facts}]
     if d["by_person"]:
         body.append({"type": "TextBlock", "text": "Open by person: " + ", ".join(
             "%s %d" % (k, n) for k, n in d["by_person"]), "wrap": True})
+    if d.get("recheck_by"):
+        body.append({"type": "TextBlock", "text": "Waiting for your re-check: " + ", ".join(
+            "%s %d" % (k, n) for k, n in d["recheck_by"]), "wrap": True})
     if d["overdue_list"]:
         body.append({"type": "TextBlock", "text": "Overdue", "weight": "Bolder", "wrap": True})
         for o in d["overdue_list"]:
@@ -3025,7 +3041,8 @@ def digest_html(pid, d):
             e(o["number"] or "?"), e(o["title"]), e(o["assigned_to"] or "-"), e(o["due_date"] or "-"), e(o["status"]))
             for o in lst) or "<tr><td colspan=5>None.</td></tr>"
     facts = [("Raised this week", d["raised"]), ("Closed this week", d["closed"]), ("Open now", d["open"]),
-             ("Overdue", d["overdue"]), ("Clash issues open", clash), ("Headroom issues open", head)]
+             ("Overdue", d["overdue"]), ("Waiting for re-check", d.get("recheck", 0)),
+             ("Clash issues open", clash), ("Headroom issues open", head)]
     return ("<!doctype html><html><head><meta charset='utf-8'><title>Weekly issues - %s</title><style>"
             "body{font:11pt Arial,sans-serif;color:#222;margin:18mm}h1{font-size:18pt;margin:0}h1 span{color:#f28022}"
             ".sub{color:#666;margin:4px 0 14px}table{border-collapse:collapse;width:100%%;margin:6px 0 14px}"

@@ -51,7 +51,7 @@ PART = [
         ['手寫', 'Pen（一筆畫完之後停定唔郁，就會變成直線、圓或者長方形）、Highlighter'],
         ['文字', 'Text、Text box、Callout'],
         ['印章', 'APPROVED、APPROVED AS NOTED、REVISE & RESUBMIT、REJECTED、REVIEWED、FOR INFORMATION、VOID（會簽上你個名同時間）'],
-        ['量度', 'Measure、Dimension、Area、Angle（用 **1:** 格入面嘅比例；空白就用 view 自己嘅比例 - 匯入嘅圖則就用 title block 寫嘅比例，例如 SCALE 1:100，格入面顯示 **auto 1:100**）'],
+        ['量度', 'Measure、Dimension、Area、Angle、Route distance（用 **1:** 格入面嘅比例；空白就用 view 自己嘅比例 - 匯入嘅圖則就用 title block 寫嘅比例，例如 SCALE 1:100，格入面顯示 **auto 1:100**）'],
         ['其他', 'Snip（將一個範圍 copy 做圖片；亦可以貼圖入嚟）、Select text、Eraser、Match properties、Select、Pan'],
     ]),
     UL([
@@ -60,6 +60,7 @@ PART = [
         '**Style bar：** Layer、線／填色／文字顏色、Opacity、Weight（紙上 mm）、線 Type、Font、Size（字高 mm）、Align。',
         '**改 markup：** 揀一個 markup 就可以搬、改大細或者改樣式；R / Shift+R 轉 90°；Ctrl+C / Ctrl+V copy 同貼（貼去另一張 sheet 會喺同一個位置）；Delete 刪除。Dimension 或者量度撳佢個數字（或者佢啲線）就揀到。',
         '**Snap 去圖則嘅線：** Dimension、Measure、Area、Angle、Line、Arrow、Polyline、Polygon、Rect 同 Cloud 會 snap 去 sheet 本身印出嚟嘅線 - 橙色記號話你知係邊種，次序係：**Endpoint**（端點）、**Intersection**（交點）、**Perpendicular**（由已經放咗嘅點垂直落一條線）、**Aligned** / **Extension**（同附近嘅角或者你第一點打橫／打直對齊，或者一條線延長出去 - 虛線顯示對齊緊乜）、**Midpoint**（中點）、**On line**（線上）。拖呢啲 markup 嘅點都會 snap。㩒住 **Alt** 就自由放；**View ▾ > Snap to drawing lines** 可以關。用伺服器圖片顯示嘅大 sheet，第一次會喺背景讀啲線（「Reading this drawing\'s lines for snapping ...」）。',
+        '**Route distance**（Measure ▾）：量走火距離（travel distance）、死胡同（dead end）、樓梯去樓梯、由消防員升降機或者由 TRS 嘅距離。撳起點、再撳終點，double-click（或者 Enter）完成；中間撳多啲點，條路線就一定經嗰啲點。**Shortest route** 會繞過平面圖嘅牆、穿過門，搵最短嘅路線同顯示長度；**Points I click** 就係將你撳嘅點之間嘅直線加埋（任何 sheet 都得，匯入嘅 PDF 都得）。喺個 panel 入面：**For** 揀量乜（會寫喺標籤前面）、**Limit** 限制（米；未超過顯示綠色，超過顯示紅色同超咗幾多）、**Blocks the route** 剔邊類嘢擋路（牆、柱、樓梯、欄杆、傢俬、櫃 ... - **Doors** 唔剔就可以穿過），同 **Clearance from walls** 離牆距離（預設 300 mm）。拖一點就可以改（只會重新搵旁邊嗰兩段），拖一段中間嘅 **+** 加一個必經點，double-click 一點刪除佢；model 改咗就撳 **Find again**。最短路線要用 2026 年 11 月 4 日或之後嘅 add-in 再 publish 嗰張 sheet 嘅平面圖（佢會喺 view 嘅 cut plane 切出每張平面圖嘅牆同門，連 PDF 一齊送）；未有嘅話，就量你撳嘅點。Link 入嚟嘅 model 暫時未切。',
         '**邊個刪得：** 自己嘅 markup；其他人喺你可以改嘅 layer 上面嘅 markup（預設係所有 member，除非 project admin 另外設定）；有 **issue** 嘅 markup 只可以由開 issue 嘅人或者 project admin 刪。Eraser 同 Delete 刪唔到嘅會留低，並且話你知點解。',
         '**Comment 定 Issue：** 圖則工具列嘅 **Comment / + Issue** 掣決定畫完 markup 之後做乜。喺 **Issue** 模式會即刻彈出 **Raise issue** 視窗。Comment 之後都可以用 **Issue** 或者右鍵 **Raise issue** 變做 issue。',
         '**Layer：** markup 放喺 layer 上面（預設「General」）。Admin 可以鎖 layer 或者唔俾某啲人睇到。issue 清單頂部嘅 **👁 Markups** 會隱藏所有 markup。',

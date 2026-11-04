@@ -67,6 +67,7 @@ export function ensureDialog() {
       </div>
       <div id="detail-body">
         <div id="detail-main">
+          <div id="detail-recheck" hidden></div>
           <div id="detail-snap"></div>
           <label>Description
             <textarea id="detail-desc" rows="4"></textarea></label>
@@ -320,6 +321,49 @@ export function openIssue(item, opts) {
       + (iss.dismissed.reason ? " - " + iss.dismissed.reason : "");
   };
 
+  /* The closed loop: a resolved issue waits for whoever raised it to look
+     again. Fixed: it is closed. Not fixed: back to Open, with what is still
+     wrong - and whoever holds it is told (server). Anyone can still set
+     the status by hand; this is the quick way for the raiser. */
+  const raiserIsMe = () => {
+    const m = /^u(\d+)$/.exec(Store.userKey() || "");
+    const aid = iss.author_id != null ? iss.author_id : item.author_id;
+    if (m && aid != null) return +m[1] === +aid;
+    const a = (iss.author || item.author || "").trim().toLowerCase();
+    return !!a && a === (opts.author || "").trim().toLowerCase();
+  };
+  const renderRecheck = () => {
+    const box = $("#detail-recheck");
+    if (iss.dismissed || (iss.status || "Open") !== "Resolved") { box.hidden = true; box.className = ""; box.innerHTML = ""; return; }
+    const by = iss.author || item.author || "whoever raised it";
+    const resolvedAt = ((iss.history || []).filter((h) => h.field === "status" && h.to === "Resolved").pop() || {}).at;
+    const waited = resolvedAt ? Math.floor((Date.now() - new Date(resolvedAt).getTime()) / 864e5) : null;
+    box.hidden = false;
+    box.className = "recheck";
+    box.innerHTML = raiserIsMe()
+      ? `<b>Re-check</b><span>This is marked Resolved${waited != null ? ` (${waited ? waited + " day" + (waited === 1 ? "" : "s") + " ago" : "today"})` : ""}. You raised it - is it fixed?</span>`
+        + `<button type="button" class="rc-ok">&#10003; Fixed - close it</button><button type="button" class="ghost rc-no">Not fixed - reopen</button>`
+      : `<b>Waiting for re-check</b><span>Resolved${waited != null ? ` ${waited ? waited + " day" + (waited === 1 ? "" : "s") + " ago" : "today"}` : ""}: ${esc(by)}, who raised it, checks the fix and closes it.</span>`;
+    const post = async (text, status, ok) => {
+      iss.comments.push({ id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        author: opts.author || "?", text, at: new Date().toISOString(), kind: "recheck" });
+      iss.rechecked = { by: opts.author || "?", at: new Date().toISOString(), ok };
+      iss.status = status;
+      $("#detail-status").value = status;
+      renderComments();
+      renderRecheck();
+      await opts.onSave(collect());
+    };
+    const okb = box.querySelector(".rc-ok"), nob = box.querySelector(".rc-no");
+    if (okb) okb.onclick = () => post("Re-checked: fixed. Closed.", "Closed", true);
+    if (nob) nob.onclick = () => {
+      const why = prompt("What is still not right? (it goes back to Open, and whoever holds it is told)");
+      if (why === null) return;
+      if (!why.trim()) { alert("Say what is still wrong - it is what the next person goes on."); return; }
+      post("Re-checked: not fixed - " + why.trim(), "Open", false);
+    };
+  };
+
   /* The discussion: every comment in time order, each answer under the
      message it answers. A query stays open until it is marked answered. */
   let replyTo = null;
@@ -396,6 +440,7 @@ export function openIssue(item, opts) {
   renderComments();
   renderImages();
   renderDismissed();
+  renderRecheck();
   if (!Array.isArray(iss.files)) iss.files = [];
   const renderFiles = () => {
     const box = $("#detail-files");
@@ -836,6 +881,11 @@ async function offerTaskDone(item, iss) {
 .it-task.done a, .it-task.done span { text-decoration: line-through; color: var(--muted, #6b7480); }
 .it-tick { display: inline-block; width: 16px; color: var(--ok, #0e9f6e); }
 .it-late { color: var(--bad, #e2453c); }
-#detail-files { margin-bottom: 2px; }`;
+#detail-files { margin-bottom: 2px; }
+#detail-recheck.recheck { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 10px; padding: 8px 10px;
+  border: 1px solid #b7d7f0; border-left: 4px solid #0284c7; border-radius: 8px; background: #eef6fc; font-size: 12.5px; color: #12324a; }
+#detail-recheck.recheck span { flex: 1 1 220px; }
+#detail-recheck .rc-ok { background: #0e9f6e; border-color: #0e9f6e; color: #fff; font-weight: 600; }
+@media (prefers-color-scheme: dark) { #detail-recheck.recheck { background: #10293a; border-color: #1f4e6e; color: #d7e9f6; } }`;
   document.head.appendChild(st);
 })();

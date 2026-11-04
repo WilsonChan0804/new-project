@@ -405,7 +405,7 @@ def export_files(folder):
         if not os.path.isdir(d):
             continue
         for name in sorted(os.listdir(d)):
-            if name.lower().endswith((".frag", ".pdf", ".lwkm", ".props.json")) \
+            if name.lower().endswith((".frag", ".pdf", ".lwkm", ".props.json", ".route.json")) \
                     and os.path.isfile(os.path.join(d, name)):
                 add(part + "/" + name)
     return out

@@ -239,6 +239,10 @@ MIGRATIONS = (
     ("tasks", "percent_at", "TEXT NOT NULL DEFAULT ''"),   # when - only touched when the value itself changes
     ("tasks", "percent_prev", "INTEGER"),                  # the percent before ticking done filled it to 100
     ("queries", "followups", "TEXT NOT NULL DEFAULT '[]'"),  # the conversation after the first answer (queries.py)
+    ("queries", "source", "TEXT NOT NULL DEFAULT ''"),       # who the comment came from: BD, FSD, Client ... (queries.SOURCES)
+    ("queries", "source_ref", "TEXT NOT NULL DEFAULT ''"),   # their letter / reference no.
+    ("queries", "source_date", "TEXT NOT NULL DEFAULT ''"),  # the date of their letter, YYYY-MM-DD
+    ("queries", "location", "TEXT NOT NULL DEFAULT ''"),     # the drawing / area it is about
 )
 
 # What the Projects page keeps about a project, beyond its name and code.
@@ -1814,6 +1818,22 @@ def register(app, core):
                 out.append(t)
         out.sort(key=lambda t: (t["done"], t["due"] or "9999", t["title"].lower()))
         return {"tasks": out[:2000], "lists": {k: v[0]["title"] for k, v in lists.items()}}
+
+    @app.get("/api/issue-task-links")
+    def issue_task_links(request: Request, project: str = "",
+                         x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """For the Dashboard's closed loop: which of a project's issues have a
+        task, and how many of those tasks are still open - counts only, so
+        nothing of a list the person cannot open is shown."""
+        pid = project or x_project
+        if core.CFG["single"]:
+            pid = pid or "default"
+        core.require_project(request, pid, "viewer", x_viewer_token)
+        with db() as d:
+            rows = d.execute("SELECT l.issue AS issue, COUNT(*) AS n, SUM(CASE WHEN t.done THEN 0 ELSE 1 END) AS open "
+                             "FROM issue_links l JOIN tasks t ON t.id = l.task_id "
+                             "WHERE l.project = ? AND t.deleted = 0 GROUP BY l.issue", (pid,)).fetchall()
+        return {"issues": dict((r["issue"], {"tasks": r["n"], "open": r["open"] or 0}) for r in rows)}
 
     @app.get("/api/tasks-by-issue")
     def tasks_by_issue(request: Request, issue: str = "", project: str = "",

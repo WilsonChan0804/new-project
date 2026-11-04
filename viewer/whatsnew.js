@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-28", date: "4 Nov 2026",
+    items: [
+      "**Route distance on plans** (Sheets > Measure ▾ > **Route distance**): travel distance, dead end, staircase to staircase, from the fireman's lift or the TRS. Click the start and the end (double-click or Enter to finish): the **shortest route** round the walls is found and its length shown, through the doors. In the panel, tick what blocks the route (walls, columns, stairs, furniture ... doors pass unless ticked), set the clearance from walls and a **limit** (green within it, red over). Drag a point to adjust, **+** on a leg adds a point the route must pass, double-click a point to remove it. **Points I click** measures the total of the points you click instead - on any sheet, imported PDFs too. The shortest route needs the floor plans **published again** with the updated add-in (it now sends each plan's walls and doors with the sheet).",
+      "**Comment-response schedule in Excel:** Tasks > Queries > **Excel (comment-response)** gives a set-out workbook of the queries shown: grouped by who sent them (BD, FSD, the client, a consultant ...) and their letter, with the comment, our response, who responded and when, the status in colour, and a Summary sheet. Ready to print on A3.",
+      "**Add from a letter:** paste a comment letter's text in Tasks > Queries > **Add from a letter** - each numbered comment becomes a query, with who it came from, their reference and date. Queries now keep **From**, **Their ref.**, **Letter date** and **Location**, and the register filters by who it came from.",
+      "**Re-check before closing an issue:** a Resolved issue asks whoever raised it to check the fix: **Fixed - close it**, or **Not fixed - reopen** with what is still wrong (whoever holds it is told). The Dashboard has a **Closed loop** card: raised → with a task → resolved → re-checked and closed, how many wait for a re-check, the average days to re-check, how many were reopened, and open issues with no task. The weekly report counts the re-checks waiting.",
+      "Double-click now always finishes a polyline, polygon, area or route. **Restart the server after this update.**",
+    ],
+  },
+  {
     version: "2026-12-27", date: "4 Nov 2026",
     items: [
       "**More snapping, in CAD's order:** **Endpoint**, **Intersection**, **Perpendicular** (a dimension or line from your first point lands square onto a wall line), **Aligned** / **Extension** (straight across or up from a nearby corner or your first point, or a line carried on past its end - a dashed line shows what it lines up with), **Midpoint**, **On line**. Alt still places freely.",

@@ -13,17 +13,20 @@
 
 import { esc, uid, today, addDays, daysBetween, fmtDate, fmtWhen, skeleton } from "./tasks-util.js";
 import { donut, hbars } from "./tasks-dash.js";
-import { keptBig, keepBig } from "./nav.js";
+import { keptBig, keepBig, headers } from "./nav.js";
 
 export const VIEW_KEY = "lwk-viewer:query-view";
 const REG_KEY = "lwk-tasks:query-reg";
 const STATUS = ["Open", "Answered", "Closed"];
+// who a comment came from (queries.py SOURCES): the comment-response schedule groups by it
+const SOURCES = ["BD", "FSD", "Client", "Consultant", "Contractor", "Internal", "Other"];
+const srcSelect = (attr, val) => `<select ${attr}><option value="">-</option>${SOURCES.map((x) => `<option${x === val ? " selected" : ""}>${x}</option>`).join("")}</select>`;
 const COL = { Open: "#f28022", Answered: "#0284c7", Closed: "#0e9f6e", over: "#e2453c" };
 const newQid = () => "q" + (crypto.getRandomValues ? Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => b.toString(16).padStart(2, "0")).join("").slice(0, 19) : uid().replace(/[^0-9a-f]/g, "0").slice(0, 19).padEnd(19, "0"));
 
 const Q = {
   projects: null, reg: "", rows: new Map(), rev: 0, people: [], admin: false,
-  view: "list", f: { status: "active", who: "all", q: "" }, open: "", detail: null, poll: 0, loaded: "",
+  view: "list", f: { status: "active", who: "all", q: "", src: "all" }, open: "", detail: null, poll: 0, loaded: "",
 };
 
 const isOver = (q) => q.status === "Open" && q.due && q.due < today();
@@ -96,7 +99,8 @@ function filtered(T) {
   const F = Q.f, s = F.q.trim().toLowerCase();
   return [...Q.rows.values()].filter((q) => (F.status === "all" || (F.status === "active" ? q.status !== "Closed" : F.status === "overdue" ? isOver(q) : q.status === F.status))
     && (F.who === "all" || (F.who === "to" ? toMe(T, q) : mine(T, q)))
-    && (!s || `${q.code} ${q.title} ${q.question} ${q.answer} ${(q.to || []).map((p) => p.name).join(" ")}`.toLowerCase().includes(s)))
+    && (!F.src || F.src === "all" || (q.source || "") === (F.src === "none" ? "" : F.src))
+    && (!s || `${q.code} ${q.title} ${q.question} ${q.answer} ${q.source || ""} ${q.source_ref || ""} ${q.location || ""} ${(q.to || []).map((p) => p.name).join(" ")}`.toLowerCase().includes(s)))
     .sort((a, b) => STATUS.indexOf(a.status) - STATUS.indexOf(b.status) || (a.due || "9999").localeCompare(b.due || "9999") || b.number - a.number);
 }
 
@@ -112,12 +116,16 @@ function draw(T, el) {
     + `<button id="q-new" class="primary">+ New query</button>`
     + `<span class="spacer"></span>`
     + `<span class="q-k"><b>${c.open}</b> open${c.over ? ` · <b class="bad">${c.over}</b> overdue` : ""} · <b>${c.ans}</b> answered</span>`
+    + `<button id="q-letter" class="ghost" title="Paste a comment letter (BD, FSD, the client ...): each numbered comment becomes a query">Add from a letter</button>`
+    + `<button id="q-xlsx" class="ghost" title="The comment-response schedule of the queries shown, as an Excel workbook: grouped by who sent them and their letter">Excel (comment-response)</button>`
     + `<button id="q-report" class="ghost" title="The register as a report: print, save as PDF or keep in Folders">Report (PDF)</button></div>`
     + (Q.view === "list"
       ? `<div class="q-bar q-f"><input id="q-q" type="search" placeholder="Search queries" value="${esc(F.q)}">`
         + `<select id="q-st">${[["active", "Open and answered"], ["Open", "Open"], ["overdue", "Overdue"], ["Answered", "Answered (to close)"], ["Closed", "Closed"], ["all", "All"]]
           .map(([v, l]) => `<option value="${v}"${F.status === v ? " selected" : ""}>${l}</option>`).join("")}</select>`
-        + `<select id="q-who">${[["all", "Everyone's"], ["to", "To me"], ["mine", "Raised by me"]].map(([v, l]) => `<option value="${v}"${F.who === v ? " selected" : ""}>${l}</option>`).join("")}</select></div>`
+        + `<select id="q-who">${[["all", "Everyone's"], ["to", "To me"], ["mine", "Raised by me"]].map(([v, l]) => `<option value="${v}"${F.who === v ? " selected" : ""}>${l}</option>`).join("")}</select>`
+        + `<select id="q-src" title="Who the comment came from">${[["all", "From anyone"]].concat(SOURCES.map((x) => [x, "From " + x]), [["none", "Source not given"]])
+          .map(([v, l]) => `<option value="${v}"${(F.src || "all") === v ? " selected" : ""}>${l}</option>`).join("")}</select></div>`
         + `<div id="q-newform"></div>`
         + listHtml(T, rows)
       : dashHtml(T, all));
@@ -125,16 +133,19 @@ function draw(T, el) {
   for (const b of el.querySelectorAll("[data-qv]")) b.onclick = () => { Q.view = b.dataset.qv; draw(T, el); };
   el.querySelector("#q-new").onclick = () => { if (Q.view !== "list") { Q.view = "list"; draw(T, el); } newForm(T, el); };
   el.querySelector("#q-report").onclick = () => openReport(T, Q.view === "list" ? rows : all);
+  el.querySelector("#q-xlsx").onclick = (ev) => exportXlsx(T, Q.view === "list" ? rows : all, ev.currentTarget);
+  el.querySelector("#q-letter").onclick = () => letterForm(T, el);
   if (Q.view === "list") {
     const q = el.querySelector("#q-q");
     q.oninput = () => { F.q = q.value; const pos = q.selectionStart; draw(T, el); const n = el.querySelector("#q-q"); n.focus(); n.setSelectionRange(pos, pos); };
     el.querySelector("#q-st").onchange = (ev) => { F.status = ev.target.value; draw(T, el); };
     el.querySelector("#q-who").onchange = (ev) => { F.who = ev.target.value; draw(T, el); };
+    el.querySelector("#q-src").onchange = (ev) => { F.src = ev.target.value; draw(T, el); };
     for (const r of el.querySelectorAll("[data-q]")) r.onclick = () => openDetail(T, r.dataset.q);
   } else {
     for (const b of el.querySelectorAll("[data-filter]")) b.onclick = () => {
       const [k, v] = b.dataset.filter.split(":");
-      Q.view = "list"; Q.f = { status: k === "status" ? v : "all", who: "all", q: k === "to" ? v : "" };
+      Q.view = "list"; Q.f = { status: k === "status" ? v : "all", who: "all", q: k === "to" ? v : "", src: "all" };
       draw(T, el);
     };
   }
@@ -150,7 +161,7 @@ function listHtml(T, rows) {
   if (!rows.length) return `<div class="t-empty"><p>No query matches.${Q.rows.size ? "" : " Raise the first with <b>+ New query</b> - or from a sheet or the 3D model: <b>Add to query</b> in its share menu."}</p></div>`;
   return `<div class="q-list">` + rows.map((q) => `<div class="q-row${q.id === Q.open ? " on" : ""}" data-q="${esc(q.id)}">`
     + `<span class="q-code">${esc(q.code)}</span>`
-    + `<span class="q-t"><b>${esc(q.title || "Untitled query")}</b><small>${esc(q.raised_by)}${(q.to || []).length ? " → " + esc(q.to.map((p) => p.name).join(", ")) : ""}</small></span>`
+    + `<span class="q-t"><b>${q.source ? `<span class="q-src" title="${esc("From " + q.source + (q.source_ref ? ", ref. " + q.source_ref : ""))}">${esc(q.source)}</span>` : ""}${esc(q.title || "Untitled query")}</b><small>${q.source_ref ? esc(q.source_ref) + " · " : ""}${esc(q.raised_by)}${(q.to || []).length ? " → " + esc(q.to.map((p) => p.name).join(", ")) : ""}</small></span>`
     + `<span class="q-m">${(q.views || []).length ? `<span title="Pictures of the sheet / 3D view">&#128247; ${q.views.length}</span>` : ""}${(q.tasks || []).length ? `<span title="Linked tasks">&#9745; ${q.tasks.length}</span>` : ""}${(q.followups || []).length ? `<span title="Follow-up questions and answers">&#8635; ${q.followups.length}</span>` : ""}</span>`
     + `<span class="q-due${isOver(q) ? " bad" : ""}">${q.due ? esc(fmtDate(q.due)) : ""}</span>${chip(q)}</div>`).join("") + `</div>`;
 }
@@ -167,6 +178,10 @@ function newForm(T, el, view) {
     + `<div class="q-thumbs"></div><div class="q-fr">${addPicHtml()}${addViewBtns()}<small class="muted">or paste a screenshot (Ctrl+V) / drop pictures here</small></div>`
     + `<div class="q-fr"><label>To ${peopleSelect("to")}</label><label>Due <input type="date" name="due" value="${addDays(today(), 7)}"></label>`
     + `<label>Priority <select name="priority"><option>Normal</option><option>High</option><option>Urgent</option></select></label></div>`
+    + `<div class="q-fr q-srcrow"><label>From ${srcSelect('name="source"', Q.lastSrc && Q.lastSrc.source)}</label>`
+    + `<label>Their ref. <input name="source_ref" maxlength="120" placeholder="letter no." value="${esc((Q.lastSrc && Q.lastSrc.source_ref) || "")}"></label>`
+    + `<label>Letter date <input type="date" name="source_date" value="${esc((Q.lastSrc && Q.lastSrc.source_date) || "")}"></label>`
+    + `<label>Drawing / location <input name="location" maxlength="300" placeholder="e.g. A-301, 3/F lift lobby"></label></div>`
     + `<div class="q-fr"><button class="primary">Raise query</button><button type="button" class="ghost" data-cancel>Cancel</button></div></form>`;
   const f = box.querySelector("form");
   const thumbs = f.querySelector(".q-thumbs");
@@ -186,12 +201,14 @@ function newForm(T, el, view) {
   const raise = async () => {
     const to = [...f.querySelectorAll("[name=to] option:checked")].map((o) => ({ uid: +o.value }));
     return save(T, { id: newQid(), title: f.title.value.trim(), question: f.question.value, to, due: f.due.value,
-      priority: f.priority.value, views: pics });
+      priority: f.priority.value, views: pics, source: f.source.value, source_ref: f.source_ref.value.trim(),
+      source_date: f.source_date.value, location: f.location.value.trim() });
   };
   f.onsubmit = async (ev) => {
     ev.preventDefault();
     try {
       const q = await raise();
+      if (f.source.value) Q.lastSrc = { source: f.source.value, source_ref: f.source_ref.value.trim(), source_date: f.source_date.value };
       box.innerHTML = "";
       Q.f.status = "active";
       draw(T, el);
@@ -445,6 +462,10 @@ async function openDetail(T, id, quiet) {
     + `<div class="td-num muted">Raised by ${esc(q.raised_by)} · ${esc(fmtWhen(q.created_at))}</div>`
     + row("To", canEdit ? peopleSelect("to", q.to) : esc((q.to || []).map((p) => p.name).join(", ") || "-"))
     + row("Due", canEdit ? `<input type="date" data-f="due" value="${esc(q.due)}">${isOver(q) ? ` <span class="bad">overdue ${daysBetween(q.due, today())} day(s)</span>` : ""}` : esc(q.due ? fmtDate(q.due) : "-"))
+    + row("From", canEdit ? srcSelect('data-f="source"', q.source || "") : esc(q.source || "-"))
+    + row("Their ref.", canEdit ? `<input data-f="source_ref" maxlength="120" value="${esc(q.source_ref || "")}" placeholder="letter / reference no.">` : esc(q.source_ref || "-"))
+    + row("Letter date", canEdit ? `<input type="date" data-f="source_date" value="${esc(q.source_date || "")}">` : esc(q.source_date ? fmtDate(q.source_date) : "-"))
+    + row("Location", canEdit ? `<input data-f="location" maxlength="300" value="${esc(q.location || "")}" placeholder="${esc(sheetsOf(q) || "drawing / area")}">` : esc(q.location || sheetsOf(q) || "-"))
     + row("Priority", canEdit ? `<select data-f="priority">${["Normal", "High", "Urgent"].map((p) => `<option${p === q.priority ? " selected" : ""}>${p}</option>`).join("")}</select>` : esc(q.priority))
     + `<div class="q-sec"><b>Question</b>` + (canEdit ? `<textarea data-f="question" rows="4">${esc(q.question)}</textarea>` : `<p class="q-text">${esc(q.question || "-")}</p>`) + `</div>`
     + `<div class="q-sec q-pics"><b>Pictures &amp; views</b> <small class="muted">a sheet / 3D picture opens that exact view; your own pictures open full size</small>`
@@ -708,7 +729,7 @@ export function reportHtml(T, rows, project) {
   const c = (s) => all.filter((q) => q.status === s).length;
   const when = new Date().toISOString().slice(0, 10);
   const detail = (q) => `<div class="q"><h3>${esc(q.code)} ${esc(q.title || "Untitled query")} <span class="st" style="color:${isOver(q) ? COL.over : COL[q.status]}">${esc(isOver(q) ? "Overdue" : q.status)}</span></h3>`
-    + `<div class="meta">Raised by ${esc(q.raised_by)} on ${esc((q.created_at || "").slice(0, 10))}${(q.to || []).length ? " · to " + esc(q.to.map((p) => p.name).join(", ")) : ""}${q.due ? " · due " + esc(q.due) : ""} · ${esc(q.priority)}</div>`
+    + `<div class="meta">${q.source ? `From ${esc(q.source)}${q.source_ref ? " (ref. " + esc(q.source_ref) + (q.source_date ? ", " + esc(q.source_date) : "") + ")" : ""} · ` : ""}${q.location || sheetsOf(q) ? esc(q.location || sheetsOf(q)) + " · " : ""}Raised by ${esc(q.raised_by)} on ${esc((q.created_at || "").slice(0, 10))}${(q.to || []).length ? " · to " + esc(q.to.map((p) => p.name).join(", ")) : ""}${q.due ? " · due " + esc(q.due) : ""} · ${esc(q.priority)}</div>`
     + `<p><b>Question</b><br>${esc(q.question || "-").replace(/\n/g, "<br>")}</p>`
     + ((q.views || []).length ? `<div class="views">${q.views.map((v) => `<figure>${v.snapshot ? `<img src="${esc(v.snapshot)}">` : ""}<figcaption>${esc(v.title || (v.kind === "sheet" ? "Sheet" : "3D view"))}</figcaption></figure>`).join("")}</div>` : "")
     + `<p><b>Answer</b>${q.answered_by ? ` <small>(${esc(q.answered_by)}, ${esc((q.answered_at || "").slice(0, 10))})</small>` : ""}<br>${q.answer ? esc(q.answer).replace(/\n/g, "<br>") : "<i>Not answered yet.</i>"}</p>`
@@ -725,8 +746,8 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:3p
 <div class="bar"><button onclick="print()">Print / Save as PDF</button><button id="keep">Save to Folders</button><span id="kept"></span></div>
 <h1>Queries - ${esc(project)}</h1><div>${when} · ${all.length} quer${all.length === 1 ? "y" : "ies"}</div>
 <p class="k"><span><b>${c("Open")}</b> open</span><span><b>${all.filter(isOver).length}</b> overdue</span><span><b>${c("Answered")}</b> answered</span><span><b>${c("Closed")}</b> closed</span></p>
-<h2>Register</h2><table><tr><th>No.</th><th>Subject</th><th>Raised by</th><th>Raised</th><th>To</th><th>Due</th><th>Status</th><th>Answered</th></tr>
-${all.map((q) => `<tr><td>${esc(q.code)}</td><td>${esc(q.title)}</td><td>${esc(q.raised_by)}</td><td>${esc((q.created_at || "").slice(0, 10))}</td>`
+<h2>Register</h2><table><tr><th>No.</th><th>From</th><th>Subject</th><th>Raised by</th><th>Raised</th><th>To</th><th>Due</th><th>Status</th><th>Answered</th></tr>
+${all.map((q) => `<tr><td>${esc(q.code)}</td><td>${esc([q.source, q.source_ref].filter(Boolean).join(" "))}</td><td>${esc(q.title)}</td><td>${esc(q.raised_by)}</td><td>${esc((q.created_at || "").slice(0, 10))}</td>`
     + `<td>${esc((q.to || []).map((p) => p.name).join(", "))}</td><td>${esc(q.due || "")}</td><td style="color:${isOver(q) ? COL.over : COL[q.status]}">${esc(isOver(q) ? "Overdue" : q.status)}</td>`
     + `<td>${esc((q.answered_at || "").slice(0, 10))}</td></tr>`).join("")}</table>
 <h2>Queries</h2>${all.map(detail).join("")}</body></html>`;
@@ -762,6 +783,147 @@ function openReport(T, rows) {
       const r = await saveToFolders(await inline(html), `Queries_${(p.code || p.short || "project").replace(/[^\w-]+/g, "_")}_${today()}.html`, "Queries", { pdf: true });
       out.textContent = " Kept in Folders: " + ((r && (r.path || r.name)) || "done");
     } catch (e) { out.textContent = " Not kept: " + e.message; btn.disabled = false; }
+  };
+}
+
+/* ------------------------------------------------- comment-response (b) */
+
+/* the sheets a query's pictures show: its location when none is typed */
+function sheetsOf(q) {
+  const seen = [];
+  for (const v of q.views || []) {
+    const s = v.kind === "view3d" ? "3D: " + (v.title || "view") : (v.sheet || v.title || "");
+    if (s && !seen.includes(s)) seen.push(s);
+  }
+  return seen.join(", ");
+}
+
+/* The comment-response schedule (server query_xlsx.py) of the queries shown */
+async function exportXlsx(T, rows, btn) {
+  if (!rows.length) { alert("No query is shown - change the filters first."); return; }
+  const F = Q.f, parts = [];
+  if (Q.view === "list") {
+    if (F.status !== "all") parts.push({ active: "open and answered", overdue: "overdue" }[F.status] || F.status.toLowerCase());
+    if (F.src && F.src !== "all") parts.push("from " + (F.src === "none" ? "no source" : F.src));
+    if (F.who !== "all") parts.push(F.who === "to" ? "to me" : "raised by me");
+    if (F.q.trim()) parts.push(`"${F.q.trim()}"`);
+  }
+  const all = Q.view !== "list" || rows.length === Q.rows.size;
+  const url = `/api/queries/export.xlsx?reg=${encodeURIComponent(Q.reg)}&today=${today()}`
+    + (all ? "" : "&ids=" + rows.map((q) => q.id).join(","))
+    + (parts.length ? "&filters=" + encodeURIComponent("Shown: " + parts.join(", ")) : "");
+  const was = btn.textContent;
+  btn.disabled = true; btn.textContent = "Making the workbook ...";
+  try {
+    const res = await fetch(url, { headers: headers(false) });
+    if (!res.ok) { let m = "HTTP " + res.status; try { m = (await res.json()).detail || m; } catch (e) {} throw new Error(m); }
+    const name = ((res.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/) || [])[1] || "Comment-Response.xlsx";
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+  } catch (e) { alert("The workbook could not be made: " + e.message); }
+  btn.disabled = false; btn.textContent = was;
+}
+
+/* A letter's comments, split where a numbered item starts. The top level
+   is the commonest kind of number: "1." / "1)" / "(1)" first, then
+   (a) / a), then (i), then bullets; the items under it - (a), (b) inside
+   comment 1 - stay with their comment. No numbers: one per paragraph. */
+export function splitLetter(text) {
+  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  const KINDS = [
+    ["num", /^\s*(?:\(\s*\d{1,3}\s*\)|\d{1,3}(?:\.\d{1,2})*[.)](?!\d)|item\s+\d{1,3}\s*[:.\-]?)\s*/i],
+    ["alpha", /^\s*(?:\(\s*[a-z]\s*\)|[a-z][.)])\s+/i],
+    ["roman", /^\s*(?:\(\s*[ivx]{1,5}\s*\)|[ivx]{1,5}[.)])\s+/i],
+    ["bullet", /^\s*[•▪●◦\-–*]\s+/],
+  ];
+  const hits = KINDS.map(([k, re]) => [k, re, lines.filter((l) => re.test(l)).length]);
+  const kind = hits.find((h) => h[2] >= 2) || hits.find((h) => h[2] >= 1) || null;
+  const items = [];
+  if (kind) {
+    let cur = null, head = [];
+    for (const l of lines) {
+      const m = l.match(kind[1]);
+      if (m && l.slice(m[0].length).trim()) {
+        if (cur) items.push(cur);
+        cur = { mark: m[0].trim(), lines: [l.slice(m[0].length)] };
+      } else if (cur) cur.lines.push(l);
+      else head.push(l);
+    }
+    if (cur) items.push(cur);
+    // the letter's sign-off is not part of its last comment
+    const last = items[items.length - 1];
+    if (last) {
+      const k = last.lines.findIndex((l, i) => i > 0 && /^\s*(yours\b|regards|best regards|kind regards|thank you|c\.?\s?c\.?\b|encl)/i.test(l)
+        && !last.lines[i - 1].trim());
+      if (k > 0) last.lines = last.lines.slice(0, k);
+    }
+  } else {
+    for (const para of String(text || "").split(/\n\s*\n/)) if (para.trim()) items.push({ mark: "", lines: para.split("\n") });
+  }
+  return items.map((it, i) => {
+    const body = it.lines.join("\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    const flat = body.replace(/\s+/g, " ");
+    const first = (flat.match(/^(.{8,90}?[.;:?!])(\s|$)/) || [])[1] || (flat.length > 90 ? flat.slice(0, 87).replace(/\s\S*$/, "") + " ..." : flat);
+    return { n: i + 1, mark: it.mark, title: first.replace(/[.;:]$/, ""), text: body };
+  }).filter((x) => x.text);
+}
+
+function letterForm(T, el) {
+  if (Q.view !== "list") { Q.view = "list"; draw(T, el); }
+  const box = el.querySelector("#q-newform");
+  if (!box) return;
+  const L = Q.lastSrc || {};
+  box.innerHTML = `<form class="q-form q-letter" autocomplete="off"><b>Add the comments of a letter</b>`
+    + `<small class="muted">Paste the letter's comments (from the PDF, the email or Word). Each numbered comment becomes a query, with who it came from and their reference - ready for the comment-response schedule.</small>`
+    + `<div class="q-fr q-srcrow"><label>From ${srcSelect('name="source" required', L.source || "")}</label>`
+    + `<label>Their ref. <input name="source_ref" maxlength="120" placeholder="letter no." value="${esc(L.source_ref || "")}"></label>`
+    + `<label>Letter date <input type="date" name="source_date" value="${esc(L.source_date || "")}"></label></div>`
+    + `<div class="q-fr"><label>To ${peopleSelect("to")}</label><label>Due <input type="date" name="due" value="${addDays(today(), 14)}"></label>`
+    + `<label>Drawing / location <input name="location" maxlength="300" placeholder="for all of them (optional)"></label></div>`
+    + `<textarea name="text" rows="9" placeholder="1. Fire resisting door at 3/F lift lobby to be provided ...&#10;2. Travel distance from Flat C ..."></textarea>`
+    + `<div class="q-letter-out"></div>`
+    + `<div class="q-fr"><button class="primary" data-make disabled>Raise the queries</button><button type="button" class="ghost" data-cancel>Cancel</button><small class="muted" data-n></small></div></form>`;
+  const f = box.querySelector("form"), out = f.querySelector(".q-letter-out"), make = f.querySelector("[data-make]");
+  let items = [];
+  const paint = () => {
+    items = splitLetter(f.text.value);
+    out.innerHTML = items.length
+      ? `<div class="q-letter-list">${items.map((it, i) => `<label class="q-li"><input type="checkbox" data-i="${i}" checked>`
+        + `<span class="q-li-n">${esc(it.mark || String(it.n))}</span><span><input data-title="${i}" value="${esc(it.title)}" maxlength="200">`
+        + `<small class="muted">${esc(it.text.length > 220 ? it.text.slice(0, 220) + " ..." : it.text)}</small></span></label>`).join("")}</div>`
+      : "";
+    make.disabled = !items.length;
+    f.querySelector("[data-n]").textContent = items.length ? `${items.length} comment${items.length === 1 ? "" : "s"} found` : "";
+  };
+  let t = 0;
+  f.text.oninput = () => { clearTimeout(t); t = setTimeout(paint, 200); };
+  f.querySelector("[data-cancel]").onclick = () => { box.innerHTML = ""; };
+  f.source.focus();
+  f.onsubmit = async (ev) => {
+    ev.preventDefault();
+    if (!f.source.value) { alert("Choose who the letter is from."); f.source.focus(); return; }
+    const to = [...f.querySelectorAll("[name=to] option:checked")].map((o) => ({ uid: +o.value }));
+    const src = { source: f.source.value, source_ref: f.source_ref.value.trim(), source_date: f.source_date.value };
+    const pick = items.map((it, i) => Object.assign({}, it, { title: (f.querySelector(`[data-title="${i}"]`).value || it.title).trim() }))
+      .filter((it, i) => f.querySelector(`[data-i="${i}"]`).checked);
+    if (!pick.length) { alert("Tick at least one comment."); return; }
+    make.disabled = true; make.textContent = "Raising ...";
+    try {
+      const qs = pick.map((it) => Object.assign({ id: newQid(), title: it.title, question: it.text, to, due: f.due.value,
+        priority: "Normal", location: f.location.value.trim() }, src));
+      const r = await T.api("/api/queries", { method: "POST", body: JSON.stringify({ reg: Q.reg, queries: qs,
+        letter: { source: src.source, ref: src.source_ref } }) });
+      for (const q of r.queries) Q.rows.set(q.id, q);
+      Q.rev = Math.max(Q.rev, r.rev);
+      keep(Q.reg);
+      Q.lastSrc = src;
+      box.innerHTML = "";
+      Q.f = { status: "active", who: "all", q: "", src: src.source };
+      draw(T, el);
+    } catch (e) { alert(e.message); make.disabled = false; make.textContent = "Raise the queries"; }
   };
 }
 
