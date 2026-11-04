@@ -59,7 +59,7 @@ PART = [
         '**Dimension、Measure、Line、Arrow：** 由第一點拖去第二點，或者撳第一點、再撳第二點（撳咗第一點之後按 Esc 取消）。',
         '**Style bar：** Layer、線／填色／文字顏色、Opacity、Weight（紙上 mm）、線 Type、Font、Size（字高 mm）、Align。',
         '**改 markup：** 揀一個 markup 就可以搬、改大細或者改樣式；R / Shift+R 轉 90°；Ctrl+C / Ctrl+V copy 同貼（貼去另一張 sheet 會喺同一個位置）；Delete 刪除。Dimension 或者量度撳佢個數字（或者佢啲線）就揀到。',
-        '**Snap 去圖則嘅線：** Dimension、Measure、Area、Angle、Line、Arrow、Polyline、Polygon、Rect 同 Cloud 會 snap 去 sheet 本身印出嚟嘅線 - 橙色記號話你知係 **Endpoint**（端點）、**Intersection**（交點）、**Midpoint**（中點）定 **On line**（線上）。拖呢啲 markup 嘅點都會 snap。㩒住 **Alt** 就自由放；**View ▾ > Snap to drawing lines** 可以關。用伺服器圖片顯示嘅大 sheet，第一次會喺背景讀啲線（「Reading this drawing\'s lines for snapping ...」）。',
+        '**Snap 去圖則嘅線：** Dimension、Measure、Area、Angle、Line、Arrow、Polyline、Polygon、Rect 同 Cloud 會 snap 去 sheet 本身印出嚟嘅線 - 橙色記號話你知係邊種，次序係：**Endpoint**（端點）、**Intersection**（交點）、**Perpendicular**（由已經放咗嘅點垂直落一條線）、**Aligned** / **Extension**（同附近嘅角或者你第一點打橫／打直對齊，或者一條線延長出去 - 虛線顯示對齊緊乜）、**Midpoint**（中點）、**On line**（線上）。拖呢啲 markup 嘅點都會 snap。㩒住 **Alt** 就自由放；**View ▾ > Snap to drawing lines** 可以關。用伺服器圖片顯示嘅大 sheet，第一次會喺背景讀啲線（「Reading this drawing\'s lines for snapping ...」）。',
         '**邊個刪得：** 自己嘅 markup；其他人喺你可以改嘅 layer 上面嘅 markup（預設係所有 member，除非 project admin 另外設定）；有 **issue** 嘅 markup 只可以由開 issue 嘅人或者 project admin 刪。Eraser 同 Delete 刪唔到嘅會留低，並且話你知點解。',
         '**Comment 定 Issue：** 圖則工具列嘅 **Comment / + Issue** 掣決定畫完 markup 之後做乜。喺 **Issue** 模式會即刻彈出 **Raise issue** 視窗。Comment 之後都可以用 **Issue** 或者右鍵 **Raise issue** 變做 issue。',
         '**Layer：** markup 放喺 layer 上面（預設「General」）。Admin 可以鎖 layer 或者唔俾某啲人睇到。issue 清單頂部嘅 **👁 Markups** 會隱藏所有 markup。',

@@ -941,7 +941,7 @@ async function loadTitleScale(sheet) {
   const box = document.getElementById("meas-scale");
   const want = sheet.number;
   S.titleScale = { sheet: want, scale: null };
-  if (box) { box.placeholder = "auto"; box.title = "Leave empty to use the view's own scale (or the title block's)"; }
+  if (box) { box.placeholder = "auto"; box.style.width = "60px"; box.title = "Leave empty to use the view's own scale (or the title block's)"; }
   const words = await wordsFor(sheet).catch(() => null);
   if (!S.sheet || S.sheet.number !== want || !words || !S.pageMM) return;
   const r = scaleFromWords(words, S.pageMM[0] * MM_PT, S.pageMM[1] * MM_PT);
@@ -949,6 +949,7 @@ async function loadTitleScale(sheet) {
   if (box) {
     if (r.scale) {
       box.placeholder = "auto 1:" + r.scale;
+      box.style.width = "88px";                  // room for "auto 1:100"
       box.title = `The title block says 1:${r.scale}: measurements outside a mapped view use it. Type another scale to override.`;
     } else if (r.several) {
       box.title = `The title block shows ${r.all.map((n) => "1:" + n).join(" and ")} - type the one for the view you measure.`;
@@ -1641,12 +1642,22 @@ function snapPoint(p, ev, handleItem) {
   if (!SNAP.on || (ev && (ev.altKey || ev.shiftKey)) || !SNAP_TOOLS.has(tool) || !S.viewport) { if (SNAP.mark) showSnap(null); return p; }
   const idx = snapLines();
   if (!idx) { if (SNAP.mark) showSnap(null); return p; }
-  const r = idx.snap(p, 10 / pxPerMM());
+  // the point already placed: perpendicular to a line from it, lining up with it
+  let anchor = null;
+  if (it) {
+    const P = it.points_mm || [];
+    anchor = P.length > 1 ? P[SNAP.handle === 0 ? 1 : 0] : null;
+  } else if (S.draft && S.draft.points_mm && S.draft.points_mm.length > 1) {
+    const P = S.draft.points_mm;
+    anchor = P[P.length - 2];
+  }
+  const r = idx.snap(p, 10 / pxPerMM(), { anchor, wide: 300 / pxPerMM() });
   showSnap(r);
   return r ? r.p.slice() : p;
 }
 
-const SNAP_WORD = { end: "Endpoint", cross: "Intersection", mid: "Midpoint", on: "On line" };
+const SNAP_WORD = { end: "Endpoint", cross: "Intersection", perp: "Perpendicular", align2: "Aligned (both)",
+  ext: "Extension", align: "Aligned", mid: "Midpoint", on: "On line" };
 function showSnap(r) {
   SNAP.mark = r;
   const svg = $("#overlay");
@@ -1657,8 +1668,18 @@ function showSnap(r) {
   const sh = r.kind === "end" ? `M${x - k} ${y - k}h${2 * k}v${2 * k}h${-2 * k}Z`
     : r.kind === "mid" ? `M${x} ${y - k}L${x + k} ${y + k}L${x - k} ${y + k}Z`
     : r.kind === "cross" ? `M${x - k} ${y - k}L${x + k} ${y + k}M${x + k} ${y - k}L${x - k} ${y + k}`
+    // perpendicular: the right-angle sign
+    : r.kind === "perp" ? `M${x - k} ${y - k}V${y + k}H${x + k}M${x - k} ${y + 1}H${x - 1}V${y + k}`
+    // aligned / extension: a small circle
+    : r.kind === "align" || r.kind === "align2" || r.kind === "ext" ? `M${x - 4} ${y}a4 4 0 1 0 8 0a4 4 0 1 0 -8 0`
     : `M${x - k} ${y - k}L${x + k} ${y - k}L${x - k} ${y + k}L${x + k} ${y + k}Z`;
   g.innerHTML = "";
+  // the dashed lines it lines up along
+  for (const q of r.guides || []) {
+    const a = canvasFrom(q[0], q[1]), b = canvasFrom(q[2], q[3]);
+    g.appendChild(svgEl("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: "#f28022",
+      "stroke-width": 1, "stroke-dasharray": "4 3", opacity: 0.85 }));
+  }
   g.appendChild(svgEl("path", { d: sh, fill: "none", stroke: "#f28022", "stroke-width": 2 }));
   const t = svgEl("text", { x: x + 10, y: y - 9, fill: "#b4530b", "font-size": 11,
     "font-family": "Segoe UI, Arial, sans-serif", "paint-order": "stroke", stroke: "#fff", "stroke-width": 3 });
@@ -2581,6 +2602,7 @@ function wirePointer() {
     else if (mode === "handle") {
       const hi = S.items.find((x) => x.id === S.sel[0]);
       // a dimension's third point is its offset: free
+      SNAP.handle = handle;
       if (hi && !(hi.type === "dimension" && handle === 2)) p = snapPoint(p, ev, hi);
     } else if (!mode && (toolOf(S.tool).kind === "drag2" || toolOf(S.tool).kind === "poly")) snapPoint(p, ev);
     else if (SNAP.mark) showSnap(null);

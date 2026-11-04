@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-27", date: "4 Nov 2026",
+    items: [
+      "**More snapping, in CAD's order:** **Endpoint**, **Intersection**, **Perpendicular** (a dimension or line from your first point lands square onto a wall line), **Aligned** / **Extension** (straight across or up from a nearby corner or your first point, or a line carried on past its end - a dashed line shows what it lines up with), **Midpoint**, **On line**. Alt still places freely.",
+    ],
+  },
+  {
     version: "2026-12-26", date: "4 Nov 2026",
     items: [
       "**Rename an imported sheet:** the **✎** beside an imported sheet in the sheet list changes its number and name. Its markups, issues and query pictures go with it.",

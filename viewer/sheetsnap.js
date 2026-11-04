@@ -9,8 +9,8 @@
  * pointer is quick on a sheet of a million strokes.
  *
  *   const idx = await readLines(page, toMm)     // toMm(x, y): PDF user space -> paper mm [u, v]
- *   idx.snap([u, v], tolMm) -> { p: [u, v], kind } | null
- *   kind: "end" | "cross" | "mid" | "on"
+ *   idx.snap([u, v], tolMm, { anchor, wide }) -> { p: [u, v], kind, guides } | null
+ *   kind: "end" | "cross" | "perp" | "align2" | "ext" | "align" | "mid" | "on"; guides: dashed lines to show
  */
 
 const PT_MM = 25.4 / 72;
@@ -99,8 +99,15 @@ export function makeIndex(L) {
   const seen = new Uint32Array(n);
   let stamp = 0;
 
-  function snap(p, tol) {
+  /* opt.anchor: the point already placed (a dimension's first point, a
+     polyline's last, the other end of a dragged point) - for perpendicular
+     and for lining up with it. opt.wide: how far (mm) alignment looks. In
+     order: endpoint, intersection, perpendicular, aligned / extension,
+     midpoint, on line. */
+  function snap(p, tol, opt) {
+    opt = opt || {};
     const [u, v] = p;
+    const A = opt.anchor || null;
     stamp++;
     let bestEnd = null, dEnd = tol, bestMid = null, dMid = tol * 0.8;
     const near = [];                 // [dist, s, qx, qy] of the lines within tol
@@ -129,22 +136,100 @@ export function makeIndex(L) {
         }
       }
     }
+    near.sort((a, b) => a[0] - b[0]);
+    // 1. a corner (end of a line)
     if (bestEnd) return { p: bestEnd, kind: "end" };
+    // 2. the crossing of the nearest line with the next one not parallel to it
     if (near.length > 1) {
-      near.sort((a, b) => a[0] - b[0]);
-      // the crossing of the nearest line with the next one not parallel to it
       const s = near[0][1];
       for (let k = 1; k < Math.min(near.length, 12); k++) {
         const x = cross(L, s, near[k][1]);
         if (x && Math.hypot(u - x[0], v - x[1]) < tol) return { p: x, kind: "cross" };
       }
     }
-    if (bestMid) return { p: bestMid, kind: "mid" };
-    if (near.length) {
-      near.sort((a, b) => a[0] - b[0]);
-      return { p: [near[0][2], near[0][3]], kind: "on" };
+    // 3. perpendicular from the point already placed onto a line here
+    if (A) {
+      let best = null, bd = tol;
+      for (const [, s] of near) {
+        const x1 = L[4 * s], y1 = L[4 * s + 1], dx = L[4 * s + 2] - x1, dy = L[4 * s + 3] - y1, l2 = dx * dx + dy * dy;
+        if (l2 < 1e-9) continue;
+        const t = ((A[0] - x1) * dx + (A[1] - y1) * dy) / l2;
+        if (t < -0.02 || t > 1.02) continue;
+        const f = [x1 + t * dx, y1 + t * dy];
+        const d = Math.hypot(u - f[0], v - f[1]);
+        if (d < bd && Math.hypot(f[0] - A[0], f[1] - A[1]) > 1e-3) { bd = d; best = f; }
+      }
+      if (best) return { p: best, kind: "perp", guides: [[A[0], A[1], best[0], best[1]]] };
     }
+    // 4. aligned: straight across / up from a corner nearby (or the point
+    //    already placed), or a line carried on past its end
+    const al = align(u, v, tol, opt.wide || tol * 30, A, near);
+    if (al) return al;
+    // 5. the middle of a line
+    if (bestMid) return { p: bestMid, kind: "mid" };
+    // 6. anywhere along a line
+    if (near.length) return { p: [near[0][2], near[0][3]], kind: "on" };
     return null;
+  }
+
+  let stamp2 = 0;
+  const seen2 = new Uint32Array(n);
+  function align(u, v, tol, R, A, near) {
+    stamp2++;
+    let vx = null, hy = null, ext = null;            // [offset, value, from x, from y] / [d, p, end]
+    const take = (ex, ey) => {
+      if (Math.hypot(u - ex, v - ey) < tol) return;   // that is the corner itself (1. above)
+      const ox = Math.abs(u - ex), oy = Math.abs(v - ey);
+      if (ox < tol && (!vx || ox < vx[0])) vx = [ox, ex, ex, ey];
+      if (oy < tol && (!hy || oy < hy[0])) hy = [oy, ey, ex, ey];
+    };
+    if (A) take(A[0], A[1]);
+    // the line under the pointer does not line up with its own ends
+    const own = new Set(near.map((x) => x[1]));
+    const i0 = Math.floor((u - R) / CELL), i1 = Math.floor((u + R) / CELL);
+    const j0 = Math.floor((v - R) / CELL), j1 = Math.floor((v + R) / CELL);
+    let looked = 0;
+    for (let i = i0; i <= i1 && looked < 20000; i++) {
+      for (let j = j0; j <= j1 && looked < 20000; j++) {
+        const a = grid.get(key(i, j));
+        if (!a) continue;
+        for (const s of a) {
+          if (seen2[s] === stamp2) continue;
+          seen2[s] = stamp2;
+          if (++looked > 20000) break;
+          const x1 = L[4 * s], y1 = L[4 * s + 1], x2 = L[4 * s + 2], y2 = L[4 * s + 3];
+          if (!own.has(s)) { take(x1, y1); take(x2, y2); }
+          // past an end, on the line's own direction
+          const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy);
+          if (len < tol) continue;
+          const t = ((u - x1) * dx + (v - y1) * dy) / (len * len);
+          if (t >= 0 && t <= 1) continue;
+          const f = [x1 + t * dx, y1 + t * dy];
+          const d = Math.hypot(u - f[0], v - f[1]);
+          const end = t < 0 ? [x1, y1] : [x2, y2];
+          if (d < tol && Math.hypot(f[0] - end[0], f[1] - end[1]) < R && (!ext || d < ext[0])) ext = [d, f, end];
+        }
+      }
+    }
+    if (vx && hy) {
+      return { p: [vx[1], hy[1]], kind: "align2",
+        guides: [[vx[2], vx[3], vx[1], hy[1]], [hy[2], hy[3], vx[1], hy[1]]] };
+    }
+    if (ext) return { p: ext[1], kind: "ext", guides: [[ext[2][0], ext[2][1], ext[1][0], ext[1][1]]] };
+    const one = vx && (!hy || vx[0] <= hy[0]) ? "v" : hy ? "h" : null;
+    if (!one) return null;
+    // lined up and on the line under the pointer at once, when there is one
+    let q = one === "v" ? [vx[1], v] : [u, hy[1]];
+    if (near.length) {
+      const s = near[0][1], x1 = L[4 * s], y1 = L[4 * s + 1], dx = L[4 * s + 2] - x1, dy = L[4 * s + 3] - y1;
+      const t = one === "v" ? (Math.abs(dx) > 1e-9 ? (vx[1] - x1) / dx : NaN) : (Math.abs(dy) > 1e-9 ? (hy[1] - y1) / dy : NaN);
+      if (t >= 0 && t <= 1) {
+        const w = [x1 + t * dx, y1 + t * dy];
+        if (Math.hypot(u - w[0], v - w[1]) < tol) q = w;
+      }
+    }
+    const src = one === "v" ? [vx[2], vx[3]] : [hy[2], hy[3]];
+    return { p: q, kind: "align", guides: [[src[0], src[1], q[0], q[1]]] };
   }
   return { count: n, snap };
 }
