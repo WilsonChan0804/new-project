@@ -2603,3 +2603,8 @@ header .flr-lab { white-space: nowrap; }
 .rp-panel .rp-mode { gap: 4px 10px; }
 #area-panel { width: 330px; }
 #area-panel button { padding: 3px 10px; }
+#area-panel button.on { background: var(--accent-soft, #fde7d3); border-color: var(--accent, #f28022); }
+.ap-chips { gap: 4px 6px; }
+.ap-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 2px 1px 8px; border-radius: 10px; background: var(--panel-2, #f1f3f5);
+  border: 1px solid var(--line, #e5e7eb); font-size: 11.5px; }
+.ap-chip button { border: 0; background: none; padding: 0 5px !important; cursor: pointer; font-size: 13px; line-height: 1; }

@@ -223,6 +223,7 @@ const AREA = createAreaTool({
   S, status: (m) => status(m), redraw: () => redraw(), persist: (ids) => persist(ids), remember: (ids) => remember(ids),
   snapLines: () => snapLines(), pxPerMM: () => pxPerMM(), activeScale: (p, it) => activeScale(p, it),
   roomAt: (p) => ROUTE.roomAt(p), hasRooms: () => ROUTE.hasRooms(),
+  cutAt: (p, cats) => ROUTE.cutAt(p, cats), hasCut: () => ROUTE.hasCut(),
   newDraft: (type, pts) => newDraft(type, pts),
   finish(d, after) {
     S.draft = d;

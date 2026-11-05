@@ -14,6 +14,10 @@
  *   kind: "end" | "cross" | "perp" | "align2" | "ext" | "align" | "mid" | "on"; guides: dashed lines to show
  *   idx.lines                                   the lines, flat x1 y1 x2 y2 ... (areafill.js)
  *   idx.nearest([u, v], tolMm) -> [x1, y1, x2, y2] | null   the line under the pointer (Area > Pick lines)
+ *   idx.nearestIndex([u, v], tolMm) -> line number | -1
+ *   idx.cls[i], idx.classes[id] = {w, color, dash, fill, n}   how line i is drawn (width mm, colour, dashed)
+ *   idx.curve[i]: the curve line i is a piece of (0: none); idx.curves: per curve start, middle, end
+ * Only painted lines count: a clipping path (a viewport's crop) is not a line.
  */
 
 const PT_MM = 25.4 / 72;
@@ -43,26 +47,67 @@ export async function readLines(page, toMm) {
   const fn = ol.fnArray, args = ol.argsArray;
   const xs = [];                    // flat x1, y1, x2, y2 in mm
   const fl = [];                    // per line: 1 its start is inside a curve, 2 its end is, 4 no midpoint
+  const cl = [];                    // per line: its class (how it is drawn: width, colour, dash)
+  const cv = [];                    // per line: the curve it is a piece of (0: a straight line)
+  const curves = [0, 0, 0, 0, 0, 0]; // per curve: its start, middle and end (mm), for telling door swings
+  const classes = [], classOf = new Map();
   const to = toMm || pdfFrame(page);
-  let ctm = [1, 0, 0, 1, 0, 0];
+  // the drawing state, as save / restore keep it
+  let G = { ctm: [1, 0, 0, 1, 0, 0], w: 1, sc: "000000", fc: "000000", dash: false };
   const stack = [];
-  const P = (x, y) => to(x * ctm[0] + y * ctm[2] + ctm[4], x * ctm[1] + y * ctm[3] + ctm[5]);
-  const seg = (a, b, f) => {
-    if (xs.length / 4 >= MAX_SEG) return;
+  const P = (x, y) => to(x * G.ctm[0] + y * G.ctm[2] + G.ctm[4], x * G.ctm[1] + y * G.ctm[3] + G.ctm[5]);
+  const hex = (a) => Array.from(a || [0, 0, 0]).slice(0, 3).map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+  /* A path is only a line once it is painted: a clip (a viewport's crop,
+     never seen) is dropped. Its pieces wait here for the paint. */
+  let pend = [];
+  let start = null, cur = null, curRaw = null, startRaw = null;
+  const seg = (a, b, f, c) => {
     if (Math.abs(a[0] - b[0]) < 1e-4 && Math.abs(a[1] - b[1]) < 1e-4) return;
-    xs.push(a[0], a[1], b[0], b[1]);
-    fl.push(f || 0);
+    pend.push(a[0], a[1], b[0], b[1], f || 0, c || 0);
   };
+  const paint = (stroked) => {
+    // the width on paper: the line width through the transform's scale
+    const k = Math.sqrt(Math.abs(G.ctm[0] * G.ctm[3] - G.ctm[1] * G.ctm[2])) || 1;
+    const w = stroked ? Math.round(Math.max(0, G.w) * k * PT_MM * 100) / 100 : 0;
+    const color = stroked ? G.sc : "f" + G.fc;
+    const key = w + "|" + color + "|" + (stroked && G.dash ? 1 : 0);
+    let id = classOf.get(key);
+    if (id === undefined) { id = classes.length; classes.push({ w, color, dash: !!(stroked && G.dash), fill: !stroked, n: 0 }); classOf.set(key, id); }
+    for (let q = 0; q < pend.length && xs.length / 4 < MAX_SEG; q += 6) {
+      xs.push(pend[q], pend[q + 1], pend[q + 2], pend[q + 3]);
+      fl.push(pend[q + 4]); cv.push(pend[q + 5]); cl.push(id);
+      classes[id].n++;
+    }
+    pend = [];
+  };
+  const STROKE = new Set([OPS.stroke, OPS.closeStroke, OPS.fillStroke, OPS.eoFillStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
+  const FILL = new Set([OPS.fill, OPS.eoFill]);
+  const CLOSE = new Set([OPS.closeStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
   for (let i = 0; i < fn.length && xs.length / 4 < MAX_SEG; i++) {
     const f = fn[i], a = args[i];
-    if (f === OPS.save) stack.push(ctm);
-    else if (f === OPS.restore) { if (stack.length) ctm = stack.pop(); }
-    else if (f === OPS.transform) ctm = mul(a, ctm);
-    else if (f === OPS.paintFormXObjectBegin) { stack.push(ctm); if (a && a[0]) ctm = mul(a[0], ctm); }
-    else if (f === OPS.paintFormXObjectEnd) { if (stack.length) ctm = stack.pop(); }
+    if (f === OPS.save) stack.push(Object.assign({}, G));
+    else if (f === OPS.restore) { if (stack.length) G = stack.pop(); }
+    else if (f === OPS.transform) G.ctm = mul(a, G.ctm);
+    else if (f === OPS.paintFormXObjectBegin) { stack.push(Object.assign({}, G)); if (a && a[0]) G.ctm = mul(a[0], G.ctm); }
+    else if (f === OPS.paintFormXObjectEnd) { if (stack.length) G = stack.pop(); }
+    else if (f === OPS.setLineWidth) G.w = a[0];
+    else if (f === OPS.setDash) G.dash = !!(a && a[0] && a[0].length && a[0].some((v) => v > 0));
+    else if (f === OPS.setStrokeRGBColor) G.sc = hex(a);
+    else if (f === OPS.setFillRGBColor) G.fc = hex(a);
+    else if (f === OPS.setGState) {
+      for (const [k, v] of (a && a[0]) || []) {
+        if (k === "LW") G.w = v;
+        else if (k === "D") G.dash = !!(v && v[0] && v[0].length && v[0].some((x) => x > 0));
+      }
+    }
+    else if (STROKE.has(f) || FILL.has(f)) {
+      if (CLOSE.has(f) && cur && start) seg(cur, start);
+      paint(STROKE.has(f));
+    }
+    else if (f === OPS.endPath) pend = [];          // a clip: not drawn
     else if (f === OPS.constructPath) {
       const ops = a[0], c = a[1];
-      let k = 0, start = null, cur = null, curRaw = null, startRaw = null;
+      let k = 0;
       for (const op of ops) {
         if (op === OPS.moveTo) { cur = start = P(c[k], c[k + 1]); curRaw = startRaw = [c[k], c[k + 1]]; k += 2; }
         else if (op === OPS.lineTo) { const q = P(c[k], c[k + 1]); curRaw = [c[k], c[k + 1]]; k += 2; if (cur) seg(cur, q); cur = q; }
@@ -79,14 +124,16 @@ export async function readLines(page, toMm) {
             const m1 = P(a1[0], a1[1]), m2 = P(a2[0], a2[1]);
             const hull = Math.hypot(m1[0] - cur[0], m1[1] - cur[1]) + Math.hypot(m2[0] - m1[0], m2[1] - m1[1]) + Math.hypot(q[0] - m2[0], q[1] - m2[1]);
             const N = Math.max(4, Math.min(24, Math.ceil(hull / 1.5)));
+            const bz = (u) => { const w = 1 - u; return [w * w * w * p0[0] + 3 * w * w * u * a1[0] + 3 * w * u * u * a2[0] + u * u * u * e[0],
+              w * w * w * p0[1] + 3 * w * w * u * a1[1] + 3 * w * u * u * a2[1] + u * u * u * e[1]]; };
+            const id = curves.length / 6;
+            const mid = P(...bz(0.5));
+            curves.push(cur[0], cur[1], mid[0], mid[1], q[0], q[1]);
             let prev = cur;
             for (let t = 1; t <= N; t++) {
-              const u = t / N, w = 1 - u;
-              const x = w * w * w * p0[0] + 3 * w * w * u * a1[0] + 3 * w * u * u * a2[0] + u * u * u * e[0];
-              const y = w * w * w * p0[1] + 3 * w * w * u * a1[1] + 3 * w * u * u * a2[1] + u * u * u * e[1];
-              const pt = t === N ? q : P(x, y);
+              const pt = t === N ? q : P(...bz(t / N));
               // only the curve's own two ends snap as ends; no midpoints of its pieces
-              seg(prev, pt, (t > 1 ? 1 : 0) | (t < N ? 2 : 0) | 4);
+              seg(prev, pt, (t > 1 ? 1 : 0) | (t < N ? 2 : 0) | 4, id);
               prev = pt;
             }
           }
@@ -102,7 +149,13 @@ export async function readLines(page, toMm) {
       }
     }
   }
-  return makeIndex(Float64Array.from(xs), Uint8Array.from(fl));
+  const idx = makeIndex(Float64Array.from(xs), Uint8Array.from(fl));
+  // how each line is drawn, for the Area tool to leave some out (areatool.js)
+  idx.cls = Uint16Array.from(cl);
+  idx.classes = classes;
+  idx.curve = Uint32Array.from(cv);
+  idx.curves = Float64Array.from(curves);
+  return idx;
 }
 
 export function makeIndex(L, F) {
@@ -261,8 +314,12 @@ export function makeIndex(L, F) {
     const src = one === "v" ? [vx[2], vx[3]] : [hy[2], hy[3]];
     return { p: q, kind: "align", guides: [[src[0], src[1], q[0], q[1]]] };
   }
-  /* The line nearest the point, within tol: [x1, y1, x2, y2] */
+  /* The line nearest the point, within tol: [x1, y1, x2, y2] (its number: nearestIndex) */
   function nearest(p, tol) {
+    const s = nearestIndex(p, tol);
+    return s < 0 ? null : [L[4 * s], L[4 * s + 1], L[4 * s + 2], L[4 * s + 3]];
+  }
+  function nearestIndex(p, tol) {
     const [u, v] = p;
     stamp++;
     let best = null, bd = tol;
@@ -278,13 +335,13 @@ export function makeIndex(L, F) {
         const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy;
         const t = Math.max(0, Math.min(1, ((u - x1) * dx + (v - y1) * dy) / (l2 || 1)));
         const d = Math.hypot(u - (x1 + t * dx), v - (y1 + t * dy));
-        if (d < bd) { bd = d; best = [x1, y1, x2, y2]; }
+        if (d < bd) { bd = d; best = s; }
       }
     }
-    return best;
+    return best === null ? -1 : best;
   }
 
-  return { count: n, snap, nearest, lines: L };
+  return { count: n, snap, nearest, nearestIndex, lines: L };
 }
 
 function crossesCell(x1, y1, x2, y2, cx, cy) {

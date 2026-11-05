@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-01", date: "6 Nov 2026",
+    items: [
+      "**Area > Click inside ignores what is not a wall:** dashed lines (grids, beams over) and door swings are left out by themselves, and so are a drawing's hidden clipping frames. A line still in the way - a dimension line across the room - can be left out in the panel: **Ignore a line > This line**, or **All lines like it** (same weight, colour and dash: every dimension line at once). What is left out shows as a chip; × uses it again. On Revit plans published with the updated add-in, **Use the Revit model's walls** bounds the room by the model's own walls, doors and columns, so no annotation gets in the way at all.",
+      "**Doorways close without rounding the room:** openings up to the gap set are closed straight across from the jambs either side, and the room's corners - chamfers too - stay exact (before, a corner could round off or overshoot).",
+      "**Added regions merge:** Shift+click another part of a room and it becomes one outline with the first, with no line left between them.",
+      "**Pick lines, closed your way:** each line shows only the part between its two corners as you go (a long wall line no longer runs off across the sheet); two pieces of one wall either side of a door join straight across; and where the drawing has no line, **Ctrl+click two points** draws your own (or choose **Pick: my own line**). If two lines do not meet near the area, it says so.",
+    ],
+  },
+  {
     version: "2026-12-31", date: "6 Nov 2026",
     items: [
       "**Area: click inside a room.** Sheets > Measure ▾ > **Area** now has three ways (in its panel): **Points I click** (as before), **Click inside** and **Pick lines**. **Click inside**: one click in a room finds its outline from the drawing's own lines - doorways narrower than the gap set (1200 mm unless changed) are closed straight across along the wall face, and furniture, text and other loose bits inside are ignored. The corners land on the drawing's corners. On Revit floor plans published with the updated add-in, it takes the **room's own outline from Revit** (with its number, name and Revit area).",

@@ -314,7 +314,22 @@ export function createRoute(ctx) {
     }
     return best;
   }
+  /* The model's own cut (walls, doors ...) of the plan round a point, as flat
+     paper-mm lines: the Area tool's Click inside bounds a room by them, so
+     no dimension, grid or text gets in the way */
+  function cutAt(p, cats) {
+    const vp = viewportAt(p);
+    if (!vp) return null;
+    const v = R.plan.viewports[String(vp.element_id)];
+    const parts = cats.map((c) => (v.cats || {})[c]).filter((x) => x && x.length);
+    if (!parts.length) return null;
+    const out = new Float64Array(parts.reduce((n, x) => n + x.length, 0));
+    let o = 0;
+    for (const x of parts) { out.set(x, o); o += x.length; }
+    return out;
+  }
+  const hasCut = () => !!(R.plan && Object.values(R.plan.viewports || {}).some((v) => Object.keys(v.cats || {}).length));
   const hasRooms = () => !!(R.plan && Object.values(R.plan.viewports || {}).some((v) => (v.rooms || []).length));
 
-  return { roomAt, hasRooms, loadPlan, refresh, changed, legsOf, legMid, label, lengthM, stamp, paintPanel, stale, hasPlan: () => !!R.plan };
+  return { roomAt, hasRooms, cutAt, hasCut, loadPlan, refresh, changed, legsOf, legMid, label, lengthM, stamp, paintPanel, stale, hasPlan: () => !!R.plan };
 }

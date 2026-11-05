@@ -97,6 +97,22 @@ export function offset(pts, d) {
   return out;
 }
 
+/* Corners only: the same point twice, and points in line with their neighbours, dropped */
+export function tidy(pts, tol) {
+  tol = tol || 0.005;
+  let out = pts.filter((p, i) => { const q = pts[(i + pts.length - 1) % pts.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-4; });
+  for (let pass = 0; pass < 3 && out.length > 3; pass++) {
+    const keep = out.filter((p, i) => {
+      const q = out[(i + out.length - 1) % out.length], r = out[(i + 1) % out.length];
+      const L = Math.hypot(r[0] - q[0], r[1] - q[1]) || 1e-9;
+      return Math.abs((r[0] - q[0]) * (q[1] - p[1]) - (q[0] - p[0]) * (r[1] - q[1])) / L > tol;
+    });
+    if (keep.length === out.length || keep.length < 3) break;
+    out = keep;
+  }
+  return out;
+}
+
 /* Fewer points: corners kept, the points along a straight edge dropped */
 export function simplify(pts, tol) {
   if (pts.length < 4) return pts.slice();
@@ -214,10 +230,11 @@ export function fillAt(L, p, opt) {
 function fillWith(L, p, opt) {
   const gap = Math.max(0, opt.gap || 0);        // paper mm: openings narrower than this close
   const page = opt.page || null;                // [w, h] paper mm: the farthest the search goes
-  let half = opt.start || Math.max(40, gap * 6);
+  const unit = opt.unit || 10;                  // paper mm per metre in the building (10 at 1:100)
+  let half = opt.start || Math.max(40, gap * 6, unit * 6);
   for (let round = 0; round < 6; round++) {
     const x0 = p[0] - half, y0 = p[1] - half, x1 = p[0] + half, y1 = p[1] + half;
-    const r = tryWindow(L, p, [x0, y0, x1, y1], gap);
+    const r = tryWindow(L, p, [x0, y0, x1, y1], gap, unit);
     if (r.pts || r.error !== "open") return r;
     if (page && x0 <= 0 && y0 <= 0 && x1 >= page[0] && y1 >= page[1]) break;
     half *= 2.2;
@@ -225,13 +242,22 @@ function fillWith(L, p, opt) {
   return { error: "open" };
 }
 
-function tryWindow(L, p, box, gap) {
+function tryWindow(L, p, box, gap, unit) {
   const [x0, y0, x1, y1] = box;
   const w = x1 - x0, h = y1 - y0;
   let c = Math.max(0.05, Math.sqrt((w * h) / MAX_CELLS));
   // fine enough for the gap to be a few cells, coarse enough to be quick
   c = Math.min(c, Math.max(0.05, gap / 6 || c));
   if ((w / c) * (h / c) > MAX_CELLS) c = Math.sqrt((w * h) / MAX_CELLS);
+  // the doorways: lines across them, from the jambs either side (no rounding of the room's corners)
+  const win = [];
+  for (let s = 0; s < L.length; s += 4) {
+    const ax = L[s], ay = L[s + 1], bx = L[s + 2], by = L[s + 3];
+    if (Math.max(ax, bx) < x0 || Math.min(ax, bx) > x1 || Math.max(ay, by) < y0 || Math.min(ay, by) > y1) continue;
+    win.push(ax, ay, bx, by);
+  }
+  const bridges = gap > 0 ? openings(win, gap, unit) : [];
+  L = bridges.length ? Float64Array.from(win.concat(bridges)) : win;
   const W = Math.ceil(w / c) + 1, H = Math.ceil(h / c) + 1;
   // j grows downwards (rows from the top of the window)
   const cell = (u, v) => [Math.floor((u - x0) / c), Math.floor((y1 - v) / c)];
@@ -254,16 +280,18 @@ function tryWindow(L, p, box, gap) {
       pi = i; pj = j;
     }
   }
-  // gaps narrower than `gap` closed: walls grown by half the gap, then shrunk back
+  /* Doorways are bridged above. What is left to close: slivers where
+     lines nearly meet (about 30 mm in the building) - not the gap, which
+     rounded every corner and joined up dashed lines. */
   let block = wall;
-  const r = gap / 2 / c;
+  const r = gap > 0 ? Math.max(1, (unit * 0.03) / c) : 0;
   if (r >= 1) {
     /* Small loose things - a chair, a stroke of text, a door leaf - are
        left out first: closed up to a wall they would cut a piece off the
        room. Walls hang together, so they stay. (Inside the room they are
        islands, which never count anyway.) */
     const ci = cell(p[0], p[1]);
-    dropSmall(wall, W, H, (gap * 2) / c, ci[0], ci[1]);
+    dropSmall(wall, W, H, Math.min(gap * 2, unit * 1.5) / c, ci[0], ci[1]);
     const d1 = distance(wall, W, H);
     const grown = new Uint8Array(W * H);
     for (let k = 0; k < grown.length; k++) grown[k] = d1[k] <= r ? 1 : 0;
@@ -298,8 +326,184 @@ function tryWindow(L, p, box, gap) {
   if (pts.length < 3) return { error: "small" };
   pts = offset(pts, c * 0.5);
   pts = layOnLines(pts, near, c * 2.5, r * c);
-  pts = simplify(pts, c * 0.3);
+  pts = tidy(simplify(pts, c * 0.3));
   return { pts, cell: c };
+}
+
+/* Lines across the doorways (and other openings up to `gap` wide), from
+ * what a plan draws either side of one:
+ *   - two jambs: short lines, joined at both ends, parallel and facing
+ *     each other across the opening: joined end to end, one line along
+ *     each face of the wall;
+ *   - a wall face that stops and carries on, in line, after the opening:
+ *     its two free ends joined.
+ * A line free at both ends (a loose dash, a stroke of text) never bridges.
+ * All in paper mm; unit = paper mm per metre in the building. */
+export function openings(S, gap, unit) {
+  const n = S.length / 4;
+  const eps = Math.max(0.02, unit * 0.005);      // ends this close meet (5 mm in the building)
+  const maxJamb = unit * 0.7, minOpen = unit * 0.25, minFace = unit * 0.25;
+  const out = [];
+  if (!n) return out;
+  // ends by place, and lines by place, to tell which ends are joined
+  const G = Math.max(eps * 8, gap);
+  const ends = new Map(), segs = new Map();
+  const k = (x, y, g) => Math.floor(x / g) * 1048576 + Math.floor(y / g);
+  for (let s = 0; s < n; s++) {
+    for (const e of [0, 1]) {
+      const x = S[4 * s + 2 * e], y = S[4 * s + 2 * e + 1], q = k(x, y, eps * 4);
+      let a = ends.get(q); if (!a) ends.set(q, a = []); a.push(s * 2 + e);
+    }
+    const x0 = Math.min(S[4 * s], S[4 * s + 2]), x1 = Math.max(S[4 * s], S[4 * s + 2]);
+    const y0 = Math.min(S[4 * s + 1], S[4 * s + 3]), y1 = Math.max(S[4 * s + 1], S[4 * s + 3]);
+    if ((x1 - x0) / G * (y1 - y0) / G > 400) continue;
+    for (let i = Math.floor(x0 / G); i <= Math.floor(x1 / G); i++) for (let j = Math.floor(y0 / G); j <= Math.floor(y1 / G); j++) {
+      const q = i * 1048576 + j; let a = segs.get(q); if (!a) segs.set(q, a = []); a.push(s);
+    }
+  }
+  const P = (s, e) => [S[4 * s + 2 * e], S[4 * s + 2 * e + 1]];
+  const len = (s) => Math.hypot(S[4 * s + 2] - S[4 * s], S[4 * s + 3] - S[4 * s + 1]);
+  const distSeg = (p, s) => {
+    const x1 = S[4 * s], y1 = S[4 * s + 1], dx = S[4 * s + 2] - x1, dy = S[4 * s + 3] - y1, l2 = dx * dx + dy * dy || 1e-12;
+    const t = Math.max(0, Math.min(1, ((p[0] - x1) * dx + (p[1] - y1) * dy) / l2));
+    return Math.hypot(p[0] - x1 - t * dx, p[1] - y1 - t * dy);
+  };
+  const near = (p, g) => {
+    const out2 = new Set();
+    for (let i = Math.floor((p[0] - g) / G); i <= Math.floor((p[0] + g) / G); i++)
+      for (let j = Math.floor((p[1] - g) / G); j <= Math.floor((p[1] + g) / G); j++) for (const s of segs.get(i * 1048576 + j) || []) out2.add(s);
+    return out2;
+  };
+  // is this end of line s joined to another line (its end, or along it)?
+  const joined = new Uint8Array(n * 2);
+  for (let s = 0; s < n; s++) for (const e of [0, 1]) {
+    const p = P(s, e);
+    let j = false;
+    const q0 = Math.floor(p[0] / (eps * 4)), q1 = Math.floor(p[1] / (eps * 4));
+    for (let di = -1; di <= 1 && !j; di++) for (let dj = -1; dj <= 1 && !j; dj++) {
+      for (const t2 of ends.get((q0 + di) * 1048576 + q1 + dj) || []) {
+        const t = t2 >> 1; if (t === s) continue;
+        const r = P(t, t2 & 1); if (Math.hypot(r[0] - p[0], r[1] - p[1]) <= eps) { j = true; break; }
+      }
+    }
+    if (!j) for (const t of near(p, eps)) if (t !== s && distSeg(p, t) <= eps) { j = true; break; }
+    joined[s * 2 + e] = j ? 1 : 0;
+  }
+  const dir = (s) => { const l = len(s) || 1; return [(S[4 * s + 2] - S[4 * s]) / l, (S[4 * s + 3] - S[4 * s + 1]) / l]; };
+  const parallel = (a, b) => { const u = dir(a), v = dir(b); return Math.abs(u[0] * v[1] - u[1] * v[0]) < 0.05; };
+  const seen = new Set();
+  const bridge = (p, q) => {
+    const key = [p, q].map((r) => r[0].toFixed(3) + "," + r[1].toFixed(3)).sort().join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(p[0], p[1], q[0], q[1]);
+  };
+  // 1. jambs facing each other
+  const jambs = [];
+  for (let s = 0; s < n; s++) { const l = len(s); if (l > eps && l <= maxJamb && joined[2 * s] && joined[2 * s + 1]) jambs.push(s); }
+  for (const a of jambs) {
+    const pa = P(a, 0), pb = P(a, 1), u = dir(a), la = len(a);
+    const mid = [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2];
+    for (const b of near(mid, gap)) {
+      if (b <= a || len(b) > maxJamb || !joined[2 * b] || !joined[2 * b + 1] || !parallel(a, b)) continue;
+      const qa = P(b, 0), qb = P(b, 1);
+      const mb = [(qa[0] + qb[0]) / 2, (qa[1] + qb[1]) / 2];
+      // across: b's distance from a's line, and their overlap along it
+      const d = Math.abs((mb[0] - pa[0]) * u[1] - (mb[1] - pa[1]) * u[0]);
+      if (d < minOpen || d > gap) continue;
+      const ta = [0, la], tb = [(qa[0] - pa[0]) * u[0] + (qa[1] - pa[1]) * u[1], (qb[0] - pa[0]) * u[0] + (qb[1] - pa[1]) * u[1]].sort((x, y) => x - y);
+      const ov = Math.min(ta[1], tb[1]) - Math.max(ta[0], tb[0]);
+      if (ov < 0.5 * Math.min(la, len(b))) continue;
+      // facing: straight across, not along
+      if (Math.abs(Math.hypot(mb[0] - mid[0], mb[1] - mid[1]) - d) > 0.35 * la + eps) continue;
+      const da = (r) => (r[0] - pa[0]) * u[0] + (r[1] - pa[1]) * u[1];
+      const [q0, q1] = da(qa) <= da(qb) ? [qa, qb] : [qb, qa];
+      bridge(pa, q0); bridge(pb, q1);
+    }
+  }
+  // 2. a wall face that stops and carries on after the opening
+  for (let s = 0; s < n; s++) {
+    if (len(s) < minFace) continue;
+    for (const e of [0, 1]) {
+      if (joined[2 * s + e] || !joined[2 * s + (1 - e)]) continue;
+      const p = P(s, e), o = P(s, 1 - e);
+      const out3 = [(p[0] - o[0]) / len(s), (p[1] - o[1]) / len(s)];      // pointing out of the line's free end
+      let best = null, bd = gap + eps;
+      for (const t of near(p, gap)) {
+        if (t === s || len(t) < minFace || !parallel(s, t)) continue;
+        for (const f of [0, 1]) {
+          if (joined[2 * t + f] || !joined[2 * t + (1 - f)]) continue;
+          const q = P(t, f);
+          const ahead = (q[0] - p[0]) * out3[0] + (q[1] - p[1]) * out3[1];
+          const off = Math.abs((q[0] - p[0]) * out3[1] - (q[1] - p[1]) * out3[0]);
+          const dd = Math.hypot(q[0] - p[0], q[1] - p[1]);
+          if (ahead > eps && off < Math.max(eps * 2, dd * 0.03) && dd < bd) { bd = dd; best = q; }
+        }
+      }
+      if (best) bridge(p, best);
+    }
+  }
+  return out;
+}
+
+/* Regions that touch or overlap, made one: [[x, y] ...] polygons in, the
+   united outlines out (largest first). The shared edges go; the corners
+   stay those of the regions. */
+export function unite(polys) {
+  polys = polys.filter((q) => q && q.length > 2);
+  if (polys.length < 2) return polys.map((q) => q.map((v) => v.slice()));
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const q of polys) for (const [x, y] of q) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const size = Math.max(x1 - x0, y1 - y0);
+  let c = Math.max(0.02, size / 1800);
+  x0 -= 3 * c; y0 -= 3 * c; x1 += 3 * c; y1 += 3 * c;
+  const W = Math.ceil((x1 - x0) / c) + 1, H = Math.ceil((y1 - y0) / c) + 1;
+  const m = new Uint8Array(W * H);
+  // each polygon filled at the cell centres (rows from the top)
+  for (const q of polys) {
+    for (let j = 0; j < H; j++) {
+      const y = y1 - (j + 0.5) * c, xs = [];
+      for (let i = 0, k = q.length - 1; i < q.length; k = i++) {
+        const a = q[i], b = q[k];
+        if ((a[1] > y) !== (b[1] > y)) xs.push(a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+      }
+      xs.sort((u, v) => u - v);
+      for (let t = 0; t + 1 < xs.length; t += 2) {
+        const i0 = Math.max(0, Math.ceil((xs[t] - x0) / c - 0.5)), i1 = Math.min(W - 1, Math.floor((xs[t + 1] - x0) / c - 0.5));
+        for (let i = i0; i <= i1; i++) m[j * W + i] = 1;
+      }
+    }
+  }
+  // a hairline between two regions laid on the same line: closed
+  const d1 = distance(m, W, H);
+  const grown = new Uint8Array(W * H);
+  for (let t = 0; t < m.length; t++) grown[t] = d1[t] <= 1.5 ? 1 : 0;
+  const inv = new Uint8Array(W * H);
+  for (let t = 0; t < m.length; t++) inv[t] = grown[t] ? 0 : 1;
+  const d2 = distance(inv, W, H);
+  for (let t = 0; t < m.length; t++) m[t] = m[t] || (grown[t] && d2[t] > 1.0) ? 1 : 0;
+  // each piece's outer edge, laid back onto the regions' own edges
+  const edges = [];
+  for (const q of polys) for (let i = 0; i < q.length; i++) { const a = q[i], b = q[(i + 1) % q.length]; edges.push(a[0], a[1], b[0], b[1]); }
+  const lab = new Int32Array(W * H).fill(-1);
+  const res = [];
+  for (let k0 = 0; k0 < m.length; k0++) {
+    if (!m[k0] || lab[k0] >= 0) continue;
+    const id = res.length, st = [k0], comp = new Uint8Array(W * H);
+    lab[k0] = id; comp[k0] = 1;
+    while (st.length) {
+      const k = st.pop();
+      for (const nk of [k - 1, k + 1, k - W, k + W]) if (nk >= 0 && nk < m.length && m[nk] && lab[nk] < 0) { lab[nk] = id; comp[nk] = 1; st.push(nk); }
+    }
+    const ring = outline(comp, W, H);
+    if (!ring || ring.length < 3) { res.push(null); continue; }
+    let pts = ring.map(([i, j]) => [x0 + i * c, y1 - j * c]);
+    pts = simplify(pts, c * 1.2);
+    if (pts.length < 3) { res.push(null); continue; }
+    pts = layOnLines(pts, edges, c * 2.5, 0);
+    res.push(tidy(simplify(pts, c * 0.2)));
+  }
+  return res.filter((q) => q && q.length > 2).sort((a, b) => area(b) - area(a));
 }
 
 /* The pieces of drawing (8-connected cells) smaller than `min` cells,
