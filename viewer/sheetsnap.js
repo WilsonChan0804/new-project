@@ -4,13 +4,16 @@
  *
  * The lines are read once per sheet from the PDF's drawing commands
  * (pdf.js getOperatorList), with the current transform kept, so they are the
- * exact plotted lines - not traced from pixels. Curves count by their ends.
+ * exact plotted lines - not traced from pixels. Curves (arcs, door swings,
+ * curved walls) are kept as short straight pieces along them.
  * Kept in paper millimetres in a coarse grid, so finding the lines under the
  * pointer is quick on a sheet of a million strokes.
  *
  *   const idx = await readLines(page, toMm)     // toMm(x, y): PDF user space -> paper mm [u, v]
  *   idx.snap([u, v], tolMm, { anchor, wide }) -> { p: [u, v], kind, guides } | null
  *   kind: "end" | "cross" | "perp" | "align2" | "ext" | "align" | "mid" | "on"; guides: dashed lines to show
+ *   idx.lines                                   the lines, flat x1 y1 x2 y2 ... (areafill.js)
+ *   idx.nearest([u, v], tolMm) -> [x1, y1, x2, y2] | null   the line under the pointer (Area > Pick lines)
  */
 
 const PT_MM = 25.4 / 72;
@@ -39,14 +42,16 @@ export async function readLines(page, toMm) {
   const ol = await page.getOperatorList();
   const fn = ol.fnArray, args = ol.argsArray;
   const xs = [];                    // flat x1, y1, x2, y2 in mm
+  const fl = [];                    // per line: 1 its start is inside a curve, 2 its end is, 4 no midpoint
   const to = toMm || pdfFrame(page);
   let ctm = [1, 0, 0, 1, 0, 0];
   const stack = [];
   const P = (x, y) => to(x * ctm[0] + y * ctm[2] + ctm[4], x * ctm[1] + y * ctm[3] + ctm[5]);
-  const seg = (a, b) => {
+  const seg = (a, b, f) => {
     if (xs.length / 4 >= MAX_SEG) return;
     if (Math.abs(a[0] - b[0]) < 1e-4 && Math.abs(a[1] - b[1]) < 1e-4) return;
     xs.push(a[0], a[1], b[0], b[1]);
+    fl.push(f || 0);
   };
   for (let i = 0; i < fn.length && xs.length / 4 < MAX_SEG; i++) {
     const f = fn[i], a = args[i];
@@ -57,26 +62,50 @@ export async function readLines(page, toMm) {
     else if (f === OPS.paintFormXObjectEnd) { if (stack.length) ctm = stack.pop(); }
     else if (f === OPS.constructPath) {
       const ops = a[0], c = a[1];
-      let k = 0, start = null, cur = null;
+      let k = 0, start = null, cur = null, curRaw = null, startRaw = null;
       for (const op of ops) {
-        if (op === OPS.moveTo) { cur = start = P(c[k], c[k + 1]); k += 2; }
-        else if (op === OPS.lineTo) { const q = P(c[k], c[k + 1]); k += 2; if (cur) seg(cur, q); cur = q; }
-        else if (op === OPS.curveTo) { const q = P(c[k + 4], c[k + 5]); k += 6; cur = q; }
-        else if (op === OPS.curveTo2 || op === OPS.curveTo3) { const q = P(c[k + 2], c[k + 3]); k += 4; cur = q; }
+        if (op === OPS.moveTo) { cur = start = P(c[k], c[k + 1]); curRaw = startRaw = [c[k], c[k + 1]]; k += 2; }
+        else if (op === OPS.lineTo) { const q = P(c[k], c[k + 1]); curRaw = [c[k], c[k + 1]]; k += 2; if (cur) seg(cur, q); cur = q; }
+        else if (op === OPS.curveTo || op === OPS.curveTo2 || op === OPS.curveTo3) {
+          // a Bezier curve, as straight pieces about 1.5 mm long (4 to 24): close enough
+          // for a curved wall to snap to and to bound an area within a tenth of a per cent
+          let c1, c2, e;
+          if (op === OPS.curveTo) { c1 = [c[k], c[k + 1]]; c2 = [c[k + 2], c[k + 3]]; e = [c[k + 4], c[k + 5]]; k += 6; }
+          else if (op === OPS.curveTo2) { c1 = null; c2 = [c[k], c[k + 1]]; e = [c[k + 2], c[k + 3]]; k += 4; }
+          else { c1 = [c[k], c[k + 1]]; c2 = null; e = [c[k + 2], c[k + 3]]; k += 4; }
+          const q = P(e[0], e[1]);
+          if (cur) {
+            const p0 = curRaw, a1 = c1 || p0, a2 = c2 || e;
+            const m1 = P(a1[0], a1[1]), m2 = P(a2[0], a2[1]);
+            const hull = Math.hypot(m1[0] - cur[0], m1[1] - cur[1]) + Math.hypot(m2[0] - m1[0], m2[1] - m1[1]) + Math.hypot(q[0] - m2[0], q[1] - m2[1]);
+            const N = Math.max(4, Math.min(24, Math.ceil(hull / 1.5)));
+            let prev = cur;
+            for (let t = 1; t <= N; t++) {
+              const u = t / N, w = 1 - u;
+              const x = w * w * w * p0[0] + 3 * w * w * u * a1[0] + 3 * w * u * u * a2[0] + u * u * u * e[0];
+              const y = w * w * w * p0[1] + 3 * w * w * u * a1[1] + 3 * w * u * u * a2[1] + u * u * u * e[1];
+              const pt = t === N ? q : P(x, y);
+              // only the curve's own two ends snap as ends; no midpoints of its pieces
+              seg(prev, pt, (t > 1 ? 1 : 0) | (t < N ? 2 : 0) | 4);
+              prev = pt;
+            }
+          }
+          cur = q; curRaw = e;
+        }
         else if (op === OPS.rectangle) {
           const x = c[k], y = c[k + 1], w = c[k + 2], h = c[k + 3]; k += 4;
           const r = [P(x, y), P(x + w, y), P(x + w, y + h), P(x, y + h)];
           for (let j = 0; j < 4; j++) seg(r[j], r[(j + 1) % 4]);
-          cur = start = r[0];
+          cur = start = r[0]; curRaw = startRaw = [x, y];
         }
-        else if (op === OPS.closePath) { if (cur && start) seg(cur, start); cur = start; }
+        else if (op === OPS.closePath) { if (cur && start) seg(cur, start); cur = start; curRaw = startRaw; }
       }
     }
   }
-  return makeIndex(Float64Array.from(xs));
+  return makeIndex(Float64Array.from(xs), Uint8Array.from(fl));
 }
 
-export function makeIndex(L) {
+export function makeIndex(L, F) {
   const n = L.length / 4;
   const grid = new Map();
   const key = (i, j) => i * 1048576 + j;
@@ -121,13 +150,14 @@ export function makeIndex(L) {
           if (seen[s] === stamp) continue;
           seen[s] = stamp;
           const x1 = L[4 * s], y1 = L[4 * s + 1], x2 = L[4 * s + 2], y2 = L[4 * s + 3];
+          const f = F ? F[s] : 0;
           let d = Math.hypot(u - x1, v - y1);
-          if (d < dEnd) { dEnd = d; bestEnd = [x1, y1]; }
+          if (!(f & 1) && d < dEnd) { dEnd = d; bestEnd = [x1, y1]; }
           d = Math.hypot(u - x2, v - y2);
-          if (d < dEnd) { dEnd = d; bestEnd = [x2, y2]; }
+          if (!(f & 2) && d < dEnd) { dEnd = d; bestEnd = [x2, y2]; }
           const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
           d = Math.hypot(u - mx, v - my);
-          if (d < dMid) { dMid = d; bestMid = [mx, my]; }
+          if (!(f & 4) && d < dMid) { dMid = d; bestMid = [mx, my]; }
           const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy;
           const t = Math.max(0, Math.min(1, ((u - x1) * dx + (v - y1) * dy) / (l2 || 1)));
           const qx = x1 + t * dx, qy = y1 + t * dy;
@@ -231,7 +261,30 @@ export function makeIndex(L) {
     const src = one === "v" ? [vx[2], vx[3]] : [hy[2], hy[3]];
     return { p: q, kind: "align", guides: [[src[0], src[1], q[0], q[1]]] };
   }
-  return { count: n, snap };
+  /* The line nearest the point, within tol: [x1, y1, x2, y2] */
+  function nearest(p, tol) {
+    const [u, v] = p;
+    stamp++;
+    let best = null, bd = tol;
+    const i0 = Math.floor((u - tol) / CELL), i1 = Math.floor((u + tol) / CELL);
+    const j0 = Math.floor((v - tol) / CELL), j1 = Math.floor((v + tol) / CELL);
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+      const a = grid.get(key(i, j));
+      if (!a) continue;
+      for (const s of a) {
+        if (seen[s] === stamp) continue;
+        seen[s] = stamp;
+        const x1 = L[4 * s], y1 = L[4 * s + 1], x2 = L[4 * s + 2], y2 = L[4 * s + 3];
+        const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy;
+        const t = Math.max(0, Math.min(1, ((u - x1) * dx + (v - y1) * dy) / (l2 || 1)));
+        const d = Math.hypot(u - (x1 + t * dx), v - (y1 + t * dy));
+        if (d < bd) { bd = d; best = [x1, y1, x2, y2]; }
+      }
+    }
+    return best;
+  }
+
+  return { count: n, snap, nearest, lines: L };
 }
 
 function crossesCell(x1, y1, x2, y2, cx, cy) {

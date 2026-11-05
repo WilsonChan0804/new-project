@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-31", date: "6 Nov 2026",
+    items: [
+      "**Area: click inside a room.** Sheets > Measure ▾ > **Area** now has three ways (in its panel): **Points I click** (as before), **Click inside** and **Pick lines**. **Click inside**: one click in a room finds its outline from the drawing's own lines - doorways narrower than the gap set (1200 mm unless changed) are closed straight across along the wall face, and furniture, text and other loose bits inside are ignored. The corners land on the drawing's corners. On Revit floor plans published with the updated add-in, it takes the **room's own outline from Revit** (with its number, name and Revit area).",
+      "**Pick lines:** click the lines round the area in turn - each is trimmed or extended to meet the next, as in CAD - then click the first line again or press Enter. Backspace takes the last line back.",
+      "**Add and cut out:** Shift+click adds another region to the area; Alt+click inside a column, a shaft or a void cuts it out as a hole (or choose **Add** / **Cut hole** in the panel). The label shows the net area; **Remove the last** takes a region back.",
+      "**Offset the edge:** with an area chosen, type a distance and press **Out** or **In** to move its whole edge - e.g. from the inside face of the walls to the centre line or the outside face.",
+      "Curved walls and arcs in drawings are now read as curves: snapping and areas follow them (before, only their ends counted).",
+    ],
+  },
+  {
     version: "2026-12-30", date: "5 Nov 2026",
     items: [
       "**Fix: @ lists everyone.** In a chat (and in an issue's discussion), typing **@** showed only the first 8 people, so the rest of a big team could not be picked. Now everyone is listed - scroll, or use the arrow keys - and the names that start with what you type come first (**@w** gives W.Chan and Wing).",

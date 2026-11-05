@@ -75,12 +75,14 @@ export function createRoute(ctx) {
   }
 
   /* The plan viewport a point is in (one the add-in cut) */
-  function viewportAt(p) {
+  function viewportAt(p, rooms) {
     if (!R.plan || !S.sheet) return null;
     let best = null, area = Infinity;
     for (const vp of S.sheet.viewports || []) {
       const r = vp.paper_rect_mm;
-      if (!r || !R.plan.viewports || !R.plan.viewports[String(vp.element_id)]) continue;
+      const v = r && R.plan.viewports && R.plan.viewports[String(vp.element_id)];
+      // the route needs the plan's cut; the Area tool its rooms
+      if (!v || (rooms ? !(v.rooms || []).length : !Object.keys(v.cats || {}).length)) continue;
       if (p[0] >= r[0] && p[0] <= r[0] + r[2] && p[1] >= r[1] && p[1] <= r[1] + r[3] && r[2] * r[3] < area) { best = vp; area = r[2] * r[3]; }
     }
     return best;
@@ -247,6 +249,7 @@ export function createRoute(ctx) {
     if (!p) {
       p = R.panel = document.createElement("div");
       p.id = "route-panel";
+      p.className = "rp-panel";
       document.body.appendChild(p);
     }
     p.hidden = false;
@@ -289,5 +292,29 @@ export function createRoute(ctx) {
     if (again) again.onclick = () => { it.leg_for = []; changed(it); };
   }
 
-  return { loadPlan, refresh, changed, legsOf, legMid, label, lengthM, stamp, paintPanel, stale, hasPlan: () => !!R.plan };
+  /* The Revit room round a paper point (Area > Click inside), or null */
+  function roomAt(p) {
+    const vp = viewportAt(p, true);
+    if (!vp) return null;
+    const inside = (P, L) => {
+      let c = false;
+      for (let i = 0, j = L.length - 1; i < L.length; j = i++) {
+        const a = L[i], b = L[j];
+        if ((a[1] > P[1]) !== (b[1] > P[1]) && P[0] < (b[0] - a[0]) * (P[1] - a[1]) / (b[1] - a[1]) + a[0]) c = !c;
+      }
+      return c;
+    };
+    let best = null, area = Infinity;
+    for (const r of R.plan.viewports[String(vp.element_id)].rooms || []) {
+      const L = r.loops || [];
+      if (!L.length || !inside(p, L[0]) || L.slice(1).some((h) => inside(p, h))) continue;
+      let a = 0;
+      for (let i = 0; i < L[0].length; i++) { const q = L[0][i], w = L[0][(i + 1) % L[0].length]; a += q[0] * w[1] - w[0] * q[1]; }
+      if (Math.abs(a) < area) { area = Math.abs(a); best = r; }
+    }
+    return best;
+  }
+  const hasRooms = () => !!(R.plan && Object.values(R.plan.viewports || {}).some((v) => (v.rooms || []).length));
+
+  return { roomAt, hasRooms, loadPlan, refresh, changed, legsOf, legMid, label, lengthM, stamp, paintPanel, stale, hasPlan: () => !!R.plan };
 }

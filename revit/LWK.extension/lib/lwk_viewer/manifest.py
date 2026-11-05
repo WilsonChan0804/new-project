@@ -938,6 +938,18 @@ def build_sheet(doc, sheet, probe, routes=True):
         try:
             from lwk_viewer import planroute
             cut = planroute.sheet_routes(doc, route_vps, probe, sheet.SheetNumber)
+            # and each plan's rooms, exactly as Revit bounds them: the Area
+            # tool's "click inside" takes a room's own outline and area
+            for vpid_, view_, mapping_, rect_ in route_vps:
+                try:
+                    rooms = [{"number": r["number"], "name": r["name"], "area_m2": r["area_m2"], "level": r["level"],
+                              "uid": r["uid"], "loops": r["loops"]}
+                             for r in view_areas(doc, view_, mapping_, rooms=True, rect=rect_)]
+                except Exception as ex_:
+                    rooms = []
+                    probe.info(sheet.SheetNumber, "rooms of '%s' not read: %s" % (view_.Name, ex_))
+                if rooms:
+                    cut.setdefault(str(vpid_), {"view": view_.Name, "cats": {}})["rooms"] = rooms
             if cut:
                 rec["_route"] = cut
                 for e in rec["viewports"]:

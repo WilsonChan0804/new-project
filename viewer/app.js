@@ -29,6 +29,8 @@ import * as QV from "./queryviews.js";
 import { readLines, pdfFrame, shownFrame } from "./sheetsnap.js";
 import { scaleFromWords } from "./titlescale.js";
 import { createRoute } from "./route.js";
+import { createAreaTool } from "./areatool.js";
+import { net as areaNet } from "./areafill.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -214,6 +216,25 @@ const ROUTE = createRoute({
   redraw: () => redraw(), putItem: (it) => putItem(it),
   activeScale: (mid, item) => activeScale(mid, item),
 });
+
+/* Area by clicking inside, by picking lines, with regions added and holes
+   cut, and its edge offset (areatool.js). */
+const AREA = createAreaTool({
+  S, status: (m) => status(m), redraw: () => redraw(), persist: (ids) => persist(ids), remember: (ids) => remember(ids),
+  snapLines: () => snapLines(), pxPerMM: () => pxPerMM(), activeScale: (p, it) => activeScale(p, it),
+  roomAt: (p) => ROUTE.roomAt(p), hasRooms: () => ROUTE.hasRooms(),
+  newDraft: (type, pts) => newDraft(type, pts),
+  finish(d, after) {
+    S.draft = d;
+    if (!d.scale) { const sc = activeScale(centreOf(d.points_mm), null); if (sc) d.scale = sc.scale; }
+    commitDraft((made) => { if (after) after(made); if (S.mode === "issue") openIssue(made); });
+  },
+});
+
+/* The extra regions and holes of an area move with it (every way its points move) */
+function moveLoops(it, f) {
+  if (it && it.loops_mm) it.loops_mm = it.loops_mm.map((l) => ({ pts: (l.pts || []).map(f), sub: !!l.sub }));
+}
 
 /* Light & Vent (lv.js): the Calculation model's rooms on this sheet's plans,
    coloured by their result. Make issue: a cloud round the room, as an issue. */
@@ -672,11 +693,28 @@ function render(item, opts) {
     add("polyline", Object.assign({}, stroke,
       { points: P.map((p) => p.join(",")).join(" ") }), "stroke");
 
+  } else if (item.type === "area" && P.length === 2 && item.picking) {
+    // Pick lines: two lines picked, not yet an area
+    for (const l of item.picking) {
+      const a = canvasFrom(l[0], l[1]), b = canvasFrom(l[2], l[3]);
+      add("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: "#f28022", "stroke-width": Math.max(3, w * 3), "stroke-opacity": 0.7, "stroke-linecap": "round" }, null);
+    }
+
   } else if (item.type === "area" && P.length > 2) {
-    add("polygon", Object.assign({}, filled, {
+    // the outline, and any regions added (filled) or cut out (holes: left clear)
+    const ring = (Q) => "M " + Q.map((p) => p.join(" ")).join(" L ") + " Z";
+    const loops = (item.loops_mm || []).map((l) => ({ Q: (l.pts || []).map((p) => canvasFrom(p[0], p[1])), sub: l.sub }));
+    add(loops.length ? "path" : "polygon", Object.assign({}, filled, {
       "fill-opacity": st.fillop > 0 ? st.fillop / 100 : 0.12,
       fill: st.fill || st.color,
-      points: P.map((p) => p.join(",")).join(" ") }), "stroke");
+    }, loops.length ? { d: ring(P) + " " + loops.map((l) => ring(l.Q)).join(" "), "fill-rule": "evenodd" }
+      : { points: P.map((p) => p.join(",")).join(" ") }), "stroke");
+    for (const l of loops) if (l.sub && l.Q.length > 2) add("path", Object.assign({}, stroke, { d: ring(l.Q), "stroke-dasharray": `${w * 3} ${w * 2}` }), null);
+    // Pick lines: the lines picked so far, thick
+    for (const l of item.picking || []) {
+      const a = canvasFrom(l[0], l[1]), b = canvasFrom(l[2], l[3]);
+      add("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: "#f28022", "stroke-width": Math.max(3, w * 3), "stroke-opacity": 0.7, "stroke-linecap": "round" }, null);
+    }
     let cx = 0, cy = 0;
     for (const p of P) { cx += p[0]; cy += p[1]; }
     const t = svgEl("text", { x: cx / P.length, y: cy / P.length,
@@ -1021,13 +1059,15 @@ function areaLabel(pts, item) {
     a2 += p[0] * q[1] - q[0] * p[1];
     cx += p[0]; cy += p[1];
   }
-  const paper = Math.abs(a2) / 2;
+  // with regions added and holes cut (areatool.js), the net of them all
+  const paper = item && item.loops_mm && item.loops_mm.length ? areaNet(Object.assign({}, item, { points_mm: pts })) : Math.abs(a2) / 2;
   const s = activeScale([cx / pts.length, cy / pts.length], item);
   if (!s) return paper.toFixed(0) + " mm2 (paper - set a scale)";
   const mm2 = paper * s.scale * s.scale;
   const m2 = mm2 / 1e6;
   const how = s.from === "title" && !(item && item.scale) ? "  (1:" + s.scale + " from title block)" : "";
-  return (m2 >= 0.01 ? m2.toFixed(2) + " m\u00B2" : mm2.toFixed(0) + " mm\u00B2") + how;
+  const room = item && item.room ? [item.room.number, item.room.name].filter(Boolean).join(" ") + ": " : "";
+  return room + (m2 >= 0.01 ? m2.toFixed(2) + " m\u00B2" : mm2.toFixed(0) + " mm\u00B2") + how;
 }
 
 /* Angle at the middle point. Scale is irrelevant: it does not change
@@ -1270,15 +1310,16 @@ function applyGeometry(field) {
   if (field === "g-x" || field === "g-y") {
     const dx = field === "g-x" ? v - b.x0 : 0;
     const dy = field === "g-y" ? v - b.y0 : 0;
-    for (const it of items) it.points_mm = it.points_mm.map((p) => [p[0] + dx, p[1] + dy]);
+    for (const it of items) { it.points_mm = it.points_mm.map((p) => [p[0] + dx, p[1] + dy]); moveLoops(it, (p) => [p[0] + dx, p[1] + dy]); }
   } else if (field === "g-w" || field === "g-h") {
     // Scale about the lower-left corner, the reference a typed X and Y use.
     const w = b.x1 - b.x0 || 1, h = b.y1 - b.y0 || 1;
     const kx = field === "g-w" ? Math.max(0.01, v) / w : 1;
     const ky = field === "g-h" ? Math.max(0.01, v) / h : 1;
     for (const it of items) {
-      it.points_mm = it.points_mm.map((p) => [b.x0 + (p[0] - b.x0) * kx,
-                                              b.y0 + (p[1] - b.y0) * ky]);
+      const f = (p) => [b.x0 + (p[0] - b.x0) * kx, b.y0 + (p[1] - b.y0) * ky];
+      it.points_mm = it.points_mm.map(f);
+      moveLoops(it, f);
     }
   } else if (field === "g-r") {
     // One item: an absolute angle. A group: turn by the typed amount.
@@ -1388,6 +1429,7 @@ function select(ids, add, byDrag) {
   S.selByDrag = !!byDrag && S.sel.length > 0;
   redraw(); renderList();
   ROUTE.paintPanel();
+  AREA.paintPanel();
 }
 
 /* ------------------------------------------------------------ undo/redo */
@@ -1551,11 +1593,13 @@ function rotateSelection(deg, noHistory) {
       const nc = rotatePoint(c, pivot, rad);
       const dx = nc[0] - c[0], dy = nc[1] - c[1];
       it.points_mm = it.points_mm.map((p) => [p[0] + dx, p[1] + dy]);
+      moveLoops(it, (p) => [p[0] + dx, p[1] + dy]);
       // Paper y runs up, the screen's runs down, so the visual sense of the
       // angle flips when it is drawn.
       it.rot = ((it.rot || 0) + deg) % 360;
     } else {
       it.points_mm = it.points_mm.map((p) => rotatePoint(p, pivot, rad));
+      moveLoops(it, (p) => rotatePoint(p, pivot, rad));
     }
   }
   redraw();
@@ -1603,7 +1647,7 @@ function paste() {
       c.group = regroup.get(c.group);
     }
     c.sheet = S.sheet.number;
-    if (sameSheet) c.points_mm = c.points_mm.map((p) => [p[0] + 5, p[1] - 5]);
+    if (sameSheet) { c.points_mm = c.points_mm.map((p) => [p[0] + 5, p[1] - 5]); moveLoops(c, (p) => [p[0] + 5, p[1] - 5]); }
     c.anchor = resolve(c.points_mm[0][0], c.points_mm[0][1]);
     c.author = me;
     c.created_at = now;
@@ -1686,7 +1730,8 @@ function snapPoint(p, ev, handleItem) {
   const it = handleItem || null;
   const tool = it ? it.type : S.tool;
   // Alt: free; Shift: its 15 degree steps win
-  if (!SNAP.on || (ev && (ev.altKey || ev.shiftKey)) || !SNAP_TOOLS.has(tool) || !S.viewport) { if (SNAP.mark) showSnap(null); return p; }
+  if (!SNAP.on || (ev && (ev.altKey || ev.shiftKey)) || !SNAP_TOOLS.has(tool) || !S.viewport
+      || (!it && tool === "area" && AREA.active())) { if (SNAP.mark) showSnap(null); return p; }
   const idx = snapLines();
   if (!idx) { if (SNAP.mark) showSnap(null); return p; }
   // the point already placed: perpendicular to a line from it, lining up with it
@@ -1861,6 +1906,7 @@ function placeMatchCopy(srcId, at) {
   c.id = uid();
   c.sheet = S.sheet.number;
   c.points_mm = c.points_mm.map((q) => [q[0] - ctr[0] + at[0], q[1] - ctr[1] + at[1]]);
+  moveLoops(c, (q) => [q[0] - ctr[0] + at[0], q[1] - ctr[1] + at[1]]);
   c.anchor = resolve(at[0], at[1]);
   c.author = Store.author();
   c.created_at = new Date().toISOString();
@@ -2408,7 +2454,8 @@ function wirePointer() {
     /* Shift turns any tool into Select for one gesture. Drawing a cloud and
        noticing the last one is in the wrong place should not mean a trip
        to the toolbar and back. */
-    const picking = t.kind === "pick" || ev.shiftKey;
+    // (not with Area > Click inside / Pick lines: there Shift+click adds a region)
+    const picking = t.kind === "pick" || (ev.shiftKey && !(S.tool === "area" && AREA.active()));
 
     if (t.kind === "erase" && !ev.shiftKey) {
       /* Rub out: everything the pen or finger passes over goes, like a
@@ -2443,7 +2490,7 @@ function wirePointer() {
         const corners = [[b.x0, b.y1], [b.x1, b.y1], [b.x1, b.y0], [b.x0, b.y0]];
         const sc = canvasFrom(...corners[c]), sf = canvasFrom(...corners[(c + 2) % 4]);
         gscale = { fixed: corners[(c + 2) % 4], d0: Math.hypot(sc[0] - sf[0], sc[1] - sf[1]) || 1, sf,
-          orig: items.map((it) => ({ it, pts: it.points_mm.map((q) => q.slice()),
+          orig: items.map((it) => ({ it, pts: it.points_mm.map((q) => q.slice()), loops: it.loops_mm ? JSON.parse(JSON.stringify(it.loops_mm)) : null,
             style: it.style ? JSON.parse(JSON.stringify(it.style)) : null })) };
         mode = "gscale";
         svg.setPointerCapture(ev.pointerId);
@@ -2503,6 +2550,12 @@ function wirePointer() {
       return;
     }
 
+    // Area > Click inside / Pick lines: the click is the tool's (the pointer as it is, unsnapped)
+    if (S.tool === "area" && AREA.active()) {
+      ev.preventDefault();
+      AREA.click(eventPoint(ev), ev);
+      return;
+    }
     if (t.kind === "poly") {
       $("#poly-finish").hidden = false;
       if (poly && nearFirst(p)) {           // p is already in paper mm
@@ -2695,7 +2748,7 @@ function wirePointer() {
       const dx = p[0] - last[0], dy = p[1] - last[1];
       for (const id of S.sel) {
         const it = S.items.find((x) => x.id === id);
-        if (it) it.points_mm = it.points_mm.map((q) => [q[0] + dx, q[1] + dy]);
+        if (it) { it.points_mm = it.points_mm.map((q) => [q[0] + dx, q[1] + dy]); moveLoops(it, (q) => [q[0] + dx, q[1] + dy]); }
       }
       last = p; redraw();
     } else if (mode === "handle") {
@@ -2726,6 +2779,7 @@ function wirePointer() {
       const f = gscale.fixed;
       for (const o of gscale.orig) {
         o.it.points_mm = o.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]);
+        if (o.loops) o.it.loops_mm = o.loops.map((l) => ({ pts: l.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]), sub: l.sub }));
         if (o.style) {
           o.it.style = Object.assign({}, o.style);
           if (o.style.size) o.it.style.size = Math.round(o.style.size * k * 100) / 100;
@@ -2867,6 +2921,8 @@ function wirePointer() {
       stepSheet(ev.key === "PageDown" ? 1 : -1);
       return;
     }
+    // Area > Pick lines: Enter closes, Escape cancels, Backspace takes a line back
+    if (AREA.key(ev)) { ev.preventDefault(); ev.stopImmediatePropagation(); return; }
     // Order matters: the drawing case has to be tested before the general
     // Escape, or the general one always wins and the run is thrown away.
     if (ev.key === "Enter" && poly) endPoly();
@@ -3741,6 +3797,7 @@ async function followViews(sheet) {
     if (dest === sheet && Math.hypot(dx, dy) < 1 && k === 1) continue;
     const item = JSON.parse(JSON.stringify(it));
     item.points_mm = it.points_mm.map((q) => [p[0] + (q[0] - p0[0]) * k, p[1] + (q[1] - p0[1]) * k]);
+    moveLoops(item, (q) => [p[0] + (q[0] - p0[0]) * k, p[1] + (q[1] - p0[1]) * k]);
     item.anchor = Object.assign({}, a, { scale: vp.scale, view_name: vp.view_name });
     item.sheet = dest.number;
     item.followed = { at: new Date().toISOString(), from_sheet: sheet.number,
@@ -6177,6 +6234,7 @@ function propsShown() {
   const sc = document.getElementById("scale-lab");
   if (sc) sc.hidden = !(MEASURE_TOOLS.has(S.tool) || selMeasure);
   ROUTE.paintPanel();
+  AREA.paintPanel();
 }
 
 /* The markup tools in families, one button each: the family's last-used tool
