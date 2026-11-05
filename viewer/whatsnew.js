@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-29", date: "5 Nov 2026",
+    items: [
+      "**Phones and tablets open Sheets on Pan:** a finger on the drawing moves the sheet, not the comment under it. Tap **Select** (the arrow) to move or change a markup.",
+      "The tool menus (the **▾** beside Shapes, Clouds, Measure ...) open **above** their button when there is no room below - on a phone, where the tools are along the bottom of the screen.",
+    ],
+  },
+  {
     version: "2026-12-28", date: "4 Nov 2026",
     items: [
       "**Route distance on plans** (Sheets > Measure ▾ > **Route distance**): travel distance, dead end, staircase to staircase, from the fireman's lift or the TRS. Click the start and the end (double-click or Enter to finish): the **shortest route** round the walls is found and its length shown, through the doors. In the panel, tick what blocks the route (walls, columns, stairs, furniture ... doors pass unless ticked), set the clearance from walls and a **limit** (green within it, red over). Drag a point to adjust, **+** on a leg adds a point the route must pass, double-click a point to remove it. **Points I click** measures the total of the points you click instead - on any sheet, imported PDFs too. The shortest route needs the floor plans **published again** with the updated add-in (it now sends each plan's walls and doors with the sheet).",

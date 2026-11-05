@@ -55,6 +55,7 @@ PART = [
         ['其他', 'Snip（將一個範圍 copy 做圖片；亦可以貼圖入嚟）、Select text、Eraser、Match properties、Select、Pan'],
     ]),
     UL([
+        '**手機同平板：** Sheets 一打開就係 **Pan**，手指喺圖上郁只會移動張圖，唔會郁到 markup；要搬或者改 markup 就撳 **Select**（箭咀）。工具列喺畫面底部嗰陣，工具旁邊嘅 **▾** 選單會喺掣上面打開。',
         '**Polyline / Polygon：** 撳啲點，然後按 Enter、double-click 或者 **✓ Finish**。Backspace 刪最後一點。',
         '**Dimension、Measure、Line、Arrow：** 由第一點拖去第二點，或者撳第一點、再撳第二點（撳咗第一點之後按 Esc 取消）。',
         '**Style bar：** Layer、線／填色／文字顏色、Opacity、Weight（紙上 mm）、線 Type、Font、Size（字高 mm）、Align。',

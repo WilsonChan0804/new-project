@@ -6220,8 +6220,12 @@ function groupTools(tw) {
         + `<span class="tg-ic">${b.innerHTML}</span><span>${esc(toolOf(b.dataset.tool).label)}</span></button>`).join("");
       document.body.appendChild(pop);
       const r = g.getBoundingClientRect();
-      pop.style.left = Math.min(innerWidth - pop.offsetWidth - 8, r.left) + "px";
-      pop.style.top = (r.bottom + 4) + "px";
+      pop.style.left = Math.max(8, Math.min(innerWidth - pop.offsetWidth - 8, r.left)) + "px";
+      // above the button when it does not fit below - on a phone the tools
+      // are along the bottom of the screen, and the list went off it
+      const h = pop.offsetHeight;
+      const up = r.bottom + 4 + h > innerHeight - 8 || (IS_MOBILE_UA && r.top > innerHeight / 2);
+      pop.style.top = (up ? Math.max(8, r.top - h - 4) : r.bottom + 4) + "px";
       pop.onclick = (e2) => {
         const p = e2.target.closest("[data-pick]");
         if (!p) return;
@@ -6312,7 +6316,9 @@ function wireChrome() {
   groupTools(tw);
   labelToolKeys();
   S.toolChipQuiet = true;           // no name flash on opening the page
-  setTool("select");
+  // phones and tablets open on Pan: a finger on the sheet moves the sheet,
+  // not the comment under it (Select is a tap away to move a markup)
+  setTool(IS_MOBILE_UA ? "pan" : "select");
   S.toolChipQuiet = false;
 
   const bind = (sel, key, cast) => {
