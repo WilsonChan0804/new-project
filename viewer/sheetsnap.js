@@ -341,7 +341,19 @@ export function makeIndex(L, F) {
     return best === null ? -1 : best;
   }
 
-  return { count: n, snap, nearest, nearestIndex, lines: L };
+  /* every line in the cells near p (each once): fn(line number) */
+  function around(p, tol, fn) {
+    stamp++;
+    const i0 = Math.floor((p[0] - tol) / CELL), i1 = Math.floor((p[0] + tol) / CELL);
+    const j0 = Math.floor((p[1] - tol) / CELL), j1 = Math.floor((p[1] + tol) / CELL);
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+      const a = grid.get(key(i, j));
+      if (!a) continue;
+      for (const s of a) { if (seen[s] === stamp) continue; seen[s] = stamp; fn(s); }
+    }
+  }
+
+  return { count: n, snap, nearest, nearestIndex, around, lines: L };
 }
 
 function crossesCell(x1, y1, x2, y2, cx, cy) {

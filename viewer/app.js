@@ -30,7 +30,7 @@ import { readLines, pdfFrame, shownFrame } from "./sheetsnap.js";
 import { scaleFromWords } from "./titlescale.js";
 import { createRoute } from "./route.js";
 import { createAreaTool } from "./areatool.js";
-import { net as areaNet } from "./areafill.js";
+import { net as areaNet, arc3 } from "./areafill.js";
 /* pdf-lib, for exports that keep the original drawing. Loaded on demand
    and optional: without it the export falls back to the picture-based
    writer rather than failing. */
@@ -231,6 +231,19 @@ const AREA = createAreaTool({
     commitDraft((made) => { if (after) after(made); if (S.mode === "issue") openIssue(made); });
   },
 });
+
+/* ◠ Arc while drawing a polyline, polygon, freeform cloud or area: the next
+   segment is an arc through three points - a point on it, then its end. It
+   is kept as points along the arc, so length, area and editing are as for
+   any other segment. Stays on until switched off. */
+const ARC_TOOLS = new Set(["polyline", "polygon", "cloudpoly", "area"]);
+S.polyArc = { on: false, mid: null, base: -1 };
+function polyButtons(show) {
+  const f = document.getElementById("poly-finish"), a = document.getElementById("poly-arc");
+  if (f) f.hidden = !show;
+  if (a) { a.hidden = !show || !ARC_TOOLS.has(S.tool); a.classList.toggle("on", !!S.polyArc.on); }
+  if (!show) S.polyArc.mid = null;
+}
 
 /* The extra regions and holes of an area move with it (every way its points move) */
 function moveLoops(it, f) {
@@ -2278,6 +2291,14 @@ function wirePointer() {
     if (!poly) return;
     const it = S.draft;
     poly = null;
+    // an arc begun (its middle clicked) but not ended: left out
+    if (it && S.polyArc.mid && S.polyArc.base >= 0) {
+      const b = S.polyArc.base;
+      // just clicked (the first click of a double-click to finish): that point ends it, straight
+      const end = performance.now() - (S.polyArc.midAt || 0) < 450 ? [S.polyArc.mid.slice()] : [];
+      it.points_mm = it.points_mm.slice(0, b + 1).concat(end, [(end[0] || it.points_mm[b]).slice()]);
+      S.polyArc.mid = null;
+    }
     // Drop the point that follows the cursor, unless the shape was already
     // trimmed to size (the angle case).
     if (it && it.type !== "angle" && it.points_mm.length > 2) {
@@ -2285,7 +2306,7 @@ function wirePointer() {
       const a0 = it.points_mm[n - 1], b0 = it.points_mm[n - 2];
       if (Math.hypot(a0[0] - b0[0], a0[1] - b0[1]) < 0.01) it.points_mm.pop();
     }
-    $("#poly-finish").hidden = true;
+    polyButtons(false);
     if (!it || it.points_mm.length < 2) { S.draft = null; redraw(); return; }
     finishDrawing(it);
   }
@@ -2558,7 +2579,7 @@ function wirePointer() {
       return;
     }
     if (t.kind === "poly") {
-      $("#poly-finish").hidden = false;
+      polyButtons(true);
       if (poly && nearFirst(p)) {           // p is already in paper mm
         endPoly();
         return;
@@ -2580,7 +2601,20 @@ function wirePointer() {
          and the next click then dereferenced null. */
       if (!poly || !S.draft || S.draft.type !== S.tool) {
         poly = true;
+        S.polyArc.mid = null;
         S.draft = newDraft(S.tool, [p, p]);
+      } else if (S.polyArc.on && ARC_TOOLS.has(S.tool)) {
+        // ◠ Arc: first a point on the arc, then its end
+        const pts = S.draft.points_mm;
+        if (!S.polyArc.mid) {
+          S.polyArc.mid = p; S.polyArc.base = pts.length - 2; S.polyArc.midAt = performance.now();
+          status("Arc: now click its end.");
+        } else {
+          const b = S.polyArc.base;
+          S.draft.points_mm = pts.slice(0, b + 1).concat(arc3(pts[b], S.polyArc.mid, p).slice(1), [p.slice()]);
+          S.polyArc.mid = null;
+          status("Arc drawn. Click a point on the next arc, or switch ◠ Arc off for straight lines.");
+        }
       } else {
         S.draft.points_mm.push(p);
       }
@@ -2726,7 +2760,11 @@ function wirePointer() {
     else if (SNAP.mark) showSnap(null);
 
     if (poly && S.draft) {
-      S.draft.points_mm[S.draft.points_mm.length - 1] = p;
+      if (S.polyArc.mid && S.polyArc.base >= 0) {
+        // the arc so far: from its start, through the point on it, to the pointer
+        const b = S.polyArc.base, pts = S.draft.points_mm;
+        S.draft.points_mm = pts.slice(0, b + 1).concat(arc3(pts[b], S.polyArc.mid, p).slice(1));
+      } else S.draft.points_mm[S.draft.points_mm.length - 1] = p;
       redraw(); return;
     }
     if (!mode) return;
@@ -2938,7 +2976,7 @@ function wirePointer() {
       if (S.draft.points_mm.length >= min) endPoly();
       else {
         poly = null; S.draft = null;
-        $("#poly-finish").hidden = true;
+        polyButtons(false);
         redraw();
         status("Drawing cancelled.");
       }
@@ -2951,13 +2989,19 @@ function wirePointer() {
          the one before it. */
       ev.preventDefault();
       const pts = S.draft.points_mm;
-      if (pts.length > 2) {
+      if (S.polyArc.mid) {
+        // an arc begun: back to its start
+        S.draft.points_mm = pts.slice(0, S.polyArc.base + 1).concat([pts[S.polyArc.base].slice()]);
+        S.polyArc.mid = null;
+        redraw();
+        status("Arc taken back.");
+      } else if (pts.length > 2) {
         pts.splice(pts.length - 2, 1);
         redraw();
         status((pts.length - 1) + " point(s) placed. Backspace removes another.");
       } else {
         poly = null; S.draft = null;
-        $("#poly-finish").hidden = true;
+        polyButtons(false);
         redraw();
         status("Drawing cancelled.");
       }
@@ -6430,6 +6474,18 @@ function wireChrome() {
   $("#zoom-out").addEventListener("click", () => zoomAt(0.8));
   $("#zoom-fit").addEventListener("click", fit);
   $("#poly-finish").addEventListener("click", () => S.endPoly && S.endPoly());
+  $("#poly-arc").addEventListener("click", () => {
+    S.polyArc.on = !S.polyArc.on;
+    if (!S.polyArc.on && S.polyArc.mid && S.draft) {
+      // switched off half way: the arc begun is left out
+      const b = S.polyArc.base;
+      S.draft.points_mm = S.draft.points_mm.slice(0, b + 1).concat([S.draft.points_mm[b].slice()]);
+      S.polyArc.mid = null;
+      redraw();
+    }
+    $("#poly-arc").classList.toggle("on", S.polyArc.on);
+    status(S.polyArc.on ? "Arc on: click a point on the arc, then its end. Click ◠ Arc again for straight lines." : "Straight lines.");
+  });
   // a link that opens this sheet
   $("#sheet-link").addEventListener("click", () => {
     if (!S.sheet) return status("Open a sheet first.");

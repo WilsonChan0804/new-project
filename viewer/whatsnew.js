@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-02", date: "6 Nov 2026",
+    items: [
+      "**Area > Click inside always leaves out dimensions:** dimension lines, their tick marks and extension lines are recognised and ignored by themselves (**Ignore dimensions**, on). There is no need to ignore whole line weights any more - remove the 0.1 mm / 0.35 mm chips if you added them.",
+      "**Doors close the room:** a door stops the room at its leaf, as a Revit room does (the leaf closed, from its hinge across the opening), and its swing space stays in the room. Double doors too. (**Doors close the room**, on.)",
+      "**Curves:** Pick lines picks a curved wall or an arc whole and trims or extends it to meet the next line; a closed curve alone (a round column) is an area with Enter. While drawing a polyline, polygon, freeform cloud or an area by points, **◠ Arc** (beside ✓ Finish) makes the next segment an arc: click a point on it, then its end; it stays on for more arcs until you switch it off.",
+    ],
+  },
+  {
     version: "2027-01-01", date: "6 Nov 2026",
     items: [
       "**Area > Click inside ignores what is not a wall:** dashed lines (grids, beams over) and door swings are left out by themselves, and so are a drawing's hidden clipping frames. A line still in the way - a dimension line across the room - can be left out in the panel: **Ignore a line > This line**, or **All lines like it** (same weight, colour and dash: every dimension line at once). What is left out shows as a chip; × uses it again. On Revit plans published with the updated add-in, **Use the Revit model's walls** bounds the room by the model's own walls, doors and columns, so no annotation gets in the way at all.",

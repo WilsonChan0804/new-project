@@ -97,6 +97,83 @@ export function offset(pts, d) {
   return out;
 }
 
+/* An arc through three points: from a, passing m, to b, as points along it
+   (about 0.6 mm apart, 6 to 96 pieces). In line: just a to b. */
+export function arc3(a, m, b) {
+  const d = 2 * (a[0] * (m[1] - b[1]) + m[0] * (b[1] - a[1]) + b[0] * (a[1] - m[1]));
+  if (Math.abs(d) < 1e-9) return [a.slice(), b.slice()];
+  const A2 = a[0] * a[0] + a[1] * a[1], M2 = m[0] * m[0] + m[1] * m[1], B2 = b[0] * b[0] + b[1] * b[1];
+  const cx = (A2 * (m[1] - b[1]) + M2 * (b[1] - a[1]) + B2 * (a[1] - m[1])) / d;
+  const cy = (A2 * (b[0] - m[0]) + M2 * (a[0] - b[0]) + B2 * (m[0] - a[0])) / d;
+  const R = Math.hypot(a[0] - cx, a[1] - cy);
+  const ang = (p) => Math.atan2(p[1] - cy, p[0] - cx);
+  const a0 = ang(a), am = ang(m), a1 = ang(b);
+  const TAU = Math.PI * 2;
+  const ccw = (x) => ((x % TAU) + TAU) % TAU;
+  // the way round from a to b that passes m
+  let sweep = ccw(a1 - a0);
+  if (ccw(am - a0) > sweep) sweep -= TAU;
+  const n = Math.max(6, Math.min(96, Math.ceil(Math.abs(sweep) * R / 0.6)));
+  const out = [a.slice()];
+  for (let i = 1; i < n; i++) { const t = a0 + sweep * i / n; out.push([cx + R * Math.cos(t), cy + R * Math.sin(t)]); }
+  out.push(b.slice());
+  return out;
+}
+
+/* The lines of the dimensions on a sheet: each dimension line (a line
+ * carrying two or more tick marks), its ticks (short lines across it at
+ * about 45 degrees, their middle on it) and its extension lines (square to
+ * it, through a tick). around(p, tol, fn) calls fn(s) for the lines near p.
+ * Returns a flag per line (1: part of a dimension). Paper mm. */
+export function dimensionParts(L, around) {
+  const n = L.length / 4, flag = new Uint8Array(n);
+  const len = (s) => Math.hypot(L[4 * s + 2] - L[4 * s], L[4 * s + 3] - L[4 * s + 1]);
+  const dir = (s) => { const l = len(s) || 1; return [(L[4 * s + 2] - L[4 * s]) / l, (L[4 * s + 3] - L[4 * s + 1]) / l]; };
+  const distSeg = (p, s) => {
+    const x1 = L[4 * s], y1 = L[4 * s + 1], dx = L[4 * s + 2] - x1, dy = L[4 * s + 3] - y1, l2 = dx * dx + dy * dy || 1e-12;
+    const t = Math.max(0, Math.min(1, ((p[0] - x1) * dx + (p[1] - y1) * dy) / l2));
+    return Math.hypot(p[0] - x1 - t * dx, p[1] - y1 - t * dy);
+  };
+  const ticksOn = new Map();          // dimension line -> [tick, its middle]
+  for (let t = 0; t < n; t++) {
+    const lt = len(t);
+    if (lt < 0.6 || lt > 6) continue;
+    const m = [(L[4 * t] + L[4 * t + 2]) / 2, (L[4 * t + 1] + L[4 * t + 3]) / 2], ut = dir(t);
+    around(m, 0.2, (s) => {
+      if (s === t || len(s) < lt * 1.5) return;
+      const us = dir(s);
+      const sin = Math.abs(ut[0] * us[1] - ut[1] * us[0]);
+      if (sin < 0.42 || sin > 0.91) return;                 // 25 - 65 degrees
+      if (distSeg(m, s) > 0.12) return;
+      let a = ticksOn.get(s);
+      if (!a) ticksOn.set(s, a = []);
+      if (!a.some((x) => x[0] === t)) a.push([t, m]);
+    });
+  }
+  for (const [s, ticks] of ticksOn) {
+    if (ticks.length < 2) continue;
+    /* A dimension line ends just past its outer ticks; a wall that two
+       dimensions cross runs on far beyond them */
+    const us = dir(s), x0 = L[4 * s], y0 = L[4 * s + 1];
+    const ts = ticks.map(([, m]) => (m[0] - x0) * us[0] + (m[1] - y0) * us[1]);
+    if (Math.min(...ts) > 6 || len(s) - Math.max(...ts) > 6) continue;
+    flag[s] = 1;
+    for (const [t, m] of ticks) {
+      flag[t] = 1;
+      // the extension line through this tick point: square to the dimension line
+      around(m, 0.2, (w) => {
+        if (w === s || flag[w]) return;
+        const uw = dir(w);
+        if (Math.abs(uw[0] * us[0] + uw[1] * us[1]) > 0.17) return;
+        // through the tick point, and ending just past it (a wall would run on)
+        const e0 = Math.hypot(L[4 * w] - m[0], L[4 * w + 1] - m[1]), e1 = Math.hypot(L[4 * w + 2] - m[0], L[4 * w + 3] - m[1]);
+        if (distSeg(m, w) < 0.15 && Math.min(e0, e1) < 6) flag[w] = 1;
+      });
+    }
+  }
+  return flag;
+}
+
 /* Corners only: the same point twice, and points in line with their neighbours, dropped */
 export function tidy(pts, tol) {
   tol = tol || 0.005;

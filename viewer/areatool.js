@@ -24,7 +24,7 @@
  * With an area chosen, Offset moves its edge out or in by a wall thickness:
  * to the inside face, the centre line or the outside face.
  */
-import { fillAt, offset, net, unite, meet, tidy, area as polyArea } from "./areafill.js";
+import { fillAt, offset, net, unite, meet, tidy, dimensionParts, area as polyArea } from "./areafill.js";
 
 const KEEP = "lwk-sheets:areatool";
 const IGNORE = "lwk-sheets:area-ignore:";
@@ -34,10 +34,10 @@ const MODEL_CATS = ["Walls", "Doors", "Windows", "Columns", "Structural Columns"
 
 export function createAreaTool(ctx) {
   const { S, status, redraw, persist, remember, snapLines, pxPerMM, activeScale, roomAt, hasRooms, cutAt, hasCut, finish, newDraft } = ctx;
-  const A = { mode: "points", gap_mm: 1200, rooms: true, model: true, noDash: true, noSwing: true, next: "new",
+  const A = { mode: "points", gap_mm: 1200, rooms: true, model: true, noDash: true, noDim: true, doors: true, next: "new",
     pickKind: "line", picked: [], pickOp: "new", panel: null, lastId: "", ignorePick: "", ownStart: null, cache: null };
   try { Object.assign(A, JSON.parse(localStorage.getItem(KEEP) || "{}"), { picked: [], ignorePick: "", ownStart: null, cache: null }); } catch (e) {}
-  const keep = () => { try { localStorage.setItem(KEEP, JSON.stringify({ mode: A.mode, gap_mm: A.gap_mm, rooms: A.rooms, model: A.model, noDash: A.noDash, noSwing: A.noSwing })); } catch (e) {} };
+  const keep = () => { try { localStorage.setItem(KEEP, JSON.stringify({ mode: A.mode, gap_mm: A.gap_mm, rooms: A.rooms, model: A.model, noDash: A.noDash, noDim: A.noDim, doors: A.doors })); } catch (e) {} };
 
   const active = () => S.tool === "area" && A.mode !== "points";
   const opOf = (ev) => (ev && ev.shiftKey ? "add" : ev && ev.altKey ? "sub" : A.next);
@@ -59,9 +59,13 @@ export function createAreaTool(ctx) {
     return a < b ? a + "|" + b : b + "|" + a;
   };
 
-  /* Door swings: arcs of a door's width (0.45 - 1.6 m) through about a quarter turn */
+  /* Door swings: arcs of a door's width (0.45 - 1.6 m) through about a
+     quarter turn. Their hinge is the arc's centre; the leaf closed runs from
+     it to one end of the arc, open to the other: both block, as a wall
+     does, so the room stops at the door (as a Revit room does). */
   function swings(idx, sc) {
     const C = idx.curves || [], n = C.length / 6, out = new Uint8Array(Math.max(1, n));
+    out.leaves = [];
     for (let i = 1; i < n; i++) {
       const ax = C[6 * i], ay = C[6 * i + 1], mx = C[6 * i + 2], my = C[6 * i + 3], bx = C[6 * i + 4], by = C[6 * i + 5];
       const d = 2 * (ax * (my - by) + mx * (by - ay) + bx * (ay - my));
@@ -74,7 +78,7 @@ export function createAreaTool(ctx) {
       let sw = Math.abs(ang(bx, by) - ang(ax, ay));
       if (sw > Math.PI) sw = 2 * Math.PI - sw;
       const deg = sw * 180 / Math.PI;
-      if (deg >= 55 && deg <= 100) out[i] = 1;
+      if (deg >= 55 && deg <= 100) { out[i] = 1; out.leaves.push(ux, uy, ax, ay, ux, uy, bx, by); }
     }
     return out;
   }
@@ -89,21 +93,26 @@ export function createAreaTool(ctx) {
     if (!idx) return null;
     const sc = scaleAt(p) || 100;
     const ig = ignored();
-    const sig = [idx.count, sc, A.noDash, A.noSwing, ig.c.join(";"), ig.l.length, ig.l.slice(-3).join(";")].join("#");
-    if (A.cache && A.cache.idx === idx && A.cache.sig === sig) return { L: A.cache.L, from: "drawing", left: A.cache.left };
+    const sig = [idx.count, sc, A.noDash, A.noDim, A.doors, ig.c.join(";"), ig.l.length, ig.l.slice(-3).join(";")].join("#");
+    if (A.cache && A.cache.idx === idx && A.cache.sig === sig) return { L: A.cache.L, from: "drawing", left: A.cache.left, dims: A.cache.dims };
     const L = idx.lines, n = L.length / 4;
     const igc = new Set(ig.c), igl = new Set(ig.l);
     const cls = idx.cls, classes = idx.classes || [];
     const off = classes.map((c) => igc.has(classKey(c)) || (A.noDash && c.dash));
-    const sw = A.noSwing && idx.curve ? swings(idx, sc) : null;
+    const sw = A.doors && idx.curve ? swings(idx, sc) : null;
+    // the dimensions (lines, ticks, extension lines): found once per sheet
+    if (A.noDim && idx.around && (!A.dimCache || A.dimCache.idx !== idx)) A.dimCache = { idx, flag: dimensionParts(L, idx.around) };
+    const dim = A.noDim && A.dimCache && A.dimCache.idx === idx ? A.dimCache.flag : null;
     const keepL = [];
-    let left = 0;
+    let left = 0, dims = 0;
     for (let s = 0; s < n; s++) {
+      if (dim && dim[s]) { dims++; continue; }
       if ((cls && off[cls[s]]) || (sw && idx.curve[s] && sw[idx.curve[s]]) || (igl.size && igl.has(lineKey(L, s)))) { left++; continue; }
       keepL.push(L[4 * s], L[4 * s + 1], L[4 * s + 2], L[4 * s + 3]);
     }
-    A.cache = { idx, sig, L: Float64Array.from(keepL), left };
-    return { L: A.cache.L, from: "drawing", left };
+    if (sw) keepL.push(...sw.leaves);
+    A.cache = { idx, sig, L: Float64Array.from(keepL), left, dims };
+    return { L: A.cache.L, from: "drawing", left, dims };
   }
 
   /* Ignore a line: the one clicked, or every line drawn like it */
@@ -214,84 +223,139 @@ export function createAreaTool(ctx) {
       return;
     }
     place(r.pts, null, null, op, p);
-    status(`Outline found (${r.pts.length} corners${B.from === "model" ? ", bounded by the Revit model's walls" : ""}). `
+    status(`Outline found (${r.pts.length} corners${B.from === "model" ? ", bounded by the Revit model's walls" : B.dims ? `, ${B.dims} lines of dimensions left out` : ""}). `
       + (B.from === "model" ? "" : "Cut short by a dimension or other line? Ignore a line (panel), then click again. ")
       + "Shift+click adds a region (merged), Alt+click cuts a hole.");
   }
 
   /* -------------------------------------------------------- pick lines */
-  const same = (a, b) => a && b && Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) + Math.abs(a[3] - b[3]) < 1e-6;
-  const proj = (l, p) => {
-    const dx = l[2] - l[0], dy = l[3] - l[1], q = (dx * dx + dy * dy) || 1;
-    const t = ((p[0] - l[0]) * dx + (p[1] - l[1]) * dy) / q;
-    return [l[0] + t * dx, l[1] + t * dy];
+  /* A pick is a polyline Q: a straight line is 2 points, a curve (an arc, a
+     curved wall) all its pieces, a line of your own 2 points. A place along
+     it is a number u: segment floor(u), and the fraction past its start
+     (below 0 or past the last segment: the line carried on). */
+  const ptAt = (Q, u) => {
+    const i = Math.max(0, Math.min(Q.length - 2, Math.floor(u))), t = u - i;
+    return [Q[i][0] + (Q[i + 1][0] - Q[i][0]) * t, Q[i][1] + (Q[i + 1][1] - Q[i][1]) * t];
   };
-  const segDist = (p, l) => {
-    const dx = l[2] - l[0], dy = l[3] - l[1], q = (dx * dx + dy * dy) || 1;
-    const t = Math.max(0, Math.min(1, ((p[0] - l[0]) * dx + (p[1] - l[1]) * dy) / q));
-    return Math.hypot(p[0] - l[0] - t * dx, p[1] - l[1] - t * dy);
-  };
-  /* where two picks in a row meet: their crossing, unless they never meet
-     near the lines (parallel, or the crossing far off): then null */
-  function corner(a, b) {
-    const q = meet([a[0], a[1]], [a[2], a[3]], [b[0], b[1]], [b[2], b[3]]);
-    if (!q) return null;                       // parallel (inLine tells whether that is fine)
-    const far = Math.max(unitAt(q) * 4, 0.5 * Math.max(Math.hypot(a[2] - a[0], a[3] - a[1]), Math.hypot(b[2] - b[0], b[3] - b[1])));
-    return Math.min(segDist(q, a), segDist(q, b)) > far ? null : q;
+  const qlen = (Q) => { let s = 0; for (let i = 1; i < Q.length; i++) s += Math.hypot(Q[i][0] - Q[i - 1][0], Q[i][1] - Q[i - 1][1]); return s; };
+  const closedQ = (Q) => Q.length > 3 && Math.hypot(Q[0][0] - Q[Q.length - 1][0], Q[0][1] - Q[Q.length - 1][1]) < 1e-6;
+  const sameQ = (a, b) => a.length === b.length && Math.hypot(a[0][0] - b[0][0], a[0][1] - b[0][1]) < 1e-6
+    && Math.hypot(a[a.length - 1][0] - b[b.length - 1][0], a[a.length - 1][1] - b[b.length - 1][1]) < 1e-6;
+  /* the place on Q nearest p */
+  function projU(Q, p) {
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < Q.length - 1; i++) {
+      const a = Q[i], b = Q[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1e-12;
+      const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2));
+      const d = Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+      if (d < bd) { bd = d; best = i + t; }
+    }
+    return best;
+  }
+  /* Where two picks in a row meet: their crossing, segment by segment, the
+     end segments carried on as far as needed (trim / extend), the crossing
+     needing least carrying on. null when they never meet near the lines. */
+  function corner(A1, B1) {
+    let best = null;
+    const nA = A1.length - 1, nB = B1.length - 1;
+    for (let i = 0; i < nA; i++) for (let j = 0; j < nB; j++) {
+      const a0 = A1[i], a1 = A1[i + 1], b0 = B1[j], b1 = B1[j + 1];
+      const q = meet(a0, a1, b0, b1);
+      if (!q) continue;
+      const la = Math.hypot(a1[0] - a0[0], a1[1] - a0[1]) || 1e-12, lb = Math.hypot(b1[0] - b0[0], b1[1] - b0[1]) || 1e-12;
+      const ta = ((q[0] - a0[0]) * (a1[0] - a0[0]) + (q[1] - a0[1]) * (a1[1] - a0[1])) / (la * la);
+      const tb = ((q[0] - b0[0]) * (b1[0] - b0[0]) + (q[1] - b0[1]) * (b1[1] - b0[1])) / (lb * lb);
+      const e = 1e-9;
+      if ((ta < -e && i > 0) || (ta > 1 + e && i < nA - 1) || (tb < -e && j > 0) || (tb > 1 + e && j < nB - 1)) continue;
+      const extA = ta < 0 ? -ta * la : ta > 1 ? (ta - 1) * la : 0, extB = tb < 0 ? -tb * lb : tb > 1 ? (tb - 1) * lb : 0;
+      const cost = extA + extB;
+      if (!best || cost < best.cost - 1e-9) best = { q, ua: i + ta, ub: j + tb, cost, extA, extB };
+    }
+    if (!best) return null;                            // parallel (inLine tells whether that is fine)
+    const far = Math.max(unitAt(best.q) * 4, 0.5 * Math.max(qlen(A1), qlen(B1)));
+    return Math.min(best.extA, best.extB) > far ? null : best;
+  }
+  /* parallel and on one line (a wall face broken by an opening): two straight picks */
+  function inLine(A1, B1) {
+    if (A1.length !== 2 || B1.length !== 2) return false;
+    const a = [A1[0][0], A1[0][1], A1[1][0], A1[1][1]];
+    const L = Math.hypot(a[2] - a[0], a[3] - a[1]) || 1;
+    const off = (x, y) => Math.abs((a[2] - a[0]) * (a[1] - y) - (a[0] - x) * (a[3] - a[1])) / L;
+    const tol = Math.max(0.05, unitAt(A1[0]) * 0.01);
+    return off(B1[0][0], B1[0][1]) < tol && off(B1[1][0], B1[1][1]) < tol;
+  }
+  /* the end of Q nearer the other pick, as a place along Q */
+  function nearEndU(Q, O) {
+    const d = (p) => { const u = projU(O, p); const q = ptAt(O, Math.max(0, Math.min(O.length - 1, u))); return Math.hypot(p[0] - q[0], p[1] - q[1]); };
+    return d(Q[0]) <= d(Q[Q.length - 1]) ? 0 : Q.length - 1;
+  }
+  /* Q from place u0 to place u1, its own corners (a curve's points) between */
+  function cut(Q, u0, u1, p0, p1) {
+    const out = [p0 || ptAt(Q, u0)];
+    const n = Q.length - 1, e = 1e-9;
+    if (u0 <= u1) { for (let k = Math.max(0, Math.ceil(u0 + e)); k <= Math.min(n, Math.floor(u1 - e)); k++) out.push(Q[k]); }
+    else { for (let k = Math.min(n, Math.floor(u0 - e)); k >= Math.max(0, Math.ceil(u1 + e)); k--) out.push(Q[k]); }
+    out.push(p1 || ptAt(Q, u1));
+    return out;
   }
   /* The picks as a chain: where each meets the next (trimmed or extended),
-     and the part of each line between its two corners. closed: the last
-     meets the first. Two picks that never meet near the lines are joined
-     straight across, end to end (warn: which). */
+     and the part of each between its two corners. closed: the last meets
+     the first. Two picks that never meet near the lines are joined straight
+     across, end to end (warn: which). */
   function chain(closed) {
     const P = A.picked, n = P.length, warn = [];
-    const C = new Array(n).fill(null);          // C[i]: the corner between pick i-1 and pick i
+    if (n === 1) {
+      const Q = P[0].Q;
+      const pts = closedQ(Q) ? Q.slice(0, -1) : Q.slice();
+      const segs = []; for (let i = 1; i < Q.length; i++) segs.push([Q[i - 1][0], Q[i - 1][1], Q[i][0], Q[i][1]]);
+      return { pts, segs, warn };
+    }
+    const C = new Array(n).fill(null);          // C[i]: where pick i-1 meets pick i
     for (let i = closed ? 0 : 1; i < n; i++) {
-      const a = P[(i + n - 1) % n].l, b = P[i].l;
+      const a = P[(i + n - 1) % n].Q, b = P[i].Q;
       C[i] = corner(a, b);
       // two pieces of one line (either side of a doorway) join straight across: that is right, no warning
       if (!C[i] && !inLine(a, b)) warn.push(i);
     }
-    const startOf = (i) => C[i] || (!closed && i === 0 ? proj(P[0].l, P[0].at) : nearerEnd(P[i].l, P[(i + n - 1) % n].l));
-    const endOf = (i) => {
-      const k = (i + 1) % n;
-      if (!closed && i === n - 1) return proj(P[i].l, P[i].at);
-      return C[k] || nearerEnd(P[i].l, P[k].l);
-    };
     const pts = [], segs = [];
     for (let i = 0; i < n; i++) {
-      const a = startOf(i), b = endOf(i);
-      // a corner shared with the line before is already in; a straight join adds both ends
-      if (!(C[i] && pts.length && pts[pts.length - 1] === C[i])) pts.push(a);
-      pts.push(b);
-      segs.push([a[0], a[1], b[0], b[1]]);
+      const Q = P[i].Q, k = (i + 1) % n, h = (i + n - 1) % n;
+      const u0 = C[i] ? C[i].ub : (!closed && i === 0 ? projU(Q, P[i].at) : nearEndU(Q, P[h].Q));
+      const last = !closed && i === n - 1;
+      const u1 = last ? projU(Q, P[i].at) : (C[k] ? C[k].ua : nearEndU(Q, P[k].Q));
+      const part = cut(Q, u0, u1, C[i] ? C[i].q : null, !last && C[k] ? C[k].q : null);
+      for (let t = 0; t < part.length; t++) {
+        // a corner shared with the pick before is already in
+        if (t === 0 && C[i] && pts.length) continue;
+        pts.push(part[t]);
+      }
+      for (let t = 1; t < part.length; t++) segs.push([part[t - 1][0], part[t - 1][1], part[t][0], part[t][1]]);
     }
-    // closed: the last end is the first corner again
     if (closed && pts.length > 2) {
       const f = pts[0], l = pts[pts.length - 1];
       if (Math.hypot(f[0] - l[0], f[1] - l[1]) < 1e-9) pts.pop();
     }
     return { pts, segs, warn };
   }
-  /* parallel and on one line (a wall face broken by an opening) */
-  function inLine(a, b) {
-    const L = Math.hypot(a[2] - a[0], a[3] - a[1]) || 1;
-    const off = (x, y) => Math.abs((a[2] - a[0]) * (a[1] - y) - (a[0] - x) * (a[3] - a[1])) / L;
-    const tol = Math.max(0.05, unitAt([a[0], a[1]]) * 0.01);
-    return off(b[0], b[1]) < tol && off(b[2], b[3]) < tol;
-  }
-  function nearerEnd(l, o) {
-    const e = [[l[0], l[1]], [l[2], l[3]]];
-    return segDist(e[0], o) <= segDist(e[1], o) ? e[0] : e[1];
+  /* A picked line of the drawing as a polyline: a piece of a curve brings the whole curve */
+  function shapeOf(idx, s) {
+    const L = idx.lines, cv = idx.curve, n = L.length / 4;
+    const E = (k, e) => [L[4 * k + 2 * e], L[4 * k + 2 * e + 1]];
+    if (!cv || !cv[s]) return [E(s, 0), E(s, 1)];
+    const eq = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) < 1e-6;
+    let a = s, b = s;
+    while (a > 0 && cv[a - 1] && eq(E(a - 1, 1), E(a, 0)) && s - a < 4000) a--;
+    while (b < n - 1 && cv[b + 1] && eq(E(b, 1), E(b + 1, 0)) && b - s < 4000) b++;
+    const Q = [E(a, 0)];
+    for (let k = a; k <= b; k++) Q.push(E(k, 1));
+    return Q;
   }
   function previewLines() {
     const P = A.picked;
     if (!P.length && !A.ownStart) { S.draft = null; redraw(); return; }
-    let pts, segs;
-    if (P.length >= 3) { const c = chain(true); pts = c.pts; segs = c.segs; }
-    else if (P.length) { const c = chain(false); pts = c.pts; segs = c.segs; }
-    else { pts = []; segs = []; }
-    S.draft = newDraft("area", pts.length ? pts : [A.ownStart, A.ownStart]);
+    let pts = [], segs = [];
+    if (P.length) { const c = chain(P.length >= 3); pts = c.pts; segs = c.segs; }
+    S.draft = newDraft("area", pts.length > 1 ? pts : [A.ownStart || pts[0], A.ownStart || pts[0]]);
     S.draft.picking = segs.concat(A.ownStart ? [[A.ownStart[0] - 0.6, A.ownStart[1], A.ownStart[0] + 0.6, A.ownStart[1]], [A.ownStart[0], A.ownStart[1] - 0.6, A.ownStart[0], A.ownStart[1] + 0.6]] : []);
     redraw();
   }
@@ -315,18 +379,21 @@ export function createAreaTool(ctx) {
       const a = A.ownStart;
       A.ownStart = null;
       if (Math.hypot(q[0] - a[0], q[1] - a[1]) < 0.2) { previewLines(); status("Too short - click two points apart."); return; }
-      P.push({ l: [a[0], a[1], q[0], q[1]], at: [(a[0] + q[0]) / 2, (a[1] + q[1]) / 2], own: true });
+      P.push({ Q: [a.slice(), q.slice()], at: [(a[0] + q[0]) / 2, (a[1] + q[1]) / 2], own: true });
       afterPick();
       return;
     }
     const idx = snapLines();
     if (!idx) { status("Reading this drawing's lines ... click again in a moment."); return; }
-    const l = idx.nearest(p, 8 / pxPerMM());
-    if (!l) { status("No line there - click on a line of the area's edge, or Ctrl+click two points to draw one."); return; }
-    if (P.length >= 3 && (same(l, P[0].l) || same(l, P[P.length - 1].l))) { endPick(); return; }
-    if (P.some((x) => same(x.l, l))) { status("That line is picked already."); return; }
+    const s = idx.nearestIndex(p, 8 / pxPerMM());
+    if (s < 0) { status("No line there - click on a line of the area's edge, or Ctrl+click two points to draw one."); return; }
+    const Q = shapeOf(idx, s);
+    if (P.length >= 3 && (sameQ(Q, P[0].Q) || sameQ(Q, P[P.length - 1].Q))) { endPick(); return; }
+    if (P.some((x) => sameQ(x.Q, Q))) { status("That line is picked already."); return; }
     if (!P.length) A.pickOp = opOf(ev);
-    P.push({ l, at: p });
+    P.push({ Q, at: p });
+    // a closed curve alone (a round column, a circular room): that is the area
+    if (P.length === 1 && closedQ(Q)) { status("A closed curve - press Enter for its area, or pick on."); previewLines(); return; }
     afterPick();
   }
   function afterPick() {
@@ -334,17 +401,18 @@ export function createAreaTool(ctx) {
     previewLines();
     const c = chain(P.length >= 3);
     const w = c.warn.filter((i) => i > 0 || P.length >= 3);
+    const what = (i) => (P[i].Q.length > 2 ? "curve " : "line ") + (i + 1);
     if (w.length) {
-      status(`Lines ${w.map((i) => `${i === 0 ? P.length : i} and ${i + 1}`).join(", ")} do not meet near the area - joined straight across. If that is wrong: Backspace, then Ctrl+click two points to draw the line yourself.`);
+      status(`${w.map((i) => `${what((i + P.length - 1) % P.length)} and ${what(i)}`).join(", ")} do not meet near the area - joined straight across. If that is wrong: Backspace, then Ctrl+click two points to draw the line yourself.`);
     } else {
-      status(P.length < 3 ? `Line ${P.length} picked - pick the next line round the area (Ctrl+click two points draws one).`
-        : `${P.length} lines - pick the next, or click the first line again (or Enter) to close.`);
+      status(P.length < 3 ? `${P[P.length - 1].Q.length > 2 ? "Curve" : "Line"} ${P.length} picked - pick the next round the area (Ctrl+click two points draws a line).`
+        : `${P.length} picked - pick the next, or click the first again (or Enter) to close.`);
     }
   }
   function endPick() {
     const P = A.picked;
-    if (P.length < 3) { status("Pick at least three lines."); return; }
-    const pts = tidy(chain(true).pts);
+    if (P.length < 3 && !(P.length === 1 && closedQ(P[0].Q))) { status("Pick at least three lines (or one closed curve)."); return; }
+    const pts = tidy(chain(true).pts, 0.002);
     A.picked = []; A.ownStart = null;
     S.draft = null;
     if (pts && pts.length > 2 && polyArea(pts) > 0) {
@@ -435,8 +503,9 @@ export function createAreaTool(ctx) {
             ? (hasRooms() ? `<div class="rp-r"><label><input type="checkbox" data-k="rooms"${A.rooms ? " checked" : ""}> Use the Revit rooms where published</label></div>` : "")
               + (model ? `<div class="rp-r"><label title="Bounded by the model's own walls, doors, windows and columns at the plan's cut - no dimension, grid or text in the way"><input type="checkbox" data-k="model"${A.model ? " checked" : ""}> Use the Revit model's walls</label></div>` : "")
               + `<div class="rp-r"><label>Close openings up to <input data-k="gap_mm" type="number" min="0" step="100" value="${esc(A.gap_mm)}"> mm</label></div>`
-              + `<div class="rp-r"><label><input type="checkbox" data-k="noDash"${A.noDash ? " checked" : ""}> Ignore dashed lines</label>`
-              + `<label><input type="checkbox" data-k="noSwing"${A.noSwing ? " checked" : ""}> Ignore door swings</label></div>`
+              + `<div class="rp-r"><label title="Dimension lines, their tick marks and extension lines"><input type="checkbox" data-k="noDim"${A.noDim ? " checked" : ""}> Ignore dimensions</label>`
+              + `<label><input type="checkbox" data-k="noDash"${A.noDash ? " checked" : ""}> Ignore dashed lines</label></div>`
+              + `<div class="rp-r"><label title="A door closes the room at its leaf, as a wall does (the swing space stays in the room)"><input type="checkbox" data-k="doors"${A.doors ? " checked" : ""}> Doors close the room</label></div>`
               + ignoreHtml()
             : "")
           + (A.mode === "lines" ? `<div class="rp-r rp-mode"><span>Pick:</span>${[["line", "a line of the drawing"], ["own", "my own line (Ctrl)"]]
@@ -455,7 +524,7 @@ export function createAreaTool(ctx) {
     for (const el of p.querySelectorAll("[name=ap-kind]")) el.onchange = () => { A.pickKind = el.value; };
     const g = p.querySelector("[data-k=gap_mm]");
     if (g) g.onchange = () => { A.gap_mm = Math.max(0, Number(g.value) || 0); keep(); };
-    for (const k of ["rooms", "model", "noDash", "noSwing"]) {
+    for (const k of ["rooms", "model", "noDash", "noDim", "doors"]) {
       const el = p.querySelector(`[data-k=${k}]`);
       if (el) el.onchange = () => { A[k] = el.checked; A.cache = null; keep(); };
     }
