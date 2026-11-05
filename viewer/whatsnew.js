@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2026-12-30", date: "5 Nov 2026",
+    items: [
+      "**Fix: @ lists everyone.** In a chat (and in an issue's discussion), typing **@** showed only the first 8 people, so the rest of a big team could not be picked. Now everyone is listed - scroll, or use the arrow keys - and the names that start with what you type come first (**@w** gives W.Chan and Wing).",
+    ],
+  },
+  {
     version: "2026-12-29", date: "5 Nov 2026",
     items: [
       "**Phones and tablets open Sheets on Pan:** a finger on the drawing moves the sheet, not the comment under it. Tap **Select** (the arrow) to move or change a markup.",

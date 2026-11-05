@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2026-12-29";
+const LWK_VERSION = "2026-12-30";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -484,12 +484,17 @@ function wireMentions() {
   const paint = () => {
     pick.innerHTML = rows.map((m, i) => `<div class="mp-row${i === cur ? " on" : ""}" data-i="${i}">`
       + `<b>${esc(m.name)}</b><span>${esc([m.office, m.company].filter(Boolean).join(" · "))}</span></div>`).join("");
+    const on = pick.querySelector(".mp-row.on");
+    if (on) on.scrollIntoView({ block: "nearest" });
   };
   const show = (ta) => {
     const t = token(ta);
     if (!t || !MEMBERS.length) return hide();
+    // everyone who matches (the list scrolls), names starting with what was typed first
+    const starts = (m) => (t.q && m.name.toLowerCase().startsWith(t.q) ? 1 : 0);
     rows = MEMBERS.filter((m) => !t.q || m.name.toLowerCase().includes(t.q)
-      || (m.email || "").toLowerCase().startsWith(t.q)).slice(0, 8);
+      || (m.email || "").toLowerCase().startsWith(t.q))
+      .sort((a, b) => (starts(b) - starts(a)) || a.name.localeCompare(b.name)).slice(0, 100);
     if (!rows.length) return hide();
     box = ta; start = t.at; cur = 0;
     paint();

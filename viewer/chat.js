@@ -974,7 +974,10 @@ function wirePickers() {
     if (!m || !C.room) { if (pickerOpen()) closePop(); return; }
     const q = m[2].toLowerCase();
     const pool = C.people.filter((p) => !C.room.members || C.room.kind === "task" || C.room.members.includes(p.uid));
-    const opts = pool.filter((p) => p.uid !== C.uid && p.name.toLowerCase().includes(q)).slice(0, 8);
+    // everyone who matches (the list scrolls), names starting with what was typed first
+    const opts = pool.filter((p) => p.uid !== C.uid && p.name.toLowerCase().includes(q))
+      .sort((a, b) => (b.name.toLowerCase().startsWith(q) - a.name.toLowerCase().startsWith(q)) || a.name.localeCompare(b.name))
+      .slice(0, 100);
     if (!opts.length) { if (pickerOpen()) closePop(); return; }
     BOX.saveRange();
     const el = pickOne(box, opts.map((p) => ({ value: p.name, label: avatar(p) + " " + esc(p.name) })), "", (name) => {
