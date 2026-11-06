@@ -622,20 +622,12 @@ div.ref-bad.lwk-callout { color: var(--ink-2); padding: 4px 8px; margin: 4px 0 4
 
 /* Finish button for polylines: floats over the stage so a finger can reach
    it without leaving the drawing. */
-#poly-finish {
-  position: absolute; right: 14px; bottom: 14px; z-index: 6;
-  background: var(--accent); color: #fff; border-color: var(--accent);
-  font-weight: 600; padding: 8px 14px; box-shadow: var(--shadow);
-}
-#poly-finish[hidden] { display: none; }
-#poly-arc { position: absolute; right: 124px; bottom: 14px; z-index: 6; font-weight: 600; padding: 8px 14px; box-shadow: var(--shadow);
-  background: var(--panel); }
-#poly-arc.on { background: var(--accent-soft, #fde7d3); border-color: var(--accent); color: var(--accent-deep, #b4530b); }
-#poly-arc[hidden] { display: none; }
-#poly-curve { position: absolute; right: 214px; bottom: 14px; z-index: 6; font-weight: 600; padding: 8px 14px; box-shadow: var(--shadow);
-  background: var(--panel); }
-#poly-curve.on { background: var(--accent-soft, #fde7d3); border-color: var(--accent); color: var(--accent-deep, #b4530b); }
-#poly-curve[hidden] { display: none; }
+#stage-row { position: relative; }
+#draw-btns { position: absolute; right: 14px; bottom: 14px; z-index: 6; display: flex; gap: 8px; pointer-events: none; }
+#draw-btns button { pointer-events: auto; font-weight: 600; padding: 8px 14px; box-shadow: var(--shadow); background: var(--panel); }
+#draw-btns button[hidden] { display: none; }
+#poly-finish { background: var(--accent) !important; color: #fff; border-color: var(--accent); }
+#poly-arc.on, #poly-curve.on { background: var(--accent-soft, #fde7d3) !important; border-color: var(--accent); color: var(--accent-deep, #b4530b); }
 #scroll { position: relative; }
 
 /* Two-finger gestures are reconstructed in JS; the browser must not claim

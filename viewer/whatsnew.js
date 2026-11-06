@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-04", date: "6 Nov 2026",
+    items: [
+      "**◠ Arc and ⌒ Curve are easy to find:** they show at the bottom right of the drawing as soon as you pick Polyline, Polygon, a freeform Cloud or Area (by points) - before the first click - and stay on screen however far you zoom in or scroll (before, they could be off screen). ✓ Finish sits beside them while drawing.",
+      "**Fix:** selecting a markup no longer nudges the whole drawing (the properties bar appearing above it pushed it down).",
+      "**Fix:** in split view, panning the right-hand sheet with the middle mouse button no longer runs away into a corner (the browser's own auto-scroll took over).",
+    ],
+  },
+  {
     version: "2027-01-03", date: "6 Nov 2026",
     items: [
       "**Fix: Pick lines takes the whole curve.** A curved wall picked was only taken in part (and then carried on straight) where the drawing draws one arc as several curves or as many short lines. The curve is now followed piece by piece to where it meets the walls.",

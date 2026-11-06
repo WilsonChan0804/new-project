@@ -224,6 +224,7 @@ const AREA = createAreaTool({
   snapLines: () => snapLines(), pxPerMM: () => pxPerMM(), activeScale: (p, it) => activeScale(p, it),
   roomAt: (p) => ROUTE.roomAt(p), hasRooms: () => ROUTE.hasRooms(),
   cutAt: (p, cats) => ROUTE.cutAt(p, cats), hasCut: () => ROUTE.hasCut(),
+  onMode: () => polyButtons(false),
   newDraft: (type, pts) => newDraft(type, pts),
   finish(d, after) {
     S.draft = d;
@@ -241,12 +242,18 @@ S.polyArc = { on: false, mid: null, base: -1 };
 /* ⌒ Curve: the next click on a curve of the drawing follows it (areatool.js
    followCurve) - so points and the drawing's own curves mix in one shape. */
 S.polyCurve = false;
-function polyButtons(show) {
+/* ✓ Finish while drawing; ◠ Arc and ⌒ Curve whenever such a tool is in hand
+   (Area: by points), so they can be switched on before the first point */
+function polyButtons(drawing) {
   const f = document.getElementById("poly-finish"), a = document.getElementById("poly-arc"), c = document.getElementById("poly-curve");
-  if (f) f.hidden = !show;
-  if (a) { a.hidden = !show || !ARC_TOOLS.has(S.tool); a.classList.toggle("on", !!S.polyArc.on); }
-  if (c) { c.hidden = !show || !ARC_TOOLS.has(S.tool); c.classList.toggle("on", !!S.polyCurve); }
-  if (!show) { S.polyArc.mid = null; S.polyCurve = false; }
+  const tools = ARC_TOOLS.has(S.tool) && !(S.tool === "area" && AREA.active());
+  if (f) f.hidden = !drawing;
+  if (a) { a.hidden = !tools; a.classList.toggle("on", !!S.polyArc.on); }
+  if (c) { c.hidden = !tools; c.classList.toggle("on", !!S.polyCurve); }
+  if (!drawing) { S.polyArc.mid = null; S.polyCurve = false; if (c) c.classList.remove("on"); }
+  // over the main pane, also with the split pane open beside it
+  const box = document.getElementById("draw-btns"), row = document.getElementById("stage-row"), sc = document.getElementById("scroll");
+  if (box && row && sc) box.style.right = Math.max(14, row.getBoundingClientRect().right - sc.getBoundingClientRect().right + 14) + "px";
 }
 
 /* The extra regions and holes of an area move with it (every way its points move) */
@@ -5469,9 +5476,13 @@ function wireSplit() {
   }, { passive: false });
   sc.addEventListener("scroll", splitDetailSoon, { passive: true });
 
-  // Drag to pan.
+  // Drag to pan - with the middle button too, without the browser's own
+  // auto-scroll taking over (it ran the pane off into a corner)
+  sc.addEventListener("mousedown", (ev) => { if (ev.button === 1) ev.preventDefault(); });
+  sc.addEventListener("auxclick", (ev) => { if (ev.button === 1) ev.preventDefault(); });
   let drag = null;
   sc.addEventListener("pointerdown", (ev) => {
+    if (ev.button === 1) ev.preventDefault();
     drag = { x: ev.clientX, y: ev.clientY, l: sc.scrollLeft, t: sc.scrollTop };
     sc.setPointerCapture(ev.pointerId);
     sc.style.cursor = "grabbing";
@@ -6285,6 +6296,9 @@ function exportAll() {
    measuring tools. The rest of the time the drawing gets the room. */
 const MEASURE_TOOLS = new Set(["measure", "dimension", "area", "angle", "route"]);
 function propsShown() {
+  // the drawing stays where it is on screen when the bars above it come or go
+  const scroller = document.getElementById("scroll");
+  const before = scroller ? scroller.getBoundingClientRect() : null;
   const k = toolOf(S.tool).kind;
   const drawing = ["drag2", "free", "poly", "click"].includes(k) && S.tool !== "snip";
   const on = drawing || (S.sel && S.sel.length > 0) || S.tool === "match";
@@ -6292,6 +6306,13 @@ function propsShown() {
   const selMeasure = (S.sel || []).some((id) => { const it = S.items.find((x) => x.id === id); return it && MEASURE_TOOLS.has(it.type); });
   const sc = document.getElementById("scale-lab");
   if (sc) sc.hidden = !(MEASURE_TOOLS.has(S.tool) || selMeasure);
+  if (before) {
+    const after = scroller.getBoundingClientRect();
+    const dy = after.top - before.top, dx = after.left - before.left;
+    if (dy) scroller.scrollTop += dy;
+    if (dx) scroller.scrollLeft += dx;
+  }
+  polyButtons(!!(S.draft && S.draft.type === S.tool && k === "poly"));
   ROUTE.paintPanel();
   AREA.paintPanel();
 }

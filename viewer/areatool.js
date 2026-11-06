@@ -577,7 +577,7 @@ export function createAreaTool(ctx) {
         + `<div class="rp-r"><label>Offset the edge <input data-k="off" type="number" step="50" min="0" placeholder="mm" value="${esc(A.off || "")}"> mm</label>`
           + `<button type="button" data-act="out" title="Move the edge outwards: e.g. from the inside face to the centre line or the outside face">Out</button>`
           + `<button type="button" data-act="in" title="Move the edge inwards">In</button></div>` : "");
-    for (const el of p.querySelectorAll("[name=ap-mode]")) el.onchange = () => { A.mode = el.value; A.picked = []; A.ownStart = null; A.ignorePick = ""; S.draft = null; keep(); redraw(); paintPanel(); };
+    for (const el of p.querySelectorAll("[name=ap-mode]")) el.onchange = () => { A.mode = el.value; A.picked = []; A.ownStart = null; A.ignorePick = ""; S.draft = null; keep(); redraw(); paintPanel(); if (ctx.onMode) ctx.onMode(); };
     for (const el of p.querySelectorAll("[name=ap-next]")) el.onchange = () => { A.next = el.value; };
     for (const el of p.querySelectorAll("[name=ap-kind]")) el.onchange = () => { A.pickKind = el.value; };
     const g = p.querySelector("[data-k=gap_mm]");
