@@ -407,7 +407,7 @@ DOC = [
     ]),
     UL([
         '**On a phone or tablet** Sheets opens with **Pan**, so a finger on the drawing moves the sheet and not the markups; tap **Select** (the arrow) to move or change a markup. A tool family\'s **▾** menu opens above its button when the tools are along the bottom of the screen.',
-        '**Polyline / Polygon:** click the points, then press Enter, double-click or **✓ Finish**. Backspace removes the last point. **◠ Arc** (beside ✓ Finish; also for freeform clouds and areas) makes the next segment an arc: click a point on the arc, then its end; it stays on until you click it again.',
+        '**Polyline / Polygon:** click the points, then press Enter, double-click or **✓ Finish**. Backspace removes the last point. **◠ Arc** (beside ✓ Finish; also for freeform clouds and areas) makes the next segment an arc: click a point on the arc, then its end; it stays on until you click it again. **⌒ Curve** makes the next click follow a curve of the drawing, from your last point (snap it onto the curve) to the curve\'s end - points and the drawing\'s curves mix in one shape.',
         '**Dimension, Measure, Line, Arrow:** drag from the first point to the second, or click the first point and then click the second (Esc cancels after the first click).',
         '**Style bar:** Layer, Line / Fill / Text colour, Opacity, Weight (paper mm), line Type, Font, Size (text height in mm), Align.',
         '**Editing:** select a markup to move, resize or restyle it; R / Shift+R rotate it 90°; Ctrl+C / Ctrl+V copy and paste (paste on another sheet lands at the same spot); Delete removes it. A dimension or measurement is picked by clicking its number (or its lines).',

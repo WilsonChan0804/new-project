@@ -56,7 +56,7 @@ PART = [
     ]),
     UL([
         '**手機同平板：** Sheets 一打開就係 **Pan**，手指喺圖上郁只會移動張圖，唔會郁到 markup；要搬或者改 markup 就撳 **Select**（箭咀）。工具列喺畫面底部嗰陣，工具旁邊嘅 **▾** 選單會喺掣上面打開。',
-        '**Polyline / Polygon：** 撳啲點，然後按 Enter、double-click 或者 **✓ Finish**。Backspace 刪最後一點。**◠ Arc**（喺 ✓ Finish 旁邊；freeform cloud 同面積都用得）令下一段變成弧線：先撳弧上一點，再撳終點；再撳一次 ◠ Arc 就變返直線。',
+        '**Polyline / Polygon：** 撳啲點，然後按 Enter、double-click 或者 **✓ Finish**。Backspace 刪最後一點。**◠ Arc**（喺 ✓ Finish 旁邊；freeform cloud 同面積都用得）令下一段變成弧線：先撳弧上一點，再撳終點；再撳一次 ◠ Arc 就變返直線。**⌒ Curve** 令下一下撳圖則上嘅弧線時，由你最後一點（snap 落條弧上面）沿住條弧去到佢嘅盡頭 - 點同圖則嘅弧線可以混埋一齊用。',
         '**Dimension、Measure、Line、Arrow：** 由第一點拖去第二點，或者撳第一點、再撳第二點（撳咗第一點之後按 Esc 取消）。',
         '**Style bar：** Layer、線／填色／文字顏色、Opacity、Weight（紙上 mm）、線 Type、Font、Size（字高 mm）、Align。',
         '**改 markup：** 揀一個 markup 就可以搬、改大細或者改樣式；R / Shift+R 轉 90°；Ctrl+C / Ctrl+V copy 同貼（貼去另一張 sheet 會喺同一個位置）；Delete 刪除。Dimension 或者量度撳佢個數字（或者佢啲線）就揀到。',

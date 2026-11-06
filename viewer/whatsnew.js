@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-03", date: "6 Nov 2026",
+    items: [
+      "**Fix: Pick lines takes the whole curve.** A curved wall picked was only taken in part (and then carried on straight) where the drawing draws one arc as several curves or as many short lines. The curve is now followed piece by piece to where it meets the walls.",
+      "**Mix points and curves:** while clicking points (Area by points, polyline, polygon, freeform cloud), **⌒ Curve** (beside ◠ Arc) makes the next click follow a curve of the drawing - from your last point (snap it onto the curve) along the curve to its end. Then carry on clicking points.",
+    ],
+  },
+  {
     version: "2027-01-02", date: "6 Nov 2026",
     items: [
       "**Area > Click inside always leaves out dimensions:** dimension lines, their tick marks and extension lines are recognised and ignored by themselves (**Ignore dimensions**, on). There is no need to ignore whole line weights any more - remove the 0.1 mm / 0.35 mm chips if you added them.",

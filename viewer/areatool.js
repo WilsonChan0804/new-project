@@ -337,18 +337,76 @@ export function createAreaTool(ctx) {
     }
     return { pts, segs, warn };
   }
-  /* A picked line of the drawing as a polyline: a piece of a curve brings the whole curve */
+  /* A picked line of the drawing as a polyline: a piece of a curve brings
+     the whole curve - followed by where its pieces meet, not by their order
+     in the PDF, since an exporter may draw one arc as several curves (in
+     separate paths, in any order) or as many short straight lines. The
+     curve ends where the next line does not carry it on: a tangent wall (a
+     long straight line), a corner, a junction. */
   function shapeOf(idx, s) {
-    const L = idx.lines, cv = idx.curve, n = L.length / 4;
+    const L = idx.lines, cv = idx.curve;
     const E = (k, e) => [L[4 * k + 2 * e], L[4 * k + 2 * e + 1]];
-    if (!cv || !cv[s]) return [E(s, 0), E(s, 1)];
-    const eq = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) < 1e-6;
-    let a = s, b = s;
-    while (a > 0 && cv[a - 1] && eq(E(a - 1, 1), E(a, 0)) && s - a < 4000) a--;
-    while (b < n - 1 && cv[b + 1] && eq(E(b, 1), E(b + 1, 0)) && b - s < 4000) b++;
-    const Q = [E(a, 0)];
-    for (let k = a; k <= b; k++) Q.push(E(k, 1));
-    return Q;
+    const len = (k) => Math.hypot(L[4 * k + 2] - L[4 * k], L[4 * k + 3] - L[4 * k + 1]);
+    const isCurve = (k) => !!(cv && cv[k]);
+    const used = new Set([s]);
+    const pts = [E(s, 0), E(s, 1)];
+    const lens = [len(s)];
+    const turn = (a, b, c) => {
+      const u = [b[0] - a[0], b[1] - a[1]], v = [c[0] - b[0], c[1] - b[1]];
+      const lu = Math.hypot(u[0], u[1]) || 1e-12, lv = Math.hypot(v[0], v[1]) || 1e-12;
+      return Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1]) * 180 / Math.PI * (lu && lv ? 1 : 0);
+    };
+    // grow the chain at its end (fwd) or its start
+    let sign = 0;                       // the way the curve turns, the same all along it
+    const grow = (fwd) => {
+      for (let guard = 0; guard < 4000; guard++) {
+        const tip = fwd ? pts[pts.length - 1] : pts[0], prev = fwd ? pts[pts.length - 2] : pts[1];
+        const lastLen = fwd ? lens[lens.length - 1] : lens[0];
+        let best = null, bt = Infinity;
+        idx.around(tip, 0.05, (k) => {
+          if (used.has(k)) return;
+          let far;
+          if (Math.hypot(L[4 * k] - tip[0], L[4 * k + 1] - tip[1]) < 0.03) far = E(k, 1);
+          else if (Math.hypot(L[4 * k + 2] - tip[0], L[4 * k + 3] - tip[1]) < 0.03) far = E(k, 0);
+          else return;
+          // the bend at the joint, seen along the chain's way
+          const t = fwd ? turn(prev, tip, far) : turn(far, tip, prev);
+          if (Math.abs(t) > 25) return;
+          const curve = isCurve(k);
+          const lk = len(k);
+          // a straight piece carries the curve on only if it is short like the last and does bend
+          if (!curve && (lk > lastLen * 3 + 1e-9 || lk < lastLen / 3 - 1e-9 || Math.abs(t) < 0.2)) return;
+          if (sign && Math.abs(t) > 0.2 && Math.sign(t) !== sign) return;
+          if (Math.abs(t) < bt) { bt = Math.abs(t); best = { k, far, t }; }
+        });
+        if (!best) return;
+        used.add(best.k);
+        if (!sign && Math.abs(best.t) > 0.2) sign = Math.sign(best.t);
+        if (fwd) { pts.push(best.far); lens.push(len(best.k)); } else { pts.unshift(best.far); lens.unshift(len(best.k)); }
+        // back where it began: a closed curve
+        if (Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < 0.03 && pts.length > 3) return "closed";
+      }
+    };
+    // a lone short straight piece starts a chain only if a neighbour carries it on as a curve
+    if (!isCurve(s)) {
+      const probe = (tip, prev) => {
+        let ok = false;
+        idx.around(tip, 0.05, (k) => {
+          if (k === s || ok) return;
+          let far;
+          if (Math.hypot(L[4 * k] - tip[0], L[4 * k + 1] - tip[1]) < 0.03) far = E(k, 1);
+          else if (Math.hypot(L[4 * k + 2] - tip[0], L[4 * k + 3] - tip[1]) < 0.03) far = E(k, 0);
+          else return;
+          const t = Math.abs(turn(prev, tip, far)), lk = len(k);
+          if (t >= 0.2 && t <= 25 && lk <= len(s) * 3 && lk >= len(s) / 3) ok = true;
+        });
+        return ok;
+      };
+      if (!probe(pts[1], pts[0]) && !probe(pts[0], pts[1])) return pts;
+    }
+    if (grow(true) === "closed") return pts;
+    grow(false);
+    return pts;
   }
   function previewLines() {
     const P = A.picked;
@@ -559,5 +617,35 @@ export function createAreaTool(ctx) {
     }
   }
 
-  return { click, key, paintPanel, cancelPick, active, picking: () => A.picked.length > 0 };
+  /* Points I click (and polylines, polygons, clouds), ⌒ Curve: the curve of
+     the drawing clicked, followed from the last point placed - from where
+     that point sits on it (snapped there), else from the curve's nearer end
+     - on through the click to the curve's end. The points along it, or null
+     when no curve is there. */
+  function followCurve(last, p) {
+    const idx = snapLines();
+    if (!idx) { status("Reading this drawing's lines ... click again in a moment."); return null; }
+    const s = idx.nearestIndex(p, 8 / pxPerMM());
+    if (s < 0) return null;
+    const Q = shapeOf(idx, s);
+    if (Q.length < 3) return null;                 // a straight line: just click its end
+    const n = Q.length - 1;
+    const uc = projU(Q, p);
+    let u0;
+    const ul = projU(Q, last), ql = ptAt(Q, ul);
+    if (Math.hypot(ql[0] - last[0], ql[1] - last[1]) < 0.5) u0 = ul;        // the last point is on the curve
+    else u0 = Math.hypot(Q[0][0] - last[0], Q[0][1] - last[1]) <= Math.hypot(Q[n][0] - last[0], Q[n][1] - last[1]) ? 0 : n;
+    // a closed curve (a round column): all the way round, back to the start
+    if (closedQ(Q)) {
+      const way = cut(Q, u0, uc > u0 ? n : 0).concat(cut(Q, uc > u0 ? 0 : n, u0).slice(1));
+      return way;
+    }
+    const u1 = uc >= u0 ? (u0 === n ? 0 : n) : (u0 === 0 ? n : 0);
+    const out = cut(Q, u0, u1);
+    // from the last point itself when it is not on the curve: a straight line to the curve first
+    if (u0 === 0 || u0 === n) out.unshift(last.slice());
+    return out;
+  }
+
+  return { click, key, paintPanel, cancelPick, active, followCurve, picking: () => A.picked.length > 0 };
 }

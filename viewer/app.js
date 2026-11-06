@@ -238,11 +238,15 @@ const AREA = createAreaTool({
    any other segment. Stays on until switched off. */
 const ARC_TOOLS = new Set(["polyline", "polygon", "cloudpoly", "area"]);
 S.polyArc = { on: false, mid: null, base: -1 };
+/* ⌒ Curve: the next click on a curve of the drawing follows it (areatool.js
+   followCurve) - so points and the drawing's own curves mix in one shape. */
+S.polyCurve = false;
 function polyButtons(show) {
-  const f = document.getElementById("poly-finish"), a = document.getElementById("poly-arc");
+  const f = document.getElementById("poly-finish"), a = document.getElementById("poly-arc"), c = document.getElementById("poly-curve");
   if (f) f.hidden = !show;
   if (a) { a.hidden = !show || !ARC_TOOLS.has(S.tool); a.classList.toggle("on", !!S.polyArc.on); }
-  if (!show) S.polyArc.mid = null;
+  if (c) { c.hidden = !show || !ARC_TOOLS.has(S.tool); c.classList.toggle("on", !!S.polyCurve); }
+  if (!show) { S.polyArc.mid = null; S.polyCurve = false; }
 }
 
 /* The extra regions and holes of an area move with it (every way its points move) */
@@ -2603,6 +2607,16 @@ function wirePointer() {
         poly = true;
         S.polyArc.mid = null;
         S.draft = newDraft(S.tool, [p, p]);
+      } else if (S.polyCurve && ARC_TOOLS.has(S.tool)) {
+        // ⌒ Curve: the drawing's curve clicked, followed from the last point
+        const pts = S.draft.points_mm;
+        const way = AREA.followCurve(pts[pts.length - 2], eventPoint(ev));
+        if (!way) { status("No curve of the drawing there - click on the curve (or ⌒ Curve again to stop)."); return; }
+        const add = way.slice(1).filter((q, i, arr) => { const r = i ? arr[i - 1] : pts[pts.length - 2]; return Math.hypot(q[0] - r[0], q[1] - r[1]) > 1e-4; });
+        S.draft.points_mm = pts.slice(0, pts.length - 1).concat(add, [way[way.length - 1].slice()]);
+        S.polyCurve = false;
+        polyButtons(true);
+        status("Curve followed. Carry on clicking points (⌒ Curve again for another curve).");
       } else if (S.polyArc.on && ARC_TOOLS.has(S.tool)) {
         // ◠ Arc: first a point on the arc, then its end
         const pts = S.draft.points_mm;
@@ -6474,6 +6488,12 @@ function wireChrome() {
   $("#zoom-out").addEventListener("click", () => zoomAt(0.8));
   $("#zoom-fit").addEventListener("click", fit);
   $("#poly-finish").addEventListener("click", () => S.endPoly && S.endPoly());
+  $("#poly-curve").addEventListener("click", () => {
+    S.polyCurve = !S.polyCurve;
+    $("#poly-curve").classList.toggle("on", S.polyCurve);
+    status(S.polyCurve ? (S.draft ? "Click the curve of the drawing: it is followed from your last point to its end." : "Click a first point, then the curve.")
+      : "Points as usual.");
+  });
   $("#poly-arc").addEventListener("click", () => {
     S.polyArc.on = !S.polyArc.on;
     if (!S.polyArc.on && S.polyArc.mid && S.draft) {

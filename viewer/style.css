@@ -632,6 +632,10 @@ div.ref-bad.lwk-callout { color: var(--ink-2); padding: 4px 8px; margin: 4px 0 4
   background: var(--panel); }
 #poly-arc.on { background: var(--accent-soft, #fde7d3); border-color: var(--accent); color: var(--accent-deep, #b4530b); }
 #poly-arc[hidden] { display: none; }
+#poly-curve { position: absolute; right: 214px; bottom: 14px; z-index: 6; font-weight: 600; padding: 8px 14px; box-shadow: var(--shadow);
+  background: var(--panel); }
+#poly-curve.on { background: var(--accent-soft, #fde7d3); border-color: var(--accent); color: var(--accent-deep, #b4530b); }
+#poly-curve[hidden] { display: none; }
 #scroll { position: relative; }
 
 /* Two-finger gestures are reconstructed in JS; the browser must not claim
