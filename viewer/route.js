@@ -22,6 +22,8 @@ const KEEP = "lwk-sheets:route";
 const CELL_MODEL_MM = 100;           // the grid: 100 mm in the building
 const DEF = { mode: "shortest", purpose: "Travel distance", limit_m: "", clear_mm: 300, block: null };
 
+import { dock, finishDock, undock } from "./rppanel.js";
+
 export function createRoute(ctx) {
   const { S, Store, status, redraw, putItem, activeScale } = ctx;
   const R = { key: "", plan: null, cats: [], blocking: [], loading: null, worker: null, req: 0, wait: new Map(), panel: null };
@@ -245,14 +247,15 @@ export function createRoute(ctx) {
     const it = selected();
     const on = !!it || S.tool === "route";
     let p = R.panel;
-    if (!on) { if (p) p.hidden = true; return; }
+    if (!on) { if (p) p.hidden = true; undock("route"); return; }
     if (!p) {
       p = R.panel = document.createElement("div");
       p.id = "route-panel";
       p.className = "rp-panel";
       document.body.appendChild(p);
     }
-    p.hidden = false;
+    const D = { key: "route", label: "Route", sig: S.tool + "|" + (S.sel || []).join(","), repaint: paintPanel };
+    if (!dock(p, D)) return;
     const st = it ? settings(it) : Object.assign({}, DEF, defaults);
     const plan = !!R.plan;
     const here = it ? hasPlanAt(it.points_mm[0]) : plan;
@@ -290,6 +293,7 @@ export function createRoute(ctx) {
     };
     const again = p.querySelector("[data-act=again]");
     if (again) again.onclick = () => { it.leg_for = []; changed(it); };
+    finishDock(p, D);
   }
 
   /* The Revit room round a paper point (Area > Click inside), or null */

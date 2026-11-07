@@ -124,7 +124,7 @@ PART = [
     LABEL('打字'),
     UL([
         '**Enter** 係換行；撳 **Send** 掣先會發送（用鍵盤嘅話，**Ctrl+Enter** 都會發送）。',
-        '可以貼或者拖截圖入嚟，或者用夾萬（📎）傳相同檔案，每個最大 50 MB。OneDrive、SharePoint 同 ACC 連結會顯示做卡片；影片連結會有播放卡，貼 OneDrive 或 SharePoint 嘅 **Embed** code 就可以喺 chat 入面直接播。',
+        '可以貼或者拖截圖入嚟，或者用夾萬（📎）傳相同檔案，每個最大 50 MB。OneDrive、SharePoint 同 ACC 連結會顯示做卡片；影片連結會有播放卡，貼 OneDrive 或 SharePoint 嘅 **Embed** code 就可以喺 chat 入面直接播。撳一張相睇大圖：**×**（或者撳旁邊、Esc、手機嘅返回）關，**‹ ›** 或者掃一掃睇同一個訊息嘅其他相，兩隻手指或者 double-tap 放大，下面有 **Open original** / **Download**。',
         '**@** 一個人。**#** 一個 task、**!** 一個 issue、**$** 一張 sheet、**%** 3D model 或者儲存咗嘅視圖：一打就會彈出清單。**先揀 project**：清單最頂有一排 project 俾你揀（喺 project channel 會預先揀好嗰個 project）。夾萬隔籬嘅 **#** 掣會打開同一啲清單，有分頁。',
         '揀咗嘅項目會喺訊息入面變成一條有名嘅連結，撳就打開。',
         '🙂 可以加 emoji。',

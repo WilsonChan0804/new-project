@@ -25,6 +25,7 @@
  * to the inside face, the centre line or the outside face.
  */
 import { fillAt, offset, net, unite, meet, tidy, dimensionParts, area as polyArea } from "./areafill.js";
+import { dock, finishDock, undock } from "./rppanel.js";
 
 const KEEP = "lwk-sheets:areatool";
 const IGNORE = "lwk-sheets:area-ignore:";
@@ -537,12 +538,14 @@ export function createAreaTool(ctx) {
     let p = A.panel;
     if (!on) {
       if (p) p.hidden = true;
+      undock("area");
       if ((A.picked.length || A.ownStart) && S.tool !== "area") { A.picked = []; A.ownStart = null; if (S.draft && S.draft.picking) S.draft = null; }
       A.ignorePick = "";
       return;
     }
     if (!p) { p = A.panel = document.createElement("div"); p.id = "area-panel"; p.className = "rp-panel"; document.body.appendChild(p); }
-    p.hidden = false;
+    const D = { key: "area", label: "Area", sig: S.tool + "|" + (S.sel || []).join(","), repaint: paintPanel };
+    if (!dock(p, D)) return;
     const loops = (it && it.loops_mm) || [];
     const adds = loops.filter((l) => !l.sub).length, holes = loops.filter((l) => l.sub).length;
     const sc = it ? (it.scale || scaleAt(it.points_mm[0])) : null;
@@ -615,6 +618,7 @@ export function createAreaTool(ctx) {
         paintPanel();
       };
     }
+    finishDock(p, D);
   }
 
   /* Points I click (and polylines, polygons, clouds), ⌒ Curve: the curve of

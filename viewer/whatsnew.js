@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-05", date: "7 Nov 2026",
+    items: [
+      "**The Route and Area panels keep out of the way:** they sit at the top right of the drawing, no longer over the issue list beside it. **–** folds a panel to its title, **×** closes it; a small **⚙ Route** / **⚙ Area** chip brings it back, and it comes back by itself the next time you pick the tool.",
+      "**⌖ Snap button** in the toolbar (beside the 1: scale box) turns snapping to the drawing's lines on and off - lit when on. **F3** does the same, as in CAD; hold **Alt** to place one point freely.",
+      "**Photos open in the page:** tapping a photo in a chat, a task or a query shows it large with a **×** to close (or tap beside it, press Esc, or the phone's Back). **‹ ›** or a swipe go to the message's other photos, pinch or double-tap to zoom, and **Open original** / **Download** are below. Before, on a phone it opened the bare picture with no way back.",
+    ],
+  },
+  {
     version: "2027-01-04", date: "6 Nov 2026",
     items: [
       "**◠ Arc and ⌒ Curve are easy to find:** they show at the bottom right of the drawing as soon as you pick Polyline, Polygon, a freeform Cloud or Area (by points) - before the first click - and stay on screen however far you zoom in or scroll (before, they could be off screen). ✓ Finish sits beside them while drawing.",

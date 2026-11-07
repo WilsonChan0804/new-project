@@ -2608,3 +2608,17 @@ header .flr-lab { white-space: nowrap; }
 .ap-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 2px 1px 8px; border-radius: 10px; background: var(--panel-2, #f1f3f5);
   border: 1px solid var(--line, #e5e7eb); font-size: 11.5px; }
 .ap-chip button { border: 0; background: none; padding: 0 5px !important; cursor: pointer; font-size: 13px; line-height: 1; }
+
+/* the tool panels' fold and close buttons, and the chip that brings a closed one back (rppanel.js) */
+.rp-panel { overflow: auto; }
+.rp-panel .rp-btns { position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; }
+.rp-panel .rp-btns button { border: 0; background: none; font-size: 16px; line-height: 1; padding: 2px 6px !important; cursor: pointer; color: var(--muted, #6b7480); box-shadow: none; }
+.rp-panel .rp-btns button:hover { background: var(--panel-2, #f1f3f5); color: var(--ink, #1f2430); }
+.rp-panel .rp-h { padding-right: 52px; }
+.rp-panel.rp-min > :not(.rp-h):not(.rp-btns) { display: none !important; }
+.rp-chip { position: fixed; z-index: 210; padding: 4px 10px; border-radius: 14px; font-size: 12px; background: var(--panel, #fff);
+  border: 1px solid var(--line, #d9dde3); box-shadow: 0 4px 14px rgba(20,26,36,.15); cursor: pointer; }
+.rp-chip[hidden] { display: none; }
+@media (max-width: 700px) { .rp-chip { right: 8px; bottom: 70px; } }
+#snap-btn { white-space: nowrap; }
+#snap-btn.active { background: var(--accent-soft, #fde7d3); border-color: var(--accent, #f28022); color: var(--accent-deep, #b4530b); }

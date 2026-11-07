@@ -6537,17 +6537,23 @@ function wireChrome() {
   /* View ▾: Split, Compare, 2D + 3D and Links in one menu. The buttons are
      the same ones as before, moved into it; a dot on View says one of the
      first three is on. */
-  const snapBtn = $("#snap-toggle");
-  if (snapBtn) {
-    snapBtn.classList.toggle("active", SNAP.on);
-    snapBtn.addEventListener("click", () => {
-      SNAP.on = !SNAP.on;
-      try { localStorage.setItem("lwk.snap", SNAP.on ? "1" : "0"); } catch (e) {}
-      snapBtn.classList.toggle("active", SNAP.on);
-      showSnap(null);
-      status(SNAP.on ? "Snapping to the drawing's lines (hold Alt to place freely)." : "Snapping off: points go exactly where you click.");
-    });
-  }
+  // Snap: the toolbar button, the View menu item and F3 are one switch
+  const snapBtns = [$("#snap-toggle"), $("#snap-btn")].filter(Boolean);
+  const paintSnap = () => { for (const b of snapBtns) { b.classList.toggle("active", SNAP.on); b.setAttribute("aria-pressed", SNAP.on ? "true" : "false"); } };
+  const flipSnap = () => {
+    SNAP.on = !SNAP.on;
+    try { localStorage.setItem("lwk.snap", SNAP.on ? "1" : "0"); } catch (e) {}
+    paintSnap();
+    showSnap(null);
+    status(SNAP.on ? "Snap on: points snap to the drawing's lines (F3 switches it off; hold Alt to place one point freely)." : "Snap off: points go exactly where you click (F3 switches it on).");
+  };
+  paintSnap();
+  for (const b of snapBtns) b.addEventListener("click", flipSnap);
+  addEventListener("keydown", (ev) => {
+    if (ev.key !== "F3" || /^(INPUT|TEXTAREA|SELECT)$/.test((ev.target && ev.target.tagName) || "")) return;
+    ev.preventDefault();          // the browser's own F3 is Find next
+    flipSnap();
+  });
   const vm = $("#view-menu"), vmb = $("#view-menu-btn");
   if (vm && vmb) {
     const shut = () => { vm.hidden = true; vmb.classList.remove("open"); };
