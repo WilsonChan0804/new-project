@@ -1693,9 +1693,18 @@ function deleteSelection() {
 function copySelection() {
   S.clip = S.items.filter((i) => S.sel.indexOf(i.id) >= 0)
                   .map((i) => JSON.parse(JSON.stringify(i)));
+  /* The system clipboard is told too, so the last copy wins: a picture
+     snipped earlier (Snipping Tool) stayed on it, and Ctrl+V pasted the
+     markups and the picture again with them. */
+  PASTE.fresh = S.clip.length > 0;
+  if (S.clip.length) {
+    try { navigator.clipboard.writeText(CLIP_MARK + S.clip.length).catch(() => {}); } catch (e) {}
+  }
   status(S.clip.length + " copied. Ctrl+V to paste.");
 }
 
+const CLIP_MARK = "LWK Viewer markups: ";
+const PASTE = { wait: 0, fresh: false };
 function paste() {
   if (!S.clip || !S.clip.length || !S.sheet) return;
   /* Pasting onto the sheet it came from offsets the copy so it can be seen;
@@ -2306,6 +2315,143 @@ function editText(id) {
     persist([id]);
   }, it.text || "");
   return true;
+}
+
+/* Find & replace (Ctrl+H, View > Find & replace): the text of this sheet's
+   markups - text, text boxes, callouts, stamps - and, when ticked, its
+   issues' titles and descriptions. The words are taken as they are (not a
+   pattern). Replace all is one step back with Ctrl+Z. Markups on a layer
+   locked for you are left as they are, and said so. */
+const FR = { el: null, at: -1 };
+function frRegex(find, o) {
+  const e = find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(o.word ? `(?<![\\p{L}\\p{N}_])${e}(?![\\p{L}\\p{N}_])` : e, "gu" + (o.cs ? "" : "i"));
+}
+function frFields(it, o) {
+  const f = [];
+  if (typeof it.text === "string" && it.text) f.push(["text"]);
+  if (o.issues && it.issue) {
+    if (it.issue.title) f.push(["issue", "title"]);
+    if (it.issue.description) f.push(["issue", "description"]);
+  }
+  return f;
+}
+const frGet = (it, path) => path.length === 1 ? it[path[0]] : it[path[0]][path[1]];
+const frSet = (it, path, v) => { if (path.length === 1) it[path[0]] = v; else it[path[0]][path[1]] = v; };
+function frOptions() {
+  const b = FR.el;
+  return { find: $("#fr-find", b).value, repl: $("#fr-repl", b).value, cs: $("#fr-cs", b).checked,
+    word: $("#fr-word", b).checked, issues: $("#fr-iss", b).checked };
+}
+/* the markups of this sheet with a match: [{ it, n }] in reading order */
+function frMatches(o) {
+  if (!o.find || !S.sheet) return [];
+  const re = frRegex(o.find, o);
+  const out = [];
+  for (const it of S.items) {
+    if (it.sheet !== S.sheet.number) continue;
+    let n = 0;
+    for (const f of frFields(it, o)) n += (String(frGet(it, f)).match(re) || []).length;
+    if (n) out.push({ it, n });
+  }
+  const c = (it) => it.points_mm && it.points_mm[0] ? it.points_mm[0] : [0, 0];
+  return out.sort((a, b) => (c(b.it)[1] - c(a.it)[1]) || (c(a.it)[0] - c(b.it)[0]));
+}
+function frCount() {
+  const o = frOptions();
+  const m = frMatches(o);
+  const total = m.reduce((a, x) => a + x.n, 0);
+  const locked = m.filter((x) => layerLocked(x.it)).length;
+  $("#fr-msg", FR.el).textContent = !o.find ? "" : !total ? "No match on this sheet"
+    : `${total} match${total === 1 ? "" : "es"} in ${m.length} markup${m.length === 1 ? "" : "s"}` + (locked ? ` (${locked} on a locked layer)` : "");
+  return m;
+}
+function frShow(it) {
+  select([it.id], false);
+  const p = it.points_mm && it.points_mm[0];
+  if (!p || !S.page) return;
+  const sc = $("#scroll"), a = canvasFrom(p[0], p[1]);
+  const P = $("#page").getBoundingClientRect(), R = sc.getBoundingClientRect();
+  const x = P.left - R.left + a[0], y = P.top - R.top + a[1];
+  if (x < 40 || y < 40 || x > sc.clientWidth - 40 || y > sc.clientHeight - 40) {
+    sc.scrollLeft += x - sc.clientWidth / 2;
+    sc.scrollTop += y - sc.clientHeight / 2;
+  }
+}
+function frNext() {
+  const m = frCount();
+  if (!m.length) return null;
+  const cur = S.sel.length === 1 ? m.findIndex((x) => x.it.id === S.sel[0]) : -1;
+  const x = m[(cur + 1) % m.length];
+  frShow(x.it);
+  return x.it;
+}
+function frReplace(all) {
+  const o = frOptions();
+  if (!o.find) return;
+  if (document.body.dataset.role === "viewer") { status("You are a Viewer on this project: markups cannot be changed."); return; }
+  const m = frMatches(o);
+  let targets;
+  if (all) targets = m;
+  else {
+    const cur = S.sel.length === 1 ? m.find((x) => x.it.id === S.sel[0]) : null;
+    if (!cur) { frNext(); return; }            // show the first one before replacing it
+    targets = [cur];
+  }
+  const ok = targets.filter((x) => !layerLocked(x.it));
+  const skipped = targets.length - ok.length;
+  if (!ok.length) { status(skipped ? "That markup is on a layer locked for you." : "Nothing to replace."); return; }
+  const re = frRegex(o.find, o);
+  const ids = ok.map((x) => x.it.id);
+  remember(ids);
+  let n = 0;
+  for (const { it } of ok) {
+    for (const f of frFields(it, o)) {
+      const v = String(frGet(it, f));
+      const w = v.replace(re, () => { n++; return o.repl; });
+      if (w !== v) frSet(it, f, w);
+    }
+  }
+  redraw(); renderList(); persist(ids);
+  status(`Replaced ${n} time${n === 1 ? "" : "s"} in ${ok.length} markup${ok.length === 1 ? "" : "s"}`
+    + (skipped ? ` - ${skipped} on a locked layer left as they are` : "") + ". Ctrl+Z undoes it.");
+  frCount();
+  if (!all) frNext();
+}
+function openFindReplace() {
+  if (FR.el) { FR.el.hidden = false; const f = $("#fr-find", FR.el); f.focus(); f.select(); frCount(); return; }
+  const b = FR.el = document.createElement("div");
+  b.id = "fr-box";
+  b.setAttribute("role", "dialog");
+  b.setAttribute("aria-label", "Find and replace");
+  b.innerHTML = `<div class="fr-h"><b>Find &amp; replace</b><small>this sheet's markup text</small><span class="spacer"></span><button type="button" class="ghost" id="fr-x" title="Close (Esc)">&times;</button></div>`
+    + `<label>Find <input id="fr-find" type="text" autocomplete="off" spellcheck="false"></label>`
+    + `<label>Replace with <input id="fr-repl" type="text" autocomplete="off" spellcheck="false"></label>`
+    + `<div class="fr-o"><label><input type="checkbox" id="fr-cs"> Match case</label><label><input type="checkbox" id="fr-word"> Whole word</label>`
+    + `<label title="Also the titles and descriptions of the issues on this sheet"><input type="checkbox" id="fr-iss"> Issue titles and descriptions</label></div>`
+    + `<div class="fr-msg muted" id="fr-msg"></div>`
+    + `<div class="fr-b"><button type="button" class="ghost" id="fr-next" title="Enter">Find next</button>`
+    + `<button type="button" class="ghost" id="fr-one" title="Shift+Enter: replace this one and go to the next">Replace</button>`
+    + `<button type="button" class="primary" id="fr-all">Replace all</button></div>`;
+  document.body.appendChild(b);
+  const close = () => { b.hidden = true; };
+  $("#fr-x", b).onclick = close;
+  $("#fr-next", b).onclick = frNext;
+  $("#fr-one", b).onclick = () => frReplace(false);
+  $("#fr-all", b).onclick = () => frReplace(true);
+  for (const id of ["#fr-find", "#fr-cs", "#fr-word", "#fr-iss"]) $(id, b).addEventListener(id === "#fr-find" ? "input" : "change", frCount);
+  b.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); close(); }
+    else if (ev.key === "Enter" && ev.target.tagName === "INPUT" && ev.target.type === "text") {
+      ev.preventDefault();
+      if (ev.shiftKey) frReplace(false); else frNext();
+    }
+  });
+  const sel = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]);
+  if (sel && sel.text && sel.text.length < 60 && !sel.text.includes("\n")) $("#fr-find", b).value = sel.text;
+  $("#fr-find", b).focus();
+  $("#fr-find", b).select();
+  frCount();
 }
 
 function wirePointer() {
@@ -3001,7 +3147,15 @@ function wirePointer() {
   document.addEventListener("paste", (ev) => {
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((ev.target && ev.target.tagName) || "")) return;
     if (!S.page) return;
+    // Ctrl+V: this paste decides what goes in - a picture on the clipboard
+    // (copied after the markups) or the markups copied here, not both
+    const fromKey = !!PASTE.wait;
+    clearTimeout(PASTE.wait); PASTE.wait = 0;
     const items = (ev.clipboardData && ev.clipboardData.items) || [];
+    const txt = (ev.clipboardData && ev.clipboardData.getData && ev.clipboardData.getData("text/plain")) || "";
+    // the markups when they were the last thing copied: the clipboard holds our
+    // note, or the page has not been left since (a snip is made in another window)
+    if (fromKey && S.clip && S.clip.length && (txt.startsWith(CLIP_MARK) || PASTE.fresh)) { ev.preventDefault(); paste(); return; }
     for (const ci of items) {
       if (ci.type && ci.type.indexOf("image/") === 0) {
         ev.preventDefault();
@@ -3013,7 +3167,9 @@ function wirePointer() {
         return;
       }
     }
+    if (fromKey) paste();
   });
+  addEventListener("blur", () => { PASTE.fresh = false; });
 
   /* The drawing takes the keyboard back. A dropdown or box used a moment
      ago (the Layer, Line or Type of the properties bar, the 1: box) kept
@@ -3096,6 +3252,10 @@ function wirePointer() {
       ev.preventDefault();
       if (ev.shiftKey) ungroupSelection(); else groupSelection();
     }
+    else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "h") {
+      ev.preventDefault();
+      openFindReplace();
+    }
     else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "a") {
       ev.preventDefault();
       select(S.items.filter((i) => S.sheet && i.sheet === S.sheet.number)
@@ -3118,7 +3278,12 @@ function wirePointer() {
       if (S.tool === "selecttext") return;
       copySelection();
     }
-    else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "v") paste();
+    else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "v") {
+      // the paste event that follows says whether the clipboard holds a
+      // newer picture; when it does not come (or holds no picture), the markups
+      clearTimeout(PASTE.wait);
+      PASTE.wait = setTimeout(() => { PASTE.wait = 0; paste(); }, 120);
+    }
     else if (!ev.ctrlKey && !ev.metaKey) {
       // one key per tool, as set in Shortcuts (the keyboard button)
       const t = toolForKey(keyName(ev));
@@ -6632,6 +6797,8 @@ function wireChrome() {
     ev.preventDefault();          // the browser's own F3 is Find next
     flipSnap();
   });
+  const frb = $("#fr-open");
+  if (frb) frb.addEventListener("click", () => { $("#view-menu").hidden = true; openFindReplace(); });
   const vm = $("#view-menu"), vmb = $("#view-menu-btn");
   if (vm && vmb) {
     const shut = () => { vm.hidden = true; vmb.classList.remove("open"); };

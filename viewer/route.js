@@ -22,7 +22,7 @@ const KEEP = "lwk-sheets:route";
 const CELL_MODEL_MM = 100;           // the grid: 100 mm in the building
 const DEF = { mode: "shortest", purpose: "Travel distance", limit_m: "", clear_mm: 300, block: null };
 
-import { dock, finishDock, undock } from "./rppanel.js";
+import { dock, fill, finishDock, undock } from "./rppanel.js";
 
 export function createRoute(ctx) {
   const { S, Store, status, redraw, putItem, activeScale } = ctx;
@@ -254,7 +254,7 @@ export function createRoute(ctx) {
       p.className = "rp-panel";
       document.body.appendChild(p);
     }
-    const D = { key: "route", label: "Route", sig: S.tool + "|" + (S.sel || []).join(","), repaint: paintPanel };
+    const D = { key: "route", label: "Route", sig: S.tool + "|" + (it ? it.id : ""), repaint: paintPanel };
     if (!dock(p, D)) return;
     const st = it ? settings(it) : Object.assign({}, DEF, defaults);
     const plan = !!R.plan;
@@ -262,7 +262,7 @@ export function createRoute(ctx) {
     const block = new Set(blockOf(st));
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const L = it ? label(it) : null;
-    p.innerHTML = `<div class="rp-h"><b>${it ? "Route" : "New route"}</b>${L ? `<span class="rp-len ${L.state}">${esc(L.text)}</span>` : ""}</div>`
+    fill(p, `<div class="rp-h"><b>${it ? "Route" : "New route"}</b>${L ? `<span class="rp-len ${L.state}">${esc(L.text)}</span>` : ""}</div>`
       + `<div class="rp-r"><label>For <select data-k="purpose">${PURPOSES.map((x) => `<option${x === st.purpose ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>`
       + `<label>Limit <input data-k="limit_m" type="number" min="0" step="0.5" value="${esc(st.limit_m)}" placeholder="none"> m</label></div>`
       + `<div class="rp-r rp-mode"><label><input type="radio" name="rp-mode" value="shortest"${st.mode === "shortest" ? " checked" : ""}${plan ? "" : " disabled"}> Shortest route</label>`
@@ -275,7 +275,7 @@ export function createRoute(ctx) {
       + (it && st.mode === "shortest" && !here && plan ? `<div class="rp-note">The start is not on a published floor plan of this sheet: straight from point to point.</div>` : "")
       + `<div class="rp-tip">${it ? "Drag a point to adjust; + on a leg adds a point the route must pass; double-click a point to remove it."
         : "Click the start, then the end - double-click (or Enter) to finish. Click points on the way to make the route pass them."}</div>`
-      + (it && st.mode === "shortest" && plan ? `<div class="rp-r"><button type="button" data-act="again">Find again</button></div>` : "");
+      + (it && st.mode === "shortest" && plan ? `<div class="rp-r"><button type="button" data-act="again">Find again</button></div>` : ""));
     const apply = (patch) => {
       if (it) {
         it.route = Object.assign(settings(it), patch);

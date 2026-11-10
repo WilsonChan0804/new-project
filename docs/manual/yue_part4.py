@@ -289,6 +289,7 @@ PART = [
         ['Sheets', 'Delete', '刪揀咗嘅 markup'],
         ['Sheets', 'Ctrl+A', '揀晒張 sheet 嘅 markup'],
         ['Sheets', 'Ctrl+C / Ctrl+V', 'Copy／貼 markup（貼去另一張 sheet 都得）'],
+        ['Sheets', 'Ctrl+H', '搵同取代呢張 sheet markup 嘅文字'],
         ['Sheets', 'Ctrl+Z / Ctrl+Y', 'Undo / redo'],
         ['Sheets', 'R / Shift+R', '揀咗嘅順時針／逆時針轉 90°'],
         ['Sheets compare', 'N / Shift+N', '下一個／上一個改動'],

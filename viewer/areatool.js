@@ -25,7 +25,7 @@
  * to the inside face, the centre line or the outside face.
  */
 import { fillAt, offset, net, unite, meet, tidy, dimensionParts, area as polyArea } from "./areafill.js";
-import { dock, finishDock, undock } from "./rppanel.js";
+import { dock, fill as fillPanel, finishDock, undock } from "./rppanel.js";
 
 const KEEP = "lwk-sheets:areatool";
 const IGNORE = "lwk-sheets:area-ignore:";
@@ -544,7 +544,7 @@ export function createAreaTool(ctx) {
       return;
     }
     if (!p) { p = A.panel = document.createElement("div"); p.id = "area-panel"; p.className = "rp-panel"; document.body.appendChild(p); }
-    const D = { key: "area", label: "Area", sig: S.tool + "|" + (S.sel || []).join(","), repaint: paintPanel };
+    const D = { key: "area", label: "Area", sig: S.tool + "|" + (it ? it.id : ""), repaint: paintPanel };
     if (!dock(p, D)) return;
     const loops = (it && it.loops_mm) || [];
     const adds = loops.filter((l) => !l.sub).length, holes = loops.filter((l) => l.sub).length;
@@ -554,7 +554,7 @@ export function createAreaTool(ctx) {
     const tip = { points: "Click the corners (they snap to the drawing), then double-click or Enter.",
       fill: "Click inside a room: its outline is found" + (hasRooms() ? " (on Revit plans, the room's own outline)" : "") + ". Shift+click another part to add it - it is merged in.",
       lines: "Click the lines round the area in turn - each is trimmed or extended to meet the next. No line there (a doorway)? Ctrl+click two points to draw one. Click the first line again or press Enter to close; Backspace takes the last back." }[A.mode];
-    p.innerHTML = `<div class="rp-h"><b>${it ? "Area" : "New area"}</b>`
+    fillPanel(p, `<div class="rp-h"><b>${it ? "Area" : "New area"}</b>`
       + (it ? `<span class="rp-len">${m2 == null ? "set a scale" : m2.toFixed(2) + " m²"}</span>`
         + (it.room ? `<small>Room ${esc([it.room.number, it.room.name].filter(Boolean).join(" "))}${it.room.area_m2 ? ` - Revit: ${esc(it.room.area_m2)} m²` : ""}</small>` : "") : "")
       + `</div>`
@@ -579,7 +579,7 @@ export function createAreaTool(ctx) {
           + (loops.length ? `<button type="button" data-act="undo-region">Remove the last</button>` : "") + `</div>`
         + `<div class="rp-r"><label>Offset the edge <input data-k="off" type="number" step="50" min="0" placeholder="mm" value="${esc(A.off || "")}"> mm</label>`
           + `<button type="button" data-act="out" title="Move the edge outwards: e.g. from the inside face to the centre line or the outside face">Out</button>`
-          + `<button type="button" data-act="in" title="Move the edge inwards">In</button></div>` : "");
+          + `<button type="button" data-act="in" title="Move the edge inwards">In</button></div>` : ""));
     for (const el of p.querySelectorAll("[name=ap-mode]")) el.onchange = () => { A.mode = el.value; A.picked = []; A.ownStart = null; A.ignorePick = ""; S.draft = null; keep(); redraw(); paintPanel(); if (ctx.onMode) ctx.onMode(); };
     for (const el of p.querySelectorAll("[name=ap-next]")) el.onchange = () => { A.next = el.value; };
     for (const el of p.querySelectorAll("[name=ap-kind]")) el.onchange = () => { A.pickKind = el.value; };

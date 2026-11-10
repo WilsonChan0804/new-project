@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-08", date: "10 Nov 2026",
+    items: [
+      "**Find & replace on a sheet:** **Ctrl+H** (or **View ▾ > Find & replace**) changes words in the text of the sheet's markups - text, text boxes, callouts, stamps - and, when ticked, its issues' titles and descriptions. Match case, Whole word, Find next, Replace or Replace all; one Ctrl+Z undoes it.",
+      "**Fix: the Route (and Area) panel closes.** Its **×** often did nothing, because the panel was rebuilt each time the drawing redrew (moving the pointer, other people's markups arriving) - between pressing and releasing the button. It is now rebuilt only when what it shows changes.",
+      "**Fix: copy and paste after a snip.** A picture snipped earlier (Snipping Tool) stayed on the clipboard, and Ctrl+V pasted it with the markups copied after it. The last thing copied is now pasted - the markups, or a picture snipped after them - not both.",
+    ],
+  },
+  {
     version: "2027-01-07", date: "10 Nov 2026",
     items: [
       "**Fix: keys on the Sheets page.** Ctrl+C / Ctrl+V (and Ctrl+A, Ctrl+G, Ctrl+Z) did nothing with **Caps Lock** on, and the tool keys (V for Select ...) did nothing with a **Chinese input method** switched on. After choosing in a drop-down of the properties bar (Layer, Line, Type ...), V changed the drop-down instead of picking Select: a click on the drawing now gives the keys back to it.",

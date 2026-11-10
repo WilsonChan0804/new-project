@@ -2622,3 +2622,19 @@ header .flr-lab { white-space: nowrap; }
 @media (max-width: 700px) { .rp-chip { right: 8px; bottom: 70px; } }
 #snap-btn { white-space: nowrap; }
 #snap-btn.active { background: var(--accent-soft, #fde7d3); border-color: var(--accent, #f28022); color: var(--accent-deep, #b4530b); }
+
+/* Find & replace (Sheets) */
+#fr-box { position: fixed; top: 130px; right: 290px; z-index: 60; width: 330px; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; font-size: 13px; }
+#fr-box[hidden] { display: none; }
+#fr-box .fr-h { display: flex; align-items: baseline; gap: 8px; }
+#fr-box .fr-h small { color: var(--muted); font-size: 11px; }
+#fr-box .fr-h .spacer { flex: 1; }
+#fr-box #fr-x { font-size: 18px; padding: 0 6px; line-height: 1; }
+#fr-box > label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+#fr-box > label input { font: inherit; font-size: 13px; color: var(--ink); padding: 5px 7px; }
+#fr-box .fr-o { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; }
+#fr-box .fr-o label { display: flex; align-items: center; gap: 4px; }
+#fr-box .fr-msg { min-height: 16px; font-size: 12px; }
+#fr-box .fr-b { display: flex; gap: 6px; justify-content: flex-end; }
+@media (max-width: 700px) { #fr-box { left: 8px; right: 8px; top: auto; bottom: 70px; width: auto; } }

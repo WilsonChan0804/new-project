@@ -49,17 +49,38 @@ export function dock(p, o) {
   return true;
 }
 
+/* The panel's content, set only when it changed. The drawing is redrawn
+   all the time (the pointer moving, other people's markups arriving) and
+   each redraw asks the panels to paint: rebuilding them each time replaced
+   the button under the pointer between press and release, so × never
+   closed it (and a drag selected all its text). A field being typed in is
+   not rebuilt under the typing either. True when it was rebuilt. */
+export function fill(p, html) {
+  if (p.__html === html) return false;
+  const a = document.activeElement;
+  if (p.__html && a && p.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return false;
+  p.innerHTML = html;
+  p.__html = html;
+  return true;
+}
+
 /* After the panel is filled: its – and × buttons, folded or not, and its place */
 export function finishDock(p, o) {
   let min = false;
   try { min = localStorage.getItem(MIN + o.key) === "1"; } catch (e) {}
   p.classList.toggle("rp-min", min);
-  const b = document.createElement("span");
-  b.className = "rp-btns";
-  b.innerHTML = `<button type="button" data-rp="min" title="${min ? "Open the panel" : "Fold the panel to its title"}">${min ? "▾" : "–"}</button>`
-    + `<button type="button" data-rp="close" title="Close the panel (it comes back with another tool, or from its chip)">×</button>`;
-  p.appendChild(b);
-  b.querySelector("[data-rp=min]").onclick = () => {
+  let b = p.querySelector(":scope > .rp-btns");
+  if (!b) {
+    b = document.createElement("span");
+    b.className = "rp-btns";
+    b.innerHTML = `<button type="button" data-rp="min"></button>`
+      + `<button type="button" data-rp="close" title="Close the panel (it comes back with another tool, or from its chip)">×</button>`;
+    p.appendChild(b);
+  }
+  const mb = b.querySelector("[data-rp=min]");
+  mb.title = min ? "Open the panel" : "Fold the panel to its title";
+  mb.textContent = min ? "▾" : "–";
+  mb.onclick = () => {
     try { localStorage.setItem(MIN + o.key, min ? "0" : "1"); } catch (e) {}
     o.repaint();
   };
