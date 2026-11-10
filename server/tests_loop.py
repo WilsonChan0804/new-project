@@ -15,7 +15,7 @@ import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FILES = ("app.py", "chat.py", "tasks.py", "boards.py", "queries.py", "files.py", "lv_api.py", "sbd_api.py", "push.py")
+FILES = ("app.py", "chat.py", "tasks.py", "boards.py", "queries.py", "files.py", "lv_api.py", "sbd_api.py", "push.py", "codes.py")
 
 
 def _is_route(fn):

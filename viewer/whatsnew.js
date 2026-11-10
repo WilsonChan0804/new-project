@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-06", date: "10 Nov 2026",
+    items: [
+      "**Codes - ask the building codes:** a new **Codes** page answers questions on the Buildings Ordinance, its Regulations, PNAPs, Codes of Practice and the office's notes, from the office's own library. The answer comes only from the clauses it finds and cites each one; click a citation to see the clause, its edition and page, and open the PDF at that page. English or Chinese; follow-up questions carry on.",
+      "**Find clauses** searches the library with no AI (clause numbers and short names like MOE, TRS, FRR work too).",
+      "**For site admins:** **Library** adds documents (PDF, Word, text) and office notes, marks old editions superseded, and sets up the answers - choose the Claude model and add the API key (pay per question, no subscription; the month's cost shows there).",
+    ],
+  },
+  {
     version: "2027-01-05", date: "7 Nov 2026",
     items: [
       "**The Route and Area panels keep out of the way:** they sit at the top right of the drawing, no longer over the issue list beside it. **–** folds a panel to its title, **×** closes it; a small **⚙ Route** / **⚙ Area** chip brings it back, and it comes back by itself the next time you pick the tool.",

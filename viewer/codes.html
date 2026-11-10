@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Codes</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="tasks.css">
+<link rel="stylesheet" href="codes.css">
+<link rel="stylesheet" href="shell.css">
+<link rel="modulepreload" href="codes.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="pagekit.js">
+<link rel="modulepreload" href="tasks-util.js">
+<link rel="modulepreload" href="chatfmt.js">
+<link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f28022">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+</head>
+<body class="tasks-page codes-page own-nav">
+<header>
+  <b class="brand"><img class="brand-logo" src="icons/logo-white.png" alt="LWK + Partners"><span class="brand-app">Viewer</span></b>
+  <div class="seg">
+    <a id="to-projects" class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
+    <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <a id="to-cal" class="seg-btn" data-page="calendar.html" href="calendar.html">Calendar</a>
+    <a id="to-folders" class="seg-btn" data-page="folders.html" href="folders.html">Folders</a>
+    <span class="seg-btn on">Codes</span>
+    <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
+  </div>
+  <span class="spacer"></span>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="h-who"></span>
+    <a href="#" id="h-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<main id="codes">
+  <section id="cx-chat">
+    <div class="cx-top">
+      <h2>Ask the codes</h2>
+      <span id="cx-state" class="muted"></span>
+      <span class="spacer"></span>
+      <button class="ghost" id="cx-recent" type="button" title="Your last questions">Recent &#9662;</button>
+      <button class="ghost" id="cx-new" type="button" title="Start a new conversation">New</button>
+      <button class="ghost" id="cx-lib" type="button" title="The documents in the library">Library</button>
+    </div>
+    <div id="cx-log" aria-live="polite"></div>
+    <form id="cx-form" onsubmit="return false">
+      <textarea id="cx-q" rows="2" placeholder="Ask about the Buildings Ordinance, PNAPs, Codes of Practice ... e.g. What is the maximum dead end travel distance?  (English or 中文)"></textarea>
+      <div class="cx-btns">
+        <button type="button" class="ghost" id="cx-search" title="Only find the clauses (no AI)">Find clauses</button>
+        <button type="submit" class="primary" id="cx-ask">Ask</button>
+      </div>
+    </form>
+  </section>
+  <aside id="cx-side">
+    <div class="cx-side-h"><b id="cx-side-title">Clauses</b><span class="spacer"></span><button class="ghost" id="cx-side-x" type="button" title="Close">&times;</button></div>
+    <div id="cx-clauses"><p class="muted cx-hint">The clauses an answer is based on show here, with their reference, edition and page.</p></div>
+  </aside>
+</main>
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="codes.js"></script>
+</body>
+</html>

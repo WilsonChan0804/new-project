@@ -235,4 +235,20 @@ PART = [
         '**放去 Sheets 版：** PDF 嘅 ⋯ > **Add to the Sheets page**，每一頁變成一張 sheet，放喺自己一個 set（揀 set 名同 sheet 編號），即刻可以 markup 同開 issue。',
         '用其他方法（例如 Windows Explorer）放入 server 上面嗰個 folder 嘅檔案，呢度都會見到。',
     ]),
+    H2('Codes 法規'),
+    P('**Codes** 會用公司自己嘅法規庫答你關於建築法規嘅問題：《建築物條例》同佢嘅規例、PNAP、Codes of Practice、設計手冊同公司嘅筆記。每個 project 都係同一個法規庫。'),
+    UL([
+        '**Ask：** 打問題（英文或者中文），撳 **Ask** 或者 Enter。系統會搵出法規庫入面相關嘅條文，再由 Claude **只根據嗰啲條文**作答，用數字小標籤註明出處。撳小標籤，右邊就會顯示嗰條條文：出處（文件、條號、頁數）、版本、標咗你啲字嘅原文、**Open page**（打開 PDF 嗰一頁）、**More around it**（前後嘅條文）同 **Copy**。法規庫冇講到嘅，答案會直接講。',
+        '**跟住問**會接住之前嘅對話（例如「冇花灑嘅樓層呢？」）；**New** 重新開始。**Recent ▾** 列出你最近問過嘅問題。',
+        '**Find clauses** 唔用 AI，淨係搜尋：列出相關條文，最相關排先。Ask 關咗都用得。條號（例如 *B5.2*、*41*）同常用簡稱（MOE、TRS、FRR、BFA、GFA、EVA、SBD ...）都搵得到。',
+        '**Copy** 會連埋出處清單複製答案；site admin 可以撳 **Save as note**，將好嘅答案存入法規庫做公司筆記。',
+        '每個數字都要對返文件最新嘅版本：答案只係幫你閱讀，唔係專業意見。公司筆記會標明 *office note, not law*。',
+    ]),
+    H3('法規庫（site admin）'),
+    UL([
+        '**Library > Add a document：** 揀 PDF、Word（.docx）或者文字檔，填標題、類別（Ordinance、Regulation、PNAP、Code of Practice、設計手冊、公司筆記）、版本同官方網頁。系統會將佢拆成一條條條文，保留條號同頁數。掃描嘅 PDF 要先轉做有文字（Acrobat > Scan & OCR）。',
+        '**Add an office note：** 貼上文字（屋宇署意見、公司做法）；每點加編號就會分開儲。',
+        '**Edit** 可以改文件資料、標做 **superseded**（已被取代：搜尋同答案唔再用，但保留紀錄）或者刪走。',
+        '**Answers by Claude：** 揀 model - **Claude Sonnet 5.5**（建議，每條問題約 US$0.03）、**Claude Haiku 5.5**（最平，約 US$0.002）或者 **Claude Opus 5.5** - 或者 **Off**，再加 **Claude API key**（console.anthropic.com，用幾多俾幾多，唔使月費）。Key 只會留喺 server，之後唔會再顯示；亦可以喺 server 設定 ANTHROPIC_API_KEY。嗰度會顯示今個月問咗幾多同大約幾錢。每次作答會將問題同相關條文送去 Anthropic；文件本身留喺 server。',
+    ]),
 ]

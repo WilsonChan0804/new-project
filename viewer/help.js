@@ -14,7 +14,7 @@ const ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke
 const PAGE = {
   "": "Sheets (2D)", "index.html": "Sheets (2D)", "model.html": "3D: moving around", "projects.html": "Projects",
   "dashboard.html": "Dashboard and projects", "tasks.html": "Tasks", "board.html": "Board", "messenger.html": "Messenger",
-  "calendar.html": "Calendar", "folders.html": "Folders", "admin.html": "For admins", "report.html": "Issues and BCF",
+  "calendar.html": "Calendar", "folders.html": "Folders", "codes.html": "Codes", "admin.html": "For admins", "report.html": "Issues and BCF",
 };
 const TOPIC = { sbd: "SBD: how to prepare the model and send it", clash: "Clash and headroom checks", search: "Search", shortcuts: "Shortcuts cheat sheet" };
 

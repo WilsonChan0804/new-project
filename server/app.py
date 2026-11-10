@@ -4387,6 +4387,13 @@ try:
 except Exception as _ex:
     print("queries not loaded: %s" % _ex)
 
+# Codes (codes.py): the building regulations library - search, and questions answered by Claude.
+try:
+    import codes
+    codes.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("codes not loaded: %s" % _ex)
+
 # Light & Ventilation (lv_api.py): the Revit Light & Vent check's result, drawn on the plans.
 try:
     import lv_api

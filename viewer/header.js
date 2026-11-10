@@ -20,12 +20,13 @@ const TABS = [
   ["chat", "Chat", "messenger.html", "Project channels, group chats, direct messages"],
   ["calendar", "Calendar", "calendar.html", "Meetings, tasks and issues by date"],
   ["folders", "Folders", "folders.html", "The project's files"],
+  ["codes", "Codes", "codes.html", "Ask the building codes: the Ordinance, PNAPs and Codes of Practice in the office's library"],
 ];
 
 const PAGE_OF = {
   "projects.html": "projects", "dashboard.html": "dashboard", "index.html": "sheets", "": "sheets",
   "model.html": "3d", "board.html": "board", "tasks.html": "tasks", "messenger.html": "chat",
-  "calendar.html": "calendar", "folders.html": "folders", "admin.html": "admin",
+  "calendar.html": "calendar", "folders.html": "folders", "admin.html": "admin", "codes.html": "codes",
 };
 
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
