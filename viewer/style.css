@@ -2638,3 +2638,6 @@ header .flr-lab { white-space: nowrap; }
 #fr-box .fr-msg { min-height: 16px; font-size: 12px; }
 #fr-box .fr-b { display: flex; gap: 6px; justify-content: flex-end; }
 @media (max-width: 700px) { #fr-box { left: 8px; right: 8px; top: auto; bottom: 70px; width: auto; } }
+
+/* a callout's width handle: drag its outer side to set where the text wraps */
+#overlay .whandle { fill: #fff; stroke: var(--accent, #f28022); stroke-width: 1.5; cursor: ew-resize; pointer-events: all; }

@@ -593,18 +593,36 @@ function textWidth(str, fs, font) {
 }
 /* Lines of text; with maxW, long lines are broken at spaces to fit (a text
    box keeps its words inside its frame). */
+/* The lines of a text wrapped at maxW (px) - as wrapText draws them */
+function svgWrapLines(str, maxW, fs, font) {
+  const t = svgEl("text", {});
+  wrapText(t, str, 0, 0, 1, "start", maxW, fs, font);
+  return Array.from(t.childNodes).map((n) => n.textContent);
+}
+const CBOX = new Map();
+const WRAPTAP = { at: 0, id: "" };       // the width handle's last press (a double press fits the text)          // callout id -> its box as last drawn (canvas px)
+
 function wrapText(node, str, x, y, lh, align, maxW, fs, font) {
   let lines = (str || "").split("\n");
   if (maxW && fs) {
     const out = [];
     for (const ln of lines) {
-      const words = ln.split(" ");
+      // words, and each Chinese character on its own (no spaces between them)
+      const words = ln.match(/[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]|[^\s\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]+|\s+/g) || [""];
       let cur = "";
-      for (const w of words) {
-        const tryL = cur ? cur + " " + w : w;
-        if (cur && textWidth(tryL, fs, font) > maxW) { out.push(cur); cur = w; } else cur = tryL;
+      for (let w of words) {
+        if (/^\s+$/.test(w)) { if (cur) cur += " "; continue; }
+        // a word longer than the width is broken where it runs out
+        while (textWidth(w, fs, font) > maxW && w.length > 1) {
+          let n = w.length - 1;
+          while (n > 1 && textWidth(cur + w.slice(0, n), fs, font) > maxW) n--;
+          if (cur && textWidth(cur + w.slice(0, n), fs, font) > maxW) { out.push(cur.trimEnd()); cur = ""; continue; }
+          out.push(cur + w.slice(0, n)); cur = ""; w = w.slice(n);
+        }
+        const tryL = cur + w;
+        if (cur.trim() && textWidth(tryL, fs, font) > maxW) { out.push(cur.trimEnd()); cur = w; } else cur = tryL;
       }
-      out.push(cur);
+      out.push(cur.trimEnd());
     }
     lines = out;
   }
@@ -916,15 +934,18 @@ function render(item, opts) {
     g.appendChild(t);
 
   } else if (item.type === "textbox" && P.length > 1) {
+    /* The text wraps at the box's width (drag a corner, or type W, to set
+       it); the box grows downwards when the wrapped text needs more room. */
     const b = box(P[0], P[1]);
-    g.appendChild(svgEl("rect", Object.assign({}, filled, b,
-      { "pointer-events": "all", "fill-opacity": st.fillop > 0
-        ? st.fillop / 100 : 0.001 })));
     const tx = st.align === "start" ? b.x + 4
              : st.align === "end" ? b.x + b.width - 4 : b.x + b.width / 2;
     const t = svgEl("text", { x: tx, y: b.y + fs, fill: tc,
       "font-size": fs, "font-family": fontFamily(st.font), "pointer-events": "none" });
-    wrapText(t, item.text, tx, b.y + fs, fs * 1.25, st.align, Math.max(fs * 2, b.width - 8), fs, st.font);
+    const n = wrapText(t, item.text, tx, b.y + fs, fs * 1.25, st.align, Math.max(fs * 2, b.width - 8), fs, st.font);
+    b.height = Math.max(b.height, (n - 1) * fs * 1.25 + fs * 1.45 + 4);
+    g.appendChild(svgEl("rect", Object.assign({}, filled, b,
+      { "pointer-events": "all", "fill-opacity": st.fillop > 0
+        ? st.fillop / 100 : 0.001 })));
     g.appendChild(t);
 
   } else if (item.type === "callout" && P.length > 1) {
@@ -936,9 +957,11 @@ function render(item, opts) {
        older version gets its knee worked out rather than rejected. */
     const target = P[0];
     const anchor = P[P.length - 1];
-    const lines = (item.text || " ").split("\n");
-    // as wide as its longest line really is (capitals and wide fonts ran out of the box)
-    const cw = Math.max(fs * 2, ...lines.map((s) => textWidth(s, fs, st.font))) + 14;
+    // a set width (drag the box's outer side): the text wraps inside it;
+    // otherwise as wide as its longest line really is
+    const wrapPx = item.wrap_mm > 0 ? item.wrap_mm * pxPerMM() : 0;
+    const lines = wrapPx ? svgWrapLines(item.text || " ", Math.max(fs * 2, wrapPx - 14), fs, st.font) : (item.text || " ").split("\n");
+    const cw = wrapPx ? Math.max(fs * 2 + 14, wrapPx) : Math.max(fs * 2, ...lines.map((s) => textWidth(s, fs, st.font))) + 14;
     const ch = lines.length * fs * 1.25 + 8;
     const rightOfTarget = anchor[0] >= target[0];
     const b = { x: rightOfTarget ? anchor[0] : anchor[0] - cw,
@@ -974,8 +997,10 @@ function render(item, opts) {
              : st.align === "end" ? b.x + b.width - 5 : b.x + b.width / 2;
     const t = svgEl("text", { x: tx, y: b.y + fs + 2, fill: tc,
       "font-size": fs, "font-family": fontFamily(st.font), "pointer-events": "none" });
-    wrapText(t, item.text, tx, b.y + fs + 2, fs * 1.25, st.align);
+    wrapText(t, lines.join("\n"), tx, b.y + fs + 2, fs * 1.25, st.align);
     g.appendChild(t);
+    // the box as drawn: where its width handle goes
+    CBOX.set(item.id, { x: b.x, y: b.y, w: b.width, h: b.height, right: rightOfTarget, ax: anchor[0] });
 
   } else if (item.type === "measure" && P.length > 1) {
     const t = svgEl("text", {
@@ -1204,6 +1229,13 @@ function redraw(target) {
     const P = it.points_mm.map((p) => canvasFrom(p[0], p[1]));
     allPx.push(...P);
     const xs = P.map((p) => p[0]), ys = P.map((p) => p[1]);
+    // a text box that grew to fit its text, or a callout's box: the box as drawn
+    const drawn = (it.type === "textbox" || it.type === "callout") && !it.rot
+      && svg.querySelector(`.mk[data-id="${CSS.escape(it.id)}"] rect[pointer-events="all"]`);
+    if (drawn) {
+      const x = +drawn.getAttribute("x"), y = +drawn.getAttribute("y"), w = +drawn.getAttribute("width"), h = +drawn.getAttribute("height");
+      if (isFinite(x + y + w + h)) { xs.push(x, x + w); ys.push(y, y + h); allPx.push([x, y], [x + w, y + h]); }
+    }
     svg.appendChild(svgEl("rect", { class: "selbox",
       x: Math.min(...xs) - 4, y: Math.min(...ys) - 4,
       width: Math.max(...xs) - Math.min(...xs) + 8,
@@ -1223,6 +1255,16 @@ function redraw(target) {
         svg.appendChild(svgEl("circle",
           { class: "handle", cx: q[0], cy: q[1], r: 5, "data-h": i }));
       });
+      // a callout: its box's outer side sets the width the text wraps at
+      const cb = it.type === "callout" && CBOX.get(it.id);
+      if (cb) {
+        const hx = cb.right ? cb.x + cb.w : cb.x, hy = cb.y + cb.h / 2;
+        const wh = svgEl("rect", { class: "whandle", x: hx - 3, y: hy - 8, width: 6, height: 16 });
+        const tip = svgEl("title", {});
+        tip.textContent = "Drag to set the width the text wraps at - double-click to fit the text again";
+        wh.appendChild(tip);
+        svg.appendChild(wh);
+      }
       /* A small square on each segment adds a point there when dragged -
          the way PDF and CAD editors let a polyline be reshaped without
          redrawing it. Freehand pen strokes are left out: they already
@@ -1715,12 +1757,13 @@ function mirrorSelection(axis) {
    them (the corner drag and the % box). orig: their state before. */
 function snapshotForScale(items) {
   return items.map((it) => ({ it, pts: it.points_mm.map((q) => q.slice()), loops: it.loops_mm ? JSON.parse(JSON.stringify(it.loops_mm)) : null,
-    style: it.style ? JSON.parse(JSON.stringify(it.style)) : null }));
+    style: it.style ? JSON.parse(JSON.stringify(it.style)) : null, wrap: it.wrap_mm || 0 }));
 }
 function scaleItems(orig, k, f) {
   for (const o of orig) {
     o.it.points_mm = o.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]);
     if (o.loops) o.it.loops_mm = o.loops.map((l) => ({ ...l, pts: l.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]) }));
+    if (o.wrap) o.it.wrap_mm = Math.round(o.wrap * k * 10) / 10;
     if (o.style) {
       o.it.style = Object.assign({}, o.style);
       if (o.style.size) o.it.style.size = Math.round(o.style.size * k * 100) / 100;
@@ -2786,6 +2829,23 @@ function wirePointer() {
         svg.setPointerCapture(ev.pointerId);
         return;
       }
+      const wh = ev.target.closest && ev.target.closest(".whandle");
+      if (wh && S.sel.length === 1) {
+        if (locked()) return;
+        // pressed twice: back to the width of its text
+        const now = Date.now(), it = S.items.find((x) => x.id === S.sel[0]);
+        if (now - (WRAPTAP.at || 0) < 400 && WRAPTAP.id === S.sel[0] && it && it.wrap_mm) {
+          WRAPTAP.at = 0;
+          remember(S.sel); delete it.wrap_mm; redraw(); persist(S.sel);
+          status("Callout fitted to its text.");
+          return;
+        }
+        WRAPTAP.at = now; WRAPTAP.id = S.sel[0];
+        remember(S.sel);
+        mode = "wrap";
+        svg.setPointerCapture(ev.pointerId);
+        return;
+      }
       const mh = ev.target.closest && ev.target.closest(".midhandle");
       if (mh && S.sel.length === 1) {
         const it = S.items.find((x) => x.id === S.sel[0]);
@@ -3078,6 +3138,16 @@ function wirePointer() {
         }
       }
       redraw();
+    } else if (mode === "wrap") {
+      const it = S.items.find((x) => x.id === S.sel[0]);
+      const cb = it && CBOX.get(it.id);
+      if (cb) {
+        const r = $("#overlay").getBoundingClientRect();
+        const wpx = Math.abs(ev.clientX - r.left - cb.ax);
+        it.wrap_mm = Math.round(Math.max(8, wpx / pxPerMM()) * 10) / 10;
+        status(`Wrap width ${it.wrap_mm} mm - press the handle twice to fit the text again`);
+        redraw();
+      }
     } else if (mode === "gscale" && gscale) {
       const r = $("#overlay").getBoundingClientRect();
       const d = Math.hypot(ev.clientX - r.left - gscale.sf[0], ev.clientY - r.top - gscale.sf[1]);
@@ -3145,7 +3215,7 @@ function wirePointer() {
       mode = null; handle = -1;
       return;
     }
-    if (mode === "move" || mode === "handle" || mode === "rotate" || mode === "gscale") {
+    if (mode === "move" || mode === "handle" || mode === "rotate" || mode === "gscale" || mode === "wrap") {
       gscale = null;
       for (const id of S.sel) {
         const it = S.items.find((x) => x.id === id);

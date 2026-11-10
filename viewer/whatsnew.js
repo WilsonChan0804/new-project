@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-10", date: "10 Nov 2026",
+    items: [
+      "**Callout width:** drag the small handle on the outer side of a callout's box to set the width its text wraps at - a long line becomes several. Press the handle twice to fit the text again.",
+      "**Text box:** the text wraps at the box's width (drag a corner or type W), and the box now grows downwards when the wrapped text needs more room instead of the words running out of it.",
+      "**Wrapping Chinese and long words:** text with no spaces (Chinese, or a long reference) now wraps too; before, it ran out of the box.",
+    ],
+  },
+  {
     version: "2027-01-09", date: "10 Nov 2026",
     items: [
       "**Mirror markups:** **⇄** (left-right) and **⇅** (up-down) beside the rotate buttons, or right-click > Mirror, mirror the selection about its middle. Text stays readable and pictures are not turned back to front; clouds keep their bumps outward. One Ctrl+Z undoes it.",

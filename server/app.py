@@ -3453,7 +3453,7 @@ def layer_can(pid, w, role, layer, what):
     return w.uid in (st.get("editors") or [])
 
 
-GEOMETRY_KEYS = ("points_mm", "type", "text", "style", "rot", "layer", "sheet", "stamp", "href")
+GEOMETRY_KEYS = ("points_mm", "type", "text", "style", "rot", "layer", "sheet", "stamp", "href", "loops_mm", "wrap_mm")
 
 
 def check_layer_edit(pid, w, role, prev, item):
