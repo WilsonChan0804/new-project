@@ -51,7 +51,7 @@ PART = [
         ['手寫', 'Pen（一筆畫完之後停定唔郁，就會變成直線、圓或者長方形）、Highlighter'],
         ['文字', 'Text、Text box、Callout'],
         ['印章', 'APPROVED、APPROVED AS NOTED、REVISE & RESUBMIT、REJECTED、REVIEWED、FOR INFORMATION、VOID（會簽上你個名同時間）'],
-        ['量度', 'Measure、Dimension、Area、Angle、Route distance（用 **1:** 格入面嘅比例；空白就用 view 自己嘅比例 - 匯入嘅圖則就用 title block 寫嘅比例，例如 SCALE 1:100，格入面顯示 **auto 1:100**）'],
+        ['量度', 'Measure、Dimension、Area、Angle、Route distance（用 **1:** 格入面嘅比例；空白就用 view 自己嘅比例 - 匯入嘅圖則就用 title block 寫嘅比例，例如 SCALE 1:100，格入面顯示 **auto 1:100**）。Revit sheet 上每個 view 都會喺你量度嘅位置提供佢嘅比例 - 冇開 crop region 嘅平面圖同 drafting view 都得（要用 2026 年 11 月 10 日或之後嘅 add-in publish；之前 publish 嘅，所有 view 同一比例先得）；咁樣量嘅數會寫 *(1:50 from the view)*。上載嘅 PDF 冇 SCALE 字眼，view 標題下面單獨寫嘅比例（*1 : 100*）全部一樣就會用'],
         ['其他', 'Snip（將一個範圍 copy 做圖片；亦可以貼圖入嚟）、Select text、Eraser、Match properties、Select、Pan'],
     ]),
     UL([

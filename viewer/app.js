@@ -1032,11 +1032,40 @@ function activeScale(mid, item) {
   if (manual && manual > 0) return { scale: manual, from: "set" };
   const r = mid && resolve(mid[0], mid[1]);
   if (r) return { scale: Number(r.scale), from: "viewport" };
+  // a Revit view that carries no model mapping (crop region off, a drafting
+  // view, a detail) still has its scale: the view whose box holds the point
+  const b = mid && boxScale(mid[0], mid[1]);
+  if (b) return { scale: b, from: "view" };
+  // outside every view, or a sheet published before the boxes were sent:
+  // the views' scale when they all share one
+  const one = sharedScale(S.sheet);
+  if (one) return { scale: one, from: "views" };
   // an imported drawing has no viewports: the scale its title block states
   const t = S.titleScale;
   if (t && t.sheet === (S.sheet && S.sheet.number) && t.scale) return { scale: t.scale, from: "title" };
   return null;
 }
+
+/* The views whose scale means a length on paper: not legends, schedules or 3D. */
+const NO_SCALE_VIEW = /Legend|Schedule|Report|ThreeD|Walkthrough|Rendering|DrawingSheet|Browser|Internal|Undefined/;
+function scaledViews(sheet) {
+  return ((sheet && sheet.viewports) || []).filter((vp) => Number(vp.scale) > 0 && !NO_SCALE_VIEW.test(vp.view_type || ""));
+}
+function boxScale(u, v) {
+  let pick = null, best = Infinity;
+  for (const vp of scaledViews(S.sheet)) {
+    const r = vp.box_mm || vp.paper_rect_mm;
+    if (!r || u < r[0] || u > r[0] + r[2] || v < r[1] || v > r[1] + r[3]) continue;
+    if (r[2] * r[3] < best) { best = r[2] * r[3]; pick = vp; }
+  }
+  return pick ? Number(pick.scale) : null;
+}
+function sharedScale(sheet) {
+  const d = [...new Set(scaledViews(sheet).map((vp) => Number(vp.scale)))];
+  return d.length === 1 ? d[0] : null;
+}
+const scaleNote = (s) => s.from === "title" ? "  (1:" + s.scale + " from title block)"
+  : s.from === "view" || s.from === "views" ? "  (1:" + s.scale + " from the view)" : "";
 
 /* The open sheet's title-block scale, read once per sheet in the background;
    the 1: box says what it found. Revit sheets keep their viewports' scales. */
@@ -1045,7 +1074,18 @@ async function loadTitleScale(sheet) {
   const box = document.getElementById("meas-scale");
   const want = sheet.number;
   S.titleScale = { sheet: want, scale: null };
-  if (box) { box.placeholder = "auto"; box.style.width = "60px"; box.title = "Leave empty to use the view's own scale (or the title block's)"; }
+  if (box) {
+    box.placeholder = "auto"; box.style.width = "60px";
+    box.title = "Leave empty to use the view's own scale (or the title block's)";
+    const ds = [...new Set(scaledViews(sheet).map((vp) => Number(vp.scale)))].sort((a, b) => a - b);
+    if (ds.length === 1) {
+      box.placeholder = "auto 1:" + ds[0]; box.style.width = "88px";
+      box.title = `From the views on this sheet (1:${ds[0]}). Type another scale to override.`;
+    } else if (ds.length > 1) {
+      box.title = `The views on this sheet are at ${ds.map((n) => "1:" + n).join(", ")}: each measurement takes the scale of the view it is in. Type a scale to override.`;
+    }
+  }
+  if (scaledViews(sheet).length) return;          // a Revit sheet: its views say the scale
   const words = await wordsFor(sheet).catch(() => null);
   if (!S.sheet || S.sheet.number !== want || !words || !S.pageMM) return;
   const r = scaleFromWords(words, S.pageMM[0] * MM_PT, S.pageMM[1] * MM_PT);
@@ -1054,7 +1094,8 @@ async function loadTitleScale(sheet) {
     if (r.scale) {
       box.placeholder = "auto 1:" + r.scale;
       box.style.width = "88px";                  // room for "auto 1:100"
-      box.title = `The title block says 1:${r.scale}: measurements outside a mapped view use it. Type another scale to override.`;
+      box.title = r.views ? `The scale written under the views' titles is 1:${r.scale}: measurements use it. Type another scale to override.`
+        : `The title block says 1:${r.scale}: measurements outside a mapped view use it. Type another scale to override.`;
     } else if (r.several) {
       box.title = `The title block shows ${r.all.map((n) => "1:" + n).join(" and ")} - type the one for the view you measure.`;
     }
@@ -1070,7 +1111,7 @@ function measureLabel(pts, item) {
   const mid = [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2];
   const s = activeScale(mid, item);
   if (s) return fmtLen(d * s.scale) + (item && item.scale ? "  (1:" + item.scale + ")"
-    : s.from === "title" ? "  (1:" + s.scale + " from title block)" : "");
+    : scaleNote(s));
   return d.toFixed(1) + " mm (paper - set a scale)";
 }
 
@@ -1090,7 +1131,7 @@ function areaLabel(pts, item) {
   if (!s) return paper.toFixed(0) + " mm2 (paper - set a scale)";
   const mm2 = paper * s.scale * s.scale;
   const m2 = mm2 / 1e6;
-  const how = s.from === "title" && !(item && item.scale) ? "  (1:" + s.scale + " from title block)" : "";
+  const how = !(item && item.scale) ? scaleNote(s) : "";
   const room = item && item.room ? [item.room.number, item.room.name].filter(Boolean).join(" ") + ": " : "";
   return room + (m2 >= 0.01 ? m2.toFixed(2) + " m\u00B2" : mm2.toFixed(0) + " mm\u00B2") + how;
 }
@@ -2974,6 +3015,26 @@ function wirePointer() {
     }
   });
 
+  /* The drawing takes the keyboard back. A dropdown or box used a moment
+     ago (the Layer, Line or Type of the properties bar, the 1: box) kept
+     it: pressing V then changed the dropdown instead of picking Select, and
+     Ctrl+C / Ctrl+V went nowhere. A click on the drawing, or a choice made
+     in a dropdown, hands the keys back to the drawing. A markup's own text
+     being typed on the sheet keeps them. */
+  const isField = (el) => el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+  document.addEventListener("pointerdown", (ev) => {
+    const a = document.activeElement;
+    if (!isField(a)) return;
+    const area = ev.target && ev.target.closest && ev.target.closest("#scroll, #split-scroll");
+    if (area && !area.contains(a)) a.blur();
+  }, true);
+  for (const id of ["#props", "#scale-lab"]) {
+    const box = $(id);
+    if (!box) continue;
+    box.addEventListener("change", (ev) => { if (ev.target.tagName === "SELECT") ev.target.blur(); });
+    box.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.tagName === "INPUT") { ev.preventDefault(); ev.target.blur(); } });
+  }
+
   document.addEventListener("keydown", (ev) => {
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)) return;
     if ((ev.key === "PageDown" || ev.key === "PageUp") && !poly) {
@@ -3031,33 +3092,33 @@ function wirePointer() {
       ev.preventDefault();
       deleteSelection();
     }
-    else if ((ev.ctrlKey || ev.metaKey) && (ev.key === "g" || ev.key === "G") && S.sel.length) {
+    else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "g" && S.sel.length) {
       ev.preventDefault();
       if (ev.shiftKey) ungroupSelection(); else groupSelection();
     }
-    else if ((ev.ctrlKey || ev.metaKey) && ev.key === "a") {
+    else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "a") {
       ev.preventDefault();
       select(S.items.filter((i) => S.sheet && i.sheet === S.sheet.number)
         .map((i) => i.id), false);
     }
-    else if (ev.key === "r" && S.sel.length) {
+    else if (!ev.ctrlKey && !ev.metaKey && !ev.altKey && keyOf(ev) === "r" && S.sel.length) {
       // R rotates 90 degrees; Shift+R the other way.
       rotateSelection(ev.shiftKey ? -90 : 90);
       persist(S.sel);
     }
-    else if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === "z") {
+    else if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && keyOf(ev) === "z") {
       ev.preventDefault(); undo();
     }
-    else if ((ev.ctrlKey || ev.metaKey) && (ev.key.toLowerCase() === "y"
-             || (ev.shiftKey && ev.key.toLowerCase() === "z"))) {
+    else if ((ev.ctrlKey || ev.metaKey) && (keyOf(ev) === "y"
+             || (ev.shiftKey && keyOf(ev) === "z"))) {
       ev.preventDefault(); redo();
     }
-    else if (ev.ctrlKey && ev.key === "c") {
+    else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "c") {
       // Selected drawing text belongs to the browser's own copy.
       if (S.tool === "selecttext") return;
       copySelection();
     }
-    else if (ev.ctrlKey && ev.key === "v") paste();
+    else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "v") paste();
     else if (!ev.ctrlKey && !ev.metaKey) {
       // one key per tool, as set in Shortcuts (the keyboard button)
       const t = toolForKey(keyName(ev));
@@ -3080,8 +3141,25 @@ const DEFAULT_KEYS = {
 };
 const RESERVED_KEYS = new Set(["r", "shift+r", "n", "shift+n", "delete", "backspace", "enter", "escape",
   "pageup", "pagedown", " ", "shift+ ", "tab", "shift+tab"]);
+/* The key pressed, as a lowercase name - the same with Caps Lock on, and
+   with a Chinese input method switched on (the browser then reports every
+   letter as "Process": the key's place on the keyboard, ev.code, says
+   which it was). */
+function keyOf(ev) {
+  const k = ev.key || "";
+  if (k.length === 1 && /[\x20-\x7e]/.test(k)) return k.toLowerCase();
+  const c = ev.code || "";
+  if (k === "Process" || k === "Unidentified" || k.length === 1 || !k) {
+    let m = /^Key([A-Z])$/.exec(c);
+    if (m) return m[1].toLowerCase();
+    m = /^(?:Digit|Numpad)(\d)$/.exec(c);
+    if (m) return m[1];
+    if (c === "Space") return " ";
+  }
+  return k.toLowerCase();
+}
 function keyName(ev) {
-  let k = (ev.key || "").toLowerCase();
+  let k = keyOf(ev);
   if (k === "shift" || k === "alt" || k === "control" || k === "meta") return "";
   return (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + k;
 }

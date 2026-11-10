@@ -78,7 +78,9 @@ function typing(t) {
 
 document.addEventListener("keydown", (ev) => {
   if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
-  const k = ev.key.toLowerCase();
+  // the same with Caps Lock or a Chinese input method on (the key then reads "Z" or "Process")
+  const m = /^Key([A-Z])$/.exec(ev.code || "");
+  const k = (ev.key || "").length === 1 && /[a-z]/i.test(ev.key) ? ev.key.toLowerCase() : m ? m[1].toLowerCase() : (ev.key || "").toLowerCase();
   if (k !== "z" && k !== "y") return;
   if (typing(ev.target) || typing(document.activeElement)) return;
   ev.preventDefault();

@@ -3,7 +3,9 @@
    points, the OCR'd words for a scan). A value beside a SCALE label counts,
    in the title block's corner first; several different ones there (a sheet
    of details), or "AS INDICATED", give none - the 1: box then says which
-   were seen. W, H: the sheet in points. */
+   were seen. With no SCALE label, a scale written on a line of its own
+   (under a view's title: "1 : 100") counts when all such agree. W, H: the
+   sheet in points. */
 export function scaleFromWords(words, W, H) {
   if (!Array.isArray(words) || !words.length) return { scale: null, all: [] };
   const toks = words.filter((w) => w && w[0]).map((w) => ({ t: String(w[0]), x: +w[1], y: +w[2], w: +w[3] || 0, h: +w[4] || 6 }));
@@ -25,7 +27,10 @@ export function scaleFromWords(words, W, H) {
     }
     for (const m of text.matchAll(/(?:^|[^\d.])1\s*[:\/]\s*(\d{1,4})(?![\d./])/g)) {
       const n = +m[1];
-      if (n >= 1 && n <= 5000) values.push({ n, x: xs[m.index + m[0].indexOf("1")], y: L.y, h: L.h });
+      // alone: the line is only the scale ("1 : 100" under a view's title),
+      // not a note that has one in it ("RAMP 1:12")
+      const alone = /^\s*(?:scale\s*:?\s*)?1\s*[:\/]\s*\d{1,4}\s*$/i.test(text);
+      if (n >= 1 && n <= 5000) values.push({ n, x: xs[m.index + m[0].indexOf("1")], y: L.y, h: L.h, alone });
     }
     for (const m of text.matchAll(/scale|比例/gi)) {
       const rest = text.slice(m.index, m.index + 40);
@@ -44,5 +49,9 @@ export function scaleFromWords(words, W, H) {
     if (d.length > 1) return { scale: null, all: d.sort((a, b) => a - b), several: true };
   }
   if (labels.some((l) => l.none)) return { scale: null, all, indicated: true };
+  // no SCALE label: the scale written on its own under the views' titles, when they agree
+  const lone = distinct(values.filter((v) => v.alone && v.n > 1));
+  if (lone.length === 1) return { scale: lone[0], all, views: true };
+  if (lone.length > 1) return { scale: null, all: lone.sort((a, b) => a - b), several: true };
   return { scale: null, all };
 }

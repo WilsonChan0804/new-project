@@ -105,6 +105,17 @@ def annotation_rect_local(view):
     return None
 
 
+def box_on_sheet(vp, origin_ft):
+    """The viewport's whole box on the page - its view and its title - as
+    (x, y, w, h) in mm from the paper origin (the convention of
+    paper_rect_mm). Known for every viewport, mappable or not, so the
+    viewer can take the view's scale from where a point falls."""
+    box = vp.GetBoxOutline()
+    bmin, bmax = box.MinimumPoint, box.MaximumPoint
+    return (round(ft_mm(bmin.X - origin_ft.X), 2), round(ft_mm(bmin.Y - origin_ft.Y), 2),
+            round(ft_mm(bmax.X - bmin.X), 2), round(ft_mm(bmax.Y - bmin.Y), 2))
+
+
 def crop_rect_on_sheet(vp, view, origin_ft):
     """Where the crop region sits on the page.
 

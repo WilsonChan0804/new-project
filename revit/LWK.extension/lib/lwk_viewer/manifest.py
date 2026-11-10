@@ -827,6 +827,13 @@ def build_sheet(doc, sheet, probe, routes=True):
             "calibration": [],
             "diagnostics": None,
         }
+        # the view's box on the page, for every view: its scale then applies
+        # where a point falls inside it, mapped to the model or not (a plan
+        # with its crop region off, a drafting view, a detail)
+        try:
+            entry["box_mm"] = list(geom.box_on_sheet(vp, origin_ft))
+        except Exception as ex_:
+            probe.info(sheet.SheetNumber, "box of '%s' not read: %s" % (view.Name, ex_))
 
         reason = unmappable_reason(view)
         spatial = str(view.ViewType) == "AreaPlan" or (want_rooms and str(view.ViewType) == "FloorPlan")

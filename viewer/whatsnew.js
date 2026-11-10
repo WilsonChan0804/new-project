@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-07", date: "10 Nov 2026",
+    items: [
+      "**Fix: keys on the Sheets page.** Ctrl+C / Ctrl+V (and Ctrl+A, Ctrl+G, Ctrl+Z) did nothing with **Caps Lock** on, and the tool keys (V for Select ...) did nothing with a **Chinese input method** switched on. After choosing in a drop-down of the properties bar (Layer, Line, Type ...), V changed the drop-down instead of picking Select: a click on the drawing now gives the keys back to it.",
+      "**The scale of every Revit view:** a measurement takes the scale of the view it is in - also a plan with its **crop region off**, a drafting view or a detail, which got none before (the title block was tried, and often says nothing). Republish the sheets with the updated add-in for this; on sheets published earlier it works when all the views share one scale. The **1:** box shows the scale found (*auto 1:100*) or lists the views' scales.",
+      "**Uploaded PDFs:** with no SCALE label in the title block, a scale written on its own under the views' titles (*1 : 100*) is used when they all agree.",
+    ],
+  },
+  {
     version: "2027-01-06", date: "10 Nov 2026",
     items: [
       "**Codes - ask the building codes:** a new **Codes** page answers questions on the Buildings Ordinance, its Regulations, PNAPs, Codes of Practice and the office's notes, from the office's own library. The answer comes only from the clauses it finds and cites each one; click a citation to see the clause, its edition and page, and open the PDF at that page. English or Chinese; follow-up questions carry on.",

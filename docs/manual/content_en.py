@@ -418,7 +418,7 @@ DOC = [
         ['Freehand', 'Pen (hold still at the end of a stroke to snap it to a line, circle or rectangle), Highlighter'],
         ['Text', 'Text, Text box, Callout'],
         ['Stamps', 'APPROVED, APPROVED AS NOTED, REVISE & RESUBMIT, REJECTED, REVIEWED, FOR INFORMATION, VOID (signed with your name and time)'],
-        ['Measuring', "Measure, Dimension, Area, Angle, Route distance (use the scale in the **1:** box; when it is empty, the view's own scale - or, on an imported drawing, the scale its title block states, e.g. SCALE 1:100, shown as **auto 1:100**)"],
+        ['Measuring', "Measure, Dimension, Area, Angle, Route distance (use the scale in the **1:** box; when it is empty, the view's own scale - or, on an imported drawing, the scale its title block states, e.g. SCALE 1:100, shown as **auto 1:100**). On a Revit sheet every view gives its scale where you measure - a plan with its crop region off and a drafting view too (sheets published with the add-in of 10 Nov 2026 or later; on earlier ones, when all the views share one scale); a measurement taken that way says *(1:50 from the view)*. On an uploaded PDF with no SCALE label, a scale written on its own under the views' titles (*1 : 100*) counts when they all agree"],
         ['Other', 'Snip (copies a region as an image; you can also paste an image), Select text, Eraser, Match properties, Select, Pan'],
     ]),
     UL([
@@ -1039,7 +1039,7 @@ DOC = [
         '**Can consultants use it?** Yes, with their own account, usually as **Viewer** or **Member** on that project only.',
     ]),
     H2('Shortcuts cheat sheet'),
-    P('Print this table or keep it beside the screen for the first week.'),
+    P('Print this table or keep it beside the screen for the first week. The keys work with Caps Lock on and with a Chinese input method switched on; after using a box or a drop-down of the toolbar, a click on the drawing gives the keys back to it.'),
     TABLE(['Where', 'Key or button', 'Action'], [
         ['3D', 'Right button drag', 'Orbit'],
         ['3D', 'Middle button drag', 'Pan'],
