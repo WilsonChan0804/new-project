@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-09", date: "10 Nov 2026",
+    items: [
+      "**Mirror markups:** **⇄** (left-right) and **⇅** (up-down) beside the rotate buttons, or right-click > Mirror, mirror the selection about its middle. Text stays readable and pictures are not turned back to front; clouds keep their bumps outward. One Ctrl+Z undoes it.",
+      "**Scale by a percentage:** the new **%** box beside W / H scales the selection evenly about its middle, text size and line weight with it (type 50 or 200). Dragging a corner of the selection does the same by eye; W / H stretch.",
+      "**Fix: the Route and Area panels really close.** A style rule kept them on screen even when they were closed - so × seemed to do nothing, and a panel stayed after its tool was put away.",
+    ],
+  },
+  {
     version: "2027-01-08", date: "10 Nov 2026",
     items: [
       "**Find & replace on a sheet:** **Ctrl+H** (or **View ▾ > Find & replace**) changes words in the text of the sheet's markups - text, text boxes, callouts, stamps - and, when ticked, its issues' titles and descriptions. Match case, Whole word, Find next, Replace or Replace all; one Ctrl+Z undoes it.",

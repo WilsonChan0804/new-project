@@ -2579,7 +2579,7 @@ header .flr-lab { white-space: nowrap; }
 #route-panel, #area-panel { position: fixed; right: 14px; top: 118px; z-index: 210; width: 300px; max-width: calc(100vw - 28px);
   background: var(--panel, #fff); border: 1px solid var(--line, #d9dde3); border-radius: 10px; box-shadow: 0 8px 28px rgba(20,26,36,.18);
   padding: 10px 12px; font-size: 12.5px; display: flex; flex-direction: column; gap: 7px; color: var(--ink, #1f2430); }
-.rp-panel[hidden] { display: none; }
+#route-panel[hidden], #area-panel[hidden], .rp-panel[hidden] { display: none; }   /* the id rule above sets display: it would beat a class's [hidden] */
 .rp-panel .rp-h { display: flex; flex-direction: column; gap: 2px; }
 .rp-panel .rp-h b { font-size: 13.5px; }
 .rp-panel .rp-len { font-weight: 700; font-size: 14px; }

@@ -1387,6 +1387,11 @@ function applyGeometry(field) {
       it.points_mm = it.points_mm.map(f);
       moveLoops(it, f);
     }
+  } else if (field === "g-k") {
+    // evenly about the middle, text and line weights with it
+    if (!(v > 0) || v === 100) { $("#g-k").value = "100"; return; }
+    scaleItems(snapshotForScale(items), v / 100, [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2]);
+    $("#g-k").value = "100";
   } else if (field === "g-r") {
     // One item: an absolute angle. A group: turn by the typed amount.
     const delta = items.length === 1 ? v - (items[0].rot || 0) : v;
@@ -1411,6 +1416,7 @@ function syncButtons() {
   }
   $("#a-rotl").disabled = !S.sel.length;
   $("#a-rotr").disabled = !S.sel.length;
+  for (const id of ["#a-mirx", "#a-miry"]) if ($(id)) $(id).disabled = !S.sel.length;
 
   fillGeometry();
 
@@ -1669,6 +1675,58 @@ function rotateSelection(deg, noHistory) {
     }
   }
   redraw();
+}
+
+/* Mirror the selection left-right ("x") or up-down ("y") about the middle
+   of its box. Text stays readable and a picture is not turned back to
+   front - as CAD's MIRRTEXT off: a box (text, text box, rectangle, cloud,
+   picture) moves to its mirrored place and turns the other way; lines and
+   shapes have their points mirrored, closed ones keeping their winding so
+   cloud bumps stay outward and areas stay positive. */
+const CLOSED = new Set(["polygon", "cloudpoly", "area"]);
+function mirrorSelection(axis) {
+  const items = S.sel.map((id) => S.items.find((x) => x.id === id)).filter((it) => it && it.points_mm && it.points_mm.length);
+  if (!items.length) return;
+  const bad = items.find((it) => layerLocked(it));
+  if (bad) { status(`"${layerOf(bad)}" is a locked layer: you can open its issues but not change its markups.`); return; }
+  remember(S.sel);
+  const b = selBounds(items);
+  const k = axis === "x" ? 0 : 1, c = k ? b.y0 + b.y1 : b.x0 + b.x1;
+  const m = (p) => { const q = p.slice(); q[k] = c - p[k]; return q; };
+  for (const it of items) {
+    if (BOXY.has(it.type)) {
+      const o = centreOf(it.points_mm), n = m(o);
+      const dx = n[0] - o[0], dy = n[1] - o[1];
+      it.points_mm = it.points_mm.map((p) => [p[0] + dx, p[1] + dy]);
+      moveLoops(it, (p) => [p[0] + dx, p[1] + dy]);
+      if (it.rot) it.rot = (360 - it.rot) % 360;
+    } else {
+      it.points_mm = it.points_mm.map(m);
+      if (CLOSED.has(it.type)) it.points_mm.reverse();
+      if (it.loops_mm) it.loops_mm = it.loops_mm.map((l) => ({ ...l, pts: l.pts.map(m).reverse() }));
+    }
+  }
+  redraw();
+  persist(S.sel);
+  status(`Mirrored ${axis === "x" ? "left-right" : "up-down"} (${items.length} markup${items.length === 1 ? "" : "s"}). Ctrl+Z undoes it.`);
+}
+
+/* Scale markups by k about a fixed point, text size and line weight with
+   them (the corner drag and the % box). orig: their state before. */
+function snapshotForScale(items) {
+  return items.map((it) => ({ it, pts: it.points_mm.map((q) => q.slice()), loops: it.loops_mm ? JSON.parse(JSON.stringify(it.loops_mm)) : null,
+    style: it.style ? JSON.parse(JSON.stringify(it.style)) : null }));
+}
+function scaleItems(orig, k, f) {
+  for (const o of orig) {
+    o.it.points_mm = o.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]);
+    if (o.loops) o.it.loops_mm = o.loops.map((l) => ({ ...l, pts: l.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]) }));
+    if (o.style) {
+      o.it.style = Object.assign({}, o.style);
+      if (o.style.size) o.it.style.size = Math.round(o.style.size * k * 100) / 100;
+      if (o.style.width) o.it.style.width = Math.round(o.style.width * k * 1000) / 1000;
+    }
+  }
 }
 
 function deleteSelection() {
@@ -2565,6 +2623,8 @@ function wirePointer() {
         action: () => { rotateSelection(-90); persist(S.sel); } },
       { label: "Rotate 180\u00B0",
         action: () => { rotateSelection(180); persist(S.sel); } },
+      { label: "Mirror left-right", action: () => mirrorSelection("x") },
+      { label: "Mirror up-down", action: () => mirrorSelection("y") },
       "-",
       { label: "Copy", key: "Ctrl+C", action: () => copySelection() },
       { label: "Apply current style", action: () => applyStyleToSelection() },
@@ -2710,8 +2770,7 @@ function wirePointer() {
         const corners = [[b.x0, b.y1], [b.x1, b.y1], [b.x1, b.y0], [b.x0, b.y0]];
         const sc = canvasFrom(...corners[c]), sf = canvasFrom(...corners[(c + 2) % 4]);
         gscale = { fixed: corners[(c + 2) % 4], d0: Math.hypot(sc[0] - sf[0], sc[1] - sf[1]) || 1, sf,
-          orig: items.map((it) => ({ it, pts: it.points_mm.map((q) => q.slice()), loops: it.loops_mm ? JSON.parse(JSON.stringify(it.loops_mm)) : null,
-            style: it.style ? JSON.parse(JSON.stringify(it.style)) : null })) };
+          orig: snapshotForScale(items) };
         mode = "gscale";
         svg.setPointerCapture(ev.pointerId);
         return;
@@ -3023,16 +3082,7 @@ function wirePointer() {
       const r = $("#overlay").getBoundingClientRect();
       const d = Math.hypot(ev.clientX - r.left - gscale.sf[0], ev.clientY - r.top - gscale.sf[1]);
       const k = Math.max(0.05, d / gscale.d0);
-      const f = gscale.fixed;
-      for (const o of gscale.orig) {
-        o.it.points_mm = o.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]);
-        if (o.loops) o.it.loops_mm = o.loops.map((l) => ({ pts: l.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]), sub: l.sub }));
-        if (o.style) {
-          o.it.style = Object.assign({}, o.style);
-          if (o.style.size) o.it.style.size = Math.round(o.style.size * k * 100) / 100;
-          if (o.style.width) o.it.style.width = Math.round(o.style.width * k * 1000) / 1000;
-        }
-      }
+      scaleItems(gscale.orig, k, gscale.fixed);
       status(`Scale ${Math.round(k * 100)}%`);
       redraw();
     } else if (mode === "rotate") {
@@ -6923,7 +6973,7 @@ function wireChrome() {
     redraw();
     persist(ids);
   });
-  for (const f of ["g-x", "g-y", "g-w", "g-h", "g-r"]) {
+  for (const f of ["g-x", "g-y", "g-w", "g-h", "g-r", "g-k"]) {
     // change, not input: applying on every keystroke would move the markup
     // through every intermediate value while a number is being typed.
     $("#" + f).addEventListener("change", () => applyGeometry(f));
@@ -6933,6 +6983,8 @@ function wireChrome() {
   }
   $("#a-rotl").addEventListener("click", () => { rotateSelection(-90); persist(S.sel); });
   $("#a-rotr").addEventListener("click", () => { rotateSelection(90); persist(S.sel); });
+  $("#a-mirx").addEventListener("click", () => mirrorSelection("x"));
+  $("#a-miry").addEventListener("click", () => mirrorSelection("y"));
   $("#rotate").addEventListener("click", () => {
     S.rotation = (S.rotation + 90) % 360; renderPage();
   });

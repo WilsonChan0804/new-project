@@ -170,9 +170,10 @@
       <span id="a-geom" hidden title="Exact position and size, in paper millimetres">
         <label class="p">X<input id="g-x" type="number" step="0.5" style="width:62px"></label>
         <label class="p">Y<input id="g-y" type="number" step="0.5" style="width:62px"></label>
-        <label class="p">W<input id="g-w" type="number" step="0.5" min="0" style="width:58px"></label>
-        <label class="p">H<input id="g-h" type="number" step="0.5" min="0" style="width:58px"></label>
+        <label class="p" title="Width: stretches the selection (drag a corner to scale evenly)">W<input id="g-w" type="number" step="0.5" min="0" style="width:58px"></label>
+        <label class="p" title="Height: stretches the selection (drag a corner to scale evenly)">H<input id="g-h" type="number" step="0.5" min="0" style="width:58px"></label>
         <label class="p">&ang;<input id="g-r" type="number" step="1" style="width:52px"></label>
+        <label class="p" title="Scale evenly about the middle - text size and line weight too. (Drag a corner of the selection to scale by eye; W / H stretch.)">%<input id="g-k" type="number" step="5" min="1" value="100" style="width:52px"></label>
       </span>
       <label class="p" id="a-scale-wrap" hidden
         title="Scale of the selected measurements. Changing it re-reads only them.">
@@ -180,6 +181,8 @@
       </label>
       <button id="a-rotl" class="ghost" disabled title="Rotate 90 degrees anticlockwise (Shift+R)">&#8634;</button>
       <button id="a-rotr" class="ghost" disabled title="Rotate 90 degrees clockwise (R)">&#8635;</button>
+      <button id="a-mirx" class="ghost" disabled title="Mirror left-right about the middle of the selection (text stays readable)">&#8644;</button>
+      <button id="a-miry" class="ghost" disabled title="Mirror up-down about the middle of the selection (text stays readable)">&#8645;</button>
       <button id="a-group" class="ghost" disabled title="Group the selected markups: they then select, move, rotate and take an issue together (Ctrl+G)">&#9635; Group</button>
       <button id="a-ungroup" class="ghost" hidden title="Ungroup (Ctrl+Shift+G)">Ungroup</button>
       <button id="a-issue" class="ghost" disabled data-icon="issue" title="Raise an issue on the selected markup">Issue</button>
