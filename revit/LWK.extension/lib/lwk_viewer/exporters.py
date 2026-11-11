@@ -17,7 +17,7 @@ this build does not have it.
 """
 
 # Printed by the auto-export buttons, so a stale copy is obvious.
-__version__ = "2026-09-27f"
+__version__ = "2026-11-11a"
 
 import os
 import shutil
@@ -206,10 +206,85 @@ def pdf_available(doc):
         return False
 
 
-def _build_options(probe, file_name):
-    from Autodesk.Revit.DB import PDFExportOptions
+# The model's own saved PDF setup used when a job names none
+DEFAULT_SETUP = "LWK Viewer"
+_SHOWN = set()          # PDF settings described once per run
 
+
+def pdf_setup_names(doc):
+    """The PDF export setups saved in the model (Revit's Export PDF dialog), by name."""
+    try:
+        from Autodesk.Revit.DB import ExportPDFSettings
+    except ImportError:
+        return []
+    try:
+        return sorted(s.Name for s in FilteredElementCollector(doc).OfClass(ExportPDFSettings))
+    except Exception:
+        return []
+
+
+def _saved_options(doc, name, probe):
+    """The options of a setup saved in the model, or None."""
+    if not name or doc is None:
+        return None
+    try:
+        from Autodesk.Revit.DB import ExportPDFSettings
+        st = ExportPDFSettings.FindByName(doc, name)
+        if st is None:
+            return None
+        return st.GetOptions()
+    except Exception as ex:
+        _once(probe, "setup:" + name, "warn", "pdf", "the PDF setup '%s' could not be read: %s" % (name, ex))
+        return None
+
+
+def _base_options(doc, setup, probe):
+    """What the PDFs start from: the setup the job names, else the model's
+    "LWK Viewer" setup, else the defaults of Revit's own Export PDF dialog.
+    The API's bare PDFExportOptions() differ from that dialog in options
+    that change how a sheet looks (region edges masking coincident lines,
+    for one: the area colours round a linked column came out wrong), so the
+    dialog's defaults are set here rather than left to the API."""
+    from Autodesk.Revit.DB import PDFExportOptions
+    if setup:
+        o = _saved_options(doc, setup, probe)
+        if o is not None:
+            return o, "the model's PDF setup '%s'" % setup
+        _once(probe, "nosetup:" + setup, "warn", "pdf",
+              "the PDF setup '%s' is not in this model (renamed or deleted?): Revit's defaults are used" % setup)
+    o = _saved_options(doc, DEFAULT_SETUP, probe)
+    if o is not None:
+        return o, "the model's PDF setup '%s'" % DEFAULT_SETUP
     opts = PDFExportOptions()
+    for attr, value in (("AlwaysUseRaster", False),
+                        ("RasterQuality", _enum(["RasterQualityType"], "High")),
+                        ("MaskCoincidentLines", True),
+                        ("ViewLinksInBlue", False),
+                        ("ReplaceHalftoneWithThinLines", False),
+                        ("HideReferencePlane", True)):
+        if hasattr(opts, attr):
+            _set(opts, attr, value, probe)
+    return opts, "Revit's Export PDF defaults"
+
+
+def _describe(opts):
+    out = []
+    for attr, label in (("AlwaysUseRaster", "raster"), ("RasterQuality", "raster quality"),
+                        ("MaskCoincidentLines", "region edges mask coincident lines"),
+                        ("ReplaceHalftoneWithThinLines", "halftone as thin lines"),
+                        ("ViewLinksInBlue", "links in blue"), ("ColorDepth", "colours"),
+                        ("ExportQuality", "quality")):
+        if hasattr(opts, attr):
+            try:
+                v = getattr(opts, attr)
+                out.append("%s: %s" % (label, ("yes" if v else "no") if isinstance(v, bool) else v))
+            except Exception:
+                pass
+    return ", ".join(out)
+
+
+def _build_options(probe, file_name, doc=None, setup=None):
+    opts, source = _base_options(doc, setup, probe)
 
     # Counter-intuitive, but deliberate: we export ONE sheet at a time with
     # Combine on. In combined mode Revit uses opts.FileName verbatim. In
@@ -230,15 +305,19 @@ def _build_options(probe, file_name):
          _enum("PaperPlacementType", "Center"), probe)
 
     # Cosmetic. 'ColorDepthType' in most builds, 'ExportColorDepthType' in
-    # some. Try both.
-    _set(opts, "ColorDepth",
-         _enum(["ColorDepthType", "ExportColorDepthType"], "Color"), probe)
+    # some. Try both. A saved setup keeps its own choice.
+    if not source.startswith("the model's"):
+        _set(opts, "ColorDepth",
+             _enum(["ColorDepthType", "ExportColorDepthType"], "Color"), probe)
 
     for flag in ("HideCropBoundaries", "HideScopeBoxes",
                  "HideReferencePlane", "HideUnreferencedViewTags",
                  "StopOnError"):
         _set(opts, flag, True, probe)
 
+    if source not in _SHOWN:
+        _SHOWN.add(source)
+        probe.info("pdf", "PDF settings: %s - %s" % (source, _describe(opts)))
     return opts
 
 
@@ -250,7 +329,7 @@ def _safe_name(text):
     return "".join(c for c in text if c.isalnum() or c in "-_.") or "sheet"
 
 
-def export_sheet_pdf(doc, sheet, folder, probe):
+def export_sheet_pdf(doc, sheet, folder, probe, setup=None):
     """One PDF per sheet, named by sheet number.
 
     Revit's own file naming for non-combined PDF export goes through naming
@@ -265,7 +344,7 @@ def export_sheet_pdf(doc, sheet, folder, probe):
     safe = _safe_name(sheet.SheetNumber)
 
     try:
-        opts = _build_options(probe, safe)
+        opts = _build_options(probe, safe, doc, setup)
     except Exception as ex:
         probe.error(sheet.SheetNumber, "could not build PDF options: %s" % ex)
         return None

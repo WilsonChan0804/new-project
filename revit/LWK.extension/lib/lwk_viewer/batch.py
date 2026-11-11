@@ -16,7 +16,7 @@ in your name to block a colleague. Nothing is saved.
 """
 
 # Printed by the auto-export buttons, so a stale copy is obvious.
-__version__ = "2026-10-09a"
+__version__ = "2026-11-11a"
 
 import os
 import io
@@ -567,7 +567,7 @@ def export_open_doc(doc, job, probe, manifest, exporters, progress=None):
                     fn = cand
                     kept += 1
             if fn is None:
-                fn = exporters.export_sheet_pdf(doc, sheet, sheet_dir, probe)
+                fn = exporters.export_sheet_pdf(doc, sheet, sheet_dir, probe, job.get("pdf_setup"))
             if fn and sheet.SheetNumber in by_number:
                 by_number[sheet.SheetNumber]["pdf"] = "sheets/" + fn
             probe.info("pdf", "%d of %d done" % (i + 1, len(sheets)))
@@ -1025,7 +1025,7 @@ PUBLISHED = ".lwk_published.json"
 # what a job asks for: a change to any of these publishes again
 _SIG_KEYS = ("publish_sheets", "publish_3d", "sheet_mode", "sheet_set", "sheet_numbers", "sheet_prefix",
              "model_format", "fast3d_detail", "fast3d_props", "ifc_detail", "ifc_exclude", "group_share",
-             "upload_project", "publish_part")
+             "upload_project", "publish_part", "pdf_setup")
 
 
 def model_signature(doc, job, probe=None):

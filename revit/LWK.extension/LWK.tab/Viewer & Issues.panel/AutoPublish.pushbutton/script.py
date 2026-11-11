@@ -47,6 +47,8 @@ for _m in [k for k in list(sys.modules) if k == "lwk_viewer" or k.startswith("lw
     del sys.modules[_m]
 
 from lwk_viewer import batch, publish, nightly, autopub
+
+PDF_DEFAULT = "(LWK Viewer setup, else Revit's Export PDF defaults)"
 from lwk_viewer import issues as LI
 
 out = script.get_output()
@@ -217,6 +219,11 @@ JOB_XAML = u"""
         </StackPanel>
         <RadioButton x:Name="sheets_list" GroupName="sheets"/>
         <CheckBox x:Name="keep_others" Margin="18,6,0,0" Content="Keep sheets published before that are not in this choice"/>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <TextBlock Text="PDF settings:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+          <ComboBox x:Name="pdf_box" Width="300" IsEditable="True"
+                    ToolTip="A PDF setup saved in the model (Revit's Export PDF window) - the sheets then look as when you export them from Revit with it. Empty: the model's setup named 'LWK Viewer', else Revit's Export PDF defaults."/>
+        </StackPanel>
         <CheckBox x:Name="as_part" Margin="0,8,0,0" Content="This file adds its sheets to a project published from another Revit file"/>
       </StackPanel>
     </GroupBox>
@@ -332,6 +339,22 @@ class JobDialog(forms.WPFWindow):
         self.do3d.IsChecked = job.get("publish_3d", True) is not False
         self.detail_box.SelectedIndex = {"coarse": 0, "medium": 1, "fine": 2}.get(job.get("fast3d_detail") or "medium", 1)
         self.dosheets.IsChecked = job.get("publish_sheets", True) is not False
+        # the PDF setups of the open model (the one being set up, if it is open)
+        self.pdf_box.Items.Add(PDF_DEFAULT)
+        names = []
+        try:
+            from lwk_viewer import exporters
+            d = HOST_APP.doc
+            if d is not None and (not job.get("title") or d.Title == job.get("title")):
+                names = exporters.pdf_setup_names(d)
+        except Exception:
+            names = []
+        for n in names:
+            self.pdf_box.Items.Add(n)
+        cur = job.get("pdf_setup") or ""
+        if cur and cur not in names:
+            self.pdf_box.Items.Add(cur)
+        self.pdf_box.Text = cur or PDF_DEFAULT
         mode = job.get("sheet_mode") or ("prefix" if (job.get("sheet_prefix") or "").strip() else "all")
         n = len(job.get("sheet_numbers") or [])
         self.keep_mode = None
@@ -435,6 +458,11 @@ class JobDialog(forms.WPFWindow):
                   "publish_3d": bool(self.do3d.IsChecked), "publish_sheets": bool(self.dosheets.IsChecked),
                   "keep_other_sheets": bool(self.keep_others.IsChecked),
                   "publish_part": bool(self.as_part.IsChecked), "upload": bool(self.upload.IsChecked)})
+        pdf = (self.pdf_box.Text or "").strip()
+        if pdf and pdf != PDF_DEFAULT:
+            j["pdf_setup"] = pdf
+        else:
+            j.pop("pdf_setup", None)
         if j.get("model") and self.region_box.SelectedItem:
             j["region"] = str(self.region_box.SelectedItem)
         if j.get("model"):

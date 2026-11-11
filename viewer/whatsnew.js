@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-12", date: "11 Nov 2026",
+    items: [
+      "**Who and when on every comment:** hover a markup on the sheet to see who made it and when, and who changed it last (an issue shows its number and title first). Selecting one says the same in the status line; several say whose they are.",
+      "**Sheet PDFs look like Revit's own export:** the add-in now exports the sheets with a PDF setup saved in the model (choose it under **PDF settings** in the auto-export job), else the model's setup named **LWK Viewer**, else Revit's Export PDF defaults - before, some settings kept the API's own defaults, and area colour fills round linked columns came out wrong. Update the LWK add-in and publish again.",
+    ],
+  },
+  {
     version: "2027-01-11", date: "11 Nov 2026",
     items: [
       "**Transform box for markups:** right-click > **Transform (resize box)** (on a tablet: **Resize** on the selection bar) puts a box with eight handles round the selected markups. A corner resizes keeping the proportions, text size and line weight with it (hold **Shift** to stretch freely); a side handle stretches one way only. The opposite corner or side stays put, and W x H shows as you drag. Esc ends it; one Ctrl+Z undoes each drag.",

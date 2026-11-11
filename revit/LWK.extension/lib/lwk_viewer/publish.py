@@ -162,7 +162,7 @@ def run(doc, uiapp, opt, echo):
                 if exporters.pdf_available(doc):
                     by_number = dict((s["number"], s) for s in data["sheets"])
                     for i, sheet in enumerate(sheets):
-                        fn = exporters.export_sheet_pdf(doc, sheet, os.path.join(folder, "sheets"), probe)
+                        fn = exporters.export_sheet_pdf(doc, sheet, os.path.join(folder, "sheets"), probe, job.get("pdf_setup"))
                         if fn and sheet.SheetNumber in by_number:
                             by_number[sheet.SheetNumber]["pdf"] = "sheets/" + fn
                         probe.info("pdf", "%d of %d" % (i + 1, len(sheets)))

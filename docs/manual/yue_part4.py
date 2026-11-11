@@ -156,6 +156,7 @@ PART = [
         'Upload 去現有 project 你要係佢嘅 **project admin**；新 project 名要 **site admin**。',
     ]),
     H3('Publish to Viewer'),
+    P('**Sheet PDF 嘅樣：** 如果自動匯出嘅 job 揀咗 model 入面儲咗嘅 PDF 設定（Revit Export PDF 視窗，job 視窗嘅 **PDF settings**），就會用佢；冇揀就用 model 入面叫 **LWK Viewer** 嘅設定；再冇就用 Revit 自己 Export PDF 嘅預設 - 所以出嚟同你喺 Revit 人手 export 嗰張一樣（link 柱周圍嘅面積顏色、遮蓋、raster 或者 vector）。只有紙張大細、100 % 縮放同隱藏 crop box、scope box、參考平面一定用 viewer 自己嘅，咁啲 view 先可以準確對位。Job 嘅 log 會寫用咗邊套設定。'),
     OL([
         '喺 Revit 打開 model，撳 **Publish to Viewer**。',
         '**Where：** 揀 **Viewer project**（或者打個新名：英文字母、數字、- 同 _），檢查 **Server** 顯示「signed in」，同埋 **Export folder**。',

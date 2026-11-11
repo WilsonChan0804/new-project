@@ -903,6 +903,9 @@ function render(item, opts) {
   }
 
   const g = svgEl("g", { class: "mk", "data-id": item.id });
+  // who made it and when: the browser's own tooltip on hover
+  const ww = whoWhen(item);
+  if (ww) { const tt = svgEl("title", {}); tt.textContent = ww; g.appendChild(tt); }
   if (item.rot && P.length) {
     // Paper y runs up and screen y runs down, so the sign flips on screen.
     const c = centreOf(P);
@@ -1480,6 +1483,23 @@ function applyGeometry(field) {
   persist(S.sel);
 }
 
+/* "Comment by Admin A · 4 Nov 2026, 14:32 · changed by Ben Chu, 5 Nov 2026, 10:01" */
+const fmtAt = (iso) => {
+  const d = new Date(iso || "");
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    + ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+};
+function whoWhen(it) {
+  if (!it || (!it.author && !it.created_at)) return "";
+  const head = it.issue ? `Issue${it.issue.number ? " #" + it.issue.number : ""}: ${it.issue.title || "Untitled"}\nRaised` : "Comment";
+  let s = head + (it.author ? " by " + it.author : "") + (it.created_at ? " \u00b7 " + fmtAt(it.created_at) : "");
+  const t0 = Date.parse(it.created_at || "") || 0, t1 = Date.parse(it.updated_at || "") || 0;
+  const by = it.updated_by || "";
+  if (t1 && (t1 - t0 > 60000 || (by && by !== it.author))) s += " \u00b7 changed" + (by ? " by " + by : "") + ", " + fmtAt(it.updated_at);
+  return s;
+}
+
 function syncButtons() {
   const one = S.sel.length === 1;
   const it = one && S.items.find((x) => x.id === S.sel[0]);
@@ -1575,6 +1595,15 @@ function select(ids, add, byDrag) {
   ids = expandGroups(ids);
   const before = S.sel.join(",");
   S.sel = add ? Array.from(new Set(S.sel.concat(ids))) : ids.slice();
+  // who made what is chosen, in the status line
+  if (S.sel.join(",") !== before && S.sel.length) {
+    const its = S.sel.map((id) => S.items.find((x) => x.id === id)).filter(Boolean);
+    if (its.length === 1) { const w = whoWhen(its[0]); if (w) status(w.replace("\n", " - ")); }
+    else if (its.length > 1) {
+      const names = [...new Set(its.map((x) => x.author).filter(Boolean))];
+      status(`${its.length} markups` + (names.length ? " by " + (names.length > 3 ? names.slice(0, 3).join(", ") + ` and ${names.length - 3} more` : names.join(", ")) : ""));
+    }
+  }
   if (!S.sel.length || (S.xform && S.sel.join(",") !== before && !add)) S.xform = false;
   /* The touch bar of big buttons is for a drag-selection; a tap or a long
      press has the menu instead (it offered the same actions twice). */
