@@ -1243,7 +1243,7 @@ function redraw(target) {
     // Vertex handles only for a single, unrotated shape: on a rotated box
     // the stored corners are not where the drawn corners are, so dragging
     // one would move the wrong thing.
-    if (selItems.length === 1) {
+    if (selItems.length === 1 && !S.xform) {
       /* On a rotated box the stored corners are the UNROTATED ones, so the
          handles are drawn turned by the same angle - on the corners the
          user actually sees - and a drag is turned back before it is
@@ -1289,7 +1289,8 @@ function redraw(target) {
     const xs = allPx.map((p) => p[0]), ys = allPx.map((p) => p[1]);
     const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
     const top = Math.min(...ys) - 4;
-    if (selItems.length > 1) {
+    if (S.xform) drawTransformBox(svg, selItems);
+    else if (selItems.length > 1) {
       // A dashed box round the whole group, so it reads as one thing.
       svg.appendChild(svgEl("rect", { class: selGroup() ? "selgroup formal" : "selgroup",
         x: Math.min(...xs) - 8, y: top - 4,
@@ -1312,6 +1313,39 @@ function redraw(target) {
   syncButtons();
 }
 
+/* Transform (right-click > Transform, or the selection bar): a box round
+   the selection with eight handles. A corner resizes keeping the
+   proportions - text size and line weight with it - or, with Shift, stretches
+   freely; a side handle stretches one way only; the opposite corner or
+   side stays put. W x H shows as it goes. Esc, or choosing something else,
+   ends it. */
+const XH = [[0, 1], [0.5, 1], [1, 1], [1, 0.5], [1, 0], [0.5, 0], [0, 0], [0, 0.5]];
+function xformBounds(items) {
+  const b = selBounds(items);
+  if (b.x1 - b.x0 < 0.5) { b.x0 -= 0.25; b.x1 += 0.25; }
+  if (b.y1 - b.y0 < 0.5) { b.y0 -= 0.25; b.y1 += 0.25; }
+  return b;
+}
+function drawTransformBox(svg, items) {
+  const b = xformBounds(items);
+  const a = canvasFrom(b.x0, b.y1), c = canvasFrom(b.x1, b.y0);
+  svg.appendChild(svgEl("rect", { class: "xbox", x: Math.min(a[0], c[0]), y: Math.min(a[1], c[1]),
+    width: Math.abs(c[0] - a[0]), height: Math.abs(c[1] - a[1]) }));
+  XH.forEach(([fx, fy], k) => {
+    const q = canvasFrom(b.x0 + (b.x1 - b.x0) * fx, b.y0 + (b.y1 - b.y0) * fy);
+    const corner = fx !== 0.5 && fy !== 0.5;
+    svg.appendChild(svgEl("rect", { class: "xhandle" + (corner ? " corner" : ""), "data-k": k,
+      "data-cur": fx === 0.5 ? "ns" : fy === 0.5 ? "ew" : (fx === fy ? "nesw" : "nwse"),
+      x: q[0] - 5, y: q[1] - 5, width: 10, height: 10 }));
+  });
+}
+function startTransform() {
+  if (!S.sel.length) return;
+  S.xform = true;
+  redraw();
+  status("Transform: drag a corner to resize (Shift: stretch freely), a side to stretch one way. Esc ends it.");
+}
+
 /* ------------------------------------------------- touch selection bar */
 
 /* Phones and tablets have no right-click and no Delete key. A selected
@@ -1331,6 +1365,7 @@ function placeSelbar(allPx) {
     bar.innerHTML =
       `<button data-a="issue">Issue</button>`
       + `<button data-a="dup">Duplicate</button>`
+      + `<button data-a="xform" title="A box with handles to resize it">Resize</button>`
       + `<button data-a="copy">Copy</button>`
       + `<button data-a="match" title="Copy this one's look (and issue details) onto others">Match</button>`
       + `<button data-a="del" class="danger">Delete</button>`;
@@ -1343,6 +1378,7 @@ function placeSelbar(allPx) {
       const one = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]);
       if (a === "del") deleteSelection();
       else if (a === "copy") copySelection();
+      else if (a === "xform") startTransform();
       else if (a === "dup") { copySelection(); paste(); }
       else if (a === "match" && one) { setTool("match"); S.matchSrc = one.id;
         status("Match: tap the markups to copy its look" + (one.issue ? " and issue details" : "")
@@ -1537,7 +1573,9 @@ function ungroupSelection() {
 
 function select(ids, add, byDrag) {
   ids = expandGroups(ids);
+  const before = S.sel.join(",");
   S.sel = add ? Array.from(new Set(S.sel.concat(ids))) : ids.slice();
+  if (!S.sel.length || (S.xform && S.sel.join(",") !== before && !add)) S.xform = false;
   /* The touch bar of big buttons is for a drag-selection; a tap or a long
      press has the menu instead (it offered the same actions twice). */
   S.selByDrag = !!byDrag && S.sel.length > 0;
@@ -1759,12 +1797,18 @@ function snapshotForScale(items) {
   return items.map((it) => ({ it, pts: it.points_mm.map((q) => q.slice()), loops: it.loops_mm ? JSON.parse(JSON.stringify(it.loops_mm)) : null,
     style: it.style ? JSON.parse(JSON.stringify(it.style)) : null, wrap: it.wrap_mm || 0 }));
 }
-function scaleItems(orig, k, f) {
+function scaleItems(orig, k, f) { scaleItemsXY(orig, k, k, f, true); }
+/* kx across, ky up, about f. Text size and line weights follow only an even
+   scale (even): a stretch makes boxes wider or taller, and their text
+   wraps to the new width, at the size it was. */
+function scaleItemsXY(orig, kx, ky, f, even) {
+  const k = even ? kx : 1;
+  const m = (q) => [f[0] + (q[0] - f[0]) * kx, f[1] + (q[1] - f[1]) * ky];
   for (const o of orig) {
-    o.it.points_mm = o.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]);
-    if (o.loops) o.it.loops_mm = o.loops.map((l) => ({ ...l, pts: l.pts.map((q) => [f[0] + (q[0] - f[0]) * k, f[1] + (q[1] - f[1]) * k]) }));
-    if (o.wrap) o.it.wrap_mm = Math.round(o.wrap * k * 10) / 10;
-    if (o.style) {
+    o.it.points_mm = o.pts.map(m);
+    if (o.loops) o.it.loops_mm = o.loops.map((l) => ({ ...l, pts: l.pts.map(m) }));
+    if (o.wrap) o.it.wrap_mm = Math.round(o.wrap * kx * 10) / 10;
+    if (o.style && even) {
       o.it.style = Object.assign({}, o.style);
       if (o.style.size) o.it.style.size = Math.round(o.style.size * k * 100) / 100;
       if (o.style.width) o.it.style.width = Math.round(o.style.width * k * 1000) / 1000;
@@ -2562,7 +2606,7 @@ function wirePointer() {
   let twoClick = false;
   const TWO_CLICK = new Set(["dimension", "measure", "line", "arrow"]);
   S.cancelTwoClick = () => { if (twoClick) { twoClick = false; mode = null; S.draft = null; redraw(); } };
-  let marquee = null, rotPivot = null, rotLast = 0, gscale = null;
+  let marquee = null, rotPivot = null, rotLast = 0, gscale = null, xform = null;
 
   svg.addEventListener("dblclick", (ev) => {
     if (poly) { ev.preventDefault(); endPoly(); return; }
@@ -2668,6 +2712,7 @@ function wirePointer() {
         action: () => { rotateSelection(180); persist(S.sel); } },
       { label: "Mirror left-right", action: () => mirrorSelection("x") },
       { label: "Mirror up-down", action: () => mirrorSelection("y") },
+      { label: S.xform ? "End transform" : "Transform (resize box)", action: () => { if (S.xform) { S.xform = false; redraw(); } else startTransform(); } },
       "-",
       { label: "Copy", key: "Ctrl+C", action: () => copySelection() },
       { label: "Apply current style", action: () => applyStyleToSelection() },
@@ -2826,6 +2871,19 @@ function wirePointer() {
           .filter(Boolean);
         rotPivot = centreOf(items.flatMap((it) => it.points_mm));
         rotLast = Math.atan2(p[1] - rotPivot[1], p[0] - rotPivot[0]);
+        svg.setPointerCapture(ev.pointerId);
+        return;
+      }
+      const xh = ev.target.closest && ev.target.closest(".xhandle");
+      if (xh && S.xform && S.sel.length) {
+        if (locked()) return;
+        remember(S.sel);
+        const items = S.sel.map((id) => S.items.find((x) => x.id === id)).filter((it) => it && it.points_mm && it.points_mm.length);
+        const b = xformBounds(items);
+        const [fx, fy] = XH[+xh.dataset.k];
+        const at = (u, v) => [b.x0 + (b.x1 - b.x0) * u, b.y0 + (b.y1 - b.y0) * v];
+        xform = { fx, fy, h: at(fx, fy), fixed: at(1 - fx, 1 - fy), w: b.x1 - b.x0, hh: b.y1 - b.y0, orig: snapshotForScale(items) };
+        mode = "xform";
         svg.setPointerCapture(ev.pointerId);
         return;
       }
@@ -3138,6 +3196,20 @@ function wirePointer() {
         }
       }
       redraw();
+    } else if (mode === "xform" && xform) {
+      const X = xform, F = X.fixed;
+      const along = (i) => {
+        const d = X.h[i] - F[i];
+        return Math.max(0.02, Math.abs(d) < 1e-9 ? 1 : (p[i] - F[i]) / d);
+      };
+      let kx = X.fx === 0.5 ? 1 : along(0), ky = X.fy === 0.5 ? 1 : along(1);
+      const corner = X.fx !== 0.5 && X.fy !== 0.5;
+      const even = corner && !ev.shiftKey;
+      if (even) kx = ky = Math.max(kx, ky);
+      scaleItemsXY(X.orig, kx, ky, F, even);
+      status(`${(X.w * kx).toFixed(1)} x ${(X.hh * ky).toFixed(1)} mm` + (even ? `  (${Math.round(kx * 100)}%)` : "  - stretched")
+        + (corner ? (even ? " - hold Shift to stretch freely" : "") : ""));
+      redraw();
     } else if (mode === "wrap") {
       const it = S.items.find((x) => x.id === S.sel[0]);
       const cb = it && CBOX.get(it.id);
@@ -3215,8 +3287,8 @@ function wirePointer() {
       mode = null; handle = -1;
       return;
     }
-    if (mode === "move" || mode === "handle" || mode === "rotate" || mode === "gscale" || mode === "wrap") {
-      gscale = null;
+    if (mode === "move" || mode === "handle" || mode === "rotate" || mode === "gscale" || mode === "wrap" || mode === "xform") {
+      gscale = null; xform = null;
       for (const id of S.sel) {
         const it = S.items.find((x) => x.id === id);
         if (it) it.anchor = resolve(it.points_mm[0][0], it.points_mm[0][1]);

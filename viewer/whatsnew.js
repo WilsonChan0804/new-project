@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-11", date: "11 Nov 2026",
+    items: [
+      "**Transform box for markups:** right-click > **Transform (resize box)** (on a tablet: **Resize** on the selection bar) puts a box with eight handles round the selected markups. A corner resizes keeping the proportions, text size and line weight with it (hold **Shift** to stretch freely); a side handle stretches one way only. The opposite corner or side stays put, and W x H shows as you drag. Esc ends it; one Ctrl+Z undoes each drag.",
+    ],
+  },
+  {
     version: "2027-01-10", date: "10 Nov 2026",
     items: [
       "**Callout width:** drag the small handle on the outer side of a callout's box to set the width its text wraps at - a long line becomes several. Press the handle twice to fit the text again.",

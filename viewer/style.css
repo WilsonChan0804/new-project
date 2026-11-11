@@ -2641,3 +2641,13 @@ header .flr-lab { white-space: nowrap; }
 
 /* a callout's width handle: drag its outer side to set where the text wraps */
 #overlay .whandle { fill: #fff; stroke: var(--accent, #f28022); stroke-width: 1.5; cursor: ew-resize; pointer-events: all; }
+
+/* Transform box (right-click > Transform): eight handles round the selection */
+#overlay .xbox { fill: none; stroke: var(--accent, #f28022); stroke-width: 1.2; stroke-dasharray: 5 3; pointer-events: none; }
+#overlay .xhandle { fill: #fff; stroke: var(--accent, #f28022); stroke-width: 1.6; pointer-events: all; }
+#overlay .xhandle.corner { fill: var(--accent, #f28022); }
+#overlay .xhandle[data-cur="ns"] { cursor: ns-resize; }
+#overlay .xhandle[data-cur="ew"] { cursor: ew-resize; }
+#overlay .xhandle[data-cur="nwse"] { cursor: nwse-resize; }
+#overlay .xhandle[data-cur="nesw"] { cursor: nesw-resize; }
+#overlay .xhandle:hover { fill: var(--accent-soft, #ffeedd); }
