@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-13", date: "12 Nov 2026",
+    items: [
+      "**Admin > Storage** (site admins): how full each of the server's disks is, with the free space (red over 80 %), what the viewer keeps - published sheets and 3D models, Folders files, chat files, pictures, recently deleted, update backups - and the largest projects. **Keep the newest 5** clears older update backups.",
+      "**Properties as a column:** on the Sheets page the layer, colours, weight, font, size and position now sit in a column at the top left of the drawing instead of a bar that scrolled sideways. Click its title to fold it to a small tab (remembered on this device).",
+    ],
+  },
+  {
     version: "2027-01-12", date: "11 Nov 2026",
     items: [
       "**Who and when on every comment:** hover a markup on the sheet to see who made it and when, and who changed it last (an issue shows its number and title first). Selecting one says the same in the status line; several say whose they are.",

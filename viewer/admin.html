@@ -94,6 +94,7 @@
     <button data-tab="publish" id="tab-publish">Auto publish</button>
     <button data-tab="devices" id="tab-devices" hidden>Devices</button>
     <button data-tab="speed" id="tab-speed" hidden>Speed</button>
+    <button data-tab="storage" id="tab-storage" hidden>Storage</button>
     <button data-tab="account" id="tab-account">My account</button>
   </div>
 
@@ -356,6 +357,20 @@
       </div>
       <div class="table-wrap"><table id="d-table"></table></div>
       <pre id="d-detail" class="dev-detail" hidden></pre>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-storage" hidden>
+    <div class="card">
+      <h3>Storage <small>how full the server's disks are, and what the viewer keeps on them</small></h3>
+      <div class="form-row" style="margin:4px 0 10px"><span class="muted" id="st-when" style="font-size:12px"></span>
+        <button id="st-reload" class="ghost">Count again</button></div>
+      <div id="st-disks" class="st-disks"></div>
+      <h4 class="st-h">What the viewer keeps</h4>
+      <div id="st-kinds"></div>
+      <h4 class="st-h">Largest projects <small class="muted">(published sheets and 3D models)</small></h4>
+      <div id="st-projects"></div>
+      <div id="st-backups"></div>
     </div>
   </section>
 

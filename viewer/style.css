@@ -2651,3 +2651,50 @@ header .flr-lab { white-space: nowrap; }
 #overlay .xhandle[data-cur="nwse"] { cursor: nwse-resize; }
 #overlay .xhandle[data-cur="nesw"] { cursor: nesw-resize; }
 #overlay .xhandle:hover { fill: var(--accent-soft, #ffeedd); }
+
+/* Admin > Storage */
+.st-disks { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.st-disk { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.st-disk.warn { border-color: #d32f2f; }
+.st-dh { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.st-dh .muted { font-size: 11px; }
+.st-bar { height: 10px; border-radius: 5px; background: var(--line); margin: 8px 0 6px; overflow: hidden; }
+.st-bar span { display: block; height: 100%; background: var(--accent); }
+.st-disk.warn .st-bar span { background: #d32f2f; }
+.st-dn { font-size: 12.5px; }
+.st-h { margin: 16px 0 6px; font-size: 13.5px; }
+.st-t { width: 100%; border-collapse: collapse; font-size: 13px; }
+.st-t td { padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.st-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.st-w { width: 30%; }
+.st-mini { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.st-mini span { display: block; height: 100%; background: var(--accent); }
+.st-path { font-size: 11px; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .st-path, .st-w { display: none; } }
+
+/* Sheets: the properties as a column at the top left of the drawing (setupPropsColumn) */
+#stage-row > #props.props-col { position: absolute; left: 10px; top: 10px; z-index: 30; display: flex; flex-direction: column;
+  align-items: stretch; flex-wrap: nowrap; gap: 6px; width: 232px; max-height: calc(100% - 20px); overflow-y: auto; overflow-x: hidden;
+  padding: 0 10px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  box-shadow: 0 6px 20px rgba(20, 26, 36, .14); font-size: 11.5px; scrollbar-width: thin; }
+#stage-row > #props.props-col > * { flex: none; }
+#props.props-col .pc-h { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 6px; margin: 0 -10px;
+  padding: 7px 8px 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line); cursor: pointer; color: var(--ink); }
+#props.props-col .pc-h b { font-size: 12.5px; }
+#props.props-col .pc-sel { flex: 1; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#props.props-col #pc-fold { padding: 0 7px; font-size: 15px; line-height: 20px; }
+#props.props-col label.p { justify-content: space-between; gap: 8px; }
+#props.props-col label.p select, #props.props-col label.p input[type=number] { max-width: 130px !important; }
+#props.props-col label.p input[type=range] { width: 120px; }
+#props.props-col .sep { width: auto; height: 1px; margin: 2px 0; }
+#props.props-col #a-geom:not([hidden]) { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+#props.props-col label.p input[type=number] { width: 74px !important; }
+#props.props-col #a-geom label.p input { width: 56px !important; }
+#props.props-col .pc-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+#props.props-col .pc-btns button { padding: 3px 7px; }
+#stage-row > #props.props-col.folded { width: auto; padding-bottom: 0; overflow: hidden; }
+#props.props-col.folded > :not(.pc-h) { display: none !important; }
+#props.props-col.folded .pc-h { border-bottom: 0; margin: 0 -10px; }
+#props.props-col.folded .pc-sel { display: none; }
+@media (max-width: 1100px) { #stage-row > #props.props-col { overflow-x: hidden; flex-wrap: nowrap; padding: 0 8px 8px; } }
+@media (max-width: 700px) { #stage-row > #props.props-col { width: min(232px, calc(100% - 20px)); max-height: 55%; } }

@@ -210,6 +210,7 @@ PART = [
     ]),
     P('每個 project 一定要留最少一個 project admin。'),
     H3('Project 同成員'),
+    P('**Storage**（site admin，Admin > Storage）：server 每個磁碟剩幾多位（用咗超過 80 % 會變紅），viewer 喺上面放咗乜 - publish 咗嘅 sheet 同 3D model、Folders 檔案、chat 檔案、相、最近刪除、sheet 圖片、更新備份 - 同最大嘅 project。資料夾大細每幾個鐘喺背景計一次（撳 **Count again** 即刻計）。**Keep the newest 5** 會刪走較舊嘅更新備份。'),
     UL([
         '**Add people to this project：** 搜尋，用 **team**、**office** 或者 **company** 篩選，剔幾個人（或者 **Select all shown**），揀 Role 再撳 **Add N people**；或者填 **Someone without an account yet**（Email、Name、Office、Company、Role）再撳 **Create and add**。臨時密碼只會顯示**一次**。',
         '用 **Email invitation**（打開你自己嘅 Outlook）或者 **Copy invitation** 傳俾佢。佢第一次 sign in 要揀自己嘅密碼。',

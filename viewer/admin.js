@@ -15,7 +15,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2027-01-12";
+const LWK_VERSION = "2027-01-13";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -195,7 +195,7 @@ async function signedIn() {
 /* ---------------------------------------------------------------- tabs */
 
 function show(tab) {
-  for (const t of ["projects", "people", "publish", "devices", "speed", "account"]) {
+  for (const t of ["projects", "people", "publish", "devices", "speed", "storage", "account"]) {
     $("#pane-" + t).hidden = t !== tab;
     $("#tab-" + t).classList.toggle("on", t === tab);
   }
@@ -421,6 +421,51 @@ function renderDevices() {
 /* The server's own timings (perf.py): days, pages as people waited, the
    stalls (what the server was busy with), the routes and slow answers. */
 const secs = (ms) => ms == null ? "-" : ms >= 10000 ? Math.round(ms / 1000) + " s" : (ms / 1000).toFixed(ms >= 1000 ? 1 : 2) + " s";
+/* Storage: the disks (read now), and the sizes from the last count (the
+   server counts in the background; this page looks again while it does). */
+const gb = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(1) + " GB" : b >= 1048576 ? Math.round(b / 1048576) + " MB" : Math.round(b / 1024) + " kB";
+async function loadStorage(fresh) {
+  let d;
+  try { d = await api("/api/admin/storage" + (fresh ? "?fresh=1" : "")); }
+  catch (e) { msg(esc(e.message), "bad"); return; }
+  $("#st-disks").innerHTML = d.disks.map((x) => `<div class="st-disk${x.warn ? " warn" : ""}">`
+    + `<div class="st-dh"><b>${esc(x.holds.join(", "))}</b><span class="muted">${esc(x.path)}</span></div>`
+    + `<div class="st-bar"><span style="width:${Math.min(100, x.pct)}%"></span></div>`
+    + `<div class="st-dn"><b>${gb(x.free)} free</b> of ${gb(x.total)} &middot; ${x.pct}% used${x.warn ? ` &middot; <span class="bad">over ${d.warn_pct}%: clear space or make the disk bigger</span>` : ""}</div></div>`).join("");
+  const c = d.count;
+  $("#st-when").textContent = d.counting ? "Counting the folders now - this page refreshes by itself ..."
+    : c ? `Folders counted ${fmtDT(c.counted_at)} (took ${c.took_s} s); the disks are as of now.` : "";
+  if (!c) {
+    $("#st-kinds").innerHTML = $("#st-projects").innerHTML = `<p class="muted">Counting ...</p>`;
+    $("#st-backups").innerHTML = "";
+  } else {
+    const max = Math.max(1, ...c.kinds.map((k) => k.size));
+    $("#st-kinds").innerHTML = `<table class="st-t"><tbody>` + c.kinds.map((k) => `<tr><td>${esc(k.label)}</td>`
+      + `<td class="st-num">${gb(k.size)}</td><td class="st-w"><div class="st-mini"><span style="width:${(100 * k.size / max).toFixed(1)}%"></span></div></td>`
+      + `<td class="muted st-path">${esc(k.path)}</td></tr>`).join("") + `</tbody></table>`;
+    const top = c.projects.slice(0, 20), pmax = Math.max(1, ...top.map((p) => p.size));
+    $("#st-projects").innerHTML = top.length ? `<table class="st-t"><tbody>` + top.map((p) => `<tr><td>${esc(p.id)}</td>`
+      + `<td class="st-num">${gb(p.size)}</td><td class="st-w"><div class="st-mini"><span style="width:${(100 * p.size / pmax).toFixed(1)}%"></span></div></td>`
+      + `<td class="muted">${p.files} files</td></tr>`).join("") + `</tbody></table>`
+      + (c.projects.length > 20 ? `<p class="muted" style="font-size:12px">and ${c.projects.length - 20} more</p>` : "") : `<p class="muted">No projects.</p>`;
+    const b = c.backups;
+    $("#st-backups").innerHTML = b && b.count ? `<h4 class="st-h">Update backups</h4><p style="font-size:13px">${b.count} copies made before updates `
+      + `(${esc(b.oldest.slice(0, 8))} to ${esc(b.newest.slice(0, 8))}), ${gb(b.update_size)} in all. Only the last few are needed to undo an update.</p>`
+      + (b.count > 5 ? `<button id="st-prune" class="ghost">Keep the newest 5, remove ${b.count - 5}</button>` : "") : "";
+    const pr = $("#st-prune");
+    if (pr) pr.onclick = async () => {
+      if (!confirm(`Remove ${b.count - 5} older update backups for good? The newest 5 are kept.`)) return;
+      pr.disabled = true;
+      try { const r = await api("/api/admin/storage/prune-backups", { method: "POST", body: JSON.stringify({ keep: 5 }) });
+        msg(`Removed ${r.removed} old backups, ${gb(r.freed)} freed.`, "ok"); }
+      catch (e) { msg(esc(e.message), "bad"); }
+      loadStorage();
+    };
+  }
+  clearTimeout(A.stTimer);
+  if (d.counting && !$("#pane-storage").hidden) A.stTimer = setTimeout(() => loadStorage(), 3000);
+}
+
 async function loadSpeed() {
   let d;
   try { d = await api("/api/admin/perf?days=" + $("#sp-days").value); }
@@ -1155,7 +1200,7 @@ async function main() {
   wireAccount();
   const first = new URLSearchParams(location.search).get("first");
   if (first || (A.me.user && A.me.user.must_change)) {
-    for (const t of ["projects", "people", "devices", "speed", "publish"]) $("#tab-" + t).hidden = true;
+    for (const t of ["projects", "people", "devices", "speed", "storage", "publish"]) $("#tab-" + t).hidden = true;
     msg("Welcome. Please choose your own password to continue - the temporary one "
       + "goes in the first box.", "");
     show("account");
@@ -1164,6 +1209,9 @@ async function main() {
   $("#tab-people").hidden = !A.me.site_admin;
   $("#tab-devices").hidden = !A.me.site_admin;
   $("#tab-devices").addEventListener("click", () => loadDevices());
+  $("#tab-storage").hidden = !A.me.site_admin;
+  $("#tab-storage").addEventListener("click", () => loadStorage());
+  $("#st-reload").onclick = () => loadStorage(true);
   $("#tab-speed").hidden = !A.me.site_admin;
   $("#tab-speed").addEventListener("click", () => loadSpeed());
   $("#sp-reload").onclick = () => loadSpeed();
@@ -1184,6 +1232,7 @@ async function main() {
   if (want === "people" && A.me.site_admin) { show("people"); renderPeople(); }
   else if (want === "devices" && A.me.site_admin) { show("devices"); loadDevices(); }
   else if (want === "speed" && A.me.site_admin) { show("speed"); loadSpeed(); }
+  else if (want === "storage" && A.me.site_admin) { show("storage"); loadStorage(); }
   else if (want === "publish") { show("publish"); loadPublishJobs(); }
   else if (want === "account") show("account");
   else show("projects");

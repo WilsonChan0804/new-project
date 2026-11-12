@@ -4387,6 +4387,13 @@ try:
 except Exception as _ex:
     print("queries not loaded: %s" % _ex)
 
+# Storage (storage.py): how full the disks are, and what the viewer keeps (Admin > Storage).
+try:
+    import storage
+    storage.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("storage not loaded: %s" % _ex)
+
 # Codes (codes.py): the building regulations library - search, and questions answered by Claude.
 try:
     import codes

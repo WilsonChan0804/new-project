@@ -6759,6 +6759,46 @@ function exportAll() {
    drawing tool is in hand or markups are selected; the scale only for the
    measuring tools. The rest of the time the drawing gets the room. */
 const MEASURE_TOOLS = new Set(["measure", "dimension", "area", "angle", "route"]);
+/* The properties (layer, colours, weight, font, size, position ...) as a
+   column at the top left of the drawing instead of a bar that scrolled
+   sideways. Its title folds it to a small tab (remembered on this
+   device); the buttons sit together in rows. */
+const PCOL_KEY = "lwk-sheets:props-folded";
+function setupPropsColumn() {
+  const p = document.getElementById("props"), stage = document.getElementById("stage-row");
+  if (!p || !stage || p.classList.contains("props-col")) return;
+  p.classList.add("props-col");
+  // the buttons in runs, a row each, rather than one per line
+  let run = null;
+  for (const el of Array.from(p.children)) {
+    if (el.tagName === "BUTTON") {
+      if (!run) { run = document.createElement("div"); run.className = "pc-btns"; p.insertBefore(run, el); }
+      run.appendChild(el);
+    } else run = null;
+  }
+  const h = document.createElement("div");
+  h.className = "pc-h";
+  h.innerHTML = `<b>Properties</b><span class="pc-sel" id="pc-sel"></span><button type="button" class="ghost" id="pc-fold" title="Fold the properties away (they stay folded on this device)">&#8211;</button>`;
+  p.insertBefore(h, p.firstChild);
+  stage.insertBefore(p, stage.firstChild);
+  let folded = false;
+  try { folded = localStorage.getItem(PCOL_KEY) === "1" || (localStorage.getItem(PCOL_KEY) === null && matchMedia("(max-width: 700px)").matches); } catch (e) {}
+  const paint = () => {
+    p.classList.toggle("folded", folded);
+    const b = document.getElementById("pc-fold");
+    b.innerHTML = folded ? "&#9656;" : "&#8211;";
+    b.title = folded ? "Show the properties" : "Fold the properties away (they stay folded on this device)";
+  };
+  h.addEventListener("click", () => {
+    folded = !folded;
+    try { localStorage.setItem(PCOL_KEY, folded ? "1" : "0"); } catch (e) {}
+    paint();
+  });
+  // a click on it is not a click on the drawing
+  p.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+  paint();
+}
+
 function propsShown() {
   // the drawing stays where it is on screen when the bars above it come or go
   const scroller = document.getElementById("scroll");
@@ -6767,6 +6807,8 @@ function propsShown() {
   const drawing = ["drag2", "free", "poly", "click"].includes(k) && S.tool !== "snip";
   const on = drawing || (S.sel && S.sel.length > 0) || S.tool === "match";
   document.body.classList.toggle("props-off", !on);
+  const ps = document.getElementById("pc-sel");
+  if (ps) ps.textContent = S.sel && S.sel.length ? (S.sel.length === 1 ? "1 selected" : S.sel.length + " selected") : (drawing ? "for new markups" : "");
   const selMeasure = (S.sel || []).some((id) => { const it = S.items.find((x) => x.id === id); return it && MEASURE_TOOLS.has(it.type); });
   const sc = document.getElementById("scale-lab");
   if (sc) sc.hidden = !(MEASURE_TOOLS.has(S.tool) || selMeasure);
@@ -7144,6 +7186,7 @@ function wireChrome() {
     redraw();
     persist(ids);
   });
+  setupPropsColumn();
   for (const f of ["g-x", "g-y", "g-w", "g-h", "g-r", "g-k"]) {
     // change, not input: applying on every keystroke would move the markup
     // through every intermediate value while a number is being typed.
