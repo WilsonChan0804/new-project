@@ -120,31 +120,40 @@
       </div>
     </div>
 
-    <div id="props">
-      <label class="p" title="The layer new markups go on (and, with markups selected, the layer they are moved to)">Layer
-        <select id="p-layer" style="max-width:130px"></select></label>
-      <button id="layers-btn" class="ghost" title="Show or hide markup layers" style="font-size:11px;padding:2px 8px">Layers</button>
-      <span class="sep"></span>
-      <label class="p">Line<input type="color" id="p-color" value="#ff3b30"></label>
-      <label class="p">Fill<input type="color" id="p-fill" value="#ff3b30"></label>
-      <label class="p" title="Colour of text, labels and measurement values - separate from the line">Text<input type="color" id="p-tcolor" value="#ff3b30"></label>
-      <label class="p">Opacity<input type="range" id="p-fillop" min="0" max="100" value="0"></label>
-      <label class="p">Weight
-<input id="p-width" type="number" list="dl-width" value="0.5"
-          min="0.05" max="20" step="0.05" style="width:62px"
-          title="Line weight in paper millimetres - pick one or type any value">
-      </label>
-      <label class="p">Type
-        <select id="p-dash">
-          <option value="none">Solid</option>
-          <option value="dash">Dashed</option>
-          <option value="dot">Dotted</option>
-          <option value="dashdot">Dash-dot</option>
-        </select>
-      </label>
-      <span class="sep"></span>
-      <label class="p">Font
-        <select id="p-font">
+    <section id="props" aria-label="Markup properties">
+      <div class="pp-head">
+        <span class="pp-ico" id="pp-ico" aria-hidden="true"></span>
+        <div class="pp-title"><b id="pp-name">Properties</b><small id="pp-sub"></small></div>
+        <button type="button" class="pp-ib" id="pp-fold" title="Fold the panel to its title" aria-label="Fold the panel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+        <button type="button" class="pp-ib" id="pp-close" title="Close · Esc (deselects)" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="pp-body">
+        <button type="button" class="pp-sec" data-sec="style" aria-expanded="true"><svg class="pp-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Style</button>
+        <div class="pp-part" data-part="style">
+          <div class="pp-row">
+            <label class="pp-sw" title="Line colour"><input type="color" id="p-color" value="#ff3b30" aria-label="Line colour"><span>Line</span></label>
+            <label class="pp-sw" title="Fill colour"><input type="color" id="p-fill" value="#ff3b30" aria-label="Fill colour"><span>Fill</span></label>
+            <label class="pp-sw" title="Colour of text, labels and measurement values - separate from the line"><input type="color" id="p-tcolor" value="#ff3b30" aria-label="Text colour"><span>Text</span></label>
+          </div>
+          <div class="pp-row">
+            <label class="pp-num" title="Line weight in paper millimetres - pick one or type any value"><span>Wt</span><input id="p-width" class="pp-ctl" type="number" list="dl-width" value="0.5" min="0.05" max="20" step="0.05" aria-label="Line weight in mm"></label>
+            <select id="p-dash" class="pp-ctl" aria-label="Line type" title="Line type">
+              <option value="none">Solid</option>
+              <option value="dash">Dashed</option>
+              <option value="dot">Dotted</option>
+              <option value="dashdot">Dash-dot</option>
+            </select>
+          </div>
+          <div class="pp-row pp-op">
+            <label for="p-fillop">Opacity</label>
+            <input type="range" id="p-fillop" min="0" max="100" value="0" title="Fill opacity">
+            <output id="pp-opv" for="p-fillop">0%</output>
+          </div>
+        </div>
+        <button type="button" class="pp-sec" data-sec="text" id="pp-text-h" aria-expanded="true"><svg class="pp-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Text</button>
+        <div class="pp-part" data-part="text" id="pp-text">
+          <div class="pp-row">
+            <select id="p-font" class="pp-ctl" aria-label="Font" title="Font">
           <optgroup label="Sans">
             <option>Segoe UI</option><option>Arial</option><option>Arial Narrow</option><option>Calibri</option>
             <option>Tahoma</option><option>Verdana</option><option>Century Gothic</option><option>Helvetica</option></optgroup>
@@ -153,43 +162,56 @@
           <optgroup label="Hand"><option>Segoe Print</option><option>Comic Sans MS</option></optgroup>
           <optgroup label="Chinese"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>Microsoft YaHei</option><option>SimSun</option><option>PingFang TC</option></optgroup>
         </select>
-      </label>
-      <label class="p">Size
-<input id="p-size" type="number" list="dl-size" value="3.5"
-          min="0.5" max="200" step="0.5" style="width:62px"
-          title="Text height in paper millimetres - pick one or type any value">
-      </label>
-      <label class="p">Align
-        <select id="p-align">
-          <option value="start">Left</option>
-          <option value="middle">Centre</option>
-          <option value="end">Right</option>
-        </select>
-      </label>
-      <span class="sep"></span>
-      <span id="a-geom" hidden title="Exact position and size, in paper millimetres">
-        <label class="p">X<input id="g-x" type="number" step="0.5" style="width:62px"></label>
-        <label class="p">Y<input id="g-y" type="number" step="0.5" style="width:62px"></label>
-        <label class="p" title="Width: stretches the selection (drag a corner to scale evenly)">W<input id="g-w" type="number" step="0.5" min="0" style="width:58px"></label>
-        <label class="p" title="Height: stretches the selection (drag a corner to scale evenly)">H<input id="g-h" type="number" step="0.5" min="0" style="width:58px"></label>
-        <label class="p">&ang;<input id="g-r" type="number" step="1" style="width:52px"></label>
-        <label class="p" title="Scale evenly about the middle - text size and line weight too. (Drag a corner of the selection to scale by eye; W / H stretch.)">%<input id="g-k" type="number" step="5" min="1" value="100" style="width:52px"></label>
-      </span>
-      <label class="p" id="a-scale-wrap" hidden
-        title="Scale of the selected measurements. Changing it re-reads only them.">
-        Scale 1:<input id="a-scale" type="number" min="1" step="1" style="width:60px">
-      </label>
-      <button id="a-rotl" class="ghost" disabled title="Rotate 90 degrees anticlockwise (Shift+R)">&#8634;</button>
-      <button id="a-rotr" class="ghost" disabled title="Rotate 90 degrees clockwise (R)">&#8635;</button>
-      <button id="a-mirx" class="ghost" disabled title="Mirror left-right about the middle of the selection (text stays readable)">&#8644;</button>
-      <button id="a-miry" class="ghost" disabled title="Mirror up-down about the middle of the selection (text stays readable)">&#8645;</button>
-      <button id="a-group" class="ghost" disabled title="Group the selected markups: they then select, move, rotate and take an issue together (Ctrl+G)">&#9635; Group</button>
-      <button id="a-ungroup" class="ghost" hidden title="Ungroup (Ctrl+Shift+G)">Ungroup</button>
-      <button id="a-issue" class="ghost" disabled data-icon="issue" title="Raise an issue on the selected markup">Issue</button>
-      <button id="a-copy" class="ghost" disabled data-icon="copy" title="Copy (Ctrl+C), paste with Ctrl+V">Copy</button>
-      <button id="a-paste" class="ghost" data-icon="paste" title="Paste (Ctrl+V) - onto another sheet at the same spot">Paste</button>
-      <button id="a-delete" class="ghost" disabled data-icon="trash" title="Delete (Del)">Delete</button>
-    </div>
+            <label class="pp-num pp-narrow" title="Text height in paper millimetres - pick one or type any value"><span>H</span><input id="p-size" class="pp-ctl" type="number" list="dl-size" value="3.5" min="0.5" max="200" step="0.5" aria-label="Text height in mm"></label>
+          </div>
+          <select id="p-align" hidden aria-hidden="true" tabindex="-1">
+            <option value="start">Left</option>
+            <option value="middle">Centre</option>
+            <option value="end">Right</option>
+          </select>
+          <div class="pp-seg pp-align" role="group" aria-label="Text alignment">
+            <button type="button" class="pp-ib" data-align="start" aria-label="Align left" title="Align left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13"/></svg></button>
+            <button type="button" class="pp-ib" data-align="middle" aria-label="Align centre" title="Align centre"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M5.5 18h13"/></svg></button>
+            <button type="button" class="pp-ib" data-align="end" aria-label="Align right" title="Align right"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M10 12h10M7 18h13"/></svg></button>
+          </div>
+        </div>
+        <button type="button" class="pp-sec" data-sec="geo" id="pp-geo-h" aria-expanded="true"><svg class="pp-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Position &amp; size</button>
+        <div class="pp-part" data-part="geo" id="pp-geo">
+          <div id="a-geom" class="pp-grid" hidden title="Exact position and size, in paper millimetres">
+            <label class="pp-num" title="X position (mm)"><span>X</span><input id="g-x" class="pp-ctl" type="number" step="0.5" aria-label="X position"></label>
+            <label class="pp-num" title="Y position (mm)"><span>Y</span><input id="g-y" class="pp-ctl" type="number" step="0.5" aria-label="Y position"></label>
+            <label class="pp-num" title="Width: stretches the selection (drag a corner to scale evenly)"><span>W</span><input id="g-w" class="pp-ctl" type="number" step="0.5" min="0" aria-label="Width"></label>
+            <label class="pp-num" title="Height: stretches the selection (drag a corner to scale evenly)"><span>H</span><input id="g-h" class="pp-ctl" type="number" step="0.5" min="0" aria-label="Height"></label>
+            <label class="pp-num" title="Rotation in degrees"><span>&deg;</span><input id="g-r" class="pp-ctl" type="number" step="1" aria-label="Rotation in degrees"></label>
+            <label class="pp-num" title="Scale evenly about the middle - text size and line weight too"><span>%</span><input id="g-k" class="pp-ctl" type="number" step="5" min="1" value="100" aria-label="Scale percent"></label>
+          </div>
+          <div class="pp-row">
+            <label class="pp-num pp-scale" id="a-scale-wrap" hidden title="Scale of the selected measurements. Changing it re-reads only them."><span>1 :</span><input id="a-scale" class="pp-ctl" type="number" min="1" step="1" placeholder="Sheet" aria-label="Drawing scale 1 to"></label>
+            <div class="pp-seg" role="group" aria-label="Rotate and mirror">
+              <button type="button" id="a-rotl" class="pp-ib" disabled title="Rotate 90&deg; anticlockwise (Shift+R)" aria-label="Rotate left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/></svg></button>
+              <button type="button" id="a-rotr" class="pp-ib" disabled title="Rotate 90&deg; clockwise (R)" aria-label="Rotate right"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5"/></svg></button>
+              <button type="button" id="a-mirx" class="pp-ib" disabled title="Mirror left-right about the middle of the selection (text stays readable)" aria-label="Mirror left-right"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M8 7l-5 5 5 5zM16 7l5 5-5 5z"/></svg></button>
+              <button type="button" id="a-miry" class="pp-ib" disabled title="Mirror up-down about the middle of the selection (text stays readable)" aria-label="Mirror up-down"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18M7 8l5-5 5 5zM7 16l5 5 5-5z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="pp-row pp-layer">
+          <label for="p-layer">Layer</label>
+          <select id="p-layer" class="pp-ctl" title="The layer new markups go on (and, with markups selected, the layer they are moved to)"></select>
+          <button type="button" id="layers-btn" class="pp-ib" title="Show or hide markup layers" aria-label="Layers"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg></button>
+        </div>
+      </div>
+      <div class="pp-foot">
+        <button type="button" id="a-issue" class="pp-act" disabled title="Raise an issue on the selected markup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="pp-flag"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Issue</button>
+        <span class="pp-fill"></span>
+        <button type="button" id="a-copy" class="pp-ib" disabled title="Copy · Ctrl C (paste with Ctrl V)" aria-label="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8h12v12H8zM16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
+        <button type="button" id="a-paste" class="pp-ib" title="Paste · Ctrl V - onto another sheet at the same spot" aria-label="Paste"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 4V3h6v1M9 11h6M9 15h4"/></svg></button>
+        <button type="button" id="a-group" class="pp-ib" disabled title="Group · Ctrl G - they then select, move, rotate and take an issue together (select 2 or more)" aria-label="Group"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h8v8H3zM13 13h8v8h-8z"/></svg></button>
+        <button type="button" id="a-ungroup" class="pp-ib" hidden title="Ungroup · Ctrl Shift G" aria-label="Ungroup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h8v8H3zM13 13h8v8h-8zM11 7h4v4"/></svg></button>
+        <span class="pp-div" aria-hidden="true"></span>
+        <button type="button" id="a-delete" class="pp-ib pp-del" disabled title="Delete · Del" aria-label="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+      </div>
+    </section>
 
     <div id="cmp-bar" hidden>
       <b>Compare</b>

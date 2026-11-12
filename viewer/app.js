@@ -1371,7 +1371,9 @@ function placeSelbar(allPx) {
       + `<button data-a="xform" title="A box with handles to resize it">Resize</button>`
       + `<button data-a="copy">Copy</button>`
       + `<button data-a="match" title="Copy this one's look (and issue details) onto others">Match</button>`
-      + `<button data-a="del" class="danger">Delete</button>`;
+      + `<button data-a="del" class="danger">Delete</button>`
+      + `<button data-a="props" class="sb-ic" title="Properties" aria-label="Properties">⋯</button>`
+      + `<button data-a="x" class="sb-ic" title="Let go of the selection" aria-label="Let go of the selection">×</button>`;
     $("#page").appendChild(bar);
     bar.addEventListener("pointerdown", (ev) => ev.stopPropagation());
     bar.addEventListener("click", (ev) => {
@@ -1380,6 +1382,8 @@ function placeSelbar(allPx) {
       const a = b.dataset.a;
       const one = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]);
       if (a === "del") deleteSelection();
+      else if (a === "props") PROPS.open();
+      else if (a === "x") select([], false);
       else if (a === "copy") copySelection();
       else if (a === "xform") startTransform();
       else if (a === "dup") { copySelection(); paste(); }
@@ -4506,6 +4510,7 @@ async function renderPage() {
     S._openT0 = 0;
   }
   const ver = sheetVersion(S.sheet);
+  paintSheetTitle(ver);
   status((ver ? ver + "  |  " : "") + `${S.sheet.number} - ${S.sheet.name}  |  `
     + `${S.pageMM[0].toFixed(0)} x ${S.pageMM[1].toFixed(0)} mm  |  `
     + `${mapped} mapped viewport(s)`
@@ -6759,44 +6764,128 @@ function exportAll() {
    drawing tool is in hand or markups are selected; the scale only for the
    measuring tools. The rest of the time the drawing gets the room. */
 const MEASURE_TOOLS = new Set(["measure", "dimension", "area", "angle", "route"]);
-/* The properties (layer, colours, weight, font, size, position ...) as a
-   column at the top left of the drawing instead of a bar that scrolled
-   sideways. Its title folds it to a small tab (remembered on this
-   device); the buttons sit together in rows. */
+/* The properties panel (the design's "markup properties panel"): a card at
+   the top right of the drawing - what is chosen (or drawn next), then
+   Style, Text and Position & size, each folding from its title, the layer,
+   and Issue / copy / paste / group / delete. "-" folds the whole card to
+   its title, "x" lets go of the selection. On a phone it is a sheet along
+   the bottom, folded until asked for. Folds are remembered on this device. */
 const PCOL_KEY = "lwk-sheets:props-folded";
+const PSEC_KEY = "lwk-sheets:props-sec:";
+const TEXTY = new Set(["text", "textbox", "callout", "stamp", "measure", "dimension", "area", "angle", "route"]);
 function setupPropsColumn() {
   const p = document.getElementById("props"), stage = document.getElementById("stage-row");
-  if (!p || !stage || p.classList.contains("props-col")) return;
-  p.classList.add("props-col");
-  // the buttons in runs, a row each, rather than one per line
-  let run = null;
-  for (const el of Array.from(p.children)) {
-    if (el.tagName === "BUTTON") {
-      if (!run) { run = document.createElement("div"); run.className = "pc-btns"; p.insertBefore(run, el); }
-      run.appendChild(el);
-    } else run = null;
-  }
-  const h = document.createElement("div");
-  h.className = "pc-h";
-  h.innerHTML = `<b>Properties</b><span class="pc-sel" id="pc-sel"></span><button type="button" class="ghost" id="pc-fold" title="Fold the properties away (they stay folded on this device)">&#8211;</button>`;
-  p.insertBefore(h, p.firstChild);
-  stage.insertBefore(p, stage.firstChild);
-  let folded = false;
-  try { folded = localStorage.getItem(PCOL_KEY) === "1" || (localStorage.getItem(PCOL_KEY) === null && matchMedia("(max-width: 700px)").matches); } catch (e) {}
-  const paint = () => {
+  if (!p || !stage || p.classList.contains("pp-on")) return;
+  p.classList.add("pp-on");
+  stage.appendChild(p);
+  const phone = matchMedia("(max-width: 700px)").matches;
+  // folded at first on a phone, and on a tablet whose drawing is narrow
+  let folded = phone || stage.getBoundingClientRect().width < 900;
+  try { const v = localStorage.getItem(PCOL_KEY); if (v !== null && !phone) folded = v === "1"; } catch (e) {}
+  const paintFold = () => {
     p.classList.toggle("folded", folded);
-    const b = document.getElementById("pc-fold");
-    b.innerHTML = folded ? "&#9656;" : "&#8211;";
-    b.title = folded ? "Show the properties" : "Fold the properties away (they stay folded on this device)";
+    const b = document.getElementById("pp-fold");
+    b.title = folded ? "Open the panel" : "Fold the panel to its title";
+    b.setAttribute("aria-label", b.title);
+    b.innerHTML = folded
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
   };
-  h.addEventListener("click", () => {
-    folded = !folded;
-    try { localStorage.setItem(PCOL_KEY, folded ? "1" : "0"); } catch (e) {}
-    paint();
+  const setFold = (f) => {
+    folded = f;
+    if (!matchMedia("(max-width: 700px)").matches) { try { localStorage.setItem(PCOL_KEY, folded ? "1" : "0"); } catch (e) {} }
+    paintFold();
+    placeRoutePanels();
+  };
+  PROPS.open = () => setFold(false);
+  document.getElementById("pp-fold").addEventListener("click", (ev) => { ev.stopPropagation(); setFold(!folded); });
+  // a click on the title opens a folded panel (the whole title is the target on a phone)
+  p.querySelector(".pp-head").addEventListener("click", (ev) => { if (folded && !ev.target.closest("#pp-close")) setFold(false); });
+  document.getElementById("pp-close").addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (S.sel.length) select([], false);
+    else if (S.tool !== "select") setTool("select");
   });
+  // the sections fold from their titles
+  for (const b of p.querySelectorAll(".pp-sec")) {
+    const k = b.dataset.sec;
+    let shut = false;
+    try { shut = localStorage.getItem(PSEC_KEY + k) === "1"; } catch (e) {}
+    const paint = () => { b.setAttribute("aria-expanded", shut ? "false" : "true"); p.querySelector(`.pp-part[data-part="${k}"]`).classList.toggle("shut", shut); };
+    b.addEventListener("click", () => { shut = !shut; try { localStorage.setItem(PSEC_KEY + k, shut ? "1" : "0"); } catch (e) {} paint(); });
+    paint();
+  }
+  // alignment: three buttons for the select the rest of the code reads
+  const al = document.getElementById("p-align");
+  const paintAlign = () => { for (const b of p.querySelectorAll("[data-align]")) b.setAttribute("aria-pressed", b.dataset.align === al.value ? "true" : "false"); };
+  for (const b of p.querySelectorAll("[data-align]")) {
+    b.addEventListener("click", () => { al.value = b.dataset.align; al.dispatchEvent(new Event("input", { bubbles: true })); al.dispatchEvent(new Event("change", { bubbles: true })); paintAlign(); });
+  }
+  PROPS.paintAlign = paintAlign;
+  // the opacity's number beside its slider
+  const op = document.getElementById("p-fillop"), opv = document.getElementById("pp-opv");
+  const paintOp = () => { opv.textContent = op.value + "%"; };
+  op.addEventListener("input", paintOp);
+  PROPS.paintOp = paintOp;
   // a click on it is not a click on the drawing
   p.addEventListener("pointerdown", (ev) => ev.stopPropagation());
-  paint();
+  paintFold(); paintAlign(); paintOp();
+}
+const PROPS = { open: () => {}, paintAlign: () => {}, paintOp: () => {}, shownFor: "" };
+
+/* The chosen markup's own look in the panel's fields (not applied: only
+   shown, so the panel says what it is). */
+function loadStyleInputs(it) {
+  const st = it && it.style;
+  if (!st) return;
+  const set = (id, v) => { const e = document.getElementById(id); if (e && v !== undefined && v !== null && v !== "" && document.activeElement !== e) e.value = v; };
+  const hex = (c) => (typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c) ? c : undefined);
+  set("p-color", hex(st.color)); set("p-fill", hex(st.fill)); set("p-tcolor", hex(st.tcolor || st.color));
+  set("p-fillop", st.fillop); set("p-width", st.width); set("p-dash", st.dash); set("p-font", st.font);
+  set("p-size", st.size); set("p-align", st.align);
+  PROPS.paintAlign(); PROPS.paintOp();
+}
+
+/* The panel's title: what is chosen, or what the next markup will be */
+function paintPropsHead(drawing) {
+  const name = document.getElementById("pp-name");
+  if (!name) return;
+  const sub = document.getElementById("pp-sub"), ico = document.getElementById("pp-ico");
+  const its = (S.sel || []).map((id) => S.items.find((x) => x.id === id)).filter(Boolean);
+  let type = "", title = "Properties", line = "";
+  if (its.length === 1) {
+    const it = its[0];
+    type = it.type;
+    title = (toolOf(it.type) || {}).label || it.type;
+    if (title === "Rect") title = "Rectangle";
+    line = it.issue ? `Issue${it.issue.number ? " #" + it.issue.number : ""} \u00b7 ${it.author || ""}` : `Comment${it.author ? " \u00b7 " + it.author : ""}`;
+    if (it.created_at) line += " \u00b7 " + fmtAt(it.created_at).replace(/, \d\d:\d\d$/, "");
+  } else if (its.length > 1) {
+    const types = [...new Set(its.map((x) => x.type))];
+    type = types.length === 1 ? types[0] : "select";
+    title = `${its.length} markups`;
+    line = `${its.length} selected` + (selGroup() ? " \u00b7 a group" : "");
+  } else if (drawing) {
+    type = S.tool;
+    const l = (toolOf(S.tool) || {}).label || S.tool;
+    title = "New " + (l === "Rect" ? "rectangle" : l.toLowerCase());
+    line = "Its look - and the layer it goes on";
+  }
+  name.textContent = title;
+  sub.textContent = line;
+  ico.innerHTML = type ? iconSvg(type, 16) : "";
+  // the Text section where words are drawn; Position & size with something chosen
+  const texty = its.length ? its.some((x) => TEXTY.has(x.type)) : TEXTY.has(S.tool);
+  for (const id of ["pp-text", "pp-text-h"]) { const e = document.getElementById(id); if (e) e.hidden = !texty; }
+  for (const id of ["pp-geo", "pp-geo-h"]) { const e = document.getElementById(id); if (e) e.hidden = !its.length; }
+  const key = its.map((x) => x.id).join(",");
+  if (its.length === 1 && PROPS.shownFor !== key) loadStyleInputs(its[0]);
+  PROPS.shownFor = key;
+}
+
+/* The Route and Area panels sit under the properties panel (computer, iPad) */
+function placeRoutePanels() {
+  try { dispatchEvent(new Event("lwk-panels")); } catch (e) {}
 }
 
 function propsShown() {
@@ -6807,8 +6896,7 @@ function propsShown() {
   const drawing = ["drag2", "free", "poly", "click"].includes(k) && S.tool !== "snip";
   const on = drawing || (S.sel && S.sel.length > 0) || S.tool === "match";
   document.body.classList.toggle("props-off", !on);
-  const ps = document.getElementById("pc-sel");
-  if (ps) ps.textContent = S.sel && S.sel.length ? (S.sel.length === 1 ? "1 selected" : S.sel.length + " selected") : (drawing ? "for new markups" : "");
+  paintPropsHead(drawing);
   const selMeasure = (S.sel || []).some((id) => { const it = S.items.find((x) => x.id === id); return it && MEASURE_TOOLS.has(it.type); });
   const sc = document.getElementById("scale-lab");
   if (sc) sc.hidden = !(MEASURE_TOOLS.has(S.tool) || selMeasure);
@@ -6821,6 +6909,7 @@ function propsShown() {
   polyButtons(!!(S.draft && S.draft.type === S.tool && k === "poly"));
   ROUTE.paintPanel();
   AREA.paintPanel();
+  placeRoutePanels();
 }
 
 /* The markup tools in families, one button each: the family's last-used tool
@@ -6864,6 +6953,17 @@ function groupTools(tw) {
         + `<span class="tg-ic">${b.innerHTML}</span><span>${esc(toolOf(b.dataset.tool).label)}</span></button>`).join("");
       document.body.appendChild(pop);
       const r = g.getBoundingClientRect();
+      // beside the strip when it stands down the drawing's left
+      const rail = tw.classList.contains("rail") && getComputedStyle(tw).flexDirection === "column";
+      if (rail) {
+        pop.style.left = Math.min(innerWidth - pop.offsetWidth - 8, r.right + 8) + "px";
+        pop.style.top = Math.max(8, Math.min(innerHeight - pop.offsetHeight - 8, r.top)) + "px";
+        pop.onclick = (e2) => { const p = e2.target.closest("[data-pick]"); if (!p) return; pop.remove(); setTool(p.dataset.pick); };
+        setTimeout(() => document.addEventListener("pointerdown", function off(e3) {
+          if (!pop.contains(e3.target)) { pop.remove(); document.removeEventListener("pointerdown", off); }
+        }), 0);
+        return;
+      }
       pop.style.left = Math.max(8, Math.min(innerWidth - pop.offsetWidth - 8, r.left)) + "px";
       // above the button when it does not fit below - on a phone the tools
       // are along the bottom of the screen, and the list went off it
@@ -6882,6 +6982,68 @@ function groupTools(tw) {
     });
   }
 }
+/* The tools as a strip down the left of the drawing (the design's tool
+   rail), with the zoom bar at its bottom right; the sheet's name heads the
+   row above. On a phone the strip lies along the bottom (CSS). */
+function setupToolRail(tw) {
+  const row = document.getElementById("stage-row");
+  if (!row || tw.classList.contains("rail")) return;
+  tw.classList.add("rail");
+  tw.setAttribute("role", "toolbar");
+  tw.setAttribute("aria-label", "Markup tools");
+  tw.setAttribute("aria-orientation", "vertical");
+  const sep = (before) => { if (!before) return; const r = document.createElement("span"); r.className = "rsep"; r.setAttribute("aria-hidden", "true"); before.before(r); };
+  sep(tw.querySelector('.tgrp[data-group="Shapes"]'));
+  sep(tw.querySelector('.tgrp[data-group="Text"]'));
+  sep(tw.querySelector('.tgrp[data-group="Measure"]'));
+  sep(tw.querySelector("#keys-btn"));
+  row.insertBefore(tw, row.firstChild);
+  // zoom, rotate, Snap and Fit: a bar at the bottom right of the drawing
+  const zb = document.createElement("div");
+  zb.id = "zoombar";
+  zb.setAttribute("role", "toolbar");
+  zb.setAttribute("aria-label", "View");
+  for (const id of ["scale-lab", "snap-btn", "rotate", "zoom-out", "zoom-label", "zoom-in", "zoom-fit"]) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (id === "rotate") { const v = document.createElement("span"); v.className = "zsep"; v.setAttribute("aria-hidden", "true"); zb.appendChild(v); }
+    zb.appendChild(el);
+  }
+  const lbl = (id, t) => { const e = document.getElementById(id); if (e) { e.setAttribute("aria-label", t); if (!e.title) e.title = t; } };
+  lbl("zoom-out", "Zoom out"); lbl("zoom-in", "Zoom in"); lbl("zoom-fit", "Fit the sheet");
+  row.appendChild(zb);
+  // what is left of the old zoom group, and dividers with nothing between them
+  const tbar = document.getElementById("toolbar");
+  if (tbar) {
+    for (const z of tbar.querySelectorAll(".zoom")) if (!z.children.length) z.remove();
+    const kids = () => [...tbar.children].filter((c) => !c.hidden);
+    for (let k = kids(), i = k.length - 1; i >= 0; i--) {
+      if (k[i].classList.contains("sep") && (i === k.length - 1 || k[i + 1].classList.contains("sep"))) { k[i].remove(); k = kids(); i = Math.min(i, k.length); }
+    }
+  }
+  // the sheet's number and name, heading the row above the drawing
+  const tb = document.getElementById("toolbar");
+  if (tb && !document.getElementById("sh-title")) {
+    const h = document.createElement("div");
+    h.id = "sh-title";
+    h.innerHTML = `<h1 id="sh-name"></h1><span id="sh-meta"></span>`;
+    tb.insertBefore(h, tb.firstChild);
+  }
+}
+function paintSheetTitle(ver) {
+  const n = document.getElementById("sh-name"), m = document.getElementById("sh-meta");
+  if (!n || !S.sheet) return;
+  n.textContent = `${S.sheet.number} \u00b7 ${S.sheet.name || ""}`;
+  n.title = n.textContent;
+  const bits = [];
+  if (S.sheet.revision) bits.push("Rev " + S.sheet.revision);
+  if (S.pageMM) bits.push(`${S.pageMM[0].toFixed(0)} \u00d7 ${S.pageMM[1].toFixed(0)} mm`);
+  const sc = [...new Set((S.sheet.viewports || []).map((v) => Number(v.scale)).filter((x) => x > 0))];
+  if (sc.length === 1) bits.push("1:" + sc[0]);
+  m.textContent = bits.join(" \u00b7 ");
+  m.title = ver || "";
+}
+
 function showInGroup(g, id) {
   for (const b of g.querySelectorAll("[data-tool]")) b.classList.toggle("tg-hide", b.dataset.tool !== id);
   try { localStorage.setItem("lwk-sheets:tg:" + g.dataset.group, id); } catch (e) {}
@@ -6958,6 +7120,7 @@ function wireChrome() {
   kb.addEventListener("click", openShortcuts);
   tw.appendChild(kb);
   groupTools(tw);
+  setupToolRail(tw);
   labelToolKeys();
   S.toolChipQuiet = true;           // no name flash on opening the page
   // phones and tablets open on Pan: a finger on the sheet moves the sheet,

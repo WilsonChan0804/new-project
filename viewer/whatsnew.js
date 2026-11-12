@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-14", date: "12 Nov 2026",
+    items: [
+      "**The Sheets page, redesigned:** the tools are a strip down the left of the drawing (a small corner triangle opens a tool's family), the zoom, Snap, rotate and Fit sit in a bar at the bottom right, and the sheet's number, name, paper size and scale head the row above.",
+      "**A new properties panel** floats at the top right of the drawing: the markup's type and who made it, then **Style** (line, fill and text colours, weight, line type, opacity), **Text** (font, size, alignment) and **Position & size** (X, Y, W, H, angle, %, scale, rotate and mirror), the layer, and Issue / copy / paste / group / delete along its foot. Each part folds from its title, **-** folds the panel and **x** lets go of the selection.",
+      "**iPad and phone:** on an iPad the strip and panel stay beside the drawing (the panel starts folded when the drawing is narrow). On a phone the tools run along the bottom, the panel is a sheet above them that opens from its title or from **...** on the bar over a selection, and the zoom bar sits at the top right.",
+      "The Route and Area panels, Find & replace and the issue list's tabs and filters take the same look.",
+    ],
+  },
+  {
     version: "2027-01-13", date: "12 Nov 2026",
     items: [
       "**Admin > Storage** (site admins): how full each of the server's disks is, with the free space (red over 80 %), what the viewer keeps - published sheets and 3D models, Folders files, chat files, pictures, recently deleted, update backups - and the largest projects. **Keep the newest 5** clears older update backups.",

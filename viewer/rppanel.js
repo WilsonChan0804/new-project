@@ -12,11 +12,39 @@ const MIN = "lwk-sheets:panel-min:";
 
 function place(el) {
   const sc = document.getElementById("scroll");
-  if (!sc || matchMedia("(max-width: 700px)").matches) { el.style.top = el.style.right = el.style.maxHeight = ""; return; }
-  const r = sc.getBoundingClientRect();
-  el.style.top = Math.round(r.top + 10) + "px";
-  el.style.right = Math.round(innerWidth - r.right + 12) + "px";
-  el.style.maxHeight = Math.max(120, Math.round(r.height - 20)) + "px";
+  if (!sc) return;
+  const pp = document.getElementById("props");
+  const ppOn = pp && pp.classList.contains("pp-on") && getComputedStyle(pp).display !== "none" && pp.getBoundingClientRect().height > 0;
+  if (matchMedia("(max-width: 700px)").matches) {
+    // the phone: above the properties sheet (or the tool bar) at the bottom
+    const tb = document.getElementById("tools");
+    let floor = innerHeight;
+    if (ppOn) floor = pp.getBoundingClientRect().top;
+    else if (tb && tb.getBoundingClientRect().height) floor = tb.getBoundingClientRect().top;
+    el.style.top = "auto"; el.style.right = "";
+    el.style.bottom = Math.round(innerHeight - floor + 8) + "px";
+    el.style.maxHeight = Math.max(120, Math.round(floor - 8 - 120)) + "px";
+    return;
+  }
+  el.style.bottom = "";
+  // the drawing area (with the properties panel at its top right: under it)
+  const row = document.getElementById("stage-row") || sc;
+  const r = row.getBoundingClientRect();
+  let top = r.top + 12;
+  if (ppOn) top = pp.getBoundingClientRect().bottom + 8;
+  // and above the zoom bar at the bottom right
+  let floor = r.bottom - 12;
+  const zb = document.getElementById("zoombar");
+  if (zb && zb.getBoundingClientRect().height) floor = Math.min(floor, zb.getBoundingClientRect().top - 8);
+  let right = innerWidth - r.right + 12;
+  if (ppOn && floor - top < 160) {
+    // no room under the panel: beside it instead
+    const q = pp.getBoundingClientRect();
+    top = q.top; right = innerWidth - q.left + 8;
+  }
+  el.style.top = Math.round(top) + "px";
+  el.style.right = Math.round(right) + "px";
+  el.style.maxHeight = Math.max(120, Math.round(floor - top)) + "px";
 }
 
 function chip(key) {
@@ -96,6 +124,9 @@ export function undock(key) {
   if (c) c.hidden = true;
 }
 
+addEventListener("lwk-panels", () => {
+  for (const el of document.querySelectorAll(".rp-panel:not([hidden]), .rp-chip:not([hidden])")) place(el);
+});
 addEventListener("resize", () => {
   for (const el of document.querySelectorAll(".rp-panel:not([hidden]), .rp-chip:not([hidden])")) place(el);
 });
