@@ -18,8 +18,8 @@
     },
     {
      "sel": "#hd-tabs",
-     "en": "The pages: Projects, Dashboard, Sheets, 3D, Board, Tasks, Chat (number: unread), Calendar, Folders",
-     "yue": "各頁：Projects、Dashboard、Sheets、3D、Board、Tasks、Chat（數字：未讀）、Calendar、Folders"
+     "en": "The pages: Projects, Dashboard, Sheets, 3D, Board, Tasks, Chat (number: unread), Calendar, Folders, Codes",
+     "yue": "各頁：Projects、Dashboard、Sheets、3D、Board、Tasks、Chat（數字：未讀）、Calendar、Folders、Codes"
     },
     {
      "sel": "#lwk-search-btn",
@@ -72,9 +72,15 @@
      "yue": "Set：顯示邊組圖則（Revit 嘅，或者上載嘅 PDF 組）；改名、封存、刪除一組"
     },
     {
+     "sel": "#sh-title",
+     "en": "The open sheet: number, name, paper size and scale",
+     "yue": "打開咗嘅圖：編號、名、紙張尺寸同比例"
+    },
+    {
      "sel": "#tools",
-     "en": "The mark-up tools, in families (next picture)",
-     "yue": "Mark-up 工具，按類分組（下一張圖）"
+     "en": "The tool strip: select, pan and the mark-up tools in families (next picture)",
+     "yue": "工具列：揀選、移動同按類分組嘅 mark-up 工具（下一張圖）",
+     "at": "r"
     },
     {
      "sel": "#mode-comment",
@@ -102,9 +108,9 @@
      "yue": "復原 / 重做"
     },
     {
-     "sel": "#zoom-label",
-     "en": "Zoom: 100% is the sheet fitting the width; rotate, zoom out / in, Fit",
-     "yue": "縮放：100% 即係張圖啱啱夠闊；旋轉、縮小 / 放大、Fit"
+     "sel": "#zoombar",
+     "en": "The zoom bar: Snap, rotate, zoom out / in (100% is the sheet fitting the width), Fit",
+     "yue": "縮放列：Snap、旋轉、縮小 / 放大（100% 即係張圖啱啱夠闊）、Fit"
     },
     {
      "sel": "#page",
@@ -114,8 +120,8 @@
     },
     {
      "sel": "#filter-tabs",
-     "en": "All / Issues / Comments",
-     "yue": "全部 / Issues / Comments"
+     "en": "All / Issues / Comments / Queries",
+     "yue": "全部 / Issues / Comments / Queries"
     },
     {
      "sel": "#show-markups",
@@ -170,10 +176,10 @@
    "clip": {
     "sel": "#tools",
     "pad": [
-     0,
-     0,
-     30,
-     0
+     8,
+     56,
+     8,
+     8
     ]
    },
    "marks": [
@@ -181,61 +187,165 @@
      "sel": "button[data-tool=select]",
      "en": "Select (V): pick, move and change mark-ups",
      "yue": "揀選 (V)：揀、搬同改 mark-up",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": "button[data-tool=pan]",
      "en": "Pan (H): move the sheet",
      "yue": "移動 (H)：拖動張圖",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": ".tgrp[data-group=\"Shapes\"]",
-     "en": "Shapes: rectangle, circle, line, arrow, polyline, polygon - the arrow beside lists them",
-     "yue": "形狀：長方形、圓形、直線、箭咀、多段線、多邊形 - 旁邊個箭咀列出全部",
-     "at": "below"
+     "en": "Shapes: rectangle, circle, line, arrow, polyline, polygon - the small triangle in its corner lists them",
+     "yue": "形狀：長方形、圓形、直線、箭咀、多段線、多邊形 - 角落個細三角形列出全部",
+     "at": "r"
     },
     {
      "sel": ".tgrp[data-group=\"Clouds\"]",
      "en": "Clouds: the usual issue mark, or a free shape",
      "yue": "雲線：最常用嚟標 issue，或者自由形",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": ".tgrp[data-group=\"Draw\"]",
      "en": "Pen and highlighter",
      "yue": "筆同螢光筆",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": ".tgrp[data-group=\"Text\"]",
      "en": "Text, text box, callout",
      "yue": "文字、文字框、引線標註",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": "button[data-tool=stamp]",
      "en": "Stamp: Approved, Rejected ...",
      "yue": "印章：Approved、Rejected ...",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": ".tgrp[data-group=\"Measure\"]",
      "en": "Measure, dimension, area, angle - at the sheet's scale",
      "yue": "量度、尺寸線、面積、角度 - 按圖則比例",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": ".tgrp[data-group=\"More tools\"]",
      "en": "Snip, select text, eraser, match properties",
      "yue": "截圖、揀選文字、擦膠、複製格式",
-     "at": "below"
+     "at": "r"
     },
     {
      "sel": "#keys-btn",
      "en": "Keyboard shortcuts: one key per tool",
      "yue": "快捷鍵：每個工具一個鍵",
+     "at": "r"
+    }
+   ]
+  },
+  {
+   "id": "sheet-props",
+   "url": "index.html?project={project}",
+   "ready": "#sheet-list li",
+   "prep": [
+    {
+     "click": "#sheet-list li"
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "button[data-tool=select]"
+    },
+    {
+     "clickEdge": "#overlay .mk[data-id=\"demotxt01\"] > text"
+    },
+    {
+     "wait": 800
+    }
+   ],
+   "clip": {
+    "sel": "#stage-row",
+    "pad": [
+     14,
+     0,
+     0,
+     0
+    ]
+   },
+   "marks": [
+    {
+     "sel": "#pp-name",
+     "en": "What is selected: its type, and who made it and when",
+     "yue": "揀咗咩：類型，同邊個、幾時整"
+    },
+    {
+     "sel": "#pp-fold",
+     "en": "Fold the panel to its title (and open it again)",
+     "yue": "將面板摺到淨返標題（再撳就打開）",
+     "at": "above"
+    },
+    {
+     "sel": "#pp-close",
+     "en": "Let go of the selection",
+     "yue": "放開所揀嘅嘢",
+     "at": "r"
+    },
+    {
+     "sel": ".pp-sec[data-sec=\"style\"]",
+     "en": "Style: line, fill and text colours, weight, line type, opacity - click a title to fold its part",
+     "yue": "Style：線、填色同文字顏色、線粗、線型、透明度 - 撳標題摺埋嗰部分",
+     "at": "l"
+    },
+    {
+     "sel": "#pp-text-h",
+     "en": "Text: font, height and alignment",
+     "yue": "Text：字型、字高同對齊",
+     "at": "l"
+    },
+    {
+     "sel": "#pp-geo-h",
+     "en": "Position & size: X, Y, W, H, angle, %, scale, rotate and mirror",
+     "yue": "Position & size：X、Y、W、H、角度、%、比例、旋轉同鏡像",
+     "at": "l"
+    },
+    {
+     "sel": "#props .pp-layer",
+     "en": "The layer it is on, and the layers list",
+     "yue": "佢喺邊個圖層，同圖層清單",
+     "at": "l"
+    },
+    {
+     "sel": "#a-issue",
+     "en": "Make it an issue (or open its issue)",
+     "yue": "變成 issue（或者打開佢個 issue）",
+     "at": "bl"
+    },
+    {
+     "sel": "#a-copy",
+     "en": "Copy, paste, group, ungroup",
+     "yue": "Copy、貼、group、ungroup",
      "at": "below"
+    },
+    {
+     "sel": "#a-delete",
+     "en": "Delete",
+     "yue": "刪除",
+     "at": "br"
+    },
+    {
+     "sel": "#tools",
+     "en": "The tool strip",
+     "yue": "工具列",
+     "at": "r"
+    },
+    {
+     "sel": "#zoombar",
+     "en": "The zoom bar",
+     "yue": "縮放列",
+     "at": "l"
     }
    ]
   },

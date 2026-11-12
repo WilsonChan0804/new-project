@@ -46,6 +46,7 @@ PART = [
     SHOT('sheet-2d3d'),
     H3('Markup 工具'),
     SHOT('markup-tools'),
+    SHOT('sheet-props'),
     TABLE(['類別', '工具'], [
         ['形狀', 'Rect、Circle、Line、Arrow、Cloud、Polyline、Polygon'],
         ['手寫', 'Pen（一筆畫完之後停定唔郁，就會變成直線、圓或者長方形）、Highlighter'],

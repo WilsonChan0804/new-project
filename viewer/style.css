@@ -2843,6 +2843,8 @@ header .flr-lab { white-space: nowrap; }
 
 /* the row above the drawing: the sheet's name, then its actions */
 #toolbar { min-height: 52px; gap: 8px !important; padding: 8px 16px !important; align-items: center; }
+/* one row on a computer or tablet: the sheet's name gives way (it ends in "...") before a button drops to a second row */
+@media (min-width: 701px) { #toolbar { flex-wrap: nowrap !important; } #toolbar > #sh-title { flex: 0 1 auto; min-width: 60px; } #sh-title h1 { min-width: 0; } }
 #toolbar > * { order: 3; }
 #toolbar > #sh-title { order: 0; display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 0 1 auto; margin-right: 8px; overflow: hidden; }
 #toolbar > .spacer { order: 1; flex: 1 1 0; min-width: 0; }
@@ -2897,3 +2899,6 @@ header .flr-lab { white-space: nowrap; }
 /* the 3D page's selection properties: the same fields */
 #inspect-body :is(input[type=text], input[type=number], input:not([type]), select) { height: 28px; box-sizing: border-box; border: 1px solid var(--line);
   border-radius: 6px; background: var(--panel); color: var(--ink); padding: 0 8px; font: 12px inherit; }
+/* the issue and text forms come above the drawing's floating panels (strip, properties, zoom bar, Route / Area) */
+#dialog-back, #text-back { z-index: 250 !important; }
+#dialog, #textdlg { z-index: 251 !important; }

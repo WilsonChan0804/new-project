@@ -33,7 +33,7 @@ await p.evaluate(([t, pid]) => {
   localStorage.setItem("lwk-viewer:token", t); localStorage.setItem("lwk-viewer:project", pid);
 }, [st.token, st.project]);
 // What's new is shown once per version: seen
-await p.evaluate(() => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/whatsnew/i.test(k)) localStorage.removeItem(k); } localStorage.setItem("lwk-whatsnew-seen", "9999-99-99"); } catch (e) {} });
+await p.evaluate(() => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/whatsnew/i.test(k)) localStorage.removeItem(k); } localStorage.setItem("lwk-whatsnew-seen", "9999-99-99"); localStorage.setItem("lwk-viewer:whatsnew-seen", "9999-99-99"); } catch (e) {} });
 
 const pngSize = (f) => { const d = fs.readFileSync(f); return [d.readUInt32BE(16), d.readUInt32BE(20)]; };
 const fill = (s) => s.replace(/\{list\}/g, st.list).replace(/\{project\}/g, st.project);
@@ -59,6 +59,11 @@ for (const shot of SPEC.shots) {
     try {
       if (step.select) await p.evaluate(([s, i]) => { const e = document.querySelector(s); e.selectedIndex = i; e.dispatchEvent(new Event("change", { bubbles: true })); }, step.select);
       if (step.drag) { const d = step.drag; await p.mouse.move(d[0], d[1]); await p.mouse.down(); await p.mouse.move(d[2], d[3], { steps: 8 }); await p.mouse.up(); }
+      if (step.clickEdge) {   // a markup is picked by its outline: click just inside its left edge
+        const c = await p.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return [e.tagName === "text" ? r.left + r.width / 2 : r.left + 1.5, r.top + r.height / 2]; }, fill(step.clickEdge));
+        if (!c) throw new Error("no " + step.clickEdge);
+        await p.mouse.click(c[0], c[1]);
+      }
       if (step.click) await p.click(fill(step.click), { timeout: 8000 });
       if (step.dblclick) await p.dblclick(fill(step.dblclick), { timeout: 8000 });
       if (step.hover) await p.hover(fill(step.hover), { timeout: 8000 });

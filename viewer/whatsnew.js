@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-15", date: "13 Nov 2026",
+    items: [
+      "**3D: one menu on right-click.** On Windows the browser's own menu (Back, Refresh, Save as ...) opened on top of the viewer's right-click menu; now only the viewer's opens. The same on the Sheets page.",
+      "**Help has new pictures** of the header, the Sheets page (tool strip, zoom bar, the new properties panel), Board, Tasks, Chat, Calendar, Folders, Dashboard and Projects. The 3D pictures follow.",
+      "The Raise issue form now opens above the properties panel instead of under it, and the Sheets row above the drawing stays on one line (the sheet's name shortens instead).",
+    ],
+  },
+  {
     version: "2027-01-14", date: "12 Nov 2026",
     items: [
       "**The Sheets page, redesigned:** the tools are a strip down the left of the drawing (a small corner triangle opens a tool's family), the zoom, Snap, rotate and Fit sit in a bar at the bottom right, and the sheet's number, name, paper size and scale head the row above.",

@@ -2,6 +2,9 @@
 
     python3 seed.py OUT SHEETS_PROJECT MODEL_PROJECT
 
+SHEETS_PROJECT can be demo_sheets.py's output (made-up drawings);
+MODEL_PROJECT may be "-" for no 3D model.
+
 OUT gets root/ (one viewer project, DEMO: the sheets of SHEETS_PROJECT and
 the 3D model of MODEL_PROJECT, two exported projects' folders) and data/
 (accounts, the project's register entry, issues on the sheets, a task list,
@@ -52,11 +55,15 @@ def main(out, sheets_src, model_src):
     os.makedirs(data)
     # the viewer project: sheets of one export, the 3D model of another
     shutil.copytree(os.path.join(sheets_src, "sheets"), os.path.join(proj, "sheets"))
-    shutil.copytree(os.path.join(model_src, "fragments"), os.path.join(proj, "fragments"))
+    # MODEL_PROJECT "-": no 3D model (the 3D pictures are then left as they are)
+    if model_src != "-":
+        shutil.copytree(os.path.join(model_src, "fragments"), os.path.join(proj, "fragments"))
     ms = json.load(open(os.path.join(sheets_src, "manifest.json")))
-    mm = json.load(open(os.path.join(model_src, "manifest.json")))
+    mm = json.load(open(os.path.join(model_src, "manifest.json"))) if model_src != "-" else {"models": []}
     names = ["Ground floor plan", "Typical floor plan", "North elevation", "Section A-A", "Roof plan"]
-    sheets = [dict(s, name=names[i] if i < len(names) else s.get("name")) for i, s in enumerate(ms["sheets"])]
+    # a real export's sheets get made-up names; demo_sheets.py's keep theirs
+    sheets = [s if str(s.get("unique_id", "")).startswith("demo-") else dict(s, name=names[i] if i < len(names) else s.get("name"))
+              for i, s in enumerate(ms["sheets"])]
     man = {"source": {"title": "Kai Tak Demo Tower"}, "sheets": sheets, "models": mm["models"]}
     if mm.get("lwk_frame"):
         man["lwk_frame"] = mm["lwk_frame"]
@@ -109,17 +116,18 @@ def seed():
                                    "status": "On hold", "owners": [uid("Wing Lee")]})
     # issues and comments on the sheets
     sh = [s["number"] for s in json.load(open(os.path.join(ROOT[0], PID, "manifest.json")))["sheets"]]
+    # paper millimetres from the top left of the A3 sheet (demo_sheets.py's plan)
     marks = [
-        (sh[0], "cloud", [[0.32, 0.30], [0.46, 0.42]], {"title": "Door swing clashes with column at grid C/4", "status": "Open", "priority": "High", "assignee": "Jake Reyes"}),
-        (sh[0], "rect", [[0.58, 0.52], [0.70, 0.64]], {"title": "Check fire exit width (1.2 m min.)", "status": "In progress", "priority": "Medium", "assignee": "Jannah Cruz"}),
-        (sh[1 % len(sh)], "cloud", [[0.40, 0.25], [0.55, 0.38]], {"title": "Slab edge not aligned with facade", "status": "Open", "priority": "High", "assignee": "Dustin Ong"}),
-        (sh[-1], "ellipse", [[0.20, 0.60], [0.30, 0.70]], {"title": "Missing level tag", "status": "Resolved", "priority": "Low", "assignee": "Clarence Po"}),
+        (sh[0], "cloud", [[126, 112], [170, 142]], {"title": "Door swing clashes with column at grid C/4", "status": "Open", "priority": "High", "assignee": "Jake Reyes"}),
+        (sh[0], "rect", [[204, 178], [248, 206]], {"title": "Check fire exit width (1.2 m min.)", "status": "In progress", "priority": "Medium", "assignee": "Jannah Cruz"}),
+        (sh[1 % len(sh)], "cloud", [[60, 118], [112, 150]], {"title": "Slab edge not aligned with facade", "status": "Open", "priority": "High", "assignee": "Dustin Ong"}),
+        (sh[-1], "ellipse", [[80, 150], [120, 180]], {"title": "Missing level tag", "status": "Resolved", "priority": "Low", "assignee": "Clarence Po"}),
     ]
     for i, (s, ty, pts, iss) in enumerate(marks):
-        call("POST", "/api/items", {"id": "demoiss%02d" % i, "sheet": s, "type": ty, "points": pts,
-                                    "style": {"color": "#dc2626", "width": 0.004}, "issue": iss}, project=PID)
-    call("POST", "/api/items", {"id": "demotxt01", "sheet": sh[0], "type": "text", "points": [[0.62, 0.20]],
-                                "text": "Confirm finishes with ID", "style": {"color": "#2563eb", "size": 0.018}}, project=PID)
+        call("POST", "/api/items", {"id": "demoiss%02d" % i, "sheet": s, "type": ty, "points_mm": pts,
+                                    "style": {"color": "#dc2626", "width": 0.5}, "issue": iss}, project=PID)
+    call("POST", "/api/items", {"id": "demotxt01", "sheet": sh[0], "type": "text", "points_mm": [[206, 64]],
+                                "text": "Confirm finishes with ID", "style": {"color": "#2563eb", "size": 3.5}}, project=PID)
     # a task list
     lid = call("POST", "/api/task-lists", {"title": "KTD Design Team", "team": "Manila BIM",
                                           "groups": [{"title": "Kai Tak Demo Tower", "project": PID, "reg": reg_id}, {"title": "Coordination"}]})["id"]

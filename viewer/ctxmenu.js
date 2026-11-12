@@ -9,6 +9,7 @@
  */
 
 let menu = null;
+let openedAt = 0;
 
 function ensure() {
   if (menu) return menu;
@@ -16,6 +17,15 @@ function ensure() {
   menu.id = "ctxmenu";
   menu.hidden = true;
   document.body.appendChild(menu);
+  /* The menu opens when the right button comes up (a right-drag still
+     orbits or pans). On Windows the browser's own "context menu" event comes
+     after that release - onto our menu, now under the pointer, or onto
+     whatever it moved off - and its Back / Refresh menu opened on top of
+     ours. It is cancelled on the menu, and anywhere just after it opened. */
+  menu.addEventListener("contextmenu", (ev) => ev.preventDefault());
+  document.addEventListener("contextmenu", (ev) => {
+    if (performance.now() - openedAt < 700) ev.preventDefault();
+  }, true);
 
   const close = () => { menu.hidden = true; };
   // Any click elsewhere, a scroll, a resize or Escape dismisses it.
@@ -31,6 +41,7 @@ function ensure() {
 
 export function openMenu(x, y, entries) {
   const m = ensure();
+  openedAt = performance.now();
   m.innerHTML = "";
 
   for (const e of entries) {

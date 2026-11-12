@@ -413,6 +413,7 @@ DOC = [
     SHOT('sheet-2d3d'),
     H3('Markup tools'),
     SHOT('markup-tools'),
+    SHOT('sheet-props'),
     TABLE(['Group', 'Tools'], [
         ['Shapes', 'Rect, Circle, Line, Arrow, Cloud, Polyline, Polygon'],
         ['Freehand', 'Pen (hold still at the end of a stroke to snap it to a line, circle or rectangle), Highlighter'],
