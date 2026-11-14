@@ -8,6 +8,7 @@ import { ensureProject, sheetSets } from "./projects.js";
 import * as MK from "./markup.js";
 import { iconButton, iconSvg, decorateIcons } from "./icons.js";
 import { attachPalette } from "./palette.js";
+import * as Styles from "./styles.js";
 import * as Check from "./selfcheck.js";
 import { openIssue as openIssueDetail } from "./issuepanel.js";
 import { openMenu } from "./ctxmenu.js";
@@ -1387,9 +1388,7 @@ function placeSelbar(allPx) {
       else if (a === "copy") copySelection();
       else if (a === "xform") startTransform();
       else if (a === "dup") { copySelection(); paste(); }
-      else if (a === "match" && one) { setTool("match"); S.matchSrc = one.id;
-        status("Match: tap the markups to copy its look" + (one.issue ? " and issue details" : "")
-          + " onto, or tap empty paper to place a copy. Pick another tool when done."); }
+      else if (a === "match" && one) startMatch(one);
       else if (a === "issue") {
         const tgt = issueTarget();
         if (tgt && tgt.issue) openIssueFromSheet(tgt);
@@ -1504,9 +1503,20 @@ function whoWhen(it) {
   return s;
 }
 
+/* Match properties from one markup: then each markup clicked takes its look
+   (and its issue's details); a click on empty paper places a copy. */
+function startMatch(one) {
+  if (!one) return;
+  setTool("match");
+  S.matchSrc = one.id;
+  status("Match: " + (S.lastPointer === "touch" ? "tap" : "click") + " the markups to copy its look" + (one.issue ? " and issue details" : "")
+    + " onto, or empty paper to place a copy. Esc or another tool when done.");
+}
+
 function syncButtons() {
   const one = S.sel.length === 1;
   const it = one && S.items.find((x) => x.id === S.sel[0]);
+  if ($("#a-match")) $("#a-match").disabled = !it;
   $("#a-delete").disabled = !S.sel.length;
   $("#a-copy").disabled = !S.sel.length;
   const tgt = issueTarget();
@@ -2749,6 +2759,8 @@ function wirePointer() {
       "-",
       { label: "Copy", key: "Ctrl+C", action: () => copySelection() },
       { label: "Apply current style", action: () => applyStyleToSelection() },
+      ...(n === 1 && one ? [{ label: "Match properties", action: () => startMatch(one) }] : []),
+      { label: "Save this look as a style ...", disabled: !one, action: () => one && saveStyleAs(one) },
       { label: "Select all on sheet", key: "Ctrl+A",
         action: () => select(onSheet.map((i) => i.id), false) },
       "-",
@@ -6800,7 +6812,10 @@ function setupPropsColumn() {
   PROPS.open = () => setFold(false);
   document.getElementById("pp-fold").addEventListener("click", (ev) => { ev.stopPropagation(); setFold(!folded); });
   // a click on the title opens a folded panel (the whole title is the target on a phone)
-  p.querySelector(".pp-head").addEventListener("click", (ev) => { if (folded && !ev.target.closest("#pp-close")) setFold(false); });
+  p.querySelector(".pp-head").addEventListener("click", (ev) => {
+    if (p._dragged) { p._dragged = false; return; }     // the end of a drag (Free) is not a click
+    if (folded && !ev.target.closest("#pp-close")) setFold(false);
+  });
   document.getElementById("pp-close").addEventListener("click", (ev) => {
     ev.stopPropagation();
     if (S.sel.length) select([], false);
@@ -6830,6 +6845,8 @@ function setupPropsColumn() {
   // a click on it is not a click on the drawing
   p.addEventListener("pointerdown", (ev) => ev.stopPropagation());
   paintFold(); paintAlign(); paintOp();
+  paintStyles();
+  Styles.load();
 }
 const PROPS = { open: () => {}, paintAlign: () => {}, paintOp: () => {}, shownFor: "" };
 
@@ -6845,6 +6862,84 @@ function loadStyleInputs(it) {
   set("p-size", st.size); set("p-align", st.align);
   PROPS.paintAlign(); PROPS.paintOp();
 }
+
+/* Saved styles: a row of chips at the top of Style. One click puts that look
+   on the selection (one undo), or on the next markup drawn. Mine come first,
+   then the project's (kept by its admins). Right-click a chip for more. */
+const STYLE_KEYS = ["color", "fill", "tcolor", "fillop", "width", "dash", "font", "size", "align"];
+function lookOf(st) {
+  const o = {};
+  for (const k of STYLE_KEYS) if (st && st[k] !== undefined && st[k] !== "") o[k] = st[k];
+  return o;
+}
+function applySavedStyle(sv) {
+  Object.assign(S.style, sv.style);
+  loadStyleInputs({ style: S.style });
+  if (S.sel.length) { applyStyleToSelection(); status("Style \u201c" + sv.name + "\u201d put on " + (S.sel.length > 1 ? S.sel.length + " markups" : "the markup") + " (Ctrl+Z undoes)"); }
+  else status("Style \u201c" + sv.name + "\u201d: the next markup is drawn with it");
+}
+function saveStyleAs(it) {
+  const st = lookOf(it ? it.style : S.style);
+  const type = it ? it.type : (S.tool !== "select" ? S.tool : "");
+  const label = (toolOf(type) || {}).label || "";
+  const name = (prompt("Name for this style (e.g. \u201cRed issue cloud\u201d):", [label, st.width ? st.width + " mm" : ""].filter(Boolean).join(" ")) || "").trim();
+  if (!name) return;
+  Styles.addStyle(name.slice(0, 60), type, st, false).then(() => status("Saved \u201c" + name + "\u201d in your styles"))
+    .catch((e) => status("Could not save the style: " + e.message));
+}
+function styleChipMenu(ev, sv, isTeam) {
+  const { team } = Styles.lists();
+  const can = !isTeam || team.admin;
+  const one = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]);
+  const fail = (e) => status("Could not change the styles: " + e.message);
+  openMenu(ev.clientX, ev.clientY, [
+    { label: S.sel.length ? "Put on the selection" : "Use for the next markup", action: () => applySavedStyle(sv) },
+    "-",
+    { label: "Rename ...", disabled: !can, action: () => {
+        const n = (prompt("New name:", sv.name) || "").trim();
+        if (n) Styles.updateStyle(sv.id, { name: n.slice(0, 60) }, isTeam).catch(fail);
+      } },
+    { label: one ? "Update from the selected markup" : "Update from the panel", disabled: !can,
+      action: () => Styles.updateStyle(sv.id, { style: lookOf(one ? one.style : S.style), type: one ? one.type : sv.type }, isTeam).catch(fail) },
+    ...(!isTeam && team.admin ? [{ label: "Share with the project", action: () => Styles.addStyle(sv.name, sv.type, sv.style, true)
+        .then(() => status("\u201c" + sv.name + "\u201d is now one of the project's styles")).catch(fail) }] : []),
+    ...(isTeam ? [{ label: "Copy to my styles", action: () => Styles.addStyle(sv.name, sv.type, sv.style, false).catch(fail) }] : []),
+    "-",
+    { label: "Delete", danger: true, disabled: !can, action: () => {
+        if (confirm("Delete the style \u201c" + sv.name + "\u201d" + (isTeam ? " for everyone on the project" : "") + "?")) Styles.removeStyle(sv.id, isTeam).catch(fail);
+      } },
+  ]);
+}
+function paintStyles() {
+  const box = document.getElementById("pp-styles");
+  if (!box) return;
+  const { mine, team } = Styles.lists();
+  const chip = (sv, isTeam) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pp-chip" + (isTeam ? " team" : "");
+    const st = sv.style || {};
+    b.title = sv.name + (isTeam ? " (the project's)" : "") + " - click to use, right-click for more";
+    b.innerHTML = `<span class="pp-prev" style="border-color:${st.color || "#999"};background:${st.fillop > 0 ? (st.fill || "transparent") : "transparent"}">`
+      + `<i style="background:${st.tcolor || st.color || "#999"}"></i></span>`
+      + (isTeam ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M15 15c3 0 6 1.5 6 4.5"/></svg>' : "")
+      + `<span class="pp-cn"></span>`;
+    b.querySelector(".pp-cn").textContent = sv.name;
+    b.addEventListener("click", () => applySavedStyle(sv));
+    b.addEventListener("contextmenu", (ev) => { ev.preventDefault(); styleChipMenu(ev, sv, isTeam); });
+    return b;
+  };
+  box.innerHTML = "";
+  for (const sv of mine.styles) box.appendChild(chip(sv, false));
+  for (const sv of team.styles) box.appendChild(chip(sv, true));
+  const add = document.createElement("button");
+  add.type = "button"; add.className = "pp-chip pp-save";
+  add.title = "Save the look now in the panel (or of the selected markup) as a style - yours on every device";
+  add.textContent = "+ Save style";
+  add.addEventListener("click", () => saveStyleAs(S.sel.length === 1 ? S.items.find((x) => x.id === S.sel[0]) : null));
+  box.appendChild(add);
+}
+Styles.onChange(paintStyles);
 
 /* The panel's title: what is chosen, or what the next markup will be */
 function paintPropsHead(drawing) {
@@ -7030,6 +7125,113 @@ function setupToolRail(tw) {
     tb.insertBefore(h, tb.firstChild);
   }
 }
+/* Where the tools and the properties sit (View > Panels), kept on this device:
+   Top   - the tools in the row above the drawing, the properties a bar under it;
+   Float - the strip down the drawing's left, the panel at its top right;
+   Free  - both dragged anywhere by their grip; a double-click puts one back.
+   A phone always has its bottom bar and sheet. */
+const PM_KEY = "lwk-sheets:panel-mode";
+const POS_KEY = "lwk-sheets:pos-";
+function panelMode() {
+  try { const v = localStorage.getItem(PM_KEY); return v === "top" || v === "free" ? v : "float"; } catch (e) { return "float"; }
+}
+function placeFree(el, key, on) {
+  if (!el) return;
+  el.style.left = el.style.top = el.style.right = el.style.bottom = el.style.maxHeight = "";
+  if (!on) return;
+  let pos = null;
+  try { pos = JSON.parse(localStorage.getItem(POS_KEY + key) || "null"); } catch (e) {}
+  if (!pos) return;                       // where Float has it, until moved
+  const r = $("#stage-row").getBoundingClientRect();
+  const x = Math.max(4, Math.min(r.width - el.offsetWidth - 4, pos.x * r.width));
+  const y = Math.max(4, Math.min(r.height - 44, pos.y * r.height));
+  Object.assign(el.style, { left: x + "px", top: y + "px", right: "auto", bottom: "auto", maxHeight: Math.max(120, r.height - y - 12) + "px" });
+}
+function wireGrip(grip, el, key) {
+  grip.addEventListener("pointerdown", (ev) => {
+    if (!document.body.classList.contains("pm-free") || ev.button !== 0) return;
+    if (ev.target.closest("button:not(.rgrip), input, select, label")) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const r = $("#stage-row").getBoundingClientRect(), e0 = el.getBoundingClientRect();
+    const dx = ev.clientX - e0.left, dy = ev.clientY - e0.top, x0 = ev.clientX, y0 = ev.clientY;
+    let moved = false;
+    try { grip.setPointerCapture(ev.pointerId); } catch (e) {}
+    const move = (e) => {
+      if (!moved && Math.hypot(e.clientX - x0, e.clientY - y0) < 4) return;
+      moved = true;
+      const x = Math.max(4, Math.min(r.width - e0.width - 4, e.clientX - r.left - dx));
+      const y = Math.max(4, Math.min(r.height - 44, e.clientY - r.top - dy));
+      Object.assign(el.style, { left: x + "px", top: y + "px", right: "auto", bottom: "auto", maxHeight: Math.max(120, r.height - y - 12) + "px" });
+    };
+    const up = () => {
+      grip.removeEventListener("pointermove", move);
+      grip.removeEventListener("pointerup", up);
+      grip.removeEventListener("pointercancel", up);
+      if (!moved) return;
+      el._dragged = true;
+      setTimeout(() => { el._dragged = false; }, 300);
+      const q = el.getBoundingClientRect();
+      try { localStorage.setItem(POS_KEY + key, JSON.stringify({ x: (q.left - r.left) / r.width, y: (q.top - r.top) / r.height })); } catch (e) {}
+      placeRoutePanels();
+    };
+    grip.addEventListener("pointermove", move);
+    grip.addEventListener("pointerup", up);
+    grip.addEventListener("pointercancel", up);
+  });
+  grip.addEventListener("dblclick", (ev) => {
+    if (!document.body.classList.contains("pm-free") || ev.target.closest("button:not(.rgrip), input, select")) return;
+    try { localStorage.removeItem(POS_KEY + key); } catch (e) {}
+    placeFree(el, key, true);
+    placeRoutePanels();
+  });
+}
+function applyPanelMode() {
+  const tw = $("#tools"), pp = $("#props"), row = $("#stage-row"), tb = $("#toolbar");
+  if (!tw || !row) return;
+  const m = matchMedia("(max-width: 700px)").matches ? "float" : panelMode();
+  for (const k of ["top", "float", "free"]) document.body.classList.toggle("pm-" + k, m === k);
+  if (m === "top") {
+    tw.classList.remove("rail");
+    tw.setAttribute("aria-orientation", "horizontal");
+    const t = $("#sh-title");
+    if (t) t.after(tw); else tb.prepend(tw);
+    if (pp && pp.parentNode === row) tb.after(pp);
+  } else {
+    tw.classList.add("rail");
+    tw.setAttribute("aria-orientation", "vertical");
+    if (tw.parentNode !== row) row.insertBefore(tw, row.firstChild);
+    if (pp && pp.parentNode !== row) row.appendChild(pp);
+  }
+  placeFree(tw, "tools", m === "free");
+  placeFree(pp, "props", m === "free");
+  for (const b of document.querySelectorAll("#pm-row [data-pm]")) b.setAttribute("aria-pressed", b.dataset.pm === panelMode() ? "true" : "false");
+  placeRoutePanels();
+}
+function setupPanelModes() {
+  const tw = $("#tools"), pp = $("#props");
+  if (tw && !tw.querySelector(".rgrip")) {
+    const g = document.createElement("span");
+    g.className = "rgrip";
+    g.title = "Drag to move the tools (double-click: back to their place)";
+    g.setAttribute("aria-hidden", "true");
+    g.innerHTML = '<svg width="14" height="8" viewBox="0 0 14 8" fill="currentColor"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="11" cy="2" r="1.2"/><circle cx="3" cy="6" r="1.2"/><circle cx="7" cy="6" r="1.2"/><circle cx="11" cy="6" r="1.2"/></svg>';
+    tw.prepend(g);
+    wireGrip(g, tw, "tools");
+  }
+  if (pp) wireGrip(pp.querySelector(".pp-head"), pp, "props");
+  for (const b of document.querySelectorAll("#pm-row [data-pm]")) {
+    b.addEventListener("click", () => {
+      try { localStorage.setItem(PM_KEY, b.dataset.pm); } catch (e) {}
+      applyPanelMode();
+      status({ top: "Panels at the top: the tools in the row above, the properties under it",
+        float: "Panels floating over the drawing", free: "Panels free: drag the tools and the properties by their grip" }[b.dataset.pm]);
+    });
+  }
+  let t = 0;
+  addEventListener("resize", () => { clearTimeout(t); t = setTimeout(applyPanelMode, 120); });
+  applyPanelMode();
+}
+
 function paintSheetTitle(ver) {
   const n = document.getElementById("sh-name"), m = document.getElementById("sh-meta");
   if (!n || !S.sheet) return;
@@ -7350,6 +7552,7 @@ function wireChrome() {
     persist(ids);
   });
   setupPropsColumn();
+  setupPanelModes();
   for (const f of ["g-x", "g-y", "g-w", "g-h", "g-r", "g-k"]) {
     // change, not input: applying on every keystroke would move the markup
     // through every intermediate value while a number is being typed.
@@ -7374,6 +7577,7 @@ function wireChrome() {
 
   $("#a-delete").addEventListener("click", deleteSelection);
   $("#a-copy").addEventListener("click", copySelection);
+  $("#a-match").addEventListener("click", () => { const it = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]); if (it) startMatch(it); });
   $("#a-paste").addEventListener("click", paste);
   $("#a-issue").addEventListener("click", () => {
     const it = issueTarget();

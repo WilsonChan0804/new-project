@@ -93,6 +93,12 @@ PART = [
     SHOT('board'),
     P('**Board** 係每個 project 一塊共用白板，好似 Miro 咁：便利貼、文字、形狀、連接線、mind map、相同 frame，仲有範本可以由頭開始。Project 入面所有人會即時見到改動。喺頂部揀 project；用 board 清單開新、改名、複製或者刪除 board。'),
     P('之前打開過嘅 board 會即刻由呢部機顯示；之後其他人做嘅改動幾秒內就會到。Sign out 會清走留喺部機嘅版本（Board、Tasks、Dashboard）。'),
+    UL([
+        '**部分字粗體、斜體、底線或者改色：** 喺便利貼、文字或者形狀打字嗰陣，揀住啲字，再撳上面條列嘅 **B**、**I**、**U** 或者文字顏色（或者 Ctrl+B / I / U）。冇揀字就成段一齊改。',
+        '**文字框高度：** 拖文字框上面或者下面嘅掣就可以拉高；佢會保持嗰個高度（字多咗都會自己加長）。',
+        '**便利貼跟字大細：** 打字嗰陣便利貼會變長，刪字或者字細咗就縮返 - 但唔會細過你拉到嘅高度。',
+        '**Group：** 一齊揀相、便利貼、形狀同線，撳 **Group**（Ctrl+G）。之後撳任何一樣就會揀晒成組，一齊搬、copy 同刪；Alt+撳就揀組入面其中一樣。**Ungroup** 係 Ctrl+Shift+G。',
+    ]),
     LABEL('LWK BIM Workflow board'),
     P('每個 project 一開始就有一塊叫 **LWK BIM Workflow** 嘅 board：公司嘅 BIM 工作流程，係呢個 project 自己嘅一份，可以按 project 需要改。第一個有權改嘢嘅人打開呢個 project 嘅 Board 頁，佢就會自動整出嚟。'),
     UL([

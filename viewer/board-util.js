@@ -294,3 +294,73 @@ export function penPath(flat) {
   }
   return d + `L${flat[n * 2 - 2]} ${flat[n * 2 - 1]}`;
 }
+
+/* Text with some words bold, italic, underlined or coloured (a sticky, a text
+   box, a shape). Kept as a little HTML beside the plain text; only these
+   are let through, whatever is pasted or typed: b, i, u, br, div, and a span
+   or font that sets a colour, bold, italic or underline. */
+export const RICH = new Set(["sticky", "text", "shape"]);
+const COLOR_RE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i;
+export function cleanRich(html) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = String(html || "").slice(0, 40000);
+  const out = document.createElement("div");
+  const walk = (src, dst) => {
+    for (const n of src.childNodes) {
+      if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.nodeValue)); continue; }
+      if (n.nodeType !== 1) continue;
+      const t = n.tagName;
+      let el = null;
+      if (t === "BR") { dst.appendChild(document.createElement("br")); continue; }
+      if (t === "SCRIPT" || t === "STYLE") continue;
+      if (t === "B" || t === "STRONG") el = document.createElement("b");
+      else if (t === "I" || t === "EM") el = document.createElement("i");
+      else if (t === "U") el = document.createElement("u");
+      else if (t === "DIV" || t === "P") el = document.createElement("div");
+      else if (t === "SPAN" || t === "FONT") {
+        const st = n.style || {};
+        const c = String(st.color || n.getAttribute("color") || "").trim();
+        el = document.createElement("span");
+        if (c && COLOR_RE.test(c)) el.style.color = c;
+        if (st.fontWeight === "bold" || Number(st.fontWeight) >= 600) el.style.fontWeight = "700";
+        if (st.fontStyle === "italic") el.style.fontStyle = "italic";
+        if (/underline/.test(st.textDecorationLine || st.textDecoration || "")) el.style.textDecoration = "underline";
+        if (!el.getAttribute("style")) el = null;          // a plain span: its words only
+      }
+      if (el) { walk(n, el); dst.appendChild(el); } else walk(n, dst);
+    }
+  };
+  walk(tpl.content, out);
+  return out.innerHTML;
+}
+export const hasRich = (el) => !!(el && el.querySelector("b,i,u,strong,em,font,span[style]"));
+
+/* The same HTML as lines of runs, for drawing on a canvas:
+   [[{ t, b, i, u, c }, ...], ...] - one array per line break. */
+export function richRuns(html) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = cleanRich(html);
+  const lines = [[]];
+  const walk = (node, f) => {
+    for (const n of node.childNodes) {
+      if (n.nodeType === 3) { if (n.nodeValue) lines[lines.length - 1].push(Object.assign({ t: n.nodeValue }, f)); continue; }
+      if (n.nodeType !== 1) continue;
+      if (n.tagName === "BR") { lines.push([]); continue; }
+      const g = Object.assign({}, f);
+      if (n.tagName === "B") g.b = true;
+      if (n.tagName === "I") g.i = true;
+      if (n.tagName === "U") g.u = true;
+      if (n.style && n.style.color) g.c = n.style.color;
+      if (n.style && n.style.fontWeight === "700") g.b = true;
+      if (n.style && n.style.fontStyle === "italic") g.i = true;
+      if (n.style && /underline/.test(n.style.textDecoration || "")) g.u = true;
+      const block = n.tagName === "DIV";
+      if (block && lines[lines.length - 1].length) lines.push([]);
+      walk(n, g);
+      if (block) lines.push([]);
+    }
+  };
+  walk(tpl.content, {});
+  while (lines.length > 1 && !lines[lines.length - 1].length) lines.pop();
+  return lines;
+}

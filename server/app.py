@@ -3513,6 +3513,104 @@ async def put_layers(request: Request, x_viewer_token: str = Header(default=""),
     return {"layers": clean}
 
 
+# ------------------------------------------------------- saved markup styles
+#
+# A named look (colours, weight, line type, opacity, font, size, alignment)
+# to put on a markup in one click, and the colours added to the palette.
+# Each person keeps their own, on every device (/api/me/styles); a project
+# admin can keep the team's for everyone on the project (/api/styles, in
+# <project>/markup_styles.json).
+
+STYLES_FILE = "markup_styles.json"
+STYLE_KEYS = {"color": "colour", "fill": "colour", "tcolor": "colour", "fillop": "num", "width": "num",
+              "dash": "word", "font": "word", "size": "num", "align": "word"}
+HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def clean_styles(body):
+    """The lists as sent, with anything unexpected left out."""
+    body = body if isinstance(body, dict) else {}
+    out, seen = [], set()
+    for s in (body.get("styles") or [])[:100]:
+        if not isinstance(s, dict) or not isinstance(s.get("style"), dict):
+            continue
+        st = {}
+        for k, kind in STYLE_KEYS.items():
+            v = s["style"].get(k)
+            if v is None or v == "":
+                continue
+            if kind == "colour" and isinstance(v, str) and HEX.match(v):
+                st[k] = v.lower()
+            elif kind == "num" and isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 1000:
+                st[k] = v
+            elif kind == "word" and isinstance(v, str) and re.match(r"^[\w .,'-]{1,60}$", v):
+                st[k] = v
+        name = str(s.get("name") or "").strip()[:60]
+        sid = re.sub(r"[^\w-]", "", str(s.get("id") or ""))[:40] or uuid.uuid4().hex[:12]
+        if not name or not st or sid in seen:
+            continue
+        seen.add(sid)
+        out.append({"id": sid, "name": name, "type": re.sub(r"[^\w-]", "", str(s.get("type") or ""))[:20], "style": st})
+    cols = []
+    for c in (body.get("colours") or [])[:60]:
+        if isinstance(c, str) and HEX.match(c) and c.lower() not in cols:
+            cols.append(c.lower())
+    return {"styles": out, "colours": cols}
+
+
+def project_styles(pid):
+    root = project_dir("default" if CFG["single"] else pid)
+    try:
+        with open(os.path.join(root, STYLES_FILE), encoding="utf-8") as f:
+            return clean_styles(json.load(f))
+    except (OSError, ValueError, TypeError):
+        return {"styles": [], "colours": []}
+
+
+def _my_styles_key(w):
+    if not accounts_on() or not w.user:
+        raise HTTPException(status_code=401, detail="Sign in first")
+    return "_user:%s" % (w.user.get("email") or "").lower()
+
+
+@app.get("/api/me/styles")
+def get_my_styles(request: Request, x_viewer_token: str = Header(default="")):
+    w = who(request, x_viewer_token)
+    try:
+        return clean_styles(json.loads(ACC.setting(_my_styles_key(w), "markup_styles") or "{}"))
+    except ValueError:
+        return {"styles": [], "colours": []}
+
+
+@app.put("/api/me/styles")
+async def put_my_styles(request: Request, x_viewer_token: str = Header(default="")):
+    w = who(request, x_viewer_token)
+    key = _my_styles_key(w)
+    clean = clean_styles(await request.json())
+    ACC.set_setting(key, "markup_styles", json.dumps(clean, ensure_ascii=False) if clean["styles"] or clean["colours"] else "")
+    return clean
+
+
+@app.get("/api/styles")
+def get_project_styles(request: Request, x_viewer_token: str = Header(default=""),
+                       x_project: str = Header(default="")):
+    w, role = require_project(request, x_project, "viewer", x_viewer_token)
+    return dict(project_styles(x_project), admin=role == "admin")
+
+
+@app.put("/api/styles")
+async def put_project_styles(request: Request, x_viewer_token: str = Header(default=""),
+                             x_project: str = Header(default="")):
+    require_project(request, x_project, "admin", x_viewer_token)
+    clean = clean_styles(await request.json())
+    root = project_dir("default" if CFG["single"] else x_project)
+    p = os.path.join(root, STYLES_FILE)
+    with open(p + ".part", "w", encoding="utf-8") as f:
+        json.dump(clean, f, ensure_ascii=False, indent=1)
+    os.replace(p + ".part", p)
+    return dict(clean, admin=True)
+
+
 # ----------------------------------------------------------- snapshots
 
 SAFE_NAME = re.compile(r"^[0-9a-f]{8,40}\.(jpg|png)$")

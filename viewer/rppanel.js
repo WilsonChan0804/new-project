@@ -14,7 +14,7 @@ function place(el) {
   const sc = document.getElementById("scroll");
   if (!sc) return;
   const pp = document.getElementById("props");
-  const ppOn = pp && pp.classList.contains("pp-on") && getComputedStyle(pp).display !== "none" && pp.getBoundingClientRect().height > 0;
+  const ppOn = pp && !document.body.classList.contains("pm-free") && pp.classList.contains("pp-on") && getComputedStyle(pp).display !== "none" && pp.getBoundingClientRect().height > 0;
   if (matchMedia("(max-width: 700px)").matches) {
     // the phone: above the properties sheet (or the tool bar) at the bottom
     const tb = document.getElementById("tools");

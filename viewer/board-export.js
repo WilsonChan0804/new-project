@@ -6,7 +6,7 @@
  * iPad on site runs, and silently drops uploaded pictures everywhere else.
  */
 
-import { col, isDark, route, arrowHead, penPath, unionBox, uid, clone } from "./board-util.js";
+import { col, isDark, route, arrowHead, penPath, unionBox, uid, clone, richRuns, RICH } from "./board-util.js";
 import { forest, branchPath } from "./board-mind.js";
 
 const FONT = '"Segoe UI", system-ui, -apple-system, sans-serif';
@@ -36,8 +36,62 @@ function wrap(ctx, text, maxW) {
   return out;
 }
 
+/* Text with some words bold, italic, underlined or coloured: the same
+   wrapping, word by word, each in its own font. */
+function richBlock(ctx, o, box, opt) {
+  const fs = o.fs || opt.fs;
+  const bold0 = (o.bold === undefined ? opt.bold : o.bold), color0 = col(o.color, opt.color);
+  const font = (r) => `${r.i || o.italic ? "italic " : ""}${r.b || bold0 ? "700" : opt.weight || "400"} ${fs}px ${FONT}`;
+  const maxW = Math.max(10, box.w - (opt.padX || 0) * 2);
+  const lines = [];
+  for (const para of richRuns(o.html)) {
+    let line = [], lw = 0;
+    const push = () => { lines.push(line); line = []; lw = 0; };
+    for (const r of para) {
+      for (const tok of r.t.split(/(\s+)/)) {
+        if (!tok) continue;
+        ctx.font = font(r);
+        const w = ctx.measureText(tok).width;
+        if (lw + w <= maxW) { line.push({ t: tok, r, w }); lw += w; continue; }
+        if (/^\s+$/.test(tok)) { push(); continue; }
+        if (line.length) push();
+        if (w <= maxW) { line.push({ t: tok, r, w }); lw = w; continue; }
+        for (const ch of tok) {
+          const cw = ctx.measureText(ch).width;
+          if (lw + cw > maxW && line.length) push();
+          line.push({ t: ch, r, w: cw }); lw += cw;
+        }
+      }
+    }
+    lines.push(line);
+  }
+  const lh = fs * (opt.lineH || 1.3), total = lines.length * lh;
+  const padX = opt.padX || 0, padY = opt.padY || 0, align = o.align || opt.align || "center";
+  let y = opt.valign === "top" ? box.y + padY : box.y + Math.max(padY, (box.h - total) / 2);
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  for (const ln of lines) {
+    while (ln.length && /^\s+$/.test(ln[ln.length - 1].t)) ln.pop();
+    const lw = ln.reduce((a, t) => a + t.w, 0);
+    let x = align === "left" ? box.x + padX : align === "right" ? box.x + box.w - padX - lw : box.x + (box.w - lw) / 2;
+    for (const t of ln) {
+      ctx.font = font(t.r);
+      ctx.fillStyle = t.r.c || color0;
+      ctx.fillText(t.t, x, y + lh / 2);
+      if (t.r.u || o.underline) ctx.fillRect(x, y + lh / 2 + fs * 0.42, t.w, Math.max(1, fs / 14));
+      x += t.w;
+    }
+    y += lh;
+  }
+}
+
 function textBlock(ctx, o, box, opt) {
   // opt: fs, bold, color, align, valign, padX, padY, lineH
+  if (o.html && RICH.has(o.t)) return richBlock(ctx, o, box, opt);
+  if ((o.italic || o.underline) && RICH.has(o.t)) {
+    const html = String(o.text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>");
+    return richBlock(ctx, Object.assign({}, o, { html }), box, opt);
+  }
   const fs = o.fs || opt.fs;
   ctx.font = `${(o.bold === undefined ? opt.bold : o.bold) ? "700" : opt.weight || "400"} ${fs}px ${FONT}`;
   ctx.fillStyle = col(o.color, opt.color);
@@ -323,9 +377,11 @@ export function remap(objects, srcMap) {
   const ids = new Map();
   const list = objects.filter((o) => o && typeof o === "object" && typeof o.id === "string").map(clone);
   for (const o of list) ids.set(o.id, uid(o.t === "node" ? "n" : "o"));
-  const out = [];
+  const out = [], groups = new Map();
   for (const o of list) {
     o.id = ids.get(o.id);
+    // a copied group is a new group of its own
+    if (o.g) { if (!groups.has(o.g)) groups.set(o.g, uid("g")); o.g = groups.get(o.g); }
     for (const k of ["rev", "cby", "cat", "uby", "uat"]) delete o[k];
     if (o.t === "node") o.parent = o.parent && ids.has(o.parent) ? ids.get(o.parent) : null;
     if (o.t === "conn") {

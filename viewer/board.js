@@ -22,6 +22,7 @@
 import { api, link, project, signOut, projectOptions, projectTwoStep, keptCopy, keepCopy, keptBig, keepBig } from "./nav.js";
 import { esc, uid, clone, clamp, round1, col, STICKY_COLORS, INK_COLORS, SHAPE_FILLS, BRANCH_COLORS, isDark, personColor,
          initials, ago, icon, center, unionBox, boxesTouch, route, arrowHead, simplify, penPath } from "./board-util.js";
+import { RICH, cleanRich, hasRich } from "./board-util.js";
 import { createSync } from "./board-sync.js";
 import * as mind from "./board-mind.js";
 import { TEMPLATES, makeTemplate, templateThumb } from "./board-templates.js";
@@ -408,6 +409,7 @@ function place(el, o) {
   if (o.t === "node") return;
   el.style.width = px(Math.max(o.w || 0, 1));
   if (o.t !== "text") el.style.height = px(Math.max(o.h || 0, 1));
+  else el.style.minHeight = o.hmin ? px(o.hmin) : "";     // a text box pulled taller keeps that height
 }
 
 function renderObj(o) {
@@ -452,12 +454,17 @@ function renderObj(o) {
   const tx = el.querySelector(".tx");
   if (!(A.edit && A.edit.id === o.id)) {
     const text = o.text || "";
-    if (tx.textContent !== text) tx.textContent = text;
+    if (o.html && RICH.has(o.t)) {
+      // some words bold, italic, underlined or coloured
+      if (tx._html !== o.html) { tx.innerHTML = cleanRich(o.html); tx._html = o.html; }
+    } else if (tx._html || tx.textContent !== text) { tx.textContent = text; tx._html = null; }
   }
   const fill = o.t === "sticky" ? col(o.fill, STICKY_COLORS[0]) : o.fill ? col(o.fill, "") : "";
   const fs = clamp(Number(o.fs) || 0, 0, 400);
   el.style.fontSize = fs ? fs + "px" : "";
   el.style.fontWeight = o.bold === undefined ? "" : o.bold ? "700" : "400";
+  el.style.fontStyle = o.italic ? "italic" : "";
+  el.style.textDecoration = o.underline ? "underline" : "";
   el.style.textAlign = o.align || "";
   // a note or shape centres its text block: one short line set left or right goes there too
   el.style.justifyContent = o.align === "left" ? "flex-start" : o.align === "right" ? "flex-end" : "";
@@ -706,7 +713,7 @@ const isRootNode = (id) => A.F.byId.has(id) && !A.F.parentOf.get(id);
 
 /* ----------------------------------------------------------------- overlay */
 
-const RESIZE = { sticky: "all", shape: "all", frame: "all", link: "all", image: "corners", pen: "corners", text: "sides" };
+const RESIZE = { sticky: "all", shape: "all", frame: "all", link: "all", image: "corners", pen: "corners", text: "all" };
 
 function drawOverlay() {
   const parts = [];
@@ -780,9 +787,35 @@ function drawOverlay() {
 
 /* ------------------------------------------------------------- selection */
 
-function select(ids) {
-  A.sel = new Set(ids);
+/* A group (pictures, notes, shapes ...) is picked as one: choosing any of it
+   chooses all of it. Alt-click picks one thing inside a group. */
+function select(ids, opt) {
+  const s = new Set(ids);
+  if (!(opt && opt.inside)) {
+    const gs = new Set();
+    for (const id of s) { const o = get(id); if (o && o.g) gs.add(o.g); }
+    if (gs.size) for (const o of O().values()) if (o.g && gs.has(o.g)) s.add(o.id);
+  }
+  A.sel = s;
   selectionChanged();
+}
+function groupSel() {
+  const sel = selObjs().filter((o) => !o.lock && objBox(o));
+  if (sel.length < 2) return;
+  const g = uid("g"), tx = begin();
+  for (const o of sel) { rec(tx, o.id); o.g = g; }
+  commit(tx);
+  select(sel.map((o) => o.id));
+  toast("Grouped " + sel.length + " - they now move, copy and delete together (Alt-click picks one)");
+}
+function ungroupSel() {
+  const sel = selObjs().filter((o) => o.g);
+  if (!sel.length) return;
+  const tx = begin();
+  for (const o of sel) { rec(tx, o.id); delete o.g; }
+  commit(tx);
+  buildCtx();
+  queueOverlay();
 }
 function selectionChanged() {
   closePop();
@@ -1029,12 +1062,13 @@ function objectGesture(ev, id, p0) {
   const multi = ev.shiftKey || ev.ctrlKey || ev.metaKey;
   const wasSelected = A.sel.has(id);
   if (multi) {
-    const s = new Set(A.sel);
-    if (wasSelected) s.delete(id); else s.add(id);
-    select(s);
+    const s = new Set(A.sel), o = get(id);
+    const members = o && o.g ? [...O().values()].filter((m) => m.g === o.g).map((m) => m.id) : [id];
+    for (const m of members) { if (wasSelected) s.delete(m); else s.add(m); }
+    select(s, { inside: wasSelected });
     return {};
   }
-  if (!wasSelected) select([id]);
+  if (!wasSelected || ev.altKey) select([id], { inside: ev.altKey });
   const thr = ev.pointerType === "touch" ? 8 : 4, sx = ev.clientX, sy = ev.clientY;
   let mode = null, movers = null, tx = null, rp = null, startBox = null, others = null, dropNode = null;
   const g = {
@@ -1268,8 +1302,11 @@ function resizeGesture(ev, h) {
       }
       o.x = round1(x); o.y = round1(y); o.w = round1(w);
       if (o.t !== "text") o.h = round1(hh);
+      // a text box or a sticky pulled up or down keeps that height as its least
+      if ((o.t === "text" || o.t === "sticky") && /[ns]/.test(h)) o.hmin = round1(hh);
       if (o.t === "shape" || o.t === "pen") renderObj(o); else place(el, o);
       if (o.t === "text") o.h = Math.max(el.offsetHeight, 20);
+      if (o.t === "sticky") fitSticky(o);
       updateConns(new Set([o.id]));
       drawOverlay();
     },
@@ -1476,8 +1513,11 @@ function startEdit(id, opt) {
   const tx = begin();
   rec(tx, id);
   A.edit = { id, el, tx, isNew: !!opt.isNew };
-  el.contentEditable = "plaintext-only";
-  if (el.contentEditable !== "plaintext-only") el.contentEditable = "true";     // older Firefox
+  if (RICH.has(o.t)) el.contentEditable = "true";             // words can be made bold, italic, coloured
+  else {
+    el.contentEditable = "plaintext-only";
+    if (el.contentEditable !== "plaintext-only") el.contentEditable = "true";     // older Firefox
+  }
   if (opt.replace != null) el.textContent = opt.replace;
   if (o.t === "node") layoutMind();
   el.focus({ preventScroll: true });
@@ -1520,17 +1560,21 @@ function editInput() {
   if (o.t === "node") { layoutMind(); updateConns(new Set(), true); }
   else if (o.t === "sticky") growSticky(o);
 }
-/* A sticky grows downwards rather than hide what was typed. */
-function growSticky(o) {
+/* A sticky fits its words: it grows rather than hide what was typed, and
+   shrinks back when words go or the text gets smaller - never below the
+   height it was pulled to (or 0.6 of its width). */
+function fitSticky(o) {
   const el = A.els.get(o.id), tx = el && el.querySelector(".tx");
   if (!tx) return;
-  const need = tx.scrollHeight + 24;
-  if (need > o.h + 1) {
+  const least = o.hmin || Math.round(o.w * 0.6);
+  const need = Math.max(least, Math.ceil(tx.scrollHeight + 24));
+  if (Math.abs(need - o.h) > 1) {
     o.h = round1(need);
     place(el, o);
     updateConns(new Set([o.id]));
   }
 }
+const growSticky = fitSticky;
 function editBlur() {
   // Not at once: a tap on the toolbar blurs the text too, and must find the edit still open to style it.
   const e = A.edit;
@@ -1569,7 +1613,9 @@ function commitEdit() {
     return;
   }
   o.text = text;
-  el.textContent = text;
+  if (RICH.has(o.t) && hasRich(el)) o.html = cleanRich(el.innerHTML);
+  else delete o.html;
+  if (o.html) { el.innerHTML = cleanRich(o.html); el._html = o.html; } else { el.textContent = text; el._html = null; }
   if (o.t === "sticky") growSticky(o);
   if (o.t === "text") o.h = Math.max(A.els.get(o.id).offsetHeight, 20);
   commit(e.tx, { merge: e.isNew });
@@ -1844,12 +1890,29 @@ document.addEventListener("cut", (ev) => { if (A.canEdit) onCopy(ev, true); });
 document.addEventListener("paste", onPaste);
 
 /* Set one property on everything selected that it applies to. */
+/* While typing in a sticky, a text or a shape, with some words chosen: make
+   just those bold / italic / underlined / coloured. False when there is no
+   such choice, so the button styles the whole thing instead. */
+function styleChosenWords(cmd, value) {
+  const e = A.edit;
+  if (!e || !e.el || !e.el.isContentEditable) return false;
+  const o = get(e.id);
+  if (!o || !RICH.has(o.t)) return false;
+  const s = getSelection();
+  if (!s.rangeCount || s.isCollapsed || !e.el.contains(s.anchorNode) || !e.el.contains(s.focusNode)) return false;
+  try { document.execCommand("styleWithCSS", false, false); } catch (err) {}
+  document.execCommand(cmd, false, value);
+  editInput();
+  return true;
+}
+
 function setProp(key, value, types) {
   const tx = begin();
   for (const o of selObjs()) {
     if (o.lock || (types && !types.includes(o.t))) continue;
     rec(tx, o.id);
     if (value === null || value === undefined) delete o[key]; else o[key] = value;
+    if (o.t === "sticky" && ["bold", "italic", "underline", "fs"].includes(key)) { renderObj(o); fitSticky(o); }
     invalidate([o.id]);
   }
   commit(tx);
@@ -2000,6 +2063,9 @@ window.addEventListener("keydown", (ev) => {
     if (low === "f") { done(); return X.openSearch && X.openSearch(); }
     if (low === "b" && sel.length) { done(); return setProp("bold", !sel.every((o) => o.bold), ["sticky", "text", "shape", "node"]); }
     if (low === "l" && sel.length) { done(); return toggleLock(); }
+    if (low === "g" && sel.length) { done(); return ev.shiftKey ? ungroupSel() : groupSel(); }
+    if (low === "i" && sel.length) { done(); return setProp("italic", !sel.every((o) => o.italic), ["sticky", "text", "shape"]); }
+    if (low === "u" && sel.length) { done(); return setProp("underline", !sel.every((o) => o.underline), ["sticky", "text", "shape"]); }
     if (k === "0") { done(); const r = stageRect(); return zoomAt(r.width / 2, r.height / 2, 1 / A.view.s); }
     return;                                           // Ctrl+C / V / X arrive as copy / paste / cut events
   }
@@ -2157,7 +2223,11 @@ function buildCtx() {
       h += b("tcolor", `<span class="txa" style="--c:${col(f.color, "#1f2430")}">A</span>`, "Text colour");
       h += b("fs-", icon("minus", 14), "Smaller text") + `<span class="fsv">${fs}</span>` + b("fs+", icon("plus", 14), "Larger text");
       if (has("sticky", "text", "shape", "node")) {
-        h += b("bold", icon("bold", 16), "Bold (Ctrl+B)", sel.every((o) => o.bold));
+        h += b("bold", icon("bold", 16), "Bold (Ctrl+B) - while typing, only the chosen words", sel.every((o) => o.bold));
+        if (has("sticky", "text", "shape")) {
+          h += b("italic", '<i style="font:italic 600 15px Georgia,serif">I</i>', "Italic (Ctrl+I) - while typing, only the chosen words", sel.every((o) => o.italic));
+          h += b("underline", '<u style="font:600 14px system-ui">U</u>', "Underline (Ctrl+U) - while typing, only the chosen words", sel.every((o) => o.underline));
+        }
         if (has("sticky", "text", "shape")) {
           const al = f.align || (f.t === "text" ? "left" : "center");
           h += b("align", icon(al === "left" ? "alignl" : al === "right" ? "alignr" : "alignc", 16), "Text to the left, middle, right");
@@ -2179,6 +2249,10 @@ function buildCtx() {
       h += sep;
     }
     if (sel.length > 1) h += b("alignmenu", icon("align", 16), "Line up, space out") + sep;
+    const gIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 3h8v8H3zM13 13h8v8h-8z"/>';
+    const gids = new Set(sel.map((o) => o.g || ""));
+    if (sel.length > 1 && !(gids.size === 1 && first.g)) h += b("group", gIcon + "</svg>", "Group (Ctrl+G): move, copy and delete them as one");
+    if (sel.some((o) => o.g)) h += b("ungroup", gIcon + '<path d="M11 7h4v4" stroke-dasharray="2 2"/></svg>', "Ungroup (Ctrl+Shift+G)") + sep;
   }
   if (one && !["conn", "pen"].includes(one.t)) {
     const m = A.meta.get(one.id);
@@ -2269,7 +2343,7 @@ ctxEl.addEventListener("click", (ev) => {
     case "tcolor":
       pop(btn, swatches(INK_COLORS, first.color), (e) => {
         const s = e.target.closest(".sw");
-        if (s) { setProp("color", s.dataset.v, TXT); closePop(); }
+        if (s) { if (!styleChosenWords("foreColor", s.dataset.v)) setProp("color", s.dataset.v, TXT); closePop(); }
       });
       break;
     case "fs-": case "fs+": {
@@ -2282,13 +2356,18 @@ ctxEl.addEventListener("click", (ev) => {
         i = clamp(i + (act === "fs+" ? 1 : -1), 0, FONT_STEPS.length - 1);
         rec(tx, o.id);
         o.fs = FONT_STEPS[i];
+        if (o.t === "sticky") { renderObj(o); fitSticky(o); }       // the note grows or shrinks with its text
         invalidate([o.id]);
       }
       commit(tx);
       buildCtx();
       break;
     }
-    case "bold": setProp("bold", !sel.every((o) => o.bold), ["sticky", "text", "shape", "node"]); break;
+    case "bold": case "italic": case "underline":
+      // typing with words chosen: only those words
+      if (styleChosenWords(act === "bold" ? "bold" : act)) break;
+      setProp(act, !sel.every((o) => o[act]), act === "bold" ? ["sticky", "text", "shape", "node"] : ["sticky", "text", "shape"]);
+      break;
     case "align": {
       const cur = first.align || (first.t === "text" ? "left" : "center");
       setProp("align", cur === "left" ? "center" : cur === "center" ? "right" : "left", ["sticky", "text", "shape"]);
@@ -2324,6 +2403,8 @@ ctxEl.addEventListener("click", (ev) => {
       break;
     case "comment": if (X.openThread) X.openThread(one.id); break;
     case "react": if (X.reactMenu) X.reactMenu(btn, one.id); break;
+    case "group": groupSel(); break;
+    case "ungroup": ungroupSel(); break;
     case "front": order(true); break;
     case "back": order(false); break;
     case "lock": toggleLock(); break;

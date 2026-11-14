@@ -6,6 +6,17 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-16", date: "14 Nov 2026",
+    items: [
+      "**Sheets - where the panels sit:** View \u25be > **Panels**: **Top** (the tools in the row above, the properties in a bar under it, as before), **Float** (as now) or **Free** (drag the tools and the properties anywhere by their grip; double-click a grip to put it back).",
+      "**Saved styles:** press **+ Save style** at the top of Style to keep a look (colours, weight, line type, opacity, font, size) under a name; click it to put it on the selection or on the next markup. Yours follow you to every device; project admins can share styles with everyone on the project.",
+      "**More colours:** the palette has a full grid of colours, **My colours** (add any colour, or type its #code) and the project's colours, besides the recent ones.",
+      "**Match properties** is now at the foot of the properties panel (the paintbrush) and on the right-click menu.",
+      "**Raise issue:** the Assign to list shows above the form again.",
+      "**Board:** bold, italic, underline or colour just the words you choose while typing (Ctrl+B / I / U too); text boxes can be pulled taller; sticky notes grow and shrink with their words and text size; **Group** (Ctrl+G) pictures, notes and shapes so they move, copy and delete as one (Alt-click picks one inside).",
+    ],
+  },
+  {
     version: "2027-01-15", date: "13 Nov 2026",
     items: [
       "**3D: one menu on right-click.** On Windows the browser's own menu (Back, Refresh, Save as ...) opened on top of the viewer's right-click menu; now only the viewer's opens. The same on the Sheets page.",

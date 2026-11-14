@@ -98,6 +98,10 @@
           title="Find and replace the text of this sheet's markups (Ctrl+H)">&#128269; Find &amp; replace<small>The text of this sheet's markups - Ctrl+H</small></button>
         <button id="snap-toggle" class="ghost active"
           title="Dimensions, measurements and line shapes snap to the drawing's own lines (hold Alt to place freely)">&#8982; Snap to drawing lines<small>Ends, crossings, midpoints - hold Alt to place freely</small></button>
+        <div id="pm-row" class="pm-row" role="group" aria-label="Where the tools and properties sit">
+          <span class="pm-lab">Panels<small>Where the tools and properties sit</small></span>
+          <span class="pm-seg"><button type="button" data-pm="top" title="Tools in the row above, properties as a bar under it">Top</button><button type="button" data-pm="float" title="Tools down the left of the drawing, properties at its top right">Float</button><button type="button" data-pm="free" title="Drag the tools and the properties anywhere by their grip (double-click a grip to put it back)">Free</button></span>
+        </div>
         <button id="lv-toggle" class="ghost" hidden
           title="The Light &amp; Vent check's rooms on the plans, coloured by result (from the Calculation model)">&#9638; Light &amp; Vent<small>Rooms coloured by lighting and ventilation result</small></button>
       </div></span>
@@ -130,6 +134,7 @@
       <div class="pp-body">
         <button type="button" class="pp-sec" data-sec="style" aria-expanded="true"><svg class="pp-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Style</button>
         <div class="pp-part" data-part="style">
+          <div class="pp-styles" id="pp-styles" aria-label="Saved styles: click one to use it"></div>
           <div class="pp-row">
             <label class="pp-sw" title="Line colour"><input type="color" id="p-color" value="#ff3b30" aria-label="Line colour"><span>Line</span></label>
             <label class="pp-sw" title="Fill colour"><input type="color" id="p-fill" value="#ff3b30" aria-label="Fill colour"><span>Fill</span></label>
@@ -204,6 +209,7 @@
       <div class="pp-foot">
         <button type="button" id="a-issue" class="pp-act" disabled title="Raise an issue on the selected markup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="pp-flag"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Issue</button>
         <span class="pp-fill"></span>
+        <button type="button" id="a-match" class="pp-ib" disabled title="Match properties - then click the markups to give this one's look (and issue details)" aria-label="Match properties"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h12v5H4zM16 6.5h3v5h-8v3M10 14.5h2v6h-2z"/></svg></button>
         <button type="button" id="a-copy" class="pp-ib" disabled title="Copy · Ctrl C (paste with Ctrl V)" aria-label="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8h12v12H8zM16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
         <button type="button" id="a-paste" class="pp-ib" title="Paste · Ctrl V - onto another sheet at the same spot" aria-label="Paste"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 4V3h6v1M9 11h6M9 15h4"/></svg></button>
         <button type="button" id="a-group" class="pp-ib" disabled title="Group · Ctrl G - they then select, move, rotate and take an issue together (select 2 or more)" aria-label="Group"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h8v8H3zM13 13h8v8h-8z"/></svg></button>

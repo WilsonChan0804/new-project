@@ -94,6 +94,8 @@ SHOTS = [
         ("#pp-text-h", "Text: font, height and alignment", "Text：字型、字高同對齊", {"at": "l"}),
         ("#pp-geo-h", "Position & size: X, Y, W, H, angle, %, scale, rotate and mirror", "Position & size：X、Y、W、H、角度、%、比例、旋轉同鏡像", {"at": "l"}),
         ("#props .pp-layer", "The layer it is on, and the layers list", "佢喺邊個圖層，同圖層清單", {"at": "l"}),
+        ("#pp-styles", "Saved styles: click one to use it; + Save style keeps the look now in the panel", "儲存咗嘅樣式：撳一個就用；+ Save style 儲存面板而家嘅樣式", {"at": "l"}),
+        ("#a-match", "Match properties: then click the markups that should take this look", "Match properties：再撳要跟呢個樣式嘅 markup", {"at": "above"}),
         ("#a-issue", "Make it an issue (or open its issue)", "變成 issue（或者打開佢個 issue）", {"at": "bl"}),
         ("#a-copy", "Copy, paste, group, ungroup", "Copy、貼、group、ungroup", {"at": "below"}),
         ("#a-delete", "Delete", "刪除", {"at": "br"}),
