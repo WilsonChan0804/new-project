@@ -6847,6 +6847,7 @@ function setupPropsColumn() {
   paintFold(); paintAlign(); paintOp();
   paintStyles();
   Styles.load();
+  try { if (localStorage.getItem(SPAL_KEY + ":open") === "1" && !matchMedia("(max-width: 700px)").matches) openStylePalette(); } catch (e) {}
 }
 const PROPS = { open: () => {}, paintAlign: () => {}, paintOp: () => {}, shownFor: "" };
 
@@ -6877,6 +6878,7 @@ function applySavedStyle(sv) {
   loadStyleInputs({ style: S.style });
   if (S.sel.length) { applyStyleToSelection(); status("Style \u201c" + sv.name + "\u201d put on " + (S.sel.length > 1 ? S.sel.length + " markups" : "the markup") + " (Ctrl+Z undoes)"); }
   else status("Style \u201c" + sv.name + "\u201d: the next markup is drawn with it");
+  paintStyles();
 }
 function saveStyleAs(it) {
   const st = lookOf(it ? it.style : S.style);
@@ -6889,9 +6891,18 @@ function saveStyleAs(it) {
 }
 function styleChipMenu(ev, sv, isTeam) {
   const { team } = Styles.lists();
-  const can = !isTeam || team.admin;
   const one = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]);
   const fail = (e) => status("Could not change the styles: " + e.message);
+  if (sv.std) {
+    openMenu(ev.clientX, ev.clientY, [
+      { label: S.sel.length ? "Put on the selection" : "Use for the next markup", action: () => applySavedStyle(sv) },
+      { label: "Copy to my styles (to change it)", action: () => Styles.addStyle(sv.name, "", sv.style, false).catch(fail) },
+      "-",
+      { label: "Hide from the palette", action: () => Styles.hideStandard(sv.id, true).catch(fail) },
+    ]);
+    return;
+  }
+  const can = !isTeam || team.admin;
   openMenu(ev.clientX, ev.clientY, [
     { label: S.sel.length ? "Put on the selection" : "Use for the next markup", action: () => applySavedStyle(sv) },
     "-",
@@ -6902,47 +6913,137 @@ function styleChipMenu(ev, sv, isTeam) {
     { label: one ? "Update from the selected markup" : "Update from the panel", disabled: !can,
       action: () => Styles.updateStyle(sv.id, { style: lookOf(one ? one.style : S.style), type: one ? one.type : sv.type }, isTeam).catch(fail) },
     ...(!isTeam && team.admin ? [{ label: "Share with the project", action: () => Styles.addStyle(sv.name, sv.type, sv.style, true)
-        .then(() => status("\u201c" + sv.name + "\u201d is now one of the project's styles")).catch(fail) }] : []),
+        .then(() => status("“" + sv.name + "” is now one of the project's styles")).catch(fail) }] : []),
     ...(isTeam ? [{ label: "Copy to my styles", action: () => Styles.addStyle(sv.name, sv.type, sv.style, false).catch(fail) }] : []),
     "-",
     { label: "Delete", danger: true, disabled: !can, action: () => {
-        if (confirm("Delete the style \u201c" + sv.name + "\u201d" + (isTeam ? " for everyone on the project" : "") + "?")) Styles.removeStyle(sv.id, isTeam).catch(fail);
+        if (confirm("Delete the style “" + sv.name + "”" + (isTeam ? " for everyone on the project" : "") + "?")) Styles.removeStyle(sv.id, isTeam).catch(fail);
       } },
   ]);
 }
+
+/* The Comment Styles Palette, as in PDF-XChange: a tile per style with a
+   pentagon drawn in its fill and line (or "Aa" for a text style), its name
+   under it. The panel shows them in a row; the palette window shows them all. */
+function styleTileSvg(st, size) {
+  const z = size || 40, f = st.fillop > 0 ? st.fill || st.color : "none";
+  const op = st.fillop > 0 ? Math.min(1, st.fillop / 100 + 0.15) : 0;
+  const sw = Math.max(1.2, Math.min(4, (Number(st.width) || 0.5) * 4));
+  const c = z / 2, r = z * 0.42;
+  const pts = [0, 1, 2, 3, 4].map((i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; return (c + r * Math.cos(a)).toFixed(1) + "," + (c + 2 + r * Math.sin(a)).toFixed(1); }).join(" ");
+  const dash = st.dash && st.dash !== "none" ? ' stroke-dasharray="4 3"' : "";
+  return `<svg width="${z}" height="${z}" viewBox="0 0 ${z} ${z}" aria-hidden="true"><polygon points="${pts}" fill="${f}" fill-opacity="${op}" stroke="${st.color || "#999"}" stroke-width="${sw}"${dash} stroke-linejoin="round"/>`
+    + (st.font && !st.fillop && st.tcolor && st.tcolor !== st.color ? `<text x="${c}" y="${c + 6}" text-anchor="middle" font-size="${z * 0.36}" font-weight="600" fill="${st.tcolor}">Aa</text>` : "") + `</svg>`;
+}
+function sameLook(a, b) {
+  for (const k of ["color", "fillop", "width", "dash"]) if (b[k] !== undefined && String(a[k]) !== String(b[k])) return false;
+  if ((b.fillop || 0) > 0 && b.fill && a.fill !== b.fill) return false;
+  return true;
+}
+function styleTile(sv, isTeam, big) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "sp-tile" + (isTeam ? " team" : "") + (sv.std ? " std" : "");
+  const one = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]);
+  if (sameLook(one ? one.style || {} : S.style, sv.style || {})) b.classList.add("on");
+  b.title = sv.name + (isTeam ? " (the project's)" : sv.std ? " (standard)" : "") + " - click to use, right-click for more";
+  b.innerHTML = styleTileSvg(sv.style || {}, big ? 44 : 30) + `<span class="sp-n"></span>`
+    + (isTeam ? '<svg class="sp-team" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/></svg>' : "");
+  b.querySelector(".sp-n").textContent = sv.name;
+  b.addEventListener("click", () => applySavedStyle(sv));
+  b.addEventListener("contextmenu", (ev) => { ev.preventDefault(); styleChipMenu(ev, sv, isTeam); });
+  return b;
+}
+function fillStyleTiles(box, big) {
+  const { mine, team } = Styles.lists();
+  box.innerHTML = "";
+  const sec = (title, list, isTeam) => {
+    if (!list.length) return;
+    if (big) { const h = document.createElement("div"); h.className = "sp-h"; h.textContent = title; box.appendChild(h); }
+    const g = document.createElement("div");
+    g.className = "sp-grid";
+    for (const sv of list) g.appendChild(styleTile(sv, isTeam, big));
+    box.appendChild(g);
+  };
+  sec("My styles", mine.styles, false);
+  sec("Project styles", team.styles, true);
+  sec("Standard", Styles.standardShown(), false);
+}
 function paintStyles() {
   const box = document.getElementById("pp-styles");
-  if (!box) return;
-  const { mine, team } = Styles.lists();
-  const chip = (sv, isTeam) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "pp-chip" + (isTeam ? " team" : "");
-    const st = sv.style || {};
-    b.title = sv.name + (isTeam ? " (the project's)" : "") + " - click to use, right-click for more";
-    b.innerHTML = `<span class="pp-prev" style="border-color:${st.color || "#999"};background:${st.fillop > 0 ? (st.fill || "transparent") : "transparent"}">`
-      + `<i style="background:${st.tcolor || st.color || "#999"}"></i></span>`
-      + (isTeam ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M15 15c3 0 6 1.5 6 4.5"/></svg>' : "")
-      + `<span class="pp-cn"></span>`;
-    b.querySelector(".pp-cn").textContent = sv.name;
-    b.addEventListener("click", () => applySavedStyle(sv));
-    b.addEventListener("contextmenu", (ev) => { ev.preventDefault(); styleChipMenu(ev, sv, isTeam); });
-    return b;
-  };
-  box.innerHTML = "";
-  for (const sv of mine.styles) box.appendChild(chip(sv, false));
-  for (const sv of team.styles) box.appendChild(chip(sv, true));
-  const add = document.createElement("button");
-  add.type = "button"; add.className = "pp-chip pp-save";
-  add.title = "Save the look now in the panel (or of the selected markup) as a style - yours on every device";
-  add.textContent = "+ Save style";
-  add.addEventListener("click", () => saveStyleAs(S.sel.length === 1 ? S.items.find((x) => x.id === S.sel[0]) : null));
-  box.appendChild(add);
+  if (box) {
+    box.innerHTML = "";
+    const row = document.createElement("div");
+    row.className = "sp-row";
+    fillStyleTiles(row, false);
+    // one row of tiles: the grids flattened
+    const tiles = [...row.querySelectorAll(".sp-tile")];
+    row.innerHTML = "";
+    tiles.forEach((t) => row.appendChild(t));
+    box.appendChild(row);
+    const more = document.createElement("div");
+    more.className = "sp-acts";
+    more.innerHTML = '<button type="button" class="sp-save">+ Save style</button><button type="button" class="sp-open" title="The Comment Styles Palette: every style, with names, in a window you can keep open">▦ Palette</button>';
+    more.querySelector(".sp-save").addEventListener("click", () => saveStyleAs(S.sel.length === 1 ? S.items.find((x) => x.id === S.sel[0]) : null));
+    more.querySelector(".sp-open").addEventListener("click", () => openStylePalette());
+    box.appendChild(more);
+  }
+  const win = document.getElementById("style-pal");
+  if (win && !win.hidden) fillStyleTiles(win.querySelector(".sp-body"), true);
 }
 Styles.onChange(paintStyles);
 
+const SPAL_KEY = "lwk-sheets:style-pal";
+function openStylePalette() {
+  let win = document.getElementById("style-pal");
+  if (!win) {
+    win = document.createElement("section");
+    win.id = "style-pal";
+    win.setAttribute("aria-label", "Comment Styles Palette");
+    win.innerHTML = '<header class="sp-head"><b>Comment Styles Palette</b><span class="sp-fill"></span>'
+      + '<button type="button" class="sp-hid" title="Show the standard styles you hid">Hidden</button>'
+      + '<button type="button" class="sp-save">+ Save style</button>'
+      + '<button type="button" class="sp-x" aria-label="Close" title="Close">×</button></header><div class="sp-body"></div>';
+    document.body.appendChild(win);
+    win.querySelector(".sp-x").addEventListener("click", () => { win.hidden = true; try { localStorage.setItem(SPAL_KEY + ":open", "0"); } catch (e) {} });
+    win.querySelector(".sp-save").addEventListener("click", () => saveStyleAs(S.sel.length === 1 ? S.items.find((x) => x.id === S.sel[0]) : null));
+    win.querySelector(".sp-hid").addEventListener("click", (ev) => {
+      const hid = Styles.STANDARD_STYLES.filter((s) => (Styles.lists().mine.hidden || []).includes(s.id));
+      openMenu(ev.clientX, ev.clientY, hid.length ? hid.map((s) => ({ label: "Show “" + s.name + "” again", action: () => Styles.hideStandard(s.id, false) }))
+        : [{ label: "No standard style is hidden", disabled: true, action: () => {} }]);
+    });
+    win.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+    // dragged by its title; the place is kept on this device
+    const head = win.querySelector(".sp-head");
+    head.addEventListener("pointerdown", (ev) => {
+      if (ev.target.closest("button") || matchMedia("(max-width: 700px)").matches) return;
+      const r = win.getBoundingClientRect(), dx = ev.clientX - r.left, dy = ev.clientY - r.top;
+      head.setPointerCapture(ev.pointerId);
+      const mv = (e) => {
+        win.style.left = Math.max(4, Math.min(innerWidth - r.width - 4, e.clientX - dx)) + "px";
+        win.style.top = Math.max(4, Math.min(innerHeight - 60, e.clientY - dy)) + "px";
+        win.style.right = "auto";
+      };
+      const up = () => {
+        head.removeEventListener("pointermove", mv); head.removeEventListener("pointerup", up);
+        try { localStorage.setItem(SPAL_KEY, JSON.stringify({ x: parseFloat(win.style.left), y: parseFloat(win.style.top) })); } catch (e) {}
+      };
+      head.addEventListener("pointermove", mv); head.addEventListener("pointerup", up);
+    });
+    try {
+      const p = JSON.parse(localStorage.getItem(SPAL_KEY) || "null");
+      if (p && !matchMedia("(max-width: 700px)").matches) Object.assign(win.style, { left: Math.min(p.x, innerWidth - 200) + "px", top: Math.min(p.y, innerHeight - 100) + "px", right: "auto" });
+    } catch (e) {}
+  }
+  win.hidden = false;
+  try { localStorage.setItem(SPAL_KEY + ":open", "1"); } catch (e) {}
+  fillStyleTiles(win.querySelector(".sp-body"), true);
+  Styles.load();
+}
+
 /* The panel's title: what is chosen, or what the next markup will be */
 function paintPropsHead(drawing) {
+  if (paintPropsHead._sel !== S.sel.join()) { paintPropsHead._sel = S.sel.join(); paintStyles(); }   // which tile is the selection's look
   const name = document.getElementById("pp-name");
   if (!name) return;
   const sub = document.getElementById("pp-sub"), ico = document.getElementById("pp-ico");

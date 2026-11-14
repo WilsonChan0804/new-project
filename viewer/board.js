@@ -22,13 +22,14 @@
 import { api, link, project, signOut, projectOptions, projectTwoStep, keptCopy, keepCopy, keptBig, keepBig } from "./nav.js";
 import { esc, uid, clone, clamp, round1, col, STICKY_COLORS, INK_COLORS, SHAPE_FILLS, BRANCH_COLORS, isDark, personColor,
          initials, ago, icon, center, unionBox, boxesTouch, route, arrowHead, simplify, penPath } from "./board-util.js";
-import { RICH, cleanRich, hasRich } from "./board-util.js";
+import { RICH, cleanRich, hasRich, FONTS, fontCss } from "./board-util.js";
 import { createSync } from "./board-sync.js";
 import * as mind from "./board-mind.js";
 import { TEMPLATES, makeTemplate, templateThumb } from "./board-templates.js";
 import { lwkBimWorkflow } from "./board-bimwf.js";
 import { remap, statusColor } from "./board-export.js";
 import { initExtra } from "./board-extra.js";
+import { initTasks } from "./board-tasks.js";
 
 const $ = (s) => document.querySelector(s);
 const stage = $("#bd-stage"), world = $("#bd-world"), objsEl = $("#bd-objs"), branchSvg = $("#bd-branches"),
@@ -464,10 +465,12 @@ function renderObj(o) {
   el.style.fontSize = fs ? fs + "px" : "";
   el.style.fontWeight = o.bold === undefined ? "" : o.bold ? "700" : "400";
   el.style.fontStyle = o.italic ? "italic" : "";
+  el.style.fontFamily = o.font ? fontCss(o.font) : "";
   el.style.textDecoration = o.underline ? "underline" : "";
   el.style.textAlign = o.align || "";
   // a note or shape centres its text block: one short line set left or right goes there too
   el.style.justifyContent = o.align === "left" ? "flex-start" : o.align === "right" ? "flex-end" : "";
+  if (o.t === "node" && X.nodeTask) X.nodeTask(el, o);          // its task's markers
   if (o.t === "sticky") {
     el.style.background = fill;
     el.style.color = col(o.color, isDark(fill) ? "#ffffff" : "#1f2430");
@@ -664,6 +667,7 @@ function layoutMind() {
     const cls = "ob node d" + d + (n.lock ? " locked" : "") + (A.sel.has(n.id) ? " sel" : "")
       + (el.classList.contains("ghost") ? " ghost" : "") + (el.classList.contains("hit") ? " hit" : "")
       + (el.classList.contains("drop") ? " drop" : "")
+      + (el.classList.contains("tdone") ? " tdone" : "") + (el.classList.contains("has-task") ? " has-task" : "")
       + (el.classList.contains("cur") ? " cur" : "") + (A.edit && A.edit.id === n.id && A.edit.isNew ? " new" : "");
     if (el.className !== cls) el.className = cls;
     el.style.display = hidden.has(n.id) ? "none" : "";
@@ -678,13 +682,23 @@ function layoutMind() {
   let paths = "";
   for (const root of F.roots) {
     const pos = mind.layout(F, root, (n) => size.get(n.id) || { w: 60, h: 28 });
+    const st = root.st || "map";
+    root._extra = pos.extra || [];
+    for (const e of root._extra) {
+      paths += e.fill ? `<path d="${e.d}" style="fill:${col(e.color, "#9aa3af")};stroke:none"/>`
+        : `<path d="${e.d}" stroke="${col(e.color, "#9aa3af")}" stroke-width="${e.width || 2}" fill="none"/>`;
+    }
     for (const [id, p] of pos) {
       const n = F.byId.get(id), el = A.els.get(id);
       n._hidden = !!p.hidden;
       if (p.hidden) { n.x = p.x; n.y = p.y; continue; }
       const s = size.get(id) || { w: 60, h: 28 };
       n.x = p.x; n.y = p.y; n.w = s.w; n.h = s.h;
-      n._dir = p.dir; n._color = p.color; n._depth = p.depth;
+      n._dir = p.dir; n._color = p.color; n._depth = p.depth; n._link = p.link;
+      // the main topics of an org chart, a timeline or a fishbone: filled in their branch colour
+      n._pill = p.depth === 1 && (st === "org" || st === "timeline" || st === "fishbone");
+      if (el) el.classList.toggle("fill1", n._pill);
+      if (el) el.classList.toggle("in-table", st === "table");
       n._below = n.collapsed ? mind.countBelow(F, id) : 0;
       if (!el) continue;
       el.style.left = px(p.x);
@@ -702,7 +716,8 @@ function layoutMind() {
       }
       const parent = F.parentOf.get(id) && F.byId.get(F.parentOf.get(id));
       if (parent && !parent._hidden) {
-        paths += `<path d="${mind.branchPath(parent, n, p.dir)}" stroke="${col(p.color, "#9aa3af")}"/>`;
+        const d = p.link === undefined ? mind.branchPath(parent, n, p.dir) : p.link;
+        if (d) paths += `<path d="${d}" stroke="${col(p.color, "#9aa3af")}"/>`;
       }
     }
   }
@@ -713,6 +728,17 @@ const isRootNode = (id) => A.F.byId.has(id) && !A.F.parentOf.get(id);
 
 /* ----------------------------------------------------------------- overlay */
 
+/* little pictures of each structure, for its button and picker */
+const _si = (body) => `<svg viewBox="0 0 64 40" width="22" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const STRUCT_ICON = {
+  map: _si('<rect x="25" y="16" width="14" height="8" rx="2"/><path d="M39 20c6 0 6-10 12-10M39 20c6 0 6 10 12 10M25 20c-6 0-6-10-12-10M25 20c-6 0-6 10-12 10"/>'),
+  logic: _si('<rect x="6" y="16" width="14" height="8" rx="2"/><path d="M20 20c8 0 8-12 16-12h20M20 20h36M20 20c8 0 8 12 16 12h20"/>'),
+  org: _si('<rect x="25" y="4" width="14" height="8" rx="2"/><path d="M32 12v6M12 18h40M12 18v6M32 18v6M52 18v6"/><rect x="6" y="26" width="12" height="8" rx="2"/><rect x="26" y="26" width="12" height="8" rx="2"/><rect x="46" y="26" width="12" height="8" rx="2"/>'),
+  timeline: _si('<path d="M4 20h56"/><circle cx="16" cy="20" r="3" fill="currentColor"/><circle cx="32" cy="20" r="3" fill="currentColor"/><circle cx="48" cy="20" r="3" fill="currentColor"/><path d="M16 17V6h10M32 23v11h10M48 17V6h10"/>'),
+  "timeline-v": _si('<path d="M32 2v36"/><circle cx="32" cy="10" r="3" fill="currentColor"/><circle cx="32" cy="22" r="3" fill="currentColor"/><circle cx="32" cy="34" r="3" fill="currentColor"/><path d="M35 10h16M29 22H13M35 34h16"/>'),
+  fishbone: _si('<path d="M4 20h44"/><path d="M48 14l12 6-12 6z"/><path d="M36 20l-8-14M36 20l-8 14M20 20l-8-14M20 20l-8 14"/>'),
+  table: _si('<rect x="6" y="5" width="52" height="30" rx="2"/><path d="M6 13h52M23 13v22M41 13v22M6 22h52"/>'),
+};
 const RESIZE = { sticky: "all", shape: "all", frame: "all", link: "all", image: "corners", pen: "corners", text: "all" };
 
 function drawOverlay() {
@@ -1612,7 +1638,9 @@ function commitEdit() {
     selectionChanged();
     return;
   }
+  const textChanged = o.text !== text;
   o.text = text;
+  if (textChanged && o.t === "node" && o.task && X.nodeTextChanged) X.nodeTextChanged(o);
   if (RICH.has(o.t) && hasRich(el)) o.html = cleanRich(el.innerHTML);
   else delete o.html;
   if (o.html) { el.innerHTML = cleanRich(o.html); el._html = o.html; } else { el.textContent = text; el._html = null; }
@@ -1912,7 +1940,7 @@ function setProp(key, value, types) {
     if (o.lock || (types && !types.includes(o.t))) continue;
     rec(tx, o.id);
     if (value === null || value === undefined) delete o[key]; else o[key] = value;
-    if (o.t === "sticky" && ["bold", "italic", "underline", "fs"].includes(key)) { renderObj(o); fitSticky(o); }
+    if (o.t === "sticky" && ["bold", "italic", "underline", "fs", "font"].includes(key)) { renderObj(o); fitSticky(o); }
     invalidate([o.id]);
   }
   commit(tx);
@@ -2221,6 +2249,8 @@ function buildCtx() {
       const f = sel.find((o) => ["sticky", "text", "shape", "node", "frame"].includes(o.t));
       const fs = Number(f.fs) || DEFAULT_FS[f.t];
       h += b("tcolor", `<span class="txa" style="--c:${col(f.color, "#1f2430")}">A</span>`, "Text colour");
+      const fn = (FONTS.find((x) => x[0] === (f.font || "")) || FONTS[0])[1].replace(/ \(.*\)/, "");
+      h += b("font", `<span class="fontname" style="font-family:${fontCss(f.font).replace(/"/g, "&quot;")}">${esc(fn.length > 12 ? fn.slice(0, 11) + "\u2026" : fn)}</span>`, "Font - while typing, only the chosen words");
       h += b("fs-", icon("minus", 14), "Smaller text") + `<span class="fsv">${fs}</span>` + b("fs+", icon("plus", 14), "Larger text");
       if (has("sticky", "text", "shape", "node")) {
         h += b("bold", icon("bold", 16), "Bold (Ctrl+B) - while typing, only the chosen words", sel.every((o) => o.bold));
@@ -2244,6 +2274,9 @@ function buildCtx() {
       h += sep;
     }
     if (one && one.t === "node") {
+      h += b("structure", STRUCT_ICON.map, "Structure: mind map, logic chart, org chart, timeline, fishbone, tree table");
+      h += b("task", '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>',
+        one.task ? "Task: progress, priority, dates, assignee" : "Make a task (or tasks of the branch) in a task list", !!one.task);
       h += b("child", icon("plus", 16), "Add a child (Tab)");
       if (mind.childrenOf(A.F, one.id).length && !isRootNode(one.id)) h += b("fold", one.collapsed ? "▸" : "▾", one.collapsed ? "Unfold" : "Fold this branch");
       h += sep;
@@ -2346,6 +2379,38 @@ ctxEl.addEventListener("click", (ev) => {
         if (s) { if (!styleChosenWords("foreColor", s.dataset.v)) setProp("color", s.dataset.v, TXT); closePop(); }
       });
       break;
+    case "font":
+      pop(btn, `<div class="menu fontmenu">` + FONTS.map(([k, label, css]) =>
+        `<button type="button" data-v="${k}" class="${(first.font || "") === k ? "on" : ""}" style="font-family:${css.replace(/"/g, "&quot;")}">${esc(label)}</button>`).join("") + `</div>`,
+      (e) => {
+        const s = e.target.closest("[data-v]");
+        if (!s) return;
+        if (!styleChosenWords("fontName", fontCss(s.dataset.v))) setProp("font", s.dataset.v || null, TXT);
+        closePop();
+      });
+      break;
+    case "task": if (X.taskButton) X.taskButton(btn, one); break;
+    case "structure": {
+      const rootId = (A.F.rootOf && A.F.rootOf.get(one.id)) || one.id, root = get(rootId);
+      if (!root) break;
+      const cur = (root.st || "map") + (root.st === "timeline" && root.stdir === "v" ? "-v" : "");
+      const opts = mind.STRUCTURES.flatMap(([k, label, tip]) => k === "timeline"
+        ? [["timeline", "Timeline \u2194", tip], ["timeline-v", "Timeline \u2195", "Steps down a line, their details to the sides"]] : [[k, label, tip]]);
+      pop(btn, `<h4>Structure</h4><div class="st-grid">` + opts.map(([k, label, tip]) =>
+        `<button type="button" data-v="${k}" title="${esc(tip)}" class="${cur === k ? "on" : ""}">${STRUCT_ICON[k] || ""}<span>${esc(label)}</span></button>`).join("") + `</div>`,
+      (e) => {
+        const s2 = e.target.closest("[data-v]");
+        if (!s2) return;
+        const v = s2.dataset.v, tx = begin();
+        rec(tx, root.id);
+        if (v === "map") delete root.st; else root.st = v === "timeline-v" ? "timeline" : v;
+        if (v === "timeline-v") root.stdir = "v"; else delete root.stdir;
+        commit(tx);
+        layoutMind(); updateConns(new Set(), true); queueOverlay();
+        closePop();
+      });
+      break;
+    }
     case "fs-": case "fs+": {
       const tx = begin();
       for (const o of sel) {
@@ -2718,6 +2783,8 @@ function closeBoard() {
 }
 
 async function openBoard(bid, push) {
+  const fq = new URLSearchParams(location.search);
+  const focusId = fq.get("board") === bid ? fq.get("focus") : null;
   closeBoard();
   const sync = createSync({
     bid, name: A.name, canEdit: A.canEdit,
@@ -2775,6 +2842,9 @@ async function openBoard(bid, push) {
   else fitStart();
   setTool("select");
   select([]);
+  // opened from a task's link: that node, in view
+  if (focusId && get(focusId)) { select([focusId]); reveal(get(focusId)); }
+  if (X.tasksBoardOpened) X.tasksBoardOpened();
   showPeople([]);
   renderBoardList();
   sync.start();
@@ -2958,6 +3028,7 @@ async function main() {
   buildTools();
   wireChrome();
   initExtra(app);
+  initTasks(app);
   await ensureSignedIn();
   if (A.me.user && A.me.user.must_change) {
     location.href = "admin.html?first=1&next=" + encodeURIComponent(location.pathname + location.search) + "#account";

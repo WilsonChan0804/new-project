@@ -154,6 +154,13 @@ SHOTS = [
         (".sbd-gaps", "The working: each gap's area, depth and S", "計算：每個空隙嘅面積、深度同 S"),
         ("[data-zm=fit]", "Zoom in / out, Fit", "放大 / 縮小、Fit"),
     ]),
+    dict(id="board-mindmap", url="board.html?project={project}&board={mapboard}&focus=nmapstep0001", ready="#bd-tools", wait=4000,
+         prep=[{"wait": 1500}], marks=[
+        ("#bd-ctx [data-act=structure]", "Structure: mind map, logic chart, org chart, timeline, fishbone or tree table", "結構：mind map、logic chart、org chart、timeline、fishbone 或者 tree table", {"at": "below"}),
+        ("#bd-ctx [data-act=task]", "Task: make the node (or its branch) tasks, or set progress, priority, dates and who", "Task：將呢個 node（或者成枝）變成 task，或者設定進度、優先、日期同負責人", {"at": "below"}),
+        ('.ob.node[data-id="nmapstep0001"] .nd-task', "The task on the node: priority, progress, due date, who - kept in step with the Tasks page", "Node 上面嘅 task：優先、進度、到期日、負責人 - 同 Tasks 頁同步", {"at": "below"}),
+        ('.ob.node[data-id="nmaproot0001"]', "The map's root: its tasks go to one task list", "Map 嘅中心：佢嘅 task 全部放喺一個 task list", {"at": "tl"}),
+    ]),
     dict(id="board", url="board.html?project={project}", ready="#bd-tools", wait=2500, marks=[
         ("#bd-menu", "Boards: all the project's boards, new board, templates", "Boards：project 所有白板、新白板、範本"),
         ("#bd-title", "The board's name", "白板名稱"),

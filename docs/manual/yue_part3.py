@@ -61,6 +61,7 @@ PART = [
         '**Dimension、Measure、Line、Arrow：** 由第一點拖去第二點，或者撳第一點、再撳第二點（撳咗第一點之後按 Esc 取消）。',
         '**Style bar：** Layer、線／填色／文字顏色、Opacity、Weight（紙上 mm）、線 Type、Font、Size（字高 mm）、Align。',
         '**面板擺邊：** **View ▾ > Panels**：**Top** 將工具放返圖則上面嗰行，屬性變成下面一條列；**Float** 係工具直列喺左邊、屬性面板喺右上角；**Free** 可以拉住佢哋嘅把手（工具列頂嘅點點、面板標題）搬去任何位置 - 雙撳把手就放返原位。呢部機會記住；手機一定係底部工具列。',
+        '**Comment Styles Palette：** Style 頂部有一行樣式方塊（每個樣式用佢嘅線同填色畫一個五邊形）- 標準一套（Red、Purple、Indigo、Blue、Green、Yellow，有填色同淨線兩款，仲有 Black Stroke），跟住係你嘅同 project 嘅。**▦ Palette** 會喺一個可以一直開住、隨意拖動嘅視窗顯示晒；同所揀嘢一樣嘅樣式會有框。右撳標準樣式可以複製去你嘅樣式（再改）或者收埋；**Hidden** 可以攞返收埋咗嘅。',
         '**儲存樣式：** 設好樣式（顏色、線粗、線型、透明度、字型、字高），撳 Style 頂嘅 **+ Save style**（或者右撳 markup > **Save this look as a style**）。撳一個已儲存嘅樣式就套落所揀嘅嘢（Ctrl+Z 可以還原）；冇揀嘢就用佢畫下一個 markup。你嘅樣式喺每部機都有。右撳可以改名、用所揀嘅嘢更新或者刪除；project admin 可以 **Share with the project**，俾所有人用（有人仔 icon）。',
         '**顏色：** 每個顏色旁邊嘅調色盤掣有一格格標準顏色、**My colours**（+ 加入格入面而家嘅顏色，或者打 #code；x 拎走）、project 嘅顏色（admin 管理）同最近用過嘅。',
         '**Match properties：** 揀一個 markup，撳面板底部嘅掃把（或者右撳 > **Match properties**），再撳要跟佢樣式（同 issue 資料）嘅 markup；完咗撳 Esc。',

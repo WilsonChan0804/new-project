@@ -261,7 +261,7 @@ DATE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$")
 PRIORITIES = ("", "Low", "Medium", "High", "Urgent")
 FIELD_TYPES = ("person", "select", "text", "date", "number", "check")
 LIST_ROLES = {"viewer": 1, "editor": 2, "owner": 3}
-LINK_KINDS = ("issue", "sheet", "view3d", "onedrive", "sharepoint", "acc", "url")
+LINK_KINDS = ("issue", "sheet", "view3d", "board", "onedrive", "sharepoint", "acc", "url")
 # What a patch may set. Everything else is the server's to say.
 PATCHABLE = ("group_id", "parent_id", "title", "description", "done", "priority", "start",
              "due", "owners", "vals", "links", "sort", "percent", "percent_prev")
@@ -411,7 +411,7 @@ def clean_links(v):
         url = clean_text(l.get("url"), 2000)
         if kind == "url":
             kind = link_kind(url)
-        if url and not re.match(r"^(https?://|index\.html|model\.html|/)", url, re.I):
+        if url and not re.match(r"^(https?://|index\.html|model\.html|board\.html|/)", url, re.I):
             raise HTTPException(status_code=400, detail="A link must start with https://")
         item = {"id": clean_text(l.get("id"), 48) or new_id(), "kind": kind, "url": url,
                 "title": clean_text(l.get("title"), 300),

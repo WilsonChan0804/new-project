@@ -37,7 +37,8 @@ class CleanStyles(unittest.TestCase):
         self.assertEqual(r["colours"], ["#abcdef", "#00ff00"])
 
     def test_limits_and_junk(self):
-        self.assertEqual(app.clean_styles(None), {"styles": [], "colours": []})
+        self.assertEqual(app.clean_styles(None), {"styles": [], "colours": [], "hidden": []})
+        self.assertEqual(app.clean_styles({"hidden": ["std-red", "../x", "std-red"]})["hidden"], ["std-red", "x"])
         many = {"styles": [{"name": "s%d" % i, "style": {"width": 1}} for i in range(150)],
                 "colours": ["#%06x" % i for i in range(100)]}
         r = app.clean_styles(many)

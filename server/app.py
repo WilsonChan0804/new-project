@@ -3555,7 +3555,12 @@ def clean_styles(body):
     for c in (body.get("colours") or [])[:60]:
         if isinstance(c, str) and HEX.match(c) and c.lower() not in cols:
             cols.append(c.lower())
-    return {"styles": out, "colours": cols}
+    hidden = []
+    for h in (body.get("hidden") or [])[:60]:
+        h = re.sub(r"[^\w-]", "", str(h))[:40]
+        if h and h not in hidden:
+            hidden.append(h)
+    return {"styles": out, "colours": cols, "hidden": hidden}
 
 
 def project_styles(pid):
@@ -3564,7 +3569,7 @@ def project_styles(pid):
         with open(os.path.join(root, STYLES_FILE), encoding="utf-8") as f:
             return clean_styles(json.load(f))
     except (OSError, ValueError, TypeError):
-        return {"styles": [], "colours": []}
+        return {"styles": [], "colours": [], "hidden": []}
 
 
 def _my_styles_key(w):
@@ -3579,7 +3584,7 @@ def get_my_styles(request: Request, x_viewer_token: str = Header(default="")):
     try:
         return clean_styles(json.loads(ACC.setting(_my_styles_key(w), "markup_styles") or "{}"))
     except ValueError:
-        return {"styles": [], "colours": []}
+        return {"styles": [], "colours": [], "hidden": []}
 
 
 @app.put("/api/me/styles")
@@ -3587,7 +3592,7 @@ async def put_my_styles(request: Request, x_viewer_token: str = Header(default="
     w = who(request, x_viewer_token)
     key = _my_styles_key(w)
     clean = clean_styles(await request.json())
-    ACC.set_setting(key, "markup_styles", json.dumps(clean, ensure_ascii=False) if clean["styles"] or clean["colours"] else "")
+    ACC.set_setting(key, "markup_styles", json.dumps(clean, ensure_ascii=False) if clean["styles"] or clean["colours"] or clean["hidden"] else "")
     return clean
 
 

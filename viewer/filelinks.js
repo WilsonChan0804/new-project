@@ -23,6 +23,7 @@ const SERVICES = {
   task: { label: "Task", color: "#0e9f6e", mark: "&#10003;" },
   query: { label: "Query", color: "#0284c7", mark: "?" },
   project: { label: "Project", color: "#4f46e5", mark: "P" },
+  board: { label: "Board", color: "#f08020", mark: "BD" },
   url: { label: "Link", color: "#6b7480", mark: "↗" },
 };
 
@@ -114,7 +115,7 @@ export function chip(link, opts) {
   const sub = [s.label, c.type].filter(Boolean).join(" · ");
   return `<span class="fl-chip" data-id="${esc(link.id || "")}">`
     + badge(link.kind)
-    + `<a href="${esc(link.url)}" target="${["sheet", "view3d", "task", "query", "issue", "project"].includes(link.kind) ? "_self" : "_blank"}"`
+    + `<a href="${esc(link.url)}" target="${["sheet", "view3d", "task", "query", "issue", "project", "board"].includes(link.kind) ? "_self" : "_blank"}"`
     + ` rel="noopener" title="${esc(link.url)}">${esc(link.title || c.name || link.url)}</a>`
     + `<small>${esc(sub)}</small>`
     + (opts.remove ? `<button type="button" class="fl-x ghost" data-remove="${esc(link.id || "")}" title="Remove the link (the file itself stays)">&#10005;</button>` : "")

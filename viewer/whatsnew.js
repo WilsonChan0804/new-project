@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-17", date: "14 Nov 2026",
+    items: [
+      "**Comment Styles Palette** (as in PDF-XChange): the styles are tiles drawn in their own line and fill, with a ready-made set - Red, Purple, Indigo, Blue, Green, Yellow, filled and as strokes, and Black Stroke - then yours and the project's. **\u25a6 Palette** opens them all in a window you can keep open and drag anywhere.",
+      "**Board fonts:** a font button for stickies, text, shapes and mind map topics (including \u5fae\u8edf\u6b63\u9ed1\u9ad4 and \u65b0\u7d30\u660e\u9ad4); with words chosen while typing, only those words change.",
+      "**Mind map structures** (as in Xmind): Mind map, Logic chart, Org chart, Timeline (across or down), Fishbone and Tree table - switch a map at any time from the structure button.",
+      "**Mind maps as tasks, both ways:** make a topic, a branch or the whole map into tasks in a task list (a branch becomes a task with sub-tasks). Topics show priority, progress, due date and who; set them in the topic's task panel. Changes on the Tasks page come back to the board, and the task links to its topic.",
+    ],
+  },
+  {
     version: "2027-01-16", date: "14 Nov 2026",
     items: [
       "**Sheets - where the panels sit:** View \u25be > **Panels**: **Top** (the tools in the row above, the properties in a bar under it, as before), **Float** (as now) or **Free** (drag the tools and the properties anywhere by their grip; double-click a grip to put it back).",

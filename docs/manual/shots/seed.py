@@ -89,11 +89,12 @@ def main(out, sheets_src, model_src):
     finally:
         srv.terminate()
         srv.wait()
-    json.dump({"token": TOK, "project": PID, "list": LIST[0], "port": PORT}, open(os.path.join(out, "state.json"), "w"))
+    json.dump({"token": TOK, "project": PID, "list": LIST[0], "mapboard": MAPBOARD[0], "port": PORT}, open(os.path.join(out, "state.json"), "w"))
     print("demo ready in", out)
 
 
 LIST = [""]
+MAPBOARD = [""]
 
 
 def seed():
@@ -168,6 +169,24 @@ def seed():
                                  ("Correspondence", "Minutes - design meeting 12.pdf", b"%PDF-1.4\n%demo\n")]:
             call("POST", "/api/files/%s/upload?path=%s&name=%s" % (reg_id, urllib.request.quote(path), urllib.request.quote(name)),
                  raw=body, ctype="application/octet-stream")
+    # a mind map as a timeline, its steps tasks in the list (made first: the board picture shows the newer board)
+    steps = [("GBP submission", "2026-10-05", "2026-10-30", "High", 60, "Wing Lee", ["Plans and sections", "GFA / SC calculations"]),
+             ("Fire services review", "2026-10-26", "2026-11-06", "Urgent", 20, "Jake Reyes", ["Means of escape", "Smoke vents"]),
+             ("Tender drawings", "2026-11-09", "2026-11-27", "Medium", 0, "Jannah Cruz", ["Architectural set", "Specifications"]),
+             ("Construction start", "2026-12-01", "2026-12-04", "Low", 0, "Dustin Ong", [])]
+    objs = [{"id": "nmaproot0001", "t": "node", "x": 0, "y": 0, "text": "Kai Tak Demo Tower - programme", "z": 1,
+             "st": "timeline", "tlist": lid, "task": "demomaptask00"}]
+    tpatch = [{"id": "demomaptask00", "title": "Kai Tak Demo Tower - programme", "group_id": g["Kai Tak Demo Tower"]}]
+    for i, (title, st0, due, pri, pct, who, kids) in enumerate(steps):
+        nid, tid = "nmapstep%04d" % i, "demomaptask%02d" % (i + 1)
+        objs.append({"id": nid, "t": "node", "parent": "nmaproot0001", "ord": i + 1, "text": title, "z": 2, "task": tid})
+        tpatch.append({"id": tid, "title": title, "parent_id": "demomaptask00", "start": st0, "due": due, "priority": pri,
+                       "percent": pct, "owners": [uid(who) if who in people else {"name": who}]})
+        for j, kid in enumerate(kids):
+            objs.append({"id": "nmapkid%02d%03d" % (i, j), "t": "node", "parent": nid, "ord": j + 1, "text": kid, "z": 3})
+    call("POST", "/api/tasks", {"list": lid, "tasks": tpatch})
+    mb = call("POST", "/api/boards", {"title": "Programme - mind map", "objects": objs}, project=PID)
+    MAPBOARD[0] = (mb.get("board") or {}).get("id", "")
     # a board
     call("POST", "/api/boards", {"title": "Design review - podium", "objects": [
         {"id": "demoobj0001", "t": "text", "x": 100, "y": 30, "w": 420, "h": 50, "z": 1, "text": "Podium options", "fs": 32},

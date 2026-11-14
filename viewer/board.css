@@ -415,3 +415,44 @@ body.readonly #home-tpls, body.readonly .th-new, body.readonly #bd-timer-btn { d
 :root[data-theme="dark"] .save-pill.busy { border-color: #725031; }
 :root[data-theme="dark"] #bl-items li.on { border-color: #725031; }
 :root[data-theme="dark"] .home-items li:hover { background: #3b2916; }
+/* the font button and its list, each name in its own font */
+#bd-ctx [data-act="font"] { width: auto !important; padding: 0 8px !important; }
+#bd-ctx .fontname { font-size: 12.5px; white-space: nowrap; }
+#bd-pop .fontmenu { min-width: 200px; }
+#bd-pop .fontmenu button { font-size: 14px; }
+#bd-pop .fontmenu button.on { background: var(--accent-soft, #FFF1E6); }
+/* structures: an org chart's, a timeline's or a fishbone's main topics are filled pills in their branch colour */
+.ob.node.d1.fill1 { background: var(--bc, #3b82f6); border-color: var(--bc, #3b82f6); color: #fff; border-radius: 999px; padding: 7px 16px; }
+.ob.node.in-table { border-color: transparent; background: transparent; border-radius: 4px; }
+.ob.node.in-table.d0 { background: #1f2430; color: #fff; }
+.ob.node.in-table.d1 { color: var(--ink); font-weight: 700; }
+.ob.node.in-table.sel { border-color: var(--brand, #F08020); }
+/* the structure picker */
+#bd-pop .st-grid { display: grid; grid-template-columns: repeat(3, 96px); gap: 6px; }
+#bd-pop .st-grid button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 11.5px; cursor: pointer; }
+#bd-pop .st-grid button.on { border-color: var(--brand, #F08020); background: var(--accent-soft, #FFF1E6); }
+#bd-pop .st-grid svg { width: 64px; height: 40px; }
+/* a node that is a task: its markers under the words (priority, progress, due, who) */
+.ob.node .nd-task { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin-top: 4px; font-style: normal; }
+.ob.node .nd-task i { font-style: normal; font: 700 9.5px/16px system-ui, sans-serif; height: 16px; padding: 0 4px; border-radius: 4px; }
+.ob.node .nt-pri { color: #fff; }
+.ob.node .nt-due { background: rgba(0,0,0,.06); color: inherit; font-weight: 600 !important; }
+.ob.node .nt-due.late { background: #fee2e2; color: #b91c1c; }
+.ob.node .nt-who { width: 16px; padding: 0 !important; border-radius: 50% !important; text-align: center; background: #6366f1; color: #fff; font-size: 8px !important; }
+.ob.node .nt-done { background: #16a34a; color: #fff; }
+.ob.node .nt-link { color: var(--muted); padding: 0 !important; font-size: 12px !important; }
+.ob.node.d0 .nt-due { background: rgba(255,255,255,.18); }
+.ob.node.tdone > .tx { text-decoration: line-through; opacity: .7; }
+/* the task panel */
+#bd-pop .tk-pan { width: 250px; display: flex; flex-direction: column; gap: 6px; }
+#bd-pop .tk-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+#bd-pop .tk-row span { width: 70px; color: var(--muted); flex: none; }
+#bd-pop .tk-row select, #bd-pop .tk-row input:not([type=checkbox]) { flex: 1; min-width: 0; height: 28px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; font: inherit; background: var(--panel); color: var(--ink); }
+#bd-pop .tk-acts { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+#bd-pop .tk-acts .spacer { flex: 1; }
+#bd-pop .tk-open { color: var(--brand-ink, #9A3412); font-weight: 600; font-size: 12.5px; }
+#bd-pop .tl-pick button small { margin-left: auto; color: var(--muted); padding-left: 10px; }
+#bd-ctx [data-act="task"].on { color: #16a34a; }
+.ob.node .nd-task:empty { display: none; }
+.ob.node.has-task::after { content: "\2713"; position: absolute; top: -7px; right: -7px; width: 14px; height: 14px; border-radius: 50%;
+  background: #16a34a; color: #fff; font: 700 9px/14px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 2px var(--panel, #fff); }

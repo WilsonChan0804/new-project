@@ -2919,18 +2919,38 @@ header .flr-lab { white-space: nowrap; }
 #member-pick, #mention-pick { z-index: 300 !important; }
 .pal-pop { z-index: 320 !important; }
 
-/* saved styles: chips at the top of Style */
-#props.pp-on .pp-styles { display: flex; flex-wrap: wrap; gap: 4px; }
-#props.pp-on .pp-chip { height: 24px; max-width: 100%; display: inline-flex; align-items: center; gap: 5px; padding: 0 8px 0 5px; border: 1px solid var(--line);
-  border-radius: 999px; background: var(--panel); color: var(--ink-2, #44403C); font: 500 11.5px inherit; cursor: pointer; min-width: 0; }
-#props.pp-on .pp-chip:hover { border-color: var(--brand, #F08020); color: var(--ink); }
-#props.pp-on .pp-chip.team { background: var(--panel-2, #F5F5F4); }
-#props.pp-on .pp-chip svg { flex: none; color: var(--muted); }
-#props.pp-on .pp-chip .pp-cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
-#props.pp-on .pp-prev { width: 14px; height: 14px; flex: none; box-sizing: border-box; border: 2px solid; border-radius: 3px; position: relative; }
-#props.pp-on .pp-prev i { position: absolute; right: -4px; bottom: -4px; width: 7px; height: 7px; border-radius: 50%; border: 1px solid #fff; }
-#props.pp-on .pp-save { border-style: dashed; color: var(--muted); padding: 0 9px; }
-@media (pointer: coarse) { #props.pp-on .pp-chip { height: 32px; } }
+/* the Comment Styles Palette: tiles in the panel's Style section, and the palette window */
+#props.pp-on .pp-styles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sp-row { display: flex; gap: 4px; overflow-x: auto; padding: 2px; scrollbar-width: thin; }
+.sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 4px; }
+.sp-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 3px 3px; flex: none; width: 52px;
+  border: 1px solid var(--line-soft, #F0EEEC); border-radius: 7px; background: var(--panel); color: var(--ink-2, #44403C); cursor: pointer; font: 500 10px/1.15 inherit; }
+.sp-grid .sp-tile { width: auto; padding: 6px 4px 5px; font-size: 11.5px; }
+.sp-tile:hover { border-color: var(--line-2, #D6D3D1); background: var(--panel-2, #F5F5F4); }
+.sp-tile.on { border-color: #e8b04a; background: #fff8e8; box-shadow: inset 0 0 0 1px #e8b04a; }
+.sp-tile .sp-n { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-tile .sp-team { position: absolute; top: 3px; right: 3px; color: var(--muted); }
+.sp-acts { display: flex; gap: 6px; }
+.sp-acts button, #style-pal .sp-head button { height: 24px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel);
+  color: var(--ink-2, #44403C); font: 500 11.5px inherit; cursor: pointer; }
+.sp-acts button:hover, #style-pal .sp-head button:hover { border-color: var(--brand, #F08020); color: var(--ink); }
+.sp-acts .sp-save { border-style: dashed; color: var(--muted); }
+#style-pal { position: fixed; right: 300px; top: 140px; z-index: 240; width: 540px; max-width: calc(100vw - 16px); max-height: min(560px, calc(100vh - 80px));
+  display: flex; flex-direction: column; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(28,25,23,.18); font-size: 12px; }
+#style-pal[hidden] { display: none; }
+#style-pal .sp-head { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--line-soft, #F0EEEC); cursor: grab; touch-action: none; }
+#style-pal .sp-head b { font-size: 13px; }
+#style-pal .sp-fill { flex: 1; }
+#style-pal .sp-x { width: 26px; padding: 0 !important; border: 0 !important; font-size: 18px !important; }
+#style-pal .sp-body { overflow-y: auto; padding: 8px 10px 12px; }
+#style-pal .sp-h { font: 600 10.5px inherit; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3, #57534E); margin: 6px 0 4px; }
+@media (pointer: coarse) { .sp-tile { width: 60px; } .sp-acts button { height: 32px; } }
+@media (max-width: 700px) {
+  #style-pal { left: 0 !important; right: 0 !important; top: auto !important; bottom: calc(57px + env(safe-area-inset-bottom)); width: auto; max-width: none;
+    max-height: 60vh; border-radius: 14px 14px 0 0; z-index: 260; }
+  #style-pal .sp-head { cursor: default; }
+}
 
 /* ------------------------------------------------------------------
    Panels: Top / Float / Free (View > Panels)

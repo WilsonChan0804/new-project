@@ -36,7 +36,7 @@ await p.evaluate(([t, pid]) => {
 await p.evaluate(() => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/whatsnew/i.test(k)) localStorage.removeItem(k); } localStorage.setItem("lwk-whatsnew-seen", "9999-99-99"); localStorage.setItem("lwk-viewer:whatsnew-seen", "9999-99-99"); } catch (e) {} });
 
 const pngSize = (f) => { const d = fs.readFileSync(f); return [d.readUInt32BE(16), d.readUInt32BE(20)]; };
-const fill = (s) => s.replace(/\{list\}/g, st.list).replace(/\{project\}/g, st.project);
+const fill = (s) => s.replace(/\{list\}/g, st.list).replace(/\{project\}/g, st.project).replace(/\{mapboard\}/g, st.mapboard || "");
 let bad = 0;
 for (const shot of SPEC.shots) {
   if (only.length && !only.includes(shot.id)) continue;

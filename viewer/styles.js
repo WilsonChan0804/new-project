@@ -13,7 +13,7 @@ import { api } from "./nav.js";
 
 const CACHE = "lwk-viewer:my-styles";
 const TEAM_CACHE = "lwk-viewer:team-styles:";
-const empty = () => ({ styles: [], colours: [] });
+const empty = () => ({ styles: [], colours: [], hidden: [] });
 
 let mine = readLocal(CACHE) || empty();
 let team = Object.assign(empty(), { admin: false });
@@ -26,8 +26,19 @@ function readLocal(k) {
   catch (e) { return null; }
 }
 function writeLocal(k, v) {
-  try { localStorage.setItem(k, JSON.stringify({ styles: v.styles, colours: v.colours })); } catch (e) {}
+  try { localStorage.setItem(k, JSON.stringify({ styles: v.styles, colours: v.colours, hidden: v.hidden || [] })); } catch (e) {}
 }
+
+/* The ready-made set, as in PDF-XChange's Comment Styles Palette: filled and
+   outline in six colours, and a black outline. Not stored - always there,
+   unless someone hides one. */
+const STD = [["red", "Red", "#e53935"], ["purple", "Purple", "#8e24aa"], ["indigo", "Indigo", "#3949ab"],
+  ["blue", "Blue", "#1e88e5"], ["green", "Green", "#43a047"], ["yellow", "Yellow", "#fdd835"]];
+export const STANDARD_STYLES = [
+  ...STD.map(([k, n, c]) => ({ id: "std-" + k, name: n, std: true, style: { color: c, fill: c, tcolor: c, fillop: 70, width: 0.5, dash: "none" } })),
+  ...STD.map(([k, n, c]) => ({ id: "std-" + k + "-s", name: n + " Stroke", std: true, style: { color: c, fill: c, tcolor: c, fillop: 0, width: 0.5, dash: "none" } })),
+  { id: "std-black-s", name: "Black Stroke", std: true, style: { color: "#000000", fill: "#000000", tcolor: "#000000", fillop: 0, width: 0.5, dash: "none" } },
+];
 function projectId() {
   return new URLSearchParams(location.search).get("project") || (() => {
     try { return sessionStorage.getItem("lwk-viewer:tab-project") || localStorage.getItem("lwk-viewer:project") || ""; }
@@ -74,24 +85,32 @@ const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toStrin
 
 export function addStyle(name, type, style, isTeam) {
   const L = list(isTeam);
-  return save(isTeam, { styles: [...L.styles, { id: newId(), name, type: type || "", style }], colours: L.colours });
+  return save(isTeam, { styles: [...L.styles, { id: newId(), name, type: type || "", style }], colours: L.colours, hidden: L.hidden || [] });
 }
 export function updateStyle(id, patch, isTeam) {
   const L = list(isTeam);
-  return save(isTeam, { styles: L.styles.map((s) => (s.id === id ? Object.assign({}, s, patch) : s)), colours: L.colours });
+  return save(isTeam, { styles: L.styles.map((s) => (s.id === id ? Object.assign({}, s, patch) : s)), colours: L.colours, hidden: L.hidden || [] });
 }
 export function removeStyle(id, isTeam) {
   const L = list(isTeam);
-  return save(isTeam, { styles: L.styles.filter((s) => s.id !== id), colours: L.colours });
+  return save(isTeam, { styles: L.styles.filter((s) => s.id !== id), colours: L.colours, hidden: L.hidden || [] });
 }
 export function addColour(c, isTeam) {
   c = String(c || "").toLowerCase();
   if (!/^#[0-9a-f]{6}$/.test(c)) return Promise.resolve();
   const L = list(isTeam);
   if (L.colours.includes(c)) return Promise.resolve();
-  return save(isTeam, { styles: L.styles, colours: [...L.colours, c].slice(-60) });
+  return save(isTeam, { styles: L.styles, colours: [...L.colours, c].slice(-60), hidden: L.hidden || [] });
 }
 export function removeColour(c, isTeam) {
   const L = list(isTeam);
-  return save(isTeam, { styles: L.styles, colours: L.colours.filter((x) => x !== c) });
+  return save(isTeam, { styles: L.styles, colours: L.colours.filter((x) => x !== c), hidden: L.hidden || [] });
 }
+
+/* Hide (or show again) one of the ready-made styles, for this person. */
+export function hideStandard(id, hide) {
+  const h = new Set(mine.hidden || []);
+  if (hide) h.add(id); else h.delete(id);
+  return saveMine({ styles: mine.styles, colours: mine.colours, hidden: [...h] });
+}
+export const standardShown = () => STANDARD_STYLES.filter((s) => !(mine.hidden || []).includes(s.id));

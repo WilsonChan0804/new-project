@@ -6,7 +6,7 @@
  * iPad on site runs, and silently drops uploaded pictures everywhere else.
  */
 
-import { col, isDark, route, arrowHead, penPath, unionBox, uid, clone, richRuns, RICH } from "./board-util.js";
+import { col, isDark, route, arrowHead, penPath, unionBox, uid, clone, richRuns, RICH, fontCss } from "./board-util.js";
 import { forest, branchPath } from "./board-mind.js";
 
 const FONT = '"Segoe UI", system-ui, -apple-system, sans-serif';
@@ -41,7 +41,7 @@ function wrap(ctx, text, maxW) {
 function richBlock(ctx, o, box, opt) {
   const fs = o.fs || opt.fs;
   const bold0 = (o.bold === undefined ? opt.bold : o.bold), color0 = col(o.color, opt.color);
-  const font = (r) => `${r.i || o.italic ? "italic " : ""}${r.b || bold0 ? "700" : opt.weight || "400"} ${fs}px ${FONT}`;
+  const font = (r) => `${r.i || o.italic ? "italic " : ""}${r.b || bold0 ? "700" : opt.weight || "400"} ${fs}px ${r.f || o.font ? fontCss(r.f || o.font) : FONT}`;
   const maxW = Math.max(10, box.w - (opt.padX || 0) * 2);
   const lines = [];
   for (const para of richRuns(o.html)) {
@@ -93,7 +93,7 @@ function textBlock(ctx, o, box, opt) {
     return richBlock(ctx, Object.assign({}, o, { html }), box, opt);
   }
   const fs = o.fs || opt.fs;
-  ctx.font = `${(o.bold === undefined ? opt.bold : o.bold) ? "700" : opt.weight || "400"} ${fs}px ${FONT}`;
+  ctx.font = `${(o.bold === undefined ? opt.bold : o.bold) ? "700" : opt.weight || "400"} ${fs}px ${o.font ? fontCss(o.font) : FONT}`;
   ctx.fillStyle = col(o.color, opt.color);
   ctx.textBaseline = "middle";
   const align = o.align || opt.align || "center";
@@ -207,10 +207,19 @@ export async function toCanvas(list, all, opt) {
   const F = forest(all);
   for (const o of rest) {
     if (o.t !== "node") continue;
+    // a root's own lines: a timeline's spine, fishbone bones, table cells
+    if (!F.parentOf.get(o.id) && Array.isArray(o._extra)) {
+      for (const e of o._extra) {
+        if (e.fill) { ctx.fillStyle = col(e.color, "#9aa3af"); ctx.fill(new Path2D(e.d)); }
+        else { ctx.strokeStyle = col(e.color, "#9aa3af"); ctx.lineWidth = e.width || 2; ctx.lineCap = "round"; ctx.stroke(new Path2D(e.d)); }
+      }
+    }
     const p = F.parentOf.get(o.id) && all.get(F.parentOf.get(o.id));
     if (!p || !inList.has(p.id) || p._hidden) continue;
+    const d = o._link === undefined ? branchPath(p, o, o._dir || 1) : o._link;
+    if (!d) continue;
     ctx.strokeStyle = col(o._color, "#9aa3af"); ctx.lineWidth = 2.5; ctx.lineCap = "round";
-    ctx.stroke(new Path2D(branchPath(p, o, o._dir || 1)));
+    ctx.stroke(new Path2D(d));
   }
 
   for (const o of rest) {
@@ -244,7 +253,14 @@ export async function toCanvas(list, all, opt) {
       ctx.stroke(new Path2D(penPath(o.pts || [])));
     } else if (o.t === "node") {
       const d = o._depth || 0, bc = col(o._color, "#c3cad4");
-      roundRect(ctx, o.x, o.y, o.w, o.h, d === 0 ? 12 : 9);
+      roundRect(ctx, o.x, o.y, o.w, o.h, o._pill ? o.h / 2 : d === 0 ? 12 : 9);
+      if (o._pill) {
+        // a main topic of an org chart, timeline or fishbone: filled in its branch colour
+        ctx.fillStyle = bc; ctx.fill();
+        textBlock(ctx, o, o, { fs: 14, weight: "600", color: "#ffffff", align: "left", padX: 16, padY: 4 });
+        ctx.restore();
+        continue;
+      }
       if (d === 0) {
         ctx.fillStyle = col(o.fill, "#1f2430"); ctx.fill();
       } else {
@@ -382,6 +398,8 @@ export function remap(objects, srcMap) {
     o.id = ids.get(o.id);
     // a copied group is a new group of its own
     if (o.g) { if (!groups.has(o.g)) groups.set(o.g, uid("g")); o.g = groups.get(o.g); }
+    // a copy is not the same task (nor tied to the same list)
+    delete o.task; delete o.tlist;
     for (const k of ["rev", "cby", "cat", "uby", "uat"]) delete o[k];
     if (o.t === "node") o.parent = o.parent && ids.has(o.parent) ? ids.get(o.parent) : null;
     if (o.t === "conn") {

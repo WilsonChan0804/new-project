@@ -300,6 +300,26 @@ export function penPath(flat) {
    are let through, whatever is pasted or typed: b, i, u, br, div, and a span
    or font that sets a colour, bold, italic or underline. */
 export const RICH = new Set(["sticky", "text", "shape"]);
+
+/* The fonts a board offers (key -> CSS family, with fallbacks). */
+export const FONTS = [
+  ["", "Default (Segoe UI)", '"Segoe UI", system-ui, -apple-system, sans-serif'],
+  ["arial", "Arial", "Arial, Helvetica, sans-serif"],
+  ["georgia", "Georgia", "Georgia, serif"],
+  ["times", "Times New Roman", '"Times New Roman", Times, serif'],
+  ["courier", "Courier New", '"Courier New", Courier, monospace'],
+  ["jhenghei", "微軟正黑體 JhengHei", '"Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif'],
+  ["mingliu", "新細明體 PMingLiU", 'PMingLiU, "MingLiU", "Songti TC", "Noto Serif TC", serif'],
+  ["hand", "Handwriting", '"Segoe Print", "Comic Sans MS", "Bradley Hand", cursive'],
+];
+export const fontCss = (key) => (FONTS.find((f) => f[0] === (key || "")) || FONTS[0])[2];
+/* a font name the editor wrote (font face / font-family) -> one of ours, or "" */
+function fontKeyOf(v) {
+  const s = String(v || "").toLowerCase();
+  if (!s) return "";
+  const f = FONTS.find((x) => x[0] && (s.includes(x[0]) || x[2].toLowerCase().split(",")[0].replace(/"/g, "").trim() === s.replace(/"/g, "").split(",")[0].trim()));
+  return f ? f[0] : "";
+}
 const COLOR_RE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i;
 export function cleanRich(html) {
   const tpl = document.createElement("template");
@@ -320,8 +340,10 @@ export function cleanRich(html) {
       else if (t === "SPAN" || t === "FONT") {
         const st = n.style || {};
         const c = String(st.color || n.getAttribute("color") || "").trim();
+        const fk = fontKeyOf(st.fontFamily || n.getAttribute("face"));
         el = document.createElement("span");
         if (c && COLOR_RE.test(c)) el.style.color = c;
+        if (fk) { el.style.fontFamily = fontCss(fk); el.dataset.f = fk; }
         if (st.fontWeight === "bold" || Number(st.fontWeight) >= 600) el.style.fontWeight = "700";
         if (st.fontStyle === "italic") el.style.fontStyle = "italic";
         if (/underline/.test(st.textDecorationLine || st.textDecoration || "")) el.style.textDecoration = "underline";
@@ -354,6 +376,7 @@ export function richRuns(html) {
       if (n.style && n.style.fontWeight === "700") g.b = true;
       if (n.style && n.style.fontStyle === "italic") g.i = true;
       if (n.style && /underline/.test(n.style.textDecoration || "")) g.u = true;
+      if (n.dataset && n.dataset.f) g.f = n.dataset.f;
       const block = n.tagName === "DIV";
       if (block && lines[lines.length - 1].length) lines.push([]);
       walk(n, g);
