@@ -57,7 +57,7 @@ SHOTS = [
         ("#lwk-send-task", "+ Task: keep this sheet on a task", "+ Task：將呢張圖放落一個 task"),
         ("#view-menu-btn", "View: split, compare two versions, sync, links between sheets", "View：分割、比較兩個版本、同步、圖則之間嘅連結"),
         ("#undo", "Undo / redo", "復原 / 重做"),
-        ("#zoombar", "The zoom bar: Snap, rotate, zoom out / in (100% is the sheet fitting the width), Fit", "縮放列：Snap、旋轉、縮小 / 放大（100% 即係張圖啱啱夠闊）、Fit"),
+        ("#zoombar", "The zoom bar: Snap, rotate, zoom out / in, the zoom (100% is the sheet's actual size - click it for Fit page, presets or a typed %), Fit", "縮放列：Snap、旋轉、縮小 / 放大、縮放 %（100% 即係圖紙實際尺寸 - 撳佢揀 Fit page、預設或者自己打 %）、Fit"),
         ("#page", "The sheet, with its issues and comments - click one to open it", "圖則，連 issue 同 comment - 撳一個打開", {"at": "tl"}),
         ("#filter-tabs", "All / Issues / Comments / Queries", "全部 / Issues / Comments / Queries"),
         ("#show-markups", "Show or hide the mark-ups on the drawing", "顯示或隱藏圖上嘅 mark-up"),

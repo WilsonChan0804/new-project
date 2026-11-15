@@ -109,8 +109,8 @@
     },
     {
      "sel": "#zoombar",
-     "en": "The zoom bar: Snap, rotate, zoom out / in (100% is the sheet fitting the width), Fit",
-     "yue": "縮放列：Snap、旋轉、縮小 / 放大（100% 即係張圖啱啱夠闊）、Fit"
+     "en": "The zoom bar: Snap, rotate, zoom out / in, the zoom (100% is the sheet's actual size - click it for Fit page, presets or a typed %), Fit",
+     "yue": "縮放列：Snap、旋轉、縮小 / 放大、縮放 %（100% 即係圖紙實際尺寸 - 撳佢揀 Fit page、預設或者自己打 %）、Fit"
     },
     {
      "sel": "#page",

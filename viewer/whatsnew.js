@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-18", date: "15 Nov 2026",
+    items: [
+      "**Sheets zoom as in PDF-XChange:** 100% now means the sheet at its actual size (it used to mean fitting the window's width, so the same sheet read differently on each screen). Click the % for **Actual size**, **Fit width**, **Fit page**, 25-400% or a % you type. **Fit** and Ctrl+0 still fit the width.",
+    ],
+  },
+  {
     version: "2027-01-17", date: "14 Nov 2026",
     items: [
       "**Comment Styles Palette** (as in PDF-XChange): the styles are tiles drawn in their own line and fill, with a ready-made set - Red, Purple, Indigo, Blue, Green, Yellow, filled and as strokes, and Black Stroke - then yours and the project's. **\u25a6 Palette** opens them all in a window you can keep open and drag anywhere.",

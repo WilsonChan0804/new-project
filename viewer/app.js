@@ -3489,6 +3489,10 @@ function wirePointer() {
       ev.preventDefault();
       if (ev.shiftKey) ungroupSelection(); else groupSelection();
     }
+    else if ((ev.ctrlKey || ev.metaKey) && ev.key === "0" && S.page) {
+      ev.preventDefault();                                   // the sheet, not the browser's own zoom
+      fit();
+    }
     else if ((ev.ctrlKey || ev.metaKey) && keyOf(ev) === "h") {
       ev.preventDefault();
       openFindReplace();
@@ -3760,10 +3764,15 @@ function takeBmp(key) {
 }
 /* The zoom as people read it: 100% is the sheet fitting the window's width
    (the paper's own size in points says nothing on a screen). */
+/* The zoom as in PDF-XChange: 100% is the sheet at its actual size (an
+   inch of paper is an inch on the screen at the screen's set DPI). pdf.js's
+   scale 1 is a PDF point (1/72 in) to a CSS pixel (1/96 in), so actual
+   size is 96/72. */
+const ACTUAL = 96 / 72;
+function zoomPct() { return S.scale / ACTUAL * 100; }
 function zoomText() {
-  if (!S.page) return Math.round(S.scale * 100) + "%";
-  const pct = Math.round(S.scale / fitScaleFor(S.page) * 100);
-  return pct + "%";
+  const p = zoomPct();
+  return (p < 10 ? p.toFixed(1) : Math.round(p)) + "%";
 }
 function fitScaleFor(page) {
   const v1 = page.getViewport({ scale: 1, rotation: 0 });
@@ -4631,6 +4640,52 @@ function fit() {
   const v1 = S.page.getViewport({ scale: 1, rotation: S.rotation });
   S.scale = Math.max(0.1, (sc.clientWidth - 40) / v1.width);
   renderPage();
+}
+
+/* the whole sheet in view, its width and its height */
+function fitPage() {
+  const sc = $("#scroll");
+  if (!S.page || !sc) return;
+  const v1 = S.page.getViewport({ scale: 1, rotation: S.rotation });
+  S.scale = Math.max(0.08, Math.min((sc.clientWidth - 40) / v1.width, (sc.clientHeight - 40) / v1.height));
+  renderPage();
+  sc.scrollTo({ left: 0, top: 0 });
+}
+/* to a given % of the actual size, keeping the middle of the view */
+function zoomToPct(p) {
+  if (!S.page || !(p > 0)) return;
+  zoomAt((Math.max(6, Math.min(900, p)) / 100 * ACTUAL) / S.scale);
+}
+function openZoomMenu(anchor) {
+  const old = document.getElementById("zoom-menu");
+  if (old) { old.remove(); return; }
+  const m = document.createElement("div");
+  m.id = "zoom-menu";
+  m.innerHTML = `<button data-z="actual"><b>Actual size</b><small>100%</small></button>`
+    + `<button data-z="width"><b>Fit width</b></button><button data-z="page"><b>Fit page</b></button><hr>`
+    + [25, 50, 75, 100, 150, 200, 400].map((p) => `<button data-z="${p}">${p}%</button>`).join("")
+    + `<hr><label>Zoom <input type="number" min="6" max="900" step="1" value="${Math.round(zoomPct())}"> %</label>`;
+  document.body.appendChild(m);
+  const r = anchor.getBoundingClientRect();
+  m.style.left = Math.max(6, Math.min(innerWidth - m.offsetWidth - 6, r.left + r.width / 2 - m.offsetWidth / 2)) + "px";
+  m.style.top = (r.top - m.offsetHeight - 6 > 6 ? r.top - m.offsetHeight - 6 : r.bottom + 6) + "px";
+  const close = () => { m.remove(); document.removeEventListener("pointerdown", away, true); };
+  const away = (ev) => { if (!m.contains(ev.target) && ev.target !== anchor) close(); };
+  document.addEventListener("pointerdown", away, true);
+  m.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-z]");
+    if (!b) return;
+    const z = b.dataset.z;
+    if (z === "actual") zoomToPct(100); else if (z === "width") fit(); else if (z === "page") fitPage(); else zoomToPct(Number(z));
+    close();
+  });
+  const inp = m.querySelector("input");
+  inp.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "Enter") { zoomToPct(Number(inp.value)); close(); }
+    if (ev.key === "Escape") close();
+  });
+  inp.focus(); inp.select();
 }
 
 function zoomAt(factor, clientX, clientY) {
@@ -7479,7 +7534,15 @@ function wireChrome() {
 
   $("#zoom-in").addEventListener("click", () => zoomAt(1.25));
   $("#zoom-out").addEventListener("click", () => zoomAt(0.8));
-  $("#zoom-fit").addEventListener("click", fit);
+  $("#zoom-fit").addEventListener("click", () => {
+    // a phone has no % to click: Fit goes between the width and the whole page
+    if (matchMedia("(max-width: 700px)").matches && S.page && Math.abs(S.scale - fitScaleFor(S.page)) < 0.002) fitPage(); else fit();
+  });
+  const zl = $("#zoom-label");
+  zl.setAttribute("role", "button"); zl.tabIndex = 0;
+  zl.title = "Zoom: 100% is the sheet's actual size (as in PDF-XChange). Click for Actual size, Fit width, Fit page or a % of your own. Ctrl+0: fit the width";
+  zl.addEventListener("click", () => openZoomMenu(zl));
+  zl.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openZoomMenu(zl); } });
   $("#poly-finish").addEventListener("click", () => S.endPoly && S.endPoly());
   $("#poly-curve").addEventListener("click", () => {
     S.polyCurve = !S.polyCurve;
