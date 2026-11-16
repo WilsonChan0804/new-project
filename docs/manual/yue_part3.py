@@ -75,6 +75,7 @@ PART = [
     ]),
     H3('Export'),
     UL([
+        '**冇 markup 嘅 PDF：** 喺 PDF 視窗 Markups 揀 **None**，就係 Revit 出嘅乾淨圖則（一張就係佢原本個檔案，幾張就合成一個 PDF）；**Files > This sheet as PDF (clean)** 或者喺圖則清單右撳 > **Download ... as PDF (clean, no markups)** 一撳就得。',
         '**PDF**（download）export 呢張 sheet、所有有 markup 嘅 sheet，或者全部 sheet；markup 可以係 **Editable**（Bluebeam、Acrobat 或 PDF-XChange 用嘅真 PDF comment）或者 **Flattened**，100、150 或 200 dpi，可以喺最尾加 issue 報告。',
         '**JSON**（download / upload）儲存或者載入所有 comment 同 issue，用嚟 backup 或者搬去另一個 project。',
         '**BCF** export sheet 嘅 issue 俾 Revit 或 Navisworks（睇「Issue 同 BCF」）。',

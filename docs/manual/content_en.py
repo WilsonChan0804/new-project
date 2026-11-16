@@ -457,6 +457,7 @@ DOC = [
     ]),
     H3('Exporting'),
     UL([
+        '**PDF without markups:** choose Markups **None** in the PDF window for the clean drawings as exported from Revit (one sheet comes down as its own file, several as one PDF); **Files > This sheet as PDF (clean)** and right-click a sheet in the list > **Download ... as PDF (clean, no markups)** do the same in one click.',
         '**PDF** (download) exports this sheet, every sheet with markups, or all sheets, with markups either **Editable** (real PDF comments for Bluebeam, Acrobat or PDF-XChange) or **Flattened**, at 100, 150 or 200 dpi, optionally with an issue report at the end.',
         '**JSON** (download / upload) saves or loads all comments and issues, for backup or moving between projects.',
         '**BCF** exports the sheet issues for Revit or Navisworks (see Issues and BCF).',

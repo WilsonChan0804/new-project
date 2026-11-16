@@ -5401,7 +5401,8 @@ function wireSetTools() {
   // after a move or hide with sheets ticked: the choice is cleared, ready for the next
   const afterAction = () => { if (PICK.on) { PICK.sel.clear(); PICK.last = null; renderSheets(); } };
   SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, apply: applySheetMeta, status, startPick,
-            list: () => setSheets(), afterAction })
+            list: () => setSheets(), afterAction,
+            cleanPdf: (nums) => exportCleanPdf(nums.map((n) => S.manifest.sheets.find((x) => x.number === n)).filter(Boolean)) })
     .then(() => { if (S.manifest) renderSheets(); });
   const gb = document.getElementById("sheet-groups-btn");
   if (gb) gb.addEventListener("click", (ev) => { ev.stopPropagation(); SG.groupsMenu(gb, setSheets()); });
@@ -6046,7 +6047,7 @@ function wireSplit() {
    sharpness. The drawing itself is rasterised: merging vector PDFs needs a
    PDF library, and none is available offline. At 150 dpi an A1 sheet is
    crisp enough to read every dimension. */
-async function renderSheetForPdf(sheet, dpi) {
+async function renderSheetForPdf(sheet, dpi, clean) {
   const doc = await pdfjsLib.getDocument(Store.dataUrl(sheet.pdf)).promise;
   const page = await doc.getPage(sheet.page || 1);
   const v1 = page.getViewport({ scale: 1 });
@@ -6070,7 +6071,7 @@ async function renderSheetForPdf(sheet, dpi) {
   const saved = { sheet: S.sheet, page: S.page, viewport: S.viewport,
                   sel: S.sel, hide: S.hideMarkups, done: S.hideDone, draft: S.draft };
   S.sheet = sheet; S.page = page; S.viewport = vp;
-  S.sel = []; S.hideMarkups = false; S.hideDone = false; S.draft = null;
+  S.sel = []; S.hideMarkups = !!clean; S.hideDone = false; S.draft = null;
   const svg = $("#overlay");
   const prevW = svg.getAttribute("width"), prevH = svg.getAttribute("height");
   svg.setAttribute("width", canvas.width);
@@ -6467,6 +6468,53 @@ async function exportPdfVector(sheets, dpi, withReport) {
            issues: entries.length, title: title };
 }
 
+/* The drawings only - no markups, no area links, no issue report. One
+   sheet that is a whole PDF file of its own comes down byte for byte, as
+   exported from Revit; several are put together page by page. */
+const fileSafe = (t) => String(t || "sheet").replace(/[^\w\u4e00-\u9fff-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 120) || "sheet";
+async function exportCleanPdf(sheets) {
+  sheets = sheets.filter((s) => s && s.pdf);
+  if (!sheets.length) { status("Open a sheet first."); return; }
+  const one = sheets.length === 1 ? sheets[0] : null;
+  const name = one ? fileSafe(one.number + "_" + (one.name || "")) + ".pdf"
+    : fileSafe((S.manifest.source && S.manifest.source.title) || "Sheets") + ".pdf";
+  try {
+    status(one ? `Downloading ${one.number} ...` : `Putting ${sheets.length} sheets together ...`);
+    const P = await pdfLib();
+    if (one) {
+      const bytes = new Uint8Array(await (await fetch(Store.dataUrl(one.pdf))).arrayBuffer());
+      let whole = (one.page || 1) === 1;
+      // a file holding several sheets: only this one's page
+      if (whole && P) { try { whole = (await P.PDFDocument.load(bytes, { ignoreEncryption: true })).getPageCount() === 1; } catch (e) { /* the file as it is */ } }
+      if (whole || !P) {
+        download(new Blob([bytes], { type: "application/pdf" }), name, "PDF");
+        status(`${one.number} downloaded - the drawing only, no markups.`);
+        return;
+      }
+    }
+    if (!P) throw new Error("the PDF tools did not load");
+    const out = await P.PDFDocument.create();
+    out.setTitle(one ? one.number + " " + (one.name || "") : ((S.manifest.source && S.manifest.source.title) || "Sheets"));
+    out.setProducer("LWK Viewer");
+    for (let i = 0; i < sheets.length; i++) {
+      const sh = sheets[i];
+      status(`Adding ${sh.number} (${i + 1} of ${sheets.length}) ...`);
+      const bytes = new Uint8Array(await (await fetch(Store.dataUrl(sh.pdf))).arrayBuffer());
+      const src = await P.PDFDocument.load(bytes, { ignoreEncryption: true });
+      const [page] = await out.copyPages(src, [(sh.page || 1) - 1]);
+      out.addPage(page);
+    }
+    download(new Blob([await out.save()], { type: "application/pdf" }), name, "PDF");
+    status(`PDF downloaded: ${sheets.length} sheet(s), the drawings only - no markups.`);
+  } catch (e) {
+    // a drawing pdf-lib cannot read still comes down, as a picture
+    showError("clean pdf", e);
+    const pages = [];
+    for (const sh of sheets) { try { pages.push(await renderSheetForPdf(sh, 150, true)); } catch (err) { showError("pdf " + sh.number, err); } }
+    if (pages.length) { download(buildPdf(pages, { title: "Sheets" }), name, "PDF"); status(`PDF downloaded as pictures (${pages.length} sheet(s)), no markups.`); }
+  }
+}
+
 async function exportPdf() {
   const withMarkup = new Set(S.items.filter((i) => i.sheet).map((i) => i.sheet));
   const scope = document.getElementById("pdf-scope").value;
@@ -6481,6 +6529,7 @@ async function exportPdf() {
     return;
   }
   $("#pdf-back").hidden = true;
+  if ((document.getElementById("pdf-markups") || {}).value === "none") return exportCleanPdf(sheets);
 
   const withReport = document.getElementById("pdf-report").checked;
   if (await pdfLib()) {
@@ -7660,6 +7709,18 @@ function wireChrome() {
 
   $("#export-pdf").addEventListener("click", () => { $("#pdf-back").hidden = false; });
   $("#pdf-go").addEventListener("click", () => exportPdf().catch((e) => showError("pdf", e)));
+  // Markups: editable, flattened or none (the clean drawing) - kept on this device
+  const pm = $("#pdf-markups");
+  const paintPm = () => {
+    const none = pm.value === "none";
+    $("#pdf-dlg h3").textContent = none ? "Export PDF" : "Export PDF with markups";
+    for (const id of ["pdf-dpi", "pdf-report"]) { const e = document.getElementById(id); e.disabled = none; e.closest("label").style.opacity = none ? ".45" : ""; }
+  };
+  try { const v = localStorage.getItem("lwk-sheets:pdf-markups"); if (v && [...pm.options].some((o) => o.value === v)) pm.value = v; } catch (e) {}
+  pm.addEventListener("change", () => { try { localStorage.setItem("lwk-sheets:pdf-markups", pm.value); } catch (e) {} paintPm(); });
+  paintPm();
+  const cl = document.getElementById("export-clean");
+  if (cl) cl.addEventListener("click", () => exportCleanPdf(S.sheet ? [S.sheet] : []).catch((e) => showError("clean pdf", e)));
   $("#pdf-cancel").addEventListener("click", () => { $("#pdf-back").hidden = true; });
   // A PDF drawing: from this PC (the usual picker) or from Folders
   $("#import-pdf-btn").addEventListener("click", async () => {

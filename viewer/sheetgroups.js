@@ -316,7 +316,7 @@ export async function hide(numbers, on) {
 
 /* right-click a sheet (or the sheets chosen with Select) */
 export function sheetMenu(ev, s, chosen) {
-  if (!M.can_group && !M.can_hide) return;
+  if (!M.can_group && !M.can_hide && !(CTX && CTX.cleanPdf)) return;
   ev.preventDefault();
   // with sheets ticked (Move / hide sheets): all of them, the one clicked too
   const nums = chosen && chosen.length ? [...new Set(chosen.concat([s.number]))] : [s.number];
@@ -324,6 +324,8 @@ export function sheetMenu(ev, s, chosen) {
   const groups = M.groups.filter((g) => (g.set || "") === set);
   const n = nums.length > 1 ? `${nums.length} sheets` : `"${s.number}"`;
   openMenu(ev.clientX, ev.clientY, [
+    ...(CTX && CTX.cleanPdf ? [{ label: `Download ${esc(n)} as PDF (clean, no markups)`, action: () => CTX.cleanPdf(nums) },
+      ...(M.can_group || M.can_hide ? ["-"] : [])] : []),
     ...(M.can_group ? [
       ...groups.map((g) => ({ label: `Move ${esc(n)} to ${esc(g.name)}`, action: () => moveTo(nums, g.id) })),
       { label: `Move ${esc(n)} to a new group ...`, action: () => newGroup(nums) },

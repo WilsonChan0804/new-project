@@ -41,6 +41,8 @@
     <input id="import-cad" type="file" accept=".dwg,.dxf,.zip" multiple hidden>
     <button id="import-cad-btn" class="ghost" hidden>CAD</button>
     <span class="hdr-sep"></span>
+    <button id="export-clean" class="ghost" data-icon="download" hidden
+      title="Download this sheet's PDF without markups">PDF (clean)</button>
     <button id="export-json" class="ghost" data-icon="download"
       title="Download all comments and issues as a JSON file">JSON</button>
     <button id="import-btn" class="ghost" data-icon="upload"
@@ -414,6 +416,7 @@
       <div>
         <div class="files-title">Download</div>
         <button data-go="export-pdf"><b>Sheets as PDF</b><span>with their markups - this sheet, sheets with markups, or all</span></button>
+        <button data-go="export-clean"><b>This sheet as PDF (clean)</b><span>the drawing only, no markups - as exported from Revit</span></button>
         <button data-go="export-json"><b>Comments and issues (JSON)</b><span>everything on this project, to keep or move</span></button>
         <button data-go="export-bcf"><b>Issues as BCF</b><span>for Revit, Navisworks, BIMcollab</span></button>
       </div>
@@ -463,6 +466,7 @@
       <select id="pdf-markups">
         <option value="editable" selected>Editable - real PDF comments, can be moved and edited</option>
         <option value="flat">Flattened - drawn into the page, cannot be changed</option>
+        <option value="none">None - the clean drawing, as exported from Revit</option>
       </select></label>
     <label>Resolution for flattened markups
       <select id="pdf-dpi">

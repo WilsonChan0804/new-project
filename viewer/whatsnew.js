@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-19", date: "16 Nov 2026",
+    items: [
+      "**PDF without markups:** in **Files > Sheets as PDF** choose Markups **None** for the clean drawings as exported from Revit, or use **Files > This sheet as PDF (clean)**, or right-click sheets in the list > **Download as PDF (clean)**. One sheet comes down as its own file, unchanged.",
+    ],
+  },
+  {
     version: "2027-01-18", date: "15 Nov 2026",
     items: [
       "**Sheets zoom as in PDF-XChange:** 100% now means the sheet at its actual size (it used to mean fitting the window's width, so the same sheet read differently on each screen). Click the % for **Actual size**, **Fit width**, **Fit page**, 25-400% or a % you type. **Fit** and Ctrl+0 still fit the width.",
