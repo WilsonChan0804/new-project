@@ -1373,6 +1373,7 @@ function placeSelbar(allPx) {
       + `<button data-a="xform" title="A box with handles to resize it">Resize</button>`
       + `<button data-a="copy">Copy</button>`
       + `<button data-a="match" title="Copy this one's look (and issue details) onto others">Match</button>`
+      + `<button data-a="move" title="Move to another sheet">Move</button>`
       + `<button data-a="del" class="danger">Delete</button>`
       + `<button data-a="props" class="sb-ic" title="Properties" aria-label="Properties">⋯</button>`
       + `<button data-a="x" class="sb-ic" title="Let go of the selection" aria-label="Let go of the selection">×</button>`;
@@ -1385,6 +1386,7 @@ function placeSelbar(allPx) {
       const one = S.sel.length === 1 && S.items.find((x) => x.id === S.sel[0]);
       if (a === "del") deleteSelection();
       else if (a === "props") PROPS.open();
+      else if (a === "move") moveItemsToSheet(S.sel.slice());
       else if (a === "x") select([], false);
       else if (a === "copy") copySelection();
       else if (a === "xform") startTransform();
@@ -2206,10 +2208,15 @@ const LAYERS = {
     try { return new Set(JSON.parse(localStorage.getItem(this.key("hidden-layers")) || "[]")); } catch (e) { return new Set(); }
   },
   setHidden(set) { try { localStorage.setItem(this.key("hidden-layers"), JSON.stringify([...set])); } catch (e) {} S.hiddenLayers = set; },
+  // layers made here, kept on this device per project (an empty one survives a reload)
+  local() { try { return JSON.parse(localStorage.getItem(this.key("extra-layers")) || "[]"); } catch (e) { return []; } },
+  addLocal(n) { const l = new Set(this.local()); l.add(n); try { localStorage.setItem(this.key("extra-layers"), JSON.stringify([...l])); } catch (e) {} },
+  removeLocal(n) { try { localStorage.setItem(this.key("extra-layers"), JSON.stringify(this.local().filter((x) => x !== n))); } catch (e) {} },
   all() {
     const names = new Set(["General", this.current()]);
     for (const it of S.items || []) if (!it.deleted) names.add(it.layer || "General");
     for (const n of this.extra) names.add(n);
+    for (const n of this.local()) names.add(n);
     return [...names].sort((a, b) => (a === "General" ? -1 : b === "General" ? 1 : a.localeCompare(b)));
   },
   extra: new Set(),
@@ -2265,6 +2272,7 @@ function wireLayers() {
       v = (prompt("Name of the new layer:") || "").trim();
       if (!v) { renderLayerPick(); return; }
       LAYERS.extra.add(v);
+      LAYERS.addLocal(v);
     }
     LAYERS.setCurrent(v);
     // selected markups move to the chosen layer
@@ -2284,26 +2292,50 @@ function wireLayers() {
 }
 
 /* The markup layers, as in Photoshop: an eye each (shown for you, on this
-   device), Only this, All on / All off. The drawing, the list and the PDF
-   window follow. */
-function openLayersPop(anchor) {
+   device), Only this, All on / All off; + New layer; ▸ opens a layer's
+   markups on this sheet, which drag onto another layer (ticked ones go
+   together); ⇥ moves the drawing's selection onto a layer; 🗑 removes a
+   layer nothing is on. The drawing, the list and the PDF window follow. */
+const LP_OPEN = new Set();
+function openLayersPop(anchor, keep) {
   const old = document.getElementById("layers-pop");
-  if (old) { old.remove(); return; }
-  const counts = new Map();
-  for (const it of S.items || []) if (!it.deleted && !NOT_HERE.has(it.placement)) counts.set(layerOf(it), (counts.get(layerOf(it)) || 0) + 1);
-  const pop = document.createElement("div");
+  if (old && !keep) { old.remove(); return; }
+  const pop = old || document.createElement("div");
   pop.id = "layers-pop";
+  const ticked = new Set();
   const eye = (on) => on
     ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
     : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/></svg>';
+  const q = (n) => String(n).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const adminLayer = (n) => !!(S.layerRules && S.layerRules.layers && S.layerRules.layers[n]);
+  const kind = (t) => (MK.TOOLS.find((x) => x.id === t) || {}).label || (t ? t.charAt(0).toUpperCase() + t.slice(1).replace(/[-_]/g, " ") : "Markup");
+  const label = (it) => (it.issue ? `#${it.issue.number || "?"} ${it.issue.title || "Issue"}` : (it.text || kind(it.type))) + (it.author ? " \u00b7 " + it.author : "");
   const paint = () => {
-    const cur = LAYERS.current();
+    const counts = new Map();
+    for (const it of S.items || []) if (!it.deleted && !NOT_HERE.has(it.placement)) counts.set(layerOf(it), (counts.get(layerOf(it)) || 0) + 1);
+    const here = (n) => (S.items || []).filter((it) => !it.deleted && S.sheet && it.sheet === S.sheet.number && !NOT_HERE.has(it.placement) && layerOf(it) === n);
+    const cur = LAYERS.current(), nsel = (S.sel || []).length;
     pop.innerHTML = `<div class="lp-head">Markup layers <span class="muted">(shown for you)</span></div>`
+      + `<form class="lp-new"><input type="text" maxlength="60" placeholder="New layer name" aria-label="New layer name"><button type="submit">+ New layer</button></form>`
       + LAYERS.all().map((n) => {
-        const on = !S.hiddenLayers.has(n), q = n.replace(/"/g, "&quot;");
-        return `<div class="lp-row${on ? "" : " off"}" data-l="${q}"><button type="button" class="lp-eye" data-eye="${q}" title="${on ? "Hide" : "Show"} this layer">${eye(on)}</button>`
-          + `<span class="lp-n">${n.replace(/</g, "&lt;")}${n === cur ? ' <small class="muted">current</small>' : ""}</span>`
-          + `<span class="muted lp-c">${counts.get(n) || 0}</span><button type="button" class="lp-solo" data-solo="${q}" title="Show only this layer">Only</button></div>`;
+        const on = !S.hiddenLayers.has(n), c = counts.get(n) || 0, ed = layerEditable(n), open = LP_OPEN.has(n);
+        const canRm = n !== "General" && !c && (!adminLayer(n) || isAdmin());
+        const rmTip = n === "General" ? "General is always there" : c ? `${c} markup(s) are on it - move them first` : adminLayer(n) && !isAdmin() ? "Set by a project admin" : "Remove this empty layer";
+        let h = `<div class="lp-row${on ? "" : " off"}${ed ? "" : " locked"}" data-l="${q(n)}">`
+          + `<button type="button" class="lp-open" data-open="${q(n)}" title="${open ? "Close" : "Show"} its markups on this sheet">${open ? "▾" : "▸"}</button>`
+          + `<button type="button" class="lp-eye" data-eye="${q(n)}" title="${on ? "Hide" : "Show"} this layer">${eye(on)}</button>`
+          + `<span class="lp-n" data-cur="${q(n)}" title="Double-click: draw on this layer">${q(n)}${n === cur ? ' <small class="muted">current</small>' : ""}${ed ? "" : " \u{1F512}"}</span>`
+          + `<span class="muted lp-c">${c}</span>`
+          + (nsel && ed ? `<button type="button" class="lp-here" data-here="${q(n)}" title="Move the ${nsel} selected markup(s) onto this layer">⇥</button>` : "")
+          + `<button type="button" class="lp-solo" data-solo="${q(n)}" title="Show only this layer">Only</button>`
+          + `<button type="button" class="lp-rm" data-rm="${q(n)}" title="${q(rmTip)}"${canRm ? "" : " disabled"}>\u{1F5D1}</button></div>`;
+        if (open) {
+          const list = here(n);
+          h += `<div class="lp-objs" data-l="${q(n)}">` + (list.length ? list.map((it) => `<div class="lp-obj" draggable="true" data-id="${q(it.id)}" title="Drag onto another layer">`
+            + `<input type="checkbox" data-tick="${q(it.id)}"${ticked.has(it.id) ? " checked" : ""}><span class="lp-on">${iconSvg(it.type, 13) || ""}</span><span class="lp-ot">${q(label(it)).slice(0, 80)}</span></div>`).join("")
+            : `<div class="lp-none muted">Nothing on this sheet</div>`) + `</div>`;
+        }
+        return h;
       }).join("")
       + `<div class="lp-foot"><button class="ghost" data-a="all">All on</button><button class="ghost" data-a="none">All off</button><button class="ghost" data-a="only">Only the current</button></div>`
       + (S.layerRules && S.layerRules.admin && S.layerRules.accounts
@@ -2314,23 +2346,82 @@ function openLayersPop(anchor) {
     S.sel = (S.sel || []).filter((id) => { const it = S.items.find((x) => x.id === id); return it && !hid.has(layerOf(it)); });
     paint(); redraw(); renderList();
   };
+  const moveTo = async (ids, target) => {
+    if (!layerEditable(target)) { status(`The layer "${target}" is locked for you.`); return; }
+    ids = ids.filter((id) => { const it = S.items.find((x) => x.id === id); return it && layerOf(it) !== target; });
+    if (!ids.length) return;
+    await bulkApply(ids, "layer", target);
+    ticked.clear();
+    renderLayerPick();
+    paint();
+  };
   paint();
-  document.body.appendChild(pop);
-  const r = anchor.getBoundingClientRect();
-  pop.style.left = Math.max(6, Math.min(innerWidth - pop.offsetWidth - 6, r.left)) + "px";
-  pop.style.top = (r.bottom + pop.offsetHeight + 8 < innerHeight ? r.bottom + 4 : Math.max(6, r.top - pop.offsetHeight - 4)) + "px";
-  pop.addEventListener("click", (e) => {
-    const t = e.target.closest("[data-eye],[data-solo],[data-a]");
+  if (!old) {
+    document.body.appendChild(pop);
+    const r = anchor.getBoundingClientRect();
+    pop.style.left = Math.max(6, Math.min(innerWidth - pop.offsetWidth - 6, r.left)) + "px";
+    pop.style.top = (r.bottom + 360 < innerHeight ? r.bottom + 4 : Math.max(6, r.top - pop.offsetHeight - 4)) + "px";
+    const away = (e) => { if (!document.body.contains(pop)) { document.removeEventListener("pointerdown", away, true); return; }
+      if (!pop.contains(e.target) && e.target !== anchor && !anchor.contains(e.target) && !e.target.closest("#ctxmenu")) { pop.remove(); document.removeEventListener("pointerdown", away, true); } };
+    setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
+  }
+  pop.onsubmit = (e) => {
+    e.preventDefault();
+    const inp = pop.querySelector(".lp-new input"), v = inp.value.trim();
+    if (!v) return;
+    if (LAYERS.all().some((n) => n.toLowerCase() === v.toLowerCase())) { inp.classList.add("bad"); status(`There is a layer "${v}" already.`); return; }
+    LAYERS.extra.add(v); LAYERS.addLocal(v); LAYERS.setCurrent(v);
+    renderLayerPick(); paint();
+    status(`Layer "${v}" made - new markups go on it.`);
+  };
+  pop.onkeydown = (e) => e.stopPropagation();
+  pop.onchange = (e) => { const t = e.target.dataset && e.target.dataset.tick; if (t) { if (e.target.checked) ticked.add(t); else ticked.delete(t); } };
+  pop.ondblclick = (e) => { const c = e.target.closest("[data-cur]"); if (c && layerEditable(c.dataset.cur)) { LAYERS.setCurrent(c.dataset.cur); renderLayerPick(); paint(); } };
+  pop.onclick = async (e) => {
+    const t = e.target.closest("[data-eye],[data-solo],[data-a],[data-open],[data-here],[data-rm]");
     if (!t) return;
-    const all = LAYERS.all();
-    if (t.dataset.eye !== undefined) { const h = new Set(S.hiddenLayers); if (h.has(t.dataset.eye)) h.delete(t.dataset.eye); else h.add(t.dataset.eye); set(h); }
-    else if (t.dataset.solo !== undefined) set(new Set(all.filter((n) => n !== t.dataset.solo)));
-    else if (t.dataset.a === "all") set(new Set());
-    else if (t.dataset.a === "none") set(new Set(all));
-    else if (t.dataset.a === "only") set(new Set(all.filter((n) => n !== LAYERS.current())));
-  });
-  const away = (e) => { if (!pop.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) { pop.remove(); document.removeEventListener("pointerdown", away, true); } };
-  setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
+    const all = LAYERS.all(), d = t.dataset;
+    if (d.eye !== undefined) { const h = new Set(S.hiddenLayers); if (h.has(d.eye)) h.delete(d.eye); else h.add(d.eye); set(h); }
+    else if (d.solo !== undefined) set(new Set(all.filter((n) => n !== d.solo)));
+    else if (d.open !== undefined) { if (LP_OPEN.has(d.open)) LP_OPEN.delete(d.open); else LP_OPEN.add(d.open); paint(); }
+    else if (d.here !== undefined) moveTo((S.sel || []).slice(), d.here);
+    else if (d.rm !== undefined && !t.disabled) {
+      const n = d.rm;
+      if (adminLayer(n) && isAdmin()) {
+        if (!confirm(`Remove the layer "${n}" for everyone on the project (its who-can-see rules go too)?`)) return;
+        const layers = Object.assign({}, S.layerRules.layers); delete layers[n];
+        try { await Store.api("/api/layers", { method: "PUT", body: JSON.stringify({ layers }) }); await loadLayerRules(); }
+        catch (err) { status("Could not remove the layer: " + err.message); return; }
+      }
+      LAYERS.extra.delete(n); LAYERS.removeLocal(n);
+      if (LAYERS.current() === n) LAYERS.setCurrent("General");
+      const h = new Set(S.hiddenLayers); h.delete(n); LAYERS.setHidden(h);
+      renderLayerPick(); paint(); redraw(); renderList();
+      status(`Layer "${n}" removed.`);
+    }
+    else if (d.a === "all") set(new Set());
+    else if (d.a === "none") set(new Set(all));
+    else if (d.a === "only") set(new Set(all.filter((n) => n !== LAYERS.current())));
+  };
+  // drag a markup (or the ticked ones) onto another layer
+  pop.ondragstart = (e) => {
+    const o = e.target.closest(".lp-obj");
+    if (!o) return;
+    const ids = ticked.has(o.dataset.id) ? [...ticked] : [o.dataset.id];
+    e.dataTransfer.setData("text/plain", JSON.stringify(ids));
+    e.dataTransfer.effectAllowed = "move";
+  };
+  pop.ondragover = (e) => { const r = e.target.closest(".lp-row, .lp-objs"); if (r) { e.preventDefault(); pop.querySelectorAll(".drop").forEach((x) => x.classList.remove("drop")); r.classList.add("drop"); } };
+  pop.ondragleave = (e) => { const r = e.target.closest(".lp-row, .lp-objs"); if (r && !r.contains(e.relatedTarget)) r.classList.remove("drop"); };
+  pop.ondrop = (e) => {
+    const r = e.target.closest(".lp-row, .lp-objs");
+    if (!r) return;
+    e.preventDefault();
+    r.classList.remove("drop");
+    let ids = [];
+    try { ids = JSON.parse(e.dataTransfer.getData("text/plain") || "[]"); } catch (err) {}
+    if (Array.isArray(ids) && ids.length) moveTo(ids, r.dataset.l);
+  };
 }
 
 /* -------------------------------------------------------- snip and paste */
@@ -2785,6 +2876,22 @@ function wirePointer() {
       "-",
       { label: "Copy", key: "Ctrl+C", action: () => copySelection() },
       { label: "Apply current style", action: () => applyStyleToSelection() },
+      "-",
+      ...(() => {
+        // the bulk actions, for what is selected on the drawing (as the list's Select)
+        const ids = S.sel.slice(), its = ids.map((id) => S.items.find((x) => x.id === id)).filter(Boolean);
+        const can = (k) => its.filter((it) => !bulkRule(it, k)).length;
+        const why = (k) => { const r = its.map((it) => bulkRule(it, k)).find(Boolean); return r || ""; };
+        const nn = (k) => (its.length > 1 ? ` (${can(k)} of ${its.length})` : "");
+        const out = [{ label: `Move ${its.length > 1 ? its.length + " " : ""}to another sheet ...`, disabled: !can("move"), title: why("move"),
+          action: () => moveItemsToSheet(its.filter((it) => !bulkRule(it, "move")).map((it) => it.id)) },
+          { label: "Archive" + nn("archive"), disabled: !can("archive"), title: why("archive"), action: () => bulkApply(ids, "archive") }];
+        if (its.some((it) => it.issue)) {
+          if (can("close")) out.push({ label: "Close" + nn("close"), action: () => bulkApply(ids, "close") });
+          if (can("endorse")) out.push({ label: "Endorse" + nn("endorse"), action: () => bulkApply(ids, "endorse") });
+        }
+        return out;
+      })(),
       ...(n === 1 && one ? [{ label: "Match properties", action: () => startMatch(one) }] : []),
       { label: "Save this look as a style ...", disabled: !one, action: () => one && saveStyleAs(one) },
       { label: "Select all on sheet", key: "Ctrl+A",
@@ -5128,6 +5235,34 @@ function showSet(name, keepSheet) {
   }
 }
 
+/* The comments and issues on each sheet, as small chips in the sheet list:
+   open issues (orange), comments (grey), and the closed issues (green) when
+   none is open. Archived and endorsed ones are not counted. */
+function paintSheetCounts() {
+  const ul = document.getElementById("sheet-list");
+  if (!ul) return;
+  const by = new Map();
+  for (const it of S.items || []) {
+    if (it.deleted || !it.sheet || NOT_HERE.has(it.placement) || it.archived || isEndorsed(it)) continue;
+    let c = by.get(it.sheet);
+    if (!c) by.set(it.sheet, c = { open: 0, done: 0, com: 0 });
+    if (it.issue) { if ((it.issue.status || "Open") === "Closed") c.done++; else c.open++; }
+    else c.com++;
+  }
+  for (const li of ul.querySelectorAll("li[data-num]")) {
+    const box = li.querySelector(".sheet-cnt");
+    if (!box) continue;
+    const c = by.get(li.dataset.num) || { open: 0, done: 0, com: 0 };
+    box.innerHTML = (c.open ? `<span class="sc sc-open">! ${c.open}</span>` : c.done ? `<span class="sc sc-done">\u2713 ${c.done}</span>` : "")
+      + (c.com ? `<span class="sc sc-com">\u{1F4AC} ${c.com}</span>` : "");
+    const parts = [];
+    if (c.open) parts.push(`${c.open} open issue${c.open > 1 ? "s" : ""}`);
+    if (c.done) parts.push(`${c.done} closed`);
+    if (c.com) parts.push(`${c.com} comment${c.com > 1 ? "s" : ""}`);
+    box.title = parts.join(", ");
+  }
+}
+
 function renderSheets() {
   paintSetBtn();
   if (S.panels && S.manifest) S.panels.autoFold("l", !S.manifest.sheets.length);
@@ -5150,9 +5285,9 @@ function renderSheets() {
         ? `<div class="tags"><span class="ext-tag">Imported</span> 2D only`
           + (s.page > 1 ? ` &middot; page ${s.page}` : "")
           + `<button class="ghost ext-ren" title="Rename this imported sheet (number and name)">&#9998;</button>`
-          + `<button class="ghost ext-del" title="Remove this imported sheet">&#10005;</button></div>`
+          + `<button class="ghost ext-del" title="Remove this imported sheet">&#10005;</button><span class="sheet-cnt"></span></div>`
         : `<div class="tags">${mapped}/${vps.length} mapped`
-          + (s.pdf ? "" : " &middot; no PDF") + "</div>");
+          + (s.pdf ? "" : " &middot; no PDF") + `<span class="sheet-cnt"></span></div>`);
     if (s.hidden) { li.classList.add("sheet-hidden"); li.title = "Hidden from the viewer (only admins see it) - right-click to show it again"; }
     if (PICK.on && pickable(s)) {
       li.classList.add("can-pick");
@@ -5238,6 +5373,7 @@ function renderSheets() {
   }
   ul.classList.toggle("picking", PICK.on);
   pickPaint(list);
+  try { paintSheetCounts(); } catch (e) {}
 }
 
 /* Select several imported sheets (Select in the Sheets heading), shift-click
@@ -5755,6 +5891,7 @@ function paintBulkBar(shownIds) {
 function renderList() {
   try { renderLayerPick(); } catch (e) {}
   try { paintOrphanChip(); } catch (e) {}
+  try { paintSheetCounts(); } catch (e) {}
   paintBulkBar([]);
   // no comments or issues on the drawings yet: the list folds away (its edge tab brings it back)
   if (S.panels) S.panels.autoFold("r", !S.items.some((it) => !it.deleted && !NOT_HERE.has(it.placement)));

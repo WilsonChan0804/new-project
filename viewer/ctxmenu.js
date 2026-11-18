@@ -55,6 +55,7 @@ export function openMenu(x, y, entries) {
     const b = document.createElement("button");
     b.className = "ctx-item" + (e.danger ? " danger" : "");
     b.disabled = !!e.disabled;
+    if (e.title) b.title = e.title;
     b.innerHTML = `<span>${e.label}</span>`
       + (e.key ? `<kbd>${e.key}</kbd>` : "");
     b.addEventListener("click", () => {

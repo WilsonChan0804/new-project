@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-21", date: "18 Nov 2026",
+    items: [
+      "**Move from the drawing:** select comments and issues on the sheet, right-click > **Move to another sheet**. The same menu archives, closes or endorses them; on a phone or iPad the selection bar has **Move**.",
+      "**A steady Top bar:** with the properties panel at the top, the bar now stays one row at a fixed height, so clicking a comment no longer moves the drawing.",
+      "**Layers panel:** make a layer there (**+ New layer**), open a layer (\u25b8) to see its markups on this sheet and drag them onto another layer (tick several to drag them together), or **\u21e5** to move the drawing's selection onto a layer. \u{1F5D1} removes a layer nothing is on.",
+      "**Counts in the sheet list:** each sheet shows its open issues (orange), comments (grey), and closed issues (green) when none is open. Archived and endorsed ones are not counted.",
+    ],
+  },
+  {
     version: "2027-01-20", date: "18 Nov 2026",
     items: [
       "**Several at once:** \u2611 Select above the issue list, tick comments and issues, then Close, Endorse, Archive, Move to sheet or change their Layer together. Each is done where you may; the rest is counted.",
