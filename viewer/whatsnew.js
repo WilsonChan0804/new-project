@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-20", date: "18 Nov 2026",
+    items: [
+      "**Several at once:** \u2611 Select above the issue list, tick comments and issues, then Close, Endorse, Archive, Move to sheet or change their Layer together. Each is done where you may; the rest is counted.",
+      "**Endorse:** a closed issue goes back to whoever raised it to **Endorse** (or reopen with a reason); endorsed issues leave the drawing and the list (**Endorsed** shows them).",
+      "**Archive** comments and issues instead of deleting them (**Archived** shows them, Restore brings them back).",
+      "**Renumbered drawings:** right-click a sheet > move all its comments and issues to another sheet. Those left on sheets no longer in the viewer show as **\u2026 on deleted sheets** - move, archive or delete them.",
+      "**Layers like Photoshop:** \u2630 Layers above the list - an eye per layer, Only, All on / off; the list follows. The PDF window chooses which layers go into the PDF.",
+    ],
+  },
+  {
     version: "2027-01-19", date: "16 Nov 2026",
     items: [
       "**PDF without markups:** in **Files > Sheets as PDF** choose Markups **None** for the clean drawings as exported from Revit, or use **Files > This sheet as PDF (clean)**, or right-click sheets in the list > **Download as PDF (clean)**. One sheet comes down as its own file, unchanged.",

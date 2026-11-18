@@ -2024,7 +2024,7 @@ def register(app, core):
             hit = _STATS.get(pid)
             if hit and hit[0] == rev and hit[1] == today:
                 return json.loads(hit[2])
-            items = [it for it in st.all_items()[1] if it.get("issue") and not it.get("deleted")]
+            items = [it for it in st.all_items()[1] if it.get("issue") and not it.get("deleted") and not it.get("archived")]
         except Exception:
             return None
         out = count_issues(items, today)

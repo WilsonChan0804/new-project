@@ -292,7 +292,7 @@ def _issues(core, w, start, end):
                 due = []
                 for it in st.all_items()[1]:
                     iss = it.get("issue") or {}
-                    if it.get("deleted") or not iss.get("due_date"):
+                    if it.get("deleted") or it.get("archived") or not iss.get("due_date"):
                         continue
                     due.append({"id": it.get("id"), "sheet": it.get("sheet") or "", "number": iss.get("number"),
                                 "title": iss.get("title") or "Issue", "status": iss.get("status") or "Open",

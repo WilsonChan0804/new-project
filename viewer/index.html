@@ -338,7 +338,12 @@
       <button id="show-markups" class="ghost i3-tog"
         title="Hide all markups">&#128065; Markups</button>
       <button id="show-queries" class="ghost i3-tog" title="Hide the query markers on the drawing">? Queries</button>
-      <button id="hide-done" class="ghost i3-tog" title="Hide resolved and closed issues (and closed queries) on the drawing">&#10003; Hide closed</button></div>
+      <button id="hide-done" class="ghost i3-tog" title="Hide resolved and closed issues (and closed queries) on the drawing">&#10003; Hide closed</button>
+      <button id="layers-chip" class="ghost i3-tog" title="Markup layers: show or hide each, as in Photoshop">&#9776; Layers</button>
+      <button id="show-endorsed" class="ghost i3-tog" title="Endorsed issues are hidden - click to show them">Endorsed</button>
+      <button id="show-archived" class="ghost i3-tog" title="Archived comments and issues are hidden - click to show them">Archived</button>
+      <button id="orphans-chip" class="ghost i3-tog warn" hidden title="Comments and issues on sheets that are no longer in the viewer">On deleted sheets</button>
+      <button id="list-pick" class="ghost i3-tog" title="Tick several comments and issues, then close, endorse, archive, move or re-layer them together">&#9745; Select</button></div>
     <div id="group-bar">
       Group
       <select id="group-by">
@@ -359,7 +364,8 @@
         <option value="">Status: all</option><option value="open-any">Open or in progress</option>
         <option value="Open">Open</option><option value="In progress">In progress</option>
         <option value="Resolved">Resolved</option><option value="Closed">Closed</option>
-        <option value="done-any">Resolved or closed</option><option value="query">With an open query</option>
+        <option value="done-any">Resolved or closed</option><option value="await-endorse">Waiting for endorsement</option>
+        <option value="endorsed">Endorsed</option><option value="query">With an open query</option>
       </select>
       <select id="sort-by" title="Order within each group">
         <option value="number">Sort: number</option><option value="newest">Newest first</option>
@@ -369,6 +375,7 @@
       </select>
     </div>
     <ul id="item-list"></ul>
+    <div id="list-bulk" hidden></div>
   </aside>
 
 </div>
@@ -468,6 +475,9 @@
         <option value="flat">Flattened - drawn into the page, cannot be changed</option>
         <option value="none">None - the clean drawing, as exported from Revit</option>
       </select></label>
+    <div id="pdf-layers-row"><div class="pdf-lh">Layers <button type="button" class="ghost" data-pl="all">All</button><button type="button" class="ghost" data-pl="none">None</button></div>
+      <div id="pdf-layers"></div>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink)"><input id="pdf-offview" type="checkbox" style="width:auto"> Include endorsed and archived</label></div>
     <label>Resolution for flattened markups
       <select id="pdf-dpi">
         <option value="100">100 dpi - small file, screen reading</option>

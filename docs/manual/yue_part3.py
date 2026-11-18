@@ -75,6 +75,11 @@ PART = [
     ]),
     H3('Export'),
     UL([
+        '**一次過處理幾個：** 撳清單上面嘅 **☑ Select**，剔 comment 同 issue（Shift+撳揀一段，**All shown** 揀晒篩選出嚟嘅），再撳 **Close**、**Endorse**、**Archive**（或者 **Restore**）、**Move to sheet ...** 或者 **Layer ▸**。只會做你有權做嘅 - 交咗俾你嘅可以 close，你提出嘅可以 endorse，你整嘅可以 archive 或者搬（project admin 全部都得）- 其餘會數埋並跳過。Archive、搬同改圖層可以 Ctrl+Z 還原。',
+        '**Endorse：** issue **Closed** 之後，提出嘅人會收到通知，喺 issue 入面見到 **Endorse**（或者 **Not right - reopen** 寫低原因）。Endorse 咗嘅 issue 會喺圖則同清單收埋；清單上面嘅 **Endorsed** 可以再顯示，狀態篩選有 **Waiting for endorsement** 同 **Endorsed**。',
+        '**Archive：** 將 comment 或者 issue 由圖則同清單收埋，但唔刪除（喺 issue 視窗、清單右撳，或者一次過幾個）；清單上面嘅 **Archived** 可以顯示返，**Restore** 就攞返出嚟。',
+        '**圖號改咗：** 喺圖則清單右撳舊嗰張 > **Move the ... comment(s) and issue(s) to another sheet**，揀新嗰張：全部會留喺紙上同一個位置。留喺已經唔喺 viewer 嘅圖則上面嘅 comment，清單上面會顯示 **… on deleted sheets**：可以搬去另一張、archive，或者（project admin）刪除。',
+        '**圖層：** 清單上面嘅 **☰ Layers** 列出每個 markup 圖層，有隻眼可以收埋或者顯示，**Only** 淨係顯示一個，**All on** / **All off**（只係你、呢部機）；圖則同清單會跟住。PDF 視窗入面 **Layers** 揀邊啲圖層放入 PDF，**Include endorsed and archived** 會連埋嗰啲。',
         '**冇 markup 嘅 PDF：** 喺 PDF 視窗 Markups 揀 **None**，就係 Revit 出嘅乾淨圖則（一張就係佢原本個檔案，幾張就合成一個 PDF）；**Files > This sheet as PDF (clean)** 或者喺圖則清單右撳 > **Download ... as PDF (clean, no markups)** 一撳就得。',
         '**PDF**（download）export 呢張 sheet、所有有 markup 嘅 sheet，或者全部 sheet；markup 可以係 **Editable**（Bluebeam、Acrobat 或 PDF-XChange 用嘅真 PDF comment）或者 **Flattened**，100、150 或 200 dpi，可以喺最尾加 issue 報告。',
         '**JSON**（download / upload）儲存或者載入所有 comment 同 issue，用嚟 backup 或者搬去另一個 project。',

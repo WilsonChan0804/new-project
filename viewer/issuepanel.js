@@ -118,6 +118,7 @@ export function ensureDialog() {
           <button id="detail-3d" class="ghost" title="Open the model at this point, on this floor">Show in 3D</button>
           <button id="detail-dismiss" class="ghost">Not an issue</button>
           <button id="detail-save">Save</button>
+          <button id="detail-archive" class="ghost" title="Take it off the drawing and the list - Show archived brings it back">Archive</button>
           <button id="detail-delete" class="ghost danger">Delete</button>
         </div>
       </div>
@@ -332,35 +333,54 @@ export function openIssue(item, opts) {
     const a = (iss.author || item.author || "").trim().toLowerCase();
     return !!a && a === (opts.author || "").trim().toLowerCase();
   };
+  /* After the fix: Resolved -> whoever raised it re-checks (and closes);
+     Closed -> whoever raised it endorses it, or reopens it with a reason.
+     An endorsed issue leaves the drawing and the list (Show endorsed). */
   const renderRecheck = () => {
     const box = $("#detail-recheck");
-    if (iss.dismissed || (iss.status || "Open") !== "Resolved") { box.hidden = true; box.className = ""; box.innerHTML = ""; return; }
+    const st = iss.status || "Open";
+    if (iss.dismissed || (st !== "Resolved" && st !== "Closed")) { box.hidden = true; box.className = ""; box.innerHTML = ""; return; }
     const by = iss.author || item.author || "whoever raised it";
-    const resolvedAt = ((iss.history || []).filter((h) => h.field === "status" && h.to === "Resolved").pop() || {}).at;
-    const waited = resolvedAt ? Math.floor((Date.now() - new Date(resolvedAt).getTime()) / 864e5) : null;
+    const atOf = (s) => ((iss.history || []).filter((h) => h.field === "status" && h.to === s).pop() || {});
+    const ago = (at) => { const d = at ? Math.floor((Date.now() - new Date(at).getTime()) / 864e5) : null; return d == null ? "" : d ? d + " day" + (d === 1 ? "" : "s") + " ago" : "today"; };
     box.hidden = false;
     box.className = "recheck";
-    box.innerHTML = raiserIsMe()
-      ? `<b>Re-check</b><span>This is marked Resolved${waited != null ? ` (${waited ? waited + " day" + (waited === 1 ? "" : "s") + " ago" : "today"})` : ""}. You raised it - is it fixed?</span>`
-        + `<button type="button" class="rc-ok">&#10003; Fixed - close it</button><button type="button" class="ghost rc-no">Not fixed - reopen</button>`
-      : `<b>Waiting for re-check</b><span>Resolved${waited != null ? ` ${waited ? waited + " day" + (waited === 1 ? "" : "s") + " ago" : "today"}` : ""}: ${esc(by)}, who raised it, checks the fix and closes it.</span>`;
-    const post = async (text, status, ok) => {
+    if (st === "Closed" && iss.endorsed) {
+      box.className = "recheck endorsed";
+      box.innerHTML = `<b>&#10003; Endorsed</b><span>by ${esc(iss.endorsed.by || by)}${iss.endorsed.at ? ", " + esc(ago(iss.endorsed.at)) : ""}. It is hidden from the drawing and the list (Show endorsed brings it back).</span>`;
+      return;
+    }
+    if (st === "Closed") {
+      const c = atOf("Closed");
+      box.innerHTML = raiserIsMe() || opts.isAdmin
+        ? `<b>Endorse</b><span>Closed${c.by ? " by " + esc(c.by) : ""}${c.at ? " " + esc(ago(c.at)) : ""}. ${raiserIsMe() ? "You raised it" : "You are a project admin"} - endorse it, or reopen it.</span>`
+          + `<button type="button" class="rc-ok">&#10003; Endorse</button><button type="button" class="ghost rc-no">Not right - reopen</button>`
+        : `<b>Waiting for endorsement</b><span>Closed${c.at ? " " + esc(ago(c.at)) : ""}: ${esc(by)}, who raised it, endorses it.</span>`;
+    } else {
+      const w = ago(atOf("Resolved").at);
+      box.innerHTML = raiserIsMe()
+        ? `<b>Re-check</b><span>This is marked Resolved${w ? ` (${w})` : ""}. You raised it - is it fixed?</span>`
+          + `<button type="button" class="rc-ok">&#10003; Fixed - close it</button><button type="button" class="ghost rc-no">Not fixed - reopen</button>`
+        : `<b>Waiting for re-check</b><span>Resolved${w ? ` ${w}` : ""}: ${esc(by)}, who raised it, checks the fix and closes it.</span>`;
+    }
+    const post = async (text, status, ok, endorse) => {
       iss.comments.push({ id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
         author: opts.author || "?", text, at: new Date().toISOString(), kind: "recheck" });
       iss.rechecked = { by: opts.author || "?", at: new Date().toISOString(), ok };
       iss.status = status;
+      if (endorse) iss.endorsed = { by: opts.author || "?", at: new Date().toISOString() }; else delete iss.endorsed;
       $("#detail-status").value = status;
       renderComments();
       renderRecheck();
       await opts.onSave(collect());
     };
     const okb = box.querySelector(".rc-ok"), nob = box.querySelector(".rc-no");
-    if (okb) okb.onclick = () => post("Re-checked: fixed. Closed.", "Closed", true);
+    if (okb) okb.onclick = () => (st === "Closed" ? post("Endorsed.", "Closed", true, true) : post("Re-checked: fixed. Closed.", "Closed", true));
     if (nob) nob.onclick = () => {
       const why = prompt("What is still not right? (it goes back to Open, and whoever holds it is told)");
       if (why === null) return;
       if (!why.trim()) { alert("Say what is still wrong - it is what the next person goes on."); return; }
-      post("Re-checked: not fixed - " + why.trim(), "Open", false);
+      post((st === "Closed" ? "Not endorsed - " : "Re-checked: not fixed - ") + why.trim(), "Open", false);
     };
   };
 
@@ -509,6 +529,13 @@ export function openIssue(item, opts) {
     } finally {
       b.disabled = false;
     }
+  };
+  const ab = $("#detail-archive");
+  ab.textContent = item.archived ? "Restore" : "Archive";
+  ab.onclick = async () => {
+    if (item.archived) delete item.archived; else item.archived = { by: opts.author || "", at: new Date().toISOString() };
+    try { await opts.onSave(collect()); close(); }
+    catch (e) { if (item.archived) delete item.archived; alert(e.message || String(e)); }
   };
   $("#detail-delete").onclick = async () => {
     if (!confirm("Delete this issue for everyone?")) return;

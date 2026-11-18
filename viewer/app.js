@@ -1218,6 +1218,7 @@ function redraw(target) {
     const pin = it.issue ? String(it.issue.number || ++n) : null;
     if (hid.size && hid.has(layerOf(it))) continue;       // numbers stay the same
     if (S.hideDone && issueDone(it)) continue;            // "Hide closed" (numbers stay)
+    if (offView(it)) continue;                            // endorsed / archived (Endorsed, Archived above the list)
     // an issue made elsewhere (the API, a task) may have no shape on the sheet
     if (!it.points_mm || !it.points_mm.length) continue;
     svg.appendChild(render(it, { pin: pin }));
@@ -2120,7 +2121,7 @@ function flushInk() {
 function openIssueFromSheet(one) {
   const nums = new Map(); let k = 0;
   for (const it of S.items) if (it.issue) nums.set(it.id, it.issue.number || ++k);
-  openIssueDetail(one, { number: nums.get(one.id), author: Store.author(), latest: () => Store.all().find((x) => x.id === one.id),
+  openIssueDetail(one, { isAdmin: isAdmin(), number: nums.get(one.id), author: Store.author(), latest: () => Store.all().find((x) => x.id === one.id),
     onUpload: (d) => Store.uploadSnapshot(d),
     onSave: async (item) => { await putItem(item); renderList(); },
     onDelete: async (item) => { removeItems([item.id]); },
@@ -2215,6 +2216,13 @@ const LAYERS = {
 };
 const layerOf = (it) => it.layer || "General";
 // set by the project admin (server): may this person change markups on it?
+/* who may do what to a markup (the server checks the same: app.py check_item_rules) */
+const myUid = () => { const m = /^u(\d+)$/.exec(Store.userKey() || ""); return m ? +m[1] : null; };
+const isAdmin = () => !S.layerRules || !S.layerRules.accounts || !!S.layerRules.admin;
+const madeByMe = (it) => it.author_id == null || myUid() === +it.author_id;
+const raisedByMe = (it) => { const a = it.issue && it.issue.author_id != null ? it.issue.author_id : it.author_id; return a == null || myUid() === +a; };
+const assignedToMe = (it) => !!it.issue && !!(it.issue.assigned_to || "").trim()
+  && (it.issue.assigned_to || "").trim().toLowerCase() === (Store.author() || "").trim().toLowerCase();
 const layerLocked = (it) => !!(S.layerRules && S.layerRules.mine
   && S.layerRules.mine[layerOf(it)] && S.layerRules.mine[layerOf(it)].edit === false);
 const layerEditable = (name) => !(S.layerRules && S.layerRules.mine && S.layerRules.mine[name]
@@ -2270,41 +2278,59 @@ function wireLayers() {
     renderLayerPick();
     redraw();
   });
-  document.getElementById("layers-btn").addEventListener("click", (ev) => {
-    const old = document.getElementById("layers-pop");
-    if (old) { old.remove(); return; }
-    const counts = new Map();
-    for (const it of S.items || []) if (!it.deleted) counts.set(layerOf(it), (counts.get(layerOf(it)) || 0) + 1);
-    const pop = document.createElement("div");
-    pop.id = "layers-pop";
-    const r = ev.target.getBoundingClientRect();
-    pop.style.left = Math.min(innerWidth - 240, r.left) + "px";
-    pop.style.top = (r.bottom + 4) + "px";
+  document.getElementById("layers-btn").addEventListener("click", (ev) => openLayersPop(ev.currentTarget));
+  const lc = document.getElementById("layers-chip");
+  if (lc) lc.addEventListener("click", (ev) => openLayersPop(ev.currentTarget));
+}
+
+/* The markup layers, as in Photoshop: an eye each (shown for you, on this
+   device), Only this, All on / All off. The drawing, the list and the PDF
+   window follow. */
+function openLayersPop(anchor) {
+  const old = document.getElementById("layers-pop");
+  if (old) { old.remove(); return; }
+  const counts = new Map();
+  for (const it of S.items || []) if (!it.deleted && !NOT_HERE.has(it.placement)) counts.set(layerOf(it), (counts.get(layerOf(it)) || 0) + 1);
+  const pop = document.createElement("div");
+  pop.id = "layers-pop";
+  const eye = (on) => on
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/></svg>';
+  const paint = () => {
+    const cur = LAYERS.current();
     pop.innerHTML = `<div class="lp-head">Markup layers <span class="muted">(shown for you)</span></div>`
-      + LAYERS.all().map((n) => `<label class="row-check"><input type="checkbox" data-l="${n.replace(/"/g, "&quot;")}"`
-        + `${S.hiddenLayers.has(n) ? "" : " checked"} style="width:auto"> ${n.replace(/</g, "&lt;")}`
-        + ` <span class="muted">${counts.get(n) || 0}</span></label>`).join("")
-      + `<div class="lp-foot"><button class="ghost" data-a="all">All</button><button class="ghost" data-a="only">Only the current layer</button></div>`
+      + LAYERS.all().map((n) => {
+        const on = !S.hiddenLayers.has(n), q = n.replace(/"/g, "&quot;");
+        return `<div class="lp-row${on ? "" : " off"}" data-l="${q}"><button type="button" class="lp-eye" data-eye="${q}" title="${on ? "Hide" : "Show"} this layer">${eye(on)}</button>`
+          + `<span class="lp-n">${n.replace(/</g, "&lt;")}${n === cur ? ' <small class="muted">current</small>' : ""}</span>`
+          + `<span class="muted lp-c">${counts.get(n) || 0}</span><button type="button" class="lp-solo" data-solo="${q}" title="Show only this layer">Only</button></div>`;
+      }).join("")
+      + `<div class="lp-foot"><button class="ghost" data-a="all">All on</button><button class="ghost" data-a="none">All off</button><button class="ghost" data-a="only">Only the current</button></div>`
       + (S.layerRules && S.layerRules.admin && S.layerRules.accounts
         ? `<div class="lp-foot"><a href="${"admin.html?project=" + encodeURIComponent(Store.currentProject() || "")}#layers">Who can see and edit each layer ...</a></div>` : "");
-    document.body.appendChild(pop);
-    const apply = () => {
-      const hid = new Set();
-      pop.querySelectorAll("input[data-l]").forEach((c) => { if (!c.checked) hid.add(c.dataset.l); });
-      LAYERS.setHidden(hid);
-      S.sel = (S.sel || []).filter((id) => { const it = S.items.find((x) => x.id === id); return it && !hid.has(layerOf(it)); });
-      redraw();
-    };
-    pop.addEventListener("change", apply);
-    pop.addEventListener("click", (e) => {
-      const a = e.target.dataset && e.target.dataset.a;
-      if (!a) return;
-      pop.querySelectorAll("input[data-l]").forEach((c) => { c.checked = a === "all" || c.dataset.l === LAYERS.current(); });
-      apply();
-    });
-    const away = (e) => { if (!pop.contains(e.target) && e.target.id !== "layers-btn") { pop.remove(); document.removeEventListener("pointerdown", away, true); } };
-    setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
+  };
+  const set = (hid) => {
+    LAYERS.setHidden(hid);
+    S.sel = (S.sel || []).filter((id) => { const it = S.items.find((x) => x.id === id); return it && !hid.has(layerOf(it)); });
+    paint(); redraw(); renderList();
+  };
+  paint();
+  document.body.appendChild(pop);
+  const r = anchor.getBoundingClientRect();
+  pop.style.left = Math.max(6, Math.min(innerWidth - pop.offsetWidth - 6, r.left)) + "px";
+  pop.style.top = (r.bottom + pop.offsetHeight + 8 < innerHeight ? r.bottom + 4 : Math.max(6, r.top - pop.offsetHeight - 4)) + "px";
+  pop.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-eye],[data-solo],[data-a]");
+    if (!t) return;
+    const all = LAYERS.all();
+    if (t.dataset.eye !== undefined) { const h = new Set(S.hiddenLayers); if (h.has(t.dataset.eye)) h.delete(t.dataset.eye); else h.add(t.dataset.eye); set(h); }
+    else if (t.dataset.solo !== undefined) set(new Set(all.filter((n) => n !== t.dataset.solo)));
+    else if (t.dataset.a === "all") set(new Set());
+    else if (t.dataset.a === "none") set(new Set(all));
+    else if (t.dataset.a === "only") set(new Set(all.filter((n) => n !== LAYERS.current())));
   });
+  const away = (e) => { if (!pop.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) { pop.remove(); document.removeEventListener("pointerdown", away, true); } };
+  setTimeout(() => document.addEventListener("pointerdown", away, true), 0);
 }
 
 /* -------------------------------------------------------- snip and paste */
@@ -2731,7 +2757,7 @@ function wirePointer() {
         ? { label: "Open issue", action: () => {
               const nums = new Map(); let k = 0;
               for (const it of S.items) if (it.issue) nums.set(it.id, it.issue.number || ++k);
-              openIssueDetail(one, { number: nums.get(one.id), author: Store.author(), latest: () => Store.all().find((x) => x.id === one.id),
+              openIssueDetail(one, { isAdmin: isAdmin(), number: nums.get(one.id), author: Store.author(), latest: () => Store.all().find((x) => x.id === one.id),
                 onUpload: (d) => Store.uploadSnapshot(d),
                 onSave: async (item) => { await putItem(item); renderList(); },
                 onDelete: async (item) => { removeItems([item.id]); },
@@ -5402,7 +5428,9 @@ function wireSetTools() {
   const afterAction = () => { if (PICK.on) { PICK.sel.clear(); PICK.last = null; renderSheets(); } };
   SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, apply: applySheetMeta, status, startPick,
             list: () => setSheets(), afterAction,
-            cleanPdf: (nums) => exportCleanPdf(nums.map((n) => S.manifest.sheets.find((x) => x.number === n)).filter(Boolean)) })
+            cleanPdf: (nums) => exportCleanPdf(nums.map((n) => S.manifest.sheets.find((x) => x.number === n)).filter(Boolean)),
+            itemsOn: (nums) => S.items.filter((it) => !it.deleted && nums.includes(it.sheet) && !NOT_HERE.has(it.placement)).length,
+            moveItems: (nums) => moveItemsToSheet(S.items.filter((it) => !it.deleted && nums.includes(it.sheet) && !NOT_HERE.has(it.placement)).map((x) => x.id), nums.join(", ")) })
     .then(() => { if (S.manifest) renderSheets(); });
   const gb = document.getElementById("sheet-groups-btn");
   if (gb) gb.addEventListener("click", (ev) => { ev.stopPropagation(); SG.groupsMenu(gb, setSheets()); });
@@ -5512,7 +5540,8 @@ function cardHtml(it, n) {
     + `<span class="pin" style="background:${color}">${iss ? n : "&middot;"}</span>`
     + `<div class="body"><div class="t">${label}</div>`
     + `<div class="tline">${bits}</div></div>`
-    + `<span class="chip ${cls}">${status}</span></div>`;
+    + `<span class="chip ${cls}">${iss && status === "Closed" ? (iss.endorsed ? "Endorsed" : "Closed \u00b7 to endorse") : status}</span>`
+    + (it.archived ? `<span class="chip archived">Archived</span>` : "") + `</div>`;
 }
 
 /* The status filter: a status, or a family of them, or "has a query
@@ -5521,13 +5550,212 @@ function statusMatches(iss, f) {
   const stt = iss.status || "Open";
   if (f === "open-any") return stt === "Open" || stt === "In progress";
   if (f === "done-any") return stt === "Resolved" || stt === "Closed";
+  if (f === "await-endorse") return stt === "Closed" && !iss.endorsed;
+  if (f === "endorsed") return stt === "Closed" && !!iss.endorsed;
   if (f === "query") return (iss.comments || []).some((c) => c && c.kind === "query" && !c.resolved && !c.deleted);
   return stt === f;
 }
 
 const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "checkcfg"]);
+/* --------------------------------------------- endorsed, archived, ticked */
+
+/* Endorsed issues and archived comments/issues leave the drawing and the
+   list until "Endorsed" / "Archived" above the list shows them again. */
+const isEndorsed = (it) => !!(it && it.issue && it.issue.endorsed && (it.issue.status || "Open") === "Closed");
+const offView = (it) => (it.archived && !S.showArchived) || (isEndorsed(it) && !S.showEndorsed);
+
+/* Ticking rows in the list (Select), then one action for them all. Each is
+   done only where this person may (as the server rules: app.py
+   check_item_rules); the rest are counted and said. */
+const PICK_L = { on: false, sel: new Set(), last: null };
+function bulkRule(it, kind) {
+  if (!it) return "gone";
+  if (["archive", "restore", "move", "layer"].includes(kind) && layerLocked(it)) return "its layer is locked for you";
+  if (kind === "close") {
+    if (!it.issue) return "not an issue";
+    if ((it.issue.status || "Open") === "Closed") return "already closed";
+    return assignedToMe(it) || isAdmin() ? "" : "not assigned to you";
+  }
+  if (kind === "endorse") {
+    if (!it.issue) return "not an issue";
+    if ((it.issue.status || "Open") !== "Closed") return "not closed yet";
+    if (it.issue.endorsed) return "already endorsed";
+    return raisedByMe(it) || isAdmin() ? "" : "not raised by you";
+  }
+  if (kind === "archive") return it.archived ? "already archived" : madeByMe(it) || isAdmin() ? "" : "not made by you";
+  if (kind === "restore") return !it.archived ? "not archived" : madeByMe(it) || isAdmin() ? "" : "not made by you";
+  if (kind === "move") return madeByMe(it) || isAdmin() ? "" : "not made by you";
+  if (kind === "layer") return "";
+  return "unknown";
+}
+async function bulkApply(ids, kind, arg) {
+  const items = ids.map((id) => S.items.find((x) => x.id === id));
+  const ok = [], skip = new Map();
+  items.forEach((it, i) => {
+    let why = bulkRule(it, kind);
+    if (!why && kind === "layer" && !layerEditable(arg)) why = "that layer is locked for you";
+    if (!why && kind === "move" && it.sheet === arg) why = "already on that sheet";
+    if (why) skip.set(why, (skip.get(why) || 0) + 1); else ok.push(it || items[i]);
+  });
+  if (!ok.length) { status("Nothing changed: " + [...skip].map(([w, n]) => `${n} ${w}`).join(", ") + "."); return 0; }
+  remember(ok.map((it) => it.id));
+  const now = new Date().toISOString(), me = Store.author() || "";
+  for (const it of ok) {
+    if (kind === "close") it.issue.status = "Closed";
+    else if (kind === "endorse") it.issue.endorsed = { by: me, at: now };
+    else if (kind === "archive") it.archived = { by: me, at: now };
+    else if (kind === "restore") delete it.archived;
+    else if (kind === "move") it.sheet = arg;
+    else if (kind === "layer") it.layer = arg;
+  }
+  let saved = 0;
+  for (let i = 0; i < ok.length; i++) {
+    if (ok.length > 5) status(`Saving ${i + 1} of ${ok.length} ...`);
+    if (await putItem(ok[i])) saved++;
+  }
+  const verb = { close: "Closed", endorse: "Endorsed", archive: "Archived", restore: "Restored", move: "Moved to " + arg, layer: "Put on layer " + arg }[kind];
+  status(`${verb}: ${saved}` + (skip.size ? " · skipped " + [...skip].map(([w, n]) => `${n} (${w})`).join(", ") : "") + (kind === "layer" || kind === "archive" || kind === "move" || kind === "restore" ? " · Ctrl+Z undoes" : ""));
+  PICK_L.sel.clear();
+  S.items = Store.all();
+  redraw(); renderList();
+  return saved;
+}
+
+/* A sheet to move to: the other sheets, searchable, the number first */
+function pickSheet(title, not, cb) {
+  const old = document.getElementById("sheet-pick-dlg");
+  if (old) old.remove();
+  const d = document.createElement("div");
+  d.id = "sheet-pick-dlg";
+  d.innerHTML = `<div class="spk"><h3></h3><input type="search" placeholder="Sheet number or name"><ul></ul>`
+    + `<div class="row end"><button type="button" class="ghost spk-x">Cancel</button></div></div>`;
+  d.querySelector("h3").textContent = title;
+  document.body.appendChild(d);
+  const ul = d.querySelector("ul"), inp = d.querySelector("input");
+  const all = (S.manifest.sheets || []).filter((s) => s.number !== not);
+  const paint = () => {
+    const q = inp.value.trim().toLowerCase();
+    ul.innerHTML = "";
+    for (const s of all.filter((s) => !q || (s.number + " " + (s.name || "")).toLowerCase().includes(q)).slice(0, 200)) {
+      const li = document.createElement("li");
+      li.innerHTML = `<b></b> <span></span>`;
+      li.firstChild.textContent = s.number; li.lastChild.textContent = s.name || "";
+      li.addEventListener("click", () => { d.remove(); cb(s); });
+      ul.appendChild(li);
+    }
+  };
+  inp.addEventListener("input", paint);
+  inp.addEventListener("keydown", (ev) => { ev.stopPropagation(); if (ev.key === "Escape") d.remove(); if (ev.key === "Enter" && ul.firstChild) ul.firstChild.click(); });
+  d.querySelector(".spk-x").addEventListener("click", () => d.remove());
+  d.addEventListener("pointerdown", (ev) => { if (ev.target === d) d.remove(); });
+  paint();
+  inp.focus();
+}
+
+/* Everything on one sheet (or the chosen ones) onto another: a renumbered
+   drawing arrives as a new sheet, and its comments stay on the old one. */
+function moveItemsToSheet(ids, fromLabel) {
+  const items = ids.map((id) => S.items.find((x) => x.id === id)).filter(Boolean);
+  if (!items.length) { status("Nothing to move."); return; }
+  const from = items[0].sheet;
+  pickSheet(`Move ${items.length} comment(s) and issue(s)${fromLabel ? " from " + fromLabel : ""} to ...`, items.every((x) => x.sheet === from) ? from : null, async (to) => {
+    const src = S.manifest.sheets.find((s) => s.number === from);
+    const sz = (s) => s && s.paper ? Math.round(s.paper.width_mm) + " × " + Math.round(s.paper.height_mm) : "";
+    const diff = src && to.paper && src.paper && (Math.abs(src.paper.width_mm - to.paper.width_mm) > 1 || Math.abs(src.paper.height_mm - to.paper.height_mm) > 1);
+    if (!confirm(`Move ${items.length} item(s) to ${to.number}${to.name ? " - " + to.name : ""}?`
+      + (diff ? `\n\nThe papers differ (${sz(src)} mm → ${sz(to)} mm): the markups keep their place in millimetres from the corner.` : "")
+      + "\n\nTheir issue pictures and 3D places stay as they are.")) return;
+    const n = await bulkApply(items.map((x) => x.id), "move", to.number);
+    if (n) openSheet(to);
+  });
+}
+
+/* Comments and issues on sheets no longer in the viewer (any set) */
+function orphanItems() {
+  if (!S.manifest) return [];
+  const have = new Set((S.manifest.sheets || []).map((s) => s.number));
+  for (const s of S.allSheets || []) have.add(s.number);
+  return S.items.filter((it) => !it.deleted && it.sheet && !have.has(it.sheet) && !NOT_HERE.has(it.placement));
+}
+function paintOrphanChip() {
+  const b = document.getElementById("orphans-chip");
+  if (!b) return;
+  const n = orphanItems().filter((it) => !it.archived && (isAdmin() || madeByMe(it))).length;
+  b.hidden = !n;
+  b.textContent = `${n} on deleted sheets`;
+}
+function openOrphans() {
+  const old = document.getElementById("orphans-dlg");
+  if (old) old.remove();
+  const list = orphanItems().filter((it) => !it.archived);
+  const by = new Map();
+  for (const it of list) { if (!by.has(it.sheet)) by.set(it.sheet, []); by.get(it.sheet).push(it); }
+  const d = document.createElement("div");
+  d.id = "orphans-dlg";
+  d.innerHTML = `<div class="spk"><h3>On sheets no longer in the viewer</h3>`
+    + `<p class="muted">A sheet renumbered in Revit comes in as a new sheet; its comments and issues stay under the old number. Move them to the new sheet, archive them, or ${isAdmin() ? "delete them" : "ask a project admin to delete them"}.</p><ul></ul>`
+    + `<div class="row end"><button type="button" class="ghost spk-x">Close</button></div></div>`;
+  const ul = d.querySelector("ul");
+  for (const [num, its] of [...by].sort()) {
+    const li = document.createElement("li");
+    li.className = "orph";
+    const nIss = its.filter((x) => x.issue).length;
+    li.innerHTML = `<b></b><span class="muted"> ${its.length} item(s), ${nIss} issue(s)</span><span class="spacer"></span>`
+      + `<button type="button" data-a="move">Move to ...</button><button type="button" data-a="archive">Archive all</button>`
+      + (isAdmin() ? `<button type="button" class="danger" data-a="delete">Delete</button>` : "");
+    li.firstChild.textContent = num;
+    li.addEventListener("click", async (ev) => {
+      const a = ev.target.dataset && ev.target.dataset.a;
+      if (!a) return;
+      const ids = its.map((x) => x.id);
+      if (a === "move") { d.remove(); moveItemsToSheet(ids, num); }
+      if (a === "archive") { await bulkApply(ids, "archive"); d.remove(); }
+      if (a === "delete" && confirm(`Delete the ${its.length} comment(s) and issue(s) of ${num}? (Admin > Recently deleted can bring them back for a while.)`)) { removeItems(ids); d.remove(); }
+    });
+    ul.appendChild(li);
+  }
+  if (!by.size) ul.innerHTML = `<li class="muted">None - every comment and issue is on a sheet that is still here.</li>`;
+  d.querySelector(".spk-x").addEventListener("click", () => d.remove());
+  d.addEventListener("pointerdown", (ev) => { if (ev.target === d) d.remove(); });
+  document.body.appendChild(d);
+}
+
+function paintBulkBar(shownIds) {
+  const bar = document.getElementById("list-bulk");
+  if (!bar) return;
+  bar.hidden = !PICK_L.on;
+  if (!PICK_L.on) return;
+  for (const id of [...PICK_L.sel]) if (!S.items.some((x) => x.id === id)) PICK_L.sel.delete(id);
+  const n = PICK_L.sel.size;
+  const ids = () => [...PICK_L.sel];
+  bar.innerHTML = `<div class="lb-top"><b>${n} chosen</b><button type="button" data-b="all">All shown (${shownIds.length})</button>`
+    + `<button type="button" data-b="none"${n ? "" : " disabled"}>Clear</button><span class="spacer"></span><button type="button" data-b="done">Done</button></div>`
+    + `<div class="lb-acts">`
+    + `<button type="button" data-b="close"${n ? "" : " disabled"}>Close</button>`
+    + `<button type="button" data-b="endorse"${n ? "" : " disabled"}>Endorse</button>`
+    + (S.showArchived ? `<button type="button" data-b="restore"${n ? "" : " disabled"}>Restore</button>` : "")
+    + `<button type="button" data-b="archive"${n ? "" : " disabled"}>Archive</button>`
+    + `<button type="button" data-b="move"${n ? "" : " disabled"}>Move to sheet ...</button>`
+    + `<button type="button" data-b="layer"${n ? "" : " disabled"}>Layer ▸</button></div>`;
+  bar.onclick = (ev) => {
+    const b = ev.target.closest("[data-b]");
+    if (!b || b.disabled) return;
+    const k = b.dataset.b;
+    if (k === "all") { shownIds.forEach((id) => PICK_L.sel.add(id)); renderList(); }
+    else if (k === "none") { PICK_L.sel.clear(); renderList(); }
+    else if (k === "done") { PICK_L.on = false; PICK_L.sel.clear(); const lp = document.getElementById("list-pick"); if (lp) lp.classList.remove("active"); renderList(); }
+    else if (k === "move") moveItemsToSheet(ids());
+    else if (k === "layer") {
+      const r = b.getBoundingClientRect();
+      openMenu(r.left, r.top - 8, LAYERS.all().map((name) => ({ label: name, disabled: !layerEditable(name), action: () => bulkApply(ids(), "layer", name) })));
+    } else bulkApply(ids(), k);
+  };
+}
+
 function renderList() {
   try { renderLayerPick(); } catch (e) {}
+  try { paintOrphanChip(); } catch (e) {}
+  paintBulkBar([]);
   // no comments or issues on the drawings yet: the list folds away (its edge tab brings it back)
   if (S.panels) S.panels.autoFold("r", !S.items.some((it) => !it.deleted && !NOT_HERE.has(it.placement)));
   const ul = $("#item-list");
@@ -5565,6 +5793,7 @@ function renderList() {
     }
   }
 
+  let byLayer = 0;
   const shown = S.items.filter((it) => {
     if (S.filter === "query") return false;
     // Issues raised in the model and saved views live on the 3D page.
@@ -5572,6 +5801,10 @@ function renderList() {
     if (it.placement === "3d" || it.placement === "view" || it.placement === "calibration" || it.placement === "clashrule" || it.placement === "clashset" || it.placement === "checkcfg") return false;
     if (S.filter === "issue" && !it.issue) return false;
     if (S.filter === "comment" && it.issue) return false;
+    // endorsed / archived: off the list unless shown (or asked for by the status filter)
+    if (offView(it) && !(fStatus === "endorsed" && isEndorsed(it))) return false;
+    // on a layer turned off: off the list too (counted at its foot)
+    if (S.hiddenLayers && S.hiddenLayers.size && S.hiddenLayers.has(layerOf(it))) { byLayer++; return false; }
     // type and status: issues only (a comment has neither)
     if (fType && (!it.issue || typeOf(it).id !== fType)) return false;
     if (fStatus) {
@@ -5653,8 +5886,14 @@ function renderList() {
 
     for (const it of rows) {
       const li = document.createElement("li");
-      li.className = S.sel.indexOf(it.id) >= 0 ? "sel" : "";
+      li.className = (S.sel.indexOf(it.id) >= 0 ? "sel" : "") + (it.archived ? " archived" : "") + (isEndorsed(it) ? " endorsed" : "");
       li.innerHTML = cardHtml(it, numbers.get(it.id));
+      li.dataset.id = it.id;
+      if (PICK_L.on) {
+        li.classList.add("pickable");
+        li.classList.toggle("picked", PICK_L.sel.has(it.id));
+        li.insertAdjacentHTML("afterbegin", `<span class="lp-box" aria-hidden="true">${PICK_L.sel.has(it.id) ? "&#10003;" : ""}</span>`);
+      }
       const jump = () => {
         const sh = S.manifest.sheets.find((s) => s.number === it.sheet);
         if (sh && sh !== S.sheet) return openSheet(sh).then(() => select([it.id], false));
@@ -5665,7 +5904,7 @@ function renderList() {
         // A comment is just a drawing: go to it. An issue has things to
         // read and decide, so it opens in full.
         if (!it.issue) { jump(); return; }
-        openIssueDetail(it, {
+        openIssueDetail(it, { isAdmin: isAdmin(),
           latest: () => Store.all().find((x) => x.id === it.id),
           number: numbers.get(it.id),
           author: Store.author(),
@@ -5680,7 +5919,17 @@ function renderList() {
           onResnap: resnapSheet, resnapHint: "Take the picture again from the sheet as it shows now (e.g. after pasting a copy onto another floor)",
         });
       };
-      li.addEventListener("click", open);
+      li.addEventListener("click", (ev) => {
+        if (!PICK_L.on) { open(); return; }
+        // ticking: Shift for a run of rows
+        const all = [...ul.querySelectorAll("li[data-id]")].map((x) => x.dataset.id);
+        if (ev.shiftKey && PICK_L.last && all.includes(PICK_L.last)) {
+          const [a, b] = [all.indexOf(PICK_L.last), all.indexOf(it.id)].sort((x, y) => x - y);
+          for (const id of all.slice(a, b + 1)) PICK_L.sel.add(id);
+        } else if (PICK_L.sel.has(it.id)) PICK_L.sel.delete(it.id); else PICK_L.sel.add(it.id);
+        PICK_L.last = it.id;
+        renderList();
+      });
       li.addEventListener("contextmenu", (ev) => {
         ev.preventDefault();
         openMenu(ev.clientX, ev.clientY, listMenu(it, open, jump));
@@ -5688,6 +5937,13 @@ function renderList() {
       ul.appendChild(li);
     }
   }
+  if (byLayer) {
+    const li = document.createElement("li");
+    li.className = "empty-note";
+    li.textContent = `${byLayer} more on layers turned off (Layers above).`;
+    ul.appendChild(li);
+  }
+  paintBulkBar(shown.map((it) => it.id));
   redraw();
 }
 
@@ -5730,6 +5986,11 @@ function listMenu(it, open, jump) {
       } });
     }
   }
+  if (iss && (iss.status || "Open") === "Closed" && !iss.endorsed && !bulkRule(it, "endorse")) entries.push({ label: "Endorse", action: () => bulkApply([it.id], "endorse") });
+  entries.push("-",
+    it.archived ? { label: "Restore (archived)", disabled: !!bulkRule(it, "restore"), action: () => bulkApply([it.id], "restore") }
+      : { label: "Archive", disabled: !!bulkRule(it, "archive"), action: () => bulkApply([it.id], "archive") },
+    { label: "Move to another sheet ...", disabled: !!bulkRule(it, "move"), action: () => moveItemsToSheet([it.id]) });
   entries.push("-",
     { label: "Copy", key: "Ctrl+C", action: () => {
       S.clip = [JSON.parse(JSON.stringify(it))];
@@ -6072,6 +6333,9 @@ async function renderSheetForPdf(sheet, dpi, clean) {
                   sel: S.sel, hide: S.hideMarkups, done: S.hideDone, draft: S.draft };
   S.sheet = sheet; S.page = page; S.viewport = vp;
   S.sel = []; S.hideMarkups = !!clean; S.hideDone = false; S.draft = null;
+  const savedHid = S.hiddenLayers, savedOff = [S.showArchived, S.showEndorsed];
+  if (PDF_PICK && PDF_PICK.layers) S.hiddenLayers = new Set(LAYERS.all().filter((n) => !PDF_PICK.layers.has(n)));
+  if (PDF_PICK) { S.showArchived = PDF_PICK.offview; S.showEndorsed = PDF_PICK.offview; }
   const svg = $("#overlay");
   const prevW = svg.getAttribute("width"), prevH = svg.getAttribute("height");
   svg.setAttribute("width", canvas.width);
@@ -6087,7 +6351,7 @@ async function renderSheetForPdf(sheet, dpi, clean) {
 
   Object.assign(S, { sheet: saved.sheet, page: saved.page,
                      viewport: saved.viewport, sel: saved.sel,
-                     hideMarkups: saved.hide, hideDone: saved.done, draft: saved.draft });
+                     hideMarkups: saved.hide, hideDone: saved.done, draft: saved.draft, hiddenLayers: savedHid, showArchived: savedOff[0], showEndorsed: savedOff[1] });
   svg.setAttribute("width", prevW);
   svg.setAttribute("height", prevH);
   svg.setAttribute("viewBox", `0 0 ${prevW} ${prevH}`);
@@ -6147,6 +6411,9 @@ async function markupLayer(sheet, bytes, dpi) {
   const prev = [svg.getAttribute("width"), svg.getAttribute("height")];
   S.sheet = sheet; S.page = page; S.viewport = vp;
   S.sel = []; S.hideMarkups = false; S.hideDone = false; S.draft = null;
+  const savedHid = S.hiddenLayers, savedOff = [S.showArchived, S.showEndorsed];
+  if (PDF_PICK && PDF_PICK.layers) S.hiddenLayers = new Set(LAYERS.all().filter((n) => !PDF_PICK.layers.has(n)));
+  if (PDF_PICK) { S.showArchived = PDF_PICK.offview; S.showEndorsed = PDF_PICK.offview; }
   svg.setAttribute("width", w); svg.setAttribute("height", h);
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   redraw();
@@ -6155,7 +6422,7 @@ async function markupLayer(sheet, bytes, dpi) {
   await inlineImages(clone);
   Object.assign(S, { sheet: saved.sheet, page: saved.page,
                      viewport: saved.viewport, sel: saved.sel,
-                     hideMarkups: saved.hide, hideDone: saved.done, draft: saved.draft });
+                     hideMarkups: saved.hide, hideDone: saved.done, draft: saved.draft, hiddenLayers: savedHid, showArchived: savedOff[0], showEndorsed: savedOff[1] });
   svg.setAttribute("width", prev[0]); svg.setAttribute("height", prev[1]);
   svg.setAttribute("viewBox", `0 0 ${prev[0]} ${prev[1]}`);
   redraw();
@@ -6429,7 +6696,8 @@ async function exportPdfVector(sheets, dpi, withReport) {
     out.addPage(page);
 
     const mine = S.items.filter((it) => it.sheet === sh.number
-      && it.placement !== "3d" && it.placement !== "view" && it.placement !== "clashrule" && it.placement !== "clashset" && it.placement !== "checkcfg");
+      && it.placement !== "3d" && it.placement !== "view" && it.placement !== "clashrule" && it.placement !== "clashset" && it.placement !== "checkcfg"
+      && pdfWants(it));
     if (mine.length) {
       const editable = (document.getElementById("pdf-markups") || {}).value !== "flat";
       if (editable) {
@@ -6472,6 +6740,26 @@ async function exportPdfVector(sheets, dpi, withReport) {
    sheet that is a whole PDF file of its own comes down byte for byte, as
    exported from Revit; several are put together page by page. */
 const fileSafe = (t) => String(t || "sheet").replace(/[^\w\u4e00-\u9fff-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 120) || "sheet";
+/* The PDF window's Layers: ticked as they are shown now; only markups on
+   ticked layers go into the PDF (and its report), endorsed and archived
+   ones only when asked for. */
+let PDF_PICK = null;
+function fillPdfLayers() {
+  const box = document.getElementById("pdf-layers");
+  if (!box) return;
+  const counts = new Map();
+  for (const it of S.items || []) if (!it.deleted && !NOT_HERE.has(it.placement)) counts.set(layerOf(it), (counts.get(layerOf(it)) || 0) + 1);
+  box.innerHTML = LAYERS.all().map((n) => `<label class="row-check"><input type="checkbox" data-l="${n.replace(/"/g, "&quot;")}"${S.hiddenLayers && S.hiddenLayers.has(n) ? "" : " checked"} style="width:auto"> ${n.replace(/</g, "&lt;")} <span class="muted">${counts.get(n) || 0}</span></label>`).join("");
+}
+function readPdfPick() {
+  const box = document.getElementById("pdf-layers");
+  const on = new Set();
+  if (box) box.querySelectorAll("input[data-l]").forEach((c) => { if (c.checked) on.add(c.dataset.l); });
+  PDF_PICK = { layers: box && box.children.length ? on : null, offview: !!(document.getElementById("pdf-offview") || {}).checked };
+}
+const pdfWants = (it) => !PDF_PICK || ((!PDF_PICK.layers || PDF_PICK.layers.has(layerOf(it)))
+  && (PDF_PICK.offview || !(it.archived || isEndorsed(it))));
+
 async function exportCleanPdf(sheets) {
   sheets = sheets.filter((s) => s && s.pdf);
   if (!sheets.length) { status("Open a sheet first."); return; }
@@ -6530,6 +6818,7 @@ async function exportPdf() {
   }
   $("#pdf-back").hidden = true;
   if ((document.getElementById("pdf-markups") || {}).value === "none") return exportCleanPdf(sheets);
+  readPdfPick();
 
   const withReport = document.getElementById("pdf-report").checked;
   if (await pdfLib()) {
@@ -7707,7 +7996,34 @@ function wireChrome() {
     });
   }
 
-  $("#export-pdf").addEventListener("click", () => { $("#pdf-back").hidden = false; });
+  // Endorsed / Archived: hidden until shown (kept on this device)
+  for (const [id, key, what] of [["show-endorsed", "showEndorsed", "Endorsed issues"], ["show-archived", "showArchived", "Archived comments and issues"]]) {
+    const b = document.getElementById(id);
+    if (!b) continue;
+    try { S[key] = localStorage.getItem("lwk.sheets." + key) === "1"; } catch (e) {}
+    const paint = () => {
+      b.classList.toggle("active", !!S[key]);
+      b.setAttribute("aria-pressed", S[key] ? "true" : "false");
+      b.title = S[key] ? `${what} are shown - click to hide them again` : `${what} are hidden - click to show them`;
+    };
+    paint();
+    b.addEventListener("click", () => {
+      S[key] = !S[key];
+      try { localStorage.setItem("lwk.sheets." + key, S[key] ? "1" : "0"); } catch (e) {}
+      paint(); redraw(); renderList();
+    });
+  }
+  const lp = document.getElementById("list-pick");
+  if (lp) lp.addEventListener("click", () => { PICK_L.on = !PICK_L.on; PICK_L.sel.clear(); lp.classList.toggle("active", PICK_L.on); renderList(); });
+  const oc = document.getElementById("orphans-chip");
+  if (oc) oc.addEventListener("click", openOrphans);
+
+  $("#export-pdf").addEventListener("click", () => { fillPdfLayers(); $("#pdf-back").hidden = false; });
+  const plr = document.getElementById("pdf-layers-row");
+  if (plr) plr.addEventListener("click", (ev) => {
+    const a = ev.target.dataset && ev.target.dataset.pl;
+    if (a) plr.querySelectorAll("#pdf-layers input").forEach((c) => { c.checked = a === "all"; });
+  });
   $("#pdf-go").addEventListener("click", () => exportPdf().catch((e) => showError("pdf", e)));
   // Markups: editable, flattened or none (the clean drawing) - kept on this device
   const pm = $("#pdf-markups");
@@ -7715,6 +8031,8 @@ function wireChrome() {
     const none = pm.value === "none";
     $("#pdf-dlg h3").textContent = none ? "Export PDF" : "Export PDF with markups";
     for (const id of ["pdf-dpi", "pdf-report"]) { const e = document.getElementById(id); e.disabled = none; e.closest("label").style.opacity = none ? ".45" : ""; }
+    const lr = document.getElementById("pdf-layers-row");
+    if (lr) { lr.style.opacity = none ? ".45" : ""; lr.style.pointerEvents = none ? "none" : ""; }
   };
   try { const v = localStorage.getItem("lwk-sheets:pdf-markups"); if (v && [...pm.options].some((o) => o.value === v)) pm.value = v; } catch (e) {}
   pm.addEventListener("change", () => { try { localStorage.setItem("lwk-sheets:pdf-markups", pm.value); } catch (e) {} paintPm(); });

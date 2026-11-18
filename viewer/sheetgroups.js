@@ -324,6 +324,7 @@ export function sheetMenu(ev, s, chosen) {
   const groups = M.groups.filter((g) => (g.set || "") === set);
   const n = nums.length > 1 ? `${nums.length} sheets` : `"${s.number}"`;
   openMenu(ev.clientX, ev.clientY, [
+    ...(CTX && CTX.moveItems && CTX.itemsOn(nums) ? [{ label: `Move the ${CTX.itemsOn(nums)} comment(s) and issue(s) on ${esc(n)} to another sheet ...`, action: () => CTX.moveItems(nums) }] : []),
     ...(CTX && CTX.cleanPdf ? [{ label: `Download ${esc(n)} as PDF (clean, no markups)`, action: () => CTX.cleanPdf(nums) },
       ...(M.can_group || M.can_hide ? ["-"] : [])] : []),
     ...(M.can_group ? [

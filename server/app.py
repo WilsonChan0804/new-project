@@ -530,10 +530,55 @@ def stamp(prev, item, w, store=None):
             iss["closed_at"] = ((piss or {}).get("closed_at") if was_closed else None) or t
         else:
             iss.pop("closed_at", None)
+        # endorsed by whoever raised it, once it is closed; the server says by whom and when
+        pend = (piss or {}).get("endorsed")
+        if st != "Closed":
+            iss.pop("endorsed", None)
+        elif iss.get("endorsed") and not pend:
+            iss["endorsed"] = {"by": by, "at": t}
+            hist.append({"at": t, "by": by, "event": "endorsed"})
+        elif iss.get("endorsed"):
+            iss["endorsed"] = pend
+        # archived (taken off the drawing and the list) or brought back
+        if bool(item.get("archived")) != bool((prev or {}).get("archived")):
+            hist.append({"at": t, "by": by, "event": "archived" if item.get("archived") else "restored"})
         iss["updated_at"] = t
         iss["updated_by"] = by
         iss["history"] = hist[-200:]
+    # archived: by whom and when, said here
+    if item.get("archived"):
+        pa = (prev or {}).get("archived")
+        item["archived"] = pa if pa else {"by": by, "at": t}
+    else:
+        item.pop("archived", None)
     return item
+
+
+def _is_author(prev, w, issue=False):
+    """Is this person the one who made the item (or raised its issue)?"""
+    src = ((prev or {}).get("issue") or {}) if issue else (prev or {})
+    aid = src.get("author_id") if src.get("author_id") is not None else (prev or {}).get("author_id")
+    if aid is not None and w.uid is not None:
+        return int(aid) == int(w.uid)
+    a = (src.get("author") or (prev or {}).get("author") or "").strip().lower()
+    return bool(a) and a == (w.name or "").strip().lower()
+
+
+def check_item_rules(prev, item, w, role):
+    """Archive / restore, endorse and moving to another sheet: the author
+    (or for endorsing, whoever raised the issue) or a project admin."""
+    if not prev or not accounts_on() or role == "admin":
+        return
+    if bool(item.get("archived")) != bool(prev.get("archived")) and not _is_author(prev, w):
+        raise HTTPException(status_code=403, detail="Only whoever made it, or a project admin, may archive or restore it")
+    if (item.get("sheet") or "") != (prev.get("sheet") or "") and not _is_author(prev, w):
+        raise HTTPException(status_code=403, detail="Only whoever made it, or a project admin, may move it to another sheet")
+    iss, piss = item.get("issue") or {}, prev.get("issue") or {}
+    if isinstance(iss, dict) and iss.get("endorsed") and not piss.get("endorsed"):
+        if (iss.get("status") or "Open") != "Closed":
+            raise HTTPException(status_code=400, detail="Only a closed issue can be endorsed")
+        if not _is_author(prev, w, issue=True):
+            raise HTTPException(status_code=403, detail="Only whoever raised the issue, or a project admin, may endorse it")
 
 
 def _comment_key(c):
@@ -593,6 +638,7 @@ async def put_item(request: Request, x_viewer_token: str = Header(default=""),
     st = store_for(x_project)
     prev = st.get(item["id"])
     check_layer_edit(x_project, w, role, prev, item)
+    check_item_rules(prev, item, w, role)
     CFG["base_url"] = str(request.base_url)
     rev, item = save_item(x_project, prev, item, w, str(request.base_url))
     out = {"rev": rev, "id": item["id"], "item": item}
@@ -817,7 +863,9 @@ def personal_targets(pid, prev, item, actor="", with_uid=False):
     st, pst = iss.get("status") or "Open", piss.get("status") or "Open"
     if piss and st != pst and st in ("Resolved", "Closed"):
         add(iss.get("author") or "", "the issue you raised is now %s - please re-check it" % st if st == "Resolved"
-            else "the issue you raised is now %s" % st)
+            else "the issue you raised is closed - please endorse it")
+    if piss and iss.get("endorsed") and not piss.get("endorsed"):
+        add(iss.get("assigned_to") or "", "endorsed by %s" % ((iss.get("endorsed") or {}).get("by") or "the raiser"))
     if piss and pst in ("Resolved", "Closed") and st not in ("Resolved", "Closed") and not iss.get("dismissed"):
         # re-checked and not fixed: whoever holds it is told
         add(iss.get("assigned_to") or "", "re-checked and not fixed - reopened by %s" % (iss.get("updated_by") or "the raiser"))
@@ -2934,7 +2982,7 @@ def digest_for(pid, days=7):
     now = time.time()
     since = now - days * 86400
     today = time.strftime("%Y-%m-%d", time.gmtime(now + 8 * 3600))
-    items = [it for it in store_for(pid).all_items()[1] if it.get("issue") and not it.get("deleted")]
+    items = [it for it in store_for(pid).all_items()[1] if it.get("issue") and not it.get("deleted") and not it.get("archived")]
     done = ("Resolved", "Closed")
     raised = [it for it in items if (_parse_when(it["issue"].get("created_at") or it.get("created_at")) or 0) >= since]
     closed = [it for it in items if (it["issue"].get("status") in done)
@@ -3024,7 +3072,7 @@ def digest_html(pid, d):
     """The weekly numbers as a page to keep (made into a PDF in Folders)."""
     import html as H
     e = lambda s: H.escape(str(s if s is not None else ""))
-    items = [it for it in store_for(pid).all_items()[1] if it.get("issue") and not it.get("deleted")]
+    items = [it for it in store_for(pid).all_items()[1] if it.get("issue") and not it.get("deleted") and not it.get("archived")]
     done = ("Resolved", "Closed", "Not an issue")
     open_ = [it for it in items if it["issue"].get("status") not in done]
     clash = sum(1 for it in open_ if it.get("clash"))
