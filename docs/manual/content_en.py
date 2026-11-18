@@ -864,6 +864,7 @@ DOC = [
     UL([
         '**Sheets:** the right panel lists **All / Issues / Comments**, grouped by Sheet, Status, Assigned to, Raised by, View, Issue type or Markup type, with a **Search** box. Right-click an entry to open it, show it on the sheet or in 3D, or change its status.',
         '**3D:** **Issues in 3D** groups by Status, Floor, Issue type, Assigned to, Raised by or Model. **Sheet issues** also shows issues raised on sheets as diamonds in the model. **Hide issues** (at the top of the panel; on Sheets, **👁 Markups**) hides the pins, and **Hide closed** hides resolved and closed ones (nothing is deleted) - on a sheet, with every markup grouped with that issue.',
+        '**3D, the same as Sheets:** above **Issues in 3D**, **☰ Layers** opens the layers panel (an eye per layer, **+ New layer**, drag issues between layers, 🗑 for an empty one; new 3D issues go on the current layer, and a hidden layer\'s pins leave the model); **Endorsed** and **Archived** show the issues that are otherwise hidden; **☑ Select** ticks several (Shift-click for a run) for **Close**, **Endorse**, **Archive** / **Restore** or **Layer ▸** together. Right-click an issue in the list, or its pin in the model, for **Endorse** (once closed), **Archive** and **Layer**. Each model in the Models list shows its open issues (orange) and comments (grey).',
         '**Dashboard:** filters, overdue lists and the responsibility table (see Dashboard and projects).',
     ]),
     H3('BCF: issues with Revit, Navisworks and others'),

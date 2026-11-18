@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-22", date: "18 Nov 2026",
+    items: [
+      "**3D, the same as Sheets:** above **Issues in 3D** there are now **\u2630 Layers**, **Endorsed**, **Archived** and **\u2611 Select**. Tick several issues to Close, Endorse, Archive / Restore or change their Layer together. Archived and endorsed issues and hidden layers leave both the list and the model.",
+      "**Right-click in 3D:** an issue in the list, or its pin in the model, now offers **Endorse** (once closed), **Archive** / **Restore** and **Layer**, as on Sheets.",
+      "**Counts per model:** each model in the 3D Models list shows its open issues and comments.",
+    ],
+  },
+  {
     version: "2027-01-21", date: "18 Nov 2026",
     items: [
       "**Move from the drawing:** select comments and issues on the sheet, right-click > **Move to another sheet**. The same menu archives, closes or endorses them; on a phone or iPad the selection bar has **Move**.",

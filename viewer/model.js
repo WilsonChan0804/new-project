@@ -35,6 +35,7 @@ import { createArrows } from "./arrows3d.js";
 import { createQuality } from "./quality.js";
 import { createWalk } from "./walk.js";
 import { openMenu } from "./ctxmenu.js";
+import { createItemKit } from "./itembulk.js";
 import { createViewCube } from "./viewcube.js";
 import { typeOf, typeColor, typeOptions, shortDate } from "./issuetypes.js";
 import { buildBcf, buildAxisTest, buildTopTest, download, readBcf } from "./bcf.js";
@@ -5060,6 +5061,19 @@ function issueMenu3D(it, open, jump) {
       await save("Marked not an issue.");
     } });
   }
+  // endorse, archive, layer: the same rules as Sheets (itembulk.js bulkRule)
+  const opt = (label, kind, arg) => {
+    const why = bulkRule(it, kind);
+    return { label, disabled: !!why, title: why ? "Not possible: " + why : "", action: () => bulkApply([it.id], kind, arg) };
+  };
+  entries.push("-");
+  if (st === "Closed" && !(iss.endorsed)) entries.push(opt("Endorse", "endorse"));
+  entries.push(it.archived ? opt("Restore", "restore") : opt("Archive", "archive"));
+  entries.push({ label: `Layer: ${layerOf(it)} \u25b8`, action: () => {
+    const r = (document.activeElement || document.body).getBoundingClientRect();
+    openMenu(S.lastMenuX || r.left, S.lastMenuY || r.top, LAYERS.all().map((n) => ({ label: (n === layerOf(it) ? "\u2713 " : "") + n,
+      disabled: !layerEditable(n) || n === layerOf(it), action: () => bulkApply([it.id], "layer", n) })));
+  } });
   entries.push("-", { label: "Delete", action: async () => {
     if (!confirm(`Delete issue "${iss.title || ""}"?`)) return;
     await Store.remove(it.id).catch((e) => status(e.message));
@@ -5416,6 +5430,14 @@ function wireOrbitCentre(dom) {
     // A drag was an orbit; only a tap means "centre here".
     if (moved > 4 || held > 600) return;
 
+    // on an issue's pin: that issue's menu (status, endorse, archive, layer ...)
+    const pid = pinIdAtScreen(ev);
+    const pit = pid && S.items.find((x) => x.id === pid);
+    if (pit) {
+      S.lastMenuX = ev.clientX; S.lastMenuY = ev.clientY;
+      openMenu(ev.clientX, ev.clientY, issueMenu3D(pit, () => selectIssue(pid), () => goToIssueView(pit)));
+      return;
+    }
     const found = await pickAt(ev);
     open3DMenu(ev, found);
   });
@@ -6082,6 +6104,25 @@ function shortModelName(name, models) {
   return out.length >= 2 ? out : name;
 }
 
+/* Each model row: its open issues (orange), closed ones (green, when none is
+   open) and comments - not counting archived and endorsed ones. */
+function paintModelCounts3D() {
+  const by = new Map();
+  for (const it of S.items || []) {
+    if (!in3D(it) || it.deleted || it.archived || isEndorsed(it)) continue;
+    const k = it.model_name || "";
+    let c = by.get(k);
+    if (!c) by.set(k, c = { open: 0, done: 0, com: 0 });
+    if (it.issue && !it.issue.comment_only) { if (issueDone3D(it)) c.done++; else c.open++; } else c.com++;
+  }
+  for (const box of document.querySelectorAll("#model-list [data-mcnt]")) {
+    const c = by.get(box.dataset.mcnt) || { open: 0, done: 0, com: 0 };
+    box.innerHTML = (c.open ? `<span class="sc sc-open">! ${c.open}</span>` : c.done ? `<span class="sc sc-done">\u2713 ${c.done}</span>` : "")
+      + (c.com ? `<span class="sc sc-com">\u{1F4AC} ${c.com}</span>` : "");
+    box.title = [c.open && `${c.open} open issue(s)`, c.done && `${c.done} resolved or closed`, c.com && `${c.com} comment(s)`].filter(Boolean).join(", ");
+  }
+}
+
 function renderModelList() {
   const models = (S.manifest.models || []).filter((m) => m.fragments && m.status !== "converting");
   $("#model-count").textContent = `(${models.length})`;
@@ -6102,6 +6143,7 @@ function renderModelList() {
       + `<input type="checkbox" id="${id}">`
       + `<span class="nm">${short}</span></label>`
       + swatchHtml(m.name)
+      + `<span class="sheet-cnt" data-mcnt="${m.name.replace(/"/g, "&quot;")}"></span>`
       + `<button class="m-more ghost" title="Details">&#9656;</button></div>`
       + `<div class="m-detail" hidden>`
       + `<div class="tags">${m.role || "link"} &middot; `
@@ -6144,6 +6186,7 @@ function renderModelList() {
       writeSelection();
     });
   }
+  try { paintModelCounts3D(); } catch (e) {}
 }
 
 async function loadAll(on) {
@@ -7020,6 +7063,30 @@ function uid() {
 
 const in3D = (it) => it && it.placement === "3d" && it.model_mm;
 
+/* Endorsed / archived / ticked / layers: the same kit as Sheets (itembulk.js) */
+const KIT = createItemKit({
+  S, putItem: (it) => putItem(it), status: (m) => status(m),
+  redraw: () => { try { refreshPins(); } catch (e) {} S.needsRender = true; },
+  renderList: () => renderIssueList(),
+  inScope: (it) => in3D(it), here: (it) => in3D(it),
+  selection: () => (S.selIssueId ? [S.selIssueId] : []),
+  onLayers: () => {}, reloadLayerRules: () => loadLayerRules3D(),
+  noun: "issue", emptyHere: "No 3D issues on it",
+  kindLabel: () => "Issue",
+});
+const { LAYERS, layerOf, layerEditable, isEndorsed, offView, PICK_L, bulkRule, bulkApply, paintBulkBar } = KIT;
+/* shown in the model and the list: not archived / endorsed (unless asked), its layer on */
+const shown3D = (it) => !offView(it) && !(S.hiddenLayers && S.hiddenLayers.has(layerOf(it)));
+async function loadLayerRules3D() {
+  try { S.layerRules = await Store.api("/api/layers"); } catch (e) { S.layerRules = null; return; }
+  for (const n of Object.keys(S.layerRules.layers || {})) LAYERS.extra.add(n);
+  let chosen = false;
+  try { chosen = localStorage.getItem(LAYERS.key("hidden-layers")) !== null; } catch (e) {}
+  if (!chosen) S.hiddenLayers = new Set(Object.entries(S.layerRules.layers || {}).filter(([, v]) => v.hidden_default).map(([k]) => k));
+  try { refreshPins(); } catch (e) {}
+  try { renderIssueList(); } catch (e) {}
+}
+
 /* Issues raised on the sheets, shown in 3D too: where their markup sits in
    the model (the viewport's mapping gave it Revit coordinates), a little
    above the floor on a plan. Diamonds, where 3D issues are balls. */
@@ -7518,7 +7585,13 @@ function sceneToSharedMM(v) {
 
 /* The issue pin under the pointer (within a finger's width), opened. */
 function pinAtScreen(ev) {
-  if (!S.pins || !S.pins.children.length) return false;
+  const best = pinIdAtScreen(ev);
+  if (!best) return false;
+  selectIssue(best);
+  return true;
+}
+function pinIdAtScreen(ev) {
+  if (!S.pins || !S.pins.children.length) return null;
   const r = S.renderer.domElement.getBoundingClientRect();
   const x = ev.clientX - r.left, y = ev.clientY - r.top;
   const lim = ev.pointerType === "touch" ? 22 : 12;
@@ -7535,9 +7608,7 @@ function pinAtScreen(ev) {
     const d = Math.hypot(sx - x, sy - y);
     if (d < bd) { bd = d; best = id; }
   }
-  if (!best) return false;
-  selectIssue(best);
-  return true;
+  return best;
 }
 
 function pinScale() {
@@ -7651,6 +7722,7 @@ function refreshPins() {
   const diamond = new THREE.OctahedronGeometry(1.25, 0);
   S.items.filter(inList3D).forEach((it) => {
     if (S.hideDone && issueDone3D(it)) return;          // "Hide closed"
+    if (!shown3D(it)) return;                            // archived, endorsed, layer off
     const closed = it.issue && it.issue.status === "Closed";
     const hex = closed ? 0x0e9f6e
       : new THREE.Color(typeColor(it)).getHex();
@@ -7760,6 +7832,7 @@ async function buildIssue3D(p, f) {
   return {
     id: uid(),
     placement: "3d",
+    layer: layerEditable(LAYERS.current()) ? LAYERS.current() : "General",
     model_mm: [toMM(p.point.x), toMM(p.point.y), toMM(p.point.z)],
     model_original_mm: originalMM(p.point),
     model_internal_mm: sceneToInternalMM(p.point),
@@ -7846,7 +7919,10 @@ function renderIssueList() {
 
   const fType = (($("#i3-ftype") || {}).value) || "";
   const fStatus = (($("#i3-fstatus") || {}).value) || "";
+  let offN = 0, layerN = 0;
   const shown = mine.filter((it) => {
+    if (offView(it)) { offN++; return false; }
+    if (S.hiddenLayers && S.hiddenLayers.has(layerOf(it))) { layerN++; return false; }
     if (fType && (!it.issue || typeOf(it).id !== fType)) return false;
     if (fStatus && (!it.issue || !statusMatches3D(it.issue, fStatus))) return false;
     if (!q) return true;
@@ -7859,6 +7935,10 @@ function renderIssueList() {
   $("#i3-count").textContent = mine.length
     ? "(" + (shown.length === mine.length ? mine.length
              : shown.length + " of " + mine.length) + ")" : "";
+  paintModelCounts3D();
+  paintBulkBar(shown.map((it) => it.id), "i3-bulk");
+  const lc = document.getElementById("i3-layers");
+  if (lc) { lc.classList.toggle("warn", !!layerN); lc.title = layerN ? `${layerN} issue(s) on hidden layers - click to choose the layers` : "Markup layers: show or hide each, as in Photoshop"; }
 
   // the queries' pictures taken in 3D (queryviews.js): their own group, first
   const qrows = QV.hidden() || fType ? [] : QV.all().filter((e) => e.kind === "view3d" && QV.matches(e, q, fStatus));
@@ -7880,7 +7960,8 @@ function renderIssueList() {
   if (!shown.length) {
     const li = document.createElement("li");
     li.className = "empty-note";
-    li.textContent = mine.length ? "Nothing matches this search."
+    li.textContent = mine.length ? (offN || layerN) && shown.length === 0 && !q && !fType && !fStatus
+      ? `All ${mine.length} are archived, endorsed or on hidden layers.` : "Nothing matches this search."
       : "No issues in 3D yet. Switch to Add issue and click the model.";
     ul.appendChild(li);
     return;
@@ -7947,9 +8028,28 @@ function renderIssueList() {
       const jump = () => goToIssueView(it);
       li.addEventListener("contextmenu", (ev) => {
         ev.preventDefault();
+        S.lastMenuX = ev.clientX; S.lastMenuY = ev.clientY;
         openMenu(ev.clientX, ev.clientY, issueMenu3D(it, () => li.click(), jump));
       });
-      li.addEventListener("click", () => {
+      if (it.archived) li.classList.add("archived");
+      if (isEndorsed(it)) li.classList.add("endorsed");
+      if (it.archived || isEndorsed(it)) li.querySelector(".chip").insertAdjacentHTML("afterend", `<span class="chip archived">${it.archived ? "Archived" : "Endorsed"}</span>`);
+      if (PICK_L.on) {
+        li.classList.add("pickable");
+        li.classList.toggle("picked", PICK_L.sel.has(it.id));
+        li.insertAdjacentHTML("afterbegin", `<span class="lp-box" aria-hidden="true">${PICK_L.sel.has(it.id) ? "&#10003;" : ""}</span>`);
+      }
+      li.addEventListener("click", (ev) => {
+        if (PICK_L.on) {
+          const all = shown.map((x) => x.id);
+          if (ev.shiftKey && PICK_L.last && all.includes(PICK_L.last)) {
+            const [a, b] = [all.indexOf(PICK_L.last), all.indexOf(it.id)].sort((x, y) => x - y);
+            for (const id of all.slice(a, b + 1)) PICK_L.sel.add(id);
+          } else if (PICK_L.sel.has(it.id)) PICK_L.sel.delete(it.id); else PICK_L.sel.add(it.id);
+          PICK_L.last = it.id;
+          renderIssueList();
+          return;
+        }
         ul.querySelectorAll("li.sel").forEach((x) => x.classList.remove("sel"));
         li.classList.add("sel");
         S.selIssueId = it.id;
@@ -8483,6 +8583,28 @@ async function boot() {
   QV.onChange(() => { try { refreshQueryPins(); } catch (e) {} try { renderIssueList(); } catch (e) {} });
   QV.load(Store.currentProject() || "");
   try { S.hideDone = localStorage.getItem("lwk.hideDone") === "1"; } catch (e) {}
+  S.hiddenLayers = LAYERS.hidden();
+  loadLayerRules3D();
+  for (const [id, key, what] of [["i3-endorsed", "showEndorsed", "Endorsed issues"], ["i3-archived", "showArchived", "Archived issues"]]) {
+    const b = document.getElementById(id);
+    if (!b) continue;
+    try { S[key] = localStorage.getItem("lwk.sheets." + key) === "1"; } catch (e) {}
+    const paint = () => {
+      b.classList.toggle("active", !!S[key]);
+      b.setAttribute("aria-pressed", S[key] ? "true" : "false");
+      b.title = S[key] ? `${what} are shown - click to hide them again` : `${what} are hidden - click to show them`;
+    };
+    paint();
+    b.addEventListener("click", () => {
+      S[key] = !S[key];
+      try { localStorage.setItem("lwk.sheets." + key, S[key] ? "1" : "0"); } catch (e) {}
+      paint(); refreshPins(); renderIssueList();
+    });
+  }
+  const i3p = document.getElementById("i3-pick");
+  if (i3p) i3p.addEventListener("click", () => { PICK_L.on = !PICK_L.on; PICK_L.sel.clear(); i3p.classList.toggle("active", PICK_L.on); renderIssueList(); });
+  const i3l = document.getElementById("i3-layers");
+  if (i3l) i3l.addEventListener("click", (ev) => KIT.openLayersPop(ev.currentTarget));
   const dt = document.getElementById("done-toggle");
   if (dt) { dt.addEventListener("click", () => { setHideDone(!S.hideDone);
     status(S.hideDone ? "Resolved and closed issues hidden in the model. Nothing was deleted." : "All issues shown in the model."); });

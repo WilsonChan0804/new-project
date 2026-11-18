@@ -3112,3 +3112,24 @@ header .flr-lab { white-space: nowrap; }
 #pdf-layers-row .pdf-lh button { height: 22px; padding: 0 8px; font-size: 11px; }
 #pdf-layers { display: flex; flex-wrap: wrap; gap: 2px 14px; max-height: 120px; overflow-y: auto; }
 #pdf-layers label { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ink); margin: 0; }
+
+/* 3D: the same Select bar and ticked rows as Sheets */
+#i3-bulk { position: sticky; bottom: 0; z-index: 3; background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -4px 14px rgba(28,25,23,.08);
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+#i3-bulk[hidden] { display: none; }
+#i3-bulk .lb-top, #i3-bulk .lb-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+#i3-bulk .spacer { flex: 1; }
+#i3-bulk button { height: 26px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--ink-2, #44403C); font: 500 11.5px inherit; cursor: pointer; }
+#i3-bulk button:hover:not([disabled]) { border-color: var(--brand, #F08020); color: var(--ink); }
+#i3-bulk button[disabled] { opacity: .45; cursor: default; }
+#i3-bulk [data-b="done"] { background: var(--ink, #1C1917); color: #fff; border-color: var(--ink, #1C1917); }
+#i3-list li.pickable { position: relative; padding-left: 34px !important; }
+#i3-list li .lp-box { position: absolute; left: 10px; top: 12px; width: 16px; height: 16px; border: 1.5px solid var(--line-2, #D6D3D1);
+  border-radius: 4px; background: var(--panel); color: #fff; font: 700 11px/14px system-ui, sans-serif; text-align: center; }
+#i3-list li.picked { background: var(--accent-soft, #FFF1E6) !important; }
+#i3-list li.picked .lp-box { background: var(--brand, #F08020); border-color: var(--brand, #F08020); }
+#i3-list li.archived, #i3-list li.endorsed { opacity: .65; }
+#i3-list .chip.archived { background: #e7e5e4; color: #44403c; margin-left: 4px; }
+.i3-togs2 { padding-top: 4px !important; }
+.i3-tog.warn { color: #b45309 !important; border-color: #f59e0b !important; }
+#model-list .sheet-cnt { margin-left: 4px; }

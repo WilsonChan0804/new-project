@@ -63,6 +63,7 @@ PART = [
     UL([
         '**Sheets：** 右邊 panel 列出 **All / Issues / Comments**，可以按 Sheet、Status、Assigned to、Raised by、View、Issue type 或者 Markup type 分組，有 **Search** 格。右鍵撳一項可以打開、喺 sheet 或者 3D 顯示，或者改狀態。',
         '**3D：** **Issues in 3D** 按 Status、Floor、Issue type、Assigned to、Raised by 或者 Model 分組。**Sheet issues** 會將喺 sheet 開嘅 issue 用菱形顯示喺 model 入面。**Hide issues**（panel 頂部）隱藏啲 pin，**Hide closed** 隱藏已解決同已關閉嘅（乜都冇刪）- 喺 sheet 上面，連同同嗰個 issue group 埋一齊嘅所有 markup。',
+        '**3D 同 Sheets 一樣：** **Issues in 3D** 上面嘅 **☰ Layers** 打開圖層 panel（每層一隻眼、**+ New layer**、將 issue 拖去另一層、🗑 刪走冇嘢嘅圖層；新 3D issue 放喺而家嗰層，收埋嘅圖層嘅 pin 會喺模型消失）；**Endorsed** 同 **Archived** 顯示平時收埋咗嘅 issues；**☑ Select** 剔幾個（Shift-click 剔一串）一齊 **Close**、**Endorse**、**Archive** / **Restore** 或者 **Layer ▸**。喺清單 right-click 一個 issue，或者喺模型 right-click 佢個 pin，有 **Endorse**（close 咗之後）、**Archive** 同 **Layer**。Models 清單每個模型會顯示佢未完成嘅 issues（橙色）同 comments（灰色）。',
         '**Dashboard：** 篩選、過咗期清單同責任表（睇「Dashboard 同 project」）。',
     ]),
     H3('BCF：同 Revit、Navisworks 等等交換 issue'),
