@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-23", date: "18 Nov 2026",
+    items: [
+      "**Model Doctor in the viewer:** 3D > Checks > **Doctor** runs LWK Model Doctor's checks on the models shown, with no Revit needed, and scores the model out of 100. It finds duplicates, overlapping walls, walls that nearly touch, walls and columns, clashes, gaps and duplicates against the other models loaded, doors off the floor, wall bases and tops off the slabs, and components sunk into the floor.",
+      "**A finding:** click it to see it. **Not an error** applies to the whole project, and Revit reads the same list. **Make issue** opens a 3D issue at the element. **Fix in Revit** queues the finding for Model Doctor in Revit. **CSV** exports the list.",
+      "**History:** each run is kept, and the list shows what is new since the last run and what has gone.",
+    ],
+  },
+  {
     version: "2027-01-22", date: "18 Nov 2026",
     items: [
       "**3D, the same as Sheets:** above **Issues in 3D** there are now **\u2630 Layers**, **Endorsed**, **Archived** and **\u2611 Select**. Tick several issues to Close, Endorse, Archive / Restore or change their Layer together. Archived and endorsed issues and hidden layers leave both the list and the model.",

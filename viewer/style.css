@@ -2105,8 +2105,8 @@ header select.two-proj, header select.two-part { min-width: 70px; flex: 0 0 auto
 :root[data-theme="dark"] #viewcube-bar button.active { background: #f28022; color: #fff; }
 
 /* ------------------------------------------------- Checks: clash and headroom (clash.js, headroom.js) */
-.chk-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-.chk-tabs button { flex: 1; }
+.chk-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.chk-tabs button { flex: 1 1 auto; white-space: nowrap; }
 .chk-row { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; }
 .chk-row select { flex: 1 1 auto; min-width: 0; font-size: 12px; }
 .chk-row button { flex: none; }
@@ -3133,3 +3133,43 @@ header .flr-lab { white-space: nowrap; }
 .i3-togs2 { padding-top: 4px !important; }
 .i3-tog.warn { color: #b45309 !important; border-color: #f59e0b !important; }
 #model-list .sheet-cnt { margin-left: 4px; }
+/* Checks > Doctor (doctor.js) */
+#doc-box .doc-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+#doc-box .doc-badge { width: 58px; height: 58px; flex: none; border-radius: 50%; background: #9AA5B1; color: #fff; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; line-height: 1.05; }
+#doc-box .doc-badge b { font-size: 21px; }
+#doc-box .doc-badge small { font-size: 10px; opacity: .95; }
+#doc-box .doc-sum { flex: 1; min-width: 0; font-size: 11.5px; }
+#doc-box .doc-t { font-weight: 700; font-size: 13px; }
+#doc-box .doc-bar { height: 5px; background: var(--line, #E7E5E4); border-radius: 3px; margin-top: 5px; overflow: hidden; }
+#doc-box .doc-bar span { display: block; height: 100%; width: 0; background: #9AA5B1; }
+#doc-box .doc-hist { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; color: var(--muted); font-size: 10.5px; }
+#doc-box .doc-h { border: 1px solid; border-radius: 999px; padding: 0 5px; color: var(--ink-2, #44403C); }
+#doc-box .doc-checks { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 6px 0; max-height: 46vh; overflow: auto; }
+#doc-box .doc-ck { padding: 5px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto auto; gap: 2px 6px; align-items: center; font-size: 12px; }
+#doc-box .doc-ck.off { display: block; color: var(--muted); }
+#doc-box .doc-ck .row-check { width: auto; }
+#doc-box .doc-desc { grid-column: 1 / -1; font-size: 11px; }
+#doc-box .doc-n { min-width: 22px; height: 18px; border-radius: 9px; color: #fff; font-size: 11px; text-align: center; line-height: 18px; padding: 0 5px; }
+#doc-box .doc-gear { padding: 0 5px; height: 22px; }
+#doc-box .doc-opts { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; padding: 4px 0 2px 18px; font-size: 11.5px; }
+#doc-box .doc-opts label { display: flex; flex-direction: column; gap: 2px; }
+#doc-box .doc-opts label.row-check { flex-direction: row; }
+#doc-box .doc-opts input:not([type=checkbox]) { height: 24px; border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; font: inherit; max-width: 160px; }
+#doc-box .doc-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 2px; }
+#doc-box .doc-filters select { font-size: 11px; height: 26px; max-width: 48%; }
+#doc-box .doc-sumline { font-size: 11px; margin: 2px 0 4px; }
+#doc-box .doc-list li { display: flex; gap: 7px; align-items: flex-start; padding: 6px 4px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 12px; }
+#doc-box .doc-list li.sel { background: var(--accent-soft, #FFF1E6); }
+#doc-box .doc-list li.note { cursor: default; color: var(--muted); }
+#doc-box .doc-sev { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 4px; }
+#doc-box .doc-b { min-width: 0; flex: 1; }
+#doc-box .doc-x { color: var(--ink-2, #44403C); font-size: 11.5px; }
+#doc-box .chip { font-size: 10px; padding: 0 6px; border-radius: 999px; margin-left: 3px; }
+#doc-box .doc-new { background: #DBEAFE; color: #1D4ED8; }
+#doc-box .doc-acc { background: #DCFCE7; color: #15803D; }
+#doc-box .doc-q { background: #FEF3C7; color: #92400E; }
+#doc-box .doc-iss { background: #EDE9FE; color: #6D28D9; }
+#doc-box .doc-acts { position: sticky; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11.5px; }
+#doc-box .doc-acts button { height: 26px; padding: 0 8px; font-size: 11.5px; }
+#doc-box .doc-acts button[disabled] { opacity: .45; }

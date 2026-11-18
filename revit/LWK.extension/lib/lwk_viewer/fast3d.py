@@ -37,7 +37,7 @@ Properties go in a second file, <name>.props.json, read by the viewer only
 when someone asks for an element's properties.
 """
 
-__version__ = "2026-10-09a"
+__version__ = "2027-01-23"
 
 import gzip
 from lwk_viewer.compat import id_int, new_id
@@ -327,6 +327,8 @@ class DocWriter(object):
                 "uid": [e.get("uid") or "" for e in self.el],
                 "baked": [e["baked"] for e in self.el],
             },
+            # Model Doctor facts per element (doctor_facts), null where none
+            "dr": [e.get("dr") for e in self.el] if any(e.get("dr") for e in self.el) else None,
             "meshes": self.meshes,
             "defs": [{"meshes": d["meshes"], "kids": kid_rows[i]} for i, d in enumerate(self.defs)],
             "inst": inst_rows,
@@ -397,6 +399,66 @@ def describe(doc, el, rec):
         rec["guid"] = ifc_guid(ExportUtils.GetExportId(doc, el.Id))
     except Exception:
         pass
+    dr = doctor_facts(doc, el)
+    if dr:
+        rec["dr"] = dr
+
+
+_PHASES = {}
+
+
+def _phase_index(doc, pid):
+    """A phase id -> its place in the document's phase order (0 first)."""
+    key = _safe(lambda: doc.GetHashCode(), 0)
+    order = _PHASES.get(key)
+    if order is None:
+        order = {}
+        try:
+            for i, ph in enumerate(doc.Phases):
+                order[id_int(ph.Id)] = i
+        except Exception:
+            pass
+        _PHASES[key] = order
+    return order.get(id_int(pid), -1)
+
+
+def doctor_facts(doc, el):
+    """What the viewer's Model Doctor cannot read off the triangles, kept
+    small (only what is set): a wall's width (mm); the phase it is made in
+    and demolished in (their order, so the viewer can tell whether two
+    elements ever stand together); its design option and that option's set;
+    pinned; in a group; a door's or window's sill height (mm above its
+    level). None when there is nothing to say."""
+    from Autodesk.Revit.DB import BuiltInParameter as B, ElementId
+    out = {}
+    w = _safe(lambda: el.Width)
+    if w:
+        out["w"] = round(w * FT * 1000.0, 1)
+    pc = _safe(lambda: el.get_Parameter(B.PHASE_CREATED))
+    pd = _safe(lambda: el.get_Parameter(B.PHASE_DEMOLISHED))
+    c = _safe(lambda: _phase_index(doc, pc.AsElementId())) if pc is not None else None
+    d = None
+    if pd is not None:
+        did = _safe(lambda: pd.AsElementId())
+        if did is not None and did != ElementId.InvalidElementId:
+            d = _phase_index(doc, did)
+    if (c is not None and c > 0) or d is not None:
+        out["ph"] = [c if c is not None else -1, d if d is not None else -1]
+    opt = _safe(lambda: el.DesignOption)
+    if opt is not None:
+        sp = _safe(lambda: opt.get_Parameter(B.OPTION_SET_ID))
+        out["opt"] = [id_int(opt.Id), _safe(lambda: id_int(sp.AsElementId()), -1) if sp is not None else -1]
+    if _safe(lambda: el.Pinned):
+        out["pin"] = 1
+    gid = _safe(lambda: el.GroupId)
+    if gid is not None and id_int(gid) > 0:
+        out["grp"] = 1
+    sp = _safe(lambda: el.get_Parameter(B.INSTANCE_SILL_HEIGHT_PARAM))
+    if sp is not None:
+        v = _safe(lambda: sp.AsDouble())
+        if v is not None:
+            out["sill"] = round(v * FT * 1000.0, 1)
+    return out or None
 
 
 def _param_group(p):

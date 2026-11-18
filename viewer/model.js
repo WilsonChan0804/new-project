@@ -30,6 +30,7 @@ import { openIssue } from "./issuepanel.js";
 import { createMeasure } from "./measure3d.js";
 import { createClash } from "./clash.js";
 import { createHeadroom } from "./headroom.js";
+import { createDoctor } from "./doctor.js";
 import { createSbd } from "./sbd.js";
 import { createArrows } from "./arrows3d.js";
 import { createQuality } from "./quality.js";
@@ -2126,7 +2127,8 @@ function initClash() {
       for (let i = 0; i < 3; i++) await new Promise((r) => requestAnimationFrame(r));
       renderMain();
       const p = { point: point.clone(), hit: el ? { guid, name, part: el.part, localId: el.lid } : null, level: levelAt(point.y),
-                  shot: captureViewpoint(), markup: [], clash: pre.clash || null, headroom: pre.headroom || null, dims: pre.dims || null };
+                  shot: captureViewpoint(), markup: [], clash: pre.clash || null, headroom: pre.headroom || null, dims: pre.dims || null,
+                  doctor: pre.doctor || null };
       const item = await buildIssue3D(p, pre);
       const ok = await putItem(item);
       if (ok) { refreshPins(); renderIssueList(); }
@@ -2164,6 +2166,7 @@ function initClash() {
       return !m.accounts || !!m.site_admin || (m.projects || {})[Store.currentProject ? Store.currentProject() : ""] === "admin";
     },
     putItem,
+    removeItem: async (id) => { try { await Store.remove(id); } catch (e) { status(e.message); } S.items = Store.all(); },
     uid,
     author: () => Store.author(),
     status,
@@ -2238,6 +2241,7 @@ function initClash() {
   S.clash = createClash(ctx);
   S.head = createHeadroom(ctx);
   S.sbd = createSbd(ctx);
+  S.doctor = createDoctor(ctx);
   if (S.clash) S.clash.refresh();
   // Clash / Headroom
   document.querySelectorAll(".chk-tabs [data-tab]").forEach((b) => b.addEventListener("click", () => {
@@ -2246,6 +2250,8 @@ function initClash() {
     $("#head-box").hidden = b.dataset.tab !== "head";
     $("#sbd-box").hidden = b.dataset.tab !== "sbd";
     $("#lv-box").hidden = b.dataset.tab !== "lv";
+    $("#doc-box").hidden = b.dataset.tab !== "doc";
+    if (b.dataset.tab === "doc" && S.doctor) S.doctor.refresh();
     if (b.dataset.tab === "lv") lvTab();
     if (b.dataset.tab === "head" && S.head) S.head.refresh();
     if (b.dataset.tab === "sbd" && S.sbd) S.sbd.refresh();
@@ -7852,6 +7858,8 @@ async function buildIssue3D(p, f) {
     clash: p.clash || undefined,
     // made from a headroom scan: the place, so the scan knows it
     headroom: p.headroom || undefined,
+    // made from Model Doctor: the finding (its signature: check, problem, elements)
+    doctor: p.doctor || undefined,
     // dimensions shown with the issue's view (a headroom height)
     dims: p.dims && p.dims.length ? p.dims : undefined,
     snapshot: snapshot,
@@ -8270,6 +8278,7 @@ async function boot() {
     }
     refreshPins();
     renderIssueList();
+    if (S.doctor) { try { S.doctor.itemsChanged(); } catch (e) {} }
     renderViewList();
     renderDims();
     if (S.clash) S.clash.itemsChanged();

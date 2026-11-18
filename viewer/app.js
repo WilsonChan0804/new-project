@@ -5537,7 +5537,7 @@ function statusMatches(iss, f) {
   return stt === f;
 }
 
-const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "checkcfg"]);
+const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "clashresult", "checkcfg", "dim3d", "doctorrun", "doctoraccept", "doctorfix"]);
 /* --------------------------------------------- endorsed, archived, ticked */
 
 /* Endorsed issues and archived comments/issues leave the drawing and the
