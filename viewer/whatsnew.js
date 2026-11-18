@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-25", date: "18 Nov 2026",
+    items: [
+      "**See where it is:** a Model Doctor finding now draws an orange **dimension** on the model where it was measured (the gap, the overlap, how far a wall runs in, the sill over the floor, the wall top to the soffit), with a ring that stays the same size at any distance, so a 5 mm gap can be found. A clash shows its depth the same way. Issues made from them keep the dimension.",
+      "**Right-click and several at once** in Doctor and Clash: tick findings or clashes (**\u2611 All shown** ticks them all), then right-click or use the bar to mark them **Not an error** / **Not an issue**, **Count again**, **Make issues** (with who to assign them to) or, in Doctor, **Fix in Revit**.",
+    ],
+  },
+  {
     version: "2027-01-24", date: "18 Nov 2026",
     items: [
       "**Model Doctor in the LWK tab in Revit:** it now shares **Not an error** with the whole project through the viewer, and **Fix queue (N)** lists what the viewer asked to fix and reports back **Fixed in Revit**, or why not.",

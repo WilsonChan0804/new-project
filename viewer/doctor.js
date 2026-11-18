@@ -23,6 +23,7 @@ import { CHECKS, REVIT_ONLY, checkById, defaults, needs, kindOf, health, signatu
 import { saveCsv } from "./checkexport.js";
 import { dueIn, nextNumber, numberText, elementLine } from "./checkissue.js";
 import { day, dayTime } from "./dates.js";
+import { openMenu } from "./ctxmenu.js";
 
 const CFG_ID = "checkcfg-doctor";
 const SEV_COL = { 3: "#C4382E", 2: "#E8A93A", 1: "#9AA5B1" };
@@ -340,7 +341,10 @@ export function createDoctor(ctx) {
     D.shown = shown;
     const gone = D.lastRun && D.lastRun.sigs ? D.lastRun.sigs.filter((s) => !all.some((f) => f.sig === s)).length : 0;
     const nNew = all.filter((f) => f.isNew).length;
-    $("doc-sumline").textContent = `Showing ${shown.length} of ${all.length}` + (D.lastRun ? ` · since ${day(D.lastRun.at)}: ${nNew} new, ${gone} gone` : "");
+    const nSel = all.filter((f) => D.sel.has(f.sig)).length;
+    $("doc-sumline").innerHTML = esc(`Showing ${shown.length} of ${all.length}` + (D.lastRun ? ` · since ${day(D.lastRun.at)}: ${nNew} new, ${gone} gone` : ""))
+      + ` <span class="doc-pick"><button class="ghost" data-pick="all" title="Choose every finding shown">&#9745; All shown</button>`
+      + (nSel ? `<button class="ghost" data-pick="none">Clear (${nSel})</button>` : "") + `</span>`;
     const ul = $("doc-list");
     ul.innerHTML = shown.slice(0, 1500).map((f, i) => {
       const chips = [f.isNew ? `<span class="chip doc-new">New</span>` : "",
@@ -348,6 +352,7 @@ export function createDoctor(ctx) {
         f.queued ? `<span class="chip doc-q" title="${esc(f.queued.reason || "")}">${f.queued.status === "fixed" ? "Fixed in Revit" : f.queued.status === "skipped" ? "Revit: not fixed" : "Queued for Revit"}</span>` : "",
         f.issue ? `<span class="chip doc-iss">Issue${f.issue.issue && f.issue.issue.number ? " #" + f.issue.issue.number : ""}</span>` : ""].join("");
       return `<li data-i="${i}" class="${D.sel.has(f.sig) ? "sel" : ""}${f.scoreless ? " note" : ""}">`
+        + (f.scoreless ? `<span class="doc-tick off"></span>` : `<span class="doc-tick" data-tick title="Choose it (for Not an error, Make issues ...)">${D.sel.has(f.sig) ? "&#10003;" : ""}</span>`)
         + `<span class="doc-sev" style="background:${SEV_COL[f.severity]}" title="${SEV_NAME[f.severity]}"></span>`
         + `<div class="doc-b"><div class="doc-p"><b>${esc(f.problem)}</b>${f.value_mm != null ? ` <span class="muted">${(f.value_mm > 0 ? "+" : "") + f.value_mm.toFixed(1)} mm</span>` : ""} ${chips}</div>`
         + `<div class="doc-x">${esc(f.text)}</div></div></li>`;
@@ -359,24 +364,56 @@ export function createDoctor(ctx) {
     $(id).addEventListener("change", (ev) => { D.filter[key] = ev.target.value; if (key === "check") D.filter.problem = ""; paint(); });
 
   /* ------------------------------------------------------------ choose */
+  // a click shows the finding (and chooses only it); the tick box, Ctrl and
+  // Shift choose several without moving the view
   $("doc-list").addEventListener("click", async (ev) => {
     const li = ev.target.closest("li[data-i]");
     if (!li) return;
     const f = D.shown[Number(li.dataset.i)];
-    if (!f) return;
+    if (!f || f.scoreless) return;
+    const tick = !!ev.target.closest("[data-tick]");
     if (ev.shiftKey && D.last != null) {
       const a = D.shown.findIndex((x) => x.sig === D.last), b = Number(li.dataset.i);
-      if (a >= 0) for (let i = Math.min(a, b); i <= Math.max(a, b); i++) D.sel.add(D.shown[i].sig);
-    } else if (ev.ctrlKey || ev.metaKey) { if (D.sel.has(f.sig)) D.sel.delete(f.sig); else D.sel.add(f.sig); }
+      if (a >= 0) for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (!D.shown[i].scoreless) D.sel.add(D.shown[i].sig);
+    } else if (tick || ev.ctrlKey || ev.metaKey) { if (D.sel.has(f.sig)) D.sel.delete(f.sig); else D.sel.add(f.sig); }
     else { D.sel.clear(); D.sel.add(f.sig); }
     D.last = f.sig;
+    D.asking = false;
     paint();
-    if (!ev.shiftKey && !(ev.ctrlKey || ev.metaKey)) await show(f);
+    if (!tick && !ev.shiftKey && !(ev.ctrlKey || ev.metaKey)) await show(f);
   });
   $("doc-list").addEventListener("dblclick", async (ev) => {
     const li = ev.target.closest("li[data-i]");
     const f = li && D.shown[Number(li.dataset.i)];
-    if (f) await show(f, true);
+    if (f && !ev.target.closest("[data-tick]")) await show(f, true);
+  });
+  $("doc-sumline").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-pick]");
+    if (!b) return;
+    if (b.dataset.pick === "all") for (const f of D.shown || []) { if (!f.scoreless) D.sel.add(f.sig); }
+    else D.sel.clear();
+    paint();
+  });
+  // right-click: the chosen ones (this one, when it is not among them)
+  $("doc-list").addEventListener("contextmenu", (ev) => {
+    const li = ev.target.closest("li[data-i]");
+    const f = li && D.shown[Number(li.dataset.i)];
+    if (!f || f.scoreless) return;
+    ev.preventDefault();
+    if (!D.sel.has(f.sig)) { D.sel.clear(); D.sel.add(f.sig); D.last = f.sig; paint(); }
+    const n = chosen(), k = n.length, cnt = (x) => (k > 1 ? ` (${x})` : "");
+    const nAcc = n.filter((x) => x.acc).length, nFix = n.filter((x) => x.fix && !x.queued).length, nIss = n.filter((x) => !x.issue).length;
+    openMenu(ev.clientX, ev.clientY, [
+      { label: "Show it", disabled: k !== 1, action: () => show(f) },
+      { label: "Show only these elements", disabled: k !== 1, action: () => show(f, true) },
+      "-",
+      { label: "Not an error" + cnt(k - nAcc), disabled: nAcc === k, title: nAcc === k ? "Already not an error" : "For everyone on the project (Revit reads it too)", action: () => act("accept", n) },
+      { label: "Reopen" + cnt(nAcc), disabled: !nAcc, title: nAcc ? "" : "None of these is marked not an error", action: () => act("reopen", n) },
+      { label: (nIss > 1 ? "Make issues" : "Make issue") + cnt(nIss), disabled: !nIss, title: nIss ? "A 3D issue at each, with its dimension" : "They have issues already", action: () => act("issue", n) },
+      { label: "Fix in Revit" + cnt(nFix), disabled: !nFix, title: nFix ? "Queued for Model Doctor in Revit" : "Revit cannot fix these automatically, or they are queued already", action: () => act("fix", n) },
+      "-",
+      { label: "Copy Revit IDs", action: () => act("ids", n) },
+    ]);
   });
 
   const elsOf = (f) => (f.els || []).map((k) => D.raw && D.raw[k]).filter(Boolean);
@@ -395,7 +432,9 @@ export function createDoctor(ctx) {
     const bx = centreOf(list);
     const c = bx.getCenter(new THREE.Vector3()), size = bx.getSize(new THREE.Vector3());
     ctx.focusAt(c, Math.max(1.5, Math.min(8, Math.max(size.x, size.z) * 0.6 + 1)));
-    say(`${f.problem}: ${f.text}` + (only ? " - only these shown; Show all brings everything back." : ""));
+    // where it was measured: an orange dimension on the model
+    D.dims = ctx.showDims ? ctx.showDims(f.dim ? [f.dim] : []) : [];
+    say(`${f.problem}: ${f.text}` + (f.dim ? ` (${f.dim.label}, the orange dimension)` : "") + (only ? " - only these shown; Show all brings everything back." : ""));
   }
 
   /* ----------------------------------------------------------- actions */
@@ -406,7 +445,14 @@ export function createDoctor(ctx) {
     a.hidden = !D.results;
     if (!D.results) return;
     const fixable = n.filter((f) => f.fix && !f.queued), accN = n.filter((f) => f.acc).length;
-    a.innerHTML = `<span class="muted">${n.length ? n.length + " chosen" : "Click a finding (Shift / Ctrl for several)"}</span>`
+    if (D.asking) {
+      const want = n.filter((f) => !f.issue).length;
+      a.innerHTML = `<span>Make <b>${want}</b> issue${want === 1 ? "" : "s"}, due ${esc(dueIn(3))}</span>`
+        + `<input id="doc-assign" class="ck-assign" placeholder="Assign to (optional)" autocomplete="off">`
+        + `<button class="primary" data-a="issue-go">Make</button><button class="ghost" data-a="issue-no">Cancel</button>`;
+      return;
+    }
+    a.innerHTML = `<span class="muted">${n.length ? n.length + " chosen" : "Tick findings (or Shift / Ctrl click) for several; right-click for the menu"}</span>`
       + `<button class="ghost" data-a="accept"${n.length && accN < n.length ? "" : " disabled"} title="Not an error, for everyone on the project (Revit reads it too). It stays in the list and leaves the score.">Not an error</button>`
       + `<button class="ghost" data-a="reopen"${accN ? "" : " disabled"} title="Count it again">Reopen</button>`
       + `<button class="ghost" data-a="issue"${n.length ? "" : " disabled"} title="A 3D issue for each, at the element">Make issue${n.length > 1 ? "s" : ""}</button>`
@@ -417,10 +463,18 @@ export function createDoctor(ctx) {
   $("doc-acts").addEventListener("click", async (ev) => {
     const b = ev.target.closest("[data-a]");
     if (!b || b.disabled) return;
-    const n = chosen(), me = ctx.myName(), now = new Date().toISOString();
-    const uidsOf = (f) => elsOf(f).map((e) => (e.info && (e.info.revit_uid || e.info.ifc_guid)) || e.guid || "").filter(Boolean);
-    const ridsOf = (f) => elsOf(f).map((e) => (e.info && e.info.revit_id) || "").filter(Boolean);
-    const a = b.dataset.a;
+    if (b.dataset.a === "issue-no") { D.asking = false; paintActs(); return; }
+    if (b.dataset.a === "issue-go") { const i = $("doc-assign"); D.asking = false; return makeIssues(chosen(), i ? i.value.trim() : ""); }
+    return act(b.dataset.a, chosen());
+  });
+  $("doc-acts").addEventListener("keydown", (ev) => {
+    if (ev.target.id === "doc-assign" && ev.key === "Enter") { ev.preventDefault(); const v = ev.target.value.trim(); D.asking = false; makeIssues(chosen(), v); }
+  });
+  const uidsOf = (f) => elsOf(f).map((e) => (e.info && (e.info.revit_uid || e.info.ifc_guid)) || e.guid || "").filter(Boolean);
+  const ridsOf = (f) => elsOf(f).map((e) => (e.info && e.info.revit_id) || "").filter(Boolean);
+  /* one action on these findings (the bar and the right-click menu) */
+  async function act(a, n) {
+    const me = ctx.myName(), now = new Date().toISOString();
     if (a === "accept") {
       for (const f of n) if (!f.acc) await ctx.putItem({ id: "doctoraccept-" + hashText(f.sig), placement: "doctoraccept", signature: f.sig, check: f.check, problem: f.problem,
         uids: uidsOf(f), text: f.text, by: me, at: now, deleted: false });
@@ -435,10 +489,18 @@ export function createDoctor(ctx) {
         value_mm: f.value_mm, text: f.text, fix: f.fix, model: (elsOf(f)[0] || {}).model ? elsOf(f)[0].model.label : "", status: "queued", by: me, at: now });
       paint(); say(`${list.length} finding(s) queued for Model Doctor in Revit (LWK tab > Model Doctor > Fix queue).`);
     } else if (a === "issue") {
-      if (n.length > 5 && !confirm(`Make ${n.length} issues?`)) return;
+      // one: straight away; several: who to assign them to first
+      if (n.filter((f) => !f.issue).length > 1) { D.asking = true; paintActs(); const i = $("doc-assign"); if (i) i.focus(); return; }
+      return makeIssues(n, "");
+    }
+    return act2(a, n, me);
+  }
+  async function makeIssues(n, assign) {
+    {
       let made = 0;
-      for (const f of n) {
-        if (f.issue) continue;
+      const todo = n.filter((f) => !f.issue);
+      for (const f of todo) {
+        say(`Making issue ${made + 1} of ${todo.length} ...`);
         const list = elsOf(f);
         if (!list.length) continue;
         await show(f);
@@ -450,12 +512,18 @@ export function createDoctor(ctx) {
             `Model Doctor (${(checkById(f.check) || {}).title || f.check}), ${day(Date.now())}.`, f.fix ? "Revit can fix it: " + f.fix + "." : ""].filter(Boolean).join("\n"),
           type: /clash/.test(f.check) ? "clash" : "coordination", status: "Open", priority: f.severity === 3 ? "High" : "Normal", due_date: dueIn(3),
           doctor: { check: f.check, problem: f.problem, signature: f.sig, value_mm: f.value_mm },
+          // its dimension kept with it: shown again whenever it is opened
+          dims: D.dims && D.dims.length ? D.dims : undefined,
         };
+        if (assign) pre.assigned_to = assign;
         const it = await ctx.createIssue(bx.getCenter(new THREE.Vector3()), { part: list[0].part, lid: list[0].lid }, pre);
         if (it) made++;
       }
-      paint(); say(`${made} issue(s) made - Issues in 3D.`);
-    } else if (a === "ids") {
+      paint(); say(`${made} issue(s) made${assign ? ", assigned to " + assign : ""} - Issues in 3D.`);
+    }
+  }
+  async function act2(a, n, me) {
+    if (a === "ids") {
       const ids = [...new Set(n.flatMap(ridsOf))];
       try { await navigator.clipboard.writeText(ids.join(",")); say(`${ids.length} Revit id(s) copied - Revit: Manage > Select by ID.`); }
       catch (e) { prompt("Revit ids:", ids.join(",")); }
@@ -469,7 +537,7 @@ export function createDoctor(ctx) {
       });
       saveCsv("Model Doctor - " + (ctx.projectName() || "model"), cols, rows);
     }
-  });
+  }
   function rescore() {
     if (D.results) { const acc = accepted(); D.rep = health(D.results, (f) => acc.has(f.sig)); }
     paint();

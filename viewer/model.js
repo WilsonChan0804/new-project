@@ -2166,6 +2166,16 @@ function initClash() {
       return !m.accounts || !!m.site_admin || (m.projects || {})[Store.currentProject ? Store.currentProject() : ""] === "admin";
     },
     putItem,
+    /* orange dimensions on the model, where a check measured (world metres
+       [{ a, b, label }]); [] takes them away. Returns them as an issue keeps
+       them (scene mm), for pre.dims. */
+    showDims(list) {
+      S.issueDims = (list || []).filter((d) => d && d.a && d.b).map((d) => ({
+        a_mm: d.a.map((v) => toMM(v)), b_mm: d.b.map((v) => toMM(v)), label: d.label || "" }));
+      renderDims();
+      S.dirty = true;
+      return S.issueDims.slice();
+    },
     removeItem: async (id) => { try { await Store.remove(id); } catch (e) { status(e.message); } S.items = Store.all(); },
     uid,
     author: () => Store.author(),
@@ -2251,6 +2261,7 @@ function initClash() {
     $("#sbd-box").hidden = b.dataset.tab !== "sbd";
     $("#lv-box").hidden = b.dataset.tab !== "lv";
     $("#doc-box").hidden = b.dataset.tab !== "doc";
+    if (ctx.showDims && S.issueDims && S.issueDims.length && !S.selIssueId) ctx.showDims([]);
     if (b.dataset.tab === "doc" && S.doctor) S.doctor.refresh();
     if (b.dataset.tab === "lv") lvTab();
     if (b.dataset.tab === "head" && S.head) S.head.refresh();
@@ -3473,7 +3484,8 @@ function restoreLastView(given) {
    scene millimetres as issue points. One switch shows or hides them all. */
 const isDim = (it) => it && it.placement === "dim3d";
 
-function dimLabel(text) {
+function dimLabel(text, col) {
+  col = col || "#1d4ed8";
   const c = document.createElement("canvas");
   const g = c.getContext("2d");
   g.font = "600 34px Segoe UI, Arial, sans-serif";
@@ -3482,8 +3494,8 @@ function dimLabel(text) {
   g.font = "600 34px Segoe UI, Arial, sans-serif";
   g.fillStyle = "rgba(255,255,255,0.92)";
   g.fillRect(0, 0, w, 50);
-  g.strokeStyle = "#1d4ed8"; g.lineWidth = 3; g.strokeRect(1.5, 1.5, w - 3, 47);
-  g.fillStyle = "#1d4ed8"; g.textBaseline = "middle";
+  g.strokeStyle = col; g.lineWidth = 3; g.strokeRect(1.5, 1.5, w - 3, 47);
+  g.fillStyle = col; g.textBaseline = "middle";
   g.fillText(text, 11, 26);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -3493,10 +3505,29 @@ function dimLabel(text) {
   return sp;
 }
 
+let _haloTex = null;
+function dimHalo(p) {
+  if (!_haloTex) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    g.strokeStyle = "#f28022"; g.lineWidth = 7;
+    g.beginPath(); g.arc(32, 32, 26, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = "rgba(242,128,34,0.25)"; g.fill();
+    _haloTex = new THREE.CanvasTexture(c);
+  }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: _haloTex, depthTest: false, sizeAttenuation: false }));
+  sp.scale.set(0.035, 0.035, 1);
+  sp.position.copy(p);
+  sp.renderOrder = 998;
+  sp.userData.sharedMap = true;        // one ring picture for them all: kept
+  return sp;
+}
+
 function renderDims() {
   if (S.dimGroup) {
     S.overlay.remove(S.dimGroup);
-    S.dimGroup.traverse((o) => { if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } if (o.geometry) o.geometry.dispose(); });
+    S.dimGroup.traverse((o) => { if (o.material) { if (o.material.map && !o.userData.sharedMap) o.material.map.dispose(); o.material.dispose(); } if (o.geometry) o.geometry.dispose(); });
   }
   const g = new THREE.Group();
   g.name = "__dims";
@@ -3533,9 +3564,14 @@ function renderDims() {
       tick.renderOrder = 997;
       og.add(tick);
     }
-    const lab = dimLabel(d.label || (a.distanceTo(b)).toFixed(3) + " m");
-    lab.position.copy(a).add(b).multiplyScalar(0.5);
+    const lab = dimLabel(d.label || (a.distanceTo(b)).toFixed(3) + " m", "#c2410c");
+    const mid = a.clone().add(b).multiplyScalar(0.5);
+    lab.position.copy(mid);
+    // the label a little above the spot, and a ring the same size on screen
+    // at any distance: a 5 mm gap is found from across the floor
+    lab.center.set(0.5, -0.6);
     og.add(lab);
+    og.add(dimHalo(mid));
     og.userData.issueDim = true;
     g.add(og);
   }

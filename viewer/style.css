@@ -3173,3 +3173,16 @@ header .flr-lab { white-space: nowrap; }
 #doc-box .doc-acts { position: sticky; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11.5px; }
 #doc-box .doc-acts button { height: 26px; padding: 0 8px; font-size: 11.5px; }
 #doc-box .doc-acts button[disabled] { opacity: .45; }
+#doc-box .doc-tick, #clash-list .ck-tick { flex: none; width: 16px; height: 16px; margin-top: 1px; border: 1.5px solid var(--line-2, #D6D3D1); border-radius: 4px;
+  background: var(--panel); color: #fff; font: 700 11px/14px system-ui, sans-serif; text-align: center; cursor: pointer; }
+#doc-box .doc-tick.off { visibility: hidden; }
+#doc-box .doc-list li.sel .doc-tick, #clash-list .ck-it.picked .ck-tick { background: var(--brand, #F08020); border-color: var(--brand, #F08020); }
+#doc-box .doc-pick, .ck-pick { display: inline-flex; gap: 4px; margin-left: 4px; }
+#doc-box .doc-pick button, .ck-pick button { height: 22px; padding: 0 7px; font-size: 11px; }
+#doc-box .doc-acts .ck-assign { height: 26px; min-width: 120px; flex: 1; border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; font: inherit; }
+#clash-list .ck-it { position: relative; }
+#clash-list .ck-it .ck-tick { position: absolute; left: 4px; top: 8px; }
+#clash-list.picking .ck-it { padding-left: 26px; }
+#clash-list .ck-it.picked { background: var(--accent-soft, #FFF1E6); }
+.ck-bulk { position: sticky; bottom: 0; z-index: 2; background: var(--panel); border-top: 1px solid var(--line); padding: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11.5px; }
+.ck-bulk button { height: 26px; padding: 0 8px; font-size: 11.5px; }

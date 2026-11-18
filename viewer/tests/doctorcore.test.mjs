@@ -114,5 +114,31 @@ r = runCheck("wall_gaps", more, o3);
 ok(r.issues.some((f) => f.problem === "Parallel sliver" && Math.abs(f.value_mm - 50) < 1), "parallel sliver 50 mm (tolerance 60) " + JSON.stringify(probs(r)));
 ok(!r.issues.some((f) => f.els.includes(Hh.k)), "phases that never overlap: no gap reported");
 
+// the dimension drawn at each finding: where it was measured
+const len = (d) => Math.hypot(d.b[0] - d.a[0], d.b[1] - d.a[1], d.b[2] - d.a[2]);
+const fOf = (id, prob, o) => runCheck(id, els, o || defaults()).issues.find((f) => f.problem === prob);
+let f = fOf("wall_gaps", "T-junction gap") || fOf("wall_gaps", "Corner gap");
+ok(f && f.dim && Math.abs(len(f.dim) * 1000 - f.value_mm) < 0.2 && /gap$/.test(f.dim.label), "gap dimension " + (f && JSON.stringify(f.dim)));
+ok(f && Math.abs(f.dim.a[1] - 1.65) < 0.01, "... at mid height");
+f = fOf("wall_overlaps", "Collinear overlap");
+ok(f && Math.abs(len(f.dim) - 2) < 0.002 && /overlap/.test(f.dim.label), "overlap dimension 2000 mm " + (f && f.dim.label));
+f = fOf("door_floor", "Door above floor");
+ok(f && Math.abs(len(f.dim) - 0.04) < 1e-4 && f.dim.a[0] === f.dim.b[0] && f.dim.a[2] === f.dim.b[2], "door: vertical 40 mm " + (f && f.dim.label));
+f = fOf("wall_top_soffit", "Wall top short of soffit");
+ok(f && Math.abs(len(f.dim) - 0.1) < 1e-4, "soffit: 100 mm " + (f && f.dim.label));
+f = fOf("wall_column_gaps", "Wall short of column");
+ok(f && Math.abs(len(f.dim) - 0.004) < 2e-4, "column gap 4 mm " + (f && f.dim.label));
+f = fOf("element_floor", "Component sunk into floor");
+ok(f && Math.abs(len(f.dim) - 0.05) < 1e-4, "sunk 50 mm " + (f && f.dim.label));
+f = fOf("link_clashes", "Clash with linked model");
+ok(f && f.dim && /deep/.test(f.dim.label), "link clash depth " + (f && f.dim.label));
+ok(!fOf("duplicates", "Stacked duplicate").dim, "duplicates: no dimension");
+r = runCheck("wall_overlaps", more, defaults());
+f = r.issues.find((x) => x.problem === "End over-run into wall");
+ok(f && Math.abs(len(f.dim) - 0.03) < 0.001, "over-run 30 mm dimension " + (f && JSON.stringify(f.dim)));
+r = runCheck("wall_gaps", more, o3);
+f = r.issues.find((x) => x.problem === "Parallel sliver");
+ok(f && Math.abs(len(f.dim) - 0.05) < 0.001, "sliver 50 mm dimension " + (f && f.dim.label));
+
 if (fails) { console.log(fails + " failed"); process.exit(1); }
 console.log("all passed");

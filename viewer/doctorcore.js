@@ -275,6 +275,24 @@ function grid(els, cell = 4) {
   };
 }
 const mm = (m) => Math.round(m * 10000) / 10;            // metres -> mm, 0.1
+/* where a finding was measured, for the dimension drawn on the model:
+   two world points (metres) and its label */
+const dimOf = (a, b, label) => ({ a: a.map((v) => +v.toFixed(5)), b: b.map((v) => +v.toFixed(5)), label });
+const at = (p2, y) => [p2[0], y, p2[1]];                  // plan point at height y
+const midY = (a, b) => (Math.max(a.box[1], b.box[1]) + Math.min(a.box[4], b.box[4])) / 2;
+const mmText = (m) => (Math.round(m * 10000) / 10).toFixed(1).replace(/\.0$/, "") + " mm";
+/* a clash's depth: across the overlap of the two boxes, along its thinnest side */
+function depthDim(ib, depth, point, word) {
+  const ext = [ib[3] - ib[0], ib[4] - ib[1], ib[5] - ib[2]];
+  const ax = ext.indexOf(Math.min(...ext));
+  const c = point || [(ib[0] + ib[3]) / 2, (ib[1] + ib[4]) / 2, (ib[2] + ib[5]) / 2];
+  const d = depth != null ? depth : ext[ax];
+  const a = c.slice(), b = c.slice();
+  a[ax] = c[ax] - d / 2; b[ax] = c[ax] + d / 2;
+  return dimOf(a, b, mmText(d) + " " + (word || "deep"));
+}
+const boxAndOf = (a, b) => [Math.max(a.box[0], b.box[0]), Math.max(a.box[1], b.box[1]), Math.max(a.box[2], b.box[2]),
+  Math.min(a.box[3], b.box[3]), Math.min(a.box[4], b.box[4]), Math.min(a.box[5], b.box[5])];
 const fmt = (m) => (Math.round(m * 10000) / 10).toFixed(1) + " mm";
 
 /* ----------------------------------------------------------- floors */
@@ -427,7 +445,9 @@ export function runCheck(id, els, opts) {
         const [small, big] = inA ? [b, a] : inB ? [a, b] : (ra.len < rb.len ? [a, b] : [b, a]);
         const centred = Math.abs((wlo + whi) / 2 - (ra.t0 + ra.t1) / 2) < 0.002;
         const problem = inA || inB ? "Wall inside another wall" : centred ? "Collinear overlap" : "Parallel overlap";
+        const tmid = (wlo + whi) / 2, ym = midY(a, b);
         push({ problem, severity: SEV.CRITICAL, els: [small.k, big.k], primary: small.k, value_mm: mm(along),
+          dim: dimOf(at(world(ra, lo, tmid), ym), at(world(ra, hi, tmid), ym), mmText(along) + " overlap"),
           text: `${label(small)} ${problem === "Wall inside another wall" ? "lies inside" : "runs " + fmt(along) + " along"} ${label(big)}${a.level ? " (" + a.level + ")" : ""}.` });
         continue;
       }
@@ -435,6 +455,7 @@ export function runCheck(id, els, opts) {
       const endIn = (r, q) => {
         // how far each end of r runs into q (along r), 0 when it does not
         const res = [];
+        res.pts = [];
         for (const [e, s] of [[0, r.s0], [1, r.s1]]) {
           const tm = (r.t0 + r.t1) / 2;
           const p = world(r, s, tm);
@@ -445,7 +466,10 @@ export function runCheck(id, els, opts) {
           const dir = e ? 1 : -1;
           const k = Math.abs(r.u[0] * q.v[0] + r.u[1] * q.v[1]) || 1;
           const face = dir * (r.u[0] * q.v[0] + r.u[1] * q.v[1]) > 0 ? q.t0 : q.t1;
-          res.push(Math.abs(qt - face) / k);
+          const run = Math.abs(qt - face) / k;
+          res.push(run);
+          // the end, and back along the wall to the face it came in through
+          res.pts[e] = [p, [p[0] - r.u[0] * dir * run, p[1] - r.u[1] * dir * run]];
         }
         return res;
       };
@@ -465,10 +489,12 @@ export function runCheck(id, els, opts) {
       }
       const best = Math.max(...ea, ...eb);
       if (best <= 0.001) continue;
-      const [vic, kee, run] = Math.max(...ea) >= Math.max(...eb) ? [a, b, Math.max(...ea)] : [b, a, Math.max(...eb)];
+      const [vic, kee, run, ends] = Math.max(...ea) >= Math.max(...eb) ? [a, b, Math.max(...ea), ea] : [b, a, Math.max(...eb), eb];
+      const pe = ends.pts[ends.indexOf(run)];
       const vol = run * Math.min(rectOf(vic).thk, rectOf(kee).thk) * dy;
       if (vol < minV) continue;
       push({ problem: "End over-run into wall", severity: SEV.CRITICAL, els: [vic.k, kee.k], primary: vic.k, value_mm: mm(run),
+        dim: pe ? dimOf(at(pe[0], midY(a, b)), at(pe[1], midY(a, b)), mmText(run) + " into wall") : null,
         text: `${label(vic)} runs ${fmt(run)} into ${label(kee)}.` });
     }
     return out;
@@ -501,11 +527,16 @@ export function runCheck(id, els, opts) {
           const near = cap.reduce((m, [x, z]) => { const q = closestOnRect(rt, x, z); const dd = Math.hypot(q[0] - x, q[1] - z); return dd < m.d ? { d: dd, q } : m; }, { d: Infinity, q: null });
           const sq = local(rw, near.q[0], near.q[1])[0];
           if (end ? sq < rw.s1 - 0.001 : sq > rw.s0 + 0.001) continue;
-          if (d <= tol && (!best || d < best.d)) best = { d, t };
+          if (d <= tol && (!best || d < best.d)) {
+            // the cap point nearest the target, and the target's nearest point
+            const cp = cap.reduce((m, [x, z]) => { const dd = distToRect(rt, x, z); return dd < m.d ? { d: dd, p: [x, z] } : m; }, { d: Infinity, p: cap[0] });
+            best = { d, t, p: cp.p, q: closestOnRect(rt, cp.p[0], cp.p[1]) };
+          }
         }
         if (touching || !best) return;
         const p = problemOf(w, best.t, end);
         if (p) push({ problem: p, severity: sev, els: [w.k, best.t.k], primary: w.k, value_mm: mm(best.d),
+          dim: dimOf(at(best.p, midY(w, best.t)), at(best.q, midY(w, best.t)), mmText(best.d) + " gap"),
           text: `${label(w)} stops ${fmt(best.d)} short of ${label(best.t)}${w.level ? " (" + w.level + ")" : ""}.`, end });
       });
     }
@@ -532,8 +563,11 @@ export function runCheck(id, els, opts) {
         const gap = lo > ra.t1 ? lo - ra.t1 : ra.t0 > hi ? ra.t0 - hi : -1;
         if (gap <= minG || gap > tol) continue;
         const ps = [world(rb, rb.s0, 0), world(rb, rb.s1, 0)].map(([x, z]) => local(ra, x, z)[0]);
-        if (Math.min(ra.s1, Math.max(...ps)) - Math.max(ra.s0, Math.min(...ps)) < 0.05) continue;
+        const slo = Math.max(ra.s0, Math.min(...ps)), shi = Math.min(ra.s1, Math.max(...ps));
+        if (shi - slo < 0.05) continue;
+        const sm = (slo + shi) / 2, [fa, fb] = lo > ra.t1 ? [ra.t1, lo] : [ra.t0, hi], ym = midY(a, b);
         push({ problem: "Parallel sliver", severity: SEV.INFO, els: [a.k, b.k], primary: a.k, value_mm: mm(gap),
+          dim: dimOf(at(world(ra, sm, fa), ym), at(world(ra, sm, fb), ym), mmText(gap) + " apart"),
           text: `${label(a)} and ${label(b)} run side by side ${fmt(gap)} apart.`, fix: null });
       }
     }
@@ -560,16 +594,17 @@ export function runCheck(id, els, opts) {
       if (a.tris && b.tris) {
         const r = judge(solid(a), solid(b), { tol: 0.001 });
         if (!r) return null;
-        return { depth: r.depth, vol };
+        return { depth: r.depth, vol, dim: depthDim(r.box || ib, r.depth, r.point) };
       }
-      return { depth: Math.min(ib[3] - ib[0], ib[5] - ib[2]), vol };
+      const dd = Math.min(ib[3] - ib[0], ib[5] - ib[2]);
+      return { depth: dd, vol, dim: depthDim(ib, dd, null) };
     };
     if (o.check_wall_column) for (const [i, j] of pairs(walls.map((e) => e.box), cols.map((e) => e.box), 0.001, false)) {
       const w = walls[i], c = cols[j];
       if (!coexist(w, c, o)) continue;
       const r = judgeVol(w, c);
       if (!r) continue;
-      push({ problem: "Wall over-run into column", severity: SEV.CRITICAL, els: [w.k, c.k], primary: w.k, value_mm: r.depth != null ? mm(r.depth) : null,
+      push({ problem: "Wall over-run into column", severity: SEV.CRITICAL, els: [w.k, c.k], primary: w.k, value_mm: r.depth != null ? mm(r.depth) : null, dim: r.dim,
         text: `${label(w)} runs ${r.depth != null ? fmt(r.depth) + " " : ""}into ${label(c)}.` });
     }
     if (o.check_column_column) for (const [i, j] of pairs(cols.map((e) => e.box), null, 0.001, true)) {
@@ -577,7 +612,7 @@ export function runCheck(id, els, opts) {
       if (!coexist(a, b, o)) continue;
       const r = judgeVol(a, b);
       if (!r) continue;
-      push({ problem: "Column clashing with column", severity: SEV.CRITICAL, els: [a.k, b.k], primary: a.k, value_mm: r.depth != null ? mm(r.depth) : null,
+      push({ problem: "Column clashing with column", severity: SEV.CRITICAL, els: [a.k, b.k], primary: a.k, value_mm: r.depth != null ? mm(r.depth) : null, dim: r.dim,
         text: `${label(a)} and ${label(b)} overlap.`, fix: null });
     }
     return out;
@@ -617,13 +652,14 @@ export function runCheck(id, els, opts) {
         Math.min(a.box[3], b.box[3]), Math.min(a.box[4], b.box[4]), Math.min(a.box[5], b.box[5])];
       const vol = (ib[3] - ib[0]) * (ib[4] - ib[1]) * (ib[5] - ib[2]);
       if (vol < o.min_volume_m3) continue;
-      let depth = null;
+      let depth = null, dim = depthDim(ib, null, null);
       if (a.tris && b.tris) {
         const r = judge(solid(a), solid(b), { tol: 0.005, join: false });
         if (!r) continue;
         depth = r.depth;
+        dim = depthDim(r.box || ib, r.depth, r.point);
       }
-      push({ problem: "Clash with linked model", severity: SEV.CRITICAL, els: [a.k, b.k], primary: a.k, value_mm: depth != null ? mm(depth) : null,
+      push({ problem: "Clash with linked model", severity: SEV.CRITICAL, els: [a.k, b.k], primary: a.k, value_mm: depth != null ? mm(depth) : null, dim,
         text: `${label(a)} clashes with ${label(b)} in ${b.modelLabel || b.model}${depth != null ? " (" + fmt(depth) + " deep)" : ""}.` });
     }
     return out;
@@ -639,19 +675,20 @@ export function runCheck(id, els, opts) {
     for (const d of doors) {
       const r = rectOf(d), sill = d.box[1];
       const sm = (r.s0 + r.s1) / 2;
-      let top = null, fl = null;
+      let top = null, fl = null, xz = null;
       // under the door and a little either side of it (the slab may stop at the wall)
       for (const t of [(r.t0 + r.t1) / 2, r.t0 - 0.05, r.t1 + 0.05]) {
         const [x, z] = world(r, sm, t);
-        for (const h of probe.tops(x, z, sill - o.search_mm / 1000, sill + 0.3)) if (top === null || h.y > top) { top = h.y; fl = h.el; }
+        for (const h of probe.tops(x, z, sill - o.search_mm / 1000, sill + 0.3)) if (top === null || h.y > top) { top = h.y; fl = h.el; xz = [x, z]; }
       }
       if (top === null) continue;
       const delta = sill - top;
       // the door and the floor, as Revit lists them (the signature is the same)
       const pairEls = fl && fl.k !== undefined ? [d.k, fl.k] : [d.k];
-      if (delta < -o.below_tol_mm / 1000) push({ problem: "Door below floor", severity: SEV.CRITICAL, els: pairEls, primary: d.k, value_mm: mm(delta),
+      const dim = dimOf(at(xz, top), at(xz, sill), (delta > 0 ? "+" : "-") + mmText(Math.abs(delta)));
+      if (delta < -o.below_tol_mm / 1000) push({ problem: "Door below floor", severity: SEV.CRITICAL, els: pairEls, primary: d.k, value_mm: mm(delta), dim,
         text: `${label(d)}: its sill is ${fmt(-delta)} below the floor${d.level ? " (" + d.level + ")" : ""}.` });
-      else if (delta > o.allowance_mm / 1000) push({ problem: "Door above floor", severity: SEV.WARNING, els: pairEls, primary: d.k, value_mm: mm(delta),
+      else if (delta > o.allowance_mm / 1000) push({ problem: "Door above floor", severity: SEV.WARNING, els: pairEls, primary: d.k, value_mm: mm(delta), dim,
         text: `${label(d)}: its sill is ${fmt(delta)} above the floor${d.level ? " (" + d.level + ")" : ""}.` });
     }
     return out;
@@ -680,14 +717,15 @@ export function runCheck(id, els, opts) {
         // the slab surface nearest the base, below it or the one it is buried in
         let best = null;
         for (const h of probe.tops(x, z, base - search, base + Math.min(0.5, search))) if (best === null || Math.abs(h.y - base) < Math.abs(best.y - base)) best = h;
-        if (best !== null) deltas.push([base - best.y, best.el]);
+        if (best !== null) deltas.push([base - best.y, best.el, [x, z], best.y]);
       }
       if (!deltas.length) continue;
       deltas.sort((p, q) => p[0] - q[0]);
-      const [delta, fl] = deltas[Math.floor(deltas.length / 2)];
+      const [delta, fl, xz, sy] = deltas[Math.floor(deltas.length / 2)];
       if (Math.abs(delta) <= tol) continue;
       push({ problem: delta > 0 ? "Wall base above slab" : "Wall base buried in slab", severity: delta > 0 ? SEV.WARNING : SEV.CRITICAL,
         els: fl && fl.k !== undefined ? [w.k, fl.k] : [w.k], primary: w.k, value_mm: mm(delta),
+        dim: dimOf(at(xz, sy), at(xz, base), (delta > 0 ? "+" : "-") + mmText(Math.abs(delta))),
         text: `${label(w)}: its base is ${fmt(Math.abs(delta))} ${delta > 0 ? "above" : "below"} the top of the slab${w.level ? " (" + w.level + ")" : ""}.` });
     }
     return out;
@@ -708,14 +746,15 @@ export function runCheck(id, els, opts) {
           if (h.y <= w.box[1] + 0.1) continue;            // the slab under the wall itself
           if (best === null || Math.abs(h.y - top) < Math.abs(best.y - top)) best = h;
         }
-        if (best !== null) deltas.push([top - best.y, best.el]);
+        if (best !== null) deltas.push([top - best.y, best.el, [x, z], best.y]);
       }
       if (!deltas.length) continue;
       deltas.sort((p, q) => p[0] - q[0]);
-      const [delta, fl] = deltas[Math.floor(deltas.length / 2)];
+      const [delta, fl, xz, sy] = deltas[Math.floor(deltas.length / 2)];
       if (Math.abs(delta) <= tol) continue;
       push({ problem: delta > 0 ? "Wall top past soffit" : "Wall top short of soffit", severity: SEV.WARNING,
         els: fl && fl.k !== undefined ? [w.k, fl.k] : [w.k], primary: w.k, value_mm: mm(delta),
+        dim: dimOf(at(xz, top), at(xz, sy), mmText(Math.abs(delta)) + (delta > 0 ? " past soffit" : " to soffit")),
         text: `${label(w)}: its top is ${fmt(Math.abs(delta))} ${delta > 0 ? "past" : "short of"} the soffit above${w.level ? " (" + w.level + ")" : ""}.` });
     }
     return out;
@@ -730,13 +769,15 @@ export function runCheck(id, els, opts) {
     for (const c of comps) {
       const b = c.box, bottom = b[1];
       let top = null, fl = null;
-      for (const [x, z] of [[(b[0] + b[3]) / 2, (b[2] + b[5]) / 2]]) {
+      const xz = [(b[0] + b[3]) / 2, (b[2] + b[5]) / 2];
+      for (const [x, z] of [xz]) {
         for (const h of probe.tops(x, z, bottom - o.search_mm / 1000, bottom + deep)) if (top === null || h.y > top) { top = h.y; fl = h.el; }
       }
       if (top === null) continue;
       const sunk = top - bottom;
       if (sunk <= tol || sunk > deep) continue;
       push({ problem: "Component sunk into floor", severity: SEV.WARNING, els: fl && fl.k !== undefined ? [c.k, fl.k] : [c.k], primary: c.k, value_mm: mm(-sunk),
+        dim: dimOf(at(xz, bottom), at(xz, top), mmText(sunk) + " sunk"),
         text: `${label(c)} sits ${fmt(sunk)} into the floor${c.level ? " (" + c.level + ")" : ""}.` });
     }
     return out;

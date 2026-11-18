@@ -21,6 +21,7 @@ import { createGeo, catLabel, scopePicker } from "./checkgeo.js";
 import { saveCsv, fileName, reportTab, tabSay, writeReport, pictures } from "./checkexport.js";
 import { dueIn, nextNumber, numberText, elementLine, xyzText } from "./checkissue.js";
 import { day, dayTime } from "./dates.js";
+import { openMenu } from "./ctxmenu.js";
 
 const OPENINGS = new Set(["Doors", "Windows", "Curtain Panels", "Curtain Wall Mullions",
   "IFCDOOR", "IFCWINDOW", "IFCPLATE", "IFCMEMBER", "IFCOPENINGELEMENT", "IFCDOORSTANDARDCASE", "IFCWINDOWSTANDARDCASE"]);
@@ -58,7 +59,8 @@ export function createClash(ctx) {
   const { THREE } = ctx;
   const C = { rules: [], ruleId: null, running: false, stop: false, result: null, shown: [], marker: null, worker: null,
               filter: "all", elsewhere: false, msg: null, over: null, force: false,
-              view: "" /* "" the latest run, else a saved result's id */ };
+              view: "" /* "" the latest run, else a saved result's id */,
+              sel: new Set() /* clash keys ticked */, lastKey: null, raiseSel: false };
   const $ = (s) => document.querySelector(s);
   const box = $("#clash-box");
   if (!box) return null;
@@ -554,6 +556,8 @@ export function createClash(ctx) {
         // and in the project's coordinates: the scene's origin follows the
         // first model loaded, which another session may load differently
         point_shared_mm: ctx.toShared(new THREE.Vector3(...f.res.point)),
+        // the depth (or the gap), drawn on the model as a dimension
+        dim_shared_mm: dimShared(f.res),
         // how big the place is (to frame it)
         size: f.res.box ? +Math.hypot(f.res.box[3] - f.res.box[0], f.res.box[4] - f.res.box[1], f.res.box[5] - f.res.box[2]).toFixed(2) : null,
         level: ctx.levelAt(f.res.point[1]) || "",
@@ -703,10 +707,14 @@ export function createClash(ctx) {
       + `<select id="clash-order" title="Order of the list"><option value="level"${order === "level" ? " selected" : ""}>By floor</option><option value="depth"${order === "depth" ? " selected" : ""}>Deepest first</option></select>`
       + `${nHidden ? ` <span class="muted">${nHidden} hidden</span>` : ""}</div>`
       + `<div class="ck-filt">${[["all", "Open", cnt.all], ["new", "New", cnt.new], ["gone", "Gone", cnt.gone], ["ignored", "Not an issue", cnt.ignored]]
-        .map(([k, l, n]) => `<button class="ghost${C.filter === k ? " active" : ""}" data-f="${k}">${l} <b>${n}</b></button>`).join("")}</div>`
-      + raiseRow(view.filter((c) => c.state !== "gone" && !c.ignored && !shallow(c) && !issueOf(c.key)))
+        .map(([k, l, n]) => `<button class="ghost${C.filter === k ? " active" : ""}" data-f="${k}">${l} <b>${n}</b></button>`).join("")}`
+        + `<span class="ck-pick"><button class="ghost" data-pick="all" title="Tick every clash listed">&#9745; All shown</button>`
+        + (C.sel.size ? `<button class="ghost" data-pick="none">Clear (${C.sel.size})</button>` : "") + `</span></div>`
+      + raiseRow(C.raiseSel ? view.filter((c) => C.sel.has(c.key) && c.state !== "gone" && !issueOf(c.key))
+        : view.filter((c) => c.state !== "gone" && !c.ignored && !shallow(c) && !issueOf(c.key)))
       + `<div class="ck-export"><span class="muted">Export the list</span><button class="ghost" data-exp="csv" title="A spreadsheet (CSV) of the clashes listed, for Excel">Spreadsheet</button>`
       + `<button class="ghost" data-exp="report" title="A report with a picture of each clash, to print or save as PDF">Report</button></div>`;
+    for (const k of [...C.sel]) if (!all.some((c) => c.key === k)) C.sel.delete(k);
     const pick = view.filter((c) => C.filter === "gone" ? c.state === "gone"
       : C.filter === "ignored" ? c.ignored && c.state !== "gone"
       : C.filter === "new" ? c.state === "new" && !c.ignored && !shallow(c)
@@ -722,7 +730,8 @@ export function createClash(ctx) {
     const row = (c) => {
       const iss = issueOf(c.key);
       const n = C.shown.indexOf(c);
-      return `<li class="ck-it${c.state === "new" ? " new" : ""}${c.state === "gone" ? " gone" : ""}${c.key === C.onKey ? " on" : ""}" data-n="${n}">`
+      return `<li class="ck-it${c.state === "new" ? " new" : ""}${c.state === "gone" ? " gone" : ""}${c.key === C.onKey ? " on" : ""}${C.sel.has(c.key) ? " picked" : ""}" data-n="${n}">`
+        + `<span class="ck-tick" data-tick title="Tick it (for Not an issue, Make issues ... on several)">${C.sel.has(c.key) ? "&#10003;" : ""}</span>`
         + `<div class="ck-l1"><span class="ck-kind k-${c.kind}">${KIND[c.kind] || c.kind}</span> <b>${esc(amount(c))}</b>`
         + `${c.level ? ` <span class="muted">${esc(c.level)}</span>` : ""}`
         + `${c.state === "new" ? ' <span class="ck-new">New</span>' : ""}${c.state === "gone" ? ' <span class="ck-gone">Gone</span>' : ""}`
@@ -747,6 +756,43 @@ export function createClash(ctx) {
       }
     }
     list.innerHTML = h;
+    list.classList.add("picking");
+    paintBulk();
+  }
+  /* the ticked clashes: one bar for them all */
+  const chosenClashes = () => (C.shown || []).filter((c) => C.sel.has(c.key));
+  function paintBulk() {
+    let bar = document.getElementById("clash-bulk");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "clash-bulk";
+      bar.className = "ck-bulk";
+      $("#clash-list").after(bar);
+      bar.addEventListener("click", (ev) => {
+        const b = ev.target.closest("[data-b]");
+        if (b && !b.disabled) bulkAct(b.dataset.b, chosenClashes());
+      });
+    }
+    const n = chosenClashes();
+    bar.hidden = n.length < 2;
+    if (bar.hidden) return;
+    const nIgn = n.filter((c) => c.ignored).length, nIss = n.filter((c) => c.state !== "gone" && !issueOf(c.key)).length;
+    bar.innerHTML = `<b>${n.length} chosen</b>`
+      + `<button class="ghost" data-b="issues"${nIss ? "" : " disabled"}>Make issues (${nIss})</button>`
+      + `<button class="ghost" data-b="ign"${n.length - nIgn ? "" : " disabled"}>Not an issue (${n.length - nIgn})</button>`
+      + `<button class="ghost" data-b="unign"${nIgn ? "" : " disabled"}>Count again (${nIgn})</button>`
+      + `<button class="ghost" data-b="clear">Clear</button>`;
+  }
+  function bulkAct(k, n) {
+    if (k === "clear") { C.sel.clear(); paint(); return; }
+    if (k === "ign") return setIgnored(n.filter((c) => !c.ignored), true);
+    if (k === "unign") return setIgnored(n.filter((c) => c.ignored), false);
+    if (k === "issues") {
+      // the Raise row, for the ticked ones: who to assign them to, then Raise
+      C.raiseSel = true; C.asking = true; paint();
+      const i = $("#clash-assign"); if (i) i.focus();
+      try { $("#clash-sum").scrollIntoView({ block: "nearest" }); } catch (e) {}
+    }
   }
 
   /* ------------------------------------------------------- showing one */
@@ -799,6 +845,7 @@ export function createClash(ctx) {
     if (only && els.length) await ctx.isolateMany(els);
     if (!keepView) await look(c);
     putMarker(at.toArray());
+    if (ctx.showDims) { const dm = dimOf(c); ctx.showDims(dm ? [dm] : []); }
     const twoCol = !(A && B && A.part.model.head && A.part.model.head === B.part.model.head);
     const nm = (e) => `${e.cat}${e.name ? " · " + e.name : ""}`;
     C.lit = { c };
@@ -819,10 +866,33 @@ export function createClash(ctx) {
     const half = Math.max(1.5, Math.min(6, (c.size || 1) * 0.75 + 1));
     ctx.focusAt(p, half);
   }
+  /* A clash's dimension: through its point, along the thinnest side of where
+     the two meet (how deep), in the project's coordinates. */
+  function dimShared(res) {
+    const b = res.box, p = res.point;
+    if (!b || !p) return null;
+    const ext = [b[3] - b[0], b[4] - b[1], b[5] - b[2]];
+    const ax = ext.indexOf(Math.min(...ext));
+    const d = res.kind === "clearance" && res.dist != null ? res.dist : res.depth != null ? res.depth : ext[ax];
+    if (!(d > 0)) return null;
+    const a = p.slice(), q = p.slice();
+    a[ax] -= d / 2; q[ax] += d / 2;
+    return [ctx.toShared(new THREE.Vector3(...a)), ctx.toShared(new THREE.Vector3(...q))];
+  }
+  /* as an orange dimension on the model (world metres), or null */
+  function dimOf(c) {
+    if (!c.dim_shared_mm || !ctx.fromShared) return null;
+    const a = ctx.fromShared(c.dim_shared_mm[0]), b = ctx.fromShared(c.dim_shared_mm[1]);
+    if (!a || !b) return null;
+    return { a: a.toArray(), b: b.toArray(), label: amount(c) };
+  }
   // what an issue from a clash says: "Clash issue 007 - Ducts x Beams (L2)"
   function issueFields(c, n) {
     const r = rule();
+    const dm = dimOf(c);
+    const dims = dm && ctx.showDims ? ctx.showDims([dm]) : null;
     return {
+      dims: dims && dims.length ? dims : undefined,
       title: `Clash issue ${numberText(n)} - ${c.a.cat} x ${c.b.cat}${c.level ? " (" + c.level + ")" : ""}`.slice(0, 120),
       description: [`${KIND[c.kind] || c.kind} ${amount(c)}${c.level ? " on " + c.level : ""}.`,
         "A: " + elementLine(c.a), "B: " + elementLine(c.b),
@@ -913,15 +983,23 @@ export function createClash(ctx) {
     loadRules();
     if (ok) ctx.status(on ? "View kept for this clash: it opens there for everyone, and its issue uses it." : "The kept view is forgotten: the clash opens framed by itself again.");
   }
-  async function toggleIgnore(c) {
+  async function toggleIgnore(c) { return setIgnored([c], !c.ignored); }
+  /* "Not an issue" (on) or "Count again" (off) for several at once: the
+     rule saved once with all of them */
+  async function setIgnored(list, on) {
     const r = rule();
-    if (!r) return;
+    if (!r || !list.length) return;
     const ign = new Set(r.ignored || []);
-    if (ign.has(c.key)) ign.delete(c.key); else ign.add(c.key);
-    c.ignored = ign.has(c.key) || undefined;
     const last = r.last ? Object.assign({}, r.last) : null;
-    if (last && last.clashes && last.clashes[c.key]) last.clashes = Object.assign({}, last.clashes, { [c.key]: Object.assign({}, last.clashes[c.key], { ignored: c.ignored }) });
+    if (last && last.clashes) last.clashes = Object.assign({}, last.clashes);
+    for (const c of list) {
+      if (on) ign.add(c.key); else ign.delete(c.key);
+      c.ignored = on || undefined;
+      if (last && last.clashes && last.clashes[c.key]) last.clashes[c.key] = Object.assign({}, last.clashes[c.key], { ignored: c.ignored });
+    }
     await ctx.putItem(Object.assign({}, r, { ignored: [...ign], last }));
+    for (const c of list) C.sel.delete(c.key);
+    ctx.status(`${list.length} clash(es): ${on ? "not an issue - left out of the list from now on" : "counted again"}.`);
     loadRules();
   }
 
@@ -1016,7 +1094,7 @@ export function createClash(ctx) {
     ctx.status(`Clash report ready in a new tab: ${list.length} clashes${imgs.filter(Boolean).length ? ", with pictures" : ""} - Print / Save as PDF there.`);
   }
   // after the pictures: the elements back to their colours
-  async function clashOff() { putMarker(null); C.lit = null; ctx.legend(null); await ctx.highlightMany([]); }
+  async function clashOff() { putMarker(null); C.lit = null; ctx.legend(null); if (ctx.showDims) ctx.showDims([]); await ctx.highlightMany([]); }
 
   /* ------------------------------------------------------------ wiring */
 
@@ -1049,8 +1127,9 @@ export function createClash(ctx) {
     if (t.hasAttribute("data-saveres")) return saveResult();
     if (t.hasAttribute("data-delres")) return deleteResult();
     if (t.dataset.raise === "ask") { C.asking = true; paint(); const i = $("#clash-assign"); if (i) i.focus(); return; }
-    if (t.dataset.raise === "no") { C.asking = false; paint(); return; }
-    if (t.dataset.raise === "go") { const i = $("#clash-assign"); return raiseAll(i ? i.value.trim() : ""); }
+    if (t.dataset.raise === "no") { C.asking = false; C.raiseSel = false; paint(); return; }
+    if (t.dataset.pick) { if (t.dataset.pick === "all") for (const c of C.shown || []) C.sel.add(c.key); else C.sel.clear(); paint(); return; }
+    if (t.dataset.raise === "go") { const i = $("#clash-assign"); const v = i ? i.value.trim() : ""; C.raiseSel = false; C.sel.clear(); return raiseAll(v); }
     if (t.dataset.f) C.filter = t.dataset.f;
     else if (t.hasAttribute("data-else")) C.elsewhere = !C.elsewhere;
     else if (t.dataset.over === "all") { C.force = true; run(); return; }
@@ -1083,6 +1162,17 @@ export function createClash(ctx) {
     if (!c) return;
     const act = ev.target.closest("[data-act]");
     const a = act && act.dataset.act;
+    // the tick box, Ctrl or Shift: choose, without moving the view
+    if (!a && (ev.target.closest("[data-tick]") || ev.ctrlKey || ev.metaKey || ev.shiftKey)) {
+      if (ev.shiftKey && C.lastKey) {
+        const i0 = C.shown.findIndex((x) => x.key === C.lastKey), i1 = C.shown.indexOf(c);
+        if (i0 >= 0) for (let i = Math.min(i0, i1); i <= Math.max(i0, i1); i++) C.sel.add(C.shown[i].key);
+      } else if (C.sel.has(c.key)) C.sel.delete(c.key); else C.sel.add(c.key);
+      C.lastKey = c.key;
+      paint();
+      return;
+    }
+    C.lastKey = c.key;
     document.querySelectorAll("#clash-list .ck-it.on").forEach((x) => x.classList.remove("on"));
     li.classList.add("on");
     C.onKey = c.key;          // kept when the list is drawn again
@@ -1096,6 +1186,32 @@ export function createClash(ctx) {
     if (c.state === "gone") { c._at = (await placeOf(c)).p; await look(c); putMarker(c._at.toArray()); return; }
     return show(c, false);
   };
+
+  // right-click a clash: the ticked ones (this one, when it is not among them)
+  $("#clash-list").addEventListener("contextmenu", (ev) => {
+    const li = ev.target.closest(".ck-it");
+    const c = li && C.shown[Number(li.dataset.n)];
+    if (!c) return;
+    ev.preventDefault();
+    if (!C.sel.has(c.key)) { C.sel.clear(); C.sel.add(c.key); C.lastKey = c.key; paint(); }
+    const n = chosenClashes(), k = n.length, cnt = (x) => (k > 1 ? ` (${x})` : "");
+    const nIgn = n.filter((x) => x.ignored).length, live = n.filter((x) => x.state !== "gone");
+    const nIss = live.filter((x) => !issueOf(x.key)).length, iss = k === 1 ? issueOf(c.key) : null;
+    openMenu(ev.clientX, ev.clientY, [
+      { label: "Show it", disabled: k !== 1, action: () => show(c, false) },
+      { label: "Only these two", disabled: k !== 1 || c.state === "gone", action: () => show(c, true) },
+      { label: "Section off", action: () => { ctx.sectionOff(); ctx.status("Section box off: the whole model."); } },
+      "-",
+      { label: "Not an issue" + cnt(live.length - nIgn), disabled: !(live.length - nIgn), title: "Left out of the list from now on, for this rule", action: () => setIgnored(live.filter((x) => !x.ignored), true) },
+      { label: "Count again" + cnt(nIgn), disabled: !nIgn, action: () => setIgnored(n.filter((x) => x.ignored), false) },
+      iss ? { label: "Open its issue", action: () => ctx.selectIssue(iss.id) }
+        : { label: (nIss > 1 ? "Make issues" : "Make issue") + cnt(nIss), disabled: !nIss, title: nIss ? "A Clash issue at each, with a picture and its dimension" : "They have issues already",
+          action: () => (k === 1 ? makeIssue(c) : bulkAct("issues", n)) },
+      "-",
+      { label: "Save view for it", disabled: k !== 1 || c.state === "gone", action: () => saveViewFor(c, true) },
+      { label: "Clear its view", disabled: k !== 1 || !viewOf(c), action: () => saveViewFor(c, false) },
+    ]);
+  });
 
   return {
     refresh() { fillScope(); loadRules(); },
