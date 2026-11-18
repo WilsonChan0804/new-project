@@ -639,17 +639,19 @@ export function runCheck(id, els, opts) {
     for (const d of doors) {
       const r = rectOf(d), sill = d.box[1];
       const sm = (r.s0 + r.s1) / 2;
-      let top = null;
+      let top = null, fl = null;
       // under the door and a little either side of it (the slab may stop at the wall)
       for (const t of [(r.t0 + r.t1) / 2, r.t0 - 0.05, r.t1 + 0.05]) {
         const [x, z] = world(r, sm, t);
-        for (const h of probe.tops(x, z, sill - o.search_mm / 1000, sill + 0.3)) if (top === null || h.y > top) top = h.y;
+        for (const h of probe.tops(x, z, sill - o.search_mm / 1000, sill + 0.3)) if (top === null || h.y > top) { top = h.y; fl = h.el; }
       }
       if (top === null) continue;
       const delta = sill - top;
-      if (delta < -o.below_tol_mm / 1000) push({ problem: "Door below floor", severity: SEV.CRITICAL, els: [d.k], primary: d.k, value_mm: mm(delta),
+      // the door and the floor, as Revit lists them (the signature is the same)
+      const pairEls = fl && fl.k !== undefined ? [d.k, fl.k] : [d.k];
+      if (delta < -o.below_tol_mm / 1000) push({ problem: "Door below floor", severity: SEV.CRITICAL, els: pairEls, primary: d.k, value_mm: mm(delta),
         text: `${label(d)}: its sill is ${fmt(-delta)} below the floor${d.level ? " (" + d.level + ")" : ""}.` });
-      else if (delta > o.allowance_mm / 1000) push({ problem: "Door above floor", severity: SEV.WARNING, els: [d.k], primary: d.k, value_mm: mm(delta),
+      else if (delta > o.allowance_mm / 1000) push({ problem: "Door above floor", severity: SEV.WARNING, els: pairEls, primary: d.k, value_mm: mm(delta),
         text: `${label(d)}: its sill is ${fmt(delta)} above the floor${d.level ? " (" + d.level + ")" : ""}.` });
     }
     return out;
@@ -664,7 +666,6 @@ export function runCheck(id, els, opts) {
     }
     return pts;
   };
-  const median = (a) => { const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
 
   if (id === "wall_base_floor") {
     const walls = ofKind(host, "wall");
@@ -678,14 +679,15 @@ export function runCheck(id, els, opts) {
       for (const [x, z] of samplesOf(r, o.samples)) {
         // the slab surface nearest the base, below it or the one it is buried in
         let best = null;
-        for (const h of probe.tops(x, z, base - search, base + Math.min(0.5, search))) if (best === null || Math.abs(h.y - base) < Math.abs(best - base)) best = h.y;
-        if (best !== null) deltas.push(base - best);
+        for (const h of probe.tops(x, z, base - search, base + Math.min(0.5, search))) if (best === null || Math.abs(h.y - base) < Math.abs(best.y - base)) best = h;
+        if (best !== null) deltas.push([base - best.y, best.el]);
       }
       if (!deltas.length) continue;
-      const delta = median(deltas);
+      deltas.sort((p, q) => p[0] - q[0]);
+      const [delta, fl] = deltas[Math.floor(deltas.length / 2)];
       if (Math.abs(delta) <= tol) continue;
       push({ problem: delta > 0 ? "Wall base above slab" : "Wall base buried in slab", severity: delta > 0 ? SEV.WARNING : SEV.CRITICAL,
-        els: [w.k], primary: w.k, value_mm: mm(delta),
+        els: fl && fl.k !== undefined ? [w.k, fl.k] : [w.k], primary: w.k, value_mm: mm(delta),
         text: `${label(w)}: its base is ${fmt(Math.abs(delta))} ${delta > 0 ? "above" : "below"} the top of the slab${w.level ? " (" + w.level + ")" : ""}.` });
     }
     return out;
@@ -704,14 +706,16 @@ export function runCheck(id, els, opts) {
         let best = null;
         for (const h of probe.bottoms(x, z, top - o.overshoot_mm / 1000, top + o.search_mm / 1000)) {
           if (h.y <= w.box[1] + 0.1) continue;            // the slab under the wall itself
-          if (best === null || Math.abs(h.y - top) < Math.abs(best - top)) best = h.y;
+          if (best === null || Math.abs(h.y - top) < Math.abs(best.y - top)) best = h;
         }
-        if (best !== null) deltas.push(top - best);
+        if (best !== null) deltas.push([top - best.y, best.el]);
       }
       if (!deltas.length) continue;
-      const delta = median(deltas);
+      deltas.sort((p, q) => p[0] - q[0]);
+      const [delta, fl] = deltas[Math.floor(deltas.length / 2)];
       if (Math.abs(delta) <= tol) continue;
-      push({ problem: delta > 0 ? "Wall top past soffit" : "Wall top short of soffit", severity: SEV.WARNING, els: [w.k], primary: w.k, value_mm: mm(delta),
+      push({ problem: delta > 0 ? "Wall top past soffit" : "Wall top short of soffit", severity: SEV.WARNING,
+        els: fl && fl.k !== undefined ? [w.k, fl.k] : [w.k], primary: w.k, value_mm: mm(delta),
         text: `${label(w)}: its top is ${fmt(Math.abs(delta))} ${delta > 0 ? "past" : "short of"} the soffit above${w.level ? " (" + w.level + ")" : ""}.` });
     }
     return out;
@@ -725,14 +729,14 @@ export function runCheck(id, els, opts) {
     const tol = o.tolerance_mm / 1000, deep = o.skip_recessed / 1000;
     for (const c of comps) {
       const b = c.box, bottom = b[1];
-      let top = null;
+      let top = null, fl = null;
       for (const [x, z] of [[(b[0] + b[3]) / 2, (b[2] + b[5]) / 2]]) {
-        for (const h of probe.tops(x, z, bottom - o.search_mm / 1000, bottom + deep)) if (top === null || h.y > top) top = h.y;
+        for (const h of probe.tops(x, z, bottom - o.search_mm / 1000, bottom + deep)) if (top === null || h.y > top) { top = h.y; fl = h.el; }
       }
       if (top === null) continue;
       const sunk = top - bottom;
       if (sunk <= tol || sunk > deep) continue;
-      push({ problem: "Component sunk into floor", severity: SEV.WARNING, els: [c.k], primary: c.k, value_mm: mm(-sunk),
+      push({ problem: "Component sunk into floor", severity: SEV.WARNING, els: fl && fl.k !== undefined ? [c.k, fl.k] : [c.k], primary: c.k, value_mm: mm(-sunk),
         text: `${label(c)} sits ${fmt(sunk)} into the floor${c.level ? " (" + c.level + ")" : ""}.` });
     }
     return out;

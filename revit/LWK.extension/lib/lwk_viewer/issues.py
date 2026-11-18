@@ -226,6 +226,10 @@ class Client(object):
         as the server stored it."""
         return self._request("POST", "/api/items", item, project=project).get("item") or item
 
+    def delete_item(self, project, item_id):
+        """Remove one item (as the web page's delete does)."""
+        return self._request("DELETE", "/api/items/" + _q(item_id), project=project)
+
     def goto(self, project, issue):
         """Ask a viewer page this person has open to show the issue.
         Returns (seq, page_open)."""

@@ -68,7 +68,7 @@ r = run("door_floor");
 ok(r.issues.length === 1 && r.issues[0].problem === "Door above floor" && Math.abs(r.issues[0].value_mm - 40) < 0.6, "door 40 mm above floor " + JSON.stringify(probs(r)));
 
 r = run("element_floor");
-ok(r.issues.length === 1 && r.issues[0].els[0] === 13 && Math.abs(r.issues[0].value_mm + 50) < 0.6, "cabinet sunk 50 mm " + JSON.stringify(probs(r)));
+ok(r.issues.length === 1 && r.issues[0].els.join() === "13,0" && Math.abs(r.issues[0].value_mm + 50) < 0.6, "cabinet sunk 50 mm " + JSON.stringify(probs(r)));
 
 r = run("wall_top_soffit");
 ok(r.issues.some((f) => f.els[0] === 5 && f.problem === "Wall top short of soffit" && Math.abs(f.value_mm + 100) < 0.6), "W4 100 mm short of soffit " + JSON.stringify(probs(r)));

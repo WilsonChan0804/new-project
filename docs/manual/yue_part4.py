@@ -194,6 +194,16 @@ PART = [
         '**Place pins for the list** / **Remove pins** 喺 workset「LWK Issues」加「LWK #n」標記。**Clouds on sheets** 喺 revision「LWK Viewer issues」下面加 revision cloud。',
         '揀個狀態及／或打個 comment，然後 **Send to viewer**：會用你個名出現喺網上 viewer。',
     ]),
+    H3('Revit 入面嘅 Model Doctor'),
+    P('**LWK tab > Model Doctor** 檢查而家打開嘅模型，搵到嘅問題可以修正，一下 Ctrl+Z 就還原。佢同 viewer 入面嘅 **3D > Checks > Doctor** 係同一個工具（睇 Model Doctor），仲可以修正。'),
+    UL([
+        '**Run checks** 逐個行剔咗嘅 checks；行嘅時候個視窗都用得，會顯示每個 check 嘅數量。**Settings for selected check** 一改就保存。',
+        '**Not an error**（第一欄個剔，或者揀咗啲行再撳 **Mark not an error**）會經 LWK Viewer 同成個 project 共用，所以 viewer 嘅 Model Doctor 會見到一樣嘅清單。要先喺 **LWK Issues** 登入同揀好 project；冇嘅話就淨係存喺呢部電腦。佢按 central model 保存，所以用 local copy 嘅人都共用同一張清單。',
+        '**Fix selected** 淨係修正揀咗嘅行（唔會預設全部修正）。**Fix all in this check** 跟 **Check** 篩選。修正之後啲 checks 會再行一次，修好嘅行會離開清單。每個 check 分開修正，一個 check 出錯只會還原佢自己嘅改動。',
+        '**Fix queue (N)：** viewer 要求修正嘅（**Fix in Revit**）。撳佢：checks 會行一次，模型入面仲喺度嘅排隊 findings 會被揀好，可以直接 **Fix selected**；viewer 會收到 **Fixed in Revit**，或者點解唔修到（pinned、俾其他人借咗、搵唔到……）。',
+        '**Export CSV** 用 Excel 開，中文都正確。',
+        '用得喺 Revit 2022 至 2026。',
+    ]),
     H3('Revit 元件同 LWK add-in'),
     UL([
         '喺 publish 咗嘅 model 3D 入面開嘅每個 issue 都帶住元件嘅 ElementId 同 UniqueId。Review 嘅人可以 copy 啲 id 用 **Manage > Select by ID**，BCF export 會當 AuthoringToolId 帶埋佢哋。',

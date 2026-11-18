@@ -1008,6 +1008,16 @@ DOC = [
         '**Place pins for the list** / **Remove pins** add "LWK #n" markers on the workset "LWK Issues". **Clouds on sheets** adds revision clouds under the revision "LWK Viewer issues".',
         'Choose a status and/or type a comment, then **Send to viewer**: it appears in the web viewer under your name.',
     ]),
+    H3('Model Doctor in Revit'),
+    P('**LWK tab > Model Doctor** checks the open model and can fix what it finds, with one Ctrl+Z to undo. It is the same tool as **3D > Checks > Doctor** in the viewer (see Model Doctor), and it can also fix.'),
+    UL([
+        '**Run checks** runs the ticked checks one by one; the window stays usable and shows each check\'s count. **Settings for selected check** are kept as soon as they are changed.',
+        '**Not an error** (the tick in the first column, or **Mark not an error** for the selected rows) is shared with the whole project through the LWK Viewer, so the viewer\'s Model Doctor shows the same. It needs the sign-in and the project chosen in **LWK Issues**; without them it is kept on this computer only. It is kept by the central model, so everyone working from local copies shares one list.',
+        '**Fix selected** fixes only the rows selected (it never fixes everything by default). **Fix all in this check** follows the **Check** filter. After a fix, the checks run again, so fixed rows leave the list. Each check is fixed on its own, so a check that fails undoes only its own changes.',
+        '**Fix queue (N):** what the viewer asked to fix (**Fix in Revit**). Click it: the checks run, the queued findings that are still in the model are selected, ready for **Fix selected**, and the viewer is told **Fixed in Revit**, or why not (pinned, owned by someone else, no longer found ...).',
+        '**Export CSV** opens in Excel with the right characters.',
+        'Runs on Revit 2022 to 2026.',
+    ]),
     H3('Revit elements and the LWK add-in'),
     UL([
         'Every issue raised in 3D on a published model carries the element\'s ElementId and UniqueId. Reviewers can copy the ids for **Manage > Select by ID**, and BCF exports carry them as AuthoringToolId.',

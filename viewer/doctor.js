@@ -386,8 +386,10 @@ export function createDoctor(ctx) {
     return b;
   };
   async function show(f, only) {
-    const list = elsOf(f);
+    let list = elsOf(f);
     if (!list.length) { say(f.text); return; }
+    // against a floor: the door, wall or component lit, not the whole slab
+    if (/^(door_floor|wall_base_floor|wall_top_soffit|element_floor)$/.test(f.check) && D.raw[f.primary]) list = [D.raw[f.primary]];
     await ctx.highlightMany(list.map((e) => ({ part: e.part, lid: e.lid })));
     if (only) await ctx.isolateMany(list.map((e) => ({ part: e.part, lid: e.lid })));
     const bx = centreOf(list);

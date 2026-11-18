@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-24", date: "18 Nov 2026",
+    items: [
+      "**Model Doctor in the LWK tab in Revit:** it now shares **Not an error** with the whole project through the viewer, and **Fix queue (N)** lists what the viewer asked to fix and reports back **Fixed in Revit**, or why not.",
+      "**Steadier and safer:** each check runs inside Revit's own safe context, one at a time, which removes the cause of the \"unrecoverable error\" crashes. **Fix selected** fixes only the rows selected, the results are checked again after a fix, and each check's fix is undone on its own if it fails. A copy in another design option or phase is no longer taken as a duplicate. It runs on Revit 2022 to 2026, and the CSV opens in Excel with the right characters.",
+    ],
+  },
+  {
     version: "2027-01-23", date: "18 Nov 2026",
     items: [
       "**Model Doctor in the viewer:** 3D > Checks > **Doctor** runs LWK Model Doctor's checks on the models shown, with no Revit needed, and scores the model out of 100. It finds duplicates, overlapping walls, walls that nearly touch, walls and columns, clashes, gaps and duplicates against the other models loaded, doors off the floor, wall bases and tops off the slabs, and components sunk into the floor.",
