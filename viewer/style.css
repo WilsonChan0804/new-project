@@ -3234,3 +3234,6 @@ body.history-mode #overlay { opacity: .85; }
 #empty .ns-card b { display: block; font-size: 16px; margin-bottom: 6px; }
 #empty .ns-card button { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding: 7px 16px; }
 #empty .ns-card p { margin: 0 0 14px; font-size: 13px; line-height: 1.45; color: var(--muted, #666); }
+
+/* saved comparisons on the sheet list */
+.sheet-cnt .sc-cmp { background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--line); }

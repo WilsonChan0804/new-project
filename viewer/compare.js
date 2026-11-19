@@ -52,6 +52,8 @@ export function createCompare(ctx) {
     align: null,        // [a, b, e, f]: the other drawing moved, scaled, turned to fit (see alignKey)
     picking: null,      // picking points to line them up: { stage: "old"|"new", old: [], new: [] }
     nudge: false,
+    savedId: "",        // the saved comparison open now (Save \u25be), if any
+    pendingSaved: "",   // one to open once its sheet has opened
   };
 
   const bar = () => $("#cmp-bar");
@@ -89,6 +91,13 @@ export function createCompare(ctx) {
       return o;
     };
     opt("", "Compare with ...");
+    const saved = savedFor(sheet && sheet.number);
+    if (saved.length) {
+      const g = document.createElement("optgroup");
+      g.label = "Saved comparisons";
+      saved.forEach((it) => opt("saved:" + it.id, "\u29c9 " + (it.name || "Saved"), g));
+      sel.appendChild(g);
+    }
     if (C.versions.length) {
       const g = document.createElement("optgroup");
       g.label = "Earlier versions of " + sheet.number;
@@ -125,6 +134,9 @@ export function createCompare(ctx) {
     }
     return null;
   }
+  // a PDF kept in the project's Folders (a saved comparison's own copy)
+  const folderSrc = (reg, path, label) => ({ kind: "folders", id: reg + "/" + path, reg, path, label: label || path.split("/").pop(),
+    fetchUrl: "/api/files/" + encodeURIComponent(reg) + "/file?path=" + encodeURIComponent(path) });
 
   async function oldPage() {
     const src = C.src;
@@ -132,6 +144,11 @@ export function createCompare(ctx) {
     if (C.oldKey !== key || !C.oldDoc) {
       if (C.oldDoc) { try { C.oldDoc.destroy(); } catch (e) {} }
       C.oldDoc = null; C.oldKey = "";
+      if (src.fetchUrl && !src.data) {
+        const res = await fetch(src.fetchUrl, { headers: Store.authHeaders() });
+        if (!res.ok) throw new Error(res.status === 404 ? "the saved PDF is no longer in Folders" : "HTTP " + res.status);
+        src.data = new Uint8Array(await res.arrayBuffer());
+      }
       const task = src.data
         ? pdfjsLib.getDocument({ data: src.data.slice(0) })
         : pdfjsLib.getDocument(src.url);
@@ -359,13 +376,14 @@ export function createCompare(ctx) {
     const it = (Store.all() || []).find((x) => x.id === alignId(k) && !x.deleted);
     return it && Array.isArray(it.m) && it.m.length === 4 ? it.m : null;
   }
-  async function keepAlign(m) {
+  async function keepAlign(m, quiet) {
     const k = alignKey();
     if (!k) return;
     try {
       await Store.put({ id: alignId(k), placement: "cmpalign", key: k, m: m || null, deleted: !m, author: Store.author() || "",
         updated_at: new Date().toISOString() });
     } catch (e) { status("Could not keep the alignment: " + e.message); }
+    if (quiet) return;
     C.key = "";
     run();
   }
@@ -434,6 +452,144 @@ export function createCompare(ctx) {
       { label: "Reset (top-left, same width)", disabled: !savedAlign(), action: () => { keepAlign(null); status("Alignment cleared."); } },
     ]);
   }
+  /* ------------------------------------------- saved comparisons */
+
+  /* Save \u25be keeps what is on screen under a name, for everyone on the
+     project: the other drawing (a PDF from this device is kept in Folders,
+     00 BIM / Exports / Compare, so it can be opened anywhere), where it was
+     moved to (the alignment), and the view. One project item each,
+     placement "cmpsaved". */
+  function savedFor(num) {
+    if (!num) return [];
+    return (Store.all() || []).filter((x) => x.placement === "cmpsaved" && !x.deleted && x.sheet === num)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }
+  const savedItem = (id) => (Store.all() || []).find((x) => x.id === id && x.placement === "cmpsaved" && !x.deleted) || null;
+  const newId = () => "cmpsaved-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+  // the source as it is kept: a version, a sheet, or a PDF in Folders
+  async function keptSource() {
+    const src = C.src;
+    if (src.kind === "version" || src.kind === "sheet" || src.kind === "folders") {
+      return { kind: src.kind, id: src.id, label: src.label, reg: src.reg, path: src.path };
+    }
+    // a PDF from this device: a copy in the project's Folders first
+    setStatus("Keeping " + src.label + " in Folders ...");
+    const h = Object.assign({}, Store.authHeaders(), { "Content-Type": "application/octet-stream" });
+    const res = await fetch("/api/files/for-viewer/save?folder=Compare&name=" + encodeURIComponent(C.fileName || "compare.pdf"),
+      { method: "POST", headers: h, body: C.fileData });
+    let out = {};
+    try { out = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(out.detail || "HTTP " + res.status);
+    const f = folderSrc(out.reg, out.path, C.fileName);
+    // the position goes with it: the same alignment under the kept copy
+    const A = C.align;
+    C.src = Object.assign(f, { data: C.fileData });
+    C.oldKey = "folders:" + f.id;                    // the open PDF is this one
+    if (A) await keepAlign(A, true);
+    return { kind: "folders", id: f.id, label: f.label, reg: f.reg, path: f.path };
+  }
+
+  async function saveCurrent(existing) {
+    if (!C.src || !S.sheet) { status("Choose what to compare with first."); return; }
+    let name = existing ? existing.name : prompt("A name for this comparison", S.sheet.number + " vs " + C.src.label);
+    if (name == null) return;
+    name = String(name).trim().slice(0, 120) || (S.sheet.number + " vs " + C.src.label);
+    let src;
+    try { src = await keptSource(); }
+    catch (e) { setStatus("Not saved: " + e.message); status("Not saved: " + e.message); return; }
+    const it = Object.assign({}, existing || {}, {
+      id: existing ? existing.id : newId(), placement: "cmpsaved", sheet: S.sheet.number, name, src,
+      align: C.align ? C.align.slice() : null, view: C.view, boxes: !!$("#cmp-boxes").checked, rotation: S.rotation || 0,
+      updated_at: new Date().toISOString(),
+    });
+    if (!existing) { it.author = Store.author() || ""; it.created_at = it.updated_at; }
+    try { await Store.put(it); }
+    catch (e) { status("Not saved: " + e.message); return; }
+    C.savedId = it.id;
+    fillSources();
+    $("#cmp-src").value = "saved:" + it.id;
+    const m = (existing ? "Updated" : "Saved") + ` "${name}" - pick it under Compare with \u25be > Saved comparisons, for everyone on the project.`;
+    setStatus(m); status(m);
+    if (ctx.afterSave) ctx.afterSave();
+  }
+
+  // a saved comparison back on screen: its drawing, position and view
+  async function openSaved(id) {
+    const it = savedItem(id);
+    if (!it) { status("That saved comparison is not there any more."); return; }
+    if (!C.on) { C.pendingSaved = id; toggle(true); return; }
+    if (!S.sheet || S.sheet.number !== it.sheet) {
+      C.pendingSaved = id;
+      const sh = S.manifest.sheets.find((x) => x.number === it.sheet);
+      if (!sh) { C.pendingSaved = ""; status("Its sheet " + it.sheet + " is not in this project any more."); return; }
+      if (ctx.openSheet) ctx.openSheet(sh);
+      return;
+    }
+    C.pendingSaved = "";
+    const k = it.src || {};
+    let src = null;
+    if (k.kind === "folders") src = folderSrc(k.reg, k.path, k.label);
+    else if (k.kind === "version" || k.kind === "sheet") src = sourceFor(k.kind + ":" + k.id);
+    if (!src) {
+      C.src = null; C.savedId = "";
+      fillSources(); $("#cmp-src").value = "";
+      setStatus(`"${it.name}": its other drawing (${k.label || k.id}) is not there any more - choose another and Save again.`);
+      run();
+      return;
+    }
+    C.src = src; C.savedId = it.id; C.key = "";
+    fillSources();
+    $("#cmp-src").value = "saved:" + it.id;
+    if ($("#cmp-boxes")) $("#cmp-boxes").checked = it.boxes !== false;
+    C.view = it.view || "diff";
+    document.querySelectorAll("#cmp-view button").forEach((b) => b.classList.toggle("active", b.dataset.v === C.view));
+    document.querySelector("#cmp-legend").hidden = C.view !== "diff";
+    // its position becomes the pair's (what Align and Nudge then work from)
+    const A = Array.isArray(it.align) && it.align.length === 4 ? it.align : null;
+    if (JSON.stringify(A) !== JSON.stringify(savedAlign())) await keepAlign(A, true);
+    C.key = "";
+    run();
+    status(`Opened "${it.name}".`);
+  }
+
+  async function renameSaved(it) {
+    const name = prompt("New name", it.name || "");
+    if (name == null || !name.trim()) return;
+    try { await Store.put(Object.assign({}, it, { name: name.trim().slice(0, 120), updated_at: new Date().toISOString() })); }
+    catch (e) { status("Not renamed: " + e.message); return; }
+    fillSources(); $("#cmp-src").value = "saved:" + it.id;
+    if (ctx.afterSave) ctx.afterSave();
+  }
+  async function deleteSaved(it) {
+    if (!confirm(`Delete the saved comparison "${it.name}"?\n\nThe drawings are not touched.`)) return;
+    try { await Store.put(Object.assign({}, it, { deleted: true, updated_at: new Date().toISOString() })); }
+    catch (e) { status("Not deleted: " + e.message); return; }
+    if (C.savedId === it.id) C.savedId = "";
+    fillSources(); $("#cmp-src").value = C.src ? currentValue() : "";
+    status(`Deleted "${it.name}".`);
+    if (ctx.afterSave) ctx.afterSave();
+  }
+  function saveMenu(btn) {
+    const r = btn.getBoundingClientRect();
+    const cur = C.savedId ? savedItem(C.savedId) : null;
+    const mine = (it) => !it.author || !Store.author() || it.author === Store.author() || (ctx.isAdmin && ctx.isAdmin());
+    const link = (it) => location.origin + location.pathname + "?project=" + encodeURIComponent((Store.currentProject && Store.currentProject()) || new URLSearchParams(location.search).get("project") || "")
+      + "&sheet=" + encodeURIComponent(it.sheet) + "&cmp=" + encodeURIComponent(it.id);
+    openMenu(r.left, r.bottom + 4, [
+      { label: "Save as a new comparison ...", disabled: !C.src, title: "Keep the other drawing, where it is moved to and the view, under a name", action: () => saveCurrent(null) },
+      ...(cur ? [
+        { label: `Update "${cur.name}"`, title: "Keep the position and view now on screen", action: () => saveCurrent(cur) },
+        { label: "Rename ...", action: () => renameSaved(cur) },
+        { label: "Copy link", action: () => { try { navigator.clipboard.writeText(link(cur)); status("Link copied."); } catch (e) { prompt("The link", link(cur)); } } },
+        "-",
+        { label: `Delete "${cur.name}" ...`, danger: true, disabled: !mine(cur), action: () => deleteSaved(cur) },
+      ] : []),
+      ...(!cur && savedFor(S.sheet && S.sheet.number).length ? ["-",
+        ...savedFor(S.sheet.number).map((it) => ({ label: "Open \u29c9 " + it.name, action: () => openSaved(it.id) }))] : []),
+    ]);
+  }
+
   function nudgeKey(ev) {
     const page = S.page;
     if (!page) return;
@@ -520,7 +676,12 @@ export function createCompare(ctx) {
       $("#cmp-src").value = "version:" + C.versions[0].id;
       C.src = sourceFor($("#cmp-src").value);
     } else { C.src = null; $("#cmp-src").value = ""; }
+    C.savedId = "";
     C.key = "";
+    if (C.pendingSaved) {
+      const it = savedItem(C.pendingSaved);
+      if (it) { await openSaved(C.pendingSaved); if (C.pendingSaved) run(); return; }
+    }
     run();
   }
 
@@ -562,7 +723,9 @@ export function createCompare(ctx) {
         ev.target.value = C.src ? currentValue() : "";
         return;
       }
+      if (v.startsWith("saved:")) { openSaved(v.slice(6)); return; }
       C.src = sourceFor(v);
+      C.savedId = "";
       C.key = "";
       run();
     });
@@ -574,6 +737,7 @@ export function createCompare(ctx) {
       fillSources();
       $("#cmp-src").value = "file:last";
       C.src = sourceFor("file:last");
+      C.savedId = "";
       C.oldKey = "";                 // a new file under the same name
       C.key = "";
       run();
@@ -582,6 +746,8 @@ export function createCompare(ctx) {
       b.addEventListener("click", () => setView(b.dataset.v)));
     const ab = $("#cmp-align");
     if (ab) ab.addEventListener("click", () => alignMenu(ab));
+    const sb = $("#cmp-save");
+    if (sb) sb.addEventListener("click", () => saveMenu(sb));
     // while lining up, a click on the page is a point, not a markup
     $("#scroll").addEventListener("pointerdown", (ev) => {
       if (!C.picking || ev.button !== 0) return;
@@ -614,6 +780,7 @@ export function createCompare(ctx) {
   function currentValue() {
     const s = C.src;
     if (!s) return "";
+    if (C.savedId) return "saved:" + C.savedId;
     if (s.kind === "file") return "file:last";
     return s.kind + ":" + s.id;
   }
@@ -629,5 +796,5 @@ export function createCompare(ctx) {
     }
   }
 
-  return { wire, toggle, onPage, decorate, goTo, get state() { return C; }, run };
+  return { wire, toggle, onPage, decorate, goTo, get state() { return C; }, run, openSaved, savedFor };
 }

@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-28", date: "19 Nov 2026",
+    items: [
+      "**Compare: Save \u25be** keeps a lined-up comparison under a name, for everyone on the project: the other drawing, where you moved it to, and the view. A PDF from your computer is kept in Folders (00 BIM / Exports / Compare), so it opens on any computer.",
+      "**Back in one click:** pick it under **Compare with \u25be > Saved comparisons**, or right-click the sheet in the list (**\u29c9** shows it has some) > **Open saved comparison**. **Save \u25be** also updates, renames, copies a link to, or deletes it.",
+    ],
+  },
+  {
     version: "2027-01-27", date: "19 Nov 2026",
     items: [
       "**Split view keeps the sizes you set:** drag the divider to share the screen as you like, and only that changes it. Clicking in the other view no longer enlarges it. Drawing there (or **\u21c4 Work here**) still swaps the two sheets, but each half of the screen stays the size it was, and so does a reload. Double-click the divider for halves.",

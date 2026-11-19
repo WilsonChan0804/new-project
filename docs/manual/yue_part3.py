@@ -42,6 +42,7 @@ PART = [
         '**Links** 將 section 標記、callout 同 elevation 標記變成連去佢哋 sheet 嘅連結；**← back** 返去。',
         '**Compare** 顯示同一張 sheet 之前 upload 嘅版本、另一張 sheet，或者你電腦入面一個 PDF 有乜唔同：紅色 = 刪咗，綠色 = 加咗。**N / Shift+N** 喺改動之間跳。',
         '**Align ▾**（Compare bar 入面）對齊 setting-out 唔同嘅圖則，例如 design plan、顧問嘅 PDF：**Pick 2 points on each**：喺另一張圖 click 兩個對應點（例如兩個 grid 交點），再喺呢張 sheet click 同樣兩點；佢會移動、縮放同轉動嚟對齊，而且成個 project 都會記住呢對 sheet 嘅對齊。**Nudge** 用方向鍵微調（1 mm，Shift 10 mm）；**Reset** 還原。',
+        '**Save ▾**（Compare bar 入面）將畫面上嘅比較用一個名儲起，成個 project 都用得：另一張圖、佢移咗去邊（Align 同 Nudge），同埋 view（Changes、Earlier 或者 Current）。由呢部電腦揀嘅 PDF 會放入 Folders 嘅 **00 BIM / Exports / Compare**，所以喺邊部電腦都開得返。再開：**Compare with ▾ > Saved comparisons**，或者喺 sheet 清單 right-click 嗰張 sheet（**⧉** 顯示有幾多個）> **Open saved comparison**。**Save ▾** 仲有 **Update**、**Rename**、**Copy link** 同 **Delete**（儲嘅人或者 project admin）。',
         '**2D + 3D** 喺 sheet 隔籬打開 3D model。揀 **Stand there** 或者 **Look at**，然後撳 plan：3D 視圖就會去嗰個位。Plan 上面有個「你喺度」標記跟住 3D 鏡頭；剔 **Follow** 就會一直睇住佢，你喺唔同樓層之間行嘅時候會自動轉 plan。只有 plan view 有用，section 同 elevation 唔得。',
     ]),
     SHOT('sheet-split'),

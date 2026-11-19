@@ -135,6 +135,9 @@ const CMP = createCompare({
   S, $, status, Store,
   redraw: () => redraw(),
   setScale: (s) => { S.scale = s; preview(); settle(160); },
+  openSheet: (sh) => openSheet(sh),
+  isAdmin: () => isAdmin(),
+  afterSave: () => paintSheetCounts(),
 });
 const SYNC = createSync3D({
   S, $, status, Store,
@@ -5086,8 +5089,9 @@ function showSet(name, keepSheet) {
 function paintSheetCounts() {
   const ul = document.getElementById("sheet-list");
   if (!ul) return;
-  const by = new Map();
+  const by = new Map(), cmp = new Map();
   for (const it of S.items || []) {
+    if (it.placement === "cmpsaved" && !it.deleted && it.sheet) cmp.set(it.sheet, (cmp.get(it.sheet) || 0) + 1);
     if (it.deleted || !it.sheet || NOT_HERE.has(it.placement) || it.archived || isEndorsed(it)) continue;
     let c = by.get(it.sheet);
     if (!c) by.set(it.sheet, c = { open: 0, done: 0, com: 0 });
@@ -5099,8 +5103,10 @@ function paintSheetCounts() {
     if (!box) continue;
     const c = by.get(li.dataset.num) || { open: 0, done: 0, com: 0 };
     box.innerHTML = (c.open ? `<span class="sc sc-open">! ${c.open}</span>` : c.done ? `<span class="sc sc-done">\u2713 ${c.done}</span>` : "")
-      + (c.com ? `<span class="sc sc-com">\u{1F4AC} ${c.com}</span>` : "");
+      + (c.com ? `<span class="sc sc-com">\u{1F4AC} ${c.com}</span>` : "")
+      + (cmp.get(li.dataset.num) ? `<span class="sc sc-cmp">\u29c9 ${cmp.get(li.dataset.num)}</span>` : "");
     const parts = [];
+    if (cmp.get(li.dataset.num)) parts.push(`${cmp.get(li.dataset.num)} saved comparison(s) - right-click to open`);
     if (c.open) parts.push(`${c.open} open issue${c.open > 1 ? "s" : ""}`);
     if (c.done) parts.push(`${c.done} closed`);
     if (c.com) parts.push(`${c.com} comment${c.com > 1 ? "s" : ""}`);
@@ -5427,6 +5433,7 @@ function wireSetTools() {
   const afterAction = () => { if (PICK.on) { PICK.sel.clear(); PICK.last = null; renderSheets(); } };
   SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, apply: applySheetMeta, status, startPick,
             list: () => setSheets(), afterAction,
+            savedCompares: (num) => CMP.savedFor(num), openCompare: (id) => CMP.openSaved(id),
             cleanPdf: (nums) => exportCleanPdf(nums.map((n) => S.manifest.sheets.find((x) => x.number === n)).filter(Boolean)),
             itemsOn: (nums) => S.items.filter((it) => !it.deleted && nums.includes(it.sheet) && !NOT_HERE.has(it.placement)).length,
             moveItems: (nums) => moveItemsToSheet(S.items.filter((it) => !it.deleted && nums.includes(it.sheet) && !NOT_HERE.has(it.placement)).map((x) => x.id), nums.join(", ")) })
@@ -5555,7 +5562,7 @@ function statusMatches(iss, f) {
   return stt === f;
 }
 
-const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "clashresult", "checkcfg", "dim3d", "doctorrun", "doctoraccept", "doctorfix", "archivebatch", "cmpalign"]);
+const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "clashresult", "checkcfg", "dim3d", "doctorrun", "doctoraccept", "doctorfix", "archivebatch", "cmpalign", "cmpsaved"]);
 /* --------------------------------------------- endorsed, archived, ticked */
 
 /* Endorsed issues and archived comments/issues leave the drawing and the
@@ -8591,6 +8598,12 @@ async function boot() {
     await openSheet(again);
     const li = document.querySelector(`#sheet-list li[data-num="${CSS.escape(again.number)}"]`);
     if (li) li.scrollIntoView({ block: "center" });
+  }
+  // a saved comparison: ?cmp=<id> (Compare > Save > Copy link)
+  const cmpId = new URLSearchParams(location.search).get("cmp");
+  if (cmpId) {
+    for (let i = 0; i < 80 && !(S.page && S.viewport); i++) await new Promise((r) => setTimeout(r, 150));
+    CMP.openSaved(cmpId);
   }
   // A query's picture: ?area=u,v,w,h (paper mm) - the sheet zoomed to what was captured
   const area = (new URLSearchParams(location.search).get("area") || "").split(",").map(Number);

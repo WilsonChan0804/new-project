@@ -611,6 +611,10 @@ def check_item_rules(prev, item, w, role):
         raise HTTPException(status_code=403, detail="Only whoever made it, or a project admin, may archive or restore it")
     if (item.get("sheet") or "") != (prev.get("sheet") or "") and not _is_author(prev, w):
         raise HTTPException(status_code=403, detail="Only whoever made it, or a project admin, may move it to another sheet")
+    # a saved comparison (Compare > Save): its maker or a project admin
+    # deletes it; anyone may update its position
+    if prev.get("placement") == "cmpsaved" and item.get("deleted") and not prev.get("deleted") and not _is_author(prev, w):
+        raise HTTPException(status_code=403, detail="Only whoever saved this comparison, or a project admin, may delete it")
     iss, piss = item.get("issue") or {}, prev.get("issue") or {}
     if isinstance(iss, dict) and iss.get("endorsed") and not piss.get("endorsed"):
         if (iss.get("status") or "Open") != "Closed":

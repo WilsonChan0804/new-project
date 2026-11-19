@@ -73,6 +73,13 @@ class Rules(unittest.TestCase):
         n2["issue"] = dict(p2["issue"], endorsed=True)
         self.assertFalse(self.allowed(p2, n2, RAISER))
 
+    def test_saved_compare_delete(self):
+        prev = item(placement="cmpsaved")
+        self.assertTrue(self.allowed(prev, item(placement="cmpsaved", deleted=True), AUTHOR))
+        self.assertFalse(self.allowed(prev, item(placement="cmpsaved", deleted=True), OTHER))
+        self.assertTrue(self.allowed(prev, item(placement="cmpsaved", deleted=True), OTHER, role="admin"))
+        self.assertTrue(self.allowed(prev, item(placement="cmpsaved", align=[1, 0, 0.1, 0]), OTHER))
+
     def test_new_items_free(self):
         self.assertTrue(self.allowed(None, item(archived={"by": "x"}), OTHER))
 

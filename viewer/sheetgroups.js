@@ -316,7 +316,8 @@ export async function hide(numbers, on) {
 
 /* right-click a sheet (or the sheets chosen with Select) */
 export function sheetMenu(ev, s, chosen) {
-  if (!M.can_group && !M.can_hide && !(CTX && CTX.cleanPdf)) return;
+  const cmps = CTX && CTX.savedCompares ? CTX.savedCompares(s.number) : [];
+  if (!M.can_group && !M.can_hide && !(CTX && CTX.cleanPdf) && !cmps.length) return;
   ev.preventDefault();
   // with sheets ticked (Move / hide sheets): all of them, the one clicked too
   const nums = chosen && chosen.length ? [...new Set(chosen.concat([s.number]))] : [s.number];
@@ -324,6 +325,7 @@ export function sheetMenu(ev, s, chosen) {
   const groups = M.groups.filter((g) => (g.set || "") === set);
   const n = nums.length > 1 ? `${nums.length} sheets` : `"${s.number}"`;
   openMenu(ev.clientX, ev.clientY, [
+    ...(nums.length === 1 && cmps.length ? [...cmps.map((it) => ({ label: `Open saved comparison \u29c9 ${esc(it.name || "Saved")}`, action: () => CTX.openCompare(it.id) })), "-"] : []),
     ...(CTX && CTX.moveItems && CTX.itemsOn(nums) ? [{ label: `Move the ${CTX.itemsOn(nums)} comment(s) and issue(s) on ${esc(n)} to another sheet ...`, action: () => CTX.moveItems(nums) }] : []),
     ...(CTX && CTX.cleanPdf ? [{ label: `Download ${esc(n)} as PDF (clean, no markups)`, action: () => CTX.cleanPdf(nums) },
       ...(M.can_group || M.can_hide ? ["-"] : [])] : []),
