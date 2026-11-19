@@ -2112,6 +2112,23 @@ def register(app, core):
             out.append(p)
         return {"projects": out, "can_create": reg_can_create(w)}
 
+    @app.post("/api/registry/{rid}/viewer")
+    def reg_make_viewer(rid: str, request: Request, x_viewer_token: str = Header(default="")):
+        """An older project made before this worked without Revit: its own
+        (empty) viewer project now, and its members brought across."""
+        w = core.who(request, x_viewer_token)
+        with db() as d:
+            old = d.execute("SELECT * FROM projects WHERE id = ? AND deleted = 0", (rid,)).fetchone()
+            if not old:
+                raise HTTPException(status_code=404, detail="No such project")
+            if not reg_can_edit(w, old):
+                raise HTTPException(status_code=403, detail="Only the project's owners or a site admin can do this")
+            if viewers_of(old):
+                return reg_row(old)
+            r = reg_row(old)
+        pid = core.make_empty_project(r.get("code") or r.get("short") or r.get("name"), r.get("name"), w)
+        return reg_save(request, x_viewer_token, {"id": rid, "viewers": [pid]})
+
     @app.post("/api/registry")
     def reg_save(request: Request, x_viewer_token: str = Header(default=""), body: dict = Depends(json_body)):
         w = core.who(request, x_viewer_token)
@@ -2145,9 +2162,14 @@ def register(app, core):
                     if not core.project_dir(v):
                         raise HTTPException(status_code=400, detail="No viewer project %s" % v)
                 cur["viewers"] = vs
-            cur["viewer"] = cur["viewers"][0] if cur["viewers"] else ""
             if not cur["name"]:
                 raise HTTPException(status_code=400, detail="A project needs a name")
+            # a new project works at once, with or without Revit: it gets its
+            # own (empty) viewer project - sheets from imported PDFs, tasks,
+            # chat, boards, folders. A Revit publish into it adds the rest.
+            if not old and not cur["viewers"] and not core.CFG["single"] and body.get("viewer_auto", True) is not False:
+                cur["viewers"] = [core.make_empty_project(cur["code"] or cur["short"] or cur["name"], cur["name"], w)]
+            cur["viewer"] = cur["viewers"][0] if cur["viewers"] else ""
             if not cur["short"]:
                 cur["short"] = split_code(cur["name"])[1]
             if not cur["code"]:
@@ -2156,6 +2178,13 @@ def register(app, core):
             pid = pid or new_id()
             before = viewers_of(old) if old else []
             added = [v for v in cur["viewers"] if v not in before]
+            if added and core.accounts_on():
+                # its owners run it: project admins of the viewer part
+                for o in cur["owners"]:
+                    if o.get("uid") is not None:
+                        for v in added:
+                            if not core.ACC.role(o["uid"], v):
+                                core.ACC.set_member(v, o["uid"], "admin", by=by)
             if old and added and core.accounts_on():
                 # the members gathered before the model existed come along
                 for m in d.execute("SELECT * FROM reg_members WHERE reg = ?", (old["id"],)).fetchall():

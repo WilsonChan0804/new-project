@@ -37,7 +37,8 @@ PART = [
     P('**Split**、**Compare**、**2D + 3D** 同 **Links** 喺 sheet 工具列嘅 **View ▾** 入面（View 上面有粒點即係 Split、Compare 或者 2D + 3D 開緊）。Markup 屬性列（layer、線、填色、文字、字型）只會喺揀咗畫圖工具或者揀咗 markup 嗰陣出現，**1:** 比例只會喺 Measure、Dimension、Area 同 Angle 出現 - 其餘時間將位留俾張圖。**👁 Markups** 同 **Hide closed** 喺右邊 issue 清單頂部，同 3D 版一樣。'),
     UL([
         '**Split** 喺隔籬打開第二張 sheet，有自己嘅 zoom。',
-        '**喺 Split 度做嘢：** 揀一個工具喺第二格畫，或者用 Select 喺嗰邊 click 一個 markup，兩張 sheet 會即刻對調位置，兩格亦會左右對調，所以你睇緊嗰張 sheet 留喺原位，仲有齊所有工具（**⇄ Work here** 手動做同樣嘅嘢）。手機或者平板：一隻手指拖動第二格，兩隻手指 pinch zoom，double tap 放大（再 double tap 睇返成張）。',
+        '**Split 嘅大細：** 拖兩格中間嘅分隔線，自己決定點樣分個畫面；double-click 分隔線就一半一半。淨係分隔線先會改大細：喺另一格 click（用 Select 或者 Pan）只會 pan 或者 zoom 嗰格，對調亦會保持畫面每一邊原本嘅大細。個比例會記喺呢個 browser。',
+        '**喺 Split 度做嘢：** 揀一個工具喺第二格畫，兩張 sheet 會即刻對調位置，兩格亦會左右對調，所以你睇緊嗰張 sheet 留喺原位，仲有齊所有工具（**⇄ Work here** 手動做同樣嘅嘢）。手機或者平板：一隻手指拖動第二格，兩隻手指 pinch zoom，double tap 放大（再 double tap 睇返成張）。',
         '**Links** 將 section 標記、callout 同 elevation 標記變成連去佢哋 sheet 嘅連結；**← back** 返去。',
         '**Compare** 顯示同一張 sheet 之前 upload 嘅版本、另一張 sheet，或者你電腦入面一個 PDF 有乜唔同：紅色 = 刪咗，綠色 = 加咗。**N / Shift+N** 喺改動之間跳。',
         '**Align ▾**（Compare bar 入面）對齊 setting-out 唔同嘅圖則，例如 design plan、顧問嘅 PDF：**Pick 2 points on each**：喺另一張圖 click 兩個對應點（例如兩個 grid 交點），再喺呢張 sheet click 同樣兩點；佢會移動、縮放同轉動嚟對齊，而且成個 project 都會記住呢對 sheet 嘅對齊。**Nudge** 用方向鍵微調（1 mm，Shift 10 mm）；**Reset** 還原。',

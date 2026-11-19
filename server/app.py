@@ -300,6 +300,33 @@ def project_dir(pid):
     return d if os.path.isfile(os.path.join(d, "manifest.json")) else None
 
 
+def make_empty_project(hint, title, w=None):
+    """A viewer project with nothing in it yet - for a project run without
+    Revit: PDFs imported as sheets, tasks, chat, boards, folders. Its folder
+    holds an empty manifest (no sheets, no model); a Revit publish into it
+    later adds those, and the imported PDFs stay. The id comes from the hint
+    (the project's code or name), made safe and unique. Returns the id."""
+    if CFG["single"]:
+        raise HTTPException(status_code=400, detail="This server shows one project only")
+    base = re.sub(r"[^A-Za-z0-9._ -]+", "-", str(hint or "")).strip(" .-_")[:60] or "project"
+    pid, n = base, 1
+    while os.path.exists(os.path.join(CFG["root"], pid)):
+        n += 1
+        pid = "%s-%d" % (base[:56], n)
+    root = os.path.join(CFG["root"], pid)
+    os.makedirs(root)
+    man = {"source": {"title": (str(title or "").strip()[:120] or pid), "empty": True,
+                      "made_by": getattr(w, "name", "") or "", "made_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
+           "sheets": [], "models": []}
+    tmp = os.path.join(root, "manifest.json.part")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(man, f, indent=1, ensure_ascii=False)
+    os.replace(tmp, os.path.join(root, "manifest.json"))
+    if accounts_on() and w is not None and getattr(w, "uid", None) is not None:
+        ACC.set_member(pid, w.uid, "admin", by=getattr(w, "name", "") or "")
+    return pid
+
+
 def store_for(pid):
     """Each project has its own database. One shared table with a project
     column would work too, but a separate file means a project can be

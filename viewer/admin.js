@@ -15,7 +15,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2027-01-26";
+const LWK_VERSION = "2027-01-27";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -238,8 +238,21 @@ async function loadProjects() {
   $("#a-part").onchange = (ev) => { A.part = ev.target.value; A.pid = ev.target.value; loadMembers(); };
   ul.innerHTML = A.regs.map((r) => `<li data-reg="${esc(r.id)}" class="${r.id === A.reg ? "on" : ""}">`
     + `<span>${esc(r.short || r.name)}<div class="sub">${esc(r.code || r.name)}`
-    + ((r.parts || []).length ? ` · ${esc(r.parts.map((x) => x.title).join(", "))}` : ` · <span class="nm">no model yet</span>`) + `</div></span>`
+    + ((r.parts || []).length ? ` · ${esc(r.parts.map((x) => x.title).join(", "))}` : ` · <button type="button" class="mini" data-mkv="${esc(r.id)}" title="Make it a viewer project now: import PDF drawings as sheets, and use Tasks, Chat, Board and Folders. A Revit publish can add the model later.">Open in the viewer</button>`) + `</div></span>`
     + `<span class="pill" title="Members">${r.members.length}</span></li>`).join("");
+  ul.querySelectorAll("[data-mkv]").forEach((b) => {
+    b.onclick = async (ev) => {
+      ev.stopPropagation();
+      b.disabled = true;
+      try {
+        const r = await api("/api/registry/" + encodeURIComponent(b.dataset.mkv) + "/viewer", { method: "POST", body: "{}" });
+        msg("Ready - open it from the project list, or bring in a PDF drawing on Sheets.", "ok");
+        A.reg = r.id; A.pid = null; A.part = "";
+        try { A.allViewer = (await api("/api/projects")).projects || []; } catch (e) {}
+        await loadProjects(); loadMembers();
+      } catch (e) { b.disabled = false; msg(e.message || String(e), "bad"); }
+    };
+  });
   ul.querySelectorAll("li[data-reg]").forEach((li) => {
     li.onclick = () => { A.reg = li.dataset.reg; A.pid = null; A.part = ""; loadProjects().then(loadMembers); };
   });
@@ -307,8 +320,9 @@ function wireRegistry() {
         id: r.id || undefined, name: $("#r-name").value, code: $("#r-code").value, short: $("#r-short").value,
         status: $("#r-status").value, team: $("#r-team").value, viewers: [...$("#r-viewer").selectedOptions].map((o) => o.value),
         owners, links: REG_LINKS, notes: $("#r-notes").value }) });
-      msg(r.id ? "Project saved." : "Project added - now add its members below.", "ok");
+      msg(r.id ? "Project saved." : "Project added and ready in the viewer - Sheets (import PDF drawings), Tasks, Chat, Board and Folders work now. Add its members below.", "ok");
       A.reg = out.id; A.pid = null;
+      try { A.allViewer = (await api("/api/projects")).projects || []; } catch (e) {}
       await loadProjects(); await loadMembers();
     } catch (e) { msg(esc(e.message), "bad"); }
   };

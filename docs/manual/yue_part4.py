@@ -235,6 +235,8 @@ PART = [
         '**+ New project**：**Project name**（例如 HKA-P-01681-ARC - SKW；code 會由佢攞）、**Code**、**Status**、**Group / team**、**Owners**，同 **Folders and files**（OneDrive、SharePoint 或者 ACC 連結）。**Import** 讀由 Lark Base 或者 Excel export 嘅 project 表。',
         '**Models and sheets：** 顯示呢個 job 嘅 viewer project（export folder）。一個 job 有幾個 Revit model 同 sheet set（例如 Site 1 同 Site 2），就 Ctrl+click 揀幾個。揀一個其他地方用緊嘅會搬嚟呢度；server 單獨為佢整嘅項目會移除，佢嘅 task group 會跟住搬過嚟。',
         '成員屬於每一個部分（係佢哋令人可以打開嗰個 model）。有幾個部分嘅話，成員表上面會出 **Part** 選擇。',
+        '**唔用 Revit 嘅 project：** 新 project 即刻用得，唔使 upload Revit。佢會喺 project 清單出現，Sheets、Tasks、Chat、Board、Calendar 同 Folders 都開得。喺 Sheets 用 **Import PDF** 帶入啲圖（每一頁變一張 sheet）。**Models and sheets** 留空就會幫佢開一個自己嘅 viewer project；之後 Revit publish 入去會加埋 Revit sheet 同 model，import 咗嘅 PDF 會保留。',
+        '**Open in the viewer：** 未有 model 嘅舊 project 喺清單會見到呢個掣。click 一下就同樣用得，佢嘅 member 會一齊帶過去。',
         '**Remove from Projects** 將一個 job 拎走出 Projects 版；佢嘅 task、issue、model 同檔案都會留低。',
     ]),
     H3('只限 site admin'),

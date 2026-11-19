@@ -178,8 +178,13 @@ export function initSplitter({ row, first, key, modes }) {
     const m = mode();
     g.hidden = !m;
     g.classList.toggle("v", vertical());
+    // the share kept is the left (or top) half of the screen, whichever
+    // pane is there: Split's swap puts the first pane on the other side
+    // (.flip), and each half stays the size the user made it
     const pct = m && st[m];
-    first.style.flex = pct ? `0 0 ${pct}%` : "";
+    if (!pct) { first.style.flex = ""; return; }
+    const gw = g.hidden ? 0 : (vertical() ? g.offsetHeight : g.offsetWidth);
+    first.style.flex = row.classList.contains("flip") ? `0 0 calc(${100 - pct}% - ${gw}px)` : `0 0 ${pct}%`;
   }
 
   g.addEventListener("dblclick", () => { delete st[mode()]; save(key, st); apply(); kick(); });
@@ -210,7 +215,10 @@ export function initSplitter({ row, first, key, modes }) {
   new MutationObserver(apply).observe(row, { attributes: true, attributeFilter: ["class"] });
   addEventListener("resize", apply);
   apply();
-  return { apply };
+  /* the two panes traded places: the share is the screen's left half, so
+     nothing to change - each half stays as it was */
+  function swapped() { apply(); }
+  return { apply, swapped };
 }
 
 /* A block inside a column (the selected element's properties, an area's

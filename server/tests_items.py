@@ -77,6 +77,31 @@ class Rules(unittest.TestCase):
         self.assertTrue(self.allowed(None, item(archived={"by": "x"}), OTHER))
 
 
+class EmptyProject(unittest.TestCase):
+    """A project made on Admin, with no Revit upload, is a real viewer project."""
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.mkdtemp()
+        self._root, self._single, self._acc = app.CFG["root"], app.CFG["single"], app.accounts_on
+        app.CFG["root"], app.CFG["single"] = self.tmp, None
+        app.accounts_on = lambda: False
+
+    def tearDown(self):
+        import shutil
+        app.CFG["root"], app.CFG["single"], app.accounts_on = self._root, self._single, self._acc
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_made_and_listed(self):
+        pid = app.make_empty_project("P2/East: Wing", "East wing", AUTHOR)
+        self.assertTrue(app.SAFE_PROJECT.match(pid))
+        self.assertTrue(app.project_dir(pid))
+        self.assertIn(pid, [p["id"] if isinstance(p, dict) else p for p in app.list_projects()])
+        again = app.make_empty_project("P2/East: Wing", "East wing", AUTHOR)
+        self.assertNotEqual(pid, again)
+        self.assertTrue(app.project_dir(again))
+        self.assertTrue(app.SAFE_PROJECT.match(app.make_empty_project("???", "", None)))
+
+
 class Stamp(unittest.TestCase):
     def test_endorse_recorded_and_cleared(self):
         prev = item()

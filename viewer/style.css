@@ -852,7 +852,8 @@ button.danger:hover:not(:disabled) { background: #fdece8; border-color: #f2b8aa;
 #split-detail { position: absolute; pointer-events: none; }
 /* the pane worked in swapped to the other side (swapSplit) */
 #stage-row.split.flip > #split-pane { order: 1; }
-#stage-row.split.flip > #scroll { order: 2; border-right: 0; border-left: 2px solid var(--line); }
+#stage-row.split.flip > .row-grip { order: 2; }
+#stage-row.split.flip > #scroll { order: 3; border-right: 0; border-left: 2px solid var(--line); }
 #split-swap { font-size: 12px; white-space: nowrap; }
 
 @media (max-width: 700px) and (orientation: portrait) {
@@ -3224,3 +3225,12 @@ body.history-mode #overlay { opacity: .85; }
 #cmp-marks .cmp-x::before, #cmp-marks .cmp-x::after { content: ""; position: absolute; background: #db2777; }
 #cmp-marks .cmp-x::before { left: 9px; top: -8px; width: 2px; height: 34px; }
 #cmp-marks .cmp-x::after { top: 9px; left: -8px; height: 2px; width: 34px; }
+
+/* a project with no sheets yet */
+#empty.no-sheets { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none; }
+#empty.no-sheets[hidden] { display: none; }
+#empty .ns-card { pointer-events: auto; max-width: 420px; background: var(--panel, #fff); border: 1px solid var(--line, #e3e3e3); border-radius: 12px;
+  padding: 20px 22px; text-align: center; color: var(--ink, #222); box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+#empty .ns-card b { display: block; font-size: 16px; margin-bottom: 6px; }
+#empty .ns-card button { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding: 7px 16px; }
+#empty .ns-card p { margin: 0 0 14px; font-size: 13px; line-height: 1.45; color: var(--muted, #666); }

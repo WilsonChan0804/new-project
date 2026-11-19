@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-27", date: "19 Nov 2026",
+    items: [
+      "**Split view keeps the sizes you set:** drag the divider to share the screen as you like, and only that changes it. Clicking in the other view no longer enlarges it. Drawing there (or **\u21c4 Work here**) still swaps the two sheets, but each half of the screen stays the size it was, and so does a reload. Double-click the divider for halves.",
+      "**A project without Revit:** a project added on **Admin > + New project** now works at once. It is in the project list, and Sheets, Tasks, Chat, Board, Calendar and Folders all open. On Sheets, **Import PDF** brings in the drawings, and each page becomes a sheet. A Revit publish can add the model later; the PDFs stay.",
+      "**Older projects with no model yet:** **Open in the viewer** on Admin's project list makes them work the same way, with their members.",
+    ],
+  },
+  {
     version: "2027-01-26", date: "19 Nov 2026",
     items: [
       "**Split view on a phone:** one finger pans the second sheet, two fingers pinch-zoom it, and a double tap zooms in. Both sheets now share the screen properly.",

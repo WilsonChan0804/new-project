@@ -5108,9 +5108,27 @@ function paintSheetCounts() {
   }
 }
 
+// a project with no sheets yet (made on Admin, no Revit upload): say how to
+// start, instead of "Pick a sheet" with nothing to pick
+function paintNoSheets() {
+  const el = $("#empty");
+  if (!el || !S.manifest) return;
+  const none = !S.manifest.sheets.length;
+  el.classList.toggle("no-sheets", none);
+  if (!none) { if (el.dataset.ns) { el.textContent = "Pick a sheet to start."; delete el.dataset.ns; } return; }
+  if (el.dataset.ns) return;
+  el.dataset.ns = "1";
+  el.innerHTML = `<div class="ns-card"><b>No sheets yet</b>`
+    + `<p>Bring in a PDF drawing - each page becomes a sheet you can mark up, raise issues and tasks on.`
+    + ` A Revit publish can add the Revit sheets and the 3D model later; the PDFs stay.</p>`
+    + `<button type="button" id="ns-import" class="primary">Import PDF</button></div>`;
+  $("#ns-import").onclick = () => $("#import-pdf-btn").click();
+}
+
 function renderSheets() {
   paintSetBtn();
   if (S.panels && S.manifest) S.panels.autoFold("l", !S.manifest.sheets.length);
+  paintNoSheets();
   const ul = $("#sheet-list"); ul.innerHTML = "";
   const list = setSheets();
   const tot = document.getElementById("sheet-total");
@@ -6130,7 +6148,12 @@ function drawSplitMarkups() {
 function toggleSplit(on) {
   const want = on === undefined ? $("#split-pane").hidden : on;
   $("#split-pane").hidden = !want;
-  if (!want) { $("#stage-row").classList.remove("flip"); placeRail(); }
+  if (!want && $("#stage-row").classList.contains("flip")) {
+    $("#stage-row").classList.remove("flip");
+    // the halves as the user left them, next time too
+    if (S.splitter && S.splitter.swapped) S.splitter.swapped();
+    placeRail();
+  }
   $("#stage-row").classList.toggle("split", want);
   $("#split-toggle").classList.toggle("active", want);
   if (want) SYNC.toggle(false);
@@ -6365,7 +6388,6 @@ function wireSplit() {
       return;
     }
     lastTap = { t: now, x: ev.clientX, y: ev.clientY };
-    if (S.tool === "select" && ev.button === 0 && ev.pointerType !== "touch") swapSplit(d.ev, true);
   };
   sc.addEventListener("pointerup", end);
   sc.addEventListener("pointercancel", end);
@@ -6401,6 +6423,8 @@ async function swapSplit(ev, click) {
     }
     // the panes trade sides; the main pane opens the split sheet as it was shown
     $("#stage-row").classList.toggle("flip");
+    // each half of the screen keeps the size the user gave it
+    if (S.splitter && S.splitter.swapped) S.splitter.swapped();
     placeRail();
     const views = readSheetViews();
     views[splitSheet.number] = { rel: splitScale / fitScaleFor(SP.page), mid: splitMid, rot: 0, t: Date.now() };
@@ -8484,7 +8508,7 @@ async function boot() {
   try { setupDrawers2d(); } catch (e) { console.warn("drawers", e); }
   try {
     S.panels = initPanels({ layout: document.getElementById("layout"), left: document.getElementById("sheets"), right: document.getElementById("items"), key: "sheets" });
-    initSplitter({ row: document.getElementById("stage-row"), first: document.getElementById("scroll"), key: "sheets-split", modes: ["sync", "split"] });
+    S.splitter = initSplitter({ row: document.getElementById("stage-row"), first: document.getElementById("scroll"), key: "sheets-split", modes: ["sync", "split"] });
   } catch (e) { console.warn("panels", e); }
   try { wireSheetFind(); } catch (e) { console.warn("find", e); }
   try { wireLayers(); } catch (e) { console.warn("layers", e); }
