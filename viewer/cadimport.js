@@ -7,6 +7,7 @@
  * (server/cad.py). This window shows how far it is and what came of it.
  */
 
+import { setPicker } from "./setpick.js";
 import { keepRow, keepImported, pickFolderFiles, folderFile } from "./folderpick.js";
 
 const esc = (s) => String(s == null ? "" : s)
@@ -125,18 +126,20 @@ export async function importCad(files, opts) {
     <div class="muted">Tick the drawings to make into sheets (each layout becomes a sheet). <b>Xrefs</b> need no tick: the ones a drawing uses are found by themselves - among these files, then in the project's Folders.</div>
     ${many ? `<input type="search" class="cad-find" placeholder="Find a drawing" style="width:100%;margin-top:6px">` : ""}
     <div class="cad-files">${rows.map((r) => `<label data-n="${esc(r.n.toLowerCase())}"><input type="checkbox" value="${r.i}"${r.zip || rows.length === 1 || (!guessXref(r.n) && !many) ? " checked" : ""}> ${esc(r.n)}</label>`).join("")}</div>
-    <label class="cad-row">Set (its entry in the drop-down)<input type="text" class="cad-set" maxlength="60" value="${esc(stem((rows.find((r) => !guessXref(r.n)) || rows[0]).n))}"></label>
+    <div class="cad-setpick"></div>
     <label class="cad-chk"><input type="checkbox" class="cad-mono" checked> Black lines, as plotted (untick for the drawing's colours)</label>
     <div class="cad-keep"></div>
     ${tools.font ? "" : `<div class="muted">Note: the server has no Chinese font for drawings yet, so Chinese text may show as boxes (it is still found by search).</div>`}
     <div class="cad-foot"><button type="button" class="cad-no">Cancel</button><button type="button" class="pri cad-go">Make sheets</button></div>`);
   const find = choose.querySelector(".cad-find");
   if (find) find.oninput = () => { const q = find.value.trim().toLowerCase(); for (const l of choose.querySelectorAll(".cad-files label")) l.hidden = !!q && !l.dataset.n.includes(q); };
+  const sp = setPicker(choose.querySelector(".cad-setpick"), { sets: opts.sets, current: opts.current,
+    newName: stem((rows.find((r) => !guessXref(r.n)) || rows[0]).n), fallback: "CAD drawings" });
   const keepEl = choose.querySelector(".cad-keep");
   let keep = null;
   if (src.files) {
-    keep = keepRow(keepEl, { kind: "cad", project: opts.project, setName: () => choose.querySelector(".cad-set").value });
-    choose.querySelector(".cad-set").addEventListener("input", () => keep.repaint());
+    keep = keepRow(keepEl, { kind: "cad", project: opts.project, setName: () => sp.value() });
+    sp.onChange(() => keep.repaint());
   } else {
     keepEl.innerHTML = `<div class="muted" style="margin-top:6px">These drawings are already in Folders: nothing more is kept.</div>`;
   }
@@ -145,7 +148,7 @@ export async function importCad(files, opts) {
     choose.querySelector(".cad-go").onclick = () => {
       const idx = [...choose.querySelectorAll(".cad-files input:checked")].map((c) => Number(c.value));
       if (!idx.length) { alert("Tick at least one drawing."); return; }
-      resolve({ idx, set: choose.querySelector(".cad-set").value.trim() || "CAD drawings", mono: choose.querySelector(".cad-mono").checked });
+      resolve({ idx, set: sp.value() || "CAD drawings", mono: choose.querySelector(".cad-mono").checked });
     };
   });
   const keepTo = keep ? keep.target() : { mode: "none" };
@@ -264,15 +267,16 @@ export async function pdfImportDialog({ file, pages, stem, sets, set, project, f
   const d = dialog(`<h3>Import ${esc(file.name)}</h3>
     <div class="muted">${pages === 1 ? "One page: it becomes one sheet." : `${pages} pages: each becomes a sheet, numbered after the prefix.`}</div>
     <label class="cad-row">${pages === 1 ? "Sheet number" : "Sheet number prefix"}<input type="text" class="pi-prefix" maxlength="40" value="${esc(stem.slice(0, 24))}"></label>
-    <label class="cad-row">Set (chosen under Set: in the Sheets list)<input type="text" class="pi-set" maxlength="60" list="pi-sets" value="${esc(set)}">
-      <datalist id="pi-sets">${(sets || []).map((x) => `<option value="${esc(x)}">`).join("")}</datalist></label>
+    <div class="pi-setpick"></div>
     <div class="pi-keep"></div>
     <div class="cad-foot"><button type="button" class="cad-no">Cancel</button><button type="button" class="pri cad-go">Import</button></div>`);
+  // the set: the one shown now, another one, or a new one
+  const sp = setPicker(d.querySelector(".pi-setpick"), { sets, current: set, newName: (sets || []).length ? "" : "Uploaded PDFs" });
   // a PDF taken from Folders is there already: nothing more to keep
   const keep = fromFolders ? { target: () => ({ mode: "none" }), repaint() {} }
-    : keepRow(d.querySelector(".pi-keep"), { kind: "pdf", project, setName: () => d.querySelector(".pi-set").value });
+    : keepRow(d.querySelector(".pi-keep"), { kind: "pdf", project, setName: () => sp.value() });
   if (fromFolders) d.querySelector(".pi-keep").innerHTML = `<div class="muted" style="margin-top:6px">From Folders: it stays where it is there.</div>`;
-  d.querySelector(".pi-set").addEventListener("input", () => keep.repaint());
+  sp.onChange(() => keep.repaint());
   setTimeout(() => d.querySelector(".pi-prefix").select(), 30);
   const r = await new Promise((resolve) => {
     d.querySelector(".cad-no").onclick = () => resolve(null);
@@ -280,7 +284,7 @@ export async function pdfImportDialog({ file, pages, stem, sets, set, project, f
     d.querySelector(".cad-go").onclick = () => {
       const prefix = d.querySelector(".pi-prefix").value.trim();
       if (!prefix) { alert("Give the sheet a number."); return; }
-      resolve({ prefix, set: d.querySelector(".pi-set").value.trim().slice(0, 60), keep: keep.target() });
+      resolve({ prefix, set: sp.value(), keep: keep.target() });
     };
   });
   d.remove();

@@ -4266,6 +4266,105 @@ async def delete_set(request: Request, x_viewer_token: str = Header(default=""),
     return await run_in_threadpool(_rest)
 
 
+# ------------------------------------- copy / transfer sheets between sets
+
+def transfer_sheets(root, numbers, to):
+    """Imported sheets into another set. Their numbers stay, so their
+    markups and issues go with them. They leave the old set's groups.
+    Sheets from Revit cannot be transferred: the next publish brings them
+    back where they were (they can be copied)."""
+    to = clean_set_name(to)
+    if not to:
+        raise HTTPException(status_code=400, detail="Choose the set to transfer to.")
+    nums = {str(n) for n in numbers or []}
+    have = read_imported(root)
+    mine = {s.get("number") for s in have}
+    if nums - mine:
+        raise HTTPException(status_code=400, detail="Sheets from Revit can be copied to a set, not transferred: %s"
+                            % ", ".join(sorted(nums - mine)))
+    n = 0
+    for sh in have:
+        if sh.get("number") in nums and (sh.get("set") or "Uploaded PDFs") != to:
+            sh["set"] = to
+            n += 1
+    write_imported(root, have)
+    with _SM_LOCK:
+        meta = read_sheet_meta(root)
+        changed = False
+        for g in meta["groups"]:
+            if (g.get("set") or "") != to and any(str(x) in nums for x in g.get("sheets") or []):
+                g["sheets"] = [x for x in g.get("sheets") or [] if str(x) not in nums]
+                changed = True
+        if changed:
+            write_sheet_meta(root, meta)
+    return {"set": to, "sheets": n}
+
+
+def copy_sheets(root, numbers, to, by=""):
+    """A clean copy of sheets in another set: the drawing only, under a new
+    number (A-101 (2)); markups stay on the originals. A sheet from Revit
+    is frozen: its PDF is copied into imported/, so a later publish does
+    not change the copy."""
+    to = clean_set_name(to)
+    if not to:
+        raise HTTPException(status_code=400, detail="Choose the set to copy to.")
+    try:
+        with open(os.path.join(root, "manifest.json"), encoding="utf-8") as f:
+            revit = {str(x.get("number")): x for x in json.load(f).get("sheets", []) if not x.get("external")}
+    except Exception:
+        revit = {}
+    imp = {str(x.get("number")): x for x in read_imported(root)}
+    folder = os.path.join(root, "imported")
+    incoming, frozen = [], []
+    for num in [str(n) for n in numbers or []]:
+        src = imp.get(num) or revit.get(num)
+        if not src:
+            continue
+        pdf, page = str(src.get("pdf") or ""), int(src.get("page") or 1)
+        if not pdf.startswith("imported/"):
+            full = os.path.normpath(os.path.join(root, pdf))
+            if ".." in pdf or not full.startswith(os.path.normpath(root) + os.sep) or not os.path.isfile(full):
+                continue
+            os.makedirs(folder, exist_ok=True)
+            fname = "%s-%s.pdf" % (SAFE_FILE.sub("_", num)[:40] or "sheet", uuid.uuid4().hex[:8])
+            shutil.copyfile(full, os.path.join(folder, fname))
+            pdf = "imported/" + fname
+            frozen.append(pdf)
+        incoming.append({"number": num, "name": src.get("name") or "", "pdf": pdf, "page": page})
+    if not incoming:
+        raise HTTPException(status_code=400, detail="None of those sheets could be copied.")
+    if frozen:
+        queue_ocr(root, frozen)
+    added = add_imported(root, to, incoming, by=by)
+    have = read_imported(root)
+    froms = {a["number"]: i["number"] for a, i in zip(added, incoming)}
+    for sh in have:
+        if sh.get("number") in froms:
+            sh["copied_from"] = froms[sh["number"]]
+    write_imported(root, have)
+    return {"set": to, "added": [dict(a, copied_from=froms.get(a["number"])) for a in added]}
+
+
+@app.post("/api/import/sheets/transfer")
+async def transfer_sheets_api(request: Request, x_viewer_token: str = Header(default=""),
+                              x_project: str = Header(default="")):
+    """{numbers, to}: imported sheets into another set, with their markups."""
+    require_project(request, x_project, "member", x_viewer_token)
+    root = project_root_for(x_project)
+    body = await request.json() or {}
+    return await run_in_threadpool(lambda: transfer_sheets(root, body.get("numbers"), body.get("to")))
+
+
+@app.post("/api/import/sheets/copy")
+async def copy_sheets_api(request: Request, x_viewer_token: str = Header(default=""),
+                          x_project: str = Header(default="")):
+    """{numbers, to}: clean copies of sheets (from Revit too) in a set."""
+    w, _ = require_project(request, x_project, "member", x_viewer_token)
+    root = project_root_for(x_project)
+    body = await request.json() or {}
+    return await run_in_threadpool(lambda: copy_sheets(root, body.get("numbers"), body.get("to"), by=w.name or ""))
+
+
 @app.api_route("/data/{path:path}", methods=["GET", "HEAD"])
 def get_data(path: str, request: Request):
     """Project files: manifest.json, fragments and sheet PDFs.

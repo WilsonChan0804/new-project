@@ -5290,6 +5290,12 @@ function pickPaint(list) {
   const pg = document.getElementById("pick-group"), ph = document.getElementById("pick-hide");
   if (pg) { pg.hidden = !SG.canGroup(); pg.disabled = !PICK.sel.size; }
   if (ph) { ph.hidden = !SG.canHide(); ph.disabled = !PICK.sel.size; }
+  const pc = document.getElementById("pick-copy"), pm = document.getElementById("pick-move");
+  if (pc) pc.disabled = !PICK.sel.size;
+  if (pm) {
+    pm.disabled = !PICK.sel.size || extSel < PICK.sel.size;
+    pm.title = extSel < PICK.sel.size ? "Sheets from Revit can be copied to a set, not transferred" : "Move the ticked sheets to another set, with their comments and issues";
+  }
 }
 
 async function deletePicked() {
@@ -5306,6 +5312,48 @@ async function deletePicked() {
   await reloadManifest();
   if (!setSheets().length) showSet("");
   status(`${out.removed} sheet(s) deleted.`);
+}
+
+/* Copy / transfer sheets to another set. A copy is a clean copy (the
+   drawing only, a new number; a sheet from Revit is frozen as today's PDF);
+   a transfer keeps the numbers, so the markups go along - imported sheets
+   only, as the next publish brings Revit sheets back. */
+function setTargetMenu(x, y, nums, mode) {
+  const sheets = nums.map((n) => S.manifest.sheets.find((s) => s.number === n)).filter(Boolean);
+  if (!sheets.length) return;
+  const from = new Set(sheets.map(sheetSet));
+  const targets = setNames().filter((n) => !(from.size === 1 && from.has(n) && mode === "transfer"));
+  openMenu(x, y, [
+    { label: `${mode === "copy" ? "Copy" : "Transfer"} ${sheets.length} sheet(s) to:`, disabled: true, action: () => {} },
+    ...targets.map((n) => ({ label: n, action: () => copyToSet(nums, n, mode) })),
+    ...(targets.length ? ["-"] : []),
+    { label: "New set ...", action: () => {
+      const to = (prompt(`A name for the new set (the ${sheets.length} sheet(s) are ${mode === "copy" ? "copied" : "moved"} into it):`, "") || "").trim();
+      if (to) copyToSet(nums, to, mode);
+    } },
+  ]);
+}
+
+async function copyToSet(nums, to, mode) {
+  const sheets = nums.map((n) => S.manifest.sheets.find((s) => s.number === n)).filter(Boolean);
+  if (mode === "transfer") {
+    if (sheets.some((s) => !s.external)) { status("Sheets from Revit can be copied to a set, not transferred - the next publish brings them back."); return; }
+    const n = S.items.filter((it) => !it.deleted && nums.includes(it.sheet) && !NOT_HERE.has(it.placement)).length;
+    if (!confirm(`Transfer ${sheets.length} sheet(s) to the set "${to}"?` + (n ? `\n\nTheir ${n} comment(s) and issue(s) go with them.` : ""))) return;
+  } else if (!confirm(`Copy ${sheets.length} sheet(s) to the set "${to}"?\n\nThe copies are the drawings only, with new numbers; comments and issues stay on the originals.`
+      + (sheets.some((s) => !s.external) ? "\n\nSheets from Revit are copied as today's PDF: a later publish does not change the copies." : ""))) return;
+  try {
+    const out = await setCall("/api/import/sheets/" + mode, { numbers: nums, to });
+    PICK.sel.clear();
+    await reloadManifest();
+    const n = mode === "copy" ? (out.added || []).length : out.sheets;
+    const st = $("#status");
+    status(`${n} sheet(s) ${mode === "copy" ? "copied" : "transferred"} to "${out.set}". `);
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "linkish"; b.textContent = "Show it";
+    b.onclick = () => showSet(out.set);
+    st.appendChild(b);
+  } catch (e) { status("Not done: " + e.message); }
 }
 
 /* Set ▾: rename, archive or delete the set of imported sheets shown, and
@@ -5345,11 +5393,13 @@ async function paintSetMenu() {
     + (imported
     ? `<div class="sm-head">${esc(S.set)} &middot; ${n} sheet(s)</div>`
       + act("pick", "select", "Move / hide sheets", "Tick several sheets, then move, hide or delete them together")
+      + act("copyset", "copy", "Copy this set to ...", "Clean copies of its sheets in another set or a new one")
       + act("rename", "text", "Rename set ...", "Give this set of imported sheets another name")
       + act("archive", "box", "Archive set", "Hide it from Sheets and Folders; nothing is deleted")
       + `<div class="sm-sep"></div>`
       + act("delete", "trash", "Delete set ...", "Its sheets and PDFs; you choose about the files in Folders", "danger")
-    : `<div class="sm-empty">${setNames().length ? "The sheets from Revit are not a set to rename or delete - show a set of uploaded PDFs (above) for that." : "No uploaded PDF sets yet: Files &#9662; &gt; PDF brings PDF drawings in as a set of their own."}</div>`)
+    : (n ? act("copyset", "copy", "Copy these sheets to a set ...", "Freeze today's Revit sheets as a set, e.g. \"Submission 1\" - drawings only") : "")
+      + `<div class="sm-empty">${setNames().length ? "The sheets from Revit are not a set to rename or delete - show a set of uploaded PDFs (above) for that." : "No uploaded PDF sets yet: Files &#9662; &gt; PDF brings PDF drawings in as a set of their own."}</div>`)
     + `<div class="sm-head">Archived sets</div><div id="sm-arch" class="sm-empty">Looking ...</div>`;
   try {
     const res = await fetch("/api/import/sets", { headers: Store.authHeaders() });
@@ -5369,6 +5419,11 @@ async function paintSetMenu() {
 async function setAction(what, name) {
   const cur = S.set;
   if (what === "pick") { PICK.on = true; PICK.sel.clear(); PICK.last = null; renderSheets(); return; }
+  if (what === "copyset") {
+    const b = document.getElementById("set-menu-btn").getBoundingClientRect();
+    setTargetMenu(b.left, b.bottom + 4, setSheets().map((x) => x.number), "copy");
+    return;
+  }
   try {
     if (what === "rename") {
       const to = (prompt(`New name for the set "${cur}":`, cur) || "").trim();
@@ -5433,6 +5488,8 @@ function wireSetTools() {
   const afterAction = () => { if (PICK.on) { PICK.sel.clear(); PICK.last = null; renderSheets(); } };
   SG.init({ set: () => S.set || "", render: () => renderSheets(), reload: reloadManifest, apply: applySheetMeta, status, startPick,
             list: () => setSheets(), afterAction,
+            toSet: (x, y, nums, mode) => setTargetMenu(x, y, nums, mode),
+            allImported: (nums) => nums.every((n) => (S.manifest.sheets.find((s) => s.number === n) || {}).external),
             savedCompares: (num) => CMP.savedFor(num), openCompare: (id) => CMP.openSaved(id),
             cleanPdf: (nums) => exportCleanPdf(nums.map((n) => S.manifest.sheets.find((x) => x.number === n)).filter(Boolean)),
             itemsOn: (nums) => S.items.filter((it) => !it.deleted && nums.includes(it.sheet) && !NOT_HERE.has(it.placement)).length,
@@ -5440,6 +5497,10 @@ function wireSetTools() {
     .then(() => { if (S.manifest) renderSheets(); });
   const gb = document.getElementById("sheet-groups-btn");
   if (gb) gb.addEventListener("click", (ev) => { ev.stopPropagation(); SG.groupsMenu(gb, setSheets()); });
+  for (const [id, mode] of [["pick-copy", "copy"], ["pick-move", "transfer"]]) {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener("click", () => { const r = b.getBoundingClientRect(); setTargetMenu(r.left, r.bottom + 4, [...PICK.sel], mode); });
+  }
   const pg = document.getElementById("pick-group");
   if (pg) pg.addEventListener("click", (ev) => {
     const r = pg.getBoundingClientRect();
@@ -7153,7 +7214,7 @@ async function importPdf(file, how) {
   const stem = file.name.replace(/\.pdf$/i, "");
   const have = setNames();
   // one window: sheet number, set, and where the PDF is kept in Folders
-  const pick = await pdfImportDialog({ file, pages, stem, sets: have, set: S.set || have[0] || PDF_SET, project: Store.currentProject(),
+  const pick = await pdfImportDialog({ file, pages, stem, sets: have, set: S.set, project: Store.currentProject(),
     fromFolders: !!(how && how.fromFolders) });
   if (!pick) return;
   const prefix = pick.prefix;
@@ -8282,7 +8343,7 @@ function wireChrome() {
       }
     } catch (e) { showError("import pdf", e); }
   });
-  const cadOpts = () => ({ headers: () => Store.authHeaders(), project: Store.currentProject(), done: async (set, nums) => {
+  const cadOpts = () => ({ headers: () => Store.authHeaders(), project: Store.currentProject(), sets: setNames(), current: S.set, done: async (set, nums) => {
     await reloadManifest();
     showSet(set, true);
     const first = S.manifest.sheets.find((s) => nums[0] && s.number === nums[0]);

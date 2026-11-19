@@ -11,6 +11,7 @@
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, modal, toast, pop, closePop, skeleton } from "./tasks-util.js";
+import { setPicker } from "./setpick.js";
 import * as Undo from "./undo.js";
 import { initFlexColumns } from "./panels.js";
 import { ago as dateAgo, dayTime } from "./dates.js";
@@ -807,13 +808,16 @@ async function toSheets(e) {
     sets = [...new Set((m.sheets || []).filter((s) => s.set).map((s) => s.set))];
   } catch (err) {}
   const stem = e.name.replace(/\.pdf$/i, "");
-  const f = await modal("Add to the Sheets page", `<p class="muted" style="margin:0 0 8px;font-size:12px">Each page of <b>${esc(e.name)}</b> becomes a sheet, in a set of its own, chosen under Set: in the Sheets list.</p>`
+  const pr = modal("Add to the Sheets page", `<p class="muted" style="margin:0 0 8px;font-size:12px">Each page of <b>${esc(e.name)}</b> becomes a sheet.</p>`
     + (parts.length > 1 ? `<label>Sheets of <select name="p">${parts.map((p) => `<option>${esc(p)}</option>`).join("")}</select></label>` : "")
-    + `<label>Set <input name="s" list="fo-sets" value="${esc(sets[0] || "Uploaded PDFs")}" maxlength="60"></label><datalist id="fo-sets">${sets.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>`
+    + `<div class="fo-setpick"></div>`
     + `<label>Sheet number (pages are numbered after it) <input name="n" value="${esc(stem.slice(0, 24))}" maxlength="40"></label>`, "Add");
+  // the set: an existing one, or a new one (named after the file by default)
+  const sp = setPicker(document.querySelector(".t-modal .fo-setpick"), { sets, current: "", newName: sets.length ? "" : "Uploaded PDFs" });
+  const f = await pr;
   if (!f) return;
   const project = f.p ? f.p.value : parts[0];
-  const set = f.s.value.trim() || "Uploaded PDFs";
+  const set = sp.value() || "Uploaded PDFs";
   const prefix = f.n.value.trim() || stem.slice(0, 24);
   toast("Adding to the Sheets page ...");
   try {

@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-29", date: "19 Nov 2026",
+    items: [
+      "**Upload into the right set:** the upload window now asks where the drawings go - **Add to the current set**, **Add to another set**, or **New set** with a name.",
+      "**Copy or transfer sheets between sets:** in Move / hide sheets, tick sheets and use **Copy to set \u25be** or **Transfer to set \u25be** (or right-click a sheet). A copy is the drawing only, with a new number; a transfer takes its comments and issues along. **Set \u25be > Copy this set to ...** copies a whole set, e.g. today's Revit sheets to \"Submission 1\" (a later publish does not change the copies).",
+      "**Compare with \u25be** now lists the sheets under their sets (Revit sheets, Set: ...), this sheet's own set first.",
+    ],
+  },
+  {
     version: "2027-01-28", date: "19 Nov 2026",
     items: [
       "**Compare: Save \u25be** keeps a lined-up comparison under a name, for everyone on the project: the other drawing, where you moved it to, and the view. A PDF from your computer is kept in Folders (00 BIM / Exports / Compare), so it opens on any computer.",

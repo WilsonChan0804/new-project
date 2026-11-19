@@ -104,11 +104,18 @@ export function createCompare(ctx) {
       C.versions.forEach((v) => opt("version:" + v.id, "Uploaded " + when(v.at), g));
       sel.appendChild(g);
     }
-    const others = (S.manifest.sheets || []).filter((s) => s !== sheet && s.pdf);
-    if (others.length) {
+    // the other sheets, one heading per set: this sheet's own set first,
+    // then the sheets from Revit, then each uploaded set
+    const setOf = (s) => (s.external ? (s.set || "Uploaded PDFs") : "");
+    const others = (S.manifest.sheets || []).filter((s) => s !== sheet && s.pdf && !s.hidden);
+    const mine = sheet ? setOf(sheet) : "";
+    const names = [...new Set(others.map(setOf))]
+      .sort((a, b) => (a === mine ? -1 : b === mine ? 1 : a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)));
+    for (const n of names) {
       const g = document.createElement("optgroup");
-      g.label = "Another sheet in this project";
-      others.forEach((s) => opt("sheet:" + s.number, s.number + "  " + (s.name || ""), g));
+      const head = n ? "Set: " + n : "Revit sheets";
+      g.label = head + (n === mine ? " (this sheet's set)" : "");
+      others.filter((s) => setOf(s) === n).forEach((s) => { opt("sheet:" + s.number, s.number + "  " + (s.name || ""), g).title = head; });
       sel.appendChild(g);
     }
     const g = document.createElement("optgroup");
