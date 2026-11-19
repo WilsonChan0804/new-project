@@ -377,7 +377,7 @@ b.mention { color: var(--accent-deep); }
 .eg-row { display: flex; gap: 6px; align-items: center; }
 .eg-row input, .eg-row select { flex: 1; }
 .eg-row button { flex: none; }
-.ef-show { display: grid; grid-template-columns: 1fr 1fr; }
+.ef-show { display: flex; flex-direction: column; gap: 1px; max-height: 46vh; overflow: auto; }
 .em { max-height: 46vh; overflow-y: auto; margin-top: 6px; }
 .em-row { display: grid; grid-template-columns: 1fr 1fr 100px; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
 .em-row[hidden] { display: none; }

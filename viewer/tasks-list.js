@@ -15,8 +15,9 @@ export function groupLinks(b) {
       + ` <a class="tl-gl" href="dashboard.html${q}" title="Issues and tasks of ${esc(b.project)}">Dashboard</a>` : "");
 }
 
-export function columns(T) {
-  const S = T.S;
+/* Every column the list can show, in the order this person chose for this
+   list (Customize columns, or dragging a header); new ones at the end. */
+export function allColumns(T) {
   const cols = [
     { k: "priority", name: "Priority", w: 92 }, { k: "owners", name: "Owner", w: 150 },
     { k: "start", name: "Start", w: 90 }, { k: "due", name: "Due", w: 100 },
@@ -28,7 +29,16 @@ export function columns(T) {
     { k: "updated", name: "Updated on", w: 130 }, { k: "links", name: "Links & files", w: 120 });
   const saved = T.colWidths();
   for (const c of cols) if (saved[c.k]) c.w = saved[c.k];
-  return cols.filter((c) => !S.hidden.has(c.k));
+  const order = T.colOrder ? T.colOrder() : [];
+  if (order.length) {
+    const at = new Map(order.map((k, i) => [k, i]));
+    const base = new Map(cols.map((c, i) => [c.k, i]));
+    cols.sort((a, b) => (at.has(a.k) ? at.get(a.k) : 1000 + base.get(a.k)) - (at.has(b.k) ? at.get(b.k) : 1000 + base.get(b.k)));
+  }
+  return cols;
+}
+export function columns(T) {
+  return allColumns(T).filter((c) => !T.S.hidden.has(c.k));
 }
 
 const MIN_COL_W = 60;
@@ -158,7 +168,7 @@ function headCell(k, name, cls, resizable) {
   const so = sortState();
   const on = so && so.k === k;
   const arrow = on ? (so.dir === "desc" ? "&#9660;" : "&#9650;") : "&#8661;";
-  return `<div class="tl-c tl-sortable${cls ? " " + cls : ""}${on ? " sorted" : ""}" data-sort="${esc(k)}" title="Sort by ${esc(name)}${on ? (so.dir === "desc" ? " (descending - click again for the list's own order)" : " (ascending - click again for descending)") : ""}">`
+  return `<div class="tl-c tl-sortable${cls ? " " + cls : ""}${on ? " sorted" : ""}" data-sort="${esc(k)}"${k === "title" ? "" : ` draggable="true" data-col="${esc(k)}"`} title="Drag sideways to move the column. Sort by ${esc(name)}${on ? (so.dir === "desc" ? " (descending - click again for the list's own order)" : " (ascending - click again for descending)") : ""}">`
     + (resizable ? `<b class="tl-grip" data-grip="${esc(k)}" title="Drag to resize"></b>` : "")
     + `${esc(name)} <span class="tl-sort">${arrow}</span></div>`;
 }
@@ -199,6 +209,7 @@ export function render(T, el) {
   el.scrollTop = scroll;
   wire(T, el, buckets);
   wireResize(T, el, cols);
+  wireColDrag(T, el);
   wireMore(T, el);
 }
 
@@ -224,6 +235,44 @@ function wireMore(T, el) {
 
 /* Drag a header cell's own grip to resize just that column - every row picks up the new width
    at once, since they all read the same --cols custom property from their shared ancestor. */
+/* Drag a column's header left or right to move it (the title stays first);
+   kept as this person's order for this list. */
+function wireColDrag(T, el) {
+  const head = el.querySelector(".tl-head");
+  if (!head) return;
+  let from = null;
+  const clear = () => head.querySelectorAll(".drop-l, .drop-r").forEach((x) => x.classList.remove("drop-l", "drop-r"));
+  head.addEventListener("dragstart", (ev) => {
+    const c = ev.target.closest("[data-col]");
+    if (!c || ev.target.closest("[data-grip]")) { ev.preventDefault(); return; }
+    from = c.dataset.col;
+    ev.dataTransfer.effectAllowed = "move";
+    try { ev.dataTransfer.setData("text/plain", from); } catch (e) {}
+    c.classList.add("dragging");
+  });
+  head.addEventListener("dragover", (ev) => {
+    const c = ev.target.closest("[data-col]");
+    if (!from || !c || c.dataset.col === from) return;
+    ev.preventDefault();
+    clear();
+    const r = c.getBoundingClientRect();
+    c.classList.add(ev.clientX > r.left + r.width / 2 ? "drop-r" : "drop-l");
+  });
+  head.addEventListener("dragleave", (ev) => { if (!head.contains(ev.relatedTarget)) clear(); });
+  head.addEventListener("dragend", () => { from = null; clear(); head.querySelectorAll(".dragging").forEach((x) => x.classList.remove("dragging")); });
+  head.addEventListener("drop", (ev) => {
+    const c = ev.target.closest("[data-col]");
+    if (!from || !c || c.dataset.col === from) return;
+    ev.preventDefault();
+    const r = c.getBoundingClientRect(), after = ev.clientX > r.left + r.width / 2;
+    const keys = allColumns(T).map((x) => x.k).filter((k) => k !== from);
+    keys.splice(keys.indexOf(c.dataset.col) + (after ? 1 : 0), 0, from);
+    T.setColOrder(keys);
+    from = null;
+    render(T, el);
+  });
+}
+
 function wireResize(T, el, cols) {
   const tl = el.querySelector(".tl");
   if (!tl) return;

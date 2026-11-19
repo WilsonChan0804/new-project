@@ -806,19 +806,49 @@ async function registry(fresh) {
 T.registry = registry;
 
 async function editFields() {
-  const cols = [["priority", "Priority"], ["owners", "Owner"], ["start", "Start"], ["due", "Due"], ["progress", "Sub-task progress"],
-    ["percent", "% complete"], ["completed", "Completed on"], ["subscribers", "Subscribers"], ["creator", "Creator"], ["created", "Created on"],
-    ["updated", "Updated on"], ["links", "Links & files"]];
   const row = (f) => `<div class="eg-row" data-id="${esc(f.id || "")}"><input class="ef-n" value="${esc(f.name)}" placeholder="Column name">`
     + `<select class="ef-t">${["person", "select", "text", "date", "number", "check"].map((t) => `<option${t === f.type ? " selected" : ""}>${t}</option>`).join("")}</select>`
     + `<input class="ef-o" value="${esc((f.options || []).join(", "))}" placeholder="choices, for select">`
     + `<button type="button" class="ghost eg-del">&#10005;</button></div>`;
-  const all = cols.concat(T.fields().map((f) => ["f:" + f.id, f.name]));
-  const p = modal("Customize columns", `<h4>Show</h4><div class="ef-show">${all.map(([k, n]) =>
-    `<label class="row-check"><input type="checkbox" data-k="${esc(k)}"${S.hidden.has(k) ? "" : " checked"}> ${esc(n)}</label>`).join("")}</div>`
+  // every column, in the order shown: tick to show, drag (or the arrows) to move
+  const all = ListView.allColumns(T).map((c) => [c.k, c.name]);
+  const p = modal("Customize columns", `<h4>Show, and in what order</h4><div class="ef-show">${all.map(([k, n]) =>
+    `<div class="ef-col" draggable="true" data-k="${esc(k)}"><span class="ef-h" title="Drag to move">&#8942;&#8942;</span>`
+    + `<label class="row-check"><input type="checkbox" data-k="${esc(k)}"${S.hidden.has(k) ? "" : " checked"}> ${esc(n)}</label>`
+    + `<button type="button" class="ghost ef-up" title="Move up">&#9650;</button><button type="button" class="ghost ef-dn" title="Move down">&#9660;</button></div>`).join("")}</div>`
+    + `<button type="button" class="ghost ef-reset">Back to the default order</button>`
     + (T.isOwner() ? `<h4>Custom fields</h4><div class="eg">${T.fields().map(row).join("")}</div><button type="button" class="ghost eg-add">+ Add field</button>` : ""), "Save");
   const form = document.querySelector(".t-modal");
   const dels = [];
+  let resetOrder = false;
+  {
+    const box = form.querySelector(".ef-show");
+    let drag = null;
+    box.addEventListener("click", (ev) => {
+      const row = ev.target.closest(".ef-col");
+      if (!row) return;
+      if (ev.target.closest(".ef-up") && row.previousElementSibling) box.insertBefore(row, row.previousElementSibling);
+      if (ev.target.closest(".ef-dn") && row.nextElementSibling) box.insertBefore(row.nextElementSibling, row);
+      resetOrder = false;
+    });
+    box.addEventListener("dragstart", (ev) => { drag = ev.target.closest(".ef-col"); if (drag) drag.classList.add("dragging"); });
+    box.addEventListener("dragend", () => { if (drag) drag.classList.remove("dragging"); drag = null; });
+    box.addEventListener("dragover", (ev) => {
+      const over = ev.target.closest(".ef-col");
+      if (!drag || !over || over === drag) return;
+      ev.preventDefault();
+      const r = over.getBoundingClientRect();
+      box.insertBefore(drag, ev.clientY > r.top + r.height / 2 ? over.nextElementSibling : over);
+      resetOrder = false;
+    });
+    form.querySelector(".ef-reset").onclick = () => {
+      // the default order, ticks kept
+      const rows = [...box.querySelectorAll(".ef-col")];
+      const T0 = Object.assign({}, T, { colOrder: () => [] });
+      for (const k of ListView.allColumns(T0).map((c) => c.k)) { const r = rows.find((x) => x.dataset.k === k); if (r) box.appendChild(r); }
+      resetOrder = true;
+    };
+  }
   if (T.isOwner()) {
     form.querySelector(".eg-add").onclick = () => form.querySelector(".eg").insertAdjacentHTML("beforeend", row({ name: "", type: "person" }));
     form.querySelector(".eg").onclick = (ev) => {
@@ -830,6 +860,7 @@ async function editFields() {
   if (!f) return;
   S.hidden = new Set([...f.querySelectorAll(".ef-show input")].filter((i) => !i.checked).map((i) => i.dataset.k));
   ls.set("hidden:" + S.listId, [...S.hidden]);
+  T.setColOrder(resetOrder ? [] : [...f.querySelectorAll(".ef-show .ef-col")].map((r) => r.dataset.k));
   if (T.isOwner()) {
     const fields = [...f.querySelectorAll(".eg-row")].filter((r) => r.querySelector(".ef-n").value.trim()).map((r, i) => ({
       id: r.dataset.id || undefined, name: r.querySelector(".ef-n").value.trim(), type: r.querySelector(".ef-t").value,
@@ -1098,6 +1129,9 @@ function wire() {
 /* The Tasks list view's own column widths, dragged by hand and kept per list, the same way
    saveCollapsed() above keeps which groups are folded. */
 T.colWidths = () => ls.get("colw:" + S.listId, {});
+// the columns' order, this person's for this list (a list of keys; [] the default)
+T.colOrder = () => ls.get("colorder:" + S.listId, []);
+T.setColOrder = (keys) => ls.set("colorder:" + S.listId, keys || []);
 T.setColWidth = (k, px) => {
   const w = T.colWidths();
   w[k] = Math.round(px);

@@ -100,5 +100,19 @@ class Stamp(unittest.TestCase):
         self.assertNotIn("archived", back)
 
 
+class Batch(unittest.TestCase):
+    def test_batch_kept(self):
+        out = app.stamp(item(), item(archived={"by": "forged", "batch": "b-20261119-x1", "name": "GBP submission 19 Nov"}), AUTHOR)
+        self.assertEqual(out["archived"]["by"], "Ann Author")
+        self.assertEqual(out["archived"]["batch"], "b-20261119-x1")
+        self.assertEqual(out["archived"]["name"], "GBP submission 19 Nov")
+
+    def test_bad_batch_dropped(self):
+        out = app.stamp(item(), item(archived={"batch": "../x", "name": "n"}), AUTHOR)
+        self.assertNotIn("batch", out["archived"])
+        out = app.stamp(item(), item(archived={"batch": "ok-1", "name": "n" * 500}), AUTHOR)
+        self.assertEqual(len(out["archived"]["name"]), 120)
+
+
 if __name__ == "__main__":
     unittest.main()

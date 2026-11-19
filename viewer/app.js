@@ -5537,7 +5537,7 @@ function statusMatches(iss, f) {
   return stt === f;
 }
 
-const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "clashresult", "checkcfg", "dim3d", "doctorrun", "doctoraccept", "doctorfix"]);
+const NOT_HERE = new Set(["3d", "view", "calibration", "clashrule", "clashset", "clashresult", "checkcfg", "dim3d", "doctorrun", "doctoraccept", "doctorfix", "archivebatch", "cmpalign"]);
 /* --------------------------------------------- endorsed, archived, ticked */
 
 /* Endorsed issues and archived comments/issues leave the drawing and the
@@ -5600,6 +5600,118 @@ function orphanItems() {
   for (const s of S.allSheets || []) have.add(s.number);
   return S.items.filter((it) => !it.deleted && it.sheet && !have.has(it.sheet) && !NOT_HERE.has(it.placement));
 }
+/* ---------------------------------------------- a submission's archive */
+
+/* After a submission (GBP, a stage report ...): every comment and issue on
+   this sheet, this set or the project archived together under one name.
+   The drawings come back clean for everyone; History shows the batch again
+   as it was handed in, makes its PDF, or brings it back. Each item is
+   archived where this person may (its author, or a project admin), as any
+   archive; the rest are counted and stay. */
+const batches = () => (S.items || []).filter((x) => x.placement === "archivebatch" && !x.deleted)
+  .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+function archiveCandidates(scope, keepOpen) {
+  const nums = scope === "sheet" ? new Set(S.sheet ? [S.sheet.number] : [])
+    : scope === "set" ? new Set(setSheets().map((x) => x.number)) : null;
+  return (S.items || []).filter((it) => !it.deleted && it.sheet && !NOT_HERE.has(it.placement) && !it.archived
+    && (!nums || nums.has(it.sheet))
+    && !(keepOpen && it.issue && !it.issue.dismissed && !/^(Closed|Resolved)$/.test(it.issue.status || "Open")));
+}
+function openArchiveAll() {
+  const old = document.getElementById("archive-dlg");
+  if (old) old.remove();
+  const d = document.createElement("div");
+  d.id = "archive-dlg";
+  const setN = setSheets().length;
+  const today = Dates.day ? Dates.day(new Date(), true) : new Date().toLocaleDateString();
+  d.innerHTML = `<div class="spk"><h3>Archive all comments</h3>`
+    + `<p class="muted">After a submission: everything goes off the drawings and the list together, under one name. History (above the list) shows it again, makes its PDF, or brings it back.</p>`
+    + `<label>Name<input id="arc-name" maxlength="120" value="GBP submission ${today}"></label>`
+    + `<div class="arc-scope">`
+    + `<label class="row-check"><input type="radio" name="arc-scope" value="sheet"${S.sheet ? "" : " disabled"}> This sheet${S.sheet ? " (" + S.sheet.number + ")" : ""}</label>`
+    + `<label class="row-check"><input type="radio" name="arc-scope" value="set" checked> This set (${setN} sheet${setN === 1 ? "" : "s"}${S.set ? ": " + S.set : ""})</label>`
+    + `<label class="row-check"><input type="radio" name="arc-scope" value="all"> The whole project</label></div>`
+    + `<label class="row-check"><input type="checkbox" id="arc-keep"> Leave open issues on the drawing</label>`
+    + `<div id="arc-count" class="muted"></div>`
+    + `<div class="row end"><button type="button" class="ghost spk-x">Cancel</button><button type="button" id="arc-go">Archive</button></div></div>`;
+  document.body.appendChild(d);
+  const scope = () => (d.querySelector('input[name="arc-scope"]:checked') || {}).value || "set";
+  const count = () => {
+    const list = archiveCandidates(scope(), d.querySelector("#arc-keep").checked);
+    const mine = list.filter((it) => !bulkRule(it, "archive"));
+    d.querySelector("#arc-count").textContent = list.length
+      ? `${list.length} comment(s) and issue(s): ${mine.length} will be archived` + (list.length - mine.length ? `, ${list.length - mine.length} not yours stay (a project admin can archive them)` : "") + "."
+      : "Nothing to archive here.";
+    d.querySelector("#arc-go").disabled = !mine.length;
+    return mine;
+  };
+  d.addEventListener("change", count);
+  count();
+  d.querySelector(".spk-x").addEventListener("click", () => d.remove());
+  d.addEventListener("pointerdown", (ev) => { if (ev.target === d) d.remove(); });
+  d.querySelector("#arc-name").addEventListener("keydown", (ev) => ev.stopPropagation());
+  d.querySelector("#arc-go").addEventListener("click", async () => {
+    const mine = count();
+    const name = d.querySelector("#arc-name").value.trim() || "Archive " + today;
+    if (!mine.length) return;
+    const sc = scope();
+    const batch = "b-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+    d.remove();
+    const n = await bulkApply(mine.map((x) => x.id), "archive", { batch, name });
+    if (!n) return;
+    const sheets = new Set(mine.map((x) => x.sheet)).size;
+    await putItem({ id: "archivebatch-" + batch, placement: "archivebatch", batch, name,
+      scope: sc === "sheet" ? "sheet " + (S.sheet ? S.sheet.number : "") : sc === "set" ? "set " + (S.set || "Revit sheets") : "project",
+      sheets, count: n, by: Store.author() || "", at: new Date().toISOString() });
+    S.items = Store.all();
+    paintHistory(); redraw(); renderList();
+    status(`"${name}": ${n} comment(s) and issue(s) archived on ${sheets} sheet(s) - the drawings are clean. History shows them again.`);
+  });
+}
+function paintHistory() {
+  const b = document.getElementById("history-chip");
+  if (b) { b.hidden = !batches().length && !S.showBatch; b.classList.toggle("active", !!S.showBatch); }
+  let ban = document.getElementById("history-banner");
+  if (!S.showBatch) { if (ban) ban.remove(); document.body.classList.remove("history-mode"); return; }
+  const bt = batches().find((x) => x.batch === S.showBatch);
+  const n = (S.items || []).filter((it) => it.archived && it.archived.batch === S.showBatch && !it.deleted).length;
+  if (!ban) {
+    ban = document.createElement("div");
+    ban.id = "history-banner";
+    document.getElementById("stage-row").appendChild(ban);
+    ban.addEventListener("click", async (ev) => {
+      const a = ev.target.closest("[data-h]");
+      if (!a) return;
+      if (a.dataset.h === "now") showHistory(null);
+      else if (a.dataset.h === "pdf") { fillPdfLayers(); $("#pdf-back").hidden = false; }
+      else if (a.dataset.h === "restore") {
+        const ids = (S.items || []).filter((it) => it.archived && it.archived.batch === S.showBatch && !it.deleted).map((it) => it.id);
+        const bn = (batches().find((x) => x.batch === S.showBatch) || {}).name || "";
+        if (!confirm(`Bring back the ${ids.length} comment(s) and issue(s) of "${bn}" onto the drawings?`)) return;
+        const keep = S.showBatch;
+        S.showBatch = null;
+        const done = await bulkApply(ids, "restore");
+        const rec = batches().find((x) => x.batch === keep);
+        if (rec && done === ids.length) await putItem(Object.assign({}, rec, { deleted: true }));
+        S.items = Store.all();
+        showHistory(null);
+      }
+    });
+  }
+  document.body.classList.add("history-mode");
+  ban.innerHTML = `<b>History:</b> ${esc(bt ? bt.name : "archived batch")} <span class="muted">${bt ? esc(Dates.day ? Dates.day(bt.at) : bt.at) + " · " + esc(bt.by || bt.author || "") + " · " : ""}${n} item(s), as handed in</span>`
+    + `<button class="ghost" data-h="pdf" title="A PDF of the sheets with these comments and issues">PDF of it</button>`
+    + `<button class="ghost" data-h="restore" title="Bring them all back onto the drawings">Restore this batch</button>`
+    + `<button data-h="now">Back to now</button>`;
+}
+function showHistory(batch) {
+  S.showBatch = batch || null;
+  if (S.showBatch) setTool("pan");
+  S.sel = [];
+  paintHistory(); redraw(); renderList();
+  if (S.showBatch) status("History: shown as handed in. Back to now returns to the drawings as they are.");
+}
+
 function paintOrphanChip() {
   const b = document.getElementById("orphans-chip");
   if (!b) return;
@@ -5649,6 +5761,7 @@ function renderList() {
   try { renderLayerPick(); } catch (e) {}
   try { paintOrphanChip(); } catch (e) {}
   try { paintSheetCounts(); } catch (e) {}
+  try { paintHistory(); } catch (e) {}
   paintBulkBar([]);
   // no comments or issues on the drawings yet: the list folds away (its edge tab brings it back)
   if (S.panels) S.panels.autoFold("r", !S.items.some((it) => !it.deleted && !NOT_HERE.has(it.placement)));
@@ -6017,6 +6130,7 @@ function drawSplitMarkups() {
 function toggleSplit(on) {
   const want = on === undefined ? $("#split-pane").hidden : on;
   $("#split-pane").hidden = !want;
+  if (!want) { $("#stage-row").classList.remove("flip"); placeRail(); }
   $("#stage-row").classList.toggle("split", want);
   $("#split-toggle").classList.toggle("active", want);
   if (want) SYNC.toggle(false);
@@ -6172,21 +6286,171 @@ function wireSplit() {
   // auto-scroll taking over (it ran the pane off into a corner)
   sc.addEventListener("mousedown", (ev) => { if (ev.button === 1) ev.preventDefault(); });
   sc.addEventListener("auxclick", (ev) => { if (ev.button === 1) ev.preventDefault(); });
-  let drag = null;
+  /* One finger (or the mouse) pans, two fingers pinch - the pane used to
+     take only one pointer, so on a phone a second finger restarted the
+     drag and the sheet could not be moved or zoomed at all. The browser's
+     own touch gestures (text selection, the magnifier) are cancelled here
+     as on the main pane: they ended a pan half way (pointercancel). */
+  const onPane = (t) => t && t.closest && t.closest("#split-scroll") && !t.closest("input, select, button, a");
+  sc.addEventListener("touchstart", (ev) => { if (onPane(ev.target)) ev.preventDefault(); }, { passive: false });
+  sc.addEventListener("touchmove", (ev) => { if (onPane(ev.target)) ev.preventDefault(); }, { passive: false });
+  document.addEventListener("selectstart", (ev) => { if (onPane(ev.target)) ev.preventDefault(); });
+  const pts = new Map();
+  let drag = null, pinch = null, lastTap = null;
+  const two = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
+  // zoom to a scale with the page point under (cx, cy) kept there
+  const zoomAbout = (scale, fx, fy, cx, cy, from) => {
+    SP.scale = Math.max(0.05, Math.min(10, scale));
+    const k = SP.scale / from;
+    splitSize();
+    const pr = $("#split-page").getBoundingClientRect();
+    sc.scrollLeft += pr.left - (cx - fx * k);
+    sc.scrollTop += pr.top - (cy - fy * k);
+  };
   sc.addEventListener("pointerdown", (ev) => {
     if (ev.button === 1) ev.preventDefault();
-    drag = { x: ev.clientX, y: ev.clientY, l: sc.scrollLeft, t: sc.scrollTop };
-    sc.setPointerCapture(ev.pointerId);
+    // a tool chosen, or a click with Select: work on this sheet (it swaps
+    // into the main pane, and the panes swap sides - see swapSplit)
+    if (ev.pointerType !== "touch" || pts.size === 0) {
+      if (S.tool && S.tool !== "pan" && S.tool !== "select" && ev.button === 0 && SP.sheet) { swapSplit(ev); return; }
+    }
+    pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    try { sc.setPointerCapture(ev.pointerId); } catch (e) {}
+    if (pts.size === 2) {
+      // a pinch: the page point under the fingers' middle stays under it
+      drag = null;
+      const t = two(), pr = $("#split-page").getBoundingClientRect();
+      pinch = { d: t.d, scale: SP.scale, fx: t.x - pr.left, fy: t.y - pr.top };
+      return;
+    }
+    if (pts.size > 2) return;
+    drag = { x: ev.clientX, y: ev.clientY, l: sc.scrollLeft, t: sc.scrollTop, moved: 0, ev };
     sc.style.cursor = "grabbing";
   });
   sc.addEventListener("pointermove", (ev) => {
+    if (!pts.has(ev.pointerId)) return;
+    pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (pinch && pts.size >= 2) {
+      const t = two();
+      zoomAbout(pinch.scale * (t.d / pinch.d), pinch.fx, pinch.fy, t.x, t.y, pinch.scale);
+      return;
+    }
     if (!drag) return;
+    drag.moved = Math.max(drag.moved, Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y));
     sc.scrollLeft = drag.l - (ev.clientX - drag.x);
     sc.scrollTop = drag.t - (ev.clientY - drag.y);
   });
-  const end = () => { drag = null; sc.style.cursor = "grab"; };
+  const end = (ev) => {
+    pts.delete(ev.pointerId);
+    if (pinch) {
+      if (pts.size < 2) { pinch = null; renderSplit(); }
+      // the finger left on the glass carries on panning
+      if (pts.size === 1) { const [p] = [...pts.values()]; drag = { x: p.x, y: p.y, l: sc.scrollLeft, t: sc.scrollTop, moved: 99 }; }
+      return;
+    }
+    const d = drag;
+    drag = null; sc.style.cursor = "grab";
+    if (!d || ev.type === "pointercancel" || d.moved > 6) return;
+    // a tap or click that did not move: Select picks on this sheet (swap);
+    // a double tap zooms in (and back out to the whole sheet)
+    const now = Date.now();
+    if (ev.pointerType === "touch" && lastTap && now - lastTap.t < 320 && Math.hypot(ev.clientX - lastTap.x, ev.clientY - lastTap.y) < 30) {
+      lastTap = null;
+      const v1 = SP.page.getViewport({ scale: 1 }), box = sc.getBoundingClientRect();
+      const fit = Math.min((box.width - 20) / v1.width, (box.height - 20) / v1.height);
+      if (SP.scale > fit * 1.5) { fitSplit(); return; }
+      const pr = $("#split-page").getBoundingClientRect();
+      zoomAbout(SP.scale * 2, ev.clientX - pr.left, ev.clientY - pr.top, ev.clientX, ev.clientY, SP.scale);
+      renderSplit();
+      return;
+    }
+    lastTap = { t: now, x: ev.clientX, y: ev.clientY };
+    if (S.tool === "select" && ev.button === 0 && ev.pointerType !== "touch") swapSplit(d.ev, true);
+  };
   sc.addEventListener("pointerup", end);
   sc.addEventListener("pointercancel", end);
+  $("#split-swap").addEventListener("click", () => swapSplit(null));
+  try { new ResizeObserver(() => placeRail()).observe($("#scroll")); } catch (e) {}
+}
+
+/* The pane you work in gets the tools. The tools run on the main pane only
+   (its viewport, its overlay, its tiles), so drawing or picking in the split
+   pane swaps the two sheets between the panes and, in the same moment,
+   swaps the panes' sides: the sheet you are looking at stays exactly where
+   it is on screen - now with every tool. The press that started it is
+   handed on to the main pane, so the line or the click begins at once. */
+async function swapSplit(ev, click) {
+  if (!SP.sheet || !SP.page || !S.sheet || !S.page || S._swapping) return;
+  S._swapping = true;
+  try {
+    const sc = $("#split-scroll"), msc = $("#scroll");
+    // each pane's sheet, scale and the paper point at its middle
+    const ssr = sc.getBoundingClientRect(), spr = $("#split-page").getBoundingClientRect();
+    const sp = SP.viewport.convertToPdfPoint(ssr.left + ssr.width / 2 - spr.left, ssr.top + ssr.height / 2 - spr.top);
+    const so = SP.page.view || [0, 0];
+    const splitMid = [(sp[0] - so[0]) * PT_MM, (sp[1] - so[1]) * PT_MM];
+    const R = msc.getBoundingClientRect(), P = $("#page").getBoundingClientRect();
+    const mainMid = paperFrom(R.left + R.width / 2 - P.left, R.top + R.height / 2 - P.top);
+    const mainSheet = S.sheet, mainScale = S.scale, mainPage = S.page;
+    const splitSheet = SP.sheet, splitScale = SP.scale;
+    // where the press was, as a paper point on the split sheet
+    let at = null;
+    if (ev) {
+      const q = SP.viewport.convertToPdfPoint(ev.clientX - spr.left, ev.clientY - spr.top);
+      at = [(q[0] - so[0]) * PT_MM, (q[1] - so[1]) * PT_MM];
+    }
+    // the panes trade sides; the main pane opens the split sheet as it was shown
+    $("#stage-row").classList.toggle("flip");
+    placeRail();
+    const views = readSheetViews();
+    views[splitSheet.number] = { rel: splitScale / fitScaleFor(SP.page), mid: splitMid, rot: 0, t: Date.now() };
+    try { localStorage.setItem(viewKeyFor(), JSON.stringify(views)); } catch (e) {}
+    await openSheet(splitSheet);
+    // exactly where it was: the paper point pressed (or the pane's middle)
+    // back under the same screen point
+    {
+      const X = ev ? ev.clientX : ssr.left + ssr.width / 2, Y = ev ? ev.clientY : ssr.top + ssr.height / 2;
+      const pt = at || splitMid;
+      const c = canvasFrom(pt[0], pt[1]), P2 = $("#page").getBoundingClientRect();
+      msc.scrollLeft += P2.left + c[0] - X;
+      msc.scrollTop += P2.top + c[1] - Y;
+    }
+    // the split pane takes the sheet that was in the main pane, as it was
+    SP.sheet = mainSheet; SP.page = mainPage; SP.base = null; SP.scale = mainScale;
+    $("#split-sheet").value = mainSheet.number;
+    await renderSplit();
+    {
+      // the other sheet's middle where the main pane's middle was
+      const pr = $("#split-page").getBoundingClientRect();
+      const o = mainPage.view || [0, 0];
+      const c = SP.viewport.convertToViewportPoint(mainMid[0] * MM_PT + o[0], mainMid[1] * MM_PT + o[1]);
+      sc.scrollLeft += pr.left + c[0] - (R.left + R.width / 2);
+      sc.scrollTop += pr.top + c[1] - (R.top + R.height / 2);
+    }
+    status(`Working on ${splitSheet.number} - ${mainSheet.number} is beside it (\u21c4 swaps back).`);
+    // the press carries on in the main pane, at the same paper point
+    if (at && S.viewport) {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const c = canvasFrom(at[0], at[1]), r = $("#overlay").getBoundingClientRect();
+      const x = r.left + c[0], y = r.top + c[1];
+      const init = { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1, pointerId: ev.pointerId || 1,
+        pointerType: ev.pointerType || "mouse", isPrimary: true, shiftKey: ev.shiftKey, ctrlKey: ev.ctrlKey };
+      const target = $("#overlay");
+      target.dispatchEvent(new PointerEvent("pointerdown", init));
+      if (click) {
+        target.dispatchEvent(new PointerEvent("pointerup", Object.assign({}, init, { buttons: 0 })));
+        target.dispatchEvent(new MouseEvent("click", init));
+      }
+    }
+  } finally { S._swapping = false; }
+}
+/* the tool strip and the drawing's buttons stay over the main pane, on
+   whichever side it is */
+function placeRail() {
+  const row = $("#stage-row"), rail = $("#tools");
+  const flip = row.classList.contains("flip") && !$("#split-pane").hidden;
+  const left = flip ? $("#scroll").offsetLeft : 0;
+  for (const el of [rail, $("#draw-btns")]) if (el) el.style.marginLeft = flip && innerWidth > 700 ? left + "px" : "";
 }
 
 /* ------------------------------------------------------------ PDF export */
@@ -6639,6 +6903,7 @@ const fileSafe = (t) => String(t || "sheet").replace(/[^\w\u4e00-\u9fff-]+/g, "_
    ones only when asked for. */
 let PDF_PICK = null;
 function fillPdfLayers() {
+  try { fillPdfScope(); } catch (e) {}
   const box = document.getElementById("pdf-layers");
   if (!box) return;
   const counts = new Map();
@@ -6652,7 +6917,8 @@ function readPdfPick() {
   PDF_PICK = { layers: box && box.children.length ? on : null, offview: !!(document.getElementById("pdf-offview") || {}).checked };
 }
 const pdfWants = (it) => !PDF_PICK || ((!PDF_PICK.layers || PDF_PICK.layers.has(layerOf(it)))
-  && (PDF_PICK.offview || !(it.archived || isEndorsed(it))));
+  && (S.showBatch ? !!(it.archived && it.archived.batch === S.showBatch)
+    : (PDF_PICK.offview || !(it.archived || isEndorsed(it)))));
 
 async function exportCleanPdf(sheets) {
   sheets = sheets.filter((s) => s && s.pdf);
@@ -6697,17 +6963,40 @@ async function exportCleanPdf(sheets) {
   }
 }
 
+/* Which sheets the PDF window means: this sheet; those of the set shown
+   (the Revit sheets, or an imported set) with markups, or all of them; or
+   every sheet of the project. "With markups" counts what would be drawn -
+   not deleted, archived or endorsed ones (unless asked), the layers chosen. */
+function pdfSheets(scope) {
+  readPdfPick();
+  const marked = new Set((S.items || []).filter((i) => i.sheet && !i.deleted && !NOT_HERE.has(i.placement) && pdfWants(i)
+    && (S.showBatch || PDF_PICK.offview || !offView(i))).map((i) => i.sheet));
+  const inSet = setSheets().filter((s) => s.pdf);
+  if (scope === "current") return S.sheet ? [S.sheet] : [];
+  if (scope === "marked") return inSet.filter((s) => marked.has(s.number));
+  if (scope === "all") return inSet;
+  return S.manifest.sheets.filter((s) => s.pdf);              // "project": every set
+}
+function fillPdfScope() {
+  const sel = document.getElementById("pdf-scope");
+  if (!sel) return;
+  const keep = sel.value;
+  const setName = S.set || "Revit sheets";
+  const n = (k) => pdfSheets(k).length;
+  sel.innerHTML = `<option value="current">This sheet</option>`
+    + `<option value="marked">Sheets with markups in this set - ${esc(setName)} (${n("marked")})</option>`
+    + `<option value="all">All sheets in this set - ${esc(setName)} (${n("all")})</option>`
+    + `<option value="project">All sheets in the project, every set (${n("project")})</option>`;
+  sel.value = [...sel.options].some((o) => o.value === keep) ? keep : "marked";
+}
+
 async function exportPdf() {
-  const withMarkup = new Set(S.items.filter((i) => i.sheet).map((i) => i.sheet));
   const scope = document.getElementById("pdf-scope").value;
   const dpi = Number(document.getElementById("pdf-dpi").value) || 150;
 
-  let sheets = S.manifest.sheets.filter((s) => s.pdf);
-  if (scope === "current") sheets = S.sheet ? [S.sheet] : [];
-  else if (scope === "marked") sheets = sheets.filter((s) => withMarkup.has(s.number));
-
+  const sheets = pdfSheets(scope);
   if (!sheets.length) {
-    status(scope === "marked" ? "No sheet has any markups yet." : "Open a sheet first.");
+    status(scope === "marked" ? "No sheet in this set has any markups to print." : scope === "current" ? "Open a sheet first." : "No sheets with a PDF here.");
     return;
   }
   $("#pdf-back").hidden = true;
@@ -7907,6 +8196,19 @@ function wireChrome() {
       paint(); redraw(); renderList();
     });
   }
+  // a submission's archive: Files > Archive all comments; History above the list
+  const aa = document.getElementById("archive-all");
+  if (aa) aa.addEventListener("click", openArchiveAll);
+  const hc = document.getElementById("history-chip");
+  if (hc) hc.addEventListener("click", (ev) => {
+    const r = hc.getBoundingClientRect();
+    const list = batches();
+    openMenu(r.left, r.bottom + 4, (S.showBatch ? [{ label: "Back to now", action: () => showHistory(null) }, "-"] : [])
+      .concat(list.map((x) => ({ label: `${S.showBatch === x.batch ? "\u2713 " : ""}${x.name} \u00b7 ${Dates.day ? Dates.day(x.at) : x.at} \u00b7 ${x.count}`,
+        title: `${x.count} archived by ${x.by || x.author || "?"} (${x.scope || ""})`, action: () => showHistory(x.batch) })))
+      .concat(list.length ? [] : [{ label: "No archived batches yet", disabled: true }]));
+  });
+  paintHistory();
   const lp = document.getElementById("list-pick");
   if (lp) lp.addEventListener("click", () => { PICK_L.on = !PICK_L.on; PICK_L.sel.clear(); lp.classList.toggle("active", PICK_L.on); renderList(); });
   const oc = document.getElementById("orphans-chip");
@@ -7919,6 +8221,8 @@ function wireChrome() {
     if (a) plr.querySelectorAll("#pdf-layers input").forEach((c) => { c.checked = a === "all"; });
   });
   $("#pdf-go").addEventListener("click", () => exportPdf().catch((e) => showError("pdf", e)));
+  // the counts follow the layers and "include archived" chosen
+  for (const id of ["pdf-layers", "pdf-offview"]) { const el = document.getElementById(id); if (el) el.addEventListener("change", () => { try { fillPdfScope(); } catch (e) {} }); }
   // Markups: editable, flattened or none (the clean drawing) - kept on this device
   const pm = $("#pdf-markups");
   const paintPm = () => {

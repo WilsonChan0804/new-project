@@ -6,6 +6,17 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-26", date: "19 Nov 2026",
+    items: [
+      "**Split view on a phone:** one finger pans the second sheet, two fingers pinch-zoom it, and a double tap zooms in. Both sheets now share the screen properly.",
+      "**Draw in Split view:** choose a tool and draw in the second pane, or click a markup there. The two sheets swap panes in place, so the one you are working on keeps its spot and gets every tool. **\u21c4 Work here** does the same.",
+      "**After a submission:** **Files > Archive all comments ...** archives everything on a sheet, a set or the project under one name (e.g. \"GBP submission\"), and the drawings come back clean. **History \u25be** shows that batch again, makes its PDF, or restores it.",
+      "**PDF of a set:** the PDF window now offers the sheets of the set shown, or all sheets in the project, with the counts.",
+      "**Tasks: column order.** Drag columns in Customize, or drag a column header, to put Due first or in any order.",
+      "**Compare: Align \u25be** lines up a drawing whose setting-out differs. Pick 2 matching points on each and it is moved, scaled and turned to fit, then kept for that pair. Fine-tune with the arrow keys.",
+    ],
+  },
+  {
     version: "2027-01-25", date: "18 Nov 2026",
     items: [
       "**See where it is:** a Model Doctor finding now draws an orange **dimension** on the model where it was measured (the gap, the overlap, how far a wall runs in, the sill over the floor, the wall top to the soffit), with a ring that stays the same size at any distance, so a 5 mm gap can be found. A clash shows its depth the same way. Issues made from them keep the dimension.",

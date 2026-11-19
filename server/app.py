@@ -548,7 +548,18 @@ def stamp(prev, item, w, store=None):
     # archived: by whom and when, said here
     if item.get("archived"):
         pa = (prev or {}).get("archived")
-        item["archived"] = pa if pa else {"by": by, "at": t}
+        if pa:
+            item["archived"] = pa
+        else:
+            arc = {"by": by, "at": t}
+            # archived as part of a named batch ("GBP submission 19 Nov"):
+            # its id and name kept, so the batch can be shown or restored
+            ca = item.get("archived") if isinstance(item.get("archived"), dict) else {}
+            bid = str(ca.get("batch") or "")
+            if re.fullmatch(r"[a-z0-9-]{1,40}", bid):
+                arc["batch"] = bid
+                arc["name"] = str(ca.get("name") or "")[:120]
+            item["archived"] = arc
     else:
         item.pop("archived", None)
     return item

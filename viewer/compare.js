@@ -1,4 +1,5 @@
 import { dayTime } from "./dates.js";
+import { openMenu } from "./ctxmenu.js";
 /* Sheet version compare - the overlay Bluebeam and ACC call "compare".
  *
  * The sheet on screen (current) and an earlier PDF of it are rendered at
@@ -48,6 +49,9 @@ export function createCompare(ctx) {
     seq: 0,
     fileData: null, fileName: "",
     versions: [],
+    align: null,        // [a, b, e, f]: the other drawing moved, scaled, turned to fit (see alignKey)
+    picking: null,      // picking points to line them up: { stage: "old"|"new", old: [], new: [] }
+    nudge: false,
   };
 
   const bar = () => $("#cmp-bar");
@@ -238,7 +242,8 @@ export function createCompare(ctx) {
       if (!C.src) setStatus("Choose an earlier version, another sheet or a PDF file to compare with.");
       return;
     }
-    const key = [sheet.number, S.rotation, C.src.kind, C.src.id, C.view].join("|");
+    C.align = savedAlign();
+    const key = [sheet.number, S.rotation, C.src.kind, C.src.id, C.view, JSON.stringify(C.align)].join("|");
     if (key === C.key && !cv.hidden) return;
 
     setStatus("Comparing ...");
@@ -255,11 +260,17 @@ export function createCompare(ctx) {
     const ko = k * v1.width / o1.width;          // same width; heights checked below
     const aspect = Math.abs(o1.height / o1.width - v1.height / v1.width) / (v1.height / v1.width);
     let note = "";
-    if (aspect > 0.01) note = " The two pages are different sizes, so they may not line up.";
+    if (aspect > 0.01 && !C.align) note = " The two pages are different sizes, so they may not line up - Align \u25be lines them up by two points.";
+    if (C.align) note = " Lined up by two points.";
 
     let oldC, newC;
     try {
-      oldC = await renderTo(op, ko, rot, w, h);
+      // drawn at the size it will show (an alignment that enlarges it would
+      // otherwise stretch a small picture, and blur every line)
+      const sA = C.align ? Math.max(0.05, Math.min(20, Math.hypot(C.align[0], C.align[1]))) : 1;
+      const ow = Math.max(1, Math.min(8192, Math.floor(o1.width * ko * sA))), oh = Math.max(1, Math.min(8192, Math.floor(o1.height * ko * sA)));
+      oldC = await renderTo(op, ko * sA, rot, ow, oh);
+      oldC = placed(oldC, w, h, sA);
       if (my !== C.seq) return;
       if (C.view === "old") {
         show(oldC, w, h);
@@ -311,6 +322,132 @@ export function createCompare(ctx) {
       ? C.boxes.length + " changed area" + (C.boxes.length === 1 ? "" : "s")
       : "No differences found")
       + " against " + C.src.label + "." + note);
+  }
+
+  /* -------------------------------------------------- lining them up */
+
+  /* The other drawing as it lies on this one: drawn through the alignment
+     (a similarity: move, scale, turn), in units of the page's width, onto a
+     white canvas the size of this page. Without one: from the top-left
+     corner at the same width, as before. */
+  function placed(src, w, h, sA = 1) {
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    g.fillStyle = "#fff";
+    g.fillRect(0, 0, w, h);
+    const A = C.align;
+    if (A) g.setTransform(A[0] / sA, A[1] / sA, -A[1] / sA, A[0] / sA, A[2] * w, A[3] * w);
+    g.drawImage(src, 0, 0);
+    src.width = 0; src.height = 0;
+    return c;
+  }
+  // the pair compared, and its alignment kept for everyone on the project
+  function alignKey() {
+    if (!S.sheet || !C.src) return "";
+    const src = C.src.kind === "file" ? "file:" + C.fileName + ":" + (C.fileData ? C.fileData.length : 0) : C.src.kind + ":" + C.src.id;
+    return [S.sheet.number, src, S.rotation || 0].join("|");
+  }
+  const alignId = (k) => {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < k.length; i++) { h ^= k.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return "cmpalign-" + (h >>> 0).toString(16) + k.length.toString(36);
+  };
+  function savedAlign() {
+    const k = alignKey();
+    if (!k) return null;
+    const it = (Store.all() || []).find((x) => x.id === alignId(k) && !x.deleted);
+    return it && Array.isArray(it.m) && it.m.length === 4 ? it.m : null;
+  }
+  async function keepAlign(m) {
+    const k = alignKey();
+    if (!k) return;
+    try {
+      await Store.put({ id: alignId(k), placement: "cmpalign", key: k, m: m || null, deleted: !m, author: Store.author() || "",
+        updated_at: new Date().toISOString() });
+    } catch (e) { status("Could not keep the alignment: " + e.message); }
+    C.key = "";
+    run();
+  }
+  // where a click is on the page, in units of its width (y down)
+  function pagePoint(ev) {
+    const r = $("#page").getBoundingClientRect();
+    return [(ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.width];
+  }
+  function marks() {
+    let m = document.getElementById("cmp-marks");
+    if (!C.picking) { if (m) m.remove(); return; }
+    if (!m) { m = document.createElement("div"); m.id = "cmp-marks"; $("#page").appendChild(m); }
+    const r = $("#page").getBoundingClientRect();
+    const pts = C.picking.stage === "old" ? C.picking.shown : C.picking.new;
+    m.innerHTML = pts.map((p, i) => `<span class="cmp-x" style="left:${p[0] * 100}%;top:${(p[1] * r.width / r.height) * 100}%">${i + 1}</span>`).join("");
+  }
+  function pickStart() {
+    if (!C.src) { status("Choose what to compare with first."); return; }
+    C.picking = { stage: "old", old: [], shown: [], new: [] };
+    setView("old");
+    marks();
+    setStatus("Line up: on the OTHER drawing (shown now), click point 1, e.g. a grid intersection. Esc stops.");
+    status("Line up by two points: click point 1 on the other drawing.");
+  }
+  function pickClick(ev) {
+    const P = C.picking;
+    const say = (m) => { setStatus(m); status(m); };
+    const q = pagePoint(ev);
+    if (P.stage === "old") {
+      // back through the alignment shown, to the other drawing's own place
+      const A = C.align || [1, 0, 0, 0];
+      const dx = q[0] - A[2], dy = q[1] - A[3], s2 = A[0] * A[0] + A[1] * A[1];
+      P.old.push([(A[0] * dx + A[1] * dy) / s2, (-A[1] * dx + A[0] * dy) / s2]);
+      P.shown.push(q);
+      marks();
+      if (P.old.length < 2) { say("Now point 2 on the other drawing - well apart from point 1."); return; }
+      P.stage = "new";
+      setView("new");
+      marks();
+      say("Now the same point 1 on THIS sheet.");
+      return;
+    }
+    P.new.push(q);
+    marks();
+    if (P.new.length < 2) { say("And the same point 2 on this sheet."); return; }
+    // z' = m z + t, from the two pairs (complex numbers: move, scale, turn)
+    const [p1, p2] = P.old, [q1, q2] = P.new;
+    const dp = [p2[0] - p1[0], p2[1] - p1[1]], dq = [q2[0] - q1[0], q2[1] - q1[1]];
+    const d2 = dp[0] * dp[0] + dp[1] * dp[1];
+    C.picking = null;
+    marks();
+    if (d2 < 1e-6) { setStatus("The two points were too close together - try again with points far apart."); setView("diff"); return; }
+    const a = (dq[0] * dp[0] + dq[1] * dp[1]) / d2, b = (dq[1] * dp[0] - dq[0] * dp[1]) / d2;
+    const m = [a, b, q1[0] - (a * p1[0] - b * p1[1]), q1[1] - (b * p1[0] + a * p1[1])];
+    const sc = Math.hypot(a, b), deg = Math.atan2(b, a) * 180 / Math.PI;
+    setView("diff");
+    keepAlign(m);
+    status(`Lined up: scaled ${(sc * 100).toFixed(1)}%, turned ${deg.toFixed(2)}\u00b0 - kept for this pair, for everyone.`);
+  }
+  function alignMenu(btn) {
+    const r = btn.getBoundingClientRect();
+    openMenu(r.left, r.bottom + 4, [
+      { label: "Pick 2 points on each ...", title: "Click two matching points (grid intersections) on the other drawing, then on this sheet", action: pickStart },
+      { label: "Nudge (arrow keys)", disabled: !C.align && !C.src, title: "Arrow keys move the other drawing 1 mm (Shift: 10 mm); Esc ends", action: () => { C.nudge = true; setStatus("Nudge: arrow keys move the other drawing 1 mm (Shift 10 mm). Esc ends."); } },
+      "-",
+      { label: "Reset (top-left, same width)", disabled: !savedAlign(), action: () => { keepAlign(null); status("Alignment cleared."); } },
+    ]);
+  }
+  function nudgeKey(ev) {
+    const page = S.page;
+    if (!page) return;
+    const v1 = page.getViewport({ scale: 1, rotation: S.rotation || 0 });
+    const mm = (72 / 25.4) / v1.width;               // 1 mm in units of the page's width
+    const step = (ev.shiftKey ? 10 : 1) * mm;
+    const A = (C.align || savedAlign() || [1, 0, 0, 0]).slice();
+    if (ev.key === "ArrowLeft") A[2] -= step; else if (ev.key === "ArrowRight") A[2] += step;
+    else if (ev.key === "ArrowUp") A[3] -= step; else if (ev.key === "ArrowDown") A[3] += step;
+    else return false;
+    clearTimeout(C._nudgeT);
+    C.align = A;
+    C._nudgeT = setTimeout(() => keepAlign(A), 250);
+    return true;
   }
 
   function show(src, w, h) {
@@ -443,6 +580,22 @@ export function createCompare(ctx) {
     });
     document.querySelectorAll("#cmp-view button").forEach((b) =>
       b.addEventListener("click", () => setView(b.dataset.v)));
+    const ab = $("#cmp-align");
+    if (ab) ab.addEventListener("click", () => alignMenu(ab));
+    // while lining up, a click on the page is a point, not a markup
+    $("#scroll").addEventListener("pointerdown", (ev) => {
+      if (!C.picking || ev.button !== 0) return;
+      if (!ev.target.closest("#page")) return;
+      ev.preventDefault(); ev.stopPropagation();
+      pickClick(ev);
+    }, true);
+    document.addEventListener("keydown", (ev) => {
+      if (!C.on) return;
+      if (ev.key === "Escape" && (C.picking || C.nudge)) {
+        C.picking = null; C.nudge = false; marks(); setView("diff"); setStatus("Stopped lining up."); ev.preventDefault(); ev.stopPropagation(); return;
+      }
+      if (C.nudge && nudgeKey(ev)) { ev.preventDefault(); ev.stopPropagation(); }
+    }, true);
     $("#cmp-prev").addEventListener("click", () => goTo(C.idx < 0 ? C.boxes.length - 1 : C.idx - 1));
     $("#cmp-next").addEventListener("click", () => goTo(C.idx + 1));
     $("#cmp-boxes").addEventListener("change", () => ctx.redraw());

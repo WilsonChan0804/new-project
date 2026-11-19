@@ -199,7 +199,10 @@ export function createItemKit(env) {
   }
 
   const isEndorsed = (it) => !!(it && it.issue && it.issue.endorsed && (it.issue.status || "Open") === "Closed");
-  const offView = (it) => (it.archived && !S.showArchived) || (isEndorsed(it) && !S.showEndorsed);
+  /* History: one archived batch shown as it was handed in (S.showBatch) -
+     only its items, nothing of now */
+  const offView = (it) => (S.showBatch ? !(it.archived && it.archived.batch === S.showBatch)
+    : (it.archived && !S.showArchived) || (isEndorsed(it) && !S.showEndorsed));
 
   /* Ticking rows in the list (Select), then one action for them all. Each is
      done only where this person may (as the server rules: app.py
@@ -235,12 +238,12 @@ export function createItemKit(env) {
       if (why) skip.set(why, (skip.get(why) || 0) + 1); else ok.push(it || items[i]);
     });
     if (!ok.length) { env.status("Nothing changed: " + [...skip].map(([w, n]) => `${n} ${w}`).join(", ") + "."); return 0; }
-    if (env.remember) env.remember(ok.map((it) => it.id));
+    if (env.remember && ok.length <= 300) env.remember(ok.map((it) => it.id));
     const now = new Date().toISOString(), me = Store.author() || "";
     for (const it of ok) {
       if (kind === "close") it.issue.status = "Closed";
       else if (kind === "endorse") it.issue.endorsed = { by: me, at: now };
-      else if (kind === "archive") it.archived = { by: me, at: now };
+      else if (kind === "archive") it.archived = Object.assign({ by: me, at: now }, arg && arg.batch ? { batch: arg.batch, name: arg.name || "" } : {});
       else if (kind === "restore") delete it.archived;
       else if (kind === "move") it.sheet = arg;
       else if (kind === "layer") it.layer = arg;

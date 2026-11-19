@@ -37,6 +37,7 @@ PART = [
         '**Gantt：** 時間線上面嘅橫條；拖成條，或者拖佢兩頭改日期。每次改之前會彈出 **Change the dates?** 問你：**Save** 先會儲存，**Cancel** 條 bar 就返原位（剔 **Don\'t ask again today**，呢部機今日就唔再問）。圖例會解釋啲顏色；milestone 係金色。',
         '**Dashboard：** 總數、完成、未完成同過咗期，按負責人、按 project、平均用幾耐同就快到期。**Activities：** 所有改動，邊個改。',
         '**Filter ▾**（搜尋格旁邊）入面有：邊啲 task（全部、未完成、完成咗、過期、我嘅）、負責人同優先次序，仲有排序（**Sort**、**Group by**）；掣上面會講設咗幾多個篩選（「Filter · 2」），**Clear filters** 還原。用 **Customize** 揀顯示邊啲欄。每個 list 可以有自己嘅欄（人、選項、文字、日期、數字），例如 Modelers 同 Project Manager。',
+        '**欄嘅次序：** **Customize**（欄設定視窗）上下拖一欄，或者用 ▲ ▼，揀佢嘅位置（例如 Due 擺第一）；或者喺清單左右拖欄頭。按你、按每個 list 保存；**Back to the default order** 還原。Task title 永遠喺第一欄。',
     ]),
     SHOT('tasks-kanban'),
     SHOT('tasks-gantt'),

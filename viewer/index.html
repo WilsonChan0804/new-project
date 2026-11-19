@@ -49,6 +49,7 @@
       title="Bring in comments and issues from a JSON file">JSON</button>
     <input id="import-json" type="file" accept="application/json,.json" hidden>
     <span class="hdr-sep"></span>
+    <button id="archive-all" class="ghost" hidden>Archive all</button>
     <button id="export-bcf" class="ghost" data-icon="export"
       title="Download issues as BCF for Revit or Navisworks">BCF</button>
   </span>
@@ -230,6 +231,7 @@
         <button data-v="old" class="ghost">Earlier</button>
         <button data-v="new" class="ghost">Current</button>
       </span>
+      <button id="cmp-align" class="ghost" title="Line the other drawing up with this sheet: pick two matching points on each (for a design plan whose setting-out differs)">Align &#9662;</button>
       <span id="cmp-legend" class="cmp-legend">
         <span><i class="rm"></i>Removed</span><span><i class="add"></i>Added</span><span><i class="same"></i>Unchanged</span>
       </span>
@@ -272,6 +274,7 @@
         <button id="split-out" class="ghost" title="Zoom out">&minus;</button>
         <button id="split-in" class="ghost" title="Zoom in">+</button>
         <button id="split-fit" class="ghost">Fit</button>
+        <button id="split-swap" class="ghost" title="Work on this sheet: it moves into the main pane with all the tools, and the panes swap sides (drawing or clicking with Select here does the same)">&#8644; Work here</button>
         <span id="split-status" class="muted"></span>
         <span class="spacer"></span>
         <button id="split-close" class="ghost" title="Close the second sheet">&#10005;</button>
@@ -342,6 +345,7 @@
       <button id="layers-chip" class="ghost i3-tog" title="Markup layers: show or hide each, as in Photoshop">&#9776; Layers</button>
       <button id="show-endorsed" class="ghost i3-tog" title="Endorsed issues are hidden - click to show them">Endorsed</button>
       <button id="show-archived" class="ghost i3-tog" title="Archived comments and issues are hidden - click to show them">Archived</button>
+      <button id="history-chip" class="ghost i3-tog" hidden title="Comments and issues archived together (Files > Archive all comments): show one as it was handed in">History &#9662;</button>
       <button id="orphans-chip" class="ghost i3-tog warn" hidden title="Comments and issues on sheets that are no longer in the viewer">On deleted sheets</button>
       <button id="list-pick" class="ghost i3-tog" title="Tick several comments and issues, then close, endorse, archive, move or re-layer them together">&#9745; Select</button></div>
     <div id="group-bar">
@@ -426,6 +430,8 @@
         <button data-go="export-clean"><b>This sheet as PDF (clean)</b><span>the drawing only, no markups - as exported from Revit</span></button>
         <button data-go="export-json"><b>Comments and issues (JSON)</b><span>everything on this project, to keep or move</span></button>
         <button data-go="export-bcf"><b>Issues as BCF</b><span>for Revit, Navisworks, BIMcollab</span></button>
+        <div class="files-title">After a submission</div>
+        <button data-go="archive-all"><b>Archive all comments ...</b><span>under one name (e.g. "GBP submission"): the drawings come back clean; History shows them again</span></button>
       </div>
       <div>
         <div class="files-title">Bring in</div>
