@@ -65,6 +65,13 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Usable floor space | 實用樓面空間 | UFS |
 | Electric vehicle charging-enabling | 電動車充電設施（預留） | EV |
 | Public transport terminus | 公共交通交匯處 | PTT |
+| Back-of-house / front-of-house | 後勤／前台設施 | BOH / FOH |
+| Service apartment | 服務式公寓 | — |
+| Deed of Dedication | 撥地契約 | — |
+| Modular Integrated Construction | 「組裝合成」建築法 | MiC |
+| Minor relaxation (of building height) | 略為放寬（建築物高度） | — |
+| Swept path | 車輛迴轉範圍 | — |
+| Run-in / run-out | 車輛進出口 | — |
 
 ## Sustainability 可持續發展
 
@@ -116,6 +123,17 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Ultimate place of safety | 最終的安全地方 | — |
 | Scissors staircase | 剪式樓梯 | — |
 | Temporary refuge space | 臨時庇護處 | — |
+| Fire barrier | 防火屏障 | — |
+| Stability / integrity / insulation | 穩定性／完整性／隔熱性 | — |
+| Spandrel | 窗間牆 | — |
+| Area of special hazard | 特殊危險的地方 | — |
+| Smoke outlet | 排煙口 | — |
+| Fire shutter | 防火捲閘 | — |
+| Fire damper | 防火閘 | — |
+| Smoke seal | 防煙封條 | — |
+| Atrium | 中庭 | — |
+| Fixed light | 固定窗 | — |
+| Liftwell | 升降機槽 | — |
 | Place of public entertainment | 公眾娛樂場所 | PPE |
 | Notifiable workplace | 須呈報工作地點 | — |
 

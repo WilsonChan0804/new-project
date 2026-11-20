@@ -41,6 +41,10 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- [FS Code Part C Fire resisting construction (in full) 耐火結構（全部條文）](codes/fsc-part-c-fire-resisting-construction.md)
+- [APP-40 Hotels 旅館](pnap/app-40.md) · [APP-104 Clubhouses 康樂設施](pnap/app-104.md) · [APP-108 Public passage 公眾通道](pnap/app-108.md) · [APP-111 Car parks 停車場](pnap/app-111.md) · [APP-122 Refuge floor sky garden 庇護層空中花園](pnap/app-122.md)
+- [JPN 8 Modular Integrated Construction 組裝合成建築法](pnap/jpn-8.md)
+
 - [FS Code Part B Means of escape (in full) 逃生途徑（全部條文）](codes/fsc-part-b-means-of-escape.md)
 - [APP-2 GFA calculation 總樓面面積計算](pnap/app-2.md) · [APP-19 Projections 伸出物](pnap/app-19.md) · [APP-42 Amenity features 適意設施](pnap/app-42.md) · [APP-156 Energy efficiency 能源效益](pnap/app-156.md)
 - [JPN 1 Green and innovative buildings 環保及創新的樓宇](pnap/jpn-1.md) · [JPN 2 Second package 第二批鼓勵措施](pnap/jpn-2.md)
