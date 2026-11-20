@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-01", date: "20 Nov 2026",
+    items: [
+      "**Codes: Quick facts** (no AI) - the answer at a glance: the clauses about what you asked with their figures and conditions, e.g. dead end 24m / 15m for Use Classifications 1 and 2, 18m for all others (B11.2).",
+      "**Diagrams in the chat:** the diagrams the clauses refer to show as pictures - click to enlarge, open the page or download. With Ask on, Claude also reads them and says what they show (D1, D2).",
+      "The clauses now read as paragraphs, and a clause number in the question (e.g. B11.3) brings that clause first.",
+    ],
+  },
+  {
     version: "2027-01-31", date: "20 Nov 2026",
     items: [
       "**Codes > Library > Find documents:** the codes, design manuals, PNAPs and practice notes the Buildings Department publishes, searchable by number or words, each marked **in the library** or **newer than the library's**. **Add** downloads one and fills in its details.",

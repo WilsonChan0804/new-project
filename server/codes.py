@@ -31,6 +31,7 @@ Kept in <data>/codes/: codes.db, files/<id>.<ext>, api_key (when one is
 saved here rather than set as ANTHROPIC_API_KEY).
 """
 
+import base64
 import json
 import os
 import re
@@ -47,6 +48,8 @@ from urllib.parse import quote
 
 from fastapi import HTTPException, Request, Header
 from starlette.concurrency import run_in_threadpool
+
+import codesread
 
 MAX_FILE = 200 * 1024 * 1024
 SAFE = re.compile(r"^[0-9a-f]{12}$")
@@ -105,6 +108,8 @@ CREATE TABLE IF NOT EXISTS asked (
   id INTEGER PRIMARY KEY, at INTEGER, uid INTEGER, name TEXT, project TEXT, q TEXT,
   answer TEXT, cites TEXT, model TEXT, tin INTEGER, tout INTEGER, cost REAL);
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE IF NOT EXISTS diagrams (source TEXT, label TEXT, page INTEGER, caption TEXT);
+CREATE INDEX IF NOT EXISTS diagrams_src ON diagrams(source, label);
 """
 
 
@@ -260,6 +265,84 @@ def store_chunks(sid, pieces):
         c.execute("UPDATE sources SET chunks = ? WHERE id = ?", (len(pieces), sid))
 
 
+def store_diagrams(sid, pages):
+    """the diagrams a document has (codesread.captions), by label and page"""
+    import codesread
+    caps = codesread.captions(["\n".join(lines) for _, lines in pages]) if pages and pages[0][0] else []
+    with db() as c:
+        c.execute("DELETE FROM diagrams WHERE source = ?", (sid,))
+        c.executemany("INSERT INTO diagrams(source, label, page, caption) VALUES(?,?,?,?)", [(sid, l, p, cap) for l, p, cap in caps])
+    set_meta("diag:" + sid, str(len(caps)))
+    return caps
+
+
+def ensure_diagrams(sid):
+    """a document put in before diagrams were indexed: its pages read once"""
+    if meta("diag:" + sid, "") != "":
+        return
+    with db() as c:
+        r = c.execute("SELECT file, ext FROM sources WHERE id = ?", (sid,)).fetchone()
+    if not r or r["ext"] != "pdf":
+        set_meta("diag:" + sid, "0")
+        return
+    try:
+        pages, _ = read_file(os.path.join(_dir("files"), r["file"]), "pdf")
+        store_diagrams(sid, pages)
+    except Exception as ex:
+        print("codes: diagrams of %s not read: %s" % (sid, ex))
+        set_meta("diag:" + sid, "0")
+
+
+MAX_DIAGRAMS = 4
+
+
+def result_diagrams(rows):
+    """The diagrams of a result: those its clauses refer to ("See Diagrams B2
+    and B4"), and one captioned on the page of a clause found (a legend on
+    a diagram's page) - at most 4, best clause first."""
+    import codesread
+    out, seen = [], set()
+    for r in rows[:10]:
+        if r.get("ext") != "pdf":
+            continue
+        sid = r["source"]
+        ensure_diagrams(sid)
+        with db() as c:
+            have = dict((d["label"], dict(d)) for d in c.execute("SELECT label, page, caption FROM diagrams WHERE source = ?", (sid,)))
+        want = codesread.diagram_refs(r.get("text") or "")
+        if r.get("page"):
+            want += [l for l, d in have.items() if d["page"] == r["page"] and l not in want]
+        for lab in want:
+            d = have.get(lab)
+            if not d or (sid, lab) in seen:
+                continue
+            seen.add((sid, lab))
+            out.append({"source": sid, "label": lab, "page": d["page"], "caption": d["caption"], "title": r.get("title") or "",
+                        "for": r.get("id")})
+            if len(out) >= MAX_DIAGRAMS:
+                return out
+    return out
+
+
+def page_png(sid, page, width):
+    """a page of a PDF in the library as a PNG (pdftoppm), kept"""
+    with db() as c:
+        r = c.execute("SELECT file, ext, pages FROM sources WHERE id = ?", (sid,)).fetchone()
+    if not r or r["ext"] != "pdf" or page < 1 or (r["pages"] and page > r["pages"]):
+        return None
+    out = os.path.join(_dir("pages"), "%s-%d-%d.png" % (sid, page, width))
+    if not os.path.exists(out):
+        if not shutil.which("pdftoppm"):
+            raise HTTPException(status_code=500, detail="This server cannot draw PDF pages: install poppler (pdftoppm)")
+        base = out[:-4] + ".tmp"
+        subprocess.run(["pdftoppm", "-f", str(page), "-l", str(page), "-png", "-singlefile", "-scale-to-x", str(width), "-scale-to-y", "-1",
+                        os.path.join(_dir("files"), r["file"]), base], capture_output=True, timeout=120)
+        if not os.path.exists(base + ".png"):
+            return None
+        os.replace(base + ".png", out)
+    return out
+
+
 def add_source(path, ext, title, kind, edition, url, by, size, note=""):
     pages, n_pages = read_file(path, ext)
     pieces = split_clauses(pages)
@@ -273,6 +356,10 @@ def add_source(path, ext, title, kind, edition, url, by, size, note=""):
                   (sid, title, kind, edition, url, os.path.basename(path), ext, n_pages, 0, "current", by,
                    int(time.time()), size, note))
     store_chunks(sid, pieces)
+    try:
+        store_diagrams(sid, pages)
+    except Exception as ex:
+        print("codes: diagrams not indexed: %s" % ex)
     return sid
 
 
@@ -287,7 +374,7 @@ please tell me need required requirement requirements""".split())
 SYNONYMS = [
     ("means of escape", "moe", "escape route", "exit route"),
     ("travel distance", "direct distance", "走火距離"),
-    ("dead end", "dead-end", "死胡同"),
+    ("dead end", "dead-end", "deadend", "死胡同"),
     ("fireman's lift", "firemans lift", "fire lift", "fireman lift", "消防員升降機"),
     ("temporary refuge space", "trs", "refuge floor", "避火層"),
     ("fire resistance rating", "frr", "fire resistance period", "耐火"),
@@ -359,10 +446,25 @@ def search(q, n=20, current_only=True):
            " JOIN sources s ON s.id = c.source WHERE chunks_fts MATCH ? %s ORDER BY score LIMIT ?" % where)
     with db() as c:
         try:
-            rows = c.execute(sql, (fts_match(terms), int(n))).fetchall()
+            rows = c.execute(sql, (fts_match(terms), int(n) * 2 + 10)).fetchall()
         except sqlite3.OperationalError:
             rows = []
-    return [dict(r) for r in rows], shown
+    rows = [dict(r) for r in rows]
+    # bm25 marks long clauses down; a clause that names what was asked in
+    # its first lines ("The deadend travel distance is limited to:") is about
+    # it - it comes up; a clause named in the question ("B11.2") first
+    keys = [codesread.norm(t) for t in terms if len(codesread.norm(t)) >= 4 and not t.isdigit()]
+    named = [codesread.norm(t) for t in terms if re.fullmatch(r"[a-z]{0,3}\d+(\.\d+)+[a-z]?", t)]
+    for k, r in enumerate(rows):
+        head = codesread.norm((r.get("text") or "")[:220])
+        bonus = 0.0
+        if any(t in head for t in keys):
+            bonus += 4.0
+        if named and any(t in codesread.norm(r.get("ref") or "") for t in named):
+            bonus += 20.0
+        r["_rank"] = (r.get("score") or 0) - bonus
+    rows.sort(key=lambda r: r["_rank"])
+    return rows[:int(n)], shown
 
 
 def ref_of(r):
@@ -385,7 +487,8 @@ Each question comes with numbered extracts from the office's library, <source id
 - Extracts of kind "internal" are the office's own notes, not law: say so when you rely on one.
 - Where extracts disagree, or an edition looks old, point it out.
 - Reply in the language of the question: English, or written Cantonese / Traditional Chinese when the question is in Chinese. Keep the code terms and clause numbers as in the extract.
-- Be brief and practical: the answer first, then the conditions, as short paragraphs or a short list. No preamble."""
+- Be brief and practical: the answer first, then the conditions, as short paragraphs or a short list. No preamble.
+- Some questions also come with diagrams from the same documents, <diagram id="D1" label="Diagram B2">caption</diagram> followed by its page as a picture. Where a diagram helps the answer, say in a sentence or two what it shows (which distance is measured where, what d1 / d2 mean) and cite it as [D1]. Read only what the picture shows; the extracts remain the authority."""
 
 
 def api_key():
@@ -452,7 +555,24 @@ def explain_error(ex):
     return "Could not write an answer: %s" % ex
 
 
-def build_messages(q, rows, history):
+MAX_IMAGES = 3
+
+
+def diagram_images(diagrams):
+    """the result's diagrams as pictures for Claude: [(n, label, caption, png bytes)]"""
+    out = []
+    for d in (diagrams or [])[:MAX_IMAGES]:
+        try:
+            p = page_png(d["source"], d["page"], 1000)
+            if p:
+                with open(p, "rb") as f:
+                    out.append((len(out) + 1, d["label"], d["caption"], f.read()))
+        except Exception as ex:
+            print("codes: diagram image: %s" % ex)
+    return out
+
+
+def build_messages(q, rows, history, images=None):
     msgs = []
     for h in (history or [])[-4:]:
         hq, ha = str(h.get("q") or "")[:2000], re.sub(r"\[S\d+\]", "", str(h.get("a") or ""))[:4000]
@@ -464,7 +584,15 @@ def build_messages(q, rows, history):
             i + 1, ref_of(r).replace('"', "'"), (r.get("edition") or "not stated").replace('"', "'"),
             r.get("kind") or "", ' status="superseded"' if r.get("status") == "superseded" else "", r["text"]))
     body = ("Extracts from the library:\n\n" + "\n\n".join(src)) if src else "The library has no extracts that match this question."
-    msgs.append({"role": "user", "content": body + "\n\nQuestion: " + q})
+    if not images:
+        msgs.append({"role": "user", "content": body + "\n\nQuestion: " + q})
+        return msgs
+    content = []
+    for n, label, cap, png in images:
+        content.append({"type": "text", "text": '<diagram id="D%d" label="Diagram %s">%s</diagram>' % (n, label, cap.replace("<", "("))})
+        content.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": base64.b64encode(png).decode("ascii")}})
+    content.append({"type": "text", "text": body + "\n\nQuestion: " + q})
+    msgs.append({"role": "user", "content": content})
     return msgs
 
 
@@ -739,13 +867,40 @@ def register(app, core):
         return {"id": r["id"], "source": r["source"], "title": r["title"], "kind": r["kind"],
                 "kind_label": KIND_LABEL.get(r["kind"], r["kind"]), "edition": r["edition"] or "",
                 "status": r["status"], "ref": r["ref"] or "", "page": r["page"] or 0, "text": r["text"],
-                "label": ref_of(r), "pdf": r["ext"] == "pdf", "url": r["url"] or ""}
+                "label": ref_of(r), "pdf": r["ext"] == "pdf", "url": r["url"] or "", "read": codesread.reflow(r["text"])}
+
+    def extras(rows, terms):
+        """Quick facts and the diagrams of a result (no AI)"""
+        try:
+            facts = codesread.quick_facts(rows, terms)
+        except Exception as ex:
+            print("codes: quick facts: %s" % ex)
+            facts = []
+        try:
+            diagrams = result_diagrams(rows)
+        except Exception as ex:
+            print("codes: diagrams: %s" % ex)
+            diagrams = []
+        return facts, diagrams
 
     @app.get("/api/codes/search")
     def codes_search(request: Request, q: str = "", n: int = 20, all: int = 0, x_viewer_token: str = Header(default="")):
         who(request, x_viewer_token)
         rows, terms = search(q[:500], max(1, min(50, n)), current_only=not all)
-        return {"items": [public(r) for r in rows], "terms": terms}
+        facts, diagrams = extras(rows, terms)
+        return {"items": [public(r) for r in rows], "terms": terms, "facts": facts, "diagrams": diagrams}
+
+    @app.get("/api/codes/sources/{sid}/page/{page}.png")
+    def codes_page_png(sid: str, page: int, request: Request, w: int = 400, x_viewer_token: str = Header(default="")):
+        core.require_request(request, x_viewer_token)
+        if not SAFE.match(sid):
+            raise HTTPException(status_code=404, detail="No such document")
+        width = 400 if w <= 600 else 1400
+        path = page_png(sid, page, width)
+        if not path:
+            raise HTTPException(status_code=404, detail="No such page")
+        from fastapi.responses import FileResponse
+        return FileResponse(path, media_type="image/png", headers={"Cache-Control": "private, max-age=86400"})
 
     @app.get("/api/codes/clause/{cid}")
     def codes_clause(cid: int, request: Request, x_viewer_token: str = Header(default="")):
@@ -778,7 +933,8 @@ def register(app, core):
         def gen():          # a plain generator: Starlette runs it in the threadpool
             rows, terms = search(look, N_CONTEXT)
             sources = [public(r) for r in rows]
-            yield json.dumps({"type": "sources", "items": sources, "terms": terms}, ensure_ascii=False) + "\n"
+            facts, diagrams = extras(rows, terms)
+            yield json.dumps({"type": "sources", "items": sources, "terms": terms, "facts": facts, "diagrams": diagrams}, ensure_ascii=False) + "\n"
             if not key or model == "off":
                 yield json.dumps({"type": "off", "why": "A site admin has turned Ask off" if model == "off"
                                   else "No Claude API key is set up yet - a site admin adds it in the Codes page > Library. The matching clauses are above."}) + "\n"
@@ -790,7 +946,7 @@ def register(app, core):
                 return
             parts, usage = [], {}
             try:
-                for kind, v in CALL["fn"](key, model, SYSTEM, build_messages(q, rows, history)):
+                for kind, v in CALL["fn"](key, model, SYSTEM, build_messages(q, rows, history, diagram_images(diagrams))):
                     if kind == "text":
                         parts.append(v)
                         yield json.dumps({"type": "text", "t": v}, ensure_ascii=False) + "\n"

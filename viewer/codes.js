@@ -58,9 +58,70 @@ function marked(text, terms) {
 /* The answer as HTML: the chat formatting, and [S3] as a chip */
 function answerHtml(t, i) {
   const n = (t.sources || []).length;
+  const nd = (t.diagrams || []).length;
   const render = (s) => esc(s).replace(/\[S(\d+)\]/g, (m, k) => (Number(k) >= 1 && Number(k) <= n
-    ? `<button type="button" class="cx-cite" data-turn="${i}" data-s="${k}" title="${esc(t.sources[k - 1].label)}">${k}</button>` : ""));
+    ? `<button type="button" class="cx-cite" data-turn="${i}" data-s="${k}" title="${esc(t.sources[k - 1].label)}">${k}</button>` : ""))
+    .replace(/\[D(\d+)\]/g, (m, k) => (Number(k) >= 1 && Number(k) <= nd
+      ? `<button type="button" class="cx-cite cx-cite-d" data-dg="${i}:${k - 1}" title="Diagram ${esc(t.diagrams[k - 1].label)}">D${k}</button>` : ""));
   return formatHtml(t.a || "", render);
+}
+
+/* ------------------------------------------------- quick facts, diagrams */
+
+// the answer at a glance, no AI: each clause about what was asked, with its
+// figures and the conditions above them (server codesread.quick_facts)
+function factsHtml(t, i) {
+  const f = t.facts || [];
+  if (!f.length) return "";
+  const src = t.sources || [];
+  return `<div class="cx-facts"><div class="cx-facts-h"><b>Quick facts</b><span class="muted">picked from the clauses by their figures - read the clause for its full conditions</span></div>`
+    + f.map((c) => {
+      const s = src[c.k - 1] || {};
+      const head = c.ref || s.label || "";
+      return `<div class="cx-fc"><button type="button" class="cx-fref" data-turn="${i}" data-s="${c.k}" title="${esc(s.label || "")}">${esc(head)}${c.page ? " \u00b7 p." + c.page : ""}</button>`
+        + (c.lead ? `<div class="cx-flead">${marked(c.lead.replace(/^Clause\s+\S+\s*/i, ""), t.terms)}</div>` : "")
+        + `<table class="cx-ft">${c.facts.map((x) => `<tr><td class="cx-fig">${esc(x.figure)}</td><td>${x.when ? `<span class="cx-when">${esc(x.when)}</span>` : ""}${marked(x.text, t.terms)}</td></tr>`).join("")}</table></div>`;
+    }).join("") + `</div>`;
+}
+
+const pageImg = (d, w) => `/api/codes/sources/${encodeURIComponent(d.source)}/page/${d.page}.png?w=${w || 400}`;
+
+function diagramsHtml(t, i) {
+  const ds = t.diagrams || [];
+  if (!ds.length) return "";
+  return `<div class="cx-dgs">${ds.map((d, k) => `<button type="button" class="cx-dg" data-dg="${i}:${k}" title="Diagram ${esc(d.label)} - ${esc(d.caption)} (click to enlarge)">`
+    + `<img src="${pageImg(d, 400)}" alt="Diagram ${esc(d.label)}" loading="lazy"><span><b>${t.kind !== "search" && t.a && new RegExp("\\[D" + (k + 1) + "\\]").test(t.a) ? `D${k + 1} \u00b7 ` : ""}Diagram ${esc(d.label)}</b> ${esc(d.caption)}<small>${esc(d.title)} \u00b7 p.${d.page}</small></span></button>`).join("")}</div>`;
+}
+
+function openDiagram(t, k) {
+  const ds = t.diagrams || [];
+  let at = k;
+  const back = document.createElement("div");
+  back.className = "cx-lightbox";
+  const paint = () => {
+    const d = ds[at];
+    const pdf = `/api/codes/sources/${encodeURIComponent(d.source)}/file#page=${d.page}`;
+    back.innerHTML = `<div class="cx-lb-card"><div class="cx-lb-h"><b>Diagram ${esc(d.label)}</b> <span>${esc(d.caption)}</span><span class="spacer"></span>`
+      + `${ds.length > 1 ? `<button type="button" class="ghost" data-lb="prev" title="Previous">&lsaquo;</button><span class="muted">${at + 1} / ${ds.length}</span><button type="button" class="ghost" data-lb="next" title="Next">&rsaquo;</button>` : ""}`
+      + `<a class="ghost btn-a" href="${pdf}" target="_blank" rel="noopener">Open page ${d.page}</a><a class="ghost btn-a" href="${pageImg(d, 1400)}" download="Diagram ${esc(d.label)}.png">Download</a>`
+      + `<button type="button" class="ghost" data-lb="x" title="Close">&times;</button></div>`
+      + `<div class="cx-lb-img"><img src="${pageImg(d, 1400)}" alt="Diagram ${esc(d.label)}"></div><div class="cx-lb-f muted">${esc(d.title)} \u00b7 page ${d.page}</div></div>`;
+  };
+  paint();
+  document.body.appendChild(back);
+  const end = () => { back.remove(); document.removeEventListener("keydown", key, true); };
+  const key = (ev) => {
+    if (ev.key === "Escape") { ev.preventDefault(); end(); }
+    else if (ev.key === "ArrowRight" && ds.length > 1) { at = (at + 1) % ds.length; paint(); }
+    else if (ev.key === "ArrowLeft" && ds.length > 1) { at = (at - 1 + ds.length) % ds.length; paint(); }
+  };
+  document.addEventListener("keydown", key, true);
+  back.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-lb]");
+    if (ev.target === back || (b && b.dataset.lb === "x")) return end();
+    if (b && b.dataset.lb === "next") { at = (at + 1) % ds.length; paint(); }
+    if (b && b.dataset.lb === "prev") { at = (at - 1 + ds.length) % ds.length; paint(); }
+  });
 }
 
 /* ------------------------------------------------------------- the log */
@@ -70,8 +131,10 @@ function turnHtml(t, i) {
   let a = "";
   const n = (t.sources || []).length;
   if (t.kind === "search") {
-    a = `<div class="cx-found">${n ? `${n} clause${n === 1 ? "" : "s"} found` : "No clause in the library matches - try the words the code uses"}`
-      + (n ? ` <button type="button" class="ghost" data-show="${i}">Show</button>` : "") + `</div>`;
+    a = factsHtml(t, i) + diagramsHtml(t, i)
+      + `<div class="cx-found">${n ? `${n} clause${n === 1 ? "" : "s"} found` : "No clause in the library matches - try the words the code uses"}`
+      + (n ? ` <button type="button" class="ghost" data-show="${i}">Show</button>` : "") + `</div>`
+      + (t.why && n ? `<p class="cx-why">${esc(t.why)}</p>` : "");
   } else {
     const body = t.a ? `<div class="cx-text">${answerHtml(t, i)}</div>` : (t.busy ? `<div class="cx-text cx-wait">${n ? `Reading ${n} clauses ...` : "Finding the clauses ..."}</div>` : "");
     const note = t.why ? `<p class="cx-why ${t.err ? "bad" : ""}">${esc(t.why)}</p>` : "";
@@ -82,7 +145,7 @@ function turnHtml(t, i) {
       + (t.a && CX.st && CX.st.manage ? `<button type="button" class="ghost" data-note="${i}" title="Keep this answer in the library as an office note">Save as note</button>` : "")
       + (t.a ? `<span class="cx-disc">Check each figure against the current edition of the document - this is a reading aid, not advice.</span>` : "")
       + `</div>`;
-    a = `<div class="cx-a">${body}${note}${foot}</div>`;
+    a = `<div class="cx-a">${body}${t.busy ? "" : diagramsHtml(t, i)}${note}${foot}</div>`;
   }
   return `<div class="cx-turn" data-i="${i}">${q}${a}</div>`;
 }
@@ -127,7 +190,8 @@ function showSources(i, focus) {
     return `<div class="cx-cl${cited.has(k) ? " cited" : ""}" id="cx-cl-${k}">`
       + `<div class="cx-cl-h"><span class="cx-n">${k}</span><b>${esc(s.label)}</b></div>`
       + `<div class="cx-cl-m">${esc(s.kind_label)}${s.edition ? " · edition " + esc(s.edition) : ""}${s.status === "superseded" ? ` · <span class="cx-sup">superseded</span>` : ""}${s.kind === "internal" ? ` · <span class="cx-int">office note, not law</span>` : ""}</div>`
-      + `<div class="cx-cl-t">${marked(s.text, t.terms)}</div>`
+      + `<div class="cx-cl-t">${marked(s.read || s.text, t.terms)}</div>`
+      + ((t.diagrams || []).some((d) => d.for === s.id) ? `<div class="cx-cl-dg">${(t.diagrams || []).map((d, dk) => (d.for === s.id ? `<button type="button" class="ghost" data-dg="${CX.turns.indexOf(t)}:${dk}">Diagram ${esc(d.label)} &rsaquo;</button>` : "")).join("")}</div>` : "")
       + `<div class="cx-cl-a">${file ? `<a href="${file}" target="_blank" rel="noopener">${s.pdf && s.page ? "Open page " + s.page : "Open document"}</a>` : ""}`
       + `${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">Official page</a>` : ""}`
       + `<button type="button" class="ghost" data-more="${s.id}">More around it</button>`
@@ -183,7 +247,7 @@ async function ask(useAi) {
     render();
     try {
       const r = await api("/api/codes/search?" + new URLSearchParams({ q, n: 25 }));
-      Object.assign(CX.turns[i], { sources: r.items, terms: r.terms, busy: false });
+      Object.assign(CX.turns[i], { sources: r.items, terms: r.terms, facts: r.facts || [], diagrams: r.diagrams || [], busy: false });
     } catch (e) { Object.assign(CX.turns[i], { busy: false, why: e.message, err: true, kind: "ask" }); }
     paintTurn(i);
     save();
@@ -212,7 +276,7 @@ async function ask(useAi) {
         const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
         if (!line.trim()) continue;
         let m; try { m = JSON.parse(line); } catch (e) { continue; }
-        if (m.type === "sources") { t.sources = m.items; t.terms = m.terms; if (!phone() && m.items.length) showSources(i); }
+        if (m.type === "sources") { t.sources = m.items; t.terms = m.terms; t.facts = m.facts || []; t.diagrams = m.diagrams || []; if (!phone() && m.items.length) showSources(i); }
         else if (m.type === "text") t.a += m.t;
         else if (m.type === "off") { t.why = m.why; t.kind = "search"; }
         else if (m.type === "error") { t.why = m.why; t.err = true; }
@@ -521,7 +585,18 @@ async function start() {
   $("#cx-lib").onclick = () => openLibrary();
   $("#cx-recent").onclick = () => recent($("#cx-recent"));
   $("#cx-side-x").onclick = () => $("#cx-side").classList.remove("on");
+  const dgClick = (ev) => {
+    const d = ev.target.closest("[data-dg]");
+    if (!d) return false;
+    const [ti, k] = d.dataset.dg.split(":").map(Number);
+    if (CX.turns[ti]) openDiagram(CX.turns[ti], k);
+    return true;
+  };
+  $("#cx-clauses").addEventListener("click", (ev) => { dgClick(ev); });
   $("#cx-log").addEventListener("click", (ev) => {
+    if (dgClick(ev)) return;
+    const fr = ev.target.closest(".cx-fref");
+    if (fr) return showSources(Number(fr.dataset.turn), Number(fr.dataset.s));
     const c = ev.target.closest(".cx-cite");
     if (c) return showSources(Number(c.dataset.turn), Number(c.dataset.s));
     const s = ev.target.closest("[data-show]");

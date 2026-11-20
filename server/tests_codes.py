@@ -206,6 +206,42 @@ class CodesTest(unittest.TestCase):
         self.assertTrue(it["pdf"])
         self.assertEqual(self.c.get("/api/codes/sources/%s/file" % it["source"]).headers["content-type"], "application/pdf")
 
+    def test_diagrams_shown_and_sent(self):
+        """A PDF with diagrams: a clause that points to them brings them along
+        (pictures of their pages), and Ask sends them to Claude as images."""
+        pdf = tiny_pdf(["Clause Q1.1 The gangway travel distance is limited to 9m. See Diagrams Q2 and Q3.",
+                        "Diagram Q2: Gangway layout", "Diagram Q3 - Gangway section"])
+        r = self.c.post("/api/codes/sources?file=gw.pdf&kind=code&title=Gangway Code", content=pdf)
+        self.assertEqual(r.status_code, 200, r.text)
+        sid = r.json()["source"]["id"]
+        try:
+            got = self.c.get("/api/codes/search?q=gangway travel distance").json()
+            labs = [(d["label"], d["page"]) for d in got["diagrams"] if d["source"] == sid]
+            self.assertEqual(labs, [("Q2", 2), ("Q3", 3)])
+            png = self.c.get("/api/codes/sources/%s/page/2.png?w=400" % sid)
+            self.assertEqual(png.status_code, 200)
+            self.assertTrue(png.content.startswith(b"\x89PNG"))
+            self.assertEqual(self.c.get("/api/codes/sources/%s/page/9.png" % sid).status_code, 404)
+            os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test-" + "x" * 30
+            seen = {}
+
+            def fake(key, model, system, messages):
+                seen["messages"], seen["system"] = messages, system
+                yield "text", "9m [S1]; the layout is in [D1]."
+                yield "done", {"stop": "end_turn", "in": 10, "out": 5, "model": model}
+            codes.CALL["fn"] = fake
+            out = [json.loads(x) for x in self.c.post("/api/codes/ask", json={"q": "gangway travel distance"}).text.splitlines()]
+            self.assertTrue(any(d["label"] == "Q2" for d in out[0]["diagrams"]))
+            content = seen["messages"][-1]["content"]
+            self.assertIsInstance(content, list)
+            imgs = [b for b in content if b.get("type") == "image"]
+            self.assertTrue(1 <= len(imgs) <= codes.MAX_IMAGES and imgs[0]["source"]["media_type"] == "image/png")
+            self.assertIn('<diagram id="D1" label="Diagram Q2">', content[0]["text"])
+            self.assertIn("[D1]", seen["system"])
+            self.assertTrue(any(f["facts"] and f["facts"][0]["figure"] == "9m" for f in out[0]["facts"]))
+        finally:
+            self.c.delete("/api/codes/sources/" + sid)
+
 
 if __name__ == "__main__":
     unittest.main()
