@@ -71,6 +71,18 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Modular Integrated Construction | 「組裝合成」建築法 | MiC |
 | Minor relaxation (of building height) | 略為放寬（建築物高度） | — |
 | Swept path | 車輛迴轉範圍 | — |
+| Refuse storage and material recovery chamber / room | 垃圾及物料回收房／室 | RS&MRC / RS&MRR |
+| Refuse collection vehicle | 垃圾收集車 | RCV |
+| Recycling corner | 中央回收點 | RC |
+| Telecommunications and broadcasting equipment room | 電訊及廣播設備房 | TBE room |
+| Mobile access facilities | 流動通訊接達設施 | MAF |
+| Specified building (telecom) | 指明建築物（電訊） | — |
+| Overall Thermal Transfer Value | 總熱傳送值 | OTTV |
+| Electronic Submission Hub | 電子呈交平台 | ESH |
+| Form BA16 (modification / exemption) | BA16 表格（變通／豁免申請） | BA16 |
+| Outline Zoning Plan | 分區計劃大綱圖 | OZP |
+| Lease modification | 修訂地契 | — |
+| Premium | 補地價 | — |
 | Run-in / run-out | 車輛進出口 | — |
 
 ## Sustainability 可持續發展
@@ -134,6 +146,12 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Atrium | 中庭 | — |
 | Fixed light | 固定窗 | — |
 | Liftwell | 升降機槽 | — |
+| Access staircase | 消防通道樓梯 | — |
+| Fire service access point | 消防出入通道處 | — |
+| Firefighting and rescue stairway | 消防和救援樓梯間 | FRS |
+| Major façade | 主要立面 | — |
+| Emergency crash gate | 緊急閘 | — |
+| Fire safety assessment report | 消防安全評估報告 | FSAR |
 | Place of public entertainment | 公眾娛樂場所 | PPE |
 | Notifiable workplace | 須呈報工作地點 | — |
 

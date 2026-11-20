@@ -67,8 +67,12 @@ nav:
       - pnap/index.md
       - APP-2 GFA calculation 總樓面面積計算: pnap/app-2.md
       - APP-19 Projections 伸出物: pnap/app-19.md
+      - APP-35 Refuse storage 垃圾存放: pnap/app-35.md
       - APP-40 Hotel development 旅館發展: pnap/app-40.md
       - APP-42 Amenity features 適意設施: pnap/app-42.md
+      - APP-67 Energy efficiency (OTTV) 能源效率: pnap/app-67.md
+      - APP-84 Telecom facilities 電訊設施: pnap/app-84.md
+      - APP-89 Better lift service 升降機服務: pnap/app-89.md
       - APP-104 Recreational facilities 康樂設施: pnap/app-104.md
       - APP-108 Public passage 公眾通道: pnap/app-108.md
       - APP-111 Car park design 停車場設計: pnap/app-111.md
@@ -76,8 +80,10 @@ nav:
       - APP-151 GFA concessions 樓面面積寬免: pnap/app-151.md
       - APP-152 SBD Guidelines 可持續建築設計指引: pnap/app-152.md
       - APP-156 Energy efficiency 能源效益: pnap/app-156.md
+      - ADM-2 Plan processing 圖則處理: pnap/adm-2.md
       - JPN 1 Green features 環保設施: pnap/jpn-1.md
       - JPN 2 Green features II 第二批環保設施: pnap/jpn-2.md
+      - JPN 4 PR / GFA control 地積比率／總樓面面積: pnap/jpn-4.md
       - JPN 8 MiC 組裝合成建築法: pnap/jpn-8.md
   - Ordinance & Regulations 條例及規例:
       - regulations/index.md
@@ -88,6 +94,7 @@ nav:
       - FS Code 2011 消防安全守則: codes/fire-safety-code-2011.md
       - FS Code Part B Means of escape 逃生途徑: codes/fsc-part-b-means-of-escape.md
       - FS Code Part C Fire resisting construction 耐火結構: codes/fsc-part-c-fire-resisting-construction.md
+      - FS Code Part D Means of access 消防進出途徑: codes/fsc-part-d-means-of-access.md
       - BFA 2008 暢通無阻的通道: codes/bfa-2008.md
   - Glossary 詞彙: glossary.md
   - Tags 標籤: tags.md
