@@ -72,11 +72,12 @@
     <span class="spacer"></span>
     <span class="pg-saved muted" id="pg-saved"></span>
     <div class="pg-grp">
-      <button type="button" class="ghost" id="pg-import" title="Tasks from a CSV (from Excel or MS Project)">Import</button>
+      <button type="button" class="ghost" id="pg-import" title="Tasks from MS Project (XML) or a CSV (Excel)">Import</button>
       <button type="button" class="primary" id="pg-export" title="PDF for the client, or CSV">Export &#9662;</button>
     </div>
   </div>
   <div class="pg-sum" id="pg-sum"></div>
+  <div class="pg-legend" id="pg-legend" hidden></div>
   <div class="pg-body" id="pg-body">
     <div class="pg-sheet" id="pg-sheet">
       <div class="pg-gh" id="pg-gh"></div>
@@ -87,7 +88,7 @@
     <div class="pg-split" id="pg-split" title="Drag to widen the table"></div>
   </div>
   <div class="pg-tip" id="pg-tip" hidden></div>
-  <input type="file" id="pg-file" accept=".csv,.txt,text/csv" hidden>
+  <input type="file" id="pg-file" accept=".csv,.txt,.xml,text/csv,text/xml,application/xml" hidden>
 </main>
 <div id="gate-back" hidden>
   <form id="gate" onsubmit="return false">

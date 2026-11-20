@@ -14,7 +14,7 @@ import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, toast, pop, closePop, modal, uid } from "./tasks-util.js";
 import * as PC from "./progcore.js";
 
-const RH = 30;                 // row height, px
+let RH = 30;                   // row height, px (Format: compact 24 / normal 30 / roomy 38)
 const HEAD = 46;               // header height, px
 const COLS = {
   id: { label: "#", w: 40, align: "right", mm: 8 },
@@ -37,6 +37,15 @@ const COLS = {
 const DEFAULT_COLS = ["id", "name", "dur", "start", "finish", "pred", "pct"];
 const ZOOM = { day: 30, week: 14, month: 4.2, quarter: 1.5 };
 const MON = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
+const WD = "Sun Mon Tue Wed Thu Fri Sat".split(" ");
+export const DEFAULT_CATS = [
+  { id: "des", name: "Design", color: "#4a78a8" }, { id: "sta", name: "Statutory", color: "#7b5ea7" },
+  { id: "ten", name: "Tender", color: "#c98a1b" }, { id: "con", name: "Construction", color: "#2e7d32" },
+  { id: "cli", name: "Client / milestone", color: "#5f6670" }, { id: "oth", name: "Other", color: "#8d6e63" },
+];
+const PALETTE = ["#4a78a8", "#2b6cb0", "#00838f", "#2e7d32", "#7cb342", "#c98a1b", "#ef6c00", "#c62828", "#ad1457", "#7b5ea7", "#5f6670", "#8d6e63"];
+const FORMAT = { date: "d-mon-yy", unit: "d", rowh: "normal", text: 12.5, label: "party", zebra: false, shade: true, today: true,
+  summary: "bracket", msdate: true, grid: "unit", boldsum: true, weekno: false, solidred: false };
 
 const P = {
   doc: null, d: null, sched: null, cal: null, byId: new Map(), rows: [], can: false, me: null,
@@ -53,19 +62,28 @@ const rowOf = (id) => P.byId.get(id);
 function fmt(iso, year = true) {
   if (!iso) return "";
   const [y, m, d] = iso.split("-").map(Number);
+  const f = (P.d && P.d.format && P.d.format.date) || "d-mon-yy";
+  if (f === "dd/mm/yyyy") return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}${year ? "/" + y : ""}`;
+  if (f === "wd d/m/yy") return `${WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d}/${m}${year ? "/" + String(y).slice(2) : ""}`;
   return `${d} ${MON[m - 1]}${year ? " " + String(y).slice(2) : ""}`;
 }
+const catOf = (t) => (t && t.cat ? (P.d.categories || []).find((c) => c.id === t.cat) : null);
+const fillOf = (t) => (t && t.color) || (catOf(t) || {}).color || "";
 function fmtLong(iso) {
   if (!iso) return "";
   const [y, m, d] = iso.split("-").map(Number);
   return `${d} ${MON[m - 1]} ${y}`;
 }
-const days = (n) => (n === null || n === undefined ? "" : `${n} d`);
+const days = (n) => {
+  if (n === null || n === undefined) return "";
+  if (P.d && P.d.format && P.d.format.unit === "w" && P.cal) { const w = n / P.cal.perWeek; return `${Math.round(w * 10) / 10} w`; }
+  return `${n} d`;
+};
 const keyView = () => "lwk-viewer:programme-view:" + (project() || "");
 function loadView() {
   let v = {};
   try { v = JSON.parse(localStorage.getItem(keyView()) || "{}") || {}; } catch (e) {}
-  P.view = Object.assign({ zoom: "week", critical: true, baseline: "", links: true, progress: false, critOnly: false, labels: true, gw: 0, collapsed: [] }, v);
+  P.view = Object.assign({ zoom: "week", critical: true, baseline: "", links: true, progress: false, critOnly: false, labels: true, gw: 0, collapsed: [], widths: {}, level: 0, cats: [] }, v);
 }
 function saveView() {
   try { localStorage.setItem(keyView(), JSON.stringify(P.view)); } catch (e) {}
@@ -78,6 +96,8 @@ function defaults(d) {
   d.columns = Array.isArray(d.columns) && d.columns.length ? d.columns.filter((k) => COLS[k]) : DEFAULT_COLS.slice();
   if (!d.columns.includes("name")) d.columns.splice(1, 0, "name");
   d.remarks = Array.isArray(d.remarks) ? d.remarks : [];
+  if (!Array.isArray(d.categories)) d.categories = DEFAULT_CATS.map((c) => Object.assign({}, c));
+  d.format = Object.assign({}, FORMAT, d.format || {});
   for (const t of d.tasks) { t.deps = Array.isArray(t.deps) ? t.deps : []; t.links = t.links || {}; }
   return d;
 }
@@ -94,13 +114,27 @@ function recalc() {
   P.cal = new PC.Calendar(calSpec());
   P.sched = PC.schedule(tasks(), P.cal, { start: P.d.cover.start || "" });
   P.byId = new Map(P.sched.rows.map((r) => [r.id, r]));
-  // the rows shown: not under a collapsed summary; only critical ones if asked
+  RH = { compact: 24, normal: 30, roomy: 38 }[P.d.format.rowh] || 30;
+  // the rows shown: not under a collapsed summary (or deeper than the level shown);
+  // only critical ones, or those of the chosen categories, if asked
   const shut = new Set(P.view.collapsed || []);
+  const lvl = +P.view.level || 0;
+  const cats = new Set(P.view.cats || []);
+  const keep = new Set();
+  if (cats.size) {                       // a category's tasks, with the summaries above them
+    for (const r of P.sched.rows) {
+      if (!cats.has(tasks()[r.i].cat || "")) continue;
+      keep.add(r.id);
+      for (let p = r.parent; p >= 0; p = P.sched.rows[p].parent) keep.add(P.sched.rows[p].id);
+    }
+  }
   const out = [];
   let hideBelow = null;
   for (const r of P.sched.rows) {
     if (hideBelow !== null) { if (r.level > hideBelow) continue; hideBelow = null; }
+    if (lvl && r.level >= lvl) continue;
     if (P.view.critOnly && !r.critical) continue;
+    if (cats.size && !keep.has(r.id)) continue;
     out.push(r);
     if (r.summary && shut.has(r.id)) hideBelow = r.level;
   }
@@ -135,7 +169,7 @@ const msX = (r) => X(r.start, !!r.ms_end);
 
 /* ---------------------------------------------------------------- saving */
 
-const snap = () => JSON.stringify({ tasks: P.d.tasks, calendar: P.d.calendar, baselines: P.d.baselines, cover: P.d.cover, columns: P.d.columns, remarks: P.d.remarks });
+const snap = () => JSON.stringify({ tasks: P.d.tasks, calendar: P.d.calendar, baselines: P.d.baselines, cover: P.d.cover, columns: P.d.columns, remarks: P.d.remarks, categories: P.d.categories, format: P.d.format });
 function before() {
   P.undo.push(snap());
   if (P.undo.length > 80) P.undo.shift();
@@ -187,8 +221,10 @@ function render() {
   document.body.classList.toggle("pg-ro", !P.can);
   paintBar();
   paintSum();
+  paintLegend();
   paintGrid();
   paintChart();
+  paintProps();
 }
 
 function paintBar() {
@@ -231,11 +267,12 @@ function firstOf(b, k) {
   return v || "";
 }
 
+const colW = (k) => (P.view.widths && P.view.widths[k]) || COLS[k].w;
 function gridTemplate() {
-  return cols().map((k) => (k === "name" ? `minmax(${P.phone ? 150 : 160}px, 1fr)` : COLS[k].w + "px")).join(" ");
+  return cols().map((k) => (k === "name" && !(P.view.widths && P.view.widths.name) ? `minmax(${P.phone ? 150 : 160}px, 1fr)` : colW(k) + "px")).join(" ");
 }
 function gridWidth() {
-  const want = cols().reduce((a, k) => a + COLS[k].w, 0) + 22;
+  const want = cols().reduce((a, k) => a + colW(k), 0) + 22;
   const w = P.view.gw || Math.min(want, Math.round(innerWidth * 0.52));
   return P.phone ? Math.min(170, innerWidth * 0.45) : Math.max(220, Math.min(w, innerWidth - 200));
 }
@@ -274,8 +311,12 @@ function paintGrid() {
   sheet.style.setProperty("--gw", gw + "px");
   sheet.style.setProperty("--cw", P.width + "px");
   sheet.style.setProperty("--cols", gridTemplate());
+  sheet.style.setProperty("--rh", RH + "px");
+  sheet.style.setProperty("--fs", (+P.d.format.text || 12.5) + "px");
+  sheet.classList.toggle("zebra", !!P.d.format.zebra);
+  sheet.classList.toggle("nobold", !P.d.format.boldsum);
   const C = cols();
-  $("#pg-gh").innerHTML = `<div class="pg-r pg-hr">${C.map((k) => `<div class="pg-c ${COLS[k].align === "right" ? "r" : ""}" data-k="${k}">${esc(COLS[k].label)}</div>`).join("")}</div>`
+  $("#pg-gh").innerHTML = `<div class="pg-r pg-hr">${C.map((k) => `<div class="pg-c ${COLS[k].align === "right" ? "r" : ""}" data-k="${k}">${esc(COLS[k].label)}${P.phone ? "" : `<span class="pg-cr" data-cr="${k}" title="Drag to change the width"></span>`}</div>`).join("")}</div>`
     + (P.phone ? "" : `<div class="pg-grip" data-split title="Drag to widen the table"></div>`);
   if (!tasks().length) {
     $("#pg-gb").innerHTML = `<div class="pg-empty">${P.can ? `<b>No programme yet</b><p class="muted">Add a task, start from the office's architectural template, or import a CSV saved from Excel or MS Project.</p>`
@@ -292,9 +333,11 @@ function paintGrid() {
       const ed = P.can && COLS[k].edit && !(r.summary && ["dur", "start", "finish", "pct"].includes(k)) ? " ed" : "";
       if (k === "name") {
         const tw = r.summary ? `<button type="button" class="pg-tw" data-tw="${esc(r.id)}" aria-label="${shut.has(r.id) ? "Expand" : "Collapse"}">${shut.has(r.id) ? "&#9656;" : "&#9662;"}</button>` : `<span class="pg-tw0"></span>`;
-        const ic = r.milestone ? `<span class="pg-msi">&#9670;</span>` : "";
+        const fc = fillOf(t);
+        const ic = (r.milestone ? `<span class="pg-msi"${fc ? ` style="color:${esc(fc)}"` : ""}>&#9670;</span>` : fc && !r.summary ? `<span class="pg-sw" style="background:${esc(fc)}"></span>` : "");
+        const fs = t.style ? (t.style.bold ? "font-weight:650;" : "") + (t.style.italic ? "font-style:italic;" : "") : "";
         const lk = (t.links && (t.links.task || t.links.room)) ? `<span class="pg-lk" title="${esc([t.links.task ? "Task: " + t.links.task.title : "", t.links.room ? "Chat: " + t.links.room.title : ""].filter(Boolean).join("\n"))}">&#128279;</span>` : "";
-        return `<div class="pg-c pg-name${ed}" data-k="name" style="padding-left:${6 + r.level * 16}px">${P.can ? `<span class="pg-drag" title="Drag to move">&#8942;&#8942;</span>` : ""}${tw}${ic}<span class="pg-tx">${esc(r.name || "(no name)")}</span>${lk}</div>`;
+        return `<div class="pg-c pg-name${ed}" data-k="name" style="padding-left:${6 + r.level * 16}px">${P.can ? `<span class="pg-drag" title="Drag to move">&#8942;&#8942;</span>` : ""}${tw}${ic}<span class="pg-tx"${fs ? ` style="${fs}"` : ""}>${esc(r.name || "(no name)")}</span>${lk}</div>`;
       }
       return `<div class="pg-c${COLS[k].align === "right" ? " r" : ""}${ed}" data-k="${k}">${esc(cell(r, t, k))}</div>`;
     }).join("") + `</div>`;
@@ -305,8 +348,16 @@ function paintGrid() {
 
 function unitFor(ppd) { return ppd >= 20 ? "day" : ppd >= 6 ? "week" : ppd >= 2 ? "month" : "quarter"; }
 
+function isoWeek(day) {
+  const dt = new Date(Date.UTC(2000, 0, 1) + day * 86400000);
+  const t = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 3 - ((dt.getUTCDay() + 6) % 7)));
+  const y1 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((t - y1) / 86400000 - 3 + ((y1.getUTCDay() + 6) % 7)) / 7);
+}
+
 function paintChart() {
   const W = P.width;
+  const F = P.d.format;
   const unit = unitFor(P.ppd);
   const d1 = P.d0 + P.span - 1;
   const dateOf = (d) => new Date(Date.UTC(2000, 0, 1) + d * 86400000);
@@ -330,59 +381,71 @@ function paintChart() {
   for (const [a, b, lab] of tiers) {
     const xa = (a - P.d0) * P.ppd, xb = (b - P.d0) * P.ppd;
     top += `<line x1="${xa}" y1="0" x2="${xa}" y2="23" class="sc-l"/>` + (xb - xa > 34 ? `<text x="${xa + 5}" y="16" class="sc-t">${lab}</text>` : "");
+    if (F.grid === "month") grid += `<line x1="${xa}" y1="0" x2="${xa}" y2="100%" class="g-l"/>`;
   }
   d = P.d0;
   while (d <= d1) {
     const dt = dateOf(d);
     let nxt, lab;
     if (unit === "day") { nxt = d + 1; lab = String(dt.getUTCDate()); }
-    else if (unit === "week") { nxt = d + 7; lab = `${dt.getUTCDate()}/${dt.getUTCMonth() + 1}`; }
+    else if (unit === "week") { nxt = d + 7; lab = F.weekno ? "W" + isoWeek(d) : `${dt.getUTCDate()}/${dt.getUTCMonth() + 1}`; }
     else if (unit === "month") { nxt = d + (Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 1) - dt.getTime()) / 86400000; lab = MON[dt.getUTCMonth()]; }
     else { const q = Math.floor(dt.getUTCMonth() / 3); nxt = d + (Date.UTC(dt.getUTCFullYear(), q * 3 + 3, 1) - dt.getTime()) / 86400000; lab = "Q" + (q + 1); }
     const xa = (d - P.d0) * P.ppd, xb = (Math.min(nxt, d1 + 1) - P.d0) * P.ppd;
     low += `<line x1="${xa}" y1="23" x2="${xa}" y2="${HEAD}" class="sc-l"/>` + (xb - xa > 16 ? `<text x="${(xa + xb) / 2}" y="${HEAD - 8}" class="sc-s">${lab}</text>` : "");
-    grid += `<line x1="${xa}" y1="0" x2="${xa}" y2="100%" class="g-l"/>`;
+    if (F.grid !== "month") grid += `<line x1="${xa}" y1="0" x2="${xa}" y2="100%" class="g-l"/>`;
     d = nxt;
   }
-  $("#pg-ch").innerHTML = `<svg width="${W}" height="${HEAD}" class="pg-scale"><line x1="0" y1="23" x2="${W}" y2="23" class="sc-l"/>${top}${low}</svg>`;
+  $("#pg-ch").innerHTML = `<svg width="${W}" height="${HEAD}" class="pg-scale" title="Drag along the scale to stretch or squeeze the time"><line x1="0" y1="23" x2="${W}" y2="23" class="sc-l"/>${top}${low}</svg>`;
 
   const H = Math.max(P.rows.length, 1) * RH + (P.can ? RH : 0);
+  const half = RH / 2, bh = Math.max(10, Math.round(RH * 0.47));
   let bg = "";
-  if (P.ppd >= 6 && P.cal) {               // days off, shaded
+  if (F.shade && P.ppd >= 6 && P.cal) {               // days off, shaded
     for (let k = P.d0; k <= d1; k++) if (!P.cal.isWork(k)) bg += `<rect x="${(k - P.d0) * P.ppd}" y="0" width="${P.ppd}" height="${H}" class="g-off"/>`;
   }
   let rows = "", bars = "", base = "";
   const b = baseline();
   const crit = !!P.view.critical;
+  const solid = !!F.solidred;
   const at = new Map();
   P.rows.forEach((r, k) => at.set(r.id, k));
   P.rows.forEach((r, k) => {
     const y = k * RH;
+    const t = tasks()[r.i];
+    if (F.zebra && k % 2) rows += `<rect x="0" y="${y}" width="${W}" height="${RH}" class="g-zeb"/>`;
     if (P.sel.has(r.id)) rows += `<rect x="0" y="${y}" width="${W}" height="${RH}" class="g-sel"/>`;
     rows += `<line x1="0" y1="${y + RH}" x2="${W}" y2="${y + RH}" class="g-r"/>`;
     const bt = b && b.tasks[r.id];
     if (bt && bt[0]) {
       if (r.milestone) base += `<path d="${diamond(X(bt[0], !!r.ms_end), y + RH - 6, 4)}" class="b-base"/>`;
-      else base += `<rect x="${X(bt[0])}" y="${y + RH - 8}" width="${Math.max(2, X(bt[1], true) - X(bt[0]))}" height="4" rx="1" class="b-base"/>`;
+      else base += `<rect x="${X(bt[0])}" y="${y + RH - 7}" width="${Math.max(2, X(bt[1], true) - X(bt[0]))}" height="4" rx="1" class="b-base"/>`;
     }
     const x0 = r.milestone ? msX(r) : X(r.start), x1 = X(r.finish, true);
-    const cy = y + (b ? RH / 2 - 2 : RH / 2);
+    const cy = y + (b ? half - 2 : half);
     const isC = crit && r.critical;
-    const label = P.view.labels ? `<text x="${(r.milestone ? x0 + 9 : x1 + 6)}" y="${cy + 4}" class="b-lab">${esc(r.milestone ? r.name + " · " + fmt(r.start, false) : (tasks()[r.i].party || r.name))}</text>` : "";
+    const fc = fillOf(t);
+    const cls = isC ? (solid || !fc ? " crit" : " critO") : "";
+    const fillAttr = fc && !(isC && (solid || !fc)) ? ` style="fill:${esc(fc)}"` : "";
+    const labTxt = r.milestone ? (r.name + (F.msdate ? " · " + fmt(r.start, false) : ""))
+      : r.summary ? r.name
+      : { none: "", name: r.name, party: t.party || r.name, dates: `${fmt(r.start, false)} - ${fmt(r.finish, false)}`, pct: r.pct + "%" }[F.label || "party"];
+    const label = P.view.labels && labTxt ? `<text x="${(r.milestone ? x0 + 9 : x1 + 6)}" y="${cy + 4}" class="b-lab">${esc(labTxt)}</text>` : "";
     if (r.summary) {
-      bars += `<g class="bar sum" data-bar="${esc(r.id)}"><path d="M${x0} ${cy - 5}H${x1}V${cy + 4}L${x1 - 6} ${cy}H${x0 + 6}L${x0} ${cy + 4}Z"/>${label}</g>`;
+      const p = F.summary === "bar" ? `<rect x="${x0}" y="${cy - 4}" width="${Math.max(2, x1 - x0)}" height="8" rx="2"/>` : `<path d="M${x0} ${cy - 5}H${x1}V${cy + 4}L${x1 - 6} ${cy}H${x0 + 6}L${x0} ${cy + 4}Z"/>`;
+      bars += `<g class="bar sum" data-bar="${esc(r.id)}">${p}${label}</g>`;
     } else if (r.milestone) {
-      bars += `<g class="bar ms${isC ? " crit" : ""}" data-bar="${esc(r.id)}"><path d="${diamond(x0, cy, 7)}"/>${label}</g>`;
+      bars += `<g class="bar ms${cls}" data-bar="${esc(r.id)}"><path d="${diamond(x0, cy, Math.round(bh / 2))}"${fillAttr}/>${label}</g>`;
     } else {
       const w = Math.max(3, x1 - x0);
       const pw = w * r.pct / 100;
-      bars += `<g class="bar task${isC ? " crit" : ""}" data-bar="${esc(r.id)}"><rect x="${x0}" y="${cy - 7}" width="${w}" height="14" rx="3" class="b-body"/>`
-        + (pw ? `<rect x="${x0}" y="${cy - 3}" width="${pw}" height="6" rx="1.5" class="b-done"/>` : "")
-        + (P.can ? `<rect x="${x1 - 5}" y="${cy - 7}" width="7" height="14" class="b-end" data-end="1"/><circle cx="${x0 - 7}" cy="${cy}" r="4" class="b-h" data-h="S"/><circle cx="${x1 + 7}" cy="${cy}" r="4" class="b-h" data-h="F"/>` : "")
+      bars += `<g class="bar task${cls}" data-bar="${esc(r.id)}"><rect x="${x0}" y="${cy - bh / 2}" width="${w}" height="${bh}" rx="3" class="b-body"${fillAttr}/>`
+        + (pw ? `<rect x="${x0}" y="${cy - bh / 5}" width="${pw}" height="${(bh * 2) / 5}" rx="1.5" class="b-done"/>` : "")
+        + (P.can ? `<rect x="${x1 - 5}" y="${cy - bh / 2}" width="7" height="${bh}" class="b-end" data-end="1"/><circle cx="${x0 - 7}" cy="${cy}" r="4" class="b-h" data-h="S"/><circle cx="${x1 + 7}" cy="${cy}" r="4" class="b-h" data-h="F"/>` : "")
         + label + `</g>`;
     }
   });
-  // links
+  // links: their own colour and line; a related-only one is dashed grey and is never critical
   let links = "";
   if (P.view.links) {
     tasks().forEach((t) => {
@@ -392,14 +455,20 @@ function paintChart() {
         const fi = at.get(dp.from);
         if (fi === undefined) continue;
         const f = P.rows[fi], s = P.rows[ti];
-        const c = crit && f.critical && s.critical && !f.summary && !s.summary;
-        links += `<g class="lnk${c ? " crit" : ""}" data-lf="${esc(dp.from)}" data-lt="${esc(t.id)}"><path d="${linkPath(f, fi, s, ti, dp.type || "FS")}" class="l-p"/><path d="${linkPath(f, fi, s, ti, dp.type || "FS")}" class="l-hit"/></g>`;
+        const rel = dp.drive === false;
+        const c = !rel && crit && f.critical && s.critical && !f.summary && !s.summary;
+        const g = linkGeom(f, fi, s, ti, dp.type || "FS");
+        const col = c ? "" : dp.color || "";
+        const sty = dp.style || (rel ? "dashed" : "solid");
+        const dash = sty === "dashed" ? ` stroke-dasharray="5 3"` : sty === "dotted" ? ` stroke-dasharray="1.5 2.5"` : "";
+        links += `<g class="lnk${c ? " crit" : ""}${rel ? " rel" : ""}" data-lf="${esc(dp.from)}" data-lt="${esc(t.id)}"${col ? ` style="--lc:${esc(col)}"` : ""}>`
+          + `<path d="${g.d}" class="l-p"${dash}/><path d="${arrowHead(g)}" class="l-a"/><path d="${g.d}" class="l-hit"/></g>`;
       }
     });
   }
   // today, the status date and the progress line
   const tx = X(PC.todayIso());
-  let lines = `<line x1="${tx}" y1="0" x2="${tx}" y2="${H}" class="g-today"/>`;
+  let lines = F.today ? `<line x1="${tx}" y1="0" x2="${tx}" y2="${H}" class="g-today"/>` : "";
   const st = P.d.cover.status_date;
   if (st) lines += `<line x1="${X(st, true)}" y1="0" x2="${X(st, true)}" y2="${H}" class="g-status"/>`;
   if (P.view.progress && st) {
@@ -412,32 +481,42 @@ function paintChart() {
         const o = r.es + (r.dur * r.pct) / 100;
         px = r.milestone ? msX(r) : (P.cal.dayAt(Math.floor(o)) - P.d0 + (o % 1)) * P.ppd;
       }
-      pts.push(`${sx},${y}`, `${px},${y + RH / 2}`, `${sx},${y + RH}`);
+      pts.push(`${sx},${y}`, `${px},${y + half}`, `${sx},${y + RH}`);
     });
     lines += `<polyline points="${pts.join(" ")}" class="g-prog"/>`;
   }
-  $("#pg-cb").innerHTML = `<svg width="${W}" height="${H}" class="pg-chart" id="pg-svg"><defs>`
-    + `<marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" class="l-ar"/></marker>`
-    + `<marker id="arc" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" class="l-arc"/></marker></defs>`
+  $("#pg-cb").innerHTML = `<svg width="${W}" height="${H}" class="pg-chart" id="pg-svg">`
     + `<g>${bg}</g><g>${grid}</g><g>${rows}</g><g>${base}</g><g>${links}</g><g>${bars}</g><g>${lines}</g><g id="pg-drag-layer"></g></svg>`;
 }
 function diamond(cx, cy, r) { return `M${cx} ${cy - r}L${cx + r} ${cy}L${cx} ${cy + r}L${cx - r} ${cy}Z`; }
 
-/* a link: out of the predecessor's start or finish, into the successor's */
-function linkPath(f, fi, s, ti, type) {
+/* a link: out of the predecessor's start or finish, into the successor's;
+   -> {d, x, y, dir: "r"|"l"|"u"|"d"} - where the arrow head goes */
+function linkGeom(f, fi, s, ti, type) {
   const fy = fi * RH + RH / 2, ty = ti * RH + RH / 2;
   const fx = f.milestone ? msX(f) : type[0] === "S" ? X(f.start) : X(f.finish, true);
   const tx = s.milestone ? msX(s) : type[1] === "S" ? X(s.start) : X(s.finish, true);
   const out = type[0] === "F" ? fx + 8 : fx - 8;
   const down = ty > fy ? 1 : -1;
   const into = type[1] === "S";
+  const bh = Math.max(10, Math.round(RH * 0.47)) / 2 + 1;
   if ((into && out <= tx - 3) || (!into && out >= tx + 3)) {
     const x = into ? Math.max(out, tx + 4) : Math.min(out, tx - 4);
-    return `M${fx} ${fy}H${x}V${ty - down * 8}`;
+    const yy = ty - down * bh;
+    return { d: `M${fx} ${fy}H${x}V${yy}`, x, y: yy, dir: down > 0 ? "d" : "u" };
   }
   const yb = fi * RH + (down > 0 ? RH : 0);
   const xin = into ? tx - 8 : tx + 8;
-  return `M${fx} ${fy}H${out}V${yb}H${xin}V${ty}H${tx + (into ? -1 : 1)}`;
+  const xe = tx + (into ? -1 : 1);
+  return { d: `M${fx} ${fy}H${out}V${yb}H${xin}V${ty}H${xe}`, x: xe, y: ty, dir: into ? "r" : "l" };
+}
+const linkPath = (f, fi, s, ti, type) => linkGeom(f, fi, s, ti, type).d;
+function arrowHead(g) {
+  const a = 5, w = 3.2, { x, y } = g;
+  if (g.dir === "r") return `M${x} ${y}L${x - a} ${y - w}L${x - a} ${y + w}Z`;
+  if (g.dir === "l") return `M${x} ${y}L${x + a} ${y - w}L${x + a} ${y + w}Z`;
+  if (g.dir === "d") return `M${x} ${y}L${x - w} ${y - a}L${x + w} ${y - a}Z`;
+  return `M${x} ${y}L${x - w} ${y + a}L${x + w} ${y + a}Z`;
 }
 
 /* ---------------------------------------------------------------- editing */
@@ -590,7 +669,7 @@ function apply(id, k, val) {
     before(); t.pct = n; return true;
   }
   if (k === "pred") {
-    const p = PC.parseDeps(val, tasks(), id, P.cal.perWeek);
+    const p = PC.parseDeps(val, tasks(), id, P.cal.perWeek, t.deps);
     if (p.error) { toast(p.error, true); return false; }
     before();
     t.deps = p.deps;
@@ -657,6 +736,7 @@ function select(id, ev, scroll) {
     el.classList.toggle("cur", el.dataset.id === P.cur);
   }
   paintChart();
+  paintProps();
   if (scroll) {
     const el = $(`#pg-gb .pg-r[data-id="${CSS.escape(id)}"]`);
     if (el) el.scrollIntoView({ block: "nearest" });
@@ -773,17 +853,29 @@ function linkMenu(lk, ev) {
   const d = t && t.deps.find((x) => x.from === from);
   if (!d) return;
   const f = rowOf(from), s = rowOf(to);
+  const sty = d.style || (d.drive === false ? "dashed" : "solid");
   const el = pop(lk, `<div class="pg-lm"><b>${esc(f.name)} → ${esc(s.name)}</b>`
     + `<label>Type <select class="lm-t">${PC.TYPES.map((x) => `<option value="${x}"${x === d.type ? " selected" : ""}>${x} - ${PC.TYPE_LABEL[x]}</option>`).join("")}</select></label>`
     + `<label>Lag (working days; minus for a lead) <input class="lm-l" type="number" step="1" value="${d.lag || 0}"></label>`
-    + `<div class="row end">${P.can ? `<button type="button" class="ghost lm-x">Delete link</button><button type="button" class="primary lm-ok">Done</button>` : ""}</div></div>`, 290);
-  el.style.left = Math.min(innerWidth - 300, ev.clientX) + "px";
-  el.style.top = (ev.clientY + 10) + "px";
-  if (!P.can) { for (const i of el.querySelectorAll("select, input")) i.disabled = true; return; }
+    + `<label class="row-check"><input type="checkbox" class="lm-d"${d.drive === false ? "" : " checked"}> Drives the dates (off: a related link only - drawn, not scheduled)</label>`
+    + `<div class="pg-2"><label>Line <select class="lm-s">${["solid", "dashed", "dotted"].map((x) => `<option${x === sty ? " selected" : ""}>${x}</option>`).join("")}</select></label>`
+    + `<label>Colour <span class="pg-cl"><input type="color" class="lm-c" value="${esc(d.color || "#7d8b9c")}"><button type="button" class="ghost lm-cx" title="The usual colour">&times;</button></span></label></div>`
+    + `<div class="row end">${P.can ? `<button type="button" class="ghost lm-x">Delete link</button><button type="button" class="primary lm-ok">Done</button>` : ""}</div></div>`, 320);
+  el.style.left = Math.min(innerWidth - 330, ev.clientX) + "px";
+  el.style.top = Math.min(innerHeight - el.offsetHeight - 8, ev.clientY + 10) + "px";
+  if (!P.can) { for (const i of el.querySelectorAll("select, input, button")) i.disabled = true; return; }
+  let color = d.color || "";
+  el.querySelector(".lm-c").oninput = (e) => { color = e.target.value; };
+  el.querySelector(".lm-cx").onclick = () => { color = ""; el.querySelector(".lm-c").value = "#7d8b9c"; };
+  el.querySelector(".lm-d").onchange = (e) => { if (!e.target.checked && el.querySelector(".lm-s").value === "solid") el.querySelector(".lm-s").value = "dashed"; };
   el.querySelector(".lm-ok").onclick = () => {
     before();
     d.type = el.querySelector(".lm-t").value;
     d.lag = Math.round(+el.querySelector(".lm-l").value || 0);
+    if (el.querySelector(".lm-d").checked) delete d.drive; else d.drive = false;
+    const st = el.querySelector(".lm-s").value;
+    if (st === "solid" && d.drive !== false) delete d.style; else d.style = st;
+    if (color) d.color = color; else delete d.color;
     closePop();
     if (checkLoop()) changed();
   };
@@ -794,68 +886,159 @@ function linkMenu(lk, ev) {
 
 function lastModal() { const all = document.querySelectorAll(".t-modal-back"); return all[all.length - 1]; }
 
-async function activity(id) {
-  const t = taskOf(id), r = rowOf(id);
-  if (!t) return;
-  const opts = tasks().filter((x) => x.id !== id).map((x, k) => `<option value="${esc(x.id)}">${esc(rowOf(x.id).wbs + " " + (x.name || ""))}</option>`).join("");
-  const depRow = (d) => `<div class="eg-row pg-dep"><select class="dp-f">${opts.replace(`value="${esc(d.from)}"`, `value="${esc(d.from)}" selected`)}</select>`
-    + `<select class="dp-t">${PC.TYPES.map((x) => `<option${x === d.type ? " selected" : ""}>${x}</option>`).join("")}</select>`
-    + `<input class="dp-l" type="number" step="1" value="${d.lag || 0}" title="Lag in working days (minus: a lead)"><button type="button" class="ghost dp-x" title="Remove">&times;</button></div>`;
+/* ---------------------------------------------- the Properties side panel */
+
+function activity(id) { if (!P.sel.has(id)) { P.sel = new Set([id]); P.cur = id; paintGrid(); paintChart(); } openProps(); }
+function openProps() {
+  let el = $("#pg-props");
+  if (!el) {
+    el = document.createElement("aside");
+    el.id = "pg-props";
+    el.className = "pg-props";
+    $("#pg").appendChild(el);
+    el.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { ev.stopPropagation(); closeProps(); } });
+  }
+  el.hidden = false;
+  document.body.classList.add("pg-props-on");
+  paintProps();
+}
+function closeProps() { const el = $("#pg-props"); if (el) el.hidden = true; document.body.classList.remove("pg-props-on"); }
+const propsOpen = () => { const el = $("#pg-props"); return el && !el.hidden; };
+
+function paintProps() {
+  const el = $("#pg-props");
+  if (!el || el.hidden) return;
+  const ids = P.rows.filter((r) => P.sel.has(r.id)).map((r) => r.id);
+  const focus = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.f || document.activeElement.className : "";
+  const ro = !P.can ? " disabled" : "";
+  const catOpts = (cur, keep) => (keep ? `<option value="__keep">(keep)</option>` : "") + `<option value=""${cur === "" ? " selected" : ""}>None</option>`
+    + P.d.categories.map((c) => `<option value="${esc(c.id)}"${c.id === cur ? " selected" : ""}>${esc(c.name)}</option>`).join("");
+  const head = `<div class="pp-h"><b>${ids.length > 1 ? ids.length + " rows" : "Properties"}</b><span class="spacer"></span><button type="button" class="ghost pp-x" title="Close (Esc)">&times;</button></div>`;
+  if (!ids.length) { el.innerHTML = head + `<p class="muted pp-pad">Select a row (click, or Ctrl / Shift + click for several).</p>`; wireProps(el, ids); return; }
+  if (ids.length > 1) {
+    el.innerHTML = head + `<div class="pp-pad"><p class="muted">Set what should change for all ${ids.length}; leave the rest.</p>
+      <label>Category<select data-f="b-cat"${ro}>${catOpts("__keep", true)}</select></label>
+      <label>Colour <span class="pg-cl"><input type="color" data-f="b-color" value="#4a78a8"${ro}><label class="row-check"><input type="checkbox" data-f="b-color-on"${ro}> set</label><button type="button" class="ghost" data-f="b-color-clear"${ro}>Clear colour</button></span></label>
+      <label>Responsible<input data-f="b-party" placeholder="(keep)"${ro}></label>
+      <div class="pg-2"><label>% done<input data-f="b-pct" type="number" min="0" max="100" placeholder="(keep)"${ro}></label>
+      <label>Duration<input data-f="b-dur" placeholder="(keep)"${ro}></label></div>
+      <label>Move the start by working days (minus: earlier)<input data-f="b-shift" type="number" step="1" placeholder="0"${ro}></label>
+      <label class="row-check"><input type="checkbox" data-f="b-bold"${ro}> Bold names</label>
+      <div class="row end"><button type="button" class="primary" data-f="b-apply"${ro}>Apply to ${ids.length} rows</button></div></div>`;
+    wireProps(el, ids);
+    return;
+  }
+  const id = ids[0], t = taskOf(id), r = rowOf(id);
   const L = t.links || {};
   const lt = L.task ? P.linked.get(L.task.list + ":" + L.task.id) : null;
-  const p = modal(`${r.wbs}  ${r.name || "Task"}`, `
-    <label>Name<input name="name" value="${esc(t.name)}" maxlength="300"></label>
-    <div class="pg-2">
-      <label>Kind<select name="kind"${r.summary ? " disabled" : ""}><option value="task">Task</option><option value="milestone"${t.kind === "milestone" ? " selected" : ""}>Milestone</option></select></label>
-      <label>Duration (working days)<input name="dur" value="${r.summary ? r.dur : t.dur || 0}"${r.summary ? " disabled" : ""}></label>
-    </div>
-    <div class="pg-2">
-      <label>Start no earlier than<input name="start" type="date" value="${esc(t.start || "")}"${r.summary ? " disabled" : ""}></label>
-      <label>% done<input name="pct" type="number" min="0" max="100" value="${r.pct}"${r.summary ? " disabled" : ""}></label>
-    </div>
-    <p class="muted pg-dates">Scheduled ${fmtLong(r.start)}${r.milestone ? "" : " - " + fmtLong(r.finish)} · total float ${r.tf} d${r.critical ? " · on the critical path" : ""}</p>
-    <label>Responsible<input name="party" value="${esc(t.party || "")}" placeholder="e.g. Architect, Contractor, BD"></label>
-    <label>Notes<textarea name="notes" rows="2">${esc(t.notes || "")}</textarea></label>
-    <h4>Predecessors</h4><div class="eg pg-deps">${t.deps.map(depRow).join("")}</div>
-    <button type="button" class="ghost dp-add">+ Predecessor</button>
+  const opts = tasks().filter((x) => x.id !== id).map((x) => `<option value="${esc(x.id)}">${esc(rowOf(x.id).wbs + " " + (x.name || ""))}</option>`).join("");
+  const depRow = (d, k) => `<div class="pp-dep" data-k="${k}"><select data-f="dp-f"${ro}>${opts.replace(`value="${esc(d.from)}"`, `value="${esc(d.from)}" selected`)}</select>`
+    + `<select data-f="dp-t"${ro}>${PC.TYPES.map((x) => `<option${x === (d.type || "FS") ? " selected" : ""}>${x}</option>`).join("")}</select>`
+    + `<input data-f="dp-l" type="number" step="1" value="${d.lag || 0}" title="Lag, working days"${ro}>`
+    + `<select data-f="dp-s" title="Line"${ro}>${["solid", "dashed", "dotted"].map((x) => `<option${x === (d.style || (d.drive === false ? "dashed" : "solid")) ? " selected" : ""}>${x}</option>`).join("")}</select>`
+    + `<label class="row-check" title="Drives the dates (off: related only)"><input type="checkbox" data-f="dp-d"${d.drive === false ? "" : " checked"}${ro}> drives</label>`
+    + `<button type="button" class="ghost" data-f="dp-x" title="Remove"${ro}>&times;</button></div>`;
+  const dis = (c) => (r.summary && c ? " disabled" : ro);
+  el.innerHTML = head + `<div class="pp-pad">
+    <label>Name<input data-f="name" value="${esc(t.name)}" maxlength="300"${ro}></label>
+    <div class="pg-2"><label>Kind<select data-f="kind"${dis(1)}><option value="task">Task</option><option value="milestone"${t.kind === "milestone" ? " selected" : ""}>Milestone</option></select></label>
+      <label>Category<select data-f="cat"${ro}>${catOpts(t.cat || "")}</select></label></div>
+    <div class="pg-2"><label>Start (no earlier than)<input data-f="start" type="date" value="${esc(t.start || "")}"${dis(1)}></label>
+      <label>Duration<input data-f="dur" value="${r.milestone ? 0 : r.dur}"${dis(1)}></label></div>
+    <div class="pg-2"><label>Finish<input data-f="finish" type="date" value="${esc(r.finish)}"${dis(1)}></label>
+      <label>% done<input data-f="pct" type="number" min="0" max="100" value="${r.pct}"${dis(1)}></label></div>
+    <p class="muted pg-dates">${fmtLong(r.start)}${r.milestone ? "" : " - " + fmtLong(r.finish)} · total float ${r.tf} d · free float ${r.ff} d${r.critical ? ` · <b class="pg-crit-t">critical</b>` : ""}</p>
+    <div class="pg-2"><label>Responsible<input data-f="party" value="${esc(t.party || "")}" placeholder="e.g. Architect, BD"${ro}></label>
+      <label>Bar colour <span class="pg-cl"><input type="color" data-f="color" value="${esc(t.color || fillOf(t) || "#4a78a8")}"${ro}><button type="button" class="ghost" data-f="color-x" title="The category's colour"${ro}>&times;</button></span></label></div>
+    <div class="pp-chk"><label class="row-check"><input type="checkbox" data-f="bold"${t.style && t.style.bold ? " checked" : ""}${ro}> Bold</label><label class="row-check"><input type="checkbox" data-f="italic"${t.style && t.style.italic ? " checked" : ""}${ro}> Italic</label></div>
+    <label>Notes<textarea data-f="notes" rows="2"${ro}>${esc(t.notes || "")}</textarea></label>
+    <h4>Predecessors</h4><div class="pp-deps">${t.deps.map(depRow).join("") || `<p class="muted">None - type them in the Predecessors column, or drag between bars.</p>`}</div>
+    ${P.can ? `<button type="button" class="ghost" data-f="dp-add">+ Predecessor</button>` : ""}
     <h4>Linked</h4>
     <div class="pg-links">
       <div class="pg-lrow"><b>Task</b> ${L.task ? `<a href="tasks.html?list=${encodeURIComponent(L.task.list)}&task=${encodeURIComponent(L.task.id)}" target="_blank">${esc(L.task.title)}</a> <span class="muted">${lt ? (lt.done ? "done" : (lt.percent || 0) + "%") + (lt.due ? " · due " + fmt(lt.due) : "") : ""}</span>
         <button type="button" class="ghost lk-sync" title="Set the task's start and due to this activity's dates">Update its dates</button>
-        <label class="row-check"><input type="checkbox" name="use_pct"${L.use_pct ? " checked" : ""}> take its % done</label>
+        <label class="row-check"><input type="checkbox" data-f="use_pct"${L.use_pct ? " checked" : ""}${ro}> take its % done</label>
         <button type="button" class="ghost lk-un">Unlink</button>`
         : `<button type="button" class="ghost lk-new">Create a task</button><button type="button" class="ghost lk-old">Link an existing task</button>`}</div>
       <div class="pg-lrow"><b>Chat</b> ${L.room ? `<a href="messenger.html?room=${encodeURIComponent(L.room.id)}" target="_blank">${esc(L.room.title)}</a> <button type="button" class="ghost lk-chat">Post again</button>` : `<button type="button" class="ghost lk-chat">Discuss in chat</button>`}</div>
-    </div>`, P.can ? "Save" : "Close");
-  const back = lastModal();
-  const form = back.querySelector("form");
-  if (!P.can) for (const i of form.querySelectorAll("input, select, textarea, .dp-add, .dp-x, .pg-links button")) i.disabled = true;
-  const box = form.querySelector(".pg-deps");
-  form.querySelector(".dp-add").onclick = () => { box.insertAdjacentHTML("beforeend", depRow({ from: "", type: "FS", lag: 0 })); };
-  box.addEventListener("click", (e) => { const x = e.target.closest(".dp-x"); if (x) x.closest(".pg-dep").remove(); });
-  const lk = (sel, fn) => { const b = form.querySelector(sel); if (b) b.onclick = async () => { b.disabled = true; try { await fn(); } finally { b.disabled = false; } }; };
-  lk(".lk-new", async () => { if (await createTask(t)) { back.remove(); activity(id); } });
-  lk(".lk-old", async () => { if (await linkTask(t, form.querySelector(".lk-old"))) { back.remove(); activity(id); } });
-  lk(".lk-un", async () => { before(); delete t.links.task; changed(); back.remove(); activity(id); });
-  lk(".lk-sync", async () => syncTask(t));
-  lk(".lk-chat", async () => { if (await discuss(t)) { back.remove(); activity(id); } });
-  const f = await p;
-  if (!f || !P.can) return;
-  before();
-  t.name = f.name.value.trim().slice(0, 300);
-  if (!r.summary) {
-    const n = PC.parseDur(f.dur.value, P.cal.perWeek);
-    t.kind = f.kind.value === "milestone" || n === 0 ? "milestone" : "task";
-    if (n !== null) t.dur = t.kind === "milestone" ? 0 : Math.max(1, n);
-    t.start = f.start.value || "";
-    t.pct = Math.max(0, Math.min(100, parseInt(f.pct.value, 10) || 0));
+    </div></div>`;
+  if (!P.can) for (const b of el.querySelectorAll(".pg-links button")) b.disabled = true;
+  wireProps(el, ids);
+  if (focus) { const f = el.querySelector(`[data-f="${focus}"]`); if (f) f.focus(); }
+}
+
+function wireProps(el, ids) {
+  el.querySelector(".pp-x").onclick = closeProps;
+  if (!P.can) return;
+  const q = (f) => el.querySelector(`[data-f="${f}"]`);
+  if (ids.length > 1) {
+    let colour = null;
+    q("b-color").oninput = () => { q("b-color-on").checked = true; };
+    q("b-color-clear").onclick = () => { colour = "clear"; q("b-color-on").checked = false; toast("The colour will be cleared - press Apply"); };
+    q("b-apply").onclick = () => {
+      before();
+      const cat = q("b-cat").value, party = q("b-party").value.trim(), pct = q("b-pct").value, dur = q("b-dur").value.trim();
+      const shift = Math.round(+q("b-shift").value || 0);
+      for (const id of ids) {
+        const t = taskOf(id), r = rowOf(id);
+        if (cat !== "__keep") { if (cat) t.cat = cat; else delete t.cat; }
+        if (q("b-color-on").checked) t.color = q("b-color").value; else if (colour === "clear") delete t.color;
+        if (party) t.party = party.slice(0, 120);
+        if (pct !== "" && !r.summary) t.pct = Math.max(0, Math.min(100, parseInt(pct, 10) || 0));
+        if (dur && !r.summary) { const n = PC.parseDur(dur, P.cal.perWeek); if (n !== null) { t.dur = n; t.kind = n === 0 ? "milestone" : "task"; } }
+        if (shift && !r.summary) t.start = P.cal.isoAt(P.cal.ordOf(r.start) + shift);
+        if (q("b-bold").checked) t.style = Object.assign({}, t.style, { bold: true });
+      }
+      if (checkLoop()) changed();
+      toast(`${ids.length} rows changed`);
+    };
+    return;
   }
-  t.party = f.party.value.trim().slice(0, 120);
-  t.notes = f.notes.value.trim().slice(0, 2000);
-  t.deps = [...box.querySelectorAll(".pg-dep")].map((x) => ({ from: x.querySelector(".dp-f").value, type: x.querySelector(".dp-t").value, lag: Math.round(+x.querySelector(".dp-l").value || 0) }))
-    .filter((d, k, all) => d.from && d.from !== id && all.findIndex((y) => y.from === d.from) === k);
-  if (t.links.task) t.links.use_pct = !!(f.use_pct && f.use_pct.checked);
-  if (checkLoop()) changed();
+  const id = ids[0], t = taskOf(id);
+  const set = (fn) => { before(); fn(); if (checkLoop()) changed(); };
+  const on = (f, ev, fn) => { const x = q(f); if (x) x.addEventListener(ev, fn); };
+  on("name", "change", (e) => set(() => { t.name = e.target.value.trim().slice(0, 300); }));
+  on("kind", "change", (e) => set(() => { t.kind = e.target.value; if (t.kind === "milestone") t.dur = 0; else if (!t.dur) t.dur = 1; }));
+  on("cat", "change", (e) => set(() => { if (e.target.value) t.cat = e.target.value; else delete t.cat; }));
+  on("start", "change", (e) => { if (apply(id, "start", e.target.value)) changed(); });
+  on("dur", "change", (e) => { if (apply(id, "dur", e.target.value)) changed(); else paintProps(); });
+  on("finish", "change", (e) => { if (apply(id, "finish", e.target.value)) changed(); else paintProps(); });
+  on("pct", "change", (e) => { if (apply(id, "pct", e.target.value)) changed(); else paintProps(); });
+  on("party", "change", (e) => set(() => { t.party = e.target.value.trim().slice(0, 120); }));
+  on("notes", "change", (e) => set(() => { t.notes = e.target.value.trim().slice(0, 2000); }));
+  on("color", "change", (e) => set(() => { t.color = e.target.value; }));
+  on("color-x", "click", () => set(() => { delete t.color; }));
+  on("bold", "change", (e) => set(() => { t.style = Object.assign({}, t.style, { bold: e.target.checked }); }));
+  on("italic", "change", (e) => set(() => { t.style = Object.assign({}, t.style, { italic: e.target.checked }); }));
+  on("use_pct", "change", (e) => set(() => { t.links.use_pct = e.target.checked; }));
+  on("dp-add", "click", () => {
+    const other = tasks().find((x) => x.id !== id && !t.deps.some((d) => d.from === x.id));
+    if (!other) return;
+    set(() => { t.deps.push({ from: other.id, type: "FS", lag: 0 }); });
+  });
+  const box = el.querySelector(".pp-deps");
+  const readDeps = () => [...box.querySelectorAll(".pp-dep")].map((x) => {
+    const old = t.deps[+x.dataset.k] || {};
+    const d = Object.assign({}, old, { from: x.querySelector('[data-f="dp-f"]').value, type: x.querySelector('[data-f="dp-t"]').value, lag: Math.round(+x.querySelector('[data-f="dp-l"]').value || 0) });
+    const st = x.querySelector('[data-f="dp-s"]').value;
+    if (x.querySelector('[data-f="dp-d"]').checked) delete d.drive; else d.drive = false;
+    if (st === "solid" && d.drive !== false) delete d.style; else d.style = st;
+    return d;
+  }).filter((d, k, all) => d.from && d.from !== id && all.findIndex((y) => y.from === d.from) === k);
+  box.addEventListener("change", () => set(() => { t.deps = readDeps(); }));
+  box.addEventListener("click", (e) => {
+    const x = e.target.closest('[data-f="dp-x"]');
+    if (!x) return;
+    x.closest(".pp-dep").remove();
+    set(() => { t.deps = readDeps(); });
+  });
+  const lk = (sel, fn) => { const b = el.querySelector(sel); if (b) b.onclick = async () => { b.disabled = true; try { await fn(); } finally { b.disabled = false; paintProps(); } }; };
+  lk(".lk-new", async () => { await createTask(t); });
+  lk(".lk-old", async () => { await linkTask(t, el.querySelector(".lk-old")); });
+  lk(".lk-un", async () => { before(); delete t.links.task; changed(); });
+  lk(".lk-sync", async () => syncTask(t));
+  lk(".lk-chat", async () => { await discuss(t); });
 }
 
 async function taskLists() {
@@ -1034,7 +1217,10 @@ function viewMenu(anchor) {
     <label class="row-check"><input type="checkbox" data-v="labels"${P.view.labels ? " checked" : ""}> Labels beside the bars</label>
     <label class="row-check"><input type="checkbox" data-v="progress"${P.view.progress ? " checked" : ""}> Progress line (needs a status date)</label>
     <label class="row-check"><input type="checkbox" data-v="critOnly"${P.view.critOnly ? " checked" : ""}> Only the critical tasks</label>
-    <div class="row"><button type="button" class="ghost" data-all="1">Expand all</button><button type="button" class="ghost" data-all="0">Collapse all</button></div></div>`, 250);
+    <h5>Outline</h5>
+    <label class="pg-lvl">Show to level <select data-lvl="1"><option value="0">All</option>${[1, 2, 3, 4, 5].map((n) => `<option value="${n}"${+P.view.level === n ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+    <div class="row"><button type="button" class="ghost" data-all="1">Expand all</button><button type="button" class="ghost" data-all="0">Collapse all</button></div>
+    <div class="row"><button type="button" class="ghost" data-fmt="1">Format ...</button>${P.can ? `<button type="button" class="ghost" data-cats="1">Categories ...</button>` : ""}</div></div>`, 260);
   el.addEventListener("change", (ev) => {
     const i = ev.target;
     if (i.dataset.col) {
@@ -1042,10 +1228,14 @@ function viewMenu(anchor) {
       const want = Object.keys(COLS).filter((x) => (x === k ? i.checked : P.d.columns.includes(x)));
       if (P.can) { before(); P.d.columns = want; changed(); } else { P.d.columns = want; recalc(); render(); }
     } else if (i.dataset.v) { P.view[i.dataset.v] = i.checked; saveView(); recalc(); render(); }
+    else if (i.dataset.lvl) { P.view.level = +i.value; saveView(); recalc(); render(); }
   });
   el.addEventListener("click", (ev) => {
+    if (ev.target.closest("[data-fmt]")) { closePop(); return formatDlg(); }
+    if (ev.target.closest("[data-cats]")) { closePop(); return categoriesDlg(); }
     const b = ev.target.closest("[data-all]");
     if (!b) return;
+    if (b.dataset.all === "1") P.view.level = 0;
     P.view.collapsed = b.dataset.all === "1" ? [] : P.sched.rows.filter((r) => r.summary).map((r) => r.id);
     saveView(); recalc(); render();
   });
@@ -1053,12 +1243,13 @@ function viewMenu(anchor) {
 
 function setupMenu(anchor) {
   const el = pop(anchor, `<div class="po-row" data-s="cal">Working calendar and holidays ...</div><div class="po-row" data-s="cover">Title block and remarks (for the PDF) ...</div>`
+    + `<div class="po-row" data-s="cats">Categories and colours ...</div><div class="po-row" data-s="fmt">Format (dates, rows, bars) ...</div>`
     + `<div class="po-row" data-s="tpl">Start from the architectural template ...</div><div class="po-row" data-s="hist">Earlier versions ...</div>`, 280);
   el.addEventListener("click", (ev) => {
     const r = ev.target.closest("[data-s]");
     if (!r) return;
     closePop();
-    ({ cal: calendarDlg, cover: coverDlg, tpl: template, hist: historyDlg })[r.dataset.s]();
+    ({ cal: calendarDlg, cover: coverDlg, tpl: template, hist: historyDlg, cats: categoriesDlg, fmt: formatDlg })[r.dataset.s]();
   });
 }
 async function calendarDlg() {
@@ -1129,6 +1320,11 @@ async function template() {
   before();
   const list = T.map(([lv, name, dur, , party], k) => ({ id: uid(), name, level: lv, kind: dur === 0 ? "milestone" : "task", start: k === 1 ? mon : "", dur: dur === undefined ? 0 : dur, pct: 0, party: party || "", notes: "", deps: [], links: {} }));
   T.forEach((x, k) => { if (x[3]) { const p = PC.parseDeps(x[3], list, list[k].id, 5); if (!p.error) list[k].deps = p.deps; } });
+  // the categories, by phase
+  const phase = { "Project inception": "des", Design: "des", "Statutory submissions": "sta", Tender: "ten", Construction: "con", Completion: "sta" };
+  let cur = "";
+  list.forEach((t) => { if (t.level === 0) cur = phase[t.name] || cur; if (cur) t.cat = cur; if (t.kind === "milestone" && /Client|award|Handover/i.test(t.name)) t.cat = "cli"; });
+  if (!P.d.categories.length) P.d.categories = DEFAULT_CATS.map((c) => Object.assign({}, c));
   P.d.tasks = list;
   if (!P.d.cover.title) P.d.cover.title = "Indicative Project Programme";
   P.view.collapsed = [];
@@ -1141,12 +1337,13 @@ async function template() {
 
 function exportMenu(anchor) {
   const el = pop(anchor, `<div class="po-row" data-x="pdf"><b>PDF for the client ...</b><br><small class="muted">A3 / A4, title block, legend, remarks</small></div>`
-    + `<div class="po-row" data-x="csv"><b>CSV</b><br><small class="muted">Excel; MS Project can import it too</small></div>`, 250);
+    + `<div class="po-row" data-x="xml"><b>MS Project XML</b><br><small class="muted">opens in MS Project (File > Open)</small></div>`
+    + `<div class="po-row" data-x="csv"><b>CSV</b><br><small class="muted">for Excel</small></div>`, 250);
   el.addEventListener("click", (ev) => {
     const r = ev.target.closest("[data-x]");
     if (!r) return;
     closePop();
-    if (r.dataset.x === "csv") downloadCsv(); else pdfDlg();
+    if (r.dataset.x === "csv") downloadCsv(); else if (r.dataset.x === "xml") exportXml(); else pdfDlg();
   });
 }
 function fileName(ext) {
@@ -1179,6 +1376,9 @@ async function pdfDlg() {
     <label class="row-check"><input type="checkbox" name="prog" checked> Progress (% done on the bars)</label>
     <label class="row-check"><input type="checkbox" name="status"${c.status_date ? " checked" : ""}> Status date line${c.status_date ? " (" + fmtLong(c.status_date) + ")" : " - set it in Set up > Title block"}</label>
     <label class="row-check"><input type="checkbox" name="labels"> The responsible party beside the bars</label>
+    <div class="pg-2"><label>Pages wide<select name="wide"><option value="1">1 (all on one page width)</option><option value="auto">Auto (about 4 months a page)</option>${[2, 3, 4, 5, 6].map((n) => `<option value="${n}">${n}</option>`).join("")}</select></label>
+      <label class="row-check pg-rep"><input type="checkbox" name="rep" checked> Repeat the ID and task name on the pages across</label></div>
+    <label class="row-check"><input type="checkbox" name="solid"${P.d.format.solidred ? " checked" : ""}> Critical bars solid red (otherwise their colour, outlined red)</label>
     <p class="muted">Title: <b>${esc(c.title || "Indicative Project Programme")}</b>${c.rev ? " · Rev " + esc(c.rev) : ""} - change it in Set up > Title block. The columns and the rows shown (collapsed summaries stay collapsed) are printed as on the page.</p>`, "Make PDF");
   if (!f) return;
   const b = P.d.baselines.find((x) => x.id === f.base.value) || null;
@@ -1189,7 +1389,7 @@ async function pdfDlg() {
     const cells = {};
     for (const k of P.d.columns) if (k !== "name") cells[k] = k === "bstart" || k === "bfinish" || k === "var" ? (v ? (k === "var" ? (v.finish > 0 ? "+" : "") + v.finish + " d" : fmt(k === "bstart" ? v.bstart : v.bfinish)) : "") : cell(r, t, k);
     return { name: r.name, level: r.level, summary: r.summary, milestone: r.milestone, ms_end: !!r.ms_end, critical: r.critical, start: r.start, finish: r.finish, pct: r.pct,
-      bstart: v ? v.bstart : "", bfinish: v ? v.bfinish : "", cells, label: f.labels.checked ? t.party || "" : "" };
+      bstart: v ? v.bstart : "", bfinish: v ? v.bfinish : "", cells, label: f.labels.checked ? t.party || "" : "", fill: r.summary ? "" : fillOf(t) };
   });
   const links = [];
   for (const t of tasks()) {
@@ -1198,15 +1398,18 @@ async function pdfDlg() {
     for (const d of t.deps) {
       const fi = at.get(d.from);
       if (fi === undefined) continue;
-      links.push({ from: fi, to: ti, type: d.type || "FS", critical: P.rows[fi].critical && P.rows[ti].critical && !P.rows[fi].summary && !P.rows[ti].summary });
+      links.push({ from: fi, to: ti, type: d.type || "FS", color: d.color || "", style: d.style || "", drive: d.drive !== false,
+        critical: d.drive !== false && P.rows[fi].critical && P.rows[ti].critical && !P.rows[fi].summary && !P.rows[ti].summary });
     }
   }
   const spec = {
     name: fileName("pdf"), paper: f.paper.value, orient: f.orient.value, range: { from: f.from.value, to: f.to.value },
     start: P.sched.start, finish: P.sched.finish,
     cover: Object.assign({ title: "Indicative Project Programme", project: P.projectName || project() || "" }, c, { status_date: f.status.checked ? c.status_date || "" : "" }),
-    columns: P.d.columns.map((k) => ({ key: k, label: COLS[k].short || COLS[k].label, w: COLS[k].mm, align: COLS[k].align || "left" })),
+    columns: P.d.columns.map((k) => ({ key: k, label: COLS[k].short || COLS[k].label, w: Math.round(COLS[k].mm * colW(k) / COLS[k].w), align: COLS[k].align || "left" })),
     rows, links, remarks: P.d.remarks,
+    pages_wide: f.wide.value === "auto" ? "auto" : +f.wide.value, repeat_names: f.rep.checked, solid_red: f.solid.checked,
+    categories: P.d.categories.filter((c) => P.rows.some((r) => !r.summary && tasks()[r.i].cat === c.id)).map((c) => ({ name: c.name, color: c.color })),
     show: { links: f.links.checked, baseline: !!b, progress: f.prog.checked, status: f.status.checked, critical: f.crit.checked },
   };
   toast("Making the PDF ...");
@@ -1226,6 +1429,7 @@ function hdrs() {
 }
 
 async function importCsv(file) {
+  if (/\.xml$/i.test(file.name) || /^\s*(<\?xml|<Project)/.test(await file.slice(0, 200).text())) return importXml(file);
   const text = await file.text();
   const r = PC.fromCsv(text, P.cal.perWeek, uid);
   if (r.error) return toast(r.error, true);
@@ -1243,6 +1447,361 @@ async function importCsv(file) {
   P.d.tasks = how === "add" ? tasks().concat(r.tasks) : r.tasks;
   changed();
   toast(`${r.tasks.length} tasks imported${r.warnings && r.warnings.length ? " - " + r.warnings.length + " predecessors not read" : ""}`);
+}
+
+/* ------------------------------------------------- the category legend */
+
+function paintLegend() {
+  const el = $("#pg-legend");
+  if (!el) return;
+  const used = new Set(tasks().map((t) => t.cat).filter(Boolean));
+  const cats = P.d.categories.filter((c) => used.has(c.id) || (P.view.cats || []).includes(c.id));
+  const on = new Set(P.view.cats || []);
+  el.hidden = !tasks().length;
+  el.innerHTML = `<span class="muted">Categories</span>` + cats.map((c) => `<button type="button" class="pg-chip${on.has(c.id) ? " on" : ""}" data-cat="${esc(c.id)}" title="Show only this category (click again to show all)"><i style="background:${esc(c.color)}"></i>${esc(c.name)}</button>`).join("")
+    + (on.size ? `<button type="button" class="ghost pg-chip-x" data-cat="">Show all</button>` : "")
+    + (P.can ? `<button type="button" class="ghost pg-chip-e" title="Names and colours of the categories">Edit ...</button>` : "")
+    + (cats.length ? "" : `<span class="muted"> - none yet: right-click rows > Category</span>`);
+}
+
+async function categoriesDlg() {
+  const rowsHtml = (list) => list.map((c, k) => `<div class="eg-row pg-catr" data-k="${k}"><input type="color" value="${esc(c.color)}" class="cc-c"><input class="cc-n" value="${esc(c.name)}" maxlength="40"><button type="button" class="ghost cc-x" title="Remove">&times;</button></div>`).join("");
+  const list = P.d.categories.map((c) => Object.assign({}, c));
+  const p = modal("Categories", `<p class="muted">Each task can have a category: its bars take the colour, and the legend can show one category at a time. A task's own colour wins over its category's.</p>
+    <div class="eg pg-cats">${rowsHtml(list)}</div><button type="button" class="ghost cc-add">+ Category</button>`, P.can ? "Save" : "Close");
+  const m = lastModal();
+  const box = m.querySelector(".pg-cats");
+  m.querySelector(".cc-add").onclick = () => box.insertAdjacentHTML("beforeend", `<div class="eg-row pg-catr" data-k="new"><input type="color" value="${PALETTE[box.children.length % PALETTE.length]}" class="cc-c"><input class="cc-n" value="" placeholder="Name" maxlength="40"><button type="button" class="ghost cc-x">&times;</button></div>`);
+  box.addEventListener("click", (e) => { const x = e.target.closest(".cc-x"); if (x) x.closest(".pg-catr").remove(); });
+  const f = await p;
+  if (!f || !P.can) return;
+  before();
+  P.d.categories = [...box.querySelectorAll(".pg-catr")].map((r) => {
+    const old = list[+r.dataset.k];
+    return { id: old ? old.id : "c" + uid().slice(0, 6), name: r.querySelector(".cc-n").value.trim() || "Category", color: r.querySelector(".cc-c").value };
+  });
+  const ids = new Set(P.d.categories.map((c) => c.id));
+  for (const t of tasks()) if (t.cat && !ids.has(t.cat)) delete t.cat;
+  changed();
+}
+
+async function formatDlg() {
+  const F = P.d.format;
+  const sel = (name, opts) => `<select name="${name}">${opts.map(([v, l]) => `<option value="${v}"${String(F[name]) === String(v) ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  const chk = (name, l) => `<label class="row-check"><input type="checkbox" name="${name}"${F[name] ? " checked" : ""}> ${esc(l)}</label>`;
+  const f = await modal("Format", `
+    <div class="pg-2"><label>Dates${sel("date", [["d-mon-yy", "1 Mar 27"], ["dd/mm/yyyy", "01/03/2027"], ["wd d/m/yy", "Mon 1/3/27"]])}</label>
+      <label>Durations in${sel("unit", [["d", "days (10 d)"], ["w", "weeks (2 w)"]])}</label></div>
+    <div class="pg-2"><label>Rows${sel("rowh", [["compact", "Compact"], ["normal", "Normal"], ["roomy", "Roomy"]])}</label>
+      <label>Text size${sel("text", [["11.5", "Small"], ["12.5", "Normal"], ["14", "Large"]])}</label></div>
+    <div class="pg-2"><label>Beside the bars${sel("label", [["party", "Responsible"], ["name", "Task name"], ["dates", "Start - finish"], ["pct", "% done"], ["none", "Nothing"]])}</label>
+      <label>Summary bars${sel("summary", [["bracket", "Bracket (MS Project)"], ["bar", "Solid bar"]])}</label></div>
+    <label>Gridlines${sel("grid", [["unit", "At every scale step (week / month)"], ["month", "Monthly (years on month or quarter scales)"]])}</label>
+    ${chk("zebra", "Banded rows (zebra)")}${chk("shade", "Shade weekends and holidays")}${chk("today", "Today line")}
+    ${chk("msdate", "Milestone dates beside the diamonds")}${chk("boldsum", "Summary rows in bold")}${chk("weekno", "Week numbers on the week scale (W12)")}
+    ${chk("solidred", "Critical bars solid red (otherwise their own colour, outlined red)")}
+    <p class="muted">The format is the programme's: everyone sees it, and the PDF follows it.</p>`, P.can ? "Save" : "Apply here");
+  if (!f) return;
+  const nf = {};
+  for (const k of ["date", "unit", "rowh", "label", "summary", "grid"]) nf[k] = f[k].value;
+  nf.text = +f.text.value;
+  for (const k of ["zebra", "shade", "today", "msdate", "boldsum", "weekno", "solidred"]) nf[k] = f[k].checked;
+  if (P.can) { before(); P.d.format = Object.assign({}, FORMAT, nf); changed(); } else { P.d.format = Object.assign({}, FORMAT, nf); recalc(); render(); }
+}
+
+/* ----------------------------------------------- right-click, clipboard */
+
+function ctxMenu(ev, id) {
+  ev.preventDefault();
+  if (id && !P.sel.has(id)) select(id);
+  const n = P.sel.size;
+  const one = n === 1 ? rowOf([...P.sel][0]) : null;
+  const sums = [...P.sel].map(rowOf).filter((r) => r && r.summary);
+  const item = (k, label, key = "", dis = false) => `<div class="po-row pg-cm${dis ? " off" : ""}" data-cm="${k}"><span>${label}</span><small class="muted">${key}</small></div>`;
+  const sep = `<div class="pg-cm-sep"></div>`;
+  const ed = P.can;
+  let h = "";
+  if (n) h += item("props", n > 1 ? `Properties of ${n} rows ...` : "Properties ...", "Enter");
+  if (ed) {
+    h += sep + item("above", "Insert task above") + item("below", "Insert task below", "Ctrl+Enter") + item("ms", "Insert milestone below");
+    if (n) h += sep + item("cut", "Cut", "Ctrl+X") + item("copy", "Copy", "Ctrl+C") + item("dup", "Duplicate", "Ctrl+D");
+    h += item("paste", P.clip ? `Paste ${P.clip.tasks.length} row${P.clip.tasks.length === 1 ? "" : "s"} below` : "Paste", "Ctrl+V", !P.clip);
+    if (n) {
+      h += sep + item("in", "Indent", "Alt+Shift+→") + item("out", "Outdent", "Alt+Shift+←") + item("up", "Move up", "Alt+↑") + item("down", "Move down", "Alt+↓");
+      h += sep + (n > 1 ? item("link", "Link in order (finish to start)") : "") + item("unlink", n > 1 ? "Unlink them" : "Remove its predecessors");
+      h += sep + item("cat", "Category ▸") + item("color", "Colour ▸");
+    }
+  } else if (n) h += item("copy", "Copy", "Ctrl+C");
+  if (sums.length) h += sep + item("fold", "Fold") + item("unfold", "Unfold");
+  if (n) {
+    h += sep + item("task", n > 1 ? `Create ${n} tasks in Tasks ...` : "Create a task in Tasks ...", "", !ed) + item("chat", "Discuss in chat ...", "", n !== 1 || !ed);
+    if (ed) h += sep + item("del", `Delete${n > 1 ? " " + n + " rows" : ""}`, "Del");
+  }
+  const el = pop(document.body, `<div class="pg-cmenu">${h}</div>`, 250);
+  el.style.left = Math.min(innerWidth - 260, ev.clientX) + "px";
+  el.style.top = Math.max(6, Math.min(innerHeight - el.offsetHeight - 6, ev.clientY)) + "px";
+  el.style.bottom = "";
+  el.addEventListener("click", (e) => {
+    const r = e.target.closest("[data-cm]");
+    if (!r || r.classList.contains("off")) return;
+    const k = r.dataset.cm;
+    if (k === "cat") return catMenu(r);
+    if (k === "color") return colorMenu(r);
+    closePop();
+    ({
+      props: openProps, above: () => insertAt("above"), below: () => add("task"), ms: () => add("milestone"),
+      cut: () => copyRows(true), copy: () => copyRows(false), dup: duplicate, paste: pasteRows,
+      in: () => indent(1), out: () => indent(-1), up: () => moveBy(-1), down: () => moveBy(1),
+      link: linkSelected, unlink: unlinkSelected, fold: () => fold(true), unfold: () => fold(false),
+      task: createTasks, chat: () => discuss(taskOf([...P.sel][0])), del,
+    })[k]();
+    void one;
+  });
+}
+function catMenu(anchor) {
+  const el = pop(anchor, `<div class="pg-cmenu">${P.d.categories.map((c) => `<div class="po-row" data-c="${esc(c.id)}"><i class="pg-dot" style="background:${esc(c.color)}"></i> ${esc(c.name)}</div>`).join("")}<div class="po-row" data-c=""><i class="pg-dot"></i> None</div><div class="po-row" data-c="__edit">Edit the categories ...</div></div>`, 220);
+  el.addEventListener("click", (e) => {
+    const r = e.target.closest("[data-c]");
+    if (!r) return;
+    closePop();
+    if (r.dataset.c === "__edit") return categoriesDlg();
+    before();
+    for (const id of P.sel) { const t = taskOf(id); if (r.dataset.c) t.cat = r.dataset.c; else delete t.cat; }
+    changed();
+  });
+}
+function colorMenu(anchor) {
+  const el = pop(anchor, `<div class="pg-pal">${PALETTE.map((c) => `<button type="button" data-col="${c}" style="background:${c}" title="${c}"></button>`).join("")}</div>
+    <div class="row"><input type="color" class="pg-own" value="#4a78a8" title="Any colour"><button type="button" class="ghost" data-col="">Category's colour</button></div>`, 220);
+  const set = (c) => { closePop(); before(); for (const id of P.sel) { const t = taskOf(id); if (c) t.color = c; else delete t.color; } changed(); };
+  el.addEventListener("click", (e) => { const b = e.target.closest("[data-col]"); if (b) set(b.dataset.col); });
+  el.querySelector(".pg-own").addEventListener("change", (e) => set(e.target.value));
+}
+function fold(shut) {
+  const s = new Set(P.view.collapsed || []);
+  for (const id of P.sel) { const r = rowOf(id); if (r && r.summary) (shut ? s.add(id) : s.delete(id)); }
+  P.view.collapsed = [...s]; saveView(); recalc(); render();
+}
+function unlinkSelected() {
+  const ids = new Set(P.sel);
+  before();
+  if (ids.size === 1) { const t = taskOf([...ids][0]); t.deps = []; }
+  else for (const id of ids) { const t = taskOf(id); t.deps = t.deps.filter((d) => !ids.has(d.from)); }
+  changed();
+}
+function insertAt(where) {
+  if (!P.can) return;
+  const list = tasks();
+  const i = P.cur ? list.findIndex((t) => t.id === P.cur) : -1;
+  before();
+  const t = { id: uid(), name: "New task", level: i >= 0 ? list[i].level || 0 : 0, kind: "task", start: "", dur: 5, pct: 0, party: "", notes: "", deps: [], links: {} };
+  if (i >= 0 && list[i].cat) t.cat = list[i].cat;
+  list.splice(Math.max(0, i), 0, t);
+  P.sel = new Set([t.id]); P.cur = t.id;
+  changed();
+  setTimeout(() => editCell(t.id, "name"), 20);
+}
+/* the selected rows with their rows under them, and the links among them */
+function copyRows(cut) {
+  const list = tasks();
+  const pick = [];
+  for (const i of roots()) { const [a, b] = subtree(i); for (let k = a; k < b; k++) pick.push(list[k]); }
+  if (!pick.length) return;
+  const ids = new Set(pick.map((t) => t.id));
+  const lv0 = Math.min(...pick.map((t) => t.level || 0));
+  P.clip = { tasks: pick.map((t) => Object.assign(JSON.parse(JSON.stringify(t)), { level: (t.level || 0) - lv0, deps: t.deps.filter((d) => ids.has(d.from)).map((d) => Object.assign({}, d)), links: {} })) };
+  // for Excel: the rows as tab-separated text
+  const tsv = ["Name\tDuration\tStart\tFinish\tResponsible"].concat(pick.map((t) => { const r = rowOf(t.id); return ["  ".repeat((t.level || 0) - lv0) + t.name, r.milestone ? 0 : r.dur, r.start, r.finish, t.party || ""].join("\t"); })).join("\n");
+  try { navigator.clipboard && navigator.clipboard.writeText(tsv).catch(() => {}); } catch (e) {}
+  if (cut) {
+    if (!P.can) return;
+    before();
+    P.d.tasks = list.filter((t) => !ids.has(t.id));
+    for (const t of P.d.tasks) t.deps = t.deps.filter((d) => !ids.has(d.from));
+    P.sel.clear(); P.cur = "";
+    changed();
+    toast(`${pick.length} row${pick.length === 1 ? "" : "s"} cut - Paste puts them below the selected row`);
+  } else toast(`${pick.length} row${pick.length === 1 ? "" : "s"} copied`);
+}
+function pasteRows() {
+  if (!P.can || !P.clip) return;
+  const list = tasks();
+  const map = new Map(P.clip.tasks.map((t) => [t.id, uid()]));
+  let at = list.length, lv = 0;
+  const i = P.cur ? list.findIndex((t) => t.id === P.cur) : -1;
+  if (i >= 0) { at = subtree(i)[1]; lv = list[i].level || 0; }
+  before();
+  const block = P.clip.tasks.map((t) => Object.assign(JSON.parse(JSON.stringify(t)), { id: map.get(t.id), level: (t.level || 0) + lv, deps: t.deps.map((d) => Object.assign({}, d, { from: map.get(d.from) })) }));
+  list.splice(at, 0, ...block);
+  P.sel = new Set(block.map((t) => t.id)); P.cur = block[0].id;
+  changed();
+  toast(`${block.length} row${block.length === 1 ? "" : "s"} pasted`);
+}
+function duplicate() { const keep = P.clip; copyRows(false); const ids = [...P.sel]; const last = P.rows.filter((r) => ids.includes(r.id)).pop(); if (last) P.cur = last.id; pasteRows(); P.clip = keep || P.clip; }
+function moveBy(step) {
+  if (!P.can || !P.sel.size) return;
+  const list = tasks();
+  const rs = roots();
+  if (!rs.length) return;
+  const ids = rs.map((i) => list[i].id);
+  let to;
+  if (step < 0) {
+    const first = rs[0];
+    if (first === 0) return;
+    // before the row above (with its own summary start if it is deeper)
+    let k = first - 1;
+    const lv = list[first].level || 0;
+    while (k > 0 && (list[k].level || 0) > lv) k--;
+    to = k;
+  } else {
+    const last = rs[rs.length - 1];
+    const end = subtree(last)[1];
+    if (end >= list.length) return;
+    to = subtree(end)[1];
+  }
+  before();
+  move(ids, to);
+  changed();
+}
+async function createTasks() {
+  const ids = P.rows.filter((r) => P.sel.has(r.id) && !r.summary).map((r) => r.id);
+  if (ids.length === 1) return createTask(taskOf(ids[0])).then(paintProps);
+  if (!ids.length) return toast("Select tasks (not summaries)", true);
+  const lists = await taskLists();
+  if (!lists) return;
+  const f = await modal(`Create ${ids.length} tasks in Tasks`, `<label>Task list<select name="list">${lists.map((l) => `<option value="${esc(l.id)}">${esc(l.title)}</option>`).join("")}</select></label>
+    <p class="muted">One task for each activity, with its start and due dates and a link back. Activities linked already are left as they are.</p>`, "Create");
+  if (!f) return;
+  const out = [];
+  before();
+  for (const id of ids) {
+    const t = taskOf(id), r = rowOf(id);
+    if (t.links.task) continue;
+    const tid = uid();
+    out.push({ id: tid, title: t.name, start: r.start, due: r.finish, description: `From the programme: ${r.wbs} ${t.name}${t.party ? " (" + t.party + ")" : ""}`, links: [backLink(t)] });
+    t.links.task = { list: f.list.value, id: tid, title: t.name };
+  }
+  if (!out.length) { P.undo.pop(); return toast("They are all linked to tasks already"); }
+  try { await api("/api/tasks", { method: "POST", body: JSON.stringify({ list: f.list.value, tasks: out }) }); }
+  catch (e) { restore(P.undo.pop()); return toast("Could not make the tasks: " + e.message, true); }
+  changed();
+  toast(`${out.length} tasks made`);
+}
+
+/* ------------------------------------------------- MS Project XML */
+
+async function importXml(file) {
+  const res = await fetch("/api/programme/mspdi/import", { method: "POST", headers: hdrs(), body: await file.arrayBuffer() });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) return toast(r.detail || "Not read", true);
+  if (!r.tasks || !r.tasks.length) return toast("No tasks in the file", true);
+  let how = "replace", cal = false;
+  const f = await modal(`Import ${r.tasks.length} tasks from MS Project`, `${tasks().length ? `<label class="row-check"><input type="radio" name="how" value="replace" checked> Replace the programme</label>
+      <label class="row-check"><input type="radio" name="how" value="add"> Add them at the end</label>` : ""}
+    <label class="row-check"><input type="checkbox" name="cal"${r.calendar && r.calendar.week !== P.d.calendar.week ? " checked" : ""}> Use the file's working week (${esc(PC.WEEKS[(r.calendar || {}).week] || "")}) and its ${((r.calendar || {}).holidays || []).length + ((r.calendar || {}).off || []).length} days off</label>
+    ${r.warnings && r.warnings.length ? `<p class="muted">${esc(r.warnings.slice(0, 5).join("; "))}</p>` : ""}`, "Import");
+  if (!f) return;
+  if (tasks().length) how = [...f.querySelectorAll('input[name="how"]')].find((x) => x.checked).value;
+  cal = f.cal.checked;
+  before();
+  P.d.tasks = how === "add" ? tasks().concat(r.tasks) : r.tasks;
+  if (cal && r.calendar) P.d.calendar = Object.assign({}, P.d.calendar, { week: r.calendar.week, holidays: (P.d.calendar.holidays || []).concat(r.calendar.holidays || []), off: (P.d.calendar.off || []).concat(r.calendar.off || []) });
+  if (how === "replace" && r.name && !P.d.cover.title) P.d.cover.title = r.name;
+  changed();
+  toast(`${r.tasks.length} tasks imported from MS Project`);
+}
+async function exportXml() {
+  if (!tasks().length) return toast("No tasks yet", true);
+  const at = new Map(P.sched.rows.map((r, k) => [r.id, k]));
+  const rows = P.sched.rows.map((r) => {
+    const t = tasks()[r.i];
+    return { name: r.name, level: r.level, milestone: r.milestone, ms_end: !!r.ms_end, summary: r.summary, start: r.start, finish: r.finish, dur: r.dur,
+      pct: r.pct, notes: t.notes || "", party: t.party || "", own_start: t.start || "",
+      deps: t.deps.filter((d) => at.has(d.from)).map((d) => ({ from: at.get(d.from), type: d.type || "FS", lag: d.lag || 0, drive: d.drive !== false })) };
+  });
+  const c = calSpec();
+  const body = { name: fileName("xml"), title: P.d.cover.title || P.projectName || "Programme", start: P.sched.start, calendar: { week: c.week, holidays: c.holidays, off: c.off }, rows };
+  try {
+    const res = await fetch("/api/programme/mspdi/export", { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, hdrs()), body: JSON.stringify(body) });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+    download(await res.blob(), body.name);
+    const rel = tasks().reduce((a, t) => a + t.deps.filter((d) => d.drive === false).length, 0);
+    toast("MS Project XML made - open it in MS Project (File > Open)" + (rel ? `; ${rel} related-only link(s) left out` : ""));
+  } catch (e) { toast("Not made: " + e.message, true); }
+}
+
+/* ----------------------------------- panning, zooming, widths by dragging */
+
+function wirePanZoom() {
+  const body = $("#pg-body");
+  // the middle button pans, in both directions
+  body.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 1) return;
+    ev.preventDefault();
+    const x0 = ev.clientX, y0 = ev.clientY, l0 = body.scrollLeft, t0 = body.scrollTop;
+    body.classList.add("panning");
+    const mv = (e) => { body.scrollLeft = l0 - (e.clientX - x0); body.scrollTop = t0 - (e.clientY - y0); };
+    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); body.classList.remove("panning"); };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up);
+  });
+  body.addEventListener("mousedown", (ev) => { if (ev.button === 1) ev.preventDefault(); });      // no auto-scroll
+  body.addEventListener("auxclick", (ev) => { if (ev.button === 1) ev.preventDefault(); });
+  // Ctrl + wheel: the time, about the pointer
+  body.addEventListener("wheel", (ev) => {
+    if (!ev.ctrlKey || !ev.target.closest("#pg-cb, #pg-ch")) return;
+    ev.preventDefault();
+    zoomAbout(ev.clientX, ev.deltaY < 0 ? 1.2 : 1 / 1.2);
+  }, { passive: false });
+  // the scale: drag along it to stretch or squeeze the time
+  $("#pg-ch").addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 0) return;
+    ev.preventDefault();
+    const x0 = ev.clientX, p0 = P.ppd;
+    const box = $("#pg-cb").getBoundingClientRect();
+    const anchor = P.d0 + (ev.clientX - box.left) / P.ppd;
+    const mv = (e) => {
+      const ppd = Math.max(0.3, Math.min(60, p0 * Math.pow(1.006, e.clientX - x0)));
+      setPpd(ppd, anchor, ev.clientX);
+    };
+    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); saveView(); };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up);
+  });
+  // the column widths: drag a header's right edge
+  $("#pg-gh").addEventListener("pointerdown", (ev) => {
+    const h = ev.target.closest("[data-cr]");
+    if (!h) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const k = h.dataset.cr;
+    const x0 = ev.clientX, w0 = h.parentElement.getBoundingClientRect().width;
+    const g0 = gridWidth();
+    const mv = (e) => {
+      P.view.widths = Object.assign({}, P.view.widths, { [k]: Math.max(30, Math.round(w0 + e.clientX - x0)) });
+      P.view.gw = Math.max(220, g0 + (P.view.widths[k] - w0));
+      const sheet = $("#pg-sheet");
+      sheet.style.setProperty("--cols", gridTemplate());
+      sheet.style.setProperty("--gw", gridWidth() + "px");
+    };
+    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); saveView(); render(); };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up);
+  });
+}
+function zoomAbout(clientX, k) {
+  const box = $("#pg-cb").getBoundingClientRect();
+  const anchor = P.d0 + (clientX - box.left) / P.ppd;
+  setPpd(Math.max(0.3, Math.min(60, P.ppd * k)), anchor, clientX);
+  saveView();
+}
+function setPpd(ppd, anchorDay, clientX) {
+  const body = $("#pg-body");
+  const box0 = body.getBoundingClientRect();
+  P.view.zoom = "fit";
+  P.view.ppd = ppd;
+  recalc();
+  paintGrid(); paintChart();
+  // keep the day under the pointer where it was
+  const x = (anchorDay - P.d0) * P.ppd;
+  body.scrollLeft = Math.max(0, x - (clientX - box0.left - gridWidth()));
+  paintBar();
 }
 
 /* ------------------------------------------------------------------ start */
@@ -1376,7 +1935,47 @@ async function start() {
   cb.addEventListener("pointerdown", chartDown);
   cb.addEventListener("pointermove", hover);
   cb.addEventListener("pointerleave", hideTip);
-  cb.addEventListener("dblclick", (ev) => { const g = ev.target.closest("[data-bar]"); if (g) activity(g.dataset.bar); });
+  cb.addEventListener("dblclick", (ev) => {
+    const g = ev.target.closest("[data-bar]");
+    if (g) return activity(g.dataset.bar);
+    if (!P.can || ev.target.closest(".lnk")) return;
+    // empty space: a new task there, from that day
+    const box = $("#pg-svg").getBoundingClientRect();
+    const k = Math.floor((ev.clientY - box.top) / RH);
+    const day = PC.isoOf(dayAtX(ev.clientX - box.left));
+    before();
+    const list = tasks();
+    const above = P.rows[Math.min(k, P.rows.length) - 1];
+    let at = list.length, lv = 0;
+    if (above && k < P.rows.length + 1) { const i = list.findIndex((t) => t.id === above.id); at = subtree(i)[1]; lv = above.summary && !(P.view.collapsed || []).includes(above.id) ? above.level + 1 : above.level; }
+    const t = { id: uid(), name: "New task", level: lv, kind: "task", start: PC.isoOf(P.cal.dayAt(P.cal.ord(PC.dayOf(day)))), dur: 5, pct: 0, party: "", notes: "", deps: [], links: {} };
+    if (above && taskOf(above.id).cat) t.cat = taskOf(above.id).cat;
+    list.splice(at, 0, t);
+    P.sel = new Set([t.id]); P.cur = t.id;
+    changed();
+    setTimeout(() => editCell(t.id, "name"), 20);
+  });
+  // right-click: the menu
+  gb.addEventListener("contextmenu", (ev) => { const row = ev.target.closest(".pg-r[data-id]"); if (row) ctxMenu(ev, row.dataset.id); else if (P.can) ctxMenu(ev, ""); });
+  cb.addEventListener("contextmenu", (ev) => {
+    const lk = ev.target.closest(".lnk");
+    if (lk && !ev.target.closest("[data-bar]")) { ev.preventDefault(); return linkMenu(lk, ev); }
+    const g = ev.target.closest("[data-bar]");
+    if (g) return ctxMenu(ev, g.dataset.bar);
+    const k = Math.floor((ev.clientY - $("#pg-svg").getBoundingClientRect().top) / RH);
+    if (P.rows[k]) ctxMenu(ev, P.rows[k].id); else if (P.can) ctxMenu(ev, "");
+  });
+  // the category legend: show one or several; edit
+  $("#pg-legend").addEventListener("click", (ev) => {
+    if (ev.target.closest(".pg-chip-e")) return categoriesDlg();
+    const b = ev.target.closest("[data-cat]");
+    if (!b) return;
+    const s = new Set(P.view.cats || []);
+    if (!b.dataset.cat) s.clear(); else if (ev.ctrlKey || ev.metaKey || ev.shiftKey) (s.has(b.dataset.cat) ? s.delete(b.dataset.cat) : s.add(b.dataset.cat));
+    else if (s.size === 1 && s.has(b.dataset.cat)) s.clear(); else { s.clear(); s.add(b.dataset.cat); }
+    P.view.cats = [...s]; saveView(); recalc(); render();
+  });
+  wirePanZoom();
 
   // keys
   document.addEventListener("keydown", (ev) => {
@@ -1385,6 +1984,12 @@ async function start() {
     if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "y") { ev.preventDefault(); redo(); }
     else if ((ev.ctrlKey || ev.metaKey) && k === "Enter") { ev.preventDefault(); add("task"); }
+    else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "c" && P.sel.size) { if (getSelection && String(getSelection())) return; ev.preventDefault(); copyRows(false); }
+    else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "x" && P.sel.size) { ev.preventDefault(); copyRows(true); }
+    else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "v" && P.clip) { ev.preventDefault(); pasteRows(); }
+    else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "d" && P.sel.size) { ev.preventDefault(); duplicate(); }
+    else if (ev.altKey && !ev.shiftKey && (k === "ArrowUp" || k === "ArrowDown")) { ev.preventDefault(); moveBy(k === "ArrowUp" ? -1 : 1); }
+    else if (k === "Escape" && propsOpen()) closeProps();
     else if (ev.altKey && ev.shiftKey && k === "ArrowRight") { ev.preventDefault(); indent(1); }
     else if (ev.altKey && ev.shiftKey && k === "ArrowLeft") { ev.preventDefault(); indent(-1); }
     else if (k === "Delete" && P.sel.size) { ev.preventDefault(); del(); }
