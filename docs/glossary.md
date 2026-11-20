@@ -45,6 +45,26 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Balcony | 露台 | — |
 | Utility platform | 工作平台 | UP |
 | Bonus GFA | 額外總樓面面積 | — |
+| Void | 中空位置 | — |
+| Curtain wall | 幕牆 | — |
+| Cladding | 覆蓋層 | — |
+| Projecting window (bay window) | 伸出窗（窗台／凸窗） | — |
+| Window cill | 窗檻 | — |
+| Air-conditioner platform | 冷氣機平台 | — |
+| Non-structural prefabricated external wall | 非結構預製外牆 | NSPEW |
+| Communal sky garden | 公用空中花園 | — |
+| Communal podium garden | 公用平台花園 | — |
+| Wider common corridor and lift lobby | 加闊公用走廊及升降機大堂 | — |
+| Acoustic fin | 隔音鰭 | — |
+| Noise barrier | 隔音屏障 | — |
+| Trellis | 花棚架 | — |
+| Covered walkway | 有蓋走道 | — |
+| Residents' recreational facilities | 住客康樂設施 | RRF |
+| Deed of Mutual Covenant | 公契 | DMC |
+| Common parts | 公用部分 | — |
+| Usable floor space | 實用樓面空間 | UFS |
+| Electric vehicle charging-enabling | 電動車充電設施（預留） | EV |
+| Public transport terminus | 公共交通交匯處 | PTT |
 
 ## Sustainability 可持續發展
 
@@ -64,6 +84,10 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | BEAM Plus New Buildings | 綠建環評新建建築 | BEAM Plus NB |
 | Overall Thermal Transfer Value | 整體熱傳送值 | OTTV |
 | Residential Thermal Transfer Value | 住宅熱傳送值 | RTTV |
+| Visible light transmittance | 可見光透射率 | VLT |
+| External reflectance | 外反光率 | ER |
+| Shading coefficient | 遮陽系數 | SC |
+| Natural ventilation for thermal comfort | 自然通風以達致熱舒適 | NVTC |
 
 ## Fire safety 消防安全
 
@@ -85,6 +109,15 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Emergency vehicular access | 緊急車輛通道 | EVA |
 | Refuge floor | 庇護層 | — |
 | Fire engineering approach | 消防工程方法 | FEA |
+| Protected lobby | 防護門廊 | — |
+| Ventilated staircase | 通風樓梯 | — |
+| Balcony approach | 露台通道 | — |
+| Inner room | 內房 | — |
+| Ultimate place of safety | 最終的安全地方 | — |
+| Scissors staircase | 剪式樓梯 | — |
+| Temporary refuge space | 臨時庇護處 | — |
+| Place of public entertainment | 公眾娛樂場所 | PPE |
+| Notifiable workplace | 須呈報工作地點 | — |
 
 ## Barrier free access 暢通無阻的通道
 

@@ -41,6 +41,10 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- [FS Code Part B Means of escape (in full) 逃生途徑（全部條文）](codes/fsc-part-b-means-of-escape.md)
+- [APP-2 GFA calculation 總樓面面積計算](pnap/app-2.md) · [APP-19 Projections 伸出物](pnap/app-19.md) · [APP-42 Amenity features 適意設施](pnap/app-42.md) · [APP-156 Energy efficiency 能源效益](pnap/app-156.md)
+- [JPN 1 Green and innovative buildings 環保及創新的樓宇](pnap/jpn-1.md) · [JPN 2 Second package 第二批鼓勵措施](pnap/jpn-2.md)
+
 - [B(P)R 18A–22 Site classification, site coverage and plot ratio 地盤分類、上蓋面積及地積比率](regulations/bpr-18a-22.md)
 - [B(P)R 23 & 23A Building height, site area, GFA and hotels 建築物高度、地盤面積、總樓面面積及酒店](regulations/bpr-23-23a.md)
 - [Code of Practice for Fire Safety in Buildings 2011 《2011 年建築物消防安全守則》](codes/fire-safety-code-2011.md)

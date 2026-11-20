@@ -22,8 +22,8 @@ tags:
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
 
 !!! note "Scope of this entry 本條目範圍"
-    This is an **overview entry** with the most-used tables. Detailed entries for each Part (B, C, D…) will follow.
-    本條目為**概覽**，附最常用的表格，各部分（B、C、D……）的詳細條目將陸續加入。
+    This is an **overview entry** with the most-used tables. **[Part B Means of Escape](fsc-part-b-means-of-escape.md)** now has its own full entry; Parts C, D… will follow.
+    本條目為**概覽**，附最常用的表格。**[B 部逃生途徑](fsc-part-b-means-of-escape.md)** 已有詳細條目，C、D 部等將陸續加入。
 
 ## At a glance 重點摘要
 

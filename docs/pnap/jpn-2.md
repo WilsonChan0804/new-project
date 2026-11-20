@@ -1,0 +1,142 @@
+---
+tags:
+  - JPN
+  - GFA concession 樓面面積寬免
+  - Green features 環保設施
+  - Utility platform 工作平台
+  - NSPEW 非結構預製外牆
+---
+
+# JPN 2 Second Package of Incentives to Promote Green and Innovative Buildings<br><small>聯合作業備考第 2 號：推廣環保及創新的樓宇第二批鼓勵措施</small>
+
+!!! info "Document info 文件資料"
+    | | |
+    |---|---|
+    | **Type 類別** | Joint Practice Note 聯合作業備考 (BD 屋宇署 · LandsD 地政總署 · PlanD 規劃署) |
+    | **First issue 首次發出** | February 2002 |
+    | **Version summarised 本摘要版本** | July 2022 (para. 2(e) and App. A 1(e) deleted, see JPN 8; App. A 1(a)(i) and footnotes amended) |
+    | **Official language 官方語言** | English only (Chinese version not available) 只有英文版 |
+    | **Source 原文** | [JPN 2 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN02.pdf) |
+    | **Last checked 最後核對** | 2026-11-20 against the July 2022 version |
+
+## At a glance 重點摘要
+
+=== "English"
+
+    - The **second package** after [JPN 1](jpn-1.md). Same objectives, procedures and three-department approach (BO, lease, Town Planning Ordinance).
+    - Four features: **(a) non-structural prefabricated external walls (NSPEW)** · **(b) utility platforms** (residential) · **(c) noise barriers** · **(d) communal sky gardens for non-residential buildings**.
+    - **NSPEW**: wall thickness up to **150 mm** exempted (finishes ≤ **75 mm** disregarded). Subject to the APP-151 **pre-requisites and 10% cap**.
+    - **Utility platforms**: **50%** of the area exempted, max. **0.75 m² per flat**; platform ≥ **1.5 m²**, ≥ **1.5 m** from a balcony, ≥ **40%** of the perimeter open, ≥ **150 mm** drop, open parapets. Subject to the **pre-requisites and 10% cap**.
+    - **Non-residential sky gardens**: max. **1 per 20 storeys**; active recreation allowed (except in industrial buildings); otherwise similar to JPN 1 (≥ 50% net area, ≥ 15% greenery, ≥ 4.5 m clear height).
+    - Item 2(e) on **Modular Integrated Construction (MiC)** was deleted in 2022 and moved to **JPN 8**.
+
+=== "中文"
+
+    - [JPN 1](jpn-1.md) 之後的**第二批鼓勵措施**，目標、程序及三部門處理方式（《建築物條例》、地契、《城市規劃條例》）不變。
+    - 四項設施：**(a) 非結構預製外牆** · **(b) 工作平台**（住宅）· **(c) 隔音屏障** · **(d) 非住宅建築物的公用空中花園**。
+    - **非結構預製外牆**：牆厚最多 **150 毫米**可豁免（≤ **75 毫米**的飾面不計）；須符合 APP-151 **先決條件及 10% 上限**。
+    - **工作平台**：豁免面積的 **50%**，每單位最多 **0.75 平方米**；平台 ≥ **1.5 平方米**、距露台 ≥ **1.5 米**、周邊 ≥ **40%** 開敞、下降 ≥ **150 毫米**、欄杆須通透；須符合**先決條件及 10% 上限**。
+    - **非住宅空中花園**：每 **20 層最多 1 個**；可作動態康樂用途（工業建築物除外）；其餘與 JPN 1 相若（淨面積 ≥ 50%、綠化 ≥ 15%、淨高 ≥ 4.5 米）。
+    - 有關**「組裝合成」建築法**的第 2(e) 項已於 2022 年刪除，改載於 **JPN 8**。
+
+## Key table: the four green features (Appendix A) 四項環保設施（附錄 A）
+
+| Feature 設施 | Exempted from 豁免 | Key criteria 主要準則 | APP-151 pre-req 先決條件 | 10% cap 上限 |
+|---|---|---|:-:|:-:|
+| **(a) Non-structural prefabricated external walls (NSPEW)** 非結構預製外牆 | GFA & SC | Non-load-bearing, meets B(C)R 27; max. exempted thickness **150 mm**; within lot; wall portion with a **door opening is accountable**; may include a projecting window per APP-19; finishes / dry-fixed stone ≤ **75 mm** disregarded 非承重；豁免厚度最多 150 毫米；有門洞部分須計算；≤ 75 毫米飾面不計 | ✅ | ✅ |
+| **(b) Utility platforms** (residential) 工作平台（住宅） | GFA & SC | **50%** of area exempted; max. **0.75 m²** per flat; platform ≥ **1.5 m²**; ≥ **1.5 m** from balcony; no projecting window in the room leading to it; ≥ **40%** of perimeter open (or longer side open if attached laterally); not in re-entrant < **1.5 m** or light well; ≥ **150 mm** drop; **open parapets** (lowest 400 mm may be solid); no bathroom exhaust into it 豁免 50%，每單位最多 0.75 平方米；平台 ≥ 1.5 平方米；距露台 ≥ 1.5 米；周邊 ≥ 40% 開敞；欄杆通透 | ✅ | ✅ |
+| **(c) Noise barriers** 隔音屏障 | GFA & SC | Stand-alone wall or cantilevered acoustic panel from podium; approvals if beyond lot; no other (commercial) use; justified by quantitative assessment; **not** for a non-noise-sensitive building used as a buffer 獨立牆或平台懸挑隔音板；須量化評估；非噪音敏感建築物作緩衝不獲豁免 | ✅ | — |
+| **(d) Communal sky gardens** (non-residential) 公用空中花園（非住宅） | GFA | ≤ storeys ÷ **20**; active recreation OK (not industrial); open on **2 opposite sides**; net area ≥ **50%** of floor plate; greenery ≥ **15%** within zone *L*; ≥ **10 storeys** apart; clear height ≥ **4.5 m**; not served by service lifts; common access only; no commercial use 數目 ≤ 樓層 ÷ 20；可作動態康樂（工業除外）；淨面積 ≥ 50%；綠化 ≥ 15%；淨高 ≥ 4.5 米 | ✅ | — |
+
+<small>Hotels are **non-residential** for this JPN, so utility platform concessions do not apply to hotels. 本備考中酒店屬**非住宅**，工作平台寬免不適用於酒店。</small>
+
+## Key clauses 主要條文
+
+!!! quote "App. A para. 1(a)(ii), (iv) — NSPEW 非結構預製外牆"
+    (ii) The maximum thickness of the wall to be exempted is 150mm; … (iv) If a door opening is formed in the wall, that portion of the wall formed with the opening will be accountable for GFA and SC calculations.
+
+    **中譯（非官方）：** (ii) 可獲豁免的牆身最大厚度為 150 毫米；……(iv) 如牆身設有門洞，設有門洞的該部分牆身須計入總樓面面積及上蓋面積。
+
+!!! quote "App. A para. 1(b)(ii)–(v) — Utility platform limits 工作平台限制"
+    (ii) Not more than 50% of the area of the utility platform is to be exempted from GFA and SC calculations; (iii) The maximum area to be exempted for such platform including portion of such platform per residential unit is 0.75m²; (iv) The size of any utility platform, including part of which to be exempted from GFA and SC calculations, is not less than 1.5m² in area; (v) The utility platform is at least 1.5m away from a balcony…
+
+    **中譯（非官方）：** (ii) 工作平台面積只有不多於 50% 可獲豁免總樓面面積及上蓋面積；(iii) 每個住宅單位獲豁免的工作平台面積上限為 0.75 平方米；(iv) 任何工作平台（包括獲豁免部分）的面積不少於 1.5 平方米；(v) 工作平台與露台相距最少 1.5 米……
+
+!!! quote "Para. 17 — Misuse 濫用"
+    The Government will monitor the use of the features and will take enforcement action, including prosecution, against non-compliance with the following conditions of exemption: (a) Utility platforms and the areas underneath the utility platforms are not to be enclosed above parapet height…; (b) The exhaust outlets for internal bathrooms and lavatories are not to open into the utility platforms…; or (c) Sky gardens are to be for the exclusive use of the owners, tenants and their visitors only…
+
+    **中譯（非官方）：** 政府會監察設施的使用，並會就違反以下豁免條件採取執法行動（包括檢控）：(a) 工作平台及其下的地方不得在欄杆高度以上圍封；(b) 內置浴室及洗手間的排氣口不得通往工作平台；或 (c) 空中花園須只供業主、租客及其訪客專用。
+
+## Figures 圖則
+
+<figure markdown>
+  ![Appendix B Figure 1 NSPEW](../assets/figures/jpn2/appendix-b-fig1-nspew.jpg){ loading=lazy }
+  <figcaption>Appendix B Fig. 1 — Non-structural prefabricated external walls: projection up to 150 mm may be exempted 非結構預製外牆：伸出最多 150 毫米可獲豁免</figcaption>
+</figure>
+
+??? abstract "Appendix B Fig. 2 原文圖 2"
+    ![Appendix B Figure 2 NSPEW](../assets/figures/jpn2/appendix-b-fig2-nspew.jpg){ loading=lazy }
+
+<small>Source: JPN 2 (July 2022), Buildings Department / Lands Department / Planning Department 資料來源：屋宇署、地政總署、規劃署</small>
+
+## Explanation 淺白解釋
+
+=== "English"
+
+    - **NSPEW** encourages **precast façades**, which mean less site waste and better quality. So that choosing precast walls does not cost the developer GFA, up to **150 mm** of their thickness is not counted. The fixing methods (in-situ RC joints, cast-in anchorage, welding to steel) are listed in footnote 1.
+    - **Utility platforms** give flats a small open-air space for laundry and A/C condensers. The limits (**50%**, **0.75 m²**, open parapets) and the enforcement against **enclosure** stop them from turning into extra rooms.
+    - **Noise barriers** are only exempted where they genuinely protect **noise-sensitive uses**. The aim is still to tackle noise **at source** (footnote 8).
+    - **Non-residential sky gardens** follow the JPN 1 logic but allow **active recreation** and fewer gardens (one per 20 storeys).
+
+=== "中文"
+
+    - **非結構預製外牆**鼓勵使用**預製外牆**，減少工地廢料並提升質素。為免採用預製外牆令發展商損失總樓面面積，其厚度最多 **150 毫米**不計算；接駁方法（現場澆築接頭、預埋錨固、焊接鋼構件）見註腳 1。
+    - **工作平台**為單位提供小型露天空間作晾曬及放置冷氣機；**50%**、**0.75 平方米**、通透欄杆等限制，以及針對**圍封**的執法，可防止其變成額外房間。
+    - **隔音屏障**只在真正保護**噪音敏感用途**時才獲豁免，目標仍是**從源頭減低噪音**（註腳 8）。
+    - **非住宅空中花園**沿用 JPN 1 的原則，但容許**動態康樂用途**，數目亦較少（每 20 層一個）。
+
+## Practical notes 實務提示
+
+=== "English"
+
+    !!! example "Worked example: utility platform"
+        Utility platform **1.8 m²** in one flat.
+
+        - 50% × 1.8 = 0.9 m², but max. **0.75 m²** per flat → exempted **0.75 m²**
+        - Remaining **1.05 m²** counts as GFA and SC
+        - Combined with a balcony under JPN 1, both are subject to the **APP-151 10% cap**.
+
+    !!! tip "Common pitfalls"
+        - **Solid parapets** on utility platforms are not allowed. Only the lowest **400 mm** may be solid (footnote 7).
+        - NSPEW with a **door opening**: that wall portion **counts** for GFA.
+        - Keep utility platforms **≥ 1.5 m** from balconies, unless designed to Appendix B of the Code of Practice on Access for External Maintenance 2021.
+        - Lease: the **extra usable area** gained where a precast wall replaces an in-situ wall may attract a **premium** under existing leases (App. B Fig. 1).
+
+=== "中文"
+
+    !!! example "計算例子：工作平台"
+        某單位工作平台 **1.8 平方米**。
+
+        - 50% × 1.8 = 0.9 平方米，但每單位上限 **0.75 平方米** → 獲豁免 **0.75 平方米**
+        - 其餘 **1.05 平方米**計入總樓面面積及上蓋面積
+        - 連同 JPN 1 的露台，兩者均計入 **APP-151 的 10% 上限**。
+
+    !!! tip "常見錯誤"
+        - 工作平台不可用**實心欄杆**，只有最底 **400 毫米**可以實心（註腳 7）。
+        - 非結構預製外牆設有**門洞**的部分須**計入**總樓面面積。
+        - 工作平台須與露台相距 **≥ 1.5 米**，除非按 2021 年《外部維修通道守則》附錄 B 設計。
+        - 地契：現有地契下，以預製外牆取代現場澆築牆而**增加的實用面積**，或須**補地價**（附錄 B 圖 1）。
+
+## Related 相關文件
+
+| Document 文件 | Relationship 關係 |
+|---|---|
+| [JPN 1](jpn-1.md) | First package (balconies, sky gardens…) 第一批鼓勵措施 |
+| [APP-151](app-151.md) | Items 7, 11–13 in Appendix A; pre-requisites and cap 附錄 A 第 7、11–13 項 |
+| [APP-19](app-19.md) | Projecting windows in NSPEW 預製外牆的伸出窗 |
+| JPN 8 | Modular Integrated Construction (MiC) 組裝合成建築法 |
+| APP-123 | Balcony parapet / fire safety reference 露台欄杆 |
+| Code of Practice on Access for External Maintenance 2021 | Utility platform near balcony / A/C platforms 外部維修通道 |
+
+---
+<small>Prepared by: _[name]_ · Checked by: _[name]_ · Unofficial summary; refer to the official JPN for the definitive text.</small>
