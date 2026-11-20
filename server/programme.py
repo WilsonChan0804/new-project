@@ -10,6 +10,8 @@ the server keeps the programme and prints it (programme_pdf.py).
   POST /api/programme/pdf   what to draw (see programme_pdf.py) -> the PDF,
                             kept too in Folders > 00 BIM > Exports > Programme
   GET  /api/programme/history   the last versions: who saved, when, how many tasks
+  POST /api/programme/mspdi/import   MS Project XML -> {tasks, calendar, warnings} (programme_xml.py)
+  POST /api/programme/mspdi/export   {title, calendar, rows} -> MS Project XML
 
 Kept in <project>/programme/programme.json; the last 30 versions in
 programme/history/.
@@ -24,7 +26,8 @@ from starlette.concurrency import run_in_threadpool
 
 MAX_BYTES = 8 * 1024 * 1024
 KEEP_HISTORY = 30
-PARTS = {"tasks": list, "calendar": dict, "baselines": list, "cover": dict, "columns": list, "remarks": list, "view": dict}
+PARTS = {"tasks": list, "calendar": dict, "baselines": list, "cover": dict, "columns": list, "remarks": list, "view": dict,
+         "categories": list, "format": dict}
 MAX_TASKS = 5000
 
 
@@ -156,6 +159,34 @@ def register(app, core):
         if not isinstance(body, dict):
             raise HTTPException(status_code=400, detail="Send {rev, data}")
         return await run_in_threadpool(save, core, x_project, body.get("rev"), body.get("data"), getattr(w, "name", "") or "")
+
+    @app.post("/api/programme/mspdi/import")
+    async def programme_xml_in(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        core.require_project(request, x_project, "member", x_viewer_token)
+        raw = await request.body()
+        if len(raw) > 20 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="The file is over 20 MB")
+        import programme_xml
+        try:
+            return await run_in_threadpool(programme_xml.read, raw)
+        except programme_xml.Refused as ex:
+            raise HTTPException(status_code=400, detail=str(ex))
+
+    @app.post("/api/programme/mspdi/export")
+    async def programme_xml_out(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        core.require_project(request, x_project, "viewer", x_viewer_token)
+        try:
+            body = json.loads((await request.body()).decode("utf-8"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Not JSON")
+        if not isinstance(body, dict) or not isinstance(body.get("rows"), list):
+            raise HTTPException(status_code=400, detail="Send {title, calendar, rows}")
+        import programme_xml
+        data = await run_in_threadpool(programme_xml.write, body)
+        name = re.sub(r"[^\w .()&+-]+", "_", str(body.get("name") or "Programme"))[:100].strip() or "Programme"
+        if not name.lower().endswith(".xml"):
+            name += ".xml"
+        return Response(content=data, media_type="application/xml", headers={"Content-Disposition": 'attachment; filename="%s"' % name})
 
     @app.post("/api/programme/pdf")
     async def programme_pdf(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):

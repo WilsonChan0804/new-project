@@ -149,7 +149,7 @@ export function schedule(tasks, calendar, opts = {}) {
   tasks.forEach((t, si) => {
     for (const d of t.deps || []) {
       const pi = idx.get(d.from);
-      if (pi === undefined) continue;
+      if (pi === undefined || d.drive === false) continue;      // a "related only" link is drawn, not scheduled
       const type = TYPES.includes(d.type) ? d.type : "FS";
       const lag = Math.round(+d.lag || 0);
       for (const p of leavesOf(pi, ol)) {
@@ -280,16 +280,16 @@ export function formatDeps(deps, tasks) {
   return (deps || []).filter((d) => at.has(d.from)).map((d) => {
     const lag = Math.round(+d.lag || 0);
     const type = d.type || "FS";
-    return at.get(d.from) + (type !== "FS" || lag ? type : "") + (lag ? (lag > 0 ? "+" : "") + lag + "d" : "");
+    return at.get(d.from) + (type !== "FS" || lag ? type : "") + (lag ? (lag > 0 ? "+" : "") + lag + "d" : "") + (d.drive === false ? "~" : "");
   }).join("; ");
 }
 
 /* "3FS+2d; 5SS; 7FF-1w" -> {deps} or {error} */
-export function parseDeps(text, tasks, selfId, perWeek = 5) {
+export function parseDeps(text, tasks, selfId, perWeek = 5, old = []) {
   const out = [];
   const parts = String(text || "").split(/[;,，；]+/).map((x) => x.trim()).filter(Boolean);
   for (const p of parts) {
-    const m = /^(\d+)\s*(FS|SS|FF|SF)?\s*(?:([+-])\s*(\d+(?:\.\d+)?)\s*(d|days?|w|wks?|weeks?)?)?$/i.exec(p);
+    const m = /^(\d+)\s*(FS|SS|FF|SF)?\s*(?:([+-])\s*(\d+(?:\.\d+)?)\s*(d|days?|w|wks?|weeks?)?)?\s*(~)?$/i.exec(p);
     if (!m) return { error: `"${p}" is not a predecessor - write it like 3, 3FS+2d, 5SS or 7FF-1d` };
     const row = +m[1];
     const t = tasks[row - 1];
@@ -297,7 +297,12 @@ export function parseDeps(text, tasks, selfId, perWeek = 5) {
     if (t.id === selfId) return { error: "A task cannot follow itself" };
     let lag = m[4] ? parseFloat(m[4]) * (/^w/i.test(m[5] || "") ? perWeek : 1) : 0;
     if (m[3] === "-") lag = -lag;
-    out.push({ from: t.id, type: (m[2] || "FS").toUpperCase(), lag: Math.round(lag) });
+    const d = { from: t.id, type: (m[2] || "FS").toUpperCase(), lag: Math.round(lag) };
+    // a link typed again keeps how it looks and whether it drives the dates
+    const was = (old || []).find((x) => x.from === d.from && (x.type || "FS") === d.type) || (old || []).find((x) => x.from === d.from);
+    if (was) for (const k of ["style", "color", "drive"]) if (was[k] !== undefined) d[k] = was[k];
+    if (m[6]) { d.drive = false; if (!d.style) d.style = "dashed"; } else if (was && was.drive === false && !m[6]) delete d.drive;
+    out.push(d);
   }
   return { deps: out };
 }

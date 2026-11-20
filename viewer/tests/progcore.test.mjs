@@ -75,6 +75,14 @@ ok(!pr.error && pr.deps.length === 3 && pr.deps[1].type === "SS" && pr.deps[2].l
 ok(formatDeps(pr.deps, net) === "1+2d; 2SS; 1FF-5d" || formatDeps(pr.deps, net) === "1FS+2d; 2SS; 1FF-5d", "format back: " + formatDeps(pr.deps, net));
 ok(parseDeps("6", net, "F").error && parseDeps("9", net, "F").error && parseDeps("1XX", net, "F").error, "itself, no such row, nonsense are refused");
 
+// --- a "related only" link: drawn, not scheduled
+const rel = schedule([T("P", 5, [], { start: "2027-03-01" }), T("S", 3, [{ from: "P", type: "FS", lag: 0, drive: false, style: "dashed" }], { start: "2027-03-01" })], wk, base);
+ok(rel.rows[1].start === "2027-03-01" && !rel.rows[1].critical && rel.rows[0].tf === 0 && rel.rows[1].tf === 2, "a related-only link moves nothing (S starts 1 Mar with P; P stays the driver of the finish)");
+const kept = parseDeps("1FS+3d", net, "B", 5, [{ from: "A", type: "FS", lag: 0, style: "dotted", color: "#888" }]);
+ok(kept.deps[0].style === "dotted" && kept.deps[0].color === "#888" && kept.deps[0].lag === 3, "a link typed again keeps its style and colour");
+const tl = parseDeps("1~", net, "B");
+ok(tl.deps[0].drive === false && tl.deps[0].style === "dashed" && formatDeps(tl.deps, net) === "1~", "1~ is a related-only link, written back as 1~");
+
 // --- baseline and variance, expected %
 const b0 = takeBaseline(schedule(net, all), "Tender");
 const moved = net.map((x) => (x.id === "B" ? Object.assign({}, x, { dur: 6 }) : x));

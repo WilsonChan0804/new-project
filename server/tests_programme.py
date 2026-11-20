@@ -14,6 +14,7 @@ sys.path.insert(0, HERE)
 
 import programme  # noqa: E402
 import programme_pdf  # noqa: E402
+import programme_xml  # noqa: E402
 from fastapi import HTTPException  # noqa: E402
 
 
@@ -109,6 +110,92 @@ class Pdf(unittest.TestCase):
             self.assertRegex(txt, r"Page 1 of [3-9]")
             self.assertIn("Remarks", txt)
             self.assertIn("Kai Tak School", txt)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+MSPDI = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+ <Title>Wellmont</Title><MinutesPerDay>480</MinutesPerDay><CalendarUID>1</CalendarUID>
+ <ExtendedAttributes><ExtendedAttribute><FieldID>188743731</FieldID><FieldName>Text1</FieldName><Alias>Responsible</Alias></ExtendedAttribute></ExtendedAttributes>
+ <Calendars><Calendar><UID>1</UID><Name>Standard</Name><WeekDays>
+  <WeekDay><DayType>1</DayType><DayWorking>0</DayWorking></WeekDay><WeekDay><DayType>2</DayType><DayWorking>1</DayWorking></WeekDay>
+  <WeekDay><DayType>7</DayType><DayWorking>1</DayWorking></WeekDay>
+  <WeekDay><DayType>0</DayType><DayWorking>0</DayWorking><TimePeriod><FromDate>2019-07-04T00:00:00</FromDate><ToDate>2019-07-04T23:59:00</ToDate></TimePeriod></WeekDay>
+ </WeekDays></Calendar></Calendars>
+ <Tasks>
+  <Task><UID>0</UID><ID>0</ID><Name>Wellmont</Name><OutlineLevel>0</OutlineLevel><Summary>1</Summary></Task>
+  <Task><UID>1</UID><ID>1</ID><Name>Notice to Proceed</Name><OutlineLevel>1</OutlineLevel><Start>2019-06-03T08:00:00</Start><Duration>PT0H0M0S</Duration><Milestone>1</Milestone></Task>
+  <Task><UID>2</UID><ID>2</ID><Name>Mobilization</Name><OutlineLevel>1</OutlineLevel><Summary>1</Summary><Duration>PT80H0M0S</Duration></Task>
+  <Task><UID>3</UID><ID>3</ID><Name>Mobilize</Name><OutlineLevel>2</OutlineLevel><Duration>PT80H0M0S</Duration><PercentComplete>40</PercentComplete>
+   <PredecessorLink><PredecessorUID>1</PredecessorUID><Type>1</Type><LinkLag>9600</LinkLag><LagFormat>7</LagFormat></PredecessorLink>
+   <ExtendedAttribute><FieldID>188743731</FieldID><Value>Contractor</Value></ExtendedAttribute></Task>
+  <Task><UID>4</UID><ID>4</ID><Name>Grade Site</Name><OutlineLevel>2</OutlineLevel><Duration>PT64H0M0S</Duration><ConstraintType>4</ConstraintType><ConstraintDate>2019-06-24T08:00:00</ConstraintDate>
+   <PredecessorLink><PredecessorUID>3</PredecessorUID><Type>3</Type><LinkLag>-4800</LinkLag></PredecessorLink>
+   <PredecessorLink><PredecessorUID>1</PredecessorUID><Type>0</Type></PredecessorLink>
+   <PredecessorLink><PredecessorUID>2</PredecessorUID><Type>2</Type></PredecessorLink><Notes>Note &amp; more</Notes></Task>
+ </Tasks></Project>"""
+
+
+class Xml(unittest.TestCase):
+    def test_read(self):
+        r = programme_xml.read(MSPDI.encode("utf-8"))
+        t = r["tasks"]
+        self.assertEqual([x["name"] for x in t], ["Notice to Proceed", "Mobilization", "Mobilize", "Grade Site"])
+        self.assertEqual([x["level"] for x in t], [0, 0, 1, 1])
+        self.assertEqual((t[0]["kind"], t[0]["start"]), ("milestone", "2019-06-03"))
+        self.assertEqual((t[2]["dur"], t[2]["pct"], t[2]["party"], t[2]["deps"]), (10, 40, "Contractor", [{"from": t[0]["id"], "type": "FS", "lag": 2}]))
+        self.assertEqual([(d["type"], d["lag"]) for d in t[3]["deps"]], [("SS", -1), ("FF", 0), ("SF", 0)])
+        self.assertEqual((t[3]["start"], t[3]["notes"]), ("2019-06-24", "Note & more"))
+        self.assertEqual(r["calendar"]["week"], "mon-sat")
+        self.assertEqual(r["calendar"]["holidays"], ["2019-07-04"])
+        self.assertEqual(r["name"], "Wellmont")
+
+    def test_refuse(self):
+        for bad in (b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]><Project>&e;</Project>', b"<nope/>", b"not xml"):
+            with self.assertRaises(programme_xml.Refused):
+                programme_xml.read(bad)
+
+    def test_round_trip(self):
+        spec = {"title": "Kai Tak", "calendar": {"week": "mon-fri", "holidays": ["2027-04-05"], "off": [{"from": "2027-02-01", "to": "2027-02-05"}]},
+                "rows": [{"name": "Design", "level": 0, "summary": True, "start": "2027-03-01", "finish": "2027-03-19", "dur": 15},
+                         {"name": "Scheme", "level": 1, "start": "2027-03-01", "finish": "2027-03-12", "dur": 10, "own_start": "2027-03-01", "party": "Architect", "pct": 50},
+                         {"name": "Detail", "level": 1, "start": "2027-03-15", "finish": "2027-03-19", "dur": 5, "deps": [{"from": 1, "type": "FS", "lag": 0}, {"from": 0, "type": "SS", "lag": 0, "drive": False}]},
+                         {"name": "Approval", "level": 0, "milestone": True, "ms_end": True, "start": "2027-03-19", "finish": "2027-03-19", "deps": [{"from": 2, "type": "FS", "lag": 3}]}]}
+        xml = programme_xml.write(spec)
+        self.assertIn(b"related-only link(s) left out", xml)
+        r = programme_xml.read(xml)
+        t = r["tasks"]
+        self.assertEqual([(x["name"], x["level"], x["kind"]) for x in t], [("Design", 0, "task"), ("Scheme", 1, "task"), ("Detail", 1, "task"), ("Approval", 0, "milestone")])
+        self.assertEqual((t[1]["dur"], t[1]["start"], t[1]["party"], t[1]["pct"]), (10, "2027-03-01", "Architect", 50))
+        self.assertEqual([(d["from"], d["type"], d["lag"]) for d in t[2]["deps"]], [(t[1]["id"], "FS", 0)])
+        self.assertEqual(t[3]["deps"][0]["lag"], 3)
+        self.assertEqual(r["calendar"]["holidays"], ["2027-04-05"])
+        self.assertEqual(r["calendar"]["off"][0]["from"], "2027-02-01")
+
+
+class PdfWide(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("pdftotext"), "needs poppler")
+    def test_pages_wide_and_colours(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            spec = dict(SPEC, pages_wide=3, _plain=True,
+                        rows=[dict(r, fill="#2e7d32") for r in SPEC["rows"]],
+                        links=SPEC["links"] + [{"from": 0, "to": 2, "type": "FS", "drive": False}],
+                        categories=[{"name": "Construction", "color": "#2e7d32"}])
+            data = programme_pdf.build(spec)
+            self.assertIn(b".180392 .490196 .196078 rg", data)          # the category's green fill
+            self.assertIn(b"[2.2 1.4] 0 d", data)                        # a dashed (related) link
+            p = os.path.join(tmp, "w.pdf")
+            with open(p, "wb") as f:
+                f.write(data)
+            txt = subprocess.run(["pdftotext", "-layout", p, "-"], capture_output=True, text=True).stdout
+            pages = txt.split("\f")
+            self.assertRegex(txt, r"Page 3 of 3")
+            self.assertIn("Scheme design", pages[1])                     # the names again on page 2
+            self.assertNotIn("Predecessors", pages[1])                   # but not the other columns
+            self.assertIn("Related link", txt)
+            self.assertIn("Construction", txt)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

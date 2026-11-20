@@ -111,6 +111,17 @@ def put(c, x, y, text, size=7, bold=False, color=INK, width=None, align="left"):
         c.drawString(x, y, text)
 
 
+def hexc(v, default):
+    v = str(v or "")
+    if re.match(r"^#[0-9a-fA-F]{6}$", v):
+        return colors.HexColor(v)
+    return default
+
+
+def darker(col, k=0.55):
+    return colors.Color(col.red * k, col.green * k, col.blue * k)
+
+
 def day(s):
     try:
         return datetime.date.fromisoformat(str(s)[:10])
@@ -145,7 +156,7 @@ def build(spec):
     fs = 6.2 if small else 7
     title_h = 22 * mm
     head_h = 10 * mm
-    legend_h = (15 + 3.6 * len(remarks)) * mm if remarks else 10 * mm
+    legend_h = ((15 + 3.6 * len(remarks)) * mm if remarks else 10 * mm) + (4 * mm if spec.get("categories") else 0)
     body_top = H - m - title_h - 3 * mm
     body_h = body_top - head_h - (m + legend_h + 3 * mm)
     if rows and body_h < len(rows) * rh <= body_h * 1.2:   # a few rows over: tighter, to keep one page
@@ -157,33 +168,44 @@ def build(spec):
     per = max(1, int(body_h / rh + 1e-6))
     pages = max(1, (len(rows) + per - 1) // per)
 
-    # columns: their widths, shrunk to at most 55% of the page
-    tw = sum(float(x.get("w") or 20) for x in cols) * mm
-    room = (W - 2 * m) * (0.62 if small else 0.55)
-    k = min(1.0, room / tw) if tw else 1.0
-    for x in cols:
-        x["_w"] = float(x.get("w") or 20) * mm * k
-    tw = sum(x["_w"] for x in cols)
-    gx0, gx1 = m + tw, W - m
-    gw = gx1 - gx0
-
-    # the time range
+    # the whole time range
     ds = [day(r.get(k2)) for r in rows for k2 in ("start", "finish", "bstart", "bfinish")]
     ds = [d for d in ds if d]
-    d0 = day((spec.get("range") or {}).get("from")) or (min(ds) if ds else datetime.date.today())
-    d1 = day((spec.get("range") or {}).get("to")) or (max(ds) if ds else d0 + datetime.timedelta(days=30))
-    if d1 <= d0:
-        d1 = d0 + datetime.timedelta(days=7)
-    d0 = d0 - datetime.timedelta(days=d0.weekday())                     # a Monday
-    pad = max(7, (d1 - d0).days // 22)                                  # room for a last label
-    d1 = d1 + datetime.timedelta(days=pad)
-    span = (d1 - d0).days + 1
-    per_day = gw / span
+    D0 = day((spec.get("range") or {}).get("from")) or (min(ds) if ds else datetime.date.today())
+    D1 = day((spec.get("range") or {}).get("to")) or (max(ds) if ds else D0 + datetime.timedelta(days=30))
+    if D1 <= D0:
+        D1 = D0 + datetime.timedelta(days=7)
+    D0 = D0 - datetime.timedelta(days=D0.weekday())                     # a Monday
+    D1 = D1 + datetime.timedelta(days=max(7, (D1 - D0).days // 22))     # room for a last label
+    # pages wide: the range cut in equal slices; later slices repeat the ID and the name
+    nw = spec.get("pages_wide") or 1
+    if nw == "auto":
+        nw = max(1, min(6, int(round((D1 - D0).days / (122 if W > 1000 else 92 if W > 700 else 61)))))
+    nw = max(1, min(6, int(nw)))
+    repeat = spec.get("repeat_names", True)
+    ALL_COLS = cols
+    slices = []
+    step = ((D1 - D0).days + 1) / float(nw)
+    for s_i in range(nw):
+        a_ = D0 + datetime.timedelta(days=int(round(step * s_i)))
+        b_ = D0 + datetime.timedelta(days=int(round(step * (s_i + 1))) - 1)
+        slices.append((a_, b_))
 
+    def layout(s_i):
+        """the columns and the time scale of slice s_i (rebinds build's own names)"""
+        out = [dict(x) for x in ALL_COLS] if s_i == 0 or not repeat else \
+            [dict(x) for x in ALL_COLS if x["key"] in ("id", "name")] if repeat else []
+        tw = sum(float(x.get("w") or 20) for x in out) * mm
+        room = (W - 2 * m) * ((0.62 if small else 0.55) if s_i == 0 else 0.3)
+        k = min(1.0, room / tw) if tw else 1.0
+        for x in out:
+            x["_w"] = float(x.get("w") or 20) * mm * k
+        return out
+
+    pno = [0]
+    ptotal = pages * nw
     def X(d, end=False):
         return gx0 + ((d - d0).days + (1 if end else 0)) * per_day
-
-    unit = "week" if per_day * 7 >= 7 * mm else "month" if per_day * 30 >= 6 * mm else "quarter"
 
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=size, pageCompression=0 if spec.get("_plain") else 1)
@@ -297,12 +319,28 @@ def build(spec):
         ly = y + legend_h - 5.5 * mm
         x = m + 3 * mm
         items = [("bar", "Task"), ("crit", "Critical task"), ("done", "Progress"), ("sum", "Summary"), ("mile", "Milestone")]
+        if any(l.get("drive") is False for l in links):
+            items.append(("rel", "Related link (not scheduled)"))
         if show.get("baseline"):
             items.append(("base", "Baseline"))
+        for cat in (spec.get("categories") or [])[:10]:
+            items.append(("cat:" + str(cat.get("color") or ""), str(cat.get("name") or "")[:30]))
         if show.get("status") and status:
             items.append(("status", "Status date"))
         for kind, lab in items:
-            if kind in ("bar", "crit", "done"):
+            need = 10 * mm + pdfmetrics.stringWidth(lab, font(lab), 6.5) + 4 * mm
+            if x + need > W - m - 3 * mm:            # the next line
+                x = m + 3 * mm
+                ly -= 4 * mm
+            if kind.startswith("cat:"):
+                c.setFillColor(hexc(kind[4:], BAR))
+                c.rect(x, ly, 8 * mm, 2.2 * mm, stroke=0, fill=1)
+            elif kind == "rel":
+                c.setStrokeColor(LINK)
+                c.setDash(2.2, 1.4)
+                c.line(x, ly + 1.1 * mm, x + 8 * mm, ly + 1.1 * mm)
+                c.setDash()
+            elif kind in ("bar", "crit", "done"):
                 c.setFillColor({"bar": BAR, "crit": CRIT, "done": BAR_DONE}[kind])
                 c.rect(x, ly, 8 * mm, 2.2 * mm, stroke=0, fill=1)
             elif kind == "sum":
@@ -319,7 +357,12 @@ def build(spec):
                 c.setDash()
             put(c, x + 10 * mm, ly + 0.3 * mm, lab, 6.5, False, INK)
             x += 10 * mm + pdfmetrics.stringWidth(lab, "Helvetica", 6.5) + (7 if not small else 4) * mm
-        put(c, W - m, m - 4 * mm, "Page %d of %d" % (pg + 1, pages), 6.5, False, MUTED, align="right")
+        where = []
+        if pages > 1:
+            where.append("rows %d-%d" % (pg * per + 1, min(len(rows), (pg + 1) * per)))
+        if nw > 1:
+            where.append("%s - %s" % (nice(d0), nice(d1)))
+        put(c, W - m, m - 4 * mm, "Page %d of %d%s" % (pno[0], ptotal, (" · " + " · ".join(where)) if where else ""), 6.5, False, MUTED, align="right")
         put(c, m, m - 4 * mm, "Printed %s" % nice(datetime.date.today()), 6.5, False, MUTED)
         if remarks:
             put(c, m + 3 * mm, ly - 5 * mm, "Remarks", 6.5, True, INK)
@@ -349,10 +392,19 @@ def build(spec):
             p.close()
             c.drawPath(p, stroke=0, fill=1)
 
-    geo = {}
-    for pg in range(pages):
-        if pg:
+    for s_i, (d0, d1) in enumerate(slices):
+      cols = layout(s_i)
+      tw = sum(x["_w"] for x in cols)
+      gx0, gx1 = m + tw, W - m
+      gw = gx1 - gx0
+      span = (d1 - d0).days + 1
+      per_day = gw / span
+      unit = "week" if per_day * 7 >= 7 * mm else "month" if per_day * 30 >= 6 * mm else "quarter"
+      for pg in range(pages):
+        geo = {}
+        if pno[0]:
             c.showPage()
+        pno[0] += 1
         title_block(pg)
         hy = body_top - head_h
         lows = timescale(hy)
@@ -396,6 +448,14 @@ def build(spec):
                 else:
                     put(c, x + 1.5 * mm + ind, ty, val, fs, bold, colr, width=col["_w"] - 3 * mm - ind)
                 x += col["_w"]
+        # the chart, clipped to its own area (a slice of the time range)
+        c.saveState()
+        cp = c.beginPath()
+        cp.rect(gx0, y_bottom, gw, hy - y_bottom)
+        c.clipPath(cp, stroke=0, fill=0)
+        for i, r in enumerate(part):
+            ri = pg * per + i
+            y = hy - (i + 1) * rh
             a, b = day(r.get("start")), day(r.get("finish"))
             if not a:
                 continue
@@ -415,17 +475,29 @@ def build(spec):
                 geo[ri] = (xa, xb, cy, pg)
             elif r.get("milestone"):
                 cx = X(a) + (per_day if r.get("ms_end") else 0)
-                diamond(cx, cy, rh * 0.28, CRIT if crit else MILE)
+                diamond(cx, cy, rh * 0.28, CRIT if crit and (spec.get("solid_red") or not r.get("fill")) else hexc(r.get("fill"), MILE))
+                if crit and r.get("fill") and not spec.get("solid_red"):
+                    c.setStrokeColor(CRIT)
+                    c.setLineWidth(0.9)
+                    q = c.beginPath()
+                    rr = rh * 0.28
+                    q.moveTo(cx, cy + rr); q.lineTo(cx + rr, cy); q.lineTo(cx, cy - rr); q.lineTo(cx - rr, cy); q.close()
+                    c.drawPath(q, stroke=1, fill=0)
                 put(c, cx + rh * 0.4, cy - 1 * mm, nice(a)[:-5] if a else "", 5.8, True, INK)
                 geo[ri] = (cx, cx, cy, pg)
             else:
                 xa, xb = X(a), X(b, True)
                 bh = rh * 0.46
-                c.setFillColor(CRIT if crit else BAR)
-                c.rect(xa, cy - bh / 2, max(xb - xa, 0.6), bh, stroke=0, fill=1)
+                fill = hexc(r.get("fill"), BAR)
+                solid = crit and (spec.get("solid_red") or not r.get("fill"))
+                c.setFillColor(CRIT if solid else fill)
+                if crit and not solid:
+                    c.setStrokeColor(CRIT)
+                    c.setLineWidth(0.9)
+                c.rect(xa, cy - bh / 2, max(xb - xa, 0.6), bh, stroke=1 if crit and not solid else 0, fill=1)
                 pct = max(0, min(100, float(r.get("pct") or 0)))
                 if show.get("progress") and pct:
-                    c.setFillColor(CRIT_DONE if crit else BAR_DONE)
+                    c.setFillColor(CRIT_DONE if solid else darker(CRIT if solid else fill))
                     c.rect(xa, cy - bh * 0.18, (xb - xa) * pct / 100, bh * 0.36, stroke=0, fill=1)
                 if r.get("label"):
                     put(c, xb + 1.2 * mm, cy - 1 * mm, r["label"], 5.6, False, MUTED, width=max(0, gx1 - xb - 2 * mm))
@@ -445,9 +517,11 @@ def build(spec):
                 ta, tb, ty2, _ = geo[t]
                 xs = fa if typ[0] == "S" else fb
                 xt = ta if typ[1] == "S" else tb
-                col = CRIT if ln.get("critical") and show.get("critical") else LINK
+                col = CRIT if ln.get("critical") and show.get("critical") else hexc(ln.get("color"), LINK)
                 c.setStrokeColor(col)
                 c.setFillColor(col)
+                sty = ln.get("style") or ("dashed" if ln.get("drive") is False else "solid")
+                c.setDash(*({"dashed": (2.2, 1.4), "dotted": (0.5, 1.2)}.get(sty, ())))
                 st = 1.2 * mm
                 out = xs + st if typ[0] == "F" else xs - st
                 down = -1 if ty2 < fy else 1
@@ -462,6 +536,7 @@ def build(spec):
                     p.lineTo(tx, y_from)
                     p.lineTo(tx, y_to)
                     c.drawPath(p, stroke=1, fill=0)
+                    c.setDash()
                     arrow(tx, y_to, 0, down)
                 else:
                     yb = fy + (rh / 2) * down          # along the row line between them
@@ -472,6 +547,7 @@ def build(spec):
                     p.lineTo(xin, ty2)
                     p.lineTo(xt, ty2)
                     c.drawPath(p, stroke=1, fill=0)
+                    c.setDash()
                     arrow(xt, ty2, 1 if typ[1] == "S" else -1, 0)
         # the status line
         if show.get("status") and status and d0 <= status <= d1:
@@ -481,6 +557,7 @@ def build(spec):
             c.setDash(2.2, 1.6)
             c.line(sx, y_bottom, sx, hy)
             c.setDash()
+        c.restoreState()
         legend(pg)
     c.save()
     return buf.getvalue()
