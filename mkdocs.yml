@@ -1,0 +1,74 @@
+site_name: HK Building Regulations Knowledge Base 香港建築法規知識庫
+site_description: Bilingual summaries and explanations of the Buildings Ordinance, regulations, Codes of Practice and PNAPs
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.tabs.link        # choosing "中文" on one page switches every page
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  icon:
+    logo: material/office-building
+
+plugins:
+  - search:
+      # 'ja' loads Material's built-in CJK segmenter, which makes Traditional
+      # Chinese queries (e.g. 樓面面積寬免) work without extra packages.
+      lang: [en, ja]
+      separator: '[\s\u200b\-_,:!=\[\]()"`/，。、；：「」（）]+'
+  - tags
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.critic
+  - pymdownx.mark
+  - pymdownx.keys
+
+nav:
+  - Home 主頁: index.md
+  - How to use 使用說明: how-to-use.md
+  - PNAP 認可人士作業備考:
+      - pnap/index.md
+      - APP-151 GFA concessions 樓面面積寬免: pnap/app-151.md
+      - APP-152 SBD Guidelines 可持續建築設計指引: pnap/app-152.md
+  - Ordinance & Regulations 條例及規例: regulations/index.md
+  - Codes of Practice 作業守則: codes/index.md
+  - Glossary 詞彙: glossary.md
+  - Tags 標籤: tags.md
+  - Contributing 編寫指引: contributing.md
