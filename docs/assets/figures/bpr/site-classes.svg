@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" role="img" aria-label="Class A, B and C sites" font-family="Roboto, Arial, 'Noto Sans TC', sans-serif">
+  <rect width="720" height="260" fill="#ffffff"/>
+  <style>
+    .st{fill:#9aa3ad}.si{fill:#5c6bc0}.tx{font-size:14px;fill:#222}.tw{font-size:12px;fill:#fff}.hd{font-size:15px;font-weight:700;fill:#222}
+  </style>
+  <!-- Class A -->
+  <text class="hd" x="20" y="22">Class A 甲類</text>
+  <rect class="si" x="40" y="40" width="140" height="130"/>
+  <rect class="st" x="20" y="170" width="180" height="30"/>
+  <text class="tw" x="70" y="190">Street ≥ 4.5 m</text>
+  <text class="tx" x="20" y="225">Abuts 1 specified street</text>
+  <text class="tx" x="20" y="243">緊連一條指明街道</text>
+  <!-- Class B -->
+  <text class="hd" x="260" y="22">Class B 乙類</text>
+  <rect class="si" x="260" y="40" width="140" height="130"/>
+  <rect class="st" x="260" y="170" width="170" height="30"/>
+  <rect class="st" x="400" y="30" width="30" height="140"/>
+  <text class="tw" x="285" y="190">Street 1</text>
+  <text class="tw" x="404" y="110" transform="rotate(90 415 105)">Street 2</text>
+  <text class="tx" x="250" y="225">Corner, 2 streets, ≥ 40% of boundary</text>
+  <text class="tx" x="250" y="243">街角，2 條街，佔界線 ≥ 40%</text>
+  <!-- Class C -->
+  <text class="hd" x="500" y="22">Class C 丙類</text>
+  <rect class="si" x="530" y="40" width="140" height="130"/>
+  <rect class="st" x="500" y="170" width="200" height="30"/>
+  <rect class="st" x="670" y="30" width="30" height="140"/>
+  <rect class="st" x="500" y="30" width="30" height="140"/>
+  <text class="tw" x="565" y="190">Street 1</text>
+  <text class="tx" x="490" y="225">Corner, 3 streets, ≥ 60% of boundary</text>
+  <text class="tx" x="490" y="243">街角，3 條街，佔界線 ≥ 60%</text>
+</svg>

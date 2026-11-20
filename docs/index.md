@@ -41,5 +41,10 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- [B(P)R 18A–22 Site classification, site coverage and plot ratio 地盤分類、上蓋面積及地積比率](regulations/bpr-18a-22.md)
+- [B(P)R 23 & 23A Building height, site area, GFA and hotels 建築物高度、地盤面積、總樓面面積及酒店](regulations/bpr-23-23a.md)
+- [Code of Practice for Fire Safety in Buildings 2011 《2011 年建築物消防安全守則》](codes/fire-safety-code-2011.md)
+- [Design Manual: Barrier Free Access 2008 《設計手冊：暢通無阻的通道 2008》](codes/bfa-2008.md)
+
 - [APP-151 Building Design to Foster a Quality and Sustainable Built Environment 優化建築設計 締造可持續建築環境](pnap/app-151.md)
 - [APP-152 Sustainable Building Design Guidelines 可持續建築設計指引](pnap/app-152.md)

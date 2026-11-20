@@ -67,8 +67,14 @@ nav:
       - pnap/index.md
       - APP-151 GFA concessions 樓面面積寬免: pnap/app-151.md
       - APP-152 SBD Guidelines 可持續建築設計指引: pnap/app-152.md
-  - Ordinance & Regulations 條例及規例: regulations/index.md
-  - Codes of Practice 作業守則: codes/index.md
+  - Ordinance & Regulations 條例及規例:
+      - regulations/index.md
+      - B(P)R 18A–22 SC & PR 上蓋面積及地積比率: regulations/bpr-18a-22.md
+      - B(P)R 23 & 23A GFA 總樓面面積: regulations/bpr-23-23a.md
+  - Codes of Practice 作業守則:
+      - codes/index.md
+      - FS Code 2011 消防安全守則: codes/fire-safety-code-2011.md
+      - BFA 2008 暢通無阻的通道: codes/bfa-2008.md
   - Glossary 詞彙: glossary.md
   - Tags 標籤: tags.md
   - Contributing 編寫指引: contributing.md

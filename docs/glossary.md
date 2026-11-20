@@ -35,6 +35,10 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | GFA concession | 總樓面面積寬免 | — |
 | Plot ratio | 地積比率 | PR |
 | Site coverage | 上蓋面積 | SC |
+| Class A / B / C site | 甲類／乙類／丙類地盤 | — |
+| Specified street | 指明街道 | — |
+| Composite building | 綜合用途建築物 | — |
+| Dedication for public passage | 撥作公眾通道 | — |
 | Green and amenity features | 環保及適意設施 | — |
 | Mandatory feature / essential plant room | 強制性設施／必要機房 | — |
 | Non-mandatory / non-essential plant room | 非強制性／非必要機房 | — |
@@ -60,6 +64,42 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | BEAM Plus New Buildings | 綠建環評新建建築 | BEAM Plus NB |
 | Overall Thermal Transfer Value | 整體熱傳送值 | OTTV |
 | Residential Thermal Transfer Value | 住宅熱傳送值 | RTTV |
+
+## Fire safety 消防安全
+
+| English | 中文 | Abbr. |
+|---|---|---|
+| Use Classification | 用途類別 | UC |
+| Occupant capacity | 佔用人數 | — |
+| Occupancy factor | 佔用率 | — |
+| Means of escape | 逃生途徑 | MoE |
+| Required staircase | 規定的樓梯 | — |
+| Protected exit | 防護出口 | — |
+| Dead-end travel distance | 盡頭路行走距離 | — |
+| Travel distance | 行走距離 | — |
+| Discharge value | 疏散量 | — |
+| Fire resistance rating | 耐火效能 | FRR |
+| Fire compartment | 防火隔室 | — |
+| Fireman's lift | 消防員升降機 | FL |
+| Firefighting and rescue stairway | 消防救援樓梯 | FRS |
+| Emergency vehicular access | 緊急車輛通道 | EVA |
+| Refuge floor | 庇護層 | — |
+| Fire engineering approach | 消防工程方法 | FEA |
+
+## Barrier free access 暢通無阻的通道
+
+| English | 中文 | Abbr. |
+|---|---|---|
+| Barrier free access | 暢通無阻的通道 | BFA |
+| Obligatory design requirements | 強制性設計規定 | — |
+| Accessible route | 暢通易達通道 | — |
+| Ramp | 斜道 | — |
+| Dropped kerb | 斜路緣 | — |
+| Tactile guide path | 觸覺引路帶 | — |
+| Tactile warning strip | 觸覺警示帶 | — |
+| Accessible lift | 暢通易達升降機 | — |
+| Accessible unisex toilet | 男女共用暢通易達洗手間 | — |
+| Accessible car parking space | 暢通易達停車位 | — |
 
 !!! note
     Chinese terms follow BD / eLegislation usage where one exists. Mark new terms with *(proposed 建議譯名)* until checked.

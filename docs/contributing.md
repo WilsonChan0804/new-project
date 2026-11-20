@@ -20,6 +20,12 @@
 | Use terms from the [Glossary 詞彙](glossary.md), and add new ones there. | 使用[詞彙表](glossary.md)用語，新詞請補充。 |
 | Add **tags** in both languages, e.g. `GFA concession 樓面面積寬免`. | 標籤須中英並列。 |
 
+## Figures and tables 圖表
+
+- **Tables with numbers** (e.g. First Schedule, Table C1): type them as Markdown tables so they can be **searched**, and add the original page as an image below for checking. 數字表格請以 Markdown 表格輸入以便搜尋，並附原文圖片供核對。
+- **Diagrams**: crop the page from the official PDF and save it under `docs/assets/figures/<document>/`, e.g. `docs/assets/figures/app-152/fig-c1-c2-setback.jpg`. Always add a caption with the figure number and "Source: … Buildings Department". 圖則存放於 `docs/assets/figures/`，並註明出處。
+- Use `??? abstract "…"` for long tables, so they are collapsed by default. 較長的表格可用摺疊方塊。
+
 ## When BD revises a document 文件修訂時
 
 1. Update the *Version summarised* and *Last checked* rows.
