@@ -13,7 +13,6 @@
 <link rel="modulepreload" href="nav.js">
 <link rel="modulepreload" href="pagekit.js">
 <link rel="modulepreload" href="tasks-util.js">
-<link rel="modulepreload" href="chatfmt.js">
 <link rel="modulepreload" href="gbp.js">
 <link rel="modulepreload" href="gbpcore.js">
 <link rel="modulepreload" href="gbptables.js">
@@ -48,32 +47,31 @@
 </header>
 
 <nav class="cx-tabs" role="tablist">
-  <button type="button" class="cx-tab on" data-tab="ask" role="tab">Ask the codes</button>
+  <button type="button" class="cx-tab on" data-tab="ask" role="tab">Search the codes</button>
   <button type="button" class="cx-tab" data-tab="gbp" role="tab" title="The GBP calculations of this project: PR, SC, GFA and concessions, occupancy, exits, staircase discharge">GBP workbook</button>
 </nav>
 <main id="gbp" hidden></main>
 <main id="codes">
   <section id="cx-chat">
     <div class="cx-top">
-      <h2>Ask the codes</h2>
+      <h2>Search the codes</h2>
       <span id="cx-state" class="muted"></span>
       <span class="spacer"></span>
-      <button class="ghost" id="cx-recent" type="button" title="Your last questions">Recent &#9662;</button>
-      <button class="ghost" id="cx-new" type="button" title="Start a new conversation">New</button>
+      <button class="ghost" id="cx-recent" type="button" title="Your last searches">Recent &#9662;</button>
+      <button class="ghost" id="cx-new" type="button" title="Clear the searches">New</button>
       <button class="ghost" id="cx-lib" type="button" title="The documents in the library">Library</button>
     </div>
     <div id="cx-log" aria-live="polite"></div>
     <form id="cx-form" onsubmit="return false">
-      <textarea id="cx-q" rows="2" placeholder="Ask about the Buildings Ordinance, PNAPs, Codes of Practice ... e.g. What is the maximum dead end travel distance?  (English or 中文)"></textarea>
+      <textarea id="cx-q" rows="2" placeholder="Search the Buildings Ordinance, PNAPs, Codes of Practice ... e.g. What is the maximum dead end travel distance?  (English or 中文)"></textarea>
       <div class="cx-btns">
-        <button type="button" class="ghost" id="cx-search" title="Only find the clauses (no AI)">Find clauses</button>
-        <button type="submit" class="primary" id="cx-ask">Ask</button>
+        <button type="submit" class="primary" id="cx-search" title="Find the clauses, Quick facts and diagrams">Search</button>
       </div>
     </form>
   </section>
   <aside id="cx-side">
     <div class="cx-side-h"><b id="cx-side-title">Clauses</b><span class="spacer"></span><button class="ghost" id="cx-side-x" type="button" title="Close">&times;</button></div>
-    <div id="cx-clauses"><p class="muted cx-hint">The clauses an answer is based on show here, with their reference, edition and page.</p></div>
+    <div id="cx-clauses"><p class="muted cx-hint">The clauses a search finds show here, with their reference, edition and page.</p></div>
   </aside>
 </main>
 <div id="gate-back" hidden>

@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-02", date: "20 Nov 2026",
+    items: [
+      "**Codes is now search only, with no AI:** one **Search** button (or Enter) gives the Quick facts, the diagrams and the clauses. Ask, the API key and model settings and the cost notes are gone, and nothing is sent outside the server.",
+      "**Recent ▾** lists your searches - click one to search again. The tab is now **Search the codes**.",
+    ],
+  },
+  {
     version: "2027-02-01", date: "20 Nov 2026",
     items: [
       "**Codes: Quick facts** (no AI) - the answer at a glance: the clauses about what you asked with their figures and conditions, e.g. dead end 24m / 15m for Use Classifications 1 and 2, 18m for all others (B11.2).",

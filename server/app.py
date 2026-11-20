@@ -4686,7 +4686,7 @@ try:
 except Exception as _ex:
     print("storage not loaded: %s" % _ex)
 
-# Codes (codes.py): the building regulations library - search, and questions answered by Claude.
+# Codes (codes.py): the building regulations library - search, Quick facts and diagrams (no AI).
 try:
     import codes
     codes.register(app, sys.modules[__name__])

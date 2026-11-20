@@ -1,20 +1,18 @@
 /* Codes page (server side: codes.py).
  *
- * Ask the office's library of building regulations: the Buildings
+ * Search the office's library of building regulations: the Buildings
  * Ordinance and its Regulations, PNAPs, Codes of Practice, design manuals
  * and the office's own notes, put in by a site admin (Library).
  *
- * Find clauses searches the library (no AI). Ask finds the clauses that
- * match and has Claude answer from them only, citing them as [S1] [S2] ...;
- * a click on a citation shows the clause - with its reference, edition and
- * page, and the page of the PDF a click away. A follow-up question keeps the
- * conversation (New starts again).
+ * Search finds the clauses that match (no AI): Quick facts - the figures
+ * the clauses give, with their conditions - the diagrams they refer to, and
+ * the clauses themselves, each with its reference, edition and page, and
+ * the page of the PDF a click away.
  */
 
 import { api, headers, project } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, toast, pop, closePop } from "./tasks-util.js";
-import { formatHtml } from "./chatfmt.js";
 import { mountGbp } from "./gbp.js";
 
 const KEEP = "lwk-viewer:codes-chat";
@@ -34,15 +32,12 @@ async function loadStatus() {
   try { CX.st = await api("/api/codes/status"); } catch (e) { CX.st = null; $("#cx-state").textContent = e.message; return; }
   const s = CX.st;
   $("#cx-state").innerHTML = s.sources
-    ? `${s.sources} document${s.sources === 1 ? "" : "s"}, ${s.clauses} clauses · `
-      + (s.ask ? `answers by ${esc(s.model_label.replace(/ \(.*\)$/, ""))}` : `<span class="cx-off" title="${esc(s.why_off)}">Ask is off - Find clauses works</span>`)
+    ? `${s.sources} document${s.sources === 1 ? "" : "s"}, ${s.clauses} clauses`
     : (s.manage ? `The library is empty: <a href="#" id="cx-first">find the documents on the BD site</a> or <a href="#" id="cx-first2">add your own</a>` : "The library is empty - ask a site admin to add the codes");
   const f = $("#cx-first");
   if (f) f.onclick = (ev) => { ev.preventDefault(); openLibrary("find"); };
   const f2 = $("#cx-first2");
   if (f2) f2.onclick = (ev) => { ev.preventDefault(); openLibrary(); };
-  $("#cx-ask").disabled = false;
-  $("#cx-ask").title = s.ask ? "Find the clauses and have Claude answer from them" : s.why_off;
 }
 
 /* -------------------------------------------------------- highlighting */
@@ -53,17 +48,6 @@ function marked(text, terms) {
   if (!ts.length) return esc(text);
   const re = new RegExp("(" + ts.join("|") + ")", "gi");
   return String(text).split(re).map((p, i) => (i % 2 ? `<mark>${esc(p)}</mark>` : esc(p))).join("");
-}
-
-/* The answer as HTML: the chat formatting, and [S3] as a chip */
-function answerHtml(t, i) {
-  const n = (t.sources || []).length;
-  const nd = (t.diagrams || []).length;
-  const render = (s) => esc(s).replace(/\[S(\d+)\]/g, (m, k) => (Number(k) >= 1 && Number(k) <= n
-    ? `<button type="button" class="cx-cite" data-turn="${i}" data-s="${k}" title="${esc(t.sources[k - 1].label)}">${k}</button>` : ""))
-    .replace(/\[D(\d+)\]/g, (m, k) => (Number(k) >= 1 && Number(k) <= nd
-      ? `<button type="button" class="cx-cite cx-cite-d" data-dg="${i}:${k - 1}" title="Diagram ${esc(t.diagrams[k - 1].label)}">D${k}</button>` : ""));
-  return formatHtml(t.a || "", render);
 }
 
 /* ------------------------------------------------- quick facts, diagrams */
@@ -90,7 +74,7 @@ function diagramsHtml(t, i) {
   const ds = t.diagrams || [];
   if (!ds.length) return "";
   return `<div class="cx-dgs">${ds.map((d, k) => `<button type="button" class="cx-dg" data-dg="${i}:${k}" title="Diagram ${esc(d.label)} - ${esc(d.caption)} (click to enlarge)">`
-    + `<img src="${pageImg(d, 400)}" alt="Diagram ${esc(d.label)}" loading="lazy"><span><b>${t.kind !== "search" && t.a && new RegExp("\\[D" + (k + 1) + "\\]").test(t.a) ? `D${k + 1} \u00b7 ` : ""}Diagram ${esc(d.label)}</b> ${esc(d.caption)}<small>${esc(d.title)} \u00b7 p.${d.page}</small></span></button>`).join("")}</div>`;
+    + `<img src="${pageImg(d, 400)}" alt="Diagram ${esc(d.label)}" loading="lazy"><span><b>Diagram ${esc(d.label)}</b> ${esc(d.caption)}<small>${esc(d.title)} \u00b7 p.${d.page}</small></span></button>`).join("")}</div>`;
 }
 
 function openDiagram(t, k) {
@@ -130,22 +114,14 @@ function turnHtml(t, i) {
   const q = `<div class="cx-q"><div class="cx-bubble">${esc(t.q)}</div></div>`;
   let a = "";
   const n = (t.sources || []).length;
-  if (t.kind === "search") {
+  // a search: Quick facts, the diagrams, the clauses (an answer kept from
+  // before the Codes page had no AI is shown the same way)
+  if (t.busy) a = `<div class="cx-found cx-wait">Finding the clauses ...</div>`;
+  else if (t.err) a = `<p class="cx-why bad">${esc(t.why || "Not found")}</p>`;
+  else {
     a = factsHtml(t, i) + diagramsHtml(t, i)
       + `<div class="cx-found">${n ? `${n} clause${n === 1 ? "" : "s"} found` : "No clause in the library matches - try the words the code uses"}`
-      + (n ? ` <button type="button" class="ghost" data-show="${i}">Show</button>` : "") + `</div>`
-      + (t.why && n ? `<p class="cx-why">${esc(t.why)}</p>` : "");
-  } else {
-    const body = t.a ? `<div class="cx-text">${answerHtml(t, i)}</div>` : (t.busy ? `<div class="cx-text cx-wait">${n ? `Reading ${n} clauses ...` : "Finding the clauses ..."}</div>` : "");
-    const note = t.why ? `<p class="cx-why ${t.err ? "bad" : ""}">${esc(t.why)}</p>` : "";
-    const used = (t.cited || []).length;
-    const foot = t.busy ? "" : `<div class="cx-foot">`
-      + (n ? `<button type="button" class="ghost" data-show="${i}">${used ? `${used} clause${used === 1 ? "" : "s"} cited` : `${n} clauses found`} &rsaquo;</button>` : "")
-      + (t.a ? `<button type="button" class="ghost" data-copy="${i}" title="Copy the answer with its references">Copy</button>` : "")
-      + (t.a && CX.st && CX.st.manage ? `<button type="button" class="ghost" data-note="${i}" title="Keep this answer in the library as an office note">Save as note</button>` : "")
-      + (t.a ? `<span class="cx-disc">Check each figure against the current edition of the document - this is a reading aid, not advice.</span>` : "")
-      + `</div>`;
-    a = `<div class="cx-a">${body}${t.busy ? "" : diagramsHtml(t, i)}${note}${foot}</div>`;
+      + (n ? ` <button type="button" class="ghost" data-show="${i}">Show</button>` : "") + `</div>`;
   }
   return `<div class="cx-turn" data-i="${i}">${q}${a}</div>`;
 }
@@ -153,8 +129,8 @@ function turnHtml(t, i) {
 function render() {
   const log = $("#cx-log");
   if (!CX.turns.length) {
-    log.innerHTML = `<div class="cx-empty"><h3>Ask a question about the building codes</h3>`
-      + `<p class="muted">Answers come only from the documents in the office's library, and cite the clauses they use.</p>`
+    log.innerHTML = `<div class="cx-empty"><h3>Search the building codes</h3>`
+      + `<p class="muted">The clauses come from the documents in the office's library, with Quick facts - their figures and conditions - and the diagrams they refer to.</p>`
       + `<div class="cx-eg">${["What is the maximum travel distance in a dead end?", "Minimum width of a required staircase serving 200 persons?",
         "When is a fireman's lift required?", "TRS 的要求是甚麼？"].map((x) => `<button type="button" class="ghost">${esc(x)}</button>`).join("")}</div></div>`;
     for (const b of log.querySelectorAll(".cx-eg button")) b.onclick = () => { $("#cx-q").value = b.textContent; $("#cx-q").focus(); };
@@ -182,7 +158,7 @@ function showSources(i, focus) {
   side.classList.add("on");
   const src = t.sources || [];
   const cited = new Set(t.cited || []);
-  $("#cx-side-title").textContent = t.kind === "search" ? `Clauses for "${t.q.slice(0, 40)}${t.q.length > 40 ? "..." : ""}"` : "Clauses of this answer";
+  $("#cx-side-title").textContent = `Clauses for "${t.q.slice(0, 40)}${t.q.length > 40 ? "..." : ""}"`;
   const order = src.map((s, k) => k + 1).sort((a, b) => (cited.has(b) - cited.has(a)) || a - b);
   $("#cx-clauses").innerHTML = src.length ? order.map((k) => {
     const s = src[k - 1];
@@ -226,69 +202,23 @@ function copy(text) {
     });
 }
 
-function withRefs(t) {
-  const used = (t.cited || []).length ? t.cited : (t.sources || []).map((s, k) => k + 1);
-  return `Q: ${t.q}\n\n${t.a}\n\nReferences:\n` + used.map((k) => {
-    const s = t.sources[k - 1];
-    return s ? `[S${k}] ${s.label}${s.edition ? " (edition " + s.edition + ")" : ""}` : "";
-  }).filter(Boolean).join("\n");
-}
+/* ------------------------------------------------------------- finding */
 
-/* ------------------------------------------------------ asking, finding */
-
-async function ask(useAi) {
+async function find() {
   const q = $("#cx-q").value.trim();
   if (!q) return $("#cx-q").focus();
   if (CX.turns.some((t) => t.busy)) return;
   $("#cx-q").value = "";
   const i = CX.turns.length;
-  if (!useAi) {
-    CX.turns.push({ q, kind: "search", sources: [], busy: true });
-    render();
-    try {
-      const r = await api("/api/codes/search?" + new URLSearchParams({ q, n: 25 }));
-      Object.assign(CX.turns[i], { sources: r.items, terms: r.terms, facts: r.facts || [], diagrams: r.diagrams || [], busy: false });
-    } catch (e) { Object.assign(CX.turns[i], { busy: false, why: e.message, err: true, kind: "ask" }); }
-    paintTurn(i);
-    save();
-    if (CX.turns[i].sources.length) showSources(i);
-    return;
-  }
-  const history = CX.turns.filter((t) => t.kind !== "search" && t.a && !t.err).slice(-4).map((t) => ({ q: t.q, a: t.a }));
-  const t = { q, kind: "ask", a: "", sources: [], cited: [], busy: true };
-  CX.turns.push(t);
+  CX.turns.push({ q, kind: "search", sources: [], busy: true });
   render();
   try {
-    const res = await fetch("/api/codes/ask", { method: "POST", headers: headers(true), body: JSON.stringify({ q, history, project: project() || "" }) });
-    if (!res.ok) {
-      let d = null; try { d = await res.json(); } catch (e) {}
-      throw new Error((d && d.detail) || "HTTP " + res.status);
-    }
-    const rd = res.body.getReader(), dec = new TextDecoder();
-    let buf = "", pending = false;
-    const repaint = () => { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; paintTurn(i); }); } };
-    for (;;) {
-      const { value, done } = await rd.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      let nl;
-      while ((nl = buf.indexOf("\n")) >= 0) {
-        const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
-        if (!line.trim()) continue;
-        let m; try { m = JSON.parse(line); } catch (e) { continue; }
-        if (m.type === "sources") { t.sources = m.items; t.terms = m.terms; t.facts = m.facts || []; t.diagrams = m.diagrams || []; if (!phone() && m.items.length) showSources(i); }
-        else if (m.type === "text") t.a += m.t;
-        else if (m.type === "off") { t.why = m.why; t.kind = "search"; }
-        else if (m.type === "error") { t.why = m.why; t.err = true; }
-        else if (m.type === "done") { t.cited = m.cited || []; t.model = m.model; }
-        repaint();
-      }
-    }
-  } catch (e) { t.why = e.message; t.err = true; }
-  t.busy = false;
+    const r = await api("/api/codes/search?" + new URLSearchParams({ q, n: 25 }));
+    Object.assign(CX.turns[i], { sources: r.items, terms: r.terms, facts: r.facts || [], diagrams: r.diagrams || [], busy: false });
+  } catch (e) { Object.assign(CX.turns[i], { busy: false, why: e.message, err: true }); }
   paintTurn(i);
-  if (CX.shown === i || (!phone() && t.sources.length)) showSources(i);
   save();
+  if (CX.turns[i].sources.length && !phone()) showSources(i);
 }
 
 /* --------------------------------------------------------------- library */
@@ -362,8 +292,7 @@ async function openLibrary(tab) {
         + `<details class="cx-add"><summary>Add an office note (pasted text)</summary>`
         + `<div class="cx-grid"><label>Title<input id="nt-title" placeholder="e.g. BD comments - MOE, 2025"></label><label>Kind<select id="nt-kind">${kindOpts("internal")}</select></label>`
         + `<label class="wide">Text<textarea id="nt-text" rows="6" placeholder="Paste the text. Number the points (1. 2. or B5.1 ...) to keep them apart."></textarea></label></div>`
-        + `<div class="row end"><button type="button" class="primary" id="nt-go">Add the note</button></div></details>`
-        + `<details class="cx-add" id="lb-ai"><summary>Answers by Claude (API key, model, cost)</summary><div class="cx-ai muted">Loading ...</div></details>`;
+        + `<div class="row end"><button type="button" class="primary" id="nt-go">Add the note</button></div></details>`;
     }
     body.innerHTML = html;
     if (!admin) return;
@@ -404,7 +333,6 @@ async function openLibrary(tab) {
       } catch (e) { toast(e.message, true); }
     };
     for (const b of body.querySelectorAll("[data-edit]")) b.onclick = () => editSource(r.sources.find((s) => s.id === b.dataset.edit), async () => { r = await api("/api/codes/sources"); paint(); });
-    paintAi($(".cx-ai", body));
   };
 
   // a document from a web address: downloaded on the server, its details
@@ -507,26 +435,6 @@ function editSource(s, done) {
   };
 }
 
-async function paintAi(box) {
-  let s;
-  try { s = await api("/api/codes/settings"); } catch (e) { box.textContent = e.message; return; }
-  const per = (m) => `about US$${((10000 * m.in + 1000 * m.out) / 1e6).toFixed(m.in < 1 ? 4 : 3)} a question`;
-  box.classList.remove("muted");
-  box.innerHTML = `<label>Model<select id="ai-model"><option value="off"${s.model === "off" ? " selected" : ""}>Off - Find clauses only</option>`
-    + s.models.map((m) => `<option value="${m.id}"${m.id === s.model ? " selected" : ""}>${esc(m.label)} - ${per(m)}</option>`).join("") + `</select></label>`
-    + `<p class="small">API key: ${s.key_set ? `<b>set</b> (ends ${esc(s.key_end)}${s.key_from === "env" ? ", from ANTHROPIC_API_KEY on the server" : ", kept on the server"})` : "<b>not set</b>"}. `
-    + `Get one at console.anthropic.com (pay as you go, no subscription); it stays on this server and is never shown again.</p>`
-    + (s.key_from === "env" ? "" : `<label>${s.key_set ? "Replace the key" : "Claude API key"}<input id="ai-key" type="password" autocomplete="off" placeholder="sk-ant-..."></label>`)
-    + `<p class="small muted">This month: ${s.month.questions} question${s.month.questions === 1 ? "" : "s"}, about US$${s.month.usd.toFixed(2)} · since the start: ${s.total.questions}, US$${s.total.usd.toFixed(2)}. Questions and the matching clauses are sent to Anthropic to write the answer.</p>`
-    + `<div class="row end">${s.key_set && s.key_from === "saved" ? `<button type="button" class="ghost danger" id="ai-clear">Remove the key</button>` : ""}<button type="button" class="primary" id="ai-save">Save</button></div>`;
-  const send = async (b) => {
-    try { await api("/api/codes/settings", { method: "POST", body: JSON.stringify(b) }); toast("Saved"); paintAi(box); loadStatus(); } catch (e) { toast(e.message, true); }
-  };
-  $("#ai-save", box).onclick = () => { const k = $("#ai-key", box); send({ model: $("#ai-model", box).value, key: k ? k.value.trim() : "" }); };
-  const c = $("#ai-clear", box);
-  if (c) c.onclick = () => { if (confirm("Remove the saved API key? Ask stops until another is added.")) send({ clear_key: true }); };
-}
-
 /* ----------------------------------------------------------------- start */
 
 async function recent(btn) {
@@ -534,19 +442,18 @@ async function recent(btn) {
   try { r = await api("/api/codes/history"); } catch (e) { return toast(e.message, true); }
   const items = r.items || [];
   const p = pop(btn, items.length ? items.map((x, k) => `<button type="button" class="cx-rq" data-k="${k}">${esc(x.q.slice(0, 120))}<small class="muted">${new Date(x.at * 1000).toLocaleString()}</small></button>`).join("")
-    : `<p class="muted" style="padding:8px">No questions yet.</p>`, 380);
+    : `<p class="muted" style="padding:8px">No searches yet.</p>`, 380);
   for (const b of p.querySelectorAll(".cx-rq")) {
     b.onclick = () => {
       const x = items[b.dataset.k];
       closePop();
-      CX.turns.push({ q: x.q, kind: "ask", a: x.answer || "", sources: [], cited: [], why: "From your earlier questions - ask again to see its clauses." });
-      render(); save();
       $("#cx-q").value = x.q;
+      find();
     };
   }
 }
 
-/* Ask the codes | GBP workbook (gbp.js): the workbook opens on first use;
+/* Search the codes | GBP workbook (gbp.js): the workbook opens on first use;
    a § source in it finds that clause in the library here */
 let GBP_ON = false;
 function showTab(tab) {
@@ -559,7 +466,7 @@ function showTab(tab) {
   history.replaceState(null, "", u.pathname + u.search);
   if (tab === "gbp" && !GBP_ON) {
     GBP_ON = true;
-    mountGbp($("#gbp"), { findClause: (q) => { showTab("ask"); $("#cx-q").value = q; ask(false); } })
+    mountGbp($("#gbp"), { findClause: (q) => { showTab("ask"); $("#cx-q").value = q; find(); } })
       .catch((e) => { GBP_ON = false; $("#gbp").innerHTML = `<p class="muted" style="padding:20px">${esc(e.message)}</p>`; });
   }
 }
@@ -578,9 +485,8 @@ async function start() {
   await loadStatus();
   const q = new URLSearchParams(location.search).get("q");
   if (q) { $("#cx-q").value = q; history.replaceState(null, "", location.pathname + (project() ? "?project=" + encodeURIComponent(project()) : "")); }
-  $("#cx-form").onsubmit = () => { ask(!!(CX.st && CX.st.ask)); return false; };
-  $("#cx-search").onclick = () => ask(false);
-  $("#cx-q").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); ask(!!(CX.st && CX.st.ask)); } });
+  $("#cx-form").onsubmit = () => { find(); return false; };
+  $("#cx-q").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); find(); } });
   $("#cx-new").onclick = () => { CX.turns = []; CX.shown = -1; save(); render(); $("#cx-side").classList.remove("on"); $("#cx-clauses").innerHTML = ""; $("#cx-q").focus(); };
   $("#cx-lib").onclick = () => openLibrary();
   $("#cx-recent").onclick = () => recent($("#cx-recent"));
@@ -597,19 +503,8 @@ async function start() {
     if (dgClick(ev)) return;
     const fr = ev.target.closest(".cx-fref");
     if (fr) return showSources(Number(fr.dataset.turn), Number(fr.dataset.s));
-    const c = ev.target.closest(".cx-cite");
-    if (c) return showSources(Number(c.dataset.turn), Number(c.dataset.s));
     const s = ev.target.closest("[data-show]");
     if (s) return showSources(Number(s.dataset.show));
-    const cp = ev.target.closest("[data-copy]");
-    if (cp) return copy(withRefs(CX.turns[cp.dataset.copy]));
-    const nt = ev.target.closest("[data-note]");
-    if (nt) {
-      const t = CX.turns[nt.dataset.note];
-      nt.disabled = true;
-      api("/api/codes/notes", { method: "POST", body: JSON.stringify({ title: "Answer: " + t.q.slice(0, 120), kind: "internal", text: withRefs(t) }) })
-        .then(() => { toast("Kept in the library as an office note"); loadStatus(); }, (e) => { toast(e.message, true); nt.disabled = false; });
-    }
   });
   const last = CX.turns.length - 1;
   if (last >= 0 && !phone() && (CX.turns[last].sources || []).length) showSources(last);

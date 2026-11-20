@@ -8445,7 +8445,7 @@ async function boot() {
       const r = await buildAxisTest(cams, fovOf(), shot.image);
       download(r.blob, "axis-test.bcfzip");
       status(`Axis test written: ${r.count} topics aimed at the current view. `
-        + "Open them in Revit and tell Claude which title lands correctly.");
+        + "Open them in Revit and note which title lands correctly.");
     } catch (e) {
       status("Axis test failed: " + e.message);
       showError("axisTest", e);

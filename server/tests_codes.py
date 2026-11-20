@@ -1,9 +1,8 @@
-"""The Codes library: clauses split and found, and Ask sending Claude only
-the clauses found (a stand-in model here - no key, no network).
+"""The Codes library: clauses split and found, Quick facts and diagrams,
+searches kept for Recent - and no AI (no Ask, no AI settings).
 
     python3 tests_codes.py
 """
-import json
 import os
 import shutil
 import sys
@@ -98,8 +97,6 @@ class CodesTest(unittest.TestCase):
 
     def setUp(self):
         self.core.admin = True
-        codes.CALL["fn"] = codes.claude_stream
-        os.environ.pop("ANTHROPIC_API_KEY", None)
 
     def test_split_keeps_clause_numbers(self):
         cl = codes.split_clauses([(1, FS_TEXT.split("\n"))])
@@ -125,46 +122,25 @@ class CodesTest(unittest.TestCase):
         self.assertTrue(r["items"])
         self.assertEqual(r["items"][0]["ref"], "第41條")
 
-    def test_ask_off_without_key_still_gives_clauses(self):
-        lines = [json.loads(x) for x in self.c.post("/api/codes/ask", json={"q": "dead end distance"}).text.splitlines()]
-        self.assertEqual(lines[0]["type"], "sources")
-        self.assertTrue(lines[0]["items"])
-        self.assertEqual(lines[-1]["type"], "off")
+    def test_no_ai(self):
+        """No Ask and no AI settings: the page searches only."""
+        for path in ("/api/codes/ask", "/api/codes/settings"):
+            self.assertIn(self.c.post(path, json={"q": "dead end"}).status_code, (404, 405), path)
+        self.assertIn(self.c.get("/api/codes/settings").status_code, (404, 405))
+        old = os.path.join(self.core.CFG["data"], "codes", "api_key")
+        with open(old, "w") as f:
+            f.write("sk-ant-old")
+        st = self.c.get("/api/codes/status").json()
+        self.assertFalse(os.path.exists(old))           # a key an earlier version kept is gone
+        self.assertEqual(set(st), {"sources", "clauses", "manage"})
+        self.assertFalse(hasattr(codes, "CALL") or hasattr(codes, "MODELS"))
 
-    def test_ask_sends_only_found_clauses(self):
-        os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test-" + "x" * 30
-        seen = {}
-
-        def fake(key, model, system, messages):
-            seen["messages"], seen["model"] = messages, model
-            yield "text", "Within a dead end: not more than 24 m [S1]. See also [S9]."
-            yield "done", {"stop": "end_turn", "in": 1000, "out": 50, "model": model}
-        codes.CALL["fn"] = fake
-        out = [json.loads(x) for x in self.c.post("/api/codes/ask", json={"q": "How long may a dead end be?", "project": "P1"}).text.splitlines()]
-        src = out[0]["items"]
-        self.assertEqual(src[0]["ref"], "B5.2")
-        body = seen["messages"][-1]["content"]
-        self.assertIn('<source id="S1" ref="FS Code 2011 · B5.2"', body)
-        self.assertEqual(body.count("<source "), len(src))
-        self.assertEqual(seen["model"], codes.DEFAULT_MODEL)
-        done = out[-1]
-        self.assertEqual(done["type"], "done")
-        self.assertEqual(done["cited"], [1] if len(src) < 9 else [1, 9])   # a citation of a clause not sent is dropped
+    def test_searches_are_recent(self):
+        self.c.get("/api/codes/search", params={"q": "How long may a dead end be?"})
+        self.c.get("/api/codes/search", params={"q": "How long may a dead end be?"})   # a repeat: once
         h = self.c.get("/api/codes/history").json()["items"]
         self.assertEqual(h[0]["q"], "How long may a dead end be?")
-        s = self.c.get("/api/codes/settings").json()
-        self.assertEqual(s["key_from"], "env")
-        self.assertGreater(s["month"]["questions"], 0)
-
-    def test_ask_reports_error(self):
-        os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test-" + "x" * 30
-
-        def bad(key, model, system, messages):
-            raise RuntimeError("boom")
-            yield
-        codes.CALL["fn"] = bad
-        out = [json.loads(x) for x in self.c.post("/api/codes/ask", json={"q": "dead end"}).text.splitlines()]
-        self.assertEqual(out[-1]["type"], "error")
+        self.assertNotEqual(h[1:2] and h[1]["q"], "How long may a dead end be?")
 
     def test_superseded_left_out(self):
         r = self.c.post("/api/codes/notes", json={"title": "Old note", "text": "B9.9 Dead end corridors in the 1996 code were 15 m.", "kind": "internal"}).json()
@@ -179,18 +155,7 @@ class CodesTest(unittest.TestCase):
         self.core.admin = False
         r = self.c.post("/api/codes/notes", json={"title": "x", "text": "some text long enough"})
         self.assertEqual(r.status_code, 403)
-        self.assertEqual(self.c.post("/api/codes/settings", json={"model": "off"}).status_code, 403)
         self.assertEqual(self.c.get("/api/codes/search", params={"q": "exit"}).status_code, 200)
-
-    def test_settings_key_and_model(self):
-        r = self.c.post("/api/codes/settings", json={"key": "not-a-key"})
-        self.assertEqual(r.status_code, 400)
-        r = self.c.post("/api/codes/settings", json={"key": "sk-ant-api03-" + "a" * 40, "model": "claude-haiku-5-5"}).json()
-        self.assertTrue(r["key_set"])
-        self.assertEqual(r["key_from"], "saved")
-        self.assertEqual(r["model"], "claude-haiku-5-5")
-        self.assertNotIn("a" * 40, json.dumps(r))          # the key itself never comes back
-        self.c.post("/api/codes/settings", json={"clear_key": True, "model": codes.DEFAULT_MODEL})
 
     @unittest.skipUnless(shutil.which("pdftotext"), "needs poppler")
     def test_pdf_pages(self):
@@ -206,9 +171,9 @@ class CodesTest(unittest.TestCase):
         self.assertTrue(it["pdf"])
         self.assertEqual(self.c.get("/api/codes/sources/%s/file" % it["source"]).headers["content-type"], "application/pdf")
 
-    def test_diagrams_shown_and_sent(self):
+    def test_diagrams_shown(self):
         """A PDF with diagrams: a clause that points to them brings them along
-        (pictures of their pages), and Ask sends them to Claude as images."""
+        (pictures of their pages), with the Quick facts of the clause."""
         pdf = tiny_pdf(["Clause Q1.1 The gangway travel distance is limited to 9m. See Diagrams Q2 and Q3.",
                         "Diagram Q2: Gangway layout", "Diagram Q3 - Gangway section"])
         r = self.c.post("/api/codes/sources?file=gw.pdf&kind=code&title=Gangway Code", content=pdf)
@@ -222,23 +187,7 @@ class CodesTest(unittest.TestCase):
             self.assertEqual(png.status_code, 200)
             self.assertTrue(png.content.startswith(b"\x89PNG"))
             self.assertEqual(self.c.get("/api/codes/sources/%s/page/9.png" % sid).status_code, 404)
-            os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test-" + "x" * 30
-            seen = {}
-
-            def fake(key, model, system, messages):
-                seen["messages"], seen["system"] = messages, system
-                yield "text", "9m [S1]; the layout is in [D1]."
-                yield "done", {"stop": "end_turn", "in": 10, "out": 5, "model": model}
-            codes.CALL["fn"] = fake
-            out = [json.loads(x) for x in self.c.post("/api/codes/ask", json={"q": "gangway travel distance"}).text.splitlines()]
-            self.assertTrue(any(d["label"] == "Q2" for d in out[0]["diagrams"]))
-            content = seen["messages"][-1]["content"]
-            self.assertIsInstance(content, list)
-            imgs = [b for b in content if b.get("type") == "image"]
-            self.assertTrue(1 <= len(imgs) <= codes.MAX_IMAGES and imgs[0]["source"]["media_type"] == "image/png")
-            self.assertIn('<diagram id="D1" label="Diagram Q2">', content[0]["text"])
-            self.assertIn("[D1]", seen["system"])
-            self.assertTrue(any(f["facts"] and f["facts"][0]["figure"] == "9m" for f in out[0]["facts"]))
+            self.assertTrue(any(f["facts"] and f["facts"][0]["figure"] == "9m" for f in got["facts"]))
         finally:
             self.c.delete("/api/codes/sources/" + sid)
 
