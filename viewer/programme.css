@@ -61,6 +61,8 @@
 .pg-r.flash { animation: pgflash 2s ease-out; }
 @keyframes pgflash { from { background: rgba(242, 128, 34, .45); } }
 .pg-c.ed { cursor: text; }
+.pg-gb, .pg-gh { user-select: none; -webkit-user-select: none; }
+.pg-gb .pg-in { user-select: text; -webkit-user-select: text; }
 .pg-c.editing { padding: 0; overflow: visible; }
 .pg-in { width: 100%; height: 100%; box-sizing: border-box; border: 2px solid var(--accent); border-radius: 0; padding: 0 5px; font: inherit; background: var(--panel); color: var(--ink); }
 .pg-tw { border: 0; background: none; padding: 0; width: 16px; flex: none; cursor: pointer; color: var(--muted); font-size: 11px; }

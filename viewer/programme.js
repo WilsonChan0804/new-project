@@ -1936,18 +1936,20 @@ async function start() {
   cb.addEventListener("pointermove", hover);
   cb.addEventListener("pointerleave", hideTip);
   cb.addEventListener("dblclick", (ev) => {
-    const g = ev.target.closest("[data-bar]");
+    // what is under the pointer now: the first click may have redrawn the chart
+    const hit = document.elementFromPoint(ev.clientX, ev.clientY) || ev.target;
+    const g = hit.closest && hit.closest("[data-bar]");
     if (g) return activity(g.dataset.bar);
-    if (!P.can || ev.target.closest(".lnk")) return;
+    if (!P.can || (hit.closest && hit.closest(".lnk"))) return;
     // empty space: a new task there, from that day
     const box = $("#pg-svg").getBoundingClientRect();
     const k = Math.floor((ev.clientY - box.top) / RH);
     const day = PC.isoOf(dayAtX(ev.clientX - box.left));
     before();
     const list = tasks();
-    const above = P.rows[Math.min(k, P.rows.length) - 1];
+    const above = P.rows[Math.min(k, P.rows.length - 1)];        // below the row double-clicked
     let at = list.length, lv = 0;
-    if (above && k < P.rows.length + 1) { const i = list.findIndex((t) => t.id === above.id); at = subtree(i)[1]; lv = above.summary && !(P.view.collapsed || []).includes(above.id) ? above.level + 1 : above.level; }
+    if (above) { const i = list.findIndex((t) => t.id === above.id); at = subtree(i)[1]; lv = above.summary && !(P.view.collapsed || []).includes(above.id) ? above.level + 1 : above.level; }
     const t = { id: uid(), name: "New task", level: lv, kind: "task", start: PC.isoOf(P.cal.dayAt(P.cal.ord(PC.dayOf(day)))), dur: 5, pct: 0, party: "", notes: "", deps: [], links: {} };
     if (above && taskOf(above.id).cat) t.cat = taskOf(above.id).cat;
     list.splice(at, 0, t);
@@ -1984,7 +1986,7 @@ async function start() {
     if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "y") { ev.preventDefault(); redo(); }
     else if ((ev.ctrlKey || ev.metaKey) && k === "Enter") { ev.preventDefault(); add("task"); }
-    else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "c" && P.sel.size) { if (getSelection && String(getSelection())) return; ev.preventDefault(); copyRows(false); }
+    else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "c" && P.sel.size) { ev.preventDefault(); copyRows(false); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "x" && P.sel.size) { ev.preventDefault(); copyRows(true); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "v" && P.clip) { ev.preventDefault(); pasteRows(); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "d" && P.sel.size) { ev.preventDefault(); duplicate(); }

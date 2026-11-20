@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-04", date: "20 Nov 2026",
+    items: [
+      "**Programme: right-click** a row or bar for Properties, insert, cut / copy / paste / duplicate, move up / down, indent, link, category, colour, fold, create tasks, chat - on one row or a whole selection. **Properties** opens as a panel at the right, and edits several rows at once.",
+      "**Colours and categories** (Design, Statutory, Tender, Construction ...) with a legend that shows one at a time; critical tasks keep their colour with a red outline. **Links** get a line style (solid, dashed, dotted), a colour, and can be *related only* - drawn, but they move no dates.",
+      "**Show to level** 1 / 2 / 3, **middle-mouse pan**, Ctrl + wheel zoom, drag the timescale to stretch it, drag column edges to widen them, double-click an empty spot for a new task. **View > Format**: date style, weeks or days, row height, text size, bar labels and more.",
+      "**MS Project XML** export and import, and the **PDF several pages wide** (the pages across repeat the ID and task name), with the colours and line styles.",
+    ],
+  },
+  {
     version: "2027-02-03", date: "20 Nov 2026",
     items: [
       "**Programme** - a new page for the project programme, the easy way to do what MS Project does: type the tasks, durations (working days, Hong Kong holidays skipped) and predecessors (3, 3FS+2d, 5SS ...) or drag between bars. The **critical path** shows in red, with total and free float.",
