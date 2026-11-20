@@ -17,16 +17,17 @@ const TABS = [
   ["3d", "3D", "model.html", "The project's 3D model"],
   ["board", "Board", "board.html", "Whiteboards: notes, mind maps, rules and ideas"],
   ["tasks", "Tasks", "tasks.html", "Team task lists: who does what, by when"],
+  ["programme", "Programme", "programme.html", "The project programme: Gantt chart, critical path, baselines, PDF for the client"],
   ["chat", "Chat", "messenger.html", "Project channels, group chats, direct messages"],
   ["calendar", "Calendar", "calendar.html", "Meetings, tasks and issues by date"],
   ["folders", "Folders", "folders.html", "The project's files"],
-  ["codes", "Codes", "codes.html", "Ask the building codes: the Ordinance, PNAPs and Codes of Practice in the office's library"],
+  ["codes", "Codes", "codes.html", "Search the building codes: the Ordinance, PNAPs and Codes of Practice in the office's library"],
 ];
 
 const PAGE_OF = {
   "projects.html": "projects", "dashboard.html": "dashboard", "index.html": "sheets", "": "sheets",
   "model.html": "3d", "board.html": "board", "tasks.html": "tasks", "messenger.html": "chat",
-  "calendar.html": "calendar", "folders.html": "folders", "admin.html": "admin", "codes.html": "codes",
+  "calendar.html": "calendar", "folders.html": "folders", "admin.html": "admin", "codes.html": "codes", "programme.html": "programme",
 };
 
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")

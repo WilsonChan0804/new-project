@@ -4707,6 +4707,13 @@ try:
 except Exception as _ex:
     print("gbp not loaded: %s" % _ex)
 
+# Programme (programme.py): the project's programme - Gantt, critical path, baselines, its PDF.
+try:
+    import programme
+    programme.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("programme not loaded: %s" % _ex)
+
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.
 try:

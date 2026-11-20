@@ -244,10 +244,11 @@ async function afterSignIn() {
       mode.insertBefore(mk("lwk-to-projects", "Projects", "projects.html", "Your projects: their sheets, 3D, tasks, issues, files and chat"), mode.firstChild);
       mode.appendChild(mk("lwk-to-board", "Board", "board.html", "Whiteboards: notes, mind maps, rules and ideas for the team"));
       mode.appendChild(mk("lwk-to-tasks", "Tasks", "tasks.html", "Team task lists: who does what, by when"));
+      mode.appendChild(mk("lwk-to-prog", "Programme", "programme.html", "The project programme: Gantt chart, critical path, baselines"));
       mode.appendChild(mk("lwk-to-chat", "Chat", "messenger.html", "Messenger: project channels, group chats, direct messages", "chat-link"));
       mode.appendChild(mk("lwk-to-cal", "Calendar", "calendar.html", "Meetings, your tasks and issues by date - and in Outlook"));
       mode.appendChild(mk("lwk-to-folders", "Folders", "folders.html", "The project's files: folders on the server, pinned and starred documents"));
-      mode.appendChild(mk("lwk-to-codes", "Codes", "codes.html", "Ask the building codes: the Ordinance, PNAPs and Codes of Practice in the office's library"));
+      mode.appendChild(mk("lwk-to-codes", "Codes", "codes.html", "Search the building codes: the Ordinance, PNAPs and Codes of Practice in the office's library"));
       mode.appendChild(mk("lwk-to-dash", "Dashboard", "dashboard.html", "Issues and tasks of this project"));
       chatBadge.on = false;
       setTimeout(chatBadge, 300);

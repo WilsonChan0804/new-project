@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Programme</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="tasks.css">
+<link rel="stylesheet" href="programme.css">
+<link rel="stylesheet" href="shell.css">
+<link rel="modulepreload" href="programme.js">
+<link rel="modulepreload" href="progcore.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="pagekit.js">
+<link rel="modulepreload" href="tasks-util.js">
+<link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f28022">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+</head>
+<body class="tasks-page programme-page own-nav">
+<header>
+  <b class="brand"><img class="brand-logo" src="icons/logo-white.png" alt="LWK + Partners"><span class="brand-app">Viewer</span></b>
+  <div class="seg">
+    <a id="to-projects" class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
+    <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <span class="seg-btn on">Programme</span>
+    <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <a id="to-cal" class="seg-btn" data-page="calendar.html" href="calendar.html">Calendar</a>
+    <a id="to-folders" class="seg-btn" data-page="folders.html" href="folders.html">Folders</a>
+    <a id="to-codes" class="seg-btn" data-page="codes.html" href="codes.html">Codes</a>
+    <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
+  </div>
+  <span class="spacer"></span>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="h-who"></span>
+    <a href="#" id="h-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<main id="pg">
+  <div class="pg-bar" id="pg-bar">
+    <div class="pg-grp pg-edit">
+      <button type="button" class="primary" id="pg-add" title="A new task under the selected row (Ctrl+Enter)">+ Task</button>
+      <button type="button" class="ghost" id="pg-ms" title="A new milestone under the selected row">&#9670; Milestone</button>
+      <button type="button" class="ghost pg-ic" id="pg-out" title="Outdent (Alt+Shift+&larr;)">&#8676;</button>
+      <button type="button" class="ghost pg-ic" id="pg-in" title="Indent: make it part of the row above (Alt+Shift+&rarr;)">&#8677;</button>
+      <button type="button" class="ghost pg-ic" id="pg-link" title="Link the selected rows in order, finish to start">&#128279;</button>
+      <button type="button" class="ghost pg-ic" id="pg-del" title="Delete the selected rows (Delete)">&#128465;</button>
+      <button type="button" class="ghost pg-ic" id="pg-undo" title="Undo (Ctrl+Z)">&#8630;</button>
+      <button type="button" class="ghost pg-ic" id="pg-redo" title="Redo (Ctrl+Y)">&#8631;</button>
+    </div>
+    <div class="pg-grp">
+      <div class="pg-seg" id="pg-zoom" role="group" aria-label="Timescale">
+        <button type="button" data-z="day">Day</button><button type="button" data-z="week">Week</button><button type="button" data-z="month">Month</button><button type="button" data-z="quarter">Quarter</button>
+      </div>
+      <button type="button" class="ghost" id="pg-fit" title="Fit the whole programme in the window">Fit</button>
+      <button type="button" class="ghost" id="pg-today" title="Scroll to today">Today</button>
+    </div>
+    <div class="pg-grp">
+      <button type="button" class="ghost pg-tog" id="pg-crit" title="Show the critical path in red">Critical path</button>
+      <button type="button" class="ghost" id="pg-base" title="Compare with a baseline">Baseline &#9662;</button>
+      <button type="button" class="ghost" id="pg-view" title="Columns, links, progress line, only critical tasks">View &#9662;</button>
+      <button type="button" class="ghost pg-edit" id="pg-setup" title="Working week, holidays, title block, remarks">Set up &#9662;</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="pg-saved muted" id="pg-saved"></span>
+    <div class="pg-grp">
+      <button type="button" class="ghost" id="pg-import" title="Tasks from a CSV (from Excel or MS Project)">Import</button>
+      <button type="button" class="primary" id="pg-export" title="PDF for the client, or CSV">Export &#9662;</button>
+    </div>
+  </div>
+  <div class="pg-sum" id="pg-sum"></div>
+  <div class="pg-body" id="pg-body">
+    <div class="pg-sheet" id="pg-sheet">
+      <div class="pg-gh" id="pg-gh"></div>
+      <div class="pg-ch" id="pg-ch"></div>
+      <div class="pg-gb" id="pg-gb"></div>
+      <div class="pg-cb" id="pg-cb"></div>
+    </div>
+    <div class="pg-split" id="pg-split" title="Drag to widen the table"></div>
+  </div>
+  <div class="pg-tip" id="pg-tip" hidden></div>
+  <input type="file" id="pg-file" accept=".csv,.txt,text/csv" hidden>
+</main>
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script type="module" src="programme.js"></script>
+</body>
+</html>
