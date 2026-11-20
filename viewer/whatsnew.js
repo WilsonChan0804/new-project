@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-30", date: "20 Nov 2026",
+    items: [
+      "**Codes > GBP workbook:** the project's GBP calculations, worked from the model's rooms and areas (the office's Revit GBP parameters) and anything typed in - one workbook per project, for everyone on it.",
+      "**Site, PR & SC** from the Cap. 123F First Schedule; **GFA** by floor with the **APP-151 concessions**, the 10% cap and the AHU limit; **occupant load and exits** by FS Code Tables B1 / B2 for every room and storey; **staircase discharge** by Tables B3 / B4. Each result names its clause; **Excel (all)** keeps the schedules in Folders.",
+      "Sanitary fitments, fire resistance and greenery / EVA come next.",
+    ],
+  },
+  {
     version: "2027-01-29", date: "19 Nov 2026",
     items: [
       "**Upload into the right set:** the upload window now asks where the drawings go - **Add to the current set**, **Add to another set**, or **New set** with a name.",

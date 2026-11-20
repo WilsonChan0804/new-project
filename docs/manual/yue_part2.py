@@ -267,4 +267,14 @@ PART = [
         '**Edit** 可以改文件資料、標做 **superseded**（已被取代：搜尋同答案唔再用，但保留紀錄）或者刪走。',
         '**Answers by Claude：** 揀 model - **Claude Sonnet 5.5**（建議，每條問題約 US$0.03）、**Claude Haiku 5.5**（最平，約 US$0.002）或者 **Claude Opus 5.5** - 或者 **Off**，再加 **Claude API key**（console.anthropic.com，用幾多俾幾多，唔使月費）。Key 只會留喺 server，之後唔會再顯示；亦可以喺 server 設定 ANTHROPIC_API_KEY。嗰度會顯示今個月問咗幾多同大約幾錢。每次作答會將問題同相關條文送去 Anthropic；文件本身留喺 server。',
     ]),
+    H3('GBP workbook'),
+    P('**Codes > GBP workbook** 幫你計而家個 project 嘅 GBP 計算：每個 project 一本，儲喺 server，成個 project 嘅人都用得。佢會讀 publish 放喺 plan sheet 上面嘅 room 同 area（連 Revit parameter，同公司嘅 Revit GBP setting 一樣），任何數都可以自己打或者改 - 冇 model 嘅 project 都用得。'),
+    UL([
+        '**Site, PR & SC：** 地盤面積、地盤類別、街道最低同最高水平同天台水平（或者直接填高度），會計出平均街道水平同建築物高度，再根據 **Cap. 123F 附表一** 計出准許上蓋面積同地積比，同埋准許上蓋面積同 GFA（住用同非住用；綜合用途：reg 21 嘅總和）。實際上蓋面積來自 Area-Type SC-D0 / SC-ND0 嘅 area（SC-D1/2、SC-ND1/2 扣減）。',
+        '**GFA & concessions：** 每層 GFA = outline（GFA-D0 / GFA-ND0）減扣減嘅 area（Area Deduct = Yes）同寬免。寬免係 Area-Type **GFA-C** 加 **PNAP APP-151** 項目編號嘅 area（GFA-C2.3 係 AHU 房，GFA-C25 係大堂挑空 ...）；清單會顯示邊啲項目要符合先決條件、邊啲計入 **10% 總上限**，並檢查上限。項目限制：AHU / 冷氣機房最多係嗰層 GFA 嘅 4%（公司設定，可以改 - 要對返 PNAP APP-42）。',
+        '**Occupancy & exits：** 每間房嘅 **Use Classification**（公司嘅 key 1b-1 ... 8，N = 按人數）會攞到 **FS Code Table B1** 嘅系數同佔用人數（向上捨入；第 8 類 100 m² 或以下當零）。**Table B2** 計出需要幾多個出口門 - 數目、總闊度、每個闊度 - 同提供咗嘅比較（來自房嘅 parameter，或者自己打門闊；闊過最窄嗰個 1.5 倍嘅門只計 1.5 倍，B7.3）。公司自己嘅用途（例如 DR 更衣室，2 m²）可以連系數加入。**Storeys：** 房嘅人數加埋就係每層嘅人數（或者自己打），並檢查走火通道（最少 2 條，B8.1）。',
+        '**Staircase discharge：** 列出 required staircase（編號、淨闊度），再喺 Storeys 填每層用邊幾條樓梯、邊層係地面層。每層人數會分俾佢用嘅樓梯；每條樓梯嘅 discharge value 就係佢分到嘅人數總和，同 **Table B3**（大廈全幢有花灑就用 **B4** - 喺 Site 剔）按佢服務嘅層數計出嘅容量比較；向上走 × 0.8，剪刀梯 × 0.7。亦會檢查總數（B12.1）。',
+        'Model 嗰行改過嘅數會標 ✎；**↺** 還原 model 嘅數，**✕** 唔計呢行。**+ Room** / **+ Area** 自己加行。**Model & mapping** 會講邊啲來自 model，如果個 project 嘅 parameter 名唔同可以喺度改。',
+        '每個結果都有出處（**§** 小標籤 - 撳一下會喺法規庫搵）。**Excel (all)** 下載所有表，並放入 Folders > 00 BIM > Exports > GBP。衛生設備、防火時效同綠化 / EVA 會喺下一個版本加入。入則前要對返最新嘅文件。',
+    ]),
 ]

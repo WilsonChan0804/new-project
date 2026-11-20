@@ -14,6 +14,10 @@
 <link rel="modulepreload" href="pagekit.js">
 <link rel="modulepreload" href="tasks-util.js">
 <link rel="modulepreload" href="chatfmt.js">
+<link rel="modulepreload" href="gbp.js">
+<link rel="modulepreload" href="gbpcore.js">
+<link rel="modulepreload" href="gbptables.js">
+<link rel="modulepreload" href="gbpmodel.js">
 <link rel="manifest" href="app.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -43,6 +47,11 @@
   </div>
 </header>
 
+<nav class="cx-tabs" role="tablist">
+  <button type="button" class="cx-tab on" data-tab="ask" role="tab">Ask the codes</button>
+  <button type="button" class="cx-tab" data-tab="gbp" role="tab" title="The GBP calculations of this project: PR, SC, GFA and concessions, occupancy, exits, staircase discharge">GBP workbook</button>
+</nav>
+<main id="gbp" hidden></main>
 <main id="codes">
   <section id="cx-chat">
     <div class="cx-top">

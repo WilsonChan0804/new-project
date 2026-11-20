@@ -15,6 +15,7 @@ import { api, headers, project } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, toast, pop, closePop } from "./tasks-util.js";
 import { formatHtml } from "./chatfmt.js";
+import { mountGbp } from "./gbp.js";
 
 const KEEP = "lwk-viewer:codes-chat";
 const CX = { st: null, turns: [], shown: -1, me: null, kinds: [] };
@@ -372,9 +373,33 @@ async function recent(btn) {
   }
 }
 
+/* Ask the codes | GBP workbook (gbp.js): the workbook opens on first use;
+   a § source in it finds that clause in the library here */
+let GBP_ON = false;
+function showTab(tab) {
+  for (const b of document.querySelectorAll(".cx-tab")) b.classList.toggle("on", b.dataset.tab === tab);
+  $("#codes").hidden = tab !== "ask";
+  $("#gbp").hidden = tab !== "gbp";
+  try { localStorage.setItem("lwk-viewer:codes-tab", tab); } catch (e) {}
+  const u = new URL(location.href);
+  if (tab === "gbp") u.searchParams.set("tab", "gbp"); else u.searchParams.delete("tab");
+  history.replaceState(null, "", u.pathname + u.search);
+  if (tab === "gbp" && !GBP_ON) {
+    GBP_ON = true;
+    mountGbp($("#gbp"), { findClause: (q) => { showTab("ask"); $("#cx-q").value = q; ask(false); } })
+      .catch((e) => { GBP_ON = false; $("#gbp").innerHTML = `<p class="muted" style="padding:20px">${esc(e.message)}</p>`; });
+  }
+}
+
 async function start() {
   CX.me = await ensureSignedIn();
   header(CX.me);
+  for (const b of document.querySelectorAll(".cx-tab")) b.onclick = () => showTab(b.dataset.tab);
+  {
+    let t = new URLSearchParams(location.search).get("tab");
+    if (!t) { try { t = localStorage.getItem("lwk-viewer:codes-tab"); } catch (e) {} }
+    if (t === "gbp") showTab("gbp");
+  }
   load();
   render();
   await loadStatus();

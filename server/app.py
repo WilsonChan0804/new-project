@@ -4700,6 +4700,13 @@ try:
 except Exception as _ex:
     print("lv not loaded: %s" % _ex)
 
+# GBP workbook (gbp.py): the Codes page's workbook inputs, and its Excel.
+try:
+    import gbp
+    gbp.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("gbp not loaded: %s" % _ex)
+
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.
 try:
