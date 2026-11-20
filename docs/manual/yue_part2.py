@@ -262,6 +262,8 @@ PART = [
     ]),
     H3('法規庫（site admin）'),
     UL([
+        '**Library > Find documents：** 屋宇署網站上嘅 codes 同設計手冊、PNAP（ADM / APP / ADV）、聯合作業備考，同埋俾 RSE 同樓宇檢驗人員嘅作業備考，由佢網站讀入（保留一日；**Refresh** 再讀）。可以用編號或者字搜（例如 *APP-151*、*fire safety*），按來源篩選。每份會顯示版本或者日期，已經喺法規庫就標 **in the library**；屋宇署列出較新版本就標 **newer than the library\'s**。**Add** 會下載並自動填好資料；**Open** 喺網上打開。條例同規例（Cap. 123 ...）喺電子版香港法例：**Open**，喺嗰度下載 PDF，再用 Choose File 加入。',
+        '**From the web：** 貼上 PDF 嘅網址再撳 **Get**：server 會下載，並認出標題、類別同版本 - 來自屋宇署清單、網址或者 PDF 本身（會用淺綠色標住，直至你改）。檢查一下，再撳 **Add to the library**。本機或者內部網絡嘅網址會被拒絕。法規庫入面有較新版本嘅文件會喺清單標住 - 撳嗰個標記攞新版，再將舊版標做 superseded。',
         '**Library > Add a document：** 揀 PDF、Word（.docx）或者文字檔，填標題、類別（Ordinance、Regulation、PNAP、Code of Practice、設計手冊、公司筆記）、版本同官方網頁。系統會將佢拆成一條條條文，保留條號同頁數。掃描嘅 PDF 要先轉做有文字（Acrobat > Scan & OCR）。',
         '**Add an office note：** 貼上文字（屋宇署意見、公司做法）；每點加編號就會分開儲。',
         '**Edit** 可以改文件資料、標做 **superseded**（已被取代：搜尋同答案唔再用，但保留紀錄）或者刪走。',

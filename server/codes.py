@@ -513,27 +513,137 @@ def register(app, core):
             rows = c.execute("SELECT * FROM sources ORDER BY status, kind, title").fetchall()
         return {"sources": [source_row(r) for r in rows], "kinds": [{"id": k, "label": KIND_LABEL[k]} for k in KINDS]}
 
+    # ------------------------------------------------ the web (codesweb.py)
+
+    def lib_rows():
+        with db() as c:
+            return [dict(r) for r in c.execute("SELECT id, title, kind, edition, url, status FROM sources").fetchall()]
+
+    def mark_library(docs):
+        """each catalogue document: in the library already? (by its address,
+        else its number in a title), and a newer edition on the web?"""
+        lib = lib_rows()
+        by_url = dict((str(r["url"] or "").lower(), r) for r in lib if r["url"])
+        for d in docs:
+            hit = by_url.get(d["url"].lower())
+            if not hit and d.get("number"):
+                num = re.compile(r"(^|\W)" + re.escape(d["number"]) + r"(\W|$)", re.I)
+                hit = next((r for r in lib if num.search(r["title"] or "")), None)
+            d["in_library"] = hit["id"] if hit else ""
+            ed_web = (d.get("edition") or d.get("date") or "").strip().lower()
+            d["newer"] = bool(hit and ed_web and (hit.get("edition") or "").strip().lower() not in ("", ed_web))
+            d["library_edition"] = hit.get("edition", "") if hit else ""
+        return docs
+
+    @app.get("/api/codes/catalogue")
+    def codes_catalogue(request: Request, refresh: int = 0, x_viewer_token: str = Header(default="")):
+        """The documents the Buildings Department publishes, read from its
+        index pages (kept a day), each marked if it is in the library."""
+        who(request, x_viewer_token)
+        import codesweb as W
+        c = W.catalogue(_dir("web"), refresh=bool(refresh))
+        out = dict(c)
+        out["docs"] = mark_library([dict(d) for d in c["docs"]])
+        return out
+
+    def pending_dir():
+        d = _dir("pending")
+        for f in os.listdir(d):                       # a day old: gone
+            try:
+                if time.time() - os.path.getmtime(os.path.join(d, f)) > 86400:
+                    os.remove(os.path.join(d, f))
+            except OSError:
+                pass
+        return d
+
+    @app.post("/api/codes/fetch")
+    async def codes_fetch(request: Request, x_viewer_token: str = Header(default="")):
+        """{url}: the document downloaded on the server, kept as pending (a
+        day), with its details recognised - Add to the library adds it."""
+        admin(request, x_viewer_token)
+        body = await request.json()
+        url = str((body or {}).get("url") or "").strip()
+        import codesweb as W
+
+        def run():
+            pid = uuid.uuid4().hex[:12]
+            tmp = os.path.join(pending_dir(), pid + ".part")
+            try:
+                got = W.fetch(url, tmp)
+            except W.Refused as ex:
+                raise HTTPException(status_code=400, detail=str(ex))
+            path = os.path.join(pending_dir(), pid + "." + got["ext"])
+            os.replace(tmp, path)
+            meta, text = ({}, "")
+            if got["ext"] == "pdf":
+                meta, text = W.pdf_meta(path)
+            elif got["ext"] in ("txt", "md"):
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    text = f.read(6000)
+            elif got["ext"] == "docx":
+                try:
+                    text = "\n".join(docx_paras(path)[:60])
+                except Exception:
+                    text = ""
+            try:
+                cat = W.catalogue(_dir("web"))
+            except Exception:
+                cat = None
+            g = W.guess_details(got["final_url"] or url, meta, text, cat)
+            if g["title"] == "" and not g["number"]:
+                g["title"] = clean(os.path.splitext(got["name"])[0], 160)
+            with open(path + ".json", "w", encoding="utf-8") as f:
+                json.dump({"url": url, "final_url": got["final_url"], "name": got["name"], "ext": got["ext"], "size": got["size"]}, f)
+            return {"pending": pid, "name": got["name"], "ext": got["ext"], "size": got["size"],
+                    "pages": int(meta.get("pages") or 0) if str(meta.get("pages") or "").isdigit() else None,
+                    "url": url, "guess": g, "kind_label": KIND_LABEL.get(g["kind"], g["kind"])}
+        return await run_in_threadpool(run)
+
     @app.post("/api/codes/sources")
     async def codes_upload(request: Request, file: str = "", title: str = "", kind: str = "other",
-                           edition: str = "", url: str = "", x_viewer_token: str = Header(default="")):
+                           edition: str = "", url: str = "", pending: str = "", x_viewer_token: str = Header(default="")):
         w = admin(request, x_viewer_token)
-        ext = os.path.splitext(file.lower())[1].lstrip(".")
-        if ext not in ("pdf", "docx", "txt", "md"):
-            raise HTTPException(status_code=400, detail="A PDF, Word (.docx) or text file please")
         sid = uuid.uuid4().hex[:12]
-        path = os.path.join(_dir("files"), sid + "." + ext)
-        size = 0
-        with open(path, "wb") as f:
-            async for chunk in request.stream():
-                size += len(chunk)
-                if size > MAX_FILE:
-                    f.close()
-                    os.remove(path)
-                    raise HTTPException(status_code=413, detail="Files up to 200 MB")
-                f.write(chunk)
-        if not size:
-            os.remove(path)
-            raise HTTPException(status_code=400, detail="The file is empty")
+        if pending:
+            # a document fetched from the web (POST /api/codes/fetch)
+            if not SAFE.match(pending):
+                raise HTTPException(status_code=400, detail="No such fetched document")
+            pd = _dir("pending")
+            info = None
+            try:
+                meta_f = next(f for f in os.listdir(pd) if f.startswith(pending + ".") and f.endswith(".json"))
+                with open(os.path.join(pd, meta_f), encoding="utf-8") as f:
+                    info = json.load(f)
+            except (StopIteration, OSError, ValueError):
+                raise HTTPException(status_code=404, detail="The fetched document is gone (kept a day) - Get it again")
+            ext = info["ext"]
+            src_path = os.path.join(pd, pending + "." + ext)
+            path = os.path.join(_dir("files"), sid + "." + ext)
+            shutil.move(src_path, path)
+            try:
+                os.remove(src_path + ".json")
+            except OSError:
+                pass
+            size = info["size"]
+            file = file or info["name"]
+            url = url or info["url"]
+        else:
+            ext = os.path.splitext(file.lower())[1].lstrip(".")
+            if ext not in ("pdf", "docx", "txt", "md"):
+                raise HTTPException(status_code=400, detail="A PDF, Word (.docx) or text file please")
+            path = os.path.join(_dir("files"), sid + "." + ext)
+            size = 0
+            with open(path, "wb") as f:
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > MAX_FILE:
+                        f.close()
+                        os.remove(path)
+                        raise HTTPException(status_code=413, detail="Files up to 200 MB")
+                    f.write(chunk)
+            if not size:
+                os.remove(path)
+                raise HTTPException(status_code=400, detail="The file is empty")
         t = clean(title, 160) or clean(os.path.splitext(file)[0], 160) or "Untitled"
 
         def run():

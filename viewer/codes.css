@@ -167,3 +167,30 @@ td.gb-ch::after { content: "\270e"; font-size: 10px; color: #9a6700; margin-left
   .gb-acts { margin: 0; flex-direction: row; }
   .gb-main { padding: 10px; overflow: visible; }
 }
+
+/* Library: In the library | Find documents; from the web */
+.cx-libtabs { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.cx-libtabs h3 { margin: 0 12px 0 0; }
+.cx-ltab { border: 1px solid transparent; border-bottom: 0; background: none; border-radius: 8px 8px 0 0; padding: 6px 12px; font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: -1px; }
+.cx-ltab.on { border-color: var(--line); background: var(--panel); color: var(--ink); }
+.cx-lib-body[hidden], .cx-find-body[hidden] { display: none; }
+.cx-web { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 4px; }
+.cx-web label { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.cx-web input { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+#lb-got { margin: 2px 0 8px; }
+.cx-guessed { background: #f3f9ef !important; }
+.cx-fhead { display: flex; gap: 8px; margin-bottom: 8px; }
+.cx-fhead input { flex: 1; font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.cx-fsrc { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.cx-chip { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--ink); }
+.cx-chip.on { border-color: var(--accent); background: var(--accent-soft); }
+.cx-chip.bad { color: #b42318; }
+.cx-chip small { color: var(--muted); }
+.cx-flist { max-height: min(56vh, 560px); overflow-y: auto; }
+.cx-cat td { vertical-align: top; padding: 6px; font-size: 13px; }
+.cx-cat .cx-no { white-space: nowrap; font-weight: 600; width: 1%; }
+.cx-cat .cx-st { white-space: nowrap; width: 1%; }
+.cx-inlib { font-size: 11px; font-weight: 700; color: #1a7f37; background: #e3f4e8; border-radius: 9px; padding: 1px 7px; }
+.cx-newer-b, .cx-newer { font-size: 11px; font-weight: 700; color: #9a6700; background: #fff3d6; border-radius: 9px; padding: 1px 7px; border: 0; }
+.cx-newer { cursor: pointer; }
+.btn-a { display: inline-block; text-decoration: none; padding: 3px 9px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; color: var(--ink); }

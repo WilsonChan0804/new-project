@@ -36,9 +36,11 @@ async function loadStatus() {
   $("#cx-state").innerHTML = s.sources
     ? `${s.sources} document${s.sources === 1 ? "" : "s"}, ${s.clauses} clauses · `
       + (s.ask ? `answers by ${esc(s.model_label.replace(/ \(.*\)$/, ""))}` : `<span class="cx-off" title="${esc(s.why_off)}">Ask is off - Find clauses works</span>`)
-    : (s.manage ? `The library is empty: <a href="#" id="cx-first">add the first documents</a>` : "The library is empty - ask a site admin to add the codes");
+    : (s.manage ? `The library is empty: <a href="#" id="cx-first">find the documents on the BD site</a> or <a href="#" id="cx-first2">add your own</a>` : "The library is empty - ask a site admin to add the codes");
   const f = $("#cx-first");
-  if (f) f.onclick = (ev) => { ev.preventDefault(); openLibrary(); };
+  if (f) f.onclick = (ev) => { ev.preventDefault(); openLibrary("find"); };
+  const f2 = $("#cx-first2");
+  if (f2) f2.onclick = (ev) => { ev.preventDefault(); openLibrary(); };
   $("#cx-ask").disabled = false;
   $("#cx-ask").title = s.ask ? "Find the clauses and have Claude answer from them" : s.why_off;
 }
@@ -231,7 +233,17 @@ const KIND_HINT = { ordinance: "e.g. Buildings Ordinance (Cap 123)", regulation:
   pnap: "e.g. PNAP APP-152", code: "e.g. Code of Practice for Fire Safety in Buildings 2011", guide: "e.g. Design Manual: Barrier Free Access 2008",
   internal: "e.g. BD comments on GBP, our practice", other: "" };
 
-async function openLibrary() {
+/* The catalogue of what the Buildings Department publishes (server reads
+   its index pages, kept a day): for Find documents, and to mark a library
+   document that has a newer edition on the web. */
+let CAT = null;
+async function catalogue(refresh) {
+  if (CAT && !refresh) return CAT;
+  CAT = await api("/api/codes/catalogue" + (refresh ? "?refresh=1" : ""));
+  return CAT;
+}
+
+async function openLibrary(tab) {
   closePop();
   let r;
   try { r = await api("/api/codes/sources"); } catch (e) { return toast(e.message, true); }
@@ -239,7 +251,9 @@ async function openLibrary() {
   const admin = CX.st && CX.st.manage;
   const back = document.createElement("div");
   back.className = "t-modal-back";
-  back.innerHTML = `<div class="t-modal cx-libm"><h3>Library</h3><div class="cx-lib-body"></div>`
+  back.innerHTML = `<div class="t-modal cx-libm"><div class="cx-libtabs"><h3>Library</h3><button type="button" class="cx-ltab on" data-lt="lib">In the library</button>`
+    + `<button type="button" class="cx-ltab" data-lt="find" title="The codes, PNAPs and practice notes the Buildings Department publishes">Find documents</button></div>`
+    + `<div class="cx-lib-body"></div><div class="cx-find-body" hidden></div>`
     + `<div class="t-modal-foot"><span class="spacer"></span><button type="button" class="primary" data-x>Done</button></div></div>`;
   document.body.appendChild(back);
   const end = () => { back.remove(); loadStatus(); };
@@ -247,6 +261,15 @@ async function openLibrary() {
   back.addEventListener("pointerdown", (ev) => { if (ev.target === back) end(); });
   back.addEventListener("keydown", (ev) => { if (ev.key === "Escape") end(); });
   const body = back.querySelector(".cx-lib-body");
+  const fbody = back.querySelector(".cx-find-body");
+  let PEND = null;          // a document fetched from the web, waiting for Add
+  const showTab = (t) => {
+    for (const b of back.querySelectorAll(".cx-ltab")) b.classList.toggle("on", b.dataset.lt === t);
+    body.hidden = t !== "lib"; fbody.hidden = t !== "find";
+    if (t === "find") paintFind();
+  };
+  for (const b of back.querySelectorAll(".cx-ltab")) b.onclick = () => showTab(b.dataset.lt);
+  const newerOf = (sid) => (CAT ? CAT.docs.find((d) => d.in_library === sid && d.newer) : null);
   const kindOpts = (sel) => CX.kinds.map((k) => `<option value="${k.id}"${k.id === sel ? " selected" : ""}>${esc(k.label)}</option>`).join("");
 
   const paint = async () => {
@@ -254,13 +277,18 @@ async function openLibrary() {
     let html = `<table class="cx-lib"><thead><tr><th>Document</th><th>Kind</th><th>Edition</th><th class="num">Clauses</th>${admin ? "<th></th>" : ""}</tr></thead><tbody>`
       + (list.length ? list.map((s) => `<tr class="${s.status === "superseded" ? "sup" : ""}" data-id="${s.id}">`
         + `<td><a href="/api/codes/sources/${s.id}/file" target="_blank" rel="noopener">${esc(s.title)}</a>${s.status === "superseded" ? ` <span class="cx-sup">superseded</span>` : ""}`
+        + (newerOf(s.id) ? ` <button type="button" class="cx-newer" data-newer="${esc(newerOf(s.id).url)}" title="The Buildings Department lists ${esc(newerOf(s.id).edition || newerOf(s.id).date)} - get it and add it (then mark this one superseded)">newer on the web: ${esc(newerOf(s.id).edition || newerOf(s.id).date)}</button>` : "")
         + `<br><small class="muted">${s.pages ? s.pages + " pages · " : ""}${esc(s.ext.toUpperCase())} · added by ${esc(s.added_by || "?")} ${new Date(s.added_at * 1000).toLocaleDateString()}</small></td>`
         + `<td>${esc(s.kind_label)}</td><td>${esc(s.edition || "-")}</td><td class="num">${s.chunks}</td>`
         + (admin ? `<td class="cx-lib-act"><button type="button" class="ghost" data-edit="${s.id}">Edit</button></td>` : "") + `</tr>`).join("")
         : `<tr><td colspan="5" class="muted">No documents yet.</td></tr>`) + `</tbody></table>`;
     if (admin) {
       html += `<details class="cx-add" open><summary>Add a document</summary>`
-        + `<div class="cx-grid"><label>File (PDF, Word, text)<input type="file" id="lb-file" accept=".pdf,.docx,.txt,.md"></label>`
+        + `<div class="cx-web"><label>From the web<input id="lb-web" type="url" placeholder="https://www.bd.gov.hk/doc/en/.../APP151.pdf - the address of the PDF"></label>`
+        + `<button type="button" class="ghost" id="lb-get" title="Download it on the server and read its title, kind and edition">Get</button>`
+        + `<button type="button" class="ghost" id="lb-find" title="Find it in the list of the Buildings Department's documents">Find documents ...</button></div>`
+        + `<p class="muted small" id="lb-got"></p>`
+        + `<div class="cx-grid"><label>or a file (PDF, Word, text)<input type="file" id="lb-file" accept=".pdf,.docx,.txt,.md"></label>`
         + `<label>Title<input id="lb-title" placeholder="${esc(KIND_HINT.code)}"></label>`
         + `<label>Kind<select id="lb-kind">${kindOpts("code")}</select></label>`
         + `<label>Edition / date<input id="lb-ed" placeholder="e.g. 2011 (Dec 2015 amendment)"></label>`
@@ -276,19 +304,30 @@ async function openLibrary() {
     body.innerHTML = html;
     if (!admin) return;
     $("#lb-kind", body).onchange = () => { $("#lb-title", body).placeholder = KIND_HINT[$("#lb-kind", body).value] || ""; };
-    $("#lb-file", body).onchange = () => { const f = $("#lb-file", body).files[0]; if (f && !$("#lb-title", body).value) $("#lb-title", body).value = f.name.replace(/\.[^.]+$/, ""); };
+    $("#lb-file", body).onchange = () => {
+      const f = $("#lb-file", body).files[0];
+      if (f) { PEND = null; $("#lb-got", body).textContent = ""; }
+      if (f && !$("#lb-title", body).value) $("#lb-title", body).value = f.name.replace(/\.[^.]+$/, "");
+    };
+    $("#lb-find", body).onclick = () => showTab("find");
+    $("#lb-get", body).onclick = () => getFromWeb($("#lb-web", body).value.trim());
+    $("#lb-web", body).onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); getFromWeb($("#lb-web", body).value.trim()); } };
+    for (const b of body.querySelectorAll("[data-newer]")) b.onclick = () => getFromWeb(b.dataset.newer);
     $("#lb-go", body).onclick = async () => {
       const f = $("#lb-file", body).files[0];
-      if (!f) return toast("Choose a file first", true);
+      if (!f && !PEND) return toast("Choose a file, or Get one from the web first", true);
       const btn = $("#lb-go", body); btn.disabled = true;
-      $("#lb-msg", body).textContent = "Uploading and reading the clauses ...";
+      $("#lb-msg", body).textContent = f ? "Uploading and reading the clauses ..." : "Reading the clauses ...";
       try {
-        const qs = new URLSearchParams({ file: f.name, title: $("#lb-title", body).value, kind: $("#lb-kind", body).value, edition: $("#lb-ed", body).value, url: $("#lb-url", body).value });
-        const res = await fetch("/api/codes/sources?" + qs, { method: "POST", headers: headers(false), body: f });
+        const qs = new URLSearchParams({ file: f ? f.name : PEND.name, title: $("#lb-title", body).value, kind: $("#lb-kind", body).value, edition: $("#lb-ed", body).value, url: $("#lb-url", body).value });
+        if (!f) qs.set("pending", PEND.pending);
+        const res = await fetch("/api/codes/sources?" + qs, { method: "POST", headers: headers(false), body: f || "" });
         const d = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(d.detail || "HTTP " + res.status);
         toast(`Added: ${d.source.title} - ${d.source.chunks} clauses`);
+        PEND = null;
         r = await api("/api/codes/sources");
+        CAT = null;              // asked again (the server's copy, marked afresh): "in the library"
         paint();
       } catch (e) { $("#lb-msg", body).textContent = e.message; btn.disabled = false; }
     };
@@ -303,7 +342,77 @@ async function openLibrary() {
     for (const b of body.querySelectorAll("[data-edit]")) b.onclick = () => editSource(r.sources.find((s) => s.id === b.dataset.edit), async () => { r = await api("/api/codes/sources"); paint(); });
     paintAi($(".cx-ai", body));
   };
+
+  // a document from a web address: downloaded on the server, its details
+  // read (the BD catalogue, the address, the PDF) and put in the form
+  async function getFromWeb(url) {
+    if (!admin) return;
+    showTab("lib");
+    const add = body.querySelector(".cx-add"); if (add) add.open = true;
+    if (!/^https?:\/\//i.test(url || "")) return toast("A web address starting with https:// please", true);
+    $("#lb-web", body).value = url;
+    const got = $("#lb-got", body), btn = $("#lb-get", body);
+    got.textContent = "Getting it and reading its details ..."; btn.disabled = true;
+    try {
+      const d = await api("/api/codes/fetch", { method: "POST", body: JSON.stringify({ url }) });
+      PEND = d;
+      const g = d.guess;
+      $("#lb-file", body).value = "";
+      $("#lb-title", body).value = g.title || "";
+      if (g.kind && [...$("#lb-kind", body).options].some((o) => o.value === g.kind)) $("#lb-kind", body).value = g.kind;
+      $("#lb-ed", body).value = g.edition || "";
+      $("#lb-url", body).value = url;
+      for (const id of ["#lb-title", "#lb-kind", "#lb-ed"]) $(id, body).classList.toggle("cx-guessed", !!g.from);
+      got.innerHTML = `Got <b>${esc(d.name)}</b> (${(d.size / 1048576).toFixed(1)} MB${d.pages ? `, ${d.pages} pages` : ""}).`
+        + (g.from ? ` Title, kind and edition from ${esc(g.from)} - check them, then <b>Add to the library</b>.` : " Fill in its details, then Add to the library.");
+      $("#lb-title", body).focus();
+    } catch (e) { got.textContent = e.message; PEND = null; }
+    finally { btn.disabled = false; }
+  }
+
+  // Find documents: what the Buildings Department publishes, searchable
+  let FQ = "", FSRC = "";
+  async function paintFind(refresh) {
+    if (!fbody.dataset.ready) {
+      fbody.dataset.ready = "1";
+      fbody.innerHTML = `<div class="cx-fhead"><input id="fd-q" type="search" placeholder="Number or words - e.g. APP-151, fire safety, JPN 1"><button type="button" class="ghost" id="fd-ref" title="Read the Buildings Department's pages again">Refresh</button></div>`
+        + `<div class="cx-fsrc"></div><div class="cx-flist"><p class="muted">Reading the Buildings Department's lists ...</p></div>`;
+      const q = $("#fd-q", fbody);
+      q.oninput = () => { FQ = q.value; list(); };
+      $("#fd-ref", fbody).onclick = () => paintFind(true);
+      setTimeout(() => q.focus(), 30);
+    }
+    try { await catalogue(!!refresh); } catch (e) {
+      $(".cx-flist", fbody).innerHTML = `<p class="cx-why bad">Could not read the Buildings Department's site from the server: ${esc(e.message)}. Choose File still works.</p>`;
+      return;
+    }
+    const srcs = CAT.sources;
+    $(".cx-fsrc", fbody).innerHTML = [`<button type="button" class="cx-chip${!FSRC ? " on" : ""}" data-src="">All</button>`]
+      .concat(srcs.map((x) => `<button type="button" class="cx-chip${FSRC === x.id ? " on" : ""}${x.ok ? "" : " bad"}" data-src="${x.id}" title="${esc(x.ok ? x.page : x.error)}">${esc(x.label)}${x.ok ? ` <small>${x.n}</small>` : " (not read)"}</button>`)).join("");
+    for (const b of fbody.querySelectorAll("[data-src]")) b.onclick = () => { FSRC = b.dataset.src; paintFind(); };
+    list();
+    // the library list's "newer on the web" marks: once (or after Refresh) -
+    // drawing it again empties what is typed in Add a document
+    if (refresh || !body.dataset.marked) { body.dataset.marked = "1"; paint(); }
+  }
+  function list() {
+    if (!CAT) return;
+    const words = FQ.toLowerCase().replace(/[-\s]+/g, " ").split(" ").filter(Boolean);
+    const hay = (d) => (d.number + " " + d.title + " " + d.edition + " " + d.source).toLowerCase().replace(/[-\s]+/g, " ");
+    const hits = CAT.docs.filter((d) => (!FSRC || d.src === FSRC) && words.every((w) => hay(d).includes(w)));
+    const shown = hits.slice(0, 200);
+    $(".cx-flist", fbody).innerHTML = (hits.length ? `<p class="muted small">${hits.length} document${hits.length === 1 ? "" : "s"}${hits.length > 200 ? " - the first 200 shown; type more to narrow it" : ""} · read ${new Date(CAT.at * 1000).toLocaleString()}</p>` : `<p class="muted">Nothing matches.</p>`)
+      + `<table class="cx-lib cx-cat"><tbody>` + shown.map((d) => `<tr><td class="cx-no">${esc(d.number)}</td><td>${esc(d.title)}<br><small class="muted">${esc(d.source)}${d.edition || d.date ? " · " + esc(d.edition || d.date) : ""}${d.availability ? " · print copy: " + esc(d.availability).toLowerCase() : ""}</small></td>`
+        + `<td class="cx-st">${d.in_library ? (d.newer ? `<span class="cx-newer-b" title="In the library as ${esc(d.library_edition)}">newer than the library's</span>` : `<span class="cx-inlib">in the library</span>`) : ""}</td>`
+        + `<td class="cx-lib-act"><a class="ghost btn-a" href="${esc(d.url)}" target="_blank" rel="noopener">Open</a>`
+        + (admin && !d.open_only && (!d.in_library || d.newer) ? ` <button type="button" class="ghost" data-get="${esc(d.url)}">Add</button>` : "")
+        + (d.open_only ? ` <small class="muted" title="eLegislation's pages are built by script: download the PDF there (its download button), then Choose File">download it there</small>` : "") + `</td></tr>`).join("") + `</tbody></table>`;
+    for (const b of fbody.querySelectorAll("[data-get]")) b.onclick = () => getFromWeb(b.dataset.get);
+  }
+
   paint();
+  if (tab === "find") showTab("find");
+  else catalogue().then(() => { if (!body.dataset.marked && !PEND && !(body.querySelector("#lb-title") || {}).value) { body.dataset.marked = "1"; paint(); } }).catch(() => {});
 }
 
 function editSource(s, done) {
@@ -409,7 +518,7 @@ async function start() {
   $("#cx-search").onclick = () => ask(false);
   $("#cx-q").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); ask(!!(CX.st && CX.st.ask)); } });
   $("#cx-new").onclick = () => { CX.turns = []; CX.shown = -1; save(); render(); $("#cx-side").classList.remove("on"); $("#cx-clauses").innerHTML = ""; $("#cx-q").focus(); };
-  $("#cx-lib").onclick = openLibrary;
+  $("#cx-lib").onclick = () => openLibrary();
   $("#cx-recent").onclick = () => recent($("#cx-recent"));
   $("#cx-side-x").onclick = () => $("#cx-side").classList.remove("on");
   $("#cx-log").addEventListener("click", (ev) => {

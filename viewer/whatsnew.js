@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-01-31", date: "20 Nov 2026",
+    items: [
+      "**Codes > Library > Find documents:** the codes, design manuals, PNAPs and practice notes the Buildings Department publishes, searchable by number or words, each marked **in the library** or **newer than the library's**. **Add** downloads one and fills in its details.",
+      "**From the web:** paste the address of a PDF and press **Get** - it is downloaded and its title, kind and edition recognised, ready to check and add.",
+    ],
+  },
+  {
     version: "2027-01-30", date: "20 Nov 2026",
     items: [
       "**Codes > GBP workbook:** the project's GBP calculations, worked from the model's rooms and areas (the office's Revit GBP parameters) and anything typed in - one workbook per project, for everyone on it.",
