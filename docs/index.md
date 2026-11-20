@@ -41,6 +41,10 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- [FS Code Parts E–G: fire tests, fire safety management, fire engineering 耐火測試、消防安全管理、消防工程](codes/fsc-parts-e-f-g.md)
+- [APP-68 Cantilevers 懸臂結構](pnap/app-68.md) · [APP-93 Drainage 排水](pnap/app-93.md) · [APP-132 Site coverage 上蓋面積](pnap/app-132.md) · [ADM-19 Approval process 審批程序](pnap/adm-19.md)
+- [JPN 5 Building height 建築物高度](pnap/jpn-5.md) · [JPN 6 SBD separation & setback 樓宇間距及後移](pnap/jpn-6.md) · [JPN 7 Site coverage 上蓋面積](pnap/jpn-7.md)
+
 - [FS Code Part D Means of access (in full) 消防及救援進出途徑（全部條文）](codes/fsc-part-d-means-of-access.md)
 - [APP-35 Refuse 垃圾](pnap/app-35.md) · [APP-67 OTTV 能源效率](pnap/app-67.md) · [APP-84 Telecom / 5G 電訊](pnap/app-84.md) · [APP-89 Lifts 升降機](pnap/app-89.md) · [ADM-2 Plan processing 圖則處理](pnap/adm-2.md) · [JPN 4 PR / GFA 地積比率](pnap/jpn-4.md)
 

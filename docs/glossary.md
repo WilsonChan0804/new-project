@@ -83,6 +83,15 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Outline Zoning Plan | 分區計劃大綱圖 | OZP |
 | Lease modification | 修訂地契 | — |
 | Premium | 補地價 | — |
+| Building height restriction | 建築物高度限制 | BHR |
+| Mean site formation level | 平均地盤平整水平 | — |
+| metres above Principal Datum | 主水平基準上米數 | mPD |
+| Curtailed check | 精簡審核 | — |
+| Letter of assurance | 保證函 | — |
+| Minor amendment | 輕微修訂 | — |
+| Pipe duct / pipe well | 管槽／管井 | — |
+| Sunken slab | 下沉式樓板 | — |
+| Cantilevered slab | 懸臂式平板 | — |
 | Run-in / run-out | 車輛進出口 | — |
 
 ## Sustainability 可持續發展
@@ -152,6 +161,13 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Major façade | 主要立面 | — |
 | Emergency crash gate | 緊急閘 | — |
 | Fire safety assessment report | 消防安全評估報告 | FSAR |
+| Bounding Conditions | 約束條件 | — |
+| Alternative Solution | 另類方案 | — |
+| Deemed-to-comply provisions | 當作符合的條文 | DTC |
+| Tenability criteria | 可承受條件 | — |
+| Fire safety management plan | 消防安全管理計劃 | — |
+| Non-combustible / limited combustibility | 不可燃／有限度可燃 | A1 / A2 |
+| Competent person | 合資格人士 | — |
 | Place of public entertainment | 公眾娛樂場所 | PPE |
 | Notifiable workplace | 須呈報工作地點 | — |
 

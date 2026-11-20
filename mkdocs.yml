@@ -71,19 +71,26 @@ nav:
       - APP-40 Hotel development 旅館發展: pnap/app-40.md
       - APP-42 Amenity features 適意設施: pnap/app-42.md
       - APP-67 Energy efficiency (OTTV) 能源效率: pnap/app-67.md
+      - APP-68 Cantilevered RC structures 懸臂式結構: pnap/app-68.md
       - APP-84 Telecom facilities 電訊設施: pnap/app-84.md
       - APP-89 Better lift service 升降機服務: pnap/app-89.md
+      - APP-93 Drainage works 排水工程: pnap/app-93.md
       - APP-104 Recreational facilities 康樂設施: pnap/app-104.md
       - APP-108 Public passage 公眾通道: pnap/app-108.md
       - APP-111 Car park design 停車場設計: pnap/app-111.md
       - APP-122 Refuge floor sky garden 庇護層空中花園: pnap/app-122.md
+      - APP-132 Site coverage & open space 上蓋面積及空地: pnap/app-132.md
       - APP-151 GFA concessions 樓面面積寬免: pnap/app-151.md
       - APP-152 SBD Guidelines 可持續建築設計指引: pnap/app-152.md
       - APP-156 Energy efficiency 能源效益: pnap/app-156.md
       - ADM-2 Plan processing 圖則處理: pnap/adm-2.md
+      - ADM-19 Building approval process 圖則批准程序: pnap/adm-19.md
       - JPN 1 Green features 環保設施: pnap/jpn-1.md
       - JPN 2 Green features II 第二批環保設施: pnap/jpn-2.md
       - JPN 4 PR / GFA control 地積比率／總樓面面積: pnap/jpn-4.md
+      - JPN 5 Building height 建築物高度: pnap/jpn-5.md
+      - JPN 6 SBD separation & setback 樓宇間距及後移: pnap/jpn-6.md
+      - JPN 7 Site coverage 上蓋面積: pnap/jpn-7.md
       - JPN 8 MiC 組裝合成建築法: pnap/jpn-8.md
   - Ordinance & Regulations 條例及規例:
       - regulations/index.md
@@ -95,6 +102,7 @@ nav:
       - FS Code Part B Means of escape 逃生途徑: codes/fsc-part-b-means-of-escape.md
       - FS Code Part C Fire resisting construction 耐火結構: codes/fsc-part-c-fire-resisting-construction.md
       - FS Code Part D Means of access 消防進出途徑: codes/fsc-part-d-means-of-access.md
+      - FS Code Parts E–G Tests, management, fire engineering 測試、管理、消防工程: codes/fsc-parts-e-f-g.md
       - BFA 2008 暢通無阻的通道: codes/bfa-2008.md
   - Glossary 詞彙: glossary.md
   - Tags 標籤: tags.md

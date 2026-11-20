@@ -22,8 +22,8 @@ tags:
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
 
 !!! note "Scope of this entry 本條目範圍"
-    This is an **overview entry** with the most-used tables. **[Part B Means of Escape](fsc-part-b-means-of-escape.md)** , **[Part C Fire Resisting Construction](fsc-part-c-fire-resisting-construction.md)** and **[Part D Means of Access](fsc-part-d-means-of-access.md)** now have their own full entries; Parts E–G will follow.
-    本條目為**概覽**，附最常用的表格。**[B 部逃生途徑](fsc-part-b-means-of-escape.md)** 、**[C 部耐火結構](fsc-part-c-fire-resisting-construction.md)** 及 **[D 部消防進出途徑](fsc-part-d-means-of-access.md)** 已有詳細條目，E–G 部將陸續加入。
+    This is an **overview entry** with the most-used tables. **[Part B Means of Escape](fsc-part-b-means-of-escape.md)** , **[Part C Fire Resisting Construction](fsc-part-c-fire-resisting-construction.md)** and **[Part D Means of Access](fsc-part-d-means-of-access.md)** and **[Parts E–G](fsc-parts-e-f-g.md)** now have their own full entries. The whole Code is covered.
+    本條目為**概覽**，附最常用的表格。**[B 部逃生途徑](fsc-part-b-means-of-escape.md)** 、**[C 部耐火結構](fsc-part-c-fire-resisting-construction.md)** 及 **[D 部消防進出途徑](fsc-part-d-means-of-access.md)** 及 **[E–G 部](fsc-parts-e-f-g.md)** 已有詳細條目，整份守則已涵蓋。
 
 ## At a glance 重點摘要
 
