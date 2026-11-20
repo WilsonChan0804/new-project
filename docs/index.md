@@ -41,6 +41,7 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **Building regulations 建築物規例:** [B(A)R 123A](regulations/bar-123a.md) · [B(C)R 123Q](regulations/bcr-123q.md) · [B(MW)R 123N](regulations/bmwr-123n.md) · [B(SFP&W)R 123I](regulations/bsfpwr-123i.md) · [B(I&R)R 123P](regulations/bir-123p.md)
 - **Buildings Ordinance (Cap. 123), all Parts 《建築物條例》全部:** [s.1–13A](regulations/bo-part-1-registration.md) · [s.14–21](regulations/bo-part-2-building-works.md) · [s.22–30](regulations/bo-part-2-enforcement.md) · [s.30A–30F](regulations/bo-part-2a-inspection.md) · [s.31–39C](regulations/bo-part-3-miscellaneous.md) · [s.40–56 & Schedules](regulations/bo-parts-4-9-schedules.md)
 - **B(P)R (Cap. 123F), all regulations 《建築物（規劃）規例》全部:** [1–15](regulations/bpr-parts-1-2.md) · [24–37](regulations/bpr-24-37.md) · [39–49E](regulations/bpr-39-49e.md) · [50–70](regulations/bpr-50-70.md) · [71–73](regulations/bpr-71-73.md)
 - [APP-5 Storey height 樓層高度](pnap/app-5.md) · [APP-25 Geotechnical assessment 岩土評估](pnap/app-25.md) · [APP-37 Curtain walls 幕牆](pnap/app-37.md) · [APP-117 Structural A&A 改動加建結構](pnap/app-117.md)

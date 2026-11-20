@@ -23,7 +23,7 @@ tags:
 === "English"
 
     - **s.14**: no building works or street works may start without the BA's written **approval of plans** and written **consent to commence**. Approval does **not** give land title, waive lease terms, or permit breaches of the BO or other laws. **Minor works** under simplified requirements are exempt (s.14AA).
-    - **s.15**: approval / consent is **deemed** given unless refused in writing within the period in the B(A)R (normally **60 days** for plans, **28 days** for consent), with reasons. Grounds are not exhaustive.
+    - **s.15**: approval / consent is **deemed** given unless refused in writing within the period in the [B(A)R](bar-123a.md) (**60 days** for a first submission or major revision, **30 days** for other resubmissions, **28 days** for consent), with reasons. Grounds are not exhaustive.
     - **s.16** lists the **grounds of refusal**: plans not as prescribed; no **FSD certificate**; contravention of the BO, other laws or **town plans** (OZP / draft plans, CDA master layout plans); building differing in **height, design, type or use** from the neighbourhood (s.16(1)(g)); dangerous access to streets; further particulars needed; risk of **collapse** of adjoining buildings, streets or land; hand-dug caissons (only ≤ 3 m deep and ≥ 1.5 m dia., or no alternative). Consent may be refused if conditions unmet, no supervision plan, or **more than 2 years** since approval.
     - **s.17**: the BA may impose **conditions** for items in the table, e.g. A&A creating a new building, access roads, structural and site formation works (loads, tests, instrumentation, supervision, **performance review**).
     - **s.19**: **urgent works** (shoring, underpinning, demolition after an accident or emergency) may start without consent on notice to the BA. **s.20**: consent **lapses** if works do not start within **3 months** or are suspended for 3 months.
@@ -32,7 +32,7 @@ tags:
 === "中文"
 
     - **第 14 條**：未取得建築事務監督書面**批准圖則**及書面**同意展開工程**，不得展開或進行任何建築工程或街道工程；批准**不**賦予土地業權、不免除地契條款，亦不准許違反本條例或其他法例。按簡化規定進行的**小型工程**獲豁免（第 14AA 條）。
-    - **第 15 條**：除非在《建築物（管理）規例》訂明的期限內（圖則一般 **60 天**、同意書 **28 天**）以書面述明理由拒絕，否則**當作**已批准／同意；拒絕理由並非詳盡無遺。
+    - **第 15 條**：除非在《建築物（管理）規例》訂明的期限內（首次呈交或重大修訂 **60 天**、其他再呈交 **30 天**、同意書 **28 天**）以書面述明理由拒絕，否則**當作**已批准／同意；拒絕理由並非詳盡無遺。
     - **第 16 條**列出**拒絕理由**：圖則不符合訂明；沒有**消防處證明書**；違反本條例、其他法例或**城市規劃圖則**（分區計劃大綱圖／草圖、綜合發展區總綱發展藍圖）；建築物在**高度、設計、類型或用途**上與鄰近建築物不同（第 16(1)(g) 條）；通往街道的出入口危險；需要進一步資料；可能令毗鄰建築物、街道或土地**倒塌**；人工挖掘沉箱（只限深 ≤ 3 米及直徑 ≥ 1.5 米，或沒有其他方法）。如未符合條件、未遞交監工計劃書或批准後已**超過 2 年**，可拒絕給予同意。
     - **第 17 條**：建築事務監督可就附表所列項目施加**條件**，例如改動加建導致成為新建築物、通路、結構及地盤平整工程（荷載、測試、監測儀器、監督、**表現檢討**）。
     - **第 19 條**：意外或緊急情況下的**緊急工程**（撐柱、托換基礎、拆卸）可在通知建築事務監督後毋須同意即展開。**第 20 條**：如在 **3 個月**內未展開或暫停 3 個月，同意即**失效**。
@@ -156,4 +156,4 @@ tags:
 | [BO s.42](bo-parts-4-9-schedules.md) | Modification / exemption from regulations 修改及豁免 |
 
 ---
-<small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese texts on eLegislation. Processing periods are set by the B(A)R.</small>
+<small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese texts on eLegislation. Processing periods: B(A)R regs. 30 and 32.</small>

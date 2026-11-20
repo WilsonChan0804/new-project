@@ -14,6 +14,21 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Registered Specialist Contractor | 註冊專門承建商 | RSC |
 | Qualified person (MWIS) | 合資格人士 | QP |
 | Supervision plan | 監工計劃書 | — |
+| Technically competent person | 技術合格人員 | TCP |
+| Stability certificate | 穩定性證明書 | — |
+| Prescribed plans | 訂明圖則 | — |
+| Dead load / imposed load / wind load | 恆載／外加荷載／風荷載 | — |
+| Proof test | 驗證測試 | — |
+| Minor retaining wall | 小型擋土牆 | — |
+| Designated exempted works | 指定豁免工程 | DEW |
+| Simplified requirements | 簡化規定 | — |
+| Usable floor area (sanitary fitments) | 實用樓面面積 | UFA |
+| Soil fitment / waste fitment | 便溺污水設備／廢水設備 | — |
+| Trap / water seal | 存水彎／水封 | — |
+| Manhole / cleaning eye | 沙井／清理孔 | — |
+| Septic tank / cesspool | 化糞池／污水池 | — |
+| Prescribed inspection / prescribed repair | 訂明檢驗／訂明修葺 | — |
+| Detailed investigation | 詳細調查 | — |
 | Approval and consent | 批准及同意 | — |
 | Occupation permit / temporary occupation permit | 佔用許可證／臨時佔用許可證 | OP / TOP |
 | Removal order | 清拆令 | — |

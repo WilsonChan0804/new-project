@@ -25,7 +25,7 @@ tags:
 
 === "English"
 
-    - **Curtain walls** must meet **B(C)R 29–31** (wind, horizontal imposed loads where no protective barrier, openings, corrosion, materials). Structural plans must include framing, calculations (incl. a **parent structure** check), elevations, sections, connections, **tolerances**, anchorages, standards, materials, and **fire / smoke stopping between floors** (paras. 1–2).
+    - **Curtain walls** must meet **[B(C)R](../regulations/bcr-123q.md) 29–31** (wind, horizontal imposed loads where no protective barrier, openings, corrosion, materials). Structural plans must include framing, calculations (incl. a **parent structure** check), elevations, sections, connections, **tolerances**, anchorages, standards, materials, and **fire / smoke stopping between floors** (paras. 1–2).
     - **Windows / window walls** need structural submission if the opening has a least dimension > **1.8 m** or area > **6 m²**, **and** is at **≥ 100 m** above ground or wind reference pressure **≥ 2.86 kPa** (para. 5). They also need submission if the span of mullions / glass fins exceeds **6 m** (para. 6).
     - **Minor works** route for certain curtain wall / window repair or replacement in existing buildings (APP-147) (para. 8). A **separate RSE** may be appointed (Forms BA4/BA5) with an assessment on the parent structure (paras. 10–12).
     - **Tempered glass**: ISO 9001 factory, QAS submitted **14 days** before production, **heat soak** to BS EN 14179-1 for **all** panes, RSE's QCS supervising **≥ 30%** of panes, RC's QCC on **full-time** supervision, data logger at **1-minute** intervals, and a quality supervision report before OP (paras. 13–14).

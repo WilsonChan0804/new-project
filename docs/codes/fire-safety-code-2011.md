@@ -18,7 +18,7 @@ tags:
     | **Version summarised 本摘要版本** | 2024 Edition (revision September 2024) 2024 年修訂版 |
     | **Official language 官方語言** | English and Chinese 中英文版 |
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/fs_code2011.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/code-and-design-manuals/fs_code2011_c.pdf) |
-    | **Legal basis 法律依據** | B(C)R 35; B(P)R 41, 41A, 41B, 41C, 41D |
+    | **Legal basis 法律依據** | [B(C)R](../regulations/bcr-123q.md) 35; B(P)R 41, 41A, 41B, 41C, 41D |
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
 
 !!! note "Scope of this entry 本條目範圍"

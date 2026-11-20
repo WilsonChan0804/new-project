@@ -6,11 +6,11 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 |---|---|---|
 | 123 | Buildings Ordinance 《建築物條例》 | ✅ Complete (all Parts and Schedules) 全部完成 |
 | 123F | Building (Planning) Regulations 《建築物（規劃）規例》 | ✅ Complete (regs. 1–73, Schedules 1–4) 全部完成 |
-| 123A | Building (Administration) Regulations 《建築物（管理）規例》 | ⏳ To do |
-| 123B | Building (Construction) Regulations 《建築物（建造）規例》 | ⏳ To do |
-| 123I | Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations | ⏳ To do |
-| 123N | Building (Minor Works) Regulations 《建築物（小型工程）規例》 | ⏳ To do |
-| 123P | Building (Inspection and Repair) Regulation 《建築物（檢驗及修葺）規例》 | ⏳ To do |
+| 123A | [Building (Administration) Regulations 《建築物（管理）規例》](bar-123a.md) | ✅ Complete 完成 |
+| 123Q | [Building (Construction) Regulation 《建築物（建造）規例》](bcr-123q.md) (replaced repealed Cap. 123B in 2021 取代已廢除的第 123B 章) | ✅ Complete 完成 |
+| 123I | [Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations 《建築物（衞生設備標準、水管裝置、排水工程及廁所）規例》](bsfpwr-123i.md) | ✅ Complete 完成 |
+| 123N | [Building (Minor Works) Regulation 《建築物（小型工程）規例》](bmwr-123n.md) | ✅ Complete 完成 |
+| 123P | [Building (Inspection and Repair) Regulation 《建築物（檢驗及修葺）規例》](bir-123p.md) | ✅ Complete 完成 |
 
 ## Buildings Ordinance, Cap. 123 《建築物條例》
 
@@ -34,6 +34,20 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | [Regs. 39–49E](bpr-39-49e.md) | Staircases; means of escape; fireman's lifts; FRS; EVA; domestic buildings; PPE 樓梯、逃生、消防員升降機、公眾娛樂場所 | ✅ Official text checked |
 | [Regs. 50–70](bpr-50-70.md) | Temporary buildings; contractor's sheds; hoardings, covered walkways, gantries 臨時建築物、圍板 | ✅ Official text checked |
 | [Regs. 71–73](bpr-71-73.md) | Windows to unenclosed verandahs; barrier free access (Third Schedule); elderly-friendly design (Fourth Schedule, 2026) 無障礙及長者設計 | ✅ Official text checked |
+
+## Other building regulations 其他建築物規例
+
+| Entry 條目 | Topic 主題 | Status 狀態 |
+|---|---|---|
+| [B(A)R, Cap. 123A](bar-123a.md) | Prescribed plans, signing, processing periods (60 / 30 / 28 days), notices, certificates, supervision, fees 訂明圖則、審批期限、通知、證明書 | ✅ Official text checked |
+| [B(C)R, Cap. 123Q](bcr-123q.md) | Loads (Tables 1–3), design, foundations, retaining walls, external walls and curtain walls, barriers, lifts 荷載、地基、擋土牆、幕牆、欄障 | ✅ Official text checked |
+| [B(MW)R, Cap. 123N](bmwr-123n.md) | 187 minor works items, classes and types, designated exempted works, submissions 小型工程項目、豁免工程 | ✅ Official text checked |
+| [B(SFP&W)R, Cap. 123I](bsfpwr-123i.md) | Sanitary fitment numbers, occupancy rates, plumbing and drainage numbers, septic tanks, testing 衞生設備數目、排水 | ✅ Official text checked |
+| [B(I&R)R, Cap. 123P](bir-123p.md) | MBIS / MWIS inspection scope, standards, reports and deadlines 強制驗樓／驗窗範圍及期限 | ✅ Official text checked |
+
+!!! note "Not yet covered 尚未涵蓋"
+    Other regulations in force under Cap. 123: **123C** Building (Demolition Works) Regulations; **123G** Building (Private Streets and Access Roads) Regulations; **123H** Building (Refuse Storage and Material Recovery Chambers and Refuse Chutes) Regulations; **123J** Building (Ventilating Systems) Regulations; **123K** Building (Oil Storage Installations) Regulations; **123L** Building (Appeal) Regulation; **123M** Building (Energy Efficiency) Regulation; **123O** Building (Minor Works) (Fees) Regulation. (123B, 123D and 123E are repealed.)
+    《建築物條例》下其他現行附屬法例（123C、123G、123H、123J、123K、123L、123M、123O）尚未整理；123B、123D、123E 已廢除。
 
 !!! tip "Bilingual legislation 雙語法例"
     Hong Kong ordinances have **official Chinese texts** of equal authenticity. Quote both from eLegislation instead of translating.

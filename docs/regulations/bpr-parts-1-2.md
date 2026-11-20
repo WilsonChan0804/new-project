@@ -106,7 +106,7 @@ tags:
 
     Part II protects **people using the street**. Anything over a street must be high enough not to hit pedestrians or vehicles (2.5 m, or 3.3 m / 5.5 m for canopies) and must not reach too far towards the middle of the street. Canopies must not be used as balconies, so no doors may open onto them.
 
-    Reg. 3A is one of the most often used rules in design. It sets the **1.1 m barrier** at every opening above G/F. Details of protective barriers are in the B(C)R and the related PNAPs.
+    Reg. 3A is one of the most often used rules in design. It sets the **1.1 m barrier** at every opening above G/F. Details of protective barriers are in the [B(C)R](bcr-123q.md) (ss. 9, 37–38) and the related PNAPs.
 
 === "中文"
 
