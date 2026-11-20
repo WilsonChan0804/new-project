@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-03", date: "20 Nov 2026",
+    items: [
+      "**Programme** - a new page for the project programme, the easy way to do what MS Project does: type the tasks, durations (working days, Hong Kong holidays skipped) and predecessors (3, 3FS+2d, 5SS ...) or drag between bars. The **critical path** shows in red, with total and free float.",
+      "**Baselines** keep a version (e.g. the tender programme): grey bars and the finish variance show what slipped. **% done**, the status date and a progress line show where the job stands.",
+      "**Export > PDF** for the client: A3 / A4, a title block, the chosen columns, legend and remarks. **CSV** for Excel, and **Import** from Excel or MS Project. **Set up** has an architectural template to start from.",
+      "An activity can **create or link a task** (Tasks) and be **discussed in chat**; the links open the Programme at that activity.",
+    ],
+  },
+  {
     version: "2027-02-02", date: "20 Nov 2026",
     items: [
       "**Codes is now search only, with no AI:** one **Search** button (or Enter) gives the Quick facts, the diagrams and the clauses. Ask, the API key and model settings and the cost notes are gone, and nothing is sent outside the server.",

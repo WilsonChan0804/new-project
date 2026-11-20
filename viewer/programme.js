@@ -30,7 +30,7 @@ const COLS = {
   party: { label: "Responsible", w: 116, edit: "text", mm: 26 },
   bstart: { label: "Baseline start", w: 98, mm: 19 },
   bfinish: { label: "Baseline finish", w: 98, mm: 19 },
-  var: { label: "Finish variance", w: 86, align: "right", mm: 17 },
+  var: { label: "Finish variance", short: "Variance", w: 86, align: "right", mm: 17 },
   task: { label: "Linked task", w: 130, mm: 30 },
   notes: { label: "Notes", w: 170, edit: "text", mm: 40 },
 };
@@ -1205,7 +1205,7 @@ async function pdfDlg() {
     name: fileName("pdf"), paper: f.paper.value, orient: f.orient.value, range: { from: f.from.value, to: f.to.value },
     start: P.sched.start, finish: P.sched.finish,
     cover: Object.assign({ title: "Indicative Project Programme", project: P.projectName || project() || "" }, c, { status_date: f.status.checked ? c.status_date || "" : "" }),
-    columns: P.d.columns.map((k) => ({ key: k, label: COLS[k].label, w: COLS[k].mm, align: COLS[k].align || "left" })),
+    columns: P.d.columns.map((k) => ({ key: k, label: COLS[k].short || COLS[k].label, w: COLS[k].mm, align: COLS[k].align || "left" })),
     rows, links, remarks: P.d.remarks,
     show: { links: f.links.checked, baseline: !!b, progress: f.prog.checked, status: f.status.checked, critical: f.crit.checked },
   };
@@ -1258,7 +1258,7 @@ function fit() {
 }
 function scrollToDay(iso) {
   const x = X(iso);
-  $("#pg-body").scrollLeft = Math.max(0, x - 120);
+  $("#pg-body").scrollLeft = Math.max(0, x - 40);      // the chart starts after the (sticky) table
 }
 
 async function start() {

@@ -148,10 +148,13 @@ def build(spec):
     legend_h = (15 + 3.6 * len(remarks)) * mm if remarks else 10 * mm
     body_top = H - m - title_h - 3 * mm
     body_h = body_top - head_h - (m + legend_h + 3 * mm)
-    if rows and len(rows) * rh < body_h:          # few rows: roomier, up to 7.5 mm
+    if rows and body_h < len(rows) * rh <= body_h * 1.2:   # a few rows over: tighter, to keep one page
+        rh = body_h / len(rows)
+        fs = max(5.6, fs * rh / ((4.6 if small else 5.2) * mm))
+    elif rows and len(rows) * rh < body_h:          # few rows: roomier, up to 7.5 mm
         rh = min(7.5 * mm, body_h / len(rows))
         fs = min(fs + 1, 8) if rh > 6.2 * mm else fs
-    per = max(1, int(body_h // rh))
+    per = max(1, int(body_h / rh + 1e-6))
     pages = max(1, (len(rows) + per - 1) // per)
 
     # columns: their widths, shrunk to at most 55% of the page
@@ -172,7 +175,7 @@ def build(spec):
     if d1 <= d0:
         d1 = d0 + datetime.timedelta(days=7)
     d0 = d0 - datetime.timedelta(days=d0.weekday())                     # a Monday
-    pad = max(3, (d1 - d0).days // 40)
+    pad = max(7, (d1 - d0).days // 22)                                  # room for a last label
     d1 = d1 + datetime.timedelta(days=pad)
     span = (d1 - d0).days + 1
     per_day = gw / span

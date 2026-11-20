@@ -41,7 +41,7 @@
 
 .pg-r { display: grid; grid-template-columns: var(--cols); height: 30px; align-items: stretch; border-bottom: 1px solid var(--line-soft); font-size: 12.5px; }
 .pg-hr { height: 46px; border-bottom: 0; font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
-.pg-hr .pg-c { align-items: flex-end; padding-bottom: 7px; }
+.pg-hr .pg-c { align-items: flex-end; padding-bottom: 6px; white-space: normal; line-height: 1.15; }
 .pg-c { display: flex; align-items: center; padding: 0 6px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-right: 1px solid var(--line-soft); gap: 3px; }
 .pg-c.r { justify-content: flex-end; text-align: right; font-variant-numeric: tabular-nums; }
 .pg-c:not(.pg-name) { color: var(--ink-2); font-variant-numeric: tabular-nums; }
