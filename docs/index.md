@@ -41,6 +41,8 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **BFA Manual in full 暢通無阻設計手冊全部:** [Div. 1–3](codes/bfa-div-1-3.md) · [Div. 4–9](codes/bfa-div-4-9.md) · [Div. 10–12](codes/bfa-div-10-12.md) · [Div. 13–20](codes/bfa-div-13-20.md) · [Ch. 5–6](codes/bfa-ch-5-6.md)
+- [Cap. 123H Refuse & material recovery 垃圾及物料回收房](regulations/brsr-123h.md) · [JPN 9 Bonus PR pilot scheme 額外地積比率先導計劃](pnap/jpn-9.md)
 - **Building regulations 建築物規例:** [B(A)R 123A](regulations/bar-123a.md) · [B(C)R 123Q](regulations/bcr-123q.md) · [B(MW)R 123N](regulations/bmwr-123n.md) · [B(SFP&W)R 123I](regulations/bsfpwr-123i.md) · [B(I&R)R 123P](regulations/bir-123p.md)
 - **Buildings Ordinance (Cap. 123), all Parts 《建築物條例》全部:** [s.1–13A](regulations/bo-part-1-registration.md) · [s.14–21](regulations/bo-part-2-building-works.md) · [s.22–30](regulations/bo-part-2-enforcement.md) · [s.30A–30F](regulations/bo-part-2a-inspection.md) · [s.31–39C](regulations/bo-part-3-miscellaneous.md) · [s.40–56 & Schedules](regulations/bo-parts-4-9-schedules.md)
 - **B(P)R (Cap. 123F), all regulations 《建築物（規劃）規例》全部:** [1–15](regulations/bpr-parts-1-2.md) · [24–37](regulations/bpr-24-37.md) · [39–49E](regulations/bpr-39-49e.md) · [50–70](regulations/bpr-50-70.md) · [71–73](regulations/bpr-71-73.md)

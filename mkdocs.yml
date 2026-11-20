@@ -92,6 +92,7 @@ nav:
       - JPN 6 SBD separation & setback 樓宇間距及後移: pnap/jpn-6.md
       - JPN 7 Site coverage 上蓋面積: pnap/jpn-7.md
       - JPN 8 MiC 組裝合成建築法: pnap/jpn-8.md
+      - JPN 9 Bonus PR pilot scheme 額外地積比率先導計劃: pnap/jpn-9.md
   - Ordinance & Regulations 條例及規例:
       - regulations/index.md
       - Buildings Ordinance 建築物條例:
@@ -114,6 +115,7 @@ nav:
       - B(MW)R Minor works 建築物（小型工程）規例: regulations/bmwr-123n.md
       - B(SFP&W)R Sanitary & drainage 衞生設備及排水: regulations/bsfpwr-123i.md
       - B(I&R)R Inspection & repair 建築物（檢驗及修葺）規例: regulations/bir-123p.md
+      - Cap. 123H Refuse & material recovery 垃圾及物料回收房: regulations/brsr-123h.md
   - Codes of Practice 作業守則:
       - codes/index.md
       - FS Code 2011 消防安全守則: codes/fire-safety-code-2011.md
@@ -122,6 +124,11 @@ nav:
       - FS Code Part D Means of access 消防進出途徑: codes/fsc-part-d-means-of-access.md
       - FS Code Parts E–G Tests, management, fire engineering 測試、管理、消防工程: codes/fsc-parts-e-f-g.md
       - BFA 2008 暢通無阻的通道: codes/bfa-2008.md
+      - BFA Div. 1–3 Auditoria, hotels, car parks 觀眾席、酒店、停車場: codes/bfa-div-1-3.md
+      - BFA Div. 4–9 Routes, ramps, stairs 通道、斜道、樓梯: codes/bfa-div-4-9.md
+      - BFA Div. 10–12 Doors, toilets, bathrooms 門、洗手間、浴室: codes/bfa-div-10-12.md
+      - BFA Div. 13–20 Signs, counters, lifts 標誌、櫃枱、升降機: codes/bfa-div-13-20.md
+      - BFA Ch. 5–6 Services & elderly-friendly 屋宇裝備及長者友善: codes/bfa-ch-5-6.md
   - Glossary 詞彙: glossary.md
   - Tags 標籤: tags.md
   - Contributing 編寫指引: contributing.md

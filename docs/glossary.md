@@ -243,6 +243,21 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Accessible lift | 暢通易達升降機 | — |
 | Accessible unisex toilet | 男女共用暢通易達洗手間 | — |
 | Accessible car parking space | 暢通易達停車位 | — |
+| Wheelchair space | 輪椅位 | — |
+| Accessible guest room | 暢通易達客房 | — |
+| Dropped kerb landing / clear space | 下斜路緣後方淨空 | — |
+| Emergency call bell | 緊急召援鐘 | — |
+| Assistive listening system | 聆聽輔助系統 | — |
+| International symbol of accessibility | 國際暢通易達標誌 | — |
+| Braille and tactile fire exit map | 點字及觸覺走火通道圖 | — |
+| Visual fire alarm | 視像火警警報 | — |
+| Vertical lifting platform | 垂直升降台 | — |
+| Elderly-friendly design | 長者友善設計 | — |
+| Gerontechnology | 樂齡科技 | — |
+| Refuse storage and material recovery chamber | 垃圾及物料回收房 | RSMRC |
+| Refuse storage and material recovery room | 垃圾及物料回收室 | RSMRR |
+| Refuse chute / hopper | 垃圾槽／漏斗 | — |
+| Bonus plot ratio | 額外地積比率 | — |
 
 !!! note
     Chinese terms follow BD / eLegislation usage where one exists. Mark new terms with *(proposed 建議譯名)* until checked.

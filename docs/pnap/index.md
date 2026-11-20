@@ -64,6 +64,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [JPN 6](jpn-6.md) | SBD Guidelines: Building Separation and Setback 樓宇間距及樓宇後移 | SBD 可持續建築設計 | Sep 2019 | ✅ Checked |
 | [JPN 7](jpn-7.md) | Development Control Parameters — Site Coverage Restriction 上蓋面積限制 | SC 上蓋面積 | Aug 2021 | ✅ Checked |
 | [JPN 8](jpn-8.md) | Enhanced Facilitation Measures for MiC 進一步促進建築物採用「組裝合成」建築法的措施 | MiC 組裝合成 | Jul 2022 | ✅ Checked |
+| [JPN 9](jpn-9.md) | Bonus Plot Ratio Pilot Scheme 額外地積比率先導計劃 | Redevelopment, bonus PR 重建、額外地積比率 | Aug 2026 | ✅ Checked |
 
 ## Suggested next 建議下一批
 
