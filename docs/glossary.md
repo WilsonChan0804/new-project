@@ -47,6 +47,26 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Bonus GFA | 額外總樓面面積 | — |
 | Void | 中空位置 | — |
 | Curtain wall | 幕牆 | — |
+| Window wall | 玻璃牆 | — |
+| Heat soak test | 熱浸處理 | HST |
+| Tempered glass | 鋼化玻璃 | — |
+| Structural sealant | 結構密封膠 | — |
+| Spider fixing | 蜘蛛爪 | — |
+| Transfer plate | 轉換層（轉移板） | — |
+| Storey height | 樓層高度 | — |
+| Minor works control system | 小型工程監管制度 | MWCS |
+| Prescribed building professional | 訂明建築專業人士 | PBP |
+| Prescribed registered contractor | 訂明註冊承建商 | PRC |
+| Registered minor works contractor | 註冊小型工程承建商 | RMWC |
+| Household minor works validation scheme | 家居小型工程檢核計劃 | HMWVS |
+| Geotechnical assessment | 岩土評估 | GA |
+| Ground investigation | 土地勘測 | GI |
+| Excavation and lateral support | 挖掘及側向支撐 | ELS |
+| Landscape Master Plan | 園景設計總圖 | LMP |
+| Landscape Proposal | 園景建議 | LP |
+| Registered Landscape Architect | 註冊園境師 | RLA |
+| Site coverage of greenery | 綠化上蓋面積 | SCG |
+| Self-Certification of Compliance | 自行核證符合規定證明書 | SCC |
 | Cladding | 覆蓋層 | — |
 | Projecting window (bay window) | 伸出窗（窗台／凸窗） | — |
 | Window cill | 窗檻 | — |

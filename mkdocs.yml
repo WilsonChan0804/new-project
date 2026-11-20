@@ -66,8 +66,11 @@ nav:
   - PNAP & JPN 作業備考:
       - pnap/index.md
       - APP-2 GFA calculation 總樓面面積計算: pnap/app-2.md
+      - APP-5 Storey height 樓層高度: pnap/app-5.md
       - APP-19 Projections 伸出物: pnap/app-19.md
+      - APP-25 Geotechnical assessment 岩土評估: pnap/app-25.md
       - APP-35 Refuse storage 垃圾存放: pnap/app-35.md
+      - APP-37 Curtain wall & windows 幕牆及窗: pnap/app-37.md
       - APP-40 Hotel development 旅館發展: pnap/app-40.md
       - APP-42 Amenity features 適意設施: pnap/app-42.md
       - APP-67 Energy efficiency (OTTV) 能源效率: pnap/app-67.md
@@ -78,15 +81,19 @@ nav:
       - APP-104 Recreational facilities 康樂設施: pnap/app-104.md
       - APP-108 Public passage 公眾通道: pnap/app-108.md
       - APP-111 Car park design 停車場設計: pnap/app-111.md
+      - APP-117 Structural A&A works 改動加建結構規定: pnap/app-117.md
       - APP-122 Refuge floor sky garden 庇護層空中花園: pnap/app-122.md
       - APP-132 Site coverage & open space 上蓋面積及空地: pnap/app-132.md
+      - APP-147 Minor works 小型工程: pnap/app-147.md
       - APP-151 GFA concessions 樓面面積寬免: pnap/app-151.md
       - APP-152 SBD Guidelines 可持續建築設計指引: pnap/app-152.md
       - APP-156 Energy efficiency 能源效益: pnap/app-156.md
       - ADM-2 Plan processing 圖則處理: pnap/adm-2.md
       - ADM-19 Building approval process 圖則批准程序: pnap/adm-19.md
+      - ADV-33 Essential info in submissions 呈交圖則重要資料: pnap/adv-33.md
       - JPN 1 Green features 環保設施: pnap/jpn-1.md
       - JPN 2 Green features II 第二批環保設施: pnap/jpn-2.md
+      - JPN 3 Landscape & greenery 園景及綠化: pnap/jpn-3.md
       - JPN 4 PR / GFA control 地積比率／總樓面面積: pnap/jpn-4.md
       - JPN 5 Building height 建築物高度: pnap/jpn-5.md
       - JPN 6 SBD separation & setback 樓宇間距及後移: pnap/jpn-6.md

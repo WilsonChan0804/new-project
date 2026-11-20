@@ -41,6 +41,8 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- [APP-5 Storey height 樓層高度](pnap/app-5.md) · [APP-25 Geotechnical assessment 岩土評估](pnap/app-25.md) · [APP-37 Curtain walls 幕牆](pnap/app-37.md) · [APP-117 Structural A&A 改動加建結構](pnap/app-117.md)
+- [APP-147 Minor works 小型工程](pnap/app-147.md) · [ADV-33 Essential information in plan submissions 呈交圖則重要資料](pnap/adv-33.md) · [JPN 3 Landscape & greenery 園景及綠化](pnap/jpn-3.md)
 - [FS Code Parts E–G: fire tests, fire safety management, fire engineering 耐火測試、消防安全管理、消防工程](codes/fsc-parts-e-f-g.md)
 - [APP-68 Cantilevers 懸臂結構](pnap/app-68.md) · [APP-93 Drainage 排水](pnap/app-93.md) · [APP-132 Site coverage 上蓋面積](pnap/app-132.md) · [ADM-19 Approval process 審批程序](pnap/adm-19.md)
 - [JPN 5 Building height 建築物高度](pnap/jpn-5.md) · [JPN 6 SBD separation & setback 樓宇間距及後移](pnap/jpn-6.md) · [JPN 7 Site coverage 上蓋面積](pnap/jpn-7.md)
