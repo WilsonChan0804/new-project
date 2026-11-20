@@ -18,22 +18,15 @@ theme:
     - content.code.copy
     - toc.follow
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: indigo
-      accent: teal
-      toggle:
-        icon: material/weather-night
-        name: Dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: indigo
-      accent: teal
-      toggle:
-        icon: material/weather-sunny
-        name: Light mode
+    scheme: default
+    primary: custom
+    accent: custom
+  font: false
   icon:
     logo: material/office-building
+
+extra_css:
+  - stylesheets/lwk.css
 
 plugins:
   - search:

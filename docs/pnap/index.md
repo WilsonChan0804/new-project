@@ -58,7 +58,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 |---|---|---|---|---|
 | [JPN 1](jpn-1.md) | Green and Innovative Buildings 環保及創新的樓宇 | Balconies, sky gardens… 露台、空中花園 | Jun 2025 | ✅ Checked |
 | [JPN 2](jpn-2.md) | Second Package of Incentives 推廣環保及創新的樓宇第二批鼓勵措施 | NSPEW, utility platforms… 預製外牆、工作平台 | Jul 2022 | ✅ Checked |
-| [JPN 3](jpn-3.md) | Landscape and Site Coverage of Greenery 園景及綠化上蓋面積 | Landscape, SCG 園景、綠化 | May 2019 | ✅ Checked |
+| [JPN 3](jpn-3.md) | Landscape and Site Coverage of Greenery 園景及綠化上蓋面積 | Landscape, SCG 園景、綠化 | Apr 2019 | ✅ Checked |
 | [JPN 4](jpn-4.md) | Development Control Parameters — PR / GFA 發展管制參數 | PR / GFA, lease 地積比率、地契 | Oct 2021 | ✅ Checked |
 | [JPN 5](jpn-5.md) | Development Control Parameters — Building Height Restriction 建築物高度限制 | Height, roof-top 高度、天台 | Apr 2019 | ✅ Checked |
 | [JPN 6](jpn-6.md) | SBD Guidelines: Building Separation and Setback 樓宇間距及樓宇後移 | SBD 可持續建築設計 | Sep 2019 | ✅ Checked |

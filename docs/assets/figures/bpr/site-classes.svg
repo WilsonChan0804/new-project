@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" role="img" aria-label="Class A, B and C sites" font-family="Roboto, Arial, 'Noto Sans TC', sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" role="img" aria-label="Class A, B and C sites" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Noto Sans TC', sans-serif">
   <rect width="720" height="260" fill="#ffffff"/>
   <style>
-    .st{fill:#9aa3ad}.si{fill:#5c6bc0}.tx{font-size:14px;fill:#222}.tw{font-size:12px;fill:#fff}.hd{font-size:15px;font-weight:700;fill:#222}
+    .st{fill:#9A3412}.si{fill:#F2923F}.tx{font-size:12px;fill:#292624}.tw{font-size:12px;fill:#fff}.hd{font-size:15px;font-weight:700;fill:#292624}
   </style>
   <!-- Class A -->
   <text class="hd" x="20" y="22">Class A 甲類</text>

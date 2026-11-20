@@ -13,10 +13,11 @@ tags:
     | | |
     |---|---|
     | **Type 類別** | Joint Practice Note (BD, LandsD, PlanD) 聯合作業備考（屋宇署、地政總署、規劃署） |
+    | **Date of current issue 本版日期** | April 2019 |
     | **Effective date 生效日期** | 15 May 2019 (para. 15) |
     | **Official language 官方語言** | English only (Chinese version not available) 只有英文版 |
     | **Source 原文** | [JPN 3 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN03.pdf) |
-    | **Last checked 最後核對** | 2026-11-20 against the May 2019 version |
+    | **Last checked 最後核對** | 2026-11-20 against the April 2019 issue |
 
 ## At a glance 重點摘要
 
