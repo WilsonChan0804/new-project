@@ -101,8 +101,21 @@ nav:
       - JPN 8 MiC 組裝合成建築法: pnap/jpn-8.md
   - Ordinance & Regulations 條例及規例:
       - regulations/index.md
-      - B(P)R 18A–22 SC & PR 上蓋面積及地積比率: regulations/bpr-18a-22.md
-      - B(P)R 23 & 23A GFA 總樓面面積: regulations/bpr-23-23a.md
+      - Buildings Ordinance 建築物條例:
+          - s.1–13A Registration 註冊及紀律: regulations/bo-part-1-registration.md
+          - s.14–21 Approval & OP 批准及佔用許可證: regulations/bo-part-2-building-works.md
+          - s.22–30 Enforcement 執法及命令: regulations/bo-part-2-enforcement.md
+          - s.30A–30F MBIS & MWIS 強制驗樓驗窗: regulations/bo-part-2a-inspection.md
+          - s.31–39C Miscellaneous 雜項: regulations/bo-part-3-miscellaneous.md
+          - s.40–56 & Schedules 罪行、豁免、上訴: regulations/bo-parts-4-9-schedules.md
+      - Building (Planning) Regulations 建築物（規劃）規例:
+          - Regs 1–15 General & projections 一般及伸出物: regulations/bpr-parts-1-2.md
+          - Regs 18A–22 SC & PR 上蓋面積及地積比率: regulations/bpr-18a-22.md
+          - Regs 23 & 23A GFA 總樓面面積: regulations/bpr-23-23a.md
+          - Regs 24–37 Heights, light & air 層高、照明通風: regulations/bpr-24-37.md
+          - Regs 39–49E Staircases & MOE 樓梯及逃生: regulations/bpr-39-49e.md
+          - Regs 50–70 Temporary buildings & hoardings 臨時建築物及圍板: regulations/bpr-50-70.md
+          - Regs 71–73 BFA & elderly 無障礙及長者: regulations/bpr-71-73.md
   - Codes of Practice 作業守則:
       - codes/index.md
       - FS Code 2011 消防安全守則: codes/fire-safety-code-2011.md

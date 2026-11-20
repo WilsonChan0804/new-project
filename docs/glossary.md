@@ -9,6 +9,32 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Buildings Department | 屋宇署 | BD |
 | Building Authority | 建築事務監督 | BA |
 | Authorized Person | 認可人士 | AP |
+| Registered Inspector | 註冊檢驗人員 | RI |
+| Registered General Building Contractor | 註冊一般建築承建商 | RGBC |
+| Registered Specialist Contractor | 註冊專門承建商 | RSC |
+| Qualified person (MWIS) | 合資格人士 | QP |
+| Supervision plan | 監工計劃書 | — |
+| Approval and consent | 批准及同意 | — |
+| Occupation permit / temporary occupation permit | 佔用許可證／臨時佔用許可證 | OP / TOP |
+| Removal order | 清拆令 | — |
+| Warning notice | 警告通知 | — |
+| Closure Order | 封閉令 | — |
+| Dangerous building | 危險建築物 | — |
+| Material change in use | 用途的重大更改 | — |
+| Modification / exemption | 變通／豁免 | — |
+| Appeal Tribunal | 上訴審裁小組 | — |
+| Scheduled areas | 附表所列地區 | — |
+| Mandatory Building Inspection Scheme | 強制驗樓計劃 | MBIS |
+| Mandatory Window Inspection Scheme | 強制驗窗計劃 | MWIS |
+| Prescribed window | 訂明的窗 | — |
+| Rectangular horizontal plane | 矩形水平面 | RHP |
+| Tenement house | 唐樓 | — |
+| Hoarding / covered walkway / gantry | 圍板／有蓋人行道／門架 | — |
+| Contractor's shed | 承建商屋棚 | — |
+| Regulated route | 受規管路徑 | — |
+| Dual-level handrail | 雙層扶手 | — |
+| Specified building | 指明建築物 | — |
+| Single-household building | 單一住户建築物 | — |
 | Registered Structural Engineer | 註冊結構工程師 | RSE |
 | Registered Geotechnical Engineer | 註冊岩土工程師 | RGE |
 | Hong Kong Green Building Council | 香港綠色建築議會 | HKGBC |
@@ -121,7 +147,6 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Sustainable Building Design Guidelines | 可持續建築設計指引 | SBD |
 | Building separation | 建築物間距 | — |
 | Building setback | 建築物後移 | — |
-| Site coverage of greenery | 上蓋綠化面積 | — |
 | Primary zone | 主要區域 | — |
 | Continuous projected façade length | 連續投影立面長度 | Lp |
 | Mean width of street canyon | 街道峽谷平均闊度 | U |
@@ -130,7 +155,6 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Permeable element | 通透元素 | PE |
 | Air ventilation assessment | 空氣流通評估 | AVA |
 | BEAM Plus New Buildings | 綠建環評新建建築 | BEAM Plus NB |
-| Overall Thermal Transfer Value | 整體熱傳送值 | OTTV |
 | Residential Thermal Transfer Value | 住宅熱傳送值 | RTTV |
 | Visible light transmittance | 可見光透射率 | VLT |
 | External reflectance | 外反光率 | ER |
@@ -153,7 +177,6 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Fire resistance rating | 耐火效能 | FRR |
 | Fire compartment | 防火隔室 | — |
 | Fireman's lift | 消防員升降機 | FL |
-| Firefighting and rescue stairway | 消防救援樓梯 | FRS |
 | Emergency vehicular access | 緊急車輛通道 | EVA |
 | Refuge floor | 庇護層 | — |
 | Fire engineering approach | 消防工程方法 | FEA |

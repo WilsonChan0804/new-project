@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 370" role="img" aria-label="B(P)R reg. 31 prescribed window: rectangular horizontal plane and inclined planes" font-family="Roboto, Arial, 'Noto Sans TC', sans-serif">
+  <rect width="880" height="370" fill="#ffffff"/>
+  <style>
+    .bd{fill:#c5cae9;stroke:#3949ab;stroke-width:1.5}.ob{fill:#cfd8dc;stroke:#607d8b;stroke-width:1.5}
+    .gr{stroke:#222;stroke-width:2}.pl{stroke:#d32f2f;stroke-width:2;stroke-dasharray:6 4}
+    .rhp{stroke:#2e7d32;stroke-width:4}
+    .tx{font-size:12px;fill:#222}.hd{font-size:14px;font-weight:700;fill:#222}.rd{font-size:12px;fill:#d32f2f}.gn{font-size:12px;fill:#2e7d32}
+  </style>
+  <!-- Panel A: window facing another building in the site -->
+  <text class="hd" x="20" y="20">(A) Window facing another building in the site</text>
+  <text class="hd" x="20" y="38">窗面向地盤內另一建築物</text>
+  <rect class="bd" x="30" y="60" width="60" height="212"/>
+  <rect x="86" y="232" width="8" height="28" fill="#90caf9" stroke="#1565c0"/>
+  <line class="gr" x1="20" y1="272" x2="400" y2="272"/>
+  <line class="rhp" x1="90" y1="260" x2="144" y2="260"/>
+  <rect class="ob" x="144" y="115" width="160" height="157"/>
+  <text class="tx" x="156" y="200">Other building in the site</text>
+  <text class="tx" x="156" y="216">地盤內其他建築物</text>
+  <line class="pl" x1="90" y1="260" x2="156" y2="62"/>
+  <text class="rd" x="165" y="72">71½° habitation 居住</text>
+  <text class="rd" x="165" y="88">76° office / kitchen 辦公室／廚房</text>
+  <text class="gn" x="20" y="295">RHP: ≥ 21 m², base ≥ 2.3 m, depth ≥ 4.5 m to the opposite wall</text>
+  <text class="gn" x="20" y="311">矩形水平面：≥ 21 平方米，底邊 ≥ 2.3 米，與對面牆距離 ≥ 4.5 米</text>
+  <text class="tx" x="20" y="335">Window sill is deemed 1 m above the room floor.</text>
+  <text class="tx" x="20" y="351">窗台當作在房間樓面以上 1 米。</text>
+  <!-- Panel B: window facing the site boundary -->
+  <text class="hd" x="450" y="20">(B) Window facing the site boundary</text>
+  <text class="hd" x="450" y="38">窗面向地盤界線</text>
+  <rect class="bd" x="460" y="98" width="60" height="174"/>
+  <rect class="bd" x="460" y="60" width="48" height="38"/>
+  <rect x="516" y="232" width="8" height="28" fill="#90caf9" stroke="#1565c0"/>
+  <line class="gr" x1="450" y1="272" x2="860" y2="272"/>
+  <line x1="548" y1="50" x2="548" y2="280" stroke="#6d4c41" stroke-width="2" stroke-dasharray="2 3"/>
+  <text class="tx" x="556" y="140">Site boundary 地盤界線</text>
+  <line class="rhp" x1="520" y1="260" x2="548" y2="260"/>
+  <line class="pl" x1="548" y1="260" x2="516" y2="69"/>
+  <text class="rd" x="556" y="215">80½° habitation 居住</text>
+  <text class="rd" x="556" y="231">83° office / kitchen 辦公室／廚房</text>
+  <text class="tx" x="556" y="170">Own building must not protrude</text>
+  <text class="tx" x="556" y="186">above this plane 本建築物不得突出此平面</text>
+  <text class="gn" x="450" y="295">RHP: ≥ 21 m², base ≥ 2.3 m, depth ≥ 2.3 m to the boundary</text>
+  <text class="gn" x="450" y="311">矩形水平面：≥ 21 平方米，底邊 ≥ 2.3 米，與界線距離 ≥ 2.3 米</text>
+  <text class="tx" x="450" y="335">Lane / street &lt; 4.5 m next to the boundary: boundary taken 1.5 m further out.</text>
+  <text class="tx" x="450" y="351">毗連闊度少於 4.5 米的通道／街道：界線當作外移 1.5 米。</text>
+</svg>
