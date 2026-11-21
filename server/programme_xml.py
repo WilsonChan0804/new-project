@@ -16,6 +16,7 @@ refused (no entity tricks).
 import datetime
 import os
 import shutil
+import sys
 import subprocess
 import tempfile
 import re
@@ -229,7 +230,7 @@ def mpp_to_xml(data, timeout=120):
     if not java or not lib:
         miss = " and ".join(x for x, ok in (("Java (11 or later)", java), ("MPXJ (pip install mpxj)", lib)) if not ok)
         raise Refused("Reading .mpp needs %s on the server - install it and restart run.bat. "
-                      "Or, in MS Project, File > Save As > XML and import that." % miss)
+                      "Or, in MS Project, File > Save As > XML and import that. (Server: %s, process %d)" % (miss, sys.executable, os.getpid()))
     with tempfile.TemporaryDirectory() as d:
         src, out = os.path.join(d, "in.mpp"), os.path.join(d, "out.xml")
         with open(src, "wb") as f:

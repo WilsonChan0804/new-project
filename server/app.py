@@ -4866,6 +4866,13 @@ def main():
         for p in ps:
             print("          %-28s %3d sheets  %s" % (p["id"], p["sheets"], p["title"]))
     print("data    : %s" % data_dir)
+    try:
+        import programme_xml as _px
+        _j, _m = _px._java(), _px._mpxj_lib()
+        print(".mpp    : %s" % ("ready (java %s)" % _j if _j and _m else "off - needs %s" % " and ".join(
+            x for x, ok in (("Java", _j), ("MPXJ (python -m pip install mpxj)", _m)) if not ok)))
+    except Exception as ex:
+        print(".mpp    : off - %s" % ex)
     if accounts_on():
         print("access  : accounts (%d) - email and password" % ACC.count())
     else:
