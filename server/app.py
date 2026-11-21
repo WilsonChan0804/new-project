@@ -4714,6 +4714,13 @@ try:
 except Exception as _ex:
     print("programme not loaded: %s" % _ex)
 
+# Knowledge base (kb.py): the summaries site from its git branch, built with MkDocs, searched by Codes.
+try:
+    import kb
+    kb.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("kb not loaded: %s" % _ex)
+
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.
 try:

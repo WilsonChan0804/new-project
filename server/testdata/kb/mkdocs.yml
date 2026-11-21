@@ -1,0 +1,18 @@
+site_name: Test KB
+docs_dir: docs
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+nav:
+  - Home: index.md
+  - APP-2: pnap/app-2.md
+  - GFA guide: guides/gfa.md
+  - APSEC 2019: apsec/2019.md
+  - APSEC 2020: apsec/2020.md
