@@ -25,14 +25,34 @@ keywords: site coverage, 上蓋面積, plot ratio, 地積比率, site class, 地
 
     Main sources 主要來源: [B(P)R 18A–22](../regulations/bpr-18a-22.md) · [B(P)R 23](../regulations/bpr-23-23a.md) · [B(P)R 25](../regulations/bpr-24-37.md) · [APP-124](../pnap/app-124.md) · [APP-132](../pnap/app-132.md) · [APP-19](../pnap/app-19.md) · [APP-108](../pnap/app-108.md) · [APP-20](../pnap/app-20.md) · [APP-44](../pnap/app-44.md) · [ADM-21](../pnap/adm-21.md) · [JPN 4](../pnap/jpn-4.md) · [JPN 5](../pnap/jpn-5.md) · [JPN 7](../pnap/jpn-7.md)
 
-## The big picture 整體概念 {#the-big-picture}
+## At a glance 重點摘要 {#at-a-glance}
+
+=== "English"
+
+    - **Permitted GFA = site area × permitted PR**. Site area excludes streets and lanes, proved by a lease plan or survey ([ADM-21](../pnap/adm-21.md)).
+    - **Site class** by specified streets ≥ **4.5 m** wide: **A** one street; **B** corner, **2** streets on ≥ **40 %** of the boundary; **C** **3** streets on ≥ **60 %** ([B(P)R 18A](../regulations/bpr-18a-22.md), [APP-124](../pnap/app-124.md)).
+    - **Height** from the **mean street level** to the roof over the highest usable floor ([B(P)R 23(1)](../regulations/bpr-23-23a.md)); taller buildings get lower SC and higher PR in the **First Schedule** (e.g. Class A domestic over **61 m**: PR **8**).
+    - **Non-domestic podium**: **100 % SC** up to **15 m** (reg. 20(3)). **Composite buildings**: domestic share + non-domestic share ≤ **1** (reg. 21(2)).
+    - **Bonus PR** for dedicating land at street level: **5 ×** the area, at most **20 %** of the PR ([B(P)R 22](../regulations/bpr-18a-22.md), [APP-108](../pnap/app-108.md)).
+    - **On top**: OZP PR, height and SC ([JPN 4](../pnap/jpn-4.md), [JPN 5](../pnap/jpn-5.md)); domestic **open space** ½ / ⅓ / ¼ of the roofed area for Class A / B / C ([B(P)R 25](../regulations/bpr-24-37.md)).
+
+=== "中文"
+
+    - **准許總樓面面積 = 地盤面積 × 准許地積比率**；地盤面積不包括街道及小巷，以地契圖則或測量圖證明（[ADM-21](../pnap/adm-21.md)）。
+    - **地盤類別**按闊度 ≥ **4.5 米**的指明街道：**甲類**一條街；**乙類**角位，**2** 條街佔界線 ≥ **40%**；**丙類** **3** 條街佔 ≥ **60%**（[第 18A 條](../regulations/bpr-18a-22.md)、[APP-124](../pnap/app-124.md)）。
+    - **高度**由**街道平均水平**量至最高可用樓層的天台（[第 23(1) 條](../regulations/bpr-23-23a.md)）；**附表一**中越高的建築物上蓋面積越低、地積比率越高（例如甲類住宅高於 **61 米**：地積比率 **8**）。
+    - **非住用平台**：**15 米**以下可 **100%** 上蓋（第 20(3) 條）；**綜合用途建築物**：住用及非住用比例相加 ≤ **1**（第 21(2) 條）。
+    - 撥出地面土地作公眾通道可獲**額外地積比率**：面積的 **5 倍**，最多為地積比率的 **20%**（[第 22 條](../regulations/bpr-18a-22.md)、[APP-108](../pnap/app-108.md)）。
+    - **另須符合**：分區計劃大綱圖的地積比率、高度及上蓋面積（[JPN 4](../pnap/jpn-4.md)、[JPN 5](../pnap/jpn-5.md)）；住用**休憩用地**為甲／乙／丙類上蓋範圍的 ½ ／ ⅓ ／ ¼（[第 25 條](../regulations/bpr-24-37.md)）。
+
+## How do SC and PR fit together? 上蓋面積與地積比率如何配合？ {#the-big-picture}
 
 <figure markdown>
   ![Working out permitted SC and PR](../assets/figures/diagrams/scpr-guide-flow.svg){ width="520" loading=lazy }
   <figcaption>Working out permitted site coverage and plot ratio. 計算准許上蓋面積及地積比率。 Diagram prepared for this site.</figcaption>
 </figure>
 
-## Step 1: site area 第一步：地盤面積 {#step-1-site-area}
+## Step 1: what counts as site area? 第一步：哪些屬地盤面積？ {#step-1-site-area}
 
 === "English"
 
@@ -46,7 +66,7 @@ keywords: site coverage, 上蓋面積, plot ratio, 地積比率, site class, 地
     - 地盤須屬申請人**業權或有實際控制前景**；須以**地契圖則或土地測量圖**證明（[ADM-21](../pnap/adm-21.md)、ADV-33）。
     - 地段內的私家街道及後巷有時可計算；新街道把大型地盤分割、地盤之間轉移地積比率等，見 [APP-44](../pnap/app-44.md) 及 [APP-73](../pnap/app-73.md)。
 
-## Step 2: site class 第二步：地盤類別 {#step-2-site-class}
+## Step 2: is the site Class A, B or C? 第二步：甲、乙還是丙類地盤？ {#step-2-site-class}
 
 <figure markdown>
   ![Site classes A, B and C](../assets/figures/diagrams/site-class.svg){ width="700" loading=lazy }
@@ -56,11 +76,11 @@ keywords: site coverage, 上蓋面積, plot ratio, 地積比率, site class, 地
 - **Class A 甲類**: one specified street. **Class B 乙類**: corner site on 2 streets, ≥ **40%** of the boundary. **Class C 丙類**: 3 streets, ≥ **60%** of the boundary.
 - A **specified street** must be government-vested and HyD-maintained, on the same lease and surrenderable, required by the lease, subject to an **express right of way**, or a private street held by the owner and kept as a street ([APP-124](../pnap/app-124.md)). Car parks, open spaces and nullahs do not count.
 
-## Step 3: building height 第三步：建築物高度 {#step-3-building-height}
+## Step 3: how is building height measured? 第三步：如何量度建築物高度？ {#step-3-building-height}
 
 Measured from the **mean level of the street** (the lowest, if streets are at different levels) to the **mean height of the roof over the highest usable floor** ([B(P)R 23(1)](../regulations/bpr-23-23a.md)). Roof-top structures above that roof generally do not count. **OZP height limits** apply separately ([JPN 5](../pnap/jpn-5.md)); airport height restrictions too ([APP-32](../pnap/app-32.md)). 由街道平均水平量至最高可用樓層上的屋頂平均高度；分區計劃大綱圖及機場高度限制另計。
 
-## Step 4: the First Schedule 第四步：附表一 {#step-4-the-first-schedule}
+## Step 4: what SC and PR does the First Schedule allow? 第四步：附表一准許多少？ {#step-4-the-first-schedule}
 
 | Height of building 建築物高度 | Domestic SC % A / B / C 住用上蓋面積 | Domestic PR A / B / C 住用地積比率 | Non-domestic SC % 非住用上蓋面積 | Non-domestic PR 非住用地積比率 |
 |---|---|---|---|---|
@@ -90,7 +110,7 @@ Measured from the **mean level of the street** (the lowest, if streets are at di
     → domestic SC **37.5%** → max covered area **450 m²** at tower levels; domestic PR **9** → permitted GFA **10,800 m²**.
     Composite with a 15 m commercial podium: podium SC may be 100% up to 15 m; if the podium uses **one tenth** of the permitted non-domestic PR, the domestic part may use up to 9 × (1 − 0.1) = **8.1**. 如平台用去准許非住用地積比率的十分之一，住用部分最多可用 9 × 0.9 = 8.1。
 
-## Step 5: bonuses and flexibility 第五步：額外地積比率及彈性 {#step-5-bonuses-and-flexibility}
+## Step 5: when is bonus PR or flexibility given? 第五步：何時有額外地積比率？ {#step-5-bonuses-and-flexibility}
 
 | Mechanism 機制 | What you get 所得 | Limit 限制 | Source 來源 |
 |---|---|---|---|
@@ -102,7 +122,7 @@ Measured from the **mean level of the street** (the lowest, if streets are at di
 | Minor projections 小型伸出物 | Not counted for SC or PR | APP-19 list | [APP-19](../pnap/app-19.md) |
 | MiC 組裝合成建築法 | 10% of MiC floor area not counted for SC at each floor | MiC floors | [JPN 8](../pnap/jpn-8.md) |
 
-## Step 6: other controls on top 第六步：其他管制 {#step-6-other-controls-on-top}
+## Step 6: what other controls apply? 第六步：還有甚麼管制？ {#step-6-other-controls-on-top}
 
 === "English"
 

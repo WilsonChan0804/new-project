@@ -32,7 +32,27 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 
     Main sources 主要來源: [B(P)R 23 & 23A](../regulations/bpr-23-23a.md) · [APP-2](../pnap/app-2.md) · [APP-151](../pnap/app-151.md) · [APP-152](../pnap/app-152.md) · [JPN 1](../pnap/jpn-1.md) · [JPN 2](../pnap/jpn-2.md) · [JPN 4](../pnap/jpn-4.md) · [APP-42](../pnap/app-42.md) · [APP-19](../pnap/app-19.md) · [APP-89](../pnap/app-89.md) · [APP-104](../pnap/app-104.md) · [APP-40](../pnap/app-40.md) · [APP-93](../pnap/app-93.md) · [APP-35](../pnap/app-35.md)
 
-## The big picture 整體概念 {#the-big-picture}
+## At a glance 重點摘要 {#at-a-glance}
+
+=== "English"
+
+    - **Accountable GFA** = floor area measured to the outer walls ([B(P)R 23(3)(a)](../regulations/bpr-23-23a.md)) **minus** areas the law disregards (B(P)R 23(3)(b): plant rooms, refuse rooms, car parks as allowed) **minus** concessions granted by modification ([APP-2](../pnap/app-2.md), [APP-151](../pnap/app-151.md)). It must not exceed **site area × permitted PR**.
+    - **Car parks**: underground **100 %** disregarded; above ground **100 %** for the first **2 floors**, **50 %** beyond, unless special cases ([APP-2](../pnap/app-2.md)).
+    - **Green and amenity features** (balconies **50 %**, max **3 m²** per flat; utility platforms **50 %**, max **0.75 m²**; sky gardens; clubhouses **5 %** down to **2.5 %**; plant rooms **1 %**) count towards the **10 % cap** ([APP-151](../pnap/app-151.md) para. 4), capped **separately** for domestic and non-domestic parts.
+    - Concessions need the **pre-requisites**: SBD Guidelines ([APP-152](../pnap/app-152.md)) and residential energy efficiency ([APP-156](../pnap/app-156.md)).
+    - Domestic **storey height** over **3.5 m** (typical flat) or **4 m** (top floor) may be treated as GFA abuse ([APP-5](../pnap/app-5.md)).
+    - For OZPs gazetted from **18 Oct 2021**, the **OZP PR/GFA** is the sole reference ([JPN 4](../pnap/jpn-4.md)).
+
+=== "中文"
+
+    - **須計算的總樓面面積** = 量度至外牆的樓面面積（[第 23(3)(a) 條](../regulations/bpr-23-23a.md)）**減**法例不計算的面積（第 23(3)(b) 條：機房、垃圾房、許可的停車場）**減**以變通批出的寬免（[APP-2](../pnap/app-2.md)、[APP-151](../pnap/app-151.md)），不得超過**地盤面積 × 准許地積比率**。
+    - **停車場**：地庫 **100%** 不計；地面以上首 **2 層** **100%**，其後 **50%**，特殊情況除外（[APP-2](../pnap/app-2.md)）。
+    - **環保及適意設施**（露台 **50%**、每單位最多 **3 平方米**；工作平台 **50%**、最多 **0.75 平方米**；空中花園；會所 **5%** 遞減至 **2.5%**；機房 **1%**）計入 **10% 上限**（[APP-151](../pnap/app-151.md) 第 4 段），住用及非住用**分開計算**。
+    - 寬免須符合**先決條件**：可持續建築設計指引（[APP-152](../pnap/app-152.md)）及住宅能源效益（[APP-156](../pnap/app-156.md)）。
+    - 住宅**層高**超過 **3.5 米**（一般單位）或 **4 米**（頂層）可被視為濫用總樓面面積（[APP-5](../pnap/app-5.md)）。
+    - **2021 年 10 月 18 日**起刊憲的分區計劃大綱圖，以其**地積比率／總樓面面積**為唯一參考（[JPN 4](../pnap/jpn-4.md)）。
+
+## How is GFA worked out? 總樓面面積如何計算？ {#the-big-picture}
 
 <figure markdown>
   ![How a GFA figure is built up](../assets/figures/diagrams/gfa-guide-flow.svg){ width="560" loading=lazy }
@@ -59,7 +79,7 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 
     計算地積比率時，看的是**須計算總樓面面積**，即第一層減去第二及第三層，不得超過**地盤面積 × 准許地積比率**（附表一，或按 JPN 4 以分區計劃大綱圖為準）。
 
-## Step 1: measuring GFA 第一步：量度 {#step-1-measuring-gfa}
+## Step 1: how is GFA measured? 第一步：如何量度？ {#step-1-measuring-gfa}
 
 | Rule 規則 | Requirement 要求 | Source 來源 |
 |---|---|---|
@@ -73,7 +93,7 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 | Projecting window 窗台 | Not GFA / SC only if all 7 criteria met (≤ **100 mm** projection, base ≥ **500 mm**, ≤ **50%** of wall…) 須符合全部 7 項準則 | [APP-19](../pnap/app-19.md) |
 | Staircases, lift shafts, ducts 樓梯、升降機槽、管道 | Count on every floor they pass through, unless they **solely** serve non-accountable floors 須逐層計算 | [APP-2](../pnap/app-2.md) |
 
-## Step 2: what B(P)R 23(3)(b) disregards 第二步：法定不計算 {#step-2-what-bpr-233b-disregards}
+## Step 2: what does B(P)R 23(3)(b) leave out? 第二步：法例不計算甚麼？ {#step-2-what-bpr-233b-disregards}
 
 | Item 項目 | Treatment 處理 | Pre-req 先決條件 | 10% cap 上限 | Source 來源 |
 |---|---|:-:|:-:|---|
@@ -84,7 +104,7 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 | Ducts for non-essential plant 非必要機房管道 | Disregarded subject to | ✅ | ✅ | [APP-151](../pnap/app-151.md) item 22 |
 | Hotel pick-up / set-down and back-of-house 酒店上落客區及後勤 | Reg. 23A; BOH normally ≤ **5%** of hotel GFA 一般 ≤ 5% | | | [APP-40](../pnap/app-40.md) |
 
-## Step 3: concessions by modification 第三步：變通寬免 {#step-3-concessions-by-modification}
+## Step 3: which features get a concession? 第三步：哪些設施獲寬免？ {#step-3-concessions-by-modification}
 
 <small>✅ = subject to the APP-151 pre-requisites / counted in the 10% cap. Full list: [APP-151 Appendix A](../pnap/app-151.md). ✅ 表示須符合先決條件／計入 10% 上限。</small>
 
@@ -108,7 +128,7 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 | Refuge floor, public transport terminus, public passage, covered setback 庇護層、公共交通交匯處、公眾通道、有蓋後移範圍 | Outside cap | | | [APP-151](../pnap/app-151.md), [APP-108](../pnap/app-108.md), [APP-152](../pnap/app-152.md) |
 | MiC buildings 組裝合成建築 | **10% of the MiC floor area** disregarded (not in the 10% cap); 10% SC at each floor 組裝合成樓面面積的 10% | | | [JPN 8](../pnap/jpn-8.md) |
 
-## Step 4: pre-requisites and the 10% cap 第四步：先決條件及 10% 上限 {#step-4-pre-requisites-and-the-10-cap-10}
+## Step 4: what are the pre-requisites and the 10% cap? 第四步：先決條件及 10% 上限 {#step-4-pre-requisites-and-the-10-cap-10}
 
 === "English"
 
@@ -142,7 +162,7 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 
     <small>Illustrative numbers only; check the current PNAPs, including the definition of "total GFA" for the cap, for a real scheme. 數字只作說明。</small>
 
-## Step 5: lease and OZP 第五步：地契及分區計劃大綱圖 {#step-5-lease-and-ozp}
+## Step 5: how do the lease and OZP fit in? 第五步：地契及分區計劃大綱圖 {#step-5-lease-and-ozp}
 
 === "English"
 

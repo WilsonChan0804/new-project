@@ -26,7 +26,25 @@ keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用�
 
     Main sources 主要來源: [B(P)R 71–73](../regulations/bpr-71-73.md) · [APP-41](../pnap/app-41.md) · [APP-175](../pnap/app-175.md) · [APP-176](../pnap/app-176.md) · [BFA 2008](../codes/bfa-2008.md) · [BFA Div. 1–3](../codes/bfa-div-1-3.md) · [Div. 4–9](../codes/bfa-div-4-9.md) · [Div. 10–12](../codes/bfa-div-10-12.md) · [Div. 13–20](../codes/bfa-div-13-20.md) · [APP-42](../pnap/app-42.md) · [APP-104](../pnap/app-104.md)
 
-## How the rules fit together 規則如何配合 {#how-the-rules-fit-together}
+## At a glance 重點摘要 {#at-a-glance}
+
+=== "English"
+
+    - **Law**: [B(P)R 72](../regulations/bpr-71-73.md) and the **Third Schedule** (barrier free access) and **B(P)R 73** with the **Fourth Schedule** (**elderly-friendly**, from **1 Aug 2026**). DDO **s.84**: plans cannot be approved without reasonable access ([APP-41](../pnap/app-41.md)).
+    - **Extent**: all of a **non-domestic** building; common areas of **domestic** buildings over **4 storeys**; entrance and G/F common areas of lower ones.
+    - **Key sizes**: accessible route **1,200 mm**; doors **850 mm** clear; ramps no steeper than **1:12** with **1,500 × 1,500 mm** landings; thresholds ≤ **15 mm**; accessible lift car **1,400 × 1,200 mm**; accessible WC **1,500 × 1,750 mm** ([DMUA 2026](../codes/dmua-2026.md)).
+    - **Elderly-friendly** (reg. 73): **13** requirements in common areas and **3** inside flats; not for works consented by **1 Aug 2026**.
+    - **Manual**: the [Universal Accessibility Manual 2026](../codes/dmua-2026.md) replaces BFA 2008; parts not yet in the B(P)R are advisory.
+
+=== "中文"
+
+    - **法例**：[第 72 條](../regulations/bpr-71-73.md)及**附表三**（無障礙通道），以及**第 73 條**及**附表四**（**長者友善**，**2026 年 8 月 1 日**起）；《殘疾歧視條例》**第 84 條**：沒有合理通道不能批准圖則（[APP-41](../pnap/app-41.md)）。
+    - **範圍**：**非住用**建築物全部；超過 **4 層**的**住用**建築物公用地方；較低者的入口及地面層公用地方。
+    - **主要尺寸**：無障礙通道 **1,200 毫米**；門淨闊 **850 毫米**；斜道不陡於 **1:12**，平台 **1,500 × 1,500 毫米**；門檻 ≤ **15 毫米**；無障礙升降機 **1,400 × 1,200 毫米**；無障礙洗手間 **1,500 × 1,750 毫米**（[2026 年手冊](../codes/dmua-2026.md)）。
+    - **長者友善**（第 73 條）：公用地方 **13** 項、單位內 **3** 項要求；**2026 年 8 月 1 日**或之前已獲同意的工程不適用。
+    - **設計手冊**：[《2026 年通用無障礙設計手冊》](../codes/dmua-2026.md)取代 2008 年手冊；未納入規例的部分屬建議性質。
+
+## Which rules apply? 哪些規定適用？ {#how-the-rules-fit-together}
 
 <figure markdown>
   ![From BFA 2008 to DMUA 2026](../assets/figures/diagrams/ua-timeline.svg){ width="760" loading=lazy }
@@ -47,14 +65,14 @@ keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用�
     - **設計手冊**：**2026 年暢道通行手冊**取代 2008 年手冊；只有已納入規例的條文屬法定要求，其餘**暫屬建議**（[APP-176](../pnap/app-176.md)）。
     - **圖則**須顯示無障礙及長者友善設施（B(A)R 第 8(1)(m) 條）。
 
-## The continuous accessible route 連續無障礙通道 {#the-continuous-accessible-route}
+## What is a continuous accessible route? 何謂連續無障礙通道？ {#the-continuous-accessible-route}
 
 <figure markdown>
   ![The continuous accessible route](../assets/figures/diagrams/bfa-route.svg){ width="760" loading=lazy }
   <figcaption>From the lot boundary to every accessible facility, without a step. 由地段界線到所有無障礙設施，沒有梯級。 Diagram prepared for this site.</figcaption>
 </figure>
 
-## Key dimensions 主要尺寸 {#key-dimensions}
+## What are the key dimensions? 主要尺寸是多少？ {#key-dimensions}
 
 | Element 項目 | Reg. 72 / BFA 2008 | Reg. 73 / Fourth Schedule (elderly) 長者友善 | Source 來源 |
 |---|---|---|---|
@@ -72,7 +90,7 @@ keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用�
 
 <small>Summary only; DMUA 2026 has more detail and advisory items. 摘要；詳細內容見 2026 年手冊。</small>
 
-## Which buildings, which parts 適用範圍 {#which-buildings-which-parts}
+## Which buildings and parts must comply? 哪些建築物及部分須符合？ {#which-buildings-which-parts}
 
 === "English"
 
@@ -86,13 +104,13 @@ keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用�
     - **長者友善（第 73 條）**：住用及商業建築物，以及設有此類單位的建築物；公用地方 **13 項**、單位內 **3 項**要求；≤ 13 米單一住戶建築物、過渡性房屋、簡約公屋及臨時建築物除外（[APP-175](../pnap/app-175.md)）。
     - **過渡安排**：**2026 年 8 月 1 日**或之前已展開或已獲同意的工程（一般為地基工程同意）不適用；小型工程以表格上的動工日期為準。
 
-## Existing buildings and exemptions 現有建築物及豁免 {#existing-buildings-and-exemptions}
+## What about existing buildings and exemptions? 現有建築物及豁免 {#existing-buildings-and-exemptions}
 
 - **s.42 modification / exemption** in special circumstances: site constraints, no control over common parts, unjustifiable hardship ([APP-41](../pnap/app-41.md), [APP-176](../pnap/app-176.md)). Applications are advised by the **Advisory Committee on Barrier Free Access** (reg. 72) and the **Building Committee** (reg. 73). 特殊情況可按第 42 條申請變通或豁免。
 - **A&A works** to buildings without initial access: take all practical measures; **DMUA para. 11.6** gives practical alternatives. 改動加建須採取一切切實可行措施。
 - **Minor works** done after 1 Aug 2026 must meet reg. 73 where applicable; the [MW Technical Guidelines](../regulations/mw-technical-guidelines.md) were amended in Aug 2026 to add these requirements. 小型工程技術指引已於 2026 年 8 月修訂。
 
-## Incentives 鼓勵措施 {#incentives}
+## Are there incentives? 有何鼓勵措施？ {#incentives}
 
 | Feature 設施 | Concession 寬免 | Source 來源 |
 |---|---|---|

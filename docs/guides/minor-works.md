@@ -26,7 +26,25 @@ keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指�
 
     Main sources 主要來源: [B(MW)R Cap. 123N](../regulations/bmwr-123n.md) · [MW Technical Guidelines](../regulations/mw-technical-guidelines.md) · [APP-147](../pnap/app-147.md) · [APP-148](../pnap/app-148.md) · [APP-149](../pnap/app-149.md) · [Cap. 123O fees](../regulations/bmwfr-123o.md) · [APP-155](../pnap/app-155.md)
 
-## Choosing the route 選擇途徑 {#choosing-the-route}
+## At a glance 重點摘要 {#at-a-glance}
+
+=== "English"
+
+    - **Three routes**: **designated exempted works** (no submission), **minor works** (**187** items, Classes **I–III**, simplified requirements), or full **approval and consent** ([B(MW)R](../regulations/bmwr-123n.md)).
+    - **Class I**: appoint a prescribed building professional (AP, plus RSE / RGE if needed) **and** a PRC; notice with plans **≥ 7 days** before starting; certificate **within 14 days** of completion.
+    - **Class II**: PRC; notice **≥ 7 days** before; certificate **within 14 days**. **Class III**: PRC; **one submission within 14 days** after completion.
+    - Contractors register as **RMWC (Individual)** for Class III items or **RMWC (Company)** for types and classes ([APP-148](../pnap/app-148.md)); one AS per submission ([APP-149](../pnap/app-149.md)).
+    - **Signboards** erected before **2 Sep 2013** can be validated and re-validated every **5 years** ([APP-155](../pnap/app-155.md)).
+
+=== "中文"
+
+    - **三條途徑**：**指定豁免工程**（毋須呈交）、**小型工程**（**187** 項，第 **I–III** 級別，簡化規定），或須事先**批准及同意**（[第 123N 章](../regulations/bmwr-123n.md)）。
+    - **第 I 級別**：委任訂明建築專業人士（認可人士，需要時加註冊結構／岩土工程師）**及**訂明註冊承建商；動工 **≥ 7 天前**連圖則通知；完工後 **14 天**內呈交證明書。
+    - **第 II 級別**：訂明註冊承建商；動工 **≥ 7 天前**通知；**14 天**內呈交證明書。**第 III 級別**：訂明註冊承建商；完工後 **14 天**內**一次呈交**。
+    - 承建商以**個人**（第 III 級別項目）或**公司**（類型及級別）註冊（[APP-148](../pnap/app-148.md)）；每份呈交一名獲授權簽署人（[APP-149](../pnap/app-149.md)）。
+    - **2013 年 9 月 2 日**前豎設的**招牌**可申請檢核，每 **5 年**重新檢核（[APP-155](../pnap/app-155.md)）。
+
+## Which route do the works take? 工程應走哪條途徑？ {#choosing-the-route}
 
 <figure markdown>
   ![Which route for small building works](../assets/figures/diagrams/mw-route.svg){ width="560" loading=lazy }
@@ -47,7 +65,7 @@ keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指�
     - **超出範圍**的工程須按條例第 14 條取得**批准及同意**（[呈交指南](submission-to-op.md)）。
     - 項目及限制請查閱**技術指引第 3 章**（[摘要](../regulations/mw-technical-guidelines.md)）。
 
-## Who does what, and when 責任及時限 {#who-does-what-and-when}
+## Who does what, and by when? 誰負責甚麼、何時完成？ {#who-does-what-and-when}
 
 <figure markdown>
   ![Minor works procedure by class](../assets/figures/diagrams/minor-works.svg){ width="760" loading=lazy }
@@ -62,13 +80,13 @@ keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指�
 
 <small>Forms MW01–MW12 (see [APP-149](../pnap/app-149.md) and [APP-60](../pnap/app-60.md)). Starting Class I or II works less than 7 days after the notice, or missing the 14-day certificate, is an offence ([APP-147](../pnap/app-147.md)). 表格 MW01–MW12。</small>
 
-## Contractors, signatories and fees 承建商、簽署人及費用 {#contractors-signatories-and-fees}
+## Which contractor, signatory and fees? 承建商、簽署人及費用 {#contractors-signatories-and-fees}
 
 - **Registers**: RMWC (Company) for types and classes; RMWC (Individual) for Class III items ([APP-148](../pnap/app-148.md)). 公司按類型及級別註冊，個人按第 III 級別項目註冊。
 - **Authorised signatory**: one AS per submission, named on every form ([APP-149](../pnap/app-149.md)). 每份呈交一名獲授權簽署人。
 - **Fees**: e.g. company application **$2,920** (Class I), **$1,100** (Class II), **$730** (Class III only); individual **$290 / $155** ([Cap. 123O](../regulations/bmwfr-123o.md)). 費用見第 123O 章。
 
-## Validation schemes 檢核計劃 {#validation-schemes}
+## Can existing works be validated? 現有工程可否檢核？ {#validation-schemes}
 
 - **Household Minor Works Validation Scheme** and **Minor Amenity Features Validation Scheme**: existing unauthorised household items (A/C supports, drying racks, small canopies) can be inspected, strengthened and certified to stay (TG Ch. 7). 家居小型工程及小型適意設施檢核計劃。
 - **Signboard Validation Scheme**: signboards erected before **2 Sep 2013** within minor works limits; re-validate every **5 years** ([APP-155](../pnap/app-155.md)). 招牌檢核計劃，每 5 年重新檢核。
@@ -78,7 +96,7 @@ keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指�
   <figcaption>Signboard validation every 5 years (APP-155). 招牌每 5 年檢核。</figcaption>
 </figure>
 
-## Technical requirements to remember 技術要點 {#technical-requirements-to-remember}
+## Which technical requirements still apply? 仍須符合哪些技術要求？ {#technical-requirements-to-remember}
 
 === "English"
 

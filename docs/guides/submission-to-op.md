@@ -36,7 +36,27 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
 
     Main sources 主要來源: [BO s.14–21](../regulations/bo-part-2-building-works.md) · [B(A)R](../regulations/bar-123a.md) · [ADM-19](../pnap/adm-19.md) · [ADM-2](../pnap/adm-2.md) · [APP-60](../pnap/app-60.md) · [ADV-33](../pnap/adv-33.md) · [APP-97](../pnap/app-97.md) · [APP-13](../pnap/app-13.md) · [APP-78](../pnap/app-78.md) · [APP-162](../pnap/app-162.md) · [APP-157](../pnap/app-157.md)
 
-## The statutory timeline 法定時間表 {#the-statutory-timeline}
+## At a glance 重點摘要 {#at-a-glance}
+
+=== "English"
+
+    - **Approval**: BD decides within **60 days** for a first submission or major revision, **30 days** for other resubmissions ([B(A)R 30](../regulations/bar-123a.md)); pre-submission enquiry about **45 days** ([ADM-19](../pnap/adm-19.md)).
+    - **Consent** (Form **BA8**): decided within **28 days**; apply within **2 years** of approval; start work within **3 months** of consent ([BO ss.14, 16, 20](../regulations/bo-part-2-building-works.md)).
+    - Before works: **BA10** (contractor and AS) and the **supervision plan**; site permits for **hoardings (BA19)** and **contractor's sheds (BA18)**.
+    - During works: notify changes of AP / RSE / RGE / contractor within **7 days**; drainage test certificates within **7 days** of the test.
+    - **Occupation permit** (Form **BA14**): decision within **14 days** ([BO s.21](../regulations/bo-part-2-building-works.md)).
+    - Use the [28-item checklist](#checklist) below before each stage.
+
+=== "中文"
+
+    - **批准**：首次呈交或重大修訂 **60 天**內決定，其他再呈交 **30 天**（[第 30 條](../regulations/bar-123a.md)）；呈交前查詢約 **45 天**（[ADM-19](../pnap/adm-19.md)）。
+    - **同意**（表格 **BA8**）：**28 天**內決定；須在批准後 **2 年**內申請；同意後 **3 個月**內動工（[條例第 14、16、20 條](../regulations/bo-part-2-building-works.md)）。
+    - 動工前：**BA10**（承建商及獲授權簽署人）及**監督計劃書**；**圍板（BA19）**及**工棚（BA18）**許可證。
+    - 施工期間：更換認可人士、註冊結構工程師、註冊岩土工程師或承建商須於 **7 天**內通知；排水測試證明書於測試後 **7 天**內呈交。
+    - **佔用許可證**（表格 **BA14**）：**14 天**內決定（[條例第 21 條](../regulations/bo-part-2-building-works.md)）。
+    - 每個階段前可使用下方的 [28 項核對清單](#checklist)。
+
+## How long does each step take? 每個步驟需時多久？ {#the-statutory-timeline}
 
 <figure markdown>
   ![Statutory periods from plan submission to occupation](../assets/figures/diagrams/statutory-timeline.svg){ width="366" loading=lazy }
@@ -56,7 +76,7 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
 | Occupation permit 佔用許可證 | Decision within **14 days**; re-inspection within 14 days after refusal 14 天 | [BO s.21](../regulations/bo-part-2-building-works.md), [APP-78](../pnap/app-78.md) |
 | Withdraw and resubmit 撤回並重新提交 | Restarts the clock; normally **at most twice** 最多兩次 | [ADM-22](../pnap/adm-22.md) |
 
-## Stage 1: before you submit 第一步：呈交前 {#stage-1-before-you-submit}
+## Stage 1: what should be ready before submitting? 第一步：呈交前要準備甚麼？ {#stage-1-before-you-submit}
 
 === "English"
 
@@ -72,7 +92,7 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
     - **岩土**：符合 APP-25 準則時須作岩土評估（[APP-25](../pnap/app-25.md)）；附表所列地區（[APP-30](../pnap/app-30.md)、[APP-61](../pnap/app-61.md)）。
     - 特殊設計或變通可先作**呈交前查詢**（[ADM-19](../pnap/adm-19.md)）。
 
-## Stage 2: appointment and plan submission 第二步：委任及呈交圖則 {#stage-2-appointment-and-plan-submission}
+## Stage 2: who is appointed and what is submitted? 第二步：委任誰、呈交甚麼？ {#stage-2-appointment-and-plan-submission}
 
 | Document / form 文件／表格 | Purpose 用途 | Source 來源 |
 |---|---|---|
@@ -85,7 +105,7 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
 | **Fees** 費用 | Form **BD24**; on GFA (new buildings) or per sheet (A&A); crossed cheque, non-refundable 按樓面面積或張數 | [APP-55](../pnap/app-55.md) |
 | **Electronic submission** 電子呈交 | Through **ESH**, with digital signatures 電子呈交平台 | [ADM-17](../pnap/adm-17.md), [APP-60](../pnap/app-60.md) |
 
-## Stage 3: consent to commence 第三步：動工同意 {#stage-3-consent-to-commence}
+## Stage 3: how is consent to commence obtained? 第三步：如何取得動工同意？ {#stage-3-consent-to-commence}
 
 === "English"
 
@@ -110,14 +130,14 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
   <figcaption>Normal or fast-track consent (APP-97). 一般程序還是快速處理。</figcaption>
 </figure>
 
-## Stage 4: construction 第四步：施工 {#stage-4-construction}
+## Stage 4: what must happen during construction? 第四步：施工期間要做甚麼？ {#stage-4-construction}
 
 - **Supervision**: AP / RSE / RGE give **periodic**, the contractor **continuous** supervision with TCPs; keep checklists and records ([APP-157](../pnap/app-157.md), [APP-158](../pnap/app-158.md)). 認可人士等定期監督，承建商持續監督。
 - **Testing**: reinforcement ([APP-45](../pnap/app-45.md)), materials by HOKLAS labs ([APP-118](../pnap/app-118.md)), early-age concrete ([APP-167](../pnap/app-167.md)), fixings ([APP-169](../pnap/app-169.md)), drainage tests ([APP-58](../pnap/app-58.md)). 鋼筋、物料、混凝土、固定件及排水測試。
 - **BD audits** may be unannounced ([ADM-18](../pnap/adm-18.md), [ADM-13](../pnap/adm-13.md)). 屋宇署可能突擊審查。
 - **Amendments**: get amendment plans approved **before** the OP application ([APP-13](../pnap/app-13.md)); minor amendments per [ADM-14](../pnap/adm-14.md). 修訂圖則須在申請佔用許可證前獲批准。
 
-## Stage 5: completion and occupation permit 第五步：完工及佔用許可證 {#stage-5-completion-and-occupation-permit}
+## Stage 5: how is the occupation permit obtained? 第五步：如何取得佔用許可證？ {#stage-5-completion-and-occupation-permit}
 
 <figure markdown>
   ![Occupation permit inspection workflow](../assets/figures/diagrams/app78-op.svg){ width="560" loading=lazy }
