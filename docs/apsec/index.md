@@ -15,6 +15,13 @@ tags:
   - Barrier free access 無障礙
   - Site supervision 地盤監督
   - Site coverage 上蓋面積
+  - Site area & classification 地盤面積及分類
+  - Refuse 垃圾
+  - Plumbing & sanitary 衞生設備
+  - Lighting & ventilation 照明及通風
+  - GFA 總樓面面積
+  - Foundation 地基
+  - Demolition 拆卸
 ---
 
 # APSEC Discussion Forum<br><small>認可人士及註冊結構工程師委員會討論會</small>

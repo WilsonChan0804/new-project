@@ -13,6 +13,13 @@ tags:
   - Site safety 地盤安全
   - GFA 總樓面面積
   - Concrete & materials 混凝土及物料
+  - Curtain wall & façade 幕牆及外牆
+  - Lift 升降機
+  - Sustainable building design 可持續建築設計
+  - Site coverage 上蓋面積
+  - Plot ratio 地積比率
+  - Foundation 地基
+  - Site area & classification 地盤面積及分類
 ---
 
 # From plan submission to occupation permit<br><small>由呈交圖則至佔用許可證（專題指南）</small>

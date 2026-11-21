@@ -13,6 +13,7 @@ tags:
   - Plumbing & sanitary 衞生設備
   - GFA concession 樓面面積寬免
   - Fire safety 消防安全
+  - Green & amenity features 環保及適意設施
 ---
 
 # Barrier-free access and universal accessibility<br><small>無障礙通道及暢道通行（專題指南）</small>

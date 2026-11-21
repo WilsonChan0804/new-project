@@ -21,6 +21,13 @@ tags:
   - Site coverage 上蓋面積
   - Plot ratio 地積比率
   - Plant rooms 機房
+  - Means of access 救援通道
+  - Excavation & ELS 挖掘
+  - Building height 建築物高度
+  - Site supervision 地盤監督
+  - Fire resisting construction 耐火結構
+  - Site safety 地盤安全
+  - Refuge floor 庇護層
 ---
 # Glossary 詞彙
 

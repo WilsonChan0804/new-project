@@ -13,6 +13,7 @@ tags:
   - Wind 風力
   - Occupation permit 佔用許可證
   - Green & amenity features 環保及適意設施
+  - Elderly-friendly 長者友善
 ---
 
 # Minor works: code, guidelines and procedure<br><small>小型工程：法例、指引及程序（專題指南）</small>

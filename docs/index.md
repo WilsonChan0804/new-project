@@ -21,6 +21,11 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Refuge floor 庇護層
   - Means of escape 逃生途徑
+  - Occupation permit 佔用許可證
+  - Lighting & ventilation 照明及通風
+  - Means of access 救援通道
+  - Demolition 拆卸
+  - Car park 停車場
 ---
 # HK Building Regulations Knowledge Base<br>香港建築法規知識庫
 
@@ -65,6 +70,7 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **All BD codes of practice and guidelines 全部屋宇署作業守則及指引** (Nov 2026): the new [Universal Accessibility 2026 通用無障礙](codes/dmua-2026.md), the structural codes ([Loads](codes/dil-2011.md) · [Wind](codes/wind-2019.md) · [Concrete](codes/concrete-2013.md) · [Steel](codes/steel-2011.md) · [Foundations](codes/foundations-2017.md) · [Glass](codes/glass-2018.md) · [Precast](codes/precast-2016.md)), plus [Site supervision](codes/site-supervision-2009.md) · [Demolition](codes/demolition-2004.md) · [External maintenance](codes/external-maintenance-2021.md) · [Lifts](codes/lifts-escalators-2011.md) · [MBIS/MWIS](codes/mbis-mwis-2012.md) · [BD Guidelines](codes/bd-guidelines.md). See the [Codes index](codes/index.md).
 - **More topic guides 更多專題指南**: [Lighting & ventilation 照明及通風](guides/lighting-ventilation.md) · [Submission to OP + checklist 呈交至佔用許可證及核對清單](guides/submission-to-op.md) · [Barrier-free & universal accessibility 無障礙及暢道通行](guides/barrier-free-access.md) · [Minor works 小型工程](guides/minor-works.md), plus the [MW Technical Guidelines 小型工程技術指引](regulations/mw-technical-guidelines.md).
 - **Reading aids 閱讀輔助**: back button, automatic links to referenced documents, highlighted key figures, and shared **editing with the editor's name shown** (see [How to use](how-to-use.md)).
 - **New topic guides 專題指南**: [GFA calculation & concessions 總樓面面積及寬免](guides/gfa.md) · [Site coverage, plot ratio & site area 上蓋面積及地積比率](guides/site-coverage-plot-ratio.md). The whole picture on one page, with the latest APSEC positions.

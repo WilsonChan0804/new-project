@@ -21,6 +21,7 @@ tags:
   - Occupation permit 佔用許可證
   - Means of escape 逃生途徑
   - Curtain wall & façade 幕牆及外牆
+  - Building height 建築物高度
 ---
 # Ordinance & Regulations 條例及規例
 

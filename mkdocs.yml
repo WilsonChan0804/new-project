@@ -364,6 +364,22 @@ nav:
       - BFA Div. 10–12 Doors, toilets, bathrooms 門、洗手間、浴室: codes/bfa-div-10-12.md
       - BFA Div. 13–20 Signs, counters, lifts 標誌、櫃枱、升降機: codes/bfa-div-13-20.md
       - BFA Ch. 5–6 Services & elderly-friendly 屋宇裝備及長者友善: codes/bfa-ch-5-6.md
+      - Universal Accessibility 2026 通用無障礙: codes/dmua-2026.md
+      - External maintenance access 2021 外部維修通道: codes/external-maintenance-2021.md
+      - Lifts & escalators 2011 升降機及自動梯: codes/lifts-escalators-2011.md
+      - Dead & imposed loads 2011 恒載及外加荷載: codes/dil-2011.md
+      - Wind effects 2019 風力效應: codes/wind-2019.md
+      - Structural use of concrete 2013 混凝土結構: codes/concrete-2013.md
+      - Structural use of steel 2011 鋼結構: codes/steel-2011.md
+      - Foundations 2017 地基: codes/foundations-2017.md
+      - Structural use of glass 2018 玻璃結構: codes/glass-2018.md
+      - Precast concrete 2016 預製混凝土: codes/precast-2016.md
+      - Site supervision 2009 & TM 地盤監督: codes/site-supervision-2009.md
+      - Demolition 2004 拆卸: codes/demolition-2004.md
+      - MBIS & MWIS 2012 強制驗樓驗窗: codes/mbis-mwis-2012.md
+      - Oil storage 1992 & caverns 1994 貯油及岩洞: codes/oil-storage-caverns.md
+      - Older codes 舊守則: codes/superseded-codes.md
+      - BD Guidelines 屋宇署指引: codes/bd-guidelines.md
   - Glossary 詞彙: glossary.md
   - Tags 標籤: tags.md
   - Contributing 編寫指引: contributing.md

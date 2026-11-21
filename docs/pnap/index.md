@@ -21,6 +21,13 @@ tags:
   - Sustainable building design 可持續建築設計
   - Site safety 地盤安全
   - Site coverage 上蓋面積
+  - Signboard 招牌
+  - Maintenance access 維修通道
+  - Means of escape 逃生途徑
+  - Curtain wall & façade 幕牆及外牆
+  - Site area & classification 地盤面積及分類
+  - Refuse 垃圾
+  - Plumbing & sanitary 衞生設備
 ---
 # PNAP 認可人士作業備考
 

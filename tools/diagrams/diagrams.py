@@ -326,3 +326,56 @@ D['mw-route'] = ('guides/minor-works.md',
   D -->|"Class I"| G["AP (+ RSE) and PRC; notice + plans<br/>≥ 7 days before; certificate ≤ 14 days"]
   D -->|"Class II"| H["PRC; notice ≥ 7 days before;<br/>certificate ≤ 14 days"]
   D -->|"Class III"| I["PRC; one submission<br/>≤ 14 days after completion"]''')
+
+D['wind-procedure'] = ('codes/wind-2019.md',
+ 'Wind Code 2019: Standard Method or wind tunnel. 風力守則：標準方法或風洞測試。',
+'''flowchart TD
+  A["Building 建築物"] --> B{"H ≤ 200 m, usual shape,<br/>simple surroundings,<br/>B/D ≤ 6?<br/>符合標準方法條件？"}
+  B -->|"No 否"| T["Wind tunnel test (Section 6)<br/>風洞測試"]
+  B -->|"Yes 是"| C["Effective height Ze<br/>(sheltering, App. A2)<br/>有效高度"]
+  C --> D["Qz = Qo,z × St × Sθ<br/>Table 3-1 · topography · direction"]
+  D --> E["Along-wind force Wz<br/>= Qz · Sq,z · Cf · B"]
+  E --> F["Torsion ±0.05B to ±0.20B<br/>扭轉"]
+  F --> G{"H < 100 m, H/B < 5<br/>and N > 0.5 Hz?"}
+  G -->|"No 否"| H["Across-wind moment check<br/>橫風彎矩"]
+  G -->|"Yes 是"| I["Load combinations (Table 2-1)<br/>荷載組合"]
+  H --> I
+  I --> J["Acceleration check (2.4)<br/>1-yr and 10-yr comfort 舒適度"]''')
+
+D['site-supervision'] = ('codes/site-supervision-2009.md',
+ 'Four supervision streams. 四個監督系統。',
+'''flowchart TD
+  subgraph AP ["AP stream 認可人士"]
+    A1["AP (head)"] --> A2["Representative"] --> A3["T1–T3 routine<br/>T4–T5 engineering"]
+  end
+  subgraph RSE ["RSE stream 結構工程師"]
+    R1["RSE (head)"] --> R2["Representative"] --> R3["T1–T3 / T4–T5"]
+  end
+  subgraph RGE ["RGE stream 岩土工程師"]
+    G1["RGE (head)"] --> G2["Representative"] --> G3["T1–T3 / T4–T5"]
+  end
+  subgraph RC ["Contractor stream 承建商"]
+    C1["AS (head)"] --> C2["Representative"] --> C3["T1–T3 / T4–T5"]
+  end
+  P["Joint supervision plan<br/>with first consent application<br/>聯合監督計劃書"]
+  A1 --> P
+  R1 --> P
+  G1 --> P
+  C1 --> P''')
+
+D['mbis-code'] = ('codes/mbis-mwis-2012.md',
+ 'MBIS: RI appointment to completion. 強制驗樓：由委任至完工。',
+'''flowchart LR
+  A["Owner served<br/>MBIS notice<br/>業主接獲通知"] --> B["Appoint RI<br/>MBI 1 within 7 days<br/>委任註冊檢驗人員"]
+  B --> C["Prescribed inspection<br/>(detailed investigation<br/>if needed)<br/>訂明檢驗"]
+  C --> D["Report + MBI 3 / 3a<br/>to owner within 7 days<br/>檢驗報告"]
+  D --> E["Prescribed repair by RC<br/>under RI supervision<br/>訂明修葺"]
+  E --> F["Completion report<br/>MBI 4 within 14 days<br/>完工報告"]''')
+
+D['dmua-status'] = ('codes/dmua-2026.md',
+ 'From BFA 2008 to the Design Manual on Universal Accessibility 2026. 由 2008 年無障礙手冊至 2026 年通用無障礙手冊。',
+'''flowchart LR
+  A["Design Manual:<br/>Barrier Free Access 2008<br/>(2025 Edition)<br/>2008 年無障礙手冊"] --> B["Design Manual on<br/>Universal Accessibility 2026<br/>(Sep 2026)<br/>2026 年通用無障礙手冊"]
+  B --> C["Already in B(P)R<br/>regs. 72–73, Sch. 3–4<br/>→ statutory 法定"]
+  B --> D["Other obligatory items<br/>(Appendix E)<br/>→ advisory until B(P)R amended<br/>修例前屬建議"]
+  B --> E["Advisory section<br/>enhanced provisions<br/>建議部分"]''')

@@ -23,6 +23,9 @@ tags:
   - Means of access 救援通道
   - Fire safety 消防安全
   - Refuge floor 庇護層
+  - Maintenance access 維修通道
+  - Excavation & ELS 挖掘
+  - Demolition 拆卸
 ---
 
 # ADM-19 Building Approval Process<br><small>建築圖則批准程序</small>
