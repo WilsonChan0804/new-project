@@ -5,6 +5,16 @@ tags:
   - Fire resisting construction 耐火結構
   - Fire compartment 防火隔室
   - FRR 耐火效能
+  - Structural 結構
+  - Staircase 樓梯
+  - Lift 升降機
+  - Curtain wall & façade 幕牆及外牆
+  - Refuge floor 庇護層
+  - Means of escape 逃生途徑
+  - Domestic 住用
+  - Car park 停車場
+  - Green & amenity features 環保及適意設施
+  - Balcony & utility platform 露台及工作平台
 ---
 
 # FS Code 2011 Part C: Fire Resisting Construction<br><small>《2011 年建築物消防安全守則》C 部：耐火結構</small>

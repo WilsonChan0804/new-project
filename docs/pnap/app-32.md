@@ -3,6 +3,8 @@ tags:
   - PNAP
   - APP series
   - Airport height restriction 機場高度限制
+  - Building height 建築物高度
+  - Minor works 小型工程
 ---
 
 # APP-32 Hong Kong Airport (Control of Obstructions) Ordinance (Cap. 301)<br><small>《香港機場（障礙管制）條例》（第301章）</small>

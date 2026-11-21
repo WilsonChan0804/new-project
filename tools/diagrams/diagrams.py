@@ -272,3 +272,26 @@ D['ua-timeline'] = ('pnap/app-41.md',
   B --> C["2025<br/>App. J elderly-friendly<br/>長者友善 (Ch. 6)"]
   C --> D["Sep 2026<br/>DMUA 2026 replaces BFA 2008<br/>暢道通行 2026 (APP-176)"]
   D --> E["B(P)R reg. 73<br/>elderly-friendly design<br/>in force 1 Aug 2026"]''')
+
+D['gfa-guide-flow'] = ('guides/gfa.md',
+ 'How a GFA figure is built up, step by step. 總樓面面積的計算步驟。',
+'''flowchart TD
+  A["Step 1: Measure all floor area<br/>B(P)R 23(3)(a), APP-2<br/>to outer face of external walls,<br/>incl. basements, balconies, voids<br/>量度所有樓面面積"] --> B["Step 2: Disregard statutory items<br/>B(P)R 23(3)(b)<br/>car parks, mandatory plant rooms,<br/>refuse rooms, lift / A/C machinery<br/>法定不計算項目"]
+  B --> C["Step 3: Apply concessions by modification<br/>BO s.42 · JPN 1/2, APP-42, APP-19,<br/>APP-89, APP-104, APP-40<br/>以變通批出的寬免"]
+  C --> D{"Step 4: APP-151 pre-requisites met?<br/>SBD (APP-152) · energy (APP-156)<br/>· BEAM Plus<br/>符合先決條件？"}
+  D -->|"No 否"| X["Green / amenity concessions lost<br/>失去環保及適意寬免"]
+  D -->|"Yes 是"| E{"Step 5: Capped items ≤ 10% of GFA?<br/>domestic and non-domestic separately<br/>受上限項目 ≤ 10%？"}
+  E -->|"Over 超出"| Y["Excess counts as GFA<br/>超出部分計入"]
+  E -->|"Within 符合"| F["Step 6: Accountable GFA ≤ permitted<br/>site area × PR (First Schedule / OZP)<br/>須計算總樓面面積 ≤ 准許"]
+  F --> G["Step 7: Align with lease and OZP<br/>JPN 4 Groups I–III; premium?<br/>與地契及分區計劃大綱圖一致"]
+  G --> H["Step 8: Undertakings, DMC common parts,<br/>registration before OP<br/>承諾書、公契、佔用許可證前登記"]''')
+
+D['scpr-guide-flow'] = ('guides/site-coverage-plot-ratio.md',
+ 'Working out permitted site coverage and plot ratio. 計算准許上蓋面積及地積比率。',
+'''flowchart TD
+  A["Step 1: Site area 地盤面積<br/>B(P)R 23(2), ADM-21 proof<br/>excl. streets and lanes"] --> B["Step 2: Site class 地盤類別<br/>B(P)R 18A, APP-124<br/>specified streets ≥ 4.5 m → A / B / C"]
+  B --> C["Step 3: Building height 建築物高度<br/>B(P)R 23(1), from mean street level"]
+  C --> D["Step 4: First Schedule 附表一<br/>domestic / non-domestic / composite<br/>→ max SC % and PR"]
+  D --> E["Step 5: Adjustments 調整<br/>bonus for dedication or surrender (B(P)R 22,<br/>APP-108, APP-20) · SC flexibility (APP-132)<br/>· projections disregarded (APP-19)"]
+  E --> F["Step 6: Other controls 其他管制<br/>OZP PR / height / SC (JPN 4, 5, 7)<br/>· lease · open space (reg. 25)"]
+  F --> G["Permitted GFA = site area × PR<br/>准許總樓面面積 = 地盤面積 × 地積比率"]''')

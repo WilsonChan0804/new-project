@@ -4,6 +4,9 @@ tags:
   - APP series
   - UBW 僭建物
   - A&A works 改動及加建工程
+  - Plan submission & approval 呈交及審批
+  - Minor works 小型工程
+  - Site supervision 地盤監督
 ---
 
 # APP-47 Unauthorized Alterations and Additions<br><small>違例改動及加建－《建築物條例》第14條</small>

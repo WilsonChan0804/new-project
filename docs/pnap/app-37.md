@@ -2,10 +2,17 @@
 tags:
   - PNAP
   - APP series
-  - Curtain wall 幕牆
+  - Curtain wall & façade 幕牆及外牆
   - Window 窗
   - Glass 玻璃
   - Structural 結構
+  - Site supervision 地盤監督
+  - Plan submission & approval 呈交及審批
+  - Occupation permit 佔用許可證
+  - Minor works 小型工程
+  - Statutory period 法定期限
+  - Protective barrier 防護欄障
+  - Fire safety 消防安全
 ---
 
 # APP-37 Curtain Wall, Window and Window Wall<br><small>幕牆、玻璃窗及玻璃牆</small>

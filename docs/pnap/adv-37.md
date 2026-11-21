@@ -3,7 +3,8 @@ tags:
   - PNAP
   - ADV series
   - Professional conduct 專業操守
-  - Discipline 紀律
+  - Discipline 紀律處分
+  - Registration 註冊
 ---
 
 # ADV-37 Conduct of Registered Building Professionals under the Buildings Ordinance<br><small>《建築物條例》下註冊建築專業人士的操守</small>

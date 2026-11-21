@@ -4,6 +4,7 @@ tags:
   - APP series
   - Places of public entertainment 公眾娛樂場所
   - Cinema 戲院
+  - Means of escape 逃生途徑
 ---
 
 # APP-81 Places of Public Entertainment (Amendment) Regulation 1996 and Associated Legislative Amendments<br><small>《1996年公眾娛樂場所(修訂)規例》及有關的法例修訂</small>

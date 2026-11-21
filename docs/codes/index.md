@@ -1,3 +1,9 @@
+---
+tags:
+  - Barrier free access 無障礙
+  - Structural 結構
+  - Fire safety 消防安全
+---
 # Codes of Practice 作業守則
 
 Official list 官方列表: [BD Codes of Practice](https://www.bd.gov.hk/en/resources/codes-and-references/codes-and-design-manuals/index.html)

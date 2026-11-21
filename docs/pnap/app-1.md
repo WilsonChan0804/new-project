@@ -4,6 +4,8 @@ tags:
   - APP series
   - Redevelopment 重建
   - Exclusion order 不包括令
+  - Demolition 拆卸
+  - Plan submission & approval 呈交及審批
 ---
 
 # APP-1 Landlord and Tenant (Consolidation) Ordinance, Cap. 7 and Demolished Buildings (Re-development of Sites) Ordinance, Cap. 337<br><small>《業主與租客（綜合）條例》（第7章）《已拆卸建築物（原址重新發展）條例》（第337章）</small>

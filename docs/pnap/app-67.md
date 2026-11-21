@@ -2,9 +2,17 @@
 tags:
   - PNAP
   - APP series
-  - Energy efficiency 能源效益
+  - Energy efficiency 能源效率
   - RTTV / OTTV 熱傳送值
   - Sunshade 遮陽篷
+  - Site coverage 上蓋面積
+  - Plan submission & approval 呈交及審批
+  - Hotel 酒店
+  - Domestic 住用
+  - Occupation permit 佔用許可證
+  - GFA 總樓面面積
+  - Curtain wall & façade 幕牆及外牆
+  - A&A works 改動及加建工程
 ---
 
 # APP-67 Energy Efficiency of Buildings — Building (Energy Efficiency) Regulation<br><small>建築物的能源效率 《建築物（能源效率）規例》</small>

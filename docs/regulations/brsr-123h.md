@@ -4,6 +4,16 @@ tags:
   - Refuse 垃圾
   - Material recovery 物料回收
   - Refuse chute 垃圾槽
+  - Domestic 住用
+  - Lighting & ventilation 照明及通風
+  - Drainage 排水
+  - GFA 總樓面面積
+  - GFA concession 樓面面積寬免
+  - Lift 升降機
+  - Concrete & materials 混凝土及物料
+  - Barrier free access 無障礙
+  - Hotel 酒店
+  - Car park 停車場
 ---
 
 # Cap. 123H Building (Refuse Storage and Material Recovery Chambers and Refuse Chutes) Regulations<br><small>《建築物（垃圾及物料回收房及垃圾槽）規例》（第 123H 章）</small>

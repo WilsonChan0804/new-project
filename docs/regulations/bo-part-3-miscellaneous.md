@@ -6,6 +6,11 @@ tags:
   - Signboard 招牌
   - Cost recovery 追討費用
   - Validation scheme 檢核計劃
+  - Site supervision 地盤監督
+  - Minor works 小型工程
+  - Plan submission & approval 呈交及審批
+  - Lighting & ventilation 照明及通風
+  - Means of escape 逃生途徑
 ---
 
 # BO s.31–39C Projections over streets, cost recovery, records, regulations, technical memorandum and validation<br><small>《建築物條例》第 31–39C 條：街道上的伸出物、追討費用、紀錄、規例、技術備忘錄及檢核</small>

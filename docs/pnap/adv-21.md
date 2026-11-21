@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Sediment 沉積物
   - Marine disposal 海上傾卸
+  - Excavation & ELS 挖掘
 ---
 
 # ADV-21 Management Framework for Disposal of Dredged / Excavated Sediment<br><small>處理疏浚／挖掘的沉積物的管理架構</small>

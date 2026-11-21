@@ -5,6 +5,8 @@ tags:
   - Hoarding 圍板
   - Covered walkway 有蓋行人道
   - Gantry 門架
+  - Site safety 地盤安全
+  - Excavation & ELS 挖掘
 ---
 
 # APP-23 Hoardings, Covered Walkways and Gantries (including Temporary Access for Construction Vehicles)<br><small>圍板、有蓋人行道及門架(包括工程車輛的臨時通道) －《建築物(規劃)規例》第IX部</small>

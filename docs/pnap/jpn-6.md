@@ -1,10 +1,16 @@
 ---
 tags:
   - JPN
-  - SBD Guidelines 可持續建築設計指引
+  - Sustainable building design 可持續建築設計
   - Building separation 建築物間距
   - Building setback 建築物後移
   - Lease 地契
+  - Plan submission & approval 呈交及審批
+  - Green & amenity features 環保及適意設施
+  - GFA 總樓面面積
+  - GFA concession 樓面面積寬免
+  - Site coverage 上蓋面積
+  - A&A works 改動及加建工程
 ---
 
 # JPN 6 Sustainable Building Design Guidelines: Building Separation and Building Setback<br><small>聯合作業備考第 6 號：可持續建築設計指引——樓宇間距及樓宇後移</small>

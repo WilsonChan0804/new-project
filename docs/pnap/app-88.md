@@ -4,6 +4,8 @@ tags:
   - APP series
   - Water carrying services 帶水設施
   - Slope 斜坡
+  - Geotechnical 岩土
+  - Maintenance access 維修通道
 ---
 
 # APP-88 Code of Practice on Inspection and Maintenance of Water Carrying Services Affecting Slopes<br><small>檢驗及維修影響斜坡的帶水設施守則</small>

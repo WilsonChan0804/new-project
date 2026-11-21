@@ -4,7 +4,8 @@ tags:
   - APP series
   - Dewatering 地下水位降低
   - Basement 地庫
-  - Excavation 挖掘
+  - Excavation & ELS 挖掘
+  - Foundation 地基
 ---
 
 # APP-22 Dewatering in Foundation and Basement Excavation Works<br><small>基礎及地庫挖掘工程中的地下水位降低情況</small>

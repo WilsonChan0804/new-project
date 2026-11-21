@@ -2,8 +2,21 @@
 tags:
   - PNAP
   - ADV series
-  - Plan submission 圖則呈交
+  - Plan submission & approval 呈交及審批
   - Checklist 核對清單
+  - Curtain wall & façade 幕牆及外牆
+  - Drainage 排水
+  - Structural 結構
+  - Geotechnical 岩土
+  - GFA 總樓面面積
+  - Balcony & utility platform 露台及工作平台
+  - Excavation & ELS 挖掘
+  - Minor works 小型工程
+  - Registration 註冊
+  - Protective barrier 防護欄障
+  - Maintenance access 維修通道
+  - GFA concession 樓面面積寬免
+  - Foundation 地基
 ---
 
 # ADV-33 Essential Information in Plan Submissions<br><small>呈交圖則包含的重要資料</small>

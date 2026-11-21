@@ -4,6 +4,15 @@ tags:
   - APP series
   - Lift 升降機
   - GFA concession 樓面面積寬免
+  - GFA 總樓面面積
+  - Domestic 住用
+  - Hotel 酒店
+  - Site coverage 上蓋面積
+  - Occupation permit 佔用許可證
+  - Registration 註冊
+  - Refuge floor 庇護層
+  - Plot ratio 地積比率
+  - Barrier free access 無障礙
 ---
 
 # APP-89 Provision of Better Lift Service<br><small>提供較佳的升降機服務</small>

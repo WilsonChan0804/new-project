@@ -4,6 +4,10 @@ tags:
   - APP series
   - Demolition 拆卸
   - Public safety 公眾安全
+  - Plan submission & approval 呈交及審批
+  - Site safety 地盤安全
+  - Site supervision 地盤監督
+  - Refuse 垃圾
 ---
 
 # APP-21 Demolition Works - Measures for Public Safety<br><small>拆卸工程 保障公眾安全的措施</small>

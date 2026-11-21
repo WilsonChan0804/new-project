@@ -4,6 +4,7 @@ tags:
   - APP series
   - Street improvement 街道改善
   - Lease 地契
+  - Plan submission & approval 呈交及審批
 ---
 
 # APP-11 Street Improvement Schemes<br><small>街道改善計劃－就受影響地段呈交建築圖則</small>

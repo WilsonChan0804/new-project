@@ -5,6 +5,13 @@ tags:
   - Fire tests 耐火測試
   - Fire safety management 消防安全管理
   - Fire engineering 消防工程
+  - Fire resisting construction 耐火結構
+  - Concrete & materials 混凝土及物料
+  - Lift 升降機
+  - Means of escape 逃生途徑
+  - Site safety 地盤安全
+  - Curtain wall & façade 幕牆及外牆
+  - A&A works 改動及加建工程
 ---
 
 # FS Code 2011 Parts E, F & G: Fire Properties, Fire Safety Management, Fire Engineering<br><small>《2011 年建築物消防安全守則》E、F、G 部：建築構件的耐火性能、消防安全管理、消防工程</small>

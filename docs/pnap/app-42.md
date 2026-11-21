@@ -3,7 +3,18 @@ tags:
   - PNAP
   - APP series
   - GFA concession 樓面面積寬免
-  - Amenity features 適意設施
+  - Green & amenity features 環保及適意設施
+  - GFA 總樓面面積
+  - Domestic 住用
+  - Plant rooms 機房
+  - Lift 升降機
+  - Barrier free access 無障礙
+  - Elderly-friendly 長者友善
+  - Site coverage 上蓋面積
+  - Open space 休憩用地
+  - Occupation permit 佔用許可證
+  - Sustainable building design 可持續建築設計
+  - Means of escape 逃生途徑
 ---
 
 # APP-42 Amenity Features<br><small>適意設施</small>

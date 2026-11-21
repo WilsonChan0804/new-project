@@ -1,10 +1,15 @@
 ---
 tags:
   - Code of Practice
-  - Barrier free access 無障礙通道
-  - Elderly-friendly design 利便長者設計
+  - Barrier free access 無障礙
+  - Elderly-friendly 長者友善
   - Fire alarm 火警警報
   - Building services 屋宇裝備
+  - Lift 升降機
+  - Lighting & ventilation 照明及通風
+  - Domestic 住用
+  - Plant rooms 機房
+  - Car park 停車場
 ---
 
 # BFA Manual Chapters 5–6: Building Services and Elderly-friendly Design Guidelines<br><small>《設計手冊：暢通無阻的通道 2008》第 5–6 章：屋宇裝備設計規定及長者友善設計指引</small>

@@ -2,8 +2,9 @@
 tags:
   - PNAP
   - APP series
-  - Barrier free access 無障礙通道
+  - Barrier free access 無障礙
   - B(P)R 72
+  - Elderly-friendly 長者友善
 ---
 
 # APP-41 Buildings to be Planned for Use by Persons with a Disability<br><small>建築物須經規劃以供殘疾人士使用《建築物（規劃）規例》第72條《設計手冊：暢通無阻的通道2008》</small>

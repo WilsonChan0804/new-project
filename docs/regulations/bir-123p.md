@@ -5,6 +5,18 @@ tags:
   - MBIS 強制驗樓
   - MWIS 強制驗窗
   - Building maintenance 樓宇維修
+  - Statutory period 法定期限
+  - Registration 註冊
+  - Fire safety 消防安全
+  - Plan submission & approval 呈交及審批
+  - Minor works 小型工程
+  - Structural 結構
+  - Signboard 招牌
+  - Site supervision 地盤監督
+  - Drainage 排水
+  - Protective barrier 防護欄障
+  - Balcony & utility platform 露台及工作平台
+  - Curtain wall & façade 幕牆及外牆
 ---
 
 # B(I&R)R Building (Inspection and Repair) Regulation, Cap. 123P<br><small>《建築物（檢驗及修葺）規例》（第 123P 章）</small>

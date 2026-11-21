@@ -4,6 +4,7 @@ tags:
   - ADM series
   - Emergency 緊急情況
   - Contact 聯絡
+  - Registration 註冊
 ---
 
 # ADM-3 Emergency Situations - Telephone Numbers for Use Outside Office Hours<br><small>緊急情況－辦公時間以外可供使用的電話號碼</small>

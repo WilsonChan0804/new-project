@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Extractor fan 抽氣扇
   - Bathroom 浴室
+  - Domestic 住用
 ---
 
 # ADV-25 Extractor Fans in Bathrooms and Lavatories in Domestic Buildings<br><small>安裝在住宅樓宇浴室及洗手間的抽氣扇</small>

@@ -3,7 +3,7 @@ tags:
   - PNAP
   - APP series
   - Rock face 岩面
-  - Slopes 斜坡
+  - Slope 斜坡
   - Geotechnical 岩土
 ---
 

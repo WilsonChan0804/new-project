@@ -4,6 +4,7 @@ tags:
   - APP series
   - Fire resisting construction 耐火結構
   - FRC Code 1996
+  - Structural 結構
 ---
 
 # APP-80 Code of Practice for Fire Resisting Construction 1996<br><small>《1996年耐火結構守則》</small>

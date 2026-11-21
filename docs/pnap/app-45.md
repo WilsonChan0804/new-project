@@ -4,6 +4,7 @@ tags:
   - APP series
   - Reinforcement 鋼筋
   - Testing 測試
+  - Concrete & materials 混凝土及物料
 ---
 
 # APP-45 Testing of Reinforcement for Concrete<br><small>混凝土鋼筋測試</small>

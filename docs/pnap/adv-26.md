@@ -2,9 +2,10 @@
 tags:
   - PNAP
   - ADV series
-  - Ventilation 通風
+  - Lighting & ventilation 照明及通風
   - Corridor 走廊
   - Lift lobby 升降機大堂
+  - Lift 升降機
 ---
 
 # ADV-26 Ventilation of Common Corridors and Lift Lobbies in Buildings<br><small>建築物的公用走廊及升降機大堂的通風設施</small>

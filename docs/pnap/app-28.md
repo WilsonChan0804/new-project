@@ -4,6 +4,9 @@ tags:
   - APP series
   - Qualified supervision 合格監督
   - Geotechnical 岩土
+  - Site supervision 地盤監督
+  - Excavation & ELS 挖掘
+  - Foundation 地基
 ---
 
 # APP-28 Qualified Supervision of Site Formation, Excavation, Foundation Works on Sloping Ground and Ground Investigation in the Scheduled Areas<br><small>地盤平整工程、挖掘工程、斜坡上的基礎工程和附表所列地區的土地勘測工程須有合格監督的規定－《建築物條例》第17條</small>

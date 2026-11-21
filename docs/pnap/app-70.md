@@ -4,6 +4,8 @@ tags:
   - APP series
   - Scaffolding 棚架
   - Fire safety 消防安全
+  - Site safety 地盤安全
+  - Lighting & ventilation 照明及通風
 ---
 
 # APP-70 Use of Plastic Sheet to Cover Scaffolding Outside Buildings<br><small>以膠布遮蓋樓外棚架</small>

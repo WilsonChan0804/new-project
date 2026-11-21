@@ -4,6 +4,7 @@ tags:
   - APP series
   - Means of access 救援通道
   - Fireman's lift 消防員升降機
+  - Lift 升降機
 ---
 
 # APP-75 Building (Planning) Regulations 41A, 41B and 41C - Means of Access for Firefighting and Rescue<br><small>《建築物(規劃)規例》第41A、41B及41C條－建築物內的消防和救援進出途徑</small>

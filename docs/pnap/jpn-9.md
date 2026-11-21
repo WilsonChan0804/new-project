@@ -5,6 +5,12 @@ tags:
   - Redevelopment 重建
   - Lease 地契
   - Land premium 補地價
+  - Domestic 住用
+  - GFA 總樓面面積
+  - Plan submission & approval 呈交及審批
+  - Occupation permit 佔用許可證
+  - Site area & classification 地盤面積及分類
+  - GFA concession 樓面面積寬免
 ---
 
 # JPN 9 Bonus Plot Ratio Pilot Scheme<br><small>額外地積比率先導計劃</small>

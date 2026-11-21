@@ -5,6 +5,7 @@ tags:
   - Show flat 示範單位
   - Sale office 售樓處
   - Temporary OP 臨時佔用許可證
+  - Occupation permit 佔用許可證
 ---
 
 # APP-95 Sale Offices and Show Flats on Construction Sites<br><small>建築地盤的售樓處及示範單位</small>

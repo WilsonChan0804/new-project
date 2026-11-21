@@ -4,6 +4,12 @@ tags:
   - APP series
   - Hotel 酒店
   - GFA concession 樓面面積寬免
+  - GFA 總樓面面積
+  - Domestic 住用
+  - Site supervision 地盤監督
+  - Plant rooms 機房
+  - Site coverage 上蓋面積
+  - Plot ratio 地積比率
 ---
 
 # APP-40 Hotel Development<br><small>旅館發展</small>

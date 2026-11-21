@@ -4,6 +4,8 @@ tags:
   - ADV series
   - MiC 組裝合成
   - Prefabrication 預製
+  - Site supervision 地盤監督
+  - GFA concession 樓面面積寬免
 ---
 
 # ADV-36 Modular Integrated Construction<br><small>「組裝合成」建築法</small>

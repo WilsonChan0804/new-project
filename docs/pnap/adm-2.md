@@ -2,8 +2,15 @@
 tags:
   - PNAP
   - ADM series
-  - Plan submission 圖則呈交
+  - Plan submission & approval 呈交及審批
   - GFA concession 樓面面積寬免
+  - GFA 總樓面面積
+  - Occupation permit 佔用許可證
+  - Structural 結構
+  - Statutory period 法定期限
+  - Site supervision 地盤監督
+  - Geotechnical 岩土
+  - Car park 停車場
 ---
 
 # ADM-2 Centralised Processing of Building Plans<br><small>中央處理建築圖則</small>

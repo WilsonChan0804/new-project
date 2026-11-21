@@ -4,6 +4,8 @@ tags:
   - APP series
   - Specified forms 指明表格
   - Electronic submission 電子呈交
+  - Plan submission & approval 呈交及審批
+  - Minor works 小型工程
 ---
 
 # APP-60 Buildings Ordinance (Cap. 123) Specified Forms<br><small>《建築物條例》(第123章)－指明表格</small>

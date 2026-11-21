@@ -3,6 +3,7 @@ tags:
   - PNAP
   - ADM series
   - Geotechnical information 岩土資料
+  - Geotechnical 岩土
 ---
 
 # ADM-7 Geotechnical Information Unit<br><small>岩土工程資料庫</small>

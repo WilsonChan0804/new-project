@@ -4,6 +4,7 @@ tags:
   - APP series
   - FS(CP)O 消防安全(商業處所)條例
   - Commercial 商業
+  - Fire safety 消防安全
 ---
 
 # APP-94 Fire Safety (Commercial Premises) Ordinance, Cap. 502<br><small>《消防安全（商業處所）條例》(第502章)</small>

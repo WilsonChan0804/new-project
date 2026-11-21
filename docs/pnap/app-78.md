@@ -3,7 +3,9 @@ tags:
   - PNAP
   - APP series
   - Occupation permit 佔用許可證
-  - Inspection 巡查
+  - Inspection 檢驗
+  - Statutory period 法定期限
+  - Plumbing & sanitary 衞生設備
 ---
 
 # APP-78 Occupation of New Buildings under Section 21 of the Buildings Ordinance<br><small>佔用新建築物－《建築物條例》第21條</small>

@@ -2,9 +2,21 @@
 tags:
   - Regulation
   - B(A)R
-  - Plan submission 圖則呈交
-  - Approval and consent 批准及同意
+  - Plan submission & approval 呈交及審批
   - Certificates 證明書
+  - Statutory period 法定期限
+  - Site supervision 地盤監督
+  - Structural 結構
+  - Geotechnical 岩土
+  - Registration 註冊
+  - Foundation 地基
+  - GFA 總樓面面積
+  - Demolition 拆卸
+  - Occupation permit 佔用許可證
+  - Industrial building 工業大廈
+  - A&A works 改動及加建工程
+  - Refuse 垃圾
+  - Excavation & ELS 挖掘
 ---
 
 # B(A)R Building (Administration) Regulations, Cap. 123A<br><small>《建築物（管理）規例》（第 123A 章）</small>

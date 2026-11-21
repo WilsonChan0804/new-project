@@ -4,6 +4,9 @@ tags:
   - APP series
   - Blasting 爆破
   - Rock excavation 岩石挖掘
+  - Geotechnical 岩土
+  - Structural 結構
+  - Excavation & ELS 挖掘
 ---
 
 # APP-72 Control of Blasting<br><small>爆破管制</small>

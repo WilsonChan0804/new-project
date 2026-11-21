@@ -1,6 +1,13 @@
 ---
 tags:
   - APSEC
+  - Structural 結構
+  - Registration 註冊
+  - Fire safety 消防安全
+  - Plan submission & approval 呈交及審批
+  - Concrete & materials 混凝土及物料
+  - Drainage 排水
+  - Site safety 地盤安全
 ---
 
 # APSEC Discussion Forum<br><small>認可人士及註冊結構工程師委員會討論會</small>

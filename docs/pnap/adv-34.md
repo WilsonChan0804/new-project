@@ -3,7 +3,7 @@ tags:
   - PNAP
   - ADV series
   - BIM 建築信息模擬
-  - Plan submission 呈交圖則
+  - Plan submission & approval 呈交及審批
 ---
 
 # ADV-34 Building Information Modelling<br><small>建築信息模擬技術</small>

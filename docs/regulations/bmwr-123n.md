@@ -5,6 +5,20 @@ tags:
   - Minor works 小型工程
   - Designated exempted works 指定豁免工程
   - Validation scheme 檢核計劃
+  - Registration 註冊
+  - Statutory period 法定期限
+  - Plan submission & approval 呈交及審批
+  - Structural 結構
+  - Signboard 招牌
+  - Site supervision 地盤監督
+  - Lighting & ventilation 照明及通風
+  - Geotechnical 岩土
+  - Demolition 拆卸
+  - Drainage 排水
+  - Curtain wall & façade 幕牆及外牆
+  - A&A works 改動及加建工程
+  - Excavation & ELS 挖掘
+  - Foundation 地基
 ---
 
 # B(MW)R Building (Minor Works) Regulation, Cap. 123N<br><small>《建築物（小型工程）規例》（第 123N 章）</small>

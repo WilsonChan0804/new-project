@@ -4,6 +4,7 @@ tags:
   - APP series
   - Footbridge 行人天橋
   - Projections 伸出物
+  - GFA 總樓面面積
 ---
 
 # APP-38 Bridges over Streets and Lanes<br><small>街道及通道巷上方的橋樑《建築物條例》第31 ( 1 ) 條</small>

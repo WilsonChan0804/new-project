@@ -5,6 +5,7 @@ tags:
   - Industrial building 工業大廈
   - Drainage 排水
   - Pollution 污染
+  - Plumbing & sanitary 衞生設備
 ---
 
 # APP-46 Pollution from Industrial Buildings<br><small>工業建築物産生的污染－《建築物(衞生設備標準、水管裝置、排水工程及廁所)規例》第90條</small>

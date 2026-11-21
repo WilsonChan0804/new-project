@@ -4,6 +4,8 @@ tags:
   - ADM series
   - Computer program 電腦程式
   - Structural design 結構設計
+  - Structural 結構
+  - Geotechnical 岩土
 ---
 
 # ADM-6 Computer Programs for Use in Structural and Geotechnical Design<br><small>結構及岩土設計使用的電腦程式</small>

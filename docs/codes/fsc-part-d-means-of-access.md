@@ -2,9 +2,18 @@
 tags:
   - Code of Practice
   - Fire safety 消防安全
-  - Means of access 消防及救援進出途徑
+  - Means of access 救援通道
   - Fireman's lift 消防員升降機
   - EVA 緊急車輛通道
+  - Lift 升降機
+  - Staircase 樓梯
+  - Curtain wall & façade 幕牆及外牆
+  - Domestic 住用
+  - Refuge floor 庇護層
+  - Lighting & ventilation 照明及通風
+  - Industrial building 工業大廈
+  - Hotel 酒店
+  - Car park 停車場
 ---
 
 # FS Code 2011 Part D: Means of Access<br><small>《2011 年建築物消防安全守則》D 部：消防及救援進出途徑</small>

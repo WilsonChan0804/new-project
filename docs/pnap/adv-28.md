@@ -2,7 +2,7 @@
 tags:
   - PNAP
   - ADV series
-  - Sanitary fitments 衞生設備
+  - Plumbing & sanitary 衞生設備
   - Female toilets 女廁
 ---
 

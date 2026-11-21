@@ -3,6 +3,8 @@ tags:
   - PNAP
   - APP series
   - Temporary building 臨時建築物
+  - Plan submission & approval 呈交及審批
+  - Occupation permit 佔用許可證
 ---
 
 # APP-50 Temporary Buildings<br><small>臨時建築物－《建築物(規劃)規例》第50至52條</small>

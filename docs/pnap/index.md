@@ -1,3 +1,20 @@
+---
+tags:
+  - Geotechnical 岩土
+  - Structural 結構
+  - Plan submission & approval 呈交及審批
+  - Concrete & materials 混凝土及物料
+  - Registration 註冊
+  - Lighting & ventilation 照明及通風
+  - Drainage 排水
+  - Site supervision 地盤監督
+  - Excavation & ELS 挖掘
+  - Lift 升降機
+  - Minor works 小型工程
+  - Green & amenity features 環保及適意設施
+  - GFA 總樓面面積
+  - Domestic 住用
+---
 # PNAP 認可人士作業備考
 
 Practice Notes for Authorized Persons, Registered Structural Engineers and Registered Geotechnical Engineers.

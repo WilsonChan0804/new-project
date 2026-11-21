@@ -4,6 +4,8 @@ tags:
   - APP series
   - Partition wall 間隔牆
   - A&A works 改動及加建工程
+  - Minor works 小型工程
+  - Demolition 拆卸
 ---
 
 # APP-86 Non-loadbearing Partition Walls<br><small>非承重間隔牆</small>

@@ -5,6 +5,7 @@ tags:
   - Historic building 歷史建築
   - Heritage 文物
   - A&A works 改動及加建工程
+  - Demolition 拆卸
 ---
 
 # APP-69 Conservation of Historic Buildings<br><small>保育歷史建築</small>

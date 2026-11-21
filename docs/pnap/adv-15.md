@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Reinforcement 鋼筋
   - Concrete cover 保護層
+  - Concrete & materials 混凝土及物料
 ---
 
 # ADV-15 Fixing of Reinforcement for Concrete Works<br><small>混凝土工程中鋼筋的安裝</small>

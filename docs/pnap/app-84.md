@@ -5,6 +5,11 @@ tags:
   - Telecom 電訊
   - GFA concession 樓面面積寬免
   - 5G
+  - GFA 總樓面面積
+  - Domestic 住用
+  - Hotel 酒店
+  - Drainage 排水
+  - Lighting & ventilation 照明及通風
 ---
 
 # APP-84 Access Facilities for Telecommunications and Broadcasting Services<br><small>為電訊及廣播服務而設的接達設施</small>

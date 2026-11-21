@@ -4,6 +4,11 @@ tags:
   - APP series
   - Qualified supervision 合格監督
   - Structural works 結構工程
+  - Site supervision 地盤監督
+  - Structural 結構
+  - Excavation & ELS 挖掘
+  - Foundation 地基
+  - Geotechnical 岩土
 ---
 
 # APP-48 Qualified Supervision of Structural Works, Foundation Works and Excavation Works<br><small>結構工程、基礎工程及挖掘工程合格監督的規定－《建築物條例》第17條</small>

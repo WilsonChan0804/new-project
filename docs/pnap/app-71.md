@@ -4,6 +4,7 @@ tags:
   - APP series
   - Cavern 岩洞
   - Underground 地下
+  - Refuse 垃圾
 ---
 
 # APP-71 Underground Cavern Development<br><small>地下岩洞發展</small>

@@ -3,6 +3,11 @@ tags:
   - Regulation
   - Energy efficiency 能源效率
   - OTTV 總熱傳送值
+  - Car park 停車場
+  - Site coverage 上蓋面積
+  - Plot ratio 地積比率
+  - Refuge floor 庇護層
+  - Hotel 酒店
 ---
 
 # Cap. 123M Building (Energy Efficiency) Regulation<br><small>《建築物（能源效率）規例》（第 123M 章）</small>

@@ -2,9 +2,17 @@
 tags:
   - Ordinance
   - Buildings Ordinance
-  - Approval and consent 批准及同意
+  - Plan submission & approval 呈交及審批
   - Occupation permit 佔用許可證
-  - Plan submission 圖則呈交
+  - Site supervision 地盤監督
+  - Refuse 垃圾
+  - Statutory period 法定期限
+  - Demolition 拆卸
+  - Minor works 小型工程
+  - Foundation 地基
+  - Excavation & ELS 挖掘
+  - Structural 結構
+  - A&A works 改動及加建工程
 ---
 
 # BO s.14–21 Approval and consent, grounds of refusal, conditions, urgent works and occupation permits<br><small>《建築物條例》第 14–21 條：批准及同意、拒絕理由、條件、緊急工程及佔用許可證</small>

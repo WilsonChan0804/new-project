@@ -4,6 +4,7 @@ tags:
   - APP series
   - Refuse chute 垃圾槽
   - Site safety 地盤安全
+  - Refuse 垃圾
 ---
 
 # APP-66 Metal Refuse Chutes at Construction Sites<br><small>建築地盤的金屬垃圾槽</small>

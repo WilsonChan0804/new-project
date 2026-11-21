@@ -4,7 +4,8 @@ tags:
   - APP series
   - Scheduled area 附表地區
   - Karst / cavities 溶洞
-  - Foundation 基礎
+  - Foundation 地基
+  - Geotechnical 岩土
 ---
 
 # APP-61 Geotechnical Control on Developments in Area Numbers 2 and 4 of the Scheduled Areas<br><small>附表所列地區第2號及第4號地區內發展的岩土工程管制</small>

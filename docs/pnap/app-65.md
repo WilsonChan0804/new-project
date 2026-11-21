@@ -3,7 +3,7 @@ tags:
   - PNAP
   - APP series
   - Staircase 樓梯
-  - Lighting 照明
+  - Lighting & ventilation 照明及通風
 ---
 
 # APP-65 Natural Lighting to Staircases<br><small>樓梯的天然照明－《建築物(規劃)規例》第40條</small>

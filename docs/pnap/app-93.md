@@ -5,6 +5,15 @@ tags:
   - Drainage 排水
   - Pipe ducts 管槽
   - Maintenance 保養
+  - Domestic 住用
+  - GFA 總樓面面積
+  - Plumbing & sanitary 衞生設備
+  - Maintenance access 維修通道
+  - Fire safety 消防安全
+  - Concrete & materials 混凝土及物料
+  - Plant rooms 機房
+  - Lighting & ventilation 照明及通風
+  - Occupation permit 佔用許可證
 ---
 
 # APP-93 Planning and Design of Drainage Works<br><small>規劃及設計排水工程</small>

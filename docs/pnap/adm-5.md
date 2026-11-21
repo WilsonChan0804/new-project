@@ -3,6 +3,7 @@ tags:
   - PNAP
   - ADM series
   - Submission counter 收件處
+  - Plan submission & approval 呈交及審批
 ---
 
 # ADM-5 Submissions to the Buildings Department<br><small>呈交屋宇署的文件</small>

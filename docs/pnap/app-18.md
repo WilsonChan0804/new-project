@@ -2,8 +2,8 @@
 tags:
   - PNAP
   - APP series
-  - Foundation 基礎
-  - Code of practice 作業守則
+  - Foundation 地基
+  - Code of Practice
 ---
 
 # APP-18 Code of Practice for Foundations 2017<br><small>《基礎作業守則2017年》</small>

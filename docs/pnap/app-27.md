@@ -4,6 +4,7 @@ tags:
   - APP series
   - Gas water heater 氣體熱水爐
   - Bathroom 浴室
+  - Balcony & utility platform 露台及工作平台
 ---
 
 # APP-27 Gas Water Heaters Regulation 35A of Building (Planning) Regulations<br><small>氣體熱水爐 《建築物（規劃）規例》第35A條</small>

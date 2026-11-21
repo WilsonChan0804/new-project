@@ -4,6 +4,9 @@ tags:
   - APP series
   - Contractor registration 承建商註冊
   - RGBC 註冊一般建築承建商
+  - Registration 註冊
+  - Minor works 小型工程
+  - Demolition 拆卸
 ---
 
 # APP-96 Registration of General Building Contractors and Specialist Contractors<br><small>一般建築承建商和專門承建商的註冊事宜</small>

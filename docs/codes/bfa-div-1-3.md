@@ -1,10 +1,14 @@
 ---
 tags:
   - Code of Practice
-  - Barrier free access 無障礙通道
+  - Barrier free access 無障礙
   - Auditorium 觀眾席
   - Hotel 酒店
   - Car park 停車場
+  - Lift 升降機
+  - Staircase 樓梯
+  - Plumbing & sanitary 衞生設備
+  - Demolition 拆卸
 ---
 
 # BFA Manual Divisions 1–3: Auditoria, Hotels and Car Parks<br><small>《設計手冊：暢通無阻的通道 2008》第 1–3 分部：觀眾席、酒店及停車場</small>

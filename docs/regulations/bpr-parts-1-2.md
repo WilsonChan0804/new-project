@@ -4,7 +4,13 @@ tags:
   - B(P)R
   - Definitions 定義
   - Projections 伸出物
-  - Protective barrier 欄障
+  - Protective barrier 防護欄障
+  - Balcony & utility platform 露台及工作平台
+  - GFA 總樓面面積
+  - Lighting & ventilation 照明及通風
+  - Site coverage 上蓋面積
+  - Minor works 小型工程
+  - Elderly-friendly 長者友善
 ---
 
 # B(P)R Parts I–II General and Projections (regs. 1–15)<br><small>《建築物（規劃）規例》第 I–II 部：一般規定及伸出物（第 1–15 條）</small>

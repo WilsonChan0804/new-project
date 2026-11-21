@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Site safety 地盤安全
   - Pay for Safety 支付安全
+  - Site supervision 地盤監督
 ---
 
 # ADV-29 Construction Site Safety - Pay for Safety Scheme<br><small>建築地盤安全－支付安全計劃</small>

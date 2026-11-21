@@ -4,6 +4,12 @@ tags:
   - Building height 建築物高度
   - OZP 分區計劃大綱圖
   - Roof-top structures 天台構築物
+  - Domestic 住用
+  - Plant rooms 機房
+  - Signboard 招牌
+  - Lift 升降機
+  - Site coverage 上蓋面積
+  - Plot ratio 地積比率
 ---
 
 # JPN 5 Development Control Parameters — Building Height Restriction<br><small>聯合作業備考第 5 號：發展管制參數——建築物高度限制</small>

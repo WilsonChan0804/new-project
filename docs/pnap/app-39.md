@@ -4,6 +4,7 @@ tags:
   - APP series
   - Building records 建築紀錄
   - Inspection of plans 查閱圖則
+  - Minor works 小型工程
 ---
 
 # APP-39 Inspection and Copying of Plans and Documents<br><small>圖則及文件的查閱及複印事宜</small>

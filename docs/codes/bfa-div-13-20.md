@@ -1,10 +1,16 @@
 ---
 tags:
   - Code of Practice
-  - Barrier free access 無障礙通道
+  - Barrier free access 無障礙
   - Signs 標誌
   - Accessible lift 暢通易達升降機
   - Visual and hearing impairment 視障及聽障
+  - Lift 升降機
+  - Lighting & ventilation 照明及通風
+  - Staircase 樓梯
+  - Elderly-friendly 長者友善
+  - Car park 停車場
+  - Hotel 酒店
 ---
 
 # BFA Manual Divisions 13–20: Signs, Visual and Hearing Aids, Counters, Lighting, Call Bells, Lifts and Escalators<br><small>《設計手冊：暢通無阻的通道 2008》第 13–20 分部：標誌、視障及聽障設施、櫃枱、照明、召援鐘、升降機及自動梯</small>

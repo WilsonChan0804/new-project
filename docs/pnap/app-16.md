@@ -3,8 +3,12 @@ tags:
   - PNAP
   - APP series
   - Cladding 覆蓋層
-  - Facade 外牆
+  - Curtain wall & façade 幕牆及外牆
   - Stone 石材
+  - Structural 結構
+  - Occupation permit 佔用許可證
+  - Minor works 小型工程
+  - Maintenance access 維修通道
 ---
 
 # APP-16 Cladding<br><small>覆蓋層</small>

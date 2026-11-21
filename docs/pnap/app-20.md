@@ -4,6 +4,7 @@ tags:
   - APP series
   - Street widening 擴闊街道
   - Bonus PR 額外地積比率
+  - Plot ratio 地積比率
 ---
 
 # APP-20 Building Proposals affected by Street Widening<br><small>受街道擴闊影響的建築工程建議－《建築物（規劃）規例》第22(2)條</small>

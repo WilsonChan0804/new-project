@@ -2,8 +2,10 @@
 tags:
   - PNAP
   - APP series
-  - ELS 挖掘及側向承托
-  - Excavation 挖掘
+  - Excavation & ELS 挖掘
+  - Geotechnical 岩土
+  - Plan submission & approval 呈交及審批
+  - Structural 結構
 ---
 
 # APP-57 Requirements for an Excavation and Lateral Support Plan<br><small>挖掘與側向承托圖則的規定《建築物（管理）規例》第8(1)(bc)條</small>

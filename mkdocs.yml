@@ -55,6 +55,9 @@ markdown_extensions:
 
 nav:
   - Home 主頁: index.md
+  - Topic guides 專題指南:
+      - GFA & concessions 總樓面面積及寬免: guides/gfa.md
+      - Site coverage & plot ratio 上蓋面積及地積比率: guides/site-coverage-plot-ratio.md
   - Timelines & workflows 時間表及流程: workflows.md
   - APSEC Discussion Forum 討論會:
       - apsec/index.md

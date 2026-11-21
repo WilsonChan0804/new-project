@@ -1,10 +1,22 @@
 ---
 tags:
   - JPN
-  - GFA
+  - GFA 總樓面面積
   - Plot ratio 地積比率
   - Lease 地契
   - GFA concession 樓面面積寬免
+  - Balcony & utility platform 露台及工作平台
+  - Lift 升降機
+  - Green & amenity features 環保及適意設施
+  - Domestic 住用
+  - Staircase 樓梯
+  - Curtain wall & façade 幕牆及外牆
+  - Car park 停車場
+  - Refuge floor 庇護層
+  - Hotel 酒店
+  - Refuse 垃圾
+  - Plant rooms 機房
+  - Occupation permit 佔用許可證
 ---
 
 # JPN 4 Development Control Parameters — Plot Ratio / Gross Floor Area<br><small>聯合作業備考第 4 號：發展管制參數——地積比率／總樓面面積</small>

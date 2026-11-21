@@ -3,6 +3,8 @@ tags:
   - Regulation
   - Demolition 拆卸
   - Site safety 地盤安全
+  - Site supervision 地盤監督
+  - Registration 註冊
 ---
 
 # Cap. 123C Building (Demolition Works) Regulations<br><small>《建築物（拆卸工程）規例》（第 123C 章）</small>

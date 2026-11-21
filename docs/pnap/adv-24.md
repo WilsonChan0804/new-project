@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Floor drain 地台去水
   - Water seal 水封
+  - Drainage 排水
 ---
 
 # ADV-24 Floor Drains in Kitchens and Bathrooms<br><small>廚房及浴室的地台去水渠</small>

@@ -3,7 +3,9 @@ tags:
   - PNAP
   - APP series
   - Service lane 後巷
-  - Site area 地盤面積
+  - Site area & classification 地盤面積及分類
+  - Lighting & ventilation 照明及通風
+  - Means of escape 逃生途徑
 ---
 
 # APP-73 Service Lanes<br><small>通道巷</small>

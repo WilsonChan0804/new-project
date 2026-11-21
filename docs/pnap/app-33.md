@@ -2,8 +2,9 @@
 tags:
   - PNAP
   - APP series
-  - Concrete 混凝土
+  - Concrete & materials 混凝土及物料
   - PFA 煤灰
+  - Structural 結構
 ---
 
 # APP-33 Pulverised Fuel Ash in Concrete<br><small>混凝土內的煤灰</small>

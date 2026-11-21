@@ -4,6 +4,8 @@ tags:
   - ADV series
   - Slope register 斜坡登記
   - Retaining wall 擋土牆
+  - Geotechnical 岩土
+  - Registration 註冊
 ---
 
 # ADV-8 Registration of Slopes and Retaining Walls<br><small>斜坡及擋土牆的登記</small>

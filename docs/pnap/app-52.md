@@ -4,6 +4,10 @@ tags:
   - APP series
   - Approved plans 核准圖則
   - Contractor 承建商
+  - Registration 註冊
+  - Minor works 小型工程
+  - Site supervision 地盤監督
+  - Structural 結構
 ---
 
 # APP-52 Supply of Plans to Registered General Building Contractors, Registered Specialist Contractors and Registered Minor Works Contractors<br><small>向註冊一般建築承建商、註冊專門承建商及註冊小型工程承建商提供圖則－《建築物(管理)規例》第36條及 《建築物(小型工程)規例》第55條</small>

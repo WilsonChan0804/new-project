@@ -5,6 +5,16 @@ tags:
   - Means of escape 逃生途徑
   - Refuge floor 庇護層
   - Staircase 樓梯
+  - Domestic 住用
+  - Lift 升降機
+  - Means of access 救援通道
+  - Balcony & utility platform 露台及工作平台
+  - GFA 總樓面面積
+  - Barrier free access 無障礙
+  - Lighting & ventilation 照明及通風
+  - Plant rooms 機房
+  - Fire resisting construction 耐火結構
+  - Site supervision 地盤監督
 ---
 
 # FS Code 2011 Part B: Means of Escape<br><small>《2011 年建築物消防安全守則》B 部：逃生途徑</small>

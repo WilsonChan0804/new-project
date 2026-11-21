@@ -2,9 +2,12 @@
 tags:
   - PNAP
   - APP series
-  - Cinema 電影院
-  - Place of public entertainment 公眾娛樂場所
-  - Means of escape 走火通道
+  - Cinema 戲院
+  - Places of public entertainment 公眾娛樂場所
+  - Means of escape 逃生途徑
+  - Domestic 住用
+  - Fire safety 消防安全
+  - Industrial building 工業大廈
 ---
 
 # APP-14 Cinemas and Other Places of Public Entertainment in Non-domestic Buildings or Composite Buildings<br><small>設於非住用建築物或綜合用途建築物內的電影院及其他公眾娛樂場所</small>

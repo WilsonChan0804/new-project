@@ -4,6 +4,8 @@ tags:
   - APP series
   - Lift 升降機
   - Escalator 自動梯
+  - Plant rooms 機房
+  - Occupation permit 佔用許可證
 ---
 
 # APP-29 Lift and Escalator Installations<br><small>升降機及自動梯裝置</small>

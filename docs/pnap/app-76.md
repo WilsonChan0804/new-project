@@ -4,6 +4,7 @@ tags:
   - APP series
   - Buried services 地下設施
   - Slope 斜坡
+  - Geotechnical 岩土
 ---
 
 # APP-76 Keeping Buried Services out of Slopes<br><small>地下設施遠離斜坡</small>

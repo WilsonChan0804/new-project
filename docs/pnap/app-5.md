@@ -4,7 +4,13 @@ tags:
   - APP series
   - Storey height 層高
   - Transfer plate 轉換層
-  - GFA
+  - GFA 總樓面面積
+  - Domestic 住用
+  - Structural 結構
+  - Staircase 樓梯
+  - Maintenance access 維修通道
+  - Building height 建築物高度
+  - Balcony & utility platform 露台及工作平台
 ---
 
 # APP-5 Height of Storeys<br><small>樓層高度－《建築物(規劃)規例》第3(3)及24條</small>

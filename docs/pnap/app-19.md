@@ -5,6 +5,13 @@ tags:
   - Site coverage 上蓋面積
   - Plot ratio 地積比率
   - Projections 伸出物
+  - GFA 總樓面面積
+  - Maintenance access 維修通道
+  - Structural 結構
+  - Protective barrier 防護欄障
+  - Green & amenity features 環保及適意設施
+  - Drainage 排水
+  - Occupation permit 佔用許可證
 ---
 
 # APP-19 Projections in relation to Site Coverage and Plot Ratio<br><small>伸出物的上蓋面積和地積比率－《建築物（規劃）規例》第20及21條</small>

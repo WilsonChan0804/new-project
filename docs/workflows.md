@@ -1,3 +1,18 @@
+---
+tags:
+  - Plan submission & approval 呈交及審批
+  - Excavation & ELS 挖掘
+  - Minor works 小型工程
+  - GFA concession 樓面面積寬免
+  - Signboard 招牌
+  - Occupation permit 佔用許可證
+  - Drainage 排水
+  - Demolition 拆卸
+  - Barrier free access 無障礙
+  - Site safety 地盤安全
+  - Means of access 救援通道
+  - GFA 總樓面面積
+---
 # Timelines & workflows<br><small>時間表及流程圖</small>
 
 All the timeline, workflow and relationship diagrams on one page. Click the link under each diagram for the full entry. 本頁集合所有時間表、流程及關係圖。

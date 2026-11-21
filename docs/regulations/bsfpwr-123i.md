@@ -2,9 +2,13 @@
 tags:
   - Regulation
   - B(SFP&W)R
-  - Sanitary fitments 衞生設備
+  - Plumbing & sanitary 衞生設備
   - Drainage 排水
-  - Plumbing 水管裝置
+  - Lighting & ventilation 照明及通風
+  - Domestic 住用
+  - Concrete & materials 混凝土及物料
+  - Staircase 樓梯
+  - Lift 升降機
 ---
 
 # B(SFP&W)R Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations, Cap. 123I<br><small>《建築物（衞生設備標準、水管裝置、排水工程及廁所）規例》（第 123I 章）</small>

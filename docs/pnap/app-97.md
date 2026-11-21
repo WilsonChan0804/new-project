@@ -4,6 +4,10 @@ tags:
   - APP series
   - Consent 動工同意
   - Fast track 快速處理
+  - Plan submission & approval 呈交及審批
+  - Excavation & ELS 挖掘
+  - Demolition 拆卸
+  - Curtain wall & façade 幕牆及外牆
 ---
 
 # APP-97 Consent Procedures for Building Works and Street Works<br><small>處理同意展開建築工程及街道工程的程序</small>

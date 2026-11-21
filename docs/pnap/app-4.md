@@ -4,6 +4,8 @@ tags:
   - APP series
   - Water supply 供水
   - Well 水井
+  - Geotechnical 岩土
+  - Hotel 酒店
 ---
 
 # APP-4 Water Supply and Wells<br><small>供水及水井</small>

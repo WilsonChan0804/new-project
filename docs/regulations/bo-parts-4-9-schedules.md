@@ -6,6 +6,15 @@ tags:
   - Exemption 豁免
   - Modification 修改
   - Appeal 上訴
+  - Minor works 小型工程
+  - Plan submission & approval 呈交及審批
+  - Structural 結構
+  - Drainage 排水
+  - Occupation permit 佔用許可證
+  - Site supervision 地盤監督
+  - Statutory period 法定期限
+  - Site safety 地盤安全
+  - Means of escape 逃生途徑
 ---
 
 # BO s.40–56 and Schedules: offences, exemptions, modifications, appeals, transitional provisions<br><small>《建築物條例》第 40–56 條及附表：罪行、豁免、變通、上訴、過渡條文</small>

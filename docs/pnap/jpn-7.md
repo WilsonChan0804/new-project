@@ -4,6 +4,7 @@ tags:
   - Site coverage 上蓋面積
   - OZP 分區計劃大綱圖
   - Lease 地契
+  - GFA 總樓面面積
 ---
 
 # JPN 7 Development Control Parameters — Site Coverage Restriction<br><small>聯合作業備考第 7 號：發展管制參數——上蓋面積限制</small>

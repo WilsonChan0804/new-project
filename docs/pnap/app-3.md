@@ -4,6 +4,10 @@ tags:
   - APP series
   - Nomination 提名
   - Registered persons 註冊人士
+  - Registration 註冊
+  - Structural 結構
+  - Geotechnical 岩土
+  - Minor works 小型工程
 ---
 
 # APP-3 Nomination of an Authorized Person, Registered Structural Engineer or Registered Geotechnical Engineer to Act Instead<br><small>提名認可人士、註冊結構工程師或註冊岩土工程師代爲行事</small>

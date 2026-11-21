@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Noise 噪音
   - Pump room 泵房
+  - Lighting & ventilation 照明及通風
 ---
 
 # ADV-17 Noise Annoyance Prevention - Design of Pump Room and Ventilation System<br><small>防止噪音滋擾－泵房及通風系統的設計</small>

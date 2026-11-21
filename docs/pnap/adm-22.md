@@ -3,7 +3,9 @@ tags:
   - PNAP
   - ADM series
   - Withdrawal and resubmission 撤回並重新提交
-  - Statutory time limit 法定期限
+  - Statutory period 法定期限
+  - Plan submission & approval 呈交及審批
+  - Occupation permit 佔用許可證
 ---
 
 # ADM-22 Withdrawal and Resubmission<br><small>撤回並重新提交申請</small>

@@ -2,7 +2,7 @@
 tags:
   - PNAP
   - APP series
-  - Site area 地盤面積
+  - Site area & classification 地盤面積及分類
   - Plot ratio 地積比率
 ---
 

@@ -4,6 +4,8 @@ tags:
   - ADV series
   - Innovation 創新
   - Pre-acceptance 預先認可
+  - Structural 結構
+  - Geotechnical 岩土
 ---
 
 # ADV-38 Innovative Building Materials and Technologies<br><small>創新建築材料與技術</small>

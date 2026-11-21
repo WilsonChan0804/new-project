@@ -2,9 +2,19 @@
 tags:
   - JPN
   - GFA concession 樓面面積寬免
-  - Green features 環保設施
-  - Balcony 露台
+  - Green & amenity features 環保及適意設施
+  - Balcony & utility platform 露台及工作平台
   - Sky garden 空中花園
+  - Domestic 住用
+  - GFA 總樓面面積
+  - Lift 升降機
+  - Hotel 酒店
+  - Site coverage 上蓋面積
+  - Lighting & ventilation 照明及通風
+  - Refuge floor 庇護層
+  - Sustainable building design 可持續建築設計
+  - Occupation permit 佔用許可證
+  - Elderly-friendly 長者友善
 ---
 
 # JPN 1 Green and Innovative Buildings<br><small>聯合作業備考第 1 號：環保及創新的樓宇</small>

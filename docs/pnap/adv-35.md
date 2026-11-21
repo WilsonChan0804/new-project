@@ -2,8 +2,10 @@
 tags:
   - PNAP
   - ADV series
-  - Greening 綠化
+  - Greenery 綠化
   - Planter 花槽
+  - Green & amenity features 環保及適意設施
+  - Minor works 小型工程
 ---
 
 # ADV-35 Greening in Buildings<br><small>樓宇綠化</small>

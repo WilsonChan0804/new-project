@@ -5,7 +5,16 @@ tags:
   - Enforcement 執法
   - UBW 僭建物
   - Dangerous building 危險建築物
-  - Change in use 更改用途
+  - Change of use 更改用途
+  - Drainage 排水
+  - Site supervision 地盤監督
+  - Demolition 拆卸
+  - Plan submission & approval 呈交及審批
+  - Geotechnical 岩土
+  - Minor works 小型工程
+  - Means of access 救援通道
+  - Plumbing & sanitary 衞生設備
+  - Statutory period 法定期限
 ---
 
 # BO s.22–30 BA's powers, orders, unauthorised works, dangerous buildings, drainage and streets<br><small>《建築物條例》第 22–30 條：建築事務監督的權力、命令、違例建築工程、危險建築物、排水及街道</small>

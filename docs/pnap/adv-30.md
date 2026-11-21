@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Mechanical ventilation 機械通風
   - Office 辦公室
+  - Lighting & ventilation 照明及通風
 ---
 
 # ADV-30 Provision of Mechanical Ventilation under Building (Planning) Regulation 34<br><small>根據《建築物(規劃)規例》第34條提供機械通風設施</small>

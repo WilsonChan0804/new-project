@@ -3,8 +3,8 @@ tags:
   - PNAP
   - APP series
   - Bathroom 浴室
-  - Ventilation 通風
-  - Lighting 照明
+  - Lighting & ventilation 照明及通風
+  - Domestic 住用
 ---
 
 # APP-98 Lighting and Ventilation for Bathrooms and Lavatories in Domestic Buildings<br><small>住用建築物內浴室及廁所的照明與通風</small>

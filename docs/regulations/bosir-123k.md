@@ -4,6 +4,8 @@ tags:
   - Oil storage 貯油
   - Licence 牌照
   - Inspection 檢驗
+  - Structural 結構
+  - Site supervision 地盤監督
 ---
 
 # Cap. 123K Building (Oil Storage Installations) Regulations<br><small>《建築物（貯油裝置）規例》（第 123K 章）</small>

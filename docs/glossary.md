@@ -1,3 +1,20 @@
+---
+tags:
+  - Refuse 垃圾
+  - Plan submission & approval 呈交及審批
+  - Staircase 樓梯
+  - Registration 註冊
+  - Occupation permit 佔用許可證
+  - GFA 總樓面面積
+  - Barrier free access 無障礙
+  - Structural 結構
+  - Lift 升降機
+  - Fire safety 消防安全
+  - Minor works 小型工程
+  - Geotechnical 岩土
+  - Curtain wall & façade 幕牆及外牆
+  - Balcony & utility platform 露台及工作平台
+---
 # Glossary 詞彙
 
 Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙。

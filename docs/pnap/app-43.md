@@ -6,6 +6,9 @@ tags:
   - Kindergarten 幼稚園
   - Restaurant 食肆
   - Licensing 發牌
+  - Staircase 樓梯
+  - Means of escape 逃生途徑
+  - Industrial building 工業大廈
 ---
 
 # APP-43 Licensing of Child Care Centres, Kindergartens and Restaurants<br><small>幼兒中心、幼稚園及食肆的發牌事宜</small>

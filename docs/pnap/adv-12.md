@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Site information 地盤資料
   - Hoarding 圍板
+  - Site safety 地盤安全
 ---
 
 # ADV-12 Display of Site Information<br><small>展示地盤資料</small>

@@ -4,6 +4,7 @@ tags:
   - ADM series
   - Site audit 地盤審查
   - Enforcement 執法
+  - Structural 結構
 ---
 
 # ADM-18 Site Auditing for Building Works<br><small>建築工程的地盤審查</small>

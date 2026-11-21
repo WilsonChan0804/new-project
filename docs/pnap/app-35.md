@@ -5,6 +5,12 @@ tags:
   - Refuse 垃圾
   - Recycling 回收
   - GFA concession 樓面面積寬免
+  - GFA 總樓面面積
+  - Domestic 住用
+  - Lighting & ventilation 照明及通風
+  - Fire resisting construction 耐火結構
+  - Drainage 排水
+  - Barrier free access 無障礙
 ---
 
 # APP-35 Refuse Storage and Collection<br><small>垃圾的存放及收集－《建築物（垃圾及物料回收房及垃圾槽）規例》</small>

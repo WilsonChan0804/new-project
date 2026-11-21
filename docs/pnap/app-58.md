@@ -4,6 +4,9 @@ tags:
   - APP series
   - Drainage 排水
   - Testing 測試
+  - Plumbing & sanitary 衞生設備
+  - Registration 註冊
+  - Site supervision 地盤監督
 ---
 
 # APP-58 Testing of Drainage Works<br><small>排水工程測試《建築物（衞生設備標準、水管裝置、排水工程及廁所）規例》第73條</small>

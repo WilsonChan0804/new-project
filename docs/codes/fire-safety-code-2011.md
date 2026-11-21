@@ -4,7 +4,16 @@ tags:
   - Fire safety 消防安全
   - Means of escape 逃生途徑
   - Fire resisting construction 耐火結構
-  - Means of access 消防及救援進出途徑
+  - Means of access 救援通道
+  - Staircase 樓梯
+  - Balcony & utility platform 露台及工作平台
+  - Hotel 酒店
+  - Domestic 住用
+  - Car park 停車場
+  - Lift 升降機
+  - Plant rooms 機房
+  - Barrier free access 無障礙
+  - Refuge floor 庇護層
 ---
 
 # Code of Practice for Fire Safety in Buildings 2011 (FS Code)<br><small>《2011 年建築物消防安全守則》</small>

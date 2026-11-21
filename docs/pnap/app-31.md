@@ -4,6 +4,7 @@ tags:
   - APP series
   - Fire service installations 消防裝置
   - Occupation permit 佔用許可證
+  - Fire safety 消防安全
 ---
 
 # APP-31 Permanent Water Supply to Fire Service Installations<br><small>為消防裝置恆久供水－《建築物條例》第21(6)(d)條</small>

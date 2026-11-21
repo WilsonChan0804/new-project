@@ -3,8 +3,12 @@ tags:
   - PNAP
   - APP series
   - Geotechnical 岩土
-  - Slopes 斜坡
-  - Plan submission 圖則呈交
+  - Slope 斜坡
+  - Plan submission & approval 呈交及審批
+  - Excavation & ELS 挖掘
+  - Foundation 地基
+  - Site supervision 地盤監督
+  - A&A works 改動及加建工程
 ---
 
 # APP-25 Requirements for a Geotechnical Assessment at General Building Plan Submission Stage<br><small>在呈交建築圖則階段須附岩土評估的規定－《建築物(管理)規例》第8(1)(ba)條</small>

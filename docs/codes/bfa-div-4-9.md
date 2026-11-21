@@ -1,11 +1,16 @@
 ---
 tags:
   - Code of Practice
-  - Barrier free access 無障礙通道
+  - Barrier free access 無障礙
   - Ramp 斜道
   - Staircase 樓梯
   - Handrail 扶手
   - Corridor 走廊
+  - Lift 升降機
+  - Geotechnical 岩土
+  - Hotel 酒店
+  - Elderly-friendly 長者友善
+  - Car park 停車場
 ---
 
 # BFA Manual Divisions 4–9: Access Routes, Ramps, Dropped Kerbs, Stairs, Handrails and Corridors<br><small>《設計手冊：暢通無阻的通道 2008》第 4–9 分部：通道、斜道、下斜路緣、樓梯、扶手及走廊</small>

@@ -4,6 +4,7 @@ tags:
   - APP series
   - Fire resisting construction 耐火結構
   - Compartment wall 防火間隔牆
+  - Structural 結構
 ---
 
 # APP-83 Amendments and Clarification to Code of Practice for Fire Resisting Construction 1996<br><small>修訂及闡明《1996年耐火結構守則》</small>

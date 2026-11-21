@@ -4,6 +4,8 @@ tags:
   - ADV series
   - Excavation permit 挖掘准許證
   - Utilities 公用設施
+  - Excavation & ELS 挖掘
+  - Site safety 地盤安全
 ---
 
 # ADV-13 Application for Excavation Permit for Works on Public Road - Circulation of Proposal to Utility Undertakers<br><small>申請挖掘准許證以便在公共道路進行工程－向公用設施公司傳閱建議</small>

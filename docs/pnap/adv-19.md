@@ -4,6 +4,7 @@ tags:
   - ADV series
   - C&D waste 拆建廢料
   - Waste minimisation 減少廢物
+  - Demolition 拆卸
 ---
 
 # ADV-19 Construction and Demolition Waste<br><small>拆建廢料</small>

@@ -1,3 +1,20 @@
+---
+tags:
+  - Barrier free access 無障礙
+  - Fire safety 消防安全
+  - Structural 結構
+  - Site coverage 上蓋面積
+  - Plan submission & approval 呈交及審批
+  - Green & amenity features 環保及適意設施
+  - GFA 總樓面面積
+  - Plot ratio 地積比率
+  - Sustainable building design 可持續建築設計
+  - Site area & classification 地盤面積及分類
+  - Refuse 垃圾
+  - Minor works 小型工程
+  - Hotel 酒店
+  - Energy efficiency 能源效率
+---
 # HK Building Regulations Knowledge Base<br>香港建築法規知識庫
 
 Bilingual summaries, plain-language explanations and practical notes on the Hong Kong building control framework.
@@ -41,6 +58,8 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **New topic guides 專題指南**: [GFA calculation & concessions 總樓面面積及寬免](guides/gfa.md) · [Site coverage, plot ratio & site area 上蓋面積及地積比率](guides/site-coverage-plot-ratio.md). The whole picture on one page, with the latest APSEC positions.
+- **Browse by topic 按主題瀏覽**: every page now carries topic tags; see the [tag index](tags.md). APSEC items now include the **original diagrams**.
 - **[APSEC Discussion Forum 討論會](apsec/index.md)**: 764 BD clarifications from 39 meetings (Nov 2017 to Aug 2026), linked from 112 regulation, code and PNAP pages under **APSEC clarifications**; where a question was revisited, the latest position is shown.
 - **All remaining Cap. 123 regulations 所有其餘附屬法例**: [123C Demolition](regulations/bdwr-123c.md) · [123G Private streets](regulations/bpsar-123g.md) · [123J Ventilating systems](regulations/bvsr-123j.md) · [123K Oil storage](regulations/bosir-123k.md) · [123L Appeal](regulations/bar-123l.md) · [123M Energy efficiency](regulations/beer-123m.md) · [123O Minor works fees](regulations/bmwfr-123o.md); plus 15 new diagrams on the [Timelines & workflows](workflows.md) page.
 - **[Timelines & workflows 時間表及流程](workflows.md)**: 18 new diagrams for statutory periods, approval and consent, OP, minor works, MBIS, ELS, demolition and who-does-what.

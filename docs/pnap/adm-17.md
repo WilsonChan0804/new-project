@@ -4,6 +4,7 @@ tags:
   - ADM series
   - Electronic submission 電子呈交
   - Digital signature 數碼簽署
+  - Plan submission & approval 呈交及審批
 ---
 
 # ADM-17 Submission of Plans and Documents in Electronic Format<br><small>以電子方式呈交圖則及文件</small>

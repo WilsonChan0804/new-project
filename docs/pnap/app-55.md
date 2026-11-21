@@ -3,7 +3,8 @@ tags:
   - PNAP
   - APP series
   - Fees 費用
-  - Plan submission 呈交圖則
+  - Plan submission & approval 呈交及審批
+  - GFA 總樓面面積
 ---
 
 # APP-55 Procedure for Payment of Fees on Submission of Plans<br><small>呈交圖則的繳費程序《建築物（管理）規例》第42條</small>

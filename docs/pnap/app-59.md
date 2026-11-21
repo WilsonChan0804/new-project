@@ -3,7 +3,8 @@ tags:
   - PNAP
   - APP series
   - Hand-dug caisson 人工挖掘沉箱
-  - Foundation 基礎
+  - Foundation 地基
+  - Excavation & ELS 挖掘
 ---
 
 # APP-59 Ban on Hand-dug Caissons<br><small>禁止採用人工挖掘沉箱</small>

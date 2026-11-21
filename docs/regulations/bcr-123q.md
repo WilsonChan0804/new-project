@@ -4,8 +4,21 @@ tags:
   - B(C)R
   - Structural 結構
   - Loads 荷載
-  - Protective barrier 欄障
-  - Curtain wall 幕牆
+  - Protective barrier 防護欄障
+  - Curtain wall & façade 幕牆及外牆
+  - Foundation 地基
+  - Fire resisting construction 耐火結構
+  - Balcony & utility platform 露台及工作平台
+  - Staircase 樓梯
+  - Domestic 住用
+  - Wind 風力
+  - Plant rooms 機房
+  - Geotechnical 岩土
+  - Drainage 排水
+  - Car park 停車場
+  - Lift 升降機
+  - Excavation & ELS 挖掘
+  - Barrier free access 無障礙
 ---
 
 # B(C)R Building (Construction) Regulation, Cap. 123Q<br><small>《建築物（建造）規例》（第 123Q 章）</small>

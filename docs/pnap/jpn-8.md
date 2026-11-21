@@ -1,10 +1,15 @@
 ---
 tags:
   - JPN
-  - MiC 組裝合成建築法
+  - MiC 組裝合成
   - GFA concession 樓面面積寬免
   - Building height 建築物高度
-  - Green features 環保設施
+  - Green & amenity features 環保及適意設施
+  - GFA 總樓面面積
+  - Balcony & utility platform 露台及工作平台
+  - Site coverage 上蓋面積
+  - Curtain wall & façade 幕牆及外牆
+  - Plant rooms 機房
 ---
 
 # JPN 8 Enhanced Facilitation Measures for Buildings Adopting Modular Integrated Construction<br><small>聯合作業備考第 8 號：推廣環保及創新的樓宇鼓勵措施——進一步促進建築物採用「組裝合成」建築法的措施</small>

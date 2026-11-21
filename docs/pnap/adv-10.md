@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Lift shaft 升降機槽
   - Site safety 地盤安全
+  - Lift 升降機
 ---
 
 # ADV-10 Lift Shaft Platforms<br><small>升降機槽平台</small>

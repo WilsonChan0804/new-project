@@ -5,6 +5,12 @@ tags:
   - Greenery 綠化
   - Lease 地契
   - Sustainable building design 可持續建築設計
+  - Green & amenity features 環保及適意設施
+  - Site coverage 上蓋面積
+  - Plan submission & approval 呈交及審批
+  - Registration 註冊
+  - GFA 總樓面面積
+  - GFA concession 樓面面積寬免
 ---
 
 # JPN 3 Landscape and Site Coverage of Greenery<br><small>園景及綠化上蓋面積</small>

@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Gondola 吊船
   - Site safety 地盤安全
+  - Maintenance access 維修通道
 ---
 
 # ADV-11 Suspended Working Platforms<br><small>吊船</small>

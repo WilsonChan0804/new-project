@@ -4,6 +4,7 @@ tags:
   - ADM series
   - Ground investigation 土地勘測
   - Scheduled area 附表地區
+  - Plan submission & approval 呈交及審批
 ---
 
 # ADM-16 Ground Investigation Works in Scheduled Areas - Approval and Consent<br><small>附表所列地區的土地勘測工程－批准及同意</small>

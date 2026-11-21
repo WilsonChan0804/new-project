@@ -2,8 +2,20 @@
 tags:
   - PNAP
   - ADM series
-  - Plan submission 圖則呈交
-  - Approval process 審批程序
+  - Plan submission & approval 呈交及審批
+  - Structural 結構
+  - Occupation permit 佔用許可證
+  - Means of escape 逃生途徑
+  - Geotechnical 岩土
+  - Drainage 排水
+  - Curtain wall & façade 幕牆及外牆
+  - Minor works 小型工程
+  - Fire resisting construction 耐火結構
+  - Barrier free access 無障礙
+  - Statutory period 法定期限
+  - Staircase 樓梯
+  - A&A works 改動及加建工程
+  - Registration 註冊
 ---
 
 # ADM-19 Building Approval Process<br><small>建築圖則批准程序</small>

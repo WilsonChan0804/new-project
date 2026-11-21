@@ -2,8 +2,10 @@
 tags:
   - PNAP
   - APP series
-  - Fire safety codes 消防守則
+  - FS Code 消防守則
   - A&A works 改動及加建工程
+  - Fire safety 消防安全
+  - Plan submission & approval 呈交及審批
 ---
 
 # APP-85 Application of the Revised Fire Safety Codes<br><small>已修訂的消防安全守則的適用範圍</small>

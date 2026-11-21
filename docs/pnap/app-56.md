@@ -4,6 +4,7 @@ tags:
   - APP series
   - NT exempted houses 新界豁免屋宇
   - Site formation 地盤平整
+  - Geotechnical 岩土
 ---
 
 # APP-56 Exemption Criteria for Site Formation Works associated with Exempted Building Works in the New Territories<br><small>與新界豁免建築工程有關的地盤平整工程豁免準則</small>

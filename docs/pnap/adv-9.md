@@ -3,6 +3,7 @@ tags:
   - PNAP
   - ADV series
   - Statistics 統計
+  - Plan submission & approval 呈交及審批
 ---
 
 # ADV-9 Submission of Development Progress<br><small>呈交發展進度報告</small>

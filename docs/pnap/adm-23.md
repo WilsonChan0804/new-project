@@ -5,6 +5,8 @@ tags:
   - Self-certification 自行認證
   - Fast track 快速處理
   - Structural works 結構工程
+  - Structural 結構
+  - Plan submission & approval 呈交及審批
 ---
 
 # ADM-23 Self-certification System for Plan Submission of Simple Structural Works<br><small>自行認證呈交簡單結構工程圖則</small>

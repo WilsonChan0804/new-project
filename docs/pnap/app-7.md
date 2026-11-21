@@ -4,6 +4,8 @@ tags:
   - APP series
   - Registration 註冊
   - AP 認可人士
+  - Structural 結構
+  - Geotechnical 岩土
 ---
 
 # APP-7 Application for Registration as Authorized Persons, Registered Structural Engineers, Registered Geotechnical Engineers and Registered Inspectors<br><small>申請註冊為認可人士、註冊結構工程師、註冊岩土工程師及註冊檢驗人員</small>

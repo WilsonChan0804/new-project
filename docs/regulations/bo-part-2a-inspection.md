@@ -5,6 +5,12 @@ tags:
   - MBIS 強制驗樓
   - MWIS 強制驗窗
   - Building maintenance 樓宇維修
+  - Registration 註冊
+  - Domestic 住用
+  - Signboard 招牌
+  - Site supervision 地盤監督
+  - Geotechnical 岩土
+  - Occupation permit 佔用許可證
 ---
 
 # BO s.30A–30F Mandatory Building Inspection and Mandatory Window Inspection<br><small>《建築物條例》第 30A–30F 條：強制驗樓計劃及強制驗窗計劃</small>

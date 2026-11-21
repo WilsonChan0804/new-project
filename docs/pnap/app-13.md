@@ -5,6 +5,9 @@ tags:
   - Occupation permit 佔用許可證
   - Completion 完工
   - Record plans 紀錄圖則
+  - Plan submission & approval 呈交及審批
+  - Statutory period 法定期限
+  - Excavation & ELS 挖掘
 ---
 
 # APP-13 Submission of Certificates of Completion, Applications for Occupation Permit, and Record Plans<br><small>呈交建築工程竣工證明書申請佔用許可證及呈交記錄圖則和資料</small>

@@ -1,9 +1,10 @@
 ---
 tags:
   - Regulation
-  - Ventilation 通風
+  - Lighting & ventilation 照明及通風
   - Fire damper 防火閘
   - Fire Services 消防處
+  - Fire resisting construction 耐火結構
 ---
 
 # Cap. 123J Building (Ventilating Systems) Regulations<br><small>《建築物（通風系統）規例》（第 123J 章）</small>

@@ -5,6 +5,8 @@ tags:
   - Mid-levels 半山區
   - Scheduled area 附表地區
   - Geotechnical 岩土
+  - Site supervision 地盤監督
+  - Plan submission & approval 呈交及審批
 ---
 
 # APP-30 Geotechnical Control on Developments in Mid-levels Scheduled Area<br><small>附表所列的半山區地區內發展的岩土工程管制</small>

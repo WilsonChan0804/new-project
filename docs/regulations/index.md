@@ -1,3 +1,20 @@
+---
+tags:
+  - Minor works 小型工程
+  - Drainage 排水
+  - Demolition 拆卸
+  - Refuse 垃圾
+  - Plumbing & sanitary 衞生設備
+  - Plan submission & approval 呈交及審批
+  - Site supervision 地盤監督
+  - Registration 註冊
+  - Lighting & ventilation 照明及通風
+  - Lift 升降機
+  - Energy efficiency 能源效率
+  - Site area & classification 地盤面積及分類
+  - Protective barrier 防護欄障
+  - Means of access 救援通道
+---
 # Ordinance & Regulations 條例及規例
 
 Official text 官方文本: [eLegislation 電子版香港法例](https://www.elegislation.gov.hk/hk/cap123)

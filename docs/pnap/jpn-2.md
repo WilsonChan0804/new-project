@@ -2,9 +2,15 @@
 tags:
   - JPN
   - GFA concession 樓面面積寬免
-  - Green features 環保設施
-  - Utility platform 工作平台
+  - Green & amenity features 環保及適意設施
+  - Balcony & utility platform 露台及工作平台
   - NSPEW 非結構預製外牆
+  - Domestic 住用
+  - GFA 總樓面面積
+  - Structural 結構
+  - Maintenance access 維修通道
+  - Hotel 酒店
+  - Site coverage 上蓋面積
 ---
 
 # JPN 2 Second Package of Incentives to Promote Green and Innovative Buildings<br><small>聯合作業備考第 2 號：推廣環保及創新的樓宇第二批鼓勵措施</small>

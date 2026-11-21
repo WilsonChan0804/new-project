@@ -1,10 +1,13 @@
 ---
 tags:
   - Code of Practice
-  - Barrier free access 無障礙通道
+  - Barrier free access 無障礙
   - Door 門
   - Accessible toilet 暢通易達洗手間
   - Bathroom 浴室
+  - Domestic 住用
+  - Fire resisting construction 耐火結構
+  - Hotel 酒店
 ---
 
 # BFA Manual Divisions 10–12: Doors, Toilets and Bathrooms<br><small>《設計手冊：暢通無阻的通道 2008》第 10–12 分部：門、洗手間及浴室</small>
