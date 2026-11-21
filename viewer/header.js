@@ -21,7 +21,7 @@ const TABS = [
   ["chat", "Chat", "messenger.html", "Project channels, group chats, direct messages"],
   ["calendar", "Calendar", "calendar.html", "Meetings, tasks and issues by date"],
   ["folders", "Folders", "folders.html", "The project's files"],
-  ["codes", "Codes", "codes.html", "Search the building codes: the Ordinance, PNAPs and Codes of Practice in the office's library"],
+  ["codes", "Codes", "codes.html", "Search the building codes: the summaries in the knowledge base, and the Ordinance, PNAPs and Codes of Practice in the library"],
 ];
 
 const PAGE_OF = {

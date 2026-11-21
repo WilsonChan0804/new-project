@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-05", date: "21 Nov 2026",
+    items: [
+      "**Codes: the knowledge base** - the office's summaries of the Ordinance, regulations, Codes of Practice, PNAPs and APSEC are now in **Codes > Knowledge base**, as they are written, with their menus, English / 中文 tabs and diagrams. The viewer follows the branch they are written on and updates itself every day.",
+      "**Search answers from the summaries first**: the topic guides, summaries and current APSEC positions that answer, with Quick facts and diagrams, then the official clauses. **Read here** or open the page.",
+      "**Library** is now a tab of its own; site admins connect the knowledge base there (repository, branch, read-only token, Update now).",
+    ],
+  },
+  {
     version: "2027-02-04", date: "20 Nov 2026",
     items: [
       "**Programme: right-click** a row or bar for Properties, insert, cut / copy / paste / duplicate, move up / down, indent, link, category, colour, fold, create tasks, chat - on one row or a whole selection. **Properties** opens as a panel at the right, and edits several rows at once.",

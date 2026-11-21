@@ -290,14 +290,22 @@ PART = [
         '用其他方法（例如 Windows Explorer）放入 server 上面嗰個 folder 嘅檔案，呢度都會見到。',
     ]),
     H2('Codes 法規'),
+    P('Codes 有四個分頁：**Search**、**Knowledge base**（公司嘅法規摘要）、**Library**（官方文件）同 **GBP workbook**。'),
     P('**Codes** 喺公司自己嘅法規庫搜尋建築法規：《建築物條例》同佢嘅規例、PNAP、Codes of Practice、設計手冊同公司嘅筆記。每個 project 都係同一個法規庫，唔用 AI：乜嘢都唔會送出 server。'),
     UL([
         '**Search：** 打你想搵嘅嘢（英文或者中文），撳 **Search** 或者 Enter。法規庫入面相關嘅條文會列出嚟，最相關排先。條號（例如 *B5.2*、*41*）同常用簡稱（MOE、TRS、FRR、BFA、GFA、EVA、SBD ...）都搵得到；打咗條號，嗰條就會排第一。',
+        '**From the summaries** 排最先：知識庫入面答到你嘅段落 - 專題指南、PNAP、規例同 Codes of Practice 嘅摘要，同埋**現行**嘅 APSEC 立場（之後會議再討論過嘅舊項目唔會顯示）- 每段顯示類別、段落同標咗你啲字。**Read here** 即場打開嗰段；**Open the page** 喺 Knowledge base 分頁打開。之後係佢哋嘅 Quick facts 同圖，再之後係官方條文（「Official text: N clauses in the Library - Show」）。摘要只係學習筆記：以官方原文為準。',
         '**Quick facts** 喺最頂：同你搜尋嘅嘢有關嘅條文，每條列出佢嘅數字（24m、1050mm、120 分鐘 ...）同上面嘅條件（「for Use Classifications 1 and 2」、「where balcony approach is provided」），照條文原文。撳條文小標籤就睇到全文。數字係按條文入面嘅數字揀出嚟，所以要睇返條文嘅全部條件。',
         '**Diagrams：** 搵到嘅條文提到嘅圖（「See Diagrams B2 and B4」），或者同一頁嘅圖，會喺結果下面顯示圖片。撳一下放大（方向鍵睇下一幅），**Open page** 打開 PDF 嗰一頁，**Download** 下載圖片。',
         '**Show** 喺右邊列出條文：出處（文件、條號、頁數）、版本、標咗你啲字嘅原文 - 分段顯示，(a) / (i) 每項一行 - **Open page**（打開 PDF 嗰一頁）、**More around it**（前後嘅條文）同 **Copy**。',
         '**Recent ▾** 列出你最近搜過嘅嘢 - 撳一下再搜；**New** 清空頁面。',
         '每個數字都要對返文件最新嘅版本：搜尋結果只係幫你閱讀，唔係專業意見。公司筆記會標明 *office note, not law*。',
+    ]),
+    H3('Knowledge base 知識庫'),
+    UL([
+        '**Codes > Knowledge base** 照原本設計顯示公司嘅法規摘要網站：佢嘅目錄（PNAP & JPN、規例、Codes of Practice、APSEC 按年份、專題指南、時間表、詞彙）、English / 中文 分頁、圖同佢自己嘅搜尋。上面一行有 **Back** 同 **Home**，顯示版本，同 **Open in a new window**。',
+        '知識庫寫喺自己嘅 GitHub branch，server 會跟住嗰個 branch：每日（或者撳 **Update now**）攞最新版本、build 同建立搜尋索引。唔使抄嚟抄去。',
+        '**設定（site admin）：Library > Knowledge base** - repository 同 branch（或者 server 上面一個有 checkout 嘅資料夾）、GitHub token（只限呢個 repository、Contents: Read-only 嘅 fine-grained token；只會留喺 server，之後唔會再顯示）、**Update every day**、**Update now**。Server 要裝 MkDocs：pip install mkdocs-material（已經喺 server 嘅 requirements 入面）。',
     ]),
     H3('法規庫（site admin）'),
     UL([

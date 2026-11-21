@@ -409,14 +409,22 @@ DOC = [
         'Files put into the project\'s folder on the server some other way (for example from Windows Explorer) show up here too.',
     ]),
     H2('Codes'),
+    P('Codes has four tabs: **Search**, **Knowledge base** (the office\'s summaries), **Library** (the official documents) and **GBP workbook**.'),
     P('**Codes** searches the building codes in the office\'s own library: the Buildings Ordinance and its Regulations, PNAPs, Codes of Practice, design manuals and the office\'s notes. It is the same for every project, and uses no AI: nothing is sent outside the server.'),
     UL([
         '**Search:** type what you are looking for (English or Chinese) and press **Search** or Enter. The clauses of the library that match come back, best first. Clause numbers (e.g. *B5.2*, *41*) and the usual short names (MOE, TRS, FRR, BFA, GFA, EVA, SBD ...) are found too; a clause number you type puts that clause first.',
+        '**From the summaries** come first: the sections of the knowledge base that answer - topic guides, the PNAP, regulation and Code of Practice summaries, and the **current** APSEC positions (an item a later meeting revisited is left out) - each with its kind, its section and the words marked. **Read here** opens the section on the spot; **Open the page** shows it in the Knowledge base tab. Their Quick facts and diagrams come next, then the official clauses ("Official text: N clauses in the Library - Show"). The summaries are study notes: the official text prevails.',
         '**Quick facts** come first: the clauses about what you searched for, each with its figures (24m, 1050mm, 120 minutes ...) and the conditions above them ("for Use Classifications 1 and 2", "where balcony approach is provided"), as the clause states them. Click a clause chip to read it in full. They are picked by their figures, so read the clause for all its conditions.',
         '**Diagrams:** the diagrams the clauses found refer to ("See Diagrams B2 and B4"), or that are on the same page, show as pictures under the result. Click one to enlarge it (arrow keys for the next one), **Open page** opens the PDF there, **Download** saves the picture.',
         '**Show** lists the clauses on the right: their reference (document, clause number, page), edition, the text with your words marked - as paragraphs, with their (a) / (i) items on their own lines - **Open page** (the PDF at that page), **More around it** (the clauses before and after) and **Copy**.',
         '**Recent ▾** lists your last searches - click one to search again; **New** clears the page.',
         'Check every figure against the current edition of the document: the search is a reading aid, not advice. Office notes are marked *office note, not law*.',
+    ]),
+    H3('Knowledge base'),
+    UL([
+        '**Codes > Knowledge base** shows the office\'s summaries site as it is written: its menus (PNAP & JPN, regulations, Codes of Practice, APSEC by year, topic guides, timelines, glossary), the English / 中文 tabs, diagrams and its own search. **Back** and **Home** are in the bar above it, with the version shown and **Open in a new window**.',
+        'It is written on its own GitHub branch, and the server follows that branch: every day (or **Update now**) it fetches the newest version, builds it and indexes it for Search. Nothing needs copying.',
+        '**Set up (site admin): Library > Knowledge base** - the repository and branch (or a folder on the server with a checkout of it), a GitHub token (a fine-grained token for this repository with Contents: Read-only; it is kept on the server and never shown again), **Update every day**, **Update now**. The server needs MkDocs: pip install mkdocs-material (in the server\'s requirements).',
     ]),
     H3('The library (site admins)'),
     UL([
