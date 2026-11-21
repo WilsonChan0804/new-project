@@ -59,17 +59,21 @@ nav:
   - PNAP & JPN 作業備考:
       - pnap/index.md
       - APP-2 GFA calculation 總樓面面積計算: pnap/app-2.md
+      - APP-4 Water supply & wells 供水及水井: pnap/app-4.md
       - APP-5 Storey height 樓層高度: pnap/app-5.md
       - APP-8 Chimneys & flues 煙囪及煙道: pnap/app-8.md
       - APP-9 Country parks 郊野公園: pnap/app-9.md
       - APP-11 Street improvement schemes 街道改善計劃: pnap/app-11.md
       - APP-13 Completion, OP & record plans 完工及佔用許可證: pnap/app-13.md
       - APP-14 Cinemas & PPE 電影院: pnap/app-14.md
+      - APP-16 Cladding 覆蓋層: pnap/app-16.md
       - APP-17 Rock faces 岩面: pnap/app-17.md
       - APP-19 Projections 伸出物: pnap/app-19.md
       - APP-20 Street widening bonus 擴闊街道: pnap/app-20.md
+      - APP-23 Hoardings & covered walkways 圍板及有蓋行人道: pnap/app-23.md
       - APP-25 Geotechnical assessment 岩土評估: pnap/app-25.md
       - APP-27 Gas water heaters 氣體熱水爐: pnap/app-27.md
+      - APP-29 Lifts & escalators 升降機及自動梯: pnap/app-29.md
       - APP-31 FSI water supply 消防恆久供水: pnap/app-31.md
       - APP-32 Airport height restrictions 機場高度限制: pnap/app-32.md
       - APP-35 Refuse storage 垃圾存放: pnap/app-35.md
@@ -93,24 +97,36 @@ nav:
       - APP-89 Better lift service 升降機服務: pnap/app-89.md
       - APP-93 Drainage works 排水工程: pnap/app-93.md
       - APP-95 Sale offices & show flats 售樓處及示範單位: pnap/app-95.md
+      - APP-97 Consent procedures 動工同意程序: pnap/app-97.md
       - APP-98 Internal bathrooms 內置浴室: pnap/app-98.md
       - APP-101 Podium height 平台高度: pnap/app-101.md
       - APP-104 Recreational facilities 康樂設施: pnap/app-104.md
+      - APP-105 Water seepage 滲水: pnap/app-105.md
       - APP-106 Restaurant kitchens 食肆廚房: pnap/app-106.md
       - APP-108 Public passage 公眾通道: pnap/app-108.md
       - APP-110 Protective barriers 防護欄障: pnap/app-110.md
       - APP-111 Car park design 停車場設計: pnap/app-111.md
+      - APP-112 A/C condensate 空調冷凝水: pnap/app-112.md
+      - APP-114 Fitments deferred to fit-out 衞生設備延後安裝: pnap/app-114.md
+      - APP-116 Aluminium windows 鋁窗: pnap/app-116.md
       - APP-117 Structural A&A works 改動加建結構規定: pnap/app-117.md
       - APP-119 Stairwells in schools 學校樓梯井: pnap/app-119.md
       - APP-122 Refuge floor sky garden 庇護層空中花園: pnap/app-122.md
+      - APP-124 Streets for site classification 地盤分類的街道: pnap/app-124.md
+      - APP-125 Floor next to external ground or roof 毗鄰外地面或屋頂的樓面: pnap/app-125.md
+      - APP-126 Erection of signboards 豎設招牌: pnap/app-126.md
       - APP-127 Contractor's sheds 承建商屋棚: pnap/app-127.md
       - APP-130 Lighting & ventilation (performance) 照明及通風: pnap/app-130.md
       - APP-132 Site coverage & open space 上蓋面積及空地: pnap/app-132.md
       - APP-136 EVA 緊急車輛通道: pnap/app-136.md
+      - APP-145 Fire Safety (Buildings) Ordinance 消防安全(建築物)條例: pnap/app-145.md
+      - APP-146 Metal gates 金屬閘: pnap/app-146.md
       - APP-147 Minor works 小型工程: pnap/app-147.md
       - APP-150 Industrial building conversion 改裝工業大廈: pnap/app-150.md
       - APP-151 GFA concessions 樓面面積寬免: pnap/app-151.md
       - APP-152 SBD Guidelines 可持續建築設計指引: pnap/app-152.md
+      - APP-154 Columbarium facilities 靈灰安置所: pnap/app-154.md
+      - APP-155 Signboard validation scheme 招牌檢核計劃: pnap/app-155.md
       - APP-156 Energy efficiency 能源效益: pnap/app-156.md
       - APP-163 External maintenance access 外部維修通道: pnap/app-163.md
       - APP-172 RCHE / RCHD 安老院及殘疾人士院舍: pnap/app-172.md
