@@ -221,6 +221,22 @@ class Endpoints(unittest.TestCase):
         self.c.post("/api/kb/edits/merged", json={"ids": [r2["id"]]})
         self.assertEqual(self.c.get("/api/kb/edits/recent").json()["not_merged"], 0)
 
+    def test_thin_pages(self):
+        kb.CFG["data"] = self.tmp
+        os.makedirs(os.path.join(self.tmp, "kb"), exist_ok=True)
+        kb.index(os.path.join(FIX, "docs"), os.path.join(self.tmp, "kb", "kb.db"))
+        r = self.c.get("/api/kb/thin").json()
+        app2 = next(x for x in r["items"] if x["path"] == "pnap/app-2.md")
+        self.assertEqual(app2["tier"], "A")                                  # a key document
+        self.assertTrue(app2["thin"] and any("short for a key document" in w for w in app2["why"]))
+        self.assertTrue(app2["has"]["glance"] and not app2["has"]["clauses"])
+        self.assertNotIn("apsec/2019.md", [x["path"] for x in r["items"]])  # the forum pages are not measured
+        self.assertEqual(r["counts"]["A"]["pages"], 1)
+        md = self.c.get("/api/kb/thin", params={"format": "md"}).text
+        self.assertIn("## Tier A: 1 of 1 pages", md)
+        self.assertTrue(self.c.get("/api/kb/thin", params={"format": "csv"}).text.startswith("\ufeffTier,Page"))
+        self.assertTrue(kb.PLACEHOLDER.search("later paras. cover structural loads") and kb.PLACEHOLDER.search("其後各段涵蓋結構荷載"))
+
     def test_front_matter_extras(self):
         page, _ = kb.parse_page("---\ntags:\n  - PNAP\n  - Draft\nsummary: How GFA is measured.\nkeywords: MOE, means of escape, 走火通道\n---\n# APP-9 Test\n\n## At a glance\n\nSome text that is long enough to keep here.\n", "pnap/app-9.md")
         self.assertEqual(page["info"]["summary"], "How GFA is measured.")

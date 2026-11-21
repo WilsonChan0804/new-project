@@ -188,8 +188,10 @@ function paintKbBox() {
       <label class="row-check"><input type="checkbox" name="auto"${st.auto !== false ? " checked" : ""}> Update every day</label></div>
       <div class="row end"><button type="button" class="ghost" id="kb-save">Save</button><button type="button" class="primary" id="kb-now"${k.updating ? " disabled" : ""}>Update now</button></div>
       <p class="muted small">The token is kept on the server and never shown again. GitHub > Settings > Developer settings > Fine-grained tokens: this repository only, Contents: Read-only.</p></form>` : "");
-  box.insertAdjacentHTML("beforeend", `<div class="cx-kbedits" id="cx-kbedits"><p class="muted">Loading the edits ...</p></div>`);
+  box.insertAdjacentHTML("beforeend", `<div class="cx-kbedits" id="cx-kbedits"><p class="muted">Loading the edits ...</p></div>`
+    + (k.on ? `<div class="cx-kbthin" id="cx-kbthin"></div>` : ""));
   paintKbEdits();
+  if (k.on) paintKbThin();
   const f = box.querySelector("form");
   if (!f) return;
   const showSrc = () => { for (const el of f.querySelectorAll(".kb-gh")) el.hidden = f.source.value !== "github"; for (const el of f.querySelectorAll(".kb-fo")) el.hidden = f.source.value !== "folder"; };
@@ -210,6 +212,34 @@ function paintKbBox() {
       toast(CX.kb && CX.kb.error ? "Not updated: " + CX.kb.error : `Knowledge base updated: ${CX.kb.pages} pages`, !!(CX.kb && CX.kb.error));
     };
     setTimeout(poll, 1200);
+  };
+}
+
+/* the thin pages: the summaries too brief for their tier, to fill in first */
+let THIN_TIER = "A";
+async function paintKbThin() {
+  const el = $("#cx-kbthin");
+  if (!el) return;
+  let r;
+  try { r = await api("/api/kb/thin"); } catch (e) { el.innerHTML = `<p class="muted">${esc(e.message)}</p>`; return; }
+  const c = r.counts;
+  const TIERS = { A: "Key documents (full template)", B: "Other APP / JPN / regulations / codes / guides", C: "ADM / ADV notes" };
+  const rows = r.items.filter((x) => x.tier === THIN_TIER && x.thin);
+  const tick = (v) => (v ? `<span class="cx-ok">&#10003;</span>` : `<span class="cx-no">&ndash;</span>`);
+  el.innerHTML = `<h4>Thin pages</h4><p class="muted">Summaries too brief to answer from, by what their tier needs. Fill these in first (send the list to the knowledge base's author).</p>`
+    + `<div class="cx-thin-tiers">${"ABC".split("").map((t) => `<button type="button" class="ghost${t === THIN_TIER ? " on" : ""}" data-tier="${t}" title="${esc(TIERS[t])}">Tier ${t}: <b>${c[t].thin}</b> of ${c[t].pages}</button>`).join("")}`
+    + `<span class="spacer"></span><a class="ghost btn-a" href="/api/kb/thin?format=md" download>Download the list</a><a class="ghost btn-a" href="/api/kb/thin?format=csv" download>CSV</a></div>`
+    + `<p class="muted small">${esc(TIERS[THIN_TIER])}. Pages with <code>summary:</code>: ${c.summary} of ${c.all}; with <code>keywords:</code>: ${c.keywords} of ${c.all}.</p>`
+    + (rows.length ? `<div class="cx-thin-wrap"><table class="cx-lib cx-thin"><thead><tr><th>Page</th><th class="num">Words</th><th title="At a glance">Glance</th><th title="Key clauses">Clauses</th><th title="Explanation">Expl.</th><th title="Practical notes / pitfalls">Notes</th><th title="Worked example">Ex.</th><th>What is missing</th></tr></thead><tbody>`
+      + rows.map((x) => `<tr><td><a href="#" data-kbgo="${esc(x.path)}">${esc(x.title)}</a><br><small class="muted">${esc(x.path)}</small></td><td class="num">${x.words}</td>`
+        + `<td>${tick(x.has.glance)}</td><td>${tick(x.has.clauses)}</td><td>${tick(x.has.explanation)}</td><td>${tick(x.has.notes)}</td><td>${tick(x.has.example)}</td>`
+        + `<td><small>${esc(x.why.filter((w) => !/^no (summary|keywords):/.test(w)).join("; "))}</small></td></tr>`).join("") + `</tbody></table></div>`
+      : `<p class="muted">None in this tier - well done.</p>`);
+  el.onclick = (ev) => {
+    const t = ev.target.closest("[data-tier]");
+    if (t) { THIN_TIER = t.dataset.tier; paintKbThin(); return; }
+    const g = ev.target.closest("[data-kbgo]");
+    if (g) { ev.preventDefault(); const p = g.dataset.kbgo.replace(/\.md$/, "/").replace(/(^|\/)index\/$/, "$1"); KB_LOADED = ""; showTab("kb", p); }
   };
 }
 

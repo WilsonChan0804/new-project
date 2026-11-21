@@ -408,6 +408,89 @@ def public(r, terms):
             "figures": [dict(f, url="/kb/" + f["src"].lstrip("/")) if not re.match(r"^(https?:)?//", f["src"]) else f for f in figs][:4]}
 
 
+# ------------------------------------------------------- the thin pages
+
+# the documents architects use every week: the full template is expected
+TIER_A = {"pnap/app-%d.md" % n for n in (2, 19, 40, 41, 42, 89, 93, 104, 111, 130, 132, 136, 147, 151, 152, 153, 156, 172, 175)} | \
+    {"pnap/adm-2.md", "pnap/adm-19.md", "pnap/adv-35.md"} | {"pnap/jpn-%d.md" % n for n in range(1, 10)} | \
+    {"regulations/bpr-18a-22.md", "regulations/bpr-23-23a.md", "regulations/bpr-24-37.md", "regulations/bpr-39-49e.md", "regulations/bpr-71-73.md",
+     "codes/fsc-part-b-means-of-escape.md", "codes/fsc-part-c-fire-resisting-construction.md", "codes/fsc-part-d-means-of-access.md", "codes/bfa-2008.md"}
+PLACEHOLDER = re.compile(r"\b(later|other|remaining|subsequent) (paras?\.?|paragraphs) (cover|deal|set out|give|provide)|其後各段|其餘各段|其他各段", re.I)
+
+
+def tier_of(path, kind):
+    if path in TIER_A:
+        return "A"
+    if kind in ("pnap", "jpn") and re.search(r"/(adm|adv)-", path):
+        return "C"
+    if kind in ("pnap", "jpn", "regulation", "code", "guide"):
+        return "B"
+    return ""
+
+
+def thin_report():
+    """Each summary page against what its tier needs: words, the sections it has,
+    placeholders - the pages to fill in first."""
+    c = _db()
+    if c is None:
+        return {"items": [], "counts": {}}
+    try:
+        pages = list(c.execute("SELECT id, path, url, title, kind, info FROM pages"))
+        secs = {}
+        for r in c.execute("SELECT page, heading, en FROM sections"):
+            secs.setdefault(r["page"], []).append((r["heading"] or "", r["en"] or ""))
+    finally:
+        c.close()
+    out = []
+    for p in pages:
+        tier = tier_of(p["path"], p["kind"])
+        if not tier:
+            continue
+        ss = secs.get(p["id"], [])
+        heads = " | ".join(h for h, _ in ss).lower()
+        text = "\n".join(t for _, t in ss)
+        words = len(re.findall(r"[A-Za-z]+", text))
+        info = json.loads(p["info"] or "{}")
+        has = {"glance": "at a glance" in heads, "clauses": "key clause" in heads or "official wording" in heads,
+               "explanation": "explanation" in heads or "step " in heads or "big picture" in heads,
+               "notes": "practical notes" in heads or "pitfall" in heads or "common mistakes" in heads,
+               "example": bool(re.search(r"worked example|計算例子|example", text, re.I)),
+               "diagram": "diagram" in heads or "figure" in heads, "summary": bool(info.get("summary")), "keywords": bool(info.get("keywords"))}
+        ph = bool(PLACEHOLDER.search(text))
+        why = []
+        if tier == "A":
+            if words < 1200:
+                why.append("short for a key document (%d words, aim 1,200+)" % words)
+            for k, lab in (("glance", "At a glance"), ("clauses", "Key clauses"), ("explanation", "Explanation"), ("notes", "Practical notes / pitfalls"), ("example", "worked example")):
+                if not has[k] and not (p["kind"] == "guide" and k == "clauses"):
+                    why.append("no " + lab)
+        elif tier == "B":
+            if words < 300:
+                why.append("short (%d words, aim 300+: one line per paragraph)" % words)
+            if not has["glance"]:
+                why.append("no At a glance")
+        else:
+            if not has["glance"]:
+                why.append("no At a glance")
+            if words < 120:
+                why.append("very short (%d words)" % words)
+        if ph:
+            why.append('"later paragraphs cover ..." without their content')
+        if not has["summary"]:
+            why.append("no summary:")
+        if not has["keywords"]:
+            why.append("no keywords:")
+        out.append({"path": p["path"], "url": p["url"], "title": p["title"], "kind": p["kind"], "tier": tier, "words": words,
+                    "has": has, "placeholder": ph, "why": why,
+                    "thin": any(not w.startswith("no summary") and not w.startswith("no keywords") for w in why)})
+    out.sort(key=lambda x: ({"A": 0, "B": 1, "C": 2}[x["tier"]], not x["thin"], x["words"]))
+    counts = {t: {"pages": sum(1 for x in out if x["tier"] == t), "thin": sum(1 for x in out if x["tier"] == t and x["thin"])} for t in "ABC"}
+    counts["summary"] = sum(1 for x in out if x["has"]["summary"])
+    counts["keywords"] = sum(1 for x in out if x["has"]["keywords"])
+    counts["all"] = len(out)
+    return {"items": out, "counts": counts}
+
+
 # ------------------------------------------------------------ the edits
 
 EDIT_SCHEMA = """
@@ -804,6 +887,32 @@ def register(app, core):
             raise HTTPException(status_code=404, detail="Not found")
         return FileResponse(target, headers={"X-Frame-Options": "SAMEORIGIN", "Content-Security-Policy": "frame-ancestors 'self'",
                                              "Cache-Control": "no-cache"})
+
+    @app.get("/api/kb/thin")
+    def kb_thin(request: Request, format: str = "json", x_viewer_token: str = Header(default="")):
+        who(request, x_viewer_token)
+        r = thin_report()
+        if format == "csv":
+            import csv
+            buf = io.StringIO()
+            w = csv.writer(buf)
+            w.writerow(["Tier", "Page", "Title", "Words", "Thin", "What is missing", "At a glance", "Key clauses", "Explanation", "Practical notes", "Example", "Diagram", "summary:", "keywords:"])
+            for x in r["items"]:
+                h = x["has"]
+                w.writerow([x["tier"], x["path"], x["title"], x["words"], "yes" if x["thin"] else "", "; ".join(x["why"]),
+                            *["yes" if h[k] else "" for k in ("glance", "clauses", "explanation", "notes", "example", "diagram", "summary", "keywords")]])
+            return Response(content="\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                            headers={"Content-Disposition": 'attachment; filename="kb-thin-pages.csv"'})
+        if format == "md":
+            lines = ["# Knowledge base: thin pages", "",
+                     "Tier A = key documents (full template expected), B = other APP / JPN / regulations / codes / guides (one line per paragraph), C = ADM / ADV.", ""]
+            for t in "ABC":
+                th = [x for x in r["items"] if x["tier"] == t and x["thin"]]
+                lines += ["## Tier %s: %d of %d pages to fill in" % (t, len(th), r["counts"][t]["pages"]), ""]
+                lines += ["- **%s** (%s, %d words): %s" % (x["path"], x["title"], x["words"], "; ".join(x["why"])) for x in th] + [""]
+            return Response(content="\n".join(lines), media_type="text/markdown; charset=utf-8",
+                            headers={"Content-Disposition": 'attachment; filename="kb-thin-pages.md"'})
+        return r
 
     # ---- editing, under the viewer's own accounts
     def me_of(request, tok=""):

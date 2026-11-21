@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-07", date: "21 Nov 2026",
+    items: [
+      "**Knowledge base: Thin pages** (Codes > Library > Knowledge base) - the summaries too brief to answer from, by tier (A key documents, B other notes and regulations, C ADM / ADV), each with what is missing; download the list for the knowledge base's author.",
+    ],
+  },
+  {
     version: "2027-02-06", date: "21 Nov 2026",
     items: [
       "**Knowledge base: edit with your viewer name** - once the knowledge base's script uses the viewer (the note for its author is in docs/kb-viewer-contract.md), anyone signed in can edit a paragraph (✎). It shows at once with 'Edited by NAME', Show original and the page's edit history; its author or a site admin can undo it.",
