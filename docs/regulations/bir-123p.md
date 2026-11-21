@@ -140,6 +140,16 @@ tags:
         - 承建商在修葺期間沒有在**地盤存放檢驗報告**（第 32 條）。
         - 註冊檢驗人員並非獨立於修葺承建商（第 13(2)(c) 條）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Proof Tests for Repair of Reinforced Concrete – Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window](../apsec/2025.md#i2025050912)** <small>ADF 2/2025, 9 May 2025</small><br>BD advised that the pull-off test was a quality control test to evaluate the bond strength between the repair mortar and the existing concrete substrate, while the hammer-tapping test was to ascertain the integrity of the repair works by identifying any poor bonding and delamination of the patch repair. …
+- **[Replacement of Windows under MWIS](../apsec/2019.md#i201905246)** <small>ADF 3/2019, 24 May 2019</small><br>BD advised that the project AP could submit the corresponding specified form of MWIS upon completion of the windows replacement works to MBI Sections for compliance with the MWIS Notice. If necessary, the project AP could indicate the MWIS Notice No. on the A&A submission to facilitate BD’s internal communication.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

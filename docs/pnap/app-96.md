@@ -33,6 +33,17 @@ tags:
     - 建築事務監督備存**三份名冊**（一般建築、專門（設分冊）、小型工程），每年刊憲並在網站公布，連同**獲授權簽署人**資料（第 3–4 段）。
     - **五類專門工程**：**拆卸、地基、土地勘測外勤、地盤平整、通風**（第 5 段）；其後各段涵蓋工程範圍、技術董事、申請及面試。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Removal of Retaining Walls in Site Formation Works](../apsec/2023.md#i2023021011)** <small>ADF 1/2023, 10 Feb 2023</small><br>BD advised that the scope of works of Registered Specialist Contractors in the demotion works and site formation works categories were delineated under Appendix A to PNAP APP-96. HKIE would provide case details for BD’s consideration on the issue.
+- **[PNAP ADM-8](../apsec/2018.md#i2018011914)** <small>ADF 1/2018, 19 Jan 2018</small><br>Members noted and would assist to facilitate BD’s review. 13 Practice Note for Authorized Persons, Registered Structural Engineers and APP-96 Registered Geotechnical Engineers Contractors and Specialist Contractors covers solely the registration of general building Minor works contractors registration is Note for Authorized …
+- **[PNAP APP-96 - Registration of General Building Contractors and Specialist Contractors](../apsec/2018.md#i2018011911)** <small>ADF 1/2018, 19 Jan 2018</small><br>BD advised that as the tie beams and individual caps/footings as shown in the attached plans formed an integral part of the foundation system, RSC(F) would be allowed to construct these beams and slabs. Other situations, such as raft and combined caps associated with basement beams and slabs, should be considered on case basis. …
+
+<!-- APSEC END -->
+
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · English only for now; Chinese text is an unofficial translation (中譯（非官方）).</small>
 ## Diagram 圖解

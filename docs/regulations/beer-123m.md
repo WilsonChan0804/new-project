@@ -42,6 +42,20 @@ tags:
     **官方中文本：** (1)本規例適用的建築物在設計和建造上須具令建築事務監督滿意的能源效率。(2)在不損害第(1)款的一般性的原則下，如某建築物的外牆及屋頂有適當的總熱傳送值，該建築物須視作在設計和建造上符合該款的規定。
 
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Overall Thermal Transfer Value (OTTV) Calculation](../apsec/2025.md#i2025080810)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that according to paragraph 4.2 of the Code of Practice for Overall Thermal Transfer Value in Buildings 1995 (OTTV Code), an external wall of a building which was a party wall should be included in OTTV calculations whether an adjoining building existed or not, and shading to such party wall from adjoining buildings …
+- **[Overall Thermal Transfer Value (OTTV) and Residential Thermal Transfer Value (RTTV)](../apsec/2024.md#i2024080930)** <small>ADF 3/2024, 9 Aug 2024</small><br>Members noted and supported the streamlining measures. In response to Members’ enquiry, BD advised that the EE Report could be submitted at any time before the application for OP.
+- **[Submission of Overall Thermal Transfer Value (OTTV) Report for Building without Provision of Air-conditioning](../apsec/2024.md#i202405034)** <small>ADF 2/2024, 3 May 2024</small><br>BD advised that pursuant to section 3 and the Schedule of the Building (Energy Efficiency) Regulation (B(EE)R), buildings to which the B(EE)R applied included commercial buildings and hotels, irrespective of whether such buildings were equipped with air-conditioning system. …
+- **[Requirements on Sunshades – PNAP APP-19 and APP-67](../apsec/2023.md#i202308049)** <small>ADF 3/2023, 4 Aug 2023</small><br>BD advised that according to PNAP APP-19, genuine sunshades solely used for the purpose of energy conservation projecting not more than 1.5 m from the external wall complying with the criteria set out in PNAP APP-67 and APP-156 were not accountable for GFA and site coverage. …
+- **[Definition of “Podium” for OTTV Calculation](../apsec/2020.md#i2020052912)** <small>ADF 2/2020, 29 May 2020</small><br>BD would adopt a pragmatic approach in considering the issue on a case-by-case basis.
+- **[RTTV and OTTV](../apsec/2019.md#i201905241)** <small>ADF 3/2019, 24 May 2019</small><br>BD advised that HKIA’s understanding was correct.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

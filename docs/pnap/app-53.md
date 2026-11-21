@@ -44,6 +44,15 @@ tags:
 | Loads 荷載 | CoP Dead and Imposed Loads 2011 (2021 Ed.) |
 | Aluminium 鋁 | BS 8118 Part 1: 1991 |
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Compliance Standard for Heat Soak Process of Tempered Glass Panes](../apsec/2018.md#i201805258)** <small>ADF 3/2018, 25 May 2018</small><br>BD briefed members on the arrangement of accepting different versions of heat soak test standard under the 2018 Code during the grace period.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

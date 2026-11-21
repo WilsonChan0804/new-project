@@ -33,5 +33,15 @@ tags:
     - 按規模、複雜程度、施工方法及風險分為 **A 至 E** 五類；資格見**附錄 A**（第 2–3 段）。
     - 倚賴**註冊結構工程師自行認證**；**C 至 E 類**另須委任**獨立審核工程師**；不符準則的工程按一般程序處理（第 3 段）；其後各段訂明程序及抽查。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Structural Submission for Maintenance Platforms](../apsec/2026.md#i2026081410)** <small>ADF 3/2026, 14 Aug 2026</small><br>or BD advised that except for minor works commenced under the simplified requirements and building works exempted under section 41 of the BO , no person shall commence or carry out any building works without having 6 obtained a prior approval and consent from the BA. …
+- **[Self-certification System for Plan Submission of Simple Structural Works – PNAP ADM-23](../apsec/2025.md#i2025080821)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that PNAP ADM-23 aimed to introduce a fast-track plan processing system for structural works which were relatively simple in nature to facilitate the construction process. …
+
+<!-- APSEC END -->
+
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · English only for now; Chinese text is an unofficial translation (中譯（非官方）).</small>

@@ -33,6 +33,15 @@ tags:
     - 除小型擋土牆（B(C)R 第 22 條）外，**排水及濾層**須按第 24 條：潔淨、耐用、不含黏土的物料；非侵蝕性環境可用**土工布濾層**（岩土指南第 1 號第 8.5 節、GEO 刊物 1/93）（第 3–4 段）。
     - **回填料**須符合岩土指南第 1 號及附錄 A 表 1；不得含泥炭或有機物、有毒、易燃、金屬、橡膠或塑膠、體積易變（海泥、膨脹黏土）或可溶物料（第 5–6 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Demolition of Retaining Walls](../apsec/2026.md#i2026050814)** <small>ADF 2/2026, 8 May 2026</small><br>BD advised that if a retaining wall did not support a building to be as demolished and was to be removed as part of site formation works or ELS works, the demolition of the retaining wall might be incorporated into the site formation plan or ELS plan for BA’s approval. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

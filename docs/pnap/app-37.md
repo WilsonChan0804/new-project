@@ -102,6 +102,28 @@ tags:
         - 一個把手帶動**多於 8 個**鎖點。
         - 幕牆圖則與**已批准的一般建築圖則**不符（第 3 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Qualified Supervision and Quality Audit for Heat Soak Test](../apsec/2026.md#i202605087)** <small>ADF 2/2026, 8 May 2026</small><br>2022 BD advised that the understanding of HKIA was correct. Paragraph precast 14(e)(iii) of PNAP APP-37 set out that if the alternative arrangement of soak employing videotelephony for the tempered glass panes undergoing the heat soak process was adopted, all supervision items covered in the videos taken should be recorded …
+- **[Streamlining the Application of Modification of Regulation 31(1)(a) Building (Construction) Regulation (B(C)R)](../apsec/2026.md#i2026020610)** <small>ADF 1/2026, 6 Feb 2026</small><br>of the that BD advised that if the specified percentage (generally 25%) was exceeded, AP/RSE was required to submit an application (i.e. Form BA16) for modification of/exemption from regulation 31(1)(a) of the curtain B(C)R under Section 42 of the BO to apply for modification/exemption in respect of those remedial drilled-in …<br><small>Latest position; replaces earlier discussion on [14 Feb 2025](../apsec/2025.md#i2025021416) 以此為最新立場</small>
+- **[Wind Pressure Criterion for Structural Submission of Window Window Wall Plans in PNAP APP-37](../apsec/2026.md#i202602069)** <small>ADF 1/2026, 6 Feb 2026</small><br>or Code BD advised that according to paragraph 5 of PNAP APP-37, structural been set submission of window or window wall plans were required when the the window or window wall was at 100m or more above adjoining ground be level, or where the wind reference pressure Q (or design wind pressure o,z of the q in preceding Wind Code …
+- **[Separate RSE for Cladding/Curtain Wall/Façade Works](../apsec/2025.md#i2025080824)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that the project AP/RSE/RC should sign the Form BA13 to certify the completion of building works resulting in a new building and to apply for the OP of such building. …
+- **[Post-Occupation Permit (OP) Rectification Works Procedures (PRWP)](../apsec/2024.md#i2024022314)** <small>ADF 1/2024, 23 Feb 2024</small><br>BD advised that if the tempered glass for replacement under PRWP was provided from the same batch of production for the project and the frequency of quality supervision prior to OP still met the 30% requirement on the quantity of the tempered glass for replacement, there was no need for such tempered glass to meet a separate …
+- **[Safety Test for Curtain Wall](../apsec/2022.md#i2022051329)** <small>ADF 3/2022, 13 May 2022</small><br>BD advised that they would consider the proposed arrangement on case basis. BD also reminded that the test should be carried out by an independent laboratory accredited by the Hong Kong Laboratory Accreditation Scheme (HOKLAS) or by other laboratory accreditation bodies which had reached mutual recognition …
+- **[Size of Top-Hung Sash under PNAP APP-37](../apsec/2020.md#i202009296)** <small>ADF 3/2020, 29 Sep 2020</small><br>BD advised that HKIA’s understanding was correct.
+- **[Locking Devices under PNAP APP-37](../apsec/2020.md#i202009295)** <small>ADF 3/2020, 29 Sep 2020</small><br>BD advised that HKIA’s understanding was correct. Notwithstanding that structural submission to BD was not required, BD reminded that the AP/RSE should ensure that the design, fabrication and installation of the window and window wall should achieve the required safety standard pursuant to paragraph 6 of PNAP APP-37.
+
+??? note "3 more APSEC items 更多項目"
+
+    - **[Inclusion of Structural Details in A&A Submission](../apsec/2019.md#i201911225)** <small>ADF 5/2019, 22 Nov 2019</small><br>BD advised that the requirement for inclusion of structural details in A&A submission should have no fundamental difference from that for new building works submission. …
+    - **[Compliance Standard for Heat Soak Process of Tempered Glass Panes](../apsec/2018.md#i201805258)** <small>ADF 3/2018, 25 May 2018</small><br>BD briefed members on the arrangement of accepting different versions of heat soak test standard under the 2018 Code during the grace period.
+    - **[Heat Soak Test of Glass](../apsec/2017.md#i201711175)** <small>ADF 5/2017, 17 Nov 2017</small><br>BD advised that Quality Assurance Scheme and Quality Supervision Plan on heat soak process in accordance with PNAP APP-37 could be submitted to the BD for consideration prior to obtaining approval of the relevant plans. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

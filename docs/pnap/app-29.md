@@ -35,6 +35,15 @@ tags:
     - 2011 年守則的**修訂**：附錄 A（**2015 年 8 月**）、附錄 B（**2019 年 9 月**，適用於 **2019 年 12 月 1 日**或之後呈交的圖則）（第 4 段）。
     - 機電及操作要求按**機電署**根據**第 618 章**發出的守則；向機電署申請使用許可前，須完成所有**相關工程**（附錄 C／D 清單）（第 5–6 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[PNAP APP-29 – Lift & Escalator Installations](../apsec/2020.md#i202009298)** <small>ADF 3/2020, 29 Sep 2020</small><br>BD advised that HKIA’s understanding was correct.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

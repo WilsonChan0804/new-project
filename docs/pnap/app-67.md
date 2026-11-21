@@ -109,6 +109,17 @@ tags:
         - 遮陽篷**伸出街道**而沒有《建築物條例》第 31(1) 條的豁免。
         - 忘記在**申請動工同意書前**提交 **OTTV 摘要表**（B(A)R 第 10 條規定）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Overall Thermal Transfer Value (OTTV) and Residential Thermal Transfer Value (RTTV)](../apsec/2024.md#i2024080930)** <small>ADF 3/2024, 9 Aug 2024</small><br>Members noted and supported the streamlining measures. In response to Members’ enquiry, BD advised that the EE Report could be submitted at any time before the application for OP.
+- **[Submission of Overall Thermal Transfer Value (OTTV) Report for Building without Provision of Air-conditioning](../apsec/2024.md#i202405034)** <small>ADF 2/2024, 3 May 2024</small><br>BD advised that pursuant to section 3 and the Schedule of the Building (Energy Efficiency) Regulation (B(EE)R), buildings to which the B(EE)R applied included commercial buildings and hotels, irrespective of whether such buildings were equipped with air-conditioning system. …
+- **[Requirements on Sunshades – PNAP APP-19 and APP-67](../apsec/2023.md#i202308049)** <small>ADF 3/2023, 4 Aug 2023</small><br>BD advised that according to PNAP APP-19, genuine sunshades solely used for the purpose of energy conservation projecting not more than 1.5 m from the external wall complying with the criteria set out in PNAP APP-67 and APP-156 were not accountable for GFA and site coverage. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

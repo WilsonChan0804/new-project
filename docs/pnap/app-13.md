@@ -57,6 +57,19 @@ tags:
         - **修訂圖則**仍在審批時便呈交 BA12／13。
         - 佔用許可證階段欠缺紀錄圖則及物料／產品清單。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Minor Amendment Submission to be Approved Prior to Application](../apsec/2025.md#i2025080818)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that according to paragraph 3 of PNAP APP-13, AP/RSE/RGE should submit and secure approval of amendment plans in advance of an application for OP, subject to the exception that minor positional deviations from the approved plans which do not contravene the Buildings Ordinance (BO) and its subsidiary regulations might …
+- **[Acknowledgment of Form BA14](../apsec/2022.md#i2022112516)** <small>ADF 5/2022, 25 Nov 2022</small><br>BD advised that as discussed in item 19 of ADF 5/2021 held on 12 November 2021, BD had been monitoring regularly and reminding staff on processing submissions of Form BA14 in a timely manner. Designated teams had been set up to clear the long outstanding Form BA14. BD would continue to monitor the situation. …
+- **[Record Plan submissions](../apsec/2022.md#i2022081212)** <small>ADF 4/2022, 12 Aug 2022</small><br>BD advised that according to paragraph 5 of PNAP APP-13, the record plans should bear either the signed and dated approval chop applied by the BA or a chop giving the AP’s personal certification of the plans being identical to those approved by the BA on the date specified.
+- **[Submission of Information and Documents upon Certification of Completion of Building Works and/or OP Application](../apsec/2022.md#i2022031822)** <small>ADF 2/2022, 18 Mar 2022</small><br>Members noted and would follow the arrangement accordingly.
+- **[Streamlined Procedure to Facilitate the Processing of Form BA13/14 Submission](../apsec/2021.md#i202103199)** <small>ADF 2/2021, 19 Mar 2021</small><br>BD advised that the summary table only served the purpose as a sample for the RSE to follow. RSE should make appropriate modification to ensure all relevant conditions and requirements imposed in the approvals were incorporated in the table. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

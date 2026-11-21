@@ -170,6 +170,17 @@ tags:
         - 排水渠坡度低於**表 29**，或 **60 米**內沒有沙井。
         - 在屋宇署**測試前**回填排水渠溝（第 73 條）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Cleaning Eye Provision for Drainage](../apsec/2024.md#i202402235)** <small>ADF 1/2024, 23 Feb 2024</small><br>BD advised that access points in sunken slab should be provided to facilitate inspection of every part of the pipe works and clearance of any blockage thereof in accordance with paragraph 5 of PNAP APP-93. …
+- **[Sunken Slab at Single Family House and G/F of Apartment](../apsec/2023.md#i202305051)** <small>ADF 2/2023, 5 May 2023</small><br>According to paragraph 5 of PNAP APP-93, sunken slab design complying with the relevant requirements should be considered as an acceptable solution to satisfy the requirement set out in paragraph 3(d) of PNAP APP-93, which stated that “for domestic buildings other than those intended for single occupancy or single family …<br><small>Latest position; replaces earlier discussion on [26 Nov 2020](../apsec/2020.md#i202011264) 以此為最新立場</small>
+- **[Installation of Sanitary Fitments/Fittings after OP](../apsec/2019.md#i201903225)** <small>ADF 2/2019, 22 Mar 2019</small><br>BD reiterated that basic sanitary fitments required under the building regulations should be installed prior to the issue of an OP. Arising from reports of sanitary fitments and other fixtures/fitting in new buildings being discarded upon occupation, for the purpose of waste reduction, BD had been adopting a pragmatic approach …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

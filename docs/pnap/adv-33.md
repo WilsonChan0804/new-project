@@ -139,6 +139,27 @@ tags:
         - 按 A1 A 部及 B／C 的轉介清單核對**圖則套數**。
         - 幕牆方面，配合 [APP-37](app-37.md) 使用 **B4**，以及新增的 **B12** 預埋件細節。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[PNAP ADM-19 – Building Approval Process According to PNAP ADM-19 – Building Approval Process, under the](../apsec/2026.md#i2026050810)** <small>ADF 2/2026, 8 May 2026</small><br>7 for Appendix B11 to PNAP ADV-33 in the structural plan submission of Large supporting frames for building services, the RSE would not be requested to submit the structural calculations of supporting frames to BD for the consideration of plan approval. …
+- **[PNAP APP-84 Telecommunications and Broadcasting Services According to Appendix A1 of PNAP ADV-33, the telecommunications](../apsec/2026.md#i2026020612)** <small>ADF 1/2026, 6 Feb 2026</small><br>on the it is not
+- **[General Building Plans (GBP) for Stage II Approval and Maintenance](../apsec/2025.md#i202505096)** <small>ADF 2/2025, 9 May 2025</small><br>BD advised that according to PNAP ADV-33, it was essential that all information required under stage II approval be submitted for approval prior to applying for consent to commence superstructure works. However, this did not imply that the M&R plan must be submitted concurrently with the first GBP amendment plans. …
+- **[Assessment of Occupant Capacity](../apsec/2023.md#i2023111722)** <small>ADF 4/2023, 17 Nov 2023</small><br>BD advised that separate assessments of occupant capacity within a room, a fire compartment and a storey were all required for demonstrating the compliance with different requirements under the FS Code, including the minimum number and width of exit doors and exit routes under Table B2 of the same code. …
+- **[Submissions of Secondary Building Elements – Metal Ceiling](../apsec/2022.md#i202211251)** <small>ADF 5/2022, 25 Nov 2022</small><br>BD advised that HKIA’s understanding was correct, provided that the secondary building elements had been indicated in the general notes and/or with typical details in the GBP.
+- **[Streamlining the Plan Approval Process](../apsec/2022.md#i2022011410)** <small>ADF 1/2022, 14 Jan 2022</small><br>BD reminded the statutory duties of AP in complying with the provisions under the BO and its subsidiary regulations and advised that good quality of the building plans prepared by AP would definitely relief the workload of AP and BD’s staff arising from amendments necessary for approval. …
+- **[Streamlining of Structural Submission of Secondary Building Elements](../apsec/2021.md#i2021111224)** <small>ADF 5/2021, 12 Nov 2021</small><br>Members of HKIE would liaise with the sub-consultants of curtain wall to work out some sample drawings for BD’s consideration. BD advised that the streamlining measures would be extended to cover 2 to 3 more types of secondary building elements in sequence proposed by members and a working group would be formed in due course. …
+- **[Supporting Frame for Suspended AC Plant / Mechanical Ventilation Plant](../apsec/2021.md#i202105217)** <small>ADF 3/2021, 21 May 2021</small><br>BD advised that a meeting with representatives of HKIA, HKIE and AAP would be arranged for discussion on the subject matter separately. [Post-meeting note issued on 25 June 2021: A meeting with representatives of HKIA, HKIE and AAP was held on 21 May 2021, at which the practitioners reflected that there were practical …
+
+??? note "2 more APSEC items 更多項目"
+
+    - **[Structural Plan Submissions of Secondary Building Elements](../apsec/2021.md#i2021012214)** <small>ADF 1/2021, 22 Jan 2021</small><br>Members of HKIE welcomed BD’s facilitating measures and gave initial suggestions in respect of the details in the sample drawings. Further comments from HKIE members would be conveyed to BD for consideration. …
+    - **[Design for Safety](../apsec/2017.md#i201711177)** <small>ADF 5/2017, 17 Nov 2017</small><br>BD advised that focusing with AC platforms which were disregarded/exempted from SC/PR, if access for maintenance and repair (M&R) of AC units thereon including their replacement was through openings envisaged in the said circular letter and the AC platforms were also designed according to guidelines by CIC (on cast-in anchors …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

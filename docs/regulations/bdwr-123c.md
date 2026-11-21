@@ -77,6 +77,15 @@ tags:
         - 未截斷設施供應及未裝妥斜柵和防塵網便開始拆卸。
         - 碎料堆積或在上層樓面放置挖掘機令樓面超載。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Application for Consent to Commencement of A&A works involving Removal of Structure](../apsec/2024.md#i2024022313)** <small>ADF 1/2024, 23 Feb 2024</small><br>BD advised that the Building (Demolition Works) Regulations applied to the demolition of a building or of any substantial or significant part of a building. For A&A works involving demolition of any substantial or significant part of a building, precautionary and other protective measures including propping and temporary …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

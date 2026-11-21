@@ -111,6 +111,15 @@ Roof-top structures are **not counted**, unless: 天台構築物**不計入**，
         - 把大型圍封的**天台會所**（> 屋頂面積 50%）當作天台構築物。
         - 以停車層表示的高度限制：該層 ≥ **50%** 須作停車用途（第 8 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[JPN5 – Building Height Restriction](../apsec/2019.md#i2019082314)** <small>ADF 4/2019, 23 Aug 2019</small><br>Since PlanD was the authority on building height restriction as stipulated in JPN5, the issue would be referred to PlanD for clarification in the Joint Sub-committee on Streamlining Development Control under LDAC.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

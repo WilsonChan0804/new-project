@@ -151,6 +151,15 @@ tags:
         - 空中花園欄杆：實心部分 ≤ **1,250 毫米**，其上開口 ≥ **3,000 毫米**，對流通風及綠化範圍方可計算（註腳 5）。
         - **沒有公用樓梯**的屋宇，在地契下不能獲加闊走廊豁免（第 9(a) 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Site Coverage and Open Space Provision](../apsec/2021.md#i202108131)** <small>ADF 4/2021, 13 Aug 2021</small><br>BD advised the following: For (1), HKIA’s understanding was correct. For (2), according to footnote 3 under PNAP APP-132, ‘the “total covered area” is the portion of the site covered by building(s) or in simple terms, the footprint of the shadow cast vertically down onto a site… but exclude the projections under PNAP APP-19’. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

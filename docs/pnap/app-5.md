@@ -95,6 +95,18 @@ tags:
         - 把**頂層 4 米**套用於複式單位的兩層。
         - 轉換層**大於大廈最低層的 2 倍**（例如延伸至平台上方）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Maximum Headroom of Required Staircases for Common Use](../apsec/2023.md#i202311178)** <small>ADF 4/2023, 17 Nov 2023</small><br>BD advised that the HKIA’s understanding was correct. 5 of the said of the Would 8
+- **[Height of Storeys](../apsec/2022.md#i202208123)** <small>ADF 4/2022, 12 Aug 2022</small><br>BD advised that provided that the storey height of the flat at topmost floor did not exceed 4 m as well as the common area outside was of genuine design and its abuse was unlikely, the BA would favourably consider accepting the common corridor with high storey height on a case-by-case basis.
+- **[Thickness of Transfer Plate](../apsec/2019.md#i2019082316)** <small>ADF 4/2019, 23 Aug 2019</small><br>To facilitate a thorough discussion, HKIE would submit examples with figures for BD’s consideration.
+- **[Clear Height of Balcony/Utility Platform](../apsec/2019.md#i201908236)** <small>ADF 4/2019, 23 Aug 2019</small><br>BD advised that HKIA’s understanding was correct.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

@@ -132,6 +132,17 @@ tags:
         - 樓層回收室上鎖或位於私人地方，未能**方便進出**（第 12B 條）。
         - 垃圾桶運送路線有梯級或斜道坡度大於 **1:20**。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Drainage of Refuse Storage and Material Recovery Chambers](../apsec/2024.md#i2024022316)** <small>ADF 1/2024, 23 Feb 2024</small><br>BD advised that there was no requirement on the provision of surface channel near the entrance door of the RSMRC. BD also advised that the outlet drain should be provided on the floor of RSMRC to facilitate cleansing of the floor. …
+- **[GFA Calculations of Fan Room serving Refuse Storage and Material Recovery Rooms (RS&MRR)](../apsec/2022.md#i202208124)** <small>ADF 4/2022, 12 Aug 2022</small><br>BD advised that subject to the merits of and justifications provided for each case, a centralised ventilation system plant room for the purpose of provision of mechanical ventilation and air purifying facilities for refuse storage and material recovery rooms under the Building (Refuse Storage and Material Recovery Chambers and …
+- **[Provision and Size of Refuse Storage and Material Recovery Room (RS&MRR) and Refuse Storage and Material Recovery Chamber](../apsec/2021.md#i2021111223)** <small>ADF 5/2021, 12 Nov 2021</small><br>Noting that BEAM Plus 2.0 was currently applied to all newly registered development projects, BD advised that provision of RS&MRR and RS&MRC with reference to the guidelines under BEAM Plus would be accepted for consideration of disregarding such from GFA calculation.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

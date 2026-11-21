@@ -148,6 +148,21 @@ tags:
         - 平台上設多座大廈：每座大廈及平台須設**獨立的**電訊及廣播設備房（第 9 段）。
         - **少於 10 平方米**的流動通訊設備房**不獲豁免**。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Hostels in the City Scheme – Provision of Access Facilities Telecommunications and Broadcasting Services](../apsec/2026.md#i2026050813)** <small>ADF 2/2026, 8 May 2026</small><br>for BD advised that student hostel was a specified building where access facilities for telecommunications and broadcasting services should be provided under regulation 28A of the B(P)R. …
+- **[PNAP APP-84 Telecommunications and Broadcasting Services According to Appendix A1 of PNAP ADV-33, the telecommunications](../apsec/2026.md#i2026020612)** <small>ADF 1/2026, 6 Feb 2026</small><br>on the it is not
+- **[PNAP APP-84 - Access Facilities for Telecommunications and Broadcasting Services](../apsec/2026.md#i202602066)** <small>ADF 1/2026, 6 Feb 2026</small><br>of BD advised that according to regulation 28A of B(P)R, every specified of building shall be provided with access facilities for telecommunications and and broadcasting services in accordance with PNAP APP-84 for the approval of GBP. …
+- **[Mobile Access Facilities (MAF) – PNAP APP-84](../apsec/2025.md#i202508087)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that according to paragraph 3 of PNAP APP-84, the Telecommunications (Amendment) Ordinance 2024 was enacted to amend section 14 of the Telecommunications Ordinance so that MNOs were granted access right to place and maintain MAF in specified buildings. …
+- **[Briefing Session on Revised PNAP APP-84](../apsec/2024.md#i2024112224)** <small>ADF 4/2024, 22 Nov 2024</small><br>Members noted.
+- **[Gross Floor Area (GFA) Concessions for Air Conditioning (AC) Plant Rooms serving Essential Plant Rooms](../apsec/2024.md#i202411225)** <small>ADF 4/2024, 22 Nov 2024</small><br>BD advised that according to PNAP APP-84, the maximum area of TBE room that could be disregarded from GFA calculation had already accommodated the area of plants supporting the operation of the access facilities for telecommunications and broadcasting. …
+- **[Provision of Telecommunications and Broadcasting (TBE) Room in Existing Shopping Arcade](../apsec/2024.md#i202405031)** <small>ADF 2/2024, 3 May 2024</small><br>For existing buildings without the provision of TBE room in the original approved design, BD advised that unless the proposed A&A works would result in a new building where not less than one half measured by volume was rebuilt or the building was altered to such an extent as to necessitate the reconstruction of not less than …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

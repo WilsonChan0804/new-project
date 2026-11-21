@@ -32,6 +32,15 @@ tags:
     - 自 **2005 年**起強烈建議認可人士**自願**採用建議，改善辦公室、商場、百貨公司、公眾娛樂場所及戲院**女性衞生設備不足**的問題（第 2 段）。
     - 最終建議將透過**修訂法例**推行；在此之前建議採用本備考的修訂數量表（第 3 段起）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Accessible Toilets](../apsec/2025.md#i202508081)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that sanitary fitments in accessible toilets could be included for the assessment of provision of sanitary fitments for either male or female person. According to paragraph 12 of PNAP ADV-28, AP should indicate clearly on plans whether such unisex toilets were additional provision or counted as provision for male or …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

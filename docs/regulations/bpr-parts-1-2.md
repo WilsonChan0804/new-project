@@ -136,6 +136,18 @@ tags:
         - 向街道開啟的雜用房門在完全開啟時**阻礙**行人路（第 15(2) 條）。
         - 簷篷設有門通往其頂部（第 12 條），亦會引起總樓面面積及僭建問題。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Site Coverage Flexibility under PNAP APP-132 – Aggregated Site Coverage](../apsec/2023.md#i202311173)** <small>ADF 4/2023, 17 Nov 2023</small><br>BD advised that in accordance with regulation 2 of the B(P)R, site coverage referred to the area of the site that was covered by the building that was erected thereon. …
+- **[Projections from External Wall – PNAP APP-19](../apsec/2022.md#i202208126)** <small>ADF 4/2022, 12 Aug 2022</small><br>For the purpose of PNAP APP-19, BD accepted that part of the architectural feature wrapping around the corner of a building as shown in the sketch plan need not be counted for SC and PR. Reference was made to item 12 of ADF 5/2012 held on 26 October 2012, in which similar consideration was applied to curtain wall situation.
+- **[Canopy Projection](../apsec/2022.md#i2022051315)** <small>ADF 3/2022, 13 May 2022</small><br>BD advised that the area covered by a canopy projecting not more than 2 m within the site boundary, over the entrance of a building, might be favourably considered for exemption from GFA calculation as per PNAP APP-19. …
+- **[“Verandah” under Building (Planning) Regulation](../apsec/2021.md#i2021052115)** <small>ADF 3/2021, 21 May 2021</small><br>BD advised that while the interpretation of “verandah” under Residential Properties (First-hand Sales) Ordinance was not under the purview of BD, the 3 cases as illustrated in the diagram were not considered as “verandah” under B(P)R 2.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

@@ -121,6 +121,16 @@ A signboard over a street is allowed only if its location and dimensions do **no
     - **第 33 條追討費用**：如屋宇署代為進行工程，業主須支付**費用 + 最高 20% 附加費 + 監工費 + 年息 10%**，因此有充分理由遵從命令。
     - **第 39C 條檢核**：為常見小型僭建物（冷氣機支架、晾衣架、小型簷篷、招牌、適意設施）提供的實際寬免：經檢查、核證及加固後，屋宇署不會**僅因未經批准**而命令清拆。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Use of Tied-Back Wall Support System for Excavation Works Paragraph 10 of the Information Note of LandsD attached to BD’s](../apsec/2026.md#i2026081411)** <small>ADF 3/2026, 14 Aug 2026</small><br>into ground reinforcements encroaching into Government land, including road, public roads, streets or footpaths currently maintained by HyD, BD will be the consult the relevant government departments under the centralised processing system and collate their comments within time limits allowed for processing the plan. …
+- **[Sites separated by a Street under the Same Lease](../apsec/2022.md#i202203181)** <small>ADF 2/2022, 18 Mar 2022</small><br>In principle, if a single lot was completely divided by a public street, the subject lot would then be regarded as two separate sites under the Buildings Ordinance (BO). …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

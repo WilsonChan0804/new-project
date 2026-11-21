@@ -147,6 +147,17 @@ tags:
         - 簷篷**沒有排水**，雨水直接流到行人身上。
         - 忘記平板側邊及轉角**回頭欄杆**的額外荷載。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Definition of Span in Clause 9.4.1 of Code of Practice for Structural](../apsec/2026.md#i202605088)** <small>ADF 2/2026, 8 May 2026</small><br>Use or slab BD confirmed that the span specified in Clause 9.4.1 of the Concrete Code There is should refer to the clear span of cantilevered structure. Is it the APP-68 BD advised that an amendment to the Concrete Code was being prepared to incorporate the updated design and construction requirements for where cantilevered …<br><small>Latest position; replaces earlier discussion on [10 Feb 2023](../apsec/2023.md#i2023021020) 以此為最新立場</small>
+- **[Cantilevered Reinforced Concrete Structure](../apsec/2019.md#i2019082313)** <small>ADF 4/2019, 23 Aug 2019</small><br>BD confirmed that the submission of construction report and Form BA14 would not be required for AC platform with clear span exceeding 750mm provided that the criteria stated in the footnote of PNAP APP-68 were fulfilled.
+- **[Design and Disposition of AC Platform](../apsec/2018.md#i201808174)** <small>ADF 4/2018, 17 Aug 2018</small><br>BD advised that relaxation on the required level difference between balcony/UP and the adjoining AC platform would be considered on a case basis with due regard to the circumstances and difficulties of individual cases. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

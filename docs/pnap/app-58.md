@@ -31,6 +31,16 @@ tags:
     - 註冊承建商及註冊專業人士負責確保合規，建築事務監督只作監察；根據第 73(1) 條進行的**排水測試**必須由**認可人士**或其代表**出席**，不論建築事務監督是否巡查（第 1 段）。
     - 註冊承建商與認可人士安排測試並向建築事務監督申請（副本送認可人士）；認可人士見證、簽署結果，並在 **7 天**內提交**排水工程測試完成證明書**（附錄）（第 2 段）；程序見註冊承建商作業備考第 11 號（第 3 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Enhanced Communication and Timely Submission of Documents](../apsec/2021.md#i2021081315)** <small>ADF 4/2021, 13 Aug 2021</small><br>For items 1 and 2, members shared their experience in handling site incidents concerning quality of works and the difficulties encountered for timely submission of structural documents to BD. …
+- **[Arrangement of Approval for Vent Pipe Design following Design B](../apsec/2017.md#i2017111714)** <small>ADF 5/2017, 17 Nov 2017</small><br>BD would follow up on the issue accordingly. [Post-meeting notes: As subsequently clarified with Carolin of AAP, this item was withdrawn.]
+
+<!-- APSEC END -->
+
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>
 

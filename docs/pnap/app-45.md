@@ -33,6 +33,15 @@ tags:
     - 屋宇署接受 **CS2:2012**：**250** 級（≤ 12 毫米）、**500B** 及 **500C** 級，涵蓋每米質量、化學成分、機械及黏結性能，以及品質保證供應商及盤條加工商認證（第 2 段）。
     - 測試為 CS2 的**買方測試**，由 **HOKLAS** 認可實驗所進行；報告須列明品質保證類別、製造商及來源地、肋紋及軋製標記、批次及送貨日期（第 3–4 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[PNAP APP-45](../apsec/2019.md#i201905248)** <small>ADF 3/2019, 24 May 2019</small><br>BD advised that under the streamlined arrangement as stipulated in the PNAP APP-45, the testing date of rebars by the Approved Yard could be earlier than the consent date of the building works. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

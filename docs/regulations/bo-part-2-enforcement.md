@@ -136,6 +136,15 @@ tags:
         - 收到**停工令**後繼續施工，而不是使地盤安全並停工（第 23(4) 條）。
         - 阻塞或改動**緊急車輛通道**（例如花槽、閘門、泊車），可能觸發**第 29A 條**命令。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Construction Site Safety](../apsec/2023.md#i2023111724)** <small>ADF 4/2023, 17 Nov 2023</small><br>Members agreed that construction site safety was of paramount importance. However, they considered that site operation relating to labour safety should be the responsibility and under the expertise of contractors, hence, AP/RSE/RGE should not be liable for the malpractice of the contractors causing such site safety incidents. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

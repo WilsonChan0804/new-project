@@ -146,6 +146,17 @@ tags:
         - 業主「安排」小型工程而沒有委任所需的訂明建築專業人士／訂明註冊承建商，屬第 4A／9AA 條**罪行**。
         - 改動加建工程規模大至令建築物成為**新建築物**。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Large-scale Televisions and LED Displays in Internal Space](../apsec/2024.md#i202411221)** <small>ADF 4/2024, 22 Nov 2024</small><br>BD advised that pursuant to section 2 of the BO, ‘signboard’ means a hoarding, framework, scaffolding or other structure erected solely for the purpose of displaying any advertisement, making any announcement or notification, or displaying any visual image or other information. …
+- **[Provision of Building Logo at Building Rooftop](../apsec/2020.md#i2020092919)** <small>ADF 3/2020, 29 Sep 2020</small><br>BD advised that according to section 2 of the Buildings Ordinance, the building name / logo as shown in the diagrams was considered as “signboard” for the purpose of displaying visual image or other information. …
+- **[PNAP ADM-8](../apsec/2018.md#i2018011914)** <small>ADF 1/2018, 19 Jan 2018</small><br>Members noted and would assist to facilitate BD’s review. 13 Practice Note for Authorized Persons, Registered Structural Engineers and APP-96 Registered Geotechnical Engineers Contractors and Specialist Contractors covers solely the registration of general building Minor works contractors registration is Note for Authorized …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

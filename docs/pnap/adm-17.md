@@ -30,6 +30,15 @@ tags:
     - 根據**《電子交易條例》（第 553 章）**，如電子紀錄可供日後查閱即符合「書面」要求；以認可證書支持的**數碼簽署**符合簽署要求（2000 年 4 月 7 日生效）（第 1–3 段）。
     - 屋宇署指定的系統包括接收圖則、文件及表格的**電子呈交平台**及第 4 段所列其他系統；其後各段訂明檔案格式、簽署及呈交程序。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Submission in Electronic Format](../apsec/2019.md#i2019011812)** <small>ADF 1/2019, 18 Jan 2019</small><br>Members appreciated the effort of the Government in promoting electronic submission and were keen to see the development of the ESH. As a trial, Members suggested that submission of documents other than plans in electronic format might be considered. BD would study the feasibility and follow up accordingly.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

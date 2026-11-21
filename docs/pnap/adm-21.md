@@ -33,6 +33,15 @@ tags:
     - 一般建築圖則須以**詳細地契圖則或土地測量圖**證明地盤參數（B(A)R 第 8(1)(h)(i) 條；ADV-33）（第 2 段）；認可人士須在核證完工前確保參數準確並已更新（第 3 段）。
     - 常見證明：地政處的**地契圖則**（面積、地界及坐標）；由認可土地測量師擬備的**土地測量圖**；其他見第 4 段。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Discrepancy in Presentation of Site Area/Dimensions](../apsec/2019.md#i201901188)** <small>ADF 1/2019, 18 Jan 2019</small><br>BD noted the discrepancy due to unit conversion and would further advise after checking with their Drawing Office. [Post Meeting Notes: BD confirmed that there was no change in the policy on the subject matter and paragraph 9 of PNAP ADM-21 should be followed.]
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

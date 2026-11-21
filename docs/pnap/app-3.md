@@ -33,5 +33,14 @@ tags:
     - 一份 BA21 可列出**所有進行中項目**；在不同認可人士下工作的結構／岩土工程師須按每位認可人士各交一份並由其簽署；代行人與屋宇署通訊時須註明根據較早的 BA21 行事（第 2 段）。
     - 代行人須具**相同註冊資格**，並在代行期間承擔責任（其後各段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Temporary Acting during Absence of AP/RSE/RGE According to BO Section 4(2) and B(A)R 23(2), if AP/RSE/RGE is absent](../apsec/2018.md#i201803233)** <small>ADF 2/2018, 23 Mar 2018</small><br>administration works. The AP/RSE/RGE in temporary absence of less than 24 hours would still be responsible for the supervision of their projects. BD replied that there were no provisions under the BO that the submission of Form BA21 could be waived for a short period of temporary absence from Hong Kong. …
+
+<!-- APSEC END -->
+
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>

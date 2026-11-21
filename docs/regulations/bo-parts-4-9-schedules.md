@@ -145,6 +145,18 @@ tags:
         - 錯過 **21 天**上訴期限（第 47 條）。
         - 以為政府或房屋委員會土地的豁免同樣適用於在該土地上進行的私人工程。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Structural Submission for Maintenance Platforms](../apsec/2026.md#i2026081410)** <small>ADF 3/2026, 14 Aug 2026</small><br>or BD advised that except for minor works commenced under the simplified requirements and building works exempted under section 41 of the BO , no person shall commence or carry out any building works without having 6 obtained a prior approval and consent from the BA. …
+- **[Minor Works - Partition Walls inside Flats](../apsec/2025.md#i2025021420)** <small>ADF 1/2025, 14 Feb 2025</small><br>BD advised that the erection of dry wall partition of relatively low density in a flat did not fall into any minor works items. Provided that the works were not carried out in contravention of any regulations related to the standards of fire safety, structural safety, drainage works, etc., the works should be considered as …
+- **[Incorporating Conditions of Modifications/Exemptions in final General Building Plan (GBP) Amendment Submission](../apsec/2022.md#i2022081220)** <small>ADF 4/2022, 12 Aug 2022</small><br>BD advised that according to paragraph 14 of PNAP ADM-2, in order to ensure that the imposed conditions were fulfilled and the parameters for granting modifications/exemptions could be made known to the public and any person who might have an interest in such building/building works, it was one of the conditions imposed in the …
+- **[Deferring Submission of Minor Amendments for Ground Investigation Works within Scheduled Areas](../apsec/2019.md#i201901182)** <small>ADF 1/2019, 18 Jan 2019</small><br>BD advised that paragraph 18 of PNAP ADM-19 regarding deferring submission of minor amendments was NOT applicable to Ground Investigation Works within Scheduled Areas since it normally involves complex ground condition, major underground utilities or existing railway facilities, etc. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

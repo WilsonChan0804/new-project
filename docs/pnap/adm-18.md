@@ -31,6 +31,15 @@ tags:
     - 建築事務監督可根據**條例第 22 條**進入地盤檢查合規情況；審查協助註冊人士履行監督職責，並及早發現結構問題（第 1–2 段）。
     - 策略：**突擊檢查**；詳細檢查**地基及上蓋**工程；**按表現決定頻率**；時間不可預測；圖則審核與審查分開；人員輪換；集中於**結構安全**（第 3 段）；審查項目見附錄（第 4 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Arrangement for Rebound Hammer Test](../apsec/2026.md#i202608145)** <small>ADF 3/2026, 14 Aug 2026</small><br>BD advised that according to paragraph 3 of PNAP ADM-18 on site without auditing for building works, BD would conduct surprise checks to audit surfaces building works without prior notification. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

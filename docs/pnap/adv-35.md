@@ -32,6 +32,15 @@ tags:
     - 綠化是否屬**建築工程**視乎固定程度、永久性、用途、大小、相關工程及拆除難易；例如**固定花槽屬建築工程**，鋪泥及種植則不是（第 2 段）。
     - 部分綠化工程屬**小型工程**（APP-147）（第 3 段）；其後各段涵蓋結構荷載、排水、消防及維修。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Protective Barrier for Greening](../apsec/2018.md#i201808175)** <small>ADF 4/2018, 17 Aug 2018</small><br>BD advised that protective barrier would not be required for planter which was inaccessible. Reference should be made to the design and construction requirements of protective barriers as laid down in PNAP APP-110, in particular, paragraph 3 on the measurement of height of a barrier which should be measured from the finished …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

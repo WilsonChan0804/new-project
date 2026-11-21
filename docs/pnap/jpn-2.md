@@ -127,6 +127,17 @@ tags:
         - 工作平台須與露台相距 **≥ 1.5 米**，除非按 2021 年《外部維修通道守則》附錄 B 設計。
         - 地契：現有地契下，以預製外牆取代現場澆築牆而**增加的實用面積**，或須**補地價**（附錄 B 圖 1）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Separation Between Utility Platform and Balcony](../apsec/2021.md#i202105216)** <small>ADF 3/2021, 21 May 2021</small><br>BD advised that according to JPN2, there was a 1.5 m separation requirement between the UP and balcony. In some circumstances, BD might relax such requirement taking into account the chance of abuse. To this end, the proposed layout as shown on the sketch was considered not acceptable.<br><small>Latest position; replaces earlier discussion on [22 Jan 2021](../apsec/2021.md#i2021012210) 以此為最新立場</small>
+- **[Separation between 2 connecting Utility Platforms](../apsec/2018.md#i201803235)** <small>ADF 2/2018, 23 Mar 2018</small><br>BD confirmed that AAP’s understanding was correct. BD would take into account the likelihood of abuse after occupation in vetting the submission.
+- **[Size of Utility Platform (UP)](../apsec/2018.md#i201801196)** <small>ADF 1/2018, 19 Jan 2018</small><br>BD advised that the size of UP was determined based on its designed function and should be irrespective of the unit size. The reduction of GFA concession for UP in 2011 was one of the recommendations proposed by the Council for Sustainable Development (SDC) after a public engagement exercise aiming to address the public …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

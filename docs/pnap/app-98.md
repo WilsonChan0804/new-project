@@ -41,6 +41,17 @@ tags:
 | Duct access 風管檢修門 | 150 × 225 mm (ducts ≥ 150 × 150) or 100 × 225 mm, every **4 m** and at bends / dampers |
 | Gas water heater 熱水爐 | B(P)R 35A and [APP-27](app-27.md) |
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Rooms Containing Soil Fitments – Regulation 36(2) of the B(P)R](../apsec/2025.md#i202508086)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that the concerned modification of regulation 36 of the B(P)R could be applied to either the lighting or ventilation requirement.
+- **[Aperture protected with Ventilating Louvres for Internal Bathroom](../apsec/2024.md#i2024080928)** <small>ADF 3/2024, 9 Aug 2024</small><br>BD advised that AAP’s proposed provision of louvre for compliance with the requirements in paragraph 3(b) of PNAP APP-98 was acceptable. 32
+- **[Provision of Reduced Size Light Well to Enhance Natural Ventilation](../apsec/2018.md#i2018011912)** <small>ADF 1/2018, 19 Jan 2018</small><br>BD advised that CFD analysis indicated that ventilation performance of reduced size light well (1:18) with bottom opened would be generally better than the standard size light well (1:6). …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

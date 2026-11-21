@@ -56,6 +56,18 @@ markdown_extensions:
 nav:
   - Home 主頁: index.md
   - Timelines & workflows 時間表及流程: workflows.md
+  - APSEC Discussion Forum 討論會:
+      - apsec/index.md
+      - 2026: apsec/2026.md
+      - 2025: apsec/2025.md
+      - 2024: apsec/2024.md
+      - 2023: apsec/2023.md
+      - 2022: apsec/2022.md
+      - 2021: apsec/2021.md
+      - 2020: apsec/2020.md
+      - 2019: apsec/2019.md
+      - 2018: apsec/2018.md
+      - 2017: apsec/2017.md
   - How to use 使用說明: how-to-use.md
   - PNAP & JPN 作業備考:
       - pnap/index.md

@@ -37,6 +37,16 @@ tags:
     - 只作鄰里通道的改道後巷，可正面考慮計算原有後巷面積（第 8 段）；後巷面積**不計入第 25 條的空地**（第 9 段）。
     - 目標為直通及闊 **≥ 3 米**的後巷；免費**交回**土地以改善後巷可獲**地積比率／上蓋面積寬免**，須附圖則及承諾負擔鋪路、排水及照明費用（第 10–13 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[“Means of Escape and Access ” in PNAP APP-73](../apsec/2024.md#i2024022311)** <small>ADF 1/2024, 23 Feb 2024</small><br>BD advised that a service lane, public or private, would not be acceptable as a means of escape and access if it was obstructed, incapable of improvement or obviously in a decaying state as stated in paragraph 5 of PNAP APP-73. …
+- **[Service Lane](../apsec/2021.md#i202103192)** <small>ADF 2/2021, 19 Mar 2021</small><br>BD advised that as per B(P)R 28, 1.5m service lane should be provided within the site of the building. The proposed setback of only 1.2m from the site boundary was considered not acceptable.<br><small>Latest position; replaces earlier discussion on [26 Nov 2020](../apsec/2020.md#i2020112615) 以此為最新立場</small>
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

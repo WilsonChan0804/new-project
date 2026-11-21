@@ -38,6 +38,16 @@ tags:
     - 可委任**另一註冊結構工程師**（BA4／BA5），並附對主結構影響的評估，由項目結構工程師簽署確認（第 7–9 段）。
     - **測試**：6 米以上鑽入式錨栓拉拔測試 **≥ 1.5 倍建議拉力**；石材抗彎（ASTM C880／EN 12372）及錨固（ASTM C1354）測試，每項 **≥ 5 個樣本**；**石灰石**老化測試後須保留 **≥ 80%**；由 T3／T1 適任技術人員檢查石材；佔用許可證前提交獨立測試報告（第 10–16 段）；部分工程屬小型工程（第 17 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Separate RSE for Cladding/Curtain Wall/Façade Works](../apsec/2025.md#i2025080824)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that the project AP/RSE/RC should sign the Form BA13 to certify the completion of building works resulting in a new building and to apply for the OP of such building. …
+- **[Cladding – PNAP APP-16](../apsec/2022.md#i2022051318)** <small>ADF 3/2022, 13 May 2022</small><br>BD clarified that the said requirement was for public safety concerns on fallen objects after the cladding was installed. BD also clarified that paragraph 4 of PNAP APP-16 did not preclude the use of other materials for the cladding. BD advised that there was no specific dimensional requirement (i.e. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

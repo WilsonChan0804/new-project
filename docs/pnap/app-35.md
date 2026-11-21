@@ -147,6 +147,15 @@ tags:
         - 垃圾及物料回收房所在樓層須**經其他樓層**才可到達：須由街道直接駛入（第 3 段）。
         - 須在建築圖則上顯示由公共街道起的**垃圾車路線**（第 3 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Minimum Headroom required for Refuse Collection Vehicles (RCV)](../apsec/2023.md#i202302103)** <small>ADF 1/2023, 10 Feb 2023</small><br>BD advised that the specifications of the RCV currently in use by FEHD specified in PNAP APP-35 were still applicable. In case of high headroom required by FEHD, BD would take a pragmatic approach and consider the case merits subject to AP's justification and the comments of the relevant government departments. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

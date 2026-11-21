@@ -31,6 +31,15 @@ tags:
     - 屋宇署**地盤監察組**有系統地巡查地盤，重點包括與圖則有重大偏差、物料有缺陷、預防措施不足、**欠缺監督**、偏離協定工序、工人經驗不足、不遵從條件或命令及違反條例（第 1 段）。
     - 會建議認可人士／註冊結構工程師／註冊岩土工程師採取糾正措施；制裁包括**命令（第 23、24A 條）**、檢控及紀律處分（第 2 段）；危險工程及階段的巡查較頻密（第 3 段）。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Site Monitoring Inspections](../apsec/2025.md#i2025050920)** <small>ADF 2/2025, 9 May 2025</small><br>Members noted.
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

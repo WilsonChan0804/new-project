@@ -50,6 +50,15 @@ tags:
     **官方中文本：** 裝有本規例適用的通風系統的任何建築物的擁有人須 —— (a)時刻保持通風系統處於安全和有效的操作狀態；及 (b)安排由有關類別的註冊專門承建商每隔不超逾12個月的期間檢查通風系統內的每個防火閘、過濾器及聚塵器。
 
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Access Panel to Air Duct](../apsec/2019.md#i2019032212)** <small>ADF 2/2019, 22 Mar 2019</small><br>BD advised that PNAP APP-93 which set out the requirements for the planning and design of drainage works for new buildings might not be appropriate for application to air duct. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

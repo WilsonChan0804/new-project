@@ -49,6 +49,15 @@ tags:
         - 在**第二次**重建時申請額外地積比率：只適用於第一幢建築物。
         - 批准前沒有登記**交回土地協議**。
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[Street Widening – Agreement to Surrender](../apsec/2019.md#i2019112224)** <small>ADF 5/2019, 22 Nov 2019</small><br>If the area to be surrendered had been specified in the lease, BD would favourably consider to waive the condition requiring the execution of Agreement of Surrender provided that the interest of the Government had been secured by the lease. …
+
+<!-- APSEC END -->
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |
