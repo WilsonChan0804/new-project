@@ -34,7 +34,7 @@ import urllib.request
 import zipfile
 
 from fastapi import HTTPException, Request, Header
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 import codes
@@ -190,13 +190,26 @@ def clean_lines(lines, figures, base_dir):
 
 def parse_page(text, rel):
     """-> page dict, [section dicts]"""
-    tags, body = [], text
+    tags, body, summary, keywords = [], text, "", []
     if text.startswith("---"):
         end = text.find("\n---", 3)
         if end > 0:
             fm = text[3:end]
             body = text[end + 4:]
-            tags = [re.sub(r"\s+#.*$", "", m.group(1)).strip().strip('"\'') for m in re.finditer(r"^\s*-\s+(.+)$", fm, re.M)]
+            # tags: the list under "tags:"; keywords: a list or a comma line; summary: one line
+            block, cur = {}, None
+            for ln in fm.split("\n"):
+                m = re.match(r"^([A-Za-z_]+):\s*(.*)$", ln)
+                if m:
+                    cur = m.group(1).lower()
+                    block[cur] = [m.group(2).strip()] if m.group(2).strip() else []
+                elif cur and re.match(r"^\s*-\s+", ln):
+                    block[cur].append(re.sub(r"^\s*-\s+", "", ln))
+            clean = lambda v: re.sub(r"\s+#.*$", "", v).strip().strip('"\'')
+            tags = [clean(v) for v in block.get("tags", []) if clean(v)]
+            kw = block.get("keywords", [])
+            keywords = [clean(x) for v in kw for x in (v.strip("[]").split(",") if len(kw) == 1 else [v]) if clean(x)]
+            summary = clean(" ".join(block.get("summary", [])))[:400]
     lines = body.split("\n")
     title, zh_title = "", ""
     for ln in lines:
@@ -256,6 +269,12 @@ def parse_page(text, rel):
             newer = m.group(1) if m else ""
         out.append({"heading": s["heading"], "anchor": s["anchor"], "ord": k, "date": s["date"], "superseded": sup, "newer": newer,
                     "en": en[:20000], "zh": zh[:20000], "figures": figs[:8]})
+    if summary:
+        info["summary"] = summary
+    if keywords:
+        info["keywords"] = keywords[:30]
+    if any(t.lower() == "draft" for t in tags):
+        info["draft"] = True
     page = {"path": rel.replace("\\", "/"), "url": url_of(rel), "title": title or rel, "zh": zh_title, "kind": kind, "tags": tags, "info": info}
     return page, out
 
@@ -300,13 +319,17 @@ def index(docs_dir, db_path):
                 cur = c.execute("INSERT INTO sections (page, heading, anchor, ord, date, superseded, newer, en, zh, figures) VALUES (?,?,?,?,?,?,?,?,?,?)",
                                 (pid, s["heading"], s["anchor"], s["ord"], s["date"], 1 if s["superseded"] else 0, s["newer"], s["en"], s["zh"],
                                  json.dumps(s["figures"], ensure_ascii=False)))
-                head = " ".join([s["heading"], page["title"], page["zh"], " ".join(page["tags"])])
+                head = " ".join([s["heading"], page["title"], page["zh"], " ".join(page["tags"]), " ".join(page["info"].get("keywords", []))])
                 c.execute("INSERT INTO sections_fts (rowid, body, head) VALUES (?,?,?)",
                           (cur.lastrowid, codes.index_text(s["en"] + "\n" + s["zh"]), codes.index_text(head)))
                 n_secs += 1
     c.commit()
     c.close()
     os.replace(tmp, db_path)
+    try:
+        overlay_edits()
+    except Exception as ex:
+        print("kb: edits not overlaid: %s" % ex)
     return n_pages, n_secs
 
 
@@ -326,8 +349,10 @@ def search(q, n=6, include_old=False):
         return [], shown
     try:
         rows = [dict(r) for r in c.execute(
-            "SELECT s.*, p.url, p.title, p.zh AS page_zh, p.kind, p.tags, p.info, p.path, bm25(sections_fts, 1.0, 3.0) AS score"
+            "SELECT s.*, p.url, p.title, p.zh AS page_zh, p.kind, p.tags, p.info, p.path, se.names AS edited, se.text AS edit_text,"
+            " bm25(sections_fts, 1.0, 3.0) AS score"
             " FROM sections_fts JOIN sections s ON s.id = sections_fts.rowid JOIN pages p ON p.id = s.page"
+            " LEFT JOIN section_edits se ON se.section = s.id"
             " WHERE sections_fts MATCH ? %s ORDER BY score LIMIT 120" % ("" if include_old else "AND s.superseded = 0"),
             (codes.fts_match(terms),)).fetchall()]
     except sqlite3.OperationalError:
@@ -373,11 +398,136 @@ def snippet(text, terms, n=320):
 
 def public(r, terms):
     figs = json.loads(r["figures"] or "[]")
-    return {"id": r["id"], "url": r["url"], "anchor": r["anchor"], "title": r["title"], "zh": r["page_zh"], "section": r["heading"],
+    info = json.loads(r["info"] or "{}")
+    ed = r.get("edited") or ""
+    return {"draft": bool(info.get("draft")), "summary": info.get("summary", ""), "edited_by": ed,
+            "edits": r.get("edit_text") or "", "id": r["id"], "url": r["url"], "anchor": r["anchor"], "title": r["title"], "zh": r["page_zh"], "section": r["heading"],
             "kind": r["kind"], "kind_label": KIND_LABEL.get(r["kind"], "Page"), "tags": json.loads(r["tags"] or "[]")[:8],
             "date": r["date"], "info": json.loads(r["info"] or "{}"), "snippet": snippet(r["en"] or r["zh"], terms),
             "read": codesread.reflow(r["en"])[:6000], "read_zh": codesread.reflow(r["zh"])[:4000],
             "figures": [dict(f, url="/kb/" + f["src"].lstrip("/")) if not re.match(r"^(https?:)?//", f["src"]) else f for f in figs][:4]}
+
+
+# ------------------------------------------------------------ the edits
+
+EDIT_SCHEMA = """
+CREATE TABLE IF NOT EXISTS edits (id INTEGER PRIMARY KEY, page TEXT, block TEXT, anchor TEXT, text TEXT, note TEXT,
+  original TEXT, uid INTEGER, name TEXT, at INTEGER, undone_at INTEGER, undone_by TEXT, merged_sha TEXT);
+CREATE INDEX IF NOT EXISTS idx_edits_page ON edits(page);
+"""
+
+
+def _edb():
+    c = sqlite3.connect(os.path.join(_dir(), "edits.db"))
+    c.row_factory = sqlite3.Row
+    c.executescript(EDIT_SCHEMA)
+    return c
+
+
+def edit_row(r):
+    return {"id": r["id"], "page": r["page"], "block": r["block"], "anchor": r["anchor"] or "", "text": r["text"], "note": r["note"] or "",
+            "original": r["original"] or "", "uid": r["uid"], "name": r["name"] or "", "at": int(r["at"] or 0) * 1000 // 1000,
+            "undone": bool(r["undone_at"]), "undone_by": r["undone_by"] or "", "merged": r["merged_sha"] or ""}
+
+
+def live_edits(page=None):
+    c = _edb()
+    try:
+        q = "SELECT * FROM edits WHERE undone_at IS NULL" + (" AND page = ?" if page else "") + " ORDER BY at, id"
+        return [edit_row(r) for r in c.execute(q, (page,) if page else ())]
+    finally:
+        c.close()
+
+
+def _norm(t):
+    return re.sub(r"\s+", " ", re.sub(r"[*_`]", "", t or "")).strip().lower()
+
+
+def overlay_edits(page=None):
+    """The edited wording into the search index: each section whose text
+    holds an edit's original (or has its anchor) is found by the new text too."""
+    c = _db()
+    if c is None:
+        return 0
+    n = 0
+    try:
+        pages = {r["path"]: r["id"] for r in c.execute("SELECT id, path FROM pages")}
+        by_sec = {}
+        for e in live_edits(page):
+            pid = pages.get(e["page"]) or pages.get(re.sub(r"(index)?\.html?$|/$", "", e["page"]) + ".md")
+            if not pid:
+                continue
+            secs = list(c.execute("SELECT id, anchor, en, zh FROM sections WHERE page = ?", (pid,)))
+            orig = _norm(e["original"])[:120]
+            hit = None
+            if orig:
+                hit = next((s for s in secs if orig[:60] in _norm(s["en"] + " " + s["zh"])), None)
+            if hit is None and e["anchor"]:
+                hit = next((s for s in secs if s["anchor"] == e["anchor"]), None)
+            if hit is not None:
+                by_sec.setdefault(hit["id"], []).append(e)
+        touched = set(by_sec)
+        if page:
+            pid = pages.get(page)
+            if pid:
+                touched |= {r["id"] for r in c.execute("SELECT id FROM sections WHERE page = ?", (pid,))}
+        c.execute("CREATE TABLE IF NOT EXISTS section_edits (section INTEGER PRIMARY KEY, text TEXT, names TEXT)")
+        for sid in touched:
+            s = c.execute("SELECT s.*, p.title, p.zh AS pzh, p.tags, p.info FROM sections s JOIN pages p ON p.id = s.page WHERE s.id = ?", (sid,)).fetchone()
+            es = by_sec.get(sid, [])
+            extra = "\n".join(e["text"] for e in es)
+            names = ", ".join(dict.fromkeys(e["name"] for e in es if e["name"]))
+            c.execute("DELETE FROM sections_fts WHERE rowid = ?", (sid,))
+            info = json.loads(s["info"] or "{}")
+            head = " ".join([s["heading"], s["title"], s["pzh"], " ".join(json.loads(s["tags"] or "[]")), " ".join(info.get("keywords", []))])
+            c.execute("INSERT INTO sections_fts (rowid, body, head) VALUES (?,?,?)", (sid, codes.index_text(s["en"] + "\n" + s["zh"] + "\n" + extra), codes.index_text(head)))
+            if es:
+                c.execute("INSERT OR REPLACE INTO section_edits (section, text, names) VALUES (?,?,?)", (sid, extra[:6000], names))
+            else:
+                c.execute("DELETE FROM section_edits WHERE section = ?", (sid,))
+            n += 1
+        c.commit()
+    finally:
+        c.close()
+    return n
+
+
+def mark_merged(sha):
+    """An edit whose new wording is now in the source (and its original gone) is merged."""
+    c = _db()
+    if c is None:
+        return 0
+    n = 0
+    try:
+        text = {}
+        for r in c.execute("SELECT p.path, s.en, s.zh FROM sections s JOIN pages p ON p.id = s.page"):
+            text[r["path"]] = text.get(r["path"], "") + " " + _norm(r["en"] + " " + r["zh"])
+    finally:
+        c.close()
+    e = _edb()
+    try:
+        for r in e.execute("SELECT * FROM edits WHERE undone_at IS NULL AND (merged_sha IS NULL OR merged_sha = '')").fetchall():
+            t = text.get(r["page"], "")
+            new, old = _norm(r["text"])[:60], _norm(r["original"])[:60]
+            if t and new and new in t and (not old or old not in t):
+                e.execute("UPDATE edits SET merged_sha = ? WHERE id = ?", (sha or "merged", r["id"]))
+                n += 1
+        e.commit()
+    finally:
+        e.close()
+    return n
+
+
+def edits_markdown(rows):
+    out = ["# Knowledge base edits made in the LWK Viewer", "",
+           "Apply each to the Markdown source (find the original text on the page), then commit. %d edits." % len(rows), ""]
+    for e in rows:
+        out += ["## %s%s" % (e["page"], (" #" + e["anchor"]) if e["anchor"] else ""),
+                "- **By** %s, %s%s" % (e["name"] or "?", time.strftime("%Y-%m-%d %H:%M", time.localtime(e["at"] / 1000.0 if e["at"] > 1e11 else e["at"])),
+                                      (" - why: " + e["note"]) if e["note"] else ""),
+                "- **Edit id** %d · block `%s`%s" % (e["id"], e["block"], " · undone" if e["undone"] else ""), "",
+                "Original:", "", "> " + (e["original"] or "").replace("\n", "\n> "), "", "New:", "", "> " + (e["text"] or "").replace("\n", "\n> "), ""]
+    return "\n".join(out)
 
 
 # ------------------------------------------------------------- the update
@@ -514,6 +664,10 @@ def update(force=False):
         site = build(src, meta["sha"] or "local")
         STATE["log"] = "Indexing ..."
         n_pages, n_secs = index(os.path.join(src, "docs"), os.path.join(_dir(), "kb.db"))
+        try:
+            mark_merged(meta.get("sha"))
+        except Exception as ex:
+            print("kb: merged check: %s" % ex)
         new = dict(meta, site=site, src=src, pages=n_pages, sections=n_secs, built=time.strftime("%Y-%m-%dT%H:%M:%S"),
                    checked=time.strftime("%Y-%m-%dT%H:%M:%S"), source=cfg.get("source"), branch=cfg.get("branch"))
         _write(os.path.join(_dir(), "current.json"), new)
@@ -650,6 +804,128 @@ def register(app, core):
             raise HTTPException(status_code=404, detail="Not found")
         return FileResponse(target, headers={"X-Frame-Options": "SAMEORIGIN", "Content-Security-Policy": "frame-ancestors 'self'",
                                              "Cache-Control": "no-cache"})
+
+    # ---- editing, under the viewer's own accounts
+    def me_of(request, tok=""):
+        w = who(request, tok)
+        uid = getattr(w, "uid", None)
+        name = getattr(w, "name", "") or ""
+        if uid is None and not name:
+            raise HTTPException(status_code=401, detail="Sign in first")
+        return w, uid, name
+
+    @app.get("/api/kb/me")
+    def kb_me(request: Request, x_viewer_token: str = Header(default="")):
+        w, uid, name = me_of(request, x_viewer_token)
+        return {"uid": uid, "name": name, "can_edit": True, "admin": bool(getattr(w, "site_admin", False)), "viewer": True}
+
+    def page_param(page):
+        page = str(page or "").strip().lstrip("/")[:300]
+        if not page or ".." in page:
+            raise HTTPException(status_code=400, detail="Which page?")
+        return page
+
+    @app.get("/api/kb/edits")
+    def kb_edits(request: Request, page: str = "", x_viewer_token: str = Header(default="")):
+        me_of(request, x_viewer_token)
+        return {"items": live_edits(page_param(page))}
+
+    @app.get("/api/kb/history")
+    def kb_history(request: Request, page: str = "", x_viewer_token: str = Header(default="")):
+        me_of(request, x_viewer_token)
+        c = _edb()
+        try:
+            return {"items": [edit_row(r) for r in c.execute("SELECT * FROM edits WHERE page = ? ORDER BY at DESC, id DESC", (page_param(page),))]}
+        finally:
+            c.close()
+
+    @app.post("/api/kb/edits")
+    async def kb_edit_post(request: Request, x_viewer_token: str = Header(default="")):
+        w, uid, name = me_of(request, x_viewer_token)
+        body = await request.json()
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="Send {page, block, text}")
+        page = page_param(body.get("page"))
+        block = str(body.get("block") or "").strip()[:200]
+        text = str(body.get("text") or "").strip()
+        if not block or not text:
+            raise HTTPException(status_code=400, detail="An edit needs its paragraph and its new text")
+        if len(text) > 5000:
+            raise HTTPException(status_code=400, detail="At most 5000 characters")
+        c = _edb()
+        try:
+            cur = c.execute("INSERT INTO edits (page, block, anchor, text, note, original, uid, name, at) VALUES (?,?,?,?,?,?,?,?,?)",
+                            (page, block, str(body.get("anchor") or "")[:120], text, str(body.get("note") or "").strip()[:300],
+                             str(body.get("original") or "").strip()[:2000], uid, name[:100], int(time.time() * 1000)))
+            c.commit()
+            row = edit_row(c.execute("SELECT * FROM edits WHERE id = ?", (cur.lastrowid,)).fetchone())
+        finally:
+            c.close()
+        try:
+            await run_in_threadpool(overlay_edits, page)
+        except Exception as ex:
+            print("kb: overlay: %s" % ex)
+        return row
+
+    @app.post("/api/kb/edits/{eid}/undo")
+    async def kb_edit_undo(eid: int, request: Request, x_viewer_token: str = Header(default="")):
+        w, uid, name = me_of(request, x_viewer_token)
+        c = _edb()
+        try:
+            r = c.execute("SELECT * FROM edits WHERE id = ?", (eid,)).fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="No such edit")
+            if r["uid"] != uid and not getattr(w, "site_admin", False):
+                raise HTTPException(status_code=403, detail="Only its author or a site admin can undo an edit")
+            c.execute("UPDATE edits SET undone_at = ?, undone_by = ? WHERE id = ?", (int(time.time() * 1000), name[:100], eid))
+            c.commit()
+            page = r["page"]
+            row = edit_row(c.execute("SELECT * FROM edits WHERE id = ?", (eid,)).fetchone())
+        finally:
+            c.close()
+        await run_in_threadpool(overlay_edits, page)
+        return row
+
+    @app.get("/api/kb/edits/all")
+    def kb_edits_all(request: Request, since: int = 0, format: str = "json", undone: int = 0, x_viewer_token: str = Header(default="")):
+        admin(request, x_viewer_token)
+        c = _edb()
+        try:
+            rows = [edit_row(r) for r in c.execute("SELECT * FROM edits WHERE at >= ? %s ORDER BY page, at" % ("" if undone else "AND undone_at IS NULL"), (since,))]
+        finally:
+            c.close()
+        if format == "md":
+            return Response(content=edits_markdown(rows), media_type="text/markdown; charset=utf-8",
+                            headers={"Content-Disposition": 'attachment; filename="kb-edits.md"'})
+        return Response(content=json.dumps({"edits": rows, "exported": time.strftime("%Y-%m-%dT%H:%M:%S")}, ensure_ascii=False, indent=1),
+                        media_type="application/json", headers={"Content-Disposition": 'attachment; filename="kb-edits.json"'})
+
+    @app.get("/api/kb/edits/recent")
+    def kb_edits_recent(request: Request, n: int = 20, x_viewer_token: str = Header(default="")):
+        me_of(request, x_viewer_token)
+        c = _edb()
+        try:
+            rows = [edit_row(r) for r in c.execute("SELECT * FROM edits ORDER BY at DESC, id DESC LIMIT ?", (max(1, min(n, 200)),))]
+            live = c.execute("SELECT COUNT(*) FROM edits WHERE undone_at IS NULL").fetchone()[0]
+            open_ = c.execute("SELECT COUNT(*) FROM edits WHERE undone_at IS NULL AND (merged_sha IS NULL OR merged_sha = '')").fetchone()[0]
+        finally:
+            c.close()
+        return {"items": rows, "live": live, "not_merged": open_}
+
+    @app.post("/api/kb/edits/merged")
+    async def kb_edits_merged(request: Request, x_viewer_token: str = Header(default="")):
+        admin(request, x_viewer_token)
+        body = await request.json()
+        ids = [int(i) for i in (body.get("ids") or []) if str(i).isdigit()] if isinstance(body, dict) else []
+        sha = str((body or {}).get("sha") or current().get("sha") or "merged")[:60]
+        c = _edb()
+        try:
+            for i in ids:
+                c.execute("UPDATE edits SET merged_sha = ? WHERE id = ?", (sha, i))
+            c.commit()
+        finally:
+            c.close()
+        return {"merged": len(ids)}
 
     @app.get("/kb")
     def kb_root():

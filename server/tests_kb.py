@@ -26,19 +26,20 @@ HAS_MKDOCS = importlib.util.find_spec("mkdocs") is not None and importlib.util.f
 
 
 class Who(object):
-    def __init__(self, admin=True):
-        self.site_admin, self.uid, self.name = admin, 1, "Tester"
+    def __init__(self, admin=True, uid=1):
+        self.site_admin, self.uid, self.name = admin, uid, "Tester" if uid == 1 else "Other"
 
 
 class Core(object):
     def __init__(self, data):
         self.CFG = {"data": data}
         self.admin = True
+        self.uid = 1
 
     def who(self, request, tok=""):
         if (tok or request.headers.get("x-viewer-token", "")) == "nobody" or request.cookies.get("deny"):
             raise HTTPException(status_code=401, detail="Sign in first")
-        return Who(self.admin)
+        return Who(self.admin, self.uid)
 
 
 class Parse(unittest.TestCase):
@@ -176,6 +177,55 @@ class Endpoints(unittest.TestCase):
         built = st["built"]
         self.c.post("/api/kb/update?wait=1")
         self.assertEqual(self.c.get("/api/kb/status").json()["built"], built)
+
+    def test_edits(self):
+        kb.CFG["data"] = self.tmp
+        os.makedirs(os.path.join(self.tmp, "kb"), exist_ok=True)
+        kb.index(os.path.join(FIX, "docs"), os.path.join(self.tmp, "kb", "kb.db"))
+        me = self.c.get("/api/kb/me").json()
+        self.assertTrue(me["can_edit"] and me["viewer"])
+        self.assertEqual(self.c.get("/api/kb/me", headers={"x-viewer-token": "nobody"}).status_code, 401)
+        orig = "Underground car parks are disregarded from GFA in full; above-ground car parks 100% for two floors, then 50%."
+        r = self.c.post("/api/kb/edits", json={"page": "guides/gfa.md", "block": "car-parks:abc", "anchor": "car-parks",
+                                                "text": "Underground car parks: disregarded in full (zebrawording).", "note": "clearer", "original": orig})
+        self.assertEqual(r.status_code, 200, r.text)
+        e = r.json()
+        self.assertEqual((e["name"], e["uid"], e["undone"]), ("Tester", 1, False))
+        self.assertEqual(self.c.post("/api/kb/edits", json={"page": "guides/gfa.md", "block": "", "text": "x"}).status_code, 400)
+        self.assertEqual(self.c.post("/api/kb/edits", json={"page": "../x", "block": "b", "text": "x"}).status_code, 400)
+        items = self.c.get("/api/kb/edits", params={"page": "guides/gfa.md"}).json()["items"]
+        self.assertEqual([i["id"] for i in items], [e["id"]])
+        # the edited wording is searched, and the card says who edited it
+        s = self.c.get("/api/kb/search", params={"q": "zebrawording"}).json()["items"]
+        self.assertTrue(s and s[0]["edited_by"] == "Tester" and s[0]["title"].startswith("GFA"), s)
+        # undo: someone else cannot, an admin can
+        self.core.uid = 2
+        self.core.admin = False
+        self.assertEqual(self.c.post("/api/kb/edits/%d/undo" % e["id"]).status_code, 403)
+        self.assertEqual(self.c.get("/api/kb/edits/all").status_code, 403)
+        self.core.admin = True
+        self.assertTrue(self.c.post("/api/kb/edits/%d/undo" % e["id"]).json()["undone"])
+        self.core.uid = 1
+        self.assertEqual(self.c.get("/api/kb/edits", params={"page": "guides/gfa.md"}).json()["items"], [])
+        self.assertEqual(len(self.c.get("/api/kb/history", params={"page": "guides/gfa.md"}).json()["items"]), 1)
+        self.assertEqual(self.c.get("/api/kb/search", params={"q": "zebrawording"}).json()["items"], [])
+        # export, as JSON and as Markdown for the knowledge base's author
+        r2 = self.c.post("/api/kb/edits", json={"page": "pnap/app-2.md", "block": "b1", "text": "New words", "original": "Old words"}).json()
+        js = self.c.get("/api/kb/edits/all").json()
+        self.assertEqual([x["id"] for x in js["edits"]], [r2["id"]])
+        md = self.c.get("/api/kb/edits/all", params={"format": "md"}).text
+        self.assertIn("pnap/app-2.md", md)
+        self.assertIn("> New words", md)
+        rec = self.c.get("/api/kb/edits/recent").json()
+        self.assertEqual((rec["live"], rec["not_merged"]), (1, 1))
+        self.c.post("/api/kb/edits/merged", json={"ids": [r2["id"]]})
+        self.assertEqual(self.c.get("/api/kb/edits/recent").json()["not_merged"], 0)
+
+    def test_front_matter_extras(self):
+        page, _ = kb.parse_page("---\ntags:\n  - PNAP\n  - Draft\nsummary: How GFA is measured.\nkeywords: MOE, means of escape, 走火通道\n---\n# APP-9 Test\n\n## At a glance\n\nSome text that is long enough to keep here.\n", "pnap/app-9.md")
+        self.assertEqual(page["info"]["summary"], "How GFA is measured.")
+        self.assertEqual(page["info"]["keywords"], ["MOE", "means of escape", "走火通道"])
+        self.assertTrue(page["info"]["draft"])
 
     def test_not_set_up(self):
         kb.CFG["data"] = tempfile.mkdtemp()
