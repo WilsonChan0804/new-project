@@ -40,6 +40,13 @@ tags:
     - **完工證明書**：承建商於完工後 **7 天**內、認可人士（連同結構／岩土工程師）於 **14 天**內提交（第 25、26 條）；緊急工程須在 **48 小時**內核證（第 28 條）；新建築物須提交供水證明書（第 25A 條）。
     - **監督**：認可人士等須作**定期監督**；承建商須作**不斷監督**、在**地盤**存放已批准圖則及監工計劃書、委任**技術合格人員**，並在完工後保存紀錄 **12 個月**（第 36–41 條）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![B(A)R deadlines at a glance. 《建築物（管理）規例》期限一覽。](../assets/figures/diagrams/bar-deadlines.svg){ width="760" loading=lazy }
+  <figcaption>B(A)R deadlines at a glance. 《建築物（管理）規例》期限一覽。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table: processing periods 審批期限
 
 | Submission 呈交 | Deemed after 當作批准／同意期限 | Reg. 條 |

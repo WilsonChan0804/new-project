@@ -39,6 +39,13 @@ tags:
     - 取得首次動工同意書後的**輕微修訂**，如獲**變通 B(A)R 第 33(1) 條**，毋須事先批准（**附錄 G** 所列項目除外），但須在申請佔用許可證前取得批准（第 28–31 段）。
     - 改動加建、排水及次要結構工程可**同時申請批准及動工同意書**；簡單改動加建、兩層倉庫及幕牆／覆蓋層維修可**在 30 天內快速處理**（第 33–39 段）；須提交**概念圖則**及計算樓面面積的**電子檔／BIM**（第 22–27 段）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Overview of the building approval process. 建築圖則批准程序概覽。](../assets/figures/diagrams/adm19-process.svg){ width="521" loading=lazy }
+  <figcaption>Overview of the building approval process. 建築圖則批准程序概覽。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table: fundamental issues of GBP (Appendix A) 一般建築圖則的根本性事項（附錄 A）
 
 | Category 類別 | Items checked 審核項目 |

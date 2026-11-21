@@ -34,6 +34,13 @@ tags:
     - 拆卸圖則未獲批准會拒絕給予同意（第 16(3)(a)、(b) 條）；保護幕、安全網、防塵幕、棚架、防護網、圍板及支撐可**毋須同意**先行搭建（第 5 段）；申請同意時須提交**監工計劃書**（第 6 段）。
     - 複雜結構須有全職**地盤工程師**，向註冊專門承建商負責；設**錄影機**（每地盤 ≥ 1 部）記錄整個拆卸過程，紀錄保存 **≥ 14 天**（第 7–10 段）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Demolition workflow. 拆卸工程流程。](../assets/figures/diagrams/app21-demolition.svg){ width="464" loading=lazy }
+  <figcaption>Demolition workflow. 拆卸工程流程。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

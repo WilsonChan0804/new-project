@@ -32,3 +32,11 @@ tags:
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>
+
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Withdrawal and resubmission restarts the clock, at most twice. 撤回並重新提交最多兩次。](../assets/figures/diagrams/adm22-wr.svg){ width="760" loading=lazy }
+  <figcaption>Withdrawal and resubmission restarts the clock, at most twice. 撤回並重新提交最多兩次。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+

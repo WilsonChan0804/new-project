@@ -33,3 +33,11 @@ tags:
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>
+
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Drainage testing procedure. 排水工程測試程序。](../assets/figures/diagrams/app58-drain-test.svg){ width="320" loading=lazy }
+  <figcaption>Drainage testing procedure. 排水工程測試程序。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+

@@ -39,6 +39,13 @@ tags:
     - **詳細調查**（第 17–21 條）：如發現嚴重欠妥或原因不明，註冊檢驗人員須先提交建議書供屋宇署**認許**（屋宇署 **28 天**內回覆），並可聘用專家。
     - **獨立性**：監督修葺的註冊檢驗人員須證明自己**並非**修葺承建商的合夥人、董事或獲授權簽署人（第 13(2)(c) 條）；委任代表須在 **7 天前**通知屋宇署（第 24 條）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![MBIS / MWIS: inspection and repair timeline. 強制驗樓／驗窗時間表。](../assets/figures/diagrams/mbis-workflow.svg){ width="343" loading=lazy }
+  <figcaption>MBIS / MWIS: inspection and repair timeline. 強制驗樓／驗窗時間表。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table: inspection items 檢驗項目
 
 | Schedule 附表 | Area 範圍 | Items 項目 |

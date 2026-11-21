@@ -12,6 +12,13 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | 123N | [Building (Minor Works) Regulation 《建築物（小型工程）規例》](bmwr-123n.md) | ✅ Complete 完成 |
 | 123P | [Building (Inspection and Repair) Regulation 《建築物（檢驗及修葺）規例》](bir-123p.md) | ✅ Complete 完成 |
 
+## Relationship diagram 關係圖
+
+<figure markdown>
+  ![Map of the Buildings Ordinance and its subsidiary legislation. 條例及附屬法例關係圖。](../assets/figures/diagrams/regs-map.svg){ width="760" loading=lazy }
+  <figcaption>Map of the Buildings Ordinance and its subsidiary legislation. 條例及附屬法例關係圖。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Buildings Ordinance, Cap. 123 《建築物條例》
 
 | Entry 條目 | Topic 主題 | Status 狀態 |

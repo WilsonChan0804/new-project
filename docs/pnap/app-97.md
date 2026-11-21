@@ -37,6 +37,13 @@ tags:
     - 快速處理容許輕微調整**無須暫停工程**，但同意只涵蓋已批准圖則的內容；如需結構修訂圖則，須待其獲批准及同意後才施工（第 7、11 段）。
     - 使用標準**工程名稱**（拆卸、土地勘測、地盤平整、挖掘及側向承托、地基、上蓋、幕牆、改動加建、排水等），並參考附錄 A 的**首次同意清單**（第 8–9 段）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Normal or fast-track consent? 一般程序還是快速處理？](../assets/figures/diagrams/app97-consent.svg){ width="520" loading=lazy }
+  <figcaption>Normal or fast-track consent? 一般程序還是快速處理？ Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

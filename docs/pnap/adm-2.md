@@ -39,6 +39,13 @@ tags:
     - **變通／豁免**：以 **BA16 表格**申請並附理據（附錄 E 列出常見申請所需資料）；條件載於 **BD 106 表格**，須在最終修訂圖則中顯示，竣工時提交**有效 BD 106 清單**（第 10–14 段）。
     - **總樓面面積寬免透明度**（第 16–18 段）：在圖則上列出**寬免面積明細**（附錄 G），並在申請佔用許可證時提交**摘要**（附錄 H）；屋宇署會在發出佔用許可證後**上載網站**。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Centralised processing: what happens by day 45 and day 60. 中央處理：第 45 及 60 天。](../assets/figures/diagrams/adm2-day45-60.svg){ width="394" loading=lazy }
+  <figcaption>Centralised processing: what happens by day 45 and day 60. 中央處理：第 45 及 60 天。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table: processing timeline and tools 審批時序及工具
 
 | Step 步驟 | What happens 內容 | Para. 段 |

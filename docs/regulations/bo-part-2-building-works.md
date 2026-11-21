@@ -38,6 +38,13 @@ tags:
     - **第 19 條**：意外或緊急情況下的**緊急工程**（撐柱、托換基礎、拆卸）可在通知建築事務監督後毋須同意即展開。**第 20 條**：如在 **3 個月**內未展開或暫停 3 個月，同意即**失效**。
     - **第 21 條**：**新建築物**未取得**佔用許可證**或**臨時佔用許可證**，除不多於 **2 名管理員**外不得佔用；申請後 **14 天**如未被拒絕即當作已發出（拒絕理由例如違規、街道工程未完成、未裝升降機、沒有消防證明書、未接駁供水、表現檢討不足）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Statutory periods from plan submission to occupation (BO s.14–21, B(A)R 30–33). 由呈交圖則至佔用的法定期限。](../assets/figures/diagrams/statutory-timeline.svg){ width="366" loading=lazy }
+  <figcaption>Statutory periods from plan submission to occupation (BO s.14–21, B(A)R 30–33). 由呈交圖則至佔用的法定期限。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Section by section 逐條摘要
 
 | s. 條 | Title 標題 | Summary 摘要 |

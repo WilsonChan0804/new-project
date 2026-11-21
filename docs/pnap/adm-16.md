@@ -30,6 +30,13 @@ tags:
     - **附表所列地區**的土地勘測屬建築工程，須取得批准及同意（第 1 段）。
     - 可選擇**同時處理**：連同土地勘測圖則呈交**地盤監工計劃書**，在附函註明，並在呈交圖則**第 32 天後**申請同意（第 2–3 段）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Concurrent approval and consent for GI in scheduled areas. 附表地區土地勘測同時處理。](../assets/figures/diagrams/adm16-gi.svg){ width="760" loading=lazy }
+  <figcaption>Concurrent approval and consent for GI in scheduled areas. 附表地區土地勘測同時處理。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

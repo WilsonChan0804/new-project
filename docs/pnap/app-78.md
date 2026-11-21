@@ -35,6 +35,13 @@ tags:
     - 條例規定的機器須可運作；可在 14 天內以書面及照片確認已作修正；被拒後提交書面確認，屋宇署會在 **14 天內再巡查**（第 6–9 段）。
     - **便利措施**：上蓋完成後進行**聯合全面巡查**，及早找出重大不符之處並抽查尺寸；另有臨時棚架支撐等安排（第 10–13 段起）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Occupation permit inspection workflow. 佔用許可證巡查流程。](../assets/figures/diagrams/app78-op.svg){ width="615" loading=lazy }
+  <figcaption>Occupation permit inspection workflow. 佔用許可證巡查流程。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Practical notes 實務提示
 
 === "English"

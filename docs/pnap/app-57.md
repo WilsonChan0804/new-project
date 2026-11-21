@@ -33,6 +33,13 @@ tags:
     - 挖掘**深於 2.5 米及長於 5 米**，**並且**可能影響 **45° 線**範圍內的道路、建築物、構築物、陡於 **30°** 的斜坡或直徑 **≥ 75 毫米**的水管，**須呈交挖掘及側向承托圖則**（第 3 段）；未獲批准不會給予同意（第 4 段）。
     - 圖則及挖掘與降水對鄰近構築物影響的結構評估由**註冊結構工程師**簽署；深度 **> 4.5 米**者，岩土文件須由**註冊岩土工程師**簽署（第 5 段）。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Do I need ELS plans? 是否須呈交挖掘及側向承托圖則？](../assets/figures/diagrams/app57-els.svg){ width="381" loading=lazy }
+  <figcaption>Do I need ELS plans? 是否須呈交挖掘及側向承托圖則？ Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table: when ELS plans are required 何時須呈交
 
 | Condition 條件 | Threshold 門檻 |

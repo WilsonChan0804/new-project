@@ -36,6 +36,13 @@ tags:
     - 申請佔用許可證**前須先取得修訂圖則批准**；只接受不違反條例的輕微位置偏差（第 3 段）。
     - **紀錄圖則**：建築事務監督可要求「新圖則」（B(A)R 第 46 條）；有修訂的項目須呈交一套**綜合一般建築圖則**顯示竣工情況，每張附屋宇署批准印或認可人士核證（第 4–5 段）；備考亦列出佔用許可證所需的紀錄資料及文件。
 
+## Workflow / timeline 流程及時間表
+
+<figure markdown>
+  ![Completion submissions and BD reply periods. 完工呈交及屋宇署回覆期限。](../assets/figures/diagrams/app13-completion.svg){ width="671" loading=lazy }
+  <figcaption>Completion submissions and BD reply periods. 完工呈交及屋宇署回覆期限。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Practical notes 實務提示
 
 === "English"
