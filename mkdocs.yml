@@ -225,9 +225,63 @@ nav:
       - APP-174 Precast Concrete Code 2016 預製混凝土守則: pnap/app-174.md
       - APP-175 Elderly-friendly design 長者友善設計: pnap/app-175.md
       - APP-176 Universal accessibility manual 暢道通行手冊: pnap/app-176.md
+      - ADM-1 Practice notes in force 有效的作業備考: pnap/adm-1.md
       - ADM-2 Plan processing 圖則處理: pnap/adm-2.md
+      - ADM-3 Emergency contact numbers 緊急聯絡電話: pnap/adm-3.md
+      - ADM-4 Priority processing 優先處理: pnap/adm-4.md
+      - ADM-5 Submissions to BD 呈交屋宇署: pnap/adm-5.md
+      - ADM-6 Computer programs for design 設計電腦程式: pnap/adm-6.md
+      - ADM-7 Geotechnical Information Unit 岩土工程資料庫: pnap/adm-7.md
+      - ADM-8 Structural design information 結構設計資料: pnap/adm-8.md
+      - ADM-9 Colouring of plans 圖則著色: pnap/adm-9.md
+      - ADM-10 Imaging standards for plans 圖則影像標準: pnap/adm-10.md
+      - ADM-11 Change of address 更改地址: pnap/adm-11.md
+      - ADM-13 Site safety & quality monitoring 地盤安全及質素監察: pnap/adm-13.md
+      - ADM-14 Minor amendments to plans 圖則輕微修訂: pnap/adm-14.md
+      - ADM-15 Site formation submissions 地盤平整圖則: pnap/adm-15.md
+      - ADM-16 GI in scheduled areas 附表地區土地勘測: pnap/adm-16.md
+      - ADM-17 Electronic submissions 電子呈交: pnap/adm-17.md
+      - ADM-18 Site auditing 地盤審查: pnap/adm-18.md
       - ADM-19 Building approval process 圖則批准程序: pnap/adm-19.md
+      - ADM-20 Central Data Bank 中央資料庫: pnap/adm-20.md
+      - ADM-21 Site parameters proof 地盤參數證明: pnap/adm-21.md
+      - ADM-22 Withdrawal and resubmission 撤回並重新提交: pnap/adm-22.md
+      - ADM-23 Self-certification for simple structural works 簡單結構工程自行認證: pnap/adm-23.md
+      - ADV-1 Asbestos 石棉: pnap/adv-1.md
+      - ADV-2 Legislation & publications list 法例及刊物: pnap/adv-2.md
+      - ADV-3 Floor numbering 樓層序數: pnap/adv-3.md
+      - ADV-4 Construction site nuisance 地盤環境滋擾: pnap/adv-4.md
+      - ADV-5 Tropical hardwood timber 熱帶硬木: pnap/adv-5.md
+      - ADV-6 Lightning protection 閃電防護: pnap/adv-6.md
+      - ADV-8 Registration of slopes 斜坡登記: pnap/adv-8.md
+      - ADV-9 Development progress returns 發展進度報告: pnap/adv-9.md
+      - ADV-10 Lift shaft platforms 升降機槽平台: pnap/adv-10.md
+      - ADV-11 Suspended working platforms 吊船: pnap/adv-11.md
+      - ADV-12 Display of site information 展示地盤資料: pnap/adv-12.md
+      - ADV-13 Excavation permits & utilities 挖掘准許證: pnap/adv-13.md
+      - ADV-14 External maintenance facilities 外牆檢查及維修設施: pnap/adv-14.md
+      - ADV-15 Fixing of reinforcement 鋼筋安裝: pnap/adv-15.md
+      - ADV-16 Street names & building numbers 街道名稱及門牌: pnap/adv-16.md
+      - ADV-17 Pump room & ventilation noise 泵房及通風噪音: pnap/adv-17.md
+      - ADV-18 Corruption prevention 防止貪污: pnap/adv-18.md
+      - ADV-19 Construction & demolition waste 拆建廢料: pnap/adv-19.md
+      - ADV-21 Dredged sediment disposal 疏浚沉積物處置: pnap/adv-21.md
+      - ADV-23 Slope landscape treatment 斜坡美化: pnap/adv-23.md
+      - ADV-24 Floor drains in kitchens & bathrooms 廚房及浴室地台去水: pnap/adv-24.md
+      - ADV-25 Bathroom extractor fans 浴室抽氣扇: pnap/adv-25.md
+      - ADV-26 Corridor & lift lobby ventilation 走廊及升降機大堂通風: pnap/adv-26.md
+      - ADV-27 Protecting natural streams 保護天然河溪: pnap/adv-27.md
+      - ADV-28 Sanitary fitments in public places 公眾場所衞生設備: pnap/adv-28.md
+      - ADV-29 Pay for Safety Scheme 支付安全計劃: pnap/adv-29.md
+      - ADV-30 Mechanical ventilation (B(P)R 34) 機械通風: pnap/adv-30.md
+      - ADV-31 Wet-fixed external tiles 濕式外牆飾面磚: pnap/adv-31.md
+      - ADV-32 Babycare & lactation rooms 育嬰間及哺集乳室: pnap/adv-32.md
       - ADV-33 Essential info in submissions 呈交圖則重要資料: pnap/adv-33.md
+      - ADV-34 Building Information Modelling 建築信息模擬: pnap/adv-34.md
+      - ADV-35 Greening in buildings 樓宇綠化: pnap/adv-35.md
+      - ADV-36 Modular Integrated Construction 組裝合成建築法: pnap/adv-36.md
+      - ADV-37 Conduct of registered professionals 註冊專業人士操守: pnap/adv-37.md
+      - ADV-38 Innovative materials & technologies 創新建築材料與技術: pnap/adv-38.md
       - JPN 1 Green features 環保設施: pnap/jpn-1.md
       - JPN 2 Green features II 第二批環保設施: pnap/jpn-2.md
       - JPN 3 Landscape & greenery 園景及綠化: pnap/jpn-3.md

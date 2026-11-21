@@ -187,14 +187,68 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 
 | No. 編號 | Title 標題 | Topic 主題 | Version 版本 | Status 狀態 |
 |---|---|---|---|---|
+| [ADM-1](adm-1.md) | Practice Notes in Force 有效的作業備考 | PNAP categories 作業備考分類 | Aug 2009 | ✅ Checked |
 | [ADM-2](adm-2.md) | Centralised Processing of Building Plans 中央處理建築圖則 | Plan submission 圖則呈交 | Jun 2024 | ✅ Checked |
+| [ADM-3](adm-3.md) | Emergency Situations - Telephone Numbers for Use Outside Office Hours 緊急情況－辦公時間以外可供使用的電話號碼 | Out-of-hours contact 辦公時間外聯絡 | Apr 2019 | ✅ Checked |
+| [ADM-4](adm-4.md) | Priority 優先處理的工程項目 | Priority status 優先處理資格 | Mar 2005 | ✅ Checked |
+| [ADM-5](adm-5.md) | Submissions to the Buildings Department 呈交屋宇署的文件 | Receipt points 收件處 | May 2022 | ✅ Checked |
+| [ADM-6](adm-6.md) | Computer Programs for Use in Structural and Geotechnical Design 結構及岩土設計使用的電腦程式 | Program prior acceptance 程式預先接納 | — | ✅ Checked |
+| [ADM-7](adm-7.md) | Geotechnical Information Unit 岩土工程資料庫 | GIU records 岩土資料紀錄 | May 1995 | ✅ Checked |
+| [ADM-8](adm-8.md) | Structural Design Information 結構設計資料 | Presenting structural submissions 結構圖則編排 | Jun 2023 | ✅ Checked |
+| [ADM-9](adm-9.md) | Colouring of Plans 圖則着色 | Standard colours 標準顏色 | Aug 2015 | ✅ Checked |
+| [ADM-10](adm-10.md) | Imaging Standards for Plans 圖則的影像處理標準 | Plans for electronic records 電子紀錄圖則 | Oct 2013 | ✅ Checked |
+| [ADM-11](adm-11.md) | Change of Address 更改地址 | Notifying address changes 通知地址更改 | Apr 2019 | ✅ Checked |
+| [ADM-13](adm-13.md) | Monitoring for Site Safety and Quality 監察地盤的安全及質素 | Site Monitoring Section 地盤監察組 | Dec 2010 | ✅ Checked |
+| [ADM-14](adm-14.md) | Minor Amendments to Plans and Specified Forms 圖則及指明表格的輕微修訂 | Amending approvable plans 修訂可批准圖則 | Jun 2024 | ✅ Checked |
+| [ADM-15](adm-15.md) | Submission of Site Formation Proposals 呈交地盤平整工程建議方案 | Part A / Part B split 分拆呈交 | Feb 2012 | ✅ Checked |
+| [ADM-16](adm-16.md) | Ground Investigation Works in Scheduled Areas - Approval and Consent 附表所列地區的土地勘測工程－批准及同意 | Concurrent approval & consent 同時批准及同意 | Feb 2006 | ✅ Checked |
+| [ADM-17](adm-17.md) | Submission of Plans and Documents in Electronic Format 以電子方式呈交圖則及文件 | ESH / e-submission 電子呈交 | May 2026 | ✅ Checked |
+| [ADM-18](adm-18.md) | Site Auditing for Building Works 建築工程的地盤審查 | Audit strategy 審查策略 | Apr 2018 | ✅ Checked |
 | [ADM-19](adm-19.md) | Building Approval Process 建築圖則批准程序 | Approval process 審批程序 | Apr 2025 | ✅ Checked |
+| [ADM-20](adm-20.md) | Central Data Bank (CDB) 中央資料庫 | Accepted materials list 已接納物料 | Sep 2021 | ✅ Checked |
+| [ADM-21](adm-21.md) | Site Parameters - Documentary Proof 地盤參數─文件證明 | Proving site area 地盤面積證明 | Jan 2017 | ✅ Checked |
+| [ADM-22](adm-22.md) | Withdrawal and Resubmission 撤回並重新提交申請 | W&R practice 撤回並重新提交 | Sep 2019 | ✅ Checked |
+| [ADM-23](adm-23.md) | Self-certification System for Plan Submission of Simple Structural Works 自行認證呈交簡單結構工程圖則 | Simple structural works fast track 簡單結構快速處理 | Jun 2025 | ✅ Checked |
 
 ## ADV series 諮詢系列
 
 | No. 編號 | Title 標題 | Topic 主題 | Version 版本 | Status 狀態 |
 |---|---|---|---|---|
+| [ADV-1](adv-1.md) | Asbestos 石棉 | ACM control 含石棉物料管制 | Jan 2015 | ✅ Checked |
+| [ADV-2](adv-2.md) | Legislation and Publications Affecting the Building Industry 對建築業有影響的法例及刊物 | Reference list 參考清單 | Nov 2014 | ✅ Checked |
+| [ADV-3](adv-3.md) | Standardization of Floor Numbering 劃一樓層序數 | Consecutive floor numbers 連續樓層編號 | May 2010 | ✅ Checked |
+| [ADV-4](adv-4.md) | Control of Environmental Nuisance from Construction Sites 管制建築地盤對環境造成的滋擾 | Environmental checklist 環境檢查表 | Mar 2026 | ✅ Checked |
+| [ADV-5](adv-5.md) | Tropical Hardwood Timber 熱帶硬木木材 | Reducing hardwood use 減少硬木 | Jul 1992 | ✅ Checked |
+| [ADV-6](adv-6.md) | Lightning Protection for Buildings 建築物閃電防護設施 | When to provide lightning protection 何時須避雷 | Sep 2017 | ✅ Checked |
+| [ADV-8](adv-8.md) | Registration of Slopes and Retaining Walls 斜坡及擋土牆的登記 | Catalogue of Slopes 斜坡名冊 | Feb 2002 | ✅ Checked |
+| [ADV-9](adv-9.md) | Submission of Development Progress 呈交發展進度報告 | Completion forecasts 落成預測 | Sep 1998 | ✅ Checked |
+| [ADV-10](adv-10.md) | Lift Shaft Platforms 升降機槽平台 | Temporary platforms in shafts 井道臨時平台 | Feb 2011 | ✅ Checked |
+| [ADV-11](adv-11.md) | Suspended Working Platforms 吊船 | Gondola safety 吊船安全 | Feb 2010 | ✅ Checked |
+| [ADV-12](adv-12.md) | Display of Site Information 展示地盤資料 | Site signboard 地盤告示 | Jan 2005 | ✅ Checked |
+| [ADV-13](adv-13.md) | Application for Excavation Permit for Works on Public Road - Circulation of Proposal to Utility Undertakers 申請挖掘准許證以便在公共道路進行工程－向公用設施公司傳閱建議 | Utility circulation 傳閱公用設施公司 | — | ✅ Checked |
+| [ADV-14](adv-14.md) | Facilities for External Inspection and Maintenance of Buildings 建築物外部檢查及維修設施 | Safe facade access 外牆安全通道 | — | ✅ Checked |
+| [ADV-15](adv-15.md) | Fixing of Reinforcement for Concrete Works 混凝土工程中鋼筋的安裝 | Rebar fixing practice 鋼筋紮放 | Jul 2003 | ✅ Checked |
+| [ADV-16](adv-16.md) | Street Name and Building Number 街道名稱及建築物編號 | Displaying building numbers 展示門牌 | May 2007 | ✅ Checked |
+| [ADV-17](adv-17.md) | Noise Annoyance Prevention - Design of Pump Room and Ventilation System 防止噪音滋擾－泵房及通風系統的設計 | Plant noise design 機房噪音設計 | Sep 1998 | ✅ Checked |
+| [ADV-18](adv-18.md) | Corruption Prevention 防止貪污 | Anti-bribery 防止賄賂 | Jul 1999 | ✅ Checked |
+| [ADV-19](adv-19.md) | Construction and Demolition Waste 拆建廢料 | Waste minimisation 減少廢物 | Jun 2000 | ✅ Checked |
+| [ADV-21](adv-21.md) | Management Framework for Disposal of Dredged / Excavated Sediment 處理疏浚／挖掘的沉積物的管理架構 | Sediment disposal 沉積物處置 | — | ✅ Checked |
+| [ADV-23](adv-23.md) | Improvement of Visual Appearance and Landscape Treatment for Man-made Slopes and Retaining Walls 改善人造斜坡及擋土牆的視覺外貌及美化其景觀 | Greening slopes 斜坡綠化 | — | ✅ Checked |
+| [ADV-24](adv-24.md) | Floor Drains in Kitchens and Bathrooms 廚房及浴室的地台去水渠 | Keeping traps sealed 保持水封 | Jun 2003 | ✅ Checked |
+| [ADV-25](adv-25.md) | Extractor Fans in Bathrooms and Lavatories in Domestic Buildings 安裝在住宅樓宇浴室及洗手間的抽氣扇 | Fan capacity & air relief 抽氣量及補氣 | Mar 2004 | ✅ Checked |
+| [ADV-26](adv-26.md) | Ventilation of Common Corridors and Lift Lobbies in Buildings 建築物的公用走廊及升降機大堂的通風設施 | Common area ventilation 公用地方通風 | Jan 2004 | ✅ Checked |
+| [ADV-27](adv-27.md) | Protection of Natural Streams / Rivers from Adverse Impacts arising from Construction Works 保護天然河溪免受建造工程影響 | Stream protection 河溪保護 | — | ✅ Checked |
+| [ADV-28](adv-28.md) | Provision of Sanitary Fitments in Offices, Shopping Arcades, Department Stores, Places of Public Entertainment, Cinemas and Other Public Places 在辦公室、商場、百貨公司、公眾娛樂場所、電影院和其他公眾場所提供衞生設備 | Female fitment provision 女性衞生設備 | — | ✅ Checked |
+| [ADV-29](adv-29.md) | Construction Site Safety - Pay for Safety Scheme 建築地盤安全－支付安全計劃 | Safety costing 安全費用 | Aug 2017 | ✅ Checked |
+| [ADV-30](adv-30.md) | Provision of Mechanical Ventilation under Building (Planning) Regulation 34 根據《建築物(規劃)規例》第34條提供機械通風設施 | Office ventilation 辦公室通風 | Jan 2007 | ✅ Checked |
+| [ADV-31](adv-31.md) | Building External Finishes - Wet-fixed Tiles 建築物外牆飾面 – 濕式鋪砌飾面磚 | Tile detachment prevention 防止飾面磚剝落 | Jul 2021 | ✅ Checked |
+| [ADV-32](adv-32.md) | Provision of Babycare Rooms and Lactation Rooms in Commercial Buildings 在商業樓宇提供育嬰間及哺集乳室 | Family facilities 家庭設施 | — | ✅ Checked |
 | [ADV-33](adv-33.md) | Essential Information in Plan Submissions 呈交圖則包含的重要資料 | Checklists, sample drawings 核對清單、樣本圖則 | May 2024 | ✅ Checked |
+| [ADV-34](adv-34.md) | Building Information Modelling 建築信息模擬技術 | BIM submissions 建築信息模擬呈交 | May 2023 | ✅ Checked |
+| [ADV-35](adv-35.md) | Greening in Buildings 樓宇綠化 | Building greening considerations 樓宇綠化考慮 | Sep 2020 | ✅ Checked |
+| [ADV-36](adv-36.md) | Modular Integrated Construction 「組裝合成」建築法 | MiC streamlining MiC便利措施 | Jul 2025 | ✅ Checked |
+| [ADV-37](adv-37.md) | Conduct of Registered Building Professionals under the Buildings Ordinance 《建築物條例》下註冊建築專業人士的操守 | Professional duties 專業責任 | May 2018 | ✅ Checked |
+| [ADV-38](adv-38.md) | Innovative Building Materials and Technologies 創新建築材料與技術 | IBMT pre-acceptance 創新物料預先認可 | Apr 2024 | ✅ Checked |
 
 ## Joint Practice Notes 聯合作業備考
 
@@ -210,7 +264,11 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [JPN 8](jpn-8.md) | Enhanced Facilitation Measures for MiC 進一步促進建築物採用「組裝合成」建築法的措施 | MiC 組裝合成 | Jul 2022 | ✅ Checked |
 | [JPN 9](jpn-9.md) | Bonus Plot Ratio Pilot Scheme 額外地積比率先導計劃 | Redevelopment, bonus PR 重建、額外地積比率 | Aug 2026 | ✅ Checked |
 
-## Suggested next 建議下一批
+## Coverage 涵蓋範圍
 
-All architectural APP-series PNAPs on BD's current list now have entries (except APP-6 and APP-36, whose texts were not available, and obsolete APP-113 and APP-161). Next: a full Design Manual: Universal Accessibility 2026 write-up, then structural / geotechnical APP items and the remaining ADM / ADV notes.
+Every PNAP in force on BD's current list (APP, ADM and ADV series) now has an entry. Not included, because BD has repealed them or they are obsolete: APP-6, APP-36, APP-77, APP-102 (repealed 11 Apr 2025), APP-103 (repealed 12 May 2021), APP-113, APP-131, APP-161, ADM-12, ADV-7, ADV-20 and ADV-22.
+
+所有現行有效的作業備考（APP、ADM 及 ADV 系列）均已收錄。已廢除或過時的備考不收錄：APP-6、36、77、102、103、113、131、161，ADM-12，ADV-7、20、22。
+
+Entries for long PNAPs (codes, registration, MiC and similar) summarise the main paragraphs; check the full PDF for appendices.
 
