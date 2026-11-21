@@ -77,6 +77,8 @@ def clean(data):
         ids.add(t["id"])
         if t.get("start") and not re.match(r"^\d{4}-\d{2}-\d{2}$", str(t["start"])):
             raise HTTPException(status_code=400, detail="%s: start is yyyy-mm-dd" % str(t.get("name") or "A task")[:60])
+        if t.get("fnet") and not re.match(r"^\d{4}-\d{2}-\d{2}$", str(t["fnet"])):
+            raise HTTPException(status_code=400, detail="%s: finish no earlier than is yyyy-mm-dd" % str(t.get("name") or "A task")[:60])
         deps = t.get("deps") or []
         if not isinstance(deps, list):
             raise HTTPException(status_code=400, detail="deps is a list")
@@ -168,6 +170,8 @@ def register(app, core):
             raise HTTPException(status_code=413, detail="The file is over 20 MB")
         import programme_xml
         try:
+            if programme_xml.is_mpp(raw):
+                raw = await run_in_threadpool(programme_xml.mpp_to_xml, raw)
             return await run_in_threadpool(programme_xml.read, raw)
         except programme_xml.Refused as ex:
             raise HTTPException(status_code=400, detail=str(ex))

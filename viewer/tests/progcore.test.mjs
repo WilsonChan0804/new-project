@@ -49,6 +49,10 @@ ok(two("FF", 1).finish === "2027-03-08", "FF+1d: finishes a day after P");
 const own = schedule([T("P", 2, [], { start: "2027-03-01" }), T("S", 2, [fs("P")], { start: "2027-03-15" })], wk, base);
 ok(own.rows[1].start === "2027-03-15" && own.rows[0].tf === 8 && !own.rows[0].critical, "a task's own later start date holds; its predecessor gets float");
 
+// "finish no earlier than" holds a task's finish
+const fn = schedule([T("P", 5, [], { start: "2027-03-01" }), T("S", 3, [fs("P")], { fnet: "2027-03-19" })], wk, base).rows[1];
+ok(fn.finish === "2027-03-19" && fn.start === "2027-03-17", "finish no earlier than 19 Mar: S 17 - 19 Mar (its link alone would end 10 Mar)");
+
 // --- milestones, summaries, links to a summary
 const tree = [
   T("ph1", 0, [], { level: 0, name: "Design" }),

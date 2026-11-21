@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-08", date: "21 Nov 2026",
+    items: [
+      "**Programme: import .mpp** - Import reads an MS Project file (.mpp) directly, as well as XML and CSV: tasks, outline, durations, links with type and lag, the calendar and constraints. A test programme of 44 tasks gave the same dates as MS Project, all but one manually scheduled summary.",
+      "**Finish no earlier than** - a new field in Properties (MS Project's FNET / MFO constraint): the task may not finish before that day. It is read from and written to MS Project.",
+      "**Export to .mpp:** MS Project's own format can only be written by MS Project. Export > MS Project XML, open it in MS Project and File > Save As > .mpp. The server needs Java and MPXJ for .mpp import; run.bat installs MPXJ and says if Java is missing.",
+    ],
+  },
+  {
     version: "2027-02-07", date: "21 Nov 2026",
     items: [
       "**Knowledge base: Thin pages** (Codes > Library > Knowledge base) - the summaries too brief to answer from, by tier (A key documents, B other notes and regulations, C ADM / ADV), each with what is missing; download the list for the knowledge base's author.",

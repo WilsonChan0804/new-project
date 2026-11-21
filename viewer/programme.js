@@ -947,6 +947,7 @@ function paintProps() {
       <label>Duration<input data-f="dur" value="${r.milestone ? 0 : r.dur}"${dis(1)}></label></div>
     <div class="pg-2"><label>Finish<input data-f="finish" type="date" value="${esc(r.finish)}"${dis(1)}></label>
       <label>% done<input data-f="pct" type="number" min="0" max="100" value="${r.pct}"${dis(1)}></label></div>
+    <label title="MS Project's Finish No Earlier Than: the task may not finish before this day">Finish no earlier than<input data-f="fnet" type="date" value="${esc(t.fnet || "")}"${dis(1)}></label>
     <p class="muted pg-dates">${fmtLong(r.start)}${r.milestone ? "" : " - " + fmtLong(r.finish)} · total float ${r.tf} d · free float ${r.ff} d${r.critical ? ` · <b class="pg-crit-t">critical</b>` : ""}</p>
     <div class="pg-2"><label>Responsible<input data-f="party" value="${esc(t.party || "")}" placeholder="e.g. Architect, BD"${ro}></label>
       <label>Bar colour <span class="pg-cl"><input type="color" data-f="color" value="${esc(t.color || fillOf(t) || "#4a78a8")}"${ro}><button type="button" class="ghost" data-f="color-x" title="The category's colour"${ro}>&times;</button></span></label></div>
@@ -1005,6 +1006,7 @@ function wireProps(el, ids) {
   on("dur", "change", (e) => { if (apply(id, "dur", e.target.value)) changed(); else paintProps(); });
   on("finish", "change", (e) => { if (apply(id, "finish", e.target.value)) changed(); else paintProps(); });
   on("pct", "change", (e) => { if (apply(id, "pct", e.target.value)) changed(); else paintProps(); });
+  on("fnet", "change", (e) => set(() => { if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) t.fnet = e.target.value; else delete t.fnet; }));
   on("party", "change", (e) => set(() => { t.party = e.target.value.trim().slice(0, 120); }));
   on("notes", "change", (e) => set(() => { t.notes = e.target.value.trim().slice(0, 2000); }));
   on("color", "change", (e) => set(() => { t.color = e.target.value; }));
@@ -1337,7 +1339,7 @@ async function template() {
 
 function exportMenu(anchor) {
   const el = pop(anchor, `<div class="po-row" data-x="pdf"><b>PDF for the client ...</b><br><small class="muted">A3 / A4, title block, legend, remarks</small></div>`
-    + `<div class="po-row" data-x="xml"><b>MS Project XML</b><br><small class="muted">opens in MS Project (File > Open)</small></div>`
+    + `<div class="po-row" data-x="xml"><b>MS Project XML</b><br><small class="muted">opens in MS Project (File > Open); Save As .mpp there</small></div>`
     + `<div class="po-row" data-x="csv"><b>CSV</b><br><small class="muted">for Excel</small></div>`, 250);
   el.addEventListener("click", (ev) => {
     const r = ev.target.closest("[data-x]");
@@ -1429,7 +1431,9 @@ function hdrs() {
 }
 
 async function importCsv(file) {
-  if (/\.xml$/i.test(file.name) || /^\s*(<\?xml|<Project)/.test(await file.slice(0, 200).text())) return importXml(file);
+  const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  const ole = head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0;   // an .mpp (OLE file)
+  if (ole || /\.(xml|mpp)$/i.test(file.name) || /^\s*(<\?xml|<Project)/.test(await file.slice(0, 200).text())) return importXml(file);
   const text = await file.text();
   const r = PC.fromCsv(text, P.cal.perWeek, uid);
   if (r.error) return toast(r.error, true);
@@ -1691,6 +1695,7 @@ async function createTasks() {
 /* ------------------------------------------------- MS Project XML */
 
 async function importXml(file) {
+  if (/\.mpp$/i.test(file.name)) toast("Reading the MS Project file…");
   const res = await fetch("/api/programme/mspdi/import", { method: "POST", headers: hdrs(), body: await file.arrayBuffer() });
   const r = await res.json().catch(() => ({}));
   if (!res.ok) return toast(r.detail || "Not read", true);
@@ -1716,7 +1721,7 @@ async function exportXml() {
   const rows = P.sched.rows.map((r) => {
     const t = tasks()[r.i];
     return { name: r.name, level: r.level, milestone: r.milestone, ms_end: !!r.ms_end, summary: r.summary, start: r.start, finish: r.finish, dur: r.dur,
-      pct: r.pct, notes: t.notes || "", party: t.party || "", own_start: t.start || "",
+      pct: r.pct, notes: t.notes || "", party: t.party || "", own_start: t.start || "", fnet: t.fnet || "",
       deps: t.deps.filter((d) => at.has(d.from)).map((d) => ({ from: at.get(d.from), type: d.type || "FS", lag: d.lag || 0, drive: d.drive !== false })) };
   });
   const c = calSpec();
@@ -1726,7 +1731,7 @@ async function exportXml() {
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
     download(await res.blob(), body.name);
     const rel = tasks().reduce((a, t) => a + t.deps.filter((d) => d.drive === false).length, 0);
-    toast("MS Project XML made - open it in MS Project (File > Open)" + (rel ? `; ${rel} related-only link(s) left out` : ""));
+    toast("MS Project XML made - open it in MS Project (File > Open), then File > Save As .mpp" + (rel ? `; ${rel} related-only link(s) left out` : ""));
   } catch (e) { toast("Not made: " + e.message, true); }
 }
 

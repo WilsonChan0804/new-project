@@ -14,6 +14,10 @@ The XML is read with no DTD at all: a file with a DOCTYPE or ENTITY is
 refused (no entity tricks).
 """
 import datetime
+import os
+import shutil
+import subprocess
+import tempfile
 import re
 import uuid
 import xml.etree.ElementTree as ET
@@ -120,17 +124,25 @@ def read(data):
         ms = _txt(t, "Milestone") == "1" or (mins is not None and mins == 0 and _txt(t, "Summary") != "1")
         preds = _kids(t, "PredecessorLink")
         ct = _txt(t, "ConstraintType", "0")
-        start = ""
+        cdate = _txt(t, "ConstraintDate")
+        start, fnet = "", ""
         if ct in ("2", "4"):                       # must / start no earlier than
-            start = _txt(t, "ConstraintDate")[:10]
+            start = cdate[:10]
         elif not preds:
             start = _txt(t, "Start")[:10]
+        if ct in ("3", "6"):                       # must / finish no earlier than
+            fnet = _cdate_finish(cdate)
+        elif ct in ("5", "7"):
+            warnings.append("%s: a 'no later than' constraint is not kept" % (_txt(t, "Name")[:60] or "A task"))
+        if _txt(t, "Summary") == "1" and _txt(t, "Manual") == "1":
+            warnings.append("%s: a manually scheduled summary - its dates now come from its tasks" % (_txt(t, "Name")[:60] or "A summary"))
         party = ""
         for ea in _kids(t, "ExtendedAttribute"):
             if _txt(ea, "FieldID") == party_field:
                 party = _txt(ea, "Value")
         task = {"id": uuid.uuid4().hex[:12], "name": _txt(t, "Name")[:300] or "(no name)", "level": lv - 1,
                 "kind": "milestone" if ms else "task", "start": start if re.match(r"^\d{4}-\d{2}-\d{2}$", start) else "",
+                "fnet": fnet if re.match(r"^\d{4}-\d{2}-\d{2}$", fnet) else "",
                 "dur": 0 if ms else max(1, days), "pct": int(float(_txt(t, "PercentComplete", "0") or 0)),
                 "party": party[:120], "notes": _txt(t, "Notes")[:2000], "deps": [], "links": {}}
         by_uid[_txt(t, "UID")] = task["id"]
@@ -153,6 +165,65 @@ def read(data):
                 lag_days = int(round(mins / mpd))
             task["deps"].append({"from": f, "type": TYPE_IN.get(_txt(pl, "Type", "1"), "FS"), "lag": lag_days})
     return {"tasks": tasks, "calendar": cal, "name": _txt(root, "Title") or _txt(root, "Name"), "warnings": warnings}
+
+
+def _cdate_finish(cdate):
+    """A finish constraint's day: MS Project may store it as 08:00 of the next day."""
+    d = cdate[:10]
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+        return ""
+    if cdate[11:16] and cdate[11:16] <= "08:00":
+        d = (datetime.date.fromisoformat(d) - datetime.timedelta(days=1)).isoformat()
+    return d
+
+
+# ---------------------------------------------------------------- .mpp
+
+MPP_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+
+def is_mpp(data):
+    return bytes(data[:8]) == MPP_MAGIC
+
+
+def _mpxj_lib():
+    """The folder of MPXJ's jars: MPXJ_LIB, or the pip package 'mpxj'."""
+    p = os.environ.get("MPXJ_LIB", "")
+    if p and os.path.isdir(p):
+        return p
+    try:
+        import importlib.util
+        spec = importlib.util.find_spec("mpxj")
+        if spec and spec.origin:
+            lib = os.path.join(os.path.dirname(spec.origin), "lib")
+            if os.path.isdir(lib):
+                return lib
+    except Exception:
+        pass
+    return ""
+
+
+def mpp_to_xml(data, timeout=120):
+    """An .mpp file -> MS Project XML, by MPXJ (Java). Refused when they are missing."""
+    java = shutil.which("java")
+    lib = _mpxj_lib()
+    if not java or not lib:
+        raise Refused("Reading .mpp needs Java and MPXJ on the server (pip install mpxj, and Java 11 or later). "
+                      "Or, in MS Project, File > Save As > XML and import that.")
+    with tempfile.TemporaryDirectory() as d:
+        src, out = os.path.join(d, "in.mpp"), os.path.join(d, "out.xml")
+        with open(src, "wb") as f:
+            f.write(data)
+        try:
+            p = subprocess.run([java, "-Djava.awt.headless=true", "-cp", os.path.join(lib, "*"), "org.mpxj.sample.MpxjConvert", src, out],
+                               capture_output=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise Refused("The .mpp file took too long to read")
+        if p.returncode != 0 or not os.path.exists(out):
+            msg = (p.stderr or b"").decode("utf-8", "replace").strip().splitlines()
+            raise Refused("The .mpp file could not be read" + (": " + msg[-1][:200] if msg else ""))
+        with open(out, "rb") as f:
+            return f.read()
 
 
 def _off(cal, a, b, name=""):
@@ -221,7 +292,10 @@ def write(spec):
              "<Milestone>%d</Milestone>" % (1 if ms else 0), "<Summary>%d</Summary>" % (1 if summ else 0),
              "<PercentComplete>%d</PercentComplete>" % int(r.get("pct") or 0)]
         own = str(r.get("own_start") or "")[:10]
-        if own and not summ:
+        fn = str(r.get("fnet") or "")[:10]
+        if fn and not summ and re.match(r"^\d{4}-\d{2}-\d{2}$", fn):
+            x += ["<ConstraintType>6</ConstraintType>", "<ConstraintDate>%sT17:00:00</ConstraintDate>" % fn]
+        elif own and not summ:
             x += ["<ConstraintType>4</ConstraintType>", "<ConstraintDate>%sT08:00:00</ConstraintDate>" % own]
         else:
             x.append("<ConstraintType>0</ConstraintType>")

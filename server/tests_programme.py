@@ -160,7 +160,7 @@ class Xml(unittest.TestCase):
         spec = {"title": "Kai Tak", "calendar": {"week": "mon-fri", "holidays": ["2027-04-05"], "off": [{"from": "2027-02-01", "to": "2027-02-05"}]},
                 "rows": [{"name": "Design", "level": 0, "summary": True, "start": "2027-03-01", "finish": "2027-03-19", "dur": 15},
                          {"name": "Scheme", "level": 1, "start": "2027-03-01", "finish": "2027-03-12", "dur": 10, "own_start": "2027-03-01", "party": "Architect", "pct": 50},
-                         {"name": "Detail", "level": 1, "start": "2027-03-15", "finish": "2027-03-19", "dur": 5, "deps": [{"from": 1, "type": "FS", "lag": 0}, {"from": 0, "type": "SS", "lag": 0, "drive": False}]},
+                         {"name": "Detail", "level": 1, "start": "2027-03-15", "finish": "2027-03-19", "dur": 5, "fnet": "2027-03-19", "deps": [{"from": 1, "type": "FS", "lag": 0}, {"from": 0, "type": "SS", "lag": 0, "drive": False}]},
                          {"name": "Approval", "level": 0, "milestone": True, "ms_end": True, "start": "2027-03-19", "finish": "2027-03-19", "deps": [{"from": 2, "type": "FS", "lag": 3}]}]}
         xml = programme_xml.write(spec)
         self.assertIn(b"related-only link(s) left out", xml)
@@ -170,8 +170,39 @@ class Xml(unittest.TestCase):
         self.assertEqual((t[1]["dur"], t[1]["start"], t[1]["party"], t[1]["pct"]), (10, "2027-03-01", "Architect", 50))
         self.assertEqual([(d["from"], d["type"], d["lag"]) for d in t[2]["deps"]], [(t[1]["id"], "FS", 0)])
         self.assertEqual(t[3]["deps"][0]["lag"], 3)
+        self.assertEqual((t[2]["fnet"], t[1]["fnet"]), ("2027-03-19", ""))
+        self.assertIn(b"<ConstraintType>6</ConstraintType>", xml)
         self.assertEqual(r["calendar"]["holidays"], ["2027-04-05"])
         self.assertEqual(r["calendar"]["off"][0]["from"], "2027-02-01")
+
+
+class Mpp(unittest.TestCase):
+    SAMPLE = os.environ.get("MPP_SAMPLE", "")
+
+    def test_finish_constraints(self):
+        x = MSPDI.replace("<Name>Grade Site</Name>", "<Name>Grade Site</Name><ConstraintType>6</ConstraintType><ConstraintDate>2019-07-01T08:00:00</ConstraintDate>")
+        t = programme_xml.read(x.encode("utf-8"))["tasks"][3]
+        self.assertEqual(t["fnet"], "2019-06-30")        # 08:00 of the next day = the end of the 30th
+
+    def test_mpp_needs_java_and_mpxj(self):
+        ole = programme_xml.MPP_MAGIC + b"\0" * 504
+        self.assertTrue(programme_xml.is_mpp(ole))
+        self.assertFalse(programme_xml.is_mpp(b"<?xml"))
+        real = shutil.which
+        try:
+            shutil.which = lambda n: None
+            with self.assertRaisesRegex(programme_xml.Refused, "Java and MPXJ"):
+                programme_xml.mpp_to_xml(ole)
+        finally:
+            shutil.which = real
+
+    @unittest.skipUnless(SAMPLE and os.path.exists(SAMPLE) and shutil.which("java") and programme_xml._mpxj_lib(), "set MPP_SAMPLE to an .mpp; needs Java and MPXJ")
+    def test_real_mpp(self):
+        with open(self.SAMPLE, "rb") as f:
+            raw = f.read()
+        r = programme_xml.read(programme_xml.mpp_to_xml(raw))
+        self.assertTrue(r["tasks"])
+        self.assertTrue(any(t["deps"] for t in r["tasks"]))
 
 
 class PdfWide(unittest.TestCase):

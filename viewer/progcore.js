@@ -4,7 +4,8 @@
  * (viewer/tests/progcore.test.mjs).
  *
  * A task: {id, name, level, kind: "task"|"milestone", start (yyyy-mm-dd, the
- * earliest it may start - its predecessors can push it later), dur (working
+ * earliest it may start - its predecessors can push it later), fnet (the
+ * earliest it may finish, optional), dur (working
  * days), pct, deps: [{from: id, type: "FS"|"SS"|"FF"|"SF", lag: working days}]}.
  * A row followed by deeper rows is a summary: its dates and % are its
  * tasks'. A link to or from a summary stands for its tasks.
@@ -190,6 +191,9 @@ export function schedule(tasks, calendar, opts = {}) {
   for (const i of order) {
     const own = cal.ordOf(tasks[i].start);
     let e = own ?? projStart;
+    // "finish no earlier than" (MS Project's FNET / MFO): it may not finish before that day
+    const fn = cal.ordOf(tasks[i].fnet);
+    if (fn !== null && fn + 1 - dur[i] > e) e = fn + 1 - dur[i];
     let drv = null;
     if (!looped.has(i)) {
       for (const l of preds[i]) {

@@ -41,6 +41,14 @@ if errorlevel 1 (
   python -m pip install "mkdocs-material>=9.5,<10" || echo MkDocs could not be installed - the viewer works, but Codes ^> Knowledge base will not build.
 )
 
+REM Programme > Import of .mpp files is read by MPXJ, which needs Java (11 or later).
+python -c "import mpxj" 2>nul
+if errorlevel 1 (
+  echo Installing MPXJ for reading MS Project .mpp files, one time only...
+  python -m pip install "mpxj>=13" || echo MPXJ could not be installed - Programme imports MS Project XML, not .mpp.
+)
+where java >nul 2>nul || echo Java is not installed - to import .mpp files in the Programme, install Java 11 or later (e.g. Eclipse Temurin).
+
 if "%ADOPT%"=="" (
   python app.py --root "%ROOT%" --pass "%PASSPHRASE%" --port %PORT%
 ) else (
