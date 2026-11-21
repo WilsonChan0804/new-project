@@ -22,7 +22,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.17](../regulations/bo-part-2-building-works.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -38,7 +38,7 @@ tags:
     - **第 II 類**：高度敏感地盤（例如毗鄰淺基礎舊樓）由**資深**（合夥人／董事級）岩土工程師定期巡查；**第 III 類**：工藝要求高的工程（地錨、填土壓實、複雜的挖掘及側向承托）由有經驗人員**全職**監督；可組合使用，人選須經建築事務監督同意（第 2–4 段）。
     - 岩土問題輕微且失敗後果不大的地盤一般不會施加（第 5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

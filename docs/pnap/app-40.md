@@ -25,7 +25,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP040.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP040.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the July 2023 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -43,7 +43,7 @@ tags:
     - **行政及管理辦公室不會**獲豁免；附錄 A 列出後勤及前台設施，**後勤及前台設施最少須佔旅館總樓面面積 3%**。
     - 只適用於**真正的旅館**，**不適用於服務式公寓**（第 11 段）；未經許可更改用途須受 B(P)R 第 23A(8)–(9) 條罰則規管。
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 3 — Hotel concession tests 旅館寬免的考慮因素"
     For hotels to qualify for the treatment under regulation 23A of the B(P)R, the BA will consider the following: (a) whether the site itself or the site relative to its neighbourhood is suitable for hotel development; (b) whether basic facilities such as reception counter, storerooms for linen, administration office, staff toilets for the operation of the hotel and facilities ancillary to the functions of a hotel (e.g. dining, entertainment and shopping facilities commensurate with hotel patronage) are provided; (c) whether the whole building or the portion of the building intended for use as a hotel is provided with a central air-conditioning (A/C) system and a centralised hot water supply system; and (d) whether there is evidence indicating that the hotel building or the hotel part of the building when completed will be operated as a licensed hotel under the Hotel and Guesthouse Accommodation Ordinance (Cap. 349).
@@ -55,7 +55,7 @@ tags:
 
     **官方中文本：** ……建築事務監督必須信納該等設施符合以下條件，方可不計算其樓面空間的面積：(a) 其大小合理、位置切實可行，設計亦確實符合擬作用途；(b) 只有旅館員工才能到達該等設施；及 (c) 設施不大可能被濫用。除非有充分理據，建築事務監督認為此等設施的總樓面面積不應超出旅館總樓面面積的5%。為免生疑問，旅館的行政及管理辦公室不會視作《規例》第23A(3)(b)(iv)條所述的獨有輔助設施。
 
-## Key table: site suitability (para. 4) 地盤是否適合（第 4 段）
+## Key table: site suitability (para. 4) 地盤是否適合（第 4 段） {#key-table-site-suitability-para-4-4}
 
 | Aspect 方面 | What the BA looks at 考慮事項 |
 |---|---|
@@ -64,7 +64,7 @@ tags:
 | (c) Streets 街道 | Enough streets, wide enough for the extra traffic and pedestrians 足夠數量及闊度的街道 |
 | (d) Transport 運輸 | Parking and loading/unloading provided. Hotels with **≥ 100 guest rooms** normally follow the **HKPSG** (para. 7) 100 間或以上客房一般按《香港規劃標準與準則》 |
 
-## Key table: BOH and FOH facilities (Appendix A) 後勤及前台設施（附錄 A）
+## Key table: BOH and FOH facilities (Appendix A) 後勤及前台設施（附錄 A） {#key-table-boh-and-foh-facilities-appendix-a-a}
 
 | Category 類別 | Facilities 設施 | GFA 總樓面面積 |
 |---|---|---|
@@ -74,7 +74,7 @@ tags:
 
 <small>Minimum total BOH + FOH provision: **3% of total hotel GFA**. ¹ Required for all hotels. ² Required for hotels with **over 10 guest rooms**. ³ Staff toilets not serving the admin office may be disregarded. 後勤及前台設施最少為旅館總樓面面積 3%。¹ 所有旅館必須設置；² 超過 10 間客房須設置；³ 不屬行政辦公室的員工洗手間可不計算。</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -92,7 +92,7 @@ tags:
 
     中央空調及熱水機房是根據**第 23(3)(b) 條**（而非第 23A 條）豁免，因此須符合 **APP-151 先決條件及 10% 上限**（註腳 1）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -133,7 +133,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

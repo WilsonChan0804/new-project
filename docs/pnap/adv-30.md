@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 30, 31, 34](../regulations/bpr-24-37.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 辦公室須按 **B(P)R 第 30 及 31 條**提供照明及通風；如未能符合第 31 條，**第 34(a) 條**規定須設機械通風，向房間各部分供應新鮮空氣，**每小時換氣 ≥ 5 次**（第 1 段）。
     - 如屬服務多個房間或樓層的**大型或複雜**中央風管系統，應聘請**註冊專業工程師（屋宇裝備）**提供意見（第 2 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

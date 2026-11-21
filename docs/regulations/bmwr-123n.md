@@ -34,7 +34,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123N](https://www.elegislation.gov.hk/hk/cap123N) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -54,7 +54,7 @@ tags:
     - 監督、委任技術合格人員、在地盤存放紀錄及圖則（第 7 部）；小型工程承建商註冊有效期 **3 年**（第 13 條）。
     - **指定豁免工程**（附表 2，30 項）：例如小型樓板開孔、挖掘 ≤ **300 毫米**、小型招牌、小型冷氣機支架、簷篷及晾衣架、窗戶防盜鐵閘、屋頂防水層；獲豁免受《建築物條例》第 4、9、9AA、14(1) 及 21 條管限，但**仍須符合規例**。
 
-## Key table: the eight types of minor works 八個類型
+## Key table: the eight types of minor works 八個類型 {#key-table-the-eight-types-of-minor-works}
 
 | Type 類型 | Nature 性質 | Examples 例子 |
 |---|---|---|
@@ -67,7 +67,7 @@ tags:
 | **G** | Demolition 拆卸 | Removal of UBW, signboards, staircases, chimneys, windows 拆除僭建物、招牌 |
 | **H** | Ventilation inside buildings (2020) 建築物內通風系統 | Metal ventilation ducts and frames, fire dampers, suspended AHU frames 風管、防火閘 |
 
-## Key table: class requirements 各級別要求
+## Key table: class requirements 各級別要求 {#key-table-class-requirements}
 
 | | **Class I** 第 I 級別 | **Class II** 第 II 級別 | **Class III** 第 III 級別 |
 |---|---|---|---|
@@ -77,7 +77,7 @@ tags:
 | After works 完工後 | Certificate **within 14 days**, photos, as-built plans 14 天內 | Certificate **within 14 days** 14 天內 | Notification and certificate **within 14 days** 14 天內 |
 | Sections 條 | 27, 28, 30–32 | 28, 33–35 | 28, 36 |
 
-## Key table: thresholds for common items 常見項目門檻
+## Key table: thresholds for common items 常見項目門檻 {#key-table-thresholds-for-common-items}
 
 | Work 工程 | Exempted (Sch. 2) 豁免 | Class III | Class II | Class I |
 |---|---|---|---|---|
@@ -91,7 +91,7 @@ tags:
 
 <small>Each item has more conditions (e.g. no additional load on cantilevered slabs, no alteration of other structural elements). Always read the full item in Schedule 1. 每個項目另有條件（例如不得對懸臂式平板造成額外荷載），請細閱附表 1 全文。</small>
 
-## Part by part 逐部摘要
+## Part by part 逐部摘要 {#part-by-part}
 
 | Part 部 | s. 條 | Subject 主題 | Summary 摘要 |
 |---|---|---|---|
@@ -105,7 +105,7 @@ tags:
 | 8 | 62, 62A | Validation (BO s.39C) 檢核 | Household minor works built before 31 Dec 2010, and Schedule 3 items, can be validated by inspection and certification. 檢核。 |
 | 9–11 | 63–93 | Provisional registration; transitional provisions for the 2020 amendments 臨時註冊；過渡條文 | Provisional register; how pre-2020 items and registrations map to the amended items. 過渡安排。 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.30 (opening) — Class I: notice before commencement 第 I 級別：開工前通知"
     Not less than 7 days before the commencement of any class I minor works, the authorized person or registered inspector appointed under section 27 in respect of the works must submit to the Building Authority— (a) a notification in the specified form …
@@ -117,7 +117,7 @@ tags:
 
     **官方中文本：** 豎設、改動或拆除自建築物外牆伸出的承托支架，但前提是 —— (aa) 該支架用於支承空調機、照明裝置或公共電訊服務的天線或收發器；(a) 該工程不會導致對任何懸臂式平板造成額外荷載；(b) 該支架並無任何部分伸出該外牆多於600毫米；(c) 該支架的最高點 —— (i) 如該支架在某屋頂上方——與該屋頂的距離超過3米；或 (ii) 在其他情況下——與地面的距離超過3米；……
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -145,7 +145,7 @@ tags:
 
     關鍵在於**項目條件**：伸出長度、離地高度、重量、面積或深度。超出任何一項限制，工程便會升級，或不再屬小型工程。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -188,7 +188,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

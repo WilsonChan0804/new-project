@@ -20,7 +20,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM022.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM022.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Withdrawal and resubmission restarts the clock, at most twice. 撤回並重新提交最多兩次。](../assets/figures/diagrams/adm22-wr.svg){ width="760" loading=lazy }

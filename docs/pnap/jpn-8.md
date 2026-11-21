@@ -24,7 +24,7 @@ tags:
     | **Source 原文** | [JPN 8 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN08.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the July 2022 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -44,7 +44,7 @@ tags:
     - **規劃署**跟隨屋宇署的豁免，並**支持第 16 條略為放寬申請**，一般只需**簡單視覺評估**（第 11 段）；**地政總署**在需要時以**標準補地價**的**快速**方式處理修訂地契（第 9、14 段）。
     - 若沒有採用 MiC，寬免會被**撤銷**；若 MiC 樓面面積減少，寬免會被**調整**（第 16 段）。
 
-## Key table: MiC incentives MiC 鼓勵措施
+## Key table: MiC incentives MiC 鼓勵措施 {#key-table-mic-incentives-mic}
 
 | Regime 制度 | Incentive 措施 | Key conditions 主要條件 | Para. 段 |
 |---|---|---|---|
@@ -56,7 +56,7 @@ tags:
 | | **Fast-track** lease modification / consent otherwise 否則快速修訂地契 | Premium (if any) at **standard rates** 標準補地價 | 9, 14 |
 | **Building height** 建築物高度 | Increase up to **4% of total storey height of MiC floors** 最多 MiC 樓層總層高 4% | MiC floor = MiC area **≥ 50%** of the floor; AP certification (Appendix A) MiC 樓層 ≥ 50%；認可人士證明 | 10–14 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 5 — GFA and SC concessions 總樓面面積及上蓋面積寬免"
     Under the building regime, BD is prepared to grant the following GFA and/ or SC concessions upon submission of an application for exemption under section 42 of the Buildings Ordinance (BO): (a) 10% of the MiC floor area of a new building may be disregarded from calculation of GFA of the development. The granting of such GFA concession is not subject to the overall GFA cap of 10% stipulated in… PNAP APP-151; and (b) 10% of the MiC floor area at each floor level need not be counted for SC.
@@ -73,7 +73,7 @@ tags:
 
     **中譯（非官方）：** ……可從寬考慮把建築物高度增加最多 MiC 樓層總層高的 4%。就此而言，MiC 樓層指 MiC 樓面面積不少於該層總面積 50% 的樓層。
 
-## What counts in MiC floor area MiC 樓面面積的計算
+## What counts in MiC floor area MiC 樓面面積的計算 {#what-counts-in-mic-floor-area-mic}
 
 | Included ✅ 計入 | Excluded ❌ 不計入 |
 |---|---|
@@ -82,7 +82,7 @@ tags:
 | MiC plant rooms, balconies, utility platforms, common corridors, lift lobbies, NSPEW, **even if already exempted** 已獲豁免的 MiC 機房、露台、工作平台、走廊、預製外牆 | Acoustic fins, noise barriers 隔音鰭、隔音屏障 |
 | | Curtain walls and cladding 幕牆及覆蓋層 |
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -100,7 +100,7 @@ tags:
 
     鼓勵措施與**實際採用 MiC** 掛鈎；若設計不再採用 MiC，寬免便會失效。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -134,7 +134,7 @@ tags:
         - MiC 樓層層高由 **MiC 組件最低至最高水平**量度，包括樓板及其下的施工接縫（註腳 4）。
         - **2022 年 8 月 1 日前**已批核的圖則，參考 2019 年 9 月版 JPN 2 及已廢除的 APP-161（第 18 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

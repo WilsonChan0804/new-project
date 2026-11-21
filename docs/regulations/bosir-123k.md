@@ -20,7 +20,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123K](https://www.elegislation.gov.hk/hk/cap123K) |
     | **Last checked 最後核對** | 2026-11-21 against the version on eLegislation (version date 21/10/2021) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -40,14 +40,14 @@ tags:
     - **註冊結構工程師檢驗**（第 8 條）：每個貯油缸在**第 10 年**前作內部檢驗，其後**每 5 年**一次；外殼及殼底接縫**每年**檢驗；相關設施**每年**檢驗；檢驗證明書須即時交建築事務監督；建築事務監督可要求額外檢驗。
     - 建築事務監督可命令**清空或限制使用**有問題的貯油缸，不遵從可檢走油品（第 9 條）；維修及改動加建除緊急情況外須獲授權，其後須在牌照上加簽（第 10–10A 條）；**漏油須報告**（第 11 條）；罪行可處**第 6 級罰款及監禁 2 年**（第 12 條）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Oil storage licence and inspection cycle. 貯油裝置牌照及檢驗周期。](../assets/figures/diagrams/oil-cycle.svg){ width="520" loading=lazy }
   <figcaption>Oil storage licence and inspection cycle. 貯油裝置牌照及檢驗周期。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: licence and inspection cycle 牌照及檢驗周期
+## Key table: licence and inspection cycle 牌照及檢驗周期 {#key-table-licence-and-inspection-cycle}
 
 | Item 項目 | Requirement 要求 | Reg. 條 |
 |---|---|---|
@@ -58,7 +58,7 @@ tags:
 | Associated works 相關設施 | **Annually** 每年 | 8(1)(c) |
 | Certificate of inspection 檢驗證明書 | Delivered to BA **forthwith** 即時 | 8(3) |
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Reg. 5 Licensing of oil storage installations 第 5 條"
     No person shall store or cause or permit to be stored any petroleum products in any oil storage installation without a licence in respect thereof or otherwise than in accordance with the terms or conditions of such licence.
@@ -66,7 +66,7 @@ tags:
     **官方中文本：** 任何人如沒有貯油裝置牌照或不按照牌照的條款或條件行事，則不得在任何貯油裝置貯存或安排貯存或准許他人貯存任何石油產品。
 
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

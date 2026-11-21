@@ -20,6 +20,8 @@ tags:
   - Occupation permit 佔用許可證
   - Elderly-friendly 長者友善
   - Barrier free access 無障礙
+summary: "How GFA is measured, what B(P)R 23(3)(b) disregards, and the APP-151/152 concessions and 10% cap."
+keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積寬免, 10% cap, disregarded GFA, APP-151, APP-152
 ---
 
 # GFA calculation and GFA concessions<br><small>總樓面面積計算及寬免（專題指南）</small>
@@ -30,7 +32,7 @@ tags:
 
     Main sources 主要來源: [B(P)R 23 & 23A](../regulations/bpr-23-23a.md) · [APP-2](../pnap/app-2.md) · [APP-151](../pnap/app-151.md) · [APP-152](../pnap/app-152.md) · [JPN 1](../pnap/jpn-1.md) · [JPN 2](../pnap/jpn-2.md) · [JPN 4](../pnap/jpn-4.md) · [APP-42](../pnap/app-42.md) · [APP-19](../pnap/app-19.md) · [APP-89](../pnap/app-89.md) · [APP-104](../pnap/app-104.md) · [APP-40](../pnap/app-40.md) · [APP-93](../pnap/app-93.md) · [APP-35](../pnap/app-35.md)
 
-## The big picture 整體概念
+## The big picture 整體概念 {#the-big-picture}
 
 <figure markdown>
   ![How a GFA figure is built up](../assets/figures/diagrams/gfa-guide-flow.svg){ width="560" loading=lazy }
@@ -57,7 +59,7 @@ tags:
 
     計算地積比率時，看的是**須計算總樓面面積**，即第一層減去第二及第三層，不得超過**地盤面積 × 准許地積比率**（附表一，或按 JPN 4 以分區計劃大綱圖為準）。
 
-## Step 1: measuring GFA 第一步：量度
+## Step 1: measuring GFA 第一步：量度 {#step-1-measuring-gfa}
 
 | Rule 規則 | Requirement 要求 | Source 來源 |
 |---|---|---|
@@ -71,7 +73,7 @@ tags:
 | Projecting window 窗台 | Not GFA / SC only if all 7 criteria met (≤ **100 mm** projection, base ≥ **500 mm**, ≤ **50%** of wall…) 須符合全部 7 項準則 | [APP-19](../pnap/app-19.md) |
 | Staircases, lift shafts, ducts 樓梯、升降機槽、管道 | Count on every floor they pass through, unless they **solely** serve non-accountable floors 須逐層計算 | [APP-2](../pnap/app-2.md) |
 
-## Step 2: what B(P)R 23(3)(b) disregards 第二步：法定不計算
+## Step 2: what B(P)R 23(3)(b) disregards 第二步：法定不計算 {#step-2-what-bpr-233b-disregards}
 
 | Item 項目 | Treatment 處理 | Pre-req 先決條件 | 10% cap 上限 | Source 來源 |
 |---|---|:-:|:-:|---|
@@ -82,7 +84,7 @@ tags:
 | Ducts for non-essential plant 非必要機房管道 | Disregarded subject to | ✅ | ✅ | [APP-151](../pnap/app-151.md) item 22 |
 | Hotel pick-up / set-down and back-of-house 酒店上落客區及後勤 | Reg. 23A; BOH normally ≤ **5%** of hotel GFA 一般 ≤ 5% | | | [APP-40](../pnap/app-40.md) |
 
-## Step 3: concessions by modification 第三步：變通寬免
+## Step 3: concessions by modification 第三步：變通寬免 {#step-3-concessions-by-modification}
 
 <small>✅ = subject to the APP-151 pre-requisites / counted in the 10% cap. Full list: [APP-151 Appendix A](../pnap/app-151.md). ✅ 表示須符合先決條件／計入 10% 上限。</small>
 
@@ -106,7 +108,7 @@ tags:
 | Refuge floor, public transport terminus, public passage, covered setback 庇護層、公共交通交匯處、公眾通道、有蓋後移範圍 | Outside cap | | | [APP-151](../pnap/app-151.md), [APP-108](../pnap/app-108.md), [APP-152](../pnap/app-152.md) |
 | MiC buildings 組裝合成建築 | **10% of the MiC floor area** disregarded (not in the 10% cap); 10% SC at each floor 組裝合成樓面面積的 10% | | | [JPN 8](../pnap/jpn-8.md) |
 
-## Step 4: pre-requisites and the 10% cap 第四步：先決條件及 10% 上限
+## Step 4: pre-requisites and the 10% cap 第四步：先決條件及 10% 上限 {#step-4-pre-requisites-and-the-10-cap-10}
 
 === "English"
 
@@ -140,7 +142,7 @@ tags:
 
     <small>Illustrative numbers only; check the current PNAPs, including the definition of "total GFA" for the cap, for a real scheme. 數字只作說明。</small>
 
-## Step 5: lease and OZP 第五步：地契及分區計劃大綱圖
+## Step 5: lease and OZP 第五步：地契及分區計劃大綱圖 {#step-5-lease-and-ozp}
 
 === "English"
 
@@ -156,7 +158,7 @@ tags:
     - **環保設施**（[JPN 1](../pnap/jpn-1.md)）：須先取得屋宇署豁免，再處理地契（露台或須**補地價**）及分區計劃大綱圖（高度／上蓋面積；超出須申請略為放寬）。
     - **承諾書**：佔用許可證前須在土地註冊處登記並在**公契**指定為公用地方；日後圍封露台或工作平台會被視為僭建執法。
 
-## Common mistakes 常見錯誤
+## Common mistakes 常見錯誤 {#common-mistakes}
 
 === "English"
 
@@ -200,7 +202,7 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 <!-- GUIDE APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | What it covers 內容 |
 |---|---|

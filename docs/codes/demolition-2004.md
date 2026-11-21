@@ -6,6 +6,8 @@ tags:
   - Site supervision 地盤監督
   - Hoarding 圍板
   - Structural 結構
+summary: "Demolition planning, precautions, catchfans, machine propping and resident supervision."
+keywords: demolition, 拆卸, catchfan, 防墮板, propping, 頂撐, demolition plan, 拆卸計劃
 ---
 
 # Code of Practice for Demolition of Buildings 2004<br><small>《2004 年拆卸建築物作業守則》</small>
@@ -18,7 +20,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Demolition_e2004.pdf) · [Oct 2023 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Demolition_e2004_amendment_oct2023.pdf) · [Sep 2016 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Demolition_e2004_amendment_sep2016.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +38,7 @@ tags:
     - **拆卸方法**：人手由上而下、機械由上而下、液壓碎石機、擺錘、爆破等；**特殊結構**：預製、預應力、懸臂、懸吊結構、油缸、海事及地下結構。
     - **複雜結構**（無樑樓板、預應力、轉換層、跨度 > **10 米**、伸出街道 > **1.2 米**的懸臂、擋土建築物）須派**駐地盤工程師**。
 
-## Contents 內容
+## Contents 內容 {#contents}
 
 | Section 章節 | Topic 主題 |
 |---|---|
@@ -48,7 +50,7 @@ tags:
 | 6 | **Site supervision and inspection**; resident supervision for complex structures 監督及巡查 |
 | App. A | **Demolition checklist** (before, during, after) 拆卸檢查表 |
 
-## Propping for machines on suspended floors 機械頂撐要求 (Table 3.4)
+## Propping for machines on suspended floors 機械頂撐要求 (Table 3.4) {#propping-for-machines-on-suspended-floors-table-34}
 
 | Design imposed load of floor 樓板設計荷載 | 3 kPa | 5 kPa | 7.5 kPa | 12.5 kPa |
 |---|---|---|---|---|
@@ -59,12 +61,12 @@ tags:
 
 <small>Steel ramp no steeper than **30°**; props at least **25 kN** (plant) / **45 kN** (ramp), braced in 2 directions; no debris piling unless justified. Not for special structures. 斜道不陡於 30°；頂撐承載力 25／45 千牛。</small>
 
-## October 2023 amendment 2023 年 10 月修訂
+## October 2023 amendment 2023 年 10 月修訂 {#october-2023-amendment-2023-10}
 
 - Table 3.4: propping for light plant up to **5,800 kg**. 輕型機械頂撐。
 - New cl. 3.8.8–3.8.10: precautions at the **interface between adjacent sites**; protection of **floor openings and free edges**; control of **debris chutes through floor openings**. 相鄰地盤介面、樓板開口及邊緣、經開口運送廢料。
 - Cl. 3.10.7: disposal of C&D material; cl. 4.2.4 and Fig. 4.5: method for demolishing **exterior columns**. 拆建物料處置；外柱拆卸。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [B(DW)R Cap. 123C](../regulations/bdwr-123c.md) · [Site Supervision Code](site-supervision-2009.md) · [B(P)R 50–70 hoardings](../regulations/bpr-50-70.md) · [Bamboo scaffolds guidelines](bd-guidelines.md)

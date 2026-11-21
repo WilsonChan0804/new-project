@@ -18,7 +18,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV004.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV004.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -30,7 +30,7 @@ tags:
     - 管理不善的地盤會造成**噪音、塵埃、污水及廢物**滋擾；認可人士、註冊結構工程師及註冊岩土工程師應防止或減低影響（第 1 段）。
     - **附錄 A** 檢查表列出實用建議、法例及負責部門，例如採用**非撞擊式打樁**等較寧靜方法；撞擊式打樁受**環保署許可證**管制（上午 7 時至下午 7 時，公眾假期除外）（第 2 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

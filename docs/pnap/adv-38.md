@@ -20,7 +20,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV038.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 屋宇署的**預先認可機制**就**創新建築材料與技術**（建築、排水及結構，不包括岩土）作出精簡、非針對個別地盤的評估，確認符合條例標準（第 1 段）。
     - 供應商或製造商須委任**認可人士／註冊結構工程師／註冊岩土工程師**評估並提交**預先認可申請**，附附錄 A 表格及證明文件（第 2 段）；其後各段涵蓋評估、有效期及在項目中使用。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -21,7 +21,7 @@ tags:
     | **Source 原文** | [Oil storage (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Osi_1992.pdf) · [Caverns (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Fsdfc_1994.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## Code of Practice for Oil Storage Installations 1992 貯油裝置作業守則
+## Code of Practice for Oil Storage Installations 1992 貯油裝置作業守則 {#code-of-practice-for-oil-storage-installations-1992}
 
 === "English"
 
@@ -47,7 +47,7 @@ tags:
 | 9–10 | Operation, sludge and effluent; **inspection and repair** 運作、檢查及維修 |
 | 11–12 | Marine pollution equipment; security and pipelines 海上污染、保安 |
 
-## Guide to Fire Safety Design for Caverns 1994 岩洞消防安全設計指引
+## Guide to Fire Safety Design for Caverns 1994 岩洞消防安全設計指引 {#guide-to-fire-safety-design-for-caverns-1994}
 
 === "English"
 
@@ -63,6 +63,6 @@ tags:
     - **逃生途徑**：限制水平距離（總距離最多可接受 **750 米**）；以車路作安全通道須另設 **1 米**行人路；向上行超過 **10 米**須特別設計。
     - 另涵蓋火警偵測及警報、花灑及消防裝置、防火分隔及**煙霧管理**。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [B(OSI)R Cap. 123K](../regulations/bosir-123k.md) · [FS Code](fire-safety-code-2011.md) · [Foundations Code](foundations-2017.md)

@@ -24,7 +24,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.17](../regulations/bo-part-2-building-works.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +36,7 @@ tags:
     - 條例第 17 條的條件可要求在某些階段進行**合格監督**，例如大型**挖掘及基礎**、**澆灌混凝土**、**合規測試**、**預應力**（張拉、灌漿、鎖定）、主要**結構鋼工程**及**專門工程**（第 1 段）。
     - 監督人員須具相關知識並熟悉設計基礎；認可人士、註冊結構工程師、註冊岩土工程師及註冊承建商須確保妥善執行（條例第 4(3)、9(3) 條；B(A)R 第 37、41 條）（第 2 段）；岩土工程見 **APP-28**（第 3 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

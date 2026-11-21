@@ -7,6 +7,8 @@ tags:
   - Fire resisting construction 耐火結構
   - Site supervision 地盤監督
   - Curtain wall & façade 幕牆及外牆
+summary: "Load and material factors, exposure and cover, span/depth ratios and high-strength concrete rules."
+keywords: concrete code, 混凝土, cover, 保護層, exposure, grade, C30, reinforcement, 鋼筋, span depth ratio
 ---
 
 # Code of Practice for Structural Use of Concrete 2013<br><small>《2013 年混凝土結構作業守則》</small>
@@ -19,7 +21,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e.pdf) · [Apr 2024 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e_amendment202404.pdf) · [Jun 2023](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e_amendment202306.pdf) · [Feb 2022](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e_amendment202202.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the 2020 Edition and the 2024 amendment |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +39,7 @@ tags:
     - **高強度混凝土**（> C60）須有**防爆裂措施**：鋼絲網、每立方米 **1.5 公斤**以上聚丙烯纖維、保護層或經驗證配比；**C80 以上**須進行耐火測試。
     - 樑、柱、牆的**延性**構造（第 9.9 節）、**轉換結構**，以及施工各階段的質量控制（第 11 節）。
 
-## Contents 內容
+## Contents 內容 {#contents}
 
 | Section 章節 | Topic 主題 |
 |---|---|
@@ -55,7 +57,7 @@ tags:
 | 12 | Prestressed concrete 預應力混凝土 |
 | 13 | Load tests 荷載測試 |
 
-## Load and material factors 荷載及材料系數 (Tables 2.1–2.3)
+## Load and material factors 荷載及材料系數 (Tables 2.1–2.3) {#load-and-material-factors-tables-2123}
 
 | Combination 組合 | Dead (adverse / beneficial) | Imposed | Earth & water | Wind |
 |---|---|---|---|---|
@@ -78,7 +80,7 @@ tags:
 
 <small>Accidental loads and localised damage: γf = 1.05. Vehicle impact on vertical elements: γf = 1.25. 意外荷載 1.05；車輛撞擊 1.25。</small>
 
-## Exposure and cover 暴露情況及保護層 (Tables 4.1–4.2)
+## Exposure and cover 暴露情況及保護層 (Tables 4.1–4.2) {#exposure-and-cover-tables-4142}
 
 | Exposure 暴露 | Examples 例子 |
 |---|---|
@@ -101,7 +103,7 @@ tags:
 - Actual cover ≥ nominal **− 5 mm**; cover ≥ main bar diameter and ≥ aggregate size. 實際保護層不少於標稱值減 5 毫米。
 - Cast against earth: **75 mm**; against blinding: **40 mm**. 直接澆向泥土 75 毫米；墊層上 40 毫米。
 
-## Deflection: basic span / effective depth 跨深比 (Table 7.3)
+## Deflection: basic span / effective depth 跨深比 (Table 7.3) {#deflection-basic-span-effective-depth-table-73}
 
 | Support 支承 | Rectangular beam / slab 矩形樑／實心板 | Flanged beam (bw/b ≤ 0.3) 翼緣樑 |
 |---|---|---|
@@ -112,11 +114,11 @@ tags:
 
 <small>Then modify for tension and compression steel; spans over 10 m need a further check. 再按鋼筋修正；跨度超過 10 米另須驗算。</small>
 
-## Amendments since the 2020 Edition 修訂
+## Amendments since the 2020 Edition 修訂 {#amendments-since-the-2020-edition}
 
 - **Apr 2024**: maximum permanent elongation for couplers longer than **100 mm**; new **strut-and-tie** provisions (cl. 6.9); new column link details (Fig. 9.5 g–i); mix proportions for **≤ 20 MPa** concrete for minor structural and non-structural works (cl. 11.7.1); BS 8500 and BS EN 206 references updated. 機械接駁器、壓桿拉桿模型、柱箍筋、小型工程低強度混凝土。
 - **Jun 2023** and **Feb 2022**: other clarifications; see the BD amendment PDFs. 其他修訂見原文。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [Dead & Imposed Loads](dil-2011.md) · [Wind Code](wind-2019.md) · [Precast Concrete Code](precast-2016.md) · [Foundations Code](foundations-2017.md) · [FS Code Part C](fsc-part-c-fire-resisting-construction.md) · [Site Supervision Code](site-supervision-2009.md) · [B(C)R](../regulations/bcr-123q.md)

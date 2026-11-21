@@ -23,7 +23,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP043.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP043.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -39,7 +39,7 @@ tags:
     - 在高層住用、全商業或其他綜合用途建築物：另須設**兩個獨立出口**供中心專用；**單樓梯**建築物：須另設**兩條樓梯**並把公用樓梯隔開；不多於 3 層的單一家庭住宅及新界豁免屋宇**沒有條件**（第 2 段）。
     - 不符合者，**更改用途**（第 25 條）會被禁止；**不得設於工業大廈**（第 3 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -53,7 +53,7 @@ tags:
         - 幼稚園設於 **24 米**以上。
         - 在單樓梯建築物依賴公用樓梯。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

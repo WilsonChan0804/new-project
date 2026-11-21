@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV024.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV024.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -31,7 +31,7 @@ tags:
     - 地台去水的**水封可能因蒸發而乾涸**（第 1 段）。
     - 可考慮**把衞生設備的廢水引入**地台去水 U 形隔氣彎管，須符合排水規例，排水暢順且**不會回流**（第 2 段）；變通按個別情況考慮（第 3 段）；根據 **APP-164**，很多情況下現已屬強制規定。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

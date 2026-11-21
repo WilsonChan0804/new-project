@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [B(SSF,P,D&L)R 10A](../regulations/bsfpwr-123i.md); [B(C)R 85](../regulations/bcr-123q.md); [B(A)R 25A](../regulations/bar-123a.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +37,7 @@ tags:
     - **水井**（B(C)R 第 85 條）：不得設於政府土地；**出水量足夠**且抽水不影響附近設施、建築物或土地方獲准。須呈交圖則、水井設計、抽水率及出水量測試建議；如未能排除影響，須由註冊岩土工程師作岩土評估（第 7–9 段）；**元朗市及馬鞍山**避免開鑿水井（沉降）（第 10 段）。
     - **出水量測試**（附錄 A）：12 月 1 日至 4 月 30 日，**連續 7 天**，每天抽水 ≤ 12 小時並以水錶計量；開始前 **1 星期**通知屋宇署及土力工程處。供水證明書按 B(A)R 第 25A 條（附錄 B／C）；食水水質須令建築事務監督滿意（第 11–14 段）。
 
-## Key table: flushing water demand 沖廁用水需求
+## Key table: flushing water demand 沖廁用水需求 {#key-table-flushing-water-demand}
 
 | User 使用者 | Unit 單位 | Average demand 平均需求 |
 |---|---|---|
@@ -48,7 +48,7 @@ tags:
 | Schools 學校 | per head / day 每人每日 | 18 L |
 | Hotels, boarding houses 酒店、賓館 | per room / day 每房每日 | 90 L |
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

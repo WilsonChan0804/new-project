@@ -28,7 +28,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123](https://www.elegislation.gov.hk/hk/cap123) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (point in time 01/03/2026) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -46,7 +46,7 @@ tags:
     - **第 6 部上訴**：因建築事務監督**酌情決定**而感到受屈的人，可在 **21 天**內向**上訴審裁小組**上訴；上訴期間暫停執行須進行工程的決定（緊急情況除外）；主席須具區域法院法官資格，成員大多數不得為公職人員。
     - **附表**：2 共用結構（保留 1935 年條例第 110–126 條）；3 及 6 手令格式；4 可代行權力的部門；**5 附表所列地區**；7 強制驗窗罰款通知；8 可檢核的訂明工程（第 39C 條）。
 
-## Key table: main offences and penalties (s.40) 主要罪行及罰則（第 40 條）
+## Key table: main offences and penalties (s.40) 主要罪行及罰則（第 40 條） {#key-table-main-offences-and-penalties-s40-40}
 
 | Offence 罪行 | s.40 | Max. penalty 最高罰則 |
 |---|---|---|
@@ -71,7 +71,7 @@ tags:
 
 <small>Standard fine levels (Criminal Procedure Ordinance, Sch. 8): level 1 $2,000; level 2 $5,000; level 3 $10,000; level 4 $25,000; level 5 $50,000; level 6 $100,000. Persons directly concerned who **permit** an offence are deemed guilty (s.40(5)); directors / partners may be liable (s.40(6), (6A)). 第 6 級罰款為 $100,000；容許犯罪的直接有關人士當作犯罪。</small>
 
-## Section by section (Parts 5–9) 逐條摘要（第 5–9 部）
+## Section by section (Parts 5–9) 逐條摘要（第 5–9 部） {#section-by-section-parts-59-59}
 
 | s. 條 | Title 標題 | Summary 摘要 |
 |---|---|---|
@@ -87,7 +87,7 @@ tags:
 | 55 | Validation 認可 | Validates certain past acts of the BA and authorised officers. 追認過往行為。 |
 | 56 | Transitional: minor works 小型工程過渡 | Works approved before the MWCS commencement are not minor works; pre-existing s.41(3) exempted works continue. 小型工程過渡。 |
 
-## Key table: Schedules 附表
+## Key table: Schedules 附表 {#key-table-schedules}
 
 | Schedule 附表 | Content 內容 |
 |---|---|
@@ -99,7 +99,7 @@ tags:
 | **7** | **MWIS penalty notice** procedure (fixed penalty before prosecution, s.40(1BE)) 強制驗窗罰款通知 |
 | **8** | Prescribed buildings / building works for **validation** (s.39C): signboards, supports for services, RBS supports, A/C and light frames, fence walls, railings, poles, etc. 可檢核的訂明工程 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.40(1AA) — Works without approval and consent 未經批准及同意進行工程"
     Any person who knowingly contravenes section 14(1) in respect of building works (other than minor works) or street works shall be guilty of an offence and shall be liable on conviction— (a) to a fine of $400,000 and to imprisonment for 2 years; and (b) to a fine of $20,000 for each day during which it is proved to the satisfaction of the court that the offence has continued.
@@ -116,7 +116,7 @@ tags:
 
     **官方中文本：** (1) 建築事務監督在接獲有關申請和獲付訂明的費用後，如認為因情況特殊而適宜藉書面通知准許對本條例的條文作出變通，則可如此變通。(2) 根據本條提出的每項豁免申請，須以指明的表格提出，建築事務監督須按申請的實況予以考慮，而無須顧及過去曾批予的豁免。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -134,7 +134,7 @@ tags:
 
     **罪行**罰則嚴厲：明知而僭建及不遵從命令的罪行設有每日罰款。**12 個月**檢控時限由屋宇署發現時起計，而不只是工程日期。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -166,7 +166,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

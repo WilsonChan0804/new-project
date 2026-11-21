@@ -21,7 +21,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV023.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV023.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - 應使人造斜坡盡量**自然**，並減少使用噴漿及灰泥（第 2 段）。
     - 建築事務監督強烈建議在新建、改善或維修斜坡及擋土牆時採用本**園景及生物工程**指引，並全程納入園景設計（第 3–4 段起）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

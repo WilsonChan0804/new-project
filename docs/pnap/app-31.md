@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.21(6)(d)](../regulations/bo-part-2-building-works.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 如消防裝置守則規定須為消防裝置提供**恆久供水**，須在**佔用前**完成恆久接駁（第 1 段）。
     - 如消防裝置合格但未接駁，消防處的證明書會附**附帶條件**，只在接駁後生效；在條件達成前**不會發出佔用許可證**（第 2 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -44,7 +44,7 @@ tags:
     !!! tip "常見錯誤"
         - 預計佔用許可證日期時，沒有預留時間完成消防水缸的**水務署恆久接駁**。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

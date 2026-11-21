@@ -23,6 +23,6 @@ BD still lists these codes. The three fire codes have been **replaced** for new 
 !!! note "Scanned documents 掃描文件"
     Most of these PDFs are scans without searchable text, and the codes are superseded or short, so this page records their status rather than their clauses. 大部分文件為掃描版，本頁只說明其地位。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [FS Code 2011](fire-safety-code-2011.md) · [B(EE)R](../regulations/beer-123m.md) · [APP-67](../pnap/app-67.md) · [BD Guidelines](bd-guidelines.md)

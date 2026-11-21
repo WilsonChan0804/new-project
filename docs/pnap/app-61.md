@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.41(3), Sch. 5](../regulations/bo-parts-4-9-schedules.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - 管制涵蓋**土地勘測、基礎設計及施工，以及抽取地下水**，補充基礎守則及 APP-18（第 2 段）。
     - **土地勘測須取得批准及同意**（第 41(3) 條、B(A)R 第 8(1)(l) 條）；須按岩土指南第 2 號由有經驗的註冊專門承建商進行高標準、受妥善監督的勘測，並訂有最低監督資格（第 3–5 段）；該區應避免開鑿水井（見 APP-4）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

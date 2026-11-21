@@ -28,6 +28,13 @@ tags:
   - Site area & classification 地盤面積及分類
   - Refuse 垃圾
   - Plumbing & sanitary 衞生設備
+  - Occupation permit 佔用許可證
+  - Staircase 樓梯
+  - Plot ratio 地積比率
+  - Industrial building 工業大廈
+  - Wind 風力
+  - Refuge floor 庇護層
+  - Means of access 救援通道
 ---
 # PNAP 認可人士作業備考
 
@@ -42,7 +49,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | **ADM** | Administration and procedures 行政及程序 |
 | **ADV** | Advisory / general guidance 諮詢及一般指引 |
 
-## Entries 已整理條目
+## Entries 已整理條目 {#entries}
 
 | No. 編號 | Title 標題 | Topic 主題 | Version 版本 | Status 狀態 |
 |---|---|---|---|---|
@@ -214,7 +221,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [APP-175](app-175.md) | Elderly-friendly Building Design 長者友善樓宇設計 | Reg. 73 第 73 條 | Aug 2026 | ✅ Checked |
 | [APP-176](app-176.md) | Design Manual on Universal Accessibility 暢道通行設計手冊 | DMUA 2026 | Sep 2026 | ✅ Checked |
 
-## ADM series 行政系列
+## ADM series 行政系列 {#adm-series}
 
 | No. 編號 | Title 標題 | Topic 主題 | Version 版本 | Status 狀態 |
 |---|---|---|---|---|
@@ -241,7 +248,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [ADM-22](adm-22.md) | Withdrawal and Resubmission 撤回並重新提交申請 | W&R practice 撤回並重新提交 | Sep 2019 | ✅ Checked |
 | [ADM-23](adm-23.md) | Self-certification System for Plan Submission of Simple Structural Works 自行認證呈交簡單結構工程圖則 | Simple structural works fast track 簡單結構快速處理 | Jun 2025 | ✅ Checked |
 
-## ADV series 諮詢系列
+## ADV series 諮詢系列 {#adv-series}
 
 | No. 編號 | Title 標題 | Topic 主題 | Version 版本 | Status 狀態 |
 |---|---|---|---|---|
@@ -281,7 +288,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [ADV-37](adv-37.md) | Conduct of Registered Building Professionals under the Buildings Ordinance 《建築物條例》下註冊建築專業人士的操守 | Professional duties 專業責任 | May 2018 | ✅ Checked |
 | [ADV-38](adv-38.md) | Innovative Building Materials and Technologies 創新建築材料與技術 | IBMT pre-acceptance 創新物料預先認可 | Apr 2024 | ✅ Checked |
 
-## Joint Practice Notes 聯合作業備考
+## Joint Practice Notes 聯合作業備考 {#joint-practice-notes}
 
 | No. 編號 | Title 標題 | Topic 主題 | Version 版本 | Status 狀態 |
 |---|---|---|---|---|
@@ -295,7 +302,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [JPN 8](jpn-8.md) | Enhanced Facilitation Measures for MiC 進一步促進建築物採用「組裝合成」建築法的措施 | MiC 組裝合成 | Jul 2022 | ✅ Checked |
 | [JPN 9](jpn-9.md) | Bonus Plot Ratio Pilot Scheme 額外地積比率先導計劃 | Redevelopment, bonus PR 重建、額外地積比率 | Aug 2026 | ✅ Checked |
 
-## Coverage 涵蓋範圍
+## Coverage 涵蓋範圍 {#coverage}
 
 Every PNAP in force on BD's current list (APP, ADM and ADV series) now has an entry. Not included, because BD has repealed them or they are obsolete: APP-6, APP-36, APP-77, APP-102 (repealed 11 Apr 2025), APP-103 (repealed 12 May 2021), APP-113, APP-131, APP-161, ADM-12, ADV-7, ADV-20 and ADV-22.
 

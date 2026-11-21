@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.22(4)](../regulations/bo-part-2-enforcement.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - 網上呈交：**電子表格呈交系統**及電子櫃位；**電子呈交平台**第 1–3 階段（2022 年 6 月、2023 年 3 月、2024 年 6 月）處理新建築物及改動加建表格；**註冊及小型工程管理系統**（**2026 年 5 月 29 日**推出）處理註冊及小型工程表格（第 3–6 段）。
     - 電子圖則格式見 **ADM-17**；應從屋宇署網站下載最新表格並以電腦填寫，使資料儲存於 **QR 碼**（第 7–8 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -23,7 +23,7 @@ tags:
 !!! note "Note 注意"
     This summarises the June 2025 revision based on the Design Manual: Barrier Free Access 2008. The **Design Manual: Universal Accessibility 2026** now replaces it (see the banner on [BFA 2008](../codes/bfa-2008.md)). Check BD for the re-issued APP-41.
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -39,7 +39,7 @@ tags:
     - 只在**特殊情況**（地盤位置、不合理的困難）下按**附錄 A** 考慮**豁免或變通**；為沒有通道的現有建築物進行改動加建時，須採取一切切實可行措施（第 6–7 段）；建築事務監督會諮詢**無障礙通道諮詢委員會**（第 8 段）。
     - 設計手冊修訂（附錄 C–I，2012–2024 年）；**附錄 J（2025 年）**加入推廣長者友善建築設計專責小組建議的**長者友善**設計（第 6 章），日後將修訂 B(P)R 使之成為強制規定（第 9–12 段）。
 
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![From the BFA Design Manual 2008 to the Universal Accessibility manual 2026. 由暢通無阻設計手冊到暢道通行設計手冊。](../assets/figures/diagrams/ua-timeline.svg){ width="760" loading=lazy }
@@ -55,7 +55,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

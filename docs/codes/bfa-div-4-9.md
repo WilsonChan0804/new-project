@@ -28,7 +28,7 @@ tags:
     BD issued the **Design Manual on Universal Accessibility 2026** (see [APP-176](../pnap/app-176.md)), which replaces this BFA 2008 Manual. The **obligatory** clauses here still match the statutory **B(P)R Third Schedule**; best-practice items may differ in the DMUA.
     屋宇署已發出《設計手冊：暢道通行2026》（見 APP-176）取代本手冊；本頁的**強制性**條文仍與 B(P)R 附表 3 相同，良好作業部分或有不同。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,7 +48,7 @@ tags:
     - **扶手**（第 8 分部）：頂部高 **850–950 毫米**；離牆 **30–50 毫米**、支架以上淨空 **70 毫米**；直徑 **32–50 毫米**；兩端伸延 **≥ 300 毫米**（門口 100 毫米）；承受 **1.3 千牛**；樓梯扶手設點字樓層及箭咀資料。
     - **走廊**（第 9 分部）：淨闊 **≥ 1 050 毫米**；每個盡頭 **3 500 毫米**內設 **1 500 × 1 500 毫米**迴轉空間；門廊長 **≥ 1 200 毫米**；入口兩旁設門擺幅外 **1 200 毫米** × 闊 **1 500 毫米**平坦空間；格柵縫 **≤ 13 毫米**且與行走方向不平行；渠蓋孔隙 **≤ 20 毫米**；2 米以下牆身凸出物 ≤ **90 毫米**；閘機及收銀處設 **800 毫米**輪椅通道；淨高 ≤ **2 000 毫米**處設護欄（前緣 ≤ **680 毫米**）。
 
-## Division 4 Access route 第 4 分部 通道
+## Division 4 Access route 第 4 分部 通道 {#division-4-access-route-4}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -63,7 +63,7 @@ tags:
   <figcaption>Figure 6A – Tactile guide paths from the lot boundary to the entrance and interior facilities. 由地段界線至入口的觸覺引路帶。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 5 Ramps 第 5 分部 斜道
+## Division 5 Ramps 第 5 分部 斜道 {#division-5-ramps-5}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -88,7 +88,7 @@ tags:
   <figcaption>Figure 8 – Running slope: level ideal; < 1:20 accessible; up to 1:10 assistance needed; > 1:10 hazard (minor rise only). 斜道坡度。Source: BD, BFA 2008. (Figure 7, landings and tactile strips: see the <a href="../bfa-2008/">overview</a>.)</figcaption>
 </figure>
 
-## Division 6 Dropped kerbs 第 6 分部 下斜路緣
+## Division 6 Dropped kerbs 第 6 分部 下斜路緣 {#division-6-dropped-kerbs-6}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -101,7 +101,7 @@ tags:
   <figcaption>Figure 9 – Dropped kerb. 下斜路緣。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 7 Steps and staircases 第 7 分部 梯級及樓梯
+## Division 7 Steps and staircases 第 7 分部 梯級及樓梯 {#division-7-steps-and-staircases-7}
 
 | Para. 段 | Obligatory requirement (required and main circulation staircases) 強制性規定 |
 |---|---|
@@ -116,7 +116,7 @@ tags:
   <figcaption>Figure 13 – Tactile warning strips (300 / 600 mm) and handrail extensions at staircases. 樓梯觸覺警示帶及扶手。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 8 Handrails 第 8 分部 扶手
+## Division 8 Handrails 第 8 分部 扶手 {#division-8-handrails-8}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -134,7 +134,7 @@ tags:
   <figcaption>Figure 15 – Handrail sections: 32–50 mm diameter, 30–50 mm from wall, 70 mm clear above bracket. 扶手截面。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 9 Corridors, lobbies and paths 第 9 分部 走廊、門廊及小路
+## Division 9 Corridors, lobbies and paths 第 9 分部 走廊、門廊及小路 {#division-9-corridors-lobbies-and-paths-9}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -157,7 +157,7 @@ tags:
   <figcaption>Figure 19 – Overhead hazard: guardrail where headroom ≤ 2 000 mm. 頭頂障礙。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 17 / Third Schedule s.17 — Ramp gradient 斜道坡度"
     No ramp shall be steeper than 1 in 12 gradient except in the following situations of minor rise: 1:10 (10%), maximum length 1500 mm, maximum rise 150 mm; 1:8 (12.5%), maximum length 600 mm, maximum rise 75 mm.
@@ -169,7 +169,7 @@ tags:
 
     **官方中文本（附表 3 第 31 條）：** (1) 走廊、門廊、小路及類似空間的淨闊度，不得少於1 050毫米。(2) 如殘疾人士只可循一個方向離開某走廊、門廊或小路，則在距離該走廊、門廊或小路3 500毫米以內的地方，須有一個闊度及深度均不少於1 500毫米的空間。(3) 走廊內任何門廊的長度不得少於1 200毫米(門的擺幅所需的空間不計算在內)。(4) 建築物每個入口的兩旁須有平坦的空間。該空間須在門的擺幅所需的範圍之外延伸不少於1 200毫米，而闊度則不得少於1 500毫米。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -193,7 +193,7 @@ tags:
         - 消防喉轆或標誌在 2 米以下伸入走廊 **> 90 毫米**。
         - 格柵縫與行走方向**平行**（小輪會卡住）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

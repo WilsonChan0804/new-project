@@ -25,7 +25,7 @@ tags:
     | **Source 原文** | [JPN 9 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN09.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the August 2026 issue |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -47,7 +47,7 @@ tags:
     - **屋宇署角色**：如城規會批准的整體地積比率超過 **B(P)R 附表 1**，須根據**《建築物條例》第 42 條**申請；屋宇署會參照 [JPN 4](jpn-4.md) **從寬考慮**（第 12 段）。
     - 兌換的抵免有效期 **10 年**，除轉讓予相聯公司外不可轉讓，不設利息或退款（第 15 段）。
 
-## Key table: bonus PR eligibility (para. 5) 額外地積比率資格（第 5 段）
+## Key table: bonus PR eligibility (para. 5) 額外地積比率資格（第 5 段） {#key-table-bonus-pr-eligibility-para-5-5}
 
 | Criterion 條件 | Requirement 要求 |
 |---|---|
@@ -56,7 +56,7 @@ tags:
 | (c) Future use 重建用途 | **Mainly residential**: **> 50%** of total GFA residential, whatever the zoning 住宅 > 50% |
 | (d) Site area 地盤面積 | **≥ 700 m²**, one or more lots. Government land to be granted is not counted; non-building areas count for the 700 m² but not for the bonus ≥ 700 平方米 |
 
-## Key table: how the 20% bonus PR is calculated (Appendix) 額外地積比率計算方法（附錄）
+## Key table: how the 20% bonus PR is calculated (Appendix) 額外地積比率計算方法（附錄） {#key-table-how-the-20-bonus-pr-is-calculated-appendix}
 
 | Situation 情況 | Basis 依據 | Example (700 m² site) 例子 |
 |---|---|---|
@@ -68,7 +68,7 @@ tags:
 
 <small>The existing building's PR is not used, even if the OZP allows redevelopment to the existing PR. Other GFA concessions (green features, heritage bonus) remain available but are not counted in the bonus. B(P)R First Schedule: see [B(P)R 18A–22](../regulations/bpr-18a-22.md). 不以現有建築物的地積比率計算；其他寬免仍適用但不計入額外地積比率。</small>
 
-## Key table: Option (i) vs Option (ii) 選項比較
+## Key table: Option (i) vs Option (ii) 選項比較 {#key-table-option-i-vs-option-ii}
 
 | | **Option (i) In kind 原址興建** | **Option (ii) Encashment 兌換** |
 |---|---|---|
@@ -79,7 +79,7 @@ tags:
 | Unused bonus 未用部分 | **Lost**: no encashment, transfer or cash 不可兌換 | Valid **10 years**; no interest, no refund 有效 10 年 |
 | Hybrid 混合 | **Not allowed** 不容許 | **Not allowed** 不容許 |
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -105,7 +105,7 @@ tags:
 
     計劃**設有時限**：只接受 **2026 年 9 月 1 日至 2031 年 8 月 31 日**期間提交的修訂地契申請。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -127,7 +127,7 @@ tags:
         - 在申請修訂地契或呈交一般建築圖則前未取得**全部業權**（第 16(c) 段）。
         - 整體地積比率超過 B(P)R 附表 1 時忘記申請**第 42 條變通**。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

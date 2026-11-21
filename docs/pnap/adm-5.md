@@ -18,7 +18,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM005.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM005.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -30,7 +30,7 @@ tags:
     - **新建築物及改動加建**的紙本呈交（與命令有關的工程除外）送交**太古灣道 14 號 7 樓新建築部收發櫃位**；其他送交**西九龍政府合署北座地下屋宇署總部**（第 1 段）。
     - 櫃位**星期一至五上午 8:30 至下午 5:30** 開放；圖則按附錄 A 摺疊；電子呈交見 **ADM-17** 及 **APP-60**（第 2–4 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

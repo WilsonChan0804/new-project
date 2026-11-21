@@ -26,7 +26,7 @@ tags:
     | **Legal basis 法律依據** | B(P)R 28A; Telecommunications Ordinance (Cap. 106) s.14 |
     | **Last checked 最後核對** | 2026-11-20 against the September 2024 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -44,7 +44,7 @@ tags:
     - **流動／5G（新增，2025 年 4 月 1 日起）**：「**指明建築物**」（商業／工業實用樓面空間 > **3,000 平方米**、住宅 > **50 個單位**、酒店 > **75 間客房**）須提供**流動通訊接達設施**：**流動通訊設備房**、**天台電訊設備房**、高於 **175 米**的建築物另設**中層電訊設備房**，以及垂直槽（附錄 C–D）。
     - **總樓面面積**：附錄 A 上限內的設備房，以及指明建築物的流動通訊設施可**不計算**；**< 10 平方米**的流動通訊設備房不獲豁免；非指明建築物的流動通訊設施須計入總樓面面積（第 17 段）。
 
-## Key table: TBE room areas (Appendix A) 電訊及廣播設備房面積（附錄 A）
+## Key table: TBE room areas (Appendix A) 電訊及廣播設備房面積（附錄 A） {#key-table-tbe-room-areas-appendix-a-a}
 
 **Commercial / industrial buildings 商業／工業建築物** (UFS per building, ×1,000 m² 每幢實用樓面空間)
 
@@ -77,7 +77,7 @@ tags:
   <figcaption>Appendix A — Requirements of access facilities for fixed telecommunications and broadcasting services (original) 固網電訊及廣播服務接達設施要求（原文）<br><small>Source: PNAP APP-84 (Sep 2024), Buildings Department 資料來源：屋宇署</small></figcaption>
 </figure>
 
-## Key table: mobile access facilities (Appendices C–D) 流動通訊接達設施（附錄 C–D）
+## Key table: mobile access facilities (Appendices C–D) 流動通訊接達設施（附錄 C–D） {#key-table-mobile-access-facilities-appendices-cd-cd}
 
 | Item 項目 | Requirement 規定 |
 |---|---|
@@ -100,14 +100,14 @@ tags:
     ![Appendix E](../assets/figures/app-84/appendix-e-maf-schematic.jpg){ loading=lazy }
     *Appendix E — Mobile access facilities 流動通訊接達設施*
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 17 — GFA exemption for MAF 流動通訊設施的總樓面面積豁免"
     As stated in paragraph 3 above, both the requirements of MAF and access right to MAF granted under section 14 of the TO are only applicable to specified buildings. Hence, GFA exemption under regulation 23(3)(b) of the B(P)R for MAF is only applicable to MAF provided in specified buildings under paragraphs 12 and 13, as well as those provided under paragraph 14 subject to support by OFCA. MAF in buildings other than specified buildings should be included in GFA calculation. [Footnote: GFA exemption would not be granted if the size of TBE<sub>MAF</sub> room, RTE room or ITE room to be provided is less than 10m².]
 
     **中譯（非官方）：** 如上文第 3 段所述，流動通訊接達設施的規定及根據《電訊條例》第 14 條授予的接達權只適用於指明建築物。因此，根據 B(P)R 第 23(3)(b) 條給予流動通訊設施的總樓面面積豁免，只適用於按第 12 及 13 段在指明建築物內提供的設施，以及獲通訊事務管理局辦公室支持而按第 14 段提供的設施；非指明建築物內的流動通訊設施須計入總樓面面積。〔註：如流動通訊設備房、天台或中層電訊設備房面積少於 10 平方米，將不獲豁免。〕
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -125,7 +125,7 @@ tags:
 
     **防水**：電訊及流動通訊設備房內不得有水管、花灑或排水管，電訊及廣播設備房亦不應設於易水浸的樓層。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -168,7 +168,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

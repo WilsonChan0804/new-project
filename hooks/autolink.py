@@ -149,3 +149,11 @@ def on_page_content(html, page, config, files):
     html = re.sub(r'\x00M(.*?)\x00/M', r'<strong class="kw-num">\1</strong>', html)
     html = re.sub(r'\x00K(.*?)\x00/K', r'<mark class="kw">\1</mark>', html)
     return html
+
+
+def on_post_page(output, page, config):
+    """Write the page's source path, used as the page id for shared edits
+    (claude.ai preview and the LWK Viewer)."""
+    src = page.file.src_uri.replace('"', '')
+    tag = f'<meta name="kb-page" content="{src}">'
+    return output.replace('</head>', tag + '</head>', 1)

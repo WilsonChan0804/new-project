@@ -6,6 +6,8 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Protective barrier 防護欄障
   - Wind 風力
+summary: "When laminated glass is required, heat soak, deflection limits and glass balustrades."
+keywords: glass code, 玻璃, laminated glass, 夾層玻璃, tempered, 鋼化玻璃, heat soak, 均質處理, glass balustrade, 玻璃欄河
 ---
 
 # Code of Practice for Structural Use of Glass 2018<br><small>《2018 年玻璃結構作業守則》</small>
@@ -18,7 +20,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUG2018e.pdf) · [2020 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUG2018e_Amend2020.pdf) · [2024 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUG2018e_Amend2024.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +38,7 @@ tags:
     - 天幕、可到達簷篷、天窗、樓梯及地台須用**多層**玻璃並具**冗餘度**：任何一片破裂後，其餘須能承受**未乘系數**的荷載。
     - 所有**鋼化玻璃**須按 BS EN 14179-1 進行**均質處理**（**260 ± 10 °C** 保持最少 **2 小時**），以減低硫化鎳自爆風險。
 
-## Contents 內容
+## Contents 內容 {#contents}
 
 | Section 章節 | Topic 主題 |
 |---|---|
@@ -47,7 +49,7 @@ tags:
 | 7 | Connections: structural sealant, framed, adhesive, **point-bolted**, clipped; holes; interlayers (PVB, ionoplast); gaskets, setting blocks 接駁 |
 | 8 | Testing: **heat soak**, fragmentation, surface stress, impact, sealant adhesion, **system tests** (curtain wall) 測試 |
 
-## Deflection limits 撓度限制 (cl. 5.5.3–5.5.4)
+## Deflection limits 撓度限制 (cl. 5.5.3–5.5.4) {#deflection-limits-cl-553554}
 
 | Support 支承 | Glass pane limit 玻璃板 |
 |---|---|
@@ -63,17 +65,17 @@ tags:
 | Span > 7.2 m | Span/360 |
 | Cantilever member 懸臂構件 | Smaller of span/90 and 20 mm |
 
-## Glass balustrades 玻璃欄河 (cl. 6.4)
+## Glass balustrades 玻璃欄河 (cl. 6.4) {#glass-balustrades-cl-64}
 
 - The **handrail and balusters** carry the handrail loads; the glass is infill and must not be relied on to support the frame. 扶手及欄杆承受荷載，玻璃只作填充。
 - Design for the [DIL barrier loads](dil-2011.md) or wind, whichever is worse, and **impact test** the glass. 按荷載守則或風壓設計，並須進行撞擊測試。
 - Free-standing balustrades of **2 or more panels** in crowded areas: the top rail must **bridge a broken pane**, or the laminated glass must still carry the working load with one ply broken. Use **continuous bottom clamps**. 擠迫地方的獨立玻璃欄河須能跨越破裂玻璃。
 
-## Amendments 修訂
+## Amendments 修訂 {#amendments}
 
 - **Feb 2024**: deleted the 8 mm weep holes in the typical external balustrade detail (Fig. 6.1); revised pressure p2 for the repeated pressure test (cl. 8.3.1); revised the failure load expressions in Annex B. 刪除去水孔、修訂測試壓力。
 - **Jul 2020**: see the BD amendment PDF. 見原文。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [Wind Code](wind-2019.md) · [Dead & Imposed Loads](dil-2011.md) · [Steel Code](steel-2011.md) · [APP-110 barriers](../pnap/app-110.md) · [APP-37 windows](../pnap/app-37.md) · [External maintenance Code](external-maintenance-2021.md)

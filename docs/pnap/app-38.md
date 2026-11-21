@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.31(1)](../regulations/bo-part-3-miscellaneous.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -38,7 +38,7 @@ tags:
     - 外觀須獲**橋樑及有關建築物外觀諮詢委員會**接受：按 ETWB TC(W) 36/2004 呈交 **10 套** A3 建議（第 2(d)、3–4 段）。
     - **完全位於政府土地**的獨立天橋不受《建築物條例》管制（由路政署負責）；施工前須與路政署議定**保養責任**（第 5–6 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -52,7 +52,7 @@ tags:
         - 天橋上設商店或攤位而沒有規劃許可及計入總樓面面積。
         - 太遲呈交外觀委員會，延誤第 31(1) 條豁免。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -22,7 +22,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R Part IX (regs 64–66)](../regulations/bpr-50-70.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -38,14 +38,14 @@ tags:
     - 佔用行車道時，單程行車線須保持 **≥ 3 米**、雙程 **5.5 米**；否則須向運輸署查詢是否需要**交通影響評估**（紅色／粉紅色路線、巴士走廊、距燈號路口 70 米內），並在申請前 **2 個月**提交（第 5 段）。
     - **行人通道淨闊度**見下表；**淨高 ≥ 2.3 米**；照明 **35–50 勒克斯**；保持公用設施沙井可達；公共道路上掘柱洞須取得**挖掘准許證**（第 28 章）（第 9–14 段）。
 
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![Covered walkway section with clear width and headroom (APP-23). 有蓋行人道剖面。](../assets/figures/diagrams/hoarding-section.svg){ width="760" loading=lazy }
   <figcaption>Covered walkway section with clear width and headroom (APP-23). 有蓋行人道剖面。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: pedestrian walkway clear width 行人通道淨闊度
+## Key table: pedestrian walkway clear width 行人通道淨闊度 {#key-table-pedestrian-walkway-clear-width}
 
 | Existing pavement 現有行人路 | Clear width 淨闊度 |
 |---|---|
@@ -67,7 +67,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

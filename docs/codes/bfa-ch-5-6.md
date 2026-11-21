@@ -27,7 +27,7 @@ tags:
     BD issued the **Design Manual on Universal Accessibility 2026** (see [APP-176](../pnap/app-176.md)), which replaces this BFA 2008 Manual. The **obligatory** clauses here still match the statutory **B(P)R Third Schedule**; best-practice items may differ in the DMUA.
     屋宇署已發出《設計手冊：暢道通行2026》（見 APP-176）取代本手冊；本頁的**強制性**條文仍與 B(P)R 附表 3 相同，良好作業部分或有不同。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -51,7 +51,7 @@ tags:
         - **身心健康**：較低窗台、每 **50 米**及樓梯平台設休息座椅、長者友善洗手間、成人更換枱、健體設施、耕種花槽。
         - **樂齡科技**：單位及公用地方預留網絡（5G、物聯網、感應器）。
 
-## Chapter 5 Building services design requirements 第 5 章 屋宇裝備設計規定
+## Chapter 5 Building services design requirements 第 5 章 屋宇裝備設計規定 {#chapter-5-building-services-design-requirements-5}
 
 | Section 節 | Subject 主題 | Key points 重點 | Status 地位 |
 |---|---|---|---|
@@ -67,7 +67,7 @@ tags:
   <figcaption>Figure 43 – Heights of switches and controls (450–1 200 mm). 開關及控制裝置高度。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Chapter 6 Elderly-friendly design guidelines 第 6 章 長者友善設計指引
+## Chapter 6 Elderly-friendly design guidelines 第 6 章 長者友善設計指引 {#chapter-6-elderly-friendly-design-guidelines-6}
 
 | Ref. | Item 項目 | Recommendation 建議 |
 |---|---|---|
@@ -107,7 +107,7 @@ tags:
   <figcaption>Figure 50 – Lower window level for seated views. 較低窗台。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Guidelines vs the 2026 law 指引與 2026 年法例比較
+## Guidelines vs the 2026 law 指引與 2026 年法例比較 {#guidelines-vs-the-2026-law-2026}
 
 Several Chapter 6 **recommendations** are now **obligatory** for buildings under [B(P)R reg. 73 and the Fourth Schedule](../regulations/bpr-71-73.md). 第 6 章部分**建議**已成為第 73 條及附表 4 的**強制**規定：
 
@@ -120,7 +120,7 @@ Several Chapter 6 **recommendations** are now **obligatory** for buildings under
 | Lifts 升降機 | Car depth ≥ 1.5 m | Accessible lifts **≥ 1 200 × 1 400 mm**, mirror finish |
 | Entrance 入口 | Automatic doors where practicable | **Automatic door** at a main residential entrance |
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -138,7 +138,7 @@ Several Chapter 6 **recommendations** are now **obligatory** for buildings under
         - 以為新住宅項目可不理會第 6 章：當中不少已成為第 73 條下的**法例**要求。
         - 在**可設斜道或升降機**的情況下仍建議設垂直升降台：它只是最後選擇。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

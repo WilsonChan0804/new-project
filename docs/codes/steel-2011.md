@@ -8,6 +8,8 @@ tags:
   - Wind 風力
   - Concrete & materials 混凝土及物料
   - Curtain wall & façade 幕牆及外牆
+summary: "Steel classes, design strengths, load factors and deflection and drift limits."
+keywords: steel code, 鋼結構, S355, design strength, deflection limit, 撓度, drift, 位移, composite
 ---
 
 # Code of Practice for the Structural Use of Steel 2011<br><small>《2011 年鋼結構作業守則》</small>
@@ -21,7 +23,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUOS2011.pdf) · [Apr 2026 amendment (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUOS2011e_Amend202604.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -39,7 +41,7 @@ tags:
     - 荷載系數與混凝土守則相同：**1.4 恒 + 1.6 外加**、1.4 恒 + 1.4 風、1.2（三者）。
     - **撓度限制**：有易碎飾面的樑 **跨度/360**、其他樑 **跨度/200**、懸臂 **長度/180**；建築物頂層位移 **H/500**、層間 **h/400**。
 
-## Contents 內容
+## Contents 內容 {#contents}
 
 | Section 章節 | Topic 主題 |
 |---|---|
@@ -57,7 +59,7 @@ tags:
 | 16 | Load tests 荷載測試 |
 | 17 | Evaluation and **modification of existing structures** 現有結構評估及改動 |
 
-## Material factors 材料系數 (Table 4.1)
+## Material factors 材料系數 (Table 4.1) {#material-factors-table-41}
 
 | Class 類別 | Yield 屈服強度 | γm1 | γm2 |
 |---|---|---|---|
@@ -66,7 +68,7 @@ tags:
 | 3 | py ≤ 170, Us ≤ 300 MPa | — | — |
 | 1H | 460–690 MPa | 1.0 | 1.05 |
 
-## Design strength py 設計強度 (Table 3.2, BS EN steels)
+## Design strength py 設計強度 (Table 3.2, BS EN steels) {#design-strength-py-table-32-bs-en-steels}
 
 | Thickness ≤ (mm) 厚度 | 16 | 40 | 63 | 80 | 100 | 150 |
 |---|---|---|---|---|---|---|
@@ -74,7 +76,7 @@ tags:
 | **S275** | 275 | 265 | 255 | 245 | 235 | 225 |
 | **S355** | 355 | 345 | 335 | 325 | 315 | 295 |
 
-## Deflection limits 撓度限制 (Table 5.1)
+## Deflection limits 撓度限制 (Table 5.1) {#deflection-limits-table-51}
 
 | Member 構件 | Limit 限制 |
 |---|---|
@@ -91,13 +93,13 @@ tags:
 
 <small>Exceeding a limit needs full justification. Precamber may be deducted. Check long spans for vibration. 超出限制須全面論證。</small>
 
-## April 2026 amendment 2026 年 4 月修訂
+## April 2026 amendment 2026 年 4 月修訂 {#april-2026-amendment-2026-4}
 
 - Definitions of Ys and Us clarified; welding between **different grades** of steel (cl. 3.4). 釐清定義；不同等級鋼材焊接。
 - **Building acceleration limits** revised (cl. 5.3.4). 修訂建築物加速度限制。
 - Lap joint and net-area equations corrected (Eq. 9.9, 9.10). 修正方程。
 - **Composite columns**: classification, allowed grades, quality control of concrete-filled hollow sections, geometric ratios, design strengths, buckling curves (cl. 10.5, Tables 10.11, 10.13). 組合柱多項修訂。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [Dead & Imposed Loads](dil-2011.md) · [Wind Code](wind-2019.md) · [Concrete Code](concrete-2013.md) · [Glass Code](glass-2018.md) · [FS Code Part C](fsc-part-c-fire-resisting-construction.md)

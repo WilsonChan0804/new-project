@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP011.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP011.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - 根據《建築物條例》批准**符合**計劃的圖則，並不表示會實施或補償；批准**不符合**計劃的圖則，**不影響**政府根據其他法例收回土地（第 4–5 段）。
     - 呈交受影響地段的圖則前，應**先向路政署查詢**（第 6 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

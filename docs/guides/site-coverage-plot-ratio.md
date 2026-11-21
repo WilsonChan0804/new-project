@@ -13,6 +13,8 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Occupation permit 佔用許可證
   - A&A works 改動及加建工程
+summary: "Working out site area, site class, permitted site coverage and plot ratio under B(P)R 18A–23."
+keywords: site coverage, 上蓋面積, plot ratio, 地積比率, site class, 地盤類別, site area, First Schedule, 附表一
 ---
 
 # Site coverage, plot ratio and site area<br><small>上蓋面積、地積比率及地盤面積（專題指南）</small>
@@ -23,14 +25,14 @@ tags:
 
     Main sources 主要來源: [B(P)R 18A–22](../regulations/bpr-18a-22.md) · [B(P)R 23](../regulations/bpr-23-23a.md) · [B(P)R 25](../regulations/bpr-24-37.md) · [APP-124](../pnap/app-124.md) · [APP-132](../pnap/app-132.md) · [APP-19](../pnap/app-19.md) · [APP-108](../pnap/app-108.md) · [APP-20](../pnap/app-20.md) · [APP-44](../pnap/app-44.md) · [ADM-21](../pnap/adm-21.md) · [JPN 4](../pnap/jpn-4.md) · [JPN 5](../pnap/jpn-5.md) · [JPN 7](../pnap/jpn-7.md)
 
-## The big picture 整體概念
+## The big picture 整體概念 {#the-big-picture}
 
 <figure markdown>
   ![Working out permitted SC and PR](../assets/figures/diagrams/scpr-guide-flow.svg){ width="520" loading=lazy }
   <figcaption>Working out permitted site coverage and plot ratio. 計算准許上蓋面積及地積比率。 Diagram prepared for this site.</figcaption>
 </figure>
 
-## Step 1: site area 第一步：地盤面積
+## Step 1: site area 第一步：地盤面積 {#step-1-site-area}
 
 === "English"
 
@@ -44,7 +46,7 @@ tags:
     - 地盤須屬申請人**業權或有實際控制前景**；須以**地契圖則或土地測量圖**證明（[ADM-21](../pnap/adm-21.md)、ADV-33）。
     - 地段內的私家街道及後巷有時可計算；新街道把大型地盤分割、地盤之間轉移地積比率等，見 [APP-44](../pnap/app-44.md) 及 [APP-73](../pnap/app-73.md)。
 
-## Step 2: site class 第二步：地盤類別
+## Step 2: site class 第二步：地盤類別 {#step-2-site-class}
 
 <figure markdown>
   ![Site classes A, B and C](../assets/figures/diagrams/site-class.svg){ width="700" loading=lazy }
@@ -54,11 +56,11 @@ tags:
 - **Class A 甲類**: one specified street. **Class B 乙類**: corner site on 2 streets, ≥ **40%** of the boundary. **Class C 丙類**: 3 streets, ≥ **60%** of the boundary.
 - A **specified street** must be government-vested and HyD-maintained, on the same lease and surrenderable, required by the lease, subject to an **express right of way**, or a private street held by the owner and kept as a street ([APP-124](../pnap/app-124.md)). Car parks, open spaces and nullahs do not count.
 
-## Step 3: building height 第三步：建築物高度
+## Step 3: building height 第三步：建築物高度 {#step-3-building-height}
 
 Measured from the **mean level of the street** (the lowest, if streets are at different levels) to the **mean height of the roof over the highest usable floor** ([B(P)R 23(1)](../regulations/bpr-23-23a.md)). Roof-top structures above that roof generally do not count. **OZP height limits** apply separately ([JPN 5](../pnap/jpn-5.md)); airport height restrictions too ([APP-32](../pnap/app-32.md)). 由街道平均水平量至最高可用樓層上的屋頂平均高度；分區計劃大綱圖及機場高度限制另計。
 
-## Step 4: the First Schedule 第四步：附表一
+## Step 4: the First Schedule 第四步：附表一 {#step-4-the-first-schedule}
 
 | Height of building 建築物高度 | Domestic SC % A / B / C 住用上蓋面積 | Domestic PR A / B / C 住用地積比率 | Non-domestic SC % 非住用上蓋面積 | Non-domestic PR 非住用地積比率 |
 |---|---|---|---|---|
@@ -88,7 +90,7 @@ Measured from the **mean level of the street** (the lowest, if streets are at di
     → domestic SC **37.5%** → max covered area **450 m²** at tower levels; domestic PR **9** → permitted GFA **10,800 m²**.
     Composite with a 15 m commercial podium: podium SC may be 100% up to 15 m; if the podium uses **one tenth** of the permitted non-domestic PR, the domestic part may use up to 9 × (1 − 0.1) = **8.1**. 如平台用去准許非住用地積比率的十分之一，住用部分最多可用 9 × 0.9 = 8.1。
 
-## Step 5: bonuses and flexibility 第五步：額外地積比率及彈性
+## Step 5: bonuses and flexibility 第五步：額外地積比率及彈性 {#step-5-bonuses-and-flexibility}
 
 | Mechanism 機制 | What you get 所得 | Limit 限制 | Source 來源 |
 |---|---|---|---|
@@ -100,7 +102,7 @@ Measured from the **mean level of the street** (the lowest, if streets are at di
 | Minor projections 小型伸出物 | Not counted for SC or PR | APP-19 list | [APP-19](../pnap/app-19.md) |
 | MiC 組裝合成建築法 | 10% of MiC floor area not counted for SC at each floor | MiC floors | [JPN 8](../pnap/jpn-8.md) |
 
-## Step 6: other controls on top 第六步：其他管制
+## Step 6: other controls on top 第六步：其他管制 {#step-6-other-controls-on-top}
 
 === "English"
 
@@ -138,7 +140,7 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 <!-- GUIDE APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | What it covers 內容 |
 |---|---|

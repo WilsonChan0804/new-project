@@ -18,7 +18,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM020.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM020.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 屋宇署的列表以認可實驗所測試或**符合證明書**為基礎（APP-118、APP-165）；資料屬**歷史數據**，每次使用仍須核證（第 3 段）。
     - 結構產品可在已完成項目中獲接納並經核證後列入，亦有其他途徑（第 4 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

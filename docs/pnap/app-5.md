@@ -26,7 +26,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP005.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP005.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the May 2019 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -42,7 +42,7 @@ tags:
     - 住用建築物的**最高樓層高度**（第 5 段）：**單位**：標準樓層 **3.5 米**、頂層 **4 米**（複式／三層複式只限其中一層）；**屋宇**：**4.5 米**。
     - **轉換層不計總樓面面積**，條件（第 6 段）：厚度 ≤ **標準樓層高度**（≤ 40 層住用）或 ≤ **4.5 米**（> 40 層住用及非住用）；面積 ≤ 其上建築物**最低樓層總樓面面積的 2 倍**；轉換層內的屋宇裝備區不計入厚度，但須有安全維修通道（第 7 段）。
 
-## Key table 主要表格
+## Key table 主要表格 {#key-table}
 
 | Item 項目 | Requirement 規定 | Para. 段 |
 |---|---|---|
@@ -61,7 +61,7 @@ tags:
 
     **官方中文本：** 為使支撐建築物的轉移板在設計上更為靈活，符合以下設計參數的轉移板一般無須計入總樓面面積：(a) 不超過40層高的住用建築物，其轉移板的厚度不應超過該建築物標準樓層的高度；(b) 超過40層高的住用建築物及所有非住用建築物，其轉移板的厚度不應超過4.5米；以及 (c) 轉移板的總面積不應超過其上方建築物最低樓層的總樓面面積2倍。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -71,7 +71,7 @@ tags:
 
     過高的樓層日後可能加建**閣樓**（非法增加樓面面積），因此屋宇署為計算總樓面面積而限制住宅層高；過厚的轉換層亦可能隱藏可用空間。APP-5 訂明清晰的**上限**，讓設計師知道哪些會被接納，同時保留基於衞生的**最低**高度。這些規則亦影響 [JPN 5](jpn-5.md) 下的建築物整體高度。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -113,7 +113,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

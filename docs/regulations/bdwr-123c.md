@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123C](https://www.elegislation.gov.hk/hk/cap123C) |
     | **Last checked 最後核對** | 2026-11-21 against the version on eLegislation (version date 13/05/2021) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -39,14 +39,14 @@ tags:
     - **監督**（第 8–9 條）：由註冊專門承建商委任的**適任技術人員**親自監督，並在地盤張貼通知；拆卸框架、樓板、牆、屋頂，切割鋼筋混凝土或鋼材，以及使用**機動機械**須在其監督下進行；機械操作員須有 **≥ 3 年**經驗。
     - **罪行**（第 13 條）：違反第 3 條可處第 4 級罰款；其他大部分違規可處**第 6 級罰款及監禁 2 年**，承建商及直接有關人士均須負責。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Demolition workflow. 拆卸工程流程。](../assets/figures/diagrams/app21-demolition.svg){ width="464" loading=lazy }
   <figcaption>Demolition workflow. 拆卸工程流程。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: who does what before and during demolition 拆卸前及期間的責任
+## Key table: who does what before and during demolition 拆卸前及期間的責任 {#key-table-who-does-what-before-and-during-demolition}
 
 | Duty 責任 | Who 負責人 | Reg. 條 |
 |---|---|---|
@@ -57,7 +57,7 @@ tags:
 | TCP supervision and site notice 適任技術人員監督及告示 | RSC | 8 |
 | Plant operator ≥ 3 years experience 機械操作員經驗 | RSC | 9(3) |
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Reg. 4A Sequence of carrying out demolition works 第 4A 條"
     A registered specialist contractor appointed in respect of demolition works is required to ensure that the demolition works are carried out— (a) in the reverse order of construction of the building to be demolished unless it is not appropriate; and (b) so that any collapse or fall of a part of the building is designed for in the plans for demolition works and controlled so as not to endanger any person.
@@ -65,7 +65,7 @@ tags:
     **官方中文本：** 就某項拆卸工程而委任的註冊專門承建商須確保 —— (a)該項拆卸工程按與須予拆卸建築物的建造次序相逆的次序進行(除非按此次序進行並不合適)；及 (b)在該項拆卸工程進行過程中，該建築物任何部分坍塌或墮下俱已在拆卸工程圖則之中預作籌謀，並加以控制以免危及任何人。
 
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -88,7 +88,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

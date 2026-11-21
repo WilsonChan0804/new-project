@@ -23,7 +23,7 @@ tags:
 !!! note "Note 注意"
     Historical note: the 1995/1996 fire codes it refers to have been replaced by the [Code of Practice for Fire Safety in Buildings 2011](../codes/fire-safety-code-2011.md). It is kept for older buildings and approvals.
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +37,7 @@ tags:
     - 須了解性能要求及最低規定；輕微偏差可能只需證明**同等替代**（或須測試），毋須制定全面消防策略（第 3 段）。
     - 較大偏差須進行全面消防工程研究並提供補償措施（其後各段）；現行指引見消防守則 **F／G 部**。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

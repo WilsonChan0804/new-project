@@ -24,7 +24,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123](https://www.elegislation.gov.hk/hk/cap123) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (point in time 01/03/2026) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,7 +48,7 @@ tags:
     - **第 39B 條**：任何人不得**阻礙業主立案法團**遵從就公用部分送達的命令或通知。
     - **第 39C 條**：若干僭建物的**檢核**：如工程在截止日期前完成，並按 B(MW)R 檢查及核證（如需要並作加固），屋宇署不會僅以未經批准為理由送達第 24 條命令或第 24C 條通知。涵蓋家居小型工程（**2010 年 12 月 31 日**前）、招牌及**附表 8** 項目（屋宇裝備支架、無線電基站、冷氣機支架、圍牆、欄杆、桿柱等）。
 
-## Section by section 逐條摘要
+## Section by section 逐條摘要 {#section-by-section}
 
 | s. 條 | Title 標題 | Summary 摘要 |
 |---|---|---|
@@ -68,7 +68,7 @@ tags:
 | 39B | Obstruction of owners' corporation 阻礙業主立案法團 | Persons notified by an OC must not obstruct it in complying with orders / notices on common parts. 不得阻礙法團。 |
 | 39C | No s.24 order / s.24C notice for validated works 檢核工程不會送達命令 | Prescribed buildings / works completed before 31 Dec 2010 (household minor works) or before dates prescribed in the B(MW)R (Schedule 8 items), inspected by an AP / RSE / RI / registered contractor, documents submitted, and strengthening done by a PRC: no order on the ground of no approval. Other grounds (e.g. danger) still apply. 檢核計劃。 |
 
-## Key table: s.31(1)(aa) signboard criteria 招牌準則
+## Key table: s.31(1)(aa) signboard criteria 招牌準則 {#key-table-s311aa-signboard-criteria}
 
 A signboard over a street is allowed only if its location and dimensions do **not** constitute: 招牌的位置及尺寸不得構成：
 
@@ -82,7 +82,7 @@ A signboard over a street is allowed only if its location and dimensions do **no
 | (vi) | An obstruction of the lighting or ventilation of any building below the regulation standard 阻礙建築物的照明或通風至低於規例標準 |
 | (vii) | A danger to the public 危及公眾 |
 
-## Key table: Schedule 8 — prescribed building works for validation (s.39C(1A)) 附表 8：可檢核的訂明建築工程
+## Key table: Schedule 8 — prescribed building works for validation (s.39C(1A)) 附表 8：可檢核的訂明建築工程 {#key-table-schedule-8-prescribed-building-works-for-validation-s39c1a-8}
 
 | Item 項目 | Description 描述 |
 |---|---|
@@ -96,7 +96,7 @@ A signboard over a street is allowed only if its location and dimensions do **no
 
 <small>"Of a prescribed type" means as prescribed in the B(MW)R (Schedule 3). The schemes are explained in [APP-147](../pnap/app-147.md) (HMWVS, Signboard Validation Scheme, MAFVS). 「訂明類型」按 B(MW)R 附表 3 訂明。</small>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.31(1) — Projections on or over streets 街道上的伸出物"
     No building or other structure shall be erected in, over, under or upon any portion of any street whether or not on land held under lease from the Government unless— (a) the building or other structure complies with the relevant criteria stipulated in Part II of the Building (Planning) Regulations (Cap. 123 sub. leg. F); (aa) the building or other structure is a signboard and its location and dimensions do not constitute— … or (b) an exemption has been granted by the Building Authority pursuant to section 42.
@@ -108,7 +108,7 @@ A signboard over a street is allowed only if its location and dimensions do **no
 
     **官方中文本：** 儘管有第24及24C條的規定，如 —— (a) 某訂明建築物或建築工程於2010年12月31日前完成或進行；及 (b) 第(2)、(3)及(4)款的規定，已就該建築物或工程而獲遵守，建築事務監督不得以該建築物或工程在違反第14(1)條的情況下完成或進行為理由，而就該建築物或工程，根據第24條送達命令，或根據第24C條送達通知。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -136,7 +136,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -45,14 +45,14 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | 123O | [Building (Minor Works) (Fees) Regulation 《建築物（小型工程）（費用）規例》](bmwfr-123o.md) | ✅ Complete 完成 |
 | 123B, 123D, 123E | Building (Construction) Regulations, (Escalators), (Lifts) — **repealed** 已廢除 | Not included 不收錄 |
 
-## Relationship diagram 關係圖
+## Relationship diagram 關係圖 {#relationship-diagram}
 
 <figure markdown>
   ![Map of the Buildings Ordinance and its subsidiary legislation. 條例及附屬法例關係圖。](../assets/figures/diagrams/regs-map.svg){ width="760" loading=lazy }
   <figcaption>Map of the Buildings Ordinance and its subsidiary legislation. 條例及附屬法例關係圖。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Buildings Ordinance, Cap. 123 《建築物條例》
+## Buildings Ordinance, Cap. 123 《建築物條例》 {#buildings-ordinance-cap-123}
 
 | Entry 條目 | Topic 主題 | Status 狀態 |
 |---|---|---|
@@ -63,7 +63,7 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | [s.31–39C](bo-part-3-miscellaneous.md) | Street projections; signboards; cost recovery; records; regulations; TM; validation 伸出物、招牌、追討費用、檢核 | ✅ Official text checked |
 | [s.40–56 & Schedules](bo-parts-4-9-schedules.md) | Offences and penalties; exemptions; s.42 modifications; appeals; Schedules 2–8 罪行、豁免、變通、上訴、附表 | ✅ Official text checked |
 
-## Building (Planning) Regulations, Cap. 123F 《建築物（規劃）規例》
+## Building (Planning) Regulations, Cap. 123F 《建築物（規劃）規例》 {#building-planning-regulations-cap-123f}
 
 | Entry 條目 | Topic 主題 | Status 狀態 |
 |---|---|---|
@@ -75,7 +75,7 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | [Regs. 50–70](bpr-50-70.md) | Temporary buildings; contractor's sheds; hoardings, covered walkways, gantries 臨時建築物、圍板 | ✅ Official text checked |
 | [Regs. 71–73](bpr-71-73.md) | Windows to unenclosed verandahs; barrier free access (Third Schedule); elderly-friendly design (Fourth Schedule, 2026) 無障礙及長者設計 | ✅ Official text checked |
 
-## Other building regulations 其他建築物規例
+## Other building regulations 其他建築物規例 {#other-building-regulations}
 
 | Entry 條目 | Topic 主題 | Status 狀態 |
 |---|---|---|

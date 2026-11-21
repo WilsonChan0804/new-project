@@ -23,7 +23,7 @@ tags:
 !!! note "Note 注意"
     Historical note: the 1995/1996 fire codes it refers to have been replaced by the [Code of Practice for Fire Safety in Buildings 2011](../codes/fire-safety-code-2011.md). It is kept for older buildings and approvals.
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +37,7 @@ tags:
     - **第 41C 條**：**消防及救援樓梯**內只可設消防員升降機，其樓梯須通往**所有樓層**（第 3 段）。
     - 適用於 **1995 年 5 月 22 日**或之前未展開或未獲同意的工程（條例第 39(2) 條）；救援通道守則已相應修訂（第 4–5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

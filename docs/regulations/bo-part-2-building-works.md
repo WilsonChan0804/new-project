@@ -26,7 +26,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123](https://www.elegislation.gov.hk/hk/cap123) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (point in time 01/03/2026) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -46,14 +46,14 @@ tags:
     - **第 19 條**：意外或緊急情況下的**緊急工程**（撐柱、托換基礎、拆卸）可在通知建築事務監督後毋須同意即展開。**第 20 條**：如在 **3 個月**內未展開或暫停 3 個月，同意即**失效**。
     - **第 21 條**：**新建築物**未取得**佔用許可證**或**臨時佔用許可證**，除不多於 **2 名管理員**外不得佔用；申請後 **14 天**如未被拒絕即當作已發出（拒絕理由例如違規、街道工程未完成、未裝升降機、沒有消防證明書、未接駁供水、表現檢討不足）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Statutory periods from plan submission to occupation (BO s.14–21, B(A)R 30–33). 由呈交圖則至佔用的法定期限。](../assets/figures/diagrams/statutory-timeline.svg){ width="366" loading=lazy }
   <figcaption>Statutory periods from plan submission to occupation (BO s.14–21, B(A)R 30–33). 由呈交圖則至佔用的法定期限。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Section by section 逐條摘要
+## Section by section 逐條摘要 {#section-by-section}
 
 | s. 條 | Title 標題 | Summary 摘要 |
 |---|---|---|
@@ -70,7 +70,7 @@ tags:
 | 20 | Resumption of suspended work 恢復暫停的工程 | Consent **lapses** if works not commenced within **3 months**, or suspended for 3 months; renewal may be granted with conditions. 3 個月未展開即失效。 |
 | 21 | Occupation of new building 新建築物的佔用 | No occupation (except ≤ 2 caretakers) without an **OP** or valid **TOP**; TOP may have conditions and time limit; OP revokes TOPs; refusal grounds (see table); deemed issued after **14 days**; if a performance review is submitted, the application is deemed received **60 days** after it. 佔用許可證。 |
 
-## Key table: s.16 grounds of refusal 第 16 條拒絕理由
+## Key table: s.16 grounds of refusal 第 16 條拒絕理由 {#key-table-s16-grounds-of-refusal-16}
 
 | s.16 | Ground 理由 |
 |---|---|
@@ -90,7 +90,7 @@ tags:
 | (3) | **Consent** refused if: plans not all approved; documents missing; s.17 conditions unmet; demolition precautions inadequate; **no supervision plan**; fees unpaid; **> 2 years** since approval 拒絕同意的理由 |
 | (4), (5) | Consent refused if works likely to cause **collapse**; demolition consent withheld until adequate **precautions** 可能倒塌；拆卸須有預防措施 |
 
-## Key table: s.17 conditions 第 17 條條件
+## Key table: s.17 conditions 第 17 條條件 {#key-table-s17-conditions-17}
 
 | Item 項目 | Application 申請 | BA may 建築事務監督可 |
 |---|---|---|
@@ -102,7 +102,7 @@ tags:
 | 6 | **Structural works**, site formation, excavation, piling, foundations, GI in scheduled areas 結構及地盤平整工程 | Conditions on **loads and stresses, tests, materials, instrumentation, workmanship, qualified supervision, sequence** (Area No. 1), **performance review** (scheduled areas, uncertain geology, groundwater impact, unconventional designs) 荷載、測試、監測、監督、表現檢討 |
 | 7 | Site formation, piling, excavation, foundations 地盤平整、打樁、挖掘、地基 | Conditions to prevent **collapse or danger** to adjoining buildings, streets or land 防止倒塌 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.14 — Approval and consent 批准及同意"
     (1) Save as otherwise provided, no person shall commence or carry out any building works or street works without having first obtained from the Building Authority— (a) his approval in writing of documents submitted to him in accordance with the regulations; and (b) his consent in writing for the commencement of the building works or street works shown in the approved plan. (2) Subject to section 28B(4), neither the approval of any plans nor the consent to the commencement of any building works or street works shall be deemed— (a) to confer any title to land; (b) to act as a waiver of any term in any lease or licence; or (c) to grant any exemption from or to permit any contravention of any of the provisions of this Ordinance or of any other enactment.
@@ -119,7 +119,7 @@ tags:
 
     **官方中文本：** 任何新建築物除被不多於2名管理員佔用外，不得以任何其他方式佔用，但如 —— (a) 建築事務監督已就該建築物發出佔用許可證；或 (b) 建築事務監督已就整幢建築物或其中正被佔用的任何部分發出臨時佔用許可證，而該臨時佔用許可證的有效期尚未屆滿，亦未被建築事務監督撤銷，則屬例外。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -137,7 +137,7 @@ tags:
 
     緊記第 14(2) 條：**屋宇署批准並不等於地契批准**。地契事宜（總樓面面積、高度、設計及佈局）由地政總署處理。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -174,7 +174,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

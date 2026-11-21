@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [B(C)R](../regulations/bcr-123q.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - B(C)R 訂明**性能要求**；**附錄 A** 列出建築事務監督接受為符合要求的標準及技術準則（第 1–2 段）。
     - 如能證明達到性能要求，並詳述背景及本地適用性，其他版本或標準亦可獲批；應**及早**向屋宇署取得原則上同意（第 2–3 段）。
 
-## Key table: App. A extract: main Hong Kong codes 附錄 A 摘錄：主要香港守則
+## Key table: App. A extract: main Hong Kong codes 附錄 A 摘錄：主要香港守則 {#key-table-app-a-extract-main-hong-kong-codes-a}
 
 | Category 類別 | Accepted standard 認可標準 |
 |---|---|
@@ -55,7 +55,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

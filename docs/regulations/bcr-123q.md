@@ -43,7 +43,7 @@ tags:
     Documents written before 2021 cite the old **Cap. 123B** regulation numbers (e.g. B(C)R 17 for imposed loads). Cap. 123B is **repealed**; use the Cap. 123Q section numbers on this page.
     2021 年前的文件引用舊**第 123B 章**的條號，該章**已廢除**，請使用本頁第 123Q 章的條號。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -67,7 +67,7 @@ tags:
     - **外牆、覆蓋層、幕牆**（第 8 部）：**不可燃**及不透水物料；覆蓋層須有伸縮縫及防銹固定件；幕牆以預埋錨固或固定於鋼構件，並排走滲水；外牆、覆蓋層、幕牆及屋頂須有**維修通道**。
     - **耐火結構**（第 35 條）、**升降機及自動梯**（第 39–41 條：安全空間、限進空間、警告告示）、水井、煙囱及煙道、蟲鼠、管道（第 12 部）。
 
-## Section by section 逐條摘要
+## Section by section 逐條摘要 {#section-by-section}
 
 | Part 部 | s. 條 | Subject 主題 | Summary 摘要 |
 |---|---|---|---|
@@ -91,7 +91,7 @@ tags:
 | 11 | 39–41 | Lift and escalator 升降機及自動梯 | Structure, space, access, ventilation; restricted spaces inaccessible except for maintenance / rescue; warning notices (incl. "do not use in fire"). 升降機及自動梯。 |
 | 12 | 42–47 | Ground treatment; wells; chimneys and flues; fireplaces; vermin; ducts 雜項 | Proof of ground treatment; wells need BA permission and protection; flues (> 200 mm or > 3 m) positioned so fumes do not enter openings; no vermin harbourage; man-sized ducts with access and strength. 雜項。 |
 
-## Key table: Table 1, minimum imposed loads (selected) 表 1：最小外加荷載（節錄）
+## Key table: Table 1, minimum imposed loads (selected) 表 1：最小外加荷載（節錄） {#key-table-table-1-minimum-imposed-loads-selected-1}
 
 | Class 類別 | Use 用途 | Distributed 分布 (kPa) | Concentrated 集中 (kN) |
 |---|---|--:|--:|
@@ -113,7 +113,7 @@ tags:
 | 7 | Inaccessible roofs ≤ 5° 2; 5°–20° 0.75; accessible roofs ≤ 20° 2; canopies 0.75 非開放屋頂；屋頂；簷篷 | 0–2 | 1.5 |
 | 8 | **Utility platforms** ≥ 4; balconies ≥ 3; stairs / corridors as served floor (3–5); A/C platforms and hoods: 1.5 kN/m edge line load 工作平台、露台、樓梯 | 3–5 | edge line loads |
 
-## Key table: Table 3, protective barrier loads 表 3：防護欄障荷載
+## Key table: Table 3, protective barrier loads 表 3：防護欄障荷載 {#key-table-table-3-protective-barrier-loads-3}
 
 | Category 類別 | Line load on top rail 線荷載 (kN/m) | UDL on infill 填充部分均布 (kPa) | Point load on infill 集中 (kN) |
 |---|--:|--:|--:|
@@ -123,14 +123,14 @@ tags:
 
 <small>Barrier height and opening limits for openings above G/F are in [B(P)R 3A](bpr-parts-1-2.md) (1 100 mm, bottom 150 mm solid). 欄障高度見 B(P)R 第 3A 條。</small>
 
-## Key table: Table 2, imposed load reduction for columns and foundations 表 2：柱及基礎的外加荷載折減
+## Key table: Table 2, imposed load reduction for columns and foundations 表 2：柱及基礎的外加荷載折減 {#key-table-table-2-imposed-load-reduction-for-columns-and-foundations-2}
 
 | Floors carried 承托樓層 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | > 8 |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | Classes 1, 2, 3, 4, 7 (%) | 0 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | **40** max |
 | Factories ≥ 7.5 kPa (%) 工廠 | 0 | 10 | 20 | 25 | 25 | 25 | 25 | 25 | **25** max |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.37 — Provision of protective barrier 設置防護欄障"
     (1) A protective barrier must be provided at the edge of a balcony, verandah, floor, roof, staircase, landing or projection to restrict or control the movement of persons, objects and vehicles. (2) If the difference between 2 adjacent levels (whether or not within a building) exceeds 600 mm, a protective barrier must be provided at the higher level to restrict or control the movement of persons, objects and vehicles.
@@ -142,7 +142,7 @@ tags:
 
     **官方中文本：** 建築物的設計及建造，須能在火警發生時 —— (a) 阻止火勢在該建築物內蔓延，以及阻止火勢蔓延至附近的建築物；(b) 有足夠抵禦火勢及煙的能力，使火勢及煙不致 —— (i) 在不同建築物之間蔓延；及 (ii) 在該建築物內不同用途之間蔓延；……
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -160,7 +160,7 @@ tags:
 
     **改動加建工程**須檢查更改用途會否增加外加荷載（例如辦公室 3 千帕改為商店 5 千帕，或改作貯物），這與 [APP-117](../pnap/app-117.md) 及《建築物條例》第 25 條更改用途有關。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -214,7 +214,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

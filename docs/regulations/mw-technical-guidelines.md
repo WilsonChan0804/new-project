@@ -30,7 +30,7 @@ tags:
 !!! note "Note 注意"
     The TG is published in Chinese only; the English text here is a summary (中譯／英文摘要非官方). The General Guidelines PDF is an older edition (it still refers to 118 items and 7 types); the current regulation has **187 items in 8 types**. Check item numbers and limits against the current TG and [B(MW)R](bmwr-123n.md).
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -53,7 +53,7 @@ tags:
   <figcaption>Which route for small building works: DEW, minor works Class I–III, or full approval. 小型建築工程應走哪條途徑。 Diagram prepared for this site.</figcaption>
 </figure>
 
-## Key table: common items and thresholds 常見項目及門檻
+## Key table: common items and thresholds 常見項目及門檻 {#key-table-common-items-and-thresholds}
 
 <small>Item numbers as listed in TG Chapter 3 (Class I = 1.x, Class II = 2.x, Class III = 3.x). Thresholds are summarised; where the TG columns could not be matched to a class with certainty, the limit is given without a class. Confirm in the TG section shown. 項目編號以技術指引第 3 章為準；門檻為摘要，請核對所示章節。</small>
 
@@ -83,11 +83,11 @@ tags:
 | Lifts, stairlifts, lifting platforms 升降機、樓梯升降機、升降台 | 1.3 · 1.33 | Class I | 3.30.1 |
 | Ventilation ducts and fire dampers 通風管道及防火閘 | 1.46 · 1.47 · 2.42 · 2.46 · 2.47 · 3.47 | See TG; fire dampers per [Cap. 123J](bvsr-123j.md) | 3.31 |
 
-## Recommended details 建議設計及詳圖
+## Recommended details 建議設計及詳圖 {#recommended-details}
 
 Appendix VII of the TG gives **recommended designs and details for Class II and Class III items** (for example supporting frames, drying racks, canopies, signboards). Following them simplifies the structural justification; anything outside the details needs a design by a PBP. Appendix X covers **windows or window walls acting as protective barriers**. 技術指引附錄 VII 載有第 II 及 III 級別項目的建議設計及詳圖；附錄 X 涵蓋作防護欄障的窗及窗牆。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

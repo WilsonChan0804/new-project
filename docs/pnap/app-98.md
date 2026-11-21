@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 36](../regulations/bpr-24-37.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 屋宇署會正面考慮就**住宅單位**內面積合理的**內置浴室及洗手間**變通 **B(P)R 第 36 條**，前提是不影響衞生及安全（第 1–2 段）。
     - 條件（第 3 段）：使用時須有人工照明及通往室外的**機械通風每小時換氣 5 次**（風管須可清潔）；須有通往露天地方／室外或有窗房間的**永久通風**，經風管或永久開啟的百葉開口，面積 **≥ 樓面面積 1/20**；風管每 **4 米**及轉角、導流片、風閘處設**檢修門** **150 × 225 毫米**（風管 ≥ 150 × 150）或 **100 × 225 毫米**（較小風管）；另須符合 **B(P)R 第 35A 條**熱水爐規定等。
 
-## Key table: modification conditions 變通條件
+## Key table: modification conditions 變通條件 {#key-table-modification-conditions}
 
 | Item 項目 | Requirement 規定 |
 |---|---|
@@ -52,7 +52,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

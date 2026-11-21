@@ -1,8 +1,9 @@
 /* Knowledge base page helpers:
  *  1. "Back" button on every page.
  *  2. Shared editing of paragraphs / clauses with the editor's name shown.
- *     Uses the claude.ai Artifact runtime (db + user capabilities) when the
- *     site is opened as a hosted Artifact; elsewhere the editing UI stays hidden.
+ *     Inside the LWK Viewer it uses the viewer's own accounts (kb-viewer-backend.js);
+ *     in the claude.ai preview it uses the Artifact runtime (db + user capabilities);
+ *     elsewhere the editing UI stays hidden.
  */
 (function () {
   "use strict";
@@ -24,8 +25,15 @@
   }
 
   /* ---------- 2. Shared editing ---------- */
-  var PAGE = (location.pathname.split("/").slice(-2).join("/") || "index.html").replace(/\/$/, "/index.html");
-  var state = { db: null, user: null, me: null, edits: [], names: {}, canWrite: false };
+  /* Page id = the page's source path (written by hooks/autolink.py), e.g. "pnap/app-2.md". */
+  function pageId() {
+    if (window.KBViewer) return KBViewer.pageId();
+    var m = document.querySelector('meta[name="kb-page"]');
+    if (m && m.content) return m.content;
+    return (location.pathname.split("/").slice(-2).join("/") || "index.html").replace(/\/$/, "/index.html");
+  }
+  var PAGE = pageId();
+  var state = { db: null, user: null, me: null, viewer: false, edits: [], names: {}, canWrite: false };
 
   function hash(s) { var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
   function blocks() {
@@ -37,13 +45,29 @@
       return (el.textContent || "").trim().length >= 20;
     });
   }
+  /* Anchor of the section the block sits in: the nearest heading with an id above it. */
+  function anchorOf(el) {
+    var hs = document.querySelectorAll("article.md-content__inner h2[id], article.md-content__inner h3[id], article.md-content__inner h4[id]");
+    var a = "top";
+    for (var i = 0; i < hs.length; i++) {
+      if (hs[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) a = hs[i].id; else break;
+    }
+    return a;
+  }
+  function origText(el) { var t = document.createElement("div"); t.innerHTML = el.dataset.kbOrig; return t.textContent.trim(); }
+  /* Block id = section anchor + ":" + hash of the original text, e.g. "at-a-glance:3k9x2". */
   function keyOf(el) {
     if (!el.dataset.kbKey) {
       el.dataset.kbOrig = el.innerHTML;
-      el.dataset.kbKey = hash(el.textContent.trim().slice(0, 400));
+      el.dataset.kbHash = hash(el.textContent.trim().slice(0, 400));
+      el.dataset.kbAnchor = anchorOf(el);
+      el.dataset.kbKey = el.dataset.kbAnchor + ":" + el.dataset.kbHash;
     }
     return el.dataset.kbKey;
   }
+  /* Edits saved before section anchors were used have the hash alone. */
+  function editFor(latest, el) { var k = keyOf(el); return latest[k] || latest[el.dataset.kbHash]; }
+  function sameBlock(e, el) { var k = keyOf(el); return e.block === k || e.block === el.dataset.kbHash; }
   function fmt(t) { try { return new Date(t).toLocaleString(); } catch (e) { return ""; } }
   function nameOf(id) { return (state.names[id] && state.names[id].name) || "Someone 某用戶"; }
 
@@ -62,13 +86,13 @@
   function render() {
     var latest = latestByBlock();
     blocks().forEach(function (el) {
-      var k = keyOf(el);
+      keyOf(el);
       var old = el.querySelector(":scope > .kb-badge"); if (old) old.remove();
-      var e = latest[k];
+      var e = editFor(latest, el);
       if (e) {
         if (!el.dataset.kbShowOrig) el.textContent = e.text;
         el.classList.add("kb-edited");
-        var n = state.edits.filter(function (x) { return x.block === k; }).length;
+        var n = state.edits.filter(function (x) { return sameBlock(x, el); }).length;
         var badge = document.createElement("span");
         badge.className = "kb-badge kb-ui";
         badge.textContent = "✎ Edited by " + nameOf(e.by) + " · " + fmt(e.at) + (n > 1 ? " · " + n + " edits" : "") + " ";
@@ -81,6 +105,18 @@
           render();
         });
         badge.appendChild(tog);
+        if (state.viewer && e.id != null && (state.me === e.by || (state.user && state.user.admin))) {
+          var undo = document.createElement("button");
+          undo.type = "button";
+          undo.textContent = "Undo 復原";
+          undo.title = "Undo this edit and show the previous text 撤銷此修改";
+          undo.addEventListener("click", async function (ev) {
+            ev.stopPropagation(); undo.disabled = true;
+            try { await KBViewer.undo(e.id); delete el.dataset.kbShowOrig; el.innerHTML = el.dataset.kbOrig; }
+            catch (err) { undo.disabled = false; undo.textContent = (err && err.message) || "Not undone 未能復原"; }
+          });
+          badge.appendChild(undo);
+        }
         el.appendChild(badge);
       } else {
         el.classList.remove("kb-edited");
@@ -98,12 +134,12 @@
   function openEditor(el) {
     if (el.nextElementSibling && el.nextElementSibling.classList.contains("kb-editor")) return;
     var k = keyOf(el);
-    var latest = latestByBlock()[k];
+    var latest = editFor(latestByBlock(), el);
     var box = document.createElement("div");
     box.className = "kb-editor kb-ui";
     var ta = document.createElement("textarea");
-    var tmp = document.createElement("div"); tmp.innerHTML = el.dataset.kbOrig;
-    ta.value = latest ? latest.text : tmp.textContent.trim();
+    var original = origText(el);
+    ta.value = latest ? latest.text : original;
     ta.rows = Math.min(12, Math.max(3, Math.ceil(ta.value.length / 90)));
     var note = document.createElement("input");
     note.placeholder = "Reason for the change (optional) 修改原因（選填）";
@@ -117,8 +153,8 @@
       save.disabled = true; msg.textContent = "Saving… 儲存中";
       try {
         await state.db.collection("edits").add({
-          page: PAGE, block: k, text: text.slice(0, 5000), note: note.value.slice(0, 300),
-          original: tmp.textContent.trim().slice(0, 600), by: state.me, at: Date.now()
+          page: PAGE, block: k, anchor: el.dataset.kbAnchor, text: text.slice(0, 5000), note: note.value.slice(0, 300),
+          original: original.slice(0, 5000), by: state.me, at: Date.now()
         });
         box.remove();
       } catch (e) {
@@ -152,7 +188,7 @@
       var a = document.createElement("a"); a.href = "#"; a.textContent = "Go to paragraph 前往段落";
       a.addEventListener("click", function (ev) {
         ev.preventDefault();
-        var el = blocks().find(function (b) { return keyOf(b) === e.block; });
+        var el = blocks().find(function (b) { return sameBlock(e, b); });
         if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("kb-flash"); setTimeout(function () { el.classList.remove("kb-flash"); }, 1600); }
       });
       var who = document.createElement("strong"); who.textContent = nameOf(e.by);
@@ -168,11 +204,13 @@
   }
 
   async function startEditing() {
-    if (!window.claude || typeof window.claude.use !== "function") return;   // static site: no editing
-    var db = await window.claude.use("db");
+    var V = window.KBViewer ? await KBViewer.me() : null;                   // LWK Viewer account
+    if (!V && (!window.claude || typeof window.claude.use !== "function")) return;   // static site: no editing
+    var db = V ? KBViewer.db() : await window.claude.use("db");
     if (!db) return;
     state.db = db;
-    state.user = await window.claude.use("user");
+    state.viewer = !!V;
+    state.user = V ? KBViewer.user(V) : await window.claude.use("user");
     try { state.me = state.user ? await state.user.id() : null; } catch (e) { state.me = null; }
     try {
       var c = state.user && state.user.can ? await state.user.can("data.write") : null;

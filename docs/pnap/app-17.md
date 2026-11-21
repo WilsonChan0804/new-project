@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 27, 47](../regulations/bpr-24-37.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +36,7 @@ tags:
     - 附錄訂明涉及岩面的**地盤平整圖則**要求：地盤勘測（測繪、鑽孔、壓水試驗、閉路電視）、由**合資格岩土工程師**進行岩面勘察，並吸取**翡翠道**山泥傾瀉的教訓（第 2 段）。
     - 施工期間須防止**失控墮石**，尤其影響公眾安全時（第 3 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

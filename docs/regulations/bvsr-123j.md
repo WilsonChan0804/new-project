@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123J](https://www.elegislation.gov.hk/hk/cap123J) |
     | **Last checked 最後核對** | 2026-11-21 against the version on eLegislation (version date 13/05/2021) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - **擁有人**須保持系統安全有效，並由**註冊專門承建商（通風工程）**每隔 **≤ 12 個月**檢查防火閘、過濾器及聚塵器（第 5 條）。
     - 承建商須在 **14 天內**發出**證明書**並把副本送交處長（第 5A 條）；消防處人員可測試系統（第 6 條）；1964 年前的系統只在改動或被認為有火警危險時才須符合規定（第 7 條）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Annual inspection cycle for ventilating systems. 通風系統年檢周期。](../assets/figures/diagrams/vent-annual.svg){ width="420" loading=lazy }
@@ -43,7 +43,7 @@ tags:
 </figure>
 
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Reg. 5(1) Duty of owners 第 5(1) 條"
     The owner of any building in which there is installed a ventilating system to which these regulations apply shall— (a) keep such ventilating system in safe and efficient working order at all times; and (b) cause every damper, filter and precipitator in such ventilating system to be inspected by a registered specialist contractor in the appropriate category at intervals not exceeding 12 months.
@@ -60,7 +60,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

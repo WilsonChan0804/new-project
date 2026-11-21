@@ -21,7 +21,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123G](https://www.elegislation.gov.hk/hk/cap123G) |
     | **Last checked 最後核對** | 2026-11-21 against the version on eLegislation (version date 09/09/2021) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -41,7 +41,7 @@ tags:
     - **建造**（第 16–25 條）：車路 **150 毫米混凝土鋪於 75 毫米碎石**上，或 75 + 25 毫米瀝青碎石鋪於 200 毫米碎石上；花崗岩路緣石 **150 × 300 × ≥ 750 毫米**，高出水溝 **75–175 毫米**；路拱 **1:40**、行人路橫坡 **1:48**；排水按 **每小時 150 毫米**雨量設計（集流時間 ≥ 30 分鐘則 100 毫米）；水溝 **≥ 300 毫米闊**，縱坡 ≥ 1:100。
     - **公眾街道**內的工程由**建築事務監督進行並向業主收費**（第 26 條）；如不切實可行，可**豁免**交界、坡度、彎道及視距規定（第 27 條），或按測試結果豁免路面規定（第 28 條）。
 
-## Key table: minimum widths 最小闊度
+## Key table: minimum widths 最小闊度 {#key-table-minimum-widths}
 
 | Street type 類別 | Area 地區 | Carriageway 車路 | Footpath (each side) 行人路 |
 |---|---|---|---|
@@ -61,7 +61,7 @@ tags:
   <figcaption>Cross-section of a residential major private street with the minimum widths, kerb, camber and crossfall (regs. 5, 19–21). 住宅區主要私家街道剖面。 Diagram prepared for this site.</figcaption>
 </figure>
 
-## Key table: geometry 幾何要求
+## Key table: geometry 幾何要求 {#key-table-geometry}
 
 | Item 項目 | Private street / cul-de-sac 私家街道／盡頭路 | Access road 通路 |
 |---|---|---|
@@ -71,7 +71,7 @@ tags:
 | Sight distance 視距 | 1 m eye to 1 m object at **40 m** | same 相同 |
 | Turning space 迴旋處 | At closed end of cul-de-sac | At far end if not a thoroughfare |
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Reg. 6(1) Width of access roads 第 6(1) 條"
     Save as provided in paragraph (2), the width of the carriageway of every access road shall be not less than 5 m and the width of the footpath therein shall be not less than 1.6 m.
@@ -79,7 +79,7 @@ tags:
     **官方中文本：** 除第(2)款另有規定外，每條通路的車路的闊度須不少於5米，而其行人路的闊度須不少於1.6米。
 
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -102,7 +102,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

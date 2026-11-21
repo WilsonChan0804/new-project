@@ -28,7 +28,7 @@ tags:
     | **Source 原文** | [APP-37 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP037.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the February 2024 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -46,7 +46,7 @@ tags:
     - **鋼化玻璃**：ISO 9001 廠房；生產前 **14 天**提交品質保證計劃；**所有**玻璃須按 BS EN 14179-1 進行**熱浸處理**；註冊結構工程師的品質控制監督員監督 **≥ 30%** 玻璃；註冊承建商的品質控制統籌員**全時間**監督；數據記錄器每 **1 分鐘**記錄；佔用許可證前提交品質監督報告（第 13–14 段）。
     - **結構密封膠**相容性／黏合／拆除測試報告；**蜘蛛爪**須作驗證荷載測試；**鎖扣裝置**安全系數 **1.8**，每個把手 ≤ **8** 個鎖點；上懸窗扇 ≤ **2.5 平方米**、側懸窗扇闊 ≤ **700 毫米**；幕牆須由 **HOKLAS** 認可化驗所進行安全測試（第 15–23 段）。
 
-## Key table: when windows / window walls need structural submission 窗／玻璃牆何時須呈交結構圖則
+## Key table: when windows / window walls need structural submission 窗／玻璃牆何時須呈交結構圖則 {#key-table-when-windows-window-walls-need-structural-submission}
 
 | Condition 條件 | Submission 呈交 | Para. 段 |
 |---|---|---|
@@ -54,7 +54,7 @@ tags:
 | Structural element span (mullion, glass fin) **> 6 m**, incl. glass shopfronts 豎框／玻璃鰭跨度 > 6 米 | **Required** 須呈交 | 6 |
 | Otherwise 其他情況 | Not required, but AP/RSE remain responsible for safety (loads, barriers, corrosion, fire stopping) 毋須呈交，但認可人士／結構工程師仍須負責 | 7 |
 
-## Key table: quality and testing requirements 品質及測試要求
+## Key table: quality and testing requirements 品質及測試要求 {#key-table-quality-and-testing-requirements}
 
 | Item 項目 | Requirement 規定 | Timing 時間 | Para. 段 |
 |---|---|---|---|
@@ -69,7 +69,7 @@ tags:
 | Sash size 窗扇尺寸 | Top-hung ≤ **2.5 m²**; side-hung width ≤ **700 mm** 上懸 ≤ 2.5 平方米；側懸闊 ≤ 700 毫米 | Design | 21 |
 | **Curtain wall safety test** 幕牆安全測試 | By a **HOKLAS**-accredited independent lab, within its scope; RSE statement 由 HOKLAS 認可化驗所 | Per approval conditions | 23 |
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -89,7 +89,7 @@ tags:
     - **五金**：經測試的蜘蛛爪及鎖扣裝置，並限制窗扇尺寸。
     - **防火**：封堵外牆與樓板邊之間的空隙，以免火及煙跨層蔓延（見消防安全守則 C10.2）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -131,7 +131,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

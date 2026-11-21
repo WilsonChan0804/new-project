@@ -20,7 +20,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP095.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP095.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -34,7 +34,7 @@ tags:
     - 建築事務監督須信納處所**結構適合**、與工程**防火分隔**、有**獨立受保護的通道及逃生途徑**通往街道，並有足夠**消防裝置**（第 2 段）。
     - 條件可限制**使用期限**及**人數**，並可要求使用期間**部分或全部暫停**建築工程（第 3 段）；違反者臨時佔用許可證會被撤銷，並可根據第 40(1)、(5) 條檢控（第 4 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

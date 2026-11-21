@@ -22,7 +22,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123M](https://www.elegislation.gov.hk/hk/cap123M) |
     | **Last checked 最後核對** | 2026-11-21 against the version on eLegislation (version date 01/12/2020) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -39,7 +39,7 @@ tags:
     - 有助達致總熱傳送值、伸出外牆 **≤ 1.5 米**的伸出物（例如**遮陽板**）在 B(P)R 第 20、22、31 條計算上蓋面積、地積比率及空地時不計算在內（第 6 條）。
 
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Section 4 Energy efficiency 第 4 條"
     (1) A building to which this Regulation applies shall be so designed and constructed as to achieve energy efficiency to the satisfaction of the Building Authority. (2) Without prejudice to the generality of subsection (1), a building shall be regarded as being designed and constructed in compliance with that subsection if its external walls and roofs have a suitable overall thermal transfer value.
@@ -61,7 +61,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

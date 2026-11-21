@@ -18,7 +18,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123O](https://www.elegislation.gov.hk/hk/cap123O) |
     | **Last checked 最後核對** | 2026-11-21 against the version on eLegislation (version date 21/10/2023) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - **第 2 部：個人第 III 級項目**（註冊小型工程承建商（個人））見下表；如建築事務監督以另一決定取代原決定，覆核費退還（第 8 條）。
     - **第 3 部：公司按類型及級別**（註冊小型工程承建商（公司））：費用按**最高級別**計算；每名額外建議獲授權簽署人另加費用（第 10 條）；註冊費各級別均為 **$595**（第 11 條）。
 
-## Key table: main fees 主要費用
+## Key table: main fees 主要費用 {#key-table-main-fees}
 
 | Application 申請 | Class III items (individual) 第 III 級項目（個人） | Class I 第 I 級 | Class II 第 II 級 | Class III only 只限第 III 級 |
 |---|---|---|---|---|
@@ -47,7 +47,7 @@ tags:
 <small>Fees as shown on eLegislation (version date 21/10/2023); check for later amendments before paying. 費用以 eLegislation 版本為準，繳費前請核實。</small>
 
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

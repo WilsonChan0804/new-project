@@ -19,7 +19,7 @@ tags:
     | **Read with 一併參閱** | LandsD LAO PN 3/2020A "Design, Disposition and Height Clause under Lease (Site Coverage)" |
     | **Last checked 最後核對** | 2026-11-20 against the August 2021 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -39,14 +39,14 @@ tags:
     - **地下構築物**不計上蓋面積；建築事務監督不計算的**小型伸出物**（APP-19），在現有地契下亦**毋須修訂地契**便可不計；以第 42 條豁免的較大伸出物或須輕微修訂地契及補地價（第 9 段）。
     - 只適用於設有**最高總樓面面積／地積比率**條款的地契；其他地契參閱 LAO PN 3/2020A（第 5 段）。
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 7 — BD as single agency for SC accountability 屋宇署為唯一部門"
     Under the streamlined arrangements, in addition to its statutory duty to check compliance of the SC restriction under the building control regime, BD is designated as the single agency responsible for determining the accountability of facilities and features for the purpose of SC calculation when assessing compliance with SC restriction. For new or amended statutory plans gazetted on or after the effective date of this JPN, PlanD would adopt BD's treatment of facilities and features for SC control when formulating the appropriate maximum SC permissible for individual site/land use zone, if needed. For the existing statutory plans, PlanD would also generally follow BD's treatment of facilities and features when checking compliance with the SC restriction in those statutory plans, unless the statutory plans provide otherwise.
 
     **中譯（非官方）：** 在精簡安排下，除了在建築管制下核實上蓋面積限制的法定職責外，屋宇署獲指定為唯一負責在評估是否符合上蓋面積限制時，決定哪些設施及特色須計入上蓋面積的部門。對於本 JPN 生效日期或之後刊憲的新訂或經修訂法定圖則，規劃署在為個別地盤／土地用途地帶訂定最高上蓋面積時（如有需要），會採用屋宇署對設施及特色的處理方法；對於現有法定圖則，除圖則另有規定外，規劃署在核實是否符合上蓋面積限制時，一般亦會跟隨屋宇署的處理方法。
 
-## Key table: SC across the three regimes 三個制度下的上蓋面積
+## Key table: SC across the three regimes 三個制度下的上蓋面積 {#key-table-sc-across-the-three-regimes}
 
 | Regime 制度 | Control 管制 | Under JPN 7 精簡後 |
 |---|---|---|
@@ -56,7 +56,7 @@ tags:
 | Underground structures 地下構築物 | — | **Not counted** in any regime (unless plan/lease says otherwise) 不計算 |
 | Minor projections (APP-19) 小型伸出物 | — | Disregarded under existing leases **without lease modification** if the BA disregards them 毋須修訂地契 |
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -66,7 +66,7 @@ tags:
 
     JPN 7 對**上蓋面積**的作用，等同 JPN 4 對**總樓面面積**、JPN 5 對**高度**的作用：計算方法**只有一套**，由**屋宇署**訂定，其餘兩個部門跟隨。實務上：按 **B(P)R 上蓋面積**設計，核對**大綱圖**對該地盤或樓層有否更嚴格的限制，並核對**舊地契**有否可能須修訂的上蓋面積或有蓋面積條款。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

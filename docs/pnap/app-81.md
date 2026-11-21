@@ -22,7 +22,7 @@ tags:
 !!! note "Note 注意"
     Historical note: the 1995/1996 fire codes it refers to have been replaced by the [Code of Practice for Fire Safety in Buildings 2011](../codes/fire-safety-code-2011.md). It is kept for older buildings and approvals.
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +36,7 @@ tags:
     - **1996 年建築物（建造）（修訂）規例**：界定「戲院」並規管**上層座位邊緣的欄障**；**1996 年建築物（規劃）（修訂）規例**：新增 **第 VIA 部**規管公眾娛樂場所的規劃及設計；**1996 年走火守則第 III 部**：公眾娛樂場所的逃生途徑。
     - 適用於 1996 年 6 月 28 日或之前未展開或未獲同意的工程（第 3 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

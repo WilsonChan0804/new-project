@@ -28,7 +28,7 @@ tags:
     | **Source 原文** | [APP-89 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP089.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the June 2025 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,7 +48,7 @@ tags:
     - **先決條件**：機廂／升降機槽 ≥ **1.82／4.12 平方米**（住用）或 **2.1／4.4 平方米**（辦公室）；須由**註冊升降機工程師**或**註冊專業工程師（屋宇裝備）**證明服務水平（載客量、候梯時間）高於可接受水平並有足夠維修空間；亦須符合 **APP-151 先決條件**（不計入 10% 上限）。
     - **不適用**於已取得佔用許可證的建築物；分期發展中已完成的期數不獲考慮，各期**不得轉移**面積。
 
-## Key table: GFA exemption for lift shafts (para. 5) 升降機槽總樓面面積豁免（第 5 段）
+## Key table: GFA exemption for lift shafts (para. 5) 升降機槽總樓面面積豁免（第 5 段） {#key-table-gfa-exemption-for-lift-shafts-para-5-5}
 
 | Accommodation served 服務對象 | Lift shaft area exempted 可豁免的升降機槽面積 | Max. exempted 豁免上限 | i.e. lift shaft area at which the cap is reached 達上限時的升降機槽面積 |
 |---|---|---|---|
@@ -59,7 +59,7 @@ tags:
 
 <small>Lift shaft area includes shafts at podium floors with lobbies serving solely the domestic / hotel / office accommodation; excludes shafts serving non-accountable storeys such as refuge floors (footnote 1). "Office accommodation" includes ancillary uses but excludes other commercial uses (footnote 2). 升降機槽面積包括只服務住用／酒店／辦公室部分的平台層升降機槽，但不包括服務庇護層等不計總樓面面積樓層者。</small>
 
-## Key table: pre-requisites (para. 8) 先決條件（第 8 段）
+## Key table: pre-requisites (para. 8) 先決條件（第 8 段） {#key-table-pre-requisites-para-8-8}
 
 | Item 項目 | Domestic / composite 住用／綜合用途 | Office 辦公室 |
 |---|--:|--:|
@@ -68,7 +68,7 @@ tags:
 | Certification 證明 | Registered lift engineer (Cap. 618) or RPE (building services): service above acceptable level (handling capacity, waiting time) to international codes; adequate maintenance space 註冊升降機工程師或註冊專業工程師（屋宇裝備）證明 | |
 | APP-151 | Pre-requisites apply (SBD, BEAM Plus, energy) 須符合先決條件 | |
 
-## Official worked example (Appendix A) 官方計算例子（附錄 A）
+## Official worked example (Appendix A) 官方計算例子（附錄 A） {#official-worked-example-appendix-a-a}
 
 !!! example "Office/commercial building 辦公室／商業建築物"
     Site **2,000 m²**; permissible non-domestic PR **15**; SC 100% (≤ 15 m) / **65%** (> 15 m).
@@ -93,7 +93,7 @@ tags:
 
     SC exemption: Phase II 875 ÷ 15 = 58.33 m²; Phase III 450 ÷ 15 = 30 m². Overall SC 39.117% ≤ 40% ✅. No GFA/SC is transferred from Phase I. 上蓋面積豁免：第二期 58.33 平方米、第三期 30 平方米；整體 39.117%；第一期不得轉移。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -107,7 +107,7 @@ tags:
 
     本寬免須符合 **APP-151 先決條件**，但**不計入** 10% 整體上限（APP-151 附錄 A 第 18 項）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -149,7 +149,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

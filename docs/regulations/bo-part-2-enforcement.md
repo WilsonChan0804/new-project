@@ -28,7 +28,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123](https://www.elegislation.gov.hk/hk/cap123) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (point in time 01/03/2026) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -52,7 +52,7 @@ tags:
     - **第 28–28D 條**：擁有人須按建築事務監督的要求進行**排水工程**；就欠妥或不衞生的渠管發出命令；附表所列地區第 1 號的**地下水排水**工程。
     - **第 29–30 條**：臨街處所擁有人須保養**私家街道及通路**；擁有人須保養**緊急車輛通道**（第 29A 條）；**通往街道的出入口**須取得建築事務監督同意（第 30 條）。
 
-## Section by section 逐條摘要
+## Section by section 逐條摘要 {#section-by-section}
 
 | s. 條 | Title 標題 | Summary 摘要 |
 |---|---|---|
@@ -76,7 +76,7 @@ tags:
 | 29A | Maintenance of EVA 緊急車輛通道的保養 | Owner maintains the EVA; orders where defects or A&A make it unserviceable; default and emergency works; registrable. 擁有人保養緊急車輛通道。 |
 | 30 | Openings to or from streets 街道的出入口 | No access / opening to a street without BA consent; refusal if dangerous or prejudicial to traffic. 須取得同意。 |
 
-## Key table: types of orders and notices 命令及通知類型
+## Key table: types of orders and notices 命令及通知類型 {#key-table-types-of-orders-and-notices}
 
 | Instrument 文書 | Section 條 | When used 何時使用 | Served on 送達對象 | Registrable? 可否登記 |
 |---|---|---|---|---|
@@ -92,7 +92,7 @@ tags:
 | Drainage order 排水令 | 28 | Defective or insanitary drains 欠妥渠管 | Owner 擁有人 | **Yes** |
 | EVA order 緊急車輛通道命令 | 29A | EVA defective or altered 欠妥或被改動 | EVA owner 擁有人 | **Yes** |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.24(1) — Removal order 清拆令"
     Where any building has been erected, or where any building works or street works have been or are being carried out in contravention of any of the provisions of this Ordinance the Building Authority may by order in writing require— (a) the demolition of the building, building works, or street works; or … (c) such alteration of the building, building works or street works as may be necessary to cause the same to comply with the provisions of this Ordinance, or otherwise to put an end to the contraventions thereof, and in every case specify the time within which the demolition, alteration or work required by such order shall be commenced and the time within which the same shall be completed.
@@ -109,7 +109,7 @@ tags:
 
     **官方中文本：** 凡建築事務監督認為任何建築物因火、風、雨、破舊、使用、缺乏走火通道或任何其他因由而變得危險或可變得危險，建築事務監督可藉向擁有人送達的書面命令，宣布該建築物構成危險或可變得危險。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -127,7 +127,7 @@ tags:
 
     **「追討費用」**條文表示：如擁有人不遵辦，屋宇署（透過其承建商）會代為進行工程，並向擁有人收費，另加第 33 條的**監工費及附加費**。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -154,7 +154,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

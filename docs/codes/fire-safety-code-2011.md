@@ -14,6 +14,7 @@ tags:
   - Plant rooms 機房
   - Barrier free access 無障礙
   - Refuge floor 庇護層
+keywords: FS Code, fire code, 消防守則, fire safety, 消防安全
 ---
 
 # Code of Practice for Fire Safety in Buildings 2011 (FS Code)<br><small>《2011 年建築物消防安全守則》</small>
@@ -34,7 +35,7 @@ tags:
     This is an **overview entry** with the most-used tables. **[Part B Means of Escape](fsc-part-b-means-of-escape.md)** , **[Part C Fire Resisting Construction](fsc-part-c-fire-resisting-construction.md)** and **[Part D Means of Access](fsc-part-d-means-of-access.md)** and **[Parts E–G](fsc-parts-e-f-g.md)** now have their own full entries. The whole Code is covered.
     本條目為**概覽**，附最常用的表格。**[B 部逃生途徑](fsc-part-b-means-of-escape.md)** 、**[C 部耐火結構](fsc-part-c-fire-resisting-construction.md)** 及 **[D 部消防進出途徑](fsc-part-d-means-of-access.md)** 及 **[E–G 部](fsc-parts-e-f-g.md)** 已有詳細條目，整份守則已涵蓋。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -54,14 +55,14 @@ tags:
     - 主要限制：一般**盡頭路行走距離 18 米**、一般**最長行走距離 36 米**、規定樓梯之間最長 **48 米**；**耐火效能 60／120 分鐘**及防火隔室限制見**表 C1**。
     - 可按**「當作符合」**條文遵從，或採用**消防工程方法**（G 部）。
 
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![How the fire safety codes evolved. 消防安全守則演變。](../assets/figures/diagrams/fire-code-timeline.svg){ width="760" loading=lazy }
   <figcaption>How the fire safety codes evolved. 消防安全守則演變。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table 1: Use Classification (Table A1) 用途類別（表 A1）
+## Key table 1: Use Classification (Table A1) 用途類別（表 A1） {#key-table-1-use-classification-table-a1-a1}
 
 | Class 類別 | Type 處所類型 | Typical examples 典型示例 |
 |---|---|---|
@@ -88,7 +89,7 @@ tags:
   <figcaption>Table A1 — Use Classification (original) 用途類別（原文）<br><small>Source: FS Code 2011 (2024 Edition), Buildings Department 資料來源：屋宇署</small></figcaption>
 </figure>
 
-## Key table 2: Occupant capacity (Table B1) 佔用人數（表 B1）
+## Key table 2: Occupant capacity (Table B1) 佔用人數（表 B1） {#key-table-2-occupant-capacity-table-b1-b1}
 
 Common occupancy factors (usable floor area in m² per person) 常用佔用率（每人可用樓面面積，平方米）：
 
@@ -111,7 +112,7 @@ Common occupancy factors (usable floor area in m² per person) 常用佔用率�
     ![Table B1 page 2](../assets/figures/fsc2011/table-b1-occupant-capacity-2.jpg){ loading=lazy }
     ![Table B1 page 3](../assets/figures/fsc2011/table-b1-occupant-capacity-3.jpg){ loading=lazy }
 
-## Key rule: travel distance (Subsection B11) 行走距離（B11 分節）
+## Key rule: travel distance (Subsection B11) 行走距離（B11 分節） {#key-rule-travel-distance-subsection-b11-b11}
 
 | | UC 1 & 2 用途類別 1 及 2 | UC 3 用途類別 3 | All other UCs 其他用途類別 |
 |---|---|---|---|
@@ -130,7 +131,7 @@ Common occupancy factors (usable floor area in m² per person) 常用佔用率�
   <figcaption>Diagram B2 — Internal corridor access: travel distances for UC 1 & 2 內走廊：用途類別 1 及 2 的行走距離<br><small>Source: FS Code 2011 (2024 Edition), Buildings Department 資料來源：屋宇署</small></figcaption>
 </figure>
 
-## Key tables: exits and staircases (Tables B2–B4) 出口及樓梯（表 B2–B4）
+## Key tables: exits and staircases (Tables B2–B4) 出口及樓梯（表 B2–B4） {#key-tables-exits-and-staircases-tables-b2b4-b2b4}
 
 - **Table B2**: minimum number and width of exit doors and exit routes, by occupant capacity of the room, compartment or storey. 按佔用人數訂明出口門及出口路線的最少數目及闊度。
 - **Tables B3 / B4**: **discharge value** of a required staircase (non-sprinklered / sprinklered), by staircase width and number of storeys served. The total discharge value must be at least the total occupant capacity (B12.1). 規定樓梯的**疏散量**（無／有花灑系統）；總疏散量不得少於總佔用人數。
@@ -145,7 +146,7 @@ Common occupancy factors (usable floor area in m² per person) 常用佔用率�
   <figcaption>Tables B3 & B4 — Discharge value of a required staircase (non-sprinklered / sprinklered) 規定樓梯的疏散量<br><small>Source: FS Code 2011 (2024 Edition), Buildings Department 資料來源：屋宇署</small></figcaption>
 </figure>
 
-## Key table: fire resistance and compartments (Table C1) 耐火效能及防火隔室（表 C1）
+## Key table: fire resistance and compartments (Table C1) 耐火效能及防火隔室（表 C1） {#key-table-fire-resistance-and-compartments-table-c1-c1}
 
 | Use Classification 用途類別 | Compartment area / volume 防火隔室面積／體積 | FRR 耐火效能 (min 分鐘) |
 |---|---|--:|
@@ -172,7 +173,7 @@ Common occupancy factors (usable floor area in m² per person) 常用佔用率�
   <figcaption>Table C1 — Fire resistance rating and fire compartment limitations (original) 耐火效能及防火隔室的規限（原文）<br><small>Source: FS Code 2011 (2024 Edition), Buildings Department 資料來源：屋宇署</small></figcaption>
 </figure>
 
-## Key table: means of access (Table D1) 消防進出途徑（表 D1）
+## Key table: means of access (Table D1) 消防進出途徑（表 D1） {#key-table-means-of-access-table-d1-d1}
 
 Table D1 sets the number of **access staircases**, **fireman's lifts** and **firefighting and rescue stairways** by building type and height. 表 D1 按建築物類型及高度訂明**消防通道樓梯**、**消防員升降機**及**消防救援樓梯**的數目。
 
@@ -180,7 +181,7 @@ Table D1 sets the number of **access staircases**, **fireman's lifts** and **fir
     ![Table D1 page 1](../assets/figures/fsc2011/table-d1-access-1.jpg){ loading=lazy }
     ![Table D1 page 2](../assets/figures/fsc2011/table-d1-access-2.jpg){ loading=lazy }
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -208,7 +209,7 @@ Table D1 sets the number of **access staircases**, **fireman's lifts** and **fir
     5. 訂定**防火隔室及耐火效能**（表 C1），並保護樓梯、升降機、管槽及開口（C 部）。
     6. 核對**進出途徑**：消防通道樓梯、消防員升降機、消防救援樓梯（表 D1）及**緊急車輛通道**（D 部）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -276,7 +277,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

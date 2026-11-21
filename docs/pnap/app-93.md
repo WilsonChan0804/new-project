@@ -30,7 +30,7 @@ tags:
     | **Legal basis 法律依據** | BO s.28(1); Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations |
     | **Last checked 最後核對** | 2026-11-20 against the May 2014 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,7 +48,7 @@ tags:
     - **總樓面面積**：管槽及管井可**豁免**（露天管井亦可豁免上蓋面積）；如同時容納**非必要機房**的喉管，須符合 APP-151 **先決條件及 10% 上限**（第 4 段）。
     - 以建築裝飾**遮蔽的外牆喉管**須由公用部分提供**閉路電視檢查**通道，並在公契中承諾（附錄 B）；部分遮蔽（通透度 ≥ **70%**、每層 **800 毫米**不遮蔽區、伸出 ≤ **500 毫米**）不視為遮蔽（附錄 C）。
 
-## Key table: requirements under BO s.28(1) (para. 3) 規定（第 3 段）
+## Key table: requirements under BO s.28(1) (para. 3) 規定（第 3 段） {#key-table-requirements-under-bo-s281-para-3-3}
 
 | Item 項目 | Requirement 規定 |
 |---|---|
@@ -62,14 +62,14 @@ tags:
 | (f) Soil pipe size 污水管尺寸 | ≥ the outlet diameter of the fitments served 不少於潔具出水口 |
 | (g) Bends 彎位 | Only where unavoidable; stack-foot bend radius ≥ **4 × stack radius**, never **< 200 mm** (centreline) 豎管底彎位半徑 ≥ 4 倍，不少於 200 毫米 |
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 3(b)(ii) — Pipe wells 管井"
     (1) The size of pipe well shall not be less than 1200 mm x 1500 mm; (2) No opening will be allowed in a pipe well other than access points for inspection and maintenance, which shall be from the common parts of the building. Access points shall be provided to the pipe well at not more than 21 storeys apart; (3) Cat ladder with proper guard rings shall be installed in the full height of the pipe well for inspection and maintenance purposes; (4) Grating platforms shall be provided at intervals of not more than 4 storeys; (5) The opening at every access point shall not be less than 600 mm wide by 2000 mm high and shall comply with Part C of the Code of Practice for Fire Safety in Buildings 2011; and (6) A ventilation opening having a minimum net area of 1/10th of the horizontal area of the pipe well shall be provided at both the top and bottom of the pipe well…
 
     **官方中文本：** (1) 管井的尺寸不應少於1 200毫米x 1 500毫米；(2) 除了從建築物的公用部分進入以供檢查和維修保養的出入口外，管井不得有其他開口。管井出入口的間距不得超過21層樓；(3) 為了進行檢查和維修保養，整道管井應裝設配備護圈的豎梯；(4) 須配置格柵平台，平台與平台的間距不得超過4層樓；(5) 每個出入口的開口不得少於600毫米闊x 2 000毫米高，並須符合《2011年建築物消防安全守則》C部的規定；及 (6) 管井的底部和頂部各開一個通風口，其淨面積最小應為管井平面面積的十分之一。除下文第4段另有規定外，管槽和管井的面積可獲豁免計入總樓面面積內。露天管井亦可獲豁免計算入上蓋面積。
 
-## Key table: other provisions 其他規定
+## Key table: other provisions 其他規定 {#key-table-other-provisions}
 
 | Topic 主題 | Requirement 規定 | Para. 段 |
 |---|---|---|
@@ -80,7 +80,7 @@ tags:
 | **Partial screening** 部分遮蔽 (App. C) | Not "concealed" if pipes are exposed on at least one side, the screen is **≥ 70% permeable**, with an **800 mm** unscreened zone per floor, and projects ≤ **500 mm** 通透度 ≥ 70%、每層 800 毫米不遮蔽、伸出 ≤ 500 毫米 | 7 |
 | Non-domestic 非住用 | Para. 3(d) not mandatory but **encouraged** 鼓勵採用 | 8 |
 
-## Figures 圖則
+## Figures 圖則 {#figures}
 
 <figure markdown>
   ![Appendix A pipe well](../assets/figures/app-93/appendix-a-pipe-well-1.jpg){ loading=lazy }
@@ -97,7 +97,7 @@ tags:
 
 <small>Source: PNAP APP-93 (May 2014), Buildings Department 資料來源：屋宇署</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -119,7 +119,7 @@ tags:
 
     管槽及管井一般屬必要設施，**豁免總樓面面積**；如同時容納非必要機房的喉管，便計入 APP-151 上限。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -165,7 +165,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

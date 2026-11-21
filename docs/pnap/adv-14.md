@@ -18,7 +18,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV014.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV014.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -30,7 +30,7 @@ tags:
     - 外牆喉管、窗、油漆及飾面須在高處工作；**永久通道設施**可提高安全（第 1–2 段）。
     - 應在設計階段考慮，例如永久**吊掛式通道系統**（ADV-11）；建造業議會建議新建築物天台設**吊船系統**（第 3–4 段）；另見 APP-163。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

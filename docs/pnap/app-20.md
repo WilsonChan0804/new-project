@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 22(2), 23(2)(a)](../regulations/bpr-18a-22.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +36,7 @@ tags:
     - 條件（第 4 段）：逐案考慮；只在密度**不過高**時給予額外地積比率；附顯示交回範圍的**地盤平面圖（一式四份）**；圖則須加註；簽立**交回土地協議**並在土地註冊處**登記**。
     - B(P)R 第 25 條空地亦採用相若原則（第 5 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -59,7 +59,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -30,7 +30,7 @@ tags:
     | **Source 原文** | [APP-42 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP042.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the July 2025 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,7 +48,7 @@ tags:
     - 有蓋走道 ≤ 闊 **3.5 米** × 高 **4.5 米**；花棚架 ≤ 天台面積 **5%**；戶外座椅上蓋 ≤ 休憩空間 **10%**、每個 ≤ **20 平方米**；住宅大廈下的平台花園 ≤ 住用總樓面面積 **5%**。
     - **2025 年 7 月新增**：戶外座椅上蓋、公眾休憩用地的有蓋地方、有蓋上落客區，以及**現有建築物加建暢通易達升降機**，以推廣**長者友善**環境。
 
-## Key table: amenity features and limits 適意設施及限制
+## Key table: amenity features and limits 適意設施及限制 {#key-table-amenity-features-and-limits}
 
 | Para. 段 | Feature 設施 | Main criteria 主要準則 | APP-151 pre-req 先決條件 | 10% cap 上限 |
 |---|---|---|:-:|:-:|
@@ -72,7 +72,7 @@ tags:
 
 <small>Pre-req / cap columns follow the paragraphs of APP-42 and Appendix A of [APP-151](app-151.md). Most exempted areas must be **common parts** in the DMC (or under the Building Management Ordinance), with an undertaking where no DMC exists yet. 大部分獲豁免地方須在公契中訂為**公用部分**。</small>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 8 — A/C plant rooms 冷氣機房"
     The following provisions would be considered reasonable in the absence of the detailed design layout of the plants: (a) air-conditioning plant rooms not exceeding 1% of the total GFA of a building; and/or (b) air handling units, not exceeding 4% of the total GFA of each floor on which they are situated.
@@ -89,7 +89,7 @@ tags:
 
     **中譯（非官方）：** 第 20、24、30 及 42 段旨在推廣長者友善建築環境的適意設施，適用於住宅及綜合用途建築物，以及長者經常光顧的商業建築物。如該等設施已存在於現有建築物並已計入總樓面面積／上蓋面積，則不接受申請將其豁免並把該面積轉作其他用途。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -111,7 +111,7 @@ tags:
     2. **公用部分**：須在公契中訂為公用部分，避免個別業主據為己有。
     3. **APP-151**：大部分項目須符合先決條件（可持續建築設計、綠建環評、能源），部分亦計入 **10% 上限**。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -181,7 +181,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -23,7 +23,7 @@ tags:
     | **Source 原文** | [JPN 5 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN05.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the April 2019 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -41,7 +41,7 @@ tags:
     - **天台構築物**（機房、升降機機房、水缸、建築裝飾、招牌）**不計入**，除非有蓋構築物超過**天台面積 50%**，或**高度超出**下列限制（第 9–10 段）。
     - **層高及轉換層厚度**由屋宇署按 **PNAP APP-5** 審核（第 12 段）。
 
-## Key table: roof-top structures counted towards BHR (para. 10) 計入高度限制的天台構築物（第 10 段）
+## Key table: roof-top structures counted towards BHR (para. 10) 計入高度限制的天台構築物（第 10 段） {#key-table-roof-top-structures-counted-towards-bhr-para-10-10}
 
 Roof-top structures are **not counted**, unless: 天台構築物**不計入**，除非：
 
@@ -58,14 +58,14 @@ Roof-top structures are **not counted**, unless: 天台構築物**不計入**，
 
 <small>Open-air labour safety facilities (working platforms, cat ladders, parapets, gondolas) and lightning poles are not counted if reasonably sized (para. 11). Some OZPs specify that total height **including** roof-top structures must not exceed the BHR (e.g. below Tai Tam Road / Repulse Bay Road levels; footnote 2). 露天工作安全設施及避雷針不計；部分大綱圖規定連天台構築物不得超出限制。</small>
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Paras. 5–6 — Top of building and measurement 建築物頂部及量度"
     …the top of a building for the purpose of measuring height of the building is the highest level of the main roof, unless otherwise specified in the statutory town plans and/or Government Leases. When BHRs are represented in maximum permissible metres, the height of a building should be, unless otherwise specified…, measured from the mean site formation level. Mean site formation level means the average of the sum of the highest and lowest formation levels of the land on which any part of the building stands including basement floors…
 
     **中譯（非官方）：** ……除法定圖則及／或地契另有規定外，量度建築物高度時，建築物頂部為主天台的最高水平。如高度限制以最高米數表示，除另有規定外，建築物高度應由平均地盤平整水平起計；平均地盤平整水平指建築物任何部分（包括地庫）所在土地的最高及最低平整水平之和的平均數……
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -85,7 +85,7 @@ Roof-top structures are **not counted**, unless: 天台構築物**不計入**，
 
     天台規則容許在天台放置機房、升降機房及適度的裝飾而不違反高度限制；但過大的「**頂冠**」（圍封 > 50% 或超出高度限制）便須全數計算。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -126,7 +126,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

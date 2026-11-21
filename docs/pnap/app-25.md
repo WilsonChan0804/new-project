@@ -25,7 +25,7 @@ tags:
     | **Legal basis 法律依據** | B(A)R 8(1)(ba) |
     | **Last checked 最後核對** | 2026-11-20 against the April 2015 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -43,7 +43,7 @@ tags:
     - **內容**（第 3 段）：地形、地質、地下水；與現存結構的相互影響；可行性、施工方法及次序；地盤平整／地基示意圖；**土地勘測範圍**（GEOGUIDE 2 第 15.3 節的監督水平）；斜坡／擋土牆勘察及補救工程。
     - 須附而沒有附岩土評估 → 可根據《建築物條例》第 16(1)(a) 條**拒批**（第 4 段）。
 
-## Key table: when a GA is required (para. 2) 何時須提交岩土評估（第 2 段）
+## Key table: when a GA is required (para. 2) 何時須提交岩土評估（第 2 段） {#key-table-when-a-ga-is-required-para-2-2}
 
 | # | Trigger 觸發條件 | Threshold 門檻 |
 |---|---|---|
@@ -59,7 +59,7 @@ tags:
 
     **官方中文本：** (i) 橫跨地盤邊界（或對於大的地盤，橫跨任何50米直線長度的範圍）的最大傾斜度超過15度；(ii) 在地盤內或在距地盤邊界7.5米範圍以內有傾斜度超過30度及高度超過7.5米的斜坡存在（包括斜坡底部或斜坡頂部所有擋土牆的高度）……
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -69,7 +69,7 @@ tags:
 
     香港有大量陡峭、受斜坡影響及填海地盤。APP-25 確保在定案佈局**之前**已考慮**岩土可行性**；若按圖則無法安全建造地基或挖掘，便屬根本性問題，屋宇署會拒批圖則，而不是日後才發現。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

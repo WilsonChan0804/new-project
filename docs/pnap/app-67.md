@@ -29,7 +29,7 @@ tags:
     | **Legal basis 法律依據** | Building (Energy Efficiency) Regulation B(EE)R; Code of Practice for OTTV in Buildings 1995 |
     | **Last checked 最後核對** | 2026-11-20 against the September 2025 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -49,7 +49,7 @@ tags:
     - 有助降低 OTTV 的**遮陽篷**：伸出 **≤ 1.5 米**不計總樓面面積及上蓋面積；> **750 毫米**須提交量化評估；≤ 750 毫米不視為阻擋訂明窗（第 10 段）。
     - **申請動工同意書前**提交 **OTTV 摘要表**，**申請佔用許可證／提交 BA14 表格時**提交 **OTTV 報告**（第 7–8 段）。
 
-## Key table: OTTV limits (para. 3) 總熱傳送值上限（第 3 段）
+## Key table: OTTV limits (para. 3) 總熱傳送值上限（第 3 段） {#key-table-ottv-limits-para-3-3}
 
 | Part of building 建築物部分 | New limit 新上限 | Previous 舊上限 |
 |---|--:|--:|
@@ -58,7 +58,7 @@ tags:
 
 <small>Applies to commercial (offices, shops, restaurants, PPE, etc.) and hotel buildings. Effective for plans submitted on or after **31 December 2025**. Same values as OTTV<sub>RRF</sub> for residential clubhouses in [APP-156](app-156.md). 適用於商業及酒店建築物；與 APP-156 住客康樂設施的數值相同。</small>
 
-## Key table: what B(EE)R covers 規例涵蓋範圍
+## Key table: what B(EE)R covers 規例涵蓋範圍 {#key-table-what-beer-covers}
 
 | Case 情況 | B(EE)R applies? 是否適用 | Para. 段 |
 |---|---|---|
@@ -69,14 +69,14 @@ tags:
 | Open-front shop **> 50 m²** 開放式店舖 > 50 平方米 | Notional OTTV with clear-glass shopfront accepted 以清玻璃作假設計算 | 6 |
 | Residential buildings 住宅建築物 | ❌ No. Use [APP-156](app-156.md) (RTTV) 改用 APP-156 | — |
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 10 — Sunshades 遮陽篷"
     Genuine sunshades used to assist in the reduction of the OTTV are not accountable for gross floor area and, by virtue of regulation 6 of the B(EE)R, shall not be included in site coverage calculations, if they project 1.5 m or less from the external walls. In determining whether the sunshades will assist in the reduction of the OTTV, quantitative assessment should be submitted to the BA for consideration, if the sunshades project over 750 mm from the external walls. In addition, sunshades with a projection of not more than 750 mm are regarded as not causing obstructions to prescribed windows. Sunshades will not be allowed to project over streets under section 31(1) of the Buildings Ordinance, but exemptions may be considered in individual cases if special circumstances so justify.
 
     **中譯（非官方）：** 用以協助降低總熱傳送值的真正遮陽篷，如伸出外牆 1.5 米或以下，不計入總樓面面積，並根據《建築物（能源效率）規例》第 6 條不計入上蓋面積。如遮陽篷伸出外牆超過 750 毫米，須向建築事務監督提交量化評估，以判斷遮陽篷是否有助降低總熱傳送值。此外，伸出不超過 750 毫米的遮陽篷不會被視為阻擋訂明窗。根據《建築物條例》第 31(1) 條，遮陽篷不得伸出街道，但如有特殊情況，可按個別情況考慮豁免。
 
-## Key table: submissions 提交文件
+## Key table: submissions 提交文件 {#key-table-submissions}
 
 | Stage 階段 | Submit 須提交 | Para. 段 |
 |---|---|---|
@@ -85,7 +85,7 @@ tags:
 | Before OP / Form BA14 申請佔用許可證／BA14 前 | Final OTTVs of walls and roofs and glass shading coefficient shown on GBP 在圖則上記錄最終數值 | 8 |
 | **At OP / Form BA14** 申請佔用許可證／BA14 時 | **OTTV Report**: calculations, Forms OTTV1–OTTV4, record plans, glass test certificates, final Summary Sheet OTTV 報告 | 8 |
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -99,7 +99,7 @@ tags:
 
     建築事務監督**鼓勵遮陽**：1.5 米以內的真正遮陽篷不計總樓面面積及上蓋面積，有效降低 OTTV 的創新設計亦不會在地積比率及上蓋面積上受罰（第 11 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -128,7 +128,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

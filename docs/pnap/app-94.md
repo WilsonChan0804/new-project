@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP094.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP094.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - **訂明商業處所**：銀行、場外投注站、設保安區的珠寶金行、超級市場／百貨公司、商場，總樓面面積 **> 230 平方米**（第 3(3)–(6) 條；附錄 A）（第 2–3 段）。
     - **指明商業建築物**：作辦公室、商業、貿易或娛樂用途，圖則在 **1987 年 3 月 1 日或之前**首次呈交（或建成）的建築物（第 4 段）；與第 572 章相若（APP-145），可向屋宇署消防安全組查詢。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

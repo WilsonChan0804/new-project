@@ -20,7 +20,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP063.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP063.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -34,7 +34,7 @@ tags:
     - 第一版（1982 年）採用**整體**安全系數；第二版（1993 年，土木工程拓展署網站持續更新）採用**分項系數**，並就參數及地下水提供指引（第 2 段）。
     - **全面**按任何一版設計均可接受；**不可混用**；須註明所用版本；**強烈建議採用第二版**（第 3 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -25,7 +25,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/fs_code2011.pdf) pp. 148–246 · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/code-and-design-manuals/fs_code2011_c.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -41,7 +41,7 @@ tags:
 
 ---
 
-## Part E — Fire properties of building elements and components 建築構件的耐火性能
+## Part E — Fire properties of building elements and components 建築構件的耐火性能 {#part-e-fire-properties-of-building-elements-and-components}
 
 ### Test standards 測試標準
 
@@ -125,7 +125,7 @@ tags:
 
 ---
 
-## Part F — Fire safety management 消防安全管理
+## Part F — Fire safety management 消防安全管理 {#part-f-fire-safety-management}
 
 | Item 項目 | Requirement 規定 | Clause 條文 |
 |---|---|---|
@@ -147,7 +147,7 @@ tags:
 
 ---
 
-## Part G — Guidelines on fire engineering 消防工程指引
+## Part G — Guidelines on fire engineering 消防工程指引 {#part-g-guidelines-on-fire-engineering}
 
 ### Framework 框架
 
@@ -179,7 +179,7 @@ tags:
 
 ---
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -197,7 +197,7 @@ tags:
     - **F 部**回答**「如何保持有效？」**：消防設施往往因疏於保養、僭建、防火門被頂開及出口被阻塞而失效；書面計劃、合資格人士及日常整理檢查可保持其有效，特別是裝修及升降機工程期間。
     - **G 部**回答**「如規範條文不適用怎麼辦？」**：大型或特殊建築物（機場、商場、中庭、體育館）可用**消防工程**證明同等安全水平；但設計只在**約束條件**不變時才有效，因此須記錄於圖則、管理計劃及公契。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -229,7 +229,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

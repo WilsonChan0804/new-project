@@ -22,7 +22,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.8–8F](../regulations/bo-part-1-registration.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -49,7 +49,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · English only for now; Chinese text is an unofficial translation (中譯（非官方）).</small>
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![The three contractor registers. 三份承建商名冊。](../assets/figures/diagrams/contractor-registers.svg){ width="760" loading=lazy }

@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 66(4)](../regulations/bpr-50-70.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 須在顯眼位置展示：地盤**地址／地段編號**、**認可人士、註冊結構工程師及註冊承建商**名稱及**聯絡電話**，方便市民舉報不安全情況（第 1 段）。
     - 圍板上不准展示廣告，但根據 B(P)R 第 66(4) 條可展示**基本發展資料**（工程、用途、高度、座數、落成日期）；其他展示須在地段範圍內（第 2–3 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

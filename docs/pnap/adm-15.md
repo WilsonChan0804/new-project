@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [B(A)R 8(1)(bb), 12](../regulations/bar-123a.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - A 部由**認可人士或註冊岩土工程師**統籌及簽署，B 部由**註冊結構工程師**負責（B(A)R 第 12 條；APP-141）（第 3 段）。
     - 可同時呈交，或在土壤與結構相互作用確定後先交 A 部再交 B 部（第 4 段）；簡單建議另有簡化安排（第 5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

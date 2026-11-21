@@ -22,7 +22,7 @@ tags:
 !!! note "Note 注意"
     Historical note: the 1995/1996 fire codes it refers to have been replaced by the [Code of Practice for Fire Safety in Buildings 2011](../codes/fire-safety-code-2011.md). It is kept for older buildings and approvals.
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -34,7 +34,7 @@ tags:
     - **1996 年耐火結構守則**（B(C)R 第 XV 部的指引）修訂 1990 年守則：釐清含糊之處、提高部分構件標準，並刪除與走火守則重複的內容（第 1–2 段）。
     - **1996 年 8 月 1 日**生效，不適用於當日或之前已展開或已獲同意的工程（第 3 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

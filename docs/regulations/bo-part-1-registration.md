@@ -33,7 +33,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123](https://www.elegislation.gov.hk/hk/cap123) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (point in time 01/03/2026) |
 
-## Buildings Ordinance map 《建築物條例》結構
+## Buildings Ordinance map 《建築物條例》結構 {#buildings-ordinance-map}
 
 | Part 部 | Sections 條 | Subject 主題 | Page 頁面 |
 |---|---|---|---|
@@ -46,7 +46,7 @@ tags:
 | **4–9** | 40–56 | Offences, exemptions, appeals, transitional, saving 罪行、豁免、上訴、過渡 | [BO s.40–56 and Schedules](bo-parts-4-9-schedules.md) |
 | Schedules 附表 | 2–8 | Party structures, shoring, departments, scheduled areas, fixed penalty, etc. 共用結構、撐柱、部門、附表所列地區等 | [BO s.40–56 and Schedules](bo-parts-4-9-schedules.md) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -64,7 +64,7 @@ tags:
     - **第 9／9AA 條**：一般工程須委任**註冊一般建築承建商**，專門工程須委任**註冊專門承建商**，小型工程須委任**訂明註冊承建商**；承建商須按監工計劃書**不斷監督**。
     - **紀律處分**（第 5–7、11–13 條）：紀律委員會可命令從名冊**除名**、**暫停**、**譴責**或**罰款**最高 **$250,000**（小型工程及驗窗為 **$150,000**）；裁斷須刊憲；可向**原訟法庭**上訴。
 
-## Section by section 逐條摘要
+## Section by section 逐條摘要 {#section-by-section}
 
 ### Preliminary 導言
 
@@ -95,7 +95,7 @@ tags:
 | 13 | Disciplinary proceedings for contractors 承建商的紀律處分程序 | Similar grounds (conviction, negligence, misconduct, supervision plan failures, wrongful minor works, causing injury); orders: removal, **fine ≤ $250,000 / $150,000**, reprimand, prohibition; may also cover directors, officers and AS / TD; appeal to CFI. 處分可包括董事及獲授權簽署人。 |
 | 13A | Appeal against BA's decision 針對建築事務監督決定的上訴 | Applicants dissatisfied with a registration, renewal or restoration decision may appeal to the CFI. 向原訟法庭上訴。 |
 
-## Key terms (s.2) 主要定義
+## Key terms (s.2) 主要定義 {#key-terms-s2}
 
 | Term 詞彙 | Meaning (summary) 定義（摘要） |
 |---|---|
@@ -113,7 +113,7 @@ tags:
 | **Supervision plan** 監工計劃書 | Plan of safety management of building / street works, prepared under the technical memorandum (s.39A). 安全管理計劃。 |
 | **Scheduled areas** 附表所列地區 | Areas in **Schedule 5**: (1) Mid-levels, (2) North-western NT, (3) railway protection areas, (4) Ma On Shan, (5) sewage tunnel protection areas, with special geotechnical controls. 附表 5：半山區、新界西北、鐵路保護範圍、馬鞍山、污水隧道保護範圍。 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.4(1), (3) — Appointment and duties of AP, RSE, RGE 認可人士等的委任及職責"
     (1) Subject to subsection (1A), every person for whom building works or street works are to be carried out shall appoint— (a) an authorized person as the co-ordinator of such building works or street works; (b) a registered structural engineer for the structural elements of such building works or street works if so required under this Ordinance; and (c) a registered geotechnical engineer for the geotechnical elements of such building works or street works if so required under this Ordinance. … (3) Any authorized person, any registered structural engineer and any registered geotechnical engineer appointed or nominated under subsection (1) or (2) shall— (a) supervise the carrying out of the building works or street works, as the case may be, in accordance with the supervision plan; (b) notify the Building Authority of any contravention of the regulations which would result from the carrying out of any work shown in any plan approved by the Building Authority in respect of the building works or street works; and (c) comply generally with this Ordinance.
@@ -125,7 +125,7 @@ tags:
 
     **官方中文本：** 新建築物指今後建成的任何建築物，以及任何以體積計不少於一半是重新興建的現有建築物，或任何曾予改動而其程度致使主牆的表面面積不少於一半需要重新建造的現有建築物；
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -143,7 +143,7 @@ tags:
 
     **「新建築物」**定義對改動加建工程很重要：如重建一半體積或一半主牆，整幢建築物須符合現行新建築物的規定。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -172,7 +172,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

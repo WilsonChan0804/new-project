@@ -26,7 +26,7 @@ tags:
     | **Source 原文** | [ADM-2 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM002.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the June 2024 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -46,14 +46,14 @@ tags:
     - **變通／豁免**：以 **BA16 表格**申請並附理據（附錄 E 列出常見申請所需資料）；條件載於 **BD 106 表格**，須在最終修訂圖則中顯示，竣工時提交**有效 BD 106 清單**（第 10–14 段）。
     - **總樓面面積寬免透明度**（第 16–18 段）：在圖則上列出**寬免面積明細**（附錄 G），並在申請佔用許可證時提交**摘要**（附錄 H）；屋宇署會在發出佔用許可證後**上載網站**。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Centralised processing: what happens by day 45 and day 60. 中央處理：第 45 及 60 天。](../assets/figures/diagrams/adm2-day45-60.svg){ width="394" loading=lazy }
   <figcaption>Centralised processing: what happens by day 45 and day 60. 中央處理：第 45 及 60 天。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: processing timeline and tools 審批時序及工具
+## Key table: processing timeline and tools 審批時序及工具 {#key-table-processing-timeline-and-tools}
 
 | Step 步驟 | What happens 內容 | Para. 段 |
 |---|---|---|
@@ -68,7 +68,7 @@ tags:
 | OP 佔用許可證 | **GFA concession summary** (Appendix H) with the OP application; published online after OP 寬免摘要隨申請提交並於網上公布 | 16–18 |
 | Structural works 結構工程 | Result letters for structural approval/consent issued **electronically** from 2 July 2024 結構工程結果以電子方式發出 | 19 |
 
-## Key table: appendices 附錄一覽
+## Key table: appendices 附錄一覽 {#key-table-appendices}
 
 | Appendix 附錄 | Content 內容 |
 |---|---|
@@ -82,7 +82,7 @@ tags:
 | **H** | **Summary of GFA concessions and car parks** for publication 寬免及停車位摘要 |
 | I | Tung Chung Cable Car Route Protection Area 東涌纜車路線保護區 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 8 — Greater certainty 更大確定性"
     To assist AP, RSE and RGE in achieving greater certainty in planning building projects, BD operates a set of procedures containing the following features: (a) On the 45th day of a submission of new building plans, AP/RSE/RGE may enquire and expect to know whether the submission is fundamentally acceptable. He may also request to discuss non-conformities identified prior to the issue of disapproval letter; and (b) Where a submission of plans is considered fundamentally unacceptable and disapproval items notified in writing within the statutory period of 60 days, new disapproval items will not, in normal circumstances, be added to the said proposal for subsequent resubmission of plans.
@@ -107,7 +107,7 @@ tags:
 
 <small>Source: PNAP ADM-2 (June 2024), Buildings Department 資料來源：屋宇署</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -127,7 +127,7 @@ tags:
     - **善用第 45 天**：致電負責人員，及早知道方案是否基本上可接受。
     - **寬免的紀錄**：每項變通均附 BD 106 條件；每項總樓面面積寬免都須以**標準明細**顯示在圖則上，並在佔用許可證發出後**公開摘要**，讓買家及公眾知道哪些面積獲豁免。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -168,7 +168,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -27,7 +27,7 @@ tags:
     | **Legal basis 法律依據** | Building (Refuse Storage and Material Recovery Chambers and Refuse Chutes) Regulations 《建築物（垃圾及物料回收房及垃圾槽）規例》 B(RS&MRC&RC)R |
     | **Last checked 最後核對** | 2026-11-20 against the December 2022 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -45,7 +45,7 @@ tags:
     - **物料回收房、垃圾及物料回收房、垃圾及物料回收室、垃圾槽及垃圾漏斗室**可根據 B(P)R 第 23(3)(b) 條**豁免總樓面面積**（第 7 段）。
     - **另一方案（附錄 C）**：總實用樓面空間 **≥ 1,320 平方米**的住用建築物，可在每層設小型**垃圾存放室（≥ 1.5 平方米）**，並在主要出入口樓層設一個**中央回收點（10–21 平方米）**，取代每層的垃圾及物料回收室。
 
-## Key table: refuse collection vehicle (para. 1) 垃圾收集車規格（第 1 段）
+## Key table: refuse collection vehicle (para. 1) 垃圾收集車規格（第 1 段） {#key-table-refuse-collection-vehicle-para-1-1}
 
 | Item 項目 | Value 數值 |
 |---|---|
@@ -62,7 +62,7 @@ tags:
 | Parking space for collection 收集垃圾泊車位 | **5 m × 12 m** |
 | Turning (if no forward exit) 迴轉（不能向前駛離） | Hammer-head **27 m × 9.5 m**, approach **10.9 m** wide 錘頭式 27 × 9.5 米 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 6 — Fire protection of RS&MRR 垃圾及物料回收室的防火"
     Every RS&MRR should have adequate provisions for fire prevention and fire fighting such as fire alarm and sprinkler. The room should be separated from the remainder of the building by walls having a fire resisting rating (FRR) of not less than -/120/120 and the access door thereto should have an FRR of not less than -/60/60. The self-closing mechanism to the door should not permit the door to be held in an open position.
@@ -74,7 +74,7 @@ tags:
 
     **官方中文本：** 如規劃令人滿意，物料回收房、垃圾及物料回收房、垃圾及物料回收室、垃圾槽以及垃圾漏斗室（如有），可根據《建築物（規劃）規例》第23(3)(b)條獲豁免計入總樓面面積內。
 
-## Key table: alternative approach (Appendix C) 另一方案（附錄 C）
+## Key table: alternative approach (Appendix C) 另一方案（附錄 C） {#key-table-alternative-approach-appendix-c-c}
 
 | Item 項目 | Requirement 規定 |
 |---|---|
@@ -90,7 +90,7 @@ tags:
 | Water and drainage 供水及排水 | Water point and sink; floor drain with grating, **≥ 100 mm** pipe to a trapped gully outside 水喉及洗滌盆；地台排水 |
 | GFA 總樓面面積 | RSR and RC may be **excluded** under B(P)R 23(3)(b), by modification of reg. 3A (para. 13) 可豁免 |
 
-## Figures 圖則
+## Figures 圖則 {#figures}
 
 <figure markdown>
   ![Annex 1 refuse collection](../assets/figures/app-35/annex-1-refuse-collection.jpg){ loading=lazy }
@@ -109,7 +109,7 @@ tags:
 
 <small>Source: PNAP APP-35 (Dec 2022), Buildings Department 資料來源：屋宇署</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -129,7 +129,7 @@ tags:
 
     這些垃圾設施一般**不計總樓面面積**（第 23(3)(b) 條），亦**不受** APP-151 的 10% 上限限制（APP-151 第 2.1 項）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -162,7 +162,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -29,7 +29,7 @@ tags:
     Where **B(P)R reg. 73 / Fourth Schedule** applies (residential and commercial "specified buildings"), doors on regulated routes and main entrance doors of flats need **850 mm** clear width (Manual: 800 mm) and thresholds **≤ 15 mm** (Manual: 20 mm). See [B(P)R 71–73](../regulations/bpr-71-73.md).
     適用第 73 條／附表 4 的建築物，受規管路徑上的門及單位主要入口門淨闊須 **850 毫米**（手冊為 800 毫米），門檻 **≤ 15 毫米**（手冊為 20 毫米）。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -43,7 +43,7 @@ tags:
     - **暢通易達水廁間**（第 11 分部）：每層水廁 **≤ 20** 個設 **1** 個、**> 20** 個設 **2** 個（多水廁間洗手間按性別計）；設有洗手間的每層最少設一個**暢通易達無分性別洗手間**；住用部分不適用。水廁間 **≥ 1 500 × 1 750 毫米**，內有 **1 500 × 1 500 毫米**迴轉空間；廁座高 **380–450 毫米**；沖水掣 **600–1 050 毫米**、≤ 22 牛頓；洗手盆邊 **≤ 750 毫米**、膝位淨空 550 毫米；槓桿式或自動水龍頭；門可從外面打開；扶手直徑 **32–40 毫米**、長 **≥ 600 毫米**，摺合扶手高 **725–750 毫米**，均可承受 **150 公斤**；**緊急召援鐘**；最少一個尿盆前有 **800 × 1 500 毫米**空間、盆邊 **≤ 400 毫米**並在 1 200 毫米高設扶手。
     - **浴室及淋浴間**（第 12 分部）：浴缸高 **≤ 380 毫米**，設 **250 毫米**座位及 **1 500 × 800 毫米**淨空；扶手 900 毫米水平 + 600 毫米垂直；槓桿式水龍頭 ≥ 75 毫米；手提花灑配 **1 500 毫米**喉管；淋浴間 **≥ 1 500 × 900 毫米**，L 形扶手 **750 × 900 毫米**高 700–800 毫米，門檻 **≤ 13 毫米**，摺合座椅 **550 × 400 毫米**高 **430–480 毫米**。
 
-## Division 10 Doors 第 10 分部 門
+## Division 10 Doors 第 10 分部 門 {#division-10-doors-10}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -68,7 +68,7 @@ tags:
   <figcaption>Figure 23A – Bevelled door threshold. 斜邊門檻。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 11 Toilets and WC cubicles 第 11 分部 洗手間及暢通易達水廁間
+## Division 11 Toilets and WC cubicles 第 11 分部 洗手間及暢通易達水廁間 {#division-11-toilets-and-wc-cubicles-11}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -100,7 +100,7 @@ tags:
   <figcaption>Figure 26 – Flap-type diaper changing counter (recommended). 摺合式尿片更換枱（建議）。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 12 Bathrooms and shower compartments 第 12 分部 浴室及淋浴間
+## Division 12 Bathrooms and shower compartments 第 12 分部 浴室及淋浴間 {#division-12-bathrooms-and-shower-compartments-12}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -118,7 +118,7 @@ tags:
   <figcaption>Figure 27 – Accessible bathroom and shower compartment. 暢通易達浴室及淋浴間。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 46 / Third Schedule s.46 — Number of accessible WC cubicles 暢通易達水廁間的數目"
     There shall be at least one accessible W.C. cubicle on a floor, or in that part of a floor designed for access by the persons with a disability where the total number of W.C. cubicles provided on that floor or in that part of a floor is 20 or less, or 2 where the total number exceeds 20. This paragraph shall not apply to domestic buildings and the domestic parts of composite buildings or where there is no toilet provided on the particular floor.
@@ -130,7 +130,7 @@ tags:
 
     **官方中文本（附表 3 第 49 條）：** (1) 暢通易達水廁間的內部面積，不得少於1 500毫米乘以1 750毫米。(2) 暢通易達水廁間內活動範圍的淨空間面積不得少於1 500毫米乘以1 500毫米(於經修飾的地面水平上350毫米處量度)。(3) 暢通易達水廁間內須設有一個符合以下規定的水廁 —— (a) 其高度量至廁位頂部不得少於380毫米及不得多於450毫米；(b) 水廁須有背靠(例如座蓋)；及 (c) 廁板不得由彈簧牽動。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -152,7 +152,7 @@ tags:
         - 摺合扶手設在**靠牆一邊**而非開放（較闊）的一邊。
         - 無檻式淋浴間的門檻 **> 13 毫米**。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

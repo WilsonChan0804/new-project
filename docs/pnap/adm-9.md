@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(A)R 14(3)](../regulations/bar-123a.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 每份圖則須有一份**著色**，以區分現有及新建工程（B(A)R 第 14(3) 條）（第 1 段）。
     - 採用**附錄 A 顏色**；修訂圖則須在**所有套數**以相同方式標示擬議工程（第 2–3 段）。
 
-## Key table: App. A preferred colours (extract) 附錄 A 建議顏色（摘錄）
+## Key table: App. A preferred colours (extract) 附錄 A 建議顏色（摘錄） {#key-table-app-a-preferred-colours-extract-a}
 
 | Material 物料 | Colour 顏色 | RGB |
 |---|---|---|

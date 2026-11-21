@@ -18,7 +18,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP091.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP091.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -30,7 +30,7 @@ tags:
     - 升降機層門須具 **1 小時完整性**，一般應保持**關閉**，以防火經井道蔓延（第 1 段）。
     - 保養或更換期間（附錄）：層門須保持**關閉**；同一井道一般**只可開啟一道**，並由升降機工人看守；如須同時開啟多道，須採取額外措施（第 2–3 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

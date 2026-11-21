@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV025.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV025.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - 須確保**喉管水封完好**；考慮進氣、氣流路線及抽氣扇容量（第 2 段）；世衞建議約**每平方米 10.2 公升／秒**（每平方呎 2 cfm），過大會產生**負壓**（第 3 段）。
     - 應設**補氣開口**，例如**門底留空**或百葉開口，並避免氣流短路（第 4 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

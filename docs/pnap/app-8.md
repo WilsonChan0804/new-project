@@ -19,7 +19,7 @@ tags:
     | **Legal basis 法律依據** | [B(C)R s.44](../regulations/bcr-123q.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - **鋼煙囪**：按《2011 年鋼結構作業守則》第 13.2 條設計，注意**風致振動**（圓形煙囪可用第 13.2.8 條簡化方法）（第 4 段）。
     - **建造**：防銹及避免**雙金屬作用**（第 13.2.7 條）；煙道穿過牆身或屋頂處設**泛水或防雨罩**；按 BS EN 1856-1 及 BS 5854（第 5 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -49,7 +49,7 @@ tags:
         - 煙道出口靠近本身或毗鄰建築物的**窗戶或新鮮空氣入口**。
         - 廚房或鍋爐煙道沒有隔熱計算。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

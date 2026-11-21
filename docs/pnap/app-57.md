@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [B(A)R 8(1)(bc)](../regulations/bar-123a.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -35,7 +35,7 @@ tags:
     - 挖掘**深於 2.5 米及長於 5 米**，**並且**可能影響 **45° 線**範圍內的道路、建築物、構築物、陡於 **30°** 的斜坡或直徑 **≥ 75 毫米**的水管，**須呈交挖掘及側向承托圖則**（第 3 段）；未獲批准不會給予同意（第 4 段）。
     - 圖則及挖掘與降水對鄰近構築物影響的結構評估由**註冊結構工程師**簽署；深度 **> 4.5 米**者，岩土文件須由**註冊岩土工程師**簽署（第 5 段）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Do I need ELS plans? 是否須呈交挖掘及側向承托圖則？](../assets/figures/diagrams/app57-els.svg){ width="381" loading=lazy }
@@ -47,7 +47,7 @@ tags:
   <figcaption>The 45° zone of influence for ELS plans (APP-57). 45° 影響範圍。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: when ELS plans are required 何時須呈交
+## Key table: when ELS plans are required 何時須呈交 {#key-table-when-els-plans-are-required}
 
 | Condition 條件 | Threshold 門檻 |
 |---|---|
@@ -70,7 +70,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

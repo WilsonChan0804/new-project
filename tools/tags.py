@@ -54,7 +54,7 @@ T = [
 added = collections.Counter(); pages = 0
 for p in glob.glob(D + '**/*.md', recursive=True):
     s = open(p).read()
-    m = re.match(r'---\ntags:\n((?:  - .*\n)*)---\n', s)
+    m = re.match(r'---\ntags:\n((?:  - .*\n)*)((?:[a-z_]+:.*\n)*)---\n', s)
     body = s[m.end():] if m else s
     body_main = re.sub(r'<!-- APSEC START -->.*?<!-- APSEC END -->', '', body, flags=re.S)
     title = (re.search(r'^# (.*)$', body, re.M) or [None, ''])[1]
@@ -69,7 +69,7 @@ for p in glob.glob(D + '**/*.md', recursive=True):
     new = [t for _, t in sorted(new, reverse=True)[:7]]
     if not new: continue
     tags = old + new
-    fm = '---\ntags:\n' + ''.join(f'  - {t}\n' for t in tags) + '---\n'
+    fm = '---\ntags:\n' + ''.join(f'  - {t}\n' for t in tags) + (m.group(2) if m else '') + '---\n'
     s = fm + body
     open(p, 'w').write(s); pages += 1; added.update(new)
 print('pages', pages); print(added.most_common(50))

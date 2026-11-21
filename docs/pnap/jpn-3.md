@@ -25,7 +25,7 @@ tags:
     | **Source 原文** | [JPN 3 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN03.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the April 2019 issue |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -45,7 +45,7 @@ tags:
     - **批准時間**：有保護樹木條款的地段須在**地盤平整**前取得批准，沒有該條款的須在**上蓋工程**前取得（第 6 段）。一般建築圖則階段只須向區域規劃處提交**園景佈局圖**（第 8 段）。
     - **綠化上蓋面積**：**屋宇署是唯一審批機構**（[APP-152](app-152.md)）。新訂或修訂地契以屋宇署在一般建築圖則上的接納作為符合地契，**毋須另向地政總署呈交**；現有地契的業主亦可選擇此途徑（第 9–11 段）。
 
-## Key table: who checks what 由誰審核
+## Key table: who checks what 由誰審核 {#key-table-who-checks-what}
 
 | Situation 情況 | Checking authority 審核部門 | Submission 呈交 | Para. 段 |
 |---|---|---|---|
@@ -57,7 +57,7 @@ tags:
 | SCG at a **higher %** requested by another B/D 其他部門要求較高百分比 | BD comments and computes; the named B/D decides 屋宇署提意見，指明部門決定 | On the GBP | 10 |
 | SCG, **existing** lease 綠化上蓋面積（現有地契） | LandsD, or **BD** if the owner / AP chooses 地政總署或屋宇署 | On the GBP for BD's acceptance; lease modification if prescriptive terms differ 如有差異須修訂地契 | 11 |
 
-## Key table: LMP process 園景設計總圖程序
+## Key table: LMP process 園景設計總圖程序 {#key-table-lmp-process}
 
 | Step 步驟 | What happens 內容 |
 |---|---|
@@ -67,14 +67,14 @@ tags:
 | 4. Audit 抽查 | Random **full compliance check**. Non-compliance may hold up discharge of the planning condition or the **Certificate of Compliance** under the lease 隨機全面審核；不符合可押後滿意紙 |
 | 5. Deemed complete 當作完成 | If not selected, deemed complete **2 weeks** after PlanD receives the SCC; DPO confirms in writing to the RLA 未被抽選者 2 星期後當作完成 |
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 10 — BD as sole SCG authority 屋宇署為綠化上蓋面積的唯一審批機構"
     As a streamlined measure, BD is the sole authority to interpret the SCG requirement, to accept the relevant proposals and to check compliance upon completion of the private development according to BD's Practice Note for Authorized Persons, Registered Structural Engineers and Registered Geotechnical Engineers (PNAP) APP-152. For the SCG requirement in new or modified leases, such clause will be drafted to the effect that the requirement will be regarded as having been satisfied upon BD's acceptance of the SCG provisions included in the GBP submission to BD. Separate submission to LandsD will not be required.
 
     **中譯（非官方）：** 作為精簡措施，屋宇署是唯一負責按《認可人士、註冊結構工程師及註冊岩土工程師作業備考》APP-152 詮釋綠化上蓋面積規定、接納相關建議及在私人發展項目完成時審核是否符合規定的機構。新訂或修訂地契中的綠化上蓋面積條款，會訂明在屋宇署接納一般建築圖則所載的綠化上蓋面積後，即當作已符合該規定，毋須另行向地政總署呈交。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -94,7 +94,7 @@ tags:
 
     園景與綠化上蓋面積是**互相獨立**的（第 9 段）：園景設計總圖完善並不代表符合綠化上蓋面積要求，反之亦然。認可人士須確保園景設計總圖／園景建議與一般建築圖則上的綠化上蓋面積**互相吻合**，並符合地契（第 12 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -114,7 +114,7 @@ tags:
         - 現有地契訂有按不同地盤面積計算的**綠化百分比**：屋宇署接納未必符合地契，或須修訂地契（可能須繳付**補地價**）（第 11 段）。
         - 以為屋宇署或規劃署的批准即表示符合**其他地契條件**：並非如此（第 12 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

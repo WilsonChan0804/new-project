@@ -22,7 +22,7 @@ tags:
     | **Legal basis 法律依據** | [B(SSF,P,D&L)R 73](../regulations/bsfpwr-123i.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -47,7 +47,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Drainage testing procedure. 排水工程測試程序。](../assets/figures/diagrams/app58-drain-test.svg){ width="320" loading=lazy }

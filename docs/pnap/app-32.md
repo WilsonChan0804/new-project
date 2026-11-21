@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP032.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP032.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - 可向**民航處處長**申請**臨時豁免**，一般每次 **≤ 2 個月**；承建商須事先取得批准才可使用超出限制的**吊機及機械**（第 2–3 段）。
     - **第三條跑道**：新高度限制由 **2022 年 5 月 31 日**起生效（機場附近較嚴、其他地區較寬鬆）；在該日前已獲批圖則的建築物或已完成的小型工程不受影響（第 4 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -47,7 +47,7 @@ tags:
         - 塔式吊機超出高度限制而沒有**民航處批准**。
         - 新項目仍使用 2022 年前的高度限制圖。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

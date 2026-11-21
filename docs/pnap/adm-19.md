@@ -41,7 +41,7 @@ tags:
     | **Source 原文** | [ADM-19 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM019.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the April 2025 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -61,14 +61,14 @@ tags:
     - 取得首次動工同意書後的**輕微修訂**，如獲**變通 B(A)R 第 33(1) 條**，毋須事先批准（**附錄 G** 所列項目除外），但須在申請佔用許可證前取得批准（第 28–31 段）。
     - 改動加建、排水及次要結構工程可**同時申請批准及動工同意書**；簡單改動加建、兩層倉庫及幕牆／覆蓋層維修可**在 30 天內快速處理**（第 33–39 段）；須提交**概念圖則**及計算樓面面積的**電子檔／BIM**（第 22–27 段）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Overview of the building approval process. 建築圖則批准程序概覽。](../assets/figures/diagrams/adm19-process.svg){ width="521" loading=lazy }
   <figcaption>Overview of the building approval process. 建築圖則批准程序概覽。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: fundamental issues of GBP (Appendix A) 一般建築圖則的根本性事項（附錄 A）
+## Key table: fundamental issues of GBP (Appendix A) 一般建築圖則的根本性事項（附錄 A） {#key-table-fundamental-issues-of-gbp-appendix-a-a}
 
 | Category 類別 | Items checked 審核項目 |
 |---|---|
@@ -81,7 +81,7 @@ tags:
 
 <small>Appendices B, C and D list the fundamental issues for **superstructure**, **drainage** (random sample), and **demolition / site formation / foundation / ELS** plans. 附錄 B、C、D 分別列出上蓋結構、排水（抽查）及拆卸／地盤平整／地基／挖掘及側向承托圖則的根本性事項。</small>
 
-## Key table: services and timelines 服務及時限
+## Key table: services and timelines 服務及時限 {#key-table-services-and-timelines}
 
 | Service 服務 | Timeline / condition 時限／條件 | Para. 段 |
 |---|---|---|
@@ -95,14 +95,14 @@ tags:
 | **Minor amendments** 輕微修訂 | No prior approval after first consent, with B(A)R 33(1) modified, **except Appendix G items**; documented in the site office; approved before OP 輕微修訂毋須事先批准（附錄 G 除外） | 28–31 |
 | Fire dampers, A/C frames, large ducts 防火閘、冷氣支架、大型風管 | Minor works items, or show on amended GBP; 30-day fast track for structural plans 小型工程或修訂圖則 | 40–43 |
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 12 — Non-fundamental issues remain the AP's responsibility 非根本性事項仍由認可人士負責"
     Under the curtailed check system, non-fundamental issues will not be checked and will not be raised as disapproval items. These relate generally to matters that do not affect the basic design of the proposed building. It is the responsibility of the AP/RSE/RGE to ensure that all such non-fundamental issues fully comply with the relevant regulations and codes of practice before commencement of the works. After commencement of works, any contravention of the Buildings Ordinance (BO) and its subsidiary regulations should be rectified as and when they are discovered and in any event, before certification of completion of works.
 
     **中譯（非官方）：** 在精簡審核制度下，非根本性事項不會被審核，亦不會列為拒批事項；這些一般是不影響擬建建築物基本設計的事項。認可人士／註冊結構工程師／註冊岩土工程師有責任確保所有非根本性事項在動工前完全符合相關規例及作業守則。動工後如發現任何違反《建築物條例》及其附屬規例之處，須盡快糾正，無論如何須在證明工程完成前糾正。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -116,7 +116,7 @@ tags:
 
     大型項目可**分階段呈交**：先以主要資料取得首次一般建築圖則批准，再在申請上蓋工程動工同意書前及佔用許可證前補充細節。施工期間，只要不屬附錄 G 所列項目並在佔用許可證前取得批准，**輕微修訂**可先行進行而毋須等待批准。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -168,7 +168,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -23,7 +23,7 @@ tags:
 !!! info "About these documents 文件性質"
     These guidelines are **not codes of practice**. They are advisory, unless a PNAP, a lease condition or a GFA concession makes them a condition, as **APP-151/156** do for the residential energy efficiency guidelines. Official list: [BD Guidelines](https://www.bd.gov.hk/en/resources/codes-and-references/codes-and-design-manuals/index.html). 以下指引屬建議性質，除非作業備考、地契或寬免條件另有規定。
 
-## Energy efficiency of residential buildings 2014 住宅建築物能源效率設計及建造規定指引
+## Energy efficiency of residential buildings 2014 住宅建築物能源效率設計及建造規定指引 {#energy-efficiency-of-residential-buildings-2014}
 
 | | |
 |---|---|
@@ -44,7 +44,7 @@ tags:
     - **自然通風達致熱舒適**：對流通風（開口之間房間總深度 ≤ **12 米**），或單面通風（由窗起計房深 ≤ **4.5 米**）。
     - **冷氣機散熱**須距相鄰單位可開啟窗戶最少 **1.5 米**。
 
-## Bamboo scaffolds 竹棚架設計及建造指引
+## Bamboo scaffolds 竹棚架設計及建造指引 {#bamboo-scaffolds}
 
 | | |
 |---|---|
@@ -64,7 +64,7 @@ tags:
     - **防墮板**每 **15 米**一層（拆卸工程每 **10 米**），伸出最少 **1.5 米**並鋪鋅鐵片。
     - 高度超過 **15 米**的竹棚須由專業工程師設計；**挑棚**高度不超過 **6 米**。
 
-## Heritage buildings: adaptive re-use and A&A 2012 (2021 Edition) 歷史建築活化再用及改動加建工程實用手冊
+## Heritage buildings: adaptive re-use and A&A 2012 (2021 Edition) 歷史建築活化再用及改動加建工程實用手冊 {#heritage-buildings-adaptive-re-use-and-aa-2012-2021-edition}
 
 | | |
 |---|---|
@@ -73,7 +73,7 @@ tags:
 
 - Explains how building control applies to historic buildings, approaches for **adaptive re-use** and A&A works, and practical advice with **case examples** (Appendix I). It shows how the BA can accept **alternative solutions** under BO s.42 where full compliance would harm heritage value. 說明條例如何應用於歷史建築，以及以替代方案及第 42 條變通處理的做法，附個案。
 
-## Other guidelines 其他指引
+## Other guidelines 其他指引 {#other-guidelines}
 
 | Guideline 指引 | What it covers 內容 | Source |
 |---|---|---|
@@ -88,6 +88,6 @@ tags:
 | **Prioritising actionable UBW** on rooftops, flat roofs, yards, lanes and basements 天台等違建執法優次 | Extract of the BD internal enforcement guidelines | [PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/dev0620cb1-2487-1-AnnexG_e.pdf) |
 | **General Guidelines on the Minor Works Control System** 小型工程監管制度一般指引 | Older edition; see the [Technical Guidelines](../regulations/mw-technical-guidelines.md) for current items | [PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/MW/MWGGe.pdf) |
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [Codes index](index.md) · [APP-151](../pnap/app-151.md) · [APP-156](../pnap/app-156.md) · [Lighting & ventilation guide](../guides/lighting-ventilation.md) · [Demolition Code](demolition-2004.md)

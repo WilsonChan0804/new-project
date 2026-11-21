@@ -14,6 +14,7 @@ tags:
   - Industrial building 工業大廈
   - Hotel 酒店
   - Car park 停車場
+keywords: MOA, means of access, 消防進出途徑, fireman's lift, 消防員升降機, EVA, 緊急車輛通道, FRS
 ---
 
 # FS Code 2011 Part D: Means of Access<br><small>《2011 年建築物消防安全守則》D 部：消防及救援進出途徑</small>
@@ -28,7 +29,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/fs_code2011.pdf) pp. 112–146 · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/code-and-design-manuals/fs_code2011_c.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,14 +49,14 @@ tags:
     - **緊急車輛通道**（未開發地盤）：車路闊 **7.3 米**（或 **6 米**硬鋪面）；淨空 **4.5 米**；斜度 ≤ **1:10**（不服務主要立面的部分 1:6）；供 **30 噸、12 米長**、迴轉圈 **26 米**的消防車使用；須服務 **≥ ¼ 建築物周邊**，距立面 **10 米**內；工業建築物須在**兩個相對立面**設緊急車輛通道。
     - 低火警風險或地形限制可申請**豁免**緊急車輛通道，須提交**消防安全評估報告**並提供**加強消防安全措施**（D25–D26）。
 
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![EVA plan: width, distance from façade and perimeter served (FS Code Part D). 緊急車輛通道平面。](../assets/figures/diagrams/eva-plan.svg){ width="760" loading=lazy }
   <figcaption>EVA plan: width, distance from façade and perimeter served (FS Code Part D). 緊急車輛通道平面。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Structure of Part D 第 D 部結構
+## Structure of Part D 第 D 部結構 {#structure-of-part-d-d}
 
 | Section 節 | Subsections 分節 | Topic 主題 |
 |---|---|---|
@@ -68,7 +69,7 @@ tags:
 
 ---
 
-## Table D1 — Number of access staircases, fireman's lifts and FRS 消防通道樓梯、消防員升降機及消防和救援樓梯間數目
+## Table D1 — Number of access staircases, fireman's lifts and FRS 消防通道樓梯、消防員升降機及消防和救援樓梯間數目 {#table-d1-number-of-access-staircases-firemans-lifts-and-frs}
 
 | # | Type of building 建築物類型 | Size / height 規模／高度 | Access staircases 消防通道樓梯 | Fireman's lifts 消防員升降機 | FRS 消防和救援樓梯間 |
 |---|---|---|---|---|---|
@@ -95,7 +96,7 @@ tags:
 
 ---
 
-## Sections 3–4 — Access staircases and fireman's lifts 消防通道樓梯及消防員升降機 (D4–D13)
+## Sections 3–4 — Access staircases and fireman's lifts 消防通道樓梯及消防員升降機 (D4–D13) {#sections-34-access-staircases-and-firemans-lifts-d4d13}
 
 - **D4–D5**: required (escape) staircases count as **access staircases**. An FRS staircase can also serve as an escape staircase if it meets Part B. 規定的逃生樓梯可作消防通道樓梯，反之亦然（須符合相關要求）。
 
@@ -134,7 +135,7 @@ tags:
 
 ---
 
-## Section 5 — Firefighting and rescue stairway (FRS) 消防和救援樓梯間 (D14–D21)
+## Section 5 — Firefighting and rescue stairway (FRS) 消防和救援樓梯間 (D14–D21) {#section-5-firefighting-and-rescue-stairway-frs-d14d21}
 
 An **FRS** is a protected shaft containing an **access staircase**, a **fireman's lift** and a **ventilated lobby** at every floor. 消防和救援樓梯間是包含**消防通道樓梯**、**消防員升降機**及每層**通風門廊**的受保護豎井。
 
@@ -161,7 +162,7 @@ An **FRS** is a protected shaft containing an **access staircase**, a **fireman'
 
 ---
 
-## Section 6 — Emergency vehicular access (EVA) 緊急車輛通道 (D22–D26)
+## Section 6 — Emergency vehicular access (EVA) 緊急車輛通道 (D22–D26) {#section-6-emergency-vehicular-access-eva-d22d26}
 
 !!! quote "Clause D22.2(a)–(d) — EVA design (virgin sites) 緊急車輛通道設計（未開發地盤）"
     (a) the width of an EVA in the form of a carriageway should not be less than 7.3m. An EVA that is not in the form of a carriageway should be hard-paved, not less than 6m wide and well demarcated on site; (b) if there is any overhead structure over any part of the EVA, a clear headroom of not less than 4.5m should be maintained; (c) the gradient of the EVA should not be steeper than 1:10. For such portion of the EVA that is not serving any major façade of any building, the gradient may be increased to not steeper than 1:6…; (d) the EVA should allow safe and unobstructed access and safe operation of a vehicle of the Fire Services Department having the following specifications: (i) Gross weight 30,000 kg (ii) Turning circle 26m (iii) Length 12m…
@@ -195,7 +196,7 @@ An **FRS** is a protected shaft containing an **access staircase**, a **fireman'
 
 ---
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -219,7 +220,7 @@ An **FRS** is a protected shaft containing an **access staircase**, a **fireman'
 
     市區或山坡的狹窄地盤可能**無法**提供緊急車輛通道；建築事務監督可予豁免，但必須有**消防安全評估**及建築物內的**額外消防保護**。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -290,7 +291,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

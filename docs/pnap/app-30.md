@@ -22,7 +22,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.41(3), Sch. 5](../regulations/bo-parts-4-9-schedules.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +36,7 @@ tags:
     - 該區**土地勘測**須取得建築事務監督**批准及同意**（第 41(3) 條），並按 B(A)R 第 8(1)(l) 條呈交圖則及化驗（第 3 段）。
     - 土地勘測須符合**岩土指南第 2 及 3 號**，一般會根據第 17(1)(6)(e) 條要求合格監督（第 4 段）；其後各段涉及岩土評估及監測。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

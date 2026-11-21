@@ -19,7 +19,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 40](../regulations/bpr-39-49e.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,14 +33,14 @@ tags:
     - **指引**（第 2 段）：用透明玻璃；每層樓梯窗玻璃面積 **≥ 樓梯間平面面積 1/10**；**12 層**或以下：窗面向**露天地方**；12 層以上：面向底邊 **2.3 米**、深 **4.5 米**的無遮蓋空間（可計通道闊度）；剪刀梯：端牆窗闊 **≥ 1.3 米**，或側窗闊 **≥ 650 毫米**、每層兩個。
     - **豁免**天然照明（第 3 段）的條件：永久**人工照明 ≥ 30 勒克斯**；自動**緊急照明 ≥ 2 勒克斯**（消防裝置守則）；及**妥善管理**（管理公司及**公契**保養條款）（第 4 段）。
 
-## Key table: natural lighting or waiver 天然照明或豁免
+## Key table: natural lighting or waiver 天然照明或豁免 {#key-table-natural-lighting-or-waiver}
 
 | Option 方案 | Requirement 規定 |
 |---|---|
 | Natural lighting 天然照明 | Clear glass ≥ **1/10** of stair plan area per storey; open air (≤ 12 storeys) or 2.3 × 4.5 m space (> 12 storeys) |
 | Waiver 豁免 | Artificial **≥ 30 lux** + emergency **≥ 2 lux** + management company and DMC maintenance clause |
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -27,7 +27,7 @@ tags:
     | **Source 原文** | [APP-19 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP019.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the June 2025 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -45,7 +45,7 @@ tags:
     - **大型伸出物下的有蓋地方**：淨高 > **7.5 米**、闊高比 ≥ **1:8**，且不能進入，則不計總樓面面積（第 6 段）。
     - 公用部分 ≤ **600 毫米**的**伸出式花槽**可獲豁免，**毋須**符合 APP-151 先決條件及上限；**維修通道**（闊 400–600 毫米）則**須**符合（第 9 段）。
 
-## Key table: minor projections not counted for SC and PR (para. 3) 毋須計入上蓋面積及地積比率的小型伸出物
+## Key table: minor projections not counted for SC and PR (para. 3) 毋須計入上蓋面積及地積比率的小型伸出物 {#key-table-minor-projections-not-counted-for-sc-and-pr-para-3}
 
 | Item 項目 | Projection 伸出物 | Limit 限制 |
 |---|---|---|
@@ -68,7 +68,7 @@ tags:
     Any feature that is exaggerated, excessive in scale, defeats the Buildings Ordinance (e.g. a **structural beam doubling as a flower box**) or is designed in an unusual way **will be counted** for SC and, if appropriate, PR.
     任何誇大、規模過大、規避《建築物條例》（例如**結構樑兼作花槽**）或設計不尋常的設施，**均會計入**上蓋面積，及（如適用）地積比率。
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 5 — Projecting windows 伸出窗"
     …projecting windows will not be regarded as GFA and will be accepted as not counting for SC and PR, if they satisfy all the following criteria within the storey from which they project: (a) the projecting window is from living room, dining room or bedroom of domestic accommodation only; (b) only one such projecting window is allowed per room and it should be located on one external wall only; (c) the elevational area of the projecting window does not exceed 50% of the area of the external wall where the projecting window is located; (d) the extent of the projection is not more than 100 mm from the outer face of the main external wall; (e) the base is not less than 500 mm above finished floor level; (f) the window complies fully with regulation 3A of the B(P)R…; and (g) the projecting windows will not form a piecemeal addition to existing buildings.
@@ -85,7 +85,7 @@ tags:
 
     **中譯（非官方）：** ……伸出不超過 750 毫米的獨立冷氣機箱／平台及不超過 500 毫米的窗簷，如離地面不少於 2.5 米，可獲准許……
 
-## Key table: projecting greenery at common parts (para. 9) 公用部分的伸出式綠化
+## Key table: projecting greenery at common parts (para. 9) 公用部分的伸出式綠化 {#key-table-projecting-greenery-at-common-parts-para-9}
 
 | Feature 設施 | Criteria 準則 | APP-151 pre-req & cap 先決條件及上限 |
 |---|---|:-:|
@@ -94,7 +94,7 @@ tags:
 
 <small>Both must be within the lot, located in and accessible only from **common parts**, with a DMC undertaking registered in the Land Registry before OP. If walkway + planter exceeds **750 mm**, they are regarded as **obstructing prescribed windows**. 兩者須在地段內並只可由**公用部分**進入，並須在申請佔用許可證前於土地註冊處登記公契承諾書；通道連花槽超過 750 毫米會被視為阻擋訂明窗。</small>
 
-## Diagrams 圖則
+## Diagrams 圖則 {#diagrams}
 
 <figure markdown>
   ![Diagram 1 window flower box](../assets/figures/app-19/diagram-1-flower-box.jpg){ loading=lazy }
@@ -115,7 +115,7 @@ tags:
 
 <small>Source: PNAP APP-19 (June 2025) Appendix A, Buildings Department 資料來源：屋宇署</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -133,7 +133,7 @@ tags:
 
     **窗台（凸窗）**以往是增加面積的主要來源。現時只接受**伸出 ≤ 100 毫米**並符合第 5 段所有條件的伸出窗。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -191,7 +191,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV019.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV019.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -31,7 +31,7 @@ tags:
     - 建築工程產生的固體廢物佔堆填區**四分之一以上**；應及早規劃廢物管理（第 1 段）。
     - 設計措施（第 2 段）：**預製及預先組裝**構件（外牆、樓梯、樓板、廚房、浴室）、噴塗批盪、**挖填平衡**、**煤灰**混凝土、合併設施坑道、**由買家選擇**裝修、減少使用非可持續木材、**系統模板**；其後為施工期間措施。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -26,7 +26,7 @@ tags:
 !!! note "Note 注意"
     The PNAP cites the 1996 MOE / FRC and 2004 MOA Codes; these are now consolidated in the [FS Code 2011](../codes/fire-safety-code-2011.md). 本備考引用的舊守則已併入《2011 年消防安全守則》。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -42,7 +42,7 @@ tags:
     - 入口可經毗鄰非住用地方（例如**商場**）的通道（第 3 段）。
     - **出口闊度**按走火通道守則表格計算；位於行人路面以上 **≥ 12 米**的影院須按較高要求；共用出口按影院及共用地方的總人數計算；出口樓梯不得向下收窄（第 4–6 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -58,7 +58,7 @@ tags:
         - 與商場**共用**出口時只按影院人數計算闊度。
         - 影院與學校、幼兒中心或安老院位於**同一建築物**（B(P)R 第 49B(4) 條）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

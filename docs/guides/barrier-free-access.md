@@ -14,6 +14,8 @@ tags:
   - GFA concession 樓面面積寬免
   - Fire safety 消防安全
   - Green & amenity features 環保及適意設施
+summary: "Barrier-free and universal accessibility: B(P)R 72–73, BFA 2008, DMUA 2026 and elderly-friendly design."
+keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用無障礙, DMUA, elderly-friendly, 長者友善, accessible toilet, accessible lift
 ---
 
 # Barrier-free access and universal accessibility<br><small>無障礙通道及暢道通行（專題指南）</small>
@@ -24,7 +26,7 @@ tags:
 
     Main sources 主要來源: [B(P)R 71–73](../regulations/bpr-71-73.md) · [APP-41](../pnap/app-41.md) · [APP-175](../pnap/app-175.md) · [APP-176](../pnap/app-176.md) · [BFA 2008](../codes/bfa-2008.md) · [BFA Div. 1–3](../codes/bfa-div-1-3.md) · [Div. 4–9](../codes/bfa-div-4-9.md) · [Div. 10–12](../codes/bfa-div-10-12.md) · [Div. 13–20](../codes/bfa-div-13-20.md) · [APP-42](../pnap/app-42.md) · [APP-104](../pnap/app-104.md)
 
-## How the rules fit together 規則如何配合
+## How the rules fit together 規則如何配合 {#how-the-rules-fit-together}
 
 <figure markdown>
   ![From BFA 2008 to DMUA 2026](../assets/figures/diagrams/ua-timeline.svg){ width="760" loading=lazy }
@@ -45,14 +47,14 @@ tags:
     - **設計手冊**：**2026 年暢道通行手冊**取代 2008 年手冊；只有已納入規例的條文屬法定要求，其餘**暫屬建議**（[APP-176](../pnap/app-176.md)）。
     - **圖則**須顯示無障礙及長者友善設施（B(A)R 第 8(1)(m) 條）。
 
-## The continuous accessible route 連續無障礙通道
+## The continuous accessible route 連續無障礙通道 {#the-continuous-accessible-route}
 
 <figure markdown>
   ![The continuous accessible route](../assets/figures/diagrams/bfa-route.svg){ width="760" loading=lazy }
   <figcaption>From the lot boundary to every accessible facility, without a step. 由地段界線到所有無障礙設施，沒有梯級。 Diagram prepared for this site.</figcaption>
 </figure>
 
-## Key dimensions 主要尺寸
+## Key dimensions 主要尺寸 {#key-dimensions}
 
 | Element 項目 | Reg. 72 / BFA 2008 | Reg. 73 / Fourth Schedule (elderly) 長者友善 | Source 來源 |
 |---|---|---|---|
@@ -70,7 +72,7 @@ tags:
 
 <small>Summary only; DMUA 2026 has more detail and advisory items. 摘要；詳細內容見 2026 年手冊。</small>
 
-## Which buildings, which parts 適用範圍
+## Which buildings, which parts 適用範圍 {#which-buildings-which-parts}
 
 === "English"
 
@@ -84,13 +86,13 @@ tags:
     - **長者友善（第 73 條）**：住用及商業建築物，以及設有此類單位的建築物；公用地方 **13 項**、單位內 **3 項**要求；≤ 13 米單一住戶建築物、過渡性房屋、簡約公屋及臨時建築物除外（[APP-175](../pnap/app-175.md)）。
     - **過渡安排**：**2026 年 8 月 1 日**或之前已展開或已獲同意的工程（一般為地基工程同意）不適用；小型工程以表格上的動工日期為準。
 
-## Existing buildings and exemptions 現有建築物及豁免
+## Existing buildings and exemptions 現有建築物及豁免 {#existing-buildings-and-exemptions}
 
 - **s.42 modification / exemption** in special circumstances: site constraints, no control over common parts, unjustifiable hardship ([APP-41](../pnap/app-41.md), [APP-176](../pnap/app-176.md)). Applications are advised by the **Advisory Committee on Barrier Free Access** (reg. 72) and the **Building Committee** (reg. 73). 特殊情況可按第 42 條申請變通或豁免。
 - **A&A works** to buildings without initial access: take all practical measures; **DMUA para. 11.6** gives practical alternatives. 改動加建須採取一切切實可行措施。
 - **Minor works** done after 1 Aug 2026 must meet reg. 73 where applicable; the [MW Technical Guidelines](../regulations/mw-technical-guidelines.md) were amended in Aug 2026 to add these requirements. 小型工程技術指引已於 2026 年 8 月修訂。
 
-## Incentives 鼓勵措施
+## Incentives 鼓勵措施 {#incentives}
 
 | Feature 設施 | Concession 寬免 | Source 來源 |
 |---|---|---|
@@ -120,7 +122,7 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 <!-- GUIDE APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | What it covers 內容 |
 |---|---|

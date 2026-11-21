@@ -24,7 +24,7 @@ tags:
     | **Source 原文** | [JPN 6 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN06.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the September 2019 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -42,14 +42,14 @@ tags:
     - **現有地契**（未指定屋宇署）：地政總署接受**屋宇署已接納**的方案為符合；不符合者須地政總署同意，後移或須**補地價**（第 6 段）。
     - 如其他政策局或部門要求**更嚴格**的間距／後移，仍須在圖則上顯示；屋宇署按 APP-152 提供意見，由該部門決定（第 7 段）。
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 4 — BD as sole authority 屋宇署為唯一當局"
     Under the streamlined arrangement, BD is the sole authority to interpret the building separation and building setback requirements under the SBD Guidelines, to accept the relevant proposals and to check compliance upon completion of the private development according to PNAP APP-152, irrespective of how the requirements have kicked in (as a requirement under the lease or pre-requisite for GFA concession under the building control regime). Under the streamlined arrangement, the Authorized Person (AP) should demonstrate and certify on the General Building Plan (GBP) submission compliance with the building separation and building setback requirements to the satisfaction of BD as per PNAP APP-152. Separate submission on these two SBD requirements to LandsD will not be required.
 
     **中譯（非官方）：** 在精簡安排下，不論規定是源於地契或建築管制下取得總樓面面積寬免的先決條件，屋宇署是唯一按 PNAP APP-152 詮釋可持續建築設計指引中樓宇間距及樓宇後移規定、接納有關方案，以及在私人發展項目竣工時核實是否符合的當局。認可人士須在一般建築圖則呈交中證明並核證符合有關規定，至屋宇署滿意的程度，毋須就這兩項規定另向地政總署呈交。
 
-## Key table: who checks what 由誰核實
+## Key table: who checks what 由誰核實 {#key-table-who-checks-what}
 
 | Situation 情況 | Who decides 由誰決定 | Para. 段 |
 |---|---|---|
@@ -59,7 +59,7 @@ tags:
 | Stricter requirement by another department 其他部門更嚴格要求 | That **department** decides; BD comments to APP-152 該部門決定 | 7 |
 | Site coverage of greenery 上蓋綠化 | Streamlined under **JPN 3** 見 JPN 3 | 3 |
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -69,7 +69,7 @@ tags:
 
     在 JPN 6 之前，認可人士可能須兩次證明符合可持續建築設計指引：向屋宇署（總樓面面積寬免）及向地政總署（地契）。JPN 6 令**屋宇署成為唯一審核者**，在一般建築圖則上呈交一次便可同時滿足兩個制度。須留意，其後佔用後移或間距空間的**改動加建**亦可能令**地契**被違反。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

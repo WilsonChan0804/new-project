@@ -28,7 +28,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123H](https://www.elegislation.gov.hk/hk/cap123H) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (version date 09/02/2012) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -50,7 +50,7 @@ tags:
     - **回收室**（第 4B 條）：最小尺寸 **1.5 米**、機械通風及空氣淨化、任何時間**方便進出**、照明 **≥ 120 勒克斯**。
     - **垃圾槽**（第 13–25 條）：垂直，底部通往回收房；內徑 **≥ 450 毫米**；實心牆 ≥ **100 毫米**；頂部高出最高漏斗 **≥ 300 毫米**；通風管 **≥ 0.05 平方米**並高出屋頂 **≥ 1 米**；漏斗開口 **250 × 150 至 350 × 250 毫米**，並向露天地方永久通風。
 
-## Key table: Schedule, when and how big 附表：何時設置及面積
+## Key table: Schedule, when and how big 附表：何時設置及面積 {#key-table-schedule-when-and-how-big}
 
 | Building 建築物 | Floor space 樓面空間 | Type required 須設置 | Minimum floor space 最小面積 |
 |---|---|---|---|
@@ -69,7 +69,7 @@ tags:
     Residential tower, domestic UFS **15 000 m²** → ≥ 13 200 m², so an RSMRC **with vehicular access** is needed; minimum area = 15 000 ÷ 347 = **43.2 m²**.
     住宅大廈，住用實用樓面空間 **15 000 平方米** → 須設**有車輛通道**的回收房；最小面積 = 15 000 ÷ 347 = **43.2 平方米**。
 
-## Key table: construction requirements 建造要求
+## Key table: construction requirements 建造要求 {#key-table-construction-requirements}
 
 | Item 項目 | RSMRC / MRC 回收房 | RSMRR (each floor) 回收室 | Reg. 條 |
 |---|---|---|---|
@@ -83,7 +83,7 @@ tags:
 | Ventilation 通風 | Mechanical, **≥ 3 air changes / hour**, with **air purifying** on exhaust | Same 同上 | 12A |
 | Lighting 照明 | — | ≥ **120 lux** at floor level | 12C |
 
-## Key table: refuse chutes 垃圾槽
+## Key table: refuse chutes 垃圾槽 {#key-table-refuse-chutes}
 
 | Item 項目 | Requirement 規定 | Reg. 條 |
 |---|---|---|
@@ -96,7 +96,7 @@ tags:
 | Access opening 檢修口 | ≥ **225 mm** dia. above the highest hopper, metal cover | 20 |
 | Hopper 漏斗 | Ventilated to open air; mouth **250 × 150** to **350 × 250 mm**; fully open or closed only; dust-tight; ≥ **3 mm** steel; inner plate ≥ **45°**; no projection into the chute | 22–25 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Reg. 3A(1) — Refuse room on every domestic floor 每層設垃圾及物料回收室"
     Subject to the other provisions of this regulation, every plan relating to— (a) a domestic building; or (b) the domestic part of a composite building, shall show provision for a refuse storage and material recovery room on every floor of the domestic building, or of the domestic part.
@@ -108,7 +108,7 @@ tags:
 
     **官方中文本：** 每個垃圾及物料回收房須設有 —— (a) 一個以機械方式操作的通風系統，該通風系統能以每小時轉換空氣不少於3次的速度為垃圾及物料回收房的每部分提供新鮮空氣；及 (b) 一個令建築事務監督滿意的設於(a)段所述的通風系統的排氣部分的空氣淨化設施。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -122,7 +122,7 @@ tags:
 
     設計目的是**衞生**（可清洗表面、排水、通風及空氣淨化）、**回收**（分類及貯存回收物料的空間）及**方便收集**（闊而無梯級的通道）。APP-35 載有屋宇署的設計指引，包括這些空間的總樓面面積寬免。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -153,7 +153,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

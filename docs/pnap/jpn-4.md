@@ -32,7 +32,7 @@ tags:
     | **Read with 一併參閱** | LandsD LAO Practice Note 4/2014A "Accountable and Non-accountable GFA under Lease" 地政總署作業備考 |
     | **Last checked 最後核對** | 2026-11-20 against the October 2021 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -50,7 +50,7 @@ tags:
     - **一致的總樓面面積計算**（附錄）：**第 I 組**（三個制度均豁免，不論地契）、**第 II 組**（地契有**特定豁免條款**才豁免：(A) 免補地價，(B) 須評估補地價）、**第 III 組**（個別考慮，在新地契中統一）。
     - 不適用於已取得佔用許可證的建築物；已完成與未完成期數之間**不得轉移**總樓面面積（第 10 段）。
 
-## Key table: GFA accountability across the three regimes (Appendix) 三個制度的總樓面面積計算（附錄）
+## Key table: GFA accountability across the three regimes (Appendix) 三個制度的總樓面面積計算（附錄） {#key-table-gfa-accountability-across-the-three-regimes-appendix}
 
 ### Group I — Not counted by all three departments, regardless of lease 第 I 組：三個部門均不計算（不論地契）
 
@@ -94,7 +94,7 @@ tags:
 3. **Covered public passageways and walkways** required by Government 政府要求的有蓋公眾通道
 4. **Covered private car parks, loading/unloading** and their ancillary areas (driveways, ramps, car lift shafts, lobbies, staircases solely serving the car park) 有蓋私家停車場及上落客貨區
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 4 — OZP as the sole PR/GFA reference 大綱圖為唯一依據"
     …where a maximum PR / GFA restriction is stipulated in new or amended statutory plans gazetted on or after the effective date of this JPN, the restriction so stipulated under the planning regime will become the sole reference, save for exceptional cases, in terms of PR / GFA control when departments vet the GBPs… if the permissible PR restriction stipulated in the First Schedule to the B(P)R is more stringent than the maximum PR / GFA restriction stipulated in the relevant statutory plan, the Building Authority (BA) may, on application, favourably consider exercising discretion under section 42 of the BO to grant modification to permit the PR restriction stipulated in the First Schedule to B(P)R to be exceeded to a level on par with the maximum PR / GFA restriction under the planning regime…
@@ -106,7 +106,7 @@ tags:
 
     **中譯（非官方）：** 在精簡的核對程序下，鑑於屋宇署負有審核及批准一般建築圖則的法定職責……屋宇署會成為唯一負責按 B(P)R 第 23(3)(a) 條核實發展項目建築設施、特色及構築物總樓面面積計算的部門，以供三個制度處理一般建築圖則之用。對於屋宇署已核實的項目，規劃署及地政總署會依據該核實結果（即沿用屋宇署的計算方法，而不另行計算）……
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -128,7 +128,7 @@ tags:
 
     處理項目時應及早核對**地契**：許多環保設施只有在地契有**豁免條款**時才在地契下不計總樓面面積，否則可能須**修訂地契及補地價**。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -146,7 +146,7 @@ tags:
         - 把第 4 段套用於**舊大綱圖**（2021 年 10 月 18 日前刊憲）涵蓋的地盤：只適用於新訂或經修訂的限制。
         - 由已完成的期數**轉移總樓面面積**至較後期數：不准許（第 10 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

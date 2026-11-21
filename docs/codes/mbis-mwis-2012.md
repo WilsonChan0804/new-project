@@ -11,6 +11,8 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Unauthorised building works 違例建築工程
   - Site supervision 地盤監督
+summary: "MBIS and MWIS: what is inspected, the RI and QP duties and the form deadlines."
+keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊檢驗人員, qualified person, MBI 1, WI 1
 ---
 
 # Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012<br><small>《2012 年強制驗樓計劃及強制驗窗計劃作業守則》</small>
@@ -23,7 +25,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_MBIS_MWISe.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -39,7 +41,7 @@ tags:
     - 業主按條例接獲通知（強制驗樓：樓齡 **30 年**或以上；強制驗窗：**10 年**或以上；見[條例第 2A 部](../regulations/bo-part-2a-inspection.md)），本守則說明**如何**進行檢驗及修葺。
     - 大部分通知須於 **7 天**內呈交建築事務監督；完工證明書須於 **14 天**內呈交。
 
-## MBIS timeline 強制驗樓時序
+## MBIS timeline 強制驗樓時序 {#mbis-timeline}
 
 <figure markdown>
   ![MBIS process and time limits](../assets/figures/diagrams/mbis-code.svg){ width="760" loading=lazy }
@@ -57,7 +59,7 @@ tags:
 | Revised repair proposal 修訂修葺建議 | Proposal | Within **7 days** of the new matter |
 | **Completion report** and certificate 完工報告 | **MBI 4** | Within **14 days** of repair completion |
 
-## MWIS time limits 強制驗窗時限
+## MWIS time limits 強制驗窗時限 {#mwis-time-limits}
 
 | Case 情況 | Form 表格 | Time limit 時限 |
 |---|---|---|
@@ -66,7 +68,7 @@ tags:
 | QP for inspection only 只負責檢驗 | **WI 2** + report | Within **7 days** of inspection; to the repair QP within **1 month** |
 | QP for repair only 只負責修葺 | **WI 3** | Within **14 days** of repair; revised proposal within 7 days |
 
-## What the RI inspects 檢驗範圍 (Code s.3)
+## What the RI inspects 檢驗範圍 (Code s.3) {#what-the-ri-inspects-code-s3}
 
 | Element 項目 | Examples 例子 |
 |---|---|
@@ -78,6 +80,6 @@ tags:
 
 <small>The Code also gives repair methods (s.5), safety and security measures during works (s.6), and report contents (s.7). 另有修葺方法、施工安全及報告內容。</small>
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [BO Part 2A](../regulations/bo-part-2a-inspection.md) · [B(I&R)R Cap. 123P](../regulations/bir-123p.md) · [APP-37 windows](../pnap/app-37.md) · [FS Code](fire-safety-code-2011.md) · [Minor works guide](../guides/minor-works.md)

@@ -26,6 +26,8 @@ tags:
   - Means of access 救援通道
   - Demolition 拆卸
   - Car park 停車場
+  - Lift 升降機
+  - Maintenance access 維修通道
 ---
 # HK Building Regulations Knowledge Base<br>香港建築法規知識庫
 
@@ -40,7 +42,7 @@ Bilingual summaries, plain-language explanations and practical notes on the Hong
     本知識庫內容為內部學習筆記，**並非**官方文本。引用任何規定前，請先於[屋宇署網站](https://www.bd.gov.hk)或
     [電子版香港法例](https://www.elegislation.gov.hk)核對最新版本。只有英文版的作業備考，其中文內容屬**非官方翻譯**。
 
-## Start here 由此開始
+## Start here 由此開始 {#start-here}
 
 <div class="grid cards" markdown>
 
@@ -55,7 +57,7 @@ Bilingual summaries, plain-language explanations and practical notes on the Hong
 
 </div>
 
-## How each entry is organised 每篇條目的結構
+## How each entry is organised 每篇條目的結構 {#how-each-entry-is-organised}
 
 | Section | 部分 | What you get 內容 |
 |---|---|---|
@@ -68,7 +70,7 @@ Bilingual summaries, plain-language explanations and practical notes on the Hong
 Use the **English / 中文** tabs on any entry. Your choice is remembered across pages.
 每篇條目均設 **English / 中文** 分頁，選擇後會套用至所有頁面。
 
-## Recently added 最近新增
+## Recently added 最近新增 {#recently-added}
 
 - **All BD codes of practice and guidelines 全部屋宇署作業守則及指引** (Nov 2026): the new [Universal Accessibility 2026 通用無障礙](codes/dmua-2026.md), the structural codes ([Loads](codes/dil-2011.md) · [Wind](codes/wind-2019.md) · [Concrete](codes/concrete-2013.md) · [Steel](codes/steel-2011.md) · [Foundations](codes/foundations-2017.md) · [Glass](codes/glass-2018.md) · [Precast](codes/precast-2016.md)), plus [Site supervision](codes/site-supervision-2009.md) · [Demolition](codes/demolition-2004.md) · [External maintenance](codes/external-maintenance-2021.md) · [Lifts](codes/lifts-escalators-2011.md) · [MBIS/MWIS](codes/mbis-mwis-2012.md) · [BD Guidelines](codes/bd-guidelines.md). See the [Codes index](codes/index.md).
 - **More topic guides 更多專題指南**: [Lighting & ventilation 照明及通風](guides/lighting-ventilation.md) · [Submission to OP + checklist 呈交至佔用許可證及核對清單](guides/submission-to-op.md) · [Barrier-free & universal accessibility 無障礙及暢道通行](guides/barrier-free-access.md) · [Minor works 小型工程](guides/minor-works.md), plus the [MW Technical Guidelines 小型工程技術指引](regulations/mw-technical-guidelines.md).

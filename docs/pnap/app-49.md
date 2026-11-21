@@ -18,7 +18,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP049.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP049.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -32,7 +32,7 @@ tags:
     - 須按土力工程處技術指引（技術指引第 1 號、**岩土指南第 2 及 3 號**）及 **2017 年基礎作業守則（2024 年版）**進行（第 3 段）。
     - **土地勘測外勤工程**屬專門工程，須由**註冊專門承建商（土地勘測外勤工程類別）**進行；化驗及現場密度測試除外（第 4 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

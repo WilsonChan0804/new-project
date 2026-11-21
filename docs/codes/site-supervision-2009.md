@@ -14,6 +14,8 @@ tags:
   - Drainage 排水
   - Concrete & materials 混凝土及物料
   - Occupation permit 佔用許可證
+summary: "Supervision plans, TCP grades T1–T5, inspection frequencies, time limits and when no plan is needed."
+keywords: site supervision, 地盤監督, supervision plan, 監督計劃書, TCP, T1, T5, technical memorandum, 技術備忘錄, 48 hours
 ---
 
 # Code of Practice for Site Supervision 2009 and Technical Memorandum for Supervision Plans 2009<br><small>《2009 年地盤監督作業守則》及《2009 年監督計劃書技術備忘錄》</small>
@@ -26,7 +28,7 @@ tags:
     | **Source 原文** | [Code (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SS2009_e.pdf) · [TM (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/TMSS2009_e.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -44,7 +46,7 @@ tags:
     - **迫切危險**：其他系統須在 **12 小時**內通知認可人士，認可人士須於 **48 小時**內向建築事務監督報告；緊急工程須於 48 小時內遞交 **BA7**（條例第 19 條）。
     - 符合技術備忘錄第 11 段的小型工程**毋須監督計劃書**，例如上蓋高度 ≤ **10 米**、跨度 ≤ **6 米**、鋼筋混凝土及樓面面積 < **500 平方米**；挖掘深度 < **2.5 米**且 45° 範圍內無構築物。
 
-## Who supervises 監督架構
+## Who supervises 監督架構 {#who-supervises}
 
 <figure markdown>
   ![Site supervision streams](../assets/figures/diagrams/site-supervision.svg){ width="720" loading=lazy }
@@ -59,7 +61,7 @@ tags:
 | **T4** | Degree + **4 years** 學位 + 4 年 | Engineering safety supervision 工程安全監督 |
 | **T5** | **Registered professional** + **5 years** 註冊專業人士 + 5 年 | Engineering safety supervision; certifies temporary works |
 
-## Inspection frequency levels 巡查頻率 (Code Tables 8.2–8.3)
+## Inspection frequency levels 巡查頻率 (Code Tables 8.2–8.3) {#inspection-frequency-levels-code-tables-8283}
 
 | Level 級別 | Visits 巡查 | Man-days / month 人日 |
 |---|---|---|
@@ -72,7 +74,7 @@ tags:
 
 <small>Multiply by the **scale factor** of the works, then read off the upgraded level. A higher grade TCP may cover a lower grade's duties. Combinations go on **Form C**. 按規模系數調整；較高職級可兼任較低職級職務。</small>
 
-## Time limits 時限
+## Time limits 時限 {#time-limits}
 
 | Event 事項 | Limit 時限 |
 |---|---|
@@ -84,7 +86,7 @@ tags:
 | Urgent works (Form BA7) 緊急工程 | Before the works or **within 48 hours** of starting |
 | Contractor non-compliance reported by AP 承建商違規 | **48 hours** |
 
-## When no supervision plan is needed 毋須監督計劃書 (TM s.11, selected)
+## When no supervision plan is needed 毋須監督計劃書 (TM s.11, selected) {#when-no-supervision-plan-is-needed-tm-s11-selected}
 
 | Works 工程 | Criteria (all must be met) 準則 |
 |---|---|
@@ -96,7 +98,7 @@ tags:
 
 <small>See the TM for A&A works and other categories. Minor works follow the [simplified requirements](../guides/minor-works.md). 改動加建等見技術備忘錄；小型工程按簡化規定。</small>
 
-## Code contents 守則內容
+## Code contents 守則內容 {#code-contents}
 
 | Section | Topic |
 |---|---|
@@ -111,6 +113,6 @@ tags:
 | 11 | Reporting **major or serious site incidents** 重大事故報告 |
 | 12 | Report to the BA 向建築事務監督報告 |
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [BO s.14–21](../regulations/bo-part-2-building-works.md) · [B(A)R](../regulations/bar-123a.md) · [Submission to OP guide](../guides/submission-to-op.md) · [Foundations Code](foundations-2017.md) · [Demolition Code](demolition-2004.md)

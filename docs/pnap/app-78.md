@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.21](../regulations/bo-part-2-building-works.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,14 +37,14 @@ tags:
     - 條例規定的機器須可運作；可在 14 天內以書面及照片確認已作修正；被拒後提交書面確認，屋宇署會在 **14 天內再巡查**（第 6–9 段）。
     - **便利措施**：上蓋完成後進行**聯合全面巡查**，及早找出重大不符之處並抽查尺寸；另有臨時棚架支撐等安排（第 10–13 段起）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Occupation permit inspection workflow. 佔用許可證巡查流程。](../assets/figures/diagrams/app78-op.svg){ width="615" loading=lazy }
   <figcaption>Occupation permit inspection workflow. 佔用許可證巡查流程。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -58,7 +58,7 @@ tags:
         - 防火門、衞生設備或消防裝置未完成便申請佔用許可證。
         - 物料測試報告及產品證書留到最後才提交。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

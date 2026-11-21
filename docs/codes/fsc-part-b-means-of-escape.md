@@ -15,6 +15,7 @@ tags:
   - Plant rooms 機房
   - Fire resisting construction 耐火結構
   - Site supervision 地盤監督
+keywords: MOE, means of escape, 走火通道, 逃生途徑, exit, travel distance, 行走距離, required staircase, 規定樓梯
 ---
 
 # FS Code 2011 Part B: Means of Escape<br><small>《2011 年建築物消防安全守則》B 部：逃生途徑</small>
@@ -28,7 +29,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/fs_code2011.pdf) pp. 23–75 · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/code-and-design-manuals/fs_code2011_c.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,14 +49,14 @@ tags:
     - **庇護層**：超過 **25 層**的建築物，每隔不多於 **25 層**（用途類別 6 為 **20 層**）須設一層；淨庇護面積 ≥ 該層總樓面面積 **50%**；26–40 層的住用及綜合用途建築物可以**主天台**代替（B18）。
     - **殘疾人士**：每層每個防火隔室的防護出口或消防員升降機門廊須設 **1.5 米 × 1.5 米臨時庇護處**，相距 ≤ **60 米**，並設閉路電視及對講機（B30）。
 
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![Dead-end travel (18 m) compared with two-direction escape. 盡頭路與雙向逃生。](../assets/figures/diagrams/moe-deadend.svg){ width="760" loading=lazy }
   <figcaption>Dead-end travel (18 m) compared with two-direction escape. 盡頭路與雙向逃生。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Structure of Part B 第 B 部結構
+## Structure of Part B 第 B 部結構 {#structure-of-part-b-b}
 
 | Section 節 | Subsections 分節 | Topic 主題 |
 |---|---|---|
@@ -66,7 +67,7 @@ tags:
 
 ---
 
-## Section 1 — General 一般規定 (B1–B3)
+## Section 1 — General 一般規定 (B1–B3) {#section-1-general-b1b3}
 
 !!! quote "Clause B3.1 — Application 適用範圍"
     The provisions in this Part apply to all buildings with the exception of domestic buildings: (a) having not more than three main domestic storeys; (b) the level of the highest floor of which is not more than 13m above the ground level; and (c) used or intended to be used for occupation by a single family.
@@ -78,7 +79,7 @@ tags:
 
 ---
 
-## Section 2 — Provisions of means of escape 逃生途徑的提供 (B4–B18)
+## Section 2 — Provisions of means of escape 逃生途徑的提供 (B4–B18) {#section-2-provisions-of-means-of-escape-b4b18}
 
 ### B4 Occupant capacity 佔用人數
 
@@ -303,7 +304,7 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
 
 ---
 
-## Section 3 — Places of public entertainment (UC 5a) 公眾娛樂場所 (B19–B28)
+## Section 3 — Places of public entertainment (UC 5a) 公眾娛樂場所 (B19–B28) {#section-3-places-of-public-entertainment-uc-5a-b19b28}
 
 | Subsection 分節 | Key requirements 主要規定 |
 |---|---|
@@ -360,7 +361,7 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
 
 ---
 
-## Section 4 — Persons with a disability 殘疾人士 (B29–B30)
+## Section 4 — Persons with a disability 殘疾人士 (B29–B30) {#section-4-persons-with-a-disability-b29b30}
 
 !!! quote "Clause B30.1 — Temporary refuge spaces 臨時庇護處"
     At least one temporary refuge space with an area of not less than 1.5m x 1.5m should be provided within the protected exit or fireman's lift lobby of every fire compartment at every floor of a building to which this Section applies. Temporary refuge spaces with barrier free access can be shared by compartments but no part of the floor served by a temporary refuge space should be more than 60m from that space. Such space should not reduce the minimum width of an exit route, the effective width/radius of the landing of a required staircase nor the minimum area of a fireman's lift lobby… two number of 0.75m x 1.5m temporary refuge spaces (instead of one 1.5m x 1.5m), in visible location to each other, can be provided…
@@ -383,7 +384,7 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
 
 ---
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -409,7 +410,7 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
     6. **高樓**：庇護層提供休息點及消防人員集結地方（B18）。
     7. **殘疾人士**：在設有閉路電視及對講機的受保護臨時庇護處等候救援（B30）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -519,7 +520,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

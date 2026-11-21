@@ -23,7 +23,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.4(2), 4A(5)](../regulations/bo-part-1-registration.md); [B(A)R 23(2)](../regulations/bar-123a.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 

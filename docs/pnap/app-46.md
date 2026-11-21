@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.24, 28](../regulations/bo-part-2-enforcement.md); [B(SFP&W)R 90](../regulations/bsfpwr-123i.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +37,7 @@ tags:
     - 單一佔用的專門工廠會諮詢**環保署**；**分層工廠**則審核一般污水處理設施（第 3 段）。
     - 排水圖則須列明**建築物用途**並提供**污水處理**；資料不足可根據**第 16(1)(i) 條**拒批（第 4 段）；分層工廠須假設會排放須**處理**的污水（第 5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

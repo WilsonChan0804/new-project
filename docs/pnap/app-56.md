@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP056.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP056.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - **準則**（第 3 段）：地段內坡度 **≤ 15°**；地段外 10 米範圍整體坡度 **< 15°**；10 米內沒有陡於 **30°** 或高於 **1.5 米**的斜坡；地段內或 10 米內沒有高於 **1.5 米**的擋土牆。
     - **條件**（第 4 段）：不得建造高於 1.5 米的擋土牆（牆加斜坡合計 ≤ 1.5 米）；高闊比 **≤ 2**，以磚石或混凝土建造；不得建造陡於 30° 或高於 1.5 米的斜坡；否則須向建築事務監督呈交地盤平整圖則（第 5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

@@ -22,7 +22,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.14, 16, 39C, 42(5)](../regulations/bo-part-2-building-works.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -38,14 +38,14 @@ tags:
     - 已完成工程的圖則會根據第 16(1)(a) 條（並非開工前的建議）等理由**拒批**（第 4 段）。
     - 如要糾正，業主一般須**拆除或還原**，或就令建築物符合規定的**新工程**呈交圖則。
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Para. 2 — No retrospective approval 不設追溯批准"
     The BA has no powers to give retrospective approval or consent for unauthorized building works (UBW). Except for minor works commenced under the simplified requirements and building works exempted under section 41 of the Buildings Ordinance (BO), no person shall commence or carry out any building works without having first obtained the approval and consent of the BA pursuant to BO s14(1). BO s42(5) further provides that the powers of exemption are not applicable to section 14.
 
     **中譯（非官方）：** 建築事務監督無權追溯批准或同意違例建築工程。除根據簡化規定展開的小型工程及根據《建築物條例》第41條獲豁免的建築工程外，任何人未根據第14(1)條事先取得建築事務監督的批准及同意，不得展開或進行任何建築工程。第42(5)條亦訂明豁免權力不適用於第14條。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -57,7 +57,7 @@ tags:
     !!! tip "常見錯誤"
         - 客戶期望認可人士呈交竣工圖便可令現有僭建物「合法化」。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

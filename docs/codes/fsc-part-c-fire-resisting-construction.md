@@ -15,6 +15,7 @@ tags:
   - Car park 停車場
   - Green & amenity features 環保及適意設施
   - Balcony & utility platform 露台及工作平台
+keywords: FRC, FRR, fire resisting construction, 耐火結構, compartment, 防火分隔, fire door, 防火門
 ---
 
 # FS Code 2011 Part C: Fire Resisting Construction<br><small>《2011 年建築物消防安全守則》C 部：耐火結構</small>
@@ -32,7 +33,7 @@ tags:
     FRR is written **stability / integrity / insulation** in minutes, e.g. **120/120/120**. A dash means that criterion is not required, e.g. **-/120/120** for a non-loadbearing fire barrier.
     耐火效能以**穩定性／完整性／隔熱性**（分鐘）表示，例如 **120/120/120**；「-」表示該項不適用，例如非承重防火屏障為 **-/120/120**。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -52,14 +53,14 @@ tags:
     - **樓板及外牆**（C10–C11）：樓板開口四周設 **450 毫米下垂板**（設花灑）；中庭 ≤ **28,000 立方米**、≤ **15 米**高、≤ **3 層**；樓層之間設 **900 毫米窗間牆**或 **500 毫米伸建物**（設花灑者毋須）。
     - **特殊情況**：特殊危險地方 **-/120/120**（毗連防護出口 **-/240/240**）；地庫 **240/240/240**，排煙口 ≥ 樓面面積 **0.5%**；防火門**自動關閉**，底部縫隙 **≤ 10 毫米**；庇護層牆 **-/120/120**、樓板 **120/120/120**。
 
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![Vertical fire separation: 900 mm spandrel or 500 mm projection (FS Code); 900 mm apron under the 1996 code. 樓層間垂直防火分隔。](../assets/figures/diagrams/spandrel.svg){ width="760" loading=lazy }
   <figcaption>Vertical fire separation: 900 mm spandrel or 500 mm projection (FS Code); 900 mm apron under the 1996 code. 樓層間垂直防火分隔。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Structure of Part C 第 C 部結構
+## Structure of Part C 第 C 部結構 {#structure-of-part-c-c}
 
 | Section 節 | Subsections 分節 | Topic 主題 |
 |---|---|---|
@@ -69,7 +70,7 @@ tags:
 
 ---
 
-## C3–C4 Fire compartments and FRR 防火隔室及耐火效能
+## C3–C4 Fire compartments and FRR 防火隔室及耐火效能 {#c3c4-fire-compartments-and-frr}
 
 !!! quote "Clause C3.1 — Fire compartmentation 防火分隔"
     Every building should be divided into fire compartments by fire barriers without exceeding the fire compartment area/volume specified in Table C1 in order to inhibit the spread of fire.
@@ -105,7 +106,7 @@ tags:
 
 <small>Y* = required for loadbearing elements only. Curtain wall glazing needs no FRR, subject to C5 and C9.7. A smoke outlet shaft whose area is reduced to ≤ 75% counts as failing stability. Y* 只適用於承重構件；幕牆玻璃毋須耐火效能（受 C5 及 C9.7 規限）。</small>
 
-## C5 Fire spread between buildings 建築物之間的火勢蔓延
+## C5 Fire spread between buildings 建築物之間的火勢蔓延 {#c5-fire-spread-between-buildings}
 
 | Situation 情況 | Requirement 規定 |
 |---|---|
@@ -120,7 +121,7 @@ tags:
   <figcaption>Diagram C1 — Prevention of fire spread between buildings 防止火勢在建築物之間蔓延</figcaption>
 </figure>
 
-## C6–C8 Flats, separation of uses, openings and shafts 住宅單位、用途分隔、開口及管槽
+## C6–C8 Flats, separation of uses, openings and shafts 住宅單位、用途分隔、開口及管槽 {#c6c8-flats-separation-of-uses-openings-and-shafts}
 
 | Clause 條文 | Requirement 規定 |
 |---|---|
@@ -133,7 +134,7 @@ tags:
 | **C8.1** Openings in compartment walls 防火隔室牆開口 | Fire doors / shutters with the wall's FRR. If openings are **> 25%** of the wall length, **insulation** is also required (reducible to **30 min** with sprinklers both sides) 開口 > 25% 須具隔熱性 |
 | C8.2–C8.6 | Ducts, trunking, pipes through barriers: **fire dampers / fire stops**; shafts **fire sealed**, shaft doors self-closing with the shaft FRR; sealing systems durable and moisture-proof 穿越屏障的管道須設防火閘／封堵 |
 
-## C9 Required staircases and lifts 規定的樓梯及升降機
+## C9 Required staircases and lifts 規定的樓梯及升降機 {#c9-required-staircases-and-lifts}
 
 !!! quote "Clause C9.1(a) — Liftwells 升降機槽"
     All liftwells, except for openings for doors and ventilation or openings between the liftwell and the machine or pulley room, should be separated from the rest of the building by fire barriers having an FRR of not less than 120/120/120…
@@ -158,7 +159,7 @@ tags:
 ??? abstract "Diagram C3 — wall extension at junctions 圖 C3：交接處的牆身延伸"
     ![Diagram C3](../assets/figures/fsc2011/diagram-c3-staircase-wall-extension.jpg){ loading=lazy }
 
-## C10–C11 Floor openings, atria, curtain walls and façades 樓板開口、中庭、幕牆及外牆
+## C10–C11 Floor openings, atria, curtain walls and façades 樓板開口、中庭、幕牆及外牆 {#c10c11-floor-openings-atria-curtain-walls-and-facades}
 
 | Clause 條文 | Requirement 規定 |
 |---|---|
@@ -185,7 +186,7 @@ tags:
     ![Diagram C6](../assets/figures/fsc2011/diagram-c6-atrium.jpg){ loading=lazy }
     *Diagram C6 — Examples of measuring atrium height 中庭高度量度例子*
 
-## C12–C14 Roofs, special hazards, basements 屋頂、特殊危險、地庫
+## C12–C14 Roofs, special hazards, basements 屋頂、特殊危險、地庫 {#c12c14-roofs-special-hazards-basements}
 
 | Clause 條文 | Requirement 規定 |
 |---|---|
@@ -204,7 +205,7 @@ tags:
 
     **官方中文本：** 每個地庫均應符合以下條件︰(a) 在地面樓層與地庫之間構成防火隔室的防火屏障（包括所有通往地庫的防護出口），其耐火效能不應低於-/240/240；(b) 地庫的所有建築構件，其耐火效能不應低於 240/240/240；(c) 於地庫內構成防火隔室牆壁的防火屏障，其耐火效能不應低於-/120/120……
 
-## C15–C17 Linked buildings, fire doors, refuge floors 連接建築物、防火門、庇護層
+## C15–C17 Linked buildings, fire doors, refuge floors 連接建築物、防火門、庇護層 {#c15c17-linked-buildings-fire-doors-refuge-floors}
 
 | Clause 條文 | Requirement 規定 |
 |---|---|
@@ -223,14 +224,14 @@ tags:
 
     **官方中文本：** 所有防火門周邊應緊貼門框，以阻止煙霧與火焰通過。防火門的底部與樓板的縫隙不應超逾 10 毫米。
 
-## C18 Cinemas and theatres 電影院及劇院
+## C18 Cinemas and theatres 電影院及劇院 {#c18-cinemas-and-theatres}
 
 - **Cinemas sharing exits** with other non-domestic uses: each auditorium is **its own compartment**; **dedicated smoke extraction** on smoke detection; seating and furnishings meet ignition-retarding standards (Part E); projection rooms **-/60/60** with smoke-sealed doors (unless no hazardous projection equipment). 電影院院廳自成防火隔室；設專用排煙；放映室 -/60/60。
 - **Theatres**: **fully sprinklered**; proscenium wall **-/60/60**; **fire or water curtain** at the opening (fire curtain ≥ **-/30/-**, smoke-restricting). 劇院全面設花灑；台口牆 -/60/60；防火幕或水幕。
 
 ---
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -256,7 +257,7 @@ tags:
 
     **花灑系統**可放寬多項規定：毋須窗間牆（C11.1）、闊開口的隔熱要求降低（C8.1）、可設中庭及樓板中空（C10）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -352,7 +353,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

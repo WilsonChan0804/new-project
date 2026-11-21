@@ -17,7 +17,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM001.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM001.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -31,14 +31,14 @@ tags:
     - 自 **2009 年 8 月**起，作業備考分為三部分並重新編號（第 2 段）：**ADM**（行政：屋宇署程序、批准、同意、佔用許可證）；**APP**（條例及規例和相關條例的應用）；**ADV**（諮詢：良好作業及其他事宜）。
     - 附錄列出有效的作業備考及其舊編號。
 
-## Relationship diagram 關係圖
+## Relationship diagram 關係圖 {#relationship-diagram}
 
 <figure markdown>
   ![How the practice note series fit together. 作業備考系列關係。](../assets/figures/diagrams/pnap-family.svg){ width="760" loading=lazy }
   <figcaption>How the practice note series fit together. 作業備考系列關係。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

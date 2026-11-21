@@ -24,7 +24,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123F](https://www.elegislation.gov.hk/hk/cap123F) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (incl. L.N. 52 of 2026) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -42,7 +42,7 @@ tags:
     - **第 5 條**：每幢建築物須有**從街道通往的途徑**；建築事務監督可要求在新地盤內闢設進出路徑或通路。
     - **第 II 部**限制伸出街道的伸出物：大部分須在地面以上最少 **2.5 米**；伸出上限為屋簷／裝飾線條 **500 毫米**、喉管 **300 毫米**、晾衣架、冷氣機支架及通風管道 **750 毫米**。簷篷在道路上方（或行人路外緣 600 毫米內）須有 **5.5 米**淨空，在行人路上方須有 **3.3 米**，伸出長度最多為**街道闊度的十分之一或 3 米**。
 
-## Regulation by regulation 逐條摘要
+## Regulation by regulation 逐條摘要 {#regulation-by-regulation}
 
 | Reg. 條 | Title 標題 | Summary 摘要 |
 |---|---|---|
@@ -62,7 +62,7 @@ tags:
 | 14 | (Repealed) 已廢除 | — |
 | 15 | Doors, etc. not to open over streets 門等不得在街道上方開啟 | Doors, gates, windows or shutters must not project over a street below **2.5 m**. Exception: emergency exit, transformer, plant and refuse room doors that cause no obstruction when fully open. 除緊急出口門等外，不得在 2.5 米以下伸出街道。 |
 
-## Key table: projections over streets (regs. 7 and 10) 伸出街道的伸出物
+## Key table: projections over streets (regs. 7 and 10) 伸出街道的伸出物 {#key-table-projections-over-streets-regs-7-and-10}
 
 | Item 項目 | Max. projection over street 最大伸出 | Min. height above ground 最低高度 | Other conditions 其他條件 | Reg. 條 |
 |---|---|---|---|---|
@@ -76,7 +76,7 @@ tags:
 
 <small>Projections over streets also need BA approval under **BO s.31(1)** unless they comply with Part II (see [ADV-33](../pnap/adv-33.md) App. A2 item 1). For GFA / SC treatment of projections see [APP-19](../pnap/app-19.md). 伸出街道的伸出物如不符合第 II 部，須根據《建築物條例》第 31(1) 條申請。</small>
 
-## Key terms (reg. 2) 主要定義
+## Key terms (reg. 2) 主要定義 {#key-terms-reg-2}
 
 | Term 詞彙 | Meaning (summary) 定義（摘要） |
 |---|---|
@@ -91,7 +91,7 @@ tags:
 | **Detached / semi-detached building** 獨立／半獨立建築物 | Has a clear open space ≥ **2.3 m** wide along its full depth and at the rear. 須有闊 ≥ 2.3 米的空地。 |
 | **Specified building** 指明建築物 (2026) | Any building other than a single-household building, a building wholly under Transitional Housing / Light Public Housing, or a Part VII temporary building or contractor's shed. Used by the elderly-friendly design rules (reg. 73). 用於第 73 條利便長者設計規定。 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Reg. 3A — Protection of openings 開口的防護"
     (1) Every opening placed on an external wall above the ground floor of any building shall be protected by a barrier which shall be not less than 1 100 mm high and the lowermost 150 mm of such barrier shall be built solid.
@@ -104,7 +104,7 @@ tags:
 
     **官方中文本：** (1) 每個在行人路外緣600毫米範圍內豎設或在道路上方伸出的簷篷，其每一部分之下須有不少於5.5米的淨空間。(2) 每個在行人路上方豎設的簷篷，其每一部分之下須有不少於3.3米的淨空間。……(4) 在任何街道上方豎設的任何簷篷(包括飛簷、裝飾線條或其他裝置)的伸出長度最多為 —— (a) 該街道闊度的十分之一；或 (b) 3米，兩者以較少者為準：但該等簷篷的任何部分不得位於自該街道的中心線最接近簷篷該部分之處劃的垂直線與簷篷等高之處的4.5米範圍內。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -122,7 +122,7 @@ tags:
 
     第 3A 條是設計上最常用的規定之一：地面層以上每個開口須設 **1.1 米欄障**。保護欄障的細節見《建築物（建造）規例》及相關作業備考。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -154,7 +154,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

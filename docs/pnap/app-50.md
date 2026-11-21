@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 50–52](../regulations/bpr-50-70.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -36,7 +36,7 @@ tags:
     - 須在 BD107 發出後 **3 個月**內展開工程（否則以 **BA9** 申請續期）；BA17 審批期限 **60／30 天**（首次呈交／再呈交）（第 3–4 段）。
     - 佔用前須取得**臨時佔用許可證（BD105）**（第 5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

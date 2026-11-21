@@ -30,7 +30,7 @@ tags:
     Each Division has a **Mandatory Section** (performance objectives and **obligatory design requirements**, which mirror the B(P)R Third Schedule and are deemed to comply with B(P)R 72) and a **Best Practice Section** (design considerations and **recommended** requirements, not mandatory). On figures, **bold** dimensions are obligatory and *italic* dimensions are recommended. The overview is at [BFA 2008](bfa-2008.md).
     每個分部分為**強制性部分**（表現目標及**強制性設計規定**，與附表 3 相同）及**良好作業部分**（設計考慮及**建議**規定，非強制）。圖則中**粗體**尺寸屬強制性，*斜體*屬建議。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -46,7 +46,7 @@ tags:
     - **停車場**（第 3 分部）：按總數設暢通易達停車位（1–50：**1**；51–150：**2**；151–250：**3**；251–350：**4**；351–450：**5**；> 450：**6**），靠近暢通易達升降機或入口；闊 **3 500 毫米**，或兩個共用 **1 200 毫米**黃斜線上落車位時各闊 **2 500 毫米**；地面標示**國際暢通易達標誌**及車位編號。
     - **建議**（良好作業）：同行者座位、可容納 16 個輪椅的可拆卸座椅、字幕及口述影像；設閃燈門鐘及點字走火圖的客房；較多停車位（小型停車場每 25 個 1 個，其後每 100 個加 1 個）及指示標誌。
 
-## Division 1 Auditorium and related facilities 第 1 分部 觀眾席及有關設施
+## Division 1 Auditorium and related facilities 第 1 分部 觀眾席及有關設施 {#division-1-auditorium-and-related-facilities-1}
 
 ### Wheelchair spaces: obligatory requirements 輪椅位：強制性規定
 
@@ -70,7 +70,7 @@ tags:
   <figcaption>Figure 1A – Wheelchair space in an auditorium (800 × 1 300 mm; 1 500 mm approach). 觀眾席輪椅位。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 2 Hotels, hostels and guesthouses 第 2 分部 酒店、旅舍及賓館
+## Division 2 Hotels, hostels and guesthouses 第 2 分部 酒店、旅舍及賓館 {#division-2-hotels-hostels-and-guesthouses-2}
 
 ### Obligatory requirements 強制性規定
 
@@ -94,7 +94,7 @@ tags:
   <figcaption>Figure 2 – Typical accessible guest room layout (bold = obligatory, italic = recommended). 暢通易達客房佈局。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 3 Car parks 第 3 分部 停車場
+## Division 3 Car parks 第 3 分部 停車場 {#division-3-car-parks-3}
 
 ### Obligatory requirements 強制性規定
 
@@ -123,7 +123,7 @@ tags:
   <figcaption>Figure 4 – Side-by-side accessible spaces with a shared 1 200 mm loading area. 並排暢通易達停車位。Source: BD, BFA 2008. (Figure 3, single space: see the <a href="../bfa-2008/">overview</a>.)</figcaption>
 </figure>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 4 / Third Schedule s.4 — Wheelchair spaces 輪椅位"
     A minimum of four wheelchair spaces shall be provided at spectator level in the auditorium with not more than 800 fixed seats. For auditorium with more than 800 fixed seats at spectator level, two wheelchair spaces shall be provided for every 400 fixed seats and any part thereof. … Each wheelchair space shall have unobstructed line of vision to the stage areas at which the relevant activity takes place, and be of minimum size of 800 mm x 1300 mm, with the side of 800 mm facing towards the stage podium or screen. The minimum width of the passage leading to a wheelchair space from an accessible entrance of the auditorium shall not be less than 1500 mm.
@@ -135,7 +135,7 @@ tags:
 
     **官方中文本（附表 3 第 9 條）：** (1) 在暢通易達停車位與有暢通易達升降機或入口的大堂之間，須設有暢通易達路徑。(2) 除第(3)款另有規定外，暢通易達停車位的闊度不得少於3 500毫米。(3) 如2個暢通易達停車位之間設有符合第(4)款的上落車位，則該等停車位的闊度不得少於2 500毫米。(4) 為施行第(3)款，上落車位 —— (a) 的闊度不得少於1 200毫米；及 (b) 須用黃斜線標示。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -155,7 +155,7 @@ tags:
         - 2 500 毫米車位旁**沒有** 1 200 毫米斜線上落車位。
         - 舞台只有樓梯而沒有供表演者使用的斜道或升降機。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

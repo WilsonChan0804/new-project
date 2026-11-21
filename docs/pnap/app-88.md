@@ -21,7 +21,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.27C](../regulations/bo-part-2-enforcement.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - 公布工務科**《檢驗及維修影響斜坡的帶水設施守則》**：涵蓋檢驗計劃、偵測及維修方案，以及減低漏水影響的永久措施（第 1–2 段）。
     - 根據**條例第 27C 條**，建築事務監督可命令業主調查及修理斜坡內或附近的地下帶水設施；認可人士、註冊結構工程師及註冊承建商應參考守則（第 3 段）；須與 APP-76 一併閱讀（第 4 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

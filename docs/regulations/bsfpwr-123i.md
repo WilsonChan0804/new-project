@@ -23,7 +23,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123I](https://www.elegislation.gov.hk/hk/cap123I) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -41,7 +41,7 @@ tags:
     - **第 IV 部排水**：**30 米**範圍內有公共污水渠須接駁髒水及地面水；有蓋排水渠 **≥ 100 毫米**；最小坡度 **1:40**（100 毫米）、**1:70**（150 毫米）、**1:100**（225 毫米）、**1:150**（300 毫米）；混凝土墊層 **≥ 100 毫米**；沙井／清理孔間距 **≤ 60 米**；進水口存水彎水封 **≥ 75 毫米**；地面水明渠坡度 **≥ 1:100**。
     - **第 V–VI 部**：化糞池（距飲用水源 **≥ 18 米**）及污水池。**第 VII 部**：排水工程須在回填渠溝前由屋宇署**測試**。**第 VIII–X 部**：屋宇署代為接駁公共污水渠並向業主收費；廁所；建築事務監督的權力（中和池等）。
 
-## Key table: occupancy for sanitary fitment calculation 計算衞生設備的人數
+## Key table: occupancy for sanitary fitment calculation 計算衞生設備的人數 {#key-table-occupancy-for-sanitary-fitment-calculation}
 
 | Building / use 建築物／用途 | Persons 人數 | Reg. 條 |
 |---|---|---|
@@ -58,7 +58,7 @@ tags:
 
 <small>**UFA** (reg. 3) excludes staircases, public circulation, lift landings, kitchens in self-contained flats, lavatories and machinery spaces. Male : female ratio is **1 : 1** unless shown otherwise. 實用樓面面積不包括樓梯、公用通道、升降機大堂、獨立單位廚房、洗手間及機房。</small>
 
-## Key table: workplace fitments (reg. 5, Tables 5–7) 工作地點衞生設備
+## Key table: workplace fitments (reg. 5, Tables 5–7) 工作地點衞生設備 {#key-table-workplace-fitments-reg-5-tables-57}
 
 | Persons 人數 | Male WCs 男水廁 | Urinals 尿廁 | Female WCs 女水廁 | Basins (each sex) 洗手盆（每性別） |
 |---|---|---|---|---|
@@ -78,7 +78,7 @@ tags:
     - Female WCs 女水廁: 2 + (50 − 25) ÷ 25 = **3**
     - Basins 洗手盆: male 50 ÷ 25 = **2**; female **2**
 
-## Key table: residential fitments (reg. 4) 住宅衞生設備
+## Key table: residential fitments (reg. 4) 住宅衞生設備 {#key-table-residential-fitments-reg-4}
 
 | Persons 人數 | WC fitments 水廁 |
 |---|---|
@@ -87,7 +87,7 @@ tags:
 
 <small>Tables 2–4 give the same rule separately for male / female, with urinals and basins / baths / showers. 表 2–4 另按男女、尿廁、洗手盆及浴缸／花灑訂明。</small>
 
-## Key table: plumbing and drainage numbers, falls of drains 水管及排水數字、排水渠坡度
+## Key table: plumbing and drainage numbers, falls of drains 水管及排水數字、排水渠坡度 {#key-table-plumbing-and-drainage-numbers-falls-of-drains}
 
 | Item 項目 | Requirement 規定 | Reg. 條 |
 |---|---|---|
@@ -109,7 +109,7 @@ tags:
 | Septic tank location 化糞池位置 | ≥ **18 m** from drinking-water springs, streams or wells | 63 |
 | Testing 測試 | Contractor applies to BD before backfilling; if BD does not test within **4 days**, trenches may be filled | 73 |
 
-## Part by part 逐部摘要
+## Part by part 逐部摘要 {#part-by-part}
 
 | Part 部 | Regs. 條 | Subject 主題 | Summary 摘要 |
 |---|---|---|---|
@@ -124,7 +124,7 @@ tags:
 | IX | 79–88 | Latrines 廁所 | Doors, lighting, ventilation, floors, surfaces, receptacles. 廁所。 |
 | X | 89–91 | Miscellaneous 雜項 | BA may prohibit soil fitments, require neutralizing tanks or interceptors; seawater flushing provisions. 雜項。 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Reg. 5(5)(a)(i) — Office occupancy 辦公室人數"
     the number of persons in a workplace is to be determined— (i) for an office—at the rate of 1 person for every 9 m² of the usable floor area of the office;
@@ -136,7 +136,7 @@ tags:
 
     **官方中文本：** 每條排水渠或私家污水渠須按照表29，由其最高的進水口至其與公共污水渠或其他出口的接駁處，以最小坡度敷設。（100毫米：1比40；150毫米：1比70；225毫米：1比100；300毫米：1比150）
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -154,7 +154,7 @@ tags:
 
     很多改動加建項目（例如把辦公室改為食肆、學校或共享工作空間）會改變人數，從而改變所需的**設備數目**。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -185,7 +185,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

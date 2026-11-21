@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV015.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV015.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - 每批鋼筋須在**測試**完成後才可紮放（APP-45）；以**鋼絲刷**清除鬆銹及軋鱗；嚴重銹蝕的鋼筋不得使用（第 2–3 段）。
     - **墊塊及鋼筋凳間距 ≤ 1.5 米**（≤ 20 毫米鋼筋須較密），以保持位置及**保護層**；墊塊用混凝土或專利產品，盡量細小，強度及耐用性不低於周圍混凝土（第 4–5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

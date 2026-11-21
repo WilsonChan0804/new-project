@@ -20,6 +20,12 @@ tags:
   - Plot ratio 地積比率
   - Foundation 地基
   - Site area & classification 地盤面積及分類
+  - GFA concession 樓面面積寬免
+  - Elderly-friendly 長者友善
+  - Demolition 拆卸
+  - A&A works 改動及加建工程
+summary: "From plan submission to occupation permit: statutory periods, stages, forms and a checklist."
+keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔用許可證, OP, BA forms, statutory period, 法定期限, checklist
 ---
 
 # From plan submission to occupation permit<br><small>由呈交圖則至佔用許可證（專題指南）</small>
@@ -30,7 +36,7 @@ tags:
 
     Main sources 主要來源: [BO s.14–21](../regulations/bo-part-2-building-works.md) · [B(A)R](../regulations/bar-123a.md) · [ADM-19](../pnap/adm-19.md) · [ADM-2](../pnap/adm-2.md) · [APP-60](../pnap/app-60.md) · [ADV-33](../pnap/adv-33.md) · [APP-97](../pnap/app-97.md) · [APP-13](../pnap/app-13.md) · [APP-78](../pnap/app-78.md) · [APP-162](../pnap/app-162.md) · [APP-157](../pnap/app-157.md)
 
-## The statutory timeline 法定時間表
+## The statutory timeline 法定時間表 {#the-statutory-timeline}
 
 <figure markdown>
   ![Statutory periods from plan submission to occupation](../assets/figures/diagrams/statutory-timeline.svg){ width="366" loading=lazy }
@@ -50,7 +56,7 @@ tags:
 | Occupation permit 佔用許可證 | Decision within **14 days**; re-inspection within 14 days after refusal 14 天 | [BO s.21](../regulations/bo-part-2-building-works.md), [APP-78](../pnap/app-78.md) |
 | Withdraw and resubmit 撤回並重新提交 | Restarts the clock; normally **at most twice** 最多兩次 | [ADM-22](../pnap/adm-22.md) |
 
-## Stage 1: before you submit 第一步：呈交前
+## Stage 1: before you submit 第一步：呈交前 {#stage-1-before-you-submit}
 
 === "English"
 
@@ -66,7 +72,7 @@ tags:
     - **岩土**：符合 APP-25 準則時須作岩土評估（[APP-25](../pnap/app-25.md)）；附表所列地區（[APP-30](../pnap/app-30.md)、[APP-61](../pnap/app-61.md)）。
     - 特殊設計或變通可先作**呈交前查詢**（[ADM-19](../pnap/adm-19.md)）。
 
-## Stage 2: appointment and plan submission 第二步：委任及呈交圖則
+## Stage 2: appointment and plan submission 第二步：委任及呈交圖則 {#stage-2-appointment-and-plan-submission}
 
 | Document / form 文件／表格 | Purpose 用途 | Source 來源 |
 |---|---|---|
@@ -79,7 +85,7 @@ tags:
 | **Fees** 費用 | Form **BD24**; on GFA (new buildings) or per sheet (A&A); crossed cheque, non-refundable 按樓面面積或張數 | [APP-55](../pnap/app-55.md) |
 | **Electronic submission** 電子呈交 | Through **ESH**, with digital signatures 電子呈交平台 | [ADM-17](../pnap/adm-17.md), [APP-60](../pnap/app-60.md) |
 
-## Stage 3: consent to commence 第三步：動工同意
+## Stage 3: consent to commence 第三步：動工同意 {#stage-3-consent-to-commence}
 
 === "English"
 
@@ -104,14 +110,14 @@ tags:
   <figcaption>Normal or fast-track consent (APP-97). 一般程序還是快速處理。</figcaption>
 </figure>
 
-## Stage 4: construction 第四步：施工
+## Stage 4: construction 第四步：施工 {#stage-4-construction}
 
 - **Supervision**: AP / RSE / RGE give **periodic**, the contractor **continuous** supervision with TCPs; keep checklists and records ([APP-157](../pnap/app-157.md), [APP-158](../pnap/app-158.md)). 認可人士等定期監督，承建商持續監督。
 - **Testing**: reinforcement ([APP-45](../pnap/app-45.md)), materials by HOKLAS labs ([APP-118](../pnap/app-118.md)), early-age concrete ([APP-167](../pnap/app-167.md)), fixings ([APP-169](../pnap/app-169.md)), drainage tests ([APP-58](../pnap/app-58.md)). 鋼筋、物料、混凝土、固定件及排水測試。
 - **BD audits** may be unannounced ([ADM-18](../pnap/adm-18.md), [ADM-13](../pnap/adm-13.md)). 屋宇署可能突擊審查。
 - **Amendments**: get amendment plans approved **before** the OP application ([APP-13](../pnap/app-13.md)); minor amendments per [ADM-14](../pnap/adm-14.md). 修訂圖則須在申請佔用許可證前獲批准。
 
-## Stage 5: completion and occupation permit 第五步：完工及佔用許可證
+## Stage 5: completion and occupation permit 第五步：完工及佔用許可證 {#stage-5-completion-and-occupation-permit}
 
 <figure markdown>
   ![Occupation permit inspection workflow](../assets/figures/diagrams/app78-op.svg){ width="560" loading=lazy }
@@ -130,7 +136,7 @@ tags:
 | **Undertakings and DMC** 承諾書及公契 | Registered before OP for green / amenity features, clubhouses, hotels 佔用許可證前登記 | [JPN 1](../pnap/jpn-1.md), [APP-104](../pnap/app-104.md), [APP-40](../pnap/app-40.md) |
 | **Landscape** 園景 | Self-certification of compliance by RLA where required | [JPN 3](../pnap/jpn-3.md) |
 
-## Checklist 核對清單
+## Checklist 核對清單 {#checklist}
 
 <small>Tick as you go; ticks are kept in your browser only. 剔選紀錄只儲存在你的瀏覽器。</small>
 
@@ -201,7 +207,7 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 <!-- GUIDE APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | What it covers 內容 |
 |---|---|

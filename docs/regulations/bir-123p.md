@@ -31,7 +31,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123P](https://www.elegislation.gov.hk/hk/cap123P) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (version date 31/03/2022) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -51,14 +51,14 @@ tags:
     - **詳細調查**（第 17–21 條）：如發現嚴重欠妥或原因不明，註冊檢驗人員須先提交建議書供屋宇署**認許**（屋宇署 **28 天**內回覆），並可聘用專家。
     - **獨立性**：監督修葺的註冊檢驗人員須證明自己**並非**修葺承建商的合夥人、董事或獲授權簽署人（第 13(2)(c) 條）；委任代表須在 **7 天前**通知屋宇署（第 24 條）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![MBIS / MWIS: inspection and repair timeline. 強制驗樓／驗窗時間表。](../assets/figures/diagrams/mbis-workflow.svg){ width="343" loading=lazy }
   <figcaption>MBIS / MWIS: inspection and repair timeline. 強制驗樓／驗窗時間表。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: inspection items 檢驗項目
+## Key table: inspection items 檢驗項目 {#key-table-inspection-items}
 
 | Schedule 附表 | Area 範圍 | Items 項目 |
 |---|---|---|
@@ -70,7 +70,7 @@ tags:
 
 <small>"Finish" (tiling, rendering, cladding, false ceilings) is part of every item (s.4(4)). Windows are excluded from MBIS items (s.4(2)–(3)). 所有項目包括飾面；窗戶不屬強制驗樓項目。</small>
 
-## Key table: documents and deadlines 文件及期限
+## Key table: documents and deadlines 文件及期限 {#key-table-documents-and-deadlines}
 
 | Document 文件 | By 由誰 | Deadline 期限 | s. 條 |
 |---|---|---|---|
@@ -83,7 +83,7 @@ tags:
 | Inspection report (window, different QPs) 檢驗報告（不同合資格人士） | QP (inspection) | **Within 7 days** after inspection | 14(4) |
 | Appointment of RI's representative 委任代表 | RI (repair) | Notify **≥ 7 days before**; changes within 7 days | 24 |
 
-## Detailed investigation 詳細調查 (ss. 17–21)
+## Detailed investigation 詳細調查 (ss. 17–21) {#detailed-investigation-ss-1721}
 
 === "English"
 
@@ -97,7 +97,7 @@ tags:
     - **如何**：通知屋宇署並提交**建議書**（目的、範圍、方法、理據、附註明照片及標示圖則的欠妥摘要）以供**認許**（第 18 條）；屋宇署須在 **28 天**內決定（第 19 條）。
     - **未獲認許不得開始**，除非已告知業主屋宇署拒絕認許而業主仍決定進行（第 20 條）；註冊檢驗人員可聘用及監督**專家**（第 21 條）。
 
-## Part by part 逐部摘要
+## Part by part 逐部摘要 {#part-by-part}
 
 | Part 部 | s. 條 | Subject 主題 | Summary 摘要 |
 |---|---|---|---|
@@ -107,14 +107,14 @@ tags:
 | 4 | 15–32 | Duties 職責 | Detailed investigation with BD endorsement; specialists; repair to the (revised) proposal; RI representatives (BA may reject); duties on change of appointment; no repair without an appointed RI / QP; copies of documents; contractor keeps the inspection report **on site**. 職責。 |
 | 5 | 33–36 | Miscellaneous 雜項 | Completion of documents; form of reports and proposals; signatures; duties not prejudicing other duties. 雜項。 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.5 — Standard of prescribed inspection 訂明檢驗的標準"
     (1) An examination or assessment mentioned in section 3 must be carried out by reference to the standards specified in subsection (2) to— (a) ascertain whether a building is safe or liable to become dangerous, or has been rendered dangerous; (b) identify any defect or deficiency of a building; and (c) make proposal for any prescribed repair. (2) The standards referred to in subsection (1) are— (a) the standard of works as shown in any plan approved by the Building Authority in respect of the building, according to which the building was completed; (b) the standard of works as shown in any plan in respect of the building submitted to the Building Authority under the Building (Minor Works) Regulation …; (c) the standard of improvement works completed in respect of the building in accordance with the Fire Safety (Commercial Premises) Ordinance … or the Fire Safety (Buildings) Ordinance …; and (d) the standard of building design and construction prevalent at the time of construction of the building. (3) If more than one standard specified in subsection (2) is applicable to a building, reference is to be made to the latest of the applicable standards.
 
     **官方中文本：** (1) 第3條所述的檢查或評估，須參照第(2)款指明的標準進行，以 —— (a) 確定建築物是否安全，或是否可變得危險或已變得危險；(b) 找出建築物的任何欠妥或不完備之處；及 (c) 提出任何訂明修葺的建議。(2) 第(1)款提述的標準是 —— (a) (凡有關建築物是按照經建築事務監督就該建築物批准的圖則建成的)該圖則所顯示的工程標準；(b) 根據《建築物(小型工程)規例》(第123章，附屬法例N)向建築事務監督呈交的、關於有關建築物的圖則所顯示的工程標準；(c) 按照《消防安全(商業處所)條例》(第502章)或《消防安全(建築物)條例》(第572章)就有關建築物完成的改善工程的標準；及 (d) 建造時的通行標準……
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -132,7 +132,7 @@ tags:
 
     **獨立性規定**很重要：監督修葺的註冊檢驗人員不得屬承建商公司的一部分，以避免自我核證。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -162,7 +162,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

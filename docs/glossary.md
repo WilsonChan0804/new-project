@@ -28,12 +28,14 @@ tags:
   - Fire resisting construction 耐火結構
   - Site safety 地盤安全
   - Refuge floor 庇護層
+  - GFA concession 樓面面積寬免
+  - Elderly-friendly 長者友善
 ---
 # Glossary 詞彙
 
 Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙。
 
-## Authorities & people 機構及人士
+## Authorities & people 機構及人士 {#authorities-people}
 
 | English | 中文 | Abbr. |
 |---|---|---|
@@ -85,7 +87,7 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Registered Geotechnical Engineer | 註冊岩土工程師 | RGE |
 | Hong Kong Green Building Council | 香港綠色建築議會 | HKGBC |
 
-## Documents & submissions 文件及申請
+## Documents & submissions 文件及申請 {#documents-submissions}
 
 | English | 中文 | Abbr. |
 |---|---|---|
@@ -99,7 +101,7 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Occupation permit | 佔用許可證 | OP |
 | Modification / exemption (BO s.42) | 變通／豁免（第 42 條） | — |
 
-## Planning & GFA 規劃及樓面面積
+## Planning & GFA 規劃及樓面面積 {#planning-gfa}
 
 | English | 中文 | Abbr. |
 |---|---|---|
@@ -186,7 +188,7 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Cantilevered slab | 懸臂式平板 | — |
 | Run-in / run-out | 車輛進出口 | — |
 
-## Sustainability 可持續發展
+## Sustainability 可持續發展 {#sustainability}
 
 | English | 中文 | Abbr. |
 |---|---|---|
@@ -207,7 +209,7 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Shading coefficient | 遮陽系數 | SC |
 | Natural ventilation for thermal comfort | 自然通風以達致熱舒適 | NVTC |
 
-## Fire safety 消防安全
+## Fire safety 消防安全 {#fire-safety}
 
 | English | 中文 | Abbr. |
 |---|---|---|
@@ -260,7 +262,7 @@ Search any term in English or Chinese. 可用中文或英文搜尋任何詞彙�
 | Place of public entertainment | 公眾娛樂場所 | PPE |
 | Notifiable workplace | 須呈報工作地點 | — |
 
-## Barrier free access 暢通無阻的通道
+## Barrier free access 暢通無阻的通道 {#barrier-free-access}
 
 | English | 中文 | Abbr. |
 |---|---|---|

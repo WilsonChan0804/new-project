@@ -20,7 +20,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP069.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP069.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -38,7 +38,7 @@ tags:
     - 應**及早聯絡古蹟辦**確定**具特色元素**；屋宇署對變通採取**務實、以表現為本**的態度，例如按《2011 年恆載及外加荷載作業守則》第 4.2 節採用以表現為本的外加荷載，以免大規模加固（第 7–8 段）。
     - 參考《2012 年活化再用及改動加建文物建築實用指南》（結構、消防、欄障、無障礙、衞生設備的替代設計）；附錄 A 列出常見變通所需理據；屋宇署**文物組**處理查詢（第 9–10 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

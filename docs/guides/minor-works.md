@@ -14,6 +14,8 @@ tags:
   - Occupation permit 佔用許可證
   - Green & amenity features 環保及適意設施
   - Elderly-friendly 長者友善
+summary: "Minor works Classes I–III, designated exempted works, the 7-day and 14-day rules, contractors and validation schemes."
+keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指定豁免工程, Class I, Class II, Class III, signboard validation, 招牌檢核
 ---
 
 # Minor works: code, guidelines and procedure<br><small>小型工程：法例、指引及程序（專題指南）</small>
@@ -24,7 +26,7 @@ tags:
 
     Main sources 主要來源: [B(MW)R Cap. 123N](../regulations/bmwr-123n.md) · [MW Technical Guidelines](../regulations/mw-technical-guidelines.md) · [APP-147](../pnap/app-147.md) · [APP-148](../pnap/app-148.md) · [APP-149](../pnap/app-149.md) · [Cap. 123O fees](../regulations/bmwfr-123o.md) · [APP-155](../pnap/app-155.md)
 
-## Choosing the route 選擇途徑
+## Choosing the route 選擇途徑 {#choosing-the-route}
 
 <figure markdown>
   ![Which route for small building works](../assets/figures/diagrams/mw-route.svg){ width="560" loading=lazy }
@@ -45,7 +47,7 @@ tags:
     - **超出範圍**的工程須按條例第 14 條取得**批准及同意**（[呈交指南](submission-to-op.md)）。
     - 項目及限制請查閱**技術指引第 3 章**（[摘要](../regulations/mw-technical-guidelines.md)）。
 
-## Who does what, and when 責任及時限
+## Who does what, and when 責任及時限 {#who-does-what-and-when}
 
 <figure markdown>
   ![Minor works procedure by class](../assets/figures/diagrams/minor-works.svg){ width="760" loading=lazy }
@@ -60,13 +62,13 @@ tags:
 
 <small>Forms MW01–MW12 (see [APP-149](../pnap/app-149.md) and [APP-60](../pnap/app-60.md)). Starting Class I or II works less than 7 days after the notice, or missing the 14-day certificate, is an offence ([APP-147](../pnap/app-147.md)). 表格 MW01–MW12。</small>
 
-## Contractors, signatories and fees 承建商、簽署人及費用
+## Contractors, signatories and fees 承建商、簽署人及費用 {#contractors-signatories-and-fees}
 
 - **Registers**: RMWC (Company) for types and classes; RMWC (Individual) for Class III items ([APP-148](../pnap/app-148.md)). 公司按類型及級別註冊，個人按第 III 級別項目註冊。
 - **Authorised signatory**: one AS per submission, named on every form ([APP-149](../pnap/app-149.md)). 每份呈交一名獲授權簽署人。
 - **Fees**: e.g. company application **$2,920** (Class I), **$1,100** (Class II), **$730** (Class III only); individual **$290 / $155** ([Cap. 123O](../regulations/bmwfr-123o.md)). 費用見第 123O 章。
 
-## Validation schemes 檢核計劃
+## Validation schemes 檢核計劃 {#validation-schemes}
 
 - **Household Minor Works Validation Scheme** and **Minor Amenity Features Validation Scheme**: existing unauthorised household items (A/C supports, drying racks, small canopies) can be inspected, strengthened and certified to stay (TG Ch. 7). 家居小型工程及小型適意設施檢核計劃。
 - **Signboard Validation Scheme**: signboards erected before **2 Sep 2013** within minor works limits; re-validate every **5 years** ([APP-155](../pnap/app-155.md)). 招牌檢核計劃，每 5 年重新檢核。
@@ -76,7 +78,7 @@ tags:
   <figcaption>Signboard validation every 5 years (APP-155). 招牌每 5 年檢核。</figcaption>
 </figure>
 
-## Technical requirements to remember 技術要點
+## Technical requirements to remember 技術要點 {#technical-requirements-to-remember}
 
 === "English"
 
@@ -112,7 +114,7 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 <!-- GUIDE APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | What it covers 內容 |
 |---|---|

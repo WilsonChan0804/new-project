@@ -25,7 +25,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123](https://www.elegislation.gov.hk/hk/cap123) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (point in time 01/03/2026) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -45,7 +45,7 @@ tags:
     - 通知可**在土地註冊處登記**；如不遵辦，屋宇署可代為檢驗及修葺，並向擁有人（如已登記，則為完工時的擁有人）追討費用。
     - 進行修葺的承建商（註冊一般建築承建商或註冊小型工程承建商）須確保該部分**安全**（第 30F 條）。
 
-## Key table: MBIS vs MWIS 強制驗樓與強制驗窗比較
+## Key table: MBIS vs MWIS 強制驗樓與強制驗窗比較 {#key-table-mbis-vs-mwis}
 
 | | **MBIS** 強制驗樓 | **MWIS** 強制驗窗 |
 |---|---|---|
@@ -59,7 +59,7 @@ tags:
 | Reporting duties 報告責任 | Emergencies; **UBW** in common parts, external walls, roof, podium, yards, slopes, streets 緊急情況及僭建物 | Emergencies 緊急情況 |
 | Default 不遵辦 | BD inspects / repairs and recovers cost; notice registrable 屋宇署代做並追討費用；可登記 | Same 同上 |
 
-## Section by section 逐條摘要
+## Section by section 逐條摘要 {#section-by-section}
 
 | s. 條 | Title 標題 | Summary 摘要 |
 |---|---|---|
@@ -70,7 +70,7 @@ tags:
 | 30E | Appointment and duties of qualified persons 合資格人士的委任及職責 | Appoint a QP to inspect and to supervise repair; personal inspection (or prescribed representative for companies); may also act as the contractor; report emergencies; **no nomination** of a substitute during illness / absence. 合資格人士職責。 |
 | 30F | Duties of RGBC and RMWC 承建商的職責 | The repair contractor must ensure the part repaired has been rendered safe. 確保修葺部分安全。 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "s.30A and s.30B(1), (3) — MBIS 強制驗樓"
     30A. This Part does not apply to a domestic building not exceeding 3 storeys in height. 30B(1) This section applies to any building aged 30 years or above. … (3) The Building Authority may by notice in writing served on any owner of a building require a prescribed inspection and, if necessary, prescribed repair in respect of the common parts of the building to be carried out within a specified time.
@@ -82,7 +82,7 @@ tags:
 
     **官方中文本：** 本條適用於樓齡達10年或以上的建築物。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -100,7 +100,7 @@ tags:
 
     由於註冊檢驗人員必須報告違例建築工程，強制驗樓往往會發現僭建物，其後可能有第 24 條清拆令跟進。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -120,7 +120,7 @@ tags:
         - 以為強制驗樓包括窗戶：第 30B 條不包括窗（第 30B(13) 條），由強制驗窗處理。
         - 出售附有已登記但未遵辦通知的單位：費用可向屋宇署完工時的擁有人追討。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

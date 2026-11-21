@@ -7,7 +7,7 @@ tags:
 ---
 # How to use 使用說明
 
-## Searching 搜尋
+## Searching 搜尋 {#searching}
 
 Press ++slash++ or click the search box at the top. You can search in **English or Chinese**:
 
@@ -28,20 +28,20 @@ Tips 提示:
 - Click a **tag** (e.g. *GFA*) at the top of a page to see every entry on that topic. 點擊頁面頂部的**標籤**可列出同一主題的所有條目。
 - Use the [Glossary 詞彙](glossary.md) to find the Chinese term for an English one, and the other way round.
 
-## Reading an entry 閱讀條目
+## Reading an entry 閱讀條目 {#reading-an-entry}
 
 1. Read **At a glance 重點摘要** first (30 seconds).
 2. Go to **Key clauses 主要條文** if you need the exact wording.
 3. **Explanation** and **Practical notes** tell you what it means on a real project.
 4. Check the **version box** at the top. If the PNAP has been revised since, the entry may be out of date.
 
-## New reading aids 閱讀輔助
+## New reading aids 閱讀輔助 {#new-reading-aids}
 
 - **Back button 返回**: at the top of every page, returns to the page you came from. 每頁頂部的返回按鈕。
 - **Automatic links 自動連結**: references such as APP-2, JPN 4, B(P)R 23(3)(b), BO s.16 or FS Code Clause B8.2 link to the page on this site (dotted underline). 文件編號會自動連結到相關頁面（虛線底線）。
 - **Highlighted key words 重點標示**: in long paragraphs, figures with units (e.g. 1.5 m, 60 days, 10%) are in **bold orange** and decisive phrases ("not acceptable", "understanding was correct", "subject to") are highlighted. 長段落中的數字及關鍵字詞會突出顯示。
 
-## Editing a paragraph 編輯段落
+## Editing a paragraph 編輯段落 {#editing-a-paragraph}
 
 When the site is opened as the shared preview on claude.ai, signed-in colleagues with edit access see a **✎** next to each paragraph or list item.
 

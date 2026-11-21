@@ -7,6 +7,8 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Site safety 地盤安全
   - Site supervision 地盤監督
+summary: "Precast concrete design and erection: temporary-stage load factors and lifting insert safety factors."
+keywords: precast, 預製, precast facade, 預製外牆, lifting insert, 吊裝, MiC, 組裝合成
 ---
 
 # Code of Practice for Precast Concrete Construction 2016<br><small>《2016 年預製混凝土建造作業守則》</small>
@@ -19,7 +21,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/cppcc2016e.pdf) · [Nov 2020 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/cppcc2016e_amendment202011.pdf) · [Jun 2026 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/cppcc2016e_amendment202606.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +39,7 @@ tags:
     - 穩定性**名義水平荷載**：不少於特徵恒載的 **1.5%**。
     - 假設等同整體澆築時，**接縫及接駁**須達到該表現；2026 年 6 月修訂加入**已完成外牆接縫及窗縫測試**（防水）。
 
-## Contents 內容
+## Contents 內容 {#contents}
 
 | Section 章節 | Topic 主題 |
 |---|---|
@@ -47,7 +49,7 @@ tags:
 | 4 | **Quality control**: factory, site, special tests 品質控制 |
 | App. A–C | Connection details; **precast façade typical details**; lifting device details 典型詳圖 |
 
-## Load factors for temporary stages 臨時階段荷載系數
+## Load factors for temporary stages 臨時階段荷載系數 {#load-factors-for-temporary-stages}
 
 | Demoulding 脫模 (Table 2.1) | Exposed aggregate 露石 | Smooth mould 光面模 |
 |---|---|---|
@@ -71,11 +73,11 @@ tags:
 
 <small>Factors apply to flexural design of the element. Arrange inserts so the failure of one does not drop the element. 系數用於構件抗彎設計；預埋件佈置須確保單一失效不致整件墮下。</small>
 
-## Amendments 修訂
+## Amendments 修訂 {#amendments}
 
 - **Jun 2026**: new Table 2.7a on **testing procedures for completed panel joints and window joints**; new Figure 2.5a on **confinement** for bearing; other updates. 新增外牆接縫及窗縫測試程序、局部承壓圍束。
 - **Nov 2020**: see the BD amendment PDF. 見原文。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [Concrete Code](concrete-2013.md) · [APP-143 precast façades](../pnap/app-143.md) · [JPN 8 MiC](../pnap/jpn-8.md) · [Site Supervision Code](site-supervision-2009.md) · [Dead & Imposed Loads](dil-2011.md)

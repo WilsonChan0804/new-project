@@ -30,7 +30,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123A](https://www.elegislation.gov.hk/hk/cap123A) |
     | **Last checked 最後核對** | 2026-11-20 against the version on eLegislation (version date 30/06/2024) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -52,14 +52,14 @@ tags:
     - **完工證明書**：承建商於完工後 **7 天**內、認可人士（連同結構／岩土工程師）於 **14 天**內提交（第 25、26 條）；緊急工程須在 **48 小時**內核證（第 28 條）；新建築物須提交供水證明書（第 25A 條）。
     - **監督**：認可人士等須作**定期監督**；承建商須作**不斷監督**、在**地盤**存放已批准圖則及監工計劃書、委任**技術合格人員**，並在完工後保存紀錄 **12 個月**（第 36–41 條）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![B(A)R deadlines at a glance. 《建築物（管理）規例》期限一覽。](../assets/figures/diagrams/bar-deadlines.svg){ width="760" loading=lazy }
   <figcaption>B(A)R deadlines at a glance. 《建築物（管理）規例》期限一覽。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key table: processing periods 審批期限
+## Key table: processing periods 審批期限 {#key-table-processing-periods}
 
 | Submission 呈交 | Deemed after 當作批准／同意期限 | Reg. 條 |
 |---|---|---|
@@ -72,7 +72,7 @@ tags:
 
 <small>Resubmissions after refusal under BO s.16(1)(i) count as a **fresh application** (reg. 29(3)). Centralised processing and referrals: see [ADM-2](../pnap/adm-2.md). 因需要進一步資料而被拒後的再呈交當作新申請。</small>
 
-## Key table: deadlines for notices and certificates 通知及證明書期限
+## Key table: deadlines for notices and certificates 通知及證明書期限 {#key-table-deadlines-for-notices-and-certificates}
 
 | Item 項目 | By whom 由誰 | Deadline 期限 | Reg. 條 |
 |---|---|---|---|
@@ -87,7 +87,7 @@ tags:
 | Change of business address 業務地址變更 | All registered persons 所有註冊人士 | **Within 14 days** 14 天內 | 45 |
 | Change of use notice (BO s.25) 更改用途通知 | Person changing use 更改用途的人 | With a **block plan** 附地盤平面圖 | 47 |
 
-## Regulation by regulation 逐條摘要
+## Regulation by regulation 逐條摘要 {#regulation-by-regulation}
 
 | Reg. 條 | Title 標題 | Summary 摘要 |
 |---|---|---|
@@ -120,7 +120,7 @@ tags:
 | 42 | Fees 費用 | Registration fees; plan fees by GFA (new buildings) or by A1 sheet (A&A); resubmissions **free**; copies of records. 費用表。 |
 | 44–48 | Miscellaneous 雜項 | Supply information to BA; address changes in 14 days; BA may require as-built plans; s.25 notice with block plan; B(A)R does **not apply to minor works** under simplified requirements. 雜項。 |
 
-## Key table: plan processing fees (reg. 42, items 7–7A) 圖則審核費用
+## Key table: plan processing fees (reg. 42, items 7–7A) 圖則審核費用 {#key-table-plan-processing-fees-reg-42-items-77a}
 
 | Type 類別 | Fee 費用 |
 |---|---|
@@ -133,7 +133,7 @@ tags:
 
 <small>Figures from the current table; check the fee schedule and [APP-55](https://www.bd.gov.hk/en/resources/codes-and-references/practice-notes-and-circular-letters/index_pnap.html) before paying. 繳費前請核對最新費用表。</small>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Reg. 30(3) — Deemed approval periods 當作批准期限"
     For the purposes of section 15 of the Ordinance, the period after which the Building Authority shall be deemed to have given his approval of plans submitted to him shall be— (a) in relation to plans which are submitted for the first time to the Building Authority for approval, 60 days from the date on which the plans were submitted; (b) in relation to plans which, having been previously submitted to the Building Authority for approval, are submitted to him again for approval so extensively revised as to constitute, in the opinion of the Building Authority, a major revision of such plans, 60 days from the date on which the plans were last submitted; (c) in relation to any other plans which, having been previously submitted to the Building Authority for approval, are submitted to him again for approval, 30 days from the date on which the plans were last submitted.
@@ -145,7 +145,7 @@ tags:
 
     **官方中文本：** 本條例第15條所提述的關於當作已給予同意的期限為28天。
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -163,7 +163,7 @@ tags:
 
     **7 天**及 **14 天**的期限很容易錯過；逾期通知可能阻礙同意書或佔用許可證，亦可能導致紀律處分。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -212,7 +212,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

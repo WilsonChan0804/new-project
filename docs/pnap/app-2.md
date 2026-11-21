@@ -29,7 +29,7 @@ tags:
     | **Source 原文** | [APP-2 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP002.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the November 2025 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -49,14 +49,14 @@ tags:
     - **機房**（B(P)R 第 23(3)(b) 條）：「任何相類設施」包括消防控制中心、水缸、電掣房、變壓房等；圍牆厚度最多 **100 毫米**亦可不計算。
     - **停車場**：地庫 **100%** 不計；地面以上：首兩層 **100%**，其餘 **50%**（特殊情況除外）；車位須**預留電動車充電設施**（第 18 段）。
 
-## Diagram 圖解
+## Diagram 圖解 {#diagram}
 
 <figure markdown>
   ![GFA concessions: prerequisites and the 10% cap. 樓面面積寬免：先決條件及 10% 上限。](../assets/figures/diagrams/gfa-concessions.svg){ width="537" loading=lazy }
   <figcaption>GFA concessions: prerequisites and the 10% cap. 樓面面積寬免：先決條件及 10% 上限。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 1 — Calculation of GFA 總樓面面積的計算"
     Regulation 23(3)(a) of the Building (Planning) Regulations (B(P)R) stipulates that gross floor area (GFA) is the area contained within the outer surface of external walls of a building measured at each floor level. Any portions of this area not floored over should also be included in the GFA calculations.
@@ -73,7 +73,7 @@ tags:
 
     **中譯（非官方）：** 不計入總樓面面積的機房及其他設施，其只服務該等房間或設施而無其他功能的圍牆及相關防護前室，亦可不計算。可不計算的牆身厚度一般不應超過 100 毫米。
 
-## Key table: other facilities (para. 4) 其他設施（第 4 段）
+## Key table: other facilities (para. 4) 其他設施（第 4 段） {#key-table-other-facilities-para-4-4}
 
 | Item 項目 | Facility 設施 | APP-151 pre-req 先決條件 | 10% cap 上限 |
 |---|---|:-:|:-:|
@@ -86,7 +86,7 @@ tags:
 
 <small>Para. 5: **refuge floors** complying with the FS Code may also be exempted. 符合《消防安全守則》的庇護層亦可獲豁免。</small>
 
-## Key table: curtain walls and cladding (paras. 6–9) 幕牆及覆蓋層
+## Key table: curtain walls and cladding (paras. 6–9) 幕牆及覆蓋層 {#key-table-curtain-walls-and-cladding-paras-69}
 
 | Feature 項目 | Criterion 準則 |
 |---|---|
@@ -102,7 +102,7 @@ tags:
   <figcaption>Appendix B — Measurement of GFA and SC for curtain wall systems (new and existing buildings) 幕牆系統的總樓面面積及上蓋面積量度<br><small>Source: PNAP APP-2 (Nov 2025), Buildings Department 資料來源：屋宇署</small></figcaption>
 </figure>
 
-## Key table: car parks and loading/unloading (para. 18) 停車場及上落貨區（第 18 段）
+## Key table: car parks and loading/unloading (para. 18) 停車場及上落貨區（第 18 段） {#key-table-car-parks-and-loadingunloading-para-18-18}
 
 | Location 位置 | Private car parks 私家停車場 | Public car parks 公眾停車場 | Loading / unloading 上落貨 |
 |---|:-:|:-:|:-:|
@@ -118,7 +118,7 @@ tags:
 **Underground car park** (Appendix C para. 3): the structural ceiling soffit is at or below the **mean street level** (or the average of the streets' mean levels), and that level is ≤ **5 m** above the lowest street level. The topmost floor may protrude up to **half its height** (max. **2.5 m**) for natural light and ventilation.
 **地庫停車場**（附錄 C 第 3 段）：結構天花底面位於**街道平均水平**（或各街道平均水平的平均數）或以下，而該水平不高於最低街道水平 **5 米**；最高一層停車場可突出最多其高度的**一半**（最多 **2.5 米**）以作天然採光及通風。
 
-## Key table: voids in duplex flats and houses (Appendix A) 複式單位及屋宇的中空位置（附錄 A）
+## Key table: voids in duplex flats and houses (Appendix A) 複式單位及屋宇的中空位置（附錄 A） {#key-table-voids-in-duplex-flats-and-houses-appendix-a-a}
 
 | Criterion 準則 | Duplex flats 複式單位 | Houses 屋宇 |
 |---|---|---|
@@ -130,7 +130,7 @@ tags:
 
 <small>Conditions: anti-abuse design (e.g. up-stand beams, large glazing facing outside), compliance with OZP and lease, and an undertaking to designate the voids in the DMC. 條件：防止濫用的設計、符合分區計劃大綱圖及地契，以及承諾在公契中訂明為中空位置。</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -152,7 +152,7 @@ tags:
 
     **停車場規則於 2025 年 11 月修訂**：地面以上停車場首兩層以外只獲 **50%** 豁免（特殊情況除外），所有獲豁免的車位須**預留電動車充電設施**。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -229,7 +229,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

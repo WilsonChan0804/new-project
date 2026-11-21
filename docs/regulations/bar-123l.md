@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [eLegislation Cap. 123L](https://www.elegislation.gov.hk/hk/cap123L) |
     | **Last checked 最後核對** | 2026-11-21 against the version on eLegislation (version date 13/05/2021) |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +37,7 @@ tags:
     - 建築事務監督在收到陳述書後 **28 天**內提交申述及文件（第 5 條）；任何一方可在 **14 天**內要求**進一步詳情**，對方須在 **14 天**內回應（第 6 條）。
     - 聆訊須在 **≥ 21 天前**通知（第 7 條）；可發出證人傳票（第 8 條）；聆訊**公開**進行，除非下令閉門（第 9 條）；可以通知撤回（第 10 條）；未有送達或提交文件，上訴可被**駁回**（第 11 條）；決定及理由送達雙方並可公布（第 12 條）；審裁小組或主席可**延展**期限（第 13 條）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Appeal timeline under Cap. 123L. 上訴時間表。](../assets/figures/diagrams/appeal-timeline.svg){ width="460" loading=lazy }
@@ -45,7 +45,7 @@ tags:
 </figure>
 
 
-## Key clause 主要條文
+## Key clause 主要條文 {#key-clause}
 
 !!! quote "Section 4(1) Statement of particulars 第 4(1) 條"
     The appellant shall, within 28 days beginning on the date notice of appeal is given or, where appropriate, within the extended period, furnish to the Secretary a statement containing— (a) the particulars of the decision to which the appeal relates; (b) the grounds of appeal…
@@ -53,7 +53,7 @@ tags:
     **官方中文本：** 上訴人須在上訴通知發出日期起計28天內或(如適當)在經延展的期限內，向秘書提交陳述書，載明 —— (a)上訴所關乎的決定的詳情；(b)上訴理由……
 
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -67,7 +67,7 @@ tags:
         - 已向秘書遞交通知，但忘記把副本送達建築事務監督。
         - 錯過 28 天提交陳述書的限期；應在屆滿前申請延展。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

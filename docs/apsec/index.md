@@ -22,6 +22,13 @@ tags:
   - GFA 總樓面面積
   - Foundation 地基
   - Demolition 拆卸
+  - Curtain wall & façade 幕牆及外牆
+  - Occupation permit 佔用許可證
+  - Minor works 小型工程
+  - Means of escape 逃生途徑
+  - Industrial building 工業大廈
+  - Hotel 酒店
+  - Green & amenity features 環保及適意設施
 ---
 
 # APSEC Discussion Forum<br><small>認可人士及註冊結構工程師委員會討論會</small>
@@ -36,7 +43,7 @@ tags:
 
 **764 items** from **39 meetings** (17 Nov 2017 to 14 Aug 2026). Each item is also listed on the related regulation, code or PNAP page under **APSEC clarifications**.
 
-## By document 按文件
+## By document 按文件 {#by-document}
 
 | Document 文件 | Items 項目 | Latest 最新 |
 |---|---|---|
@@ -153,7 +160,7 @@ tags:
 | [ADM-18 Site Auditing for Building Works](../pnap/adm-18.md#apsec-clarifications) | 1 | 14 Aug 2026 |
 | [APP-175 Elderly-friendly Building Design](../pnap/app-175.md#apsec-clarifications) | 1 | 14 Aug 2026 |
 
-## By meeting 按會議
+## By meeting 按會議 {#by-meeting}
 
 | Meeting 會議 | Date 日期 | Items 項目 | Source 原文 |
 |---|---|---|---|
@@ -197,6 +204,6 @@ tags:
 | [ADF 1/2018](2018.md) | 19 Jan 2018 | 14 | [PDF](https://www.hkie-st.org/wp-content/uploads/2022/07/68_Summary-of-Items-Discussed-in-APSEC-Discussion-Forum-on-19-January-2018.pdf) |
 | [ADF 5/2017](2017.md) | 17 Nov 2017 | 14 | [PDF](https://www.hkie-st.org/wp-content/uploads/2022/07/67_Finalised-Summary-of-Items-Discussed-in-APSEC-Discussion-Forum-on-17-November-2017.pdf) |
 
-## Items not linked to a specific document 未連結文件的項目
+## Items not linked to a specific document 未連結文件的項目 {#items-not-linked-to-a-specific-document}
 
 217 items (e.g. general procedures, site safety, liaison) are listed only on the yearly pages.

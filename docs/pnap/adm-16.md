@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM016.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADM/ADM016.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -31,14 +31,14 @@ tags:
     - **附表所列地區**的土地勘測屬建築工程，須取得批准及同意（第 1 段）。
     - 可選擇**同時處理**：連同土地勘測圖則呈交**地盤監工計劃書**，在附函註明，並在呈交圖則**第 32 天後**申請同意（第 2–3 段）。
 
-## Workflow / timeline 流程及時間表
+## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
   ![Concurrent approval and consent for GI in scheduled areas. 附表地區土地勘測同時處理。](../assets/figures/diagrams/adm16-gi.svg){ width="760" loading=lazy }
   <figcaption>Concurrent approval and consent for GI in scheduled areas. 附表地區土地勘測同時處理。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

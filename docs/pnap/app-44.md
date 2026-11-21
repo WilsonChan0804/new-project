@@ -19,7 +19,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 23(2)(a)](../regulations/bpr-23-23a.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - 《建築物條例》沒有明確權力**轉移地積比率**（例如保留一個地盤作公園），因公園日後可能被發展（第 3 段）。
     - 如有**有效的規劃管制**（地契管制圖、**總綱發展藍圖**、城規第 16 條許可），可透過變通考慮在**另一地盤給予較高地積比率**，但不得損害規劃要求；日後抵銷有關好處的改變會被反對（第 4–5 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

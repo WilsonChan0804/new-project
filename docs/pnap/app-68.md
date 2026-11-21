@@ -28,7 +28,7 @@ tags:
     APP-68 cites the **Code of Practice for Structural Use of Concrete 2004** and the **Code of Practice for Site Supervision 2009**. Check the latest editions for the equivalent clause numbers.
     本備考引用《2004 年混凝土結構作業守則》及《2009 年地盤監督作業守則》，請核對最新版本的相應條文。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -48,7 +48,7 @@ tags:
     - **外露而跨度 > 750 毫米的外部懸臂板**：**≥ 35 兆帕的防水混凝土**、**熱浸鍍鋅**主鋼筋、防水膜，竣工時提交**施工報告及 BA14 表格**。
     - **排水**：斜度 ≥ **1:75**，邊緣設滴水線，不能進入清理者排水口相距 ≤ **5 米**；簷篷必須接駁建築物排水系統；須在一般建築圖則及排水圖則上顯示（符合 B(P)R 第 4(b)、10(3) 條）。
 
-## Key table: design requirements (Appendix A) 設計規定（附錄 A）
+## Key table: design requirements (Appendix A) 設計規定（附錄 A） {#key-table-design-requirements-appendix-a-a}
 
 | Item 項目 | Requirement 規定 | Para. 段 |
 |---|---|---|
@@ -66,7 +66,7 @@ tags:
 
 <small>"Exposed to weathering" excludes cantilevers under a permanent solid cover not more than one storey above and at least the same plan area (footnote 1). 位於不高於一層、面積不少於其本身的永久實心上蓋下的懸臂構件，可視為不受風雨侵蝕。</small>
 
-## Key table: construction, drainage and maintenance 施工、排水及保養
+## Key table: construction, drainage and maintenance 施工、排水及保養 {#key-table-construction-drainage-and-maintenance}
 
 | Topic 主題 | Requirement 規定 | Para. 段 |
 |---|---|---|
@@ -80,7 +80,7 @@ tags:
 | Construction report 施工報告 | As-built plan (dimensions, falls, outlets, finishes, membrane, joints, grades, bars, casting date, **covermeter readings**) + photos before and after concreting 竣工圖及照片 | 10 |
 | Maintenance 保養 | AP / RSE / RGBC prepare inspection and maintenance documentation for the owners. Clear drains and check waterproofing regularly, especially in the **rainy season**. **Do not** use canopies as A/C supports 定期清理排水口；簷篷不得用作冷氣機支架 | 11–12 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "App. A para. 6(a) — Minimum slab thickness 最少厚度"
     The minimum overall thickness should be-- (i) 110 mm for span not greater than 500 mm; (ii) 125 mm for span greater than 500 mm but not greater than 750 mm; (iii) 150 mm for span greater than 750 mm.
@@ -97,7 +97,7 @@ tags:
   <figcaption>Appendix B — Recommended location of construction joints for exposed cantilevered slabs (continuous slab, drop slab, slab at beam top) 外露懸臂板施工縫的建議位置<br><small>Source: PNAP APP-68 (Sep 2012), Buildings Department 資料來源：屋宇署</small></figcaption>
 </figure>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -119,7 +119,7 @@ tags:
 
     遵從附錄 A 即被視為符合 B(C)R 第 4 條的結構性能要求；在圖則上顯示排水即被視為符合 B(P)R 第 4(b) 及 10(3) 條。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -162,7 +162,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

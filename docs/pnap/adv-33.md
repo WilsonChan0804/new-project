@@ -38,7 +38,7 @@ tags:
     | **Source 原文** | [ADV-33 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV033.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the May 2024 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -56,7 +56,7 @@ tags:
     - 核對清單**只供自用**，**毋須**呈交屋宇署。
     - 一般建築圖則清單（A1）按**階段**標示每個項目：**I**（首套圖則，第 I 階段批准）、**II**（申請上蓋工程同意書前）、**III**（申請佔用許可證／臨時佔用許可證前）、**○**（須隨圖則附上的文件）。如押後提交第 II／III 階段資料，首套圖則須載有**聲明**，確認押後的 B(A)R 8(1) 資料會適時提交並獲批准。
 
-## Key table: the appendices 附錄一覽
+## Key table: the appendices 附錄一覽 {#key-table-the-appendices}
 
 | Appendix 附錄 | Content 內容 | Type 類型 |
 |---|---|---|
@@ -78,14 +78,14 @@ tags:
 | **C2** | Typical modifications / exemptions in drainage works 排水工程常見修改／豁免 | Checklist |
 | **C3** | Sample drainage drawings 排水圖則樣本 | Sample drawings |
 
-## Key figure: Appendix A1 legend and Part A 附錄 A1 圖例及 A 部
+## Key figure: Appendix A1 legend and Part A 附錄 A1 圖例及 A 部 {#key-figure-appendix-a1-legend-and-part-a-a1-a}
 
 <figure markdown>
   ![ADV-33 Appendix A1 page 1: stage legend and Part A Administration](../assets/figures/adv-33/appendix-a1-p1.jpg){ width="560" loading=lazy }
   <figcaption>Appendix A1, page 1: the stage symbols (I, II, III, ○) and Part A (forms, number of plan sets, fee). 附錄 A1 第 1 頁：階段符號及行政部分。Source: BD, PNAP ADV-33.</figcaption>
 </figure>
 
-## Key table: Appendix A1 highlights 附錄 A1 重點
+## Key table: Appendix A1 highlights 附錄 A1 重點 {#key-table-appendix-a1-highlights-a1}
 
 | Item 項目 | What to provide 須提供 | Stage 階段 | Reference 參考 |
 |---|---|---|---|
@@ -104,7 +104,7 @@ tags:
 
 <small>Selected items only. Use the full A1 checklist for a real submission. 只列部分項目；實際呈交請用完整清單。</small>
 
-## Key table: Appendix A2, typical modifications / exemptions 附錄 A2 常見修改／豁免
+## Key table: Appendix A2, typical modifications / exemptions 附錄 A2 常見修改／豁免 {#key-table-appendix-a2-typical-modifications-exemptions-a2}
 
 | # | Application 申請 | Key information 主要資料 |
 |---|---|---|
@@ -119,7 +119,7 @@ tags:
 
 <small>The list continues in the PNAP. GFA / SC calculations for exempted areas must be shown on plans. 清單在原文續有其他項目；豁免面積的計算須在圖則上顯示。</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -137,7 +137,7 @@ tags:
 
     結構及排水清單（B、C）同樣適用於註冊結構工程師、註冊岩土工程師及排水設計者，並列出轉介所需的**額外圖則套數**（例如鐵路保護範圍的港鐵公司、附表區、斜坡、暗渠、機場）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -178,7 +178,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

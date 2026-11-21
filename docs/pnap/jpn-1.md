@@ -29,7 +29,7 @@ tags:
     | **Source 原文** | [JPN 1 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN01.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the June 2025 version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -49,7 +49,7 @@ tags:
     - **地契及規劃**：建築事務監督批出豁免是**先決條件**，其後地政總署可按地契豁免（露台或須**補地價**）；規劃署採用相同準則，惟須符合分區計劃大綱圖的高度及上蓋面積限制。
     - **濫用**（圍封露台、浴室排氣口通往露台、花園私用）會被**執法及檢控**（第 21 段）。
 
-## Key table: the six green features (Appendix A) 六項環保設施（附錄 A）
+## Key table: the six green features (Appendix A) 六項環保設施（附錄 A） {#key-table-the-six-green-features-appendix-a-a}
 
 | Feature 設施 | Exempted from 豁免 | Key criteria 主要準則 | APP-151 pre-req 先決條件 | 10% cap 上限 |
 |---|---|---|:-:|:-:|
@@ -62,7 +62,7 @@ tags:
 
 <small>"Residential" excludes the non-domestic part of composite buildings, and **hotels are non-residential** for this JPN, so (a)–(c) do not apply to hotels. 本備考中的「住宅」不包括綜合用途建築物的非住用部分；**酒店屬非住宅**，故 (a)–(c) 不適用於酒店。</small>
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "App. A para. 1(a)(x)–(xii) — Balcony exemption limits 露台豁免上限"
     (x) Not more than 50% of the area of the balcony is to be exempted from GFA and SC calculations; (xi) The summation of areas to be exempted for such balconies including portion of such balconies per residential unit is 1m² or 2.5% of the Usable Floor Space of the unit whichever is the greater subject to a maximum of 3m²; (xii) The size of any balcony, including part of which to be exempted from GFA and SC calculations, is not less than 2m².
@@ -79,7 +79,7 @@ tags:
 
     **中譯（非官方）：** 政府會監察設施的使用，並會就違反以下豁免條件採取執法行動（包括檢控）：(a) 不得圍封露台及露台下的有蓋地方；(b) 內置浴室及洗手間的排氣口不得通往露台；或 (c) 空中花園及平台花園須指定只供業主、租客及其訪客專用。
 
-## Figures 圖則
+## Figures 圖則 {#figures}
 
 <figure markdown>
   ![Appendix B Figure 1 wider corridors](../assets/figures/jpn1/appendix-b-fig1-corridor.jpg){ loading=lazy }
@@ -99,7 +99,7 @@ tags:
 
 <small>Source: JPN 1 (June 2025), Buildings Department / Lands Department / Planning Department 資料來源：屋宇署、地政總署、規劃署</small>
 
-## Explanation 淺白解釋
+## Explanation 淺白解釋 {#explanation}
 
 === "English"
 
@@ -123,7 +123,7 @@ tags:
     3. 核對**分區計劃大綱圖**：如豁免令建築物超出大綱圖的高度或上蓋面積限制，須向城市規劃委員會申請**略為放寬**（第 13 段）。
     4. **申請佔用許可證前**須在土地註冊處登記**承諾書**（第 20 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -170,7 +170,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

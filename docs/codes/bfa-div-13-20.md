@@ -28,7 +28,7 @@ tags:
     BD issued the **Design Manual on Universal Accessibility 2026** (see [APP-176](../pnap/app-176.md)), which replaces this BFA 2008 Manual. The **obligatory** clauses here still match the statutory **B(P)R Third Schedule**; best-practice items may differ in the DMUA.
     屋宇署已發出《設計手冊：暢道通行2026》（見 APP-176）取代本手冊；本頁的**強制性**條文仍與 B(P)R 附表 3 相同，良好作業部分或有不同。
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -52,7 +52,7 @@ tags:
     - **升降機**（第 19 分部）：每層最少有一部**暢通易達升降機**：機廂 **≥ 1 200（深）× 1 100 毫米（闊）**、門 **≥ 850 毫米**、扶手高 850–950 毫米；**多於 3 部**時，一部須 **≥ 1 500 × 1 400 毫米**。橫向自動趟門，**500–600 毫米**高設重開感應器；按鈕 **900–1 200 毫米**高、**≥ 20 毫米**，設點字及觸覺（主要樓層用星形、警鐘用鐘形）；**對講機**及閃燈確認，由緊急電源供電；到達鐘聲（上行一聲、下行兩聲）；門框樓層號 **60 毫米**高、離地 1 200 毫米；機廂位置顯示 50 毫米；以**英語、粵語、普通話**報層。
     - **自動梯及自動行人道**（第 20 分部）：**不**屬暢通無阻路線；兩端設**觸覺警示帶**。
 
-## Division 13 Signs 第 13 分部 標誌
+## Division 13 Signs 第 13 分部 標誌 {#division-13-signs-13}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -67,7 +67,7 @@ tags:
   <figcaption>Figure 32 – Braille and tactile fire exit map. 點字及觸覺走火通道圖。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Division 14 Visual and hearing impairment (Table 2 buildings) 第 14 分部 協助視障及聽障人士
+## Division 14 Visual and hearing impairment (Table 2 buildings) 第 14 分部 協助視障及聽障人士 {#division-14-visual-and-hearing-impairment-table-2-buildings-14}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -78,7 +78,7 @@ tags:
 **Table 2 building categories** (Third Schedule Part 2, Div. 21): department stores and shopping complexes; hotels, hostels, guesthouses and banks; places of worship; cinemas, theatres, concert halls, stadiums, museums, theme parks; schools, colleges, universities and libraries; factories and industrial buildings; sports complexes and public pools; restaurants and food courts; indoor markets and supermarkets; hospitals and clinics; elderly homes and welfare centres; club houses; transport stations and terminals; car parks. Each category has its own list of required provisions in Table 2.
 **表 2 建築物類別**：百貨公司及商場；酒店、旅舍、賓館及銀行；宗教場所；電影院、劇院、音樂廳、體育場、博物館、主題公園；學校、大專及圖書館；工廠；體育館及公眾泳池；食肆；街市及超市；醫院及診所；安老院及福利中心；會所；交通站及客運大樓；停車場。各類別須提供的設施見表 2。
 
-## Division 15 Public information or service counters 第 15 分部 公共詢問或服務櫃枱
+## Division 15 Public information or service counters 第 15 分部 公共詢問或服務櫃枱 {#division-15-public-information-or-service-counters-15}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -90,7 +90,7 @@ tags:
   <figcaption>Figure 39 – Counter top ≤ 750 mm; knee space ≥ 680 mm high, 400–600 mm deep. 櫃枱主要高度。Source: BD, BFA 2008.</figcaption>
 </figure>
 
-## Divisions 16–18 Illumination, emergency call bells, assistive listening 第 16–18 分部 照明、召援鐘、聆聽輔助
+## Divisions 16–18 Illumination, emergency call bells, assistive listening 第 16–18 分部 照明、召援鐘、聆聽輔助 {#divisions-1618-illumination-emergency-call-bells-assistive-listening-1618}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -102,7 +102,7 @@ tags:
 
 <small>The Fourth Schedule (2026) raises corridor and lift lighting to **≥ 120 lux** on regulated routes of buildings under reg. 73. 第 73 條適用的建築物須 120 勒克斯。</small>
 
-## Division 19 Lifts 第 19 分部 升降機
+## Division 19 Lifts 第 19 分部 升降機 {#division-19-lifts-19}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
@@ -121,14 +121,14 @@ tags:
   <figcaption>Figure 41 – Tactile graphics for lift buttons (star for main floor, bell for alarm). 升降機按鈕觸覺圖形。Source: BD, BFA 2008. (Figure 40, accessible lift: see the <a href="../bfa-2008/">overview</a>.)</figcaption>
 </figure>
 
-## Division 20 Escalators and passenger conveyors 第 20 分部 自動梯及乘客輸送帶
+## Division 20 Escalators and passenger conveyors 第 20 分部 自動梯及乘客輸送帶 {#division-20-escalators-and-passenger-conveyors-20}
 
 | Para. 段 | Obligatory requirement 強制性規定 |
 |---|---|
 | 84 | Escalators and travelators are **not** part of a barrier-free route; warning and guarding alongside and at each end 不屬暢通無阻路線 |
 | 85 | **Tactile warning strips** at the top and bottom of escalators and both ends of passenger conveyors (Figure 36) 觸覺警示帶 |
 
-## Key clauses 主要條文
+## Key clauses 主要條文 {#key-clauses}
 
 !!! quote "Para. 78(1) — Accessible lifts 暢通易達升降機"
     Every floor of a building shall be accessible by at least one passenger lift which shall fully comply with all the obligatory design requirements as stipulated in this section and have direct access to main lift lobby. … A lift shall have minimum internal car dimensions of 1200 mm x 1100 mm wide, with a minimum clear entrance width of 850 mm, and shall have handrails extending to within 150 mm of the corners at the rear and sides of the car. The top of the gripping surface of the handrails shall be at a height of 850 mm to 950 mm, with a space of 30 mm to 50 mm between the handrails and wall.
@@ -138,7 +138,7 @@ tags:
 
 <small>For the official Chinese of these clauses see B(P)R Third Schedule ss. 72 and 78 on [eLegislation](https://www.elegislation.gov.hk/hk/cap123F!zh-Hant-HK). 官方中文本見附表 3 第 72 及 78 條。</small>
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -160,7 +160,7 @@ tags:
         - 觸覺引路帶只到建築物入口，沒有延伸至**升降機區、櫃枱及暢通易達洗手間**（第 69(3) 段）。
         - 走廊照明按一般辦公室標準設計，但地面量度**低於 85 勒克斯**。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

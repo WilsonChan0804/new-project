@@ -29,6 +29,7 @@ hooks:
   - hooks/autolink.py
 
 extra_javascript:
+  - javascripts/kb-viewer-backend.js
   - javascripts/kb.js
 
 extra_css:

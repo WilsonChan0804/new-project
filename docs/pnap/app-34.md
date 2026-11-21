@@ -19,7 +19,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP034.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP034.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -33,7 +33,7 @@ tags:
     - **全部或部分位於地段內**，或由私人建築物承托／與之相連（例如兩幢建築物之間或由建築物連往政府土地的行人天橋）：按**條例**處理，亦須符合 **B(C)R**（第 3–4 段）。
     - **完全位於地段外**、建於政府土地或公路上的獨立構築物：**豁免受條例規管**，由路政署管制（第 5–6 段）。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

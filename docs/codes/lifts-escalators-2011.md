@@ -7,6 +7,8 @@ tags:
   - Maintenance access 維修通道
   - Fire safety 消防安全
   - Barrier free access 無障礙
+summary: "Lift well, pit, headroom and machine room sizes, pit access and machine room access rules."
+keywords: lift, 升降機, escalator, 自動梯, lift pit, 機坑, machine room, 機房, headroom, liftwell
 ---
 
 # Code of Practice for Building Works for Lifts and Escalators 2011<br><small>《2011 年為安裝及安全使用升降機及自動梯而設計及建造建築物及建築工程作業守則》</small>
@@ -19,7 +21,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/BWLE2020e.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -37,7 +39,7 @@ tags:
     - 機坑深度超過 **2 米**（1.6 米以上在可行時亦須）須設**機坑出入門**：最少 **1.4 × 0.6 米**，並設中英文警告告示。
     - **機房通道**須經公用地方，高度最少 **2 米**；高差超過 **0.6 米**須設樓梯：闊 **≥ 900 毫米**、梯級深 **≥ 225 毫米**、級高 **≤ 175 毫米**、每段 **≤ 16** 級、兩邊扶手、欄障 **1.1 米**。
 
-## Minimum dimensions 最小尺寸 (Table 1, selected, 1.0 m/s)
+## Minimum dimensions 最小尺寸 (Table 1, selected, 1.0 m/s) {#minimum-dimensions-table-1-selected-10-ms}
 
 | Rated load 載重 | Persons 人數 | Car area max. 機廂面積 | Well W × D 槽 | Entrance W × H 入口 | Pit 機坑 | Headroom 頂部空間 | Machine room 機房 |
 |---|---|---|---|---|---|---|---|
@@ -49,7 +51,7 @@ tags:
 
 <small>Dimensions in mm. Faster lifts need deeper pits and more headroom (e.g. 1,000 kg at 3.5 m/s: pit 3,650, headroom 6,300). Interpolate between values. Above 1,600 kg add 0.16 m² car area and 0.6 m² machine room per 100 kg. 速度越高機坑及頂部空間越大；可內插。</small>
 
-## Key requirements 主要規定
+## Key requirements 主要規定 {#key-requirements}
 
 | Item 項目 | Requirement 要求 | Clause |
 |---|---|---|
@@ -61,6 +63,6 @@ tags:
 | Service lifts 送貨升降機 | Similar rules; pit needed only where the lowest level served is at or near floor level | 4 |
 | Escalators 自動梯 | Machine and return stations, steps, landings, clearances to obstructions | 5 |
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [B(C)R](../regulations/bcr-123q.md) · [FS Code Part C](fsc-part-c-fire-resisting-construction.md) · [FS Code Part D firemen's lifts](fsc-part-d-means-of-access.md) · [BFA lifts](bfa-div-13-20.md) · [Dead & Imposed Loads](dil-2011.md)

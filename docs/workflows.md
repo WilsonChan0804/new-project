@@ -20,7 +20,7 @@ All the timeline, workflow and relationship diagrams on one page. Click the link
 !!! note "Note 注意"
     These diagrams simplify the law. Periods are the statutory or normal BD periods stated in the source; always check the linked page and the official text.
 
-## Plan approval to occupation 由審批至佔用
+## Plan approval to occupation 由審批至佔用 {#plan-approval-to-occupation}
 
 <figure markdown>
   ![Statutory periods from plan submission to occupation (BO s.14–21, B(A)R 30–33). 由呈交圖則至佔用的法定期限。](assets/figures/diagrams/statutory-timeline.svg){ width="366" loading=lazy }
@@ -62,7 +62,7 @@ All the timeline, workflow and relationship diagrams on one page. Click the link
   <figcaption>B(A)R deadlines at a glance. 《建築物（管理）規例》期限一覽。 → [Full entry 詳細內容](regulations/bar-123a.md)</figcaption>
 </figure>
 
-## Site works 地盤工程
+## Site works 地盤工程 {#site-works}
 
 <figure markdown>
   ![Do I need ELS plans? 是否須呈交挖掘及側向承托圖則？](assets/figures/diagrams/app57-els.svg){ width="381" loading=lazy }
@@ -89,7 +89,7 @@ All the timeline, workflow and relationship diagrams on one page. Click the link
   <figcaption>Smart site safety conditions under s.17. 智慧工地安全條件。 → [Full entry 詳細內容](pnap/app-162.md)</figcaption>
 </figure>
 
-## Minor works and inspection 小型工程及檢驗
+## Minor works and inspection 小型工程及檢驗 {#minor-works-and-inspection}
 
 <figure markdown>
   ![Minor works: who does what, and when. 小型工程：負責人及時限。](assets/figures/diagrams/minor-works.svg){ width="760" loading=lazy }
@@ -101,7 +101,7 @@ All the timeline, workflow and relationship diagrams on one page. Click the link
   <figcaption>MBIS / MWIS: inspection and repair timeline. 強制驗樓／驗窗時間表。 → [Full entry 詳細內容](regulations/bir-123p.md)</figcaption>
 </figure>
 
-## Who and what 人物及文件關係
+## Who and what 人物及文件關係 {#who-and-what}
 
 <figure markdown>
   ![Map of the Buildings Ordinance and its subsidiary legislation. 條例及附屬法例關係圖。](assets/figures/diagrams/regs-map.svg){ width="760" loading=lazy }
@@ -118,7 +118,7 @@ All the timeline, workflow and relationship diagrams on one page. Click the link
   <figcaption>Who is responsible for what. 各方職責關係。 → [Full entry 詳細內容](pnap/app-141.md)</figcaption>
 </figure>
 
-## Regulations, codes and drawings 規例、守則及圖解
+## Regulations, codes and drawings 規例、守則及圖解 {#regulations-codes-and-drawings}
 
 <figure markdown>
   ![Appeal timeline (Cap. 123L). 上訴時間表。](assets/figures/diagrams/appeal-timeline.svg){ width="700" loading=lazy }

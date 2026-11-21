@@ -11,6 +11,8 @@ tags:
   - Balcony & utility platform 露台及工作平台
   - Fire resisting construction 耐火結構
   - Means of escape 逃生途徑
+summary: "Natural lighting and ventilation: prescribed windows, B(P)R 30–36, and the APP-130 performance route."
+keywords: lighting, ventilation, 照明, 通風, prescribed window, 訂明的窗, VDF, APP-130, natural ventilation, 自然通風
 ---
 
 # Lighting and ventilation<br><small>照明及通風（專題指南）</small>
@@ -21,14 +23,14 @@ tags:
 
     Main sources 主要來源: [B(P)R 29–37](../regulations/bpr-24-37.md) · [B(P)R 71](../regulations/bpr-71-73.md) · [APP-130](../pnap/app-130.md) · [APP-98](../pnap/app-98.md) · [ADV-30](../pnap/adv-30.md) · [ADV-25](../pnap/adv-25.md) · [ADV-26](../pnap/adv-26.md) · [APP-150](../pnap/app-150.md) · [FS Code Part B](../codes/fsc-part-b-means-of-escape.md)
 
-## The big picture 整體概念
+## The big picture 整體概念 {#the-big-picture}
 
 <figure markdown>
   ![Lighting and ventilation decision route](../assets/figures/diagrams/lv-guide-flow.svg){ width="600" loading=lazy }
   <figcaption>Choosing the prescriptive or performance-based route. 選擇規定或性能方法。 Diagram prepared for this site.</figcaption>
 </figure>
 
-## 1. The prescriptive rules (B(P)R 29–33) 規定方法
+## 1. The prescriptive rules (B(P)R 29–33) 規定方法 {#1-the-prescriptive-rules-bpr-2933}
 
 | Requirement 要求 | Standard 標準 | Reg. 條 |
 |---|---|---|
@@ -43,7 +45,7 @@ tags:
 !!! example "Quick check 快速核算"
     Bedroom **12 m²** → glass ≥ 12 ÷ 10 = **1.2 m²**; openable ≥ 12 ÷ 16 = **0.75 m²**, with the top of the opening at least 2 m above floor. 睡房 12 平方米 → 玻璃 ≥ 1.2 平方米，可開啟 ≥ 0.75 平方米。
 
-## 2. The performance-based route (APP-130) 性能為本方法
+## 2. The performance-based route (APP-130) 性能為本方法 {#2-the-performance-based-route-app-130}
 
 === "English"
 
@@ -65,7 +67,7 @@ tags:
     - **開口**：主要開口 ≥ 樓面面積 **1/16**；如有**對流通風**（主要及次要開口各 ≥ **2%**），房間深度可達 **12 米**。
     - 以**簡化方法**（附錄 A）或**日光模擬／計算流體力學**（附錄 B、C）證明，並以**表格 BA16** 申請；可部分採用規定方法、部分採用性能方法。
 
-## 3. Mechanical ventilation 機械通風
+## 3. Mechanical ventilation 機械通風 {#3-mechanical-ventilation}
 
 | Situation 情況 | Requirement 要求 | Source 來源 |
 |---|---|---|
@@ -76,16 +78,16 @@ tags:
 | Industrial-to-office conversion 工廈改裝為辦公室 | Modification of regs 30–31 with artificial light, mechanical ventilation and **BEAM Plus 40% EU and IEQ** | [APP-130](../pnap/app-130.md), [APP-150](../pnap/app-150.md) |
 | Ductwork through compartments 穿過防火間隔的風管 | Fire dampers; inspection every **12 months** | [Cap. 123J](../regulations/bvsr-123j.md) |
 
-## 4. Bathrooms and lavatories 浴室及洗手間
+## 4. Bathrooms and lavatories 浴室及洗手間 {#4-bathrooms-and-lavatories}
 
 - A room with a WC or urinal needs a window with glass ≥ **1/10** and opening ≥ **1/10** of the floor area, and must **not open directly** into a room used for food ([B(P)R 36](../regulations/bpr-24-37.md)). 有水廁或尿兜的房間須有窗，玻璃及開口各 ≥ 1/10，且不得直接通往食物房間。
 - Internal (windowless) bathrooms in flats are accepted by **modification** under the [APP-98](../pnap/app-98.md) conditions. 住宅內置浴室可按 APP-98 條件以變通方式批准。
 
-## 5. Open kitchens 開放式廚房
+## 5. Open kitchens 開放式廚房 {#5-open-kitchens}
 
 Open kitchens raise **fire safety** as well as ventilation questions (escape routes past the kitchen, fire-rated walls, smoke detectors, sprinklers). BD has answered these mainly at APSEC; the current positions are listed below. See also [FS Code Part B](../codes/fsc-part-b-means-of-escape.md). 開放式廚房同時涉及**消防安全**（逃生途徑、耐火牆、煙霧感應器、花灑）及通風，屋宇署主要在 APSEC 作出澄清，現行立場見下文。
 
-## Common mistakes 常見錯誤
+## Common mistakes 常見錯誤 {#common-mistakes}
 
 === "English"
 
@@ -123,7 +125,7 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 <!-- GUIDE APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | What it covers 內容 |
 |---|---|

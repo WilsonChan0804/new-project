@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [B(P)R 35A](../regulations/bpr-24-37.md) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -34,7 +34,7 @@ tags:
     - **開口尺寸**：一般 **320 × 420 毫米**（闊 × 高）；只可設花灑的浴室 **240 × 240 毫米**；配合已知煙道可用非標準尺寸，但日後須可擴大而毋須切斷鋼筋（第 3–4 段）。
     - **位置**：設於**外牆**淨面（或永久開敞的露台通道）；開口四周淨空：上 **50 毫米**、兩旁 **100 毫米**、下 **150 毫米**；底部距地 **≥ 200 毫米**；距牆角及其他開口 **≥ 300 毫米**；與對面牆或界線之間 **≥ 1 500 毫米**（面向街道的牆不受此限）；**不得在晾衣架下方**（第 5 段）。
 
-## Key table: aperture requirements 開口規定
+## Key table: aperture requirements 開口規定 {#key-table-aperture-requirements}
 
 | Item 項目 | Requirement 規定 |
 |---|---|
@@ -54,7 +54,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|

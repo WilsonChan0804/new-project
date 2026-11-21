@@ -9,6 +9,8 @@ tags:
   - Site safety 地盤安全
   - Green & amenity features 環保及適意設施
   - Staircase 樓梯
+summary: "Maintenance and repair access for façades, projections and roofs: windows, doors, gondolas and anchors."
+keywords: external maintenance, 外部維修, M&R access, 維修通道, gondola, 吊船, maintenance access window, 維修窗, anchor, 錨固點
 ---
 
 # Code of Practice on Access for External Maintenance 2021<br><small>《2021 年外部維修通道作業守則》</small>
@@ -21,7 +23,7 @@ tags:
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/cop_on_access_for_external_maintenance_2021.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -41,7 +43,7 @@ tags:
     - **每個露台及工作平台**最少設**一個錨固點**；冷氣機平台按附錄 B 及 C；招牌須設最少 **200 毫米**的檢查口。
     - 如通道須經私人單位，**公契**（或買賣及租約文件）須訂明進入權；連同檢查表呈交**維修通道圖則**（附錄 E 及 F）。
 
-## Access required for each element 各構件所需通道 (Part 2)
+## Access required for each element 各構件所需通道 (Part 2) {#access-required-for-each-element-part-2}
 
 | Element 構件 | Acceptable M&R access 可接受的維修通道 |
 |---|---|
@@ -57,7 +59,7 @@ tags:
 | **Accessible roof** 可到達天台 | Direct staircase or maintenance door; barriers to B(C)R ss.37–38; fixed ladder for roof signs over **5 m** high |
 | **Inaccessible roof** 不可到達天台 | Fixed ladder or walkway, gantry, maintenance door, platform or gondola; **guard-rails with toe-boards** if workers step on; otherwise collapsible guard-rails or temporary edge protection, with anchors or a lifeline at the roof access or ≥ **2 m** from the edge |
 
-## Design requirements 設計要求 (Part 3)
+## Design requirements 設計要求 (Part 3) {#design-requirements-part-3}
 
 | Item 項目 | Requirement 要求 |
 |---|---|
@@ -70,6 +72,6 @@ tags:
 | **Maintenance door** 維修門 | ≥ **600 × 2,000 mm**; locked; bilingual "DANGER" notice ≥ 25 mm |
 | Anchors 錨固點 | Comply with the Labour Department rules (App. D para. 7); cast-in anchor details submitted for approval (App. G example) |
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 [B(C)R](../regulations/bcr-123q.md) · [APP-163](../pnap/app-163.md) · [APP-93 pipe ducts](../pnap/app-93.md) · [APP-42 utility platforms](../pnap/app-42.md) · [APP-110 barriers](../pnap/app-110.md) · [Glass Code](glass-2018.md) · [Dead & Imposed Loads](dil-2011.md)

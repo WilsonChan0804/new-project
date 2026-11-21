@@ -20,7 +20,7 @@ tags:
     | **Legal basis 法律依據** | [BO s.16(1)(d)](../regulations/bo-part-2-building-works.md); Country Parks Ordinance (Cap. 208) s.10(1) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
 
-## At a glance 重點摘要
+## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
 
@@ -34,7 +34,7 @@ tags:
     - 在取得批准前，或違反批准條件時，建築事務監督可根據**《建築物條例》第 16(1)(d) 條拒批圖則**（違反其他成文法則）（第 3 段）。
     - 應**及早**諮詢管理局，並核對郊野公園及特別地區的界線（漁護署圖則）（第 3–4 段）。
 
-## Practical notes 實務提示
+## Practical notes 實務提示 {#practical-notes}
 
 === "English"
 
@@ -46,7 +46,7 @@ tags:
     !!! tip "常見錯誤"
         - 位於**郊野公園「不包括的土地」**或部分位於郊野公園的地盤，未取得第 208 章批准便呈交圖則。
 
-## Related 相關文件
+## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
 |---|---|
