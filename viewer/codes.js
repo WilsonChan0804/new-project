@@ -30,14 +30,17 @@ function load() {
 
 async function loadStatus() {
   try { CX.st = await api("/api/codes/status"); } catch (e) { CX.st = null; $("#cx-state").textContent = e.message; return; }
+  try { CX.kb = await api("/api/kb/status"); } catch (e) { CX.kb = null; }
   const s = CX.st;
+  const kbTxt = CX.kb && CX.kb.on ? ` · summaries: ${CX.kb.pages} pages` : "";
   $("#cx-state").innerHTML = s.sources
-    ? `${s.sources} document${s.sources === 1 ? "" : "s"}, ${s.clauses} clauses`
+    ? `${s.sources} document${s.sources === 1 ? "" : "s"}, ${s.clauses} clauses${kbTxt}`
     : (s.manage ? `The library is empty: <a href="#" id="cx-first">find the documents on the BD site</a> or <a href="#" id="cx-first2">add your own</a>` : "The library is empty - ask a site admin to add the codes");
   const f = $("#cx-first");
   if (f) f.onclick = (ev) => { ev.preventDefault(); openLibrary("find"); };
   const f2 = $("#cx-first2");
   if (f2) f2.onclick = (ev) => { ev.preventDefault(); openLibrary(); };
+  paintKbBar();
 }
 
 /* -------------------------------------------------------- highlighting */
@@ -108,6 +111,104 @@ function openDiagram(t, k) {
   });
 }
 
+/* -------------------------------------------- the knowledge base's answers */
+
+const KB_ICON = { guide: "&#128218;", regulation: "&#167;", code: "&#128214;", pnap: "&#128196;", jpn: "&#128196;", apsec: "&#128172;", glossary: "&#128292;", workflow: "&#128260;" };
+function kbHtml(t, i) {
+  const items = t.kb || [];
+  if (!items.length) return "";
+  return `<div class="cx-kb"><div class="cx-facts-h"><b>From the summaries</b><span class="muted">the office's knowledge base</span></div>`
+    + items.slice(0, 5).map((x, k) => `<div class="cx-kbc cx-kb-${esc(x.kind)}">`
+      + `<div class="cx-kbc-h"><span class="cx-kbk">${KB_ICON[x.kind] || ""} ${esc(x.kind_label)}${x.date ? " \u00b7 " + esc(x.date) : ""}</span>`
+      + `<button type="button" class="cx-kbt" data-kb="${i}:${k}" title="Open in the Knowledge base">${esc(x.title)}${x.zh ? ` <small>${esc(x.zh)}</small>` : ""}</button></div>`
+      + (x.section ? `<div class="cx-kbs">${esc(x.section)}</div>` : "")
+      + `<div class="cx-kbx">${marked(x.snippet, t.terms)}</div>`
+      + `<details class="cx-kbd"><summary>Read here</summary><div class="cx-kbr">${marked(x.read, t.terms)}${x.read_zh ? `<hr>${marked(x.read_zh, t.terms)}` : ""}</div></details>`
+      + `<div class="cx-kba"><button type="button" class="ghost" data-kb="${i}:${k}">Open the page &rsaquo;</button>`
+      + (x.info && x.info["version summarised"] ? `<span class="muted">version ${esc(x.info["version summarised"])}${x.info["last checked"] ? " \u00b7 checked " + esc(x.info["last checked"].slice(0, 10)) : ""}</span>` : "")
+      + `</div></div>`).join("") + `</div>`;
+}
+function kbFactsHtml(t, i) {
+  const f = t.kbfacts || [];
+  if (!f.length) return "";
+  return `<div class="cx-facts cx-facts-kb"><div class="cx-facts-h"><b>Quick facts</b><span class="muted">from the summaries - their figures and conditions</span></div>`
+    + f.map((c) => `<div class="cx-fc"><button type="button" class="cx-fref" data-kbf="${esc(c.url)}#${esc(c.anchor || "")}" title="Open in the Knowledge base">${esc(c.title || "")}${c.ref ? " \u00b7 " + esc(c.ref) : ""}</button>`
+      + (c.lead ? `<div class="cx-flead">${marked(c.lead, t.terms)}</div>` : "")
+      + `<table class="cx-ft">${c.facts.map((x) => `<tr><td class="cx-fig">${esc(x.figure)}</td><td>${x.when ? `<span class="cx-when">${esc(x.when)}</span>` : ""}${marked(x.text, t.terms)}</td></tr>`).join("")}</table></div>`).join("")
+    + `</div>`;
+}
+function kbFigsHtml(t, i) {
+  const figs = [];
+  (t.kb || []).forEach((x, k) => (x.figures || []).forEach((f) => { if (figs.length < 6 && !figs.some((g) => g.url === f.url)) figs.push(Object.assign({ k, title: x.title }, f)); }));
+  if (!figs.length) return "";
+  return `<div class="cx-dgs">${figs.map((f) => `<button type="button" class="cx-dg cx-kbfig" data-kb="${i}:${f.k}" title="${esc(f.alt)} - open the page">`
+    + `<img src="${esc(f.url)}" alt="${esc(f.alt)}" loading="lazy"><span><b>${esc((f.alt || "Diagram").slice(0, 80))}</b><small>${esc(f.title)}</small></span></button>`).join("")}</div>`;
+}
+
+/* --------------------------------------------- the Knowledge base tab */
+
+let KB_LOADED = "";
+function openKb(path) {
+  showTab("kb", path || "");
+}
+function paintKbBar() {
+  const bar = $("#kb-ver");
+  if (!bar) return;
+  const k = CX.kb;
+  bar.textContent = k && k.on ? `Version ${String(k.sha || "").slice(0, 7)} \u00b7 ${k.date ? new Date(k.date).toLocaleDateString() : ""} \u00b7 ${k.message || ""}` : "";
+  const empty = $("#kb-empty");
+  if (empty) {
+    empty.hidden = !!(k && k.on);
+    empty.innerHTML = k && k.on ? "" : `<h3>The knowledge base is not connected yet</h3><p class="muted">${k && k.updating ? "It is being fetched and built now ..." : k && k.manage
+      ? `Connect it in <a href="#" id="kb-setup">Library > Knowledge base</a>: the GitHub branch the summaries are written on, and a read-only token.`
+      : "A site admin connects it in Codes > Library > Knowledge base."}</p>${k && k.error ? `<p class="cx-why bad">${esc(k.error)}</p>` : ""}`;
+    const a = $("#kb-setup");
+    if (a) a.onclick = (ev) => { ev.preventDefault(); openLibrary(); };
+  }
+  $("#kb-frame").hidden = !(k && k.on);
+}
+
+function paintKbBox() {
+  const box = $("#cx-kbbox");
+  if (!box) return;
+  const k = CX.kb || {};
+  const st = k.settings || {};
+  const ver = k.on ? `<p>In the viewer: <b>${k.pages} pages</b>, ${k.sections} sections · commit <code>${esc(String(k.sha || "").slice(0, 7))}</code> ${k.date ? "of " + esc(new Date(k.date).toLocaleString()) : ""} - ${esc(k.message || "")}${k.checked ? ` · checked ${esc(new Date(k.checked).toLocaleString())}` : ""}</p>` : `<p class="muted">Not connected yet.</p>`;
+  box.innerHTML = `<h3>Knowledge base</h3><p class="muted">The office's summaries of the Ordinance, regulations, Codes of Practice, PNAPs and APSEC - written on a GitHub branch, built here with MkDocs, and searched first by Codes.</p>${ver}`
+    + (k.updating ? `<p class="cx-wait">${esc(k.log || "Updating ...")}</p>` : "")
+    + (k.error ? `<p class="cx-why bad">${esc(k.error)}</p>` : "")
+    + (k.manage ? `<form class="cx-kbform" onsubmit="return false">
+      <div class="cx-grid"><label>Source<select name="source"><option value="github"${st.source !== "folder" ? " selected" : ""}>GitHub branch</option><option value="folder"${st.source === "folder" ? " selected" : ""}>A folder on the server</option></select></label>
+      <label class="kb-gh">Repository (owner/name)<input name="repo" value="${esc(st.repo || "")}"></label>
+      <label class="kb-gh">Branch<input name="branch" value="${esc(st.branch || "")}"></label>
+      <label class="kb-gh">GitHub token ${st.token_set ? `<span class="cx-ok">saved</span>` : ""}<input name="token" type="password" autocomplete="off" placeholder="${st.token_set ? "leave empty to keep it" : "a fine-grained token: Contents read-only"}"></label>
+      <label class="kb-fo">Folder on the server (a checkout of the branch)<input name="folder" value="${esc(st.folder || "")}"></label>
+      <label class="row-check"><input type="checkbox" name="auto"${st.auto !== false ? " checked" : ""}> Update every day</label></div>
+      <div class="row end"><button type="button" class="ghost" id="kb-save">Save</button><button type="button" class="primary" id="kb-now"${k.updating ? " disabled" : ""}>Update now</button></div>
+      <p class="muted small">The token is kept on the server and never shown again. GitHub > Settings > Developer settings > Fine-grained tokens: this repository only, Contents: Read-only.</p></form>` : "");
+  const f = box.querySelector("form");
+  if (!f) return;
+  const showSrc = () => { for (const el of f.querySelectorAll(".kb-gh")) el.hidden = f.source.value !== "github"; for (const el of f.querySelectorAll(".kb-fo")) el.hidden = f.source.value !== "folder"; };
+  f.source.onchange = showSrc; showSrc();
+  const send = async () => {
+    const body = { source: f.source.value, repo: f.repo.value.trim(), branch: f.branch.value.trim(), folder: f.folder.value.trim(), auto: f.auto.checked };
+    if (f.token.value.trim()) body.token = f.token.value.trim();
+    await api("/api/kb/settings", { method: "POST", body: JSON.stringify(body) });
+  };
+  $("#kb-save").onclick = async () => { try { await send(); toast("Saved"); await loadStatus(); paintKbBox(); } catch (e) { toast(e.message, true); } };
+  $("#kb-now").onclick = async () => {
+    try { await send(); await api("/api/kb/update?force=1", { method: "POST" }); } catch (e) { return toast(e.message, true); }
+    toast("Fetching and building the knowledge base ...");
+    const poll = async () => {
+      await loadStatus(); paintKbBox();
+      if (CX.kb && CX.kb.updating) return setTimeout(poll, 1500);
+      KB_LOADED = "";
+      toast(CX.kb && CX.kb.error ? "Not updated: " + CX.kb.error : `Knowledge base updated: ${CX.kb.pages} pages`, !!(CX.kb && CX.kb.error));
+    };
+    setTimeout(poll, 1200);
+  };
+}
+
 /* ------------------------------------------------------------- the log */
 
 function turnHtml(t, i) {
@@ -116,12 +217,13 @@ function turnHtml(t, i) {
   const n = (t.sources || []).length;
   // a search: Quick facts, the diagrams, the clauses (an answer kept from
   // before the Codes page had no AI is shown the same way)
-  if (t.busy) a = `<div class="cx-found cx-wait">Finding the clauses ...</div>`;
+  if (t.busy) a = `<div class="cx-found cx-wait">Finding the summaries and the clauses ...</div>`;
   else if (t.err) a = `<p class="cx-why bad">${esc(t.why || "Not found")}</p>`;
   else {
-    a = factsHtml(t, i) + diagramsHtml(t, i)
-      + `<div class="cx-found">${n ? `${n} clause${n === 1 ? "" : "s"} found` : "No clause in the library matches - try the words the code uses"}`
-      + (n ? ` <button type="button" class="ghost" data-show="${i}">Show</button>` : "") + `</div>`;
+    a = kbHtml(t, i) + kbFactsHtml(t, i) + factsHtml(t, i) + kbFigsHtml(t, i) + diagramsHtml(t, i)
+      + `<div class="cx-found">${n ? `<b>Official text:</b> ${n} clause${n === 1 ? "" : "s"} in the Library` : "No clause in the Library matches - try the words the code uses"}`
+      + (n ? ` <button type="button" class="ghost" data-show="${i}">Show</button>` : "") + `</div>`
+      + ((t.kb || []).length ? `<p class="cx-disc">Summaries are the office's study notes - the official text prevails; check the clause.</p>` : "");
   }
   return `<div class="cx-turn" data-i="${i}">${q}${a}</div>`;
 }
@@ -130,7 +232,7 @@ function render() {
   const log = $("#cx-log");
   if (!CX.turns.length) {
     log.innerHTML = `<div class="cx-empty"><h3>Search the building codes</h3>`
-      + `<p class="muted">The clauses come from the documents in the office's library, with Quick facts - their figures and conditions - and the diagrams they refer to.</p>`
+      + `<p class="muted">Answers come from the office's knowledge base first - the summaries, topic guides and the current APSEC positions - then from the official clauses in the Library, with Quick facts and the diagrams.</p>`
       + `<div class="cx-eg">${["What is the maximum travel distance in a dead end?", "Minimum width of a required staircase serving 200 persons?",
         "When is a fireman's lift required?", "TRS 的要求是甚麼？"].map((x) => `<button type="button" class="ghost">${esc(x)}</button>`).join("")}</div></div>`;
     for (const b of log.querySelectorAll(".cx-eg button")) b.onclick = () => { $("#cx-q").value = b.textContent; $("#cx-q").focus(); };
@@ -213,8 +315,10 @@ async function find() {
   CX.turns.push({ q, kind: "search", sources: [], busy: true });
   render();
   try {
-    const r = await api("/api/codes/search?" + new URLSearchParams({ q, n: 25 }));
-    Object.assign(CX.turns[i], { sources: r.items, terms: r.terms, facts: r.facts || [], diagrams: r.diagrams || [], busy: false });
+    const [r, k] = await Promise.all([api("/api/codes/search?" + new URLSearchParams({ q, n: 25 })),
+      CX.kb && CX.kb.on ? api("/api/kb/search?" + new URLSearchParams({ q, n: 6 })).catch(() => null) : Promise.resolve(null)]);
+    Object.assign(CX.turns[i], { sources: r.items, terms: r.terms, facts: r.facts || [], diagrams: r.diagrams || [],
+      kb: k ? k.items : [], kbfacts: k ? k.facts : [], busy: false });
   } catch (e) { Object.assign(CX.turns[i], { busy: false, why: e.message, err: true }); }
   paintTurn(i);
   save();
@@ -239,30 +343,34 @@ async function catalogue(refresh) {
 
 async function openLibrary(tab) {
   closePop();
+  // the Library is a tab of its own: its documents, Find documents, and the knowledge base's set-up
+  showTab("lib", null, true);
   let r;
   try { r = await api("/api/codes/sources"); } catch (e) { return toast(e.message, true); }
   CX.kinds = r.kinds;
   const admin = CX.st && CX.st.manage;
+  const page = $("#cx-libpage");
   const back = document.createElement("div");
-  back.className = "t-modal-back";
-  back.innerHTML = `<div class="t-modal cx-libm"><div class="cx-libtabs"><h3>Library</h3><button type="button" class="cx-ltab on" data-lt="lib">In the library</button>`
-    + `<button type="button" class="cx-ltab" data-lt="find" title="The codes, PNAPs and practice notes the Buildings Department publishes">Find documents</button></div>`
-    + `<div class="cx-lib-body"></div><div class="cx-find-body" hidden></div>`
-    + `<div class="t-modal-foot"><span class="spacer"></span><button type="button" class="primary" data-x>Done</button></div></div>`;
-  document.body.appendChild(back);
-  const end = () => { back.remove(); loadStatus(); };
+  back.className = "cx-libpage-in";
+  back.innerHTML = `<div class="cx-libm cx-inline"><div class="cx-libtabs"><h3>Library</h3><button type="button" class="cx-ltab on" data-lt="lib">In the library</button>`
+    + `<button type="button" class="cx-ltab" data-lt="find" title="The codes, PNAPs and practice notes the Buildings Department publishes">Find documents</button>`
+    + `<span class="spacer"></span><button type="button" class="ghost" data-x title="Back to Search">Back to Search</button></div>`
+    + `<div class="cx-lib-body"></div><div class="cx-find-body" hidden></div></div>`;
+  page.innerHTML = "";
+  page.appendChild(back);
+  page.insertAdjacentHTML("beforeend", `<div class="cx-kbbox" id="cx-kbbox"></div>`);
+  paintKbBox();
+  const end = () => { loadStatus(); showTab("ask"); };
   back.querySelector("[data-x]").onclick = end;
-  back.addEventListener("pointerdown", (ev) => { if (ev.target === back) end(); });
-  back.addEventListener("keydown", (ev) => { if (ev.key === "Escape") end(); });
   const body = back.querySelector(".cx-lib-body");
   const fbody = back.querySelector(".cx-find-body");
   let PEND = null;          // a document fetched from the web, waiting for Add
-  const showTab = (t) => {
+  const libTab = (t) => {
     for (const b of back.querySelectorAll(".cx-ltab")) b.classList.toggle("on", b.dataset.lt === t);
     body.hidden = t !== "lib"; fbody.hidden = t !== "find";
     if (t === "find") paintFind();
   };
-  for (const b of back.querySelectorAll(".cx-ltab")) b.onclick = () => showTab(b.dataset.lt);
+  for (const b of back.querySelectorAll(".cx-ltab")) b.onclick = () => libTab(b.dataset.lt);
   const newerOf = (sid) => (CAT ? CAT.docs.find((d) => d.in_library === sid && d.newer) : null);
   const kindOpts = (sel) => CX.kinds.map((k) => `<option value="${k.id}"${k.id === sel ? " selected" : ""}>${esc(k.label)}</option>`).join("");
 
@@ -302,7 +410,7 @@ async function openLibrary(tab) {
       if (f) { PEND = null; $("#lb-got", body).textContent = ""; }
       if (f && !$("#lb-title", body).value) $("#lb-title", body).value = f.name.replace(/\.[^.]+$/, "");
     };
-    $("#lb-find", body).onclick = () => showTab("find");
+    $("#lb-find", body).onclick = () => libTab("find");
     $("#lb-get", body).onclick = () => getFromWeb($("#lb-web", body).value.trim());
     $("#lb-web", body).onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); getFromWeb($("#lb-web", body).value.trim()); } };
     for (const b of body.querySelectorAll("[data-newer]")) b.onclick = () => getFromWeb(b.dataset.newer);
@@ -339,7 +447,7 @@ async function openLibrary(tab) {
   // read (the BD catalogue, the address, the PDF) and put in the form
   async function getFromWeb(url) {
     if (!admin) return;
-    showTab("lib");
+    libTab("lib");
     const add = body.querySelector(".cx-add"); if (add) add.open = true;
     if (!/^https?:\/\//i.test(url || "")) return toast("A web address starting with https:// please", true);
     $("#lb-web", body).value = url;
@@ -403,7 +511,7 @@ async function openLibrary(tab) {
   }
 
   paint();
-  if (tab === "find") showTab("find");
+  if (tab === "find") libTab("find");
   else catalogue().then(() => { if (!body.dataset.marked && !PEND && !(body.querySelector("#lb-title") || {}).value) { body.dataset.marked = "1"; paint(); } }).catch(() => {});
 }
 
@@ -456,14 +564,26 @@ async function recent(btn) {
 /* Search the codes | GBP workbook (gbp.js): the workbook opens on first use;
    a § source in it finds that clause in the library here */
 let GBP_ON = false;
-function showTab(tab) {
+function showTab(tab, kbPath, quiet) {
   for (const b of document.querySelectorAll(".cx-tab")) b.classList.toggle("on", b.dataset.tab === tab);
   $("#codes").hidden = tab !== "ask";
   $("#gbp").hidden = tab !== "gbp";
+  $("#kbtab").hidden = tab !== "kb";
+  $("#libtab").hidden = tab !== "lib";
   try { localStorage.setItem("lwk-viewer:codes-tab", tab); } catch (e) {}
   const u = new URL(location.href);
-  if (tab === "gbp") u.searchParams.set("tab", "gbp"); else u.searchParams.delete("tab");
+  if (tab !== "ask") u.searchParams.set("tab", tab); else u.searchParams.delete("tab");
+  if (tab !== "kb") u.searchParams.delete("page");
   history.replaceState(null, "", u.pathname + u.search);
+  if (tab === "kb") {
+    paintKbBar();
+    const fr = $("#kb-frame");
+    if (CX.kb && CX.kb.on && (kbPath !== undefined && kbPath !== null ? true : !KB_LOADED)) {
+      const want = "/kb/" + String(kbPath || "").replace(/^\/+/, "");
+      if (KB_LOADED !== want) { fr.src = want; KB_LOADED = want; }
+    }
+  }
+  if (tab === "lib" && !quiet && !$("#cx-libpage").childElementCount) openLibrary();
   if (tab === "gbp" && !GBP_ON) {
     GBP_ON = true;
     mountGbp($("#gbp"), { findClause: (q) => { showTab("ask"); $("#cx-q").value = q; find(); } })
@@ -474,21 +594,29 @@ function showTab(tab) {
 async function start() {
   CX.me = await ensureSignedIn();
   header(CX.me);
-  for (const b of document.querySelectorAll(".cx-tab")) b.onclick = () => showTab(b.dataset.tab);
-  {
-    let t = new URLSearchParams(location.search).get("tab");
-    if (!t) { try { t = localStorage.getItem("lwk-viewer:codes-tab"); } catch (e) {} }
-    if (t === "gbp") showTab("gbp");
-  }
+  for (const b of document.querySelectorAll(".cx-tab")) b.onclick = () => (b.dataset.tab === "lib" ? openLibrary() : showTab(b.dataset.tab));
   load();
   render();
   await loadStatus();
+  {
+    const sp = new URLSearchParams(location.search);
+    let t = sp.get("tab");
+    if (!t) { try { t = localStorage.getItem("lwk-viewer:codes-tab"); } catch (e) {} }
+    if (t === "gbp") showTab("gbp");
+    else if (t === "kb") showTab("kb", sp.get("page") || null);
+    else if (t === "lib") openLibrary();
+  }
+  // the knowledge base's own page: Back / Home / a window of its own
+  $("#kb-back").onclick = () => { try { $("#kb-frame").contentWindow.history.back(); } catch (e) {} };
+  $("#kb-home").onclick = () => { KB_LOADED = ""; showTab("kb", ""); };
+  $("#kb-open").onclick = () => { let u = "/kb/"; try { u = $("#kb-frame").contentWindow.location.href; } catch (e) {} open(u, "_blank", "noopener"); };
   const q = new URLSearchParams(location.search).get("q");
   if (q) { $("#cx-q").value = q; history.replaceState(null, "", location.pathname + (project() ? "?project=" + encodeURIComponent(project()) : "")); }
   $("#cx-form").onsubmit = () => { find(); return false; };
   $("#cx-q").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); find(); } });
   $("#cx-new").onclick = () => { CX.turns = []; CX.shown = -1; save(); render(); $("#cx-side").classList.remove("on"); $("#cx-clauses").innerHTML = ""; $("#cx-q").focus(); };
   $("#cx-lib").onclick = () => openLibrary();
+  $("#cx-kbtop").onclick = () => showTab("kb");
   $("#cx-recent").onclick = () => recent($("#cx-recent"));
   $("#cx-side-x").onclick = () => $("#cx-side").classList.remove("on");
   const dgClick = (ev) => {
@@ -501,6 +629,10 @@ async function start() {
   $("#cx-clauses").addEventListener("click", (ev) => { dgClick(ev); });
   $("#cx-log").addEventListener("click", (ev) => {
     if (dgClick(ev)) return;
+    const kf = ev.target.closest("[data-kbf]");
+    if (kf) return openKb(kf.dataset.kbf);
+    const kc = ev.target.closest("[data-kb]");
+    if (kc) { const [ti, k] = kc.dataset.kb.split(":").map(Number); const x = CX.turns[ti] && CX.turns[ti].kb[k]; if (x) openKb(x.url + (x.anchor ? "#" + x.anchor : "")); return; }
     const fr = ev.target.closest(".cx-fref");
     if (fr) return showSources(Number(fr.dataset.turn), Number(fr.dataset.s));
     const s = ev.target.closest("[data-show]");

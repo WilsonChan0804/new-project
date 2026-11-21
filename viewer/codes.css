@@ -216,3 +216,51 @@ td.gb-ch::after { content: "\270e"; font-size: 10px; color: #9a6700; margin-left
 .cx-lb-img img { display: block; width: 100%; max-width: 1100px; height: auto; }
 .cx-lb-f { font-size: 11.5px; padding: 6px 12px; }
 @media (max-width: 800px) { .cx-dg { width: calc(50% - 5px); } .cx-dg img { height: 110px; } }
+
+/* the knowledge base's answers */
+.cx-kb { display: flex; flex-direction: column; gap: 8px; }
+.cx-kbc { border: 1px solid var(--line); border-left: 4px solid #4a78a8; border-radius: 8px; padding: 9px 12px; background: var(--panel); }
+.cx-kbc.cx-kb-guide { border-left-color: #2e7d32; }
+.cx-kbc.cx-kb-apsec { border-left-color: #c98a1b; }
+.cx-kbc.cx-kb-regulation, .cx-kbc.cx-kb-code { border-left-color: #7b5ea7; }
+.cx-kbc-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cx-kbk { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); white-space: nowrap; }
+.cx-kbt { border: 0; background: none; padding: 0; font: inherit; font-weight: 650; color: var(--ink); cursor: pointer; text-align: left; }
+.cx-kbt:hover { color: var(--accent-ink); text-decoration: underline; }
+.cx-kbt small { font-weight: 400; color: var(--muted); }
+.cx-kbs { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+.cx-kbx { font-size: 13px; line-height: 1.5; margin-top: 4px; color: var(--ink-2); }
+.cx-kbd summary { cursor: pointer; font-size: 12px; color: var(--accent-ink); margin-top: 4px; }
+.cx-kbr { white-space: pre-wrap; font-size: 13px; line-height: 1.5; max-height: 360px; overflow: auto; padding: 6px 0; }
+.cx-kbr hr { border: 0; border-top: 1px dashed var(--line); }
+.cx-kba { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; flex-wrap: wrap; }
+.cx-kba button { font-size: 12px; padding: 3px 8px; }
+.cx-facts-kb { border-color: #b9d3ef; }
+.cx-kbfig img { object-fit: contain; background: #fff; }
+
+/* the Knowledge base tab */
+#kbtab { display: flex; flex-direction: column; height: calc(100% - var(--hdr-h, 56px) - 41px); background: var(--panel); }
+#kbtab[hidden] { display: none; }
+.kb-bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: 12px; }
+.kb-bar button { font-size: 12.5px; padding: 4px 10px; }
+#kb-ver { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#kb-frame { flex: 1; width: 100%; border: 0; background: #fff; }
+#kb-frame[hidden] { display: none; }
+.kb-empty { margin: 40px auto; max-width: 560px; text-align: center; padding: 0 16px; }
+
+/* the Library tab */
+#libtab { height: calc(100% - var(--hdr-h, 56px) - 41px); overflow-y: auto; background: var(--bg); }
+#libtab[hidden] { display: none; }
+#cx-libpage { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.cx-libm.cx-inline { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+.cx-libm.cx-inline .cx-libtabs { display: flex; align-items: center; gap: 6px; }
+.cx-kbbox { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: 13px; }
+.cx-kbbox h3 { margin: 0 0 6px; }
+.cx-kbbox code { font-size: 12px; }
+.cx-kbform .cx-grid label[hidden] { display: none; }
+.cx-kbform .row.end { display: flex; justify-content: flex-end; gap: 8px; }
+.cx-ok { color: var(--ok); font-weight: 600; }
+@media (max-width: 800px) {
+  .cx-tabs { overflow-x: auto; white-space: nowrap; }
+  #cx-libpage { padding: 10px; }
+}
