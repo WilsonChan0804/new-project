@@ -41,6 +41,13 @@ tags:
     - **機房**（B(P)R 第 23(3)(b) 條）：「任何相類設施」包括消防控制中心、水缸、電掣房、變壓房等；圍牆厚度最多 **100 毫米**亦可不計算。
     - **停車場**：地庫 **100%** 不計；地面以上：首兩層 **100%**，其餘 **50%**（特殊情況除外）；車位須**預留電動車充電設施**（第 18 段）。
 
+## Diagram 圖解
+
+<figure markdown>
+  ![GFA concessions: prerequisites and the 10% cap. 樓面面積寬免：先決條件及 10% 上限。](../assets/figures/diagrams/gfa-concessions.svg){ width="537" loading=lazy }
+  <figcaption>GFA concessions: prerequisites and the 10% cap. 樓面面積寬免：先決條件及 10% 上限。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key clauses 主要條文
 
 !!! quote "Para. 1 — Calculation of GFA 總樓面面積的計算"

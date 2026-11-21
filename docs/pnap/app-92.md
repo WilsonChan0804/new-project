@@ -31,6 +31,13 @@ tags:
 
     - 取代走火守則第 14(3)(b) 段：如由房間出口只可**單向行走（盡頭路）**，房間內任何一點與出口或可通往 2 個或以上出口的地點之間的距離（直線距離加行走距離）不得超過 **18 米**；該點以後適用第 14 段的一般限制（第 1 段）。
 
+## Diagram 圖解
+
+<figure markdown>
+  ![Dead-end travel (18 m) compared with two-direction escape. 盡頭路與雙向逃生。](../assets/figures/diagrams/moe-deadend.svg){ width="760" loading=lazy }
+  <figcaption>Dead-end travel (18 m) compared with two-direction escape. 盡頭路與雙向逃生。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Related 相關文件
 
 | Document 文件 | Relationship 關係 |

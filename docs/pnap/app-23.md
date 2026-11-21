@@ -36,6 +36,13 @@ tags:
     - 佔用行車道時，單程行車線須保持 **≥ 3 米**、雙程 **5.5 米**；否則須向運輸署查詢是否需要**交通影響評估**（紅色／粉紅色路線、巴士走廊、距燈號路口 70 米內），並在申請前 **2 個月**提交（第 5 段）。
     - **行人通道淨闊度**見下表；**淨高 ≥ 2.3 米**；照明 **35–50 勒克斯**；保持公用設施沙井可達；公共道路上掘柱洞須取得**挖掘准許證**（第 28 章）（第 9–14 段）。
 
+## Diagram 圖解
+
+<figure markdown>
+  ![Covered walkway section with clear width and headroom (APP-23). 有蓋行人道剖面。](../assets/figures/diagrams/hoarding-section.svg){ width="760" loading=lazy }
+  <figcaption>Covered walkway section with clear width and headroom (APP-23). 有蓋行人道剖面。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table: pedestrian walkway clear width 行人通道淨闊度
 
 | Existing pavement 現有行人路 | Clear width 淨闊度 |

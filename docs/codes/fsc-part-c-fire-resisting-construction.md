@@ -42,6 +42,13 @@ tags:
     - **樓板及外牆**（C10–C11）：樓板開口四周設 **450 毫米下垂板**（設花灑）；中庭 ≤ **28,000 立方米**、≤ **15 米**高、≤ **3 層**；樓層之間設 **900 毫米窗間牆**或 **500 毫米伸建物**（設花灑者毋須）。
     - **特殊情況**：特殊危險地方 **-/120/120**（毗連防護出口 **-/240/240**）；地庫 **240/240/240**，排煙口 ≥ 樓面面積 **0.5%**；防火門**自動關閉**，底部縫隙 **≤ 10 毫米**；庇護層牆 **-/120/120**、樓板 **120/120/120**。
 
+## Diagram 圖解
+
+<figure markdown>
+  ![Vertical fire separation: 900 mm spandrel or 500 mm projection (FS Code); 900 mm apron under the 1996 code. 樓層間垂直防火分隔。](../assets/figures/diagrams/spandrel.svg){ width="760" loading=lazy }
+  <figcaption>Vertical fire separation: 900 mm spandrel or 500 mm projection (FS Code); 900 mm apron under the 1996 code. 樓層間垂直防火分隔。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Structure of Part C 第 C 部結構
 
 | Section 節 | Subsections 分節 | Topic 主題 |

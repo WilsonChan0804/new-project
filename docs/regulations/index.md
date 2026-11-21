@@ -11,6 +11,14 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | 123I | [Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations 《建築物（衞生設備標準、水管裝置、排水工程及廁所）規例》](bsfpwr-123i.md) | ✅ Complete 完成 |
 | 123N | [Building (Minor Works) Regulation 《建築物（小型工程）規例》](bmwr-123n.md) | ✅ Complete 完成 |
 | 123P | [Building (Inspection and Repair) Regulation 《建築物（檢驗及修葺）規例》](bir-123p.md) | ✅ Complete 完成 |
+| 123C | [Building (Demolition Works) Regulations 《建築物（拆卸工程）規例》](bdwr-123c.md) | ✅ Complete 完成 |
+| 123G | [Building (Private Streets and Access Roads) Regulations 《建築物（私家街道及通路）規例》](bpsar-123g.md) | ✅ Complete 完成 |
+| 123J | [Building (Ventilating Systems) Regulations 《建築物（通風系統）規例》](bvsr-123j.md) | ✅ Complete 完成 |
+| 123K | [Building (Oil Storage Installations) Regulations 《建築物（貯油裝置）規例》](bosir-123k.md) | ✅ Complete 完成 |
+| 123L | [Building (Appeal) Regulation 《建築物（上訴）規例》](bar-123l.md) | ✅ Complete 完成 |
+| 123M | [Building (Energy Efficiency) Regulation 《建築物（能源效率）規例》](beer-123m.md) | ✅ Complete 完成 |
+| 123O | [Building (Minor Works) (Fees) Regulation 《建築物（小型工程）（費用）規例》](bmwfr-123o.md) | ✅ Complete 完成 |
+| 123B, 123D, 123E | Building (Construction) Regulations, (Escalators), (Lifts) — **repealed** 已廢除 | Not included 不收錄 |
 
 ## Relationship diagram 關係圖
 
@@ -52,10 +60,15 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | [B(SFP&W)R, Cap. 123I](bsfpwr-123i.md) | Sanitary fitment numbers, occupancy rates, plumbing and drainage numbers, septic tanks, testing 衞生設備數目、排水 | ✅ Official text checked |
 | [B(I&R)R, Cap. 123P](bir-123p.md) | MBIS / MWIS inspection scope, standards, reports and deadlines 強制驗樓／驗窗範圍及期限 | ✅ Official text checked |
 | [Cap. 123H Refuse storage and material recovery](brsr-123h.md) | Refuse chambers (Schedule sizes), refuse rooms on every floor, refuse chutes 垃圾及物料回收房、回收室、垃圾槽 | ✅ Official text checked |
+| [Cap. 123C Demolition works](bdwr-123c.md) | Pre-demolition duties, fans and catch platforms, shoring, reverse-order demolition, TCP supervision 拆卸前責任、斜柵、支撐、逆序拆卸、監督 | ✅ Official text checked |
+| [Cap. 123G Private streets and access roads](bpsar-123g.md) | Street, cul-de-sac and access road widths, junctions, gradients, curves, surfacing, kerbs, drainage 街道闊度、交界、坡度、路面、排水 | ✅ Official text checked |
+| [Cap. 123J Ventilating systems](bvsr-123j.md) | Ducts through compartments, fire dampers, 12-monthly RSC inspection, 14-day certificate 防火閘、年檢、證明書 | ✅ Official text checked |
+| [Cap. 123K Oil storage installations](bosir-123k.md) | Licensing, operation instructions, RSE tank inspections, renewal 牌照、操作指示、貯油缸檢驗 | ✅ Official text checked |
+| [Cap. 123L Appeal](bar-123l.md) | Appeal Tribunal procedure and time limits (28 / 28 / 14 / 21 days) 上訴程序及期限 | ✅ Official text checked |
+| [Cap. 123M Energy efficiency](beer-123m.md) | OTTV for commercial buildings and hotels; sunshade projections ≤ 1.5 m disregarded 總熱傳送值、遮陽板 | ✅ Official text checked |
+| [Cap. 123O Minor works fees](bmwfr-123o.md) | Minor works contractor registration fees 小型工程承建商註冊費用 | ✅ Official text checked |
 
-!!! note "Not yet covered 尚未涵蓋"
-    Other regulations in force under Cap. 123: **123C** Building (Demolition Works) Regulations; **123G** Building (Private Streets and Access Roads) Regulations; **123J** Building (Ventilating Systems) Regulations; **123K** Building (Oil Storage Installations) Regulations; **123L** Building (Appeal) Regulation; **123M** Building (Energy Efficiency) Regulation; **123O** Building (Minor Works) (Fees) Regulation. (123B, 123D and 123E are repealed.)
-    《建築物條例》下其他現行附屬法例（123C、123G、123J、123K、123L、123M、123O）尚未整理；123B、123D、123E 已廢除。
+All regulations in force under Cap. 123 are now covered. 123B, 123D and 123E are repealed and not included. 《建築物條例》下所有現行附屬法例均已收錄；123B、123D、123E 已廢除。
 
 !!! tip "Bilingual legislation 雙語法例"
     Hong Kong ordinances have **official Chinese texts** of equal authenticity. Quote both from eLegislation instead of translating.

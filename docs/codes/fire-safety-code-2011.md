@@ -45,6 +45,13 @@ tags:
     - 主要限制：一般**盡頭路行走距離 18 米**、一般**最長行走距離 36 米**、規定樓梯之間最長 **48 米**；**耐火效能 60／120 分鐘**及防火隔室限制見**表 C1**。
     - 可按**「當作符合」**條文遵從，或採用**消防工程方法**（G 部）。
 
+## Diagram 圖解
+
+<figure markdown>
+  ![How the fire safety codes evolved. 消防安全守則演變。](../assets/figures/diagrams/fire-code-timeline.svg){ width="760" loading=lazy }
+  <figcaption>How the fire safety codes evolved. 消防安全守則演變。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table 1: Use Classification (Table A1) 用途類別（表 A1）
 
 | Class 類別 | Type 處所類型 | Typical examples 典型示例 |

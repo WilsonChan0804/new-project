@@ -102,3 +102,81 @@ All the timeline, workflow and relationship diagrams on one page. Click the link
   ![Who is responsible for what. 各方職責關係。](assets/figures/diagrams/roles-ap-rse-rge.svg){ width="653" loading=lazy }
   <figcaption>Who is responsible for what. 各方職責關係。 → [Full entry 詳細內容](pnap/app-141.md)</figcaption>
 </figure>
+
+## Regulations, codes and drawings 規例、守則及圖解
+
+<figure markdown>
+  ![Appeal timeline (Cap. 123L). 上訴時間表。](assets/figures/diagrams/appeal-timeline.svg){ width="700" loading=lazy }
+  <figcaption>Appeal timeline (Cap. 123L). 上訴時間表。 → [Full entry 詳細內容](regulations/bar-123l.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Ventilating system inspection cycle (Cap. 123J). 通風系統年檢。](assets/figures/diagrams/vent-annual.svg){ width="700" loading=lazy }
+  <figcaption>Ventilating system inspection cycle (Cap. 123J). 通風系統年檢。 → [Full entry 詳細內容](regulations/bvsr-123j.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Oil storage licence and inspection cycle (Cap. 123K). 貯油裝置牌照及檢驗。](assets/figures/diagrams/oil-cycle.svg){ width="700" loading=lazy }
+  <figcaption>Oil storage licence and inspection cycle (Cap. 123K). 貯油裝置牌照及檢驗。 → [Full entry 詳細內容](regulations/bosir-123k.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Signboard validation every 5 years. 招牌檢核。](assets/figures/diagrams/signboard-cycle.svg){ width="700" loading=lazy }
+  <figcaption>Signboard validation every 5 years. 招牌檢核。 → [Full entry 詳細內容](pnap/app-155.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![GFA concessions and the 10% cap. 樓面面積寬免。](assets/figures/diagrams/gfa-concessions.svg){ width="700" loading=lazy }
+  <figcaption>GFA concessions and the 10% cap. 樓面面積寬免。 → [Full entry 詳細內容](pnap/app-151.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Fire safety codes timeline. 消防守則演變。](assets/figures/diagrams/fire-code-timeline.svg){ width="700" loading=lazy }
+  <figcaption>Fire safety codes timeline. 消防守則演變。 → [Full entry 詳細內容](codes/fire-safety-code-2011.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![BFA 2008 to DMUA 2026. 無障礙設計手冊演變。](assets/figures/diagrams/ua-timeline.svg){ width="700" loading=lazy }
+  <figcaption>BFA 2008 to DMUA 2026. 無障礙設計手冊演變。 → [Full entry 詳細內容](pnap/app-41.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Contractor registers. 承建商名冊。](assets/figures/diagrams/contractor-registers.svg){ width="700" loading=lazy }
+  <figcaption>Contractor registers. 承建商名冊。 → [Full entry 詳細內容](pnap/app-96.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Private street cross-section (Cap. 123G). 私家街道剖面。](assets/figures/diagrams/street-section.svg){ width="700" loading=lazy }
+  <figcaption>Private street cross-section (Cap. 123G). 私家街道剖面。 → [Full entry 詳細內容](regulations/bpsar-123g.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Site classes A / B / C. 地盤類別。](assets/figures/diagrams/site-class.svg){ width="700" loading=lazy }
+  <figcaption>Site classes A / B / C. 地盤類別。 → [Full entry 詳細內容](regulations/bpr-18a-22.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Dead end vs two directions. 盡頭路與雙向。](assets/figures/diagrams/moe-deadend.svg){ width="700" loading=lazy }
+  <figcaption>Dead end vs two directions. 盡頭路與雙向。 → [Full entry 詳細內容](codes/fsc-part-b-means-of-escape.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Spandrel or projection. 窗間牆或伸建物。](assets/figures/diagrams/spandrel.svg){ width="700" loading=lazy }
+  <figcaption>Spandrel or projection. 窗間牆或伸建物。 → [Full entry 詳細內容](codes/fsc-part-c-fire-resisting-construction.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![EVA plan. 緊急車輛通道。](assets/figures/diagrams/eva-plan.svg){ width="700" loading=lazy }
+  <figcaption>EVA plan. 緊急車輛通道。 → [Full entry 詳細內容](codes/fsc-part-d-means-of-access.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![Covered walkway section. 有蓋行人道剖面。](assets/figures/diagrams/hoarding-section.svg){ width="700" loading=lazy }
+  <figcaption>Covered walkway section. 有蓋行人道剖面。 → [Full entry 詳細內容](pnap/app-23.md)</figcaption>
+</figure>
+
+<figure markdown>
+  ![ELS 45° zone. 45° 影響範圍。](assets/figures/diagrams/els-45.svg){ width="700" loading=lazy }
+  <figcaption>ELS 45° zone. 45° 影響範圍。 → [Full entry 詳細內容](pnap/app-57.md)</figcaption>
+</figure>
+

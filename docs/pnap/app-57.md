@@ -40,6 +40,11 @@ tags:
   <figcaption>Do I need ELS plans? 是否須呈交挖掘及側向承托圖則？ Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
 
+<figure markdown>
+  ![The 45° zone of influence for ELS plans (APP-57). 45° 影響範圍。](../assets/figures/diagrams/els-45.svg){ width="760" loading=lazy }
+  <figcaption>The 45° zone of influence for ELS plans (APP-57). 45° 影響範圍。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Key table: when ELS plans are required 何時須呈交
 
 | Condition 條件 | Threshold 門檻 |

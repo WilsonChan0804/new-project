@@ -41,6 +41,7 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **All remaining Cap. 123 regulations 所有其餘附屬法例**: [123C Demolition](regulations/bdwr-123c.md) · [123G Private streets](regulations/bpsar-123g.md) · [123J Ventilating systems](regulations/bvsr-123j.md) · [123K Oil storage](regulations/bosir-123k.md) · [123L Appeal](regulations/bar-123l.md) · [123M Energy efficiency](regulations/beer-123m.md) · [123O Minor works fees](regulations/bmwfr-123o.md); plus 15 new diagrams on the [Timelines & workflows](workflows.md) page.
 - **[Timelines & workflows 時間表及流程](workflows.md)**: 18 new diagrams for statutory periods, approval and consent, OP, minor works, MBIS, ELS, demolition and who-does-what.
 - **All PNAPs in force 全部現行作業備考** (Nov 2026): the remaining APP structural, geotechnical, fire and admin notes plus the full **ADM** and **ADV** series. See the [PNAP index](pnap/index.md).
 - **47 more architectural PNAPs 另加 47 份建築相關作業備考** (Nov 2026): APP-4 to APP-173, including [APP-13 Completion & record plans](pnap/app-13.md) · [APP-16 Cladding](pnap/app-16.md) · [APP-23 Hoardings](pnap/app-23.md) · [APP-41 BFA](pnap/app-41.md) · [APP-105 Water seepage](pnap/app-105.md) · [APP-116 Aluminium windows](pnap/app-116.md) · [APP-126 Signboards](pnap/app-126.md) · [APP-164 Drainage](pnap/app-164.md) · [APP-173 Student hostels](pnap/app-173.md). Full list in the [PNAP index](pnap/index.md).

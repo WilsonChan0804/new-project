@@ -188,5 +188,87 @@ D['regs-map'] = ('regulations/index.md',
   BO --> N["123N B(MW)R<br/>minor works 小型工程"]
   BO --> P["123P B(I&R)R<br/>inspection 檢驗及修葺"]
   F --> FS["FS Code 2011<br/>消防安全守則"]
-  F --> UA["Design Manual: Universal<br/>Accessibility 2026 暢通易達"]
+  F --> UA["Design Manual: Universal<br/>Accessibility 2026 暢道通行"]
   Q --> CD["Structural codes 結構守則"]''')
+
+D['vent-annual'] = ('regulations/bvsr-123j.md',
+ 'Annual inspection cycle for ventilating systems. 通風系統年檢周期。',
+'''flowchart TD
+  A["Owner keeps system safe and efficient<br/>擁有人保持系統安全有效"] --> B["RSC (ventilation works) inspects<br/>dampers, filters, precipitators<br/>專門承建商檢查"]
+  B -->|"certificate ≤ 14 days<br/>14 天內發證明書"| C["Certificate to owner<br/>copy to Director of Fire Services<br/>副本送消防處處長"]
+  C -->|"next inspection ≤ 12 months<br/>12 個月內再檢查"| B
+  D["FSD may test at any time<br/>消防處可隨時測試"] -.-> B''')
+
+D['oil-cycle'] = ('regulations/bosir-123k.md',
+ 'Oil storage licence and inspection cycle. 貯油裝置牌照及檢驗周期。',
+'''flowchart TD
+  A["Plans approved and built<br/>圖則批准及建成"] --> B["Licence application<br/>+ operation instructions<br/>申請牌照及操作指示"]
+  B --> C["Licence 12 months<br/>牌照 12 個月"]
+  C --> D["RSE inspections 註冊結構工程師檢驗:<br/>external shell and associated works yearly<br/>internal by year 10, then every 5 years"]
+  D -->|"certificates forthwith<br/>即時交證明書"| E["Renewal ≥ 2 months before expiry<br/>settlement records + RSE statement<br/>屆滿前 2 個月續牌"]
+  E --> C
+  D -.->|"defect 缺陷"| F["BA notice: empty or restrict tank<br/>清空或限制使用"]''')
+
+D['appeal-timeline'] = ('regulations/bar-123l.md',
+ 'Appeal timeline under Cap. 123L. 上訴時間表。',
+'''flowchart TD
+  A["Notice of appeal to Secretary<br/>copy to BA (BO s.47 period)<br/>上訴通知"] -->|"≤ 28 days<br/>28 天"| B["Appellant's statement of particulars<br/>上訴人詳情陳述書"]
+  B -->|"≤ 28 days<br/>28 天"| C["BA representations and documents<br/>建築事務監督申述"]
+  B -.->|"BA may ask further particulars ≤ 14 days<br/>14 天內要求詳情"| X["Reply ≤ 14 days<br/>14 天內回覆"]
+  C -.->|"appellant may ask ≤ 14 days"| X
+  C --> D["Hearing notice ≥ 21 days ahead<br/>聆訊前 21 天通知"]
+  D --> E["Public hearing<br/>公開聆訊"]
+  E --> F["Decision with reasons<br/>served on both sides<br/>決定及理由"]''')
+
+D['gfa-concessions'] = ('pnap/app-151.md',
+ 'GFA concessions: prerequisites and the 10% cap. 樓面面積寬免：先決條件及 10% 上限。',
+'''flowchart TD
+  A["Proposed green / amenity features and<br/>non-mandatory plant rooms<br/>綠化／適意設施及非強制機房"] --> B{"Prerequisites met?<br/>符合先決條件？"}
+  B -->|"No 否"| N["No concession<br/>不獲寬免"]
+  B -->|"Yes 是"| C["SBD Guidelines (APP-152)<br/>+ energy efficiency (APP-156)<br/>+ BEAM Plus registration"]
+  C --> D{"Total of capped items<br/>≤ 10% of GFA?<br/>受上限項目 ≤ 10%？"}
+  D -->|"Yes 是"| OK["Concession granted<br/>獲寬免"]
+  D -->|"No 否"| T["Excess counts as GFA<br/>超出部分計入樓面面積"]
+  O["Outside the cap 不受上限:<br/>car parks, mandatory plant rooms,<br/>podium / sky gardens, hotel items"] -.-> OK''')
+
+D['signboard-cycle'] = ('pnap/app-155.md',
+ 'Signboard validation every 5 years. 招牌每 5 年檢核。',
+'''flowchart LR
+  A["Unauthorised signboard<br/>erected before 2 Sep 2013<br/>違例招牌"] --> B{"Within minor works specs?<br/>符合小型工程規格？"}
+  B -->|"No 否"| E["Enforcement / removal<br/>執法或拆除"]
+  B -->|"Yes 是"| C["Inspect, strengthen, certify<br/>SC01 / SC02 / SC03<br/>檢查、加固、核證"]
+  C --> D["Validated for 5 years<br/>有效 5 年"]
+  D -->|"after 5 years<br/>5 年後"| F{"Re-validate?<br/>再檢核？"}
+  F -->|"Yes 是"| C
+  F -->|"No 否"| E''')
+
+D['fire-code-timeline'] = ('codes/fire-safety-code-2011.md',
+ 'How the fire safety codes evolved. 消防安全守則演變。',
+'''flowchart LR
+  A["1995<br/>MOA Code 救援通道守則<br/>(APP-75)"] --> B["1996<br/>FRC Code 1 Aug 1996<br/>MOE Code 1 Dec 1996<br/>(APP-80, 82)"]
+  B --> C["1996–2004<br/>amendments 修訂<br/>(APP-83, 92, 121, 123)<br/>MOA Code 2004"]
+  C --> D["Sep 2011<br/>FS Code published<br/>消防安全守則發布"]
+  D --> E["1 Apr 2012<br/>FS Code in operation<br/>實施 (APP-153)"]
+  E --> F["Jun 2023 Edition<br/>現行版本"]''')
+
+D['contractor-registers'] = ('pnap/app-96.md',
+ 'The three contractor registers. 三份承建商名冊。',
+'''flowchart TD
+  R["Contractor registers<br/>BO s.8A 承建商名冊"] --> G["General Building Contractors<br/>一般建築承建商 (RGBC)"]
+  R --> S["Specialist Contractors<br/>專門承建商 (RSC)"]
+  R --> M["Minor Works Contractors<br/>小型工程承建商 (RMWC)"]
+  S --> S1["Demolition 拆卸"]
+  S --> S2["Foundation 地基"]
+  S --> S3["GI field works 土地勘測"]
+  S --> S4["Site formation 地盤平整"]
+  S --> S5["Ventilation 通風"]
+  M --> M1["Company 公司<br/>classes I–III by type"]
+  M --> M2["Individual 個人<br/>Class III items"]''')
+
+D['ua-timeline'] = ('pnap/app-41.md',
+ 'From the BFA Design Manual 2008 to the Universal Accessibility manual 2026. 由暢通無阻設計手冊到暢道通行設計手冊。',
+'''flowchart LR
+  A["2008<br/>Design Manual:<br/>Barrier Free Access<br/>暢通無阻的通道"] --> B["2012–2024<br/>Amendments App. C–I<br/>修訂"]
+  B --> C["2025<br/>App. J elderly-friendly<br/>長者友善 (Ch. 6)"]
+  C --> D["Sep 2026<br/>DMUA 2026 replaces BFA 2008<br/>暢道通行 2026 (APP-176)"]
+  D --> E["B(P)R reg. 73<br/>elderly-friendly design<br/>in force 1 Aug 2026"]''')

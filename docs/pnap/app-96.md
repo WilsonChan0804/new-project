@@ -35,3 +35,10 @@ tags:
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · English only for now; Chinese text is an unofficial translation (中譯（非官方）).</small>
+## Diagram 圖解
+
+<figure markdown>
+  ![The three contractor registers. 三份承建商名冊。](../assets/figures/diagrams/contractor-registers.svg){ width="760" loading=lazy }
+  <figcaption>The three contractor registers. 三份承建商名冊。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+

@@ -39,6 +39,13 @@ tags:
     - **緊急車輛通道**（未開發地盤）：車路闊 **7.3 米**（或 **6 米**硬鋪面）；淨空 **4.5 米**；斜度 ≤ **1:10**（不服務主要立面的部分 1:6）；供 **30 噸、12 米長**、迴轉圈 **26 米**的消防車使用；須服務 **≥ ¼ 建築物周邊**，距立面 **10 米**內；工業建築物須在**兩個相對立面**設緊急車輛通道。
     - 低火警風險或地形限制可申請**豁免**緊急車輛通道，須提交**消防安全評估報告**並提供**加強消防安全措施**（D25–D26）。
 
+## Diagram 圖解
+
+<figure markdown>
+  ![EVA plan: width, distance from façade and perimeter served (FS Code Part D). 緊急車輛通道平面。](../assets/figures/diagrams/eva-plan.svg){ width="760" loading=lazy }
+  <figcaption>EVA plan: width, distance from façade and perimeter served (FS Code Part D). 緊急車輛通道平面。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Structure of Part D 第 D 部結構
 
 | Section 節 | Subsections 分節 | Topic 主題 |

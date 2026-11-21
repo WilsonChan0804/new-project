@@ -38,6 +38,13 @@ tags:
     - **庇護層**：超過 **25 層**的建築物，每隔不多於 **25 層**（用途類別 6 為 **20 層**）須設一層；淨庇護面積 ≥ 該層總樓面面積 **50%**；26–40 層的住用及綜合用途建築物可以**主天台**代替（B18）。
     - **殘疾人士**：每層每個防火隔室的防護出口或消防員升降機門廊須設 **1.5 米 × 1.5 米臨時庇護處**，相距 ≤ **60 米**，並設閉路電視及對講機（B30）。
 
+## Diagram 圖解
+
+<figure markdown>
+  ![Dead-end travel (18 m) compared with two-direction escape. 盡頭路與雙向逃生。](../assets/figures/diagrams/moe-deadend.svg){ width="760" loading=lazy }
+  <figcaption>Dead-end travel (18 m) compared with two-direction escape. 盡頭路與雙向逃生。 Diagram prepared for this site; check the source text for exact wording.</figcaption>
+</figure>
+
 ## Structure of Part B 第 B 部結構
 
 | Section 節 | Subsections 分節 | Topic 主題 |
