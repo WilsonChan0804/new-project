@@ -30,14 +30,22 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [APP-93](app-93.md) | Planning and Design of Drainage Works 規劃及設計排水工程 | Drainage 排水 | May 2014 | ✅ Checked |
 | [APP-104](app-104.md) | Exclusion of Floor Areas for Recreational Use 豁免計算入總樓面面積的康樂設施 | Clubhouse 會所 | Jul 2025 | ✅ Checked |
 | [APP-108](app-108.md) | Dedication of Land/Area for Use as Public Passage 撥供公眾作通道用途的土地／樓面 | Bonus GFA 額外總樓面面積 | Jun 2003 | ✅ Checked |
+| [APP-110](app-110.md) | Protective Barriers 防護欄障 | Barriers 欄障 | Jan 2026 | ✅ Checked |
 | [APP-111](app-111.md) | Design of Car Parks and Loading/Unloading Facilities 停車場及上落客貨設施的設計 | Car parks 停車場 | Jul 2019 | ✅ Checked |
 | [APP-117](app-117.md) | Structural Requirements for A&A Works in Existing Buildings 現存樓宇改動及加建工程的結構規定 | Structural A&A 結構改動 | Dec 2000 | ✅ Checked |
 | [APP-122](app-122.md) | Provision of Sky Garden in Refuge Floor 在庇護層設置空中花園 | Refuge floor 庇護層 | Sep 2010 | ✅ Checked |
+| [APP-130](app-130.md) | Lighting and Ventilation – Performance-based Approach 照明及通風規定－以效能表現為本的方法 | UVA, VDF 照明通風 | Dec 2016 | ✅ Checked |
 | [APP-132](app-132.md) | Site Coverage and Open Space Provision 上蓋面積及建築物周圍的空地 | SC flexibility 上蓋面積 | Dec 2012 | ✅ Checked |
+| [APP-136](app-136.md) | Emergency Vehicular Access 緊急車輛通道 | EVA 緊急車輛通道 | Jul 2006 | ✅ Checked |
 | [APP-147](app-147.md) | Minor Works Control System 小型工程監管制度 | Minor works 小型工程 | Sep 2021 | ✅ Checked |
+| [APP-150](app-150.md) | Wholesale Conversion of Industrial Buildings 改裝整幢工業大廈 | Conversion 改裝 | Jun 2013 | ✅ Checked |
 | [APP-151](app-151.md) | Building Design to Foster a Quality and Sustainable Built Environment 優化建築設計 締造可持續建築環境 | GFA concessions 樓面面積寬免 | Jul 2025 | ✅ Checked |
 | [APP-152](app-152.md) | Sustainable Building Design Guidelines 可持續建築設計指引 | SBD 可持續建築設計 | Sep 2023 | ✅ Checked |
 | [APP-156](app-156.md) | Energy Efficiency of Residential Buildings 住宅樓宇的能源效益設計及建造規定 | Energy 能源效益 | Sep 2025 | ✅ Checked |
+| [APP-163](app-163.md) | Code of Practice on Access for External Maintenance 2021 外部維修通道作業守則 | M&R access 維修通道 | Sep 2024 | ✅ Checked |
+| [APP-172](app-172.md) | RCHE and RCHD 安老院及殘疾人士院舍 | Care homes 院舍 | Apr 2024 | ✅ Checked |
+| [APP-175](app-175.md) | Elderly-friendly Building Design 長者友善樓宇設計 | Reg. 73 第 73 條 | Aug 2026 | ✅ Checked |
+| [APP-176](app-176.md) | Design Manual on Universal Accessibility 暢道通行設計手冊 | DMUA 2026 | Sep 2026 | ✅ Checked |
 
 ## ADM series 行政系列
 
@@ -68,4 +76,4 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 
 ## Suggested next 建議下一批
 
-APP-55 (plan processing fees 圖則處理費用), APP-126 (signboards 招牌), APP-130 (lighting and ventilation 照明及通風), APP-148 (minor works contractors 小型工程承建商), APP-155 (signboard validation 招牌檢核), Code of Practice on Access for External Maintenance 2021 (外部維修通道), Code of Practice for Site Supervision (地盤監督).
+Architectural PNAPs continue in batches: APP-14 (cinemas / PPE), APP-29 (lifts), APP-41 (BFA), APP-65 (staircase lighting), APP-69 (historic buildings), APP-86 (partitions), APP-95 (show flats), APP-98 (bathroom L&V), APP-101 (podium height), APP-105 (water seepage), APP-106, APP-112, APP-116, APP-119, APP-124, APP-125, APP-126, APP-146, APP-154, APP-155, APP-159, APP-162, APP-164, APP-166, APP-173, and more.

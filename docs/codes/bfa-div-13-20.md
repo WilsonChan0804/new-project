@@ -18,6 +18,10 @@ tags:
     | **Source 原文** | [BFA 2008 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/BFA2008_e.pdf), pp. 81–120 |
     | **Last checked 最後核對** | 2026-11-20 against the 2025 Edition |
 
+!!! warning "Superseded by DMUA 2026 已被 DMUA 2026 取代"
+    BD issued the **Design Manual on Universal Accessibility 2026** (see [APP-176](../pnap/app-176.md)), which replaces this BFA 2008 Manual. The **obligatory** clauses here still match the statutory **B(P)R Third Schedule**; best-practice items may differ in the DMUA.
+    屋宇署已發出《設計手冊：暢道通行2026》（見 APP-176）取代本手冊；本頁的**強制性**條文仍與 B(P)R 附表 3 相同，良好作業部分或有不同。
+
 ## At a glance 重點摘要
 
 === "English"

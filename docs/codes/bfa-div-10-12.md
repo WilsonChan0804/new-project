@@ -18,6 +18,10 @@ tags:
     | **Source 原文** | [BFA 2008 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/BFA2008_e.pdf), pp. 57–80 |
     | **Last checked 最後核對** | 2026-11-20 against the 2025 Edition |
 
+!!! warning "Superseded by DMUA 2026 已被 DMUA 2026 取代"
+    BD issued the **Design Manual on Universal Accessibility 2026** (see [APP-176](../pnap/app-176.md)), which replaces this BFA 2008 Manual. The **obligatory** clauses here still match the statutory **B(P)R Third Schedule**; best-practice items may differ in the DMUA.
+    屋宇署已發出《設計手冊：暢道通行2026》（見 APP-176）取代本手冊；本頁的**強制性**條文仍與 B(P)R 附表 3 相同，良好作業部分或有不同。
+
 !!! warning "Stricter rules since 2026 for some buildings 2026 年起部分建築物要求較嚴"
     Where **B(P)R reg. 73 / Fourth Schedule** applies (residential and commercial "specified buildings"), doors on regulated routes and main entrance doors of flats need **850 mm** clear width (Manual: 800 mm) and thresholds **≤ 15 mm** (Manual: 20 mm). See [B(P)R 71–73](../regulations/bpr-71-73.md).
     適用第 73 條／附表 4 的建築物，受規管路徑上的門及單位主要入口門淨闊須 **850 毫米**（手冊為 800 毫米），門檻 **≤ 15 毫米**（手冊為 20 毫米）。

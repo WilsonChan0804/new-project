@@ -41,6 +41,7 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **PNAPs:** [APP-130 L&V](pnap/app-130.md) · [APP-175 Elderly-friendly](pnap/app-175.md) · [APP-176 DMUA 2026](pnap/app-176.md) · [APP-110 Barriers](pnap/app-110.md) · [APP-136 EVA](pnap/app-136.md) · [APP-163 Maintenance access](pnap/app-163.md) · [APP-150 IB conversion](pnap/app-150.md) · [APP-172 RCHE](pnap/app-172.md)
 - **BFA Manual in full 暢通無阻設計手冊全部:** [Div. 1–3](codes/bfa-div-1-3.md) · [Div. 4–9](codes/bfa-div-4-9.md) · [Div. 10–12](codes/bfa-div-10-12.md) · [Div. 13–20](codes/bfa-div-13-20.md) · [Ch. 5–6](codes/bfa-ch-5-6.md)
 - [Cap. 123H Refuse & material recovery 垃圾及物料回收房](regulations/brsr-123h.md) · [JPN 9 Bonus PR pilot scheme 額外地積比率先導計劃](pnap/jpn-9.md)
 - **Building regulations 建築物規例:** [B(A)R 123A](regulations/bar-123a.md) · [B(C)R 123Q](regulations/bcr-123q.md) · [B(MW)R 123N](regulations/bmwr-123n.md) · [B(SFP&W)R 123I](regulations/bsfpwr-123i.md) · [B(I&R)R 123P](regulations/bir-123p.md)
