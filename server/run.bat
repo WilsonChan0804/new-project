@@ -42,7 +42,7 @@ if errorlevel 1 (
 )
 
 REM Programme > Import of .mpp files is read by MPXJ, which needs Java (11 or later).
-python -c "import mpxj" 2>nul
+python -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('mpxj') else 1)" 2>nul
 if errorlevel 1 (
   echo Installing MPXJ for reading MS Project .mpp files, one time only...
   python -m pip install "mpxj>=13" || echo MPXJ could not be installed - Programme imports MS Project XML, not .mpp.
