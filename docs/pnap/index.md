@@ -14,6 +14,13 @@ tags:
   - Green & amenity features 環保及適意設施
   - GFA 總樓面面積
   - Domestic 住用
+  - Foundation 地基
+  - Fire resisting construction 耐火結構
+  - Fire safety 消防安全
+  - Demolition 拆卸
+  - Sustainable building design 可持續建築設計
+  - Site safety 地盤安全
+  - Site coverage 上蓋面積
 ---
 # PNAP 認可人士作業備考
 

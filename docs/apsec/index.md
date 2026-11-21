@@ -8,6 +8,13 @@ tags:
   - Concrete & materials 混凝土及物料
   - Drainage 排水
   - Site safety 地盤安全
+  - Geotechnical 岩土
+  - Excavation & ELS 挖掘
+  - Energy efficiency 能源效率
+  - Domestic 住用
+  - Barrier free access 無障礙
+  - Site supervision 地盤監督
+  - Site coverage 上蓋面積
 ---
 
 # APSEC Discussion Forum<br><small>認可人士及註冊結構工程師委員會討論會</small>

@@ -14,6 +14,13 @@ tags:
   - Minor works 小型工程
   - Hotel 酒店
   - Energy efficiency 能源效率
+  - Building height 建築物高度
+  - Geotechnical 岩土
+  - Fire resisting construction 耐火結構
+  - Drainage 排水
+  - Curtain wall & façade 幕牆及外牆
+  - Refuge floor 庇護層
+  - Means of escape 逃生途徑
 ---
 # HK Building Regulations Knowledge Base<br>香港建築法規知識庫
 
@@ -58,6 +65,8 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **More topic guides 更多專題指南**: [Lighting & ventilation 照明及通風](guides/lighting-ventilation.md) · [Submission to OP + checklist 呈交至佔用許可證及核對清單](guides/submission-to-op.md) · [Barrier-free & universal accessibility 無障礙及暢道通行](guides/barrier-free-access.md) · [Minor works 小型工程](guides/minor-works.md), plus the [MW Technical Guidelines 小型工程技術指引](regulations/mw-technical-guidelines.md).
+- **Reading aids 閱讀輔助**: back button, automatic links to referenced documents, highlighted key figures, and shared **editing with the editor's name shown** (see [How to use](how-to-use.md)).
 - **New topic guides 專題指南**: [GFA calculation & concessions 總樓面面積及寬免](guides/gfa.md) · [Site coverage, plot ratio & site area 上蓋面積及地積比率](guides/site-coverage-plot-ratio.md). The whole picture on one page, with the latest APSEC positions.
 - **Browse by topic 按主題瀏覽**: every page now carries topic tags; see the [tag index](tags.md). APSEC items now include the **original diagrams**.
 - **[APSEC Discussion Forum 討論會](apsec/index.md)**: 764 BD clarifications from 39 meetings (Nov 2017 to Aug 2026), linked from 112 regulation, code and PNAP pages under **APSEC clarifications**; where a question was revisited, the latest position is shown.

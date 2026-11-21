@@ -295,3 +295,34 @@ D['scpr-guide-flow'] = ('guides/site-coverage-plot-ratio.md',
   D --> E["Step 5: Adjustments 調整<br/>bonus for dedication or surrender (B(P)R 22,<br/>APP-108, APP-20) · SC flexibility (APP-132)<br/>· projections disregarded (APP-19)"]
   E --> F["Step 6: Other controls 其他管制<br/>OZP PR / height / SC (JPN 4, 5, 7)<br/>· lease · open space (reg. 25)"]
   F --> G["Permitted GFA = site area × PR<br/>准許總樓面面積 = 地盤面積 × 地積比率"]''')
+
+D['lv-guide-flow'] = ('guides/lighting-ventilation.md',
+ 'Lighting and ventilation: prescriptive or performance route. 照明及通風：規定或性能方法。',
+'''flowchart TD
+  A["Room type 房間類別"] --> B{"Habitable room, office<br/>or kitchen?<br/>居住房間、辦公室或廚房？"}
+  B -->|"WC / bathroom 浴室"| W["B(P)R 36: window glass ≥ 1/10,<br/>opening ≥ 1/10 of floor<br/>or APP-98 internal bathroom: 5 ACH"]
+  B -->|"Yes 是"| C{"Prescribed window possible?<br/>B(P)R 30–32<br/>可設訂明窗？"}
+  C -->|"Yes 是"| P["Prescriptive 規定方法:<br/>glass ≥ 1/10, openable ≥ 1/16,<br/>faces 4.5 m street or 21 m² RHP,<br/>room depth ≤ 9 m"]
+  C -->|"No / partly 否"| Q["Performance-based APP-130 性能方法:<br/>VDF ≥ 8% (4% kitchen),<br/>1.5 ACH natural; UVA cone;<br/>cross ventilation → depth 12 m"]
+  C -->|"Office cannot meet reg. 31<br/>辦公室"| M["B(P)R 34: mechanical 5 ACH<br/>+ artificial light (ADV-30)"]
+  Q --> S["Form BA16 with simulation / Appendix A<br/>以 BA16 申請"]''')
+
+D['bfa-route'] = ('guides/barrier-free-access.md',
+ 'The continuous accessible route. 連續無障礙通道。',
+'''flowchart LR
+  A["Lot boundary / street<br/>地段界線"] --> B["Accessible route ≥ 1 050 mm<br/>(≥ 1 200 mm reg. 73)<br/>ramp ≤ 1:12<br/>無障礙通道"]
+  B --> C["Accessible entrance<br/>door ≥ 800 mm (850 mm reg. 73)<br/>threshold ≤ 15 mm<br/>無障礙入口"]
+  C --> D["Accessible lift<br/>≥ 1 200 × 1 100 mm<br/>(1 200 × 1 400 reg. 73)<br/>無障礙升降機"]
+  D --> E["Facilities 設施:<br/>accessible toilet, counters,<br/>seating, parking<br/>暢通易達洗手間等"]''')
+
+D['mw-route'] = ('guides/minor-works.md',
+ 'Which route for small building works? 小型建築工程應走哪條途徑？',
+'''flowchart TD
+  A["Proposed small works<br/>擬進行的小規模工程"] --> B{"Listed as Designated Exempted<br/>Works (B(MW)R Sch. 2)?<br/>指定豁免工程？"}
+  B -->|"Yes 是"| E["No submission; follow DEW conditions<br/>毋須呈交，按條件施工"]
+  B -->|"No 否"| C{"Within a minor works item<br/>(187 items, Sch. 1)?<br/>屬小型工程項目？"}
+  C -->|"No 否"| F["Full approval and consent<br/>BO s.14 (Forms BA5 / BA8)<br/>須事先批准及同意"]
+  C -->|"Yes 是"| D{"Class 級別"}
+  D -->|"Class I"| G["AP (+ RSE) and PRC; notice + plans<br/>≥ 7 days before; certificate ≤ 14 days"]
+  D -->|"Class II"| H["PRC; notice ≥ 7 days before;<br/>certificate ≤ 14 days"]
+  D -->|"Class III"| I["PRC; one submission<br/>≤ 14 days after completion"]''')

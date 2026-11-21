@@ -17,6 +17,11 @@ tags:
   - Maintenance access 維修通道
   - GFA concession 樓面面積寬免
   - Foundation 地基
+  - Plumbing & sanitary 衞生設備
+  - Occupation permit 佔用許可證
+  - Means of access 救援通道
+  - Sustainable building design 可持續建築設計
+  - Refuse 垃圾
 ---
 
 # ADV-33 Essential Information in Plan Submissions<br><small>呈交圖則包含的重要資料</small>

@@ -25,6 +25,12 @@ theme:
   icon:
     logo: material/office-building
 
+hooks:
+  - hooks/autolink.py
+
+extra_javascript:
+  - javascripts/kb.js
+
 extra_css:
   - stylesheets/lwk.css
 
@@ -52,12 +58,19 @@ markdown_extensions:
   - pymdownx.critic
   - pymdownx.mark
   - pymdownx.keys
+  - pymdownx.tasklist:
+      custom_checkbox: true
+      clickable_checkbox: true
 
 nav:
   - Home 主頁: index.md
   - Topic guides 專題指南:
       - GFA & concessions 總樓面面積及寬免: guides/gfa.md
       - Site coverage & plot ratio 上蓋面積及地積比率: guides/site-coverage-plot-ratio.md
+      - Lighting & ventilation 照明及通風: guides/lighting-ventilation.md
+      - Submission to OP + checklist 呈交至佔用許可證: guides/submission-to-op.md
+      - Barrier-free & universal accessibility 無障礙及暢道通行: guides/barrier-free-access.md
+      - Minor works 小型工程: guides/minor-works.md
   - Timelines & workflows 時間表及流程: workflows.md
   - APSEC Discussion Forum 討論會:
       - apsec/index.md
@@ -337,6 +350,7 @@ nav:
       - Cap. 123L Appeal 上訴: regulations/bar-123l.md
       - Cap. 123M Energy efficiency 能源效率: regulations/beer-123m.md
       - Cap. 123O Minor works fees 小型工程費用: regulations/bmwfr-123o.md
+      - MW Technical Guidelines 小型工程技術指引: regulations/mw-technical-guidelines.md
   - Codes of Practice 作業守則:
       - codes/index.md
       - FS Code 2011 消防安全守則: codes/fire-safety-code-2011.md

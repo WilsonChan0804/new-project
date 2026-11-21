@@ -14,6 +14,13 @@ tags:
   - Site area & classification 地盤面積及分類
   - Protective barrier 防護欄障
   - Means of access 救援通道
+  - Hotel 酒店
+  - Elderly-friendly 長者友善
+  - Site safety 地盤安全
+  - Signboard 招牌
+  - Occupation permit 佔用許可證
+  - Means of escape 逃生途徑
+  - Curtain wall & façade 幕牆及外牆
 ---
 # Ordinance & Regulations 條例及規例
 
@@ -84,6 +91,7 @@ Official text 官方文本: [eLegislation 電子版香港法例](https://www.ele
 | [Cap. 123L Appeal](bar-123l.md) | Appeal Tribunal procedure and time limits (28 / 28 / 14 / 21 days) 上訴程序及期限 | ✅ Official text checked |
 | [Cap. 123M Energy efficiency](beer-123m.md) | OTTV for commercial buildings and hotels; sunshade projections ≤ 1.5 m disregarded 總熱傳送值、遮陽板 | ✅ Official text checked |
 | [Cap. 123O Minor works fees](bmwfr-123o.md) | Minor works contractor registration fees 小型工程承建商註冊費用 | ✅ Official text checked |
+| [MW Technical Guidelines 小型工程技術指引](mw-technical-guidelines.md) | Item thresholds, DEW, procedures, recommended details; Aug 2026 elderly-friendly amendment 項目門檻及建議詳圖 | ✅ Checked (Chinese-only source) |
 
 All regulations in force under Cap. 123 are now covered. 123B, 123D and 123E are repealed and not included. 《建築物條例》下所有現行附屬法例均已收錄；123B、123D、123E 已廢除。
 

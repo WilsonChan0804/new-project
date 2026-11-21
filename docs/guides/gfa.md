@@ -14,6 +14,12 @@ tags:
   - Hotel 酒店
   - Site coverage 上蓋面積
   - Refuse 垃圾
+  - Registration 註冊
+  - Refuge floor 庇護層
+  - Curtain wall & façade 幕牆及外牆
+  - Occupation permit 佔用許可證
+  - Elderly-friendly 長者友善
+  - Barrier free access 無障礙
 ---
 
 # GFA calculation and GFA concessions<br><small>總樓面面積計算及寬免（專題指南）</small>

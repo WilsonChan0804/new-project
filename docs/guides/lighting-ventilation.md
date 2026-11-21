@@ -1,0 +1,136 @@
+---
+tags:
+  - Topic guide 專題指南
+  - Lighting & ventilation 照明及通風
+  - Prescribed window 訂明的窗
+  - Domestic 住用
+  - Kitchen 廚房
+  - Bathroom 浴室
+  - Staircase 樓梯
+  - Fire safety 消防安全
+  - Balcony & utility platform 露台及工作平台
+  - Fire resisting construction 耐火結構
+  - Means of escape 逃生途徑
+---
+
+# Lighting and ventilation<br><small>照明及通風（專題指南）</small>
+
+!!! abstract "What this guide covers 本指南內容"
+    Natural lighting and ventilation for **habitable rooms, offices, kitchens, bathrooms and lavatories**: the prescriptive window rules, the **performance-based** alternative, mechanical ventilation, open kitchens and common areas, and the latest APSEC positions.
+    **居住房間、辦公室、廚房、浴室及洗手間**的天然照明及通風：訂明窗規定、**性能為本**方法、機械通風、開放式廚房及公用地方，以及 APSEC 最新立場。
+
+    Main sources 主要來源: [B(P)R 29–37](../regulations/bpr-24-37.md) · [B(P)R 71](../regulations/bpr-71-73.md) · [APP-130](../pnap/app-130.md) · [APP-98](../pnap/app-98.md) · [ADV-30](../pnap/adv-30.md) · [ADV-25](../pnap/adv-25.md) · [ADV-26](../pnap/adv-26.md) · [APP-150](../pnap/app-150.md) · [FS Code Part B](../codes/fsc-part-b-means-of-escape.md)
+
+## The big picture 整體概念
+
+<figure markdown>
+  ![Lighting and ventilation decision route](../assets/figures/diagrams/lv-guide-flow.svg){ width="600" loading=lazy }
+  <figcaption>Choosing the prescriptive or performance-based route. 選擇規定或性能方法。 Diagram prepared for this site.</figcaption>
+</figure>
+
+## 1. The prescriptive rules (B(P)R 29–33) 規定方法
+
+| Requirement 要求 | Standard 標準 | Reg. 條 |
+|---|---|---|
+| Which rooms 適用房間 | Rooms for **habitation**, **offices** and **kitchens** 居住房間、辦公室及廚房 | 29–31 |
+| Window glass area 玻璃面積 | ≥ **1/10** of the floor area 樓面面積十分之一 | 30 |
+| Openable area 可開啟面積 | ≥ **1/16** of the floor area; top of opening ≥ **2 m** above floor 十六分之一，開口頂部離地 ≥ 2 米 | 30 |
+| What the window faces 窗面向 | A street ≥ **4.5 m** wide, or a clear **rectangular horizontal plane (RHP)** ≥ **21 m²**, with obstruction angles **71½° / 76°** and **80½° / 83°** 闊 4.5 米的街道或 ≥ 21 平方米的長方形水平面 | 31 |
+| Room depth 房間深度 | No part more than **9 m** from the window 任何部分距窗 ≤ 9 米 | 32 |
+| Windows to balconies 面向露台的窗 | May face an **unenclosed verandah or balcony** if L&V is not prejudiced 可面向開敞露台 | 71 |
+| Neighbours 鄰近建築物 | Do not reduce other buildings' L&V below the B(P)R standard 不得令其他建築物低於標準 | 37 |
+
+!!! example "Quick check 快速核算"
+    Bedroom **12 m²** → glass ≥ 12 ÷ 10 = **1.2 m²**; openable ≥ 12 ÷ 16 = **0.75 m²**, with the top of the opening at least 2 m above floor. 睡房 12 平方米 → 玻璃 ≥ 1.2 平方米，可開啟 ≥ 0.75 平方米。
+
+## 2. The performance-based route (APP-130) 性能為本方法
+
+=== "English"
+
+    Use it when the prescriptive window rules cannot be met, for **habitable rooms and domestic kitchens**:
+
+    - **Daylight**: Vertical Daylight Factor (**VDF**) at the window centre ≥ **8%** (habitable room) or ≥ **4%** (kitchen).
+    - **Ventilation**: **1.5 air changes per hour** by natural means; kitchens also **5 ACH mechanical**.
+    - **Unobstructed Vision Area (UVA)**: the open area in a **100° cone** in front of the window, sized by façade height and glazing ratio (**10 / 15 / 20%** of floor area).
+    - **Openings**: primary openings ≥ **1/16** of floor area; with **cross ventilation** (primary and secondary ≥ **2%** each), room depth may reach **12 m**.
+    - Show compliance by the **simplified method** (App. A) or by **daylight simulation / CFD** (Apps B, C); apply on **Form BA16**. The design may be partly prescriptive and partly performance-based.
+
+=== "中文"
+
+    無法符合訂明窗規定時，可用於**居住房間及住宅廚房**：
+
+    - **日光**：窗中心的**垂直日光系數** ≥ **8%**（居住房間）或 ≥ **4%**（廚房）。
+    - **通風**：自然通風**每小時換氣 1.5 次**；廚房另須**機械通風每小時 5 次**。
+    - **無遮擋視域範圍**：窗前 **100° 錐形**範圍內的空曠面積，按外牆高度及玻璃比率（樓面面積的 **10／15／20%**）決定。
+    - **開口**：主要開口 ≥ 樓面面積 **1/16**；如有**對流通風**（主要及次要開口各 ≥ **2%**），房間深度可達 **12 米**。
+    - 以**簡化方法**（附錄 A）或**日光模擬／計算流體力學**（附錄 B、C）證明，並以**表格 BA16** 申請；可部分採用規定方法、部分採用性能方法。
+
+## 3. Mechanical ventilation 機械通風
+
+| Situation 情況 | Requirement 要求 | Source 來源 |
+|---|---|---|
+| Office that cannot meet reg. 31 不符合第 31 條的辦公室 | Mechanical ventilation **≥ 5 ACH** to all parts + approved artificial light; large ducted systems: engage an **RPE (Building Services)** | [B(P)R 34](../regulations/bpr-24-37.md), [ADV-30](../pnap/adv-30.md) |
+| Internal bathroom / lavatory (domestic) 內置浴室 | Artificial light + **5 ACH** mechanical; permanent ventilation ≥ **1/20** of floor area; duct access panels every **4 m** | [APP-98](../pnap/app-98.md) |
+| Bathroom extractor fan 浴室抽氣扇 | About **10.2 L/s per m²**; provide **air relief** (door undercut / louvre); keep traps sealed | [ADV-25](../pnap/adv-25.md) |
+| Common corridors and lift lobbies 公用走廊及升降機大堂 | Promote natural ventilation; else mechanical with enough fresh air, no short-circuiting | [ADV-26](../pnap/adv-26.md) |
+| Industrial-to-office conversion 工廈改裝為辦公室 | Modification of regs 30–31 with artificial light, mechanical ventilation and **BEAM Plus 40% EU and IEQ** | [APP-130](../pnap/app-130.md), [APP-150](../pnap/app-150.md) |
+| Ductwork through compartments 穿過防火間隔的風管 | Fire dampers; inspection every **12 months** | [Cap. 123J](../regulations/bvsr-123j.md) |
+
+## 4. Bathrooms and lavatories 浴室及洗手間
+
+- A room with a WC or urinal needs a window with glass ≥ **1/10** and opening ≥ **1/10** of the floor area, and must **not open directly** into a room used for food ([B(P)R 36](../regulations/bpr-24-37.md)). 有水廁或尿兜的房間須有窗，玻璃及開口各 ≥ 1/10，且不得直接通往食物房間。
+- Internal (windowless) bathrooms in flats are accepted by **modification** under the [APP-98](../pnap/app-98.md) conditions. 住宅內置浴室可按 APP-98 條件以變通方式批准。
+
+## 5. Open kitchens 開放式廚房
+
+Open kitchens raise **fire safety** as well as ventilation questions (escape routes past the kitchen, fire-rated walls, smoke detectors, sprinklers). BD has answered these mainly at APSEC; the current positions are listed below. See also [FS Code Part B](../codes/fsc-part-b-means-of-escape.md). 開放式廚房同時涉及**消防安全**（逃生途徑、耐火牆、煙霧感應器、花灑）及通風，屋宇署主要在 APSEC 作出澄清，現行立場見下文。
+
+## Common mistakes 常見錯誤
+
+=== "English"
+
+    - Not checking how the **deemed sill level** (glazing below 1 m) applies to your window: see the APSEC items of Nov 2017 and May 2020 on B(P)R 30 and 31.
+    - Forgetting the **9 m** room depth limit when the window is on one side only.
+    - Using APP-130 without submitting **Form BA16** and the supporting calculation or simulation.
+    - Internal bathroom fans without **air relief**, causing negative pressure and dry traps.
+
+=== "中文"
+
+    - 未核實**當作窗台水平**（離地 1 米以下的玻璃）如何應用：見 2017 年 11 月及 2020 年 5 月有關第 30 及 31 條的 APSEC 項目。
+    - 單面開窗時忽略 **9 米**房間深度限制。
+    - 採用 APP-130 但未提交**表格 BA16** 及計算或模擬。
+    - 內置浴室抽氣扇未設**補氣口**，造成負壓及水封乾涸。
+
+<!-- GUIDE APSEC START -->
+## Latest APSEC positions 最新 APSEC 立場 {#apsec-positions}
+
+BD's most recent clarifications on this topic from the [APSEC Discussion Forum](../apsec/index.md), newest first. Items later revisited are left out; only the **current position** is shown (25 relevant items in total). 屋宇署最新澄清，只列現行立場。
+
+- **[FS Code – Handrail on each side of the required staircase](../apsec/2025.md#i202511215)** <small>21 Nov 2025</small><br>BD advised that the understanding of HKIA was correct. Nevertheless, BD reminded that the provision of staircase handrails should comply with all relevant requirements as stipulated in the Design Manual: Barrier Free Access 2008 (2025 Edition).
+- **[FS Code - Exit from Rooms and/or Fire Compartment](../apsec/2025.md#i202511212)** <small>21 Nov 2025</small><br>BD advised that the number of exits for large scale toilets/ lavatories should be assessed on case basis to ensure adequate means of escape in case of fire. …
+- **[Rooms Containing Soil Fitments – Regulation 36(2) of the B(P)R](../apsec/2025.md#i202508086)** <small>8 Aug 2025</small><br>BD advised that the concerned modification of regulation 36 of the B(P)R could be applied to either the lighting or ventilation requirement.
+- **[Common Secondary Exit Door for Two Adjoining Rooms](../apsec/2025.md#i2025050917)** <small>9 May 2025</small><br>BD advised that additional information including the travel distance between the furthest point on a storey or within a fire compartment to the centre of the fire rated door to a protected exit or a required staircase, the Use Classifications and occupancies of Room A and Room B, etc. …
+- **[Mechanical Ventilation in Kiosks or Guard Rooms](../apsec/2025.md#i202505094)** <small>9 May 2025</small><br>BD advised that whenever AP submitted a Form BA16 treating kiosks or guard rooms as ancillary offices and applying for modification of regulation 30 of the Building (Planning) Regulations (B(P)R), BD would favourably consider such applications and impose relevant mechanical ventilation and lighting …
+- **[Prescribed Window facing Street with Overhanging Building Structure](../apsec/2025.md#i202502147)** <small>14 Feb 2025</small><br>BD advised that according to regulation 30(2)(b) of the B(P)R, prescribed windows were required to face directly into external air. In this regard, BD would consider the scenario put forward by HKIA on case basis, in particular the depth of the overhanging structure and its obstruction to the …
+- **[Aperture protected with Ventilating Louvres for Internal Bathroom](../apsec/2024.md#i2024080928)** <small>9 Aug 2024</small><br>BD advised that AAP’s proposed provision of louvre for compliance with the requirements in paragraph 3(b) of PNAP APP-98 was acceptable. 32
+- **[UVA encroaching on Balcony and Utility Platform (UP)](../apsec/2024.md#i202408096)** <small>9 Aug 2024</small><br>BD advised that HKIA’s understanding was correct and the scenarios depicted in the diagram were generally acceptable. In passing, BD advised that PNAP APP-130 was currently under review including the measurement of UVA in relation to projecting features such as balcony, UP and A/C platform.
+- **[Assessment of Occupant Capacity](../apsec/2023.md#i2023111722)** <small>17 Nov 2023</small><br>BD advised that separate assessments of occupant capacity within a room, a fire compartment and a storey were all required for demonstrating the compliance with different requirements under the FS Code, including the minimum number and width of exit doors and exit routes under Table B2 of the same …
+- **[Lighting and Ventilation of Rooms used as Office – Regulation 30 of the B(P)R](../apsec/2023.md#i2023111718)** <small>17 Nov 2023</small><br>BD advised that the simplified assessment method on natural ventilation requirement stipulated in PNAP APP-130 was not applicable to office. Meanwhile, the applicability of the said PNAP was under review.
+- **[Discharge Value Calculation](../apsec/2023.md#i202311175)** <small>17 Nov 2023</small><br>BD advised that under normal circumstances, it might not be necessary to demonstrate the sufficiency of the discharge value of each required staircase by dividing the total occupant capacity of the storeys by the number of required staircases serving those storeys. …
+- **[Discharge Value and Width of Required Staircase](../apsec/2023.md#i202308047)** <small>4 Aug 2023</small><br>BD advised that the DV of the required staircase in the scenario described by HKIA should be calculated as follows: DV of required staircase (with increased width) serving lower storeys (above G/F) + DV of required staircase serving upper storeys by adopting the figures of “each additional storey …
+- **[Lighting and Ventilation – Regulation 30 & 31 of the Building (Planning) Regulations …](../apsec/2022.md#i2022112511)** <small>25 Nov 2022</small><br>BD advised that for prescribed window facing into a space uncovered and unobstructed above the area delineated by the rectangular horizontal plane, the sill of the window should be deemed to be at a level of 1 m A.F.F.L. …
+- **[Fire Resistance Rating (FRR) for an Enclosed Footbridge over a Public Street between Two …](../apsec/2022.md#i202208127)** <small>12 Aug 2022</small><br>BD advised that with regard to the situation illustrated in the sketch that the buildings are situated on two different sites separated by a public street and an enclosed footbridge is proposed to be constructed as part of Building I and to connect to Building II, the requirements under Clause C5.3 …
+
+<!-- GUIDE APSEC END -->
+
+## Related 相關文件
+
+| Document 文件 | What it covers 內容 |
+|---|---|
+| [B(P)R 24–37](../regulations/bpr-24-37.md) | Prescribed windows, mechanical ventilation, lavatories 訂明窗、機械通風、洗手間 |
+| [APP-130](../pnap/app-130.md) | Performance-based L&V 性能為本照明通風 |
+| [APP-98](../pnap/app-98.md) · [ADV-25](../pnap/adv-25.md) | Bathrooms 浴室 |
+| [ADV-30](../pnap/adv-30.md) · [ADV-26](../pnap/adv-26.md) | Offices and common areas 辦公室及公用地方 |
+
+---
+<small>Topic guide prepared from the pages on this site and the cited documents; always check the current BD documents. 本指南根據本網站及所引文件整理，請以屋宇署最新文件為準。</small>

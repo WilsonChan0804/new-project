@@ -16,6 +16,13 @@ tags:
   - Staircase 樓梯
   - A&A works 改動及加建工程
   - Registration 註冊
+  - Open space 休憩用地
+  - Lighting & ventilation 照明及通風
+  - Foundation 地基
+  - Site area & classification 地盤面積及分類
+  - Means of access 救援通道
+  - Fire safety 消防安全
+  - Refuge floor 庇護層
 ---
 
 # ADM-19 Building Approval Process<br><small>建築圖則批准程序</small>

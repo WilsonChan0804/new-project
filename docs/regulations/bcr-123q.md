@@ -19,6 +19,12 @@ tags:
   - Lift 升降機
   - Excavation & ELS 挖掘
   - Barrier free access 無障礙
+  - Industrial building 工業大廈
+  - Concrete & materials 混凝土及物料
+  - Refuge floor 庇護層
+  - Maintenance access 維修通道
+  - Hotel 酒店
+  - A&A works 改動及加建工程
 ---
 
 # B(C)R Building (Construction) Regulation, Cap. 123Q<br><small>《建築物（建造）規例》（第 123Q 章）</small>

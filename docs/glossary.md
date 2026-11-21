@@ -14,6 +14,13 @@ tags:
   - Geotechnical 岩土
   - Curtain wall & façade 幕牆及外牆
   - Balcony & utility platform 露台及工作平台
+  - Sustainable building design 可持續建築設計
+  - Means of escape 逃生途徑
+  - Lighting & ventilation 照明及通風
+  - Green & amenity features 環保及適意設施
+  - Site coverage 上蓋面積
+  - Plot ratio 地積比率
+  - Plant rooms 機房
 ---
 # Glossary 詞彙
 
