@@ -34,6 +34,13 @@ if errorlevel 1 (
   python -m pip install -r requirements.txt || (pause & exit /b 1)
 )
 
+REM The knowledge base (Codes > Knowledge base) is built with MkDocs.
+python -c "import mkdocs, material" 2>nul
+if errorlevel 1 (
+  echo Installing MkDocs for the knowledge base, one time only...
+  python -m pip install "mkdocs-material>=9.5,<10" || echo MkDocs could not be installed - the viewer works, but Codes ^> Knowledge base will not build.
+)
+
 if "%ADOPT%"=="" (
   python app.py --root "%ROOT%" --pass "%PASSPHRASE%" --port %PORT%
 ) else (
