@@ -41,6 +41,7 @@ Use the **English / 中文** tabs on any entry. Your choice is remembered across
 
 ## Recently added 最近新增
 
+- **[APSEC Discussion Forum 討論會](apsec/index.md)**: 764 BD clarifications from 39 meetings (Nov 2017 to Aug 2026), linked from 112 regulation, code and PNAP pages under **APSEC clarifications**; where a question was revisited, the latest position is shown.
 - **All remaining Cap. 123 regulations 所有其餘附屬法例**: [123C Demolition](regulations/bdwr-123c.md) · [123G Private streets](regulations/bpsar-123g.md) · [123J Ventilating systems](regulations/bvsr-123j.md) · [123K Oil storage](regulations/bosir-123k.md) · [123L Appeal](regulations/bar-123l.md) · [123M Energy efficiency](regulations/beer-123m.md) · [123O Minor works fees](regulations/bmwfr-123o.md); plus 15 new diagrams on the [Timelines & workflows](workflows.md) page.
 - **[Timelines & workflows 時間表及流程](workflows.md)**: 18 new diagrams for statutory periods, approval and consent, OP, minor works, MBIS, ELS, demolition and who-does-what.
 - **All PNAPs in force 全部現行作業備考** (Nov 2026): the remaining APP structural, geotechnical, fire and admin notes plus the full **ADM** and **ADV** series. See the [PNAP index](pnap/index.md).
