@@ -29,7 +29,34 @@ Nothing needs merging. Keep pushing to your branch; if its name changes, tell Wi
    - a revisited item carries `!!! warning "Later discussion 其後再討論"` with a link to the `[later response](yyyy.md#i…)`. The viewer leaves such items out of answers, so only current positions show.
 9. **Figures:** Markdown images (`![alt](../assets/….svg)`). The viewer shows the figures of the sections it finds as thumbnails. Give them a meaningful `alt`.
 
+## Editing inside the viewer (viewer accounts)
+
+In the viewer, edits are saved on the viewer's own server under each person's **viewer account**: the member list. Every signed-in member may edit, the edit shows at once with their name, and the author or a site admin can undo it. The claude.ai preview runtime is not there, so `kb.js` must use the viewer's API when it is available.
+
+- **`docs/kb-viewer-backend.js`** (in the viewer's repo, branch `claude/amazing-fermi-96v958`) is a drop-in adapter. It gives `kb.js` the same `db` / `user` interface it already uses with `window.claude.use(...)`. Copy it to `docs/javascripts/kb-viewer-backend.js` and load it **before** `kb.js`. Then change three lines of `kb.js`, as described at the end of that file:
+  - `PAGE`
+  - `db`
+  - `state.user`
+  
+  It has been tested in the viewer: pens, save, "Edited by NAME", other browsers, history, undo.
+- Viewer API (same origin, the viewer's sign-in cookie):
+  - `GET /api/kb/me` gives `{uid, name, admin, can_edit, viewer: true}`, or 401 when not signed in.
+  - `GET /api/kb/edits?page=<source path>` gives the live edits, each with `{id, page, block, anchor, text, note, original, uid, name, at}`.
+  - `POST /api/kb/edits {page, block, anchor, text, note, original}` saves an edit; the server sets `uid`, `name` and `at`.
+  - `POST /api/kb/edits/<id>/undo` undoes an edit (its author or a site admin); `GET /api/kb/history?page=` lists them all, including undone ones.
+- **Page id = the page's source path** (`pnap/app-2.md`). Please write it into every page from the hook (`<meta name="kb-page" content="pnap/app-2.md">`) instead of taking the last two URL segments. Those break under `/kb/` and differ between `.html` and directory URLs, and the viewer matches edits to pages by this path.
+- **Block id:** use the anchor of the section above plus the hash (`at-a-glance:3k9x2`), and send `anchor` and the full `original` text. The viewer uses them to put the edited wording into its search and to fold edits back into the source.
+- **Undo:** show it beside "Edited by NAME" when `state.me === e.by`, or for admins (`KBViewer.user(...).admin`), calling `KBViewer.undo(e.id)`.
+- **Folding edits back into the Markdown:** Wilson downloads them from the viewer (Codes > Library > Knowledge base > Download edits: a Markdown list of page, original → new, who, why, edit id). Apply them to the source and commit. After the next update, the viewer marks an edit "in the source" when its new wording is in the page and its original is gone.
+
 ## Good to know
 
 - A build that fails keeps the viewer on the previous version, and the error shows in Library > Knowledge base. `mkdocs build --strict` passing on your side is the best check.
+- Optional front matter the viewer now reads:
+  - `summary:` one line, used as the page's snippet;
+  - `keywords:` other names for the search, as a list or a comma line (e.g. `MOE, means of escape, 走火通道`);
+  - the tag `Draft`, which shows a "draft" badge on search results.
+- Hooks: keep them to the standard library and `mkdocs` (as `hooks/autolink.py` is now). There are no network calls at build time, and the build must finish in a few minutes on the office server.
+- The site lives under `/kb/`: relative links and assets only, no absolute `/...` paths in JS or CSS.
+- Images: compressed (about 500 KB at most each); do not commit build output or generated folders.
 - The viewer's search is no-AI: SQLite full text over your section text and headings, with each Chinese character indexed. Plain words and figures in the text help it most.

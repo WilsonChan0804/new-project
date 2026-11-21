@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-06", date: "21 Nov 2026",
+    items: [
+      "**Knowledge base: edit with your viewer name** - once the knowledge base's script uses the viewer (the note for its author is in docs/kb-viewer-contract.md), anyone signed in can edit a paragraph (✎). It shows at once with 'Edited by NAME', Show original and the page's edit history; its author or a site admin can undo it.",
+      "Search finds the edited wording and marks the card 'edited by'. **Library > Knowledge base** lists the edits, with Undo and **Download edits** for the author to fold them into the source.",
+      "Search cards show a **draft** badge for pages marked Draft, and read the pages' keywords.",
+    ],
+  },
+  {
     version: "2027-02-05", date: "21 Nov 2026",
     items: [
       "**Codes: the knowledge base** - the office's summaries of the Ordinance, regulations, Codes of Practice, PNAPs and APSEC are now in **Codes > Knowledge base**, as they are written, with their menus, English / 中文 tabs and diagrams. The viewer follows the branch they are written on and updates itself every day.",

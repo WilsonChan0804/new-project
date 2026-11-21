@@ -264,3 +264,10 @@ td.gb-ch::after { content: "\270e"; font-size: 10px; color: #9a6700; margin-left
   .cx-tabs { overflow-x: auto; white-space: nowrap; }
   #cx-libpage { padding: 10px; }
 }
+.cx-kbdraft { font-size: 10.5px; padding: 1px 6px; border-radius: 8px; background: #fff3cd; color: #8a6100; }
+.cx-kbed { font-size: 11px; color: var(--accent-ink); }
+.cx-kbedits { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.cx-kbedits h4 { margin: 0 0 6px; }
+.cx-edl td { vertical-align: top; font-size: 12px; }
+.cx-edl del { color: #b42318; }
+.cx-edl ins { color: #1a7f37; text-decoration: none; }

@@ -120,9 +120,11 @@ function kbHtml(t, i) {
   return `<div class="cx-kb"><div class="cx-facts-h"><b>From the summaries</b><span class="muted">the office's knowledge base</span></div>`
     + items.slice(0, 5).map((x, k) => `<div class="cx-kbc cx-kb-${esc(x.kind)}">`
       + `<div class="cx-kbc-h"><span class="cx-kbk">${KB_ICON[x.kind] || ""} ${esc(x.kind_label)}${x.date ? " \u00b7 " + esc(x.date) : ""}</span>`
+      + (x.draft ? `<span class="cx-kbdraft" title="The author marked this page as a draft - not yet checked">draft</span>` : "")
+      + (x.edited_by ? `<span class="cx-kbed" title="Edited in the viewer">&#9998; edited by ${esc(x.edited_by)}</span>` : "")
       + `<button type="button" class="cx-kbt" data-kb="${i}:${k}" title="Open in the Knowledge base">${esc(x.title)}${x.zh ? ` <small>${esc(x.zh)}</small>` : ""}</button></div>`
       + (x.section ? `<div class="cx-kbs">${esc(x.section)}</div>` : "")
-      + `<div class="cx-kbx">${marked(x.snippet, t.terms)}</div>`
+      + `<div class="cx-kbx">${marked(x.edits ? x.edits.slice(0, 320) : x.snippet, t.terms)}</div>`
       + `<details class="cx-kbd"><summary>Read here</summary><div class="cx-kbr">${marked(x.read, t.terms)}${x.read_zh ? `<hr>${marked(x.read_zh, t.terms)}` : ""}</div></details>`
       + `<div class="cx-kba"><button type="button" class="ghost" data-kb="${i}:${k}">Open the page &rsaquo;</button>`
       + (x.info && x.info["version summarised"] ? `<span class="muted">version ${esc(x.info["version summarised"])}${x.info["last checked"] ? " \u00b7 checked " + esc(x.info["last checked"].slice(0, 10)) : ""}</span>` : "")
@@ -186,6 +188,8 @@ function paintKbBox() {
       <label class="row-check"><input type="checkbox" name="auto"${st.auto !== false ? " checked" : ""}> Update every day</label></div>
       <div class="row end"><button type="button" class="ghost" id="kb-save">Save</button><button type="button" class="primary" id="kb-now"${k.updating ? " disabled" : ""}>Update now</button></div>
       <p class="muted small">The token is kept on the server and never shown again. GitHub > Settings > Developer settings > Fine-grained tokens: this repository only, Contents: Read-only.</p></form>` : "");
+  box.insertAdjacentHTML("beforeend", `<div class="cx-kbedits" id="cx-kbedits"><p class="muted">Loading the edits ...</p></div>`);
+  paintKbEdits();
   const f = box.querySelector("form");
   if (!f) return;
   const showSrc = () => { for (const el of f.querySelectorAll(".kb-gh")) el.hidden = f.source.value !== "github"; for (const el of f.querySelectorAll(".kb-fo")) el.hidden = f.source.value !== "folder"; };
@@ -206,6 +210,33 @@ function paintKbBox() {
       toast(CX.kb && CX.kb.error ? "Not updated: " + CX.kb.error : `Knowledge base updated: ${CX.kb.pages} pages`, !!(CX.kb && CX.kb.error));
     };
     setTimeout(poll, 1200);
+  };
+}
+
+/* edits made in the knowledge base pages, under the viewer's accounts */
+async function paintKbEdits() {
+  const el = $("#cx-kbedits");
+  if (!el) return;
+  let r;
+  try { r = await api("/api/kb/edits/recent?n=15"); } catch (e) { el.innerHTML = `<p class="muted">${esc(e.message)}</p>`; return; }
+  const k = CX.kb || {};
+  const when = (t) => new Date(t).toLocaleString();
+  el.innerHTML = `<h4>Edits made in the viewer</h4><p>${r.live} live edit${r.live === 1 ? "" : "s"}, <b>${r.not_merged}</b> not yet in the source.`
+    + (k.manage ? ` <a class="ghost btn-a" href="/api/kb/edits/all?format=md" download>Download edits (for the knowledge base's author)</a> <a class="ghost btn-a" href="/api/kb/edits/all" download>JSON</a>` : "") + `</p>`
+    + (r.items.length ? `<table class="cx-lib cx-edl"><thead><tr><th>When</th><th>Who</th><th>Page</th><th>Change</th><th></th></tr></thead><tbody>${r.items.map((e) => `<tr class="${e.undone ? "sup" : ""}">`
+      + `<td>${esc(when(e.at))}</td><td>${esc(e.name)}</td><td><a href="#" data-kbgo="${esc(e.page)}">${esc(e.page)}</a></td>`
+      + `<td><del>${esc((e.original || "").slice(0, 90))}</del><br><ins>${esc((e.text || "").slice(0, 90))}</ins>${e.note ? `<br><small class="muted">${esc(e.note)}</small>` : ""}</td>`
+      + `<td>${e.undone ? `<small class="muted">undone${e.undone_by ? " by " + esc(e.undone_by) : ""}</small>` : e.merged ? `<small class="muted">in the source</small>` : (k.manage || (CX.me && CX.me.user && CX.me.user.id === e.uid)) ? `<button type="button" class="ghost" data-kbundo="${e.id}">Undo</button>` : ""}</td></tr>`).join("")}</tbody></table>`
+      : `<p class="muted">No edits yet. Anyone signed in can edit a paragraph in the Knowledge base (the &#9998; pen); the edit shows at once with their name.</p>`);
+  el.onclick = async (ev) => {
+    const u = ev.target.closest("[data-kbundo]");
+    if (u) {
+      if (!confirm("Undo this edit?")) return;
+      try { await api(`/api/kb/edits/${u.dataset.kbundo}/undo`, { method: "POST" }); toast("Edit undone"); paintKbEdits(); } catch (e) { toast(e.message, true); }
+      return;
+    }
+    const g = ev.target.closest("[data-kbgo]");
+    if (g) { ev.preventDefault(); const p = g.dataset.kbgo.replace(/\.md$/, "/").replace(/(^|\/)index\/$/, "$1"); KB_LOADED = ""; showTab("kb", p); }
   };
 }
 

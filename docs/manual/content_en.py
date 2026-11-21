@@ -424,6 +424,7 @@ DOC = [
     UL([
         '**Codes > Knowledge base** shows the office\'s summaries site as it is written: its menus (PNAP & JPN, regulations, Codes of Practice, APSEC by year, topic guides, timelines, glossary), the English / 中文 tabs, diagrams and its own search. **Back** and **Home** are in the bar above it, with the version shown and **Open in a new window**.',
         'It is written on its own GitHub branch, and the server follows that branch: every day (or **Update now**) it fetches the newest version, builds it and indexes it for Search. Nothing needs copying.',
+        '**Editing:** anyone signed in can edit a paragraph of the knowledge base: the ✎ pen beside it, the new text and why. The edit shows at once to everyone, with **Edited by NAME** and **Show original**; each page lists its **Edit history**. Its author or a site admin can undo it (on the page, or in Library > Knowledge base). Search finds the edited wording. **Download edits** (site admin) gives the list for the knowledge base\'s author to fold into the source; once it is there, the edit is marked *in the source*.',
         '**Set up (site admin): Library > Knowledge base** - the repository and branch (or a folder on the server with a checkout of it), a GitHub token (a fine-grained token for this repository with Contents: Read-only; it is kept on the server and never shown again), **Update every day**, **Update now**. The server needs MkDocs: pip install mkdocs-material (in the server\'s requirements).',
     ]),
     H3('The library (site admins)'),

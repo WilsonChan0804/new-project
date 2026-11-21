@@ -305,6 +305,7 @@ PART = [
     UL([
         '**Codes > Knowledge base** 照原本設計顯示公司嘅法規摘要網站：佢嘅目錄（PNAP & JPN、規例、Codes of Practice、APSEC 按年份、專題指南、時間表、詞彙）、English / 中文 分頁、圖同佢自己嘅搜尋。上面一行有 **Back** 同 **Home**，顯示版本，同 **Open in a new window**。',
         '知識庫寫喺自己嘅 GitHub branch，server 會跟住嗰個 branch：每日（或者撳 **Update now**）攞最新版本、build 同建立搜尋索引。唔使抄嚟抄去。',
+        '**編輯：** 登入咗嘅人都可以改知識庫嘅段落：撳段落旁邊嘅 ✎，打新內容同原因。改動即刻俾所有人睇到，顯示 **Edited by 名字** 同 **Show original**；每頁有 **Edit history**。作者或者 site admin 可以 Undo（喺頁面或者 Library > Knowledge base）。Search 搵得到修改後嘅字眼。**Download edits**（site admin）會出一份清單俾知識庫嘅作者併返入原文；併咗之後會標 *in the source*。',
         '**設定（site admin）：Library > Knowledge base** - repository 同 branch（或者 server 上面一個有 checkout 嘅資料夾）、GitHub token（只限呢個 repository、Contents: Read-only 嘅 fine-grained token；只會留喺 server，之後唔會再顯示）、**Update every day**、**Update now**。Server 要裝 MkDocs：pip install mkdocs-material（已經喺 server 嘅 requirements 入面）。',
     ]),
     H3('法規庫（site admin）'),
