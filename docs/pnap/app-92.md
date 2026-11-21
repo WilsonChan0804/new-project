@@ -1,0 +1,41 @@
+---
+tags:
+  - PNAP
+  - APP series
+  - Means of escape 逃生途徑
+  - Dead end 盡頭路
+---
+
+# APP-92 Amendments and Clarification to Code of Practice for the Provision of Means of Escape in Case of Fire 1996<br><small>修訂及澄清《1996年提供火警逃生途徑守則》</small>
+
+!!! info "Document info 文件資料"
+    | | |
+    |---|---|
+    | **Type 類別** | PNAP (APP series), previously PNAP 210 舊編號 PNAP 210 |
+    | **Issued by 發出機構** | Buildings Department 屋宇署 |
+    | **Version summarised 本摘要版本** | August 1997 |
+    | **Official language 官方語言** | English and Chinese 中英文版 |
+    | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP092.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP092.pdf) |
+    | **Last checked 最後核對** | 2026-11-21 against the current BD version |
+
+!!! note "Note 注意"
+    Historical note: the 1995/1996 fire codes it refers to have been replaced by the [Code of Practice for Fire Safety in Buildings 2011](../codes/fire-safety-code-2011.md). It is kept for older buildings and approvals.
+
+## At a glance 重點摘要
+
+=== "English"
+
+    - Replaces MOE Code para. 14(3)(b): where travel from a room exit is possible in **one direction only (dead end)**, no point in the room may be more than **18 m** (direct plus travel distance) from an exit or from a point where 2 or more exits are available; beyond that point the normal para. 14 limits apply (para. 1).
+
+=== "中文"
+
+    - 取代走火守則第 14(3)(b) 段：如由房間出口只可**單向行走（盡頭路）**，房間內任何一點與出口或可通往 2 個或以上出口的地點之間的距離（直線距離加行走距離）不得超過 **18 米**；該點以後適用第 14 段的一般限制（第 1 段）。
+
+## Related 相關文件
+
+| Document 文件 | Relationship 關係 |
+|---|---|
+| [APP-82](app-82.md) | MOE Code 1996 |
+
+---
+<small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>

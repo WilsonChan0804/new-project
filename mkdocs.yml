@@ -58,46 +58,99 @@ nav:
   - How to use 使用說明: how-to-use.md
   - PNAP & JPN 作業備考:
       - pnap/index.md
+      - APP-1 Cap. 7 & Cap. 337 redevelopment 業主與租客條例重建: pnap/app-1.md
       - APP-2 GFA calculation 總樓面面積計算: pnap/app-2.md
+      - APP-3 Nominating a replacement AP/RSE/RGE 提名代行人士: pnap/app-3.md
       - APP-4 Water supply & wells 供水及水井: pnap/app-4.md
       - APP-5 Storey height 樓層高度: pnap/app-5.md
+      - APP-7 Registration of AP/RSE/RGE/RI 註冊: pnap/app-7.md
       - APP-8 Chimneys & flues 煙囪及煙道: pnap/app-8.md
       - APP-9 Country parks 郊野公園: pnap/app-9.md
+      - APP-10 Oil storage installations 貯油裝置: pnap/app-10.md
       - APP-11 Street improvement schemes 街道改善計劃: pnap/app-11.md
+      - APP-12 Prestressed ground anchors 預應力地錨: pnap/app-12.md
       - APP-13 Completion, OP & record plans 完工及佔用許可證: pnap/app-13.md
       - APP-14 Cinemas & PPE 電影院: pnap/app-14.md
+      - APP-15 Filling works 填土工程: pnap/app-15.md
       - APP-16 Cladding 覆蓋層: pnap/app-16.md
       - APP-17 Rock faces 岩面: pnap/app-17.md
+      - APP-18 Foundations Code 2017 基礎作業守則: pnap/app-18.md
       - APP-19 Projections 伸出物: pnap/app-19.md
       - APP-20 Street widening bonus 擴闊街道: pnap/app-20.md
+      - APP-21 Demolition works 拆卸工程: pnap/app-21.md
+      - APP-22 Dewatering 降低地下水位: pnap/app-22.md
       - APP-23 Hoardings & covered walkways 圍板及有蓋行人道: pnap/app-23.md
+      - APP-24 Railway protection 鐵路保護: pnap/app-24.md
       - APP-25 Geotechnical assessment 岩土評估: pnap/app-25.md
+      - APP-26 Pouring concrete against adjoining walls 靠鄰牆澆混凝土: pnap/app-26.md
       - APP-27 Gas water heaters 氣體熱水爐: pnap/app-27.md
+      - APP-28 Geotechnical qualified supervision 岩土合格監督: pnap/app-28.md
       - APP-29 Lifts & escalators 升降機及自動梯: pnap/app-29.md
+      - APP-30 Mid-levels scheduled area 半山區附表地區: pnap/app-30.md
       - APP-31 FSI water supply 消防恆久供水: pnap/app-31.md
       - APP-32 Airport height restrictions 機場高度限制: pnap/app-32.md
+      - APP-33 PFA in concrete 混凝土內的煤灰: pnap/app-33.md
+      - APP-34 Bridges & highway structures 橋樑及公路構築物: pnap/app-34.md
       - APP-35 Refuse storage 垃圾存放: pnap/app-35.md
       - APP-37 Curtain wall & windows 幕牆及窗: pnap/app-37.md
       - APP-38 Bridges over streets 街道上方的天橋: pnap/app-38.md
+      - APP-39 Inspection & copying of plans 查閱及複印圖則: pnap/app-39.md
       - APP-40 Hotel development 旅館發展: pnap/app-40.md
       - APP-41 Barrier free access (B(P)R 72) 無障礙通道: pnap/app-41.md
       - APP-42 Amenity features 適意設施: pnap/app-42.md
       - "APP-43 Licensing: child care, kindergartens, restaurants 幼兒中心、幼稚園及食肆發牌": pnap/app-43.md
       - APP-44 Streets and site area 街道與地盤面積: pnap/app-44.md
+      - APP-45 Testing of reinforcement 鋼筋測試: pnap/app-45.md
       - APP-46 Industrial effluent 工業污水: pnap/app-46.md
       - APP-47 Unauthorized A&A 違例改動加建: pnap/app-47.md
+      - APP-48 Structural qualified supervision 結構合格監督: pnap/app-48.md
+      - APP-49 Site & ground investigation 地盤及土地勘測: pnap/app-49.md
       - APP-50 Temporary buildings 臨時建築物: pnap/app-50.md
+      - APP-51 Horizontal drains 排水斜管: pnap/app-51.md
+      - APP-52 Supplying plans to contractors 向承建商提供圖則: pnap/app-52.md
+      - APP-53 B(C)R accepted standards 建造規例認可標準: pnap/app-53.md
+      - APP-54 Retaining walls 擋土牆: pnap/app-54.md
+      - APP-55 Plan submission fees 呈交圖則費用: pnap/app-55.md
+      - APP-56 NT site formation exemption 新界地盤平整豁免: pnap/app-56.md
+      - APP-57 ELS plans 挖掘及側向承托圖則: pnap/app-57.md
+      - APP-58 Testing of drainage works 排水工程測試: pnap/app-58.md
+      - APP-59 Hand-dug caisson ban 禁止人工挖掘沉箱: pnap/app-59.md
+      - APP-60 Specified forms 指明表格: pnap/app-60.md
+      - APP-61 Scheduled Areas 2 & 4 附表地區第2及4號: pnap/app-61.md
+      - APP-62 Sewage & drainage tunnels 污水及排水隧道: pnap/app-62.md
+      - APP-63 Geoguide 1 retaining walls 岩土指南第1冊: pnap/app-63.md
+      - APP-64 GEOSPEC 3 soil testing 土壤測試: pnap/app-64.md
       - APP-65 Staircase lighting 樓梯照明: pnap/app-65.md
+      - APP-66 Metal refuse chutes 金屬垃圾槽: pnap/app-66.md
       - APP-67 Energy efficiency (OTTV) 能源效率: pnap/app-67.md
       - APP-68 Cantilevered RC structures 懸臂式結構: pnap/app-68.md
       - APP-69 Historic buildings 歷史建築: pnap/app-69.md
+      - APP-70 Plastic sheets on scaffolding 棚架膠布: pnap/app-70.md
+      - APP-71 Underground caverns 地下岩洞: pnap/app-71.md
+      - APP-72 Control of blasting 爆破管制: pnap/app-72.md
       - APP-73 Service lanes 後巷: pnap/app-73.md
+      - APP-74 Alkali-aggregate reaction 鹼性骨料反應: pnap/app-74.md
+      - APP-75 B(P)R 41A–41C MOA 1995 救援通道: pnap/app-75.md
+      - APP-76 Buried services out of slopes 地下設施遠離斜坡: pnap/app-76.md
       - APP-78 Occupation of new buildings 新建築物的佔用: pnap/app-78.md
+      - APP-79 Geoguide 5 slope maintenance 斜坡維修指南: pnap/app-79.md
+      - APP-80 FRC Code 1996 耐火結構守則: pnap/app-80.md
+      - APP-81 PPE Regulation 1996 公眾娛樂場所規例: pnap/app-81.md
+      - APP-82 MOE Code 1996 走火守則: pnap/app-82.md
+      - APP-83 FRC Code 1996 amendments 耐火結構守則修訂: pnap/app-83.md
       - APP-84 Telecom facilities 電訊設施: pnap/app-84.md
+      - APP-85 Applying the revised fire codes 修訂消防守則的應用: pnap/app-85.md
       - APP-86 Non-loadbearing partitions 非承重間隔牆: pnap/app-86.md
+      - APP-87 Fire engineering approach 消防工程方法: pnap/app-87.md
+      - APP-88 Water services affecting slopes 影響斜坡的帶水設施: pnap/app-88.md
       - APP-89 Better lift service 升降機服務: pnap/app-89.md
+      - APP-90 s.18(6) entry for shoring 進入建築物: pnap/app-90.md
+      - APP-91 Lift maintenance & fire safety 升降機保養與防火: pnap/app-91.md
+      - APP-92 MOE Code 1996 dead-end amendment 走火守則盡頭路修訂: pnap/app-92.md
       - APP-93 Drainage works 排水工程: pnap/app-93.md
+      - APP-94 Fire Safety (Commercial Premises) Ordinance 消防安全(商業處所)條例: pnap/app-94.md
       - APP-95 Sale offices & show flats 售樓處及示範單位: pnap/app-95.md
+      - APP-96 Contractor registration 承建商註冊: pnap/app-96.md
       - APP-97 Consent procedures 動工同意程序: pnap/app-97.md
       - APP-98 Internal bathrooms 內置浴室: pnap/app-98.md
       - APP-101 Podium height 平台高度: pnap/app-101.md
