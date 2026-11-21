@@ -4,6 +4,7 @@ tags:
   - ADV series
   - Tiles 飾面磚
   - External finishes 外牆飾面
+keywords: external tiles, 外牆瓷磚, wet-fixed tiles, 濕貼, tile detachment, 瓷磚剝落, debonding, 空鼓, rendering, 批盪, PNAP 303
 ---
 
 # ADV-31 Building External Finishes - Wet-fixed Tiles<br><small>建築物外牆飾面 – 濕式鋪砌飾面磚</small>
@@ -24,13 +25,25 @@ tags:
 
     - Wet-fixed ceramic or mosaic tiles on cement-sand render are common; past **detachments** show installation matters (paras. 1–2).
     - APs, RSEs, RGBCs and RMWCs are strongly advised to follow these guidelines for a minimum safety standard (para. 2).
-    - Provide **project-specific design and specifications**; use **trade-tested workers trained** by the manufacturer (para. 3); later paras. give detailed design and workmanship guidance.
+    - Provide **project-specific design and specifications**; use **trade-tested workers trained** by the manufacturer (para. 3). Detailed design, workmanship, **QA and supervision** guidance in **Appendix A**, standards in Appendix B (para. 4). Some re-tiling and rendering works are **minor works** (APP-147) (para. 5). **Inspect regularly**; owners of new buildings should arrange periodic **debonding surveys** (para. 6).
 
 === "中文"
 
     - 以濕式方法在水泥砂漿批盪上鋪砌瓷磚或紙皮石很常見；過往的**剝落**事故顯示安裝至關重要（第 1–2 段）。
     - 強烈建議認可人士、註冊結構工程師、註冊一般建築承建商及註冊小型工程承建商遵從指引，以達最低安全標準（第 2 段）。
-    - 須為每座建築物訂明**合適的設計及規格**；由**經製造商培訓的合格工人**施工（第 3 段）；其後各段提供詳細設計及施工指引。
+    - 須為每座建築物訂明**合適的設計及規格**；由**經製造商培訓的合格工人**施工（第 3 段）。詳細設計、施工、**品質保證及監督**指引見**附錄 A**，相關標準見附錄 B（第 4 段）；部分外牆批盪及瓷磚工程屬**小型工程**（APP-147）（第 5 段）；須**定期檢查**，新建築物業主應安排定期**空鼓檢查**（第 6 段）。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1–2 | Wet-fixed ceramic or mosaic tiles on mortar render: past **detachments** show the need for proper installation; guidance for APs, RSEs, RGBCs and RMWCs. 濕貼瓷磚。 |
+| 3 | Project-specific **design and specifications**; **trade-tested workers trained** by the manufacturer. 設計及工人。 |
+| 4 | Appendix A: design, construction, QA and supervision; Appendix B: relevant standards. 附錄。 |
+| 5 | Some external rendering, tile and roof finish works are **minor works** (B(MW)R Schedule 1, APP-147). 小型工程。 |
+| 6 | **Regular inspection**; advise owners of new buildings to arrange periodic **debonding monitoring surveys**. 定期檢查。 |
+| 7 | Alternatives and new products may be used with professional judgment. 其他方案。 |
+| 8 | A similar note is issued to registered contractors. 承建商作業備考。 |
 
 ## Related 相關文件 {#related}
 

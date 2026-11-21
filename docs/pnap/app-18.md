@@ -4,6 +4,8 @@ tags:
   - APP series
   - Foundation 地基
   - Code of Practice
+summary: "The Foundation Code 2017 (2024 Edition, amended Sep 2025) is deemed to satisfy the B(C)R; two-stage pile submissions and deferred ground investigation speed up foundation approval."
+keywords: Foundation Code, 地基守則, piles, 樁, two-stage submission, 分階段呈交, deferred GI, ground investigation, 土地勘測, PNAP 66
 ---
 
 # APP-18 Code of Practice for Foundations 2017<br><small>《基礎作業守則2017年》</small>
@@ -24,13 +26,22 @@ tags:
 
     - The **Code of Practice for Foundations 2017** was amended in 2021–2024 (2024 Edition, Oct 2024) and again by **App. A (Sep 2025)**, effective immediately (paras. 1–2).
     - Compliance is **deemed to satisfy** B(C)R; also follow the foundation PNAPs listed in **App. B** and the design, construction and procedural requirements in **App. C** (paras. 3–4).
-    - Streamlining measures for **early foundation submissions** are set out in later paragraphs.
+    - Streamlining for **early foundation submissions** (para. 4): **two-stage pile foundation plans** (Annex C1), and **deferred site-specific ground investigation** in non-scheduled areas and Scheduled Areas **Nos. 3 and 5** (Appendix C).
 
 === "中文"
 
     - **《基礎作業守則 2017》**於 2021–2024 年修訂（2024 年版，2024 年 10 月發布），並以**附錄 A（2025 年 9 月）**再修訂，即時生效（第 1–2 段）。
     - 符合守則即**視為符合** B(C)R；亦須遵從**附錄 B** 所列與基礎有關的作業備考，以及**附錄 C** 的設計、施工及程序要求（第 3–4 段）。
-    - 其後各段列出便利**及早呈交基礎圖則**的簡化措施。
+    - 便利**及早呈交基礎圖則**（第 4 段）：**分兩階段呈交樁基礎圖則**（附件 C1），以及在非附表地區和附表地區**第 3 及 5 號**可**延後進行地盤專屬土地勘測**（附錄 C）。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Foundation Code 2017 amended Feb 2021, Jul 2022, Aug 2023 and Jun 2024, consolidated in the **2024 Edition** (Oct 2024). 2024 年版。 |
+| 2 | Further amendment with immediate effect: **Appendix A, Sep 2025**. 2025 年 9 月修訂。 |
+| 3 | Complying with the Code is **deemed to satisfy** the B(C)R; also follow other PNAPs on foundations. 當作符合。 |
+| 4 | Observe the requirements in **Appendix C**. Streamlining: (a) **two-stage pile foundation submissions** (Annex C1); (b) **deferred site-specific GI** in non-scheduled areas and Scheduled Areas Nos. 3 and 5. 簡化措施。 |
 
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}

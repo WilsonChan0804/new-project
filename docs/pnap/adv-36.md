@@ -6,6 +6,8 @@ tags:
   - Prefabrication 預製
   - Site supervision 地盤監督
   - GFA concession 樓面面積寬免
+summary: "BD offers early enquiries and in-principle acceptance of MiC systems within 45 days; neither is required for plan approval. GFA concessions are in JPN 8."
+keywords: MiC, modular integrated construction, 組裝合成, prefabricated, 預製, IPA, in-principle acceptance, 原則上接納, pre-acceptance, 預先認可, 45 days
 ---
 
 # ADV-36 Modular Integrated Construction<br><small>「組裝合成」建築法</small>
@@ -26,13 +28,23 @@ tags:
 
     - **MiC** uses freestanding volumetric modules with finishes and fittings made off-site, improving safety, quality, speed and waste reduction; BD offers **streamlined measures** (para. 1).
     - Engage **MiC suppliers early** to resolve standardisation, buildability, **delivery to the site**, supervision and the **plan submission programme** (para. 2).
-    - Later paras. cover pre-acceptance of MiC systems, design and quality guidelines, factory supervision and plan processing; see also **JPN 8** for GFA concessions.
+    - Engage MiC suppliers **early** on standardisation, delivery, supervision and the submission programme (para. 2). Use the **pre-submission enquiry** service (ADM-19) for unusual designs: **45 days** (para. 3). **Pre-acceptance (IPA)** of MiC systems or prototypes for the performance items in Appendix C, decided **within 45 days**, but **not a pre-requisite** for GBP approval (paras. 4–5). GFA concessions: **JPN 8**.
 
 === "中文"
 
     - **組裝合成建築法**以在場外製造、已完成裝修及裝置的獨立立體組件建造，可提升安全、質素、速度並減少廢物；屋宇署提供**便利措施**（第 1 段）。
     - 應**及早**與**組件供應商**商討標準化、可建性、**運送到地盤**、監督及**呈交圖則時間表**等事宜（第 2 段）。
-    - 其後各段涵蓋組裝合成系統預先認可、設計及品質指引、工廠監督及圖則處理；樓面面積寬免見 **JPN 8**。
+    - 應**及早**與組裝合成供應商商討標準化、運送、監督及呈交時間表（第 2 段）；特殊設計可用**預先查詢服務**（ADM-19），**45 天**內回覆（第 3 段）；組裝合成系統或原型可申請**原則上接納**（附錄 C 所列性能），**45 天**內決定，但**並非**批准圖則的先決條件（第 4–5 段）；樓面面積寬免見 **JPN 8**。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | MiC benefits (less waste, labour, nuisance); BD has streamlined measures and guidelines. 組裝合成好處。 |
+| 2 | Engage **MiC suppliers early**: standardisation, buildability, delivery mode and site conditions, supervision, submission programme; general guidelines in Appendix A. 及早參與。 |
+| 3 | Clear unconventional designs or module prototypes through the **pre-submission enquiry** service (ADM-19); determination **within 45 days**. 預先查詢。 |
+| 4 | **Pre-acceptance (in-principle acceptance, IPA)** of MiC systems, components or prototypes for the specific performance in **Appendix C**; letter **within 45 days** of a complete application. 原則上接納。 |
+| 5 | Discuss with BD before applying; details on the BD website; **pre-acceptance is not required** for GBP approval. 非先決條件。 |
 
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}

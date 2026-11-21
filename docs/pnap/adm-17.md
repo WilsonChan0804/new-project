@@ -5,6 +5,8 @@ tags:
   - Electronic submission 電子呈交
   - Digital signature 數碼簽署
   - Plan submission & approval 呈交及審批
+summary: "Plans go through the Electronic Submission Hub with a personal digital certificate or iAM Smart; statutory periods count from the next day, and BA10 via ESH may be 1 day before works."
+keywords: ESH, Electronic Submission Hub, 電子呈交平台, e-submission, 電子呈交, digital certificate, 數碼證書, iAM Smart, 智方便, EFSS, e-Counter, RMWMS, PNAP 240, BA10
 ---
 
 # ADM-17 Submission of Plans and Documents in Electronic Format<br><small>以電子方式呈交圖則及文件</small>
@@ -24,12 +26,30 @@ tags:
 === "English"
 
     - Under the **Electronic Transactions Ordinance (Cap. 553)**, electronic records satisfy "in writing" if accessible for later reference, and **digital signatures** with a recognised certificate satisfy signature requirements (in force 7 Apr 2000) (paras. 1–3).
-    - BD's designated systems include the **Electronic Submission Hub (ESH)** for plans, documents and forms, and others listed in para. 4; later paras. set file formats, signing and submission procedures.
+    - BD's designated systems include the **Electronic Submission Hub (ESH)** for plans, documents and forms, and others listed in para. 4; **e-Counter** for items **≤ 25 MB**, **EFSS** for forms, and **RMWMS** for minor works forms (launched **29 May 2026**) (paras. 4–5). Submissions need a **personal digital certificate** or **iAM Smart** (paras. 6, 8); **one set** only, with an **electronic plan index** (paras. 10–11); once on ESH, **stay on ESH** (para. 14). Statutory periods start the **next day**, as for paper (paras. 18–19). With ESH, **BA10** may be accepted **1 day** before commencement (modification of B(A)R 20(1)) (paras. 20–21).
 
 === "中文"
 
     - 根據**《電子交易條例》（第 553 章）**，如電子紀錄可供日後查閱即符合「書面」要求；以認可證書支持的**數碼簽署**符合簽署要求（2000 年 4 月 7 日生效）（第 1–3 段）。
-    - 屋宇署指定的系統包括接收圖則、文件及表格的**電子呈交平台**及第 4 段所列其他系統；其後各段訂明檔案格式、簽署及呈交程序。
+    - 屋宇署指定的系統包括接收圖則、文件及表格的**電子呈交平台**及第 4 段所列其他系統；**電子櫃枱**收取 **≤ 25 MB** 的呈交，**電子表格呈交系統**收取表格，**RMWMS** 收取小型工程表格（**2026 年 5 月 29 日**推出）（第 4–5 段）。須以**個人數碼證書**或**「智方便」**認證（第 6、8 段）；只需**一套**文件並附**電子圖則索引**（第 10–11 段）；經電子呈交平台呈交後**須繼續使用**（第 14 段）。法定時限與紙本相同，由**翌日**起計（第 18–19 段）。經平台呈交 **BA10** 可獲變通為動工前 **1 天**（第 20–21 段）。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1–3 | **ETO Cap. 553**: electronic records satisfy "in writing" and digital signatures satisfy signatures (s.5, s.6), in force for BO submissions. 電子交易條例。 |
+| 4 | Designated systems: **ESH** (plans), **e-Counter** receipt@bd.gov.hk (**≤ 25 MB**), **EFSS** (forms), **RMWMS** (minor works forms). 指定系統。 |
+| 5 | ESH stages: **30 Jun 2022**, **31 Mar 2023**, **30 Jun 2024**; RMWMS **29 May 2026**. 推行日期。 |
+| 6–7 | Identity by a **digital certificate** (Postmaster General or other recognised CA); wrong format or manner **invalidates** the submission. 數碼證書。 |
+| 8–9 | ESH runs **24/7**; AP/RSE/RGE use a personal digital certificate or **iAM Smart**; ESH becomes the designated system for BD's replies. 全天候。 |
+| 10–11 | **One set** of documents (BA may ask for more, B(A)R 11(2)); Appendix B requirements; **electronic plan index** (App. C). 一套文件。 |
+| 13 | Keep equipment to supply records, keep them on site and produce them (B(A)R 36, 40). 保存紀錄。 |
+| 14 | After an ESH submission, **all later amendments via ESH**. 須繼續使用。 |
+| 15 | e-Counter: digitally signed email, PDF forms with signatures in place, no voluminous files. 電子櫃枱。 |
+| 16–17 | EFSS and RMWMS: digitally signed forms, each **≤ 25 MB** (APP-60). 表格系統。 |
+| 18–19 | Statutory periods count from the **next day** after receipt, holidays and warnings included, e.g. Saturday 23:59 → counts from Sunday. 法定時限計算。 |
+| 20–21 | **BA10** via ESH: modification of B(A)R 20(1) may allow notice **1 day** before commencement; TCP and supervision plan still **7 days** before (20(2)–(3)). BA10 一天前通知。 |
+| 22 | Systems will be improved with feedback. 持續改善。 |
 
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}

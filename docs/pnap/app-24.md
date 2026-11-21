@@ -4,6 +4,8 @@ tags:
   - APP series
   - Railway protection 鐵路保護
   - Scheduled area 附表地區
+summary: "Works within about 30 m of a railway are referred to MTRCL, need a railway monitoring plan, and stop if readings reach the suspension limit; GI in Scheduled Area No. 3 needs approval."
+keywords: railway protection, 鐵路保護, MTR, 港鐵, Scheduled Area No. 3, 附表地區第 3 號, 30 m, railway monitoring, 鐵路監測, PNAP 77, ground investigation
 ---
 
 # APP-24 Railway Protection under Railways Ordinance, MTR (Land Resumption and Related Provisions) Ordinance and Area Number 3 of the Scheduled Areas<br><small>《鐵路條例》、《地下鐵路（收回土地及有關規定）條例》及《建築物條例》附表5所列地區的第3號地區的鐵路防護措施</small>
@@ -24,13 +26,30 @@ tags:
 
     - MTRCL operates all lines (App. A). **Railway protection areas**, roughly **30 m** beyond railway structures (or fence / nearest rail), possibly covering whole lots and more at stations, carry special building guidelines (paras. 1–3).
     - Some are **Scheduled Area No. 3** (BO Schedule 5), adding statutory controls on works and ground investigation (para. 4).
-    - Plans for works in these areas are **referred to MTRCL**; show the railway, assess effects, and provide monitoring as required (later paras.).
+    - Plans in protection areas go to **MTRCL** for comment; protective measures under RO s.27 / Cap. 276 s.15 (para. 6). A **railway monitoring plan** is needed for SF, foundation, ELS and other ground-moving works (para. 7). If a reading reaches the **suspension limit**, BD, EMSD and MTRCL notify each other and works stop; resumption press release **within 48 hours** of agreement (paras. 11–12). **GI in Scheduled Area No. 3 needs approval and consent** (Appendix B guidelines) (para. 14).
 
 === "中文"
 
     - 港鐵公司營運所有鐵路（附錄 A）；**鐵路保護範圍**大致為鐵路構築物（或圍欄／最近路軌）以外約 **30 米**，可涵蓋整個地段，車站範圍更大，並有特別的建築指引（第 1–3 段）。
     - 部分範圍屬條例附表 5 的**附表所列地區第 3 號**，工程及土地勘測受額外法定管制（第 4 段）。
-    - 在該等範圍內的工程圖則會**轉介港鐵公司**；須顯示鐵路、評估影響並按要求設置監測（其後各段）。
+    - 保護範圍內的圖則會轉交**港鐵公司**提供意見，並按《鐵路條例》第 27 條或第 276 章第 15 條要求保護措施（第 6 段）；地盤平整、地基、挖掘及其他會引致地面移動的工程須附**鐵路監測計劃**（第 7 段）；監測讀數達**暫停施工限值**時三方互相通知並停工，同意復工後 **48 小時**內發新聞稿（第 11–12 段）；**附表地區第 3 號內的土地勘測須獲批准及同意**（第 14 段）。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | MTRCL operates all railway lines (merger 2 Dec 2007); lines in Appendix A. 港鐵營運所有鐵路。 |
+| 2 | Railway protection areas and building/engineering guidelines; plans viewable at MTRCL by appointment. 鐵路保護範圍。 |
+| 3 | Boundary about **30 m** outside the railway structure, fence or wall (or nearest rail), possibly the **whole lot**; larger at stations. 約 30 米。 |
+| 4 | Some protection areas are **Scheduled Area No. 3** (BO Schedule 5); plans at the Land Registry and BD. 附表地區第 3 號。 |
+| 6 | Plans circulated to **MTRCL**; measures required under **RO s.27** or **MTR(LR&RP)O s.15**. 轉交港鐵。 |
+| 7 | AP/RSE/RGE monitor and assess movement and vibration of railway structures; a **monitoring plan** with SF, foundation, ELS and similar plans. 監測計劃。 |
+| 8 | Keep MTRCL informed of monitoring records (piezometric, ground movement). 通知港鐵。 |
+| 9 | MTRCL staff may be authorised to **enter sites** to monitor (Cap. 276 s.12 or RO s.24). 進入地盤。 |
+| 10–12 | BD / EMSD / MTRCL **notification mechanism**: reaching the **suspension (Action) limit** stops affected works; joint press releases on suspension and **within 48 hours** of agreed resumption. 通知及公布機制。 |
+| 13–14 | GI near tunnels is dangerous; **GI in Scheduled Area No. 3 needs approval and consent** (B(A)R 8(1)(l), Appendix B guidelines, concurrent processing per ADM-16). 土地勘測須批准。 |
+| 15 | GI or underground drainage in other protection areas: send to **MTRCL** for comment before starting. 其他範圍須先諮詢港鐵。 |
+| 16 | Class I and II minor works with footings, excavation or underground drainage in Area No. 3: BD forwards to MTRCL; get MTRCL's agreement before starting. 小型工程。 |
 
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
