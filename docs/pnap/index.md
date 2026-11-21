@@ -37,6 +37,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [APP-37](app-37.md) | Curtain Wall, Window and Window Wall 幕牆、玻璃窗及玻璃牆 | Façade, glass 外牆、玻璃 | Feb 2024 | ✅ Checked |
 | [APP-38](app-38.md) | Bridges over Streets and Lanes 街道及通道巷上方的橋樑《建築物條例》第31 ( 1 ) 條 | Bridges over streets 天橋 | Apr 2011 | ✅ Checked |
 | [APP-40](app-40.md) | Hotel Development 旅館發展 | Hotel concessions 酒店寬免 | Jul 2023 | ✅ Checked |
+| [APP-41](app-41.md) | Buildings to be Planned for Use by Persons with a Disability 建築物須經規劃以供殘疾人士使用《建築物（規劃）規例》第72條《設計手冊：暢通無阻的通道2008》 | BFA policy 無障礙政策 | Jun 2025 | ✅ Checked |
 | [APP-42](app-42.md) | Amenity Features 適意設施 | Amenity features 適意設施 | Jul 2025 | ✅ Checked |
 | [APP-43](app-43.md) | Licensing of Child Care Centres, Kindergartens and Restaurants 幼兒中心、幼稚園及食肆的發牌事宜 | Licensing referrals 發牌轉介 | Aug 1996 | ✅ Checked |
 | [APP-44](app-44.md) | Streets in relation to Site Area 與地盤面積有關的街道－《建築物(規劃)規例》第23(2)(a)條 | Site area, PR transfer 地盤面積 | Jan 1990 | ✅ Checked |
@@ -85,8 +86,13 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [APP-154](app-154.md) | Design Requirements for Columbarium Facilities 靈灰安置所設施的設計規定 | Columbarium design 靈灰安置所設計 | Aug 2012 | ✅ Checked |
 | [APP-155](app-155.md) | Validation Scheme for Unauthorised Signboards 違例招牌檢核計劃 | Unauthorised signboards 違例招牌 | Dec 2020 | ✅ Checked |
 | [APP-156](app-156.md) | Energy Efficiency of Residential Buildings 住宅樓宇的能源效益設計及建造規定 | Energy 能源效益 | Sep 2025 | ✅ Checked |
+| [APP-159](app-159.md) | Measures to Deter Misuse of Industrial Buildings for Residential Use 防止濫用工業樓宇作居住用途的措施 | Deterring IB residential use 防止工廈住用 | Oct 2016 | ✅ Checked |
+| [APP-162](app-162.md) | Conditions and Requirements Imposed under the Buildings Ordinance upon Granting Approval and/or Consent 根據《建築物條例》給予批准及／或同意時施加的條件及規定 | s.17 conditions 第 17 條條件 | Mar 2025 | ✅ Checked |
 | [APP-163](app-163.md) | Code of Practice on Access for External Maintenance 2021 外部維修通道作業守則 | M&R access 維修通道 | Sep 2024 | ✅ Checked |
+| [APP-164](app-164.md) | Enhanced Design Standards of Aboveground Drainage System 提升地底以上排水系統的設計標準 | Enhanced drainage design 加強排水設計 | Nov 2023 | ✅ Checked |
+| [APP-166](app-166.md) | Metal Grille and Louvre 金屬柵檔及百葉窗 | Grille / louvre structural submissions 柵檔百葉結構圖則 | Jan 2026 | ✅ Checked |
 | [APP-172](app-172.md) | RCHE and RCHD 安老院及殘疾人士院舍 | Care homes 院舍 | Apr 2024 | ✅ Checked |
+| [APP-173](app-173.md) | Hostels in the City Scheme 城中學舍計劃 | Student hostel conversion 學生宿舍改裝 | Sep 2025 | ✅ Checked |
 | [APP-175](app-175.md) | Elderly-friendly Building Design 長者友善樓宇設計 | Reg. 73 第 73 條 | Aug 2026 | ✅ Checked |
 | [APP-176](app-176.md) | Design Manual on Universal Accessibility 暢道通行設計手冊 | DMUA 2026 | Sep 2026 | ✅ Checked |
 
@@ -119,4 +125,5 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 
 ## Suggested next 建議下一批
 
-Architectural PNAPs continue in batches: APP-14 (cinemas / PPE), APP-29 (lifts), APP-41 (BFA), APP-65 (staircase lighting), APP-69 (historic buildings), APP-86 (partitions), APP-95 (show flats), APP-98 (bathroom L&V), APP-101 (podium height), APP-105 (water seepage), APP-106, APP-112, APP-116, APP-119, APP-124, APP-125, APP-126, APP-146, APP-154, APP-155, APP-159, APP-162, APP-164, APP-166, APP-173, and more.
+All architectural APP-series PNAPs on BD's current list now have entries (except APP-6 and APP-36, whose texts were not available, and obsolete APP-113 and APP-161). Next: a full Design Manual: Universal Accessibility 2026 write-up, then structural / geotechnical APP items and the remaining ADM / ADV notes.
+
