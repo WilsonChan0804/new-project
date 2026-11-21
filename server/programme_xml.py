@@ -203,13 +203,33 @@ def _mpxj_lib():
     return ""
 
 
+def _java():
+    """java on the PATH, else under JAVA_HOME, else the usual Windows install folders."""
+    j = shutil.which("java")
+    if j:
+        return j
+    exe = "java.exe" if os.name == "nt" else "java"
+    homes = [os.environ.get("JAVA_HOME", "")]
+    for base in (os.environ.get("ProgramFiles", r"C:\Program Files"), os.environ.get("ProgramFiles(x86)", "")):
+        for vendor in ("Eclipse Adoptium", "Java", "Microsoft", "Zulu", "Amazon Corretto", "BellSoft"):
+            d = os.path.join(base, vendor) if base else ""
+            if d and os.path.isdir(d):
+                homes += sorted((os.path.join(d, x) for x in os.listdir(d)), reverse=True)
+    for h in homes:
+        p = os.path.join(h, "bin", exe) if h else ""
+        if p and os.path.isfile(p):
+            return p
+    return None
+
+
 def mpp_to_xml(data, timeout=120):
     """An .mpp file -> MS Project XML, by MPXJ (Java). Refused when they are missing."""
-    java = shutil.which("java")
+    java = _java()
     lib = _mpxj_lib()
     if not java or not lib:
-        raise Refused("Reading .mpp needs Java and MPXJ on the server (pip install mpxj, and Java 11 or later). "
-                      "Or, in MS Project, File > Save As > XML and import that.")
+        miss = " and ".join(x for x, ok in (("Java (11 or later)", java), ("MPXJ (pip install mpxj)", lib)) if not ok)
+        raise Refused("Reading .mpp needs %s on the server - install it and restart run.bat. "
+                      "Or, in MS Project, File > Save As > XML and import that." % miss)
     with tempfile.TemporaryDirectory() as d:
         src, out = os.path.join(d, "in.mpp"), os.path.join(d, "out.xml")
         with open(src, "wb") as f:

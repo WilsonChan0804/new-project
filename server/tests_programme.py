@@ -191,7 +191,8 @@ class Mpp(unittest.TestCase):
         real = shutil.which
         try:
             shutil.which = lambda n: None
-            with self.assertRaisesRegex(programme_xml.Refused, "Java and MPXJ"):
+            os.environ.pop("JAVA_HOME", None)
+            with self.assertRaisesRegex(programme_xml.Refused, "Java"):
                 programme_xml.mpp_to_xml(ole)
         finally:
             shutil.which = real
