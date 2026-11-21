@@ -110,42 +110,76 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 | [APP-96](app-96.md) | Registration of General Building Contractors and Specialist Contractors 一般建築承建商和專門承建商的註冊事宜 | RGBC / RSC registration 承建商註冊 | Sep 2026 | ✅ Checked |
 | [APP-97](app-97.md) | Consent Procedures for Building Works and Street Works 處理同意展開建築工程及街道工程的程序 | Consent / fast-track 動工同意 | May 2023 | ✅ Checked |
 | [APP-98](app-98.md) | Lighting and Ventilation for Bathrooms and Lavatories in Domestic Buildings 住用建築物內浴室及廁所的照明與通風 | Bathroom / lavatory L&V 浴室照明通風 | Jun 2013 | ✅ Checked |
+| [APP-99](app-99.md) | Flushing Volume for Flushing Cisterns 沖廁水箱的沖水量 | Low-flush cisterns 低沖水量水箱 | Feb 2012 | ✅ Checked |
+| [APP-100](app-100.md) | Structural Plans of Glass Reinforced Polyester (GRP) Water Tanks 玻璃强化聚酯水箱的結構圖則 | GRP tank structural plans 水箱結構圖則 | Dec 2010 | ✅ Checked |
 | [APP-101](app-101.md) | Podium Height Restriction under Building (Planning) Regulation 20(3) 《建築物(規劃)規例》第20(3)條訂明的平台高度限制 | Podium height relaxation 平台高度 | Apr 1998 | ✅ Checked |
 | [APP-104](app-104.md) | Exclusion of Floor Areas for Recreational Use 豁免計算入總樓面面積的康樂設施 | Clubhouse 會所 | Jul 2025 | ✅ Checked |
 | [APP-105](app-105.md) | Water Seepage 滲水問題 | Seepage prevention 防止滲水 | Sep 2024 | ✅ Checked |
 | [APP-106](app-106.md) | Fire Resisting Construction 食肆廚房的耐火結構 | Kitchen FRC 廚房耐火結構 | Oct 1998 | ✅ Checked |
+| [APP-107](app-107.md) | Precautionary Measures for Construction Sites 在建築地盤內應採取的預防措施 | Protecting neighbours 保護鄰近物業 | Dec 1998 | ✅ Checked |
 | [APP-108](app-108.md) | Dedication of Land/Area for Use as Public Passage 撥供公眾作通道用途的土地／樓面 | Bonus GFA 額外總樓面面積 | Jun 2003 | ✅ Checked |
+| [APP-109](app-109.md) | Geotechnical Manual for Slopes 《斜坡岩土工程手冊》－有關詮釋及更新手冊內容的指引 | GMS interpretation 手冊詮釋 | Jun 1999 | ✅ Checked |
 | [APP-110](app-110.md) | Protective Barriers 防護欄障 | Barriers 欄障 | Jan 2026 | ✅ Checked |
 | [APP-111](app-111.md) | Design of Car Parks and Loading/Unloading Facilities 停車場及上落客貨設施的設計 | Car parks 停車場 | Jul 2019 | ✅ Checked |
 | [APP-112](app-112.md) | Disposal of Condensate from Air-conditioners 空調機凝結水的處置 | Condensate disposal 冷凝水處置 | Mar 2019 | ✅ Checked |
 | [APP-114](app-114.md) | Waste Minimization 減少廢物－在新樓宇內設置的衞生設備及裝置 | Waste minimisation 減少廢物 | Dec 2000 | ✅ Checked |
+| [APP-115](app-115.md) | Performance Review - Item 6(g)(ii) in Column B, Section 17(1) of the Buildings Ordinance 表現檢討－《建築物條例》第17(1)條B欄第6(g)(ii)項 | s.17(1) item 6(g) review 表現檢討 | Dec 2005 | ✅ Checked |
 | [APP-116](app-116.md) | Aluminium Windows 鋁窗 | Window design & installation 窗設計及安裝 | Feb 2021 | ✅ Checked |
 | [APP-117](app-117.md) | Structural Requirements for A&A Works in Existing Buildings 現存樓宇改動及加建工程的結構規定 | Structural A&A 結構改動 | Dec 2000 | ✅ Checked |
+| [APP-118](app-118.md) | Testing of Building Materials 建築物料的測試 | Material testing labs 物料測試實驗所 | May 2012 | ✅ Checked |
 | [APP-119](app-119.md) | Stair-well and Open Wells In School and Other Buildings Used by Youngsters 學校及其他青少年使用的建築物內的樓梯井及開敞豎井 | Open wells for youngsters 青少年使用的開敞豎井 | May 2001 | ✅ Checked |
+| [APP-120](app-120.md) | Concrete Batching Plant 混凝土拌合廠 | CBP as buildings 拌合廠屬建築物 | Mar 2002 | ✅ Checked |
+| [APP-121](app-121.md) | Amendment to Code of Practice for Provision of Means of Escape in Case of Fire 1996 修訂《1996年提供火警逃生途徑守則》 | Inner room vision panel 內室觀察窗 | Jun 2001 | ✅ Checked |
 | [APP-122](app-122.md) | Provision of Sky Garden in Refuge Floor 在庇護層設置空中花園 | Refuge floor 庇護層 | Sep 2010 | ✅ Checked |
+| [APP-123](app-123.md) | Alternative Designs - Paragraph 12.3 of the Code of Practice for Fire Resisting Construction 1996 《1996年耐火結構守則》第12.3段－可供選擇的設計 | Vertical fire separation 垂直防火分隔 | Oct 2001 | ✅ Checked |
 | [APP-124](app-124.md) | Streets for Site Classification 作地盤分類之用的街道 | Specified streets 指明街道 | Nov 2005 | ✅ Checked |
 | [APP-125](app-125.md) | External Area and Floor Adjoining External Ground or Roof 毗鄰室外地面或屋頂的室外範圍及樓面（非官方譯名） | Water ingress at thresholds 門檻防水 | Feb 2021 | ✅ Checked |
 | [APP-126](app-126.md) | Erection of Signboards 豎設招牌 | Signboards 招牌 | Jul 2021 | ✅ Checked |
 | [APP-127](app-127.md) | Contractor's Sheds 承建商屋棚 | Site sheds 地盤屋棚 | Oct 2007 | ✅ Checked |
+| [APP-128](app-128.md) | Geotechnical Design Information 岩土設計的資料 | Organising geotechnical submissions 岩土圖則編排 | Dec 2005 | ✅ Checked |
+| [APP-129](app-129.md) | Use of Recycled Aggregates in Concrete for Minor Structures and Non-structural Works 在小型結構工程及非結構工程的混凝土中使用再生骨料的事宜 | Recycled aggregate concrete 再生骨料混凝土 | Feb 2022 | ✅ Checked |
 | [APP-130](app-130.md) | Lighting and Ventilation – Performance-based Approach 照明及通風規定－以效能表現為本的方法 | UVA, VDF 照明通風 | Dec 2016 | ✅ Checked |
 | [APP-132](app-132.md) | Site Coverage and Open Space Provision 上蓋面積及建築物周圍的空地 | SC flexibility 上蓋面積 | Dec 2012 | ✅ Checked |
+| [APP-133](app-133.md) | Cast Iron Pipes for Drainage Works 排水工程的鑄鐵喉管 | C.I. pipe quality 鑄鐵喉管質素 | Nov 2003 | ✅ Checked |
+| [APP-134](app-134.md) | Development in the Designated Area of Northshore Lantau 大嶼山北岸指定地區的發展 | Complex geology foundations 複雜地質基礎 | Feb 2006 | ✅ Checked |
+| [APP-135](app-135.md) | Quality Supervision of Soil Nailing Works 泥釘工程的質量監督 | Soil nail QA 泥釘質量 | Feb 2006 | ✅ Checked |
 | [APP-136](app-136.md) | Emergency Vehicular Access 緊急車輛通道 | EVA 緊急車輛通道 | Jul 2006 | ✅ Checked |
+| [APP-137](app-137.md) | Ground-borne Vibration and Ground Settlement arising from Pile Foundation and Excavation and Lateral Support Works 樁基礎及挖掘與側向承托工程所引致經地下傳送的震動及地面沉降 | Pile installation effects 打樁影響 | Nov 2024 | ✅ Checked |
+| [APP-138](app-138.md) | Appointment of Authorised Signatory to Act for Registered Contractor and Temporary Absence of Authorised Signatories 委任獲授權簽署人代註冊承建商行事及獲授權簽署人暫時缺勤 | RC authorised signatory 承建商簽署人 | May 2004 | ✅ Checked |
+| [APP-139](app-139.md) | Code of Practice on Wind Effects in Hong Kong 《香港風力效應作業守則》 | Wind Code implementation 風力守則實施 | Dec 2023 | ✅ Checked |
+| [APP-140](app-140.md) | Registration of Authorized Persons and Registered Structural Engineers as Registered Geotechnical Engineers 認可人士及註冊結構工程師註冊爲註冊岩土工程師 | RGE transitional registration 岩土工程師過渡註冊 | Dec 2004 | ✅ Checked |
+| [APP-141](app-141.md) | Division of Responsibilities between Authorized Person, Registered Structural Engineer and Registered Geotechnical Engineer 認可人士、註冊結構工程師與註冊岩土工程師的職責分工 | Division of duties 職責分工 | Feb 2009 | ✅ Checked |
+| [APP-142](app-142.md) | Code of Practice for Structural Use of Concrete 2013 《混凝土結構作業守則2013年》 | Concrete Code amendments 混凝土守則修訂 | Apr 2024 | ✅ Checked |
+| [APP-143](app-143.md) | Quality Control and Supervision of Precast Concrete Construction 預製混凝土的品質控制及質量監督 | Precast QA & supervision 預製件質量 | Apr 2022 | ✅ Checked |
+| [APP-144](app-144.md) | Design and Construction of Run-in and Run-out on Public Road 公用道路上車輛進出口通道的設計及建造事宜 | Vehicular access on public roads 公共道路車輛出入口 | Sep 2006 | ✅ Checked |
 | [APP-145](app-145.md) | Fire Safety (Buildings) Ordinance Cap. 572 《消防安全（建築物）條例》（第572章） | Cap. 572 upgrading 舊樓消防提升 | Oct 2010 | ✅ Checked |
 | [APP-146](app-146.md) | Metal Gates 金屬閘 | Gate design & installation 閘設計及安裝 | Mar 2025 | ✅ Checked |
 | [APP-147](app-147.md) | Minor Works Control System 小型工程監管制度 | Minor works 小型工程 | Sep 2021 | ✅ Checked |
+| [APP-148](app-148.md) | Minor Works Contractors Registration 小型工程承建商的註冊事宜 | RMWC registration 小型工程承建商註冊 | Sep 2020 | ✅ Checked |
+| [APP-149](app-149.md) | Appointment of Authorized Signatory to Act for Prescribed Registered Contractor in respect of Minor Works 關於在簡化規定下展開的小型工程 委任獲授權簽署人代訂明註冊承建商行事及獲授權簽署人暫時缺勤 | PRC authorised signatory 承建商簽署人 | Dec 2010 | ✅ Checked |
 | [APP-150](app-150.md) | Wholesale Conversion of Industrial Buildings 改裝整幢工業大廈 | Conversion 改裝 | Jun 2013 | ✅ Checked |
 | [APP-151](app-151.md) | Building Design to Foster a Quality and Sustainable Built Environment 優化建築設計 締造可持續建築環境 | GFA concessions 樓面面積寬免 | Jul 2025 | ✅ Checked |
 | [APP-152](app-152.md) | Sustainable Building Design Guidelines 可持續建築設計指引 | SBD 可持續建築設計 | Sep 2023 | ✅ Checked |
+| [APP-153](app-153.md) | Code of Practice for Fire Safety in Buildings 2011 《2011 年建築物消防安全守則》 | FS Code application 消防守則應用 | Sep 2024 | ✅ Checked |
 | [APP-154](app-154.md) | Design Requirements for Columbarium Facilities 靈灰安置所設施的設計規定 | Columbarium design 靈灰安置所設計 | Aug 2012 | ✅ Checked |
 | [APP-155](app-155.md) | Validation Scheme for Unauthorised Signboards 違例招牌檢核計劃 | Unauthorised signboards 違例招牌 | Dec 2020 | ✅ Checked |
 | [APP-156](app-156.md) | Energy Efficiency of Residential Buildings 住宅樓宇的能源效益設計及建造規定 | Energy 能源效益 | Sep 2025 | ✅ Checked |
+| [APP-157](app-157.md) | Code of Practice for Site Supervision 2009 2009年地盤監督作業守則 | Supervision Code amendments 監督守則修訂 | Aug 2024 | ✅ Checked |
+| [APP-158](app-158.md) | Quality Supervision of Building Works 建築工程的質量監督 | Inspection items 巡查項目 | Sep 2024 | ✅ Checked |
 | [APP-159](app-159.md) | Measures to Deter Misuse of Industrial Buildings for Residential Use 防止濫用工業樓宇作居住用途的措施 | Deterring IB residential use 防止工廈住用 | Oct 2016 | ✅ Checked |
 | [APP-162](app-162.md) | Conditions and Requirements Imposed under the Buildings Ordinance upon Granting Approval and/or Consent 根據《建築物條例》給予批准及／或同意時施加的條件及規定 | s.17 conditions 第 17 條條件 | Mar 2025 | ✅ Checked |
 | [APP-163](app-163.md) | Code of Practice on Access for External Maintenance 2021 外部維修通道作業守則 | M&R access 維修通道 | Sep 2024 | ✅ Checked |
 | [APP-164](app-164.md) | Enhanced Design Standards of Aboveground Drainage System 提升地底以上排水系統的設計標準 | Enhanced drainage design 加強排水設計 | Nov 2023 | ✅ Checked |
+| [APP-165](app-165.md) | Product Certification System 產品認證系統 | Third-party certification 第三方認證 | Sep 2021 | ✅ Checked |
 | [APP-166](app-166.md) | Metal Grille and Louvre 金屬柵檔及百葉窗 | Grille / louvre structural submissions 柵檔百葉結構圖則 | Jan 2026 | ✅ Checked |
+| [APP-167](app-167.md) | Quality of In-situ Reinforced Concrete Works at an Early Age 現場澆注鋼筋混凝土工程於早齡期的質量 | Rebound hammer tests 回彈錘測試 | Mar 2022 | ✅ Checked |
+| [APP-168](app-168.md) | Code of Practice for the Structural Use of Steel 2011 2011鋼結構作業守則 | Steel Code amendments 鋼結構守則修訂 | Apr 2026 | ✅ Checked |
+| [APP-169](app-169.md) | Strength Tests for Structural Fixings in Concrete 混凝土內嵌固件的強度測試 | Anchor / dowel tests 錨栓測試 | Oct 2023 | ✅ Checked |
+| [APP-170](app-170.md) | Code of Practice for Demolition of Buildings 2004 建築物拆卸作業守則2004年 | Demolition Code amendments 拆卸守則修訂 | Oct 2023 | ✅ Checked |
+| [APP-171](app-171.md) | Code of Practice for the Structural Use of Glass 2018 2018年玻璃結構作業守則 | Glass Code amendments 玻璃守則修訂 | Feb 2024 | ✅ Checked |
 | [APP-172](app-172.md) | RCHE and RCHD 安老院及殘疾人士院舍 | Care homes 院舍 | Apr 2024 | ✅ Checked |
 | [APP-173](app-173.md) | Hostels in the City Scheme 城中學舍計劃 | Student hostel conversion 學生宿舍改裝 | Sep 2025 | ✅ Checked |
+| [APP-174](app-174.md) | Code of Practice for Precast Concrete Construction 2016 預製混凝土結構作業守則2016年 | Precast Code amendments 預製守則修訂 | Jun 2026 | ✅ Checked |
 | [APP-175](app-175.md) | Elderly-friendly Building Design 長者友善樓宇設計 | Reg. 73 第 73 條 | Aug 2026 | ✅ Checked |
 | [APP-176](app-176.md) | Design Manual on Universal Accessibility 暢道通行設計手冊 | DMUA 2026 | Sep 2026 | ✅ Checked |
 
