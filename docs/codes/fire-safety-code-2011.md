@@ -278,6 +278,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🔵 [5th Amendment of the Code of Practice for Fire Safety in Buildings 2011 & Motion Sensor Lighting in Required Staircases and Protected Lobbies](../circulars/2015.md#cl-5thafscode2011-msl) <small>22 Oct 2015 · 《2011年建築物消防安全守則》第五次修訂及在規定樓梯及防護門廊的動作感應照明</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

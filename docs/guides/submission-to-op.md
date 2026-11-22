@@ -25,6 +25,7 @@ tags:
   - Demolition 拆卸
   - A&A works 改動及加建工程
   - Registration 註冊
+  - Green & amenity features 環保及適意設施
 summary: "From plan submission to occupation permit: statutory periods, stages, forms and a checklist."
 keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔用許可證, OP, BA forms, statutory period, 法定期限, checklist
 ---
@@ -234,10 +235,12 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Submission of Electronic Test Reports in Standardised Test Report Formats](../circulars/2026.md#cl-setrstrf2026) <small>20 Oct 2026 · 提交標準化格式的電子測試報告</small>
+- 🟢 [Electronic Submission of Summary of Gross Floor Area (GFA) Concessions, Declaration on Annual Energy Use and General Building Plans Showing Greenery Areas in Common Parts](../circulars/2015.md#cl-esgfa2015) <small>11 Dec 2015 · 以電子方式遞交總樓面面積寬免摘要、每年能源消耗量聲明及顯示公用部分的綠化面積的建築圖則</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

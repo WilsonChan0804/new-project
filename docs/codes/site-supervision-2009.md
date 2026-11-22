@@ -399,6 +399,7 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -413,6 +414,8 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 - 🔵 [Amendments to Code of Practice for Site Supervision 2009](../circulars/2020.md#cl-acopss2020) <small>29 Sep 2020 · 《2009年地盤監督作業守則》修訂事宜</small>
 - 🔵 [Code of Practice for Site Supervision 2009 Amendments](../circulars/2019.md#cl-cpss2009a201905) <small>8 May 2019 · 《2009年地盤監督作業守則》修訂事宜</small>
 - 🔵 [Code of Practice for Site Supervision 2009 Corrigenda](../circulars/2016.md#cl-copss2009c-2016) <small>14 Jun 2016 · 《2009年地盤監督作業守則》 更正</small>
+- 🔵 [Code of Practice for Site Supervision 2009 Corrigenda](../circulars/2015.md#cl-copss2009c) <small>8 May 2015 · 2009年地盤監督作業守則更正</small>
+- 🟢 ["Diploma in Vocational Education (Construction) - Employment Option" Training Course Leading to Grade T1 Technically Competent Persons](../circulars/2015.md#cl-dve2015) <small>27 Apr 2015 · "中專教育文憑(建造工程) -就業途徑"成為T1職級適任技術人員的培訓課程</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

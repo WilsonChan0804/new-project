@@ -187,6 +187,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines)(Amendment) Regulation 2015](../circulars/2015.md#cl-spdwl2015) <small>8 Dec 2015 · 《2015年建築物（衞生設備標準、水管裝置、排水工程及廁所）（修訂）規例》</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

@@ -98,6 +98,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🔵 [Safety Requirements for Liftwell Inspection and Emergency Doors](../circulars/2015.md#cl-srlied201510) <small>6 Oct 2015 · 升降機槽的檢查門及緊急通道門的安全規定</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

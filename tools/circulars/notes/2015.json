@@ -1,0 +1,373 @@
+{
+ "CL_ESGFA2015": {
+  "to": "Authorized Persons",
+  "by": "Building Surveyor / Heritage",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-151.md|APP-151",
+   "../guides/submission-to-op.md|Submission to OP guide"
+  ],
+  "topics": [
+   "submission",
+   "design"
+  ],
+  "points": [
+   [
+    "At **OP application**, submit a separate non-rewritable **DVD-ROM** with (i) a standard **Excel** summary of **GFA concessions**, (ii) the fillable PDF **Declaration on Annual Energy Use**, (iii) latest approved GBP (A3, 200 dpi PDF) showing **greenery areas in common parts** with a schedule – for upload to BD's website; mark and sign the disc.",
+    "申請**佔用許可證**時須另交光碟，載有 (i) **總樓面面積寬免** Excel 摘要、(ii) **每年能源消耗量聲明**（PDF）、(iii) 顯示**公用部分綠化面積**的核准圖則（A3、200 dpi）及附表，供上載屋宇署網站。"
+   ]
+  ],
+  "related": []
+ },
+ "APP151_annxbf": {
+  "to": "Authorized Persons",
+  "by": "—",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-151.md|APP-151"
+  ],
+  "topics": [
+   "design",
+   "submission"
+  ],
+  "points": [
+   [
+    "Fillable **APP-151 Appendix B – Declaration on Annual Energy Use of a Building Development**: building particulars (type, central A/C, **energy efficient features**) and the predicted annual energy use of the proposed or completed building.",
+    "**APP-151 附錄 B 樓宇每年能源消耗量聲明**（可填寫 PDF）：樓宇資料（類型、中央空調、**節能設施**）及預計每年能源消耗量。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Form in force as APP-151 Appendix B 屬 APP-151 附錄 B 表格"
+ },
+ "CL_WDAR2015": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings",
+  "status": "current",
+  "status_links": [
+   "../pnap/adm-19.md|ADM-19"
+  ],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "**Withdrawal and resubmission (W&R)** of OP and plan approval applications: must be **in writing with reasons**, and generally **not more than twice** for the same submission.",
+    "撤回及重新提交佔用許可證或圖則申請：須**書面並說明理由**，同一申請一般**不多於兩次**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RBGAOBD2015": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Annual reminder not to offer gifts or advantages to BD officers.",
+    "每年提示不得向屋宇署人員送禮。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ICRI2015": {
+  "to": "Registered Inspectors",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "status_links": [
+   "#cl-ecrrbprc2022|2022 e-certificates",
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "registration",
+   "mbis"
+  ],
+  "points": [
+   [
+    "From **1 Jan 2016**, RIs receive a **registration card** instead of the A4 paper certificate, to identify themselves for MBIS work; old certificates valid until expiry; apply with photo and particulars.",
+    "由 **2016 年 1 月 1 日**起，註冊檢驗人員改發**註冊卡**代替 A4 證書；舊證書有效至到期。"
+   ]
+  ],
+  "related": [],
+  "status_note": "In force; QR codes added in 2022 有效；2022 年加入二維碼"
+ },
+ "CL_SPDWL2015": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings",
+  "status": "current",
+  "status_links": [
+   "../regulations/bsfpwr-123i.md|B(SSFPDWL)R"
+  ],
+  "topics": [
+   "design"
+  ],
+  "points": [
+   [
+    "**B(SSFPDWL)(Amendment) Regulation 2015**, in force **14 Dec 2015**: new categories of building use for sanitary fitments; more **female fitments** in public places (cinemas, places of public entertainment); rationalised standards for **restaurants**.",
+    "**2015 年衞生設備標準修訂規例**（2015 年 12 月 14 日生效）：新增樓宇用途類別；公眾地方增加**女性衞生設備**；理順**食肆**標準。"
+   ],
+   [
+    "Not applicable (BO s 39(2)) to works being carried out or with consent by 14 Dec 2015. For **A&A to existing buildings**, applies only on **substantial alteration** – e.g. a **change in use** (shop to restaurant or cinema) or **extension** increasing restaurant area or cinema seating.",
+    "按第 39(2) 條，不適用於 2015 年 12 月 14 日前已進行或已獲同意的工程；現有樓宇加建改建只在**重大改動**（例如**改變用途**或**擴展**面積或座位）時才適用。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_5thAFSCode2011_MSL": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/fire-safety-code-2011.md|FS Code",
+   "../codes/fsc-part-c-fire-resisting-construction.md|FS Code Part C (C9.3)",
+   "../codes/bfa-2008.md|BFA Manual"
+  ],
+  "topics": [
+   "fire",
+   "design"
+  ],
+  "points": [
+   [
+    "**5th amendment** of the FS Code 2011 and an Oct 2015 consolidated version uploaded.",
+    "上載消防安全守則**第 5 次修訂**及 2015 年 10 月綜合版。"
+   ],
+   [
+    "**Motion sensor lighting** in required staircases and protected lobbies (B5.5) is acceptable under **C9.3(d)** only to raise illumination from **30 lux** (always on) to **85 lux** when needed (BFA Manual Division 16 para 72).",
+    "**感應燈**：只可用作把樓梯及防護大堂照度由**常設 30 勒克斯**提升至 **85 勒克斯**，方符合 C9.3(d)。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the FS Code (later editions) 已納入消防安全守則"
+ },
+ "CL_TGMWCA201501": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "incorporated",
+  "status_links": [
+   "../regulations/mw-technical-guidelines.md|MW Technical Guidelines"
+  ],
+  "topics": [
+   "minorworks"
+  ],
+  "points": [
+   [
+    "**TG Addendum 1/2015** (Section 3): QC and supervision of **tempered glass**; **repair of structural elements**; supporting structures for **antennas and radio base stations** on roofs.",
+    "技術指引**增補 1/2015**：**鋼化玻璃**品質控制；**結構構件修葺**；天台**天線及基站**支架。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the TG (2024 Edition) 已納入技術指引 2024 年版"
+ },
+ "CL_NRC2015": {
+  "to": "RMWC (Individual)",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [
+   "#cl-ecrrbprc2022|2022 e-certificates"
+  ],
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "From **1 Sep 2015**, RMWC (Individual) get a **registration card** instead of the A4 certificate; old ones valid until expiry and replaced on renewal or new items.",
+    "由 2015 年 9 月 1 日起，小型工程承建商（個人）改發**註冊卡**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_NCCCMW2015": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "amended",
+  "status_links": [
+   "#cl-mwcsncccmw2024|Jan 2024 letter",
+   "../regulations/bmwr-123n.md|B(MW)R"
+  ],
+  "topics": [
+   "minorworks",
+   "enforcement"
+  ],
+  "points": [
+   [
+    "Minor works timeframes: **notice of commencement** (MW01/MW03) **≥ 7 days before** Class I and II works; **certificate of completion** (MW02/MW04/MW05) **within 14 days** after completion. Breach: prosecution under **B(MW)R s 58** (fine up to **$50,000**) and discipline under BO s 13(2).",
+    "小型工程時限：第 I、II 級**展開通知**（MW01/MW03）**動工前 ≥ 7 日**；**完工證明書**（MW02/04/05）完工後 **14 日內**；違者可被檢控（最高罰款 5 萬元）及紀律處分。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Reinforced by the Jan 2024 letter (late submissions returned) 已由 2024 年 1 月通告加強"
+ },
+ "CL_SSW2015": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual typhoon season scaffolding letter.",
+    "每年颱風季節棚架通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPSS2009C": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/site-supervision-2009.md|Site Supervision Code"
+  ],
+  "topics": [
+   "supervision"
+  ],
+  "points": [
+   [
+    "Site Supervision Code corrigenda (May 2015): **Basic Values** in Table 8.1 adjusted (usable for amending existing supervision plans); **Appendix X** recognition of TCPs by professional institute membership **repealed** – only academic qualifications and experience (para 8) count.",
+    "地盤監督守則勘誤（2015 年 5 月）：調整表 8.1 **基本值**；**廢除附錄 X** 以學會會籍認可技術人員，只按學歷及經驗。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Site Supervision Code 已納入地盤監督守則"
+ },
+ "CL_DVE2015": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../codes/site-supervision-2009.md|Site Supervision Code Table 8.4"
+  ],
+  "topics": [
+   "supervision",
+   "registration"
+  ],
+  "points": [
+   [
+    "VTC Youth College **Diploma in Vocational Education (Construction) – Employment Option** is recognised as equivalent to the **Certificate in Building Studies** (Site Supervision Code Table 8.4), so S6 graduates with experience can act as **TCP T1** in the RC stream.",
+    "職業訓練局青年學院**建造業職業教育文憑（就業選項）**等同**建築學證書**（守則表 8.4），中六畢業生具經驗可擔任承建商 **T1 技術人員**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_FP2015": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "topics": [
+   "weather",
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual flood prevention letter.",
+    "每年地盤防洪通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_AM2015": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/New Buildings",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Anti-mosquito reminder for construction sites.",
+    "地盤防蚊提示。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_QSPSC2014": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "HKQAA **QSPSC:2014** (with **CS3:2013** aggregates) released 21 Nov 2014; from **1 Feb 2016** all structural concrete under the Concrete Code must come from suppliers **certified to QSPSC:2014**.",
+    "香港品質保證局**混凝土生產及供應品質制度 QSPSC:2014**（配合 CS3:2013）；由 **2016 年 2 月 1 日**起結構混凝土須來自取得 QSPSC:2014 認證的供應商。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_BDLogo2015": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [],
+  "topics": [
+   "registration",
+   "enforcement"
+  ],
+  "points": [
+   [
+    "Contractors must **not use the BD logo** on name cards or leaflets to solicit business – it is Government copyright (Copyright Ordinance); BD will take action.",
+    "承建商**不得使用屋宇署標誌**於名片或宣傳品招攬生意；標誌受《版權條例》保護。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPD2015": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "CPD course for RGBC/RSC renewal or restoration.",
+    "一般建築及專門承建商持續專業發展課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_MWPBPPRC2015": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "superseded",
+  "status_links": [
+   "#cl-rmwms2026|RMWMS (2026)"
+  ],
+  "topics": [
+   "minorworks",
+   "submission"
+  ],
+  "points": [
+   [
+    "From **19 Jan 2015**, minor works forms go to the **Kwun Tong office** (AIA Kowloon Tower) or by e-mail to receipt@bd.gov.hk.",
+    "由 2015 年 1 月 19 日起，小型工程表格交**觀塘辦事處**或電郵 receipt@bd.gov.hk。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Superseded by later e-submission (RMWMS 2026) and office changes 已由其後電子呈交安排取代"
+ },
+ "CL_SRLIED201510": {
+  "to": "Property management bodies",
+  "by": "AD/New Buildings",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/lifts-escalators-2011.md|Lifts & Escalators Code",
+   "../pnap/app-29.md|APP-29"
+  ],
+  "topics": [
+   "design"
+  ],
+  "points": [
+   [
+    "After a 2010 death when a meter reader opened a **liftwell emergency door** by mistake: for new buildings and A&A, liftwell **inspection and emergency doors** need **dual key-operated locks** (two designated keys simultaneously) and a permanent **figure-type warning sign** at the keyhole (revised CoP and **APP-29**).",
+    "2010 年抄錶員誤開**升降機槽緊急門**墮亡：新建及加建改建工程的升降機槽**檢查門及緊急門**須設**雙匙鎖**（兩條指定鎖匙同時操作）及匙孔旁**圖案警告標誌**（APP-29）。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Lifts and Escalators Code and APP-29 已納入升降機守則及 APP-29"
+ }
+}

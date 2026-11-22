@@ -65,10 +65,12 @@ keywords: lift, 升降機, escalator, 自動梯, lift pit, 機坑, machine room,
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🔵 [Code of Practice for Building Works for Lifts and Escalators 2011 (2020 Edition)](../circulars/2020.md#cl-copnwle2020) <small>7 Sep 2020 · 《2011年升降機及自動梯建築工程守則（2020年修訂版）》</small>
+- 🔵 [Safety Requirements for Liftwell Inspection and Emergency Doors](../circulars/2015.md#cl-srlied201510) <small>6 Oct 2015 · 升降機槽的檢查門及緊急通道門的安全規定</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

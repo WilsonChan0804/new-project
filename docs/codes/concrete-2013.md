@@ -122,6 +122,7 @@ keywords: concrete code, 混凝土, cover, 保護層, exposure, grade, C30, rein
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -134,6 +135,7 @@ keywords: concrete code, 混凝土, cover, 保護層, exposure, grade, C30, rein
 - 🔵 [Code of Practice for Structural Use of Concrete 2013 Construction Standard CS2:2012 – Steel Reinforcing Bars for the Reinforcement of Concrete](../circulars/2016.md#cl-copsuc2013cs) <small>22 Sep 2016 · 2013年混凝土結構作業守則建築標準CS2:2012 –用於混凝土的鋼筋</small>
 - 🔵 [Code of Practice for Structural Use of Concrete 2013 Construction Standard CS2:2012 – Steel Reinforcing Bars for the Reinforcement of Concrete](../circulars/2016.md#cl-srbrc2016) <small>26 Aug 2016 · 2013年混凝土結構作業守則建築標準CS2:2012 – 用於混凝土的鋼筋</small>
 - 🟢 [Use of Off-site Prefabricated Steel Reinforcing Bar Products](../circulars/2016.md#cl-uopsrbp2016) <small>14 Apr 2016 · 使用工地外預製鋼筋組件</small>
+- 🟢 [Quality Scheme for the Production and Supply of Concrete 2014](../circulars/2015.md#cl-qspsc2014) <small>25 Mar 2015 · 2014 年混凝土生產和供應質量規範</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

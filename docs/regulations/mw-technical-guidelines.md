@@ -95,6 +95,7 @@ Appendix VII of the TG gives **recommended designs and details for Class II and 
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -105,6 +106,7 @@ Appendix VII of the TG gives **recommended designs and details for Class II and 
 - 🔵 [Amendments to the Technical Guidelines on Minor Works Control System](../circulars/2021.md#cl-atgmwcs-2021) <small>24 Mar 2021 · 《小型工程監管制度之技術指引》修訂事宜</small>
 - 🔵 [Technical Guidelines on Minor Works Control System (TG) Addendum (1/2020) Minor Works involving Signboards](../circulars/2020.md#cl-tgmwcsa2020) <small>18 Mar 2020 · 小型工程監管制度之技術指引附錄(1/2020)有關招牌的小型工程</small>
 - 🟢 [Matters requiring Attention under the Minor Works Control System (MWCS)](../circulars/2017.md#cl-mramwcs2017) <small>27 Apr 2017 · 小型工程監管制度注意事項</small>
+- 🔵 [Technical Guidelines on Minor Works Control System Addendum (1/2015) on Section 3 Categorisation of Minor Works Quality control and supervision of Tempered Glass Repair of Structural Elements Supporting Structure for Antenna and Transceiver or Radio Base Station on Roof](../circulars/2015.md#cl-tgmwca201501) <small>— · 小型工程監管制度之技術指引 附錄(1/2015) 第3章 小型工程的範疇 鋼化玻璃的品質控制及監督 修葺結構構件 屋頂上支承天線和收發器或無線電通訊站的構築物</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

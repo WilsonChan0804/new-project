@@ -88,6 +88,7 @@ keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊�
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -103,6 +104,7 @@ keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊�
 - 🟢 [Top-up Courses for Level 2 Representatives under the Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012](../circulars/2017.md#cl-tclrcop2017) <small>11 Sep 2017 · 《強制驗樓計劃及強制驗窗計劃作業守則2012》2級代表補足資格培訓課程</small>
 - 🔵 [Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012 Amendments](../circulars/2017.md#cl-cop-mbis-mwis-amendment2017) <small>6 Mar 2017 · Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012 Amendments</small>
 - 🟢 [Issue of "QP Card" for Qualified Person (QP)](../circulars/2016.md#cl-iqpc2016) <small>5 Feb 2016 · 向合資格人士發出「驗窗卡」</small>
+- 🟢 [Issue of Certification of Registration in the Form of a Card for Registered Inspectors (RI)](../circulars/2015.md#cl-icri2015) <small>1 Jan 2016 · 向註冊檢驗人員發出卡片式註冊證明書</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}
