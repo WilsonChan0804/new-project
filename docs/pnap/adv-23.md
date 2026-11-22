@@ -19,7 +19,7 @@ keywords: ADV-23, landscape treatment, 美化, slopes, 斜坡, retaining walls, 
     |---|---|
     | **Type 類別** | PNAP (ADV series), previously PNAP 270 舊編號 PNAP 270 |
     | **Issued by 發出機構** | Buildings Department 屋宇署 |
-    | **Version summarised 本摘要版本** | — |
+    | **Version summarised 本摘要版本** | May 2004 |
     | **Official language 官方語言** | English and Chinese 中英文版 |
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV023.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV023.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |

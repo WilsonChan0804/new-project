@@ -18,7 +18,7 @@ keywords: ADV-32, babycare room, 育嬰室, lactation room, 哺乳室, commercia
     |---|---|
     | **Type 類別** | PNAP (ADV series), previously PNAP 305 舊編號 PNAP 305 |
     | **Issued by 發出機構** | Buildings Department 屋宇署 |
-    | **Version summarised 本摘要版本** | — |
+    | **Version summarised 本摘要版本** | November 2018 |
     | **Official language 官方語言** | English and Chinese 中英文版 |
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV032.pdf) · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/practice-notes-and-circular-letters/pnap/ADV/ADV032.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the current BD version |
