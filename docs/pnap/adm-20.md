@@ -61,6 +61,15 @@ keywords: ADM-20, Central Data Bank, CDB, 中央資料庫, building materials, a
 | Construction regulation 建造規例 | [B(C)R](../regulations/bcr-123q.md) |
 | Simple structural works 簡單結構工程 | [ADM-23](adm-23.md) |
 
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+    - **[Central Data Bank (CDB)](../apsec/2020.md#i2020011020)** <small>ADF 1/2020, 10 Jan 2020</small><br>Members noted that the purpose of the CDB is intended to help sharing of information to the industry. In response to members’ enquiries, BD would review the process of updating of accepted structural materials, components or construction systems to CDB.
+
+<!-- APSEC END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

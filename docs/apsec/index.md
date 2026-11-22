@@ -55,7 +55,7 @@ tags:
 | [APP-2 Calculation of Gross Floor Area and Non-accountable Gross Floor Area](../pnap/app-2.md#apsec-clarifications) | 39 | 14 Aug 2026 |
 | [APP-152 Sustainable Building Design Guidelines](../pnap/app-152.md#apsec-clarifications) | 30 | 8 May 2026 |
 | [B(C)R Building (Construction) Regulation, Cap. 123Q](../regulations/bcr-123q.md#apsec-clarifications) | 23 | 6 Feb 2026 |
-| [ADM-19 Building Approval Process](../pnap/adm-19.md#apsec-clarifications) | 23 | 14 Aug 2026 |
+| [ADM-19 Building Approval Process](../pnap/adm-19.md#apsec-clarifications) | 22 | 14 Aug 2026 |
 | [FS Code 2011 Part D: Means of Access](../codes/fsc-part-d-means-of-access.md#apsec-clarifications) | 22 | 8 May 2026 |
 | [APP-151 Building Design to Foster a Quality and Sustainable Built Environment](../pnap/app-151.md#apsec-clarifications) | 22 | 8 May 2026 |
 | [APP-142 Code of Practice for Structural Use of Concrete 2013](../pnap/app-142.md#apsec-clarifications) | 22 | 8 May 2026 |
@@ -69,7 +69,7 @@ tags:
 | [APP-132 Site Coverage and Open Space Provision](../pnap/app-132.md#apsec-clarifications) | 16 | 17 Nov 2023 |
 | [APP-93 Planning and Design of Drainage Works](../pnap/app-93.md#apsec-clarifications) | 16 | 14 Aug 2026 |
 | [APP-19 Projections in relation to Site Coverage and Plot Ratio](../pnap/app-19.md#apsec-clarifications) | 16 | 8 May 2026 |
-| [APP-139 Code of Practice on Wind Effects in Hong Kong](../pnap/app-139.md#apsec-clarifications) | 16 | 14 Aug 2026 |
+| [APP-139 Code of Practice on Wind Effects in Hong Kong](../pnap/app-139.md#apsec-clarifications) | 15 | 14 Aug 2026 |
 | [B(P)R 23 & 23A Building height, site area, GFA and hotel concessions](../regulations/bpr-23-23a.md#apsec-clarifications) | 15 | 8 Aug 2025 |
 | [APP-37 Curtain Wall, Window and Window Wall](../pnap/app-37.md#apsec-clarifications) | 12 | 8 May 2026 |
 | [B(MW)R Building (Minor Works) Regulation, Cap. 123N](../regulations/bmwr-123n.md#apsec-clarifications) | 12 | 21 Nov 2025 |
@@ -86,7 +86,7 @@ tags:
 | [ADM-8 Structural Design Information](../pnap/adm-8.md#apsec-clarifications) | 6 | 3 May 2024 |
 | [APP-156 Design and Construction Requirements for Energy Efficiency of Residential Buildings](../pnap/app-156.md#apsec-clarifications) | 6 | 9 Aug 2024 |
 | [APP-171 Code of Practice for the Structural Use of Glass 2018](../pnap/app-171.md#apsec-clarifications) | 6 | 8 May 2026 |
-| [APP-24 Railway Protection under Railways Ordinance, MTR (Land Resumption and Related Provisions) Ordinance and Area Number 3 of the Scheduled Areas](../pnap/app-24.md#apsec-clarifications) | 6 | 14 Feb 2025 |
+| [APP-24 Railway Protection under Railways Ordinance, MTR (Land Resumption and Related Provisions) Ordinance and Area Number 3 of the Scheduled Areas](../pnap/app-24.md#apsec-clarifications) | 5 | 14 Feb 2025 |
 | [Cap. 123M Building (Energy Efficiency) Regulation](../regulations/beer-123m.md#apsec-clarifications) | 6 | 8 Aug 2025 |
 | [APP-23 Hoardings, Covered Walkways and Gantries (including Temporary Access for Construction Vehicles)](../pnap/app-23.md#apsec-clarifications) | 5 | 6 Feb 2026 |
 | [APP-170 Code of Practice for Demolition of Buildings 2004](../pnap/app-170.md#apsec-clarifications) | 5 | 3 May 2024 |
@@ -123,7 +123,7 @@ tags:
 | [APP-16 Cladding](../pnap/app-16.md#apsec-clarifications) | 2 | 8 Aug 2025 |
 | [APP-117 Structural Requirements for Alteration and Addition Works in Existing Buildings](../pnap/app-117.md#apsec-clarifications) | 2 | 8 Aug 2025 |
 | [APP-158 Quality Supervision of Building Works](../pnap/app-158.md#apsec-clarifications) | 2 | 25 Nov 2022 |
-| [APP-163 Code of Practice on Access for External Maintenance 2021](../pnap/app-163.md#apsec-clarifications) | 2 | 14 Feb 2025 |
+| [APP-163 Code of Practice on Access for External Maintenance 2021](../pnap/app-163.md#apsec-clarifications) | 3 | 14 Feb 2025 |
 | [APP-105 Water Seepage](../pnap/app-105.md#apsec-clarifications) | 2 | 14 Feb 2025 |
 | [ADM-23 Self-certification System for Plan Submission of Simple Structural Works](../pnap/adm-23.md#apsec-clarifications) | 2 | 14 Aug 2026 |
 | [APP-89 Provision of Better Lift Service](../pnap/app-89.md#apsec-clarifications) | 2 | 21 Nov 2025 |
@@ -147,13 +147,11 @@ tags:
 | [APP-124 Streets for Site Classification](../pnap/app-124.md#apsec-clarifications) | 1 | 18 Mar 2022 |
 | [APP-35 Refuse Storage and Collection](../pnap/app-35.md#apsec-clarifications) | 1 | 10 Feb 2023 |
 | [APP-40 Hotel Development](../pnap/app-40.md#apsec-clarifications) | 1 | 5 May 2023 |
-| [APP-27 Gas Water Heaters Regulation 35A of Building (Planning) Regulations](../pnap/app-27.md#apsec-clarifications) | 1 | 5 May 2023 |
 | [BO s.22–30 BA's powers, orders, unauthorised works, dangerous buildings, drainage and streets](../regulations/bo-part-2-enforcement.md#apsec-clarifications) | 1 | 17 Nov 2023 |
 | [Cap. 123C Building (Demolition Works) Regulations](../regulations/bdwr-123c.md#apsec-clarifications) | 1 | 23 Feb 2024 |
 | [APP-122 Provision of Sky Garden in Refuge Floor](../pnap/app-122.md#apsec-clarifications) | 1 | 9 Aug 2024 |
 | [APP-153 Code of Practice for Fire Safety in Buildings 2011](../pnap/app-153.md#apsec-clarifications) | 1 | 9 Aug 2024 |
 | [APP-169 Strength Tests for Structural Fixings in Concrete](../pnap/app-169.md#apsec-clarifications) | 1 | 14 Feb 2025 |
-| [APP-15 Site Formation - Temporary or Permanent Filling Work](../pnap/app-15.md#apsec-clarifications) | 1 | 14 Feb 2025 |
 | [APP-41 Buildings to be Planned for Use by Persons with a Disability](../pnap/app-41.md#apsec-clarifications) | 1 | 9 May 2025 |
 | [B(P)R Part X 71–73 and Third & Fourth Schedules: windows to verandahs, barrier free access, elderly-friendly design](../regulations/bpr-71-73.md#apsec-clarifications) | 1 | 9 May 2025 |
 | [ADM-13 Monitoring for Site Safety and Quality](../pnap/adm-13.md#apsec-clarifications) | 1 | 9 May 2025 |
@@ -162,6 +160,7 @@ tags:
 | [APP-54 Retaining Wall](../pnap/app-54.md#apsec-clarifications) | 1 | 8 May 2026 |
 | [ADM-18 Site Auditing for Building Works](../pnap/adm-18.md#apsec-clarifications) | 1 | 14 Aug 2026 |
 | [APP-175 Elderly-friendly Building Design](../pnap/app-175.md#apsec-clarifications) | 1 | 14 Aug 2026 |
+| [ADM-20 Central Data Bank (CDB)](../pnap/adm-20.md#apsec-clarifications) | 1 | 10 Jan 2020 |
 
 ## By meeting 按會議 {#by-meeting}
 
