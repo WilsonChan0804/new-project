@@ -196,6 +196,67 @@ An **FRS** is a protected shaft containing an **access staircase**, a **fireman'
 
 ---
 
+## Clause by clause 逐條條文 {#clause-by-clause}
+
+| Clause 條文 | What it requires 規定 | 中文要點 |
+|---|---|---|
+| **D1.1–D1.3** | Deemed-to-comply provisions for means of access and EVA, read with all other Parts; guidance on meeting the Performance Requirements. Commentary: implements [B(P)R 41A–41D](../regulations/bpr-39-49e.md) | 消防進出途徑及緊急車輛通道的當作符合規定 |
+| **D2.1** | Performance Requirements in Part A **A10** | 性能要求見 A10 |
+| **D3.1** | Numbers of access staircases, fireman's lifts and FRS per B(P)R 41A–41C, summarised in **Table D1** | 數目見表 D1 |
+| **D3.2** | **High-risk** uses (e.g. UC 5a, 5d, 6): extra fireman's lifts / FRS may be required | 高風險用途可要求增加 |
+| **Table D1 note** | An access staircase / fireman's lift inside an FRS **counts** as one for 41A / 41B | FRS 內的樓梯及升降機計入 |
+| **D4.1** | **Required (escape) staircases** count as access staircases; inside an FRS only if 41C and Part D are met | 規定樓梯可作通道樓梯 |
+| **D5.1** | An FRS access staircase can count as an **escape staircase** if Part B is met | FRS 樓梯符合 B 部可作逃生樓梯 |
+| **D6.1–D6.2** | Where several lifts exist, **FSD designates** the fireman's lift; not a **goods lift** in UC 6 | 由消防處指定；工業貨梯不可 |
+| **D7.1** | **Fire service access point** at a ground storey on the building perimeter, from a street accessible to FSD vehicles or via an open area ≥ **1.5 m** wide; doors / gates openable **without a key** | 消防進出點：街道或 ≥ 1.5 米空地；門閘毋須鑰匙 |
+| **D7.2** | Lift may be set back up to **18 m** from the access point (longer if BA allows) | 升降機距進出點 ≤ 18 米 |
+| **D7.3** | Passage clear **1,500 mm** wide, **2,000 mm** headroom; FRR walls as G/F elements; openings via a protected lobby (C9.3, C16.5) | 通道闊 1.5 米、高 2 米，防火分隔 |
+| **D7.4** | Sign "Fireman's Lift 消防員升降機", characters ≥ **20 mm**, lit by two systems or self-luminous | 標誌字高 ≥ 20 毫米 |
+| **D8.1** | Reach any floor on fire **without traversing more than two floors**: single lift serves at least **alternate floors**; zoning allowed in a common liftwell if indicated; **uniform** pattern (odd, even or all); **every refuge floor** served (doors per B18.2(i)) | 最多行兩層；隔層停；庇護層必停 |
+| **D8.2** | Top floor served if in the pattern, unless the machine room must be there | 頂層須停（機房除外） |
+| **D8.3** | Lowest (or topmost basement) landing **at the access point level**, or within **one floor** if constrained | 最低停靠層在進出點水平（最多差一層） |
+| **D8.4** | Every part of a served floor ≤ **60 m** from the **lift lobby door** along actual routes; **45 m direct** at design stage if layout unknown | 60 米（實際路線）／45 米（直線） |
+| **D9.1–D9.2** | Separate liftwell, **≤ 3** fireman's lifts may share; sign "FIREMAN'S LIFT 消防員升降機" ≥ **15 mm** with floors served | 獨立升降機槽，最多 3 部共用 |
+| **D10.1** | Car: min. internal dimension **1.1 m**, floor area ≥ **1.35 m²**, rated load ≥ **680 kg** | 機廂 1.35 平方米、680 公斤 |
+| **D11.1** | Each landing (except the access point) via a **lobby ≥ 2.25 m²**, min. **1.5 m**; walls and doors FRR as the floor (max. **120 min**), Table C2 | 升降機大堂 ≥ 2.25 平方米，耐火 ≤ 120 分鐘 |
+| **D11.2** | External wall openings in the lobby to C9.6–C9.8 | 外牆開口按 C9.6–C9.8 |
+| **D11.3** | May share a lobby with other lifts if that lobby exists on **every floor** served | 可與其他升降機共用大堂 |
+| **D11.4** | Direct, unobstructed, unlocked access to a **protected exit**; lobby is a **common area**, not absorbable into units | 直達受保護出口；屬公用地方 |
+| **D12.1** | Door opening ≥ **800 × 2,000 mm**, power-operated self-closing | 門 ≥ 800 × 2,000 毫米 |
+| **D13.1** | Controls and operation per the EMSD **Lifts and Escalators Code** | 按機電署升降機守則 |
+| **D14.1–D14.2** | FRS access point as D7.1; set-back ≤ **18 m** to the lift door or first step; lift and staircase reached from the **same street** | FRS 進出點；≤ 18 米；同一街道 |
+| **D14.3–D14.4** | FRS and passage separated from G/F (incl. cargo lift lobbies) with D17.2 FRR; passage **1,500 mm** wide, **2,000 mm** high | 分隔及通道尺寸 |
+| **D14.5** | Sign "Firefighting and Rescue Stairway 消防和救援樓梯間", ≥ **20 mm** | 標誌 |
+| **D15.1** | Staircase and lift serve **every floor incl. refuge floors**; staircase serves the **roof** if other staircases do; lift need not serve the roof but serves the top floor (machine room exception) | 每層包括庇護層；樓梯通天台 |
+| **D15.2** | Ancillary **car park / loading** floors also served | 停車及上落貨層亦須服務 |
+| **D15.3** | Lowest landing at the access point level (or ± one floor) | 同 D8.3 |
+| **D15.4** | Upper-floor FRS staircase must **not continue directly** into the basement | 上層樓梯不得直通地庫 |
+| **D15.5** | Staircase passing a refuge floor is **discontinued** so the route crosses the refuge area | 經庇護層須轉經庇護區 |
+| **D15.6** | Every part ≤ **60 m** from the FRS lobby door (45 m direct at design) | 60 米 |
+| **D16.1(a)–(b)** | Floor access via a **lobby 5–10 m²**, min. **1.5 m**; above G/F it has an **external wall** | 前室 5–10 平方米，有外牆 |
+| **D16.1(c)** | Above G/F natural ventilation: openings ≥ **25%** of lobby area, top ≥ **1.9 m**, to external air over ≥ **21 m²** (enclosed well ≥ **1 m² per 1 m** height, min. 1.5 m); side-hung windows opening ≥ **30°**, keyless | 開口 ≥ 25%；開向 ≥ 21 平方米露天地方 |
+| **D16.1(d)** | Below G/F: **smoke outlets ≥ 1 m²** per lobby to open air, individually, ≥ **5 m** (or 2.5 m if directed away) from exits and access points, shaft FRR as stairway walls; or openings into an open well. Not needed if the staircase is **open on 3 sides** (≥ 900 mm) to a void ≥ **10 m²** (Diagram D2) | 地庫前室：排煙口 ≥ 1 平方米，距出口 ≥ 5 米 |
+| **D16.2–D16.3** | Lift opens into that lobby; staircase and lift **communicate at every floor** | 升降機開向前室；每層相通 |
+| **D17.1** | Walls, landings, flights, linings and finishes **wholly non-combustible** (Part E) | 全部不燃物料 |
+| **D17.2–D17.3** | Perimeter walls, supports and slabs, and internal walls between staircase and lobby: FRR **as the floor's elements** | 圍牆及內部分隔耐火 |
+| **D17.4** | Lobby doors FRR as the walls (Table C2, C16.5); no bolts or locks, except a lock on the floor-side door **openable from the floor side** without a key (electric locks to B13.2) | 不得上鎖（樓層一面可無匙開啟除外） |
+| **D17.5** | External wall openings to C9.6–C9.8 and ≥ **450 mm** from other openings of the building | 外牆開口距其他開口 ≥ 450 毫米 |
+| **D18.1** | Staircase: clear width ≥ **1,050 mm**, headroom ≥ **2,000 mm**; straight flights, **2–16 risers**, tread ≥ **225 mm** (clear of nosings), riser ≤ **175 mm**; landings ≥ flight width, not reduced by door swing; handrails **both sides** at **850–1,100 mm**, ≤ **90 mm** projection | 闊 ≥ 1,050 毫米；兩邊扶手 850–1,100 毫米 |
+| **D19.1** | Staircase **pressurised** (D21.1) **or** naturally ventilated: openings ≥ **15%** of staircase plan area at each storey above G/F, plus a top vent ≥ **5%** with a remote switch at the G/F access point | 加壓或天然通風 15%＋頂部 5% |
+| **D20.1–D20.2** | Up to **3** fireman's lifts and **no other lifts**; no goods lift; comply with D9.2, D10, D12, D13 | 最多 3 部，不得有其他升降機 |
+| **D21.1** | Natural ventilation may be omitted with **pressurisation** or similar to FSD's satisfaction | 可以加壓系統代替 |
+| **D22.1** | **Virgin sites** (and later redevelopments of them) | 新發展地盤 |
+| **D22.2(a)–(c)** | Width **7.3 m** (carriageway) or **6 m** hard-paved and demarcated; headroom ≥ **4.5 m**; gradient ≤ **1:10** (≤ **1:6** where not serving a major façade), transitions per Diagram D5 | 闊 7.3／6 米；淨高 4.5 米；斜度 1:10（1:6） |
+| **D22.2(d)** | Design vehicle **30,000 kg**, turning circle **26 m**, length **12 m**; turning space at dead ends | 30 噸、轉彎 26 米、長 12 米 |
+| **D22.2(e)** | Serve ≥ one **major façade** (≥ **¼** of total perimeter, aggregate to ¼ if shorter); façade within **10 m** of the EVA; not applicable above **60 m**; the serving part **uncovered** | 服務 ≥ ¼ 周長立面，距 10 米內 |
+| **D22.3(a)** | **UC 6**: two **opposite** remote façades each ≥ ¼, from different streets if possible; **two-way 13.5 m** (or 2 × 7.3 m with divider); a **6 m reserve** if EVA is outside the site (Diagram D6) | 工業：兩面相對立面、雙程 13.5 米 |
+| **D22.3(b)–(c)** | **UC 5a**: thoroughfares per **B20**; mixed uses: the most stringent | 娛樂場所按 B20；混合用途取最嚴 |
+| **D22.4** | EVA not normally used by other vehicles: HyD-standard **crash gate** perpendicular to the EVA, with clear space (Diagrams D7–D8) | 緊急閘門 |
+| **D23.1–D23.4** | **Redevelopment sites**: D22.2(b)–(d) apply; UC 6 one major façade **7.3 m**; UC 5a per B20; others one major façade **6 m**; mixed: more stringent; crash gates | 重建地盤：工業 7.3 米、其他 6 米 |
+| **D24.1–D24.3** | Signs: layout sign at the entrance (D9); indication signs ≤ **100 m** apart (D10); **No Parking** ≤ **50 m** apart on carriageways (D11); non-carriageway EVA may use durable route markers on kerbs ≤ 100 m (D12) | 標誌：100 米、禁止泊車 50 米 |
+| **D25.1–D25.2** | **Exemption** for **low fire risk** or **topography** (B(P)R 41D(3)); apply with a **fire safety assessment report** (Part G). Commentary: e.g. transmitter stations, beach houses; stepped streets; remote islands case by case | 低風險或地形可豁免，須消防安全評估報告 |
+| **D26.1** | **Enhanced fire safety** to compensate (41D(4)): MoE, MoA, FRC, FSI. Commentary: fast-response sprinklers in common areas (whole commercial part of composite buildings), staircase pressurisation / venting, direct line to FSCC, larger tanks | 補償措施：花灑、加壓、直線通報、加大水缸 |
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"
