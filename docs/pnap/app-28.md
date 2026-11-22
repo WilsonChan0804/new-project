@@ -7,6 +7,8 @@ tags:
   - Site supervision 地盤監督
   - Excavation & ELS 挖掘
   - Foundation 地基
+summary: "Qualified supervision of geotechnical works under s.17: Categories I, II, III and suitable persons."
+keywords: APP-28, qualified supervision, 合資格監督, geotechnical, 岩土, site formation, excavation, RPE (Geotechnical), Category I II III
 ---
 
 # APP-28 Qualified Supervision of Site Formation, Excavation, Foundation Works on Sloping Ground and Ground Investigation in the Scheduled Areas<br><small>地盤平整工程、挖掘工程、斜坡上的基礎工程和附表所列地區的土地勘測工程須有合格監督的規定－《建築物條例》第17條</small>
@@ -37,6 +39,33 @@ tags:
     - **第 I 類**：如穩定或位移計算結果**對設計假設敏感**，須由負責設計的岩土工程師定期巡查，在現場核實假設（B(A)R 第 8(1)(bb)、(bc) 條）（第 2 段）。
     - **第 II 類**：高度敏感地盤（例如毗鄰淺基礎舊樓）由**資深**（合夥人／董事級）岩土工程師定期巡查；**第 III 類**：工藝要求高的工程（地錨、填土壓實、複雜的挖掘及側向承托）由有經驗人員**全職**監督；可組合使用，人選須經建築事務監督同意（第 2–4 段）。
     - 岩土問題輕微且失敗後果不大的地盤一般不會施加（第 5 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: works with **significant geotechnical content** (site formation, excavation, foundations on **sloping ground**, GI in **Scheduled Areas**) where the BA imposes **qualified supervision** under **BO s.17**. 岩土工程的合資格監督。
+
+    **Not imposed 不施加**: sites with minor geotechnical problems and insignificant failure consequences (para. 5). 輕微問題不施加。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | **s.17** empowers the BA to require qualified supervision on approval or consent. 法定權力。 |
+| 2 (I) | **Category I**: **periodic** inspections by a qualified geotechnical engineer **involved** in the geotechnical design, where results are **sensitive** to assumptions; check assumptions on site (B(A)R 8(1)(bb), (bc)) and judge design changes; e.g. **geological model** (sheet pile penetration), **groundwater** (perched water tables). 第 I 類。 |
+| 2 (II) | **Category II**: periodic inspections by a **senior** engineer **responsible** for the design, for **high-sensitivity** sites (e.g. excavation next to **old buildings on shallow foundations**). 第 II 類。 |
+| 2 (III) | **Category III**: **full-time** supervision by an experienced person where day-to-day checks matter, e.g. **ground anchors**, **fill compaction**, complex ELS. 第 III 類。 |
+| 3 | Packages may combine I, II, III; names submitted for **agreement**. 可組合。 |
+| 4 | Suitable persons: I = **RPE (Geotechnical)** or equivalent from the design firm; II = RPE (G) **partner / director**; III = experienced engineer / geologist, technical inspector or works supervisor. 人選。 |
+| 5 | RPE (G) not mandatory; case by case; not imposed for minor cases. 非必要條件。 |
+| 6 | Some **leases** contain geotechnical supervision clauses; ask the CBS. 地契條款。 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Current s.17 conditions 現行條件 | [APP-162](app-162.md) |
+| Structural qualified supervision 結構工程監督 | [APP-48](app-48.md) |
+| Supervision plans and TCP grades 監工計劃書 | [Site Supervision Code](../codes/site-supervision-2009.md) |
+| Typical works 相關工程 | [APP-12](app-12.md) (anchors) · [APP-15](app-15.md) (fill) · [APP-22](app-22.md) (dewatering) · [APP-61](app-61.md) (Scheduled Areas) |
 
 ## Related 相關文件 {#related}
 
