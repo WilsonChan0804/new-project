@@ -15,6 +15,7 @@ tags:
   - Geotechnical 岩土
   - Foundation 地基
   - Drainage 排水
+  - A&A works 改動及加建工程
 summary: "Consent procedures: Type I and Type II works, fast-track consent, the 2-year review of approved plans, new regulations and the first-consent checklist."
 keywords: APP-97, consent, 動工同意, Type II works, fast track, 快速處理, BA8, s.16(3)(d), first consent checklist, 首次同意
 ---
