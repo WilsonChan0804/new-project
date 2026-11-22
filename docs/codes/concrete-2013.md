@@ -121,6 +121,7 @@ keywords: concrete code, 混凝土, cover, 保護層, exposure, grade, C30, rein
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -128,6 +129,11 @@ keywords: concrete code, 混凝土, cover, 保護層, exposure, grade, C30, rein
 - 🔵 [Code of Practice for Structural Use of Concrete 2013 (2020 Edition)](../circulars/2020.md#cl-copsuc2013-2020) <small>29 Dec 2020 · 《混凝土結構作業守則2013年（2020年修訂版）》</small>
 - 🔵 [Amendments to Code of Practice for Structural Use of Concrete 2013](../circulars/2020.md#cl-acpsuc2013-2020) <small>24 Nov 2020 · 《混凝土結構作業守則2013年》修訂事宜</small>
 - 🔵 [Code of Practice for Structural Use of Concrete 2013 Construction Standard CS2:2012 – Steel Reinforcing Bars for the Reinforcement of Concrete](../circulars/2018.md#cl-srbrc) <small>31 Oct 2018 · 《2013年混凝土結構作業守則》建築標準CS2:2012–用於混凝土的鋼筋</small>
+- 🔵 [Amendments to Code of Practice for Structural Use of Concrete 2013](../circulars/2017.md#cl-acopsuc2013-2017) <small>13 Jun 2017 · 《混凝土結構作業守則2013年》修訂</small>
+- ⚫ [Code of Practice for Structural Use of Concrete 2013 Construction Standard CS2:2012 – Steel Reinforcing Bars for the Reinforcement of Concrete](../circulars/2016.md#cl-copsuc2013cs-a) <small>28 Nov 2016 · 2013年混凝土結構作業守則建築標準CS2:2012–用於混凝土的鋼筋</small>
+- 🔵 [Code of Practice for Structural Use of Concrete 2013 Construction Standard CS2:2012 – Steel Reinforcing Bars for the Reinforcement of Concrete](../circulars/2016.md#cl-copsuc2013cs) <small>22 Sep 2016 · 2013年混凝土結構作業守則建築標準CS2:2012 –用於混凝土的鋼筋</small>
+- 🔵 [Code of Practice for Structural Use of Concrete 2013 Construction Standard CS2:2012 – Steel Reinforcing Bars for the Reinforcement of Concrete](../circulars/2016.md#cl-srbrc2016) <small>26 Aug 2016 · 2013年混凝土結構作業守則建築標準CS2:2012 – 用於混凝土的鋼筋</small>
+- 🟢 [Use of Off-site Prefabricated Steel Reinforcing Bar Products](../circulars/2016.md#cl-uopsrbp2016) <small>14 Apr 2016 · 使用工地外預製鋼筋組件</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

@@ -331,12 +331,15 @@ Conditions: not for special or unconventional structures; **no debris accumulati
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [GB 5725‑2025 "Fall protection – Safety nets"](../circulars/2026.md#cl-fpsn2026) <small>31 Aug 2026 · GB 5725‑2025《墜落防護 安全網》</small>
 - 🟢 [Use of Fire Retardant Protective Net/Screen/Tarpaulin/Plastic Sheeting on Facade of Buildings under Construction, Demolition, Repair or Minor Works](../circulars/2025.md#cl-ufrpnstpsfbcdrmw2025) <small>21 Oct 2025 · 就正在興建、拆卸，或進行修葺或小型工程的建築物在外牆裝設阻燃保護網／保護幕／防水油布／塑膠帆布須知</small>
 - 🟢 [Precautionary Measures for Repair Works of External Walls in Buildings](../circulars/2023.md#cl-rwew2023) <small>28 Aug 2023 · 大廈外牆修葺工程的防護措施</small>
+- 🟢 [Streamlined Procedures for Carrying out Minor Works before Demolition of Buildings](../circulars/2017.md#cl-spmwdb2017) <small>26 Jun 2017 · 拆卸建築物前進行小型工程的簡化程序</small>
+- 🔵 [Amendments to Code of Practice for Demolition of Buildings 2004](../circulars/2016.md#cl-acpdb2016) <small>Sep 2016 · 修訂《建築物拆卸作業守則2004年》</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

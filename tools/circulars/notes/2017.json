@@ -1,0 +1,211 @@
+{
+ "CL_TCLRCOP2017": {
+  "to": "RI, RGBC, RMWC",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "status_links": [
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "mbis",
+   "registration"
+  ],
+  "points": [
+   [
+    "After the Mar 2017 MBIS/MWIS Code amendments allowing an RI to appoint a **Level 2 representative** in the supervision team (App. VI Table 1), IVE runs **top-up courses** for (i) **TCP T1** (building or minor works) with 2 years' relevant experience and (ii) **authorised signatories** of RGBC or RMWC (Class I, Type A or B). With **5 years'** experience plus the course, they may act as Level 2 representatives; the **RI keeps overall responsibility**.",
+    "配合 2017 年 3 月守則修訂（註冊檢驗人員可委任**第 2 級代表**），IVE 為 (i) 具 2 年經驗的 **T1 技術人員**及 (ii) 承建商**獲授權簽署人**開辦**銜接課程**；具 **5 年**經驗並完成課程者可擔任第 2 級代表，**註冊檢驗人員仍負全責**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_AABP2017": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "superseded",
+  "status_links": [
+   "#cl-aagbpprpclfs_2021|Sep 2021 letter"
+  ],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "A building plan site may include only land the applicant owns or has a **realistic prospect of controlling**. The BA considers all information, e.g. (a) **percentage of ownership** acquired, (b) steps to acquire the rest, (c) steps to get other owners' consent for joint redevelopment.",
+    "地盤只可包括申請人擁有或**有實際機會控制**的土地；當局考慮 (a) 已取得業權百分比、(b) 收購其餘業權的行動、(c) 取得其他業主同意合併重建的行動。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Superseded by the Sep 2021 letter listing acceptable situations 已由 2021 年 9 月通告取代"
+ },
+ "CL_SPMWDB2017": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../codes/demolition-2004.md|Demolition Code",
+   "../guides/minor-works.md|Minor works guide"
+  ],
+  "topics": [
+   "minorworks",
+   "submission"
+  ],
+  "points": [
+   [
+    "**Minor works before demolition** (removing UBW, projections, windows; slab openings for debris; precautionary measures) – one-stop processing by **NBD1** if the same **project team** (AP, RSE, RSC (Demolition), RGE where applicable) does the demolition: submit **MW01 ≥ 7 days** before start **with the demolition plans** (showing the MW and TG protective measures; photos not needed if in the building appraisal report); submit **MW02** with **Form BA14A** (photos not needed if the whole building is demolished), or separately to NBD1 if completed before Form BA10. The RSC(D) must also be registered for the MW class/type, with the same AS.",
+    "**拆卸前小型工程**（清拆僭建物、伸出物、窗；開洞運送廢料；防護措施）：如由負責拆卸的同一**項目小組**進行，可由**新建築物科一組**一站式處理：**MW01 須於動工前 ≥ 7 日**隨拆卸圖則提交；**MW02** 隨 **BA14A** 提交；拆卸專門承建商須同時註冊相關小型工程類別。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACOPSUC2013_2017": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Concrete Code amendments (Jun 2017): **\"cementitious content\"** (cement + silica fume + PFA or GGBS) replaces cement content; revised **minimum cementitious content** (Table 4.2); post-fire investigation of **spalling protection** in high strength concrete; **flange beam** longitudinal shear; shear in **circular columns**; beam-column joints; crack width for **0.1 mm** limits; alternative design of **exposed cantilevered slabs** by limiting steel stress.",
+    "混凝土守則修訂（2017 年 6 月）：以**膠凝材料含量**取代水泥含量；修訂最少含量；高強度混凝土火災後**剝落防護**檢查；翼樑縱向剪力；**圓柱**剪力；樑柱接頭；**0.1 毫米**裂縫；外露懸臂板替代設計。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Concrete Code 2020 Edition 已納入 2020 年版"
+ },
+ "CL_SSW2017": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual typhoon season scaffolding letter.",
+    "每年颱風季節棚架通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_FPMCS2017": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "topics": [
+   "weather",
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual flood prevention letter.",
+    "每年地盤防洪通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COP_Foundations2017": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/foundations-2017.md|Foundations Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Publication of the **Code of Practice for Foundations 2017** (review of the 2004 Code since 2012), usable at once. Major revisions: **bearing capacity equation** for shallow foundations and **plate load test** criteria; **settlement** estimation and acceptance; **Scheduled Areas 2 and 4** (marble); uplift, overturning and buoyancy with the **highest possible groundwater table** and overall stability; pile types; **re-use of foundations**; **monitoring plan**, vibration and settlement limits; **PR plan** for piling; more testing guidance.",
+    "頒布**《2017 年地基作業守則》**。主要修訂：淺地基**承載力公式**及**平板荷載測試**；**沉降**估算及準則；**附表地區第 2、4 號**（大理石）；以**最高可能地下水位**驗算上浮、傾覆、浮力；樁類；**重用地基**；**監測計劃**、振動及沉降限值；打樁**公關計劃**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Promulgates the Foundations Code 2017 (now the 2024 Edition) 頒布地基守則 2017（現為 2024 年版）"
+ },
+ "CL_AMMCS2017": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 1",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Anti-mosquito reminder for construction sites.",
+    "地盤防蚊提示。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_MRAMWCS2017": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [
+   "../guides/minor-works.md|Minor works guide",
+   "../regulations/mw-technical-guidelines.md|MW Technical Guidelines"
+  ],
+  "topics": [
+   "minorworks"
+  ],
+  "points": [
+   [
+    "BD audits often find non-compliance. Ensure: (a) works fall within the **class, type and item you are registered for**; (b) forms complete with all documents; (c) licences for any **third-party IP** in submissions (you indemnify the Government); (d) **no unnecessary personal data**. Tell BD if works cannot start on the stated date or finish **within 6 months**. See the TG and the \"Quick Guide for Minor Works\" app.",
+    "審核常見違規。須確保：(a) 工程屬**已註冊的級別、類型及項目**；(b) 表格及文件齊全；(c) 已取得**第三者知識產權**許可；(d) 不提交不必要的**個人資料**。如未能按期動工或 **6 個月內**完成須通知屋宇署。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CoP_MBIS_MWIS_amendment2017": {
+  "to": "AP, RSE, RGE, RI, QP",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "MBIS/MWIS Code amendments (6 Mar 2017): inspection of **cantilevered slab canopies**; RI's **supervision of repair works**; a **Level 2 representative** of the RI for supervision.",
+    "驗樓驗窗守則修訂（2017 年 3 月 6 日）：**懸臂板簷篷**檢驗；註冊檢驗人員**監督修葺**的要求；可委任**第 2 級代表**。"
+   ]
+  ],
+  "related": [
+   "#cl-tclrcop2017|Top-up courses"
+  ],
+  "status_note": "Incorporated into the MBIS/MWIS Code 2023 Edition 已納入 2023 年版"
+ },
+ "CL_RCRMWC2017": {
+  "to": "RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Refresher course for RMWC renewal or restoration.",
+    "小型工程承建商重溫課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPDC2017": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "CPD course for RGBC/RSC renewal or restoration.",
+    "一般建築及專門承建商持續專業發展課程。"
+   ]
+  ],
+  "related": []
+ }
+}

@@ -80,11 +80,13 @@ keywords: precast, 預製, precast facade, 預製外牆, lifting insert, 吊裝,
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - ⚫ [Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass](../circulars/2022.md#cl-qsqapccmichsptg2022) <small>22 Apr 2022 · Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass</small>
 - 🔵 [Amendments to Code of Practice for Precast Concrete Construction 2016](../circulars/2020.md#cl-acoppcc2016-2020) <small>17 Nov 2020 · 《預製混凝土結構作業守則2016年》修訂事宜</small>
+- 🔵 [Code of Practice for Precast Concrete Construction 2016](../circulars/2016.md#cl-cppcc2016) <small>25 Apr 2016 · 《預製混凝土建造作業守則2016年》</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

@@ -398,6 +398,7 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -411,6 +412,7 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 - ⚪ [Code of Practice for Site Supervision 2009 (2021 Edition)](../circulars/2021.md#cl-cops2009-2021) <small>26 Mar 2021 · 2009年地盤監督作業守則(2021年修訂版)</small>
 - 🔵 [Amendments to Code of Practice for Site Supervision 2009](../circulars/2020.md#cl-acopss2020) <small>29 Sep 2020 · 《2009年地盤監督作業守則》修訂事宜</small>
 - 🔵 [Code of Practice for Site Supervision 2009 Amendments](../circulars/2019.md#cl-cpss2009a201905) <small>8 May 2019 · 《2009年地盤監督作業守則》修訂事宜</small>
+- 🔵 [Code of Practice for Site Supervision 2009 Corrigenda](../circulars/2016.md#cl-copss2009c-2016) <small>14 Jun 2016 · 《2009年地盤監督作業守則》 更正</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

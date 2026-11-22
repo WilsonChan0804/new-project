@@ -1,0 +1,400 @@
+{
+ "CL_GDASP2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "superseded",
+  "status_links": [
+   "#cl-copdsem2019|Sep 2019 letter",
+   "../codes/external-maintenance-2021.md|AfEM Code 2021",
+   "../pnap/adv-33.md|ADV-33"
+  ],
+  "topics": [
+   "design"
+  ],
+  "points": [
+   [
+    "Design guidelines for safe **maintenance and repair of external air conditioners**: access preferably (a) from inside the unit through windows without climbing out, (b) from common areas via access doors, (c) via openable windows with climbing out; openings **≥ 500 × 900 mm** and not smaller than the AC. **AC platform** projection up to **900 mm** if justified (outer **150 mm** at least perforated); working space **400 mm** front or back and **300 mm** sides; **100 mm** ventilation gap; show platform and AC sizes on GBP (ADV-14, ADV-33).",
+    "**外置冷氣機**維修安全設計指引：通道以 (a) 由室內經窗而毋須爬出為優先；開口 **≥ 500 × 900 毫米**；**冷氣機平台**伸出可放寬至 **900 毫米**（外側最少 150 毫米須通花）；工作空間前或後 **400 毫米**、兩側 **300 毫米**；通風空隙 **100 毫米**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Superseded by Appendix C of the 2019 DfS Code, now the AfEM Code 2021 已由 2019 年守則附錄 C 及 2021 年外部維修通道守則取代"
+ },
+ "CL_COPSUC2013CS_A": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "spent",
+  "status_links": [
+   "#cl-srbrc|Oct 2018 letter",
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "SCCT extended the grace period: **purchaser's bond property tests** not required for steel rebars delivered on or before **31 Dec 2018**.",
+    "建造業標準委員會延長寬限期：**2018 年 12 月 31 日**或之前運抵的鋼筋毋須進行購買者**黏結性能**測試。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Waiver ended 31 Dec 2018 豁免已於 2018 年底結束"
+ },
+ "CL_SC2001Amend2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/steel-2011.md|Steel Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Steel Code amendments (Nov 2016): rebar characteristic strength **460 → 500 N/mm²** (CS2:2012) and shear stud resistance (Table 10.7); new **Table 12.2e** for hot rolled rebar at elevated temperature; **GB/T 700-2006** accepted; second-order direct analysis (Eq. 6.14) and restrained beams (8.2); \"vibration\" replaces \"oscillation\".",
+    "鋼結構守則修訂（2016 年 11 月）：鋼筋特徵強度 **460 → 500 牛頓/平方毫米**；新增高溫鋼筋折減表；接受 GB/T 700-2006；二階直接分析；用詞統一。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Steel Code (2021 and 2023 Editions) 已納入鋼結構守則"
+ },
+ "CL_COPSUC2013CS": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "SCCT **Amendment 1/2016** to CS2:2012: tensile test specimen length and figure for the **transverse rib flank inclination angle α**.",
+    "CS2:2012 **修訂 1/2016**：拉力試件長度及橫肋側面傾角圖。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Part of CS2:2012 (Amendment 1/2016) 已成為 CS2 修訂"
+ },
+ "CL_ACPDB2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/demolition-2004.md|Demolition Code"
+  ],
+  "topics": [
+   "scaffold",
+   "structural"
+  ],
+  "points": [
+   [
+    "Demolition Code amendments (Sep 2016): **RGE** role for demolition with geotechnical concerns and the **Minor Works Control System**; stabilising scaffolds and **catch-fans** in strong wind and typhoons; an **extra layer of heavy duty net** against falling debris; guidance for **machine demolition** and aged buildings designed to old codes; waste facilities and debris handling. Plans to the old Code accepted for a **3-month grace period**.",
+    "拆卸守則修訂（2016 年 9 月）：**岩土工程師**角色及小型工程制度；強風下穩固棚架及**接料台**；加設**重型安全網**；**機械拆卸**及舊樓指引；廢料處理。舊版圖則有 **3 個月寬限期**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Demolition Code (2016 amendments) 已納入拆卸守則"
+ },
+ "CL_COPDILA2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/dil-2011.md|Loads Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Amendments to the **Dead and Imposed Loads Code 2011** (Aug 2016), effective at once except for amendment submissions to already-approved designs; to be included in a future edition.",
+    "**荷載守則**修訂（2016 年 8 月），即時生效（已批准設計的修訂除外）。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Loads Code 2021 Edition 已納入 2021 年版"
+ },
+ "CL_SRBRC2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "SCCT **Technical Note 3** on CS2:2012: demonstrating enough **nitrogen binding elements** when rebar nitrogen content exceeds the Table 4 limit (Note b).",
+    "CS2 **技術說明 3**：鋼筋氮含量較高時須證明有足夠**氮結合元素**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Part of CS2:2012 guidance (Technical Note 3) 已成為 CS2 技術說明"
+ },
+ "CL_EFSS2016": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "**Electronic Forms Submission System** launched 24 Jun 2016; all specified forms revamped with notes; fill in on computer so data go into the **QR code**; old forms not accepted from **1 Nov 2016**.",
+    "2016 年 6 月 24 日推出**電子表格呈交系統**；所有指定表格改版；電腦填寫資料存入**二維碼**；舊表格 2016 年 11 月 1 日起不再接受。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CWRO2016": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "spent",
+  "status_links": [],
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "**Construction Workers Registration Ordinance**: from **1 Apr 2017** only **registered skilled/semi-skilled workers** of designated trades may do designated skill work independently on sites; senior workers' one-off registration deadline 30 Sep 2016; others by trade test.",
+    "《建造業工人註冊條例》**「專工專責」**：由 **2017 年 4 月 1 日**起只有註冊熟練／半熟練工人可獨立進行指定工種工作。"
+   ]
+  ],
+  "related": [],
+  "status_note": "One-off (implementation 1 Apr 2017) 一次性"
+ },
+ "CL_MDMIBRU2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-159.md|APP-159"
+  ],
+  "topics": [
+   "design"
+  ],
+  "points": [
+   [
+    "To deter **residential misuse of new industrial buildings**: (a) no modification for **non-provision of natural lighting and ventilation** to toilets except communal toilets; (b) so internal **pipe ducts** for toilets are **not GFA-exempt** except for communal toilets in common parts; (c) **high headroom** in small workshop units must be justified; (d) justify designs and facilities not usual in industrial buildings, or the proposal may not be accepted as an IB.",
+    "防止**新工業大廈被用作住宅**：(a) 除公用廁所外，不批准廁所**不設天然採光通風**；(b) 因此廁所**管道槽不獲豁免總樓面面積**；(c) 細小工場單位**高樓底**須有理據；(d) 非工業常見設計須解釋。"
+   ]
+  ],
+  "related": [
+   "#cl-mdmibru2018|Feb 2018 letter"
+  ]
+ },
+ "CL_COPSS2009C_2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/site-supervision-2009.md|Site Supervision Code"
+  ],
+  "topics": [
+   "supervision"
+  ],
+  "points": [
+   [
+    "Site Supervision Code corrigenda (Jun 2016): updated **Basic Values** for assessing the **Scale of Works** (Table 8.1); new inspection frequency **Level 4.4 (five visits a week)** (Table 8.3).",
+    "地盤監督守則勘誤（2016 年 6 月）：更新**工程規模**評估**基本值**；新增巡查頻率 **4.4 級（每星期 5 次）**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Site Supervision Code 已納入地盤監督守則"
+ },
+ "CL_SSW2016": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual typhoon season scaffolding letter.",
+    "每年颱風季節棚架通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RGEB": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-19.md|APP-19",
+   "../codes/dil-2011.md|Loads Code (greenery as dead load)"
+  ],
+  "topics": [
+   "design",
+   "structural"
+  ],
+  "points": [
+   [
+    "**Roof greening on existing buildings**: no submission if no building works, but check **load capacity**, **drainage** and change in use; if new works or **strengthening** are needed, submit A&A plans. AP/RSE check approved records and site conditions against greening loads (green carpets to deep ponds).",
+    "**現有樓宇天台綠化**：如無建築工程毋須呈交，但須考慮**承重**、**排水**及用途改變；如需新工程或**加固**須提交加建改建圖則；須按核准記錄核算綠化荷載。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ICPG2016": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "status": "current",
+  "status_links": [],
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "ICAC **Integrity and Corruption Prevention Guide on Managing Relationship with Public Servants**: legal provisions (Prevention of Bribery Ordinance), case studies and good practices; please adopt.",
+    "廉署**《與公職人員相處的誠信及防貪指南》**：法律規定、個案及良好做法。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPPCC2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/precast-2016.md|Precast Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Publication of the **Code of Practice for Precast Concrete Construction 2016** (review of the 2003 Code): **ties** (2.7.8); **tolerances** (3.17); **quality control** (Ch. 4); connection and **precast façade** details (App. A, B); **lifting device** details (App. C). **6-month grace period** for 2003 Code designs.",
+    "頒布**《2016 年預製混凝土建造作業守則》**：**繫筋**、**容差**、**品質控制**、接駁及預製外牆細節、**吊裝裝置**；舊設計 **6 個月寬限期**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Promulgates the current Precast Code 2016 頒布現行預製守則"
+ },
+ "CL_FP2016": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "topics": [
+   "weather",
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual flood prevention letter.",
+    "每年地盤防洪通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_UOPSRBP2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Prefabricated rebar products (cut and bent bars, **cages**, threaded/coupled bars) from **CEDD-approved off-site prefabrication yards** (DEVB TC(W) 1/2016, quality management and traceability) may be used as complying with the **Concrete Code**; arrange supervision with the yard.",
+    "由**土木工程拓展署認可場外鋼筋預製場**（發展局技術通告 1/2016）生產的預製鋼筋產品（切彎鋼筋、**鋼筋籠**、螺紋接駁）可視為符合**混凝土守則**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_AMMCS2016": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 1",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Anti-mosquito reminder for construction sites.",
+    "地盤防蚊提示。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PSRNBD2016": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings",
+  "status": "spent",
+  "status_links": [],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "From **18 Apr 2016**, new building and A&A submissions to the NBDs at **7/F Cityplaza Three, Taikoo Shing** (later moved to West Kowloon in 2019).",
+    "由 2016 年 4 月 18 日起新建築物及加建改建文件交**太古城中心三座 7 樓**（2019 年再遷往西九龍）。"
+   ]
+  ],
+  "related": [
+   "#cl-asrbdh|2019 relocation"
+  ],
+  "status_note": "One-off (office relocation 2016) 一次性（遷址）"
+ },
+ "CL_IQPC2016": {
+  "to": "AP, RSE, RGE, RI, RGBC, RMWC",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "status_links": [
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "mbis",
+   "registration"
+  ],
+  "points": [
+   [
+    "From **15 Feb 2016**, BD issues **QP Cards** on application, so Qualified Persons can identify themselves to owners and managers for MWIS work; expiry follows the latest registration.",
+    "由 2016 年 2 月 15 日起應申請發出**合資格人士證**，方便驗窗工作。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPDC2016": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "CPD course for RGBC/RSC renewal or restoration.",
+    "一般建築及專門承建商持續專業發展課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_IRCRMWC2016": {
+  "to": "Property management bodies",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [
+   "#cl-pmcecrrbprc2022|2022 letter"
+  ],
+  "topics": [
+   "registration",
+   "mbis"
+  ],
+  "points": [
+   [
+    "Registration cards for **RMWC (Individual)** and **RI**, and **QP Cards** (from 15 Feb 2016) help holders gain access to premises for minor works, MBIS and MWIS; old cards remain valid until expiry. Samples attached.",
+    "**小型工程承建商（個人）**及**註冊檢驗人員**註冊卡，以及**合資格人士證**，方便進入處所進行工作；舊卡有效至到期。"
+   ]
+  ],
+  "related": [],
+  "status_note": "In force; e-certificates and QR codes added in 2022 有效；2022 年加入電子證書及二維碼"
+ }
+}

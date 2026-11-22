@@ -256,10 +256,12 @@ The **Appendix E checklist** lists, for each access type (gondola, maintenance a
 | Loads 荷載 | [Dead & Imposed Loads](dil-2011.md) · [Wind Code](wind-2019.md) |
 | Fire safety 消防 | [FS Code Part B](fsc-part-b-means-of-escape.md) · [Part C](fsc-part-c-fire-resisting-construction.md) |
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - ⚪ [Code of Practice on Design for Safety – External Maintenance](../circulars/2019.md#cl-copdsem2019) <small>19 Sep 2019 · Code of Practice on Design for Safety – External Maintenance</small>
+- ⚪ [Guidelines for Designing Access and Safety Provisions for the Maintenance and Repair (M&R) of External Air Conditioners (ACs) at Height](../circulars/2016.md#cl-gdasp2016) <small>23 Dec 2016 · 建築物外部高處空調機保養及維修通道及安全設施設計指引</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

@@ -15,6 +15,7 @@ tags:
   - Green & amenity features 環保及適意設施
   - Elderly-friendly 長者友善
   - Geotechnical 岩土
+  - Demolition 拆卸
 summary: "Minor works Classes I–III, designated exempted works, the 7-day and 14-day rules, contractors and validation schemes."
 keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指定豁免工程, Class I, Class II, Class III, signboard validation, 招牌檢核
 ---
@@ -138,12 +139,15 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🔵 [Amendments to the "Technical Guidelines on Minor Works Control System (2024 Edition)"](../circulars/2026.md#cl-atgmwcse2026) <small>13 Aug 2026 · 《小型工程監管制度之技術指引》（2024年修訂版）修訂事宜</small>
 - 🟢 [Registration and Minor Works Management System](../circulars/2026.md#cl-rmwms2026) <small>29 May 2026 · 註冊及小型工程管理系統</small>
 - 🟢 [Updating of Specified Forms under Minor Works Control System](../circulars/2026.md#cl-usfmwcs2026) <small>13 Feb 2026 · 更新小型工程監管制度的指定表格</small>
+- 🟢 [Streamlined Procedures for Carrying out Minor Works before Demolition of Buildings](../circulars/2017.md#cl-spmwdb2017) <small>26 Jun 2017 · 拆卸建築物前進行小型工程的簡化程序</small>
+- 🟢 [Matters requiring Attention under the Minor Works Control System (MWCS)](../circulars/2017.md#cl-mramwcs2017) <small>27 Apr 2017 · 小型工程監管制度注意事項</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

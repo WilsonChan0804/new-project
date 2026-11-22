@@ -195,10 +195,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Dedicated Processing Units for High-yield Residential Projects and Transitional Housing Projects](../circulars/2023.md#cl-dpuhrpthp2023) <small>15 Mar 2023 · 成立專責審批組 審批大型住宅項目和過渡性房屋項目</small>
+- ⚪ [Guidelines for Designing Access and Safety Provisions for the Maintenance and Repair (M&R) of External Air Conditioners (ACs) at Height](../circulars/2016.md#cl-gdasp2016) <small>23 Dec 2016 · 建築物外部高處空調機保養及維修通道及安全設施設計指引</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

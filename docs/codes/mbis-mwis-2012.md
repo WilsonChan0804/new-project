@@ -87,6 +87,7 @@ keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊�
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -99,6 +100,9 @@ keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊�
 - 🔵 [Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012 Amendments](../circulars/2020.md#cl-copmbismwis2012a2020) <small>20 Jul 2020 · 《強制驗樓計劃及強制驗窗計劃作業守則2012》修訂事宜</small>
 - 🔵 [Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012 Amendments](../circulars/2018.md#cl-copmbi2018) <small>30 Apr 2018 · 《強制驗樓計劃及強制驗窗計劃作業守則2012》修訂事宜</small>
 - 🟢 [Specified Forms under the Mandatory Window Inspection Scheme (MWIS)](../circulars/2018.md#cl-sfmbismwis2018) <small>30 Apr 2018 · 強制驗窗計劃的指明表格</small>
+- 🟢 [Top-up Courses for Level 2 Representatives under the Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012](../circulars/2017.md#cl-tclrcop2017) <small>11 Sep 2017 · 《強制驗樓計劃及強制驗窗計劃作業守則2012》2級代表補足資格培訓課程</small>
+- 🔵 [Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012 Amendments](../circulars/2017.md#cl-cop-mbis-mwis-amendment2017) <small>6 Mar 2017 · Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012 Amendments</small>
+- 🟢 [Issue of "QP Card" for Qualified Person (QP)](../circulars/2016.md#cl-iqpc2016) <small>5 Feb 2016 · 向合資格人士發出「驗窗卡」</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

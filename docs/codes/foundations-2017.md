@@ -439,6 +439,7 @@ All tests by **HOKLAS** labs except SPT and proof core drilling (cl. 8.1).
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -448,6 +449,7 @@ All tests by **HOKLAS** labs except SPT and proof core drilling (cl. 8.1).
 - 🔵 [Amendments to the "Technical Guidelines on Minor Works Control System" (Technical Guidelines)](../circulars/2021.md#cl-atgmwcstg-2021) <small>29 Oct 2021 · 《小型工程監管制度之技術指引》（《技術指引》）修訂事宜</small>
 - ⚫ [Repeal of PNAP APP-103 Structures On Grade on Newly Reclaimed Land](../circulars/2021.md#cl-rpnapsognrl2021) <small>12 May 2021 · </small>
 - 🔵 [Amendments to Code of Practice for Foundations 2017](../circulars/2021.md#cl-acpf2017-2021) <small>17 Feb 2021 · 《基礎作業守則2017年》修訂事宜</small>
+- 🔵 [Code of Practice for Foundations 2017](../circulars/2017.md#cl-cop-foundations2017) <small>24 Apr 2017 · 基礎作業守則2017</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}
