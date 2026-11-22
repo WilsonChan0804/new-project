@@ -14,6 +14,10 @@ tags:
   - Drainage 排水
   - Concrete & materials 混凝土及物料
   - Occupation permit 佔用許可證
+  - Foundation 地基
+  - A&A works 改動及加建工程
+  - Curtain wall & façade 幕牆及外牆
+  - Heritage 文物
 summary: "Code of Practice for Site Supervision 2009 (2024 Edition) and the Technical Memorandum: supervision plan parts and timing, four streams and duties, TCP grades and qualifications, TM Table 1 minimum frequencies, scale factors and Form C, critical stages, temporary works Cases 1–3 and tower cranes, quality supervision, non-conformity and incident reporting."
 keywords: site supervision, 地盤監督, supervision plan, 監督計劃書, SSP, TCP, 技術稱職人員, T1 T2 T3 T4 T5, technical memorandum, 技術備忘錄, Table 1, frequency level, 巡查頻率, scale factor, 規模系數, Form C, critical stages, temporary works Case 1 2 3, 臨時工程, tower crane, TW1 TW2 TW3, non-conformity, Form B, 48 hours, site incident
 ---
