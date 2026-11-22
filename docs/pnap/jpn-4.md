@@ -17,6 +17,11 @@ tags:
   - Refuse 垃圾
   - Plant rooms 機房
   - Occupation permit 佔用許可證
+  - Site coverage 上蓋面積
+  - Site area & classification 地盤面積及分類
+  - Sustainable building design 可持續建築設計
+summary: "For OZPs gazetted from 18 Oct 2021 the OZP PR/GFA is the sole reference (s.42 to exceed a stricter First Schedule); BD alone verifies GFA and PlanD and LandsD rely on it."
+keywords: JPN4, JPN 4, plot ratio, 地積比率, GFA, 總樓面面積, OZP, 分區計劃大綱圖, three regimes, 三個制度, lease, 地契, Group I, Group II, Group III, s.42 modification, 第 42 條變通, LAO PN 4/2014A
 ---
 
 # JPN 4 Development Control Parameters — Plot Ratio / Gross Floor Area<br><small>聯合作業備考第 4 號：發展管制參數——地積比率／總樓面面積</small>
@@ -49,6 +54,80 @@ tags:
     - **單一計算**（第 6–8 段）：**屋宇署是唯一**按 B(P)R 第 23(3)(a) 條核實總樓面面積的部門，規劃署及地政總署**依據屋宇署核實的數字**；地政總署仍自行核對特定用途的總樓面面積（例如零售／辦公室最低面積）。
     - **一致的總樓面面積計算**（附錄）：**第 I 組**（三個制度均豁免，不論地契）、**第 II 組**（地契有**特定豁免條款**才豁免：(A) 免補地價，(B) 須評估補地價）、**第 III 組**（個別考慮，在新地契中統一）。
     - 不適用於已取得佔用許可證的建築物；已完成與未完成期數之間**不得轉移**總樓面面積（第 10 段）。
+
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: new or major-revision building plans submitted **on or after 18 Oct 2021** (para. 13). The "OZP as sole reference" rule (para. 4) is for sites under **new or amended** PR/GFA controls on plans gazetted on or after that date. 適用於 2021 年 10 月 18 日或之後呈交的圖則；「大綱圖為唯一參考」只適用於該日或之後刊憲的管制。
+    **Does not apply**: buildings with an **OP** (no GFA transfer to new phases, para. 10); **NT exempted houses** (para. 11); sites **without site classification** (B(P)R 19(3)) or **carved out** of a used-up parent site (fn. 2); plans approved before Jan 2011 use the Nov 2008 version (para. 9). 已取得佔用許可證、新界豁免屋宇及特殊地盤不適用。
+
+## Key clauses 主要條文 {#key-clauses-table}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Streamlined stipulation of **max PR / GFA**, GFA accountability of features, and compliance checking among **BD, LandsD and PlanD**; read with **LAO PN 4/2014A**. 範圍。 |
+| 2 | All developments are controlled by the **B(P)R**; statutory plans add controls, and the **stricter** applies; modern leases carry a max GFA reflecting the plan (or PlanD advice). 三個制度。 |
+| 3 | Before: each department checked GBPs by its **own definitions** of site area and GFA. 以往各自審核。 |
+| 4 | For new or amended OZP PR/GFA controls gazetted from 18 Oct 2021, the **OZP restriction is the sole reference**: if the OZP is **stricter**, it prevails; if the **First Schedule is stricter**, the BA may **favourably** grant a **s.42 modification** to raise the B(P)R PR to the OZP level (incl. where site area is interpreted differently, fn. 3); LandsD reflects the OZP in new leases. 大綱圖為唯一參考。 |
+| 5 | Aligned **GFA accountability** in the Appendix: **Group I** exempt in all regimes; **Group II** exempt if the lease has a specific clause (else lease modification, premium case by case); **Group III** case by case, aligned in new leases. Green features and larger lift shafts: **new developments only** (fn. 4). 三組設施。 |
+| 6 | **BD is the sole agent** verifying GFA under **B(P)R 23(3)(a)** (curtain walls, atrium voids, car parks, green, amenity and innovative features, fn. 6); PlanD and LandsD **rely** on it. 屋宇署為唯一核實部門。 |
+| 7 | PlanD checks OZP and planning-approval compliance from BD's verified GFA (as a base where the plan has its own accountability rules). 規劃署。 |
+| 8 | LandsD checks the lease max PR/GFA from BD's figure; **use-specific** GFA (retail, office, welfare) still verified by LandsD (**LAO PN 3/2018**). 地政總署。 |
+| 9 | Plans approved before the **Jan 2011** version: refer to the **Nov 2008** version (subject to BO s.16(3)(d)). 舊圖則。 |
+| 10 | Not for buildings with an **OP**; **no GFA transfer** between completed and later phases. 不適用於已落成建築物。 |
+| 11 | Not for **NT exempted houses**. 新界豁免屋宇。 |
+| 12 | Departments act in their own capacity; lease rights reserved. 部門權責。 |
+| 13 | Effective **18 Oct 2021**, for new or major-revision plans. 生效日期。 |
+
+## Which PR governs? 以哪個地積比率為準？ {#which-pr}
+
+<figure markdown>
+  ![JPN 4: OZP and First Schedule plot ratio, and one GFA figure for three regimes](../assets/figures/diagrams/jpn4-regimes.svg){ width="760" loading=lazy }
+  <figcaption>The OZP PR/GFA is the sole reference; BD verifies one GFA figure that PlanD and LandsD rely on (paras. 4, 6–8). 大綱圖為唯一參考；屋宇署核實的總樓面面積供三個部門使用。</figcaption>
+</figure>
+
+| Situation 情況 | Result 結果 | Para. 段 |
+|---|---|---|
+| OZP PR **lower** than the First Schedule 大綱圖較嚴 | **OZP prevails** | 4 |
+| OZP PR **higher** than the First Schedule 附表一較嚴 | **s.42 modification** to allow up to the OZP PR, considered favourably | 4 |
+| OZP and BD measure **site area** differently 地盤面積定義不同 | s.42 modification to bring PR on par with the OZP | fn. 3 |
+| No PR/GFA control on the OZP 大綱圖沒有管制 | B(P)R First Schedule | 2 |
+| Site without site classification, or carved out of a used-up site 特殊地盤 | **Exceptional case**: not the sole-reference rule | fn. 2 |
+| Lease GFA clause 地契 | Reflects the OZP in new leases; checked using **BD's GFA figure** | 4, 8 |
+
+## Worked example 例子 {#worked-example}
+
+=== "English"
+
+    A **2,000 m²** Class A domestic site under an OZP amended in 2023 with **max domestic PR 9**; building over 61 m.
+
+    1. First Schedule (Class A, > 61 m): **PR 8**; OZP: **PR 9**. The OZP is the sole reference (para. 4), so apply for a **s.42 modification** to exceed the First Schedule: permitted GFA **18,000 m²** (not 16,000 m²).
+    2. **BD verifies** the GFA, including balconies, UPs, plant rooms and clubhouse concessions under [APP-151](app-151.md) (10 % cap) (para. 6).
+    3. **PlanD** checks the OZP PR 9 using BD's figure (para. 7); **LandsD** checks the lease GFA using the same figure (para. 8).
+    4. **Balconies and UPs** are **Group II**: exempt under the lease only if it has a green-feature clause; an old lease without one needs a lease modification and premium (para. 5, Appendix).
+    5. Separately, **height** (OZP, [JPN 5](jpn-5.md)) and **site coverage** ([JPN 7](jpn-7.md)) are streamlined in the same way.
+
+=== "中文"
+
+    一個 **2,000 平方米**甲類住宅地盤，2023 年修訂的大綱圖規定**住用地積比率 9**，建築物高於 61 米：
+
+    1. 附表一（甲類、高於 61 米）：**地積比率 8**；大綱圖：**9**。大綱圖為唯一參考（第 4 段），可申請**第 42 條變通**超出附表一：准許總樓面面積 **18,000 平方米**（而非 16,000）。
+    2. **屋宇署核實**總樓面面積，包括按 [APP-151](app-151.md) 的露台、工作平台、機房及會所寬免（10% 上限）（第 6 段）。
+    3. **規劃署**按屋宇署的數字核對大綱圖（第 7 段）；**地政總署**以同一數字核對地契（第 8 段）。
+    4. **露台及工作平台**屬**第 II 組**：地契須有環保設施豁免條款；沒有條款的舊地契須修訂並可能補地價（第 5 段、附錄）。
+    5. **高度**（[JPN 5](jpn-5.md)）及**上蓋面積**（[JPN 7](jpn-7.md)）亦以相同方式精簡處理。
+
+## The development control JPNs together 發展管制聯合作業備考一覽 {#jpn-family}
+
+| JPN | Controls 管制 | Who decides 由誰決定 |
+|---|---|---|
+| **JPN 4** (this note) | **PR / GFA**: OZP as sole reference; one GFA figure | BD verifies GFA |
+| [JPN 5](jpn-5.md) | **Building height** restriction | PlanD |
+| [JPN 7](jpn-7.md) | **Site coverage** restriction | BD decides SC accountability |
+| [JPN 6](jpn-6.md) | SBD **separation and setback** | BD |
+| [JPN 3](jpn-3.md) | **Landscape** and site coverage of greenery | PlanD / LandsD; BD for SCG |
+| [JPN 1](jpn-1.md), [JPN 2](jpn-2.md), [JPN 8](jpn-8.md) | **Green and innovative features**, MiC | BD exempts; lease follows |
+| [JPN 9](jpn-9.md) | **Bonus PR** pilot for redevelopment | LandsD lease modification; TPB; BD s.42 |
+
+See also the [Site coverage & PR guide](../guides/site-coverage-plot-ratio.md) and the [GFA guide](../guides/gfa.md) for the whole picture. 整體概覽見上蓋面積及地積比率專題及總樓面面積專題。
 
 ## Key table: GFA accountability across the three regimes (Appendix) 三個制度的總樓面面積計算（附錄） {#key-table-gfa-accountability-across-the-three-regimes-appendix}
 
@@ -94,7 +173,7 @@ tags:
 3. **Covered public passageways and walkways** required by Government 政府要求的有蓋公眾通道
 4. **Covered private car parks, loading/unloading** and their ancillary areas (driveways, ramps, car lift shafts, lobbies, staircases solely serving the car park) 有蓋私家停車場及上落客貨區
 
-## Key clauses 主要條文 {#key-clauses}
+## Key quotes 原文摘錄 {#key-clauses}
 
 !!! quote "Para. 4 — OZP as the sole PR/GFA reference 大綱圖為唯一依據"
     …where a maximum PR / GFA restriction is stipulated in new or amended statutory plans gazetted on or after the effective date of this JPN, the restriction so stipulated under the planning regime will become the sole reference, save for exceptional cases, in terms of PR / GFA control when departments vet the GBPs… if the permissible PR restriction stipulated in the First Schedule to the B(P)R is more stringent than the maximum PR / GFA restriction stipulated in the relevant statutory plan, the Building Authority (BA) may, on application, favourably consider exercising discretion under section 42 of the BO to grant modification to permit the PR restriction stipulated in the First Schedule to B(P)R to be exceeded to a level on par with the maximum PR / GFA restriction under the planning regime…
@@ -154,6 +233,8 @@ tags:
 | [APP-151](app-151.md) | GFA concessions under the BO 建築物條例下的寬免 |
 | [JPN 1](jpn-1.md), [JPN 2](jpn-2.md), [JPN 8](jpn-8.md) | Green features and MiC (Group II items) 環保設施及組裝合成（第 II 組） |
 | [ADM-2](adm-2.md) | Plan processing and lease referral 圖則處理及地契轉交 |
+| [JPN 5](jpn-5.md), [JPN 6](jpn-6.md), [JPN 7](jpn-7.md), [JPN 9](jpn-9.md) | Height, SBD, site coverage, bonus PR 高度、可持續設計、上蓋面積、額外地積比率 |
+| [GFA guide](../guides/gfa.md), [SC & PR guide](../guides/site-coverage-plot-ratio.md) | The whole picture 專題 |
 | LandsD LAO PN 4/2014A, 3/2018 | GFA under lease; use-specific GFA checking 地契下的總樓面面積 |
 
 ---

@@ -10,6 +10,14 @@ tags:
   - Plant rooms 機房
   - Site coverage 上蓋面積
   - Plot ratio 地積比率
+  - Barrier free access 無障礙
+  - Lighting & ventilation 照明及通風
+  - Lift 升降機
+  - Fire safety 消防安全
+  - Energy efficiency 能源效率
+  - A&A works 改動及加建工程
+summary: "A licensed hotel may be treated as non-domestic for site coverage and plot ratio, with pick-up areas and back-of-house facilities (normally ≤ 5% of hotel GFA) disregarded from GFA; service apartments excluded."
+keywords: hotel, 酒店, 旅館, B(P)R 23A, hotel concession, 酒店寬免, back-of-house, BOH, 後勤設施, front-of-house, non-domestic, 非住用, service apartment, 服務式住宅, Cap. 349, PNAP 111
 ---
 
 # APP-40 Hotel Development<br><small>旅館發展</small>
@@ -45,6 +53,26 @@ tags:
 
 ## Key clauses 主要條文 {#key-clauses}
 
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: **bona fide hotels** (licensed under the **Hotel and Guesthouse Accommodation Ordinance, Cap. 349**), new hotels, **extensions** of existing hotels, and **conversions** of existing buildings to hotels (paras. 9, 11–12). 適用於真正的旅館，包括新建、擴建及改作旅館。
+    **Does not apply**: **service apartments** (para. 11); guesthouses and hostels outside Cap. 349 licensing; see [APP-173](app-173.md) for hostels under the "Hostels in the City" scheme. 服務式住宅不適用；城市旅舍見 APP-173。
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | **B(P)R 23A** (from **1 Nov 2000**): the BA may treat a hotel as **non-domestic** for SC and PR, and disregard **supporting facilities** and **pick-up / set-down areas** from GFA. 第 23A 條。 |
+| 2 | This note sets out the BA's factors under **reg. 23A(2) and (3)**. 考慮因素。 |
+| 3 | Tests: (a) **site suitable**; (b) **basic facilities** (reception, linen stores, admin office, staff toilets) and **ancillary** dining, entertainment and shopping in proportion; (c) **central A/C** and **centralised hot water**; (d) evidence it will run as a **licensed hotel** (Cap. 349). 四項準則。 |
+| fn. 1 | Plant rooms for central A/C and hot water may be disregarded under **reg. 23(3)(b)**, subject to the **APP-151 pre-requisites and 10 % cap**. 機房受 10% 上限。 |
+| 4 | Site suitability: (a) hotel **permitted on the OZP** (Column 1 or s.16); (b) **scale** compatible with neighbours' permitted intensity; (c) enough **streets** for the traffic; (d) **transport, parking, loading** provided. 地盤是否合適。 |
+| 5 | An operator's **appointment confirmation** may serve as evidence for 3(d). 營運商確認書。 |
+| 6 | Facility needs vary with hotel **size and room numbers**; special circumstances considered. 視乎規模。 |
+| 7 | Transport facilities by **TD's assessment**; hotels with **100+ rooms** normally provide parking and loading to the **HKPSG**. 交通設施。 |
+| 8 | Disregarded **BOH facilities** (reg. 23A(3)(b)) must be of **reasonable size**, practical location and genuine design, **staff only**, unlikely to be abused; normally **≤ 5 %** of hotel GFA; **management offices** are **not** unique facilities (Appendix A). 後勤設施 ≤ 5%。 |
+| 9 | **Conversions** of existing buildings assessed by the same criteria. 改裝。 |
+| 10 | Sanctions for **unauthorised change of use** (reg. 23A(8)–(9)); BD monitors with the **Licensing Authority**. 擅自改變用途。 |
+| 11 | Bona fide hotels only; **not service apartments**. 不適用於服務式住宅。 |
+| 12 | Applies to new hotels and **extensions**; A&A adding GFA or bulk is **reassessed** under the current rules. 擴建重新評估。 |
+
 !!! quote "Para. 3 — Hotel concession tests 旅館寬免的考慮因素"
     For hotels to qualify for the treatment under regulation 23A of the B(P)R, the BA will consider the following: (a) whether the site itself or the site relative to its neighbourhood is suitable for hotel development; (b) whether basic facilities such as reception counter, storerooms for linen, administration office, staff toilets for the operation of the hotel and facilities ancillary to the functions of a hotel (e.g. dining, entertainment and shopping facilities commensurate with hotel patronage) are provided; (c) whether the whole building or the portion of the building intended for use as a hotel is provided with a central air-conditioning (A/C) system and a centralised hot water supply system; and (d) whether there is evidence indicating that the hotel building or the hotel part of the building when completed will be operated as a licensed hotel under the Hotel and Guesthouse Accommodation Ordinance (Cap. 349).
 
@@ -73,6 +101,47 @@ tags:
 | **3. FOH** 前台設施 | Reception counter / lobby¹ 接待處／大堂 · Shopping 購物 · Dining 餐飲 · Business centre 商務中心 · Function rooms 宴會廳 | **Accountable** 須計算 |
 
 <small>Minimum total BOH + FOH provision: **3% of total hotel GFA**. ¹ Required for all hotels. ² Required for hotels with **over 10 guest rooms**. ³ Staff toilets not serving the admin office may be disregarded. 後勤及前台設施最少為旅館總樓面面積 3%。¹ 所有旅館必須設置；² 超過 10 間客房須設置；³ 不屬行政辦公室的員工洗手間可不計算。</small>
+
+## Why the concession matters 寬免的作用 {#why-it-matters}
+
+Treating a hotel as **non-domestic** uses the higher non-domestic limits in the **First Schedule** ([B(P)R 18A–22](../regulations/bpr-18a-22.md)). For a building over **61 m**: 酒店視作非住用，可採用較高的非住用上限：
+
+| Site class 地盤類別 | Domestic PR 住用 | Non-domestic PR 非住用 | Domestic SC 住用 | Non-domestic SC 非住用 |
+|---|---|---|---|---|
+| A 甲類 | 8 | **15** | 33.33 % | **60 %** |
+| B 乙類 | 9 | **15** | 37.5 % | **62.5 %** |
+| C 丙類 | 10 | **15** | 40 % | **65 %** |
+
+<small>OZP limits still apply ([JPN 4](jpn-4.md), [JPN 5](jpn-5.md)), and the hotel use is then **locked in**: it cannot be changed without BA approval (reg. 23A(6), (8)–(9)). 仍受分區計劃大綱圖管制，用途其後不得擅自改變。</small>
+
+## Hotels in the whole picture 酒店與其他規定 {#whole-picture}
+
+| Topic 課題 | Rule 規定 | Source 出處 |
+|---|---|---|
+| **GFA disregarded** 不計總樓面面積 | Pick-up / set-down areas and **BOH** facilities (reg. 23A(3)); outside the **10 % cap** (APP-151 items 3–4) | [B(P)R 23A](../regulations/bpr-23-23a.md), [APP-151](app-151.md) |
+| **Plant rooms** 機房 | Central A/C and hot water plant under reg. 23(3)(b), **within** the 10 % cap | [APP-2](app-2.md), [APP-42](app-42.md) |
+| **Lift shafts** 升降機槽 | Hotel lift shafts above **2.5 %** of hotel GFA may be exempted (cap 3.5 %) | [APP-89](app-89.md) |
+| **Parking and loading** 泊車及上落貨 | **100+ rooms**: HKPSG; layout to Appendix A of APP-111 | [APP-111](app-111.md) |
+| **Accessible rooms** 無障礙客房 | **2 per 100** rooms or part (minimum 2) | [BFA Div. 1–3](../codes/bfa-div-1-3.md), [DMUA 2026](../codes/dmua-2026.md) |
+| **Fire safety** 消防安全 | Hotels are a **sleeping risk** use: means of escape and compartment rules for that use class | [FS Code Part B](../codes/fsc-part-b-means-of-escape.md), [Part C](../codes/fsc-part-c-fire-resisting-construction.md) |
+| **Lighting and ventilation** 照明及通風 | Guest rooms are habitable rooms: prescribed windows or the performance route | [Lighting & ventilation guide](../guides/lighting-ventilation.md), [APP-130](app-130.md) |
+| **Energy** 能源效率 | Hotels are covered by the **OTTV** control | [B(EE)R Cap. 123M](../regulations/beer-123m.md), [APP-67](app-67.md) |
+| **Licensing** 發牌 | Hotel licence under **Cap. 349** (Office of the Licensing Authority) | [APP-43](app-43.md) |
+
+## Worked example 例子 {#worked-example}
+
+A **1,000 m²** Class A site, hotel tower over 61 m, **300 rooms**, OZP PR 12. 甲類 1,000 平方米地盤上的 300 間客房酒店，大綱圖地積比率 12：
+
+| Step 步驟 | Working 計算 |
+|---|---|
+| Treatment 處理 | Hotel accepted under reg. 23A → **non-domestic** (paras. 3–4) |
+| Permitted GFA 准許面積 | Lower of First Schedule non-domestic PR **15** and OZP PR **12** → 1,000 × 12 = **12,000 m²** accountable |
+| BOH disregarded 後勤不計 | Laundry, stores, staff canteen, changing and rest rooms = **550 m²**; 5 % × hotel GFA (about 12,000) = **600 m²** → ✔ (para. 8) |
+| Admin office 行政辦公室 | **Counts** for GFA (Appendix A item 2) |
+| Minimum BOH + FOH 最少前後台 | **≥ 3 %** of total hotel GFA (Appendix A) → ≥ 360 m² ✔ |
+| Pick-up / set-down 上落客區 | Disregarded under reg. 23A(3)(a) |
+| Parking and loading 泊車 | 300 rooms → HKPSG provision (para. 7), designed to [APP-111](app-111.md) |
+| Accessible rooms 無障礙客房 | 300 rooms → **6** |
 
 ## Explanation 淺白解釋 {#explanation}
 
@@ -142,6 +211,10 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | [APP-151](app-151.md) | Items 3–4 (outside the 10% cap); para. 5(f) 附錄 A 第 3–4 項（不受上限） |
 | [APP-2](app-2.md) | Plant rooms under 23(3)(b) 機房 |
 | [APP-111](app-111.md) | Parking and loading/unloading design 停車場設計 |
+| [APP-89](app-89.md) | Hotel lift shaft exemption 酒店升降機槽豁免 |
+| [APP-173](app-173.md) | Hostels in the City scheme 城市旅舍 |
+| [JPN 4](jpn-4.md) | OZP PR / GFA 地積比率／總樓面面積 |
+| [GFA guide](../guides/gfa.md) | Hotel concessions among other GFA rules 總樓面面積專題 |
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>

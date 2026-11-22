@@ -10,6 +10,12 @@ tags:
   - Site coverage 上蓋面積
   - Curtain wall & façade 幕牆及外牆
   - Plant rooms 機房
+  - Plan submission & approval 呈交及審批
+  - Site supervision 地盤監督
+  - Domestic 住用
+  - Structural 結構
+summary: "MiC buildings get 10% of the MiC floor area off GFA (outside the 10% cap) and 10% off SC at each floor, plus up to 4% of MiC storey height as minor height relaxation."
+keywords: MiC, modular integrated construction, 組裝合成, 組合合成建築法, prefabricated module, 預製組件, GFA concession, 樓面面積寬免, building height relaxation, 放寬高度, 4%, JPN8, JPN 8
 ---
 
 # JPN 8 Enhanced Facilitation Measures for Buildings Adopting Modular Integrated Construction<br><small>聯合作業備考第 8 號：推廣環保及創新的樓宇鼓勵措施——進一步促進建築物採用「組裝合成」建築法的措施</small>
@@ -43,6 +49,10 @@ tags:
     - **建築物高度**：可考慮放寬最多 **MiC 樓層總層高的 4%**；MiC 樓層指 MiC 樓面面積 **≥ 該層面積 50%** 的樓層（第 10 段）。
     - **規劃署**跟隨屋宇署的豁免，並**支持第 16 條略為放寬申請**，一般只需**簡單視覺評估**（第 11 段）；**地政總署**在需要時以**標準補地價**的**快速**方式處理修訂地契（第 9、14 段）。
     - 若沒有採用 MiC，寬免會被**撤銷**；若 MiC 樓面面積減少，寬免會被**調整**（第 16 段）。
+
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: **new buildings** adopting MiC, for new or major-revision building plans submitted **on or after 1 Aug 2022** (para. 17). 適用於 2022 年 8 月 1 日或之後呈交的新建築物。
+    **Not covered**: plans approved before then may follow the **Sep 2019 JPN 2** and repealed **APP-161** (para. 18). Concessions are **revoked or adjusted** if MiC is not used, or the MiC floor area falls (para. 16). Precast components that are not volumetric modules are not MiC: see the [Precast Code](../codes/precast-2016.md). 較早批准的圖則按 2019 年版 JPN 2；如不採用 MiC 會撤回寬免。
 
 ## Key table: MiC incentives MiC 鼓勵措施 {#key-table-mic-incentives-mic}
 
@@ -81,6 +91,52 @@ tags:
 | Associated construction joints 相關施工接縫 | **A/C platforms**, even if combined with balconies / utility platforms (footnote 1) 冷氣機平台 |
 | MiC plant rooms, balconies, utility platforms, common corridors, lift lobbies, NSPEW, **even if already exempted** 已獲豁免的 MiC 機房、露台、工作平台、走廊、預製外牆 | Acoustic fins, noise barriers 隔音鰭、隔音屏障 |
 | | Curtain walls and cladding 幕牆及覆蓋層 |
+
+## Building height relaxation: the official format 放寬高度：官方格式 (Appendix A) {#appendix-a}
+
+The AP certifies the MiC floors and storey heights on the **Appendix A form**, submitted with the GBP to PlanD (and LandsD if the lease limits height) through centralised processing (paras. 13–14). 認可人士以附錄 A 表格證明 MiC 樓層及層高，連同圖則經中央處理呈交。
+
+<figure markdown>
+  ![Appendix A — percentage of MiC floor area on a floor](../assets/figures/jpn8/appendix-a-mic-floor-area.png){ width="620" loading=lazy }
+  <figcaption>Appendix A, part I — on 2/F–3/F, MiC floor area 700 m² of 1,000 m² total = **70 %** (≥ 50 % → an MiC floor). 附錄 A 第 I 部：MiC 樓面佔 70%，屬 MiC 樓層。<br><small>Source: JPN No. 8 (Jul 2022), BD / LandsD / PlanD 資料來源：聯合作業備考第 8 號</small></figcaption>
+</figure>
+
+| Floor 樓層 | % of MiC floor area MiC 樓面百分比 | Storey height counted 計算層高 |
+|---|---|---|
+| G/F | 100 % | 5 m |
+| 1/F | 100 % | 5 m |
+| 2/F–3/F | 70 % | 4 m × 2 = 8 m |
+| 4/F–10/F | 50 % | 4 m × 7 = 28 m |
+| 11/F–15/F | 30 % (below 50 %: not an MiC floor) | N.A. |
+| **(a) Total storey height of MiC floors** MiC 樓層總層高 | | **46 m** |
+| **(b) Maximum eligible BH relaxation** (4 % × 46 m) 最多可放寬高度 | | **1.84 m** |
+
+<small>Storey height measured from the lowest to the highest level of the MiC module, including slabs and the construction joints below (fn. 4). A floor is an MiC floor if MiC floor area ≥ **50 %** of the floor's site coverage area (para. 10, fn. 5). 層高由組件最低點量至最高點；MiC 樓面 ≥ 50% 才屬 MiC 樓層。</small>
+
+## Worked example: GFA, SC and height 例子：總樓面面積、上蓋面積及高度 {#worked-example}
+
+A residential tower, **20 MiC floors** of **600 m²** MiC floor area each (including balconies and utility platforms built as modules), typical MiC storey height **3.15 m**; OZP height limit **100 mPD**. 住宅大廈 20 層 MiC 樓層，每層 MiC 樓面 600 平方米，層高 3.15 米：
+
+| Item 項目 | Working 計算 | Para. 段 |
+|---|---|---|
+| MiC floor area 組件樓面面積 | 20 × 600 = **12,000 m²** (balconies / UPs included even though already exempted; **A/C platforms**, fins, curtain walls excluded) | 6, fn. 1 |
+| GFA concession 總樓面面積寬免 | 10 % × 12,000 = **1,200 m²** disregarded by **s.42** application; **not** in the APP-151 **10 % cap** | 5(a) |
+| SC concession 上蓋面積寬免 | 10 % × 600 = **60 m²** not counted at each MiC floor | 5(b) |
+| Height relaxation 放寬高度 | 20 × 3.15 = 63 m of MiC floors → up to 4 % × 63 = **2.52 m** above 100 mPD, via **s.16** minor relaxation (simple visual appraisal) | 10–12 |
+| Lease 地契 | Lease with a green-feature clause → approved at plan checking; otherwise **fast-track** lease modification, premium at **standard rates** | 8–9, 14 |
+| Certification 證明 | AP signs **Appendix A** with the GBP | 13 |
+
+## MiC in the whole picture 組裝合成與其他規定 {#whole-picture}
+
+| Topic 課題 | Rule 規定 | Source 出處 |
+|---|---|---|
+| **Early acceptance** 預先接納 | Pre-submission enquiry (45 days) and **in-principle acceptance** of MiC systems | [ADV-36](adv-36.md), [ADM-19](adm-19.md) |
+| **Structural design** 結構設計 | Volumetric precast design, lifting, erection, tolerances, joint testing | [Precast Code 2016](../codes/precast-2016.md), [APP-143](app-143.md) |
+| **Other green features** 其他環保設施 | Balconies, UPs, NSPEW, sky gardens: JPN 1 / JPN 2, **within** the 10 % cap | [JPN 1](jpn-1.md), [JPN 2](jpn-2.md), [APP-151](app-151.md) |
+| **Height limits** 高度限制 | How BHR is measured and what roof structures count | [JPN 5](jpn-5.md) |
+| **GFA control across regimes** 三個制度的總樓面面積 | One GFA figure shared by BD, PlanD, LandsD | [JPN 4](jpn-4.md), [GFA guide](../guides/gfa.md) |
+| **Supervision** 監督 | MiC and precast need **qualified supervision** and quality audits (heat soak and MiC circular letters) | [Site Supervision Code](../codes/site-supervision-2009.md) |
+| **Storey heights** 層高 | Domestic storey height limits still apply | [APP-5](app-5.md) |
 
 ## Explanation 淺白解釋 {#explanation}
 
@@ -142,6 +198,9 @@ tags:
 | [APP-151](app-151.md) item 38 | MiC listed; not subject to pre-requisites / cap 列於附錄 A，不受先決條件及上限 |
 | [APP-19](app-19.md) | Minor projecting features (excluded) 小型伸出物（不計入） |
 | [B(P)R 18A–22](../regulations/bpr-18a-22.md) | Building height and SC/PR tables 建築物高度及上蓋面積／地積比率 |
+| [ADV-36](adv-36.md) | MiC pre-acceptance and guidelines 組裝合成預先接納 |
+| [Precast Code 2016](../codes/precast-2016.md) | Design and erection of precast and volumetric units 預製混凝土守則 |
+| [JPN 5](jpn-5.md) | Building height restriction 高度限制 |
 | TPB Guidelines for Class A and Class B Amendments | Minor amendments to approved schemes 核准方案的輕微修訂 |
 
 ---

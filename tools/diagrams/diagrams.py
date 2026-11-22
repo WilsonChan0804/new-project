@@ -463,3 +463,16 @@ D['app147-validation'] = ('pnap/app-147.md',
   S --> D
   D -->|"Yes 是"| E["Submit MW06-1 / 06-2 / 06-3<br/>within 14 days with photos<br/>14 天內呈交"]
   E --> F["BD acknowledges; no enforcement<br/>unless condition changes<br/>不會執法"]''')
+
+D['jpn4-regimes'] = ('pnap/jpn-4.md',
+ 'JPN 4: which PR governs, and one GFA figure for three regimes. 以哪個地積比率為準；三個制度共用一個總樓面面積。',
+'''flowchart TD
+  A{"OZP PR / GFA control gazetted<br/>on or after 18 Oct 2021?<br/>2021 年 10 月 18 日或之後刊憲？"} -->|"Yes 是"| B{"Compare with B(P)R<br/>First Schedule 與附表一比較"}
+  A -->|"No / no OZP control<br/>否／沒有管制"| C["Stricter of OZP and<br/>First Schedule applies (para. 2)<br/>以較嚴者為準"]
+  B -->|"OZP stricter 大綱圖較嚴"| D["OZP prevails (para. 4)<br/>以大綱圖為準"]
+  B -->|"First Schedule stricter 附表一較嚴"| E["s.42 modification up to<br/>the OZP PR, favourable (para. 4)<br/>第 42 條變通"]
+  D --> F["BD verifies GFA under B(P)R 23(3)(a)<br/>屋宇署核實總樓面面積 (para. 6)"]
+  E --> F
+  C --> F
+  F --> G["PlanD checks OZP / approval<br/>規劃署 (para. 7)"]
+  F --> H["LandsD checks lease GFA<br/>(use-specific GFA by LandsD)<br/>地政總署 (para. 8)"]''')

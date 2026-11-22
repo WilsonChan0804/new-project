@@ -11,6 +11,14 @@ tags:
   - Maintenance access 維修通道
   - Hotel 酒店
   - Site coverage 上蓋面積
+  - Lighting & ventilation 照明及通風
+  - Plan submission & approval 呈交及審批
+  - Occupation permit 佔用許可證
+  - Refuge floor 庇護層
+  - Fire safety 消防安全
+  - Curtain wall & façade 幕牆及外牆
+summary: "NSPEW (up to 150 mm), residential utility platforms (50%, max 0.75 m² per flat), noise barriers and non-residential sky gardens may be exempted from GFA/SC on the Appendix A criteria."
+keywords: JPN2, JPN 2, green features, 環保設施, NSPEW, non-structural prefabricated external wall, 非結構預製外牆, utility platform, 工作平台, noise barrier, 隔音屏障, sky garden, 空中花園, 0.75 m2, 150 mm
 ---
 
 # JPN 2 Second Package of Incentives to Promote Green and Innovative Buildings<br><small>聯合作業備考第 2 號：推廣環保及創新的樓宇第二批鼓勵措施</small>
@@ -56,7 +64,128 @@ tags:
 
 <small>Hotels are **non-residential** for this JPN, so utility platform concessions do not apply to hotels. 本備考中酒店屬**非住宅**，工作平台寬免不適用於酒店。</small>
 
-## Key clauses 主要條文 {#key-clauses}
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: new projects **without an OP** (para. 12), on application for **modification** with an **undertaking** (para. 14). Utility platforms: **residential buildings only**, not hotels (treated as non-residential) and not the non-domestic part of composite buildings (App. A para. 1). Sky gardens here: **non-residential** buildings (residential sky gardens are in [JPN 1](jpn-1.md)). 適用於未取得佔用許可證的新項目；工作平台只限住宅；本備考的空中花園只限非住宅。
+    **Moved out**: **MiC** is now in [JPN 8](jpn-8.md) (July 2022 revision). 組裝合成已移至 JPN 8。
+
+## Key clauses 主要條文 {#key-clauses-table}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Second package after JPN 1; same objective, application and conditions. 第二批鼓勵措施。 |
+| 2–3 | Under the BO: **(a) NSPEW**, **(b) utility platforms** (residential), **(c) noise barriers**, **(d) communal sky gardens** (non-residential) may be exempted from GFA and/or SC; criteria in **Appendix A**. 四項設施。 |
+| 4 | BO exemptions may be given **before** any lease modification or premium, subject to the TPO. 可先於地契修訂。 |
+| 5 | **New tender sites**: lease clause allows the same exemption **without premium**, design acceptable to the Director of Lands. 新地契。 |
+| 6 | **Existing leases**: same exemptions; if a **storey or height limit** in the lease is breached, a **lease modification** is needed. 現有地契。 |
+| 7 | Check the lease; DLO enquiry reply normally **within 30 days**, or the DLO informs the AP within **8 weeks** (**10 weeks** for BC III cases) of a formal submission. 地政處回覆時限。 |
+| 8 | Lease exemption needs the **BA's exemption first**; apply for lease modification **in parallel**; send approved plans and the fee receipt to the DLO. 屋宇署先豁免。 |
+| 9 | PlanD adopts the same criteria, unless OZP height or SC limits are exceeded (sky gardens may need **minor relaxation** by the TPB). 規劃署。 |
+| 10–11 | Previously approved schemes: TPB **Class A / B amendment** guidelines; enquiries to the DPO. 已批准方案。 |
+| 12 | Only for projects **without an OP**. 未取得佔用許可證的項目。 |
+| 13–15 | Normal submission channels; BO exemption by **modification** with documents and **undertaking**; enquiries to the Chief Building Surveyor. 申請途徑。 |
+| 16 | **No OP** until the **undertaking** is registered in the Land Registry. 須先註冊承諾書。 |
+| 17 | Enforcement and **prosecution** if: UPs or the area beneath are **enclosed** above parapet height; bathroom exhausts open into UPs; sky gardens not for **exclusive** use. 檢控。 |
+| 18 | Developers must warn purchasers about misuse. 提醒買家。 |
+| 19–20 | Each department acts in its own capacity; lease rights reserved. 部門權責。 |
+
+## Full criteria by feature 各設施的詳細準則 (Appendix A) {#full-criteria}
+
+=== "(a) NSPEW 非結構預製外牆"
+
+    | Criterion 準則 | Requirement 要求 |
+    |---|---|
+    | (i) | **Non-load-bearing**; meets the external wall requirements of **B(C)R s.27**; fixed by in-situ RC joints, cast-in anchors, or welding to steel (fn. 1) |
+    | (ii) | Maximum exempted thickness **150 mm** |
+    | (iii) | Wall and finishes **do not project beyond the lot boundary** |
+    | (iv) | The part of the wall with a **door opening** counts for GFA and SC |
+    | (v) | NSPEW with a prefabricated **projecting window** may be exempted if the window meets [APP-19](app-19.md) |
+    | (vi) | Finishes of nominal thickness or **dry-fixed stone ≤ 75 mm** are ignored when measuring the 150 mm |
+    | (vii) | Subject to the **APP-151 pre-requisites and 10 % cap**; submit blown-up sections (fn. 2, Appendix B) |
+
+=== "(b) Utility platforms 工作平台"
+
+    | Criterion 準則 | Requirement 要求 |
+    |---|---|
+    | (i) | **Residential buildings only** |
+    | (ii)–(iii) | At most **50 %** of the platform exempted; at most **0.75 m²** per residential unit |
+    | (iv) | Platform at least **1.5 m²** |
+    | (v) | At least **1.5 m** from a **balcony** (unless combined per App. B of the [External Maintenance Code](../codes/external-maintenance-2021.md)) |
+    | (vi) | **No projecting window** in the room leading to it |
+    | (vii) | ≥ **40 %** of the perimeter faces the **open air**, not enclosed above safe parapet height (or the longer side, if attached to another UP) |
+    | (viii) | Not in a **re-entrant < 1,500 mm** wide or a **light well** |
+    | (ix) | Does not harm **lighting and ventilation** of habitable rooms, kitchens, bathrooms |
+    | (x) | Does not project beyond the lot boundary |
+    | (xi) | **150 mm drop** from the adjacent interior |
+    | (xii) | **Open parapets** (railing, perforated sheet, mesh); the lowest **400 mm** may be solid; fire safety as for balconies ([APP-123](app-123.md)) |
+    | (xiii) | Exhausts of internal bathrooms (B(P)R 36 modification) **not** into the UP |
+    | (xiv) | Covered area under the **lowest** UP fully exempted if ≥ 40 % of its perimeter is open |
+    | (xv) | Subject to the **APP-151 pre-requisites and 10 % cap** |
+
+=== "(c) Noise barriers 隔音屏障"
+
+    | Criterion 準則 | Requirement 要求 |
+    |---|---|
+    | (i) | **Stand-alone wall** away from the tower, or **cantilevered acoustic panel** from the podium walls |
+    | (ii) | Projection beyond the lot needs other departments' approval |
+    | (iii) | **No other use**, including commercial |
+    | (iv) | Provision and size justified by **quantitative assessment** |
+    | (v) | Subject to the **APP-151 pre-requisites** (not the cap); a non-noise-sensitive building used as a **noise buffer** gets **no** exemption; tackle noise at source first (EPD, HyD guidelines) |
+
+=== "(d) Communal sky gardens 公用空中花園"
+
+    | Criterion 準則 | Requirement 要求 |
+    |---|---|
+    | (i) | Natural ventilation, greenery and recreational space for **communal use** |
+    | (ii) | Number of sky gardens ≤ **storeys ÷ 20** (plus any podium garden) |
+    | (iii) | Active recreation allowed, except in **industrial** buildings |
+    | (iv) | **Open-sided** above safe parapet height on at least **two opposite sides** |
+    | (v) | Net garden area ≥ **50 %** of the floor plate; parcels linked by communal circulation |
+    | (vi) | **Greenery ≥ 15 %** of the floor plate, planted, within distance **L** of an open external wall, where L = clear height from floor to the top of the opening (Appendix C) |
+    | (vii) | Without a podium garden, the first sky garden **≤ 10 storeys** above the lowest ground storey |
+    | (viii) | At least **10 storeys** above any lower sky or podium garden |
+    | (ix) | **Refuge floors** at the roof or combined with sky gardens, to the fire codes (e.g. a 55-storey building with 2 refuge floors may have 2 combined plus 1 independent sky garden) |
+    | (x)–(xi) | Accessible from **common areas only**; **not served by service lifts** |
+    | (xii) | Clear height **≥ 4.5 m** |
+    | (xiii) | No ventilation **exhaust** facing the garden |
+    | (xiv) | Planters, furniture and equipment **fixed** |
+    | (xv) | **Notice**: communal use, **no cafés or shops** |
+    | (xvi) | Maintenance financially viable; **maintenance manual** for end users |
+    | (xvii) | No PlanD concern on building **height** |
+    | (xviii) | Subject to the **APP-151 pre-requisites** |
+    | fn. 10 | Solid parapet **≤ 1,250 mm**; opening top **≥ 3,000 mm** above the parapet; parapets behind planters or benches ≥ **2/3 free area** above 1,250 mm |
+
+**Conditions on approval** (App. A para. 2): register the **undertaking** before the OP application, designating in the **DMC** the UPs and the area beneath as **"non-enclosed areas"** and sky gardens as **"common areas"**; plus any APP-151 conditions. 批准條件：註冊承諾書並在公契訂明。
+
+<figure markdown>
+  ![Appendix C — diagrammatic plan and section of a communal sky garden](../assets/figures/jpn2/appendix-c-sky-garden.png){ width="620" loading=lazy }
+  <figcaption>Appendix C — greenery zone within distance **L** of open walls (Fig. 1) and the section with **≥ 4,500 mm** clear height, solid parapet **≤ 1,250 mm** and opening **≥ 3,000 mm** (Fig. 2). 附錄 C：可計算綠化範圍及剖面。<br><small>Source: JPN No. 2, BD / LandsD / PlanD 資料來源：聯合作業備考第 2 號</small></figcaption>
+</figure>
+
+## Worked examples 例子 {#worked-example}
+
+| Case 情況 | Working 計算 |
+|---|---|
+| **Utility platform** 工作平台 | A 2.0 m² UP: 50 % = 1.0 m², but the cap is **0.75 m²** per flat → **0.75 m²** exempted; the other 1.25 m² counts. Platform ≥ 1.5 m² ✔; ≥ 1.5 m from the balcony; 150 mm step down. |
+| **NSPEW** 非結構預製外牆 | 175 mm precast panel + 40 mm dry-fixed stone: stone ignored (≤ 75 mm), so 175 mm wall → **150 mm** exempted, **25 mm** counts. |
+| **Sky gardens, 45-storey office tower** 寫字樓空中花園 | 45 ÷ 20 = **2.25** → at most **2** sky gardens; first within 10 storeys of ground (no podium garden), the second ≥ 10 storeys above it; floor plate 1,200 m² → garden ≥ **600 m²**, greenery ≥ **180 m²** within L of the open sides; clear height ≥ 4.5 m. |
+| **Cap check** 上限 | UPs and NSPEW are **capped** items (APP-151 10 %); noise barriers and sky gardens need the **pre-requisites** but are not capped. |
+
+## Green features in the whole picture 環保設施與其他規定 {#whole-picture}
+
+| Topic 課題 | Where 出處 |
+|---|---|
+| First package: balconies, wider corridors, residential sky gardens, podium gardens 第一批 | [JPN 1](jpn-1.md) |
+| MiC (moved from this JPN) 組裝合成 | [JPN 8](jpn-8.md), [ADV-36](adv-36.md) |
+| Pre-requisites and 10 % cap 先決條件及上限 | [APP-151](app-151.md), [APP-152](app-152.md), [APP-156](app-156.md) |
+| Projecting windows in NSPEW 窗台 | [APP-19](app-19.md) |
+| Precast façade design 預製外牆設計 | [APP-143](app-143.md), [Precast Code](../codes/precast-2016.md) |
+| UP and A/C platform maintenance access 維修通道 | [External Maintenance Code](../codes/external-maintenance-2021.md) |
+| Refuge floors with sky gardens 庇護層 | [FS Code Part B](../codes/fsc-part-b-means-of-escape.md) |
+| Sky gardens and greenery 空中花園及綠化 | [APP-122](app-122.md), [JPN 3](jpn-3.md), [ADV-35](adv-35.md) |
+| Lighting and ventilation 照明及通風 | [Lighting & ventilation guide](../guides/lighting-ventilation.md) |
+| The whole GFA picture 總樓面面積全貌 | [GFA guide](../guides/gfa.md) |
+
+## Key quotes 原文摘錄 {#key-clauses}
 
 !!! quote "App. A para. 1(a)(ii), (iv) — NSPEW 非結構預製外牆"
     (ii) The maximum thickness of the wall to be exempted is 150mm; … (iv) If a door opening is formed in the wall, that portion of the wall formed with the opening will be accountable for GFA and SC calculations.
@@ -151,9 +280,9 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | [JPN 1](jpn-1.md) | First package (balconies, sky gardens…) 第一批鼓勵措施 |
 | [APP-151](app-151.md) | Items 7, 11–13 in Appendix A; pre-requisites and cap 附錄 A 第 7、11–13 項 |
 | [APP-19](app-19.md) | Projecting windows in NSPEW 預製外牆的伸出窗 |
-| JPN 8 | Modular Integrated Construction (MiC) 組裝合成建築法 |
-| APP-123 | Balcony parapet / fire safety reference 露台欄杆 |
-| Code of Practice on Access for External Maintenance 2021 | Utility platform near balcony / A/C platforms 外部維修通道 |
+| [JPN 8](jpn-8.md) | Modular Integrated Construction (MiC) 組裝合成建築法 |
+| [APP-123](app-123.md) | Balcony parapet / fire safety reference 露台欄杆 |
+| [Code of Practice on Access for External Maintenance 2021](../codes/external-maintenance-2021.md) | Utility platform near balcony / A/C platforms 外部維修通道 |
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Unofficial summary; refer to the official JPN for the definitive text.</small>
