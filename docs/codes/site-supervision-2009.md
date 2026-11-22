@@ -396,6 +396,7 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -406,6 +407,8 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 - 🟡 [Qualified Supervision of Building Works Involving Mobile Plants and Tower Cranes by Adopting Smart Site Safety System](../circulars/2024.md#cl-qsbwimptcassss2024) <small>28 Mar 2024 · 採用「安全智慧工地」系統為涉及流動機械及塔式起重機的建築工程提供合格監督</small>
 - 🟢 [Qualified Supervision for Off-site Fabrication of Simple Structural Steel Elements](../circulars/2023.md#cl-qsofssse2023) <small>15 Dec 2023 · 為場外預製的鋼結構工程提供合格監督</small>
 - 🟢 [Structural Safety and Integrity of Tower Cranes in Construction Sites](../circulars/2022.md#cl-ssitccs2022) <small>12 Sep 2022 · 建築地盤內塔式起重機的結構安全及完整性</small>
+- ⚪ [Code of Practice for Site Supervision 2009 (2021 Edition)](../circulars/2021.md#cl-cops2009-2021) <small>26 Mar 2021 · 2009年地盤監督作業守則(2021年修訂版)</small>
+- 🔵 [Amendments to Code of Practice for Site Supervision 2009](../circulars/2020.md#cl-acopss2020) <small>29 Sep 2020 · 《2009年地盤監督作業守則》修訂事宜</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

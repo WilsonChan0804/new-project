@@ -13,6 +13,7 @@ tags:
   - Wind 風力
   - Drainage 排水
   - Occupation permit 佔用許可證
+  - Minor works 小型工程
 summary: "Presumed bearing values, rock sockets, stability factors, pile spacing and settlement monitoring."
 keywords: foundation code, 地基, piles, 樁, bearing pressure, 承載壓力, rock socket, settlement, 沉降, Alert Alarm Action
 ---
@@ -436,12 +437,16 @@ All tests by **HOKLAS** labs except SPT and proof core drilling (cl. 8.1).
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Use of Tied-Back Wall Support System for Excavation Works](../circulars/2026.md#cl-utbwssew2026) <small>7 Jul 2026 · 挖掘工程使用後拉式圍牆支撐系統</small>
 - 🟢 [Further Streamlining Measures for Foundation Works](../circulars/2025.md#cl-fsmfw2025) <small>31 Mar 2025 · 基礎工程的進一步簡化措施</small>
 - 🔵 [Amendments to Code of Practice for Foundations 2017](../circulars/2022.md#cl-acopf2017-2022) <small>26 Jul 2022 · 《基礎作業守則2017年》修訂事宜</small>
+- 🔵 [Amendments to the "Technical Guidelines on Minor Works Control System" (Technical Guidelines)](../circulars/2021.md#cl-atgmwcstg-2021) <small>29 Oct 2021 · 《小型工程監管制度之技術指引》（《技術指引》）修訂事宜</small>
+- ⚫ [Repeal of PNAP APP-103 Structures On Grade on Newly Reclaimed Land](../circulars/2021.md#cl-rpnapsognrl2021) <small>12 May 2021 · </small>
+- 🔵 [Amendments to Code of Practice for Foundations 2017](../circulars/2021.md#cl-acpf2017-2021) <small>17 Feb 2021 · 《基礎作業守則2017年》修訂事宜</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

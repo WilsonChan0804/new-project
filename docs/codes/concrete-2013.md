@@ -119,10 +119,13 @@ keywords: concrete code, 混凝土, cover, 保護層, exposure, grade, C30, rein
 - **Apr 2024**: maximum permanent elongation for couplers longer than **100 mm**; new **strut-and-tie** provisions (cl. 6.9); new column link details (Fig. 9.5 g–i); mix proportions for **≤ 20 MPa** concrete for minor structural and non-structural works (cl. 11.7.1); BS 8500 and BS EN 206 references updated. 機械接駁器、壓桿拉桿模型、柱箍筋、小型工程低強度混凝土。
 - **Jun 2023** and **Feb 2022**: other clarifications; see the BD amendment PDFs. 其他修訂見原文。
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🔵 [Amendments to Code of Practice for Structural Use of Concrete 2013 (2020 Edition)](../circulars/2022.md#cl-acopsus2013-2022) <small>23 Feb 2022 · 《混凝土結構作業守則2013年（2020年修訂版）》修訂事宜</small>
+- 🔵 [Code of Practice for Structural Use of Concrete 2013 (2020 Edition)](../circulars/2020.md#cl-copsuc2013-2020) <small>29 Dec 2020 · 《混凝土結構作業守則2013年（2020年修訂版）》</small>
+- 🔵 [Amendments to Code of Practice for Structural Use of Concrete 2013](../circulars/2020.md#cl-acpsuc2013-2020) <small>24 Nov 2020 · 《混凝土結構作業守則2013年》修訂事宜</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

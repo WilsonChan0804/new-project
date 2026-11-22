@@ -101,10 +101,13 @@ keywords: steel code, 鋼結構, S355, design strength, deflection limit, 撓度
 - Lap joint and net-area equations corrected (Eq. 9.9, 9.10). 修正方程。
 - **Composite columns**: classification, allowed grades, quality control of concrete-filled hollow sections, geometric ratios, design strengths, buckling curves (cl. 10.5, Tables 10.11, 10.13). 組合柱多項修訂。
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Qualified Supervision for Off-site Fabrication of Simple Structural Steel Elements](../circulars/2023.md#cl-qsofssse2023) <small>15 Dec 2023 · 為場外預製的鋼結構工程提供合格監督</small>
+- ⚪ [Code of Practice for the Structural Use of Steel 2011 (2021 Edition)](../circulars/2021.md#cl-copsus2011-2021) <small>3 Sep 2021 · 《2011年鋼結構作業守則 (2021年修訂版)》</small>
+- 🔵 [Amendments to Code of Practice for the Structural Use of Steel 2011](../circulars/2021.md#cl-acopsus2011-2021) <small>17 May 2021 · 《2011年鋼結構作業守則》修訂事宜</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

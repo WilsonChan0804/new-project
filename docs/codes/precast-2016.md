@@ -78,10 +78,12 @@ keywords: precast, 預製, precast facade, 預製外牆, lifting insert, 吊裝,
 - **Jun 2026**: new Table 2.7a on **testing procedures for completed panel joints and window joints**; new Figure 2.5a on **confinement** for bearing; other updates. 新增外牆接縫及窗縫測試程序、局部承壓圍束。
 - **Nov 2020**: see the BD amendment PDF. 見原文。
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - ⚫ [Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass](../circulars/2022.md#cl-qsqapccmichsptg2022) <small>22 Apr 2022 · Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass</small>
+- 🔵 [Amendments to Code of Practice for Precast Concrete Construction 2016](../circulars/2020.md#cl-acoppcc2016-2020) <small>17 Nov 2020 · 《預製混凝土結構作業守則2016年》修訂事宜</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

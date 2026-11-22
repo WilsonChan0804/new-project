@@ -85,6 +85,7 @@ keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊�
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -93,6 +94,8 @@ keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊�
 - 🟢 [Timely Submission of Notification and Certificate by Qualified Person](../circulars/2026.md#cl-tsncqp2026) <small>7 Jan 2026 · 合資格人士按時呈交通知書及證明書</small>
 - 🟢 [Mandatory Window Inspection Scheme (MWIS) Submission of Notification and Certificate](../circulars/2025.md#cl-mwissnc2025) <small>15 May 2025 · 強制驗窗計劃呈交通知書及證明書</small>
 - 🟢 [Mandatory Building Inspection Scheme (MBIS) Inspection of Unauthorised Building Works (UBW)](../circulars/2023.md#cl-mbisiubw2023) <small>28 Sep 2023 · 強制驗樓計劃違例建築工程（僭建物）的檢驗</small>
+- 🟢 [Mandatory Building Inspection Scheme (MBIS) Submission of Notification and Certificate](../circulars/2021.md#cl-mbissnc-2021) <small>9 Feb 2021 · 強制驗樓計劃呈交通知書及證明書</small>
+- 🔵 [Code of Practice for the Mandatory Building Inspection Scheme and the Mandatory Window Inspection Scheme 2012 Amendments](../circulars/2020.md#cl-copmbismwis2012a2020) <small>20 Jul 2020 · 《強制驗樓計劃及強制驗窗計劃作業守則2012》修訂事宜</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

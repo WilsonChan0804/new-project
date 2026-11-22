@@ -92,12 +92,16 @@ Appendix VII of the TG gives **recommended designs and details for Class II and 
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🔵 [Amendments to the "Technical Guidelines on Minor Works Control System (2024 Edition)"](../circulars/2026.md#cl-atgmwcse2026) <small>13 Aug 2026 · 《小型工程監管制度之技術指引》（2024年修訂版）修訂事宜</small>
 - 🔵 [Amendments to the "Technical Guidelines on Minor Works Control System (2024 Edition)"](../circulars/2025.md#cl-atgmwcs2025) <small>31 Oct 2025 · 《小型工程監管制度之技術指引》（2024年修訂版）修訂事宜</small>
 - 🔵 [Technical Guidelines on Minor Works Control System (2024 Edition)](../circulars/2025.md#cl-tgmwcs2024e2025) <small>28 Feb 2025 · 小型工程監管制度之技術指引（2024 年修訂版）</small>
+- 🔵 [Amendments to the "Technical Guidelines on Minor Works Control System" (Technical Guidelines)](../circulars/2021.md#cl-atgmwcstg-2021) <small>29 Oct 2021 · 《小型工程監管制度之技術指引》（《技術指引》）修訂事宜</small>
+- 🔵 [Amendments to the Technical Guidelines on Minor Works Control System](../circulars/2021.md#cl-atgmwcs-2021) <small>24 Mar 2021 · 《小型工程監管制度之技術指引》修訂事宜</small>
+- 🔵 [Technical Guidelines on Minor Works Control System (TG) Addendum (1/2020) Minor Works involving Signboards](../circulars/2020.md#cl-tgmwcsa2020) <small>18 Mar 2020 · 小型工程監管制度之技術指引附錄(1/2020)有關招牌的小型工程</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

@@ -216,6 +216,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🔵 [Amendments to Code of Practice for Dead and Imposed Loads 2011](../circulars/2020.md#cl-acpdil2011-2020) <small>2 Dec 2020 · 《恆載及外加荷載作業守則2011年》修訂事宜</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

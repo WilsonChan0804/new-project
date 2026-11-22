@@ -1,0 +1,304 @@
+{
+ "CL_COPSUC2013_2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "The 2020 Edition is the current Concrete Code (with later amendments) 現行混凝土守則版本",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Promulgates the **Concrete Code 2013 (2020 Edition)**, consolidating the Jun 2017 and Nov 2020 amendments.",
+    "頒布**混凝土守則 2013（2020 年版）**，整合 2017 年 6 月及 2020 年 11 月修訂。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RBGAOBD2020": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Annual reminder not to offer gifts or advantages to BD officers.",
+    "每年提示不得向屋宇署人員送禮。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACPDIL2011_2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Incorporated into the Loads Code 2021 Edition 已納入荷載守則 2021 年版",
+  "status_links": [
+   "../codes/dil-2011.md|Loads Code",
+   "../regulations/bcr-123q.md|B(C)R"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Loads Code amendments effective **1 Feb 2021** with the new **B(C)R**: Table 3.13 (cl 3.8.1) – height for applying the barrier **line load** (1.1 m or top edge, whichever lower); cl 3.11 – **Notice as to Load** requirements moved from the old B(C)R reg 19.",
+    "荷載守則修訂，於新《建築物（建造）規例》2021 年 2 月 1 日生效時實施：欄障線荷載施加高度；**荷載告示**規定由舊規例第 19 條移入守則 3.11 條。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACPSUC2013_2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Incorporated into the Concrete Code 2020 Edition 已納入混凝土守則 2020 年版",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Concrete Code amendments (Nov 2020): new **cl 3.3** for **Grade 500A welded fabric**; Table 9.1 and cl 9.3.1.1, 9.4.2 – **minimum reinforcement** by concrete strength; cl 9.4.1 – **pure cantilevered slabs**.",
+    "混凝土守則修訂（2020 年 11 月）：新增 **500A 級焊接鋼筋網**；按混凝土強度訂**最少鋼筋**；**純懸臂板**設計。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACOPPCC2016_2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Part of the Precast Code as the Nov 2020 amendment 已成為預製守則 2020 年 11 月修訂",
+  "status_links": [
+   "../codes/precast-2016.md|Precast Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Precast Concrete Construction Code amendments (Nov 2020), with immediate effect (details in the Annex on BD's website).",
+    "預製混凝土建造守則修訂（2020 年 11 月），即時生效。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACOPSS2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Incorporated into the Site Supervision Code (2021 and 2024 Editions) 已納入地盤監督守則",
+  "status_links": [
+   "../codes/site-supervision-2009.md|Site Supervision Code"
+  ],
+  "topics": [
+   "supervision",
+   "design"
+  ],
+  "points": [
+   [
+    "Site Supervision Code amendments effective **15 Dec 2020**: enhanced supervision for particular **A&A works to heritage buildings**; clarified definition of supervision, record keeping, **non-conformance reporting** and communication.",
+    "地盤監督守則修訂（2020 年 12 月 15 日生效）：加強**歷史建築**加建改建工程的監督；釐清監督定義、記錄、**不符合事項匯報**及溝通。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPNWLE2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "incorporated",
+  "status_note": "The 2020 Edition is the current Lifts and Escalators Code 現行版本",
+  "status_links": [
+   "../codes/lifts-escalators-2011.md|Lifts & Escalators Code"
+  ],
+  "topics": [
+   "design"
+  ],
+  "points": [
+   [
+    "Promulgates the **Code of Practice for Building Works for Lifts and Escalators 2011 (2020 Edition)**, consolidating the Aug 2015 and Sep 2019 amendments, with an updated sample general note on **lift machine room clearances** for GBP.",
+    "頒布**升降機及自動梯建築工程守則 2011（2020 年版）**，並更新一般建築圖則上**升降機機房淨空**的樣本附註。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPWEHK2019EGP2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "spent",
+  "status_note": "Grace period ended 31 Mar 2021 寬限期已於 2021 年 3 月 31 日結束",
+  "status_links": [
+   "../codes/wind-2019.md|Wind Code 2019"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Grace period for plans designed to the **Wind Code 2004** extended (epidemic, postponed seminars) to **31 Mar 2021**; after that the **Wind Code 2019** applies.",
+    "按 **2004 年風力守則**設計的圖則寬限期延至 **2021 年 3 月 31 日**；其後須用 2019 年守則。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RCRMWCA2020": {
+  "to": "RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Refresher course for RMWC renewal or restoration.",
+    "小型工程承建商重溫課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_TGMWCSA2020": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "incorporated",
+  "status_note": "Incorporated into the TG (2024 Edition) 已納入技術指引 2024 年版",
+  "status_links": [
+   "../regulations/mw-technical-guidelines.md|MW Technical Guidelines"
+  ],
+  "topics": [
+   "minorworks"
+  ],
+  "points": [
+   [
+    "**TG Addendum 1/2020** updates the requirements for **signboards** under the Minor Works Control System.",
+    "技術指引增補 **1/2020** 更新**招牌**小型工程規定。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPMBISMWIS2012A2020": {
+  "to": "AP, RSE, RGE, RI, QP",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "incorporated",
+  "status_note": "Incorporated into the MBIS/MWIS Code 2023 Edition 已納入 2023 年版",
+  "status_links": [
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "MBIS/MWIS Code amendments (Jul 2020): inspection requirements for **concealed external elements** and other physical elements; mandatory requirements for **window replacement/repair**; best practice for replacing **rivets and screws**.",
+    "驗樓驗窗守則修訂（2020 年 7 月）：**隱蔽外部構件**檢驗要求；**更換或修葺窗戶**的強制要求；更換**鉚釘及螺絲**的良好做法。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACOPSUG2018": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Part of the Glass Code as the Jul 2020 amendment 已成為玻璃守則 2020 年 7 月修訂",
+  "status_links": [
+   "../codes/glass-2018.md|Glass Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Glass Code amendments (Jul 2020): **cl 7.1.1** – **retaining devices** for bond failure of **structural sealant**; Annex C item C2 – symbol of glass fin thickness in the torsional moment of inertia J.",
+    "玻璃守則修訂（2020 年 7 月）：**結構密封膠**失效時的**固定裝置**要求；附錄 C 玻璃肋厚度符號。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SSTCCSTS2020": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Last separate typhoon season scaffolding and tower crane letter (combined into the rainy and typhoon season letter from 2021).",
+    "最後一份獨立的颱風季節棚架及塔式起重機通告（2021 年起合併）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_FPMCS2020": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "topics": [
+   "weather",
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Last separate flood prevention letter (DSD list of improper site activities; combined into the rainy and typhoon season letter from 2021).",
+    "最後一份獨立防洪通告（2021 年起合併）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_GRDNMRPCMCD2020": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 1",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual rodent-proofing design and site mosquito/rodent guidelines.",
+    "每年防鼠設計及地盤防蚊防鼠指引。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_QSPCCMICHSPTG2020": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "superseded",
+  "status_note": "Superseded by the Apr 2022 arrangements and revised PNAPs 已由 2022 年 4 月安排及修訂作業備考取代",
+  "status_links": [
+   "#cl-qsqapccmichsptg2022|Apr 2022 letter",
+   "../pnap/app-143.md|APP-143",
+   "../pnap/adv-36.md|ADV-36",
+   "../pnap/app-37.md|APP-37"
+  ],
+  "topics": [
+   "structural",
+   "supervision"
+  ],
+  "points": [
+   [
+    "Approval conditions (BO s 17(1) item 6) for Mainland factories: AP, RSE and RC AS inspect precast and **MiC** factories **monthly**; each stream's **TCP T3** supervises production **weekly** and **heat soak** of **≥ 30 %** of tempered glass panes (APP-37, APP-143, ADV-36). Alternative arrangements allowed under the epidemic cross-boundary control.",
+    "內地廠房批准條件：認可人士、結構工程師及承建商**每月**巡查預製及組裝合成建築廠房；各方 **T3** 技術人員**每星期**監督生產，並監督 **≥ 30%** 鋼化玻璃**熱浸**；疫情期間容許替代安排。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SBSBMRW2020": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual bamboo scaffold safety reminder to property managers.",
+    "每年竹棚架安全提示。"
+   ]
+  ],
+  "related": []
+ }
+}

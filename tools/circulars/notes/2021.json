@@ -1,0 +1,307 @@
+{
+ "CL_RBGAOBD2021": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Annual reminder not to offer gifts or advantages to BD officers.",
+    "每年提示不得向屋宇署人員送禮。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ATGMWCSTG_2021": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "incorporated",
+  "status_note": "Incorporated into the TG (2024 Edition) 已納入技術指引 2024 年版",
+  "status_links": [
+   "../regulations/mw-technical-guidelines.md|MW Technical Guidelines",
+   "#cl-tgmwcs2024e2025|TG 2024 Edition letter"
+  ],
+  "topics": [
+   "minorworks"
+  ],
+  "points": [
+   [
+    "TG amendments (Oct 2021): **paras 3.3.1 and 3.24.1** add **APP-164** above-ground drainage requirements (e.g. traps and anti-siphonage; vent pipes ≥ 1 m above roof, consider **3 m above an accessible roof**); **paras 3.3.2 and 3.15.2** refer to **Foundations Code s 2.4** for drains and fence walls on **newly reclaimed land**.",
+    "技術指引修訂（2021 年 10 月）：3.3.1 及 3.24.1 段加入 **APP-164** 地面以上排水規定（如通風管高出天台 1 米，可到達天台建議 **3 米**）；3.3.2 及 3.15.2 段引用地基守則 2.4 節（**新填海土地**排水及圍牆）。"
+   ]
+  ],
+  "related": [
+   "../pnap/app-164.md|APP-164",
+   "../codes/foundations-2017.md|Foundations Code s 2.4"
+  ]
+ },
+ "CL_AAGBPPRPCLFS_2021": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../regulations/bpr-18a-22.md|B(P)R site and lot"
+  ],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "A GBP site may include only land the applicant **owns or has a realistic prospect of controlling**. Typical acceptable situations (Appendix): (a) authorised by the registered owners; (b) a registered owner authorised by all others; (c) **District Lands Conference** in-principle approval of a land grant; (d) in-principle approval of a licence by a department; (e) acceptance of LandsD basic terms or payment of the land exchange admin fee; (f) lease from the registered owner who authorises development; (g) **IO** for A&A forming a new building on common parts; (h) binding provisional sale and purchase agreement with all owners; (i) ownership enough for a **compulsory sale order** application (solicitor's letter and LR proof; possible B(P)R 20/21 modification on a **notional site** basis with a **2-year non-renewable** limit).",
+    "一般建築圖則的地盤只可包括申請人**擁有或有實際機會控制**的土地。附錄列出可接受情況：(a) 獲登記業主授權；(b) 業主之一並獲其他業主授權；(c) **地政總署地區地政會議**原則上批准批地；(d) 部門原則上批出牌照；(e) 已接受基本條款或繳付換地行政費；(f) 向業主租用並獲授權發展；(g) 法團於公用部分加建新建築物；(h) 與所有業主簽訂具約束力臨時買賣合約；(i) 擁有足夠業權申請**強制售賣令**（可按「**概念地盤**」修改 B(P)R 第 20、21 條，限期 **2 年**不可續）。"
+   ],
+   [
+    "Submit bulky proof (e.g. LR records) on a non-rewritable **CD/DVD** with PDFs and an index file, labelled and signed by the AP.",
+    "大量證明文件（如土地註冊處記錄）宜以不可重寫光碟提交，附 PDF 及索引。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPSUS2011_2021": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "superseded",
+  "status_note": "Superseded by the Steel Code 2011 (2023 Edition) 已由 2023 年版取代",
+  "status_links": [
+   "../codes/steel-2011.md|Steel Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Promulgates the **Steel Code 2011 (2021 Edition)**, consolidating the Nov 2016 and May 2021 amendments.",
+    "頒布**鋼結構守則 2011（2021 年版）**，整合 2016 年 11 月及 2021 年 5 月修訂。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPDIL2021": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "The 2021 Edition is the current Loads Code 現行荷載守則版本",
+  "status_links": [
+   "../codes/dil-2011.md|Loads Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Promulgates the **Dead and Imposed Loads Code 2011 (2021 Edition)**, consolidating the Mar 2014, Aug 2016 and Dec 2020 amendments.",
+    "頒布**恒載及外加荷載守則 2011（2021 年版）**，整合 2014、2016 及 2020 年修訂。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RCRMWCA2021": {
+  "to": "RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Refresher course for RMWC renewal or restoration.",
+    "小型工程承建商重溫課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPDCRGBCRSC2021": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "CPD course for RGBC/RSC renewal or restoration.",
+    "一般建築及專門承建商持續專業發展課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACOPSUS2011_2021": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Incorporated into the Steel Code (2021 and 2023 Editions) 已納入鋼結構守則",
+  "status_links": [
+   "../codes/steel-2011.md|Steel Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Steel Code amendments (May 2021): symbol **λeff** (cl 1.5); yield strength definition (3.1.2); **BS EN 10268** replaces withdrawn BS 1449 (Table 3.9); revised effective slenderness about minor axes (8.7.9); **no WPS submission** before welding cold-formed hollow sections (11.7.5(iii)); conditions for welding cold-formed areas (Table 11.5); using the latest version of Annex A standards; adds **BS EN 10147:2000** and **BS EN 10268:2006**.",
+    "鋼結構守則修訂（2021 年 5 月）：新增 λeff 符號；屈服強度定義；以 BS EN 10268 取代 BS 1449；修訂有效長細比；冷成型空心型材焊接前毋須提交焊接程序規格；附錄 A 標準可用最新版本。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RPNAPSOGNRL2021": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "spent",
+  "status_note": "APP-103 repealed 12 May 2021 已廢除 APP-103",
+  "status_links": [
+   "../codes/foundations-2017.md|Foundations Code s 2.4"
+  ],
+  "topics": [
+   "structural",
+   "design"
+  ],
+  "points": [
+   [
+    "**PNAP APP-103** (Structures On Grade on Newly Reclaimed Land) **repealed** at once: the **Foundations Code 2017** now covers structures on grade on newly reclaimed land, and APP-103 App. A details are no longer applicable – measures against soil migration under raft pile caps are considered **case by case**.",
+    "**APP-103（新填海土地上的地面結構）即時廢除**：地基守則已涵蓋相關指引；防止樁帽下泥土流失的措施按個別情況考慮。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMCSRTS2021": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "First combined rainy and typhoon season site letter (replacing the separate flood prevention and typhoon scaffolding letters).",
+    "首份合併的雨季及颱風季節地盤通告（取代以往分開的防洪及颱風棚架通告）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_GRDNMRPCMCD2021": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual rodent-proofing design and site mosquito/rodent guidelines.",
+    "每年防鼠設計及地盤防蚊防鼠指引。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPS2009_2021": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "superseded",
+  "status_note": "Superseded by the Site Supervision Code 2024 Edition 已由 2024 年版取代",
+  "status_links": [
+   "../codes/site-supervision-2009.md|Site Supervision Code",
+   "../pnap/app-157.md|APP-157"
+  ],
+  "topics": [
+   "supervision"
+  ],
+  "points": [
+   [
+    "Promulgates the **Site Supervision Code 2009 (2021 Edition)**, consolidating corrigenda and amendments of May 2015, Jun 2016, May 2019, Sep and Dec 2020, with minor amendments: new para **4.1** General Principles (from 6.25); **natural terrain hazard mitigation** added to 7.1(a); Table 8.1 wording; TCPs keep **their own copy of supervision reports** with identity recorded (10.2); new samples (App. V, VI); TCP qualifications with **geology** background (App. VII).",
+    "頒布**地盤監督守則 2009（2021 年版）**並作輕微修訂：新增 4.1 段一般原則；7.1(a) 加入**天然山坡災害緩解**；技術人員須**各自保存監督報告**（10.2 段）；附錄 VII 更新**地質學**背景技術人員資歷。"
+   ]
+  ],
+  "related": [
+   "#cl-acopss2020|Sep 2020 amendments"
+  ]
+ },
+ "CL_ATGMWCS_2021": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "incorporated",
+  "status_note": "Incorporated into the TG (2024 Edition) 已納入技術指引 2024 年版",
+  "status_links": [
+   "../regulations/mw-technical-guidelines.md|MW Technical Guidelines"
+  ],
+  "topics": [
+   "minorworks"
+  ],
+  "points": [
+   [
+    "TG amended for the **B(MW)(Amendment) Regulation 2020** (in force **1 Sep 2020**): **+70, −9 items** (126 → **187** MW items), 56 descriptions amended; designated exempted works **15 → 30**; new **Type H** (ventilation systems). Section 3 recast; App. VII recommended designs updated; new **App. X** windows or window walls acting as protective barriers.",
+    "配合 2020 年 9 月 1 日生效的《建築物（小型工程）（修訂）規例》：小型工程項目由 126 增至 **187** 項；指定豁免工程由 15 增至 **30** 項；新增 **H 類**（通風系統）；新增附錄 X（窗作防護欄障）。"
+   ]
+  ],
+  "related": [
+   "../regulations/bmwr-123n.md|B(MW)R"
+  ]
+ },
+ "CL_MBISSNC_2021": {
+  "to": "Registered Inspectors",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "status_links": [
+   "../regulations/bir-123p.md|B(I&R)R",
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "Late MBIS submissions. Timeframes: **MBI 1** (appointment of RI) within **7 days** of appointment; **MBI 3a / MBI 3** (inspection certificate, without/with repair) within **7 days** after inspection; **MBI 2** (nomination of another RI for repair) within **7 days**; **MBI 4** (repair certificate) within **14 days** after repair; **MBI 5** (no business connection) within **14 days** after repair. Breaches → disciplinary action under BO s 7.",
+    "強制驗樓遲交。時限：**MBI 1**（委任）委任後 **7 日**；**MBI 3a／3**（檢驗證明書）檢驗後 **7 日**；**MBI 2**（提名另一檢驗人員）**7 日**；**MBI 4**（修葺證明書）修葺後 **14 日**；**MBI 5**（無業務關連）**14 日**。違者可被紀律處分。"
+   ]
+  ],
+  "related": [
+   "#cl-mwissnc2025|MWIS timeframes (2025)"
+  ]
+ },
+ "CL_ACPF2017_2021": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Incorporated into the Foundations Code 2024 Edition 已納入地基守則 2024 年版",
+  "status_links": [
+   "../codes/foundations-2017.md|Foundations Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Foundations Code amendments (Feb 2021): glossary **minor or temporary structures** (1.2) and their footings (2.2.2(5)); **category 2 rock** definition (Table 2.1); max effective overburden depth (2.2.4); **settlement and rotation reference criteria** (2.3.2(2)); note on accidental loads (2.5.4(1)); shallow foundation testing (4.2.2(2)); non-recognised piling systems (5.1.1); NSF alternative approach (5.2.3(c)); H-piles to bedrock founding materials and alternative to dynamic load tests (5.4.11).",
+    "地基守則修訂（2021 年 2 月）：小型或臨時構築物；第 2 類岩石定義；有效覆土深度；**沉降及轉角參考準則**；意外荷載；淺地基測試；非認可樁系統；負摩擦力；打至基岩工字樁。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMPBSTS2021": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather"
+  ],
+  "points": [
+   [
+    "Annual typhoon season reminder to property managers.",
+    "每年颱風季節提示。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SBSBMRW2021": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual bamboo scaffold safety reminder to property managers.",
+    "每年竹棚架安全提示。"
+   ]
+  ],
+  "related": []
+ }
+}

@@ -193,6 +193,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | BIM submissions BIM 呈交 | [ADV-34](adv-34.md) |
 | GFA 樓面面積 | [GFA guide](../guides/gfa.md) |
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 

@@ -13,6 +13,7 @@ tags:
   - Statutory period 法定期限
   - Protective barrier 防護欄障
   - Fire safety 消防安全
+  - Concrete & materials 混凝土及物料
 summary: "Curtain walls, windows and window walls: B(C)R 29–31, when structural plans are needed (1.8 m / 6 m² / 100 m), locking devices and supervision."
 keywords: APP-37, curtain wall, 幕牆, window wall, windows, B(C)R 29 30 31, structural submission, locking device
 ---
@@ -133,10 +134,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - ⚫ [Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass](../circulars/2022.md#cl-qsqapccmichsptg2022) <small>22 Apr 2022 · Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass</small>
+- ⚪ [Qualified Supervision for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass](../circulars/2020.md#cl-qspccmichsptg2020) <small>7 Feb 2020 · 為預製混凝土建造、「組裝合成」建築法及鋼化玻璃熱浸程序提供合格的監督</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

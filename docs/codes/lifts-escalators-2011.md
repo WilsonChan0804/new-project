@@ -63,6 +63,12 @@ keywords: lift, 升降機, escalator, 自動梯, lift pit, 機坑, machine room,
 | Service lifts 送貨升降機 | Similar rules; pit needed only where the lowest level served is at or near floor level | 4 |
 | Escalators 自動梯 | Machine and return stations, steps, landings, clearances to obstructions | 5 |
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🔵 [Code of Practice for Building Works for Lifts and Escalators 2011 (2020 Edition)](../circulars/2020.md#cl-copnwle2020) <small>7 Sep 2020 · 《2011年升降機及自動梯建築工程守則（2020年修訂版）》</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 [B(C)R](../regulations/bcr-123q.md) · [FS Code Part C](fsc-part-c-fire-resisting-construction.md) · [FS Code Part D firemen's lifts](fsc-part-d-means-of-access.md) · [BFA lifts](bfa-div-13-20.md) · [Dead & Imposed Loads](dil-2011.md)
