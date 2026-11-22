@@ -152,6 +152,17 @@ JPN 6 only says **who** checks. The requirements themselves are in [APP-152](app
 - Expecting JPN 6 to cover **greenery**: site coverage of greenery is under [JPN 3](jpn-3.md). 以為本備考包括綠化。
 - Measuring setback from the **site boundary** instead of the **street centreline** (APP-152 para. 7). 由地界而非街道中線量度後移。
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| SBD rules being checked 審核的要求 | [APP-152](app-152.md) (separation, setback, greenery) |
+| GFA concessions that require SBD 寬免先決條件 | [APP-151](app-151.md) · [GFA guide](../guides/gfa.md) |
+| Greenery (third SBD element) 綠化 | [JPN 3](jpn-3.md) · [ADV-35](adv-35.md) |
+| Three-regime streamlining 三個制度精簡 | [JPN 4](jpn-4.md) (PR / GFA) · [JPN 5](jpn-5.md) (height) · [JPN 7](jpn-7.md) (SC) |
+| Site coverage and open space 上蓋面積及空地 | [B(P)R 18A–22](../regulations/bpr-18a-22.md) · [B(P)R 25](../regulations/bpr-24-37.md#clause-by-clause) · [SC & PR guide](../guides/site-coverage-plot-ratio.md) |
+| Plan submission 呈交圖則 | [ADM-2](adm-2.md) · [ADM-19](adm-19.md) · [Submission to OP guide](../guides/submission-to-op.md) |
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

@@ -136,6 +136,16 @@ Extract of the **First Schedule** (maximum SC %) — full table, with plot ratio
 - Using JPN 7 for an old lease **without** a GFA/PR clause: follow **LAO PN 3/2020A** instead (para. 5). 把本備考用於沒有地積比率條款的舊地契。
 - Assuming a **s.42** projection relaxation is automatically accepted under the lease: it may need a lease modification and **premium** (para. 9). 以為第 42 條變通自動適用於地契。
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| B(P)R SC limits 規例上蓋面積 | [B(P)R 18A–22](../regulations/bpr-18a-22.md) · [SC & PR guide](../guides/site-coverage-plot-ratio.md) |
+| Measuring SC (projections, flexibility) 計算 | [APP-19](app-19.md) · [APP-132](app-132.md) · [B(P)R 23](../regulations/bpr-23-23a.md) |
+| Other three-regime notes 其他精簡 | [JPN 4](jpn-4.md) · [JPN 5](jpn-5.md) · [JPN 6](jpn-6.md) · [JPN 3](jpn-3.md) |
+| Care homes as non-domestic for SC 院舍 | [APP-172](app-172.md) |
+| MiC 組裝合成 | [JPN 8](jpn-8.md) |
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

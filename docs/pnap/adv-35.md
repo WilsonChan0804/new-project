@@ -119,6 +119,18 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Loads 荷載 | [Dead & Imposed Loads Code](../codes/dil-2011.md) |
+| Site coverage of greenery 綠化上蓋面積 | [JPN 3](jpn-3.md) · [APP-152](app-152.md) |
+| Sky gardens and podium gardens 空中及平台花園 | [APP-122](app-122.md) · [JPN 1](jpn-1.md) · [JPN 2](jpn-2.md) |
+| Structural checks for A&A 改動加建結構 | [APP-117](app-117.md) · [B(C)R](../regulations/bcr-123q.md) |
+| Minor works route 小型工程 | [APP-147](app-147.md) · [Minor works guide](../guides/minor-works.md) |
+| Roof drainage 天台排水 | [APP-93](app-93.md) · [Cap. 123I](../regulations/bsfpwr-123i.md) |
+| Refuge roofs (no trellis) 庇護天台 | [FS Code B18](../codes/fsc-part-b-means-of-escape.md#clause-by-clause) · [APP-42](app-42.md) |
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

@@ -188,6 +188,17 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Lift shafts in GFA 升降機槽與總樓面面積 | [APP-2](app-2.md) · [APP-151](app-151.md) item 18 · [GFA guide](../guides/gfa.md) |
+| Accessible and elderly-friendly lifts 無障礙升降機 | [B(P)R 72–73](../regulations/bpr-71-73.md) · [APP-175](app-175.md) · [DMUA 2026](../codes/dmua-2026.md) |
+| Fireman's lifts 消防員升降機 | [FS Code Part D](../codes/fsc-part-d-means-of-access.md#clause-by-clause) D6–D13 · [B(P)R 41B](../regulations/bpr-39-49e.md#clause-by-clause) |
+| Liftwell fire resistance 升降機槽耐火 | [FS Code C9](../codes/fsc-part-c-fire-resisting-construction.md#clause-by-clause) |
+| Lift engineering 升降機工程 | [Lifts & Escalators Code](../codes/lifts-escalators-2011.md) · [APP-29](app-29.md) |
+| Lift lobbies and escape 升降機大堂 | [FS Code B16](../codes/fsc-part-b-means-of-escape.md#clause-by-clause) |
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

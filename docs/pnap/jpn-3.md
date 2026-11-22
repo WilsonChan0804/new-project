@@ -208,6 +208,18 @@ keywords: landscape, 園景, LMP, landscape master plan, 園景設計總圖, LP,
         - 現有地契訂有按不同地盤面積計算的**綠化百分比**：屋宇署接納未必符合地契，或須修訂地契（可能須繳付**補地價**）（第 11 段）。
         - 以為屋宇署或規劃署的批准即表示符合**其他地契條件**：並非如此（第 12 段）。
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Greenery percentages 綠化百分比 | [APP-152](app-152.md) |
+| Concessions that require SBD 寬免先決條件 | [APP-151](app-151.md) · [GFA guide](../guides/gfa.md) |
+| Other SBD elements 其他要求 | [JPN 6](jpn-6.md) |
+| Building greening loads and maintenance 樓宇綠化 | [ADV-35](adv-35.md) |
+| Sky gardens 空中花園 | [APP-122](app-122.md) · [JPN 1](jpn-1.md) · [JPN 2](jpn-2.md) |
+| Three-regime notes 三個制度 | [JPN 4](jpn-4.md) · [JPN 5](jpn-5.md) · [JPN 7](jpn-7.md) |
+| Timing of submissions 呈交時間 | [Submission to OP guide](../guides/submission-to-op.md) |
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

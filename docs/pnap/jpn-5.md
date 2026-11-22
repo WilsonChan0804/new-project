@@ -173,6 +173,18 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| B(P)R height (for SC / PR) 規例高度 | [B(P)R 23(1)](../regulations/bpr-23-23a.md#clause-by-clause) |
+| Height for firefighting (41B, 41C) 消防高度 | [B(P)R 39–49E](../regulations/bpr-39-49e.md#clause-by-clause) · [FS Code Part D](../codes/fsc-part-d-means-of-access.md) |
+| Storey heights and transfer plates 層高 | [APP-5](app-5.md) |
+| Roof-top structures, signboards 天台構築物 | [APP-42](app-42.md) · [APP-126](app-126.md) |
+| Other three-regime notes 其他精簡 | [JPN 4](jpn-4.md) · [JPN 6](jpn-6.md) · [JPN 7](jpn-7.md) |
+| MiC relaxation 組裝合成 | [JPN 8](jpn-8.md) |
+| Airport height control 機場高度 | [APP-32](app-32.md) |
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
