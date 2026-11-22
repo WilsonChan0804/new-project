@@ -66,6 +66,8 @@ keywords: site coverage, 上蓋面積, plot ratio, 地積比率, site class, 地
     - 地盤須屬申請人**業權或有實際控制前景**；須以**地契圖則或土地測量圖**證明（[ADM-21](../pnap/adm-21.md)、ADV-33）。
     - 地段內的私家街道及後巷有時可計算；新街道把大型地盤分割、地盤之間轉移地積比率等，見 [APP-44](../pnap/app-44.md) 及 [APP-73](../pnap/app-73.md)。
 
+[Calculate site area in the GBP workbook](gbp:site)
+
 ## Step 2: is the site Class A, B or C? 第二步：甲、乙還是丙類地盤？ {#step-2-site-class}
 
 <figure markdown>
@@ -109,6 +111,8 @@ Measured from the **mean level of the street** (the lowest, if streets are at di
     Site area **1,200 m²**, Class B, domestic tower 80 m high. 地盤 1,200 平方米，乙類，住宅大廈高 80 米。
     → domestic SC **37.5%** → max covered area **450 m²** at tower levels; domestic PR **9** → permitted GFA **10,800 m²**.
     Composite with a 15 m commercial podium: podium SC may be 100% up to 15 m; if the podium uses **one tenth** of the permitted non-domestic PR, the domestic part may use up to 9 × (1 − 0.1) = **8.1**. 如平台用去准許非住用地積比率的十分之一，住用部分最多可用 9 × 0.9 = 8.1。
+
+[Calculate SC and PR in the GBP workbook](gbp:site)
 
 ## Step 5: when is bonus PR or flexibility given? 第五步：何時有額外地積比率？ {#step-5-bonuses-and-flexibility}
 

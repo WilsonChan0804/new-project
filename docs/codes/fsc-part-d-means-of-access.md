@@ -17,6 +17,7 @@ tags:
   - Fire resisting construction 耐火結構
   - Means of escape 逃生途徑
 keywords: MOA, means of access, 消防進出途徑, fireman's lift, 消防員升降機, EVA, 緊急車輛通道, FRS
+summary: "FS Code Part D: number of access staircases, fireman's lifts and FRS (Table D1), lift and FRS design, and EVA width, gradient, façade coverage, signs and exemptions."
 ---
 
 # FS Code 2011 Part D: Means of Access<br><small>《2011 年建築物消防安全守則》D 部：消防及救援進出途徑</small>
@@ -30,6 +31,11 @@ keywords: MOA, means of access, 消防進出途徑, fireman's lift, 消防員升
     | **Official language 官方語言** | English and Chinese 中英文版 |
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/fs_code2011.pdf) pp. 112–146 · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/code-and-design-manuals/fs_code2011_c.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all buildings, new and A&A, as the deemed-to-comply way of meeting [B(P)R 41A–41D](../regulations/bpr-39-49e.md#clause-by-clause) and Part A **A10**. Section 6 EVA: **virgin sites** (D22, and later redevelopments of them) and **redevelopment sites** (D23). 所有建築物；新發展及重建地盤的緊急車輛通道要求不同。
+
+    **Exemptions 豁免**: Table D1 rows needing nothing (≤ 1 storey; single-family ≤ 3 storeys); B(P)R 41B exemptions for low buildings; **EVA exemption** for low fire risk or topography with an **FSAR** and enhanced measures (D25–D26). High-risk uses (UC 5a, 5d, 6) may need more lifts / FRS (D3.2). 低矮建築物及特殊地形可豁免。
 
 ## At a glance 重點摘要 {#at-a-glance}
 
@@ -258,6 +264,20 @@ An **FRS** is a protected shaft containing an **access staircase**, a **fireman'
 | **D24.1–D24.3** | Signs: layout sign at the entrance (D9); indication signs ≤ **100 m** apart (D10); **No Parking** ≤ **50 m** apart on carriageways (D11); non-carriageway EVA may use durable route markers on kerbs ≤ 100 m (D12) | 標誌：100 米、禁止泊車 50 米 |
 | **D25.1–D25.2** | **Exemption** for **low fire risk** or **topography** (B(P)R 41D(3)); apply with a **fire safety assessment report** (Part G). Commentary: e.g. transmitter stations, beach houses; stepped streets; remote islands case by case | 低風險或地形可豁免，須消防安全評估報告 |
 | **D26.1** | **Enhanced fire safety** to compensate (41D(4)): MoE, MoA, FRC, FSI. Commentary: fast-response sprinklers in common areas (whole commercial part of composite buildings), staircase pressurisation / venting, direct line to FSCC, larger tanks | 補償措施：花灑、加壓、直線通報、加大水缸 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Legal duty (41A–41D) and exemptions 法定要求 | [B(P)R 39–49E](../regulations/bpr-39-49e.md#clause-by-clause) |
+| Height and cubical extent 高度及體積 | [B(P)R 23(1)](../regulations/bpr-23-23a.md) |
+| Escape staircases counted as access staircases 逃生樓梯 | [Part B](fsc-part-b-means-of-escape.md#clause-by-clause) B8, B14, B18 |
+| Liftwell and lobby fire resistance 升降機槽耐火 | [Part C](fsc-part-c-fire-resisting-construction.md#clause-by-clause) C9, C16.5 |
+| EVA practice notes 緊急車輛通道 | [APP-136](../pnap/app-136.md) · [APP-75](../pnap/app-75.md) |
+| Lifts 升降機 | [APP-89](../pnap/app-89.md) · [Lifts & Escalators Code](lifts-escalators-2011.md) |
+| Fire safety assessment report 消防安全評估 | [Parts E–G](fsc-parts-e-f-g.md) (Part G) |
+| Access roads, run-ins 通路 | [APP-111](../pnap/app-111.md) · [APP-144](../pnap/app-144.md) |
+| Practice notes 作業備考 | [APP-153](../pnap/app-153.md) |
 
 ## Explanation 淺白解釋 {#explanation}
 

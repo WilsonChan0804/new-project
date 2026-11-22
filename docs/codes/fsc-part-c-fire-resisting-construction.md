@@ -17,7 +17,10 @@ tags:
   - Balcony & utility platform 露台及工作平台
   - Hotel 酒店
   - Industrial building 工業大廈
+  - Lighting & ventilation 照明及通風
+  - Drainage 排水
 keywords: FRC, FRR, fire resisting construction, 耐火結構, compartment, 防火分隔, fire door, 防火門
+summary: "FS Code Part C: compartment sizes and FRR (Tables C1–C2), separation between buildings and uses, shafts, staircases and lifts, atria, curtain walls, spandrels, kitchens, basements, fire doors and refuge floors."
 ---
 
 # FS Code 2011 Part C: Fire Resisting Construction<br><small>《2011 年建築物消防安全守則》C 部：耐火結構</small>
@@ -34,6 +37,11 @@ keywords: FRC, FRR, fire resisting construction, 耐火結構, compartment, 防�
 !!! tip "Reading FRR notation 耐火效能的寫法"
     FRR is written **stability / integrity / insulation** in minutes, e.g. **120/120/120**. A dash means that criterion is not required, e.g. **-/120/120** for a non-loadbearing fire barrier.
     耐火效能以**穩定性／完整性／隔熱性**（分鐘）表示，例如 **120/120/120**；「-」表示該項不適用，例如非承重防火屏障為 **-/120/120**。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all buildings, new and A&A, as the deemed-to-comply way of meeting Part A **A9** and the fire resisting construction duties under the BO and [B(C)R](../regulations/bcr-123q.md). Section 3 (C18) adds rules for **cinemas and theatres**. 所有建築物；C18 適用於電影院及劇院。
+
+    **Relief and alternatives 放寬及替代**: unprotected steel in small single-storey buildings (C4.3); no spandrel needed in **sprinklered** buildings or single houses (C11.1); compartments over Table C1 limits judged on merit (Table C1 note 1) or by **fire engineering** (Part G). FRR tested under **Part E**. 小型單層、花灑保護建築物等可放寬。
 
 ## At a glance 重點摘要 {#at-a-glance}
 
@@ -292,6 +300,21 @@ keywords: FRC, FRR, fire resisting construction, 耐火結構, compartment, 防�
 | **C18.1** | **Cinemas** sharing exits: each auditorium its own compartment; dedicated **smoke extraction** by ceiling detectors; seating to Part E ignition rules; projector rooms **-/60/60** with smoke-sealed doors (unless no hazardous projection) | 電影院 |
 | **C18.2** | **Theatres**: fully sprinklered; **proscenium wall -/60/60**; **fire or water curtain** (≥ -/30/-, restricts smoke) | 劇院：台口牆及防火幕 |
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Use classifications, definitions 用途分類 | [FS Code overview](fire-safety-code-2011.md) |
+| Escape routes, protected lobbies, refuge floors 逃生途徑 | [Part B](fsc-part-b-means-of-escape.md#clause-by-clause) B10, B13, B18 |
+| Fireman's lift lobbies, FRS enclosure 消防員升降機大堂 | [Part D](fsc-part-d-means-of-access.md#clause-by-clause) D11, D17 |
+| Fire tests, non-combustibility, FRR tables 耐火測試 | [Parts E–G](fsc-parts-e-f-g.md) |
+| Curtain walls and façades 幕牆及外牆 | [APP-2](../pnap/app-2.md) · [APP-37](../pnap/app-37.md) · [Glass Code](glass-2018.md) |
+| Open kitchens 開放式廚房 | [Lighting & ventilation guide](../guides/lighting-ventilation.md) · [APP-130](../pnap/app-130.md) |
+| Refuge floor sky gardens 庇護層空中花園 | [APP-122](../pnap/app-122.md) · [JPN 1](../pnap/jpn-1.md) |
+| Shafts and drainage pipes 管槽 | [APP-93](../pnap/app-93.md) · [APP-2](../pnap/app-2.md) |
+| Practice notes 作業備考 | [APP-153](../pnap/app-153.md) |
+| Statutory basis 法定依據 | [B(P)R 39–49E](../regulations/bpr-39-49e.md) · [B(C)R](../regulations/bcr-123q.md) |
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"
@@ -423,7 +446,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | [APP-122](../pnap/app-122.md) | Sky garden in refuge floor 庇護層空中花園 |
 | [APP-2](../pnap/app-2.md) | Curtain wall measurement for GFA 幕牆的總樓面面積量度 |
 | Code of Practice for Minimum FSI and Equipment | Sprinklers, smoke extraction, dampers 花灑、排煙、防火閘 |
-| FS Code Part E | Fire tests and non-combustibility 耐火測試及不可燃性 |
+| [FS Code Parts E–G](fsc-parts-e-f-g.md) | Fire tests and non-combustibility 耐火測試及不可燃性 |
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the Code for the definitive text.</small>

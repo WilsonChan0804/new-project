@@ -15,7 +15,10 @@ tags:
   - Plant rooms 機房
   - Fire resisting construction 耐火結構
   - Site supervision 地盤監督
+  - Hotel 酒店
+  - Green & amenity features 環保及適意設施
 keywords: MOE, means of escape, 走火通道, 逃生途徑, exit, travel distance, 行走距離, required staircase, 規定樓梯
+summary: "FS Code Part B: occupant capacity, exits, travel distance, staircase discharge, refuge floors, places of public entertainment and refuge spaces for persons with a disability."
 ---
 
 # FS Code 2011 Part B: Means of Escape<br><small>《2011 年建築物消防安全守則》B 部：逃生途徑</small>
@@ -28,6 +31,11 @@ keywords: MOE, means of escape, 走火通道, 逃生途徑, exit, travel distanc
     | **Official language 官方語言** | English and Chinese 中英文版 |
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/fs_code2011.pdf) pp. 23–75 · [中文 (PDF)](https://www.bd.gov.hk/doc/tc/resources/codes-and-references/code-and-design-manuals/fs_code2011_c.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the 2024 Edition |
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all buildings (B3.1), new and A&A, as the deemed-to-comply way of meeting [B(P)R 41(1)](../regulations/bpr-39-49e.md) and Part A **A8**. Section 3 adds rules for **places of public entertainment (UC 5a)**; Section 4 for **persons with a disability**. 所有建築物；第 3 節娛樂場所；第 4 節殘疾人士。
+
+    **Does not apply 不適用**: single-family domestic buildings with ≤ **3 main storeys** and top floor ≤ **13 m** (B3.1). Other law prevails where it sets MoE rules (B3.2: child care, schools, hotels, karaoke, elderly homes, factories). A **fire engineering** approach (Part G) may replace these provisions with BA agreement. 三層或以下單一家庭住宅除外；其他法例優先；可用消防工程方法。
 
 ## At a glance 重點摘要 {#at-a-glance}
 
@@ -85,6 +93,8 @@ keywords: MOE, means of escape, 走火通道, 逃生途徑, exit, travel distanc
 
 Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e.g. offices 9, retail G–2/F 3, restaurants 1 m²/person). See the [FS Code overview](fire-safety-code-2011.md#key-table-2-occupant-capacity-table-b1-b1) for the full table.
 佔用人數 = **可用樓面面積 ÷ 表 B1 的佔用率**。
+
+[Calculate occupant capacity in the GBP workbook](gbp:moe)
 
 ### B5 General requirements of exit routes 出口路線的一般規定
 
@@ -148,6 +158,8 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
 | B7.3 / B8.1(b) | **50% rule**: any width above **1.5 × the narrowest** door/route in the group is not counted 超過最窄者 50% 的闊度不計算 |
 | B8.2 | Cross-access between required staircases at least **every 5 storeys** and at the roof/topmost floor (or at refuge floors and roof), not through private premises. Security locks release on fire alarm or power failure 每 5 層最少一次可轉往另一道樓梯 |
 | B8.3 | Notice **"ACCESSIBLE TO ANOTHER EXIT STAIRCASE 可通往其他逃生樓梯"**, 50 mm characters, at 1,500 mm, illuminated 告示 |
+
+[Check exits in the GBP workbook](gbp:moe)
 
 ### B9–B10 Exits at ground storey; access to staircases 地面層出口及通往樓梯
 
@@ -228,6 +240,8 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
 | Each additional storey 每增一層 | +32 | +38 | +45 | +51 | +57 | +62 |
 
 <small>Staircases wider than 1,800 mm: linear projection (but see B14.5). 闊於 1,800 毫米：以直線推算（另見 B14.5）。</small>
+
+[Check staircase discharge in the GBP workbook](gbp:stairs)
 
 ### B13 Doors in relation to exits 出口門
 
@@ -481,6 +495,21 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
 | **B30.4** | **CCTV and intercom** to management, **1 h** backup, intercom **900–1,200 mm** | 閉路電視及對講機 |
 | **B30.5–B30.7** | Notice with accessibility symbol, **50 mm** text and **110 mm** symbol, on wall and floor; floor **demarcated** in contrasting colour; directional signs | 標誌及地面標示 |
 
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Legal duty: staircases, second staircase, 24 m rule 法定要求 | [B(P)R 39–44](../regulations/bpr-39-49e.md#clause-by-clause) |
+| Use classifications (Table A1), definitions 用途分類 | [FS Code overview](fire-safety-code-2011.md) |
+| Enclosure of staircases, lobbies, refuge floors 樓梯及庇護層耐火 | [Part C](fsc-part-c-fire-resisting-construction.md#clause-by-clause) C9, C16, C17 |
+| Fireman's lifts, FRS, EVA 消防進出途徑 | [Part D](fsc-part-d-means-of-access.md#clause-by-clause) |
+| Fire engineering alternative 消防工程 | [Parts E–G](fsc-parts-e-f-g.md) |
+| Practice notes on the FS Code 作業備考 | [APP-153](../pnap/app-153.md) · [APP-122](../pnap/app-122.md) (refuge sky garden) · [APP-119](../pnap/app-119.md) (school stair-wells) |
+| Refuge floors and GFA 庇護層與總樓面面積 | [APP-2](../pnap/app-2.md) · [GFA guide](../guides/gfa.md) |
+| Cinemas and PPE (B(P)R 49A–49E) 娛樂場所 | [B(P)R 49A–49E](../regulations/bpr-39-49e.md#clause-by-clause) · [APP-81](../pnap/app-81.md) |
+| Accessible escape 無障礙逃生 | [B(P)R 72](../regulations/bpr-71-73.md) · [DMUA 2026](dmua-2026.md) |
+| Calculations 計算 | GBP workbook: occupancy, exits, discharge (links above in B4, B7–B8, B12) |
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"
@@ -625,7 +654,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | [BFA 2008](bfa-2008.md) | Definition of persons with a disability 殘疾人士定義 |
 | [APP-2](../pnap/app-2.md) para. 5 | Refuge floors exempted from GFA 庇護層豁免總樓面面積 |
 | [APP-42](../pnap/app-42.md) | No trellis or shelters on refuge roofs 庇護天台不得設花棚架 |
-| APP-122 | Refuge floor cum sky garden 庇護層兼空中花園 |
+| [APP-122](../pnap/app-122.md) | Refuge floor cum sky garden 庇護層兼空中花園 |
 | Code of Practice for Minimum FSI and Equipment | Emergency lighting, exit signs, pressurisation 緊急照明、出口標誌、加壓系統 |
 
 ---

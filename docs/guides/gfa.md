@@ -95,6 +95,8 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 | Projecting window 窗台 | Not GFA / SC only if all 7 criteria met (≤ **100 mm** projection, base ≥ **500 mm**, ≤ **50%** of wall…) 須符合全部 7 項準則 | [APP-19](../pnap/app-19.md) |
 | Staircases, lift shafts, ducts 樓梯、升降機槽、管道 | Count on every floor they pass through, unless they **solely** serve non-accountable floors 須逐層計算 | [APP-2](../pnap/app-2.md) |
 
+[Calculate GFA in the GBP workbook](gbp:gfa)
+
 ## Step 2: what does B(P)R 23(3)(b) leave out? 第二步：法例不計算甚麼？ {#step-2-what-bpr-233b-disregards}
 
 | Item 項目 | Treatment 處理 | Pre-req 先決條件 | 10% cap 上限 | Source 來源 |
@@ -130,6 +132,8 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
 | Refuge floor, public transport terminus, public passage, covered setback 庇護層、公共交通交匯處、公眾通道、有蓋後移範圍 | Outside cap | | | [APP-151](../pnap/app-151.md), [APP-108](../pnap/app-108.md), [APP-152](../pnap/app-152.md) |
 | MiC buildings 組裝合成建築 | **10% of the MiC floor area** disregarded (not in the 10% cap); 10% SC at each floor 組裝合成樓面面積的 10% | | | [JPN 8](../pnap/jpn-8.md) |
 
+[Calculate GFA concessions in the GBP workbook](gbp:gfa)
+
 ## Step 4: what are the pre-requisites and the 10% cap? 第四步：先決條件及 10% 上限 {#step-4-pre-requisites-and-the-10-cap-10}
 
 === "English"
@@ -163,6 +167,8 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
     Total built floor area ≈ 16,000 + 1,420 + 3,000 + 450 + 200 + 120 = **21,190 m²**, while accountable GFA stays at **16,000 m²**. If the capped items reached 1,800 m², the extra **200 m²** would count as GFA and push the scheme over its PR. 實際建築樓面約 21,190 平方米，但須計算總樓面面積仍為 16,000 平方米；如受上限項目達 1,800 平方米，超出的 200 平方米須計入。
 
     <small>Illustrative numbers only; check the current PNAPs, including the definition of "total GFA" for the cap, for a real scheme. 數字只作說明。</small>
+
+[Check the 10% cap in the GBP workbook](gbp:gfa)
 
 ## Step 5: how do the lease and OZP fit in? 第五步：地契及分區計劃大綱圖 {#step-5-lease-and-ozp}
 

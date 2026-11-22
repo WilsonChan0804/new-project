@@ -182,7 +182,9 @@
     panel.appendChild(el("p", "kb-pp-note", "Saved in this browser only. 只儲存在此瀏覽器。"));
     fab.addEventListener("click", function () { panel.hidden = !panel.hidden; renderPanel(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") panel.hidden = true; });
-    document.body.appendChild(fab); document.body.appendChild(panel);
+    var hdr = document.querySelector(".md-header__inner"), srch = hdr && hdr.querySelector(".md-search");
+    if (hdr) { fab.classList.add("kb-pp-hdr"); hdr.insertBefore(fab, srch || null); } else document.body.appendChild(fab);
+    document.body.appendChild(panel);
   }
 
   function init() { pins = load(KEY, []); buildPanel(); decorate(); record(); renderPanel(); }
