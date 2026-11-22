@@ -8,6 +8,7 @@ tags:
   - Lighting & ventilation 照明及通風
   - Demolition 拆卸
   - Maintenance access 維修通道
+  - Minor works 小型工程
 summary: "Plastic sheeting on scaffolds: flame-retardant sheets, wind-strengthened scaffolds, keep light and ventilation of occupied buildings."
 keywords: APP-70, plastic sheet, 膠布, PVC, scaffolding, 棚架, flame retardant, 防火, bamboo scaffold
 ---
@@ -67,4 +68,5 @@ keywords: APP-70, plastic sheet, 膠布, PVC, scaffolding, 棚架, flame retarda
 
 - 🟢 [Fire Safety Precautionary Measures for Major Building Repair Works](../circulars/2026.md#cl-fspm2026) <small>29 Oct 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
 - 🟢 [Fire Safety Precautionary Measures to be Taken During Large Scale Building Repair Works](../circulars/2026.md#cl-fspmmbrw2026) <small>16 Mar 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
+- 🟢 [Use of Fire Retardant Protective Net/Screen/Tarpaulin/Plastic Sheeting on Facade of Buildings under Construction, Demolition, Repair or Minor Works](../circulars/2025.md#cl-ufrpnstpsfbcdrmw2025) <small>21 Oct 2025 · 就正在興建、拆卸，或進行修葺或小型工程的建築物在外牆裝設阻燃保護網／保護幕／防水油布／塑膠帆布須知</small>
 <!-- CL END -->

@@ -327,10 +327,12 @@ Conditions: not for special or unconventional structures; **no debris accumulati
 | Loads and wind 荷載 | [Dead & Imposed Loads](dil-2011.md) · [Wind Code](wind-2019.md) |
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [GB 5725‑2025 "Fall protection – Safety nets"](../circulars/2026.md#cl-fpsn2026) <small>31 Aug 2026 · GB 5725‑2025《墜落防護 安全網》</small>
+- 🟢 [Use of Fire Retardant Protective Net/Screen/Tarpaulin/Plastic Sheeting on Facade of Buildings under Construction, Demolition, Repair or Minor Works](../circulars/2025.md#cl-ufrpnstpsfbcdrmw2025) <small>21 Oct 2025 · 就正在興建、拆卸，或進行修葺或小型工程的建築物在外牆裝設阻燃保護網／保護幕／防水油布／塑膠帆布須知</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

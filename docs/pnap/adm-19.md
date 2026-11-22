@@ -259,6 +259,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🔵 [Further Streamlining Measures for Structural Works](../circulars/2024.md#cl-fsmsw2024) <small>31 Oct 2024 · Further Streamlining Measures for Structural Works</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

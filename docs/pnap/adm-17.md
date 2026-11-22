@@ -102,6 +102,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Buildings Department Launches Stage 3 of Electronic Submission Hub](../circulars/2024.md#cl-bdlsesh2024) <small>30 Jun 2024 · 屋宇署電子資料呈交及處理系統第三階段正式啓用</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

@@ -165,10 +165,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 <!-- APSEC END -->
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Timely Submission of Notification and Certificate by Qualified Person](../circulars/2026.md#cl-tsncqp2026) <small>7 Jan 2026 · 合資格人士按時呈交通知書及證明書</small>
+- 🟢 [Mandatory Window Inspection Scheme (MWIS) Submission of Notification and Certificate](../circulars/2025.md#cl-mwissnc2025) <small>15 May 2025 · 強制驗窗計劃呈交通知書及證明書</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

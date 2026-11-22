@@ -1,0 +1,384 @@
+{
+ "CL_ASMTR2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "superseded",
+  "status_note": "Encouragement superseded by the mandatory requirement from 1 Dec 2026 鼓勵性質，已由 2026 年 12 月 1 日起的強制要求取代",
+  "status_links": [
+   "#cl-setrstrf2026|20 Oct 2026 letter"
+  ],
+  "topics": [
+   "structural",
+   "submission"
+  ],
+  "points": [
+   [
+    "GEO (CEDD) launched **SmartCheck** (Dec 2025), a pilot web system that reads **standardised material test reports with an encoded digital signature and QR code** and checks results against acceptance criteria automatically.",
+    "土木工程拓展署土力工程處於 2025 年 12 月推出試行系統 **SmartCheck**，透過二維碼及數碼簽署自動讀取**標準化物料測試報告**並核對接受準則。"
+   ],
+   [
+    "Initially for **concrete cube and core strength** and **steel reinforcing bar** tests. All stakeholders are **encouraged** to submit digitally signed standardised reports.",
+    "初期涵蓋**混凝土立方體及芯強度**及**鋼筋**測試；鼓勵各方提交附數碼簽署的標準化報告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RBGAOBD2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Annual reminder before Christmas and Chinese New Year: **do not offer gifts or advantages of any kind** to BD officers. Government regulations forbid acceptance; offering may lead to action against the sender and the receiver.",
+    "聖誕及農曆新年前的每年提示：**不得向屋宇署人員饋贈任何禮物或利益**；政府規例禁止接受，送禮者及收禮者均可能被追究。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_UFRPNSTPSFBCDAARMWAPRSERGERI2025": {
+  "to": "AP, RSE, RGE, RI",
+  "by": "AD/Corporate Services",
+  "status": "spent",
+  "status_note": "One-off reporting exercise (deadline 4 Dec 2025); requirements now in PNRC 85 一次性申報（2025 年 12 月 4 日截止），規定已納入 PNRC 85",
+  "status_links": [
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc85.pdf|PNRC 85"
+  ],
+  "topics": [
+   "fire",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "After the **No. 5 alarm fire at Wang Fuk Court, Tai Po (26 Nov 2025)** involving bamboo scaffolds and protective nets: review the fire retardant properties of **nets, screens, tarpaulins and plastic sheeting** on facades of all works under your charge (construction, demolition, A&A, repair, minor works).",
+    "**大埔宏福苑五級火（2025 年 11 月 26 日）**後：須檢視所負責工程外牆的**保護網、保護幕、防水布及膠布**的阻燃性能。"
+   ],
+   [
+    "Submit **one report per project** with certificates, test or assessment reports from accredited laboratories, showing compliance with recognised standards and good condition, **within 7 days (by 4 Dec 2025)**, by hand or to frm_submission@bd.gov.hk. BD audits and acts on non-conformities.",
+    "每個項目提交**一份報告**，附認可實驗所證書或測試報告，於 **7 日內（2025 年 12 月 4 日前）**遞交；屋宇署會抽查並採取行動。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_UFRPNSTPSFBCDAARMWRC2025": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "spent",
+  "status_note": "One-off reporting exercise (deadline 4 Dec 2025); requirements now in PNRC 85 一次性申報，規定已納入 PNRC 85",
+  "status_links": [
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc85.pdf|PNRC 85"
+  ],
+  "topics": [
+   "fire",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Same requirement as the letter to AP/RSE/RGE/RI of the same date, addressed to **registered contractors**: report on fire retardant properties of facade protective materials with laboratory evidence **by 4 Dec 2025**.",
+    "與同日致認可人士等的通告相同，對象為**註冊承建商**：於 2025 年 12 月 4 日前提交外牆保護物料阻燃性能報告。"
+   ]
+  ],
+  "related": [
+   "#cl-ufrpnstpsfbcdaarmwaprsergeri2025|Letter to AP/RSE/RGE/RI"
+  ]
+ },
+ "CL_ATGMWCS2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "incorporated",
+  "status_note": "Incorporated into the MW Technical Guidelines (Oct 2025) 已納入小型工程技術指引",
+  "status_links": [
+   "../regulations/mw-technical-guidelines.md|MW Technical Guidelines"
+  ],
+  "topics": [
+   "minorworks",
+   "fire"
+  ],
+  "points": [
+   [
+    "Amends **TG Section 11.2.10**: all protective nets, screens, tarpaulins and plastic sheeting covering external walls and scaffolds must have suitable **fire retardant** properties meeting recognised standards, e.g. **GB 5725-2009** (formerly GB 16909-1997), **BS 5867-2:2008 Type B**, **NFPA 701:2019 Test Method 2**, or equivalent.",
+    "修訂技術指引 **11.2.10 節**：所有外牆及棚架的保護網等須具**阻燃**性能，符合認可標準，例如 **GB 5725-2009**、**BS 5867-2:2008 B 類**、**NFPA 701:2019 方法 2** 或同等標準。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_UFRPNSTPSFBCDRMW2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_note": "In force; standards later set out in PNRC 85 (Dec 2025) 有效；標準其後列入 PNRC 85",
+  "status_links": [
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc85.pdf|PNRC 85",
+   "../codes/fsc-parts-e-f-g.md|FS Code F5.6(e)"
+  ],
+  "topics": [
+   "fire",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "After a **No. 3 alarm fire (18 Oct 2025)** on bamboo scaffolds at a building under A&A and minor works: **inspect at once** that facade protective materials are fire retardant to recognised standards.",
+    "**2025 年 10 月 18 日三級火**後：須**即時檢查**外牆保護物料符合阻燃標準。"
+   ],
+   [
+    "Requirements listed: **FS Code F5.6(e)**; **Demolition Code para 3.3.2**; **APP-70 para 4(a)**; **PNRC 26 para 4(a)**; circular of **21 Mar 2023**; Bamboo Scaffold Guidelines **para 6.15 Part C**; Labour Department CoP for Bamboo Scaffolding Safety **para 4.4.4**; CIC Safety Message 24/25. Non-compliance may lead to prosecution and disciplinary action.",
+    "相關規定：消防安全守則 F5.6(e)；拆卸守則 3.3.2 段；APP-70 第 4(a) 段；PNRC 26 第 4(a) 段；2023 年 3 月 21 日通告；竹棚架指引 C 部 6.15 段；勞工處竹棚架守則 4.4.4 段。違者或被檢控及紀律處分。"
+   ]
+  ],
+  "related": [
+   "../codes/demolition-2004.md|Demolition Code",
+   "../pnap/app-70.md|APP-70"
+  ]
+ },
+ "CL_PMCSTR2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "status": "spent",
+  "status_note": "One-off (Severe Tropical Storm Ragasa, Sep 2025) 一次性（2025 年 9 月颱風樺加沙）",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Urgent measures before **Ragasa (樺加沙)**: scaffold ties at the top, ≤ one floor above the topmost floor, bracing and brackets, **remove screens/tarpaulins** and lower scaffolds to ≤ half a floor when signals are up, no loose materials, dismantle completed scaffolds; tower crane and gondola precautions as in the annual rainy-season letter (16 Apr 2025).",
+    "**樺加沙**來襲前的緊急措施：棚架頂部拉結、高出頂層不多於一層、懸掛信號時**拆除保護幕**並降至半層、清走物料；塔式起重機及吊船措施同 2025 年 4 月 16 日通告。"
+   ]
+  ],
+  "related": [
+   "#cl-pmcsrts2025|Rainy season letter 2025"
+  ]
+ },
+ "CL_GRDNBMRPCMCDS2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual rodent-proofing design and site mosquito/rodent guidelines; same content as the 2026 letter (rodent disinfestation ≥ 3 months before completion; 6 mm gap rules).",
+    "每年防鼠設計及地盤防蚊防鼠指引，內容與 2026 年版相同。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_MWISSNC2025": {
+  "to": "Qualified Persons (MWIS)",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "status_links": [
+   "../regulations/bir-123p.md|B(I&R)R s 14",
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "Many **late MWIS submissions**. Statutory timeframes under **B(I&R)R s 14**: **WI 1** (same QP for inspection and repair) – within **14 days** after inspection if no repair, or after repair; **WI 2** (different QPs) – within **7 days** after inspection; **WI 3** – within **14 days** after repair.",
+    "強制驗窗**遲交**情況普遍。**B(I&R)R 第 14 條**時限：**WI 1**（同一合資格人士）檢驗後（無需修葺）或修葺後 **14 日**內；**WI 2**（不同人士）檢驗後 **7 日**內；**WI 3** 修葺後 **14 日**內。"
+   ],
+   [
+    "Forms with irregularities are **rejected** (Appendix: address not matching the notice, missing names or signatures, wrong dates). Prosecution or disciplinary action possible. Use e-Forms.",
+    "有錯漏的表格會被**退回**（附錄列出常見錯誤）；可被檢控或紀律處分；鼓勵用電子表格。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RCRMWCARRR2025": {
+  "to": "RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "HKIC and IVE continue the **refresher course** for RMWC renewal or restoration. Without a job reference for at least one relevant minor works item, the application goes to the **MWCRC interview** (PNRC 69 App. O para 1(a), App. D para 6).",
+    "建造業議會及 IVE 繼續提供小型工程承建商**重溫課程**；續期或恢復註冊時如無最少一項相關工程記錄，須接受**委員會面見**。"
+   ],
+   [
+    "Exemption from interview if the course was completed **within 3 years** before applying; not available after a failed interview, or with convictions, disciplinary records or public works suspension.",
+    "申請前 **3 年內**完成課程可免面見；面見失敗、有定罪、紀律記錄或被暫停投標者不適用。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPDCRGBCRSCARRR2025": {
+  "to": "RGBC, RSC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "HKIC **CPD course** for RGBC/RSC renewal or restoration. Interview by CRC only if **inactive** (no job reference on one relevant project, PNRC 38 App. M) or new incidents (PNRC 38 App. J).",
+    "建造業議會為一般建築及專門承建商提供**持續專業發展課程**；只有**不活躍**或有新事故時才需委員會面見（PNRC 38）。"
+   ],
+   [
+    "Inactive contractors who completed the course **within 3 years** may be exempted from interview; not for those with convictions, disciplinary records, suspension, or a failed interview.",
+    "不活躍承建商如 3 年內完成課程可免面見；有定罪等記錄或面見失敗者不適用。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMCSRTS2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual rainy and typhoon season measures for sites (scaffolds, tower cranes, flood prevention); same structure as the 2026 letter.",
+    "每年雨季及颱風季節地盤措施（棚架、塔式起重機、防洪），內容與 2026 年版相若。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_EASSSSQSATBWIMPTC2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Incorporated into APP-162 and PNRC 80 已納入 APP-162 及 PNRC 80",
+  "status_links": [
+   "../pnap/app-162.md|APP-162",
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc80.pdf|PNRC 80"
+  ],
+  "topics": [
+   "scaffold",
+   "submission"
+  ],
+  "points": [
+   [
+    "Extends the 2024 requirement: from **1 July 2025**, projects with estimated building works cost **> $30 million** get **BO s 17(1) item 6** conditions requiring qualified supervision by the **Mobile Plant Alert System** and **Tower Crane Alert System** (4S) for **all types** of works using mobile plants or tower cranes – demolition, site formation, ELS, foundations, pile caps and superstructure.",
+    "擴大 2024 年要求：由 **2025 年 7 月 1 日**起，工程造價 **超過 3,000 萬元**的項目，凡涉及流動機械或塔式起重機的**所有類別**工程（拆卸、地盤平整、挖掘支撐、地基、樁帽、上蓋），均按《建築物條例》第 17(1) 條附加條件，須以**流動機械警報系統**及**塔式起重機警報系統**作合資格監督。"
+   ],
+   [
+    "Imposed on the **first approval** or major revision of plans and/or the **first consent**; also A&A projects with structural works above the threshold. Details in revised **APP-162** and **PNRC 80**.",
+    "於**首次批准**／重大修訂及／或**首次同意**時附加；涉及結構工程而達門檻的加建改建項目亦適用。"
+   ]
+  ],
+  "related": [
+   "#cl-qsbwimptcassss2024|28 Mar 2024 letter",
+   "../codes/site-supervision-2009.md|Site Supervision Code"
+  ]
+ },
+ "CL_FSMFW2025": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-18.md|APP-18",
+   "../codes/foundations-2017.md|Foundations Code"
+  ],
+  "topics": [
+   "structural",
+   "submission"
+  ],
+  "points": [
+   [
+    "**Plate load tests by videotelephony**: extends the 2 Jun 2023 arrangement for pile proof load tests. Whole test under RSE and RSC supervisory teams; App. I: at least **one or 50 %** of the tests (whichever more) witnessed **on site** by BD; **TCP T5 (RSE)** and **TCP T4 (RSC)** present; trial video beforehand; video (≥ **480p**) on DVD certified by RSE and the RSC AS within **7 days**; video shows site features, test location, supervisors and HOKLAS lab staff.",
+    "**以視像方式見證平板荷載測試**：伸延 2023 年 6 月 2 日樁荷載測試安排。附錄 I：最少 **1 次或 50%**（以較多者為準）須由屋宇署**到場**見證；結構工程師 T5 及承建商 T4 須在場；事先試播；錄影（≥ 480p）於 7 日內提交並經核證。"
+   ],
+   [
+    "**Streamlined witnessing of test installation of piles** (not for **sensitive sites**): for socketed H-piles and mini-piles BD checks only at the **bedrock drilling** stage (supervisors present, setting out, casing size and position, hole depth, rock fragments); for driven H-piles at the **final set** stage (setting out, pile type and size, hammer, drop height, blow count). App. II: TCPs do pre-bedrock inspection with videos and photos (plant, advance rate, casing verticality, air pressure, flushing).",
+    "**簡化見證試樁**（**敏感地盤**除外）：嵌岩工字樁及微型樁只於**鑽岩階段**查核；打入式工字樁只於**最後貫入度**階段查核。附錄 II：技術人員須於鑽岩前階段自行檢查並錄影拍照。"
+   ],
+   [
+    "**Proof test pile selection on Form BA14**: APP-18 (Oct 2024) measures – BA14 after **≥ 85 %** interface proof drilling for large bored piles and deferring 28-day cube results – extended to other bored foundation types. BD selects piles once essential information is in; later documents allowed (excavation records, monitoring, sonic tests, 28-day cubes if earlier cubes justify, mill certificates, proof drilling ≥ 85 %). BA14 acknowledged only when all results are satisfactory.",
+    "**BA14 選樁作驗證測試**：APP-18（2024 年 10 月）的措施（大直徑鑽孔樁完成 **85%** 介面鑽探即可交 BA14、延後提交 28 日立方體結果）伸延至其他需鑽岩的樁型；部分文件可稍後提交；全部結果滿意後才確認 BA14。"
+   ]
+  ],
+  "related": [
+   "../pnap/app-18.md|APP-18",
+   "../codes/site-supervision-2009.md|Site Supervision Code"
+  ]
+ },
+ "CL_TGMWCS2024E2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "incorporated",
+  "status_note": "Promulgates the TG (2024 Edition), later amended Oct 2025 and Aug 2026 頒布技術指引 2024 年版（其後於 2025 年 10 月及 2026 年 8 月修訂）",
+  "status_links": [
+   "../regulations/mw-technical-guidelines.md|MW Technical Guidelines",
+   "#cl-atgmwcs2025|Oct 2025 amendment",
+   "#cl-atgmwcse2026|Aug 2026 amendment"
+  ],
+  "topics": [
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Promulgates the **Technical Guidelines on Minor Works Control System (2024 Edition)**, consolidating addenda 1/2012, 1/2014, 11/2014, 1/2015, 1/2020 and amendments 3/2021, 10/2021, with the Technical Committee's advice.",
+    "頒布**《小型工程監管制度之技術指引》（2024 年修訂版）**，整合以往增補及修訂。"
+   ],
+   [
+    "Changes: more interpretations (1.3); legislative amendments (1.4); statutory procedures (2, 4.3–4.6); 2020 new items and designated exempted works (3, 6); clarifications – **PV panel supports** (3.2.1), grease traps and manholes (3.3), skylight glass (3.4.1), slab openings for internal stairs (3.10, 3.25), backfilling (3.18.1), screeding in flats (3.28.1), spare glass panes (3.32.5–3.32.10); **Signboard and Minor Amenity Feature Validation Schemes** (7); departmental comments (9–14).",
+    "主要修訂：釋義、法例修訂、法定程序、2020 年新增項目、**光伏板支架**、隔油池及沙井、天窗玻璃、內部樓梯樓板開洞、回填、單位內批盪、後備玻璃；新增**招牌及小型適意設施檢核計劃**指引。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SCIITC2025": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Appeal to subscribe to the **Construction Industry Integrity Charter 2.0** (DEVB, ICAC, CIC), extending the 2021 Charter from contractors to **consultants**, and to implement an **Integrity Management System**.",
+    "呼籲簽署**《建造業誠信約章 2.0》**（發展局、廉署、建造業議會），範圍由承建商擴展至**顧問**，並推行誠信管理系統。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMPBSTR2025": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "status": "spent",
+  "status_note": "One-off (Ragasa, Sep 2025) 一次性（颱風樺加沙）",
+  "topics": [
+   "weather"
+  ],
+  "points": [
+   [
+    "Before **Ragasa**: protect exposed glazing and lock windows and curtain wall sashes; secure gondolas; cordon off tree-fall zones; check external projections (scaffolds, signboards, PV panels); clear roof and basement drains; pumps in flood-risk areas; inspect slopes and retaining walls.",
+    "**樺加沙**來襲前：保護玻璃並鎖好窗；固定吊船；封閉塌樹範圍；檢查外牆裝置；清理排水；備抽水設備；巡查斜坡。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMPBSTS2025": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather"
+  ],
+  "points": [
+   [
+    "Annual typhoon season reminder to property managers (same items as the 2026 letter).",
+    "每年颱風季節對物業管理公司的提示，內容與 2026 年版相同。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SBSBMRW2025": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual bamboo scaffold safety reminder to property managers (same items as the 2026 letter).",
+    "每年竹棚架安全提示，內容與 2026 年版相同。"
+   ]
+  ],
+  "related": []
+ }
+}

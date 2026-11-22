@@ -394,10 +394,15 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 | Minor works 小型工程 | [APP-147](../pnap/app-147.md) · [APP-149](../pnap/app-149.md) |
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Prevention Measures at Construction Sites during Rainy and Typhoon Seasons](../circulars/2026.md#cl-pmcsrts2026) <small>13 May 2026 · 雨季和颱風季節期間建築地盤的預防措施</small>
+- 🔵 [Extension of Adopting Smart Site Safety System for Qualified Supervision of All Types of Building Works Involving Mobile Plants and Tower Cranes](../circulars/2025.md#cl-eassssqsatbwimptc2025) <small>31 Mar 2025 · 擴大「安全智慧工地」系統的採用範圍為涉及流動機械及塔式起重機的所有類型建築工程提供合格監督</small>
+- 🟢 [Further Streamlining Measures for Foundation Works](../circulars/2025.md#cl-fsmfw2025) <small>31 Mar 2025 · 基礎工程的進一步簡化措施</small>
+- 🟢 [Training Courses leading to Equivalent Academic Qualifications for Technically Competent Persons (TCP) T1 to T3 and Authorized Signatory of Contractors for Registration under the Buildings Ordinance](../circulars/2024.md#cl-tceaqtcpascrbo2024) <small>7 Nov 2024 · 獲取適任技術人員T1至T3及根據《建築物條例》註冊成為承建商獲授權簽署人的同等學歷資格的培訓課程</small>
+- 🟡 [Qualified Supervision of Building Works Involving Mobile Plants and Tower Cranes by Adopting Smart Site Safety System](../circulars/2024.md#cl-qsbwimptcassss2024) <small>28 Mar 2024 · 採用「安全智慧工地」系統為涉及流動機械及塔式起重機的建築工程提供合格監督</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

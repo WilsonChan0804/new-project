@@ -76,3 +76,10 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · English only for now; Chinese text is an unofficial translation (中譯（非官方）).</small>
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Further Streamlining Measures for Foundation Works](../circulars/2025.md#cl-fsmfw2025) <small>31 Mar 2025 · 基礎工程的進一步簡化措施</small>
+- 🔵 [Further Streamlining Measures for Structural Works](../circulars/2024.md#cl-fsmsw2024) <small>31 Oct 2024 · Further Streamlining Measures for Structural Works</small>
+<!-- CL END -->

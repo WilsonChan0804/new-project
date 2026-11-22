@@ -13,6 +13,8 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - A&A works 改動及加建工程
   - Maintenance access 維修通道
+  - Minor works 小型工程
+  - Demolition 拆卸
 summary: "FS Code Parts E–G: fire test standards and combustibility classes, fire safety management plans, and the fire engineering approach for alternative solutions."
 keywords: FS Code Part E F G, fire properties, non-combustible, fire safety management, 消防安全管理, fire engineering, 消防工程, alternative solution
 ---
@@ -233,11 +235,13 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 <!-- APSEC END -->
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Fire Safety Precautionary Measures for Major Building Repair Works](../circulars/2026.md#cl-fspm2026) <small>29 Oct 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
 - 🟢 [Fire Safety Precautionary Measures to be Taken During Large Scale Building Repair Works](../circulars/2026.md#cl-fspmmbrw2026) <small>16 Mar 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
+- 🟢 [Use of Fire Retardant Protective Net/Screen/Tarpaulin/Plastic Sheeting on Facade of Buildings under Construction, Demolition, Repair or Minor Works](../circulars/2025.md#cl-ufrpnstpsfbcdrmw2025) <small>21 Oct 2025 · 就正在興建、拆卸，或進行修葺或小型工程的建築物在外牆裝設阻燃保護網／保護幕／防水油布／塑膠帆布須知</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

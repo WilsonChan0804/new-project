@@ -434,10 +434,12 @@ All tests by **HOKLAS** labs except SPT and proof core drilling (cl. 8.1).
 | Neighbours, blasting 鄰近影響、爆破 | cl. 7.2 | [APP-24](../pnap/app-24.md), [APP-72](../pnap/app-72.md), [Demolition Code](demolition-2004.md) |
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Use of Tied-Back Wall Support System for Excavation Works](../circulars/2026.md#cl-utbwssew2026) <small>7 Jul 2026 · 挖掘工程使用後拉式圍牆支撐系統</small>
+- 🟢 [Further Streamlining Measures for Foundation Works](../circulars/2025.md#cl-fsmfw2025) <small>31 Mar 2025 · 基礎工程的進一步簡化措施</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}
