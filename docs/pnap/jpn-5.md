@@ -164,15 +164,6 @@ Roof-top structures are **not counted**, unless: 天台構築物**不計入**，
         - 把大型圍封的**天台會所**（> 屋頂面積 50%）當作天台構築物。
         - 以停車層表示的高度限制：該層 ≥ **50%** 須作停車用途（第 8 段）。
 
-<!-- APSEC START -->
-## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
-
-BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
-
-- **[JPN5 – Building Height Restriction](../apsec/2019.md#i2019082314)** <small>ADF 4/2019, 23 Aug 2019</small><br>Since PlanD was the authority on building height restriction as stipulated in JPN5, the issue would be referred to PlanD for clarification in the Joint Sub-committee on Streamlining Development Control under LDAC.
-
-<!-- APSEC END -->
-
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |
@@ -184,6 +175,17 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | Other three-regime notes 其他精簡 | [JPN 4](jpn-4.md) · [JPN 6](jpn-6.md) · [JPN 7](jpn-7.md) |
 | MiC relaxation 組裝合成 | [JPN 8](jpn-8.md) |
 | Airport height control 機場高度 | [APP-32](app-32.md) |
+
+<!-- APSEC START -->
+## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
+
+BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
+
+- **[JPN No. 5 - Building Height Restriction](../apsec/2020.md#i2020052920)** <small>ADF 2/2020, 29 May 2020</small><br>BD advised that the query was conveyed to PlanD for direct clarification.
+- **[JPN No. 5 - Building Height Restriction](../apsec/2019.md#i2019112221)** <small>ADF 5/2019, 22 Nov 2019</small><br>Since PlanD was the authority for building height restriction as stipulated in JPN No. 5, the issue would be referred to PlanD for direct clarification.
+- **[JPN5 – Building Height Restriction](../apsec/2019.md#i2019082314)** <small>ADF 4/2019, 23 Aug 2019</small><br>Since PlanD was the authority on building height restriction as stipulated in JPN5, the issue would be referred to PlanD for clarification in the Joint Sub-committee on Streamlining Development Control under LDAC.
+
+<!-- APSEC END -->
 
 ## Related 相關文件 {#related}
 

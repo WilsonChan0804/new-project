@@ -32,6 +32,7 @@ tags:
   - Elderly-friendly 長者友善
   - Building height 建築物高度
   - Refuge floor 庇護層
+  - Plot ratio 地積比率
 ---
 
 # APSEC Discussion Forum<br><small>認可人士及註冊結構工程師委員會討論會</small>
@@ -55,7 +56,7 @@ tags:
 | [APP-2 Calculation of Gross Floor Area and Non-accountable Gross Floor Area](../pnap/app-2.md#apsec-clarifications) | 39 | 14 Aug 2026 |
 | [APP-152 Sustainable Building Design Guidelines](../pnap/app-152.md#apsec-clarifications) | 30 | 8 May 2026 |
 | [B(C)R Building (Construction) Regulation, Cap. 123Q](../regulations/bcr-123q.md#apsec-clarifications) | 23 | 6 Feb 2026 |
-| [ADM-19 Building Approval Process](../pnap/adm-19.md#apsec-clarifications) | 22 | 14 Aug 2026 |
+| [ADM-19 Building Approval Process](../pnap/adm-19.md#apsec-clarifications) | 23 | 14 Aug 2026 |
 | [FS Code 2011 Part D: Means of Access](../codes/fsc-part-d-means-of-access.md#apsec-clarifications) | 22 | 8 May 2026 |
 | [APP-151 Building Design to Foster a Quality and Sustainable Built Environment](../pnap/app-151.md#apsec-clarifications) | 22 | 8 May 2026 |
 | [APP-142 Code of Practice for Structural Use of Concrete 2013](../pnap/app-142.md#apsec-clarifications) | 22 | 8 May 2026 |
@@ -69,7 +70,7 @@ tags:
 | [APP-132 Site Coverage and Open Space Provision](../pnap/app-132.md#apsec-clarifications) | 16 | 17 Nov 2023 |
 | [APP-93 Planning and Design of Drainage Works](../pnap/app-93.md#apsec-clarifications) | 16 | 14 Aug 2026 |
 | [APP-19 Projections in relation to Site Coverage and Plot Ratio](../pnap/app-19.md#apsec-clarifications) | 16 | 8 May 2026 |
-| [APP-139 Code of Practice on Wind Effects in Hong Kong](../pnap/app-139.md#apsec-clarifications) | 15 | 14 Aug 2026 |
+| [APP-139 Code of Practice on Wind Effects in Hong Kong](../pnap/app-139.md#apsec-clarifications) | 16 | 14 Aug 2026 |
 | [B(P)R 23 & 23A Building height, site area, GFA and hotel concessions](../regulations/bpr-23-23a.md#apsec-clarifications) | 15 | 8 Aug 2025 |
 | [APP-37 Curtain Wall, Window and Window Wall](../pnap/app-37.md#apsec-clarifications) | 12 | 8 May 2026 |
 | [B(MW)R Building (Minor Works) Regulation, Cap. 123N](../regulations/bmwr-123n.md#apsec-clarifications) | 12 | 21 Nov 2025 |
@@ -86,14 +87,14 @@ tags:
 | [ADM-8 Structural Design Information](../pnap/adm-8.md#apsec-clarifications) | 6 | 3 May 2024 |
 | [APP-156 Design and Construction Requirements for Energy Efficiency of Residential Buildings](../pnap/app-156.md#apsec-clarifications) | 6 | 9 Aug 2024 |
 | [APP-171 Code of Practice for the Structural Use of Glass 2018](../pnap/app-171.md#apsec-clarifications) | 6 | 8 May 2026 |
-| [APP-24 Railway Protection under Railways Ordinance, MTR (Land Resumption and Related Provisions) Ordinance and Area Number 3 of the Scheduled Areas](../pnap/app-24.md#apsec-clarifications) | 5 | 14 Feb 2025 |
+| [APP-24 Railway Protection under Railways Ordinance, MTR (Land Resumption and Related Provisions) Ordinance and Area Number 3 of the Scheduled Areas](../pnap/app-24.md#apsec-clarifications) | 6 | 14 Feb 2025 |
 | [Cap. 123M Building (Energy Efficiency) Regulation](../regulations/beer-123m.md#apsec-clarifications) | 6 | 8 Aug 2025 |
 | [APP-23 Hoardings, Covered Walkways and Gantries (including Temporary Access for Construction Vehicles)](../pnap/app-23.md#apsec-clarifications) | 5 | 6 Feb 2026 |
-| [APP-170 Code of Practice for Demolition of Buildings 2004](../pnap/app-170.md#apsec-clarifications) | 5 | 3 May 2024 |
+| [APP-170 Code of Practice for Demolition of Buildings 2004](../pnap/app-170.md#apsec-clarifications) | 4 | 3 May 2024 |
 | [APP-104 Exclusion of Floor Areas for Recreational Use](../pnap/app-104.md#apsec-clarifications) | 5 | 8 May 2026 |
 | [APP-13 Submission of Certificates of Completion, Applications for Occupation Permit, and Record Plans](../pnap/app-13.md#apsec-clarifications) | 5 | 8 Aug 2025 |
 | [B(P)R 39–49E Staircases, means of escape, firefighting access, domestic buildings and places of public entertainment](../regulations/bpr-39-49e.md#apsec-clarifications) | 5 | 8 Aug 2025 |
-| [JPN 2 Second Package of Incentives to Promote Green and Innovative Buildings](../pnap/jpn-2.md#apsec-clarifications) | 4 | 21 May 2021 |
+| [JPN 2 Second Package of Incentives to Promote Green and Innovative Buildings](../pnap/jpn-2.md#apsec-clarifications) | 9 | 8 May 2026 |
 | [FS Code 2011 Parts E, F & G: Fire Properties, Fire Safety Management, Fire Engineering](../codes/fsc-parts-e-f-g.md#apsec-clarifications) | 4 | 9 May 2025 |
 | [APP-68 Design and Construction of Cantilevered Reinforced Concrete Structures](../pnap/app-68.md#apsec-clarifications) | 4 | 8 May 2026 |
 | [APP-126 Erection of Signboards](../pnap/app-126.md#apsec-clarifications) | 4 | 22 Nov 2024 |
@@ -109,7 +110,7 @@ tags:
 | [APP-73 Service Lanes](../pnap/app-73.md#apsec-clarifications) | 3 | 23 Feb 2024 |
 | [B(P)R 18A–22 Site classification, site coverage and plot ratio](../regulations/bpr-18a-22.md#apsec-clarifications) | 3 | 17 Nov 2023 |
 | [Cap. 123H Building (Refuse Storage and Material Recovery Chambers and Refuse Chutes) Regulations](../regulations/brsr-123h.md#apsec-clarifications) | 3 | 23 Feb 2024 |
-| [APP-174 Code of Practice for Precast Concrete Construction 2016](../pnap/app-174.md#apsec-clarifications) | 3 | 10 Feb 2023 |
+| [APP-174 Code of Practice for Precast Concrete Construction 2016](../pnap/app-174.md#apsec-clarifications) | 2 | 10 Feb 2023 |
 | [ADV-36 Modular Integrated Construction](../pnap/adv-36.md#apsec-clarifications) | 3 | 8 May 2026 |
 | [APP-67 Energy Efficiency of Buildings — Building (Energy Efficiency) Regulation](../pnap/app-67.md#apsec-clarifications) | 3 | 9 Aug 2024 |
 | [APP-58 Testing of Drainage Works](../pnap/app-58.md#apsec-clarifications) | 2 | 13 Aug 2021 |
@@ -137,13 +138,13 @@ tags:
 | [Cap. 123J Building (Ventilating Systems) Regulations](../regulations/bvsr-123j.md#apsec-clarifications) | 1 | 22 Mar 2019 |
 | [APP-45 Testing of Reinforcement for Concrete](../pnap/app-45.md#apsec-clarifications) | 1 | 24 May 2019 |
 | [APP-108 Dedication of Land/Area for Use as Public Passage](../pnap/app-108.md#apsec-clarifications) | 1 | 23 Aug 2019 |
-| [JPN 5 Development Control Parameters — Building Height Restriction](../pnap/jpn-5.md#apsec-clarifications) | 1 | 23 Aug 2019 |
+| [JPN 5 Development Control Parameters — Building Height Restriction](../pnap/jpn-5.md#apsec-clarifications) | 3 | 29 May 2020 |
 | [APP-111 Design of Car Parks and Loading/Unloading Facilities](../pnap/app-111.md#apsec-clarifications) | 1 | 22 Nov 2019 |
 | [APP-20 Building Proposals affected by Street Widening](../pnap/app-20.md#apsec-clarifications) | 1 | 22 Nov 2019 |
 | [APP-29 Lift and Escalator Installations](../pnap/app-29.md#apsec-clarifications) | 1 | 29 Sep 2020 |
 | [ADM-6 Computer Programs for Use in Structural and Geotechnical Design](../pnap/adm-6.md#apsec-clarifications) | 1 | 26 Nov 2020 |
 | [Cap. 123G Building (Private Streets and Access Roads) Regulations](../regulations/bpsar-123g.md#apsec-clarifications) | 1 | 21 May 2021 |
-| [JPN 1 Green and Innovative Buildings](../pnap/jpn-1.md#apsec-clarifications) | 1 | 13 Aug 2021 |
+| [JPN 1 Green and Innovative Buildings](../pnap/jpn-1.md#apsec-clarifications) | 7 | 8 May 2026 |
 | [APP-124 Streets for Site Classification](../pnap/app-124.md#apsec-clarifications) | 1 | 18 Mar 2022 |
 | [APP-35 Refuse Storage and Collection](../pnap/app-35.md#apsec-clarifications) | 1 | 10 Feb 2023 |
 | [APP-40 Hotel Development](../pnap/app-40.md#apsec-clarifications) | 1 | 5 May 2023 |
@@ -205,6 +206,8 @@ tags:
 | [ADF 2/2018](2018.md) | 23 Mar 2018 | 6 | [PDF](https://www.hkie-st.org/wp-content/uploads/2022/07/69_Finalised-Summary-of-Items-Discussed-in-APSEC-Discussion-Forum-on-23-March-2018.pdf) |
 | [ADF 1/2018](2018.md) | 19 Jan 2018 | 14 | [PDF](https://www.hkie-st.org/wp-content/uploads/2022/07/68_Summary-of-Items-Discussed-in-APSEC-Discussion-Forum-on-19-January-2018.pdf) |
 | [ADF 5/2017](2017.md) | 17 Nov 2017 | 14 | [PDF](https://www.hkie-st.org/wp-content/uploads/2022/07/67_Finalised-Summary-of-Items-Discussed-in-APSEC-Discussion-Forum-on-17-November-2017.pdf) |
+| [APP-27 Gas Water Heaters Regulation 35A of Building (Planning) Regulations](../pnap/app-27.md#apsec-clarifications) | 1 | 5 May 2023 |
+| [JPN 4 Development Control Parameters — Plot Ratio / Gross Floor Area](../pnap/jpn-4.md#apsec-clarifications) | 4 | 25 Nov 2022 |
 
 ## Items not linked to a specific document 未連結文件的項目 {#items-not-linked-to-a-specific-document}
 

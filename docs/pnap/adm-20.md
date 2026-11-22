@@ -66,7 +66,7 @@ keywords: ADM-20, Central Data Bank, CDB, 中央資料庫, building materials, a
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-    - **[Central Data Bank (CDB)](../apsec/2020.md#i2020011020)** <small>ADF 1/2020, 10 Jan 2020</small><br>Members noted that the purpose of the CDB is intended to help sharing of information to the industry. In response to members’ enquiries, BD would review the process of updating of accepted structural materials, components or construction systems to CDB.
+- **[Central Data Bank (CDB)](../apsec/2020.md#i2020011020)** <small>ADF 1/2020, 10 Jan 2020</small><br>Members noted that the purpose of the CDB is intended to help sharing of information to the industry. In response to members’ enquiries, BD would review the process of updating of accepted structural materials, components or construction systems to CDB.
 
 <!-- APSEC END -->
 
