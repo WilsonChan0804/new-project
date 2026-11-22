@@ -11,6 +11,7 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Unauthorised building works 違例建築工程
   - Site supervision 地盤監督
+  - Maintenance access 維修通道
 summary: "MBIS and MWIS: what is inspected, the RI and QP duties and the form deadlines."
 keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊檢驗人員, qualified person, MBI 1, WI 1
 ---
@@ -79,6 +80,15 @@ keywords: MBIS, MWIS, 強制驗樓, 強制驗窗, registered inspector, 註冊�
 | **UBW** 違例建築工程 | In common parts, on the exterior (walls, roofs, podiums, yards, slopes) and on the street |
 
 <small>The Code also gives repair methods (s.5), safety and security measures during works (s.6), and report contents (s.7). 另有修葺方法、施工安全及報告內容。</small>
+
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Fire Safety Precautionary Measures for Major Building Repair Works](../circulars/2026.md#cl-fspm2026) <small>29 Oct 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
+- 🟢 [Fire Safety Precautionary Measures to be Taken During Large Scale Building Repair Works](../circulars/2026.md#cl-fspmmbrw2026) <small>16 Mar 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
+- 🟢 [Timely Submission of Notification and Certificate by Qualified Person](../circulars/2026.md#cl-tsncqp2026) <small>7 Jan 2026 · 合資格人士按時呈交通知書及證明書</small>
+<!-- CL END -->
 
 ## Related 相關文件 {#related}
 

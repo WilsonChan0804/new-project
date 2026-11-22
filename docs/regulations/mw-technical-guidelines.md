@@ -89,6 +89,13 @@ keywords: Technical Guidelines, minor works control system, 小型工程監管�
 
 Appendix VII of the TG gives **recommended designs and details for Class II and Class III items** (for example supporting frames, drying racks, canopies, signboards). Following them simplifies the structural justification; anything outside the details needs a design by a PBP. Appendix X covers **windows or window walls acting as protective barriers**. 技術指引附錄 VII 載有第 II 及 III 級別項目的建議設計及詳圖；附錄 X 涵蓋作防護欄障的窗及窗牆。
 
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🔵 [Amendments to the "Technical Guidelines on Minor Works Control System (2024 Edition)"](../circulars/2026.md#cl-atgmwcse2026) <small>13 Aug 2026 · 《小型工程監管制度之技術指引》（2024年修訂版）修訂事宜</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

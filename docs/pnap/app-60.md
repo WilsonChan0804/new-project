@@ -82,6 +82,13 @@ keywords: APP-60, specified forms, 指明表格, BA5, BA8, BA13, BA14, BA16, MW0
 | Signboards 招牌 | [APP-155](app-155.md) |
 | Temporary buildings and demolition 臨時建築物及拆卸 | [APP-50](app-50.md) · [APP-21](app-21.md) |
 
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Registration and Minor Works Management System](../circulars/2026.md#cl-rmwms2026) <small>29 May 2026 · 註冊及小型工程管理系統</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

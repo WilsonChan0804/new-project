@@ -11,6 +11,7 @@ tags:
   - Plan submission & approval 呈交及審批
   - Lighting & ventilation 照明及通風
   - Means of escape 逃生途徑
+  - Excavation & ELS 挖掘
 summary: "Buildings Ordinance ss.31–39C: projections over streets, street names and building numbers, cost recovery and surcharges, records, regulations and validation of signboards."
 keywords: BO s.31-39C, projections over street, 伸出街道, building number, surcharge 20%, signboard validation, technical memorandum
 ---
@@ -137,6 +138,13 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 - **[Sites separated by a Street under the Same Lease](../apsec/2022.md#i202203181)** <small>ADF 2/2022, 18 Mar 2022</small><br>In principle, if a single lot was completely divided by a public street, the subject lot would then be regarded as two separate sites under the Buildings Ordinance (BO). As such, GFA concessions for the plant rooms and …
 
 <!-- APSEC END -->
+
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Use of Tied-Back Wall Support System for Excavation Works](../circulars/2026.md#cl-utbwssew2026) <small>7 Jul 2026 · 挖掘工程使用後拉式圍牆支撐系統</small>
+<!-- CL END -->
 
 ## Related 相關文件 {#related}
 

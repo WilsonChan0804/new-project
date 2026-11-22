@@ -326,6 +326,13 @@ Conditions: not for special or unconventional structures; **no debris accumulati
 | Minor works 小型工程 | [MW Technical Guidelines](../regulations/mw-technical-guidelines.md) |
 | Loads and wind 荷載 | [Dead & Imposed Loads](dil-2011.md) · [Wind Code](wind-2019.md) |
 
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [GB 5725‑2025 "Fall protection – Safety nets"](../circulars/2026.md#cl-fpsn2026) <small>31 Aug 2026 · GB 5725‑2025《墜落防護 安全網》</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 [B(DW)R Cap. 123C](../regulations/bdwr-123c.md) · [APP-21](../pnap/app-21.md) · [APP-23](../pnap/app-23.md) · [APP-170](../pnap/app-170.md) · [Site Supervision Code](site-supervision-2009.md)

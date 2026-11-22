@@ -393,6 +393,13 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 | Site safety 地盤安全 | [ADM-13](../pnap/adm-13.md) · [ADM-18](../pnap/adm-18.md) · [ADV-29](../pnap/adv-29.md) |
 | Minor works 小型工程 | [APP-147](../pnap/app-147.md) · [APP-149](../pnap/app-149.md) |
 
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Prevention Measures at Construction Sites during Rainy and Typhoon Seasons](../circulars/2026.md#cl-pmcsrts2026) <small>13 May 2026 · 雨季和颱風季節期間建築地盤的預防措施</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 [BO s.14–21](../regulations/bo-part-2-building-works.md) · [B(A)R](../regulations/bar-123a.md) · [Submission to OP guide](../guides/submission-to-op.md) · [Foundations Code](foundations-2017.md) · [Demolition Code](demolition-2004.md)

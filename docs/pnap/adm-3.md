@@ -59,3 +59,9 @@ keywords: ADM-3, emergency, 緊急情況, out of office hours, 辦公時間以�
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Prevention Measures at Construction Sites during Rainy and Typhoon Seasons](../circulars/2026.md#cl-pmcsrts2026) <small>13 May 2026 · 雨季和颱風季節期間建築地盤的預防措施</small>
+<!-- CL END -->

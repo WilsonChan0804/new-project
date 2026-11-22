@@ -7,6 +7,7 @@ tags:
   - Site safety 地盤安全
   - Lighting & ventilation 照明及通風
   - Demolition 拆卸
+  - Maintenance access 維修通道
 summary: "Plastic sheeting on scaffolds: flame-retardant sheets, wind-strengthened scaffolds, keep light and ventilation of occupied buildings."
 keywords: APP-70, plastic sheet, 膠布, PVC, scaffolding, 棚架, flame retardant, 防火, bamboo scaffold
 ---
@@ -60,3 +61,10 @@ keywords: APP-70, plastic sheet, 膠布, PVC, scaffolding, 棚架, flame retarda
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Fire Safety Precautionary Measures for Major Building Repair Works](../circulars/2026.md#cl-fspm2026) <small>29 Oct 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
+- 🟢 [Fire Safety Precautionary Measures to be Taken During Large Scale Building Repair Works](../circulars/2026.md#cl-fspmmbrw2026) <small>16 Mar 2026 · 進行樓宇大維修須採取的消防安全預防措施</small>
+<!-- CL END -->

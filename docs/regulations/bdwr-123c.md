@@ -90,6 +90,13 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Guidelines on Rodent-proofing Design in New Buildings and Mosquito/Rodent Prevention and Control Measures in Construction/Demolition Sites](../circulars/2026.md#cl-grdnbmrpcmcds2026) <small>Jun 2026 · 新建樓宇防鼠設計及建築／拆卸地盤蚊患／鼠患防治措施指引</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

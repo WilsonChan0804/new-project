@@ -228,6 +228,13 @@ BD's most recent clarifications on this topic from the [APSEC Discussion Forum](
 
 <!-- GUIDE APSEC END -->
 
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Submission of Electronic Test Reports in Standardised Test Report Formats](../circulars/2026.md#cl-setrstrf2026) <small>20 Oct 2026 · 提交標準化格式的電子測試報告</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | What it covers 內容 |

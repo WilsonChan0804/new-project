@@ -69,6 +69,13 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Proper Erection of Scaffolds in Proximity to or over Streets for Ensuring Safety of Road Users](../circulars/2026.md#cl-pespsesru-rpb-rc2026) <small>7 May 2026 · 在街道附近或上方妥善搭建棚架以確保道路使用者安全</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |
