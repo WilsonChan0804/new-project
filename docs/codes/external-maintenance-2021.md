@@ -16,6 +16,9 @@ tags:
   - Drainage 排水
   - A&A works 改動及加建工程
   - Fire safety 消防安全
+  - Wind 風力
+  - Occupation permit 佔用許可證
+  - Means of escape 逃生途徑
 summary: "Code of Practice on Access for External Maintenance 2021 (2024 Edition): M&R access for every external wall, projection and roof; design rules for gondolas, windows, doors, ladders and anchors; A/C platforms combined with balconies or UPs; M&R access plans and undertakings."
 keywords: external maintenance, 外部維修, AfEM Code, M&R access, 維修通道, M&R access plan, 維修通道圖則, gondola, 吊船, maintenance access window, 維修窗, cast-in anchor, 預埋錨固點, AC platform, 冷氣機平台, balcony, utility platform, inaccessible roof, B(C)R 27 28 31 34
 ---

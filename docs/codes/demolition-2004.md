@@ -13,6 +13,11 @@ tags:
   - Minor works 小型工程
   - Foundation 地基
   - Drainage 排水
+  - Balcony & utility platform 露台及工作平台
+  - Wind 風力
+  - Sustainable building design 可持續建築設計
+  - Excavation & ELS 挖掘
+  - Curtain wall & façade 幕牆及外牆
 summary: "Code of Practice for Demolition of Buildings 2004 (with the 2016 and 2023 amendments): building and structural surveys, demolition plan and stability report, hoarding, covered walkway and catch platform criteria and loads, scaffolds, screens, catchfans, temporary supports and propping, party walls, debris handling, demolition methods and sequences, special structures and supervision."
 keywords: demolition, 拆卸, demolition plan, 拆卸圖則, stability report, hoarding, 圍板, covered walkway, 有蓋行人道, catch platform, 承接平台, 5 kPa, 20 kN, catchfan, 防墮板, screen, nylon net, propping, 頂撐, Table 3.4, party wall, 共用牆, debris chute, top down, wrecking ball, implosion, prestressed, B(DW)R, B(A)R 8
 ---
