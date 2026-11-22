@@ -8,6 +8,12 @@ tags:
   - Site safety 地盤安全
   - Site supervision 地盤監督
   - Refuse 垃圾
+  - Minor works 小型工程
+  - Statutory period 法定期限
+  - Geotechnical 岩土
+  - Structural 結構
+summary: "Demolition: plans and consent, supervision plan, video records, plant operators, dangerous buildings and party wall shores, fast-track completion, checklists and minor works before demolition."
+keywords: APP-21, demolition, 拆卸, B(DW)R, plant operator, 機械操作員, video record, 錄影, raking shore, 斜撐, party wall, 共用牆, BA14B, fast track, dangerous building
 ---
 
 # APP-21 Demolition Works - Measures for Public Safety<br><small>拆卸工程 保障公眾安全的措施</small>
@@ -44,6 +50,76 @@ tags:
   ![Demolition workflow. 拆卸工程流程。](../assets/figures/diagrams/app21-demolition.svg){ width="464" loading=lazy }
   <figcaption>Demolition workflow. 拆卸工程流程。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all **demolition works** needing approval and consent under the BO, B(A)R and **B(DW)R**: plans, consent, supervision plan, TCPs, plant operators and completion; special rules for **dangerous buildings** under a BA order. Some demolition-related works are **minor works** (para. 31). 拆卸工程。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1–2 | Controls: plans approval, consent, site safety supervision, **TCP** appointment, **plant operator** appointment, completion. 管制範圍。 |
+| 3–4 | Submit plans per **B(A)R 8(3)–(4)** with the **Demolition Code 2004**; refusal under s.16(1)(a), (e) if incomplete; no consent before approval (s.16(3)(a), (b)). 呈交圖則。 |
+| 5 | May erect **without consent** (if not affecting structure): (a) screens and nets; (b) dust screens; (c) scaffolds and catchfans; (d) **hoarding, covered walkway, gantry, catch platforms**; (e) shoring and propping. 毋須同意可先搭建。 |
+| 6 | **Supervision plan** lodged before / with consent (unless TM para. 11 exempts); Site Supervision Code 2009 (2024 Ed.); refusal under s.16(3)(bc). 監工計劃書。 |
+| 7–8 | Follow the Demolition Code on **full-time site engineer** for complex structures, debris management, etc.; the site engineer answers to the **RSC**; changes reported at once. 駐地盤工程師。 |
+| 9–10 | **Video cameras** record the whole process, **≥ 1 per site**, tamper-proof, shown on plans; keep records **≥ 14 days**. 錄影記錄 14 天。 |
+| 11–15 | **Plant operators** to B(DW)R 9(3) (e.g. HKIC "Demolition of Building Course for Plant Operators"); particulars (names, HKID, DOB, address, phone) with the consent application (B(A)R 31) or refusal s.16(3)(b); BA vets them; changes notified within **7 days**. 機械操作員。 |
+| 16 | Remove **flammable goods**; risk of fire or explosion (B(DW)R 6). 易燃品。 |
+| 17(a) | **Dangerous buildings**: secure after closure; entry permit from **EBD**. 危險建築物封閉。 |
+| 17(b)–(d) | **Shores** of steel **Grade 250+** to the Steel Code; dead shore positions agreed with EBD; raking or permanent supports designed and agreed; good **connection to party walls**; replace temporary shores with permanent support where needed. 支撐。 |
+| 17(e)–(f) | Pedestrian passages per [APP-23](app-23.md); **joint demolition**: start only when all adjacent buildings can proceed together. 聯合拆卸。 |
+| 17(g)–(i) | **Party walls**: raking or flying shores (Appendix A), often under a BA order; may require demolishing a party wall next to a framed building and new enclosure; alternatives considered; inspect and repair as demolition proceeds. 共用牆。 |
+| 17(j)–(k) | **Default works** by BA with costs, supervision charge and surcharge; report unexpected weaknesses to EBD at once. 代辦工程及通報。 |
+| 18–19 | Tell **HyD** about street name plates (BO s.32); tell **DSD** when drains are sealed (B(DW)R 3(2)(b)). 通知路政署及渠務署。 |
+| 20 | Affecting slopes or walls: RGE recommendations in the plans, RSE / RGE agree before submission. 斜坡及擋土牆。 |
+| 21–22 | Hoardings, covered walkways, gantries, catch platforms at all times; minimise **dust, noise, vibration**. 保障公眾。 |
+| 23–24 | Design per Demolition Code Ch. 3 and [APP-23](app-23.md) (standard designs, precast footings, demountable joints). 圍板設計。 |
+| 25 | Nets, screens, sheeting on façades **fire-retardant**, certificates on site. 防火膠布。 |
+| 26 | Precautions done and documents in before / with **Form BA8** (checklist App. B); refusal under s.16(3)(b), (ba), (bc) or (bb). 動工前完成。 |
+| 27 | Completion certified within **14 days**: **BA14A**, or **BA14B** for fast track. 14 天內完工證明。 |
+| 28 | **Fast-track** criteria: (a) structurally independent; (b) no basement or below-ground structures (filling a basement with debris against buoyancy is OK); (c) nothing above ground left except G/F slab and beams; (d) no support needed for party / adjoining walls; (e) no effect on slopes or retaining structures. 快速驗收條件。 |
+| 29–30 | State compliance on plans; submit **BA14B** with colour photos and a photo key plan; BD replies within **14 days**, or **28 days** if audited. 快速驗收程序。 |
+| 31 | Some works are **minor works** ([APP-147](app-147.md)). 小型工程。 |
+| 32–33 | **Appendix C** streamlined route for minor works before demolition; similar note to contractors. 簡化程序。 |
+
+<figure markdown>
+  ![Raking shores](../assets/figures/app-21/appendix-a-raking-shores.jpg){ width="380" loading=lazy }
+  <figcaption>Appendix A (1 of 2) – Standard details of raking shores, with spacing ≤ 5 m and raker sizes by wall height. 斜撐標準詳圖。Source: BD, PNAP APP-21.</figcaption>
+</figure>
+
+<figure markdown>
+  ![Flying shores](../assets/figures/app-21/appendix-a-flying-shores.jpg){ width="380" loading=lazy }
+  <figcaption>Appendix A (2 of 2) – Standard details of flying shores, spacing ≤ 5 m. 飛撐標準詳圖。Source: BD, PNAP APP-21.</figcaption>
+</figure>
+
+## Appendix B: first consent checklist 附錄 B：首次同意核對表 {#appendix-b}
+
+| Part | Items 項目 |
+|---|---|
+| 1 Site preparation | Hoarding, covered walkway, catch platforms; scaffolds, dust screens, catchfans (also at boundaries with adjoining demolition sites); propping of slabs; shoring and support to walls / slopes; **debris chutes**; **video cameras**; glazing and doors removed; drains **sealed**; utilities **disconnected**, meters removed; tram / street lighting fittings removed; emergency exit route with lighting and extinguishers; **no-go markings** for plant and propped areas; **asbestos** and hazardous materials removed by specialists; contacts posted at the entrance |
+| 2 Documents | **BA8**; **BA20** (TCPs); supervision plan; TCP particulars; **plant operators**; debris disposal system; site engineer; **Chinese demolition plans**; minor works records |
+| 3 Other | Hoarding permit valid; HyD excavation permit; adjoining owners' consent for party walls; approval conditions met; other departments and **MTR** requirements; **AMO**; HyD told about street name plates |
+
+## Appendix C: minor works before demolition 附錄 C：拆卸前小型工程 {#appendix-c}
+
+- Applies when the **same project team** (AP, RSE, RSC Demolition, same authorized signatory) does both. 同一項目團隊。
+- Submit **MW01** at least **7 days** before, with the demolition plans, which show the MW and a precautions statement; photos not needed if in the building appraisal report. 提交 MW01。
+- Submit **MW02** with **BA14A / BA14B**; no completion photos if the whole building is then demolished; if done before **BA10**, submit MW02 separately to NBD1. 提交 MW02。
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Demolition Code 拆卸守則 | [Demolition Code](../codes/demolition-2004.md) |
+| Demolition regulations 拆卸規例 | [B(DW)R Cap. 123C](../regulations/bdwr-123c.md) |
+| Hoardings and covered walkways 圍板 | [APP-23](app-23.md) · [B(P)R 50–70](../regulations/bpr-50-70.md) |
+| Supervision plans and TCPs 監工 | [Site Supervision Code](../codes/site-supervision-2009.md) · [APP-158](app-158.md) |
+| Blasting in demolition 爆破拆卸 | [APP-72](app-72.md) |
+| Oil tank demolition 油缸拆卸 | [APP-10](app-10.md) App. D |
+| Fundamental issues of demolition plans 根本性事項 | [ADM-19](adm-19.md) App. D |
+| Minor works 小型工程 | [APP-147](app-147.md) |
+| Site precautions overview 地盤預防措施 | [APP-107](app-107.md) |
 
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
