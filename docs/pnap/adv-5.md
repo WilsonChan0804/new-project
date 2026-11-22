@@ -5,7 +5,8 @@ tags:
   - Timber 木材
   - Sustainability 可持續發展
   - Site safety 地盤安全
-keywords: tropical hardwood, 熱帶硬木, timber, 木材, formwork, 模板, hoarding, 圍板, covered walkway, 有蓋行人道, rainforest, PNAP 153
+summary: "Reduce tropical hardwood timber on sites: steel hoardings, fewer covered walkways, alternative formwork and props, non-timber finishes, reuse and renewable sources."
+keywords: ADV-5, tropical hardwood, 熱帶硬木, timber, rainforest, steel hoarding, formwork alternatives, 模板, permanent formwork, precast, sustainable timber
 ---
 
 # ADV-5 Tropical Hardwood Timber<br><small>熱帶硬木木材</small>
@@ -31,6 +32,31 @@ keywords: tropical hardwood, 熱帶硬木, timber, 木材, formwork, 模板, hoa
 
     - 香港是**熱帶雨林木材**的主要進口地，大部分用於建築業並造成浪費及棄置（第 1–2 段）。
     - 須接受改變傳統施工方法；屋宇署正檢討會鼓勵使用硬木的規定（第 3–5 段）；應積極減少使用硬木，例如**以其他物料造圍板**（第 6 段）。考慮是否真的需要**有蓋行人道**，例如建築物已後移（第 7 段）；以壓型鋼板、預製件等取代木**模板**（第 8–9 段）；**牆板、門、門框、踢腳線**改用非木材料（第 10–11 段）；木材廢料**分類再用**（第 12 段）；無替代時採用**可再生來源**木材（第 13 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all projects as **good practice** (advisory, from the 1990s). 良好作業建議。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1–4 | HK is a major user of tropical timber, much wasted; government encourages alternatives | 背景 |
+| 5 | BD reviewing requirements that encourage hardwood; meanwhile reduce its use | 減少使用 |
+| 6 | **Hoardings**: use **steel** (reusable), as ArchSD and HD require | 鋼圍板 |
+| 7 | **Covered walkways**: question need, especially where buildings are set back | 有蓋行人道 |
+| 8–9 | **Formwork** (largest user): profiled steel permanent formwork, **precast**, structural steel frames, steel formwork, steel props | 模板替代 |
+| 10–11 | Internal finishes, doors, frames, skirtings: non-hardwood alternatives | 內部裝修 |
+| 12 | Separate and **reuse** timber waste | 重用 |
+| 13 | Otherwise specify **renewable sources** | 可再生來源 |
+| 14 | Long-term change in construction methods | 長遠方向 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| C&D waste 拆建廢料 | [ADV-19](adv-19.md) |
+| Site nuisance 環境滋擾 | [ADV-4](adv-4.md) |
+| Hoardings 圍板 | [B(P)R 50–70](../regulations/bpr-50-70.md) |
 
 ## Key clauses 主要條文 {#key-clauses}
 

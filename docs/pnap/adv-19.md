@@ -5,6 +5,9 @@ tags:
   - C&D waste 拆建廢料
   - Waste minimisation 減少廢物
   - Demolition 拆卸
+  - Concrete & materials 混凝土及物料
+summary: "Minimise construction and demolition waste by design and site measures, require a Waste Management Plan, and use the trip-ticket system to deliver public fill and C&D waste to designated outlets."
+keywords: ADV-19, construction and demolition waste, 拆建廢料, waste management plan, 廢物管理計劃, trip ticket, 載運紀錄, public fill, 公眾填料, landfill, precast, WBTC 5/99
 ---
 
 # ADV-19 Construction and Demolition Waste<br><small>拆建廢料</small>
@@ -30,6 +33,39 @@ tags:
 
     - 建築工程產生的固體廢物佔堆填區**四分之一以上**；應及早規劃廢物管理（第 1 段）。
     - 設計措施（第 2 段）：**預製及預先組裝**構件（外牆、樓梯、樓板、廚房、浴室）、噴塗批盪、**挖填平衡**、**煤灰**混凝土、合併設施坑道、**由買家選擇**裝修、減少使用非可持續木材、**系統模板**；其後為施工期間措施。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all building projects (advisory); EPD advice offered for projects producing **> 300,000 m³** of C&D material. 所有建築項目。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | C&D material is > 1/4 of landfill waste; plan early | 背景 |
+| 2 design | Precast and prefabrication, sprayed plaster, balanced cut and fill, **PFA**, combined trenches, purchasers' choice of finishes, sustainable timber, system formwork | 設計措施 |
+| 2 site | Waste Management Plan, non-timber hoarding, metal formwork, on-site sorting, recycling concrete and aggregate, wheel wash | 工地措施 |
+| 3 | Client to require the contractor's **Waste Management Plan** (14 items: types and quantities, timing, reduction, sorting, reuse, storage, disposal outlets, monitoring, organisation, trip tickets, hazardous waste, packaging) | 廢物管理計劃 |
+| 4 | > **300,000 m³**: EPD advice; Public Fill Committee advice | 大型項目 |
+| 5–6 | **Trip-ticket system** (WBTC 5/99): **public fill** (inert) to public filling facilities (CEDD), **C&D waste** (non-inert) to landfills (EPD); recommended for private sites | 載運紀錄制度 |
+| 7 | References | 參考 |
+
+### Trip-ticket steps (Appendix A) 載運紀錄步驟 {#trip-ticket-steps}
+
+| Step 步驟 | Action 行動 |
+|---|---|
+| (i)–(ii) | Planning: confirm outlets with CEDD and EPD, giving contract, location, quantities, programme, contaminants, types |
+| (iii)–(iv) | Outlets and acceptance criteria designated and put in tender documents |
+| (v)–(vi) | A **Disposal Delivery Form** for every truckload |
+| (vii) | Present the form at the gate, get a receipt at exit, return the original to the project office |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Site nuisance 環境滋擾 | [ADV-4](adv-4.md) |
+| Timber 木材 | [ADV-5](adv-5.md) |
+| Asbestos waste 石棉 | [ADV-1](adv-1.md) |
+| Demolition 拆卸 | [B(DW)R](../regulations/bdwr-123c.md) |
 
 ## Related 相關文件 {#related}
 
