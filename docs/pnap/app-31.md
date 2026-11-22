@@ -5,6 +5,8 @@ tags:
   - Fire service installations 消防裝置
   - Occupation permit 佔用許可證
   - Fire safety 消防安全
+summary: "No OP until the permanent water supply to fire service installations is connected; FS certificates may carry a rider."
+keywords: APP-31, fire service installation, 消防裝置, water supply, 供水, occupation permit, 佔用許可證, s.21(6)(d), FS certificate
 ---
 
 # APP-31 Permanent Water Supply to Fire Service Installations<br><small>為消防裝置恆久供水－《建築物條例》第21(6)(d)條</small>
@@ -31,6 +33,26 @@ tags:
 
     - 如消防裝置守則規定須為消防裝置提供**恆久供水**，須在**佔用前**完成恆久接駁（第 1 段）。
     - 如消防裝置合格但未接駁，消防處的證明書會附**附帶條件**，只在接駁後生效；在條件達成前**不會發出佔用許可證**（第 2 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: buildings whose **fire service installations** need a **permanent water supply** under the Minimum FSI Code, at **OP** stage (BO s.21(6)(d)). 消防裝置須永久供水的建築物。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Permanent water connection must be made **before occupation**. 入伙前須接駁永久水源。 |
+| 2(a) | No supply needed, or already connected: **FS certificate** under s.21(6)(d) issued normally. 一般發出證書。 |
+| 2(b) | FSI satisfactory but not yet connected: certificate issued with a **rider** that it is valid only when connected. 附帶條件。 |
+| 2(c) | **No OP** until the rider is fulfilled. 條件未達成不發佔用許可證。 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| OP procedure 佔用許可證程序 | [APP-78](app-78.md) · [BO Part 2](../regulations/bo-part-2-building-works.md) (s.21) · [Submission to OP guide](../guides/submission-to-op.md) |
+| FSI plans 消防裝置圖則 | [ADM-2](adm-2.md) App. B |
+| Water supply 供水 | [Cap. 123I](../regulations/bsfpwr-123i.md) |
 
 ## Practical notes 實務提示 {#practical-notes}
 
