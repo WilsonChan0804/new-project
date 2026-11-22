@@ -231,6 +231,65 @@ keywords: FRC, FRR, fire resisting construction, 耐火結構, compartment, 防�
 
 ---
 
+## Clause by clause 逐條條文 {#clause-by-clause}
+
+<small>Tables C1–C2 are on this page above; this table lists every clause. FRR shown as stability / integrity / insulation (minutes). 表 C1–C2 見上文；耐火效能以穩定性／完整性／隔熱性（分鐘）表示。</small>
+
+| Clause 條文 | What it requires 規定 | 中文要點 |
+|---|---|---|
+| **C1.1–C1.3** | Deemed-to-comply provisions for fire resisting construction; read with all Parts | 耐火結構當作符合規定 |
+| **C2.1** | Performance Requirements in Part A **A9** | 性能要求見 A9 |
+| **C3.1–C3.2** | Divide into **fire compartments** within **Table C1** limits; openings, joints and penetrations keep the barrier's FRR | 防火隔室按表 C1 |
+| **C4.1** | Elements and barriers FRR per **Table C1**: e.g. residential / hotel **60** unlimited; office 10,500 m² **60**; retail ≤ 2,500 m² 60, to 10,500 m² **120**; industrial **120**; warehouse 28,000 m³; DG 7,000 m³; car park 60. Notes: larger by merit; flats and hotel rooms separated | 表 C1 耐火效能及隔室上限 |
+| **C4.2** | Stability / integrity / insulation criteria per **Table C2**, tested to Part E (curtain wall glazing needs no FRR, subject to C5, C9.7; smoke shaft failure at 75% area) | 表 C2 準則 |
+| **C4.3** | Single storey ≤ **7,000 m³** and ≤ **7.5 m** high, **6 m** clear from neighbours / boundary: steel may be **unprotected**. Commentary: single-storey non-combustible covered walkways need no FRR | 單層小型建築鋼結構可無保護 |
+| **C5.1** | External walls and roofs with FRR against spread to neighbours | 外牆及屋頂防止蔓延 |
+| **C5.2** | Same site, < **1.8 m** apart: façade angle > **135°**: imperforate FRR walls within **900 mm**, unprotected openings ≥ **900 mm** apart; ≤ 135°: within **1.8 m**, FRR fixed lights ≥ 900 mm, unprotected ≥ **1.8 m** apart; roofs within 1.8 m imperforate (Diagram C1) | 同一地盤建築物分隔 |
+| **C5.3** | Other sites: within **900 mm** of the boundary, walls / roof FRR and imperforate; FRR fixed lights ≥ **450 mm** from the boundary | 距界線 900 毫米內須耐火 |
+| **C6.1** | UC 1–2 flats on a common internal corridor: corridor barriers per Table C1; flat doors same FRR with **smoke seals** (top and sides) | 單位門須耐火及煙封 |
+| **C7.1** | Different **use classes** or **occupancies** separated by the **longer FRR** | 不同用途以較長耐火分隔 |
+| **C7.2** | No separation needed for ancillary small offices, caretaker's quarters, small stores, loading in industrial buildings; office pantries; UC 5a snack bars | 附屬用途毋須分隔 |
+| **C7.3** | No separation between occupancies in **UC 4a** or **retail 4b** within compartment limits | 辦公室及零售單位之間毋須分隔 |
+| **C7.4** | Common corridors to different occupancies separated (not shopping arcades), higher FRR, fixed lights to match | 公用走廊分隔 |
+| **C7.5** | **Dead-end balcony approach** separated with FRR doors / lights; UC 1 windows fixed **-/30/30** | 盡頭露天走廊 |
+| **C8.1** | Compartment wall openings: FRR **doors or shutters**; total width > **25%** of wall: insulation too (or **30 min** with sprinklers both sides) | 開口 > 25% 須隔熱 |
+| **C8.2** | Duct, cable and pipe openings: **fire dampers** or fire stops | 防火閘及防火封堵 |
+| **C8.3** | Vertical shafts: penetrations fire sealed; no floor FRR inside; doors / hatches same FRR and **self-closing** | 管槽門自動關上 |
+| **C8.4** | Services within one compartment need no enclosure | 同一隔室內毋須圍封 |
+| **C8.5–C8.6** | Fire sealing: Part E, moisture-proof, life ≥ the service, firmly fixed; gaps at metal water pipes filled to the barrier FRR | 封堵物料要求 |
+| **C8.7** | Fire shutters to BA's satisfaction, operation to FSD; fire dampers to FSD or BA (commentary: B(VS)R dampers under FSD) | 防火卷閘及防火閘 |
+| **C9.1** | Liftwells **120/120/120**; landing door frames, indicators and buttons sealed; landing doors integrity as wall or **-/120/-**; basement lifts via a **smoke seal lobby** | 升降機槽 120 分鐘 |
+| **C9.2** | Bullet / panorama lifts in one compartment: no FRC if the machine room is separated | 觀光升降機例外 |
+| **C9.3** | Protected exits and lobbies: barriers as the compartment; doors integrity and insulation; lobby doors per C16.5; **no services** except emergency ones unless enclosed | 受保護出口：只容緊急設施 |
+| **C9.4** | Staircase elements within FRR walls: **non-combustible**, no FRR needed | 樓梯構件不燃即可 |
+| **C9.5** | Single-staircase building with non-domestic / office G/F: G/F–1/F staircase separated with the longer FRR; wall returned **450 mm** at the entrance | 單樓梯地面層分隔 |
+| **C9.6–C9.7** | Staircase / lobby external walls may be unprotected, except within **6 m** of the opposite side of a street, a site boundary, a lower-FRR wall or unprotected opening, or another building: FRR and imperforate, fixed lights ≤ **25%** of the wall (Diagram C2) | 6 米內外牆須耐火 |
+| **C9.8** | Where in the same plane as lower-FRR walls: staircase walls extend **450 mm** at the junction (Diagram C3) | 牆延伸 450 毫米 |
+| **C10.1** | Sprinklered floor openings (escalators, stairs): **450 mm** downstand **-/30/-** non-combustible (below false ceiling), or an approved **smoke curtain** (BS EN 12101-1, 600 °C 30 min) | 樓板開口 450 毫米擋煙垂壁 |
+| **C10.2** | **Curtain walls** over one storey: **non-combustible** (except sealants); perimeter void sealed, FRR as floors, D-stability, leakage ≤ **25 m³/h/m²** at 25 Pa | 幕牆不燃及層間封堵 |
+| **C10.3** | **Atria** (sprinklered): separated by FRR walls, shutters, curtains or glazing; ≤ **28,000 m³**; ≤ **15 m** high; sprinklers at the base; **≤ 3 floors**; others BA decides (Diagram C6) | 中庭 ≤ 28,000 立方米、15 米、3 層 |
+| **C11.1** | Floor-to-floor external separation: **900 mm spandrel** or **500 mm projection** with the floor's FRR; not for single houses or **sprinklered** buildings (Diagram C7) | 窗間牆 900 毫米或伸出 500 毫米 |
+| **C11.2** | UC 1: spandrel openings ≤ **110 mm** dia. for kitchen / bathroom pipes | 喉管開口 ≤ 110 毫米 |
+| **C12.1–C12.4** | Roofs **non-combustible**; single-staircase > 13 m and refuge roofs FRR as the storey below; podium temporary safe places to C9, floor FRR as below | 屋頂不燃；庇護天台耐火 |
+| **C13.1** | **Special hazard** areas **-/120/120**; opening onto a protected exit **-/240/240** | 特殊危險 120／240 分鐘 |
+| **C13.2** | **Restaurant kitchen** as ancillary: **-/60/60** enclosure and doors; protected lobby to exit routes, and to the dining area if > **45 m²**; hold-open devices allowed | 餐廳廚房 60 分鐘 |
+| **C13.3** | Flat with **single exit door**: kitchen next to it **-/30/30** walls and door | 單一出口單位廚房 30 分鐘 |
+| **C13.4** | **Open kitchen**: smoke detector with sounder in the flat (local panel only); detector outside (to FSCC); sprinkler over the notional kitchen; **600 mm** full-height **-/30/30** wall by the door; **450 mm** downstand if internal staircase | 開放式廚房條件 |
+| **C14.1** | Basements: G/F–basement barriers **-/240/240** incl. exits; elements **240/240/240**; compartment walls **-/120/120**; may unite with upper storeys of the same use at basement FRR | 地庫 240 分鐘 |
+| **C14.2** | Enclosed basements: **smoke outlets** ≤ **30 m** apart, high level, through draft, every compartment, ≥ **0.5%** of floor area (**2.5%** storage), ≥ **1 m**, away from staircases, breakable covers, metal (not aluminium) grilles | 排煙口 0.5%／2.5% |
+| **C14.3** | With dynamic smoke extraction: one outlet per **3,500 m³**, at least one per floor, accessible | 機械排煙時每 3,500 立方米一個 |
+| **C14.4** | Smoke outlet shafts through other storeys: FRR as the higher storey; adjoining shafts separated | 排煙管道耐火 |
+| **C15.1** | **Bridges**: with end barriers, longest FRR (shutters need by-pass lobbies); open-sided (parapets ≤ **1.2 m**) non-combustible with longest FRR; otherwise part of the compartment | 天橋 |
+| **C15.2** | **Tunnels**: end barriers with longest FRR, by-pass lobbies with exit signs, non-combustible | 隧道 |
+| **C16.1–C16.2** | Fire doors **self-closing** (Part E); staircase and lobby doors **kept closed**; others may hold open per B13.8 | 防火門自動關上 |
+| **C16.3** | Notice "FIRE DOOR TO BE KEPT CLOSED 防火門應常關", **10 mm**, both sides | 告示 |
+| **C16.4** | Close-fitting edges; bottom gap ≤ **10 mm** (or tested value) | 門底隙 ≤ 10 毫米 |
+| **C16.5** | **Protected lobby**: barriers soffit to floor (or FRR false ceiling); outer door full FRR and second door none, or both doors **half** FRR; **smoke seals** on both | 防護門廊門要求 |
+| **C17.1** | **Refuge area**: walls **-/120/120**, floors **120/120/120**; shafts not opening onto it (a protected lobby is fine) | 庇護層 120 分鐘 |
+| **C17.2** | Open sides ≥ **6 m** from a street's far side, site boundary, < 120 min wall, or another building (unless in the same plane). Commentary: **sky gardens** on refuge floors: planters excluded from net area, fixed non-combustible furniture, no BBQ, lift doors via **-/120/120** lobby and locked on alarm, avoid artificial plants | 開放面距 6 米；空中花園 |
+| **C18.1** | **Cinemas** sharing exits: each auditorium its own compartment; dedicated **smoke extraction** by ceiling detectors; seating to Part E ignition rules; projector rooms **-/60/60** with smoke-sealed doors (unless no hazardous projection) | 電影院 |
+| **C18.2** | **Theatres**: fully sprinklered; **proscenium wall -/60/60**; **fire or water curtain** (≥ -/30/-, restricts smoke) | 劇院：台口牆及防火幕 |
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"

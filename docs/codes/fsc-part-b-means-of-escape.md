@@ -384,6 +384,103 @@ Occupant capacity = **usable floor area ÷ occupancy factor** in **Table B1** (e
 
 ---
 
+## Clause by clause 逐條條文 {#clause-by-clause}
+
+<small>Tables B1–B7 are on this page above; this table lists every clause. 表 B1–B7 見上文；本表逐條列出。</small>
+
+| Clause 條文 | What it requires 規定 | 中文要點 |
+|---|---|---|
+| **B1.1–B1.3** | Deemed-to-comply provisions for means of escape; read with all Parts; guidance on meeting the Performance Requirements | 逃生途徑當作符合規定 |
+| **B2.1** | Performance Requirements in Part A **A8** | 性能要求見 A8 |
+| **B3.1** | Applies to all buildings **except** single-family domestic buildings ≤ **3 main storeys** and highest floor ≤ **13 m** | 三層或以下、≤ 13 米單一家庭住宅除外 |
+| **B3.2** | Does not override MoE rules in other law: Caps. 447, 243, 279, 59, 95, 349, 573, 459 | 不凌駕其他法例 |
+| **B3.3** | Cases not covered: BA decides | 未涵蓋情況由監督決定 |
+| **B4.1** | Occupant capacity from **Table B1** (m² per person or seats / bedspaces). Notes: Labour Dept for specialised workplaces; BA for unlisted uses; **actual counting** accepted; karaoke per FEHD; pools by water area; columbaria include circulation; UC 8 rooms ≤ **100 m²** net = zero | 佔用人數按表 B1；機房 ≤ 100 平方米當作零人 |
+| **B5.1–B5.2** | Exits from every storey / compartment; every route leads directly to an **ultimate place of safety**; doors openable from inside **without a key** | 通往最終安全地方；毋須鑰匙 |
+| **B5.3** | Route ending on an open **podium**: defined by permanent features, leads on to safety, built as a protected exit (C12.4, Diagram B1) | 平台出口路線要求 |
+| **B5.4** | **Special hazard** area: protected lobby onto exit routes; normal-hazard routes not through special-hazard areas (restaurant kitchens are notifiable workplaces, see B13.6) | 特殊危險區須設防護門廊 |
+| **B5.5** | Lighting **≥ 30 lux** at floor, backed by emergency lighting | 照明 ≥ 30 勒克斯 |
+| **B5.6** | Discharge to a **private lane** only if paved, unobstructed and accepted by the BA | 私家巷須經接納 |
+| **B5.7** | Discharge next to another route / accommodation: enclosing walls return or project **≥ 450 mm** | 出口牆回轉 ≥ 450 毫米 |
+| **B5.8** | Door at a level drop set back ≥ the **route width**; single step clearly marked | 門須後移；單級須標示 |
+| **B5.9** | Headroom **≥ 2,000 mm**; side-wall sprinklers ≤ **90 mm** projection and ≤ **105 mm** headroom loss | 淨高 ≥ 2 米 |
+| **B5.10** | Directional and exit signs per the FSI Code | 方向及出口指示牌 |
+| **B5.11** | No roof access: notice "This staircase has no access to the roof 此樓梯不能通往天台", **≥ 50 mm** | 不通天台告示 |
+| **B6.1** | **One staircase** only if: ≤ **6 storeys** and top floor ≤ **17 m**; only domestic / office (G/F shop or carport allowed); ≤ 13 m: floors ≤ **250 m²**; > 13 m: floors ≤ **150 m²**, **protected lobby**, staircase to **roof**, roof refuge ≥ **0.5 m² / person**, roof to C12 | 單樓梯條件 |
+| **B7.1** | Rooms / compartments > **3 persons**: exit doors per **Table B2** | 房間出口門按表 B2 |
+| **B7.2** | Each door to an independent route; ≤ **200** persons may share one corridor / balcony with escape in two directions | ≤ 200 人可共用走廊 |
+| **B7.3** | Width over **150%** of the narrowest door not counted | 超過最窄門 1.5 倍不計 |
+| **B8.1** | ≥ **2 exit routes** per storey (or Table B2); one storey of a maisonette; 150% rule | 每層 ≥ 2 條出口路線 |
+| **B8.2** | Access between staircases **at least every 5 storeys** and at the roof / top floor (or at evenly spaced refuge floors), not through private premises; security released on alarm or power failure | 每 5 層可轉往另一樓梯 |
+| **B8.3** | Notice "ACCESSIBLE TO ANOTHER EXIT STAIRCASE 可通往其他逃生樓梯", **50 mm**, at **1,500 mm**, lit on two systems, white on green / green on white or black | 轉梯告示 |
+| **Table B2 notes** | > 3,000 persons: BA decides; door width = least clear frame width; staircase / corridor width between finishes, only handrails ≤ **90 mm** may project. Commentary: fire engineering for > 3,000 | 表 B2 附註 |
+| **B9.1** | Staircase walls continue at G/F to the discharge; openings via protected lobby; with ≥ 2 staircases WC / caretaker / fire control room may open off it; with ≥ 3, **one in three** may discharge through an entrance hall | 地面層出口分隔 |
+| **B9.2** | Shared G/F route width ≥ **½ G/F requirement + upper staircase + basement staircase** | 共用出口闊度相加 |
+| **B10.1–B10.2** | Two or more staircases: approached from **different directions** (dead ends per B11.2); doors **≥ 6 m** apart (Diagrams B2, B4) | 樓梯門相距 ≥ 6 米 |
+| **B10.3** | Must not pass through one staircase enclosure, lobby or landing to reach another | 不得穿過另一樓梯 |
+| **B10.4** | Doors not to reduce corridor width; **protected lobby** to every staircase unless: single-stair ≤ 13 m; ≥ 2 stairs and top floor ≤ **20 m**; **pressurised**; or **ventilated staircase**; lobby is common area | 防護門廊及豁免 |
+| **B10.5** | Ventilated staircase: **≥ 50%** of perimeter open (≥ 50% of that on the long face, ≥ 25% on others), balustrade to soffit, evenly spread, Part C | 通風樓梯 50% 周邊開敞 |
+| **B10.6** | Balcony approach: protected (Part C); staircase landing not part of it; doors and windows not reduce width (windows 180° or fanlights ≥ **2,000 mm**) | 露天走廊要求 |
+| **B11.1** | Travel distance as defined in Part A | 行走距離定義 |
+| **B11.2** | **Dead end**: UC 1–2: **24 m** in flat / room + **15 m** to staircase or choice point; UC 3: **12 m** (24 m balcony); others **18 m** (24 m balcony) | 盡頭路距離 |
+| **B11.3(a)** | **Max. travel**: UC 1–2 **24 m** from flat door (45 m balcony); UC 3 **30 m**; others **36 m** (45 m balcony) | 最大行走距離 |
+| **B11.3(b)** | Staircases / discharge points ≤ **48 m** apart along the route centreline | 樓梯相距 ≤ 48 米 |
+| **B11.4** | Flats on **3+ levels**: two levels with access to a protected exit | 三層複式兩層有出口 |
+| **B11.5** | **Inner room**: ≤ **30** persons; through one room only; dead-end limits; access room not special hazard and same occupier; **vision panel** or alarm (not for flats via living / kitchen) | 內房條件 |
+| **B11.6–B11.7** | Two exits / alternative directions only if lines to them diverge **≥ 30°** | 兩出口夾角 ≥ 30° |
+| **B12.1–B12.2** | Staircase **discharge value** ≥ occupant capacity of storeys above G/F, and separately of basements | 疏散量 ≥ 佔用人數 |
+| **B12.3–B12.5** | **Table B3** non-sprinklered, **Table B4** sprinklered (whole building; mixed and unseparated uses Table B3) | 表 B3／B4 |
+| **B12.6–B12.7** | Upward exit **× 0.8**; scissors staircase without intermediate landing **× 0.7** | 向上 0.8；剪刀梯 0.7 |
+| **B13.1** | Doors from rooms / storeys > **30** persons open **in the direction of exit**, or two-way with vision panel | 門向外開 |
+| **B13.2** | Locks openable from inside without a key, push devices not encased; **electric locks release** on fire alarm and power failure, with local manual override; not defeating B8.2 | 電子鎖自動釋放 |
+| **B13.3** | Doors on landings not reduce the landing radius below staircase width | 門不得減少平台 |
+| **B13.4** | Exit door ≥ **750 mm**; double leaf ≥ **600 mm** each; rebated stiles need a closing-order device | 出口門 ≥ 750 毫米 |
+| **B13.5** | Protected lobby doors: FRR **vision panel** | 門廊門視窗 |
+| **B13.6** | **Notifiable workplaces**: exit doors and rooms with ≥ **10** workers open **outward**; exit doors self-closing | 應呈報工場門向外開 |
+| **B13.7** | Staircase / lobby doors: no hold-open check action; "keep closed" notices both sides | 樓梯門不得常開 |
+| **B13.8** | Other self-closing exit doors may be **held open** by devices releasing on alarm, smoke detection (both sides) and power failure | 其他門可用磁扣 |
+| **B14.1–B14.2** | Staircases to Part C; straight flights, **2–16 risers**, tread ≥ **225 mm**, riser ≤ **175 mm**; UC 5a **280 / 150**; UC 5b **250 / 75–150** | 梯級尺寸 |
+| **B14.3–B14.4** | Landings ≥ staircase width; width per B8.1; headroom **≥ 2,000 mm** | 平台及淨高 |
+| **B14.5** | Max. width **1,800 mm**; wider ones split by a central handrail into **1,050–1,800 mm** sections | 闊度上限 1,800 毫米 |
+| **B14.6** | Handrails **both sides**, **850–1,100 mm**, ≤ **90 mm** projection, continuous per flight (round landings in UC 5a) | 兩邊扶手 |
+| **B15.1** | Ramps ≤ **1:12** | 斜道 ≤ 1:12 |
+| **B16.1** | Lift lobbies: unobstructed, unlocked access to an exit route, or an **intercom** to management with **2 h** backup | 升降機大堂須通出口或設對講機 |
+| **B17.1** | Basements ≥ **2 exits**, except ≤ **3,000 mm** deep, ≤ **150 m²**, WC / plant only | 地庫 ≥ 2 出口 |
+| **B17.2–B17.3** | Exit signs in basement staircases; upper-floor staircases **not continued** into basements | 上層樓梯不得直通地庫 |
+| **B17.4** | Upward-discharging basements: at least one exit per floor serving **that floor only**, discharging independently | 每層地庫一個獨立出口 |
+| **B17.5** | Protected lobby to basement staircases unless pressurised or independent (B17.4) | 地庫樓梯防護門廊 |
+| **B18.1** | **Refuge floors** for buildings > **25 storeys**: every **20** storeys (UC 6) or **25** (others); plant-only storeys may be excluded | 庇護層：25 層／工業 20 層 |
+| **B18.2** | No occupied or accessible plant (FS tanks and pumps OK); net refuge ≥ **50%** of floor GFA, headroom ≥ **2,300 mm**; min. dimension ≥ **1.5 × widest staircase**; separated (Part C); **open on two opposite sides**; staircases **discontinued** across the refuge area; **30 lux**; FSI as FSD requires; served only by **fireman's lift**, landing door locked until fireman's switch (Diagram B5) | 庇護層要求 |
+| **B18.3** | **Main roof** as refuge: flat; net area ≥ **50%** of a typical floor; staircases continue unobstructed; dimension rule; 30 lux. Commentary: no private stair onto refuge area; private roof fenced **1.5 m**; stairhood within 1.8 m FRR **-/60/60**; plant rooms **-/120/120** | 主天台作庇護層 |
+| **B18.4** | Signs: staircase no. and entrance sign at **1,500 mm**; "REFUGE FLOOR 庇護層" notice; directional signs; bilingual, lit, **50 mm**, green / white; entrance notice **25 mm** | 庇護層標誌 |
+| **B18.5** | Domestic / composite **25–40 storeys**: roof refuge (B18.3–B18.4) instead. Commentary: Part A aims (escape, rest, smoke-free stairs, staging) | 25–40 層住宅以天台代替 |
+| **B19.1–B19.2** | UC 5a extra rules B19–B27; temporary buildings B28. UC 5a ≤ **50** persons (total ≤ **150**, not basement) may share routes | 娛樂場所特別規定 |
+| **B20.1–B20.3** | Site with frontages to **two or more thoroughfares**, ≥ **½ of perimeter**, wide enough to disperse | 兩條或以上通道 |
+| **B20.4–B20.8** | One thoroughfare ≥ **7.3 m** (≤ 500); **12 m** (501–2,000); 12 m + **9 m** carriageway / 6 m footway (2,001–3,000); **15 m** + 9 m (3,001–5,000); > 5,000 BA decides | 通道闊度按人數 |
+| **B20.9** | ≤ 500 in a non-domestic (not polluting UC 6) building: **one** thoroughfare if an acceptable EVA and FSD agrees (commentary: reg. 49A modification) | ≤ 500 人可一條通道 |
+| **B21.1** | Below **12 m**: Table B2; at **12 m or above**: **Table B5** (wider routes) | 12 米以上用表 B5 |
+| **B21.2–B21.8** | Routes from every tier; two into **different thoroughfares**; tiers ≤ **35°**, headroom **3 m**; count standing and waiting space (cafés, foyers); direct to thoroughfares; **remote from the stage**; all doors available while public inside | 出口安排 |
+| **B22.1–B22.7** | Exit signs from auditorium, stage, dressing rooms; label non-exit doors; handpointers; **no "NO EXIT"** notices; exit notices lit on two systems, never dimmed | 出口指示 |
+| **B23.1–B23.3** | Staircases: no winders; **3–16 steps**; ≤ **2 flights** without a turn; turn if a flight > **12** steps; tread ≥ **280**, riser ≤ **150 mm**; chased newel walls; recesses guarded | 樓梯要求 |
+| **B24.1–B24.2** | Admission barriers open under exit pressure, not narrowing routes, strength per B(C)R 9; rope barriers with auto catches | 欄栅 |
+| **B25.1–B25.6** | No chains or padlocks; gangways per B27.6; **slip-resistant**; conspicuous nosings; guard rail **1,100 mm** where fall > **1,000 mm**; **30 lux** | 出口細節 |
+| **B26.1–B26.2** | Exit from **each side of the stage**, one to a thoroughfare; exit from the stage basement | 舞台出口 |
+| **B27.1** | Cinemas ≤ **2,000** aggregate in any storey of a non-domestic building / part | 電影院 ≤ 2,000 人 |
+| **B27.2** | Sharing exits: dedicated **smoke extraction**; FRR separation and doors; foyer separation (or smoke extraction); shared exits from common areas; tread change landing ≥ **2 × width** with "Beware of steps change" notice; widths per B21; separate from domestic routes; discharge to streets ≥ **4.5 m**, two different streets; **not in basement** | 共用出口條件 |
+| **B27.3** | Only **first basement**: short direct routes; independent discharge; other basement stairs sealed; one **FRS**; Table B5; **G/F foyer** 0.5 m² × ⅓ seats; protected lobby to lifts | 只可在地庫一層 |
+| **B27.4** | Shared exits sized on combined occupancy (commentary: wider upper floor carries down) | 共用出口合併計算 |
+| **B27.5** | Up to **half** the cinema exit width through adjoining areas, which need **0.5 m² / person** (pro-rata cinema share + foyer + Table B1) | 一半出口可經商場 |
+| **B27.6** | Rows ≤ **12 m** (one gangway) / **24 m** (two); seats per **Table B6**; ≥ **300 mm** clear; fixed seats; gangways per **Table B7** (1,100–1,500 mm); handgrips at steps; no projections | 座位及通道 |
+| **B27.7** | Projection room: exits per this Section (one if elevated serving one auditorium); independent ventilation | 放映室 |
+| **B27.8–B27.9** | Waiting space (reg. 49E): **0.5 m² × ⅙** of seats; rules may apply to other UC 5a | 等候地方 |
+| **B28.1–B28.7** | Temporary buildings: **300 mm** seat clearance, fixed or battened in 4s; gangways **1.2 m**, seat ≤ **3 m** from one; blocks ≤ **9 m** deep; exits **2.4 m** at gangway ends; extra stage exits; kept clear; doors open outward | 臨時建築物 |
+| **B29.1** | Persons with a disability as in the BFA manual. Not for: BFA-exempt buildings; sites ≤ **500 m²** with floors ≤ **200 m²** or ≤ **2 units**; ventilated stairs + balcony approach without fireman's lift; refuge floors; G/F | 殘疾人士條文豁免 |
+| **B30.1** | **Temporary refuge space** ≥ **1.5 × 1.5 m** (or 2 × 0.75 × 1.5 m) in the protected exit or fireman's lift lobby of every compartment, ≤ **60 m** away, not reducing widths (Diagram B6) | 臨時庇護處 1.5 × 1.5 米 |
+| **B30.2** | Accessible and unobstructed | 無障礙、無阻擋 |
+| **B30.3** | Door ≥ **850 mm** (or Table B2), handle **950–1,050 mm** (commentary: 950 mm good practice) | 門 ≥ 850 毫米 |
+| **B30.4** | **CCTV and intercom** to management, **1 h** backup, intercom **900–1,200 mm** | 閉路電視及對講機 |
+| **B30.5–B30.7** | Notice with accessibility symbol, **50 mm** text and **110 mm** symbol, on wall and floor; floor **demarcated** in contrasting colour; directional signs | 標誌及地面標示 |
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"
