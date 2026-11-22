@@ -66,7 +66,7 @@ keywords: ADM-1, practice notes in force, 有效作業備考, PNAP categorizatio
 |---|---|
 | Plan processing 圖則處理 | [ADM-2](adm-2.md) · [ADM-19](adm-19.md) |
 | All APP notes 條例應用 | [PNAP index](index.md) |
-| Joint practice notes 聯合作業備考 | [JPN index](../jpn/index.md) |
+| Joint practice notes 聯合作業備考 | [JPN 1](jpn-1.md) |
 | APSEC clarifications 委員會討論 | [APSEC](../apsec/index.md) |
 
 ## Related 相關文件 {#related}

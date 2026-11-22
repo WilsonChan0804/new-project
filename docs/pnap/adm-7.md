@@ -53,7 +53,7 @@ keywords: ADM-7, Geotechnical Information Unit, GIU, 岩土工程資料庫, grou
 |---|---|
 | Site investigation and foundations 地基 | [APP-18](app-18.md) · [ADM-15](adm-15.md) |
 | Scheduled Areas 附表地區 | [APP-61](app-61.md) |
-| Slopes and retaining walls 斜坡 | [APP-56](app-56.md) · [B(SFP&W)R](../regulations/bsfpwr-123c.md) |
+| Slopes and retaining walls 斜坡 | [APP-56](app-56.md) |
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>

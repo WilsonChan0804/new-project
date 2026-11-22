@@ -60,7 +60,7 @@ keywords: ADM-6, computer program, 電腦程式, prior acceptance, 預先接納,
 | Topic 主題 | Where 文件 |
 |---|---|
 | Structural submissions 結構呈交 | [ADM-8](adm-8.md) · [ADM-19](adm-19.md) |
-| Structural regulations 結構規例 | [B(C)R](../regulations/bcr-123b.md) |
+| Structural regulations 結構規例 | [B(C)R](../regulations/bcr-123q.md) |
 | Geotechnical design 岩土 | [APP-109](app-109.md) · [APP-134](app-134.md) |
 
 <!-- APSEC START -->

@@ -7,7 +7,10 @@ tags:
   - Site safety 地盤安全
   - Curtain wall & façade 幕牆及外牆
   - Plan submission & approval 呈交及審批
-keywords: minor amendments, 小修訂, substitute sheets, 替換圖紙, ESH revised submission, PNAP 190, amend in BD
+  - GFA 總樓面面積
+  - Foundation 地基
+summary: "Minor amendments to approvable plans and specified forms by agreement with BD: amending in BD, substitute sheets or forms within 2 working days, taking parts away, and ESH revised submissions."
+keywords: ADM-14, minor amendments, 輕微修訂, substitute sheets, 替換圖則, two working days, Revised Submission, ESH, s.16(1)(i), lease implications, Development Schedule
 ---
 
 # ADM-14 Minor Amendments to Plans and Specified Forms<br><small>圖則及指明表格的輕微修訂</small>
@@ -33,6 +36,31 @@ keywords: minor amendments, 小修訂, substitute sheets, 替換圖紙, ESH revi
 
     - 如圖則只須**輕微修訂**即可批准，可在屋宇署事先同意下修訂（第 1 段）。
     - (a) 與個案主任面談後**在屋宇署內修訂**並簽署確認，如有需要可帶同專門承建商（幕牆、地基、圍板）出席；(b) 遞交清楚註明並逐項簽署、已獲個案主任同意的**替換圖紙**（第 2 段）。修訂圖則或表格**未在協定日期前交回**，可被**拒絕**（第 16(1)(i)、16(1)(c) 條）（第 3 段）；影響**地契**的修訂（例如不計總樓面面積）須**多交一份**連發展附表轉交**地政總署**（第 4 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: plans BD considers **approvable subject to minor amendments**, with the **case officer's prior agreement**. Not for substantive redesign. 只限經個案主任同意的輕微修訂。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | AP / RSE / RGE may make minor amendments to plans and specified forms with BD's **prior agreement** | 須事先同意 |
+| 2(a) | **Amend in BD** after an interview; authenticate by signature; bring specialist contractors (glazing, curtain wall, foundation, hoarding) where needed | 在署內修改 |
+| 2(b) | **Substitute sheets** annotated and authenticated, within **2 working days**; substitute forms by agreement | 替換圖則 |
+| 2(c) | **Take away** part of a submission by written request with undertaking to return within **2 working days** | 取回修改 |
+| 2(d) | ESH: use **“Revised Submission”**, by agreed deadline | 電子呈交修訂 |
+| 3 | Not returned by agreed date: may be **disapproved** under BO **s.16(1)(i)** and/or **16(1)(c)** | 逾期可被拒批 |
+| 4 | Amendments with **lease** implications (e.g. GFA exclusion, hotel back-of-house): extra copy with **Development Schedule** for **LandsD**; ESH: direct referral to the DLO | 地契影響 |
+| 5 | Facility reviewed; may be modified or cancelled if abused | 可取消 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Statutory processing 審批 | [ADM-2](adm-2.md) · [BO s.16](../regulations/bo-part-2-building-works.md) |
+| E-submission 電子呈交 | [ADM-17](adm-17.md) |
+| Withdrawal and resubmission 撤回重交 | [ADM-22](adm-22.md) |
+| GFA and lease 樓面面積 | [GFA guide](../guides/gfa.md) |
 
 ## Key clauses 主要條文 {#key-clauses}
 

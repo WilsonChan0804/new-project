@@ -9,8 +9,10 @@ tags:
   - Plan submission & approval 呈交及審批
   - Statutory period 法定期限
   - Registration 註冊
-summary: "Simple structural works (Categories A–E) can be fast-tracked on the RSE's self-certification, with an independent checking engineer for C–E: 20 days via ESH."
-keywords: self-certification, 自行認證, fast track, 快速處理, simple structural works, 簡單結構工程, ICE, independent checking engineer, 獨立審核工程師, Category A B C D E
+  - Curtain wall & façade 幕牆及外牆
+  - Minor works 小型工程
+summary: "Self-certification by the RSE (plus an independent checking engineer for Categories C–E) lets simple structural works be processed in 20 days via ESH; eligibility criteria for Categories A–E."
+keywords: ADM-23, self-certification, 自行認證, simple structural works, 簡單結構工程, independent checking engineer, ICE, Category A B C D E, fast track, 20 days, ESH
 ---
 
 # ADM-23 Self-certification System for Plan Submission of Simple Structural Works<br><small>自行認證呈交簡單結構工程圖則</small>
@@ -38,6 +40,54 @@ keywords: self-certification, 自行認證, fast track, 快速處理, simple str
     - 為**簡單、風險較低的結構工程**設立**自行認證**快速處理制度，在確保安全下簡化發展程序（第 1 段）。
     - 按規模、複雜程度、施工方法及風險分為 **A 至 E** 五類；資格見**附錄 A**（第 2–3 段）。
     - 倚賴**註冊結構工程師自行認證**；**C 至 E 類**另須委任**獨立審核工程師**；不符準則的工程按一般程序處理（第 3 段）；註冊結構工程師（及獨立審核工程師）須連同 BA5／BA6 填寫**附錄 B1／B2 核對表**及**附錄 C 證明書**（第 4 段）；獨立審核工程師須為由**業主**委任、**沒有利益衝突**的註冊結構工程師（第 5 段）；屋宇署只作**精簡審查**（第 7 段）。處理時間：首次呈交經電子呈交平台 **20 天**（紙本 40 天），修訂 **10 天**（紙本 20 天）（第 8 段）；其後呈交須沿用自行認證（第 9 段）；屋宇署會**隨機抽查**（第 12 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: structural plans for **simple structural works** meeting Appendix A: conventional materials, no effect on overall stability, **no prestressing, no retaining structures**. Categories A–B: RSE only; **C–E: plus ICE**. 只限符合附錄 A 的簡單結構工程。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | Self-certification with fast track for simple, lower-risk structural works (first issue **Jun 2025**) | 目的 |
+| 2–3 | Five categories **A–E** (Appendix A); A–B rely on RSE, **C–E need an ICE** | 五類 |
+| 4 | RSE and ICE complete checklists **B1 / B2** and certificate **C**, plus BA5, BA6; plans per ADM-8; Appendix D statement | 核對表及證書 |
+| 5 | ICE: an **RSE**, appointed by the **owner**, **no conflict of interest**; notify with Appendix E on or before submission | 獨立審核工程師 |
+| 6 | ICE does the fundamental check (B2) and advises on eligibility | ICE 職責 |
+| 7 | BD's curtailed check: compatibility with supporting structure, **FRR**, design loads, codes, materials, fixing tests, **corrosion** | 署方精簡審查 |
+| 8 | Processing time below | 審批時間 |
+| 9–10 | Later resubmissions should also self-certify, otherwise normal B(A)R 30 time; may start self-certifying at a later resubmission | 後續呈交 |
+| 11 | Concurrent approval and consent per [ADM-19](adm-19.md) once building plans approved | 同時申請同意 |
+| 12 | Random **audit checks**; misrepresentation leads to action under the BO | 抽查 |
+
+### Processing time 審批時間 {#processing-time}
+
+| Submission 呈交類別 | Via ESH (days) | Other (days) |
+|---|---|---|
+| First submission / resubmission / major revision | **20** | 40 |
+| Amendment, incl. Type II works for fast-track consent | **10** | 20 |
+
+### Appendix A categories 附錄 A 類別 {#app-a-categories}
+
+| Category 類別 | Works 工程 | Limits 限制 |
+|---|---|---|
+| **A** (RSE) | Works in a new building of the same nature as a **minor works item**; or MW in an existing building submitted for approval instead of the MWCS | — |
+| **B** (RSE) | (a) metal / glass cladding, false ceilings, louvres, grilles; (b) green wall frames and modules; (c) metal / glass canopies; (d) frames for BSI; (e) frames for GRP tanks / BSI; (f) maintenance platforms | Top ≤ **100 m**; panel least dimension ≤ **2 m**, area ≤ **6 m²**; modules ≤ 0.75 m, projection ≤ 0.2 m, proprietary; canopy projection ≤ **2 m**; BSI ≤ 2 kPa and 2,000 kg (suspended) or ≤ 20 kPa and 9,000 kg (on grade); platform ≤ 2 kPa |
+| **C** (RSE + ICE) | **Stone cladding** in a new building | ≤ 100 m; panel ≤ 2 m and 6 m² |
+| **D** (RSE + ICE) | (a) single-storey refuse room, plant room, covered walkway; (b) detached / semi-detached **house ≤ 3 storeys** | Span ≤ **8 m**; height ≤ 5 m (a) or storey ≤ **4.5 m** (b); **no basement** |
+| **E** (RSE + ICE) | **Shallow foundation** for Category D | ≤ **300 kPa** (150 kPa below water table); not on soft clay or mud; ≤ **3 m** deep; not in Scheduled Areas 1, 3, 5; ground within 10 m downhill ≤ **15°**, no slope > 15°, no wall > 1.5 m |
+
+<small>Checklist B1 also asks for factors of safety: anchors ≥ 3; footing sliding, uplift, overturning ≥ 1.5 (wind / water), overturning ≥ 2 (other loads). 核對表安全系數。</small>
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Structural submissions 結構呈交 | [ADM-8](adm-8.md) |
+| Fast track and consent 快速審批 | [ADM-19](adm-19.md) |
+| Minor works 小型工程 | [B(MW)R](../regulations/bmwr-123n.md) · [APP-147](app-147.md) |
+| Cladding, curtain wall, precast 幕牆 | [APP-16](app-16.md) · [APP-37](app-37.md) · [APP-143](app-143.md) |
+| Materials 物料 | [ADM-20](adm-20.md) |
+| E-submission 電子呈交 | [ADM-17](adm-17.md) |
 
 ## Key clauses 主要條文 {#key-clauses}
 

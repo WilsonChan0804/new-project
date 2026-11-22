@@ -5,6 +5,12 @@ tags:
   - Site monitoring 地盤監察
   - Enforcement 執法
   - Site safety 地盤安全
+  - Site supervision 地盤監督
+  - Minor works 小型工程
+  - Geotechnical 岩土
+  - Demolition 拆卸
+summary: "BD's Site Monitoring Section inspects construction and demolition sites for safety and quality; officers' powers, what APs, RSEs and RGEs must do, and audit inspections of minor works."
+keywords: ADM-13, site monitoring, 地盤監察, Site Monitoring Section, SMS, site safety, 地盤安全, warrant card, precautionary measures, minor works audit
 ---
 
 # ADM-13 Monitoring for Site Safety and Quality<br><small>監察地盤的安全及質素</small>
@@ -31,6 +37,33 @@ tags:
 
     - 屋宇署**地盤監察組**有系統地巡查地盤，重點包括與圖則有重大偏差、物料有缺陷、預防措施不足、**欠缺監督**、偏離協定工序、工人經驗不足、不遵從條件或命令及違反條例（第 1 段）。
     - 會建議認可人士／註冊結構工程師／註冊岩土工程師採取糾正措施；制裁包括**命令（第 23、24A 條）**、檢控及紀律處分（第 2 段）；危險工程及階段的巡查較頻密（第 3 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all construction and **demolition** sites with approved plans; **minor works** under simplified requirements get **audit** safety inspections instead (para. 8). 所有建築及拆卸地盤。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | SMS inspects to enhance safety and quality; concerns: (a) **material deviation** from approved plans, (b) defective materials, (c) no precautionary measures, (d) **lack of supervision**, (e) departure from agreed sequence, (f) inexperienced workmen for hazardous operations, (g) non-compliance with conditions or orders | 關注事項 |
+| 2 | Remedies; **prosecution and disciplinary action** considered where appropriate | 補救及懲處 |
+| 3 | More frequent inspection of high-risk work: **demolition, deep excavation, percussion piling**, steep slopes, high retaining walls, works over public roads, heavy plant | 高風險工程 |
+| 4 | Officers carry a **warrant card**: enter premises and land, check compliance, test, open up and take samples | 授權證 |
+| 5 | AP / RSE / RGE to ensure: (a) access; (b) approved plans, sequences, conditions kept on site; (c) minor works plans on site; (d) explained (with translation); (e) supervision met; (f) **precautions against falling objects**; (g) contraventions **notified** promptly; (h) defects rectified | 須配合事項 |
+| 6 | Inspections for approval, consent, OP and material tests stay with **New Buildings Divisions** | 新建築部 |
+| 7 | Non-BO matters referred to other departments | 轉介 |
+| 8 | Minor works (simplified requirements): selected **audit site safety inspections** | 小型工程 |
+| 9–10 | Joint effort; tell clients and RCs; similar note to RCs | 共同責任 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Site auditing 地盤審查 | [ADM-18](adm-18.md) |
+| Site supervision 工地監督 | [APP-158](app-158.md) |
+| Demolition 拆卸 | [B(DW)R](../regulations/bdwr-123c.md) |
+| Minor works 小型工程 | [APP-147](app-147.md) · [B(MW)R](../regulations/bmwr-123n.md) |
+| Emergency contact 緊急電話 | [ADM-3](adm-3.md) |
 
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}

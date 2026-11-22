@@ -54,7 +54,7 @@ keywords: ADM-3, emergency, 緊急情況, out of office hours, 辦公時間以�
 | Topic 主題 | Where 文件 |
 |---|---|
 | Site safety and supervision 工地安全 | [APP-158](app-158.md) · [BO Part 1](../regulations/bo-part-1-registration.md) |
-| Hoardings and covered walkways 圍板 | [B(P)R](../regulations/bpr-123f.md) |
+| Hoardings and covered walkways 圍板 | [B(C)R](../regulations/bcr-123q.md) |
 | Change of address 更改地址 | [ADM-11](adm-11.md) |
 
 ---

@@ -94,7 +94,7 @@ keywords: ADM-8, structural design information, 結構設計資料, structural c
 | Pre-submission enquiry 預先諮詢 | [ADM-19](adm-19.md) |
 | Foundations and ELS 地基及挖掘 | [APP-18](app-18.md) · [ADM-15](adm-15.md) · [APP-57](app-57.md) |
 | Scheduled Areas 附表地區 | [APP-61](app-61.md) |
-| Structural regulations 結構規例 | [B(C)R](../regulations/bcr-123b.md) |
+| Structural regulations 結構規例 | [B(C)R](../regulations/bcr-123q.md) |
 | E-submission 電子呈交 | [ADM-17](adm-17.md) |
 
 <!-- APSEC START -->

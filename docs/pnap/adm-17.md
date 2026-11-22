@@ -7,8 +7,10 @@ tags:
   - Plan submission & approval 呈交及審批
   - Statutory period 法定期限
   - Minor works 小型工程
-summary: "Plans go through the Electronic Submission Hub with a personal digital certificate or iAM Smart; statutory periods count from the next day, and BA10 via ESH may be 1 day before works."
-keywords: ESH, Electronic Submission Hub, 電子呈交平台, e-submission, 電子呈交, digital certificate, 數碼證書, iAM Smart, 智方便, EFSS, e-Counter, RMWMS, PNAP 240, BA10
+  - Site supervision 地盤監督
+  - A&A works 改動及加建工程
+summary: "Electronic submissions under the BO via ESH, e-Counter, EFSS and RMWMS: legal basis (ETO), digital signatures, file limits, time counting, and BA10 one day before works."
+keywords: ADM-17, electronic submission, 電子呈交, Electronic Submission Hub, ESH, e-Counter, EFSS, RMWMS, digital signature, 數碼簽署, iAM Smart, ETO Cap. 553, BA10
 ---
 
 # ADM-17 Submission of Plans and Documents in Electronic Format<br><small>以電子方式呈交圖則及文件</small>
@@ -34,6 +36,44 @@ keywords: ESH, Electronic Submission Hub, 電子呈交平台, e-submission, 電�
 
     - 根據**《電子交易條例》（第 553 章）**，如電子紀錄可供日後查閱即符合「書面」要求；以認可證書支持的**數碼簽署**符合簽署要求（2000 年 4 月 7 日生效）（第 1–3 段）。
     - 屋宇署指定的系統包括接收圖則、文件及表格的**電子呈交平台**及第 4 段所列其他系統；**電子櫃枱**收取 **≤ 25 MB** 的呈交，**電子表格呈交系統**收取表格，**RMWMS** 收取小型工程表格（**2026 年 5 月 29 日**推出）（第 4–5 段）。須以**個人數碼證書**或**「智方便」**認證（第 6、8 段）；只需**一套**文件並附**電子圖則索引**（第 10–11 段）；經電子呈交平台呈交後**須繼續使用**（第 14 段）。法定時限與紙本相同，由**翌日**起計（第 18–19 段）。經平台呈交 **BA10** 可獲變通為動工前 **1 天**（第 20–21 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: any plan, document or specified form submitted electronically under the BO. ESH Stage 3 (from **30 Jun 2024**) covers all plan types including GBP and A&A. 所有電子呈交。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1–3 | **ETO Cap. 553**: electronic records and **digital signatures** (recognised certificate) equal paper; in force since 7 Apr 2000 | 法律基礎 |
+| 4 | Systems: (a) **ESH** esh.bd.gov.hk; (b) **e-Counter** receipt@bd.gov.hk ≤ **25 MB**; (c) **EFSS** forms; (d) **RMWMS** forms and documents | 指定系統 |
+| 5 | ESH Stages 1–3 launched 30 Jun 2022, 31 Mar 2023, **30 Jun 2024**; RMWMS 29 May 2026 | 推行日期 |
+| 6–7 | Identity by digital certificate (Postmaster General or recognised CA); failing the gazetted format **invalidates** the submission | 格式要求 |
+| 8–9 | ESH 24/7 with **personal digital certificate** or **iAM Smart**; ESH becomes your designated system for BD replies | 全天候 |
+| 10–11 | Only **one set** needed; BA may still ask for hard copies (B(A)R 11(2)); meet Appendix B; include an **electronic plan index** (Appendix C) | 一套即可 |
+| 13 | Electronic records must be available on site and producible (B(A)R 36, 40) | 工地紀錄 |
+| 14 | Once in ESH, later amendments **stay in ESH**; e-Workspace for team preparation | 後續亦用 ESH |
+| 15 | e-Counter: PDF ≤ A3 signed, or TIFF/JPEG ≤ 3 300 × 2 340 px at 200 dpi; total ≤ **25 MB** | e-Counter 規格 |
+| 16–17 | EFSS and RMWMS forms ([APP-60](app-60.md)), digitally signed, ≤ 25 MB; QR code on typed forms | 表格 |
+| 18–19 | Time counts from the **next day** regardless of holidays or warnings; e.g. Sat 23:59 → starts Sunday; Sun 00:00 → starts Monday | 計算法定期限 |
+| 20–21 | **BA10 via ESH**: modification of B(A)R 20(1) may allow notice **1 day** before works (condition: BA10 via ESH); TCP and supervision plan still **7 days** (B(A)R 20(2)–(3)) | BA10 一天前 |
+
+### ESH stages 推行階段 {#esh-stages}
+
+| Stage 階段 | Scope 範圍 |
+|---|---|
+| Stage 1 (30 Jun 2022) | Structural plans for works **above ground** not needing cross-departmental referral; no A&A |
+| Stage 2 (31 Mar 2023) | Hoarding, covered walkway, gantry; demolition; drainage; ELS; GI; foundations; site formation; all structural works; no A&A |
+| Stage 3 (30 Jun 2024) | **All plans** incl. GBP and A&A, and related applications |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Paper submissions 紙本 | [ADM-5](adm-5.md) |
+| Forms 表格 | [APP-60](app-60.md) |
+| Amendments 修訂 | [ADM-14](adm-14.md) |
+| CD/DVD documents 光碟 | [ADM-8](adm-8.md) |
+| Statutory periods 法定期限 | [ADM-2](adm-2.md) |
 
 ## Key clauses 主要條文 {#key-clauses}
 
