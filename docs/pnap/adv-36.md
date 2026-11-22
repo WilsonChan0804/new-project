@@ -9,7 +9,7 @@ tags:
   - Plan submission & approval 呈交及審批
   - Statutory period 法定期限
 summary: "BD offers early enquiries and in-principle acceptance of MiC systems within 45 days; neither is required for plan approval. GFA concessions are in JPN 8."
-keywords: MiC, modular integrated construction, 組裝合成, prefabricated, 預製, IPA, in-principle acceptance, 原則上接納, pre-acceptance, 預先認可, 45 days
+keywords: ADV-36, modular integrated construction, MiC, 組裝合成, in-principle acceptance, IPA, pre-acceptance 45 days, prefabricated modules, joints water tightness
 ---
 
 # ADV-36 Modular Integrated Construction<br><small>「組裝合成」建築法</small>
@@ -37,6 +37,29 @@ keywords: MiC, modular integrated construction, 組裝合成, prefabricated, 預
     - **組裝合成建築法**以在場外製造、已完成裝修及裝置的獨立立體組件建造，可提升安全、質素、速度並減少廢物；屋宇署提供**便利措施**（第 1 段）。
     - 應**及早**與**組件供應商**商討標準化、可建性、**運送到地盤**、監督及**呈交圖則時間表**等事宜（第 2 段）。
     - 應**及早**與組裝合成供應商商討標準化、運送、監督及呈交時間表（第 2 段）；特殊設計可用**預先查詢服務**（ADM-19），**45 天**內回覆（第 3 段）；組裝合成系統或原型可申請**原則上接納**（附錄 C 所列性能），**45 天**內決定，但**並非**批准圖則的先決條件（第 4–5 段）；樓面面積寬免見 **JPN 8**。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: projects using **MiC** volumetric modules. Pre-submission enquiry and IPA are **optional**, not prerequisites for GBP approval. 採用組裝合成的項目。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | MiC: off-site volumetric modules with finishes; streamlined BD measures | 定義 |
+| 2 | Engage MiC suppliers early; standardisation, delivery, supervision, submission programme; App. A design, App. B quality control | 早期參與 |
+| 3 | **Pre-submission enquiry** ([ADM-19](adm-19.md)): determination within **45 days** | 預先諮詢 |
+| 4 | **In-principle acceptance (IPA)** of systems / prototypes (App. C): **45 days**; respond to comments in **30 days** or abandoned; BD replies in 30 days | 原則上接納 |
+| 5 | Discuss before applying; IPA not a prerequisite for GBP approval | 非必要 |
+| App. A | Fire performance (equivalence or fire engineering); **joints and gaps** against water; structural codes; **stability**, temporary stability, **robustness** and tying | 設計要求 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| MiC joint practice note 聯合作業備考 | [JPN 8](jpn-8.md) |
+| Innovative materials 創新物料 | [ADV-38](adv-38.md) |
+| Precast concrete 預製 | [APP-143](app-143.md) |
+| Fire safety 消防 | [FS Code Part C](../codes/fsc-part-c-fire-resisting-construction.md) |
 
 ## Key clauses 主要條文 {#key-clauses}
 

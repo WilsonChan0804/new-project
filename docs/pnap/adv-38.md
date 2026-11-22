@@ -11,7 +11,7 @@ tags:
   - Minor works 小型工程
   - Drainage 排水
 summary: "Suppliers can get in-principle acceptance of innovative materials within 45 days, valid up to 5 years; it does not replace plan approval and consent."
-keywords: IBMT, innovative building materials, 創新建築物料, pre-acceptance, 預先認可, in-principle acceptance, 原則上接納, Central Data Bank, 中央資料庫, 45 days
+keywords: ADV-38, innovative building materials, 創新建築材料, IBMT, pre-acceptance application, in-principle acceptance, 45 days, Central Data Bank, BO s.42 modification
 ---
 
 # ADV-38 Innovative Building Materials and Technologies<br><small>創新建築材料與技術</small>
@@ -37,6 +37,30 @@ keywords: IBMT, innovative building materials, 創新建築物料, pre-acceptanc
 
     - 屋宇署的**預先認可機制**就**創新建築材料與技術**（建築、排水及結構，不包括岩土）作出精簡、非針對個別地盤的評估，確認符合條例標準（第 1 段）。
     - 供應商或製造商須委任**認可人士／註冊結構工程師／註冊岩土工程師**評估並提交**預先認可申請**，附附錄 A 表格及證明文件（第 2 段）。不適用於已載於作業備考、守則或**中央資料庫**的產品（第 3 段）；屋宇署於 **45 天**內發出原則上接納信或意見（第 4 段），信中列明**限制**及可否用於**小型工程**（第 5 段）；**不能代替**批准及同意，項目或須申請**第 42 條變通**（第 6 段）；有效期**最多 5 年**，屆滿須續期（第 8 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: suppliers or manufacturers of **building, drainage and structural** innovations (via an appointed AP / RSE / RGE). **Not** for geotechnical innovations (GEO), items already in PNAPs or codes (e.g. MiC), or items in the CDB. 建築、排水及結構創新物料。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | Pre-acceptance gives a curtailed assessment of **non-site-specific** matters | 目的 |
+| 2 | Supplier appoints AP / RSE / RGE; application: (a) form App. A; (b) **innovation brief**; (c) plans showing compliance or equivalence; (d) specifications, accredited tests, **ISO 9001** QA | 申請文件 |
+| 3 | Not for items in PNAPs / codes or in the [CDB](adm-20.md) | 不適用 |
+| 4 | Determination within **45 days**; comments answered in **30 days**; reply within 30 days; refusal needs a new application | 審批時間 |
+| 5 | IPA letter states requirements and limits, whether usable for **minor works**; published on BD website | 接納信 |
+| 6 | Not an exemption from approval and consent; apply for **s.42 modification** where needed; not a prerequisite | 仍須批准 |
+| 7 | Users ensure compliance with BO, approved plans and IPA limits | 使用責任 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Central Data Bank 中央資料庫 | [ADM-20](adm-20.md) |
+| MiC 組裝合成 | [ADV-36](adv-36.md) |
+| Pre-submission enquiry 預先諮詢 | [ADM-19](adm-19.md) |
+| Modifications 修改 | [BO Part 2](../regulations/bo-part-2-building-works.md) |
 
 ## Key clauses 主要條文 {#key-clauses}
 

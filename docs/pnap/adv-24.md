@@ -5,6 +5,8 @@ tags:
   - Floor drain 地台去水
   - Water seal 水封
   - Drainage 排水
+summary: "Floor drain traps in kitchens and bathrooms dry out; APs may divert waste water from a fitment to the floor drain trap, complying with B(SFP&W)R and avoiding back-flow."
+keywords: ADV-24, floor drain, 地台去水, water seal trap, 水封, U-trap, kitchen, bathroom, dried trap, B(SFP&W)R
 ---
 
 # ADV-24 Floor Drains in Kitchens and Bathrooms<br><small>廚房及浴室的地台去水渠</small>
@@ -30,6 +32,24 @@ tags:
 
     - 地台去水的**水封可能因蒸發而乾涸**（第 1 段）。
     - 可考慮**把衞生設備的廢水引入**地台去水 U 形隔氣彎管，須符合排水規例，排水暢順且**不會回流**（第 2 段）；變通按個別情況考慮（第 3 段）；根據 **APP-164**，很多情況下現已屬強制規定。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: kitchens and bathrooms with **floor drains** connected to a common stack. 有地台去水的廚房及浴室。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | Every fitment, including floor drains, needs a **water seal trap**; traps dry by evaporation | 水封 |
+| 2 | Consider **diverting waste water** from a fitment (e.g. basin) to the floor drain U-trap; comply with B(SFP&W)R, smooth flow, no **back-flow** | 引水補充 |
+| 3 | Modifications of the Regulations considered case by case | 修改規例 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Drainage regulations 排水規例 | [B(SFP&W)R](../regulations/bsfpwr-123i.md) |
+| Bathroom extractor fans 抽氣扇 | [ADV-25](adv-25.md) |
 
 ## Related 相關文件 {#related}
 

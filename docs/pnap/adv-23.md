@@ -7,6 +7,9 @@ tags:
   - Bio-engineering 生物工程
   - Geotechnical 岩土
   - Green & amenity features 環保及適意設施
+  - Maintenance access 維修通道
+summary: "Make man-made slopes and retaining walls look natural: landscape treatment and bio-engineering, shotcrete or chunam only as a last resort, protect healthy trees, tree inspection before site formation completion."
+keywords: ADV-23, landscape treatment, 美化, slopes, 斜坡, retaining walls, bio-engineering, shotcrete, chunam, 噴漿, tree preservation, GEO Publication 1/2000
 ---
 
 # ADV-23 Improvement of Visual Appearance and Landscape Treatment for Man-made Slopes and Retaining Walls<br><small>改善人造斜坡及擋土牆的視覺外貌及美化其景觀</small>
@@ -34,6 +37,31 @@ tags:
     - **噴漿及灰泥**斜坡外觀生硬且反射熱力；植物有助吸收二氧化碳及紓緩**市區熱島效應**（第 1 段）。
     - 應使人造斜坡盡量**自然**，並減少使用噴漿及灰泥（第 2 段）。
     - 建築事務監督強烈建議在新建、改善或維修斜坡及擋土牆時採用本**園景及生物工程**指引，並全程納入園景設計（第 3–4 段起）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: forming new slopes and retaining walls, and **upgrading or maintaining** existing ones (strong recommendation). 新建、改善及維修斜坡。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1–3 | Shotcrete / chunam slopes are unsightly and hot; aim for natural-looking slopes | 目的 |
+| 4 | Landscape treatment on all new or upgraded slopes; **shotcrete / chunam last resort** (App. A) | 綠化優先 |
+| 5 | Avoid or reduce large slopes by layout or unobtrusive retaining structures | 減少大斜坡 |
+| 6 | Protect **healthy trees**; tree rings if shotcreted; unobtrusive tree supports | 保護樹木 |
+| 7 | Inspection of vegetation by an experienced person; **report to BA before the site formation completion certificate** | 樹木檢查 |
+| 8 | Felling or transplanting only as last resort; lease and LAO PN 8/2002 | 伐樹 |
+| 9 | Maintenance in the **slope maintenance manual** | 維修 |
+| 10–11 | Geotechnical Manual for Slopes; **GEO Publication 1/2000**; Layman's Guide | 技術指引 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Slope registration 斜坡註冊 | [ADV-8](adv-8.md) |
+| Site formation 地盤平整 | [ADM-15](adm-15.md) |
+| Slopes 斜坡 | [APP-56](app-56.md) |
+| Greening 綠化 | [ADV-35](adv-35.md) |
 
 ## Related 相關文件 {#related}
 

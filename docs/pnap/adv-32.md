@@ -4,6 +4,11 @@ tags:
   - ADV series
   - Babycare room 育嬰間
   - Lactation room 哺集乳室
+  - Barrier free access 無障礙
+  - GFA 總樓面面積
+  - GFA concession 樓面面積寬免
+summary: "Guidelines for babycare rooms (at least 5 m² single, 12 m² multiple) and staff lactation rooms (at least 7.5 m², 2 users) in commercial buildings: location, layout, equipment and signs."
+keywords: ADV-32, babycare room, 育嬰室, lactation room, 哺乳室, commercial buildings, breastfeeding, nappy changing, 5 m2, 12 m2, 7.5 m2, GFA concession
 ---
 
 # ADV-32 Provision of Babycare Rooms and Lactation Rooms in Commercial Buildings<br><small>在商業樓宇提供育嬰間及哺集乳室</small>
@@ -31,6 +36,32 @@ tags:
     - 鼓勵在商業樓宇為公眾提供**育嬰間**及為員工提供**哺集乳室**（第 1 段）。
     - 育嬰間須有獨立的**換尿片區**及**餵哺區**，並設**私隱哺乳間**；建議**每幢樓宇最少一間**（第 2 段）。
     - 應設於**公用地方**並方便到達（地下有平路通道或經升降機），**與洗手間分開**，避免臭氣，並有清晰**指示牌**（第 3–4 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: private **commercial** buildings (encouraged); BB rooms for the public, lactation rooms for office staff. 商業樓宇（鼓勵）。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | Promote BB rooms and lactation rooms; guidelines | 目的 |
+| 2 | BB room: separate **nappy changing** and **feeding** areas with private breastfeeding; **≥ 1 per building** | 育嬰室 |
+| 3–4 | Common area, easy access, **away from toilets**, no foul air; directional signs (App. A symbol) | 位置及標誌 |
+| 5 | Single user **≥ 5 m²** (wheelchair); multiple **≥ 12 m²** with cubicles, one accessible (App. B layouts) | 面積 |
+| 6–8 | B(P)R 36 lighting / ventilation; comfortable temperature; safe finishes; **both sexes** may enter; lockable doors openable from outside; “Breastfeeding Area for Woman only” | 設計要求 |
+| 9 | Equipment: chairs, nappy table, sink with lever tap, hand drying, covered bin, side table, **power socket** | 設備 |
+| 10 | Optional: disinfectant, hooks, mirror, floor drain, alarm | 可選設備 |
+| 11–12 | Lactation room: **≥ 1 per office building**, in common areas, away from toilets | 哺乳室 |
+| 13 | **≥ 7.5 m²**, at least **2 users** in separate cubicles, one wheelchair accessible | 哺乳室面積 |
+| 14 ff. | Lighting, ventilation, signage, equipment | 其他要求 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| GFA concessions 樓面面積寬免 | [APP-151](app-151.md) · [GFA guide](../guides/gfa.md) |
+| Sanitary provision 衞生設備 | [ADV-28](adv-28.md) |
+| Barrier free access 無障礙 | [BFA 2008](../codes/bfa-2008.md) |
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Quotes from the official English and Chinese versions; refer to the PNAP for the definitive text.</small>

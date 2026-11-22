@@ -5,6 +5,10 @@ tags:
   - Extractor fan 抽氣扇
   - Bathroom 浴室
   - Domestic 住用
+  - Lighting & ventilation 照明及通風
+  - Drainage 排水
+summary: "After Amoy Gardens, size bathroom extractor fans sensibly (WHO: about 10.2 l/s per m²), keep plumbing seals intact, and provide air relief openings such as door undercuts."
+keywords: ADV-25, extractor fan, 抽氣扇, bathroom, lavatory, SARS, Amoy Gardens, negative pressure, 負壓, WHO 10.2 l/s, door undercut, water seal
 ---
 
 # ADV-25 Extractor Fans in Bathrooms and Lavatories in Domestic Buildings<br><small>安裝在住宅樓宇浴室及洗手間的抽氣扇</small>
@@ -32,6 +36,29 @@ tags:
     - **抽氣量過大**而補充新鮮空氣不足，被認為是**淘大花園沙士傳播**的可能因素之一（第 1 段）。
     - 須確保**喉管水封完好**；考慮進氣、氣流路線及抽氣扇容量（第 2 段）；世衞建議約**每平方米 10.2 公升／秒**（每平方呎 2 cfm），過大會產生**負壓**（第 3 段）。
     - 應設**補氣開口**，例如**門底留空**或百葉開口，並避免氣流短路（第 4 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: bathrooms and lavatories in **domestic** flats with extractor fans. 住宅浴室及廁所。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | Over-capacity fans with poor fresh air supply may have helped spread **SARS** at Amoy Gardens | 背景 |
+| 2 | Keep **plumbing seals** intact; consider air intake, flow path, fan capacity | 水封及氣流 |
+| 3 | WHO optimum: **2 cfm/ft² (10.2 l/s per m²)**; more risks negative pressure | 建議風量 |
+| 4 | Provide **air relief**: door undercut or louvred opening; avoid short-circuiting | 補氣口 |
+
+!!! example "Illustrative only 只作說明"
+    A 4 m² bathroom: 4 × 10.2 ≈ **41 l/s**. A much larger fan adds little comfort and can pull trap seals. 只作說明。
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Floor drains 地台去水 | [ADV-24](adv-24.md) |
+| Lighting and ventilation 採光及通風 | [Guide](../guides/lighting-ventilation.md) |
+| Drainage 排水 | [B(SFP&W)R](../regulations/bsfpwr-123i.md) |
 
 ## Related 相關文件 {#related}
 

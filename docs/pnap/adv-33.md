@@ -22,6 +22,8 @@ tags:
   - Means of access 救援通道
   - Sustainable building design 可持續建築設計
   - Refuse 垃圾
+summary: "Lists the essential information to show in GBP, structural and other plan submissions (Appendices A1–A2), and typical modifications and exemptions, so BD can process plans efficiently."
+keywords: ADV-33, essential information, 重要資料, plan submissions, general building plans, GBP checklist, Appendix A1, modifications exemptions, site parameters
 ---
 
 # ADV-33 Essential Information in Plan Submissions<br><small>呈交圖則包含的重要資料</small>
@@ -55,6 +57,9 @@ tags:
     - 附錄分三組：**A** = 一般建築圖則；**B** = 結構圖則（地基、挖掘及側向支撐、上蓋、幕牆、玻璃欄杆、金屬覆層、天花、支架）；**C** = 排水圖則。
     - 核對清單**只供自用**，**毋須**呈交屋宇署。
     - 一般建築圖則清單（A1）按**階段**標示每個項目：**I**（首套圖則，第 I 階段批准）、**II**（申請上蓋工程同意書前）、**III**（申請佔用許可證／臨時佔用許可證前）、**○**（須隨圖則附上的文件）。如押後提交第 II／III 階段資料，首套圖則須載有**聲明**，確認押後的 B(A)R 8(1) 資料會適時提交並獲批准。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: preparing **GBP and other statutory plan submissions**; missing essential information can lead to disapproval under BO s.16. 準備呈交圖則。
 
 ## Key table: the appendices 附錄一覽 {#key-table-the-appendices}
 
@@ -177,6 +182,16 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
     - **[Design for Safety](../apsec/2017.md#i201711177)** <small>ADF 5/2017, 17 Nov 2017</small><br>BD advised that focusing with AC platforms which were disregarded/exempted from SC/PR, if access for maintenance and repair (M&R) of AC units thereon including their replacement was through openings envisaged in the said circular letter and the AC platforms were also designed according to guidelines by CIC (on cast-in anchors …
 
 <!-- APSEC END -->
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Site parameters 地盤參數 | [ADM-21](adm-21.md) |
+| Plan processing 審批 | [ADM-2](adm-2.md) · [ADM-19](adm-19.md) |
+| Structural submissions 結構呈交 | [ADM-8](adm-8.md) |
+| BIM submissions BIM 呈交 | [ADV-34](adv-34.md) |
+| GFA 樓面面積 | [GFA guide](../guides/gfa.md) |
 
 ## Related 相關文件 {#related}
 
