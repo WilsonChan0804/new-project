@@ -6,6 +6,13 @@ tags:
   - Calculations 計算
   - Structural 結構
   - Concrete & materials 混凝土及物料
+  - Plan submission & approval 呈交及審批
+  - Geotechnical 岩土
+  - Foundation 地基
+  - Excavation & ELS 挖掘
+  - A&A works 改動及加建工程
+summary: "How to present structural plans and calculations: general notes, load notes, Part I (kept by BD) and Part II calculations, pre-submission enquiry, referral checklist and electronic or CD/DVD documents."
+keywords: ADM-8, structural design information, 結構設計資料, structural calculations, Part I calculations, Part II calculations, checklist, 核對表, referral, CD DVD, ESH
 ---
 
 # ADM-8 Structural Design Information<br><small>結構設計資料</small>
@@ -33,6 +40,62 @@ tags:
     - 結構圖則及計算須清晰編排：圖則須編索引並有標題及編號（第 1–2 段）。
     - 第一張圖：**一般註釋及物料規格**：守則、混凝土成分（煤灰、磨細礦渣）、鋼筋、等級及強度、**保護層、防銹及耐火要求**、施工及測試（第 3 段）。
     - 顯示總圖、平面、剖面、立面；在樓面圖註明**外加荷載**（不同荷載以圖示）；改動加建須顯示取自核准圖則的現有構件細節；有需要時附岩土資料（第 4–7 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: all **structural submissions** (new buildings, A&A, foundations, ELS, site formation, superstructure, curtain walls, signboards). Prepared by AP / RSE (RGE for geotechnical content). 所有結構圖則呈交。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1–2 | Plans and calculations clearly presented; drawings indexed, titled, numbered | 整理呈交 |
+| 3 | First drawing: general notes on (a) codes, (b) concrete materials incl. **PFA and GGBS**, (c) reinforcement, (d) grades and strengths, (e) **cover, corrosion, fire resistance**, (f) construction, workmanship, testing | 總說明 |
+| 4 | Key plans, floor/layout plans, sections, elevations with frame and member identification | 圖則內容 |
+| 5 | **Design imposed loads** (partitions, screeds, dynamic effects) on floor plans; variations shown diagrammatically | 設計荷載 |
+| 6 | A&A: show existing reinforcement / steelwork of affected members from approved plans | 加建改建 |
+| 7 | Foundations and geotechnical works: boreholes, adjacent buildings, streets, services, slopes, nullahs; **precautionary measures, monitoring and contingency plans** (CoP Foundations 2017, APP-18, APP-54, APP-57, ADM-15) | 岩土相關 |
+| 8 | Design imposed loads also on **general building plans** | 建築圖則 |
+| 9 | Calculations in two parts: **Part I kept by BD**; **Part II returned** after processing | 兩部分計算書 |
+| 10 | Part I: (a) synopsis and design basis; (b) **computer program** details (name, version, BD ref, limitations, input, output, interpretation); (c) **lateral load** design and equilibrium check; (d) dead and imposed loads, reactions; (e) **transfer members**; (f) cantilevered canopies, balconies; (g) geotechnical data and assessment of nearby structures | Part I 內容 |
+| 11 | Part II: detailed member design, usually computer output | Part II 內容 |
+| 12 | New theories, materials, forms: **pre-submission enquiry** ([ADM-19](adm-19.md)); otherwise one extra set for the **Technical Services Unit** | 預先諮詢 |
+| 13 | Complete and sign the **Appendix A checklist** for referrals | 核對表 |
+| 14 | **ESH** submission encouraged ([ADM-17](adm-17.md)) | 電子呈交 |
+| 15–16 | Until full ESH: Part II and Appendix B documents on **non-rewriteable CD/DVD**, PDF ≤ A3, indexed, searchable, ≥ **300 dpi**; not returned | 光碟格式 |
+
+### Appendix A referrals 附錄 A 轉介部門 {#app-a-referrals}
+
+| Proposal involves 涉及 | Referred to 轉介 | Sets (plans + documents) 套數 |
+|---|---|---|
+| Scheduled Areas No. 1, 2 or 4 | GEO | 1 + 1 |
+| Scheduled Area No. 3 / Railway Protection Areas | MTRCL; HyD Railway Division | 2 |
+| Scheduled Area No. 5 | GEO; DSD | 2 + 1 |
+| Designated Area of Northshore Lantau | GEO | 1 + 1 |
+| Slopes, retaining structures, deep excavation, disused tunnel | GEO | 1 + 1 |
+| Culvert, nullah, stream course | GEO; DSD; HyD | 3 |
+| Proposed railway routes | HyD Railway Development Office | 1 |
+| Chek Lap Kok Airport | CAD | 1 |
+| Structures in, over, under a street | LandsD; HyD | 2 |
+| Highway structures | HyD | 1 + 1 |
+| Sea walls | CEDD Port Works | 1 + 1 |
+| Reclamation, piers | MD; CEDD Port Works | 2 + 2 |
+| Public drainage | DSD | 1 |
+| Water mains | WSD | 1 |
+| Monuments, graded buildings, archaeological sites | AMO | 1 |
+| New theories, materials, sophisticated or unconventional design | BD Technical Services Unit | 1 + 1 |
+
+<small>Appendix B documents allowed on CD/DVD: material test reports, QA documents, QSP and audit reports, TCP T5 / DSS reports, GI and lab reports, method statements, condition surveys, appraisal reports, monitoring readings, site management documents. 可用光碟呈交的文件。</small>
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Computer programs 電腦程式 | [ADM-6](adm-6.md) |
+| Pre-submission enquiry 預先諮詢 | [ADM-19](adm-19.md) |
+| Foundations and ELS 地基及挖掘 | [APP-18](app-18.md) · [ADM-15](adm-15.md) · [APP-57](app-57.md) |
+| Scheduled Areas 附表地區 | [APP-61](app-61.md) |
+| Structural regulations 結構規例 | [B(C)R](../regulations/bcr-123b.md) |
+| E-submission 電子呈交 | [ADM-17](adm-17.md) |
 
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}

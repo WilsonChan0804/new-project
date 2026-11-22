@@ -3,6 +3,11 @@ tags:
   - PNAP
   - ADM series
   - PNAP index 作業備考索引
+  - Plan submission & approval 呈交及審批
+  - Geotechnical 岩土
+  - Occupation permit 佔用許可證
+summary: "How PNAPs are organised since Aug 2009 into ADM, APP and ADV series, renamed to include RGEs, issued bilingually and online only, with the list of notes in force."
+keywords: ADM-1, practice notes in force, 有效作業備考, PNAP categorization, ADM APP ADV, PNAP numbering, 舊編號, bilingual PNAP
 ---
 
 # ADM-1 Practice Notes in Force<br><small>有效的作業備考</small>
@@ -37,6 +42,32 @@ tags:
   ![How the practice note series fit together. 作業備考系列關係。](../assets/figures/diagrams/pnap-family.svg){ width="760" loading=lazy }
   <figcaption>How the practice note series fit together. 作業備考系列關係。 Summary diagram prepared for this site; check the source text for exact wording.</figcaption>
 </figure>
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: everyone using PNAPs: explains the ADM / APP / ADV numbering and old PNAP numbers. The 2009 list in Appendix A is **dated**; the live list is on the BD website and in this site's [PNAP index](index.md). 了解作業備考編號；附錄清單已過時。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | What it says 內容 | 中文要點 |
+|---|---|---|
+| 1 | BA issues PNAPs to AP, RSE, RGE on how the BO and regulations are applied and enforced, and on administrative and advisory matters | 發出目的 |
+| 2(a) | **Part A – Administration (ADM)**: BD general administration, plan approval, consent, OP procedures | 行政 |
+| 2(b) | **Part B – Application (APP)**: how the BA applies the BO, regulations and other Ordinances it administers, and related Ordinances for plan approval | 條例應用 |
+| 2(c) | **Part C – Advisory (ADV)**: general advice and good practice | 諮詢 |
+| 3 | From Aug 2009 all extant PNAPs re-issued with new numbers, **contents unchanged**; a note in one part may touch others | 重新編號、內容不變 |
+| 4 | Renamed *PNAP for AP, RSE and RGE* (RGE added by the 2004 amendment); abbreviation stays “PNAP” | 加入 RGE |
+| 5 | Chinese version published; new and revised PNAPs bilingual | 中英雙語 |
+| 6–7 | List in Appendix A, kept updated on the BD website; hard copies ceased; old “Index under” footnotes become redundant | 網上發布 |
+| 8 | Closing remarks | 結語 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Plan processing 圖則處理 | [ADM-2](adm-2.md) · [ADM-19](adm-19.md) |
+| All APP notes 條例應用 | [PNAP index](index.md) |
+| Joint practice notes 聯合作業備考 | [JPN index](../jpn/index.md) |
+| APSEC clarifications 委員會討論 | [APSEC](../apsec/index.md) |
 
 ## Related 相關文件 {#related}
 
