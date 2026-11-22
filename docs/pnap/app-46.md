@@ -6,6 +6,9 @@ tags:
   - Drainage 排水
   - Pollution 污染
   - Plumbing & sanitary 衞生設備
+  - Car park 停車場
+summary: "Industrial effluent: state processes on drainage plans, individual trapped outlets per factory unit (100 / 150 mm), and petrol interceptor details."
+keywords: APP-46, industrial effluent, 工業污水, flatted factory, 分層工廠大廈, petrol interceptor, 截油器, reg. 90, drainage
 ---
 
 # APP-46 Pollution from Industrial Buildings<br><small>工業建築物産生的污染－《建築物(衞生設備標準、水管裝置、排水工程及廁所)規例》第90條</small>
@@ -36,6 +39,42 @@ tags:
     - 未經處理的有害污水會損害河道、海洋、處理設施及渠管，並危及維修工人（第 2 段）。
     - 單一佔用的專門工廠會諮詢**環保署**；**分層工廠**則審核一般污水處理設施（第 3 段）。
     - 排水圖則須列明**建築物用途**並提供**污水處理**；資料不足可根據**第 16(1)(i) 條**拒批（第 4 段）；分層工廠須假設會排放須**處理**的污水（第 5 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: drainage plans of **industrial buildings**, especially multi-occupancy **"flatted factories"**, and areas for servicing and parking vehicles (petrol interceptors). 工業大廈排水圖，特別是分層工廠大廈。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Powers: **BO s.24, s.28** and **Cap. 123I reg. 90** to tackle water pollution from industrial effluent. 法定權力。 |
+| 2 | Stricter measures since 1987: untreated effluent pollutes streams and sea, damages treatment works, drains and sewers, overloads them, and endangers maintenance workers. 背景。 |
+| 3 | Single-occupancy specialised factories: **EPD** consulted; flatted factories: BD checks general effluent provisions. 諮詢環保署。 |
+| 4 | APs / RSEs should get the **intended industrial processes** from clients and state building uses on drainage plans; otherwise drainage proposals may be rejected under **BO s.16(1)(i)**. 須列明工序。 |
+| 5 | Flatted factories are assumed to need drainage **beyond reg. 5(1)**; not providing for future effluent may lead to disapproval under **reg. 90**. 須預留排放設施。 |
+| 6 | Each unit: individual **trapped outlet** to the **foul** system: **100 mm** (unit < 1,000 m²), **150 mm min.** (> 1,000 m²); foul stacks **150–300 mm**; **never to storm drains**; may be sealed at floor level until needed; occupants treat effluent before discharge. 每單位獨立出口。 |
+| 7 | **Petrol interceptor** for vehicle servicing and parking areas (standard detail below); seek consultants' advice for other effluents. 截油器。 |
+| 8 | A BD unit targets **illegal and polluting drains and factories**. 執法小組。 |
+
+<figure markdown>
+  ![Petrol interceptor plan](../assets/figures/app-46/petrol-interceptor-plan.jpg){ width="640" loading=lazy }
+  <figcaption>Detail of petrol interceptor, plan: three chambers ≥ 750 mm, 150 mm walls, 150 mm pipes, 75 mm CI vent. 截油器平面圖。Source: BD, PNAP APP-46.</figcaption>
+</figure>
+
+<figure markdown>
+  ![Petrol interceptor section](../assets/figures/app-46/petrol-interceptor-section.jpg){ width="640" loading=lazy }
+  <figcaption>Section A–A: 150 mm RC walls with 20 mm waterproof render, dip pipes, CI step irons at 300 mm. 截油器剖面圖。Source: BD, PNAP APP-46.</figcaption>
+</figure>
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Drainage regulations 排水規例 | [Cap. 123I](../regulations/bsfpwr-123i.md) (regs. 5, 90) |
+| Drainage design and access 排水設計 | [APP-93](app-93.md) · [ADM-19](adm-19.md) App. C (trade effluent to EPD) |
+| Car parks 停車場 | [APP-111](app-111.md) |
+| Industrial building conversions 工廈改裝 | [APP-150](app-150.md) |
+| Oil installations 油缸 | [APP-10](app-10.md) |
 
 ## Related 相關文件 {#related}
 

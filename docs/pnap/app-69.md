@@ -13,6 +13,8 @@ tags:
   - Barrier free access 無障礙
   - Lighting & ventilation 照明及通風
   - Plumbing & sanitary 衞生設備
+  - Means of access 救援通道
+  - Elderly-friendly 長者友善
 summary: "Historic buildings: monuments need a Cap. 53 permit; graded buildings are referred to CHO and AMO; pragmatic, performance-based modifications with Appendix A justifications."
 keywords: APP-69, historic building, 歷史建築, monument, 古蹟, graded building, 評級建築, AMO, 古物古蹟辦事處, adaptive re-use, 活化, heritage
 ---
