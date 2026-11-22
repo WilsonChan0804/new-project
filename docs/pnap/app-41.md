@@ -71,6 +71,28 @@ keywords: BFA, barrier free access, 無障礙, 暢通無阻, PNAP 112, B(P)R 72,
 | App. A | Ramp waiver in A&A works: **no control** over the area **+** co-owners' or OC's **consent refused or unobtainable** **+** ground beam **constraint**. |
 | App. B | ACBFA: chaired by **AD/NB1**; Commissioner for Rehabilitation, ArchSD, an AP, a lay member and **3 representatives** of people with physical, visual and hearing impairments. |
 
+## Worked example 例子 {#worked-example}
+
+!!! example "Illustrative only 只作說明"
+    **(A) New office building**: DDO s.84 applies, so BFA must be shown **on the GBP** (B(A)R 8(1)(m), para. 5) and comply **fully** with [B(P)R 72 and the Third Schedule](../regulations/bpr-71-73.md) (non-domestic: all parts). Design to the [DMUA 2026](../codes/dmua-2026.md) / [BFA 2008](../codes/bfa-2008.md): 1,200 mm route, 850 mm doors, accessible lift, accessible toilet per floor. 新辦公室須全面符合。
+
+    **(B) A&A to a 1975 office building** with **3 steps (450 mm)** at the only entrance: a 1:12 ramp needs **5.4 m** of run plus landings (DMUA 6.2). The tenant's works are inside a shop; the ramp would sit on the **common entrance** (no control), the OC **refuses consent**, and a **ground beam** below the steps prevents lowering the floor. All three App. A conditions are met, so the BA may **waive the ramp** case by case on ACBFA advice (paras. 6–8). Inside the shop all practical BFA measures still apply (para. 7). 舊樓改動：三項條件齊備可免斜道。
+
+    **(C) Single-family house, 12 m high**: DDO s.84 does **not** apply and reg. 72(4)(a) exempts it; at **15 m** both apply, and [reg. 73](../regulations/bpr-71-73.md) elderly-friendly Parts 2–3 too. 獨立屋按高度區分。
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Statutory requirements 法定要求 | [B(P)R 71–73](../regulations/bpr-71-73.md#clause-by-clause) · [B(A)R](../regulations/bar-123a.md) (reg. 8(1)(m)) · [Cap. 123I](../regulations/bsfpwr-123i.md) (accessible fitments) |
+| Design manuals 設計手冊 | [DMUA 2026](../codes/dmua-2026.md) · [BFA 2008](../codes/bfa-2008.md) · [BFA Divisions](../codes/bfa-div-4-9.md) |
+| Elderly-friendly design 長者友善 | [APP-175](app-175.md) · [BFA Ch. 5–6](../codes/bfa-ch-5-6.md) |
+| Accessible escape 無障礙逃生 | [FS Code B29–B30](../codes/fsc-part-b-means-of-escape.md#clause-by-clause) |
+| Accessible parking, lifts 泊車位、升降機 | [APP-111](app-111.md) · [APP-89](app-89.md) |
+| Care homes 院舍 | [APP-172](app-172.md) |
+| Overview 概覽 | [Accessibility guide](../guides/barrier-free-access.md) |
+| Modification procedure 變通程序 | [ADM-2](adm-2.md) · [ADV-33](adv-33.md) |
+
 ## Explanation 解釋 {#explanation}
 
 === "English"
