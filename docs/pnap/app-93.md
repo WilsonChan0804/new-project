@@ -14,6 +14,9 @@ tags:
   - Plant rooms 機房
   - Lighting & ventilation 照明及通風
   - Occupation permit 佔用許可證
+  - GFA concession 樓面面積寬免
+summary: "Drainage layout for maintainable common drains: pipe ducts, pipe wells, no pipes into the flat below, sunken slabs and concealed external pipes."
+keywords: APP-93, drainage, 排水, pipe duct, 管槽, pipe well, 管井, sunken slab, 下沉式樓板, CCTV, concealed pipes, 遮蔽喉管, common parts, 公用部分
 ---
 
 # APP-93 Planning and Design of Drainage Works<br><small>規劃及設計排水工程</small>
@@ -47,6 +50,24 @@ tags:
     - **單位的喉管不得伸入下層另一單位**（多戶住宅）；最底層須**獨立**接駁沙井（3 層以上建築物）；豎管底部彎位半徑 ≥ **4 倍豎管半徑**，絕不少於 **200 毫米**。
     - **總樓面面積**：管槽及管井可**豁免**（露天管井亦可豁免上蓋面積）；如同時容納**非必要機房**的喉管，須符合 APP-151 **先決條件及 10% 上限**（第 4 段）。
     - 以建築裝飾**遮蔽的外牆喉管**須由公用部分提供**閉路電視檢查**通道，並在公契中承諾（附錄 B）；部分遮蔽（通透度 ≥ **70%**、每層 **800 毫米**不遮蔽區、伸出 ≤ **500 毫米**）不視為遮蔽（附錄 C）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: drainage works for **new buildings**, imposed under **BO s.28(1)**; paras. 3(b) and 3(d) target **multi-occupancy domestic** buildings. 新建築物；第 3(b)、3(d) 段針對多伙住用建築物。
+
+    **Does not apply / partly 不適用或部分適用**: car-parking floors for para. 3(a); single-occupancy domestic buildings and single-family houses for 3(b), 3(d); buildings **≤ 3 storeys** for 3(e); non-domestic premises for 3(d) (encouraged only, para. 8). 停車層、獨立住宅、三層或以下、非住用。
+
+## Key clauses table 條文一覽 {#key-clauses-table}
+
+| Para. | What it says 內容 |
+|---|---|
+| 1 | Requirements for planning and design of drainage for **new buildings** |
+| 2 | Why: repairs to drains under shops, restaurant kitchens and separate flats mean entry, opening slabs, trenches, even closure |
+| 3(a)–(g) | Imposed under **BO s.28(1)** (see table below): drains in sterilised / common land; stacks in common parts; pipe duct and pipe well criteria; GFA exemption (and SC for open pipe wells); re-entrant access; **no pipes into the flat below**; separate lowest-floor pipework; soil pipe size; bends ≥ 4 × radius, ≥ 200 mm |
+| 4 | Ducts / wells also housing pipes for **non-mandatory / non-essential plant**: exemption subject to the [APP-151](app-151.md) pre-requisites and **10% cap** (fn. 1) |
+| 5 | Modification of **B(SSFPDWL)R 25(1)**: bath / shower to trap up to **750 mm** at **1:40**; sunken slabs not backfilled, else access panels / cleaning eyes for CCTV; warn owners floors may be opened |
+| 6 | External pipe maintenance per [ADV-14](adv-14.md); separate pipe **zones** for high-rise |
+| 7 | Pipes **enclosed by architectural features**: effective visual inspection from common parts, shown on drainage and building plans (Appendix B); partial screening per Appendix C is not "enclosed" |
+| 8 | Para. 3(d) encouraged for non-domestic premises |
 
 ## Key table: requirements under BO s.28(1) (para. 3) 規定（第 3 段） {#key-table-requirements-under-bo-s281-para-3-3}
 
@@ -96,6 +117,45 @@ tags:
     *Appendix C — Criteria for partial screening 部分遮蔽準則*
 
 <small>Source: PNAP APP-93 (May 2014), Buildings Department 資料來源：屋宇署</small>
+
+## Appendix B in detail: concealed external pipes 遮蔽外牆喉管詳細要求 {#appendix-b-detail}
+
+| Ref. | Requirement 要求 |
+|---|---|
+| App. B 1 | Feature and space to Annex 1 so a **CCTV imaging device** (camera on a cable, up to ~120 m) can inspect; schematics in Annex 2 |
+| App. B 2 | Owner / developer **undertaking** that the **DMC** will (a) require the manager to provide a suitable CCTV device and trained staff, or a service contract; (b) designate access and working space as **common parts**; (c) require **regular inspection** at the AP's proposed interval |
+| App. B 3 | No DMC: undertaking direct, carried into sale, assignment and tenancy documents |
+| App. B 4 | Before OP: CCTV inspection supervised by the AP or representative; submit the **Annex 3 certificate** with endorsed records (B(A)R 44, with Form **BA13**) |
+| Annex 1 1.1–1.3 | Projection **≤ 500 mm** (also the max. depth for GFA exemption); space wide enough for fixing and camera; vents **≥ 50%** of the space's plan area at top and bottom |
+| Annex 1 2.1–2.7 | Access openings **≥ 300 × 300 mm** from common parts, connected to a vertical passage, extra openings per cable length; within **600 mm** of floor / roof or with a cast-in anchor ([ADV-14](adv-14.md)); lowest level accessible; working space as common parts |
+| Annex 1 3.1–3.3 | Vertical passage unobstructed full height, **≥ 120 mm** clear in front of all pipes; extra passages ≥ 120 mm dia. so every pipe is seen |
+
+## Appendix C: partial screening 部分遮蔽準則 {#appendix-c-detail}
+
+1. Pipes exposed on **at least one side** and not hidden behind other services (Fig. A: the outermost pipe must not screen pipes behind). 至少一面外露。
+2. The exposed side may have screens of **≥ 70% permeability**, with an unscreened vertical zone **≥ 800 mm** high at each floor exposing pipes and branches (Fig. B). 通透度 ≥ 70%，每層留 800 毫米。
+3. No part projects more than **500 mm**. 伸出不超過 500 毫米。
+
+## Worked example 例子 {#worked-example}
+
+!!! example "Illustrative only 只作說明"
+    A 35-storey residential tower, 8 flats per floor.
+
+    - Internal soil and waste stacks in a **pipe well 1,300 × 1,600 mm** opening off the lift lobby: access doors (600 × 2,000, FRR as the enclosure) at G/F, 21/F and roof (≤ 21 storeys apart); grating platforms every 4 floors; cat ladder; top and bottom vents ≥ 0.21 m² (1/10 of 2.08 m²). Area **exempt from GFA**; it holds only drainage pipes, so the APP-151 cap does not apply (para. 4).
+    - Bathrooms on **sunken slabs**, void left unfilled; bath trap 700 mm at 1:40 under a **BA16** for B(SSFPDWL)R 25(1) (para. 5) so no pipe enters the flat below (3(d)).
+    - Ground-floor fitments at the stack-foot level on **separate pipework to a manhole** (3(e)); stack-foot bends radius ≥ 4 × stack radius.
+    - External pipes behind 450 mm deep fins: Appendix B route with DMC undertaking and CCTV certificate before OP.
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Drainage regulations (traps, falls, joints) 排水規例 | [B(SSFPDWL)R Cap. 123I](../regulations/bsfpwr-123i.md) |
+| BO s.28 drainage powers 條例第 28 條 | [BO Part 2](../regulations/bo-part-2-building-works.md) |
+| Pipe ducts GFA and cap 管槽面積及上限 | [APP-2](app-2.md) · [APP-151](app-151.md) · [ADM-2](adm-2.md) App. G |
+| External maintenance access 外部保養設施 | [ADV-14](adv-14.md) · [Access for External Maintenance Code](../codes/external-maintenance-2021.md) |
+| Fire-rated access doors 防火門 | [FS Code Part C](../codes/fsc-part-c-fire-resisting-construction.md) |
+| Inspection later in life 樓宇檢驗 | [MBIS / MWIS Code](../codes/mbis-mwis-2012.md) |
 
 ## Explanation 淺白解釋 {#explanation}
 
@@ -173,7 +233,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | [APP-151](app-151.md) items 21–22 | Pipe ducts: cap applies to non-essential 非必要管道計入上限 |
 | [APP-68](app-68.md) | Drainage of cantilevered structures 懸臂結構排水 |
 | [FS Code Part C](../codes/fsc-part-c-fire-resisting-construction.md) | Fire-rated access doors; shafts (C8) 防火檢修門；管槽 |
-| PNAP ADV-14 | Maintenance of external drainage pipes 外牆喉管保養 |
+| [ADV-14](adv-14.md) | Maintenance of external drainage pipes 外牆喉管保養 |
 | Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations | Drainage regulations 排水規例 |
 
 ---

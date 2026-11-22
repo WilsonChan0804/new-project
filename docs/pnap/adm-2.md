@@ -11,6 +11,15 @@ tags:
   - Site supervision 地盤監督
   - Geotechnical 岩土
   - Car park 停車場
+  - Balcony & utility platform 露台及工作平台
+  - Plant rooms 機房
+  - Lift 升降機
+  - Green & amenity features 環保及適意設施
+  - A&A works 改動及加建工程
+  - Minor works 小型工程
+  - Hotel 酒店
+summary: "How BD refers GBP to other departments, the day-45 check, BA16 modifications, BD 106 conditions and GFA concession publication."
+keywords: ADM-2, centralised processing, 中央處理, ESH, BA16, BD 106, day 45, disapproval, 拒批, GFA concession, 總樓面面積寬免, FSI, DLO, lease
 ---
 
 # ADM-2 Centralised Processing of Building Plans<br><small>中央處理建築圖則</small>
@@ -45,6 +54,11 @@ tags:
     - **更大確定性**（第 8 段）：新呈交圖則可在**第 45 天**查詢是否**基本上可接受**；如在 **60 天**內拒批，再次呈交時一般**不會加入新的拒批事項**。
     - **變通／豁免**：以 **BA16 表格**申請並附理據（附錄 E 列出常見申請所需資料）；條件載於 **BD 106 表格**，須在最終修訂圖則中顯示，竣工時提交**有效 BD 106 清單**（第 10–14 段）。
     - **總樓面面積寬免透明度**（第 16–18 段）：在圖則上列出**寬免面積明細**（附錄 G），並在申請佔用許可證時提交**摘要**（附錄 H）；屋宇署會在發出佔用許可證後**上載網站**。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: every submission of **general building plans, structural and geotechnical plans** to the BA (new buildings and A&A), paper or ESH. 所有呈交建築事務監督的圖則。
+
+    **Not covered here 不在此列**: what counts as a disapproval item ([ADM-19](adm-19.md)); number of sets for structural plans ([ADM-8](adm-8.md)); e-submission details ([ADM-17](adm-17.md), [APP-60](app-60.md)); minor works ([Minor works guide](../guides/minor-works.md)). 拒批理由、結構圖份數、電子呈交另見。
 
 ## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
@@ -82,7 +96,98 @@ tags:
 | **H** | **Summary of GFA concessions and car parks** for publication 寬免及停車位摘要 |
 | I | Tung Chung Cable Car Route Protection Area 東涌纜車路線保護區 |
 
-## Key clauses 主要條文 {#key-clauses}
+## Key clauses table 條文一覽 {#key-clauses-table}
+
+| Para. | What it says 內容 |
+|---|---|
+| 1 | Purpose: all interested departments consulted; comments collated by the BA **within the statutory time limits**; BD the focal point |
+| 2 | Submit via **ESH** (instant transmission to BD and departments). Paper: correct number of sets, **Appendix A** checklist; structural sets per [ADM-8](adm-8.md). Fn. 2: sites in the **Tung Chung Cable Car Route Protection Area** referred to Ngong Ping 360 (**Appendix I**) |
+| 3 | FSI proposals → **Appendix B**; lease matters → **Appendix C** |
+| 4 | Fundamental BO matters ([ADM-19](adm-19.md)) = **disapproval items**; other comments for information only; late comments by separate letter / ESH notice |
+| 5 | BA arbitrates BO matters; non-BO matters taken up directly with the department; BD convenes meetings on **conflicting departmental requirements** |
+| 6–7 | **Pre-submission enquiry** with a specific proposition; **presentation** (3-D model) for complicated sites after submission, at or with the CPO's agreement |
+| 8–9 | **Day 45**: ask if fundamentally acceptable, discuss non-conformities; disapproved within **60 days** → normally **no new items** on resubmission. Ask the BS/SE direct or via ESH |
+| 10–12 | Modification / exemption on **Form BA16** with special circumstances and justification (**Appendix D**); information for common cases (**Appendix E**) |
+| 13–14 | Conditions under BO s.42 on **Form BD 106**; must appear on final amendment plans before the B(A)R 25 certificate ([ADV-33](adv-33.md) App. A3 tables); **checklist of valid BD 106s** (**Appendix F**) |
+| 15 | Approval confers **no land title** nor lease waiver (BO s.14(2)); get adjoining owners' consent; comply with other authorities |
+| 16–18 | **GFA concession transparency**: breakdown on plans (**Appendix G**); summary with car park numbers with the OP application (**Appendix H**); published after OP |
+| 19 | Structural result letters (approval/consent) issued **electronically** even for paper submissions from **2 Jul 2024** (fn. 3: excludes A&A and railway consultation) |
+
+## Appendix B: FSI proposals 消防裝置建議 {#appendix-b-fsi}
+
+| Step 步驟 | Paper 紙本 | ESH 電子 |
+|---|---|---|
+| Referral 轉介 | Copy covering letter to FSD; **2 sets** (**3** if Cap. 502 / 572 / 636 applies) marked in bold at lower right | Upload to the FSD folder; no marking needed |
+| Acceptable 可接受 | Collect endorsed plans; pay the **Cap. 95C** fee for the s.16(1)(b)(ii) certificate | Fee notice via ESH; endorsed plans via ESH; certificate sent after payment |
+| Minor changes 小修改 | Amend at the FSD office | Via ESH "Discussion Forum" |
+| Not acceptable 不接受 | FSD keeps one set and writes with comments (not repeated by BD) | Letter via ESH |
+| Collection 領回 | Within **3 months** or the plans are disposed of | — |
+| FSD comments grouped as 意見分類 | (a) reasons for refusing the s.16(1)(b) certificate; (b) **strongly recommended** (else possible abatement under Cap. 95); (c) purely optional | |
+
+## Appendix C: lease matters 地契事宜 {#appendix-c-lease}
+
+- Paper: one set of GBP with the **Development Schedule**, coloured plans and **CAD or BIM** files on DVD (LAO PN 3/2018) referred to the **DLO**; more sets if Government accommodation is involved. 紙本附 CAD／BIM 檔轉介地政處。
+- ESH: upload with CAD / BIM files for direct referral to the DLO or **Building Plan Unit**. 電子呈交直接轉介。
+- Amendments: complete LandsD's **streamlined arrangement reply slip**. 修訂圖則填回條。
+- Enquiries go to the DLO / BPU / Railway Development Section directly; a **lease modification must precede** formal submission. 契約修訂須先於正式呈交。
+
+## Appendix E: common modifications and what to submit 常見變通 {#appendix-e}
+
+| Provision 條文 | Typical application 申請 | See 參閱 |
+|---|---|---|
+| BO s.31(1) | Projection over street; sheet piles under a street (only if departments do not object) | [BO Part 4](../regulations/bo-parts-4-9-schedules.md) |
+| B(P)R 20 & 21 | Exclude A/C boxes and platforms from PR / SC | [APP-19](app-19.md) |
+| B(P)R 20 | Excess SC for FS upgrading in existing buildings | [B(P)R 19–23](../regulations/bpr-18a-22.md) |
+| B(P)R 22 | Bonus PR / SC for dedication or surrender of land | [APP-108](app-108.md) |
+| B(P)R 23(3)(a) | Voids, covered landscape and recreation, screens, lift shafts, refuge floors, plant rooms, **green features (JPN 1, 2)**, **MiC (JPN 8)** | [APP-2](app-2.md) · [APP-42](app-42.md) · [JPN 2](jpn-2.md) · [JPN 8](jpn-8.md) |
+| B(P)R 23(3)(b) | Disregard essential / non-essential plant rooms, car parks | [APP-84](app-84.md) · [APP-151](app-151.md) · [APP-111](app-111.md) |
+| B(P)R 30, 36 | Reduced natural lighting and ventilation | [APP-130](app-130.md) |
+| B(P)R 35A, 40 | Gas aperture omission; no natural light to podium staircases | [B(P)R 24–37](../regulations/bpr-24-37.md) · [B(P)R 39–49E](../regulations/bpr-39-49e.md) |
+| B(SSFPDWL)R 48, 50(3) | Lesser drain falls; flexible joints | [Cap. 123I](../regulations/bsfpwr-123i.md) |
+| B(C)R 9A | Deviation from the Code for Building Works | [B(C)R](../regulations/bcr-123q.md) |
+
+## Appendix G: where each GFA concession appears 寬免須列明的位置 {#appendix-g-table}
+
+| Item (Appendix G) | On plans when applying | On final amendment plans before OP | Subject to 10% cap ([APP-151](app-151.md)) |
+|---|:-:|:-:|:-:|
+| 1 Car parks / loading (not PTT) | | ✓ | |
+| 2.1 Mandatory plant rooms with area limits (lift machine, TBE, refuse) | ✓ | ✓ | |
+| 2.2 Mandatory plant rooms without limits (FSI, meter, transformer, tanks) | | ✓ | |
+| 2.3 Non-mandatory plant (A/C plant, AHU) | ✓ | ✓ | ✓ |
+| 3–4 Hotel drop-off; hotel supporting facilities | ✓ (4) | ✓ | |
+| 5–6 Balcony; wider corridor / lift lobby | ✓ | ✓ | ✓ |
+| 7–10 Sky garden, podium garden, acoustic fin, wing wall | ✓ | ✓ | |
+| 11–12 Prefab external wall; utility platform | ✓ | ✓ | ✓ |
+| 14–15, 17–20, 22, 25–26 Amenity features, recreation, larger lift shaft, voids in duplex | ✓ | ✓ | ✓ |
+| 16, 23–24, 27 Covered landscape, eco plant, high headroom, sunshades | ✓ | ✓ | |
+| 21, 28 Ducts for mandatory plant; minor projections | | ✓ | |
+
+<small>Summarised from Appendix G; full scanned pages below. 摘自附錄 G。</small>
+
+## Worked example 例子 {#worked-example}
+
+!!! example "Illustrative only 只作說明"
+    A residential GBP submitted via ESH on day 0 with 3 BA16s (APP-19 A/C platforms, JPN 1 balconies, APP-130 lighting).
+
+    1. ESH refers it at once to FSD, PlanD, LandsD (with BIM file). 即時轉介。
+    2. **Day 45**: the AP asks the BS; told the balcony calculation is a fundamental non-conformity and discusses it. 第 45 天查詢。
+    3. **Day 58**: disapproval letter: balcony item as disapproval item ([ADM-19](adm-19.md)); FSD "strongly recommended" items and LandsD comments listed for information. 拒批。
+    4. Resubmission: the BA will not normally add new disapproval items. Approved with **BD 106** conditions, later shown on the final amendment plans; at completion submit the **BD 106 checklist** and the **Appendix H** GFA concession summary with the OP application. 再呈交及竣工。
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Stage 階段 | Documents 文件 |
+|---|---|
+| Statutory periods (60 / 90 days) 法定期限 | [BO Part 3](../regulations/bo-part-2-building-works.md) · [Plan submission guide](../guides/submission-to-op.md) |
+| Disapproval grounds 拒批理由 | [ADM-19](adm-19.md) |
+| Electronic submission 電子呈交 | [ADM-17](adm-17.md) · [APP-60](app-60.md) |
+| Structural plan sets 結構圖 | [ADM-8](adm-8.md) |
+| Modification checklists and tables 變通清單 | [ADV-33](adv-33.md) |
+| GFA concessions and 10% cap 寬免上限 | [APP-151](app-151.md) · [JPN 1](jpn-1.md) · [JPN 2](jpn-2.md) |
+| Fees 費用 | [APP-55](app-55.md) |
+| Geotechnical reports 岩土報告 | [APP-25](app-25.md) |
+
+## Key quotes 原文摘錄 {#key-clauses}
 
 !!! quote "Para. 8 — Greater certainty 更大確定性"
     To assist AP, RSE and RGE in achieving greater certainty in planning building projects, BD operates a set of procedures containing the following features: (a) On the 45th day of a submission of new building plans, AP/RSE/RGE may enquire and expect to know whether the submission is fundamentally acceptable. He may also request to discuss non-conformities identified prior to the issue of disapproval letter; and (b) Where a submission of plans is considered fundamentally unacceptable and disapproval items notified in writing within the statutory period of 60 days, new disapproval items will not, in normal circumstances, be added to the said proposal for subsequent resubmission of plans.

@@ -476,3 +476,10 @@ D['jpn4-regimes'] = ('pnap/jpn-4.md',
   C --> F
   F --> G["PlanD checks OZP / approval<br/>規劃署 (para. 7)"]
   F --> H["LandsD checks lease GFA<br/>(use-specific GFA by LandsD)<br/>地政總署 (para. 8)"]''')
+
+D['app156-timeline'] = ('pnap/app-156.md',
+ 'APP-156: what to submit at each stage. 各階段須呈交的文件。',
+'''flowchart LR
+  A["General building plans<br/>RTTV / OTTV statement<br/>一般建築圖則"] --> B["Before consent to commence<br/>Summary Sheets A / B<br/>動工同意前"]
+  B --> C["Before Occupation Permit<br/>finalised values on GBP and<br/>Energy Efficiency Report<br/>入伙紙前"]
+  C --> D["After OP: BD publishes<br/>RTTV / OTTV values<br/>屋宇署公布數值"]''')

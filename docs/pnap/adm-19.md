@@ -26,6 +26,11 @@ tags:
   - Maintenance access 維修通道
   - Excavation & ELS 挖掘
   - Demolition 拆卸
+  - Site supervision 地盤監督
+  - GFA 總樓面面積
+  - Concrete & materials 混凝土及物料
+summary: "BD curtailed checks: fundamental issues per plan type, staged GBP, minor amendments, concurrent approval and consent, and fast tracks."
+keywords: ADM-19, curtailed check, 簡化審核, fundamental issues, 根本性事項, staged GBP, 分階段, minor amendments, 輕微修訂, BA8A, fast track, 快速處理, letter of assurance, 保證函, concept drawings
 ---
 
 # ADM-19 Building Approval Process<br><small>建築圖則批准程序</small>
@@ -61,6 +66,34 @@ tags:
     - 取得首次動工同意書後的**輕微修訂**，如獲**變通 B(A)R 第 33(1) 條**，毋須事先批准（**附錄 G** 所列項目除外），但須在申請佔用許可證前取得批准（第 28–31 段）。
     - 改動加建、排水及次要結構工程可**同時申請批准及動工同意書**；簡單改動加建、兩層倉庫及幕牆／覆蓋層維修可**在 30 天內快速處理**（第 33–39 段）；須提交**概念圖則**及計算樓面面積的**電子檔／BIM**（第 22–27 段）。
 
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: every plan submission under the BO (GBP, superstructure, drainage, demolition, site formation, foundation, ELS) and the BD services around it. **Staged GBP** (paras. 14–19): new buildings whose first GBP or major revision is submitted **after 31 Mar 2023** (not A&A). 所有圖則；分階段審批適用於 2023 年 3 月 31 日後首次呈交的新建築物。
+
+    **Not here 不在此列**: referral and BA16 procedure ([ADM-2](adm-2.md)); statutory periods ([BO Part 2](../regulations/bo-part-2-building-works.md), [B(A)R](../regulations/bar-123a.md)); minor works ([APP-147](app-147.md)). 轉介程序、法定期限、小型工程另見。
+
+## Key clauses table 條文一覽 {#key-clauses-table}
+
+| Para. | What it says 內容 |
+|---|---|
+| 1 | BD's "totally positive attitude": facilitate, not find faults, while ensuring safety and health |
+| 2–3 | **GBP prevails** over other plan types; approval of other plans is not approval of layout. Before completion / OP all amended GBP, structural, drainage and site formation plans must **tally** |
+| 4–5 | **Letter of assurance** on written enquiry normally within **45 days**; pre-submission conferences with departments; consult early on new structural theory, materials, unconventional methods |
+| 6–10 | **Curtailed check** of fundamental issues only: GBP (App. A), superstructure master framing (App. B, B1; fn. 1 secondary elements included), drainage by **random sample** (App. C, fn. 2), demolition / SF / foundation / ELS (App. D) |
+| 11 | Checklists and sample tables in [ADV-33](adv-33.md) |
+| 12–13 | Non-fundamental issues not checked or raised, but remain the AP/RSE/RGE's duty before works start; **random audit checks**; action against blatant or repeated contraventions |
+| 14–20 | **Staged GBP** Stages I / II / III (ADV-33 App. A1); B(A)R 30(3)(c) period for deferred items unless a major revision; BA may refuse consent (s.16(3)(a)) or OP (s.21(6)(a)) if required plans not approved; Stage II marking "This set of plans is submitted for Stage II Curtailed Check"; early Stage II check on request for simple, GIC, short-covenant or advanced projects |
+| 21 | Enquiry service, answer normally within **4 weeks** |
+| 22 | **Concept drawings** (App. E) with SC, GFA, fire strategy, BFA |
+| 23–25 | Digital files for computer area calculations (AutoCAD, MicroStation, Revit, ArchiCAD; App. F; BIM guidelines, [ADV-34](adv-34.md)); paper may be approved ahead of the file under [ADM-14](adm-14.md); consolidated file at OP / completion |
+| 26–27 | Submitting a **BIM model** permits LandsD and PlanD to extract 3D data |
+| 28–32 | **Minor amendments** without prior approval after first consent, by **modification of B(A)R 33(1)** (s.42), except **App. G** items; documented in the site office; approved before completion / OP; fn. 3: superstructure permit covers secondary structural elements |
+| 33–34 | **Concurrent approval and consent** for A&A, drainage and secondary structural works: no foundations (spread footing ≤ **4.5 m** OK), no significant geotechnical content or precautionary works, full B(A)R 8 documents, consent documents (APP-117; APP-37 certificates may follow before OP) |
+| 35 | **Simple A&A fast track: 30 days** with AP/RSE certificate (App. H), no structure, only FSD referral |
+| 36 | **Two-storey warehouse** fast track (App. I) |
+| 37–38 | Curtain wall, window wall, cladding repairs: minor works (fn. 5 items 1.48, 1.60, 1.61, 2.8, 2.48, 3.6, 3.31) or **30-day** fast track if the structural system is unchanged (App. J; APP-16, 37, 117) |
+| 39 | **Form BA8A**: consent effective from approval date; not processed until plans approved; otherwise the **28-day** consent period (B(A)R 32(3)) runs from approval |
+| 40–43 | Fire dampers, A/C plant frames, large metal ducts (MW items 1.46, 1.51, 2.42, 2.46): show on amended GBP before OP / completion (consent after **31 Aug 2021**) unless done as minor works; 30-day structural fast track; or include in first submission (ADV-33 App. A4, B11) |
+
 ## Workflow / timeline 流程及時間表 {#workflow-timeline}
 
 <figure markdown>
@@ -95,7 +128,65 @@ tags:
 | **Minor amendments** 輕微修訂 | No prior approval after first consent, with B(A)R 33(1) modified, **except Appendix G items**; documented in the site office; approved before OP 輕微修訂毋須事先批准（附錄 G 除外） | 28–31 |
 | Fire dampers, A/C frames, large ducts 防火閘、冷氣支架、大型風管 | Minor works items, or show on amended GBP; 30-day fast track for structural plans 小型工程或修訂圖則 | 40–43 |
 
-## Key clause 主要條文 {#key-clause}
+## Appendices B–D: fundamental issues of other plans 其他圖則的根本性事項 {#appendices-b-d}
+
+| Plan type 圖則 | BD checks 審核項目 |
+|---|---|
+| **Superstructure** (App. B, B1 checklist in Part I of calcs per [ADM-8](adm-8.md)) | Structural system; compatibility (wind model, layout vs GBP, loads vs foundations); **stability** (B(C)R 15, lateral deflection d/H, anchorage, curtain wall supports, robustness esp. precast); **FRR** ([FS Code](../codes/fire-safety-code-2011.md)); floor, lateral, impact and dynamic loads (B(C)R 17); design codes ([Concrete](../codes/concrete-2013.md), [Steel](../codes/steel-2011.md)), method, programs; materials (concrete > C45 stated, rebar CS2, tendons, steel, aluminium, **glass**) |
+| **Drainage** (App. C, random sample) | Disposal: public / private sewers (DSD), STP / septic tank (EPD), trade effluent; replenishing traps ([APP-164](app-164.md)). Layout: flow, **no foul ↔ surface cross-connection**, reclaimed land (Foundations Code 2.4), drains out of slopes ([APP-76](app-76.md)), terminal manholes. Access: common drains in common parts ([APP-93](app-93.md)); no pipes cast in structure ([APP-105](app-105.md)). Other: wells ([APP-4](app-4.md)), gathering grounds, fish culture zones, railway zones, A/C condensate ([APP-112](app-112.md)) |
+| **Demolition** (App. D 1) | Precautions (hoarding, covered walkway, propping); codes; appraisal, method, sequence, mechanical plant; stability during and after; effects on neighbours ([Demolition Code](../codes/demolition-2004.md)) |
+| **Site formation / ELS** (App. D 2) | Codes; geotechnical parameters; margins of safety; structural adequacy; effects incl. settlement and drawdown; buildability; precautions |
+| **Foundation / other structural** (App. D 3) | As above plus design loadings ([Foundations Code](../codes/foundations-2017.md)) |
+
+## Appendix G: amendments that are NOT minor 不屬輕微修訂的修訂 {#appendix-g}
+
+| Works 工程 | Not minor if the amendment… 以下情況不屬輕微 |
+|---|---|
+| Building / A&A | Major or localised major revision ([APP-55](app-55.md)); affects fundamental issues; slope / retaining wall / neighbour stability; needs a **BA16**; breaches the OZP or TPB scheme; works **outside the lot** |
+| Superstructure | Affects overall stability; fundamental issues; needs a BA16 |
+| Drainage | Relayout from a major revision; change of disposal or **public sewer connection**; stability concerns; BA16; excavation **> 3 m**; outside the lot |
+| **Foundation** | Changes design assumptions, method, material, tolerances, monitoring, founding stratum or capacity; breaches **railway** ([APP-24](app-24.md)) or **DSD tunnel** ([APP-62](app-62.md)) limits; below the bulk excavation limit in Scheduled Area 1; H-piles to rock steeper than **25°**; piles on slopes; foundation clearance to boundary; **coupler Type 1 ↔ 2**; pile moved **> 5 m**; pile number increase **> 5%** (**> 15%** for LDBP, rounded up) |
+| Pile cap | Design assumptions; below bulk excavation limit; railway / tunnel limits; changes ELS; couplers |
+| ELS | Design, method, retaining elements, sequence, **strut pre-loading**; bulk excavation limit; railway / tunnel; strut layout or member reduction (except local tweaks without loss of stiffness) |
+| Site formation | Design, method, monitoring; excavation limit; railway / tunnel; level change **> 1 m**; affects ELS or neighbours; retained height change **> 1 m**; couplers |
+
+!!! example "Pile count rule (App. G fn. 1) 樁數計算"
+    15 non-LDBP approved → 15 × 5% = 0.75 → round up → at most **1** extra pile as a minor amendment. 10 LDBP → 10 × 15% = 1.5 → at most **2**.
+
+## Appendices E, I and J 附錄 E、I、J {#appendices-e-i-j}
+
+| Appendix | Content 內容 |
+|---|---|
+| E Concept drawings 概念圖 | SC and GFA (accountable, non-accountable, exempted), fire strategy (MoE, MoA, FRC), BFA; A2 / A3 / A4; BD's colour scheme and symbols |
+| I Two-storey warehouse 兩層倉庫 | Via the Efficiency Office **One Stop Centre** or BD direct with all plans and consent; general storage, ≤ 2 storeys, no basement; Class A/B/C site with EVA (B(P)R 41D); compartment ≤ **28,000 m³** and **10,500 m²**; processed in **45 days**; bearing stratum inspection within **1 working day** |
+| J Curtain wall repairs 幕牆維修 | Supervision plan; for tempered glass the heat-soak quality supervision plan and QA scheme ([APP-37](app-37.md)); OTTV report if thermally inferior ([APP-67](app-67.md), [APP-156](app-156.md)); justification for changed materials; fn. 6: like-for-like components need no structural calcs |
+
+## Worked example 例子 {#worked-example}
+
+!!! example "Illustrative only 只作說明"
+    A new office tower, first GBP in 2026.
+
+    1. Letter of assurance on a refuge floor arrangement (≈ 45 days). 保證函。
+    2. **Stage I** GBP: density, MoE, MoA, FRC curtailed check (App. A); Stage II / III items (ADV-33 App. A1) deferred and not checked. 第 I 階段。
+    3. Approval condition (B(A)R 10): submit Stage II plans; an amendment marked "Stage II Curtailed Check" approved before superstructure consent. 第 II 階段。
+    4. B(A)R 33(1) modification after first foundation consent: 4 bored piles relocated 2 m = minor, recorded on site; a 6th extra pile on 30 non-LDBP (> 5% = 2) needs prior approval. 輕微修訂。
+    5. Later A&A shopfront: concurrent approval and consent with **BA8A**; simple A&A fast track **30 days**. 同時申請。
+    6. **Stage III** approval and all plans tallying before the OP application. 第 III 階段。
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Referral, BA16, GFA concession publication 轉介、變通 | [ADM-2](adm-2.md) |
+| Checklists and staged items 清單及分階段項目 | [ADV-33](adv-33.md) |
+| Statutory periods; consent; OP 法定期限 | [B(A)R](../regulations/bar-123a.md) · [BO Part 2](../regulations/bo-part-2-building-works.md) · [Submission to OP guide](../guides/submission-to-op.md) |
+| Fees and major revisions 費用及重大修訂 | [APP-55](app-55.md) |
+| Structural calcs format 結構計算 | [ADM-8](adm-8.md) |
+| Minor works alternative 小型工程 | [APP-147](app-147.md) · [Minor works guide](../guides/minor-works.md) |
+| Railway and tunnel protection 鐵路及隧道 | [APP-24](app-24.md) · [APP-62](app-62.md) |
+| Site supervision plans 監工計劃書 | [Site Supervision Code](../codes/site-supervision-2009.md) |
+
+## Key quotes 原文摘錄 {#key-clause}
 
 !!! quote "Para. 12 — Non-fundamental issues remain the AP's responsibility 非根本性事項仍由認可人士負責"
     Under the curtailed check system, non-fundamental issues will not be checked and will not be raised as disapproval items. These relate generally to matters that do not affect the basic design of the proposed building. It is the responsibility of the AP/RSE/RGE to ensure that all such non-fundamental issues fully comply with the relevant regulations and codes of practice before commencement of the works. After commencement of works, any contravention of the Buildings Ordinance (BO) and its subsidiary regulations should be rectified as and when they are discovered and in any event, before certification of completion of works.
