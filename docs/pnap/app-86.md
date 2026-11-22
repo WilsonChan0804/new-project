@@ -6,6 +6,10 @@ tags:
   - A&A works 改動及加建工程
   - Minor works 小型工程
   - Demolition 拆卸
+  - Structural 結構
+  - Site supervision 地盤監督
+summary: "Non-loadbearing partition walls: design for stability, demolition precautions and the minor works route."
+keywords: APP-86, partition wall, 間隔牆, non-loadbearing, 非承重, demolition, 拆卸, minor works, 小型工程
 ---
 
 # APP-86 Non-loadbearing Partition Walls<br><small>非承重間隔牆</small>
@@ -35,6 +39,28 @@ tags:
     - 按守則及 **APP-53** **設計**，考慮**細長比、支承及約束**對剛度及穩定性的影響（第 2 段）。
     - 按 **APP-21** **拆卸**：採取預防措施、由有經驗工人進行並作足夠監督（第 3 段）。
     - 很多間隔牆工程屬**小型工程**（例如 B(MW)R 項目 3.39 住宅單位內的輕質磚牆），見 APP-147（第 4 段）。
+
+!!! tip "Does it apply? 是否適用"
+    **Applies 適用**: design, construction and demolition of **non-loadbearing partition walls**, especially in A&A works; some are **minor works**. 非承重間隔牆。
+
+## Key clauses 條文一覽 {#key-clauses-table}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Not structural, but must meet **safety and performance** standards. 須安全。 |
+| 2 | Design to relevant codes; consider **slenderness, supports and restraints** for stiffness and stability. 長細比及支撐。 |
+| 3 | Demolition per [APP-21](app-21.md): (a) precautions to suit the site; (b) **experienced workers**; (c) **adequate supervision**. 拆卸要求。 |
+| 4 | Certain partition works are **minor works** (B(MW)R Schedule 1, [APP-147](app-147.md)). 小型工程。 |
+
+## Whole picture 整體關係 {#whole-picture}
+
+| Topic 主題 | Where 文件 |
+|---|---|
+| Loads from partitions 間隔牆荷載 | [Dead & Imposed Loads Code](../codes/dil-2011.md) |
+| A&A structural checks 改動加建 | [APP-117](app-117.md) |
+| Demolition 拆卸 | [APP-21](app-21.md) · [Demolition Code](../codes/demolition-2004.md) |
+| Minor works 小型工程 | [APP-147](app-147.md) · [Minor works guide](../guides/minor-works.md) |
+| Fire-rated partitions 防火間隔 | [FS Code Part C](../codes/fsc-part-c-fire-resisting-construction.md) |
 
 ## Related 相關文件 {#related}
 
