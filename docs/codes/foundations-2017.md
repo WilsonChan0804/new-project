@@ -435,11 +435,13 @@ All tests by **HOKLAS** labs except SPT and proof core drilling (cl. 8.1).
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Use of Tied-Back Wall Support System for Excavation Works](../circulars/2026.md#cl-utbwssew2026) <small>7 Jul 2026 · 挖掘工程使用後拉式圍牆支撐系統</small>
 - 🟢 [Further Streamlining Measures for Foundation Works](../circulars/2025.md#cl-fsmfw2025) <small>31 Mar 2025 · 基礎工程的進一步簡化措施</small>
+- 🔵 [Amendments to Code of Practice for Foundations 2017](../circulars/2022.md#cl-acopf2017-2022) <small>26 Jul 2022 · 《基礎作業守則2017年》修訂事宜</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

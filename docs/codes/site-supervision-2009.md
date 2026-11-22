@@ -395,6 +395,7 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -403,6 +404,8 @@ Report by email to **siteincident@bd.gov.hk** with: address; location, date and 
 - 🟢 [Further Streamlining Measures for Foundation Works](../circulars/2025.md#cl-fsmfw2025) <small>31 Mar 2025 · 基礎工程的進一步簡化措施</small>
 - 🟢 [Training Courses leading to Equivalent Academic Qualifications for Technically Competent Persons (TCP) T1 to T3 and Authorized Signatory of Contractors for Registration under the Buildings Ordinance](../circulars/2024.md#cl-tceaqtcpascrbo2024) <small>7 Nov 2024 · 獲取適任技術人員T1至T3及根據《建築物條例》註冊成為承建商獲授權簽署人的同等學歷資格的培訓課程</small>
 - 🟡 [Qualified Supervision of Building Works Involving Mobile Plants and Tower Cranes by Adopting Smart Site Safety System](../circulars/2024.md#cl-qsbwimptcassss2024) <small>28 Mar 2024 · 採用「安全智慧工地」系統為涉及流動機械及塔式起重機的建築工程提供合格監督</small>
+- 🟢 [Qualified Supervision for Off-site Fabrication of Simple Structural Steel Elements](../circulars/2023.md#cl-qsofssse2023) <small>15 Dec 2023 · 為場外預製的鋼結構工程提供合格監督</small>
+- 🟢 [Structural Safety and Integrity of Tower Cranes in Construction Sites](../circulars/2022.md#cl-ssitccs2022) <small>12 Sep 2022 · 建築地盤內塔式起重機的結構安全及完整性</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

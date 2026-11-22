@@ -8,6 +8,7 @@ tags:
   - Wind 風力
   - Concrete & materials 混凝土及物料
   - Curtain wall & façade 幕牆及外牆
+  - Site supervision 地盤監督
 summary: "Steel classes, design strengths, load factors and deflection and drift limits."
 keywords: steel code, 鋼結構, S355, design strength, deflection limit, 撓度, drift, 位移, composite
 ---
@@ -99,6 +100,12 @@ keywords: steel code, 鋼結構, S355, design strength, deflection limit, 撓度
 - **Building acceleration limits** revised (cl. 5.3.4). 修訂建築物加速度限制。
 - Lap joint and net-area equations corrected (Eq. 9.9, 9.10). 修正方程。
 - **Composite columns**: classification, allowed grades, quality control of concrete-filled hollow sections, geometric ratios, design strengths, buckling curves (cl. 10.5, Tables 10.11, 10.13). 組合柱多項修訂。
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Qualified Supervision for Off-site Fabrication of Simple Structural Steel Elements](../circulars/2023.md#cl-qsofssse2023) <small>15 Dec 2023 · 為場外預製的鋼結構工程提供合格監督</small>
+<!-- CL END -->
 
 ## Related 相關文件 {#related}
 

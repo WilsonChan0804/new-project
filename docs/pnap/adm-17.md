@@ -102,10 +102,13 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Buildings Department Launches Stage 3 of Electronic Submission Hub](../circulars/2024.md#cl-bdlsesh2024) <small>30 Jun 2024 · 屋宇署電子資料呈交及處理系統第三階段正式啓用</small>
+- ⚪ [Buildings Department Launches Stage 2 of Electronic Submission Hub](../circulars/2023.md#cl-bdlsesh2023) <small>31 Mar 2023 · 屋宇署電子資料呈交及處理系統第二階段正式啓用</small>
+- ⚪ [Buildings Department Launches Stage 1 of Electronic Submission Hub](../circulars/2022.md#cl-bdlsesh2022) <small>30 Jun 2022 · 屋宇署電子資料呈交及處理系統第一階段正式啟用</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

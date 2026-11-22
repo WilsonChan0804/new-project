@@ -1,0 +1,430 @@
+{
+ "CL_QSOFSSSE2023": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../codes/steel-2011.md|Steel Code",
+   "../codes/site-supervision-2009.md|Site Supervision Code"
+  ],
+  "topics": [
+   "structural",
+   "supervision"
+  ],
+  "points": [
+   [
+    "**Simple structural steel elements** (cast-in embeds, brackets, balustrades, railings, A/C support frames, minor-works type steelwork) often fabricated in **Mainland factories**. Approval conditions (BO s 17(1) item 6) require an RSE's **QCS** (qualifications as **TCP T3**) to inspect fabrication **at least weekly**.",
+    "**簡單結構鋼構件**（預埋件、托架、欄杆、冷氣機架等）常於**內地廠房**製造；批准條件要求結構工程師委派**品質控制監督**（資歷同 **T3**）**每星期最少一次**監督製造。"
+   ],
+   [
+    "Alternative accepted: **on-site audit checks** instead of factory visits – sample **≥ 5 %, minimum 5 assemblies per batch**; RSE's checklist covers size and dimensions, **mill certificates**, visual and **NDT of welds** by a HOKLAS lab, bolt size and quality; results logged and kept on site.",
+    "可改為**工地抽查**：每批抽樣 **≥ 5%，最少 5 件**；清單包括尺寸、**鋼材證明書**、HOKLAS 實驗所**焊縫無損檢測**、螺栓；記錄存放工地。"
+   ],
+   [
+    "RSE gives the BA **one month's written notice**; other element types by application (decision in 14 days). All other approval conditions and Steel Code QC requirements still apply.",
+    "結構工程師須**一個月前書面通知**；其他構件須申請（14 日內決定）；其餘條件及鋼結構守則品質要求不變。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RBGAOBD2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Annual reminder not to offer gifts or advantages to BD officers.",
+    "每年提示不得向屋宇署人員送禮。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CBOCEUBWRBPRC2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [
+   "../pnap/adv-37.md|ADV-37",
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc79.pdf|PNRC 79",
+   "../regulations/bo-part-2-enforcement.md|BO s 40"
+  ],
+  "topics": [
+   "enforcement"
+  ],
+  "points": [
+   [
+    "After **landslides in the Sep 2023 rainstorm** exposed blatant UBW: **do not advise or assist** anyone to erect UBW. Duties of PBPs and PRCs: BO **ss 4(3), 4B, 9(5), 9AA(6)**; conduct per **ADV-37** and **PNRC 79**.",
+    "**2023 年 9 月暴雨山泥傾瀉**揭露嚴重違例建築：**不得建議或協助**任何人搭建違例建築；訂明人士及承建商責任見《建築物條例》第 4(3)、4B、9(5)、9AA(6) 條及 ADV-37、PNRC 79。"
+   ],
+   [
+    "Tell clients to get **approval and consent (s 14(1))** or use the **Minor Works Control System**. Penalties: knowingly breaching s 14(1) – **$400,000 and 2 years**, plus **$20,000 per day** (s 40(1AA)); minor works without a PBP/PRC – **$100,000** (s 40(1AB)); disciplinary action under ss 7 and 13.",
+    "須提醒客戶取得**第 14(1) 條批准及同意**或循小型工程監管制度進行。罰則：明知違反第 14(1) 條 **罰款 40 萬元及監禁 2 年**，每日另罰 **2 萬元**；小型工程不委任訂明人士 **罰款 10 萬元**；亦可被紀律處分。"
+   ]
+  ],
+  "related": [
+   "#cl-cboceubwpmc2023|Letter to property managers",
+   "#cl-cboceubwa2023|Letter to associations"
+  ]
+ },
+ "CL_MBISIUBW2023": {
+  "to": "Registered Inspectors",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "status_links": [
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code para 3.7"
+  ],
+  "topics": [
+   "mbis",
+   "enforcement"
+  ],
+  "points": [
+   [
+    "After an **unauthorised canopy fell** from a building that had completed MBIS inspection: RIs must follow the **MBIS/MWIS Code (2023 Ed.)**, alert owners of emergencies and notify the BA; inspect and assess **UBW within para 3.7.1** for obvious hazard or imminent danger, and **advise owners to remove all UBW** found (para 3.7).",
+    "一座已完成強制驗樓的樓宇有**僭建簷篷墮下**：註冊檢驗人員須按守則（2023 年版）提醒業主緊急情況並通知當局；檢驗第 3.7.1 段範圍內的**違例建築**並**建議業主清拆**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RECCS2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "status": "spent",
+  "status_note": "One-off (black rainstorm, 8 Sep 2023) 一次性（2023 年 9 月黑雨）",
+  "topics": [
+   "weather"
+  ],
+  "points": [
+   [
+    "After the **extreme conditions** of 8 Sep 2023 (flooding, landslide risk): inspect site drainage, scaffolds and temporary protective measures and **rectify promptly**; refer to the 24 Apr 2023 rainy season letter.",
+    "2023 年 9 月 8 日**極端情況**後：檢查地盤排水、棚架及臨時防護措施並**盡快修正**。"
+   ]
+  ],
+  "related": [
+   "#cl-pmcsrts2023|Rainy season letter 2023"
+  ]
+ },
+ "CL_SUVCTCS2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Incidents of **grab lorry cranes** damaging highway facilities: lower and secure cranes in the **stowed position** before leaving sites; see TD **Code of Practice for the Loading of Vehicles** and safety tips leaflet.",
+    "**吊臂車**吊臂損壞道路設施：離開地盤前須把吊臂**收妥固定**；參考運輸署《車輛裝載守則》。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CARMWCRS2023": {
+  "to": "RMWC (Company)",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "From **1 Nov 2023**, new RMWC (Company) applicants need **working capital and employed capital** of at least **Class I $78,000; Class II $39,000; Class III $10,000** (B(MW)R s 12(5)(b)), shown by an **auditor's report** (period ending ≤ 18 months before; no qualified/adverse opinion or disclaimer); new firms may use a recent balance sheet (≤ 3 months) endorsed by the managing director, partner or proprietor.",
+    "由 **2023 年 11 月 1 日**起，新申請註冊小型工程承建商（公司）的**營運資金及運用資本**不少於：**第 I 級 78,000 元、第 II 級 39,000 元、第 III 級 10,000 元**，須附**核數師報告**；新公司可用近 3 個月資產負債表。"
+   ]
+  ],
+  "related": [
+   "#cl-carcrs2023|RGBC/RSC version"
+  ]
+ },
+ "CL_CARCRS2023": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "From **1 Nov 2023**, new RGBC/RSC applicants need working and employed capital of at least **$200,000** (BO s 8B(2)(c)), with an auditor's report (same rules as for RMWC).",
+    "由 **2023 年 11 月 1 日**起，新申請一般建築或專門承建商的營運及運用資本不少於 **20 萬元**，須附核數師報告。"
+   ]
+  ],
+  "related": [
+   "#cl-carmwcrs2023|RMWC version"
+  ]
+ },
+ "CL_RWEW2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../codes/demolition-2004.md|Demolition Code"
+  ],
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "After rendering fell from a bamboo scaffold onto a **double-decker bus**: scaffolds for external wall repairs must have **closely boarded or metal-plated platforms**, **toe-boards and guard-rails**, protective coverings or **screen nets**; do not pile removed rendering or concrete on platforms. Registered professionals in charge check the precautions (BD bamboo scaffold guidelines, LD CoP).",
+    "外牆維修時批盪從竹棚架掉下擊中**雙層巴士**：棚架須有**密鋪工作台**、**踢腳板及護欄**、保護網；不得在工作台堆放鑿下物料；負責的註冊人士須檢查。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_AAWFPLT2023": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_note": "In force; extended to plate load tests on 31 Mar 2025 有效，2025 年 3 月 31 日擴展至平板荷載測試",
+  "status_links": [
+   "#cl-fsmfw2025|31 Mar 2025 letter",
+   "../pnap/app-18.md|APP-18"
+  ],
+  "topics": [
+   "structural",
+   "submission"
+  ],
+  "points": [
+   [
+    "After a 2022 pilot, **foundation proof load tests** after Form BA14 may be witnessed by BD **via videotelephony** with BD's **prior agreement**. Appendix: at least **one or 50 %** witnessed on site; **TCP T5 (RSE)** and **TCP T4 (RSC)** present; trial run; colour video ≥ **480p** on DVD certified by RSE and RSC AS within **7 days**.",
+    "2022 年試行後，交 BA14 後的**樁荷載驗證測試**可經屋宇署**事先同意**以**視像**見證：最少 **1 次或 50%** 到場；T5 及 T4 須在場；錄影 ≥ 480p 於 7 日內提交並核證。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_GRDNMRPCMCD2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual rodent-proofing design and site mosquito/rodent guidelines.",
+    "每年防鼠設計及地盤防蚊防鼠指引。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMCSRTS2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual rainy and typhoon season site measures (scaffolds, tower cranes, flood prevention).",
+    "每年雨季及颱風季節地盤措施。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_BDLSESH2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "superseded",
+  "status_note": "Superseded by ESH Stage 3 (30 Jun 2024) 已由第三階段取代",
+  "status_links": [
+   "#cl-bdlsesh2024|Stage 3 letter",
+   "../pnap/adm-17.md|ADM-17"
+  ],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "**ESH Stage 2** (31 Mar 2023) adds hoarding/covered walkway/gantry, demolition, drainage, ELS, GI, foundation, site formation and all structural works (not A&A); 16 departments use ESH.",
+    "**電子資料呈交平台第二階段**（2023 年 3 月 31 日）新增圍板、拆卸、排水、挖掘支撐、土地勘測、地基、地盤平整及所有結構工程（不包括加建改建）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SSSS2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "amended",
+  "status_note": "Encouragement; two measures made mandatory from 1 Jul 2024 and extended 2025 鼓勵性質；其中兩項已於 2024 及 2025 年強制",
+  "status_links": [
+   "#cl-qsbwimptcassss2024|28 Mar 2024 letter",
+   "../pnap/app-162.md|APP-162"
+  ],
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Appeal to adopt a **Smart Site Safety System (4S)**: smart devices, communication network and a central platform. Devices: tracking of plant and tools, digital permit-to-work, electronic lock access control, **mobile plant danger zone alert**, **tower crane lifting zone alert**, worker monitoring, AI safety monitoring, confined space monitoring, VR training. CITF subsidy up to **$7.5 million** per contractor from 1 Apr 2023.",
+    "呼籲採用**智慧工地安全系統**：包括機械追蹤、電子工作許可、電子鎖、**流動機械危險區警報**、**塔式起重機吊運區警報**、工人監察、人工智能、密閉空間監察、虛擬實境培訓；建造業創新及科技基金每名承建商資助最多 **750 萬元**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_UFRPNSTPSFBCDRMW2023": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "superseded",
+  "status_note": "Standards now in PNRC 85 and MW TG 11.2.10; GB 5725-2009 replaced by GB 5725-2025 from 1 Sep 2026 標準已納入 PNRC 85 及技術指引",
+  "status_links": [
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc85.pdf|PNRC 85",
+   "#cl-fpsn2026|GB 5725-2025 letter",
+   "#cl-atgmwcs2025|TG 11.2.10"
+  ],
+  "topics": [
+   "fire",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Per **APP-70** and the **Demolition Code**, protective nets, screens, tarpaulins and plastic sheeting on facades must be **fire retardant** to a recognised standard: **GB 5725-2009** (formerly GB 16909-1997), **BS 5867-2:2008 Type B**, **NFPA 701:2019 Test Method 2**, or equivalent.",
+    "按 **APP-70** 及拆卸守則，外牆保護網等須**阻燃**並符合認可標準：GB 5725-2009、BS 5867-2:2008 B 類、NFPA 701:2019 方法 2 或同等。"
+   ]
+  ],
+  "related": [
+   "../pnap/app-70.md|APP-70"
+  ]
+ },
+ "CL_RCRMWC2023": {
+  "to": "RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Refresher course for RMWC renewal or restoration (interview exemption if completed within 3 years).",
+    "小型工程承建商重溫課程（3 年內完成可免面見）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPDCRGBCRSC2023": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "CPD course for RGBC/RSC renewal or restoration (interview exemption for inactive contractors).",
+    "一般建築及專門承建商持續專業發展課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_DPUHRPTHP2023": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../pnap/adm-19.md|ADM-19",
+   "../pnap/adv-33.md|ADV-33"
+  ],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "**Dedicated Processing Units (DPU)** in NBD 1 and 2 (2022 Policy Address) for **high-yield private residential projects (≥ 500 units)** and **transitional housing**, for projects with **GBP first submitted on or after 31 Mar 2023**. Services: pre-submission conferences (with Chief Professional Officers where needed), help with compliant designs, chasing other departments' comments and liaison meetings.",
+    "**專責審批組**（2022 年施政報告）處理**500 個單位或以上的私人住宅**及**過渡性房屋**，適用於 **2023 年 3 月 31 日或以後首次呈交**的一般建築圖則；提供呈交前會議、協助設計及跟進其他部門意見。"
+   ],
+   [
+    "AP/RSE/RGE should: (a) hold pre-submission conferences (early BC/SEC guidance); (b) use written pre-submission enquiries for a **letter of assurance**; (c) submit all **BA16** supporting documents with the plans; (d) use staged essential information under **ADM-19** and **ADV-33**; (e) give a **block plan PDF** on the DVD (ADV-33 App. A4); and title covering letters \"High-yield Residential Project\" or \"Transitional Housing Project\".",
+    "認可人士等應：(a) 召開呈交前會議；(b) 以書面查詢取得**保證信**；(c) 隨圖則提交所有 **BA16** 文件；(d) 按 ADM-19 及 ADV-33 分階段提交；(e) 於光碟附**地盤位置圖 PDF**；信件標題註明項目類別。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SMSW2023": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "amended",
+  "status_note": "Extended by the 31 Oct 2024 letter; measures in APP-18 and ADM-19 已由 2024 年 10 月 31 日通告擴大，措施見 APP-18 及 ADM-19",
+  "status_links": [
+   "#cl-fsmsw2024|31 Oct 2024 letter",
+   "../pnap/app-18.md|APP-18",
+   "../pnap/adm-19.md|ADM-19"
+  ],
+  "topics": [
+   "submission",
+   "structural"
+  ],
+  "points": [
+   [
+    "(a) **Concurrent approval and consent** for secondary structural elements (precast façade, glass canopy, skylight, balustrade) after the first superstructure consent; (b) pile design **back-analysis** and updated pile loading schedule (APP-18 para 13) may go with **Form BA14**; (c) consent for **working driven piles** before trial pile proof load tests if **PDA/CAPWAP** results are satisfactory, with load test reports within **14 days**.",
+    "(a) 取得首次上蓋同意後，次要結構構件可**同時批准及同意**；(b) 樁設計**反分析**可隨 **BA14** 提交；(c) 如**打樁分析儀／CAPWAP** 結果滿意，可於試樁荷載測試完成前批出工作樁同意，報告 **14 日**內提交。"
+   ],
+   [
+    "(d) ELS: consent for **vertical retaining elements** (e.g. sheet piles) together with initial excavation **≤ 1.5 m** and the first layer of supports, excavation starting only after BA14 for the walls; (e) submit test reports of new materials used for the **Central Data Bank**. State the measures used in the covering letter.",
+    "(d) 挖掘支撐：**垂直擋土構件**可連同 **≤ 1.5 米**初步挖掘及首層支撐一併同意；(e) 提交新物料測試報告供**中央資料庫**；申請時於信中註明。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CBOCEUBWPMC2023": {
+  "to": "Property management companies",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "topics": [
+   "enforcement"
+  ],
+  "points": [
+   [
+    "Tell owners and occupants to get BD approval and consent or use the Minor Works Control System for A&A works, seek professional advice when in doubt, and **report suspected UBW** to BD; help BD staff enter premises – obstruction is an offence (**$10,000 and 6 months**, BO s 40(2AAA)).",
+    "物業管理公司應提醒業主及住戶依法進行加建改建、如有疑問諮詢專業人士及**舉報懷疑違例建築**；協助屋宇署人員進入處所，阻撓屬違法（罰款 1 萬元及監禁 6 個月）。"
+   ]
+  ],
+  "related": [
+   "#cl-cboceubwrbprc2023|Letter to registered persons"
+  ]
+ },
+ "CL_CBOCEUBWA2023": {
+  "to": "Professional institutes and trade associations",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "topics": [
+   "enforcement"
+  ],
+  "points": [
+   [
+    "Same message to HKIA, HKIE, HKIS, contractor and minor works associations: practitioners must not advise or assist UBW; penalties under BO s 40(1AA) and (1AB).",
+    "向建築師學會、工程師學會、測量師學會及承建商商會發出相同訊息：業界不得協助違例建築。"
+   ]
+  ],
+  "related": [
+   "#cl-cboceubwrbprc2023|Letter to registered persons"
+  ]
+ },
+ "CL_PMPBSTS2023": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather"
+  ],
+  "points": [
+   [
+    "Annual typhoon season reminder to property managers.",
+    "每年颱風季節提示。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SBSBMRW2023": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual bamboo scaffold safety reminder to property managers.",
+    "每年竹棚架安全提示。"
+   ]
+  ],
+  "related": []
+ }
+}

@@ -1,0 +1,301 @@
+{
+ "CL_RBGAOBD2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Annual reminder not to offer gifts or advantages to BD officers.",
+    "每年提示不得向屋宇署人員送禮。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_LAAQ2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc38.pdf|PNRC 38",
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc69.pdf|PNRC 69"
+  ],
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "BD publishes a **List of Accepted Academic Qualifications (AAQ)** for authorized signatories, technical directors and other officers of registered contractors; qualifications on the list (by institution and year) need no further proof. Requirements in **PNRC 38 and 69**.",
+    "屋宇署公布**已接納學歷名單**，適用於註冊承建商的獲授權簽署人、技術董事及其他人員；名單上的學歷毋須另行證明（PNRC 38、69）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SSITCCS2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../codes/site-supervision-2009.md|Site Supervision Code paras 4.8–4.11"
+  ],
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "After a **fatal tower crane incident (7 Sep 2022)**: check temporary works, sequence and method statements so all tower cranes are safe; **review the design of supporting structures and foundations** if necessary. See Site Supervision Code **paras 4.8–4.11**, LD CoP for Safe Use of Tower Cranes, CIC Guidelines on Safety of Tower Cranes.",
+    "**2022 年 9 月 7 日塔式起重機致命事故**後：檢查臨時工程、施工次序及方法說明；有需要時**覆核支承結構及地基設計**。參考地盤監督守則 4.8–4.11 段。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_FLMAWS2022": {
+  "to": "Qualified Persons (MWIS)",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "**WIN SAFE** app launched for public use (8 Aug 2022): owners search and appoint QPs for MWIS notices and discuss services; QPs to promote it.",
+    "**「窗安心」**手機程式（2022 年 8 月 8 日）供公眾使用，方便業主物色及委任合資格人士處理驗窗通知。"
+   ]
+  ],
+  "related": [
+   "#cl-nmawsqpr2022|QP registration letter"
+  ]
+ },
+ "CL_MPCMCDS2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "spent",
+  "status_note": "One-off (2022 summer mosquito situation) 一次性",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Alarming mosquito infestation (dengue risk): strengthen mosquito prevention at construction and demolition sites per FEHD **Guidelines on Mosquito Prevention for Contractors of Construction Sites**.",
+    "蚊患嚴重（登革熱風險）：按食環署指引加強建築及拆卸地盤防蚊。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ACOPF2017_2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Incorporated into the Foundations Code 2024 Edition 已納入地基守則 2024 年版",
+  "status_links": [
+   "../codes/foundations-2017.md|Foundations Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Foundations Code amendments (Jul 2022): (a) **cl 4.2.2(2)(a)** – **Category 3** intermediate soil excluded from the plate load test trigger; (b) **cl 5.3.3(1)** – tension proof test not needed if tension capacity < half the shaft compressive capacity and the piles are in the compression proof test pool; check the **soil column and rock or soil cone**; (c) **cl 5.3.3(2)(b), Fig. 5.1** – overlapping **rock cone** checks for socketed piles; (d) **cl 5.3.3(3)(c), Fig. 5.2** – overlapping **soil cone** checks for piles in granular soil; (e) figure titles.",
+    "地基守則修訂（2022 年 7 月）：(a) 第 3 類中間土毋須平板荷載測試；(b) 拉力樁驗證測試要求及土柱、岩錐或土錐檢查；(c) 嵌岩樁**岩錐重疊**檢查；(d) 粒狀土樁**土錐重疊**檢查；(e) 圖題。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_BDLSESH2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "superseded",
+  "status_note": "Superseded by Stages 2 and 3 已由第二、三階段取代",
+  "status_links": [
+   "#cl-bdlsesh2024|Stage 3 letter",
+   "../pnap/adm-17.md|ADM-17"
+  ],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "**ESH Stage 1** (30 Jun 2022): electronic **structural plan** submissions for works above ground (excluding A&A); Stages 2 and 3 to follow. See **ADM-17** and PNRC 42.",
+    "**電子資料呈交平台第一階段**（2022 年 6 月 30 日）：接受地面以上**結構圖則**（不包括加建改建）電子呈交。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ECRRBPRC2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "For applications on or after **30 Jun 2022**, certificates of registration are issued as **e-Certificates** by e-mail (hard copy on request); RIs and RMWC (Individual) also get cards; **QR codes** link to BD's register on certificates, cards and QP cards. Existing certificates remain valid.",
+    "2022 年 6 月 30 日起的申請以**電子證書**電郵發出；證書、註冊卡及合資格人士卡附**二維碼**連結名冊；舊證書繼續有效。"
+   ]
+  ],
+  "related": [
+   "#cl-pmcecrrbprc2022|Letter to property managers"
+  ]
+ },
+ "CL_NMAWSQPR2022": {
+  "to": "Qualified Persons (MWIS)",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "superseded",
+  "status_note": "Superseded by the full launch letter (8 Aug 2022) 已由正式推出通告取代",
+  "status_links": [
+   "#cl-flmaws2022|Full launch letter"
+  ],
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "**WIN SAFE** open for **QP registration**: owners search QPs, chatroom, enquiries on MWIS notices, service and cost statistics; public launch planned for Q3 2022.",
+    "**「窗安心」**開放合資格人士登記：搜尋、聊天室、查詢及收費統計；計劃於 2022 年第三季推出。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_GRDNMRPCMCD2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual rodent-proofing design and site mosquito/rodent guidelines.",
+    "每年防鼠設計及地盤防蚊防鼠指引。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMCSRTS2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual rainy and typhoon season site measures.",
+    "每年雨季及颱風季節地盤措施。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_QSQAPCCMICHSPTG2022": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "spent",
+  "status_note": "Temporary arrangements during cross-boundary control; standing rules in APP-37, APP-143, ADV-36, PNRC 63 疫情期間臨時安排；長期規定見 APP-37、APP-143、ADV-36、PNRC 63",
+  "status_links": [
+   "../pnap/app-143.md|APP-143",
+   "../pnap/adv-36.md|ADV-36",
+   "../pnap/app-37.md|APP-37",
+   "https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnrc/Pnrc63.pdf|PNRC 63"
+  ],
+  "topics": [
+   "structural",
+   "supervision"
+  ],
+  "points": [
+   [
+    "Supervision and audit of **precast concrete**, **MiC** and **heat soak of tempered glass** in Mainland factories rationalised in **APP-37, APP-143, ADV-36 and PNRC 63** (Apr 2022). During cross-boundary control: first-batch inspections by RSE/AP/AS and QS/audit by AS and **TCP T3** may be by **videotelephony**.",
+    "**預製混凝土**、**組裝合成建築**及**鋼化玻璃熱浸**的監督已於 2022 年 4 月修訂的 APP-37、APP-143、ADV-36、PNRC 63 中理順；跨境管制期間，首批產品檢查及 T3 監督可用**視像**進行。"
+   ],
+   [
+    "Then on-site audit sampling rises to **≥ 2 %, min. one per 10 batches** (precast) and **≥ 2 % of each MiC module type**. If TCP T1 full-time factory supervision is disrupted by lockdowns, video supervision may be approved case by case with AS audits **biweekly** and **≥ 50 %** of tempered glass panes supervised by TCP T3 by video; assistants must not be RC supervisory staff; log books and DVDs kept.",
+    "工地抽查提高至**≥ 2%（每 10 批最少 1 件）**及**每類組件 ≥ 2%**；如封城影響 T1 全時間監督，可個別批准視像監督，獲授權簽署人**每兩星期**抽查，**≥ 50%** 鋼化玻璃由 T3 以視像監督。"
+   ]
+  ],
+  "related": [
+   "../codes/precast-2016.md|Precast Code"
+  ]
+ },
+ "CL_ACOPSUS2013_2022": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_note": "Part of the Concrete Code 2013 (2020 Ed.) as the Feb 2022 amendment 已成為混凝土守則 2022 年 2 月修訂",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Concrete Code amendments (Feb 2022): (a) **cl 6.2.3, Fig. 6.18b** – design of **plain concrete linings** for tunnels and caverns (always in compression, good rock; nLT ≤ **0.32 h fcu** for e ≤ 0.1h; ≤ 0.4(h − 2e) fcu for 0.1h–0.3h; max eccentricity **0.3h**); (b) **cl 10.3.4.2, Table 10.2** – use of **100 mm and 150 mm cubes**; (c) **cl 11.7.5.4, Table 11.2** – early strength by the **maturity method**; (d) Annex A adds **ASTM C1074-19ε1**.",
+    "混凝土守則修訂（2022 年 2 月）：(a) 隧道及洞穴**素混凝土襯砌**設計；(b) **100 及 150 毫米立方體**使用；(c) 以**成熟度法**監察早期強度；(d) 附錄加入 ASTM C1074。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RIMLMG2022": {
+  "to": "Property management companies",
+  "by": "AD/Existing Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-146.md|APP-146 Large metal gates"
+  ],
+  "topics": [
+   "design"
+  ],
+  "points": [
+   [
+    "After a **fatal accident with a large electric gate (15 Aug 2022)**: inspect all large electric gates at once, especially **manual mode**, and advise owners to arrange **regular inspection and maintenance** of large metal gates. See LD Safety Guide on Gate Work, EMSD CoP and guide on electric sliding gates, **APP-146**.",
+    "**2022 年 8 月 15 日大型電動閘致命意外**後：即時檢查所有大型電動閘（特別是**手動模式**），並建議業主**定期檢查及保養**；參考 APP-146。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_PMCECRRBPRC2022": {
+  "to": "Property management companies",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Same e-Certificate arrangement explained to property managers, with **samples** of certificates and cards (RMWC Individual, RI) and QP cards with QR codes, to help verify registration.",
+    "向物業管理公司說明電子證書安排，附證書及註冊卡樣本，方便核實註冊。"
+   ]
+  ],
+  "related": [
+   "#cl-ecrrbprc2022|Letter to registered persons"
+  ]
+ },
+ "CL_PMPBSTS2022": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather"
+  ],
+  "points": [
+   [
+    "Annual typhoon season reminder to property managers.",
+    "每年颱風季節提示。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SBSBMRW2022": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual bamboo scaffold safety reminder to property managers.",
+    "每年竹棚架安全提示。"
+   ]
+  ],
+  "related": []
+ }
+}

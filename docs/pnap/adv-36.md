@@ -8,6 +8,7 @@ tags:
   - GFA concession 樓面面積寬免
   - Plan submission & approval 呈交及審批
   - Statutory period 法定期限
+  - Concrete & materials 混凝土及物料
 summary: "BD offers early enquiries and in-principle acceptance of MiC systems within 45 days; neither is required for plan approval. GFA concessions are in JPN 8."
 keywords: ADV-36, modular integrated construction, MiC, 組裝合成, in-principle acceptance, IPA, pre-acceptance 45 days, prefabricated modules, joints water tightness
 ---
@@ -81,6 +82,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 - **[Design and Supervision Responsibilities for the Adoption of Modular Integrated Construction (MiC)](../apsec/2022.md#i2022081217)** <small>ADF 4/2022, 12 Aug 2022</small><br>BD advised that the pre-acceptance mechanism aimed to resolve the non-site specific design and construction matters of a MiC system/component by granting in-principle acceptance (IPA) to individual MiC …
 
 <!-- APSEC END -->
+
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- ⚫ [Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass](../circulars/2022.md#cl-qsqapccmichsptg2022) <small>22 Apr 2022 · Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass</small>
+<!-- CL END -->
 
 ## Related 相關文件 {#related}
 

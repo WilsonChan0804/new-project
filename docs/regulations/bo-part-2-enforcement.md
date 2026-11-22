@@ -156,6 +156,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Compliance with the Buildings Ordinance Concerning Erection of Unauthorised Building Works](../circulars/2023.md#cl-cboceubwrbprc2023) <small>6 Nov 2023 · 遵從《建築物條例》的規定有關建造違例建築工程</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

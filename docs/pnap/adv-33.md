@@ -193,6 +193,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | BIM submissions BIM 呈交 | [ADV-34](adv-34.md) |
 | GFA 樓面面積 | [GFA guide](../guides/gfa.md) |
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Dedicated Processing Units for High-yield Residential Projects and Transitional Housing Projects](../circulars/2023.md#cl-dpuhrpthp2023) <small>15 Mar 2023 · 成立專責審批組 審批大型住宅項目和過渡性房屋項目</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

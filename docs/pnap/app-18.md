@@ -4,6 +4,7 @@ tags:
   - APP series
   - Foundation 地基
   - Code of Practice
+  - Structural 結構
 summary: "The Foundation Code 2017 (2024 Edition, amended Sep 2025) is deemed to satisfy the B(C)R; two-stage pile submissions and deferred ground investigation speed up foundation approval."
 keywords: Foundation Code, 地基守則, piles, 樁, two-stage submission, 分階段呈交, deferred GI, ground investigation, 土地勘測, PNAP 66
 ---
@@ -82,4 +83,6 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 - 🟢 [Further Streamlining Measures for Foundation Works](../circulars/2025.md#cl-fsmfw2025) <small>31 Mar 2025 · 基礎工程的進一步簡化措施</small>
 - 🔵 [Further Streamlining Measures for Structural Works](../circulars/2024.md#cl-fsmsw2024) <small>31 Oct 2024 · Further Streamlining Measures for Structural Works</small>
+- 🟢 [Alternative Arrangement for Witnessing Foundation Proof Load Test](../circulars/2023.md#cl-aawfplt2023) <small>2 Jun 2023 · 見證基礎荷載驗證測試的替代安排</small>
+- 🟡 [Streamlining Measures for Structural Works](../circulars/2023.md#cl-smsw2023) <small>27 Feb 2023 · 結構工程的簡化措施</small>
 <!-- CL END -->
