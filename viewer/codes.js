@@ -685,7 +685,26 @@ function showTab(tab, kbPath, quiet) {
   }
 }
 
-/* a page of the knowledge base: its gbp: links open the workbook beside it */
+/* a page of the knowledge base: its gbp: links open the workbook beside it;
+   a link to another site (the BD's PDFs ...) opens in a new tab - those sites
+   refuse to be shown inside the viewer - or the Library's copy when it has it */
+let LIB_URLS = null;
+const normUrl = (u) => String(u || "").replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase();
+async function libUrls() {
+  if (LIB_URLS) return LIB_URLS;
+  LIB_URLS = new Map();
+  try {
+    const r = await api("/api/codes/sources");
+    for (const x of r.items || r.sources || []) if (x.url && x.id != null) LIB_URLS.set(normUrl(x.url), x);
+  } catch (e) {}
+  return LIB_URLS;
+}
+async function openOutside(href) {
+  const w = window.open("about:blank", "_blank");
+  const m = (await libUrls()).get(normUrl(href));
+  const to = m ? `/api/codes/sources/${encodeURIComponent(m.id)}/file` : href;
+  if (w) { try { w.opener = null; } catch (e) {} w.location.href = to; } else location.assign(to);
+}
 function wireFrame() {
   const fr = $("#kb-frame");
   let doc;
@@ -694,13 +713,18 @@ function wireFrame() {
   doc.body.dataset.lwk = "1";
   const st = doc.createElement("style");
   st.textContent = `a[href^="gbp:"]{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;margin:4px 0;border-radius:8px;border:1px solid #e8731a;color:#c2560a!important;background:#fff4ea;font-weight:600;text-decoration:none!important}
-a[href^="gbp:"]::before{content:"\\1F9EE";}a[href^="gbp:"]:hover{background:#ffe6d0}`;
+a[href^="gbp:"]::before{content:"\\1F9EE";}a[href^="gbp:"]:hover{background:#ffe6d0}
+a.lwk-out::after{content:" \\2197";font-size:.85em;opacity:.7}`;
   doc.head.appendChild(st);
+  for (const a of doc.querySelectorAll("a[href]")) {
+    if (a.protocol && /^https?:$/.test(a.protocol) && a.host !== location.host) { a.classList.add("lwk-out"); if (!a.title) a.title = "Opens in a new tab"; }
+  }
   doc.addEventListener("click", (ev) => {
-    const a = ev.target.closest && ev.target.closest('a[href^="gbp:"]');
+    const a = ev.target.closest && ev.target.closest("a[href]");
     if (!a) return;
-    ev.preventDefault();
-    panel("gbp", a.getAttribute("href").slice(4).trim().toLowerCase());
+    if (/^gbp:/i.test(a.getAttribute("href"))) { ev.preventDefault(); panel("gbp", a.getAttribute("href").slice(4).trim().toLowerCase()); return; }
+    if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
+    if (a.protocol && /^https?:$/.test(a.protocol) && a.host !== location.host) { ev.preventDefault(); ev.stopPropagation(); openOutside(a.href); }
   }, true);
   doc.addEventListener("keydown", (ev) => { if (ev.key === "/" && !/INPUT|TEXTAREA/.test((ev.target.tagName || "")) && !ev.target.isContentEditable) { ev.preventDefault(); $("#cx-q").focus(); } });
 }

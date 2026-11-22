@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-12", date: "22 Nov 2026",
+    items: [
+      "**Knowledge base: source documents open** - a link to the BD's PDF or page (marked ↗) now opens in a new tab - the Library's own copy when it has that document - instead of \"www.bd.gov.hk refused to connect\" inside the page.",
+    ],
+  },
+  {
     version: "2027-02-11", date: "22 Nov 2026",
     items: [
       "**Knowledge base: your pins and reading history follow you** - kept on the server under your account, so a page or clause you pin on the office PC is there on your iPad. Each person sees only their own. It starts once the knowledge base's script uses it.",
