@@ -317,7 +317,7 @@ Official index 官方索引: [BD PNAP index](https://www.bd.gov.hk/en/resources/
 
 ## Coverage 涵蓋範圍 {#coverage}
 
-Every PNAP in force on BD's current list (APP, ADM and ADV series) now has an entry. Not included, because BD has repealed them or they are obsolete: APP-6, APP-36, APP-77, APP-102 (repealed 11 Apr 2025), APP-103 (repealed 12 May 2021), APP-113, APP-131, APP-161, ADM-12, ADV-7, ADV-20 and ADV-22.
+Every PNAP in force on BD's current list (APP, ADM and ADV series) now has an entry. Repealed PNAPs with a short reference page: [APP-102](app-102.md) (repealed 11 Apr 2025), [APP-113](app-113.md) (see APP-130), [APP-161](app-161.md) (repealed 1 Aug 2022, see JPN 8) and [ADV-22](adv-22.md) (see LAO practice notes). Not included, because BD has repealed them or they are obsolete: APP-6, APP-36, APP-77, APP-103 (repealed 12 May 2021), APP-131 (see APP-24), ADM-12 (repealed 6 Nov 2019), ADV-7 and ADV-20. 已廢除作業備考：APP-102、APP-113、APP-161、ADV-22 設有簡短參考頁。
 
 所有現行有效的作業備考（APP、ADM 及 ADV 系列）均已收錄。已廢除或過時的備考不收錄：APP-6、36、77、102、103、113、131、161，ADM-12，ADV-7、20、22。
 

@@ -208,6 +208,8 @@ tags:
 | [ADF 5/2017](2017.md) | 17 Nov 2017 | 14 | [PDF](https://www.hkie-st.org/wp-content/uploads/2022/07/67_Finalised-Summary-of-Items-Discussed-in-APSEC-Discussion-Forum-on-17-November-2017.pdf) |
 | [APP-27 Gas Water Heaters Regulation 35A of Building (Planning) Regulations](../pnap/app-27.md#apsec-clarifications) | 1 | 5 May 2023 |
 | [JPN 4 Development Control Parameters — Plot Ratio / Gross Floor Area](../pnap/jpn-4.md#apsec-clarifications) | 4 | 25 Nov 2022 |
+| [APP-102 Superstructure Works – Measures for Public Safety (repealed)](../pnap/app-102.md#apsec-clarifications) | 2 | 12 Aug 2022 |
+| [APP-161 Exemption of Gross Floor Area for Buildings adopting Modular Integrated Construction (repealed)](../pnap/app-161.md#apsec-clarifications) | 1 | 23 Aug 2019 |
 
 ## Items not linked to a specific document 未連結文件的項目 {#items-not-linked-to-a-specific-document}
 

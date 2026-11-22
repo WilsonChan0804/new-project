@@ -59,15 +59,18 @@ def main():
     pages = sorted(f[:-3] for f in os.listdir(os.path.join(ROOT, "docs/pnap"))
                    if re.fullmatch(r"(adm|app|adv)-\d+\.md", f))
     issues = 0
+    repealed_pages = set()
     for k in pages:
         s, n = k.split("-")
         name = f"{s.upper()}{int(n):03d}.pdf"
+        page = open(os.path.join(ROOT, "docs/pnap", k + ".md"), encoding="utf-8").read()
+        if re.search(r"Status[^|]*\|\s*\*\*Repealed", page):
+            repealed_pages.add(k); continue
         try:
             pdf = fetch(BASE + s.upper() + "/" + name, os.path.join(a.cache, name))
         except Exception as e:
             print("UNREAD ", k, "download failed:", e); issues += 1; continue
         cur = pdf_revision(pdf)
-        page = open(os.path.join(ROOT, "docs/pnap", k + ".md"), encoding="utf-8").read()
         m = re.search(r"Version summarised[^|]*\|\s*([^|\n]*)", page)
         ours = month(m.group(1)) if m else None
         if ours is None:
@@ -94,7 +97,9 @@ def main():
             else: listed.add(k)
         for k in sorted(listed - set(pages), key=lambda k: (k[:3], int(k.split("-")[1]))):
             print("NOPAGE ", k); issues += 1
-        for k in sorted(set(repealed) & set(pages)):
+        for k in sorted(repealed_pages - set(repealed)):
+            print("NOTREPEALED", k, "page says repealed but BD's index does not"); issues += 1
+        for k in sorted((set(repealed) & set(pages)) - repealed_pages):
             print("REPEALED", k, "has a page but BD says:", repealed[k]); issues += 1
         print(len(repealed), "repealed PNAPs on BD's index (no page needed)")
     except Exception as e:
