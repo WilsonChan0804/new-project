@@ -3,11 +3,14 @@
  * - Pin a whole document (button by the page title), a section (by each h2/h3)
  *   or a single clause (each row of the clause tables).
  * - Every page you open is recorded; the panel shows Recent and Most used.
- * - Kept in this browser only (localStorage), per viewer. Nothing is sent anywhere.
+ * - Kept in this browser (localStorage). Inside the LWK Viewer, when signed in,
+ *   they are also synced to the viewer account (GET/PUT /api/kb/pins), so they
+ *   follow you to other devices. Elsewhere nothing is sent anywhere.
  */
 (function () {
   "use strict";
-  var KEY = "kb-pins-v1", HKEY = "kb-history-v1", MAXH = 200;
+  var KEY = "kb-pins-v1", HKEY = "kb-history-v1", TKEY = "kb-pins-tomb-v1", RKEY = "kb-pins-rev-v1", MAXH = 200;
+  var TOMB_DAYS = 90, API = "/api/kb/pins";
   var CLAUSE_SECTIONS = ["clause-by-clause", "key-clauses-table", "regulation-by-regulation"];
 
   function load(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v || d; } catch (e) { return d; } }
@@ -43,10 +46,102 @@
   function idOf(rel, anchor) { return rel + "#" + (anchor || ""); }
   function isPinned(id) { return pins.some(function (p) { return p.id === id; }); }
   function toggle(item) {
-    if (isPinned(item.id)) pins = pins.filter(function (p) { return p.id !== item.id; });
-    else pins.unshift(item);
-    save(KEY, pins); refreshButtons(); renderPanel();
+    var tomb = load(TKEY, {}), now = Date.now();
+    if (isPinned(item.id)) { pins = pins.filter(function (p) { return p.id !== item.id; }); tomb[item.id] = now; }
+    else { item.at = now; pins.unshift(item); delete tomb[item.id]; }
+    save(KEY, pins); save(TKEY, tomb); refreshButtons(); renderPanel(); schedulePush(800);
   }
+
+  // ---- sync with the viewer account (only when the viewer API answers) ----
+  var sync = { on: false, timer: null, busy: false };
+  function merge(a, b) {
+    // a, b: {pins, history, tombstones}; returns the union, newest wins, unpins respected
+    var tomb = {}, cut = Date.now() - TOMB_DAYS * 864e5;
+    [a.tombstones || {}, b.tombstones || {}].forEach(function (t) {
+      Object.keys(t).forEach(function (k) { if (t[k] > cut && !(tomb[k] >= t[k])) tomb[k] = t[k]; });
+    });
+    var byId = {};
+    (a.pins || []).concat(b.pins || []).forEach(function (p) {
+      if (!p || !p.id) return;
+      var at = p.at || 0, cur = byId[p.id];
+      if (!cur || at > (cur.at || 0)) byId[p.id] = p;
+    });
+    var outPins = Object.keys(byId).map(function (k) { return byId[k]; })
+      .filter(function (p) { return !(tomb[p.id] >= (p.at || 0)); })
+      .sort(function (x, y) { return (y.at || 0) - (x.at || 0); });
+    outPins.forEach(function (p) { if (tomb[p.id] !== undefined) delete tomb[p.id]; });
+    // history tombstones: "h:<rel>" removes one page, "h:*" clears everything older
+    var byRel = {};
+    (a.history || []).concat(b.history || []).forEach(function (e) {
+      if (!e || !e.rel) return;
+      var cur = byRel[e.rel];
+      if (!cur) { byRel[e.rel] = { rel: e.rel, title: e.title, at: e.at || 0, n: e.n || 1 }; return; }
+      if ((e.at || 0) > cur.at) { cur.at = e.at; cur.title = e.title || cur.title; }
+      cur.n = Math.max(cur.n, e.n || 1);
+    });
+    var outH = Object.keys(byRel).map(function (k) { return byRel[k]; })
+      .filter(function (e) { return !(tomb["h:" + e.rel] >= e.at) && !(tomb["h:*"] >= e.at); })
+      .sort(function (x, y) { return y.at - x.at; }).slice(0, MAXH);
+    return { pins: outPins, history: outH, tombstones: tomb };
+  }
+  function localState() { return { pins: load(KEY, []), history: load(HKEY, []), tombstones: load(TKEY, {}) }; }
+  function same(x, y) { return JSON.stringify(x) === JSON.stringify(y); }
+  function applyLocal(st) {
+    save(KEY, st.pins); save(HKEY, st.history); save(TKEY, st.tombstones);
+    pins = st.pins; refreshButtons(); renderPanel();
+  }
+  async function signedIn() {
+    try {
+      if (window.KBViewer && KBViewer.me) return !!(await KBViewer.me());
+      var r = await fetch("/api/kb/me", { credentials: "same-origin", headers: { Accept: "application/json" } });
+      return r.ok;
+    } catch (e) { return false; }
+  }
+  async function api(method, body) {
+    var r = await fetch(API, {
+      method: method, credentials: "same-origin",
+      headers: body ? { "Content-Type": "application/json", Accept: "application/json" } : { Accept: "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    var j = null; try { j = await r.json(); } catch (e) {}
+    return { status: r.status, data: j };
+  }
+  async function pull() {
+    var r = await api("GET");
+    if (r.status !== 200 || !r.data) { sync.on = false; return null; }
+    save(RKEY, r.data.rev || 0);
+    return r.data;
+  }
+  async function push(remote, tries) {
+    var merged = merge(localState(), remote || {});
+    applyLocal(merged);
+    if (remote && same(merge(remote, {}), merged)) return;
+    var r = await api("PUT", { pins: merged.pins, history: merged.history, tombstones: merged.tombstones, rev: load(RKEY, 0) });
+    if (r.status === 200 && r.data) { save(RKEY, r.data.rev || 0); return; }
+    if (r.status === 409 && r.data && (tries || 0) < 2) { save(RKEY, r.data.rev || 0); return push(r.data, (tries || 0) + 1); }
+    if (r.status === 401 || r.status === 404) sync.on = false;
+  }
+  async function syncNow() {
+    if (!sync.on || sync.busy) return;
+    sync.busy = true;
+    try { var remote = await pull(); if (sync.on) await push(remote, 0); } catch (e) {} finally { sync.busy = false; }
+  }
+  function schedulePush(ms) {
+    if (!sync.on) return;
+    clearTimeout(sync.timer); sync.timer = setTimeout(syncNow, ms || 1000);
+  }
+  async function startSync() {
+    if (sync.started) return; sync.started = true;
+    var cached = null; try { cached = sessionStorage.getItem("kb-pins-sync"); } catch (e) {}
+    if (cached === "off") return;
+    if (!(await signedIn())) { try { sessionStorage.setItem("kb-pins-sync", "off"); } catch (e) {} return; }
+    sync.on = true; await syncNow();
+    if (!sync.on) { try { sessionStorage.setItem("kb-pins-sync", "off"); } catch (e) {} return; }
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") syncNow(); });
+    var note = document.querySelector(".kb-pp-note");
+    if (note) note.textContent = "Synced to your viewer account. 已同步至你的閱覽器帳戶。";
+  }
+  window.KBPins = { merge: merge, syncNow: syncNow };
 
   function pinButton(item, cls) {
     var b = document.createElement("button");
@@ -107,7 +202,7 @@
     if (e) { if (now - e.at > 3000) e.n = (e.n || 1) + 1; e.at = now; e.title = pageTitle(); }
     else h.push({ rel: rel, title: pageTitle(), at: now, n: 1 });
     h.sort(function (a, b) { return b.at - a.at; });
-    save(HKEY, h.slice(0, MAXH));
+    save(HKEY, h.slice(0, MAXH)); schedulePush(5000);
   }
 
   // ---- panel ----
@@ -147,7 +242,7 @@
         body.appendChild(ul);
       });
       var clr = el("button", "kb-pp-clear", "Clear all pins 清除所有釘選"); clr.type = "button";
-      clr.addEventListener("click", function () { if (confirm("Clear all pins? 清除所有釘選？")) { pins = []; save(KEY, pins); refreshButtons(); renderPanel(); } });
+      clr.addEventListener("click", function () { if (confirm("Clear all pins? 清除所有釘選？")) { var t = load(TKEY, {}), now = Date.now(); pins.forEach(function (p) { t[p.id] = now; }); pins = []; save(KEY, pins); save(TKEY, t); refreshButtons(); renderPanel(); schedulePush(500); } });
       body.appendChild(clr);
     } else {
       var h = load(HKEY, []);
@@ -156,12 +251,13 @@
       var ul = el("ul");
       list.forEach(function (e) {
         ul.appendChild(row(e.title, tab === "recent" ? ago(e.at) + " ago" : (e.n || 1) + " visits 次", href(e.rel), function () {
-          save(HKEY, load(HKEY, []).filter(function (x) { return x.rel !== e.rel; })); renderPanel();
+          var t = load(TKEY, {}); t["h:" + e.rel] = Date.now(); save(TKEY, t);
+          save(HKEY, load(HKEY, []).filter(function (x) { return x.rel !== e.rel; })); renderPanel(); schedulePush(1000);
         }));
       });
       body.appendChild(ul);
       var c2 = el("button", "kb-pp-clear", "Clear history 清除記錄"); c2.type = "button";
-      c2.addEventListener("click", function () { if (confirm("Clear history? 清除瀏覽記錄？")) { save(HKEY, []); renderPanel(); } });
+      c2.addEventListener("click", function () { if (confirm("Clear history? 清除瀏覽記錄？")) { var t = load(TKEY, {}); t["h:*"] = Date.now(); save(TKEY, t); save(HKEY, []); renderPanel(); schedulePush(500); } });
       body.appendChild(c2);
     }
   }
@@ -179,7 +275,7 @@
       b.addEventListener("click", function () { tab = t[0]; renderPanel(); }); tabs.appendChild(b);
     });
     panel.appendChild(head); panel.appendChild(tabs); panel.appendChild(el("div", "kb-pp-body"));
-    panel.appendChild(el("p", "kb-pp-note", "Saved in this browser only. 只儲存在此瀏覽器。"));
+    panel.appendChild(el("p", "kb-pp-note", sync.on ? "Synced to your viewer account. 已同步至你的閱覽器帳戶。" : "Saved in this browser only. 只儲存在此瀏覽器。"));
     fab.addEventListener("click", function () { panel.hidden = !panel.hidden; renderPanel(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") panel.hidden = true; });
     var hdr = document.querySelector(".md-header__inner"), srch = hdr && hdr.querySelector(".md-search");
@@ -187,7 +283,7 @@
     document.body.appendChild(panel);
   }
 
-  function init() { pins = load(KEY, []); buildPanel(); decorate(); record(); renderPanel(); }
+  function init() { pins = load(KEY, []); buildPanel(); decorate(); record(); renderPanel(); startSync(); }
   if (window.document$ && window.document$.subscribe) window.document$.subscribe(init);
   else if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();

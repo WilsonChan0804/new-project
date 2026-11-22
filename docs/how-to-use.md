@@ -56,7 +56,9 @@ Tips 提示:
     - **Recent 最近**: the last 30 pages you opened.
     - **Most used 常用**: the pages you open most often.
 - Remove one item with **✕**, or clear all with the link at the bottom.
-- Pins and history are kept **in this browser only**. They are not shared with colleagues and do not move to another device or browser; clearing browser data removes them. 釘選及記錄只儲存在此瀏覽器，不會與同事共享，亦不會同步到其他裝置。
+- **In the LWK Viewer, signed in**: pins and history are saved to **your viewer account** and follow you to other devices and browsers (the panel says *Synced to your viewer account*). Unpinning or clearing on one device also applies on the others. 在閱覽器登入後，釘選及記錄會儲存到你的帳戶並跨裝置同步。
+- **Elsewhere** (e.g. the claude.ai preview, or not signed in): kept **in this browser only**; clearing browser data removes them. 其他情況只儲存在此瀏覽器。
+- Pins are **personal**: colleagues cannot see them. 釘選屬個人資料，同事看不到。
 
 ## Dark mode 深色模式 {#dark-mode}
 
