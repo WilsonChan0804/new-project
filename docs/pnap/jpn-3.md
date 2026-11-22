@@ -11,6 +11,11 @@ tags:
   - Registration 註冊
   - GFA 總樓面面積
   - GFA concession 樓面面積寬免
+  - Occupation permit 佔用許可證
+  - Site area & classification 地盤面積及分類
+  - Drainage 排水
+summary: "Landscape plans go to PlanD (planning route) or LandsD (lease only); site coverage of greenery is checked by BD alone on the GBP under APP-152."
+keywords: landscape, 園景, LMP, landscape master plan, 園景設計總圖, LP, RLA, 註冊園境師, SCC, site coverage of greenery, SCG, 綠化上蓋面積, greenery, 綠化, tree preservation, 保護樹木, JPN3, JPN 3
 ---
 
 # JPN 3 Landscape and Site Coverage of Greenery<br><small>園景及綠化上蓋面積</small>
@@ -44,6 +49,65 @@ tags:
     - **只屬地契要求的園景** → 由**地政總署**（或地契指明的部門）審核；如規劃署或其他部門沒有要求，地契只載**簡單園景條款**，毋須呈交（第 5 段）。
     - **批准時間**：有保護樹木條款的地段須在**地盤平整**前取得批准，沒有該條款的須在**上蓋工程**前取得（第 6 段）。一般建築圖則階段只須向區域規劃處提交**園景佈局圖**（第 8 段）。
     - **綠化上蓋面積**：**屋宇署是唯一審批機構**（[APP-152](app-152.md)）。新訂或修訂地契以屋宇署在一般建築圖則上的接納作為符合地契，**毋須另向地政總署呈交**；現有地契的業主亦可選擇此途徑（第 9–11 段）。
+
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: landscape submissions (**LMP / LP**) required by **planning permission**, statutory plans or the **lease**, within **private lots**; and **site coverage of greenery (SCG)** under [APP-152](app-152.md) as a lease condition or a GFA concession pre-requisite ([APP-151](app-151.md)). 適用於私人地段內的園景呈交及綠化上蓋面積。
+    **Not covered**: areas to be **handed back** to the Government or outside the lot (para. 7); **BD does not impose landscape** requirements (footnote 1); building separation and setback are under [JPN 6](jpn-6.md). 交還政府或地段以外的範圍不適用；屋宇署不設園景要求；樓宇間距及後移見 JPN 6。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Streamlined processing of **landscape** and **SCG** submissions by BD, LandsD and PlanD. 範圍。 |
+| 2 | Landscape submissions (**LMP** or **LP**) support planning applications or meet planning or lease conditions; content per **PlanD PN 1/2019**. 園景呈交。 |
+| 3 | With a planning application: **PlanD** checks at submission and implementation, even if also a lease condition. Lease-only: **LandsD** (or a named B/D) checks (LAO PN 6/2003). 由誰審核。 |
+| 4(a) | Planning route: PlanD approval is **deemed** to meet the lease landscape clause, if a **deemed approval application** is made to LandsD. 當作符合地契。 |
+| 4(b) | **LMP**: a **Registered Landscape Architect (RLA)** (Cap. 516) is **mandatory**; LMP approved by the DPO **before landscape works**; on completion an **RLA Self-Certification of Compliance (SCC)** with the approved LMP. 園景設計總圖須由註冊園境師擬備。 |
+| 4(c) | DPO acknowledges the SCC; PlanD's Landscape Unit **randomly audits**; not selected = **deemed complete 2 weeks** after receipt; non-compliance can withhold discharge of the planning condition or the **Certificate of Compliance**. 抽查及兩周當作完成。 |
+| 4(d) | **LP**: RLA optional; with an RLA, as 4(b)–(c); without, **full compliance check** by PlanD. 園景建議。 |
+| 5 | Without a planning application: **LandsD** checks (or a named B/D); LMP/LP put in leases only on request of PlanD or a B/D, which then approves; otherwise a **simple landscape clause** (plant and maintain unbuilt areas) with **no submission**. 非規劃申請。 |
+| 6 | **Timing**: landscape approval needed **before site formation** (sites with a **tree preservation** clause) or **before superstructure** (others); see LAO PN 7/2007, 7/2007A. 批准時限。 |
+| 7 | Private lots only; hand-back and off-lot areas to the departments in the lease (para. 4 procedures may be used by agreement). 只限私人地段。 |
+| 8 | With GBP: submit a **Landscape Layout Plan** to the DPO **before or with the GBP**, showing the design concept is not compromised by the building. 園景佈局圖。 |
+| 9 | **SCG** is one of the three SBD elements, **independent** of landscape requirements; in leases and as a GFA concession pre-requisite. 綠化上蓋面積獨立於園景。 |
+| 10 | **BD is the sole authority** for SCG under APP-152: accepted on the **GBP**, no separate LandsD submission; **higher %** required by another B/D: BD comments and computes, that B/D decides. 屋宇署為唯一當局。 |
+| 11 | **Existing leases**: SCG needs LandsD approval, but the owner may instead show it on the GBP for **BD acceptance**, which LandsD accepts subject to the lease's prescriptive terms; mismatches (e.g. **site area** differences) need a lease modification (premium, fee). 現有地契。 |
+| 12 | Approvals do not mean compliance with **other lease conditions**; the LMP/LP and GBP SCG must **tally**. 須互相吻合。 |
+| 13 | Requirements imposed for another B/D: that B/D checks, supplemented by this JPN. 其他部門。 |
+| 14 | Government's lease rights reserved. 保留權利。 |
+| 15 | Effective **15 May 2019**. 生效日期。 |
+
+## Landscape or SCG? Two separate requirements 園景與綠化上蓋面積：兩項獨立要求 {#landscape-vs-scg}
+
+| | Landscape (LMP / LP) 園景 | Site coverage of greenery (SCG) 綠化上蓋面積 |
+|---|---|---|
+| Source 來源 | Planning permission, OZP, lease 規劃許可、大綱圖、地契 | Lease; GFA concession pre-requisite ([APP-151](app-151.md)) 地契；寬免先決條件 |
+| Standard 標準 | PlanD PN 1/2019; LAO PN 6/2003 | [APP-152](app-152.md) paras. 10–11 |
+| Prepared by 擬備 | **RLA** (mandatory for LMP) 註冊園境師 | **AP**, on the GBP 認可人士 |
+| Checked by 審核 | **PlanD** (planning route) or **LandsD** (lease only) | **BD** (sole authority) |
+| Approval timing 時限 | Before site formation or superstructure (para. 6) 地盤平整或上蓋前 | With the GBP; checked at completion 隨圖則；竣工核實 |
+| Completion 竣工 | **SCC** by RLA; random audit; deemed in **2 weeks** | BD check before **OP** |
+
+## SCG requirements BD checks (APP-152) 屋宇署審核的綠化要求 {#scg-requirements}
+
+| Site area 地盤面積 | Primary zone 主要區域 | Overall 整體 |
+|---|---|---|
+| 1,000 m² – 20,000 m² | **10 %** | **20 %** |
+| ≥ 20,000 m² | **15 %** | **30 %** |
+
+- **Primary zone**: the **15 m** vertical zone above the abutting street level (pedestrian zone). 主要區域為毗連街面以上 15 米。
+- Not for sites with a **single family house** only; sites below **1,000 m²** are not covered (APP-152 para. 11). 只有單一獨立屋的地盤不適用。
+- Measure planting as in Fig. D1. **Water features, grass paving and vertical greening** together may make up **no more than 30 %** of the required overall greenery, with reduction factors (e.g. grass paving **50 %**). See [APP-152](app-152.md) for the counting rules and [ADV-35](adv-35.md) for structure, drainage and maintenance of greening. 計算方法見 APP-152；結構及排水見 ADV-35。
+
+<figure markdown>
+  ![Fig. D1 — Measurement of greenery area 綠化面積的量度](../assets/figures/app-152/fig-d1-greenery.jpg){ loading=lazy }
+  <figcaption>Fig. D1 — Measurement of greenery area: what counts and what does not 綠化面積的量度<br><small>Source: PNAP APP-152 (Sep 2023), Buildings Department 資料來源：屋宇署</small></figcaption>
+</figure>
+
+<figure markdown>
+  ![JPN 3: landscape and site coverage of greenery routes](../assets/figures/diagrams/jpn3-flow.svg){ width="760" loading=lazy }
+  <figcaption>Two separate routes: landscape (PlanD / LandsD) and SCG (BD). 兩條獨立途徑：園景（規劃署／地政總署）及綠化上蓋面積（屋宇署）。</figcaption>
+</figure>
 
 ## Key table: who checks what 由誰審核 {#key-table-who-checks-what}
 
@@ -94,6 +158,36 @@ tags:
 
     園景與綠化上蓋面積是**互相獨立**的（第 9 段）：園景設計總圖完善並不代表符合綠化上蓋面積要求，反之亦然。認可人士須確保園景設計總圖／園景建議與一般建築圖則上的綠化上蓋面積**互相吻合**，並符合地契（第 12 段）。
 
+## Worked example 例子 {#worked-example}
+
+=== "English"
+
+    A **8,000 m²** residential site, rezoned by a **planning permission** with a landscape condition; new lease with a tree preservation clause and an SCG clause; developer seeks GFA concessions.
+
+    | Step | Requirement | Who | When |
+    |---|---|---|---|
+    | 1 | **Landscape Layout Plan** to the DPO | Applicant | Before or with the **GBP** (para. 8) |
+    | 2 | **SCG on the GBP**: primary zone ≥ **800 m²** (10 %), overall ≥ **1,600 m²** (20 %) | AP → **BD** | With the GBP (para. 10) |
+    | 3 | **LMP** by an **RLA**, approved by the DPO; **deemed approval** application to LandsD | RLA → **PlanD** | **Before site formation** (tree preservation clause, para. 6) |
+    | 4 | Landscape works built; **SCC** by RLA to DPO and Landscape Unit | RLA | On completion (para. 4(b)) |
+    | 5 | Not audited → **deemed complete 2 weeks** later; SCG checked by BD | PlanD / BD | Before OP and the Certificate of Compliance |
+
+    Keep the LMP planting areas and the GBP SCG areas **the same** (para. 12); a planter shown in one and paved in the other causes rejections.
+
+=== "中文"
+
+    一個 **8,000 平方米**住宅地盤，經**規劃許可**改劃並附園景條件；新地契設保護樹木條款及綠化條款；發展商申請總樓面面積寬免：
+
+    | 步驟 | 要求 | 負責 | 時限 |
+    |---|---|---|---|
+    | 1 | 向地區規劃處提交**園景佈局圖** | 申請人 | 一般建築圖則**之前或同時**（第 8 段） |
+    | 2 | **圖則上顯示綠化上蓋面積**：主要區域 ≥ **800 平方米**（10%），整體 ≥ **1,600 平方米**（20%） | 認可人士 → **屋宇署** | 隨圖則（第 10 段） |
+    | 3 | 由**註冊園境師**擬備**園景設計總圖**經地區規劃處批准，並向地政總署申請**當作批准** | 註冊園境師 → **規劃署** | **地盤平整前**（有保護樹木條款，第 6 段） |
+    | 4 | 完成園景工程，註冊園境師提交**自行證明符合規定** | 註冊園境師 | 竣工時（第 4(b) 段） |
+    | 5 | 未被抽查 → **兩周後當作完成**；屋宇署核實綠化 | 規劃署／屋宇署 | 佔用許可證及完成證明書前 |
+
+    園景設計總圖的種植範圍須與圖則上的綠化範圍**一致**（第 12 段）。
+
 ## Practical notes 實務提示 {#practical-notes}
 
 === "English"
@@ -123,6 +217,12 @@ tags:
 | [JPN 1](jpn-1.md), [JPN 2](jpn-2.md) | Green and amenity features 環保及適意設施 |
 | PlanD PN No. 1/2019 | Landscape submissions under the planning regime 規劃制度下的園景呈交 |
 | LandsD LAO PN 6/2003, 7/2007 & 7/2007A | Landscape clause compliance; tree preservation 園景條款；保護樹木 |
+| [JPN 6](jpn-6.md) | The other two SBD elements: separation and setback 另外兩項可持續建築設計要求 |
+| [JPN 4](jpn-4.md), [JPN 7](jpn-7.md) | GFA and site coverage across the three regimes 總樓面面積及上蓋面積 |
+| [ADV-35](adv-35.md) | Greening in buildings: loads, drainage, maintenance 樓宇綠化 |
+| [APP-122](app-122.md) | Sky gardens 空中花園 |
+| [GFA guide](../guides/gfa.md) | Where SCG fits in the GFA concession pre-requisites 總樓面面積專題 |
+| [Submission to OP guide](../guides/submission-to-op.md) | When each submission is due 呈交時間 |
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Chinese text is an unofficial translation (中譯（非官方）). Refer to the JPN for the definitive text.</small>

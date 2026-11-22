@@ -408,3 +408,58 @@ D['jpn5-height'] = ('pnap/jpn-5.md',
   D -->|"Enclosed area ≤ 50% of roof below<br/>and within height limits"| E["Not counted 不計入 (para. 9)"]
   D -->|"Enclosed area over 50%<br/>or above height limits"| F["Counted towards BHR<br/>計入高度 (para. 10)"]
   E --> G["Ancillary ≤ 3 m (≤ 30 m bldg) or 10% / 15 m;<br/>features ≤ 15% / 7 m (residential);<br/>signs as ancillary 高度上限"]''')
+
+D['jpn3-flow'] = ('pnap/jpn-3.md',
+ 'JPN 3: landscape and site coverage of greenery routes. 園景及綠化上蓋面積途徑。',
+'''flowchart TD
+  A["Landscape requirement<br/>園景要求 (LMP / LP)"] --> B{"Made with a planning application?<br/>是否與規劃申請有關？"}
+  B -->|"Yes 是"| C["PlanD checks at submission and completion<br/>規劃署審核 (para. 4)"]
+  B -->|"No, lease only 只屬地契"| D["LandsD (or named B/D) checks<br/>地政總署審核 (para. 5)"]
+  C --> E["LMP by RLA → DPO approval before<br/>site formation / superstructure (para. 6)<br/>註冊園境師擬備，動工前獲批"]
+  E --> F["SCC by RLA on completion;<br/>random audit, else deemed in 2 weeks<br/>自行證明，兩周後當作完成"]
+  G["Site coverage of greenery (APP-152)<br/>綠化上蓋面積"] --> H["BD is sole authority: shown on GBP<br/>屋宇署為唯一當局 (paras. 10–11)"]
+  H --> I["Must tally with the LMP / LP<br/>須與園景圖吻合 (para. 12)"]
+  F --> I''')
+
+D['jpn9-flow'] = ('pnap/jpn-9.md',
+ 'JPN 9: Bonus PR Pilot Scheme process. 額外地積比率先導計劃流程。',
+'''flowchart TD
+  A["DLO enquiry: eligibility and estimated bonus<br/>地政處查詢 (para. 16(b))"] --> B{"Eligible? 7 areas · OP ≥ 50 yrs ·<br/>mainly residential · site ≥ 700 m²<br/>符合資格？ (para. 5)"}
+  B -->|"No 否"| X["Not in the scheme 不適用"]
+  B -->|"Yes 是"| C{"Option 選項"}
+  C -->|"(i) Build in kind 原址興建"| D["s.16 planning permission stating<br/>bonus built in-situ (para. 9)<br/>第 16 條規劃許可"]
+  C -->|"(ii) Encash 兌換"| E["Planning permission only if<br/>'Flat' needs it (fn. 14)<br/>如需要才申請規劃許可"]
+  D --> F["Lease modification application<br/>1 Sep 2026 – 31 Aug 2031<br/>修訂地契申請"]
+  E --> F
+  F --> G["BBTO: premium minus bonus value<br/>at standard rate (paras. 11, 14)<br/>基本條款要約"]
+  G --> H["Execute within 3 years (para. 16(a))<br/>三年內簽立"]
+  H --> I["Option (i): s.42 if PR above B(P)R (para. 12)<br/>Option (ii): unused value valid 10 years (para. 15)<br/>第 42 條申請／十年有效"]
+  I --> J["Full ownership before GBP submission (para. 16(c))<br/>呈交圖則前須取得全部業權"]''')
+
+D['app89-check'] = ('pnap/app-89.md',
+ 'APP-89: working out the lift shaft exemption. 計算升降機槽豁免。',
+'''flowchart TD
+  A["Lift shafts serving which use?<br/>服務甚麼用途？"] --> B{"Domestic / hotel<br/>住用／酒店"}
+  A --> C{"Office GFA<br/>辦公室面積"}
+  B --> D["Exempt above 2.5%, cap 3.5%<br/>超出 2.5% 豁免，上限 3.5%"]
+  C -->|"under 10,000 m²"| E["Exempt above 5%, cap 3%<br/>超出 5%，上限 3%"]
+  C -->|"10,000–12,000 m²"| F["Up to 300 m² may be allowed<br/>最多 300 平方米"]
+  C -->|"10,000 m² or more"| G["Exempt above 3.5%, cap 2.5%<br/>超出 3.5%，上限 2.5%"]
+  D --> H["Pre-requisites: car / shaft sizes,<br/>lift engineer assessment, APP-151 (paras. 8–9)<br/>先決條件"]
+  E --> H
+  F --> H
+  G --> H
+  H --> I["SC exemption = GFA exemption ÷<br/>storeys occupied by the shafts (para. 6)<br/>上蓋面積豁免"]''')
+
+D['app147-validation'] = ('pnap/app-147.md',
+ 'APP-147: validation of existing minor structures. 現有小型構築物檢核。',
+'''flowchart TD
+  A["Owner appoints a PBP or registered contractor<br/>to inspect 委任人士檢驗"] --> B{"Is the structure a<br/>prescribed building work?<br/>是否屬訂明建築工程？"}
+  B -->|"No 否"| C{"Non-concrete canopy<br/>projecting ≤ 750 mm?"}
+  C -->|"No 否"| N["Scheme not applicable<br/>計劃不適用"]
+  C -->|"Yes 是"| S["Strengthen or alter by PRC<br/>(MW01 / MW03 ≥ 7 days for Class I / II)<br/>由承建商加固"]
+  B -->|"Yes 是"| D{"Structurally safe?<br/>結構安全？"}
+  D -->|"No 否"| S
+  S --> D
+  D -->|"Yes 是"| E["Submit MW06-1 / 06-2 / 06-3<br/>within 14 days with photos<br/>14 天內呈交"]
+  E --> F["BD acknowledges; no enforcement<br/>unless condition changes<br/>不會執法"]''')

@@ -13,6 +13,11 @@ tags:
   - Refuge floor 庇護層
   - Plot ratio 地積比率
   - Barrier free access 無障礙
+  - Sustainable building design 可持續建築設計
+  - Means of access 救援通道
+  - Elderly-friendly 長者友善
+summary: "Lift shaft area above 2.5% (domestic/hotel) or 5% / 3.5% (office) of GFA may be exempted from GFA and SC, up to 3.5% / 3% / 2.5%, with an engineer's lift service assessment."
+keywords: lift shaft, 升降機槽, better lift service, 優質升降機服務, GFA exemption, 總樓面面積豁免, handling capacity, waiting time, 候機時間, registered lift engineer, 註冊升降機工程師, PNAP 207
 ---
 
 # APP-89 Provision of Better Lift Service<br><small>提供較佳的升降機服務</small>
@@ -48,6 +53,35 @@ tags:
     - **先決條件**：機廂／升降機槽 ≥ **1.82／4.12 平方米**（住用）或 **2.1／4.4 平方米**（辦公室）；須由**註冊升降機工程師**或**註冊專業工程師（屋宇裝備）**證明服務水平（載客量、候梯時間）高於可接受水平並有足夠維修空間；亦須符合 **APP-151 先決條件**（不計入 10% 上限）。
     - **不適用**於已取得佔用許可證的建築物；分期發展中已完成的期數不獲考慮，各期**不得轉移**面積。
 
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: lift shafts serving **domestic, hotel and office** accommodation in new buildings, or buildings **under construction** if an enhanced lift service is shown (para. 10); also **phased** developments, phase by phase (para. 11). 適用於住用、酒店及辦公室的升降機槽。
+    **Does not apply**: buildings **with an OP** already issued, and **completed phases** (no transfer between phases); lift shafts serving **non-accountable storeys** such as refuge floors; **other commercial** (retail) lift shafts in office/commercial buildings (footnotes 1–2). 已取得佔用許可證的建築物、已完成的期數、服務庇護層或零售部分的升降機槽不適用。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Guidelines on lifts in **domestic and office** buildings to promote **better lift service**. 目的。 |
+| 2 | Lifts and lift shafts **count for SC and GFA** (B(P)R 20, 23(3)(a)). 計入上蓋面積及總樓面面積。 |
+| 3 | Apart from **fireman's lifts** ([FS Code Part D](../codes/fsc-part-d-means-of-access.md)) and **accessible lifts** ([B(P)R 72–73](../regulations/bpr-71-73.md)), the law sets no lift service standard, so designers often provide the minimum. 法例沒有服務標準。 |
+| 4 | Lift quality depends on **number, size, handling capacity, travel and waiting time**; the BA may exclude lift shaft area **above the average** from GFA and SC under paras. 5–6. 可豁免超出平均的部分。 |
+| 5(a) | **Domestic, composite (domestic part) and hotels**: exempt the shaft area **above 2.5 %** of domestic/hotel GFA, capped at **3.5 %** (i.e. shafts over **6 %** get the full 3.5 %). 住用及酒店。 |
+| 5(b) | **Office GFA < 10,000 m²**: exempt above **5 %**, capped at **3 %** (full cap at **8 %**). 辦公室少於 10,000 平方米。 |
+| 5(c) | **Office GFA ≥ 10,000 m²**: exempt above **3.5 %**, capped at **2.5 %** (full cap at **6 %**). 辦公室 10,000 平方米或以上。 |
+| 5(d) | **Office GFA 10,000–12,000 m²**: up to **300 m²** may be allowed (bridges the step at 10,000 m²). 過渡範圍。 |
+| fn. 1–2 | Includes podium lift shafts with lobbies **solely** serving the domestic/hotel/office part; excludes shafts serving **refuge floors** and other non-accountable storeys; office GFA includes ancillary uses but **not** other commercial uses. 計算範圍。 |
+| 6 | **SC exemption** = GFA exemption ÷ **number of storeys** the exempted shafts occupy. 上蓋面積豁免。 |
+| 7 | Example in **Appendix A**. 例子。 |
+| 8 | Pre-requisites: (a) domestic/composite car **≥ 1.82 m²**, shaft **≥ 4.12 m²** each; (b) office car **≥ 2.1 m²**, shaft **≥ 4.4 m²** each; (c) assessment by a **registered lift engineer** (Cap. 618) or **RPE (building services)**: above the acceptance level for **handling capacity and waiting time** to international codes, with **maintenance space**. 先決條件。 |
+| 9 | Also subject to the **APP-151 pre-requisites** (SBD, energy efficiency). 須符合 APP-151 先決條件。 |
+| 10 | **Not** for buildings with an OP; buildings under construction considered if enhanced service is built in. 適用時間。 |
+| 11 | **Phased** developments: completed phases excluded; **no transfer** of GFA/SC between phases (Appendix B). 分期發展。 |
+
+<figure markdown>
+  ![APP-89: working out the lift shaft exemption](../assets/figures/diagrams/app89-check.svg){ width="720" loading=lazy }
+  <figcaption>Which rule applies, and how the GFA and SC exemptions follow (paras. 5–6, 8). 適用哪條規則及如何計算豁免。</figcaption>
+</figure>
+
 ## Key table: GFA exemption for lift shafts (para. 5) 升降機槽總樓面面積豁免（第 5 段） {#key-table-gfa-exemption-for-lift-shafts-para-5-5}
 
 | Accommodation served 服務對象 | Lift shaft area exempted 可豁免的升降機槽面積 | Max. exempted 豁免上限 | i.e. lift shaft area at which the cap is reached 達上限時的升降機槽面積 |
@@ -69,6 +103,11 @@ tags:
 | APP-151 | Pre-requisites apply (SBD, BEAM Plus, energy) 須符合先決條件 | |
 
 ## Official worked example (Appendix A) 官方計算例子（附錄 A） {#official-worked-example-appendix-a-a}
+
+<figure markdown>
+  ![Appendix A — office tower on a retail podium](../assets/figures/app-89/appendix-a-section.png){ width="520" loading=lazy }
+  <figcaption>Appendix A — office tower (20 storeys) on a 15 m retail podium: only the shafts serving the **office** count for the exemption. 附錄 A：只有服務辦公室的升降機槽可計算豁免。<br><small>Source: PNAP APP-89 (Jun 2025), Buildings Department 資料來源：屋宇署</small></figcaption>
+</figure>
 
 !!! example "Office/commercial building 辦公室／商業建築物"
     Site **2,000 m²**; permissible non-domestic PR **15**; SC 100% (≤ 15 m) / **65%** (> 15 m).
@@ -158,6 +197,10 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | [B(P)R 18A–22](../regulations/bpr-18a-22.md) | SC and PR limits 上蓋面積及地積比率 |
 | [BFA 2008](../codes/bfa-2008.md) Division 19 | Accessible lift sizes 暢通易達升降機尺寸 |
 | [FS Code Part D](../codes/fsc-part-d-means-of-access.md) | Fireman's lifts 消防員升降機 |
+| [B(P)R 73](../regulations/bpr-71-73.md), [APP-175](app-175.md) | Elderly-friendly: accessible lift car **1,400 × 1,200 mm** from Aug 2026 長者友善較大升降機 |
+| [Lifts & Escalators Code](../codes/lifts-escalators-2011.md) | Minimum well, pit, headroom and machine room sizes 升降機槽尺寸 |
+| [APP-29](app-29.md) | Lift and escalator installations 升降機及自動梯安裝 |
+| [GFA guide](../guides/gfa.md) | Where lift shafts sit among the GFA concessions 總樓面面積專題 |
 
 ---
 <small>Prepared by: _[name]_ · Checked by: _[name]_ · Unofficial summary; refer to the official PNAP for the definitive text.</small>

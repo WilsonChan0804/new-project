@@ -13,6 +13,8 @@ tags:
   - Protective barrier 防護欄障
   - A&A works 改動及加建工程
   - Site coverage 上蓋面積
+  - Refuge floor 庇護層
+  - Means of escape 逃生途徑
 summary: "Greening is dead load taken fully saturated plus the normal imposed load; fall at least 1:80; no submission unless new works or strengthening are needed."
 keywords: green roof, roof garden, 綠化天台, 天台花園, planter, 花槽, vertical greening, 垂直綠化, saturated soil, 飽和泥土, 1:80, drainage, 排水
 ---

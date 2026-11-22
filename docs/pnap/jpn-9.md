@@ -11,6 +11,12 @@ tags:
   - Occupation permit 佔用許可證
   - Site area & classification 地盤面積及分類
   - GFA concession 樓面面積寬免
+  - Sustainable building design 可持續建築設計
+  - Hotel 酒店
+  - Heritage 文物
+  - Balcony & utility platform 露台及工作平台
+summary: "Old residential buildings (OP 50+ years) on sites of 700 m² or more in 7 designated areas can get 20% premium-free bonus PR, built in kind or encashed, via a lease modification by 31 Aug 2031."
+keywords: bonus plot ratio, 額外地積比率, pilot scheme, 先導計劃, redevelopment, 重建, encashment, 兌換, land premium, 補地價, Sham Shui Po, 深水埗, Mong Kok, 旺角, To Kwa Wan, 土瓜灣, Yau Ma Tei, 油麻地, JPN9, JPN 9
 ---
 
 # JPN 9 Bonus Plot Ratio Pilot Scheme<br><small>額外地積比率先導計劃</small>
@@ -46,6 +52,68 @@ tags:
     - 以**修訂地契**落實，只加入「**最低所需**」條款及**建築規約**；修訂地契函件須在有效申請後 **3 年**內簽立（第 16(a) 段）。
     - **屋宇署角色**：如城規會批准的整體地積比率超過 **B(P)R 附表 1**，須根據**《建築物條例》第 42 條**申請；屋宇署會參照 [JPN 4](jpn-4.md) **從寬考慮**（第 12 段）。
     - 兌換的抵免有效期 **10 年**，除轉讓予相聯公司外不可轉讓，不設利息或退款（第 15 段）。
+
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: redevelopment of **old residential buildings** (OP **50+ years**) on sites **≥ 700 m²** in the **7 designated areas**, mainly for residential use, with a **lease modification** applied for **1 Sep 2026 – 31 Aug 2031**. 適用於 7 個指定地區、樓齡 50 年以上、地盤 ≥ 700 平方米、以住宅為主的重建。
+    **Excluded**: hotels and guesthouses; hostels, dormitories, staff quarters, student hostels and **care homes**; **NT exempted houses** (footnote 3); government land in the site does **not** earn bonus PR (footnote 6). 酒店、宿舍、院舍及新界豁免屋宇不包括在內；政府土地不計額外地積比率。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Key points for the **Bonus PR Pilot Scheme** (2025 Policy Address) to push private redevelopment in old districts. 額外地積比率先導計劃。 |
+| 2 | Pull down an **old residential building** in a **designated area** and redevelop mainly for residential: **+20 % land premium-free PR/GFA**, used **in kind** (TPB approval) or **encashed** as a premium credit (in-situ, Northern Metropolis or elsewhere); effected by **lease modification** with a **building covenant**. 額外 20% 免補地價地積比率。 |
+| 3 | Five-year window **1 Sep 2026 – 31 Aug 2031** for the lease modification application; any **s.16 planning permission** must come **first** (extensions possible with DEVB, footnote 2). 五年期。 |
+| 4 | "Lease modification" includes **land exchange**. 包括換地。 |
+| 5 | Eligibility (all): (a) in the **7 designated areas**; (b) building(s) with **residential elements** with an **OP at least 50 years old** (at planning or lease application); (c) redeveloped **mainly residential** (> 50 % GFA); (d) site **≥ 700 m²** (one or more lots). 資格。 |
+| 6 | Bonus = 20 % of the **max. domestic PR/GFA on the OZP**; non-residential zones needing permission for 'Flat': the **"R(A)"** PR of that OZP; no OZP limit: **B(P)R First Schedule, domestic > 61 m** (Appendix). 計算基礎。 |
+| 7 | Premium value from **standard rates** (one per designated area, updated yearly); **no appeal**. 標準價率。 |
+| 8 | Choose **Option (i)** in kind **or** **Option (ii)** encashment; **no hybrid**; unused in-kind bonus is **lost**. 二選一。 |
+| 9 | Option (i): state in the **s.16 application** that the bonus is built in-situ; then lease modification within the 5-year period; premium **reduced** by the bonus value. 原址興建。 |
+| 10 | **Minimum necessary** lease terms: building covenant, user, min/max PR or GFA, alienation and **pre-sale consent**, DMC, essential TPB conditions; B/Ds add only essential (e.g. safety) terms. 最少需要的地契條款。 |
+| 11 | Premium = normal before-and-after assessment **minus** bonus value at the standard rate on the **BBTO** date. 補地價計算。 |
+| 12 | PR above the **B(P)R First Schedule** needs a **BO s.42** application, considered **favourably** with reference to [JPN 4](jpn-4.md); in 'Flat'-by-permission zones, PR above the zone or "R(A)" limit counts as using the bonus in kind. 第 42 條申請。 |
+| 13 | Option (ii): lease modification for the 100 % in-situ scheme stating **encashment**; minimum necessary terms. 兌換選項。 |
+| 14 | BBTO states the bonus value; may offset the in-situ premium; LandsD records the **remaining value** after execution. 記錄價值。 |
+| 15 | LandsD **register**; unused value valid **10 years** from the lease modification letter; no interest or refund; **non-transferable** except to associated companies (Cap. 622). 十年有效。 |
+| 16(a) | Apply to the **DLO**; lease modification to be **executed within 3 years** of a valid application. 三年內簽立。 |
+| 16(b) | DLO **enquiry service** on eligibility and estimated bonus value; PlanD advice on planning matters. 查詢服務。 |
+| 16(c) | Full ownership not needed for the s.16 application, but **needed before** the lease modification application or **building plan submission**; joint ownership allowed. 業權。 |
+| 16(d) | Voluntary **planning gains** encouraged: community facilities, **setback beyond the SBD Guidelines** ([APP-152](app-152.md)), canopies, **public passageways** ([APP-108](app-108.md)); see URA District Studies. 規劃增益。 |
+| 16(e) | Other GFA concessions ([APP-151](app-151.md), [JPN 1](jpn-1.md), [JPN 2](jpn-2.md), heritage bonus) remain available but are **not counted** in the 20 %. 其他寬免不受影響。 |
+| 16(f) | Government may **recover** the bonus value if the redevelopment is not built per the lease (**Deed of Undertaking**). 追討。 |
+| 16(g) | Sites in a **Transfer of Plot Ratio** scheme may also apply, following the TPB TPR Guidelines. 地積比率轉移。 |
+| 16(h) | LandsD **administrative fee** (and LACO fee for land exchange). 行政費。 |
+| 17–19 | Engage professionals; each case on its merits; no expectation of approval; rights to modify reserved. 其他。 |
+
+## The 7 designated areas 7 個指定地區 (footnote 1) {#designated-areas}
+
+| Area 地區 | OZP 分區計劃大綱圖 |
+|---|---|
+| Sham Shui Po 深水埗 | Cheung Sha Wan OZP **S/K5/39** |
+| Kowloon City and To Kwa Wan 九龍城及土瓜灣 | Ma Tau Kok OZP **S/K10/30** |
+| Mong Kok 旺角 | Mong Kok OZP **S/K3/36** |
+| Sai Ying Pun and Sheung Wan 西營盤及上環 | **S/H3/34** |
+| Tsuen Wan 荃灣 | **S/TW/35** |
+| Wan Chai 灣仔 | **S/H5/31** |
+| Yau Ma Tei 油麻地 | **S/K2/24** |
+
+<small>The areas in the Schedule to the **Land (Compulsory Sale for Redevelopment) (Specification of Lower Percentage) Notice, Cap. 545A**. 即《土地（為重新發展而強制售賣）（指明較低百分比）公告》附表所列地區。</small>
+
+## Timeline 時間表 {#timeline}
+
+<figure markdown>
+  ![JPN 9: Bonus PR Pilot Scheme process](../assets/figures/diagrams/jpn9-flow.svg){ width="760" loading=lazy }
+  <figcaption>From eligibility check to building plans, with the two options. 由資格查詢至呈交建築圖則，兩個選項的流程。</figcaption>
+</figure>
+
+| Milestone 里程碑 | Limit 期限 | Para. 段 |
+|---|---|---|
+| Lease modification application window 申請期 | **1 Sep 2026 – 31 Aug 2031** | 3 |
+| Building age 樓齡 | OP **≥ 50 years** before the planning (or lease) application | 5(b) |
+| Execute the lease modification 簽立修訂地契 | Within **3 years** of a valid application | 16(a) |
+| Use the encashed value 使用兌換價值 | Within **10 years** of the lease modification letter | 15 |
+| Full ownership 全部業權 | Before the lease application or **building plan submission** | 16(c) |
 
 ## Key table: bonus PR eligibility (para. 5) 額外地積比率資格（第 5 段） {#key-table-bonus-pr-eligibility-para-5-5}
 
@@ -105,6 +173,24 @@ tags:
 
     計劃**設有時限**：只接受 **2026 年 9 月 1 日至 2031 年 8 月 31 日**期間提交的修訂地契申請。
 
+## Worked example: Option (i) from planning to building plans 例子：選項 (i) 由規劃至建築圖則 {#worked-example}
+
+A **900 m²** Class A site zoned "R(A)" on the **Mong Kok OZP** (max. domestic PR **8.5**), with two 1960s tenement blocks (OPs over 50 years old). 旺角「住宅（甲類）」甲類地盤 900 平方米，兩幢 1960 年代唐樓：
+
+| Step 步驟 | Working 計算／行動 |
+|---|---|
+| Eligibility 資格 | Designated area ✔ · OP ≥ 50 years ✔ · mainly residential ✔ · ≥ 700 m² ✔ (para. 5) |
+| Base GFA 基本 | 900 × 8.5 = **7,650 m²** domestic |
+| Bonus 額外 | 7,650 × 20 % = **1,530 m²** → total **9,180 m²** (PR **10.2**) |
+| Planning 規劃 | **s.16** application stating the bonus is built in-situ (para. 9) |
+| B(P)R check 規例 | First Schedule domestic, Class A, > 61 m: PR **8**. 10.2 > 8 → **BO s.42** application, considered favourably under [JPN 4](jpn-4.md) (para. 12) |
+| Premium 補地價 | Normal assessment minus 1,530 m² × standard rate for Mong Kok at the BBTO date (para. 11) |
+| Other concessions 其他寬免 | Balconies, utility platforms and plant rooms under [APP-151](app-151.md) still available, on top of 9,180 m² and **within the 10 % cap**; they are not part of the bonus (para. 16(e)) |
+| Lease 地契 | Execute within **3 years**; full ownership before **GBP** (para. 16(a), (c)) |
+| Height 高度 | The extra PR must still fit the **OZP height** limit ([JPN 5](jpn-5.md)) and SBD rules ([APP-152](app-152.md)) |
+
+Under **Option (ii)** the same site would build **7,650 m²** and receive a premium credit worth **1,530 m²** at the standard rate, valid **10 years**. 如選擇選項 (ii)，只建 7,650 平方米，並獲相當於 1,530 平方米的補地價抵免，有效 10 年。
+
 ## Practical notes 實務提示 {#practical-notes}
 
 === "English"
@@ -135,6 +221,10 @@ tags:
 | [B(P)R 18A–22](../regulations/bpr-18a-22.md) | First Schedule PR (domestic > 61 m) 附表 1 |
 | [BO s.42](../regulations/bo-parts-4-9-schedules.md) | Modification of B(P)R PR limits 變通 |
 | [APP-151](app-151.md), [JPN 1](jpn-1.md), [JPN 2](jpn-2.md) | Other GFA concessions still available 其他寬免 |
+| [JPN 5](jpn-5.md) | Building height limits on the extra GFA 高度限制 |
+| [APP-152](app-152.md), [APP-108](app-108.md) | Setback and public passage as voluntary planning gains 後移及公眾通道 |
+| [ADM-19](adm-19.md) | Pre-submission enquiry and approval process 呈交前查詢 |
+| [Site coverage and PR guide](../guides/site-coverage-plot-ratio.md), [GFA guide](../guides/gfa.md) | The whole picture on PR and GFA 地積比率及總樓面面積專題 |
 | Land (Compulsory Sale for Redevelopment) (Specification of Lower Percentage) Notice, Cap. 545A | Defines the 7 designated areas 7 個指定地區 |
 
 ---

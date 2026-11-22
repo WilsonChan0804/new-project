@@ -42,6 +42,10 @@ tags:
   - Barrier free access 無障礙
   - Balcony & utility platform 露台及工作平台
   - A&A works 改動及加建工程
+  - Protective barrier 防護欄障
+  - Building height 建築物高度
+  - GFA concession 樓面面積寬免
+  - Elderly-friendly 長者友善
 ---
 # PNAP 認可人士作業備考
 
