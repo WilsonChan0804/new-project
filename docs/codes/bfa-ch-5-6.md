@@ -10,6 +10,8 @@ tags:
   - Domestic 住用
   - Plant rooms 機房
   - Car park 停車場
+summary: "BFA Manual Chapters 5–6: switches, visual fire alarms, payphones, lifting platforms and drinking fountains, plus elderly-friendly design guidelines."
+keywords: BFA chapter 5, building services, visual fire alarm, 火警閃燈, vertical lifting platform, elderly-friendly design, 長者友善
 ---
 
 # BFA Manual Chapters 5–6: Building Services and Elderly-friendly Design Guidelines<br><small>《設計手冊：暢通無阻的通道 2008》第 5–6 章：屋宇裝備設計規定及長者友善設計指引</small>

@@ -12,6 +12,8 @@ tags:
   - Site safety 地盤安全
   - Curtain wall & façade 幕牆及外牆
   - A&A works 改動及加建工程
+summary: "FS Code Parts E–G: fire test standards and combustibility classes, fire safety management plans, and the fire engineering approach for alternative solutions."
+keywords: FS Code Part E F G, fire properties, non-combustible, fire safety management, 消防安全管理, fire engineering, 消防工程, alternative solution
 ---
 
 # FS Code 2011 Parts E, F & G: Fire Properties, Fire Safety Management, Fire Engineering<br><small>《2011 年建築物消防安全守則》E、F、G 部：建築構件的耐火性能、消防安全管理、消防工程</small>

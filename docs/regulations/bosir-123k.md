@@ -6,6 +6,8 @@ tags:
   - Inspection 檢驗
   - Structural 結構
   - Site supervision 地盤監督
+summary: "Building (Oil Storage Installations) Regulations Cap. 123K: design to minimise pollution, fire and explosion, licensing, operation instructions and inspections."
+keywords: Cap. 123K, oil storage installations, 油庫, licence, operation instructions, petroleum products, Standing Advisory Committee
 ---
 
 # Cap. 123K Building (Oil Storage Installations) Regulations<br><small>《建築物（貯油裝置）規例》（第 123K 章）</small>

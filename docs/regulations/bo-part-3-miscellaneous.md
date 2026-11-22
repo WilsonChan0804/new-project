@@ -11,6 +11,8 @@ tags:
   - Plan submission & approval 呈交及審批
   - Lighting & ventilation 照明及通風
   - Means of escape 逃生途徑
+summary: "Buildings Ordinance ss.31–39C: projections over streets, street names and building numbers, cost recovery and surcharges, records, regulations and validation of signboards."
+keywords: BO s.31-39C, projections over street, 伸出街道, building number, surcharge 20%, signboard validation, technical memorandum
 ---
 
 # BO s.31–39C Projections over streets, cost recovery, records, regulations, technical memorandum and validation<br><small>《建築物條例》第 31–39C 條：街道上的伸出物、追討費用、紀錄、規例、技術備忘錄及檢核</small>

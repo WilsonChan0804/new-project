@@ -13,6 +13,8 @@ tags:
   - Structural 結構
   - Curtain wall & façade 幕牆及外牆
   - Green & amenity features 環保及適意設施
+summary: "Technical Guidelines on the Minor Works Control System: classes, types and 187 items, common item guidance, recommended details and the other rules that still apply."
+keywords: Technical Guidelines, minor works control system, 小型工程監管制度, MWCS, recommended details, PBP, PRC, minor works items
 ---
 
 # Technical Guidelines on Minor Works Control System<br><small>《小型工程監管制度之技術指引》（2024 年修訂版）及《一般指引》</small>

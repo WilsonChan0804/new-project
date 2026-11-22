@@ -16,6 +16,8 @@ tags:
   - Minor works 小型工程
   - Maintenance access 維修通道
   - GFA concession 樓面面積寬免
+summary: "BD guidelines for residential energy efficiency (RTTV walls ≤ 14, roofs ≤ 4 W/m²), glazing light transmittance ≥ 50% and natural ventilation for thermal comfort."
+keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency, visible light transmittance, natural ventilation, cross ventilation, thermal comfort
 ---
 
 # BD Guidelines<br><small>屋宇署指引</small>

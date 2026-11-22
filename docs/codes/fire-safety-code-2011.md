@@ -14,7 +14,8 @@ tags:
   - Plant rooms 機房
   - Barrier free access 無障礙
   - Refuge floor 庇護層
-keywords: FS Code, fire code, 消防守則, fire safety, 消防安全
+summary: "Overview of the Code of Practice for Fire Safety in Buildings 2011: seven Parts A–G, use classification and links to the Part B, C, D and E–G pages."
+keywords: FS Code 2011, 消防安全守則, fire safety in buildings, use classification, means of escape, fire resisting construction, means of access, fire engineering
 ---
 
 # Code of Practice for Fire Safety in Buildings 2011 (FS Code)<br><small>《2011 年建築物消防安全守則》</small>

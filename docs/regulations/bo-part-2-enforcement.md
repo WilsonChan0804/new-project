@@ -15,6 +15,8 @@ tags:
   - Means of access 救援通道
   - Plumbing & sanitary 衞生設備
   - Statutory period 法定期限
+summary: "Buildings Ordinance ss.22–30: BA's power of entry, stop and removal orders for UBW, dangerous buildings, drainage and street orders, and cost recovery."
+keywords: BO s.22-30, enforcement, 執法, removal order, s.24, unauthorised building works, 僭建, dangerous building, closure order
 ---
 
 # BO s.22–30 BA's powers, orders, unauthorised works, dangerous buildings, drainage and streets<br><small>《建築物條例》第 22–30 條：建築事務監督的權力、命令、違例建築工程、危險建築物、排水及街道</small>

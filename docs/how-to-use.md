@@ -4,6 +4,8 @@ tags:
   - GFA 總樓面面積
   - GFA concession 樓面面積寬免
   - Sustainable building design 可持續建築設計
+summary: "How to search, read an entry, pin documents and clauses, use history, switch dark mode and edit paragraphs on this knowledge base."
+keywords: how to use, 使用說明, search, 搜尋, pin, 釘選, history, 瀏覽記錄, dark mode, 深色模式, edit, 編輯
 ---
 # How to use 使用說明
 
@@ -31,15 +33,34 @@ Tips 提示:
 ## Reading an entry 閱讀條目 {#reading-an-entry}
 
 1. Read **At a glance 重點摘要** first (30 seconds).
-2. Go to **Key clauses 主要條文** if you need the exact wording.
-3. **Explanation** and **Practical notes** tell you what it means on a real project.
-4. Check the **version box** at the top. If the PNAP has been revised since, the entry may be out of date.
+2. **Does it apply? 是否適用** (green box) says which projects, works or dates the document covers, and when it does **not** apply. A **Superseded 已不適用** box (orange) points to the current rule.
+3. **Key clauses 條文一覽** / **Clause by clause 逐條條文** is a table of every paragraph or clause with a short summary. Go to **Key clauses 主要條文** if you need the exact wording.
+4. **Illustrative only 只作說明** boxes are worked examples. Their numbers are made up to show the method; they are **not** from the source.
+5. **Whole picture 整體關係** lists the other regulations, codes and PNAPs on the same topic.
+6. **APSEC clarifications** lists BD's answers at the APSEC Discussion Forum on that document, newest first.
+7. Check the **version box** at the top. If the PNAP has been revised since, the entry may be out of date.
+
+閱讀次序：重點摘要 → **是否適用**（綠框）→ **條文一覽**表 → **只作說明**例子（數字並非出自原文）→ **整體關係**表 → APSEC 討論。
 
 ## New reading aids 閱讀輔助 {#new-reading-aids}
 
 - **Back button 返回**: at the top of every page, returns to the page you came from. 每頁頂部的返回按鈕。
 - **Automatic links 自動連結**: references such as APP-2, JPN 4, B(P)R 23(3)(b), BO s.16 or FS Code Clause B8.2 link to the page on this site (dotted underline). 文件編號會自動連結到相關頁面（虛線底線）。
 - **Highlighted key words 重點標示**: in long paragraphs, figures with units (e.g. 1.5 m, 60 days, 10%) are in **bold orange** and decisive phrases ("not acceptable", "understanding was correct", "subject to") are highlighted. 長段落中的數字及關鍵字詞會突出顯示。
+
+## Pins and history 釘選及瀏覽記錄 {#pins-and-history}
+
+- Click **📍** beside a **page title**, a **section heading** or a **row of a clause table** to pin it. It turns into **📌**; click again to unpin. 按標題、章節或條文表每行旁的 📍 釘選，再按一次取消。
+- Click **📌** in the top bar to open **My pins 我的釘選**, with three tabs:
+    - **Pinned 釘選**: grouped into documents, sections and clauses. Clicking a clause opens the page and highlights the row.
+    - **Recent 最近**: the last 30 pages you opened.
+    - **Most used 常用**: the pages you open most often.
+- Remove one item with **✕**, or clear all with the link at the bottom.
+- Pins and history are kept **in this browser only**. They are not shared with colleagues and do not move to another device or browser; clearing browser data removes them. 釘選及記錄只儲存在此瀏覽器，不會與同事共享，亦不會同步到其他裝置。
+
+## Dark mode 深色模式 {#dark-mode}
+
+The site follows your device setting (light or dark). Click the **sun / moon** icon in the top bar to switch between **follow system 跟隨系統**, **light 淺色** and **dark 深色**. Figures keep a white background so drawings stay readable. 網站預設跟隨裝置設定；按頂部太陽／月亮圖示切換。
 
 ## Editing a paragraph 編輯段落 {#editing-a-paragraph}
 

@@ -11,6 +11,8 @@ tags:
   - Site supervision 地盤監督
   - Geotechnical 岩土
   - Occupation permit 佔用許可證
+summary: "Buildings Ordinance Part 2A ss.30A–30F: Mandatory Building Inspection (30+ years) and Mandatory Window Inspection (10+ years) notices and duties."
+keywords: BO Part 2A, MBIS, MWIS, 強制驗樓計劃, 強制驗窗計劃, statutory notice, 30 years, 10 years, registered inspector
 ---
 
 # BO s.30A–30F Mandatory Building Inspection and Mandatory Window Inspection<br><small>《建築物條例》第 30A–30F 條：強制驗樓計劃及強制驗窗計劃</small>

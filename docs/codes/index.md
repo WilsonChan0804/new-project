@@ -13,6 +13,8 @@ tags:
   - Maintenance access 維修通道
   - Means of escape 逃生途徑
   - Energy efficiency 能源效率
+summary: "List of the codes of practice, design manuals and guidelines covered on this site, with their current editions and related PNAPs."
+keywords: codes of practice, 作業守則, design manual, BD codes, FS Code, BFA, structural codes, list
 ---
 # Codes of Practice 作業守則
 

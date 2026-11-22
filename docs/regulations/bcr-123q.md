@@ -25,6 +25,8 @@ tags:
   - Maintenance access 維修通道
   - Hotel 酒店
   - A&A works 改動及加建工程
+summary: "Building (Construction) Regulation Cap. 123Q: performance-based structural requirements, dead, imposed and wind loads (Table 1), load reductions, materials, fire resistance and codes of practice."
+keywords: B(C)R, Cap. 123Q, 建築物（建造）規例, imposed load, Table 1, wind load, load reduction, structural requirements, codes of practice
 ---
 
 # B(C)R Building (Construction) Regulation, Cap. 123Q<br><small>《建築物（建造）規例》（第 123Q 章）</small>

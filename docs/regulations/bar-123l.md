@@ -5,6 +5,8 @@ tags:
   - Appeal Tribunal 上訴審裁小組
   - Statutory period 法定期限
   - Site supervision 地盤監督
+summary: "Building (Appeal) Regulation Cap. 123L: notice of appeal, 28-day statement of particulars, hearings and procedure of the Appeal Tribunal (Buildings)."
+keywords: Cap. 123L, Building (Appeal) Regulation, 上訴, Appeal Tribunal Buildings, notice of appeal, statement of particulars
 ---
 
 # Cap. 123L Building (Appeal) Regulation<br><small>《建築物（上訴）規例》（第 123L 章）</small>

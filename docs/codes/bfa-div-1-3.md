@@ -9,6 +9,8 @@ tags:
   - Staircase 樓梯
   - Plumbing & sanitary 衞生設備
   - Demolition 拆卸
+summary: "BFA Manual Divisions 1–3: wheelchair spaces in auditoria, accessible hotel rooms (2 per 100) and accessible car parking spaces by total number."
+keywords: BFA division 1 2 3, auditoria wheelchair spaces, 輪椅位, accessible hotel rooms, accessible parking, 暢通易達泊車位, 3500 mm
 ---
 
 # BFA Manual Divisions 1–3: Auditoria, Hotels and Car Parks<br><small>《設計手冊：暢通無阻的通道 2008》第 1–3 分部：觀眾席、酒店及停車場</small>

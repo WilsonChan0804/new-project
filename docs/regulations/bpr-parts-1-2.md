@@ -11,6 +11,8 @@ tags:
   - Site coverage 上蓋面積
   - Minor works 小型工程
   - Elderly-friendly 長者友善
+summary: "B(P)R regs 1–15: definitions, protective barriers (1,100 mm), nuisance, and projections such as balconies, canopies and bay windows over streets and in buildings."
+keywords: B(P)R reg 1-15, definitions, protective barrier 1100 mm, 防護欄障, projections, 伸出物, balcony, canopy, residential unit
 ---
 
 # B(P)R Parts I–II General and Projections (regs. 1–15)<br><small>《建築物（規劃）規例》第 I–II 部：一般規定及伸出物（第 1–15 條）</small>

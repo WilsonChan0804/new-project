@@ -11,6 +11,8 @@ tags:
   - Hotel 酒店
   - Elderly-friendly 長者友善
   - Car park 停車場
+summary: "BFA Manual Divisions 4–9: accessible routes (1,050 mm), ramps (1:12), dropped kerbs, staircases, handrails and corridors."
+keywords: BFA division 4-9, access route 1050 mm, ramp 1:12, 斜道, dropped kerb, handrail, 扶手, corridor
 ---
 
 # BFA Manual Divisions 4–9: Access Routes, Ramps, Dropped Kerbs, Stairs, Handrails and Corridors<br><small>《設計手冊：暢通無阻的通道 2008》第 4–9 分部：通道、斜道、下斜路緣、樓梯、扶手及走廊</small>

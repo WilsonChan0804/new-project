@@ -9,6 +9,8 @@ tags:
   - Concrete & materials 混凝土及物料
   - Staircase 樓梯
   - Lift 升降機
+summary: "Sanitary Fitments, Plumbing, Drainage and Latrines Regulations Cap. 123I: number of fitments by building type and population, traps, soil, vent and rain water pipes, and drainage."
+keywords: Cap. 123I, B(SFP&W)R, sanitary fitments, 衞生設備, plumbing, drainage, 排水, soil pipe, water seal, population
 ---
 
 # B(SFP&W)R Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations, Cap. 123I<br><small>《建築物（衞生設備標準、水管裝置、排水工程及廁所）規例》（第 123I 章）</small>

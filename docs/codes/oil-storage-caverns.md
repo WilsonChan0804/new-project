@@ -9,6 +9,8 @@ tags:
   - Foundation 地基
   - Refuse 垃圾
   - Maintenance access 維修通道
+summary: "Oil Storage Installations Code 1992 and Fire Safety Guide for Caverns 1994: tank spacing, bund capacity (105% / 100%), drainage and cavern fire safety."
+keywords: oil storage installations, 油庫, petroleum tanks, bund 105%, safety distance, caverns, 岩洞, Cap. 123K
 ---
 
 # Oil Storage Installations Code 1992 and Fire Safety Guide for Caverns 1994<br><small>《1992 年貯油裝置作業守則》及《1994 年岩洞消防安全設計指引》</small>

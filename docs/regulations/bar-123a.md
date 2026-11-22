@@ -17,6 +17,8 @@ tags:
   - A&A works 改動及加建工程
   - Refuse 垃圾
   - Excavation & ELS 挖掘
+summary: "Building (Administration) Regulations Cap. 123A: prescribed plans, who signs them, notices and certificates, processing periods, duties of AP / RSE / RGE and contractors, and fees."
+keywords: B(A)R, Cap. 123A, 建築物（管理）規例, prescribed plans, reg. 8, signing of plans, processing period, fees, Form BA
 ---
 
 # B(A)R Building (Administration) Regulations, Cap. 123A<br><small>《建築物（管理）規例》（第 123A 章）</small>

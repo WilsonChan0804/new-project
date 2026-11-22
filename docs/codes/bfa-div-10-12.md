@@ -8,6 +8,8 @@ tags:
   - Domestic 住用
   - Fire resisting construction 耐火結構
   - Hotel 酒店
+summary: "BFA Manual Divisions 10–12: accessible doors (800 mm clear), accessible WC cubicles and unisex toilets, bathrooms and showers."
+keywords: BFA division 10 11 12, accessible doors, 800 mm, accessible toilet, 暢通易達洗手間, unisex toilet, grab rails, shower
 ---
 
 # BFA Manual Divisions 10–12: Doors, Toilets and Bathrooms<br><small>《設計手冊：暢通無阻的通道 2008》第 10–12 分部：門、洗手間及浴室</small>

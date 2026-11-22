@@ -13,6 +13,8 @@ tags:
   - Excavation & ELS 挖掘
   - Structural 結構
   - A&A works 改動及加建工程
+summary: "Buildings Ordinance ss.14–21: approval and consent, deemed approval periods, grounds of refusal (s.16), conditions, urgent works and occupation permits."
+keywords: BO s.14-21, approval and consent, 批准及同意, s.16 refusal, deemed approval 60 days, occupation permit, 佔用許可證
 ---
 
 # BO s.14–21 Approval and consent, grounds of refusal, conditions, urgent works and occupation permits<br><small>《建築物條例》第 14–21 條：批准及同意、拒絕理由、條件、緊急工程及佔用許可證</small>

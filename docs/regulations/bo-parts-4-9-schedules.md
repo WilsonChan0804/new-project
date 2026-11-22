@@ -15,6 +15,8 @@ tags:
   - Statutory period 法定期限
   - Site safety 地盤安全
   - Means of escape 逃生途徑
+summary: "Buildings Ordinance ss.40–56 and Schedules: offences and penalties, exemptions, s.42 modifications, appeals, and the Scheduled Areas."
+keywords: BO s.40-56, offences, 罪行, penalty, s.41 exemption, s.42 modification, 修改, appeal, Schedule 5 Scheduled Areas
 ---
 
 # BO s.40–56 and Schedules: offences, exemptions, modifications, appeals, transitional provisions<br><small>《建築物條例》第 40–56 條及附表：罪行、豁免、變通、上訴、過渡條文</small>

@@ -14,6 +14,8 @@ tags:
   - Barrier free access 無障礙
   - Hotel 酒店
   - Car park 停車場
+summary: "Refuse Storage and Material Recovery Regulations Cap. 123H: when RSMRCs, MRCs and floor rooms are needed, their sizes, vehicular access and refuse chutes."
+keywords: Cap. 123H, refuse storage, 垃圾房, RSMRC, material recovery chamber, refuse chute, 垃圾槽, vehicular access
 ---
 
 # Cap. 123H Building (Refuse Storage and Material Recovery Chambers and Refuse Chutes) Regulations<br><small>《建築物（垃圾及物料回收房及垃圾槽）規例》（第 123H 章）</small>

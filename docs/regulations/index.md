@@ -22,6 +22,8 @@ tags:
   - Means of escape 逃生途徑
   - Curtain wall & façade 幕牆及外牆
   - Building height 建築物高度
+summary: "Index of the Buildings Ordinance and its regulations covered on this site, by Part and chapter number."
+keywords: Buildings Ordinance, regulations, 條例及規例, Cap. 123, B(P)R, B(A)R, B(C)R, index
 ---
 # Ordinance & Regulations 條例及規例
 

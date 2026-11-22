@@ -17,6 +17,8 @@ tags:
   - Protective barrier 防護欄障
   - Balcony & utility platform 露台及工作平台
   - Curtain wall & façade 幕牆及外牆
+summary: "Building (Inspection and Repair) Regulation Cap. 123P: scope and standard of prescribed inspections and repairs under MBIS and MWIS, documents and time limits."
+keywords: Cap. 123P, B(I&R)R, MBIS, MWIS, 強制驗樓, 強制驗窗, prescribed inspection, prescribed repair, registered inspector
 ---
 
 # B(I&R)R Building (Inspection and Repair) Regulation, Cap. 123P<br><small>《建築物（檢驗及修葺）規例》（第 123P 章）</small>

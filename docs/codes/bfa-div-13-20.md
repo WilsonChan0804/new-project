@@ -11,6 +11,8 @@ tags:
   - Elderly-friendly 長者友善
   - Car park 停車場
   - Hotel 酒店
+summary: "BFA Manual Divisions 13–20: accessibility signs, tactile guide paths and Braille, counters, lighting, call bells, lifts and escalators."
+keywords: BFA division 13-20, signage, tactile guide path, 引路徑, Braille, counter 750 mm, accessible lift, call bell
 ---
 
 # BFA Manual Divisions 13–20: Signs, Visual and Hearing Aids, Counters, Lighting, Call Bells, Lifts and Escalators<br><small>《設計手冊：暢通無阻的通道 2008》第 13–20 分部：標誌、視障及聽障設施、櫃枱、照明、召援鐘、升降機及自動梯</small>
