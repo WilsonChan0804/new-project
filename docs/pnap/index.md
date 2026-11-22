@@ -35,6 +35,13 @@ tags:
   - Wind 風力
   - Refuge floor 庇護層
   - Means of access 救援通道
+  - Hotel 酒店
+  - Heritage 文物
+  - Energy efficiency 能源效率
+  - Car park 停車場
+  - Barrier free access 無障礙
+  - Balcony & utility platform 露台及工作平台
+  - A&A works 改動及加建工程
 ---
 # PNAP 認可人士作業備考
 

@@ -6,6 +6,7 @@ tags:
   - Plan processing 圖則處理
   - Site safety 地盤安全
   - Curtain wall & façade 幕牆及外牆
+  - Plan submission & approval 呈交及審批
 keywords: minor amendments, 小修訂, substitute sheets, 替換圖紙, ESH revised submission, PNAP 190, amend in BD
 ---
 

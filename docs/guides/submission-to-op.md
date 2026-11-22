@@ -24,6 +24,7 @@ tags:
   - Elderly-friendly 長者友善
   - Demolition 拆卸
   - A&A works 改動及加建工程
+  - Registration 註冊
 summary: "From plan submission to occupation permit: statutory periods, stages, forms and a checklist."
 keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔用許可證, OP, BA forms, statutory period, 法定期限, checklist
 ---

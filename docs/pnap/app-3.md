@@ -8,6 +8,8 @@ tags:
   - Structural 結構
   - Geotechnical 岩土
   - Minor works 小型工程
+  - Statutory period 法定期限
+  - Refuse 垃圾
 summary: "An AP, RSE or RGE who is ill or away may nominate a stand-in on Form BA 21 or MW09 within 7 days, for no more than about 3 months."
 keywords: temporary replacement, 暫代, acting AP, 代行, Form BA 21, MW09, MW31, absence from Hong Kong, 離港, PNAP 14
 ---

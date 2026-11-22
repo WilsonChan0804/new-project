@@ -5,6 +5,9 @@ tags:
   - Barrier free access 無障礙
   - B(P)R 72
   - Elderly-friendly 長者友善
+  - Plan submission & approval 呈交及審批
+  - A&A works 改動及加建工程
+  - Refuse 垃圾
 summary: "Plans cannot be approved without reasonable barrier free access (DDO s.84, B(P)R 72); exemptions only for special circumstances, advised by the ACBFA."
 keywords: BFA, barrier free access, 無障礙, 暢通無阻, PNAP 112, B(P)R 72, Third Schedule, 附表三, DDO s.84, 殘疾歧視條例, ACBFA, exemption, 豁免, ramp, 斜道, disabled access, 傷殘人士
 ---

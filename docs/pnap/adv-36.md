@@ -6,6 +6,8 @@ tags:
   - Prefabrication 預製
   - Site supervision 地盤監督
   - GFA concession 樓面面積寬免
+  - Plan submission & approval 呈交及審批
+  - Statutory period 法定期限
 summary: "BD offers early enquiries and in-principle acceptance of MiC systems within 45 days; neither is required for plan approval. GFA concessions are in JPN 8."
 keywords: MiC, modular integrated construction, 組裝合成, prefabricated, 預製, IPA, in-principle acceptance, 原則上接納, pre-acceptance, 預先認可, 45 days
 ---

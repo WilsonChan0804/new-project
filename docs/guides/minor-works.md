@@ -14,6 +14,7 @@ tags:
   - Occupation permit 佔用許可證
   - Green & amenity features 環保及適意設施
   - Elderly-friendly 長者友善
+  - Geotechnical 岩土
 summary: "Minor works Classes I–III, designated exempted works, the 7-day and 14-day rules, contractors and validation schemes."
 keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指定豁免工程, Class I, Class II, Class III, signboard validation, 招牌檢核
 ---

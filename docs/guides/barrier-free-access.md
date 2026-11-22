@@ -14,6 +14,7 @@ tags:
   - GFA concession 樓面面積寬免
   - Fire safety 消防安全
   - Green & amenity features 環保及適意設施
+  - Plan submission & approval 呈交及審批
 summary: "Barrier-free and universal accessibility: B(P)R 72–73, BFA 2008, DMUA 2026 and elderly-friendly design."
 keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用無障礙, DMUA, elderly-friendly, 長者友善, accessible toilet, accessible lift
 ---

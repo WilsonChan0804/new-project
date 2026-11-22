@@ -7,6 +7,8 @@ tags:
   - Structural works 結構工程
   - Structural 結構
   - Plan submission & approval 呈交及審批
+  - Statutory period 法定期限
+  - Registration 註冊
 summary: "Simple structural works (Categories A–E) can be fast-tracked on the RSE's self-certification, with an independent checking engineer for C–E: 20 days via ESH."
 keywords: self-certification, 自行認證, fast track, 快速處理, simple structural works, 簡單結構工程, ICE, independent checking engineer, 獨立審核工程師, Category A B C D E
 ---

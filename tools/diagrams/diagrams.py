@@ -379,3 +379,32 @@ D['dmua-status'] = ('codes/dmua-2026.md',
   B --> C["Already in B(P)R<br/>regs. 72–73, Sch. 3–4<br/>→ statutory 法定"]
   B --> D["Other obligatory items<br/>(Appendix E)<br/>→ advisory until B(P)R amended<br/>修例前屬建議"]
   B --> E["Advisory section<br/>enhanced provisions<br/>建議部分"]''')
+
+D['jpn6-flow'] = ('pnap/jpn-6.md',
+ 'JPN 6: who checks building separation and setback. 由誰審核樓宇間距及後移。',
+'''flowchart TD
+  A["SBD requirement: building separation / setback<br/>可持續建築設計：樓宇間距／後移"] --> B{"Where does it come from?<br/>規定來源？"}
+  B -->|"GFA concession pre-requisite<br/>APP-151 寬免先決條件"| C["BD checks on GBP to APP-152<br/>屋宇署按 APP-152 審核"]
+  B -->|"New or modified lease<br/>新訂／修訂地契"| D["Director of Buildings named in lease<br/>BD acceptance = lease complied (para. 5)<br/>地契指定屋宇署署長"]
+  B -->|"Existing lease<br/>現有地契"| E["LandsD accepts BD-accepted proposal<br/>else LandsD consent, premium possible (para. 6)<br/>地政總署跟隨屋宇署"]
+  B -->|"Stricter rule by another department<br/>其他部門較嚴要求"| F["Show on GBP; BD comments;<br/>that department decides (para. 7)<br/>由該部門決定"]
+  C --> G["AP certifies on GBP · no separate LandsD submission<br/>認可人士在圖則上證明，毋須另向地政總署呈交"]
+  D --> G
+  E --> G''')
+
+D['jpn7-regimes'] = ('pnap/jpn-7.md',
+ 'JPN 7: one treatment of site coverage across three regimes. 三個制度採用同一上蓋面積計算方法。',
+'''flowchart LR
+  BD["BD: B(P)R First Schedule SC<br/>+ decides what counts (para. 7)<br/>屋宇署：附表一及計算方法"] --> P["PlanD: OZP SC only where needed,<br/>stating the levels it applies to (para. 6)<br/>規劃署：只在需要時設限"]
+  BD --> L["LandsD: no SC in new leases;<br/>existing SC checked by BD's treatment (para. 8)<br/>地政總署：新地契不設上蓋面積"]
+  BD --> X["Common rules: basements not counted;<br/>APP-19 projections disregarded (para. 9)<br/>地庫不計；小型伸出物不計"]''')
+
+D['jpn5-height'] = ('pnap/jpn-5.md',
+ 'JPN 5: measuring building height for BHR. 量度高度限制下的建築物高度。',
+'''flowchart TD
+  A["Mean site formation level<br/>= (highest + lowest formation level) ÷ 2<br/>平均地盤平整水平 (para. 6)"] --> B["Storeys incl. basements unless OZP says otherwise<br/>樓層，地庫一般計算 (para. 7)"]
+  B --> C["Main roof: roof over highest usable floor<br/>主天台 (para. 5) = BHR height 高度"]
+  C --> D{"Roof-top structures<br/>天台構築物"}
+  D -->|"Enclosed area ≤ 50% of roof below<br/>and within height limits"| E["Not counted 不計入 (para. 9)"]
+  D -->|"Enclosed area over 50%<br/>or above height limits"| F["Counted towards BHR<br/>計入高度 (para. 10)"]
+  E --> G["Ancillary ≤ 3 m (≤ 30 m bldg) or 10% / 15 m;<br/>features ≤ 15% / 7 m (residential);<br/>signs as ancillary 高度上限"]''')

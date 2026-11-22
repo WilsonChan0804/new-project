@@ -5,6 +5,8 @@ tags:
   - Electronic submission 電子呈交
   - Digital signature 數碼簽署
   - Plan submission & approval 呈交及審批
+  - Statutory period 法定期限
+  - Minor works 小型工程
 summary: "Plans go through the Electronic Submission Hub with a personal digital certificate or iAM Smart; statutory periods count from the next day, and BA10 via ESH may be 1 day before works."
 keywords: ESH, Electronic Submission Hub, 電子呈交平台, e-submission, 電子呈交, digital certificate, 數碼證書, iAM Smart, 智方便, EFSS, e-Counter, RMWMS, PNAP 240, BA10
 ---

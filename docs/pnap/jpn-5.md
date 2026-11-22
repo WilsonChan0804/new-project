@@ -10,6 +10,12 @@ tags:
   - Lift 升降機
   - Site coverage 上蓋面積
   - Plot ratio 地積比率
+  - Fire safety 消防安全
+  - Lighting & ventilation 照明及通風
+  - Maintenance access 維修通道
+  - Car park 停車場
+summary: "Building height restrictions are set by the OZP and measured from the mean site formation level to the main roof; roof-top structures count only beyond the para. 10 area and height limits."
+keywords: BHR, building height restriction, 建築物高度限制, mPD, 主水平基準, OZP, 分區計劃大綱圖, roof-top structures, 天台構築物, mean site formation level, 平均地盤平整水平, architectural feature, 建築裝飾, JPN5, JPN 5
 ---
 
 # JPN 5 Development Control Parameters — Building Height Restriction<br><small>聯合作業備考第 5 號：發展管制參數——建築物高度限制</small>
@@ -40,6 +46,47 @@ tags:
     - **建築物頂部** = **主天台**最高水平（最高實用樓面空間之上的屋頂）（第 5 段）；以**米**表示時由該建築物所在土地的**平均地盤平整水平**量度（第 6 段）；以**層數**表示時按 B(P)R 定義，除大綱圖／地契另有規定外**地庫須計算**（第 7 段）。
     - **天台構築物**（機房、升降機機房、水缸、建築裝飾、招牌）**不計入**，除非有蓋構築物超過**天台面積 50%**，或**高度超出**下列限制（第 9–10 段）。
     - **層高及轉換層厚度**由屋宇署按 **PNAP APP-5** 審核（第 12 段）。
+
+!!! tip "Applies / does not apply 適用／不適用"
+    **Applies**: building height restrictions (BHR) in **statutory plans** and **leases**, for new building plans or major revisions submitted **on or after 15 May 2019** (para. 17). 適用於法定圖則及地契的高度限制；2019 年 5 月 15 日或之後呈交的新圖則或重大修訂。
+    **Does not apply**: **BD's building height under the B(P)R** (for site class, PR, SC and fire safety, para. 3); **NT exempted houses** (Cap. 121, para. 14); leases with different explicit wording, or with no other intensity control (para. 15). 不適用於規例下的建築物高度、新界豁免屋宇，以及另有明文規定的地契。
+
+## Key clauses 主要條文 {#key-clauses}
+
+| Para. 段 | Rule 規定 |
+|---|---|
+| 1 | Streamlined BHR arrangements among **BD, PlanD and LandsD**. 範圍。 |
+| 2 | BHR achieves visual compatibility, visual quality, **air ventilation** and vertical bulk control; expressed in **mPD**, **metres** or **number of storeys**; imposed in statutory plans and leases. 目的及表達方式。 |
+| 3 | **BD does not impose BHR**; building height under the B(P)R (for intensity and fire safety) is **not affected** by this JPN. 屋宇署不設高度限制。 |
+| 4 | BHR, if needed, is controlled by **statutory plans**; generally **not** in new or modified leases except special circumstances. 以法定圖則管制。 |
+| 5 | Top of building = **highest level of the main roof** (roof over the highest **usable floor space**), unless the plan or lease says otherwise. 建築物頂部。 |
+| 6 | Height in metres measured from the **mean site formation level** = average of the **highest and lowest formation levels** under the building (incl. basements); for several buildings, each on its own part of the site. 平均地盤平整水平。 |
+| 7 | Height in **storeys**: B(P)R definition of storey; **basements counted** unless the plan or lease says otherwise; future OZPs may disregard **fully submerged** basements. 樓層數目。 |
+| 8 | BHR referenced to **carport levels**: at least **50 %** of the carport level for parking (incl. driveways and ramps); the rest for reasonable ancillary uses. 停車場樓層。 |
+| 9 | Not normally counted: roof-top **building works** (ancillary plant, tanks, lift machine rooms, E&M, solar, wind), **architectural features**, **signboards**. 一般不計的天台構築物。 |
+| 10 | **Counted** if (I) enclosed and covered roof structures exceed **50 %** of the roof area below, and/or (II) they exceed the **height limits** in the table below. 須計入的情況。 |
+| 11 | Open-air **labour safety facilities** (platforms, cat ladders, parapets, gondolas) and **lightning poles** not counted if reasonably sized. 安全設施及避雷針。 |
+| 12 | **Storey heights and transfer plates** add to height; BD interprets them under **APP-5**. 層高及轉換層。 |
+| 13 | **PlanD** is the authority on BHR and may advise BD to refuse plans (BO s.16(1)(d), (da)); ask PlanD on ambiguities. 規劃署為主管當局。 |
+| 14 | Not for **NT exempted houses** (Cap. 121). 新界豁免屋宇。 |
+| 15 | LandsD follows this JPN, except where the lease explicitly differs or has no other intensity control (Director of Lands decides); BHR removal by lease modification with **premium** and fee. 地政總署。 |
+| 16 | Government's lease rights reserved. 保留權利。 |
+| 17 | Effective **15 May 2019**, for new or major-revision plans submitted on or after that date. 生效日期。 |
+
+## Two different "heights" 兩種「高度」 {#two-heights}
+
+| | BHR under OZP / lease (this JPN) 規劃／地契高度限制 | Building height under B(P)R 規例下的建築物高度 |
+|---|---|---|
+| Purpose 目的 | Townscape, views, ventilation, bulk 城市景觀、通風 | Site class, **SC and PR** (First Schedule), fire safety 地積比率、上蓋面積、消防 |
+| Authority 主管 | **PlanD** (LandsD for leases) | **BD** |
+| Measured from 量度起點 | **Mean site formation level** (para. 6), unless mPD | **Mean level of the street** ([B(P)R 23(1)](../regulations/bpr-23-23a.md)) |
+| Measured to 量度至 | Highest level of the **main roof** (para. 5) | Mean height of the roof over the highest usable floor |
+| Roof-top structures 天台構築物 | Not counted within the **para. 10** limits | Generally not counted |
+
+<figure markdown>
+  ![JPN 5: measuring building height for BHR](../assets/figures/diagrams/jpn5-height.svg){ width="720" loading=lazy }
+  <figcaption>BHR is measured from the mean site formation level to the main roof; roof-top structures count only beyond the para. 10 limits. 高度由平均地盤平整水平量至主天台；天台構築物只在超出第 10 段限制時計入。</figcaption>
+</figure>
 
 ## Key table: roof-top structures counted towards BHR (para. 10) 計入高度限制的天台構築物（第 10 段） {#key-table-roof-top-structures-counted-towards-bhr-para-10-10}
 

@@ -6,6 +6,10 @@ tags:
   - Pre-acceptance 預先認可
   - Structural 結構
   - Geotechnical 岩土
+  - Plan submission & approval 呈交及審批
+  - Statutory period 法定期限
+  - Minor works 小型工程
+  - Drainage 排水
 summary: "Suppliers can get in-principle acceptance of innovative materials within 45 days, valid up to 5 years; it does not replace plan approval and consent."
 keywords: IBMT, innovative building materials, 創新建築物料, pre-acceptance, 預先認可, in-principle acceptance, 原則上接納, Central Data Bank, 中央資料庫, 45 days
 ---

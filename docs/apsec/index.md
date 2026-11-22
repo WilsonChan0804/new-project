@@ -29,6 +29,9 @@ tags:
   - Industrial building 工業大廈
   - Hotel 酒店
   - Green & amenity features 環保及適意設施
+  - Elderly-friendly 長者友善
+  - Building height 建築物高度
+  - Refuge floor 庇護層
 ---
 
 # APSEC Discussion Forum<br><small>認可人士及註冊結構工程師委員會討論會</small>

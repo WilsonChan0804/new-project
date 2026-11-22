@@ -5,6 +5,8 @@ tags:
   - Floor numbering 樓層編號
   - Refuge floor 庇護層
   - Car park 停車場
+  - Occupation permit 佔用許可證
+  - Green & amenity features 環保及適意設施
 summary: "Number all floors consecutively whatever their use; only 4, 13 and numbers ending in 4 may be skipped."
 keywords: floor numbering, 樓層編號, omission of floors, 省略樓層, 4/F, 13/F, skipped floors, refuge floor numbering, 庇護層編號
 ---

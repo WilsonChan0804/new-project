@@ -4,6 +4,8 @@ tags:
   - ADV series
   - Tiles 飾面磚
   - External finishes 外牆飾面
+  - Minor works 小型工程
+  - Site supervision 地盤監督
 keywords: external tiles, 外牆瓷磚, wet-fixed tiles, 濕貼, tile detachment, 瓷磚剝落, debonding, 空鼓, rendering, 批盪, PNAP 303
 ---
 

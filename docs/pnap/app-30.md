@@ -7,6 +7,9 @@ tags:
   - Geotechnical 岩土
   - Site supervision 地盤監督
   - Plan submission & approval 呈交及審批
+  - Excavation & ELS 挖掘
+  - Foundation 地基
+  - Demolition 拆卸
 summary: "In the Mid-levels Scheduled Area, ground investigation needs approval, excavation is capped at the bulk excavation limit, and foundation plans go in with site formation plans."
 keywords: Mid-levels, 半山, Scheduled Area No. 1, 附表地區, BEL, bulk excavation limit, 挖掘限制水平, TGN 50, ground investigation, 土地勘測, PNAP 85, performance review
 ---

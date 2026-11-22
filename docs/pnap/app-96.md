@@ -7,6 +7,8 @@ tags:
   - Registration 註冊
   - Minor works 小型工程
   - Demolition 拆卸
+  - Lighting & ventilation 照明及通風
+  - Foundation 地基
 summary: "Building works must be done by contractors on the right register; five categories of specialised works need registered specialist contractors."
 keywords: RGBC, RSC, registered general building contractor, 註冊一般建築承建商, specialist contractor, 註冊專門承建商, CRC, authorized signatory, technical director, PNAP 214, PNRC 38, specialised works, 專門工程
 ---

@@ -4,6 +4,10 @@ tags:
   - APP series
   - Railway protection 鐵路保護
   - Scheduled area 附表地區
+  - Plan submission & approval 呈交及審批
+  - Excavation & ELS 挖掘
+  - Foundation 地基
+  - Minor works 小型工程
 summary: "Works within about 30 m of a railway are referred to MTRCL, need a railway monitoring plan, and stop if readings reach the suspension limit; GI in Scheduled Area No. 3 needs approval."
 keywords: railway protection, 鐵路保護, MTR, 港鐵, Scheduled Area No. 3, 附表地區第 3 號, 30 m, railway monitoring, 鐵路監測, PNAP 77, ground investigation
 ---

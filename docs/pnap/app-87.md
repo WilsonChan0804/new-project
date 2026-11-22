@@ -5,6 +5,9 @@ tags:
   - Fire engineering 消防工程
   - Performance-based 性能為本
   - Fire safety 消防安全
+  - Means of escape 逃生途徑
+  - Means of access 救援通道
+  - A&A works 改動及加建工程
 keywords: fire engineering, 消防工程, performance-based, 性能為本, fire safety strategy, 消防安全策略, equivalence, 等效, FS Code Part G
 ---
 

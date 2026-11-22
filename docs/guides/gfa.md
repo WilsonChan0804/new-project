@@ -20,6 +20,8 @@ tags:
   - Occupation permit 佔用許可證
   - Elderly-friendly 長者友善
   - Barrier free access 無障礙
+  - Site area & classification 地盤面積及分類
+  - Energy efficiency 能源效率
 summary: "How GFA is measured, what B(P)R 23(3)(b) disregards, and the APP-151/152 concessions and 10% cap."
 keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積寬免, 10% cap, disregarded GFA, APP-151, APP-152
 ---

@@ -6,6 +6,13 @@ tags:
   - Planter 花槽
   - Green & amenity features 環保及適意設施
   - Minor works 小型工程
+  - Drainage 排水
+  - Plan submission & approval 呈交及審批
+  - Structural 結構
+  - Maintenance access 維修通道
+  - Protective barrier 防護欄障
+  - A&A works 改動及加建工程
+  - Site coverage 上蓋面積
 summary: "Greening is dead load taken fully saturated plus the normal imposed load; fall at least 1:80; no submission unless new works or strengthening are needed."
 keywords: green roof, roof garden, 綠化天台, 天台花園, planter, 花槽, vertical greening, 垂直綠化, saturated soil, 飽和泥土, 1:80, drainage, 排水
 ---
