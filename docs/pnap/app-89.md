@@ -16,6 +16,7 @@ tags:
   - Sustainable building design 可持續建築設計
   - Means of access 救援通道
   - Elderly-friendly 長者友善
+  - Fire safety 消防安全
 summary: "Lift shaft area above 2.5% (domestic/hotel) or 5% / 3.5% (office) of GFA may be exempted from GFA and SC, up to 3.5% / 3% / 2.5%, with an engineer's lift service assessment."
 keywords: lift shaft, 升降機槽, better lift service, 優質升降機服務, GFA exemption, 總樓面面積豁免, handling capacity, waiting time, 候機時間, registered lift engineer, 註冊升降機工程師, PNAP 207
 ---

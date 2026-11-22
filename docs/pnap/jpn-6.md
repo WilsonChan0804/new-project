@@ -14,6 +14,7 @@ tags:
   - Lighting & ventilation 照明及通風
   - Plant rooms 機房
   - Balcony & utility platform 露台及工作平台
+  - Occupation permit 佔用許可證
 summary: "BD alone checks building separation and setback under APP-152 on the GBP, whether required by lease, planning permission or GFA concession; no separate LandsD submission."
 keywords: SBD, sustainable building design, 可持續建築設計, building separation, 樓宇間距, building setback, 建築物後移, Lp, permeability, 通透度, lease, 地契, JPN6, JPN 6
 ---
