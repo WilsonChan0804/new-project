@@ -50,7 +50,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 - **[Rooms Containing Soil Fitments – Regulation 36(2) of the B(P)R](../apsec/2025.md#i202508086)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that the concerned modification of regulation 36 of the B(P)R could be applied to either the lighting or ventilation requirement.
 - **[Aperture protected with Ventilating Louvres for Internal Bathroom](../apsec/2024.md#i2024080928)** <small>ADF 3/2024, 9 Aug 2024</small><br>BD advised that AAP’s proposed provision of louvre for compliance with the requirements in paragraph 3(b) of PNAP APP-98 was acceptable.
-- **[Provision of Reduced Size Light Well to Enhance Natural Ventilation](../apsec/2018.md#i2018011912)** <small>ADF 1/2018, 19 Jan 2018</small><br>BD advised that CFD analysis indicated that ventilation performance of reduced size light well (1:18) with bottom opened would be generally better than the standard size light well (1:6). …
+- **[Provision of Reduced Size Light Well to Enhance Natural Ventilation](../apsec/2018.md#i2018011912)** <small>ADF 1/2018, 19 Jan 2018</small><br>BD advised that CFD analysis indicated that ventilation performance of reduced size light well (1:18) with bottom opened would be generally better than the standard size light well (1:6). In order to allow more design …
 
 <!-- APSEC END -->
 

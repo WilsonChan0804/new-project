@@ -60,7 +60,7 @@ keywords: temporary replacement, 暫代, acting AP, 代行, Form BA 21, MW09, MW
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Temporary Acting during Absence of AP/RSE/RGE According to BO Section 4(2) and B(A)R 23(2), if AP/RSE/RGE is absent](../apsec/2018.md#i201803233)** <small>ADF 2/2018, 23 Mar 2018</small><br>administration works. The AP/RSE/RGE in temporary absence of less than 24 hours would still be responsible for the supervision of their projects. BD replied that there were no provisions under the BO that the submission of Form BA21 could be waived for a short period of temporary absence from Hong Kong. …
+- **[Temporary Acting during Absence of AP/RSE/RGE](../apsec/2018.md#i201803233)** <small>ADF 2/2018, 23 Mar 2018</small><br>HKIE stated that the proposal aimed to save the resources in administration works. The AP/RSE/RGE in temporary absence of less than 24 hours would still be responsible for the supervision of their projects. BD replied …
 
 <!-- APSEC END -->
 

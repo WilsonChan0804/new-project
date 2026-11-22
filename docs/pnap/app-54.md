@@ -40,7 +40,7 @@ keywords: APP-54, retaining wall, 擋土牆, Geoguide 1, B(C)R 23 24, drainage f
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Demolition of Retaining Walls](../apsec/2026.md#i2026050814)** <small>ADF 2/2026, 8 May 2026</small><br>BD advised that if a retaining wall did not support a building to be as demolished and was to be removed as part of site formation works or ELS works, the demolition of the retaining wall might be incorporated into the site formation plan or ELS plan for BA’s approval. …
+- **[Demolition of Retaining Walls](../apsec/2026.md#i2026050814)** <small>ADF 2/2026, 8 May 2026</small><br>BD advised that if a retaining wall did not support a building to be demolished and was to be removed as part of site formation works or ELS works, the demolition of the retaining wall might be incorporated into the …
 
 <!-- APSEC END -->
 

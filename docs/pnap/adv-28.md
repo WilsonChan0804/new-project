@@ -74,7 +74,7 @@ keywords: ADV-28, sanitary fitments, 衞生設備, female toilets, 女廁, male 
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Accessible Toilets](../apsec/2025.md#i202508081)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that sanitary fitments in accessible toilets could be included for the assessment of provision of sanitary fitments for either male or female person. According to paragraph 12 of PNAP ADV-28, AP should indicate clearly on plans whether such unisex toilets were additional provision or counted as provision for male or …
+- **[Accessible Toilets](../apsec/2025.md#i202508081)** <small>ADF 3/2025, 8 Aug 2025</small><br>BD advised that sanitary fitments in accessible toilets could be included for the assessment of provision of sanitary fitments for either male or female person. According to paragraph 12 of PNAP ADV-28, AP should …
 
 <!-- APSEC END -->
 

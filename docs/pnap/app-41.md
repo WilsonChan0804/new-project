@@ -119,7 +119,7 @@ keywords: BFA, barrier free access, 無障礙, 暢通無阻, PNAP 112, B(P)R 72,
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Landing for Accessible Lift in Alterations and Additions (A&A) Works](../apsec/2025.md#i202505097)** <small>ADF 2/2025, 9 May 2025</small><br>According to paragraph 7 of PNAP APP-41, where alteration and addition works were proposed to an existing building without initial access for persons with a disability, all practical measures should be taken to provide suitable barrier free access. …
+- **[Landing for Accessible Lift in Alterations and Additions](../apsec/2025.md#i202505097)** <small>ADF 2/2025, 9 May 2025</small><br>According to paragraph 7 of PNAP APP-41, where alteration and addition works were proposed to an existing building without initial access for persons with a disability, all practical measures should be taken to provide …
 
 <!-- APSEC END -->
 

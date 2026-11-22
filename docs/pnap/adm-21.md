@@ -74,7 +74,7 @@ keywords: ADM-21, site parameters, 地盤參數, documentary proof, 文件證明
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Discrepancy in Presentation of Site Area/Dimensions](../apsec/2019.md#i201901188)** <small>ADF 1/2019, 18 Jan 2019</small><br>BD noted the discrepancy due to unit conversion and would further advise after checking with their Drawing Office. [Post Meeting Notes: BD confirmed that there was no change in the policy on the subject matter and paragraph 9 of PNAP ADM-21 should be followed.]
+- **[Discrepancy in Presentation of Site Area/Dimensions](../apsec/2019.md#i201901188)** <small>ADF 1/2019, 18 Jan 2019</small><br>BD noted the discrepancy due to unit conversion and would further advise after checking with their Drawing Office. [Post Meeting Notes: BD confirmed that there was no change in the policy on the subject matter and …
 
 <!-- APSEC END -->
 

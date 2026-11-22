@@ -41,7 +41,7 @@ keywords: APP-58, drainage testing, 排水測試, water test, AP attendance, com
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Enhanced Communication and Timely Submission of Documents](../apsec/2021.md#i2021081315)** <small>ADF 4/2021, 13 Aug 2021</small><br>For items 1 and 2, members shared their experience in handling site incidents concerning quality of works and the difficulties encountered for timely submission of structural documents to BD. …
+- **[Enhanced Communication and Timely Submission of Documents](../apsec/2021.md#i2021081315)** <small>ADF 4/2021, 13 Aug 2021</small><br>For items 1 and 2, members shared their experience in handling site incidents concerning quality of works and the difficulties encountered for timely submission of structural documents to BD. Members raised that the …
 - **[Arrangement of Approval for Vent Pipe Design following Design B](../apsec/2017.md#i2017111714)** <small>ADF 5/2017, 17 Nov 2017</small><br>BD would follow up on the issue accordingly. [Post-meeting notes: As subsequently clarified with Carolin of AAP, this item was withdrawn.]
 
 <!-- APSEC END -->

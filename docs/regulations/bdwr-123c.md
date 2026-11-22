@@ -86,7 +86,7 @@ keywords: Cap. 123C, demolition works, 拆卸工程, catch fan, shoring, demolit
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Application for Consent to Commencement of A&A works involving Removal of Structure](../apsec/2024.md#i2024022313)** <small>ADF 1/2024, 23 Feb 2024</small><br>BD advised that the Building (Demolition Works) Regulations applied to the demolition of a building or of any substantial or significant part of a building. For A&A works involving demolition of any substantial or significant part of a building, precautionary and other protective measures including propping and temporary …
+- **[Application for Consent to Commencement of A&A works involving Removal of Structure](../apsec/2024.md#i2024022313)** <small>ADF 1/2024, 23 Feb 2024</small><br>BD advised that the Building (Demolition Works) Regulations applied to the demolition of a building or of any substantial or significant part of a building. For A&A works involving demolition of any substantial or …
 
 <!-- APSEC END -->
 

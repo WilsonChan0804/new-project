@@ -68,7 +68,7 @@ keywords: ADM-6, computer program, 電腦程式, prior acceptance, 預先接納,
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Code of Practice for Site Supervision 2009](../apsec/2020.md#i202011269)** <small>ADF 4/2020, 26 Nov 2020</small><br>BD advised that the required inspection frequency by a DSS would be considered and imposed by GEO on a case by case basis. The RGE was advised to approach GEO during plans submission stage to discuss the inspection frequencies at different construction stages if necessary. …
+- **[Code of Practice for Site Supervision 2009](../apsec/2020.md#i202011269)** <small>ADF 4/2020, 26 Nov 2020</small><br>BD advised that the required inspection frequency by a DSS would be considered and imposed by GEO on a case by case basis. The RGE was advised to approach GEO during plans submission stage to discuss the inspection …
 
 <!-- APSEC END -->
 

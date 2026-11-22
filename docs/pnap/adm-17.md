@@ -98,7 +98,7 @@ keywords: ADM-17, electronic submission, 電子呈交, Electronic Submission Hub
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Submission in Electronic Format](../apsec/2019.md#i2019011812)** <small>ADF 1/2019, 18 Jan 2019</small><br>Members appreciated the effort of the Government in promoting electronic submission and were keen to see the development of the ESH. As a trial, Members suggested that submission of documents other than plans in electronic format might be considered. BD would study the feasibility and follow up accordingly.
+- **[Submission in Electronic Format](../apsec/2019.md#i2019011812)** <small>ADF 1/2019, 18 Jan 2019</small><br>Members appreciated the effort of the Government in promoting electronic submission and were keen to see the development of the ESH. As a trial, Members suggested that submission of documents other than plans in …
 
 <!-- APSEC END -->
 

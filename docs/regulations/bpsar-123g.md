@@ -100,7 +100,7 @@ keywords: Cap. 123G, private streets, 私家街, access roads, 通路, cul-de-sa
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Driveway / EVA within a Proposed Development](../apsec/2021.md#i202105214)** <small>ADF 3/2021, 21 May 2021</small><br>BD advised that HKIA’s understanding was correct. If the EVA also served as a private street/access road, footpath(s) should be provided according to Building (Private Streets and Access Roads) Regulation 4. Response to item 17 of ADF 3/2016 held on 27 May 2016 was also relevant.
+- **[Driveway / EVA within a Proposed Development](../apsec/2021.md#i202105214)** <small>ADF 3/2021, 21 May 2021</small><br>BD advised that HKIA’s understanding was correct. If the EVA also served as a private street/access road, footpath(s) should be provided according to Building (Private Streets and Access Roads) Regulation 4. Response to …
 
 <!-- APSEC END -->
 

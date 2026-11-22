@@ -184,8 +184,8 @@ keywords: lift shaft, 升降機槽, better lift service, 優質升降機服務, 
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[GFA Exemption for better lift service](../apsec/2025.md#i202511218)** <small>ADF 4/2025, 21 Nov 2025</small><br>BD advised that newly built student hostels under the Scheme would be considered as hotels for the purposes of PNAP APP-89, provided that the criteria stipulated in PNAP APP-89 are met, which include the compliance with the pre-requisites under PNAP APP-151.
-- **[Implementation of PNAP APP-151 and GFA concessions under](../apsec/2025.md#i202511214)** <small>ADF 4/2025, 21 Nov 2025</small><br>BD advised that the GFA concessions under the recently revised PNAPs APP-19, APP-42, APP-89 and JPN No.1 were applicable to all new buildings with works in progress, including those with GBP approved before 30 June 2024 and/or localised major revision, provided that the pre-requisites under the PNAP APP-151 and relevant …
+- **[GFA Exemption for better lift service](../apsec/2025.md#i202511218)** <small>ADF 4/2025, 21 Nov 2025</small><br>BD advised that newly built student hostels under the Scheme would be considered as hotels for the purposes of PNAP APP-89, provided that the criteria stipulated in PNAP APP-89 are met, which include the compliance with …
+- **[Implementation of PNAP APP-151 and GFA concessions under various updated PNAPs](../apsec/2025.md#i202511214)** <small>ADF 4/2025, 21 Nov 2025</small><br>BD advised that the GFA concessions under the recently revised PNAPs APP-19, APP-42, APP-89 and JPN No.1 were applicable to all new buildings with works in progress, including those with GBP approved before 30 June 2024 …
 
 <!-- APSEC END -->
 

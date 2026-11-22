@@ -116,7 +116,7 @@ If the roof was approved for 2.0 kPa imposed load with light finishes, the extra
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Protective Barrier for Greening](../apsec/2018.md#i201808175)** <small>ADF 4/2018, 17 Aug 2018</small><br>BD advised that protective barrier would not be required for planter which was inaccessible. Reference should be made to the design and construction requirements of protective barriers as laid down in PNAP APP-110, in particular, paragraph 3 on the measurement of height of a barrier which should be measured from the finished …
+- **[Protective Barrier for Greening](../apsec/2018.md#i201808175)** <small>ADF 4/2018, 17 Aug 2018</small><br>BD advised that protective barrier would not be required for planter which was inaccessible. Reference should be made to the design and construction requirements of protective barriers as laid down in PNAP APP-110, in …
 
 <!-- APSEC END -->
 

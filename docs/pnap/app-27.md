@@ -52,7 +52,7 @@ keywords: APP-27, gas water heater, 氣體熱水爐, B(P)R 35A, room-sealed, flu
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Tie Beams within Building Setback Area under Sustainable Building Design Guidelines (SBD Guidelines)](../apsec/2023.md#i2023050522)** <small>ADF 2/2023, 5 May 2023</small><br>BD would pragmatically consider the merits of the case with the provision of tie beams, provided that the ventilation effectiveness would not be adversely affected. Depending on the circumstances of the case, BD might require further setback from the centreline of the street. …<br><small>Latest position; replaces earlier discussion on [22 Nov 2019](../apsec/2019.md#i2019112225) 以此為最新立場</small>
+- **[Tie Beams within Building Setback Area under Sustainable Building Design Guidelines (SBD Guidelines)](../apsec/2023.md#i2023050522)** <small>ADF 2/2023, 5 May 2023</small><br>BD would pragmatically consider the merits of the case with the provision of tie beams, provided that the ventilation effectiveness would not be adversely affected. Depending on the circumstances of the case, BD might …
 
 <!-- APSEC END -->
 

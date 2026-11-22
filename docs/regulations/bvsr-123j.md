@@ -58,7 +58,7 @@ keywords: Cap. 123J, ventilating systems, 通風系統, fire damper, 防火閘, 
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Access Panel to Air Duct](../apsec/2019.md#i2019032212)** <small>ADF 2/2019, 22 Mar 2019</small><br>BD advised that PNAP APP-93 which set out the requirements for the planning and design of drainage works for new buildings might not be appropriate for application to air duct. …
+- **[Access Panel to Air Duct](../apsec/2019.md#i2019032212)** <small>ADF 2/2019, 22 Mar 2019</small><br>BD advised that PNAP APP-93 which set out the requirements for the planning and design of drainage works for new buildings might not be appropriate for application to air duct. While the provision of access panels for …
 
 <!-- APSEC END -->
 

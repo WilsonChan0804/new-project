@@ -41,7 +41,7 @@ keywords: APP-45, reinforcement testing, 鋼筋測試, CS2:2012, grade 500B 500C
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[PNAP APP-45](../apsec/2019.md#i201905248)** <small>ADF 3/2019, 24 May 2019</small><br>BD advised that under the streamlined arrangement as stipulated in the PNAP APP-45, the testing date of rebars by the Approved Yard could be earlier than the consent date of the building works. …
+- **[PNAP APP-45](../apsec/2019.md#i201905248)** <small>ADF 3/2019, 24 May 2019</small><br>BD advised that under the streamlined arrangement as stipulated in the PNAP APP-45, the testing date of rebars by the Approved Yard could be earlier than the consent date of the building works. The sampling and witness …
 
 <!-- APSEC END -->
 

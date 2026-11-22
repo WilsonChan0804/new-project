@@ -198,7 +198,7 @@ A **1,000 m²** Class A site, hotel tower over 61 m, **300 rooms**, OZP PR 12. �
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[GFA Exemption for Hot Water Boiler Room](../apsec/2023.md#i2023050514)** <small>ADF 2/2023, 5 May 2023</small><br>BD advised that HKIS’s understanding was correct. Boiler room for centralised hot water supply system in a hotel or clubhouse might be exempted from GFA calculation subject to the pre-requisites and overall cap under PNAP APP-151 and the limitations as stipulated in PNAP APP-40 and PNAP APP-104 for hotel development and …
+- **[GFA Exemption for Hot Water Boiler Room](../apsec/2023.md#i2023050514)** <small>ADF 2/2023, 5 May 2023</small><br>BD advised that HKIS’s understanding was correct. Boiler room for centralised hot water supply system in a hotel or clubhouse might be exempted from GFA calculation subject to the pre-requisites and overall cap under …
 
 <!-- APSEC END -->
 

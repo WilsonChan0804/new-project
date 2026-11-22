@@ -152,7 +152,7 @@ keywords: BO s.22-30, enforcement, 執法, removal order, s.24, unauthorised bui
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Construction Site Safety](../apsec/2023.md#i2023111724)** <small>ADF 4/2023, 17 Nov 2023</small><br>Members agreed that construction site safety was of paramount importance. However, they considered that site operation relating to labour safety should be the responsibility and under the expertise of contractors, hence, AP/RSE/RGE should not be liable for the malpractice of the contractors causing such site safety incidents. …
+- **[Construction Site Safety](../apsec/2023.md#i2023111724)** <small>ADF 4/2023, 17 Nov 2023</small><br>Members agreed that construction site safety was of paramount importance. However, they considered that site operation relating to labour safety should be the responsibility and under the expertise of contractors …
 
 <!-- APSEC END -->
 

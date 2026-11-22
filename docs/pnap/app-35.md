@@ -160,7 +160,7 @@ keywords: APP-35, refuse storage, 垃圾收集, refuse collection vehicle, RS&MR
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Minimum Headroom required for Refuse Collection Vehicles (RCV)](../apsec/2023.md#i202302103)** <small>ADF 1/2023, 10 Feb 2023</small><br>BD advised that the specifications of the RCV currently in use by FEHD specified in PNAP APP-35 were still applicable. In case of high headroom required by FEHD, BD would take a pragmatic approach and consider the case merits subject to AP's justification and the comments of the relevant government departments. …
+- **[Minimum Headroom required for Refuse Collection Vehicles (RCV)](../apsec/2023.md#i202302103)** <small>ADF 1/2023, 10 Feb 2023</small><br>BD advised that the specifications of the RCV currently in use by FEHD specified in PNAP APP-35 were still applicable. In case of high headroom required by FEHD, BD would take a pragmatic approach and consider the case …
 
 <!-- APSEC END -->
 

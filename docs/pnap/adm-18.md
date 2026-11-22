@@ -81,7 +81,7 @@ keywords: ADM-18, site auditing, 地盤審查, BO s.22, surprise checks, perform
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Arrangement for Rebound Hammer Test](../apsec/2026.md#i202608145)** <small>ADF 3/2026, 14 Aug 2026</small><br>BD advised that according to paragraph 3 of PNAP ADM-18 on site without auditing for building works, BD would conduct surprise checks to audit surfaces building works without prior notification. …
+- **[Arrangement for Rebound Hammer Test](../apsec/2026.md#i202608145)** <small>ADF 3/2026, 14 Aug 2026</small><br>BD advised that according to paragraph 3 of PNAP ADM-18 on site auditing for building works, BD would conduct surprise checks to audit building works without prior notification. The auditing officer of BD would have the …
 
 <!-- APSEC END -->
 

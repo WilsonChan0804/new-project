@@ -57,7 +57,7 @@ keywords: APP-20, street widening, 擴闊街道, surrender, bonus plot ratio, B(
 
 BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
 
-- **[Street Widening – Agreement to Surrender](../apsec/2019.md#i2019112224)** <small>ADF 5/2019, 22 Nov 2019</small><br>If the area to be surrendered had been specified in the lease, BD would favourably consider to waive the condition requiring the execution of Agreement of Surrender provided that the interest of the Government had been secured by the lease. …
+- **[Street Widening – Agreement to Surrender](../apsec/2019.md#i2019112224)** <small>ADF 5/2019, 22 Nov 2019</small><br>If the area to be surrendered had been specified in the lease, BD would favourably consider to waive the condition requiring the execution of Agreement of Surrender provided that the interest of the Government had been …
 
 <!-- APSEC END -->
 
