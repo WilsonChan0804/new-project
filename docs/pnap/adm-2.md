@@ -18,6 +18,7 @@ tags:
   - A&A works 改動及加建工程
   - Minor works 小型工程
   - Hotel 酒店
+  - Refuge floor 庇護層
 summary: "How BD refers GBP to other departments, the day-45 check, BA16 modifications, BD 106 conditions and GFA concession publication."
 keywords: ADM-2, centralised processing, 中央處理, ESH, BA16, BD 106, day 45, disapproval, 拒批, GFA concession, 總樓面面積寬免, FSI, DLO, lease
 ---

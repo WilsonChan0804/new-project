@@ -15,6 +15,8 @@ tags:
   - Car park 停車場
   - Green & amenity features 環保及適意設施
   - Balcony & utility platform 露台及工作平台
+  - Hotel 酒店
+  - Industrial building 工業大廈
 keywords: FRC, FRR, fire resisting construction, 耐火結構, compartment, 防火分隔, fire door, 防火門
 ---
 

@@ -14,6 +14,8 @@ tags:
   - Industrial building 工業大廈
   - Hotel 酒店
   - Car park 停車場
+  - Fire resisting construction 耐火結構
+  - Means of escape 逃生途徑
 keywords: MOA, means of access, 消防進出途徑, fireman's lift, 消防員升降機, EVA, 緊急車輛通道, FRS
 ---
 
