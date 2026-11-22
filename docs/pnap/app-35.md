@@ -11,6 +11,8 @@ tags:
   - Fire resisting construction 耐火結構
   - Drainage 排水
   - Barrier free access 無障礙
+summary: "Refuse storage and collection: RS&MRC design for refuse collection vehicles (11 × 3 × 4 m), turning areas and access."
+keywords: APP-35, refuse storage, 垃圾收集, refuse collection vehicle, RS&MRC, hammer-head 27 m, Cap. 123H
 ---
 
 # APP-35 Refuse Storage and Collection<br><small>垃圾的存放及收集－《建築物（垃圾及物料回收房及垃圾槽）規例》</small>

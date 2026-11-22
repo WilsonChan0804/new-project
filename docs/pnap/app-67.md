@@ -13,6 +13,8 @@ tags:
   - GFA 總樓面面積
   - Curtain wall & façade 幕牆及外牆
   - A&A works 改動及加建工程
+summary: "Energy efficiency of commercial buildings and hotels under B(EE)R: OTTV method and the revised limits (tower 20, podium 40 W/m²) from 31 Dec 2025."
+keywords: APP-67, OTTV, 總熱傳送值, energy efficiency, 能源效益, B(EE)R, tower 20 W/m2, podium 40 W/m2
 ---
 
 # APP-67 Energy Efficiency of Buildings — Building (Energy Efficiency) Regulation<br><small>建築物的能源效率 《建築物（能源效率）規例》</small>

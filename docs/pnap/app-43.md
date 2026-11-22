@@ -9,6 +9,8 @@ tags:
   - Staircase 樓梯
   - Means of escape 逃生途徑
   - Industrial building 工業大廈
+summary: "BD comments for licensing child care centres, kindergartens and restaurants: structural safety, means of escape and floor locations."
+keywords: APP-43, licensing, 發牌, child care centre, kindergarten, 幼稚園, restaurant, means of escape, structural safety
 ---
 
 # APP-43 Licensing of Child Care Centres, Kindergartens and Restaurants<br><small>幼兒中心、幼稚園及食肆的發牌事宜</small>

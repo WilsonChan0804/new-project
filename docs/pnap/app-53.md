@@ -6,6 +6,8 @@ tags:
   - Standards 標準
   - Concrete & materials 混凝土及物料
   - Wind 風力
+summary: "Standards and technical criteria the BA accepts as meeting the performance-based Building (Construction) Regulation, and how to seek acceptance of others."
+keywords: APP-53, Building (Construction) Regulation, B(C)R, deemed-to-comply standards, Appendix A, acceptable standards
 ---
 
 # APP-53 Building (Construction) Regulation<br><small>《建築物（建造）規例》</small>

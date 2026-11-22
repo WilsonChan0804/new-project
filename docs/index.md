@@ -28,6 +28,8 @@ tags:
   - Car park 停車場
   - Lift 升降機
   - Maintenance access 維修通道
+summary: "Bilingual knowledge base of Hong Kong building regulations: Buildings Ordinance, regulations, codes of practice, PNAPs, JPNs and APSEC clarifications."
+keywords: Hong Kong building regulations, 香港建築法規, knowledge base, Buildings Ordinance, PNAP, codes of practice, APSEC
 ---
 # HK Building Regulations Knowledge Base<br>香港建築法規知識庫
 

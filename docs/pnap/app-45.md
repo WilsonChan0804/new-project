@@ -5,6 +5,8 @@ tags:
   - Reinforcement 鋼筋
   - Testing 測試
   - Concrete & materials 混凝土及物料
+summary: "Verification testing of steel reinforcement delivered to site or factory, CS2:2012 grades 250, 500B and 500C, sampling and certification."
+keywords: APP-45, reinforcement testing, 鋼筋測試, CS2:2012, grade 500B 500C, verification test, rebar
 ---
 
 # APP-45 Testing of Reinforcement for Concrete<br><small>混凝土鋼筋測試</small>

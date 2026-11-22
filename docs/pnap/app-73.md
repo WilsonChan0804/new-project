@@ -6,6 +6,8 @@ tags:
   - Site area & classification 地盤面積及分類
   - Lighting & ventilation 照明及通風
   - Means of escape 逃生途徑
+summary: "Service lanes for light, ventilation, access, escape and fire breaks: rights of way, use of private lanes and their maintenance."
+keywords: APP-73, service lane, 後巷, scavenging lane, right of way, B(P)R 28, fire break
 ---
 
 # APP-73 Service Lanes<br><small>通道巷</small>

@@ -6,6 +6,8 @@ tags:
   - Well 水井
   - Geotechnical 岩土
   - Hotel 酒店
+summary: "Water supply and wells: Water Authority certificate with first plans, flushing and potable demand, and wells where no mains supply."
+keywords: APP-4, water supply, 供水, wells, 水井, flushing water, Water Authority certificate
 ---
 
 # APP-4 Water Supply and Wells<br><small>供水及水井</small>

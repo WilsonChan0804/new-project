@@ -15,6 +15,8 @@ tags:
   - Occupation permit 佔用許可證
   - Sustainable building design 可持續建築設計
   - Means of escape 逃生途徑
+summary: "Amenity features eligible for GFA / SC modification or exemption, their objectives, size limits and undertakings."
+keywords: APP-42, amenity features, 適意設施, GFA exemption, caretaker quarters, clubhouse, podium garden, modification
 ---
 
 # APP-42 Amenity Features<br><small>適意設施</small>

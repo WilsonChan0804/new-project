@@ -9,6 +9,8 @@ tags:
   - Foundation 地基
   - Site supervision 地盤監督
   - A&A works 改動及加建工程
+summary: "Geotechnical assessment required with GBP for sites with slopes, steep ground or deep excavation, its triggers and contents."
+keywords: APP-25, geotechnical assessment, 岩土評估, GBP submission, slope 30 degrees, excavation, site gradient 15 degrees
 ---
 
 # APP-25 Requirements for a Geotechnical Assessment at General Building Plan Submission Stage<br><small>在呈交建築圖則階段須附岩土評估的規定－《建築物(管理)規例》第8(1)(ba)條</small>

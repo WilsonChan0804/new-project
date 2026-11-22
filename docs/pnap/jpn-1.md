@@ -15,6 +15,8 @@ tags:
   - Sustainable building design 可持續建築設計
   - Occupation permit 佔用許可證
   - Elderly-friendly 長者友善
+summary: "Joint Practice Note 1: six green features (balconies, wider corridors, sky gardens, podium gardens, acoustic fins, wing walls) exempt from GFA / SC under BO, lease and planning."
+keywords: JPN 1, green and innovative buildings, 環保及創新樓宇, balcony, sky garden, GFA exemption, joint practice note
 ---
 
 # JPN 1 Green and Innovative Buildings<br><small>聯合作業備考第 1 號：環保及創新的樓宇</small>

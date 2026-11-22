@@ -5,6 +5,8 @@ tags:
   - Bathroom 浴室
   - Lighting & ventilation 照明及通風
   - Domestic 住用
+summary: "Modification of B(P)R 36 for internal bathrooms and lavatories in flats: mechanical ventilation of 5 ACH, permanent vents and lighting."
+keywords: APP-98, bathroom, 浴室, lavatory, internal bathroom, B(P)R 36 modification, mechanical ventilation 5 ACH
 ---
 
 # APP-98 Lighting and Ventilation for Bathrooms and Lavatories in Domestic Buildings<br><small>住用建築物內浴室及廁所的照明與通風</small>

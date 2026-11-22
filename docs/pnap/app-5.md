@@ -11,6 +11,8 @@ tags:
   - Maintenance access 維修通道
   - Building height 建築物高度
   - Balcony & utility platform 露台及工作平台
+summary: "Storey and balcony heights measured between structural members; minimum heights (2.5 m rooms, 2.3 m under beams) and related rules."
+keywords: APP-5, height of storeys, 樓層高度, B(P)R 24, headroom, 2.5 m, beam soffit 2.3 m, balcony height
 ---
 
 # APP-5 Height of Storeys<br><small>樓層高度－《建築物(規劃)規例》第3(3)及24條</small>

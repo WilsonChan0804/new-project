@@ -5,6 +5,8 @@ tags:
   - Gas water heater 氣體熱水爐
   - Bathroom 浴室
   - Balcony & utility platform 露台及工作平台
+summary: "Provision for room-sealed gas water heaters under B(P)R 35A: aperture sizes, flue positions, tie beams at re-entrants and later enlargement."
+keywords: APP-27, gas water heater, 氣體熱水爐, B(P)R 35A, room-sealed, flue aperture 320 x 420, re-entrant
 ---
 
 # APP-27 Gas Water Heaters Regulation 35A of Building (Planning) Regulations<br><small>氣體熱水爐 《建築物（規劃）規例》第35A條</small>

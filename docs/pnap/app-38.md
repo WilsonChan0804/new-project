@@ -5,6 +5,8 @@ tags:
   - Footbridge 行人天橋
   - Projections 伸出物
   - GFA 總樓面面積
+summary: "Bridges over streets and lanes from private lots need BO s.31(1) exemption; criteria such as lease, planning, functional need and public benefit."
+keywords: APP-38, footbridge, 天橋, bridge over street, BO s.31(1), exemption, lane
 ---
 
 # APP-38 Bridges over Streets and Lanes<br><small>街道及通道巷上方的橋樑《建築物條例》第31 ( 1 ) 條</small>

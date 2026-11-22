@@ -9,6 +9,8 @@ tags:
   - Drainage 排水
   - Site supervision 地盤監督
   - Balcony & utility platform 露台及工作平台
+summary: "Design and construction of cantilevered RC structures (canopies, balconies, A/C platforms): beam-and-slab for spans over 1 m, loads, cover and supervision."
+keywords: APP-68, cantilever, 懸臂, canopy, balcony, A/C platform, reinforced concrete, beam-and-slab
 ---
 
 # APP-68 Design and Construction of Cantilevered Reinforced Concrete Structures<br><small>懸臂式鋼筋混凝土構築物的設計及建造</small>

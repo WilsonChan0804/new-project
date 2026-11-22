@@ -13,6 +13,8 @@ tags:
   - Statutory period 法定期限
   - Protective barrier 防護欄障
   - Fire safety 消防安全
+summary: "Curtain walls, windows and window walls: B(C)R 29–31, when structural plans are needed (1.8 m / 6 m² / 100 m), locking devices and supervision."
+keywords: APP-37, curtain wall, 幕牆, window wall, windows, B(C)R 29 30 31, structural submission, locking device
 ---
 
 # APP-37 Curtain Wall, Window and Window Wall<br><small>幕牆、玻璃窗及玻璃牆</small>

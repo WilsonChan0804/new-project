@@ -7,6 +7,8 @@ tags:
   - Gantry 門架
   - Site safety 地盤安全
   - Excavation & ELS 挖掘
+summary: "Hoardings, covered walkways and gantries under B(P)R 64–66: hoarding permits, temporary vehicle access, street furniture, trees and design requirements."
+keywords: APP-23, hoarding, 圍板, covered walkway, 有蓋行人道, gantry, hoarding permit, B(P)R 64 65 66, temporary access
 ---
 
 # APP-23 Hoardings, Covered Walkways and Gantries (including Temporary Access for Construction Vehicles)<br><small>圍板、有蓋人行道及門架(包括工程車輛的臨時通道) －《建築物(規劃)規例》第IX部</small>

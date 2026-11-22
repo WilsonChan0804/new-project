@@ -12,6 +12,8 @@ tags:
   - Site safety 地盤安全
   - Means of access 救援通道
   - GFA 總樓面面積
+summary: "Timelines and workflows: plan submission to occupation permit, statutory periods and typical sequences of approvals."
+keywords: workflows, 流程, timeline, 時間表, plan approval, occupation permit, statutory period
 ---
 # Timelines & workflows<br><small>時間表及流程圖</small>
 

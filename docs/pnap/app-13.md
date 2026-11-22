@@ -8,6 +8,8 @@ tags:
   - Plan submission & approval 呈交及審批
   - Statutory period 法定期限
   - Excavation & ELS 挖掘
+summary: "Completion certificates (BA12–14C), applications for occupation permit and record plans: what to submit, when to approve amendments, and processing times."
+keywords: APP-13, certificate of completion, 完工證明書, occupation permit, 佔用許可證, Form BA12 BA14, record plans, amendment plans
 ---
 
 # APP-13 Submission of Certificates of Completion, Applications for Occupation Permit, and Record Plans<br><small>呈交建築工程竣工證明書申請佔用許可證及呈交記錄圖則和資料</small>

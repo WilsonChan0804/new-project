@@ -1,6 +1,8 @@
 ---
 tags:
   - GFA concession 樓面面積寬免
+summary: "How entries on this site are prepared and checked: sources, page structure, bilingual style and review."
+keywords: contributing, 參與編寫, editorial guide, sources, bilingual, review
 ---
 # Contributing 編寫指引
 

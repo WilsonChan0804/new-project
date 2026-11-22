@@ -7,6 +7,8 @@ tags:
   - Plan submission & approval 呈交及審批
   - Minor works 小型工程
   - Site supervision 地盤監督
+summary: "No retrospective approval for unauthorised A&A works; validation of pre-2010 household minor works under BO s.39C, and how BD enforces."
+keywords: APP-47, unauthorized building works, 僭建, UBW, retrospective approval, BO s.39C validation, household minor works
 ---
 
 # APP-47 Unauthorized Alterations and Additions<br><small>違例改動及加建－《建築物條例》第14條</small>

@@ -46,6 +46,8 @@ tags:
   - Building height 建築物高度
   - GFA concession 樓面面積寬免
   - Elderly-friendly 長者友善
+summary: "Index of all PNAPs (ADM, APP, ADV) and Joint Practice Notes covered on this site, with old numbers and topics."
+keywords: PNAP index, 認可人士作業備考, practice notes, ADM APP ADV, JPN, joint practice notes
 ---
 # PNAP 認可人士作業備考
 

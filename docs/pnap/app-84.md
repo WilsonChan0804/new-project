@@ -10,6 +10,8 @@ tags:
   - Hotel 酒店
   - Drainage 排水
   - Lighting & ventilation 照明及通風
+summary: "Telecommunications and broadcasting access facilities under B(P)R 28A: lead-in ducts, TBE rooms (GFA-exempt maximum) and risers."
+keywords: APP-84, telecommunications, 電訊, broadcasting, B(P)R 28A, TBE room, lead-in duct, riser
 ---
 
 # APP-84 Access Facilities for Telecommunications and Broadcasting Services<br><small>為電訊及廣播服務而設的接達設施</small>

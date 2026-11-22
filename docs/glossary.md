@@ -30,6 +30,8 @@ tags:
   - Refuge floor 庇護層
   - GFA concession 樓面面積寬免
   - Elderly-friendly 長者友善
+summary: "English–Chinese glossary of Hong Kong building control terms used across the site."
+keywords: glossary, 詞彙, English Chinese terms, building control terminology, 中英對照
 ---
 # Glossary 詞彙
 

@@ -9,6 +9,8 @@ tags:
   - Occupation permit 佔用許可證
   - Minor works 小型工程
   - Maintenance access 維修通道
+summary: "Cladding to B(C)R 3 and 28: non-combustible materials, movement joints, corrosion-resistant fixings, and structural submissions above 6 m."
+keywords: APP-16, cladding, 覆蓋層, stone cladding, metal cladding, fixings, non-combustible, B(C)R 28, 6 m
 ---
 
 # APP-16 Cladding<br><small>覆蓋層</small>

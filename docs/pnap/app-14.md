@@ -8,6 +8,8 @@ tags:
   - Domestic 住用
   - Fire safety 消防安全
   - Industrial building 工業大廈
+summary: "Cinemas and places of public entertainment in non-domestic or composite buildings under B(P)R 49B: shared exits, smoke extraction, fire separation and entrances."
+keywords: APP-14, cinema, 戲院, place of public entertainment, B(P)R 49B, shared exits, smoke extraction, composite building
 ---
 
 # APP-14 Cinemas and Other Places of Public Entertainment in Non-domestic Buildings or Composite Buildings<br><small>設於非住用建築物或綜合用途建築物內的電影院及其他公眾娛樂場所</small>

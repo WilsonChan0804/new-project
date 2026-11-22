@@ -14,6 +14,8 @@ tags:
   - Concrete & materials 混凝土及物料
   - Fire safety 消防安全
   - Green & amenity features 環保及適意設施
+summary: "How to measure GFA to the outer face of external walls, when voids may be exempted, and which areas are non-accountable GFA."
+keywords: APP-2, gross floor area, 總樓面面積, GFA measurement, voids, non-accountable GFA, B(P)R 23(3), 樓面面積
 ---
 
 # APP-2 Calculation of Gross Floor Area and Non-accountable Gross Floor Area<br><small>總樓面面積及無須計算的總樓面面積的計算 －《建築物(規劃)規例》第23(3)(a)及(b)條</small>

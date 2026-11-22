@@ -12,6 +12,8 @@ tags:
   - Green & amenity features 環保及適意設施
   - Drainage 排水
   - Occupation permit 佔用許可證
+summary: "Projections and site coverage / plot ratio: which minor projections (A/C boxes, cills, flower boxes, canopies, fins) need not count and their size limits."
+keywords: APP-19, projections, 伸出物, site coverage, plot ratio, A/C box 750 mm, canopy, bay window, minor projections
 ---
 
 # APP-19 Projections in relation to Site Coverage and Plot Ratio<br><small>伸出物的上蓋面積和地積比率－《建築物（規劃）規例》第20及21條</small>

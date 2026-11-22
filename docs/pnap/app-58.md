@@ -7,6 +7,8 @@ tags:
   - Plumbing & sanitary 衞生設備
   - Registration 註冊
   - Site supervision 地盤監督
+summary: "Testing of drainage works: AP attends tests under reg. 73(1), contractor arranges, and the completion-of-testing certificate within 7 days."
+keywords: APP-58, drainage testing, 排水測試, water test, AP attendance, completion certificate, Cap. 123I
 ---
 
 # APP-58 Testing of Drainage Works<br><small>排水工程測試《建築物（衞生設備標準、水管裝置、排水工程及廁所）規例》第73條</small>

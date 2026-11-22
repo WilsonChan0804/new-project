@@ -5,6 +5,8 @@ tags:
   - Street widening 擴闊街道
   - Bonus PR 額外地積比率
   - Plot ratio 地積比率
+summary: "Street widening: surrendered land may count as site area for bonus plot ratio and site coverage under B(P)R 22(2) for the first building."
+keywords: APP-20, street widening, 擴闊街道, surrender, bonus plot ratio, B(P)R 22(2), site area
 ---
 
 # APP-20 Building Proposals affected by Street Widening<br><small>受街道擴闊影響的建築工程建議－《建築物（規劃）規例》第22(2)條</small>

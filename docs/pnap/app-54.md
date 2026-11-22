@@ -4,6 +4,8 @@ tags:
   - APP series
   - Retaining wall 擋土牆
   - Geotechnical 岩土
+summary: "Retaining walls to B(C)R 23 and Geoguide 1: definition, drainage and filters, minor walls, and design submission."
+keywords: APP-54, retaining wall, 擋土牆, Geoguide 1, B(C)R 23 24, drainage filter, geotextile
 ---
 
 # APP-54 Retaining Wall<br><small>擋土牆</small>
