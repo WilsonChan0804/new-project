@@ -79,7 +79,11 @@ const days = (n) => {
   if (P.d && P.d.format && P.d.format.unit === "w" && P.cal) { const w = n / P.cal.perWeek; return `${Math.round(w * 10) / 10} w`; }
   return `${n} d`;
 };
-const keyView = () => "lwk-viewer:programme-view:" + (project() || "");
+const keyView = () => "lwk-viewer:programme-view:" + (project() || "") + (P.pg ? ":" + P.pg : "");
+/* several programmes in a project: ?pg=<id> (none = the first) */
+const pgParam = () => { const v = new URLSearchParams(location.search).get("pg") || ""; return /^[a-z0-9]{6,16}$/.test(v) ? v : ""; };
+const pq = (path) => path + (P.pg ? (path.includes("?") ? "&" : "?") + "pg=" + P.pg : "");
+const pgUrl = (pg) => { const u = new URL(location.href); u.searchParams.delete("task"); if (pg && pg !== "main") u.searchParams.set("pg", pg); else u.searchParams.delete("pg"); return u.pathname + u.search; };
 function loadView() {
   let v = {};
   try { v = JSON.parse(localStorage.getItem(keyView()) || "{}") || {}; } catch (e) {}
@@ -196,7 +200,7 @@ async function save() {
   if (P.saving) { clearTimeout(P.t); P.t = setTimeout(save, 400); return; }
   P.saving = true;
   try {
-    const out = await api("/api/programme", { method: "PUT", body: JSON.stringify({ rev: P.doc.rev, data: P.d }) });
+    const out = await api(pq("/api/programme"), { method: "PUT", body: JSON.stringify({ rev: P.doc.rev, data: P.d }) });
     P.doc.rev = out.rev; P.doc.by = out.by; P.doc.at = out.at;
     P.pending = false;
     $("#pg-saved").textContent = "Saved";
@@ -210,7 +214,7 @@ async function save() {
   } finally { P.saving = false; }
 }
 async function loadDoc() {
-  P.doc = await api("/api/programme");
+  P.doc = await api(pq("/api/programme"));
   P.d = defaults(P.doc.data || {});
   P.can = !!P.doc.can_edit && !P.phone;
 }
@@ -1049,7 +1053,7 @@ async function taskLists() {
   const mine = lists.filter((l) => !l.project || l.project === project());
   return mine.length ? mine : lists;
 }
-const backLink = (t) => ({ kind: "url", url: `/programme.html?project=${encodeURIComponent(project() || "")}&task=${encodeURIComponent(t.id)}`, title: "Programme: " + (t.name || "") });
+const backLink = (t) => ({ kind: "url", url: `/programme.html?project=${encodeURIComponent(project() || "")}${P.pg ? "&pg=" + P.pg : ""}&task=${encodeURIComponent(t.id)}`, title: "Programme: " + (t.name || "") });
 
 async function createTask(t) {
   const lists = await taskLists();
@@ -1124,7 +1128,7 @@ async function discuss(t) {
   const pr = project();
   rooms.sort((a, b) => ((b.project === pr) - (a.project === pr)) || String(a.title).localeCompare(String(b.title)));
   const r = rowOf(t.id);
-  const url = `${location.origin}/programme.html?project=${encodeURIComponent(pr || "")}&task=${encodeURIComponent(t.id)}`;
+  const url = `${location.origin}/programme.html?project=${encodeURIComponent(pr || "")}${P.pg ? "&pg=" + P.pg : ""}&task=${encodeURIComponent(t.id)}`;
   const text = `Programme · ${r.wbs} ${t.name}\n${r.milestone ? "Milestone " + fmtLong(r.start) : `${fmtLong(r.start)} - ${fmtLong(r.finish)} · ${r.dur} working days`} · float ${r.tf} d${r.critical ? " · on the critical path" : ""}${t.party ? "\nResponsible: " + t.party : ""}\n${url}`;
   const f = await modal("Discuss in chat", `<label>Chat<select name="room">${rooms.map((x) => `<option value="${esc(x.id)}"${t.links.room && t.links.room.id === x.id ? " selected" : ""}>${esc(x.title || "Chat")}</option>`).join("")}</select></label>
     <label>Message<textarea name="body" rows="5">${esc(text)}</textarea></label>`, "Post");
@@ -1291,12 +1295,12 @@ async function coverDlg() {
 }
 async function historyDlg() {
   let items = [];
-  try { items = (await api("/api/programme/history")).items || []; } catch (e) { return toast(e.message, true); }
+  try { items = (await api(pq("/api/programme/history"))).items || []; } catch (e) { return toast(e.message, true); }
   const el = await modal("Earlier versions", items.length ? `<div class="pg-hist">${items.map((x) => `<label class="row-check"><input type="radio" name="rev" value="${x.rev}"> Version ${x.rev} · ${esc(x.by || "")} · ${esc(String(x.at || "").replace("T", " ").slice(0, 16))} · ${x.tasks} tasks</label>`).join("")}</div><p class="muted">Bring one back: it becomes the newest version (the current one stays in the list).</p>` : `<p class="muted">No versions yet.</p>`, P.can ? "Bring back" : "Close");
   if (!el || !P.can || !el.rev) return;
   const rv = [...el.querySelectorAll('input[name="rev"]')].find((x) => x.checked);
   if (!rv) return;
-  const old = await api("/api/programme?rev=" + rv.value);
+  const old = await api(pq("/api/programme?rev=" + rv.value));
   before();
   Object.assign(P.d, defaults(old.data || {}));
   changed();
@@ -1337,6 +1341,55 @@ async function template() {
 
 /* ------------------------------------------------------- export / import */
 
+/* ------------------------------------------------- several programmes */
+async function loadList() {
+  try { P.list = (await api("/api/programme/list")).items || []; } catch (e) { P.list = [{ id: "main", name: "Programme", tasks: 0 }]; }
+  const me = P.list.find((x) => x.id === (P.pg || "main")) || P.list[0] || { name: "Programme" };
+  P.pgName = me.name;
+  $("#pg-which-n").textContent = me.name;
+  $("#pg-which").title = P.list.length > 1 ? `${P.list.length} programmes in this project - choose, add, rename` : "Add another programme to this project, or rename this one";
+  document.title = me.name + " - Programme";
+}
+function whichMenu(anchor) {
+  const cur = P.pg || "main";
+  const el = pop(anchor, P.list.map((x) => `<div class="po-row${x.id === cur ? " on" : ""}" data-pg="${esc(x.id)}"><b>${x.id === cur ? "&#10003; " : ""}${esc(x.name)}</b><br><small class="muted">${x.tasks} task${x.tasks === 1 ? "" : "s"}${x.at ? " · saved " + esc(x.at.slice(0, 10)) + (x.by ? " by " + esc(x.by) : "") : ""}</small></div>`).join("")
+    + (P.doc.can_edit ? `<hr><div class="po-row" data-a="new"><b>+ New programme</b><br><small class="muted">empty, or a copy of this one</small></div>`
+      + `<div class="po-row" data-a="ren">Rename this programme ...</div>`
+      + (cur !== "main" ? `<div class="po-row" data-a="del">Delete this programme ...</div>` : "") : ""), 300);
+  el.addEventListener("click", async (ev) => {
+    const r = ev.target.closest("[data-pg],[data-a]");
+    if (!r) return;
+    closePop();
+    if (r.dataset.pg) { if (r.dataset.pg !== cur) go(r.dataset.pg); return; }
+    if (r.dataset.a === "new") {
+      const f = await modal("New programme", `<label>Name<input name="name" maxlength="80" placeholder="e.g. Phase 2, Fitting-out, Option B" required></label>
+        <label class="row-check"><input type="radio" name="how" value="empty" checked> Empty</label>
+        <label class="row-check"><input type="radio" name="how" value="copy"> A copy of "${esc(P.pgName)}" (tasks, links, calendar, set-up)</label>`, "Create");
+      if (!f) return;
+      const name = f.name.value.trim();
+      if (!name) return toast("Give it a name", true);
+      const copy = [...f.querySelectorAll('input[name="how"]')].find((x) => x.checked).value === "copy";
+      if (copy && P.pending) await save();
+      try {
+        const n = await api("/api/programme/list", { method: "POST", body: JSON.stringify({ name, copy: copy ? cur : null }) });
+        go(n.id);
+      } catch (e) { toast(e.message, true); }
+    } else if (r.dataset.a === "ren") {
+      const f = await modal("Rename the programme", `<label>Name<input name="name" maxlength="80" value="${esc(P.pgName)}" required></label>`, "Rename");
+      if (!f || !f.name.value.trim()) return;
+      try { await api("/api/programme/list/" + cur, { method: "PATCH", body: JSON.stringify({ name: f.name.value.trim() }) }); await loadList(); toast("Renamed"); } catch (e) { toast(e.message, true); }
+    } else if (r.dataset.a === "del") {
+      const f = await modal(`Delete "${P.pgName}"?`, `<p>Its ${tasks().length} tasks go for everyone on the project. The site admin can still get it back from the server (programme/deleted).</p>`, "Delete");
+      if (!f) return;
+      try { await api("/api/programme/list/" + cur, { method: "DELETE" }); P.pending = false; go("main"); } catch (e) { toast(e.message, true); }
+    }
+  });
+}
+async function go(pg) {
+  if (P.pending) await save();
+  location.href = pgUrl(pg);
+}
+
 function exportMenu(anchor) {
   const el = pop(anchor, `<div class="po-row" data-x="pdf"><b>PDF for the client ...</b><br><small class="muted">A3 / A4, title block, legend, remarks</small></div>`
     + `<div class="po-row" data-x="xml"><b>MS Project XML</b><br><small class="muted">opens in MS Project (File > Open); Save As .mpp there</small></div>`
@@ -1350,7 +1403,7 @@ function exportMenu(anchor) {
 }
 function fileName(ext) {
   const c = P.d.cover;
-  return [(c.project || P.projectName || project() || "Programme"), "Programme", c.rev ? "Rev " + c.rev : "", PC.todayIso()].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]+/g, " ") + "." + ext;
+  return [(c.project || P.projectName || project() || "Programme"), P.pg && P.pgName ? P.pgName : "Programme", c.rev ? "Rev " + c.rev : "", PC.todayIso()].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]+/g, " ") + "." + ext;
 }
 function download(blob, name) {
   const a = document.createElement("a");
@@ -1829,6 +1882,7 @@ async function start() {
   P.me = await ensureSignedIn();
   header(P.me);
   P.phone = phone();
+  P.pg = pgParam();
   loadView();
   if (P.phone && !localStorage.getItem(keyView())) P.view.zoom = "month";
   try {
@@ -1836,7 +1890,11 @@ async function start() {
     const p = (ps.projects || ps || []).find && (ps.projects || ps).find((x) => x.id === project());
     P.projectName = p ? p.name || p.title || "" : "";
   } catch (e) {}
-  await loadDoc();
+  try { await loadDoc(); } catch (e) {
+    if (e.status !== 404 || !P.pg) throw e;
+    toast(e.message, true); history.replaceState(null, "", pgUrl("")); P.pg = ""; await loadDoc(); loadView();
+  }
+  await loadList();
   recalc();
   render();
   if (await loadLinked() && P.can) changed(); else render();
@@ -1849,6 +1907,7 @@ async function start() {
   } else if (tasks().length) scrollToDay(PC.todayIso() > P.sched.start && PC.todayIso() < P.sched.finish ? PC.todayIso() : P.sched.start);
 
   // toolbar
+  $("#pg-which").onclick = (ev) => whichMenu(ev.currentTarget);
   $("#pg-add").onclick = () => add("task");
   $("#pg-ms").onclick = () => add("milestone");
   $("#pg-in").onclick = () => indent(1);
@@ -2011,7 +2070,7 @@ async function start() {
   addEventListener("focus", async () => {
     if (P.pending || P.saving || document.querySelector(".t-modal-back")) return;
     try {
-      const d = await api("/api/programme");
+      const d = await api(pq("/api/programme"));
       if (d.rev !== P.doc.rev) {
         P.doc = d; P.d = defaults(d.data || {}); P.can = !!d.can_edit && !P.phone;
         recalc(); render();

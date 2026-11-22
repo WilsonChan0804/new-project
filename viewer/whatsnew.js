@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-09", date: "22 Nov 2026",
+    items: [
+      "**Programme: several programmes in a project** - the name at the left of the Programme's toolbar lists them: the master programme, a phase, a fitting-out, an option. **+ New programme** makes one empty or as a copy of the one open (tasks, links, calendar, set-up); rename or delete it from the same list. Each keeps its own history, baselines and view; the existing programme stays as the first.",
+    ],
+  },
+  {
     version: "2027-02-08", date: "21 Nov 2026",
     items: [
       "**Programme: import .mpp** - Import reads an MS Project file (.mpp) directly, as well as XML and CSV: tasks, outline, durations, links with type and lag, the calendar and constraints. A test programme of 44 tasks gave the same dates as MS Project, all but one manually scheduled summary.",

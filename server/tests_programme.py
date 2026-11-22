@@ -46,6 +46,29 @@ class Store(unittest.TestCase):
         p = programme.load(self.core, "P1")
         self.assertEqual((p["rev"], p["data"]), (0, {}))
 
+    def test_several_programmes(self):
+        C = self.core
+        programme.save(C, "P1", 0, {"tasks": [task("a", "Design")], "cover": {"title": "Master"}}, "Ann")
+        self.assertEqual([(x["id"], x["name"], x["tasks"]) for x in programme.programmes(C, "P1")], [("main", "Master", 1)])
+        n = programme.create(C, "P1", "Phase 2 fitting-out", None, "Ann")
+        c = programme.create(C, "P1", "Master - option B", "main", "Bob")
+        items = programme.programmes(C, "P1")
+        self.assertEqual([x["name"] for x in items], ["Master", "Phase 2 fitting-out", "Master - option B"])
+        self.assertEqual([x["tasks"] for x in items], [1, 0, 1])                 # the copy has the tasks
+        programme.save(C, "P1", 1, {"tasks": [task("x", "Strip out"), task("y", "Fit out")]}, "Ann", n["id"])
+        self.assertEqual(len(programme.load(C, "P1", n["id"])["data"]["tasks"]), 2)
+        self.assertEqual(len(programme.load(C, "P1")["data"]["tasks"]), 1)      # the first one is untouched
+        self.assertEqual([h["rev"] for h in programme.history(C, "P1", n["id"])], [2, 1])
+        programme.rename(C, "P1", "main", "Master programme")
+        self.assertEqual(programme.programmes(C, "P1")[0]["name"], "Master programme")
+        programme.remove(C, "P1", c["id"])
+        self.assertEqual(len(programme.programmes(C, "P1")), 2)
+        self.assertTrue(os.listdir(os.path.join(self.tmp, "P1", "programme", "deleted")))   # kept, not lost
+        for bad in (lambda: programme.remove(C, "P1", "main"), lambda: programme.load(C, "P1", c["id"]),
+                    lambda: programme.load(C, "P1", "../x"), lambda: programme.create(C, "P1", "  ", None, "Ann")):
+            with self.assertRaises(HTTPException):
+                bad()
+
     def test_save_conflict_history(self):
         tasks = [task("a", "Design", start="2027-03-01"), task("b", "Tender", deps=[{"from": "a", "type": "FS", "lag": 2}, {"from": "gone", "type": "FS"}])]
         a = programme.save(self.core, "P1", 0, {"tasks": tasks, "calendar": {"week": "mon-fri"}, "junk": 1}, "Ann")

@@ -13,13 +13,22 @@ the server keeps the programme and prints it (programme_pdf.py).
   POST /api/programme/mspdi/import   MS Project XML -> {tasks, calendar, warnings} (programme_xml.py)
   POST /api/programme/mspdi/export   {title, calendar, rows} -> MS Project XML
 
-Kept in <project>/programme/programme.json; the last 30 versions in
-programme/history/.
+A project can have several programmes (?pg=<id> on each of the calls
+above; none = the first, "main"):
+  GET    /api/programme/list          [{id, name, tasks, by, at}]
+  POST   /api/programme/list          {name, copy} (member) -> a new one, empty or a copy
+  PATCH  /api/programme/list/<id>     {name} (member)
+  DELETE /api/programme/list/<id>     (member; not the first) - moved to programme/deleted/
+
+Kept in <project>/programme/programme.json (the first) or
+programme/p/<id>/programme.json; the last 30 versions in history/ beside it.
 """
 import json
 import os
 import re
+import shutil
 import time
+import uuid
 
 from fastapi import HTTPException, Request, Header, Response
 from starlette.concurrency import run_in_threadpool
@@ -31,8 +40,25 @@ PARTS = {"tasks": list, "calendar": dict, "baselines": list, "cover": dict, "col
 MAX_TASKS = 5000
 
 
-def _dir(core, pid, sub=""):
-    d = os.path.join(core.project_root_for(pid), "programme", sub)
+PG_ID = re.compile(r"^[a-z0-9]{6,16}$")
+
+
+def _pg(pg):
+    pg = (pg or "").strip()
+    if pg in ("", "main"):
+        return ""
+    if not PG_ID.match(pg):
+        raise HTTPException(status_code=400, detail="No such programme")
+    return pg
+
+
+def _base(core, pid, pg=""):
+    b = os.path.join(core.project_root_for(pid), "programme")
+    return os.path.join(b, "p", pg) if pg else b
+
+
+def _dir(core, pid, sub="", pg=""):
+    d = os.path.join(_base(core, pid, pg), sub)
     if not os.path.isdir(d):
         os.makedirs(d)
     return d
@@ -90,20 +116,22 @@ def clean(data):
     return out
 
 
-def load(core, pid):
-    p = _read(os.path.join(_dir(core, pid), "programme.json"))
+def load(core, pid, pg=""):
+    if pg and not os.path.isfile(os.path.join(_base(core, pid, pg), "programme.json")):
+        raise HTTPException(status_code=404, detail="That programme is not in this project (deleted?)")
+    p = _read(os.path.join(_dir(core, pid, pg=pg), "programme.json"))
     return p or {"rev": 0, "data": {}, "by": "", "at": ""}
 
 
-def save(core, pid, rev, data, who):
-    d = _dir(core, pid)
-    cur = load(core, pid)
+def save(core, pid, rev, data, who, pg=""):
+    d = _dir(core, pid, pg=pg)
+    cur = load(core, pid, pg)
     if int(rev or 0) != int(cur.get("rev") or 0):
         raise HTTPException(status_code=409, detail={"message": "Someone else changed the programme meanwhile", "current": cur})
     out = {"rev": int(cur.get("rev") or 0) + 1, "data": clean(data), "by": who or "",
            "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
     _write(os.path.join(d, "programme.json"), out)
-    h = _dir(core, pid, "history")
+    h = _dir(core, pid, "history", pg)
     _write(os.path.join(h, "%s-r%06d.json" % (time.strftime("%Y%m%d-%H%M%S"), out["rev"])), out)
     for f in sorted(os.listdir(h))[:-KEEP_HISTORY]:
         try:
@@ -113,8 +141,8 @@ def save(core, pid, rev, data, who):
     return out
 
 
-def history(core, pid):
-    h = _dir(core, pid, "history")
+def history(core, pid, pg=""):
+    h = _dir(core, pid, "history", pg)
     out = []
     for f in sorted(os.listdir(h), reverse=True):
         v = _read(os.path.join(h, f))
@@ -124,19 +152,99 @@ def history(core, pid):
     return out
 
 
+# ------------------------------------------------------------ several programmes
+
+def _index(core, pid):
+    v = _read(os.path.join(_dir(core, pid), "index.json"))
+    return v if isinstance(v, dict) else {}
+
+
+def _set_index(core, pid, ix):
+    _write(os.path.join(_dir(core, pid), "index.json"), ix)
+
+
+def programmes(core, pid):
+    ix = _index(core, pid)
+    names = ix.get("names") or {}
+    order = [""] + [x for x in (ix.get("order") or []) if x and os.path.isfile(os.path.join(_base(core, pid, x), "programme.json"))]
+    out = []
+    for pg in order:
+        doc = _read(os.path.join(_base(core, pid, pg), "programme.json")) or {}
+        title = ((doc.get("data") or {}).get("cover") or {}).get("title") or ""
+        out.append({"id": pg or "main", "name": names.get(pg or "main") or (title if not pg else "") or ("Programme" if not pg else "Programme " + pg[:4]),
+                    "tasks": len((doc.get("data") or {}).get("tasks") or []), "by": doc.get("by") or "", "at": doc.get("at") or ""})
+    return out
+
+
+def _name(v):
+    n = re.sub(r"\s+", " ", str(v or "")).strip()[:80]
+    if not n:
+        raise HTTPException(status_code=400, detail="Give the programme a name")
+    return n
+
+
+def create(core, pid, name, copy, who):
+    name = _name(name)
+    ix = _index(core, pid)
+    if len(ix.get("order") or []) >= 50:
+        raise HTTPException(status_code=400, detail="At most 50 programmes in a project")
+    pg = uuid.uuid4().hex[:10]
+    data = {}
+    if copy not in (None, ""):
+        src = load(core, pid, _pg(copy))
+        data = json.loads(json.dumps(src.get("data") or {}))
+        data.setdefault("cover", {})
+        data["cover"]["title"] = name
+    else:
+        data = {"cover": {"title": name}}
+    _write(os.path.join(_dir(core, pid, pg=pg), "programme.json"), {"rev": 0, "data": {}, "by": "", "at": ""})
+    out = save(core, pid, 0, data, who, pg)
+    ix.setdefault("order", []).append(pg)
+    ix.setdefault("names", {})[pg] = name
+    _set_index(core, pid, ix)
+    return {"id": pg, "name": name, "rev": out["rev"]}
+
+
+def rename(core, pid, pg, name):
+    name = _name(name)
+    pg = _pg(pg)
+    load(core, pid, pg)
+    ix = _index(core, pid)
+    ix.setdefault("names", {})[pg or "main"] = name
+    _set_index(core, pid, ix)
+    return {"id": pg or "main", "name": name}
+
+
+def remove(core, pid, pg):
+    pg = _pg(pg)
+    if not pg:
+        raise HTTPException(status_code=400, detail="The first programme cannot be deleted - clear its tasks instead")
+    load(core, pid, pg)
+    dest = os.path.join(_base(core, pid), "deleted")
+    os.makedirs(dest, exist_ok=True)
+    shutil.move(_base(core, pid, pg), os.path.join(dest, "%s-%s" % (pg, time.strftime("%Y%m%d-%H%M%S"))))
+    ix = _index(core, pid)
+    ix["order"] = [x for x in (ix.get("order") or []) if x != pg]
+    (ix.get("names") or {}).pop(pg, None)
+    _set_index(core, pid, ix)
+    return {"ok": True}
+
+
 def register(app, core):
 
     def can_edit(role):
         return core.RANK.get(role, 0) >= core.RANK["member"] or not core.accounts_on()
 
     @app.get("/api/programme")
-    def programme_get(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default=""), rev: int = 0):
+    def programme_get(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default=""), rev: int = 0, pg: str = ""):
         w, role = core.require_project(request, x_project, "viewer", x_viewer_token)
-        out = load(core, x_project)
+        pg = _pg(pg)
+        out = load(core, x_project, pg)
         if rev and rev != out.get("rev"):         # an earlier version, to look at or bring back
-            for f in os.listdir(_dir(core, x_project, "history")):
+            hd = _dir(core, x_project, "history", pg)
+            for f in os.listdir(hd):
                 if f.endswith("-r%06d.json" % rev):
-                    out = _read(os.path.join(_dir(core, x_project, "history"), f)) or out
+                    out = _read(os.path.join(hd, f)) or out
                     out["old"] = True
                     break
         out["can_edit"] = can_edit(role)
@@ -144,12 +252,42 @@ def register(app, core):
         return out
 
     @app.get("/api/programme/history")
-    def programme_history(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    def programme_history(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default=""), pg: str = ""):
         core.require_project(request, x_project, "viewer", x_viewer_token)
-        return {"items": history(core, x_project)}
+        return {"items": history(core, x_project, _pg(pg))}
+
+    @app.get("/api/programme/list")
+    def programme_list(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        w, role = core.require_project(request, x_project, "viewer", x_viewer_token)
+        return {"items": programmes(core, x_project), "can_edit": can_edit(role)}
+
+    @app.post("/api/programme/list")
+    async def programme_new(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        w, _ = core.require_project(request, x_project, "member", x_viewer_token)
+        try:
+            body = json.loads((await request.body()).decode("utf-8") or "{}")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Not JSON")
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="Send {name, copy}")
+        return await run_in_threadpool(create, core, x_project, body.get("name"), body.get("copy"), getattr(w, "name", "") or "")
+
+    @app.patch("/api/programme/list/{pg}")
+    async def programme_rename(pg: str, request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        core.require_project(request, x_project, "member", x_viewer_token)
+        try:
+            body = json.loads((await request.body()).decode("utf-8") or "{}")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Not JSON")
+        return await run_in_threadpool(rename, core, x_project, pg, (body or {}).get("name"))
+
+    @app.delete("/api/programme/list/{pg}")
+    def programme_delete(pg: str, request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        core.require_project(request, x_project, "member", x_viewer_token)
+        return remove(core, x_project, pg)
 
     @app.put("/api/programme")
-    async def programme_put(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+    async def programme_put(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default=""), pg: str = ""):
         w, _ = core.require_project(request, x_project, "member", x_viewer_token)
         raw = await request.body()
         if len(raw) > MAX_BYTES:
@@ -160,7 +298,7 @@ def register(app, core):
             raise HTTPException(status_code=400, detail="Not JSON")
         if not isinstance(body, dict):
             raise HTTPException(status_code=400, detail="Send {rev, data}")
-        return await run_in_threadpool(save, core, x_project, body.get("rev"), body.get("data"), getattr(w, "name", "") or "")
+        return await run_in_threadpool(save, core, x_project, body.get("rev"), body.get("data"), getattr(w, "name", "") or "", _pg(pg))
 
     @app.post("/api/programme/mspdi/import")
     async def programme_xml_in(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
