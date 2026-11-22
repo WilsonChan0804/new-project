@@ -15,6 +15,7 @@ Output lines:
     NODATE  the page has no "Version summarised" date
     UNREAD  the PDF revision line could not be read -> check by hand
     NOPAGE  in force on BD's index but not on this site
+    REPEALED  BD has repealed a PNAP that still has a page here
 """
 import argparse, datetime, html, os, re, subprocess, sys, tempfile, urllib.request
 
@@ -80,10 +81,22 @@ def main():
     try:
         idx = os.path.join(a.cache, "index_pnap.html")
         fetch(INDEX, idx)
-        t = html.unescape(re.sub("<[^>]+>", " ", open(idx, encoding="utf-8", errors="ignore").read()))
-        listed = {f"{x.lower()}-{int(y)}" for x, y in re.findall(r"\b(ADM|APP|ADV)-(\d+)\b", t)}
+        t = re.sub(r"\s+", " ", html.unescape(re.sub("<[^>]+>", " | ", open(idx, encoding="utf-8", errors="ignore").read())))
+        # split the index into one chunk per PNAP row; a row marked "[This practice note ... repealed ...]" is not in force
+        rows = re.split(r"\| (?=(?:ADM|APP|ADV)-\d+ \| (?!\.))", t)  # "see | APP-130 | ." inside a note is not a new row
+        listed, repealed = set(), {}
+        for r in rows:
+            m = re.match(r"(ADM|APP|ADV)-(\d+) \|", r)
+            if not m: continue
+            k = f"{m.group(1).lower()}-{int(m.group(2))}"
+            rep = re.search(r"\[\s*This practice note[^\]]*repeal[^\]]*\]", r, re.I)
+            if rep: repealed[k] = re.sub(r"\s*\|\s*", " ", rep.group(0)).strip("[] ")
+            else: listed.add(k)
         for k in sorted(listed - set(pages), key=lambda k: (k[:3], int(k.split("-")[1]))):
             print("NOPAGE ", k); issues += 1
+        for k in sorted(set(repealed) & set(pages)):
+            print("REPEALED", k, "has a page but BD says:", repealed[k]); issues += 1
+        print(len(repealed), "repealed PNAPs on BD's index (no page needed)")
     except Exception as e:
         print("index not read:", e)
     print(f"{len(pages)} pages checked, {issues} to look at")
