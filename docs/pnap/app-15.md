@@ -36,15 +36,6 @@ keywords: APP-15, fill, 填土, compaction, 壓實, fill slope, 填土斜坡, fl
     - 鬆散而無承托的填土可引致**流動性山泥傾瀉**；如填土斜坡倒塌可危及公眾，建築事務監督會要求按附錄 A 標準呈交填土**圖則**，並由**註冊岩土工程師定期監督**及執行合資格監督（第 1–2 段）。
     - 須通知建築事務監督**動工日期**；每月提交**壓實測試報告**及由註冊岩土工程師簽署的評估（同類泥土的現場密度與最大乾密度比較）（第 3–4 段）。
 
-<!-- APSEC START -->
-## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
-
-BD's responses at the APSEC Discussion Forum that clarify this document, **newest first**. Where the same question came up more than once, only the **latest position** is listed. See [all APSEC items](../apsec/index.md). 屋宇署在討論會上就本文件作出的澄清，新者在前；同一問題只列最新立場。
-
-- **[Revitalisation of Existing Industrial Buildings – GFA Calculation of Mezzanine Floor Solely Used for Additional Transformer Room and](../apsec/2025.md#i2025021425)** <small>ADF 1/2025, 14 Feb 2025</small><br>BD advised that comments could only be provided based on the special circumstances of individual cases. Guidelines set out in PNAP APP-150 and items 21 and 22 of ADF 3/2022 held on 13 May 2022 were relevant.
-
-<!-- APSEC END -->
-
 !!! tip "Does it apply? 是否適用"
     **Applies 適用**: **temporary or permanent fill** in private building works where a **fill slope failure could endanger the public** (BA's opinion): drawings, monthly compaction reports and as-built records to **Appendix A**. 可能危及公眾的填土工程。
 
