@@ -13,7 +13,7 @@
 import { api, headers, project } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, toast, pop, closePop } from "./tasks-util.js";
-import { mountGbp } from "./gbp.js";
+import { mountGbp, showPart } from "./gbp.js";
 
 const KEEP = "lwk-viewer:codes-chat";
 const CX = { st: null, turns: [], shown: -1, me: null, kinds: [] };
@@ -372,6 +372,8 @@ async function find() {
   if (!q) return $("#cx-q").focus();
   if (CX.turns.some((t) => t.busy)) return;
   $("#cx-q").value = "";
+  if ($("#kbtab").hidden) showTab("kb");
+  panel("search");
   const i = CX.turns.length;
   CX.turns.push({ q, kind: "search", sources: [], busy: true });
   render();
@@ -383,7 +385,6 @@ async function find() {
   } catch (e) { Object.assign(CX.turns[i], { busy: false, why: e.message, err: true }); }
   paintTurn(i);
   save();
-  if (CX.turns[i].sources.length && !phone()) showSources(i);
 }
 
 /* --------------------------------------------------------------- library */
@@ -415,13 +416,13 @@ async function openLibrary(tab) {
   back.className = "cx-libpage-in";
   back.innerHTML = `<div class="cx-libm cx-inline"><div class="cx-libtabs"><h3>Library</h3><button type="button" class="cx-ltab on" data-lt="lib">In the library</button>`
     + `<button type="button" class="cx-ltab" data-lt="find" title="The codes, PNAPs and practice notes the Buildings Department publishes">Find documents</button>`
-    + `<span class="spacer"></span><button type="button" class="ghost" data-x title="Back to Search">Back to Search</button></div>`
+    + `<span class="spacer"></span><button type="button" class="ghost" data-x title="Back to the Knowledge base">Back</button></div>`
     + `<div class="cx-lib-body"></div><div class="cx-find-body" hidden></div></div>`;
   page.innerHTML = "";
   page.appendChild(back);
   page.insertAdjacentHTML("beforeend", `<div class="cx-kbbox" id="cx-kbbox"></div>`);
   paintKbBox();
-  const end = () => { loadStatus(); showTab("ask"); };
+  const end = () => { loadStatus(); showTab("kb"); };
   back.querySelector("[data-x]").onclick = end;
   const body = back.querySelector(".cx-lib-body");
   const fbody = back.querySelector(".cx-find-body");
@@ -622,18 +623,51 @@ async function recent(btn) {
   }
 }
 
-/* Search the codes | GBP workbook (gbp.js): the workbook opens on first use;
-   a § source in it finds that clause in the library here */
+/* Codes: the Knowledge base (the summaries, with the search and the GBP
+   workbook in a panel beside the page) | Library | GBP workbook (a tab of its
+   own too). The workbook is one: it moves between its tab and the panel. */
 let GBP_ON = false;
+function gbpOpts(part) {
+  return {
+    part,
+    findClause: (q) => { panel("search"); $("#cx-q").value = q; find(); },
+    openGuide: (p) => { showTab("kb", p); panel("gbp"); },
+  };
+}
+function ensureGbp(part) {
+  if (GBP_ON) { if (part) showPart(part); return; }
+  GBP_ON = true;
+  mountGbp($("#gbp"), gbpOpts(part)).catch((e) => { GBP_ON = false; $("#gbp").innerHTML = `<p class="muted" style="padding:20px">${esc(e.message)}</p>`; });
+}
+function placeGbp(where) {
+  const g = $("#gbp");
+  const host = where === "panel" ? $("#kbp-gbp") : $("#gbptab");
+  if (g.parentElement !== host) host.appendChild(g);
+}
+/* the panel beside the page: "search" | "gbp" | "" (closed) */
+function panel(view, part) {
+  const p = $("#kb-panel");
+  if (!view) { p.hidden = true; $("#kbtab").classList.remove("p-on"); $("#kb-ptog").innerHTML = "Results &#9656;"; try { sessionStorage.setItem("lwk-viewer:kb-panel", ""); } catch (e) {} return; }
+  p.hidden = false;
+  $("#kbtab").classList.add("p-on");
+  $("#kbtab").classList.toggle("p-gbp", view === "gbp");
+  $("#kb-ptog").innerHTML = "Hide &#9666;";
+  for (const b of p.querySelectorAll("[data-pv]")) b.classList.toggle("on", b.dataset.pv === view);
+  $("#kbp-search").hidden = view !== "search";
+  $("#kbp-gbp").hidden = view !== "gbp";
+  for (const id of ["cx-recent", "cx-new", "cx-state"]) $("#" + id).hidden = view !== "search";
+  if (view === "gbp") { placeGbp("panel"); ensureGbp(part); }
+  try { sessionStorage.setItem("lwk-viewer:kb-panel", view); } catch (e) {}
+}
 function showTab(tab, kbPath, quiet) {
+  if (tab === "ask") { tab = "kb"; }
   for (const b of document.querySelectorAll(".cx-tab")) b.classList.toggle("on", b.dataset.tab === tab);
-  $("#codes").hidden = tab !== "ask";
-  $("#gbp").hidden = tab !== "gbp";
+  $("#gbptab").hidden = tab !== "gbp";
   $("#kbtab").hidden = tab !== "kb";
   $("#libtab").hidden = tab !== "lib";
   try { localStorage.setItem("lwk-viewer:codes-tab", tab); } catch (e) {}
   const u = new URL(location.href);
-  if (tab !== "ask") u.searchParams.set("tab", tab); else u.searchParams.delete("tab");
+  if (tab !== "kb") u.searchParams.set("tab", tab); else u.searchParams.delete("tab");
   if (tab !== "kb") u.searchParams.delete("page");
   history.replaceState(null, "", u.pathname + u.search);
   if (tab === "kb") {
@@ -645,11 +679,30 @@ function showTab(tab, kbPath, quiet) {
     }
   }
   if (tab === "lib" && !quiet && !$("#cx-libpage").childElementCount) openLibrary();
-  if (tab === "gbp" && !GBP_ON) {
-    GBP_ON = true;
-    mountGbp($("#gbp"), { findClause: (q) => { showTab("ask"); $("#cx-q").value = q; find(); } })
-      .catch((e) => { GBP_ON = false; $("#gbp").innerHTML = `<p class="muted" style="padding:20px">${esc(e.message)}</p>`; });
+  if (tab === "gbp") {
+    if (!$("#kb-panel").hidden && !$("#kbp-gbp").hidden) panel("search");
+    placeGbp("tab"); ensureGbp();
   }
+}
+
+/* a page of the knowledge base: its gbp: links open the workbook beside it */
+function wireFrame() {
+  const fr = $("#kb-frame");
+  let doc;
+  try { doc = fr.contentDocument; } catch (e) { return; }
+  if (!doc || !doc.body || doc.body.dataset.lwk) return;
+  doc.body.dataset.lwk = "1";
+  const st = doc.createElement("style");
+  st.textContent = `a[href^="gbp:"]{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;margin:4px 0;border-radius:8px;border:1px solid #e8731a;color:#c2560a!important;background:#fff4ea;font-weight:600;text-decoration:none!important}
+a[href^="gbp:"]::before{content:"\\1F9EE";}a[href^="gbp:"]:hover{background:#ffe6d0}`;
+  doc.head.appendChild(st);
+  doc.addEventListener("click", (ev) => {
+    const a = ev.target.closest && ev.target.closest('a[href^="gbp:"]');
+    if (!a) return;
+    ev.preventDefault();
+    panel("gbp", a.getAttribute("href").slice(4).trim().toLowerCase());
+  }, true);
+  doc.addEventListener("keydown", (ev) => { if (ev.key === "/" && !/INPUT|TEXTAREA/.test((ev.target.tagName || "")) && !ev.target.isContentEditable) { ev.preventDefault(); $("#cx-q").focus(); } });
 }
 
 async function start() {
@@ -663,10 +716,26 @@ async function start() {
     const sp = new URLSearchParams(location.search);
     let t = sp.get("tab");
     if (!t) { try { t = localStorage.getItem("lwk-viewer:codes-tab"); } catch (e) {} }
-    if (t === "gbp") showTab("gbp");
-    else if (t === "kb") showTab("kb", sp.get("page") || null);
+    const sec = sp.get("sec");
+    if (t === "gbp") { showTab("gbp"); if (sec) ensureGbp(sec); }
     else if (t === "lib") openLibrary();
+    else {
+      showTab("kb", sp.get("page") || null);
+      let pv = "";
+      try { pv = sessionStorage.getItem("lwk-viewer:kb-panel") || ""; } catch (e) {}
+      if (t === "ask" || sp.get("q") || (pv === "search" && CX.turns.length)) panel("search");
+      else if (pv === "gbp" || sec) panel("gbp", sec || undefined);
+    }
   }
+  $("#kb-frame").addEventListener("load", wireFrame);
+  $("#kb-ptog").onclick = () => panel($("#kb-panel").hidden ? "search" : "");
+  $("#kb-px").onclick = () => panel("");
+  $("#kb-fab").onclick = () => { panel("search"); $("#cx-q").focus(); };
+  for (const b of document.querySelectorAll("[data-pv]")) b.onclick = () => panel(b.dataset.pv);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "/" && !$("#kbtab").hidden && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.activeElement.isContentEditable) { ev.preventDefault(); $("#cx-q").focus(); }
+    if (ev.key === "Escape" && document.activeElement === $("#cx-q") && !$("#cx-side").classList.contains("on")) $("#cx-q").blur();
+  });
   // the knowledge base's own page: Back / Home / a window of its own
   $("#kb-back").onclick = () => { try { $("#kb-frame").contentWindow.history.back(); } catch (e) {} };
   $("#kb-home").onclick = () => { KB_LOADED = ""; showTab("kb", ""); };
@@ -676,8 +745,6 @@ async function start() {
   $("#cx-form").onsubmit = () => { find(); return false; };
   $("#cx-q").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); find(); } });
   $("#cx-new").onclick = () => { CX.turns = []; CX.shown = -1; save(); render(); $("#cx-side").classList.remove("on"); $("#cx-clauses").innerHTML = ""; $("#cx-q").focus(); };
-  $("#cx-lib").onclick = () => openLibrary();
-  $("#cx-kbtop").onclick = () => showTab("kb");
   $("#cx-recent").onclick = () => recent($("#cx-recent"));
   $("#cx-side-x").onclick = () => $("#cx-side").classList.remove("on");
   const dgClick = (ev) => {
@@ -700,8 +767,7 @@ async function start() {
     if (s) return showSources(Number(s.dataset.show));
   });
   const last = CX.turns.length - 1;
-  if (last >= 0 && !phone() && (CX.turns[last].sources || []).length) showSources(last);
-  $("#cx-q").focus();
+  if (!phone()) $("#cx-q").focus();
 }
 
 start().catch((e) => { if (!/Set your own password/.test(e.message)) toast(e.message, true); });

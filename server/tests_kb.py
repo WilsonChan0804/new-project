@@ -104,6 +104,27 @@ def make_zip(entries):
     return b.getvalue()
 
 
+class GbpLinks(unittest.TestCase):
+    def test_markers(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            kb.CFG["data"] = tmp
+            d = os.path.join(tmp, "docs", "guides")
+            os.makedirs(d)
+            with open(os.path.join(d, "gfa.md"), "w", encoding="utf-8") as f:
+                f.write("# GFA guide<br><small>樓面面積</small>\n\n## Step 1: what counts? {#step-1}\n\nThe GFA is measured to the outside of the walls, "
+                        "floor by floor.\n\n[Calculate in the GBP workbook](gbp:gfa)\n\n## Exits\n\nThe exits are worked out from the occupant capacity "
+                        "of each room. [Exits](gbp:exits) [Nope](gbp:bogus)\n")
+            os.makedirs(os.path.join(tmp, "kb"))
+            kb.index(os.path.join(tmp, "docs"), os.path.join(tmp, "kb", "kb.db"))
+            g = kb.gbp_links()
+            self.assertEqual(sorted(g), ["gfa", "moe"])
+            self.assertEqual((g["gfa"][0]["anchor"], g["gfa"][0]["url"]), ("step-1", "guides/gfa/"))
+            self.assertEqual(g["moe"][0]["heading"], "Exits")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class Unpack(unittest.TestCase):
     def test_safe(self):
         tmp = tempfile.mkdtemp()

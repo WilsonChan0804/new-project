@@ -27,7 +27,14 @@ const PARTS = [
   { id: "map", label: "Model & mapping" },
   { id: "next", label: "Sanitary, FRR, greenery", soon: true },
 ];
-const G = { el: null, wb: null, model: null, modelErr: "", part: "site", t: null, saving: false, opts: {} };
+const G = { el: null, wb: null, model: null, modelErr: "", part: "site", t: null, saving: false, opts: {}, guides: {} };
+/* the knowledge base's guide sections that link to a part ([..](gbp:gfa)): "Why? 依據" */
+const ALIAS = { sc: "site", pr: "site", occupancy: "moe", exits: "moe", discharge: "stairs" };
+function guideLine(part) {
+  const g = G.guides[part] || [];
+  if (!g.length) return "";
+  return `<div class="gb-guide"><b>Why? 依據</b> ${g.slice(0, 4).map((x) => `<button type="button" class="gb-gl" data-guide="${esc(x.url + (x.anchor ? "#" + x.anchor : ""))}" title="Open the guide beside the workbook">&#128218; ${esc(x.title)}${x.heading ? " · " + esc(x.heading) : ""}</button>`).join("")}</div>`;
+}
 const KEEP = "lwk-viewer:gbp-part";
 
 const D = () => {
@@ -327,7 +334,7 @@ function render() {
   const keepScroll = (G.el.querySelector(".gb-main") || {}).scrollTop || 0;
   G.el.innerHTML = `<aside class="gb-nav">${nav}<div class="gb-meta">${can() ? "" : "<b>View only</b><br>"}${G.wb.at ? `Last change ${esc(G.wb.by || "")}, ${esc(G.wb.at.replace("T", " ").slice(0, 16))}` : "Nothing saved yet"}<br><span class="gb-saved"></span></div>
       <div class="gb-acts"><button type="button" class="ghost" id="gb-xlsx">Excel (all)</button></div></aside>
-    <section class="gb-main">${body}<p class="gb-disc">Worked from the code tables as transcribed (each result names its source). Check against the current documents before submission; the Building Authority's decision prevails.</p></section>`;
+    <section class="gb-main">${guideLine(G.part)}${body}<p class="gb-disc">Worked from the code tables as transcribed (each result names its source). Check against the current documents before submission; the Building Authority's decision prevails.</p></section>`;
   G.el.querySelector(".gb-main").scrollTop = keepScroll;
 }
 
@@ -337,6 +344,7 @@ function wire() {
     const t = ev.target.closest("button");
     if (!t) return;
     if (t.dataset.part) { G.part = t.dataset.part; try { localStorage.setItem(KEEP, G.part); } catch (e) {} render(); return; }
+    if (t.dataset.guide) { if (G.opts.openGuide) G.opts.openGuide(t.dataset.guide); return; }
     if (t.dataset.clause) { if (G.opts.findClause) G.opts.findClause(t.dataset.clause); return; }
     if (t.dataset.act) return rowAct(t.dataset.k, t.dataset.u, t.dataset.act);
     if (t.dataset.add) return addRow(t.dataset.add);
@@ -435,8 +443,18 @@ export async function mountGbp(el, opts) {
   try { const p = localStorage.getItem(KEEP); if (p && PARTS.some((x) => x.id === p && !x.soon)) G.part = p; } catch (e) {}
   el.innerHTML = `<p class="muted" style="padding:20px">Opening the workbook ...</p>`;
   if (!project()) { el.innerHTML = `<p class="muted" style="padding:20px">Choose a project first (the project list at the top).</p>`; return; }
-  await Promise.all([loadWb(), readModel()]);
+  await Promise.all([loadWb(), readModel(), api("/api/kb/gbp").then((r) => { G.guides = r.parts || {}; }).catch(() => {})]);
+  if (opts && opts.part) showPart(opts.part, true);
   wire();
   render();
+}
+/* open a part (from a guide's gbp: link, or ?sec=) */
+export function showPart(id, quiet) {
+  id = ALIAS[id] || id;
+  if (!PARTS.some((p) => p.id === id && !p.soon)) return false;
+  G.part = id;
+  try { localStorage.setItem(KEEP, id); } catch (e) {}
+  if (!quiet && G.wb) render();
+  return true;
 }
 export const _test = { calc, sheetsOf, G };

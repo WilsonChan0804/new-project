@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-10", date: "22 Nov 2026",
+    items: [
+      "**Codes: the search is in the Knowledge base** - one tab now. The search bar is at the top (press /); the results open in a panel at the right while the page you read stays open, and a result opens its page on the left. On a phone, the round 🔍 button at the bottom right.",
+      "**Guides and the GBP workbook together** - a topic guide's **Calculate in the GBP workbook** button opens this project's workbook at that part beside the guide; each part of the workbook links back to its guides (**Why? 依據**). The buttons appear as the knowledge base's author adds them.",
+    ],
+  },
+  {
     version: "2027-02-09", date: "22 Nov 2026",
     items: [
       "**Programme: several programmes in a project** - the name at the left of the Programme's toolbar lists them: the master programme, a phase, a fitting-out, an option. **+ New programme** makes one empty or as a copy of the one open (tasks, links, calendar, set-up); rename or delete it from the same list. Each keeps its own history, baselines and view; the existing programme stays as the first.",

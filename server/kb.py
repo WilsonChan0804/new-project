@@ -141,6 +141,12 @@ def url_of(rel):
 MONTHS = {m: i + 1 for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split())}
 
 
+# A topic guide links to the viewer's GBP workbook with [text](gbp:<part>):
+# the viewer opens that part beside the page, and the workbook links back.
+GBP_PARTS = ("site", "gfa", "moe", "stairs")
+GBP_PART = {"sc": "site", "pr": "site", "occupancy": "moe", "exits": "moe", "discharge": "stairs"}
+
+
 def clean_lines(lines, figures, base_dir):
     """Markdown with MkDocs extras -> plain lines (English, Chinese)."""
     en, zh, lang = [], [], None
@@ -268,7 +274,8 @@ def parse_page(text, rel):
             m = re.search(r"Later discussion[^\n]*\n(?:.*\n){0,3}?.*?\[later response\]\(([^)]+)\)", raw)
             newer = m.group(1) if m else ""
         out.append({"heading": s["heading"], "anchor": s["anchor"], "ord": k, "date": s["date"], "superseded": sup, "newer": newer,
-                    "en": en[:20000], "zh": zh[:20000], "figures": figs[:8]})
+                    "en": en[:20000], "zh": zh[:20000], "figures": figs[:8],
+                    "gbp": sorted(set(GBP_PART.get(m, m) for m in re.findall(r"\]\(gbp:([a-z]+)\)", raw) if GBP_PART.get(m, m) in GBP_PARTS))})
     if summary:
         info["summary"] = summary
     if keywords:
@@ -296,6 +303,7 @@ def index(docs_dir, db_path):
     c = sqlite3.connect(tmp)
     c.executescript(SCHEMA)
     n_pages = n_secs = 0
+    gbp = {}
     for root, dirs, files in os.walk(docs_dir):
         dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d not in ("assets", "stylesheets", "javascripts"))
         for fn in sorted(files):
@@ -323,6 +331,10 @@ def index(docs_dir, db_path):
                 c.execute("INSERT INTO sections_fts (rowid, body, head) VALUES (?,?,?)",
                           (cur.lastrowid, codes.index_text(s["en"] + "\n" + s["zh"]), codes.index_text(head)))
                 n_secs += 1
+                for part in s.get("gbp") or []:
+                    gbp.setdefault(part, []).append({"url": page["url"], "anchor": s["anchor"], "title": page["title"], "zh": page["zh"],
+                                                     "heading": s["heading"], "kind": page["kind"]})
+    c.execute("INSERT OR REPLACE INTO meta (k, v) VALUES ('gbp', ?)", (json.dumps(gbp, ensure_ascii=False),))
     c.commit()
     c.close()
     os.replace(tmp, db_path)
@@ -385,6 +397,21 @@ def search(q, n=6, include_old=False):
         if len(out) >= n:
             break
     return out, shown
+
+
+def gbp_links():
+    c = _db()
+    if c is None:
+        return {}
+    try:
+        r = c.execute("SELECT v FROM meta WHERE k='gbp'").fetchone()
+        v = json.loads(r[0]) if r and r[0] else {}
+    except Exception:
+        v = {}
+    finally:
+        c.close()
+    # guides first, then the other pages
+    return {k: sorted(x, key=lambda i: (i.get("kind") != "guide", i.get("title") or ""))[:8] for k, x in v.items()}
 
 
 def snippet(text, terms, n=320):
@@ -887,6 +914,12 @@ def register(app, core):
             raise HTTPException(status_code=404, detail="Not found")
         return FileResponse(target, headers={"X-Frame-Options": "SAMEORIGIN", "Content-Security-Policy": "frame-ancestors 'self'",
                                              "Cache-Control": "no-cache"})
+
+    @app.get("/api/kb/gbp")
+    def kb_gbp(request: Request, x_viewer_token: str = Header(default="")):
+        """The guide sections that link to each part of the GBP workbook."""
+        who(request, x_viewer_token)
+        return {"parts": gbp_links()}
 
     @app.get("/api/kb/thin")
     def kb_thin(request: Request, format: str = "json", x_viewer_token: str = Header(default="")):

@@ -49,6 +49,23 @@ In the viewer, edits are saved on the viewer's own server under each person's **
 - **Undo:** show it beside "Edited by NAME" when `state.me === e.by`, or for admins (`KBViewer.user(...).admin`), calling `KBViewer.undo(e.id)`.
 - **Folding edits back into the Markdown:** Wilson downloads them from the viewer (Codes > Library > Knowledge base > Download edits: a Markdown list of page, original → new, who, why, edit id). Apply them to the source and commit. After the next update, the viewer marks an edit "in the source" when its new wording is in the page and its original is gone.
 
+## Links to the GBP workbook
+
+A topic guide can open the viewer's **GBP workbook** at a part, beside the page, for the project the reader has open:
+
+```markdown
+[Calculate GFA in the GBP workbook](gbp:gfa)
+```
+
+- **Parts:**
+  - `site` (site, PR and SC; also `sc`, `pr`);
+  - `gfa` (GFA and APP-151 concessions);
+  - `moe` (occupancy and exits; also `occupancy`, `exits`);
+  - `stairs` (staircase discharge; also `discharge`).
+- **Placement:** put the link on its own line, in the section that explains that calculation. The viewer shows it as a button.
+- **Back links:** the viewer links back from the workbook ("Why? 依據") to every section holding such a link, by its anchor, so keep those `{#id}` anchors stable.
+- **Outside the viewer:** on GitHub or in the claude.ai preview the link does nothing. That is fine; `mkdocs build --strict` accepts it.
+
 ## Good to know
 
 - A build that fails keeps the viewer on the previous version, and the error shows in Library > Knowledge base. `mkdocs build --strict` passing on your side is the best check.

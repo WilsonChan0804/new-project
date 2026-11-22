@@ -47,43 +47,50 @@
 </header>
 
 <nav class="cx-tabs" role="tablist">
-  <button type="button" class="cx-tab on" data-tab="ask" role="tab">Search</button>
-  <button type="button" class="cx-tab" data-tab="kb" role="tab" title="The office's summaries: Ordinance, regulations, Codes of Practice, PNAPs, APSEC, topic guides">Knowledge base</button>
+  <button type="button" class="cx-tab on" data-tab="kb" role="tab" title="The office's summaries - Ordinance, regulations, Codes of Practice, PNAPs, APSEC, topic guides - with the search beside them">Knowledge base</button>
   <button type="button" class="cx-tab" data-tab="lib" role="tab" title="The official documents: their clauses are searched; Find documents on the BD site">Library</button>
   <button type="button" class="cx-tab" data-tab="gbp" role="tab" title="The GBP calculations of this project: PR, SC, GFA and concessions, occupancy, exits, staircase discharge">GBP workbook</button>
 </nav>
-<main id="gbp" hidden></main>
-<main id="kbtab" hidden>
-  <div class="kb-bar"><button type="button" class="ghost" id="kb-back" title="Back">&lsaquo; Back</button><button type="button" class="ghost" id="kb-home">Home</button>
-    <span class="muted" id="kb-ver"></span><span class="spacer"></span><button type="button" class="ghost" id="kb-open" title="Open this page in a window of its own">Open in a new window &#8599;</button></div>
-  <div class="kb-empty" id="kb-empty" hidden></div>
-  <iframe id="kb-frame" title="Knowledge base" hidden></iframe>
+<main id="gbptab" hidden><div id="gbp"></div></main>
+<main id="kbtab">
+  <div class="kb-bar">
+    <button type="button" class="ghost" id="kb-back" title="Back">&lsaquo;</button><button type="button" class="ghost" id="kb-home" title="The knowledge base's home page">Home</button>
+    <form id="cx-form" class="kb-sform" onsubmit="return false" role="search">
+      <input id="cx-q" type="search" autocomplete="off" placeholder="Search the codes and the summaries ... e.g. dead end travel distance, TRS 要求  ( / )">
+      <button type="submit" class="primary" id="cx-search" title="Find the summaries, Quick facts, diagrams and clauses">Search</button>
+    </form>
+    <span class="spacer"></span>
+    <span class="muted kb-ver" id="kb-ver"></span>
+    <button type="button" class="ghost" id="kb-ptog" title="Show or hide the search results and the workbook beside the page">Results &#9656;</button>
+    <button type="button" class="ghost" id="kb-open" title="Open this page in a window of its own">&#8599;</button>
+  </div>
+  <div class="kb-split">
+    <div class="kb-left">
+      <div class="kb-empty" id="kb-empty" hidden></div>
+      <iframe id="kb-frame" title="Knowledge base" hidden></iframe>
+    </div>
+    <aside id="kb-panel" hidden>
+      <div class="kbp-h">
+        <div class="kbp-tabs"><button type="button" class="on" data-pv="search">Search</button><button type="button" data-pv="gbp" title="This project's GBP workbook, beside the guide">GBP workbook</button></div>
+        <span class="spacer"></span>
+        <span id="cx-state" class="muted"></span>
+        <button class="ghost" id="cx-recent" type="button" title="Your last searches">Recent &#9662;</button>
+        <button class="ghost" id="cx-new" type="button" title="Clear the searches">New</button>
+        <button class="ghost kbp-x" id="kb-px" type="button" title="Close">&times;</button>
+      </div>
+      <div id="kbp-search">
+        <div id="cx-log" aria-live="polite"></div>
+        <section id="cx-side">
+          <div class="cx-side-h"><button class="ghost" id="cx-side-x" type="button" title="Back to the results">&lsaquo; Results</button><b id="cx-side-title">Clauses</b></div>
+          <div id="cx-clauses"></div>
+        </section>
+      </div>
+      <div id="kbp-gbp" hidden></div>
+    </aside>
+  </div>
+  <button type="button" class="kb-fab" id="kb-fab" title="Search" aria-label="Search">&#128269;</button>
 </main>
 <main id="libtab" hidden><div id="cx-libpage"></div></main>
-<main id="codes">
-  <section id="cx-chat">
-    <div class="cx-top">
-      <h2>Search</h2>
-      <span id="cx-state" class="muted"></span>
-      <span class="spacer"></span>
-      <button class="ghost" id="cx-recent" type="button" title="Your last searches">Recent &#9662;</button>
-      <button class="ghost" id="cx-new" type="button" title="Clear the searches">New</button>
-      <button class="ghost" id="cx-kbtop" type="button" title="Browse the summaries">Knowledge base</button>
-      <button class="ghost" id="cx-lib" type="button" title="The documents in the library">Library</button>
-    </div>
-    <div id="cx-log" aria-live="polite"></div>
-    <form id="cx-form" onsubmit="return false">
-      <textarea id="cx-q" rows="2" placeholder="Search the Buildings Ordinance, PNAPs, Codes of Practice ... e.g. What is the maximum dead end travel distance?  (English or 中文)"></textarea>
-      <div class="cx-btns">
-        <button type="submit" class="primary" id="cx-search" title="Find the clauses, Quick facts and diagrams">Search</button>
-      </div>
-    </form>
-  </section>
-  <aside id="cx-side">
-    <div class="cx-side-h"><b id="cx-side-title">Clauses</b><span class="spacer"></span><button class="ghost" id="cx-side-x" type="button" title="Close">&times;</button></div>
-    <div id="cx-clauses"><p class="muted cx-hint">The clauses a search finds show here, with their reference, edition and page.</p></div>
-  </aside>
-</main>
 <div id="gate-back" hidden>
   <form id="gate" onsubmit="return false">
     <b>Sign in</b>

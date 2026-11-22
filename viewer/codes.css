@@ -279,3 +279,53 @@ td.gb-ch::after { content: "\270e"; font-size: 10px; color: #9a6700; margin-left
 .cx-thin td { vertical-align: top; font-size: 12px; }
 .cx-thin td:nth-child(n+3):nth-child(-n+7), .cx-thin th:nth-child(n+3):nth-child(-n+7) { text-align: center; }
 .cx-no { color: #b42318; }
+
+/* ------- the Knowledge base with the search (and the workbook) beside it */
+#gbptab { height: calc(100% - var(--hdr-h, 56px) - 41px); }
+#gbptab[hidden] { display: none; }
+#gbptab > #gbp { height: 100%; }
+#gbp[hidden] { display: none; }
+#kbtab { position: relative; }
+.kb-bar { flex-wrap: nowrap; }
+.kb-sform { display: flex; gap: 6px; flex: 0 1 560px; min-width: 200px; }
+.kb-sform #cx-q { flex: 1; min-width: 0; min-height: 0; resize: none; padding: 6px 10px; font-size: 13.5px; border-radius: 8px; }
+.kb-sform button { padding: 5px 12px; }
+.kb-ver { font-size: 11px; max-width: 220px; }
+.kb-split { flex: 1; display: flex; min-height: 0; }
+.kb-left { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#kb-panel { width: 460px; flex: none; border-left: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; min-height: 0; position: relative; }
+#kb-panel[hidden] { display: none; }
+#kbtab.p-gbp #kb-panel { width: min(62%, 980px); }
+.kbp-h { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.kbp-h button { font-size: 12px; padding: 3px 8px; }
+.kbp-tabs { display: flex; gap: 2px; background: var(--bg); border-radius: 8px; padding: 2px; }
+.kbp-tabs button { border: 0; background: none; font-weight: 600; color: var(--muted); border-radius: 6px; }
+.kbp-tabs button.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+#cx-state { font-size: 11px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#kbp-search { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+#kbp-search[hidden], #kbp-gbp[hidden] { display: none; }
+#kbp-search #cx-log { padding: 12px; }
+#kbp-search .cx-turn { max-width: none; }
+#kbp-search .cx-empty { padding: 10px; }
+/* the clauses: over the results, with a way back */
+#kbp-search #cx-side { position: absolute; inset: 0; width: auto; border: 0; z-index: 3; display: none; transform: none; border-radius: 0; box-shadow: none; top: 0; }
+#kbp-search #cx-side.on { display: flex; }
+#kbp-search #cx-side-x { display: inline-block; font-size: 12px; padding: 3px 8px; }
+#kbp-gbp { flex: 1; min-height: 0; display: flex; }
+#kbp-gbp > #gbp { flex: 1; height: 100%; flex-direction: column; }
+#kbp-gbp .gb-nav { width: auto; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); padding: 6px; }
+#kbp-gbp .gb-meta, #kbp-gbp .gb-acts { display: none; }
+#kbp-gbp .gb-main { padding: 10px 12px 24px; }
+.gb-guide { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.gb-gl { border: 0; background: var(--accent-soft); color: var(--accent-ink); border-radius: 6px; padding: 3px 8px; cursor: pointer; font: inherit; font-size: 12px; }
+.kb-fab { display: none; }
+@media (max-width: 800px) {
+  .kb-bar { flex-wrap: wrap; padding: 6px 8px; }
+  .kb-sform { order: 5; flex: 1 1 100%; }
+  .kb-ver, #kb-ptog, #kb-open { display: none; }
+  #kb-panel, #kbtab.p-gbp #kb-panel { position: fixed; inset: var(--hdr-h, 56px) 0 0 0; width: auto; z-index: 45; border-left: 0; }
+  .kb-fab { display: flex; position: fixed; right: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: 52px; height: 52px; border-radius: 50%;
+    border: 0; background: var(--accent, #e8731a); color: #fff; font-size: 22px; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 30; }
+  #kbtab.p-on .kb-fab { display: none; }
+}
+.kbp-h button, .kbp-tabs button { white-space: nowrap; }

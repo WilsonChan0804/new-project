@@ -411,7 +411,7 @@ DOC = [
         'Files put into the project\'s folder on the server some other way (for example from Windows Explorer) show up here too.',
     ]),
     H2('Codes'),
-    P('Codes has four tabs: **Search**, **Knowledge base** (the office\'s summaries), **Library** (the official documents) and **GBP workbook**.'),
+    P('Codes has three tabs: **Knowledge base** (the office\'s summaries, with the search beside them), **Library** (the official documents) and **GBP workbook**. The search bar is at the top of the Knowledge base (press / to type): the results open in a panel at the right, so the page you read stays open - a result opens its page on the left. **Hide** closes the panel; on a phone the round 🔍 button at the bottom right opens it. A topic guide\'s **Calculate in the GBP workbook** button opens the project\'s workbook at that part beside the guide (the panel\'s **GBP workbook** view), and each part of the workbook has **Why? 依據** links back to the guides.'),
     P('**Codes** searches the building codes in the office\'s own library: the Buildings Ordinance and its Regulations, PNAPs, Codes of Practice, design manuals and the office\'s notes. It is the same for every project, and uses no AI: nothing is sent outside the server.'),
     UL([
         '**Search:** type what you are looking for (English or Chinese) and press **Search** or Enter. The clauses of the library that match come back, best first. Clause numbers (e.g. *B5.2*, *41*) and the usual short names (MOE, TRS, FRR, BFA, GFA, EVA, SBD ...) are found too; a clause number you type puts that clause first.',

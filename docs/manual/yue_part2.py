@@ -292,7 +292,7 @@ PART = [
         '用其他方法（例如 Windows Explorer）放入 server 上面嗰個 folder 嘅檔案，呢度都會見到。',
     ]),
     H2('Codes 法規'),
-    P('Codes 有四個分頁：**Search**、**Knowledge base**（公司嘅法規摘要）、**Library**（官方文件）同 **GBP workbook**。'),
+    P('Codes 有三個分頁：**Knowledge base**（公司嘅法規摘要，旁邊就係搜尋）、**Library**（官方文件）同 **GBP workbook**。搜尋欄喺 Knowledge base 最頂（撳 / 就可以打字）：結果喺右邊嘅側欄出，左邊睇緊嗰頁唔會走；撳結果就喺左邊打開嗰頁。**Hide** 收埋側欄；手機用右下角嘅圓形 🔍 掣。專題指南入面嘅 **Calculate in the GBP workbook** 掣會喺指南旁邊打開個 project 嘅 workbook 對應部分（側欄嘅 **GBP workbook**），workbook 每部分都有 **Why? 依據** link 返去指南。'),
     P('**Codes** 喺公司自己嘅法規庫搜尋建築法規：《建築物條例》同佢嘅規例、PNAP、Codes of Practice、設計手冊同公司嘅筆記。每個 project 都係同一個法規庫，唔用 AI：乜嘢都唔會送出 server。'),
     UL([
         '**Search：** 打你想搵嘅嘢（英文或者中文），撳 **Search** 或者 Enter。法規庫入面相關嘅條文會列出嚟，最相關排先。條號（例如 *B5.2*、*41*）同常用簡稱（MOE、TRS、FRR、BFA、GFA、EVA、SBD ...）都搵得到；打咗條號，嗰條就會排第一。',
