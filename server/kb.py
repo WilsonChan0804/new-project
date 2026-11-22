@@ -17,6 +17,7 @@ search answers from the summaries first (no AI).
 Kept in <data>/kb/: settings.json, token, src/<sha>/ (the branch), site/<sha>/
 (the build), kb.db (the index), current.json.
 """
+import datetime
 import hashlib
 import io
 import json
@@ -524,7 +525,112 @@ EDIT_SCHEMA = """
 CREATE TABLE IF NOT EXISTS edits (id INTEGER PRIMARY KEY, page TEXT, block TEXT, anchor TEXT, text TEXT, note TEXT,
   original TEXT, uid INTEGER, name TEXT, at INTEGER, undone_at INTEGER, undone_by TEXT, merged_sha TEXT);
 CREATE INDEX IF NOT EXISTS idx_edits_page ON edits(page);
+CREATE TABLE IF NOT EXISTS pins (owner TEXT PRIMARY KEY, data TEXT, rev INTEGER, updated_at TEXT);
 """
+
+
+# ------------------------------------------- each reader's pins and history
+# kb-pins.js (the knowledge base's own script) keeps them here when the site
+# is opened in the viewer, so they follow the reader across devices.
+PINS_MAX_BYTES = 256 * 1024
+PIN_TYPES = ("doc", "section", "clause")
+
+
+def _s(v, n):
+    if v is None:
+        return ""
+    if not isinstance(v, (str, int, float)) or isinstance(v, bool):
+        raise HTTPException(status_code=400, detail="Pins: a text field is not text")
+    return str(v)[:n]
+
+
+def _at(v):
+    if isinstance(v, bool) or not isinstance(v, (int, float, str)) and v is not None:
+        raise HTTPException(status_code=400, detail="Pins: 'at' is a number or a date")
+    return v if isinstance(v, (int, float)) else _s(v, 40)
+
+
+def pins_clean(body):
+    """{pins, history, tombstones} -> the same, checked and trimmed."""
+    pins, hist, tomb = body.get("pins") or [], body.get("history") or [], body.get("tombstones") or {}
+    if not isinstance(pins, list) or not isinstance(hist, list) or not isinstance(tomb, dict):
+        raise HTTPException(status_code=400, detail="Send {pins: [...], history: [...], tombstones: {...}, rev}")
+    out_p, seen = [], set()
+    for p in pins[:500]:
+        if not isinstance(p, dict):
+            raise HTTPException(status_code=400, detail="Pins: each pin is an object")
+        pid = _s(p.get("id"), 300)
+        if not pid or pid in seen:
+            continue
+        seen.add(pid)
+        typ = p.get("type") if p.get("type") in PIN_TYPES else "doc"
+        out_p.append({"id": pid, "type": typ, "rel": _s(p.get("rel"), 300), "anchor": _s(p.get("anchor"), 200),
+                      "label": _s(p.get("label"), 300), "page": _s(p.get("page"), 300), "at": _at(p.get("at"))})
+    out_h = []
+    for h in hist:
+        if not isinstance(h, dict):
+            raise HTTPException(status_code=400, detail="History: each entry is an object")
+        n = h.get("n")
+        n = int(n) if isinstance(n, (int, float)) and not isinstance(n, bool) and n >= 0 else 0
+        out_h.append({"rel": _s(h.get("rel"), 300), "title": _s(h.get("title"), 300), "at": _at(h.get("at")), "n": n})
+    key = lambda h: h["at"] if isinstance(h["at"], (int, float)) else _iso_ms(h["at"])
+    out_h = sorted(out_h, key=key, reverse=True)[:200]
+    cut = int(time.time() * 1000) - 90 * 86400 * 1000
+    out_t = {}
+    for k, v in tomb.items():
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= cut:
+            out_t[str(k)[:300]] = int(v)
+    if len(out_t) > 2000:
+        out_t = dict(sorted(out_t.items(), key=lambda kv: kv[1], reverse=True)[:2000])
+    return {"pins": out_p, "history": out_h, "tombstones": out_t}
+
+
+def _iso_ms(v):
+    try:
+        return datetime.datetime.fromisoformat(str(v).replace("Z", "+00:00")).timestamp() * 1000
+    except Exception:
+        return 0
+
+
+def _pins_obj(row):
+    if not row:
+        return {"pins": [], "history": [], "tombstones": {}, "rev": 0, "updated_at": ""}
+    d = json.loads(row["data"] or "{}")
+    return {"pins": d.get("pins") or [], "history": d.get("history") or [], "tombstones": d.get("tombstones") or {},
+            "rev": int(row["rev"] or 0), "updated_at": row["updated_at"] or ""}
+
+
+def pins_get(owner):
+    c = _edb()
+    try:
+        return _pins_obj(c.execute("SELECT * FROM pins WHERE owner=?", (owner,)).fetchone())
+    finally:
+        c.close()
+
+
+def pins_put(owner, body):
+    data = pins_clean(body)
+    blob = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    if len(blob.encode("utf-8")) > PINS_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Pins and history are over 256 KB")
+    try:
+        rev = int(body.get("rev") or 0)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="rev is a number")
+    c = _edb()
+    try:
+        c.execute("BEGIN IMMEDIATE")
+        row = c.execute("SELECT * FROM pins WHERE owner=?", (owner,)).fetchone()
+        cur = _pins_obj(row)
+        if rev != cur["rev"]:
+            c.execute("ROLLBACK")
+            raise HTTPException(status_code=409, detail={"message": "Changed on another device meanwhile - merge and send again", "current": cur})
+        now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()
+        c.execute("INSERT OR REPLACE INTO pins (owner, data, rev, updated_at) VALUES (?,?,?,?)", (owner, blob, cur["rev"] + 1, now))
+        c.commit()
+        return dict(data, rev=cur["rev"] + 1, updated_at=now)
+    finally:
+        c.close()
 
 
 def _edb():
@@ -955,6 +1061,28 @@ def register(app, core):
         if uid is None and not name:
             raise HTTPException(status_code=401, detail="Sign in first")
         return w, uid, name
+
+    def owner_of(request, tok):
+        w, uid, name = me_of(request, tok)
+        return ("u:%s" % uid) if uid is not None else ("n:%s" % name)
+
+    @app.get("/api/kb/pins")
+    def kb_pins_get(request: Request, x_viewer_token: str = Header(default="")):
+        return pins_get(owner_of(request, x_viewer_token))
+
+    @app.put("/api/kb/pins")
+    async def kb_pins_put(request: Request, x_viewer_token: str = Header(default="")):
+        owner = owner_of(request, x_viewer_token)
+        raw = await request.body()
+        if len(raw) > PINS_MAX_BYTES:
+            raise HTTPException(status_code=413, detail="Pins and history are over 256 KB")
+        try:
+            body = json.loads(raw.decode("utf-8") or "{}")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Not JSON")
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="Send {pins, history, tombstones, rev}")
+        return await run_in_threadpool(pins_put, owner, body)
 
     @app.get("/api/kb/me")
     def kb_me(request: Request, x_viewer_token: str = Header(default="")):

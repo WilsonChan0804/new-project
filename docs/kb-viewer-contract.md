@@ -49,6 +49,20 @@ In the viewer, edits are saved on the viewer's own server under each person's **
 - **Undo:** show it beside "Edited by NAME" when `state.me === e.by`, or for admins (`KBViewer.user(...).admin`), calling `KBViewer.undo(e.id)`.
 - **Folding edits back into the Markdown:** Wilson downloads them from the viewer (Codes > Library > Knowledge base > Download edits: a Markdown list of page, original → new, who, why, edit id). Apply them to the source and commit. After the next update, the viewer marks an edit "in the source" when its new wording is in the page and its original is gone.
 
+## Pins and reading history (each reader's own, across devices)
+
+Same origin and sign-in as `/api/kb/edits` (the viewer's cookie, or the `X-Viewer-Token` header); 401 when not signed in.
+
+- `GET /api/kb/pins` returns `{pins, history, tombstones, rev, updated_at}`. A reader with nothing saved gets empty values, `rev` 0 and `updated_at` "".
+- `PUT /api/kb/pins` takes `{pins, history, tombstones, rev}`:
+  - It saves only when `rev` equals the stored rev, and returns the saved object with `rev`+1 and `updated_at` (ISO, UTC).
+  - Otherwise it returns **409** with `{"detail": {"message": "...", "current": {pins, history, tombstones, rev, updated_at}}}`. Merge with `current` and PUT again with `current.rev`.
+- **Limits:** 256 KB per reader (413).
+  - **pins:** 500 at most, `id` unique (the first kept). Each is `{id, type: doc|section|clause, rel, anchor, label, page, at}`; other keys are dropped and the text fields are cut to 200–300 characters.
+  - **history:** `{rel, title, at, n}`; the server sorts it newest first (`at` in ms, or an ISO date) and keeps 200.
+  - **tombstones:** `{id: ms}`; entries older than 90 days are dropped, and 2000 kept at most.
+- Each reader reads and writes only their own record; admins have no access to others'.
+
 ## Links to the GBP workbook
 
 A topic guide can open the viewer's **GBP workbook** at a part, beside the page, for the project the reader has open:

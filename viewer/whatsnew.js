@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-11", date: "22 Nov 2026",
+    items: [
+      "**Knowledge base: your pins and reading history follow you** - kept on the server under your account, so a page or clause you pin on the office PC is there on your iPad. Each person sees only their own. It starts once the knowledge base's script uses it.",
+    ],
+  },
+  {
     version: "2027-02-10", date: "22 Nov 2026",
     items: [
       "**Codes: the search is in the Knowledge base** - one tab now. The search bar is at the top (press /); the results open in a panel at the right while the page you read stays open, and a result opens its page on the left. On a phone, the round 🔍 button at the bottom right.",

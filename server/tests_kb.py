@@ -199,6 +199,35 @@ class Endpoints(unittest.TestCase):
         self.c.post("/api/kb/update?wait=1")
         self.assertEqual(self.c.get("/api/kb/status").json()["built"], built)
 
+    def test_pins(self):
+        import time as _t
+        now = int(_t.time() * 1000)
+        try:
+            self.core.uid = 1
+            self.assertEqual(self.c.get("/api/kb/pins").json(), {"pins": [], "history": [], "tombstones": {}, "rev": 0, "updated_at": ""})
+            body = {"rev": 0, "pins": [{"id": "pnap/app-2.html#cl-3-a", "type": "clause", "rel": "pnap/app-2.html", "anchor": "cl-3-a", "label": "APP-2 3(a)",
+                                        "page": "APP-2", "at": now, "junk": "x"}, {"id": "pnap/app-2.html#cl-3-a", "type": "doc"}],
+                    "history": [{"rel": "a.html", "title": "A", "at": now - 1000 * i, "n": 1} for i in range(250)],
+                    "tombstones": {"old": now - 100 * 86400 * 1000, "new": now}}
+            r = self.c.put("/api/kb/pins", json=body)
+            self.assertEqual(r.status_code, 200, r.text)
+            d = r.json()
+            self.assertEqual((d["rev"], len(d["pins"]), len(d["history"]), d["tombstones"]), (1, 1, 200, {"new": now}))
+            self.assertNotIn("junk", d["pins"][0])
+            self.assertEqual(d["history"][0]["at"], now)                     # newest first
+            stale = self.c.put("/api/kb/pins", json=dict(body, rev=0))
+            self.assertEqual(stale.status_code, 409)
+            self.assertEqual(stale.json()["detail"]["current"]["rev"], 1)
+            self.assertEqual(self.c.get("/api/kb/pins").json()["rev"], 1)
+            self.core.uid = 2                                               # another reader: their own record
+            self.assertEqual(self.c.get("/api/kb/pins").json()["rev"], 0)
+            self.assertEqual(self.c.put("/api/kb/pins", json={"rev": 0, "pins": "x"}).status_code, 400)
+            big = {"rev": 0, "history": [{"rel": "x" * 300, "title": "y" * 300, "at": now} for _ in range(600)]}
+            self.assertEqual(self.c.put("/api/kb/pins", json=big).status_code, 413)
+            self.assertEqual(self.c.get("/api/kb/pins", headers={"x-viewer-token": "nobody"}).status_code, 401)
+        finally:
+            self.core.uid = 1
+
     def test_edits(self):
         kb.CFG["data"] = self.tmp
         os.makedirs(os.path.join(self.tmp, "kb"), exist_ok=True)
