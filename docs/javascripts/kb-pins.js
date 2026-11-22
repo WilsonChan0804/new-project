@@ -54,29 +54,32 @@
 
   // ---- sync with the viewer account (only when the viewer API answers) ----
   var sync = { on: false, timer: null, busy: false };
+  function atMs(v) { if (typeof v === "number") return v; var t = Date.parse(v || ""); return isNaN(t) ? 0 : t; }
   function merge(a, b) {
     // a, b: {pins, history, tombstones}; returns the union, newest wins, unpins respected
     var tomb = {}, cut = Date.now() - TOMB_DAYS * 864e5;
     [a.tombstones || {}, b.tombstones || {}].forEach(function (t) {
-      Object.keys(t).forEach(function (k) { if (t[k] > cut && !(tomb[k] >= t[k])) tomb[k] = t[k]; });
+      Object.keys(t).forEach(function (k) { var v = atMs(t[k]); if (v > cut && !(tomb[k] >= v)) tomb[k] = v; });
     });
     var byId = {};
     (a.pins || []).concat(b.pins || []).forEach(function (p) {
       if (!p || !p.id) return;
-      var at = p.at || 0, cur = byId[p.id];
-      if (!cur || at > (cur.at || 0)) byId[p.id] = p;
+      p = Object.assign({}, p, { at: atMs(p.at) });
+      var cur = byId[p.id];
+      if (!cur || p.at > cur.at) byId[p.id] = p;
     });
     var outPins = Object.keys(byId).map(function (k) { return byId[k]; })
-      .filter(function (p) { return !(tomb[p.id] >= (p.at || 0)); })
-      .sort(function (x, y) { return (y.at || 0) - (x.at || 0); });
+      .filter(function (p) { return !(tomb[p.id] >= p.at); })
+      .sort(function (x, y) { return atMs(y.at) - atMs(x.at); }).slice(0, 500);
     outPins.forEach(function (p) { if (tomb[p.id] !== undefined) delete tomb[p.id]; });
     // history tombstones: "h:<rel>" removes one page, "h:*" clears everything older
     var byRel = {};
     (a.history || []).concat(b.history || []).forEach(function (e) {
       if (!e || !e.rel) return;
       var cur = byRel[e.rel];
-      if (!cur) { byRel[e.rel] = { rel: e.rel, title: e.title, at: e.at || 0, n: e.n || 1 }; return; }
-      if ((e.at || 0) > cur.at) { cur.at = e.at; cur.title = e.title || cur.title; }
+      var t = atMs(e.at);
+      if (!cur) { byRel[e.rel] = { rel: e.rel, title: e.title, at: t, n: e.n || 1 }; return; }
+      if (t > cur.at) { cur.at = t; cur.title = e.title || cur.title; }
       cur.n = Math.max(cur.n, e.n || 1);
     });
     var outH = Object.keys(byRel).map(function (k) { return byRel[k]; })
@@ -112,13 +115,30 @@
     save(RKEY, r.data.rev || 0);
     return r.data;
   }
+  // Viewer contract (docs/kb-viewer-contract.md, "Pins and reading history"):
+  //   200 -> the saved object (server may trim it): use it as the new local state
+  //   409 -> {detail: {message, current}}: merge with current, retry with current.rev
+  //   413 -> over 256 KB; 400 -> bad shape; 401 -> signed out
   async function push(remote, tries) {
     var merged = merge(localState(), remote || {});
     applyLocal(merged);
     if (remote && same(merge(remote, {}), merged)) return;
+    var sent = JSON.stringify(merged);
     var r = await api("PUT", { pins: merged.pins, history: merged.history, tombstones: merged.tombstones, rev: load(RKEY, 0) });
-    if (r.status === 200 && r.data) { save(RKEY, r.data.rev || 0); return; }
-    if (r.status === 409 && r.data && (tries || 0) < 2) { save(RKEY, r.data.rev || 0); return push(r.data, (tries || 0) + 1); }
+    if (r.status === 200 && r.data) {
+      save(RKEY, r.data.rev || 0);
+      var changed = JSON.stringify(localState()) !== sent;   // edits made while the request was in flight
+      if (changed) { applyLocal(merge(localState(), r.data)); schedulePush(500); }
+      else applyLocal({ pins: r.data.pins || [], history: r.data.history || [], tombstones: r.data.tombstones || {} });
+      return;
+    }
+    var cur = r.data && r.data.detail && r.data.detail.current;
+    if (r.status === 409 && cur && (tries || 0) < 2) { save(RKEY, cur.rev || 0); return push(cur, (tries || 0) + 1); }
+    if (r.status === 413 || r.status === 400) {
+      // too large or rejected: keep local copy, trim history and try once more
+      if ((tries || 0) < 1) { var st = localState(); st.history = st.history.slice(0, 50); applyLocal(st); return push(remote, (tries || 0) + 1); }
+      return;
+    }
     if (r.status === 401 || r.status === 404) sync.on = false;
   }
   async function syncNow() {
