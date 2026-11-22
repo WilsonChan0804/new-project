@@ -261,12 +261,14 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🔵 [Further Streamlining Measures for Structural Works](../circulars/2024.md#cl-fsmsw2024) <small>31 Oct 2024 · Further Streamlining Measures for Structural Works</small>
 - 🟢 [Dedicated Processing Units for High-yield Residential Projects and Transitional Housing Projects](../circulars/2023.md#cl-dpuhrpthp2023) <small>15 Mar 2023 · 成立專責審批組 審批大型住宅項目和過渡性房屋項目</small>
 - 🟡 [Streamlining Measures for Structural Works](../circulars/2023.md#cl-smsw2023) <small>27 Feb 2023 · 結構工程的簡化措施</small>
+- 🟢 [Repairs to Curtain Wall, Glass Wall and Cladding](../circulars/2019.md#cl-cgwcr2019) <small>3 Oct 2019 · "修葺幕牆、玻璃牆及覆蓋層"</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

@@ -76,10 +76,12 @@ keywords: glass code, 玻璃, laminated glass, 夾層玻璃, tempered, 鋼化玻
 - **Feb 2024**: deleted the 8 mm weep holes in the typical external balustrade detail (Fig. 6.1); revised pressure p2 for the repeated pressure test (cl. 8.3.1); revised the failure load expressions in Annex B. 刪除去水孔、修訂測試壓力。
 - **Jul 2020**: see the BD amendment PDF. 見原文。
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🔵 [Amendments to Code of Practice for Structural Use of Glass 2018](../circulars/2020.md#cl-acopsug2018) <small>17 Jul 2020 · 《2018年玻璃結構作業守則》修訂事宜</small>
+- 🔵 [Code of Practice for Structural Use of Glass 2018](../circulars/2018.md#cl-copsug2018) <small>Feb 2018 · 《2018年玻璃結構作業守則》</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

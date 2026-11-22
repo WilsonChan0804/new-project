@@ -1,0 +1,241 @@
+{
+ "CL_RBGAOBD2019": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Annual reminder not to offer gifts or advantages to BD officers.",
+    "每年提示不得向屋宇署人員送禮。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_WC2019": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/wind-2019.md|Wind Code 2019",
+   "#cl-copwehk2019egp2020|Grace period extension"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Publication of the **Code of Practice on Wind Effects in Hong Kong 2019**, usable at once, from a BD consultancy reviewing the **2004 Code** against international codes. New features: unified **gust pressure** approach with size and size-and-dynamic factors; **torsional and across-wind** forces; load combination factors; **building acceleration and occupant comfort**; wind loads on **temporary structures**; **sheltering** by effective height; force and pressure coefficients; wind tunnel guidance; **directionality factors**; dominant openings; damping by aspect ratio. **Explanatory Notes** issued too.",
+    "頒布**《2019 年香港風力效應作業守則》**，即時可用。新特點：統一**陣風壓**方法及尺寸、動力系數；**扭轉及橫風**；荷載組合；**建築物加速度及舒適度**；**臨時構築物**；以有效高度計**遮擋**；力及壓力系數；風洞測試；**風向系數**；主要開口；阻尼比；另附**釋義**。"
+   ],
+   [
+    "**12-month grace period** for plans designed to the 2004 Code (later extended to 31 Mar 2021).",
+    "按 2004 年守則設計的圖則有 **12 個月寬限期**（其後延至 2021 年 3 月 31 日）。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Promulgates the current Wind Code 2019; grace period ended 31 Mar 2021 頒布現行風力守則；寬限期已結束"
+ },
+ "CL_CGWCR2019": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-37.md|APP-37",
+   "../pnap/app-117.md|APP-117",
+   "../pnap/app-16.md|APP-16",
+   "../pnap/adm-19.md|ADM-19"
+  ],
+  "topics": [
+   "submission",
+   "structural"
+  ],
+  "points": [
+   [
+    "Repairs to damaged **curtain walls, glass walls and cladding** are **not** minor works or exempted works – they need **approval and consent**, but get **ADM-19 fast track (≤ 30 days)** if the structural system is unchanged. Follow **APP-117**, **APP-37** and **APP-16**; the RSE assesses existing condition and integrity. Replacing individual components (glass panes, sealants, setting blocks) or cladding panels to the approved design needs **no structural calculations** or parent-structure check.",
+    "修葺受損**幕牆、玻璃牆及覆面**不屬小型工程或豁免工程，須**批准及同意**；如結構系統不變可按 **ADM-19 快速處理（≤ 30 日）**；須符合 APP-117、APP-37、APP-16。按原設計更換個別組件毋須結構計算。"
+   ],
+   [
+    "Submit together: (a) **supervision plan** (AP, RSE, RGBC per TM and Site Supervision Code); (b) for **tempered glass**, RSE/RGBC quality supervision plan for **heat soak** and the manufacturer's QA scheme (APP-37); (c) if glass thermal performance is worse than approved, provisional **OTTV** report (APP-67) and energy efficiency report (APP-156).",
+    "須同時提交：(a) **監工計劃書**；(b) 如用**鋼化玻璃**，熱浸品質監督計劃及廠商品質保證計劃；(c) 如玻璃隔熱較差，臨時 **OTTV** 報告（APP-67）及能源效益報告（APP-156）。"
+   ]
+  ],
+  "related": [
+   "#cl-rcw2018|Sep 2018 letter"
+  ],
+  "status_note": "In force (supersedes the Sep 2018 curtain wall letter) 有效（取代 2018 年 9 月通告）"
+ },
+ "CL_COPDSEM2019": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "superseded",
+  "status_links": [
+   "../codes/external-maintenance-2021.md|AfEM Code 2021"
+  ],
+  "topics": [
+   "design",
+   "submission"
+  ],
+  "points": [
+   [
+    "Promulgates the advisory **Code of Practice on Design for Safety – External Maintenance** (means of access for maintenance of external walls, curtain walls, cladding, roofs and projections). Its **Appendix C** superseded the 23 Dec 2016 design guidelines for new and major revision plans submitted **on or after 1 Dec 2019**. BD planned performance-based requirements in regulations (now B(P)R and the 2021 AfEM Code).",
+    "頒布建議性質的**《設計安全作業守則 – 外部維修》**（外牆、幕牆、覆面、天台及伸出物的維修通道）；附錄 C 取代 2016 年 12 月 23 日的設計指引，適用於 2019 年 12 月 1 日或以後呈交的圖則；其後由規例及 2021 年守則取代。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Superseded by the Code of Practice on Access for External Maintenance 2021 已由 2021 年外部維修通道守則取代"
+ },
+ "CL_JSVSAFBL2019": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-155.md|APP-155"
+  ],
+  "topics": [
+   "minorworks"
+  ],
+  "points": [
+   [
+    "From **1 Sep 2019**, new forms **UBW-1a and UBW-2a** let an AP/RSE certify food premises free of UBW **and validate unauthorised signboards** under the **Signboard Validation Scheme** at the same time when applying for an FEHD **food business licence**. Eligible signboards: para 6 of Annex I in App. P of the FEHD restaurant licence guide and B(MW)R Sch. 3 Part 3. See **APP-155**.",
+    "由 **2019 年 9 月 1 日**起，申請**食物業牌照**時可用新表格 **UBW-1a 及 UBW-2a**，同時證明處所無違例建築及**檢核違例招牌**（**招牌檢核計劃**，APP-155）。"
+   ]
+  ],
+  "related": [
+   "../regulations/bmwr-123n.md|B(MW)R Sch 3"
+  ]
+ },
+ "CL_SSTCCSTS2019": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual typhoon season scaffolding and tower crane letter.",
+    "每年颱風季節棚架及塔式起重機通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_FPMCS2019": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "topics": [
+   "weather",
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual flood prevention letter for construction sites.",
+    "每年地盤防洪通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPSS2009A201905": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/site-supervision-2009.md|Site Supervision Code Table 8.1"
+  ],
+  "topics": [
+   "supervision"
+  ],
+  "points": [
+   [
+    "Site Supervision Code amendment (May 2019) to **Table 8.1**: guidance on assessing the **cost of works** used to set supervision requirements.",
+    "地盤監督守則**表 8.1** 修訂：評估**工程造價**以釐定監督要求的指引。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the Site Supervision Code 已納入地盤監督守則"
+ },
+ "CL_GRDNMRPCMCD": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 1",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "First combined rodent-proofing design and site mosquito/rodent guidelines (replacing the separate anti-mosquito letters).",
+    "首份合併的防鼠設計及地盤防蚊防鼠指引。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_AMMCS2019": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 1",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Anti-mosquito reminder for construction sites (later combined into the rodent/mosquito guidelines).",
+    "地盤防蚊提示（其後併入防鼠防蚊指引）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SVGP": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-19.md|APP-19 greenery",
+   "../codes/wind-2019.md|Wind Code"
+  ],
+  "topics": [
+   "design",
+   "structural"
+  ],
+  "points": [
+   [
+    "**Vertical greening (VG)** – demountable modular units on a supporting frame on an external wall – must be shown on **GBP**. If the supporting frame is **> 3 m** above adjoining ground, **structural plans** are required (frame layout, fixing of modules).",
+    "**垂直綠化**須在一般建築圖則顯示；支承架高出地面 **> 3 米**須提交**結構圖則**。"
+   ],
+   [
+    "**No structural details of modules** needed if: (a) each module **≤ 0.75 m** high and wide; (b) projection **≤ 0.2 m** from fixing points; (c) top **≤ 15 m** above ground; (d) proprietary system. AP/RSE still ensure safety; advise owners of **regular inspection and maintenance**.",
+    "如符合以下條件毋須提交組件結構細節：(a) 每件 **≤ 0.75 米**；(b) 伸出 **≤ 0.2 米**；(c) 最高點 **≤ 15 米**；(d) 專利系統。須提醒業主**定期檢查保養**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_ASRBDH": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "spent",
+  "status_links": [],
+  "topics": [
+   "submission"
+  ],
+  "points": [
+   [
+    "From **25 Mar 2019**, submissions to Existing Buildings, MBI, Corporate Services Divisions and the NBD1 Licensing Unit go to the **BD Headquarters, North Tower, West Kowloon Government Offices**; Building Information Centre on 2/F from 1 Apr 2019.",
+    "由 2019 年 3 月 25 日起，相關部門文件須交**西九龍政府合署北座屋宇署總部**；樓宇資訊中心 4 月 1 日遷往 2 樓。"
+   ]
+  ],
+  "related": [],
+  "status_note": "One-off (office relocation, Mar 2019) 一次性（遷址安排）"
+ },
+ "CL_SBSBMRW": {
+  "to": "Property management companies",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual bamboo scaffold safety reminder to property managers.",
+    "每年竹棚架安全提示。"
+   ]
+  ],
+  "related": []
+ }
+}

@@ -79,6 +79,7 @@ keywords: precast, 預製, precast facade, 預製外牆, lifting insert, 吊裝,
 - **Nov 2020**: see the BD amendment PDF. 見原文。
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 

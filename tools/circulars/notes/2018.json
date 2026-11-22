@@ -1,0 +1,335 @@
+{
+ "CL_CPDC2019": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "CPD course for RGBC/RSC renewal or restoration.",
+    "一般建築及專門承建商持續專業發展課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RCRMWC2019": {
+  "to": "RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Refresher course for RMWC renewal or restoration.",
+    "小型工程承建商重溫課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CWROADRSWP": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/Corporate Services",
+  "status": "spent",
+  "status_links": [],
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "Under the **Construction Workers Registration Ordinance** s 39(3), applications for **provisional** skilled/semi-skilled worker registration closed on **30 Jun 2019**; afterwards workers register by trade test or qualification.",
+    "《建造業工人註冊條例》臨時熟練／半熟練工人註冊申請於 **2019 年 6 月 30 日**截止；其後須通過測試或具資歷註冊。"
+   ]
+  ],
+  "related": [],
+  "status_note": "One-off (deadline 30 Jun 2019) 一次性（2019 年 6 月 30 日截止）"
+ },
+ "CL_SRBRC": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/concrete-2013.md|Concrete Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Concrete Code 2013 is used with **CS2:2012** (steel rebar). SCCT **Amendment 1/2018** (28 Aug 2018): **bond property** testing; the waiver of purchaser's bond tests (28 Nov 2016 letter) **ended 31 Dec 2018**. **Amendment 2/2018** and **Technical Note 5** (26 Sep 2018): **coils and decoiled products**, quality-assured processors and prefabrication yards on CEDD's approved list (DEVB TC(W) 10/2018).",
+    "混凝土守則須配合 **CS2:2012**。修訂 1/2018：**黏結性能**測試；豁免購買者黏結測試於 **2018 年 12 月 31 日**結束。修訂 2/2018 及技術說明 5：**盤條及解捲鋼筋**及預製場要求。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Requirements now in CS2 and the Concrete Code 規定已見於 CS2 及混凝土守則"
+ },
+ "CL_GMEBPTHI": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "status": "current",
+  "status_links": [
+   "../regulations/bo-part-3-miscellaneous.md|BO s 42"
+  ],
+  "topics": [
+   "design",
+   "submission"
+  ],
+  "points": [
+   [
+    "BD will favourably consider **BO s 42 modification/exemption** for **transitional housing** by **NPOs** in **old domestic buildings (completed before 1976)** with compensatory measures, after **THB endorsement**; for wholesale conversion of **industrial buildings** to transitional housing, exemption from **site coverage, plot ratio, open space and service lane** may be considered.",
+    "當局會酌情按《建築物條例》第 42 條，為**非牟利機構**在 **1976 年前落成的舊住宅**推行的**過渡性房屋**批出修改／豁免（須有補償措施及運輸及房屋局支持）；整幢**工業大廈**改作過渡性房屋，可考慮豁免**上蓋面積、地積比率、休憩用地及後巷**要求。"
+   ],
+   [
+    "Form **BA16** with plans and compensatory measures, mechanical ventilation assessment, NPO tenancy proof, written undertaking and **management plan**; under minor works an AP applies, works may start but cannot be certified before the permit. Reply within **10 working days** (final within 20). Permit **BD106** valid **6 months** for completion; void when the tenancy ends (reinstate); possible **annual AP inspection**; documents published on BD's website.",
+    "須以 **BA16** 申請，附圖則、機械通風評估、租約、承諾書及**管理計劃**；一般 **10 個工作天**回覆；許可證 **BD106** 有效期 **6 個月**，租約終止即失效並須復原；或須**每年由認可人士檢查**。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_RCW2018": {
+  "to": "RGBC, RSC, AP, RSE",
+  "by": "AD/New Buildings 1",
+  "status": "superseded",
+  "status_links": [
+   "#cl-cgwcr2019|Oct 2019 letter"
+  ],
+  "topics": [
+   "submission",
+   "structural"
+  ],
+  "points": [
+   [
+    "Repairs to curtain walls need approval and consent with ADM-19 fast track (≤ 30 days) if the structural system is unchanged; supervision plan, heat soak quality plan for tempered glass, provisional OTTV report if thermal performance worse.",
+    "修葺幕牆須批准及同意，可按 ADM-19 快速處理；須交監工計劃書等。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Superseded by the Oct 2019 letter (adds glass walls and cladding) 已由 2019 年 10 月通告取代"
+ },
+ "CL_SSWCBS2018": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "status": "spent",
+  "status_links": [],
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Before **Super Typhoon Mangkhut (山竹)**: scaffold ties at the top, ≤ one floor above the topmost floor, bracing and brackets, **remove plastic sheeting** when signals are up, no loose materials, dismantle completed or idle scaffolds; tower crane precautions per LD codes.",
+    "**超強颱風山竹**來襲前：棚架頂部拉結、高出頂層不多於一層、懸掛信號時**拆除膠布**、清走物料、拆除已完成或閒置棚架。"
+   ]
+  ],
+  "related": [],
+  "status_note": "One-off (Super Typhoon Mangkhut, Sep 2018; scanned original) 一次性（超強颱風山竹；掃描版原文）"
+ },
+ "CL_APRRGBCRSC2018": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "status": "superseded",
+  "status_links": [
+   "#cl-carcrs2023|Aug 2023 letter"
+  ],
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "From **2 Oct 2018**, bank statements no longer accepted; new RGBC/RSC applicants need an auditor's report with **positive working capital** and employed capital **≥ $140,000**.",
+    "由 2018 年 10 月 2 日起不再接受銀行月結單；營運資金須為**正數**，運用資本 **≥ 14 萬元**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Superseded by the Aug 2023 letter ($200,000) 已由 2023 年 8 月通告取代"
+ },
+ "CL_APRRMWC2018": {
+  "to": "RMWC",
+  "by": "AD/Corporate Services",
+  "status": "superseded",
+  "status_links": [
+   "#cl-carmwcrs2023|Aug 2023 letter"
+  ],
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "From **2 Oct 2018**: RMWC applicants need positive working capital and employed capital ≥ **Class I $56,000; II $28,000; III $7,000** (auditor's report).",
+    "由 2018 年 10 月 2 日起：第 I／II／III 級分別 **56,000／28,000／7,000 元**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Superseded by the Aug 2023 letter 已由 2023 年 8 月通告取代"
+ },
+ "CL_FPMCS2018": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 2",
+  "topics": [
+   "weather",
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Annual flood prevention letter for construction sites.",
+    "每年地盤防洪通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SSW2018": {
+  "to": "AP, RSE, RGE, RI, RGBC, RSC, RMWC",
+  "by": "Chief Officer/Technical Services",
+  "topics": [
+   "weather",
+   "scaffold"
+  ],
+  "points": [
+   [
+    "Annual typhoon season scaffolding letter.",
+    "每年颱風季節棚架通告。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_AMMCS2018": {
+  "to": "RGBC, RSC, RMWC",
+  "by": "AD/New Buildings 1",
+  "topics": [
+   "hygiene"
+  ],
+  "points": [
+   [
+    "Anti-mosquito reminder for construction sites.",
+    "地盤防蚊提示。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPMBI2018": {
+  "to": "AP, RSE, RGE, RI, QP",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code"
+  ],
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "MBIS/MWIS Code amendments (30 Apr 2018): (i) **reinstatement of finishes** of external walls, corridors and lobbies matching the existing appearance (s 5.3.1); (ii) MWIS procedures and App. IX–X following the revised **PNBI-3**; (iii) treatment of **reinforcement** (App. V).",
+    "驗樓驗窗守則修訂（2018 年 4 月 30 日）：(i) 外牆、走廊及大堂**飾面復原**須配合原有外觀；(ii) 配合 PNBI-3 修訂驗窗程序；(iii) **鋼筋處理**（附錄 V）。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Incorporated into the MBIS/MWIS Code 2023 Edition 已納入 2023 年版"
+ },
+ "CL_SFMBISMWIS2018": {
+  "to": "QP (MWIS)",
+  "by": "AD/Mandatory Building Inspection",
+  "status": "current",
+  "status_links": [
+   "../codes/mbis-mwis-2012.md|MBIS/MWIS Code",
+   "#cl-mwissnc2025|2025 timeframes letter"
+  ],
+  "topics": [
+   "mbis"
+  ],
+  "points": [
+   [
+    "New MWIS specified forms **WI 1, WI 2, WI 3** (BO s 22(4)) from **30 Apr 2018**, with revised **PNBI-3**; old forms accepted until 31 Jul 2018. Submit online or fill in electronically so data go into the form's **QR code**.",
+    "由 2018 年 4 月 30 日起採用新驗窗表格 **WI 1、WI 2、WI 3**（PNBI-3 修訂）；鼓勵網上或電子填寫（資料存入**二維碼**）。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_COPSUG2018": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 2",
+  "status": "incorporated",
+  "status_links": [
+   "../codes/glass-2018.md|Glass Code"
+  ],
+  "topics": [
+   "structural"
+  ],
+  "points": [
+   [
+    "Publication of the **Code of Practice for Structural Use of Glass 2018** – **limit state design**; load duration effects; safety against **falling broken glass** and failure of glass elements; non-linear analysis; load sharing in **IGUs**; composite action of **laminated glass**; **lateral torsional buckling of glass fins**; construction details; testing and QA. **12-month grace period** for pre-2018 designs (amendments to approved designs excepted).",
+    "頒布**《2018 年玻璃結構作業守則》**：**極限狀態設計**、荷載時間效應、防止**碎玻璃墮下**、非線性分析、中空玻璃荷載分擔、**夾層玻璃**組合作用、**玻璃肋側向扭轉屈曲**、施工細節、測試及品質保證；舊設計有 **12 個月寬限期**。"
+   ]
+  ],
+  "related": [],
+  "status_note": "Promulgates the current Glass Code 2018 頒布現行玻璃守則"
+ },
+ "CL_MDMIBRU2018": {
+  "to": "AP, RSE, RGE, RGBC, RSC",
+  "by": "AD/New Buildings 1",
+  "status": "current",
+  "status_links": [
+   "../pnap/app-159.md|APP-159"
+  ],
+  "topics": [
+   "design",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Under **APP-159**, BD will **not approve** A&A proposals subdividing industrial premises into **\"small\" units (usable floor area < 80 m²) with en suite toilets**; such works must **not** be done under the **Minor Works Control System** either – submissions are unacceptable and PBPs/PRCs may face enforcement and **disciplinary action**.",
+    "按 **APP-159**，不會批准把工業處所分間成**附設獨立廁所的「細小」單位（實用面積 < 80 平方米）**；亦不得以**小型工程**進行，否則會執法及**紀律處分**。"
+   ]
+  ],
+  "related": [
+   "#cl-mdmibru2016|Jun 2016 letter"
+  ]
+ },
+ "CL_RCRMWC2018": {
+  "to": "RMWC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration",
+   "minorworks"
+  ],
+  "points": [
+   [
+    "Refresher course for RMWC renewal or restoration.",
+    "小型工程承建商重溫課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_CPD2018": {
+  "to": "RGBC, RSC",
+  "by": "AD/Corporate Services",
+  "topics": [
+   "registration"
+  ],
+  "points": [
+   [
+    "CPD course for RGBC/RSC renewal or restoration.",
+    "一般建築及專門承建商持續專業發展課程。"
+   ]
+  ],
+  "related": []
+ },
+ "CL_SUPT2018": {
+  "to": "Property management agents",
+  "by": "Chief Officer/Technical Services",
+  "status": "spent",
+  "status_links": [],
+  "topics": [
+   "weather"
+  ],
+  "points": [
+   [
+    "Before **Mangkhut**: check roof, podium and basement drains; external installations; pumps; slopes and retaining walls; protect exposed glazing; secure gondolas; cordon off tree-fall zones; inspect and repair afterwards.",
+    "**山竹**來襲前：檢查排水、外牆裝置、抽水設備、斜坡；保護玻璃；固定吊船；封閉塌樹範圍。"
+   ]
+  ],
+  "related": [],
+  "status_note": "One-off (Super Typhoon Mangkhut; scanned original) 一次性（掃描版原文）"
+ }
+}

@@ -194,6 +194,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 | GFA 樓面面積 | [GFA guide](../guides/gfa.md) |
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 

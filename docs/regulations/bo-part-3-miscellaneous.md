@@ -143,10 +143,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - 🟢 [Use of Tied-Back Wall Support System for Excavation Works](../circulars/2026.md#cl-utbwssew2026) <small>7 Jul 2026 · 挖掘工程使用後拉式圍牆支撐系統</small>
+- 🟢 [Granting of Modification or Exemption under Section 42 of the Buildings Ordinance for Transitional Housing Initiatives](../circulars/2018.md#cl-gmebpthi) <small>Oct 2018 · 根據《建築物條例》第42條就過渡性房屋措施批予變通或豁免</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

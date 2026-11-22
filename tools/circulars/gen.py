@@ -56,11 +56,13 @@ def status(e,here):
     if e['id'] in SER:
         new=SER[e['id']]; tgt=(f"{'' if page_of(new)==here else page_of(new)}#{aid(new)}") if new['id'] in N else new['url']
         return ('superseded',f"Superseded by the later reminder of {fdate(new.get('date'))} 已由較新一份取代",f"[{new['title']}]({tgt})")
+    if e['id'] not in N and (e['year'] or '0')<'2015':
+        return ('unverified','Not verified – pre-2015 letter, read the original 未核實（2015 年前通告，請參閱原文）','')
     st=n.get('status','current')
     lab={'current':'In force 有效','superseded':'Superseded 已被取代','incorporated':'Incorporated 已納入','spent':'Spent (one-off) 一次性／已過時','amended':'Amended 已修訂'}[st]
     lk=' · '.join(x for x in (link(r,here) for r in n.get('status_links',[])) if x)
     return (st,(n.get('status_note') or lab),lk)
-BADGE={'current':'🟢','superseded':'⚪','incorporated':'🔵','spent':'⚫','amended':'🟡'}
+BADGE={'unverified':'❔','current':'🟢','superseded':'⚪','incorporated':'🔵','spent':'⚫','amended':'🟡'}
 def badge(e,here):
     st,note,lk=status(e,here)
     return f"{BADGE[st]} **{note}**"+(f" → {lk}" if lk else '')
@@ -110,7 +112,7 @@ years=sorted({year_of(e) for e in L if year_of(e)!='other'},reverse=True)
 out=["---\ntags:\n  - Circular letter 通告函件\nsummary: \"Index of all Buildings Department circular letters, by year, with links to summaries and the original PDFs.\"\nkeywords: circular letter, 通告函件, Buildings Department, 屋宇署, index\n---\n",
      "# Circular letters<br><small>通告函件</small>\n",
      f"!!! info \"About 關於\"\n    Buildings Department circular letters to Authorized Persons, Registered Structural and Geotechnical Engineers, Registered Inspectors, registered contractors and industry stakeholders. They announce new arrangements, remind of statutory duties and give interim guidance before Practice Notes or Codes are revised. {len(L)} letters are listed on the BD index; years with summaries are linked below. 屋宇署向認可人士、註冊結構及岩土工程師、註冊檢驗人員、註冊承建商及業界發出的通告函件，用以公布新安排、提醒法定責任或於作業備考／守則修訂前提供指引。\n\n    Source 原文: [BD index (English)](https://www.bd.gov.hk/en/resources/codes-and-references/practice-notes-and-circular-letters/index_circulars.html) · [屋宇署索引（中文）](https://www.bd.gov.hk/tc/resources/codes-and-references/practice-notes-and-circular-letters/index_circulars.html) · Last checked 最後核對: {datetime.date.today()}\n",
-     "!!! tip \"Status 狀態\"\n    🟢 In force 有效 · ⚪ Superseded by a later letter 已由較新通告取代 · 🔵 Incorporated into a Code, PNAP or guideline 已納入守則／作業備考／指引 · 🟡 Amended 已修訂 · ⚫ One-off or spent 一次性／已過時. Annual reminders (typhoon, rainy season, bamboo scaffolds, mosquito and rodent, gifts, CPD) are marked superseded by the latest issue. Status of letters not yet summarised is provisional. 每年重發的提示以最新一份為準；尚未摘錄的通告狀態僅供參考。\n\n    See also 另見: [Letters by topic 按主題](topics.md)\n",
+     "!!! tip \"Status 狀態\"\n    🟢 In force 有效 · ⚪ Superseded by a later letter 已由較新通告取代 · 🔵 Incorporated into a Code, PNAP or guideline 已納入守則／作業備考／指引 · 🟡 Amended 已修訂 · ⚫ One-off or spent 一次性／已過時 · ❔ Not verified (letters before 2015 are listed but not summarised) 未核實（2015 年前通告只列出，未作摘錄）. Annual reminders (typhoon, rainy season, bamboo scaffolds, mosquito and rodent, gifts, CPD) are marked superseded by the latest issue. Status of letters not yet summarised is provisional. 每年重發的提示以最新一份為準；尚未摘錄的通告狀態僅供參考。\n\n    See also 另見: [Letters by topic 按主題](topics.md)\n",
      "## By year 按年份 {#by-year}\n","| Year 年份 | Letters 數目 | Summaries 摘要 |","|---|---|---|"]
 for y in years:
     es=[e for e in L if year_of(e)==y]; s=sum(e['id'] in N for e in es)

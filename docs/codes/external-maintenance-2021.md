@@ -256,6 +256,12 @@ The **Appendix E checklist** lists, for each access type (gondola, maintenance a
 | Loads 荷載 | [Dead & Imposed Loads](dil-2011.md) · [Wind Code](wind-2019.md) |
 | Fire safety 消防 | [FS Code Part B](fsc-part-b-means-of-escape.md) · [Part C](fsc-part-c-fire-resisting-construction.md) |
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- ⚪ [Code of Practice on Design for Safety – External Maintenance](../circulars/2019.md#cl-copdsem2019) <small>19 Sep 2019 · Code of Practice on Design for Safety – External Maintenance</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 [B(C)R](../regulations/bcr-123q.md) · [APP-163](../pnap/app-163.md) · [APP-93 pipe ducts](../pnap/app-93.md) · [APP-42 utility platforms](../pnap/app-42.md) · [APP-110 barriers](../pnap/app-110.md) · [Glass Code](glass-2018.md) · [Dead & Imposed Loads](dil-2011.md)

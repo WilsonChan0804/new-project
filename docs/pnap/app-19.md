@@ -193,6 +193,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Submission of Vertical Greening Plans](../circulars/2019.md#cl-svgp) <small>14 Feb 2019 · 呈交垂直綠化工程的圖則</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

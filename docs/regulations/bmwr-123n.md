@@ -194,6 +194,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
@@ -201,6 +202,7 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 - 🟢 [Updating of Specified Forms under Minor Works Control System](../circulars/2026.md#cl-usfmwcs2026) <small>13 Feb 2026 · 更新小型工程監管制度的指定表格</small>
 - 🟢 [Minor Works Control System Notice of Commencement and Certificate of Completion of Minor Works (MW)](../circulars/2024.md#cl-mwcsncccmw2024) <small>2 Jan 2024 · 小型工程監管制度小型工程展開通知書及完工證明書</small>
 - 🔵 [Amendments to the Technical Guidelines on Minor Works Control System](../circulars/2021.md#cl-atgmwcs-2021) <small>24 Mar 2021 · 《小型工程監管制度之技術指引》修訂事宜</small>
+- 🟢 [Joining the Signboard Validation Scheme when Applying for Food Business Licence](../circulars/2019.md#cl-jsvsafbl2019) <small>1 Sep 2019 · 申請食物業牌照時參加招牌檢核計劃</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}

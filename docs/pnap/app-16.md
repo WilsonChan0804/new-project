@@ -54,6 +54,12 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 
 <!-- APSEC END -->
 
+<!-- CL START -->
+## Related circular letters 相關通告函件 {#circular-letters}
+
+- 🟢 [Repairs to Curtain Wall, Glass Wall and Cladding](../circulars/2019.md#cl-cgwcr2019) <small>3 Oct 2019 · "修葺幕牆、玻璃牆及覆蓋層"</small>
+<!-- CL END -->
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

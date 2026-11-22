@@ -135,11 +135,13 @@ BD's responses at the APSEC Discussion Forum that clarify this document, **newes
 <!-- APSEC END -->
 
 
+
 <!-- CL START -->
 ## Related circular letters 相關通告函件 {#circular-letters}
 
 - ⚫ [Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass](../circulars/2022.md#cl-qsqapccmichsptg2022) <small>22 Apr 2022 · Qualified Supervision and Quality Audit for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass</small>
 - ⚪ [Qualified Supervision for Precast Concrete Construction, Modular Integrated Construction and Heat Soak Process of Tempered Glass](../circulars/2020.md#cl-qspccmichsptg2020) <small>7 Feb 2020 · 為預製混凝土建造、「組裝合成」建築法及鋼化玻璃熱浸程序提供合格的監督</small>
+- 🟢 [Repairs to Curtain Wall, Glass Wall and Cladding](../circulars/2019.md#cl-cgwcr2019) <small>3 Oct 2019 · "修葺幕牆、玻璃牆及覆蓋層"</small>
 <!-- CL END -->
 
 ## Related 相關文件 {#related}
