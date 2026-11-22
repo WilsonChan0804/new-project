@@ -295,3 +295,13 @@ body[data-md-color-scheme="slate"] { background: #1C1917; }
 [data-md-color-scheme="slate"] .kb-editor { background: #292524; border-color: #7A2E12; }
 [data-md-color-scheme="slate"] .kb-pp-clear, [data-md-color-scheme="slate"] .kb-pen { color: #FDBA74; }
 [data-md-color-scheme="slate"] .md-typeset figure img { background: #FFFFFF; }
+
+/* APSEC: question and BD response in different colours 問題與回覆分色 */
+.md-typeset p.apsec-q { background: #EEF3FD; border-left: 4px solid #2A4DD0; padding: .55rem .8rem; border-radius: 0 6px 6px 0; margin: .6rem 0 .3rem; }
+.md-typeset p.apsec-q > strong:first-child { color: #2A4DD0; }
+.md-typeset p.apsec-a { background: #FFF3E8; border-left: 4px solid #E1863B; padding: .55rem .8rem; border-radius: 0 6px 6px 0; margin: .3rem 0 1rem; }
+.md-typeset p.apsec-a > strong:first-child { color: #9A3412; }
+[data-md-color-scheme="slate"] .md-typeset p.apsec-q { background: #1E2A44; border-left-color: #93B4FF; }
+[data-md-color-scheme="slate"] .md-typeset p.apsec-q > strong:first-child { color: #93B4FF; }
+[data-md-color-scheme="slate"] .md-typeset p.apsec-a { background: #3A2416; border-left-color: #F08020; }
+[data-md-color-scheme="slate"] .md-typeset p.apsec-a > strong:first-child { color: #FDBA74; }

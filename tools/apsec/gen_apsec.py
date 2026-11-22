@@ -67,10 +67,10 @@ for y in years:
                 o += ['<small>Follows earlier discussion: ' + ', '.join(f'[{fdate(byid[e]["date"])}]({rel(P, year_page(byid[e]))}#{anchor(byid[e])})' for e in i['earlier']) + '</small>', '']
             if i.get('see'):
                 o += ['<small>Related discussions 相關討論: ' + ', '.join(f'[{fdate(byid[e]["date"])} item {byid[e]["no"]}]({rel(P, year_page(byid[e]))}#{anchor(byid[e])})' for e in sorted(set(i['see']))[:6]) + '</small>', '']
-            o += [f'**Question 問題:** {cut(i["q"], 700)}', '']
+            o += [f'**Question 問題:** {cut(i["q"], 700)}', '{: .apsec-q }', '']
             for k, fg in enumerate(FIG.get(i['id'], [])):
                 o += ['<figure markdown>', f'  ![Diagram from the original APSEC summary, item {i["no"]}](../assets/figures/apsec-figures/{fg["img"]}){{ width="{min(fg["w"], 680)}" loading=lazy }}', f'  <figcaption>Diagram {k + 1} from the original summary ({label.get(i["file"], "ADF")}, item {i["no"]}). 原文附圖。</figcaption>', '</figure>', '']
-            o += [f'**BD\'s response 屋宇署回覆:** {cut(i["a"], 1600) or "—"}', '']
+            o += [f'**BD\'s response 屋宇署回覆:** {cut(i["a"], 1600) or "—"}', '{: .apsec-a }', '']
     o.append('---\n<small>Source: Summary of Items Discussed in APSEC Discussion Forum, published by the HKIE Structural Division. Condensed for reference; the PDF is the authoritative record.</small>\n')
     open(D + P, 'w').write('\n'.join(o))
 
