@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-19", date: "23 Nov 2026",
+    items: [
+      "**Programme: zoom a step at a time** - Ctrl or Shift + wheel over the chart zooms a little each notch (it jumped straight to Fit), and new **− / +** buttons beside Day / Week / Month / Quarter do the same (or the − and + keys). Your zoom is kept for next time.",
+    ],
+  },
+  {
     version: "2027-02-18", date: "23 Nov 2026",
     items: [
       "**Programme: dragging a task with a \"finish no earlier than\" date** (many come with it from MS Project) now moves it: the drag clears that date, as MS Project does, and says so. Before, the bar stayed and the message wrongly blamed a predecessor.",

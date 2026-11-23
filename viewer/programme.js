@@ -159,7 +159,7 @@ function recalc() {
   lo -= 7;
   hi += pad + 14;
   const dt = new Date(Date.UTC(2000, 0, 1) + lo * 86400000);
-  const ppdWant = P.view.zoom === "fit" ? P.view.ppd || 4 : ZOOM[P.view.zoom] || 14;
+  const ppdWant = P.view.zoom === "fit" || P.view.zoom === "free" ? P.view.ppd || 4 : ZOOM[P.view.zoom] || 14;
   if (ppdWant < 6) lo -= dt.getUTCDate() - 1;            // a month or quarter scale starts on the 1st
   else lo -= (dt.getUTCDay() + 6) % 7;                   // a day or week scale on a Monday
   P.d0 = lo;
@@ -1870,11 +1870,15 @@ function wirePanZoom() {
   });
   body.addEventListener("mousedown", (ev) => { if (ev.button === 1) ev.preventDefault(); });      // no auto-scroll
   body.addEventListener("auxclick", (ev) => { if (ev.button === 1) ev.preventDefault(); });
-  // Ctrl + wheel: the time, about the pointer
+  // Ctrl or Shift + wheel: the time, a step at a time, about the pointer
   body.addEventListener("wheel", (ev) => {
-    if (!ev.ctrlKey || !ev.target.closest("#pg-cb, #pg-ch")) return;
+    if (!(ev.ctrlKey || ev.shiftKey) || !ev.target.closest("#pg-cb, #pg-ch")) return;
     ev.preventDefault();
-    zoomAbout(ev.clientX, ev.deltaY < 0 ? 1.2 : 1 / 1.2);
+    const d = ev.deltaY || ev.deltaX;            // Shift turns the wheel sideways on Windows
+    if (!d) return;
+    const px = ev.deltaMode === 1 ? d * 33 : ev.deltaMode === 2 ? d * 400 : d;
+    const k = Math.abs(px) >= 50 ? (px < 0 ? 1.15 : 1 / 1.15) : Math.exp(-px / 300);   // a mouse notch, or a trackpad pinch
+    zoomAbout(ev.clientX, k);
   }, { passive: false });
   // the scale: drag along it to stretch or squeeze the time
   $("#pg-ch").addEventListener("pointerdown", (ev) => {
@@ -1915,10 +1919,15 @@ function zoomAbout(clientX, k) {
   setPpd(Math.max(0.3, Math.min(60, P.ppd * k)), anchor, clientX);
   saveView();
 }
+/* the − / + buttons and keys: about the middle of the chart in view */
+function zoomStep(k) {
+  const body = $("#pg-body").getBoundingClientRect();
+  zoomAbout(body.left + gridWidth() + (body.width - gridWidth()) / 2, k);
+}
 function setPpd(ppd, anchorDay, clientX) {
   const body = $("#pg-body");
   const box0 = body.getBoundingClientRect();
-  P.view.zoom = "fit";
+  P.view.zoom = "free";               // a zoom of its own (only Fit keeps re-fitting)
   P.view.ppd = ppd;
   recalc();
   paintGrid(); paintChart();
@@ -1991,6 +2000,8 @@ async function start() {
   $("#pg-redo").onclick = redo;
   $("#pg-zoom").onclick = (ev) => { const b = ev.target.closest("[data-z]"); if (!b) return; const mid = midDay(); P.view.zoom = b.dataset.z; saveView(); recalc(); render(); scrollToDay(PC.isoOf(mid)); };
   $("#pg-fit").onclick = fit;
+  $("#pg-zin").onclick = () => zoomStep(1.25);
+  $("#pg-zout").onclick = () => zoomStep(1 / 1.25);
   $("#pg-today").onclick = () => scrollToDay(PC.todayIso());
   $("#pg-crit").onclick = () => { P.view.critical = !P.view.critical; saveView(); render(); };
   $("#pg-base").onclick = (ev) => baseMenu(ev.currentTarget);
@@ -2129,6 +2140,7 @@ async function start() {
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "v" && P.clip) { ev.preventDefault(); pasteRows(); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "d" && P.sel.size) { ev.preventDefault(); duplicate(); }
     else if (ev.altKey && !ev.shiftKey && (k === "ArrowUp" || k === "ArrowDown")) { ev.preventDefault(); moveBy(k === "ArrowUp" ? -1 : 1); }
+    else if (!ev.ctrlKey && !ev.metaKey && !ev.altKey && (k === "+" || k === "=" || k === "-")) { ev.preventDefault(); zoomStep(k === "-" ? 1 / 1.25 : 1.25); }
     else if (ev.altKey && !ev.shiftKey && (k === "ArrowLeft" || k === "ArrowRight") && P.sel.size) { ev.preventDefault(); nudge(k === "ArrowLeft" ? -1 : 1); }
     else if (k === "Escape" && propsOpen()) closeProps();
     else if (ev.altKey && ev.shiftKey && k === "ArrowRight") { ev.preventDefault(); indent(1); }
