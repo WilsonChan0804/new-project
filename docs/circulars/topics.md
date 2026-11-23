@@ -29,6 +29,8 @@ tags:
   - Plumbing & sanitary 衞生設備
   - Means of access 救援通道
   - Barrier free access 無障礙
+  - Industrial building 工業大廈
+  - GFA concession 樓面面積寬免
 summary: "BD circular letters grouped by topic, with status and links to the related Codes and PNAPs."
 keywords: circular letter, 通告函件, topic, 主題
 ---

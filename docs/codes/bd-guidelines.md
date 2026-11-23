@@ -30,6 +30,9 @@ tags:
   - Site area & classification 地盤面積及分類
   - Refuse 垃圾
   - Refuge floor 庇護層
+  - Protective barrier 防護欄障
+  - Excavation & ELS 挖掘
+  - Car park 停車場
 summary: "BD guidelines: residential energy efficiency (RTTV), glazing, ventilation, bamboo scaffolds, heritage A&A, water seepage, drainage maintenance, signboards, maintenance guidebook, greening, BIM, default-works surcharge, TMB UBW and minor works."
 keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency, visible light transmittance, natural ventilation, cross ventilation, thermal comfort
 ---

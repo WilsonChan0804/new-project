@@ -15,6 +15,7 @@ tags:
   - Fire safety 消防安全
   - Green & amenity features 環保及適意設施
   - Plan submission & approval 呈交及審批
+  - Hotel 酒店
 summary: "Barrier-free and universal accessibility: B(P)R 72–73, BFA 2008, DMUA 2026 and elderly-friendly design."
 keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用無障礙, DMUA, elderly-friendly, 長者友善, accessible toilet, accessible lift
 ---
@@ -26,6 +27,20 @@ keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用�
     **第 72 條**（無障礙通道）及**第 73 條**（長者友善設計，**2026 年 8 月 1 日**生效）的法定要求、設計手冊（**2008 年暢通無阻手冊**及新的**2026 年暢道通行手冊**）、主要尺寸、現有建築物的豁免，以及相關樓面面積寬免。
 
     Main sources 主要來源: [B(P)R 71–73](../regulations/bpr-71-73.md) · [APP-41](../pnap/app-41.md) · [APP-175](../pnap/app-175.md) · [APP-176](../pnap/app-176.md) · [BFA 2008](../codes/bfa-2008.md) · [BFA Div. 1–3](../codes/bfa-div-1-3.md) · [Div. 4–9](../codes/bfa-div-4-9.md) · [Div. 10–12](../codes/bfa-div-10-12.md) · [Div. 13–20](../codes/bfa-div-13-20.md) · [APP-42](../pnap/app-42.md) · [APP-104](../pnap/app-104.md)
+
+## Jump to 快速跳轉 {#jump}
+
+| Section 章節 | |
+|---|---|
+| Which rules apply? 哪些規定適用？ | [Go 前往](#how-the-rules-fit-together) |
+| What is a continuous accessible route? 何謂連續無障礙通道？ | [Go 前往](#the-continuous-accessible-route) |
+| What are the key dimensions? 主要尺寸是多少？ | [Go 前往](#key-dimensions) |
+| How many accessible provisions are needed? 暢通易達設施數量一覽 | [Go 前往](#quantities) |
+| Submission checklist 呈交清單 | [Go 前往](#bfa-checklist) |
+| Which buildings and parts must comply? 哪些建築物及部分須符合？ | [Go 前往](#which-buildings-which-parts) |
+| What about existing buildings and exemptions? 現有建築物及豁免 | [Go 前往](#existing-buildings-and-exemptions) |
+| Are there incentives? 有何鼓勵措施？ | [Go 前往](#incentives) |
+| Latest APSEC positions 最新 APSEC 立場 | [Go 前往](#apsec-positions) |
 
 ## At a glance 重點摘要 {#at-a-glance}
 
@@ -90,6 +105,31 @@ keywords: barrier free access, BFA, 無障礙, universal accessibility, 通用�
 | Assistive provisions 輔助設施 | Tactile paths, Braille, visual alarms, assistive listening by building use (Table 2) | — | [BFA 2008](../codes/bfa-2008.md) |
 
 <small>Summary only; DMUA 2026 has more detail and advisory items. 摘要；詳細內容見 2026 年手冊。</small>
+
+## How many accessible provisions are needed? 暢通易達設施數量一覽 {#quantities}
+
+| Provision 設施 | Number required 數量 | Source 來源 |
+|---|---|---|
+| **Accessible WC cubicle** (multi-cubicle toilets) 暢通易達水廁間 | **1** per floor where **≤ 20** WCs; **2** where **> 20** (for each sex) | [BFA Div. 11](../codes/bfa-div-10-12.md) (Third Schedule s.46) |
+| **Accessible unisex toilet** 無分性別暢通易達洗手間 | **At least 1** on every floor with toilets, reached without passing a single-sex area | [BFA Div. 11](../codes/bfa-div-10-12.md) (s.47) |
+| Accessible toilet size 洗手間尺寸 | Min. **1 500 × 1 750 mm**, turning **1 500 × 1 500 mm**; WC seat 380–450 mm | [BFA Fig. 24](../codes/bfa-div-10-12.md) |
+| **Wheelchair spaces** in auditoria 觀眾席輪椅位 | **≥ 4** up to 800 fixed seats; above 800, **2 per 400** seats or part (900 seats → 6); each **800 × 1 300 mm**, in pairs | [BFA Div. 1](../codes/bfa-div-1-3.md) |
+| **Accessible hotel rooms** 暢通易達客房 | **2 per 100** rooms or part (min. 2; 150 rooms → 4) | [BFA Div. 2](../codes/bfa-div-1-3.md) |
+| **Accessible parking** 暢通易達泊車位 | Total 1–50: **1**; 51–150: **2**; 151–250: **3**; 251–350: **4**; 351–450: **5**; > 450: **6**; width **3 500 mm** (or 2 500 mm + shared 1 200 mm hatched zone) | [BFA Div. 3](../codes/bfa-div-1-3.md) |
+| Assistive provisions 輔助設施 | Tactile guide paths, Braille maps, visual fire alarms, assistive listening by building use (BFA Table 2) | [BFA 2008](../codes/bfa-2008.md) |
+| Elderly-friendly (reg. 73) 長者友善 | **13** items in common areas + **3** inside units, for works consented after **1 Aug 2026** | [APP-175](../pnap/app-175.md) · [DMUA 2026](../codes/dmua-2026.md) |
+
+Sanitary fitment numbers for the ordinary toilets come from Cap. 123I Part II: use the [sanitary fitment calculator](../regulations/sanitary-fitments.md#calculator). 一般衞生設備數目見衞生設備計算器。
+
+## Submission checklist 呈交清單 {#bfa-checklist}
+
+- [ ] Accessible route drawn from the **site entrance / street** to every required part, with widths, ramps (≤ 1:12) and level changes. 由地盤入口起計的無障礙通道。
+- [ ] Accessible lifts sized and located; lift lobby turning space. 無障礙升降機。
+- [ ] Accessible WC cubicles and unisex toilet on **every floor with toilets**. 每層洗手間。
+- [ ] Parking, auditoria seats, hotel rooms counted against the tables above. 數量核算。
+- [ ] Table 2 assistive provisions for the building use. 輔助設施。
+- [ ] For works consented on or after 1 Aug 2026: reg. 73 elderly-friendly items (door 850 mm, threshold ≤ 15 mm, 1 200 mm routes, P3 / R10 finishes, automatic main entrance door). 長者友善項目。
+- [ ] Any s.42 modification (Form [BA16](../forms/nb-aa.md#ba16)) justified with alternatives. 變通申請。
 
 ## Which buildings and parts must comply? 哪些建築物及部分須符合？ {#which-buildings-which-parts}
 

@@ -5,6 +5,12 @@ tags:
   - Fire damper 防火閘
   - Fire Services 消防處
   - Fire resisting construction 耐火結構
+  - Fire safety 消防安全
+  - Statutory period 法定期限
+  - Registration 註冊
+  - Barrier free access 無障礙
+  - Refuse 垃圾
+  - Minor works 小型工程
 summary: "Building (Ventilating Systems) Regulations Cap. 123J: ducted systems passing between compartments, fire dampers, annual inspection by an RSC and FSD control."
 keywords: Cap. 123J, ventilating systems, 通風系統, fire damper, 防火閘, ductwork, annual inspection, Director of Fire Services
 ---

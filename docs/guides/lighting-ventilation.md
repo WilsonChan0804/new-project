@@ -11,6 +11,8 @@ tags:
   - Balcony & utility platform 露台及工作平台
   - Fire resisting construction 耐火結構
   - Means of escape 逃生途徑
+  - GFA concession 樓面面積寬免
+  - Energy efficiency 能源效率
 summary: "Natural lighting and ventilation: prescribed windows, B(P)R 30–36, and the APP-130 performance route."
 keywords: lighting, ventilation, 照明, 通風, prescribed window, 訂明的窗, VDF, APP-130, natural ventilation, 自然通風
 ---
@@ -22,6 +24,20 @@ keywords: lighting, ventilation, 照明, 通風, prescribed window, 訂明的窗
     **居住房間、辦公室、廚房、浴室及洗手間**的天然照明及通風：訂明窗規定、**性能為本**方法、機械通風、開放式廚房及公用地方，以及 APSEC 最新立場。
 
     Main sources 主要來源: [B(P)R 29–37](../regulations/bpr-24-37.md) · [B(P)R 71](../regulations/bpr-71-73.md) · [APP-130](../pnap/app-130.md) · [APP-98](../pnap/app-98.md) · [ADV-30](../pnap/adv-30.md) · [ADV-25](../pnap/adv-25.md) · [ADV-26](../pnap/adv-26.md) · [APP-150](../pnap/app-150.md) · [FS Code Part B](../codes/fsc-part-b-means-of-escape.md)
+
+## Jump to 快速跳轉 {#jump}
+
+| Question 問題 | Section 章節 |
+|---|---|
+| Which route? 用哪種方法 | [Decision route](#the-big-picture) |
+| Prescribed window sizes 訂明窗面積 | [1. Prescriptive rules](#1-the-prescriptive-rules-bpr-2933) · [6. Geometry in detail](#6-geometry) |
+| Performance route (VDF, UVA) 性能方法 | [2. APP-130](#2-the-performance-based-route-app-130) |
+| Mechanical ventilation 機械通風 | [3. Mechanical](#3-mechanical-ventilation) |
+| Bathrooms, lavatories 浴室 | [4. Bathrooms](#4-bathrooms-and-lavatories) · [Sanitary fitment calculator](../regulations/sanitary-fitments.md) |
+| Open kitchens 開放式廚房 | [5. Open kitchens](#5-open-kitchens) |
+| Energy / natural ventilation for comfort (RTTV, NVTC) 能源及自然通風 | [7. NVTC](#7-nvtc) |
+| Worked example and checklist 例子及清單 | [8. Worked example](#8-worked-example) · [9. Submission checklist](#9-checklist) |
+| Common mistakes, APSEC 常見錯誤 | [Mistakes](#common-mistakes) · [APSEC](#apsec-positions) |
 
 ## At a glance 重點摘要 {#at-a-glance}
 
@@ -104,6 +120,59 @@ keywords: lighting, ventilation, 照明, 通風, prescribed window, 訂明的窗
 ## 5. Are open kitchens allowed? 可否設開放式廚房？ {#5-open-kitchens}
 
 Open kitchens raise **fire safety** as well as ventilation questions (escape routes past the kitchen, fire-rated walls, smoke detectors, sprinklers). BD has answered these mainly at APSEC; the current positions are listed below. See also [FS Code Part B](../codes/fsc-part-b-means-of-escape.md). 開放式廚房同時涉及**消防安全**（逃生途徑、耐火牆、煙霧感應器、花灑）及通風，屋宇署主要在 APSEC 作出澄清，現行立場見下文。
+
+## 6. How is the prescribed window geometry checked? 訂明窗幾何如何核算？ {#6-geometry}
+
+| Check 檢查 | Habitable room 居住房間 | Office / kitchen 辦公室／廚房 | Reg. 條 |
+|---|---|---|---|
+| Faces a **street ≥ 4.5 m** wide 面向 ≥ 4.5 米街道 | Passes automatically 自動符合 | Passes | 31(1)(a) |
+| **RHP** at sill level 矩形水平面 | Area **≥ 21 m²**, base **≥ 2.3 m**, depth **≥ 4.5 m** to a wall opposite in the site, or **≥ 2.3 m** to the site boundary | Same | 31(2) |
+| Narrow lane alongside boundary 窄巷 | Depth measured to **1.5 m beyond** the boundary, or to the lane **centre line** if the lane < **3 m** wide | Same | 31(2)(e) |
+| Inclined plane from the RHP base (other buildings in the site) 傾斜面 | **71½°** not breached | **76°** | 31(1)(b)–(c) |
+| Inclined plane from the boundary (own building) 界線傾斜面 | **80½°** | **83°** | 31(1)(d) |
+| Sill level 窗台 | **Deemed 1 m** above floor (glazing below 1 m does not lower it) | Same | 31(3) |
+| Room depth 房深 | **≤ 9 m** from the window | Same | 32 |
+| Enclosed verandah / balcony 圍封露台 | Outer window sized on **combined** floor area | Same | 33 |
+
+<figure markdown>
+  ![Reg. 31 planes](../assets/figures/bpr/reg31-window-planes.svg){ loading=lazy }
+  <figcaption>Reg. 31: RHP and inclined planes (simplified, prepared for this site). 第 31 條簡化剖面。</figcaption>
+</figure>
+
+**Projections that can block the planes 可能阻擋傾斜面的伸出物**: bay windows, balconies, utility platforms, A/C platforms and canopies **above** a prescribed window; sunshades **≤ 750 mm** are accepted as not obstructing ([APP-19](../pnap/app-19.md), [APP-156](../pnap/app-156.md) para. 13). UVA may encroach on balconies and utility platforms in the scenarios accepted at APSEC Aug 2024. 窗上方的伸出物可能阻擋；750 毫米以內遮陽篷不視為阻擋。
+
+## 7. How does this link to energy efficiency and natural ventilation for comfort? 與能源效率及自然通風的關係 {#7-nvtc}
+
+B(P)R 30 sets the **health minimum**. For GFA concessions, residential projects must also report **natural ventilation for thermal comfort (NVTC)** under the [RTTV Guidelines](../codes/rttv-2014.md#nvtc) ([APP-156](../pnap/app-156.md)):
+
+| | B(P)R 30 minimum 最低要求 | NVTC (thermal comfort) 熱舒適 |
+|---|---|---|
+| Openable area 可開啟面積 | ≥ **1/16** of floor area | Cross ventilation **≥ 1/8**; single-sided **≥ 1/5** |
+| Depth 深度 | ≤ **9 m** (12 m with cross ventilation under APP-130) | Cross path **< 12 m**, one turn ≤ 90°; single-sided ≤ **4.5 m** |
+| Glazing 玻璃 | ≥ 1/10 | **VLT ≥ 50 %** on prescribed windows; external reflectance ≤ 20 % |
+| A/C 冷氣 | — | Heat rejection **≥ 1.5 m** from neighbours' openings |
+
+## 8. Worked example: a 2-bedroom flat 例子：兩房單位 {#8-worked-example}
+
+!!! warning "Illustrative only 只作說明"
+    Dimensions invented to show the checks. 尺寸為虛構。
+
+| Room 房間 | Area 面積 | Glass ≥ 1/10 玻璃 | Openable ≥ 1/16 可開啟 | Depth 深度 | Other 其他 |
+|---|---|---|---|---|---|
+| Living / dining 客飯廳 | 22 m² | 2.2 m² | 1.375 m² | 8.5 m ≤ 9 m ✓ | Faces 6 m street → passes reg. 31 |
+| Bedroom 1 睡房 | 9 m² | 0.9 m² | 0.5625 m² | 3.2 m ✓ | Faces RHP 2.5 × 8.4 m = 21 m², base 2.5 ≥ 2.3 ✓, 71½° clear |
+| Bedroom 2 睡房 | 7 m² | 0.7 m² | 0.4375 m² | 3.0 m ✓ | Same RHP; bay window above? check 71½° |
+| Kitchen 廚房 | 5 m² | 0.5 m² | 0.3125 m² | 2.5 m ✓ | **76°** plane; or mechanical 5 ACH + APP-130 VDF ≥ 4 % |
+| Bathroom 浴室 | 3.5 m² | 0.35 m² | **0.35 m²** (1/10) | — | Or internal bathroom per [APP-98](../pnap/app-98.md): 5 ACH, permanent vent ≥ 1/20 |
+
+## 9. Submission checklist 呈交清單 {#9-checklist}
+
+- [ ] Schedule of rooms with floor area, window glass and openable areas (≥ 1/10, ≥ 1/16; bathrooms 1/10). 房間面積及窗面積表。
+- [ ] RHP diagrams with dimensions, 71½° / 76° and 80½° / 83° sections; street widths. 矩形水平面及傾斜面圖。
+- [ ] 9 m depth shown on plans. 9 米深度。
+- [ ] APP-130 route: **Form BA16**, VDF / UVA calculation or simulation, ventilation openings. 性能方法須 BA16。
+- [ ] Mechanical ventilation: ACH, duct routes, fire dampers ([Cap. 123J](../regulations/bvsr-123j.md)), RPE(BS) where needed. 機械通風。
+- [ ] Residential GFA concession projects: RTTV / NVTC statement ([APP-156](../pnap/app-156.md)). 住宅寬免另交 RTTV／NVTC。
 
 ## Common mistakes 常見錯誤 {#common-mistakes}
 

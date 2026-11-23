@@ -7,6 +7,9 @@ tags:
   - Domestic 住用
   - Site area & classification 地盤面積及分類
   - Site supervision 地盤監督
+  - Concrete & materials 混凝土及物料
+  - Drainage 排水
+  - Means of access 救援通道
 summary: "Building (Private Streets and Access Roads) Regulations Cap. 123G: definitions, connection, widths, gradients, footpaths and construction of private streets and access roads."
 keywords: Cap. 123G, private streets, 私家街, access roads, 通路, cul-de-sac, footpath width, carriageway
 ---

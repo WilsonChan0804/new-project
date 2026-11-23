@@ -8,6 +8,8 @@ tags:
   - Plot ratio 地積比率
   - Refuge floor 庇護層
   - Hotel 酒店
+  - Domestic 住用
+  - Open space 休憩用地
 summary: "Building (Energy Efficiency) Regulation Cap. 123M: OTTV for commercial buildings and hotels, and what plans and calculations must show."
 keywords: Cap. 123M, energy efficiency, 能源效益, OTTV, 總熱傳送值, commercial buildings, hotels, window schedule
 ---

@@ -26,6 +26,7 @@ tags:
   - A&A works 改動及加建工程
   - Registration 註冊
   - Green & amenity features 環保及適意設施
+  - Energy efficiency 能源效率
 summary: "From plan submission to occupation permit: statutory periods, stages, forms and a checklist."
 keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔用許可證, OP, BA forms, statutory period, 法定期限, checklist
 ---
@@ -37,6 +38,21 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
     新建築物在《建築物條例》下的整個法定程序：須委任的人士、各階段須提交的**表格及文件**、**法定期限**、常見問題，以及可逐項剔選的**核對清單**（剔選紀錄只儲存在你的瀏覽器）。
 
     Main sources 主要來源: [BO s.14–21](../regulations/bo-part-2-building-works.md) · [B(A)R](../regulations/bar-123a.md) · [ADM-19](../pnap/adm-19.md) · [ADM-2](../pnap/adm-2.md) · [APP-60](../pnap/app-60.md) · [ADV-33](../pnap/adv-33.md) · [APP-97](../pnap/app-97.md) · [APP-13](../pnap/app-13.md) · [APP-78](../pnap/app-78.md) · [APP-162](../pnap/app-162.md) · [APP-157](../pnap/app-157.md)
+
+## Jump to 快速跳轉 {#jump}
+
+| Section 章節 | |
+|---|---|
+| How long does each step take? 每個步驟需時多久？ | [Go 前往](#the-statutory-timeline) |
+| Stage 1: what should be ready before submitting? 第一步：呈交前要準備甚麼？ | [Go 前往](#stage-1-before-you-submit) |
+| Stage 2: who is appointed and what is submitted? 第二步：委任誰、呈交甚麼？ | [Go 前往](#stage-2-appointment-and-plan-submission) |
+| Stage 3: how is consent to commence obtained? 第三步：如何取得動工同意？ | [Go 前往](#stage-3-consent-to-commence) |
+| Stage 4: what must happen during construction? 第四步：施工期間要做甚麼？ | [Go 前往](#stage-4-construction) |
+| Stage 5: how is the occupation permit obtained? 第五步：如何取得佔用許可證？ | [Go 前往](#stage-5-completion-and-occupation-permit) |
+| Which form at which stage? 各階段使用哪份表格？ | [Go 前往](#forms-by-stage) |
+| Typical programme (illustrative) 一般時間表（示意） | [Go 前往](#typical-programme) |
+| Checklist 核對清單 | [Go 前往](#checklist) |
+| Latest APSEC positions 最新 APSEC 立場 | [Go 前往](#apsec-positions) |
 
 ## At a glance 重點摘要 {#at-a-glance}
 
@@ -157,6 +173,36 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
 | **Lifts and escalators** 升降機及自動梯 | Associated works complete before EMSD permission to use | [APP-29](../pnap/app-29.md) |
 | **Undertakings and DMC** 承諾書及公契 | Registered before OP for green / amenity features, clubhouses, hotels 佔用許可證前登記 | [JPN 1](../pnap/jpn-1.md), [APP-104](../pnap/app-104.md), [APP-40](../pnap/app-40.md) |
 | **Landscape** 園景 | Self-certification of compliance by RLA where required | [JPN 3](../pnap/jpn-3.md) |
+
+## Which form at which stage? 各階段使用哪份表格？ {#forms-by-stage}
+
+| Stage 階段 | Form 表格 | Deadline 時限 | Main attachments 主要附件 |
+|---|---|---|---|
+| Appoint AP / RSE / RGE 委任 | [BA4](../forms/nb-aa.md#ba4) | With first submission | Owner's signature, registration numbers |
+| Submit plans 呈交圖則 | [BA5](../forms/nb-aa.md#ba5) (+ [BA6](../forms/nb-aa.md#ba6) for A&A, [BA16](../forms/nb-aa.md#ba16) for modification) | BA decides in **60 / 30 days** | Prescribed plans (B(A)R 8), calculations, GI / site formation reports, coloured copy, fee |
+| Apply for consent 申請同意 | [BA8](../forms/nb-aa.md#ba8) / [BA8A](../forms/nb-aa.md#ba8a) | BA decides in **28 days** | Approved plan reference; OTTV / RTTV **summary sheets** ([APP-67](../pnap/app-67.md), [APP-156](../pnap/app-156.md)); demolition plant particulars |
+| Hoardings, covered walkways 圍板 | [BA19](../forms/nb-aa.md#ba19) | Before erection | Hoarding plans ([APP-23](../pnap/app-23.md)) |
+| Notify start 開工通知 | [BA10](../forms/nb-aa.md#ba10) + [SP / SPA](../forms/nb-aa.md#sp) + [Form C](../forms/nb-aa.md#forms-a-c) | **≥ 7 days** before works | Contractor undertaking, TCP list |
+| During works 施工期間 | [BA9](../forms/nb-aa.md#ba9), [BA11](../forms/nb-aa.md#ba11), [BA20](../forms/nb-aa.md#ba20), [BA21](../forms/nb-aa.md#ba21), [Forms A–B](../forms/nb-aa.md#forms-a-c) | Changes **within 7 days** | Supervision records |
+| Completion and OP 完工及佔用許可證 | [BA13](../forms/nb-aa.md#ba13) (or [BA12](../forms/nb-aa.md#ba12) TOP, [BA14](../forms/nb-aa.md#ba14) A&A) | Contractor **7 days**, AP **14 days** | WSD and FSD certificates, record plans, test reports, OTTV / Energy Efficiency Report |
+| After OP 佔用許可證後 | [Appendices I–IV](../forms/nb-aa.md#appendices) | Rectification works | — |
+
+Full form guide: [Specified forms](../forms/index.md). 完整表格指南。
+
+## Typical programme (illustrative) 一般時間表（示意） {#typical-programme}
+
+!!! warning "Illustrative only 只作說明"
+    Statutory periods are fixed; the rest depends on the project. 法定期限固定，其他視乎項目。
+
+| Month 月 | Milestone 里程碑 | Statutory link 法定依據 |
+|---|---|---|
+| 0 | GBP first submission (BA5) | — |
+| 2 | Approval / disapproval (60 days) | B(A)R 30(3)(a) |
+| 3 | Resubmission, decided in 30 days; foundation plans in parallel | B(A)R 30(3)(c) |
+| 4 | Foundation consent (28 days); BA10 7 days before start | B(A)R 32, 20 |
+| 5–30 | Construction; superstructure consent; amendment plans (28 days) | B(A)R 33 |
+| 30 | Completion; BA13 within 14 days; WSD certificate (10 days) | B(A)R 25, 25A |
+| 30.5 | OP issued or refused within **14 days** | BO s.21 |
 
 ## Checklist 核對清單 {#checklist}
 

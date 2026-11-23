@@ -25,6 +25,21 @@ keywords: site coverage, 上蓋面積, plot ratio, 地積比率, site class, 地
 
     Main sources 主要來源: [B(P)R 18A–22](../regulations/bpr-18a-22.md) · [B(P)R 23](../regulations/bpr-23-23a.md) · [B(P)R 25](../regulations/bpr-24-37.md) · [APP-124](../pnap/app-124.md) · [APP-132](../pnap/app-132.md) · [APP-19](../pnap/app-19.md) · [APP-108](../pnap/app-108.md) · [APP-20](../pnap/app-20.md) · [APP-44](../pnap/app-44.md) · [ADM-21](../pnap/adm-21.md) · [JPN 4](../pnap/jpn-4.md) · [JPN 5](../pnap/jpn-5.md) · [JPN 7](../pnap/jpn-7.md)
 
+## Jump to 快速跳轉 {#jump}
+
+| Section 章節 | |
+|---|---|
+| How do SC and PR fit together? 上蓋面積與地積比率如何配合？ | [Go 前往](#the-big-picture) |
+| Step 1: what counts as site area? 第一步：哪些屬地盤面積？ | [Go 前往](#step-1-site-area) |
+| Step 2: is the site Class A, B or C? 第二步：甲、乙還是丙類地盤？ | [Go 前往](#step-2-site-class) |
+| Step 3: how is building height measured? 第三步：如何量度建築物高度？ | [Go 前往](#step-3-building-height) |
+| Step 4: what SC and PR does the First Schedule allow? 第四步：附表一准許多少？ | [Go 前往](#step-4-the-first-schedule) |
+| Step 5: when is bonus PR or flexibility given? 第五步：何時有額外地積比率？ | [Go 前往](#step-5-bonuses-and-flexibility) |
+| Step 6: what other controls apply? 第六步：還有甚麼管制？ | [Go 前往](#step-6-other-controls-on-top) |
+| Step 7: worked example, step by step 第七步：完整計算例子 | [Go 前往](#step-7-worked-example) |
+| Submission checklist 呈交清單 | [Go 前往](#step-8-checklist) |
+| Latest APSEC positions 最新 APSEC 立場 | [Go 前往](#apsec-positions) |
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
@@ -84,16 +99,41 @@ Measured from the **mean level of the street** (the lowest, if streets are at di
 
 ## Step 4: what SC and PR does the First Schedule allow? 第四步：附表一准許多少？ {#step-4-the-first-schedule}
 
-| Height of building 建築物高度 | Domestic SC % A / B / C 住用上蓋面積 | Domestic PR A / B / C 住用地積比率 | Non-domestic SC % 非住用上蓋面積 | Non-domestic PR 非住用地積比率 |
-|---|---|---|---|---|
-| ≤ 15 m | 66.6 / 75 / 80 | 3.3 / 3.75 / 4.0 | 100 | 5 |
-| > 15 m, ≤ 18 m | 60 / 67 / 72 | 3.6 / 4.0 / 4.3 | 97.5 | 5.8 |
-| > 18 m, ≤ 21 m | 56 / 62 / 67 | 3.9 / 4.3 / 4.7 | 95 | 6.7 |
-| > 21 m, ≤ 24 m | 52 / 58 / 63 | 4.2 / 4.6 / 5.0 | 92 | 7.4 |
-| > 30 m, ≤ 36 m | 42 / 47.5 / 50 | 5.0 / 5.7 / 6.0 | see table | see table |
-| > 61 m | 33.33 / 37.5 / 40 | 8 / 9 / 10 | see table | see table |
+**Domestic buildings 住用建築物** (First Schedule)
 
-<small>Extract only; full tables (including non-domestic rows by site class) on [B(P)R 18A–22](../regulations/bpr-18a-22.md). Non-domestic buildings may have **100% SC up to 15 m** (podium) whatever their height (reg. 20(3)); composite buildings share PR by the reg. 21(2) formula. 摘錄；完整表格見規例頁。</small>
+| Height 高度 | SC % Class A | SC % Class B | SC % Class C | PR Class A | PR Class B | PR Class C |
+|---|---|---|---|---|---|---|
+| ≤ 15 m 不超逾15米 | 66.6 | 75 | 80 | 3.3 | 3.75 | 4.0 |
+| > 15 m, ≤ 18 m | 60 | 67 | 72 | 3.6 | 4.0 | 4.3 |
+| > 18 m, ≤ 21 m | 56 | 62 | 67 | 3.9 | 4.3 | 4.7 |
+| > 21 m, ≤ 24 m | 52 | 58 | 63 | 4.2 | 4.6 | 5.0 |
+| > 24 m, ≤ 27 m | 49 | 55 | 59 | 4.4 | 4.9 | 5.3 |
+| > 27 m, ≤ 30 m | 46 | 52 | 55 | 4.6 | 5.2 | 5.5 |
+| > 30 m, ≤ 36 m | 42 | 47.5 | 50 | 5.0 | 5.7 | 6.0 |
+| > 36 m, ≤ 43 m | 39 | 44 | 47 | 5.4 | 6.1 | 6.5 |
+| > 43 m, ≤ 49 m | 37 | 41 | 44 | 5.9 | 6.5 | 7.0 |
+| > 49 m, ≤ 55 m | 35 | 39 | 42 | 6.3 | 7.0 | 7.5 |
+| > 55 m, ≤ 61 m | 34 | 38 | 41 | 6.8 | 7.6 | 8.0 |
+| > 61 m 超逾61米 | 33.33 | 37.5 | 40 | 8.0 | 9.0 | 10.0 |
+
+**Non-domestic buildings 非住用建築物** (First Schedule)
+
+| Height 高度 | SC % Class A | SC % Class B | SC % Class C | PR Class A | PR Class B | PR Class C |
+|---|---|---|---|---|---|---|
+| ≤ 15 m 不超逾15米 | 100 | 100 | 100 | 5 | 5 | 5 |
+| > 15 m, ≤ 18 m | 97.5 | 97.5 | 97.5 | 5.8 | 5.8 | 5.8 |
+| > 18 m, ≤ 21 m | 95 | 95 | 95 | 6.7 | 6.7 | 6.7 |
+| > 21 m, ≤ 24 m | 92 | 92 | 92 | 7.4 | 7.4 | 7.4 |
+| > 24 m, ≤ 27 m | 89 | 90 | 90 | 8.0 | 8.1 | 8.1 |
+| > 27 m, ≤ 30 m | 85 | 87 | 88 | 8.5 | 8.7 | 8.8 |
+| > 30 m, ≤ 36 m | 80 | 82.5 | 85 | 9.5 | 9.9 | 10.2 |
+| > 36 m, ≤ 43 m | 75 | 77.5 | 80 | 10.5 | 10.8 | 11.2 |
+| > 43 m, ≤ 49 m | 69 | 72.5 | 75 | 11.0 | 11.6 | 12.0 |
+| > 49 m, ≤ 55 m | 64 | 67.5 | 70 | 11.5 | 12.1 | 12.6 |
+| > 55 m, ≤ 61 m | 60 | 62.5 | 65 | 12.2 | 12.5 | 13.0 |
+| > 61 m 超逾61米 | 60 | 62.5 | 65 | 15 | 15 | 15 |
+
+<small>Full First Schedule from Cap. 123F, copied from the [B(P)R 18A–22 page](../regulations/bpr-18a-22.md#key-table-first-schedule-1-percentage-site-coverages-and-plot-ratios). Non-domestic buildings may have **100% SC up to 15 m** (podium) whatever their height (reg. 20(3)); composite buildings share PR by the reg. 21(2) formula; OZP limits may be stricter. 附表一全文；分區計劃大綱圖可能更嚴。</small>
 
 === "English"
 
@@ -143,6 +183,31 @@ Measured from the **mean level of the street** (the lowest, if streets are at di
     - **地契**：地契的最高總樓面面積／地積比率可能較低，設計前須核實；額外地積比率或彈性安排或須修訂地契及補地價。
 
 <!-- GUIDE APSEC START -->
+## Step 7: worked example, step by step 第七步：完整計算例子 {#step-7-worked-example}
+
+!!! warning "Illustrative only 只作說明"
+    Invented site; check site class, height measurement, OZP and lease for a real scheme. 虛構地盤。
+
+| Step 步驟 | Calculation 計算 | Result 結果 |
+|---|---|---|
+| 1. Site area 地盤面積 | Lot 1 450 m² − service lane 50 m² (excluded) + 0 dedicated | **1 400 m²** |
+| 2. Site class 地盤類別 | Corner site on two specified streets ≥ 4.5 m, abutting 45 % of boundary (≥ 40 %) | **Class B** |
+| 3. Height 高度 | Mean street level to roof over highest usable floor | **95 m** (> 61 m band) |
+| 4. Domestic tower 住用大廈 | SC **37.5 %** → 525 m² per floor; PR **9** → 12 600 m² | |
+| 5. Non-domestic podium 非住用平台 | 15 m podium at **100 % SC** (reg. 20(3)); shops 3 × 1 400 = 4 200 m²; non-domestic PR (> 61 m, Class B) **15** → used 4 200 ÷ 1 400 = **3.0** = 3 / 15 = **0.20** of permitted | |
+| 6. Composite formula 綜合公式 (reg. 21(2)) | Domestic PR allowed = 9 × (1 − 0.20) = **7.2** → 7.2 × 1 400 | **10 080 m²** domestic GFA |
+| 7. Concessions 寬免 | APP-151 capped items ≤ 10 % of GFA, pre-requisites met (APP-152, APP-156) | see [GFA guide](gfa.md#step-4-pre-requisites-and-the-10-cap-10) |
+| 8. Other limits 其他限制 | OZP PR / height (may be stricter); lease GFA; APP-152 building separation and setback | lowest governs |
+
+## Submission checklist 呈交清單 {#step-8-checklist}
+
+- [ ] Site area plan with lot boundary, lease plan / Land Survey Plan, streets and lanes excluded ([ADM-21](../pnap/adm-21.md)). 地盤面積圖。
+- [ ] Site classification with specified street evidence ([APP-124](../pnap/app-124.md)). 地盤類別證明。
+- [ ] Height measurement section (mean street level to main roof). 高度剖面。
+- [ ] SC diagrams **at every level** that changes, PR schedule by use; composite formula. 各層上蓋面積圖及地積比率表。
+- [ ] Bonus PR claims: dedication plans and Deed of Dedication ([APP-108](../pnap/app-108.md)); surrender ([APP-20](../pnap/app-20.md)). 額外地積比率。
+- [ ] OZP / lease compliance statement ([JPN 4](../pnap/jpn-4.md)). 分區計劃大綱圖及地契。
+
 ## Latest APSEC positions 最新 APSEC 立場 {#apsec-positions}
 
 BD's most recent clarifications on this topic from the [APSEC Discussion Forum](../apsec/index.md), newest first. Items later revisited are left out; only the **current position** is shown (20 relevant items in total). 屋宇署最新澄清，只列現行立場。

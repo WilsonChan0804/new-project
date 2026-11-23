@@ -5,6 +5,7 @@ tags:
   - Site safety 地盤安全
   - Site supervision 地盤監督
   - Registration 註冊
+  - Drainage 排水
 summary: "Building (Demolition Works) Regulations Cap. 123C: disconnection of services, fans and catch platforms, shoring, demolition sequence and supervision."
 keywords: Cap. 123C, demolition works, 拆卸工程, catch fan, shoring, demolition sequence, RSC demolition
 ---

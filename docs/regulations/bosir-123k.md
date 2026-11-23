@@ -6,6 +6,8 @@ tags:
   - Inspection 檢驗
   - Structural 結構
   - Site supervision 地盤監督
+  - A&A works 改動及加建工程
+  - Drainage 排水
 summary: "Building (Oil Storage Installations) Regulations Cap. 123K: design to minimise pollution, fire and explosion, licensing, operation instructions and inspections."
 keywords: Cap. 123K, oil storage installations, 油庫, licence, operation instructions, petroleum products, Standing Advisory Committee
 ---

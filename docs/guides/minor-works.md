@@ -28,6 +28,18 @@ keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指�
 
     Main sources 主要來源: [B(MW)R Cap. 123N](../regulations/bmwr-123n.md) · [MW Technical Guidelines](../regulations/mw-technical-guidelines.md) · [APP-147](../pnap/app-147.md) · [APP-148](../pnap/app-148.md) · [APP-149](../pnap/app-149.md) · [Cap. 123O fees](../regulations/bmwfr-123o.md) · [APP-155](../pnap/app-155.md)
 
+## Jump to 快速跳轉 {#jump}
+
+| Section 章節 | |
+|---|---|
+| Which route do the works take? 工程應走哪條途徑？ | [Go 前往](#choosing-the-route) |
+| Who does what, and by when? 誰負責甚麼、何時完成？ | [Go 前往](#who-does-what-and-when) |
+| Which contractor, signatory and fees? 承建商、簽署人及費用 | [Go 前往](#contractors-signatories-and-fees) |
+| Which form, and examples of classification 用哪份表格及分類例子 | [Go 前往](#mw-forms-examples) |
+| Can existing works be validated? 現有工程可否檢核？ | [Go 前往](#validation-schemes) |
+| Which technical requirements still apply? 仍須符合哪些技術要求？ | [Go 前往](#technical-requirements-to-remember) |
+| Latest APSEC positions 最新 APSEC 立場 | [Go 前往](#apsec-positions) |
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
@@ -87,6 +99,31 @@ keywords: minor works, 小型工程, MWCS, DEW, designated exempted works, 指�
 - **Registers**: RMWC (Company) for types and classes; RMWC (Individual) for Class III items ([APP-148](../pnap/app-148.md)). 公司按類型及級別註冊，個人按第 III 級別項目註冊。
 - **Authorised signatory**: one AS per submission, named on every form ([APP-149](../pnap/app-149.md)). 每份呈交一名獲授權簽署人。
 - **Fees**: e.g. company application **$2,920** (Class I), **$1,100** (Class II), **$730** (Class III only); individual **$290 / $155** ([Cap. 123O](../regulations/bmwfr-123o.md)). 費用見第 123O 章。
+
+## Which form, and examples of classification 用哪份表格及分類例子 {#mw-forms-examples}
+
+| Class 級別 | Before works 開工前 | After works 完工後 | Appointees 委任 |
+|---|---|---|---|
+| **I** | [MW01](../forms/mw.md#mw01) ≥ 7 days before, plans, [SP](../forms/mw.md#sp) | [MW02](../forms/mw.md#mw02) within 14 days | AP (or RI), RSE / RGE if needed, PRC |
+| **II** | [MW03](../forms/mw.md#mw03) ≥ 7 days before | [MW04](../forms/mw.md#mw04) within 14 days | PRC |
+| **III** | — ([MW32](../forms/mw.md#mw32) first for signboards) | [MW05](../forms/mw.md#mw05) within 14 days | PRC |
+| Changes 變更 | [MW07](../forms/mw.md#mw07) / [MW08](../forms/mw.md#mw08) / [MW09](../forms/mw.md#mw09) / [MW10](../forms/mw.md#mw10) / [MW31](../forms/mw.md#mw31) | within 7 days | — |
+| Validation 檢核 | — | [MW06-1/2/3](../forms/mw.md#mw06) + [VSR](../forms/mw.md#vsr) | — |
+
+**Classification examples (check the item conditions in Schedule 1) 分類例子（須核對附表 1 條件）**
+
+| Work 工程 | Likely route 可能途徑 |
+|---|---|
+| Slab opening 0.8 m² in a flat | Class II item 2.1 (≤ 1 m²) |
+| Slab opening 3 m² for an internal staircase | Class I item 1.2 (> 1 m², ≤ 4.5 m²) |
+| A/C bracket projecting 500 mm, unit 80 kg, > 3 m above ground | Class III item 3.27 |
+| Lightweight block wall in a flat (≤ 650 kg/m³, ≤ 3 m high, ≤ 75 mm thick) | Class III item 3.39 |
+| Replacing a window to the original design | Class III 3.6 / Class I 1.60 depending on height and size |
+| Small window security grille | **Designated exempted works** (Schedule 2), no submission |
+| Moving WCs / basins with new **above-ground** drainage | Type D minor works item (class per item) — recheck [sanitary fitment numbers](../regulations/sanitary-fitments.md) |
+| Removal of an unauthorised rooftop structure | Type G item (class depends on size / height) |
+
+Thresholds: [B(MW)R thresholds table](../regulations/bmwr-123n.md#key-table-thresholds-for-common-items). 門檻表。
 
 ## Can existing works be validated? 現有工程可否檢核？ {#validation-schemes}
 

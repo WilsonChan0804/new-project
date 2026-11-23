@@ -22,6 +22,9 @@ tags:
   - Barrier free access 無障礙
   - Site area & classification 地盤面積及分類
   - Energy efficiency 能源效率
+  - Plumbing & sanitary 衞生設備
+  - A&A works 改動及加建工程
+  - Industrial building 工業大廈
 summary: "How GFA is measured, what B(P)R 23(3)(b) disregards, and the APP-151/152 concessions and 10% cap."
 keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積寬免, 10% cap, disregarded GFA, APP-151, APP-152
 ---
@@ -33,6 +36,21 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
     一次過看清**總樓面面積**：如何量度、法例容許不計算的部分、可獲寬免的設施、APP-151 先決條件及 **10% 上限**、地契及分區計劃大綱圖的配合，以及 APSEC 的**最新澄清**。
 
     Main sources 主要來源: [B(P)R 23 & 23A](../regulations/bpr-23-23a.md) · [APP-2](../pnap/app-2.md) · [APP-151](../pnap/app-151.md) · [APP-152](../pnap/app-152.md) · [JPN 1](../pnap/jpn-1.md) · [JPN 2](../pnap/jpn-2.md) · [JPN 4](../pnap/jpn-4.md) · [APP-42](../pnap/app-42.md) · [APP-19](../pnap/app-19.md) · [APP-89](../pnap/app-89.md) · [APP-104](../pnap/app-104.md) · [APP-40](../pnap/app-40.md) · [APP-93](../pnap/app-93.md) · [APP-35](../pnap/app-35.md)
+
+## Jump to 快速跳轉 {#jump}
+
+| Section 章節 | |
+|---|---|
+| How is GFA worked out? 總樓面面積如何計算？ | [Go 前往](#the-big-picture) |
+| Step 1: how is GFA measured? 第一步：如何量度？ | [Go 前往](#step-1-measuring-gfa) |
+| Step 2: what does B(P)R 23(3)(b) leave out? 第二步：法例不計算甚麼？ | [Go 前往](#step-2-what-bpr-233b-disregards) |
+| Step 3: which features get a concession? 第三步：哪些設施獲寬免？ | [Go 前往](#step-3-concessions-by-modification) |
+| Step 4: what are the pre-requisites and the 10% cap? 第四步：先決條件及 10% 上限 | [Go 前往](#step-4-pre-requisites-and-the-10-cap-10) |
+| Step 5: how do the lease and OZP fit in? 第五步：地契及分區計劃大綱圖 | [Go 前往](#step-5-lease-and-ozp) |
+| Step 6: pre-requisites checklist for GFA concessions 第六步：寬免先決條件清單 | [Go 前往](#step-6-prerequisites-checklist) |
+| Step 7: GFA issues in A&A and change of use 第七步：改動加建及改變用途的總樓面面積問題 | [Go 前往](#step-7-aa-issues) |
+| Common mistakes 常見錯誤 | [Go 前往](#common-mistakes) |
+| Latest APSEC positions 最新 APSEC 立場 | [Go 前往](#apsec-positions) |
 
 ## At a glance 重點摘要 {#at-a-glance}
 
@@ -185,6 +203,26 @@ keywords: GFA, gross floor area, 總樓面面積, GFA concession, 樓面面積�
     - **一致的豁免**（JPN 4 附錄）：**第 I 組**三個制度均豁免；**第 II 組**地契有豁免條款才豁免（部分須**補地價**）；**第 III 組**個別考慮。
     - **環保設施**（[JPN 1](../pnap/jpn-1.md)）：須先取得屋宇署豁免，再處理地契（露台或須**補地價**）及分區計劃大綱圖（高度／上蓋面積；超出須申請略為放寬）。
     - **承諾書**：佔用許可證前須在土地註冊處登記並在**公契**指定為公用地方；日後圍封露台或工作平台會被視為僭建執法。
+
+## Step 6: pre-requisites checklist for GFA concessions 第六步：寬免先決條件清單 {#step-6-prerequisites-checklist}
+
+| Pre-requisite 先決條件 | What to submit 呈交 | When 何時 | Source 來源 |
+|---|---|---|---|
+| **SBD Guidelines**: building separation, setback, site coverage of greenery 可持續建築設計 | SBD compliance plans and calculations | With GBP | [APP-152](../pnap/app-152.md) |
+| **Energy efficiency (residential)**: RTTV<sub>wall</sub> ≤ 12.5, RTTV<sub>roof</sub> ≤ 3.5 W/m², clubhouse OTTV ≤ 20 / 40, NVTC, VLT ≥ 50 %, ER ≤ 20 % | Statement → summary sheets → Energy Efficiency Report | GBP → before consent → OP | [APP-156](../pnap/app-156.md) · [RTTV page](../codes/rttv-2014.md) |
+| **Energy (non-residential)**: OTTV tower ≤ 20, podium ≤ 40 W/m² | Summary sheet → OTTV Report | Before consent → OP | [APP-67](../pnap/app-67.md) · [OTTV page](../codes/ottv-1995.md) |
+| **BEAM Plus** registration and target rating 綠建環評 | Registration certificate; provisional / final assessment | With GBP / before OP | [APP-151](../pnap/app-151.md) |
+| Energy / sustainability information 能源資料 | Estimated energy consumption etc. | As required | [APP-151](../pnap/app-151.md) |
+
+## Step 7: GFA issues in A&A and change of use 第七步：改動加建及改變用途的總樓面面積問題 {#step-7-aa-issues}
+
+| Situation 情況 | Watch out 注意 | Source 來源 |
+|---|---|---|
+| Enclosing a balcony / utility platform granted concession 圍封露台或工作平台 | Becomes accountable GFA; usually exceeds PR → unauthorised works | [JPN 1](../pnap/jpn-1.md) · [JPN 2](../pnap/jpn-2.md) |
+| Converting a plant room / car park to other use 機房或停車場改作其他用途 | Disregarded area becomes GFA | [APP-2](../pnap/app-2.md) · [APP-35](../pnap/app-35.md) |
+| New mezzanine or floor slab infilling a void 加建閣樓或填補中空 | Adds GFA; check PR headroom and BO s.25 change of use | [APP-2](../pnap/app-2.md) |
+| Change of use domestic ↔ non-domestic 住用與非住用互換 | Different PR / SC; composite formula; sanitary fitments and loading change | [B(P)R 21](../regulations/bpr-18a-22.md) · [Sanitary fitments](../regulations/sanitary-fitments.md) · [BA15](../forms/nb-aa.md#ba15) |
+| Industrial building conversion 工廈改裝 | Wholesale conversion and lighting / ventilation modifications | [APP-150](../pnap/app-150.md) · [APP-130](../pnap/app-130.md) |
 
 ## Common mistakes 常見錯誤 {#common-mistakes}
 
