@@ -22,6 +22,12 @@ tags:
   - Green & amenity features 環保及適意設施
   - Geotechnical 岩土
   - A&A works 改動及加建工程
+  - Signboard 招牌
+  - Drainage 排水
+  - Plumbing & sanitary 衞生設備
+  - GFA 總樓面面積
+  - Means of access 救援通道
+  - Industrial building 工業大廈
 summary: "Index of all Buildings Department circular letters, by year, with links to summaries and the original PDFs."
 keywords: circular letter, 通告函件, Buildings Department, 屋宇署, index
 ---

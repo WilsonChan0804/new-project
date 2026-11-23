@@ -23,6 +23,13 @@ tags:
   - GFA 總樓面面積
   - Concrete & materials 混凝土及物料
   - Fire safety 消防安全
+  - Sustainable building design 可持續建築設計
+  - Means of access 救援通道
+  - Hotel 酒店
+  - Geotechnical 岩土
+  - Site area & classification 地盤面積及分類
+  - Refuse 垃圾
+  - Refuge floor 庇護層
 summary: "BD guidelines: residential energy efficiency (RTTV), glazing, ventilation, bamboo scaffolds, heritage A&A, water seepage, drainage maintenance, signboards, maintenance guidebook, greening, BIM, default-works surcharge, TMB UBW and minor works."
 keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency, visible light transmittance, natural ventilation, cross ventilation, thermal comfort
 ---
@@ -32,26 +39,38 @@ keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency
 !!! info "About these documents 文件性質"
     These guidelines are **not codes of practice**. They are advisory, unless a PNAP, a lease condition or a GFA concession makes them a condition, as **APP-151/156** do for the residential energy efficiency guidelines. Official list: [BD Guidelines](https://www.bd.gov.hk/en/resources/codes-and-references/codes-and-design-manuals/index.html). 以下指引屬建議性質，除非作業備考、地契或寬免條件另有規定。
 
-## Energy efficiency of residential buildings 2014 住宅建築物能源效率設計及建造規定指引 {#energy-efficiency-of-residential-buildings-2014}
+## Jump to 快速跳轉 {#jump}
 
-| | |
+| Guideline 指引 | Go 跳轉 |
 |---|---|
-| **Source** | [PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Guidelines_DCREERB2014e.pdf) (Sep 2014) |
-| **Used by** | [APP-156](../pnap/app-156.md) and [APP-151](../pnap/app-151.md) (a pre-requisite for GFA concessions) |
+| **RTTV** residential energy efficiency 住宅熱傳送值 | [Full page](rttv-2014.md) · [summary](#energy-efficiency-of-residential-buildings-2014) |
+| **OTTV** commercial and hotel 總熱傳送值 | [Full page](ottv-1995.md) |
+| Bamboo scaffolds 竹棚架 | [Section](#bamboo-scaffolds) |
+| Heritage buildings 歷史建築 | [Section](#heritage-buildings-adaptive-re-use-and-aa-2012-2021-edition) |
+| Water seepage in new buildings 預防滲水 | [Section](#water-seepage) |
+| Drainage and sanitary fitment maintenance 排水保養 | [Section](#drainage-maintenance) |
+| Advertising signs 招牌 | [Section](#advertising-signs) |
+| Abandoned / dangerous signboards 棄置招牌 | [Section](#abandoned-signboards) |
+| Building Maintenance Guidebook 樓宇維修指南 | [Section](#maintenance-guidebook) |
+| Greening in buildings 樓宇綠化 | [Section](#greening) |
+| BIM submissions 建築信息模擬 | [Section](#bim) |
+| Surcharge on defaulted works 違責工程附加費 | [Section](#surcharge) |
+| Rooftop / yard / lane / basement UBW 天台等違建 | [Section](#tmb) |
+| Minor works general guidelines 小型工程一般指引 | [Section](#mw-general-guidelines) |
 
-=== "English"
+## Energy efficiency: RTTV and OTTV 能源效率 {#energy-efficiency-of-residential-buildings-2014}
 
-    - **RTTV** (residential thermal transfer value): walls **≤ 14 W/m²**, roofs **≤ 4 W/m²**. Calculation forms and a deemed-to-satisfy route for walls are included.
-    - Glazing to prescribed windows: **visible light transmittance ≥ 50 %**, and control of glare.
-    - **Natural ventilation for thermal comfort**: cross ventilation (total room depth between openings ≤ **12 m**), or single-sided ventilation (room depth ≤ **4.5 m** from the window).
-    - **A/C heat rejection** at least **1.5 m** from the openable windows of adjacent units.
+!!! tip "Full pages 完整頁面"
+    - **[RTTV Guidelines 2014 (residential)](rttv-2014.md)**: formulas, Tables 1–9, deemed-to-satisfy Tables 15–20, natural ventilation, calculator. 住宅熱傳送值完整頁面。
+    - **[OTTV Code 1995 (commercial and hotel)](ottv-1995.md)**: formulas, Tables 1–9, exclusions, forms, calculator. 總熱傳送值完整頁面。
 
-=== "中文"
+| | RTTV (residential) | OTTV (commercial / hotel) |
+|---|---|---|
+| Current limits (plans from 31 Dec 2025) | Wall **12.5**, roof **3.5 W/m²** ([APP-156](../pnap/app-156.md)) | Tower **20**, podium **40 W/m²** ([APP-67](../pnap/app-67.md)) |
+| Glazing | VLT ≥ 50 % (prescribed windows); ER ≤ 20 % | — |
+| Ventilation | Cross ventilation path < 12 m, openable ≥ 1/8; single-sided depth ≤ 4.5 m, openable ≥ 1/5; A/C heat ≥ 1.5 m from neighbours' openings | — |
 
-    - **住宅熱傳送值**：外牆 **≤ 14 瓦／平方米**，天台 **≤ 4 瓦／平方米**；附計算表格及外牆「當作符合」方法。
-    - 訂明窗戶玻璃：**可見光透射率 ≥ 50%**，並控制眩光。
-    - **自然通風達致熱舒適**：對流通風（開口之間房間總深度 ≤ **12 米**），或單面通風（由窗起計房深 ≤ **4.5 米**）。
-    - **冷氣機散熱**須距相鄰單位可開啟窗戶最少 **1.5 米**。
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ## Bamboo scaffolds 竹棚架設計及建造指引 {#bamboo-scaffolds}
 
@@ -73,6 +92,8 @@ keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency
     - **防墮板**每 **15 米**一層（拆卸工程每 **10 米**），伸出最少 **1.5 米**並鋪鋅鐵片。
     - 高度超過 **15 米**的竹棚須由專業工程師設計；**挑棚**高度不超過 **6 米**。
 
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
+
 ## Heritage buildings: adaptive re-use and A&A 2012 (2021 Edition) 歷史建築活化再用及改動加建工程實用手冊 {#heritage-buildings-adaptive-re-use-and-aa-2012-2021-edition}
 
 | | |
@@ -81,6 +102,8 @@ keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency
 | **Related** | [APP-69](../pnap/app-69.md) |
 
 - Explains how building control applies to historic buildings, approaches for **adaptive re-use** and A&A works, and practical advice with **case examples** (Appendix I). It shows how the BA can accept **alternative solutions** under BO s.42 where full compliance would harm heritage value. 說明條例如何應用於歷史建築，以及以替代方案及第 42 條變通處理的做法，附個案。
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ## Other guidelines 其他指引 {#other-guidelines}
 
@@ -96,6 +119,8 @@ keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency
 | Surcharge on defaulted works 違責工程附加費 | Jan 2014 | Owners 業主 | [Surcharge](#surcharge) |
 | Prioritisation of actionable UBW (TMB) 天台、平台、天井、巷及地庫違建優次 | Apr 2016 | Owners 業主 | [TMB](#tmb) |
 | General Guidelines on the Minor Works Control System 小型工程監管制度一般指引 | 2010 edition | Public 公眾 | [MW general guidelines](#mw-general-guidelines) |
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ### Prevention of water seepage in new buildings (Mar 2005) 預防新建樓宇滲水指引 {#water-seepage}
 
@@ -114,6 +139,8 @@ keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency
 
 Related: [APP-93 pipe ducts](../pnap/app-93.md) · [APP-68 construction joints](../pnap/app-68.md) · [Concrete code](concrete-2013.md) · [External maintenance code](external-maintenance-2021.md) · [Water seepage circulars](../circulars/topics.md).
 
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
+
 ### Maintenance and repair of drainage systems and sanitary fitments 排水系統及衞生設備保養及維修指引 {#drainage-maintenance}
 
 [PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Drainage-System-Guideline-Eng.PDF) · 1-page owners' leaflet. 業主單張。
@@ -128,6 +155,8 @@ Related: [APP-93 pipe ducts](../pnap/app-93.md) · [APP-68 construction joints](
 | **Professional help** 專業協助 | Serious or unclear problems: appoint an **AP**; BD hotline **2626 1616**. 委任認可人士。 |
 
 Related: [APP-58 drainage tests](../pnap/app-58.md) · [B(SSFP&D)R](../regulations/bsfpwr-123i.md) · [Drainage repair orders, BO s.28](../regulations/bo-part-2-enforcement.md).
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ### Erection and maintenance of advertising signs 招牌豎設及保養指引 {#advertising-signs}
 
@@ -160,6 +189,8 @@ Related: [APP-58 drainage tests](../pnap/app-58.md) · [B(SSFP&D)R](../regulatio
 
 Related: [APP-126 Erection of signboards](../pnap/app-126.md) · [APP-155 Signboard validation](../pnap/app-155.md) · [Minor works guide](../guides/minor-works.md) · [MW32 / MW05 forms](../forms/mw.md#mw32).
 
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
+
 ### Identification of abandoned or dangerous signboards 識別棄置或危險招牌指引 {#abandoned-signboards}
 
 [PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Guide_signboards_e.pdf) · 3 pages with photos.
@@ -172,6 +203,8 @@ BD serves **Dangerous Structure Removal Notices** under the **Public Health and 
 | **Dangerous** 危險 | (a) frame or supports (members, bracing, suspension wires) not intact, dilapidated or heavily rusted; (b) fixings to the building show structural danger (loose / rusty plates or anchor bolts, cracks); (c) frame or display surface seriously damaged (torn, loosely hung or missing, exposing lights). 支架殘破銹蝕；固定點有危險；顯示面嚴重損壞。 | Damaged display; distorted frame; corroded frame and tilted display 顯示面損壞；支架變形；支架銹蝕傾斜 |
 
 Related: [APP-155](../pnap/app-155.md) · [APP-126](../pnap/app-126.md) · [Advertising signs](#advertising-signs).
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ### Building Maintenance Guidebook (Jun 2002) 樓宇維修指南 {#maintenance-guidebook}
 
@@ -187,6 +220,8 @@ Related: [APP-155](../pnap/app-155.md) · [APP-126](../pnap/app-126.md) · [Adve
 | FAQ and appendices 常見問題及附錄 | Concise answers to common problems; list of codes of practice (App. 3). |
 
 Related: [MBIS / MWIS code](mbis-mwis-2012.md) · [External maintenance code](external-maintenance-2021.md) · [BO enforcement](../regulations/bo-part-2-enforcement.md).
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ### Greening in buildings 樓宇綠化指引 {#greening}
 
@@ -207,6 +242,8 @@ Related: [MBIS / MWIS code](mbis-mwis-2012.md) · [External maintenance code](ex
 **Table 1 (summary)**: *New building*: appoint AP / RSE; cater for greening in design; show it on building, structural and drainage plans. *Existing building*: consult professionals; assess structure, drainage and fire safety; submit plans if A&A or strengthening is needed; appoint a registered contractor. *Existing approved greening*: keep use consistent with design. *Unapproved greening*: get assessment; rectify defects; remove at once if overloading or safety concerns. 表 1 摘要。
 
 Related: [APP-152 sustainable building design](../pnap/app-152.md) · [APP-19 planters](../pnap/app-19.md) · [Loading code](dil-2011.md) · [JPN 1 / 2 sky gardens](../pnap/jpn-1.md).
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ### BIM in statutory submissions 建築信息模擬呈交指引 {#bim}
 
@@ -229,6 +266,8 @@ Related: [APP-152 sustainable building design](../pnap/app-152.md) · [APP-19 pl
 
 Related: [ADM-17 e-submission](../pnap/adm-17.md) · [GFA guide](../guides/gfa.md) · [APP-152 SBD](../pnap/app-152.md).
 
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
+
 ### Surcharge on defaulted works (Jan 2014) 違責工程附加費 {#surcharge}
 
 [PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/IG_ISDWe.pdf) · summary of BD internal guidelines. When owners fail to comply with orders, BD's contractor (BDC) does the works under a default works consultant (DWC); BD recovers cost and supervision charges plus a surcharge **≤ 20%** under **BO s.33** (as amended from **20 July 2012**). 業主不遵從命令時，屋宇署代做並收取不多於 20% 附加費。
@@ -247,6 +286,8 @@ Proof: age at the date of service of the order; medical certificate or SWD refer
 
 Related: [BO Part 2 enforcement](../regulations/bo-part-2-enforcement.md) · [BO Part 3](../regulations/bo-part-3-miscellaneous.md) · [MBIS / MWIS](mbis-mwis-2012.md).
 
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
+
 ### Prioritisation of actionable UBW on rooftops, flat roofs, yards, lanes and basements (Apr 2016) 天台、平台、天井、巷及地庫違建執法優次 {#tmb}
 
 [PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/dev0620cb1-2487-1-AnnexG_e.pdf) · extract of BD internal guidelines.
@@ -259,6 +300,8 @@ Related: [BO Part 2 enforcement](../regulations/bo-part-2-enforcement.md) · [BO
 | Ranking 次序 | 2011 and 2012 queues: earliest date known to BD (incl. warning notices). After 2012: **current report date only**. 2012 年後按舉報日期。 |
 
 Related: [UBW enforcement, BO s.24](../regulations/bo-part-2-enforcement.md) · [APP-47](../pnap/app-47.md) · [Circulars on UBW](../circulars/topics.md).
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ### General Guidelines on the Minor Works Control System 小型工程監管制度一般指引 {#mw-general-guidelines}
 
@@ -277,6 +320,8 @@ Related: [UBW enforcement, BO s.24](../regulations/bo-part-2-enforcement.md) · 
 
 Related: [APP-147](../pnap/app-147.md) · [Minor works guide](../guides/minor-works.md) · [Minor works forms](../forms/mw.md).
 
+
+<small>[↑ Back to jump list 返回目錄](#jump)</small>
 
 ## Related 相關文件 {#related}
 

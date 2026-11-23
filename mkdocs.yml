@@ -427,6 +427,8 @@ nav:
       - Demolition 2004 拆卸: codes/demolition-2004.md
       - MBIS & MWIS 2012 強制驗樓驗窗: codes/mbis-mwis-2012.md
       - Oil storage 1992 & caverns 1994 貯油及岩洞: codes/oil-storage-caverns.md
+      - OTTV 1995 總熱傳送值 (commercial 商業): codes/ottv-1995.md
+      - RTTV 2014 住宅熱傳送值 (residential 住宅): codes/rttv-2014.md
       - Older codes 舊守則: codes/superseded-codes.md
       - BD Guidelines 屋宇署指引: codes/bd-guidelines.md
   - Glossary 詞彙: glossary.md

@@ -11,6 +11,8 @@ tags:
   - Plan submission & approval 呈交及審批
   - Occupation permit 佔用許可證
   - Lift 升降機
+  - Hotel 酒店
+  - Minor works 小型工程
 summary: "Cap. 123I Part II in full: occupancy rates, male:female ratios and Tables 1–28 for the number of WCs, urinals, basins and baths, with a calculator, worked examples and an A&A checklist."
 keywords: sanitary fitments, sanfit, 衞生設備數目, Table 5, Table 26, WC, urinal, lavatory basin, 水廁, 尿廁, 洗手盆, usable floor area, 實用樓面面積, 1:1.5
 ---

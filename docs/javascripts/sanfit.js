@@ -103,3 +103,39 @@
   if (window.document$ && document$.subscribe) document$.subscribe(init);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
+/* RTTVwall and OTTV wall calculators */
+(function () {
+  function v(id) { var e = document.getElementById(id); return e ? parseFloat(e.value) || 0 : 0; }
+  function initR() {
+    var r = document.getElementById("rttv-calc");
+    if (!r || r.dataset.ready) return; r.dataset.ready = "1";
+    function run() {
+      var w = v("rt-wwr"), g = v("rt-or");
+      var c1 = 3.57 * (1 - w) * v("rt-uw") * v("rt-a") * g, c2 = 0.64 * w * v("rt-uf") * g, c3 = 41.75 * w * v("rt-sc") * v("rt-esc") * g;
+      var t = c1 + c2 + c3;
+      document.getElementById("rt-out").innerHTML = "<p>Opaque wall " + c1.toFixed(2) + " + glazing conduction " + c2.toFixed(2) + " + solar " + c3.toFixed(2) +
+        " = <b>RTTVwall " + t.toFixed(2) + " W/m²</b> — " + (t <= 12.5 ? "within 12.5 (APP-156) 符合" : "exceeds 12.5 (APP-156) 超出") + "</p>";
+    }
+    r.querySelectorAll("input,select").forEach(function (e) { e.addEventListener("input", run); e.addEventListener("change", run); }); run();
+  }
+  var TDEQ = { N: [3.70,3.38,2.72,2.05,1.70], NE: [5.60,5.03,3.86,2.67,2.05], E: [7.50,6.68,5.01,3.28,2.40], SE: [6.60,5.85,4.30,2.71,1.90],
+    S: [5.70,5.01,3.60,2.15,1.40], SW: [6.60,5.82,4.23,2.59,1.75], W: [6.50,5.79,4.35,2.86,2.10], NW: [5.10,4.59,3.54,2.45,1.90] };
+  var SF = { N: 104, NE: 138, E: 168, SE: 197, S: 191, SW: 202, W: 175, NW: 138 };
+  function initO() {
+    var r = document.getElementById("ottv-calc");
+    if (!r || r.dataset.ready) return; r.dataset.ready = "1";
+    function run() {
+      var o = document.getElementById("ot-or").value, d = v("ot-den");
+      var band = d < 22 ? 0 : d < 200 ? 1 : d < 380 ? 2 : d < 570 ? 3 : 4;
+      var td = TDEQ[o][band], sf = SF[o];
+      var aw = v("ot-aw"), af = v("ot-af");
+      var q1 = aw * v("ot-u") * v("ot-a") * td, q2 = af * v("ot-sc") * v("ot-esm") * sf, t = (aw + af) > 0 ? (q1 + q2) / (aw + af) : 0;
+      document.getElementById("ot-out").innerHTML = "<p>TD<sub>EQ</sub> " + td + " °C, SF " + sf + " W/m² → (" + q1.toFixed(0) + " + " + q2.toFixed(0) + ") / " + (aw + af).toFixed(1) +
+        " = <b>OTTV " + t.toFixed(2) + " W/m²</b> (limits: tower 20, podium 40 — APP-67)</p>";
+    }
+    r.querySelectorAll("input,select").forEach(function (e) { e.addEventListener("input", run); e.addEventListener("change", run); }); run();
+  }
+  function all() { try { initR(); initO(); } catch (e) { console.error("thermal", e); } }
+  if (window.document$ && document$.subscribe) document$.subscribe(all);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", all); else all();
+})();

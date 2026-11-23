@@ -22,6 +22,13 @@ tags:
   - A&A works 改動及加建工程
   - Wind 風力
   - Lift 升降機
+  - Signboard 招牌
+  - GFA 總樓面面積
+  - Drainage 排水
+  - Staircase 樓梯
+  - Plumbing & sanitary 衞生設備
+  - Means of access 救援通道
+  - Barrier free access 無障礙
 summary: "BD circular letters grouped by topic, with status and links to the related Codes and PNAPs."
 keywords: circular letter, 通告函件, topic, 主題
 ---
