@@ -39,6 +39,9 @@ keywords: submission, approval, consent, 批准, 同意, occupation permit, 佔�
 
     Main sources 主要來源: [BO s.14–21](../regulations/bo-part-2-building-works.md) · [B(A)R](../regulations/bar-123a.md) · [ADM-19](../pnap/adm-19.md) · [ADM-2](../pnap/adm-2.md) · [APP-60](../pnap/app-60.md) · [ADV-33](../pnap/adv-33.md) · [APP-97](../pnap/app-97.md) · [APP-13](../pnap/app-13.md) · [APP-78](../pnap/app-78.md) · [APP-162](../pnap/app-162.md) · [APP-157](../pnap/app-157.md)
 
+!!! tip "Detailed guides 詳細指南"
+    [GBP submission (new and A&A)](gbp-submission.md) · [OP application and A&A completion](op-application.md)
+
 ## Jump to 快速跳轉 {#jump}
 
 | Section 章節 | |
