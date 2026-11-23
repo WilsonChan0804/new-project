@@ -5,7 +5,9 @@
 :root {
   --brand: #F08020;
   --brand-ink: #9a3412;            /* orange text on white (the active tab) */
-  --hdr-h: 56px;
+  /* the header's height, with the iPhone's status bar / Dynamic Island above
+     it when the app runs full screen (viewport-fit=cover) */
+  --hdr-h: calc(56px + env(safe-area-inset-top, 0px));
   /* one meaning per colour, on every page */
   --c-overdue: var(--bad);         /* red: overdue, blocking, critical */
   --c-open: var(--warn);           /* amber: open, waiting */
@@ -23,7 +25,8 @@
 /* ------------------------------------------------------------ header */
 header.app-head {
   display: flex !important; flex-wrap: nowrap !important; align-items: center; gap: 12px !important;
-  height: var(--hdr-h) !important; min-height: var(--hdr-h) !important; padding: 0 16px !important;
+  height: var(--hdr-h) !important; min-height: var(--hdr-h) !important; box-sizing: border-box;
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)) !important;
   background: var(--brand) !important; color: #fff; font-size: 14px !important;
   box-shadow: none; overflow: visible; position: relative; z-index: 30;
 }
@@ -158,7 +161,7 @@ header.app-head #lwk-nav .who, header.app-head #lwk-nav a[href*="admin.html"], h
   .hd-proj .hd-pt b, .hd-proj .hd-pt small { max-width: 110px; }
 }
 @media (max-width: 760px) {
-  :root { --hdr-h: 52px; }
+  :root { --hdr-h: calc(52px + env(safe-area-inset-top, 0px)); }
   header.app-head { gap: 6px !important; padding: 0 8px !important; }
   header.app-head .hd-brand { display: none !important; }
   .hd-proj { padding: 0 6px 0 4px !important; gap: 6px; }

@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-15", date: "23 Nov 2026",
+    items: [
+      "**iPhone: the orange header clears the Dynamic Island** - when the viewer runs from the Home Screen, the header now starts below the status bar (and beside the notch on its side), on every page.",
+    ],
+  },
+  {
     version: "2027-02-14", date: "23 Nov 2026",
     items: [
       "**Programme on a phone** - upright or on its side, the toolbar is one row you swipe sideways (Fit and View are back), and the summary and categories take one line each, so the chart gets most of the screen.",
