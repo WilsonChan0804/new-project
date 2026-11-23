@@ -9,14 +9,16 @@
 import { areaXY } from "./sitecore.js";
 
 export const USES = {
-  dom: { label: "Domestic", acc: 100, cls: "dom", color: "#f2a25c" },
-  non: { label: "Non-domestic", acc: 100, cls: "non", color: "#5b8fd6" },
-  club: { label: "Clubhouse", acc: 0, cls: "dom", color: "#e3c25a" },
-  car: { label: "Car park", acc: 0, cls: "non", color: "#9aa3ad" },
-  em: { label: "E&M / plant", acc: 0, cls: "non", color: "#9a7fc4" },
-  refuge: { label: "Refuge floor", acc: 0, cls: "dom", color: "#5fb36b" },
-  lobby: { label: "Lobby / G/F", acc: 100, cls: "dom", color: "#e88e7a" },
-  void: { label: "Void / transfer", acc: 0, cls: "non", color: "#c9ced4" },
+  dom: { label: "Domestic", acc: 100, cls: "dom", color: "#f3cf8a", cap: true },
+  non: { label: "Non-domestic", acc: 100, cls: "non", color: "#8fb3e8", cap: true },
+  lobby: { label: "Lobby / G/F", acc: 100, cls: "dom", color: "#f2a99a", cap: true },
+  club: { label: "Clubhouse", acc: 0, cls: "dom", color: "#f6e3a1" },
+  car: { label: "Car park", acc: 0, cls: "non", color: "#c9cdd3" },
+  em: { label: "E&M / plant floor", acc: 0, cls: "non", color: "#c8b8e8" },
+  refuge: { label: "Refuge floor", acc: 0, cls: "dom", color: "#a9dcb4" },
+  transfer: { label: "Transfer plate", acc: 0, cls: "non", color: "#e4e7eb", storey: false },
+  emzone: { label: "E&M zone (not a storey)", acc: 0, cls: "non", color: "#ddd3f0", storey: false },
+  void: { label: "Void", acc: 0, cls: "non", color: "#eef0f2" },
 };
 
 /* FS Code 2011 Clause B18 (refuge floors):
@@ -35,7 +37,7 @@ export function stacks(m) {
     if (!b.on || !byId[b.on] || seen.has(b.id)) return 0;
     seen.add(b.id);
     const p = byId[b.on];
-    return base(p, seen) + groupsOf(p).reduce((s, g) => s + g.n, 0);
+    return base(p, seen) + groupsOf(p).reduce((s, g) => s + ((g.storey == null ? (USES[g.use] || USES.dom).storey !== false : g.storey) ? g.n : 0), 0);
   };
   const zOf = (b, seen = new Set()) => {
     if (!b.on || !byId[b.on] || seen.has(b.id)) return 0;
@@ -50,10 +52,13 @@ export function stacks(m) {
     const storeys = [];
     for (const g of groupsOf(b)) {
       const u = USES[g.use] || USES.dom;
+      const isStorey = g.storey == null ? u.storey !== false : !!g.storey;
       for (let i = 0; i < g.n; i++) {
-        const acc = g.acc == null || g.acc === "" ? u.acc : Number(g.acc);
-        const gfa = Math.max(0, a * acc / 100 - (Number(g.conc) || 0));
-        storeys.push({ block: b.id, no: ++k, use: g.use, cls: u.cls, h: g.h, z0: z, z1: z + g.h, area: a, gfa, conc: Math.min(Number(g.conc) || 0, a * acc / 100) });
+        const acc = Math.max(0, Math.min(100, g.acc == null || g.acc === "" ? u.acc : Number(g.acc)));
+        const gfa = a * acc / 100;
+        // the floor area not counted is the concession; any extra (balconies, UP outside the footprint) on top
+        const conc = a - gfa + (Number(g.extra) || 0);
+        storeys.push({ block: b.id, no: isStorey ? ++k : null, storey: isStorey, use: g.use, cls: u.cls, cap: !!u.cap, h: g.h, z0: z, z1: z + g.h, area: a, gfa, conc });
         z += g.h;
       }
     }
@@ -62,7 +67,7 @@ export function stacks(m) {
   return out;
 }
 function groupsOf(b) {
-  return (b.groups || []).map((g) => ({ use: g.use || "dom", n: Math.max(0, Math.round(Number(g.n) || 0)), h: Math.max(0, Number(g.h) || 0), acc: g.acc, conc: g.conc }));
+  return (b.groups || []).map((g) => ({ use: g.use || "dom", n: Math.max(0, Math.round(Number(g.n) || 0)), h: Math.max(0, Number(g.h) || 0), acc: g.acc, extra: g.extra != null ? g.extra : g.conc, storey: g.storey }));
 }
 
 /* the buildings: each top block with everything under it, storeys bottom up */
@@ -82,7 +87,8 @@ export function buildings(m) {
 }
 
 /* refuge floors for one building's storeys -> {need, why, due: [storey no], ok} */
-export function refuge(storeys, uc6) {
+export function refuge(all, uc6) {
+  const storeys = (all || []).filter((s) => s.storey !== false);
   const every = uc6 ? REFUGE.everyUc6 : REFUGE.every;
   const counted = storeys.filter((s) => s.use !== "refuge").length;
   const placed = storeys.filter((s) => s.use === "refuge").map((s) => s.no);
@@ -135,18 +141,18 @@ export function inside(p, x, y) {
 /* the figures: GFA, SC, PR, heights, storeys, refuge */
 export function figures(m, siteArea, level, uc6) {
   const st = stacks(m);
-  let dom = 0, non = 0, conc = 0;
-  for (const x of st) for (const s of x.storeys) { if (s.cls === "dom") dom += s.gfa; else non += s.gfa; conc += s.conc; }
+  let dom = 0, non = 0, conc = 0, capConc = 0;
+  for (const x of st) for (const s of x.storeys) { if (s.cls === "dom") dom += s.gfa; else non += s.gfa; conc += s.conc; if (s.cap) capConc += s.conc; }
   const covered = unionArea(st.filter((x) => x.storeys.length).map((x) => x.block.fp));
   const bs = buildings(m).map((b) => {
     const top = b.storeys.length ? b.storeys[b.storeys.length - 1].z1 : 0;
     const lv = Number(level);
-    return { top: b.top, storeys: b.storeys.length, height: top, mpd: level === "" || level == null || isNaN(lv) ? null : lv + top, refuge: refuge(b.storeys, uc6) };
+    return { top: b.top, storeys: b.storeys.filter((x) => x.storey !== false).length, height: top, mpd: level === "" || level == null || isNaN(lv) ? null : lv + top, refuge: refuge(b.storeys, uc6) };
   });
   const A = Number(siteArea) || 0;
   const r = (x) => Math.round(x * 1000) / 1000;
   return {
-    dgfa: r(dom), ngfa: r(non), gfa: r(dom + non), conc: r(conc), covered: r(covered),
+    dgfa: r(dom), ngfa: r(non), gfa: r(dom + non), conc: r(conc), capConc: r(capConc), covered: r(covered),
     sc: A ? r(covered / A * 100) : null, dpr: A ? r(dom / A) : null, npr: A ? r(non / A) : null, pr: A ? r((dom + non) / A) : null,
     storeys: bs.length ? Math.max(...bs.map((b) => b.storeys)) : 0,
     height: bs.length ? Math.max(...bs.map((b) => b.height)) : 0,
@@ -172,16 +178,16 @@ export function against(f, rows) {
 
 /* the boundary offset inwards by d m (each edge moved in, its ends where the
    moved neighbours meet) - for a podium set back from the site */
-export function inset(xy, d) {
-  const n = xy.length;
-  if (n < 3 || !d) return xy.map((p) => p.slice());
+export function inset(xy, dd) {
+  const n = xy.length, dOf = (i) => (Array.isArray(dd) ? Number(dd[i]) || 0 : Number(dd) || 0);
+  if (n < 3 || (!Array.isArray(dd) && !dd)) return xy.map((p) => p.slice());
   let s = 0;
   for (let i = 0; i < n; i++) { const [x1, y1] = xy[i], [x2, y2] = xy[(i + 1) % n]; s += x1 * y2 - x2 * y1; }
   const sg = s > 0 ? 1 : -1; // anticlockwise: inward is to the left
   // inward normal: (-dy, dx) for anticlockwise
   const L2 = xy.map((a, i) => {
     const b = xy[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
-    const nx = -dy / L * sg, ny = dx / L * sg;
+    const nx = -dy / L * sg, ny = dx / L * sg, d = dOf(i);
     return { p: [a[0] + nx * d, a[1] + ny * d], dir: [dx, dy] };
   });
   const out = [];
@@ -224,3 +230,27 @@ export function toObj(m, level) {
   }
   return out;
 }
+
+/* the set-back of each footprint edge from the site boundary: the
+   perpendicular distance to the nearest near-parallel site edge -> [m|null] */
+export function setbacks(fp, site) {
+  const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]);
+  return fp.map((a, i) => {
+    const b = fp[(i + 1) % fp.length], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], t = ang(a, b);
+    let best = null;
+    site.forEach((p, j) => {
+      const q = site[(j + 1) % site.length];
+      let d = Math.abs(((t - ang(p, q)) + Math.PI * 2) % Math.PI);
+      d = Math.min(d, Math.PI - d);
+      if (d > 10 * Math.PI / 180) return;
+      const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1;
+      const u = ((m[0] - p[0]) * dx + (m[1] - p[1]) * dy) / (L * L);
+      if (u < -0.2 || u > 1.2) return;
+      const dist = Math.abs((m[0] - p[0]) * dy - (m[1] - p[1]) * dx) / L;
+      if (best == null || dist < best) best = dist;
+    });
+    return best;
+  });
+}
+/* the polygon grown (d > 0) or shrunk (d < 0) by d m */
+export const grow = (xy, d) => inset(xy, -d);

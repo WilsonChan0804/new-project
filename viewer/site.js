@@ -127,7 +127,7 @@ function draw() {
     const rd = st != null ? s.roads[st] || {} : null;
     const lab = (st != null ? `${esc(roadName(s, st, no))}${rd.width ? " · " + rd.width + " m" : ""} · ` : "") + `${f1(lens[i])} m`;
     line.bindTooltip(lab, { permanent: true, direction: "center", className: "st-edge-lab" + (st ? " st" : "") });
-    if (CAN) {
+    if (CAN && !document.body.classList.contains("st-mass")) {
       line.on("click", (ev) => {
         L.DomEvent.stop(ev);
         if (drawing) return;
@@ -139,7 +139,7 @@ function draw() {
       line.on("mouseout", () => line.setStyle({ weight: st ? 8 : 3 }));
     }
   });
-  if (CAN && !drawing && PICK == null && !MEAS) s.pts.forEach((p, i) => {
+  if (CAN && !drawing && PICK == null && !MEAS && !document.body.classList.contains("st-mass")) s.pts.forEach((p, i) => {
     const m = L.marker(p, { draggable: true, icon: L.divIcon({ className: "st-vx", iconSize: [14, 14] }), title: "Drag to move this corner; right-click to remove it" }).addTo(layer);
     m.on("drag", (ev) => { const ll = ev.target.getLatLng(); s.pts[i] = [ll.lat, ll.lng]; drawLight(); });
     m.on("dragend", () => { draw(); panel(); save(); });
@@ -147,7 +147,7 @@ function draw() {
   });
   drawMeasures();
   // a corner can be added on the middle of each edge
-  if (CAN && !drawing && PICK == null && !MEAS) s.pts.forEach((p, i) => {
+  if (CAN && !drawing && PICK == null && !MEAS && !document.body.classList.contains("st-mass")) s.pts.forEach((p, i) => {
     const q = s.pts[(i + 1) % s.pts.length];
     const m = L.marker([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], { icon: L.divIcon({ className: "st-mid", iconSize: [10, 10] }), title: "Click to add a corner here" }).addTo(layer);
     m.on("click", (ev) => { L.DomEvent.stop(ev); addCorner(i); });
@@ -678,7 +678,7 @@ function wireFind() {
   else if (s.view && s.view.c) map.setView(s.view.c, s.view.z || 16);
   draw(); panel(); tools();
   MS.init({
-    study, save, can: () => CAN, map: () => map, L: L_, siteArea: () => siteAreaOf(study()),
+    hint, study, save, can: () => CAN, map: () => map, L: L_, siteArea: () => siteAreaOf(study()),
     potential: () => { const s2 = study(); return potentialOf(s2, siteAreaOf(s2), s2.pts.length >= 3 ? clsOf(s2) : null).rows; },
     sendToWorkbook: ({ gfaTotal, height }) => {
       const q = WB.data.quick || (WB.data.quick = {});
@@ -690,7 +690,7 @@ function wireFind() {
   });
   const setMode = (m) => {
     for (const b of document.querySelectorAll(".st-mode [data-mode]")) b.classList.toggle("on", b.dataset.mode === m);
-    stopModes(); MS.show(m === "mass"); if (m !== "mass") { draw(); panel(); tools(); }
+    stopModes(); MS.show(m === "mass"); draw(); if (m !== "mass") { panel(); tools(); }
     try { sessionStorage.setItem("lwk-viewer:site-mode", m); } catch (e) {}
   };
   document.querySelector(".st-mode").addEventListener("click", (ev) => { const b = ev.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });

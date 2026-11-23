@@ -138,8 +138,30 @@ body.st-mass #st-tools, body.st-mass .st-find, body.st-mass #st-hits { display: 
 .ms-groups { width: 100%; border-collapse: collapse; font-size: 12px; }
 .ms-groups th { text-align: left; font-size: 10.5px; color: var(--muted); font-weight: 600; padding: 2px; }
 .ms-groups td { padding: 2px; }
-.ms-groups select { font-size: 12px; max-width: 120px; }
+.ms-groups select { font-size: 12px; width: 104px; }
 .ms-groups input { width: 54px; font-size: 12px; }
 .ms-groups .nw { white-space: nowrap; }
 .ms-add { margin-bottom: 10px; }
 .ms-move { background: #fff; border: 2px solid #d1660e; border-radius: 50%; text-align: center; line-height: 18px; font-size: 14px; color: #d1660e; cursor: move; box-sizing: border-box; }
+.st-views select, .st-views input[type=range] { margin: 0 6px; font-size: 12px; align-self: center; }
+.st-views { background: var(--panel); align-items: center; }
+.ms-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--c); margin-right: 3px; vertical-align: middle; border: 1px solid rgba(0,0,0,.15); }
+.ms-groups td:first-child { white-space: nowrap; }
+.ms-groups td.num { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ms-groups input[type=checkbox] { width: auto; }
+.ms-tools { display: flex; flex-direction: column; gap: 4px; font-size: 12px; margin-bottom: 6px; }
+.ms-tools b { display: inline-block; width: 46px; color: var(--muted); font-weight: 600; }
+.ms-tools input { width: 56px; }
+.ms-tools select { font-size: 12px; }
+.ms-elab span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; background: rgba(255,255,255,.92); border: 1px solid #c9a27a; border-radius: 4px; padding: 0 4px; font-size: 10.5px; color: #333; }
+.ms-elab b { color: #d1660e; }
+.ms-over { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ms-over span { position: absolute; transform: translate(4px, -50%); font-size: 11px; background: rgba(255,255,255,.85); padding: 0 4px; border-radius: 3px; white-space: nowrap; color: #444; }
+.ms-over span.lim { color: #cf222e; transform: translate(-100%, -120%); }
+.ms-groups select { width: 104px; }
+.ms-groups input[type=number] { width: 46px; }
+.ms-groups select { width: 92px; }
+.ms-groups input[type=number] { width: 40px; padding-left: 3px; padding-right: 2px; }
+.ms-groups .st-ib { padding: 1px 4px; }
+.ms-sw { display: none; }
+.ms-groups tr { box-shadow: inset 3px 0 0 var(--c); }

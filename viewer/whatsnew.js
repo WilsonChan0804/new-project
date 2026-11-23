@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-02", date: "23 Nov 2026",
+    items: [
+      "**Massing: lighter colours** (pastel blocks, a pale site, white streets, soft shadows) and the **areas follow while you drag** a corner or the block; click the dot on a footprint edge to **add a corner**, right-click one to remove it. Each edge shows its length and its **set-back to the boundary**.",
+      "**GFA % gives the concession**: the floor area not counted is the concession (with an extra for balconies or utility platforms outside the footprint); only domestic and non-domestic ones count toward the 10% cap. **Transfer plates and E&M zones** can be layers that are **not storeys** (the St. tick): they add height but not storeys or refuge counts.",
+      "**Precise footprints**: the site set back by a distance (click a site edge on the plan for its own set-back), a rectangle **width × depth squared to a site edge**, or a footprint grown / shrunk by a distance; **📏 measure** in Massing. **Elevation** (from any site edge, levels in mPD and the height limit dashed red) and **Section** (a slider), PNG of each; **+ Context** draws neighbouring buildings with their height, and the Lands Department map lies under the 3D view.",
+    ],
+  },
+  {
     version: "2027-03-01", date: "23 Nov 2026",
     items: [
       "**Site study 2 · Massing** - add a **podium** (the site set back) and **towers** (a rectangle of the area you give) standing on it; drag a block's corners or ✥ on the map. Each block is a stack of floor groups: use (domestic, non-domestic, clubhouse, car park, E&M, refuge, lobby, void), storeys, storey height, the share counted as GFA and the concessions per floor.",
