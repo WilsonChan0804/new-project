@@ -73,7 +73,7 @@ A topic guide can open the viewer's **GBP workbook** at a part, beside the page,
 
 - **Parts:**
   - `site` (site, PR and SC; also `sc`, `pr`);
-  - `gfa` (GFA and APP-151 concessions);
+  - `gfa` (GFA concessions: the 10% cap, APP-151);
   - `moe` (occupancy and exits; also `occupancy`, `exits`);
   - `stairs` (staircase discharge; also `discharge`).
 - **Placement:** put the link on its own line, in the section that explains that calculation. The viewer shows it as a button.

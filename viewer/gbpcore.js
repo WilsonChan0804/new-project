@@ -394,3 +394,23 @@ export function exitsFor5a(load) {
   const r = B5.find((b) => n >= b.from && n <= b.to);
   return { n: r.n, routes: r.routes, doors: null, route: null, door: null, b5: true };
 }
+
+/* GFA concessions on the quick page (PNAP APP-151 para 4-5, Appendix A):
+   one area per feature (m2) -> those under the 10% overall cap against
+   10% of the total GFA; the others listed apart. items: {item: area} */
+export function quickCap(items, total) {
+  const T = Number(total) || 0;
+  const rows = [];
+  let capped = 0, uncapped = 0, pre = 0;
+  for (const a of APP151) {
+    const v = Number((items || {})[a.item]);
+    if (!(v > 0)) continue;
+    rows.push(Object.assign({}, a, { area: r3(v) }));
+    if (a.cap) capped += v; else uncapped += v;
+    if (a.pre) pre++;
+  }
+  const cap = r3(T * CAP_PCT / 100);
+  const share = cap ? capped / cap : 0;
+  return { rows, capped: r3(capped), uncapped: r3(uncapped), cap, pct: CAP_PCT, share, pre, total: T,
+    status: !T ? "check" : capped <= cap + EPS ? "ok" : "fail" };
+}

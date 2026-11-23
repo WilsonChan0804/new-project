@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-23", date: "23 Nov 2026",
+    items: [
+      "**GBP workbook: one simple workbook** - the four steps are the workbook now: 1 Site, 2 Occupancy & exits (with travel distance), 3 Staircase discharge, and new **4 GFA concessions: the 10% cap** - type the area of each feature you use (balcony, utility platform, AHU room ... from PNAP APP-151 Appendix A) and see the capped total against 10% of the GFA, with a bar and the pre-requisites to meet.",
+      "The old room-by-room and area-by-area tables are retired; the site's figures from the model (GBP area plans) and **Excel** are under the steps (**From the model**). The guides' GFA button opens step 4.",
+    ],
+  },
+  {
     version: "2027-02-22", date: "23 Nov 2026",
     items: [
       "**GBP Quick check: travel distance (FS Code B11)** - step 2 now gives, for the use chosen, the limits within the flat / guestroom, the dead end, the maximum travel distance and 48 m between staircases (B11.2, B11.3), with a plan of them; a **balcony approach** switch (B10.6) and **check your design** with your own distances. Use Classification 5a at 12 m or more above G/F uses **Table B5**.",

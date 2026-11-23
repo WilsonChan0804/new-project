@@ -9,7 +9,7 @@
  */
 import { esc, toast } from "./tasks-util.js";
 import * as C from "./gbpcore.js";
-import { FIRST_SCHEDULE, B1, SRC, STAIR_BANDS } from "./gbptables.js";
+import { FIRST_SCHEDULE, B1, SRC, STAIR_BANDS, APP151, CAP_PCT } from "./gbptables.js";
 /* travel distance: FS Code B11.2 / B11.3 (gbptables.js TRAVEL) */
 
 const f3 = (x) => (x == null || !isFinite(x) ? "—" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
@@ -30,6 +30,7 @@ export function quickData(d) {
   if (q.nband == null) q.nband = 0;
   q.occ = Object.assign({ key: "1b-2", how: "area", area: null, persons: null, widths: [] }, q.occ || {});
   q.st = Object.assign({ rows: [], stairs: 2, width: 1050, sprinkler: true }, q.st || {});
+  q.gfa = Object.assign({ total: null, use_permitted: true, items: {}, all: false }, q.gfa || {});
   return q;
 }
 
@@ -289,9 +290,44 @@ function step3(q) {
     <p class="gb-srcs">${srcBtn(st.sprinkler ? "b4" : "b3")} ${srcBtn("b12")}</p></section>`;
 }
 
+/* step 4: GFA concessions - one area per feature, the 10% cap (APP-151) */
+const COMMON = ["5", "12", "11", "2.3", "14", "15", "20", "22", "25", "26", "29", "19", "6", "7", "8", "16", "17", "30"];
+function permittedGfa(q) {
+  const R = siteCalc(q);
+  if (R.s.status !== "ok" || !q.area) return null;
+  return q.mode === "composite" && R.comp ? R.comp.total : R.s.gfa;
+}
+function step4(q) {
+  const g = q.gfa, perm = permittedGfa(q);
+  const total = g.use_permitted && perm != null ? perm : g.total;
+  const r = C.quickCap(g.items, total);
+  const used = new Set(Object.keys(g.items).filter((k) => Number(g.items[k]) > 0));
+  const list = (g.all ? APP151 : APP151.filter((a) => COMMON.includes(a.item) || used.has(a.item)))
+    .slice().sort((a, b) => (g.all ? 0 : COMMON.indexOf(a.item) - COMMON.indexOf(b.item)));
+  const rows = list.map((a) => `<tr class="${used.has(a.item) ? "on" : ""}"><td class="qk-it">${esc(a.item)}</td><td>${esc(a.text)}<br><small class="muted">${esc(a.pn)} · ${esc(a.group)}</small></td>
+      <td class="c">${a.pre ? '<span class="qk-badge pre" title="Subject to the APP-151 pre-requisites">pre-req</span>' : ""}</td><td class="c">${a.cap ? '<span class="qk-badge cap" title="Counted in the 10% overall cap">10% cap</span>' : '<span class="qk-badge" title="Not in the cap">outside</span>'}</td>
+      <td><input type="number" step="any" data-qgi="${esc(a.item)}" value="${esc(g.items[a.item] == null ? "" : g.items[a.item])}" placeholder="m²" class="qk-n"${dis()}></td></tr>`).join("");
+  const pct = Math.min(130, r.share * 100), tone = r.status === "fail" ? "fail" : r.share > 0.9 ? "warn" : "ok";
+  return `<section class="qk-card" id="qk-gfa"><div class="qk-head"><i>4</i><h3>GFA concessions: the 10% cap</h3>${ctx.why("gfa")}<span class="spacer"></span><button type="button" class="ghost qk-copy" data-copy="4">Copy</button></div>
+    <div class="qk-in qk-in-row">
+      <div><div class="qk-lbl">Total GFA</div>${seg("gfa.use_permitted", g.use_permitted ? "1" : "", [["1", "The permitted GFA (step 1)"], ["", "Type it"]])}</div>
+      ${g.use_permitted ? `<div class="qk-l">&nbsp;<b class="qk-tot">${perm != null ? f3(perm) + " m²" : "— give step 1 first"}</b></div>`
+        : `<label class="qk-l">Total GFA (m²)<input type="number" step="any" data-qg="total" value="${esc(g.total == null ? "" : g.total)}" placeholder="e.g. 16000"${dis()}></label>`}
+    </div>
+    <div class="qk-res">${r.total ? `<div class="qk-bigs">${big("Under the 10% cap", f3(r.capped), "m²", `${(r.share * 100).toFixed(1)}% of the cap`, r.status === "fail" ? "qk-bad" : "qk-ok")}${big("The cap", f3(r.cap), "m²", `${CAP_PCT}% of ${f3(r.total)} m²`)}${big("Outside the cap", f3(r.uncapped), "m²", "other exemptions entered")}</div>
+      <div class="qk-capbar"><i class="${tone}" style="width:${(pct / 1.3).toFixed(1)}%"></i><b style="left:${(100 / 1.3).toFixed(1)}%" title="the 10% cap"></b></div>
+      <div class="qk-banner ${r.status}">${r.status === "ok" ? `✓ Within the 10% overall cap (${f3(r.cap - r.capped)} m² left)` : `✗ Over the cap by ${f3(r.capped - r.cap)} m² - the excess counts as GFA`}</div>
+      ${r.pre ? `<p class="qk-tip">${r.pre} of the items entered need the APP-151 pre-requisites (sustainable building design, BEAM Plus, energy).</p>` : ""}`
+      : `<p class="qk-need">Give the total GFA (or the site in step 1).</p>`}</div>
+    <div class="qk-scroll"><table class="qk-t qk-ct"><tr><th>Item</th><th>Feature (APP-151 Appendix A)</th><th>Pre-req</th><th>Cap</th><th>Area m²</th></tr>${rows}</table></div>
+    <p><button type="button" class="ghost" data-qgall>${g.all ? "Show the common ones" : `Show all ${APP151.length} items`}</button></p>
+    <p class="gb-srcs">${srcBtn("app151")} ${srcBtn("reg23")}</p></section>`;
+}
+
 export function renderQuick(el, data, c) {
   root = el; ctx = c; Q = quickData(data);
-  el.innerHTML = `<div class="qk">${step1(Q)}${step2(Q)}${step3(Q)}
+  el.innerHTML = `<div class="qk">${step1(Q)}${step2(Q)}${step3(Q)}${step4(Q)}
+    ${c.model ? `<p class="qk-model"><button type="button" class="ghost" data-gmode="full">&#128203; The site's figures from the model (GBP area plans) and Excel ›</button></p>` : ""}
     <p class="gb-disc">Worked from the code tables as transcribed (each result names its source). Check against the current documents before submission; the Building Authority's decision prevails.</p></div>`;
 }
 
@@ -310,6 +346,10 @@ function copyText(n) {
     L.push("Occupancy and exits (FS Code Table B1 / B2)", `${t ? t.use : o.key}: ${o.how === "persons" ? p + " persons" : `${o.area} m2 / ${t && t.factor} = ${p} persons`}`);
     if (e && !e.none && !e.beyond) L.push(`Min. ${e.n} exits; exit routes ${e.routes || e.route} mm total (each ${e.route}); exit doors ${e.doors || e.door} mm total (each ${e.door})`);
     if (t) { const r = C.travelFor(t.cls, { balcony: !!o.balcony }); L.push(`Travel distance (B11${o.balcony ? ", balcony approach" : ""}): ${r.within != null ? `within the flat ${r.within} m; door to staircase ` : "dead end "}${r.deadend} m; max ${r.max} m; between staircases ${r.between} m`); }
+  } else if (n === 4) {
+    const g = Q.gfa, perm = permittedGfa(Q), r = C.quickCap(g.items, g.use_permitted && perm != null ? perm : g.total);
+    L.push("GFA concessions: the 10% overall cap (PNAP APP-151)", ...r.rows.map((x) => `Item ${x.item} ${x.text}: ${x.area} m2${x.cap ? " (in the cap)" : ""}`),
+      `Under the cap ${r.capped} m2 of ${r.cap} m2 (${r.pct}% of ${r.total} m2) - ${r.status === "ok" ? "OK" : "over"}; outside the cap ${r.uncapped} m2`);
   } else {
     const r = C.quickStairs(Q.st.rows, Q.st);
     L.push("Staircase discharge (FS Code Table " + (Q.st.sprinkler ? "B4" : "B3") + ")", ...r.rows.map((x) => `${x.label || ""} ${x.floors} floor(s) x ${x.each} = ${x.sum}`),
@@ -332,12 +372,13 @@ export function wireQuick(el, onChange) {
     if (!Q || !ev.target.closest(".qk")) return;
     const b = ev.target.closest("button");
     if (!b || b.disabled) return;
-    if (b.dataset.qs) { const f = b.dataset.qs; if (f === "occ.how") Q.occ.how = b.dataset.v; else if (f.startsWith("occ.")) Q.occ[f.slice(4)] = b.dataset.v === "1"; else Q[f] = b.dataset.v; return repaint(); }
+    if (b.dataset.qs) { const f = b.dataset.qs; if (f === "occ.how") Q.occ.how = b.dataset.v; else if (f.startsWith("occ.")) Q.occ[f.slice(4)] = b.dataset.v === "1"; else if (f.startsWith("gfa.")) Q.gfa[f.slice(4)] = b.dataset.v === "1"; else Q[f] = b.dataset.v; return repaint(); }
     if (b.dataset.copy) return copyText(+b.dataset.copy);
     if (b.hasAttribute("data-qwadd")) { Q.occ.widths.push(1050); return repaint(); }
     if (b.dataset.qwx != null) { Q.occ.widths.splice(+b.dataset.qwx, 1); return repaint(); }
     if (b.hasAttribute("data-qradd")) { Q.st.rows.push({ label: "", floors: 1, key: "4a-1", area: null, persons: null }); return repaint(); }
     if (b.dataset.qrx != null) { Q.st.rows.splice(+b.dataset.qrx, 1); return repaint(); }
+    if (b.hasAttribute("data-qgall")) { Q.gfa.all = !Q.gfa.all; return repaint(); }
     if (b.hasAttribute("data-qex")) {
       Q.st.rows = [{ label: "1/F – 10/F", floors: 10, key: "7", area: 1350, persons: null }];
       Q.st.stairs = 2; Q.st.width = 1050; Q.st.sprinkler = true;
@@ -371,13 +412,15 @@ export function wireQuick(el, onChange) {
     if (t.dataset.qo) { Q.occ[t.dataset.qo] = v; return repaint(); }
     if (t.dataset.qw != null) { Q.occ.widths[+t.dataset.qw] = v; return repaint(); }
     if (t.dataset.qr != null) { const r = Q.st.rows[+t.dataset.qr]; r[t.dataset.f] = t.dataset.f === "key" || t.dataset.f === "label" ? v : v; return repaint(); }
+    if (t.dataset.qg) { Q.gfa[t.dataset.qg] = v; return repaint(); }
+    if (t.dataset.qgi) { if (v == null || v === 0) delete Q.gfa.items[t.dataset.qgi]; else Q.gfa.items[t.dataset.qgi] = v; return repaint(); }
     if (t.dataset.qt) { Q.st[t.dataset.qt] = t.dataset.qt === "width" ? Number(v) : v; return repaint(); }
   });
 }
 
 /* scroll to a step (from a guide's gbp: link) */
 export function showStep(part) {
-  const id = { site: "qk-site", moe: "qk-moe", stairs: "qk-stairs" }[part];
+  const id = { site: "qk-site", moe: "qk-moe", stairs: "qk-stairs", gfa: "qk-gfa" }[part];
   const el = id && document.getElementById(id);
   if (el) { el.scrollIntoView({ block: "start", behavior: "smooth" }); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
   return !!el;

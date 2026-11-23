@@ -130,6 +130,14 @@ ok(stairCapacity(1200, 5, { sprinkler: true, up: true }).value === Math.floor(63
   ok(b5.n === 2 && b5.routes === 4300 && b5.b5, "Table B5: 450 persons -> 2 exits, 4300 mm");
 }
 
+// --- the quick 10% cap (APP-151)
+{
+  const a = C.quickCap({ "5": 1420, "12": 450, "2.3": 200, "30": 900 }, 16000);
+  ok(a.capped === 2070 && a.cap === 1600 && a.status === "fail" && a.uncapped === 900 && a.pre === 3, `balcony 1420 + utility platform 450 + AHU 200 = ${a.capped} against ${a.cap}: over; refuge floor ${a.uncapped} not in the cap`);
+  const b = C.quickCap({ "12": 450, "2.3": 200 }, 16000);
+  ok(b.capped === 650 && b.status === "ok", "without the balcony: 650 of 1600, ok");
+}
+
 console.log(`\n${n - fails} of ${n} passed`);
 if (fails) process.exit(1);
 console.log("all passed");
