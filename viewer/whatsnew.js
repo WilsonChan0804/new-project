@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-05", date: "23 Nov 2026",
+    items: [
+      "**Massing: the real surroundings in 3D** - **🏙 Surroundings** brings in the buildings around the site from the Lands Department's 3D Spatial Data (CSDI, 3D Tiles), in light grey, with the map on the ground; the buildings on the site itself are left out. The first load of a site takes up to a minute, then it is kept on the server.",
+    ],
+  },
+  {
     version: "2027-03-04", date: "23 Nov 2026",
     items: [
       "**Massing: ↶ Undo / ↷ Redo** (Ctrl+Z / Ctrl+Y) for every change to the blocks, floors and footprints.",

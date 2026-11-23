@@ -21,7 +21,7 @@ let MEAS = [], rub = null;
 let ELEV = 0, CUT = 50, SELG = null; // SELG: {b: block id, g: group index} - editing that group's own floor plate
 const pref = (k, d) => { try { const v = localStorage.getItem("lwk-viewer:ms-" + k); return v == null ? d : v === "1"; } catch (e) { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem("lwk-viewer:ms-" + k, v ? "1" : "0"); } catch (e) {} };
-let SNAP = pref("snap", true), SHADOW = pref("shadow", true);
+let SNAP = pref("snap", true), SHADOW = pref("shadow", true), CTX3D = pref("ctx3d", true);
 
 export function init(ctx) {
   C = ctx;
@@ -99,7 +99,7 @@ function viewsBar() {
     ${VIEW === "sect" ? `<input type="range" min="0" max="100" value="${CUT}" data-cut title="Where the section cuts">` : ""}
     ${VIEW === "plan" && C.can() ? `<button type="button" data-tool="measure" class="${TOOL && TOOL.kind === "measure" ? "on" : ""}" title="Measure: snaps to the site and the footprints">📏</button><button type="button" data-tool="context" class="${TOOL && TOOL.kind === "context" ? "on" : ""}" title="Draw a neighbouring building for the 3D view">+ Context</button>` : ""}
     ${VIEW === "plan" ? gridBar() : ""}
-    ${VIEW === "plan" ? `<button type="button" data-snap class="${SNAP ? "on" : ""}" title="Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)">⌖ Snap</button>` : `<button type="button" data-shadow class="${SHADOW ? "on" : ""}" title="Shadows on / off">☀ Shadow</button>`}
+    ${VIEW === "plan" ? `<button type="button" data-snap class="${SNAP ? "on" : ""}" title="Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)">⌖ Snap</button>` : `<button type="button" data-shadow class="${SHADOW ? "on" : ""}" title="Shadows on / off">☀ Shadow</button><button type="button" data-ctx3d class="${CTX3D ? "on" : ""}" title="The buildings around: the Lands Department's 3D Spatial Data (CSDI)">🏙 Surroundings</button><span class="ms-ctxst" id="ms-ctxst"></span>`}
     ${VIEW !== "plan" ? `<button type="button" data-png title="Save this view as a picture">PNG</button>` : ""}`;
 }
 function gridBar() {
@@ -122,6 +122,7 @@ function onViews(ev) {
     C.save(); viewsBar(); return drawPlan();
   }
   if (t.dataset.snap != null && ev.type === "click") { SNAP = !SNAP; setPref("snap", SNAP); return viewsBar(); }
+  if (t.dataset.ctx3d != null && ev.type === "click") { CTX3D = !CTX3D; setPref("ctx3d", CTX3D); viewsBar(); if (T3) T3.context(CTX3D ? C.study() : null); return; }
   if (t.dataset.shadow != null && ev.type === "click") { SHADOW = !SHADOW; setPref("shadow", SHADOW); viewsBar(); if (T3) T3.shadow(SHADOW); return; }
   if (t.dataset.tool && ev.type === "click") {
     if (TOOL && TOOL.kind === t.dataset.tool) return endTool();
@@ -559,6 +560,7 @@ async function draw3d() {
     T3 = makeScene(V.THREE, V.OrbitControls, $("#st-3d"));
   }
   T3.build(model(), C.study(), mass(), VIEW, ELEV, C.potential());
+  T3.context(CTX3D ? C.study() : null);
   if (VIEW === "sect") T3.cut(CUT);
 }
 function makeScene(THREE, Orbit, host) {
@@ -750,7 +752,41 @@ function makeScene(THREE, Orbit, host) {
     clip.constant = (pct / 100 * 2 - 1) * R; // from the far side to the near side
   };
   sun.castShadow = SHADOW;
-  const shadow = (on) => { sun.castShadow = on; if (group) group.traverse((x) => { if (x.isMesh) { x.castShadow = on; x.receiveShadow = on; } }); };
+  /* the buildings around, from the server (CSDI 3D Spatial Data), once per site */
+  let ctxMesh = null, ctxKey = "", ctxBusy = false;
+  const status = (t) => { const e = document.getElementById("ms-ctxst"); if (e) e.textContent = t; };
+  const context = async (s) => {
+    if (!s || s.pts.length < 3) { if (ctxMesh) ctxMesh.visible = false; status(""); return; }
+    const c = S.centroid(s.pts), R = Math.max(200, Math.min(500, Math.max(...S.toXY(s.pts, c).map((p) => Math.hypot(p[0], p[1]))) * 3));
+    const key = c.map((x) => x.toFixed(5)).join(",") + "," + Math.round(R);
+    if (key === ctxKey && ctxMesh) { ctxMesh.visible = true; return; }
+    if (ctxBusy) return;
+    ctxBusy = true; status("loading the surroundings …");
+    try {
+      const res = await fetch(`/api/site/context?lat=${c[0]}&lng=${c[1]}&r=${Math.round(R)}`, { headers: C.headers() });
+      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.detail || "HTTP " + res.status); }
+      const meta = JSON.parse(res.headers.get("X-Context") || "{}");
+      const raw = new Float32Array(await res.arrayBuffer());
+      // the buildings on the site itself go: the scheme replaces them
+      const sxy = S.toXY(s.pts, c), keep = [];
+      for (let i = 0; i < raw.length; i += 9) {
+        const cx = (raw[i] + raw[i + 3] + raw[i + 6]) / 3, cy = (raw[i + 1] + raw[i + 4] + raw[i + 7]) / 3;
+        if (!M.inside(sxy, cx, cy)) for (let k = 0; k < 9; k++) keep.push(raw[i + k]);
+      }
+      const arr = new Float32Array(keep);
+      if (ctxMesh) { scene.remove(ctxMesh); ctxMesh.geometry.dispose(); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+      g.computeVertexNormals();
+      ctxMesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0xdfe3e8, side: THREE.DoubleSide }));
+      ctxMesh.castShadow = SHADOW; ctxMesh.receiveShadow = SHADOW;
+      scene.add(ctxMesh);
+      ctxKey = key;
+      status(meta.triangles ? `${meta.triangles.toLocaleString("en-GB")} triangles · © Lands Department` : "no buildings found around");
+    } catch (e) { status("surroundings not loaded: " + e.message); }
+    ctxBusy = false;
+  };
+  const shadow = (on) => { sun.castShadow = on; if (ctxMesh) { ctxMesh.castShadow = on; ctxMesh.receiveShadow = on; } if (group) group.traverse((x) => { if (x.isMesh) { x.castShadow = on; x.receiveShadow = on; } }); };
   resize(); loop();
-  return { shadow, build, resize, cut, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
+  return { context, shadow, build, resize, cut, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
 }

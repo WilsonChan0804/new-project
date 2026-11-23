@@ -4707,6 +4707,13 @@ try:
 except Exception as _ex:
     print("gbp not loaded: %s" % _ex)
 
+# Site study 3D surroundings from the Lands Department's 3D Spatial Data (context3d.py).
+try:
+    import context3d
+    context3d.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("context3d not loaded: %s" % _ex)
+
 # Site study OZP list and Notes reader (ozp.py).
 try:
     import ozp

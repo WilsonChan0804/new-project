@@ -678,7 +678,7 @@ function wireFind() {
   else if (s.view && s.view.c) map.setView(s.view.c, s.view.z || 16);
   draw(); panel(); tools();
   MS.init({
-    hint, study, save, can: () => CAN, map: () => map, L: L_, siteArea: () => siteAreaOf(study()),
+    hint, headers: () => headers(false), study, save, can: () => CAN, map: () => map, L: L_, siteArea: () => siteAreaOf(study()),
     potential: () => { const s2 = study(); return potentialOf(s2, siteAreaOf(s2), s2.pts.length >= 3 ? clsOf(s2) : null).rows; },
     sendToWorkbook: ({ gfaTotal, height }) => {
       const q = WB.data.quick || (WB.data.quick = {});
