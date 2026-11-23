@@ -47,6 +47,25 @@ keywords: Cap. 123L, Building (Appeal) Regulation, 上訴, Appeal Tribunal Build
 </figure>
 
 
+## Appeal timetable, section by section 上訴時間表（逐條） {#section-detail}
+
+| Step 步驟 | s. 條 | Who 由誰 | Deadline 期限 | What 內容 |
+|---|---|---|---|---|
+| 1. Notice of appeal 上訴通知 | 3; BO s.47 | Appellant 上訴人 | Received by the Secretary **≤ 21 days** after the decision notice is sent (BO s.47) | In writing to the **Secretary** (post, fax or by hand); **copy to BA** within the same period. 送秘書並副本予建築事務監督。 |
+| 2. Statement of particulars 詳情陳述書 | 4 | Appellant | **28 days** from notice of appeal | Decision appealed; **grounds**; detailed description; documents to be produced; property and appellant's interest; **witnesses**. Copy to BA. |
+| 3. BA's representations 建築事務監督陳述 | 5 | BA | **28 days** from receiving the statement | Written representations and documents to the Secretary; copy to appellant. |
+| 4. Further particulars 進一步詳情 | 6 | Either party | Request within **14 days** (BA: of statement; appellant: of representations); reply within **14 days** | Further particulars, inspection or copies of documents; copies to the Secretary. Unreasonable requests may be refused by the Tribunal. |
+| 5. Hearing notice 聆訊通知 | 7 | Secretary | **≥ 21 days** before the hearing | Date, time and place. |
+| 6. Witness summons 傳召證人 | 8 | Tribunal (Chairman signs) | On application | Attend and give evidence / produce documents. |
+| 7. Hearing 聆訊 | 9; BO s.49 | Tribunal | — | **In public**, unless the Tribunal orders private (after consulting parties), with non-disclosure directions; privilege claims are questions of law. Preliminary hearing possible (BO s.49). |
+| Withdrawal 撤回 | 10 | Appellant | Any time | Written notice to the Secretary; copy to BA. |
+| Default 失責 | 11 | Tribunal | — | Appeal may be **dismissed** if the appellant fails to serve the notice copy, the statement or comply with requests. 可駁回上訴。 |
+| Decision 裁決 | 12 | Chairman and members | — | Record grounds, witnesses, evidence, decision, reasons, costs; signed decision served on both parties; may be **published** (even if heard in private). |
+| Extension 延期 | 13 | Tribunal or Chairman | On application | Extend the limits in ss. 4(1), 5(a), 6(2)–(3). |
+| Service 送達 | 14 | — | — | Secretary / BA: by hand or registered post; individuals: last residence; companies: registered address or place of business. |
+
+<small>Appeals lie against BA decisions listed in BO s.44 (e.g. refusal of plans, orders). Tribunal panel: BO ss. 45–48. See [BO Parts 4–9](bo-parts-4-9-schedules.md) and the [appeal timeline diagram](#workflow-timeline). 可上訴的決定見條例第 44 條。</small>
+
 ## Key clause 主要條文 {#key-clause}
 
 !!! quote "Section 4(1) Statement of particulars 第 4(1) 條"

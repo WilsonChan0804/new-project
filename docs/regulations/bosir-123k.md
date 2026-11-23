@@ -60,6 +60,37 @@ keywords: Cap. 123K, oil storage installations, 油庫, licence, operation instr
 | Associated works 相關設施 | **Annually** 每年 | 8(1)(c) |
 | Certificate of inspection 檢驗證明書 | Delivered to BA **forthwith** 即時 | 8(3) |
 
+## Regulation by regulation (full) 逐條詳解 {#regulation-detail}
+
+| Reg. 條 | Subject 主題 | Requirement 規定 |
+|---|---|---|
+| 2 | Definitions 釋義 | **Associated works** 相關設施: bunded area, drainage system, pipelines in the bund, receipt / issue pipelines to jetties, related surface water drainage. **Bunded area** 堤壆保護區: area enclosed by bund walls to retain tank spillage. **Operation instructions** 操作指示: operation and management instructions. |
+| 3 | Design objective 設計目標 | Installation, associated works and any A&A designed and built to **minimise risk of pollution, fire and explosion**. 盡量減低污染、火警及爆炸風險。 |
+| 4 | **Standing Advisory Committee** 常務諮詢委員會 | Appointed by BA to advise on pollution / fire / explosion prevention, remedial measures and regular review. |
+| 5 | **Licence required** 須領牌照 | No storage of petroleum products in an installation **without a licence** or contrary to its conditions. |
+| 6(1) | Application 申請 | Specified form **[BA23](../forms/nb-aa.md#ba23)** with one copy of the **operation instructions**. |
+| 6(3) | Fee 費用 | **$47,000** for grant; BA may impose conditions. |
+| 6(4) | Conditions for grant 批出條件 | Built to the BO and **approved plans**; built to reg. 3 and **tests** prove it; operation instructions satisfactory. |
+| 6(5) | Revocation 撤銷 | For contravention of the regulations or licence conditions. |
+| 6A | Operation instructions 操作指示 | Not amended **without BA's written authorisation**. |
+| 6B | Operation 運作 | Operated per the latest accepted operation instructions. |
+| 7(1) | **Expiry** 有效期 | **12 months** from grant / renewal. |
+| 7(2) | Renewal fee 續期費 | **$30,300**. |
+| 7(3) | Renewal timing 續期時間 | Apply on the specified form **≥ 2 months before expiry**. 屆滿前最少兩個月。 |
+| 7(4) | Renewal documents 續期文件 | **Tank settlement records** for the past 12 months and an **RSE statement** of findings and recommendations; RSE recommendations carried out — otherwise BA (after the Committee's advice) may refuse. 沉降紀錄及註冊結構工程師報告。 |
+| 8(1)(a) | **Internal inspection** 內部檢驗 | By / under an **RSE**: first general internal inspection **by the 10th year** of each tank, then **every 5 years**. 第 10 年內首次，其後每 5 年。 |
+| 8(1)(b) | External shell 外殼 | **Annual** inspection of the external shell and shell-to-bottom joint. 每年。 |
+| 8(1)(c) | Associated works 相關設施 | **Annual** inspection. |
+| 8(1), (3) | Certificate 證明書 | RSE issues a **certificate of inspection** with results and repair recommendations; licensee **delivers it to BA forthwith**. |
+| 8(2) | Extra inspections | BA may require an inspection at any time. |
+| 9 | Defective tanks 有缺陷油缸 | BA may order emptying, prohibit or restrict use; may **seize and remove** products; powers of entry (forcible in emergency). |
+| 10 | **A&A and repairs** 改動及修葺 | Need BA's **written authorisation** (plans may be required); in an emergency, works to reduce risk may proceed with **written notice to BA as soon as possible**. |
+| 10A | Endorsement 加簽 | After A&A during a licence, apply for **endorsement** and return the licence; conditions as for grant. |
+| 11 | **Leaking tanks** 油缸洩漏 | Report to BA in writing; in an emergency take remedial measures **forthwith** and report immediately. |
+| 12 | **Offences** 罪行 | Storing without licence, amending instructions, unauthorised A&A, missing inspections / certificates, failing remedial measures or notices, **wilful spillage** polluting outside the site or raising fire risk, false information: **level 6 fine and 2 years' imprisonment**. 第 6 級罰款及監禁 2 年。 |
+
+Related: [Oil storage & caverns codes](../codes/oil-storage-caverns.md) · [BA23 form](../forms/nb-aa.md#ba23) · [APP-71 caverns](../pnap/app-71.md).
+
 ## Key clause 主要條文 {#key-clause}
 
 !!! quote "Reg. 5 Licensing of oil storage installations 第 5 條"

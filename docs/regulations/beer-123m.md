@@ -41,6 +41,26 @@ keywords: Cap. 123M, energy efficiency, 能源效益, OTTV, 總熱傳送值, com
     - 有助達致總熱傳送值、伸出外牆 **≤ 1.5 米**的伸出物（例如**遮陽板**）在 B(P)R 第 20、22、31 條計算上蓋面積、地積比率及空地時不計算在內（第 6 條）。
 
 
+## Section by section (full) 逐條詳解 {#section-detail}
+
+| s. 條 | Subject 主題 | Requirement 規定 |
+|---|---|---|
+| 2 | **Commercial buildings** 商業建築物 | Includes offices, shops, department stores, places of public entertainment, places of public assembly, restaurants and other commercial uses. **Excludes** hotels (separately listed), domestic premises, industrial buildings, schools, car parks, bulk storage, utility buildings (power stations, substations). 包括辦公室、商店等；不包括住宅、工業、學校、停車場、貯存及公用設施建築物。 |
+| 2 | External wall 外牆 | Whole or part of an outer wall, **including a wall adjoining another building** (party wall); **excluding underground** walls. 包括共用牆；不包括地下牆。 |
+| 2 | Hotel 旅館 | Premises offering sleeping accommodation to anyone paying a fee (amended 2020). |
+| 2 | OTTV 總熱傳送值 | Heat transferred through the envelope in **W/m²**, considering area, materials, thermal properties, orientation, openings and shading projections. |
+| 2 | Refuge floor 庇護層 | Protected floor for occupants to assemble in a fire. |
+| 3 | **Application** 適用 | Buildings in the **Schedule**: (1) **commercial buildings**, (2) **hotels**. Mixed buildings: only the commercial / hotel parts and their ancillary uses, **excluding refuge floors and car parks**. 綜合用途只適用於商業／酒店部分，庇護層及停車場除外。 |
+| 4(1) | Energy efficiency 能源效率 | Designed and constructed to achieve energy efficiency **to BA's satisfaction**. |
+| 4(2) | Deemed compliance 當作符合 | External walls and roofs with a **suitable OTTV** — by the [OTTV Code 1995](../codes/ottv-1995.md), limits now in [APP-67](../pnap/app-67.md): **tower ≤ 20, podium ≤ 40 W/m²** (plans from 31 Dec 2025). |
+| 5(a) | Plans: envelope materials 圖則：外殼物料 | Diagrams of dimensions, **colours**, arrangement and details of wall and roof materials. 顯示顏色及物料。 |
+| 5(b) | Plans: window schedule 窗戶表 | For **each floor**, in a table: number and size of windows **per orientation**, **glass thickness**, **glass type**. 每層按方向列出窗戶數目、尺寸、玻璃厚度及種類。 |
+| 5(c) | U-values U 值 | Thermal transmittance of **composite walls and roofs** with calculations. |
+| 5(d) | OTTV statement | **Statement and calculations** of the OTTV of external walls and roofs (timing relaxed by APP-67: summary sheet before consent, report at OP). |
+| 6 | **Projections disregarded** 伸出物不計 | A projection the BA is satisfied **helps achieve the OTTV** and projecting **≤ 1.5 m** is ignored for **B(P)R 20 (site coverage), 22 (plot ratio) and 31 (open space / window setbacks)**. 有助達致 OTTV 並伸出不超過 1.5 米的伸出物，不計上蓋面積、地積比率及空地。 |
+
+**Who it does not cover 不適用者**: residential buildings use the [RTTV Guidelines](../codes/rttv-2014.md) via [APP-156](../pnap/app-156.md); building services energy (lighting, A/C, lifts, electrical) is under the **Buildings Energy Efficiency Ordinance (Cap. 610)** administered by EMSD. 住宅見 RTTV；屋宇裝備能源效益受第 610 章（機電署）規管。
+
 ## Key clause 主要條文 {#key-clause}
 
 !!! quote "Section 4 Energy efficiency 第 4 條"

@@ -73,6 +73,56 @@ keywords: Cap. 123G, private streets, 私家街, access roads, 通路, cul-de-sa
 | Sight distance 視距 | 1 m eye to 1 m object at **40 m** | same 相同 |
 | Turning space 迴旋處 | At closed end of cul-de-sac | At far end if not a thoroughfare |
 
+## Regulation by regulation (full) 逐條詳解 {#regulation-detail}
+
+**Definitions (reg. 2)**: *carriageway* 車路 (vehicles), *footpath* 行人路, *cul-de-sac* 盡頭路 (closed at one end), *pedestrian way* 行人徑 (pedestrians only), *public street* 公眾街道 (vested in and maintained by Government); areas are *residential*, *industrial* (incl. offices / commercial) or *mixed usage* — BA decides the area type and whether a street is **major or minor** (reg. 5(2)).
+
+### Planning (Part II) 規劃
+
+| Reg. 條 | Subject 主題 | Requirement 規定 |
+|---|---|---|
+| 3 | Access 連接 | Every new private street, cul-de-sac and access road accessible from an existing or another new street. |
+| 4 | Footpaths 行人路 | Private streets and cul-de-sacs: footpath **on each side**; access roads: **at least one side**. |
+| 5(1)(a) | Widths, **residential** 住宅區闊度 | Major street: carriageway **7.3 m**, footpath **3.7 m**; minor: **5.5 m** / **2.75 m**; cul-de-sac: **5 m** / **2.75 m**. |
+| 5(1)(b) | Widths, **industrial / mixed** 工業／混合區 | Major: **10.5 m** / **3.7 m**; minor: **7.3 m** / **2.75 m**; cul-de-sac: **7.3 m** / **2.75 m**. |
+| 5(2)(b) | Long cul-de-sac 長盡頭路 | Cul-de-sac **> 120 m** long (centre line from a thoroughfare) is treated as a **private street**. 超過 120 米當作私家街。 |
+| 6(1) | **Access roads** 通路 | Carriageway **≥ 5 m**, footpath **≥ 1.6 m**. |
+| 6(2) | Small access roads 小型通路 | If serving **≤ 12 buildings or ≤ 24 flats**, total floor area **≤ 3 500 m²**, with **passing places ≤ 60 m apart**: carriageway **≥ 2.75 m**, footpath **≥ 1.5 m**. |
+| 7 | Pedestrian ways 行人徑 | **≥ 3.5 m** wide and protected against vehicles. |
+| 8 | Kerb radius 路緣半徑 | At junctions: not less than the footpath width (the **wider** if different). |
+| 9 | Junctions 交界 | At **right angles**; new street with existing street or 2+ new streets: straight for **≥ 30 m**; access road: **≥ 7.5 m**. |
+| 10 | No undulation 不得起伏 | Minor street graded into a major street without undulation on the major street. |
+| 11 | **Gradients** 坡度 | Max **1 in 6**; within **30 m** of a junction (streets) or **7.5 m** (access roads): max **1 in 30**. |
+| 12 | Horizontal curves 平曲線 | Radius **≥ 30 m** (streets) / **≥ 9 m** (access roads), to the centre line. |
+| 13 | Vertical curves 豎曲線 | Sight line: from **1 m** above the carriageway see the top of a **1 m** object up to **40 m** away. 視線距離 40 米。 |
+| 14 | Widening on curves (Table III) 彎位擴闊 | Where BA allows radius < 30 m: widen the outer edge to (carriageway ≤ 6 m) **1.2 m** (r < 18 m), **1.0 m** (18–24 m), **0.6 m** (> 24 m); (carriageway > 6 m) **1.0 / 0.6 / 0.3 m**. |
+| 15 | Turning space 迴旋處 | At the closed end of every cul-de-sac, and at the far end of any non-thoroughfare access road. |
+
+### Construction (Part III) 建造
+
+| Reg. 條 | Element 構件 | Requirement 規定 |
+|---|---|---|
+| 16 | Carriageway surfacing 車路面層 | **Concrete ≥ 150 mm** on **≥ 75 mm** rolled hardcore; or **bitumen macadam ≥ 75 mm** on **≥ 200 mm** hardcore + **≥ 25 mm** fine macadam; or approved material (reg. 28 waiver after bearing tests). |
+| 17 | Pedestrian ways and **service lanes** 行人徑及後巷 | Concrete **≥ 100 mm** on **≥ 75 mm** hardcore; or bitumen macadam **≥ 50 mm** on **≥ 75 mm** + **25 mm** fine. |
+| 18 | Footpaths 行人路 | Concrete **≥ 50 mm** + granolithic paving **≥ 12.5 mm**, or approved. |
+| 19 | Kerbstones 路緣石 | **150 × 300 mm**, length **≥ 750 mm**; **granite** in private streets / cul-de-sacs; granite or concrete in access roads. |
+| 20 | Kerb height 路緣高度 | **75–175 mm** above the channel. |
+| 21 | Camber / crossfall 路拱及橫坡 | Carriageway camber **1 in 40** (unless super-elevated); footpath crossfall **1 in 48** towards the kerb. |
+| 22 | Manhole covers grade 沙井蓋等級 | Carriageway: **Grade A**; footpaths, pedestrian ways, service lanes: **Grade B** (current British Standard). |
+| 23 | Manhole cover shape 沙井蓋形狀 | **Foul water: rectangular**; **surface water: round**. 污水長方形、雨水圓形。 |
+| 24 | Drainage 排水 | Channels and drains for rain and surface water; design rainfall **≥ 150 mm/h** if time of concentration **< 30 min**, else **≥ 100 mm/h**. |
+| 25 | Channels 明渠 | Concrete **≥ 150 mm** thick, **≥ 300 mm** wide; crossfall **1 in 30** to the kerb; longitudinal **≥ 1 in 100** (BA may allow **1 in 250**). |
+
+### Miscellaneous (Part IV) 雜項
+
+| Reg. 條 | Subject 主題 | Requirement 規定 |
+|---|---|---|
+| 26 | Works in a public street 公眾街道工程 | Works or alterations in a **public street** for a new private street, access road or building access are done **by the BA** at the owner's cost; unauthorised works may be removed and costs recovered. 由建築事務監督進行並向業主收費（實務上由路政署安排）。 |
+| 27 | Waiver of regs. 9, 11, 12, 13 豁免 | Where ground conditions make compliance impracticable, BA may waive and order alternative street works. |
+| 28 | Waiver of reg. 16 豁免面層 | With satisfactory bearing tests, BA may waive and set surfacing from test results. |
+
+Related: [B(P)R 18A–22 street classes, site classification](bpr-18a-22.md) · [B(P)R 39–49E EVA](bpr-39-49e.md) · [FS Code Part D EVA](../codes/fsc-part-d-means-of-access.md) · street works plans (B(A)R reg. 9).
+
 ## Key clause 主要條文 {#key-clause}
 
 !!! quote "Reg. 6(1) Width of access roads 第 6(1) 條"

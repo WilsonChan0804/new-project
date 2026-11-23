@@ -59,6 +59,36 @@ keywords: Cap. 123C, demolition works, 拆卸工程, catch fan, shoring, demolit
 | TCP supervision and site notice 適任技術人員監督及告示 | RSC | 8 |
 | Plant operator ≥ 3 years experience 機械操作員經驗 | RSC | 9(3) |
 
+## Regulation by regulation (full) 逐條詳解 {#regulation-detail}
+
+| Reg. 條 | Who 由誰 | Requirement 規定 | Penalty 罰則 (reg. 13) |
+|---|---|---|---|
+| 2 | — | Applies to demolition of a building or any **substantial or significant part**. 適用於拆卸建築物或其主要部分。 | — |
+| 3(1)(a) | **AP** 認可人士 | Before demolition: remove all **gas, electricity, water and other meters**; disconnect gas and electricity (except supplies used for the works). 拆除錶並截斷煤氣電力。 | Level 4 |
+| 3(1)(b) | AP | Remove fittings for **tramway, street lighting, electricity** or other services attached to the building. 拆除電車、街燈等附件。 | Level 4 |
+| 3(2)(a)(i) | **RSC (demolition)** 註冊專門承建商 | Where a wall fronts a street, service lane or public open area: **fans or catch platforms at 1/F level**. 一樓設斜棚／承接台。 | Level 4 |
+| 3(2)(a)(ii) | RSC | Further fans / catch platforms at **≤ 10 m vertical intervals**, the top one **≤ 10 m below the working level**. 垂直相距不超過 10 米，最高一層不低於工作面 10 米。 | Level 4 |
+| 3(2)(a)(iii) | RSC | **Dust screens** over the whole wall. 全牆防塵網。 | Level 4 |
+| 3(2)(b)–(c) | RSC | **Seal all sewer and drainage connections**; remove all **glazed sashes and doors**. 封閉渠口；拆除玻璃窗扇及門。 | Level 4 |
+| 4 | RSC and persons concerned | **Shoring** or other precautions before and during demolition to prevent accidental collapse of the building or **adjoining buildings** (not applicable to the person placing the shoring if kept safe). 支撐防止倒塌。 | Level 6 + 2 years |
+| 4A | RSC | Demolish in **reverse order of construction** (unless inappropriate); any collapse or fall must be **designed for in the demolition plans** and controlled. 按建造相反次序拆卸；倒塌須在圖則中預先設計。 | Level 6 + 2 years |
+| 5 | — | No cable or apparatus liable to be dangerous may **remain electrically charged** (except those used for the works). 電纜不得帶電。 | Level 6 + 2 years |
+| 6(a) | RSC | Prevent danger from **fire or explosion** (gas / vapour leakage or accumulation) and **flooding** (water mains, sewers, culverts). 防火、防爆、防水浸。 | Level 6 + 2 years |
+| 6(b) | — | Protect all **external openings**. 保護外部開口。 | Level 6 + 2 years |
+| 7 | — | **Chutes** for debris sited and built to avoid danger. 滑槽須安全。 | Level 6 + 2 years |
+| 8(1) | RSC | Demolition under the **personal supervision of a TCP** appointed by the RSC. 由技術合格人員親自監督。 | Level 6 + 2 years |
+| 8(2) | Each RSC | Where 2+ RSCs: each appoints TCPs and **agrees method and timing** with the others before any operation. 多於一名承建商須協調。 | Level 6 + 2 years |
+| 8(3) | RSC | Post a **notice (specified form)** naming the TCPs prominently on site (see [BA20](../forms/nb-aa.md#ba20)). 在地盤張貼技術合格人員通知。 | Level 6 + 2 years |
+| 9(1)–(2) | RSC / TCP | Only under **immediate TCP supervision** (or experienced workmen under TCP supervision): demolition of **framework, floors, walls, roofs, staircases** where collapse risk exists; parts with **special collapse risk**; **cutting / breaking RC, steelwork or ironwork**; use of **powered mechanical plant**. 指定工序須在技術合格人員直接監督下進行。 | Level 6 + 2 years |
+| 9(3) | Plant operator 機械操作員 | **≥ 3 years' experience** on that plant; training / skills specified by BA; under immediate TCP supervision. 操作員最少 3 年經驗。 | Level 6 + 2 years |
+| 10 | — | Do not **overload** floors / roofs with debris, materials or plant; no debris piled against fences, hoardings or walls. 不得超載；廢料不得堆靠圍板。 | Level 6 + 2 years |
+| 11 | — | Steel / iron being cut or released: guard against **sudden twist, spring or collapse**. 切割鋼材防扭彈倒塌。 | Level 6 + 2 years |
+| 12 | — | Removing framing from framed buildings: all practicable precautions against **collapse**. 拆除框架防倒塌。 | Level 6 + 2 years |
+
+<small>Level 4 = $25,000; level 6 = $100,000 (Criminal Procedure Ordinance Sch. 8). 第 4 級罰款 25,000 元；第 6 級 100,000 元。</small>
+
+**Related submissions 相關呈交**: demolition plans and **structural stability report** (B(A)R reg. 8(1)(h)–(i)); powered plant particulars with consent application (B(A)R reg. 31, [BA8](../forms/nb-aa.md#ba8)); TCP notice [BA20](../forms/nb-aa.md#ba20); completion [BA14A / 14B](../forms/nb-aa.md#ba14a); hoardings and covered walkways [BA19](../forms/nb-aa.md#ba19), [APP-23](../pnap/app-23.md); public safety [APP-21](../pnap/app-21.md); [Demolition Code 2004](../codes/demolition-2004.md).
+
 ## Key clause 主要條文 {#key-clause}
 
 !!! quote "Reg. 4A Sequence of carrying out demolition works 第 4A 條"
