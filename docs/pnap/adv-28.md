@@ -69,6 +69,97 @@ keywords: ADV-28, sanitary fitments, 衞生設備, female toilets, 女廁, male 
 | Babycare rooms 育嬰室 | [ADV-32](adv-32.md) |
 | Modifications 修改 | [BO s.42](../regulations/bo-part-2-building-works.md) |
 
+## Appendix A tables in full 附錄 A 表格全文 {#paragraph-detail}
+
+Checked against the BD copy, revision November 2012. These are **recommendations** adopted voluntarily, and the BA will consider modifications (paras 3–9). The [sanitary fitments calculator](../regulations/sanitary-fitments.md) covers the statutory tables. 已按 2012 年 11 月版本核對；屬建議性質。
+
+**Male : female ratio 男女比例** (paras 4–5)
+
+| Use 用途 | Ratio 比例 |
+|---|---|
+| Offices | **1 : 1** (modification of s. 5(5)(c)) |
+| Shopping arcades, department stores, places of public entertainment, cinemas, religious institutions, funeral parlours | **1 : 1.5** (modification of ss. 6(3)(b), 7(3)(b)) |
+| Sports stadiums | **1 : 1** |
+
+### A. Assessment of population 人口計算 (Tables 1–3, no fixed seating)
+
+| Table 表 | Use 用途 | m² usable floor area per person 每人可用樓面面積 |
+|---|---|---|
+| 1 | Shopping arcade / department store: **B/F, G/F, 1/F, 2/F** | **3** |
+| 1 | Shopping arcade / department store: **3/F or above** | **4.5** |
+| 2 | Assembly halls, auditoria, stadia without seating or with movable seating (spectator areas) | **0.5** |
+| 2 | Dance halls (dancing area), discos, dancing party venues | **0.75** |
+| 2 | Museums, exhibition halls, trade marts, display areas | **2** |
+| 3 | Religious institutions and funeral parlours (worship areas) | **0.5** |
+
+Table 1 area includes the arcade and its public circulation. Fixed seating: seats **+ estimated staff** (para. 7). Offices: s. 5(5)(a) (para. 8).
+
+### B. Shopping arcades and department stores 商場及百貨公司 (Tables 4–6)
+
+| Fitment 設備 | Persons 人數 | Provision 數目 |
+|---|---|---|
+| Male WC | 1–500 | 1 per 125 or part |
+| | > 500 | 4 + 1 per extra 250 or part over 500 |
+| Male urinal | any | 1 per 250 or part |
+| **Female WC** | 1–50 | 1 per 25 or part |
+| | 51–125 | 3 |
+| | 126–1800 | 3 + 1 per extra 80 or part over 125 |
+| | > 1800 | 24 + 1 per extra 90 or part over 1800 |
+| Basin (male; female the same) | 1–500 | 1 per 125 or part |
+| | > 500 | 4 + 1 per extra 250 or part over 500 |
+
+### C. Places of public entertainment 公眾娛樂場所 (Tables 7–9)
+
+| Fitment 設備 | Persons 人數 | Provision 數目 |
+|---|---|---|
+| Male WC | 1–400 | 1 per 100 or part |
+| | > 400 | 4 + 1 per extra 250 or part over 400 |
+| Male urinal | any | 1 per 50 or part |
+| **Female WC** | 1–250 | **2 per 50** or part |
+| | > 250 | 10 + 1 per extra 40 or part over 250 |
+| Basin (male; female the same) | any | 1 per 100 or part |
+
+### D. Cinemas 戲院 (Tables 10–12)
+
+| Fitment 設備 | Persons 人數 | Provision 數目 |
+|---|---|---|
+| Male WC | 1–200 / 201–500 / 501–1000 | 1 / 2 / 3 |
+| | > 1000 | 3 + 1 per extra 500 or part over 1000 |
+| Male urinal | any | 1 per 100 or part |
+| **Female WC** | 1–120 | 1 per 40 or part |
+| | 121–250 | 3 + 1 per extra 65 or part over 120 |
+| | 251–420 | 5 + 1 per extra 85 or part over 250 |
+| | > 420 | 7 + 1 per extra 100 or part over 420 |
+| Basin (male; female the same) | 1–200 / 201–500 / 501–1000 | 1 / 2 / 3 |
+| | > 1000 | 3 + 1 per extra 500 or part over 1000 |
+
+### E. Sports stadiums 體育場 (Tables 13–15) and F. Religious institutions and funeral parlours 宗教場所及殯儀館 (Tables 16–18)
+
+| Fitment 設備 | Sports stadiums 體育場 | Religious / funeral 宗教／殯儀 |
+|---|---|---|
+| Male WC | 1 per 100 or part | 1 per 150 or part |
+| Male urinal | 1 per 100 or part | 1 per 150 or part |
+| Female WC | 1 per 50 or part | 1 per 75 or part |
+| Basin (male; female the same) | 1 per 100 or part | 1 per 300 or part |
+
+!!! example "Worked example — Illustrative only 只作說明"
+    Shopping arcade on G/F, usable floor area 3,000 m².
+
+    - Population = 3,000 ÷ 3 = 1,000. Ratio 1 : 1.5, so 400 male and 600 female.
+    - Male: WC 400 ÷ 125 → **4**; urinals 400 ÷ 250 → **2**; basins **4**.
+    - Female: WC 3 + (600 − 125) ÷ 80 = 3 + 5.94 → 3 + 6 = **9**; basins 600 → 4 + (100 ÷ 250 → 1) = **5**.
+
+    Check the result against the statutory minimum as well (para. 9).
+
+### Appendix B: space requirements 空間要求 (11/2012)
+
+Appendix B contains eight figures (dimensions in mm), and the PDF has the drawings:
+- Fig. 1 WC cubicle; Fig. 2 range of WC cubicles;
+- Fig. 3 urinal; Fig. 4 urinal in a cubicle; Fig. 5 range of urinal cubicles; Fig. 6 range of urinals;
+- Fig. 7 lavatory basin; Fig. 8 range of basins.
+
+The dimensions (paras 14–17) are in the table above. Clear floor spaces must not overlap, but circulation spaces may.
+
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
 

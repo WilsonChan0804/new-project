@@ -48,6 +48,52 @@ keywords: ADV-27, natural streams, 天然河溪, rivers, Ecologically Important 
 | 8 | Indirect only: good site practice and pollution control | 工地措施 |
 | 9 | Similar note to RCs | 承建商 |
 
+## Appendices A–B in full 附錄 A–B 詳解 {#paragraph-detail}
+
+Checked against the BD copy, first issue May 2005 (not revised since). The appendices are extracts from **ETWB TC(W) No. 5/2005**. Check with the current DEVB circular and AFCD's EIS list before relying on them. 已按 2005 年版本核對，內容摘自工務技術通告 5/2005。
+
+**Definitions (paras 1–2, footnote 1)** 定義:
+- A **natural stream / river** has natural water from upper terrain. It may be perennial or flow only in the wet season. The bed is natural (bedrock, boulders, cobbles, gravel, sand, silt, clay) and the banks are largely natural with riparian vegetation.
+- **Excluded**: flood retention ponds, fishponds and engineered drainage such as nullahs, channels and ditches (e.g. Tin Shui Wai, Yuen Long and Tuen Mun Nullahs, engineered parts of the Shing Mun River, concrete U-channels).
+- **EIS** (Ecologically Important Streams) are natural streams with important ecological functions; AFCD keeps the list.
+
+### Appendix A(A): planning works in natural streams 天然河溪工程規劃
+
+| Item 項目 | Guideline 指引 |
+|---|---|
+| a | Choose the method with the least impact. **Avoid concrete-lined new channels** unless greener designs are proven impracticable. Options in **ascending order of impact**: (i) bank protection at erosion spots with natural materials such as rock; (ii) selective removal of obstructions and vegetation; (iii) widening **one bank** only; (iv) widening **both banks**; (v) **deepening**; (vi) **realigning** into a new channel; (vii) a new channel with **smooth concrete-type lining**. 影響由低至高的工程選項。 |
+| b | Work in the **dry season** when flow is low, because wet-season flow raises the risk of bank collapse and turbid water. |
+| c | Plan temporary access to minimise damage to the bed and riparian vegetation. |
+| d | Use fewer or smaller plant to reduce disturbance of the riverbed. |
+| e | A temporary sewerage system keeps wastewater out of streams. |
+| f | Identify storage areas well away from streams for equipment, fill, chemicals, fuel, debris and spoil before starting. |
+| g | Do the landscape and visual impact assessment early. |
+
+### Appendix A(B): extra considerations for EIS 具重要生態價值河溪的額外考慮
+
+| Item 項目 | Guideline 指引 |
+|---|---|
+| a | Plant varied trees, shrubs, herbs, wetland plants and grass on the banks to form a riparian zone. Leave the **stream bottom intact** where practicable; use only soft but robust bank stabilisation or widening. |
+| b | Avoid or minimise concrete. Use geotextile-reinforced grass, bio-engineering, natural stone walls or gabions on banks, and random rubble or stones on the bed, unless the site is severely constrained. |
+| c | Avoid habitats of special flora and fauna. If unavoidable: translocation, temporary migration paths, recolonisation or compensation. Afterwards, place substrate similar to the original bed. |
+| d | **Phase** the works. Don't work across the **full width** at once if the stream is wide enough; keep flow and free passage so no stagnant water forms. |
+| e | If a dam is built and the upper reaches are fish breeding grounds, provide a **fish ladder**. |
+| f | Consult **AFCD** on rare species before starting; agree relocation if needed. |
+| g | Inspect for large **pools** and preserve them where possible, as they are key habitats. |
+
+### Appendix B: precautions during construction 施工期間預防措施
+
+| Item 項目 | Measure 措施 |
+|---|---|
+| a | Isolate the works area temporarily (sandbags, **silt curtains** weighted at the bottom and properly propped). Prevent pollution or silting of the site's water gathering grounds. |
+| b | Keep the natural bed and flow. Any temporary access on the bed is as narrow and short as possible; temporary crossings on **stilts**. |
+| c | Cover stockpiles and keep them away from streams. |
+| d | Cover or remove debris and spoil quickly so rain does not wash them in. |
+| e | Collect and treat effluent, run-off and sewage, in this order: **minimise → reuse / recycle → treat**. Put discharge outlets well away from streams. |
+| f | Avoid clearing bank vegetation. Where disturbed, **hydroseed** or replant on completion. |
+| g | Lateral support to stop soil slipping into the stream, without blocking flood flow. |
+| h | Station supervisory staff on site to supervise and monitor. |
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |

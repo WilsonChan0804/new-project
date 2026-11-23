@@ -61,7 +61,46 @@ keywords: ADV-31, wet-fixed tiles, 濕貼紙皮石, external finishes, 外牆飾
 | Drying | Concrete **6 weeks** before rendering; each coat several days; final coat cured ≥ **2 weeks** |
 | Render thickness | Each coat **8–16 mm**; total ≤ **20 mm** (or per manufacturer) |
 
-<small>Further items (movement joints, adhesives, QA and supervision) in the original Appendix A. 其他項目見原文。</small>
+### Appendix A in full (Rev. 7/2021) 附錄 A 全文 {#paragraph-detail}
+
+Checked against the BD copy, revision July 2021 (Appendix A amended). It replaces the "further items" note above. 已按 2021 年 7 月版本核對。
+
+| Para. 段 | Guideline 指引 |
+|---|---|
+| 1 | System: tiles on a bed of proprietary adhesive or cement-sand slurry, on rendering bonded to the wall with **spatter dash** and/or a **bonding agent**. |
+| 2 | Design for **thermal effects, water penetration and pollution** when choosing tiles, bedding and movement joints. Tile joints usually **8–10 mm**, never **< 3 mm**, so grout can fill them. |
+| 3 | Substrate rigid and sound. Remedy honeycombs and loose particles; remove dirt, oil, grease, dust, paint and efflorescence. **Dampen, but not too wet**, when rendering. |
+| 4 | Spatter dash preferably within **24 h** of striking formwork. Otherwise the contractor, with the AP/RSE, prepares remedial measures (e.g. bonding agent). |
+| 5 | Let the concrete dry and shrink about **6 weeks** before rendering. Each intermediate coat gets several days (or the manufacturer's time). The final coat is cured and dried **≥ 2 weeks**. |
+| 6 | Each render coat **8–16 mm**; total **≤ 20 mm** (or per the proprietary product). |
+| 7 | On undulating substrate, uneven or thick render causes variable stress and debonding. Consider reinforcement or **expanded metal lathing** anchored to the concrete, or a proprietary adhesion system. |
+| 8 | Where practicable, **tile from the top downwards** (more drying time; loads from upper storeys have taken effect). **Tap-test the rendering** and fix any debonding before tiling. 由上而下鋪磚；鋪磚前敲擊檢查批盪。 |
+| 9 | **Mechanical keys** stop render sagging: spatter dash, scratching, bush hammering. |
+| 10 | **Projecting horizontal fins** to divide tiling into panels and support its self-weight are encouraged. |
+| 11–13 | **Movement joints** through the full render depth, sealed: at regular intervals between panels (thermal), where tiling meets restraining surfaces, and over construction, control or movement joints in the structure. Expanded metal lathing over **cold joints** before rendering. |
+| 14 | Tiles compatible with substrate and rendering, chosen together with the adhesive. **Low-absorption tiles are not recommended** outside; if used, use a special **polymer-modified adhesive** and test compatibility first if in doubt. |
+| 15 | Control tile size, thickness and weight in the design. Tiles **> 0.1 m²** must be **mechanically secured**. 大於 0.1 平方米的瓷磚須機械固定。 |
+| 16 | With proprietary adhesive, tiles and render must not be too wet. With cement slurry, **soak ceramic tiles ≥ 30 min**, drain, and dampen the render. Water absorption of external ceramic tiles: **≤ 0.5%** up to 1/F height; **≤ 3%** above 1/F. Pre-grouted paper-faced mosaic: adhesive covers each whole tessera. |
+| 17 | Bonding agent mixed with cement and sand before applying, and used as an admixture in the mortar. This raises strength and allows thinner, lighter render. Follow the manufacturer. |
+| 18 | **Pre-mixed dry mix rendering** is preferred for high performance and bond. |
+| 19 | **Manufactured sand (M-sand)** may replace river sand in mortar (see DEVB **TC(W) No. 8/2018**). M-sand is crushed rock or gravel processed by grinding, screening and cleaning, used in public works rendering since 2018. |
+| 20 | Sealant must take the expected movement without losing adhesion, and resist water and UV. |
+| 21–22 | Grout: good workability, low shrinkage, good adhesion, cleanable; preferably **type CG2 to BS EN 13888:2009**. Grout as soon as the adhesive has hardened enough. |
+| 23 | Reinforcement: **austenitic stainless steel** wire, preferably **2.5 mm** dia. welded to about **50 × 50 mm** mesh, with stainless fixings. Galvanised mesh only in limited sheltered areas, **not externally** or where constantly wet. |
+| 24 | **Off-site precast tiling** gives better factory quality control. |
+| 25 | Workers trained and trade-tested (CITB / CIC courses and trade tests). |
+| 26 | Early in the project the contractor (with the AP/RSE) prepares **method statements, QA and testing procedures** and the supervision level. Workers are trained by the manufacturer on the proprietary products. |
+| 27 | The RGBC/RMWC provides qualified site supervision of substrate preparation, rendering, keys, movement joints and finishes. The AP/RSE **audits** the supervision. |
+| 28 | **On-site pull-off tests**: proposal, acceptance criteria and non-compliance plan made before tiling starts. Rate **≥ 3 samples per tile type per 10 typical floors** (or part) per block, locations chosen by the AP/RSE. Applies to tiles on render over concrete, direct on concrete, or slurry-fixed on render. **Not** taken from tiles over waterproofing layers. 拉拔測試：每 10 層每款至少 3 個樣本。 |
+| 29 | Tests by a **HOKLAS**-accredited laboratory for that test, reported on a HOKLAS Endorsed Certificate (directory on the HKAS website). |
+| 30 | **Infra-red thermographic scanning** by a specialist can supplement QA to locate voids. |
+
+**Appendix B standards (Rev. 10/2020)** 相關標準:
+- Cement and aggregates: BS EN 197-1:2011 (cement); BS EN 14647:2005 (calcium aluminate cement); BS 4550-6:1978 (standard sand for mortar cubes); BS EN 13139:2013 (aggregates for mortar).
+- Tiles, adhesives and grout: BS EN 12004-1 and -2:2017 (tile adhesives and test methods); BS EN 13888:2009 (grout); BS EN 14411:2016 (ceramic tiles).
+- Tiling and rendering practice: BS 5385-2:2015 (external wall tiling); BS EN 13914-1:2016 (external rendering).
+- Sealants and workmanship: BS 6213:2000+A1:2010 (sealant selection); BS 8000-16:1997+A1:2010 (sealing joints); BS 8000-0:2014 (workmanship general).
+- Reinforcement: BS 4483:2005 (steel fabric).
 
 ## Whole picture 整體關係 {#whole-picture}
 

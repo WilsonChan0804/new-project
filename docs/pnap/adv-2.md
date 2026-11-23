@@ -44,6 +44,37 @@ keywords: ADV-2, legislation, 法例, publications, 刊物, Cap. 123 regulations
 | App. A–A | Laws: Cap. **123** and regulations **123A–123P**; plus Caps. 7, 17, 28, 40, 51, 53, 59, 95 and more | 條例 |
 | App. A–B ff. | Codes of practice, design manuals and other departmental publications | 守則及刊物 |
 
+## Appendix A notes 附錄 A 說明 {#paragraph-detail}
+
+Checked against the BD copy, revision November 2014 (Appendix A Rev. 11/2014). The list is **for information only, not exhaustive, and dated 2014**. Several items have since been **superseded or renamed**. 清單為 2014 年版本，部分已被取代。
+
+| Listed in 2014 2014 年清單所列 | Current position 現況 (see this knowledge base) |
+|---|---|
+| CoP Wind Effects 2004 | Replaced by [Wind Code 2019](../codes/wind-2019.md) ([APP-139](app-139.md)) |
+| CoP Fire Resisting Construction 1996; Means of Escape 1996; Means of Access 1995 | Replaced by the [FS Code 2011](../codes/fire-safety-code-2011.md) |
+| CoP Precast Concrete Construction 2003 | Replaced by the [Precast Code 2016](../codes/precast-2016.md) |
+| CoP Foundations (2004) | Now the [Foundations Code 2017](../codes/foundations-2017.md) |
+| Design Manual BFA 2008 | Still in use, with amendments ([BFA 2008](../codes/bfa-2008.md)) |
+| OTTV CoP 1995 | Still the BD code ([OTTV 1995](../codes/ottv-1995.md)); RTTV 2014 added for residential |
+| Kowloon-Canton Railway Corporation Ordinance (Cap. 372) | KCRC operations merged into MTRCL in 2007 ([APP-24](app-24.md)) |
+
+**What the 2014 Appendix A covers** 涵蓋範圍:
+- **A. Laws**: Cap. 123 and regulations 123A–123P, plus about 70 other ordinances, from Cap. 7 (Landlord and Tenant) to Cap. 618 (Lifts and Escalators). Examples: Caps. 28, 95, 131, 132, 172, 344, 349, 354, 358, 400, 499, 502, 572 and 610.
+- **B. Technical memoranda**: s. 39A supervision plans (BD); the EIA process (EPD); effluent standards under WPCO s. 21 (EPD).
+- **C. Codes of practice**:
+  - BD codes.
+  - EMSD: gas, lifts and escalators, builders' lifts, wiring, LPG modules, gates and shutters, GU12, energy audit and energy efficiency.
+  - EPD: asbestos codes.
+  - FSD: FSI codes.
+  - HAD: building management.
+  - Labour Department: scaffolding, cranes, excavators, suspended working platforms, confined spaces, welding and similar.
+  - LandsD (land survey) and TD (vehicle loading, private roads).
+- **D. Design manuals and specifications**: BD (BFA 2008, cavern fire safety guide, bamboo scaffold guidelines, heritage A&A guidebook 2012); CEDD (CS1, General Specification, Geoguides 1–7, Geospecs 1 and 3, Geotechnical Manual for Slopes); HyD (Structures Design Manual); PlanD (HKPSG).
+- **E. Practice notes**: BD (JPNs, PNAPs, MBIS/MWIS notes, PNRCs); EPD ProPECC; LandsD LAO, LACO and SMO; PlanD.
+- **F. Guidelines**: BD minor works guidelines; EMSD; EPD (sewer connections, grease traps, village house discharges, EIAO and WPCO guides, small sewage plants, sewage flow estimation, landfill gas); Hongkong Post letter boxes; PlanD EIAO GN 8/2010; Town Planning Board guidelines.
+
+Para. 2: ordering details via the ISD Publications Sales Unit (phone, online Government Bookstore, fax, e-mail) date from 2014; most items are now free on department websites.
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |
