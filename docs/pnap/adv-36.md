@@ -72,6 +72,53 @@ keywords: ADV-36, modular integrated construction, MiC, 組裝合成, in-princip
 | 4 | **Pre-acceptance (in-principle acceptance, IPA)** of MiC systems, components or prototypes for the specific performance in **Appendix C**; letter **within 45 days** of a complete application. 原則上接納。 |
 | 5 | Discuss with BD before applying; details on the BD website; **pre-acceptance is not required** for GBP approval. 非先決條件。 |
 
+## Paragraph by paragraph and appendices (full) 逐段及附錄詳解 {#paragraph-detail}
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 1 | MiC: freestanding **volumetric modules** with finishes, fixtures and fittings made off-site and assembled on site; BD offers streamlined measures. |
+| 2 | Engage MiC suppliers **early** (standardisation, buildability, delivery, supervision, submission programme); design and QC guidelines in **App. A and B**. |
+| 3 | **Pre-submission enquiry** ([ADM-19](adm-19.md)) for unconventional designs / prototypes — determination within **45 days**. |
+| 4 | **In-principle acceptance (IPA)** of MiC systems / components / prototypes (App. C): decision within **45 days**; respond to comments within **30 days** (else abandoned); BD decides within **30 days** of the response; a refused application restarts at 45 days. |
+| 5 | Discuss before applying; details on BD's website; **IPA is not a pre-requisite** for GBP approval. |
+
+### Appendix A – design requirements 設計要求
+
+| Topic 主題 | Requirement 規定 |
+|---|---|
+| Fire safety 消防 | Fire protection of elements addressed; non-code-compliant designs justified, with **fire engineering** where needed ([FS Code](../codes/fire-safety-code-2011.md)) |
+| Joints and gaps 接縫 | More joints in drainage and envelope → design against water ingress ([APP-105](app-105.md)) |
+| Structure 結構 | Concrete, precast and steel codes apply; **stability** (wind / lateral, temporary stability during assembly); **robustness** against disproportionate collapse, units tied horizontally and vertically; **temporary stages** (fabrication, lifting, transport, assembly); **movements** (creep, shrinkage, differential, thermal) and tolerances |
+| Maintenance 保養 | Access points / inspection pits for connections, drainage, services, joints |
+| **Separate balcony / UP modules** 獨立露台／工作平台組件 | **Avoid** (maintenance burden); if used, their area is **not MiC floor area** for the [JPN 8](jpn-8.md) GFA / SC concessions |
+
+### Appendix B – quality control and supervision 質量控制及監督
+
+| Item 項目 | Requirement 規定 |
+|---|---|
+| **Factory QA** 廠房質量保證 | Factory with a valid **Full Certificate** under the BTRI **MiC Manufacturer Accreditation Scheme**, ISO 9001 or equivalent (BO s.17(1) condition) |
+| QAS submission 質量保證計劃 | Copy of the Full Certificate or the supplier's **QAS ≥ 14 days before production** (B(A)R 10), unless covered by IPA; AP / RSE confirm QAS adequacy. QAS covers QC tests (incl. raw materials), calibration, production, inspections and audits by in-house and **independent parties** (HKCAS / HKIAS bodies) |
+| **Supervision plan** 監工計劃 | Qualified supervision by AP, RSE and RC for fabrication, assembly, installation and pre-installed finishes; **MiC Supervision Plan ≥ 14 days before production** (names, qualifications, frequency) |
+| **Teams and minimum standards (Table 1)** 監督團隊 | AP and RSE **QCST** and RC **QCCT** ([APP-158](app-158.md)): AP stream **T3 weekly**, RSE stream **T3 weekly**, RC stream **T3 weekly + T1 continuous** |
+| Log book 紀錄冊 | Names, production, inspection, audit and test records; kept at the factory, copy on site |
+| **Quality audits** 質量審核 | AP, RSE and RC's AS visit the factory **in person for the first batch**, then audit **monthly**: in person **quarterly**, other months in person or by **videotelephony** (≥ 480p colour, recorded on DVD-ROM, certified); reports to BD **within 14 days** |
+| Alternative 替代安排 | First visit in person, then **on-site audits** of delivered modules; notify BA **1 month** before production; on-site reports within 14 days |
+| **On-site audit minimum (Annex)** 現場審核 | Sample **≥ 1 %** of each module type. AP: layout, dimensions (storey height, projections, balconies, UPs, A/C platforms, barriers, exits), windows and flues ([APP-116](app-116.md)), BFA provisions, sanitary fitments and drainage, **fire resisting construction (open-up check of dry walls)**, waterproofing (ponding / spray tests), ventilation, lighting, FSI (detectors, sprinklers for open kitchens), log books. RSE: **3 opening-ups** (100 × 300 mm) for bars and cover, covermeter at 6 locations, NDT concrete strength at 3 locations, weld NDT, **tensile test 1 per 40 t** of steel, surfaces, tolerances, starter bars, shear connectors; results within **60 days** of delivery |
+
+### Appendix C – pre-acceptance application checklist 預先接納申請清單
+
+Applies to an individual MiC system / component / prototype representing the whole building when assembled; mirrored modules count as one type.
+
+| Section 部分 | Essential information 主要資料 |
+|---|---|
+| **1 General** 一般 | Codes / manuals adopted; building and module use; module plans at **≥ 1:100** with full dimensions; structural layout of floor / ceiling elements, units, connections and **movement joints** (≥ 1:100); interfaces with adjacent modules / in-situ work at **≥ 1:50** (gas flues, balconies, UPs, A/C platforms, curtain / window walls, cladding, sunken slabs, impermeable wet rooms, barriers, projections, vertical greening, pipe ducts); sealing of gaps with **cavity barriers and waterproofing**; schedule of off-site finishes, fixtures and fittings (**Annex II**) |
+| **2 Fire safety** 消防 | FS Code compliance for the MiC portion: occupant capacity and exits; construction and FRR of walls, floors, columns, beams, stairs; fire-resisting and non / limited-combustible products with test references (**Annex III**); direct and travel distances; fire barriers, protected routes, shafts, staircases and MiC / in-situ interfaces; fireman's lift and FRS; notes on non-combustible cladding / insulation, limited-combustible linings and insulation in ducts |
+| Further sections 其他部分 | Structural design, building services, water-tightness and QA / QC information — see the original checklist |
+| **Annex I** | Sample drawings showing acceptable standards |
+
+**At OP**: provide the accepted **user manual** to owners / occupants / managers and the AP / RSE / AS **audit reports** ([APP-13](app-13.md#appendix-f) App. F item 2.21).
+
+
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
 
