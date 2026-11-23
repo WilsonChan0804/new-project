@@ -14,6 +14,7 @@ import * as S from "./sitecore.js";
 import { site as bprSite } from "./gbpcore.js";
 import { OZP, OZP_PORTAL } from "./ozptables.js";
 import * as MS from "./sitemass.js";
+import * as UN from "./siteunits.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -67,7 +68,7 @@ function pruneRoads(s) {
 function save() {
   if (!CAN) return;
   clearTimeout(saveT);
-  for (const id of ["#st-saved", "#ms-saved"]) { const e = $(id); if (e) e.textContent = "Saving …"; }
+  for (const id of ["#st-saved", "#ms-saved", "#un-saved"]) { const e = $(id); if (e) e.textContent = "Saving …"; }
   saveT = setTimeout(push, 700);
 }
 async function push(again) {
@@ -83,9 +84,9 @@ async function push(again) {
     else if (!WB.data.quick && quick) WB.data.quick = quick;
     return push(true);
   }
-  if (!res.ok) { for (const id of ["#st-saved", "#ms-saved"]) { const e = $(id); if (e) e.textContent = "Not saved"; } toast((body && body.detail && (body.detail.message || body.detail)) || "Not saved", true); return; }
+  if (!res.ok) { for (const id of ["#st-saved", "#ms-saved", "#un-saved"]) { const e = $(id); if (e) e.textContent = "Not saved"; } toast((body && body.detail && (body.detail.message || body.detail)) || "Not saved", true); return; }
   WB.rev = body.rev; push.quickSent = null;
-  for (const id of ["#st-saved", "#ms-saved"]) { const e = $(id); if (e) e.textContent = "Saved with the project"; }
+  for (const id of ["#st-saved", "#ms-saved", "#un-saved"]) { const e = $(id); if (e) e.textContent = "Saved with the project"; }
 }
 
 /* ---------- the map */
@@ -690,11 +691,14 @@ function wireFind() {
   });
   const setMode = (m) => {
     for (const b of document.querySelectorAll(".st-mode [data-mode]")) b.classList.toggle("on", b.dataset.mode === m);
-    stopModes(); MS.show(m === "mass"); draw(); if (m !== "mass") { panel(); tools(); }
+    stopModes(); MS.show(m === "mass"); UN.show(m === "units");
+    if (m === "units") $("#st-panel").hidden = true;
+    draw(); if (m === "site") { panel(); tools(); }
     try { sessionStorage.setItem("lwk-viewer:site-mode", m); } catch (e) {}
   };
   document.querySelector(".st-mode").addEventListener("click", (ev) => { const b = ev.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });
   let m0 = "site"; try { m0 = new URLSearchParams(location.search).get("mode") || sessionStorage.getItem("lwk-viewer:site-mode") || "site"; } catch (e) {}
-  if (m0 === "mass") setMode("mass");
+  UN.init({ study, save, can: () => CAN });
+  if (m0 === "mass" || m0 === "units") setMode(m0);
   window.__site = { study, S, map: () => map }; // for the tests
 })();

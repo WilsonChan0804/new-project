@@ -187,3 +187,31 @@ tr.ms-part td { background: var(--panel-2, #f6f7f9); font-size: 11.5px; }
 tr.ms-part select { width: 84px !important; }
 tr.ms-part small { color: var(--muted); }
 .ms-ctxst { font-size: 11px; color: var(--muted); padding: 0 8px; white-space: nowrap; }
+/* units */
+#st-uplan { position: absolute; inset: 0; z-index: 960; background: #f3f5f8; overflow: hidden; touch-action: none; }
+#st-uplan[hidden] { display: none; }
+body.st-units #st-tools, body.st-units .st-find, body.st-units #st-hits, body.st-units #st-views { display: none !important; }
+.un-empty { padding: 40px; color: var(--muted); text-align: center; }
+.un-drag { fill: transparent; cursor: col-resize; }
+.un-drag.h { cursor: row-resize; }
+.un-drag:hover { fill: rgba(242, 128, 34, .35); }
+.un-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.un-tab { font-size: 12px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.un-tab small { display: block; color: var(--muted); font-size: 10.5px; }
+.un-tab.on { border-color: var(--accent); background: var(--accent-soft); }
+.un-bigs { grid-template-columns: 1fr 1fr; }
+.un-warn { margin: 6px 0; padding-left: 18px; font-size: 12px; color: #9a6700; }
+.un-row { border-top: 1px solid var(--line); padding: 6px 0; }
+.un-rh { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+.un-rh input { width: 52px; }
+.un-ra { margin-left: auto; }
+.un-room { display: flex; align-items: center; gap: 4px; font-size: 12px; margin: 3px 0 0 6px; padding-left: 6px; box-shadow: inset 4px 0 0 var(--c); flex-wrap: wrap; }
+.un-room select { font-size: 12px; width: 120px; }
+.un-room input { width: 52px; font-size: 12px; }
+.un-room input[data-un] { width: 100px; }
+.un-room small { color: var(--muted); }
+.un-walls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; }
+.un-walls input { width: 56px; }
+.un-walls select { font-size: 12px; }
+.ms-mix { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; } .ms-mix select { width: 90px !important; } .ms-mix input { width: 40px; }
+body.st-units .leaflet-control-container { display: none; }

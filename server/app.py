@@ -4714,6 +4714,13 @@ try:
 except Exception as _ex:
     print("context3d not loaded: %s" % _ex)
 
+# Site study unit library (units.py).
+try:
+    import units as _units
+    _units.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("units not loaded: %s" % _ex)
+
 # Site study OZP list and Notes reader (ozp.py).
 try:
     import ozp

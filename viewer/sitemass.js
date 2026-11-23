@@ -6,6 +6,7 @@
  */
 import * as S from "./sitecore.js";
 import * as M from "./massingcore.js";
+import * as UC from "./unitcore.js";
 import { toast } from "./tasks-util.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -175,6 +176,7 @@ function panel() {
       <div class="st-head"><b>Massing</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-undo="-1" title="Undo (Ctrl+Z)"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-undo="1" title="Redo (Ctrl+Y)"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button></span>` : ""}<span class="muted" id="ms-saved">${can ? "Saved with the project" : "View only"}</span></div>
       ${noSite ? `<p class="st-need">Draw the site boundary first (1 · Site).</p>` : ""}
       <div class="ms-sum">${rows.map(bar).join("")}
+        ${(() => { let fl = 0, sa = 0; for (const b of m.blocks) for (const g of b.groups || []) { const x = mixOf(g); fl += x.n * (Number(g.n) || 0); sa += x.sale * (Number(g.n) || 0); } return fl ? `<div class="ms-row"><span>Flats</span><b>${f0(fl)}</b><em>${f0(sa)} m² saleable · ${f1(sa / fl)} m² on average${f.dgfa ? ` · saleable ÷ domestic GFA ${f0(sa / f.dgfa * 100)}%` : ""}</em></div>` : ""; })()}
         <div class="ms-row"><span>Plot ratio</span><b>${f2(f.pr)}</b><em>domestic ${f2(f.dpr)} · non-domestic ${f2(f.npr)}</em></div>
         <div class="ms-row"><span>Height</span><b>${f1(f.height)} <small>m</small></b><em>${f.mpd == null ? "give the site level (Site, card 3) for mPD" : "from " + f1(Number(s.plan.level)) + " mPD"}</em></div>
         <div class="ms-row ${capPct > 10 ? "over" : ""}"><span>Concessions</span><b>${f0(f.capConc)} <small>m²</small></b><em>under the 10% cap: ${f1(capPct)}% of the GFA${capPct > 10 ? " – over 10%" : ""} · ${f0(f.conc - f.capConc)} m² more exempt (car park, plant, refuge, clubhouse ...)</em></div>
@@ -195,6 +197,21 @@ function panel() {
     </section>`;
 }
 
+/* the units on these floors (domestic): from 3 · Units, so many a floor */
+function unitList() { const s = C.study(); return (s.units && Array.isArray(s.units.list)) ? s.units.list : []; }
+function mixOf(g) {
+  const list = unitList(), out = { n: 0, sale: 0, gfa: 0 };
+  for (const x of g.mix || []) { const u = list.find((q) => q.name === x.u); if (!u) continue; const f = UC.figures(u), k = Number(x.n) || 0; out.n += k; out.sale += k * f.saleable; out.gfa += k * f.gfa; }
+  return out;
+}
+function mixRow(g, bi, gi, ga, dis) {
+  if (g.use !== "dom" || !unitList().length) return "";
+  const list = unitList(), mx = mixOf(g), n = Number(g.n) || 0;
+  const items = (g.mix || []).map((x, mi) => `<span class="ms-mix"><select data-gmu="${bi}.${gi}.${mi}"${dis}>${list.map((u) => `<option${u.name === x.u ? " selected" : ""}>${esc(u.name)}</option>`).join("")}</select>×<input type="number" min="0" step="1" data-gmn="${bi}.${gi}.${mi}" value="${esc(x.n)}"${dis}>${dis ? "" : `<button type="button" class="ghost st-ib" data-gmdel="${bi}.${gi}.${mi}">×</button>`}</span>`).join("");
+  const fill = ga ? mx.gfa / ga : 0;
+  return `<tr class="ms-part"><td colspan="8">Units / floor: ${items}${dis ? "" : `<button type="button" class="ghost st-ib" data-gmadd="${bi}.${gi}">+ unit</button>`}
+    ${mx.n ? `<small> = ${mx.n * n} flats · ${f1(mx.sale / mx.n)} m² saleable on average · units ${f0(mx.gfa)} of ${f0(ga)} m² a floor (${f0(fill * 100)}%)${fill > 1 ? " – more than the floor" : ""}</small>` : ""}</td></tr>`;
+}
 /* the uses sharing these floors: each its share of the plate */
 function partRows(g, bi, gi, ga, dis, useOpt) {
   if (!Array.isArray(g.parts) || g.parts.length < 2) return "";
@@ -225,7 +242,7 @@ function blockCard(b, bi, m, dis) {
       <td class="num" title="Floor area not counted as GFA (+ the extra)">${f0(conc)}</td>
       <td><input type="number" min="0" step="1" data-g="${bi}.${gi}.extra" value="${esc(g.extra == null ? "" : g.extra)}" placeholder="0" title="Extra concession per floor outside the footprint (balconies, utility platforms)"${dis}></td>
       <td><input type="checkbox" data-gs="${bi}.${gi}"${isSt(g) ? " checked" : ""} title="Counts as a storey"${dis}></td>
-      <td class="nw">${dis ? "" : `<button type="button" class="ghost st-ib${g.parts && g.parts.length > 1 ? " on" : ""}" data-gsplit="${bi}.${gi}" title="Split these floors between more than one use">⫽</button><button type="button" class="ghost st-ib${g.fp ? " on" : ""}${SELG && SELG.b === b.id && SELG.g === gi ? " ed" : ""}" data-gfp="${bi}.${gi}" title="${g.fp ? "Its own floor plate (click to edit it on the plan; right-click: back to the block's)" : "Give these floors their own floor plate"}">▱</button><button type="button" class="ghost st-ib" data-gup="${bi}.${gi}" title="Move down">↓</button><button type="button" class="ghost st-ib" data-gdel="${bi}.${gi}" title="Remove">×</button>`}</td></tr>${partRows(g, bi, gi, ga, dis, useOpt)}`;
+      <td class="nw">${dis ? "" : `<button type="button" class="ghost st-ib${g.parts && g.parts.length > 1 ? " on" : ""}" data-gsplit="${bi}.${gi}" title="Split these floors between more than one use">⫽</button><button type="button" class="ghost st-ib${g.fp ? " on" : ""}${SELG && SELG.b === b.id && SELG.g === gi ? " ed" : ""}" data-gfp="${bi}.${gi}" title="${g.fp ? "Its own floor plate (click to edit it on the plan; right-click: back to the block's)" : "Give these floors their own floor plate"}">▱</button><button type="button" class="ghost st-ib" data-gup="${bi}.${gi}" title="Move down">↓</button><button type="button" class="ghost st-ib" data-gdel="${bi}.${gi}" title="Remove">×</button>`}</td></tr>${partRows(g, bi, gi, ga, dis, useOpt)}${mixRow(g, bi, gi, ga, dis)}`;
   }).join("");
   const s = C.study(), sel = SEL === b.id;
   const edgeOpts = s.pts.map((p, i) => `<option value="${i}"${+b.align === i ? " selected" : ""}>${esc(edgeName(i))}</option>`).join("");
@@ -268,6 +285,11 @@ function onChange(ev) {
   const t = ev.target, m = mass();
   if (t.dataset.mf === "uc6") { m.uc6 = t.checked; return changed(); }
   if (t.dataset.b) { const [bi, k] = t.dataset.b.split("."); m.blocks[+bi][k] = t.value; return changed(); }
+  if (t.dataset.gmu || t.dataset.gmn) {
+    const [bi, gi, mi] = (t.dataset.gmu || t.dataset.gmn).split(".").map(Number), x = m.blocks[bi].groups[gi].mix[mi];
+    if (t.dataset.gmu) x.u = t.value; else x.n = Math.max(0, parseInt(t.value) || 0);
+    return changed();
+  }
   if (t.dataset.gp) {
     const [bi, gi, pi, k] = t.dataset.gp.split("."), q = m.blocks[+bi].groups[+gi].parts[+pi];
     q[k] = k === "use" ? t.value : t.value === "" ? null : Math.max(0, parseFloat(t.value));
@@ -352,6 +374,8 @@ function onClick(ev) {
     else g.parts = [{ use: g.use, share: 60, acc: g.acc }, { use: g.use === "retail" ? "lobby" : "retail", share: 40 }];
     return changed();
   }
+  if (d.gmadd) { const [bi, gi] = d.gmadd.split(".").map(Number), g = m.blocks[bi].groups[gi], l = unitList(); (g.mix = g.mix || []).push({ u: l[0].name, n: 4 }); return changed(); }
+  if (d.gmdel) { const [bi, gi, mi] = d.gmdel.split(".").map(Number); m.blocks[bi].groups[gi].mix.splice(mi, 1); return changed(); }
   if (d.gpadd) { const [bi, gi] = d.gpadd.split(".").map(Number); m.blocks[bi].groups[gi].parts.push({ use: "em", share: 10 }); return changed(); }
   if (d.gpdel) {
     const [bi, gi, pi] = d.gpdel.split(".").map(Number), g = m.blocks[bi].groups[gi];

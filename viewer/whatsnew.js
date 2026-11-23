@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-07", date: "23 Nov 2026",
+    items: [
+      "**Site study 3 · Units** - residential unit layouts from templates (studio, 1-room, 2-room, 3-room, sized after recent Tseung Kwan O brochures): rows of rooms from the corridor to the façade, each room's width and each row's depth to change, or **drag a partition** on the plan (50 mm steps); the balcony, utility platform and A/C platforms at the façade.",
+      "Each unit's **saleable area** (m² and ft², First-hand Sales Ordinance s.8), **unit GFA** and **concessions** - balcony (JPN 1: 50%, at most max(1 m², 2.5% UFS) ≤ 3 m²), utility platform (JPN 2: 50%, at most 0.75 m²), A/C platform (APP-19: ≤ 750 mm not counted) - with warnings for narrow rooms. **Save to the office library** shares a unit with every project.",
+      "In Massing, a domestic floor group takes a **unit mix** (units × number a floor): the flats, the average saleable area and saleable ÷ domestic GFA.",
+    ],
+  },
+  {
     version: "2027-03-06", date: "23 Nov 2026",
     items: [
       "**3D surroundings: how far around** - choose ± 250 / 500 / 1,000 / 1,500 m beside 🏙 Surroundings; the map on the ground and the buildings now cover the same square. A wide area is built on the server in the background (the bar shows how far it has gone) and kept for a month.",
