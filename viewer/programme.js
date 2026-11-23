@@ -202,17 +202,20 @@ function restore(s) {
 function undo() { if (!P.undo.length) return; P.redo.push(snap()); restore(P.undo.pop()); changed(); }
 function redo() { if (!P.redo.length) return; P.undo.push(snap()); restore(P.redo.pop()); changed(); }
 
+/* Set up (calendar, title block, categories, format, template, versions):
+   any member, a phone too */
+const canSet = () => !!(P.doc && P.doc.can_edit);
 function changed() {
   recalc();
   render();
-  if (!P.can) return;
+  if (!canSet()) return;
   P.pending = true;
   $("#pg-saved").textContent = "Saving ...";
   clearTimeout(P.t);
   P.t = setTimeout(save, 700);
 }
 async function save() {
-  if (!P.can) return;
+  if (!P.doc || !P.doc.can_edit) return;        // members; on a phone only Set up changes anything
   if (P.saving) { clearTimeout(P.t); P.t = setTimeout(save, 400); return; }
   P.saving = true;
   try {
@@ -780,6 +783,8 @@ function chartDown(ev) {
   const layer = $("#pg-drag-layer");
   const bar = g.querySelector(".b-body, path");
   let moved = false, last = 0, target = null;
+  // several bars selected and this one among them: the drag moves them all
+  const group = P.sel.size > 1 && P.sel.has(id) ? [...P.sel].map(rowOf).filter((x) => x && !x.summary) : [];
   svg.setPointerCapture(ev.pointerId);
   const ri = P.rows.findIndex((x) => x.id === id);
   const fx = side === "S" ? X(r.start) : X(r.finish, true), fy = ri * RH + RH / 2;
@@ -788,7 +793,11 @@ function chartDown(ev) {
     if (Math.abs(dx) > 3 || Math.abs(e.clientY - ev.clientY) > 3) moved = true;
     if (!moved) return;
     const dd = Math.round(dx / P.ppd);
-    if (mode === "move") { g.setAttribute("transform", `translate(${dd * P.ppd},0)`); tip(e, `${fmt(PC.isoOf(PC.dayOf(r.start) + dd))} - ${fmt(PC.isoOf(PC.dayOf(r.finish) + dd))}`); }
+    if (mode === "move" && group.length > 1) {
+      for (const x of group) { const gg = svg.querySelector(`[data-bar="${CSS.escape(x.id)}"]`); if (gg) gg.setAttribute("transform", `translate(${dd * P.ppd},0)`); }
+      const wd = dd ? P.cal.between(PC.isoOf(Math.min(PC.dayOf(r.start), PC.dayOf(r.start) + dd)), PC.isoOf(Math.max(PC.dayOf(r.start), PC.dayOf(r.start) + dd))) : 0;
+      tip(e, `${group.length} tasks · ${dd >= 0 ? "+" : "−"}${wd} working day${wd === 1 ? "" : "s"}`);
+    } else if (mode === "move") { g.setAttribute("transform", `translate(${dd * P.ppd},0)`); tip(e, `${fmt(PC.isoOf(PC.dayOf(r.start) + dd))} - ${fmt(PC.isoOf(PC.dayOf(r.finish) + dd))}`); }
     else if (mode === "dur") {
       const end = PC.dayOf(r.finish) + dd;
       const n = Math.max(1, P.cal.between(r.start, PC.isoOf(end)) + 1);
@@ -819,7 +828,9 @@ function chartDown(ev) {
     layer.innerHTML = "";
     if (!moved) return;
     const t = taskOf(id);
-    if (mode === "move" && last) {
+    if (mode === "move" && last && group.length > 1) {
+      moveTasks(group.map((x) => x.id), (x) => PC.dayOf(x.start) + last);
+    } else if (mode === "move" && last) {
       before();
       const want = PC.isoOf(PC.dayOf(r.start) + last);
       t.start = PC.isoOf(P.cal.dayAt(P.cal.ord(PC.dayOf(want))));
@@ -842,6 +853,29 @@ function chartDown(ev) {
   svg.addEventListener("pointermove", mv);
   svg.addEventListener("pointerup", up);
   svg.addEventListener("pointercancel", up);
+}
+
+/* several tasks to new starts at once (one Undo): to(row) -> the new day; a
+   task held by a predecessor outside them is reported */
+function moveTasks(ids, to) {
+  if (!ids.length) return;
+  before();
+  const want = new Map();
+  for (const id of ids) {
+    const r = rowOf(id), t = taskOf(id);
+    if (!r || !t || r.summary) continue;
+    t.start = PC.isoOf(P.cal.dayAt(P.cal.ord(to(r))));
+    want.set(id, t.start);
+  }
+  changed();
+  let held = 0;
+  for (const [id, s] of want) { const now = rowOf(id); if (now && now.start > s) held++; }
+  if (held) toast(`${held} held later by ${held === 1 ? "its predecessor" : "their predecessors"} outside the selection - change the link's lag to start sooner`);
+}
+/* Alt+← / Alt+→: the selection a working day earlier / later */
+function nudge(n) {
+  if (!P.can || !P.sel.size) return;
+  moveTasks([...P.sel], (r) => P.cal.dayAt(P.cal.ord(PC.dayOf(r.start)) + n));
 }
 
 function tip(ev, html) {
@@ -1282,8 +1316,8 @@ async function calendarDlg() {
     <label>More holidays (one date a line, e.g. 2027-04-06)<textarea name="hol" rows="3">${esc((c.holidays || []).join("\n"))}</textarea></label>
     <label>The office's or the site's own days off (from..to a line, e.g. 2027-02-01..2027-02-12 Lunar New Year shutdown)<textarea name="off" rows="3">${esc((c.off || []).map((o) => (typeof o === "string" ? o : o.from + ".." + (o.to || o.from) + (o.name ? " " + o.name : ""))).join("\n"))}</textarea></label>
     <label>Project start (when a task has no date or link of its own)<input type="date" name="start" value="${esc(P.d.cover.start || "")}"></label>
-    <p class="muted">Durations and lags count working days. Check the holidays against each year's gazette notice.</p>`, P.can ? "Save" : "Close");
-  if (!f || !P.can) return;
+    <p class="muted">Durations and lags count working days. Check the holidays against each year's gazette notice.</p>`, canSet() ? "Save" : "Close");
+  if (!f || !canSet()) return;
   before();
   const hol = f.hol.value.split(/\s*\n\s*/).map((x) => x.trim().slice(0, 10)).filter((x) => PC.dayOf(x) !== null);
   const off = f.off.value.split(/\n/).map((x) => x.trim()).filter(Boolean).map((x) => {
@@ -1302,8 +1336,8 @@ async function coverDlg() {
     <div class="pg-2"><label>Revision<input name="rev" value="${esc(c.rev || "A")}"></label><label>Date<input type="date" name="date" value="${esc(c.date || PC.todayIso())}"></label></div>
     <div class="pg-2"><label>Prepared by<input name="prepared" value="${esc(c.prepared || (P.me && P.me.user ? P.me.user.name : ""))}"></label><label>Status date<input type="date" name="status_date" value="${esc(c.status_date || "")}"></label></div>
     <label>Note under the title (optional)<input name="note" value="${esc(c.note || "")}" placeholder="e.g. Subject to the Buildings Department's approval timing"></label>
-    <label>Remarks (one a line, numbered on the PDF)<textarea name="remarks" rows="4">${esc(P.d.remarks.join("\n"))}</textarea></label>`, P.can ? "Save" : "Close");
-  if (!f || !P.can) return;
+    <label>Remarks (one a line, numbered on the PDF)<textarea name="remarks" rows="4">${esc(P.d.remarks.join("\n"))}</textarea></label>`, canSet() ? "Save" : "Close");
+  if (!f || !canSet()) return;
   before();
   for (const k of ["title", "project", "client", "rev", "date", "prepared", "status_date", "note"]) c[k] = f[k].value.trim().slice(0, 200);
   P.d.remarks = f.remarks.value.split(/\n/).map((x) => x.trim()).filter(Boolean).slice(0, 12);
@@ -1312,8 +1346,8 @@ async function coverDlg() {
 async function historyDlg() {
   let items = [];
   try { items = (await api(pq("/api/programme/history"))).items || []; } catch (e) { return toast(e.message, true); }
-  const el = await modal("Earlier versions", items.length ? `<div class="pg-hist">${items.map((x) => `<label class="row-check"><input type="radio" name="rev" value="${x.rev}"> Version ${x.rev} · ${esc(x.by || "")} · ${esc(String(x.at || "").replace("T", " ").slice(0, 16))} · ${x.tasks} tasks</label>`).join("")}</div><p class="muted">Bring one back: it becomes the newest version (the current one stays in the list).</p>` : `<p class="muted">No versions yet.</p>`, P.can ? "Bring back" : "Close");
-  if (!el || !P.can || !el.rev) return;
+  const el = await modal("Earlier versions", items.length ? `<div class="pg-hist">${items.map((x) => `<label class="row-check"><input type="radio" name="rev" value="${x.rev}"> Version ${x.rev} · ${esc(x.by || "")} · ${esc(String(x.at || "").replace("T", " ").slice(0, 16))} · ${x.tasks} tasks</label>`).join("")}</div><p class="muted">Bring one back: it becomes the newest version (the current one stays in the list).</p>` : `<p class="muted">No versions yet.</p>`, canSet() ? "Bring back" : "Close");
+  if (!el || !canSet() || !el.rev) return;
   const rv = [...el.querySelectorAll('input[name="rev"]')].find((x) => x.checked);
   if (!rv) return;
   const old = await api(pq("/api/programme?rev=" + rv.value));
@@ -1541,13 +1575,13 @@ async function categoriesDlg() {
   const rowsHtml = (list) => list.map((c, k) => `<div class="eg-row pg-catr" data-k="${k}"><input type="color" value="${esc(c.color)}" class="cc-c"><input class="cc-n" value="${esc(c.name)}" maxlength="40"><button type="button" class="ghost cc-x" title="Remove">&times;</button></div>`).join("");
   const list = P.d.categories.map((c) => Object.assign({}, c));
   const p = modal("Categories", `<p class="muted">Each task can have a category: its bars take the colour, and the legend can show one category at a time. A task's own colour wins over its category's.</p>
-    <div class="eg pg-cats">${rowsHtml(list)}</div><button type="button" class="ghost cc-add">+ Category</button>`, P.can ? "Save" : "Close");
+    <div class="eg pg-cats">${rowsHtml(list)}</div><button type="button" class="ghost cc-add">+ Category</button>`, canSet() ? "Save" : "Close");
   const m = lastModal();
   const box = m.querySelector(".pg-cats");
   m.querySelector(".cc-add").onclick = () => box.insertAdjacentHTML("beforeend", `<div class="eg-row pg-catr" data-k="new"><input type="color" value="${PALETTE[box.children.length % PALETTE.length]}" class="cc-c"><input class="cc-n" value="" placeholder="Name" maxlength="40"><button type="button" class="ghost cc-x">&times;</button></div>`);
   box.addEventListener("click", (e) => { const x = e.target.closest(".cc-x"); if (x) x.closest(".pg-catr").remove(); });
   const f = await p;
-  if (!f || !P.can) return;
+  if (!f || !canSet()) return;
   before();
   P.d.categories = [...box.querySelectorAll(".pg-catr")].map((r) => {
     const old = list[+r.dataset.k];
@@ -1573,13 +1607,13 @@ async function formatDlg() {
     ${chk("zebra", "Banded rows (zebra)")}${chk("shade", "Shade weekends and holidays")}${chk("today", "Today line")}
     ${chk("msdate", "Milestone dates beside the diamonds")}${chk("boldsum", "Summary rows in bold")}${chk("weekno", "Week numbers on the week scale (W12)")}
     ${chk("solidred", "Critical bars solid red (otherwise their own colour, outlined red)")}
-    <p class="muted">The format is the programme's: everyone sees it, and the PDF follows it.</p>`, P.can ? "Save" : "Apply here");
+    <p class="muted">The format is the programme's: everyone sees it, and the PDF follows it.</p>`, canSet() ? "Save" : "Apply here");
   if (!f) return;
   const nf = {};
   for (const k of ["date", "unit", "rowh", "label", "summary", "grid"]) nf[k] = f[k].value;
   nf.text = +f.text.value;
   for (const k of ["zebra", "shade", "today", "msdate", "boldsum", "weekno", "solidred"]) nf[k] = f[k].checked;
-  if (P.can) { before(); P.d.format = Object.assign({}, FORMAT, nf); changed(); } else { P.d.format = Object.assign({}, FORMAT, nf); recalc(); render(); }
+  if (canSet()) { before(); P.d.format = Object.assign({}, FORMAT, nf); changed(); } else { P.d.format = Object.assign({}, FORMAT, nf); recalc(); render(); }
 }
 
 /* ----------------------------------------------- right-click, clipboard */
@@ -1961,6 +1995,7 @@ async function start() {
   $("#pg-import").onclick = () => { if (!P.can) return toast("Only a project member can change the programme", true); $("#pg-file").click(); };
   $("#pg-file").onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ""; if (f) importCsv(f); };
   if (!P.can) for (const el of document.querySelectorAll(".pg-edit")) el.hidden = true;
+  $("#pg-setup").hidden = !P.doc.can_edit;           // Set up's dialogs work on a phone too
 
   // the table
   const gb = $("#pg-gb");
@@ -2089,6 +2124,7 @@ async function start() {
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "v" && P.clip) { ev.preventDefault(); pasteRows(); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "d" && P.sel.size) { ev.preventDefault(); duplicate(); }
     else if (ev.altKey && !ev.shiftKey && (k === "ArrowUp" || k === "ArrowDown")) { ev.preventDefault(); moveBy(k === "ArrowUp" ? -1 : 1); }
+    else if (ev.altKey && !ev.shiftKey && (k === "ArrowLeft" || k === "ArrowRight") && P.sel.size) { ev.preventDefault(); nudge(k === "ArrowLeft" ? -1 : 1); }
     else if (k === "Escape" && propsOpen()) closeProps();
     else if (ev.altKey && ev.shiftKey && k === "ArrowRight") { ev.preventDefault(); indent(1); }
     else if (ev.altKey && ev.shiftKey && k === "ArrowLeft") { ev.preventDefault(); indent(-1); }

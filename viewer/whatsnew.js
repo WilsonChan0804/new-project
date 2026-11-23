@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-17", date: "23 Nov 2026",
+    items: [
+      "**Programme: move several bars at once** - select rows (Ctrl or Shift + click), then drag one of their bars: they all move by the same time, links among them kept; one Undo puts them back. **Alt+← / Alt+→** moves the selection a working day. A task held by a predecessor outside the selection is reported.",
+      "**Programme: Set up on a phone** - the working calendar, title block, categories and format can be changed from a phone too (the rest of the editing stays on a computer or iPad).",
+    ],
+  },
+  {
     version: "2027-02-16", date: "23 Nov 2026",
     items: [
       "**Admin > Viewer update** (site admins) - see which version the server runs and the newest on GitHub, and press **Update now**: the server checks the download, keeps the current code (Undo the last update), updates itself and restarts in about 10 seconds. The data, run.bat and the passphrase are never touched.",
