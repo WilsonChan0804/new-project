@@ -201,3 +201,19 @@ body.pg-props-on .pg-body { padding-right: 360px; }
 .t-pop .po-row.on { background: var(--accent-soft, rgba(240, 120, 30, 0.1)); }
 .t-pop hr { border: 0; border-top: 1px solid var(--line, #ddd); margin: 4px 0; }
 @media (max-width: 700px) { .pg-which { max-width: 150px; } }
+
+/* phones (and phones on their side): one toolbar row that swipes sideways,
+   the summary and the categories on one line each - more room for the chart */
+@media (max-width: 800px), (max-height: 520px) {
+  .pg-bar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 5px 8px; gap: 6px; }
+  .pg-bar::-webkit-scrollbar { display: none; }
+  .pg-bar > * { flex: none; }
+  .pg-bar .spacer { flex: 0 0 4px; }
+  #pg-fit, #pg-view { display: inline-block; }
+  .pg-sum { flex-wrap: nowrap; overflow-x: auto; gap: 2px 14px; padding: 4px 10px; scrollbar-width: none; }
+  .pg-sum::-webkit-scrollbar { display: none; }
+  .pg-sum span { flex: none; }
+  .pg-legend { flex-wrap: nowrap; overflow-x: auto; padding: 4px 10px; scrollbar-width: none; }
+  .pg-legend > * { flex: none; }
+  .pg-body { -webkit-overflow-scrolling: touch; }
+}
