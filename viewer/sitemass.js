@@ -29,6 +29,7 @@ export function init(ctx) {
   const P = $("#st-mpanel");
   P.addEventListener("change", onChange);
   P.addEventListener("click", onClick);
+  P.addEventListener("toggle", (ev) => { const t = ev.target; if (t.dataset && t.dataset.topen != null) { const b = mass().blocks[+t.dataset.topen]; if (b) b.toolsOpen = t.open; } }, true);
   P.addEventListener("contextmenu", (ev) => {
     const t = ev.target.closest("[data-gfp]"); if (!t) return;
     ev.preventDefault();
@@ -40,13 +41,24 @@ export function init(ctx) {
   $("#st-views").addEventListener("change", onViews);
   $("#st-views").addEventListener("input", onViews);
   window.addEventListener("resize", () => T3 && T3.resize());
-  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && TOOL) endTool(); if (ev.key === "Enter" && TOOL && TOOL.kind === "context") finishContext(); });
+  document.addEventListener("keydown", (ev) => {
+    if (ON && (ev.ctrlKey || ev.metaKey) && !ev.target.closest("input,select,textarea")) {
+      const k = ev.key.toLowerCase();
+      if (k === "z" && !ev.shiftKey) { ev.preventDefault(); return undo(-1); }
+      if (k === "y" || (k === "z" && ev.shiftKey)) { ev.preventDefault(); return undo(1); }
+    }
+    if (ev.key === "Escape" && TOOL) endTool(); if (ev.key === "Enter" && TOOL && TOOL.kind === "context") finishContext(); });
   const map = C.map();
   map.on("click", (ev) => { if (!ON || !TOOL) return; toolClick(ev); });
   map.on("dblclick", () => { if (ON && TOOL && TOOL.kind === "context") finishContext(); });
   map.on("mousemove", (ev) => { if (ON && TOOL && TOOL.kind === "measure" && TOOL.a) rubber(ev); });
 }
 
+/* a site edge's name: its number and the street on it */
+function edgeName(i) {
+  const s = C.study(), id = s.streets && s.streets[i], r = id != null && s.roads && s.roads[id];
+  return `E${i + 1}${id != null ? " · " + (r && r.name ? r.name : "street") : ""}`;
+}
 function mass() {
   const s = C.study();
   s.massing = s.massing && typeof s.massing === "object" ? s.massing : {};
@@ -72,7 +84,7 @@ export function show(on) {
   $("#st-panel").hidden = on;
   $("#st-mpanel").hidden = !on;
   $("#st-views").hidden = !on;
-  if (on) { layer.addTo(C.map()); render(); viewsBar(); } else { endTool(); layer.remove(); setView("plan"); }
+  if (on) { if (!HIST.length) snapHist(); layer.addTo(C.map()); render(); viewsBar(); } else { endTool(); layer.remove(); setView("plan"); }
 }
 export function refresh() { if (ON) render(); }
 
@@ -83,7 +95,7 @@ function viewsBar() {
   void no;
   const el = $("#st-views");
   el.innerHTML = `<button type="button" data-v="plan"${VIEW === "plan" ? ' class="on"' : ""}>Plan</button><button type="button" data-v="3d"${VIEW === "3d" ? ' class="on"' : ""}>3D</button><button type="button" data-v="elev"${VIEW === "elev" ? ' class="on"' : ""}>Elevation</button><button type="button" data-v="sect"${VIEW === "sect" ? ' class="on"' : ""}>Section</button>
-    ${VIEW === "elev" || VIEW === "sect" ? `<select data-elev title="Looking at the building square to this edge">${s.pts.map((p, i) => `<option value="${i}"${i === ELEV ? " selected" : ""}>${VIEW === "elev" ? "from " : "along "}${esc(names(i))}</option>`).join("")}</select>` : ""}
+    ${VIEW === "elev" || VIEW === "sect" ? `<select data-elev title="Looking at the building square to this edge">${s.pts.map((p, i) => `<option value="${i}"${i === ELEV ? " selected" : ""}>${VIEW === "elev" ? "from " : "along "}${esc(edgeName(i))}</option>`).join("")}</select>` : ""}
     ${VIEW === "sect" ? `<input type="range" min="0" max="100" value="${CUT}" data-cut title="Where the section cuts">` : ""}
     ${VIEW === "plan" && C.can() ? `<button type="button" data-tool="measure" class="${TOOL && TOOL.kind === "measure" ? "on" : ""}" title="Measure: snaps to the site and the footprints">📏</button><button type="button" data-tool="context" class="${TOOL && TOOL.kind === "context" ? "on" : ""}" title="Draw a neighbouring building for the 3D view">+ Context</button>` : ""}
     ${VIEW === "plan" ? gridBar() : ""}
@@ -92,7 +104,7 @@ function viewsBar() {
 }
 function gridBar() {
   const g = mass().grid, s = C.study(), can = C.can() ? "" : " disabled";
-  return `<button type="button" data-grid class="${g.on ? "on" : ""}" title="A grid to draw to; corners snap to it">＃ Grid</button>${g.on ? `<input type="number" min="0.1" step="0.1" data-gstep value="${g.step}" title="Grid spacing, m"${can}><small>m</small><input type="number" step="0.5" data-gang value="${+(+g.ang).toFixed(2)}" title="Grid rotation, degrees"${can}><small>°</small><select data-galign title="Square the grid to a site edge"${can}><option value="">∥ edge …</option>${s.pts.map((p, i) => `<option value="${i}">${i + 1}–${(i + 1) % s.pts.length + 1}</option>`).join("")}</select>` : ""}`;
+  return `<button type="button" data-grid class="${g.on ? "on" : ""}" title="A grid to draw to; corners snap to it">＃ Grid</button>${g.on ? `<input type="number" min="0.1" step="0.1" data-gstep value="${g.step}" title="Grid spacing, m"${can}><small>m</small><input type="number" step="0.5" data-gang value="${+(+g.ang).toFixed(2)}" title="Grid rotation, degrees"${can}><small>°</small><select data-galign title="Square the grid to a site edge"${can}><option value="">∥ edge …</option>${s.pts.map((p, i) => `<option value="${i}">${esc(edgeName(i))}</option>`).join("")}</select>` : ""}`;
 }
 function onViews(ev) {
   const t = ev.target;
@@ -156,7 +168,7 @@ function panel() {
   const capPct = f.gfa ? f.capConc / f.gfa * 100 : 0;
   $("#st-mpanel").innerHTML = `
     <section class="st-card">
-      <div class="st-head"><b>Massing</b><span class="muted" id="ms-saved">${can ? "Saved with the project" : "View only"}</span></div>
+      <div class="st-head"><b>Massing</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-undo="-1" title="Undo (Ctrl+Z)"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-undo="1" title="Redo (Ctrl+Y)"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button></span>` : ""}<span class="muted" id="ms-saved">${can ? "Saved with the project" : "View only"}</span></div>
       ${noSite ? `<p class="st-need">Draw the site boundary first (1 · Site).</p>` : ""}
       <div class="ms-sum">${rows.map(bar).join("")}
         <div class="ms-row"><span>Plot ratio</span><b>${f2(f.pr)}</b><em>domestic ${f2(f.dpr)} · non-domestic ${f2(f.npr)}</em></div>
@@ -179,6 +191,17 @@ function panel() {
     </section>`;
 }
 
+/* the uses sharing these floors: each its share of the plate */
+function partRows(g, bi, gi, ga, dis, useOpt) {
+  if (!Array.isArray(g.parts) || g.parts.length < 2) return "";
+  const tot = g.parts.reduce((x, q) => x + (Number(q.share) || 0), 0) || 1;
+  return g.parts.map((q, pi) => { const u = M.USES[q.use] || M.USES.dom; return `<tr class="ms-part" style="--c:${u.color}">
+    <td>↳ <select data-gp="${bi}.${gi}.${pi}.use"${dis}>${useOpt(q.use)}</select></td>
+    <td colspan="2"><input type="number" min="0" max="100" step="1" data-gp="${bi}.${gi}.${pi}.share" value="${esc(q.share)}"${dis}>% <small>${f0(ga * (Number(q.share) || 0) / tot)} m²</small></td>
+    <td><input type="number" min="0" max="100" step="1" data-gp="${bi}.${gi}.${pi}.acc" value="${esc(q.acc == null ? "" : q.acc)}" placeholder="${u.acc}"${dis}></td>
+    <td colspan="3"></td>
+    <td class="nw">${dis ? "" : `<button type="button" class="ghost st-ib" data-gpdel="${bi}.${gi}.${pi}" title="Remove this use">×</button>${pi === g.parts.length - 1 ? `<button type="button" class="ghost st-ib" data-gpadd="${bi}.${gi}" title="Another use">+</button>` : ""}`}</td></tr>`; }).join("");
+}
 function blockCard(b, bi, m, dis) {
   const a = b.fp && b.fp.length >= 3 ? S.area(b.fp) : 0;
   const others = m.blocks.filter((x) => x.id !== b.id);
@@ -198,30 +221,56 @@ function blockCard(b, bi, m, dis) {
       <td class="num" title="Floor area not counted as GFA (+ the extra)">${f0(conc)}</td>
       <td><input type="number" min="0" step="1" data-g="${bi}.${gi}.extra" value="${esc(g.extra == null ? "" : g.extra)}" placeholder="0" title="Extra concession per floor outside the footprint (balconies, utility platforms)"${dis}></td>
       <td><input type="checkbox" data-gs="${bi}.${gi}"${isSt(g) ? " checked" : ""} title="Counts as a storey"${dis}></td>
-      <td class="nw">${dis ? "" : `<button type="button" class="ghost st-ib${g.fp ? " on" : ""}${SELG && SELG.b === b.id && SELG.g === gi ? " ed" : ""}" data-gfp="${bi}.${gi}" title="${g.fp ? "Its own floor plate (click to edit it on the plan; right-click: back to the block's)" : "Give these floors their own floor plate"}">▱</button><button type="button" class="ghost st-ib" data-gup="${bi}.${gi}" title="Move down">↓</button><button type="button" class="ghost st-ib" data-gdel="${bi}.${gi}" title="Remove">×</button>`}</td></tr>`;
+      <td class="nw">${dis ? "" : `<button type="button" class="ghost st-ib${g.parts && g.parts.length > 1 ? " on" : ""}" data-gsplit="${bi}.${gi}" title="Split these floors between more than one use">⫽</button><button type="button" class="ghost st-ib${g.fp ? " on" : ""}${SELG && SELG.b === b.id && SELG.g === gi ? " ed" : ""}" data-gfp="${bi}.${gi}" title="${g.fp ? "Its own floor plate (click to edit it on the plan; right-click: back to the block's)" : "Give these floors their own floor plate"}">▱</button><button type="button" class="ghost st-ib" data-gup="${bi}.${gi}" title="Move down">↓</button><button type="button" class="ghost st-ib" data-gdel="${bi}.${gi}" title="Remove">×</button>`}</td></tr>${partRows(g, bi, gi, ga, dis, useOpt)}`;
   }).join("");
   const s = C.study(), sel = SEL === b.id;
-  const edgeOpts = s.pts.map((p, i) => `<option value="${i}"${+b.align === i ? " selected" : ""}>edge ${i + 1}–${(i + 1) % s.pts.length + 1}</option>`).join("");
+  const edgeOpts = s.pts.map((p, i) => `<option value="${i}"${+b.align === i ? " selected" : ""}>${esc(edgeName(i))}</option>`).join("");
   return `<section class="st-card ms-block${sel ? " sel" : ""}" data-bid="${b.id}">
     <div class="st-head"><input class="ms-name" data-b="${bi}.name" value="${esc(b.name || "")}"${dis}><span class="muted" data-barea="${b.id}">${f0(a)} m² · ${n} storeys · ${f1(h)} m</span></div>
     <div class="ms-fp"><label>On <select data-b="${bi}.on"${dis}><option value="">the ground</option>${others.map((x) => `<option value="${x.id}"${b.on === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label></div>
-    ${dis ? "" : `<div class="ms-tools">
-      <span><b>Site −</b><input type="number" min="0" step="0.5" data-fpset="${bi}" value="${esc(b.setback == null ? 3 : b.setback)}"> m <button type="button" class="ghost st-ib" data-fp="${bi}.site" title="The site boundary set back; select the block and click a site edge on the plan for its own set-back">Set</button></span>
-      <span><b>Rect</b><input type="number" min="1" step="0.5" data-fpw="${bi}" value="${esc(b.w || 30)}">×<input type="number" min="1" step="0.5" data-fpd="${bi}" value="${esc(b.d || 20)}"> m <select data-fpal="${bi}" title="Square to this site edge">${edgeOpts}</select> <button type="button" class="ghost st-ib" data-fp="${bi}.rect">Set</button></span>
-      <span><b>Offset</b><input type="number" step="0.5" data-fpoff="${bi}" value="${esc(b.off == null ? 1 : b.off)}"> m <button type="button" class="ghost st-ib" data-fp="${bi}.grow" title="Grow (+) or shrink (−) this footprint">Apply</button></span>
-    </div>`}
-    ${b.edges ? `<p class="muted st-note">Set-backs per site edge: ${b.edges.map((d, i) => `${i + 1}–${(i + 1) % b.edges.length + 1}: ${f1(d)} m`).join(" · ")}</p>` : ""}
+    ${dis ? "" : `<details class="ms-tools"${b.toolsOpen ? " open" : ""} data-topen="${bi}"><summary>Shape the footprint</summary>
+      <div class="ms-trow"><b>Fill the site</b> set back <input type="number" min="0" step="0.5" data-fpset="${bi}" value="${esc(b.setback == null ? 3 : b.setback)}"> m from every site edge <button type="button" class="ghost st-ib" data-fp="${bi}.site">Apply</button>
+        <small>then click a site edge on the plan to give that edge its own set-back</small></div>
+      <div class="ms-trow"><b>Rectangle</b> <input type="number" min="1" step="0.5" data-fpw="${bi}" value="${esc(b.w || 30)}"> × <input type="number" min="1" step="0.5" data-fpd="${bi}" value="${esc(b.d || 20)}"> m, long side parallel to <select data-fpal="${bi}">${edgeOpts}</select> <button type="button" class="ghost st-ib" data-fp="${bi}.rect">Apply</button>
+        <small>placed in the middle of the block below (or of the site); then drag it</small></div>
+      <div class="ms-trow"><b>Grow / shrink</b> by <input type="number" step="0.5" data-fpoff="${bi}" value="${esc(b.off == null ? 1 : b.off)}"> m <button type="button" class="ghost st-ib" data-fp="${bi}.grow">Apply</button>
+        <small>every edge moves out the distance; a minus figure moves them in</small></div>
+    </details>`}
+    ${b.edges ? `<p class="muted st-note">Set-backs: ${b.edges.map((d, i) => `E${i + 1} ${f1(d)} m`).join(" · ")}</p>` : ""}
     <table class="ms-groups"><thead><tr><th>Use</th><th>No.</th><th>Ht m</th><th title="The share of the floor area counted as GFA">GFA %</th><th title="Concession per floor: area × (1 − GFA %) + extra">Conc.</th><th title="Extra concession per floor (outside the footprint)">+Extra</th><th title="Counts as a storey">St.</th><th></th></tr></thead><tbody>${gr}</tbody></table>
     ${dis ? "" : `<div class="st-row"><button type="button" class="ghost st-ib" data-gadd="${bi}">+ Floors above</button><button type="button" class="ghost st-ib" data-gtr="${bi}">+ Transfer plate</button><button type="button" class="ghost st-ib" data-bdup="${bi}">Duplicate</button><button type="button" class="ghost st-ib" data-bdel="${bi}">Remove</button></div>`}
   </section>`;
 }
 
-function changed() { C.save(); render(); }
+/* undo / redo: the massing as it was after each change */
+let HIST = [], HI = -1;
+function snapHist() {
+  const j = JSON.stringify(mass());
+  if (HIST[HI] === j) return;
+  HIST = HIST.slice(0, HI + 1); HIST.push(j);
+  if (HIST.length > 80) HIST.shift();
+  HI = HIST.length - 1;
+}
+function undo(step) {
+  if (!HIST.length) return;
+  const k = HI + step;
+  if (k < 0 || k >= HIST.length) return toast(step < 0 ? "Nothing to undo" : "Nothing to redo");
+  HI = k; C.study().massing = JSON.parse(HIST[HI]); SELG = null;
+  C.save(); render();
+}
+function changed() { snapHist(); C.save(); render(); }
 
 function onChange(ev) {
   const t = ev.target, m = mass();
   if (t.dataset.mf === "uc6") { m.uc6 = t.checked; return changed(); }
   if (t.dataset.b) { const [bi, k] = t.dataset.b.split("."); m.blocks[+bi][k] = t.value; return changed(); }
+  if (t.dataset.gp) {
+    const [bi, gi, pi, k] = t.dataset.gp.split("."), q = m.blocks[+bi].groups[+gi].parts[+pi];
+    q[k] = k === "use" ? t.value : t.value === "" ? null : Math.max(0, parseFloat(t.value));
+    if (k === "use") q.acc = null;
+    if (+pi === 0 && k === "use") m.blocks[+bi].groups[+gi].use = t.value;
+    return changed();
+  }
   if (t.dataset.gs) { const [bi, gi] = t.dataset.gs.split(".").map(Number); m.blocks[bi].groups[gi].storey = t.checked; return changed(); }
   if (t.dataset.g) {
     const [bi, gi, k] = t.dataset.g.split("."), g = m.blocks[+bi].groups[+gi];
@@ -229,6 +278,7 @@ function onChange(ev) {
     if (k === "use") { g.acc = null; g.storey = null; }
     return changed();
   }
+  if (t.dataset.topen != null) return;
   if (t.dataset.ctx != null) { m.context[+t.dataset.ctx].h = Math.max(0, parseFloat(t.value) || 0); return changed(); }
   const num = (v, d) => (isNaN(parseFloat(v)) ? d : parseFloat(v));
   if (t.dataset.fpset != null) { const b = m.blocks[+t.dataset.fpset]; b.setback = Math.max(0, num(t.value, 3)); b.edges = null; C.save(); }
@@ -265,6 +315,7 @@ function onClick(ev) {
   const t = ev.target.closest("button") || ev.target, m = mass(), d = t.dataset || {};
   const card = ev.target.closest(".ms-block");
   if (card && SEL !== card.dataset.bid && !ev.target.closest("button,input,select")) { SEL = card.dataset.bid; SELG = null; render(); return; }
+  if (d.undo) return undo(+d.undo);
   if (d.ma) {
     if (d.ma === "example") {
       const p = { id: uid(), name: "Podium", setback: 3, groups: [{ use: "lobby", n: 1, h: 6 }, { use: "car", n: 2, h: 4.5 }, { use: "club", n: 1, h: 5 }, { use: "transfer", n: 1, h: 2.5 }] };
@@ -289,6 +340,18 @@ function onClick(ev) {
     if (!g.fp) g.fp = b.fp.map((q) => q.slice());
     SEL = b.id; SELG = SELG && SELG.b === b.id && SELG.g === gi ? null : { b: b.id, g: gi };
     if (SELG) C.hint(`Editing the floor plate of ${b.name}'s floors ${gi + 1}: drag its corners, add corners on its edges. Click ▱ again to go back to the block.`, 6000);
+    return changed();
+  }
+  if (d.gsplit) {
+    const [bi, gi] = d.gsplit.split(".").map(Number), g = m.blocks[bi].groups[gi];
+    if (g.parts && g.parts.length > 1) { if (!confirm("One use for these floors again?")) return; delete g.parts; }
+    else g.parts = [{ use: g.use, share: 60, acc: g.acc }, { use: g.use === "retail" ? "lobby" : "retail", share: 40 }];
+    return changed();
+  }
+  if (d.gpadd) { const [bi, gi] = d.gpadd.split(".").map(Number); m.blocks[bi].groups[gi].parts.push({ use: "em", share: 10 }); return changed(); }
+  if (d.gpdel) {
+    const [bi, gi, pi] = d.gpdel.split(".").map(Number), g = m.blocks[bi].groups[gi];
+    g.parts.splice(pi, 1); if (g.parts.length < 2) { g.use = g.parts[0] ? g.parts[0].use : g.use; delete g.parts; } else g.use = g.parts[0].use;
     return changed();
   }
   if (d.gtr != null) { const b = m.blocks[+d.gtr]; (b.groups = b.groups || []).push({ use: "transfer", n: 1, h: 2.5 }); return changed(); }
@@ -326,6 +389,10 @@ function drawPlan() {
   const L = C.L, m = mass(), can = C.can() && !TOOL, s = C.study(), o = origin();
   layer.clearLayers();
   drawGrid(L, m, s, o);
+  s.pts.forEach((p, i) => {
+    const q = s.pts[(i + 1) % s.pts.length];
+    L.marker([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], { interactive: false, icon: L.divIcon({ className: "ms-eno", html: `<span>E${i + 1}</span>`, iconSize: [0, 0] }) }).addTo(layer);
+  });
   for (const c of m.context) L.polygon(c.fp, { color: "#8d949c", weight: 1, fillColor: "#c3c8ce", fillOpacity: 0.5, interactive: false }).addTo(layer);
   for (const b of m.blocks) {
     if (!b.fp || b.fp.length < 3) continue;
@@ -552,7 +619,8 @@ function makeScene(THREE, Orbit, host) {
     await Promise.all([...Array((x1 - x0 + 1) * (y1 - y0 + 1)).keys()].map(async (k) => {
       const x = x0 + (k % (x1 - x0 + 1)), y = y0 + Math.floor(k / (x1 - x0 + 1));
       try {
-        const res = await fetch(TILE + `${z}/${x}/${y}.png`, { mode: "cors" });
+        let res = await fetch(`/api/site/tile/${z}/${x}/${y}`).catch(() => null);
+        if (!res || !res.ok) res = await fetch(TILE + `${z}/${x}/${y}.png`, { mode: "cors" });
         if (!res.ok) return;
         const bm = await createImageBitmap(await res.blob());
         g.drawImage(bm, (x - x0) * 256, (y - y0) * 256); got++;

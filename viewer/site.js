@@ -125,7 +125,7 @@ function draw() {
     const q = s.pts[(i + 1) % s.pts.length], st = s.streets[i];
     const line = L.polyline([p, q], { color: st ? STREET : EDGE, weight: st ? 8 : 3, opacity: st ? 0.85 : 0.9 }).addTo(layer);
     const rd = st != null ? s.roads[st] || {} : null;
-    const lab = (st != null ? `${esc(roadName(s, st, no))}${rd.width ? " · " + rd.width + " m" : ""} · ` : "") + `${f1(lens[i])} m`;
+    const lab = `E${i + 1} · ` + (st != null ? `${esc(roadName(s, st, no))}${rd.width ? " · " + rd.width + " m" : ""} · ` : "") + `${f1(lens[i])} m`;
     line.bindTooltip(lab, { permanent: true, direction: "center", className: "st-edge-lab" + (st ? " st" : "") });
     if (CAN && !document.body.classList.contains("st-mass")) {
       line.on("click", (ev) => {
@@ -400,7 +400,7 @@ function panel(light) {
   const opts = (cur) => `<option value="">–</option>${Object.keys(no).map((id) => `<option value="${id}"${String(cur) === id ? " selected" : ""}>${esc(roadName(s, id, no))}</option>`).join("")}<option value="new">+ New street</option>`;
   const rows = n >= 3 ? s.pts.map((p, i) => {
     const st = s.streets[i];
-    return `<tr class="${st != null ? "st-on" : ""}"><td>${i + 1}–${(i + 1) % n + 1}</td><td class="num">${f1(lens[i])}</td>
+    return `<tr class="${st != null ? "st-on" : ""}"><td title="From corner ${i + 1} to corner ${(i + 1) % n + 1}">E${i + 1}</td><td class="num">${f1(lens[i])}</td>
       <td><select data-se="${i}"${dis}>${opts(st)}</select></td></tr>`;
   }).join("") : "";
   const roadRows = Object.keys(no).map((id) => { const r = s.roads[id] || {}; const w = r.width;

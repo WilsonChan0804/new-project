@@ -86,6 +86,7 @@ def save(core, pid, rev, data, who):
     return out
 
 
+TILE_URL = "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/%d/%d/%d.png"
 SEARCH_URL = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
 
 
@@ -167,6 +168,32 @@ def register(app, core):
         if not isinstance(body, dict):
             raise HTTPException(status_code=400, detail="Send {rev, data}")
         return await run_in_threadpool(save, core, x_project, body.get("rev"), body.get("data"), getattr(w, "name", "") or "")
+
+    @app.get("/api/site/tile/{z}/{x}/{y}")
+    def site_tile(z: int, x: int, y: int):
+        """Site study 3D ground: a Lands Department map tile through this
+        server (the page cannot read it across origins), kept a while."""
+        if not (10 <= z <= 19) or not (0 <= x < 2 ** z) or not (0 <= y < 2 ** z):
+            raise HTTPException(status_code=400, detail="Not a tile")
+        d = os.path.join(core.CFG["data"], "tiles", str(z), str(x))
+        f = os.path.join(d, "%d.png" % y)
+        if os.path.exists(f) and time.time() - os.path.getmtime(f) < 30 * 86400:
+            with open(f, "rb") as fh:
+                return Response(content=fh.read(), media_type="image/png", headers={"Cache-Control": "max-age=86400"})
+        import urllib.request
+        try:
+            req = urllib.request.Request(TILE_URL % (z, x, y), headers={"User-Agent": "LWK-Viewer site study"})
+            with urllib.request.urlopen(req, timeout=12) as r:
+                data = r.read()
+        except Exception as ex:
+            raise HTTPException(status_code=502, detail="The map did not answer: %s" % ex)
+        try:
+            os.makedirs(d, exist_ok=True)
+            with open(f, "wb") as fh:
+                fh.write(data)
+        except OSError:
+            pass
+        return Response(content=data, media_type="image/png", headers={"Cache-Control": "max-age=86400"})
 
     @app.get("/api/site/search")
     def site_search(request: Request, q: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):

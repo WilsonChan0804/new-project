@@ -61,12 +61,20 @@ export function stacks(m) {
       const u = USES[g.use] || USES.dom;
       const fp = g.fp && g.fp.length >= 3 ? g.fp : b.fp, ga = g.fp && g.fp.length >= 3 ? areaXY(g.fp) : a;
       const isStorey = g.storey == null ? u.storey !== false : !!g.storey;
+      // a floor of more than one use: strips of the plate, each its share of the area
+      const parts = Array.isArray(g.parts) && g.parts.length >= 2 ? g.parts : null;
+      const pieces = parts ? strips(fp, parts.map((q) => Math.max(0, Number(q.share) || 0))).map((pf, j) => ({ fp: pf, use: parts[j].use || "dom", acc: parts[j].acc }))
+        : [{ fp, use: g.use, acc: g.acc, whole: true }];
       for (let i = 0; i < g.n; i++) {
-        const acc = Math.max(0, Math.min(100, g.acc == null || g.acc === "" ? u.acc : Number(g.acc)));
-        const gfa = ga * acc / 100;
-        // the floor area not counted is the concession; any extra (balconies, UP outside the footprint) on top
-        const conc = ga - gfa + (Number(g.extra) || 0);
-        storeys.push({ block: b.id, no: isStorey ? ++k : null, storey: isStorey, use: g.use, cls: u.cls, cap: !!u.cap, h: g.h, z0: z, z1: z + g.h, area: ga, gfa, conc, fp });
+        const no = isStorey ? ++k : null;
+        for (const pc of pieces) {
+          const pu = USES[pc.use] || USES.dom, pa = pc.whole ? ga : areaXY(pc.fp);
+          const acc = Math.max(0, Math.min(100, pc.acc == null || pc.acc === "" ? pu.acc : Number(pc.acc)));
+          const gfa = pa * acc / 100;
+          // the floor area not counted is the concession; any extra (balconies, UP outside the footprint) on top
+          const conc = pa - gfa + (pc === pieces[0] ? Number(g.extra) || 0 : 0);
+          storeys.push({ block: b.id, no, storey: isStorey, use: pc.use, cls: pu.cls, cap: !!pu.cap, h: g.h, z0: z, z1: z + g.h, area: pa, gfa, conc, fp: pc.fp, part: !pc.whole });
+        }
         z += g.h;
       }
     }
@@ -75,7 +83,7 @@ export function stacks(m) {
   return out;
 }
 function groupsOf(b) {
-  return (b.groups || []).map((g) => ({ use: g.use || "dom", n: Math.max(0, Math.round(Number(g.n) || 0)), h: Math.max(0, Number(g.h) || 0), acc: g.acc, extra: g.extra != null ? g.extra : g.conc, storey: g.storey, fp: g.fp }));
+  return (b.groups || []).map((g) => ({ use: g.use || "dom", n: Math.max(0, Math.round(Number(g.n) || 0)), h: Math.max(0, Number(g.h) || 0), acc: g.acc, extra: g.extra != null ? g.extra : g.conc, storey: g.storey, fp: g.fp, parts: g.parts }));
 }
 
 /* the buildings: each top block with everything under it, storeys bottom up */
@@ -96,7 +104,9 @@ export function buildings(m) {
 
 /* refuge floors for one building's storeys -> {need, why, due: [storey no], ok} */
 export function refuge(all, uc6) {
-  const storeys = (all || []).filter((s) => s.storey !== false);
+  const byNo = new Map();
+  for (const s of all || []) if (s.storey !== false) { const o = byNo.get(s.no); if (!o) byNo.set(s.no, Object.assign({}, s)); else if (s.use === "refuge") o.use = "refuge"; }
+  const storeys = [...byNo.values()];
   const every = uc6 ? REFUGE.everyUc6 : REFUGE.every;
   const counted = storeys.filter((s) => s.use !== "refuge").length;
   const placed = storeys.filter((s) => s.use === "refuge").map((s) => s.no);
@@ -158,7 +168,7 @@ export function figures(m, siteArea, level, uc6) {
   const bs = buildings(m).map((b) => {
     const top = b.storeys.length ? b.storeys[b.storeys.length - 1].z1 : 0;
     const lv = Number(level);
-    return { top: b.top, storeys: b.storeys.filter((x) => x.storey !== false).length, height: top, mpd: level === "" || level == null || isNaN(lv) ? null : lv + top, refuge: refuge(b.storeys, uc6) };
+    return { top: b.top, storeys: new Set(b.storeys.filter((x) => x.storey !== false).map((x) => x.no)).size, height: top, mpd: level === "" || level == null || isNaN(lv) ? null : lv + top, refuge: refuge(b.storeys, uc6) };
   });
   const A = Number(siteArea) || 0;
   const r = (x) => Math.round(x * 1000) / 1000;
@@ -265,3 +275,41 @@ export function setbacks(fp, site) {
 }
 /* the polygon grown (d > 0) or shrunk (d < 0) by d m */
 export const grow = (xy, d) => inset(xy, -d);
+
+/* half-plane clip: the part of poly where (p - a)·n >= 0 */
+function clipHalf(poly, a, n) {
+  const out = [], f = (p) => (p[0] - a[0]) * n[0] + (p[1] - a[1]) * n[1];
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length], fp = f(p), fq = f(q);
+    if (fp >= 0) out.push(p);
+    if ((fp >= 0) !== (fq >= 0)) { const t = fp / (fp - fq); out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]); }
+  }
+  return out;
+}
+/* the plate cut into strips across its longest edge, each the share of the
+   area given (shares in any units) -> [poly] */
+export function strips(fp, shares) {
+  const n = fp.length, tot = shares.reduce((x, y) => x + y, 0) || 1, A = areaXY(fp);
+  let li = 0, ll = 0;
+  for (let i = 0; i < n; i++) { const q = fp[(i + 1) % n], L = Math.hypot(q[0] - fp[i][0], q[1] - fp[i][1]); if (L > ll) { ll = L; li = i; } }
+  const q = fp[(li + 1) % n], u = [(q[0] - fp[li][0]) / ll, (q[1] - fp[li][1]) / ll];
+  const proj = fp.map((p) => p[0] * u[0] + p[1] * u[1]), lo = Math.min(...proj), hi = Math.max(...proj);
+  const at = (t) => [u[0] * t, u[1] * t];
+  const below = (t) => clipHalf(fp, at(t), [-u[0], -u[1]]); // the part with projection <= t
+  const cuts = [lo];
+  let acc = 0;
+  for (let j = 0; j < shares.length - 1; j++) {
+    acc += shares[j] / tot * A;
+    let a = lo, b = hi;
+    for (let k = 0; k < 50; k++) { const m = (a + b) / 2, pm = below(m); if ((pm.length >= 3 ? areaXY(pm) : 0) < acc) a = m; else b = m; }
+    cuts.push((a + b) / 2);
+  }
+  cuts.push(hi);
+  const out = [];
+  for (let j = 0; j < shares.length; j++) {
+    let p = clipHalf(fp, at(cuts[j]), u);
+    p = clipHalf(p, at(cuts[j + 1]), [-u[0], -u[1]]);
+    out.push(p.length >= 3 ? p : []);
+  }
+  return out;
+}

@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-04", date: "23 Nov 2026",
+    items: [
+      "**Massing: ↶ Undo / ↷ Redo** (Ctrl+Z / Ctrl+Y) for every change to the blocks, floors and footprints.",
+      "**The site's edges are numbered E1, E2 ...** on the map (Site and Massing) and named so in every list, with the street on them (\"E3 · Fuk Hang Tsuen Road\").",
+      "**Shape the footprint**, explained: *Fill the site* set back a distance from every edge (then click an edge for its own), *Rectangle* width × depth with its long side parallel to an edge, *Grow / shrink* by a distance.",
+      "**⫽ Split** a floor group between uses (retail 70% and lobby 30%, say): the plate is cut in strips by share, each with its own use, GFA % and colour.",
+    ],
+  },
+  {
     version: "2027-03-03", date: "23 Nov 2026",
     items: [
       "**Massing colours** - a brighter set by use (domestic, hotel, office, retail, F&B, lobby, clubhouse, refuge, GIC, landscape, car park, E&M, loading, basement, transfer plate) on a light blue-grey ground, with darker storey lines; **☀ Shadow** turns the shadows on or off.",

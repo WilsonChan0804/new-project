@@ -172,3 +172,17 @@ body.st-mass #st-tools, body.st-mass .st-find, body.st-mass #st-hits { display: 
 .st-views { max-width: calc(100% - 120px); flex-wrap: wrap; }
 .st-views select { width: auto !important; max-width: 140px; }
 .st-views > * { flex: none; }
+.ms-undo { margin-left: auto; margin-right: 8px; display: inline-flex; gap: 2px; }
+.ms-undo button:disabled { opacity: .35; }
+.ms-eno span { position: absolute; transform: translate(-50%, -50%); background: #5b6470; color: #fff; font-size: 10.5px; font-weight: 700; padding: 0 5px; border-radius: 9px; white-space: nowrap; }
+details.ms-tools { border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px; margin-bottom: 6px; }
+details.ms-tools summary { cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.ms-trow { font-size: 12px; padding: 5px 0; border-top: 1px solid var(--line); }
+.ms-trow:first-of-type { border-top: 0; }
+.ms-trow b { display: block; font-size: 12px; }
+.ms-trow small { display: block; color: var(--muted); font-size: 10.5px; }
+.ms-trow input { width: 52px; }
+.ms-trow select { font-size: 12px; max-width: 170px; }
+tr.ms-part td { background: var(--panel-2, #f6f7f9); font-size: 11.5px; }
+tr.ms-part select { width: 84px !important; }
+tr.ms-part small { color: var(--muted); }

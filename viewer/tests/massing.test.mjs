@@ -58,5 +58,13 @@ ok((obj.match(/^v /gm) || []).length === 43 * 8 && /^o Tower_dom$/m.test(obj), "
   const f5 = M.figures(m5, 1000, 0);
   ok(near(f5.dgfa, 10 * 750 + 10 * 500, 1e-6) && near(f5.sc, 75, 1), "a smaller plate above: GFA 12,500, site coverage still 750 m² (75%)");
 }
+// a floor split: 60% retail, 40% lobby on a 30 x 25 plate
+{
+  const st = M.strips(sq(30, 25), [60, 40]);
+  const a = st.map((p) => Math.abs(p.reduce((s2, q, i, x) => { const r = x[(i + 1) % x.length]; return s2 + q[0] * r[1] - r[0] * q[1]; }, 0) / 2));
+  ok(near(a[0], 450, 0.01) && near(a[1], 300, 0.01), "strips: 450 + 300 m2");
+  const f6 = M.figures({ blocks: [{ id: "a", fp: sq(30, 25), groups: [{ use: "retail", n: 2, h: 5, parts: [{ use: "retail", share: 60 }, { use: "car", share: 40 }] }, { use: "dom", n: 3, h: 3 }] }] }, 1000, 0);
+  ok(near(f6.ngfa, 2 * 450, 0.01) && f6.storeys === 5 && near(f6.dgfa, 3 * 750, 0.01), "split floors: retail 900 m2 GFA, car park none, 5 storeys");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);
