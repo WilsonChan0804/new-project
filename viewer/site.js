@@ -11,6 +11,8 @@ import { api, project, headers } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { toast } from "./tasks-util.js";
 import * as S from "./sitecore.js";
+import { site as bprSite } from "./gbpcore.js";
+import { OZP, OZP_PORTAL } from "./ozptables.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -309,12 +311,58 @@ function panel(light) {
       <table class="st-edges"><thead><tr><th>Edge</th><th class="num">Length m</th><th>Abuts</th><th>Street width</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="muted st-note">B(P)R reg. 2: class B is a corner site on two specified streets, class C on three. A street under ${S.STREET_MIN} m wide does not count. The street widths also go to the GBP workbook later (height and site coverage by street width come in phase 2).</p>
     </section>` : ""}
+    ${planCards(s, n >= 3 ? (s.target > 0 && ok ? s.target : a) : s.target || null, cls)}
     <section class="st-card">
-      <div class="st-head"><b>3 · GBP workbook</b></div>
+      <div class="st-head"><b>5 · GBP workbook</b></div>
       <p class="muted st-note">Puts the site area${n >= 3 ? ` (${f3(s.target > 0 && ok ? s.target : a)} m²)` : ""} and the class of site${cls ? ` (${cls.cls})` : ""} into the workbook's step 1, for everyone on the project.</p>
       <div class="st-row"><button type="button" class="primary" id="st-send"${n >= 3 && CAN ? "" : " disabled"}>Send to GBP workbook</button>
       <a class="st-link" id="st-open" href="codes.html?${new URLSearchParams({ project: project(), tab: "gbp", sec: "site" })}">Open GBP workbook ›</a></div>
       ${sentNote()}
+    </section>`;
+}
+/* ---------- 3 Planning (OZP) and lease, 4 development potential */
+function zoneOf(pl) { const p = OZP[pl.plan]; return p && p.zones[pl.zone] ? p.zones[pl.zone] : null; }
+function planCards(s, areaM2, cls) {
+  const pl = s.plan || {}, ls = s.lease || {}, dis = CAN ? "" : " disabled";
+  const z = zoneOf(pl), P = OZP[pl.plan];
+  const inp = (grp, k, v, ph, w) => `<input type="number" step="any" min="0" data-${grp}="${k}" value="${esc(v == null ? "" : v)}" placeholder="${esc(ph || "")}"${dis}${w ? ` style="width:${w}px"` : ""}>`;
+  const plans = Object.keys(OZP).map((k) => `<option value="${esc(k)}"${k === pl.plan ? " selected" : ""}>${esc(k)}</option>`).join("");
+  const zones = P ? Object.keys(P.zones).map((k) => `<option value="${esc(k)}"${k === pl.zone ? " selected" : ""}>${esc(k)}</option>`).join("") : "";
+  // B(P)R from the height: the OZP or lease height less the site level
+  const bh = [pl.bh, ls.bh].map(Number).filter((x) => x > 0);
+  const top = bh.length ? Math.min(...bh) : null;
+  const h = top != null && pl.level !== "" && pl.level != null ? top - Number(pl.level) : null;
+  const B = areaM2 && cls && h > 0 ? bprSite({ area: areaM2, cls: cls.cls, kind: "domestic", height: h }) : null;
+  const bpr = B && B.status === "ok" ? { dpr: B.dom.pr, npr: B.non.pr, sc: B.dom.sc } : {};
+  const rows = S.potential({ area: areaM2, bpr, ozp: { dpr: pl.dpr, npr: pl.npr, pr: pl.pr, sc: pl.sc, bh: pl.bh, storeys: pl.storeys }, lease: ls });
+  const fmt = (r, v) => (v == null ? "–" : r.unit === "m²" ? f1(v) : r.unit === "%" ? f1(v) : r.unit === "mPD" ? f1(v) : String(v));
+  return `<section class="st-card" id="st-plan">
+      <div class="st-head"><b>3 · Planning and lease</b><a class="st-link" href="${OZP_PORTAL}" target="_blank" rel="noopener">OZP portal ›</a></div>
+      <div class="st-grid">
+        <label class="st-f">Plan<select data-pl="plan"${dis}><option value="">– other plan –</option>${plans}</select></label>
+        <label class="st-f">Zone${P ? `<select data-pl="zone"${dis}><option value="">– choose –</option>${zones}</select>` : `<input data-pl="zone" value="${esc(pl.zone || "")}" placeholder="e.g. R(A)9"${dis}>`}</label>
+      </div>
+      ${!P ? `<label class="st-f">Plan no.<input data-pl="planno" value="${esc(pl.planno || "")}" placeholder="e.g. S/K20/30"${dis}></label>` : ""}
+      <table class="st-lim"><thead><tr><th></th><th>OZP</th><th>Lease</th></tr></thead><tbody>
+        <tr><td>Domestic PR / GFA m²</td><td>${inp("pl", "dpr", pl.dpr, "PR", 70)}</td><td>${inp("ls", "dgfa", ls.dgfa, "GFA m²", 100)}</td></tr>
+        <tr><td>Non-domestic PR / GFA m²</td><td>${inp("pl", "npr", pl.npr, "PR", 70)}</td><td>${inp("ls", "ngfa", ls.ngfa, "GFA m²", 100)}</td></tr>
+        <tr><td>Total PR / GFA m²</td><td>${inp("pl", "pr", pl.pr, "PR", 70)}</td><td>${inp("ls", "gfa", ls.gfa, "GFA m²", 100)}</td></tr>
+        <tr><td>Site coverage %</td><td>${inp("pl", "sc", pl.sc, "none", 70)}</td><td>${inp("ls", "sc", ls.sc, "none", 100)}</td></tr>
+        <tr><td>Building height mPD</td><td>${inp("pl", "bh", pl.bh, z && z.bhPlan ? "on the Plan" : "none", 70)}</td><td>${inp("ls", "bh", ls.bh, "none", 100)}</td></tr>
+        <tr><td>Storeys</td><td>${inp("pl", "storeys", pl.storeys, "none", 70)}</td><td>${inp("ls", "storeys", ls.storeys, "none", 100)}</td></tr>
+      </tbody></table>
+      <label class="st-f">Site formation level (mPD) <small>for the B(P)R height band</small>${inp("pl", "level", pl.level, "e.g. 6.0")}</label>
+      ${z && z.bhPlan && !(pl.bh > 0) ? `<p class="st-sent warn">The height of ${esc(pl.zone)} is on the Plan: read it there and type it.</p>` : ""}
+      ${z && z.note ? `<p class="muted st-note">${esc(z.note)}</p>` : ""}
+      ${P ? `<p class="muted st-note">${esc(P.common)} <i>Source: ${esc(P.name)}, ${esc(P.src)}.</i></p>` : `<p class="muted st-note">Read the plan's Notes on the OZP portal and type the restrictions.</p>`}
+    </section>
+    <section class="st-card" id="st-pot">
+      <div class="st-head"><b>4 · Development potential</b><span class="muted">the strictest governs</span></div>
+      ${areaM2 ? "" : `<p class="st-need">Give the site area (step 1) for the GFAs.</p>`}
+      <table class="st-pot"><thead><tr><th></th><th>B(P)R</th><th>OZP</th><th>Lease</th><th>Governs</th></tr></thead><tbody>
+        ${rows.map((r) => `<tr><td>${r.label}${r.unit ? ` <small>${r.unit}</small>` : ""}</td>${["bpr", "ozp", "lease"].map((k) => `<td class="num${r[k] != null && r.value != null && Math.abs(r[k] - r.value) < 1e-9 ? " gov" : ""}">${fmt(r, r[k])}</td>`).join("")}<td class="num"><b>${fmt(r, r.value)}</b>${r.by ? `<small>${esc(r.by)}</small>` : ""}</td></tr>`).join("")}
+      </tbody></table>
+      <p class="muted st-note">${B && B.status === "ok" ? `B(P)R: class ${esc(cls.cls)}, a building of ${f1(h)} m (${esc(B.band)}), domestic site coverage and plot ratios from the First Schedule.` : "B(P)R figures need the class of site, a height (OZP or lease) and the site level."} GFA = plot ratio × the site area; the OZP's and lease's exemptions are not taken off here.</p>
     </section>`;
 }
 function sentNote() {
@@ -330,6 +378,14 @@ function wirePanel() {
     if (t.dataset.sf === "name") { s.name = t.value.trim(); save(); }
     else if (t.dataset.sf === "target") { const v = parseFloat(t.value); s.target = v > 0 ? v : null; panel(); tools(); save(); }
     else if (t.dataset.se != null) toggleStreet(+t.dataset.se);
+    else if (t.dataset.pl != null || t.dataset.ls != null) {
+      const grp = t.dataset.pl != null ? "plan" : "lease", k = t.dataset.pl != null ? t.dataset.pl : t.dataset.ls;
+      const o = s[grp] = s[grp] || {};
+      o[k] = t.type === "number" ? (t.value === "" ? "" : Math.max(0, parseFloat(t.value))) : t.value.trim();
+      if (grp === "plan" && k === "plan") o.zone = "";
+      if (grp === "plan" && k === "zone") { const z = zoneOf(o); if (z) { for (const f of ["dpr", "npr", "pr", "sc", "storeys"]) o[f] = z[f] == null ? "" : z[f]; o.bh = z.bh == null ? (z.bhPlan ? o.bh || "" : "") : z.bh; } }
+      panel(); save();
+    }
     else if (t.dataset.sw != null) { const i = +t.dataset.sw; if (s.streets[i]) s.streets[i].width = t.value === "" ? "" : Math.max(0, parseFloat(t.value)); changed(); }
   });
   el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.matches("input")) ev.target.blur(); });

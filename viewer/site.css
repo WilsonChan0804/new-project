@@ -1,6 +1,6 @@
 /* Site study page */
 #st { display: flex; flex-direction: row; height: calc(100% - var(--hdr-h, 56px)); min-height: 0; background: var(--bg); }
-.st-side { width: 380px; flex: none; overflow: auto; border-right: 1px solid var(--line); background: var(--panel-2, var(--panel)); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.st-side { width: 430px; flex: none; overflow: auto; border-right: 1px solid var(--line); background: var(--panel-2, var(--panel)); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .st-map-wrap { flex: 1; align-self: stretch; position: relative; min-width: 0; }
 #st-map { position: absolute; inset: 0; background: #e8ecef; }
 #st-map.st-drawing { cursor: crosshair; }
@@ -59,3 +59,15 @@
   .st-tools { left: 50px; max-width: calc(100% - 100px); }
   .st-tools button { padding: 5px 7px; font-size: 12px; }
 }
+.st-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.st-f small { color: var(--muted); }
+.st-lim, .st-pot { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 4px 0 8px; }
+.st-lim th, .st-pot th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 3px 4px; border-bottom: 1px solid var(--line); }
+.st-lim td, .st-pot td { padding: 3px 4px; border-bottom: 1px solid var(--line); }
+.st-pot .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st-pot td.gov { background: var(--accent-soft); font-weight: 600; }
+.st-pot td small { display: block; font-size: 10.5px; color: var(--muted); }
+.st-pot td > small { display: inline; }
+.st-pot td.num small { display: block; }
+.st-pot { font-size: 11.5px; }
+.st-pot td:first-child { min-width: 78px; }

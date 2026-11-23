@@ -43,5 +43,14 @@ ok(near(o[0], 22 + 18 / 60 + 43.68 / 3600 - 5.5 / 3600, 1e-6) && near(o[1], 114 
 const p = S.hk80ToWgs84(836694.05 + 1000, 819069.80 + 2000), dxy = S.toXY([p], o)[0];
 ok(near(dxy[0], 1000, 2) && near(dxy[1], 2000, 2), "1 km E, 2 km N of the origin: " + dxy.map((x) => x.toFixed(1)));
 
+// development potential: TKO Area 137A, R(A)9 (S/TKO/32): dom PR 7.5, non-dom 0.3, 200 mPD
+const pot = S.potential({ area: 91509, bpr: { dpr: 10, npr: 15, sc: 33.33 }, ozp: { dpr: 7.5, npr: 0.3, sc: null, bh: 200 }, lease: { dgfa: 680000, bh: "" } });
+const row = (k) => pot.find((r) => r.key === k);
+ok(near(row("dgfa").ozp, 686317.5, 0.001) && row("dgfa").value === 680000 && row("dgfa").by === "Lease", "domestic GFA: OZP 686,317.5, the lease's 680,000 governs");
+ok(near(row("ngfa").value, 27452.7, 0.001) && row("ngfa").by === "OZP", "non-domestic GFA: OZP 0.3 governs");
+ok(near(row("gfa").value, 713770.2, 0.001), "total GFA from the OZP: 713,770.2");
+ok(row("sc").value === 33.33 && row("sc").by === "B(P)R" && row("bh").value === 200 && row("bh").by === "OZP", "SC by B(P)R, height by the OZP");
+ok(row("storeys").value === null, "no storey limit given: none");
+
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

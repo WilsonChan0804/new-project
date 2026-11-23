@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-26", date: "23 Nov 2026",
+    items: [
+      "**Site study: Planning and lease** - choose the OZP and the zone and its restrictions fill in (the Tseung Kwan O OZP S/TKO/32 is in, e.g. R(A)9: domestic PR 7.5, non-domestic 0.3, height on the Plan); for another plan type them from its Notes (the OZP portal link is there). Add the lease's GFA, site coverage, height and storeys.",
+      "**Development potential** - B(P)R, the OZP and the lease side by side for the domestic, non-domestic and total GFA, site coverage, height and storeys; the strictest governs and says which one.",
+    ],
+  },
+  {
     version: "2027-02-25", date: "23 Nov 2026",
     items: [
       "**Site study** (new page, beside Codes) - find the site on the Lands Department map (or the aerial photo), **Draw boundary** by clicking its corners or start from a **Rectangle**, and **Match area** scales it to the site area you give. Drag a corner to move it, click the dot on an edge to add one, right-click a corner to remove it.",

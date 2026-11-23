@@ -69,9 +69,15 @@ export function centroid(pts) {
 export function scaleTo(pts, target) {
   const a = area(pts);
   if (!(a > 0) || !(target > 0)) return { pts, factor: 1 };
-  const f = Math.sqrt(target / a), o = centroid(pts);
-  const xy = toXY(pts, o).map(([x, y]) => [x * f, y * f]);
-  return { pts: fromXY(xy, o), factor: f };
+  // twice: the local plane about the centroid and the one area() uses differ
+  // by a hair on a large site
+  let out = pts, f = 1;
+  for (let k = 0; k < 3; k++) {
+    const fk = Math.sqrt(target / area(out)), o = centroid(out);
+    out = fromXY(toXY(out, o).map(([x, y]) => [x * fk, y * fk]), o);
+    f *= fk;
+  }
+  return { pts: out, factor: f };
 }
 
 /* does the boundary cross itself? (its area would then mean nothing) */
@@ -177,4 +183,36 @@ export function hk80ToWgs84(E, N) {
 export function rectangle(c, areaM2) {
   const w = Math.sqrt(areaM2 * 1.5), d = areaM2 / w;
   return fromXY([[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]], c);
+}
+
+/* Development potential: B(P)R, the OZP and the lease side by side, the
+   strictest of each governing. Every input may be missing (null).
+   i: {area, bpr: {dpr, npr, sc}, ozp: {dpr, npr, pr, sc, bh, storeys},
+       lease: {gfa, dgfa, ngfa, sc, bh, storeys}}
+   -> [{key, label, unit, bpr, ozp, lease, value, by}] */
+export function potential(i) {
+  const a = Number(i.area) > 0 ? Number(i.area) : null;
+  const n = (x) => (x === "" || x == null || isNaN(Number(x)) ? null : Number(x));
+  const B = i.bpr || {}, O = i.ozp || {}, L = i.lease || {};
+  const g = (pr) => (a != null && n(pr) != null ? Math.round(a * n(pr) * 1000) / 1000 : null);
+  const ozTot = n(O.pr) != null ? g(O.pr) : n(O.dpr) != null || n(O.npr) != null ? (g(O.dpr) || 0) + (g(O.npr) || 0) : null;
+  const rows = [
+    { key: "dgfa", label: "Domestic GFA", unit: "m²", bpr: g(B.dpr), ozp: g(O.dpr), lease: n(L.dgfa) },
+    { key: "ngfa", label: "Non-domestic GFA", unit: "m²", bpr: g(B.npr), ozp: g(O.npr), lease: n(L.ngfa) },
+    { key: "gfa", label: "Total GFA", unit: "m²", bpr: null, ozp: ozTot, lease: n(L.gfa) },
+    { key: "sc", label: "Site coverage", unit: "%", bpr: n(B.sc), ozp: n(O.sc), lease: n(L.sc) },
+    { key: "bh", label: "Building height", unit: "mPD", bpr: null, ozp: n(O.bh), lease: n(L.bh) },
+    { key: "storeys", label: "Storeys", unit: "", bpr: null, ozp: n(O.storeys), lease: n(L.storeys) },
+  ];
+  const NAMES = { bpr: "B(P)R", ozp: "OZP", lease: "Lease" };
+  for (const r of rows) {
+    let v = null, by = [];
+    for (const k of ["bpr", "ozp", "lease"]) {
+      if (r[k] == null) continue;
+      if (v == null || r[k] < v - 1e-9) { v = r[k]; by = [NAMES[k]]; }
+      else if (Math.abs(r[k] - v) <= 1e-9) by.push(NAMES[k]);
+    }
+    r.value = v; r.by = by.join(" + ");
+  }
+  return rows;
 }
