@@ -9,16 +9,23 @@
 import { areaXY } from "./sitecore.js";
 
 export const USES = {
-  dom: { label: "Domestic", acc: 100, cls: "dom", color: "#f3cf8a", cap: true },
-  non: { label: "Non-domestic", acc: 100, cls: "non", color: "#8fb3e8", cap: true },
-  lobby: { label: "Lobby / G/F", acc: 100, cls: "dom", color: "#f2a99a", cap: true },
-  club: { label: "Clubhouse", acc: 0, cls: "dom", color: "#f6e3a1" },
-  car: { label: "Car park", acc: 0, cls: "non", color: "#c9cdd3" },
-  em: { label: "E&M / plant floor", acc: 0, cls: "non", color: "#c8b8e8" },
-  refuge: { label: "Refuge floor", acc: 0, cls: "dom", color: "#a9dcb4" },
-  transfer: { label: "Transfer plate", acc: 0, cls: "non", color: "#e4e7eb", storey: false },
-  emzone: { label: "E&M zone (not a storey)", acc: 0, cls: "non", color: "#ddd3f0", storey: false },
-  void: { label: "Void", acc: 0, cls: "non", color: "#eef0f2" },
+  dom: { label: "Domestic", acc: 100, cls: "dom", color: "#f6d86b", cap: true },
+  hotel: { label: "Hotel / serviced apt", acc: 100, cls: "non", color: "#d9a8ec", cap: true },
+  non: { label: "Office", acc: 100, cls: "non", color: "#7dbbf0", cap: true },
+  retail: { label: "Retail", acc: 100, cls: "non", color: "#f47b6b", cap: true },
+  fnb: { label: "F&B", acc: 100, cls: "non", color: "#f9a65a", cap: true },
+  lobby: { label: "Lobby / G/F", acc: 100, cls: "dom", color: "#f7c9a8", cap: true },
+  club: { label: "Clubhouse / amenity", acc: 0, cls: "dom", color: "#8ed6a1" },
+  refuge: { label: "Refuge floor", acc: 0, cls: "dom", color: "#4cc3b8" },
+  gic: { label: "GIC / community", acc: 100, cls: "non", color: "#6e8ff2" },
+  land: { label: "Landscape / roof deck", acc: 0, cls: "non", color: "#bce070" },
+  car: { label: "Car park", acc: 0, cls: "non", color: "#bcc6d2" },
+  em: { label: "E&M / plant", acc: 0, cls: "non", color: "#9eaabb" },
+  load: { label: "Loading / service", acc: 0, cls: "non", color: "#8794a3" },
+  base: { label: "Basement", acc: 0, cls: "non", color: "#c8ac90" },
+  transfer: { label: "Transfer plate", acc: 0, cls: "non", color: "#5b6470", storey: false },
+  emzone: { label: "E&M zone (not a storey)", acc: 0, cls: "non", color: "#aeb8c6", storey: false },
+  void: { label: "Void", acc: 0, cls: "non", color: "#e6e9ee" },
 };
 
 /* FS Code 2011 Clause B18 (refuge floors):
@@ -52,13 +59,14 @@ export function stacks(m) {
     const storeys = [];
     for (const g of groupsOf(b)) {
       const u = USES[g.use] || USES.dom;
+      const fp = g.fp && g.fp.length >= 3 ? g.fp : b.fp, ga = g.fp && g.fp.length >= 3 ? areaXY(g.fp) : a;
       const isStorey = g.storey == null ? u.storey !== false : !!g.storey;
       for (let i = 0; i < g.n; i++) {
         const acc = Math.max(0, Math.min(100, g.acc == null || g.acc === "" ? u.acc : Number(g.acc)));
-        const gfa = a * acc / 100;
+        const gfa = ga * acc / 100;
         // the floor area not counted is the concession; any extra (balconies, UP outside the footprint) on top
-        const conc = a - gfa + (Number(g.extra) || 0);
-        storeys.push({ block: b.id, no: isStorey ? ++k : null, storey: isStorey, use: g.use, cls: u.cls, cap: !!u.cap, h: g.h, z0: z, z1: z + g.h, area: a, gfa, conc });
+        const conc = ga - gfa + (Number(g.extra) || 0);
+        storeys.push({ block: b.id, no: isStorey ? ++k : null, storey: isStorey, use: g.use, cls: u.cls, cap: !!u.cap, h: g.h, z0: z, z1: z + g.h, area: ga, gfa, conc, fp });
         z += g.h;
       }
     }
@@ -67,7 +75,7 @@ export function stacks(m) {
   return out;
 }
 function groupsOf(b) {
-  return (b.groups || []).map((g) => ({ use: g.use || "dom", n: Math.max(0, Math.round(Number(g.n) || 0)), h: Math.max(0, Number(g.h) || 0), acc: g.acc, extra: g.extra != null ? g.extra : g.conc, storey: g.storey }));
+  return (b.groups || []).map((g) => ({ use: g.use || "dom", n: Math.max(0, Math.round(Number(g.n) || 0)), h: Math.max(0, Number(g.h) || 0), acc: g.acc, extra: g.extra != null ? g.extra : g.conc, storey: g.storey, fp: g.fp }));
 }
 
 /* the buildings: each top block with everything under it, storeys bottom up */
@@ -143,7 +151,10 @@ export function figures(m, siteArea, level, uc6) {
   const st = stacks(m);
   let dom = 0, non = 0, conc = 0, capConc = 0;
   for (const x of st) for (const s of x.storeys) { if (s.cls === "dom") dom += s.gfa; else non += s.gfa; conc += s.conc; if (s.cap) capConc += s.conc; }
-  const covered = unionArea(st.filter((x) => x.storeys.length).map((x) => x.block.fp));
+  // the site coverage: every floor plate seen from above, together
+  const plates = [];
+  for (const x of st) { if (!x.storeys.length) continue; const seen = new Set(); for (const s2 of x.storeys) if (!seen.has(s2.fp)) { seen.add(s2.fp); plates.push(s2.fp); } }
+  const covered = unionArea(plates);
   const bs = buildings(m).map((b) => {
     const top = b.storeys.length ? b.storeys[b.storeys.length - 1].z1 : 0;
     const lv = Number(level);
@@ -217,7 +228,7 @@ export function toObj(m, level) {
     for (const [use, ss] of Object.entries(groups)) {
       out += `o ${(x.block.name || x.block.id).replace(/\s+/g, "_")}_${use}\n`;
       for (const s of ss) {
-        const fp = x.block.fp, n = fp.length;
+        const fp = s.fp || x.block.fp, n = fp.length;
         for (const [px, py] of fp) out += `v ${px.toFixed(3)} ${(s.z0 + lv).toFixed(3)} ${(-py).toFixed(3)}\n`;
         for (const [px, py] of fp) out += `v ${px.toFixed(3)} ${(s.z1 + lv).toFixed(3)} ${(-py).toFixed(3)}\n`;
         const b = v + 1, t = v + 1 + n;

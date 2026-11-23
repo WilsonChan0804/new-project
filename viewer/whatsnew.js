@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-03", date: "23 Nov 2026",
+    items: [
+      "**Massing colours** - a brighter set by use (domestic, hotel, office, retail, F&B, lobby, clubhouse, refuge, GIC, landscape, car park, E&M, loading, basement, transfer plate) on a light blue-grey ground, with darker storey lines; **☀ Shadow** turns the shadows on or off.",
+      "**A different floor plate for some floors**: ▱ on a floor group gives those floors their own plate (a set-back tower top, a smaller podium level) to edit on the plan; right-click ▱ to go back to the block's.",
+      "**⌖ Snap** (on by default): corners snap to the site, the other footprints, the neighbours and the grid; hold Alt for a free point. **＃ Grid** with its spacing and rotation, or squared to a site edge.",
+    ],
+  },
+  {
     version: "2027-03-02", date: "23 Nov 2026",
     items: [
       "**Massing: lighter colours** (pastel blocks, a pale site, white streets, soft shadows) and the **areas follow while you drag** a corner or the block; click the dot on a footprint edge to **add a corner**, right-click one to remove it. Each edge shows its length and its **set-back to the boundary**.",

@@ -18,7 +18,10 @@ const TILE = "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/";
 let C = null, layer = null, ON = false, VIEW = "plan", T3 = null, SEL = null;
 let TOOL = null; // "measure" {a} | "context" [pts]
 let MEAS = [], rub = null;
-let ELEV = 0, CUT = 50;
+let ELEV = 0, CUT = 50, SELG = null; // SELG: {b: block id, g: group index} - editing that group's own floor plate
+const pref = (k, d) => { try { const v = localStorage.getItem("lwk-viewer:ms-" + k); return v == null ? d : v === "1"; } catch (e) { return d; } };
+const setPref = (k, v) => { try { localStorage.setItem("lwk-viewer:ms-" + k, v ? "1" : "0"); } catch (e) {} };
+let SNAP = pref("snap", true), SHADOW = pref("shadow", true);
 
 export function init(ctx) {
   C = ctx;
@@ -26,6 +29,12 @@ export function init(ctx) {
   const P = $("#st-mpanel");
   P.addEventListener("change", onChange);
   P.addEventListener("click", onClick);
+  P.addEventListener("contextmenu", (ev) => {
+    const t = ev.target.closest("[data-gfp]"); if (!t) return;
+    ev.preventDefault();
+    const [bi, gi] = t.dataset.gfp.split(".").map(Number), m = mass(), g = m.blocks[bi].groups[gi];
+    if (g.fp && confirm("Back to the block's floor plate for these floors?")) { delete g.fp; SELG = null; changed(); }
+  });
   P.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.matches("input")) ev.target.blur(); });
   $("#st-views").addEventListener("click", onViews);
   $("#st-views").addEventListener("change", onViews);
@@ -44,6 +53,7 @@ function mass() {
   const m = s.massing;
   m.blocks = Array.isArray(m.blocks) ? m.blocks : [];
   m.context = Array.isArray(m.context) ? m.context : [];
+  m.grid = Object.assign({ on: false, step: 3, ang: 0 }, m.grid || {});
   // the first form typed concessions; GFA % now gives them, the typed figure is an extra
   for (const b of m.blocks) for (const g of b.groups || []) if (g.conc != null && g.extra == null) { g.extra = g.conc; delete g.conc; }
   return m;
@@ -51,7 +61,8 @@ function mass() {
 const origin = () => { const s = C.study(); return s.pts.length >= 3 ? S.centroid(s.pts) : null; };
 function model() {
   const o = origin(), m = mass();
-  return { blocks: m.blocks.map((b) => Object.assign({}, b, { fp: o && b.fp && b.fp.length >= 3 ? S.toXY(b.fp, o) : [] })) };
+  const xy = (fp) => (o && fp && fp.length >= 3 ? S.toXY(fp, o) : null);
+  return { blocks: m.blocks.map((b) => Object.assign({}, b, { fp: xy(b.fp) || [], groups: (b.groups || []).map((g) => Object.assign({}, g, { fp: xy(g.fp) })) })) };
 }
 const uid = () => "b" + Math.random().toString(36).slice(2, 8);
 
@@ -75,7 +86,13 @@ function viewsBar() {
     ${VIEW === "elev" || VIEW === "sect" ? `<select data-elev title="Looking at the building square to this edge">${s.pts.map((p, i) => `<option value="${i}"${i === ELEV ? " selected" : ""}>${VIEW === "elev" ? "from " : "along "}${esc(names(i))}</option>`).join("")}</select>` : ""}
     ${VIEW === "sect" ? `<input type="range" min="0" max="100" value="${CUT}" data-cut title="Where the section cuts">` : ""}
     ${VIEW === "plan" && C.can() ? `<button type="button" data-tool="measure" class="${TOOL && TOOL.kind === "measure" ? "on" : ""}" title="Measure: snaps to the site and the footprints">📏</button><button type="button" data-tool="context" class="${TOOL && TOOL.kind === "context" ? "on" : ""}" title="Draw a neighbouring building for the 3D view">+ Context</button>` : ""}
+    ${VIEW === "plan" ? gridBar() : ""}
+    ${VIEW === "plan" ? `<button type="button" data-snap class="${SNAP ? "on" : ""}" title="Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)">⌖ Snap</button>` : `<button type="button" data-shadow class="${SHADOW ? "on" : ""}" title="Shadows on / off">☀ Shadow</button>`}
     ${VIEW !== "plan" ? `<button type="button" data-png title="Save this view as a picture">PNG</button>` : ""}`;
+}
+function gridBar() {
+  const g = mass().grid, s = C.study(), can = C.can() ? "" : " disabled";
+  return `<button type="button" data-grid class="${g.on ? "on" : ""}" title="A grid to draw to; corners snap to it">＃ Grid</button>${g.on ? `<input type="number" min="0.1" step="0.1" data-gstep value="${g.step}" title="Grid spacing, m"${can}><small>m</small><input type="number" step="0.5" data-gang value="${+(+g.ang).toFixed(2)}" title="Grid rotation, degrees"${can}><small>°</small><select data-galign title="Square the grid to a site edge"${can}><option value="">∥ edge …</option>${s.pts.map((p, i) => `<option value="${i}">${i + 1}–${(i + 1) % s.pts.length + 1}</option>`).join("")}</select>` : ""}`;
 }
 function onViews(ev) {
   const t = ev.target;
@@ -83,6 +100,17 @@ function onViews(ev) {
   if (t.dataset.elev != null && ev.type === "change") { ELEV = +t.value; return draw3d(); }
   if (t.dataset.cut != null && ev.type === "input") { CUT = +t.value; if (T3) T3.cut(CUT); return; }
   if (t.dataset.png != null && ev.type === "click") return png();
+  const g = mass().grid;
+  if (t.dataset.grid != null && ev.type === "click") { g.on = !g.on; C.save(); viewsBar(); return drawPlan(); }
+  if (t.dataset.gstep != null && ev.type === "change") { g.step = Math.max(0.1, parseFloat(t.value) || 3); C.save(); return drawPlan(); }
+  if (t.dataset.gang != null && ev.type === "change") { g.ang = parseFloat(t.value) || 0; C.save(); return drawPlan(); }
+  if (t.dataset.galign != null && ev.type === "change" && t.value !== "") {
+    const s2 = C.study(), o = origin(), xy = S.toXY(s2.pts, o), i = +t.value, a = xy[i], b = xy[(i + 1) % xy.length];
+    g.ang = +(Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI).toFixed(2); g.ox = a[0]; g.oy = a[1];
+    C.save(); viewsBar(); return drawPlan();
+  }
+  if (t.dataset.snap != null && ev.type === "click") { SNAP = !SNAP; setPref("snap", SNAP); return viewsBar(); }
+  if (t.dataset.shadow != null && ev.type === "click") { SHADOW = !SHADOW; setPref("shadow", SHADOW); viewsBar(); if (T3) T3.shadow(SHADOW); return; }
   if (t.dataset.tool && ev.type === "click") {
     if (TOOL && TOOL.kind === t.dataset.tool) return endTool();
     endTool();
@@ -160,7 +188,8 @@ function blockCard(b, bi, m, dis) {
   const h = (b.groups || []).reduce((s2, g) => s2 + (Number(g.n) || 0) * (Number(g.h) || 0), 0);
   const gr = (b.groups || []).map((g, gi) => {
     const u = M.USES[g.use] || M.USES.dom, acc = g.acc == null || g.acc === "" ? u.acc : Math.max(0, Math.min(100, Number(g.acc)));
-    const conc = a * (1 - acc / 100) + (Number(g.extra) || 0);
+    const ga = g.fp && g.fp.length >= 3 ? S.area(g.fp) : a;
+    const conc = ga * (1 - acc / 100) + (Number(g.extra) || 0);
     return `<tr style="--c:${u.color}">
       <td><i class="ms-sw"></i><select data-g="${bi}.${gi}.use"${dis}>${useOpt(g.use)}</select></td>
       <td><input type="number" min="0" step="1" data-g="${bi}.${gi}.n" value="${esc(g.n)}"${dis}></td>
@@ -169,7 +198,7 @@ function blockCard(b, bi, m, dis) {
       <td class="num" title="Floor area not counted as GFA (+ the extra)">${f0(conc)}</td>
       <td><input type="number" min="0" step="1" data-g="${bi}.${gi}.extra" value="${esc(g.extra == null ? "" : g.extra)}" placeholder="0" title="Extra concession per floor outside the footprint (balconies, utility platforms)"${dis}></td>
       <td><input type="checkbox" data-gs="${bi}.${gi}"${isSt(g) ? " checked" : ""} title="Counts as a storey"${dis}></td>
-      <td class="nw">${dis ? "" : `<button type="button" class="ghost st-ib" data-gup="${bi}.${gi}" title="Move down">↓</button><button type="button" class="ghost st-ib" data-gdel="${bi}.${gi}" title="Remove">×</button>`}</td></tr>`;
+      <td class="nw">${dis ? "" : `<button type="button" class="ghost st-ib${g.fp ? " on" : ""}${SELG && SELG.b === b.id && SELG.g === gi ? " ed" : ""}" data-gfp="${bi}.${gi}" title="${g.fp ? "Its own floor plate (click to edit it on the plan; right-click: back to the block's)" : "Give these floors their own floor plate"}">▱</button><button type="button" class="ghost st-ib" data-gup="${bi}.${gi}" title="Move down">↓</button><button type="button" class="ghost st-ib" data-gdel="${bi}.${gi}" title="Remove">×</button>`}</td></tr>`;
   }).join("");
   const s = C.study(), sel = SEL === b.id;
   const edgeOpts = s.pts.map((p, i) => `<option value="${i}"${+b.align === i ? " selected" : ""}>edge ${i + 1}–${(i + 1) % s.pts.length + 1}</option>`).join("");
@@ -235,7 +264,7 @@ function footprint(kind, b) {
 function onClick(ev) {
   const t = ev.target.closest("button") || ev.target, m = mass(), d = t.dataset || {};
   const card = ev.target.closest(".ms-block");
-  if (card && SEL !== card.dataset.bid && !ev.target.closest("button,input,select")) { SEL = card.dataset.bid; render(); return; }
+  if (card && SEL !== card.dataset.bid && !ev.target.closest("button,input,select")) { SEL = card.dataset.bid; SELG = null; render(); return; }
   if (d.ma) {
     if (d.ma === "example") {
       const p = { id: uid(), name: "Podium", setback: 3, groups: [{ use: "lobby", n: 1, h: 6 }, { use: "car", n: 2, h: 4.5 }, { use: "club", n: 1, h: 5 }, { use: "transfer", n: 1, h: 2.5 }] };
@@ -255,6 +284,13 @@ function onClick(ev) {
   }
   if (d.fp) { const [bi, k] = d.fp.split("."); footprint(k, m.blocks[+bi]); SEL = m.blocks[+bi].id; return changed(); }
   if (d.gadd != null) { const b = m.blocks[+d.gadd], last = (b.groups || []).slice(-1)[0]; (b.groups = b.groups || []).push(last ? Object.assign({}, last) : { use: "dom", n: 1, h: 3.15 }); return changed(); }
+  if (d.gfp) {
+    const [bi, gi] = d.gfp.split(".").map(Number), b = m.blocks[bi], g = b.groups[gi];
+    if (!g.fp) g.fp = b.fp.map((q) => q.slice());
+    SEL = b.id; SELG = SELG && SELG.b === b.id && SELG.g === gi ? null : { b: b.id, g: gi };
+    if (SELG) C.hint(`Editing the floor plate of ${b.name}'s floors ${gi + 1}: drag its corners, add corners on its edges. Click ▱ again to go back to the block.`, 6000);
+    return changed();
+  }
   if (d.gtr != null) { const b = m.blocks[+d.gtr]; (b.groups = b.groups || []).push({ use: "transfer", n: 1, h: 2.5 }); return changed(); }
   if (d.gdel) { const [bi, gi] = d.gdel.split(".").map(Number); m.blocks[bi].groups.splice(gi, 1); return changed(); }
   if (d.gup) { const [bi, gi] = d.gup.split(".").map(Number), g = m.blocks[bi].groups; if (gi > 0) [g[gi - 1], g[gi]] = [g[gi], g[gi - 1]]; return changed(); }
@@ -289,6 +325,7 @@ function download(text, name, type) {
 function drawPlan() {
   const L = C.L, m = mass(), can = C.can() && !TOOL, s = C.study(), o = origin();
   layer.clearLayers();
+  drawGrid(L, m, s, o);
   for (const c of m.context) L.polygon(c.fp, { color: "#8d949c", weight: 1, fillColor: "#c3c8ce", fillOpacity: 0.5, interactive: false }).addTo(layer);
   for (const b of m.blocks) {
     if (!b.fp || b.fp.length < 3) continue;
@@ -297,39 +334,41 @@ function drawPlan() {
     const pg = L.polygon(b.fp, { color: sel ? "#d1660e" : "#7a6a55", weight: sel ? 2.5 : 1, fillColor: col, fillOpacity: b.on ? 0.85 : 0.6 }).addTo(layer);
     pg.on("click", () => { if (TOOL) return; SEL = b.id; render(); });
     if (!sel) { pg.bindTooltip(`${esc(b.name)} · ${f0(S.area(b.fp))} m²`, { direction: "center", className: "st-edge-lab" }); continue; }
+    const G = SELG && SELG.b === b.id ? (b.groups || [])[SELG.g] : null, T = G && G.fp ? G : b;
+    if (T !== b) L.polygon(T.fp, { color: "#1f6feb", weight: 2.5, dashArray: "6 4", fillOpacity: 0.15, fillColor: "#1f6feb" }).addTo(layer);
     // its edges: length and set-back from the boundary
     const lab = L.layerGroup().addTo(layer);
     const labels = () => {
       lab.clearLayers();
       if (!o) return;
-      const xy = S.toXY(b.fp, o), sb = M.setbacks(xy, S.toXY(s.pts, o)), lens = S.edges(b.fp);
-      b.fp.forEach((p, i) => {
-        const q = b.fp[(i + 1) % b.fp.length];
+      const xy = S.toXY(T.fp, o), sb = M.setbacks(xy, S.toXY(s.pts, o)), lens = S.edges(T.fp);
+      T.fp.forEach((p, i) => {
+        const q = T.fp[(i + 1) % T.fp.length];
         L.marker([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], { interactive: false, icon: L.divIcon({ className: "ms-elab", html: `<span>${f1(lens[i])} m${sb[i] != null ? ` · <b>${f1(sb[i])} m</b> to boundary` : ""}</span>`, iconSize: [0, 0] }) }).addTo(lab);
       });
     };
     labels();
     if (!can) continue;
-    const live = () => { pg.setLatLngs(b.fp); labels(); panel(); };
-    b.fp.forEach((p, i) => {
+    const tp = T === b ? pg : null; const live = () => { if (tp) tp.setLatLngs(T.fp); labels(); panel(); };
+    T.fp.forEach((p, i) => {
       const mk = L.marker(p, { draggable: true, icon: L.divIcon({ className: "st-vx ms-vx", iconSize: [12, 12] }), title: "Drag; right-click to remove" }).addTo(layer);
-      mk.on("drag", (ev) => { const ll = ev.target.getLatLng(); b.fp[i] = [ll.lat, ll.lng]; b.fromSite = false; live(); });
+      mk.on("drag", (ev) => { const ll = ev.target.getLatLng(); const sn = SNAP && !(ev.originalEvent && ev.originalEvent.altKey) ? snapLL([ll.lat, ll.lng], T.fp, i) : null; if (sn) ev.target.setLatLng(sn); T.fp[i] = sn || [ll.lat, ll.lng]; if (T === b) b.fromSite = false; live(); });
       mk.on("dragend", () => changed());
-      mk.on("contextmenu", (ev) => { L.DomEvent.stop(ev); if (b.fp.length <= 3) return toast("A footprint needs three corners", true); b.fp.splice(i, 1); changed(); });
+      mk.on("contextmenu", (ev) => { L.DomEvent.stop(ev); if (T.fp.length <= 3) return toast("A footprint needs three corners", true); T.fp.splice(i, 1); changed(); });
     });
-    b.fp.forEach((p, i) => {
-      const q = b.fp[(i + 1) % b.fp.length];
+    T.fp.forEach((p, i) => {
+      const q = T.fp[(i + 1) % T.fp.length];
       const mk = L.marker([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], { icon: L.divIcon({ className: "st-mid", iconSize: [10, 10] }), title: "Click to add a corner" }).addTo(layer);
-      mk.on("click", (ev) => { L.DomEvent.stop(ev); b.fp.splice(i + 1, 0, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]); changed(); });
+      mk.on("click", (ev) => { L.DomEvent.stop(ev); T.fp.splice(i + 1, 0, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]); changed(); });
     });
-    const c = S.centroid(b.fp);
+    const c = S.centroid(T.fp);
     const mv = L.marker(c, { draggable: true, icon: L.divIcon({ className: "ms-move", html: "✥", iconSize: [22, 22] }), title: "Drag to move the block" }).addTo(layer);
     let from = null, orig = null;
-    mv.on("dragstart", () => { from = c; orig = b.fp.map((q) => q.slice()); });
-    mv.on("drag", (ev) => { const ll = ev.target.getLatLng(), dl = ll.lat - from[0], dg = ll.lng - from[1]; b.fp = orig.map(([a, g]) => [a + dl, g + dg]); b.fromSite = false; live(); });
+    mv.on("dragstart", () => { from = c; orig = T.fp.map((q) => q.slice()); });
+    mv.on("drag", (ev) => { const ll = ev.target.getLatLng(), dl = ll.lat - from[0], dg = ll.lng - from[1]; T.fp = orig.map(([a, g]) => [a + dl, g + dg]); if (T === b) b.fromSite = false; live(); });
     mv.on("dragend", () => changed());
     // a footprint from the site: click a site edge for its own set-back
-    if (b.fromSite && o) {
+    if (b.fromSite && o && T === b) {
       const n = s.pts.length;
       s.pts.forEach((p, i) => {
         const q = s.pts[(i + 1) % n], dv = b.edges && b.edges.length === n ? b.edges[i] : b.setback == null ? 3 : b.setback;
@@ -354,8 +393,35 @@ function drawPlan() {
   if (TOOL && TOOL.kind === "context" && TOOL.pts.length) L.polyline(TOOL.pts, { color: "#5b6168", dashArray: "4 4", interactive: false }).addTo(layer);
 }
 
+/* the grid in local metres: lines every step along and across the angle, through (ox, oy) */
+function gridXY() {
+  const m = mass(), g = m.grid, s = C.study(), o = origin();
+  if (!g.on || !o) return null;
+  const t = (Number(g.ang) || 0) * Math.PI / 180, ox = Number(g.ox) || 0, oy = Number(g.oy) || 0;
+  return { o, t, ox, oy, st: Math.max(0.1, Number(g.step) || 3),
+    toG: ([x, y]) => { const dx = x - ox, dy = y - oy; return [dx * Math.cos(t) + dy * Math.sin(t), -dx * Math.sin(t) + dy * Math.cos(t)]; },
+    fromG: ([u, v]) => [ox + u * Math.cos(t) - v * Math.sin(t), oy + u * Math.sin(t) + v * Math.cos(t)], R: Math.max(80, ...S.toXY(s.pts, o).map((p) => Math.hypot(p[0], p[1]))) * 1.6 };
+}
+function drawGrid(L, m, s, o) {
+  const G = gridXY(); if (!G) return;
+  const lim = G.R + Math.hypot(G.ox, G.oy), n = Math.min(400, Math.ceil(lim / G.st));
+  const every = n > 150 ? Math.ceil(n / 150) : 1;
+  for (let k = -n; k <= n; k += every) {
+    const major = k % (5 * every) === 0, sty = { color: major ? "#5b6470" : "#8794a3", weight: major ? 0.9 : 0.5, opacity: major ? 0.55 : 0.35, interactive: false };
+    L.polyline(S.fromXY([G.fromG([k * G.st, -lim]), G.fromG([k * G.st, lim])], o), sty).addTo(layer);
+    L.polyline(S.fromXY([G.fromG([-lim, k * G.st]), G.fromG([lim, k * G.st])], o), sty).addTo(layer);
+  }
+}
+/* the nearest grid point to ll, if within 10 px */
+function snapGrid(ll) {
+  const G = gridXY(); if (!G) return null;
+  const [u, v] = G.toG(S.toXY([ll], G.o)[0]);
+  const q = S.fromXY([G.fromG([Math.round(u / G.st) * G.st, Math.round(v / G.st) * G.st])], G.o)[0];
+  const map = C.map();
+  return map.latLngToContainerPoint(q).distanceTo(map.latLngToContainerPoint(ll)) < 10 ? q : null;
+}
 function snapPts() {
-  const s = C.study(), m = mass(), polys = [s.pts, ...m.blocks.map((b) => b.fp || []), ...m.context.map((c) => c.fp)];
+  const s = C.study(), m = mass(), polys = [s.pts, ...m.blocks.flatMap((b) => [b.fp || [], ...(b.groups || []).map((g) => g.fp || [])]), ...m.context.map((c) => c.fp)];
   return polys.filter((p) => p && p.length >= 2);
 }
 function snap(ev) {
@@ -373,7 +439,26 @@ function snap(ev) {
     const d = Math.hypot(c.x - pa.x - dx * t, c.y - pa.y - dy * t);
     if (d < bd) { bd = d; best = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
   });
-  return best || ll;
+  return best || snapGrid(ll) || ll;
+}
+/* snap a dragged corner to the corners and edges of the site, the other
+   footprints and plates, and the neighbours (not to its own polygon) */
+function snapLL(ll, own, idx) {
+  const map = C.map(), P = (q) => map.latLngToContainerPoint(q), c = P(ll);
+  const polys = snapPts().filter((p) => p !== own);
+  if (own) polys.push(own.filter((_, j) => j !== idx));
+  let best = null, bd = 10;
+  for (const poly of polys) for (const q of poly) { const d = P(q).distanceTo(c); if (d < bd) { bd = d; best = q.slice(); } }
+  if (best) return best;
+  bd = 7;
+  for (const poly of polys.filter((p) => p !== own)) poly.forEach((a, i) => {
+    const b = poly[(i + 1) % poly.length], pa = P(a), pb = P(b);
+    const dx = pb.x - pa.x, dy = pb.y - pa.y, L2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((c.x - pa.x) * dx + (c.y - pa.y) * dy) / L2));
+    const d = Math.hypot(c.x - pa.x - dx * t, c.y - pa.y - dy * t);
+    if (d < bd) { bd = d; best = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+  });
+  return best || snapGrid(ll);
 }
 function toolClick(ev) {
   const p = snap(ev);
@@ -413,11 +498,12 @@ function makeScene(THREE, Orbit, host) {
   const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   r.shadowMap.enabled = true;
+  r.shadowMap.type = THREE.PCFSoftShadowMap;
   r.localClippingEnabled = true;
   host.appendChild(r.domElement);
   const over = document.createElement("div"); over.className = "ms-over"; host.appendChild(over);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf4f5f7);
+  scene.background = new THREE.Color(0xf3f5f8);
   const persp = new THREE.PerspectiveCamera(38, 1, 1, 30000); persp.up.set(0, 0, 1);
   const ortho = new THREE.OrthographicCamera(-100, 100, 100, -100, -5000, 5000); ortho.up.set(0, 0, 1);
   let cam = persp;
@@ -492,9 +578,9 @@ function makeScene(THREE, Orbit, host) {
     if (o) {
       const sxy = S.toXY(s.pts, o);
       for (const p of sxy) span = Math.max(span, Math.hypot(p[0], p[1]));
-      const site = new THREE.Mesh(new THREE.ShapeGeometry(shape(sxy)), new THREE.MeshLambertMaterial({ color: 0xd9efd3 }));
+      const site = new THREE.Mesh(new THREE.ShapeGeometry(shape(sxy)), new THREE.MeshLambertMaterial({ color: 0xe2ebdd }));
       site.position.z = 0.02; site.receiveShadow = true; group.add(site);
-      const ol = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(sxy.map(([x, y]) => new THREE.Vector3(x, y, 0.06))), new THREE.LineBasicMaterial({ color: 0xf28022 }));
+      const ol = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(sxy.map(([x, y]) => new THREE.Vector3(x, y, 0.06))), new THREE.LineBasicMaterial({ color: 0xcbd6c5 }));
       group.add(ol);
       // streets: light strips outside the street edges, at their widths
       let sg = 0; for (let i = 0; i < sxy.length; i++) { const [x1, y1] = sxy[i], [x2, y2] = sxy[(i + 1) % sxy.length]; sg += x1 * y2 - x2 * y1; }
@@ -512,15 +598,18 @@ function makeScene(THREE, Orbit, host) {
     const st = M.stacks(mdl), bs = M.buildings(mdl);
     for (const x of st) {
       if (x.block.fp.length < 3) continue;
-      const sh = shape(x.block.fp);
       for (const p of x.block.fp) span = Math.max(span, Math.hypot(p[0], p[1]));
+      const shapes = new Map();
       for (const sto of x.storeys) {
+        const fp = sto.fp && sto.fp.length >= 3 ? sto.fp : x.block.fp;
+        if (!shapes.has(fp)) shapes.set(fp, shape(fp));
+        const sh = shapes.get(fp);
         const u = M.USES[sto.use] || M.USES.dom;
         const geo = new THREE.ExtrudeGeometry(sh, { depth: Math.max(0.05, sto.h - 0.12), bevelEnabled: false });
         const mesh = new THREE.Mesh(geo, mat({ color: new THREE.Color(u.color), transparent: sto.storey === false, opacity: sto.storey === false ? 0.75 : 1, clippingPlanes: clipping, side: THREE.DoubleSide }));
-        mesh.position.z = sto.z0; mesh.castShadow = true; mesh.receiveShadow = true;
+        mesh.position.z = sto.z0; mesh.castShadow = SHADOW; mesh.receiveShadow = SHADOW;
         group.add(mesh);
-        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, clippingPlanes: clipping }));
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: 0x28323c, transparent: true, opacity: 0.3, clippingPlanes: clipping }));
         edges.position.z = sto.z0; group.add(edges);
         zmax = Math.max(zmax, sto.z1);
       }
@@ -592,6 +681,8 @@ function makeScene(THREE, Orbit, host) {
     const R = ortho.userData.range || 50;
     clip.constant = (pct / 100 * 2 - 1) * R; // from the far side to the near side
   };
+  sun.castShadow = SHADOW;
+  const shadow = (on) => { sun.castShadow = on; if (group) group.traverse((x) => { if (x.isMesh) { x.castShadow = on; x.receiveShadow = on; } }); };
   resize(); loop();
-  return { build, resize, cut, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
+  return { shadow, build, resize, cut, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
 }

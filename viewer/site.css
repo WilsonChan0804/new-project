@@ -165,3 +165,10 @@ body.st-mass #st-tools, body.st-mass .st-find, body.st-mass #st-hits { display: 
 .ms-groups .st-ib { padding: 1px 4px; }
 .ms-sw { display: none; }
 .ms-groups tr { box-shadow: inset 3px 0 0 var(--c); }
+.st-views input[type=number] { width: 52px; margin: 0 2px 0 6px; font-size: 12px; }
+.st-views small { font-size: 11px; color: var(--muted); }
+.st-views button.on { background: var(--accent); color: #fff; }
+.st-ib.ed { outline: 2px solid #1f6feb; }
+.st-views { max-width: calc(100% - 120px); flex-wrap: wrap; }
+.st-views select { width: auto !important; max-width: 140px; }
+.st-views > * { flex: none; }

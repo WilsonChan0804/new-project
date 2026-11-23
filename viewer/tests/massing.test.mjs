@@ -52,5 +52,11 @@ ok((obj.match(/^v /gm) || []).length === 43 * 8 && /^o Tower_dom$/m.test(obj), "
   const sb = M.setbacks(sq(30, 20, 5, 3), sq(60, 40));
   ok(near(sb[0], 3, 1e-9) && near(sb[3], 5, 1e-9), "set-backs from the boundary: 3 m (south), 5 m (west)");
 }
+// a different floor plate for the upper floors
+{
+  const m5 = { blocks: [{ id: "a", fp: sq(30, 25), groups: [{ use: "dom", n: 10, h: 3 }, { use: "dom", n: 10, h: 3, fp: sq(20, 25) }] }] };
+  const f5 = M.figures(m5, 1000, 0);
+  ok(near(f5.dgfa, 10 * 750 + 10 * 500, 1e-6) && near(f5.sc, 75, 1), "a smaller plate above: GFA 12,500, site coverage still 750 m² (75%)");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);
