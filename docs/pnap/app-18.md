@@ -44,6 +44,60 @@ keywords: Foundation Code, 地基守則, piles, 樁, two-stage submission, 分�
 | 3 | Complying with the Code is **deemed to satisfy** the B(C)R; also follow other PNAPs on foundations. 當作符合。 |
 | 4 | Observe the requirements in **Appendix C**. Streamlining: (a) **two-stage pile foundation submissions** (Annex C1); (b) **deferred site-specific GI** in non-scheduled areas and Scheduled Areas Nos. 3 and 5. 簡化措施。 |
 
+## Paragraph by paragraph and appendices (full) 逐段及附錄詳解 {#paragraph-detail}
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 1 | Amendments of **Feb 2021, Jul 2022, Aug 2023, Jun 2024** incorporated in the **2024 Edition** (Oct 2024); earlier amendments in BD's old-versions ZIP. |
+| 2 | Further amendments with immediate effect: **Appendix A – Sep 2025** (see [Foundations Code page](../codes/foundations-2017.md#september-2025-amendment-2025-9)). |
+| 3 | Compliance with the Code is **deemed-to-satisfy** the B(C)R; also follow the foundation PNAPs listed in **Appendix B**. |
+| 4 | Follow **Appendix C**; streamlining: (a) **two-stage pile foundation submission** (Annex C1); (b) **deferred site-specific GI** in non-scheduled areas and Scheduled Areas **3 and 5**. |
+
+### Appendix A (Sep 2025) – amendments 修訂摘要
+
+| Item | Clause | Change 修改 |
+|---|---|---|
+| 1 | 2.2.4 | Settlement of shallow foundations on soil: without accurate data, **E<sub>s</sub> (MPa) = 1.5 × SPT N** may be used |
+| 4 | 4.2.2(2)(c) | Plate load test trigger: E<sub>s</sub> > **1 × N**, or **1.5 × N** for saprolites / residual soils with **N > 30** |
+| 5 | Table 7.2 | Triggering levels apply to nearby buildings, structures, **land** or services not sensitive to settlement |
+| 6 | 8.10 | Tension test load may be **1.5 × design tension capacity** where tension bond ≤ **50 %** of allowable compression bond |
+
+<small>Full list on the [Foundations Code page](../codes/foundations-2017.md). 完整修訂見守則頁。</small>
+
+### Appendix C – design, construction and procedural requirements 設計、施工及程序要求
+
+| Para. 段 | Topic 主題 | Requirement 規定 |
+|---|---|---|
+| 1–3 | **Uncommon pile systems** 非常用樁系統 | Settle design principles with BA **before** submission; pre-submission enquiry ([ADM-19](adm-19.md)); submit specification, manufacture, installation, capacity method, ground suitability, track record; a **demonstration** is usually required. |
+| 4–5 | **Steel H-pile sections** 鋼工字樁截面 | Demonstrate B(C)R s.3 compliance: manufacture, identification / mill labels, mill certificates, section properties and tolerances, chemical / mechanical properties incl. **max. CEV** and HOKLAS test results, welding specifications, capacity, design, QA / QC, test reports. Accepted sections are on BD's **"Deemed-to-Satisfy" list**. |
+| 6 | **GEO TGN 26 / TGN 53** (rev. 28 Apr 2025) | If marble (TGN 26) or igneous rock (TGN 53) presumed values are used, approval conditions under BO s.17(1) item 6: (a) settlement analysis with as-built pile lengths; (b) structural tolerance assessment; (c) report at foundation completion; (d) **settlement monitoring** during superstructure (scheme agreed before pile cap works); (e) **final performance review before OP / BA14** — no OP / BA14 acknowledgment until accepted. |
+| 7 | **Mass concrete fill** 填充混凝土 | Fill **> 1 m** deep under footings / rafts is a **structural element** designed to the [Concrete Code](../codes/concrete-2013.md). |
+| 8 | Drilling contractor 鑽探承建商 | Pre-drilling, proof drilling and proof core-drilling only by an **RSC (Ground Investigation Field Works)**; the core-drilling contractor (B(C)R s.20) declares any relationship with the foundation contractor. |
+| 9 | **Interface proof drilling** 界面驗證鑽探 | Large-diameter bored piles / barrettes: pipe **≥ 150 mm** left in, stopping ~**1 m** above the interface; minor imperfections acceptable with RSE / RGE justification or pre-approved remedial proposals. |
+| 10 | Responsibilities 職責 | Geotechnical reports prepared and signed by the **RGE** ([APP-141](app-141.md)). |
+| 11–14 | **Two-stage pile submission** 兩階段樁基呈交 | **Stage 1**: physical properties at maximum pile capacity (compression, tension, lateral); no rigorous pile cap analysis or load schedules. After Stage 1 approval, consent for piling / test piles may be sought. Changes only in pile **numbers or layout** are not a major revision unless affecting ADM-19 App. D fundamentals. **Stage 2**: full load path, column / wall and pile load schedules, rigorous pile cap analysis (first Stage 2 submission = 60-day period). Both must be approved before **BA14**. |
+| 15–16 | **Deferred site-specific GI** 延後地盤勘探 | Non-scheduled areas and Scheduled Areas 3 and 5: foundation plans may rely on existing GI **within 20 m** of the boundary (GEO GIU or previous development); site GI after approval at the approved borehole locations; submit GI and verification report **with the consent application** — if incompatible, revise plans first, else consent refused (BO s.16(3)(ba)). |
+| 17 | **Piles near the boundary** 近界線樁 | Consent for socketed H-piles **within 10 m** of the boundary may need record plans and assessment of **pile walls / grout curtain** first; may be submitted with BA8; staged consents need extra assessment. |
+| 18 | **Concurrent approval and consent** 同時批准及同意 | Possible unless pre-conditions (condition surveys, shoring); submit consent application **not before the 32nd day** after the plan submission. |
+| 19 | Driven H-piles 打入式樁 | Consent for working piles may be given on satisfactory **PDA with CAPWAP** on trial piles; proof load tests concurrently, reports **within 14 days**. |
+| 20 | **Initial ELS** 初步挖掘 | Sheet / pipe pile walls and initial excavation (to the first strut layer, **≤ 1.5 m** below ground) concurrently with foundations; consent for the rest of the excavation before foundation completion. |
+| 21 | **Pile cap / superstructure consent** 樁帽及上蓋同意 | Only after: foundation records accepted; **BA14** submitted; proof tests satisfactory; imposed conditions (e.g. material tests) complied with. |
+| 22–23 | BA14 and records 完工及紀錄 | BA14 on completion (B(A)R 25); large sites may phase proof testing; records may precede BA14; BD selects representative piles for proof tests **within 14 days** of BA14. |
+| 24–25 | **Back-analysis** 反算分析 | Required if as-built pile lengths differ from tentative lengths by **> ± 5 %**, or nearby piles differ enough to redistribute loads / indicate steep rock; additional GI may be required; Scheduled Areas 2 and 4: Code cl. 7.8 and [APP-61](app-61.md). May be submitted with BA14. |
+| 26 | Two-stage + BA14 | BA14 not acknowledged until Stage 1 amendments and Stage 2 plans approved. |
+| 27 | Large-diameter bored piles 大直徑鑽孔樁 | BA14 may be submitted after interface proof drilling of **≥ 85 %** of piles; 28-day cube results may follow; acknowledged only when all results are satisfactory. |
+
+### Annex C1 – content of two-stage submissions 兩階段呈交內容
+
+| Stage | Plans 圖則 | Supporting documents 證明文件 |
+|---|---|---|
+| **1** | Code cl. 2.7 items (1)(a)–(d), (f), (g), (i)–(l); assumed loads from adjacent buildings, streets, utilities, slopes, nullahs, retaining walls; assumed design loads of the new foundations | Cl. 2.7 items (2)(a), (d) (public relations plan may follow before consent); pile capacity calculations; assessment of loads from neighbours; assessment of effects on neighbours under temporary loads |
+| **2** | Cl. 2.7 items (1)(a), (e), (h); design loading schedule at pile cap level with column / wall layout | Stage 1 approved plans; detailed pile load analysis and capacity compatibility; vertical and lateral load paths |
+
+### Appendix B – related PNAPs 相關作業備考
+
+Appendix B lists the PNAPs with supplementary foundation requirements. Its table is an image in the PDF and is not transcribed here: see the [original APP-18 PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/pnap/APP/APP018.pdf). PNAPs cited in the APP-18 text itself: [ADM-19](adm-19.md), [APP-141](app-141.md), [APP-61](app-61.md). 附錄 B 為圖像，未轉錄；請參閱原文。
+
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
 

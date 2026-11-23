@@ -167,6 +167,9 @@ Related: [APP-58 drainage tests](../pnap/app-58.md) · [B(SSFP&D)R](../regulatio
 
 **General (§2)**: get consent from owners / OC and the electricity supplier; check lease conditions; inspect and maintain regularly; owners may be liable for damage or injury; no obscene content. 取得業主／法團及電力公司同意；查核地契；定期保養。
 
+!!! warning "This old guideline differs from the current statutory requirements 舊指引與現行規定不同"
+    For signboards needing approval, the **current** rules are in **[APP-126](../pnap/app-126.md#paragraph-detail)**: e.g. clearance over a footpath **3.5 m** (**2.5 m** if projecting ≤ 600 mm), **5.8 m** within 1 m of the kerb or over a carriageway, no part within **1.5 m** of the street centre line, **≥ 1.2 m** from the common lot boundary, projecting signboards ≤ **4.2 m** and within a **40 m² × 600 mm** prism, fireman's switch **2.5–3 m** above ground. Use APP-126, not the figures below. 請以 APP-126 為準。
+
 **Buildings Department (§3)**
 
 | Topic 主題 | Requirement 要求 |
