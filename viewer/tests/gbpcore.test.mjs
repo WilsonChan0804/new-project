@@ -118,6 +118,18 @@ ok(stairCapacity(1200, 5, { sprinkler: true, up: true }).value === Math.floor(63
   ok(q.total === 450 && q.per === 225 && q.storeys === 10 && q.capacity === 708 && q.status === "ok", `10 floors x 45 persons, 2 stairs of 1050 mm, sprinklered: ${q.per} each vs ${q.capacity} (Table B4)`);
 }
 
+// --- travel distance (FS Code B11.2 / B11.3) and Table B5
+{
+  const f = C.travelFor("1b"), fb = C.travelFor("1b", { balcony: true }), o = C.travelFor("4a"), ob = C.travelFor("4a", { balcony: true }), d = C.travelFor("3a");
+  ok(f.within === 24 && f.deadend === 15 && f.max === 24 && f.between === 48 && fb.max === 45, "flats: 24 within, 15 to the staircase, 24 max (45 balcony), 48 between staircases");
+  ok(o.deadend === 18 && o.max === 36 && ob.deadend === 24 && ob.max === 45 && o.within == null, "offices: 18 dead end, 36 max; balcony 24 / 45");
+  ok(d.deadend === 12 && d.max === 30, "use class 3: 12 dead end, 30 max");
+  const c1 = C.checkTravel(o, { deadend: 20, max: 30, between: 40 }), c2 = C.checkTravel(o, { deadend: 15, max: 30, between: 40 });
+  ok(c1.status === "fail" && c1.items.find((x) => x.key === "deadend").status === "fail" && c2.status === "ok", "a 20 m dead end fails for an office, 15 m passes");
+  const b5 = C.exitsFor5a(450);
+  ok(b5.n === 2 && b5.routes === 4300 && b5.b5, "Table B5: 450 persons -> 2 exits, 4300 mm");
+}
+
 console.log(`\n${n - fails} of ${n} passed`);
 if (fails) process.exit(1);
 console.log("all passed");

@@ -10,6 +10,7 @@
 import { esc, toast } from "./tasks-util.js";
 import * as C from "./gbpcore.js";
 import { FIRST_SCHEDULE, B1, SRC, STAIR_BANDS } from "./gbptables.js";
+/* travel distance: FS Code B11.2 / B11.3 (gbptables.js TRAVEL) */
 
 const f3 = (x) => (x == null || !isFinite(x) ? "—" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
 const f0 = (x) => (x == null || !isFinite(x) ? "—" : Number(x).toLocaleString("en-GB"));
@@ -172,8 +173,12 @@ function step2(q) {
   let res = "";
   if (persons == null) res = `<p class="qk-need">${t && !t.factor && o.how !== "persons" ? `${esc(t.by || "By number")}: type the number of persons.` : "Give the usable floor area (or the number of persons)."}</p>`;
   else {
-    const e = C.exitsFor(persons);
-    if (e.none || e.beyond) res = `<div class="qk-bigs">${big("Occupant capacity", f0(persons), "persons", o.how === "area" ? `${f0(o.area)} ÷ ${t.factor} m²/p` : "")}</div><p class="qk-need">${esc(e.why)}</p>`;
+    const b5 = t && t.cls === "5a" && o.high;
+    const e = b5 ? C.exitsFor5a(persons) : C.exitsFor(persons);
+    if (b5 && e.b5) res = `<div class="qk-bigs qk-b2">${big("Occupant capacity", f0(persons), "persons", o.how === "area" ? `${f0(o.area)} ÷ ${t.factor} m²/p, rounded up` : "typed", "qk-hi")}
+        ${big("Min. exits", e.n, "", "Table B5")}${big("Exit routes, total", f0(e.routes), "mm", "Table B5 (5a at 12 m or more)")}</div>
+        <p class="qk-need">Use Classification 5a at 12 m or more above G/F: Table B5 gives the exits and the total width of the exit routes (Clause B21.1).</p>`;
+    else if (e.none || e.beyond) res = `<div class="qk-bigs">${big("Occupant capacity", f0(persons), "persons", o.how === "area" ? `${f0(o.area)} ÷ ${t.factor} m²/p` : "")}</div><p class="qk-need">${esc(e.why)}</p>`;
     else {
       const ws = (o.widths || []).map(Number).filter((x) => x > 0);
       const chk = ws.length ? C.checkExits(persons, { widths: ws }) : null;
@@ -194,11 +199,51 @@ function step2(q) {
     <div class="qk-in qk-in-row">
       <label class="qk-l qk-wide">Use (FS Code Table B1)<select data-qo="key"${dis()}>${b1Opts(o.key)}</select></label>
       <div><div class="qk-lbl">Count by</div>${seg("occ.how", o.how, [["area", "Floor area"], ["persons", "Persons"]])}</div>
+      <div><div class="qk-lbl">Balcony approach (B10.6)</div>${seg("occ.balcony", o.balcony ? "1" : "", [["", "No"], ["1", "Yes"]])}</div>
+      ${t && t.cls === "5a" ? `<div><div class="qk-lbl">At 12 m or more above G/F</div>${seg("occ.high", o.high ? "1" : "", [["", "No"], ["1", "Yes (Table B5)"]])}</div>` : ""}
       ${o.how === "persons" ? `<label class="qk-l">Persons<input type="number" data-qo="persons" value="${esc(o.persons == null ? "" : o.persons)}"${dis()}></label>`
         : `<label class="qk-l">Usable floor area (m²)<input type="number" step="any" data-qo="area" value="${esc(o.area == null ? "" : o.area)}" placeholder="e.g. 450"${dis()}></label>`}
     </div>
     <div class="qk-res">${res}</div>
-    <p class="gb-srcs">${srcBtn("b1")} ${srcBtn("b2")} ${srcBtn("b7")} <button type="button" class="gb-src" data-clause="FS Code 2011 Clause B11 travel distance" title="Travel distance is not in the quick check yet - find the clause">§ Travel distance: Clause B11 ›</button></p></section>`;
+    ${travelHtml(o, t)}
+    <p class="gb-srcs">${srcBtn("b1")} ${srcBtn(t && t.cls === "5a" && o.high ? "b5" : "b2")} ${srcBtn("b7")} ${srcBtn("b11")}</p></section>`;
+}
+
+/* travel distance: the limits for the use (B11.2 / B11.3), a plan of them,
+   and the design's own distances checked */
+function travelPic(r) {
+  const flat = r.group === "1-2";
+  const t = (x, y, s, a = "middle", c = "") => `<text x="${x}" y="${y}" text-anchor="${a}" class="qk-tl ${c}">${esc(s)}</text>`;
+  let o = `<rect x="10" y="58" width="400" height="26" rx="3" class="qk-cor"/>`;              // the corridor
+  o += `<rect x="350" y="40" width="56" height="62" rx="4" class="qk-stair-r"/>${t(378, 75, "Stair 1", "middle", "qk-tb")}`;
+  o += `<rect x="350" y="118" width="56" height="44" rx="4" class="qk-stair-r"/>${t(378, 144, "Stair 2", "middle", "qk-tb")}`;
+  o += `<rect x="20" y="0" width="120" height="56" rx="3" class="qk-flat"/>${t(80, 22, flat ? "Flat / guestroom" : "Room", "middle", "qk-tb")}`;
+  o += `<rect x="128" y="50" width="16" height="8" class="qk-door"/>`;
+  // dead end: from the door to the point of choice (here the corner by the staircases)
+  o += `<path d="M136 71 H300" class="qk-dead"/>${t(218, 98, `dead end ≤ ${r.deadend} m`, "middle", "qk-tdead")}`;
+  if (flat) o += `<path d="M40 40 L132 54" class="qk-in"/>${t(70, 48, `≤ ${r.within} m`, "middle", "qk-tin")}`;
+  o += `<path d="M300 71 H350" class="qk-max"/><path d="M300 71 V140 H350" class="qk-max"/>${t(300, 120, `max ≤ ${r.max} m`, "end", "qk-tmax")}`;
+  o += `<path d="M412 70 C440 70 440 140 412 140" class="qk-btw"/>${t(446, 110, `≤ ${r.between} m`, "start", "qk-tbtw")}`;
+  return `<svg class="qk-travel" viewBox="0 -6 500 176" role="img" aria-label="Travel distance">${o}</svg>`;
+}
+function travelHtml(o, t) {
+  if (!t) return "";
+  const r = C.travelFor(t.cls, { balcony: !!o.balcony });
+  const ck = C.checkTravel(r, { within: o.d_within, deadend: o.d_deadend, max: o.d_max, between: o.d_between });
+  const inp = (k, lbl) => `<label class="qk-l">${lbl}<span class="qk-u"><input type="number" step="any" data-qo="d_${k}" value="${esc(o["d_" + k] == null ? "" : o["d_" + k])}" placeholder="m"${dis()}> m</span></label>`;
+  return `<div class="qk-res qk-trav"><div class="qk-sub">Travel distance <small class="muted">${esc(r.label)}${o.balcony ? " · along a balcony approach" : ""}</small></div>
+    <div class="qk-grid qk-grid-t"><div><div class="qk-bigs">
+      ${r.within != null ? big("Within the flat / room", r.within, "m", `to its exit door · ${r.refs.within}`) : ""}
+      ${big(r.group === "1-2" ? "Door to the staircase" : "Dead end", r.deadend, "m", `${r.group === "1-2" ? "dead end · " : ""}${r.refs.deadend}`)}
+      ${big("Max travel distance", r.max, "m", `with 2 or more exits · ${r.refs.max}`)}
+      ${big("Between staircases", r.between, "m", "B11.3(b), along the route")}</div></div>
+      <div class="qk-pic">${travelPic(r)}</div></div>
+    <div class="qk-check"><div class="qk-lbl">Check your design: the distances on your plan</div>
+      <div class="qk-in-row qk-tin-row">${r.within != null ? inp("within", "Within the flat") : ""}${inp("deadend", r.group === "1-2" ? "Door to staircase" : "Dead end")}${inp("max", "Max travel")}${inp("between", "Between staircases")}</div>
+      ${ck.items.some((x) => x.have != null) ? `<div class="qk-ticks">${ck.items.filter((x) => x.have != null).map((x) => `<span class="qk-tick ${x.status}">${x.status === "ok" ? "✓" : "✗"} ${esc(x.what)}: ${x.have} / ${x.limit} m</span>`).join("")}</div>
+        <div class="qk-banner ${ck.status}">${ck.status === "ok" ? "✓ Within the travel distances of B11" : ck.status === "fail" ? "✗ Too far - see the red ones" : "Give the other distances to check them all"}</div>` : ""}
+      <small class="muted">A point of choice counts only where the lines to the two exits make 30° or more (B11.6 / B11.7). Distances are measured as Part A of the Code defines them.</small>
+    </div></div>`;
 }
 
 function stairsPic(r) {
@@ -264,6 +309,7 @@ function copyText(n) {
     const e = p ? C.exitsFor(p) : null;
     L.push("Occupancy and exits (FS Code Table B1 / B2)", `${t ? t.use : o.key}: ${o.how === "persons" ? p + " persons" : `${o.area} m2 / ${t && t.factor} = ${p} persons`}`);
     if (e && !e.none && !e.beyond) L.push(`Min. ${e.n} exits; exit routes ${e.routes || e.route} mm total (each ${e.route}); exit doors ${e.doors || e.door} mm total (each ${e.door})`);
+    if (t) { const r = C.travelFor(t.cls, { balcony: !!o.balcony }); L.push(`Travel distance (B11${o.balcony ? ", balcony approach" : ""}): ${r.within != null ? `within the flat ${r.within} m; door to staircase ` : "dead end "}${r.deadend} m; max ${r.max} m; between staircases ${r.between} m`); }
   } else {
     const r = C.quickStairs(Q.st.rows, Q.st);
     L.push("Staircase discharge (FS Code Table " + (Q.st.sprinkler ? "B4" : "B3") + ")", ...r.rows.map((x) => `${x.label || ""} ${x.floors} floor(s) x ${x.each} = ${x.sum}`),
@@ -286,7 +332,7 @@ export function wireQuick(el, onChange) {
     if (!Q || !ev.target.closest(".qk")) return;
     const b = ev.target.closest("button");
     if (!b || b.disabled) return;
-    if (b.dataset.qs) { const f = b.dataset.qs; if (f === "occ.how") Q.occ.how = b.dataset.v; else Q[f] = b.dataset.v; return repaint(); }
+    if (b.dataset.qs) { const f = b.dataset.qs; if (f === "occ.how") Q.occ.how = b.dataset.v; else if (f.startsWith("occ.")) Q.occ[f.slice(4)] = b.dataset.v === "1"; else Q[f] = b.dataset.v; return repaint(); }
     if (b.dataset.copy) return copyText(+b.dataset.copy);
     if (b.hasAttribute("data-qwadd")) { Q.occ.widths.push(1050); return repaint(); }
     if (b.dataset.qwx != null) { Q.occ.widths.splice(+b.dataset.qwx, 1); return repaint(); }
@@ -337,3 +383,7 @@ export function showStep(part) {
   return !!el;
 }
 export const _testQuick = { siteCalc, heightOf };
+/* the sketch for the project workbook's site: s = gbpcore site(...) */
+export function siteSketch(s) {
+  return sketch({ cls: s.cls || "A", mode: s.kind === "composite" ? "composite" : "single", area: s.area }, { s, h: s.height });
+}

@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-22", date: "23 Nov 2026",
+    items: [
+      "**GBP Quick check: travel distance (FS Code B11)** - step 2 now gives, for the use chosen, the limits within the flat / guestroom, the dead end, the maximum travel distance and 48 m between staircases (B11.2, B11.3), with a plan of them; a **balcony approach** switch (B10.6) and **check your design** with your own distances. Use Classification 5a at 12 m or more above G/F uses **Table B5**.",
+      "**Project workbook: the Site page** in the new look - big figures, the street / site / building sketch, and the composite (reg 21) shares as bars.",
+    ],
+  },
+  {
     version: "2027-02-21", date: "23 Nov 2026",
     items: [
       "**GBP Quick check: the site sketch** - its labels (site coverage, height, site area, street) now sit outside the drawing and are never cut off, whatever the site coverage or the height.",

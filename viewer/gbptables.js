@@ -20,6 +20,8 @@ export const SRC = {
   b12: { doc: "FS Code 2011", ref: "Clause B12.1-B12.7 (discharge value of required staircases)", ed: "2011 (2024 ed.)" },
   app151: { doc: "PNAP APP-151", ref: "Para 4-5 and Appendix A (overall cap of 10%)", ed: "rev. July 2025" },
   reg23: { doc: "Cap. 123F B(P)R", ref: "Reg 23(3)(a)/(b) (GFA, disregarded GFA)", ed: "" },
+  b11: { doc: "FS Code 2011", ref: "Clause B11.2 / B11.3 (travel distance)", ed: "2011 (2024 ed.)" },
+  b5: { doc: "FS Code 2011", ref: "Table B5 - Use Classification 5a at 12 m or more above G/F (Clause B21.1)", ed: "2011 (2024 ed.)" },
   office: { doc: "Office GBP setting", ref: "Revit GBP setting (verify against the PNAP / regulation named)", ed: "" },
 };
 
@@ -206,4 +208,35 @@ export const CAP_PCT = 10;     // APP-151 para 4
    editable on the page, and says where to verify it. */
 export const ITEM_LIMITS = [
   { item: "2.3", label: "AHU / A/C plant room on a floor", kind: "max", pct_of_floor_gfa: 4, verify: "PNAP APP-42" },
+];
+
+/* ------------------------------------------- FS Code Subsection B11 (pp. 46-47)
+   Travel distance, as written. B11.2: dead end - (a) UC 1 & 2: 24 m from any
+   point within a flat / hotel guestroom to its exit door, 15 m from that door
+   to the required staircase or a point of choice; (b) UC 3: 12 m; (c) all
+   other UC: 18 m; for (b) and (c) 24 m where a balcony approach complying
+   with B10.6 is provided. B11.3(a): the maximum travel distance, including
+   any dead end, where served by 2 or more protected exits - UC 1 & 2: 24 m
+   from the flat / guestroom exit door to the nearest required staircase;
+   UC 3: 30 m; others: 36 m; 45 m along a balcony approach for each.
+   B11.3(b): at most 48 m between required staircases (or discharge points),
+   along the centreline of the exit route. */
+export const TRAVEL = {
+  "1-2": { label: "Use Classifications 1 and 2 (flats, hotels)", within: 24, deadend: 15, deadend_balcony: 15, max: 24, max_balcony: 45,
+    refs: { within: "B11.2(a)(i)", deadend: "B11.2(a)(ii)", max: "B11.3(a)(i)" } },
+  "3": { label: "Use Classification 3", within: null, deadend: 12, deadend_balcony: 24, max: 30, max_balcony: 45,
+    refs: { deadend: "B11.2(b)", max: "B11.3(a)(ii)" } },
+  other: { label: "All other Use Classifications", within: null, deadend: 18, deadend_balcony: 24, max: 36, max_balcony: 45,
+    refs: { deadend: "B11.2(c)", max: "B11.3(a)(iii)" } },
+};
+export const STAIR_SEPARATION = 48;          // B11.3(b)
+
+/* FS Code Table B5 (Clause B21.1): Use Classification 5a at a storey 12 m or
+   more above the ground floor - the minimum number of exits and the minimum
+   total width of the exit routes (mm). */
+export const B5 = [
+  { from: 31, to: 200, n: 2, routes: 2400 }, { from: 201, to: 300, n: 2, routes: 2600 }, { from: 301, to: 500, n: 2, routes: 4300 },
+  { from: 501, to: 750, n: 3, routes: 6400 }, { from: 751, to: 1000, n: 4, routes: 8500 }, { from: 1001, to: 1250, n: 5, routes: 10400 },
+  { from: 1251, to: 1500, n: 6, routes: 12500 }, { from: 1501, to: 1750, n: 7, routes: 14600 }, { from: 1751, to: 2000, n: 8, routes: 16700 },
+  { from: 2001, to: 2500, n: 10, routes: 20800 }, { from: 2501, to: 3000, n: 12, routes: 24900 },
 ];

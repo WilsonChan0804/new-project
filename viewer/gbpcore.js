@@ -16,7 +16,7 @@
  * the table), "na".
  */
 
-import { FIRST_SCHEDULE, B1, B2, B3, B4, STAIR_BANDS, STAIR_FACTORS, APP151, CAP_PCT, ITEM_LIMITS } from "./gbptables.js";
+import { FIRST_SCHEDULE, B1, B2, B3, B4, B5, STAIR_BANDS, STAIR_FACTORS, APP151, CAP_PCT, ITEM_LIMITS, TRAVEL, STAIR_SEPARATION } from "./gbptables.js";
 
 const EPS = 1e-9;
 export const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
@@ -357,4 +357,40 @@ export function quickStairs(rows, opts) {
     if (c.value != null && out.per <= c.value) { out.suggest = { width: w, capacity: c.value }; break; }
   }
   return out;
+}
+
+/* ------------------------------------------------------- travel distance
+   the B11 limits for a Use Classification ("1b", "2", "3a", "4a" ...) */
+export function travelGroup(cls) {
+  const c = String(cls || "").toLowerCase();
+  return /^[12]/.test(c) ? "1-2" : /^3/.test(c) ? "3" : "other";
+}
+export function travelFor(cls, opts) {
+  const o = opts || {};
+  const g = travelGroup(cls), t = TRAVEL[g];
+  return { group: g, label: t.label, balcony: !!o.balcony, within: t.within, deadend: o.balcony ? t.deadend_balcony : t.deadend,
+    max: o.balcony ? t.max_balcony : t.max, between: STAIR_SEPARATION, refs: t.refs };
+}
+// the distances of a design (m) against the limits: {within, deadend, max, between}
+export function checkTravel(rule, given) {
+  const g = given || {}, items = [];
+  const one = (k, what, lim, ref) => {
+    if (lim == null) return;
+    const v = g[k] == null || g[k] === "" ? null : Number(g[k]);
+    items.push({ key: k, what, limit: lim, have: v, ref, status: v == null ? "check" : v <= lim + EPS ? "ok" : "fail" });
+  };
+  one("within", "Within the flat / guestroom to its door", rule.within, rule.refs.within);
+  one("deadend", rule.group === "1-2" ? "Door to the staircase (dead end)" : "Dead end", rule.deadend, rule.refs.deadend);
+  one("max", "Maximum travel distance", rule.max, rule.refs.max);
+  one("between", "Between required staircases", rule.between, "B11.3(b)");
+  const given_ = items.filter((x) => x.have != null);
+  return { items, status: !given_.length ? "check" : given_.some((x) => x.status === "fail") ? "fail" : given_.length < items.length ? "check" : "ok" };
+}
+// Table B5: Use Classification 5a at 12 m or more above G/F (B21.1)
+export function exitsFor5a(load) {
+  const n = Number(load) || 0;
+  if (n <= 30) return Object.assign(exitsFor(n), { b5: false });
+  if (n > 3000) return { beyond: true, n: null, why: "More than 3000 persons: to be determined by the Building Authority (Table B5)" };
+  const r = B5.find((b) => n >= b.from && n <= b.to);
+  return { n: r.n, routes: r.routes, doors: null, route: null, door: null, b5: true };
 }

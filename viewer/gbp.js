@@ -17,7 +17,7 @@ import { api, headers, project } from "./nav.js";
 import { esc, toast } from "./tasks-util.js";
 import * as C from "./gbpcore.js";
 import { B1, SRC, APP151, ITEM_LIMITS } from "./gbptables.js";
-import { renderQuick, wireQuick, showStep } from "./gbpquick.js";
+import { renderQuick, wireQuick, showStep, siteSketch } from "./gbpquick.js";
 import { loadModel, roomRows, areaRows, widthsOf, MAP_DEFAULTS, MAP_LABELS } from "./gbpmodel.js";
 
 const PARTS = [
@@ -191,34 +191,34 @@ function partSite(R) {
   const d = D().site, s = R.s;
   const sel = (k, opts) => `<select data-site="${k}"${can() ? "" : " disabled"}>${opts.map(([v, t]) => `<option value="${v}"${String(d[k] || "") === v ? " selected" : ""}>${t}</option>`).join("")}</select>`;
   const inp = (k, ph, step = "any") => `<input type="number" step="${step}" data-site="${k}" value="${esc(d[k] == null ? "" : d[k])}" placeholder="${esc(ph)}"${can() ? "" : " disabled"}>`;
-  const res = (lbl, v, unit, sub) => `<div class="gb-big"><small>${lbl}</small><b>${v}${unit ? ` <span>${unit}</span>` : ""}</b>${sub ? `<em>${sub}</em>` : ""}</div>`;
-  return `<div class="gb-card"><h3>Site</h3><div class="gb-form">
-      <label>Site area (m²)${inp("area", "e.g. 7192.891")}</label>
-      <label>Class of site${sel("cls", [["", "Choose ..."], ["A", "Class A - one street"], ["B", "Class B - two streets (corner)"], ["C", "Class C - three streets"]])}</label>
-      <label>Building${sel("kind", [["non-domestic", "Non-domestic"], ["domestic", "Domestic"], ["composite", "Composite"]])}</label>
-      <label>Street low level (mPD)${inp("street_low", "e.g. 156.790")}</label>
-      <label>Street high level (mPD)${inp("street_high", "e.g. 161.180")}</label>
-      <label>Roof level (mPD)${inp("roof", "e.g. 178.600")}</label>
-      <label>or the height (m)${inp("height", "if not from levels")}</label>
-      <label class="gb-chk"><input type="checkbox" data-site="sprinkler"${d.sprinkler ? " checked" : ""}${can() ? "" : " disabled"}> Sprinkler protected throughout</label>
-      <label class="gb-chk"><input type="checkbox" data-site="single_stair"${d.single_stair ? " checked" : ""}${can() ? "" : " disabled"}> One required staircase allowed (B6.1)</label>
-    </div></div>
-    <div class="gb-card"><h3>Permitted (Cap. 123F First Schedule) ${chip(s.status === "ok" ? "ok" : "check", s.status === "ok" ? s.band : "Needs data")}</h3>
-      ${s.status !== "ok" ? `<p class="muted">${esc(s.why)}</p>` : `
-      <div class="gb-bigs">
-        ${res("Mean street level", s.mean != null ? f3(s.mean) : "—", "mPD")}
-        ${res("Height of building", f3(s.height), "m", s.mean != null ? `${f3(d.roof)} - ${f3(s.mean)}` : "")}
-        ${res("Site coverage", s.sc, "%", `${f3(s.sc_area)} m²`)}
-        ${res("Plot ratio", s.pr, "", `GFA ${f3(s.gfa)} m²`)}
-      </div>
-      <table class="gb-t"><tr><th></th><th>SC %</th><th>SC area m²</th><th>PR</th><th>GFA m²</th></tr>
+  const big = (lbl, v, unit, sub, cls = "") => `<div class="qk-big ${cls}"><small>${lbl}</small><b>${v}${unit ? `<span>${unit}</span>` : ""}</b>${sub ? `<em>${sub}</em>` : ""}</div>`;
+  const chk = (k, txt) => `<label class="qk-chk"><input type="checkbox" data-site="${k}"${d[k] ? " checked" : ""}${can() ? "" : " disabled"}> ${txt}</label>`;
+  const comp = R.comp;
+  const share = (v) => Math.max(0, Math.min(1.2, v)) / 1.2 * 100;
+  return `<section class="qk-card"><div class="qk-head"><i>&#8962;</i><h3>Site</h3><span class="spacer"></span>${chip(s.status === "ok" ? "ok" : "check", s.status === "ok" ? s.band : "Needs data")}</div>
+    <div class="qk-grid"><div class="qk-in">
+      <div class="qk-row3"><label class="qk-l">Site area (m²)${inp("area", "e.g. 7192.891")}</label>
+        <label class="qk-l">Class of site${sel("cls", [["", "Choose ..."], ["A", "Class A - one street"], ["B", "Class B - two streets (corner)"], ["C", "Class C - three streets"]])}</label>
+        <label class="qk-l">Building${sel("kind", [["non-domestic", "Non-domestic"], ["domestic", "Domestic"], ["composite", "Composite"]])}</label></div>
+      <div class="qk-lbl">Levels</div>
+      <div class="qk-row3"><label class="qk-l">Street low (mPD)${inp("street_low", "e.g. 156.790")}</label><label class="qk-l">Street high (mPD)${inp("street_high", "e.g. 161.180")}</label>
+        <label class="qk-l">Roof (mPD)${inp("roof", "e.g. 178.600")}</label><label class="qk-l">or the height (m)${inp("height", "if not from levels")}</label></div>
+      <div class="qk-chks">${chk("sprinkler", "Sprinkler protected throughout")}${chk("single_stair", "One required staircase allowed (B6.1)")}</div>
+    </div><div class="qk-pic">${siteSketch(s)}</div></div></section>
+    <section class="qk-card"><div class="qk-head"><i>&#9638;</i><h3>Permitted (Cap. 123F First Schedule)</h3></div><div class="qk-res">
+      ${s.status !== "ok" ? `<p class="qk-need">${esc(s.why)}</p>` : `
+      <div class="qk-bigs">${big("Mean street level", s.mean != null ? f3(s.mean) : "—", "mPD", "(low + high) ÷ 2")}${big("Height of building", f3(s.height), "m", s.mean != null ? `${f3(d.roof)} − ${f3(s.mean)}` : "", "qk-small")}
+        ${big("Site coverage", s.sc, "%", `${f3(s.sc_area)} m²`)}${big("Plot ratio", s.pr, "", `GFA ${f3(s.gfa)} m²`)}</div>
+      <table class="gb-t qk-tt"><tr><th></th><th>SC %</th><th>SC area m²</th><th>PR</th><th>GFA m²</th></tr>
         <tr${s.kind === "domestic" ? ' class="on"' : ""}><td>Domestic</td><td>${s.dom.sc}</td><td>${f3(s.dom.sc_area)}</td><td>${s.dom.pr}</td><td>${f3(s.dom.gfa)}</td></tr>
         <tr${s.kind === "non-domestic" ? ' class="on"' : ""}><td>Non-domestic</td><td>${s.non.sc}</td><td>${f3(s.non.sc_area)}</td><td>${s.non.pr}</td><td>${f3(s.non.gfa)}</td></tr></table>
-      ${R.comp ? `<p>Composite (reg 21): PR ${R.comp.pr} ${chip(R.comp.ok_pr ? "ok" : "fail")} · SC ${R.comp.sc} ${chip(R.comp.ok_sc ? "ok" : "fail")} - each part as a share of what it may have, together not more than 1.</p>` : ""}`}
-      <p class="gb-srcs">${src("first")}</p></div>
-    <div class="gb-card"><h3>Actual site coverage ${R.sc.rows.length ? chip(R.sc.status || "check") : chip("check", "No SC areas")}</h3>
-      ${R.sc.rows.length ? `<p>Covered ${f3(R.sc.outline)} m² - deducted ${f3(R.sc.deduct)} m² = <b>${f3(R.sc.actual)} m²</b>${R.sc.permitted != null ? ` against ${f3(R.sc.permitted)} m² permitted (${(R.sc.actual / (s.area || 1) * 100).toFixed(2)}% of the site)` : ""}.</p>`
-        : `<p class="muted">Areas with Area-Type SC-D0 / SC-ND0 (and SC-D1/2, SC-ND1/2 deducted) give the actual site coverage - from the model's site coverage area plan, or add them under GFA & concessions.</p>`}</div>`;
+      ${comp ? `<div class="qk-sub" style="margin-top:12px">Composite (reg 21): each part as a share of what it may have, together not more than 1</div>
+        <div class="qk-meter"><span>Plot ratio ${comp.pr}</span><div><i class="${comp.ok_pr ? "ok" : "fail"}" style="width:${share(comp.pr)}%"></i><b style="left:${share(1)}%"></b></div>${chip(comp.ok_pr ? "ok" : "fail")}</div>
+        <div class="qk-meter"><span>Site coverage ${comp.sc}</span><div><i class="${comp.ok_sc ? "ok" : "fail"}" style="width:${share(comp.sc)}%"></i><b style="left:${share(1)}%"></b></div>${chip(comp.ok_sc ? "ok" : "fail")}</div>` : ""}`}
+      <p class="gb-srcs">${src("first")}</p></div></section>
+    <section class="qk-card"><div class="qk-head"><i>&#9635;</i><h3>Actual site coverage</h3><span class="spacer"></span>${R.sc.rows.length ? chip(R.sc.status || "check") : chip("check", "No SC areas")}</div><div class="qk-res">
+      ${R.sc.rows.length ? `<div class="qk-bigs">${big("Covered", f3(R.sc.outline), "m²")}${big("Deducted", f3(R.sc.deduct), "m²")}${big("Actual site coverage", f3(R.sc.actual), "m²", R.sc.permitted != null ? `${(R.sc.actual / (s.area || 1) * 100).toFixed(2)}% of the site · ${f3(R.sc.permitted)} m² permitted` : "", R.sc.status === "fail" ? "qk-bad" : R.sc.status === "ok" ? "qk-ok" : "")}</div>`
+        : `<p class="qk-need">Areas with Area-Type SC-D0 / SC-ND0 (and SC-D1/2, SC-ND1/2 deducted) give the actual site coverage - from the model's site coverage area plan, or add them under GFA & concessions.</p>`}</div></section>`;
 }
 
 function partGfa(R) {
