@@ -55,6 +55,26 @@ keywords: ADV-32, babycare room, 育嬰室, lactation room, 哺乳室, commercia
 | 13 | **≥ 7.5 m²**, at least **2 users** in separate cubicles, one wheelchair accessible | 哺乳室面積 |
 | 14 ff. | Lighting, ventilation, signage, equipment | 其他要求 |
 
+## Paragraph detail (full) 逐段補充 {#paragraph-detail}
+
+Checked against the BD copy, revision November 2018 (generally revamped). Prepared with FHB, DH, GPA, ArchSD and HD (footnote 1). 已按 2018 年 11 月版本核對。
+
+| Para. 段 | Detail 細節 |
+|---|---|
+| 6 | B(P)R **36** lighting and ventilation where a sink is provided. Footnote 2: a **thermostat** is recommended. |
+| 7 | Family-friendly and safe: no sharp edges or hard corners; **non-slip**, easily cleaned finishes. |
+| 8 | Open to **males and females**. Multi-user rooms have lockable breastfeeding cubicles (one accessible), bottle-feeding and nappy areas. Locks must **open from outside in an emergency**; an "engaged" indicator may be added. Sign "Breastfeeding Area for Woman only 餵哺範圍，女士專用". |
+| 9 | Required equipment: (a) comfortable chairs or benches; (b) nappy changing table with raised edge and wipeable soft mat (footnote 3: preferably perpendicular to the wall, at a usable height with knee space for disabled users); (c) sink with lever tap and soap dispenser (footnote 4: sensor tap and dispenser desirable); (d) paper towels or hand drying; (e) bin with hinged cover for nappies; (f) small side table; (g) power outlet for breast pumps. |
+| 10 | Optional: mat disinfectant (e.g. sensor alcohol dispenser), clothing hooks, safety mirror, floor drain or leak sensor, emergency alarm. |
+| 12 | Lactation rooms in office common areas, for the landlord's or tenants' authorised persons and employees. Away from toilets and foul air. |
+| 14 | Good lighting and ventilation; **women-only** signage; cubicle locks openable from outside; "engaged" indicator optional. |
+| 15 | Basic facilities: power outlet, small side table, comfortable chair or sofa. |
+| 16 | If space allows: refrigerator, hand drying, covered bin, safety mirror, clothing hooks, sink with lever tap and soap, floor drain or leak sensor where a sink is fitted. |
+| 17 | Expressed milk goes in a refrigerator, which need **not** be inside the room. |
+| 18 | Both rooms are **free of charge** during building opening hours. Post a notice by the sign with opening hours, target users, and the responsible manager's contact. Check them regularly. 免費使用並張貼開放時間及負責人。 |
+
+Appendix A has a sign example with the breastfeeding and nappy-changing symbol and the text "Babycare Room 育嬰間". Appendix B (Rev. 11/2018) has sample layouts: Fig. 1 single user, Fig. 2 multiple users, Fig. 3 lactation room for two users. The drawings are in the PDF.
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |

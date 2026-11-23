@@ -58,6 +58,20 @@ keywords: ADV-19, construction and demolition waste, 拆建廢料, waste managem
 | (v)–(vi) | A **Disposal Delivery Form** for every truckload |
 | (vii) | Present the form at the gate, get a receipt at exit, return the original to the project office |
 
+## Appendix A annexes 附錄 A 附件 {#paragraph-detail}
+
+Checked against the BD copy, first issue June 2000 (not revised). WBTC 5/99 has been superseded by later DEVB circulars, and CED is now **CEDD**. Check current trip-ticket and dumping licence rules. 已按 2000 年版本核對，相關通告已更新。
+
+**Annex I: disposal of public fill** 公眾填料處置:
+- (a) A trip ticket (Disposal Delivery Form) for every truckload.
+- (b) Dump trucks need a valid CED **Dumping Licence**, or they are rejected.
+- (c) Licence forms from the Port Works Division or CED's website (sample in Annex III).
+- (d) Inert C&D material must meet the licence conditions.
+- (e) Opening hours at the time: 8:30 am–12:00 noon and 1:00–6:00 pm.
+- (f) Land delivery of inert material was **free of charge** at the time; charges now apply under the Construction Waste Disposal Charging Scheme.
+
+**Annex II: Disposal Delivery Form** fields: department, contract no. and title, contractor, site, public filling facility or landfill, vehicle registration, approximate load (full / ¾ / ½ / ¼), date, time of departure, remarks, and the chop of the Engineer's or Architect's Representative.
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |
