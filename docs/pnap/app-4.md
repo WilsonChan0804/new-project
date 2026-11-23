@@ -50,6 +50,41 @@ keywords: APP-4, water supply, 供水, wells, 水井, flushing water, Water Auth
 | Schools 學校 | per head / day 每人每日 | 18 L |
 | Hotels, boarding houses 酒店、賓館 | per room / day 每房每日 | 90 L |
 
+## Paragraph by paragraph and appendices (full) 逐段及附錄詳解 {#paragraph-detail}
+
+Checked against the BD copy, revision December 2005 (paras 9–10 and Annex I amended). Regulation references are to the Building (Standards of Sanitary Fitments, Plumbing, Drainage Works and Latrines) Regulations ([Cap. 123I](../regulations/bsfpwr-123i.md)). 已按 2005 年版本核對。
+
+| Para. 段 | Content 內容 |
+|---|---|
+| 1 | If water is not from the waterworks, investigate adequacy and effects **before design**. Apply early for the Water Authority's **Certificate Regarding Water Supply Availability** and submit it with the **first building plan submission**. |
+| 2 | If the Water Authority certifies (Form WWO 1004 or equivalent) under reg. **10A(5)** that mains water is not available, a well or other source may be permitted. |
+| 3 | Assess flushing and potable demand under reg. 10A(4); potable water is defined by reg. 10A(2). |
+| 4 | Flushing demand: domestic and non-domestic **450 L per required soil fitment per day**; restaurants **13.5 L / seat / day**; cinemas **4.5 L / seat / day**; schools **18 L / head / day**; hotels and boarding houses **90 L / room / day**. |
+| 5 | Potable supply assessed on individual merits; consult the Water Authority if in doubt. |
+| 6 | No fresh or salt mains water for **evaporative air-conditioning**, except for a specific industrial process and only its immediate needs. |
+| 7 | Wells normally **not on Government land**. Permission (B(C)R **85**) on private land only if (a) the yield is adequate and (b) extraction won't harm nearby services, buildings, structures or land. |
+| 8 | Application: (a) plan and sections showing the well relative to everything within the expected **drawdown zone**, ground conditions and changes from the development; (b) well design (screen, electrode switching) and development method; (c) daily extraction rate and duration; (d) yield test proposal. |
+| 9 | If (8) doesn't show no harm, an **RGE** prepares: (a) a site-specific SI report with drillhole logs, groundwater / piezometric levels and field permeability tests; (b) a geotechnical assessment with calculations of short- and long-term effects (groundwater, ground movement, stability); (c) field tests to verify the predictions if needed. |
+| 10 | Wells not advisable where settlement is likely. The Water Authority normally supplies flushing water there, currently **Yuen Long Town (Scheduled Area 2)** and **Ma On Shan (Scheduled Area 4)**. 元朗市及馬鞍山不宜鑿井。 |
+| 11 | Appendix A is the approved test where pumping is **< 12 hours/day** (reg. 10A(7)). Longer pumping, or concern about long-term yield, may need a more sophisticated test (e.g. **BS 6316:1983**). |
+| 12 | Notify **BD and GEO in writing ≥ 1 week** before a yield test. |
+| 13 | B(A)R **25A** certificates on the model forms (Appendix B: permanent connection; Appendix C: yield test). One extra copy of yield test reports goes to GEO's Geotechnical Information Unit. |
+| 14 | Potable water quality must satisfy the BA. A water sample examination report from the Water Authority, or other evidence, may be required. |
+
+### Appendix A: well yield test procedure 抽水量測試程序
+
+| Item 項目 | Requirement 規定 |
+|---|---|
+| 1 | Only between **1 December and 30 April** (dry season). 只可於 12 月 1 日至 4 月 30 日進行。 |
+| 2 | **7 consecutive days**. Days 1–6 pump at the proposed daily yield averaged over the daily pumping period, **≤ 12 h/day**, leaving **≥ 12 h** recovery. |
+| 3 | Measure daily quantity with a **water meter**, not from the pump rating. |
+| 4 | Water level from ground: ≥ 24 h before the test, just before start, and just before the end of each day's pumping. Days 1 and 6: every **1 min for 10 min**, every **10 min to 120 min**, then every **1½ h**. |
+| 5 | Day 7: check for **suspended soil particles** at the pump's full discharge and maximum drawdown. |
+| 6 | Discharge to a proper drain or watercourse, never where it can soak back into the well or aquifer. |
+| Notes | The test checks quantity, recharge and recovery, and whether the screen and filter pack stop soil loss. Don't assume part-day yield can be sustained 24 h × 7 days. **Pass** if the daily quantity is met, recovery is adequate each day, and water is clean on day 7. Record on Annex I (required quantity, well depth and screen levels, diameter, pump type and model, groundwater level 24 h before, daily start / stop, hours, litres, levels before and after pumping). |
+
+**Appendix B** is a model AP certificate under B(A)R 25A(1)(b)(i) / (1)(c) / (2)(b)(i) / (2)(c) for a **permanent connection** of flushing or potable water from a well or other source (reg. 10A(1)/(2)). **Appendix C** is a model AP **well yield test certificate** under reg. 10A(7)(c), with Annex I attached.
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

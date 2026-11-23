@@ -54,6 +54,42 @@ keywords: ADV-23, landscape treatment, 美化, slopes, 斜坡, retaining walls, 
 | 9 | Maintenance in the **slope maintenance manual** | 維修 |
 | 10–11 | Geotechnical Manual for Slopes; **GEO Publication 1/2000**; Layman's Guide | 技術指引 |
 
+## Paragraph by paragraph and Appendix A (full) 逐段及附錄 A 詳解 {#paragraph-detail}
+
+Checked against the BD copy, revision May 2004 (para. 7 added). Old numbers cited: PNAP 234 = [APP-109](app-109.md), PNAP 267 = [ADV-22](adv-22.md). Newer GEO guidance has been issued since, so check current GEO publications. 已按 2004 年版本核對。
+
+| Para. 段 | Content 內容 |
+|---|---|
+| 1–2 | Shotcrete and chunam slopes look harsh and reflect more heat. Vegetation absorbs CO₂ and reduces the heat-island effect. Make slopes as natural as possible. |
+| 3 | The BA strongly recommends these guidelines for new, upgraded and maintained slopes and walls. |
+| 4 | Landscape treatment wherever possible on new or upgraded slopes. **Shotcrete / chunam only as a last resort** (Appendix A). 噴漿只作最後選擇。 |
+| 5 | Avoid or reduce **large slopes** by re-planning the layout, or use retaining structures that are not too massive or obtrusive. |
+| 6 | Preserve healthy trees and avoid damage to crown, trunk or roots. If the slope is covered, provide **tree rings** large enough for air and water. Add unobtrusive structural support if trees may fall (self-weight, wind). |
+| 7 | **New (2004)**: the AP arranges an experienced person to inspect vegetation for unhealthy or decaying trees and remove any danger. Submit the **inspection report to the BA before the site formation completion certificate**. 完工證明書前提交樹木檢查報告。 |
+| 8 | Felling or transplanting only as a last resort for genuine safety reasons; land grant and legislation may require Government approval ([ADV-22](adv-22.md), LAO PN 8/2002). |
+| 9 | Put landscape maintenance requirements in the **slope maintenance manual**; get specialist advice where needed. |
+| 10–11 | Technical guidance: Geotechnical Manual for Slopes (2nd Ed.); **GEO Publication No. 1/2000** (landscape treatment and bio-engineering); **GEO Report No. 116** (integrating slopes, especially roadside slopes); a free Layman's Guide from District Offices. Adopt new GEO guidance as issued. |
+
+### Appendix A (Rev. 5/2004) 附錄 A
+
+**A. Shotcrete and chunam 噴漿及灰漿批盪**
+
+| Item 項目 | Guideline 指引 |
+|---|---|
+| 1 | Last resort only. **Avoid the bottom 3 m** of a slope, which is the most visible part. If unavoidable: toe wall planters, planter boxes, tree pits, creeper holes, pigments in the shotcrete, and tree rings. 斜坡底部 3 米避免噴漿。 |
+| 2 | Generally **not** on soil cut slopes of consequence-to-life **Category 3**. When upgrading or maintaining, replace existing shotcrete with vegetation on Category 3 soil cuts, and on other categories where safe. Otherwise add landscape measures. **Stone pitching** is a nicer alternative. |
+| 3 | Not on fresh to moderately decomposed rock (**Grade I–III**) with tight joints at average spacing **> 60 mm**. It may be justified on closely jointed rock (< 60 mm), open joints or fast-weathering rock, confirmed by an experienced geotechnical engineer or engineering geologist. Place weepholes from a site assessment of discontinuities and seepage (GMS Fig. 5.4). |
+| 4 | For fractured rock needing restraint, prefer **wire mesh** (less obtrusive). Finish large buttresses and dentition to reduce impact; consider masonry facing; break up large uniform surfaces. |
+
+**B. Landscape treatment and bio-engineering 園景處理及生物工程**
+
+| Item 項目 | Guideline 指引 |
+|---|---|
+| 5–7 | GMS covers grass, shrubs, trees and **hydroseeding** on all soil slopes; GEO Pub. 1/2000 gives the design process for new, upgraded and maintained slopes; GEO Report 116 covers aesthetics. |
+| 8 | Keep soft landscape as maintenance-free as possible. Avoid species needing heavy pruning or dry-season watering. Consider **native species** with seasonal flowers. |
+| 9 | After hydroseeding, **always** lay a **biodegradable protective fabric**, whatever the gradient, to reduce raindrop erosion while grass establishes. |
+| 10 | Maintain vegetation; protect, support or if necessary remove trees. **Approval from the relevant authority is needed before removing trees.** |
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |

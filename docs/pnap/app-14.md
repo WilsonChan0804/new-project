@@ -60,6 +60,68 @@ keywords: APP-14, cinema, 戲院, place of public entertainment, B(P)R 49B, shar
         - 與商場**共用**出口時只按影院人數計算闊度。
         - 影院與學校、幼兒中心或安老院位於**同一建築物**（B(P)R 第 49B(4) 條）。
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+Checked against the BD copy, revision April 2010 (paras 16–17 added, 15 and 18 amended). The PNAP still refers to the **MOE Code 1996, FRC Code 1996 and MOA Code**. These have been replaced by the [FS Code 2011](../codes/fire-safety-code-2011.md), so check the equivalent FS Code clauses (Part B for places of public entertainment) before relying on the paragraph references. 原文引用已被取代的 1996 年消防守則，請對照 2011 年消防守則。
+
+### Shared exits, para. 2 共用出口條件
+
+| Item 項目 | Requirement 規定 |
+|---|---|
+| (a) | Every cinema box has a **dedicated smoke extraction system** and other FSI to FSD's satisfaction. |
+| (b) | Boxes are separated from other uses by fire-resisting walls and floors (FRP per the FRC Code); doors have the **same FRP as the walls**. No protected lobby is needed at box doors to the foyer or adjoining areas. |
+| (c) | The same separation between boxes and **foyers**, unless the foyer also has smoke extraction. Then the foyer is separated from other uses, and openings have doors or fire shutters of the wall's FRP. |
+| (d) | Shared exits reachable from **common circulation** without passing through other private premises. |
+| (e) | A staircase connected directly to a cinema storey (not via adjoining areas) is built fully to MOE Code para. 17.2(b) and 26.2. |
+| (f) | Shared exits sized on the **combined capacity** (paras 4–7). |
+| (g) | In composite buildings, cinema exits are **separate from domestic exits**. |
+| (h) | Exits discharge to streets **≥ 4.5 m** wide; two exit routes from each floor discharge to **different thoroughfares**. |
+| (i) | **Not in a basement** (basements: para. 14). |
+
+### Other paragraphs 其他段落
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 1 | B(P)R 49B: cinemas totalling **≤ 2,000 persons** on any storey of a non-domestic building or part. Groups may share exits, foyers, waiting space, vestibules and projection rooms. |
+| 3 | Entrance may be through adjoining circulation, e.g. a shopping arcade. |
+| 4 | Exit widths per MOE Table 2. Cinemas **≥ 12 m above pavement** follow MOE paras 25.1, 25.3, 25.4. |
+| 5 | Shared exits: number and width based on the **total** of the cinema and the designated sharing area. |
+| 6 | If an upper floor needs a wider shared exit than floors below, the staircase keeps that width **down to ground**. |
+| 7 | **Horizontal exits** through adjoining areas: (a) **≤ half** the cinema's required exit width; (b) circulation areas (including the foyer) **≥ 0.5 m² per person**, counting: the cinema occupants assigned to those exits pro rata by width; foyer occupants at 1 per 0.5 m²; and occupants of the adjoining circulation per MOE Table 1. |
+| 8 | Row length **≤ 12 m** (gangway one side) or **≤ 24 m** (both sides); seats per row per Table A. |
+| 9 | Gangway widths per Table B. |
+| 10 | **Projection rooms**: walls and floors **≥ 1 hour FRP**. Doors 1 hour FRP with leakage **≤ 3 m³/h/m** (head and jambs) at 25 Pa under BS 476-31.1. Not needed where no film projector or hazardous light source (arc, xenon, etc.) is used. |
+| 11 | Projection room exits per MOE. An elevated room serving **one** box may have **one exit** if direct plus travel distance meets MOE para. 14(3)(b); it may discharge through the seating area. |
+| 12 | Projection suites without natural ventilation: **independent mechanical ventilation** to open air. |
+| 13 | **Foyer** (B(P)R 49E): **0.5 m² per person** for **1 in 6** of the seats. |
+| 14 | **Basement cinemas** (MOE para. 23.3 also applies): (a) foyer on **G/F**, 0.5 m² per person for **1 in 3** of the seats; (b) lifts open into the cinema through a protected lobby, and the fireman's lift opens into the ventilated lobby of the firefighting stair, which gives access to the boxes; (c) separation **≥ 4 hours FRP** (FRC paras 6.2, 15). |
+| 15 | Seats need **not** be installed before OP / BA14 if gangways and seatways are marked on site and the developer / AP undertakes to install them **before the cinema licence application**. |
+| 16 | These rules may be applied to **other places of public entertainment (PPE)** as if they were cinemas. |
+| 17 | Other PPE (no cinema or theatre) totalling **≤ 500 persons** in a non-domestic building without polluting industry, or non-domestic part of a composite building: the site may abut **one thoroughfare** if it is an acceptable EVA and FSD has no objection; B(P)R 49A modification may be considered. |
+| 18 | PPE / cinemas of **≤ 50 persons** may share exits, and this PNAP and MOE Part III do not apply, if: (a) all such premises in the building total **≤ 150 persons**; (b) not in a basement; (c) projection rooms meet paras 10–12; (d) foyer per para. 13. |
+
+**Table A: maximum seats in a row** 每行最多座位
+
+| Seatway width (mm) 座位通道闊度 | Gangway one side 一邊有通道 | Gangway both sides 兩邊有通道 |
+|---|---|---|
+| 300–324 | 7 | 14 |
+| 325–349 | 8 | 15 |
+| 350–374 | 9 | 18 |
+| 375–399 | 10 | 20 |
+| 400–424 | 11 | 22 |
+| 425–449 | 12 | 24 |
+| 450–474 | 12 | 26 |
+| 475–499 | 12 | 28 |
+| ≥ 500 | Limited by 12 m row length | Limited by 24 m row length |
+
+Seatway width = clear distance from the back of one seat to the nearest projection of the seat behind. For tip-up seats, measure to the seat behind **in the tipped-up position**.
+
+**Table B: minimum gangway width** 通道最小闊度
+
+| Persons served 服務人數 | < 500 | 501–1000 | 1001–1500 | > 1500 |
+|---|---|---|---|---|
+| Each gangway 每條通道 | 1100 mm | 1200 mm | 1350 mm | 1500 mm |
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

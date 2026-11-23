@@ -55,6 +55,38 @@ keywords: ADM-6, computer program, 電腦程式, prior acceptance, 預先接納,
 | 9 | Changes to an accepted program: submit amendments and updated manual **before use** | 修訂須先接納 |
 | 10 | Lists of accepted programs and limitations: NBD counter or BD website | 接納清單 |
 
+## Paragraph detail and forms 逐段補充及表格 {#paragraph-detail}
+
+Checked against the BD copy, revision June 2016 (Appendices A–C amended). 已按 2016 年 6 月版本核對。
+
+| Para. 段 | Detail 細節 |
+|---|---|
+| 1 | Programs used for calculations or designs in BA submissions must be **accepted before** plans are submitted. |
+| 2 | An **RSE** applies for structural programs and an **RGE** for geotechnical ones. Accepted programs get a BD reference prefixed **S** (structural) or **G** (geotechnical), quoted in submissions. |
+| 3 | Apply (including renewal) on Appendix A with a user's manual covering: (a) mathematical modelling; (b) flow charts; (c) regulations and codes complied with; (d) theory and algorithms with references; (e) limitations and applicability; (f) data input and output; (g) interpretation of results; (h) examples covering **every part** of the program, verified by the RSE / RGE. More test examples may be required. |
+| 4 | When used, give the information in the first part of the structural calculations required by [ADM-8](adm-8.md) para. 9(b). |
+| 5 | The RSE (structural) or RGE (geotechnical) is responsible for **running** the program, and includes the Appendix B and/or C statement in the submission. |
+| 6 | A program without a valid BD reference: the BA may ask for all the para. 3 information with the submission. |
+| 7–8 | Valid up to **3 years** from the last acceptance; renew on expiry, applying no earlier than **4 months** before. |
+| 9 | Changes to an accepted program: submit details and the updated manual for acceptance **before use**. |
+| 10 | Lists of accepted programs and their limitations are on BD's website. |
+
+**Appendix A** (Rev. 6/2016), the application form for prior acceptance or renewal:
+- A: applicant (RSE / RGE) and registration no.
+- B: program name, version and developer; BD ref. for renewals.
+- C: documents enclosed — structural: **one** manual and flow charts; geotechnical: **two** copies.
+- D: areas of application (space frame, core wall, seepage, slope stability, etc.).
+- E: description and theory (linear / non-linear, static / dynamic, FE / stiffness, etc.).
+- F: **limitations** (number of elements, nodes, load cases, codes, load factors, combinations).
+- G: supporting information and verified examples.
+- Signed declaration of adequate assessment.
+
+**Appendix B** (structural statement): BD file ref., site, AP and RSE. It lists each program with its S-number and methodology (elastic, load factor, ultimate limit state) and what it was used for (foundation, pile cap, footing, superstructure, others — analysis or design). Signed by the RSE.
+
+**Appendix C** (geotechnical statement): programs with G-numbers used for earth-retaining structures, ELS, slope works or others. Signed by the RGE, who confirms he/she ran the programs.
+
+Note: [APP-57](app-57.md) (July 2026) requires a **separate acceptance for each design method** (GFM / PFM) even for the same program.
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |
