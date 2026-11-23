@@ -146,9 +146,14 @@ def b3dm_triangles(data, tile_tf):
     return tris
 
 
-def find_tiles(lat, lng, r, cache_dir):
-    """the finest b3dm tiles whose boxes come within r of the point -> [(url, transform)]"""
+def find_tiles(lat, lng, r, cache_dir, prog=None):
+    """the finest b3dm tiles whose boxes reach the square of half-width r about
+    the point -> ([(url, transform)], capped). Nested tilesets are read in
+    parallel, level by level."""
+    from concurrent.futures import ThreadPoolExecutor
     p = ecef(lat, lng)
+    reach = r * math.sqrt(2)
+    cap = max_tiles(r)
     out = []
 
     def near(bv, tf):
@@ -157,75 +162,107 @@ def find_tiles(lat, lng, r, cache_dir):
             return True
         c = (b[0] + tf[12], b[1] + tf[13], b[2] + tf[14])
         rad = sum(math.sqrt(b[3 + 3 * k] ** 2 + b[4 + 3 * k] ** 2 + b[5 + 3 * k] ** 2) for k in range(3))
-        return math.dist(c, p) <= rad + r
+        return math.dist(c, p) <= rad + reach
 
-    def walk(node, base_url, tf, depth):
-        if len(out) >= MAX_TILES or depth > 40:
+    def tight(bv, tf):
+        """the box really over the square (its centre within it, give or take its own half-size)"""
+        b = bv.get("box")
+        if not b:
+            return False
+        c = (b[0] + tf[12], b[1] + tf[13], b[2] + tf[14])
+        half = max(math.sqrt(b[3 + 3 * k] ** 2 + b[4 + 3 * k] ** 2 + b[5 + 3 * k] ** 2) for k in range(3))
+        return math.dist(c, p) <= reach + half * 0.5 and half < 3000
+
+    def expand(node, base_url, tf, depth, pending):
+        """the node's finest tiles, or the nested tilesets still to read"""
+        if depth > 60:
             return
         if "transform" in node:
             tf = _mat_mul(tf, node["transform"])
         if not near(node.get("boundingVolume", {}), tf):
             return
-        kids = [k for k in node.get("children", [])]
+        kids = node.get("children", [])
         content = (node.get("content") or {}).get("uri") or (node.get("content") or {}).get("url")
         if content and content.endswith(".json"):
-            url = urllib.parse.urljoin(base_url, content)
-            ts = json.loads(_get(url, cache_dir))
-            walk(ts["root"], url, tf, depth + 1)
+            pending.append((urllib.parse.urljoin(base_url, content), tf, depth + 1))
             return
         near_kids = [k for k in kids if near(k.get("boundingVolume", {}), tf)]
         if near_kids:
             for k in near_kids:
-                walk(k, base_url, tf, depth + 1)
-        elif content and (not kids or (node.get("geometricError") or 0) <= 2):
-            # the finest level only: a coarse tile whose finer children are all far is not wanted
+                expand(k, base_url, tf, depth + 1, pending)
+        elif content and (not kids or (node.get("geometricError") or 0) <= 2 or tight(node.get("boundingVolume", {}), tf)):
+            # the finest here: a leaf, or a tile whose finer children do not reach the area
             out.append((urllib.parse.urljoin(base_url, content), tf))
 
     root_url = BASE + "tileset.json"
-    ts = json.loads(_get(root_url, cache_dir))
-    walk(ts["root"], root_url, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 0)
-    return out
+    pending = []
+    expand(json.loads(_get(root_url, cache_dir))["root"], root_url, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 0, pending)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        while pending and len(out) < cap:
+            if prog is not None:
+                prog["stage"] = "finding tiles"; prog["done"] = len(out)
+            docs = list(pool.map(lambda it: (it, json.loads(_get(it[0], cache_dir))), pending))
+            pending = []
+            for (url, tf, depth), ts in docs:
+                expand(ts["root"], url, tf, depth, pending)
+    capped = len(out) > cap
+    return out[:cap], capped
 
 
-def context(core, lat, lng, r):
+def max_tiles(r):
+    return int(max(160, min(2000, 160 * (r / 300.0) ** 2)))
+
+
+JOBS = {}
+
+
+def context(core, lat, lng, r, prog=None):
     cache_dir = os.path.join(core.CFG["data"], "context3d")
     os.makedirs(cache_dir, exist_ok=True)
-    key = os.path.join(cache_dir, "out-%.5f-%.5f-%d.bin" % (lat, lng, r))
+    key = os.path.join(cache_dir, "sq-%.5f-%.5f-%d.bin" % (lat, lng, r))
     if os.path.exists(key) and time.time() - os.path.getmtime(key) < 30 * 86400:
         with open(key, "rb") as f:
             blob = f.read()
         with open(key + ".json") as f:
             return blob, json.load(f)
-    tiles = find_tiles(lat, lng, r, cache_dir)
+    tiles, capped = find_tiles(lat, lng, r, cache_dir, prog)
     o, e, n, u = enu_frame(lat, lng)
     verts = []
     from concurrent.futures import ThreadPoolExecutor
+    if prog is not None:
+        prog.update(stage="reading buildings", done=0, total=len(tiles))
 
     def one(item):
         url, tf = item
         try:
-            return b3dm_triangles(_get(url, cache_dir), tf)
+            tris = b3dm_triangles(_get(url, cache_dir), tf)
         except Exception as ex:
             print("context3d: %s: %s" % (url, ex))
-            return []
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(one, tiles))
-    for tris in results:
+            tris = []
+        loc_tris = []
         for t in tris:
             loc = []
             for (x, y, z) in t:
                 d = (x - o[0], y - o[1], z - o[2])
                 loc.append((d[0] * e[0] + d[1] * e[1] + d[2] * e[2], d[0] * n[0] + d[1] * n[1] + d[2] * n[2], d[0] * u[0] + d[1] * u[1] + d[2] * u[2]))
             cx, cy = (loc[0][0] + loc[1][0] + loc[2][0]) / 3, (loc[0][1] + loc[1][1] + loc[2][1]) / 3
-            if cx * cx + cy * cy <= r * r:
+            if abs(cx) <= r and abs(cy) <= r:
+                loc_tris.append(loc)
+        if prog is not None:
+            prog["done"] = prog.get("done", 0) + 1
+        return loc_tris
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for lt in pool.map(one, tiles):
+            for loc in lt:
                 verts.extend(loc)
-        if len(verts) // 3 >= MAX_TRIS:
-            break
+    max_tris = int(min(3000000, MAX_TRIS * (r / 300.0) ** 2 + MAX_TRIS))
+    if len(verts) // 3 > max_tris:
+        verts = verts[:max_tris * 3]; capped = True
     # the ground: low among the vertices near the site
-    zs = sorted(v[2] for v in verts if v[0] * v[0] + v[1] * v[1] < (r * 0.5) ** 2) or sorted(v[2] for v in verts) or [0]
+    zs = sorted(v[2] for v in verts if v[0] * v[0] + v[1] * v[1] < 150 ** 2) or sorted(v[2] for v in verts) or [0]
     ground = zs[max(0, int(len(zs) * 0.02))]
     blob = struct.pack("<%df" % (len(verts) * 3), *[c for v in verts for c in (v[0], v[1], v[2] - ground)])
-    meta = {"tiles": len(tiles), "triangles": len(verts) // 3, "ground": round(ground, 2)}
+    meta = {"tiles": len(tiles), "triangles": len(verts) // 3, "ground": round(ground, 2), "r": r, "capped": bool(capped)}
     try:
         with open(key, "wb") as f:
             f.write(blob)
@@ -236,16 +273,46 @@ def context(core, lat, lng, r):
     return blob, meta
 
 
+def start(core, lat, lng, r):
+    """the area ready -> (blob, meta); else a job is started or running -> (None, progress)"""
+    k = (lat, lng, r)
+    cache_dir = os.path.join(core.CFG["data"], "context3d")
+    key = os.path.join(cache_dir, "sq-%.5f-%.5f-%d.bin" % (lat, lng, r))
+    if os.path.exists(key) and os.path.exists(key + ".json"):
+        return context(core, lat, lng, r)
+    j = JOBS.get(k)
+    if j and j.get("error"):
+        JOBS.pop(k, None)
+        raise RuntimeError(j["error"])
+    if j and j.get("ready"):
+        JOBS.pop(k, None)
+        return context(core, lat, lng, r)
+    if not j:
+        import threading
+        j = JOBS[k] = {"stage": "starting", "done": 0, "total": 0}
+
+        def run():
+            try:
+                context(core, lat, lng, r, j)
+                j["ready"] = True
+            except Exception as ex:
+                j["error"] = str(ex)
+        threading.Thread(target=run, daemon=True).start()
+    return None, dict(j)
+
+
 def register(app, core):
     @app.get("/api/site/context")
-    async def site_context(request: Request, lat: float, lng: float, r: float = 250,
+    async def site_context(request: Request, lat: float, lng: float, r: float = 500,
                            x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
         core.require_project(request, x_project, "viewer", x_viewer_token)
         if not (22.1 <= lat <= 22.6 and 113.8 <= lng <= 114.5):
             raise HTTPException(status_code=400, detail="Not in Hong Kong")
-        r = max(50.0, min(600.0, r))
+        r = int(max(100.0, min(1500.0, r)))
         try:
-            blob, meta = await run_in_threadpool(context, core, round(lat, 5), round(lng, 5), int(r))
+            blob, meta = await run_in_threadpool(start, core, round(lat, 5), round(lng, 5), r)
         except Exception as ex:
             raise HTTPException(status_code=502, detail="The 3D data did not answer: %s" % ex)
+        if blob is None:
+            return Response(content=json.dumps(dict(meta, status="working")), status_code=202, media_type="application/json")
         return Response(content=blob, media_type="application/octet-stream", headers={"X-Context": json.dumps(meta)})

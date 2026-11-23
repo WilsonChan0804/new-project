@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-06", date: "23 Nov 2026",
+    items: [
+      "**3D surroundings: how far around** - choose ± 250 / 500 / 1,000 / 1,500 m beside 🏙 Surroundings; the map on the ground and the buildings now cover the same square. A wide area is built on the server in the background (the bar shows how far it has gone) and kept for a month.",
+      "Some newer buildings are not yet in the Lands Department's 3D data; draw those with **+ Context** (Plan view) and their height.",
+    ],
+  },
+  {
     version: "2027-03-05", date: "23 Nov 2026",
     items: [
       "**Massing: the real surroundings in 3D** - **🏙 Surroundings** brings in the buildings around the site from the Lands Department's 3D Spatial Data (CSDI, 3D Tiles), in light grey, with the map on the ground; the buildings on the site itself are left out. The first load of a site takes up to a minute, then it is kept on the server.",

@@ -23,6 +23,8 @@ const pref = (k, d) => { try { const v = localStorage.getItem("lwk-viewer:ms-" +
 const setPref = (k, v) => { try { localStorage.setItem("lwk-viewer:ms-" + k, v ? "1" : "0"); } catch (e) {} };
 let SNAP = pref("snap", true), SHADOW = pref("shadow", true), CTX3D = pref("ctx3d", true);
 
+/* the surroundings' extent: half-width of the square, m (per project) */
+const ctxR = () => { const m = mass(); return [250, 500, 1000, 1500].includes(+m.ctxR) ? +m.ctxR : 500; };
 export function init(ctx) {
   C = ctx;
   layer = C.L.layerGroup();
@@ -99,7 +101,7 @@ function viewsBar() {
     ${VIEW === "sect" ? `<input type="range" min="0" max="100" value="${CUT}" data-cut title="Where the section cuts">` : ""}
     ${VIEW === "plan" && C.can() ? `<button type="button" data-tool="measure" class="${TOOL && TOOL.kind === "measure" ? "on" : ""}" title="Measure: snaps to the site and the footprints">📏</button><button type="button" data-tool="context" class="${TOOL && TOOL.kind === "context" ? "on" : ""}" title="Draw a neighbouring building for the 3D view">+ Context</button>` : ""}
     ${VIEW === "plan" ? gridBar() : ""}
-    ${VIEW === "plan" ? `<button type="button" data-snap class="${SNAP ? "on" : ""}" title="Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)">⌖ Snap</button>` : `<button type="button" data-shadow class="${SHADOW ? "on" : ""}" title="Shadows on / off">☀ Shadow</button><button type="button" data-ctx3d class="${CTX3D ? "on" : ""}" title="The buildings around: the Lands Department's 3D Spatial Data (CSDI)">🏙 Surroundings</button><span class="ms-ctxst" id="ms-ctxst"></span>`}
+    ${VIEW === "plan" ? `<button type="button" data-snap class="${SNAP ? "on" : ""}" title="Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)">⌖ Snap</button>` : `<button type="button" data-shadow class="${SHADOW ? "on" : ""}" title="Shadows on / off">☀ Shadow</button><button type="button" data-ctx3d class="${CTX3D ? "on" : ""}" title="The buildings around: the Lands Department's 3D Spatial Data (CSDI)">🏙 Surroundings</button><select data-ctxr title="How far around: the map and the buildings, each side of the site">${[250, 500, 1000, 1500].map((v) => `<option value="${v}"${v === ctxR() ? " selected" : ""}>± ${v.toLocaleString("en-GB")} m</option>`).join("")}</select><span class="ms-ctxst" id="ms-ctxst"></span>`}
     ${VIEW !== "plan" ? `<button type="button" data-png title="Save this view as a picture">PNG</button>` : ""}`;
 }
 function gridBar() {
@@ -122,6 +124,7 @@ function onViews(ev) {
     C.save(); viewsBar(); return drawPlan();
   }
   if (t.dataset.snap != null && ev.type === "click") { SNAP = !SNAP; setPref("snap", SNAP); return viewsBar(); }
+  if (t.dataset.ctxr != null && ev.type === "change") { mass().ctxR = +t.value; C.save(); return draw3d(); }
   if (t.dataset.ctx3d != null && ev.type === "click") { CTX3D = !CTX3D; setPref("ctx3d", CTX3D); viewsBar(); if (T3) T3.context(CTX3D ? C.study() : null); return; }
   if (t.dataset.shadow != null && ev.type === "click") { SHADOW = !SHADOW; setPref("shadow", SHADOW); viewsBar(); if (T3) T3.shadow(SHADOW); return; }
   if (t.dataset.tool && ev.type === "click") {
@@ -607,14 +610,14 @@ function makeScene(THREE, Orbit, host) {
   const mat = (o) => { const mm = new THREE.MeshLambertMaterial(o); mats.push(mm); return mm; };
   const groundMap = async (s, o, R) => {
     // the Lands Department map under the site, as in Plan
-    const key = s.pts.map((p) => p.join(",")).join(";");
+    const key = s.pts.map((p) => p.join(",")).join(";") + "|" + R;
     if (key === groundKey) return; groundKey = key;
     if (ground) { scene.remove(ground); ground = null; }
-    const z = 18, n2 = 2 ** z, rad = Math.PI / 180;
+    const z = R > 900 ? 16 : R > 450 ? 17 : 18, n2 = 2 ** z, rad = Math.PI / 180;
     const tx = (lng) => (lng + 180) / 360 * n2, ty = (lat) => (1 - Math.log(Math.tan(lat * rad) + 1 / Math.cos(lat * rad)) / Math.PI) / 2 * n2;
     const dLat = R / 111320, dLng = R / (111320 * Math.cos(o[0] * rad));
     const x0 = Math.floor(tx(o[1] - dLng)), x1 = Math.floor(tx(o[1] + dLng)), y0 = Math.floor(ty(o[0] + dLat)), y1 = Math.floor(ty(o[0] - dLat));
-    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 64) return;
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 144) return;
     const cv = document.createElement("canvas"); cv.width = (x1 - x0 + 1) * 256; cv.height = (y1 - y0 + 1) * 256;
     const g = cv.getContext("2d");
     let got = 0;
@@ -638,6 +641,7 @@ function makeScene(THREE, Orbit, host) {
     scene.add(ground);
   };
   const build = (mdl, s, m, view, elev, pot) => {
+    { const RR = ctxR(); persp.far = Math.max(30000, RR * 8); persp.updateProjectionMatrix(); Object.assign(sun.shadow.camera, { left: -RR, right: RR, top: RR, bottom: -RR, far: RR * 6 }); sun.shadow.camera.updateProjectionMatrix(); }
     mode = view === "plan" ? "3d" : view;
     resize();
     if (group) { scene.remove(group); group.traverse((x) => { if (x.geometry) x.geometry.dispose(); }); }
@@ -662,7 +666,7 @@ function makeScene(THREE, Orbit, host) {
         const st = new THREE.Mesh(new THREE.ShapeGeometry(shape(q)), new THREE.MeshLambertMaterial({ color: 0xffffff }));
         st.position.z = 0.03; st.receiveShadow = true; group.add(st);
       }
-      groundMap(s, o, Math.max(200, span * 2.5));
+      groundMap(s, o, ctxR());
     }
     const clipping = mode === "sect" ? [clip] : [];
     const st = M.stacks(mdl), bs = M.buildings(mdl);
@@ -757,13 +761,21 @@ function makeScene(THREE, Orbit, host) {
   const status = (t) => { const e = document.getElementById("ms-ctxst"); if (e) e.textContent = t; };
   const context = async (s) => {
     if (!s || s.pts.length < 3) { if (ctxMesh) ctxMesh.visible = false; status(""); return; }
-    const c = S.centroid(s.pts), R = Math.max(200, Math.min(500, Math.max(...S.toXY(s.pts, c).map((p) => Math.hypot(p[0], p[1]))) * 3));
+    const c = S.centroid(s.pts), R = ctxR();
     const key = c.map((x) => x.toFixed(5)).join(",") + "," + Math.round(R);
     if (key === ctxKey && ctxMesh) { ctxMesh.visible = true; return; }
     if (ctxBusy) return;
     ctxBusy = true; status("loading the surroundings …");
     try {
-      const res = await fetch(`/api/site/context?lat=${c[0]}&lng=${c[1]}&r=${Math.round(R)}`, { headers: C.headers() });
+      let res;
+      for (let k = 0; k < 900; k++) { // the server builds a big area in the background: ask again until it is there
+        res = await fetch(`/api/site/context?lat=${c[0]}&lng=${c[1]}&r=${Math.round(R)}`, { headers: C.headers() });
+        if (res.status !== 202) break;
+        const j = await res.json().catch(() => ({}));
+        status(`loading the surroundings: ${j.stage || "…"}${j.total ? ` ${j.done} / ${j.total} tiles` : j.done ? ` ${j.done}` : ""}`);
+        await new Promise((ok) => setTimeout(ok, 2000));
+        if (ctxR() !== R) { ctxBusy = false; return context(C.study()); }
+      }
       if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.detail || "HTTP " + res.status); }
       const meta = JSON.parse(res.headers.get("X-Context") || "{}");
       const raw = new Float32Array(await res.arrayBuffer());
@@ -782,7 +794,7 @@ function makeScene(THREE, Orbit, host) {
       ctxMesh.castShadow = SHADOW; ctxMesh.receiveShadow = SHADOW;
       scene.add(ctxMesh);
       ctxKey = key;
-      status(meta.triangles ? `${meta.triangles.toLocaleString("en-GB")} triangles · © Lands Department` : "no buildings found around");
+      status(meta.triangles ? `${meta.triangles.toLocaleString("en-GB")} triangles · ${R.toLocaleString("en-GB")} m around${meta.capped ? " (capped: some tiles left out)" : ""} · © Lands Department 3D data` : "no buildings found around");
     } catch (e) { status("surroundings not loaded: " + e.message); }
     ctxBusy = false;
   };
