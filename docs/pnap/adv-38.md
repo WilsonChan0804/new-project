@@ -75,6 +75,24 @@ keywords: ADV-38, innovative building materials, 創新建築材料, IBMT, pre-a
 | 7 | Project professionals ensure use complies with the BO, approved plans and the letter's limits. 項目責任。 |
 | 8 | Valid **maximum 5 years**; renew on the Appendix B form. 有效期 5 年。 |
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+Checked against the BD copy, first issue April 2024. Extra detail not in the table above 上表以外的細節:
+
+| Para. / note 段／註 | Detail 細節 |
+|---|---|
+| 1 | IBMT covers materials, products, systems or construction technologies that improve safety, health, environmental performance or productivity. The curtailed assessment checks compliance with the BO and its regulations. |
+| Footnote 1 | **Geotechnical** innovations go to the **Geotechnical Engineering Office (CEDD)**, not BD. 岩土創新須向土木工程拓展署土力工程處申請。 |
+| Footnote 2 | An **RGE** must be appointed if the IBMT involves geotechnical matters, e.g. a new foundation system. |
+| 2(b), footnote 3 | Innovation brief: use, design principle, job references, and the innovative content. Example: concrete with an innovative cement replacement or aggregate, or an IBMT with no local or international standard. |
+| 2(c) | Plans show compliance with the BO, or performance **equivalent or not inferior** to it. |
+| 2(d) | Specs plus catalogue, technical documents, accredited laboratory test / assessment reports, factory QA with **ISO 9001** or equivalent. |
+| 4 | Comments: AP/RSE/RGE replies within **30 days** or the application may be treated as **abandoned**; BD decides within 30 days of the reply; refusal lists outstanding items (footnote 4: a refused case needs a **new application**). Discuss with BD before applying. |
+| 5 | The acceptance letter, a brief description, and the requirements and limitations are **published on BD's website**. |
+| 8 | Validity up to **5 years**, to keep up with technology and changes in the BO, codes and PNAPs. Renewal is prepared by the AP/RSE/RGE on the Appendix B form. |
+
+**Appendix A – Form IBMT 1** (BD 4/2024, 6 pages, bilingual): Part A application particulars (IBMT name, model, category — building / drainage, structural, or others — and description; manufacturer / supplier details with HKID or BR no., contact email required); details of the appointed AP (building / drainage), RSE (structural) and/or RGE with appointment dates; declarations. **Appendix B** is the renewal form, with a part for updates on the manufacturer and a declaration. Fill in from the PDF; field wording is not reproduced here.
+
 ## Related 相關文件 {#related}
 
 | Document 文件 | Relationship 關係 |

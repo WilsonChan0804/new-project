@@ -59,6 +59,71 @@ keywords: RGBC, RSC, registered general building contractor, 註冊一般建築�
 | 19–21 | CRC composition for the general and specialist registers; chair elected by members. 委員會組成。 |
 | 22 | Procedures in **PNRC 38**. 申請程序。 |
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+Checked against the BD copy, revision September 2026 (paras 10 and 17 amended, para. 12 added). 已按 2026 年 9 月版本核對（第 10、17 段修訂，新增第 12 段）。
+
+### Points not shown in the key clauses table 主要條文表未載的細節
+
+| Para. 段 | Detail 細節 |
+|---|---|
+| 6 | RGBC may do **all** minor works in B(MW)R Schedule 1 Part 2. RSC may only do the minor works in **B(MW)R s. 28(1)(b) to (ea)** for their own sub-register categories. 專門承建商只可做第 28(1)(b)–(ea) 條相應小型工程。 |
+| 9 | BO s. 8B(2) tests: (a) management structure (corporations); (b) experience and qualifications of personnel; (c) access to plant and resources; (d) AS understands building and street works through experience and knows the basic statutory requirements. |
+| 10(b) | **Technical Director (TD)**: at least one board director of a corporation, authorised by the board to (i) access plant and resources, (ii) give technical and financial support, (iii) make decisions and supervise the AS and other staff. 技術董事須獲董事會授權。 |
+| 10(c) | If the director acting as TD lacks the qualifications or experience, the board appoints an **Other Officer (OO)** or an AS to assist. An OO or AS may assist **one TD only**. 其他高級人員只可協助一名技術董事。 |
+| 11 | The applicant must also show it employs suitably qualified staff to help execute, manage and supervise the works. |
+| 12 | **Pre-accepted AS** (new): qualified individuals (minimum qualifications and experience in **PNRC 38 Appendices A–F**) may be assessed by the CRC and BA before any contractor appoints them. Successful names go on the **List of AS** on BD's website, which has three parts: Former AS, Pre-accepted AS and Practising AS. Contractors may pick from it when applying for registration or adding an AS. |
+| 13 | Individual: only the applicant may be AS. Partnership: a partner appointed by all other partners. Corporation: AS appointed by the board; TD must be a director under the Companies Ordinance appointed by the board as TD. |
+| 14 | One person may be both AS and TD of a corporation if he/she meets both sets of requirements. 同一人可兼任 AS 及 TD。 |
+| 15 | No person may be AS/TD/OO of two contractors at the same time, except the **special sharing arrangement for holding and subsidiary companies**. |
+| 16 | CRC functions: examine qualifications; inquire into experience; interview applicants and key personnel; advise the BA to **accept, defer or reject**. |
+| 17 | BA must not register an RGBC or RSC unless the CRC recommends (s. 8B(10)). The BA may also ask the CRC about adding an AS/TD/OO and about **Pre-accepted AS** applications. |
+| 18 | Renewal (s. 8C(4)) and restoration (s. 8D(3)): BA may consult the CRC. |
+| 19 | **General building CRC** (s. 8(3)): BA's representative; 3 persons, one each nominated by the ARB, ERB and SRB from the AP/RSE/RGE lists; 3 nominated by the HK Construction Association; **1** by the HK E&M Contractors' Association; **1** selected by the BA from nominees of bodies it thinks fit. |
+| 20 | **Specialist CRC** (s. 8(3A)): BA's representative; 3 from ARB/ERB/SRB; 3 from the HK Construction Association; **2** selected by the BA. |
+| 21 | Chairman elected by members, not the BA's representative (s. 8(6)). |
+
+### Appendix A: scope of works 附錄 A：工程範圍 (9/2013)
+
+**When specialist contractors are needed 何時須聘用專門承建商**
+
+| Category 類別 | Specialised works unless … 除非全部符合以下情況，否則屬專門工程 |
+|---|---|
+| **Demolition RSC(D)** | All demolition under the Building (Demolition Works) Regulations, **unless all** apply: (a) not in Scheduled Area No. 1; (b) no part **> 10 m** above adjacent ground; (c) no element with clear span **> 6 m** or cantilever **> 1 m**; (d) no prestressed concrete; (e) no earth-retaining structure with retained height **> 1.5 m**; (f) no other building within **5 m**. |
+| **Foundation RSC(F)** | All foundation works **except** where the penetration depth of the element is **≤ 3 m**. 入土深度不超過 3 米除外。 |
+| **Ground investigation RSC(GIFW)** | Always: exploratory drilling, boring, excavation and probing (with instruments, sampling, borehole testing); **pre-drilling** for foundations; **proof-drilling** for cast-in-place foundations, mini-piles and socketed H-piles; field tests of treated ground. |
+| **Site formation RSC(SF)** | All site formation **unless all** apply: (a) gradient across the lot **≤ 15°**; (b) overall gradient within 10 m outside the lot **< 15°**; (c) no slope within 10 m outside the lot steeper than **30°** or higher than **1.5 m**; (d) no retaining / terrace wall **> 1.5 m** in the lot or within 10 m; (e) no such wall > 1.5 m to be built; (f) no slope > 30° or > 1.5 m to be built; (g) combined new wall and slope height **≤ 1.5 m**. |
+| **Ventilation RSC(V)** | All ventilating system works under the Building (Ventilating Systems) Regulations. |
+
+**Examples of GIFW works (para. 5, not exhaustive) 土地勘測工程例子**
+
+| Type 類型 | Examples 例子 |
+|---|---|
+| Excavation | Trial pits, trial trenches, slope surface stripping |
+| Boreholes | Hand auger, corehole drilling, light cable percussion, rotary open hole, rotary core drilling |
+| Sampling | Disturbed, U76, U100, split barrel SPT, thin-walled piston, continuous soil and rock, rotary core, Mazier, block, groundwater samples, vibro-coring |
+| Instrumentation | Piezometers, standpipes, tensiometers, piezometer buckets, inclinometers, extensometers |
+| Borehole field tests | SPT, vane shear, permeability, packer (water absorption), plate, pressuremeter, impression packer survey, cone penetration test |
+| Cast-in-place foundations | Pre-drilling for rockhead; core-drilling to check the founding stratum |
+| Ground treatment | Field tests of load capacity of treated ground |
+
+**Works that more than one category may do (paras 8–10) 可由多於一類承建商進行的工程**
+
+Paras 8–9: no exhaustive line can be drawn. The AP/RSE/RGE judges whether a category has the competence, experience, plant and resources; unusual cases go to the BA case by case.
+
+| Item 項目 | Who may do it 可進行者 |
+|---|---|
+| (a) Temporary works | RGBC, RSC(F), RSC(SF), RSC(D) for temporary works tied to their own works: hoarding, covered walkways, sheet / soldier / pipe piling, shoring, rock-filled slopes for demolition, protective measures. |
+| (b) Pile caps | RGBC or RSC(F), with related excavation and lateral support. |
+| (c) Basements | Excavation, basement walls, slabs and drains not part of pile caps: **RGBC**. |
+| (d) Foundations | Diaphragm walls **> 3 m** penetration: RSC(F). Depth is measured from existing or newly formed ground. Spread footings and rafts: RSC(F) or RGBC. |
+| (e) Landscape and street works | On-grade roads, streets, landscape features: generally RGBC. If no roof or foundation is involved (and drains are peripheral, not permanent building drains), RSC(SF) may also do them. |
+| (f) Retaining structures | With diaphragm walls, bored piles, caissons or other foundations: RSC(F). Mini-piles (up to 400 mm dia., not for lateral load per [APP-18](app-18.md) App. B): RSC(F), or RGBC if **< 3 m** deep, but **not** RSC(SF). |
+| (g) Dredging | Site formation: RSC(SF) if within the Appendix A para. 6 scope, otherwise RGBC. |
+| (h) Reclamation | Site formation: RSC(SF). |
+| (i) Trial pits | Normally RSC(GIFW). Any other registered contractor **except RSC(V)** may dig them only to: expose shallow foundations; locate utilities and underground structures; check backfill density behind retaining structures (in-situ density test by a Hong Kong Accreditation Service accredited lab); or other studies not about ground conditions (e.g. archaeology). |
+| (j) Fire dampers | RGBC or RSC(V) may install. If RGBC installs, an RSC(V) inspects and certifies under FS Code cl. E8.3; if RSC(V) installs, it may certify its own. Certification: [APP-13](app-13.md). |
+
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
 

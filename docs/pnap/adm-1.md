@@ -60,6 +60,15 @@ keywords: ADM-1, practice notes in force, 有效作業備考, PNAP categorizatio
 | 6–7 | List in Appendix A, kept updated on the BD website; hard copies ceased; old “Index under” footnotes become redundant | 網上發布 |
 | 8 | Closing remarks | 結語 |
 
+## Appendix A 附錄 A {#appendix-a}
+
+Appendix A (Rev. 8/2009) is the August 2009 list that maps each new ADM / APP / ADV number to its old PNAP number and the issue date at that time. It says itself that **it will not be updated**: the issue dates and titles in it are out of date, and many notes have since been revised, renamed, merged or withdrawn. 附錄 A 是 2009 年的新舊編號對照表，**不會再更新**，所載日期及標題已過時。
+
+- Each PNAP page in this knowledge base gives the old number in its **Document info** box ("previously PNAP …"). 本知識庫每份 PNAP 頁面的「文件資料」均列出舊編號。
+- For the current list and dates, use BD's website or the [PNAP index](index.md).
+
+Examples from the 2009 list 例子: ADM-2 = PNAP 30; ADM-19 = PNAP 272; APP-2 = PNAP 13; APP-13 = PNAP 53; APP-37 = PNAP 106; APP-96 = PNAP 214; ADV-4 = PNAP 144.
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |

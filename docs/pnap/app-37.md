@@ -72,6 +72,95 @@ keywords: APP-37, curtain wall, 幕牆, window wall, windows, B(C)R 29 30 31, st
 | Sash size 窗扇尺寸 | Top-hung ≤ **2.5 m²**; side-hung width ≤ **700 mm** 上懸 ≤ 2.5 平方米；側懸闊 ≤ 700 毫米 | Design | 21 |
 | **Curtain wall safety test** 幕牆安全測試 | By a **HOKLAS**-accredited independent lab, within its scope; RSE statement 由 HOKLAS 認可化驗所 | Per approval conditions | 23 |
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+Checked against the BD copy, revision February 2024 (paras 2, 5 and 23 and Appendix B amended; paras 3, 26 and 29 and Appendix E added). 已按屋宇署 2024 年 2 月版本核對。
+
+### Curtain wall plans 幕牆結構圖則 (paras 1–3)
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 1 | Design to B(C)R ss. 29–31. Watch wind loads, horizontal imposed loads (B(C)R s. 9 and Table 3) where there is no protective barrier, protection of openings, corrosion protection and material quality. 須符合 B(C)R 第 29–31 條；無防護欄障時須承受水平外加荷載。 |
+| 2(a) | Structural framing, key details and installation procedure (no unnecessary shop fabrication details). 結構框架、主要細節及安裝程序。 |
+| 2(b) | Calculations: check on the parent structure, adequacy and stability of the curtain wall, element design (aluminium, fixings, glazing), deflection check of main members. 結構計算，包括母結構核算及撓度。 |
+| 2(c) | Workmanship specs: welding, galvanising, bi-metallic measures, corrosion prevention. 焊接、鍍鋅、雙金屬及防銹。 |
+| 2(d)–(f) | Elevations with pane layout; typical and non-typical sections; typical and non-typical connections. 立面、剖面及連接。 |
+| 2(g) | Allowable tolerance for support positions, and remedial details if exceeded. 支座位置容差及超出時的補救。 |
+| 2(h) | Mode of support (cast-in anchors in concrete or welding to steel). Drilled or bolted fixings need justification and a **modification of B(C)R s. 31**. 鑽孔／螺栓錨固須申請修改第 31 條。 |
+| 2(i)–(j) | Standards / codes used; material specs (steel, aluminium, cast-in anchors, screws, structural sealant, glazing). 標準及物料規格。 |
+| 2(k) | Sections showing compliance with B(C)R s. 35 and the [Fire Safety Code 2011](../codes/fire-safety-code-2011.md): fire / smoke stopping between floors, between compartments on a floor, and between a storey and the required staircase or its protected lobby. 防火及防煙封堵。 |
+| 3 | AP and RSE must make sure curtain wall plans are compatible with the approved GBP. 須與已批准的建築圖則一致。 |
+
+### Window and window wall plans 窗及窗牆圖則 (paras 4–7)
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 4 | Must meet B(C)R performance requirements, B(P)R lighting and ventilation, and relevant codes. 符合 B(C)R 及 B(P)R 採光通風。 |
+| 5 | Submission **required** if it forms (part of) the external wall, **and** the structural opening has least dimension **> 1.8 m** or area **> 6 m²**, **and** it is **≥ 100 m** above adjoining ground **or** Q<sub>o,z</sub> **≥ 2.86 kPa**. Contents: items 2(b)–(g) and 2(i)–(k); horizontal imposed load check where it acts as a protective barrier; deflection within [Glass Code 2018](../codes/glass-2018.md) limits. Footnote 1: if the 2004 Wind Code is used, use design wind pressure q<sub>z</sub> as the criterion. |
+| 6 | Submission also required where the design span of a structural element (mullion, glass fin, etc.) **> 6 m**, including glass shopfronts; same contents as para. 5. 構件跨度 > 6 米須呈交。 |
+| 7 | Where not submitted, AP and RSE still ensure safety: horizontal imposed loads, protection of openings, protective barrier function, corrosion, material quality, fire and smoke stopping. 毋須呈交亦須確保安全。 |
+
+### Minor works, standards and separate RSE 小型工程、標準及另聘結構工程師 (paras 8–12)
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 8 | Some curtain wall repair/replacement and window/window wall works in existing buildings are minor works. See B(MW)R Schedule 1 and [APP-147](app-147.md). 部分工程屬小型工程。 |
+| 9 | Acceptable standards: Appendix A and [APP-53](app-53.md). |
+| 10 | A **separate RSE** may be appointed. Submit Forms **BA4 and BA5** (appointment and scope) with the plans. On completion the separate RSE certifies under **B(A)R 25(3)**. 另聘結構工程師須交 BA4／BA5。 |
+| 11 | The separate RSE's submission needs an **assessment report** on the effect on the parent structure, with a statement signed by the **project RSE** that he/she is aware of the connection details and effects. 須附評估報告及項目結構工程師聲明。 |
+| 12 | The separate RSE supervises the works, including cast-in anchorage (anchor plates, embeds, through bolts). If anchorage was pre-installed before his/her appointment, the project RSE shows it on superstructure plans and supervises it; the separate RSE designs to those details and coordinates any changes. 預埋件的監督責任分工。 |
+
+### Tempered glass 鋼化玻璃 (paras 13–14)
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 13 | RSE and RC ensure the manufacturer adopts an acceptable **QAS** to reduce spontaneous breakage. 須採用品質保證計劃。 |
+| 14(a) | Factory with **ISO 9001** (BO s. 17(1) item 6). |
+| 14(b) | Copy of the QAS submitted **≥ 14 days** before production (B(A)R 10), with an RSE statement that it is adequate. QAS contents: Glass Code cl. 9.1.3. |
+| 14(c) | Heat soak compliance reports (manufacturer, endorsed by RSE) to Glass Code cl. 9.3, submitted before OP application or Form BA14. Footnote 2: **all** tempered panes are heat soaked to **BS EN 14179-1:2016** and the Glass Code. 所有鋼化玻璃須熱浸處理。 |
+| 14(d) | Quality supervision plan by RSE and RC, **≥ 14 days** before production (standard form: Appendix B). |
+| 14(e)(i) | **RSE's QCS** (at least grade **T3** TCP, RSE stream, [Supervision Code](../codes/site-supervision-2009.md)) covers **≥ 30%** of panes. Videotelephony is allowed, with an assistant in the factory who is not in the RC's supervision team. Footnote 3: two-way real-time audio and video, recorded in colour at **≥ 480p** on non-rewritable DVD-ROM. |
+| 14(e)(ii) | **RC's QCC** (at least grade **T1** TCP, RC stream) supervises **full time**, measuring glass surface temperature with his/her **own data logger** at **1-minute** intervals, records kept in the factory. 承建商全時間監督，自備數據記錄器。 |
+| 14(e)(iii) | Names, qualifications and heat soak details recorded in log books kept in the factory. If videotelephony is used: QCS log entries made at the time, and log plus DVD-ROMs submitted to BD **within 14 days** after each batch; RSE marks each disc to certify the QCS used videotelephony personally. |
+| 14(f) | **Quality supervision report** by RSE before OP application: RSE statement, QCS and QCC log books, soft copy of data logger records. |
+
+### Sealant, spider fixings, locking devices 密封膠、蜘蛛爪及鎖扣 (paras 15–22)
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 15 | Structural sealant must be compatible with glazing and frame. Before OP / BA14 submit: compatibility, adhesion and print review reports (Glass Code), and a **deglazing** test report, all by the sealant manufacturer, with an RSE statement. |
+| 16 | Metal spider fixings verified by **proof load test**; interface detail must take all expected movements. Plans show mechanical properties, dimensions, capacities and model number/series. |
+| 17 | Proof load test per Appendix C after completion, report endorsed by RSE, submitted before OP / BA14. Not needed if the type is in BD's **Central Data Bank** ([ADM-20](adm-20.md)). |
+| 18 | All locking device components durable and **non-combustible**. 鎖扣須耐用及不可燃。 |
+| 19 | Locking points evenly spaced; locations and ultimate design strength shown on structural plans. Ultimate design strength = characteristic strength ÷ **FOS 1.8**. Characteristic strength by proof load test (Appendix D), report endorsed by RSE before OP / BA14, unless in the Central Data Bank. Footnote 4: applies to new or major revised structural plans submitted on or after **1 August 2020**. |
+| 20 | One handle bar to **≤ 8** locking points. 一個把手 ≤ 8 個鎖點。 |
+| 21 | Hinges carry the sash's own weight. Top-hung sash generally **≤ 2.5 m²**; side-hung sash width **≤ 700 mm**. |
+| 22 | Proper design and assembly to meet performance and tolerance; FOS 1.8 normally covers construction tolerance. Poor assembly adds moment on locking components, so provide adequate site supervision. |
+
+### Safety test, maintenance and others 安全測試、保養及其他 (paras 23–29)
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 23 | Curtain wall safety test (BO s. 17(1) item 6) by an independent **HOKLAS**-accredited lab (or one under a mutual recognition arrangement), within its scope. Report on a HOKLAS endorsed (or equivalent) certificate with an RSE statement, before OP / BA14. **Not required** for repair/replacement under the fast track procedure of [ADM-19](adm-19.md) or minor works item **1.61**. |
+| 24 | Choose test panes by engineering judgement (with computer models where appropriate) because pane sizes and wind pressures vary; better to show representative test panes on the plans. Details: Glass Code cl. **8.3.1**. |
+| 25 | Inspection, maintenance and repair follow **Annex D of the Glass Code**. AP/RSE should help clients who own such buildings. |
+| 26 | Spare glass panes may be kept for future repair; follow Appendix E. 可保留備用玻璃，見附錄 E。 |
+| 27 | Aluminium windows: see [APP-116](app-116.md). |
+| 28 | Curtain wall approval and consent may be applied for at the same time under [ADM-19](adm-19.md). 可同時申請批准及同意。 |
+| 29 | A similar practice note is issued to RCs (PNRC 84). |
+
+### Appendices 附錄
+
+| Appendix 附錄 | Content 內容 |
+|---|---|
+| **A** Standards (Rev. 5/2020) | Reference only, not exhaustive; national standards are not exactly equivalent; apply a chosen standard consistently; **Building Regulations prevail** over other standards. Lists: Glass Code 2018 (materials, design, testing); stainless steel tolerances BS EN 10029:2010, BS EN ISO 9445:2006 (-1 and -2:2010), BS EN 10048:1997, BS EN 10051:1991+A1:1997, BS EN 10095:1999. Further standards: [APP-53](app-53.md). |
+| **B** Heat soak supervision plan (Rev. 2/2024) | Standard plan form addressed to the BA: undertakings to follow APP-37 / PNRC 84 and the Glass Code; table of RSE's QCS (≥ 30% of panes) and RC's QCC (full time) with ID / TCP no. and signatures (CV not needed if TCP no. given); signed by RSE and the AS of the RGBC; personal data notes. |
+| B Annex 1 (4/2022) | Typical check items: **H1–H5 general** (names in log book agree with plan; frequency per APP-37 and Glass Code; oven calibration to Glass Code cl. 9.3.2 and BS EN 14179-1:2016; thermocouples calibrated every **6 months** (HOKLAS Supplementary Criteria No. 2); all details logged). **H6–H14 heat soak**: ≥ **8** thermocouples (cl. 9.3.3); one extra thermocouple on the QCC's own logger; **≥ 20 mm** between panes; start heating from ambient; heating ends when the last pane reaches **250 °C**, never above **290 °C**, time above 270 °C kept short, heating rate **≤ 3 °C/min**; holding starts when all panes reach 250 °C, lasts **≥ 120 min** at **260 °C ± 10 °C**; oven doors not opened until the control element drops to **70 °C**; broken panes recorded; fragmentation test after heat soak; Hn other items. |
+| B Annex 2 | Sample inspection record (S / NS / NA results with remedial remarks). |
+| **C** Spider fixing proof load test (5/2012) | To the [Steel Code 2011](../codes/steel-2011.md): sample **≥ 1% or 3 nos.**, whichever is more, per type, set up as the approved fixing; test load per cl. 16.2.1.2 (dead load present = spider weight; remainder = attachment, e.g. glass); apply and release in **≥ 5** steps; readings when stable, at three 5-minute intervals at test load until no significant increase; **no creep for ≥ 15 min**; load–deformation plot substantially linear; residual deformation **≤ 5%** of the maximum. |
+| **D** Locking device proof load test (5/2020) | Specimens fully represent the site arrangement; sample **≥ 0.1% or 5 nos.**, whichever is more, per type; load at a constant rate. Characteristic strength = average failure load − **K × σ**, K = **3.41** for at least 5 specimens (a K for more specimens may be used), σ = standard deviation. |
+| **E** Spare glass panes (2/2024) | The original RGBC confirms the spares were made for the project, puts the spare glass documents (approval and consent letters, certificates, test reports, compliance report, QAS) in the maintenance manual, labels each pane with a unique ID and fills **Schedule A**. Owners / management office keep the manual, the panes and a traceable storage record. For BA-approved repair, the RSE checks the documents and states on plans that spares will be used and inspected before installation; inspects them (Glass Code Annex D); records them in **Schedule B**, submitted with **Form BA14** and copied to the owners. If an endorsed Schedule A is submitted with BA14, the heat soak supervision plan and report for the spare tempered panes are **not needed**. Minor works: see the MWCS Technical Guidelines. Schedule B is signed by the RSE, or by the PBP (Class I) / AS of PRC (Classes II/III). |
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"

@@ -44,18 +44,76 @@ keywords: ADV-4, environmental nuisance, 環境滋擾, construction noise permit
 | 2 | Checklist with practical advice, sanctions and departments in **Appendix A** | 核對表 |
 | 3 | Similar note to registered contractors | 承建商 |
 
-### Appendix A checklist (summary) 附錄 A 核對表（摘要） {#app-a-checklist}
+### Appendix A checklist (full, Rev. 3/2026) 附錄 A 核對表（完整） {#app-a-checklist}
 
-| Nuisance 滋擾 | Practical advice 建議 | Sanction 罰則 | Dept 部門 |
-|---|---|---|---|
-| Noise (1)–(2) | Quieter methods (non-percussive piling), quieter plant, screens, scheduling, education | **Percussive piling** only 7 am–7 pm non-holidays with a **construction noise permit**; restricted hours (7 pm–7 am, holidays) need a permit (NCO); fine level 6, then $200,000 | EPD |
-| Air (3)–(5) | Maintained plant; cover and spray dusty materials; paved, watered haul roads; wheel washing; hoarding; no open burning | APCO notices; **Construction Dust Regulation** notification and measures; specified process licence (concrete batching); Public Health Ordinance | EPD, FEHD |
-| Water and drainage (6)–(13) | Sand / silt traps; no direct discharge; seal sewer connections before demolition; protect and keep access to public drains and manholes | Water Pollution Control Ordinance; B(P)R / BO requirements | EPD, DSD, BD |
-| Hygiene (14)–(17) | Remove stagnant water (mosquitoes), food waste (flies, rodents), refuse | Public Health and Municipal Services Ordinance, level 3 fines | FEHD |
-| Sewage and chemical waste (18)–(19) | Connect temporary kitchens and toilets to sewers; register as chemical waste producer | WPCO; Waste Disposal Ordinance (up to $200,000 and 6 months) | DSD, EPD |
-| Roads (20)–(21) | Secure and cover loads; wash wheels; keep roads free of mud | Fixed Penalty (Public Cleanliness) Ordinance; level 4 | FEHD, HyD, Police |
+**Noise 噪音** — items (1) powered mechanical equipment and (2) prescribed construction works (formwork / scaffolding, handling rubble, boards, steel bars, hammering). Dept: EPD Regional Offices.
 
-<small>Summary of a long table; exact penalties and item wording in the original. 長表摘要。</small>
+| Advice 建議 | Sanction 罰則 |
+|---|---|
+| Planning: quieter methods (non-percussive piling) and quieter equipment (Quality Powered Mechanical Equipment). Abatement: baffles / noise screens, absorptive linings in engine compartments. Operation: keep noise sources away from sensitive receivers, run only when needed, maintain machines (loose panels, silencers), handle with care. Scheduling: noisy work at less sensitive times (e.g. avoid school exams), avoid concurrent noisy work. Educate workers and foremen. | **Percussive piling**: needs a construction noise permit (CNP) between **7 am and 7 pm** on non-public holidays; generally **prohibited** at other times. **Restricted hours** (7 pm–7 am, or any time on a general holiday incl. Sunday): powered equipment for general works and prescribed works in designated areas need a CNP. Offence under the Noise Control Ordinance: up to **level 6** fine on first conviction, **$200,000** on later convictions. |
+
+**Air 空氣** — items (3) black smoke / fume (e.g. diesel hammer), (4) dust (demolition, vehicles, handling, conveyors, concrete batching), (5) open burning.
+
+| Advice 建議 | Sanction 罰則 | Dept 部門 |
+|---|---|---|
+| Less polluting, maintained equipment; cover dusty materials and stockpiles, water sprays; hard-pave and water the main haul road; cover loads, limit speed, wash wheels; water the site, hoarding on the boundary; for concrete batching get a specified process licence if needed, locate away from receivers, suppress dust. | Not complying with an air pollution abatement notice (APCO): **$100,000–$500,000** and **6–12 months**. | EPD |
+| | Construction Dust Regulation: works needing **prior notice to EPD** — site formation, reclamation, building demolition, tunnel works (except parts > 100 m from the exit), foundation, superstructure, road works. Max **$25,000** first / **$50,000** later. Not taking dust reduction measures: **$50,000** first / **$100,000 + 3 months** later. | EPD |
+| | Specified process without a licence (APCO Sch. 1): **$200,000 + 6 months**, daily **$20,000**. | EPD |
+| | Dust nuisance from a building under construction / demolition (Public Health and Municipal Services Ordinance, PHMSO): **$10,000 (level 3)**, daily $200. | FEHD |
+| | No fans, catch platforms and dust screens in demolition (Building (Demolition Works) Regulations): **$25,000 (level 4)**. | BD |
+| | Dirt, soil or dust dropped from vehicles (Public Cleansing and Prevention of Nuisances Regulation): **$25,000 (level 4) + 6 months**. | FEHD |
+| | Open burning (Open Burning Regulation): **$50,000** plus **$500 per 15 minutes** continuing, first conviction. | EPD |
+
+**Drains and water 渠務及水** — items (6)–(13).
+
+| Item 項目 | Advice 建議 | Sanction / Dept 罰則／部門 |
+|---|---|---|
+| (6)–(8) Silt / mortar blockage, waste water discharge, stagnant water | Temporary drainage with de-silting before connecting; sand traps, settling pits, grease traps; perimeter channels or sandbags; pH adjustment or petrol interceptors; gravel on open areas; servicing and wash bays under cover; wheel wash; clear traps often; pump away stagnant water; cover stockpiles and exposed slopes (rainy season); reuse de-silted water. | Muddy water discharge (PHMSO): **$5,000** (DSD or BD). Site discharge must follow a **WPCO licence**; discharge into a Water Control Zone: **$200,000 + 6 months** first offence (EPD). |
+| (9) Silt entering via old / abandoned connections | **Seal sewer and drain connections before demolition or foundation works.** | Not sealing in demolition (Demolition Works Regs): **$25,000 (level 4)** (BD). Foreign matter into public drains (PHMSO): **$50,000 (level 5)** (DSD). |
+| (10) Foundations damaging drains / sewers | Monitor works closely | DSD or BD |
+| (11) Temporary structures blocking public manholes / drainage reserves | Erect sheds properly | DSD or BD |
+| (12) Damage to drains / sewers not promptly reported to DSD | Monitor works closely | DSD or BD |
+| (13) Surface water through illicit connections into foul sewers | Route surface water through silt removal to surface drains or natural channels | DSD or BD |
+
+**Health 衞生** — items (14)–(19).
+
+| Item 項目 | Advice 建議 | Sanction / Dept 罰則／部門 |
+|---|---|---|
+| (14) Mosquitoes | Pump away stagnant water; if impossible, a thin film of diesel oil weekly; lids on containers; level uneven ground; remove tyres, cans, bottles; professional pest control. | Larvae / pupae in water (PHMSO): **$25,000 (level 4)**, daily **$450** (FEHD). |
+| (15) Flies | Fly-proof food containers; covered refuse containers; remove food waste and refuse daily; proper latrines, excreta disposed daily. | Refuse nuisance (PHMSO): **$10,000 (level 3)**, daily $200 (FEHD). |
+| (16) Rodents | Covered food storage; covered refuse; remove food remnants daily; seal holes in unpaved ground; clear junk and debris; professional pest control. | Premises a nuisance (PHMSO): **$10,000 (level 3)**, daily $200 (FEHD). |
+| (17) Refuse | Covered receptacles; remove daily. | As (15) (FEHD). |
+| (18) Temporary toilets / kitchens draining to stormwater or streams | Connect to sewers; in unsewered areas a septic tank and soakaway, or a treatment plant for large flows. | WPCO: **$200,000 + 6 months** first offence (DSD, EPD or BD). |
+| (19) Chemical waste | Register with EPD as a **chemical waste producer**; package, label and store properly; use licensed collectors and disposal facilities. | Waste Disposal Ordinance and Chemical Waste Regulation: **$200,000 + 6 months** (EPD). |
+
+**Roads and footpaths 道路及行人路** — items (20)–(30).
+
+| Item 項目 | Advice 建議 | Sanction / Dept 罰則／部門 |
+|---|---|---|
+| (20) Materials dropped on roads | Secure and cover loads before leaving | Public Cleansing and Prevention of Nuisances Regulation: **$25,000 (level 4) + 6 months** (FEHD or Police) |
+| (21) Mud on roads | Wheel-wash bath; workers at the exit to flush vehicles and clear mud | Same regulation, **$25,000 (level 4) + 6 months** (FEHD or Police) |
+| (22) Excavations (utility trenches): (A) inconvenience, e.g. narrow footpath, stacked materials; (B) hazards, e.g. poor guarding and lighting, pedestrians forced onto the carriageway; (C) trench backfilled but not surfaced | Follow excavation permit conditions and the Excavation Permit Processing Manual; keep enough footpath width; supervise regularly; lighting, signing and guarding per the **Code of Practice for the Lighting, Signing and Guarding of Road Works**; supervise backfilling | Summary Offences Ordinance, Land (Miscellaneous Provisions) Ordinance, Road Traffic (Traffic Control) Regulations as applicable (HyD, TD) |
+| (23) Run-in/out hazards to pedestrians | Keep pedestrians safe; TD agreement to move or remove traffic signs; avoid uneven steel plates at temporary run-in/outs | Road Traffic Ordinance and Traffic Control Regulations (TD; HyD if signs damaged, TD if obscured) |
+| (24) Signs / facilities damaged or hidden by hoardings | Hoardings must not affect existing or proposed signs; follow hoarding permit conditions | HyD |
+| (25) Damaged footpath not resurfaced | Inspect regularly, repair promptly | HyD or BD |
+| (26) Footpath made hazardous by contractor | Inspect and remove dumping; monitor the contractor | HyD or BD; PHMSO or Summary Offences Ordinance (FEHD) |
+| (27) Litter and rubbish | Workers remove litter daily; educate all site personnel and monitor | PHMSO or Summary Offences Ordinance (FEHD or HyD) |
+| (28) Dumping of debris, soil or materials | Designated sorting and storage areas; arrange, supervise and track waste disposal; inspect; monitor; educate | Unlawful depositing of waste (Waste Disposal Ordinance): **$200,000 + 6 months** (EPD) |
+| (29) Vehicles parked on the footpath | Plan transport to avoid over-parking; parking areas on site | Road Traffic (Parking) Regulations, Fixed Penalty (Traffic Contraventions) Ordinance (Police) |
+| (30) Objects dropped from buildings | Fans, catch platforms and/or mesh screens, cleared regularly; train and brief workers on external wall works | Summary Offences Ordinance: **$50,000 + 1 year** (Police); B(P)R (BD) |
+
+**Hoardings, covered walkways and gantries 圍板、有蓋行人道及門架** — items (31)–(34), see [APP-23](app-23.md).
+
+| Item 項目 | Advice 建議 | Sanction / Dept 罰則／部門 |
+|---|---|---|
+| (31) Unsound or damaged hoarding | Inspect regularly, repair promptly | — |
+| (32) Narrower than the hoarding plan | Inspect; build to the hoarding plan; fix promptly | B(P)R (BD) |
+| (33) Pedestrian passage obstructed | Site survey of signs, taxi ranks, bus stops, queuing areas and crossings, agreed by TD in the hoarding plan; build to the plan; carry out pedestrian measures agreed by TD and Police | Summary Offences Ordinance (Police or BD) |
+| (34) Hoarding hazardous to pedestrians | Keep safe; remove hazards promptly | B(P)R (BD) |
+
+**Remark 備註**: a **Schedule 2 Designated Project** under the EIA Ordinance needs an **Environmental Permit** before construction and operation, and must meet all permit conditions. 屬環評條例附表 2 指定工程項目者須先取得環境許可證。
+
+<small>Fines are quoted from the PNAP (Rev. 3/2026); check the current legislation before relying on a figure. 罰款按 PNAP 原文，引用前請核對現行法例。</small>
 
 ## Whole picture 整體關係 {#whole-picture}
 
