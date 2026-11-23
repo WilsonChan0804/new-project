@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-27", date: "23 Nov 2026",
+    items: [
+      "**Site study: Finish keeps what you traced** - the boundary is no longer scaled to the site area by itself; **Match area** does it when you ask, either **scale about centre** or **keep street edges** (the street edges stay; the other corners - or, when every corner is on a street, the back edge - move).",
+      "**Streets by name**: the pieces of a curved road are one street (click the next edge and it joins), each street has a name and a width, and streets meet at a corner across a short splay. A street with no width counts (taken as 4.5 m or more), so three streets give **class C** as they should.",
+      "**OZP for any plan**: type the plan no. and zone - a plan in the list or the **office list** fills in. **Read the Notes PDF** (from the OZP portal) finds each zone's plot ratio, site coverage, height and storeys in the Notes' wording, to use and **save to the office list** for everyone.",
+    ],
+  },
+  {
     version: "2027-02-26", date: "23 Nov 2026",
     items: [
       "**Site study: Planning and lease** - choose the OZP and the zone and its restrictions fill in (the Tseung Kwan O OZP S/TKO/32 is in, e.g. R(A)9: domestic PR 7.5, non-domestic 0.3, height on the Plan); for another plan type them from its Notes (the OZP portal link is there). Add the lease's GFA, site coverage, height and storeys.",

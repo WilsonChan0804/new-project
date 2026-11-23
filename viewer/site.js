@@ -32,7 +32,33 @@ function study() {
   const s = d.study;
   s.pts = Array.isArray(s.pts) ? s.pts : [];
   s.streets = s.streets && typeof s.streets === "object" ? s.streets : {};
+  s.roads = s.roads && typeof s.roads === "object" ? s.roads : {};
+  if (s.plan && s.plan.planno && !s.plan.plan) { s.plan.plan = String(s.plan.planno).replace(/\s+/g, "").toUpperCase(); delete s.plan.planno; }
+  // the first form kept {edge: {width}}: one road per run of edges
+  if (Object.values(s.streets).some((v) => v && typeof v === "object")) Object.assign(s, S.migrateStreets(s.streets, s.pts));
   return s;
+}
+const snap = () => { const s = study(); return { pts: s.pts.slice(), streets: Object.assign({}, s.streets), roads: JSON.parse(JSON.stringify(s.roads)) }; };
+/* the roads in use, numbered in order: {id: 1, ...} */
+function roadNos(s) {
+  const ids = [...new Set(Object.values(s.streets).map(String))].sort((a, b) => a - b), out = {};
+  ids.forEach((id, k) => { out[id] = k + 1; });
+  return out;
+}
+const roadName = (s, id, no) => (s.roads[id] && s.roads[id].name) || "Street " + (no || roadNos(s))[id];
+function clsOf(s) {
+  const no = roadNos(s), roads = {};
+  for (const id of Object.keys(no)) roads[id] = { name: roadName(s, id, no), width: s.roads[id] ? s.roads[id].width : "" };
+  return S.roadClass(s.pts.length, s.streets, roads, S.edges(s.pts));
+}
+function newRoad(s) {
+  const id = Math.max(0, ...Object.keys(s.roads).map(Number), ...Object.values(s.streets).map(Number)) + 1;
+  s.roads[id] = { name: "", width: "" };
+  return id;
+}
+function pruneRoads(s) {
+  const used = new Set(Object.values(s.streets).map(String));
+  for (const id of Object.keys(s.roads)) if (!used.has(id) && !(s.roads[id] && s.roads[id].name)) delete s.roads[id];
 }
 
 /* ---------- saving (as the GBP workbook: rev, 409 -> take theirs, keep ours) */
@@ -88,11 +114,12 @@ function draw() {
   layer.clearLayers();
   if (s.pts.length < 3) return;
   L.polygon(s.pts, { color: PINK, weight: 1, fillColor: PINK, fillOpacity: 0.22, interactive: false }).addTo(layer);
-  const lens = S.edges(s.pts), no = streetNos(s);
+  const lens = S.edges(s.pts), no = roadNos(s);
   s.pts.forEach((p, i) => {
     const q = s.pts[(i + 1) % s.pts.length], st = s.streets[i];
     const line = L.polyline([p, q], { color: st ? STREET : EDGE, weight: st ? 8 : 3, opacity: st ? 0.85 : 0.9 }).addTo(layer);
-    const lab = (st ? `Street ${no[i]}${st.width ? " · " + st.width + " m" : ""} · ` : "") + `${f1(lens[i])} m`;
+    const rd = st != null ? s.roads[st] || {} : null;
+    const lab = (st != null ? `${esc(roadName(s, st, no))}${rd.width ? " · " + rd.width + " m" : ""} · ` : "") + `${f1(lens[i])} m`;
     line.bindTooltip(lab, { permanent: true, direction: "center", className: "st-edge-lab" + (st ? " st" : "") });
     if (CAN) {
       line.on("click", (ev) => { L.DomEvent.stop(ev); if (drawing) return; toggleStreet(i); });
@@ -132,25 +159,28 @@ function addCorner(i) {
   const st = s.streets[i];
   s.pts.splice(i + 1, 0, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]);
   shiftStreets((k) => (k > i ? k + 1 : k));
-  if (st) s.streets[i + 1] = Object.assign({}, st); // both halves stay on the street
+  if (st != null) s.streets[i + 1] = st; // both halves stay on the street
   changed();
 }
 function removeCorner(i) {
   const s = study(), n = s.pts.length;
   s.pts.splice(i, 1);
   // the edges either side (i-1 and i) become one: it keeps the street of either
-  const prev = (i - 1 + n) % n, keep = s.streets[prev] || s.streets[i];
+  const prev = (i - 1 + n) % n, keep = s.streets[prev] != null ? s.streets[prev] : s.streets[i];
   shiftStreets((k) => (k === i ? null : k > i ? k - 1 : k));
   const np = (i - 1 + n - 1) % (n - 1);
-  if (keep) s.streets[np] = keep; else delete s.streets[np];
+  if (keep != null) s.streets[np] = keep; else delete s.streets[np];
   changed();
 }
+/* a click on an edge: off a street, or onto the street of the edge next to
+   it (past short splays), else a new street */
 function toggleStreet(i) {
-  const s = study();
-  if (s.streets[i]) delete s.streets[i];
-  else s.streets[i] = { width: "" };
+  const s = study(), n = s.pts.length, lens = S.edges(s.pts);
+  if (s.streets[i] != null) { delete s.streets[i]; pruneRoads(s); return changed(); }
+  const near = (dir) => { let e = (i + dir + n) % n, k = 0; while (k < n && s.streets[e] == null && lens[e] < S.SPLAY) { e = (e + dir + n) % n; k++; } return s.streets[e]; };
+  const id = near(-1) != null ? near(-1) : near(1) != null ? near(1) : newRoad(s);
+  s.streets[i] = id;
   changed();
-  if (s.streets[i]) setTimeout(() => { const el = $(`#st-panel input[data-sw="${i}"]`); el && el.focus(); }, 30);
 }
 function changed() { if (light) { light.remove(); light = null; } draw(); panel(); save(); }
 
@@ -159,7 +189,7 @@ let rubber = null;
 function startDraw() {
   if (!CAN) return;
   const s = study();
-  lastPts = { pts: s.pts.slice(), streets: Object.assign({}, s.streets) };
+  lastPts = snap();
   drawing = [];
   layer.clearLayers();
   $("#st-map").classList.add("st-drawing");
@@ -185,39 +215,54 @@ function finishDraw(cancel) {
   const clean = (pts || []).filter((p, i, a) => !i || Math.hypot(p[0] - a[i - 1][0], p[1] - a[i - 1][1]) > 1e-7);
   if (!cancel && clean.length >= 3) {
     if (S.selfCrosses(clean)) { toast("The boundary crosses itself: draw the corners in order round the site", true); }
-    else { s.pts = clean; s.streets = {}; if (s.target > 0) matchArea(true); hint("Click an edge to mark it as a street. Drag a corner to move it.", 6000); }
+    else { s.pts = clean; s.streets = {}; s.roads = {}; s.factor = null; hint(s.target > 0 ? `Traced ${f1(S.area(clean))} m². Mark the streets (click an edge), then Match area if it should be ${f1(s.target)} m².` : "Click an edge to mark it as a street. Drag a corner to move it.", 8000); }
   } else hint("", 0);
   draw(); panel(); tools(); save();
 }
 function startRect() {
   const s = study(), a = s.target > 0 ? s.target : 1000, c = map.getCenter();
-  lastPts = { pts: s.pts.slice(), streets: Object.assign({}, s.streets) };
+  lastPts = snap();
   s.pts = S.rectangle([c.lat, c.lng], a);
-  s.streets = {};
+  s.streets = {}; s.roads = {};
   changed();
   fit();
   hint(`A rectangle of ${f1(a)} m² in the middle of the map: drag its corners onto the site, then Match area.`, 7000);
 }
-function matchArea(quiet) {
+function matchArea() {
   const s = study();
   if (!(s.target > 0)) return toast("Give the site area to match first", true);
   if (s.pts.length < 3) return toast("Draw the boundary first", true);
+  lastPts = snap();
+  if (s.mmode === "keep") {
+    const n = s.pts.length, fixed = new Set();
+    for (const e of Object.keys(s.streets).map(Number)) { fixed.add(e); fixed.add((e + 1) % n); }
+    if (!fixed.size) return toast("Mark the street edges first: they stay, the other corners move", true);
+    const free = s.pts.map((p, i) => i).filter((i) => s.streets[i] == null && S.edges(s.pts)[i] >= S.SPLAY);
+    const grow = s.target > S.area(s.pts);
+    const r = S.matchKeeping(s.pts, s.target, [...fixed], free);
+    if (!r) return toast("Keeping the street edges cannot reach that area: try Scale about centre", true);
+    s.pts = r.pts; s.factor = null;
+    changed();
+    hint(r.how === "edges" ? `The edge${r.moved > 1 ? "s" : ""} off the streets moved ${grow ? "out" : "in"} ${f1(Math.abs(r.offset))} m; the street edges stayed. ${f1(s.target)} m².`
+      : `The ${r.moved} corners off the streets moved (×${r.factor.toFixed(4)} from the centre); the street edges stayed. ${f1(s.target)} m².`, 8000);
+    return;
+  }
   const r = S.scaleTo(s.pts, s.target);
   s.pts = r.pts; s.factor = r.factor;
-  if (!quiet) { changed(); hint(`Scaled ×${r.factor.toFixed(4)} about its centre: the boundary is now ${f1(s.target)} m².`, 6000); }
+  changed(); hint(`Scaled ×${r.factor.toFixed(4)} about its centre: the boundary is now ${f1(s.target)} m².`, 6000);
 }
 function undoShape() {
   if (!lastPts) return;
-  const s = study(), now = { pts: s.pts.slice(), streets: Object.assign({}, s.streets) };
-  s.pts = lastPts.pts; s.streets = lastPts.streets; lastPts = now;
+  const s = study(), now = snap();
+  s.pts = lastPts.pts; s.streets = lastPts.streets; s.roads = lastPts.roads || s.roads; lastPts = now;
   changed();
 }
 function clearAll() {
   const s = study();
   if (!s.pts.length) return;
   if (!confirm("Clear the site boundary and its streets for everyone on this project?")) return;
-  lastPts = { pts: s.pts.slice(), streets: Object.assign({}, s.streets) };
-  s.pts = []; s.streets = {}; s.factor = null;
+  lastPts = snap();
+  s.pts = []; s.streets = {}; s.roads = {}; s.factor = null;
   changed();
   hint("Cleared. Undo shape puts it back.", 6000);
 }
@@ -238,7 +283,7 @@ function tools() {
     ? `<button type="button" class="primary" data-t="finish"${drawing.length < 3 ? " disabled" : ""}>Finish</button><button type="button" data-t="back"${drawing.length ? "" : " disabled"}>Undo corner</button><button type="button" data-t="cancel">Cancel</button>`
     : `<button type="button" class="primary" data-t="draw" title="Click the site's corners on the map">✎ Draw boundary</button>
        <button type="button" data-t="rect" title="A rectangle of the site area, to drag onto the site">▭ Rectangle</button>
-       <button type="button" data-t="match"${s.pts.length >= 3 && s.target > 0 ? "" : " disabled"} title="Scale the boundary about its centre to the site area">⤢ Match area</button>
+       <span class="st-mm"><button type="button" data-t="match"${s.pts.length >= 3 && s.target > 0 ? "" : " disabled"} title="Make the boundary the site area">⤢ Match area</button><select data-t="mmode" title="How Match area changes the boundary"><option value="scale"${s.mmode !== "keep" ? " selected" : ""}>scale about centre</option><option value="keep"${s.mmode === "keep" ? " selected" : ""}>keep street edges</option></select></span>
        <button type="button" data-t="fit"${s.pts.length >= 3 ? "" : " disabled"}>Fit</button>
        <button type="button" data-t="undo"${lastPts ? "" : " disabled"}>Undo shape</button>
        <button type="button" data-t="clear"${s.pts.length ? "" : " disabled"}>Clear</button>`;
@@ -259,6 +304,7 @@ function wireTools() {
     else if (t === "undo") undoShape();
     else if (t === "clear") clearAll();
   });
+  $("#st-tools").addEventListener("change", (ev) => { if (ev.target.dataset.t === "mmode") { study().mmode = ev.target.value; save(); } });
   L_.DomEvent.disableClickPropagation($("#st-tools"));
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && drawing) finishDraw(true);
@@ -267,22 +313,10 @@ function wireTools() {
 }
 
 /* ---------- the panel */
-function streetsList(s) {
-  return Object.entries(s.streets).map(([k, v]) => ({ edge: +k, width: v && v.width !== "" && v.width != null ? Number(v.width) : "" }));
-}
-/* each street edge's street number: pieces of one street share it */
-function streetNos(s) {
-  const edges = Object.keys(s.streets).map(Number).sort((a, b) => a - b), n = s.pts.length;
-  // as siteClass, but every marked edge (whatever its width) is named
-  const all = S.siteClass(n, edges.map((e) => ({ edge: e, width: 99 })), s.pts).streetOf || {};
-  const map = {}, out = {}; let k = 0;
-  for (const e of edges) { const g = all[e]; if (map[g] == null) map[g] = ++k; out[e] = map[g]; }
-  return out;
-}
 function panel(light) {
   const s = study(), el = $("#st-panel");
   const a = S.area(s.pts), n = s.pts.length, lens = S.edges(s.pts);
-  const cls = n >= 3 ? S.siteClass(n, streetsList(s), s.pts) : null;
+  const cls = n >= 3 ? clsOf(s) : null;
   const diff = s.target > 0 && n >= 3 ? a - s.target : null;
   const dis = CAN ? "" : " disabled";
   const ok = diff != null && Math.abs(diff) < 0.05;
@@ -292,13 +326,16 @@ function panel(light) {
       <div class="st-big"><small>Perimeter</small><b>${f1(S.perimeter(s.pts))}</b><i>m</i><span>${n} corners${s.factor && Math.abs(s.factor - 1) > 1e-6 ? ` · last scaled ×${s.factor.toFixed(4)}` : ""}</span></div>
     </div>` : `<p class="st-need">${CAN ? "Find the site on the map, then <b>Draw boundary</b> (click its corners) or start from a <b>Rectangle</b> of the site area." : "No site boundary yet."}</p>`;
   if (light) { const r = $("#st-res", el); if (r) r.innerHTML = res; return; }
-  const no = n >= 3 ? streetNos(s) : {};
+  const no = n >= 3 ? roadNos(s) : {};
+  const opts = (cur) => `<option value="">–</option>${Object.keys(no).map((id) => `<option value="${id}"${String(cur) === id ? " selected" : ""}>${esc(roadName(s, id, no))}</option>`).join("")}<option value="new">+ New street</option>`;
   const rows = n >= 3 ? s.pts.map((p, i) => {
     const st = s.streets[i];
-    return `<tr class="${st ? "st-on" : ""}"><td>${i + 1}–${(i + 1) % n + 1}</td><td class="num">${f1(lens[i])}</td>
-      <td><label class="st-chk"><input type="checkbox" data-se="${i}"${st ? " checked" : ""}${dis}> ${st ? "Street " + no[i] : "Street"}</label></td>
-      <td>${st ? `<input type="number" step="0.1" min="0" data-sw="${i}" value="${esc(st.width)}" placeholder="width"${dis}> m${st.width !== "" && st.width != null && +st.width < S.STREET_MIN ? ` <em class="warn" title="Under ${S.STREET_MIN} m: not a specified street for the class of site">&lt; ${S.STREET_MIN} m</em>` : ""}` : ""}</td></tr>`;
+    return `<tr class="${st != null ? "st-on" : ""}"><td>${i + 1}–${(i + 1) % n + 1}</td><td class="num">${f1(lens[i])}</td>
+      <td><select data-se="${i}"${dis}>${opts(st)}</select></td></tr>`;
   }).join("") : "";
+  const roadRows = Object.keys(no).map((id) => { const r = s.roads[id] || {}; const w = r.width;
+    return `<tr><td><b>${no[id]}</b></td><td><input data-rn="${id}" value="${esc(r.name || "")}" placeholder="Street ${no[id]}: its name"${dis}></td>
+      <td class="nw"><input type="number" step="0.1" min="0" data-rw="${id}" value="${esc(w == null ? "" : w)}" placeholder="width"${dis}> m${w !== "" && w != null && +w < S.STREET_MIN ? ` <em class="warn" title="Under ${S.STREET_MIN} m: not a specified street">&lt; ${S.STREET_MIN}</em>` : ""}</td></tr>`; }).join("");
   el.innerHTML = `
     <section class="st-card">
       <div class="st-head"><b>1 · The site</b><span class="muted" id="st-saved">${CAN ? "Saved with the project" : "View only"}</span></div>
@@ -308,8 +345,10 @@ function panel(light) {
     </section>
     ${n >= 3 ? `<section class="st-card">
       <div class="st-head"><b>2 · Edges and streets</b><span class="muted">click an edge on the map, or tick it here</span></div>
-      <table class="st-edges"><thead><tr><th>Edge</th><th class="num">Length m</th><th>Abuts</th><th>Street width</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="muted st-note">B(P)R reg. 2: class B is a corner site on two specified streets, class C on three. A street under ${S.STREET_MIN} m wide does not count. The street widths also go to the GBP workbook later (height and site coverage by street width come in phase 2).</p>
+      ${roadRows ? `<table class="st-roads"><thead><tr><th></th><th>Street</th><th>Width</th></tr></thead><tbody>${roadRows}</tbody></table>` : `<p class="st-need">Click the edges along each street on the map: the edges next to one already on a street join it.</p>`}
+      <details class="st-edl"${roadRows ? "" : " open"}><summary>Edges (${n})</summary>
+      <table class="st-edges"><thead><tr><th>Edge</th><th class="num">Length m</th><th>Abuts</th></tr></thead><tbody>${rows}</tbody></table></details>
+      <p class="muted st-note">B(P)R reg. 2: class B is a corner site on two specified streets, class C on three. The pieces of one street are one street; streets meet at a corner on edges side by side, or across a short splay (under ${S.SPLAY} m). A street with no width is taken as ${S.STREET_MIN} m or more; one under ${S.STREET_MIN} m does not count.</p>
     </section>` : ""}
     ${planCards(s, n >= 3 ? (s.target > 0 && ok ? s.target : a) : s.target || null, cls)}
     <section class="st-card">
@@ -321,13 +360,46 @@ function panel(light) {
     </section>`;
 }
 /* ---------- 3 Planning (OZP) and lease, 4 development potential */
-function zoneOf(pl) { const p = OZP[pl.plan]; return p && p.zones[pl.zone] ? p.zones[pl.zone] : null; }
+/* the plans known: built in (ozptables.js) and the office list (/api/ozp) */
+let OFFICE = { plans: {} }, NOTES = null;
+const normPlan = (x) => String(x || "").replace(/\s+/g, "").toUpperCase();
+const normZone = (x) => { const z = String(x || "").replace(/\s+/g, " ").trim(); return z.length <= 12 ? z.toUpperCase() : z; };
+function planOf(no) {
+  const k = normPlan(no), b = Object.keys(OZP).find((x) => normPlan(x) === k), o = OFFICE.plans[k];
+  if (!b && !o) return null;
+  const zones = Object.assign({}, o ? o.zones : {}, b ? OZP[b].zones : {});
+  return { builtIn: b ? OZP[b] : null, office: o || null, zones };
+}
+function zoneOf(pl) {
+  const P = planOf(pl.plan); if (!P) return null;
+  const z = normZone(pl.zone), k = Object.keys(P.zones).find((x) => normZone(x) === z);
+  return k ? Object.assign({ key: k, office: !(P.builtIn && P.builtIn.zones[k]) }, P.zones[k]) : null;
+}
+function fillZone(o, z) {
+  for (const f of ["dpr", "npr", "pr", "sc", "storeys"]) o[f] = z[f] == null ? "" : z[f];
+  o.bh = z.bh != null ? z.bh : z.bhPlan ? o.bh || "" : "";
+  o.bhPlan = !!z.bhPlan;
+}
+function notesBox(pl) {
+  if (!NOTES) return "";
+  if (NOTES.error) return `<p class="bad st-note">${esc(NOTES.error)}</p>`;
+  if (NOTES.busy) return `<p class="muted st-note">Reading the Notes …</p>`;
+  const lab = { dpr: "Dom PR", npr: "Non-dom PR", pr: "PR", sc: "SC %", bh: "BH mPD", storeys: "Storeys", dgfa: "Dom GFA", ngfa: "Non-dom GFA", gfa: "GFA" };
+  const vals = (v) => Object.keys(lab).filter((k) => v[k] != null).map((k) => `${lab[k]} <b>${v[k].toLocaleString("en-GB")}</b>`).concat(v.bhPlan ? ["BH on the Plan"] : []).join(" · ");
+  return `<div class="st-notes"><div class="st-head"><b>From the Notes: ${esc(NOTES.plan || "plan")}</b><button type="button" class="ghost" data-nclose>×</button></div>
+    ${NOTES.zones.length ? `<table>${NOTES.zones.map((z, i) => `<tr${normZone(z.zone) === normZone(pl.zone) ? ' class="on"' : ""}><td><b>${esc(z.zone)}</b></td><td>${vals(z.values)}<small>${esc(Object.values(z.evidence || {})[0] || "")}</small></td><td><button type="button" class="ghost" data-nuse="${i}"${CAN ? "" : " disabled"}>Use</button></td></tr>`).join("")}</table>
+    <div class="st-row"><button type="button" class="ghost" id="st-nsave"${CAN ? "" : " disabled"}>Save all ${NOTES.zones.length} to the office list</button><span class="muted st-note">Read from the Notes' own wording: check each against the Notes.</span></div>`
+    : `<p class="muted st-note">No restrictions found in the wording of these Notes: type them.</p>`}</div>`;
+}
+async function ozpPut(plan, zone, values, src) {
+  OFFICE = await api("/api/ozp", { method: "PUT", body: JSON.stringify({ plan, zone, values, src }) });
+}
 function planCards(s, areaM2, cls) {
   const pl = s.plan || {}, ls = s.lease || {}, dis = CAN ? "" : " disabled";
-  const z = zoneOf(pl), P = OZP[pl.plan];
+  const z = zoneOf(pl), PP = planOf(pl.plan), P = PP && PP.builtIn;
   const inp = (grp, k, v, ph, w) => `<input type="number" step="any" min="0" data-${grp}="${k}" value="${esc(v == null ? "" : v)}" placeholder="${esc(ph || "")}"${dis}${w ? ` style="width:${w}px"` : ""}>`;
-  const plans = Object.keys(OZP).map((k) => `<option value="${esc(k)}"${k === pl.plan ? " selected" : ""}>${esc(k)}</option>`).join("");
-  const zones = P ? Object.keys(P.zones).map((k) => `<option value="${esc(k)}"${k === pl.zone ? " selected" : ""}>${esc(k)}</option>`).join("") : "";
+  const plans = [...new Set([...Object.keys(OZP), ...Object.keys(OFFICE.plans)])].map((k) => `<option value="${esc(k)}">`).join("");
+  const zones = PP ? Object.keys(PP.zones).map((k) => `<option value="${esc(k)}">`).join("") : "";
   // B(P)R from the height: the OZP or lease height less the site level
   const bh = [pl.bh, ls.bh].map(Number).filter((x) => x > 0);
   const top = bh.length ? Math.min(...bh) : null;
@@ -339,10 +411,16 @@ function planCards(s, areaM2, cls) {
   return `<section class="st-card" id="st-plan">
       <div class="st-head"><b>3 · Planning and lease</b><a class="st-link" href="${OZP_PORTAL}" target="_blank" rel="noopener">OZP portal ›</a></div>
       <div class="st-grid">
-        <label class="st-f">Plan<select data-pl="plan"${dis}><option value="">– other plan –</option>${plans}</select></label>
-        <label class="st-f">Zone${P ? `<select data-pl="zone"${dis}><option value="">– choose –</option>${zones}</select>` : `<input data-pl="zone" value="${esc(pl.zone || "")}" placeholder="e.g. R(A)9"${dis}>`}</label>
+        <label class="st-f">Plan no.<input data-pl="plan" list="st-plans" value="${esc(pl.plan || pl.planno || "")}" placeholder="e.g. S/TM-LTYY/14"${dis}></label>
+        <label class="st-f">Zone<input data-pl="zone" list="st-zones" value="${esc(pl.zone || "")}" placeholder="e.g. CDA, R(A)9"${dis}></label>
       </div>
-      ${!P ? `<label class="st-f">Plan no.<input data-pl="planno" value="${esc(pl.planno || "")}" placeholder="e.g. S/K20/30"${dis}></label>` : ""}
+      <datalist id="st-plans">${plans}</datalist><datalist id="st-zones">${zones}</datalist>
+      <p class="st-known ${z ? "good" : pl.plan ? "warn" : ""}">${z ? `${esc(z.key)}: filled in from ${z.office ? `the office list${z.by ? " (" + esc(z.by) + (z.at ? ", " + esc(z.at) : "") + ")" : ""}${z.src ? " · " + esc(z.src) : ""}` : esc(P.name)}` : PP ? `${esc(normPlan(pl.plan))} is known: choose its zone (${Object.keys(PP.zones).length} zones).` : pl.plan ? `${esc(normPlan(pl.plan))} is not in the list yet: read its Notes PDF, or type the figures and save them for the office.` : "Type the plan no.: a plan in the list fills in its zone's restrictions."}</p>
+      <div class="st-row st-ozp-act">
+        <label class="ghost st-up${CAN ? "" : " off"}">📄 Read the Notes PDF<input type="file" accept="application/pdf,.pdf" id="st-notes"${dis} hidden></label>
+        <button type="button" class="ghost" id="st-ozp-save"${CAN && pl.plan && pl.zone ? "" : " disabled"} title="Keep these figures for this plan and zone, for everyone in the office">Save to the office list</button>
+      </div>
+      ${notesBox(pl)}
       <table class="st-lim"><thead><tr><th></th><th>OZP</th><th>Lease</th></tr></thead><tbody>
         <tr><td>Domestic PR / GFA m²</td><td>${inp("pl", "dpr", pl.dpr, "PR", 70)}</td><td>${inp("ls", "dgfa", ls.dgfa, "GFA m²", 100)}</td></tr>
         <tr><td>Non-domestic PR / GFA m²</td><td>${inp("pl", "npr", pl.npr, "PR", 70)}</td><td>${inp("ls", "ngfa", ls.ngfa, "GFA m²", 100)}</td></tr>
@@ -377,21 +455,65 @@ function wirePanel() {
     const t = ev.target, s = study();
     if (t.dataset.sf === "name") { s.name = t.value.trim(); save(); }
     else if (t.dataset.sf === "target") { const v = parseFloat(t.value); s.target = v > 0 ? v : null; panel(); tools(); save(); }
-    else if (t.dataset.se != null) toggleStreet(+t.dataset.se);
+    else if (t.dataset.se != null) {
+      const i = +t.dataset.se;
+      if (t.value === "") delete s.streets[i];
+      else s.streets[i] = t.value === "new" ? newRoad(s) : +t.value;
+      pruneRoads(s); changed();
+    }
+    else if (t.dataset.rn != null) { (s.roads[t.dataset.rn] = s.roads[t.dataset.rn] || {}).name = t.value.trim(); changed(); }
+    else if (t.dataset.rw != null) { (s.roads[t.dataset.rw] = s.roads[t.dataset.rw] || {}).width = t.value === "" ? "" : Math.max(0, parseFloat(t.value)); changed(); }
     else if (t.dataset.pl != null || t.dataset.ls != null) {
       const grp = t.dataset.pl != null ? "plan" : "lease", k = t.dataset.pl != null ? t.dataset.pl : t.dataset.ls;
       const o = s[grp] = s[grp] || {};
       o[k] = t.type === "number" ? (t.value === "" ? "" : Math.max(0, parseFloat(t.value))) : t.value.trim();
-      if (grp === "plan" && k === "plan") o.zone = "";
-      if (grp === "plan" && k === "zone") { const z = zoneOf(o); if (z) { for (const f of ["dpr", "npr", "pr", "sc", "storeys"]) o[f] = z[f] == null ? "" : z[f]; o.bh = z.bh == null ? (z.bhPlan ? o.bh || "" : "") : z.bh; } }
+      if (grp === "plan" && k === "plan") { o.plan = normPlan(o.plan); delete o.planno; }
+      if (grp === "plan" && (k === "zone" || k === "plan")) { const z = zoneOf(o); if (z) { o.zone = z.key; fillZone(o, z); } }
       panel(); save();
     }
-    else if (t.dataset.sw != null) { const i = +t.dataset.sw; if (s.streets[i]) s.streets[i].width = t.value === "" ? "" : Math.max(0, parseFloat(t.value)); changed(); }
   });
   el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.matches("input")) ev.target.blur(); });
+  el.addEventListener("change", async (ev) => {
+    if (ev.target.id !== "st-notes" || !ev.target.files[0]) return;
+    NOTES = { busy: true }; panel();
+    try {
+      const r = await fetch("/api/ozp/notes", { method: "POST", headers: headers(false), body: ev.target.files[0] });
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(b.detail || "Not read");
+      NOTES = b;
+      const s = study(), o = s.plan = s.plan || {};
+      if (b.plan && !o.plan) o.plan = normPlan(b.plan);
+    } catch (e) { NOTES = { error: e.message }; }
+    panel(); save();
+  });
+  el.addEventListener("click", async (ev) => {
+    const s = study(), o = s.plan = s.plan || {};
+    if (ev.target.closest("[data-nclose]")) { NOTES = null; return panel(); }
+    const use = ev.target.closest("[data-nuse]");
+    if (use) {
+      const z = NOTES.zones[+use.dataset.nuse];
+      if (NOTES.plan) o.plan = normPlan(NOTES.plan);
+      o.zone = z.zone; fillZone(o, z.values);
+      panel(); save(); return;
+    }
+    if (ev.target.id === "st-nsave") {
+      try {
+        for (const z of NOTES.zones) await ozpPut(NOTES.plan || o.plan, z.zone, z.values, `Notes (${z.heading || ""}) read ${new Date().toISOString().slice(0, 10)}`);
+        toast(`Saved ${NOTES.zones.length} zones of ${NOTES.plan} for the office`); panel();
+      } catch (e) { toast(e.message, true); }
+      return;
+    }
+    if (ev.target.id === "st-ozp-save") {
+      try {
+        await ozpPut(o.plan, o.zone, { dpr: o.dpr, npr: o.npr, pr: o.pr, sc: o.sc, bh: o.bh, storeys: o.storeys, bhPlan: o.bhPlan }, "typed from the Notes");
+        toast(`${normPlan(o.plan)} ${o.zone} saved: the office gets it when they type the plan no.`); panel();
+      } catch (e) { toast(e.message, true); }
+      return;
+    }
+  });
   el.addEventListener("click", (ev) => {
     if (ev.target.id !== "st-send") return;
-    const s = study(), a = S.area(s.pts), cls = S.siteClass(s.pts.length, streetsList(s), s.pts);
+    const s = study(), a = S.area(s.pts), cls = clsOf(s);
     const areaOut = +(s.target > 0 && Math.abs(a - s.target) < 0.05 ? s.target : a).toFixed(3);
     const q = WB.data.quick || (WB.data.quick = {});
     if (q.area != null && Math.abs(q.area - areaOut) > 0.01 && !confirm(`The workbook has ${f3(q.area)} m². Replace it with ${f3(areaOut)} m² (class ${cls.cls})?`)) return;
@@ -443,10 +565,11 @@ function wireFind() {
     WB = { rev: wb.rev || 0, data: wb.data || {} };
     CAN = !!wb.can_edit;
   } catch (e) { toast(e.message, true); }
+  try { OFFICE = await api("/api/ozp"); } catch (e) {}
   document.body.classList.toggle("st-ro", !CAN);
   const s = study();
   if (s.pts.length >= 3) fit();
   else if (s.view && s.view.c) map.setView(s.view.c, s.view.z || 16);
   draw(); panel(); tools();
-  window.__site = { study, S }; // for the tests
+  window.__site = { study, S, map: () => map }; // for the tests
 })();

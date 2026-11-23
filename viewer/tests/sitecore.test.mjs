@@ -52,5 +52,29 @@ ok(near(row("gfa").value, 713770.2, 0.001), "total GFA from the OZP: 713,770.2")
 ok(row("sc").value === 33.33 && row("sc").by === "B(P)R" && row("bh").value === 200 && row("bh").by === "OZP", "SC by B(P)R, height by the OZP");
 ok(row("storeys").value === null, "no storey limit given: none");
 
+// streets by name: a curved road in eight pieces, a splay, two more roads
+{
+  const lens = [10, 10, 10, 10, 10, 10, 10, 10, 1.9, 30, 1.9, 40, 50];
+  const E = { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 9: 2, 11: 3 };
+  const r = S.roadClass(13, E, { 1: { name: "Fuk Hang Tsuen Road", width: "" }, 2: { name: "Side road", width: 7 }, 3: { name: "To Lai Road", width: 12 } }, lens);
+  ok(r.cls === "C" && /Fuk Hang Tsuen Road/.test(r.why) && /taken as/.test(r.why), "a road in eight pieces + two across 1.9 m splays, no width on one: class C · " + r.why);
+  const r2 = S.roadClass(13, E, { 1: { width: 12 }, 2: { width: 3 }, 3: { width: 12 } }, lens);
+  ok(r2.cls === "A" && /not counted/.test(r2.why), "the side road 3 m wide: the others do not meet, class A · " + r2.why);
+  ok(S.roadClass(4, { 0: 1, 1: 2 }, {}, [40, 50, 40, 50]).cls === "B", "two roads on neighbouring edges, no widths: class B");
+  ok(S.roadClass(4, { 0: 1, 1: 1 }, {}, [40, 50, 40, 50]).cls === "A", "one road on two edges: one street, class A");
+  const m = S.migrateStreets({ 0: { width: 12 }, 1: { width: 12 }, 2: { width: 6 } }, five);
+  ok(m.streets[0] === m.streets[1] && m.streets[2] !== m.streets[0] && m.roads[m.streets[0]].width === 12, "old saved streets: the two pieces become one road");
+  // keep the street corners (0, 1 on edge 0) and match 2,400 m2
+  const k = S.matchKeeping(sq, 2400, [0, 1]);
+  ok(k && near(S.area(k.pts), 2400, 0.01) && near(k.pts[0][0], sq[0][0], 1e-12) && near(k.pts[1][1], sq[1][1], 1e-12), "match keeping the street edge: 2,400 m2, its corners unmoved");
+}
+
+// every corner on a street: the back edge (2) moves parallel
+{
+  const k2 = S.matchKeeping(sq, 2400, [0, 1, 2, 3], [2]);
+  const xy = S.toXY(k2.pts, S.centroid(sq));
+  ok(k2 && near(S.area(k2.pts), 2400, 0.01) && k2.how === "edges" && near(k2.offset, 10, 0.01), "all corners on streets: the free edge moves out 10 m to 2,400 m2 (" + (k2 && k2.offset.toFixed(3)) + ")");
+}
+
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

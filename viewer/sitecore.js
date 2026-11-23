@@ -216,3 +216,115 @@ export function potential(i) {
   }
   return rows;
 }
+
+/* ---------- streets by name (2027-02-27)
+   edgeStreet: {edge: id}; roads: {id: {name, width}}. A road with no width
+   counts (taken as 4.5 m or more, and said so); a typed width under 4.5 m
+   drops it. Two different roads meet at a corner on neighbouring edges, or
+   across short edges (splays, under SPLAY m) between them. */
+export const SPLAY = 3;
+export function roadClass(n, edgeStreet, roads, lens) {
+  const R = roads || {}, E = edgeStreet || {};
+  const wOf = (id) => { const r = R[id]; return r && r.width !== "" && r.width != null && !isNaN(Number(r.width)) ? Number(r.width) : null; };
+  const used = [...new Set(Object.entries(E).filter(([e]) => +e >= 0 && +e < n).map(([, id]) => String(id)))];
+  const counts = used.filter((id) => wOf(id) == null || wOf(id) >= STREET_MIN);
+  const narrow = used.filter((id) => wOf(id) != null && wOf(id) < STREET_MIN);
+  const noWidth = counts.filter((id) => wOf(id) == null);
+  const ok = new Set(counts);
+  const idAt = (e) => (E[e] != null && ok.has(String(E[e])) ? String(E[e]) : null);
+  // corners: from each street edge, walk on past short unmarked edges
+  const link = {};
+  for (const id of counts) link[id] = new Set();
+  for (let e = 0; e < n; e++) {
+    const a = idAt(e);
+    if (a == null) continue;
+    let f = (e + 1) % n, steps = 0;
+    while (steps < n && idAt(f) == null && E[f] == null && lens && lens[f] < SPLAY) { f = (f + 1) % n; steps++; }
+    const b = idAt(f);
+    if (b != null && b !== a) { link[a].add(b); link[b].add(a); }
+  }
+  let best = [];
+  const seen = new Set();
+  for (const id of counts) {
+    if (seen.has(id)) continue;
+    const comp = [], st = [id]; seen.add(id);
+    while (st.length) { const x = st.pop(); comp.push(x); for (const y of link[x]) if (!seen.has(y)) { seen.add(y); st.push(y); } }
+    if (comp.length > best.length) best = comp;
+  }
+  const nm = (id) => (R[id] && R[id].name) || "Street " + (used.indexOf(id) + 1);
+  const list = (ids) => ids.map(nm).join(ids.length > 2 ? ", " : " and ").replace(/, ([^,]*)$/, " and $1");
+  const notes = [];
+  if (noWidth.length) notes.push(`width not given for ${list(noWidth)} – taken as ≥ ${STREET_MIN} m`);
+  if (narrow.length) notes.push(`${list(narrow)} under ${STREET_MIN} m: not counted`);
+  const note = notes.length ? " (" + notes.join("; ") + ")" : "";
+  const out = (cls, why) => ({ cls, why: why + note, streets: counts.length, corner: best });
+  if (best.length >= 3) return out("C", `A corner site on ${list(best.slice(0, 3))}${best.length > 3 ? " (and more)" : ""}`);
+  if (best.length === 2) return out("B", `A corner site on ${list(best)}`);
+  if (counts.length >= 2) return out("A", `${list(counts)} do not meet at a corner`);
+  if (counts.length === 1) return out("A", `One street: ${nm(counts[0])}`);
+  return out("A", used.length ? "No street counts" : "No street marked yet: class A until streets are marked");
+}
+
+/* the old saved form {edge: {width}} -> {streets: {edge: id}, roads} */
+export function migrateStreets(old, pts) {
+  const edges = Object.keys(old || {}).map(Number).sort((a, b) => a - b), n = (pts || []).length;
+  const g = siteClass(n, edges.map((e) => ({ edge: e, width: 99 })), pts).streetOf || {};
+  const streets = {}, roads = {}, ids = {};
+  let k = 0;
+  for (const e of edges) {
+    const grp = g[e] != null ? g[e] : "e" + e;
+    if (ids[grp] == null) { ids[grp] = ++k; roads[k] = { name: "", width: old[e] && old[e].width != null ? old[e].width : "" }; }
+    streets[e] = ids[grp];
+  }
+  return { streets, roads };
+}
+
+/* Match the area keeping the street edges: the corners on a street stay,
+   the others move along the line from the centroid (one factor for all,
+   found by bisection). -> {pts, factor, moved} or null when nothing can move */
+export function matchKeeping(pts, target, fixed, freeEdges) {
+  const n = pts.length, fx = new Set(fixed || []);
+  if (!(target > 0) || n < 3) return null;
+  const o = centroid(pts), xy = toXY(pts, o);
+  const solve = (at, lo, hi) => {
+    const f = (t) => { const q = at(t); return q ? area(q) - target : NaN; };
+    let flo = f(lo), fhi = f(hi);
+    if (flo > 0 && fhi < 0) { [lo, hi] = [hi, lo]; [flo, fhi] = [fhi, flo]; }
+    if (!(flo <= 0 && fhi >= 0)) {
+      // too far either way breaks the shape: close in from both ends
+      let ok2 = false;
+      for (let k = 0; k < 40 && !ok2; k++) { lo = lo * 0.7; hi = hi * 0.7; flo = f(lo); fhi = f(hi); if (flo > 0 && fhi < 0) { [lo, hi] = [hi, lo]; [flo, fhi] = [fhi, flo]; } ok2 = flo <= 0 && fhi >= 0; }
+      if (!ok2) return null;
+    }
+    for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2, fm = f(m); if (!(fm < 0)) hi = m; else lo = m; }
+    const out = at((lo + hi) / 2);
+    return out && !selfCrosses(out) ? { pts: out, factor: (lo + hi) / 2 } : null;
+  };
+  if (fx.size < n) {
+    // the corners off the streets move along the line from the centroid
+    const r = solve((t) => fromXY(xy.map((p, i) => (fx.has(i) ? p : [p[0] * t, p[1] * t])), o), 0.2, 5);
+    if (r) return Object.assign(r, { moved: n - fx.size, how: "corners" });
+  }
+  // every corner is on a street: push the edges off the streets in or out,
+  // parallel, their ends sliding along the edges either side
+  const free = (freeEdges || []).filter((e) => e >= 0 && e < n);
+  if (!free.length) return null;
+  const sgn = Math.sign(xy.reduce((s2, p, i) => { const q = xy[(i + 1) % n]; return s2 + p[0] * q[1] - q[0] * p[1]; }, 0)) || 1;
+  const meet = (p1, d1, p2, d2) => { const den = d1[0] * d2[1] - d1[1] * d2[0]; if (Math.abs(den) < 1e-9) return null; const t = ((p2[0] - p1[0]) * d2[1] - (p2[1] - p1[1]) * d2[0]) / den; return [p1[0] + d1[0] * t, p1[1] + d1[1] * t]; };
+  const at = (d) => {
+    const q = xy.map((p) => p.slice());
+    for (const e of free) {
+      const a = q[e], b = q[(e + 1) % n], pa = q[(e - 1 + n) % n], nb = q[(e + 2) % n];
+      const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+      const nrm = [sgn * dy / L, -sgn * dx / L]; // outward
+      const a0 = [a[0] + nrm[0] * d, a[1] + nrm[1] * d], dir = [dx, dy];
+      const na = meet(pa, [a[0] - pa[0], a[1] - pa[1]], a0, dir), nb2 = meet(nb, [b[0] - nb[0], b[1] - nb[1]], a0, dir);
+      if (!na || !nb2) return null;
+      q[e] = na; q[(e + 1) % n] = nb2;
+    }
+    return fromXY(q, o);
+  };
+  const span = Math.sqrt(area(pts)) * 2;
+  const r = solve(at, -span, span);
+  return r ? Object.assign(r, { moved: free.length, how: "edges", offset: r.factor }) : null;
+}

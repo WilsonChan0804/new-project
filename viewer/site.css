@@ -71,3 +71,28 @@
 .st-pot td.num small { display: block; }
 .st-pot { font-size: 11.5px; }
 .st-pot td:first-child { min-width: 78px; }
+.st-roads { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 6px; }
+.st-roads td, .st-roads th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.st-roads th { font-size: 11px; color: var(--muted); font-weight: 600; }
+.st-roads td:first-child { width: 18px; color: #d1660e; }
+.st-roads input[data-rn] { width: 100%; box-sizing: border-box; }
+.st-roads .nw { white-space: nowrap; }
+.st-roads input[type=number] { width: 60px; }
+.st-edl summary { cursor: pointer; font-size: 12.5px; color: var(--muted); margin: 4px 0; }
+.st-edges select { font-size: 12px; max-width: 170px; }
+.st-mm { display: inline-flex; gap: 0; }
+.st-mm button { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.st-mm select { font-size: 12px; border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; max-width: 150px; }
+.st-known { font-size: 12px; margin: 0 0 6px; color: var(--muted); }
+.st-known.good { color: var(--good, #1a7f37); }
+.st-known.warn { color: #9a6700; }
+.st-ozp-act { margin: 0 0 8px; }
+.st-up { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; font-size: 12.5px; cursor: pointer; background: var(--panel); }
+.st-up.off { opacity: .4; pointer-events: none; }
+.st-ozp-act button { font-size: 12.5px; }
+.st-notes { border: 1px solid var(--accent); border-radius: 8px; padding: 8px; margin: 0 0 8px; background: var(--accent-soft); }
+.st-notes table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.st-notes td { padding: 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.st-notes tr.on td { background: var(--panel); }
+.st-notes td small { display: block; color: var(--muted); font-size: 10.5px; margin-top: 2px; }
+.st-notes button { font-size: 12px; padding: 3px 8px; }

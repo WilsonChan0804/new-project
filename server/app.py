@@ -4707,6 +4707,13 @@ try:
 except Exception as _ex:
     print("gbp not loaded: %s" % _ex)
 
+# Site study OZP list and Notes reader (ozp.py).
+try:
+    import ozp
+    ozp.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("ozp not loaded: %s" % _ex)
+
 # Programme (programme.py): the project's programme - Gantt, critical path, baselines, its PDF.
 try:
     import programme
