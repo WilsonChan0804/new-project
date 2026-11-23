@@ -328,3 +328,9 @@ export function matchKeeping(pts, target, fixed, freeEdges) {
   const r = solve(at, -span, span);
   return r ? Object.assign(r, { moved: free.length, how: "edges", offset: r.factor }) : null;
 }
+
+/* the distance between two [lat,lng] points, m */
+export function distance(a, b) {
+  const [p, q] = toXY([a, b], a);
+  return Math.hypot(q[0] - p[0], q[1] - p[1]);
+}

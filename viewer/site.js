@@ -25,6 +25,7 @@ const HK = [22.35, 114.15];
 
 let WB = { rev: 0, data: {} }, CAN = false, ST = null, map = null;
 let L_ = null, layer = null, drawing = null, saveT = null, lastPts = null;
+let PICK = null, MEAS = null; // picking edges for a street id; measuring: {a} or {}
 
 function study() {
   const d = WB.data;
@@ -41,7 +42,7 @@ function study() {
 const snap = () => { const s = study(); return { pts: s.pts.slice(), streets: Object.assign({}, s.streets), roads: JSON.parse(JSON.stringify(s.roads)) }; };
 /* the roads in use, numbered in order: {id: 1, ...} */
 function roadNos(s) {
-  const ids = [...new Set(Object.values(s.streets).map(String))].sort((a, b) => a - b), out = {};
+  const ids = [...new Set([...Object.values(s.streets).map(String), ...Object.keys(s.roads)])].sort((a, b) => a - b), out = {};
   ids.forEach((id, k) => { out[id] = k + 1; });
   return out;
 }
@@ -101,7 +102,11 @@ function initMap() {
   let failed = 0;
   topo.on("tileerror", () => { if (++failed === 6) hint("The map tiles do not load from here. You can still draw the boundary; the area and lengths are worked out all the same.", 9000); });
   layer = L.layerGroup().addTo(map);
-  map.on("click", (ev) => { if (drawing) { drawing.push([ev.latlng.lat, ev.latlng.lng]); drawRubber(); } });
+  map.on("click", (ev) => {
+    if (drawing) { drawing.push([ev.latlng.lat, ev.latlng.lng]); drawRubber(); return; }
+    if (MEAS) measureClick(ev);
+  });
+  map.on("mousemove", (ev) => { if (MEAS && MEAS.a) measureRubber(ev); });
   map.on("dblclick", () => { if (drawing) finishDraw(); });
   map.on("moveend", () => { const s = study(), c = map.getCenter(); s.view = { c: [+c.lat.toFixed(6), +c.lng.toFixed(6)], z: map.getZoom() }; });
   L_ = L;
@@ -112,7 +117,7 @@ const PINK = "#e85d8a", STREET = "#f28022", EDGE = "#3a3a3a";
 function draw() {
   const L = L_, s = study();
   layer.clearLayers();
-  if (s.pts.length < 3) return;
+  if (s.pts.length < 3) return drawMeasures();
   L.polygon(s.pts, { color: PINK, weight: 1, fillColor: PINK, fillOpacity: 0.22, interactive: false }).addTo(layer);
   const lens = S.edges(s.pts), no = roadNos(s);
   s.pts.forEach((p, i) => {
@@ -122,24 +127,82 @@ function draw() {
     const lab = (st != null ? `${esc(roadName(s, st, no))}${rd.width ? " · " + rd.width + " m" : ""} · ` : "") + `${f1(lens[i])} m`;
     line.bindTooltip(lab, { permanent: true, direction: "center", className: "st-edge-lab" + (st ? " st" : "") });
     if (CAN) {
-      line.on("click", (ev) => { L.DomEvent.stop(ev); if (drawing) return; toggleStreet(i); });
+      line.on("click", (ev) => {
+        L.DomEvent.stop(ev);
+        if (drawing) return;
+        if (MEAS) return measureClick(ev);
+        if (PICK != null) { if (String(s.streets[i]) === String(PICK)) delete s.streets[i]; else s.streets[i] = +PICK; return changed(); }
+        toggleStreet(i);
+      });
       line.on("mouseover", () => line.setStyle({ weight: st ? 10 : 6 }));
       line.on("mouseout", () => line.setStyle({ weight: st ? 8 : 3 }));
     }
   });
-  if (CAN && !drawing) s.pts.forEach((p, i) => {
+  if (CAN && !drawing && PICK == null && !MEAS) s.pts.forEach((p, i) => {
     const m = L.marker(p, { draggable: true, icon: L.divIcon({ className: "st-vx", iconSize: [14, 14] }), title: "Drag to move this corner; right-click to remove it" }).addTo(layer);
     m.on("drag", (ev) => { const ll = ev.target.getLatLng(); s.pts[i] = [ll.lat, ll.lng]; drawLight(); });
     m.on("dragend", () => { draw(); panel(); save(); });
     m.on("contextmenu", (ev) => { L.DomEvent.stop(ev); if (s.pts.length <= 3) return toast("A site needs three corners at least", true); removeCorner(i); });
   });
+  drawMeasures();
   // a corner can be added on the middle of each edge
-  if (CAN && !drawing) s.pts.forEach((p, i) => {
+  if (CAN && !drawing && PICK == null && !MEAS) s.pts.forEach((p, i) => {
     const q = s.pts[(i + 1) % s.pts.length];
     const m = L.marker([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], { icon: L.divIcon({ className: "st-mid", iconSize: [10, 10] }), title: "Click to add a corner here" }).addTo(layer);
     m.on("click", (ev) => { L.DomEvent.stop(ev); addCorner(i); });
   });
 }
+/* ---------- measuring: two clicks, snapped to the boundary's corners and edges (Alt: no snap) */
+function snapLL(ev) {
+  const s = study(), ll = [ev.latlng.lat, ev.latlng.lng];
+  if (ev.originalEvent && ev.originalEvent.altKey) return ll;
+  const P = (q) => map.latLngToContainerPoint(q), c = P(ll);
+  let best = null, bd = 12;
+  for (const q of s.pts) { const d = P(q).distanceTo(c); if (d < bd) { bd = d; best = q.slice(); } }
+  if (best) return best;
+  bd = 8;
+  s.pts.forEach((a, i) => {
+    const b = s.pts[(i + 1) % s.pts.length], pa = P(a), pb = P(b);
+    const dx = pb.x - pa.x, dy = pb.y - pa.y, L2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((c.x - pa.x) * dx + (c.y - pa.y) * dy) / L2));
+    const px = pa.x + dx * t, py = pa.y + dy * t, d = Math.hypot(c.x - px, c.y - py);
+    if (d < bd) { bd = d; best = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+  });
+  return best || ll;
+}
+let mRubber = null;
+function measureClick(ev) {
+  const p = snapLL(ev);
+  if (!MEAS.a) { MEAS.a = p; hint("Click the other side.", 0); return; }
+  const s = study();
+  s.measures = s.measures || [];
+  s.measures.push({ a: MEAS.a, b: p, len: +S.distance(MEAS.a, p).toFixed(2) });
+  MEAS = {};
+  if (mRubber) { mRubber.remove(); mRubber = null; }
+  hint(`${f1(s.measures[s.measures.length - 1].len)} m. Click to measure another; Esc to stop.`, 0);
+  changed();
+}
+function measureRubber(ev) {
+  const p = snapLL(ev);
+  if (mRubber) mRubber.remove();
+  mRubber = L_.polyline([MEAS.a, p], { color: "#1f6feb", weight: 2, dashArray: "4 4", interactive: false }).addTo(map);
+  mRubber.bindTooltip(`${f1(S.distance(MEAS.a, p))} m`, { permanent: true, direction: "center", className: "st-edge-lab st-ms" }).openTooltip();
+}
+function drawMeasures() {
+  const s = study();
+  (s.measures || []).forEach((m, k) => {
+    const l = L_.polyline([m.a, m.b], { color: "#1f6feb", weight: 2, interactive: false }).addTo(layer);
+    [m.a, m.b].forEach((q) => L_.circleMarker(q, { radius: 3, color: "#1f6feb", fillOpacity: 1, interactive: false }).addTo(layer));
+    l.bindTooltip(`M${k + 1} · ${f1(m.len)} m`, { permanent: true, direction: "center", className: "st-edge-lab st-ms" });
+  });
+}
+function stopModes() {
+  MEAS = null; PICK = null;
+  if (mRubber) { mRubber.remove(); mRubber = null; }
+  $("#st-map").classList.remove("st-drawing");
+  hint("", 0);
+}
+
 /* while a corner is dragged: only the outline, fast */
 let light = null;
 function drawLight() {
@@ -279,11 +342,14 @@ function hint(t, ms) {
 function tools() {
   const el = $("#st-tools"), s = study();
   if (!CAN) { el.innerHTML = `<span class="st-ro">View only</span><button type="button" data-t="fit">Fit</button>`; return; }
+  if (PICK != null) { el.innerHTML = `<span class="st-ro">Picking edges for <b>${esc(roadName(s, PICK))}</b></span><button type="button" class="primary" data-t="done">Done</button>`; return; }
+  if (MEAS) { el.innerHTML = `<span class="st-ro">📏 Measuring (snaps to the boundary; Alt: free)</span><button type="button" class="primary" data-t="done">Done</button>`; return; }
   el.innerHTML = drawing
     ? `<button type="button" class="primary" data-t="finish"${drawing.length < 3 ? " disabled" : ""}>Finish</button><button type="button" data-t="back"${drawing.length ? "" : " disabled"}>Undo corner</button><button type="button" data-t="cancel">Cancel</button>`
     : `<button type="button" class="primary" data-t="draw" title="Click the site's corners on the map">✎ Draw boundary</button>
        <button type="button" data-t="rect" title="A rectangle of the site area, to drag onto the site">▭ Rectangle</button>
        <span class="st-mm"><button type="button" data-t="match"${s.pts.length >= 3 && s.target > 0 ? "" : " disabled"} title="Make the boundary the site area">⤢ Match area</button><select data-t="mmode" title="How Match area changes the boundary"><option value="scale"${s.mmode !== "keep" ? " selected" : ""}>scale about centre</option><option value="keep"${s.mmode === "keep" ? " selected" : ""}>keep street edges</option></select></span>
+       <button type="button" data-t="measure" title="Measure a distance on the map, e.g. a street's width">📏 Measure</button>
        <button type="button" data-t="fit"${s.pts.length >= 3 ? "" : " disabled"}>Fit</button>
        <button type="button" data-t="undo"${lastPts ? "" : " disabled"}>Undo shape</button>
        <button type="button" data-t="clear"${s.pts.length ? "" : " disabled"}>Clear</button>`;
@@ -303,11 +369,14 @@ function wireTools() {
     else if (t === "fit") fit();
     else if (t === "undo") undoShape();
     else if (t === "clear") clearAll();
+    else if (t === "measure") { stopModes(); MEAS = {}; $("#st-map").classList.add("st-drawing"); hint("Click one side of the street, then the other.", 0); draw(); tools(); }
+    else if (t === "done") { stopModes(); draw(); tools(); panel(); }
   });
   $("#st-tools").addEventListener("change", (ev) => { if (ev.target.dataset.t === "mmode") { study().mmode = ev.target.value; save(); } });
   L_.DomEvent.disableClickPropagation($("#st-tools"));
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && drawing) finishDraw(true);
+    else if (ev.key === "Escape" && (MEAS || PICK != null)) { stopModes(); draw(); tools(); panel(); }
     if (ev.key === "Enter" && drawing && drawing.length >= 3 && !ev.target.closest("input")) finishDraw();
   });
 }
@@ -335,7 +404,11 @@ function panel(light) {
   }).join("") : "";
   const roadRows = Object.keys(no).map((id) => { const r = s.roads[id] || {}; const w = r.width;
     return `<tr><td><b>${no[id]}</b></td><td><input data-rn="${id}" value="${esc(r.name || "")}" placeholder="Street ${no[id]}: its name"${dis}></td>
-      <td class="nw"><input type="number" step="0.1" min="0" data-rw="${id}" value="${esc(w == null ? "" : w)}" placeholder="width"${dis}> m${w !== "" && w != null && +w < S.STREET_MIN ? ` <em class="warn" title="Under ${S.STREET_MIN} m: not a specified street">&lt; ${S.STREET_MIN}</em>` : ""}</td></tr>`; }).join("");
+      <td class="nw"><input type="number" step="0.1" min="0" data-rw="${id}" value="${esc(w == null ? "" : w)}" placeholder="width"${dis}> m${w !== "" && w != null && +w < S.STREET_MIN ? ` <em class="warn" title="Under ${S.STREET_MIN} m: not a specified street">&lt; ${S.STREET_MIN}</em>` : ""}</td>
+      <td class="nw">${CAN ? `<button type="button" class="ghost st-ib${String(PICK) === id ? " on" : ""}" data-rpick="${id}" title="Pick its edges on the map">⌖</button><button type="button" class="ghost st-ib" data-rdel="${id}" title="Remove this street">×</button>` : ""}<small class="muted">${Object.values(s.streets).filter((v) => String(v) === id).length} edges</small></td></tr>`; }).join("");
+  const ms = s.measures || [];
+  const msRows = ms.map((m, k) => `<tr><td>M${k + 1}</td><td class="num">${f1(m.len)} m</td><td>${CAN && Object.keys(no).length ? `<select data-muse="${k}"><option value="">Use as width of …</option>${Object.keys(no).map((id) => `<option value="${id}">${esc(roadName(s, id, no))}</option>`).join("")}</select>` : ""}</td><td>${CAN ? `<button type="button" class="ghost st-ib" data-mdel="${k}" title="Remove">×</button>` : ""}</td></tr>`).join("");
+  const addRow = CAN ? `<div class="st-add"><input id="st-add-name" placeholder="Street name, e.g. Fuk Hang Tsuen Road"><input id="st-add-w" type="number" step="0.1" min="0" placeholder="width m"><button type="button" class="ghost" id="st-add">+ Add street</button></div>` : "";
   el.innerHTML = `
     <section class="st-card">
       <div class="st-head"><b>1 · The site</b><span class="muted" id="st-saved">${CAN ? "Saved with the project" : "View only"}</span></div>
@@ -345,7 +418,9 @@ function panel(light) {
     </section>
     ${n >= 3 ? `<section class="st-card">
       <div class="st-head"><b>2 · Edges and streets</b><span class="muted">click an edge on the map, or tick it here</span></div>
-      ${roadRows ? `<table class="st-roads"><thead><tr><th></th><th>Street</th><th>Width</th></tr></thead><tbody>${roadRows}</tbody></table>` : `<p class="st-need">Click the edges along each street on the map: the edges next to one already on a street join it.</p>`}
+      ${roadRows ? `<table class="st-roads"><thead><tr><th></th><th>Street</th><th>Width</th><th></th></tr></thead><tbody>${roadRows}</tbody></table>` : `<p class="st-need">Add a street by its name and pick its edges, or click the edges along each street on the map: the edges next to one already on a street join it.</p>`}
+      ${addRow}
+      ${msRows ? `<table class="st-ms-list"><tbody>${msRows}</tbody></table><button type="button" class="ghost st-ib" id="st-mclear"${CAN ? "" : " disabled"}>Clear measures</button>` : `<p class="muted st-note">📏 <b>Measure</b> (map tools): click both sides of a street to check its width.</p>`}
       <details class="st-edl"${roadRows ? "" : " open"}><summary>Edges (${n})</summary>
       <table class="st-edges"><thead><tr><th>Edge</th><th class="num">Length m</th><th>Abuts</th></tr></thead><tbody>${rows}</tbody></table></details>
       <p class="muted st-note">B(P)R reg. 2: class B is a corner site on two specified streets, class C on three. The pieces of one street are one street; streets meet at a corner on edges side by side, or across a short splay (under ${S.SPLAY} m). A street with no width is taken as ${S.STREET_MIN} m or more; one under ${S.STREET_MIN} m does not count.</p>
@@ -461,6 +536,7 @@ function wirePanel() {
       else s.streets[i] = t.value === "new" ? newRoad(s) : +t.value;
       pruneRoads(s); changed();
     }
+    else if (t.dataset.muse != null && t.value) { const m = s.measures[+t.dataset.muse]; (s.roads[t.value] = s.roads[t.value] || {}).width = +m.len.toFixed(1); changed(); }
     else if (t.dataset.rn != null) { (s.roads[t.dataset.rn] = s.roads[t.dataset.rn] || {}).name = t.value.trim(); changed(); }
     else if (t.dataset.rw != null) { (s.roads[t.dataset.rw] = s.roads[t.dataset.rw] || {}).width = t.value === "" ? "" : Math.max(0, parseFloat(t.value)); changed(); }
     else if (t.dataset.pl != null || t.dataset.ls != null) {
@@ -488,6 +564,25 @@ function wirePanel() {
   });
   el.addEventListener("click", async (ev) => {
     const s = study(), o = s.plan = s.plan || {};
+    const t = ev.target;
+    if (t.id === "st-add") {
+      const name = $("#st-add-name").value.trim(), w = $("#st-add-w").value;
+      if (!name) { toast("Type the street's name", true); return $("#st-add-name").focus(); }
+      const id = newRoad(s); s.roads[id] = { name, width: w === "" ? "" : Math.max(0, parseFloat(w)) };
+      stopModes(); PICK = id; $("#st-map").classList.add("st-drawing");
+      hint(`Click the edges along ${name} on the map; click one again to take it off. Done (or Esc) when finished.`, 0);
+      changed(); tools(); return;
+    }
+    if (t.dataset.rpick) { stopModes(); PICK = t.dataset.rpick; $("#st-map").classList.add("st-drawing"); hint(`Click the edges along ${roadName(s, PICK)}. Done (or Esc) when finished.`, 0); draw(); tools(); panel(); return; }
+    if (t.dataset.rdel) {
+      const id = t.dataset.rdel;
+      if (!confirm(`Remove ${roadName(s, id)} and take its edges off?`)) return;
+      for (const [e, v] of Object.entries(s.streets)) if (String(v) === id) delete s.streets[e];
+      delete s.roads[id]; if (String(PICK) === id) stopModes();
+      changed(); tools(); return;
+    }
+    if (t.dataset.mdel != null) { s.measures.splice(+t.dataset.mdel, 1); return changed(); }
+    if (t.id === "st-mclear") { s.measures = []; return changed(); }
     if (ev.target.closest("[data-nclose]")) { NOTES = null; return panel(); }
     const use = ev.target.closest("[data-nuse]");
     if (use) {

@@ -96,3 +96,13 @@
 .st-notes tr.on td { background: var(--panel); }
 .st-notes td small { display: block; color: var(--muted); font-size: 10.5px; margin-top: 2px; }
 .st-notes button { font-size: 12px; padding: 3px 8px; }
+.st-ib { padding: 2px 7px; font-size: 13px; line-height: 1.2; }
+.st-ib.on { background: var(--accent); color: #fff; }
+.st-roads small { margin-left: 4px; font-size: 10.5px; }
+.st-add { display: flex; gap: 4px; margin: 6px 0; }
+.st-add #st-add-name { flex: 1; min-width: 0; }
+.st-add #st-add-w { width: 70px; }
+.st-ms-list { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 6px; }
+.st-ms-list td { padding: 2px 4px; border-bottom: 1px solid var(--line); }
+.st-ms-list select { font-size: 12px; }
+.leaflet-tooltip.st-edge-lab.st-ms { background: #1f6feb; color: #fff; border-color: #1f6feb; }

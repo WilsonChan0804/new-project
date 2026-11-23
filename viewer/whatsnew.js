@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-28", date: "23 Nov 2026",
+    items: [
+      "**Site study: + Add street** - type the street's name (and width), then click the boundary edges along it on the map; ⌖ picks more edges later, × removes the street.",
+      "**📏 Measure** - click both sides of a street (or any two points; it snaps to the boundary, Alt for free) to read the distance; each measure can be **used as the width** of a street.",
+    ],
+  },
+  {
     version: "2027-02-27", date: "23 Nov 2026",
     items: [
       "**Site study: Finish keeps what you traced** - the boundary is no longer scaled to the site area by itself; **Match area** does it when you ask, either **scale about centre** or **keep street edges** (the street edges stay; the other corners - or, when every corner is on a street, the back edge - move).",
