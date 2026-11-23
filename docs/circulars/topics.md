@@ -15,6 +15,13 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Occupation permit 佔用許可證
   - Heritage 文物
+  - Excavation & ELS 挖掘
+  - Green & amenity features 環保及適意設施
+  - Geotechnical 岩土
+  - Domestic 住用
+  - A&A works 改動及加建工程
+  - Wind 風力
+  - Lift 升降機
 summary: "BD circular letters grouped by topic, with status and links to the related Codes and PNAPs."
 keywords: circular letter, 通告函件, topic, 主題
 ---

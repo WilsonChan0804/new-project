@@ -15,6 +15,13 @@ tags:
   - Curtain wall & façade 幕牆及外牆
   - Lift 升降機
   - Wind 風力
+  - Heritage 文物
+  - Occupation permit 佔用許可證
+  - Excavation & ELS 挖掘
+  - Domestic 住用
+  - Green & amenity features 環保及適意設施
+  - Geotechnical 岩土
+  - A&A works 改動及加建工程
 summary: "Index of all Buildings Department circular letters, by year, with links to summaries and the original PDFs."
 keywords: circular letter, 通告函件, Buildings Department, 屋宇署, index
 ---

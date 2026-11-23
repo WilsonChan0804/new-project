@@ -49,6 +49,7 @@ extra_javascript:
   - javascripts/kb-viewer-backend.js
   - javascripts/kb.js
   - javascripts/kb-pins.js
+  - javascripts/sanfit.js
 
 extra_css:
   - stylesheets/lwk.css
@@ -388,6 +389,7 @@ nav:
       - B(C)R Construction 建築物（建造）規例: regulations/bcr-123q.md
       - B(MW)R Minor works 建築物（小型工程）規例: regulations/bmwr-123n.md
       - B(SFP&W)R Sanitary & drainage 衞生設備及排水: regulations/bsfpwr-123i.md
+      - Sanitary fitment tables & calculator 衞生設備數目表及計算器: regulations/sanitary-fitments.md
       - B(I&R)R Inspection & repair 建築物（檢驗及修葺）規例: regulations/bir-123p.md
       - Cap. 123H Refuse & material recovery 垃圾及物料回收房: regulations/brsr-123h.md
       - Cap. 123C Demolition works 建築物（拆卸工程）規例: regulations/bdwr-123c.md

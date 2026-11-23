@@ -9,6 +9,7 @@ tags:
   - Concrete & materials 混凝土及物料
   - Staircase 樓梯
   - Lift 升降機
+  - A&A works 改動及加建工程
 summary: "Sanitary Fitments, Plumbing, Drainage and Latrines Regulations Cap. 123I: number of fitments by building type and population, traps, soil, vent and rain water pipes, and drainage."
 keywords: Cap. 123I, B(SFP&W)R, sanitary fitments, 衞生設備, plumbing, drainage, 排水, soil pipe, water seal, population
 ---
@@ -44,6 +45,9 @@ keywords: Cap. 123I, B(SFP&W)R, sanitary fitments, 衞生設備, plumbing, drain
     - **第 V–VI 部**：化糞池（距飲用水源 **≥ 18 米**）及污水池。**第 VII 部**：排水工程須在回填渠溝前由屋宇署**測試**。**第 VIII–X 部**：屋宇署代為接駁公共污水渠並向業主收費；廁所；建築事務監督的權力（中和池等）。
 
 ## Key table: occupancy for sanitary fitment calculation 計算衞生設備的人數 {#key-table-occupancy-for-sanitary-fitment-calculation}
+
+!!! tip "Full tables and calculator 完整表格及計算器"
+    All Tables 1–28 (every building type), the calculator, worked examples and an A&A checklist: **[Sanitary fitment tables & calculator](sanitary-fitments.md)**. 全部表 1–28、計算器、例子及改動加建清單。
 
 | Building / use 建築物／用途 | Persons 人數 | Reg. 條 |
 |---|---|---|

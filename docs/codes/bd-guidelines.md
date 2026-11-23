@@ -16,6 +16,13 @@ tags:
   - Minor works 小型工程
   - Maintenance access 維修通道
   - GFA concession 樓面面積寬免
+  - Plan submission & approval 呈交及審批
+  - Structural 結構
+  - Site supervision 地盤監督
+  - Plumbing & sanitary 衞生設備
+  - GFA 總樓面面積
+  - Concrete & materials 混凝土及物料
+  - Fire safety 消防安全
 summary: "BD guidelines: residential energy efficiency (RTTV), glazing, ventilation, bamboo scaffolds, heritage A&A, water seepage, drainage maintenance, signboards, maintenance guidebook, greening, BIM, default-works surcharge, TMB UBW and minor works."
 keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency, visible light transmittance, natural ventilation, cross ventilation, thermal comfort
 ---

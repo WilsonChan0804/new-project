@@ -10,6 +10,7 @@ tags:
   - Geotechnical 岩土
   - Site supervision 地盤監督
   - Green & amenity features 環保及適意設施
+  - A&A works 改動及加建工程
 summary: "Minor works specified forms MW01–MW33, PR1–PR6, SP and VSR: purpose, timing, legal basis, related PNAPs and documents."
 keywords: MW01, MW02, MW03, MW04, MW05, MW06, MW32, MW33, PR1, VSR, 小型工程表格
 ---

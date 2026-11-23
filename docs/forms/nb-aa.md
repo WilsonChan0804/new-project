@@ -11,6 +11,13 @@ tags:
   - Demolition 拆卸
   - Registration 註冊
   - Drainage 排水
+  - Site safety 地盤安全
+  - Foundation 地基
+  - Minor works 小型工程
+  - Maintenance access 維修通道
+  - GFA 總樓面面積
+  - Fire safety 消防安全
+  - Excavation & ELS 挖掘
 summary: "BA4–BA23, SP/SPA, Forms A–C and Appendices I–IV: purpose, timing, legal basis, related PNAPs and documents."
 keywords: BA4, BA5, BA6, BA8, BA8A, BA10, BA13, BA14, BA16, supervision plan, 監工計劃書
 ---
