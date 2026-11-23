@@ -1029,7 +1029,7 @@ def register(app, core):
 
     @app.get("/api/kb/thin")
     def kb_thin(request: Request, format: str = "json", x_viewer_token: str = Header(default="")):
-        who(request, x_viewer_token)
+        admin(request, x_viewer_token)
         r = thin_report()
         if format == "csv":
             import csv
@@ -1172,7 +1172,7 @@ def register(app, core):
 
     @app.get("/api/kb/edits/recent")
     def kb_edits_recent(request: Request, n: int = 20, x_viewer_token: str = Header(default="")):
-        me_of(request, x_viewer_token)
+        admin(request, x_viewer_token)
         c = _edb()
         try:
             rows = [edit_row(r) for r in c.execute("SELECT * FROM edits ORDER BY at DESC, id DESC LIMIT ?", (max(1, min(n, 200)),))]

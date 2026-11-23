@@ -95,6 +95,7 @@
     <button data-tab="devices" id="tab-devices" hidden>Devices</button>
     <button data-tab="speed" id="tab-speed" hidden>Speed</button>
     <button data-tab="storage" id="tab-storage" hidden>Storage</button>
+    <button data-tab="update" id="tab-update" hidden>Viewer update</button>
     <button data-tab="account" id="tab-account">My account</button>
   </div>
 
@@ -357,6 +358,25 @@
       </div>
       <div class="table-wrap"><table id="d-table"></table></div>
       <pre id="d-detail" class="dev-detail" hidden></pre>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-update" hidden>
+    <div class="card">
+      <h3>Viewer update <small>bring this server up to the newest code, from GitHub</small></h3>
+      <div id="up-state"><p class="muted">Loading ...</p></div>
+      <div class="form-row" style="margin:10px 0">
+        <button id="up-go">Update now</button>
+        <button id="up-back" class="ghost" title="Put back the code from before the last update">Undo the last update</button>
+        <button id="up-check" class="ghost">Check again</button>
+      </div>
+      <pre id="up-log" class="up-log" hidden></pre>
+      <details class="up-set"><summary>Where the code comes from</summary>
+        <div class="form-row"><label>Repository (owner/name)<input id="up-repo"></label><label>Branch<input id="up-branch"></label>
+          <label>GitHub token <small class="muted">only for a private repository</small><input id="up-token" type="password" autocomplete="off" placeholder="leave empty to keep it"></label>
+          <button id="up-save" class="ghost">Save</button></div>
+      </details>
+      <p class="muted" style="font-size:12px">The update keeps the current code (the last 3 updates can be undone), never touches the data, run.bat or the passphrase, and refuses a download that does not work. Everyone signed in is disconnected for about 10 seconds while the server restarts.</p>
     </div>
   </section>
 

@@ -15,7 +15,7 @@
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2027-02-15";
+const LWK_VERSION = "2027-02-16";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -195,7 +195,7 @@ async function signedIn() {
 /* ---------------------------------------------------------------- tabs */
 
 function show(tab) {
-  for (const t of ["projects", "people", "publish", "devices", "speed", "storage", "account"]) {
+  for (const t of ["projects", "people", "publish", "devices", "speed", "storage", "update", "account"]) {
     $("#pane-" + t).hidden = t !== tab;
     $("#tab-" + t).classList.toggle("on", t === tab);
   }
@@ -438,6 +438,72 @@ const secs = (ms) => ms == null ? "-" : ms >= 10000 ? Math.round(ms / 1000) + " 
 /* Storage: the disks (read now), and the sizes from the last count (the
    server counts in the background; this page looks again while it does). */
 const gb = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(1) + " GB" : b >= 1048576 ? Math.round(b / 1048576) + " MB" : Math.round(b / 1024) + " kB";
+/* ------------------------------------------------------- viewer update */
+
+let UP = null, UP_T = 0;
+const short = (sha) => String(sha || "").slice(0, 7);
+function paintUpdate(d) {
+  UP = d;
+  const inst = d.installed || {}, lt = d.latest;
+  $("#up-state").innerHTML = `<table class="up-t">`
+    + `<tr><td>Installed</td><td>${inst.sha ? `<code>${esc(short(inst.sha))}</code> · ${esc(fmtDT(inst.at))}${inst.by ? " by " + esc(inst.by) : ""}${inst.rolled_back ? " (put back)" : ""}` : `<span class="muted">not known yet - the first update records it</span>`}</td></tr>`
+    + `<tr><td>Newest on GitHub</td><td>${lt ? `<code>${esc(short(lt.sha))}</code> · ${esc(fmtDT(lt.date))} - ${esc(lt.message)}` : `<span class="bad">${esc(d.latest_error || "not reachable")}</span>`}</td></tr>`
+    + `<tr><td>Branch</td><td>${esc(d.repo)} · <code>${esc(d.branch)}</code></td></tr></table>`
+    + (d.current ? `<p class="ok">Up to date.</p>` : lt ? `<p><b>A newer version is ready.</b></p>` : "")
+    + (d.can_restart ? "" : `<p class="muted">This server runs on Windows: after the update, close run.bat and start it again.</p>`);
+  $("#up-go").disabled = d.running || !lt;
+  $("#up-back").disabled = d.running || !(d.backups || []).length;
+  $("#up-go").textContent = d.running ? "Updating ..." : d.current ? "Install again" : "Update now";
+  const L = (d.log || []).join("\n") + (d.error ? "\n" + d.error : "");
+  $("#up-log").hidden = !L;
+  $("#up-log").textContent = L;
+  $("#up-repo").value = d.repo; $("#up-branch").value = d.branch;
+  $("#up-token").placeholder = d.token_set ? "saved - leave empty to keep it" : "none (a public repository needs none)";
+}
+async function loadUpdate() {
+  try { paintUpdate(await api("/api/admin/update")); } catch (e) { msg(esc(e.message), "bad"); }
+}
+/* while it runs, and through the restart: ask until the new server answers */
+function followUpdate(want) {
+  clearTimeout(UP_T);
+  let away = 0;
+  const tick = async () => {
+    let d = null;
+    try { d = await api("/api/admin/update"); } catch (e) { away++; }
+    if (d) {
+      paintUpdate(d);
+      if (!d.running && (away || !(d.log || []).length)) {   // it restarted (a new server: no log) and is back
+        msg(`The viewer was updated${d.installed && d.installed.sha ? " to " + esc(short(d.installed.sha)) : ""}. Reloading ...`, "ok");
+        return setTimeout(() => location.reload(), 1500);
+      }
+      if (!d.running && (d.error || !d.can_restart)) return;
+    } else $("#up-log").textContent += "\n... the server is restarting";
+    if (away > 80) return msg("The server has not come back after 2 minutes - check it in the Azure portal (Run command: systemctl status lwk-viewer).", "bad");
+    UP_T = setTimeout(tick, 1500);
+  };
+  UP_T = setTimeout(tick, 1000);
+  void want;
+}
+function wireUpdate() {
+  $("#up-check").onclick = async () => { try { await api("/api/admin/update", { method: "POST", body: JSON.stringify({ branch: UP ? UP.branch : "" }) }); } catch (e) {} loadUpdate(); };
+  $("#up-go").onclick = async () => {
+    if (!confirm("Update the viewer now? Everyone signed in is disconnected for about 10 seconds while the server restarts.")) return;
+    try { paintUpdate(await api("/api/admin/update", { method: "POST", body: JSON.stringify({ go: true }) })); followUpdate("update"); }
+    catch (e) { msg(esc(e.message), "bad"); }
+  };
+  $("#up-back").onclick = async () => {
+    if (!confirm("Put back the code from before the last update? The server restarts.")) return;
+    try { paintUpdate(await api("/api/admin/update/rollback", { method: "POST" })); followUpdate("rollback"); }
+    catch (e) { msg(esc(e.message), "bad"); }
+  };
+  $("#up-save").onclick = async () => {
+    const body = { repo: $("#up-repo").value.trim(), branch: $("#up-branch").value.trim() };
+    if ($("#up-token").value.trim()) body.token = $("#up-token").value.trim();
+    try { paintUpdate(await api("/api/admin/update", { method: "POST", body: JSON.stringify(body) })); $("#up-token").value = ""; msg("Saved", "ok"); }
+    catch (e) { msg(esc(e.message), "bad"); }
+  };
+}
+
 async function loadStorage(fresh) {
   let d;
   try { d = await api("/api/admin/storage" + (fresh ? "?fresh=1" : "")); }
@@ -1223,6 +1289,9 @@ async function main() {
   $("#tab-people").hidden = !A.me.site_admin;
   $("#tab-devices").hidden = !A.me.site_admin;
   $("#tab-devices").addEventListener("click", () => loadDevices());
+  $("#tab-update").hidden = !A.me.site_admin;
+  $("#tab-update").addEventListener("click", () => loadUpdate());
+  wireUpdate();
   $("#tab-storage").hidden = !A.me.site_admin;
   $("#tab-storage").addEventListener("click", () => loadStorage());
   $("#st-reload").onclick = () => loadStorage(true);
@@ -1247,6 +1316,7 @@ async function main() {
   else if (want === "devices" && A.me.site_admin) { show("devices"); loadDevices(); }
   else if (want === "speed" && A.me.site_admin) { show("speed"); loadSpeed(); }
   else if (want === "storage" && A.me.site_admin) { show("storage"); loadStorage(); }
+  else if (want === "update" && A.me.site_admin) { show("update"); loadUpdate(); }
   else if (want === "publish") { show("publish"); loadPublishJobs(); }
   else if (want === "account") show("account");
   else show("projects");

@@ -432,6 +432,7 @@ DOC = [
         '**Thin pages** (Library > Knowledge base): the summaries too brief for what they are - **Tier A** key documents (GFA, SC / PR, MOE, BFA, lighting and ventilation, SBD, submissions) need the full template; **Tier B** other APP / JPN / regulations / codes need one line per paragraph; **Tier C** ADM / ADV notes may be brief. Each row says what is missing; **Download the list** to send it to the knowledge base\'s author.',
         '**Source documents:** a link to another site (the BD\'s PDFs and pages, marked ↗) opens in a new tab - the Library\'s copy when the Library has that document. Other sites cannot be shown inside the viewer.',
         '**Pins and history:** what you pin in the Knowledge base, and the pages you read, are kept under your account on the server, so they follow you to your other devices. Nobody else sees them.',
+        '**Library** is for site admins (adding, fetching and editing documents, the knowledge base\'s set-up, edits and thin pages). Everyone else opens the documents from the search and the Knowledge base.',
         '**Set up (site admin): Library > Knowledge base** - the repository and branch (or a folder on the server with a checkout of it), a GitHub token (a fine-grained token for this repository with Contents: Read-only; it is kept on the server and never shown again), **Update every day**, **Update now**. The server needs MkDocs: pip install mkdocs-material (in the server\'s requirements).',
     ]),
     H3('The library (site admins)'),
@@ -1115,6 +1116,7 @@ DOC = [
     P('Every project must keep at least one project admin.'),
     H3('Projects and members'),
     P('**Storage** (site admins, Admin > Storage): each of the server\'s disks with its free space (red over 80 % full), what the viewer keeps on them - published sheets and 3D models, Folders files, chat files, pictures, recently deleted, sheet pictures, update backups - and the largest projects. The folders are counted in the background every few hours (**Count again** for now). **Keep the newest 5** removes older update backups.'),
+    P('**Viewer update** (site admins, Admin > Viewer update): the version this server runs and the newest on GitHub (repository and branch under *Where the code comes from*). **Update now** downloads it, checks that it works, keeps the current code, copies the new files (never the data, run.bat or the passphrase) and restarts the server: everyone is disconnected for about 10 seconds, then the page reloads. **Undo the last update** puts the code back (the last 3 are kept). On a Windows server (run.bat), close run.bat and start it again after the update.'),
     UL([
         '**Add people to this project:** search, narrow by **team**, **office** or **company**, tick several (or **Select all shown**), choose the Role and press **Add N people**; or fill in **Someone without an account yet** (Email, Name, Office, Company, Role) and **Create and add**. A temporary password is shown **once**.',
         'Send it with **Email invitation** (opens your own Outlook) or **Copy invitation**. The person must choose their own password at first sign-in.',

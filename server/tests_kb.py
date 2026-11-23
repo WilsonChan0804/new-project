@@ -199,6 +199,15 @@ class Endpoints(unittest.TestCase):
         self.c.post("/api/kb/update?wait=1")
         self.assertEqual(self.c.get("/api/kb/status").json()["built"], built)
 
+    def test_library_box_is_admin_only(self):
+        try:
+            self.core.admin = False
+            self.assertEqual(self.c.get("/api/kb/thin").status_code, 403)
+            self.assertEqual(self.c.get("/api/kb/edits/recent").status_code, 403)
+            self.assertNotEqual(self.c.get("/api/kb/edits", params={"page": "guides/gfa.md"}).status_code, 403)   # the pages still read their edits
+        finally:
+            self.core.admin = True
+
     def test_pins(self):
         import time as _t
         now = int(_t.time() * 1000)

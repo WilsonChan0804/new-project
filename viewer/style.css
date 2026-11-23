@@ -3237,3 +3237,10 @@ body.history-mode #overlay { opacity: .85; }
 
 /* saved comparisons on the sheet list */
 .sheet-cnt .sc-cmp { background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--line); }
+
+/* Admin > Viewer update */
+.up-t td { padding: 3px 12px 3px 0; vertical-align: top; font-size: 13px; }
+.up-t td:first-child { color: var(--muted); white-space: nowrap; }
+.up-log { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; max-height: 260px; overflow: auto; white-space: pre-wrap; }
+.up-set { margin: 8px 0; font-size: 13px; }
+.up-set .form-row label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }

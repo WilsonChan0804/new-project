@@ -313,6 +313,7 @@ PART = [
         '**Thin pages**（Library > Knowledge base）：列出寫得太簡短嘅摘要 - **Tier A** 重要文件（GFA、上蓋面積 / 地積比率、走火、BFA、採光通風、SBD、入則）要用全套格式；**Tier B** 其他 APP / JPN / 規例 / 守則要每段一句；**Tier C** ADM / ADV 可以簡短。每行寫明欠咗乜；**Download the list** 可以下載清單俾知識庫嘅作者。',
         '**原文文件：** 去其他網站嘅 link（屋宇署嘅 PDF 同網頁，有 ↗ 記號）會喺新分頁打開；Library 有嗰份文件嘅話就開 Library 嘅副本。其他網站唔可以喺閱覽器入面直接顯示。',
         '**釘選同瀏覽記錄：** 你喺 Knowledge base 釘選嘅嘢同睇過嘅頁，會跟你個帳戶儲喺 server，喺你其他裝置都見到；其他人睇唔到。',
+        '**Library** 只限 site admin（加文件、下載、修改、知識庫設定、編輯記錄同 Thin pages）。其他人經搜尋同 Knowledge base 打開文件。',
         '**設定（site admin）：Library > Knowledge base** - repository 同 branch（或者 server 上面一個有 checkout 嘅資料夾）、GitHub token（只限呢個 repository、Contents: Read-only 嘅 fine-grained token；只會留喺 server，之後唔會再顯示）、**Update every day**、**Update now**。Server 要裝 MkDocs：pip install mkdocs-material（已經喺 server 嘅 requirements 入面）。',
     ]),
     H3('法規庫（site admin）'),

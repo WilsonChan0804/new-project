@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-16", date: "23 Nov 2026",
+    items: [
+      "**Admin > Viewer update** (site admins) - see which version the server runs and the newest on GitHub, and press **Update now**: the server checks the download, keeps the current code (Undo the last update), updates itself and restarts in about 10 seconds. The data, run.bat and the passphrase are never touched.",
+      "**Codes > Library is for site admins** - everyone still finds and opens the documents from the Knowledge base and the search.",
+    ],
+  },
+  {
     version: "2027-02-15", date: "23 Nov 2026",
     items: [
       "**iPhone: the orange header clears the Dynamic Island** - when the viewer runs from the Home Screen, the header now starts below the status bar (and beside the notch on its side), on every page.",

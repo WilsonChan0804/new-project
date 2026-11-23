@@ -41,6 +41,8 @@ async function loadStatus() {
   const f2 = $("#cx-first2");
   if (f2) f2.onclick = (ev) => { ev.preventDefault(); openLibrary(); };
   paintKbBar();
+  const lt = document.querySelector('.cx-tab[data-tab="lib"]');
+  if (lt) lt.hidden = !s.manage;
 }
 
 /* -------------------------------------------------------- highlighting */
@@ -403,8 +405,10 @@ async function catalogue(refresh) {
   return CAT;
 }
 
+const isAdmin = () => !!(CX.st && CX.st.manage);
 async function openLibrary(tab) {
   closePop();
+  if (!isAdmin()) { showTab("kb"); return; }            // the Library is for site admins
   // the Library is a tab of its own: its documents, Find documents, and the knowledge base's set-up
   showTab("lib", null, true);
   let r;
@@ -742,7 +746,7 @@ async function start() {
     if (!t) { try { t = localStorage.getItem("lwk-viewer:codes-tab"); } catch (e) {} }
     const sec = sp.get("sec");
     if (t === "gbp") { showTab("gbp"); if (sec) ensureGbp(sec); }
-    else if (t === "lib") openLibrary();
+    else if (t === "lib" && isAdmin()) openLibrary();
     else {
       showTab("kb", sp.get("page") || null);
       let pv = "";

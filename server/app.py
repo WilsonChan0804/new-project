@@ -4721,6 +4721,13 @@ try:
 except Exception as _ex:
     print("kb not loaded: %s" % _ex)
 
+# Admin > Viewer update (selfupdate.py): the newest code of the GitHub branch, from the viewer.
+try:
+    import selfupdate
+    selfupdate.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("selfupdate not loaded: %s" % _ex)
+
 # Offline copies (offline.py): the two lists a browser asks for before it
 # keeps a project on the device. Read-only.
 try:
