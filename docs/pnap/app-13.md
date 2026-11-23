@@ -62,6 +62,56 @@ keywords: APP-13, certificate of completion, 完工證明書, occupation permit,
         - **修訂圖則**仍在審批時便呈交 BA12／13。
         - 佔用許可證階段欠缺紀錄圖則及物料／產品清單。
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+| Para. 段 | Subject 主題 | Requirement 規定 |
+|---|---|---|
+| 1 | Completion certificates 完工證明書 | Under B(A)R 25: **BA14 / 14A / 14B / 14C** (and **MW02 / 04**) for works not resulting in a new building; **BA12 / 13** for a new building. No statutory period for BA14, but BD **normally replies in 28 days** (BA14 / 14A) and **14 days** (BA14B / 14C non-audit) or **28 days** (audit). BA12 / 13 with the OP application processed in **14 days** (BO s.21). |
+| 2 | One certificate 單一證明書 | Same contractor for **spread footings (excavation ≤ 4.5 m)** and superstructure (new building or A&A): one BA12 / 13 or one BA14 covers both. |
+| 3 | Amendments before OP 修訂先於佔用許可證 | Get **amendment plans approved before** applying for the OP; only **minor positional deviations** not contravening the BO are accepted. |
+| 4 | "New plans" 新圖則 | BA may require plans of the building as completed (B(A)R 46). |
+| 5 | **Record plans** 紀錄圖則 | With the OP / BA14 / BA14C: a set of **GBP amalgamating all approved plans**, each with BD's signed and dated approval chop or the **AP's certification** that it is identical to the approved plan; hard copy reduced to **≥ 1:200** or **DVD-ROM** (non-rewritable ISO/IEC 13346, indexed per App. H, cover with BD ref., project, AP, declaration, disc no., signature). |
+| 6 | No unapproved amendments 不得含未批准修訂 | Record plans must not contain amendments not approved. |
+| 7 | **RVD** 差餉物業估價署 | One set of record plans for RVD (rating); AutoCAD / MicroStation DVD marked "DVD-ROM containing plans for RVD". |
+| 8–9 | **Schedule of building materials and products** 建築物料及產品明細表 | Required under **B(A)R 44** with the OP (and on A&A / minor works completion where appropriate): AP certifies compliance of application and performance; RC confirms use. Covers materials not specified on approved plans affecting **structure and fire safety**, and **cast iron pipes** ([APP-133](app-133.md)). Samples: **App. A** (building works), **App. B** (minor works). |
+| 10 | Certificates of conformity 產品合格證書 | Valid certificates for **fire-rated doorsets** and **non-loadbearing partitions** under the Product Conformity Certification Scheme ([APP-165](app-165.md)) accepted instead of test reports. |
+| 11–12 | **Fire dampers** 防火擋板 | May be installed by the RGBC with an **RSC (Ventilation)**, or as minor works; dampers installed by RGBC / RMWC must be **inspected and certified by an RSC(V)** (FS Code E8.3); include the inspection certificate (App. A Part C). |
+| 13–15 | **Structural documents** 結構文件 | RSE submits test reports, mill certificates, method statements, records, compliance certificates, foundation record plans and reports, monitoring and QA / QC documents on time; **summary tables** of approved plans and required documents (**App. C, D**) **half-yearly**, at foundation completion and at OP (A&A: half-yearly or at completion); foundation report with as-built summary (**App. E**). |
+| 16 | Checklists 核對清單 | **App. F** (TOP / OP, BA12 / 13) and **App. G** (A&A, BA14 / 14C) — see below. |
+| 17 | Website data DVD 網上公布資料 | DVD-ROM with documents under ADM-2, APP-126, APP-151, APP-152, APP-156 for upload to BD's website. |
+| 18–20 | **Fast-track acceptance of A&A** A&A 快速接納 | For simple A&A (ADM-19 fast track), curtain wall / window wall / cladding repair or replacement, and signboards approved under APP-126: submit **BA14C** with record plans, documents and **colour photos** with a direction plan. Non-audit reply **14 days**; audit cases informed within 14 days and replied in **28 days**. |
+| 21 | Paperless 無紙化 | Certificates and compliance statements (BA12–14C, materials schedule, run-in / run-out certificate) in **hard copy**; other documents may be on DVD-ROM. |
+
+<small>APP-13 (Feb 2023) refers to ADM-19 paras. 29 and 32 for the fast tracks; in the current ADM-19 these are paras. 35 and 37–38. 段落編號因 ADM-19 修訂而不同。</small>
+
+### Appendix F – TOP / OP checklist (BA12 / 13) 臨時／佔用許可證核對清單 {#appendix-f}
+
+| Part 部分 | Items 項目 |
+|---|---|
+| **1 Site works** 地盤工程 | All works complete; **run-in / out** built; **public sewer connections** done; **hoarding / sheds removed**; shoring / wall ties / adjoining buildings dealt with; MiC units complete with finishes and fittings ([ADV-36](adv-36.md)) |
+| **2 Documents** 文件 | BA12 / 13 in order (hard copy); all **amendment consents** issued; **Fire Certificate (FS 172)**; **Fire Services Water Completion Advice**; **water certificates (potable, flushing)**; certificates for **fireman's lifts, accessible lifts / VLPs**; **Certificate of Completion of Vehicular Run-in / Run-out** ([APP-144](app-144.md)); performance review under BO s.17(1)(g) ([APP-30](app-30.md), [APP-115](app-115.md)); APP-13 documents: materials certificate and schedule (App. A), test reports / certificates, record plans for BD and **RVD**, structural summary (App. D); **maintenance access record plans for Labour Department** ([CoP 2021](../codes/external-maintenance-2021.md) App. F); **plan index for record imaging** ([ADM-10](adm-10.md)); ADM-2: **BD106 checklist**, conditions and fire engineering bounding conditions on GBP, **GFA concession summary** (App. H); APP-67: OTTV summary, final OTTV report, final OTTVs on GBP; APP-151 / 152 / 156: **annual energy use declaration**, **BEAM Plus provisional assessment**, **greenery plans and calculations**, final energy efficiency report (RTTV / OTTV<sub>RRF</sub> / NVTC, VLT, ER); **EV charging-enabling certificate by RPE** ([APP-2](app-2.md)); **undertaking registered** in the Land Registry ([APP-104](app-104.md), APP-152, JPN 1 / 2, BD106); **Agreement to Surrender** ([APP-20](app-20.md)) / **Deed of Dedication** ([APP-108](app-108.md)) registered; **drain test certificate** ([APP-58](app-58.md) App. A) and concealed drainage inspection certificate ([APP-93](app-93.md)); signboard information ([APP-126](app-126.md) App. N); final fire engineering report; MiC user manual and audit reports (ADV-36) |
+| **3 Other** 其他 | BA14 acknowledged for substructure, site formation, street works; **lot description / address** confirmed; BD106 conditions complied with |
+
+### Appendix G – A&A completion checklist (BA14 / 14C) 改動加建完工核對清單 {#appendix-g}
+
+| Part 部分 | Items 項目 |
+|---|---|
+| **1 Site works** | All works complete; hoarding removed |
+| **2 Documents** | BA14 / 14C in order; amendment consents; **Fire Certificate (FS 251)** if FSI changed; lift / VLP certificates; materials certificate and schedule, test reports, record plans for BD and RVD, structural summary (if any); LD maintenance access plans (if any); ADM-10 plan index; BD106 checklist and conditions; fire engineering bounding conditions; OTTV documents (if applicable); EV charging certificate; drain test and concealed drainage certificates; signboard information; final fire engineering report; **colour photos with direction plan for BA14C** |
+| **3 Other** | BD106 conditions complied with |
+
+### Other appendices 其他附錄
+
+| Appendix | Content 內容 |
+|---|---|
+| **A** | Certificate of Accepted Building Materials and Products: Part A AP, Part B RC, Part C RSC(V) for fire dampers; Annex A schedule |
+| **B** | Sample schedule for minor works |
+| **C** | Summary of approved foundation plans and required structural documents |
+| **D** | Summary of approved structural plans and required structural documents |
+| **E** | As-built summary of foundation works (founding levels, pile lengths vs tentative) |
+| **H** | DVD-ROM indexing: Disc 1 GBP record plans for BD (PDF); Disc 2 for RVD (CAD); Disc 3 website / GeoInfo Map data (GFA summary, energy declaration, greenery, OTTV / RTTV / OTTV<sub>RRF</sub> sheets, signboard data); Disc 4 other certificates |
+
+
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
 

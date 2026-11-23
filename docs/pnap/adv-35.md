@@ -77,7 +77,7 @@ keywords: green roof, roof garden, 綠化天台, 天台花園, planter, 花槽, 
 
 === "English"
 
-    The note is a checklist rather than a set of numbers: the only fixed figure is the **1:80 fall**. The real design work is the **load**: a saturated growing medium weighs roughly **16–20 kN/m³** (check the supplier's data), so 300 mm of soil alone is about **5–6 kPa**, more than a typical office imposed load. Because the greening is **dead load**, the roof must also carry its normal imposed load (2.0 kPa for an inaccessible flat roof, or the use load where people gather).
+    The note is a checklist rather than a set of numbers: the only fixed figure is the **1:80 fall**. The real design work is the **load**: a saturated growing medium weighs roughly **16–20 kN/m³** (typical figure, *not from the PNAP*: check the supplier's data), so 300 mm of soil alone is about **5–6 kPa**, more than a typical office imposed load. Because the greening is **dead load**, the roof must also carry its normal imposed load (2.0 kPa for an inaccessible flat roof, or the use load where people gather).
 
     For **existing buildings**, start from the approved structural plans: an old roof designed for 2.0 kPa imposed load often cannot take deep planting without strengthening, and strengthening turns it into an **A&A submission** (para. 5).
 

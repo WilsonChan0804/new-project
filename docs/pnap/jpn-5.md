@@ -25,6 +25,7 @@ keywords: BHR, building height restriction, 建築物高度限制, mPD, 主水�
     |---|---|
     | **Type 類別** | Joint Practice Note 聯合作業備考 (BD 屋宇署 · LandsD 地政總署 · PlanD 規劃署) |
     | **First issue 首次發出** | April 2019 (effective **15 May 2019**) |
+    | **Version summarised 本摘要版本** | April 2019 (current issue on BD index, checked 2026-11-23) |
     | **Official language 官方語言** | English only (Chinese version not available) 只有英文版 |
     | **Source 原文** | [JPN 5 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN05.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the April 2019 version |

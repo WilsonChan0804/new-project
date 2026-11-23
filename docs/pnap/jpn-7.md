@@ -18,6 +18,7 @@ keywords: site coverage, SC, 上蓋面積, OZP, 分區計劃大綱圖, lease, �
     |---|---|
     | **Type 類別** | Joint Practice Note 聯合作業備考 (BD 屋宇署 · LandsD 地政總署 · PlanD 規劃署) |
     | **First issue 首次發出** | August 2021 (effective **23 August 2021**) |
+    | **Version summarised 本摘要版本** | August 2021 (current issue on BD index, checked 2026-11-23) |
     | **Official language 官方語言** | English only (Chinese version not available) 只有英文版 |
     | **Source 原文** | [JPN 7 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN07.pdf) |
     | **Read with 一併參閱** | LandsD LAO PN 3/2020A "Design, Disposition and Height Clause under Lease (Site Coverage)" |

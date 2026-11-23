@@ -84,9 +84,15 @@ Submit **before or with** BA13 — missing documents can cause **refusal**. Uplo
 | **Record plans** 紀錄圖則 | **Consolidated GBP** as completed, each bearing BD's approval chop or the **AP's certification**; "new plans" under B(A)R 46 | [APP-13](../pnap/app-13.md) paras. 4–5 |
 | **Materials and products schedule** 物料及產品清單 | With certificates of accepted materials / products | [APP-13](../pnap/app-13.md), [APP-118](../pnap/app-118.md) |
 | **Test reports** 測試報告 | Concrete cubes, reinforcement, anchors, stone cladding, drainage tests (electronic standard formats from 2026) | [APP-16](../pnap/app-16.md), [APP-45](../pnap/app-45.md), [APP-58](../pnap/app-58.md) |
-| **WSD certificate** of water supply 供水證明書 | Permanent supply for domestic / flushing and **FSI** (WSD issues within 10 days) | B(A)R 25A; [APP-31](../pnap/app-31.md) |
-| **FSD** certificate / acceptance of FSI 消防處證明 | FS installations inspected and accepted | [APP-31](../pnap/app-31.md) |
-| **Lifts and escalators** 升降機 | Builder's works complete for EMSD permit to use | [APP-29](../pnap/app-29.md) |
+| **Water certificates** (potable and flushing) 供水證明書 | WSD certificates (WSD issues within 10 days of application) | B(A)R 25A |
+| **Fire Certificate (FS 172)** and **FS Water Completion Advice** 消防證書 | FSD certificate for FSI; FS water supply (A&A with FSI change: **FS 251**) | [APP-31](../pnap/app-31.md) |
+| **Lifts and escalators** 升降機 | Builder's works complete for EMSD permit to use; certificates for fireman's / accessible lifts | [APP-29](../pnap/app-29.md) |
+| **Run-in / run-out certificate** 車輛出入口證明書 | Certificate of Completion of Vehicular Run-in and Run-out (hard copy) | [APP-144](../pnap/app-144.md) |
+| **Record plans for RVD** 差餉物業估價署圖則 | Hard and soft copies (CAD) | [APP-13](../pnap/app-13.md) para. 7 |
+| **Plan index** 圖則索引 | For record imaging | [ADM-10](../pnap/adm-10.md) |
+| **Maintenance access plans** 維修通道圖則 | For referral to Labour Department | [CoP 2021](../codes/external-maintenance-2021.md) |
+| **EV charging-enabling certificate** 電動車充電證明 | By RPE for car parks | [APP-2](../pnap/app-2.md) |
+| **BEAM Plus / energy / greenery** 綠建環評等 | Provisional assessment, annual energy use declaration, greenery plans | [APP-151](../pnap/app-151.md), [APP-152](../pnap/app-152.md) |
 | **BD 106 checklist** 變通條件清單 | Valid modification conditions shown on final plans | [ADM-2](../pnap/adm-2.md) para. 14, App. F |
 | **GFA concession summary** 寬免摘要 | ADM-2 App. H (published after OP) | [ADM-2](../pnap/adm-2.md) paras. 16–18 |
 | **Energy Efficiency / OTTV Report** 能源效益報告 | RTTV / OTTV / NVTC calculations, record plans, glass test certificates, final summary sheets | [APP-156](../pnap/app-156.md), [APP-67](../pnap/app-67.md) |
@@ -178,16 +184,25 @@ Submit **before or with** BA13 — missing documents can cause **refusal**. Uplo
 - [ ] Undertakings registered; DMC common parts designated 承諾書及公契
 - [ ] Energy Efficiency / OTTV Report prepared 能源報告
 
-**At completion 完工時**
+**At completion 完工時** — follow the official **[APP-13 Appendix F checklist](../pnap/app-13.md#appendix-f)** 按 APP-13 附錄 F 官方清單
 
-- [ ] WSD water supply certificate (domestic, flushing, FSI) 供水證明
-- [ ] FSD certificate / acceptance 消防證明
-- [ ] Lifts / escalators ready for EMSD permit 升降機
-- [ ] Contractor certificate within 7 days; AP / RSE / RGE within 14 days on **BA13** 完工證明書
-- [ ] Consolidated record GBP with BD chop / AP certification 紀錄圖則
-- [ ] BD 106 checklist; GFA concession summary (ADM-2 App. H) 變通清單及寬免摘要
-- [ ] Landscape self-certification (if required) 園景
-- [ ] Minor works location plan 小型工程位置圖
+- [ ] Site: run-in / out built, **public sewer connections**, hoardings and sheds removed, adjoining-building shoring / ties dealt with 地盤工程
+- [ ] **Fire Certificate (FS 172)** and **Fire Services Water Completion Advice** 消防證書及消防供水完成通知
+- [ ] **Water certificates** (potable and flushing) 食水及沖廁水證明書
+- [ ] Certificates for **fireman's lifts, accessible lifts / VLPs** 消防員升降機等證明書
+- [ ] **Certificate of Completion of Vehicular Run-in / Run-out** ([APP-144](../pnap/app-144.md)) 車輛出入口完工證明書
+- [ ] Contractor certificate ≤ 7 days; AP / RSE / RGE ≤ 14 days on **BA13** 完工證明書
+- [ ] **Certificate and Schedule of Accepted Building Materials and Products** (APP-13 App. A, incl. RSC(V) fire damper certificate) 物料證明書及明細表
+- [ ] Record plans for **BD** and **RVD**; structural summary (App. D); **ADM-10 plan index** 紀錄圖則及索引
+- [ ] Maintenance-access record plans for **Labour Department** (CoP 2021 App. F) 維修通道圖則
+- [ ] **BD106 checklist**, conditions and fire engineering bounding conditions on GBP; **GFA concession summary** (ADM-2 App. H) 變通清單及寬免摘要
+- [ ] OTTV / RTTV / NVTC final reports; **annual energy use declaration** (APP-151 App. B); **BEAM Plus provisional assessment**; **greenery plans** (APP-152 App. F) 能源及綠化文件
+- [ ] **EV charging-enabling certificate** by RPE ([APP-2](../pnap/app-2.md)) 電動車充電設施證明
+- [ ] **Undertakings**, Agreement to Surrender, Deed of Dedication **registered** in the Land Registry 承諾書等已登記
+- [ ] **Drain test certificate** ([APP-58](../pnap/app-58.md)) and concealed drainage inspection certificate ([APP-93](../pnap/app-93.md)) 排水測試證明
+- [ ] Signboard information (APP-126 App. N); MiC user manual and audit reports (ADV-36) 招牌及組裝合成文件
+- [ ] BA14 acknowledged for substructure, site formation, street works; lot description / address confirmed 其他
+- [ ] DVD-ROMs indexed per APP-13 App. H 光碟索引
 
 **Inspection 巡查**
 
@@ -196,13 +211,20 @@ Submit **before or with** BA13 — missing documents can cause **refusal**. Uplo
 
 ## 13. Checklist: A&A completion 改動加建完工核對清單 {#checklist-aa}
 
+Follow the official **[APP-13 Appendix G checklist](../pnap/app-13.md#appendix-g)** 按 APP-13 附錄 G 官方清單:
+
+- [ ] All works complete; hoarding removed 工程完成，圍板已拆
 - [ ] All amendment plans approved 修訂圖則已批准
-- [ ] Contractor certificate within 7 days; AP / RSE within 14 days on **BA14 / BA14C** 完工證明書
-- [ ] Record plans / test reports / BD 106 conditions 紀錄及報告
-- [ ] FSD acceptance for altered FSI 消防
-- [ ] Drainage tested before covering ([APP-58](../pnap/app-58.md)) 排水測試
-- [ ] Minor works forms for any MW items 小型工程表格
-- [ ] Licences (FEHD restaurant, etc.) applied separately 牌照
+- [ ] Contractor certificate ≤ 7 days; AP / RSE ≤ 14 days on **BA14 / BA14C** 完工證明書
+- [ ] **Fire Certificate (FS 251)** if FSI changed 消防證書
+- [ ] Lift / VLP certificates (if any) 升降機證明書
+- [ ] Materials certificate and schedule (APP-13 App. A), test reports, record plans for BD and RVD, structural summary 物料及紀錄
+- [ ] ADM-10 plan index; BD106 checklist and conditions; fire engineering bounding conditions 索引及變通條件
+- [ ] OTTV documents (if B(EE)R applies), EV charging certificate (if car park works) 能源及充電設施
+- [ ] Drain test certificate ([APP-58](../pnap/app-58.md)) and concealed drainage certificate 排水
+- [ ] Signboard information (if any) 招牌資料
+- [ ] **BA14C**: colour record photos with direction plan 快速接納須附照片
+- [ ] Minor works forms for any MW items; licences (FEHD etc.) separately 小型工程及牌照
 
 ## 14. Examples 例子 {#examples}
 

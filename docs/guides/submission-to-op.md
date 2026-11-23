@@ -209,6 +209,9 @@ Full form guide: [Specified forms](../forms/index.md). 完整表格指南。
 
 ## Checklist 核對清單 {#checklist}
 
+!!! tip "Official completion checklists 官方完工清單"
+    BD's own checklists: [APP-13 Appendix F (TOP / OP)](../pnap/app-13.md#appendix-f) and [Appendix G (A&A)](../pnap/app-13.md#appendix-g). Detailed guide: [OP application](op-application.md).
+
 <small>Tick as you go; ticks are kept in your browser only. 剔選紀錄只儲存在你的瀏覽器。</small>
 
 **Before submission 呈交前**

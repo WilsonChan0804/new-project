@@ -179,7 +179,7 @@ keywords: ADM-2, centralised processing, 中央處理, ESH, BA16, BD 106, day 45
 
 | Stage 階段 | Documents 文件 |
 |---|---|
-| Statutory periods (60 / 90 days) 法定期限 | [BO Part 3](../regulations/bo-part-2-building-works.md) · [Plan submission guide](../guides/submission-to-op.md) |
+| Statutory periods (60 / 30 / 28 days, B(A)R 30–33) 法定期限 | [BO s.14–21](../regulations/bo-part-2-building-works.md) · [B(A)R](../regulations/bar-123a.md#key-table-processing-periods) · [Plan submission guide](../guides/submission-to-op.md) |
 | Disapproval grounds 拒批理由 | [ADM-19](adm-19.md) |
 | Electronic submission 電子呈交 | [ADM-17](adm-17.md) · [APP-60](app-60.md) |
 | Structural plan sets 結構圖 | [ADM-8](adm-8.md) |

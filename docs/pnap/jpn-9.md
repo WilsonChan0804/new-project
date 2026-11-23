@@ -27,6 +27,7 @@ keywords: bonus plot ratio, 額外地積比率, pilot scheme, 先導計劃, rede
     | **Type 類別** | Joint Practice Note (BD, LandsD, PlanD) 聯合作業備考（屋宇署、地政總署、規劃署） |
     | **First issue 首次發出** | **August 2026** (new) 2026 年 8 月（新發出） |
     | **Pilot period 先導期** | **1 September 2026 – 31 August 2031** (five years) 五年 |
+    | **Version summarised 本摘要版本** | August 2026 (current issue on BD index, checked 2026-11-23) |
     | **Official language 官方語言** | English only for now (Chinese version to follow) 暫只有英文版 |
     | **Source 原文** | [JPN 9 (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/practice-notes-and-circular-letters/joint/JPN09.pdf) |
     | **Last checked 最後核對** | 2026-11-20 against the August 2026 issue |
