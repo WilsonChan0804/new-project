@@ -76,11 +76,18 @@ function sketch(q, R) {
   const S = 100, st = 30;          // site half-size, street width
   const streets = { A: ["s"], B: ["s", "e"], C: ["s", "e", "w"] }[q.cls] || ["s"];
   let out = "";
-  const sideRect = { s: [[-S, S], [S, S], [S, S + st], [-S, S + st]], e: [[S, -S], [S + st, -S], [S + st, S + (streets.includes("s") ? st : 0)], [S, S]],
-    w: [[-S - st, -S], [-S, -S], [-S, S], [-S - st, S + (streets.includes("s") ? st : 0)]] };
+  // each street a strip along its side of the site; where two meet, the corner
+  const sideRect = { s: [[-S, S], [S, S], [S, S + st], [-S, S + st]], e: [[S, -S], [S + st, -S], [S + st, S], [S, S]],
+    w: [[-S - st, -S], [-S, -S], [-S, S], [-S - st, S]] };
+  const corners = [];
+  if (streets.includes("s") && streets.includes("e")) corners.push([[S, S], [S + st, S], [S + st, S + st], [S, S + st]]);
+  if (streets.includes("s") && streets.includes("w")) corners.push([[-S - st, S], [-S, S], [-S, S + st], [-S - st, S + st]]);
   for (const k of streets) out += poly(sideRect[k].map(([x, y]) => P(x, y, 0)), "qk-street");
+  for (const c of corners) out += poly(c.map(([x, y]) => P(x, y, 0)), "qk-street qk-corner");
   out += poly([[-S, -S], [S, -S], [S, S], [-S, S]].map(([x, y]) => P(x, y, 0)), "qk-site");
-  const b = S * Math.sqrt(Math.max(5, Math.min(100, sc)) / 100);
+  // the footprint at most 88% of the site's side, so the site always shows round it
+  const b = S * Math.min(0.88, Math.sqrt(Math.max(5, Math.min(100, sc)) / 100));
+  if (sc >= 77) out += `<polygon points="${[[-S, -S], [S, -S], [S, S], [-S, S]].map(([x, y]) => P(x, y, 0).join(",")).join(" ")}" class="qk-edge"/>`;
   const z = Math.min(150, z0);
   const top = [[-b, -b], [b, -b], [b, b], [-b, b]].map(([x, y]) => P(x, y, z));
   out += poly([P(b, -b, 0), P(b, b, 0), P(b, b, z), P(b, -b, z)], "qk-b-r");
@@ -99,10 +106,20 @@ function sketch(q, R) {
   const sts = streets.map((k2) => sideRect[k2].map(([x, y]) => P(x, y, 0)));
   const low = sts.flat().reduce((a, p2) => (p2[1] > a[1] ? p2 : a), [0, -1e9]);
   let lab = "";
-  if (s.status === "ok") lab += t(tp[0], tp[1] - 12, `covers ≤ ${sc}%`, "middle", "qk-strong");
+  const siteTxt = q.area ? `Site ${f0(q.area)} m²` : "Site area ?";
+  lab += t(tp[0], tp[1] - 12, s.status === "ok" ? `${siteTxt} · covers ≤ ${sc}%` : siteTxt, "middle", "qk-strong");
   lab += t(right[0] + 10, right[1] + 4, R.h != null ? `H ${f2(R.h)} m` : "Height ?", "start", "qk-strong");
-  lab += t(left[0] - 8, left[1] + 4, q.area ? `Site ${f0(q.area)} m²` : "Site area ?", "end");
-  lab += t(low[0], low[1] + 18, "Street" + (R.s.mean != null ? ` · mean ${f2(R.s.mean)} mPD` : ""));
+  void left;
+  // each street named on its strip's outer side
+  const mid = { s: [0, S + st], e: [S + st, 0], w: [-S - st, S * 0.55] };
+  streets.forEach((k2, i) => {
+    const [mx, my] = mid[k2], pt = P(mx, my, 0);
+    const name = streets.length > 1 ? `Street ${i + 1}` : "Street";
+    const off = k2 === "s" ? [0, 18, "middle"] : k2 === "e" ? [10, 16, "start"] : [-12, 8, "end"];
+    lab += t(pt[0] + off[0], pt[1] + off[1], name + (i === 0 && R.s.mean != null ? ` · mean ${f2(R.s.mean)} mPD` : ""), off[2]);
+  });
+  void low;
+  if (corners.length) { const c = P(S + st / 2, S + st / 2, 0); if (streets.includes("e")) lab += t(c[0] + 12, c[1] + 22, "corner", "start", "qk-corner-t"); }
   out += lab;
   const pad = 8, vb = [box.x0 - pad, box.y0 - pad, box.x1 - box.x0 + 2 * pad, box.y1 - box.y0 + 2 * pad].map((v) => Math.round(v));
   return `<svg class="qk-sketch" viewBox="${vb.join(" ")}" role="img" aria-label="Street, site and building">${out}</svg>`;
@@ -111,7 +128,9 @@ function sketch(q, R) {
 function clsIcon(k) {
   const st = { A: ["s"], B: ["s", "e"], C: ["s", "e", "w"] }[k];
   const r = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" class="${c}"/>`;
-  return `<svg viewBox="0 0 48 40" class="qk-cls-ic">${r(10, 6, 28, 24, "qk-site")}${st.includes("s") ? r(4, 31, 40, 7, "qk-street") : ""}${st.includes("e") ? r(39, 2, 7, 36, "qk-street") : ""}${st.includes("w") ? r(2, 2, 7, 36, "qk-street") : ""}</svg>`;
+  // the site in the middle; streets on its sides, and the corner squares where two meet
+  return `<svg viewBox="0 0 48 40" class="qk-cls-ic">${r(10, 4, 28, 26, "qk-site")}${st.includes("s") ? r(10, 31, 28, 7, "qk-street") : ""}${st.includes("e") ? r(39, 4, 7, 26, "qk-street") : ""}${st.includes("w") ? r(2, 4, 7, 26, "qk-street") : ""}`
+    + `${st.includes("s") && st.includes("e") ? r(39, 31, 7, 7, "qk-street qk-corner") : ""}${st.includes("s") && st.includes("w") ? r(2, 31, 7, 7, "qk-street qk-corner") : ""}</svg>`;
 }
 
 /* --------------------------------------------------------------- the page */
@@ -149,7 +168,7 @@ function step1(q) {
       <div class="qk-bar"><span class="qk-non" style="width:${(c.share * 100).toFixed(1)}%">${c.share > 0.08 ? "Non-dom" : ""}</span><span class="qk-dom" style="width:${((1 - c.share) * 100).toFixed(1)}%">${c.share < 0.92 ? "Domestic" : ""}</span></div>
       <p class="qk-formula">Domestic PR = ${s.dom.pr} × [ 1 − ( ${c.nonPr.toFixed(2)} / ${s.non.pr} ) ] = <b>${c.domPr.toFixed(3)}</b>${q.area ? ` · total GFA ${f3(c.nonGfa)} + ${f3(c.domGfa)} = <b>${f3(c.total)} m²</b>` : ""}</p>`;
   }
-  return `<section class="qk-card" id="qk-site"><div class="qk-head"><i>1</i><h3>Site: plot ratio and site coverage</h3>${ctx.why("site")}<span class="spacer"></span><button type="button" class="ghost qk-copy" data-copy="1">Copy</button></div>
+  return `<section class="qk-card" id="qk-site"><div class="qk-head"><i>1</i><h3>Site: plot ratio and site coverage</h3>${ctx.why("site")}<span class="spacer"></span>${clearBtn(1)}<button type="button" class="ghost qk-copy" data-copy="1">Copy</button></div>
     <div class="qk-grid">
       <div class="qk-in">
         ${seg("mode", q.mode, [["single", "Single use"], ["composite", "Composite use"]])}
@@ -196,7 +215,7 @@ function step2(q) {
         </div>`;
     }
   }
-  return `<section class="qk-card" id="qk-moe"><div class="qk-head"><i>2</i><h3>Occupancy and exits</h3>${ctx.why("moe")}<span class="spacer"></span><button type="button" class="ghost qk-copy" data-copy="2">Copy</button></div>
+  return `<section class="qk-card" id="qk-moe"><div class="qk-head"><i>2</i><h3>Occupancy and exits</h3>${ctx.why("moe")}<span class="spacer"></span>${clearBtn(2)}<button type="button" class="ghost qk-copy" data-copy="2">Copy</button></div>
     <div class="qk-in qk-in-row">
       <label class="qk-l qk-wide">Use (FS Code Table B1)<select data-qo="key"${dis()}>${b1Opts(o.key)}</select></label>
       <div><div class="qk-lbl">Count by</div>${seg("occ.how", o.how, [["area", "Floor area"], ["persons", "Persons"]])}</div>
@@ -272,7 +291,7 @@ function step3(q) {
       <td><input type="number" step="any" data-qr="${i}" data-f="area" value="${esc(x.area == null ? "" : x.area)}" class="qk-n" placeholder="m²"${dis()}></td>
       <td><input type="number" data-qr="${i}" data-f="persons" value="${esc(x.persons == null ? "" : x.persons)}" class="qk-n" placeholder="${x.each == null ? "?" : x.each}" title="Persons per floor - worked out from the area, or type your own"${dis()}></td>
       <td class="n"><b>${x.sum == null ? "?" : f0(x.sum)}</b></td><td><button type="button" class="gb-x" data-qrx="${i}"${dis()}>✕</button></td></tr>`).join("");
-  return `<section class="qk-card" id="qk-stairs"><div class="qk-head"><i>3</i><h3>Staircase discharge</h3>${ctx.why("stairs")}<span class="spacer"></span><button type="button" class="ghost" data-qex${dis()}>Load an example</button><button type="button" class="ghost qk-copy" data-copy="3">Copy</button></div>
+  return `<section class="qk-card" id="qk-stairs"><div class="qk-head"><i>3</i><h3>Staircase discharge</h3>${ctx.why("stairs")}<span class="spacer"></span><button type="button" class="ghost" data-qex${dis()}>Load an example</button>${clearBtn(3)}<button type="button" class="ghost qk-copy" data-copy="3">Copy</button></div>
     <div class="qk-scroll"><table class="qk-t"><tr><th>Floors</th><th>No. of floors</th><th>Use (Table B1)</th><th>Area / floor</th><th>Persons / floor</th><th>Persons</th><th></th></tr>${rows}
       <tr class="tot"><td colspan="5">Above the ground storey: ${r.storeys} storeys</td><td class="n"><b>${f0(r.total)}</b></td><td></td></tr></table></div>
     <p><button type="button" class="qk-add" data-qradd${dis()}>+ Floors</button></p>
@@ -308,7 +327,7 @@ function step4(q) {
       <td class="c">${a.pre ? '<span class="qk-badge pre" title="Subject to the APP-151 pre-requisites">pre-req</span>' : ""}</td><td class="c">${a.cap ? '<span class="qk-badge cap" title="Counted in the 10% overall cap">10% cap</span>' : '<span class="qk-badge" title="Not in the cap">outside</span>'}</td>
       <td><input type="number" step="any" data-qgi="${esc(a.item)}" value="${esc(g.items[a.item] == null ? "" : g.items[a.item])}" placeholder="m²" class="qk-n"${dis()}></td></tr>`).join("");
   const pct = Math.min(130, r.share * 100), tone = r.status === "fail" ? "fail" : r.share > 0.9 ? "warn" : "ok";
-  return `<section class="qk-card" id="qk-gfa"><div class="qk-head"><i>4</i><h3>GFA concessions: the 10% cap</h3>${ctx.why("gfa")}<span class="spacer"></span><button type="button" class="ghost qk-copy" data-copy="4">Copy</button></div>
+  return `<section class="qk-card" id="qk-gfa"><div class="qk-head"><i>4</i><h3>GFA concessions: the 10% cap</h3>${ctx.why("gfa")}<span class="spacer"></span>${clearBtn(4)}<button type="button" class="ghost qk-copy" data-copy="4">Copy</button></div>
     <div class="qk-in qk-in-row">
       <div><div class="qk-lbl">Total GFA</div>${seg("gfa.use_permitted", g.use_permitted ? "1" : "", [["1", "The permitted GFA (step 1)"], ["", "Type it"]])}</div>
       ${g.use_permitted ? `<div class="qk-l">&nbsp;<b class="qk-tot">${perm != null ? f3(perm) + " m²" : "— give step 1 first"}</b></div>`
@@ -324,9 +343,33 @@ function step4(q) {
     <p class="gb-srcs">${srcBtn("app151")} ${srcBtn("reg23")}</p></section>`;
 }
 
+const clearBtn = (n) => (ctx.can() ? `<button type="button" class="ghost qk-clear" data-qclear="${n}" title="Empty this step (for everyone on the project)">Clear</button>` : "");
+const STEP1 = ["mode", "cls", "kind", "hmode", "band", "nband", "nhmode", "height", "nheight", "street_low", "street_high", "roof", "area", "npr"];
+const STEP_NAME = { 1: "step 1 (Site)", 2: "step 2 (Occupancy and exits)", 3: "step 3 (Staircase discharge)", 4: "step 4 (GFA concessions)", all: "the whole workbook" };
+let UNDO = null;
+/* empty a step (or all) back to its defaults; the copy before is kept for Undo */
+function clearStep(n) {
+  UNDO = JSON.parse(JSON.stringify(Q));
+  if (n === "all" || n === "1") for (const k of STEP1) delete Q[k];
+  if (n === "all" || n === "2") delete Q.occ;
+  if (n === "all" || n === "3") delete Q.st;
+  if (n === "all" || n === "4") delete Q.gfa;
+}
+function undoBar(onUndo) {
+  document.querySelectorAll(".qk-undo").forEach((x) => x.remove());
+  const bar = document.createElement("div");
+  bar.className = "qk-undo";
+  bar.innerHTML = `<span>Cleared</span><button type="button">Undo</button>`;
+  document.body.appendChild(bar);
+  const t = setTimeout(() => bar.remove(), 10000);
+  bar.querySelector("button").onclick = () => { clearTimeout(t); bar.remove(); onUndo(); };
+}
+
 export function renderQuick(el, data, c) {
   root = el; ctx = c; Q = quickData(data);
-  el.innerHTML = `<div class="qk">${step1(Q)}${step2(Q)}${step3(Q)}${step4(Q)}
+  el.innerHTML = `<div class="qk">
+    <div class="qk-top"><span class="muted">&#128101; Saved with the project - everyone on it sees the same figures${c.can() ? " (members can change them)" : " (view only)"}.</span><span class="spacer"></span>${c.can() ? `<button type="button" class="ghost qk-clear" data-qclear="all">Clear all</button>` : ""}</div>
+    ${step1(Q)}${step2(Q)}${step3(Q)}${step4(Q)}
     ${c.model ? `<p class="qk-model"><button type="button" class="ghost" data-gmode="full">&#128203; The site's figures from the model (GBP area plans) and Excel ›</button></p>` : ""}
     <p class="gb-disc">Worked from the code tables as transcribed (each result names its source). Check against the current documents before submission; the Building Authority's decision prevails.</p></div>`;
 }
@@ -378,6 +421,15 @@ export function wireQuick(el, onChange) {
     if (b.dataset.qwx != null) { Q.occ.widths.splice(+b.dataset.qwx, 1); return repaint(); }
     if (b.hasAttribute("data-qradd")) { Q.st.rows.push({ label: "", floors: 1, key: "4a-1", area: null, persons: null }); return repaint(); }
     if (b.dataset.qrx != null) { Q.st.rows.splice(+b.dataset.qrx, 1); return repaint(); }
+    if (b.dataset.qclear) {
+      const n = b.dataset.qclear;
+      if (!confirm(`Clear ${STEP_NAME[n]} for everyone on this project?`)) return;
+      clearStep(n);
+      Object.assign(Q, quickData({ quick: Q }));
+      repaint();
+      undoBar(() => { if (!UNDO) return; for (const k of Object.keys(Q)) delete Q[k]; Object.assign(Q, UNDO); UNDO = null; repaint(); });
+      return;
+    }
     if (b.hasAttribute("data-qgall")) { Q.gfa.all = !Q.gfa.all; return repaint(); }
     if (b.hasAttribute("data-qex")) {
       Q.st.rows = [{ label: "1/F – 10/F", floors: 10, key: "7", area: 1350, persons: null }];

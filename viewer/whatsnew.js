@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-24", date: "23 Nov 2026",
+    items: [
+      "**GBP workbook: Clear** - each step has a **Clear** button and the top a **Clear all**, with **Undo** for 10 seconds. The workbook is kept with the project: everyone on it sees the same figures (members can change them), so Clear asks first.",
+      "**The site sketch**: each street on its side (Street 1 / 2 / 3) with the **corner** where two meet, and the site always shows round the building, even at 100% site coverage.",
+    ],
+  },
+  {
     version: "2027-02-23", date: "23 Nov 2026",
     items: [
       "**GBP workbook: one simple workbook** - the four steps are the workbook now: 1 Site, 2 Occupancy & exits (with travel distance), 3 Staircase discharge, and new **4 GFA concessions: the 10% cap** - type the area of each feature you use (balcony, utility platform, AHU room ... from PNAP APP-151 Appendix A) and see the capped total against 10% of the GFA, with a bar and the pre-requisites to meet.",

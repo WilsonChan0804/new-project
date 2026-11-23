@@ -497,3 +497,10 @@ td.gb-ch::after { content: "\270e"; font-size: 10px; color: #9a6700; margin-left
 .qk-badge.pre { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
 .qk-badge.cap { background: #fff1e6; color: #9a3412; border-color: #fed7aa; }
 .qk-model { text-align: center; }
+.qk-corner { fill: #8fe3e6; }
+.qk-edge { fill: none; stroke: #e88a9c; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.qk-corner-t { font-size: 11px; fill: #0e7490; font-style: italic; }
+.qk-top { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.qk-clear { color: #b42318 !important; }
+.qk-undo { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1c1917; color: #fff; border-radius: 10px; padding: 8px 10px 8px 16px; display: flex; gap: 14px; align-items: center; z-index: 90; box-shadow: 0 8px 24px rgba(0,0,0,.3); font-size: 13px; }
+.qk-undo button { background: #f08020; color: #fff; border: 0; border-radius: 7px; padding: 5px 12px; font-weight: 700; cursor: pointer; }
