@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LWK Viewer - Site study</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dash.css">
+<link rel="stylesheet" href="tasks.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="shell.css">
+<link rel="modulepreload" href="site.js">
+<link rel="modulepreload" href="sitecore.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="pagekit.js">
+<link rel="modulepreload" href="tasks-util.js">
+<link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f28022">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+</head>
+<body class="tasks-page site-page own-nav">
+<header>
+  <b class="brand"><img class="brand-logo" src="icons/logo-white.png" alt="LWK + Partners"><span class="brand-app">Viewer</span></b>
+  <div class="seg">
+    <a id="to-projects" class="seg-btn" data-page="projects.html" href="projects.html">Projects</a>
+    <a id="to-sheets" class="seg-btn" data-page="index.html" href="index.html">Sheets</a>
+    <a id="to-3d" class="seg-btn" data-page="model.html" href="model.html">3D</a>
+    <a id="to-board" class="seg-btn" data-page="board.html" href="board.html">Board</a>
+    <a id="to-tasks" class="seg-btn" data-page="tasks.html" href="tasks.html">Tasks</a>
+    <a id="to-prog" class="seg-btn" data-page="programme.html" href="programme.html">Programme</a>
+    <a id="to-chat" class="seg-btn chat-link" data-page="messenger.html" href="messenger.html">Chat</a>
+    <a id="to-cal" class="seg-btn" data-page="calendar.html" href="calendar.html">Calendar</a>
+    <a id="to-folders" class="seg-btn" data-page="folders.html" href="folders.html">Folders</a>
+    <a id="to-codes" class="seg-btn" data-page="codes.html" href="codes.html">Codes</a>
+    <span class="seg-btn on">Site study</span>
+    <a id="to-dash" class="seg-btn" data-page="dashboard.html" href="dashboard.html">Dashboard</a>
+  </div>
+  <span class="spacer"></span>
+  <div id="lwk-nav">
+    <a id="to-admin" href="admin.html" hidden>Admin</a>
+    <span class="who" id="h-who"></span>
+    <a href="#" id="h-signout" hidden>Sign out</a>
+  </div>
+</header>
+
+<main id="st">
+  <aside class="st-side" id="st-side">
+    <form class="st-find" id="st-find" onsubmit="return false">
+      <input id="st-q" type="search" placeholder="Find a place: address, building, lot (e.g. TKO Area 137)">
+      <button type="submit" class="primary" id="st-go">Find</button>
+    </form>
+    <div id="st-hits" class="st-hits" hidden></div>
+    <div id="st-panel"></div>
+  </aside>
+  <div class="st-map-wrap">
+    <div id="st-map"></div>
+    <div class="st-tools" id="st-tools"></div>
+    <div class="st-hint" id="st-hint" hidden></div>
+  </div>
+</main>
+
+<div id="gate-back" hidden>
+  <form id="gate" onsubmit="return false">
+    <b>Sign in</b>
+    <label>Email<input id="gate-name" type="email" autocomplete="username"></label>
+    <label>Password<input id="gate-pass" type="password" autocomplete="current-password"></label>
+    <p id="gate-msg" class="muted" style="font-size:11px"></p>
+    <div class="row end"><button id="gate-go">Sign in</button></div>
+  </form>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script type="module" src="site.js"></script>
+</body>
+</html>

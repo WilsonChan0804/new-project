@@ -23,7 +23,7 @@ from starlette.concurrency import run_in_threadpool
 
 MAX_BYTES = 8 * 1024 * 1024
 KEEP_HISTORY = 20
-PARTS = ("quick", "site", "map", "rooms", "areas", "stairs", "storeys", "b1", "limits", "notes", "sanitary", "fire", "green", "eva")
+PARTS = ("quick", "study", "site", "map", "rooms", "areas", "stairs", "storeys", "b1", "limits", "notes", "sanitary", "fire", "green", "eva")
 
 
 def _dir(core, pid, sub=""):
@@ -86,6 +86,29 @@ def save(core, pid, rev, data, who):
     return out
 
 
+SEARCH_URL = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
+
+
+def run_search(q):
+    import urllib.parse
+    import urllib.request
+    try:
+        req = urllib.request.Request(SEARCH_URL + urllib.parse.quote(q), headers={"User-Agent": "LWK-Viewer site study"})
+        with urllib.request.urlopen(req, timeout=12) as r:
+            rows = json.loads(r.read().decode("utf-8"))
+    except Exception as ex:
+        raise HTTPException(status_code=502, detail="The map search did not answer: %s" % ex)
+    out = []
+    for x in (rows or [])[:20]:
+        try:
+            out.append({"name": x.get("nameEN") or x.get("nameZH") or "", "zh": x.get("nameZH") or "",
+                        "address": x.get("addressEN") or x.get("addressZH") or "",
+                        "x": float(x["x"]), "y": float(x["y"])})
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
 def make_xlsx(sheets, project=""):
     """sheets: [{name, title, note, head: [..], rows: [[..]], marks: ["ok"|"fail"|"check"|""], widths}]"""
     import xlsx
@@ -144,6 +167,16 @@ def register(app, core):
         if not isinstance(body, dict):
             raise HTTPException(status_code=400, detail="Send {rev, data}")
         return await run_in_threadpool(save, core, x_project, body.get("rev"), body.get("data"), getattr(w, "name", "") or "")
+
+    @app.get("/api/site/search")
+    def site_search(request: Request, q: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """Site study: find a place by name or address - the Lands Department's
+        location search (geodata.gov.hk), HK 1980 Grid coordinates back."""
+        core.require_project(request, x_project, "viewer", x_viewer_token)
+        q = (q or "").strip()[:200]
+        if not q:
+            return {"results": []}
+        return {"results": run_search(q)}
 
     @app.post("/api/gbp/xlsx")
     async def gbp_xlsx(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):

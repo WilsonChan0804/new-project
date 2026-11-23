@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-25", date: "23 Nov 2026",
+    items: [
+      "**Site study** (new page, beside Codes) - find the site on the Lands Department map (or the aerial photo), **Draw boundary** by clicking its corners or start from a **Rectangle**, and **Match area** scales it to the site area you give. Drag a corner to move it, click the dot on an edge to add one, right-click a corner to remove it.",
+      "Click an edge (or tick it) to mark a **street** and give its width: the **class of site** follows (B a corner on two streets, C on three; under 4.5 m does not count). **Send to GBP workbook** puts the area and class into step 1; the workbook has a **Site study** link back. Kept with the project, shared like the workbook.",
+    ],
+  },
+  {
     version: "2027-02-24", date: "23 Nov 2026",
     items: [
       "**GBP workbook: Clear** - each step has a **Clear** button and the top a **Clear all**, with **Undo** for 10 seconds. The workbook is kept with the project: everyone on it sees the same figures (members can change them), so Clear asks first.",

@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2027-02-24";
+const LWK_VERSION = "2027-02-25";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -249,6 +249,7 @@ async function afterSignIn() {
       mode.appendChild(mk("lwk-to-cal", "Calendar", "calendar.html", "Meetings, your tasks and issues by date - and in Outlook"));
       mode.appendChild(mk("lwk-to-folders", "Folders", "folders.html", "The project's files: folders on the server, pinned and starred documents"));
       mode.appendChild(mk("lwk-to-codes", "Codes", "codes.html", "Search the building codes: the Ordinance, PNAPs and Codes of Practice in the office's library"));
+      mode.appendChild(mk("lwk-to-site", "Site study", "site.html", "Site study: find the site on the map, draw its boundary at the site area, its streets"));
       mode.appendChild(mk("lwk-to-dash", "Dashboard", "dashboard.html", "Issues and tasks of this project"));
       chatBadge.on = false;
       setTimeout(chatBadge, 300);

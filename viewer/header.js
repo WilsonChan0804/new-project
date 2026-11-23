@@ -22,12 +22,13 @@ const TABS = [
   ["calendar", "Calendar", "calendar.html", "Meetings, tasks and issues by date"],
   ["folders", "Folders", "folders.html", "The project's files"],
   ["codes", "Codes", "codes.html", "Search the building codes: the summaries in the knowledge base, and the Ordinance, PNAPs and Codes of Practice in the library"],
+  ["site", "Site study", "site.html", "Site study: find the site on the map, draw its boundary at the site area, mark its streets"],
 ];
 
 const PAGE_OF = {
   "projects.html": "projects", "dashboard.html": "dashboard", "index.html": "sheets", "": "sheets",
   "model.html": "3d", "board.html": "board", "tasks.html": "tasks", "messenger.html": "chat",
-  "calendar.html": "calendar", "folders.html": "folders", "admin.html": "admin", "codes.html": "codes", "programme.html": "programme",
+  "calendar.html": "calendar", "folders.html": "folders", "admin.html": "admin", "codes.html": "codes", "programme.html": "programme", "site.html": "site",
 };
 
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")

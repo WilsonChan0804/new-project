@@ -168,7 +168,7 @@ function step1(q) {
       <div class="qk-bar"><span class="qk-non" style="width:${(c.share * 100).toFixed(1)}%">${c.share > 0.08 ? "Non-dom" : ""}</span><span class="qk-dom" style="width:${((1 - c.share) * 100).toFixed(1)}%">${c.share < 0.92 ? "Domestic" : ""}</span></div>
       <p class="qk-formula">Domestic PR = ${s.dom.pr} × [ 1 − ( ${c.nonPr.toFixed(2)} / ${s.non.pr} ) ] = <b>${c.domPr.toFixed(3)}</b>${q.area ? ` · total GFA ${f3(c.nonGfa)} + ${f3(c.domGfa)} = <b>${f3(c.total)} m²</b>` : ""}</p>`;
   }
-  return `<section class="qk-card" id="qk-site"><div class="qk-head"><i>1</i><h3>Site: plot ratio and site coverage</h3>${ctx.why("site")}<span class="spacer"></span>${clearBtn(1)}<button type="button" class="ghost qk-copy" data-copy="1">Copy</button></div>
+  return `<section class="qk-card" id="qk-site"><div class="qk-head"><i>1</i><h3>Site: plot ratio and site coverage</h3>${ctx.why("site")}<span class="spacer"></span><a class="ghost qk-study" href="site.html?project=${encodeURIComponent(new URLSearchParams(location.search).get("project") || "")}" title="Site study: draw the boundary on the map at the site area and mark its streets; it sends the area and class here">Site study ›</a>${clearBtn(1)}<button type="button" class="ghost qk-copy" data-copy="1">Copy</button></div>
     <div class="qk-grid">
       <div class="qk-in">
         ${seg("mode", q.mode, [["single", "Single use"], ["composite", "Composite use"]])}
