@@ -163,9 +163,25 @@ function recalc() {
   if (ppdWant < 6) lo -= dt.getUTCDate() - 1;            // a month or quarter scale starts on the 1st
   else lo -= (dt.getUTCDay() + 6) % 7;                   // a day or week scale on a Monday
   P.d0 = lo;
-  P.ppd = ppdWant;
+  P.ppd = P.view.zoom === "fit" ? fitPpd() || ppdWant : ppdWant;
   P.span = hi - lo + 1;
-  P.width = Math.max(Math.round(P.span * P.ppd), 400);
+  // the chart reaches the window's right edge, whatever the table's width
+  const room = (($("#pg-body") || {}).clientWidth || 0) - gridWidth();
+  P.width = Math.max(Math.round(P.span * P.ppd), 400, room);
+}
+/* the text beside a bar: the row's own choice (Properties / right-click >
+   Label), else Format > Beside the bars */
+const LABELS = [["party", "Responsible"], ["name", "Task name"], ["dates", "Start - finish"], ["namedates", "Name + dates"], ["finish", "Finish date"], ["pct", "% done"], ["none", "Nothing"]];
+function labelText(r, t) {
+  const F = P.d.format;
+  const own = t && t.label;
+  const d1 = fmt(r.start, false), d2 = fmt(r.finish, false);
+  if (r.milestone) {
+    if (!own) return r.name + (F.msdate ? " · " + d1 : "");
+    return { none: "", name: r.name, party: (t && t.party) || r.name, dates: d1, finish: d1, namedates: r.name + " · " + d1, pct: r.name }[own] ?? r.name;
+  }
+  const k = own || (r.summary ? "name" : F.label || "party");
+  return { none: "", name: r.name, party: (t && t.party) || r.name, dates: `${d1} - ${d2}`, namedates: `${r.name} · ${d1} - ${d2}`, finish: d2, pct: r.pct + "%" }[k] ?? r.name;
 }
 const X = (iso, end) => { const d = PC.dayOf(iso); return d === null ? 0 : (d - P.d0 + (end ? 1 : 0)) * P.ppd; };
 const dayAtX = (x) => P.d0 + Math.floor(x / P.ppd);
@@ -431,9 +447,7 @@ function paintChart() {
     const fc = fillOf(t);
     const cls = isC ? (solid || !fc ? " crit" : " critO") : "";
     const fillAttr = fc && !(isC && (solid || !fc)) ? ` style="fill:${esc(fc)}"` : "";
-    const labTxt = r.milestone ? (r.name + (F.msdate ? " · " + fmt(r.start, false) : ""))
-      : r.summary ? r.name
-      : { none: "", name: r.name, party: t.party || r.name, dates: `${fmt(r.start, false)} - ${fmt(r.finish, false)}`, pct: r.pct + "%" }[F.label || "party"];
+    const labTxt = labelText(r, t);
     const label = P.view.labels && labTxt ? `<text x="${(r.milestone ? x0 + 9 : x1 + 6)}" y="${cy + 4}" class="b-lab">${esc(labTxt)}</text>` : "";
     if (r.summary) {
       const p = F.summary === "bar" ? `<rect x="${x0}" y="${cy - 4}" width="${Math.max(2, x1 - x0)}" height="8" rx="2"/>` : `<path d="M${x0} ${cy - 5}H${x1}V${cy + 4}L${x1 - 6} ${cy}H${x0 + 6}L${x0} ${cy + 4}Z"/>`;
@@ -955,6 +969,7 @@ function paintProps() {
     <p class="muted pg-dates">${fmtLong(r.start)}${r.milestone ? "" : " - " + fmtLong(r.finish)} · total float ${r.tf} d · free float ${r.ff} d${r.critical ? ` · <b class="pg-crit-t">critical</b>` : ""}</p>
     <div class="pg-2"><label>Responsible<input data-f="party" value="${esc(t.party || "")}" placeholder="e.g. Architect, BD"${ro}></label>
       <label>Bar colour <span class="pg-cl"><input type="color" data-f="color" value="${esc(t.color || fillOf(t) || "#4a78a8")}"${ro}><button type="button" class="ghost" data-f="color-x" title="The category's colour"${ro}>&times;</button></span></label></div>
+    <label>Beside this bar<select data-f="label"${ro}><option value="">As in Format (${esc((LABELS.find((x) => x[0] === (P.d.format.label || "party")) || ["", ""])[1])})</option>${LABELS.map(([v, n]) => `<option value="${v}"${t.label === v ? " selected" : ""}>${n}</option>`).join("")}</select></label>
     <div class="pp-chk"><label class="row-check"><input type="checkbox" data-f="bold"${t.style && t.style.bold ? " checked" : ""}${ro}> Bold</label><label class="row-check"><input type="checkbox" data-f="italic"${t.style && t.style.italic ? " checked" : ""}${ro}> Italic</label></div>
     <label>Notes<textarea data-f="notes" rows="2"${ro}>${esc(t.notes || "")}</textarea></label>
     <h4>Predecessors</h4><div class="pp-deps">${t.deps.map(depRow).join("") || `<p class="muted">None - type them in the Predecessors column, or drag between bars.</p>`}</div>
@@ -1011,6 +1026,7 @@ function wireProps(el, ids) {
   on("finish", "change", (e) => { if (apply(id, "finish", e.target.value)) changed(); else paintProps(); });
   on("pct", "change", (e) => { if (apply(id, "pct", e.target.value)) changed(); else paintProps(); });
   on("fnet", "change", (e) => set(() => { if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) t.fnet = e.target.value; else delete t.fnet; }));
+  on("label", "change", (e) => set(() => { if (e.target.value) t.label = e.target.value; else delete t.label; }));
   on("party", "change", (e) => set(() => { t.party = e.target.value.trim().slice(0, 120); }));
   on("notes", "change", (e) => set(() => { t.notes = e.target.value.trim().slice(0, 2000); }));
   on("color", "change", (e) => set(() => { t.color = e.target.value; }));
@@ -1444,7 +1460,7 @@ async function pdfDlg() {
     const cells = {};
     for (const k of P.d.columns) if (k !== "name") cells[k] = k === "bstart" || k === "bfinish" || k === "var" ? (v ? (k === "var" ? (v.finish > 0 ? "+" : "") + v.finish + " d" : fmt(k === "bstart" ? v.bstart : v.bfinish)) : "") : cell(r, t, k);
     return { name: r.name, level: r.level, summary: r.summary, milestone: r.milestone, ms_end: !!r.ms_end, critical: r.critical, start: r.start, finish: r.finish, pct: r.pct,
-      bstart: v ? v.bstart : "", bfinish: v ? v.bfinish : "", cells, label: f.labels.checked ? t.party || "" : "", fill: r.summary ? "" : fillOf(t) };
+      bstart: v ? v.bstart : "", bfinish: v ? v.bfinish : "", cells, label: f.labels.checked ? labelText(r, t) : "", fill: r.summary ? "" : fillOf(t) };
   });
   const links = [];
   for (const t of tasks()) {
@@ -1551,7 +1567,7 @@ async function formatDlg() {
       <label>Durations in${sel("unit", [["d", "days (10 d)"], ["w", "weeks (2 w)"]])}</label></div>
     <div class="pg-2"><label>Rows${sel("rowh", [["compact", "Compact"], ["normal", "Normal"], ["roomy", "Roomy"]])}</label>
       <label>Text size${sel("text", [["11.5", "Small"], ["12.5", "Normal"], ["14", "Large"]])}</label></div>
-    <div class="pg-2"><label>Beside the bars${sel("label", [["party", "Responsible"], ["name", "Task name"], ["dates", "Start - finish"], ["pct", "% done"], ["none", "Nothing"]])}</label>
+    <div class="pg-2"><label>Beside the bars${sel("label", LABELS)}</label>
       <label>Summary bars${sel("summary", [["bracket", "Bracket (MS Project)"], ["bar", "Solid bar"]])}</label></div>
     <label>Gridlines${sel("grid", [["unit", "At every scale step (week / month)"], ["month", "Monthly (years on month or quarter scales)"]])}</label>
     ${chk("zebra", "Banded rows (zebra)")}${chk("shade", "Shade weekends and holidays")}${chk("today", "Today line")}
@@ -1586,7 +1602,7 @@ function ctxMenu(ev, id) {
     if (n) {
       h += sep + item("in", "Indent", "Alt+Shift+→") + item("out", "Outdent", "Alt+Shift+←") + item("up", "Move up", "Alt+↑") + item("down", "Move down", "Alt+↓");
       h += sep + (n > 1 ? item("link", "Link in order (finish to start)") : "") + item("unlink", n > 1 ? "Unlink them" : "Remove its predecessors");
-      h += sep + item("cat", "Category ▸") + item("color", "Colour ▸");
+      h += sep + item("cat", "Category ▸") + item("color", "Colour ▸") + item("label", "Label beside the bar ▸");
     }
   } else if (n) h += item("copy", "Copy", "Ctrl+C");
   if (sums.length) h += sep + item("fold", "Fold") + item("unfold", "Unfold");
@@ -1604,6 +1620,7 @@ function ctxMenu(ev, id) {
     const k = r.dataset.cm;
     if (k === "cat") return catMenu(r);
     if (k === "color") return colorMenu(r);
+    if (k === "label") return labelMenu(r);
     closePop();
     ({
       props: openProps, above: () => insertAt("above"), below: () => add("task"), ms: () => add("milestone"),
@@ -1624,6 +1641,16 @@ function catMenu(anchor) {
     if (r.dataset.c === "__edit") return categoriesDlg();
     before();
     for (const id of P.sel) { const t = taskOf(id); if (r.dataset.c) t.cat = r.dataset.c; else delete t.cat; }
+    changed();
+  });
+}
+function labelMenu(anchor) {
+  const el = pop(anchor, `<div class="pg-cmenu"><div class="po-row" data-lb="">As in Format</div>${LABELS.map(([v, n]) => `<div class="po-row" data-lb="${v}">${n}</div>`).join("")}</div>`, 200);
+  el.addEventListener("click", (e) => {
+    const r = e.target.closest("[data-lb]");
+    if (!r) return;
+    closePop(); before();
+    for (const id of P.sel) { const t = taskOf(id); if (r.dataset.lb) t.label = r.dataset.lb; else delete t.label; }
     changed();
   });
 }
@@ -1839,7 +1866,7 @@ function wirePanZoom() {
       sheet.style.setProperty("--cols", gridTemplate());
       sheet.style.setProperty("--gw", gridWidth() + "px");
     };
-    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); saveView(); render(); };
+    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); saveView(); recalc(); render(); };
     addEventListener("pointermove", mv); addEventListener("pointerup", up);
   });
 }
@@ -1864,12 +1891,19 @@ function setPpd(ppd, anchorDay, clientX) {
 
 /* ------------------------------------------------------------------ start */
 
-function fit() {
-  const w = $("#pg-body").clientWidth - gridWidth() - 30;
+function fitPpd() {
+  const body = $("#pg-body");
+  if (!body || !body.clientWidth || !P.sched) return 0;
+  const w = body.clientWidth - gridWidth() - 30;
   const lo = PC.dayOf(P.sched.start), hi = PC.dayOf(P.sched.finish);
-  if (lo === null) return;
+  if (lo === null) return 0;
+  return Math.max(0.3, Math.min(40, w / Math.max(14, (hi - lo) * 1.1 + 21)));
+}
+function fit() {
+  const p = fitPpd();
+  if (!p) return;
   P.view.zoom = "fit";
-  P.view.ppd = Math.max(0.3, Math.min(40, w / Math.max(14, (hi - lo) * 1.1 + 21)));
+  P.view.ppd = p;
   saveView(); recalc(); render();
   $("#pg-body").scrollLeft = 0;
 }
@@ -1991,7 +2025,7 @@ async function start() {
     ev.preventDefault();
     const x0 = ev.clientX, w0 = gridWidth();
     const mv = (e) => { P.view.gw = Math.max(220, w0 + e.clientX - x0); $("#pg-sheet").style.setProperty("--gw", gridWidth() + "px"); };
-    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); saveView(); render(); };
+    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); saveView(); recalc(); render(); };
     addEventListener("pointermove", mv); addEventListener("pointerup", up);
   });
   // the chart
@@ -2078,7 +2112,7 @@ async function start() {
       }
     } catch (e) {}
   });
-  addEventListener("resize", () => { const ph = phone(); if (ph !== P.phone) { P.phone = ph; P.can = !!P.doc.can_edit && !ph; } render(); });
+  addEventListener("resize", () => { const ph = phone(); if (ph !== P.phone) { P.phone = ph; P.can = !!P.doc.can_edit && !ph; } recalc(); render(); });
   addEventListener("beforeunload", (ev) => { if (P.pending) { save(); ev.preventDefault(); ev.returnValue = ""; } });
 }
 function midDay() {

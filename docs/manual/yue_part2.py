@@ -199,6 +199,7 @@ PART = [
         '**Set up > Title block and remarks：** 標題（例如 *Indicative Project Programme*）、project、客戶、revision、日期、prepared by、status date，同埋印喺圖下面嘅編號備註。',
         '**Export > PDF：** A3、A4 或者 A1，橫或者直，日期範圍、baseline、critical path、link、進度同 status line。會照頁面顯示嘅欄同行嚟印（摺埋嘅 summary 都係摺埋），連顏色、線款同 category，向下頁數唔夠會自動加，橫向可以揀 **Pages wide** 1 - 6（或者 Auto）：橫向後面嘅頁會重複 ID 同工序名。每頁都有 title block、圖例，同埋顯示嗰頁行數同日期嘅頁碼。副本會放喺 **Folders > 00 BIM > Exports > Programme**。',
         '**Export > MS Project XML** 出一個 MS Project 開得到嘅檔（File > Open）：工序、層級、工期、連類型同 lag 嘅 link、% done、備註、負責人同連假期嘅日曆。**Import** 可以讀返呢種檔，或者直接讀 **.mpp** 檔，亦可以揀用埋佢嘅工作週；constraint 都會讀（start no earlier than、finish no earlier than）。Manually scheduled 嘅 summary 會跟返佢下面工序嘅日子。Related link 會唔包括（MS Project 冇呢種 link）。冇得直接 export .mpp：只有 MS Project 先寫得 .mpp，所以 export XML 之後喺 MS Project 開，再 File > Save As > .mpp。Server 要有 Java 同 MPXJ 先讀到 .mpp（run.bat 會裝 MPXJ）。',
+        '**Bar 旁邊嘅字：** 成個進度表喺 Format > Beside the bars 揀；個別工序就 right-click > **Label beside the bar**（或者 Properties > Beside this bar）：工序名、開始 - 完成、名 + 日子、完成日、負責人、% done 或者乜都唔顯示。拖表同 chart 之間嗰條線可以調闊窄，線右邊嘅欄會收埋喺 chart 下面。',
         '**幾個進度表：** 工具列最左邊嘅名列出個 project 所有進度表（master programme、某一期、某個方案）。**+ New programme** 可以開一個空白嘅，或者複製而家開緊嗰個；改名同刪除都喺同一個選單（第一個唔可以刪；刪咗嘅會留喺 server）。每個都有自己嘅版本記錄、baseline 同顯示設定。',
         '**Finish no earlier than**（Properties）：工序唔可以早過呢日完成，例如 handover 或者批文日期，即係 MS Project 嘅 FNET。',
         '**Export > CSV** 用 Excel 開（中文照顯示）。**Import** 亦讀 CSV - 我哋自己嘅，或者由 Excel、MS Project 存出嚟嘅（Name、Duration、Start、Predecessors、Outline Level ...）- 取代成個進度表或者加喺後面。',

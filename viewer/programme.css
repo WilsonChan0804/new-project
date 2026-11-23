@@ -36,7 +36,8 @@
 .pg-ch { position: sticky; top: 0; z-index: 5; background: var(--panel-2); border-bottom: 1px solid var(--line-2); }
 .pg-gb { position: sticky; left: 0; z-index: 4; background: var(--panel); border-right: 2px solid var(--line-2); min-height: 100%; }
 .pg-cb { position: relative; }
-.pg-grip { position: absolute; right: -5px; top: 0; bottom: 0; width: 9px; cursor: col-resize; z-index: 7; }
+.pg-gh, .pg-gb { overflow: hidden; }
+.pg-grip { position: absolute; right: 0; top: 0; bottom: 0; width: 9px; cursor: col-resize; z-index: 7; }
 .pg-grip:hover { background: rgba(242, 128, 34, .25); }
 
 .pg-r { display: grid; grid-template-columns: var(--cols); height: var(--rh, 30px); align-items: stretch; border-bottom: 1px solid var(--line-soft); font-size: var(--fs, 12.5px); }

@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-13", date: "23 Nov 2026",
+    items: [
+      "**Programme: the divider** - dragging the line between the table and the chart now hides the table's right-hand columns under the chart, as in MS Project, and the chart always reaches the right edge (Fit stays fitted).",
+      "**Programme: a label for each bar** - right-click rows > **Label beside the bar**, or Properties > **Beside this bar**: task name, start - finish, **name + dates**, **finish date**, responsible, % done or nothing - for those rows only. Format > Beside the bars sets the rest, and the PDF prints the same.",
+    ],
+  },
+  {
     version: "2027-02-12", date: "22 Nov 2026",
     items: [
       "**Knowledge base: source documents open** - a link to the BD's PDF or page (marked ↗) now opens in a new tab - the Library's own copy when it has that document - instead of \"www.bd.gov.hk refused to connect\" inside the page.",
