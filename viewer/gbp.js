@@ -17,6 +17,7 @@ import { api, headers, project } from "./nav.js";
 import { esc, toast } from "./tasks-util.js";
 import * as C from "./gbpcore.js";
 import { B1, SRC, APP151, ITEM_LIMITS } from "./gbptables.js";
+import { renderQuick, wireQuick, showStep } from "./gbpquick.js";
 import { loadModel, roomRows, areaRows, widthsOf, MAP_DEFAULTS, MAP_LABELS } from "./gbpmodel.js";
 
 const PARTS = [
@@ -36,6 +37,10 @@ function guideLine(part) {
   return `<div class="gb-guide"><b>Why? 依據</b> ${g.slice(0, 4).map((x) => `<button type="button" class="gb-gl" data-guide="${esc(x.url + (x.anchor ? "#" + x.anchor : ""))}" title="Open the guide beside the workbook">&#128218; ${esc(x.title)}${x.heading ? " · " + esc(x.heading) : ""}</button>`).join("")}</div>`;
 }
 const KEEP = "lwk-viewer:gbp-part";
+const KEEP_MODE = "lwk-viewer:gbp-mode";
+G.mode = "quick";                 // "quick" (the Quick check) | "full" (the project workbook, from the model)
+const modeBar = () => `<div class="gb-mode"><button type="button" data-gmode="quick" class="${G.mode === "quick" ? "on" : ""}">&#9889; Quick check</button><button type="button" data-gmode="full" class="${G.mode === "full" ? "on" : ""}">&#128203; Project workbook <small>from the model</small></button></div>`;
+const whyChips = (part) => { const g = G.guides[ALIAS[part] || part] || []; return g.length ? `<span class="qk-why">${g.slice(0, 2).map((x) => `<button type="button" class="gb-gl" data-guide="${esc(x.url + (x.anchor ? "#" + x.anchor : ""))}" title="Why? Open the guide beside the workbook">&#128218; ${esc(x.title)}</button>`).join("")}</span>` : ""; };
 
 const D = () => {
   const d = G.wb.data;
@@ -327,12 +332,24 @@ function partMap() {
 
 function render() {
   if (!G.el || !G.wb) return;
+  if (G.mode === "quick") {
+    const keep = (G.el.querySelector(".gb-qhost") || {}).scrollTop || 0;
+    // the field being typed in, to be focused again after the repaint (Tab to the next one)
+    const ae = document.activeElement, attrs = ["data-qf", "data-qo", "data-qr", "data-qw", "data-qt", "data-f"];
+    const sel = ae && G.el.contains(ae) ? attrs.filter((k) => ae.hasAttribute(k)).map((k) => `[${k}="${CSS.escape(ae.getAttribute(k))}"]`).join("") : "";
+    G.el.innerHTML = `<div class="gb-qwrap">${modeBar()}<div class="gb-qhost"></div></div>`;
+    renderQuick(G.el.querySelector(".gb-qhost"), D(), { can, why: whyChips });
+    G.el.querySelector(".gb-qhost").scrollTop = keep;
+    const again = sel && G.el.querySelector((ae.tagName || "").toLowerCase() + sel);
+    if (again) { again.focus(); if (again.select && again.type !== "range") try { again.select(); } catch (e) {} }
+    return;
+  }
   const R = calc();
   G.last = R;
   const nav = PARTS.map((p) => `<button type="button" class="gb-p${p.id === G.part ? " on" : ""}" data-part="${p.id}"${p.soon ? " disabled title=\"Next release\"" : ""}>${esc(p.label)}${R.st[p.id] ? " " + chip(R.st[p.id]) : p.soon ? ' <small class="muted">next</small>' : ""}</button>`).join("");
   const body = { site: partSite, gfa: partGfa, moe: partMoe, stairs: partStairs, map: partMap }[G.part](R);
   const keepScroll = (G.el.querySelector(".gb-main") || {}).scrollTop || 0;
-  G.el.innerHTML = `<aside class="gb-nav">${nav}<div class="gb-meta">${can() ? "" : "<b>View only</b><br>"}${G.wb.at ? `Last change ${esc(G.wb.by || "")}, ${esc(G.wb.at.replace("T", " ").slice(0, 16))}` : "Nothing saved yet"}<br><span class="gb-saved"></span></div>
+  G.el.innerHTML = `<aside class="gb-nav">${modeBar()}${nav}<div class="gb-meta">${can() ? "" : "<b>View only</b><br>"}${G.wb.at ? `Last change ${esc(G.wb.by || "")}, ${esc(G.wb.at.replace("T", " ").slice(0, 16))}` : "Nothing saved yet"}<br><span class="gb-saved"></span></div>
       <div class="gb-acts"><button type="button" class="ghost" id="gb-xlsx">Excel (all)</button></div></aside>
     <section class="gb-main">${guideLine(G.part)}${body}<p class="gb-disc">Worked from the code tables as transcribed (each result names its source). Check against the current documents before submission; the Building Authority's decision prevails.</p></section>`;
   G.el.querySelector(".gb-main").scrollTop = keepScroll;
@@ -343,6 +360,7 @@ function wire() {
   el.addEventListener("click", (ev) => {
     const t = ev.target.closest("button");
     if (!t) return;
+    if (t.dataset.gmode) { G.mode = t.dataset.gmode; try { localStorage.setItem(KEEP_MODE, G.mode); } catch (e) {} render(); return; }
     if (t.dataset.part) { G.part = t.dataset.part; try { localStorage.setItem(KEEP, G.part); } catch (e) {} render(); return; }
     if (t.dataset.guide) { if (G.opts.openGuide) G.opts.openGuide(t.dataset.guide); return; }
     if (t.dataset.clause) { if (G.opts.findClause) G.opts.findClause(t.dataset.clause); return; }
@@ -441,20 +459,25 @@ async function readModel() {
 export async function mountGbp(el, opts) {
   G.el = el; G.opts = opts || {};
   try { const p = localStorage.getItem(KEEP); if (p && PARTS.some((x) => x.id === p && !x.soon)) G.part = p; } catch (e) {}
+  try { const m = localStorage.getItem(KEEP_MODE); if (m === "full" || m === "quick") G.mode = m; } catch (e) {}
   el.innerHTML = `<p class="muted" style="padding:20px">Opening the workbook ...</p>`;
   if (!project()) { el.innerHTML = `<p class="muted" style="padding:20px">Choose a project first (the project list at the top).</p>`; return; }
   await Promise.all([loadWb(), readModel(), api("/api/kb/gbp").then((r) => { G.guides = r.parts || {}; }).catch(() => {})]);
   if (opts && opts.part) showPart(opts.part, true);
   wire();
+  wireQuick(el, () => setTimeout(() => changed(), 0));     // after the focus has moved on (Tab), so it is kept
   render();
+  if (opts && opts.part && G.mode === "quick") setTimeout(() => showStep(ALIAS[opts.part] || opts.part), 50);
 }
 /* open a part (from a guide's gbp: link, or ?sec=) */
 export function showPart(id, quiet) {
   id = ALIAS[id] || id;
   if (!PARTS.some((p) => p.id === id && !p.soon)) return false;
   G.part = id;
-  try { localStorage.setItem(KEEP, id); } catch (e) {}
-  if (!quiet && G.wb) render();
+  // the Quick check has site, exits and staircases; GFA by floor is the project workbook's
+  G.mode = id === "gfa" || id === "map" ? "full" : "quick";
+  try { localStorage.setItem(KEEP, id); localStorage.setItem(KEEP_MODE, G.mode); } catch (e) {}
+  if (!quiet && G.wb) { render(); if (G.mode === "quick") setTimeout(() => showStep(id), 50); }
   return true;
 }
 export const _test = { calc, sheetsOf, G };

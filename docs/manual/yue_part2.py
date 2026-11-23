@@ -327,6 +327,7 @@ PART = [
         '**Edit** 可以改文件資料、標做 **superseded**（已被取代：搜尋唔再用，但保留紀錄）或者刪走。',
     ]),
     H3('GBP workbook'),
+    P('**Quick check** 一打開就係：三個步驟，每步輸入幾樣，答案用大字顯示。**1 Site** - 揀單一或綜合用途、地盤類別（A 一條街、B 街角、C 三條街）、高度（揀級別、打米數，或者由街道同天台水平計）同地盤面積，就有最高上蓋面積同地積比率，仲有示意圖；綜合用途用滑桿揀非住宅地積比率，就會顯示剩低幾多住宅地積比率（reg 21：住宅 PR = 上限 × (1 − 非住宅 PR / 佢嘅上限)）。**2 Occupancy and exits** - 用途（Table B1）同可用樓面面積（或者人數）計出佔用人數，同 Table B2 要幾多個出口、幾闊；加入每道出口門嘅闊度就可以檢查（較闊嘅只計最窄嗰道嘅 1.5 倍，B7.3）。**3 Staircase discharge** - 地面以上嘅樓層（層數、用途、面積）、有冇花灑、樓梯數目同闊度，計出每條樓梯要承擔幾多人，對比 Table B3 / B4 嘅容量，唔夠會建議點改。走火距離（B11）未包括：個掣會搵條文。**Copy** 會將嗰步嘅數字變成文字；數值會跟 project 儲存。**Project workbook** 係詳細版，由 model 讀入，喺下面。'),
     P('**Codes > GBP workbook** 幫你計而家個 project 嘅 GBP 計算：每個 project 一本，儲喺 server，成個 project 嘅人都用得。佢會讀 publish 放喺 plan sheet 上面嘅 room 同 area（連 Revit parameter，同公司嘅 Revit GBP setting 一樣），任何數都可以自己打或者改 - 冇 model 嘅 project 都用得。'),
     UL([
         '**Site, PR & SC：** 地盤面積、地盤類別、街道最低同最高水平同天台水平（或者直接填高度），會計出平均街道水平同建築物高度，再根據 **Cap. 123F 附表一** 計出准許上蓋面積同地積比，同埋准許上蓋面積同 GFA（住用同非住用；綜合用途：reg 21 嘅總和）。實際上蓋面積來自 Area-Type SC-D0 / SC-ND0 嘅 area（SC-D1/2、SC-ND1/2 扣減）。',

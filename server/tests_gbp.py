@@ -53,6 +53,11 @@ class Store(unittest.TestCase):
         self.assertEqual(b["rev"], 2)
         self.assertEqual(len(os.listdir(os.path.join(self.tmp, "P1", "gbp", "history"))), 2)
 
+    def test_quick_check_kept(self):
+        a = gbp.save(self.core, "P1", 0, {"quick": {"mode": "composite", "area": 1000, "npr": 0.61}}, "Ann")
+        self.assertEqual(gbp.load(self.core, "P1")["data"]["quick"]["npr"], 0.61)
+        self.assertEqual(a["rev"], 1)
+
     def test_bad_part(self):
         with self.assertRaises(HTTPException):
             gbp.save(self.core, "P1", 0, {"site": "not a table"}, "Ann")

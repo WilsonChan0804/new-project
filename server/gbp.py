@@ -23,7 +23,7 @@ from starlette.concurrency import run_in_threadpool
 
 MAX_BYTES = 8 * 1024 * 1024
 KEEP_HISTORY = 20
-PARTS = ("site", "map", "rooms", "areas", "stairs", "storeys", "b1", "limits", "notes", "sanitary", "fire", "green", "eva")
+PARTS = ("quick", "site", "map", "rooms", "areas", "stairs", "storeys", "b1", "limits", "notes", "sanitary", "fire", "green", "eva")
 
 
 def _dir(core, pid, sub=""):

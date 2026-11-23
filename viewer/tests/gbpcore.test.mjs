@@ -1,6 +1,7 @@
 /* node viewer/tests/gbpcore.test.mjs - the GBP workbook's calculations
    against the worked numbers of the office's Revit GBP setting (a 5-storey
    school, site class B) and the code tables. */
+import * as C from "../gbpcore.js";
 import { site, band, gfa, siteCoverage, occupancy, exitsFor, checkExits, effectiveTotal, stairCapacity, discharge, storeyLoads, num, yes, ceilPersons, compositeIndex } from "../gbpcore.js";
 import { FIRST_SCHEDULE, B1, B2, APP151 } from "../gbptables.js";
 
@@ -102,6 +103,20 @@ ok(D("S-1").capacity === 632 && d2.stairs.find((x) => x.mark === "S-1").capacity
 ok(stairCapacity(1100, 3, { sprinkler: true }).value === 484 && stairCapacity(1750, 12, {}).value === 898 + 2 * 62, "B4 1050-1200 x 3 = 484; B3 1700 x 12 = 1022");
 ok(stairCapacity(1000, 3).status === "check" && stairCapacity(2000, 2).status === "check", "narrower than 1050 or wider than 1800: check");
 ok(stairCapacity(1200, 5, { sprinkler: true, up: true }).value === Math.floor(632 * 0.8), "exit upwards x 0.8 (B12.6)");
+
+// --- Quick check (his reference tool's worked examples)
+{
+    const s = C.site({ area: 1000, cls: "A", kind: "composite", height: 15 });
+  const c = C.compositePr(s, 0.61);
+  ok(c.domPr === 2.897 && c.domGfa === 2897.4 && c.nonGfa === 610 && c.total === 3507.4, `composite A, <=15 m, 1000 m2, non-dom PR 0.61 -> dom PR ${c.domPr}, GFA ${c.domGfa}, total ${c.total}`);
+  const r = C.occupancy([{ area: 450, key: "1b-2" }])[0];
+  const e = C.exitsFor(r.load);
+  ok(r.load === 50 && e.n === 2 && e.routes === 2100 && e.doors === 1750 && e.route === 1050 && e.door === 850, "Flats 450 m2 / 9 -> 50 persons: 2 exits, 2100 / 1750 mm, each 1050 / 850");
+  const pass = C.checkExits(50, { widths: [1050, 1050] });
+  ok(pass.status === "ok", "two 1050 mm exit doors pass for 50 persons");
+  const q = C.quickStairs([{ floors: 10, key: "7", area: 1350 }], { stairs: 2, width: 1050, sprinkler: true });
+  ok(q.total === 450 && q.per === 225 && q.storeys === 10 && q.capacity === 708 && q.status === "ok", `10 floors x 45 persons, 2 stairs of 1050 mm, sprinklered: ${q.per} each vs ${q.capacity} (Table B4)`);
+}
 
 console.log(`\n${n - fails} of ${n} passed`);
 if (fails) process.exit(1);

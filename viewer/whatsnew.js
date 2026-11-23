@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-20", date: "23 Nov 2026",
+    items: [
+      "**GBP workbook: Quick check** - opens first, three steps with big figures and pictures: **1 Site** (class A / B / C, height, area: max SC and PR, a street / site / building sketch; composite use with a slider for the non-domestic PR and the domestic PR left, reg 21), **2 Occupancy and exits** (Table B1 use and area: persons, Table B2 exits and widths, then check your door widths), **3 Staircase discharge** (floors, sprinklers, staircases and width: each staircase's share against Table B3 / B4). Kept with the project; **Copy** puts a step's figures as text.",
+      "The detailed workbook from the model is one click away (**Project workbook**), and the guides' workbook buttons open the matching step.",
+    ],
+  },
+  {
     version: "2027-02-19", date: "23 Nov 2026",
     items: [
       "**Programme: zoom a step at a time** - Ctrl or Shift + wheel over the chart zooms a little each notch (it jumped straight to Fit), and new **− / +** buttons beside Day / Week / Month / Quarter do the same (or the − and + keys). Your zoom is kept for next time.",

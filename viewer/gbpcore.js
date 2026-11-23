@@ -312,3 +312,49 @@ export function worst(statuses) {
   const s = (statuses || []).filter(Boolean);
   return s.includes("fail") ? "fail" : s.includes("check") ? "check" : s.length && s.every((x) => x === "na") ? "na" : s.length ? "ok" : "check";
 }
+
+/* ---------------------------------------------------------- Quick check
+   Composite building (B(P)R reg 21) on the quick page: the non-domestic
+   part's plot ratio uses a share of what it may have; the domestic part
+   gets the rest. s: site(...) of the building ({dom, non, area}). */
+export function compositePr(s, nonPr) {
+  if (!s || !s.dom || !s.non) return null;
+  const nMax = s.non.pr, dMax = s.dom.pr, area = s.area || 0;
+  const n = Math.max(0, Math.min(nMax, Number(nonPr) || 0));
+  const share = nMax ? n / nMax : 0;
+  const domPr = Math.round(dMax * (1 - share) * 1000) / 1000;
+  const nonGfa = r3(n * area), domGfa = r3(dMax * (1 - share) * area);     // the GFA from the exact share
+  return { nonPr: n, nonMax: nMax, domMax: dMax, share, domPr, nonGfa, domGfa, total: r3(nonGfa + domGfa) };
+}
+
+/* floors -> persons -> the required staircases share them evenly
+   (B12.1): rows [{floors: n, key, area, persons (typed)}],
+   opts {stairs: n, width: mm, sprinkler, extra (own B1 keys)}. */
+export function quickStairs(rows, opts) {
+  const o = opts || {};
+  const out = { rows: [], storeys: 0, total: 0, per: 0, maxFloor: 0 };
+  for (const r of rows || []) {
+    const n = Math.max(1, Math.round(Number(r.floors) || 1));
+    const t = b1(r.key, o.extra);
+    const typed = r.persons != null && r.persons !== "" ? Math.max(0, Math.round(Number(r.persons))) : null;
+    const each = typed != null ? typed : t && t.factor ? ceilPersons((Number(r.area) || 0) / t.factor) : null;
+    out.rows.push(Object.assign({}, r, { floors: n, factor: t ? t.factor : null, use: t ? t.use : "", each, sum: each == null ? null : each * n }));
+    out.storeys += n;
+    if (each != null) { out.total += each * n; out.maxFloor = Math.max(out.maxFloor, each); }
+  }
+  const k = Math.max(1, Math.round(Number(o.stairs) || 2));
+  out.stairs = k;
+  out.per = Math.ceil(out.total / k);
+  const cap = stairCapacity(o.width || 1050, out.storeys, { sprinkler: !!o.sprinkler });
+  out.capacity = cap.value;
+  out.table = cap.table;
+  out.note = cap.note || cap.why || "";
+  out.status = cap.value == null ? "check" : out.per <= cap.value ? "ok" : "fail";
+  // the least width that would take it, with this many staircases
+  out.suggest = null;
+  for (const w of STAIR_BANDS) {
+    const c = stairCapacity(w, out.storeys, { sprinkler: !!o.sprinkler });
+    if (c.value != null && out.per <= c.value) { out.suggest = { width: w, capacity: c.value }; break; }
+  }
+  return out;
+}
