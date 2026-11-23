@@ -81,6 +81,28 @@ keywords: JPN 1, green and innovative buildings, 環保及創新樓宇, balcony,
 
     **中譯（非官方）：** 政府會監察設施的使用，並會就違反以下豁免條件採取執法行動（包括檢控）：(a) 不得圍封露台及露台下的有蓋地方；(b) 內置浴室及洗手間的排氣口不得通往露台；或 (c) 空中花園及平台花園須指定只供業主、租客及其訪客專用。
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 1–3 | Aim: life-cycle approach, renewable / recycled materials, lower energy use, less C&D waste; incentive list reviewed continually. |
+| 4–5 | **BO exemptions** (on application, Appendix A criteria): (a) balconies (residential); (b) wider common corridors and lift lobbies (residential); (c) communal **sky gardens** (residential); (d) communal **podium gardens** (non-residential); (e) **acoustic fins**; (f) **wing walls, wind catchers and funnels**. |
+| 6 | BO exemptions may be given **before** lease modification and premium (subject to the TPO). |
+| 7 | **New land sale sites** with GFA / SC limits: lease clause may allow the same exemptions **without premium**, if design acceptable to the Director of Lands. |
+| 8 | **Existing leases**: same exemptions may apply; if a **storey / height** limit would be breached, apply for lease modification. |
+| 9 | **Balconies** under a lease: by exemption clause or by lease modification with **premium** and fee. Other features exempted (with or without a clause) if excluded by BA and acceptable to LandsD, except: (a) wider corridors / lobbies in **houses without a common staircase**; (b) sky gardens: **sitting-out only**, no recreational facilities except elderly-friendly equipment, **no commercial use**; (c) podium gardens: no commercial use, **no shop fronts directly abutting**. LandsD may add conditions. |
+| 10 | Where para. 9 conflicts with [JPN 4](jpn-4.md) (Oct 2021) on existing leases, **para. 9 prevails** until JPN 4 is revised. |
+| 11 | Check lease conditions; DLO enquiry reply normally **30 days**; via centralised processing, DLO informs within **8 weeks** (non-BC III) or **10 weeks** (BC III). |
+| 12 | Lease exemptions require **BA's exemption first**; apply for lease modification **in parallel** with the BD submission; send approved plans and the fee receipt to DLO. |
+| 13 | **PlanD** uses the same criteria, subject to OZP / DPAP height and SC limits; if exceeded, apply to the **TPB for minor relaxation** (where provided). |
+| 14–15 | Previously approved schemes: Class A / B amendment guidelines; enquiries to the District Planning Office. |
+| 16 | Applies to new projects **without an OP** yet. |
+| 17–19 | Submit through normal channels; BO exemptions by **modification application with documents and undertaking**; enquiries to the Chief Building Surveyor. |
+| 20 | **No OP** until the **undertaking** (App. A para. 2(a)) is **registered in the Land Registry**. |
+| 21–22 | **Enforcement / prosecution** for: enclosing balconies or the covered area below; bathroom exhausts opening onto balconies; sky / podium gardens not exclusively for owners, tenants and visitors. Developers must warn purchasers. |
+| 23–24 | BD, LandsD and PlanD act separately; JPN does not fetter the Government's lease rights. |
+
+
 ## Figures 圖則 {#figures}
 
 <figure markdown>

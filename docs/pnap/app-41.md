@@ -71,6 +71,21 @@ keywords: BFA, barrier free access, 無障礙, 暢通無阻, PNAP 112, B(P)R 72,
 | App. A | Ramp waiver in A&A works: **no control** over the area **+** co-owners' or OC's **consent refused or unobtainable** **+** ground beam **constraint**. |
 | App. B | ACBFA: chaired by **AD/NB1**; Commissioner for Rehabilitation, ArchSD, an AP, a lay member and **3 representatives** of people with physical, visual and hearing impairments. |
 
+## Appendices C–J: Design Manual amendments 設計手冊修訂 {#appendices-c-j}
+
+| App. | Date 日期 | Content 內容 | Where on this site 本網站 |
+|---|---|---|---|
+| C | Nov 2012 | Amendments to the Design Manual: BFA 2008 | [BFA 2008](../codes/bfa-2008.md) and Divisions pages |
+| D | Sep 2015 | Amendments | same |
+| E | Apr 2017 | Amendments | same |
+| F | Jun 2019 | Amendments | same |
+| G | Oct 2020 | Amendments | same |
+| H | Dec 2021 | Amendments | same |
+| I | May 2024 | Amendments (incorporated in the **2024 Edition**) | same |
+| J | Jun 2025 | Amended **Chapter 6** — recommended **elderly-friendly** design requirements (active ageing, autonomy, social interaction) | [BFA Ch. 5–6](../codes/bfa-ch-5-6.md) · [DMUA 2026](../codes/dmua-2026.md) |
+
+All are incorporated in the **Design Manual 2008 (2025 Edition)** on BD's website (para. 12); the BFA pages here summarise the consolidated text. Mandatory elderly-friendly requirements now in [B(P)R 73](../regulations/bpr-71-73.md) from **1 Aug 2026** ([APP-175](app-175.md)). 各修訂已納入 2025 年版手冊。
+
 ## Worked example 例子 {#worked-example}
 
 !!! example "Illustrative only 只作說明"

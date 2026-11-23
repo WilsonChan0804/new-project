@@ -124,6 +124,25 @@ keywords: ADV-33, essential information, 重要資料, plan submissions, general
 
 <small>The list continues in the PNAP. GFA / SC calculations for exempted areas must be shown on plans. 清單在原文續有其他項目；豁免面積的計算須在圖則上顯示。</small>
 
+## Appendices B and C: structural and drainage checklists 結構及排水清單 {#appendices-b-c}
+
+Each structural checklist has **Part A Administration**, **Part B Documents** (Design Document **Part I synopsis and essential information**, **Part II detailed analysis**), and **Part C Plans**. 各結構清單分行政、文件及圖則三部分。
+
+| App. | Checklist 清單 | Key items 主要項目 |
+|---|---|---|
+| **B1** | Foundation plans 地基圖則 | Forms BA4, BA5, BA6, BA16; fee ([APP-55](app-55.md)); **2 signed sets of plans + 1 set of documents** ([ADM-8](adm-8.md), [APP-141](app-141.md)); **extra sets for referrals**: Scheduled Areas 1, 2, 4 (1 + 1), **railway protection** (2), Scheduled Area 5 (2 + 1), North Lantau (1 + 1), slopes / retaining walls / deep excavation / tunnels (1 + 1), culverts / nullahs (3), airport (1), structures over streets (2), highway structures (1 + 1), sea walls (1 + 1), reclamation / piers (2 + 2), public drains / water mains (1) ([APP-24](app-24.md), [APP-30](app-30.md), [APP-61](app-61.md), [APP-62](app-62.md), [APP-134](app-134.md)). Documents: foundation type, codes and editions, materials, geotechnical parameters, groundwater, design assumptions, **effects on adjoining buildings / slopes** with precautions and monitoring; loads (dead, imposed, wind, earth, water); computer program statements signed by RSE / RGE, assumptions, input graphics; combined stress checks, **final set table**, capacities, load combinations, margins of safety ([APP-18](app-18.md), B(C)R 15) |
+| **B2** | Excavation and lateral support 挖掘及側向承托 | Same administration and referral pattern; ELS design, monitoring and precautionary measures ([APP-57](app-57.md)) |
+| **B3** | Superstructure 上蓋結構 | Synopsis (structural system, loads, codes), detailed analysis, framing plans ([ADM-6](adm-6.md), [ADM-19](adm-19.md) App. B fundamentals) |
+| **B4** | Curtain wall details 幕牆細節 | Administration, documents, detailed design; App. A / B to the checklist ([Glass Code](../codes/glass-2018.md)) |
+| **B5** | Glass balustrades 玻璃欄杆 | Synopsis, detailed design, plans (sample drawings B8) |
+| **B6** | Metal cladding 金屬覆層 | Sample drawings B9 |
+| **B7** | Metal ceiling / grille / louvre 金屬天花／格柵／百葉 | Sample drawings B10 |
+| **B11–B12** | Sample drawings: supports for ducts, fans, AHUs; curtain wall embeds 樣本圖則 | — |
+| **C1** | **Drainage plans** 排水圖則 | Forms BA5, **BA8 / BA8A**, BA16, BD24; **2 signed coloured sets** with Annex C1 confirmation; documents for BA16, manhole structural details (separate submission except A&A), **soakaway percolation tests** (B(SSFP&D)R 90), septic tank / treatment plant calculations (EPD ProPECC PN 5/93), **DIA / SIA** for DSD, third-party consent for off-site private drains. On plans: public sewers / drains from DSD; **terminal manholes** near the boundary with disconnecting traps, ventilated (regs. 52(2), 57); trade effluent, grease traps, **petrol interceptors** ([APP-46](app-46.md)); pipe sizes, **falls (Table 29)**, flow directions; no acute angles in manholes (reg. 49(2)); **drop pipes** where inverts differ > **600 mm**; hatch boxes in water gathering grounds (reg. 47A); leakage collection near slopes ([APP-76](app-76.md)); **no manholes in refuse rooms**; cast-iron airtight covers, **double-sealed inside buildings** (reg. 56(7)); no cross-connection of foul and surface water; manholes / cleaning eyes **≤ 60 m** (reg. 55(2)); rainwater pipes **≥ 65 mm** (reg. 32(3)); cantilevers drained at **≥ 1:75** ([APP-68](app-68.md)); paving falls **≥ 1:80** (B(C)R 33(3), [APP-125](app-125.md)); **150 mm** step between internal floor and external ground / roof or extra channels ([Cap. 123I](../regulations/bsfpwr-123i.md)) |
+| **C2** | Typical drainage modifications / exemptions 常見排水變通 | Information needed for BA16 applications on drainage |
+| **C3** | Sample drainage drawings 排水樣本圖則 | — |
+
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"

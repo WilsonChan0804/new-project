@@ -132,6 +132,33 @@ keywords: APP-2, gross floor area, 總樓面面積, GFA measurement, voids, non-
 
 <small>Conditions: anti-abuse design (e.g. up-stand beams, large glazing facing outside), compliance with OZP and lease, and an undertaking to designate the voids in the DMC. 條件：防止濫用的設計、符合分區計劃大綱圖及地契，以及承諾在公契中訂明為中空位置。</small>
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+| Para. 段 | Requirement 規定 |
+|---|---|
+| 1 | GFA = area within the **outer surface of external walls** at each floor; areas **not floored over** are included (B(P)R 23(3)(a)). |
+| 2 | **Voids** may be excluded by modification (subject to [APP-151](app-151.md) pre-requisites for (a)–(g); 10 % cap for (f), (g)): (a) in front of cinema / theatre balconies; (b) banking halls; (c) shopping arcades, total voids **≤ 10 %** of arcade GFA; (d) cocklofts in single-staircase buildings' ground storey; (e) auditoria, sports halls, squash courts, school halls, religious institutions; (f) **main common entrance lobbies** of non-domestic buildings; (g) duplex flats / houses meeting **App. A**. |
+| 3 | **Split levels** differing **< 1 m** may be treated as one level; larger differences: clarify with BD first. |
+| 4 | Modification favourably considered (pre-requisites for all except (e); cap for (a)–(d)): (a) **chimney shafts**; (b) **filtration plant rooms** for hotel pools or water features; (c) **SMATV room ≤ 1.2 × 1.2 m** ([APP-42](app-42.md) para. 33); (d) inspectable **pipe / air ducts** for non-essential plant; (e) the same for **essential** plant; (f) plant rooms for **environmentally friendly systems** (rain / grey water recycling, solar battery rooms). |
+| 5 | **Refuge floors** complying with the [FS Code](../codes/fire-safety-code-2011.md) may be excluded. |
+| 6 | **Curtain walls** (B(C)R s.26): measure GFA and SC to the **structure** if: not part of the structure; RC **dwarf wall ≥ 300 mm**; projection **≤ 200 mm** (domestic) / **≤ 250 mm** (non-domestic; hotels count as non-domestic); glass **external reflectance ≤ 20 %** (sketches App. B); not for industrial buildings with small workshop units. |
+| 7 | Curtain walls on existing façades in **wholesale conversions** may project over streets (BO s.31(1) exemption) if BEAM Plus **40 % in EU and IEQ**: HKGBC registration letter and undertaking; Provisional Assessment before consent; Final Assessment within **6 months** of BA14 acknowledgment. |
+| 8 | No curtain walls on existing balconies over a public street or on localised façade portions; permitted curtain walls over streets are not GFA / SC. |
+| 9 | **Cladding** ≤ **90 mm** (≤ **75 mm** on NSPEW) disregarded for measurement; never beyond the site boundary; refurbishment over streets needs s.31(1) exemption. |
+| 10 | Check **lease conditions** for curtain walls / claddings over public streets. |
+| 11 | B(P)R 23(3)(b) **plant rooms** ("any similar service"): fire control centre, water tanks, switch rooms, meter rooms, transformer rooms, generator, pump, telephone, cable riser, CO₂, hose reel, sewage treatment, smoke extraction — premises and size **justified**; for houses: no duplication, minimum area, consider consolidation. |
+| 12 | Enclosing walls and protected lobbies solely serving disregarded rooms also disregarded; wall thickness normally **≤ 100 mm**. |
+| 13 | A/C and heating plant rooms: APP-151 pre-requisites and **10 % cap**. |
+| 14 | **Staircases, lift shafts, vertical ducts** counted on every floor they pass (except refuge floors), unless they **solely** serve non-accountable floors. |
+| 15–16 | **Car parks and PTT**: BA's discretion on case merits (design, infrastructure, density, bulk), referring to the Commissioner for Transport, statutory plans and **HKPSG**. |
+| 17 | Parking / loading on **open areas or podium roofs** generally not GFA; otherwise consider (App. C): public vs private; lease requirements for **Government Accommodation** or **HKHS / URA subsidised flats** (letter from HKHS / URA; provisions agreed with TD); above vs below ground; size; **EV charging-enabling**; deep basements; [APP-111](app-111.md) minimum design. |
+| 18 | **Percentage disregarded** — see the [car park table](#key-table-car-parks-and-loadingunloading-para-18-18). |
+| 19 | **Effective dates** (new plans and major revisions; not existing car parks): 18(a) underground **public** car parks — **1 Mar 2017**; **18(b)** and **18(c) above-ground public** car parks — **1 Nov 2025**; 18(d) and 18(e) — **1 Aug 2023**. **EV charging-enabling requirements** (App. C para. 4) — new developments submitted on or after **1 Nov 2025** (earlier approvals: Dec 2023 version). |
+| 20 | **Public transport terminus**: per PlanD, **GFA-accountable** unless the town plan or planning approval says otherwise. |
+| 21 | **Covered bicycle parking** required by lease and designated common area may be exempted from GFA. |
+
+
+
 ## Explanation 淺白解釋 {#explanation}
 
 === "English"
