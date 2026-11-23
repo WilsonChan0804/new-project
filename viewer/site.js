@@ -13,6 +13,7 @@ import { toast } from "./tasks-util.js";
 import * as S from "./sitecore.js";
 import { site as bprSite } from "./gbpcore.js";
 import { OZP, OZP_PORTAL } from "./ozptables.js";
+import * as MS from "./sitemass.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -66,7 +67,7 @@ function pruneRoads(s) {
 function save() {
   if (!CAN) return;
   clearTimeout(saveT);
-  $("#st-saved") && ($("#st-saved").textContent = "Saving …");
+  for (const id of ["#st-saved", "#ms-saved"]) { const e = $(id); if (e) e.textContent = "Saving …"; }
   saveT = setTimeout(push, 700);
 }
 async function push(again) {
@@ -82,9 +83,9 @@ async function push(again) {
     else if (!WB.data.quick && quick) WB.data.quick = quick;
     return push(true);
   }
-  if (!res.ok) { $("#st-saved").textContent = "Not saved"; toast((body && body.detail && (body.detail.message || body.detail)) || "Not saved", true); return; }
+  if (!res.ok) { for (const id of ["#st-saved", "#ms-saved"]) { const e = $(id); if (e) e.textContent = "Not saved"; } toast((body && body.detail && (body.detail.message || body.detail)) || "Not saved", true); return; }
   WB.rev = body.rev; push.quickSent = null;
-  $("#st-saved").textContent = "Saved with the project";
+  for (const id of ["#st-saved", "#ms-saved"]) { const e = $(id); if (e) e.textContent = "Saved with the project"; }
 }
 
 /* ---------- the map */
@@ -469,12 +470,9 @@ function notesBox(pl) {
 async function ozpPut(plan, zone, values, src) {
   OFFICE = await api("/api/ozp", { method: "PUT", body: JSON.stringify({ plan, zone, values, src }) });
 }
-function planCards(s, areaM2, cls) {
-  const pl = s.plan || {}, ls = s.lease || {}, dis = CAN ? "" : " disabled";
-  const z = zoneOf(pl), PP = planOf(pl.plan), P = PP && PP.builtIn;
-  const inp = (grp, k, v, ph, w) => `<input type="number" step="any" min="0" data-${grp}="${k}" value="${esc(v == null ? "" : v)}" placeholder="${esc(ph || "")}"${dis}${w ? ` style="width:${w}px"` : ""}>`;
-  const plans = [...new Set([...Object.keys(OZP), ...Object.keys(OFFICE.plans)])].map((k) => `<option value="${esc(k)}">`).join("");
-  const zones = PP ? Object.keys(PP.zones).map((k) => `<option value="${esc(k)}">`).join("") : "";
+/* the development potential rows (B(P)R, OZP, lease; the strictest) */
+function potentialOf(s, areaM2, cls) {
+  const pl = s.plan || {}, ls = s.lease || {};
   // B(P)R from the height: the OZP or lease height less the site level
   const bh = [pl.bh, ls.bh].map(Number).filter((x) => x > 0);
   const top = bh.length ? Math.min(...bh) : null;
@@ -482,6 +480,19 @@ function planCards(s, areaM2, cls) {
   const B = areaM2 && cls && h > 0 ? bprSite({ area: areaM2, cls: cls.cls, kind: "domestic", height: h }) : null;
   const bpr = B && B.status === "ok" ? { dpr: B.dom.pr, npr: B.non.pr, sc: B.dom.sc } : {};
   const rows = S.potential({ area: areaM2, bpr, ozp: { dpr: pl.dpr, npr: pl.npr, pr: pl.pr, sc: pl.sc, bh: pl.bh, storeys: pl.storeys }, lease: ls });
+  return { rows, B, h };
+}
+function siteAreaOf(s) {
+  const a = S.area(s.pts), n = s.pts.length;
+  return n >= 3 ? (s.target > 0 && Math.abs(a - s.target) < 0.05 ? s.target : a) : s.target || null;
+}
+function planCards(s, areaM2, cls) {
+  const pl = s.plan || {}, ls = s.lease || {}, dis = CAN ? "" : " disabled";
+  const z = zoneOf(pl), PP = planOf(pl.plan), P = PP && PP.builtIn;
+  const inp = (grp, k, v, ph, w) => `<input type="number" step="any" min="0" data-${grp}="${k}" value="${esc(v == null ? "" : v)}" placeholder="${esc(ph || "")}"${dis}${w ? ` style="width:${w}px"` : ""}>`;
+  const plans = [...new Set([...Object.keys(OZP), ...Object.keys(OFFICE.plans)])].map((k) => `<option value="${esc(k)}">`).join("");
+  const zones = PP ? Object.keys(PP.zones).map((k) => `<option value="${esc(k)}">`).join("") : "";
+  const { rows, B, h } = potentialOf(s, areaM2, cls);
   const fmt = (r, v) => (v == null ? "–" : r.unit === "m²" ? f1(v) : r.unit === "%" ? f1(v) : r.unit === "mPD" ? f1(v) : String(v));
   return `<section class="st-card" id="st-plan">
       <div class="st-head"><b>3 · Planning and lease</b><a class="st-link" href="${OZP_PORTAL}" target="_blank" rel="noopener">OZP portal ›</a></div>
@@ -666,5 +677,24 @@ function wireFind() {
   if (s.pts.length >= 3) fit();
   else if (s.view && s.view.c) map.setView(s.view.c, s.view.z || 16);
   draw(); panel(); tools();
+  MS.init({
+    study, save, can: () => CAN, map: () => map, L: L_, siteArea: () => siteAreaOf(study()),
+    potential: () => { const s2 = study(); return potentialOf(s2, siteAreaOf(s2), s2.pts.length >= 3 ? clsOf(s2) : null).rows; },
+    sendToWorkbook: ({ gfaTotal, height }) => {
+      const q = WB.data.quick || (WB.data.quick = {});
+      q.gfa = Object.assign({}, q.gfa || {}, { total: gfaTotal, use_permitted: false });
+      q.hmode = "m"; q.height = height;
+      push.quickSent = Object.assign({}, push.quickSent || {}, { gfa: q.gfa, hmode: "m", height });
+      save();
+    },
+  });
+  const setMode = (m) => {
+    for (const b of document.querySelectorAll(".st-mode [data-mode]")) b.classList.toggle("on", b.dataset.mode === m);
+    stopModes(); MS.show(m === "mass"); if (m !== "mass") { draw(); panel(); tools(); }
+    try { sessionStorage.setItem("lwk-viewer:site-mode", m); } catch (e) {}
+  };
+  document.querySelector(".st-mode").addEventListener("click", (ev) => { const b = ev.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });
+  let m0 = "site"; try { m0 = new URLSearchParams(location.search).get("mode") || sessionStorage.getItem("lwk-viewer:site-mode") || "site"; } catch (e) {}
+  if (m0 === "mass") setMode("mass");
   window.__site = { study, S, map: () => map }; // for the tests
 })();

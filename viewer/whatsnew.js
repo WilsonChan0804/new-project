@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-01", date: "23 Nov 2026",
+    items: [
+      "**Site study 2 · Massing** - add a **podium** (the site set back) and **towers** (a rectangle of the area you give) standing on it; drag a block's corners or ✥ on the map. Each block is a stack of floor groups: use (domestic, non-domestic, clubhouse, car park, E&M, refuge, lobby, void), storeys, storey height, the share counted as GFA and the concessions per floor.",
+      "**Live figures against what governs** (B(P)R / OZP / lease from Site): domestic, non-domestic and total GFA, site coverage, height in mPD and storeys - red when over. **Refuge floors** (FS Code B18): from which storey a refuge floor is needed, or a refuge roof up to 40 storeys; the storey due shows green in 3D.",
+      "**3D view**, coloured by use; **OBJ** export (SketchUp, Rhino, Revit), **PNG**, and **Send GFA and height to the GBP workbook**.",
+    ],
+  },
+  {
     version: "2027-02-28", date: "23 Nov 2026",
     items: [
       "**Site study: + Add street** - type the street's name (and width), then click the boundary edges along it on the map; ⌖ picks more edges later, × removes the street.",
