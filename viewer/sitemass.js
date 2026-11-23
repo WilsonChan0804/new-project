@@ -746,7 +746,7 @@ function makeScene(THREE, Orbit, host) {
       if (bh && bh.value != null) { line(bh.value - lv, 0xcf222e, true); labels.push({ x: -far[0], y: -far[1], z: bh.value - lv, t: `${f1(bh.value)} mPD limit (${esc(bh.by)})`, cls: "lim" }); }
     } else {
       cam = persp;
-      if (first || mode !== "3d") { persp.position.set(-span * 2.0, -span * 2.4, zmax * 0.9 + span); ctl.target.set(0, 0, zmax / 3); first = false; }
+      if (first || mode !== "3d") { const d = Math.max(span, zmax * 0.8, 90); persp.position.set(-d * 2.0, -d * 2.4, zmax * 0.9 + d * 1.2); ctl.target.set(0, 0, zmax / 3); first = false; }
       ctl.update();
     }
   };

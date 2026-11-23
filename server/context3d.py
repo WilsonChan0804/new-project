@@ -210,7 +210,7 @@ def find_tiles(lat, lng, r, cache_dir, prog=None):
 
 
 def max_tiles(r):
-    return int(max(160, min(2000, 160 * (r / 300.0) ** 2)))
+    return int(max(300, min(8000, 400 * (r / 300.0) ** 2)))
 
 
 JOBS = {}
