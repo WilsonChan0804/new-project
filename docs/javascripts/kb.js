@@ -247,3 +247,57 @@
   // Material instant navigation
   if (window.document$ && window.document$.subscribe) window.document$.subscribe(function () { addBack(); });
 })();
+
+/* ---------- 3. Document-name tooltips on links ----------
+ * Links to other pages carry data-doc="<title>" (added by hooks/autolink.py).
+ * Desktop: shown on mouse hover. Phone / tablet: press and hold the link.
+ */
+(function () {
+  "use strict";
+  var tip = null, timer = null, longPressed = false, hideTimer = null;
+  function ensure() {
+    if (tip) return tip;
+    var st = document.createElement("style");
+    st.textContent = ".kb-doctip{position:fixed;z-index:1000;max-width:min(360px,calc(100vw - 24px));padding:6px 10px;border-radius:6px;" +
+      "background:var(--md-default-fg-color,#222);color:var(--md-default-bg-color,#fff);font-size:.72rem;line-height:1.35;" +
+      "box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .12s}.kb-doctip.on{opacity:.96}";
+    document.head.appendChild(st);
+    tip = document.createElement("div"); tip.className = "kb-doctip"; tip.setAttribute("role", "tooltip");
+    document.body.appendChild(tip);
+    return tip;
+  }
+  function show(a) {
+    var t = ensure(); t.textContent = a.getAttribute("data-doc");
+    var r = a.getBoundingClientRect();
+    t.style.left = "0px"; t.style.top = "0px"; t.classList.add("on");
+    var w = t.offsetWidth, h = t.offsetHeight;
+    var x = Math.max(12, Math.min(r.left, window.innerWidth - w - 12));
+    var y = r.top - h - 8; if (y < 8) y = r.bottom + 8;
+    t.style.left = x + "px"; t.style.top = y + "px";
+  }
+  function hide() { if (tip) tip.classList.remove("on"); }
+  function link(e) { return e.target && e.target.closest ? e.target.closest("a[data-doc]") : null; }
+  document.addEventListener("mouseover", function (e) {
+    var a = link(e); if (!a) return;
+    clearTimeout(timer); timer = setTimeout(function () { show(a); }, 250);
+  });
+  document.addEventListener("mouseout", function (e) {
+    if (link(e)) { clearTimeout(timer); hide(); }
+  });
+  document.addEventListener("touchstart", function (e) {
+    var a = link(e); longPressed = false; if (!a) return;
+    clearTimeout(timer); clearTimeout(hideTimer);
+    timer = setTimeout(function () { longPressed = true; show(a); }, 450);
+  }, { passive: true });
+  ["touchend", "touchcancel", "touchmove"].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      clearTimeout(timer);
+      if (longPressed) { clearTimeout(hideTimer); hideTimer = setTimeout(hide, 2500); }
+    }, { passive: true });
+  });
+  document.addEventListener("click", function (e) {
+    if (longPressed && link(e)) { e.preventDefault(); longPressed = false; }
+  }, true);
+  document.addEventListener("contextmenu", function (e) { if (longPressed && link(e)) e.preventDefault(); });
+  window.addEventListener("scroll", hide, { passive: true });
+})();

@@ -15,6 +15,21 @@ from html import escape
 
 _PAGES = set()
 _URL = {}
+_TITLE = {}   # page url (no trailing slash / .html) -> readable title
+_H1 = re.compile(r'^#\s+(.+)$', re.M)
+_SEC = {}   # (page key, anchor) -> section heading
+_HID = re.compile(r'^#{2,4}\s+(.+?)\s*\{#([^}\s]+)[^}]*\}\s*$', re.M)
+
+def _clean_title(t):
+    t = re.sub(r'<br\s*/?>', ' · ', t)
+    t = re.sub(r'<[^>]+>', '', t)
+    return re.sub(r'\s+', ' ', t).strip()
+
+def _key(u):
+    u = u.split('#')[0].split('?')[0]
+    if u.endswith('index.html'): u = u[:-10]
+    if u.endswith('.html'): u = u[:-5]
+    return u.strip('/')
 from mkdocs.utils import get_relative_url
 _HEAD = re.compile(r'<(a|h[1-6]|code|pre|script|style|figcaption|nav|label|button|svg|title)\b', re.I)
 
@@ -23,6 +38,14 @@ def on_files(files, config):
     for f in files:
         if f.src_uri.endswith('.md'):
             _PAGES.add(f.src_uri); _URL[f.src_uri] = f.url
+            try:
+                txt = open(f.abs_src_path, encoding='utf-8').read()
+                m = _H1.search(txt)
+                if m: _TITLE[_key(f.url)] = _clean_title(m.group(1))
+                for h in _HID.finditer(txt):
+                    _SEC[(_key(f.url), h.group(2))] = _clean_title(re.sub(r'[*`]', '', h.group(1)))
+            except OSError:
+                pass
     return files
 
 def _bpr(n):
@@ -148,6 +171,28 @@ def on_page_content(html, page, config, files):
     html = re.sub(r'\x00A(.*?)\x01(.*?)\x00/A', mk_link, html)
     html = re.sub(r'\x00M(.*?)\x00/M', r'<strong class="kw-num">\1</strong>', html)
     html = re.sub(r'\x00K(.*?)\x00/K', r'<mark class="kw">\1</mark>', html)
+    # add the target document's title for hover / long-press tooltips
+    base = page.url if (use_dir and page.url.endswith('/')) else os.path.dirname(page.url)
+    def add_title(m):
+        tag, href = m.group(0), m.group(2)
+        if 'data-doc=' in tag or re.match(r'^(?:[a-z]+:|#|//)', href):
+            return tag
+        path = href.split('#')[0]
+        if not path:
+            return tag
+        k = _key(os.path.normpath(os.path.join(base, path)).replace(os.sep, '/'))
+        t = _TITLE.get(k)
+        frag = href.split('#')[1] if '#' in href else ''
+        sec = _SEC.get((k, frag)) if frag else None
+        if not t:
+            return tag
+        if k == _key(page.url):
+            if not sec: return tag
+            t = sec
+        elif sec:
+            t = t.split(' · ')[0] + ' › ' + sec
+        return tag[:-1] + f' data-doc="{escape(t, quote=True)}">'
+    html = re.sub(r'<a\b([^>]*?)\bhref="([^"]+)"[^>]*>', add_title, html)
     return html
 
 
