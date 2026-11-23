@@ -8,6 +8,13 @@ tags:
   - Site supervision 地盤監督
   - Demolition 拆卸
   - Site safety 地盤安全
+  - Plan submission & approval 呈交及審批
+  - Fire safety 消防安全
+  - Foundation 地基
+  - Maintenance access 維修通道
+  - Curtain wall & façade 幕牆及外牆
+  - Occupation permit 佔用許可證
+  - Heritage 文物
 summary: "BD circular letters grouped by topic, with status and links to the related Codes and PNAPs."
 keywords: circular letter, 通告函件, topic, 主題
 ---

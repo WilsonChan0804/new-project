@@ -8,6 +8,13 @@ tags:
   - Demolition 拆卸
   - Site supervision 地盤監督
   - Site safety 地盤安全
+  - Plan submission & approval 呈交及審批
+  - Foundation 地基
+  - Fire safety 消防安全
+  - Maintenance access 維修通道
+  - Curtain wall & façade 幕牆及外牆
+  - Lift 升降機
+  - Wind 風力
 summary: "Index of all Buildings Department circular letters, by year, with links to summaries and the original PDFs."
 keywords: circular letter, 通告函件, Buildings Department, 屋宇署, index
 ---

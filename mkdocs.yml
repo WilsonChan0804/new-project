@@ -90,6 +90,10 @@ nav:
       - Submission to OP + checklist 呈交至佔用許可證: guides/submission-to-op.md
       - Barrier-free & universal accessibility 無障礙及暢道通行: guides/barrier-free-access.md
       - Minor works 小型工程: guides/minor-works.md
+  - Specified forms 指明表格:
+      - forms/index.md
+      - New buildings & A&A 新建築物及改動加建: forms/nb-aa.md
+      - Minor works 小型工程: forms/mw.md
   - Timelines & workflows 時間表及流程: workflows.md
   - Circular letters 通告函件:
       - circulars/index.md
