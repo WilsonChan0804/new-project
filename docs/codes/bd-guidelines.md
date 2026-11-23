@@ -112,7 +112,7 @@ keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency
 
 | Guideline 指引 | Date 日期 | Audience 對象 | Section 章節 |
 |---|---|---|---|
-| Prevention of water seepage in new buildings 預防新建樓宇滲水 | Mar 2005 | Designers, contractors 設計者、承建商 | [Water seepage](#water-seepage) |
+| Prevention of water seepage in new buildings 預防新建樓宇滲水 | Mar 2005 — **superseded by [APP-105](../pnap/app-105.md) App. B (2024)** | Designers, contractors 設計者、承建商 | [Water seepage](#water-seepage) |
 | Maintenance and repair of drainage systems and sanitary fitments 排水系統及衞生設備保養 | — | Owners 業主 | [Drainage maintenance](#drainage-maintenance) |
 | Erection and maintenance of advertising signs 招牌豎設及保養 | — | Sign owners, APs 招牌擁有人 | [Advertising signs](#advertising-signs) |
 | Identification of abandoned or dangerous signboards 識別棄置或危險招牌 | — | Public, owners 公眾 | [Abandoned signboards](#abandoned-signboards) |
@@ -127,7 +127,10 @@ keywords: BD guidelines, RTTV, 住宅熱傳送值, residential energy efficiency
 
 ### Prevention of water seepage in new buildings (Mar 2005) 預防新建樓宇滲水指引 {#water-seepage}
 
-[PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/GWS.pdf) · 6 pages · general reference for designers and contractors. 供設計者及承建商參考。
+!!! danger "Superseded for new submissions 已被取代"
+    For new GBP, major revisions and A&A **submitted after 31 Mar 2025**, use the **enhanced guidelines in [APP-105 Appendix B](../pnap/app-105.md#paragraph-detail)** (Sep 2024). Key changes: waterproofing round bathtubs / showers **≥ 2 200 mm** (was 1 800 mm); behind basins / sinks / countertops **≥ 1 100 mm** or 300 mm above the fixture; whole kitchen floor incl. **open kitchens**; **sunken slab** rules; pipe-penetration membrane details; balconies and utility platforms treated as roofs; mock-up water tests for precast façades and curtain walls; RC roof guidance (C35 waterproof concrete, 150 mm slabs). The 2005 text below is kept for reference only. 2025 年 3 月 31 日後的呈交請用 APP-105 附錄 B；以下 2005 年內容只供參考。
+
+[PDF](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/GWS.pdf) · 6 pages · **2005**, superseded by APP-105 App. B. 2005 年版，已被取代。
 
 | Area 位置 | Design 設計 (paras.) | Workmanship and testing 施工及測試 |
 |---|---|---|
