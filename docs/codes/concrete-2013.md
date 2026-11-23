@@ -21,6 +21,10 @@ keywords: concrete code, 混凝土, cover, 保護層, exposure, grade, C30, rein
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e.pdf) · [Apr 2024 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e_amendment202404.pdf) · [Jun 2023](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e_amendment202306.pdf) · [Feb 2022](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/CoP_SUC2013e_amendment202202.pdf) |
     | **Last checked 最後核對** | 2026-11-21 against the 2020 Edition and the 2024 amendment |
 
+
+!!! tip "Latest amendments 最新修訂"
+    Amendments promulgated through [APP-142](../pnap/app-142.md#paragraph-detail): Feb 2022, Jun 2023 and Apr 2024 (Table 10.2 cube criteria, maturity method, strut-and-tie, nominal mixes). Check them with this page. 最新修訂見 APP-142。
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"

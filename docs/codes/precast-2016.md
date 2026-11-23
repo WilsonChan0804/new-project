@@ -21,6 +21,10 @@ keywords: precast, 預製, precast facade, 預製外牆, lifting insert, 吊裝,
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/cppcc2016e.pdf) · [Nov 2020 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/cppcc2016e_amendment202011.pdf) · [Jun 2026 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/cppcc2016e_amendment202606.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
+
+!!! tip "Latest amendments 最新修訂"
+    Amendments promulgated through [APP-174](../pnap/app-174.md#paragraph-detail): Nov 2020 and Jun 2026 (ASR, bearing strength with confinement factor, field joint water test). Check them with this page. 最新修訂見 APP-174。
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"

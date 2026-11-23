@@ -33,6 +33,10 @@ keywords: demolition, 拆卸, demolition plan, 拆卸圖則, stability report, h
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Demolition_e2004.pdf) · [Oct 2023 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Demolition_e2004_amendment_oct2023.pdf) · [Sep 2016 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/Demolition_e2004_amendment_sep2016.pdf) |
     | **Last checked 最後核對** | 2026-11-22 against the Code and both amendments |
 
+
+!!! tip "Latest amendments 最新修訂"
+    Amendments promulgated through [APP-170](../pnap/app-170.md#paragraph-detail): Sep 2016 and Oct 2023. Check them with this page. 最新修訂見 APP-170。
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"

@@ -33,6 +33,10 @@ keywords: site supervision, 地盤監督, supervision plan, 監督計劃書, SSP
     | **Source 原文** | [Code (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SS2009_e.pdf) · [TM (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/TMSS2009_e.pdf) |
     | **Last checked 最後核對** | 2026-11-22 against the Code (2024 Edition) and TM 2009 |
 
+
+!!! tip "Latest amendments 最新修訂"
+    Amendments promulgated through [APP-157](../pnap/app-157.md#paragraph-detail): Dec 2023 and Aug 2024 (2024 Edition, tower crane temporary works). Check them with this page. 最新修訂見 APP-157。
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"

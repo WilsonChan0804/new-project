@@ -66,6 +66,17 @@ keywords: ADM-18, site auditing, 地盤審查, BO s.22, surprise checks, perform
 | Spread footing / raft | Bearing stratum | Suitability of founding material |
 | Superstructure | Materials, reinforcement, concrete, canopies (see original) | Compliance with approved plans |
 
+### Performance-based site auditing flowchart (4/2001) 按表現審核流程 {#audit-frequency}
+
+The timings below come from the PDF flowchart, whose text extracts out of order, so check the figure.
+
+| Stage 階段 | First audit 首次審核 | Normal interval 一般相隔 | If performance is unsatisfactory 表現欠佳 | If performance is satisfactory 表現良好 |
+|---|---|---|---|---|
+| Foundation 地基 | **1 month** after piling starts | **2 months** | More frequent: **1 month** | Less frequent: **4 months** |
+| Superstructure 上蓋 | **3 months** after superstructure works start | **4 months** | More frequent: **2 months** | Less frequent, as BD decides |
+
+Auditing continues until all structural components are complete. Unacceptable audited works trigger more frequent audits.
+
 ## Whole picture 整體關係 {#whole-picture}
 
 | Topic 主題 | Where 文件 |

@@ -20,6 +20,10 @@ keywords: glass code, 玻璃, laminated glass, 夾層玻璃, tempered, 鋼化玻
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUG2018e.pdf) · [2020 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUG2018e_Amend2020.pdf) · [2024 amendment](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUG2018e_Amend2024.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
+
+!!! tip "Latest amendments 最新修訂"
+    Amendments promulgated through [APP-171](../pnap/app-171.md#paragraph-detail): Jul 2020 and Feb 2024 (retaining devices for structural sealant glazing, pressure test p2). Check them with this page. 最新修訂見 APP-171。
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"

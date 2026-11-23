@@ -24,6 +24,10 @@ keywords: steel code, 鋼結構, S355, design strength, deflection limit, 撓度
     | **Source 原文** | [English (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUOS2011.pdf) · [Apr 2026 amendment (PDF)](https://www.bd.gov.hk/doc/en/resources/codes-and-references/code-and-design-manuals/SUOS2011e_Amend202604.pdf) |
     | **Last checked 最後核對** | 2026-11-21 |
 
+
+!!! tip "Latest amendments 最新修訂"
+    Amendments promulgated through [APP-168](../pnap/app-168.md#paragraph-detail): Apr 2026 (welding of different grades, tall building acceleration, composite columns, footbridges). Check them with this page. 最新修訂見 APP-168。
+
 ## At a glance 重點摘要 {#at-a-glance}
 
 === "English"
