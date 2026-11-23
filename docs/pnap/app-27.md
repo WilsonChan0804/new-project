@@ -47,6 +47,27 @@ keywords: APP-27, gas water heater, 氣體熱水爐, B(P)R 35A, room-sealed, flu
 | Facing space 前方空間 | **≥ 1 500 mm** to facing wall or boundary (unless facing a street) ≥ 1 500 毫米 |
 | Not under 不可位於 | Fixed drying racks 晾衣架下方 |
 
+## Paragraph by paragraph (full) 逐段詳解 {#paragraph-detail}
+
+Checked against the BD copy, revision September 2019 (paras 2 and 11 amended; para. 12 added). 已按 2019 年 9 月版本核對。
+
+| Para. 段 | Content 內容 |
+|---|---|
+| 1–2 | B(P)R 35A requires provision for a **room-sealed gas water heater** in every bathroom. Other arrangements are considered on merit. |
+| 3 | Standard aperture **320 W × 420 H mm**, or **240 × 240 mm** where only a shower fits. |
+| 4 | Non-standard apertures are allowed if they suit a heater flue installed **before completion**, and can later be enlarged to standard size without cutting rebar or moving services (the enlargement zone must be discernible). |
+| 5(a) | In the clear face of an **external wall**, or venting into a permanently open, well-ventilated **balcony approach**. |
+| 5(b)–(e) | Clear internal area around it: 50 mm above, 100 mm each side, 150 mm below. Base **≥ 200 mm** above floor. **≥ 300 mm** from corners and other openings. **≥ 1500 mm** clear to a facing wall, building part or boundary, unless the boundary abuts a street. |
+| 5(f) | Not directly below fixed **clothes drying racks**. Fit manufacturer **flue terminal guards** if the heater has no overheating protector. |
+| 5(g)–(h) | The heater must not obstruct use of the room and must be accessible for operation and maintenance. Hot water pipe length per **Waterworks Regulation 19** (Cap. 102A). |
+| 6 | **Enclosed spaces** (light wells): no obstruction to vertical air flow; vents to open air **below the lowest aperture**, **≥ 0.05 m² per aperture**, no vent dimension < **200 mm**. Minimum plan dimension: **3 m** (≤ 10 storeys), **4 m** (11–19 storeys), **5 m** (≥ 20 storeys). 天井最小平面尺寸。 |
+| 7 | **Re-entrants**: plan width **≥ 1.5 m**; obstructions (e.g. tie beams) at the open end reduce the vertical open area by **≤ 20%** per storey; no obstruction to vertical air flow. |
+| 8 | **Confined cavities** (false ceilings): accessible, e.g. a **quick-release panel** with no tools needed; ventilated by **non-adjustable purpose-made louvres** that can't easily be blocked; follow the manufacturer's requirements. |
+| 9 | Appendix A shows the acceptable terminal location (dimensions K–Q as in para. 5). |
+| 10 | If no heater is fitted at construction, a standard aperture is still required. It may be sealed with **easily removable** plain concrete, brick or block, clearly discernible (e.g. recessed) from inside. |
+| 11 | See EMSD **Code of Practice GU03** (domestic gas water heaters up to 70 kW). |
+| 12 | **Exemption** (new 2019): the AP justifies it (e.g. design constraint) and the developer / owner undertakes that (a) **no town gas** (Gas Safety Ordinance Cap. 51) goes to the domestic part; (b) the **DMC** restricts gas installations and delivery of **LPG cylinders** to domestic units (excluding GU-marked disposable cassette cartridges); without a DMC, the restriction goes in the sale and purchase agreement, assignment and tenancy information; (c) **electric water heaters and electric / induction cookers** are installed in all units **before OP**. 豁免須承諾不供應煤氣並安裝電熱水爐及電磁爐。 |
+
 <!-- APSEC START -->
 ## APSEC clarifications 認可人士及註冊結構工程師委員會討論 {#apsec-clarifications}
 
