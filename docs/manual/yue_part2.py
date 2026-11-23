@@ -203,7 +203,7 @@ PART = [
         '**一次過郁幾條 bar：** 先揀幾行（Ctrl 或者 Shift + click），再拖其中一條 bar，全部會一齊郁同樣時間，佢哋之間嘅 link 照保留；撳一次 Undo 就全部還原。**Alt+← / Alt+→** 將揀咗嘅工序提早 / 押後一個工作日。工序唔可以早過佢嘅 predecessor 容許嘅日子，頁面會講有幾多個被頂住。',
         '**Bar 旁邊嘅字：** 成個進度表喺 Format > Beside the bars 揀；個別工序就 right-click > **Label beside the bar**（或者 Properties > Beside this bar）：工序名、開始 - 完成、名 + 日子、完成日、負責人、% done 或者乜都唔顯示。拖表同 chart 之間嗰條線可以調闊窄，線右邊嘅欄會收埋喺 chart 下面。',
         '**幾個進度表：** 工具列最左邊嘅名列出個 project 所有進度表（master programme、某一期、某個方案）。**+ New programme** 可以開一個空白嘅，或者複製而家開緊嗰個；改名同刪除都喺同一個選單（第一個唔可以刪；刪咗嘅會留喺 server）。每個都有自己嘅版本記錄、baseline 同顯示設定。',
-        '**Finish no earlier than**（Properties）：工序唔可以早過呢日完成，例如 handover 或者批文日期，即係 MS Project 嘅 FNET。',
+        '**Finish no earlier than**（Properties）：工序唔可以早過呢日完成，例如 handover 或者批文日期，即係 MS Project 嘅 FNET。拖 bar 會清走呢個日期（bar 會留喺你放嘅位置）。',
         '**Export > CSV** 用 Excel 開（中文照顯示）。**Import** 亦讀 CSV - 我哋自己嘅，或者由 Excel、MS Project 存出嚟嘅（Name、Duration、Start、Predecessors、Outline Level ...）- 取代成個進度表或者加喺後面。',
         '**Set up > Earlier versions** 列出最近 30 次儲存；有需要可以攞返舊版。',
     ]),

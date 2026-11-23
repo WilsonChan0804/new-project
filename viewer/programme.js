@@ -834,9 +834,13 @@ function chartDown(ev) {
       before();
       const want = PC.isoOf(PC.dayOf(r.start) + last);
       t.start = PC.isoOf(P.cal.dayAt(P.cal.ord(PC.dayOf(want))));
+      const hadFnet = !!t.fnet;
+      delete t.fnet;                     // dragged to a date: that date, not an old "finish no earlier than" (as MS Project)
       changed();
       const now = rowOf(id);
-      if (now.start > t.start) toast("Held later by its predecessor - change the link's lag to start it sooner");
+      if (now.start > t.start) toast(t.deps.some((d) => d.drive !== false) ? "Held later by its predecessor - change the link's lag to start it sooner"
+        : "Held later by the project start (Set up > Title block) - or a summary's link");
+      else if (hadFnet) toast("Its \"finish no earlier than\" date was cleared - the bar is where you put it");
     } else if (mode === "dur" && last) {
       before();
       t.dur = Math.max(1, P.cal.between(r.start, PC.isoOf(PC.dayOf(r.finish) + last)) + 1);
@@ -865,6 +869,7 @@ function moveTasks(ids, to) {
     const r = rowOf(id), t = taskOf(id);
     if (!r || !t || r.summary) continue;
     t.start = PC.isoOf(P.cal.dayAt(P.cal.ord(to(r))));
+    delete t.fnet;
     want.set(id, t.start);
   }
   changed();

@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-02-18", date: "23 Nov 2026",
+    items: [
+      "**Programme: dragging a task with a \"finish no earlier than\" date** (many come with it from MS Project) now moves it: the drag clears that date, as MS Project does, and says so. Before, the bar stayed and the message wrongly blamed a predecessor.",
+    ],
+  },
+  {
     version: "2027-02-17", date: "23 Nov 2026",
     items: [
       "**Programme: move several bars at once** - select rows (Ctrl or Shift + click), then drag one of their bars: they all move by the same time, links among them kept; one Undo puts them back. **Alt+← / Alt+→** moves the selection a working day. A task held by a predecessor outside the selection is reported.",
