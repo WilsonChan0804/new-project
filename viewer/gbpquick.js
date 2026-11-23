@@ -84,13 +84,26 @@ function sketch(q, R) {
   out += poly([P(b, -b, 0), P(b, b, 0), P(b, b, z), P(b, -b, z)], "qk-b-r");
   out += poly([P(-b, b, 0), P(b, b, 0), P(b, b, z), P(-b, b, z)], "qk-b-l");
   out += poly(top, "qk-b-t");
-  const t = (x, y, txt, cls = "") => `<text x="${x}" y="${y}" class="qk-lab ${cls}">${esc(txt)}</text>`;
-  const sp = P(0, S + st / 2, 0), hp = P(b, b, z / 2), ap = P(-S * 0.7, S * 0.2, 0);
-  out += t(sp[0] - 40, sp[1] + 18, "Street" + (R.s.mean != null ? ` · mean ${f2(R.s.mean)} mPD` : ""));
-  out += t(hp[0] + 10, hp[1], R.h != null ? `H ${f2(R.h)} m` : "Height ?", "qk-strong");
-  out += t(ap[0] - 70, ap[1] + 44, q.area ? `Site ${f0(q.area)} m²` : "Site area ?");
-  if (s.status === "ok") { const cp = P(-b, -b, z); out += t(cp[0] - 20, cp[1] - 10, `covers ≤ ${sc}%`, "qk-strong"); }
-  return `<svg class="qk-sketch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Street, site and building">${out}</svg>`;
+  // the labels sit outside the shapes; the drawing is framed to all of it, so nothing is cut
+  const box = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 };
+  const grow = (x, y) => { box.x0 = Math.min(box.x0, x); box.y0 = Math.min(box.y0, y); box.x1 = Math.max(box.x1, x); box.y1 = Math.max(box.y1, y); };
+  for (const m of out.matchAll(/points="([^"]+)"/g)) for (const pt of m[1].split(" ")) { const [x, y] = pt.split(",").map(Number); grow(x, y); }
+  const t = (x, y, txt, anchor = "middle", cls = "") => {
+    const w = txt.length * 6.6, x0 = anchor === "middle" ? x - w / 2 : anchor === "end" ? x - w : x;
+    grow(x0, y - 12); grow(x0 + w, y + 4);
+    return `<text x="${x}" y="${y}" text-anchor="${anchor}" class="qk-lab ${cls}">${esc(txt)}</text>`;
+  };
+  const tp = P(-b, -b, z), right = P(b, -b, z / 2), left = P(-S, S, 0);
+  const sts = streets.map((k2) => sideRect[k2].map(([x, y]) => P(x, y, 0)));
+  const low = sts.flat().reduce((a, p2) => (p2[1] > a[1] ? p2 : a), [0, -1e9]);
+  let lab = "";
+  if (s.status === "ok") lab += t(tp[0], tp[1] - 12, `covers ≤ ${sc}%`, "middle", "qk-strong");
+  lab += t(right[0] + 10, right[1] + 4, R.h != null ? `H ${f2(R.h)} m` : "Height ?", "start", "qk-strong");
+  lab += t(left[0] - 8, left[1] + 4, q.area ? `Site ${f0(q.area)} m²` : "Site area ?", "end");
+  lab += t(low[0], low[1] + 18, "Street" + (R.s.mean != null ? ` · mean ${f2(R.s.mean)} mPD` : ""));
+  out += lab;
+  const pad = 8, vb = [box.x0 - pad, box.y0 - pad, box.x1 - box.x0 + 2 * pad, box.y1 - box.y0 + 2 * pad].map((v) => Math.round(v));
+  return `<svg class="qk-sketch" viewBox="${vb.join(" ")}" role="img" aria-label="Street, site and building">${out}</svg>`;
 }
 // a small plan for each class of site: the site and its streets
 function clsIcon(k) {
