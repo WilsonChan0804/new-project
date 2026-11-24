@@ -215,3 +215,11 @@ body.st-units #st-tools, body.st-units .st-find, body.st-units #st-hits, body.st
 .un-walls select { font-size: 12px; }
 .ms-mix { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; } .ms-mix select { width: 90px !important; } .ms-mix input { width: 40px; }
 body.st-units .leaflet-control-container { display: none; }
+.un-room.sel { background: var(--accent-soft); }
+.un-room .un-nm { width: 96px; }
+.un-room .un-xy input, .un-room .un-wh input { width: 46px; }
+.un-room .un-xy { color: var(--muted); }
+.un-party { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.un-r { cursor: pointer; }
+.un-bigs { grid-template-columns: 1fr 1fr; }
+.un-bigs .st-big:first-child { grid-column: auto; }

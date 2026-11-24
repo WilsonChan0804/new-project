@@ -1,42 +1,69 @@
-/* Unit templates, after the sales brochure plans of recent Tseung Kwan O
- * flats (studio about 240 ft², 1-room about 285 ft², 2-room about 440 ft²,
- * 3-room about 700 ft²). Rows run from the corridor (first) to the façade
- * (last); widths and depths in metres. Adjust them to the project. */
-export const TEMPLATES = {
-  studio: {
-    name: "Studio", type: "studio", wall: 0.2, party: 0.2, part: 0.1, left: "party", right: "party",
-    rows: [
-      { depth: 1.9, rooms: [{ kind: "BATH", name: "Bath", w: 1.5 }, { kind: "OKIT", name: "Open kitchen", w: 1.8 }] },
-      { depth: 3.6, rooms: [{ kind: "LD", name: "Living / bed", w: 3.4 }] },
-    ],
-    extras: [{ kind: "up", w: 1.5, d: 1.0 }, { kind: "acp", w: 1.0, d: 0.6 }],
-  },
-  "1R": {
-    name: "1-room", type: "1R", wall: 0.2, party: 0.2, part: 0.1, left: "party", right: "party",
-    rows: [
-      { depth: 1.6, rooms: [{ kind: "BATH", name: "Bath", w: 1.4 }, { kind: "KIT", name: "Kitchen", w: 1.6 }] },
-      { depth: 2.6, rooms: [{ kind: "LD", name: "Living / dining", w: 3.1 }] },
-      { depth: 2.4, rooms: [{ kind: "BR", name: "Bedroom", w: 2.4 }, { kind: "STORE", name: "Wardrobe", w: 0.6 }] },
-    ],
-    extras: [{ kind: "bal", w: 1.6, d: 1.25 }, { kind: "up", w: 1.5, d: 1.0 }, { kind: "acp", w: 1.0, d: 0.6 }],
-  },
-  "2R": {
-    name: "2-room", type: "2R", wall: 0.2, party: 0.2, part: 0.1, left: "party", right: "party",
-    rows: [
-      { depth: 1.8, rooms: [{ kind: "KIT", name: "Kitchen", w: 1.8 }, { kind: "BATH", name: "Bath", w: 1.5 }, { kind: "ENTRY", name: "Entrance", w: 1.5 }] },
-      { depth: 2.6, rooms: [{ kind: "LD", name: "Living / dining", w: 5.0 }] },
-      { depth: 2.6, rooms: [{ kind: "MBR", name: "Bedroom 1", w: 2.7 }, { kind: "BR", name: "Bedroom 2", w: 2.2 }] },
-    ],
-    extras: [{ kind: "bal", w: 2.0, d: 1.2 }, { kind: "up", w: 1.5, d: 1.0 }, { kind: "acp", w: 1.2, d: 0.6 }],
-  },
-  "3R": {
-    name: "3-room", type: "3R", wall: 0.2, party: 0.2, part: 0.1, left: "party", right: "party",
-    rows: [
-      { depth: 2.0, rooms: [{ kind: "KIT", name: "Kitchen", w: 2.0 }, { kind: "BATH", name: "Bath", w: 1.5 }, { kind: "ENTRY", name: "Entrance", w: 1.3 }, { kind: "STORE", name: "Store", w: 0.9 }] },
-      { depth: 2.9, rooms: [{ kind: "LD", name: "Living / dining", w: 6.0 }] },
-      { depth: 2.6, rooms: [{ kind: "MBR", name: "Master bedroom", w: 2.8 }, { kind: "BR", name: "Bedroom 2", w: 3.1 }] },
-      { depth: 2.3, rooms: [{ kind: "BR", name: "Bedroom 3", w: 2.4 }, { kind: "ENS", name: "Ensuite", w: 1.5 }, { kind: "STORE", name: "Wardrobe", w: 1.9 }] },
-    ],
-    extras: [{ kind: "bal", w: 2.4, d: 1.3 }, { kind: "up", w: 1.5, d: 1.0 }, { kind: "acp", w: 1.2, d: 0.6 }, { kind: "acp", w: 1.2, d: 0.6 }],
-  },
+/* Unit templates traced from recent sales brochure plans (via Centanet):
+ * the room arrangement of each, scaled so that its saleable area matches the
+ * brochure's. Rooms are rectangles to the wall centrelines (m, x to the
+ * right, y down the page); `facade` is the window side, `partySides` the
+ * sides on other units. Adjust them to the project. */
+import { scaleTo, fromRows } from "./unitcore.js";
+
+const base = { wall: 0.2, party: 0.2, part: 0.1 };
+const R = (id, kind, name, x, y, w, h) => ({ id, kind, name, x, y, w, h });
+
+const RAW = {
+  "1R-B": Object.assign({}, base, {
+    name: "1-room (318 ft²)", type: "1R", ft2: 318, src: "after Park Silicon · Palo Springs, Tower 2A unit B, 318 ft²",
+    facade: "e", partySides: ["w", "s"],
+    rooms: [R("k", "OKIT", "Open kitchen", 0, 0, 1.6, 2.4), R("l", "LD", "Living / dining", 1.6, 0, 3.6, 2.4),
+      R("b", "BATH", "Bath", 0.5, 2.4, 1.6, 1.8), R("h", "LOBBY", "", 2.1, 2.4, 0.9, 1.0), R("m", "MBR", "Master bedroom", 3.0, 2.4, 2.2, 2.2)],
+    extras: [{ kind: "bal", x: 5.2, y: 0, w: 1.2, h: 1.7 }, { kind: "up", x: 5.2, y: 1.7, w: 1.2, h: 1.25 }, { kind: "acp", x: 5.2, y: 2.95, w: 1.2, h: 0.6 }, { kind: "pd", x: 5.2, y: 3.55, w: 0.4, h: 0.4 }],
+    doors: [{ room: "l", side: "n", at: 0.3, w: 0.9, entry: true }, { room: "b", side: "e", at: 0.2, w: 0.75 }, { room: "m", side: "w", at: 0.1, w: 0.8 }],
+  }),
+  "1R-E": Object.assign({}, base, {
+    name: "1-room (290 ft²)", type: "1R", ft2: 290, src: "after Park Silicon · Palo Springs, Tower 2A unit E",
+    facade: "s", partySides: ["w", "e"],
+    rooms: [R("b", "BATH", "Bath", 0, 0, 1.5, 1.8), R("h", "LOBBY", "", 1.5, 0, 1.1, 1.8), R("k", "OKIT", "Open kitchen", 2.6, 0, 2.2, 1.8),
+      R("m", "MBR", "Master bedroom", 0, 1.8, 2.3, 2.8), R("l", "LD", "Living / dining", 2.3, 1.8, 2.5, 2.8)],
+    extras: [{ kind: "acp", x: 0.4, y: 4.6, w: 1.2, h: 0.6 }, { kind: "up", x: 2.6, y: 4.6, w: 1.25, h: 1.2 }],
+    doors: [{ room: "h", side: "n", at: 0.1, w: 0.9, entry: true }, { room: "b", side: "s", at: 0.4, w: 0.75 }, { room: "m", side: "n", at: 1.6, w: 0.8 }],
+  }),
+  "2R-B": Object.assign({}, base, {
+    name: "2-room (419 ft²)", type: "2R", ft2: 419, src: "after Emerald Avenue, unit B, 419 ft²",
+    facade: "w", partySides: ["n", "s"],
+    rooms: [R("m", "MBR", "Master bedroom", 0, 0, 2.6, 2.6), R("b", "BATH", "Bath 1", 2.6, 0, 1.4, 1.9), R("h", "LOBBY", "", 2.6, 1.9, 1.4, 0.7),
+      R("e", "LOBBY", "", 4.0, 1.3, 0.9, 1.3), R("l", "LD", "Living / dining", 0, 2.6, 3.0, 2.4), R("k", "OKIT", "Open kitchen", 3.0, 2.6, 1.9, 2.0),
+      R("r", "BR", "Bedroom 1", 0, 5.0, 2.6, 2.3)],
+    extras: [{ kind: "bal", x: -1.2, y: 2.6, w: 1.2, h: 1.7 }, { kind: "up", x: -1.2, y: 4.3, w: 1.2, h: 1.25 }, { kind: "acp", x: -1.2, y: 5.55, w: 1.2, h: 0.6 }],
+    doors: [{ room: "e", side: "e", at: 0.2, w: 0.9, entry: true }, { room: "m", side: "e", at: 1.9, w: 0.8 }, { room: "b", side: "s", at: 0.3, w: 0.75 }, { room: "r", side: "n", at: 1.7, w: 0.8 }],
+  }),
+  "3R-A": Object.assign({}, base, {
+    name: "3-room (576 ft²)", type: "3R", ft2: 576, src: "after Park Silicon · Palo Springs, Tower 2B unit A, 576 ft²",
+    facade: "s", partySides: ["w", "e"],
+    rooms: [R("r1", "BR", "Bedroom 1", 0, 0, 2.4, 2.8), R("b", "BATH", "Bath", 2.4, 0, 1.5, 2.0), R("k", "OKIT", "Open kitchen", 3.9, 0, 1.8, 2.0),
+      R("e", "LOBBY", "", 5.7, 0, 1.5, 2.0), R("h", "LOBBY", "", 2.4, 2.0, 2.6, 0.8), R("l", "LD", "Living / dining", 5.0, 2.0, 2.2, 3.2),
+      R("m", "MBR", "Master bedroom", 0.3, 2.8, 2.6, 2.6), R("r2", "BR", "Bedroom 2", 2.9, 2.8, 2.1, 2.4)],
+    extras: [{ kind: "bal", x: 5.6, y: 5.2, w: 1.6, h: 1.4, splay: 0.6 }, { kind: "up", x: 4.4, y: 5.2, w: 1.2, h: 1.25 }, { kind: "acp", x: 0.6, y: 5.4, w: 2.0, h: 0.6 }, { kind: "pd", x: 4.0, y: 5.2, w: 0.4, h: 0.4 }],
+    doors: [{ room: "e", side: "n", at: 0.3, w: 0.9, entry: true }, { room: "r1", side: "e", at: 2.1, w: 0.8 }, { room: "b", side: "s", at: 0.4, w: 0.75 }, { room: "m", side: "n", at: 2.0, w: 0.8 }, { room: "r2", side: "n", at: 0.6, w: 0.8 }],
+  }),
+  "3R-B": Object.assign({}, base, {
+    name: "3-room (524 ft²)", type: "3R", ft2: 524, src: "after Park Silicon · Palo Springs, Tower 2B unit B, 524 ft²",
+    facade: "s", partySides: ["w", "e"],
+    rooms: [R("k", "OKIT", "Open kitchen", 0, 0, 2.0, 1.8), R("e", "LOBBY", "", 2.0, 0, 1.0, 1.8), R("l", "LD", "Living / dining", 0, 1.8, 3.0, 3.4),
+      R("b", "BATH", "Bath", 3.0, 0.4, 1.6, 1.8), R("h", "LOBBY", "", 3.0, 2.2, 4.2, 0.8),
+      R("r2", "BR", "Bedroom 2", 3.0, 3.0, 2.1, 2.2), R("r1", "BR", "Bedroom 1", 5.1, 3.0, 2.1, 2.2), R("m", "MBR", "Master bedroom", 7.2, 2.2, 2.5, 3.0)],
+    extras: [{ kind: "roof", x: 3.0, y: 5.2, w: 6.7, h: 1.0 }, { kind: "bal", x: 0, y: 5.2, w: 1.6, h: 1.3 }, { kind: "up", x: 1.6, y: 5.2, w: 1.2, h: 1.25 }, { kind: "acp", x: 0, y: 6.5, w: 1.4, h: 0.6 }],
+    doors: [{ room: "e", side: "n", at: 0.05, w: 0.9, entry: true }, { room: "b", side: "s", at: 0.4, w: 0.75 }, { room: "r2", side: "n", at: 1.1, w: 0.8 }, { room: "r1", side: "n", at: 1.1, w: 0.8 }, { room: "m", side: "w", at: 0.1, w: 0.8 }],
+  }),
 };
+
+const STUDIO = fromRows(Object.assign({}, base, {
+  name: "Studio", type: "studio", left: "party", right: "party",
+  rows: [
+    { depth: 1.9, rooms: [{ kind: "BATH", name: "Bath", w: 1.5 }, { kind: "OKIT", name: "Open kitchen", w: 1.8 }] },
+    { depth: 3.6, rooms: [{ kind: "LD", name: "Living / bed", w: 3.4 }] },
+  ],
+  extras: [{ kind: "up", w: 1.5, d: 1.0 }, { kind: "acp", w: 1.0, d: 0.6 }],
+}));
+STUDIO.doors = [{ room: "r1", side: "n", at: 0.3, w: 0.75 }, { room: "r2", side: "n", at: 0.6, w: 0.9, entry: true }];
+STUDIO.src = "a compact studio";
+
+export const TEMPLATES = Object.assign({ studio: STUDIO },
+  Object.fromEntries(Object.entries(RAW).map(([k, t]) => [k, scaleTo(t, t.ft2)])));

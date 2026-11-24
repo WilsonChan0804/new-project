@@ -1,32 +1,39 @@
-/* node viewer/tests/units.test.mjs - unit areas and concessions */
+/* node viewer/tests/units.test.mjs - unit plans: areas and concessions */
 import * as U from "../unitcore.js";
 import { TEMPLATES } from "../unittables.js";
 
 let fails = 0;
 const ok = (c, m) => { if (!c) { fails++; console.log("FAIL " + m); } else console.log("PASS " + m); };
 const near = (a, b, e) => Math.abs(a - b) <= e;
+const R = (id, kind, x, y, w, h) => ({ id, kind, name: id, x, y, w, h });
 
-const t1 = TEMPLATES["1R"], f1 = U.figures(t1);
-// inner 3.1 x (1.6 + 2.6 + 2.4 + 2 x 0.1) = 3.1 x 6.8; outer + 2 x 0.1 (party halves) and 0.2 + 0.2 (façade, corridor)
-ok(near(f1.layout.W, 3.1, 1e-9) && near(f1.layout.D, 6.8, 1e-9), "1-room inner 3.1 × 6.8 m");
-ok(near(f1.enclosed, 3.3 * 7.2, 1e-6), "enclosed to the party walls' middles and the outside of the external walls: 23.76 m²");
-ok(near(f1.saleable, 23.76 + 2 + 1.5, 1e-6) && near(f1.saleableFt, 293, 1), "saleable 27.26 m² (293 ft²) with the balcony 2.0 and UP 1.5, not the A/C platform");
-ok(near(f1.balEx, 1, 1e-9) && near(f1.upEx, 0.75, 1e-9), "balcony exempt 1 m² (50% of 2 capped at max(1, 2.5% UFS)), UP 0.75 m²");
-ok(near(f1.gfa, 23.76 + 1 + 0.75, 1e-6), "unit GFA 25.51 m²");
-// widen the bedroom 0.3 m: the unit widens 0.3 m
-const f2 = U.figures(U.setWidth(t1, 2, 0, 2.7));
-ok(near(f2.layout.outW - f1.layout.outW, 0.3, 1e-9) && near(f2.enclosed - f1.enclosed, 0.3 * 7.2, 1e-6), "bedroom 0.3 m wider: the unit 0.3 m wider, +2.16 m²");
-const f3 = U.figures(U.movePartition(t1, 2, 0, -0.2));
-ok(near(f3.layout.W, 3.1, 1e-9) && /Bedroom: 2\.20/.test(f3.warn.join()) === false && f3.layout.rooms.find((r) => r.name === "Bedroom").w === 2.2, "moving the partition keeps the width, the bedroom 2.2 m");
-const f4 = U.figures(U.setWidth(t1, 2, 0, 2.0));
-ok(f4.warn.some((w) => /Bedroom: 2\.00 m is under 2\.1/.test(w)), "a 2.0 m bedroom warns");
-// a deep A/C platform is exempt only under the cap
-const t5 = JSON.parse(JSON.stringify(t1)); t5.extras.push({ kind: "acp", w: 1.0, d: 0.9 });
-const f5 = U.figures(t5);
-ok(near(f5.acpCapEx, 0.9, 1e-9) && near(f5.acpFree, 0.6, 1e-9) && f5.warn.some((w) => /over 750 mm/.test(w)), "A/C platform 0.9 m deep: under the cap, with a warning");
-// a small balcony: no exemption
-const t6 = JSON.parse(JSON.stringify(t1)); t6.extras[0] = { kind: "bal", w: 1.2, d: 1.2 };
-ok(U.figures(t6).balEx === 0, "a 1.44 m² balcony: not exempted (under 2 m²)");
-for (const [k, t] of Object.entries(TEMPLATES)) { const f = U.figures(t); ok(f.saleable > 15 && f.saleable < 90, `${k}: ${f.saleableFt} ft² saleable`); }
+// an L of two rooms: 4 x 3 and 2 x 2 below its left part
+const L = { wall: 0.2, party: 0.2, part: 0.1, facade: "s", partySides: [], rooms: [R("a", "LD", 0, 0, 4, 3), R("b", "BR", 0, 3, 2, 2.4)], extras: [] };
+const fL = U.figures(L);
+ok(near(fL.area, 12 + 4.8, 1e-9), "an L of 4 × 3 and 2 × 2.4: 16.8 m² to the centrelines");
+const ext = fL.edges.filter((e) => e.kind === "ext").reduce((s, e) => s + e.len, 0);
+ok(near(ext, 2 * (4 + 5.4), 1e-9) && fL.edges.filter((e) => e.kind === "part").length === 1, "its outline 18.8 m, one partition 2 m");
+ok(near(fL.enclosed, 16.8 + 18.8 * 0.1 + 4 * 0.01, 1e-9), "enclosed to the outside of the external walls: + 18.8 × 0.1 + corners");
+const P = Object.assign({}, L, { partySides: ["w"] });
+ok(near(U.figures(P).enclosed, 16.8 + (18.8 - 5.4) * 0.1 + 0.04, 1e-9), "a party wall on the west: measured to its middle, no half-wall added");
+// moving the shared wall line keeps the total when both sides move
+const two = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], rooms: [R("a", "LD", 0, 0, 3, 3), R("b", "BR", 3, 0, 2.5, 3)], extras: [] };
+const mv = U.moveLine(two, "x", 3, 0.3);
+ok(near(U.figures(mv).area, U.figures(two).area, 1e-9) && near(mv.rooms[0].w, 3.3, 1e-9) && near(mv.rooms[1].w, 2.2, 1e-9), "the wall between moved 0.3 m: 3.3 + 2.2, the total kept");
+const mvOut = U.moveLine(two, "x", 5.5, 0.5);
+ok(near(U.figures(mvOut).area, 16.5 + 1.5, 1e-9), "the outer wall moved 0.5 m: 1.5 m² more");
+// templates against their brochures
+for (const [k, t] of Object.entries(TEMPLATES)) if (t.ft2) { const f = U.figures(t); ok(Math.abs(f.saleableFt - t.ft2) / t.ft2 <= 0.03, `${k}: ${f.saleableFt} ft² against ${t.ft2} ft² (${t.src})`); }
+// concessions (the 1-room B: balcony 2.04, UP 1.5)
+const f1 = U.figures(TEMPLATES["1R-B"]);
+ok(near(f1.bal, 2.04, 1e-6) && near(f1.balEx, 1, 1e-9) && near(f1.upEx, 0.75, 1e-9), "balcony 2.04 m² exempt 1 m² (capped), UP exempt 0.75 m²");
+ok(near(f1.saleable, f1.enclosed + f1.bal + f1.up, 1e-9) && near(f1.gfa, f1.enclosed + f1.bal - 1 + f1.up - 0.75, 1e-9), "saleable adds the balcony and UP; the GFA adds what is not exempt");
+// the first form (rows) converts with the same areas
+const old = { wall: 0.2, party: 0.2, part: 0.1, rows: [{ depth: 2.4, rooms: [{ kind: "BR", w: 2.4 }, { kind: "BATH", w: 1.5 }] }, { depth: 3, rooms: [{ kind: "LD", w: 4.0 }] }], extras: [] };
+const conv = U.fromRows(old);
+ok(conv.rooms.length === 3 && near(U.figures(conv).area, 4.0 * (2.5 + 3), 1e-9), "a row unit converts: 4.0 × 5.5 m to the centrelines");
+// warnings
+const narrow = U.moveLine(TEMPLATES["2R-B"], "x", TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").w, -0.8, TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").y, 99);
+ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 2\.1/.test(w)), "a bedroom narrowed under 2.1 m warns");
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

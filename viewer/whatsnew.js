@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-08", date: "24 Nov 2026",
+    items: [
+      "**Units drawn as real plans** - rooms are now placed freely on a 50 mm grid, so a unit can have the stepped outline of a real flat; drawn like a sales brochure: thick external walls, partitions, door swings, bath, WC and kitchen counter, open kitchens without a wall, and bilingual labels (客/飯廳 LIV./DIN., 主人睡房 M.B.R. ...).",
+      "**New templates traced from the references**: Park Silicon · Palo Springs 1-room 318 ft² (2A-B) and 1-room E, 3-room 576 ft² (2B-A) and 524 ft² (2B-B), Emerald Avenue 2-room 419 ft² - each scaled to its brochure's saleable area, with its balcony, utility platform, A/C platform and pipe duct.",
+      "**Drag any wall line** on the plan (the whole line moves, Alt for one piece only); rooms, doors and the extras are listed to type their sizes. Units made before are converted.",
+    ],
+  },
+  {
     version: "2027-03-07", date: "23 Nov 2026",
     items: [
       "**Site study 3 · Units** - residential unit layouts from templates (studio, 1-room, 2-room, 3-room, sized after recent Tseung Kwan O brochures): rows of rooms from the corridor to the façade, each room's width and each row's depth to change, or **drag a partition** on the plan (50 mm steps); the balcony, utility platform and A/C platforms at the façade.",
