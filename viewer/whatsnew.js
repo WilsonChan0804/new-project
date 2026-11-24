@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-11", date: "25 Nov 2026",
+    items: [
+      "**Site study 4 · Floors** - the typical floor of a domestic massing group: its unit mix laid along a double-loaded corridor on the group's floor plate (turned to its long side), each unit with its entrance on the corridor; a core of staircases, lifts, a refuse room and an E&M riser, in the middle or with the staircases at the ends. What is left of the plate is the residual, taken as exempt E&M, with a warning and the plate depth that would fit when it is large.",
+      "The floor's **GFA and concessions**: units (their balcony, UP, A/C platform and façade concessions), corridor (a wider corridor's extra width exempt, JPN 1 - the widths to check), staircases and lift shafts counted; refuse room and riser exempt; **MiC** (JPN 8) as a share. **Use in Massing** sets the group's GFA % from the layout.",
+      "**Checks**: staircases by the GBP workbook's quick check (Table B1 / B3, the width that would do), the travel from the farthest flat door to a staircase (B11: dead end 15 m, else 24 m), the distance between staircases, and **lifts by service time** (round trip by the CIBSE Guide D method: 5-minute capacity and interval, both settable).",
+    ],
+  },
+  {
     version: "2027-03-10", date: "25 Nov 2026",
     items: [
       "**Unit editor: ▭ + Room** - choose the room kind beside the tool and drag a rectangle on the plan: it snaps to the walls already there (within 0.25 m) and to the 50 mm grid, shows its size as you drag, and is refused if it overlaps a room. A kitchen or bathroom gets its fittings. Make a unit bigger, add a store, a study or a second bathroom.",

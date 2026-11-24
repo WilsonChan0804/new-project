@@ -15,6 +15,7 @@ import { site as bprSite } from "./gbpcore.js";
 import { OZP, OZP_PORTAL } from "./ozptables.js";
 import * as MS from "./sitemass.js";
 import * as UN from "./siteunits.js";
+import * as FL from "./sitefloor.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -691,14 +692,15 @@ function wireFind() {
   });
   const setMode = (m) => {
     for (const b of document.querySelectorAll(".st-mode [data-mode]")) b.classList.toggle("on", b.dataset.mode === m);
-    stopModes(); MS.show(m === "mass"); UN.show(m === "units");
-    if (m === "units") $("#st-panel").hidden = true;
+    stopModes(); MS.show(m === "mass"); UN.show(m === "units"); FL.show(m === "floors");
+    if (m === "units" || m === "floors") $("#st-panel").hidden = true;
     draw(); if (m === "site") { panel(); tools(); }
     try { sessionStorage.setItem("lwk-viewer:site-mode", m); } catch (e) {}
   };
   document.querySelector(".st-mode").addEventListener("click", (ev) => { const b = ev.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });
   let m0 = "site"; try { m0 = new URLSearchParams(location.search).get("mode") || sessionStorage.getItem("lwk-viewer:site-mode") || "site"; } catch (e) {}
   UN.init({ study, save, can: () => CAN });
-  if (m0 === "mass" || m0 === "units") setMode(m0);
+  FL.init({ study, save, can: () => CAN, S });
+  if (m0 === "mass" || m0 === "units" || m0 === "floors") setMode(m0);
   window.__site = { study, S, map: () => map }; // for the tests
 })();

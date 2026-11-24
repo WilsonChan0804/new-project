@@ -239,3 +239,19 @@ body.st-units .leaflet-control-container { display: none; }
 .un-bar select { width: auto !important; max-width: 180px; }
 .un-bar { align-items: center; }
 .un-pop select { font-size: 12px; width: auto; }
+
+/* floors (stage 4) */
+#st-fplan { position: absolute; inset: 0; z-index: 960; background: #f3f5f8; overflow: hidden; }
+#st-fplan[hidden], #st-fpanel[hidden] { display: none; }
+body.st-floors #st-tools, body.st-floors .st-find, body.st-floors #st-hits, body.st-floors #st-views, body.st-floors .leaflet-control-container { display: none !important; }
+.fl-checks { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+.fl-checks li { padding: 5px 0 5px 8px; border-top: 1px solid var(--line); box-shadow: inset 3px 0 0 #2e8b57; }
+.fl-checks li.bad { box-shadow: inset 3px 0 0 #c62828; }
+.fl-checks li small { color: var(--muted); }
+.fl-set { display: grid; gap: 6px; font-size: 12px; }
+.fl-set select { font-size: 12px; width: auto; }
+.ms-fig { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+.ms-fig td { padding: 3px 4px; border-top: 1px solid var(--line); vertical-align: top; }
+.ms-fig td:nth-child(2) { text-align: right; white-space: nowrap; font-weight: 600; }
+.ms-fig td:nth-child(3) { color: var(--muted); }
+.st-lbl { display: flex; flex-direction: column; gap: 3px; font-size: 12px; font-weight: 600; }
