@@ -24,7 +24,7 @@
 
 import { api } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop, ic, pop, skeleton } from "./tasks-util.js";
+import { $, esc, avatar, ago, fmtWhen, pickPeople, pickOne, modal, toast, closePop, ic, pop, skeleton, placeAt } from "./tasks-util.js";
 import { linkify, badge, chip, classify } from "./filelinks.js";
 import { upload, filesHtml, pendingHtml, catchFiles } from "./uploads.js";
 import { initFlexColumns } from "./panels.js";
@@ -1429,9 +1429,7 @@ function roomMenu(ev, id) {
     + (r.kind === "project" ? `<div class="po-row" data-k="topic">${ic("hash")} New topic</div>` : "")
     + (r.can_delete ? `<div class="po-row bad" data-k="del">${ic("trash")} Delete ${r.kind === "topic" ? "topic" : "chat"}</div>` : ""), 200);
   // where it was asked for, but wholly on screen (it is taller with more rows)
-  el.style.bottom = "";
-  el.style.left = Math.max(4, Math.min(innerWidth - el.offsetWidth - 8, ev.clientX)) + "px";
-  el.style.top = Math.max(4, Math.min(innerHeight - el.offsetHeight - 8, ev.clientY)) + "px";
+  placeAt(el, ev.clientX, ev.clientY);
   el.onclick = async (e) => {
     const k = (e.target.closest(".po-row") || {}).dataset;
     if (!k) return;

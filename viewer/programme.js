@@ -11,7 +11,7 @@
 
 import { api, project } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
-import { $, esc, toast, pop, closePop, modal, uid } from "./tasks-util.js";
+import { $, esc, toast, pop, closePop, modal, uid, placeAt } from "./tasks-util.js";
 import * as PC from "./progcore.js";
 
 let RH = 30;                   // row height, px (Format: compact 24 / normal 30 / roomy 38)
@@ -939,8 +939,7 @@ function linkMenu(lk, ev) {
     + `<div class="pg-2"><label>Line <select class="lm-s">${["solid", "dashed", "dotted"].map((x) => `<option${x === sty ? " selected" : ""}>${x}</option>`).join("")}</select></label>`
     + `<label>Colour <span class="pg-cl"><input type="color" class="lm-c" value="${esc(d.color || "#7d8b9c")}"><button type="button" class="ghost lm-cx" title="The usual colour">&times;</button></span></label></div>`
     + `<div class="row end">${P.can ? `<button type="button" class="ghost lm-x">Delete link</button><button type="button" class="primary lm-ok">Done</button>` : ""}</div></div>`, 320);
-  el.style.left = Math.min(innerWidth - 330, ev.clientX) + "px";
-  el.style.top = Math.min(innerHeight - el.offsetHeight - 8, ev.clientY + 10) + "px";
+  placeAt(el, ev.clientX, ev.clientY + 10);
   if (!P.can) { for (const i of el.querySelectorAll("select, input, button")) i.disabled = true; return; }
   let color = d.color || "";
   el.querySelector(".lm-c").oninput = (e) => { color = e.target.value; };
@@ -1809,9 +1808,7 @@ function ctxMenu(ev, id) {
     if (ed) h += sep + item("del", `Delete${n > 1 ? " " + n + " rows" : ""}`, "Del");
   }
   const el = pop(document.body, `<div class="pg-cmenu">${h}</div>`, 250);
-  el.style.left = Math.min(innerWidth - 260, ev.clientX) + "px";
-  el.style.top = Math.max(6, Math.min(innerHeight - el.offsetHeight - 6, ev.clientY)) + "px";
-  el.style.bottom = "";
+  placeAt(el, ev.clientX, ev.clientY);
   el.addEventListener("click", (e) => {
     const r = e.target.closest("[data-cm]");
     if (!r || r.classList.contains("off")) return;

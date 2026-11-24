@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-19", date: "25 Nov 2026",
+    items: [
+      "**Programme: the link box shows whole** - a link clicked low in the window opened its box (type, lag, line, colour) squeezed into a thin strip; it now opens at the click, wholly on screen, as does the right-click menu (and the chat's room menu).",
+    ],
+  },
+  {
     version: "2027-03-18", date: "25 Nov 2026",
     items: [
       "**Unit plans drawn like the office's typical plans** - walls at their real thickness with thin face lines: external and party walls RC in dark grey hatch, partitions block in diagonal hatch, precast in diagonal and dashed hatch; doors with frames, a thin leaf and swing; windows frame - glass - frame; a curtain wall with mullions and its 100 mm RC curb (300 mm high) inside. Fittings and furniture redrawn: WC with cistern, basin, shower tray, bath, kitchen counter with sink and two-ring hob, fridge, washing machine, wardrobe, beds with pillows, sofa, dining set, desk.",

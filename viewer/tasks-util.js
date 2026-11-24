@@ -191,6 +191,20 @@ export function pop(anchor, html, width) {
   return el;
 }
 
+/* A box from pop() moved to a point (a click): wholly on screen, scrolling
+   when taller than the window. pop() may have opened it upwards (bottom
+   set) - that is cleared first, or the box is squeezed between the two. */
+export function placeAt(el, x, y) {
+  el.style.top = el.style.bottom = el.style.maxHeight = el.style.overflowY = "";
+  el.style.top = "0px";
+  const w = el.offsetWidth, h = el.offsetHeight;
+  if (h > innerHeight - 12) { el.style.maxHeight = (innerHeight - 12) + "px"; el.style.overflowY = "auto"; }
+  const hh = Math.min(h, innerHeight - 12);
+  el.style.left = Math.max(6, Math.min(innerWidth - w - 6, x)) + "px";
+  el.style.top = Math.max(6, Math.min(innerHeight - hh - 6, y)) + "px";
+  return el;
+}
+
 /* Choose people: the organisation's accounts, or a typed name when the
    server runs without accounts. Calls done(list) on every change.
    With more (everyone), the list offers `everyone` first (a task list's
