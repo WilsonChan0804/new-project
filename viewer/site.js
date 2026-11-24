@@ -418,6 +418,7 @@ function panel(light) {
       <label class="st-f">Site name / lot<input data-sf="name" value="${esc(s.name || "")}" placeholder="e.g. TKO Area 137, STTL 618"${dis}></label>
       <label class="st-f">Site area to match (m²)<input type="number" step="any" min="0" data-sf="target" value="${esc(s.target || "")}" placeholder="from the lease / survey"${dis}></label>
       <div id="st-res">${res}</div>
+      ${s.lot && s.lot.code != null && s.lot.hk80 ? `<details class="st-edl" open><summary>Lot (LandsD)</summary>${lotCard(s.lot)}</details>` : ""}
     </section>
     ${n >= 3 ? `<section class="st-card">
       <div class="st-head"><b>2 · Edges and streets</b><span class="muted">click an edge on the map, or tick it here</span></div>
@@ -503,7 +504,8 @@ function planCards(s, areaM2, cls) {
         <label class="st-f">Zone<input data-pl="zone" list="st-zones" value="${esc(pl.zone || "")}" placeholder="e.g. CDA, R(A)9"${dis}></label>
       </div>
       <datalist id="st-plans">${plans}</datalist><datalist id="st-zones">${zones}</datalist>
-      <p class="st-known ${z ? "good" : pl.plan ? "warn" : ""}">${z ? `${esc(z.key)}: filled in from ${z.office ? `the office list${z.by ? " (" + esc(z.by) + (z.at ? ", " + esc(z.at) : "") + ")" : ""}${z.src ? " · " + esc(z.src) : ""}` : esc(P.name)}` : PP ? `${esc(normPlan(pl.plan))} is known: choose its zone (${Object.keys(PP.zones).length} zones).` : pl.plan ? `${esc(normPlan(pl.plan))} is not in the list yet: read its Notes PDF, or type the figures and save them for the office.` : "Type the plan no.: a plan in the list fills in its zone's restrictions."}</p>
+      ${zoningBox(s)}
+      ${!z && s.zoning && pl.from === "notes" && s.zoning.zones.some((q) => normPlan(q.plan) === normPlan(pl.plan) && q.zone === pl.zone) ? `<p class="st-known good">${esc(normPlan(pl.plan))} ${esc(pl.zone)}: from the Town Planning Board's data and the plan's Notes, as read above - check them, then <b>Save to the office list</b> to keep them for everyone.</p>` : `<p class="st-known ${z ? "good" : pl.plan ? "warn" : ""}">${z ? `${esc(z.key)}: filled in from ${z.office ? `the office list${z.by ? " (" + esc(z.by) + (z.at ? ", " + esc(z.at) : "") + ")" : ""}${z.src ? " · " + esc(z.src) : ""}` : esc(P.name)}` : PP ? `${esc(normPlan(pl.plan))} is known: choose its zone (${Object.keys(PP.zones).length} zones).` : pl.plan ? `${esc(normPlan(pl.plan))} is not in the list yet: read its Notes PDF, or type the figures and save them for the office.` : "Type the plan no.: a plan in the list fills in its zone's restrictions."}</p>`}
       <div class="st-row st-ozp-act">
         <label class="ghost st-up${CAN ? "" : " off"}">📄 Read the Notes PDF<input type="file" accept="application/pdf,.pdf" id="st-notes"${dis} hidden></label>
         <button type="button" class="ghost" id="st-ozp-save"${CAN && pl.plan && pl.zone ? "" : " disabled"} title="Keep these figures for this plan and zone, for everyone in the office">Save to the office list</button>
@@ -541,6 +543,7 @@ function wirePanel() {
   const el = $("#st-panel");
   el.addEventListener("change", (ev) => {
     const t = ev.target, s = study();
+    if (t.dataset.zshow != null) { s.zoneOff = !t.checked; drawZoning(); save(); return; }
     if (t.dataset.sf === "name") { s.name = t.value.trim(); save(); }
     else if (t.dataset.sf === "target") { const v = parseFloat(t.value); s.target = v > 0 ? v : null; panel(); tools(); save(); }
     else if (t.dataset.se != null) {
@@ -597,6 +600,9 @@ function wirePanel() {
     if (t.dataset.mdel != null) { s.measures.splice(+t.dataset.mdel, 1); return changed(); }
     if (t.id === "st-mclear") { s.measures = []; return changed(); }
     if (ev.target.closest("[data-nclose]")) { NOTES = null; return panel(); }
+    if (ev.target.closest("[data-zagain]")) return getZoning(s, true);
+    const zu = ev.target.closest("[data-zuse]");
+    if (zu && s.zoning) { applyZone(s, s.zoning.zones[+zu.dataset.zuse]); panel(); save(); return; }
     const use = ev.target.closest("[data-nuse]");
     if (use) {
       const z = NOTES.zones[+use.dataset.nuse];
@@ -691,10 +697,10 @@ async function findLot(q, box) {
       lotLayer = L_.polygon(rings, { color: "#c62828", weight: 3, dashArray: "6 4", fillColor: "#c62828", fillOpacity: 0.08 }).addTo(map).bindTooltip(esc(g.name), { permanent: true, direction: "center", className: "st-edge-lab st" });
       map.fitBounds(lotLayer.getBounds(), { padding: [60, 60], maxZoom: 19 });
       const area = S.area(rings[0]);
-      box._lot = { name: g.name, id: g.id, pts: rings[0], area };
-      box.innerHTML = `<div class="st-lot"><b>${esc(g.name)}</b> <span>${esc(x.place)}</span><br><small>${f1(area)} m² from the lot boundary (LandsD iC1000 - for identification only, not a survey)${g.rings.length > 1 ? ` · ${g.rings.length} parts, the first is used` : ""}</small>
-        <div class="st-row">${CAN ? `<button type="button" class="primary st-ib" data-lotuse>Use as the site boundary</button>` : ""}<a class="st-link" href="${OZP_PORTAL}" target="_blank" rel="noopener">Open the OZP portal ›</a></div>
-        <small class="muted">The zoning: choose the plan and zone under <b>3 · Planning and lease</b>; the plan's Notes can be read there. Lot data © Lands Department.</small></div>` + rows.map((y, i) => `<button type="button" data-lot="${i}"><b>${esc(y.name)}</b> <span>${esc(y.place)}</span></button>`).join("");
+      box._lot = { name: g.name, id: g.id, pts: rings[0], area, place: x.place, type: g.type || "", number: g.number || "", code: g.code || "", updated: g.updated || "", parts: g.rings.length, hk80: g.rings[0] };
+      if (!CAN) { box.innerHTML = `<div class="st-lot">${lotCard(box._lot)}</div>`; return; }
+      // straight into the drawing as the site boundary, then its zoning from the Town Planning Board
+      useLot(box._lot, box);
     } catch (e) { b.disabled = false; toast(e.message, true); }
   };
 }
@@ -703,13 +709,87 @@ function useLot(lot, box) {
   if (s.pts.length >= 3 && !confirm(`Replace the site boundary with ${lot.name} (${f1(lot.area)} m²)?`)) return;
   lastPts = snap();
   s.pts = lot.pts.slice(); s.streets = {}; s.roads = {}; s.factor = null;
-  s.lot = { name: lot.name, id: lot.id, area: Math.round(lot.area * 100) / 100 };
+  // the area to match: the new lot's, when it had none or it was the last lot's
+  if (s.lot && s.lot.area && Math.abs((s.target || 0) - s.lot.area) < 0.05) s.target = null;
+  s.lot = { name: lot.name, id: lot.id, area: Math.round(lot.area * 100) / 100, place: lot.place || "", type: lot.type || "", number: lot.number || "", code: lot.code || "", updated: lot.updated || "", parts: lot.parts || 1, hk80: lot.hk80 || null };
+  s.zoning = null;
   if (!s.name) s.name = lot.name;
   if (!(s.target > 0)) s.target = Math.round(lot.area * 100) / 100;
   if (lotLayer) { lotLayer.remove(); lotLayer = null; }
   box.hidden = true;
   changed(); fit();
-  hint(`${lot.name}: ${f1(lot.area)} m². Mark the streets (click an edge); Undo shape puts the old boundary back.`, 8000);
+  hint(`${lot.name}: ${f1(lot.area)} m², set as the site. Getting its zoning from the Town Planning Board … Undo shape puts the old boundary back.`, 8000);
+  if (lot.hk80) getZoning(s);
+}
+
+/* ---------- the lot's details (LandsD iC1000) */
+const LOT_TYPES = { NNG: "New Grant", ONG: "Old Grant", STT: "Short Term Tenancy", GLA: "Government Land Allocation", SEC: "Section", RP: "Remaining Portion" };
+function lotCard(l) {
+  const rows = [["Lot", `<b>${esc(l.name)}</b>${l.place ? ` · ${esc(l.place)}` : ""}`], ["Lot type", l.type ? `${esc(LOT_TYPES[l.type] || l.type)}${LOT_TYPES[l.type] ? ` <small>(${esc(l.type)})</small>` : ""}` : "–"],
+    ["Lot number", esc(l.number || "–")], ["Lot code", esc(l.code || "–")], ["LandsD lot id", esc(l.id || "–")], ["Last updated", esc(l.updated || "–")],
+    ["Area from the boundary", `${f3(l.area)} m²${l.parts > 1 ? ` <small>(${l.parts} parts; the first used)</small>` : ""}`]];
+  return `<table class="st-lotcard">${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("")}</table>
+    <p class="muted st-note">Lands Department iC1000 Lot Index - for identification only, not a survey. © Lands Department.</p>`;
+}
+
+/* ---------- the site's zoning: the Town Planning Board's Digital Planning Data (/api/site/zoning) */
+let ZONING_BUSY = false, ZONING_ERR = "", zoneLayer = null, ZONE_RINGS = null;
+async function getZoning(s, again) {
+  if (!s.lot || !s.lot.hk80) return;
+  ZONING_BUSY = true; ZONING_ERR = ""; panel();
+  try {
+    const r = await api("/api/site/zoning?" + new URLSearchParams({ rings: JSON.stringify([s.lot.hk80]), id: again ? "" : s.lot.id || "" }));
+    ZONE_RINGS = r.zones.map((z) => ({ zone: z.zone, rings: z.rings }));
+    s.zoning = { plans: r.plans, zones: r.zones.map(({ rings, ...z }) => z), bh: r.bh, notes: r.notes, at: r.at, src: r.src, lot: s.lot.id };
+    if (r.zones.length) applyZone(s, r.zones[0]);
+    drawZoning();
+    save();
+  } catch (e) { ZONING_ERR = e.message; }
+  ZONING_BUSY = false; panel();
+}
+/* a zone of the site into 3 · Planning and lease: the plan and zone, the figures known for it (the office list or built in, else
+   the plan's Notes as read), the height control on the Plan where it covers most of the site */
+function applyZone(s, zr) {
+  const o = s.plan = s.plan || {};
+  o.plan = normPlan(zr.plan); o.zone = zr.zone; delete o.planno; o.bh = ""; o.storeys = "";
+  const z = zoneOf(o), N = s.zoning && s.zoning.notes && s.zoning.notes[zr.plan] && s.zoning.notes[zr.plan][zr.zone];
+  if (z) { o.zone = z.key; fillZone(o, z); o.from = "list"; }
+  else if (N) { fillZone(o, N.values || {}); o.from = "notes"; }
+  else { fillZone(o, {}); o.from = ""; }
+  const B = (s.zoning && s.zoning.bh) || [];
+  const m = B.filter((b) => b.plan === zr.plan && b.kind === "mPD").sort((a, b) => b.share - a.share)[0], st = B.filter((b) => b.plan === zr.plan && b.kind === "storeys").sort((a, b) => b.share - a.share)[0];
+  if (m && !(o.bh > 0)) o.bh = m.value;
+  if (st && !(o.storeys > 0)) o.storeys = st.value;
+}
+function drawZoning() {
+  if (zoneLayer) { zoneLayer.remove(); zoneLayer = null; }
+  const s = study();
+  if (!ZONE_RINGS || !ZONE_RINGS.length || s.zoneOff) return;
+  const COL = ["#6a5acd", "#2e7d32", "#c27c0e", "#1565c0", "#ad1457", "#00838f"];
+  zoneLayer = L_.layerGroup(ZONE_RINGS.map((z, i) => L_.polygon(z.rings.map((r) => r.map(([e, n]) => S.hk80ToWgs84(e, n))), { color: COL[i % COL.length], weight: 1.5, fillOpacity: 0.12, interactive: false })
+    .bindTooltip(esc(z.zone), { permanent: true, direction: "center", className: "st-edge-lab" }))).addTo(map);
+}
+function zoningBox(s) {
+  const Z = s.zoning;
+  if (!s.lot || !s.lot.hk80) return "";
+  if (ZONING_BUSY) return `<p class="muted st-note">Getting the zoning of ${esc(s.lot.name)} from the Town Planning Board …</p>`;
+  if (ZONING_ERR) return `<p class="bad st-note">${esc(ZONING_ERR)} <button type="button" class="ghost st-ib" data-zagain>Try again</button></p>`;
+  if (!Z) return `<div class="st-row"><button type="button" class="ghost st-ib" data-zagain>Get the zoning of ${esc(s.lot.name)} from the Town Planning Board</button></div>`;
+  const pl = s.plan || {};
+  const plans = Z.plans.map((p) => `<b>${esc(p.plan)}</b> ${esc(p.name)} ${esc(p.name_cht)}${p.approved ? ` · approved ${esc(p.approved)}` : ""}${p.published ? ` · published ${esc(p.published)}` : ""}`).join("<br>");
+  const zrows = Z.zones.map((z, i) => `<tr${normPlan(z.plan) === normPlan(pl.plan) && z.zone === pl.zone ? ' class="on"' : ""}><td><b>${esc(z.zone)}</b></td><td>${esc(z.desc)}${z.special ? ` <small>${esc(z.special)}</small>` : ""}<br><small>${esc(z.desc_cht)}</small></td><td class="num">${f1(z.share * 100)}%<br><small>${f1(z.area)} m²</small></td><td>${CAN ? `<button type="button" class="ghost st-ib" data-zuse="${i}">Use</button>` : ""}</td></tr>`).join("");
+  const bh = Z.bh.length ? Z.bh.map((b) => `${b.kind === "mPD" ? `${f1(b.value)} mPD` : `${b.value} storeys`} <small>(${f1(b.share * 100)}% of the site)</small>`).join(" · ") : "none on the Plan's height control layer";
+  const N = Z.notes[pl.plan] && Z.notes[pl.plan][pl.zone];
+  const lab = { dpr: "Dom PR", npr: "Non-dom PR", pr: "PR", sc: "SC %", bh: "BH mPD", storeys: "Storeys", dgfa: "Dom GFA", ngfa: "Non-dom GFA", gfa: "GFA" };
+  const nv = N ? Object.keys(lab).filter((k) => N.values[k] != null).map((k) => `${lab[k]} <b>${N.values[k].toLocaleString("en-GB")}</b>`).concat(N.values.bhPlan ? ["BH as on the Plan"] : []).join(" · ") : "";
+  return `<div class="st-zoning">
+      <p class="st-note">${plans}</p>
+      <table class="st-ztab">${zrows}</table>
+      <p class="st-note">Building height control: ${bh}</p>
+      ${N ? `<p class="st-note">The Notes, ${esc(pl.zone)}: ${nv || "no figures in its wording"}${Object.values(N.evidence || {})[0] ? `<br><small>“${esc(String(Object.values(N.evidence)[0]).slice(0, 260))}”</small>` : ""}</p>` : pl.zone ? `<p class="muted st-note">The Notes of ${esc(pl.plan)} give no figures for ${esc(pl.zone)} that could be read.</p>` : ""}
+      <div class="st-row"><label class="st-chk"><input type="checkbox" data-zshow${s.zoneOff ? "" : " checked"}> Zoning on the map</label><button type="button" class="ghost st-ib" data-zagain>Get again</button></div>
+      <p class="muted st-note">From the ${esc(Z.src)}, ${esc(Z.at)}${pl.from === "notes" ? "; the figures read from the Notes' wording - check them against the Notes" : pl.from === "list" ? "; the figures from the office list / built-in table" : ""}. The share of each zone is measured over the lot boundary.</p>
+    </div>`;
 }
 
 /* ---------- start */
@@ -727,6 +807,8 @@ function useLot(lot, box) {
   document.body.classList.toggle("st-ro", !CAN);
   const s = study();
   if (s.pts.length >= 3) fit();
+  // the zoning got before: its overlay again (the server keeps it a week)
+  if (s.lot && s.lot.hk80 && s.zoning) api("/api/site/zoning?" + new URLSearchParams({ rings: JSON.stringify([s.lot.hk80]), id: s.lot.id || "" })).then((r) => { ZONE_RINGS = r.zones.map((z) => ({ zone: z.zone, rings: z.rings })); drawZoning(); }).catch(() => {});
   else if (s.view && s.view.c) map.setView(s.view.c, s.view.z || 16);
   draw(); panel(); tools();
   MS.init({

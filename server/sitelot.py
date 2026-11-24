@@ -122,7 +122,8 @@ def parse_gml(body):
             if len(pts) >= 3:
                 rings.append(pts)
         if rings:
-            out.append({"id": val("lotid"), "name": val("cislotdisplayname") or val("lotnumber"), "type": val("lottype"), "rings": rings})
+            out.append({"id": val("lotid"), "name": val("cislotdisplayname") or val("lotnumber"), "type": val("lottype"),
+                        "number": val("lotnumber"), "code": val("lotcode"), "updated": val("lastupdatedate")[:10], "rings": rings})
     return out
 
 
@@ -144,7 +145,9 @@ def geometry(core, lid, x, y, ext, kind="lot"):
     p = os.path.join(d, safe + ".json") if safe else None
     if p and os.path.exists(p):
         with open(p, encoding="utf-8") as f:
-            return json.load(f)
+            got = json.load(f)
+        if "code" in got:      # cached before the lot's details were kept: fetched again
+            return got
     # the box: the lot's extent and 20 m round it, at most 700 x 580 m (the service answers up to 750 x 600 m)
     if ext:
         x0, y0, x1, y1 = ext[0] - 20, ext[1] - 20, ext[2] + 20, ext[3] + 20

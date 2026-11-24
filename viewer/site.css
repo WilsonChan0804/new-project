@@ -299,3 +299,10 @@ body.st-inplace #st-uplan { inset: 3% 3% 3% 3%; z-index: 975; border: 2px solid 
 body.st-inplace #st-fplan { filter: saturate(.4) brightness(1.04); pointer-events: none; }
 .un-inplace { border: 2px solid var(--accent, #f28022); background: #fff7ef; }
 .un-inplace .st-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+/* the lot's details and the zoning from the Town Planning Board */
+.st-lotcard, .st-ztab { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 4px 0; }
+.st-lotcard td, .st-ztab td { padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.st-lotcard td:first-child { color: var(--muted); width: 42%; }
+.st-ztab tr.on { background: var(--accent-soft, #fff1e4); }
+.st-ztab td.num { text-align: right; white-space: nowrap; }
+.st-zoning { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 6px 0; background: var(--panel); }

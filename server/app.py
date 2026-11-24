@@ -4735,6 +4735,13 @@ try:
 except Exception as _ex:
     print("sitelot not loaded: %s" % _ex)
 
+# Site study: the statutory zoning of a site from the Town Planning Board (ozpgov.py).
+try:
+    import ozpgov
+    ozpgov.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("ozpgov not loaded: %s" % _ex)
+
 # Site study OZP list and Notes reader (ozp.py).
 try:
     import ozp

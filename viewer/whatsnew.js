@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-23", date: "25 Nov 2026",
+    items: [
+      "**Find a lot: its details and its zoning** - choosing a lot found by its number now puts its boundary straight into the drawing as the site, shows the lot's details from the Lands Department (lot type, number, code, id, last updated, area), and gets its zoning from the Town Planning Board's digital planning data: the plan, each zone on the lot with its share, the building height control on the Plan, and the zone's figures read from the plan's Notes. 3 · Planning and lease fills itself (check the figures against the Notes); the zones are drawn on the map.",
+    ],
+  },
+  {
     version: "2027-03-22", date: "25 Nov 2026",
     items: [
       "**4 · Floors: walls shared, edge to edge** - the core has its full RC wall (250 mm) all round, and pieces side by side share one; every wall on the floor (units, core, party walls) is drawn as one, so a wall two share is drawn once. A unit's outer wall now has its face on the corridor's edge. Dragged pieces snap so their walls overlap.",

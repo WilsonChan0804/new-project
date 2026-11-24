@@ -26,6 +26,7 @@ class LotTests(unittest.TestCase):
         f = feats[0]
         self.assertEqual(f["id"], "1800260551")
         self.assertEqual(f["name"], "STTL 121")
+        self.assertEqual((f["number"], f["code"], f["type"], f["updated"]), ("121", "7320", "NNG", "2023-12-12"))
         self.assertEqual(len(f["rings"][0]), 5)
         self.assertTrue(sitelot.inside(f["rings"][0], 836374.45, 826277.03))
         self.assertFalse(sitelot.inside(f["rings"][0], 836300, 826277))
