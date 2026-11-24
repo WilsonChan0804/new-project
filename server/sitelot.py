@@ -170,7 +170,28 @@ def geometry(core, lid, x, y, ext, kind="lot"):
     return hit
 
 
+def lots_in(x0, y0, x1, y1, fetch=None):
+    """the lots in a box (HK80), at most 700 x 580 m round its middle -> [{id, name, type, number, code, updated, rings}]"""
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    hw, hh = min(350, abs(x1 - x0) / 2), min(290, abs(y1 - y0) / 2)
+    bbox = "%.1f,%.1f,%.1f,%.1f,EPSG:2326" % (cx - hw, cy - hh, cx + hw, cy + hh)
+    return parse_gml(_get("/gs/api/v1.0.0/iC1000/lot?bbox=%s" % bbox, _is_gml, timeout=20, fetch=fetch))
+
+
 def register(app, core):
+
+    @app.get("/api/site/lots")
+    async def site_lots(request: Request, bbox: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """the Lot Index round a place: the lots in view, to see their numbers on the map and pick one"""
+        core.require_project(request, x_project, "viewer", x_viewer_token)
+        try:
+            x0, y0, x1, y1 = [float(q) for q in bbox.split(",")]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Give the box: x0,y0,x1,y1 (HK 1980 Grid)")
+        if not all(800000 < v < 870000 for v in (x0, x1)) or not all(800000 < v < 850000 for v in (y0, y1)):
+            raise HTTPException(status_code=400, detail="Give the box in the HK 1980 Grid")
+        lots = await run_in_threadpool(lots_in, x0, y0, x1, y1)
+        return {"lots": lots[:600], "capped": len(lots) > 600}
 
     @app.get("/api/site/lot")
     async def site_lot(request: Request, no: str = "", x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):

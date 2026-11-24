@@ -6,6 +6,20 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-24", date: "25 Nov 2026",
+    items: [
+      "**4 · Floors is much faster** - the walls, the core and the E&M left over are worked out in a fraction of the time, and a drag redraws once a frame.",
+      "**Edit a unit in place: a floating window** beside the floor plan - drag it by its title bar, resize it from its corner, close it with Done or ×; the floor changes as you edit.",
+      "**A unit's own shape** - a plate traced round a unit's walls no longer reads \"outside the plate\": the check uses its rooms out to their outer faces, not its bounding box, and leaves the balcony, UP and A/C platform out. The plate's corners also snap to the units' outer faces.",
+      "**Plate corners**: double-click one, or tap it and **× Remove corner** (or Delete), to take it off.",
+      "**Passages turn**: tap a passage for its width, **+ Bend** / **− Bend**, and drag its points for an L or a Z. **Core pieces resize in place**: drag their edges, or type their clear sizes.",
+      "**JPN 1: corridor and lift lobby** - the exempt part of the corridor (over 1.5 m, up to 2.4 m) and of the lift lobby in front of the lifts (its own minimum and maximum, set in Core and corridor) are drawn as strips down their middle, with their areas, and listed apart.",
+      "**▦ Grid** on the plan: a 1 m background with 5 m lines and the structural grid, on or off; things snap to it when on.",
+      "**3 · Units: GFA measured to** the external walls' outer face, centre or inner face, and the party walls' centre or outer face (Walls and sides). **The balcony, UP and A/C platform** now start at the external wall's outer face instead of overlapping it (existing ones moved out, their areas the same).",
+      "**1 · Site: ▦ Lots** - the Lands Department's Lot Index on the map: the lots and their numbers round a place found by name; click one to set it as the site, with its details and zoning.",
+    ],
+  },
+  {
     version: "2027-03-23", date: "25 Nov 2026",
     items: [
       "**Find a lot: its details and its zoning** - choosing a lot found by its number now puts its boundary straight into the drawing as the site, shows the lot's details from the Lands Department (lot type, number, code, id, last updated, area), and gets its zoning from the Town Planning Board's digital planning data: the plan, each zone on the lot with its share, the building height control on the Plan, and the zone's figures read from the plan's Notes. 3 · Planning and lease fills itself (check the figures against the Notes); the zones are drawn on the map.",

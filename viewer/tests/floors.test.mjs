@@ -72,7 +72,14 @@ ok(near(Fg.gfa, Fg.unitGfa + Fg.corridor + Fg.stair + Fg.lift + Fg.coreWalls + F
   ok(Lb.figures.corridor > Ld.figures.corridor - 1e-6 + pa.w * pa.h - 0.01, "the passage counted with the corridor");
 }
 const W = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, corridor: 2.0 });
-ok(near(W.figures.wideEx, (2.0 - 1.5) * 48, 1e-6), "a 2 m corridor: 0.5 m of its width exempt along 48 m (wider corridor)");
+ok(near(W.figures.wideEx, (2.0 - 1.5) * W.jpn1.corrLen, 1e-6) && near(W.jpn1.corrLen + W.jpn1.lobLen, 48, 1e-6), "a 2 m corridor: 0.5 m of its width exempt along the corridor (48 m less the lift lobby " + W.jpn1.lobLen + " m)");
+ok(W.figures.lobbyEx === 0, "a 2 m lift lobby: nothing over its 2.0 m minimum");
+{
+  for (const [cw2, ce, le] of [[1.5, 0, 0], [1.8, 0.3, 0], [2.6, 0.9, 0.6]]) {
+    const Z = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, corridor: cw2 });
+    ok(near(Z.figures.wideEx, ce * Z.jpn1.corrLen, 1e-6) && near(Z.figures.lobbyEx, le * Z.jpn1.lobLen, 1e-6) && Z.jpn1.lobLen > 0, `corridor ${cw2} m: corridor ${ce} m × ${Z.jpn1.corrLen}, lift lobby ${le} m × ${Z.jpn1.lobLen} exempt`);
+  }
+}
 const MiC = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, mic: true, micPct: 10 });
 ok(near(MiC.figures.gfa, Fg.gfa * 0.9, 1e-3), "MiC at 10%: the floor GFA less 10%");
 ok(L.checks.some((c) => /Staircases/.test(c.what) && c.ok) && L.checks.some((c) => /Travel/.test(c.what)), "the checks: staircases (Table B3) and travel");
@@ -147,6 +154,37 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const Lp = F.layout({ poly: P0, mix, storeys: 30, pieces: old });
   ok(Lp.core.every((c, k) => Math.abs(c.w - Ln.core[k].w) < 1e-6 && Math.abs(c.x - Ln.core[k].x) < 1e-6), "pieces stored before the full walls: grown by half a wall all round, the same insides");
   ok(Ln.residuals.length > 0 && Ln.residuals.every((z) => z.area >= 0.5 && z.cells.length), "the plate's leftovers as E&M regions: " + Ln.residuals.map((z) => z.area).join(", "));
+}
+{
+  // a plate traced round an L-shaped unit's outer wall faces: inside, its balcony outside the plate not counted
+  const rooms = [{ x: 0, y: 0, w: 4, h: 3 }, { x: 0, y: 3, w: 2, h: 2 }], t = 0.2, g = t / 2;
+  const L = [[-g, -g], [4 + g, -g], [4 + g, 3 + g], [2 + g, 3 + g], [2 + g, 5 + g], [-g, 5 + g]];
+  ok(F.unitInside(L, 0, 0, rooms, t), "an L-shaped unit in a plate traced to its outer faces: inside (by its rooms, not its box)");
+  ok(!F.unitInside([[-g, -g], [4 + g, -g], [4 + g, 5 + g], [-g, 5 + g]].map(([x, y]) => [x * 0.9, y]), 0, 0, rooms, t), "the plate cutting into a room: outside");
+  // unionArea / residualRegions against a plain count
+  const R = [{ x0: 0, y0: 0, x1: 2, y1: 1 }, { x0: 1, y0: 0, x1: 3, y1: 2 }, { x0: 5, y0: 5, x1: 6, y1: 7 }];
+  ok(Math.abs(F.unionArea(R) - (2 + 4 - 1 + 2)) < 1e-9, "the union of overlapping rectangles: 7 m²");
+  const res = F.residualRegions([[0, 0], [10, 0], [10, 10], [0, 10]], [{ x0: 0, y0: 0, x1: 10, y1: 4 }, { x0: 0, y0: 6, x1: 10, y1: 10 }, { x0: 4.8, y0: 4, x1: 5.2, y1: 6 }]);
+  ok(res.length === 2 && res.every((z) => Math.abs(z.area - 9.6) < 1e-6), "what is left: two regions of 4.8 × 2 m");
+}
+{
+  // a passage turned into an L: its area the union of its runs, counted with the corridor
+  const c = F.passageShape({ kind: "passage", path: [[10, 8], [10, 5], [14, 5]], width: 1.2 });
+  ok(c.rects.length === 2 && Math.abs(F.unionArea(c.rects) - (1.2 * 3.6 + 1.2 * 3.4)) < 1e-6, "an L passage: two runs, squared at the bend, " + F.unionArea(c.rects).toFixed(3) + " m²");
+  ok(JSON.stringify(F.orthoPath([[0, 0], [3, 4]])) === JSON.stringify([[0, 0], [3, 0], [3, 4]]), "a slanting run made orthogonal: across, then along");
+  const P0 = [[0, 0], [48, 0], [48, 18], [0, 18]];
+  const Lb = F.layout({ poly: P0, mix, storeys: 30, core: "behind" });
+  const pieces = Lb.coreOut.map((q) => Object.assign({}, q));
+  const pa = pieces.find((q) => q.kind === "passage");
+  pa.path = [pa.path[0], [pa.path[0][0], pa.path[0][1] - 1], [pa.path[0][0] - 2, pa.path[0][1] - 1], [pa.path[0][0] - 2, pa.path[1][1]]];   // a Z
+  const Lz = F.layout({ poly: P0, mix, storeys: 30, core: "behind", pieces });
+  const pz = Lz.core.find((q) => q.kind === "passage");
+  ok(pz.path.length === 4 && Math.abs(Lz.figures.corridor - (Lz.L * Lz.cw + F.unionArea(pz.rects))) < 1e-6, "a Z passage kept, its area with the corridor's");
+  // a piece resized: its clear inside follows, its walls stay
+  const rs = Lb.coreOut.map((q) => Object.assign({}, q)), li = rs.findIndex((q) => q.kind === "lift");
+  rs[li].w += 0.5;
+  const Lr = F.layout({ poly: P0, mix, storeys: 30, core: "behind", pieces: rs });
+  ok(Math.abs(Lr.core[li].w - Lb.core[li].w - 0.5) < 1e-6 && Lr.figures.lift > Lb.figures.lift, "a lift shaft made 0.5 m wider: its area grows");
 }
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

@@ -161,12 +161,16 @@ export function outline(u, mode = "saleable", E0) {
   const G = grid(rooms), E = E0 || edges(u), inn = (i, j) => !!G.at(i, j);
   const wall = n(u.wall, 0.1);
   const facOf = (e) => ((u.walls || {})[e.key] || {}).f || u.facadeType || "rc";
+  // the GFA's lines, as the user sets them: external walls to their outer face (default), centre or inner face; party walls to their centre (default) or outer face
+  const gExt = mode === "gfa" ? u.gfaExt || "outer" : "outer", gParty = mode === "gfa" ? u.gfaParty || "centre" : "centre";
   const offOf = (e) => {
-    if (!e || e.kind === "party") return 0;
+    if (!e) return 0;
+    if (e.kind === "party") return gParty === "outer" ? (e.t != null ? e.t : n(u.party, 0.15)) / 2 : 0;
     const t = e.t != null ? e.t : FACADES[facOf(e)] && FACADES[facOf(e)].t != null ? FACADES[facOf(e)].t : wall, f = facOf(e);
-    if (mode === "gfa" && f === "cw") return 0;
-    if (mode === "gfa" && f === "pc") return t / 2 - Math.min(t, FACADES.pc.max);
-    return t / 2;
+    const base = gExt === "centre" ? 0 : gExt === "inner" ? -t / 2 : t / 2;
+    if (mode === "gfa" && f === "cw") return Math.min(0, base);
+    if (mode === "gfa" && f === "pc") return gExt === "outer" ? t / 2 - Math.min(t, FACADES.pc.max) : base;
+    return base;
   };
   // the boundary in unit pieces, each directed with the inside on its left (y down: outward normal = (dy, -dx))
   const segs = [];
@@ -275,7 +279,9 @@ export function figures(u0) {
   const acpFree = ex.filter((e) => e.kind === "acp" && (Math.min(n(e.w), n(e.h)) <= RULES.acp.depth + 1e-9 || e.dfs)).reduce((s, e) => s + e.area, 0);
   const acpCapEx = acp - acpFree;
   const saleable = enclosed + bal + up;
-  const gfa = enclosed - cwEx - pcEx + (bal - balEx) + (up - upEx);
+  // to the lines chosen for the GFA: the GFA line's own area when they are not the usual ones
+  const usual = (u.gfaExt || "outer") === "outer" && (u.gfaParty || "centre") === "centre";
+  const gfa = (usual || !ringG.rings.length ? enclosed - cwEx - pcEx : ringG.area) + (bal - balEx) + (up - upEx);
   const warn = [];
   for (const r of rooms) {
     if (r.space && r.space !== r.id) continue;          // a piece of another room's space: that room is checked
@@ -521,4 +527,35 @@ export function genWindows(u) {
     out.push({ room: r.id, side, at: +Math.max(0, Math.min(L - ww, start + (e.len - ww) / 2)).toFixed(2), w: +ww.toFixed(2) });
   }
   return out;
+}
+
+/* an external wall's thickness: its own, else its façade's, else the unit's */
+export function extWallT(u, e) {
+  if (e.t != null) return e.t;
+  const f = ((u.walls || {})[e.key] || {}).f || u.facadeType || "rc";
+  return FACADES[f] && FACADES[f].t != null ? FACADES[f].t : n(u.wall, 0.15);
+}
+/* the balcony, UP and A/C platform from the external wall's outer face, not its centre line: those made before moved out by
+   half the wall, once (u.xFace); their areas as they were */
+const rr3 = (x) => Math.round(x * 1000) / 1000;
+export function extrasToFace(u) {
+  if (u.xFace) return false;
+  const E = edges(u).filter((e) => e.kind === "ext" || e.kind === "party");
+  let moved = false;
+  for (const x of u.extras || []) {
+    const X0 = n(x.x), Y0 = n(x.y), X1 = X0 + n(x.w), Y1 = Y0 + n(x.h);
+    for (const e of E) {
+      const t = e.kind === "ext" ? extWallT(u, e) : n(u.party, 0.15), v = e.x1 === e.x2;
+      const lo = v ? e.y1 : e.x1, hi = v ? e.y2 : e.x2, a = v ? Y0 : X0, b = v ? Y1 : X1;
+      if (Math.min(hi, b) - Math.max(lo, a) < 0.05) continue;
+      // its inner edge on the wall's centre line, or off it by up to a wall (a template drawn for a thicker wall): onto the outer face
+      const near = (d) => d > -EPS && d < Math.max(t, 0.2) + EPS;
+      if (v && e.face === "e" && near(X0 - e.x1)) { x.x = rr3(e.x1 + t / 2); moved = true; break; }
+      if (v && e.face === "w" && near(e.x1 - X1)) { x.x = rr3(e.x1 - t / 2 - n(x.w)); moved = true; break; }
+      if (!v && e.face === "s" && near(Y0 - e.y1)) { x.y = rr3(e.y1 + t / 2); moved = true; break; }
+      if (!v && e.face === "n" && near(e.y1 - Y1)) { x.y = rr3(e.y1 - t / 2 - n(x.h)); moved = true; break; }
+    }
+  }
+  u.xFace = 1;
+  return moved;
 }

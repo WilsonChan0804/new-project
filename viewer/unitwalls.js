@@ -91,23 +91,28 @@ export function wallGeom(u, edges, opts) {
   return { rects, off, lines: outlineOf(rects) };
 }
 
+/* the cells of a grid (xs, ys sorted) each rectangle covers: binary search its span, visit those cells only */
+export function lowerBound(a, v) { let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < v - 1e-9) lo = m + 1; else hi = m; } return lo; }
+export function rasterise(xs, ys, rects, visit) {
+  const ny = ys.length - 1;
+  for (let k = 0; k < rects.length; k++) {
+    const r = rects[k];
+    const i0 = lowerBound(xs, r.x0), i1 = lowerBound(xs, r.x1), j0 = lowerBound(ys, r.y0), j1 = lowerBound(ys, r.y1);
+    for (let i = i0; i < i1; i++) for (let j = j0; j < j1; j++) visit(i * ny + j, r, k);
+  }
+}
+const uniq = (v) => { const a = v.map((q) => +q.toFixed(5)).sort((x, y) => x - y); const o = []; for (const q of a) if (!o.length || q - o[o.length - 1] > 1e-9) o.push(q); return o; };
+
 /* the union's lines: [{x1, y1, x2, y2, k}] k = the filled material on the edge, "join" between two materials */
 const PRI = { rc: 3, pc: 3, blk: 1 };
+const MI = ["", "blk", "rc", "pc"], MK = { blk: 1, rc: 2, pc: 3 };
 export function outlineOf(rects) {
   if (!rects.length) return [];
-  const xs = [...new Set(rects.flatMap((r) => [r.x0, r.x1]).map((v) => +v.toFixed(5)))].sort((a, b) => a - b);
-  const ys = [...new Set(rects.flatMap((r) => [r.y0, r.y1]).map((v) => +v.toFixed(5)))].sort((a, b) => a - b);
-  const nx = xs.length - 1, ny = ys.length - 1, cell = new Array(nx * ny).fill(null);
-  for (let i = 0; i < nx; i++) {
-    const cx = (xs[i] + xs[i + 1]) / 2;
-    for (let j = 0; j < ny; j++) {
-      const cy = (ys[j] + ys[j + 1]) / 2;
-      let m = null;
-      for (const r of rects) if (cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1 && (!m || PRI[r.m] > PRI[m])) m = r.m;
-      cell[i * ny + j] = m;
-    }
-  }
-  const at = (i, j) => (i < 0 || j < 0 || i >= nx || j >= ny ? null : cell[i * ny + j]);
+  const xs = uniq(rects.flatMap((r) => [r.x0, r.x1])), ys = uniq(rects.flatMap((r) => [r.y0, r.y1]));
+  const nx = xs.length - 1, ny = ys.length - 1, cell = new Uint8Array(Math.max(0, nx * ny));
+  // the highest-priority material on each cell
+  rasterise(xs, ys, rects, (c, r) => { const m = MK[r.m] || 1, cur = cell[c]; if (!cur || PRI[r.m] > PRI[MI[cur]]) cell[c] = m; });
+  const at = (i, j) => (i < 0 || j < 0 || i >= nx || j >= ny ? null : MI[cell[i * ny + j]] || null);
   const kind = (A, B) => (A && !B ? A : B && !A ? B : A && B && A !== B ? "join" : null);
   const out = [];
   const add = (x1, y1, x2, y2, k) => {

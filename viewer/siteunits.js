@@ -47,6 +47,8 @@ export function store() {
     if (!Array.isArray(u.fixtures)) u.fixtures = U.genFixtures(u);
     // the first form of an open kitchen (a room) as a zone in the living room's space, once
     if (!u.zonesDone && (u.rooms || []).some((r) => r.kind === "OKIT")) { U.zoneKitchens(u); u.zonesDone = 1; if (u.orig) { const o = JSON.parse(u.orig); U.zoneKitchens(o); o.zonesDone = 1; u.orig = JSON.stringify(o); } }
+    // the balcony, UP and A/C platform from the external wall's outer face (those made on its centre line moved out), once
+    if (!u.xFace) { U.extrasToFace(u); if (u.orig) { const o = JSON.parse(u.orig); U.extrasToFace(o); u.orig = JSON.stringify(o); } }
     if (u.orig == null) setOrig(u);
   }
   if (st.sel == null || st.sel >= st.list.length) st.sel = st.list.length ? 0 : -1;
@@ -61,9 +63,39 @@ const copyNamed = (u, list) => { const c = JSON.parse(JSON.stringify(u)); let nm
 
 /* opened in place from 4 · Floors: a floating window over the floor plan, a banner with Done */
 let INPLACE = null;
+/* in place: the plan in a floating window (a title bar to drag it by, Done and ×, resized from its corner) over the floor plan, which stays live */
+let WIN = null;
+function openWin(title) {
+  const host = $("#st-uplan");
+  if (!WIN) {
+    WIN = document.createElement("div"); WIN.id = "un-win";
+    WIN.innerHTML = `<div class="un-win-bar"><b></b><span><button type="button" class="primary st-ib" data-wdone>Done</button><button type="button" class="ghost st-ib" data-wdone title="Close">×</button></span></div>`;
+    WIN._home = [host.parentNode, host.nextSibling];
+    host.parentNode.appendChild(WIN);
+    WIN.appendChild(host);
+    const bar = WIN.querySelector(".un-win-bar");
+    bar.addEventListener("click", (ev) => { if (ev.target.closest("[data-wdone]")) { const cb = INPLACE && INPLACE.onDone; show(false).then(() => cb && cb()); } });
+    bar.addEventListener("pointerdown", (ev) => {
+      if (ev.target.closest("button")) return;
+      const r = WIN.getBoundingClientRect(), pr = WIN.offsetParent.getBoundingClientRect(), dx = ev.clientX - r.left, dy = ev.clientY - r.top;
+      const mv = (e) => { WIN.style.left = Math.max(0, Math.min(pr.width - 80, e.clientX - pr.left - dx)) + "px"; WIN.style.top = Math.max(0, Math.min(pr.height - 40, e.clientY - pr.top - dy)) + "px"; WIN.style.right = "auto"; };
+      const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); };
+      addEventListener("pointermove", mv); addEventListener("pointerup", up); ev.preventDefault();
+    });
+    new ResizeObserver(() => { if (ON && WIN) drawPlan(); }).observe(WIN);
+  }
+  WIN.querySelector(".un-win-bar b").textContent = "✎ " + (title || "");
+}
+function closeWin() {
+  if (!WIN) return;
+  const host = $("#st-uplan"), [par, next] = WIN._home;
+  par.insertBefore(host, next && next.parentNode === par ? next : null);
+  WIN.remove(); WIN = null;
+}
 export async function show(on, opts) {
   INPLACE = on && opts && opts.inplace ? opts : null;
   document.body.classList.toggle("st-inplace", !!INPLACE);
+  if (INPLACE) { const u = cur(); openWin(u ? u.name + " - in place" : "in place"); } else closeWin();
   ON = on;
   $("#st-upanel").hidden = !on;
   $("#st-uplan").hidden = !on;
@@ -79,7 +111,7 @@ function undo(step) {
   if (k < 0 || k >= HIST.length) return toast(step < 0 ? "Nothing to undo" : "Nothing to redo");
   HI = k; C.study().units = JSON.parse(HIST[HI]); C.save(); render();
 }
-function changed() { snap(); C.save(); render(); }
+function changed() { snap(); C.save(); render(); if (INPLACE && INPLACE.onChange) INPLACE.onChange(); }
 
 /* ---------- the panel */
 function render() {
@@ -138,6 +170,7 @@ function render() {
         <div class="un-walls">
           <label>External ${num('data-uf="wall"', u.wall, 0.01)} m</label><label>Party ${num('data-uf="party"', u.party, 0.01)} m</label><label>Partition ${num('data-uf="part"', u.part, 0.01)} m</label>
           <label>External walls <select data-uf="facadeType"${dis}>${Object.entries(U.FACADES).map(([k, q]) => `<option value="${k}"${(u.facadeType || "rc") === k ? " selected" : ""}>${q.label}</option>`).join("")}</select></label>
+          <label>GFA measured to: external walls <select data-uf="gfaExt"${dis}>${[["outer", "outer face"], ["centre", "centre"], ["inner", "inner face"]].map(([k, v]) => `<option value="${k}"${(u.gfaExt || "outer") === k ? " selected" : ""}>${v}</option>`).join("")}</select> · party walls <select data-uf="gfaParty"${dis}>${[["centre", "centre"], ["outer", "outer face"]].map(([k, v]) => `<option value="${k}"${(u.gfaParty || "centre") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <label>Partitions in line with a thicker wall <select data-uf="join"${dis}><option value="edge"${u.join !== "centre" ? " selected" : ""}>flush with its inside face</option><option value="centre"${u.join === "centre" ? " selected" : ""}>centre to centre</option></select></label>
           <label>Façade (windows) <select data-uf="facade"${dis}>${Object.entries(SIDES).map(([k, v]) => `<option value="${k}"${(u.facade || "s") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <span class="un-party">Party walls on: ${Object.entries(SIDES).map(([k, v]) => `<label class="st-chk"><input type="checkbox" data-ups="${k}"${(u.partySides || []).includes(k) ? " checked" : ""}${dis}> ${v}</label>`).join("")}</span>
@@ -163,7 +196,7 @@ function onChange(ev) {
   if (d.unew != null && t.value) { const c = ensure(copyNamed(TEMPLATES[t.value], st.list)); setOrig(c); st.list.push(c); st.sel = st.list.length - 1; SELR = null; return changed(); }
   if (d.ulib != null && t.value) { const x = LIB.units.find((q) => q.id === t.value); if (x) { const c = copyNamed(x.unit.rows ? U.fromRows(x.unit) : x.unit, st.list); c.libId = x.id; ensure(c); setOrig(c); st.list.push(c); st.sel = st.list.length - 1; toast(`${x.name} copied into this project`); return changed(); } }
   if (!u) return;
-  if (d.uf) { u[d.uf] = ["name", "facade", "facadeType", "join"].includes(d.uf) ? t.value : Math.max(0, num(t.value, u[d.uf])); return changed(); }
+  if (d.uf) { u[d.uf] = ["name", "facade", "facadeType", "join", "gfaExt", "gfaParty"].includes(d.uf) ? t.value : Math.max(0, num(t.value, u[d.uf])); return changed(); }
   if (d.ups) { const s2 = new Set(u.partySides || []); if (t.checked) s2.add(d.ups); else s2.delete(d.ups); u.partySides = [...s2]; return changed(); }
   const R = (k) => u.rooms[+k];
   if (d.rk != null) { const r = R(d.rk), old = (U.KINDS[r.kind] || {}).label; r.kind = t.value; if (!r.name || r.name === old) r.name = U.KINDS[t.value].label; return changed(); }
@@ -754,7 +787,7 @@ function wirePlan() {
         if (!e || e.kind === "part") return toast("Click an external wall: it goes outside it", true);
         const k = TOOL.slice(2), X = XADD[k], vert = e.x1 === e.x2;
         const len = X.parts ? X.parts.reduce((s2, q) => s2 + q.len, 0) : X.len, dep = X.depth;
-        const out = e.face === "e" || e.face === "s" ? 1 : -1, wallAt = vert ? e.x1 : e.y1;
+        const out = e.face === "e" || e.face === "s" ? 1 : -1, wallAt = (vert ? e.x1 : e.y1) + out * U.extWallT(u, e) / 2;   // its outer face
         const mid = Math.round(((vert ? P[1] : P[0]) - len / 2) * 20) / 20, lo = vert ? e.y1 : e.x1, hi = vert ? e.y2 : e.x2;
         const a = Math.max(lo - len / 2, Math.min(mid, hi - len / 2));
         const ex = vert ? { x: out > 0 ? wallAt : wallAt - dep, y: a, w: dep, h: len } : { x: a, y: out > 0 ? wallAt : wallAt - dep, w: len, h: dep };
@@ -843,6 +876,7 @@ function wirePlan() {
       // a balcony / UP / bay: to the wall lines near (0.25 m), else the 50 mm grid
       const x = v.extras[drag.i], xs = [], ys = [];
       for (const r of v.rooms) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
+      for (const e of U.edges(v)) if (e.kind === "ext") { const t = U.extWallT(v, e) / 2; if (e.x1 === e.x2) xs.push(e.x1 + (e.face === "e" ? t : -t)); else ys.push(e.y1 + (e.face === "s" ? t : -t)); }
       const sn = (p, w, L) => { let b = null; for (const a of L) for (const c of [a - p, a - (p + w)]) if (Math.abs(c) <= 0.25 && (b == null || Math.abs(c) < Math.abs(b))) b = c; return b != null ? +(p + b).toFixed(3) : snapv(p); };
       x.x = ev.altKey ? snapv(x.x + dx) : sn(x.x + dx, x.w, xs); x.y = ev.altKey ? snapv(x.y + dy) : sn(x.y + dy, x.h, ys);
     }

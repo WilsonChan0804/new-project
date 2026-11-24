@@ -31,6 +31,14 @@ class LotTests(unittest.TestCase):
         self.assertTrue(sitelot.inside(f["rings"][0], 836374.45, 826277.03))
         self.assertFalse(sitelot.inside(f["rings"][0], 836300, 826277))
 
+    def test_lots_in_a_box(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests_lot_sample.gml"), "rb") as f:
+            body = f.read()
+        urls = []
+        lots = sitelot.lots_in(836000, 826000, 837500, 826500, fetch=lambda url, timeout: urls.append(url) or body)
+        self.assertEqual(lots[0]["name"], "STTL 121")
+        self.assertIn("iC1000/lot?bbox=836400.0,826000.0,837100.0,826500.0", urls[0])   # at most 700 x 580 m round the middle
+
 
     def test_host_fallback(self):
         good = b'{"candidates": [{"address": "STTL 121, Tai Wai", "location": {"x": 836374.4, "y": 826277.0}, "score": 100, "attributes": {"Ref_ID": "1800260551", "PlaceName": "STTL 121", "City": "Tai Wai"}, "extent": {"xmin": 1, "ymin": 2, "xmax": 3, "ymax": 4}}]}'

@@ -149,5 +149,25 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a be
   ok(G2.rects.filter((r) => r.key === "m:w").length === 2, "a window cuts its wall in two");
   ok(outlineOf([{ x0: 0, y0: 0, x1: 1, y1: 0.1, m: "rc" }, { x0: 0, y0: 0, x1: 0.1, y1: 1, m: "rc" }]).length === 6, "two overlapping bands: one L outline of six lines");
 }
+{
+  // the GFA's measure lines: external walls to their centre take off half the wall all round (and the corners); party walls to their outer face add half of it
+  const g0 = { wall: 0.2, party: 0.2, part: 0.1, partySides: ["w"], rooms: [R("a", "LD", 0, 0, 4, 3)], extras: [] };
+  const base = U.figures(g0).gfa;
+  const cen = U.figures(Object.assign({}, g0, { gfaExt: "centre" })).gfa;
+  ok(near(base - cen, (3 + 4 + 4) * 0.1 + 2 * 0.01, 1e-6), "GFA to the external walls' centre: half the wall less on the three external sides (" + (base - cen).toFixed(3) + " m²)");
+  const po = U.figures(Object.assign({}, g0, { gfaParty: "outer" })).gfa;
+  ok(near(po - base, 3 * 0.1 + 2 * 0.01, 1e-6), "GFA to the party wall's outer face: half of it more (" + (po - base).toFixed(3) + " m²)");
+  ok(U.figures(Object.assign({}, g0, { gfaExt: "inner" })).gfa < cen, "to the inner face: less again");
+}
+{
+  // a balcony made on the external wall's centre line: moved out to its outer face, its area the same
+  const u = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], rooms: [R("a", "LD", 0, 0, 4, 3)], extras: [{ kind: "bal", x: 4, y: 0.5, w: 1.2, h: 1.7 }] };
+  const a0 = U.figures(u).saleable;
+  U.extrasToFace(u);
+  ok(Math.abs(u.extras[0].x - 4.1) < 1e-9 && u.xFace === 1, "the balcony off the wall: from x 4.0 (the wall's centre) to 4.1 (its outer face)");
+  ok(Math.abs(U.figures(u).saleable - a0) < 1e-9, "its area, and the saleable area, the same");
+  U.extrasToFace(u);
+  ok(Math.abs(u.extras[0].x - 4.1) < 1e-9, "once only");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

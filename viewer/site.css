@@ -295,8 +295,11 @@ body.st-planfull .st-map-wrap { min-height: 100%; }
 .fl-vw button.on { background: var(--accent, #f28022); color: #fff; }
 .fl-vw select { border: 0; background: none; }
 /* a unit edited in place from 4 · Floors: its editor floats over the floor plan */
-body.st-inplace #st-uplan { inset: 3% 3% 3% 3%; z-index: 975; border: 2px solid var(--accent, #f28022); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
-body.st-inplace #st-fplan { filter: saturate(.4) brightness(1.04); pointer-events: none; }
+#un-win { position: absolute; top: 56px; right: 12px; width: min(52%, 900px); height: calc(100% - 80px); min-width: 320px; min-height: 260px; z-index: 980; resize: both; overflow: hidden; background: #f3f5f8; border: 2px solid var(--accent, #f28022); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+#un-win .un-win-bar { position: absolute; left: 0; right: 0; top: 0; height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px 0 12px; background: #fff7ef; border-bottom: 1px solid var(--line); cursor: move; user-select: none; }
+#un-win .un-win-bar b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#un-win .un-win-bar span { display: flex; gap: 4px; }
+#un-win #st-uplan { position: absolute; inset: 36px 0 0 0; }
 .un-inplace { border: 2px solid var(--accent, #f28022); background: #fff7ef; }
 .un-inplace .st-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 /* the lot's details and the zoning from the Town Planning Board */
@@ -306,3 +309,5 @@ body.st-inplace #st-fplan { filter: saturate(.4) brightness(1.04); pointer-event
 .st-ztab tr.on { background: var(--accent-soft, #fff1e4); }
 .st-ztab td.num { text-align: right; white-space: nowrap; }
 .st-zoning { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 6px 0; background: var(--panel); }
+.leaflet-tooltip.st-lotlab { background: rgba(255,255,255,.8); border: 0; box-shadow: none; padding: 0 3px; font-size: 10.5px; color: #6a1b9a; font-weight: 600; }
+.leaflet-tooltip.st-lotlab::before { display: none; }

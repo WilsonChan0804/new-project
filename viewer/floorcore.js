@@ -12,7 +12,7 @@
  */
 import * as U from "./unitcore.js";
 import { quickStairs, travelFor, b1, ceilPersons } from "./gbpcore.js";
-import { wallGeom, outlineOf } from "./unitwalls.js";
+import { wallGeom, outlineOf, rasterise } from "./unitwalls.js";
 
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
 const n = (x, d = 0) => (Number.isFinite(Number(x)) ? Number(x) : d);
@@ -21,6 +21,8 @@ export const DEF = {
   corridor: 1.5,        // m, clear width (B(P)R / MoE: at least 1.05 m for a route)
   wideBase: 1.5,        // JPN 1 wider common corridor: the part wider than this ...
   wideMax: 2.4,         // ... up to this width is exempt (check against JPN 1)
+  lobbyMin: 2.0,        // JPN 1 wider lift lobby (in front of the lifts): the part wider than this ...
+  lobbyMax: 3.0,        // ... up to this width is exempt (check against JPN 1)
   stairs: 2, stairWidth: 1200,  // mm
   persons: "",          // persons a flat, for the lifts: empty = from each flat's usable floor area (Table B1)
   lobby: false,         // a protected lobby between each staircase and the corridor
@@ -229,10 +231,13 @@ export function layout(o) {
     for (const c of p.pieces) {
       const grow = c.full || c.kind === "passage" ? 0 : cwl / 2;
       const q = { kind: c.kind, label: c.label || c.kind, x: r3(n(c.x) - grow), y: r3(n(c.y) - grow), w: r3(Math.max(0.3, n(c.w, 1) + 2 * grow)), h: r3(Math.max(0.3, n(c.h, 1) + 2 * grow)), full: true };
+      if (c.kind === "passage" && Array.isArray(c.path) && c.path.length >= 2) { q.path = c.path.map((pt) => [r3(n(pt[0])), r3(n(pt[1]))]); q.width = r3(Math.max(0.6, n(c.width, 1.2))); }
       core.push(q); if (q.kind === "stair") pushX(q.x + q.w / 2);
     }
     nS = Math.max(1, core.filter((c) => c.kind === "stair").length * per); nL = Math.max(1, core.filter((c) => c.kind === "lift").length);
   }
+  // a passage: a centre line (straight, or with bends: L, Z ...) at a clear width; its footprint the rectangles of its segments
+  for (const c of core) if (c.kind === "passage") passageShape(c);
   // the core's doors, on the face onto the corridor, a passage or a lobby
   coreDoors(core, { y0, y1, cwl, L, per });
   // free runs along each band: what the pieces standing on it leave
@@ -249,6 +254,11 @@ export function layout(o) {
     const pts = [[q.x + 0.05, q.y + 0.05], [q.x + q.w - 0.05, q.y + 0.05], [q.x + q.w - 0.05, q.y + q.h - 0.05], [q.x + 0.05, q.y + q.h - 0.05]];
     return pts.every(([px, py]) => inPoly(F.poly, px, py));
   };
+  // a unit at (x, y): its own shape - each room out to its walls' outer faces - not its bounding box; the balcony, UP and A/C platform left out
+  const insideUnit = (x, y, rooms, wall) => unitInside(F.poly, x, y, rooms, wall);
+  // two units, or a unit and a core piece, overlapping: by their rooms (a unit's wall may share a core wall)
+  const roomsOv = (q, b, tol) => q.rooms.some((r) => Math.min(q.x + r.x + r.w, b.x + b.w) - Math.max(q.x + r.x, b.x) > tol && Math.min(q.y + r.y + r.h, b.y + b.h) - Math.max(q.y + r.y, b.y) > tol);
+  const unitsOv = (q, o) => o.rooms.some((r) => roomsOv(q, { x: o.x + r.x, y: o.y + r.y, w: r.w, h: r.h }, 0.05));
   const placed = [], left = [];
   // between units the party wall: what the plans hold at their ends (half their own party wall each) less the RC wall set here
   const gapOf = (t) => r3(Math.max(0, n(p.partyWall, 0.2) - n(t.party, 0.15)));
@@ -267,7 +277,7 @@ export function layout(o) {
         const x = end === "l" ? run.l + nudge * 0.25 : run.r - t.W - nudge * 0.25;
         if (x < run.l - 1e-6 || x + t.W > run.r + 0.01) break;
         const y = band === "s" ? y1 + t.wall / 2 : y0 - t.D - t.wall / 2, box = { x: r3(x), y: r3(y), w: t.W, h: t.D };
-        if (!inside(box)) continue;
+        if (!insideUnit(box.x, box.y, t.rooms, t.wall)) continue;
         if (!probe) { if (end === "l") run.l = r3(x + t.W + gapOf(t)); else run.r = r3(x - gapOf(t)); if (end === "l") c.i = k; else c.j = k; }
         return box;
       }
@@ -339,9 +349,9 @@ export function layout(o) {
   const issues = [];
   for (const [i, q] of placed.entries()) {
     q.flags = [];
-    if (!inside(q)) q.flags.push("outside the plate");
-    for (const [j, o] of placed.entries()) if (j !== i && ov(q, o)) { q.flags.push("overlaps " + (o.name || "a unit")); break; }
-    const c = core.find((cc) => ov(q, cc, cwl / 2 + 0.05)); if (c) q.flags.push("overlaps " + c.label);
+    if (!insideUnit(q.x, q.y, q.rooms, q.wt)) q.flags.push("outside the plate");
+    for (const [j, o] of placed.entries()) if (j !== i && ov(q, o) && unitsOv(q, o)) { q.flags.push("overlaps " + (o.name || "a unit")); break; }
+    const c = core.find((cc) => roomsOv(q, cc, cwl / 2 + 0.05)); if (c) q.flags.push("overlaps " + c.label);
     if (q.r % 360) q.flags.push("entrance not on the corridor");
     for (const fl of q.flags) issues.push(`${q.name}: ${fl}`);
   }
@@ -356,8 +366,14 @@ export function layout(o) {
   if (!SEQ) for (const q of left) seqOut.s.push({ u: q.u.name, m: false });
   // areas
   const plate = Math.abs(area(F.poly));
-  const corrA = L * cw + core.filter((c) => c.kind === "passage").reduce((s2, c) => s2 + c.w * c.h, 0);
-  const wideEx = Math.max(0, Math.min(cw, n(p.wideMax, 2.4)) - n(p.wideBase, 1.5)) * L;
+  const corrA = L * cw + core.filter((c) => c.kind === "passage").reduce((s2, c) => s2 + unionArea(c.rects), 0);
+  // JPN 1: the corridor in front of the lifts is the lift lobby, with its own widths; the rest is the common corridor.
+  // The exempt part of each: its width over the minimum, up to the maximum, along its length
+  const onCorr = core.filter((c) => c.kind === "lift" && (Math.abs(c.y + c.h - y0) < 0.02 || Math.abs(c.y - y1) < 0.02));
+  const llob = onCorr.length ? { x0: r3(Math.max(0, Math.min(...onCorr.map((c) => c.x)))), x1: r3(Math.min(L, Math.max(...onCorr.map((c) => c.x + c.w)))) } : null;
+  const lobLen = llob ? Math.max(0, llob.x1 - llob.x0) : 0;
+  const exCorrW = Math.max(0, Math.min(cw, n(p.wideMax, 2.4)) - n(p.wideBase, 1.5)), exLobW = Math.max(0, Math.min(cw, n(p.lobbyMax, 3.0)) - n(p.lobbyMin, 2.0));
+  const wideEx = exCorrW * (L - lobLen), lobbyEx = exLobW * lobLen;
   // a staircase, lift or lobby: its inside and half its walls; the refuse room and riser: the inside (exempt); the rest of the walls round the core
   const A = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - cwl) * Math.max(0, c.h - cwl), 0);
   const clearA = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - 2 * cwl) * Math.max(0, c.h - 2 * cwl), 0);
@@ -374,11 +390,11 @@ export function layout(o) {
   // what is left of the plate: found as regions (slivers aside), each taken as E&M
   const residuals = residualRegions(F.poly, [
     ...placed.flatMap((q) => [...q.rooms.map((rm) => ({ x0: q.x + rm.x - q.wt / 2, y0: q.y + rm.y - q.wt / 2, x1: q.x + rm.x + rm.w + q.wt / 2, y1: q.y + rm.y + rm.h + q.wt / 2 })), ...(q.extras || []).map((e) => ({ x0: q.x + e.x, y0: q.y + e.y, x1: q.x + e.x + e.w, y1: q.y + e.y + e.h }))]),
-    ...core.map((c) => ({ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h })),
+    ...core.flatMap((c) => (c.rects ? c.rects : [{ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h }])),
     { x0: -1e3, y0: y0, x1: 1e3, y1: y1 },
   ]);
   const residual = residuals.reduce((s2, q) => s2 + q.area, 0);
-  let gfa = unitGfa + corrA - wideEx + stairA + liftA + lobbyA + coreWallA + partyA;
+  let gfa = unitGfa + corrA - wideEx - lobbyEx + stairA + liftA + lobbyA + coreWallA + partyA;
   const mic = p.mic ? gfa * n(p.micPct, 10) / 100 : 0;
   gfa -= mic;
   // staircases: the persons on a floor (Table B1 1b-1 with five or more flats a floor a staircase)
@@ -404,10 +420,11 @@ export function layout(o) {
   if (between != null) checks.push({ what: "Between the staircases", ok: between <= tr.between, text: `${between} m, at most ${tr.between} m (B11.3(b))` });
   return {
     seq: SEQ ? { s: SEQ.s.map((e) => Object.assign({}, e)), n: SEQ.n.map((e) => Object.assign({}, e)) } : seqOut, edited: !!SEQ, note, cornerFac: r3(cornerFac),
-    coreOut: core.map((c) => ({ kind: c.kind, label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, full: true })), residuals, persons: { factor: fac, floor: popFloor }, coreAuto, coreEdited, issues, frameAxis: { ux: F.ux, uy: F.uy },
+    jpn1: { lobby: llob, corrW: r3(exCorrW), lobW: r3(exLobW), corrLen: r3(L - lobLen), lobLen: r3(lobLen) },
+    coreOut: core.map((c) => Object.assign({ kind: c.kind, label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, full: true }, c.path ? { path: c.path.map((q) => q.slice()), width: c.width } : {})), residuals, persons: { factor: fac, floor: popFloor }, coreAuto, coreEdited, issues, frameAxis: { ux: F.ux, uy: F.uy },
     F, L: r3(L), D: r3(D), y0, y1, cw, core, placed, left, stairsX: xs.map(r3), lifts: lf, nL, nS, stairs: qs, checks,
     figures: {
-      plate: r3(plate), units: placed.length, saleable: r3(sale), unitGfa: r3(unitGfa), corridor: r3(corrA), wideEx: r3(wideEx),
+      plate: r3(plate), units: placed.length, saleable: r3(sale), unitGfa: r3(unitGfa), corridor: r3(corrA), wideEx: r3(wideEx), lobbyEx: r3(lobbyEx),
       stair: r3(stairA), lift: r3(liftA), lobby: r3(lobbyA), refuse: r3(refA), riser: r3(riserA), coreWalls: r3(coreWallA), partyWalls: r3(partyA), residual: r3(residual), mic: r3(mic), unitEx: r3(balEx),
       gfa: r3(gfa), acc: plate ? r3(gfa / plate * 100) : null, efficiency: gfa ? r3(sale / gfa * 100) : null,
       conc: r3(plate - gfa),
@@ -459,11 +476,10 @@ export function stairSize(o) {
 export function unionArea(rects) {
   if (!rects.length) return 0;
   const xs = [...new Set(rects.flatMap((r) => [r.x0, r.x1]))].sort((a, b) => a - b), ys = [...new Set(rects.flatMap((r) => [r.y0, r.y1]))].sort((a, b) => a - b);
+  const ny = ys.length - 1, hit = new Uint8Array(Math.max(0, (xs.length - 1) * ny));
+  rasterise(xs, ys, rects, (c) => { hit[c] = 1; });
   let a = 0;
-  for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) {
-    const cx = (xs[i] + xs[i + 1]) / 2, cy = (ys[j] + ys[j + 1]) / 2;
-    if (rects.some((r) => cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1)) a += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
-  }
+  for (let c = 0; c < hit.length; c++) if (hit[c]) { const i = Math.floor(c / ny), j = c % ny; a += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]); }
   return a;
 }
 
@@ -472,13 +488,20 @@ export function unionArea(rects) {
 export function residualRegions(poly, rects, minA = 0.5, minW = 0.4) {
   const xs = [...new Set([...poly.map((p) => p[0]), ...rects.flatMap((r) => [r.x0, r.x1])].map((v) => +v.toFixed(4)))].sort((a, b) => a - b);
   const ys = [...new Set([...poly.map((p) => p[1]), ...rects.flatMap((r) => [r.y0, r.y1])].map((v) => +v.toFixed(4)))].sort((a, b) => a - b);
-  const nx = xs.length - 1, ny = ys.length - 1, free = new Uint8Array(Math.max(0, nx * ny));
-  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
-    const cx = (xs[i] + xs[i + 1]) / 2, cy = (ys[j] + ys[j + 1]) / 2;
-    if (xs[i + 1] - xs[i] < 1e-6 || ys[j + 1] - ys[j] < 1e-6) continue;
-    if (!inPoly(poly, cx, cy)) continue;
-    if (rects.some((r) => cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1)) continue;
-    free[i * ny + j] = 1;
+  const nx = xs.length - 1, ny = ys.length - 1, free = new Uint8Array(Math.max(0, nx * ny)), cov = new Uint8Array(free.length);
+  rasterise(xs, ys, rects, (c) => { cov[c] = 1; });
+  // inside the plate: one crossing test a row of cells (the cells' middles on a line y)
+  for (let j = 0; j < ny; j++) {
+    if (ys[j + 1] - ys[j] < 1e-6) continue;
+    const cy = (ys[j] + ys[j + 1]) / 2, cuts = [];
+    for (let a = 0, b = poly.length - 1; a < poly.length; b = a++) { const [xa, ya] = poly[a], [xb, yb] = poly[b]; if ((ya > cy) !== (yb > cy)) cuts.push(xa + (cy - ya) * (xb - xa) / (yb - ya)); }
+    cuts.sort((p, q) => p - q);
+    for (let i = 0; i < nx; i++) {
+      if (xs[i + 1] - xs[i] < 1e-6 || cov[i * ny + j]) continue;
+      const cx = (xs[i] + xs[i + 1]) / 2;
+      let n = 0; for (const c of cuts) if (c < cx) n++;
+      if (n % 2) free[i * ny + j] = 1;
+    }
   }
   const seen = new Uint8Array(free.length), out = [];
   for (let k = 0; k < free.length; k++) {
@@ -539,8 +562,15 @@ export function coreDoors(core, o) {
 }
 
 /* a placed unit's walls in plan metres: its turned rooms through wallGeom, its doors cut; [{x0, y0, x1, y1, m}] and the door openings */
+const PW = new WeakMap();   // a placed unit's walls (its own frame), kept while the layout stands (its rooms array the key)
 export function placedWalls(q, at) {
   const ox = at ? at.x : q.x, oy = at ? at.y : q.y;
+  let w = PW.get(q.rooms);
+  if (!w) { w = placedWalls0(q); PW.set(q.rooms, w); }
+  return { rects: w.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: w.ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
+}
+function placedWalls0(q) {
+  const ox = 0, oy = 0;
   const pu = { rooms: q.rooms, walls: Object.fromEntries(Object.entries(q.u.walls || {}).filter(([k2]) => k2.includes("|"))), partySides: [] };
   const ed = U.edges(pu), tOf = (e) => (e.kind === "part" ? Number(q.u.part ?? 0.075) || 0.075 : Number(q.u.wall ?? 0.15) || 0.15);
   const ops = (q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
@@ -567,3 +597,47 @@ export function coreWallRects(core, cwl) {
   return out;
 }
 void outlineOf;
+
+/* a unit at (x, y) inside a plate: each room out to its walls' outer faces (less 60 mm, so a plate traced on them passes), tested
+   at its corners and every metre along its edges; its balcony, UP and A/C platform are not tested */
+export function unitInside(poly, x, y, rooms, wall) {
+  const g = (wall || 0) / 2 - 0.06;
+  for (const r of rooms) {
+    const x0 = x + r.x - g, y0 = y + r.y - g, x1 = x + r.x + r.w + g, y1 = y + r.y + r.h + g;
+    const nx = Math.max(1, Math.ceil(x1 - x0)), ny = Math.max(1, Math.ceil(y1 - y0));
+    for (let i = 0; i <= nx; i++) for (const yy of [y0, y1]) if (!inPoly(poly, x0 + (x1 - x0) * i / nx, yy)) return false;
+    for (let j = 0; j <= ny; j++) for (const xx of [x0, x1]) if (!inPoly(poly, xx, y0 + (y1 - y0) * j / ny)) return false;
+  }
+  return true;
+}
+
+/* a passage's shape: its centre line (path, orthogonal segments) and clear width; one made from its box when it has none
+   (down the middle of its longer side). Sets c.path, c.width, c.rects (a rectangle a segment, squared at the bends) and its box. */
+export function passageShape(c) {
+  if (!Array.isArray(c.path) || c.path.length < 2) {
+    if (c.h >= c.w) { c.width = r3(c.w); c.path = [[r3(c.x + c.w / 2), r3(c.y + c.h)], [r3(c.x + c.w / 2), r3(c.y)]]; }
+    else { c.width = r3(c.h); c.path = [[r3(c.x), r3(c.y + c.h / 2)], [r3(c.x + c.w), r3(c.y + c.h / 2)]]; }
+  }
+  c.path = orthoPath(c.path);
+  const hw = n(c.width, 1.2) / 2, P = c.path;
+  c.rects = [];
+  for (let i = 0; i < P.length - 1; i++) {
+    const [ax, ay] = P[i], [bx, by] = P[i + 1];
+    const ea = i > 0 ? hw : 0, eb = i < P.length - 2 ? hw : 0;   // squared at the bends, flush at the ends
+    if (Math.abs(ax - bx) < 1e-6) { const lo = Math.min(ay, by), hi = Math.max(ay, by), e0 = ay < by ? ea : eb, e1 = ay < by ? eb : ea; c.rects.push({ x0: ax - hw, x1: ax + hw, y0: lo - e0, y1: hi + e1 }); }
+    else { const lo = Math.min(ax, bx), hi = Math.max(ax, bx), e0 = ax < bx ? ea : eb, e1 = ax < bx ? eb : ea; c.rects.push({ x0: lo - e0, x1: hi + e1, y0: ay - hw, y1: ay + hw }); }
+  }
+  const x0 = Math.min(...c.rects.map((r) => r.x0)), y0 = Math.min(...c.rects.map((r) => r.y0)), x1 = Math.max(...c.rects.map((r) => r.x1)), y1 = Math.max(...c.rects.map((r) => r.y1));
+  Object.assign(c, { x: r3(x0), y: r3(y0), w: r3(x1 - x0), h: r3(y1 - y0) });
+  return c;
+}
+/* a path made orthogonal: a slanting segment turned into two (across, then along), points on one line merged */
+export function orthoPath(P0) {
+  const P = [];
+  for (const pt of P0) {
+    const q = [r3(pt[0]), r3(pt[1])], last = P[P.length - 1];
+    if (last && Math.abs(last[0] - q[0]) > 1e-6 && Math.abs(last[1] - q[1]) > 1e-6) P.push([q[0], last[1]]);
+    if (!last || Math.abs(last[0] - q[0]) > 1e-6 || Math.abs(last[1] - q[1]) > 1e-6) P.push(q);
+  }
+  return P;   // a point in line with its neighbours is kept: a bend still to be dragged out
+}

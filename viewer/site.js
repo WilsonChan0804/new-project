@@ -111,7 +111,7 @@ function initMap() {
   });
   map.on("mousemove", (ev) => { if (MEAS && MEAS.a) measureRubber(ev); });
   map.on("dblclick", () => { if (drawing) finishDraw(); });
-  map.on("moveend", () => { const s = study(), c = map.getCenter(); s.view = { c: [+c.lat.toFixed(6), +c.lng.toFixed(6)], z: map.getZoom() }; });
+  map.on("moveend", () => { const s = study(), c = map.getCenter(); s.view = { c: [+c.lat.toFixed(6), +c.lng.toFixed(6)], z: map.getZoom() }; if (LOTS_ON) loadLots(); });
   L_ = L;
 }
 
@@ -344,7 +344,7 @@ function hint(t, ms) {
 
 function tools() {
   const el = $("#st-tools"), s = study();
-  if (!CAN) { el.innerHTML = `<span class="st-ro">View only</span><button type="button" data-t="fit">Fit</button>`; return; }
+  if (!CAN) { el.innerHTML = `<span class="st-ro">View only</span><button type="button" data-t="fit">Fit</button><button type="button" data-t="lots" class="${LOTS_ON ? "on" : ""}" title="The lots and their numbers on the map">▦ Lots</button>`; return; }
   if (PICK != null) { el.innerHTML = `<span class="st-ro">Picking edges for <b>${esc(roadName(s, PICK))}</b></span><button type="button" class="primary" data-t="done">Done</button>`; return; }
   if (MEAS) { el.innerHTML = `<span class="st-ro">📏 Measuring (snaps to the boundary; Alt: free)</span><button type="button" class="primary" data-t="done">Done</button>`; return; }
   el.innerHTML = drawing
@@ -353,6 +353,7 @@ function tools() {
        <button type="button" data-t="rect" title="A rectangle of the site area, to drag onto the site">▭ Rectangle</button>
        <span class="st-mm"><button type="button" data-t="match"${s.pts.length >= 3 && s.target > 0 ? "" : " disabled"} title="Make the boundary the site area">⤢ Match area</button><select data-t="mmode" title="How Match area changes the boundary"><option value="scale"${s.mmode !== "keep" ? " selected" : ""}>scale about centre</option><option value="keep"${s.mmode === "keep" ? " selected" : ""}>keep street edges</option></select></span>
        <button type="button" data-t="measure" title="Measure a distance on the map, e.g. a street's width">📏 Measure</button>
+       <button type="button" data-t="lots" class="${LOTS_ON ? "on" : ""}" title="The Lands Department's Lot Index on the map: the lots and their numbers; click one to use it">▦ Lots</button>
        <button type="button" data-t="fit"${s.pts.length >= 3 ? "" : " disabled"}>Fit</button>
        <button type="button" data-t="undo"${lastPts ? "" : " disabled"}>Undo shape</button>
        <button type="button" data-t="clear"${s.pts.length ? "" : " disabled"}>Clear</button>`;
@@ -370,6 +371,7 @@ function wireTools() {
     else if (t === "rect") startRect();
     else if (t === "match") matchArea();
     else if (t === "fit") fit();
+    else if (t === "lots") { LOTS_ON = !LOTS_ON; tools(); if (LOTS_ON) loadLots(); else if (lotsLayer) { lotsLayer.remove(); lotsLayer = null; } }
     else if (t === "undo") undoShape();
     else if (t === "clear") clearAll();
     else if (t === "measure") { stopModes(); MEAS = {}; $("#st-map").classList.add("st-drawing"); hint("Click one side of the street, then the other.", 0); draw(); tools(); }
@@ -670,6 +672,10 @@ async function findPlace(q, box) {
         const mk = L_.circleMarker(p, { radius: 9, color: STREET, weight: 3, fill: false }).addTo(map);
         setTimeout(() => mk.remove(), 6000);
         box.hidden = true;
+        // the lots round the place, to find its lot number: click one for its boundary, details and zoning
+        if (!LOTS_ON) { LOTS_ON = true; tools(); }
+        loadLots();
+        hint("The lots round it are shown (Lands Department Lot Index): click the site's lot for its boundary, details and zoning.", 8000);
       };
     } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
@@ -720,6 +726,52 @@ function useLot(lot, box) {
   changed(); fit();
   hint(`${lot.name}: ${f1(lot.area)} m², set as the site. Getting its zoning from the Town Planning Board … Undo shape puts the old boundary back.`, 8000);
   if (lot.hk80) getZoning(s);
+}
+
+/* ---------- the Lot Index on the map: the lots in view and their numbers (/api/site/lots); click one to use it */
+let LOTS_ON = false, lotsLayer = null, lotsKey = "", lotsT = null;
+// WGS84 -> HK80: hk80ToWgs84 solved by Newton's method (a few steps from the grid's origin)
+function toHK80(lat, lng) {
+  let E = 836694, N = 819070;
+  for (let k = 0; k < 6; k++) {
+    const [a, b] = S.hk80ToWgs84(E, N), [aE, bE] = S.hk80ToWgs84(E + 1, N), [aN, bN] = S.hk80ToWgs84(E, N + 1);
+    const j11 = bE - b, j12 = bN - b, j21 = aE - a, j22 = aN - a, det = j11 * j22 - j12 * j21;   // d(lng, lat) / d(E, N)
+    const dl = lng - b, dp = lat - a;
+    E += (dl * j22 - j12 * dp) / det; N += (j11 * dp - j21 * dl) / det;
+  }
+  return [E, N];
+}
+function loadLots() {
+  clearTimeout(lotsT);
+  lotsT = setTimeout(async () => {
+    if (!LOTS_ON || !map) return;
+    if (map.getZoom() < 16) { hint("Zoom in to see the lots (Lot Index).", 3000); return; }
+    const B = map.getBounds(), [x0, y0] = toHK80(B.getSouth(), B.getWest()), [x1, y1] = toHK80(B.getNorth(), B.getEast());
+    const key = [x0, y0, x1, y1].map((v) => Math.round(v / 20)).join(",");
+    if (key === lotsKey) return;
+    lotsKey = key;
+    let r;
+    try { r = await api("/api/site/lots?" + new URLSearchParams({ bbox: [x0, y0, x1, y1].map((v) => v.toFixed(1)).join(",") })); }
+    catch (e) { toast(e.message, true); return; }
+    if (!LOTS_ON) return;
+    if (lotsLayer) lotsLayer.remove();
+    const big = map.getZoom() >= 18;
+    lotsLayer = L_.layerGroup(r.lots.map((f) => {
+      const rings = f.rings.map((rg) => rg.map(([e, n]) => S.hk80ToWgs84(e, n)));
+      const pg = L_.polygon(rings, { color: "#8e24aa", weight: 1.2, fillColor: "#8e24aa", fillOpacity: 0.04 });
+      pg.bindTooltip(esc(f.name), big ? { permanent: true, direction: "center", className: "st-lotlab" } : { sticky: true });
+      pg.on("click", (ev) => { L_.DomEvent.stop(ev); pickLot(f, rings); });
+      return pg;
+    })).addTo(map);
+    if (r.capped) hint("Many lots here: zoom in to see them all.", 3000);
+  }, 350);
+}
+function pickLot(f, rings) {
+  const area = S.area(rings[0]);
+  const lot = { name: f.name, id: f.id, pts: rings[0], area, place: "", type: f.type || "", number: f.number || "", code: f.code || "", updated: f.updated || "", parts: f.rings.length, hk80: f.rings[0] };
+  const box = $("#st-hits");
+  if (!CAN) { box.hidden = false; box.innerHTML = `<div class="st-lot">${lotCard(lot)}</div>`; return; }
+  useLot(lot, box);
 }
 
 /* ---------- the lot's details (LandsD iC1000) */
