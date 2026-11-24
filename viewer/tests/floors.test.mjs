@@ -48,6 +48,21 @@ ok(near(Fg.gfa, Fg.unitGfa + Fg.corridor + Fg.stair + Fg.lift + Fg.coreWalls + F
   const stairPiece = Lw.core.find((c) => c.kind === "stair");
   ok(near(stairPiece.w, st.W + 0.25, 1e-6) && Lw.figures.coreWalls > 0, "a staircase piece: its inside and the RC core wall");
 }
+{
+  // staircase types: 2 risers on the half landing shorten the flights; a scissor holds two staircases in one enclosure
+  const d1 = F.stairSize({ width: 1.2, storeyH: 3.15, riser: 0.175, going: 0.25 }), d2 = F.stairSize({ width: 1.2, storeyH: 3.15, riser: 0.175, going: 0.25, type: "dogleg2" });
+  ok(d2.n1 + d2.n2 + d2.land2 === d2.risers && d2.D < d1.D && d2.count === 1, "dog-leg with 2 risers on the half landing: " + d2.n1 + " + " + d2.n2 + " + 2 risers, " + d2.D + " m long against " + d1.D);
+  const sc = F.stairSize({ width: 1.2, storeyH: 3.15, riser: 0.175, going: 0.25, type: "scissor" });
+  ok(sc.count === 2 && sc.t1 === sc.risers - 1 && Math.abs(sc.W - 2.6) < 1e-9, "scissor: one flight of " + sc.t1 + " treads each, 2 staircases in " + sc.W + " m");
+  const Ls = F.layout({ poly: [[0, 0], [48, 0], [48, 16], [0, 16]], mix, storeys: 30, stairType: "scissor" });
+  ok(Ls.core.filter((c) => c.kind === "stair").length === 1 && Ls.nS === 2, "a scissor: one enclosure counted as two staircases");
+  const Ld = F.layout({ poly: [[0, 0], [48, 0], [48, 16], [0, 16]], mix, storeys: 30 });
+  ok(Ls.figures.stair < Ld.figures.stair, "and less staircase area than two dog-legs: " + Ls.figures.stair + " < " + Ld.figures.stair);
+  const Lb = F.layout({ poly: [[0, 0], [48, 0], [48, 18], [0, 18]], mix, storeys: 30, core: "behind" });
+  const pa = Lb.core.find((c) => c.kind === "passage"), sA = Lb.core.find((c) => c.kind === "stair"), lf = Lb.core.find((c) => c.kind === "lift");
+  ok(pa && sA && sA.y + sA.h <= lf.y + 1e-6 && Math.abs(pa.x - sA.x) < 1e-6 && Math.abs(pa.y + pa.h - Lb.y0) < 1e-6, "behind the lifts: the staircase behind them, a passage from the corridor beside the lifts to it");
+  ok(Lb.figures.corridor > Ld.figures.corridor - 1e-6 + pa.w * pa.h - 0.01, "the passage counted with the corridor");
+}
 const W = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, corridor: 2.0 });
 ok(near(W.figures.wideEx, (2.0 - 1.5) * 48, 1e-6), "a 2 m corridor: 0.5 m of its width exempt along 48 m (wider corridor)");
 const MiC = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, mic: true, micPct: 10 });

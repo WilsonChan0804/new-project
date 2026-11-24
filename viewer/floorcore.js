@@ -32,7 +32,8 @@ export const DEF = {
   coreWall: 0.25,       // RC round the staircases, lifts, refuse room and riser (shared between neighbours)
   partyWall: 0.2,       // RC between units (centred on their line)
   riser: 0.175, going: 0.25,  // Code of Practice for Means of Escape: riser 175 mm at most, going 225 mm at least
-  core: "middle",       // middle | ends
+  core: "middle",       // middle | ends | behind (a staircase behind the lifts, reached by a passage beside them)
+  stairType: "dogleg",  // dogleg | dogleg2 (2 risers on the half landing) | scissor (two stairs crossing in one enclosure)
   mic: false, micPct: 10, // JPN 8 (check the % in force)
 };
 
@@ -79,7 +80,18 @@ export function turn(u, k) {
   const mx = Math.min(...all.map((r) => r.x)), my = Math.min(...all.map((r) => r.y));
   for (const r of all) { r.x = r3(r.x - mx); r.y = r3(r.y - my); r.w = r3(r.w); r.h = r3(r.h); }
   const W = Math.max(...all.map((r) => r.x + r.w)), D = Math.max(...all.map((r) => r.y + r.h));
-  return { rooms, extras, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.1) };
+  // the doors, turned with the rooms: the hinge H, the closed end O, the side it opens to (sn), its width
+  const doors = [];
+  for (const d of u.doors || []) {
+    const r = (u.rooms || []).find((q) => q.id === d.room); if (!r) continue;
+    const at = n(d.at), w = n(d.w, 0.8), x = n(r.x), y = n(r.y), rw = n(r.w), rh = n(r.h);
+    const seg = d.side === "n" ? [[x + at, y], [x + at + w, y], [0, 1]] : d.side === "s" ? [[x + at, y + rh], [x + at + w, y + rh], [0, -1]] : d.side === "w" ? [[x, y + at], [x, y + at + w], [1, 0]] : [[x + rw, y + at], [x + rw, y + at + w], [-1, 0]];
+    const k2 = d.swing === "out" ? -1 : 1, H = d.hinge === "end" ? seg[1] : seg[0], O = d.hinge === "end" ? seg[0] : seg[1];
+    const P = (pt) => { const q2 = rot(pt); return [r3(q2[0] - mx), r3(q2[1] - my)]; };
+    const sn = rot([seg[2][0] * k2, seg[2][1] * k2]);
+    doors.push({ H: P(H), O: P(O), sn: [Math.round(sn[0]), Math.round(sn[1])], w, entry: !!d.entry });
+  }
+  return { rooms, extras, doors, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.1) };
 }
 /* the side the entrance is on (the corridor side), else opposite the façade */
 export function entrySide(u) {
@@ -137,7 +149,8 @@ export function layout(o) {
   const dN = y0, dS = D - y1;
   // the core on the north band
   // a staircase from its width, the storey height, the riser and going; each core piece with its RC wall (half on each side, shared with the next)
-  const sw = n(p.stairWidth, 1200) / 1000, cwl = n(p.coreWall, 0.25), SZ = stairSize({ width: sw, storeyH: p.storeyH, riser: p.riser, going: p.going });
+  const sw = n(p.stairWidth, 1200) / 1000, cwl = n(p.coreWall, 0.25), SZ = stairSize({ width: sw, storeyH: p.storeyH, riser: p.riser, going: p.going, type: p.stairType });
+  const per = SZ.count;   // staircases an enclosure holds: 2 for a scissor
   const stW = r3(SZ.W + cwl), stD = r3(SZ.D + cwl);
   const fl = { flats: want.length };
   const lf = lifts({ floors: n(p.floorsAbove, n(p.storeys, 1)), population: want.length * n(p.storeys, 1) * n(p.persons, 3), car: p.car, storeyH: p.storeyH, hc5: p.hc5, interval: p.interval });
@@ -147,23 +160,38 @@ export function layout(o) {
   const mid = [];
   for (let i = 0; i < nL; i++) mid.push(["lift", p.lift[0] + cwl, p.lift[1] + cwl, "Lift " + (i + 1)]);
   mid.push(["refuse", p.refuse[0] + cwl, p.refuse[1] + cwl, "Refuse"], ["riser", p.emr[0] + cwl, p.emr[1] + cwl, "E&M riser"]);
-  const stairs = Array.from({ length: nS }, (_, i) => ["stair", stW, stD, "Stair " + String.fromCharCode(65 + i)]);
+  const nE = Math.ceil(nS / per);
+  const stairs = Array.from({ length: nE }, (_, i) => ["stair", stW, stD, per > 1 ? `Stairs ${String.fromCharCode(65 + 2 * i)} + ${String.fromCharCode(66 + 2 * i)}` : "Stair " + String.fromCharCode(65 + i)]);
   let xs = [];
-  if (p.core === "ends" && nS >= 2) {
+  const pushX = (x) => { for (let k = 0; k < per; k++) xs.push(x); };
+  if (p.core === "behind") {
+    // the lifts, refuse room and riser on the corridor with a passage beside them; the first staircase across behind them, its door off the passage
+    const pw = Math.max(cw, 1.2), rowW = pw + mid.reduce((s, q) => s + q[1], 0), rowD = Math.max(...mid.map((q) => q[2]));
+    const s0 = stairs[0], sW = s0[2], sD = s0[1];   // turned: its flights along the corridor
+    const rest = stairs.slice(1);
+    const tot = Math.max(rowW, sW) + rest.reduce((s2, q) => s2 + q[1], 0);
+    let x = (L - tot) / 2;
+    core.push({ kind: "passage", x: r3(x), w: r3(pw), h: r3(Math.min(rowD, dN)), label: "Passage" });
+    let xx = x + pw;
+    for (const q of mid) { core.push({ kind: q[0], x: r3(xx), w: q[1], h: Math.min(q[2], dN), label: q[3] }); xx += q[1]; }
+    core.push({ kind: "stair", x: r3(x), w: r3(sW), h: r3(sD), label: s0[3], behind: rowD }); pushX(x + sW / 2);
+    x += Math.max(rowW, sW);
+    for (const q of rest) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); pushX(x + q[1] / 2); x += q[1]; }
+  } else if (p.core === "ends" && nE >= 2) {
     const midW = mid.reduce((s, q) => s + q[1], 0);
-    let x = 0; const a = stairs[0]; core.push({ kind: a[0], x: 0, w: a[1], h: Math.min(a[2], dN), label: a[3] }); xs.push(a[1] / 2);
-    const b = stairs[1]; core.push({ kind: b[0], x: r3(L - b[1]), w: b[1], h: Math.min(b[2], dN), label: b[3] }); xs.push(L - b[1] / 2);
+    let x = 0; const a = stairs[0]; core.push({ kind: a[0], x: 0, w: a[1], h: Math.min(a[2], dN), label: a[3] }); pushX(a[1] / 2);
+    const b = stairs[1]; core.push({ kind: b[0], x: r3(L - b[1]), w: b[1], h: Math.min(b[2], dN), label: b[3] }); pushX(L - b[1] / 2);
     x = (L - midW) / 2;
     for (const q of mid) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); x += q[1]; }
-    for (const q of stairs.slice(2)) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); xs.push(x + q[1] / 2); x += q[1]; }
+    for (const q of stairs.slice(2)) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); pushX(x + q[1] / 2); x += q[1]; }
   } else {
     const seq = [stairs[0], ...mid, ...stairs.slice(1)];
     const tot = seq.reduce((s, q) => s + q[1], 0);
     let x = (L - tot) / 2;
-    for (const q of seq) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); if (q[0] === "stair") xs.push(x + q[1] / 2); x += q[1]; }
+    for (const q of seq) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); if (q[0] === "stair") pushX(x + q[1] / 2); x += q[1]; }
   }
   void put;
-  for (const c of core) c.y = r3(y0 - c.h);
+  for (const c of core) { c.y = r3(y0 - c.h - (c.behind || 0)); delete c.behind; }
   // a core moved by hand: its pieces as stored, anywhere on the plate
   const coreAuto = core.map((c) => Object.assign({}, c));
   const coreEdited = Array.isArray(p.pieces) && p.pieces.length > 0;
@@ -171,9 +199,9 @@ export function layout(o) {
     core.length = 0; xs = [];
     for (const c of p.pieces) {
       const q = { kind: c.kind, label: c.label || c.kind, x: r3(n(c.x)), y: r3(n(c.y)), w: r3(Math.max(0.3, n(c.w, 1))), h: r3(Math.max(0.3, n(c.h, 1))) };
-      core.push(q); if (q.kind === "stair") xs.push(q.x + q.w / 2);
+      core.push(q); if (q.kind === "stair") pushX(q.x + q.w / 2);
     }
-    nS = Math.max(1, core.filter((c) => c.kind === "stair").length); nL = Math.max(1, core.filter((c) => c.kind === "lift").length);
+    nS = Math.max(1, core.filter((c) => c.kind === "stair").length * per); nL = Math.max(1, core.filter((c) => c.kind === "lift").length);
   }
   // free runs along each band: what the pieces standing on it leave
   const runs = [];
@@ -217,7 +245,7 @@ export function layout(o) {
     return null;
   };
   const order = { s: 0, n: 0 };
-  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras }));
+  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors }));
   if (SEQ) {
     // units put by hand (x given) first, where they were put; the runs keep clear of them
     for (const band of ["s", "n"]) {
@@ -296,7 +324,7 @@ export function layout(o) {
   if (!SEQ) for (const q of left) seqOut.s.push({ u: q.u.name, m: false });
   // areas
   const plate = Math.abs(area(F.poly));
-  const corrA = L * cw;
+  const corrA = L * cw + core.filter((c) => c.kind === "passage").reduce((s2, c) => s2 + c.w * c.h, 0);
   const wideEx = Math.max(0, Math.min(cw, n(p.wideMax, 2.4)) - n(p.wideBase, 1.5)) * L;
   const A = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + c.w * c.h, 0);
   const clearA = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - cwl) * Math.max(0, c.h - cwl), 0);
@@ -371,8 +399,17 @@ export function snap1(v, w, edges, tol = 0.3, grid = 0.05) {
    at both ends, a 100 mm well. All in metres. */
 export function stairSize(o) {
   const w = n(o.width, 1.2), H = n(o.storeyH, 3.15), rMax = n(o.riser, 0.175), g = n(o.going, 0.25);
+  const type = ["dogleg2", "scissor"].includes(o.type) ? o.type : "dogleg";
   const nR = Math.max(2, Math.ceil(H / rMax - 1e-9)), r = H / nR;
-  const n1 = Math.ceil(nR / 2), n2 = nR - n1, t1 = n1 - 1, t2 = n2 - 1;
-  const run = Math.max(t1, t2) * g, landing = Math.max(w, n(o.landing, 0)), well = 0.1;
-  return { width: w, risers: nR, riser: r3(r), going: g, n1, n2, t1, t2, run: r3(run), landing: r3(landing), well, W: r3(2 * w + well), D: r3(run + 2 * landing) };
+  const landing = Math.max(w, n(o.landing, 0));
+  if (type === "scissor") {
+    // two staircases in one enclosure: each a single flight a storey, side by side and opposite, an RC wall between; a landing at each end serves one's top and the other's foot
+    const t1 = nR - 1, run = t1 * g, mid = 0.2;
+    return { type, count: 2, width: w, risers: nR, riser: r3(r), going: g, n1: nR, n2: nR, t1, t2: t1, land2: 0, run: r3(run), landing: r3(landing), well: mid, W: r3(2 * w + mid), D: r3(run + 2 * landing) };
+  }
+  // a dog-leg: two flights; with "dogleg2" two of the risers are on the half landing, across it, so the flights are shorter
+  const land2 = type === "dogleg2" ? 2 : 0, nF = Math.max(2, nR - land2);
+  const n1 = Math.ceil(nF / 2), n2 = nF - n1, t1 = n1 - 1, t2 = n2 - 1;
+  const run = Math.max(t1, t2) * g, well = 0.1;
+  return { type, count: 1, width: w, risers: nR, riser: r3(r), going: g, n1, n2, t1, t2, land2, run: r3(run), landing: r3(landing), well, W: r3(2 * w + well), D: r3(run + 2 * landing) };
 }

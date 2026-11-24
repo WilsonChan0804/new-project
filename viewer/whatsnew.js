@@ -6,6 +6,17 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-21", date: "25 Nov 2026",
+    items: [
+      "**Unit plans: walls join properly** - the walls are drawn as one, so corners and tees close and doors and windows cut them cleanly. A partition in line with a thicker external or party wall now sits **flush with its inside face** (or centre to centre: Walls and sides, or one wall's menu). Doors have a rebated frame at each jamb; the WC is redrawn (cistern, pan, seat).",
+      "**Balcony, UP and A/C platform keep their area** - 2.0, 1.5 and 0.8 m²: change one side and the other follows (untick **keep area** to size both).",
+      "**4 · Floors: staircase types and the core** - dog-leg, dog-leg with 2 risers on the half landing, or a **scissor** staircase (two in one enclosure); a staircase **behind the lifts** with a passage to it; the core's pieces side by side drawn with one shared RC wall.",
+      "**4 · Floors: grid, snapping and doors** - a structural grid with bubbles that units, core and the plate's corners snap to (the corners also to the units and core); the doors inside the units shown.",
+      "**4 · Floors in 3D** - **3D** at the top left: the floor group stacked to its storeys, the typical floor open on top with its walls, doors, lifts and staircases.",
+      "**Site: Find** - the list of lots found is no longer squeezed.",
+    ],
+  },
+  {
     version: "2027-03-20", date: "25 Nov 2026",
     items: [
       "**Programme PDF: links across pages** - a link between tasks on different pages is now drawn: on one page it runs to the chart's foot (or top), marked **to p.N**, and on the other it comes in at the same place, marked **from p.N**, in the link's own colour and style.",

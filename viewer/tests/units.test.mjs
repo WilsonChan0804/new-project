@@ -1,6 +1,7 @@
 /* node viewer/tests/units.test.mjs - unit plans: areas and concessions */
 import * as U from "../unitcore.js";
 import { TEMPLATES } from "../unittables.js";
+import { wallGeom, outlineOf } from "../unitwalls.js";
 
 let fails = 0;
 const ok = (c, m) => { if (!c) { fails++; console.log("FAIL " + m); } else console.log("PASS " + m); };
@@ -123,6 +124,30 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a be
   ok(r3.rings.length === 1 && near(r3.area, U.figures(t3).enclosed, 1e-3), "the saleable line's own area is the table's enclosed area");
   const cw = U.figures(t3);
   ok(cw.cwEx > 0 && cw.gfaRing < cw.ringArea, "with a curtain wall the GFA line lies inside the saleable line");
+}
+// walls drawn as one: a bath standing above the bedroom; its west wall (external, 0.2) runs on down as the partition (0.1)
+{
+  const u = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], rooms: [R("m", "MBR", 0, 1, 3, 3), R("b", "BATH", 3, 0, 1.5, 2.5), R("l", "LD", 3, 2.5, 1.5, 1.5)], extras: [], walls: {} };
+  const f = U.figures(u), tOf = (e) => (e.kind === "part" ? 0.1 : 0.2);
+  const opt = { tOf, isOpen: (e) => U.isOpen(u, e), solid: (e) => U.solidPart(u, e), openings: [] };
+  const G = wallGeom(u, f.edges, opt);
+  const pe = f.edges.find((e) => e.key === "b|m");
+  ok(near(G.off.get(pe), 0.05, 1e-9), "edge: the partition under the bath's external wall moves 50 mm into the bath, flush with its inside face");
+  const pr = G.rects.find((r) => r.key === "b|m");
+  ok(near(pr.x1, 3.1, 1e-9), "its bath face at x 3.10, as the external wall's inside face");
+  u.join = "centre";
+  ok(wallGeom(u, f.edges, opt).off.get(pe) === 0, "centre to centre: on its line");
+  u.join = "edge"; u.walls["b|m"] = { align: "flip" };
+  ok(near(wallGeom(u, f.edges, opt).off.get(pe), -0.05, 1e-9), "flipped: flush with the other face");
+  delete u.walls["b|m"];
+  // the outline closes at every corner: no line ends loose
+  const ends = new Map();
+  for (const l of G.lines.filter((q) => q.k !== "join")) for (const k of [l.x1.toFixed(4) + "," + l.y1.toFixed(4), l.x2.toFixed(4) + "," + l.y2.toFixed(4)]) ends.set(k, (ends.get(k) || 0) + 1);
+  ok([...ends.values()].every((n) => n % 2 === 0), "the walls' outline is closed: every corner meets an even number of lines");
+  // an opening cuts the wall
+  const G2 = wallGeom(u, f.edges, Object.assign({}, opt, { openings: [{ x1: 0, y1: 2, x2: 0, y2: 3 }] }));
+  ok(G2.rects.filter((r) => r.key === "m:w").length === 2, "a window cuts its wall in two");
+  ok(outlineOf([{ x0: 0, y0: 0, x1: 1, y1: 0.1, m: "rc" }, { x0: 0, y0: 0, x1: 0.1, y1: 1, m: "rc" }]).length === 6, "two overlapping bands: one L outline of six lines");
 }
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

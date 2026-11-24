@@ -1,6 +1,7 @@
 /* Site study page */
 #st { display: flex; flex-direction: row; height: calc(100% - var(--hdr-h, 56px)); min-height: 0; background: var(--bg); }
 .st-side { width: 430px; flex: none; overflow: auto; border-right: 1px solid var(--line); background: var(--panel-2, var(--panel)); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.st-side > * { flex-shrink: 0; }
 .st-map-wrap { flex: 1; align-self: stretch; position: relative; min-width: 0; }
 #st-map { position: absolute; inset: 0; background: #e8ecef; }
 #st-map.st-drawing { cursor: crosshair; }
@@ -8,7 +9,7 @@
 .st-find { display: flex; gap: 6px; }
 .st-find input { flex: 1; min-width: 0; }
 .st-hits[hidden] { display: none; }
-.st-hits { display: flex; flex-direction: column; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px; max-height: 300px; overflow: auto; }
+.st-hits { display: flex; flex-direction: column; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px; max-height: 300px; min-height: 44px; overflow: auto; flex: none; }
 .st-hits button { text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 6px; display: block; width: 100%; }
 .st-hits button:hover { background: var(--accent-soft); }
 .st-hits button span { color: var(--muted); font-size: 12px; }
@@ -283,3 +284,13 @@ body.st-planfull .st-map-wrap { min-height: 100%; }
 .un-chip { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 4px; font-size: 11px; }
 .un-chip button { padding: 0 4px !important; border: 0; background: none; }
 .un-z { cursor: move; } .un-zh { cursor: nwse-resize; }
+/* Floors: Plan / 3D */
+#st-f3d { position: absolute; inset: 0; z-index: 960; background: #f3f5f8; overflow: hidden; touch-action: none; }
+#st-f3d[hidden] { display: none; }
+#st-f3d .fl3-cv { display: block; }
+.fl-vw-host { position: absolute; left: 12px; top: 12px; z-index: 2; }
+#st-fplan > .fl-vw { position: absolute; left: 12px; top: 12px; z-index: 2; }
+.fl-vw { display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 3px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.fl-vw button { border: 0; background: none; padding: 5px 12px; border-radius: 6px; font-weight: 600; }
+.fl-vw button.on { background: var(--accent, #f28022); color: #fff; }
+.fl-vw select { border: 0; background: none; }

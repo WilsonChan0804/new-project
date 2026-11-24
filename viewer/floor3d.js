@@ -1,0 +1,156 @@
+/* Site study, stage 4 in 3D: the floor group's typical floor stacked to its
+ * storeys. The lower floors as slabs and a box a unit (coloured by its
+ * plan); the top floor open, its walls at their thickness with the doors
+ * cut through, the core's RC walls, the lift shafts and the staircases'
+ * flights and landings, so the layout reads from above.
+ * Plan frame (x along the corridor, y across, y down) -> three (x, -y, z up).
+ */
+import * as UC from "./unitcore.js";
+import { wallGeom } from "./unitwalls.js";
+
+let V = null, R = null;   // three, and the one scene
+
+const COLS = [0xf6d7a7, 0xcfe3f5, 0xd9ecd0, 0xf3cfd6, 0xe3dbf3, 0xf7e7b4, 0xd2ece9, 0xf2d9c4];
+
+export async function show(host, r, o) {
+  if (!V) V = await import("./vendor/three-fragments.js");
+  if (!R) R = scene(V.THREE, V.OrbitControls, host);
+  R.build(r, o || {});
+  return R;
+}
+export function hide() { if (R) R.paused = true; }
+
+function scene(THREE, Orbit, host) {
+  const rd = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  rd.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  host.appendChild(rd.domElement);
+  rd.domElement.className = "fl3-cv";
+  const sc = new THREE.Scene();
+  sc.background = new THREE.Color(0xf3f5f8);
+  const cam = new THREE.PerspectiveCamera(36, 1, 0.5, 5000); cam.up.set(0, 0, 1);
+  const ctl = new Orbit(cam, rd.domElement);
+  ctl.enableDamping = true;
+  sc.add(new THREE.HemisphereLight(0xffffff, 0xdfe3e8, 2.2));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.1); sun.position.set(-60, -90, 140); sc.add(sun);
+  let grp = null, first = true, key = "";
+  const self = { paused: false };
+  const resize = () => {
+    const w = host.clientWidth || 800, h = host.clientHeight || 600;
+    rd.setSize(w, h, false); rd.domElement.style.width = "100%"; rd.domElement.style.height = "100%";
+    cam.aspect = w / h; cam.updateProjectionMatrix();
+  };
+  new ResizeObserver(resize).observe(host);
+  const loop = () => { if (!self.paused && !host.hidden) { ctl.update(); rd.render(sc, cam); } requestAnimationFrame(loop); };
+  loop();
+  const mats = new Map();
+  const mat = (c, op = 1) => { const k = c + ":" + op; if (!mats.has(k)) mats.set(k, new THREE.MeshLambertMaterial({ color: c, transparent: op < 1, opacity: op, depthWrite: op >= 1 })); return mats.get(k); };
+  const edgeM = new THREE.LineBasicMaterial({ color: 0x3c4650, transparent: true, opacity: 0.55 });
+  const box = (g, x0, y0, x1, y1, z0, z1, m, edges) => {
+    const w = x1 - x0, d = y1 - y0, h = z1 - z0;
+    if (w < 1e-4 || d < 1e-4 || h < 1e-4) return;
+    const geo = new THREE.BoxGeometry(w, d, h), me = new THREE.Mesh(geo, m);
+    me.position.set(x0 + w / 2, -(y0 + d / 2), z0 + h / 2);
+    g.add(me);
+    if (edges) { const l = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeM); l.position.copy(me.position); g.add(l); }
+  };
+  const slab = (g, poly, z0, z1, m) => {
+    const sh = new THREE.Shape(); poly.forEach(([x, y], i) => (i ? sh.lineTo(x, -y) : sh.moveTo(x, -y))); sh.closePath();
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: z1 - z0, bevelEnabled: false });
+    const me = new THREE.Mesh(geo, m); me.position.z = z0; g.add(me);
+    const l = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeM); l.position.z = z0; g.add(l);
+  };
+  self.build = (r, o) => {
+    self.paused = false;
+    if (grp) { sc.remove(grp); grp.traverse((q) => q.geometry && q.geometry.dispose()); }
+    grp = new THREE.Group(); sc.add(grp);
+    const H = Number(o.storeyH) || 3.15, N = Math.max(1, Math.round(Number(o.storeys) || 1)), show = o.show || "all", cw = r.coreWall || 0.25, sl = 0.2;
+    const colOf = new Map();
+    for (const q of r.placed) if (!colOf.has(q.name)) colOf.set(q.name, COLS[colOf.size % COLS.length]);
+    const lower = show === "top" ? 0 : N - 1;
+    // the lower floors: a slab, a box a unit, the core all the way up
+    for (let k = 0; k < lower; k++) {
+      const z = k * H;
+      slab(grp, r.F.poly, z, z + sl, mat(0xc9ced4));
+      for (const q of r.placed) box(grp, q.x, q.y, q.x + q.w, q.y + q.h, z + sl, z + H, mat(colOf.get(q.name), 0.92), true);
+      for (const c of r.core) if (c.kind !== "passage") box(grp, c.x, c.y, c.x + c.w, c.y + c.h, z + sl, z + H, mat(0x9aa1a8), true);
+    }
+    // the top floor, open
+    const z = lower * H, wz = z + sl, wh = Math.min(H - sl, 2.8);
+    slab(grp, r.F.poly, z, wz, mat(0xd4d8dd));
+    box(grp, 0, r.y0, r.L, r.y1, wz, wz + 0.01, mat(0xe6e9ee));
+    const rcM = mat(0xa3a9b0), blkM = mat(0xeeeae0), pcM = mat(0xa9b0b7);
+    for (const q of r.placed) {
+      // the floor of each room, by its use
+      for (const rm of q.rooms) box(grp, q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h, wz, wz + 0.02, mat(/BATH|ENS/.test(rm.kind) ? 0xd9ebe7 : colOf.get(q.name)));
+      for (const e of q.extras || []) box(grp, q.x + e.x, q.y + e.y, q.x + e.x + e.w, q.y + e.y + e.h, wz, wz + 0.02, mat(0xe8edf2));
+      // its walls, cut by its doors, a lintel over each door
+      const pu = { rooms: q.rooms, walls: Object.fromEntries(Object.entries(q.u.walls || {}).filter(([k2]) => k2.includes("|"))), partySides: [] };
+      const ed = UC.edges(pu), tOf = (e) => (e.kind === "part" ? Number(q.u.part ?? 0.075) || 0.075 : Number(q.u.wall ?? 0.15) || 0.15);
+      const ops = (q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
+      const G = wallGeom(pu, ed, { tOf, isOpen: (e) => UC.isOpen(pu, e), solid: (e) => UC.solidPart(pu, e), openings: ops });
+      for (const w of G.rects) box(grp, q.x + w.x0, q.y + w.y0, q.x + w.x1, q.y + w.y1, wz, wz + wh, w.m === "blk" ? blkM : w.m === "pc" ? pcM : rcM, true);
+      for (const s of ops) {
+        const v = Math.abs(s.x1 - s.x2) < 1e-6, t = 0.15;
+        if (v) box(grp, q.x + s.x1 - t / 2, q.y + s.y1, q.x + s.x1 + t / 2, q.y + s.y2, wz + 2.1, wz + wh, blkM);
+        else box(grp, q.x + s.x1, q.y + s.y1 - t / 2, q.x + s.x2, q.y + s.y1 + t / 2, wz + 2.1, wz + wh, blkM);
+      }
+    }
+    // the core: its RC walls (half their thickness in from each side), the lifts' shafts, the staircases' flights
+    for (const c of r.core) {
+      if (c.kind === "passage") { box(grp, c.x, c.y, c.x + c.w, c.y + c.h, wz, wz + 0.01, mat(0xe6e9ee)); continue; }
+      const t = cw / 2, top = z + H;
+      box(grp, c.x, c.y, c.x + c.w, c.y + t, wz, top, rcM, true);
+      box(grp, c.x, c.y + c.h - t, c.x + c.w, c.y + c.h, wz, top, rcM, true);
+      box(grp, c.x, c.y + t, c.x + t, c.y + c.h - t, wz, top, rcM, true);
+      box(grp, c.x + c.w - t, c.y + t, c.x + c.w, c.y + c.h - t, wz, top, rcM, true);
+      if (c.kind === "lift") box(grp, c.x + t + 0.3, c.y + t + 0.3, c.x + c.w - t - 0.3, c.y + c.h - t - 0.3, wz, wz + 2.4, mat(0xb7b3e0, 0.85), true);
+      if (c.kind === "stair" && r.stair) stairs(grp, r.stair, c.x + t, c.y + t, c.w - 2 * t, c.h - 2 * t, z, H, box, mat(0xc8c2b6));
+      if (c.kind === "refuse" || c.kind === "riser") box(grp, c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t, wz, wz + 0.02, mat(c.kind === "refuse" ? 0xe3e7d3 : 0xf1d6d6));
+    }
+    // the camera: once, from the south-west above, the whole stack in view
+    const k2 = `${r.L}|${r.D}|${N}|${show}`;
+    if (first || k2 !== key) {
+      const top = N * H, one = show === "top", span = one ? Math.max(r.L, r.D) : Math.max(r.L, r.D, top);
+      const tz = one ? z : top * 0.5, d = one ? [-0.25, -0.6, 0.95] : [-0.8, -1.5, 0.55];
+      ctl.target.set(r.L / 2, -r.D / 2, tz);
+      cam.position.set(r.L / 2 + span * d[0], -r.D / 2 + span * d[1], tz + span * d[2]);
+      cam.far = span * 20; cam.updateProjectionMatrix();
+      first = false; key = k2;
+    }
+    resize();
+  };
+  return self;
+}
+
+/* a staircase's flights a storey: from z up to z + H; dog-leg (two flights, half landing) or scissor (one flight each way, a wall between) */
+function stairs(g, st, X, Y, W, D, z, H, box, m) {
+  const along = D >= W, L = along ? D : W, A = along ? W : D;
+  const k = L / (st.run + 2 * st.landing), run = st.run * k, land = st.landing * k, rH = H / st.risers;
+  const fw = st.type === "scissor" ? (A - 0.2) / 2 : (A - st.well * (A / st.W)) / 2;
+  // u along the flights from the far end, v across
+  const B = (u0, u1, v0, v1, z0, z1) => (along ? box(g, X + v0, Y + u0, X + v1, Y + u1, z0, z1, m, true) : box(g, X + u0, Y + v0, X + u1, Y + v1, z0, z1, m, true));
+  const flight = (v0, v1, nR, zFrom, up) => {
+    // nR risers over the run, from the floor landing (u large) towards u small when up, else the other way
+    const nT = Math.max(1, nR - 1), gu = run / nT;
+    for (let i = 0; i < nT; i++) {
+      const u0 = up ? land + run - (i + 1) * gu : land + i * gu;
+      B(u0, u0 + gu, v0, v1, zFrom + (i + 1) * rH - 0.18, zFrom + (i + 1) * rH);
+    }
+  };
+  if (st.type === "scissor") {
+    flight(0, fw, st.risers, z, true);
+    flight(A - fw, A, st.risers, z, false);
+    B(0, land, 0, A, z + H - 0.18, z + H); B(land + run, L, 0, A, z - 0.18 + 0.2, z + 0.2);
+    B(land, land + run, fw, A - fw, z, z + H);
+  } else {
+    flight(0, fw, st.n1, z, true);
+    const l2 = st.land2 || 0, zL = z + st.n1 * rH, zHalf = zL + l2 * rH;
+    if (l2) {
+      // the half landing in three: its first part, one tread, then the part two risers up
+      const gk = Math.min(st.going * (A / st.W), A / 4);
+      B(0, land, 0, A / 2 - gk / 2, zL - 0.18, zL); B(0, land, A / 2 - gk / 2, A / 2 + gk / 2, zL + rH - 0.18, zL + rH); B(0, land, A / 2 + gk / 2, A, zHalf - 0.18, zHalf);
+    } else B(0, land, 0, A, zL - 0.18, zL);
+    flight(A - fw, A, st.n2, zHalf, false);
+    B(land + run, L, 0, A, z + 0.02, z + 0.2);
+  }
+}
