@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-15", date: "25 Nov 2026",
+    items: [
+      "**My programmes** - programmes of your own, not in a project: for a tender or a job that is not in the viewer yet. Open them from **My programmes** on the Projects page, or the programme picker (☰ beside the Task button): **+ New programme of my own** (empty or a copy of the one open), **Share …** with people (view or edit) or everyone in the office, **Copy into a project …** when the job starts. Everything else - tasks, links, calendar, baselines, PDF, MS Project - works the same.",
+      "**Beside the milestones** (Set up › Format): the name, name · date, the date only, the responsible party, or nothing.",
+      "**Move the whole programme**: Set up › **Move the whole programme …** takes a new start date or a number of working days; every task with its own date moves with it (linked tasks follow their links). Changing the **Project start** in the working calendar now offers the same.",
+    ],
+  },
+  {
     version: "2027-03-14", date: "25 Nov 2026",
     items: [
       "**Find works again** - the Lands Department moved its place search to www.map.gov.hk (the old geodata.gov.hk address now answers \"not found\"); the Find box uses the new address first, then the older ones, and says which answered what if none does. A lot number that finds no lot falls back to the place search.",

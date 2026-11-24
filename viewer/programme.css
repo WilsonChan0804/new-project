@@ -217,3 +217,8 @@ body.pg-props-on .pg-body { padding-right: 360px; }
   .pg-legend > * { flex: none; }
   .pg-body { -webkit-overflow-scrolling: touch; }
 }
+/* my programmes (not in a project) */
+.po-head { padding: 6px 10px 2px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.pg-share { max-height: 320px; overflow: auto; display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.pg-share-r { display: flex !important; flex-direction: row !important; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding-top: 4px; }
+.pg-share-r select { width: auto; }

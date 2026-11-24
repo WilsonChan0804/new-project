@@ -20,7 +20,7 @@ import { installHeader } from "./header.js";
 /* Which version of the viewer this browser is running - shown small beside
    the name, so "I can't see the new button" can be told apart from "the
    server still has the old files" at a glance. */
-const LWK_VERSION = "2027-03-14";
+const LWK_VERSION = "2027-03-15";
 (function () {
   const b = document.querySelector(".brand");
   if (b && !b.querySelector(".ver")) {
@@ -245,6 +245,7 @@ async function afterSignIn() {
       mode.appendChild(mk("lwk-to-board", "Board", "board.html", "Whiteboards: notes, mind maps, rules and ideas for the team"));
       mode.appendChild(mk("lwk-to-tasks", "Tasks", "tasks.html", "Team task lists: who does what, by when"));
       mode.appendChild(mk("lwk-to-prog", "Programme", "programme.html", "The project programme: Gantt chart, critical path, baselines"));
+      { const b = mk("lwk-to-myprog", "My programmes", "programme.html", "Programmes of your own, not in a project - for a tender or a job not in the viewer yet; share them, copy one into a project"); b.onclick = () => { location.href = link("programme.html", { mine: "list" }); }; mode.appendChild(b); }
       mode.appendChild(mk("lwk-to-chat", "Chat", "messenger.html", "Messenger: project channels, group chats, direct messages", "chat-link"));
       mode.appendChild(mk("lwk-to-cal", "Calendar", "calendar.html", "Meetings, your tasks and issues by date - and in Outlook"));
       mode.appendChild(mk("lwk-to-folders", "Folders", "folders.html", "The project's files: folders on the server, pinned and starred documents"));

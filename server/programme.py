@@ -116,22 +116,23 @@ def clean(data):
     return out
 
 
-def load(core, pid, pg=""):
-    if pg and not os.path.isfile(os.path.join(_base(core, pid, pg), "programme.json")):
-        raise HTTPException(status_code=404, detail="That programme is not in this project (deleted?)")
-    p = _read(os.path.join(_dir(core, pid, pg=pg), "programme.json"))
-    return p or {"rev": 0, "data": {}, "by": "", "at": ""}
+def load_at(d):
+    """the programme kept in folder d (made when missing)"""
+    os.makedirs(d, exist_ok=True)
+    return _read(os.path.join(d, "programme.json")) or {"rev": 0, "data": {}, "by": "", "at": ""}
 
 
-def save(core, pid, rev, data, who, pg=""):
-    d = _dir(core, pid, pg=pg)
-    cur = load(core, pid, pg)
+def save_at(d, rev, data, who):
+    """a new version in folder d: the rev must be the current one (else 409), the last KEEP_HISTORY kept"""
+    os.makedirs(d, exist_ok=True)
+    cur = load_at(d)
     if int(rev or 0) != int(cur.get("rev") or 0):
         raise HTTPException(status_code=409, detail={"message": "Someone else changed the programme meanwhile", "current": cur})
     out = {"rev": int(cur.get("rev") or 0) + 1, "data": clean(data), "by": who or "",
            "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
     _write(os.path.join(d, "programme.json"), out)
-    h = _dir(core, pid, "history", pg)
+    h = os.path.join(d, "history")
+    os.makedirs(h, exist_ok=True)
     _write(os.path.join(h, "%s-r%06d.json" % (time.strftime("%Y%m%d-%H%M%S"), out["rev"])), out)
     for f in sorted(os.listdir(h))[:-KEEP_HISTORY]:
         try:
@@ -141,8 +142,9 @@ def save(core, pid, rev, data, who, pg=""):
     return out
 
 
-def history(core, pid, pg=""):
-    h = _dir(core, pid, "history", pg)
+def history_at(d):
+    h = os.path.join(d, "history")
+    os.makedirs(h, exist_ok=True)
     out = []
     for f in sorted(os.listdir(h), reverse=True):
         v = _read(os.path.join(h, f))
@@ -150,6 +152,33 @@ def history(core, pid, pg=""):
             out.append({"rev": v.get("rev"), "by": v.get("by"), "at": v.get("at"),
                         "tasks": len((v.get("data") or {}).get("tasks") or [])})
     return out
+
+
+def version_at(d, rev):
+    """an earlier version, to look at or bring back"""
+    h = os.path.join(d, "history")
+    if os.path.isdir(h):
+        for f in os.listdir(h):
+            if f.endswith("-r%06d.json" % rev):
+                v = _read(os.path.join(h, f))
+                if v:
+                    v["old"] = True
+                    return v
+    return None
+
+
+def load(core, pid, pg=""):
+    if pg and not os.path.isfile(os.path.join(_base(core, pid, pg), "programme.json")):
+        raise HTTPException(status_code=404, detail="That programme is not in this project (deleted?)")
+    return load_at(_dir(core, pid, pg=pg))
+
+
+def save(core, pid, rev, data, who, pg=""):
+    return save_at(_dir(core, pid, pg=pg), rev, data, who)
+
+
+def history(core, pid, pg=""):
+    return history_at(_dir(core, pid, pg=pg))
 
 
 # ------------------------------------------------------------ several programmes
@@ -241,12 +270,7 @@ def register(app, core):
         pg = _pg(pg)
         out = load(core, x_project, pg)
         if rev and rev != out.get("rev"):         # an earlier version, to look at or bring back
-            hd = _dir(core, x_project, "history", pg)
-            for f in os.listdir(hd):
-                if f.endswith("-r%06d.json" % rev):
-                    out = _read(os.path.join(hd, f)) or out
-                    out["old"] = True
-                    break
+            out = version_at(_dir(core, x_project, pg=pg), rev) or out
         out["can_edit"] = can_edit(role)
         out["me"] = getattr(w, "name", "") or ""
         return out
@@ -302,7 +326,7 @@ def register(app, core):
 
     @app.post("/api/programme/mspdi/import")
     async def programme_xml_in(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
-        core.require_project(request, x_project, "member", x_viewer_token)
+        core.who(request, x_viewer_token)          # signed in: it reads the file sent, nothing of a project
         raw = await request.body()
         if len(raw) > 20 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="The file is over 20 MB")
@@ -316,7 +340,7 @@ def register(app, core):
 
     @app.post("/api/programme/mspdi/export")
     async def programme_xml_out(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
-        core.require_project(request, x_project, "viewer", x_viewer_token)
+        core.who(request, x_viewer_token)
         try:
             body = json.loads((await request.body()).decode("utf-8"))
         except ValueError:

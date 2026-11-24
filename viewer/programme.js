@@ -79,11 +79,15 @@ const days = (n) => {
   if (P.d && P.d.format && P.d.format.unit === "w" && P.cal) { const w = n / P.cal.perWeek; return `${Math.round(w * 10) / 10} w`; }
   return `${n} d`;
 };
-const keyView = () => "lwk-viewer:programme-view:" + (project() || "") + (P.pg ? ":" + P.pg : "");
+const keyView = () => "lwk-viewer:programme-view:" + (P.mine ? "mine:" + P.mine : (project() || "") + (P.pg ? ":" + P.pg : ""));
 /* several programmes in a project: ?pg=<id> (none = the first) */
 const pgParam = () => { const v = new URLSearchParams(location.search).get("pg") || ""; return /^[a-z0-9]{6,16}$/.test(v) ? v : ""; };
-const pq = (path) => path + (P.pg ? (path.includes("?") ? "&" : "?") + "pg=" + P.pg : "");
-const pgUrl = (pg) => { const u = new URL(location.href); u.searchParams.delete("task"); if (pg && pg !== "main") u.searchParams.set("pg", pg); else u.searchParams.delete("pg"); return u.pathname + u.search; };
+/* a programme of one's own, not in a project: ?mine=<id> (myprog.py) */
+const mineParam = () => { const v = new URLSearchParams(location.search).get("mine") || ""; return /^[a-z0-9]{10}$/.test(v) ? v : ""; };
+const pq = (path) => P.mine ? path.replace(/^\/api\/programme(\/history)?/, (m, h) => "/api/myprog/" + P.mine + (h || ""))
+  : path + (P.pg ? (path.includes("?") ? "&" : "?") + "pg=" + P.pg : "");
+const pgUrl = (pg) => { const u = new URL(location.href); u.searchParams.delete("task"); u.searchParams.delete("mine"); if (pg && pg !== "main") u.searchParams.set("pg", pg); else u.searchParams.delete("pg"); return u.pathname + u.search; };
+const mineUrl = (id) => { const u = new URL(location.href); u.searchParams.delete("task"); u.searchParams.delete("pg"); u.searchParams.set("mine", id); return u.pathname + u.search; };
 function loadView() {
   let v = {};
   try { v = JSON.parse(localStorage.getItem(keyView()) || "{}") || {}; } catch (e) {}
@@ -171,13 +175,18 @@ function recalc() {
 }
 /* the text beside a bar: the row's own choice (Properties / right-click >
    Label), else Format > Beside the bars */
+const MSLABELS = [["name", "Milestone name"], ["namedate", "Name · date"], ["date", "Date only"], ["party", "Responsible"], ["none", "Nothing"]];
 const LABELS = [["party", "Responsible"], ["name", "Task name"], ["dates", "Start - finish"], ["namedates", "Name + dates"], ["finish", "Finish date"], ["pct", "% done"], ["none", "Nothing"]];
 function labelText(r, t) {
   const F = P.d.format;
   const own = t && t.label;
   const d1 = fmt(r.start, false), d2 = fmt(r.finish, false);
   if (r.milestone) {
-    if (!own) return r.name + (F.msdate ? " · " + d1 : "");
+    if (!own) {
+      // Format > Beside the milestones (the first form: the tick "milestone dates")
+      const k = F.mslabel || (F.msdate ? "namedate" : "name");
+      return { name: r.name, namedate: r.name + " · " + d1, date: d1, party: (t && t.party) || r.name, none: "" }[k] ?? r.name;
+    }
     return { none: "", name: r.name, party: (t && t.party) || r.name, dates: d1, finish: d1, namedates: r.name + " · " + d1, pct: r.name }[own] ?? r.name;
   }
   const k = own || (r.summary ? "name" : F.label || "party");
@@ -1198,6 +1207,7 @@ async function discuss(t) {
 }
 
 async function loadLinked() {
+  if (P.mine) return false;           // a programme of one's own: no project's Tasks to follow
   const want = new Map();
   for (const t of tasks()) if (t.links && t.links.task) want.set(t.links.task.list, true);
   P.linkedLinks = P.linkedLinks || new Map();
@@ -1305,12 +1315,13 @@ function viewMenu(anchor) {
 function setupMenu(anchor) {
   const el = pop(anchor, `<div class="po-row" data-s="cal">Working calendar and holidays ...</div><div class="po-row" data-s="cover">Title block and remarks (for the PDF) ...</div>`
     + `<div class="po-row" data-s="cats">Categories and colours ...</div><div class="po-row" data-s="fmt">Format (dates, rows, bars) ...</div>`
+    + `<div class="po-row" data-s="move">Move the whole programme (new start date) ...</div>`
     + `<div class="po-row" data-s="tpl">Start from the architectural template ...</div><div class="po-row" data-s="hist">Earlier versions ...</div>`, 280);
   el.addEventListener("click", (ev) => {
     const r = ev.target.closest("[data-s]");
     if (!r) return;
     closePop();
-    ({ cal: calendarDlg, cover: coverDlg, tpl: template, hist: historyDlg, cats: categoriesDlg, fmt: formatDlg })[r.dataset.s]();
+    ({ cal: calendarDlg, cover: coverDlg, tpl: template, hist: historyDlg, cats: categoriesDlg, fmt: formatDlg, move: moveAllDlg })[r.dataset.s]();
   });
 }
 async function calendarDlg() {
@@ -1321,6 +1332,7 @@ async function calendarDlg() {
     <label>More holidays (one date a line, e.g. 2027-04-06)<textarea name="hol" rows="3">${esc((c.holidays || []).join("\n"))}</textarea></label>
     <label>The office's or the site's own days off (from..to a line, e.g. 2027-02-01..2027-02-12 Lunar New Year shutdown)<textarea name="off" rows="3">${esc((c.off || []).map((o) => (typeof o === "string" ? o : o.from + ".." + (o.to || o.from) + (o.name ? " " + o.name : ""))).join("\n"))}</textarea></label>
     <label>Project start (when a task has no date or link of its own)<input type="date" name="start" value="${esc(P.d.cover.start || "")}"></label>
+    <label class="row-check"><input type="checkbox" name="moveall" checked> When the start changes, move every task with its own date by the same working days (the whole programme moves)</label>
     <p class="muted">Durations and lags count working days. Check the holidays against each year's gazette notice.</p>`, canSet() ? "Save" : "Close");
   if (!f || !canSet()) return;
   before();
@@ -1329,9 +1341,41 @@ async function calendarDlg() {
     const m = /^(\d{4}-\d{2}-\d{2})(?:\s*(?:\.\.|to|-)\s*(\d{4}-\d{2}-\d{2}))?\s*(.*)$/.exec(x);
     return m ? { from: m[1], to: m[2] || m[1], name: m[3].slice(0, 80) } : null;
   }).filter(Boolean);
+  const was = P.sched && P.sched.start, nowStart = f.start.value || "";
   P.d.calendar = { week: f.week.value, hk: f.hk.checked, holidays: hol, off };
-  P.d.cover.start = f.start.value || "";
+  // the whole programme with its start: the dated tasks by the same working days
+  if (f.moveall.checked && nowStart && was && nowStart !== (P.d.cover.start || "") && P.cal) {
+    const d = P.cal.between(was, nowStart);
+    if (d) shiftAll(d);
+  }
+  P.d.cover.start = nowStart;
   changed();
+}
+/* every task's own dates (start, finish no earlier than) d working days later (or earlier); links and durations as they are */
+function shiftAll(d) {
+  let n = 0;
+  for (const t of tasks()) {
+    if (t.start) { const o = P.cal.ordOf(t.start); if (o !== null) { t.start = P.cal.isoAt(o + d); n++; } }
+    if (t.fnet) { const o = P.cal.ordOf(t.fnet); if (o !== null) t.fnet = P.cal.isoAt(o + d); }
+  }
+  if (P.d.cover.start) { const o = P.cal.ordOf(P.d.cover.start); if (o !== null) P.d.cover.start = P.cal.isoAt(o + d); }
+  return n;
+}
+async function moveAllDlg() {
+  if (!canSet()) return toast("Only a member can move the programme", true);
+  const s0 = P.sched && P.sched.start;
+  const f = await modal("Move the whole programme", `<p class="muted">Now it starts ${esc(fmtLong(s0))} and finishes ${esc(fmtLong(P.sched.finish))} (${P.sched.days} working days).</p>
+    <label>New start date<input type="date" name="to" value="${esc(s0 || "")}"></label>
+    <label>or move by (working days, minus for earlier)<input type="number" name="by" step="1" placeholder="e.g. 10 or -5"></label>
+    <p class="muted">Every task with its own date moves by the same working days; linked tasks follow their links. Baselines stay as they were.</p>`, "Move");
+  if (!f) return;
+  const by = f.by.value !== "" ? Math.round(+f.by.value) : P.cal.between(s0, f.to.value);
+  if (!by) return toast("Nothing to move");
+  before();
+  const n = shiftAll(by);
+  if (!P.d.cover.start && f.by.value === "" && f.to.value) P.d.cover.start = f.to.value;
+  changed();
+  toast(`Moved ${by > 0 ? "+" : ""}${by} working days (${n} dated task${n === 1 ? "" : "s"})`);
 }
 async function coverDlg() {
   const c = P.d.cover;
@@ -1398,7 +1442,17 @@ async function template() {
 
 /* ------------------------------------------------- several programmes */
 async function loadList() {
-  try { P.list = (await api("/api/programme/list")).items || []; } catch (e) { P.list = [{ id: "main", name: "Programme", tasks: 0 }]; }
+  P.list = [];
+  if (project()) { try { P.list = (await api("/api/programme/list")).items || []; } catch (e) { P.list = []; } }
+  try { P.mineList = (await api("/api/myprog/list")).items || []; } catch (e) { P.mineList = []; }
+  if (P.mine) {
+    const m = P.mineList.find((x) => x.id === P.mine) || { name: P.doc.name || "My programme", role: P.doc.role };
+    P.pgName = m.name; P.mineMeta = m;
+    $("#pg-which-n").textContent = "My programme · " + m.name + (m.role !== "owner" && m.owner_name ? " (shared by " + m.owner_name + ")" : "");
+    $("#pg-which").title = "A programme of your own, not in a project - choose, share, copy into a project";
+    document.title = m.name + " - My programme";
+    return;
+  }
   const me = P.list.find((x) => x.id === (P.pg || "main")) || P.list[0] || { name: "Programme" };
   P.pgName = me.name;
   $("#pg-which-n").textContent = me.name;
@@ -1406,16 +1460,40 @@ async function loadList() {
   document.title = me.name + " - Programme";
 }
 function whichMenu(anchor) {
-  const cur = P.pg || "main";
-  const el = pop(anchor, P.list.map((x) => `<div class="po-row${x.id === cur ? " on" : ""}" data-pg="${esc(x.id)}"><b>${x.id === cur ? "&#10003; " : ""}${esc(x.name)}</b><br><small class="muted">${x.tasks} task${x.tasks === 1 ? "" : "s"}${x.at ? " · saved " + esc(x.at.slice(0, 10)) + (x.by ? " by " + esc(x.by) : "") : ""}</small></div>`).join("")
-    + (P.doc.can_edit ? `<hr><div class="po-row" data-a="new"><b>+ New programme</b><br><small class="muted">empty, or a copy of this one</small></div>`
+  const cur = P.mine ? "" : P.pg || "main";
+  const mineRows = (P.mineList || []).map((x) => `<div class="po-row${x.id === P.mine ? " on" : ""}" data-mine="${esc(x.id)}"><b>${x.id === P.mine ? "&#10003; " : ""}${esc(x.name)}</b><br><small class="muted">${x.role === "owner" ? (x.all || Object.keys(x.share || {}).length ? "yours, shared" : "yours") : "shared by " + esc(x.owner_name || "someone") + (x.role === "view" ? " (view)" : "")} · ${x.tasks} task${x.tasks === 1 ? "" : "s"}</small></div>`).join("");
+  const mineActs = `<div class="po-row" data-a="newmine"><b>+ New programme of my own</b><br><small class="muted">not in a project - empty, or a copy of the one open</small></div>`
+    + (P.mine && P.mineMeta && P.mineMeta.role === "owner" ? `<div class="po-row" data-a="share">Share this programme ...</div>` : "")
+    + (P.mine ? `<div class="po-row" data-a="toproj">Copy into a project ...</div>` : "")
+    + (P.mine && P.doc.can_edit ? `<div class="po-row" data-a="ren">Rename this programme ...</div>` : "")
+    + (P.mine && P.mineMeta && P.mineMeta.role === "owner" ? `<div class="po-row" data-a="del">Delete this programme ...</div>` : "");
+  const projHead = project() ? `<div class="po-head">This project${P.projectName ? ": " + esc(P.projectName) : ""}</div>` : "";
+  const el = pop(anchor, projHead + P.list.map((x) => `<div class="po-row${x.id === cur ? " on" : ""}" data-pg="${esc(x.id)}"><b>${x.id === cur ? "&#10003; " : ""}${esc(x.name)}</b><br><small class="muted">${x.tasks} task${x.tasks === 1 ? "" : "s"}${x.at ? " · saved " + esc(x.at.slice(0, 10)) + (x.by ? " by " + esc(x.by) : "") : ""}</small></div>`).join("")
+    + (!P.mine && P.doc.can_edit && project() ? `<div class="po-row" data-a="new"><b>+ New programme in this project</b><br><small class="muted">empty, or a copy of this one</small></div>`
       + `<div class="po-row" data-a="ren">Rename this programme ...</div>`
-      + (cur !== "main" ? `<div class="po-row" data-a="del">Delete this programme ...</div>` : "") : ""), 300);
+      + (cur !== "main" ? `<div class="po-row" data-a="del">Delete this programme ...</div>` : "") : "")
+    + `<hr><div class="po-head">My programmes <small class="muted">(not in a project)</small></div>` + mineRows + mineActs, 320);
   el.addEventListener("click", async (ev) => {
-    const r = ev.target.closest("[data-pg],[data-a]");
+    const r = ev.target.closest("[data-pg],[data-a],[data-mine]");
     if (!r) return;
     closePop();
     if (r.dataset.pg) { if (r.dataset.pg !== cur) go(r.dataset.pg); return; }
+    if (r.dataset.mine) { if (r.dataset.mine !== P.mine) goMine(r.dataset.mine); return; }
+    if (r.dataset.a === "newmine") return newMine();
+    if (r.dataset.a === "share") return shareMine();
+    if (r.dataset.a === "toproj") return mineToProject();
+    if (P.mine && r.dataset.a === "ren") {
+      const f = await modal("Rename the programme", `<label>Name<input name="name" maxlength="80" value="${esc(P.pgName)}" required></label>`, "Rename");
+      if (!f || !f.name.value.trim()) return;
+      try { await api("/api/myprog/list/" + P.mine, { method: "PATCH", body: JSON.stringify({ name: f.name.value.trim() }) }); await loadList(); toast("Renamed"); } catch (e) { toast(e.message, true); }
+      return;
+    }
+    if (P.mine && r.dataset.a === "del") {
+      const f = await modal(`Delete "${P.pgName}"?`, `<p>Its ${tasks().length} tasks go${P.mineMeta && (P.mineMeta.all || Object.keys(P.mineMeta.share || {}).length) ? ", also for the people you shared it with" : ""}. The site admin can still get it back from the server (myprog/deleted).</p>`, "Delete");
+      if (!f) return;
+      try { await api("/api/myprog/list/" + P.mine, { method: "DELETE" }); P.pending = false; location.href = project() ? pgUrl("") : "projects.html"; } catch (e) { toast(e.message, true); }
+      return;
+    }
     if (r.dataset.a === "new") {
       const f = await modal("New programme", `<label>Name<input name="name" maxlength="80" placeholder="e.g. Phase 2, Fitting-out, Option B" required></label>
         <label class="row-check"><input type="radio" name="how" value="empty" checked> Empty</label>
@@ -1439,6 +1517,53 @@ function whichMenu(anchor) {
       try { await api("/api/programme/list/" + cur, { method: "DELETE" }); P.pending = false; go("main"); } catch (e) { toast(e.message, true); }
     }
   });
+}
+async function goMine(id) {
+  if (P.pending) await save();
+  location.href = mineUrl(id);
+}
+async function newMine(first) {
+  const f = await modal("New programme of my own", `<p class="muted">Kept as yours, not in a project - for a tender or a job not in the viewer yet. You can share it, and copy it into a project later.</p>
+    <label>Name<input name="name" maxlength="80" placeholder="e.g. Tender - School at Area 137" required></label>
+    ${first ? "" : `<label class="row-check"><input type="radio" name="how" value="empty" checked> Empty</label>
+    <label class="row-check"><input type="radio" name="how" value="copy"> A copy of "${esc(P.pgName || "this programme")}" (tasks, links, calendar, set-up)</label>`}`, "Create");
+  if (!f) return null;
+  const name = f.name.value.trim();
+  if (!name) { toast("Give it a name", true); return null; }
+  const copy = !first && [...f.querySelectorAll('input[name="how"]')].find((x) => x.checked).value === "copy";
+  if (copy && P.pending) await save();
+  try {
+    const from = copy ? (P.mine ? { mine: P.mine } : { project: project(), pg: P.pg || "" }) : null;
+    const n = await api("/api/myprog/list", { method: "POST", body: JSON.stringify({ name, from }) });
+    location.href = mineUrl(n.id);
+    return n;
+  } catch (e) { toast(e.message, true); return null; }
+}
+async function shareMine() {
+  const m = P.mineMeta || {};
+  let people = [];
+  try { people = ((await api("/api/people")).people || []).filter((p) => p.uid && !(P.me && ((P.me.email && p.email === P.me.email) || (P.me.id != null && String(p.uid) === String(P.me.id))))); } catch (e) {}
+  const opt = (v, cur) => ["", "view", "edit"].map((k) => `<option value="${k}"${(cur || "") === k ? " selected" : ""}>${k ? (k === "view" ? "can view" : "can edit") : "-"}</option>`).join("");
+  const f = await modal(`Share "${esc(P.pgName)}"`, `<label>Everyone in the office<select name="all">${opt("", m.all)}</select></label>
+    <div class="pg-share">${people.length ? people.map((p) => `<label class="pg-share-r"><span>${esc(p.name)}<small class="muted"> ${esc(p.team || p.company || p.email || "")}</small></span><select data-uid="${esc(p.uid)}">${opt("", (m.share || {})[p.uid])}</select></label>`).join("") : `<p class="muted">No people to share with (accounts are off: everyone can open it).</p>`}</div>`, "Share");
+  if (!f) return;
+  const share = {};
+  for (const sel of f.querySelectorAll("select[data-uid]")) if (sel.value) share[sel.dataset.uid] = sel.value;
+  try { await api("/api/myprog/list/" + P.mine, { method: "PATCH", body: JSON.stringify({ share, all: f.all.value }) }); await loadList(); toast("Shared"); } catch (e) { toast(e.message, true); }
+}
+async function mineToProject() {
+  let ps = [];
+  try { const r = await api("/api/projects"); ps = (r.projects || r || []).filter((p) => !p.role || ["member", "publisher", "admin"].includes(p.role)); } catch (e) {}
+  if (!ps.length) return toast("You are not a member of a project to copy it into", true);
+  const f = await modal("Copy into a project", `<label>Project<select name="p">${ps.map((p) => `<option value="${esc(p.id)}">${esc(p.name || p.title || p.id)}</option>`).join("")}</select></label>
+    <label>Name there<input name="name" maxlength="80" value="${esc(P.pgName)}"></label><p class="muted">A copy: this programme stays yours as it is.</p>`, "Copy");
+  if (!f) return;
+  if (P.pending) await save();
+  try {
+    const n = await api(`/api/myprog/${P.mine}/to-project`, { method: "POST", body: JSON.stringify({ project: f.p.value, name: f.name.value.trim() || P.pgName }) });
+    toast("Copied - opening it in the project");
+    location.href = `/programme.html?project=${encodeURIComponent(f.p.value)}&pg=${encodeURIComponent(n.id)}`;
+  } catch (e) { toast(e.message, true); }
 }
 async function go(pg) {
   if (P.pending) await save();
@@ -1524,7 +1649,7 @@ async function pdfDlg() {
   };
   toast("Making the PDF ...");
   try {
-    const res = await fetch("/api/programme/pdf", { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, hdrs()), body: JSON.stringify(spec) });
+    const res = await fetch(P.mine ? `/api/myprog/${P.mine}/pdf` : "/api/programme/pdf", { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, hdrs()), body: JSON.stringify(spec) });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
     const kept = res.headers.get("X-Kept");
     download(await res.blob(), spec.name);
@@ -1610,14 +1735,16 @@ async function formatDlg() {
       <label>Summary bars${sel("summary", [["bracket", "Bracket (MS Project)"], ["bar", "Solid bar"]])}</label></div>
     <label>Gridlines${sel("grid", [["unit", "At every scale step (week / month)"], ["month", "Monthly (years on month or quarter scales)"]])}</label>
     ${chk("zebra", "Banded rows (zebra)")}${chk("shade", "Shade weekends and holidays")}${chk("today", "Today line")}
-    ${chk("msdate", "Milestone dates beside the diamonds")}${chk("boldsum", "Summary rows in bold")}${chk("weekno", "Week numbers on the week scale (W12)")}
+    <label>Beside the milestones<select name="mslabel">${MSLABELS.map(([v, l]) => `<option value="${v}"${(F.mslabel || (F.msdate ? "namedate" : "name")) === v ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+    ${chk("boldsum", "Summary rows in bold")}${chk("weekno", "Week numbers on the week scale (W12)")}
     ${chk("solidred", "Critical bars solid red (otherwise their own colour, outlined red)")}
     <p class="muted">The format is the programme's: everyone sees it, and the PDF follows it.</p>`, canSet() ? "Save" : "Apply here");
   if (!f) return;
   const nf = {};
-  for (const k of ["date", "unit", "rowh", "label", "summary", "grid"]) nf[k] = f[k].value;
+  for (const k of ["date", "unit", "rowh", "label", "summary", "grid", "mslabel"]) nf[k] = f[k].value;
+  nf.msdate = nf.mslabel === "namedate" || nf.mslabel === "date";
   nf.text = +f.text.value;
-  for (const k of ["zebra", "shade", "today", "msdate", "boldsum", "weekno", "solidred"]) nf[k] = f[k].checked;
+  for (const k of ["zebra", "shade", "today", "boldsum", "weekno", "solidred"]) nf[k] = f[k].checked;
   if (canSet()) { before(); P.d.format = Object.assign({}, FORMAT, nf); changed(); } else { P.d.format = Object.assign({}, FORMAT, nf); recalc(); render(); }
 }
 
@@ -1646,7 +1773,7 @@ function ctxMenu(ev, id) {
   } else if (n) h += item("copy", "Copy", "Ctrl+C");
   if (sums.length) h += sep + item("fold", "Fold") + item("unfold", "Unfold");
   if (n) {
-    h += sep + item("task", n > 1 ? `Create ${n} tasks in Tasks ...` : "Create a task in Tasks ...", "", !ed) + item("chat", "Discuss in chat ...", "", n !== 1 || !ed);
+    if (!P.mine) h += sep + item("task", n > 1 ? `Create ${n} tasks in Tasks ...` : "Create a task in Tasks ...", "", !ed) + item("chat", "Discuss in chat ...", "", n !== 1 || !ed);
     if (ed) h += sep + item("del", `Delete${n > 1 ? " " + n + " rows" : ""}`, "Del");
   }
   const el = pop(document.body, `<div class="pg-cmenu">${h}</div>`, 250);
@@ -1964,7 +2091,17 @@ async function start() {
   P.me = await ensureSignedIn();
   header(P.me);
   P.phone = phone();
-  P.pg = pgParam();
+  P.mine = mineParam();
+  P.pg = P.mine ? "" : pgParam();
+  // no project open and no programme of one's own chosen: one's own programmes
+  if (!P.mine && (!project() || new URLSearchParams(location.search).get("mine") === "list")) {
+    let mine = [];
+    try { mine = (await api("/api/myprog/list")).items || []; } catch (e) {}
+    if (mine.length) { location.replace(mineUrl(mine[0].id)); return; }
+    P.pgName = ""; P.doc = { can_edit: true };
+    if (!(await newMine(true))) location.href = "projects.html";
+    return;
+  }
   loadView();
   if (P.phone && !localStorage.getItem(keyView())) P.view.zoom = "month";
   try {

@@ -4721,6 +4721,13 @@ try:
 except Exception as _ex:
     print("units not loaded: %s" % _ex)
 
+# My programmes: a person's own programmes, not in a project (myprog.py).
+try:
+    import myprog
+    myprog.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("myprog not loaded: %s" % _ex)
+
 # Site study: find a site by lot number (sitelot.py).
 try:
     import sitelot

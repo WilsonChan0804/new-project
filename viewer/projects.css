@@ -108,3 +108,6 @@ table.pj th.pj-sort.on { color: var(--accent-ink); }
 :root[data-theme="dark"] .pj-st.st-on-hold { background: #4a3a1c; color: #f1c07e; }
 :root[data-theme="dark"] .pj-st.st-tender { background: #16253b; }
 :root[data-theme="dark"] .pj-chip.bad { background: #3b1816; color: #ee8981; }
+
+.pj-myprog { font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: inherit; }
+.pj-myprog:hover { border-color: var(--accent); }
