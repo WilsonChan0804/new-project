@@ -11,7 +11,8 @@
  * façade outward.
  */
 import * as U from "./unitcore.js";
-import { quickStairs, travelFor } from "./gbpcore.js";
+import { quickStairs, travelFor, b1, ceilPersons } from "./gbpcore.js";
+import { wallGeom, outlineOf } from "./unitwalls.js";
 
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
 const n = (x, d = 0) => (Number.isFinite(Number(x)) ? Number(x) : d);
@@ -21,7 +22,9 @@ export const DEF = {
   wideBase: 1.5,        // JPN 1 wider common corridor: the part wider than this ...
   wideMax: 2.4,         // ... up to this width is exempt (check against JPN 1)
   stairs: 2, stairWidth: 1200,  // mm
-  persons: 3,           // persons a flat, for the lifts
+  persons: "",          // persons a flat, for the lifts: empty = from each flat's usable floor area (Table B1)
+  lobby: false,         // a protected lobby between each staircase and the corridor
+  lobbyDepth: 1.8,      // m, its clear depth
   hc5: 6,               // % of the population in 5 minutes (CIBSE Guide D: residential 5-7%)
   interval: 60,         // s, the longest average interval
   car: 13,              // persons (1000 kg)
@@ -31,7 +34,7 @@ export const DEF = {
   lift: [2.05, 2.25],   // a shaft's clear inside, along x and across
   coreWall: 0.25,       // RC round the staircases, lifts, refuse room and riser (shared between neighbours)
   partyWall: 0.2,       // RC between units (centred on their line)
-  riser: 0.175, going: 0.25,  // Code of Practice for Means of Escape: riser 175 mm at most, going 225 mm at least
+  riser: 0.175, going: 0.225,  // Code of Practice for Means of Escape: riser 175 mm at most, going 225 mm at least
   core: "middle",       // middle | ends | behind (a staircase behind the lifts, reached by a passage beside them)
   stairType: "dogleg",  // dogleg | dogleg2 (2 risers on the half landing) | scissor (two stairs crossing in one enclosure)
   mic: false, micPct: 10, // JPN 8 (check the % in force)
@@ -91,7 +94,7 @@ export function turn(u, k) {
     const sn = rot([seg[2][0] * k2, seg[2][1] * k2]);
     doors.push({ H: P(H), O: P(O), sn: [Math.round(sn[0]), Math.round(sn[1])], w, entry: !!d.entry });
   }
-  return { rooms, extras, doors, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.1) };
+  return { rooms, extras, doors, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.15) };
 }
 /* the side the entrance is on (the corridor side), else opposite the façade */
 export function entrySide(u) {
@@ -136,73 +139,102 @@ export function layout(o) {
   let note = "";
   if (SEQ) {
     const cnt = (list) => { const c = {}; for (const e of list) c[e.u] = (c[e.u] || 0) + 1; return c; };
-    const a = cnt([...SEQ.s, ...SEQ.n]), b = cnt(want.map((u) => ({ u: u.name })));
+    const typeOf = (e) => { const u = byName.get(e.u); return { u: (u && u.variantOf) || e.u }; };
+    const a = cnt([...SEQ.s, ...SEQ.n].map(typeOf)), b = cnt(want.map((u) => ({ u: u.name })));
     if ([...new Set([...Object.keys(a), ...Object.keys(b)])].some((k) => (a[k] || 0) !== (b[k] || 0))) note = "The edited floor differs from the unit mix";
     want.length = 0; for (const e of [...SEQ.s, ...SEQ.n]) want.push(unitOf(e));
   }
   const f0 = new Map();
   const figOf = (u) => { if (!f0.has(u)) f0.set(u, U.figures(u)); return f0.get(u); };
-  const deep = want.length ? Math.max(...want.map((u) => turn(u, TO_N[entrySide(u)] || 0).D)) : (D - cw) / 2;
+  const deep = want.length ? Math.max(...want.map((u) => { const t = turn(u, TO_N[entrySide(u)] || 0); return t.D + t.wall; })) : (D - cw) / 2;
   // the corridor in the middle; when the plate is too shallow for the deepest unit on both sides, moved so one side takes it
   const half = (D - cw) / 2;
   const y0 = r3(Math.max(0, half >= deep || D - cw < deep ? half : D - cw - deep)), y1 = r3(y0 + cw);
   const dN = y0, dS = D - y1;
   // the core on the north band
-  // a staircase from its width, the storey height, the riser and going; each core piece with its RC wall (half on each side, shared with the next)
+  // a staircase from its width, the storey height, the riser and going. Each core piece: its clear inside and a full RC wall
+  // (coreWall) all round; pieces side by side overlap by one wall, so they share it
   const sw = n(p.stairWidth, 1200) / 1000, cwl = n(p.coreWall, 0.25), SZ = stairSize({ width: sw, storeyH: p.storeyH, riser: p.riser, going: p.going, type: p.stairType });
   const per = SZ.count;   // staircases an enclosure holds: 2 for a scissor
-  const stW = r3(SZ.W + cwl), stD = r3(SZ.D + cwl);
+  const W2 = 2 * cwl, stW = r3(SZ.W + W2), stD = r3(SZ.D + W2), lobD = r3(n(p.lobbyDepth, 1.8) + W2);
   const fl = { flats: want.length };
-  const lf = lifts({ floors: n(p.floorsAbove, n(p.storeys, 1)), population: want.length * n(p.storeys, 1) * n(p.persons, 3), car: p.car, storeyH: p.storeyH, hc5: p.hc5, interval: p.interval });
+  // the persons: each flat from its usable floor area (Table B1, as the staircases), unless a number a flat is given
+  const fac = (b1("1b-1") || {}).factor || 9;
+  const perFlat = (u) => (p.persons != null && p.persons !== "" && Number(p.persons) > 0 ? Number(p.persons) : ceilPersons(figOf(u).internal / fac));
+  const popFloor = want.reduce((s2, u) => s2 + perFlat(u), 0);
+  const lf = lifts({ floors: n(p.floorsAbove, n(p.storeys, 1)), population: popFloor * n(p.storeys, 1), car: p.car, storeyH: p.storeyH, hc5: p.hc5, interval: p.interval });
   let nL = Math.max(1, Math.round(n(p.lifts, 0)) || lf.n), nS = Math.max(1, Math.round(n(p.stairs, 2)));
   const core = [];
-  const put = (kind, w, d, label) => core.push({ kind, w: r3(w), h: r3(Math.min(d, dN)), label });
   const mid = [];
-  for (let i = 0; i < nL; i++) mid.push(["lift", p.lift[0] + cwl, p.lift[1] + cwl, "Lift " + (i + 1)]);
-  mid.push(["refuse", p.refuse[0] + cwl, p.refuse[1] + cwl, "Refuse"], ["riser", p.emr[0] + cwl, p.emr[1] + cwl, "E&M riser"]);
+  for (let i = 0; i < nL; i++) mid.push({ kind: "lift", w: p.lift[0] + W2, h: p.lift[1] + W2, label: "Lift " + (i + 1) });
+  mid.push({ kind: "refuse", w: p.refuse[0] + W2, h: p.refuse[1] + W2, label: "Refuse" }, { kind: "riser", w: p.emr[0] + W2, h: p.emr[1] + W2, label: "E&M riser" });
   const nE = Math.ceil(nS / per);
-  const stairs = Array.from({ length: nE }, (_, i) => ["stair", stW, stD, per > 1 ? `Stairs ${String.fromCharCode(65 + 2 * i)} + ${String.fromCharCode(66 + 2 * i)}` : "Stair " + String.fromCharCode(65 + i)]);
+  const stairs = Array.from({ length: nE }, (_, i) => ({ kind: "stair", w: stW, h: stD, label: per > 1 ? `Stairs ${String.fromCharCode(65 + 2 * i)} + ${String.fromCharCode(66 + 2 * i)}` : "Stair " + String.fromCharCode(65 + i) }));
   let xs = [];
   const pushX = (x) => { for (let k = 0; k < per; k++) xs.push(x); };
+  const walled = (k) => k !== "passage";
+  // a row from x: each next piece overlaps the one before by a wall when both have walls
+  const rowW = (list) => list.reduce((s2, q, i) => s2 + q.w - (i && walled(q.kind) && walled(list[i - 1].kind) ? cwl : 0), 0);
+  const putRow = (list, x0) => {
+    let x = x0;
+    list.forEach((q, i) => {
+      if (i && walled(q.kind) && walled(list[i - 1].kind)) x -= cwl;
+      core.push(Object.assign({}, q, { x: r3(x), h: r3(Math.min(q.h, dN)), up: q.up || 0 }));
+      if (q.kind === "stair") pushX(x + q.w / 2);
+      x += q.w;
+    });
+    return x;
+  };
+  // with protected lobbies: a lobby between each staircase and the corridor, the staircase behind it sharing its wall
+  const lob = !!p.lobby;
+  const withLobby = (st) => (lob ? [{ kind: "lobby", w: st.w, h: lobD, label: "Lobby" }, Object.assign({}, st, { up: lobD - cwl })] : [st]);
   if (p.core === "behind") {
-    // the lifts, refuse room and riser on the corridor with a passage beside them; the first staircase across behind them, its door off the passage
-    const pw = Math.max(cw, 1.2), rowW = pw + mid.reduce((s, q) => s + q[1], 0), rowD = Math.max(...mid.map((q) => q[2]));
-    const s0 = stairs[0], sW = s0[2], sD = s0[1];   // turned: its flights along the corridor
+    // the lifts, refuse room and riser on the corridor with a passage (or a protected lobby) beside them; the first staircase across behind them
+    const pw = Math.max(cw, 1.2), rowD = Math.max(...mid.map((q) => q.h));
+    const s0 = stairs[0], turned = { kind: "stair", w: s0.h, h: s0.w, label: s0.label };
+    const first = lob ? { kind: "lobby", w: r3(pw + W2), h: rowD, label: "Lobby" } : { kind: "passage", w: r3(pw), h: r3(rowD - cwl), label: "Passage" };
+    const row = [first, ...mid], rw = rowW(row);
     const rest = stairs.slice(1);
-    const tot = Math.max(rowW, sW) + rest.reduce((s2, q) => s2 + q[1], 0);
-    let x = (L - tot) / 2;
-    core.push({ kind: "passage", x: r3(x), w: r3(pw), h: r3(Math.min(rowD, dN)), label: "Passage" });
-    let xx = x + pw;
-    for (const q of mid) { core.push({ kind: q[0], x: r3(xx), w: q[1], h: Math.min(q[2], dN), label: q[3] }); xx += q[1]; }
-    core.push({ kind: "stair", x: r3(x), w: r3(sW), h: r3(sD), label: s0[3], behind: rowD }); pushX(x + sW / 2);
-    x += Math.max(rowW, sW);
-    for (const q of rest) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); pushX(x + q[1] / 2); x += q[1]; }
+    const tot = Math.max(rw, turned.w) + rest.reduce((s2, q) => s2 + q.w - cwl, 0);
+    const x0 = (L - tot) / 2;
+    const xe = putRow(row, x0);
+    core.push(Object.assign({}, turned, { x: r3(x0), up: rowD - cwl })); pushX(x0 + turned.w / 2);
+    let x = Math.max(xe, x0 + turned.w);
+    for (const q of rest) { const ls = withLobby(q); for (const z of ls) core.push(Object.assign({}, z, { x: r3(x - cwl) })); pushX(x - cwl + q.w / 2); x += q.w - cwl; }
   } else if (p.core === "ends" && nE >= 2) {
-    const midW = mid.reduce((s, q) => s + q[1], 0);
-    let x = 0; const a = stairs[0]; core.push({ kind: a[0], x: 0, w: a[1], h: Math.min(a[2], dN), label: a[3] }); pushX(a[1] / 2);
-    const b = stairs[1]; core.push({ kind: b[0], x: r3(L - b[1]), w: b[1], h: Math.min(b[2], dN), label: b[3] }); pushX(L - b[1] / 2);
-    x = (L - midW) / 2;
-    for (const q of mid) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); x += q[1]; }
-    for (const q of stairs.slice(2)) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); pushX(x + q[1] / 2); x += q[1]; }
+    const put1 = (st, x) => { for (const z of withLobby(st)) core.push(Object.assign({}, z, { x: r3(x) })); pushX(x + st.w / 2); };
+    put1(stairs[0], 0); put1(stairs[1], r3(L - stairs[1].w));
+    const list = [...mid, ...stairs.slice(2)];
+    const xe = putRow(list, (L - rowW(list)) / 2);
+    void xe;
   } else {
+    // staircases at the ends of the row, the lifts, refuse room and riser between
     const seq = [stairs[0], ...mid, ...stairs.slice(1)];
-    const tot = seq.reduce((s, q) => s + q[1], 0);
-    let x = (L - tot) / 2;
-    for (const q of seq) { core.push({ kind: q[0], x: r3(x), w: q[1], h: Math.min(q[2], dN), label: q[3] }); if (q[0] === "stair") pushX(x + q[1] / 2); x += q[1]; }
+    const x0 = (L - rowW(seq)) / 2;
+    let x = x0;
+    seq.forEach((q, i) => {
+      if (i) x -= cwl;
+      if (q.kind === "stair") { for (const z of withLobby(q)) core.push(Object.assign({}, z, { x: r3(x), h: r3(z.h) })); pushX(x + q.w / 2); }
+      else core.push(Object.assign({}, q, { x: r3(x), h: r3(Math.min(q.h, dN)) }));
+      x += q.w;
+    });
   }
-  void put;
-  for (const c of core) { c.y = r3(y0 - c.h - (c.behind || 0)); delete c.behind; }
-  // a core moved by hand: its pieces as stored, anywhere on the plate
+  // each piece's outer face on the corridor's edge (those behind another, up by it)
+  for (const c of core) { c.y = r3(y0 - c.h - (c.up || 0)); delete c.up; c.full = true; }
+  // a core moved by hand: its pieces as stored, anywhere on the plate (stored before the full walls: grown by half a wall all round)
   const coreAuto = core.map((c) => Object.assign({}, c));
   const coreEdited = Array.isArray(p.pieces) && p.pieces.length > 0;
   if (coreEdited) {
     core.length = 0; xs = [];
     for (const c of p.pieces) {
-      const q = { kind: c.kind, label: c.label || c.kind, x: r3(n(c.x)), y: r3(n(c.y)), w: r3(Math.max(0.3, n(c.w, 1))), h: r3(Math.max(0.3, n(c.h, 1))) };
+      const grow = c.full || c.kind === "passage" ? 0 : cwl / 2;
+      const q = { kind: c.kind, label: c.label || c.kind, x: r3(n(c.x) - grow), y: r3(n(c.y) - grow), w: r3(Math.max(0.3, n(c.w, 1) + 2 * grow)), h: r3(Math.max(0.3, n(c.h, 1) + 2 * grow)), full: true };
       core.push(q); if (q.kind === "stair") pushX(q.x + q.w / 2);
     }
     nS = Math.max(1, core.filter((c) => c.kind === "stair").length * per); nL = Math.max(1, core.filter((c) => c.kind === "lift").length);
   }
+  // the core's doors, on the face onto the corridor, a passage or a lobby
+  coreDoors(core, { y0, y1, cwl, L, per });
   // free runs along each band: what the pieces standing on it leave
   const runs = [];
   const bandY = { n: [0, y0], s: [y1, D] };
@@ -234,7 +266,7 @@ export function layout(o) {
       for (let nudge = 0; nudge < 40; nudge++) {
         const x = end === "l" ? run.l + nudge * 0.25 : run.r - t.W - nudge * 0.25;
         if (x < run.l - 1e-6 || x + t.W > run.r + 0.01) break;
-        const y = band === "s" ? y1 : y0 - t.D, box = { x: r3(x), y: r3(y), w: t.W, h: t.D };
+        const y = band === "s" ? y1 + t.wall / 2 : y0 - t.D - t.wall / 2, box = { x: r3(x), y: r3(y), w: t.W, h: t.D };
         if (!inside(box)) continue;
         if (!probe) { if (end === "l") run.l = r3(x + t.W + gapOf(t)); else run.r = r3(x - gapOf(t)); if (end === "l") c.i = k; else c.j = k; }
         return box;
@@ -245,13 +277,13 @@ export function layout(o) {
     return null;
   };
   const order = { s: 0, n: 0 };
-  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors }));
+  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors, wt: t.wall }));
   if (SEQ) {
     // units put by hand (x given) first, where they were put; the runs keep clear of them
     for (const band of ["s", "n"]) {
       SEQ[band].forEach((e, k) => {
         if (e.x == null) return;
-        const u = unitOf(e), t = tOf(u, band, e.r), x = r3(n(e.x)), y = band === "s" ? y1 : y0 - t.D;
+        const u = unitOf(e), t = tOf(u, band, e.r), x = r3(n(e.x)), y = band === "s" ? y1 + t.wall / 2 : y0 - t.D - t.wall / 2;
         placeAt(u, band, { x, y: r3(y), w: t.W, h: t.D }, t, e, k);
         for (const run of sides[band]) {
           if (x + t.W <= run.l + 1e-6 || x >= run.r - 1e-6) continue;
@@ -270,7 +302,7 @@ export function layout(o) {
         if (e.x != null) return;
         order[band] = k;
         const u = unitOf(e), t = tOf(u, band, e.r);
-        if (t.D > depth[band] + 0.05) { order[band]++; return left.push({ u, why: `${u.name || "Unit"} is ${t.D.toFixed(2)} m deep from its entrance; the ${band === "s" ? "south" : "north"} side is ${depth[band].toFixed(2)} m` }); }
+        if (t.D + t.wall > depth[band] + 0.05) { order[band]++; return left.push({ u, why: `${u.name || "Unit"} is ${t.D.toFixed(2)} m deep from its entrance; the ${band === "s" ? "south" : "north"} side is ${depth[band].toFixed(2)} m` }); }
         const end = p.corners && k % 2 ? "r" : "l";
         const box = take(band, end, t) || take(band, end === "l" ? "r" : "l", t);
         if (!box) { order[band]++; return left.push({ u, why: `no room left along the corridor for ${u.name || "a unit"}` }); }
@@ -280,7 +312,7 @@ export function layout(o) {
   } else {
     // from the mix: at each end the next unit that still fits its run (so a smaller one takes a gap)
     const rest = want.map((u) => ({ u, t: { n: tOf(u, "n"), s: tOf(u, "s") } }));
-    for (const q of rest) if (q.t.s.D > dS + 0.05 && q.t.n.D > dN + 0.05) { q.gone = true; left.push({ u: q.u, why: `${q.u.name || "Unit"} is ${q.t.s.D.toFixed(2)} m deep from its entrance; the corridor leaves ${Math.max(dN, dS).toFixed(2)} m` }); }
+    for (const q of rest) if (q.t.s.D + q.t.s.wall > dS + 0.05 && q.t.n.D + q.t.n.wall > dN + 0.05) { q.gone = true; left.push({ u: q.u, why: `${q.u.name || "Unit"} is ${q.t.s.D.toFixed(2)} m deep from its entrance; the corridor leaves ${Math.max(dN, dS).toFixed(2)} m` }); }
     for (const band of ["s", "n"]) {
       const ends = p.corners ? ["l", "r"] : ["l"], done = new Set();
       let turnI = 0, guard = 0;
@@ -289,7 +321,7 @@ export function layout(o) {
         if (done.has(end)) continue;
         const c = cursor[band], k = end === "l" ? c.i : c.j;
         if (k < 0 || k >= sides[band].length || c.i > c.j) { done.add(end); continue; }
-        const q = rest.find((z) => !z.gone && z.t[band].D <= depth[band] + 0.05 && take(band, end, z.t[band], true));
+        const q = rest.find((z) => !z.gone && z.t[band].D + z.t[band].wall <= depth[band] + 0.05 && take(band, end, z.t[band], true));
         if (q) { const box = take(band, end, q.t[band]); placeAt(q.u, band, box, q.t[band]); q.gone = true; continue; }
         // nothing fits this run from this end: on to the next run
         if (end === "l") c.i++; else c.j--;
@@ -303,20 +335,20 @@ export function layout(o) {
   for (const q of placed) q.corner = q.x < 0.05 ? "w" : q.x + q.w > L - 0.05 ? "e" : "";
   const cornerFac = placed.filter((q) => q.corner).reduce((s2, q) => s2 + q.h, 0);
   // what a hand-placed layout may get wrong: overlaps, outside the plate, the entrance turned away from the corridor
-  const ov = (a, b) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.05 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.05;
+  const ov = (a, b, tol = 0.05) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > tol && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > tol;
   const issues = [];
   for (const [i, q] of placed.entries()) {
     q.flags = [];
     if (!inside(q)) q.flags.push("outside the plate");
     for (const [j, o] of placed.entries()) if (j !== i && ov(q, o)) { q.flags.push("overlaps " + (o.name || "a unit")); break; }
-    const c = core.find((cc) => ov(q, cc)); if (c) q.flags.push("overlaps " + c.label);
+    const c = core.find((cc) => ov(q, cc, cwl / 2 + 0.05)); if (c) q.flags.push("overlaps " + c.label);
     if (q.r % 360) q.flags.push("entrance not on the corridor");
     for (const fl of q.flags) issues.push(`${q.name}: ${fl}`);
   }
   for (const [i, c] of core.entries()) {
     c.flags = [];
     if (!inside(c)) c.flags.push("outside the plate");
-    for (const [j, o] of core.entries()) if (j > i && ov(c, o)) c.flags.push("overlaps " + o.label);
+    for (const [j, o] of core.entries()) if (j > i && ov(c, o, cwl + 0.05)) c.flags.push("overlaps " + o.label);
     for (const fl of c.flags) issues.push(`${c.label}: ${fl}`);
   }
   const seqOut = { s: placed.filter((q) => q.band === "s").sort((a, b) => a.si - b.si).map((q) => ({ u: q.name, m: q.m })), n: placed.filter((q) => q.band === "n").sort((a, b) => a.si - b.si).map((q) => ({ u: q.name, m: q.m })) };
@@ -326,10 +358,12 @@ export function layout(o) {
   const plate = Math.abs(area(F.poly));
   const corrA = L * cw + core.filter((c) => c.kind === "passage").reduce((s2, c) => s2 + c.w * c.h, 0);
   const wideEx = Math.max(0, Math.min(cw, n(p.wideMax, 2.4)) - n(p.wideBase, 1.5)) * L;
-  const A = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + c.w * c.h, 0);
-  const clearA = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - cwl) * Math.max(0, c.h - cwl), 0);
-  const stairA = A("stair"), liftA = A("lift"), refA = clearA("refuse"), riserA = clearA("riser");
-  const coreWallA = A("refuse") - refA + A("riser") - riserA;     // their walls count, the rooms inside are exempt
+  // a staircase, lift or lobby: its inside and half its walls; the refuse room and riser: the inside (exempt); the rest of the walls round the core
+  const A = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - cwl) * Math.max(0, c.h - cwl), 0);
+  const clearA = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - 2 * cwl) * Math.max(0, c.h - 2 * cwl), 0);
+  const stairA = A("stair"), liftA = A("lift"), lobbyA = A("lobby"), refA = clearA("refuse"), riserA = clearA("riser");
+  const coreU = unionArea(core.filter((c) => c.kind !== "passage").map((c) => ({ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h })));
+  const coreWallA = Math.max(0, coreU - stairA - liftA - lobbyA - refA - riserA);     // the walls count, the refuse room and riser inside are exempt
   // the party walls between units on a side: the gaps
   let partyA = 0;
   for (const band of ["s", "n"]) { const q = placed.filter((o) => o.band === band).sort((a, b) => a.x - b.x); for (let k = 1; k < q.length; k++) { const gp = q[k].x - (q[k - 1].x + q[k - 1].w); if (gp > 1e-6 && gp < 0.6) partyA += gp * Math.min(q[k].h, q[k - 1].h); } }
@@ -337,8 +371,14 @@ export function layout(o) {
   const unitGfa = placed.reduce((s, q) => s + q.fig.gfa, 0), sale = placed.reduce((s, q) => s + q.fig.saleable, 0);
   const unitUfa = placed.reduce((s, q) => s + q.fig.internal, 0);
   const balEx = placed.reduce((s, q) => s + q.fig.balEx + q.fig.upEx + q.fig.acpFree + q.fig.cwEx + q.fig.pcEx + q.fig.acpCapEx, 0);
-  const residual = Math.max(0, plate - unitBox - corrA - stairA - liftA - refA - riserA - coreWallA - partyA);
-  let gfa = unitGfa + corrA - wideEx + stairA + liftA + coreWallA + partyA;
+  // what is left of the plate: found as regions (slivers aside), each taken as E&M
+  const residuals = residualRegions(F.poly, [
+    ...placed.flatMap((q) => [...q.rooms.map((rm) => ({ x0: q.x + rm.x - q.wt / 2, y0: q.y + rm.y - q.wt / 2, x1: q.x + rm.x + rm.w + q.wt / 2, y1: q.y + rm.y + rm.h + q.wt / 2 })), ...(q.extras || []).map((e) => ({ x0: q.x + e.x, y0: q.y + e.y, x1: q.x + e.x + e.w, y1: q.y + e.y + e.h }))]),
+    ...core.map((c) => ({ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h })),
+    { x0: -1e3, y0: y0, x1: 1e3, y1: y1 },
+  ]);
+  const residual = residuals.reduce((s2, q) => s2 + q.area, 0);
+  let gfa = unitGfa + corrA - wideEx + stairA + liftA + lobbyA + coreWallA + partyA;
   const mic = p.mic ? gfa * n(p.micPct, 10) / 100 : 0;
   gfa -= mic;
   // staircases: the persons on a floor (Table B1 1b-1 with five or more flats a floor a staircase)
@@ -364,11 +404,11 @@ export function layout(o) {
   if (between != null) checks.push({ what: "Between the staircases", ok: between <= tr.between, text: `${between} m, at most ${tr.between} m (B11.3(b))` });
   return {
     seq: SEQ ? { s: SEQ.s.map((e) => Object.assign({}, e)), n: SEQ.n.map((e) => Object.assign({}, e)) } : seqOut, edited: !!SEQ, note, cornerFac: r3(cornerFac),
-    coreOut: core.map((c) => ({ kind: c.kind, label: c.label, x: c.x, y: c.y, w: c.w, h: c.h })), coreAuto, coreEdited, issues, frameAxis: { ux: F.ux, uy: F.uy },
+    coreOut: core.map((c) => ({ kind: c.kind, label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, full: true })), residuals, persons: { factor: fac, floor: popFloor }, coreAuto, coreEdited, issues, frameAxis: { ux: F.ux, uy: F.uy },
     F, L: r3(L), D: r3(D), y0, y1, cw, core, placed, left, stairsX: xs.map(r3), lifts: lf, nL, nS, stairs: qs, checks,
     figures: {
       plate: r3(plate), units: placed.length, saleable: r3(sale), unitGfa: r3(unitGfa), corridor: r3(corrA), wideEx: r3(wideEx),
-      stair: r3(stairA), lift: r3(liftA), refuse: r3(refA), riser: r3(riserA), coreWalls: r3(coreWallA), partyWalls: r3(partyA), residual: r3(residual), mic: r3(mic), unitEx: r3(balEx),
+      stair: r3(stairA), lift: r3(liftA), lobby: r3(lobbyA), refuse: r3(refA), riser: r3(riserA), coreWalls: r3(coreWallA), partyWalls: r3(partyA), residual: r3(residual), mic: r3(mic), unitEx: r3(balEx),
       gfa: r3(gfa), acc: plate ? r3(gfa / plate * 100) : null, efficiency: gfa ? r3(sale / gfa * 100) : null,
       conc: r3(plate - gfa),
     },
@@ -410,6 +450,120 @@ export function stairSize(o) {
   // a dog-leg: two flights; with "dogleg2" two of the risers are on the half landing, across it, so the flights are shorter
   const land2 = type === "dogleg2" ? 2 : 0, nF = Math.max(2, nR - land2);
   const n1 = Math.ceil(nF / 2), n2 = nF - n1, t1 = n1 - 1, t2 = n2 - 1;
-  const run = Math.max(t1, t2) * g, well = 0.1;
+  // the well: 100 mm, or with 2 risers on the half landing at least their tread's depth (the step sits across it)
+  const run = Math.max(t1, t2) * g, well = land2 ? Math.max(0.1, g) : 0.1;
   return { type, count: 1, width: w, risers: nR, riser: r3(r), going: g, n1, n2, t1, t2, land2, run: r3(run), landing: r3(landing), well, W: r3(2 * w + well), D: r3(run + 2 * landing) };
 }
+
+/* the area of a union of rectangles {x0, y0, x1, y1} */
+export function unionArea(rects) {
+  if (!rects.length) return 0;
+  const xs = [...new Set(rects.flatMap((r) => [r.x0, r.x1]))].sort((a, b) => a - b), ys = [...new Set(rects.flatMap((r) => [r.y0, r.y1]))].sort((a, b) => a - b);
+  let a = 0;
+  for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) {
+    const cx = (xs[i] + xs[i + 1]) / 2, cy = (ys[j] + ys[j + 1]) / 2;
+    if (rects.some((r) => cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1)) a += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
+  }
+  return a;
+}
+
+/* what of the plate nothing covers: connected regions of cells, each {area, box, at (its largest cell's middle), cells};
+   slivers (under 0.5 m2, or under 0.4 m across) left out */
+export function residualRegions(poly, rects, minA = 0.5, minW = 0.4) {
+  const xs = [...new Set([...poly.map((p) => p[0]), ...rects.flatMap((r) => [r.x0, r.x1])].map((v) => +v.toFixed(4)))].sort((a, b) => a - b);
+  const ys = [...new Set([...poly.map((p) => p[1]), ...rects.flatMap((r) => [r.y0, r.y1])].map((v) => +v.toFixed(4)))].sort((a, b) => a - b);
+  const nx = xs.length - 1, ny = ys.length - 1, free = new Uint8Array(Math.max(0, nx * ny));
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+    const cx = (xs[i] + xs[i + 1]) / 2, cy = (ys[j] + ys[j + 1]) / 2;
+    if (xs[i + 1] - xs[i] < 1e-6 || ys[j + 1] - ys[j] < 1e-6) continue;
+    if (!inPoly(poly, cx, cy)) continue;
+    if (rects.some((r) => cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1)) continue;
+    free[i * ny + j] = 1;
+  }
+  const seen = new Uint8Array(free.length), out = [];
+  for (let k = 0; k < free.length; k++) {
+    if (!free[k] || seen[k]) continue;
+    const st = [k], cells = []; seen[k] = 1;
+    while (st.length) {
+      const c = st.pop(), i = Math.floor(c / ny), j = c % ny; cells.push([i, j]);
+      for (const [a, b] of [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]) { if (a < 0 || b < 0 || a >= nx || b >= ny) continue; const q = a * ny + b; if (free[q] && !seen[q]) { seen[q] = 1; st.push(q); } }
+    }
+    let area = 0, big = null, bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+    const rc = cells.map(([i, j]) => { const r = { x0: xs[i], y0: ys[j], x1: xs[i + 1], y1: ys[j + 1] }; const a = (r.x1 - r.x0) * (r.y1 - r.y0); area += a; if (!big || a > big.a) big = Object.assign({ a }, r); bx0 = Math.min(bx0, r.x0); by0 = Math.min(by0, r.y0); bx1 = Math.max(bx1, r.x1); by1 = Math.max(by1, r.y1); return r; });
+    if (area < minA || Math.min(big.x1 - big.x0, big.y1 - big.y0) < minW) continue;
+    out.push({ area: r3(area), box: { x: bx0, y: by0, w: bx1 - bx0, h: by1 - by0 }, at: [(big.x0 + big.x1) / 2, (big.y0 + big.y1) / 2], cells: rc });
+  }
+  return out;
+}
+
+/* the doors of the core pieces: a staircase's on its face onto the corridor, a passage or a lobby (two on a scissor), a lift's
+   opening on the corridor or lobby, the refuse room's and riser's onto the corridor; a lobby's from the corridor.
+   Each door {H, O, sn, w, slide}: on its wall's middle line, the hinge, the closed end, the side it opens to */
+export function coreDoors(core, o) {
+  const { y0, y1, cwl } = o, E2 = 0.01;
+  const open = core.filter((c) => c.kind === "passage" || c.kind === "lobby");
+  for (const c of core) {
+    c.doors = [];
+    if (c.kind === "passage") continue;
+    const faces = [];
+    // the faces onto the corridor
+    if (Math.abs(c.y + c.h - y0) < E2) faces.push({ side: "s", a: c.x, b: c.x + c.w });
+    if (Math.abs(c.y - y1) < E2) faces.push({ side: "n", a: c.x, b: c.x + c.w });
+    // onto a passage or lobby (not for a lobby itself)
+    if (c.kind !== "lobby") for (const q of open) {
+      if (q === c) continue;
+      const ox0 = Math.max(c.x, q.x), ox1 = Math.min(c.x + c.w, q.x + q.w);
+      const inner = q.kind === "lobby" ? cwl : 0;   // a lobby overlaps its neighbour by its wall
+      if (ox1 - ox0 > 0.8) {
+        if (Math.abs(c.y + c.h - (q.y + inner)) < E2 + cwl && c.y < q.y) faces.push({ side: "s", a: ox0 + inner, b: ox1 - inner });
+        else if (Math.abs(c.y - (q.y + q.h - inner)) < E2 + cwl && c.y > q.y) faces.push({ side: "n", a: ox0 + inner, b: ox1 - inner });
+      }
+    }
+    if (!faces.length) continue;
+    const f = faces.find((q) => open.some((z) => z !== c && q.a >= z.x - 0.01 && q.b <= z.x + z.w + 0.01)) || faces[0];
+    const yw = f.side === "s" ? c.y + c.h - cwl / 2 : c.y + cwl / 2, sOut = f.side === "s" ? 1 : -1;
+    const mk = (mid, w, into, slide) => {
+      const a = Math.max(f.a + cwl + 0.05, mid - w / 2), b = Math.min(f.b - cwl - 0.05, a + w);
+      if (b - a < 0.5) return;
+      c.doors.push({ H: [r3(a), r3(yw)], O: [r3(b), r3(yw)], sn: [0, into ? -sOut : sOut], w: r3(b - a), slide: !!slide });
+    };
+    const m = (f.a + f.b) / 2;
+    if (c.kind === "stair") {
+      // into the staircase, the way of escape; a scissor's two staircases each their own
+      if (o.per > 1) { mk(f.a + (f.b - f.a) * 0.27, 0.9, true); mk(f.a + (f.b - f.a) * 0.73, 0.9, true); } else mk(m, 0.9, true);
+    } else if (c.kind === "lift") mk(m, 1.0, false, true);
+    else if (c.kind === "lobby") mk(m, 0.9, true);
+    else mk(m, 0.75, false);
+  }
+  return core;
+}
+
+/* a placed unit's walls in plan metres: its turned rooms through wallGeom, its doors cut; [{x0, y0, x1, y1, m}] and the door openings */
+export function placedWalls(q, at) {
+  const ox = at ? at.x : q.x, oy = at ? at.y : q.y;
+  const pu = { rooms: q.rooms, walls: Object.fromEntries(Object.entries(q.u.walls || {}).filter(([k2]) => k2.includes("|"))), partySides: [] };
+  const ed = U.edges(pu), tOf = (e) => (e.kind === "part" ? Number(q.u.part ?? 0.075) || 0.075 : Number(q.u.wall ?? 0.15) || 0.15);
+  const ops = (q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
+  const G = wallGeom(pu, ed, { tOf, isOpen: (e) => U.isOpen(pu, e), solid: (e) => U.solidPart(pu, e), openings: ops });
+  return { rects: G.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
+}
+
+/* the core's RC walls: each piece's four bands (coreWall), the doors cut through every band at them */
+export function coreWallRects(core, cwl) {
+  const cuts = core.flatMap((c) => (c.doors || []).map((d) => ({ x0: Math.min(d.H[0], d.O[0]), x1: Math.max(d.H[0], d.O[0]), y0: d.H[1] - cwl / 2 - 0.001, y1: d.H[1] + cwl / 2 + 0.001 })));
+  const out = [];
+  for (const c of core) {
+    if (c.kind === "passage") continue;
+    const bands = [
+      { x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + cwl }, { x0: c.x, y0: c.y + c.h - cwl, x1: c.x + c.w, y1: c.y + c.h },
+      { x0: c.x, y0: c.y, x1: c.x + cwl, y1: c.y + c.h }, { x0: c.x + c.w - cwl, y0: c.y, x1: c.x + c.w, y1: c.y + c.h },
+    ];
+    for (const b of bands) {
+      let segs = [[b.x0, b.x1]];
+      for (const k of cuts) if (k.y0 <= b.y0 + 1e-6 && k.y1 >= b.y1 - 1e-6 && b.y1 - b.y0 < cwl + 1e-6) segs = segs.flatMap(([p, q]) => (k.x1 <= p || k.x0 >= q ? [[p, q]] : [[p, k.x0], [k.x1, q]].filter(([u, v]) => v - u > 1e-6)));
+      for (const [p, q] of segs) out.push({ x0: p, y0: b.y0, x1: q, y1: b.y1, m: "rc" });
+    }
+  }
+  return out;
+}
+void outlineOf;

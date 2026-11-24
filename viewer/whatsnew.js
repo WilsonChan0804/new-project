@@ -6,6 +6,17 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-22", date: "25 Nov 2026",
+    items: [
+      "**4 · Floors: walls shared, edge to edge** - the core has its full RC wall (250 mm) all round, and pieces side by side share one; every wall on the floor (units, core, party walls) is drawn as one, so a wall two share is drawn once. A unit's outer wall now has its face on the corridor's edge. Dragged pieces snap so their walls overlap.",
+      "**Doors and protected lobbies** - staircases, lifts (sliding), the refuse room and riser get their doors; tick **Protected lobby to the staircases** for a lobby between each staircase and the corridor, or add one (or any core piece) from **+ Core piece**.",
+      "**E&M found by itself** - what is left between the corridor, the units and the core is found and shown as E&M regions with their areas. The wider corridor's exempt part is shown on the plan with its area; MiC's area by its tick.",
+      "**Persons a flat** from each flat's usable floor area (Table B1) for the lifts, unless a number is given. A dog-leg with 2 risers on the half landing has a well as deep as their tread.",
+      "**Lengths to 3 d.p.** on Units and Floors (riser 0.175, going 0.225 by default).",
+      "**Edit a unit in place** - tap a unit on 4 · Floors, **✎ Edit in place**: its plan opens over the floor (every flat of it changes); **Variant for this flat** makes a copy for that flat only.",
+    ],
+  },
+  {
     version: "2027-03-21", date: "25 Nov 2026",
     items: [
       "**Unit plans: walls join properly** - the walls are drawn as one, so corners and tees close and doors and windows cut them cleanly. A partition in line with a thicker external or party wall now sits **flush with its inside face** (or centre to centre: Walls and sides, or one wall's menu). Doors have a rebated frame at each jamb; the WC is redrawn (cistern, pan, seat).",

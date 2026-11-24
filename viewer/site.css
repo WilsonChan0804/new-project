@@ -294,3 +294,8 @@ body.st-planfull .st-map-wrap { min-height: 100%; }
 .fl-vw button { border: 0; background: none; padding: 5px 12px; border-radius: 6px; font-weight: 600; }
 .fl-vw button.on { background: var(--accent, #f28022); color: #fff; }
 .fl-vw select { border: 0; background: none; }
+/* a unit edited in place from 4 · Floors: its editor floats over the floor plan */
+body.st-inplace #st-uplan { inset: 3% 3% 3% 3%; z-index: 975; border: 2px solid var(--accent, #f28022); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+body.st-inplace #st-fplan { filter: saturate(.4) brightness(1.04); pointer-events: none; }
+.un-inplace { border: 2px solid var(--accent, #f28022); background: #fff7ef; }
+.un-inplace .st-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }

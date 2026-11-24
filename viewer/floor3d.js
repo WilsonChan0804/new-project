@@ -5,8 +5,7 @@
  * flights and landings, so the layout reads from above.
  * Plan frame (x along the corridor, y across, y down) -> three (x, -y, z up).
  */
-import * as UC from "./unitcore.js";
-import { wallGeom } from "./unitwalls.js";
+import * as FC from "./floorcore.js";
 
 let V = null, R = null;   // three, and the one scene
 
@@ -84,29 +83,26 @@ function scene(THREE, Orbit, host) {
       for (const rm of q.rooms) box(grp, q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h, wz, wz + 0.02, mat(/BATH|ENS/.test(rm.kind) ? 0xd9ebe7 : colOf.get(q.name)));
       for (const e of q.extras || []) box(grp, q.x + e.x, q.y + e.y, q.x + e.x + e.w, q.y + e.y + e.h, wz, wz + 0.02, mat(0xe8edf2));
       // its walls, cut by its doors, a lintel over each door
-      const pu = { rooms: q.rooms, walls: Object.fromEntries(Object.entries(q.u.walls || {}).filter(([k2]) => k2.includes("|"))), partySides: [] };
-      const ed = UC.edges(pu), tOf = (e) => (e.kind === "part" ? Number(q.u.part ?? 0.075) || 0.075 : Number(q.u.wall ?? 0.15) || 0.15);
-      const ops = (q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
-      const G = wallGeom(pu, ed, { tOf, isOpen: (e) => UC.isOpen(pu, e), solid: (e) => UC.solidPart(pu, e), openings: ops });
-      for (const w of G.rects) box(grp, q.x + w.x0, q.y + w.y0, q.x + w.x1, q.y + w.y1, wz, wz + wh, w.m === "blk" ? blkM : w.m === "pc" ? pcM : rcM, true);
-      for (const s of ops) {
-        const v = Math.abs(s.x1 - s.x2) < 1e-6, t = 0.15;
-        if (v) box(grp, q.x + s.x1 - t / 2, q.y + s.y1, q.x + s.x1 + t / 2, q.y + s.y2, wz + 2.1, wz + wh, blkM);
-        else box(grp, q.x + s.x1, q.y + s.y1 - t / 2, q.x + s.x2, q.y + s.y1 + t / 2, wz + 2.1, wz + wh, blkM);
+      const PW = FC.placedWalls(q);
+      for (const w of PW.rects) box(grp, w.x0, w.y0, w.x1, w.y1, wz, wz + wh, w.m === "blk" ? blkM : w.m === "pc" ? pcM : rcM, true);
+      for (const s2 of PW.ops) {
+        const v = Math.abs(s2.x1 - s2.x2) < 1e-6, t = 0.15;
+        if (v) box(grp, s2.x1 - t / 2, s2.y1, s2.x1 + t / 2, s2.y2, wz + 2.1, wz + wh, blkM);
+        else box(grp, s2.x1, s2.y1 - t / 2, s2.x2, s2.y1 + t / 2, wz + 2.1, wz + wh, blkM);
       }
     }
-    // the core: its RC walls (half their thickness in from each side), the lifts' shafts, the staircases' flights
+    // the core: its RC walls (shared where pieces meet, cut by the doors), the lift cars, the staircases' flights
+    for (const w of FC.coreWallRects(r.core, cw)) box(grp, w.x0, w.y0, w.x1, w.y1, wz, z + H, rcM, true);
+    for (const c of r.core) for (const d of c.doors || []) { const x0 = Math.min(d.H[0], d.O[0]), x1 = Math.max(d.H[0], d.O[0]); box(grp, x0, d.H[1] - cw / 2, x1, d.H[1] + cw / 2, wz + 2.1, z + H, rcM); }
     for (const c of r.core) {
-      if (c.kind === "passage") { box(grp, c.x, c.y, c.x + c.w, c.y + c.h, wz, wz + 0.01, mat(0xe6e9ee)); continue; }
-      const t = cw / 2, top = z + H;
-      box(grp, c.x, c.y, c.x + c.w, c.y + t, wz, top, rcM, true);
-      box(grp, c.x, c.y + c.h - t, c.x + c.w, c.y + c.h, wz, top, rcM, true);
-      box(grp, c.x, c.y + t, c.x + t, c.y + c.h - t, wz, top, rcM, true);
-      box(grp, c.x + c.w - t, c.y + t, c.x + c.w, c.y + c.h - t, wz, top, rcM, true);
+      if (c.kind === "passage" || c.kind === "lobby") { box(grp, c.x, c.y, c.x + c.w, c.y + c.h, wz, wz + 0.01, mat(0xe6e9ee)); continue; }
+      const t = cw;
       if (c.kind === "lift") box(grp, c.x + t + 0.3, c.y + t + 0.3, c.x + c.w - t - 0.3, c.y + c.h - t - 0.3, wz, wz + 2.4, mat(0xb7b3e0, 0.85), true);
       if (c.kind === "stair" && r.stair) stairs(grp, r.stair, c.x + t, c.y + t, c.w - 2 * t, c.h - 2 * t, z, H, box, mat(0xc8c2b6));
       if (c.kind === "refuse" || c.kind === "riser") box(grp, c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t, wz, wz + 0.02, mat(c.kind === "refuse" ? 0xe3e7d3 : 0xf1d6d6));
     }
+    // the E&M regions left over
+    for (const zr of r.residuals || []) for (const c of zr.cells) box(grp, c.x0, c.y0, c.x1, c.y1, wz, wz + 0.03, mat(0xf3dfae));
     // the camera: once, from the south-west above, the whole stack in view
     const k2 = `${r.L}|${r.D}|${N}|${show}`;
     if (first || k2 !== key) {
@@ -147,8 +143,8 @@ function stairs(g, st, X, Y, W, D, z, H, box, m) {
     const l2 = st.land2 || 0, zL = z + st.n1 * rH, zHalf = zL + l2 * rH;
     if (l2) {
       // the half landing in three: its first part, one tread, then the part two risers up
-      const gk = Math.min(st.going * (A / st.W), A / 4);
-      B(0, land, 0, A / 2 - gk / 2, zL - 0.18, zL); B(0, land, A / 2 - gk / 2, A / 2 + gk / 2, zL + rH - 0.18, zL + rH); B(0, land, A / 2 + gk / 2, A, zHalf - 0.18, zHalf);
+      const wl = A - 2 * fw;
+      B(0, land, 0, fw, zL - 0.18, zL); B(0, land, fw, fw + wl, zL + rH - 0.18, zL + rH); B(0, land, fw + wl, A, zHalf - 0.18, zHalf);
     } else B(0, land, 0, A, zL - 0.18, zL);
     flight(A - fw, A, st.n2, zHalf, false);
     B(land + run, L, 0, A, z + 0.02, z + 0.2);

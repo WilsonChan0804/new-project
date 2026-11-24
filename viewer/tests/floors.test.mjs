@@ -1,4 +1,5 @@
 /* node viewer/tests/floors.test.mjs - stage 4: a typical floor */
+import * as U from "../unitcore.js";
 import * as F from "../floorcore.js";
 import { TEMPLATES } from "../unittables.js";
 
@@ -28,13 +29,20 @@ ok(F.lifts({ floors: 6, population: 60, interval: 120 }).n === 1 && F.lifts({ fl
 // the layout
 const mix = [{ u: TEMPLATES["2R-B"], n: 4 }, { u: TEMPLATES["3R-A"], n: 2 }, { u: TEMPLATES["1R-B"], n: 4 }];
 const L = F.layout({ poly: rot(box, 0.3), mix, storeys: 30 });
-const ov = (a, b) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.01 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.01;
-const all = [...L.placed, ...L.core];
-ok(L.placed.length >= 8 && !all.some((a, i) => all.some((b, j) => j > i && ov(a, b))), `${L.placed.length} units and the core placed, nothing overlapping`);
-ok(L.placed.every((q) => (q.band === "s" ? near(q.y, L.y1, 1e-6) : near(q.y + q.h, L.y0, 1e-6))), "every unit on the corridor");
+const ov = (a, b, t = 0.01) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > t && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > t;
+const cwl = 0.25;
+ok(L.placed.length >= 8 && !L.placed.some((a, i) => L.placed.some((b, j) => j > i && ov(a, b))) && !L.placed.some((a) => L.core.some((c) => ov(a, c, cwl / 2 + 0.01))), `${L.placed.length} units and the core placed, nothing overlapping`);
+ok(!L.core.some((a, i) => L.core.some((b, j) => j > i && ov(a, b, cwl + 0.01))), "the core's pieces overlap by no more than their shared wall");
+const nb = L.core.filter((c) => c.y + c.h === L.y0).sort((a, b) => a.x - b.x);
+ok(nb.slice(1).every((c, k) => near(c.x, nb[k].x + nb[k].w - cwl, 1e-6)), "pieces side by side share one wall: each overlaps the one before by 250 mm");
+ok(L.placed.every((q) => (q.band === "s" ? near(q.y - q.wt / 2, L.y1, 1e-6) : near(q.y + q.h + q.wt / 2, L.y0, 1e-6))), "every unit on the corridor, its wall's face on the corridor's edge");
 ok(L.core.filter((c) => c.kind === "stair").length === 2 && L.core.filter((c) => c.kind === "lift").length === L.nL, "two staircases and the lifts in the core");
 const Fg = L.figures;
-ok(near(Fg.plate, 48 * 16, 1e-6) && near(Fg.residual, Fg.plate - L.placed.reduce((s, q) => s + q.w * q.h, 0) - Fg.corridor - Fg.stair - Fg.lift - Fg.refuse - Fg.riser - Fg.coreWalls - Fg.partyWalls, 1e-3), "the residual is what the units, corridor, core and walls leave");
+ok(near(Fg.plate, 48 * 16, 1e-6) && near(Fg.residual, L.residuals.reduce((s, q) => s + q.area, 0), 1e-3) && L.residuals.every((q) => q.area >= 0.5), "the residual: the regions left of the plate, slivers aside (" + L.residuals.length + ", " + Fg.residual + " m²)");
+{ // a residual region is not covered by any unit or core piece
+  const hit = L.residuals.some((z) => z.cells.some((c) => { const cx = (c.x0 + c.x1) / 2, cy = (c.y0 + c.y1) / 2; return L.core.some((k) => cx > k.x && cx < k.x + k.w && cy > k.y && cy < k.y + k.h); }));
+  ok(!hit, "no residual cell under the core");
+}
 ok(near(Fg.gfa, Fg.unitGfa + Fg.corridor + Fg.stair + Fg.lift + Fg.coreWalls + Fg.partyWalls, 1e-3), "the floor GFA: units + corridor + staircases + lift shafts + the walls (refuse, riser, residual exempt)");
 // the staircase from the storey height, riser and going; the walls between
 {
@@ -46,7 +54,7 @@ ok(near(Fg.gfa, Fg.unitGfa + Fg.corridor + Fg.stair + Fg.lift + Fg.coreWalls + F
   const sS = Lw.placed.filter((q) => q.band === "s").sort((a, b) => a.x - b.x);
   ok(sS.length > 1 && near(sS[1].x - (sS[0].x + sS[0].w), 0.15, 1e-6) && Lw.figures.partyWalls > 0, "a 300 mm party wall between units: 150 mm more than the plans hold (they hold half of 150 each)");
   const stairPiece = Lw.core.find((c) => c.kind === "stair");
-  ok(near(stairPiece.w, st.W + 0.25, 1e-6) && Lw.figures.coreWalls > 0, "a staircase piece: its inside and the RC core wall");
+  ok(near(stairPiece.w, st.W + 0.5, 1e-6) && Lw.figures.coreWalls > 0, "a staircase piece: its inside and the RC core wall");
 }
 {
   // staircase types: 2 risers on the half landing shorten the flights; a scissor holds two staircases in one enclosure
@@ -60,7 +68,7 @@ ok(near(Fg.gfa, Fg.unitGfa + Fg.corridor + Fg.stair + Fg.lift + Fg.coreWalls + F
   ok(Ls.figures.stair < Ld.figures.stair, "and less staircase area than two dog-legs: " + Ls.figures.stair + " < " + Ld.figures.stair);
   const Lb = F.layout({ poly: [[0, 0], [48, 0], [48, 18], [0, 18]], mix, storeys: 30, core: "behind" });
   const pa = Lb.core.find((c) => c.kind === "passage"), sA = Lb.core.find((c) => c.kind === "stair"), lf = Lb.core.find((c) => c.kind === "lift");
-  ok(pa && sA && sA.y + sA.h <= lf.y + 1e-6 && Math.abs(pa.x - sA.x) < 1e-6 && Math.abs(pa.y + pa.h - Lb.y0) < 1e-6, "behind the lifts: the staircase behind them, a passage from the corridor beside the lifts to it");
+  ok(pa && sA && sA.y + sA.h <= lf.y + 0.25 + 1e-6 && Math.abs(pa.x - sA.x) < 1e-6 && Math.abs(pa.y + pa.h - Lb.y0) < 1e-6 && Math.abs(pa.y - (sA.y + sA.h)) < 1e-6, "behind the lifts: the staircase behind them, a passage from the corridor beside the lifts to it");
   ok(Lb.figures.corridor > Ld.figures.corridor - 1e-6 + pa.w * pa.h - 0.01, "the passage counted with the corridor");
 }
 const W = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, corridor: 2.0 });
@@ -118,6 +126,27 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const fr0 = F.frame(rp), moved = rp.map((p, i) => (i === 1 ? [p[0] + 3, p[1] + 6] : p)), fr1 = F.frame(moved, { ux: fr0.ux, uy: fr0.uy });
   ok(near(fr1.ux, fr0.ux, 1e-12) && near(fr1.uy, fr0.uy, 1e-12), "the frame kept on its axis while a corner moves");
   ok(F.snap1(8.17, 2, [10.3]) === 8.3 && F.snap1(3.02, 2, [20]) === 3, "snap to a neighbour's edge within 0.3 m, else the 50 mm grid");
+}
+{
+  // protected lobbies, doors, the dog-leg's well, persons by the usable floor area, old stored pieces, the E&M left over
+  const P0 = [[0, 0], [48, 0], [48, 18], [0, 18]];
+  const Lo = F.layout({ poly: P0, mix, storeys: 30, lobby: true }), Ln = F.layout({ poly: P0, mix, storeys: 30 });
+  const lobs = Lo.core.filter((c) => c.kind === "lobby"), sts = Lo.core.filter((c) => c.kind === "stair");
+  ok(lobs.length === 2 && sts.every((s0) => lobs.some((l) => Math.abs(l.x - s0.x) < 1e-6 && Math.abs(l.y + l.h - Lo.y0) < 1e-6 && Math.abs(s0.y + s0.h - (l.y + 0.25)) < 1e-6)), "protected lobbies: one between each staircase and the corridor, sharing the staircase's wall");
+  ok(Lo.figures.lobby > 0 && Math.abs(Lo.figures.gfa - Ln.figures.gfa - Lo.figures.lobby) < 3, "the lobbies in the GFA: " + Lo.figures.lobby + " m²");
+  ok(lobs.every((l) => l.doors.length === 1) && sts.every((s0) => s0.doors.length === 1 && s0.doors[0].sn[1] === -1), "a door from the corridor into each lobby, and one from the lobby into the staircase");
+  ok(Ln.core.filter((c) => c.kind === "lift").every((c) => c.doors.length === 1 && c.doors[0].slide), "each lift: its sliding doors on the corridor");
+  const d2 = F.stairSize({ width: 1.2, storeyH: 3.15, riser: 0.175, going: 0.225, type: "dogleg2" });
+  ok(Math.abs(d2.W - (2 * 1.2 + 0.225)) < 1e-9, "2 risers on the half landing: the well as deep as their tread, W = 2 × 1.2 + 0.225");
+  ok(F.DEF.going === 0.225, "going 225 mm by default");
+  const fac = Ln.persons.factor, want = mix.reduce((s2, m) => s2 + m.n * Math.ceil(U.figures(m.u).internal / fac - 1e-7), 0);
+  ok(Ln.persons.floor === want, "persons a floor from each flat's usable floor area at " + fac + " m² a person: " + want);
+  const L3 = F.layout({ poly: P0, mix, storeys: 30, persons: 3 });
+  ok(L3.persons.floor === 3 * 10, "a number a flat given: that");
+  const old = Ln.coreOut.map((c) => Object.assign({}, c, { x: c.x + 0.125, y: c.y + 0.125, w: c.w - 0.25, h: c.h - 0.25, full: undefined }));
+  const Lp = F.layout({ poly: P0, mix, storeys: 30, pieces: old });
+  ok(Lp.core.every((c, k) => Math.abs(c.w - Ln.core[k].w) < 1e-6 && Math.abs(c.x - Ln.core[k].x) < 1e-6), "pieces stored before the full walls: grown by half a wall all round, the same insides");
+  ok(Ln.residuals.length > 0 && Ln.residuals.every((z) => z.area >= 0.5 && z.cells.length), "the plate's leftovers as E&M regions: " + Ln.residuals.map((z) => z.area).join(", "));
 }
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

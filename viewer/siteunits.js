@@ -15,6 +15,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const cap = (el, ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic or finished pointer */ } };
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const f1 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+const f3 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+const n3 = (x) => (x == null || x === "" || isNaN(x) ? "" : Number(x).toFixed(3));
 const f2 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const SIDES = { n: "top", e: "right", s: "bottom", w: "left" };
 
@@ -57,7 +59,11 @@ const unsaved = (u) => !!(u && u.orig && bare(u) !== u.orig);
 const cur = () => { const st = store(); return st.list[st.sel] || null; };
 const copyNamed = (u, list) => { const c = JSON.parse(JSON.stringify(u)); let nm = c.name || "Unit", k = 2; while (list.some((q) => q.name === nm)) nm = `${c.name} (${k++})`; c.name = nm; return c; };
 
-export async function show(on) {
+/* opened in place from 4 · Floors: a floating window over the floor plan, a banner with Done */
+let INPLACE = null;
+export async function show(on, opts) {
+  INPLACE = on && opts && opts.inplace ? opts : null;
+  document.body.classList.toggle("st-inplace", !!INPLACE);
   ON = on;
   $("#st-upanel").hidden = !on;
   $("#st-uplan").hidden = !on;
@@ -81,7 +87,7 @@ function render() {
   const st = store(), u = cur(), can = C.can(), dis = can ? "" : " disabled";
   const kindOpt = (k) => Object.entries(U.KINDS).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
   const exOpt = (k) => Object.entries(Object.assign({ bay: { label: "Balcony / UP / A/C bay" } }, U.EXTRAS)).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
-  const num = (attr, v, step = 0.05) => `<input type="number" step="${step}" ${attr} value="${esc(v == null ? "" : +(+v).toFixed(3))}"${dis}>`;
+  const num = (attr, v, step = 0.05) => `<input type="number" step="${step}" ${attr} value="${esc(v == null || v === "" ? "" : (+v).toFixed(3))}"${dis}>`;
   const tabs = st.list.map((x, i) => `<button type="button" class="un-tab${i === st.sel ? " on" : ""}" data-usel="${i}">${esc(x.name || "Unit")}<small>${U.figures(x).saleableFt} ft²</small></button>`).join("");
   let body = "";
   if (u) {
@@ -104,7 +110,7 @@ function render() {
         ${can ? `<button type="button" class="ghost st-ib" data-edel="${i}">×</button>` : ""}</div>`).join("");
     body = `
       <section class="st-card">
-        <div class="st-head"><input class="ms-name" data-uf="name" value="${esc(u.name || "")}"${dis}><span class="muted">${f2(f.W)} × ${f2(f.D)} m</span></div>
+        <div class="st-head"><input class="ms-name" data-uf="name" value="${esc(u.name || "")}"${dis}><span class="muted">${f3(f.W)} × ${f3(f.D)} m</span></div>
         ${u.src ? `<p class="muted st-note">${esc(u.src)}</p>` : ""}
         <div class="st-bigs un-bigs">
           ${big("Saleable area", `${f1(f.saleable)} <i>m²</i>`, `<b>${f.saleableFt} ft²</b> · balcony ${f2(f.bal)} + UP ${f2(f.up)} m² included`)}
@@ -139,7 +145,7 @@ function render() {
       </section>`;
   }
   const libOpt = (LIB.units || []).map((x) => `<option value="${esc(x.id)}">${esc(x.name)} · ${U.figures(x.unit).saleableFt} ft²${x.by ? " · " + esc(x.by) : ""}</option>`).join("");
-  $("#st-upanel").innerHTML = `
+  $("#st-upanel").innerHTML = (INPLACE ? `<section class="st-card un-inplace"><div class="st-head"><b>✎ Editing ${esc(u ? u.name : "")} in place</b><button type="button" class="primary st-ib" data-uinpl>Done</button></div><p class="st-note">${esc(INPLACE.title || "")} - the floor is laid out again with it when you are done.${u && u.variantOf ? ` A variant of ${esc(u.variantOf)}, for that flat only.` : " Changes are to this unit type: every flat of it changes."}</p></section>` : "") + `
     <section class="st-card">
       <div class="st-head"><b>Units</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-uundo="-1"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-uundo="1"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button>${unsaved(u) ? `<button type="button" class="ghost st-ib" data-ureset title="Back to the unit as it was made or last saved to the library">⟲ Reset</button>` : ""}</span>` : ""}<span class="muted" id="un-saved">${can ? "Saved with the project" : "View only"}</span></div>
       <div class="un-tabs">${tabs || `<p class="st-need">No units yet: start from a template or the office library.</p>`}</div>
@@ -184,6 +190,7 @@ async function onClick(ev) {
   const t = ev.target.closest("button"); if (!t) return;
   const st = store(), u = cur(), d = t.dataset;
   if (d.uundo) return undo(+d.uundo);
+  if (d.uinpl != null) { const cb = INPLACE && INPLACE.onDone; await show(false); if (cb) cb(); return; }
   if (d.usel != null) { st.sel = +d.usel; SELR = null; C.save(); return render(); }
   if (!u) return;
   if (d.umir != null) { const v = U.mirrorUnit(ensure(u)); delete v.libId; st.list[st.sel] = v; SEL = null; return changed(); }
@@ -441,7 +448,7 @@ function drawPlan() {
     const parts = u.rooms.filter((q) => U.spaceOf(q) === r.id), big = parts.reduce((m, q) => (q.w * q.h > m.w * m.h ? q : m), r);
     const X = sx(big.x + big.w / 2), Y = sy(big.y + big.h / 2), w = big.w * SC, fs = Math.max(7, Math.min(12, w / 7, SC * 0.28)), lv = near && near.has(r.id);
     const no = r.name && /\d/.test(r.name) ? r.name.match(/\d+/)[0] : "";
-    const small = big.h * SC < fs * 4.2, size = parts.length > 1 ? f1(parts.reduce((s2, q) => s2 + q.w * q.h, 0)) + " m²" : `${f2(r.w)} × ${f2(r.h)}`;
+    const small = big.h * SC < fs * 4.2, size = parts.length > 1 ? f1(parts.reduce((s2, q) => s2 + q.w * q.h, 0)) + " m²" : `${f3(r.w)} × ${f3(r.h)}`;
     g += `<text x="${X}" y="${small ? Y + fs / 3 : Y - 4}" text-anchor="middle" font-size="${fs}" fill="#1f2a36" pointer-events="none">${esc(k.zh)}${no ? " " + no : ""}</text>` + (small && !lv ? "" : `<text x="${X}" y="${Y + fs}" text-anchor="middle" font-size="${fs - 1}" fill="#1f2a36" pointer-events="none">${esc(k.ab)}${no}</text>
       <text x="${X}" y="${Y + fs * 2 + 2}" text-anchor="middle" font-size="${lv ? fs : fs - 3}" font-weight="${lv ? 700 : 400}" fill="${lv ? "#b4520a" : "#5b6b7b"}" pointer-events="none">${size}</text>`);
   }
@@ -460,7 +467,7 @@ function drawPlan() {
   // a selected partition's ends: drag to shorten it
   if (WENDS) for (const [p, k] of WENDS.pts) g += `<circle class="un-wend" data-wend="${k}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7" fill="#fff" stroke="#f28022" stroke-width="2.5" />`;
   g += dims(u, f, sx, sy);
-  if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f2(LIVE.d)} m</text>`;
+  if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f3(LIVE.d)} m</text>`;
   g += `<text x="${bw - 20}" y="${bh - 18}" text-anchor="end" font-size="11" fill="#6b7785">${esc(u.name || "")} · ${f.saleableFt} ft² · ${f1(f.saleable)} m²</text>`;
   host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${HATCH}${g}</svg>${toolbar()}${popup(u, f, sx, sy, bw, bh)}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
 }
@@ -477,12 +484,12 @@ function dims(u, f, sx, sy) {
   const chainH = (vals, Y) => {
     const v = [...new Set(vals.map((q) => +q.toFixed(3)))].sort((a, b) => a - b);
     g += `<line x1="${sx(v[0])}" y1="${Y}" x2="${sx(v[v.length - 1])}" y2="${Y}" stroke="#333" stroke-width="0.8" />`;
-    v.forEach((q, i) => { g += tick(sx(q), Y, true); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${(sx(q) + sx(v[i - 1])) / 2}" y="${Y - 3}" text-anchor="middle" font-size="${dfs}">${f2(L)}</text>`; } });
+    v.forEach((q, i) => { g += tick(sx(q), Y, true); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${(sx(q) + sx(v[i - 1])) / 2}" y="${Y - 3}" text-anchor="middle" font-size="${dfs}">${f3(L)}</text>`; } });
   };
   const chainV = (vals, X) => {
     const v = [...new Set(vals.map((q) => +q.toFixed(3)))].sort((a, b) => a - b);
     g += `<line x1="${X}" y1="${sy(v[0])}" x2="${X}" y2="${sy(v[v.length - 1])}" stroke="#333" stroke-width="0.8" />`;
-    v.forEach((q, i) => { g += tick(X, sy(q), false); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${X - 4}" y="${(sy(q) + sy(v[i - 1])) / 2}" text-anchor="middle" font-size="${dfs}" transform="rotate(-90 ${X - 4} ${(sy(q) + sy(v[i - 1])) / 2})">${f2(L)}</text>`; } });
+    v.forEach((q, i) => { g += tick(X, sy(q), false); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${X - 4}" y="${(sy(q) + sy(v[i - 1])) / 2}" text-anchor="middle" font-size="${dfs}" transform="rotate(-90 ${X - 4} ${(sy(q) + sy(v[i - 1])) / 2})">${f3(L)}</text>`; } });
   };
   const top = sy(oy0) - DO, bot = sy(oy1) + DO, lef = sx(ox0) - DO, rig = sx(ox1) + DO;
   if (mode === "chains") {
@@ -579,9 +586,9 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     const e = f.edges.find((q) => q.key === SEL.key); if (!e) return "";
     at = [sx((e.x1 + e.x2) / 2), sy((e.y1 + e.y2) / 2)];
     const o = u.walls[e.key] || {}, open = U.isOpen(u, e), def = e.kind === "ext" ? u.wall : e.kind === "party" ? u.party : u.part;
-    html = `<b>${e.kind === "ext" ? "External wall" : e.kind === "party" ? "Party wall" : "Partition"}</b> ${f2(e.len)} m
+    html = `<b>${e.kind === "ext" ? "External wall" : e.kind === "party" ? "Party wall" : "Partition"}</b> ${f3(e.len)} m
       ${e.kind === "part" ? `<button type="button" data-pw="toggle">${open ? "Put the wall back" : "Delete wall"}</button><button type="button" data-pw="join">Join the rooms</button><button type="button" data-pw="space">${(() => { const A = u.rooms.find((q) => q.id === e.a), B = u.rooms.find((q) => q.id === e.b); return A && B && U.spaceOf(A) === U.spaceOf(B) ? "Separate the spaces" : "One space (L-shaped)"; })()}</button>
-        ${open ? "" : `<label>solid from <input type="number" step="0.05" min="0" data-pws value="${f2(U.solidPart(u, e)[0])}"> to <input type="number" step="0.05" min="0" data-pwe value="${f2(U.solidPart(u, e)[1])}"> m</label>${o.s != null || o.e != null ? `<button type="button" data-pw="full">Full length</button>` : ""}<small>or drag its ends</small>`}
+        ${open ? "" : `<label>solid from <input type="number" step="0.05" min="0" data-pws value="${f3(U.solidPart(u, e)[0])}"> to <input type="number" step="0.05" min="0" data-pwe value="${f3(U.solidPart(u, e)[1])}"> m</label>${o.s != null || o.e != null ? `<button type="button" data-pw="full">Full length</button>` : ""}<small>or drag its ends</small>`}
         ${open ? "" : `<label>line <select data-pwa><option value=""${!o.align ? " selected" : ""}>${u.join === "centre" ? "centre (unit setting)" : "flush (unit setting)"}</option><option value="c"${o.align === "c" ? " selected" : ""}>centre to centre</option><option value="flip"${o.align === "flip" ? " selected" : ""}>flush, the other face</option></select></label>`}` : ""}
       ${e.kind === "ext" ? `<label>façade <select data-pwf>${Object.entries(U.FACADES).map(([k, q]) => `<option value="${k}"${(o.f || u.facadeType || "rc") === k ? " selected" : ""}>${q.label}</option>`).join("")}</select></label>` : ""}
       <label>thickness <input type="number" step="0.005" min="0" data-pwt value="${o.t != null ? o.t : ""}" placeholder="${e.kind === "ext" && U.FACADES[o.f || u.facadeType || "rc"].t != null ? U.FACADES[o.f || u.facadeType || "rc"].t : def}"> m</label>
@@ -589,28 +596,28 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
   } else if (SEL.t === "door") {
     const d = u.doors[SEL.i], r = d && u.rooms.find((q) => q.id === d.room); if (!r) return "";
     const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
-    html = `<b>Door</b> <button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button><label>w <input type="number" step="0.05" data-pdw value="${d.w}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
+    html = `<b>Door</b> <button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button><label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
   } else if (SEL.t === "win") {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
-    html = `<b>Window</b> <label>w <input type="number" step="0.05" data-pww value="${w.w}"> m</label><button type="button" data-pwin="del">Remove</button><small>drag it along the wall</small>`;
+    html = `<b>Window</b> <label>w <input type="number" step="0.05" data-pww value="${n3(w.w)}"> m</label><button type="button" data-pwin="del">Remove</button><small>drag it along the wall</small>`;
   } else if (SEL.t === "z") {
     const z = (u.zones || [])[SEL.i]; if (!z) return "";
     at = [sx(z.x + z.w), sy(z.y)];
-    html = `<b>${esc((U.KINDS[z.kind] || {}).label || z.kind)}</b> <label><input type="number" step="0.05" data-pzw value="${z.w}"> × <input type="number" step="0.05" data-pzh value="${z.h}"> m</label><button type="button" data-pz2="del">Remove</button><small>a zone in the room: drag it, or its corners - no wall moves</small>`;
+    html = `<b>${esc((U.KINDS[z.kind] || {}).label || z.kind)}</b> <label><input type="number" step="0.05" data-pzw value="${n3(z.w)}"> × <input type="number" step="0.05" data-pzh value="${n3(z.h)}"> m</label><button type="button" data-pz2="del">Remove</button><small>a zone in the room: drag it, or its corners - no wall moves</small>`;
   } else if (SEL.t === "x") {
     const e = (u.extras || [])[SEL.i]; if (!e) return "";
     at = [sx(e.x + e.w), sy(e.y)];
     const nm = e.kind === "bay" ? "Balcony / UP / A/C bay" : (U.EXTRAS[e.kind] || {}).label || e.kind;
-    html = `<b>${esc(nm)}</b> <label><input type="number" step="0.05" data-pxw value="${e.w}"> × <input type="number" step="0.05" data-pxh value="${e.h}"> m</label>
-      ${e.kind === "bay" ? `<span class="un-parts">${e.parts.map((q, k) => `<span class="un-chip">${esc((U.EXTRAS[q.kind] || {}).ab || q.kind)} ${f2(q.len)}<button type="button" data-pxd="${k}" title="Omit this part">×</button></span>`).join("")}</span>` : ""}
+    html = `<b>${esc(nm)}</b> <label><input type="number" step="0.05" data-pxw value="${n3(e.w)}"> × <input type="number" step="0.05" data-pxh value="${n3(e.h)}"> m</label>
+      ${e.kind === "bay" ? `<span class="un-parts">${e.parts.map((q, k) => `<span class="un-chip">${esc((U.EXTRAS[q.kind] || {}).ab || q.kind)} ${f3(q.len)}<button type="button" data-pxd="${k}" title="Omit this part">×</button></span>`).join("")}</span>` : ""}
       ${["bal", "up", "acp"].includes(e.kind) || e.kind === "bay" ? `<button type="button" data-pxp="bal">+ BAL</button><button type="button" data-pxp="up">+ UP</button><button type="button" data-pxp="acp">+ A/C</button>` : ""}
       ${["bal", "up", "acp", "bay"].includes(e.kind) ? `<label class="st-chk" title="Balcony 2.0, UP 1.5, A/C platform 0.8 m²: change one side, the other follows"><input type="checkbox" data-pxfree${e.free ? "" : " checked"}> keep area</label>` : ""}
       <button type="button" data-px="rot">⟳ Rotate</button><button type="button" data-px="del">Remove</button><small>drag it to move (it snaps to the walls)</small>`;
   } else if (SEL.t === "fix") {
     const x = u.fixtures[SEL.i]; if (!x) return "";
     at = [sx(x.x + x.w), sy(x.y)];
-    html = `<b>${esc(FIXK[x.kind] || x.kind)}</b> <button type="button" data-pf="rot">⟳ Rotate 90°</button><label><input type="number" step="0.05" data-pfw value="${x.w}"> × <input type="number" step="0.05" data-pfh value="${x.h}"> m</label><button type="button" data-pf="del">Remove</button><small>drag to move</small>`;
+    html = `<b>${esc(FIXK[x.kind] || x.kind)}</b> <button type="button" data-pf="rot">⟳ Rotate 90°</button><label><input type="number" step="0.05" data-pfw value="${n3(x.w)}"> × <input type="number" step="0.05" data-pfh value="${n3(x.h)}"> m</label><button type="button" data-pf="del">Remove</button><small>drag to move</small>`;
   }
   if (!at) return "";
   const pw = Math.min(360, bw - 16), L = Math.max(8, Math.min(at[0] + 12, bw - pw - 8)), T = Math.max(56, Math.min(at[1] + 12, bh - 150));
@@ -645,7 +652,7 @@ function roomPreview(d) {
   const X = OX + (x0 - BX) * SC, Y = OY + (y0 - BY) * SC;
   const ok = ROOMK === "OKIT" || ROOMK === "KIT" ? w >= 0.3 && h >= 0.3 : U.addRoom(cur(), { x: x0, y: y0, w, h }, ROOMK);
   g.innerHTML = `<rect x="${X}" y="${Y}" width="${w * SC}" height="${h * SC}" fill="${ok ? "rgba(242,128,34,.18)" : "rgba(200,40,40,.15)"}" stroke="${ok ? "#f28022" : "#c62828"}" stroke-width="1.5" stroke-dasharray="6 3" />
-    <text x="${X + w * SC / 2}" y="${Y + h * SC / 2}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#b4520a">${f2(w)} × ${f2(h)} m · ${f2(w * h)} m²</text>`;
+    <text x="${X + w * SC / 2}" y="${Y + h * SC / 2}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#b4520a">${f3(w)} × ${f3(h)} m · ${f2(w * h)} m²</text>`;
 }
 
 function wirePlan() {
