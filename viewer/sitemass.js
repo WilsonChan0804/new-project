@@ -238,7 +238,7 @@ function blockCard(b, bi, m, dis) {
       <td><i class="ms-sw"></i><select data-g="${bi}.${gi}.use"${dis}>${useOpt(g.use)}</select></td>
       <td><input type="number" min="0" step="1" data-g="${bi}.${gi}.n" value="${esc(g.n)}"${dis}></td>
       <td><input type="number" min="0" step="0.05" data-g="${bi}.${gi}.h" value="${esc(g.h)}"${dis}></td>
-      <td><input type="number" min="0" max="100" step="1" data-g="${bi}.${gi}.acc" value="${esc(g.acc == null ? "" : g.acc)}" placeholder="${u.acc}"${dis}></td>
+      <td><input type="number" min="0" max="100" step="0.1" data-g="${bi}.${gi}.acc" value="${esc(g.acc == null ? "" : g.acc)}" placeholder="${u.acc}"${dis}${g.accFrom === "floors" ? ' title="From 4 · Floors: the typical floor\'s GFA ÷ its plate (untick Follow 4 · Floors there to type it)" class="ms-fromfl"' : ""}></td>
       <td class="num" title="Floor area not counted as GFA (+ the extra)">${f0(conc)}</td>
       <td><input type="number" min="0" step="1" data-g="${bi}.${gi}.extra" value="${esc(g.extra == null ? "" : g.extra)}" placeholder="0" title="Extra concession per floor outside the footprint (balconies, utility platforms)"${dis}></td>
       <td><input type="checkbox" data-gs="${bi}.${gi}"${isSt(g) ? " checked" : ""} title="Counts as a storey"${dis}></td>
@@ -302,6 +302,7 @@ function onChange(ev) {
     const [bi, gi, k] = t.dataset.g.split("."), g = m.blocks[+bi].groups[+gi];
     g[k] = k === "use" ? t.value : t.value === "" ? (k === "acc" || k === "extra" ? null : 0) : Math.max(0, parseFloat(t.value));
     if (k === "use") { g.acc = null; g.storey = null; }
+    if (k === "acc") { delete g.accFrom; if (g.floor) g.floor.follow = false; }   // typed here: no longer from 4 · Floors
     return changed();
   }
   if (t.dataset.topen != null) return;
@@ -428,6 +429,8 @@ function drawPlan() {
     const sel = SEL === b.id;
     const pg = L.polygon(b.fp, { color: sel ? "#d1660e" : "#7a6a55", weight: sel ? 2.5 : 1, fillColor: col, fillOpacity: b.on ? 0.85 : 0.6 }).addTo(layer);
     pg.on("click", () => { if (TOOL) return; SEL = b.id; render(); });
+    // floors with their own plate (from 4 · Floors, or set here): dashed over the block, so the change shows
+    for (const [gi2, g2] of (b.groups || []).entries()) if (g2.fp && g2.fp.length >= 3 && !(SELG && SELG.b === b.id && SELG.g === gi2)) L.polygon(g2.fp, { color: "#1f6feb", weight: 1.8, dashArray: "5 4", fill: false, interactive: false }).bindTooltip(`${esc(b.name)}: ${g2.n} × ${esc((M.USES[g2.use] || {}).label || g2.use)} - their own plate, ${f0(S.area(g2.fp))} m²${g2.accFrom === "floors" ? " (from 4 · Floors)" : ""}`, { sticky: true }).addTo(layer);
     if (!sel) { pg.bindTooltip(`${esc(b.name)} · ${f0(S.area(b.fp))} m²`, { direction: "center", className: "st-edge-lab" }); continue; }
     const G = SELG && SELG.b === b.id ? (b.groups || [])[SELG.g] : null, T = G && G.fp ? G : b;
     if (T !== b) L.polygon(T.fp, { color: "#1f6feb", weight: 2.5, dashArray: "6 4", fillOpacity: 0.15, fillColor: "#1f6feb" }).addTo(layer);
@@ -604,7 +607,7 @@ function makeScene(THREE, Orbit, host) {
   const ortho = new THREE.OrthographicCamera(-100, 100, 100, -100, -5000, 5000); ortho.up.set(0, 0, 1);
   let cam = persp;
   const ctl = new Orbit(persp, r.domElement);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xe6e9ee, 2.0));
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xe6e9ee, 2.0); scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffffff, 1.0);
   sun.position.set(-250, -350, 500); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -667,6 +670,7 @@ function makeScene(THREE, Orbit, host) {
   const build = (mdl, s, m, view, elev, pot) => {
     { const RR = ctxR(); persp.far = Math.max(30000, RR * 8); persp.updateProjectionMatrix(); Object.assign(sun.shadow.camera, { left: -RR, right: RR, top: RR, bottom: -RR, far: RR * 6 }); sun.shadow.camera.updateProjectionMatrix(); }
     mode = view === "plan" ? "3d" : view;
+    LOOK = { s, view: mode, elev };
     resize();
     if (group) { scene.remove(group); group.traverse((x) => { if (x.geometry) x.geometry.dispose(); }); }
     mats.length = 0; labels = [];
@@ -707,18 +711,20 @@ function makeScene(THREE, Orbit, host) {
         const mesh = new THREE.Mesh(geo, mat({ color: new THREE.Color(u.color), transparent: sto.storey === false, opacity: sto.storey === false ? 0.75 : 1, clippingPlanes: clipping, side: THREE.DoubleSide }));
         mesh.position.z = sto.z0; mesh.castShadow = SHADOW; mesh.receiveShadow = SHADOW;
         group.add(mesh);
-        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: 0x28323c, transparent: true, opacity: 0.3, clippingPlanes: clipping }));
+        const flat = mode !== "3d";
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: flat ? 0x1b232c : 0x28323c, transparent: true, opacity: flat ? 0.85 : 0.3, clippingPlanes: clipping }));
         edges.position.z = sto.z0; group.add(edges);
         zmax = Math.max(zmax, sto.z1);
       }
     }
     // the surroundings
-    const oo = o;
+    const oo = o, LN = lineOf(s, o, view, elev);
     for (const c of m.context || []) {
       if (!oo || !c.fp || c.fp.length < 3) continue;
       const xy = S.toXY(c.fp, oo);
+      if (LN && !nearLine(LN, xy)) continue;
       const geo = new THREE.ExtrudeGeometry(shape(xy), { depth: Math.max(1, Number(c.h) || 10), bevelEnabled: false });
-      const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0xdfe3e8, transparent: true, opacity: 0.9 }));
+      const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: LN ? 0xd5d9de : 0xdfe3e8, transparent: true, opacity: 0.9 }));
       mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh);
       group.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: 0xb8bec6 })));
       zmax = Math.max(zmax, Number(c.h) || 0);
@@ -773,21 +779,71 @@ function makeScene(THREE, Orbit, host) {
       if (first || mode !== "3d") { const d = Math.max(span, zmax * 0.8, 90); persp.position.set(-d * 2.0, -d * 2.4, zmax * 0.9 + d * 1.2); ctl.target.set(0, 0, zmax / 3); first = false; }
       ctl.update();
     }
+    look();
   };
+  /* the line an elevation looks at (the site edge) or a section cuts along; null in 3D. {p, n}: a point on it, its normal */
+  const lineOf = (s, o, view, elev) => {
+    if (!o || (view !== "elev" && view !== "sect") || s.pts.length < 3) return null;
+    const sxy = S.toXY(s.pts, o), e = Math.min(elev, sxy.length - 1), a = sxy[e], b = sxy[(e + 1) % sxy.length];
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+    if (view === "sect") return { sect: true, n: [dy / L, -dx / L] };   // the cut's point comes from clip at use
+    // an elevation: the normal outward (where the viewer stands); what stands wholly in front of the edge is left out, so it hides nothing
+    let sg = 0; for (let i = 0; i < sxy.length; i++) { const [x1, y1] = sxy[i], [x2, y2] = sxy[(i + 1) % sxy.length]; sg += x1 * y2 - x2 * y1; }
+    return { p: a, n: sg > 0 ? [dy / L, -dx / L] : [-dy / L, dx / L], front: true };
+  };
+  const NEAR = 50;   // the surroundings shown in elevation and section: within 50 m of the line
+  const distOf = (LN, x, y) => (LN.sect ? Math.abs(clip.normal.x * x + clip.normal.y * y + clip.constant) : Math.abs(LN.n[0] * (x - LN.p[0]) + LN.n[1] * (y - LN.p[1])));
+  const nearLine = (LN, xy) => {
+    let lo = Infinity, hi = -Infinity;
+    for (const [x, y] of xy) { const d = LN.sect ? clip.normal.x * x + clip.normal.y * y + clip.constant : LN.n[0] * (x - LN.p[0]) + LN.n[1] * (y - LN.p[1]); lo = Math.min(lo, d); hi = Math.max(hi, d); }
+    if (LN.front && lo > 1) return false;
+    return (lo <= 0 && hi >= 0) || Math.min(Math.abs(lo), Math.abs(hi)) <= NEAR;
+  };
+  let LOOK = { s: null, view: "3d", elev: 0 }, nearMesh = null, nearKey = "";
+  /* elevation / section: flat, clear colours (the sun off, more sky light); the CSDI surroundings near the line only, pale grey */
+  const look = () => {
+    const flat = mode !== "3d";
+    hemi.intensity = flat ? 3.1 : 2.0; sun.intensity = flat ? 0 : 1.0;
+    if (!ctxMesh) return;
+    const s = LOOK.s, o = s && s.pts.length >= 3 ? S.centroid(s.pts) : null, LN = flat && o ? lineOf(s, o, LOOK.view, LOOK.elev) : null;
+    if (!LN || !ctxComp) { ctxMesh.visible = ctxOn; if (nearMesh) nearMesh.visible = false; return; }
+    ctxMesh.visible = false;
+    const B = ctxComp.box, keepC = new Uint8Array(ctxComp.n);
+    let key = "";
+    for (let c = 0; c < ctxComp.n; c++) {
+      const xy = [[B[c * 4], B[c * 4 + 1]], [B[c * 4 + 2], B[c * 4 + 1]], [B[c * 4 + 2], B[c * 4 + 3]], [B[c * 4], B[c * 4 + 3]]];
+      if (nearLine(LN, xy)) { keepC[c] = 1; key += c + ","; }
+    }
+    if (key !== nearKey || !nearMesh) {
+      const T = ctxComp.tri, A = ctxArr; let k = 0;
+      for (let i = 0; i < T.length; i++) if (keepC[T[i]]) k++;
+      const out = new Float32Array(k * 9); let j = 0;
+      for (let i = 0; i < T.length; i++) if (keepC[T[i]]) { out.set(A.subarray(i * 9, i * 9 + 9), j); j += 9; }
+      if (nearMesh) { scene.remove(nearMesh); nearMesh.geometry.dispose(); }
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(out, 3)); g.computeVertexNormals();
+      nearMesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0xd5d9de, side: THREE.DoubleSide, clippingPlanes: mode === "sect" ? [clip] : [] }));
+      scene.add(nearMesh); nearKey = key;
+    }
+    nearMesh.material.clippingPlanes = mode === "sect" ? [clip] : [];
+    nearMesh.visible = ctxOn;
+  };
+  void distOf;
   const cut = (pct) => {
     const out = ortho.userData.out; if (!out) return;
     const R = ortho.userData.range || 50;
     clip.constant = (pct / 100 * 2 - 1) * R; // from the far side to the near side
+    look();
   };
   sun.castShadow = SHADOW;
   /* the buildings around, from the server (CSDI 3D Spatial Data), once per site */
-  let ctxMesh = null, ctxKey = "", ctxBusy = false;
+  let ctxMesh = null, ctxKey = "", ctxBusy = false, ctxComp = null, ctxArr = null, ctxOn = false;
   const status = (t) => { const e = document.getElementById("ms-ctxst"); if (e) e.textContent = t; };
   const context = async (s) => {
-    if (!s || s.pts.length < 3) { if (ctxMesh) ctxMesh.visible = false; status(""); return; }
+    ctxOn = !!(s && s.pts.length >= 3);
+    if (!ctxOn) { if (ctxMesh) ctxMesh.visible = false; if (nearMesh) nearMesh.visible = false; status(""); return; }
     const c = S.centroid(s.pts), R = ctxR();
     const key = c.map((x) => x.toFixed(5)).join(",") + "," + Math.round(R);
-    if (key === ctxKey && ctxMesh) { ctxMesh.visible = true; return; }
+    if (key === ctxKey && ctxMesh) { look(); return; }
     if (ctxBusy) return;
     ctxBusy = true; status("loading the surroundings …");
     try {
@@ -817,7 +873,7 @@ function makeScene(THREE, Orbit, host) {
       ctxMesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0xdfe3e8, side: THREE.DoubleSide }));
       ctxMesh.castShadow = SHADOW; ctxMesh.receiveShadow = SHADOW;
       scene.add(ctxMesh);
-      ctxKey = key;
+      ctxKey = key; ctxArr = arr; ctxComp = comps(arr); nearKey = ""; look();
       status(meta.triangles ? `${meta.triangles.toLocaleString("en-GB")} triangles · ${R.toLocaleString("en-GB")} m around${meta.capped ? " (capped: some tiles left out)" : ""} · © Lands Department 3D data` : "no buildings found around");
     } catch (e) { status("surroundings not loaded: " + e.message); }
     ctxBusy = false;
@@ -825,4 +881,23 @@ function makeScene(THREE, Orbit, host) {
   const shadow = (on) => { sun.castShadow = on; if (ctxMesh) { ctxMesh.castShadow = on; ctxMesh.receiveShadow = on; } if (group) group.traverse((x) => { if (x.isMesh) { x.castShadow = on; x.receiveShadow = on; } }); };
   resize(); loop();
   return { context, shadow, build, resize, cut, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
+}
+
+/* the buildings in a triangle soup (9 floats a triangle): triangles that share a corner are one building;
+   -> {n, tri: Int32Array (a building a triangle), box: Float32Array (x0, y0, x1, y1 a building)} */
+export function comps(arr) {
+  const nt = Math.floor(arr.length / 9), P = new Int32Array(nt), id = new Map();
+  for (let i = 0; i < nt; i++) P[i] = i;
+  const find = (a) => { while (P[a] !== a) { P[a] = P[P[a]]; a = P[a]; } return a; };
+  for (let i = 0; i < nt; i++) for (let k = 0; k < 3; k++) {
+    const o = i * 9 + k * 3, h = Math.round(arr[o] * 20) + "," + Math.round(arr[o + 1] * 20) + "," + Math.round(arr[o + 2] * 20);
+    const j = id.get(h);
+    if (j == null) id.set(h, i); else { const a = find(i), b = find(j); if (a !== b) P[a] = b; }
+  }
+  const map = new Map(), tri = new Int32Array(nt);
+  for (let i = 0; i < nt; i++) { const r = find(i); let c = map.get(r); if (c == null) { c = map.size; map.set(r, c); } tri[i] = c; }
+  const box = new Float32Array(map.size * 4);
+  for (let c = 0; c < map.size; c++) { box[c * 4] = box[c * 4 + 1] = Infinity; box[c * 4 + 2] = box[c * 4 + 3] = -Infinity; }
+  for (let i = 0; i < nt; i++) { const c = tri[i]; for (let k = 0; k < 3; k++) { const x = arr[i * 9 + k * 3], y = arr[i * 9 + k * 3 + 1]; if (x < box[c * 4]) box[c * 4] = x; if (y < box[c * 4 + 1]) box[c * 4 + 1] = y; if (x > box[c * 4 + 2]) box[c * 4 + 2] = x; if (y > box[c * 4 + 3]) box[c * 4 + 3] = y; } }
+  return { n: map.size, tri, box };
 }

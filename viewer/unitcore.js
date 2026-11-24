@@ -92,7 +92,16 @@ function grid(rooms) {
   return { xs, ys, at };
 }
 
-/* the outline's edges and the partitions: [{x1, y1, x2, y2, kind: ext|party|part, face: n|e|s|w, a, b}] */
+/* the outline's edges and the partitions: [{x1, y1, x2, y2, kind: ext|party|part, face: n|e|s|w, a, b}];
+   an outer wall is party when its side is in partySides, unless walls[key].kind says ext or party for it alone */
+/* a door beside a balcony or utility platform: the external wall the extra touches */
+export function byOutdoor(u, e) {
+  if (!e || e.kind === "part") return false;
+  const v = e.x1 === e.x2;
+  return expandBays(u.extras || []).some((x) => (x.kind === "bal" || x.kind === "up") && (v
+    ? (Math.abs(n(x.x) - e.x1) < 0.35 || Math.abs(n(x.x) + n(x.w) - e.x1) < 0.35) && n(x.y) < Math.max(e.y1, e.y2) - 0.3 && n(x.y) + n(x.h) > Math.min(e.y1, e.y2) + 0.3
+    : (Math.abs(n(x.y) - e.y1) < 0.35 || Math.abs(n(x.y) + n(x.h) - e.y1) < 0.35) && n(x.x) < Math.max(e.x1, e.x2) - 0.3 && n(x.x) + n(x.w) > Math.min(e.x1, e.x2) + 0.3));
+}
 export function edges(u) {
   const rooms = u.rooms || [], G = grid(rooms), out = [];
   const party = new Set(u.partySides || []);
@@ -122,6 +131,8 @@ export function edges(u) {
   return out.map((e) => {
     const key = e.kind === "part" ? [e.a, e.b].sort().join("|") : e.a + ":" + e.face;
     const o = W[key] || {};
+    // a wall's own type (external / party) over its side's setting
+    if (e.kind !== "part" && (o.kind === "ext" || o.kind === "party")) e.kind = o.kind;
     return Object.assign(e, { len: Math.hypot(e.x2 - e.x1, e.y2 - e.y1), key, t: o.t != null && o.t !== "" ? Number(o.t) : null, removed: !!o.open });
   });
 }

@@ -186,5 +186,65 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const Lr = F.layout({ poly: P0, mix, storeys: 30, core: "behind", pieces: rs });
   ok(Math.abs(Lr.core[li].w - Lb.core[li].w - 0.5) < 1e-6 && Lr.figures.lift > Lb.figures.lift, "a lift shaft made 0.5 m wider: its area grows");
 }
+{
+  // a plate edit that moves the frame's origin: what is stored moves with it; the corridor stays
+  const f = { pieces: [{ x: 5, y: 2, w: 3, h: 3 }, { kind: "passage", path: [[1, 1], [1, 4]] }], seq: { s: [{ u: "a", x: 7 }], n: [{ u: "b" }] }, gridX: 8, corrY: 6 };
+  F.shiftFrame(f, 2, 1.5);
+  ok(f.pieces[0].x === 7 && f.pieces[0].y === 3.5 && f.pieces[1].path[1][1] === 5.5 && f.seq.s[0].x === 9 && f.seq.n[0].x == null && f.gridOX === 2 && f.corrY === 7.5, "shiftFrame: pieces, passage path, placed units, grid and corridor moved by the frame's shift");
+  const P0 = [[0, 0], [48, 0], [48, 18], [0, 18]];
+  const A = F.layout({ poly: P0, mix, storeys: 30 }), B = F.layout({ poly: [[0, 0], [48, 0], [48, 22], [0, 22]], mix, storeys: 30, corrY: A.y0 });
+  ok(B.y0 === A.y0, "the corridor kept at its place when the plate gets deeper: y0 " + B.y0);
+}
+{
+  // a staircase's door put on its west face: the passage linked to it routes from there to the corridor
+  const P0 = [[0, 0], [48, 0], [48, 18], [0, 18]];
+  const Lb = F.layout({ poly: P0, mix, storeys: 30, core: "behind" });
+  const pieces = Lb.coreOut.map((q) => JSON.parse(JSON.stringify(q)));
+  const st = pieces.find((q) => q.kind === "stair"), pa = pieces.find((q) => q.kind === "passage");
+  ok(pa.for === st.label && pa.auto, "the passage behind the lifts follows its staircase (" + pa.for + ")");
+  st.door = { side: "w", at: 0.5 };
+  const Lw = F.layout({ poly: P0, mix, storeys: 30, core: "behind", pieces });
+  const s2 = Lw.core.find((q) => q.kind === "stair"), p2 = Lw.core.find((q) => q.kind === "passage");
+  ok(s2.doors.length === 1 && s2.doors[0].side === "w" && s2.doors[0].sn[0] === 1, "the door on the staircase's west face, opening into it");
+  const last = p2.path[p2.path.length - 1];
+  ok(p2.path.length === 3 && Math.abs(p2.path[0][0] - s2.x) < 1e-6 && Math.abs(last[1] - Lw.y0) < 1e-6, "the passage: out of the door, then down to the corridor - an L " + JSON.stringify(p2.path));
+  ok(F.coreWallRects(Lw.core, 0.25).every((r) => !(r.x0 < s2.x + 0.1 && r.x1 > s2.x && r.y0 < s2.doors[0].H[1] + 0.3 && r.y1 > s2.doors[0].O[1] - 0.3 && r.y1 - r.y0 > 1.2 && r.x1 - r.x0 < 0.3)), "the west wall cut at the door");
+  // a piece's own wall: its inside follows
+  const pz = Lb.coreOut.map((q) => JSON.parse(JSON.stringify(q))), li = pz.findIndex((q) => q.kind === "lift");
+  pz[li].wt = 0.35;
+  const Lt = F.layout({ poly: P0, mix, storeys: 30, core: "behind", pieces: pz });
+  ok(Lt.figures.lift < Lb.figures.lift && F.coreWallRects(Lt.core, 0.25).some((r) => Math.abs((r.y1 - r.y0) - 0.35) < 1e-6 || Math.abs((r.x1 - r.x0) - 0.35) < 1e-6), "a lift's own 350 mm wall: its bands that thick, its shaft smaller");
+}
+{
+  // a wall drawn across the corridor near its west end: the corridor ends there, what lies beyond is left over (E&M)
+  const P0 = [[0, 0], [48, 0], [48, 18], [0, 18]];
+  const A = F.layout({ poly: P0, mix, storeys: 30, corridor: 1.8 });
+  const B = F.layout({ poly: P0, mix, storeys: 30, corridor: 1.8, corrY: A.y0, walls: [{ path: [[4, A.y0 - 1], [4, A.y1 + 1]], t: 0.2 }] });
+  ok(Math.abs(B.corr.x0 - 4.1) < 1e-6 && B.corr.x1 === 48, "the corridor cut by the wall: from x 4.100 (the wall's face) to 48");
+  ok(Math.abs(B.figures.corridor - (A.figures.corridor - 4.1 * 1.8)) < 1e-6, "its area 4.1 × 1.8 m less: " + B.figures.corridor);
+  ok(Math.abs(B.figures.wideEx - 0.3 * B.jpn1.corrLen) < 1e-6 && B.jpn1.corrLen < A.jpn1.corrLen, "JPN 1 along the shorter corridor");
+  ok(B.walls.length === 1 && B.fwallA > 0 && B.figures.coreWalls > A.figures.coreWalls - 1e-9, "the wall counted with the walls (" + B.fwallA + " m²)");
+}
+// a party wall's own thickness; the units' windows, curtain walls and sliding doors through turn()
+{
+  const sq = [[0, 0], [48, 0], [48, 16], [0, 16]];
+  const L0 = F.layout({ poly: sq, mix, storeys: 30 });
+  const s0 = L0.placed.filter((q) => q.band === "s").sort((a, b) => a.x - b.x), A = s0[0];
+  ok(A.gs === "l" && A.gk === "s:" + A.si, "the first unit on the south, put from the left: its gap after it is keyed " + A.gk);
+  const L1 = F.layout({ poly: sq, mix, storeys: 30, partyT: { [A.gk]: 0.4 } });
+  const s1 = L1.placed.filter((q) => q.band === "s").sort((a, b) => a.x - b.x);
+  const g0 = s0[1].x - (s0[0].x + s0[0].w), g1 = s1[1].x - (s1[0].x + s1[0].w);
+  ok(near(g1 - g0, 0.2, 1e-6) && L1.figures.partyWalls > L0.figures.partyWalls, `that party wall alone at 400 mm: its gap 200 mm wider (${g0.toFixed(3)} -> ${g1.toFixed(3)}), more party wall area`);
+  const u = JSON.parse(JSON.stringify(TEMPLATES["2R-B"]));
+  u.rooms = u.rooms || U.fromRows(u).rooms;
+  const r0 = u.rooms[0];
+  u.windows = [{ room: r0.id, side: "n", at: 0.2, w: 1.0 }];
+  u.walls = Object.assign({}, u.walls, { [r0.id + ":w"]: { f: "cw" } });
+  u.doors = [{ room: r0.id, side: "n", at: 0.2, w: 1.6, type: "sliding2" }];
+  const T = F.turn(u, 1);
+  const win = T.ops.find((o) => o.k === "win"), cw = T.ops.find((o) => o.k === "cw");
+  ok(win && near(Math.hypot(win.b[0] - win.a[0], win.b[1] - win.a[1]), 1, 1e-6) && win.no[0] === 1 && win.no[1] === 0, "a north window, turned a quarter: 1 m long, facing east");
+  ok(cw && T.doors[0].type === "sliding2", "the curtain wall edge and the sliding door come through");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

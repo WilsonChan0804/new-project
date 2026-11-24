@@ -94,9 +94,28 @@ export function turn(u, k) {
     const k2 = d.swing === "out" ? -1 : 1, H = d.hinge === "end" ? seg[1] : seg[0], O = d.hinge === "end" ? seg[0] : seg[1];
     const P = (pt) => { const q2 = rot(pt); return [r3(q2[0] - mx), r3(q2[1] - my)]; };
     const sn = rot([seg[2][0] * k2, seg[2][1] * k2]);
-    doors.push({ H: P(H), O: P(O), sn: [Math.round(sn[0]), Math.round(sn[1])], w, entry: !!d.entry });
+    doors.push(Object.assign({ H: P(H), O: P(O), sn: [Math.round(sn[0]), Math.round(sn[1])], w, entry: !!d.entry }, d.type === "sliding" || d.type === "sliding2" ? { type: d.type, flip: d.hinge === "end" } : {}));
   }
-  return { rooms, extras, doors, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.15) };
+  // the windows and the curtain-wall edges: segments [a, b] turned with the rooms, the outward normal on
+  const P2 = (pt) => { const q2 = rot(pt); return [r3(q2[0] - mx), r3(q2[1] - my)]; };
+  const NRM = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] };
+  const seg2 = (r, side, at, w) => { const x = n(r.x), y = n(r.y), rw = n(r.w), rh = n(r.h); return side === "n" ? [[x + at, y], [x + at + w, y]] : side === "s" ? [[x + at, y + rh], [x + at + w, y + rh]] : side === "w" ? [[x, y + at], [x, y + at + w]] : [[x + rw, y + at], [x + rw, y + at + w]]; };
+  const ops = [];
+  for (const wi of u.windows || []) {
+    const r = (u.rooms || []).find((q) => q.id === wi.room); if (!r) continue;
+    const [a, b] = seg2(r, wi.side, n(wi.at), n(wi.w, 1)), no = rot(NRM[wi.side] || [0, 1]);
+    ops.push({ k: "win", a: P2(a), b: P2(b), no: [Math.round(no[0]), Math.round(no[1])] });
+  }
+  let E = null;
+  try { E = U.edges(u); } catch (ex) { E = []; }
+  for (const e of E) {
+    if (e.kind !== "ext") continue;
+    const f = ((u.walls || {})[e.key] || {}).f || u.facadeType;
+    if (f !== "cw") continue;
+    const no = rot(NRM[e.face] || [0, 1]);
+    ops.push({ k: "cw", a: P2([e.x1, e.y1]), b: P2([e.x2, e.y2]), no: [Math.round(no[0]), Math.round(no[1])] });
+  }
+  return { rooms, extras, doors, ops, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.15) };
 }
 /* the side the entrance is on (the corridor side), else opposite the façade */
 export function entrySide(u) {
@@ -151,7 +170,9 @@ export function layout(o) {
   const deep = want.length ? Math.max(...want.map((u) => { const t = turn(u, TO_N[entrySide(u)] || 0); return t.D + t.wall; })) : (D - cw) / 2;
   // the corridor in the middle; when the plate is too shallow for the deepest unit on both sides, moved so one side takes it
   const half = (D - cw) / 2;
-  const y0 = r3(Math.max(0, half >= deep || D - cw < deep ? half : D - cw - deep)), y1 = r3(y0 + cw);
+  // the corridor kept where it was when the plate was edited (corrY), else in the middle (or moved for the deepest unit)
+  const yAuto = Math.max(0, half >= deep || D - cw < deep ? half : D - cw - deep);
+  const y0 = r3(p.corrY != null && Number.isFinite(Number(p.corrY)) ? Math.max(0, Math.min(D - cw, Number(p.corrY))) : yAuto), y1 = r3(y0 + cw);
   const dN = y0, dS = D - y1;
   // the core on the north band
   // a staircase from its width, the storey height, the riser and going. Each core piece: its clear inside and a full RC wall
@@ -194,7 +215,7 @@ export function layout(o) {
     // the lifts, refuse room and riser on the corridor with a passage (or a protected lobby) beside them; the first staircase across behind them
     const pw = Math.max(cw, 1.2), rowD = Math.max(...mid.map((q) => q.h));
     const s0 = stairs[0], turned = { kind: "stair", w: s0.h, h: s0.w, label: s0.label };
-    const first = lob ? { kind: "lobby", w: r3(pw + W2), h: rowD, label: "Lobby" } : { kind: "passage", w: r3(pw), h: r3(rowD - cwl), label: "Passage" };
+    const first = lob ? { kind: "lobby", w: r3(pw + W2), h: rowD, label: "Lobby" } : { kind: "passage", w: r3(pw), h: r3(rowD - cwl), label: "Passage", for: s0.label, auto: true, width: r3(pw) };
     const row = [first, ...mid], rw = rowW(row);
     const rest = stairs.slice(1);
     const tot = Math.max(rw, turned.w) + rest.reduce((s2, q) => s2 + q.w - cwl, 0);
@@ -232,14 +253,27 @@ export function layout(o) {
       const grow = c.full || c.kind === "passage" ? 0 : cwl / 2;
       const q = { kind: c.kind, label: c.label || c.kind, x: r3(n(c.x) - grow), y: r3(n(c.y) - grow), w: r3(Math.max(0.3, n(c.w, 1) + 2 * grow)), h: r3(Math.max(0.3, n(c.h, 1) + 2 * grow)), full: true };
       if (c.kind === "passage" && Array.isArray(c.path) && c.path.length >= 2) { q.path = c.path.map((pt) => [r3(n(pt[0])), r3(n(pt[1]))]); q.width = r3(Math.max(0.6, n(c.width, 1.2))); }
+      if (c.kind === "passage") { if (c.for) q.for = c.for; if (c.auto === false) q.auto = false; else if (c.for) q.auto = true; if (c.width) q.width = r3(Math.max(0.6, n(c.width, 1.2))); }
+      if (c.door && /^[nsew]$/.test(c.door.side || "")) q.door = { side: c.door.side, at: Math.max(0, Math.min(1, n(c.door.at, 0.5))) };
+      if (Number(c.wt) > 0) q.wt = r3(Number(c.wt));
       core.push(q); if (q.kind === "stair") pushX(q.x + q.w / 2);
     }
     nS = Math.max(1, core.filter((c) => c.kind === "stair").length * per); nL = Math.max(1, core.filter((c) => c.kind === "lift").length);
   }
   // a passage: a centre line (straight, or with bends: L, Z ...) at a clear width; its footprint the rectangles of its segments
   for (const c of core) if (c.kind === "passage") passageShape(c);
-  // the core's doors, on the face onto the corridor, a passage or a lobby
+  // the core's doors, on the face onto the corridor, a passage or a lobby (or where the user put one)
   coreDoors(core, { y0, y1, cwl, L, per });
+  // a passage that follows its staircase's door: routed from it to the corridor, then the doors again (the others see it)
+  let routed = false;
+  for (const c of core) {
+    if (c.kind !== "passage" || c.auto === false || !c.for) continue;
+    const st = core.find((q) => q.kind === "stair" && q.label === c.for), d = st && st.doors && st.doors[0];
+    if (!d) continue;
+    c.path = routePassage(st, d, { y0, y1, width: c.width || cw, cwl: Number(st.wt) > 0 ? Number(st.wt) : cwl });
+    passageShape(c); routed = true;
+  }
+  if (routed) coreDoors(core, { y0, y1, cwl, L, per });
   // free runs along each band: what the pieces standing on it leave
   const runs = [];
   const bandY = { n: [0, y0], s: [y1, D] };
@@ -261,7 +295,10 @@ export function layout(o) {
   const unitsOv = (q, o) => o.rooms.some((r) => roomsOv(q, { x: o.x + r.x, y: o.y + r.y, w: r.w, h: r.h }, 0.05));
   const placed = [], left = [];
   // between units the party wall: what the plans hold at their ends (half their own party wall each) less the RC wall set here
-  const gapOf = (t) => r3(Math.max(0, n(p.partyWall, 0.2) - n(t.party, 0.15)));
+  // a party wall's own thickness (partyT["band:order"]: the one after a unit put from the left, before one put from the right) over partyWall
+  const PT = p.partyT && typeof p.partyT === "object" ? p.partyT : {};
+  const ptOf = (key) => (PT[key] != null && PT[key] !== "" && Number(PT[key]) > 0 ? Number(PT[key]) : n(p.partyWall, 0.2));
+  const gapOf = (t, key) => r3(Math.max(0, ptOf(key) - n(t.party, 0.15)));
   // each side: its runs, taken from the left end (and with corner units from the right end too, alternately)
   const sides = { s: runs.filter((r) => r.band === "s").map((r) => ({ l: r.x0, r: r.x1 })), n: runs.filter((r) => r.band === "n").map((r) => ({ l: r.x0, r: r.x1 })) };
   const depth = { s: dS, n: dN };
@@ -278,8 +315,9 @@ export function layout(o) {
         if (x < run.l - 1e-6 || x + t.W > run.r + 0.01) break;
         const y = band === "s" ? y1 + t.wall / 2 : y0 - t.D - t.wall / 2, box = { x: r3(x), y: r3(y), w: t.W, h: t.D };
         if (!insideUnit(box.x, box.y, t.rooms, t.wall)) continue;
-        if (!probe) { if (end === "l") run.l = r3(x + t.W + gapOf(t)); else run.r = r3(x - gapOf(t)); if (end === "l") c.i = k; else c.j = k; }
-        return box;
+        const key = band + ":" + order[band];
+        if (!probe) { if (end === "l") run.l = r3(x + t.W + gapOf(t, key)); else run.r = r3(x - gapOf(t, key)); if (end === "l") c.i = k; else c.j = k; }
+        return Object.assign(box, { gs: end, gk: key });
       }
       if (probe) return null; // only the current run, for the best fit
       k += end === "l" ? 1 : -1;
@@ -287,7 +325,7 @@ export function layout(o) {
     return null;
   };
   const order = { s: 0, n: 0 };
-  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors, wt: t.wall }));
+  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors, ops: t.ops, wt: t.wall }));
   if (SEQ) {
     // units put by hand (x given) first, where they were put; the runs keep clear of them
     for (const band of ["s", "n"]) {
@@ -366,20 +404,33 @@ export function layout(o) {
   if (!SEQ) for (const q of left) seqOut.s.push({ u: q.u.name, m: false });
   // areas
   const plate = Math.abs(area(F.poly));
-  const corrA = L * cw + core.filter((c) => c.kind === "passage").reduce((s2, c) => s2 + unionArea(c.rects), 0);
+  // walls drawn on the floor (closing off what is not units or core): a rectangle a run at their thickness, squared at the bends
+  const fwalls = (Array.isArray(p.walls) ? p.walls : []).filter((w) => Array.isArray(w.path) && w.path.length >= 2).map((w) => {
+    const t = Math.max(0.05, n(w.t, cwl)), sh = passageShape({ path: w.path.map((q) => [n(q[0]), n(q[1])]), width: t });
+    return { path: sh.path, t: r3(t), m: w.m === "blk" ? "blk" : "rc", rects: sh.rects.map((q) => Object.assign({ m: w.m === "blk" ? "blk" : "rc" }, q)) };
+  });
+  // a wall across the corridor cuts it: the corridor is the part between the cuts that holds the core (its lifts, else its middle)
+  const coreMid = (() => { const ls = core.filter((c) => c.kind === "lift"), P = ls.length ? ls : core; return P.length ? P.reduce((a, c) => a + c.x + c.w / 2, 0) / P.length : L / 2; })();
+  const cuts = fwalls.flatMap((w) => w.rects).filter((q) => q.y0 <= y0 + 0.05 && q.y1 >= y1 - 0.05 && q.x1 - q.x0 < 1.5).map((q) => [q.x0, q.x1]);
+  let cx0 = 0, cx1 = L;
+  for (const [a, b] of cuts) { if (b <= coreMid) cx0 = Math.max(cx0, b); else if (a >= coreMid) cx1 = Math.min(cx1, a); }
+  const corrLen = Math.max(0, cx1 - cx0);
+  const corrA = corrLen * cw + core.filter((c) => c.kind === "passage").reduce((s2, c) => s2 + unionArea(c.rects), 0);
   // JPN 1: the corridor in front of the lifts is the lift lobby, with its own widths; the rest is the common corridor.
   // The exempt part of each: its width over the minimum, up to the maximum, along its length
   const onCorr = core.filter((c) => c.kind === "lift" && (Math.abs(c.y + c.h - y0) < 0.02 || Math.abs(c.y - y1) < 0.02));
-  const llob = onCorr.length ? { x0: r3(Math.max(0, Math.min(...onCorr.map((c) => c.x)))), x1: r3(Math.min(L, Math.max(...onCorr.map((c) => c.x + c.w)))) } : null;
+  const llob = onCorr.length ? { x0: r3(Math.max(cx0, Math.min(...onCorr.map((c) => c.x)))), x1: r3(Math.min(cx1, Math.max(...onCorr.map((c) => c.x + c.w)))) } : null;
   const lobLen = llob ? Math.max(0, llob.x1 - llob.x0) : 0;
   const exCorrW = Math.max(0, Math.min(cw, n(p.wideMax, 2.4)) - n(p.wideBase, 1.5)), exLobW = Math.max(0, Math.min(cw, n(p.lobbyMax, 3.0)) - n(p.lobbyMin, 2.0));
-  const wideEx = exCorrW * (L - lobLen), lobbyEx = exLobW * lobLen;
+  const wideEx = exCorrW * Math.max(0, corrLen - lobLen), lobbyEx = exLobW * lobLen;
   // a staircase, lift or lobby: its inside and half its walls; the refuse room and riser: the inside (exempt); the rest of the walls round the core
-  const A = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - cwl) * Math.max(0, c.h - cwl), 0);
-  const clearA = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - 2 * cwl) * Math.max(0, c.h - 2 * cwl), 0);
+  const wtC = (c) => (Number(c.wt) > 0 ? Number(c.wt) : cwl);   // a piece's own wall, else the core's
+  const A = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - wtC(c)) * Math.max(0, c.h - wtC(c)), 0);
+  const clearA = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - 2 * wtC(c)) * Math.max(0, c.h - 2 * wtC(c)), 0);
   const stairA = A("stair"), liftA = A("lift"), lobbyA = A("lobby"), refA = clearA("refuse"), riserA = clearA("riser");
   const coreU = unionArea(core.filter((c) => c.kind !== "passage").map((c) => ({ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h })));
-  const coreWallA = Math.max(0, coreU - stairA - liftA - lobbyA - refA - riserA);     // the walls count, the refuse room and riser inside are exempt
+  const fwallA = unionArea(fwalls.flatMap((w) => w.rects));
+  const coreWallA = Math.max(0, coreU - stairA - liftA - lobbyA - refA - riserA) + fwallA;     // the walls count, the refuse room and riser inside are exempt
   // the party walls between units on a side: the gaps
   let partyA = 0;
   for (const band of ["s", "n"]) { const q = placed.filter((o) => o.band === band).sort((a, b) => a.x - b.x); for (let k = 1; k < q.length; k++) { const gp = q[k].x - (q[k - 1].x + q[k - 1].w); if (gp > 1e-6 && gp < 0.6) partyA += gp * Math.min(q[k].h, q[k - 1].h); } }
@@ -391,7 +442,8 @@ export function layout(o) {
   const residuals = residualRegions(F.poly, [
     ...placed.flatMap((q) => [...q.rooms.map((rm) => ({ x0: q.x + rm.x - q.wt / 2, y0: q.y + rm.y - q.wt / 2, x1: q.x + rm.x + rm.w + q.wt / 2, y1: q.y + rm.y + rm.h + q.wt / 2 })), ...(q.extras || []).map((e) => ({ x0: q.x + e.x, y0: q.y + e.y, x1: q.x + e.x + e.w, y1: q.y + e.y + e.h }))]),
     ...core.flatMap((c) => (c.rects ? c.rects : [{ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h }])),
-    { x0: -1e3, y0: y0, x1: 1e3, y1: y1 },
+    { x0: cx0, y0: y0, x1: cx1, y1: y1 },
+    ...fwalls.flatMap((w) => w.rects),
   ]);
   const residual = residuals.reduce((s2, q) => s2 + q.area, 0);
   let gfa = unitGfa + corrA - wideEx - lobbyEx + stairA + liftA + lobbyA + coreWallA + partyA;
@@ -420,8 +472,9 @@ export function layout(o) {
   if (between != null) checks.push({ what: "Between the staircases", ok: between <= tr.between, text: `${between} m, at most ${tr.between} m (B11.3(b))` });
   return {
     seq: SEQ ? { s: SEQ.s.map((e) => Object.assign({}, e)), n: SEQ.n.map((e) => Object.assign({}, e)) } : seqOut, edited: !!SEQ, note, cornerFac: r3(cornerFac),
-    jpn1: { lobby: llob, corrW: r3(exCorrW), lobW: r3(exLobW), corrLen: r3(L - lobLen), lobLen: r3(lobLen) },
-    coreOut: core.map((c) => Object.assign({ kind: c.kind, label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, full: true }, c.path ? { path: c.path.map((q) => q.slice()), width: c.width } : {})), residuals, persons: { factor: fac, floor: popFloor }, coreAuto, coreEdited, issues, frameAxis: { ux: F.ux, uy: F.uy },
+    jpn1: { lobby: llob, corrW: r3(exCorrW), lobW: r3(exLobW), corrLen: r3(Math.max(0, corrLen - lobLen)), lobLen: r3(lobLen) },
+    corr: { x0: r3(cx0), x1: r3(cx1) }, walls: fwalls, fwallA: r3(fwallA),
+    coreOut: core.map((c) => Object.assign({ kind: c.kind, label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, full: true }, c.path ? { path: c.path.map((q) => q.slice()), width: c.width } : {}, c.for ? { for: c.for, auto: c.auto !== false } : {}, c.door ? { door: Object.assign({}, c.door) } : {}, Number(c.wt) > 0 ? { wt: c.wt } : {})), residuals, persons: { factor: fac, floor: popFloor }, coreAuto, coreEdited, issues, frameAxis: { ux: F.ux, uy: F.uy },
     F, L: r3(L), D: r3(D), y0, y1, cw, core, placed, left, stairsX: xs.map(r3), lifts: lf, nL, nS, stairs: qs, checks,
     figures: {
       plate: r3(plate), units: placed.length, saleable: r3(sale), unitGfa: r3(unitGfa), corridor: r3(corrA), wideEx: r3(wideEx), lobbyEx: r3(lobbyEx),
@@ -524,10 +577,31 @@ export function residualRegions(poly, rects, minA = 0.5, minW = 0.4) {
    Each door {H, O, sn, w, slide}: on its wall's middle line, the hinge, the closed end, the side it opens to */
 export function coreDoors(core, o) {
   const { y0, y1, cwl } = o, E2 = 0.01;
+  const wtOf = (c) => (Number(c.wt) > 0 ? Number(c.wt) : cwl);
   const open = core.filter((c) => c.kind === "passage" || c.kind === "lobby");
+  // a door on a face: side n|s|e|w, from a to b along it (x for n / s, y for e / w)
+  const door = (c, side, mid, w, into, slide, a0, b0) => {
+    const t = wtOf(c), horiz = side === "n" || side === "s";
+    const lo = (a0 != null ? a0 : horiz ? c.x : c.y) + t + 0.05, hi = (b0 != null ? b0 : horiz ? c.x + c.w : c.y + c.h) - t - 0.05;
+    const a = Math.max(lo, Math.min(hi - w, mid - w / 2)), b = Math.min(hi, a + w);
+    if (b - a < 0.5) return;
+    const line = side === "s" ? c.y + c.h - t / 2 : side === "n" ? c.y + t / 2 : side === "e" ? c.x + c.w - t / 2 : c.x + t / 2;
+    const sOut = side === "s" || side === "e" ? 1 : -1, s2 = into ? -sOut : sOut;
+    c.doors.push(horiz ? { H: [r3(a), r3(line)], O: [r3(b), r3(line)], sn: [0, s2], w: r3(b - a), slide: !!slide, side, t }
+      : { H: [r3(line), r3(a)], O: [r3(line), r3(b)], sn: [s2, 0], w: r3(b - a), slide: !!slide, side, t });
+  };
   for (const c of core) {
     c.doors = [];
     if (c.kind === "passage") continue;
+    const t = wtOf(c);
+    // a door placed by the user: its face and where along it (0 .. 1)
+    if (c.door && /^[nsew]$/.test(c.door.side || "")) {
+      const horiz = c.door.side === "n" || c.door.side === "s", len = horiz ? c.w : c.h, start = horiz ? c.x : c.y;
+      const at = Math.max(0, Math.min(1, Number(c.door.at != null ? c.door.at : 0.5)));
+      const w = c.kind === "lift" ? 1.0 : c.kind === "stair" || c.kind === "lobby" ? 0.9 : 0.75;
+      door(c, c.door.side, start + t + (len - 2 * t) * at, w, c.kind === "stair" || c.kind === "lobby", c.kind === "lift");
+      continue;
+    }
     const faces = [];
     // the faces onto the corridor
     if (Math.abs(c.y + c.h - y0) < E2) faces.push({ side: "s", a: c.x, b: c.x + c.w });
@@ -535,30 +609,51 @@ export function coreDoors(core, o) {
     // onto a passage or lobby (not for a lobby itself)
     if (c.kind !== "lobby") for (const q of open) {
       if (q === c) continue;
-      const ox0 = Math.max(c.x, q.x), ox1 = Math.min(c.x + c.w, q.x + q.w);
-      const inner = q.kind === "lobby" ? cwl : 0;   // a lobby overlaps its neighbour by its wall
-      if (ox1 - ox0 > 0.8) {
-        if (Math.abs(c.y + c.h - (q.y + inner)) < E2 + cwl && c.y < q.y) faces.push({ side: "s", a: ox0 + inner, b: ox1 - inner });
-        else if (Math.abs(c.y - (q.y + q.h - inner)) < E2 + cwl && c.y > q.y) faces.push({ side: "n", a: ox0 + inner, b: ox1 - inner });
+      const R = q.rects || [{ x0: q.x, y0: q.y, x1: q.x + q.w, y1: q.y + q.h }], inner = q.kind === "lobby" ? wtOf(q) : 0;
+      for (const r of R) {
+        const ox0 = Math.max(c.x, r.x0), ox1 = Math.min(c.x + c.w, r.x1), oy0 = Math.max(c.y, r.y0), oy1 = Math.min(c.y + c.h, r.y1);
+        if (ox1 - ox0 > 0.8) {
+          if (Math.abs(c.y + c.h - (r.y0 + inner)) < E2 + t && c.y < r.y0) faces.push({ side: "s", a: ox0 + inner, b: ox1 - inner, open: true });
+          else if (Math.abs(c.y - (r.y1 - inner)) < E2 + t && c.y > r.y0) faces.push({ side: "n", a: ox0 + inner, b: ox1 - inner, open: true });
+        }
+        if (oy1 - oy0 > 0.8) {
+          if (Math.abs(c.x + c.w - (r.x0 + inner)) < E2 + t && c.x < r.x0) faces.push({ side: "e", a: oy0 + inner, b: oy1 - inner, open: true });
+          else if (Math.abs(c.x - (r.x1 - inner)) < E2 + t && c.x > r.x0) faces.push({ side: "w", a: oy0 + inner, b: oy1 - inner, open: true });
+        }
       }
     }
     if (!faces.length) continue;
-    const f = faces.find((q) => open.some((z) => z !== c && q.a >= z.x - 0.01 && q.b <= z.x + z.w + 0.01)) || faces[0];
-    const yw = f.side === "s" ? c.y + c.h - cwl / 2 : c.y + cwl / 2, sOut = f.side === "s" ? 1 : -1;
-    const mk = (mid, w, into, slide) => {
-      const a = Math.max(f.a + cwl + 0.05, mid - w / 2), b = Math.min(f.b - cwl - 0.05, a + w);
-      if (b - a < 0.5) return;
-      c.doors.push({ H: [r3(a), r3(yw)], O: [r3(b), r3(yw)], sn: [0, into ? -sOut : sOut], w: r3(b - a), slide: !!slide });
-    };
-    const m = (f.a + f.b) / 2;
+    const f = faces.find((q) => q.open) || faces[0];
+    const clip = (v) => [f.a, f.b];
+    const [A, B] = clip();
+    const m = (A + B) / 2;
     if (c.kind === "stair") {
       // into the staircase, the way of escape; a scissor's two staircases each their own
-      if (o.per > 1) { mk(f.a + (f.b - f.a) * 0.27, 0.9, true); mk(f.a + (f.b - f.a) * 0.73, 0.9, true); } else mk(m, 0.9, true);
-    } else if (c.kind === "lift") mk(m, 1.0, false, true);
-    else if (c.kind === "lobby") mk(m, 0.9, true);
-    else mk(m, 0.75, false);
+      if (o.per > 1) { door(c, f.side, A + (B - A) * 0.27, 0.9, true, false, A, B); door(c, f.side, A + (B - A) * 0.73, 0.9, true, false, A, B); } else door(c, f.side, m, 0.9, true, false, A, B);
+    } else if (c.kind === "lift") door(c, f.side, m, 1.0, false, true, A, B);
+    else if (c.kind === "lobby") door(c, f.side, m, 0.9, true, false, A, B);
+    else door(c, f.side, m, 0.75, false, false, A, B);
   }
   return core;
+}
+
+/* a passage from a staircase's door to the corridor: out of the door at right angles, then to the corridor's edge (y0 above it,
+   y1 below), round the staircase when the door faces away; its centre line, orthogonal */
+export function routePassage(stair, d, o) {
+  const { y0, y1 } = o, w = Number(o.width) || 1.2, t = d.t || o.cwl || 0.25;
+  const M = [(d.H[0] + d.O[0]) / 2, (d.H[1] + d.O[1]) / 2], n = [-d.sn[0], -d.sn[1]];   // out of the staircase
+  const A = [r3(M[0] + n[0] * t / 2), r3(M[1] + n[1] * t / 2)];                       // its outer face
+  const above = stair.y + stair.h / 2 < (y0 + y1) / 2, ty = above ? y0 : y1;           // the corridor's near edge
+  const out = w / 2 + 0.1, P = [A];
+  if (n[0] === 0 && Math.sign(n[1]) === (above ? 1 : -1)) P.push([A[0], ty]);          // straight onto the corridor
+  else if (n[1] === 0) { const B = [r3(A[0] + n[0] * out), A[1]]; P.push(B, [B[0], ty]); }   // a side face: out, then along to it
+  else {
+    // facing away: out, round the nearer end of the staircase, then to the corridor
+    const B = [A[0], r3(A[1] + n[1] * out)], side = A[0] - stair.x < stair.x + stair.w - A[0] ? -1 : 1;
+    const X = r3(side < 0 ? stair.x - out : stair.x + stair.w + out);
+    P.push(B, [X, B[1]], [X, ty]);
+  }
+  return orthoPath(P);
 }
 
 /* a placed unit's walls in plan metres: its turned rooms through wallGeom, its doors cut; [{x0, y0, x1, y1, m}] and the door openings */
@@ -580,18 +675,29 @@ function placedWalls0(q) {
 
 /* the core's RC walls: each piece's four bands (coreWall), the doors cut through every band at them */
 export function coreWallRects(core, cwl) {
-  const cuts = core.flatMap((c) => (c.doors || []).map((d) => ({ x0: Math.min(d.H[0], d.O[0]), x1: Math.max(d.H[0], d.O[0]), y0: d.H[1] - cwl / 2 - 0.001, y1: d.H[1] + cwl / 2 + 0.001 })));
+  const wtOf = (c) => (Number(c.wt) > 0 ? Number(c.wt) : cwl);
+  // each door's opening through the wall it is in (and the wall of a piece sharing it)
+  const cuts = core.flatMap((c) => (c.doors || []).map((d) => {
+    const t = (d.t || wtOf(c)) / 2 + 0.001, horiz = Math.abs(d.H[1] - d.O[1]) < 1e-6;
+    return horiz ? { x0: Math.min(d.H[0], d.O[0]), x1: Math.max(d.H[0], d.O[0]), y0: d.H[1] - t, y1: d.H[1] + t, horiz } : { y0: Math.min(d.H[1], d.O[1]), y1: Math.max(d.H[1], d.O[1]), x0: d.H[0] - t, x1: d.H[0] + t, horiz };
+  }));
   const out = [];
   for (const c of core) {
     if (c.kind === "passage") continue;
+    const t = wtOf(c);
     const bands = [
-      { x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + cwl }, { x0: c.x, y0: c.y + c.h - cwl, x1: c.x + c.w, y1: c.y + c.h },
-      { x0: c.x, y0: c.y, x1: c.x + cwl, y1: c.y + c.h }, { x0: c.x + c.w - cwl, y0: c.y, x1: c.x + c.w, y1: c.y + c.h },
+      { x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + t, h: true }, { x0: c.x, y0: c.y + c.h - t, x1: c.x + c.w, y1: c.y + c.h, h: true },
+      { x0: c.x, y0: c.y, x1: c.x + t, y1: c.y + c.h, h: false }, { x0: c.x + c.w - t, y0: c.y, x1: c.x + c.w, y1: c.y + c.h, h: false },
     ];
     for (const b of bands) {
-      let segs = [[b.x0, b.x1]];
-      for (const k of cuts) if (k.y0 <= b.y0 + 1e-6 && k.y1 >= b.y1 - 1e-6 && b.y1 - b.y0 < cwl + 1e-6) segs = segs.flatMap(([p, q]) => (k.x1 <= p || k.x0 >= q ? [[p, q]] : [[p, k.x0], [k.x1, q]].filter(([u, v]) => v - u > 1e-6)));
-      for (const [p, q] of segs) out.push({ x0: p, y0: b.y0, x1: q, y1: b.y1, m: "rc" });
+      let segs = b.h ? [[b.x0, b.x1]] : [[b.y0, b.y1]];
+      for (const k of cuts) {
+        if (k.horiz !== b.h) continue;
+        if (b.h ? !(k.y0 <= b.y0 + 1e-6 && k.y1 >= b.y1 - 1e-6) : !(k.x0 <= b.x0 + 1e-6 && k.x1 >= b.x1 - 1e-6)) continue;
+        const [k0, k1] = b.h ? [k.x0, k.x1] : [k.y0, k.y1];
+        segs = segs.flatMap(([p, q]) => (k1 <= p || k0 >= q ? [[p, q]] : [[p, k0], [k1, q]].filter(([u, v]) => v - u > 1e-6)));
+      }
+      for (const [p, q] of segs) out.push(b.h ? { x0: p, y0: b.y0, x1: q, y1: b.y1, m: "rc" } : { x0: b.x0, y0: p, x1: b.x1, y1: q, m: "rc" });
     }
   }
   return out;
@@ -640,4 +746,23 @@ export function orthoPath(P0) {
     if (!last || Math.abs(last[0] - q[0]) > 1e-6 || Math.abs(last[1] - q[1]) > 1e-6) P.push(q);
   }
   return P;   // a point in line with its neighbours is kept: a bend still to be dragged out
+}
+
+/* a floor's stored positions moved by (du, dv) in the plate frame: when an edit of the plate moves the frame's origin, so that the
+   units, core, walls and grid stay where they were */
+export function shiftFrame(f, du, dv) {
+  if (!f || (!du && !dv)) return f;
+  const R = (v) => Math.round(v * 1000) / 1000;
+  for (const q of f.pieces || []) {
+    if (q.x != null) q.x = R(q.x + du); if (q.y != null) q.y = R(q.y + dv);
+    if (Array.isArray(q.path)) q.path = q.path.map(([x, y]) => [R(x + du), R(y + dv)]);
+  }
+  for (const band of ["s", "n"]) for (const e of (f.seq && f.seq[band]) || []) if (e.x != null) e.x = R(e.x + du);
+  for (const w of f.walls || []) if (Array.isArray(w.path)) w.path = w.path.map(([x, y]) => [R(x + du), R(y + dv)]);
+  if (f.gridOX != null && f.gridOX !== "") f.gridOX = R(Number(f.gridOX) + du);
+  else if (du && Number(f.gridX) > 0) f.gridOX = R(du);
+  if (f.gridOY != null && f.gridOY !== "") f.gridOY = R(Number(f.gridOY) + dv);
+  else if (dv && Number(f.gridY) > 0) f.gridOY = R(dv);
+  if (f.corrY != null) f.corrY = R(Number(f.corrY) + dv);
+  return f;
 }

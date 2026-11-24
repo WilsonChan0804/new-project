@@ -96,11 +96,13 @@ function scene(THREE, Orbit, host) {
     for (const c of r.core) for (const d of c.doors || []) { const x0 = Math.min(d.H[0], d.O[0]), x1 = Math.max(d.H[0], d.O[0]); box(grp, x0, d.H[1] - cw / 2, x1, d.H[1] + cw / 2, wz + 2.1, z + H, rcM); }
     for (const c of r.core) {
       if (c.kind === "passage" || c.kind === "lobby") { for (const q of c.rects || [{ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h }]) box(grp, q.x0, q.y0, q.x1, q.y1, wz, wz + 0.01, mat(0xe6e9ee)); continue; }
-      const t = cw;
+      const t = Number(c.wt) > 0 ? Number(c.wt) : cw;
       if (c.kind === "lift") box(grp, c.x + t + 0.3, c.y + t + 0.3, c.x + c.w - t - 0.3, c.y + c.h - t - 0.3, wz, wz + 2.4, mat(0xb7b3e0, 0.85), true);
       if (c.kind === "stair" && r.stair) stairs(grp, r.stair, c.x + t, c.y + t, c.w - 2 * t, c.h - 2 * t, z, H, box, mat(0xc8c2b6));
       if (c.kind === "refuse" || c.kind === "riser") box(grp, c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t, wz, wz + 0.02, mat(c.kind === "refuse" ? 0xe3e7d3 : 0xf1d6d6));
     }
+    // the walls drawn on the floor
+    for (const w of r.walls || []) for (const q of w.rects) box(grp, q.x0, q.y0, q.x1, q.y1, wz, wz + wh, w.m === "blk" ? blkM : rcM, true);
     // the E&M regions left over
     for (const zr of r.residuals || []) for (const c of zr.cells) box(grp, c.x0, c.y0, c.x1, c.y1, wz, wz + 0.03, mat(0xf3dfae));
     // the camera: once, from the south-west above, the whole stack in view

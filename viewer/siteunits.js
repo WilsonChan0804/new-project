@@ -271,7 +271,7 @@ const ZM = PZ.create(); // the plan's zoom and pan
 let ZFOR = null;        // the unit it is for
 let WENDS = null;       // a selected partition's two ends on the plan
 /* the office's hatches: RC dark grey, block diagonal, precast diagonal with a dashed diagonal */
-const HATCH = `<defs><pattern id="hp-rc" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><rect width="5" height="5" fill="#8b9096"/><line x1="0" y1="0" x2="0" y2="5" stroke="#5c6166" stroke-width="1.2"/></pattern>
+const HATCH = `<defs><marker id="un-ar" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 z" fill="#222"/></marker><pattern id="hp-rc" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><rect width="5" height="5" fill="#8b9096"/><line x1="0" y1="0" x2="0" y2="5" stroke="#5c6166" stroke-width="1.2"/></pattern>
   <pattern id="hp-blk" patternUnits="userSpaceOnUse" width="4.5" height="4.5" patternTransform="rotate(45)"><rect width="4.5" height="4.5" fill="#fff"/><line x1="0" y1="0" x2="0" y2="4.5" stroke="#4a4f55" stroke-width="0.55"/></pattern>
   <pattern id="hp-pc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><line x1="0" y1="0" x2="0" y2="7" stroke="#4a4f55" stroke-width="0.6"/><line x1="3.5" y1="0" x2="3.5" y2="7" stroke="#4a4f55" stroke-width="0.6" stroke-dasharray="1.4 1.4"/></pattern></defs>`;
 const ROOMFILL = { LD: "#fbf3d5", MBR: "#fbf3d5", BR: "#fbf3d5", STUDY: "#fbf3d5", BATH: "#eef6f4", ENS: "#eef6f4", LOBBY: "#fbf3d5", OKIT: "#fbf3d5", KIT: "#f9efd8", STORE: "#f3f1ea" };
@@ -451,6 +451,7 @@ function drawPlan() {
     const r = u.rooms.find((q) => q.id === d.room); if (!r) continue;
     const dw = +d.w || 0.8, [a, b, inn] = sideSeg(r, d.side, +d.at || 0, dw), sel = SEL && SEL.t === "door" && SEL.i === i;
     const at = wallAt(a, b), t = at ? at.t : wallT(d.room, d.side), o = at ? at.o : 0, vert = a[0] === b[0], st = sel ? "#f28022" : "#222";
+    if (d.type === "sliding" || d.type === "sliding2") { g += slideSvg(a, b, t, o, vert, st, d, sel, sx, sy); g += `<line class="un-hit" data-di="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${t * SC + 4}" />`; continue; }
     const k = d.swing === "out" ? -1 : 1, sn = [inn[0] * k, inn[1] * k];                   // the side the door opens to
     const al = vert ? [0, 1] : [1, 0], ctr = vert ? [o, 0] : [0, o];
     const fw = 0.05, fd = Math.min(t, 0.1), stp = 0.015, lt = 0.04;
@@ -611,6 +612,30 @@ function toolbar() {
     <select data-dims title="Dimensions"><option value="chains"${DIMS() === "chains" ? " selected" : ""}>Dimensions: chains</option><option value="overall"${DIMS() === "overall" ? " selected" : ""}>overall</option><option value="off"${DIMS() === "off" ? " selected" : ""}>off</option></select></div>`;
 }
 
+/* a sliding door in the wall from a to b (t thick, its middle o off the line): a frame at each jamb, the leaves
+   on two tracks overlapping, no swing; 2 leaves meet in the middle, 1 leaf slides along the wall; svg */
+export function slideSvg(a, b, t, o, vert, st, d, sel, sx, sy) {
+  const al = vert ? [0, 1] : [1, 0], nm = vert ? [1, 0] : [0, 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const P = (s2, nn) => [a[0] + al[0] * s2 + nm[0] * (o + nn), a[1] + al[1] * s2 + nm[1] * (o + nn)];
+  const rect = (s0, s1, n0, n1, fill) => { const q = [P(s0, n0), P(s1, n0), P(s1, n1), P(s0, n1)]; return `<polygon points="${q.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="${fill}" stroke="${st}" stroke-width="${sel ? 1.2 : 0.6}" />`; };
+  const fw = 0.05, lt = Math.min(0.04, t / 4), gap = Math.min(0.01, t / 10), flip = d.hinge === "end";
+  let g = rect(0, fw, -t / 2, t / 2, "#fff") + rect(L - fw, L, -t / 2, t / 2, "#fff");
+  const a0 = fw, a1 = L - fw, ov = 0.05;
+  if (d.type === "sliding2") {
+    const m = (a0 + a1) / 2;
+    g += rect(a0, m + ov, -lt - gap / 2, -gap / 2, "#fff") + rect(m - ov, a1, gap / 2, lt + gap / 2, "#fff");
+  } else {
+    // one leaf on the outer track, the fixed panel behind it; flip: from the other jamb
+    const m = (a0 + a1) / 2;
+    g += flip ? rect(m - ov, a1, -lt - gap / 2, -gap / 2, "#fff") + rect(a0, m + ov, gap / 2, lt + gap / 2, "#eef4fa") : rect(a0, m + ov, -lt - gap / 2, -gap / 2, "#fff") + rect(m - ov, a1, gap / 2, lt + gap / 2, "#eef4fa");
+  }
+  // the arrows: which way each leaf slides
+  const ar = (s0, s1, nn) => { const p0 = P(s0, nn), p1 = P(s1, nn); return `<line x1="${sx(p0[0])}" y1="${sy(p0[1])}" x2="${sx(p1[0])}" y2="${sy(p1[1])}" stroke="${st}" stroke-width="0.5" marker-end="url(#un-ar)" />`; };
+  const off = t / 2 + 0.12, mm = (a0 + a1) / 2, q = (a1 - a0) / 4;
+  g += d.type === "sliding2" ? ar(mm - 0.05, mm - q, -off) + ar(mm + 0.05, mm + q, off) : flip ? ar(mm + q, mm - q, -off) : ar(mm - q, mm + q, -off);
+  return g;
+}
+
 /* the small menu by what is selected */
 function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
   if (!SEL || !C.can()) return "";
@@ -623,13 +648,15 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
       ${e.kind === "part" ? `<button type="button" data-pw="toggle">${open ? "Put the wall back" : "Delete wall"}</button><button type="button" data-pw="join">Join the rooms</button><button type="button" data-pw="space">${(() => { const A = u.rooms.find((q) => q.id === e.a), B = u.rooms.find((q) => q.id === e.b); return A && B && U.spaceOf(A) === U.spaceOf(B) ? "Separate the spaces" : "One space (L-shaped)"; })()}</button>
         ${open ? "" : `<label>solid from <input type="number" step="0.05" min="0" data-pws value="${f3(U.solidPart(u, e)[0])}"> to <input type="number" step="0.05" min="0" data-pwe value="${f3(U.solidPart(u, e)[1])}"> m</label>${o.s != null || o.e != null ? `<button type="button" data-pw="full">Full length</button>` : ""}<small>or drag its ends</small>`}
         ${open ? "" : `<label>line <select data-pwa><option value=""${!o.align ? " selected" : ""}>${u.join === "centre" ? "centre (unit setting)" : "flush (unit setting)"}</option><option value="c"${o.align === "c" ? " selected" : ""}>centre to centre</option><option value="flip"${o.align === "flip" ? " selected" : ""}>flush, the other face</option></select></label>`}` : ""}
+      ${e.kind !== "part" ? `<span class="un-seg"><button type="button" data-pw="kind-ext"${e.kind === "ext" ? ' class="on"' : ""}>External</button><button type="button" data-pw="kind-party"${e.kind === "party" ? ' class="on"' : ""}>Party</button></span>${o.kind ? `<small>this wall only</small>` : ""}` : ""}
       ${e.kind === "ext" ? `<label>façade <select data-pwf>${Object.entries(U.FACADES).map(([k, q]) => `<option value="${k}"${(o.f || u.facadeType || "rc") === k ? " selected" : ""}>${q.label}</option>`).join("")}</select></label>` : ""}
       <label>thickness <input type="number" step="0.005" min="0" data-pwt value="${o.t != null ? o.t : ""}" placeholder="${e.kind === "ext" && U.FACADES[o.f || u.facadeType || "rc"].t != null ? U.FACADES[o.f || u.facadeType || "rc"].t : def}"> m</label>
       <button type="button" data-pw="door">+ Door here</button>${e.kind !== "part" ? `<button type="button" data-pw="win">+ Window here</button>` : ""}`;
   } else if (SEL.t === "door") {
     const d = u.doors[SEL.i], r = d && u.rooms.find((q) => q.id === d.room); if (!r) return "";
     const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
-    html = `<b>Door</b> <button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button><label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
+    const dt = d.type || "hinged";
+    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
   } else if (SEL.t === "win") {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
@@ -711,6 +738,7 @@ function wirePlan() {
     if (t.dataset.pzw != null || t.dataset.pzh != null) { const z = u.zones[SEL.i]; const v = Math.max(0.3, Math.round((parseFloat(t.value) || 0) * 20) / 20); if (t.dataset.pzw != null) z.w = v; else z.h = v; return changed(); }
     if (t.dataset.pwa != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; if (t.value) o.align = t.value; else delete o.align; return changed(); }
     if (t.dataset.pwt != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; if (t.value === "") delete o.t; else o.t = Math.max(0, parseFloat(t.value)); return changed(); }
+    if (t.dataset.pdt != null) { const dd = u.doors[SEL.i]; if (t.value === "hinged") delete dd.type; else dd.type = t.value; return changed(); }
     if (t.dataset.pdw != null) { u.doors[SEL.i].w = Math.max(0.5, parseFloat(t.value) || 0.8); return changed(); }
     if (t.dataset.pww != null) { u.windows[SEL.i].w = Math.max(0.3, parseFloat(t.value) || 1); return changed(); }
     if (t.dataset.pfw != null) { u.fixtures[SEL.i].w = Math.max(0.2, parseFloat(t.value) || 0.5); return changed(); }
@@ -730,11 +758,23 @@ function wirePlan() {
         else { const main = (A.kind === "LD" || A.w * A.h >= B.w * B.h) ? A : B, other = main === A ? B : A, sp = U.spaceOf(main), was = U.spaceOf(other); for (const r of u.rooms) if (U.spaceOf(r) === was) r.space = sp; if (main.space === main.id) delete main.space; }
         return changed();
       }
+      if (d.pw === "kind-ext" || d.pw === "kind-party") {
+        // this wall alone; the same as its side's setting: no override kept
+        const k = d.pw.slice(5), o = u.walls[e.key] = u.walls[e.key] || {}, side = (u.partySides || []).includes(e.face) ? "party" : "ext";
+        if (k === side) delete o.kind; else o.kind = k;
+        return changed();
+      }
       if (d.pw === "full") { const o = u.walls[e.key] || {}; delete o.s; delete o.e; return changed(); }
       if (d.pw === "toggle") { const o = u.walls[e.key] = u.walls[e.key] || {}; o.open = !U.isOpen(u, e); return changed(); }
       if (d.pw === "join") { const v = U.joinRooms(u, e.a, e.b); if (!v) return toast("These two rooms do not make one rectangle", true); { const st0 = store(); st0.list[st0.sel] = v; } SEL = null; return changed(); }
       const rs = edgeRoomSide(e);
-      if (d.pw === "door") { u.doors.push({ room: rs.room, side: rs.side, at: +(Math.max(0, (e.len - 0.8) / 2) + (rs.from - (rs.side === "n" || rs.side === "s" ? u.rooms.find((q) => q.id === rs.room).x : u.rooms.find((q) => q.id === rs.room).y))).toFixed(2), w: 0.8, hinge: "start", swing: "in" }); SEL = { t: "door", i: u.doors.length - 1 }; return changed(); }
+      if (d.pw === "door") {
+        // to a balcony or utility platform: a sliding door, 2 leaves, as wide as the wall allows (to 2.4 m)
+        const sl = U.byOutdoor(u, e), dw = sl ? +Math.max(0.8, Math.min(2.4, e.len - 0.4)).toFixed(2) : 0.8;
+        const r0 = u.rooms.find((q) => q.id === rs.room);
+        u.doors.push(Object.assign({ room: rs.room, side: rs.side, at: +(Math.max(0, (e.len - dw) / 2) + (rs.from - (rs.side === "n" || rs.side === "s" ? r0.x : r0.y))).toFixed(2), w: dw, hinge: "start", swing: "in" }, sl ? { type: "sliding2" } : {}));
+        SEL = { t: "door", i: u.doors.length - 1 }; return changed();
+      }
       if (d.pw === "win") { const r = u.rooms.find((q) => q.id === rs.room), ww = Math.min(1.5, e.len - 0.4); u.windows.push({ room: rs.room, side: rs.side, at: +((rs.from - (rs.side === "n" || rs.side === "s" ? r.x : r.y)) + (e.len - ww) / 2).toFixed(2), w: +ww.toFixed(2) }); SEL = { t: "win", i: u.windows.length - 1 }; return changed(); }
     }
     if (d.pd) { const dd = u.doors[SEL.i]; if (d.pd === "hinge") dd.hinge = dd.hinge === "end" ? "start" : "end"; if (d.pd === "swing") dd.swing = dd.swing === "out" ? "in" : "out"; if (d.pd === "del") { u.doors.splice(SEL.i, 1); SEL = null; } return changed(); }
@@ -769,7 +809,7 @@ function wirePlan() {
         const e = f.edges.find((q) => q.key === t.dataset.ek), rs = e && edgeRoomSide(e);
         if (!e || (TOOL === "window" && e.kind === "part")) return toast("A window goes on an external wall", true);
         const r = u.rooms.find((q) => q.id === rs.room), along = rs.side === "n" || rs.side === "s" ? P[0] - r.x : P[1] - r.y;
-        if (TOOL === "door") { u.doors.push({ room: rs.room, side: rs.side, at: +Math.max(0, along - 0.4).toFixed(2), w: 0.8, hinge: "start", swing: "in" }); SEL = { t: "door", i: u.doors.length - 1 }; }
+        if (TOOL === "door") { const sl = U.byOutdoor(u, e), dw = sl ? +Math.max(0.8, Math.min(2.4, e.len - 0.4)).toFixed(2) : 0.8; u.doors.push(Object.assign({ room: rs.room, side: rs.side, at: +Math.max(0, along - dw / 2).toFixed(2), w: dw, hinge: "start", swing: "in" }, sl ? { type: "sliding2" } : {})); SEL = { t: "door", i: u.doors.length - 1 }; }
         else { u.windows.push({ room: rs.room, side: rs.side, at: +Math.max(0, along - 0.6).toFixed(2), w: 1.2 }); SEL = { t: "win", i: u.windows.length - 1 }; }
         TOOL = "select"; return changed();
       }

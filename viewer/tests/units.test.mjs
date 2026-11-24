@@ -169,5 +169,19 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a be
   U.extrasToFace(u);
   ok(Math.abs(u.extras[0].x - 4.1) < 1e-9, "once only");
 }
+// one wall's own type over its side's
+{
+  const W1 = Object.assign({}, L, { walls: { "b:w": { kind: "party" } } });
+  const eW = U.edges(W1).filter((e) => e.face === "w");
+  ok(eW.find((e) => e.key === "b:w").kind === "party" && eW.find((e) => e.key === "a:w").kind === "ext", "b's west wall alone is party, a's stays external");
+  const d = U.figures(L).enclosed - U.figures(W1).enclosed;
+  ok(d > 2.4 * 0.1 - 0.03 && d < 2.4 * 0.1 + 0.03, "the saleable line goes to its middle there: about 2.4 × 0.1 less (" + d.toFixed(3) + ")");
+  const W2 = Object.assign({}, P, { walls: { "a:w": { kind: "ext" } } });
+  ok(U.edges(W2).find((e) => e.key === "a:w").kind === "ext" && U.edges(W2).find((e) => e.key === "b:w").kind === "party", "a party side with one wall set back to external");
+  // a balcony against a's south face: a door there is by the outdoors
+  const B = Object.assign({}, two, { extras: [{ kind: "bal", x: 0.5, y: 3, w: 2, h: 1.2 }] });
+  const es = U.edges(B).find((e) => e.key === "a:s"), en = U.edges(B).find((e) => e.key === "a:n");
+  ok(U.byOutdoor(B, es) && !U.byOutdoor(B, en), "the wall the balcony touches is by the outdoors (a sliding door there)");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

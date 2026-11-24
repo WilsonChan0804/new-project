@@ -24,6 +24,10 @@ const f2 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-
 let C = null, ON = false, SEL = null, LAST = null;
 let PSEL = null;          // the selected unit on the plan: index into LAST.placed
 let SWAP = false;         // the next unit (or core piece) tapped swaps with the selected one
+let VIEWKEY = "";
+let PTSEL = null;          // the selected party wall between units (its partyT key)
+let WSEL = null;           // the selected floor wall (index into the floor's walls)
+let WALLDRAW = null;       // a wall being drawn: {pts: [[x, y]], hover}          // the group the view was fitted to
 let VSEL = null;          // the selected corner of the plate (its menu: remove it)
 let CSEL = null;          // the selected core piece: index into LAST.core
 const SNAP = () => { try { return localStorage.getItem("lwk-viewer:fl-snap") !== "off"; } catch (e) { return true; } };
@@ -70,6 +74,23 @@ function edit(fn) {
   render();
 }
 /* an edit of the core: the automatic core taken as it stands first */
+function editWalls(fn) {
+  const x = cur(); if (!x || !LAST || !C.can()) return;
+  snapF(x);
+  const g = x.b.groups[x.gi], f = g.floor = g.floor || {};
+  if (!f.frame) f.frame = LAST.frameAxis;
+  if (f.corrY == null) f.corrY = LAST.y0;
+  f.walls = Array.isArray(f.walls) ? f.walls : [];
+  const keep = fn(f.walls, f);
+  snapF(x); C.save();
+  WSEL = keep == null ? null : keep;
+  render();
+}
+function finishWall() {
+  const W = WALLDRAW; WALLDRAW = null;
+  if (W && W.pts.length >= 2) return editWalls((A) => { A.push({ path: FC.orthoPath(W.pts), t: Number(opts(cur()).coreWall) || 0.25, m: "rc" }); return A.length - 1; });
+  render();
+}
 function editCore(fn) {
   const x = cur(); if (!x || !LAST || !C.can()) return;
   snapF(x);
@@ -89,6 +110,18 @@ function editPlate(fn) {
   if (!f.frame) f.frame = LAST.frameAxis;
   const pts = fn(LAST.F.poly.map((p) => p.slice()));
   if (!pts || pts.length < 3) return;
+  // the frame's origin is the plate's lowest corner: when that moves, move what is stored with it, and the view, so nothing jumps
+  const du = -Math.min(...pts.map((p) => p[0])), dv = -Math.min(...pts.map((p) => p[1]));
+  if (f.corrY == null) f.corrY = LAST.y0;
+  // the layout as it is seen held in place (the core's pieces, each unit at its x), so the plate's edit does not reflow it
+  if (!Array.isArray(f.pieces) || !f.pieces.length) f.pieces = JSON.parse(JSON.stringify(LAST.coreOut));
+  const seq = { s: [], n: [] };
+  for (const band of ["s", "n"]) for (const q of LAST.placed.filter((o) => o.band === band).sort((a2, b2) => a2.si - b2.si)) seq[band].push(Object.assign({ u: (q.entry && q.entry.u) || q.name, m: q.m }, q.r ? { r: q.r } : {}, { x: q.x }));
+  for (const q of LAST.left || []) seq.s.push({ u: (q.u && (q.u.variantOf ? q.u.name : q.u.name)) || "", m: false });   // those not placed stay in the list
+  if (LAST.placed.length) f.seq = seq;
+  FC.shiftFrame(f, du, dv);
+  if (du || dv) { X0 += du; Y0 += dv; }
+  VIEWKEY = cur() ? cur().key : "";
   const own = !!(g.fp && g.fp.length >= 3);
   g.fp = C.S.fromXY(pts.map((p) => LAST.F.from(p)), x.o);
   if (!own) toast("These floors now have their own floor plate (▱ in Massing); the block's footprint is unchanged");
@@ -182,6 +215,11 @@ function render() {
     <label class="st-lbl">Floor group <select data-fsel>${list.map((q) => `<option value="${esc(q.key)}"${q.key === x.key ? " selected" : ""}>${esc(q.label)}</option>`).join("")}</select></label>
     <p class="st-note">Unit mix a floor: ${mixTxt}. ${x.g.n} floors at ${f3(Number(x.g.h))} m; the building has ${x.top} storeys.</p></div>`;
   if (!r) { P.innerHTML = h + `<div class="st-card"><p class="st-note">This floor group has no floor plate.</p></div>`; drawPlan(); return; }
+  // Massing follows: the group's GFA % kept to the layout's (its floor GFA over its plate)
+  const follow = !(x.g.floor && x.g.floor.follow === false) && (x.g.mix || []).length > 0;
+  if (follow && can && r.figures.acc != null && (x.g.accFrom !== "floors" || Math.abs(Number(x.g.acc) - Math.round(r.figures.acc * 10) / 10) > 0.05)) {
+    x.b.groups[x.gi].acc = Math.round(r.figures.acc * 10) / 10; x.b.groups[x.gi].accFrom = "floors"; C.save();
+  }
   const F = r.figures, accNow = x.g.acc == null || x.g.acc === "" ? (M.USES[x.g.use] || M.USES.dom).acc : Number(x.g.acc);
   h += `<div class="st-card"><div class="st-bigs"><div class="st-big"><b>${F.units}</b><span>flats a floor</span></div><div class="st-big"><b>${f1(F.gfa)} m²</b><span>floor GFA</span></div><div class="st-big"><b>${f1(F.acc)}%</b><span>GFA ÷ plate (Massing ${f1(accNow)}%)</span></div><div class="st-big"><b>${f1(F.efficiency)}%</b><span>saleable ÷ GFA</span></div></div>
     <table class="ms-fig">
@@ -201,11 +239,12 @@ function render() {
       <tr><td>Units' concessions</td><td>${f1(F.unitEx)} m²</td><td>balcony, UP, A/C platform, façade</td></tr>
       ${F.mic ? `<tr><td>MiC</td><td>${f1(F.mic)} m²</td><td>${o.micPct}% of the floor's GFA (JPN 8 - check)</td></tr>` : ""}
     </table>
-    ${can ? `<div class="st-row"><button type="button" class="primary st-ib" data-fuse title="Set the group's GFA % to the layout's">Use ${f1(F.acc)}% in Massing</button></div>` : ""}</div>`;
+    ${can ? `<div class="st-row"><label class="st-chk" title="Massing's GFA % for these floors kept to this layout's, as it changes"><input type="checkbox" data-ffollow${follow ? " checked" : ""}> Massing follows 4 · Floors${follow ? ` (GFA % ${f1(F.acc)})` : ""}</label>${follow ? "" : `<button type="button" class="primary st-ib" data-fuse title="Set the group's GFA % to the layout's">Use ${f1(F.acc)}% in Massing</button>`}</div>` : ""}</div>`;
   h += `<div class="st-card"><h3>Edit the floor</h3>
     <p class="st-note">Tap a unit on the plan to flip it, move it along the corridor, send it to the other side, swap it with another or take it off this floor; or drag it onto another unit to swap them, onto a gap to move it there.</p>
     ${r.note ? `<p class="st-note warn">${esc(r.note)}. <button type="button" class="ghost st-ib" data-freset>Reset to the mix</button></p>` : ""}
     <div class="st-row"><label class="st-chk"><input type="checkbox" data-fo="corners"${o.corners ? " checked" : ""}${dis}> Corner units at the ends</label>
+    ${can ? `<button type="button" class="ghost st-ib${WALLDRAW ? " on" : ""}" data-fwall title="Draw a wall on the floor: click its points on the plan, double-click (or Enter) to finish; across the corridor it ends the corridor">${WALLDRAW ? "Finish wall" : "+ Wall"}</button>` : ""}
     ${can ? `<select data-fcadd><option value="">+ Core piece …</option><option value="lobby">Protected lobby</option><option value="stair">Staircase</option><option value="lift">Lift</option><option value="refuse">Refuse room</option><option value="riser">E&amp;M riser</option></select>` : ""}
     ${can ? `<select data-fadd><option value="">+ Add a unit …</option>${units().map((u) => `<option>${esc(u.name)}</option>`).join("")}</select>` : ""}
     ${can && r.edited ? `<button type="button" class="ghost st-ib" data-freset>Reset to automatic</button>` : ""}
@@ -239,6 +278,7 @@ function render() {
 function onChange(ev) {
   const t = ev.target, list = groups(), x = cur(list);
   if (t.dataset.fsel != null) { SEL = t.value; PSEL = null; PZ.reset(ZM); return render(); }
+  if (t.dataset.ffollow != null && x && C.can()) { const g = x.b.groups[x.gi], f = g.floor = g.floor || {}; if (t.checked) delete f.follow; else { f.follow = false; delete g.accFrom; } C.save(); return render(); }
   if (t.dataset.fsnap != null) { try { localStorage.setItem("lwk-viewer:fl-snap", t.checked ? "on" : "off"); } catch (e) {} return; }
   if (t.dataset.fcadd != null) {
     const k = t.value; if (!k || !LAST || !x) return;
@@ -268,8 +308,9 @@ function onChange(ev) {
 function onClick(ev) {
   const t = ev.target.closest("button"); if (!t) return;
   if (t.dataset.fundo) return undo(+t.dataset.fundo);
+  if (t.dataset.fwall != null) { if (WALLDRAW) return finishWall(); WALLDRAW = { pts: [] }; PSEL = CSEL = WSEL = VSEL = null; toast("Click the wall's points on the plan; double-click or Enter to finish, Esc to cancel"); return render(); }
   if (t.dataset.ffit != null) return fitPlate();
-  if (t.dataset.freset != null) { const x = cur(); if (!x || !C.can()) return; snapF(x); const f = x.b.groups[x.gi].floor || {}; delete f.seq; snapF(x); C.save(); PSEL = null; return render(); }
+  if (t.dataset.freset != null) { const x = cur(); if (!x || !C.can()) return; snapF(x); const f = x.b.groups[x.gi].floor || {}; delete f.seq; delete f.corrY; snapF(x); C.save(); PSEL = null; return render(); }
   if (t.dataset.fuse != null && LAST) {
     const x = cur(); if (!x) return;
     x.b.groups[x.gi].acc = Math.round(LAST.figures.acc * 10) / 10;
@@ -287,7 +328,9 @@ function drawPlan() {
   // the box: the plate, and anything put outside it
   const xs = [...r.F.poly.map((p) => p[0]), ...r.placed.flatMap((q) => [q.x, q.x + q.w]), ...r.core.flatMap((c) => [c.x, c.x + c.w])];
   const ys = [...r.F.poly.map((p) => p[1]), ...r.placed.flatMap((q) => [q.y, q.y + q.h]), ...r.core.flatMap((c) => [c.y, c.y + c.h])];
-  if (!DRAG) { X0 = Math.min(0, ...xs); Y0 = Math.min(0, ...ys); drawPlan.W = Math.max(r.L, ...xs) - X0; drawPlan.H = Math.max(r.D, ...ys) - Y0; }
+  // the view: fitted when the group changes or on Fit, else kept, so an edit does not move the plan on the screen
+  const gk = cur() ? cur().key : "";
+  if (!DRAG && (VIEWKEY !== gk || !drawPlan.W)) { X0 = Math.min(0, ...xs); Y0 = Math.min(0, ...ys); drawPlan.W = Math.max(r.L, ...xs) - X0; drawPlan.H = Math.max(r.D, ...ys) - Y0; VIEWKEY = gk; }
   const W = drawPlan.W, H = drawPlan.H;
   const mg = Math.max(24, Math.min(70, 0.08 * Math.min(bw, bh)));
   const fit = Math.max(1, Math.min((bw - 2 * mg) / W, (bh - 2 * mg - 40) / H));
@@ -302,16 +345,17 @@ function drawPlan() {
     for (const c of z.cells) g += `<rect x="${sx(c.x0)}" y="${sy(c.y0)}" width="${(c.x1 - c.x0) * SC + 0.5}" height="${(c.y1 - c.y0) * SC + 0.5}" fill="url(#fl-em)" pointer-events="none" />`;
     if (z.area >= 1) g += `<text x="${sx(z.at[0])}" y="${sy(z.at[1]) + fs / 3}" text-anchor="middle" font-size="${fs - 1}" fill="#7a5a1a" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">E&amp;M ${f1(z.area)} m²</text>`;
   }
-  g += `<rect x="${sx(0)}" y="${sy(r.y0)}" width="${r.L * SC}" height="${r.cw * SC}" fill="#eceff3" stroke="#9aa5b1" stroke-width="0.8" />`;
+  const CX0 = r.corr ? r.corr.x0 : 0, CX1 = r.corr ? r.corr.x1 : r.L;
+  g += `<rect x="${sx(CX0)}" y="${sy(r.y0)}" width="${(CX1 - CX0) * SC}" height="${r.cw * SC}" fill="#eceff3" stroke="#9aa5b1" stroke-width="0.8" />`;
   // the wider corridor's exempt part (JPN 1), its extent along the corridor
   // JPN 1: the exempt parts as strips down the middle of the corridor (green) and of the lift lobby in front of the lifts (blue)
   const o0 = opts(cur()), J = r.jpn1 || {}, cy0 = (r.y0 + r.y1) / 2;
   const strip = (x0, x1, w, fill, col, lab) => (w > 1e-6 && x1 - x0 > 0.05 ? `<rect x="${sx(x0)}" y="${sy(cy0 - w / 2)}" width="${(x1 - x0) * SC}" height="${w * SC}" fill="url(#${fill})" stroke="${col}" stroke-width="0.8" stroke-dasharray="5 3" pointer-events="none" />` + (lab && (x1 - x0) * SC > 140 ? `<text x="${sx((x0 + x1) / 2)}" y="${sy(cy0 + r.cw / 2) - 3}" text-anchor="middle" font-size="${fs - 2}" fill="${col}" pointer-events="none">${lab}</text>` : "") : "");
   if (J.lobby) {
-    g += strip(0, J.lobby.x0, J.corrW, "fl-ex", "#2e7d32", J.lobby.x0 > r.L / 4 ? `corridor exempt ${f3(J.corrW)} m wide` : "") + strip(J.lobby.x1, r.L, J.corrW, "fl-ex", "#2e7d32", `corridor exempt ${f3(J.corrW)} m × ${f3(J.corrLen)} m = ${f1(r.figures.wideEx)} m² (JPN 1)`);
+    g += strip(CX0, J.lobby.x0, J.corrW, "fl-ex", "#2e7d32", J.lobby.x0 > r.L / 4 ? `corridor exempt ${f3(J.corrW)} m wide` : "") + strip(J.lobby.x1, CX1, J.corrW, "fl-ex", "#2e7d32", `corridor exempt ${f3(J.corrW)} m × ${f3(J.corrLen)} m = ${f1(r.figures.wideEx)} m² (JPN 1)`);
     g += strip(J.lobby.x0, J.lobby.x1, J.lobW, "fl-lx", "#1565c0", `lift lobby exempt ${f3(J.lobW)} m × ${f3(J.lobLen)} m = ${f1(r.figures.lobbyEx)} m²`);
     g += `<line x1="${sx(J.lobby.x0)}" y1="${sy(r.y0)}" x2="${sx(J.lobby.x0)}" y2="${sy(r.y1)}" stroke="#1565c0" stroke-width="0.8" stroke-dasharray="2 2" pointer-events="none" /><line x1="${sx(J.lobby.x1)}" y1="${sy(r.y0)}" x2="${sx(J.lobby.x1)}" y2="${sy(r.y1)}" stroke="#1565c0" stroke-width="0.8" stroke-dasharray="2 2" pointer-events="none" />`;
-  } else g += strip(0, r.L, J.corrW || 0, "fl-ex", "#2e7d32", `corridor exempt ${f3(J.corrW || 0)} m × ${f3(r.L)} m = ${f1(r.figures.wideEx)} m² (JPN 1)`);
+  } else g += strip(CX0, CX1, J.corrW || 0, "fl-ex", "#2e7d32", `corridor exempt ${f3(J.corrW || 0)} m × ${f3(r.L)} m = ${f1(r.figures.wideEx)} m² (JPN 1)`);
   void o0;
   g += `<text x="${sx(r.L / 2)}" y="${sy(r.y0 + r.cw / 2) + fs / 3}" text-anchor="middle" font-size="${fs}" fill="#5b6b7b">CORRIDOR ${f3(r.cw)} m</text>`;
   const hot = DRAG && DRAG.moved && DRAG.k !== "vert" ? dropTarget(DRAG) : null;
@@ -335,7 +379,7 @@ function drawPlan() {
       for (const l of outlineOf((c.rects || []).map((q) => Object.assign({ m: "rc" }, q)))) g += `<line x1="${sx(l.x1)}" y1="${sy(l.y1)}" x2="${sx(l.x2)}" y2="${sy(l.y2)}" stroke="#9aa5b1" stroke-width="0.8" stroke-dasharray="4 2" pointer-events="none" />`;
       continue;
     }
-    const IX = sx(c.x + cwl), IY = sy(c.y + cwl), iw = Math.max(0, (c.w - 2 * cwl) * SC), ih = Math.max(0, (c.h - 2 * cwl) * SC);
+    const tw = Number(c.wt) > 0 ? Number(c.wt) : cwl, IX = sx(c.x + tw), IY = sy(c.y + tw), iw = Math.max(0, (c.w - 2 * tw) * SC), ih = Math.max(0, (c.h - 2 * tw) * SC);
     g += `<rect x="${IX}" y="${IY}" width="${iw}" height="${ih}" fill="${KF[c.kind] || "#f1d6d6"}" />`;
     if (c.kind === "stair") g += stairSvg(r.stair, IX, IY, iw, ih);
     if (c.kind === "lift") g += `<line x1="${IX}" y1="${IY}" x2="${IX + iw}" y2="${IY + ih}" stroke="#555" stroke-width="0.6" /><line x1="${IX + iw}" y1="${IY}" x2="${IX}" y2="${IY + ih}" stroke="#555" stroke-width="0.6" /><rect x="${IX + iw * 0.15}" y="${IY + ih * 0.1}" width="${iw * 0.7}" height="${ih * 0.75}" fill="none" stroke="#555" stroke-width="0.5" />`;
@@ -349,14 +393,20 @@ function drawPlan() {
   const WR = [];
   for (const [pi, q] of r.placed.entries()) WR.push(...FC.placedWalls(q, uview[pi]).rects);
   WR.push(...FC.coreWallRects(cview, cwl));
+  // the walls drawn on the floor (one being reshaped at its new place)
+  const wview = (r.walls || []).map((w, wi) => (DRAG && DRAG.moved && DRAG.k === "fwpt" && DRAG.i === wi ? Object.assign({}, w, FC.passageShape({ path: DRAG.path, width: w.t }), { rects: FC.passageShape({ path: DRAG.path, width: w.t }).rects.map((q) => Object.assign({ m: w.m }, q)) }) : w));
+  for (const w of wview) WR.push(...w.rects);
+  const PTW = drawPlan.ptw = [];
   for (const band of ["s", "n"]) {
     const qs = r.placed.map((q, k) => ({ q, at: uview[k] })).filter((o) => o.q.band === band).sort((a, b) => a.at.x - b.at.x);
     for (let k = 1; k < qs.length; k++) {
       const A = qs[k - 1], Bq = qs[k], gap = Bq.at.x - (A.at.x + A.q.w);
       if (gap > 0.6 || gap < -0.05) continue;
-      const mid = (A.at.x + A.q.w + Bq.at.x) / 2, t = Math.max(Number(o0.partyWall) || 0.2, gap + (A.q.u.party || 0.15));
+      // its own thickness (the floor's partyT, keyed by the unit whose gap it is) over the generic one
+      const key = A.q.gs === "l" && A.q.gk ? A.q.gk : Bq.q.gs === "r" && Bq.q.gk ? Bq.q.gk : band + ":" + A.q.si, own = Number((o0.partyT || {})[key]) > 0 ? Number(o0.partyT[key]) : null;
+      const mid = (A.at.x + A.q.w + Bq.at.x) / 2, t = own || Math.max(Number(o0.partyWall) || 0.2, gap + (A.q.u.party || 0.15));
       const ya = Math.max(A.at.y, Bq.at.y), yb = Math.min(A.at.y + A.q.h, Bq.at.y + Bq.q.h);
-      if (yb - ya > 0.1) WR.push({ x0: mid - t / 2, y0: ya, x1: mid + t / 2, y1: yb, m: "rc" });
+      if (yb - ya > 0.1) { WR.push({ x0: mid - t / 2, y0: ya, x1: mid + t / 2, y1: yb, m: "rc" }); PTW.push({ key, own, t, x0: mid - t / 2, y0: ya, x1: mid + t / 2, y1: yb }); }
     }
   }
   const FILL = { blk: "url(#fl-blk)", rc: "url(#fl-rc)", pc: "url(#fl-rc)" };
@@ -370,7 +420,38 @@ function drawPlan() {
     const T = [H[0] + d.sn[0] * L2, H[1] + d.sn[1] * L2], cr = (T[0] - H[0]) * (O[1] - H[1]) - (T[1] - H[1]) * (O[0] - H[0]);
     return `<line x1="${sx(H[0])}" y1="${sy(H[1])}" x2="${sx(T[0])}" y2="${sy(T[1])}" stroke="#222" stroke-width="${Math.max(0.6, SC * 0.03)}" pointer-events="none" /><path d="M ${sx(T[0])} ${sy(T[1])} A ${L2 * SC} ${L2 * SC} 0 0 ${cr > 0 ? 1 : 0} ${sx(O[0])} ${sy(O[1])}" fill="none" stroke="#444" stroke-width="0.5" pointer-events="none" />`;
   };
-  for (const [pi, q] of r.placed.entries()) for (const d of q.doors || []) g += doorSvg(d, uview[pi].x, uview[pi].y);
+  // a unit's sliding door: the leaves on two tracks in the wall, overlapping, no swing
+  const slideSvg = (d, ox, oy, t) => {
+    const H = [ox + d.H[0], oy + d.H[1]], O = [ox + d.O[0], oy + d.O[1]], L2 = Math.hypot(O[0] - H[0], O[1] - H[1]) || d.w;
+    const al = [(O[0] - H[0]) / L2, (O[1] - H[1]) / L2], nm = [-al[1], al[0]], lt = Math.min(0.04, t / 4);
+    const P = (s2, nn) => [H[0] + al[0] * s2 + nm[0] * nn, H[1] + al[1] * s2 + nm[1] * nn];
+    const rect = (s0, s1, n0, n1) => `<polygon points="${[P(s0, n0), P(s1, n0), P(s1, n1), P(s0, n1)].map((p2) => sx(p2[0]) + "," + sy(p2[1])).join(" ")}" fill="#fff" stroke="#222" stroke-width="0.6" pointer-events="none" />`;
+    const m = L2 / 2, ov = 0.05;
+    return rect(0, m + ov, -lt, 0) + rect(m - ov, L2, 0, lt);
+  };
+  for (const [pi, q] of r.placed.entries()) for (const d of q.doors || []) g += d.type ? slideSvg(d, uview[pi].x, uview[pi].y, q.wt || 0.15) : doorSvg(d, uview[pi].x, uview[pi].y);
+  // the windows (frame, two glass lines, frame) and the curtain walls (glazing and mullions) in the units' external walls
+  for (const [pi, q] of r.placed.entries()) {
+    if (!(q.ops || []).length) continue;
+    const ox = uview[pi].x, oy = uview[pi].y, rects = FC.placedWalls(q, uview[pi]).rects;
+    for (const o of q.ops) {
+      const a = [ox + o.a[0], oy + o.a[1]], b = [ox + o.b[0], oy + o.b[1]], v = Math.abs(a[0] - b[0]) < 1e-6, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      // the wall it is in: across, that wall's faces; else the unit's wall centred on the line
+      const w0 = rects.find((w) => mid[0] >= w.x0 - 0.02 && mid[0] <= w.x1 + 0.02 && mid[1] >= w.y0 - 0.02 && mid[1] <= w.y1 + 0.02);
+      const half = (q.wt || 0.15) / 2, c0 = w0 ? (v ? w0.x0 : w0.y0) : (v ? a[0] : a[1]) - half, c1 = w0 ? (v ? w0.x1 : w0.y1) : (v ? a[0] : a[1]) + half;
+      const s0 = v ? Math.min(a[1], b[1]) : Math.min(a[0], b[0]), s1 = v ? Math.max(a[1], b[1]) : Math.max(a[0], b[0]);
+      const L = (c, wd, col) => (v ? `<line x1="${sx(c)}" y1="${sy(s0)}" x2="${sx(c)}" y2="${sy(s1)}"` : `<line x1="${sx(s0)}" y1="${sy(c)}" x2="${sx(s1)}" y2="${sy(c)}"`) + ` stroke="${col}" stroke-width="${wd}" pointer-events="none" />`;
+      g += v ? `<rect x="${sx(c0)}" y="${sy(s0)}" width="${(c1 - c0) * SC}" height="${(s1 - s0) * SC}" fill="#fff" pointer-events="none" />` : `<rect x="${sx(s0)}" y="${sy(c0)}" width="${(s1 - s0) * SC}" height="${(c1 - c0) * SC}" fill="#fff" pointer-events="none" />`;
+      const cm = (c0 + c1) / 2;
+      if (o.k === "win") g += L(c0, 0.7, "#111") + L(cm - 0.012, 0.45, "#2b6cb0") + L(cm + 0.012, 0.45, "#2b6cb0") + L(c1, 0.7, "#111");
+      else {
+        // a curtain wall: the glass line and a mullion each 1.5 m or so
+        g += L(cm, Math.max(1, SC * 0.02), "#2b6cb0");
+        const k = Math.max(1, Math.round((s1 - s0) / 1.5));
+        for (let i = 0; i <= k; i++) { const p0 = s0 + (s1 - s0) * i / k; g += v ? `<rect x="${sx(c0)}" y="${sy(p0) - 1.5}" width="${(c1 - c0) * SC}" height="3" fill="#222" pointer-events="none" />` : `<rect x="${sx(p0) - 1.5}" y="${sy(c0)}" width="3" height="${(c1 - c0) * SC}" fill="#222" pointer-events="none" />`; }
+      }
+    }
+  }
   for (const c of cview) for (const d of c.doors || []) g += doorSvg(d, 0, 0);
   // the labels, the selection and what to pick
   for (const [ci, c] of cview.entries()) {
@@ -395,6 +476,19 @@ function drawPlan() {
     if (q.w * SC > fs * 5) g += `<text x="${sx(ox + q.w / 2)}" y="${sy(oy + q.h / 2)}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#1f2a36" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">${esc(q.name || "Unit")}${q.m && !/mirrored/.test(q.name || "") ? " ⇋" : ""}</text>
       <text x="${sx(ox + q.w / 2)}" y="${sy(oy + q.h / 2) + fs + 2}" text-anchor="middle" font-size="${fs - 1}" fill="${bad ? "#c62828" : "#3c4650"}" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">${bad ? esc(q.flags[0]) : `${f1(q.fig.saleable)} m² · ${f3(q.w)} m`}</text>`;
     g += `<rect class="fl-u" data-pi="${pi}" x="${sx(ox)}" y="${sy(oy)}" width="${q.w * SC}" height="${q.h * SC}" fill="transparent" />`;
+  }
+  // the party walls between units: picked to set their own thickness
+  for (const w of PTW) g += `<rect class="fl-fw" data-ptw="${w.key}" x="${sx(w.x0) - 3}" y="${sy(w.y0)}" width="${(w.x1 - w.x0) * SC + 6}" height="${(w.y1 - w.y0) * SC}" fill="${PTSEL === w.key ? "rgba(242,128,34,.25)" : "transparent"}" stroke="${PTSEL === w.key ? "#f28022" : "none"}" stroke-width="1.5" />`;
+  // the floor's walls: picked by their bands; a selected one's points to drag
+  for (const [wi, w] of wview.entries()) {
+    for (const q of w.rects) g += `<rect class="fl-fw" data-fw="${wi}" x="${sx(q.x0) - 3}" y="${sy(q.y0) - 3}" width="${(q.x1 - q.x0) * SC + 6}" height="${(q.y1 - q.y0) * SC + 6}" fill="${WSEL === wi ? "rgba(242,128,34,.25)" : "transparent"}" stroke="${WSEL === wi ? "#f28022" : "none"}" stroke-width="1.5" />`;
+    if (WSEL === wi && C.can()) w.path.forEach(([x, y], k) => { g += `<circle class="fl-ppt" data-fwpt="${k}" cx="${sx(x)}" cy="${sy(y)}" r="7" fill="#fff" stroke="#f28022" stroke-width="2.5" />`; });
+  }
+  // a wall being drawn
+  if (WALLDRAW && WALLDRAW.pts.length) {
+    const P = WALLDRAW.hover ? WALLDRAW.pts.concat([WALLDRAW.hover]) : WALLDRAW.pts;
+    g += `<polyline points="${P.map(([x, y]) => sx(x) + "," + sy(y)).join(" ")}" fill="none" stroke="#f28022" stroke-width="${Math.max(2, (Number(opts(cur()).coreWall) || 0.25) * SC)}" stroke-opacity="0.6" pointer-events="none" />`;
+    for (const [x, y] of WALLDRAW.pts) g += `<circle cx="${sx(x)}" cy="${sy(y)}" r="4" fill="#f28022" pointer-events="none" />`;
   }
   // the structural grid: chain-dotted lines, bubbles at both ends
   const GL = gridLines(r), gb = Math.max(7, Math.min(11, SC * 0.35));
@@ -460,6 +554,23 @@ function stairSvg(st, X, Y, W, H) {
 /* the small menu by the selected unit or core piece */
 function pop(r, sx, sy, bw, bh) {
   if (!C.can() || DRAG) return "";
+  const PW2 = PTSEL != null && (drawPlan.ptw || []).find((w) => w.key === PTSEL);
+  if (PW2) {
+    const L2 = Math.max(8, Math.min(sx(PW2.x1) + 10, bw - 300)), T2 = Math.max(8, Math.min(sy((PW2.y0 + PW2.y1) / 2), bh - 100));
+    return `<div class="fl-pop" style="left:${Math.round(L2)}px;top:${Math.round(T2)}px"><b>Party wall</b> ${f3(PW2.y1 - PW2.y0)} m long
+      <label>thickness <input type="number" step="0.005" min="0.05" data-ptt value="${PW2.own != null ? PW2.own.toFixed(3) : ""}" placeholder="${f3(Number(opts(cur()).partyWall) || 0.2)}"> m</label>
+      <small>${PW2.own != null ? "this wall's own; clear it for the floor's setting" : "blank: the floor's party wall setting"}</small></div>`;
+  }
+  const W = WSEL != null && (r.walls || [])[WSEL];
+  if (W) {
+    const xs2 = W.path.map((q) => q[0]), ys2 = W.path.map((q) => q[1]);
+    const L2 = Math.max(8, Math.min(sx(Math.min(...xs2)), bw - 340)), T2 = Math.max(8, Math.min(sy(Math.max(...ys2)) + 14, bh - 120));
+    const len = W.path.slice(1).reduce((a, q, k) => a + Math.hypot(q[0] - W.path[k][0], q[1] - W.path[k][1]), 0);
+    return `<div class="fl-pop" style="left:${Math.round(L2)}px;top:${Math.round(T2)}px"><b>Wall</b> ${f3(len)} m
+      <label>thickness <input type="number" step="0.001" min="0.05" data-fwt value="${W.t.toFixed(3)}"> m</label>
+      <label><select data-fwm><option value="rc"${W.m === "rc" ? " selected" : ""}>RC</option><option value="blk"${W.m === "blk" ? " selected" : ""}>block</option></select></label>
+      <button type="button" data-fwdel>Remove</button><small>drag its points to reshape it</small></div>`;
+  }
   const at = (q) => [Math.max(8, Math.min(sx(q.x), bw - 340)), Math.max(8, Math.min(q.y + q.h / 2 > r.y0 ? sy(q.y + q.h) + 8 : sy(q.y) - 54, bh - 90))];
   const q = PSEL != null && r.placed[PSEL];
   if (q) {
@@ -474,10 +585,12 @@ function pop(r, sx, sy, bw, bh) {
     // below the piece and the corridor, clear of its handles
     const L = Math.max(8, Math.min(sx(c.x), bw - 360)), T = Math.max(8, Math.min(sy(Math.max(c.y + c.h, r.y1)) + 14, bh - 150));
     const cw0 = r.coreWall || 0.25, can2 = C.can();
-    const size = c.kind === "passage" ? `<label>width <input type="number" step="0.001" min="0.6" data-fcpw value="${(c.width || 1.2).toFixed(3)}"${can2 ? "" : " disabled"}> m</label><button type="button" data-fc="bend" title="A point in the middle of its longest run: drag it out for an L or a Z">+ Bend</button><button type="button" data-fc="unbend"${(c.path || []).length > 2 ? "" : " disabled"} title="Take off the last bend">− Bend</button><small>drag its points to turn it</small>`
+    const dis2 = can2 ? "" : " disabled", dr = c.door || {};
+    const doorCtl = c.kind === "passage" ? "" : `<label>door <select data-fcds${dis2}><option value="">auto</option>${[["n", "top"], ["e", "right"], ["s", "bottom"], ["w", "left"]].map(([k, v]) => `<option value="${k}"${dr.side === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>${dr.side ? `<label>along <input type="range" min="0" max="100" step="1" data-fcda value="${Math.round((dr.at != null ? dr.at : 0.5) * 100)}"${dis2}></label>` : ""}<label>wall <input type="number" step="0.001" min="0.05" data-fcwt value="${Number(c.wt) > 0 ? Number(c.wt).toFixed(3) : ""}" placeholder="${cw0.toFixed(3)}"${dis2} title="Its own wall thickness; empty: the core's"> m</label>`;
+    const size = c.kind === "passage" ? `<label>width <input type="number" step="0.001" min="0.6" data-fcpw value="${(c.width || 1.2).toFixed(3)}"${can2 ? "" : " disabled"}> m</label><button type="button" data-fc="bend" title="A point in the middle of its longest run: drag it out for an L or a Z">+ Bend</button><button type="button" data-fc="unbend"${(c.path || []).length > 2 ? "" : " disabled"} title="Take off the last bend">− Bend</button>${c.for ? `<button type="button" data-fc="reroute"${c.auto !== false ? " disabled" : ""} title="From ${esc(c.for)}'s door to the corridor again">↻ Re-route</button><small>${c.auto !== false ? `follows ${esc(c.for)}'s door - move the door, it follows; or drag its points` : "drawn by hand"}</small>` : `<small>drag its points to turn it</small>`}`
       : `<label>clear <input type="number" step="0.001" min="0.5" data-fccw value="${Math.max(0, c.w - 2 * cw0).toFixed(3)}"${can2 ? "" : " disabled"}> × <input type="number" step="0.001" min="0.5" data-fcch value="${Math.max(0, c.h - 2 * cw0).toFixed(3)}"${can2 ? "" : " disabled"}> m</label><small>or drag its edges</small>`;
     return `<div class="fl-pop" style="left:${Math.round(L)}px;top:${Math.round(T)}px"><b>${esc(c.label)}</b> ${f3(c.w)} × ${f3(c.h)} m
-      ${size}
+      ${size}${doorCtl}
       <button type="button" data-fc="rot">⟳ Rotate 90°</button><button type="button" data-fc="swap" class="${SWAP ? "on" : ""}">Swap with…</button><button type="button" data-fc="lift">+ Lift</button><button type="button" data-fc="del">Remove</button>${r.coreEdited ? `<button type="button" data-fc="reset">Reset core</button>` : ""}
       ${c.flags && c.flags.length ? `<small class="bad">${esc(c.flags.join(" · "))}</small>` : ""}</div>`;
   }
@@ -576,8 +689,9 @@ function coreAction(k) {
   const i = CSEL;
   if (k === "rot") return editCore((P) => { const q = P[i], cx = q.x + q.w / 2, cy = q.y + q.h / 2; [q.w, q.h] = [q.h, q.w]; q.x = Math.round((cx - q.w / 2) * 20) / 20; q.y = Math.round((cy - q.h / 2) * 20) / 20; return i; });
   if (k === "del") return editCore((P) => { P.splice(i, 1); });
+  if (k === "reroute") return editCore((P) => { P[i].auto = true; return i; });
   if (k === "bend" || k === "unbend") return editCore((P) => {
-    const q = P[i]; if (!Array.isArray(q.path)) q.path = FC.passageShape(Object.assign({}, q)).path;
+    const q = P[i]; if (!Array.isArray(q.path)) q.path = FC.passageShape(Object.assign({}, q)).path; if (q.for) q.auto = false;
     if (k === "unbend") { if (q.path.length > 2) q.path.splice(q.path.length - 2, 1); q.path = FC.orthoPath(q.path); return i; }
     let best = 0, bl = -1;
     for (let j = 0; j < q.path.length - 1; j++) { const l = Math.hypot(q.path[j + 1][0] - q.path[j][0], q.path[j + 1][1] - q.path[j][1]); if (l > bl) { bl = l; best = j; } }
@@ -592,30 +706,63 @@ function wirePlan() {
   const host = $("#st-fplan");
   let pan = null;
   host.addEventListener("change", (ev) => {
+    const tw = ev.target;
+    if (PTSEL != null && tw.dataset.ptt != null) {
+      const v = parseFloat(tw.value), k = PTSEL;
+      return editWalls((A, f) => { f.partyT = f.partyT && typeof f.partyT === "object" ? f.partyT : {}; if (v > 0) f.partyT[k] = Math.round(v * 1000) / 1000; else delete f.partyT[k]; if (!Object.keys(f.partyT).length) delete f.partyT; PTSEL = k; return null; });
+    }
+    if (WSEL != null && tw.dataset.fwt != null) { const v = parseFloat(tw.value); if (v > 0) return editWalls((A) => { A[WSEL].t = Math.round(v * 1000) / 1000; return WSEL; }); return; }
+    if (WSEL != null && tw.dataset.fwm != null) return editWalls((A) => { A[WSEL].m = tw.value; return WSEL; });
     const t = ev.target, i = CSEL; if (i == null || !LAST || !C.can()) return;
+    if (t.dataset.fcda != null) { const at = Math.max(0, Math.min(1, (parseFloat(t.value) || 0) / 100)); return editCore((P) => { P[i].door = Object.assign({ side: "s" }, P[i].door, { at }); return i; }); }
+    if (t.dataset.fcds != null) { const sd = t.value; return editCore((P) => { if (sd) P[i].door = { side: sd, at: P[i].door && P[i].door.at != null ? P[i].door.at : 0.5 }; else delete P[i].door; return i; }); }
+    if (t.dataset.fcwt != null && t.value === "") return editCore((P) => { delete P[i].wt; return i; });
     const v = parseFloat(t.value); if (!(v > 0)) return;
     const cw0 = LAST.coreWall || 0.25;
     if (t.dataset.fccw != null) return editCore((P) => { P[i].w = Math.round((v + 2 * cw0) * 1000) / 1000; return i; });
     if (t.dataset.fcch != null) return editCore((P) => { P[i].h = Math.round((v + 2 * cw0) * 1000) / 1000; return i; });
+    if (t.dataset.fcds != null) { const sd = t.value; return editCore((P) => { if (sd) P[i].door = { side: sd, at: P[i].door && P[i].door.at != null ? P[i].door.at : 0.5 }; else delete P[i].door; return i; }); }
+    if (t.dataset.fcwt != null) return editCore((P) => { if (t.value === "") delete P[i].wt; else P[i].wt = Math.max(0.05, Math.round(v * 1000) / 1000); return i; });
     if (t.dataset.fcpw != null) return editCore((P) => { if (!Array.isArray(P[i].path)) P[i].path = FC.passageShape(Object.assign({}, P[i])).path; P[i].width = Math.max(0.6, Math.round(v * 1000) / 1000); return i; });
   });
   const h3 = $("#st-f3d");
   for (const el of [host, h3]) { el.addEventListener("click", onView); el.addEventListener("change", onView); }
   // a corner of the plate: double-click it to remove it
+  host.addEventListener("dblclick", (ev) => { if (WALLDRAW) { ev.preventDefault(); WALLDRAW.pts = WALLDRAW.pts.filter((q, k, A) => !(k && q[0] === A[k - 1][0] && q[1] === A[k - 1][1])); finishWall(); } });
+  document.addEventListener("keydown", (ev) => { if (!ON || !WALLDRAW || ev.target.closest("input,select,textarea")) return; if (ev.key === "Enter") { ev.preventDefault(); finishWall(); } if (ev.key === "Escape") { WALLDRAW = null; render(); } });
   host.addEventListener("dblclick", (ev) => { const t = ev.target; if (t.dataset && t.dataset.vi != null) { ev.preventDefault(); removeCorner(+t.dataset.vi); } });
   document.addEventListener("keydown", (ev) => { if (ON && VSEL != null && (ev.key === "Delete" || ev.key === "Backspace") && !ev.target.closest("input,select,textarea")) { ev.preventDefault(); removeCorner(VSEL); } });
   host.addEventListener("click", (ev) => {
     const b = ev.target.closest("button"); if (!b) return;
     if (b.dataset.fv) return;
-    if (b.dataset.pz) return PZ.barClick(ZM, b, host.getBoundingClientRect(), drawPlan);
+    if (b.dataset.pz) { if (b.dataset.pz === "fit") VIEWKEY = ""; return PZ.barClick(ZM, b, host.getBoundingClientRect(), drawPlan); }
     if (b.dataset.fu) return unitAction(b.dataset.fu);
     if (b.dataset.vdel != null) return removeCorner(VSEL);
+    if (b.dataset.fwdel != null && WSEL != null) { const k = WSEL; return editWalls((A) => { A.splice(k, 1); }); }
     if (b.dataset.fc) return coreAction(b.dataset.fc);
   });
+  // a point of a wall being drawn: snapped, and square to the one before
+  const wallPt = (ev) => {
+    const [px, py] = toPlan(ev), { ex, ey } = edgesFor(LAST, -1, -1);
+    let x = SNAP() && !ev.altKey ? FC.snap1(px, 0, ex, 12 / SC) : Math.round(px * 20) / 20, y = SNAP() && !ev.altKey ? FC.snap1(py, 0, ey, 12 / SC) : Math.round(py * 20) / 20;
+    const last = WALLDRAW && WALLDRAW.pts[WALLDRAW.pts.length - 1];
+    if (last) { if (Math.abs(x - last[0]) >= Math.abs(y - last[1])) y = last[1]; else x = last[0]; }
+    return [x, y];
+  };
   host.addEventListener("pointerdown", (ev) => {
     if (ev.target.closest(".pz-bar,.fl-pop,.fl-vw")) return;
+    if (WALLDRAW && LAST && C.can()) {
+      ev.preventDefault();
+      const q = wallPt(ev), last = WALLDRAW.pts[WALLDRAW.pts.length - 1], now = Date.now();
+      // a second click on the same point soon after: the wall is finished (the plan redraws between clicks, so no dblclick comes)
+      if (last && WALLDRAW.t && now - WALLDRAW.t < 450 && Math.hypot(q[0] - last[0], q[1] - last[1]) * SC < 8) return finishWall();
+      WALLDRAW.pts.push(q); WALLDRAW.t = now; WALLDRAW.hover = null; return drawPlan();
+    }
     if (PZ.down(ZM, ev)) { DRAG = null; pan = null; cap(host, ev); ev.preventDefault(); return drawPlan(); }
     const t = ev.target;
+    if (t.dataset.fwpt != null && WSEL != null && C.can()) { DRAG = { k: "fwpt", i: WSEL, p: +t.dataset.fwpt, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; cap(host, ev); ev.preventDefault(); return; }
+    if (t.dataset.ptw != null && LAST && !WALLDRAW) { PTSEL = PTSEL === t.dataset.ptw ? null : t.dataset.ptw; PSEL = CSEL = VSEL = WSEL = null; ev.preventDefault(); return drawPlan(); }
+    if (t.dataset.fw != null && LAST) { WSEL = WSEL === +t.dataset.fw ? null : +t.dataset.fw; PSEL = CSEL = VSEL = null; ev.preventDefault(); return drawPlan(); }
     if (t.dataset.vm != null && LAST && C.can()) { const k = +t.dataset.vm; ev.preventDefault(); return editPlate((P) => { const a = P[k], b = P[(k + 1) % P.length]; P.splice(k + 1, 0, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); return P; }); }
     if (t.dataset.ce != null && LAST && C.can() && CSEL != null) { DRAG = { k: "cedge", i: CSEL, e: t.dataset.ce, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; cap(host, ev); ev.preventDefault(); return; }
     if (t.dataset.ppt != null && LAST && C.can() && CSEL != null) { DRAG = { k: "ppt", i: CSEL, p: +t.dataset.ppt, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; cap(host, ev); ev.preventDefault(); return; }
@@ -626,6 +773,7 @@ function wirePlan() {
     cap(host, ev); ev.preventDefault();
   });
   host.addEventListener("pointermove", (ev) => {
+    if (WALLDRAW && LAST && WALLDRAW.pts.length) { WALLDRAW.hover = wallPt(ev); if (!drawPlan.raf) drawPlan.raf = requestAnimationFrame(() => { drawPlan.raf = 0; drawPlan(); }); return; }
     if (PZ.move(ZM, ev, host.getBoundingClientRect())) return drawPlan();
     if (pan) { const dx = ev.clientX - pan.x, dy = ev.clientY - pan.y; if (!pan.moved && Math.hypot(dx, dy) < 4) return; pan.moved = true; ZM.px = pan.px + dx; ZM.py = pan.py + dy; return drawPlan(); }
     if (!DRAG) return;
@@ -650,6 +798,11 @@ function wirePlan() {
       if (DRAG.e === "n") { const y0 = Math.min(c.y + c.h - min, S1(c.y + dy / SC, ey)); b.h = c.y + c.h - y0; b.y = y0; }
       for (const k of ["x", "y", "w", "h"]) b[k] = Math.round(b[k] * 1000) / 1000;
       DRAG.box = b;
+    } else if (DRAG.k === "fwpt") {
+      const w = LAST.walls[DRAG.i], P = w.path.map((q) => q.slice()), p0 = P[DRAG.p], snap = SNAP() && !ev.altKey, { ex, ey } = edgesFor(LAST, -1, -1);
+      const vx = p0[0] + dx / SC, vy = p0[1] + dy / SC;
+      P[DRAG.p] = snap ? [FC.snap1(vx, 0, ex, 12 / SC), FC.snap1(vy, 0, ey, 12 / SC)] : [Math.round(vx * 20) / 20, Math.round(vy * 20) / 20];
+      DRAG.path = P;
     } else if (DRAG.k === "ppt") {
       // a point of a passage: moved, snapped; the path kept orthogonal
       const c = LAST.core[DRAG.i], P = c.path.map((q) => q.slice()), p0 = P[DRAG.p], snap = SNAP() && !ev.altKey, { ex, ey } = edgesFor(LAST, -1, DRAG.i);
@@ -662,14 +815,15 @@ function wirePlan() {
   });
   const end = (ev) => {
     PZ.up(ZM, ev);
-    if (pan) { const p = pan; pan = null; if (!p.moved) { PSEL = null; CSEL = null; SWAP = false; } return drawPlan(); }
+    if (pan) { const p = pan; pan = null; if (!p.moved) { PSEL = null; CSEL = null; PTSEL = null; SWAP = false; } return drawPlan(); }
     if (drawPlan.raf) { cancelAnimationFrame(drawPlan.raf); drawPlan.raf = 0; }
     if (!DRAG) return;
     const d = DRAG; DRAG = null;
     const r = LAST;
     if (d.k === "vert") { if (d.moved && d.poly) { VSEL = null; return editPlate(() => d.poly); } const now = Date.now(), dbl = drawPlan.lastV && drawPlan.lastV.i === d.i && now - drawPlan.lastV.t < 450; drawPlan.lastV = { i: d.i, t: now }; if (dbl) { drawPlan.lastV = null; return removeCorner(d.i); } VSEL = d.i; PSEL = null; CSEL = null; return drawPlan(); }
     if (d.k === "cedge") { if (!d.moved || !d.box) return drawPlan(); return editCore((P) => { Object.assign(P[d.i], d.box); return d.i; }); }
-    if (d.k === "ppt") { if (!d.moved || !d.path) return drawPlan(); return editCore((P) => { P[d.i].path = FC.orthoPath(d.path); return d.i; }); }
+    if (d.k === "fwpt") { if (!d.moved || !d.path) return drawPlan(); return editWalls((A) => { A[d.i].path = FC.orthoPath(d.path); return d.i; }); }
+    if (d.k === "ppt") { if (!d.moved || !d.path) return drawPlan(); return editCore((P) => { P[d.i].path = FC.orthoPath(d.path); if (P[d.i].for) P[d.i].auto = false; return d.i; }); }
     if (d.k === "core") {
       if (!d.moved) {
         if (SWAP && CSEL != null && CSEL !== d.i) { const a = CSEL; SWAP = false; return editCore((P) => { swapCore(P, a, d.i); return d.i; }); }

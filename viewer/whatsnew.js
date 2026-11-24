@@ -6,6 +6,19 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-25", date: "26 Nov 2026",
+    items: [
+      "**4 · Floors: plate edits stay put** - moving one corner of the plate and then another no longer makes everything jump: the units, the core and the corridor keep their places, and the view does not refit.",
+      "**A staircase's door, where you want it** - tap the staircase: its door on the top, right, bottom or left, slid along that face; the passage traces itself from the door to the corridor. Drag its points to adjust it by hand, **Re-route** to let it trace again.",
+      "**2 · Massing follows 4 · Floors** - a plate edited in Floors is the group's shape in Massing's plan (dashed) and 3D, and its GFA % comes from the Floors layout while **Massing follows 4 · Floors** is ticked (typing a GFA % in Massing stops it).",
+      "**+ Wall on the floor** - click its points (double-click or Enter to finish) to close off what is neither units nor core; a wall across the corridor ends it there, and what lies beyond becomes plate left over. Tap a wall for its thickness, RC or block, or to remove it.",
+      "**Openings on the floor**: the units' windows, curtain walls (glazing and mullions) and sliding doors are drawn on the floor plan.",
+      "**Wall thicknesses: generic, with overrides** - the core and party wall settings stay as the defaults; a core piece's menu sets its own wall, and a party wall between two units, tapped, takes its own thickness (the units part to suit).",
+      "**3 · Units: external or party, wall by wall** - a wall's menu has **External / Party** for that wall alone, over its side's setting. **Sliding doors**: a door's type is hinged, sliding (1 leaf) or sliding (2 leaves); a door added on a wall by the balcony or UP starts as a 2-leaf sliding door.",
+      "**Elevation and Section: clearer** - only the buildings within 50 m of the line are shown (none in front of an elevation), in pale grey; the massing in its clear use colours with dark outlines.",
+    ],
+  },
+  {
     version: "2027-03-24", date: "25 Nov 2026",
     items: [
       "**4 · Floors is much faster** - the walls, the core and the E&M left over are worked out in a fraction of the time, and a drag redraws once a frame.",
