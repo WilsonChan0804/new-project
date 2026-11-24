@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-12", date: "25 Nov 2026",
+    items: [
+      "**Unit and floor plans on a phone**: the plan now fits the screen (smaller margins, labels and dimensions sized to the scale), **pinch to zoom**, drag the background to pan, the mouse wheel zooms on a computer. A zoom bar: **＋ / − / Fit** and **⤢** for the plan full screen (the panel hidden; press again to bring it back). The tool bar scrolls sideways on a phone.",
+      "**4 · Floors: edit the typical floor** - tap a unit to **⇋ flip** it, move it **◀ ▶** along the corridor, send it to the **other side**, **swap** it with another or **remove** it; drag a unit onto another to swap them, or onto a gap to move it there. **Corner units at the ends** puts flats at both ends of each side, their end wall a second façade. **+ Add a unit**, **Reset to automatic**, undo / redo; the GFA and the checks follow every change.",
+    ],
+  },
+  {
     version: "2027-03-11", date: "25 Nov 2026",
     items: [
       "**Site study 4 · Floors** - the typical floor of a domestic massing group: its unit mix laid along a double-loaded corridor on the group's floor plate (turned to its long side), each unit with its entrance on the corridor; a core of staircases, lifts, a refuse room and an E&M riser, in the middle or with the staircases at the ends. What is left of the plate is the residual, taken as exempt E&M, with a warning and the plate depth that would fit when it is large.",

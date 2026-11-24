@@ -106,6 +106,17 @@ export function layout(o) {
   // the units, in the order of the mix, turned to face out
   const want = [];
   for (const m of p.mix || []) for (let i = 0; i < Math.max(0, Math.round(n(m.n))); i++) want.push(m.u);
+  // an edited floor: the units along each side in order ({u: name, m: mirrored}), else laid out from the mix
+  const byName = new Map([...(p.lib || []).map((u) => [u.name, u]), ...(p.mix || []).map((m) => [m.u.name, m.u])]);
+  const SEQ = p.seq && (Array.isArray(p.seq.s) || Array.isArray(p.seq.n)) ? { s: (p.seq.s || []).filter((e) => byName.has(e.u)), n: (p.seq.n || []).filter((e) => byName.has(e.u)) } : null;
+  const mirrors = new Map(), unitOf = (e) => { const u = byName.get(e.u); if (!e.m) return u; if (!mirrors.has(u)) mirrors.set(u, U.mirrorUnit(u)); return mirrors.get(u); };
+  let note = "";
+  if (SEQ) {
+    const cnt = (list) => { const c = {}; for (const e of list) c[e.u] = (c[e.u] || 0) + 1; return c; };
+    const a = cnt([...SEQ.s, ...SEQ.n]), b = cnt(want.map((u) => ({ u: u.name })));
+    if ([...new Set([...Object.keys(a), ...Object.keys(b)])].some((k) => (a[k] || 0) !== (b[k] || 0))) note = "The edited floor differs from the unit mix";
+    want.length = 0; for (const e of [...SEQ.s, ...SEQ.n]) want.push(unitOf(e));
+  }
   const f0 = new Map();
   const figOf = (u) => { if (!f0.has(u)) f0.set(u, U.figures(u)); return f0.get(u); };
   const deep = want.length ? Math.max(...want.map((u) => turn(u, TO_N[entrySide(u)] || 0).D)) : (D - cw) / 2;
@@ -152,25 +163,71 @@ export function layout(o) {
     return pts.every(([px, py]) => inPoly(F.poly, px, py));
   };
   const placed = [], left = [];
-  // each run filled in turn: at each point the next unit of the mix that still fits (so a smaller one takes a gap)
-  const rest = want.map((u) => ({ u }));
-  for (const q of rest) {
-    q.t = { n: turn(q.u, (TO_N[entrySide(q.u)] || 0) + 2), s: turn(q.u, TO_N[entrySide(q.u)] || 0) };
-    if (q.t.s.D > dS + 0.05 && q.t.n.D > dN + 0.05) { q.gone = true; left.push({ u: q.u, why: `${q.u.name || "Unit"} is ${q.t.s.D.toFixed(2)} m deep from its entrance; the corridor leaves ${Math.max(dN, dS).toFixed(2)} m` }); }
-  }
-  for (const run of runs) {
-    const band = run.band === "s" ? dS : dN;
-    let cx = run.x0, guard = 0;
-    while (guard++ < 400) {
-      const q = rest.find((z) => !z.gone && z.t[run.band].D <= band + 0.05 && cx + z.t[run.band].W <= run.x1 + 0.01);
-      if (!q) break;
-      const t = q.t[run.band], y = run.band === "s" ? y1 : y0 - t.D, box = { x: r3(cx), y: r3(y), w: t.W, h: t.D };
-      if (!inside(box)) { cx += 0.25; continue; }
-      placed.push(Object.assign({ u: q.u, name: q.u.name, band: run.band, fig: figOf(q.u) }, box, { rooms: t.rooms, extras: t.extras }));
-      q.gone = true; cx = r3(cx + t.W);
+  // each side: its runs, taken from the left end (and with corner units from the right end too, alternately)
+  const sides = { s: runs.filter((r) => r.band === "s").map((r) => ({ l: r.x0, r: r.x1 })), n: runs.filter((r) => r.band === "n").map((r) => ({ l: r.x0, r: r.x1 })) };
+  const depth = { s: dS, n: dN };
+  const tOf = (u, band) => turn(u, (TO_N[entrySide(u)] || 0) + (band === "n" ? 2 : 0));
+  const cursor = { s: { i: 0, j: sides.s.length - 1 }, n: { i: 0, j: sides.n.length - 1 } };
+  // put a unit of width W at the current run of this end; null when no run of that end has room
+  const take = (band, end, t, probe) => {
+    const R = sides[band], c = cursor[band];
+    let k = end === "l" ? c.i : c.j;
+    while (k >= 0 && k < R.length && (end === "l" ? k <= c.j : k >= c.i)) {
+      const run = R[k];
+      for (let nudge = 0; nudge < 40; nudge++) {
+        const x = end === "l" ? run.l + nudge * 0.25 : run.r - t.W - nudge * 0.25;
+        if (x < run.l - 1e-6 || x + t.W > run.r + 0.01) break;
+        const y = band === "s" ? y1 : y0 - t.D, box = { x: r3(x), y: r3(y), w: t.W, h: t.D };
+        if (!inside(box)) continue;
+        if (!probe) { if (end === "l") run.l = r3(x + t.W); else run.r = r3(x); if (end === "l") c.i = k; else c.j = k; }
+        return box;
+      }
+      if (probe) return null; // only the current run, for the best fit
+      k += end === "l" ? 1 : -1;
     }
+    return null;
+  };
+  const order = { s: 0, n: 0 };
+  const placeAt = (u, band, box, t, e) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: order[band]++, m: !!(e && e.m), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras }));
+  if (SEQ) {
+    for (const band of ["s", "n"]) {
+      SEQ[band].forEach((e, k) => {
+        const u = unitOf(e), t = tOf(u, band);
+        if (t.D > depth[band] + 0.05) { order[band]++; return left.push({ u, why: `${u.name || "Unit"} is ${t.D.toFixed(2)} m deep from its entrance; the ${band === "s" ? "south" : "north"} side is ${depth[band].toFixed(2)} m` }); }
+        const end = p.corners && k % 2 ? "r" : "l";
+        const box = take(band, end, t) || take(band, end === "l" ? "r" : "l", t);
+        if (!box) { order[band]++; return left.push({ u, why: `no room left along the corridor for ${u.name || "a unit"}` }); }
+        placeAt(u, band, box, t, e);
+      });
+    }
+  } else {
+    // from the mix: at each end the next unit that still fits its run (so a smaller one takes a gap)
+    const rest = want.map((u) => ({ u, t: { n: tOf(u, "n"), s: tOf(u, "s") } }));
+    for (const q of rest) if (q.t.s.D > dS + 0.05 && q.t.n.D > dN + 0.05) { q.gone = true; left.push({ u: q.u, why: `${q.u.name || "Unit"} is ${q.t.s.D.toFixed(2)} m deep from its entrance; the corridor leaves ${Math.max(dN, dS).toFixed(2)} m` }); }
+    for (const band of ["s", "n"]) {
+      const ends = p.corners ? ["l", "r"] : ["l"], done = new Set();
+      let turnI = 0, guard = 0;
+      while (done.size < ends.length && guard++ < 500) {
+        const end = ends[turnI % ends.length]; turnI++;
+        if (done.has(end)) continue;
+        const c = cursor[band], k = end === "l" ? c.i : c.j;
+        if (k < 0 || k >= sides[band].length || c.i > c.j) { done.add(end); continue; }
+        const q = rest.find((z) => !z.gone && z.t[band].D <= depth[band] + 0.05 && take(band, end, z.t[band], true));
+        if (q) { const box = take(band, end, q.t[band]); placeAt(q.u, band, box, q.t[band]); q.gone = true; continue; }
+        // nothing fits this run from this end: on to the next run
+        if (end === "l") c.i++; else c.j--;
+        turnI--; // the same end again
+        if (c.i > c.j) done.add(end);
+      }
+    }
+    for (const q of rest) if (!q.gone) left.push({ u: q.u, why: `no room left along the corridor for ${q.u.name || "a unit"}` });
   }
-  for (const q of rest) if (!q.gone) left.push({ u: q.u, why: `no room left along the corridor for ${q.u.name || "a unit"}` });
+  // the flats at the plate's ends: corner units, their end wall a second façade
+  for (const q of placed) q.corner = q.x < 0.05 ? "w" : q.x + q.w > L - 0.05 ? "e" : "";
+  const cornerFac = placed.filter((q) => q.corner).reduce((s2, q) => s2 + q.h, 0);
+  const seqOut = { s: placed.filter((q) => q.band === "s").sort((a, b) => a.si - b.si).map((q) => ({ u: q.name, m: q.m })), n: placed.filter((q) => q.band === "n").sort((a, b) => a.si - b.si).map((q) => ({ u: q.name, m: q.m })) };
+  // those that did not fit stay in the edited floor (listed as not placed) so it still matches the mix
+  if (!SEQ) for (const q of left) seqOut.s.push({ u: q.u.name, m: false });
   // areas
   const plate = Math.abs(area(F.poly));
   const corrA = L * cw;
@@ -206,6 +263,7 @@ export function layout(o) {
   ];
   if (between != null) checks.push({ what: "Between the staircases", ok: between <= tr.between, text: `${between} m, at most ${tr.between} m (B11.3(b))` });
   return {
+    seq: SEQ ? { s: SEQ.s.map((e) => Object.assign({}, e)), n: SEQ.n.map((e) => Object.assign({}, e)) } : seqOut, edited: !!SEQ, note, cornerFac: r3(cornerFac),
     F, L: r3(L), D: r3(D), y0, y1, cw, core, placed, left, stairsX: xs.map(r3), lifts: lf, nL, nS, stairs: qs, checks,
     figures: {
       plate: r3(plate), units: placed.length, saleable: r3(sale), unitGfa: r3(unitGfa), corridor: r3(corrA), wideEx: r3(wideEx),

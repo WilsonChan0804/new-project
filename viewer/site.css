@@ -255,3 +255,22 @@ body.st-floors #st-tools, body.st-floors .st-find, body.st-floors #st-hits, body
 .ms-fig td:nth-child(2) { text-align: right; white-space: nowrap; font-weight: 600; }
 .ms-fig td:nth-child(3) { color: var(--muted); }
 .st-lbl { display: flex; flex-direction: column; gap: 3px; font-size: 12px; font-weight: 600; }
+/* plan zoom bar (units, floors) */
+.pz-bar { position: absolute; right: 10px; bottom: 36px; z-index: 6; display: flex; flex-direction: column; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 3px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.pz-bar button { min-width: 34px; height: 32px; border: 0; background: none; border-radius: 6px; font-size: 15px; padding: 0 6px; }
+.pz-bar button.on { background: var(--accent); color: #fff; }
+#st-fplan { touch-action: none; }
+.fl-pop { position: absolute; z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; max-width: 340px; }
+.fl-pop button { font-size: 12px; padding: 3px 8px; }
+.fl-u { cursor: grab; }
+body.st-planfull .st-side { display: none; }
+body.st-planfull .st-map-wrap { min-height: 100%; }
+@media (max-width: 760px) {
+  body.st-units .st-side, body.st-floors .st-side { max-height: 40%; }
+  body.st-units .st-map-wrap, body.st-floors .st-map-wrap { min-height: 60%; }
+  .un-bar { flex-wrap: nowrap; overflow-x: auto; left: 6px; right: 6px; top: 6px; max-width: none; -webkit-overflow-scrolling: touch; }
+  .un-bar button { padding: 6px 8px; white-space: nowrap; flex: none; }
+  .un-bar select { flex: none; max-width: 130px; }
+  .pz-bar { right: 6px; bottom: 30px; }
+  .pz-bar button { min-width: 36px; height: 34px; }
+}

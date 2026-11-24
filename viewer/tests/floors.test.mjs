@@ -46,5 +46,25 @@ ok(far.checks.some((c) => /Travel/.test(c.what) && !c.ok), "a 90 m slab with a m
 const ends = F.layout({ poly: [[0, 0], [90, 0], [90, 16], [0, 16]], mix: [{ u: TEMPLATES["2R-B"], n: 20 }], storeys: 20, core: "ends" });
 ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
 
+// editing the floor: the order along each side, swaps, mirrored units, corner units
+{
+  const poly = [[0, 0], [48, 0], [48, 16], [0, 16]];
+  const A = F.layout({ poly, mix, storeys: 30 });
+  const seq = JSON.parse(JSON.stringify(A.seq));
+  const B = F.layout({ poly, mix, storeys: 30, seq });
+  ok(B.edited && !B.note && JSON.stringify(B.placed.map((q) => [q.name, q.x])) === JSON.stringify(A.placed.map((q) => [q.name, q.x])), "the snapshot of the automatic floor lays out the same");
+  const sw = JSON.parse(JSON.stringify(seq)); [sw.s[0], sw.s[4]] = [sw.s[4], sw.s[0]];
+  const Cs = F.layout({ poly, mix, storeys: 30, seq: sw }), first = Cs.placed.find((q) => q.band === "s" && q.si === 0);
+  ok(first.name === seq.s[4].u && near(first.x, 0, 1e-6), "a swap: the fifth unit now first along the south side");
+  const mi = JSON.parse(JSON.stringify(seq)); mi.s[0].m = true;
+  const Mi = F.layout({ poly, mix, storeys: 30, seq: mi }), q0 = Mi.placed.find((q) => q.band === "s" && q.si === 0);
+  ok(q0.m && near(q0.fig.saleable, A.placed.find((q) => q.band === "s" && q.si === 0).fig.saleable, 1e-6) && near(Mi.figures.gfa, A.figures.gfa, 1e-6), "a mirrored unit: the same areas");
+  const rm = JSON.parse(JSON.stringify(seq)); rm.s.pop();
+  ok(/differs from the unit mix/.test(F.layout({ poly, mix, storeys: 30, seq: rm }).note), "one removed: the floor differs from the mix");
+  const Co = F.layout({ poly, mix, storeys: 30, corners: true }), sS = Co.placed.filter((q) => q.band === "s");
+  ok(sS.some((q) => near(q.x, 0, 1e-6) && q.corner === "w") && sS.some((q) => near(q.x + q.w, 48, 1e-6) && q.corner === "e") && Co.cornerFac > 0, "corner units: flats at both ends of the south side");
+  const Cq = F.layout({ poly, mix, storeys: 30, corners: true, seq: Co.seq });
+  ok(JSON.stringify(Cq.placed.map((q) => [q.name, q.x])) === JSON.stringify(Co.placed.map((q) => [q.name, q.x])), "corner units: the snapshot lays out the same");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

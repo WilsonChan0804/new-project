@@ -8,8 +8,10 @@ import * as U from "./unitcore.js";
 import { TEMPLATES } from "./unittables.js";
 import { api } from "./nav.js";
 import { toast } from "./tasks-util.js";
+import * as PZ from "./planzoom.js";
 
 const $ = (s, r = document) => r.querySelector(s);
+const cap = (el, ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic or finished pointer */ } };
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const f1 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 const f2 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -208,6 +210,8 @@ async function onClick(ev) {
 /* ---------- the plan, as a sales brochure: walls, doors, fixtures, labels */
 /* ---------- the plan, as a sales brochure: walls, windows, doors, fittings, labels, dimension chains */
 let SC = 60, OX = 40, OY = 40, BX = 0, BY = 0;
+const ZM = PZ.create(); // the plan's zoom and pan
+let ZFOR = null;        // the unit it is for
 let SEL = null;      // {t: "wall"|"door"|"win"|"fix", i | key}
 let TOOL = "select"; // select | door | window | split-x | split-y | room | fix:<kind>
 let ROOMK = "BR";     // the kind a drawn room gets
@@ -238,8 +242,11 @@ function drawPlan() {
   BX = Math.min(...xs); BY = Math.min(...ys);
   const W = Math.max(...xs) - BX, H = Math.max(...ys) - BY;
   const bw = host.clientWidth || 900, bh = host.clientHeight || 700;
-  SC = Math.max(20, Math.min((bw - 260) / W, (bh - 260) / H));
-  OX = (bw - W * SC) / 2; OY = (bh - H * SC) / 2 + 20;
+  // fit: a margin for the dimension chains and the tool bar, smaller on a phone; then the zoom and pan
+  const mg = Math.max(40, Math.min(130, 0.18 * Math.min(bw, bh))), top = Math.min(70, 30 + mg / 3);
+  const fit = Math.max(4, Math.min((bw - 2 * mg) / W, (bh - 2 * mg - top / 2) / H));
+  if (ZFOR !== store().sel) { PZ.reset(ZM); ZFOR = store().sel; }
+  ({ SC, OX, OY } = PZ.apply(ZM, fit, (bw - W * fit) / 2, (bh - H * fit) / 2 + top / 3, bw, bh));
   const sx = (x) => OX + (x - BX) * SC, sy = (y) => OY + (y - BY) * SC;
   const wall = +(u.wall ?? 0.15), pt = +(u.part ?? 0.075), party = +(u.party ?? 0.15);
   let g = "";
@@ -313,15 +320,16 @@ function drawPlan() {
   // the labels
   for (const r of u.rooms) {
     const k = U.KINDS[r.kind] || {}; if (!k.zh && !k.ab) continue;
-    const X = sx(r.x + r.w / 2), Y = sy(r.y + r.h / 2), w = r.w * SC, fs = Math.max(9, Math.min(13, w / 7)), lv = near && near.has(r.id);
+    const X = sx(r.x + r.w / 2), Y = sy(r.y + r.h / 2), w = r.w * SC, fs = Math.max(7, Math.min(13, w / 7, SC * 0.3)), lv = near && near.has(r.id);
     const no = r.name && /\d/.test(r.name) ? r.name.match(/\d+/)[0] : "";
-    g += `<text x="${X}" y="${Y - 4}" text-anchor="middle" font-size="${fs}" fill="#1f2a36" pointer-events="none">${esc(k.zh)}${no ? " " + no : ""}</text><text x="${X}" y="${Y + fs}" text-anchor="middle" font-size="${fs - 1}" fill="#1f2a36" pointer-events="none">${esc(k.ab)}${no}</text>
-      <text x="${X}" y="${Y + fs * 2 + 2}" text-anchor="middle" font-size="${lv ? fs : fs - 3}" font-weight="${lv ? 700 : 400}" fill="${lv ? "#b4520a" : "#5b6b7b"}" pointer-events="none">${f2(r.w)} × ${f2(r.h)}</text>`;
+    const small = r.h * SC < fs * 4.2;
+    g += `<text x="${X}" y="${small ? Y + fs / 3 : Y - 4}" text-anchor="middle" font-size="${fs}" fill="#1f2a36" pointer-events="none">${esc(k.zh)}${no ? " " + no : ""}</text>` + (small && !lv ? "" : `<text x="${X}" y="${Y + fs}" text-anchor="middle" font-size="${fs - 1}" fill="#1f2a36" pointer-events="none">${esc(k.ab)}${no}</text>
+      <text x="${X}" y="${Y + fs * 2 + 2}" text-anchor="middle" font-size="${lv ? fs : fs - 3}" font-weight="${lv ? 700 : 400}" fill="${lv ? "#b4520a" : "#5b6b7b"}" pointer-events="none">${f2(r.w)} × ${f2(r.h)}</text>`);
   }
   g += dims(u, f, sx, sy);
   if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f2(LIVE.d)} m</text>`;
   g += `<text x="${bw - 20}" y="${bh - 18}" text-anchor="end" font-size="11" fill="#6b7785">${esc(u.name || "")} · ${f.saleableFt} ft² · ${f1(f.saleable)} m²</text>`;
-  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${g}</svg>${toolbar()}${popup(u, f, sx, sy)}`;
+  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${g}</svg>${toolbar()}${popup(u, f, sx, sy, bw, bh)}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
 }
 
 /* the dimension chains: a tick at every wall line along each side, the room spans between, the overall outside */
@@ -331,18 +339,19 @@ function dims(u, f, sx, sy) {
   const ex = U.expandBays(u.extras || []);
   const ox0 = Math.min(x0, ...ex.map((q) => q.x)), ox1 = Math.max(x1, ...ex.map((q) => q.x + q.w)), oy0 = Math.min(y0, ...ex.map((q) => q.y)), oy1 = Math.max(y1, ...ex.map((q) => q.y + q.h));
   let g = "";
+  const DO = Math.max(14, Math.min(26, SC * 0.45)), dfs = Math.max(8, Math.min(10, SC * 0.22));
   const tick = (X, Y, v) => (v ? `<line x1="${X - 4}" y1="${Y + 4}" x2="${X + 4}" y2="${Y - 4}" stroke="#333" />` : `<line x1="${X - 4}" y1="${Y + 4}" x2="${X + 4}" y2="${Y - 4}" stroke="#333" />`);
   const chainH = (vals, Y) => {
     const v = [...new Set(vals.map((q) => +q.toFixed(3)))].sort((a, b) => a - b);
     g += `<line x1="${sx(v[0])}" y1="${Y}" x2="${sx(v[v.length - 1])}" y2="${Y}" stroke="#333" stroke-width="0.8" />`;
-    v.forEach((q, i) => { g += tick(sx(q), Y, true); if (i) { const L = q - v[i - 1]; if ((L * SC) > 18) g += `<text x="${(sx(q) + sx(v[i - 1])) / 2}" y="${Y - 4}" text-anchor="middle" font-size="10">${f2(L)}</text>`; } });
+    v.forEach((q, i) => { g += tick(sx(q), Y, true); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${(sx(q) + sx(v[i - 1])) / 2}" y="${Y - 3}" text-anchor="middle" font-size="${dfs}">${f2(L)}</text>`; } });
   };
   const chainV = (vals, X) => {
     const v = [...new Set(vals.map((q) => +q.toFixed(3)))].sort((a, b) => a - b);
     g += `<line x1="${X}" y1="${sy(v[0])}" x2="${X}" y2="${sy(v[v.length - 1])}" stroke="#333" stroke-width="0.8" />`;
-    v.forEach((q, i) => { g += tick(X, sy(q), false); if (i) { const L = q - v[i - 1]; if ((L * SC) > 18) g += `<text x="${X - 5}" y="${(sy(q) + sy(v[i - 1])) / 2}" text-anchor="middle" font-size="10" transform="rotate(-90 ${X - 5} ${(sy(q) + sy(v[i - 1])) / 2})">${f2(L)}</text>`; } });
+    v.forEach((q, i) => { g += tick(X, sy(q), false); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${X - 4}" y="${(sy(q) + sy(v[i - 1])) / 2}" text-anchor="middle" font-size="${dfs}" transform="rotate(-90 ${X - 4} ${(sy(q) + sy(v[i - 1])) / 2})">${f2(L)}</text>`; } });
   };
-  const top = sy(oy0) - 26, bot = sy(oy1) + 26, lef = sx(ox0) - 26, rig = sx(ox1) + 26;
+  const top = sy(oy0) - DO, bot = sy(oy1) + DO, lef = sx(ox0) - DO, rig = sx(ox1) + DO;
   if (mode === "chains") {
     chainH(R.filter((r) => Math.abs(r.y - y0) < e).flatMap((r) => [r.x, r.x + r.w]), top);
     chainH(R.filter((r) => Math.abs(r.y + r.h - y1) < e).flatMap((r) => [r.x, r.x + r.w]), bot);
@@ -350,7 +359,7 @@ function dims(u, f, sx, sy) {
     chainV(R.filter((r) => Math.abs(r.x + r.w - x1) < e).flatMap((r) => [r.y, r.y + r.h]), rig);
   }
   // overall
-  chainH([x0, x1], top - 22); chainV([y0, y1], rig + 22);
+  chainH([x0, x1], top - DO * 0.85); chainV([y0, y1], rig + DO * 0.85);
   return g;
 }
 
@@ -378,7 +387,7 @@ function toolbar() {
 }
 
 /* the small menu by what is selected */
-function popup(u, f, sx, sy) {
+function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
   if (!SEL || !C.can()) return "";
   let at = null, html = "";
   if (SEL.t === "wall") {
@@ -403,7 +412,9 @@ function popup(u, f, sx, sy) {
     at = [sx(x.x + x.w), sy(x.y)];
     html = `<b>${esc(FIXK[x.kind] || x.kind)}</b> <button type="button" data-pf="rot">⟳ Rotate 90°</button><label><input type="number" step="0.05" data-pfw value="${x.w}"> × <input type="number" step="0.05" data-pfh value="${x.h}"> m</label><button type="button" data-pf="del">Remove</button><small>drag to move</small>`;
   }
-  return at ? `<div class="un-pop" style="left:${Math.round(at[0] + 12)}px;top:${Math.round(at[1] + 12)}px">${html}</div>` : "";
+  if (!at) return "";
+  const pw = Math.min(360, bw - 16), L = Math.max(8, Math.min(at[0] + 12, bw - pw - 8)), T = Math.max(56, Math.min(at[1] + 12, bh - 150));
+  return `<div class="un-pop" style="left:${Math.round(L)}px;top:${Math.round(T)}px;max-width:${pw}px">${html}</div>`;
 }
 
 /* where a click on the plan is, in plan metres */
@@ -454,6 +465,7 @@ function wirePlan() {
   });
   host.addEventListener("click", (ev) => {
     const t = ev.target.closest("button"); const u = cur(); if (!t || !u) return;
+    if (t.dataset.pz) return PZ.barClick(ZM, t, host.getBoundingClientRect(), drawPlan);
     const d = t.dataset;
     if (d.tool) { TOOL = d.tool; SEL = null; return drawPlan(); }
     const f = U.figures(u);
@@ -470,7 +482,12 @@ function wirePlan() {
     if (d.pf) { if (d.pf === "rot") u.fixtures[SEL.i] = U.rotateFixture(u.fixtures[SEL.i]); if (d.pf === "del") { u.fixtures.splice(SEL.i, 1); SEL = null; } return changed(); }
   });
   host.addEventListener("pointerdown", (ev) => {
-    const t = ev.target, u0 = cur(); if (!u0 || ev.target.closest(".un-bar,.un-pop")) return;
+    const t = ev.target, u0 = cur(); if (!u0 || ev.target.closest(".un-bar,.un-pop,.pz-bar")) return;
+    // a second finger: whatever was being dragged goes back, and the two pinch the plan
+    if (PZ.down(ZM, ev)) {
+      if (drag) { if (drag.u0) { const st0 = store(); st0.list[st0.sel] = drag.u0; } drag = null; LIVE = null; }
+      cap(host, ev); ev.preventDefault(); drawPlan(); return;
+    }
     const u = ensure(u0), f = U.figures(u), P = toPlan(ev), can = C.can();
     // tools that click a room or a wall
     if (can && TOOL !== "select") {
@@ -490,7 +507,7 @@ function wirePlan() {
       }
       if (TOOL === "room") {
         drag = { kind: "newroom", P0: snapRoom(u, P), P1: null };
-        host.setPointerCapture(ev.pointerId); ev.preventDefault(); return;
+        cap(host, ev); ev.preventDefault(); return;
       }
       if (TOOL.startsWith("fix:") && t.dataset.rid) {
         const k = TOOL.slice(4), sz = { bath: [1.5, 0.7], shower: [0.9, 0.9], wc: [0.4, 0.65], basin: [0.5, 0.4], counter: [1.8, 0.6], sink: [0.6, 0.5], hob: [0.6, 0.5], wardrobe: [1.2, 0.6] }[k];
@@ -507,11 +524,17 @@ function wirePlan() {
       if (can && e) drag = { kind: "wall", e, key: e.key, x: ev.clientX, y: ev.clientY, u0: JSON.parse(JSON.stringify(u)), alt: ev.altKey, moved: false };
       else { SEL = { t: "wall", key: t.dataset.ek }; drawPlan(); }
     } else if (t.dataset.rid) { SELR = t.dataset.rid; SEL = null; render(); return; }
-    else { SEL = null; drawPlan(); return; }
-    if (drag) { host.setPointerCapture(ev.pointerId); ev.preventDefault(); }
+    else { drag = { kind: "pan", x: ev.clientX, y: ev.clientY, px: ZM.px, py: ZM.py, moved: false }; }
+    if (drag) { cap(host, ev); ev.preventDefault(); }
   });
   host.addEventListener("pointermove", (ev) => {
+    if (PZ.move(ZM, ev, host.getBoundingClientRect())) return drawPlan();
     if (!drag) return;
+    if (drag.kind === "pan") {
+      const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+      drag.moved = true; ZM.px = drag.px + dx; ZM.py = drag.py + dy; return drawPlan();
+    }
     const st = store(), P = toPlan(ev);
     if (drag.kind === "newroom") { drag.P1 = snapRoom(cur(), P); return roomPreview(drag); }
     if (drag.kind === "wall") {
@@ -537,6 +560,7 @@ function wirePlan() {
   const end = () => {
     if (!drag) return;
     const d = drag; drag = null; LIVE = null;
+    if (d.kind === "pan") { if (!d.moved) SEL = null; return drawPlan(); }
     if (d.kind === "newroom") {
       const u = cur(); if (!u || !d.P1) return drawPlan();
       const rect = { x: Math.min(d.P0[0], d.P1[0]), y: Math.min(d.P0[1], d.P1[1]), w: Math.abs(d.P1[0] - d.P0[0]), h: Math.abs(d.P1[1] - d.P0[1]) };
@@ -552,8 +576,12 @@ function wirePlan() {
     if (d.kind === "wall" && !d.moved) { SEL = { t: "wall", key: d.key }; return drawPlan(); }
     if (d.moved) changed(); else drawPlan();
   };
-  host.addEventListener("pointerup", end);
-  host.addEventListener("pointercancel", end);
+  host.addEventListener("pointerup", (ev) => { PZ.up(ZM, ev); end(); });
+  host.addEventListener("pointercancel", (ev) => { PZ.up(ZM, ev); end(); });
+  host.addEventListener("wheel", (ev) => {
+    if (ev.target.closest(".un-pop,.un-bar,.pz-bar")) return;
+    ev.preventDefault(); if (PZ.wheel(ZM, ev, host.getBoundingClientRect())) drawPlan();
+  }, { passive: false });
   document.addEventListener("keydown", (ev) => {
     if (!ON || ev.target.closest("input,select,textarea")) return;
     if (ev.key === "Escape") { TOOL = "select"; SEL = null; drawPlan(); }
