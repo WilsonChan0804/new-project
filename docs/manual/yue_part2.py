@@ -206,7 +206,7 @@ PART = [
         '**幾個進度表：** 工具列最左邊嘅名列出個 project 所有進度表（master programme、某一期、某個方案）。**+ New programme** 可以開一個空白嘅，或者複製而家開緊嗰個；改名同刪除都喺同一個選單（第一個唔可以刪；刪咗嘅會留喺 server）。每個都有自己嘅版本記錄、baseline 同顯示設定。',
         '**My programmes（唔屬於任何 project）：** 投標或者未入 viewer 嘅工作，可以開一個自己嘅進度表 - Projects 頁嘅 **My programmes**，或者進度表選單底部嘅 **+ New programme of my own**（空白，或者複製而家開緊嗰個）。佢係你嘅：**Share ...** 可以畀人睇或者改（或者全 office），佢哋喺 My programmes 會見到「shared by」你；只有你可以分享或者刪除。工作開始之後，**Copy into a project ...** 會複製一份去你有份嘅 project（你嗰份不變）。Task、link、日曆、baseline、格式、PDF 同 MS Project 全部一樣；送去 Tasks 同 chat 只限 project 嘅進度表。',
         '**里程碑旁邊顯示：** Set up > Format > **Beside the milestones** - 名稱、名稱加日期、淨係日期、負責人，或者乜都唔顯示；個別 row 自己嘅 label（右鍵 > Label beside the bar）優先。',
-        '**成個進度表移日期：** Set up > **Move the whole programme ...** - 輸入新開始日期，或者幾多個工作天（負數即係提早）：每個有自己開始日期（同 finish no earlier than 日期）嘅 task 都會移同樣工作天，有 link 嘅跟住 link，baseline 不變。喺工作日曆改 **Project start** 都會問你係咪一齊移。總工期好長通常即係有一個 task 好遠 - 按 Start 或者 Finish 排序就搵到。',
+        '**成個進度表移日期：** Set up > **Move the whole programme ...** - 輸入新開始日期，或者幾多個工作天（負數即係提早）：每個有自己開始日期（同 finish no earlier than 日期）嘅 task 都會移同樣工作天，有 link 嘅跟住 link，baseline 不變。喺工作日曆改 **Project start** 都會問你係咪一齊移。摘要嘅 START 同 FINISH 係第一個 task 嘅開始同最後一個 task 嘅完成（撳一下就跳去嗰個 task），工期就係兩者之間；如果 Set up 嘅 Project start 遠早過第一個 task，下面會有提示，可以 **Use the first task\'s date** 或者 **Clear it** - Project start 只係用嚟放冇自己日期、冇 link 嘅 task。',
         '**Finish no earlier than**（Properties）：工序唔可以早過呢日完成，例如 handover 或者批文日期，即係 MS Project 嘅 FNET。拖 bar 會清走呢個日期（bar 會留喺你放嘅位置）。',
         '**Export > CSV** 用 Excel 開（中文照顯示）。**Import** 亦讀 CSV - 我哋自己嘅，或者由 Excel、MS Project 存出嚟嘅（Name、Duration、Start、Predecessors、Outline Level ...）- 取代成個進度表或者加喺後面。',
         '**Set up > Earlier versions** 列出最近 30 次儲存；有需要可以攞返舊版。',

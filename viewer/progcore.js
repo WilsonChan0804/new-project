@@ -272,8 +272,13 @@ export function schedule(tasks, calendar, opts = {}) {
   for (const t of tasks) {
     for (const d of t.deps || []) if (!idx.has(d.from)) errors.push({ kind: "missing", message: `${t.name || "A task"}: its predecessor is gone` });
   }
+  // the tasks' own first start and last finish (the project start above may be earlier than any task)
+  let fi = null, li = null;
+  for (const i of leaves) { if (fi === null || es[i] < es[fi]) fi = i; if (li === null || ef[i] >= ef[li]) li = i; }
+  const first = fi === null ? cal.isoAt(projStart) : rows[fi].start, last = li === null ? cal.isoAt(projStart) : rows[li].finish;
+  const span = fi === null ? 0 : Math.max(0, ef[li] - es[fi]);
   return { rows, links: [...seen].length, start: cal.isoAt(projStart), finish: pf > projStart ? cal.isoAt(pf - 1) : cal.isoAt(projStart),
-    days: pf - projStart, errors, cal, succs, preds };
+    days: pf - projStart, first, last, span, firstId: fi === null ? null : tasks[fi].id, lastId: li === null ? null : tasks[li].id, errors, cal, succs, preds };
 }
 
 /* ---------------------------------------------------------- predecessors */

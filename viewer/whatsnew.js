@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-16", date: "25 Nov 2026",
+    items: [
+      "**Programme START, FINISH and duration come from the tasks** - they were measured from Set up's **Project start**, so an old project start (e.g. 2021) gave a START no task has and a far too long duration. Now START is the first task's start, FINISH the last task's finish (click either to go to that task), and a note says when the Project start is well before the first task, with **Use the first task's date** or **Clear it**.",
+    ],
+  },
+  {
     version: "2027-03-15", date: "25 Nov 2026",
     items: [
       "**My programmes** - programmes of your own, not in a project: for a tender or a job that is not in the viewer yet. Open them from **My programmes** on the Projects page, or the programme picker (☰ beside the Task button): **+ New programme of my own** (empty or a copy of the one open), **Share …** with people (view or edit) or everyone in the office, **Copy into a project …** when the job starts. Everything else - tasks, links, calendar, baselines, PDF, MS Project - works the same.",

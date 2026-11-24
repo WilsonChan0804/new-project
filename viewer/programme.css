@@ -222,3 +222,5 @@ body.pg-props-on .pg-body { padding-right: 360px; }
 .pg-share { max-height: 320px; overflow: auto; display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .pg-share-r { display: flex !important; flex-direction: row !important; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding-top: 4px; }
 .pg-share-r select { width: auto; }
+#pg-sum .pg-warn-start { flex-basis: 100%; color: #9a6700; font-size: 12px; display: flex !important; flex-direction: row !important; gap: 8px; align-items: center; justify-content: flex-start; flex-wrap: wrap; text-align: left; }
+#pg-sum .pg-warn-start button { display: inline-block !important; width: auto; font-size: 12px; padding: 2px 8px; border: 1px solid #d9b86a; border-radius: 6px; }

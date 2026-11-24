@@ -106,5 +106,11 @@ const im = fromCsv(msp);
 ok(im.tasks.length === 4 && im.tasks[1].level === 1 && im.tasks[3].kind === "milestone" && im.tasks[3].deps[0].lag === 2 && im.tasks[1].start === "2027-03-01", "an MS Project CSV: outline levels, days, dates, lags");
 ok(isoFromText("05-Jun-19") === "2019-06-05" && isoFromText("6/3/2019") === "2019-03-06", "dates as text, day first");
 
+// a project start years before every task: START / FINISH / duration from the tasks themselves
+{
+  const T = [{ id: "a", name: "Tender", dur: 10, start: "2027-01-04" }, { id: "b", name: "Award", dur: 0, kind: "milestone", deps: [{ from: "a", type: "FS" }] }];
+  const s = schedule(T, wk, { start: "2021-01-11" });
+  ok(s.start === "2021-01-11" && s.first === "2027-01-04" && s.firstId === "a" && s.lastId === "b" && s.span === 10 && s.days > 1000, `project start 2021, tasks 2027: first ${s.first}, span ${s.span} d (from the project start ${s.days} d)`);
+}
 console.log(`${n - fails}/${n} passed`);
 if (fails) { console.log("FAILED"); process.exit(1); } else console.log("all passed");

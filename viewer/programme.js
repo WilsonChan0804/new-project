@@ -282,14 +282,26 @@ function paintSum() {
     if (v && v.finish) slip = `<span class="${v.finish > 0 ? "pg-bad" : "pg-ok"}">${v.finish > 0 ? "+" : ""}${v.finish} d against ${esc(b.name)}</span>`;
   }
   $("#pg-sum").innerHTML = !tasks().length ? "" :
-    `<span><small>Start</small><b>${fmtLong(s.start)}</b></span><span><small>Finish</small><b>${fmtLong(s.finish)}</b></span>`
-    + `<span><small>Duration</small><b>${s.days} working days</b></span><span><small>Tasks</small><b>${n}</b></span>`
+    `<span><small>Start</small><b><a href="#" id="pg-first" title="The task that starts first - click to go to it">${fmtLong(s.first)}</a></b></span><span><small>Finish</small><b><a href="#" id="pg-last" title="The task that finishes last - click to go to it">${fmtLong(s.last)}</a></b></span>`
+    + `<span><small>Duration</small><b>${s.span} working days</b></span><span><small>Tasks</small><b>${n}</b></span>`
     + `<span><small>Critical</small><b class="${crit ? "pg-crit-t" : ""}">${crit}</b></span>`
     + `<span><small>Status date</small><b><a href="#" id="pg-status">${status ? fmtLong(status) : "set"}</a></b></span>`
     + (late ? `<span><small>Behind</small><b class="pg-bad">${late}</b></span>` : "")
     + (slip ? `<span><small>Finish variance</small><b>${slip}</b></span>` : "")
     + (s.errors.length ? `<span class="pg-err" title="${esc(s.errors.map((e) => e.message).join("\n"))}">&#9888; ${esc(s.errors[0].message.slice(0, 120))}</span>` : "")
     + `<span class="pg-cal muted">${esc(PC.WEEKS[P.d.calendar.week])}${P.d.calendar.hk && P.d.calendar.week !== "all" ? " · HK holidays" : ""}</span>`;
+  // a project start (Set up) well before every task: the reason for an odd START before
+  const ps = P.d.cover.start;
+  if (tasks().length && ps && P.cal && s.first && ps < s.first && (P.cal.between(ps, s.first) || 0) > 5) {
+    const yrs = (PC.dayOf(s.first) - PC.dayOf(ps)) / 365.25;
+    $("#pg-sum").innerHTML += `<span class="pg-warn-start">&#9888; Project start (Set up) is ${esc(fmtLong(ps))}, ${yrs >= 1 ? Math.round(yrs) + " year" + (Math.round(yrs) === 1 ? "" : "s") : P.cal.between(ps, s.first) + " working days"} before the first task (${esc(fmtLong(s.first))}): tasks without a date or link would start then.
+      ${canSet() ? `<button type="button" class="ghost" data-ps="first">Use the first task's date</button><button type="button" class="ghost" data-ps="clear">Clear it</button>` : ""}</span>`;
+  }
+  for (const b of $("#pg-sum").querySelectorAll("[data-ps]")) b.onclick = () => { before(); P.d.cover.start = b.dataset.ps === "first" ? s.first : ""; changed(); toast(b.dataset.ps === "first" ? "Project start set to the first task's date" : "Project start cleared"); };
+  const go1 = (id) => { if (!id) return; const shut = new Set(P.view.collapsed || []); let changedV = false; for (const r of s.rows) if (r.summary && shut.has(r.id) && rowOf(id) && r.wbs && String(rowOf(id).wbs).startsWith(r.wbs + ".")) { shut.delete(r.id); changedV = true; } if (changedV || P.view.level) { P.view.collapsed = [...shut]; P.view.level = 0; saveView(); recalc(); render(); } select(id, null, true); scrollToDay(rowOf(id).start); };
+  const a1 = $("#pg-first"), a2 = $("#pg-last");
+  if (a1) a1.onclick = (ev) => { ev.preventDefault(); go1(s.firstId); };
+  if (a2) a2.onclick = (ev) => { ev.preventDefault(); go1(s.lastId); };
   const st = $("#pg-status");
   if (st) st.onclick = (ev) => { ev.preventDefault(); statusDate(st); };
 }
@@ -1341,7 +1353,7 @@ async function calendarDlg() {
     const m = /^(\d{4}-\d{2}-\d{2})(?:\s*(?:\.\.|to|-)\s*(\d{4}-\d{2}-\d{2}))?\s*(.*)$/.exec(x);
     return m ? { from: m[1], to: m[2] || m[1], name: m[3].slice(0, 80) } : null;
   }).filter(Boolean);
-  const was = P.sched && P.sched.start, nowStart = f.start.value || "";
+  const was = P.sched && (P.d.cover.start || P.sched.first), nowStart = f.start.value || "";
   P.d.calendar = { week: f.week.value, hk: f.hk.checked, holidays: hol, off };
   // the whole programme with its start: the dated tasks by the same working days
   if (f.moveall.checked && nowStart && was && nowStart !== (P.d.cover.start || "") && P.cal) {
@@ -1363,8 +1375,8 @@ function shiftAll(d) {
 }
 async function moveAllDlg() {
   if (!canSet()) return toast("Only a member can move the programme", true);
-  const s0 = P.sched && P.sched.start;
-  const f = await modal("Move the whole programme", `<p class="muted">Now it starts ${esc(fmtLong(s0))} and finishes ${esc(fmtLong(P.sched.finish))} (${P.sched.days} working days).</p>
+  const s0 = P.sched && P.sched.first;
+  const f = await modal("Move the whole programme", `<p class="muted">Now it starts ${esc(fmtLong(s0))} and finishes ${esc(fmtLong(P.sched.last))} (${P.sched.span} working days).</p>
     <label>New start date<input type="date" name="to" value="${esc(s0 || "")}"></label>
     <label>or move by (working days, minus for earlier)<input type="number" name="by" step="1" placeholder="e.g. 10 or -5"></label>
     <p class="muted">Every task with its own date moves by the same working days; linked tasks follow their links. Baselines stay as they were.</p>`, "Move");
@@ -1604,7 +1616,7 @@ async function pdfDlg() {
   const f = await modal("PDF for the client", `
     <div class="pg-2"><label>Paper<select name="paper"><option>A3</option><option>A4</option><option>A1</option></select></label>
       <label>Orientation<select name="orient"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label></div>
-    <div class="pg-2"><label>From<input type="date" name="from" value="${P.sched.start}"></label><label>To<input type="date" name="to" value="${P.sched.finish}"></label></div>
+    <div class="pg-2"><label>From<input type="date" name="from" value="${P.sched.first}"></label><label>To<input type="date" name="to" value="${P.sched.last}"></label></div>
     <label>Baseline<select name="base"><option value="">None</option>${P.d.baselines.map((b) => `<option value="${esc(b.id)}"${b.id === P.view.baseline ? " selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label>
     <label class="row-check"><input type="checkbox" name="crit"${P.view.critical ? " checked" : ""}> Critical path in red</label>
     <label class="row-check"><input type="checkbox" name="links"${P.view.links ? " checked" : ""}> Links (arrows)</label>
