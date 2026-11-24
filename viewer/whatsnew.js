@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-09", date: "24 Nov 2026",
+    items: [
+      "**Unit editor**: dimension chains on every side (each room's span and the overall), and while you drag a wall the two rooms' new sizes and the distance show live. Tools over the plan: **+ Door**, **+ Window**, **✂ Split** a room (a new wall), **+ Fitting**; click a wall to **delete it** (or put it back), **join** the rooms, give it its own thickness or façade; click a door to **flip** its hinge or swing and drag it along the wall; click a fitting to **rotate** it 90° (R) or move it.",
+      "**Walls**: external 100 mm and partitions 75 mm by default, each changeable. **Façades** per external wall: RC with windows, **curtain wall** (PNAP APP-2: its projection not GFA) or **precast façade** (JPN 2: up to 150 mm exempt, under the 10% cap).",
+      "**Balcony, UP and A/C platform as one bay** (each still counted by its own rule). **Update in the office library** or **Save as new** after editing.",
+    ],
+  },
+  {
     version: "2027-03-08", date: "24 Nov 2026",
     items: [
       "**Units drawn as real plans** - rooms are now placed freely on a 50 mm grid, so a unit can have the stepped outline of a real flat; drawn like a sales brochure: thick external walls, partitions, door swings, bath, WC and kitchen counter, open kitchens without a wall, and bilingual labels (客/飯廳 LIV./DIN., 主人睡房 M.B.R. ...).",

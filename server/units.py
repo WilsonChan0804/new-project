@@ -42,11 +42,11 @@ def _write(core, data):
 
 
 def clean_unit(u):
-    if not isinstance(u, dict) or not isinstance(u.get("rows"), list) or not u["rows"]:
-        raise HTTPException(status_code=400, detail="A unit is rows of rooms")
+    if not isinstance(u, dict) or not ((isinstance(u.get("rooms"), list) and u["rooms"]) or (isinstance(u.get("rows"), list) and u["rows"])):
+        raise HTTPException(status_code=400, detail="A unit is rooms")
     if len(json.dumps(u)) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="The unit is too big")
-    out = {k: u[k] for k in ("name", "type", "wall", "party", "part", "left", "right", "corridor", "rows", "extras", "note") if k in u}
+    out = {k: u[k] for k in ("name", "type", "wall", "party", "part", "left", "right", "corridor", "rows", "rooms", "doors", "windows", "fixtures", "walls", "extras", "facade", "facadeType", "partySides", "src", "ft2", "note") if k in u}
     out["name"] = str(out.get("name") or "Unit")[:80]
     return out
 

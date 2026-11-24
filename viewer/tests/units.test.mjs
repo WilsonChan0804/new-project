@@ -35,5 +35,40 @@ ok(conv.rooms.length === 3 && near(U.figures(conv).area, 4.0 * (2.5 + 3), 1e-9),
 // warnings
 const narrow = U.moveLine(TEMPLATES["2R-B"], "x", TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").w, -0.8, TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").y, 99);
 ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 2\.1/.test(w)), "a bedroom narrowed under 2.1 m warns");
+// round 2: deleted walls, split / join, own thickness, the bay, defaults, windows
+{
+  const T = JSON.parse(JSON.stringify(TEMPLATES["2R-B"]));
+  ok(T.wall === 0.1 && T.part === 0.075, "templates: external 100 mm, partitions 75 mm");
+  const f0 = U.figures(T), e = f0.edges.find((q) => q.kind === "part" && !U.isOpen(T, q));
+  T.walls = { [e.key]: { open: true } };
+  const f1 = U.figures(T);
+  ok(near(f1.area, f0.area, 1e-9) && f1.internal > f0.internal && U.isOpen(T, f1.edges.find((q) => q.key === e.key)), "a deleted partition: same area, more usable floor");
+  T.walls = { [e.key]: { t: 0.2 } };
+  ok(U.figures(T).internal < f0.internal, "a thicker partition: less usable floor");
+  const sp = U.splitRoom(TEMPLATES["2R-B"], "l", "x", 1.5);
+  const fs = U.figures(sp);
+  ok(sp.rooms.length === TEMPLATES["2R-B"].rooms.length + 1 && near(fs.area, f0.area, 1e-9) && fs.edges.filter((q) => q.kind === "part").length > f0.edges.filter((q) => q.kind === "part").length, "split the living room: one more room and partition, the same area");
+  const jn = U.joinRooms(sp, "l", sp.rooms.find((r) => r.id.startsWith("ls")).id);
+  ok(jn && jn.rooms.length === TEMPLATES["2R-B"].rooms.length && near(U.figures(jn).area, f0.area, 1e-9), "join them back");
+  const bayU = { wall: 0.15, part: 0.075, party: 0.15, rooms: [R("a", "LD", 0, 0, 4, 3)], extras: [{ kind: "bay", x: 4, y: 0, w: 1.2, h: 3.55, parts: [{ kind: "bal", len: 1.7 }, { kind: "up", len: 1.25 }, { kind: "acp", len: 0.6 }] }] };
+  const sepU = Object.assign({}, bayU, { extras: [{ kind: "bal", x: 4, y: 0, w: 1.2, h: 1.7 }, { kind: "up", x: 4, y: 1.7, w: 1.2, h: 1.25 }, { kind: "acp", x: 4, y: 2.95, w: 1.2, h: 0.6 }] });
+  const fb = U.figures(bayU), fsep = U.figures(sepU);
+  ok(near(fb.saleable, fsep.saleable, 1e-9) && near(fb.gfa, fsep.gfa, 1e-9) && near(fb.acpFree, fsep.acpFree, 1e-9), "a combined bay counts as its parts would");
+  const nw = JSON.parse(JSON.stringify(TEMPLATES["2R-B"])); nw.windows = nw.windows.filter((w) => w.room !== "r");
+  ok(U.figures(nw).warn.some((w) => /Bedroom 1: no window/.test(w)), "a bedroom without its window warns");
+  const fx = U.rotateFixture({ kind: "counter", x: 0, y: 0, w: 2, h: 0.6, rot: 0 });
+  ok(near(fx.w, 0.6, 1e-9) && near(fx.h, 2, 1e-9) && fx.rot === 90 && near(fx.x + fx.w / 2, 1, 1e-9), "rotating a counter 90° about its centre");
+}
+// façades: a curtain wall's projection is not GFA; a precast wall's thickness up to 150 mm exempt under the cap
+{
+  const T = JSON.parse(JSON.stringify(TEMPLATES["2R-B"])), f0 = U.figures(T);
+  const e = f0.edges.find((q) => q.kind === "ext" && q.a === "m" && q.face === "w");
+  T.walls = { [e.key]: { f: "cw" } };
+  const fc = U.figures(T);
+  ok(near(fc.cwEx, e.len * 0.15 / 2, 1e-3) && near(fc.gfa, U.figures(Object.assign({}, T, { walls: { [e.key]: { t: 0.15 } } })).gfa - e.len * 0.075, 2e-3), "a curtain wall 150 mm: its outer half not GFA, outside the cap");
+  T.walls = { [e.key]: { f: "pc" } };
+  const fp = U.figures(T);
+  ok(near(fp.pcEx, e.len * 0.15, 1e-3) && fp.capped > f0.capped, "a precast wall 150 mm: its thickness exempt, under the cap");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

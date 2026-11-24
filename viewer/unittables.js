@@ -3,9 +3,9 @@
  * brochure's. Rooms are rectangles to the wall centrelines (m, x to the
  * right, y down the page); `facade` is the window side, `partySides` the
  * sides on other units. Adjust them to the project. */
-import { scaleTo, fromRows } from "./unitcore.js";
+import { scaleTo, fromRows, genWindows, genFixtures } from "./unitcore.js";
 
-const base = { wall: 0.2, party: 0.2, part: 0.1 };
+const base = { wall: 0.1, party: 0.15, part: 0.075 };
 const R = (id, kind, name, x, y, w, h) => ({ id, kind, name, x, y, w, h });
 
 const RAW = {
@@ -14,7 +14,7 @@ const RAW = {
     facade: "e", partySides: ["w", "s"],
     rooms: [R("k", "OKIT", "Open kitchen", 0, 0, 1.6, 2.4), R("l", "LD", "Living / dining", 1.6, 0, 3.6, 2.4),
       R("b", "BATH", "Bath", 0.5, 2.4, 1.6, 1.8), R("h", "LOBBY", "", 2.1, 2.4, 0.9, 1.0), R("m", "MBR", "Master bedroom", 3.0, 2.4, 2.2, 2.2)],
-    extras: [{ kind: "bal", x: 5.2, y: 0, w: 1.2, h: 1.7 }, { kind: "up", x: 5.2, y: 1.7, w: 1.2, h: 1.25 }, { kind: "acp", x: 5.2, y: 2.95, w: 1.2, h: 0.6 }, { kind: "pd", x: 5.2, y: 3.55, w: 0.4, h: 0.4 }],
+    extras: [{ kind: "bay", x: 5.2, y: 0, w: 1.2, h: 3.55, parts: [{ kind: "bal", len: 1.7 }, { kind: "up", len: 1.25 }, { kind: "acp", len: 0.6 }] }, { kind: "pd", x: 5.2, y: 3.55, w: 0.4, h: 0.4 }],
     doors: [{ room: "l", side: "n", at: 0.3, w: 0.9, entry: true }, { room: "b", side: "e", at: 0.2, w: 0.75 }, { room: "m", side: "w", at: 0.1, w: 0.8 }],
   }),
   "1R-E": Object.assign({}, base, {
@@ -31,7 +31,7 @@ const RAW = {
     rooms: [R("m", "MBR", "Master bedroom", 0, 0, 2.6, 2.6), R("b", "BATH", "Bath 1", 2.6, 0, 1.4, 1.9), R("h", "LOBBY", "", 2.6, 1.9, 1.4, 0.7),
       R("e", "LOBBY", "", 4.0, 1.3, 0.9, 1.3), R("l", "LD", "Living / dining", 0, 2.6, 3.0, 2.4), R("k", "OKIT", "Open kitchen", 3.0, 2.6, 1.9, 2.0),
       R("r", "BR", "Bedroom 1", 0, 5.0, 2.6, 2.3)],
-    extras: [{ kind: "bal", x: -1.2, y: 2.6, w: 1.2, h: 1.7 }, { kind: "up", x: -1.2, y: 4.3, w: 1.2, h: 1.25 }, { kind: "acp", x: -1.2, y: 5.55, w: 1.2, h: 0.6 }],
+    extras: [{ kind: "bay", x: -1.2, y: 2.6, w: 1.2, h: 3.55, parts: [{ kind: "bal", len: 1.7 }, { kind: "up", len: 1.25 }, { kind: "acp", len: 0.6 }] }],
     doors: [{ room: "e", side: "e", at: 0.2, w: 0.9, entry: true }, { room: "m", side: "e", at: 1.9, w: 0.8 }, { room: "b", side: "s", at: 0.3, w: 0.75 }, { room: "r", side: "n", at: 1.7, w: 0.8 }],
   }),
   "3R-A": Object.assign({}, base, {
@@ -40,7 +40,7 @@ const RAW = {
     rooms: [R("r1", "BR", "Bedroom 1", 0, 0, 2.4, 2.8), R("b", "BATH", "Bath", 2.4, 0, 1.5, 2.0), R("k", "OKIT", "Open kitchen", 3.9, 0, 1.8, 2.0),
       R("e", "LOBBY", "", 5.7, 0, 1.5, 2.0), R("h", "LOBBY", "", 2.4, 2.0, 2.6, 0.8), R("l", "LD", "Living / dining", 5.0, 2.0, 2.2, 3.2),
       R("m", "MBR", "Master bedroom", 0.3, 2.8, 2.6, 2.6), R("r2", "BR", "Bedroom 2", 2.9, 2.8, 2.1, 2.4)],
-    extras: [{ kind: "bal", x: 5.6, y: 5.2, w: 1.6, h: 1.4, splay: 0.6 }, { kind: "up", x: 4.4, y: 5.2, w: 1.2, h: 1.25 }, { kind: "acp", x: 0.6, y: 5.4, w: 2.0, h: 0.6 }, { kind: "pd", x: 4.0, y: 5.2, w: 0.4, h: 0.4 }],
+    extras: [{ kind: "bay", x: 4.4, y: 5.2, w: 2.8, h: 1.4, splay: 0.6, parts: [{ kind: "up", len: 1.2 }, { kind: "bal", len: 1.6 }] }, { kind: "acp", x: 0.6, y: 5.4, w: 2.0, h: 0.6 }, { kind: "pd", x: 4.0, y: 5.2, w: 0.4, h: 0.4 }],
     doors: [{ room: "e", side: "n", at: 0.3, w: 0.9, entry: true }, { room: "r1", side: "e", at: 2.1, w: 0.8 }, { room: "b", side: "s", at: 0.4, w: 0.75 }, { room: "m", side: "n", at: 2.0, w: 0.8 }, { room: "r2", side: "n", at: 0.6, w: 0.8 }],
   }),
   "3R-B": Object.assign({}, base, {
@@ -49,7 +49,7 @@ const RAW = {
     rooms: [R("k", "OKIT", "Open kitchen", 0, 0, 2.0, 1.8), R("e", "LOBBY", "", 2.0, 0, 1.0, 1.8), R("l", "LD", "Living / dining", 0, 1.8, 3.0, 3.4),
       R("b", "BATH", "Bath", 3.0, 0.4, 1.6, 1.8), R("h", "LOBBY", "", 3.0, 2.2, 4.2, 0.8),
       R("r2", "BR", "Bedroom 2", 3.0, 3.0, 2.1, 2.2), R("r1", "BR", "Bedroom 1", 5.1, 3.0, 2.1, 2.2), R("m", "MBR", "Master bedroom", 7.2, 2.2, 2.5, 3.0)],
-    extras: [{ kind: "roof", x: 3.0, y: 5.2, w: 6.7, h: 1.0 }, { kind: "bal", x: 0, y: 5.2, w: 1.6, h: 1.3 }, { kind: "up", x: 1.6, y: 5.2, w: 1.2, h: 1.25 }, { kind: "acp", x: 0, y: 6.5, w: 1.4, h: 0.6 }],
+    extras: [{ kind: "roof", x: 3.0, y: 5.2, w: 6.7, h: 1.0 }, { kind: "bay", x: 0, y: 5.2, w: 3.0, h: 1.3, parts: [{ kind: "bal", len: 1.6 }, { kind: "up", len: 1.2 }, { kind: "acp", len: 0.6 }] }],
     doors: [{ room: "e", side: "n", at: 0.05, w: 0.9, entry: true }, { room: "b", side: "s", at: 0.4, w: 0.75 }, { room: "r2", side: "n", at: 1.1, w: 0.8 }, { room: "r1", side: "n", at: 1.1, w: 0.8 }, { room: "m", side: "w", at: 0.1, w: 0.8 }],
   }),
 };
@@ -65,5 +65,6 @@ const STUDIO = fromRows(Object.assign({}, base, {
 STUDIO.doors = [{ room: "r1", side: "n", at: 0.3, w: 0.75 }, { room: "r2", side: "n", at: 0.6, w: 0.9, entry: true }];
 STUDIO.src = "a compact studio";
 
-export const TEMPLATES = Object.assign({ studio: STUDIO },
-  Object.fromEntries(Object.entries(RAW).map(([k, t]) => [k, scaleTo(t, t.ft2)])));
+const finish = (t) => { t.windows = genWindows(t); t.fixtures = genFixtures(t); return t; };
+export const TEMPLATES = Object.assign({ studio: finish(STUDIO) },
+  Object.fromEntries(Object.entries(RAW).map(([k, t]) => [k, finish(scaleTo(t, t.ft2))])));

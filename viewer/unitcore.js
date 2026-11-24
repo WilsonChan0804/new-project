@@ -45,13 +45,19 @@ export const RULES = {
   up: { min: 1.5, share: 0.5, max: 0.75, src: "JPN 2 para 1(b)(ii)-(v)" },
   acp: { depth: 0.75, src: "PNAP APP-19 para 3(b), (c); APP-151 items 28, 29" },
 };
+/* the façade of an external wall: RC with windows, curtain wall, precast (NSPEW) */
+export const FACADES = {
+  rc: { label: "RC wall with windows", t: null },
+  cw: { label: "Curtain wall", t: 0.15, src: "PNAP APP-2 para 6: projecting not more than 200 mm (domestic) from the structure, disregarded from GFA and SC; at least a 300 mm RC dwarf wall" },
+  pc: { label: "Precast façade (NSPEW)", t: 0.15, max: 0.15, src: "JPN 2 / APP-151 item 11: non-structural prefabricated external wall, its thickness up to 150 mm exempted, under the 10% cap" },
+};
 const n = (x, d = 0) => (x === "" || x == null || isNaN(Number(x)) ? d : Number(x));
 const EPS = 1e-6;
 
 /* the first form (rows of rooms) as rooms on the plan */
 export function fromRows(u) {
   if (!u || !Array.isArray(u.rows)) return u;
-  const pt = n(u.part, 0.1), rooms = [];
+  const pt = n(u.part, 0.075), rooms = [];
   const rowW = u.rows.map((r) => (r.rooms || []).reduce((s, q) => s + n(q.w), 0) + Math.max(0, (r.rooms || []).length - 1) * pt);
   const W = Math.max(0, ...rowW);
   let y = 0, k = 0;
@@ -111,12 +117,19 @@ export function edges(u) {
       if (T && B) push({ x1, y1: y, x2, y2: y, kind: "part", face: "", a: T.id, b: B.id });
       else push({ x1, y1: y, x2, y2: y, kind: party.has(T ? "s" : "n") ? "party" : "ext", face: T ? "s" : "n", a: (T || B).id, b: null });
     }
-  return out.map((e) => Object.assign(e, { len: Math.hypot(e.x2 - e.x1, e.y2 - e.y1) }));
+  const W = u.walls || {};
+  return out.map((e) => {
+    const key = e.kind === "part" ? [e.a, e.b].sort().join("|") : e.a + ":" + e.face;
+    const o = W[key] || {};
+    return Object.assign(e, { len: Math.hypot(e.x2 - e.x1, e.y2 - e.y1), key, t: o.t != null && o.t !== "" ? Number(o.t) : null, removed: !!o.open });
+  });
 }
 
 /* an open kitchen and the living room share no wall */
 export function isOpen(u, e) {
   if (e.kind !== "part") return false;
+  if (e.removed) return true;
+  if (u.walls && u.walls[e.key] && u.walls[e.key].open === false) return false;
   const ka = (u.rooms.find((r) => r.id === e.a) || {}).kind, kb = (u.rooms.find((r) => r.id === e.b) || {}).kind;
   const k = [ka, kb].sort().join("+");
   return k === "LD+OKIT" || k === "LD+LOBBY" || (u.open || []).includes([e.a, e.b].sort().join("+"));
@@ -125,16 +138,27 @@ export function isOpen(u, e) {
 export function figures(u0) {
   const u = u0 && u0.rows ? fromRows(u0) : u0;
   const rooms = u.rooms || [];
-  const wall = n(u.wall, 0.2), party = n(u.party, 0.2), pt = n(u.part, 0.1);
+  const wall = n(u.wall, 0.1), party = n(u.party, 0.15), pt = n(u.part, 0.075);
   const area = rooms.reduce((s, r) => s + n(r.w) * n(r.h), 0); // the rooms tile: no overlaps
   const E = edges(u);
   const extL = E.filter((e) => e.kind === "ext").reduce((s, e) => s + e.len, 0);
   const partyL = E.filter((e) => e.kind === "party").reduce((s, e) => s + e.len, 0);
   const partL = E.filter((e) => e.kind === "part" && !isOpen(u, e)).reduce((s, e) => s + e.len, 0);
   // to the outside of the external walls (the outline grown by half the wall; the corners add 4 small squares), to the middle of party walls
-  const enclosed = area + extL * wall / 2 + 4 * (wall / 2) ** 2 * (extL > 0 ? 1 : 0);
-  const internal = Math.max(0, area - extL * wall / 2 - partyL * party / 2 - partL * pt / 2);
-  const ex = (u.extras || []).map((e) => Object.assign({ area: e.splay ? n(e.w) * n(e.h) - n(e.splay) ** 2 / 2 : n(e.w) * n(e.h) }, e));
+  // each external wall at its thickness and façade
+  const facOf = (e) => ((u.walls || {})[e.key] || {}).f || u.facadeType || "rc";
+  const extT = (e) => (e.t != null ? e.t : FACADES[facOf(e)] && FACADES[facOf(e)].t != null ? FACADES[facOf(e)].t : wall);
+  for (const e of E) if (e.kind === "ext") { e.facade = facOf(e); if (e.t == null) e.t = extT(e); }
+  const extOut = E.filter((e) => e.kind === "ext").reduce((s2, e) => s2 + e.len * e.t / 2, 0);
+  const enclosed = area + extOut + 4 * (wall / 2) ** 2 * (extL > 0 ? 1 : 0);
+  // façade concessions: a curtain wall's projection beyond the structure is not GFA (outside the cap); a precast wall's thickness up to 150 mm is exempt (under the cap)
+  const cwEx = E.filter((e) => e.kind === "ext" && e.facade === "cw").reduce((s2, e) => s2 + e.len * e.t / 2, 0);
+  const pcEx = E.filter((e) => e.kind === "ext" && e.facade === "pc").reduce((s2, e) => s2 + e.len * Math.min(e.t, FACADES.pc.max), 0);
+  // inside the walls: each wall at its own thickness where it has one
+  const tOf = (e) => (e.t != null ? e.t : e.kind === "ext" ? wall : e.kind === "party" ? party : pt);
+  const internal = Math.max(0, area - E.filter((e) => e.kind !== "part" || !isOpen(u, e)).reduce((s2, e) => s2 + e.len * tOf(e) / 2 * (e.kind === "part" ? 1 : 1), 0));
+  void partL;
+  const ex = expandBays(u.extras || []).map((e) => Object.assign({ area: e.splay ? n(e.w) * n(e.h) - n(e.splay) ** 2 / 2 : n(e.w) * n(e.h) }, e));
   const sum = (k) => ex.filter((e) => e.kind === k).reduce((s, e) => s + e.area, 0);
   const bal = sum("bal"), up = sum("up"), acp = sum("acp");
   const balOk = ex.filter((e) => e.kind === "bal" && e.area >= RULES.bal.min - 1e-9).reduce((s, e) => s + e.area, 0);
@@ -145,12 +169,13 @@ export function figures(u0) {
   const acpFree = ex.filter((e) => e.kind === "acp" && (Math.min(n(e.w), n(e.h)) <= RULES.acp.depth + 1e-9 || e.dfs)).reduce((s, e) => s + e.area, 0);
   const acpCapEx = acp - acpFree;
   const saleable = enclosed + bal + up;
-  const gfa = enclosed + (bal - balEx) + (up - upEx);
+  const gfa = enclosed - cwEx - pcEx + (bal - balEx) + (up - upEx);
   const warn = [];
   for (const r of rooms) {
     const k = KINDS[r.kind];
     if (k && Math.min(n(r.w), n(r.h)) < k.min - 1e-9) warn.push(`${r.name || k.label}: ${Math.min(n(r.w), n(r.h)).toFixed(2)} m is under ${k.min} m`);
-    if (k && k.hab && !E.some((e) => e.kind === "ext" && e.a === r.id && e.face === (u.facade || "s")) && !(u.extras || []).some((x) => touches(r, x)))
+    const hasWin = Array.isArray(u.windows) ? u.windows.some((w) => w.room === r.id) : E.some((e) => e.kind === "ext" && e.a === r.id && e.face === (u.facade || "s")) || (u.extras || []).some((x) => touches(r, x));
+    if (k && k.hab && !hasWin)
       warn.push(`${r.name || k.label}: no window on the façade`);
   }
   const has = (...k) => rooms.some((r) => k.includes(r.kind));
@@ -169,7 +194,8 @@ export function figures(u0) {
   return {
     unit: u, edges: E, area: r3(area), internal: r3(internal), enclosed: r3(enclosed), bal: r3(bal), up: r3(up), acp: r3(acp),
     saleable: r3(saleable), saleableFt: Math.round(saleable * M2_FT2), gfa: r3(gfa), balEx: r3(balEx), upEx: r3(upEx), acpFree: r3(acpFree), acpCapEx: r3(acpCapEx),
-    capped: r3(balEx + upEx + acpCapEx), efficiency: gfa ? r3(internal / gfa) : null, warn,
+    cwEx: r3(cwEx), pcEx: r3(pcEx),
+    capped: r3(balEx + upEx + acpCapEx + pcEx), efficiency: gfa ? r3(internal / gfa) : null, warn,
     W: xs.length ? Math.max(...xs) - Math.min(...xs) : 0, D: ys.length ? Math.max(...ys) - Math.min(...ys) : 0,
     box: xs.length ? [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] : [0, 0, 0, 0],
   };
@@ -218,4 +244,91 @@ export function scaleTo(u, ft2) {
   };
   for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (figures(at(m)).saleableFt < ft2) lo = m; else hi = m; }
   return at((lo + hi) / 2);
+}
+
+/* a combined bay (BAL / UP / ACP in one outline) as its parts, each a
+   rectangle along the bay's long side, the splay on the last part */
+export function expandBays(extras) {
+  const out = [];
+  for (const e of extras || []) {
+    if (e.kind !== "bay") { out.push(e); continue; }
+    const vert = n(e.h) >= n(e.w);
+    let at = 0;
+    const parts = e.parts || [];
+    parts.forEach((p, i) => {
+      const L = n(p.len);
+      const r = vert ? { x: n(e.x), y: n(e.y) + at, w: n(e.w), h: L } : { x: n(e.x) + at, y: n(e.y), w: L, h: n(e.h) };
+      out.push(Object.assign({ kind: p.kind, dfs: !!p.dfs, splay: i === parts.length - 1 ? n(e.splay) : 0, bay: true }, r));
+      at += L;
+    });
+  }
+  return out;
+}
+
+/* split a room in two with a new partition: axis "x" a vertical wall at x = at
+   from the room's left, "y" a horizontal one */
+export function splitRoom(u, id, axis, at) {
+  const v = JSON.parse(JSON.stringify(u)), i = v.rooms.findIndex((r) => r.id === id);
+  if (i < 0) return u;
+  const r = v.rooms[i], a = Math.round(at * 20) / 20;
+  const span = axis === "x" ? r.w : r.h;
+  if (a < 0.5 || a > span - 0.5) return u;
+  const id2 = id + "s" + Date.now().toString(36).slice(-3);
+  const r2 = Object.assign({}, r, { id: id2, name: (r.name || "") + " 2" });
+  if (axis === "x") { r2.x = +(r.x + a).toFixed(3); r2.w = +(r.w - a).toFixed(3); r.w = a; }
+  else { r2.y = +(r.y + a).toFixed(3); r2.h = +(r.h - a).toFixed(3); r.h = a; }
+  v.rooms.splice(i + 1, 0, r2);
+  return v;
+}
+/* join two rooms that together make a rectangle (the wall between goes) */
+export function joinRooms(u, a, b) {
+  const v = JSON.parse(JSON.stringify(u)), A = v.rooms.find((r) => r.id === a), B = v.rooms.find((r) => r.id === b);
+  if (!A || !B) return null;
+  const eq = (p, q) => Math.abs(p - q) < 0.01;
+  let R = null;
+  if (eq(A.y, B.y) && eq(A.h, B.h) && (eq(A.x + A.w, B.x) || eq(B.x + B.w, A.x))) R = { x: Math.min(A.x, B.x), y: A.y, w: A.w + B.w, h: A.h };
+  if (eq(A.x, B.x) && eq(A.w, B.w) && (eq(A.y + A.h, B.y) || eq(B.y + B.h, A.y))) R = { x: A.x, y: Math.min(A.y, B.y), w: A.w, h: A.h + B.h };
+  if (!R) return null;
+  Object.assign(A, R);
+  v.rooms = v.rooms.filter((r) => r.id !== b);
+  for (const d of v.doors || []) if (d.room === b) d.room = a;
+  for (const w of v.windows || []) if (w.room === b) w.room = a;
+  return v;
+}
+
+/* the fittings a room of each kind gets at first: bath / shower, WC, basin;
+   kitchen counter with sink and hob; [{kind, x, y, w, h, rot}] */
+export function genFixtures(u) {
+  const out = [];
+  for (const r of u.rooms || []) {
+    const x = n(r.x), y = n(r.y), w = n(r.w), h = n(r.h), long = w >= h;
+    if (r.kind === "BATH" || r.kind === "ENS") {
+      if (Math.max(w, h) >= 2.0) out.push(long ? { kind: "bath", x: x + 0.1, y: y + 0.1, w: 1.5, h: 0.7, rot: 0 } : { kind: "bath", x: x + 0.1, y: y + 0.1, w: 0.7, h: 1.5, rot: 0 });
+      else out.push({ kind: "shower", x: x + 0.1, y: y + 0.1, w: 0.9, h: 0.9, rot: 0 });
+      out.push({ kind: "wc", x: x + w - 0.55, y: y + h - 0.75, w: 0.4, h: 0.65, rot: 0 });
+      out.push({ kind: "basin", x: x + w - 0.6, y: y + 0.1, w: 0.5, h: 0.4, rot: 0 });
+    }
+    if (r.kind === "OKIT" || r.kind === "KIT")
+      out.push(long ? { kind: "counter", x: x + 0.05, y: y + 0.05, w: Math.max(1, w - 0.1), h: 0.6, rot: 0 } : { kind: "counter", x: x + 0.05, y: y + 0.05, w: 0.6, h: Math.max(1, h - 0.1), rot: 0 });
+  }
+  return out;
+}
+/* rotate a fitting 90° about its centre */
+export function rotateFixture(f) {
+  const cx = n(f.x) + n(f.w) / 2, cy = n(f.y) + n(f.h) / 2;
+  return Object.assign({}, f, { w: n(f.h), h: n(f.w), x: +(cx - n(f.h) / 2).toFixed(3), y: +(cy - n(f.w) / 2).toFixed(3), rot: ((n(f.rot) + 90) % 360) });
+}
+/* windows on each habitable room's façade wall, at first */
+export function genWindows(u) {
+  const E = edges(u), out = [];
+  for (const r of u.rooms || []) {
+    const k = KINDS[r.kind]; if (!k || !k.hab) continue;
+    const e = E.find((q) => q.kind === "ext" && q.a === r.id && q.face === (u.facade || "s")) || E.find((q) => q.kind === "ext" && q.a === r.id && q.len >= 1.2 && !(u.partySides || []).includes(q.face));
+    if (!e) continue;
+    const side = { n: "n", s: "s", e: "e", w: "w" }[e.face], L = side === "n" || side === "s" ? n(r.w) : n(r.h);
+    const ww = Math.min(1.8, Math.max(0.6, e.len - 0.6));
+    const start = side === "n" || side === "s" ? Math.min(e.x1, e.x2) - n(r.x) : Math.min(e.y1, e.y2) - n(r.y);
+    out.push({ room: r.id, side, at: +Math.max(0, Math.min(L - ww, start + (e.len - ww) / 2)).toFixed(2), w: +ww.toFixed(2) });
+  }
+  return out;
 }
