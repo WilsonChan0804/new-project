@@ -218,12 +218,30 @@ function touches(r, x) {
 
 /* move the wall line at x = X (vertical) or y = Y (horizontal) by d: every
    room edge on it within the span moves, so the rooms stay tiled */
-export function moveLine(u, axis, at, d, lo, hi) {
+export function moveLine(u, axis, at, d, lo, hi, seed) {
   const v = JSON.parse(JSON.stringify(u)), step = Math.round(d * 20) / 20;
   if (!step) return v;
   const on = (a, b) => Math.abs(a - b) < 0.01;
-  const inSpan = (a0, a1) => lo == null || (a1 > lo + 0.01 && a0 < hi - 0.01);
+  let inSpan = (a0, a1) => lo == null || (a1 > lo + 0.01 && a0 < hi - 0.01);
+  // only the rooms of the dragged piece: the seed, and every room on the line whose side overlaps one already moving
+  let only = null;
+  if (seed && seed.length) {
+    const onLine = v.rooms.filter((r) => (axis === "x" ? on(r.x, at) || on(r.x + r.w, at) : on(r.y, at) || on(r.y + r.h, at)));
+    const span = (r) => (axis === "x" ? [r.y, r.y + r.h] : [r.x, r.x + r.w]);
+    only = new Set(onLine.filter((r) => seed.includes(r.id)).map((r) => r.id));
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const r of onLine) {
+        if (only.has(r.id)) continue;
+        const [a0, a1] = span(r);
+        if (onLine.some((q) => only.has(q.id) && Math.min(a1, span(q)[1]) - Math.max(a0, span(q)[0]) > 0.01)) { only.add(r.id); grew = true; }
+      }
+    }
+    const spans = onLine.filter((r) => only.has(r.id)).map(span);
+    inSpan = (a0, a1) => spans.some(([p, q]) => Math.min(a1, q) - Math.max(a0, p) > 0.01);
+  }
   for (const r of v.rooms) {
+    if (only && !only.has(r.id)) continue;
     if (axis === "x" && inSpan(r.y, r.y + r.h)) {
       if (on(r.x, at)) { r.x += step; r.w -= step; }
       else if (on(r.x + r.w, at)) r.w += step;
@@ -234,8 +252,8 @@ export function moveLine(u, axis, at, d, lo, hi) {
     }
   }
   for (const x of v.extras || []) {
-    if (axis === "x" && on(x.x, at)) x.x += step;
-    if (axis === "y" && on(x.y, at)) x.y += step;
+    if (axis === "x" && on(x.x, at) && inSpan(x.y, x.y + x.h)) x.x += step;
+    if (axis === "y" && on(x.y, at) && inSpan(x.x, x.x + x.w)) x.y += step;
   }
   if (v.rooms.some((r) => r.w < 0.5 || r.h < 0.5)) return u;
   for (const r of v.rooms) for (const k of ["x", "y", "w", "h"]) r[k] = +r[k].toFixed(3);

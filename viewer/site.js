@@ -645,6 +645,12 @@ function wireFind() {
     box.hidden = false; box.innerHTML = `<p class="muted">Finding …</p>`;
     // a lot number (STTL 121, TKOTL 137, IL 152, DD 123 Lot 456): the Lands Department's lot search and boundary
     if (LOT_RE.test(q)) return findLot(q, box);
+    return findPlace(q, box);
+  };
+  $("#st-find").addEventListener("submit", go);
+}
+/* a place, an address or a building: the Lands Department's Location Search */
+async function findPlace(q, box) {
     try {
       const r = await api("/api/site/search?" + new URLSearchParams({ q }));
       const rows = r.results || [];
@@ -660,8 +666,6 @@ function wireFind() {
         box.hidden = true;
       };
     } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
-  };
-  $("#st-find").addEventListener("submit", go);
 }
 
 /* ---------- find by lot number: LandsD Land Parcel Number search + the iC1000 Lot Index (/api/site/lot, /api/site/lotgeom) */
@@ -671,7 +675,7 @@ async function findLot(q, box) {
   let rows = [];
   try { rows = (await api("/api/site/lot?" + new URLSearchParams({ no: q }))).results || []; }
   catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; return; }
-  if (!rows.length) { box.innerHTML = `<p class="muted">No lot found for "${esc(q)}". Lot numbers look like STTL 121, TKOTL 137, IL 152 or DD 123 Lot 456.</p>`; return; }
+  if (!rows.length) return findPlace(q, box);
   box.innerHTML = `<p class="muted">${rows.length > 1 ? "Lots found - choose one" : "Lot found"} (Lands Department)</p>` + rows.map((x, i) => `<button type="button" data-lot="${i}"><b>${esc(x.name)}</b> <span>${esc(x.place)}</span>${x.score != null && x.score < 100 ? `<small>match ${Math.round(x.score)}</small>` : ""}</button>`).join("");
   box.onclick = async (ev) => {
     const b = ev.target.closest("[data-lot]"), u = ev.target.closest("[data-lotuse]");

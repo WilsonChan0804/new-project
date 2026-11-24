@@ -87,25 +87,49 @@ def save(core, pid, rev, data, who):
 
 
 TILE_URL = "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/%d/%d/%d.png"
-SEARCH_URL = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
+SEARCH_HOSTS = ["https://www.map.gov.hk", "https://geodata.gov.hk", "https://mapapi.geodata.gov.hk"]
+SEARCH_PATH = "/gs/api/v1.0.0/locationSearch?q="
 
 
-def run_search(q):
+def _search_rows(body):
+    """the Location Search answer: a list of places, or {results: [...]}; None when it is not one"""
+    try:
+        d = json.loads(body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return None
+    if isinstance(d, dict) and isinstance(d.get("results"), list):
+        d = d["results"]
+    return d if isinstance(d, list) else None
+
+
+def run_search(q, fetch=None):
+    """the Lands Department's Location Search (www.map.gov.hk; the older hosts after it): HK 1980 Grid back"""
     import urllib.parse
     import urllib.request
-    try:
-        req = urllib.request.Request(SEARCH_URL + urllib.parse.quote(q), headers={"User-Agent": "LWK-Viewer site study"})
-        with urllib.request.urlopen(req, timeout=12) as r:
-            rows = json.loads(r.read().decode("utf-8"))
-    except Exception as ex:
-        raise HTTPException(status_code=502, detail="The map search did not answer: %s" % ex)
-    out = []
-    for x in (rows or [])[:20]:
+
+    def get(url):
+        req = urllib.request.Request(url, headers={"User-Agent": "LWK-Viewer site study"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            return r.read()
+    fetch = fetch or get
+    rows, tried = None, []
+    for h in SEARCH_HOSTS:
         try:
-            out.append({"name": x.get("nameEN") or x.get("nameZH") or "", "zh": x.get("nameZH") or "",
-                        "address": x.get("addressEN") or x.get("addressZH") or "",
-                        "x": float(x["x"]), "y": float(x["y"])})
-        except (KeyError, TypeError, ValueError):
+            rows = _search_rows(fetch(h + SEARCH_PATH + urllib.parse.quote(q)))
+            if rows is not None:
+                break
+            tried.append("%s: not a place list" % h.split("//")[1])
+        except Exception as ex:
+            tried.append("%s: %s" % (h.split("//")[1], ex))
+    if rows is None:
+        raise HTTPException(status_code=502, detail="The map search did not answer (" + "; ".join(tried) + ")")
+    out = []
+    for x in rows[:20]:
+        try:
+            out.append({"name": x.get("nameEN") or x.get("nameZH") or x.get("name") or "", "zh": x.get("nameZH") or "",
+                        "address": x.get("addressEN") or x.get("addressZH") or x.get("address") or "",
+                        "x": float(x.get("x", x.get("X"))), "y": float(x.get("y", x.get("Y")))})
+        except (AttributeError, TypeError, ValueError):
             continue
     return out
 

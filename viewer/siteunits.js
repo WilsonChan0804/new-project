@@ -227,6 +227,15 @@ let TOOL = "select"; // select | door | window | split-x | split-y | room | fix:
 let ROOMK = "BR";     // the kind a drawn room gets
 let LIVE = null;     // while a wall line is dragged: {axis, at, d}
 const DIMS = () => { try { return localStorage.getItem("lwk-viewer:un-dims") || "chains"; } catch (e) { return "chains"; } };
+/* what + Balcony / UP adds outside a wall: its depth from the wall and its length along it; a bay's parts */
+const XADD = {
+  bay: { label: "Bay: balcony + UP + A/C", depth: 1.2, parts: [{ kind: "bal", len: 1.7 }, { kind: "up", len: 1.25 }, { kind: "acp", len: 0.6 }] },
+  bal: { label: "Balcony", depth: 1.2, len: 1.7 },
+  up: { label: "Utility platform", depth: 1.2, len: 1.25 },
+  acp: { label: "A/C platform", depth: 0.6, len: 1.0 },
+  pd: { label: "Pipe duct", depth: 0.4, len: 0.6 },
+};
+const PART_LEN = { bal: 1.7, up: 1.25, acp: 0.6 };
 const FIXK = { bath: "Bath tub", shower: "Shower", wc: "WC", basin: "Basin", counter: "Kitchen counter", sink: "Sink", hob: "Hob", wardrobe: "Wardrobe" };
 
 function ensure(u) {
@@ -264,13 +273,14 @@ function drawPlan() {
   for (const [xi, e] of (u.extras || []).entries()) {
     const X = sx(e.x), Y = sy(e.y), w = e.w * SC, h = e.h * SC, sp = (+e.splay || 0) * SC;
     const pts = sp && e.splayL ? `${X},${Y} ${X + w},${Y} ${X + w},${Y + h} ${X + sp},${Y + h} ${X},${Y + h - sp}` : sp ? `${X},${Y} ${X + w},${Y} ${X + w},${Y + h - sp} ${X + w - sp},${Y + h} ${X},${Y + h}` : `${X},${Y} ${X + w},${Y} ${X + w},${Y + h} ${X},${Y + h}`;
-    g += `<polygon data-xi="${xi}" points="${pts}" fill="${e.kind === "roof" ? "#eef1f4" : "#dfe9f3"}" stroke="#3c4650" stroke-width="1.2" stroke-dasharray="${e.kind === "pd" || e.kind === "af" ? "0" : "6 3"}" />`;
+    const xsel = SEL && SEL.t === "x" && SEL.i === xi;
+    g += `<polygon class="un-x" data-xi="${xi}" points="${pts}" fill="${xsel ? "#f9dcc0" : e.kind === "roof" ? "#eef1f4" : "#dfe9f3"}" stroke="${xsel ? "#f28022" : "#3c4650"}" stroke-width="${xsel ? 2.5 : 1.2}" stroke-dasharray="${e.kind === "pd" || e.kind === "af" ? "0" : "6 3"}" />`;
     const parts = e.kind === "bay" ? U.expandBays([e]) : [e];
     parts.forEach((p, k) => {
       const PX = sx(p.x), PY = sy(p.y), pw = p.w * SC, ph = p.h * SC;
-      if (e.kind === "bay" && k > 0) g += (e.h >= e.w) ? `<line x1="${PX}" y1="${PY}" x2="${PX + pw}" y2="${PY}" stroke="#3c4650" stroke-width="0.8" stroke-dasharray="3 2" />` : `<line x1="${PX}" y1="${PY}" x2="${PX}" y2="${PY + ph}" stroke="#3c4650" stroke-width="0.8" stroke-dasharray="3 2" />`;
+      if (e.kind === "bay" && k > 0) g += (e.h >= e.w) ? `<line x1="${PX}" y1="${PY}" x2="${PX + pw}" y2="${PY}" stroke="#3c4650" stroke-width="0.8" stroke-dasharray="3 2" pointer-events="none" />` : `<line x1="${PX}" y1="${PY}" x2="${PX}" y2="${PY + ph}" stroke="#3c4650" stroke-width="0.8" stroke-dasharray="3 2" pointer-events="none" />`;
       const kk = U.EXTRAS[p.kind] || {};
-      if (pw > 22 && ph > 14) g += `<text x="${PX + pw / 2}" y="${PY + ph / 2 - 1}" text-anchor="middle" font-size="${Math.min(11, pw / 5)}" fill="#3c4650">${esc(kk.zh || "")}</text><text x="${PX + pw / 2}" y="${PY + ph / 2 + 10}" text-anchor="middle" font-size="${Math.min(10, pw / 6)}" fill="#3c4650">${esc(kk.ab || "")} ${f2(p.w * p.h)}</text>`;
+      if (pw > 22 && ph > 14) g += `<text x="${PX + pw / 2}" y="${PY + ph / 2 - 1}" text-anchor="middle" font-size="${Math.min(11, pw / 5)}" fill="#3c4650" pointer-events="none">${esc(kk.zh || "")}</text><text x="${PX + pw / 2}" y="${PY + ph / 2 + 10}" text-anchor="middle" font-size="${Math.min(10, pw / 6)}" fill="#3c4650" pointer-events="none">${esc(kk.ab || "")} ${f2(p.w * p.h)}</text>`;
     });
   }
   // the rooms
@@ -402,8 +412,9 @@ function fixture(x, sx, sy, sel, i) {
 function toolbar() {
   if (!C.can()) return "";
   const b = (t, l, ti) => `<button type="button" data-tool="${t}" class="${TOOL === t ? "on" : ""}" title="${ti}">${l}</button>`;
-  return `<div class="un-bar">${b("select", "↖ Select", "Click a wall, door, window or fitting; drag a wall line")}${b("door", "+ Door", "Click a wall where the door goes")}${b("window", "+ Window", "Click an external wall")}${b("split-x", "✂ Split │", "Click a room: a new wall up and down at that point")}${b("split-y", "✂ Split ─", "Click a room: a new wall across at that point")}${b("room", "▭ + Room", "Drag a rectangle beside the rooms: a new room (snaps to the walls, 50 mm grid)")}
+  return `<div class="un-bar">${b("select", "↖ Select", "Click a wall, door, window, fitting, balcony or UP; drag a wall (Alt: the whole aligned line)")}${b("door", "+ Door", "Click a wall where the door goes")}${b("window", "+ Window", "Click an external wall")}${b("split-x", "✂ Split │", "Click a room: a new wall up and down at that point")}${b("split-y", "✂ Split ─", "Click a room: a new wall across at that point")}${b("room", "▭ + Room", "Drag a rectangle beside the rooms: a new room (snaps to the walls, 50 mm grid)")}
     <select data-roomk title="The kind of the room you draw">${Object.entries(U.KINDS).map(([k, q]) => `<option value="${k}"${ROOMK === k ? " selected" : ""}>${q.label}</option>`).join("")}</select>
+    <select data-xadd title="Then click an external wall: it goes outside it"><option value="">+ Balcony / UP …</option>${Object.entries(XADD).map(([k, v]) => `<option value="${k}"${TOOL === "x:" + k ? " selected" : ""}>${v.label}</option>`).join("")}</select>
     <select data-fixadd title="Click a room to place it"><option value="">+ Fitting …</option>${Object.entries(FIXK).map(([k, v]) => `<option value="${k}"${TOOL === "fix:" + k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <select data-dims title="Dimensions"><option value="chains"${DIMS() === "chains" ? " selected" : ""}>Dimensions: chains</option><option value="overall"${DIMS() === "overall" ? " selected" : ""}>overall</option><option value="off"${DIMS() === "off" ? " selected" : ""}>off</option></select></div>`;
 }
@@ -430,6 +441,14 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
     html = `<b>Window</b> <label>w <input type="number" step="0.05" data-pww value="${w.w}"> m</label><button type="button" data-pwin="del">Remove</button><small>drag it along the wall</small>`;
+  } else if (SEL.t === "x") {
+    const e = (u.extras || [])[SEL.i]; if (!e) return "";
+    at = [sx(e.x + e.w), sy(e.y)];
+    const nm = e.kind === "bay" ? "Balcony / UP / A/C bay" : (U.EXTRAS[e.kind] || {}).label || e.kind;
+    html = `<b>${esc(nm)}</b> <label><input type="number" step="0.05" data-pxw value="${e.w}"> × <input type="number" step="0.05" data-pxh value="${e.h}"> m</label>
+      ${e.kind === "bay" ? `<span class="un-parts">${e.parts.map((q, k) => `<span class="un-chip">${esc((U.EXTRAS[q.kind] || {}).ab || q.kind)} ${f2(q.len)}<button type="button" data-pxd="${k}" title="Omit this part">×</button></span>`).join("")}</span>` : ""}
+      ${["bal", "up", "acp"].includes(e.kind) || e.kind === "bay" ? `<button type="button" data-pxp="bal">+ BAL</button><button type="button" data-pxp="up">+ UP</button><button type="button" data-pxp="acp">+ A/C</button>` : ""}
+      <button type="button" data-px="rot">⟳ Rotate</button><button type="button" data-px="del">Remove</button><small>drag it to move (it snaps to the walls)</small>`;
   } else if (SEL.t === "fix") {
     const x = u.fixtures[SEL.i]; if (!x) return "";
     at = [sx(x.x + x.w), sy(x.y)];
@@ -478,6 +497,8 @@ function wirePlan() {
     const t = ev.target, u = cur(); if (!u) return;
     if (t.dataset.dims != null) { try { localStorage.setItem("lwk-viewer:un-dims", t.value); } catch (e) {} return drawPlan(); }
     if (t.dataset.roomk != null) { ROOMK = t.value; TOOL = "room"; return drawPlan(); }
+    if (t.dataset.xadd != null) { TOOL = t.value ? "x:" + t.value : "select"; SEL = null; return drawPlan(); }
+    if (t.dataset.pxw != null || t.dataset.pxh != null) { const e = u.extras[SEL.i]; const v = Math.max(0.2, Math.round((parseFloat(t.value) || 0) * 20) / 20); if (t.dataset.pxw != null) e.w = v; else e.h = v; return changed(); }
     if (t.dataset.fixadd != null) { TOOL = t.value ? "fix:" + t.value : "select"; return drawPlan(); }
     if (t.dataset.pwf != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; o.f = t.value; if (t.value === "cw") u.windows = u.windows.filter((w) => !(w.room === SEL.key.split(":")[0] && w.side === SEL.key.split(":")[1])); return changed(); }
     if (t.dataset.pws != null || t.dataset.pwe != null) {
@@ -509,6 +530,19 @@ function wirePlan() {
       if (d.pw === "win") { const r = u.rooms.find((q) => q.id === rs.room), ww = Math.min(1.5, e.len - 0.4); u.windows.push({ room: rs.room, side: rs.side, at: +((rs.from - (rs.side === "n" || rs.side === "s" ? r.x : r.y)) + (e.len - ww) / 2).toFixed(2), w: +ww.toFixed(2) }); SEL = { t: "win", i: u.windows.length - 1 }; return changed(); }
     }
     if (d.pd) { const dd = u.doors[SEL.i]; if (d.pd === "hinge") dd.hinge = dd.hinge === "end" ? "start" : "end"; if (d.pd === "swing") dd.swing = dd.swing === "out" ? "in" : "out"; if (d.pd === "del") { u.doors.splice(SEL.i, 1); SEL = null; } return changed(); }
+    if (d.px) {
+      const e = u.extras[SEL.i]; if (!e) return;
+      if (d.px === "rot") { [e.w, e.h] = [e.h, e.w]; return changed(); }
+      if (d.px === "del") { u.extras.splice(SEL.i, 1); SEL = null; return changed(); }
+    }
+    if (d.pxp) { const e = u.extras[SEL.i]; if (!e) return; if (e.kind !== "bay") { e.parts = [{ kind: e.kind in PART_LEN ? e.kind : "bal", len: +(Math.max(e.w, e.h)).toFixed(3) }]; e.kind = "bay"; } const L = PART_LEN[d.pxp]; e.parts.push({ kind: d.pxp, len: L }); if (e.h >= e.w) e.h = +(e.h + L).toFixed(3); else e.w = +(e.w + L).toFixed(3); return changed(); }
+    if (d.pxd != null) {
+      const e = u.extras[SEL.i]; if (!e || e.kind !== "bay") return;
+      const [q] = e.parts.splice(+d.pxd, 1), L = +q.len || 0;
+      if (!e.parts.length) { u.extras.splice(SEL.i, 1); SEL = null; return changed(); }
+      if (e.h >= e.w) e.h = +Math.max(0.3, e.h - L).toFixed(3); else e.w = +Math.max(0.3, e.w - L).toFixed(3);
+      return changed();
+    }
     if (d.pwin === "del") { u.windows.splice(SEL.i, 1); SEL = null; return changed(); }
     if (d.pf) { if (d.pf === "rot") u.fixtures[SEL.i] = U.rotateFixture(u.fixtures[SEL.i]); if (d.pf === "del") { u.fixtures.splice(SEL.i, 1); SEL = null; } return changed(); }
   });
@@ -536,6 +570,23 @@ function wirePlan() {
         if (v === u) return toast("Too near the room's edge", true);
         { const st0 = store(); st0.list[st0.sel] = v; } TOOL = "select"; return changed();
       }
+      // the wall clicked: its line, or a window / door in it
+      const wi = t.dataset.wi != null ? u.windows[+t.dataset.wi] : t.dataset.di != null ? u.doors[+t.dataset.di] : null;
+      const ek = t.dataset.ek || (wi ? wi.room + ":" + wi.side : "");
+      if (TOOL.startsWith("x:") && ek) {
+        const e = f.edges.find((q) => q.key === ek || (q.kind !== "part" && q.a === wi?.room && q.face === wi?.side && (q.x1 === q.x2 ? P[1] >= q.y1 - 0.05 && P[1] <= q.y2 + 0.05 : P[0] >= q.x1 - 0.05 && P[0] <= q.x2 + 0.05)));
+        if (!e || e.kind === "part") return toast("Click an external wall: it goes outside it", true);
+        const k = TOOL.slice(2), X = XADD[k], vert = e.x1 === e.x2;
+        const len = X.parts ? X.parts.reduce((s2, q) => s2 + q.len, 0) : X.len, dep = X.depth;
+        const out = e.face === "e" || e.face === "s" ? 1 : -1, wallAt = vert ? e.x1 : e.y1;
+        const mid = Math.round(((vert ? P[1] : P[0]) - len / 2) * 20) / 20, lo = vert ? e.y1 : e.x1, hi = vert ? e.y2 : e.x2;
+        const a = Math.max(lo - len / 2, Math.min(mid, hi - len / 2));
+        const ex = vert ? { x: out > 0 ? wallAt : wallAt - dep, y: a, w: dep, h: len } : { x: a, y: out > 0 ? wallAt : wallAt - dep, w: len, h: dep };
+        for (const q of ["x", "y", "w", "h"]) ex[q] = +ex[q].toFixed(3);
+        u.extras = u.extras || [];
+        u.extras.push(Object.assign({ kind: X.parts ? "bay" : k }, ex, X.parts ? { parts: X.parts.map((q) => Object.assign({}, q)) } : {}));
+        SEL = { t: "x", i: u.extras.length - 1 }; TOOL = "select"; return changed();
+      }
       if (TOOL === "room") {
         drag = { kind: "newroom", P0: snapRoom(u, P), P1: null };
         cap(host, ev); ev.preventDefault(); return;
@@ -547,7 +598,8 @@ function wirePlan() {
       }
       return;
     }
-    if (t.dataset.wend && WENDS && can) { drag = { kind: "wend", key: WENDS.key, end: t.dataset.wend, u0: JSON.parse(JSON.stringify(u)), moved: false }; }
+    if (t.dataset.xi != null) { SEL = { t: "x", i: +t.dataset.xi }; if (can) drag = { kind: "x", i: +t.dataset.xi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
+    else if (t.dataset.wend && WENDS && can) { drag = { kind: "wend", key: WENDS.key, end: t.dataset.wend, u0: JSON.parse(JSON.stringify(u)), moved: false }; }
     else if (t.dataset.di != null) { SEL = { t: "door", i: +t.dataset.di }; if (can) drag = { kind: "door", i: +t.dataset.di, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.wi != null) { SEL = { t: "win", i: +t.dataset.wi }; if (can) drag = { kind: "win", i: +t.dataset.wi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.fi != null) { SEL = { t: "fix", i: +t.dataset.fi }; if (can) drag = { kind: "fix", i: +t.dataset.fi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
@@ -573,7 +625,8 @@ function wirePlan() {
       const e = drag.e, v = e.x1 === e.x2, dist = v ? (ev.clientX - drag.x) / SC : (ev.clientY - drag.y) / SC;
       if (Math.abs(dist) < 0.025 && !drag.moved) return;
       drag.moved = true;
-      st.list[st.sel] = U.moveLine(drag.u0, v ? "x" : "y", v ? e.x1 : e.y1, dist, drag.alt ? (v ? e.y1 : e.x1) : null, drag.alt ? (v ? e.y2 : e.x2) : null);
+      // just this piece of wall (its rooms); Alt: the whole line it is aligned with
+      st.list[st.sel] = U.moveLine(drag.u0, v ? "x" : "y", v ? e.x1 : e.y1, dist, null, null, drag.alt ? null : [e.a, e.b].filter(Boolean));
       LIVE = { axis: v ? "x" : "y", at: (v ? e.x1 : e.y1) + Math.round(dist * 20) / 20, d: Math.round(dist * 20) / 20 };
       return render();
     }
@@ -593,6 +646,13 @@ function wirePlan() {
       const L = o.side === "n" || o.side === "s" ? r.w : r.h, delta = o.side === "n" || o.side === "s" ? dx : dy;
       o.at = Math.max(0, Math.min(L - (+o.w || 0.8), snapv((+o.at || 0) + delta)));
     } else if (drag.kind === "fix") { const x = v.fixtures[drag.i]; x.x = snapv(x.x + dx); x.y = snapv(x.y + dy); }
+    else if (drag.kind === "x") {
+      // a balcony / UP / bay: to the wall lines near (0.25 m), else the 50 mm grid
+      const x = v.extras[drag.i], xs = [], ys = [];
+      for (const r of v.rooms) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
+      const sn = (p, w, L) => { let b = null; for (const a of L) for (const c of [a - p, a - (p + w)]) if (Math.abs(c) <= 0.25 && (b == null || Math.abs(c) < Math.abs(b))) b = c; return b != null ? +(p + b).toFixed(3) : snapv(p); };
+      x.x = ev.altKey ? snapv(x.x + dx) : sn(x.x + dx, x.w, xs); x.y = ev.altKey ? snapv(x.y + dy) : sn(x.y + dy, x.h, ys);
+    }
     st.list[st.sel] = v;
     drawPlan();
   });
@@ -626,10 +686,11 @@ function wirePlan() {
     if (ev.key === "Escape") { TOOL = "select"; SEL = null; drawPlan(); }
     const u = cur(); if (!u || !SEL || !C.can()) return;
     if (ev.key === "Delete" || ev.key === "Backspace") {
-      if (SEL.t === "door") u.doors.splice(SEL.i, 1); else if (SEL.t === "win") u.windows.splice(SEL.i, 1); else if (SEL.t === "fix") u.fixtures.splice(SEL.i, 1);
+      if (SEL.t === "door") u.doors.splice(SEL.i, 1); else if (SEL.t === "win") u.windows.splice(SEL.i, 1); else if (SEL.t === "fix") u.fixtures.splice(SEL.i, 1); else if (SEL.t === "x") u.extras.splice(SEL.i, 1);
       else if (SEL.t === "wall") { (u.walls[SEL.key] = u.walls[SEL.key] || {}).open = true; }
       SEL = null; changed();
     }
+    if (ev.key.toLowerCase() === "r" && SEL.t === "x") { const e = u.extras[SEL.i]; [e.w, e.h] = [e.h, e.w]; changed(); }
     if (ev.key.toLowerCase() === "r" && SEL.t === "fix") { u.fixtures[SEL.i] = U.rotateFixture(u.fixtures[SEL.i]); changed(); }
     if (ev.key.toLowerCase() === "f" && SEL.t === "door") { const dd = u.doors[SEL.i]; dd.hinge = dd.hinge === "end" ? "start" : "end"; changed(); }
   });

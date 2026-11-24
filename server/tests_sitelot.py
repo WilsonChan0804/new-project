@@ -31,5 +31,31 @@ class LotTests(unittest.TestCase):
         self.assertFalse(sitelot.inside(f["rings"][0], 836300, 826277))
 
 
+    def test_host_fallback(self):
+        good = b'{"candidates": [{"address": "STTL 121, Tai Wai", "location": {"x": 836374.4, "y": 826277.0}, "score": 100, "attributes": {"Ref_ID": "1800260551", "PlaceName": "STTL 121", "City": "Tai Wai"}, "extent": {"xmin": 1, "ymin": 2, "xmax": 3, "ymax": 4}}]}'
+        seen = []
+
+        def fake(url, timeout):
+            seen.append(url)
+            if "hkmapservice" in url:
+                return b"<html>Service unavailable</html>"
+            return good if "/lus/lot/" in url else b'{"candidates": []}'
+        r = sitelot.search("STTL 121", fetch=fake)
+        self.assertEqual([x["name"] for x in r], ["STTL 121"])
+        self.assertTrue(any("hkmapservice" in u for u in seen) and any("geodata" in u for u in seen))
+
+    def test_place_search_hosts(self):
+        import gbp
+        rows = b'[{"nameEN": "SHA TIN TOWN HALL", "nameZH": "x", "addressEN": "1 TAM KON PO STREET", "x": 837591.0, "y": 826841.0}]'
+
+        def fake(url):
+            if "www.map.gov.hk" in url:
+                return b'{ "statusCode": 404, "message": "Resource not found" }'
+            return rows
+        r = gbp.run_search("Sha Tin Town Hall", fetch=fake)
+        self.assertEqual(r[0]["name"], "SHA TIN TOWN HALL")
+        self.assertEqual(gbp.run_search("x", fetch=lambda u: b'{"results": ' + rows + b'}')[0]["x"], 837591.0)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-14", date: "25 Nov 2026",
+    items: [
+      "**Find works again** - the Lands Department moved its place search to www.map.gov.hk (the old geodata.gov.hk address now answers \"not found\"); the Find box uses the new address first, then the older ones, and says which answered what if none does. A lot number that finds no lot falls back to the place search.",
+      "**Unit editor: a wall moves on its own** - dragging a wall line now moves only that piece and the rooms along it; a room that merely lines up with it (the master bedroom beside the open kitchen) stays. Hold **Alt** to move the whole aligned line as before.",
+      "**Balcony, UP and A/C platform on the plan** - click one to move it (drag; it snaps to the walls), resize it, **⟳ rotate** it, **+ BAL / + UP / + A/C** a part or **×** omit one, or **Remove** it (Delete). **+ Balcony / UP …** in the tool bar adds a bay, a balcony, a UP, an A/C platform or a pipe duct: choose it, then click an external wall.",
+    ],
+  },
+  {
     version: "2027-03-13", date: "25 Nov 2026",
     items: [
       "**Find a site by its lot number** - type a lot (STTL 121, TKOTL 137, IL 152, DD 123 Lot 456) in the Find box: the Lands Department's lot search lists the matches, choosing one draws the lot's boundary from the iC1000 Lot Index, and **Use as the site boundary** makes it the site (its area, name and corners). Then pick the plan and zone under Planning and lease, or open the OZP portal.",

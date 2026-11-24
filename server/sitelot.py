@@ -35,26 +35,53 @@ def looks_like_lot(q):
     return bool(q) and len(q) <= 40 and bool(LOT_RE.match(q))
 
 
-def _get(path, timeout=15):
-    last = None
+def _fetch(url, timeout):
+    req = urllib.request.Request(url, headers={"User-Agent": "LWK-Viewer site study"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def _get(path, check, timeout=8, fetch=None):
+    """the first host whose answer passes check(body); the reasons of the others in the error"""
+    fetch = fetch or _fetch
+    tried = []
     for h in HOSTS:
         try:
-            req = urllib.request.Request(h + path, headers={"User-Agent": "LWK-Viewer site study"})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                body = r.read()
-            if body:
+            body = fetch(h + path, timeout)
+            if body and check(body):
                 return body
+            tried.append("%s: an unexpected answer" % h.split("//")[1])
         except Exception as ex:  # the next host
-            last = ex
-    raise HTTPException(status_code=502, detail="The Lands Department lot search did not answer: %s" % last)
+            tried.append("%s: %s" % (h.split("//")[1], ex))
+    raise HTTPException(status_code=502, detail="The Lands Department lot search did not answer (" + "; ".join(tried) + ")")
 
 
-def search(no):
-    out, seen = [], set()
-    for t in TYPES:
+def _is_candidates(body):
+    try:
+        return isinstance(json.loads(body.decode("utf-8")).get("candidates"), list)
+    except (ValueError, UnicodeDecodeError, AttributeError):
+        return False
+
+
+def _is_gml(body):
+    return b"FeatureCollection" in body[:2000]
+
+
+def search(no, fetch=None):
+    from concurrent.futures import ThreadPoolExecutor
+
+    def one(t):
         try:
-            d = json.loads(_get("/gs/api/v1.0.0/lus/%s/SearchNumber?text=%s" % (t, urllib.parse.quote(no))).decode("utf-8"))
-        except (HTTPException, ValueError):
+            return json.loads(_get("/gs/api/v1.0.0/lus/%s/SearchNumber?text=%s" % (t, urllib.parse.quote(no)), _is_candidates, fetch=fetch).decode("utf-8"))
+        except HTTPException as ex:
+            return ex
+    with ThreadPoolExecutor(len(TYPES)) as pool:
+        answers = list(pool.map(one, TYPES))
+    if all(isinstance(a, HTTPException) for a in answers):
+        raise answers[0]
+    out, seen = [], set()
+    for t, d in zip(TYPES, answers):
+        if isinstance(d, HTTPException):
             continue
         for c in d.get("candidates") or []:
             a = c.get("attributes") or {}
@@ -127,7 +154,7 @@ def geometry(core, lid, x, y, ext, kind="lot"):
     hw, hh = min(350, (x1 - x0) / 2), min(290, (y1 - y0) / 2)
     bbox = "%.1f,%.1f,%.1f,%.1f,EPSG:2326" % (cx - hw, cy - hh, cx + hw, cy + hh)
     kind = kind if kind in TYPES else "lot"
-    feats = parse_gml(_get("/gs/api/v1.0.0/iC1000/%s?bbox=%s" % (kind, bbox), timeout=25))
+    feats = parse_gml(_get("/gs/api/v1.0.0/iC1000/%s?bbox=%s" % (kind, bbox), _is_gml, timeout=20))
     hit = next((f for f in feats if lid and f["id"] == lid), None)
     if not hit:
         hit = next((f for f in feats if any(inside(r, x, y) for r in f["rings"])), None)

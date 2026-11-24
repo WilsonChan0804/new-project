@@ -96,5 +96,19 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 2\.1/.test(w)), "a be
   const f1 = U.figures(T);
   ok(near(U.solidLen(T, e), e.len / 2, 1e-9) && near(f1.internal - f0.internal, e.len / 2 * T.part / 2, 2e-3) && near(f1.area, f0.area, 1e-9), "a partition shortened to half: half its length × t/2 more usable floor, the same area");
 }
+// a wall dragged on its own: the open kitchen's line aligned with the MBR's wall
+{
+  const T = { wall: 0.1, part: 0.075, party: 0.15, partySides: [], extras: [], rooms: [R("m", "MBR", 0, 0, 3, 3), R("k", "OKIT", 0, 3, 3, 2), R("l", "LD", 3, 0, 3.5, 5)] };
+  const one = U.moveLine(T, "x", 3, 0.4, null, null, ["k", "l"]);
+  const m1 = one.rooms.find((r) => r.id === "m"), k1 = one.rooms.find((r) => r.id === "k"), l1 = one.rooms.find((r) => r.id === "l");
+  // the living room spans the whole line, so the MBR moves with it; a living room only beside the kitchen leaves it
+  ok(near(k1.w, 3.4, 1e-9) && near(l1.x, 3.4, 1e-9), "the kitchen's wall moved 0.4 m with the room across it");
+  const T2 = { wall: 0.1, part: 0.075, party: 0.15, partySides: [], extras: [], rooms: [R("m", "MBR", 0, 0, 3, 3), R("b", "BATH", 3, 0, 2, 3), R("k", "OKIT", 0, 3, 3, 2), R("l", "LD", 3, 3, 2, 2)] };
+  const two = U.moveLine(T2, "x", 3, 0.4, null, null, ["k", "l"]);
+  ok(near(two.rooms.find((r) => r.id === "k").w, 3.4, 1e-9) && near(two.rooms.find((r) => r.id === "m").w, 3, 1e-9) && near(two.rooms.find((r) => r.id === "b").x, 3, 1e-9), "the MBR and bathroom above, on the same line: they stay");
+  const all = U.moveLine(T2, "x", 3, 0.4);
+  ok(near(all.rooms.find((r) => r.id === "m").w, 3.4, 1e-9), "Alt (the whole line): the MBR moves too");
+  void m1;
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

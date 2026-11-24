@@ -278,3 +278,7 @@ body.st-planfull .st-map-wrap { min-height: 100%; }
 .st-lot small { display: block; color: var(--muted); margin-top: 3px; }
 .fl-v { cursor: move; } .fl-vm { cursor: copy; }
 .fl-pop button.on { background: var(--accent); color: #fff; }
+.un-x { cursor: move; }
+.un-parts { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.un-chip { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 4px; font-size: 11px; }
+.un-chip button { padding: 0 4px !important; border: 0; background: none; }
