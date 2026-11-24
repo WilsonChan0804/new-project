@@ -39,7 +39,13 @@ export function store() {
   const st = s.units;
   if (!Array.isArray(st.list)) st.list = [];
   for (let i = 0; i < st.list.length; i++) if (st.list[i] && st.list[i].rows) st.list[i] = U.fromRows(st.list[i]);
-  for (const u of st.list) { if (!Array.isArray(u.windows)) u.windows = U.genWindows(u); if (!Array.isArray(u.fixtures)) u.fixtures = U.genFixtures(u); if (u.orig == null) setOrig(u); }
+  for (const u of st.list) {
+    if (!Array.isArray(u.windows)) u.windows = U.genWindows(u);
+    if (!Array.isArray(u.fixtures)) u.fixtures = U.genFixtures(u);
+    // the first form of an open kitchen (a room) as a zone in the living room's space, once
+    if (!u.zonesDone && (u.rooms || []).some((r) => r.kind === "OKIT")) { U.zoneKitchens(u); u.zonesDone = 1; if (u.orig) { const o = JSON.parse(u.orig); U.zoneKitchens(o); o.zonesDone = 1; u.orig = JSON.stringify(o); } }
+    if (u.orig == null) setOrig(u);
+  }
   if (st.sel == null || st.sel >= st.list.length) st.sel = st.list.length ? 0 : -1;
   return st;
 }
@@ -222,6 +228,12 @@ let SC = 60, OX = 40, OY = 40, BX = 0, BY = 0;
 const ZM = PZ.create(); // the plan's zoom and pan
 let ZFOR = null;        // the unit it is for
 let WENDS = null;       // a selected partition's two ends on the plan
+/* the office's hatches: RC dark grey, block diagonal, precast diagonal with a dashed diagonal */
+const HATCH = `<defs><pattern id="hp-rc" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><rect width="5" height="5" fill="#8b9096"/><line x1="0" y1="0" x2="0" y2="5" stroke="#5c6166" stroke-width="1.2"/></pattern>
+  <pattern id="hp-blk" patternUnits="userSpaceOnUse" width="4.5" height="4.5" patternTransform="rotate(45)"><rect width="4.5" height="4.5" fill="#fff"/><line x1="0" y1="0" x2="0" y2="4.5" stroke="#4a4f55" stroke-width="0.55"/></pattern>
+  <pattern id="hp-pc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><line x1="0" y1="0" x2="0" y2="7" stroke="#4a4f55" stroke-width="0.6"/><line x1="3.5" y1="0" x2="3.5" y2="7" stroke="#4a4f55" stroke-width="0.6" stroke-dasharray="1.4 1.4"/></pattern></defs>`;
+const ROOMFILL = { LD: "#fbf3d5", MBR: "#fbf3d5", BR: "#fbf3d5", STUDY: "#fbf3d5", BATH: "#eef6f4", ENS: "#eef6f4", LOBBY: "#fbf3d5", OKIT: "#fbf3d5", KIT: "#f9efd8", STORE: "#f3f1ea" };
+const ALINES = () => { try { return localStorage.getItem("lwk-viewer:un-alines") || "off"; } catch (e) { return "off"; } };
 let SEL = null;      // {t: "wall"|"door"|"win"|"fix", i | key}
 let TOOL = "select"; // select | door | window | split-x | split-y | room | fix:<kind>
 let ROOMK = "BR";     // the kind a drawn room gets
@@ -236,7 +248,7 @@ const XADD = {
   pd: { label: "Pipe duct", depth: 0.4, len: 0.6 },
 };
 const PART_LEN = { bal: 1.7, up: 1.25, acp: 0.6 };
-const FIXK = { bath: "Bath tub", shower: "Shower", wc: "WC", basin: "Basin", counter: "Kitchen counter", sink: "Sink", hob: "Hob", wardrobe: "Wardrobe" };
+const FIXK = { bath: "Bath tub", shower: "Shower", wc: "WC", basin: "Basin", counter: "Kitchen counter (sink + hob)", sink: "Sink", hob: "Hob", fridge: "Fridge", wm: "Washing machine", wardrobe: "Wardrobe", bed: "Bed", sofa: "Sofa", dining: "Dining set", desk: "Desk" };
 
 function ensure(u) {
   if (!Array.isArray(u.windows)) u.windows = U.genWindows(u);
@@ -274,7 +286,7 @@ function drawPlan() {
     const X = sx(e.x), Y = sy(e.y), w = e.w * SC, h = e.h * SC, sp = (+e.splay || 0) * SC;
     const pts = sp && e.splayL ? `${X},${Y} ${X + w},${Y} ${X + w},${Y + h} ${X + sp},${Y + h} ${X},${Y + h - sp}` : sp ? `${X},${Y} ${X + w},${Y} ${X + w},${Y + h - sp} ${X + w - sp},${Y + h} ${X},${Y + h}` : `${X},${Y} ${X + w},${Y} ${X + w},${Y + h} ${X},${Y + h}`;
     const xsel = SEL && SEL.t === "x" && SEL.i === xi;
-    g += `<polygon class="un-x" data-xi="${xi}" points="${pts}" fill="${xsel ? "#f9dcc0" : e.kind === "roof" ? "#eef1f4" : "#dfe9f3"}" stroke="${xsel ? "#f28022" : "#3c4650"}" stroke-width="${xsel ? 2.5 : 1.2}" stroke-dasharray="${e.kind === "pd" || e.kind === "af" ? "0" : "6 3"}" />`;
+    g += `<polygon class="un-x" data-xi="${xi}" points="${pts}" fill="${xsel ? "#f9dcc0" : e.kind === "roof" ? "#f4f4f2" : "#fffdf6"}" stroke="${xsel ? "#f28022" : "#3c4650"}" stroke-width="${xsel ? 2.5 : 0.8}" stroke-dasharray="${e.kind === "pd" || e.kind === "af" ? "0" : "6 3"}" />`;
     const parts = e.kind === "bay" ? U.expandBays([e]) : [e];
     parts.forEach((p, k) => {
       const PX = sx(p.x), PY = sy(p.y), pw = p.w * SC, ph = p.h * SC;
@@ -283,41 +295,70 @@ function drawPlan() {
       if (pw > 22 && ph > 14) g += `<text x="${PX + pw / 2}" y="${PY + ph / 2 - 1}" text-anchor="middle" font-size="${Math.min(11, pw / 5)}" fill="#3c4650" pointer-events="none">${esc(kk.zh || "")}</text><text x="${PX + pw / 2}" y="${PY + ph / 2 + 10}" text-anchor="middle" font-size="${Math.min(10, pw / 6)}" fill="#3c4650" pointer-events="none">${esc(kk.ab || "")} ${f2(p.w * p.h)}</text>`;
     });
   }
-  // the rooms
+  // the rooms: pale like the office's plans; a space (living / dining with its foyer) as one
   const near = LIVE ? new Set(u.rooms.filter((r) => LIVE.axis === "x" ? Math.abs(r.x - LIVE.at) < 0.01 || Math.abs(r.x + r.w - LIVE.at) < 0.01 : Math.abs(r.y - LIVE.at) < 0.01 || Math.abs(r.y + r.h - LIVE.at) < 0.01).map((r) => r.id)) : null;
-  for (const r of u.rooms) g += `<rect data-rid="${esc(r.id)}" class="un-r" x="${sx(r.x)}" y="${sy(r.y)}" width="${r.w * SC}" height="${r.h * SC}" fill="${near && near.has(r.id) ? "#f6d9b8" : SELR === r.id ? "#a9c6e8" : "#c6d9ef"}" />`;
-  // the fittings
+  const selSpace = SELR ? U.spaceOf(u.rooms.find((q) => q.id === SELR)) : null;
+  for (const r of u.rooms) g += `<rect data-rid="${esc(r.id)}" class="un-r" x="${sx(r.x)}" y="${sy(r.y)}" width="${r.w * SC}" height="${r.h * SC}" fill="${near && near.has(r.id) ? "#f6d9b8" : selSpace && U.spaceOf(r) === selSpace ? "#f3e3ad" : ROOMFILL[r.kind] || "#fbf3d5"}" />`;
+  // the open kitchen and other zones: dashed, over the rooms
+  for (const [zi, z] of (u.zones || []).entries()) {
+    const zs = SEL && SEL.t === "z" && SEL.i === zi, k = U.KINDS[z.kind] || {};
+    g += `<rect x="${sx(z.x)}" y="${sy(z.y)}" width="${z.w * SC}" height="${z.h * SC}" fill="none" stroke="${zs ? "#f28022" : "#4a5866"}" stroke-width="${zs ? 2 : 0.7}" stroke-dasharray="5 3" pointer-events="none" />`;
+  }
+  // the fittings and furniture
   for (const [i, x] of u.fixtures.entries()) g += fixture(x, sx, sy, SEL && SEL.t === "fix" && SEL.i === i, i);
-  // the walls
+  // the walls at their thickness: partitions first (block, hatched), then the external and party walls (RC dark grey; precast hatched and dashed); each wall's two faces drawn
   WENDS = null;
+  const tOf = (e) => (e.t != null ? e.t : e.kind === "ext" ? (U.FACADES[e.facade] && U.FACADES[e.facade].t != null ? U.FACADES[e.facade].t : wall) : e.kind === "party" ? party : pt);
+  const band = (e, a, b, t, ext) => {   // the wall's rectangle from a to b along it, ext beyond its ends
+    const v = e.x1 === e.x2;
+    return v ? [sx(e.x1 - t / 2), sy(e.y1 + a - ext), t * SC, (b - a + 2 * ext) * SC] : [sx(e.x1 + a - ext), sy(e.y1 - t / 2), (b - a + 2 * ext) * SC, t * SC];
+  };
+  const faces = (e, a, b, t, ext, st, w) => {
+    const v = e.x1 === e.x2;
+    if (v) { const X1 = sx(e.x1 - t / 2), X2 = sx(e.x1 + t / 2), Y1 = sy(e.y1 + a - ext), Y2 = sy(e.y1 + b + ext); return `<line x1="${X1}" y1="${Y1}" x2="${X1}" y2="${Y2}" stroke="${st}" stroke-width="${w}" /><line x1="${X2}" y1="${Y1}" x2="${X2}" y2="${Y2}" stroke="${st}" stroke-width="${w}" />`; }
+    const Y1 = sy(e.y1 - t / 2), Y2 = sy(e.y1 + t / 2), X1 = sx(e.x1 + a - ext), X2 = sx(e.x1 + b + ext);
+    return `<line x1="${X1}" y1="${Y1}" x2="${X2}" y2="${Y1}" stroke="${st}" stroke-width="${w}" /><line x1="${X1}" y1="${Y2}" x2="${X2}" y2="${Y2}" stroke="${st}" stroke-width="${w}" />`;
+  };
+  const LW = Math.max(0.8, Math.min(1.4, SC * 0.022));   // wall faces, as the plans' heavier line
   for (const e of f.edges) {
+    if (e.kind !== "part") continue;
     const sel = SEL && SEL.t === "wall" && SEL.key === e.key;
-    if (U.isOpen(u, e)) { g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : "#4a5866"}" stroke-width="${sel ? 3 : 1}" stroke-dasharray="6 4" />`; continue; }
-    const t = (e.t != null ? e.t : e.kind === "ext" ? wall : e.kind === "party" ? party : pt) * SC;
+    const t = tOf(e);
+    if (U.isOpen(u, e)) {
+      // open (or one space): nothing, unless chosen - then a dashed line to find it
+      const sp = (() => { const A = u.rooms.find((q) => q.id === e.a), B = u.rooms.find((q) => q.id === e.b); return A && B && U.spaceOf(A) === U.spaceOf(B); })();
+      if (sel || !sp) g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : "#8a949e"}" stroke-width="${sel ? 2.5 : 0.6}" stroke-dasharray="6 4" />`;
+      continue;
+    }
+    const [a, b] = U.solidPart(u, e), v = e.x1 === e.x2, P = (d) => (v ? [e.x1, e.y1 + d] : [e.x1 + d, e.y1]);
+    if (b - a < e.len - 1e-6) g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="#8a949e" stroke-width="0.6" stroke-dasharray="6 4" />`;
+    const [X, Y, Wd, Ht] = band(e, a, b, t, 0);
+    g += `<rect x="${X}" y="${Y}" width="${Wd}" height="${Ht}" fill="url(#hp-blk)" />` + faces(e, a, b, t, 0, sel ? "#f28022" : "#222", sel ? 2 : LW * 0.8);
+    if (b - a < e.len - 1e-6) { const A = P(a), B = P(b); g += v ? `<line x1="${sx(A[0] - t / 2)}" y1="${sy(A[1])}" x2="${sx(A[0] + t / 2)}" y2="${sy(A[1])}" stroke="#222" stroke-width="${LW * 0.8}" /><line x1="${sx(B[0] - t / 2)}" y1="${sy(B[1])}" x2="${sx(B[0] + t / 2)}" y2="${sy(B[1])}" stroke="#222" stroke-width="${LW * 0.8}" />` : `<line x1="${sx(A[0])}" y1="${sy(A[1] - t / 2)}" x2="${sx(A[0])}" y2="${sy(A[1] + t / 2)}" stroke="#222" stroke-width="${LW * 0.8}" /><line x1="${sx(B[0])}" y1="${sy(B[1] - t / 2)}" x2="${sx(B[0])}" y2="${sy(B[1] + t / 2)}" stroke="#222" stroke-width="${LW * 0.8}" />`; }
+    if (sel && C.can()) WENDS = { key: e.key, pts: [[P(a), "s"], [P(b), "e"]] };
+  }
+  for (const e of f.edges) {
+    if (e.kind === "part") continue;
+    const sel = SEL && SEL.t === "wall" && SEL.key === e.key, t = tOf(e), v = e.x1 === e.x2;
+    const nx = e.face === "e" ? 1 : e.face === "w" ? -1 : 0, ny = e.face === "s" ? 1 : e.face === "n" ? -1 : 0;
     if (e.kind === "ext" && e.facade === "cw") {
-      // a curtain wall: glass all along, the mullions
-      const vert = e.x1 === e.x2, o = Math.max(2, t / 3);
-      g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f9d2ad" : "#d7ecf7"}" stroke-width="${Math.max(4, t)}" />`;
-      g += vert ? `<line x1="${sx(e.x1) - o}" y1="${sy(e.y1)}" x2="${sx(e.x2) - o}" y2="${sy(e.y2)}" stroke="#2b6c8f" stroke-width="1" /><line x1="${sx(e.x1) + o}" y1="${sy(e.y1)}" x2="${sx(e.x2) + o}" y2="${sy(e.y2)}" stroke="#2b6c8f" stroke-width="1" />`
-        : `<line x1="${sx(e.x1)}" y1="${sy(e.y1) - o}" x2="${sx(e.x2)}" y2="${sy(e.y2) - o}" stroke="#2b6c8f" stroke-width="1" /><line x1="${sx(e.x1)}" y1="${sy(e.y1) + o}" x2="${sx(e.x2)}" y2="${sy(e.y2) + o}" stroke="#2b6c8f" stroke-width="1" />`;
-      const L = e.len, k = Math.max(1, Math.round(L / 1.2));
-      for (let j = 0; j <= k; j++) { const q = j / k, X = sx(e.x1 + (e.x2 - e.x1) * q), Y = sy(e.y1 + (e.y2 - e.y1) * q); g += vert ? `<line x1="${X - o - 2}" y1="${Y}" x2="${X + o + 2}" y2="${Y}" stroke="#2b6c8f" stroke-width="1.5" />` : `<line x1="${X}" y1="${Y - o - 2}" x2="${X}" y2="${Y + o + 2}" stroke="#2b6c8f" stroke-width="1.5" />`; }
+      // a curtain wall: glazing in the outer part with mullions every 1.2 m or so; a 100 mm RC curb (300 mm high) on the inside
+      const o1 = t / 2, cur = 0.1, gl = (off) => v ? `<line x1="${sx(e.x1 + nx * off)}" y1="${sy(e.y1 - 0.05)}" x2="${sx(e.x1 + nx * off)}" y2="${sy(e.y2 + 0.05)}" stroke="#2b6c8f" stroke-width="0.7" />` : `<line x1="${sx(e.x1 - 0.05)}" y1="${sy(e.y1 + ny * off)}" x2="${sx(e.x2 + 0.05)}" y2="${sy(e.y1 + ny * off)}" stroke="#2b6c8f" stroke-width="0.7" />`;
+      const cb = v ? [sx(Math.min(e.x1 - nx * o1, e.x1 - nx * (o1 + cur))), sy(e.y1), cur * SC, e.len * SC] : [sx(e.x1), sy(Math.min(e.y1 - ny * o1, e.y1 - ny * (o1 + cur))), e.len * SC, cur * SC];
+      g += `<rect x="${cb[0]}" y="${cb[1]}" width="${cb[2]}" height="${cb[3]}" fill="url(#hp-rc)" stroke="#222" stroke-width="${LW * 0.7}" />`;
+      g += gl(o1 * 0.15) + gl(o1 * 0.65) + gl(-o1);
+      const k = Math.max(1, Math.round(e.len / 1.2));
+      for (let j = 0; j <= k; j++) {
+        const q = e.len * j / k, mw = 0.05, md = t;
+        g += v ? `<rect x="${sx(e.x1 - md / 2)}" y="${sy(e.y1 + q - mw / 2)}" width="${md * SC}" height="${mw * SC}" fill="#2b6c8f" />` : `<rect x="${sx(e.x1 + q - mw / 2)}" y="${sy(e.y1 - md / 2)}" width="${mw * SC}" height="${md * SC}" fill="#2b6c8f" />`;
+      }
+      if (sel) g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="#f28022" stroke-width="2" />`;
+      if (SC > 45) { const mx = sx((e.x1 + e.x2) / 2 - nx * (o1 + cur + 0.12)), my = sy((e.y1 + e.y2) / 2 - ny * (o1 + cur + 0.12)); g += `<text x="${mx}" y="${my}" font-size="8" fill="#2b6c8f" text-anchor="middle" pointer-events="none"${v ? ` transform="rotate(-90 ${mx} ${my})"` : ""}>C.W. · 100 RC curb 300 H</text>`; }
       continue;
     }
-    if (e.kind === "ext" && e.facade === "pc") {
-      g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : "#6f7b87"}" stroke-width="${Math.max(4, t)}" stroke-linecap="square" /><line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="#fff" stroke-width="1" stroke-dasharray="2 5" />`;
-      continue;
-    }
-    if (e.kind === "part") {
-      // a shortened partition: the open part dashed, the solid part at its thickness; its two ends to drag when selected
-      const [a, b] = U.solidPart(u, e), v = e.x1 === e.x2, P = (d) => (v ? [e.x1, e.y1 + d] : [e.x1 + d, e.y1]);
-      if (b - a < e.len - 1e-6) g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="#4a5866" stroke-width="1" stroke-dasharray="6 4" />`;
-      const A = P(a), B = P(b);
-      g += `<line x1="${sx(A[0])}" y1="${sy(A[1])}" x2="${sx(B[0])}" y2="${sy(B[1])}" stroke="${sel ? "#f28022" : "#2a2f35"}" stroke-width="${Math.max(2, t)}" stroke-linecap="square" />`;
-      if (sel && C.can()) WENDS = { key: e.key, pts: [[A, "s"], [B, "e"]] };
-      continue;
-    }
-    g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : "#111"}" stroke-width="${Math.max(3.5, t)}" stroke-linecap="square" />`;
+    const fill = e.kind === "ext" && e.facade === "pc" ? "url(#hp-pc)" : "url(#hp-rc)";
+    const [X, Y, Wd, Ht] = band(e, 0, e.len, t, t / 2);
+    g += `<rect x="${X}" y="${Y}" width="${Wd}" height="${Ht}" fill="${fill}" />` + faces(e, 0, e.len, t, t / 2, sel ? "#f28022" : "#111", sel ? 2.4 : LW);
   }
   // the wall lines to drag / click
   for (const e of f.edges) {
@@ -325,43 +366,74 @@ function drawPlan() {
     g += v ? `<rect class="un-drag v" data-ek="${esc(e.key)}" x="${sx(e.x1) - hw}" y="${sy(e.y1)}" width="${hw * 2}" height="${(e.y2 - e.y1) * SC}" />`
       : `<rect class="un-drag h" data-ek="${esc(e.key)}" x="${sx(e.x1)}" y="${sy(e.y1) - hw}" width="${(e.x2 - e.x1) * SC}" height="${hw * 2}" />`;
   }
-  // the windows: a gap in the wall with the glazing lines
+  // the thickness of the wall a window or door sits in
+  const wallT = (room, side) => { const e = f.edges.find((q) => q.kind !== "part" && q.a === room && q.face === side) || f.edges.find((q) => q.kind === "part" && (q.a === room || q.b === room)); return e ? tOf(e) : pt; };
+  // the windows: the wall cut, frame - glass - frame, the sill inside
   for (const [i, w] of u.windows.entries()) {
     const r = u.rooms.find((q) => q.id === w.room); if (!r) continue;
-    const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1), th = Math.max(4, wall * SC) + 1, sel = SEL && SEL.t === "win" && SEL.i === i;
-    const vert = a[0] === b[0], o = th / 4;
-    g += `<line x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="#fff" stroke-width="${th}" />`;
-    g += vert ? `<line x1="${sx(a[0]) - o}" y1="${sy(a[1])}" x2="${sx(b[0]) - o}" y2="${sy(b[1])}" stroke="${sel ? "#f28022" : "#111"}" stroke-width="1" /><line x1="${sx(a[0]) + o}" y1="${sy(a[1])}" x2="${sx(b[0]) + o}" y2="${sy(b[1])}" stroke="${sel ? "#f28022" : "#111"}" stroke-width="1" />`
-      : `<line x1="${sx(a[0])}" y1="${sy(a[1]) - o}" x2="${sx(b[0])}" y2="${sy(b[1]) - o}" stroke="${sel ? "#f28022" : "#111"}" stroke-width="1" /><line x1="${sx(a[0])}" y1="${sy(a[1]) + o}" x2="${sx(b[0])}" y2="${sy(b[1]) + o}" stroke="${sel ? "#f28022" : "#111"}" stroke-width="1" />`;
-    g += `<line class="un-hit" data-wi="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${th + 8}" />`;
+    const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1), t = wallT(w.room, w.side), sel = SEL && SEL.t === "win" && SEL.i === i;
+    const vert = a[0] === b[0], st = sel ? "#f28022" : "#222";
+    const L = (off, wd, dash) => vert ? `<line x1="${sx(a[0] + off)}" y1="${sy(a[1])}" x2="${sx(b[0] + off)}" y2="${sy(b[1])}" stroke="${st}" stroke-width="${wd}"${dash ? ' stroke-dasharray="3 2"' : ""} />` : `<line x1="${sx(a[0])}" y1="${sy(a[1] + off)}" x2="${sx(b[0])}" y2="${sy(b[1] + off)}" stroke="${st}" stroke-width="${wd}"${dash ? ' stroke-dasharray="3 2"' : ""} />`;
+    g += vert ? `<rect x="${sx(a[0] - t / 2)}" y="${sy(a[1])}" width="${t * SC}" height="${(b[1] - a[1]) * SC}" fill="#fff" />` : `<rect x="${sx(a[0])}" y="${sy(a[1] - t / 2)}" width="${(b[0] - a[0]) * SC}" height="${t * SC}" fill="#fff" />`;
+    g += L(-t / 2, 0.7) + L(0, 0.6) + L(t / 2, 0.7);
+    // the jambs
+    g += vert ? `<line x1="${sx(a[0] - t / 2)}" y1="${sy(a[1])}" x2="${sx(a[0] + t / 2)}" y2="${sy(a[1])}" stroke="${st}" stroke-width="${LW}" /><line x1="${sx(b[0] - t / 2)}" y1="${sy(b[1])}" x2="${sx(b[0] + t / 2)}" y2="${sy(b[1])}" stroke="${st}" stroke-width="${LW}" />` : `<line x1="${sx(a[0])}" y1="${sy(a[1] - t / 2)}" x2="${sx(a[0])}" y2="${sy(a[1] + t / 2)}" stroke="${st}" stroke-width="${LW}" /><line x1="${sx(b[0])}" y1="${sy(b[1] - t / 2)}" x2="${sx(b[0])}" y2="${sy(b[1] + t / 2)}" stroke="${st}" stroke-width="${LW}" />`;
+    g += `<line class="un-hit" data-wi="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${t * SC + 8}" />`;
   }
-  // the doors: a gap, the leaf from its hinge, the swing
+  // the doors: the wall cut, a frame at each jamb, the leaf from its hinge, the swing
   for (const [i, d] of (u.doors || []).entries()) {
     const r = u.rooms.find((q) => q.id === d.room); if (!r) continue;
     const dw = +d.w || 0.8, [a, b, inn] = sideSeg(r, d.side, +d.at || 0, dw), sel = SEL && SEL.t === "door" && SEL.i === i;
+    const t = wallT(d.room, d.side), vert = a[0] === b[0], st = sel ? "#f28022" : "#222", fr = 0.04;
     const H = d.hinge === "end" ? b : a, O = d.hinge === "end" ? a : b, k = d.swing === "out" ? -1 : 1;
     const P = [H[0] + inn[0] * dw * k, H[1] + inn[1] * dw * k];
     const cr = (P[0] - H[0]) * (O[1] - H[1]) - (P[1] - H[1]) * (O[0] - H[0]);
-    const th = (d.entry ? wall : pt) * SC + 3;
-    g += `<line x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="#c6d9ef" stroke-width="${th}" />`;
-    g += `<path d="M ${sx(H[0])} ${sy(H[1])} L ${sx(P[0])} ${sy(P[1])} A ${dw * SC} ${dw * SC} 0 0 ${cr > 0 ? 1 : 0} ${sx(O[0])} ${sy(O[1])}" fill="none" stroke="${sel ? "#f28022" : "#2a2f35"}" stroke-width="${sel ? 2 : 1}" />`;
-    g += `<line class="un-hit" data-di="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${th + 10}" />`;
+    g += vert ? `<rect x="${sx(a[0] - t / 2 - 0.01)}" y="${sy(a[1])}" width="${(t + 0.02) * SC}" height="${dw * SC}" fill="${ROOMFILL[r.kind] || "#fbf3d5"}" />` : `<rect x="${sx(a[0])}" y="${sy(a[1] - t / 2 - 0.01)}" width="${dw * SC}" height="${(t + 0.02) * SC}" fill="${ROOMFILL[r.kind] || "#fbf3d5"}" />`;
+    // the frames, 40 mm along the opening, the wall's thickness
+    for (const [p, s2] of [[a, 1], [b, -1]]) g += vert ? `<rect x="${sx(p[0] - t / 2)}" y="${sy(s2 > 0 ? p[1] : p[1] - fr)}" width="${t * SC}" height="${fr * SC}" fill="#fff" stroke="${st}" stroke-width="0.7" />` : `<rect x="${sx(s2 > 0 ? p[0] : p[0] - fr)}" y="${sy(p[1] - t / 2)}" width="${fr * SC}" height="${t * SC}" fill="#fff" stroke="${st}" stroke-width="0.7" />`;
+    // the leaf: a thin rectangle from the hinge, and its swing
+    const lx = Math.min(H[0], P[0]), ly = Math.min(H[1], P[1]), lw = Math.abs(P[0] - H[0]) || fr, lh = Math.abs(P[1] - H[1]) || fr;
+    g += `<rect x="${sx(lx - (lw === fr ? fr / 2 : 0))}" y="${sy(ly - (lh === fr ? fr / 2 : 0))}" width="${lw * SC}" height="${lh * SC}" fill="#fff" stroke="${st}" stroke-width="${sel ? 1.6 : 0.8}" />`;
+    g += `<path d="M ${sx(P[0])} ${sy(P[1])} A ${dw * SC} ${dw * SC} 0 0 ${cr > 0 ? 1 : 0} ${sx(O[0])} ${sy(O[1])}" fill="none" stroke="${st}" stroke-width="${sel ? 1.4 : 0.5}" />`;
+    g += `<line class="un-hit" data-di="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${t * SC + 4}" />`;
   }
-  // the labels
+  // the zones' hit areas and labels (over the walls, under the room labels)
+  for (const [zi, z] of (u.zones || []).entries()) {
+    const k = U.KINDS[z.kind] || {}, X = sx(z.x + z.w / 2), Y = sy(z.y + z.h / 2), fs = Math.max(7, Math.min(11, z.w * SC / 8, SC * 0.26));
+    // picked by its dashed outline, so the fittings inside it stay clickable
+    g += `<rect class="un-z" data-zi="${zi}" x="${sx(z.x)}" y="${sy(z.y)}" width="${z.w * SC}" height="${z.h * SC}" fill="none" stroke="transparent" stroke-width="10" pointer-events="stroke" />`;
+    g += `<text x="${X}" y="${Y - 2}" text-anchor="middle" font-size="${fs}" fill="#1f2a36" pointer-events="none">${esc(k.zh || "")}</text><text x="${X}" y="${Y + fs}" text-anchor="middle" font-size="${fs - 1}" fill="#1f2a36" pointer-events="none">${esc(k.ab || z.kind)}</text>`;
+    if (SEL && SEL.t === "z" && SEL.i === zi && C.can()) for (const [cx, cy, c] of [[z.x, z.y, "nw"], [z.x + z.w, z.y, "ne"], [z.x + z.w, z.y + z.h, "se"], [z.x, z.y + z.h, "sw"]]) g += `<rect class="un-zh" data-zh="${zi}:${c}" x="${sx(cx) - 5}" y="${sy(cy) - 5}" width="10" height="10" fill="#fff" stroke="#f28022" stroke-width="2" />`;
+  }
+  // the labels: one a space, at its largest piece, its area when it has more than one
   for (const r of u.rooms) {
+    if (r.space && r.space !== r.id) continue;
     const k = U.KINDS[r.kind] || {}; if (!k.zh && !k.ab) continue;
-    const X = sx(r.x + r.w / 2), Y = sy(r.y + r.h / 2), w = r.w * SC, fs = Math.max(7, Math.min(13, w / 7, SC * 0.3)), lv = near && near.has(r.id);
+    const parts = u.rooms.filter((q) => U.spaceOf(q) === r.id), big = parts.reduce((m, q) => (q.w * q.h > m.w * m.h ? q : m), r);
+    const X = sx(big.x + big.w / 2), Y = sy(big.y + big.h / 2), w = big.w * SC, fs = Math.max(7, Math.min(12, w / 7, SC * 0.28)), lv = near && near.has(r.id);
     const no = r.name && /\d/.test(r.name) ? r.name.match(/\d+/)[0] : "";
-    const small = r.h * SC < fs * 4.2;
+    const small = big.h * SC < fs * 4.2, size = parts.length > 1 ? f1(parts.reduce((s2, q) => s2 + q.w * q.h, 0)) + " m²" : `${f2(r.w)} × ${f2(r.h)}`;
     g += `<text x="${X}" y="${small ? Y + fs / 3 : Y - 4}" text-anchor="middle" font-size="${fs}" fill="#1f2a36" pointer-events="none">${esc(k.zh)}${no ? " " + no : ""}</text>` + (small && !lv ? "" : `<text x="${X}" y="${Y + fs}" text-anchor="middle" font-size="${fs - 1}" fill="#1f2a36" pointer-events="none">${esc(k.ab)}${no}</text>
-      <text x="${X}" y="${Y + fs * 2 + 2}" text-anchor="middle" font-size="${lv ? fs : fs - 3}" font-weight="${lv ? 700 : 400}" fill="${lv ? "#b4520a" : "#5b6b7b"}" pointer-events="none">${f2(r.w)} × ${f2(r.h)}</text>`);
+      <text x="${X}" y="${Y + fs * 2 + 2}" text-anchor="middle" font-size="${lv ? fs : fs - 3}" font-weight="${lv ? 700 : 400}" fill="${lv ? "#b4520a" : "#5b6b7b"}" pointer-events="none">${size}</text>`);
+  }
+  // the saleable and GFA lines, to check the figures
+  const AL = ALINES();
+  if (AL !== "off") {
+    const ring = (rg, col, dash) => rg.rings.map((pts) => `<polygon points="${pts.map(([x, y]) => sx(x) + "," + sy(y)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6" stroke-dasharray="${dash}" pointer-events="none" />`).join("");
+    const exs2 = U.expandBays(u.extras || []).filter((e) => e.kind === "bal" || e.kind === "up");
+    if (AL === "saleable" || AL === "both") g += ring(f.ringS, "#c62828", "9 3 2 3") + exs2.map((e) => `<rect x="${sx(e.x)}" y="${sy(e.y)}" width="${e.w * SC}" height="${e.h * SC}" fill="none" stroke="#c62828" stroke-width="1.2" stroke-dasharray="9 3 2 3" pointer-events="none" />`).join("");
+    if (AL === "gfa" || AL === "both") g += ring(f.ringG, "#1565c0", "6 3");
+    const lines = [];
+    if (AL === "saleable" || AL === "both") lines.push([`#c62828`, `Saleable ${f2(f.saleable)} m² = within the line ${f2(f.ringArea)} + balcony ${f2(f.bal)} + UP ${f2(f.up)}`]);
+    if (AL === "gfa" || AL === "both") lines.push([`#1565c0`, `GFA ${f2(f.gfa)} m² = within the line ${f2(f.gfaRing)}${f.pcEx ? "" : ""} + balcony ${f2(f.bal - f.balEx)} + UP ${f2(f.up - f.upEx)} (not exempt)${Math.abs(f.gfa - (f.gfaRing + f.bal - f.balEx + f.up - f.upEx)) > 0.02 ? ` · corners ${f2(f.gfa - (f.gfaRing + f.bal - f.balEx + f.up - f.upEx))}` : ""}`]);
+    lines.forEach(([c, t2], k) => { g += `<text x="14" y="${bh - 46 + k * 15}" font-size="11.5" fill="${c}" font-weight="600">${esc(t2)}</text>`; });
   }
   // a selected partition's ends: drag to shorten it
   if (WENDS) for (const [p, k] of WENDS.pts) g += `<circle class="un-wend" data-wend="${k}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7" fill="#fff" stroke="#f28022" stroke-width="2.5" />`;
   g += dims(u, f, sx, sy);
   if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f2(LIVE.d)} m</text>`;
   g += `<text x="${bw - 20}" y="${bh - 18}" text-anchor="end" font-size="11" fill="#6b7785">${esc(u.name || "")} · ${f.saleableFt} ft² · ${f1(f.saleable)} m²</text>`;
-  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${g}</svg>${toolbar()}${popup(u, f, sx, sy, bw, bh)}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
+  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${HATCH}${g}</svg>${toolbar()}${popup(u, f, sx, sy, bw, bh)}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
 }
 
 /* the dimension chains: a tick at every wall line along each side, the room spans between, the overall outside */
@@ -395,18 +467,59 @@ function dims(u, f, sx, sy) {
   return g;
 }
 
+/* a fitting or a piece of furniture as on the office's plans: drawn at rotation 0 in its own box, then turned */
 function fixture(x, sx, sy, sel, i) {
-  const X = sx(x.x), Y = sy(x.y), w = x.w * SC, h = x.h * SC, st = sel ? "#f28022" : "#2a2f35", sw = sel ? 2 : 1;
-  let g = `<g class="un-fix" data-fi="${i}">`;
-  if (x.kind === "bath") g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" rx="4" fill="#fff" stroke="${st}" stroke-width="${sw}" /><rect x="${X + 5}" y="${Y + 5}" width="${w - 10}" height="${h - 10}" rx="10" fill="none" stroke="${st}" stroke-width="0.8" />`;
-  else if (x.kind === "shower") g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="#fff" stroke="${st}" stroke-width="${sw}" /><line x1="${X}" y1="${Y}" x2="${X + w}" y2="${Y + h}" stroke="${st}" stroke-width="0.6" /><line x1="${X + w}" y1="${Y}" x2="${X}" y2="${Y + h}" stroke="${st}" stroke-width="0.6" />`;
-  else if (x.kind === "wc") { const long = h >= w; g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" rx="${Math.min(w, h) / 2.2}" fill="#fff" stroke="${st}" stroke-width="${sw}" />` + (long ? `<rect x="${X}" y="${(x.rot === 180 ? Y + h - h * 0.3 : Y)}" width="${w}" height="${h * 0.3}" fill="#fff" stroke="${st}" stroke-width="${sw}" />` : `<rect x="${(x.rot === 270 ? X + w - w * 0.3 : X)}" y="${Y}" width="${w * 0.3}" height="${h}" fill="#fff" stroke="${st}" stroke-width="${sw}" />`); }
-  else if (x.kind === "basin") g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="#fff" stroke="${st}" stroke-width="${sw}" /><ellipse cx="${X + w / 2}" cy="${Y + h / 2}" rx="${w * 0.35}" ry="${h * 0.32}" fill="none" stroke="${st}" stroke-width="0.8" />`;
-  else if (x.kind === "counter") { const long = w >= h; g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="#fff" stroke="${st}" stroke-width="${sw}" stroke-dasharray="5 2" />` + (long ? `<rect x="${X + w * 0.15}" y="${Y + h * 0.2}" width="${Math.min(w * 0.3, 0.5 * SC)}" height="${h * 0.6}" fill="none" stroke="${st}" /><circle cx="${X + w * 0.75}" cy="${Y + h / 2}" r="${h * 0.18}" fill="none" stroke="${st}" />` : `<rect x="${X + w * 0.2}" y="${Y + h * 0.15}" width="${w * 0.6}" height="${Math.min(h * 0.3, 0.5 * SC)}" fill="none" stroke="${st}" /><circle cx="${X + w / 2}" cy="${Y + h * 0.75}" r="${w * 0.18}" fill="none" stroke="${st}" />`); }
-  else if (x.kind === "sink") g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" rx="3" fill="#fff" stroke="${st}" stroke-width="${sw}" />`;
-  else if (x.kind === "hob") g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="#fff" stroke="${st}" stroke-width="${sw}" /><circle cx="${X + w * 0.3}" cy="${Y + h / 2}" r="${Math.min(w, h) * 0.18}" fill="none" stroke="${st}" /><circle cx="${X + w * 0.7}" cy="${Y + h / 2}" r="${Math.min(w, h) * 0.18}" fill="none" stroke="${st}" />`;
-  else if (x.kind === "wardrobe") g += `<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="none" stroke="${st}" stroke-width="${sw}" stroke-dasharray="2 2" /><line x1="${X}" y1="${Y}" x2="${X + w}" y2="${Y + h}" stroke="${st}" stroke-width="0.6" />`;
-  return g + `<rect class="un-fhit" data-fi="${i}" x="${X}" y="${Y}" width="${w}" height="${h}" fill="transparent" /></g>`;
+  const rot = ((+x.rot || 0) % 360 + 360) % 360, q = rot === 90 || rot === 270;
+  const W = (q ? x.h : x.w) * SC, H = (q ? x.w : x.h) * SC, cx = sx(x.x + x.w / 2), cy = sy(x.y + x.h / 2);
+  const st = sel ? "#f28022" : "#2a2f35", sw = sel ? 1.6 : 0.6, th = 0.45;
+  const R = (a, b, c, d, extra = "") => `<rect x="${a}" y="${b}" width="${Math.max(0, c)}" height="${Math.max(0, d)}" fill="#fff" stroke="${st}" stroke-width="${sw}"${extra} />`;
+  const Ln = (a, b, c, d, w = th, dash = "") => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="${st}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""} />`;
+  const Ci = (a, b, r, w = th) => `<circle cx="${a}" cy="${b}" r="${Math.max(0.5, r)}" fill="none" stroke="${st}" stroke-width="${w}" />`;
+  const m = Math.min(W, H);
+  let d = "";
+  switch (x.kind) {
+    case "bath": d = R(0, 0, W, H) + `<rect x="${W * 0.06}" y="${H * 0.1}" width="${W * 0.88}" height="${H * 0.8}" rx="${m * 0.3}" fill="none" stroke="${st}" stroke-width="${th}" />` + Ci(W * 0.85, H / 2, m * 0.05); break;
+    case "shower": d = R(0, 0, W, H) + Ln(0, 0, W, H) + Ln(W, 0, 0, H) + Ci(W / 2, H / 2, m * 0.07) + Ci(W / 2, H / 2, m * 0.03); break;
+    case "wc": d = R(W * 0.08, 0, W * 0.84, H * 0.26) + `<ellipse cx="${W / 2}" cy="${H * 0.62}" rx="${W * 0.42}" ry="${H * 0.36}" fill="#fff" stroke="${st}" stroke-width="${sw}" /><ellipse cx="${W / 2}" cy="${H * 0.64}" rx="${W * 0.27}" ry="${H * 0.24}" fill="none" stroke="${st}" stroke-width="${th}" />`; break;
+    case "basin": d = R(0, 0, W, H) + `<ellipse cx="${W / 2}" cy="${H * 0.55}" rx="${W * 0.34}" ry="${H * 0.32}" fill="none" stroke="${st}" stroke-width="${th}" />` + Ci(W / 2, H * 0.14, m * 0.05); break;
+    case "counter": {
+      // a kitchen counter: its front line dashed (the wall cabinets above), a sink and a two-ring hob
+      const L = W >= H, sw2 = L ? Math.min(W * 0.32, 0.55 * SC) : W * 0.7, sh2 = L ? H * 0.7 : Math.min(H * 0.32, 0.55 * SC);
+      d = R(0, 0, W, H) + (L ? Ln(0, H * 0.9, W, H * 0.9, th, "4 2") : Ln(W * 0.9, 0, W * 0.9, H, th, "4 2"));
+      const sxx = L ? W * 0.12 : (W - sw2) / 2, syy = L ? (H - sh2) / 2 : H * 0.12;
+      d += `<rect x="${sxx}" y="${syy}" width="${sw2}" height="${sh2}" rx="3" fill="#fff" stroke="${st}" stroke-width="${th}" />` + Ci(sxx + sw2 / 2, syy + sh2 / 2, m * 0.06);
+      const hx = L ? W * 0.72 : W / 2, hy = L ? H / 2 : H * 0.72, r1 = m * 0.17;
+      d += L ? Ci(hx - r1 * 1.15, hy, r1) + Ci(hx + r1 * 1.15, hy, r1 * 0.8) : Ci(hx, hy - r1 * 1.15, r1) + Ci(hx, hy + r1 * 1.15, r1 * 0.8);
+      break;
+    }
+    case "sink": d = R(0, 0, W, H) + `<rect x="${W * 0.1}" y="${H * 0.15}" width="${W * 0.8}" height="${H * 0.7}" rx="3" fill="none" stroke="${st}" stroke-width="${th}" />` + Ci(W / 2, H / 2, m * 0.07) + Ln(W / 2, 0, W / 2, H * 0.15); break;
+    case "hob": d = R(0, 0, W, H) + Ci(W * 0.3, H / 2, m * 0.25) + Ci(W * 0.3, H / 2, m * 0.12) + Ci(W * 0.72, H / 2, m * 0.2) + Ci(W * 0.72, H / 2, m * 0.09); break;
+    case "fridge": d = R(0, 0, W, H) + Ln(0, H * 0.12, W, H * 0.12) + `<text x="${W / 2}" y="${H * 0.62}" text-anchor="middle" font-size="${Math.max(5, m * 0.28)}" fill="${st}">REF</text>`; break;
+    case "wm": d = R(0, 0, W, H) + Ci(W / 2, H / 2, m * 0.34) + Ci(W / 2, H / 2, m * 0.2) + `<text x="${W / 2}" y="${H * 0.95}" text-anchor="middle" font-size="${Math.max(4, m * 0.14)}" fill="${st}">W/M</text>`; break;
+    case "wardrobe": {
+      d = `<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="${st}" stroke-width="${sw}" />` + Ln(0, H / 2, W, H / 2, th, "3 2");
+      const n2 = Math.max(2, Math.round(W / (0.12 * SC)));
+      for (let k = 1; k < n2; k++) d += Ln(W * k / n2, H * 0.2, W * k / n2, H * 0.8, 0.35);
+      break;
+    }
+    case "bed": {
+      // a bed, its head at the top: pillows (two on a double), the cover folded back at one corner
+      const dbl = W > 1.2 * SC;
+      d = R(0, 0, W, H) + (dbl ? R(W * 0.06, H * 0.04, W * 0.4, H * 0.14) + R(W * 0.54, H * 0.04, W * 0.4, H * 0.14) : R(W * 0.12, H * 0.04, W * 0.76, H * 0.14));
+      d += Ln(0, H * 0.22, W, H * 0.22) + `<path d="M ${W * 0.55} ${H * 0.22} L ${W} ${H * 0.22} L ${W} ${H * 0.5} Z" fill="#fff" stroke="${st}" stroke-width="${th}" />` + Ln(W * 0.55, H * 0.22, W, H * 0.5);
+      break;
+    }
+    case "sofa": d = R(0, 0, W, H) + R(0, 0, W, H * 0.25) + R(0, H * 0.25, W * 0.1, H * 0.75) + R(W * 0.9, H * 0.25, W * 0.1, H * 0.75) + Ln(W / 2, H * 0.25, W / 2, H); break;
+    case "dining": {
+      const cw = Math.min(W * 0.28, 0.45 * SC), ch = Math.min(H * 0.32, 0.42 * SC);
+      for (const fx of [0.2, 0.62]) d += R(W * fx, -ch * 0.75, cw, ch) + R(W * fx, H - ch * 0.25, cw, ch);
+      d += R(0, 0, W, H);
+      break;
+    }
+    case "desk": d = R(0, 0, W, H) + `<rect x="${W * 0.35}" y="${H * 0.75}" width="${W * 0.3}" height="${H * 0.5}" rx="3" fill="#fff" stroke="${st}" stroke-width="${th}" />`; break;
+    default: d = R(0, 0, W, H);
+  }
+  return `<g class="un-fix" data-fi="${i}" transform="translate(${cx} ${cy}) rotate(${rot}) translate(${-W / 2} ${-H / 2})">${d}<rect class="un-fhit" data-fi="${i}" x="0" y="0" width="${W}" height="${H}" fill="transparent" /></g>`;
 }
 
 function toolbar() {
@@ -416,6 +529,7 @@ function toolbar() {
     <select data-roomk title="The kind of the room you draw">${Object.entries(U.KINDS).map(([k, q]) => `<option value="${k}"${ROOMK === k ? " selected" : ""}>${q.label}</option>`).join("")}</select>
     <select data-xadd title="Then click an external wall: it goes outside it"><option value="">+ Balcony / UP …</option>${Object.entries(XADD).map(([k, v]) => `<option value="${k}"${TOOL === "x:" + k ? " selected" : ""}>${v.label}</option>`).join("")}</select>
     <select data-fixadd title="Click a room to place it"><option value="">+ Fitting …</option>${Object.entries(FIXK).map(([k, v]) => `<option value="${k}"${TOOL === "fix:" + k ? " selected" : ""}>${v}</option>`).join("")}</select>
+    <select data-alines title="The saleable and GFA lines, to check the figures"><option value="off"${ALINES() === "off" ? " selected" : ""}>Area lines: off</option><option value="saleable"${ALINES() === "saleable" ? " selected" : ""}>Saleable line</option><option value="gfa"${ALINES() === "gfa" ? " selected" : ""}>GFA line</option><option value="both"${ALINES() === "both" ? " selected" : ""}>Saleable + GFA</option></select>
     <select data-dims title="Dimensions"><option value="chains"${DIMS() === "chains" ? " selected" : ""}>Dimensions: chains</option><option value="overall"${DIMS() === "overall" ? " selected" : ""}>overall</option><option value="off"${DIMS() === "off" ? " selected" : ""}>off</option></select></div>`;
 }
 
@@ -428,7 +542,7 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     at = [sx((e.x1 + e.x2) / 2), sy((e.y1 + e.y2) / 2)];
     const o = u.walls[e.key] || {}, open = U.isOpen(u, e), def = e.kind === "ext" ? u.wall : e.kind === "party" ? u.party : u.part;
     html = `<b>${e.kind === "ext" ? "External wall" : e.kind === "party" ? "Party wall" : "Partition"}</b> ${f2(e.len)} m
-      ${e.kind === "part" ? `<button type="button" data-pw="toggle">${open ? "Put the wall back" : "Delete wall"}</button><button type="button" data-pw="join">Join the rooms</button>
+      ${e.kind === "part" ? `<button type="button" data-pw="toggle">${open ? "Put the wall back" : "Delete wall"}</button><button type="button" data-pw="join">Join the rooms</button><button type="button" data-pw="space">${(() => { const A = u.rooms.find((q) => q.id === e.a), B = u.rooms.find((q) => q.id === e.b); return A && B && U.spaceOf(A) === U.spaceOf(B) ? "Separate the spaces" : "One space (L-shaped)"; })()}</button>
         ${open ? "" : `<label>solid from <input type="number" step="0.05" min="0" data-pws value="${f2(U.solidPart(u, e)[0])}"> to <input type="number" step="0.05" min="0" data-pwe value="${f2(U.solidPart(u, e)[1])}"> m</label>${o.s != null || o.e != null ? `<button type="button" data-pw="full">Full length</button>` : ""}<small>or drag its ends</small>`}` : ""}
       ${e.kind === "ext" ? `<label>façade <select data-pwf>${Object.entries(U.FACADES).map(([k, q]) => `<option value="${k}"${(o.f || u.facadeType || "rc") === k ? " selected" : ""}>${q.label}</option>`).join("")}</select></label>` : ""}
       <label>thickness <input type="number" step="0.005" min="0" data-pwt value="${o.t != null ? o.t : ""}" placeholder="${e.kind === "ext" && U.FACADES[o.f || u.facadeType || "rc"].t != null ? U.FACADES[o.f || u.facadeType || "rc"].t : def}"> m</label>
@@ -441,6 +555,10 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
     html = `<b>Window</b> <label>w <input type="number" step="0.05" data-pww value="${w.w}"> m</label><button type="button" data-pwin="del">Remove</button><small>drag it along the wall</small>`;
+  } else if (SEL.t === "z") {
+    const z = (u.zones || [])[SEL.i]; if (!z) return "";
+    at = [sx(z.x + z.w), sy(z.y)];
+    html = `<b>${esc((U.KINDS[z.kind] || {}).label || z.kind)}</b> <label><input type="number" step="0.05" data-pzw value="${z.w}"> × <input type="number" step="0.05" data-pzh value="${z.h}"> m</label><button type="button" data-pz2="del">Remove</button><small>a zone in the room: drag it, or its corners - no wall moves</small>`;
   } else if (SEL.t === "x") {
     const e = (u.extras || [])[SEL.i]; if (!e) return "";
     at = [sx(e.x + e.w), sy(e.y)];
@@ -485,7 +603,7 @@ function roomPreview(d) {
   if (!g) { g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.setAttribute("class", "un-newroom"); svg.appendChild(g); }
   const x0 = Math.min(d.P0[0], d.P1[0]), y0 = Math.min(d.P0[1], d.P1[1]), w = Math.abs(d.P1[0] - d.P0[0]), h = Math.abs(d.P1[1] - d.P0[1]);
   const X = OX + (x0 - BX) * SC, Y = OY + (y0 - BY) * SC;
-  const ok = U.addRoom(cur(), { x: x0, y: y0, w, h }, ROOMK);
+  const ok = ROOMK === "OKIT" || ROOMK === "KIT" ? w >= 0.3 && h >= 0.3 : U.addRoom(cur(), { x: x0, y: y0, w, h }, ROOMK);
   g.innerHTML = `<rect x="${X}" y="${Y}" width="${w * SC}" height="${h * SC}" fill="${ok ? "rgba(242,128,34,.18)" : "rgba(200,40,40,.15)"}" stroke="${ok ? "#f28022" : "#c62828"}" stroke-width="1.5" stroke-dasharray="6 3" />
     <text x="${X + w * SC / 2}" y="${Y + h * SC / 2}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#b4520a">${f2(w)} × ${f2(h)} m · ${f2(w * h)} m²</text>`;
 }
@@ -495,6 +613,7 @@ function wirePlan() {
   let drag = null;
   host.addEventListener("change", (ev) => {
     const t = ev.target, u = cur(); if (!u) return;
+    if (t.dataset.alines != null) { try { localStorage.setItem("lwk-viewer:un-alines", t.value); } catch (e) {} return drawPlan(); }
     if (t.dataset.dims != null) { try { localStorage.setItem("lwk-viewer:un-dims", t.value); } catch (e) {} return drawPlan(); }
     if (t.dataset.roomk != null) { ROOMK = t.value; TOOL = "room"; return drawPlan(); }
     if (t.dataset.xadd != null) { TOOL = t.value ? "x:" + t.value : "select"; SEL = null; return drawPlan(); }
@@ -508,6 +627,7 @@ function wirePlan() {
       if (o.s === 0) delete o.s; if (o.e != null && Math.abs(o.e - e.len) < 1e-6) delete o.e;
       return changed();
     }
+    if (t.dataset.pzw != null || t.dataset.pzh != null) { const z = u.zones[SEL.i]; const v = Math.max(0.3, Math.round((parseFloat(t.value) || 0) * 20) / 20); if (t.dataset.pzw != null) z.w = v; else z.h = v; return changed(); }
     if (t.dataset.pwt != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; if (t.value === "") delete o.t; else o.t = Math.max(0, parseFloat(t.value)); return changed(); }
     if (t.dataset.pdw != null) { u.doors[SEL.i].w = Math.max(0.5, parseFloat(t.value) || 0.8); return changed(); }
     if (t.dataset.pww != null) { u.windows[SEL.i].w = Math.max(0.3, parseFloat(t.value) || 1); return changed(); }
@@ -522,6 +642,12 @@ function wirePlan() {
     const f = U.figures(u);
     if (d.pw) {
       const e = f.edges.find((q) => q.key === SEL.key); if (!e) return;
+      if (d.pw === "space") {
+        const A = u.rooms.find((q) => q.id === e.a), B = u.rooms.find((q) => q.id === e.b); if (!A || !B) return;
+        if (U.spaceOf(A) === U.spaceOf(B)) { for (const r of [A, B]) if (r.space && r.space !== r.id) delete r.space; if (!A.space && !B.space) { /* the main one keeps the rest */ } }
+        else { const main = (A.kind === "LD" || A.w * A.h >= B.w * B.h) ? A : B, other = main === A ? B : A, sp = U.spaceOf(main), was = U.spaceOf(other); for (const r of u.rooms) if (U.spaceOf(r) === was) r.space = sp; if (main.space === main.id) delete main.space; }
+        return changed();
+      }
       if (d.pw === "full") { const o = u.walls[e.key] || {}; delete o.s; delete o.e; return changed(); }
       if (d.pw === "toggle") { const o = u.walls[e.key] = u.walls[e.key] || {}; o.open = !U.isOpen(u, e); return changed(); }
       if (d.pw === "join") { const v = U.joinRooms(u, e.a, e.b); if (!v) return toast("These two rooms do not make one rectangle", true); { const st0 = store(); st0.list[st0.sel] = v; } SEL = null; return changed(); }
@@ -543,6 +669,7 @@ function wirePlan() {
       if (e.h >= e.w) e.h = +Math.max(0.3, e.h - L).toFixed(3); else e.w = +Math.max(0.3, e.w - L).toFixed(3);
       return changed();
     }
+    if (d.pz2 === "del") { u.zones.splice(SEL.i, 1); SEL = null; return changed(); }
     if (d.pwin === "del") { u.windows.splice(SEL.i, 1); SEL = null; return changed(); }
     if (d.pf) { if (d.pf === "rot") u.fixtures[SEL.i] = U.rotateFixture(u.fixtures[SEL.i]); if (d.pf === "del") { u.fixtures.splice(SEL.i, 1); SEL = null; } return changed(); }
   });
@@ -592,13 +719,15 @@ function wirePlan() {
         cap(host, ev); ev.preventDefault(); return;
       }
       if (TOOL.startsWith("fix:") && t.dataset.rid) {
-        const k = TOOL.slice(4), sz = { bath: [1.5, 0.7], shower: [0.9, 0.9], wc: [0.4, 0.65], basin: [0.5, 0.4], counter: [1.8, 0.6], sink: [0.6, 0.5], hob: [0.6, 0.5], wardrobe: [1.2, 0.6] }[k];
+        const k = TOOL.slice(4), sz = { bath: [1.5, 0.7], shower: [0.9, 0.9], wc: [0.4, 0.65], basin: [0.5, 0.4], counter: [1.8, 0.6], sink: [0.6, 0.5], hob: [0.6, 0.5], fridge: [0.6, 0.65], wm: [0.6, 0.6], wardrobe: [1.2, 0.6], bed: [1.5, 1.9], sofa: [1.8, 0.85], dining: [1.2, 0.8], desk: [1.0, 0.55] }[k];
         u.fixtures.push({ kind: k, x: +(P[0] - sz[0] / 2).toFixed(2), y: +(P[1] - sz[1] / 2).toFixed(2), w: sz[0], h: sz[1], rot: 0 });
         SEL = { t: "fix", i: u.fixtures.length - 1 }; TOOL = "select"; return changed();
       }
       return;
     }
-    if (t.dataset.xi != null) { SEL = { t: "x", i: +t.dataset.xi }; if (can) drag = { kind: "x", i: +t.dataset.xi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
+    if (t.dataset.zh && can) { const [zi, c] = t.dataset.zh.split(":"); drag = { kind: "zh", i: +zi, c, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; }
+    else if (t.dataset.zi != null) { SEL = { t: "z", i: +t.dataset.zi }; if (can) drag = { kind: "zone", i: +t.dataset.zi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
+    else if (t.dataset.xi != null) { SEL = { t: "x", i: +t.dataset.xi }; if (can) drag = { kind: "x", i: +t.dataset.xi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.wend && WENDS && can) { drag = { kind: "wend", key: WENDS.key, end: t.dataset.wend, u0: JSON.parse(JSON.stringify(u)), moved: false }; }
     else if (t.dataset.di != null) { SEL = { t: "door", i: +t.dataset.di }; if (can) drag = { kind: "door", i: +t.dataset.di, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.wi != null) { SEL = { t: "win", i: +t.dataset.wi }; if (can) drag = { kind: "win", i: +t.dataset.wi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
@@ -646,6 +775,19 @@ function wirePlan() {
       const L = o.side === "n" || o.side === "s" ? r.w : r.h, delta = o.side === "n" || o.side === "s" ? dx : dy;
       o.at = Math.max(0, Math.min(L - (+o.w || 0.8), snapv((+o.at || 0) + delta)));
     } else if (drag.kind === "fix") { const x = v.fixtures[drag.i]; x.x = snapv(x.x + dx); x.y = snapv(x.y + dy); }
+    else if (drag.kind === "zone" || drag.kind === "zh") {
+      // a zone: moved or a corner pulled, to the wall lines near (0.25 m) or the 50 mm grid; no room changes
+      const z = v.zones[drag.i], xs = [], ys = [];
+      for (const r of v.rooms) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
+      const s1 = (p, L) => { let b = null; for (const a of L) if (Math.abs(a - p) <= 0.25 && (b == null || Math.abs(a - p) < Math.abs(b - p))) b = a; return ev.altKey || b == null ? snapv(p) : +b.toFixed(3); };
+      if (drag.kind === "zone") { const sn = (p, w, L) => { let b = null; for (const a of L) for (const c of [a - p, a - (p + w)]) if (Math.abs(c) <= 0.25 && (b == null || Math.abs(c) < Math.abs(b))) b = c; return ev.altKey || b == null ? snapv(p) : +(p + b).toFixed(3); }; z.x = sn(z.x + dx, z.w, xs); z.y = sn(z.y + dy, z.h, ys); }
+      else {
+        let x0 = z.x, y0 = z.y, x1 = z.x + z.w, y1 = z.y + z.h;
+        if (drag.c.includes("w")) x0 = s1(x0 + dx, xs); else x1 = s1(x1 + dx, xs);
+        if (drag.c.includes("n")) y0 = s1(y0 + dy, ys); else y1 = s1(y1 + dy, ys);
+        if (x1 - x0 >= 0.3 && y1 - y0 >= 0.3) Object.assign(z, { x: +x0.toFixed(3), y: +y0.toFixed(3), w: +(x1 - x0).toFixed(3), h: +(y1 - y0).toFixed(3) });
+      }
+    }
     else if (drag.kind === "x") {
       // a balcony / UP / bay: to the wall lines near (0.25 m), else the 50 mm grid
       const x = v.extras[drag.i], xs = [], ys = [];
@@ -664,6 +806,12 @@ function wirePlan() {
       const u = cur(); if (!u || !d.P1) return drawPlan();
       const rect = { x: Math.min(d.P0[0], d.P1[0]), y: Math.min(d.P0[1], d.P1[1]), w: Math.abs(d.P1[0] - d.P0[0]), h: Math.abs(d.P1[1] - d.P0[1]) };
       if (rect.w < 0.05 && rect.h < 0.05) return drawPlan();
+      if (ROOMK === "OKIT" || ROOMK === "KIT") {
+        if (rect.w < 0.3 || rect.h < 0.3) return drawPlan();
+        const q = (a) => Math.round(a * 20) / 20;
+        (u.zones = u.zones || []).push({ kind: ROOMK, x: q(rect.x), y: q(rect.y), w: q(rect.w), h: q(rect.h) });
+        SEL = { t: "z", i: u.zones.length - 1 }; return changed();
+      }
       const v = U.addRoom(u, rect, ROOMK);
       if (!v) { toast("A room is at least 0.6 × 0.6 m and does not overlap another room", true); return drawPlan(); }
       const nr = v.rooms[v.rooms.length - 1];
@@ -686,7 +834,7 @@ function wirePlan() {
     if (ev.key === "Escape") { TOOL = "select"; SEL = null; drawPlan(); }
     const u = cur(); if (!u || !SEL || !C.can()) return;
     if (ev.key === "Delete" || ev.key === "Backspace") {
-      if (SEL.t === "door") u.doors.splice(SEL.i, 1); else if (SEL.t === "win") u.windows.splice(SEL.i, 1); else if (SEL.t === "fix") u.fixtures.splice(SEL.i, 1); else if (SEL.t === "x") u.extras.splice(SEL.i, 1);
+      if (SEL.t === "door") u.doors.splice(SEL.i, 1); else if (SEL.t === "win") u.windows.splice(SEL.i, 1); else if (SEL.t === "fix") u.fixtures.splice(SEL.i, 1); else if (SEL.t === "x") u.extras.splice(SEL.i, 1); else if (SEL.t === "z") u.zones.splice(SEL.i, 1);
       else if (SEL.t === "wall") { (u.walls[SEL.key] = u.walls[SEL.key] || {}).open = true; }
       SEL = null; changed();
     }

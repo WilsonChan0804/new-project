@@ -26,9 +26,12 @@ export const DEF = {
   interval: 60,         // s, the longest average interval
   car: 13,              // persons (1000 kg)
   storeyH: 3.15,
-  refuse: [1.6, 2.0],   // refuse storage and material recovery room (APP-151 item 2.1)
-  riser: [1.6, 1.2],    // E&M riser / meter room (items 2.2, 21)
-  lift: [2.3, 2.5],     // a shaft, along x and across
+  refuse: [1.5, 1.8],   // refuse storage and material recovery room (APP-151 item 2.1), clear
+  emr: [1.4, 1.0],      // E&M riser / meter room (items 2.2, 21), clear
+  lift: [2.05, 2.25],   // a shaft's clear inside, along x and across
+  coreWall: 0.25,       // RC round the staircases, lifts, refuse room and riser (shared between neighbours)
+  partyWall: 0.2,       // RC between units (centred on their line)
+  riser: 0.175, going: 0.25,  // Code of Practice for Means of Escape: riser 175 mm at most, going 225 mm at least
   core: "middle",       // middle | ends
   mic: false, micPct: 10, // JPN 8 (check the % in force)
 };
@@ -76,7 +79,7 @@ export function turn(u, k) {
   const mx = Math.min(...all.map((r) => r.x)), my = Math.min(...all.map((r) => r.y));
   for (const r of all) { r.x = r3(r.x - mx); r.y = r3(r.y - my); r.w = r3(r.w); r.h = r3(r.h); }
   const W = Math.max(...all.map((r) => r.x + r.w)), D = Math.max(...all.map((r) => r.y + r.h));
-  return { rooms, extras, W: r3(W), D: r3(D) };
+  return { rooms, extras, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.1) };
 }
 /* the side the entrance is on (the corridor side), else opposite the façade */
 export function entrySide(u) {
@@ -133,15 +136,17 @@ export function layout(o) {
   const y0 = r3(Math.max(0, half >= deep || D - cw < deep ? half : D - cw - deep)), y1 = r3(y0 + cw);
   const dN = y0, dS = D - y1;
   // the core on the north band
-  const sw = n(p.stairWidth, 1200) / 1000, stW = r3(2 * sw + 0.1 + 0.3), stD = r3(Math.min(dN, 2 * sw + 2.0 + 0.3));
+  // a staircase from its width, the storey height, the riser and going; each core piece with its RC wall (half on each side, shared with the next)
+  const sw = n(p.stairWidth, 1200) / 1000, cwl = n(p.coreWall, 0.25), SZ = stairSize({ width: sw, storeyH: p.storeyH, riser: p.riser, going: p.going });
+  const stW = r3(SZ.W + cwl), stD = r3(SZ.D + cwl);
   const fl = { flats: want.length };
   const lf = lifts({ floors: n(p.floorsAbove, n(p.storeys, 1)), population: want.length * n(p.storeys, 1) * n(p.persons, 3), car: p.car, storeyH: p.storeyH, hc5: p.hc5, interval: p.interval });
   let nL = Math.max(1, Math.round(n(p.lifts, 0)) || lf.n), nS = Math.max(1, Math.round(n(p.stairs, 2)));
   const core = [];
   const put = (kind, w, d, label) => core.push({ kind, w: r3(w), h: r3(Math.min(d, dN)), label });
   const mid = [];
-  for (let i = 0; i < nL; i++) mid.push(["lift", p.lift[0], p.lift[1], "Lift " + (i + 1)]);
-  mid.push(["refuse", p.refuse[0], p.refuse[1], "Refuse"], ["riser", p.riser[0], p.riser[1], "E&M riser"]);
+  for (let i = 0; i < nL; i++) mid.push(["lift", p.lift[0] + cwl, p.lift[1] + cwl, "Lift " + (i + 1)]);
+  mid.push(["refuse", p.refuse[0] + cwl, p.refuse[1] + cwl, "Refuse"], ["riser", p.emr[0] + cwl, p.emr[1] + cwl, "E&M riser"]);
   const stairs = Array.from({ length: nS }, (_, i) => ["stair", stW, stD, "Stair " + String.fromCharCode(65 + i)]);
   let xs = [];
   if (p.core === "ends" && nS >= 2) {
@@ -185,6 +190,8 @@ export function layout(o) {
     return pts.every(([px, py]) => inPoly(F.poly, px, py));
   };
   const placed = [], left = [];
+  // between units the party wall: what the plans hold at their ends (half their own party wall each) less the RC wall set here
+  const gapOf = (t) => r3(Math.max(0, n(p.partyWall, 0.2) - n(t.party, 0.15)));
   // each side: its runs, taken from the left end (and with corner units from the right end too, alternately)
   const sides = { s: runs.filter((r) => r.band === "s").map((r) => ({ l: r.x0, r: r.x1 })), n: runs.filter((r) => r.band === "n").map((r) => ({ l: r.x0, r: r.x1 })) };
   const depth = { s: dS, n: dN };
@@ -201,7 +208,7 @@ export function layout(o) {
         if (x < run.l - 1e-6 || x + t.W > run.r + 0.01) break;
         const y = band === "s" ? y1 : y0 - t.D, box = { x: r3(x), y: r3(y), w: t.W, h: t.D };
         if (!inside(box)) continue;
-        if (!probe) { if (end === "l") run.l = r3(x + t.W); else run.r = r3(x); if (end === "l") c.i = k; else c.j = k; }
+        if (!probe) { if (end === "l") run.l = r3(x + t.W + gapOf(t)); else run.r = r3(x - gapOf(t)); if (end === "l") c.i = k; else c.j = k; }
         return box;
       }
       if (probe) return null; // only the current run, for the best fit
@@ -292,13 +299,18 @@ export function layout(o) {
   const corrA = L * cw;
   const wideEx = Math.max(0, Math.min(cw, n(p.wideMax, 2.4)) - n(p.wideBase, 1.5)) * L;
   const A = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + c.w * c.h, 0);
-  const stairA = A("stair"), liftA = A("lift"), refA = A("refuse"), riserA = A("riser");
+  const clearA = (k2) => core.filter((c) => c.kind === k2).reduce((s, c) => s + Math.max(0, c.w - cwl) * Math.max(0, c.h - cwl), 0);
+  const stairA = A("stair"), liftA = A("lift"), refA = clearA("refuse"), riserA = clearA("riser");
+  const coreWallA = A("refuse") - refA + A("riser") - riserA;     // their walls count, the rooms inside are exempt
+  // the party walls between units on a side: the gaps
+  let partyA = 0;
+  for (const band of ["s", "n"]) { const q = placed.filter((o) => o.band === band).sort((a, b) => a.x - b.x); for (let k = 1; k < q.length; k++) { const gp = q[k].x - (q[k - 1].x + q[k - 1].w); if (gp > 1e-6 && gp < 0.6) partyA += gp * Math.min(q[k].h, q[k - 1].h); } }
   const unitBox = placed.reduce((s, q) => s + q.w * q.h, 0);
   const unitGfa = placed.reduce((s, q) => s + q.fig.gfa, 0), sale = placed.reduce((s, q) => s + q.fig.saleable, 0);
   const unitUfa = placed.reduce((s, q) => s + q.fig.internal, 0);
   const balEx = placed.reduce((s, q) => s + q.fig.balEx + q.fig.upEx + q.fig.acpFree + q.fig.cwEx + q.fig.pcEx + q.fig.acpCapEx, 0);
-  const residual = Math.max(0, plate - unitBox - corrA - stairA - liftA - refA - riserA);
-  let gfa = unitGfa + corrA - wideEx + stairA + liftA;
+  const residual = Math.max(0, plate - unitBox - corrA - stairA - liftA - refA - riserA - coreWallA - partyA);
+  let gfa = unitGfa + corrA - wideEx + stairA + liftA + coreWallA + partyA;
   const mic = p.mic ? gfa * n(p.micPct, 10) / 100 : 0;
   gfa -= mic;
   // staircases: the persons on a floor (Table B1 1b-1 with five or more flats a floor a staircase)
@@ -328,11 +340,11 @@ export function layout(o) {
     F, L: r3(L), D: r3(D), y0, y1, cw, core, placed, left, stairsX: xs.map(r3), lifts: lf, nL, nS, stairs: qs, checks,
     figures: {
       plate: r3(plate), units: placed.length, saleable: r3(sale), unitGfa: r3(unitGfa), corridor: r3(corrA), wideEx: r3(wideEx),
-      stair: r3(stairA), lift: r3(liftA), refuse: r3(refA), riser: r3(riserA), residual: r3(residual), mic: r3(mic), unitEx: r3(balEx),
+      stair: r3(stairA), lift: r3(liftA), refuse: r3(refA), riser: r3(riserA), coreWalls: r3(coreWallA), partyWalls: r3(partyA), residual: r3(residual), mic: r3(mic), unitEx: r3(balEx),
       gfa: r3(gfa), acc: plate ? r3(gfa / plate * 100) : null, efficiency: gfa ? r3(sale / gfa * 100) : null,
       conc: r3(plate - gfa),
     },
-    deep: r3(deep), fl,
+    deep: r3(deep), fl, stair: SZ, coreWall: cwl,
   };
 }
 
@@ -352,4 +364,15 @@ export function snap1(v, w, edges, tol = 0.3, grid = 0.05) {
   let best = null;
   for (const e of edges) for (const c of [e - v, e - (v + w)]) if (Math.abs(c) <= tol && (best == null || Math.abs(c) < Math.abs(best))) best = c;
   return best != null ? r3(v + best) : r3(Math.round(v / grid) * grid);
+}
+
+/* a dog-leg staircase: risers a storey from the riser at most, two flights
+   (treads one fewer than risers each), landings at least the stair's width
+   at both ends, a 100 mm well. All in metres. */
+export function stairSize(o) {
+  const w = n(o.width, 1.2), H = n(o.storeyH, 3.15), rMax = n(o.riser, 0.175), g = n(o.going, 0.25);
+  const nR = Math.max(2, Math.ceil(H / rMax - 1e-9)), r = H / nR;
+  const n1 = Math.ceil(nR / 2), n2 = nR - n1, t1 = n1 - 1, t2 = n2 - 1;
+  const run = Math.max(t1, t2) * g, landing = Math.max(w, n(o.landing, 0)), well = 0.1;
+  return { width: w, risers: nR, riser: r3(r), going: g, n1, n2, t1, t2, run: r3(run), landing: r3(landing), well, W: r3(2 * w + well), D: r3(run + 2 * landing) };
 }

@@ -15,7 +15,7 @@ const ext = fL.edges.filter((e) => e.kind === "ext").reduce((s, e) => s + e.len,
 ok(near(ext, 2 * (4 + 5.4), 1e-9) && fL.edges.filter((e) => e.kind === "part").length === 1, "its outline 18.8 m, one partition 2 m");
 ok(near(fL.enclosed, 16.8 + 18.8 * 0.1 + 4 * 0.01, 1e-9), "enclosed to the outside of the external walls: + 18.8 × 0.1 + corners");
 const P = Object.assign({}, L, { partySides: ["w"] });
-ok(near(U.figures(P).enclosed, 16.8 + (18.8 - 5.4) * 0.1 + 0.04, 1e-9), "a party wall on the west: measured to its middle, no half-wall added");
+ok(near(U.figures(P).enclosed, 16.8 + (18.8 - 5.4) * 0.1 + 0.02, 1e-9), "a party wall on the west: measured to its middle, no half-wall added (and no corner squares on that side)");
 // moving the shared wall line keeps the total when both sides move
 const two = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], rooms: [R("a", "LD", 0, 0, 3, 3), R("b", "BR", 3, 0, 2.5, 3)], extras: [] };
 const mv = U.moveLine(two, "x", 3, 0.3);
@@ -33,8 +33,8 @@ const old = { wall: 0.2, party: 0.2, part: 0.1, rows: [{ depth: 2.4, rooms: [{ k
 const conv = U.fromRows(old);
 ok(conv.rooms.length === 3 && near(U.figures(conv).area, 4.0 * (2.5 + 3), 1e-9), "a row unit converts: 4.0 × 5.5 m to the centrelines");
 // warnings
-const narrow = U.moveLine(TEMPLATES["2R-B"], "x", TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").w, -0.8, TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").y, 99);
-ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 2\.1/.test(w)), "a bedroom narrowed under 2.1 m warns");
+const narrow = U.moveLine(TEMPLATES["2R-B"], "x", TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").w, -1.0, TEMPLATES["2R-B"].rooms.find((r) => r.id === "r").y, 99);
+ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a bedroom narrowed under 1.9 m warns");
 // round 2: deleted walls, split / join, own thickness, the bay, defaults, windows
 {
   const T = JSON.parse(JSON.stringify(TEMPLATES["2R-B"]));
@@ -109,6 +109,20 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 2\.1/.test(w)), "a be
   const all = U.moveLine(T2, "x", 3, 0.4);
   ok(near(all.rooms.find((r) => r.id === "m").w, 3.4, 1e-9), "Alt (the whole line): the MBR moves too");
   void m1;
+}
+// the open kitchen as a zone, the living room one space with its foyer
+{
+  const T = { wall: 0.1, part: 0.075, party: 0.15, partySides: [], extras: [], rooms: [R("k", "OKIT", 0, 0, 2, 1.5), R("h", "LOBBY", 2, 0, 1.2, 1.5), R("l", "LD", 0, 1.5, 3.2, 3), R("m", "MBR", 3.2, 0, 2.5, 4.5)] };
+  const f0 = U.figures(T), Z = U.zoneKitchens(JSON.parse(JSON.stringify(T))), f1 = U.figures(Z);
+  ok(Z.zones.length === 1 && Z.rooms.filter((r) => r.space === "l").length === 2 && near(f1.saleable, f0.saleable, 1e-9) && near(f1.gfa, f0.gfa, 1e-9) && near(f1.area, f0.area, 1e-9), "an open kitchen and foyer join the living room's space, the kitchen a zone: the areas the same");
+  const E = f1.edges.filter((e) => e.kind === "part" && !U.isOpen(Z, e));
+  ok(E.every((e) => !["k", "h"].includes(e.a) || ["m"].includes(e.b) || ["m"].includes(e.a)), "no wall inside the living room's space");
+  const Z2 = JSON.parse(JSON.stringify(Z)); Z2.zones[0].w = 1.2;
+  ok(JSON.stringify(Z2.rooms) === JSON.stringify(Z.rooms), "the kitchen zone resized: no room moved");
+  const t3 = TEMPLATES["LWK-3BR"], r3 = U.outline(t3);
+  ok(r3.rings.length === 1 && near(r3.area, U.figures(t3).enclosed, 1e-3), "the saleable line's own area is the table's enclosed area");
+  const cw = U.figures(t3);
+  ok(cw.cwEx > 0 && cw.gfaRing < cw.ringArea, "with a curtain wall the GFA line lies inside the saleable line");
 }
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

@@ -34,8 +34,20 @@ ok(L.placed.length >= 8 && !all.some((a, i) => all.some((b, j) => j > i && ov(a,
 ok(L.placed.every((q) => (q.band === "s" ? near(q.y, L.y1, 1e-6) : near(q.y + q.h, L.y0, 1e-6))), "every unit on the corridor");
 ok(L.core.filter((c) => c.kind === "stair").length === 2 && L.core.filter((c) => c.kind === "lift").length === L.nL, "two staircases and the lifts in the core");
 const Fg = L.figures;
-ok(near(Fg.plate, 48 * 16, 1e-6) && near(Fg.residual, Fg.plate - L.placed.reduce((s, q) => s + q.w * q.h, 0) - Fg.corridor - Fg.stair - Fg.lift - Fg.refuse - Fg.riser, 1e-3), "the residual is what the units, corridor and core leave");
-ok(near(Fg.gfa, Fg.unitGfa + Fg.corridor + Fg.stair + Fg.lift, 1e-3), "the floor GFA: units + corridor + staircases + lift shafts (refuse, riser, residual exempt)");
+ok(near(Fg.plate, 48 * 16, 1e-6) && near(Fg.residual, Fg.plate - L.placed.reduce((s, q) => s + q.w * q.h, 0) - Fg.corridor - Fg.stair - Fg.lift - Fg.refuse - Fg.riser - Fg.coreWalls - Fg.partyWalls, 1e-3), "the residual is what the units, corridor, core and walls leave");
+ok(near(Fg.gfa, Fg.unitGfa + Fg.corridor + Fg.stair + Fg.lift + Fg.coreWalls + Fg.partyWalls, 1e-3), "the floor GFA: units + corridor + staircases + lift shafts + the walls (refuse, riser, residual exempt)");
+// the staircase from the storey height, riser and going; the walls between
+{
+  const st = F.stairSize({ width: 1.2, storeyH: 3.15, riser: 0.175, going: 0.25 });
+  ok(st.risers === 18 && near(st.riser, 0.175, 1e-9) && st.t1 === 8 && near(st.run, 2.0, 1e-9) && near(st.W, 2.5, 1e-9) && near(st.D, 4.4, 1e-9), `3.15 m, 1.2 m wide, 175 / 250: ${st.risers} risers, ${st.t1} treads a flight, run ${st.run}, inside ${st.W} × ${st.D} m`);
+  const lo = F.stairSize({ width: 1.2, storeyH: 3.15, riser: 0.16, going: 0.25 });
+  ok(lo.risers === 20 && lo.D > st.D, "a lower riser (160): more steps, a longer staircase");
+  const Lw = F.layout({ poly: [[0, 0], [48, 0], [48, 16], [0, 16]], mix, storeys: 30, partyWall: 0.3 });
+  const sS = Lw.placed.filter((q) => q.band === "s").sort((a, b) => a.x - b.x);
+  ok(sS.length > 1 && near(sS[1].x - (sS[0].x + sS[0].w), 0.15, 1e-6) && Lw.figures.partyWalls > 0, "a 300 mm party wall between units: 150 mm more than the plans hold (they hold half of 150 each)");
+  const stairPiece = Lw.core.find((c) => c.kind === "stair");
+  ok(near(stairPiece.w, st.W + 0.25, 1e-6) && Lw.figures.coreWalls > 0, "a staircase piece: its inside and the RC core wall");
+}
 const W = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, corridor: 2.0 });
 ok(near(W.figures.wideEx, (2.0 - 1.5) * 48, 1e-6), "a 2 m corridor: 0.5 m of its width exempt along 48 m (wider corridor)");
 const MiC = F.layout({ poly: rot(box, 0.3), mix, storeys: 30, mic: true, micPct: 10 });

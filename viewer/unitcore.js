@@ -22,13 +22,14 @@
  */
 export const M2_FT2 = 10.7639;
 export const KINDS = {
-  LD: { label: "Living / dining", zh: "客/飯廳", ab: "LIV./DIN.", min: 2.4, hab: true },
-  MBR: { label: "Master bedroom", zh: "主人睡房", ab: "M.B.R.", min: 2.3, hab: true },
-  BR: { label: "Bedroom", zh: "睡房", ab: "B.R.", min: 2.1, hab: true },
+  LD: { label: "Living / dining", zh: "客/飯廳", ab: "LIV./DIN.", min: 2.2, hab: true },
+  MBR: { label: "Master bedroom", zh: "主人睡房", ab: "M.B.R.", min: 2.0, hab: true },
+  BR: { label: "Bedroom", zh: "睡房", ab: "B.R.", min: 1.9, hab: true },
+  STUDY: { label: "Study", zh: "書房", ab: "STUDY", min: 1.2 },
   OKIT: { label: "Open kitchen", zh: "開放式廚房", ab: "OPEN KIT.", min: 1.2 },
   KIT: { label: "Kitchen", zh: "廚房", ab: "KIT.", min: 1.4 },
-  BATH: { label: "Bathroom", zh: "浴室", ab: "BATH", min: 1.4 },
-  ENS: { label: "Ensuite", zh: "浴室", ab: "BATH", min: 1.4 },
+  BATH: { label: "Bathroom", zh: "浴室", ab: "BATH", min: 1.1 },
+  ENS: { label: "Ensuite", zh: "浴室", ab: "BATH", min: 1.1 },
   LOBBY: { label: "Lobby / corridor", zh: "", ab: "", min: 0.8 },
   STORE: { label: "Store", zh: "儲物室", ab: "ST", min: 0.5 },
 };
@@ -136,13 +137,106 @@ export function solidPart(u, e) {
 }
 export function solidLen(u, e) { if (isOpen(u, e)) return 0; const [a, b] = solidPart(u, e); return b - a; }
 
+/* the space a room belongs to: rooms joined into one space (an L-shaped living / dining with its foyer) share no wall */
+export const spaceOf = (r) => (r && r.space) || (r && r.id);
 export function isOpen(u, e) {
   if (e.kind !== "part") return false;
   if (e.removed) return true;
   if (u.walls && u.walls[e.key] && u.walls[e.key].open === false) return false;
-  const ka = (u.rooms.find((r) => r.id === e.a) || {}).kind, kb = (u.rooms.find((r) => r.id === e.b) || {}).kind;
+  const A = u.rooms.find((r) => r.id === e.a), Bq = u.rooms.find((r) => r.id === e.b);
+  if (A && Bq && spaceOf(A) === spaceOf(Bq)) return true;
+  const ka = (A || {}).kind, kb = (Bq || {}).kind;
   const k = [ka, kb].sort().join("+");
   return k === "LD+OKIT" || k === "LD+LOBBY" || (u.open || []).includes([e.a, e.b].sort().join("+"));
+}
+
+/* the rooms' outline as rings of points, each side moved off the room
+   edges: "saleable" - to the outside face of external walls (t/2), the
+   middle of party walls (0); "gfa" - the same but a curtain wall at the
+   structure (0) and a precast wall at its inside face less what is exempt.
+   -> {rings: [[[x, y], ...]], area} */
+export function outline(u, mode = "saleable", E0) {
+  const rooms = u.rooms || [];
+  if (!rooms.length) return { rings: [], area: 0 };
+  const G = grid(rooms), E = E0 || edges(u), inn = (i, j) => !!G.at(i, j);
+  const wall = n(u.wall, 0.1);
+  const facOf = (e) => ((u.walls || {})[e.key] || {}).f || u.facadeType || "rc";
+  const offOf = (e) => {
+    if (!e || e.kind === "party") return 0;
+    const t = e.t != null ? e.t : FACADES[facOf(e)] && FACADES[facOf(e)].t != null ? FACADES[facOf(e)].t : wall, f = facOf(e);
+    if (mode === "gfa" && f === "cw") return 0;
+    if (mode === "gfa" && f === "pc") return t / 2 - Math.min(t, FACADES.pc.max);
+    return t / 2;
+  };
+  // the boundary in unit pieces, each directed with the inside on its left (y down: outward normal = (dy, -dx))
+  const segs = [];
+  const edgeAt = (face, x1, y1, x2, y2) => E.find((e) => e.kind !== "part" && e.face === face && (face === "e" || face === "w" ? Math.abs(e.x1 - x1) < EPS && e.y1 <= Math.min(y1, y2) + EPS && e.y2 >= Math.max(y1, y2) - EPS : Math.abs(e.y1 - y1) < EPS && e.x1 <= Math.min(x1, x2) + EPS && e.x2 >= Math.max(x1, x2) - EPS));
+  for (let i = 0; i < G.xs.length; i++) for (let j = 0; j < G.ys.length - 1; j++) {
+    const L = inn(i - 1, j), R = inn(i, j), x = G.xs[i], a = G.ys[j], b = G.ys[j + 1];
+    if (L && !R) segs.push({ p: [x, a], q: [x, b], nx: 1, ny: 0, off: offOf(edgeAt("e", x, a, x, b)) });
+    if (R && !L) segs.push({ p: [x, b], q: [x, a], nx: -1, ny: 0, off: offOf(edgeAt("w", x, a, x, b)) });
+  }
+  for (let j = 0; j < G.ys.length; j++) for (let i = 0; i < G.xs.length - 1; i++) {
+    const T = inn(i, j - 1), B = inn(i, j), y = G.ys[j], a = G.xs[i], b = G.xs[i + 1];
+    if (T && !B) segs.push({ p: [b, y], q: [a, y], nx: 0, ny: 1, off: offOf(edgeAt("s", a, y, b, y)) });
+    if (B && !T) segs.push({ p: [a, y], q: [b, y], nx: 0, ny: -1, off: offOf(edgeAt("n", a, y, b, y)) });
+  }
+  const key = (pt) => pt[0].toFixed(4) + "," + pt[1].toFixed(4);
+  const from = new Map();
+  for (const sg of segs) { const k = key(sg.p); if (!from.has(k)) from.set(k, []); from.get(k).push(sg); }
+  const used = new Set(), rings = [];
+  for (const s0 of segs) {
+    if (used.has(s0)) continue;
+    const chain = [];
+    let sg = s0, guard = 0;
+    while (sg && !used.has(sg) && guard++ < 10000) {
+      used.add(sg); chain.push(sg);
+      const nx = (from.get(key(sg.q)) || []).filter((c) => !used.has(c));
+      // at a point where two rings touch, turn left first (keeps each ring simple)
+      sg = nx.length > 1 ? nx.find((c) => c.nx === -sg.ny && c.ny === sg.nx) || nx[0] : nx[0] || null;
+    }
+    // merge straight runs with the same offset, then the corners from the meeting offset lines
+    const runs = [];
+    for (const c of chain) { const l = runs[runs.length - 1]; if (l && l.nx === c.nx && l.ny === c.ny && Math.abs(l.off - c.off) < EPS) l.q = c.q; else runs.push(Object.assign({}, c)); }
+    if (runs.length > 1) { const f = runs[0], l = runs[runs.length - 1]; if (f.nx === l.nx && f.ny === l.ny && Math.abs(f.off - l.off) < EPS) { f.p = l.p; runs.pop(); } }
+    const pts = [];
+    for (let k = 0; k < runs.length; k++) {
+      const A = runs[k], Bq = runs[(k + 1) % runs.length];
+      const ax = A.p[0] + A.nx * A.off, ay = A.p[1] + A.ny * A.off;      // a point on A's offset line
+      const bx = Bq.p[0] + Bq.nx * Bq.off, by = Bq.p[1] + Bq.ny * Bq.off;
+      if (A.nx === Bq.nx && A.ny === Bq.ny) {            // straight on, a different offset: a small step
+        pts.push(A.nx ? [ax, A.q[1]] : [A.q[0], ay], Bq.nx ? [bx, Bq.p[1]] : [Bq.p[0], by]);
+      } else pts.push(A.nx ? [ax, by] : [bx, ay]);
+    }
+    if (pts.length >= 3) rings.push(pts.map(([x, y]) => [+x.toFixed(4), +y.toFixed(4)]));
+  }
+  let a = 0;
+  for (const r of rings) { let s2 = 0; for (let k = 0; k < r.length; k++) { const p = r[k], q = r[(k + 1) % r.length]; s2 += p[0] * q[1] - q[0] * p[1]; } a += s2 / 2; }
+  return { rings, area: Math.abs(a) };
+}
+
+/* the first form of an open kitchen (a room open to the living room) as a
+   zone drawn over the living / dining space, which takes in the kitchen's
+   floor and the foyer open to it: the areas stay, the kitchen's extent no
+   longer moves a wall */
+export function zoneKitchens(u) {
+  const rooms = u.rooms || [];
+  const ld = rooms.find((r) => r.kind === "LD" && !r.space);
+  if (!ld) return u;
+  const E = edges(u), touch = (a, b) => E.some((e) => e.kind === "part" && ((e.a === a.id && e.b === b.id) || (e.a === b.id && e.b === a.id)) && isOpen(u, e));
+  const inSpace = new Set([ld.id]);
+  let changed = false;
+  for (let k = 0; k < 3; k++) for (const r of rooms) {
+    if (inSpace.has(r.id) || !["OKIT", "LOBBY"].includes(r.kind)) continue;
+    if (rooms.some((q) => inSpace.has(q.id) && touch(q, r))) inSpace.add(r.id);
+  }
+  for (const r of rooms) {
+    if (!inSpace.has(r.id) || r.id === ld.id) continue;
+    if (r.kind === "OKIT") { (u.zones = u.zones || []).push({ kind: "OKIT", x: r.x, y: r.y, w: r.w, h: r.h }); r.kind = "LD"; }
+    r.space = ld.id; changed = true;
+  }
+  if (changed) u.zonesDone = 1;
+  return u;
 }
 
 export function figures(u0) {
@@ -160,7 +254,9 @@ export function figures(u0) {
   const extT = (e) => (e.t != null ? e.t : FACADES[facOf(e)] && FACADES[facOf(e)].t != null ? FACADES[facOf(e)].t : wall);
   for (const e of E) if (e.kind === "ext") { e.facade = facOf(e); if (e.t == null) e.t = extT(e); }
   const extOut = E.filter((e) => e.kind === "ext").reduce((s2, e) => s2 + e.len * e.t / 2, 0);
-  const enclosed = area + extOut + 4 * (wall / 2) ** 2 * (extL > 0 ? 1 : 0);
+  // to the outside of the external walls and the middle of party walls: the saleable line's own area (each wall at its thickness)
+  const ringS = outline(u, "saleable", E), ringG = outline(u, "gfa", E);
+  const enclosed = ringS.rings.length ? ringS.area : area + extOut + 4 * (wall / 2) ** 2 * (extL > 0 ? 1 : 0);
   // façade concessions: a curtain wall's projection beyond the structure is not GFA (outside the cap); a precast wall's thickness up to 150 mm is exempt (under the cap)
   const cwEx = E.filter((e) => e.kind === "ext" && e.facade === "cw").reduce((s2, e) => s2 + e.len * e.t / 2, 0);
   const pcEx = E.filter((e) => e.kind === "ext" && e.facade === "pc").reduce((s2, e) => s2 + e.len * Math.min(e.t, FACADES.pc.max), 0);
@@ -182,16 +278,19 @@ export function figures(u0) {
   const gfa = enclosed - cwEx - pcEx + (bal - balEx) + (up - upEx);
   const warn = [];
   for (const r of rooms) {
+    if (r.space && r.space !== r.id) continue;          // a piece of another room's space: that room is checked
     const k = KINDS[r.kind];
-    if (k && Math.min(n(r.w), n(r.h)) < k.min - 1e-9) warn.push(`${r.name || k.label}: ${Math.min(n(r.w), n(r.h)).toFixed(2)} m is under ${k.min} m`);
-    const hasWin = Array.isArray(u.windows) ? u.windows.some((w) => w.room === r.id) : E.some((e) => e.kind === "ext" && e.a === r.id && e.face === (u.facade || "s")) || (u.extras || []).some((x) => touches(r, x));
+    const parts = rooms.filter((q) => spaceOf(q) === r.id);
+    if (k && parts.length < 2 && Math.min(n(r.w), n(r.h)) < k.min - 1e-9) warn.push(`${r.name || k.label}: ${Math.min(n(r.w), n(r.h)).toFixed(2)} m is under ${k.min} m`);
+    const hasWin = Array.isArray(u.windows) ? u.windows.some((w) => parts.some((q) => q.id === w.room)) : E.some((e) => e.kind === "ext" && e.a === r.id && e.face === (u.facade || "s")) || (u.extras || []).some((x) => touches(r, x));
     if (k && k.hab && !hasWin)
       warn.push(`${r.name || k.label}: no window on the façade`);
   }
   const has = (...k) => rooms.some((r) => k.includes(r.kind));
   if (!has("BATH", "ENS")) warn.push("No bathroom");
-  if (!has("KIT", "OKIT")) warn.push("No kitchen");
-  if (has("OKIT")) warn.push("Open kitchen: FS Code requirements apply (sprinklers / the cooking area away from the exit door)");
+  const kz = (u.zones || []).some((z) => z.kind === "OKIT" || z.kind === "KIT");
+  if (!has("KIT", "OKIT") && !kz) warn.push("No kitchen");
+  if (has("OKIT") || kz) warn.push("Open kitchen: FS Code requirements apply (sprinklers / the cooking area away from the exit door)");
   for (const e of ex) {
     if (e.kind === "bal" && e.area < RULES.bal.min) warn.push(`Balcony ${e.area.toFixed(2)} m² is under ${RULES.bal.min} m²: no exemption (JPN 1)`);
     if (e.kind === "up" && e.area < RULES.up.min) warn.push(`Utility platform ${e.area.toFixed(2)} m² is under ${RULES.up.min} m²: no exemption (JPN 2)`);
@@ -204,7 +303,7 @@ export function figures(u0) {
   return {
     unit: u, edges: E, area: r3(area), internal: r3(internal), enclosed: r3(enclosed), bal: r3(bal), up: r3(up), acp: r3(acp),
     saleable: r3(saleable), saleableFt: Math.round(saleable * M2_FT2), gfa: r3(gfa), balEx: r3(balEx), upEx: r3(upEx), acpFree: r3(acpFree), acpCapEx: r3(acpCapEx),
-    cwEx: r3(cwEx), pcEx: r3(pcEx),
+    cwEx: r3(cwEx), pcEx: r3(pcEx), ringS, ringG, ringArea: r3(ringS.area), gfaRing: r3(ringG.area),
     capped: r3(balEx + upEx + acpCapEx + pcEx), efficiency: gfa ? r3(internal / gfa) : null, warn,
     W: xs.length ? Math.max(...xs) - Math.min(...xs) : 0, D: ys.length ? Math.max(...ys) - Math.min(...ys) : 0,
     box: xs.length ? [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] : [0, 0, 0, 0],
@@ -268,6 +367,7 @@ export function scaleTo(u, ft2) {
     const sx = (x) => Math.round(x * k * 20) / 20;
     v.rooms = u.rooms.map((r) => ({ ...r, x: sx(r.x), y: sx(r.y), w: +(sx(r.x + r.w) - sx(r.x)).toFixed(3), h: +(sx(r.y + r.h) - sx(r.y)).toFixed(3) }));
     v.extras = (u.extras || []).map((e) => ({ ...e, x: sx(e.x), y: sx(e.y) }));
+    if (u.zones) v.zones = u.zones.map((z) => ({ ...z, x: sx(z.x), y: sx(z.y), w: +(sx(z.x + z.w) - sx(z.x)).toFixed(3), h: +(sx(z.y + z.h) - sx(z.y)).toFixed(3) }));
     return v;
   };
   for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (figures(at(m)).saleableFt < ft2) lo = m; else hi = m; }
@@ -358,6 +458,7 @@ export function mirrorUnit(u) {
   for (const r of v.rooms || []) fx(r);
   for (const e of v.extras || []) { fx(e); if (e.splay) e.splayL = !e.splayL; }
   for (const x of v.fixtures || []) { fx(x); if (x.rot === 90) x.rot = 270; else if (x.rot === 270) x.rot = 90; }
+  for (const z of v.zones || []) fx(z);
   v.partySides = (v.partySides || []).map((s) => ew[s]);
   if (v.facade) v.facade = ew[v.facade];
   if (v.walls) {
@@ -383,6 +484,22 @@ export function genFixtures(u) {
     }
     if (r.kind === "OKIT" || r.kind === "KIT")
       out.push(long ? { kind: "counter", x: x + 0.05, y: y + 0.05, w: Math.max(1, w - 0.1), h: 0.6, rot: 0 } : { kind: "counter", x: x + 0.05, y: y + 0.05, w: 0.6, h: Math.max(1, h - 0.1), rot: 0 });
+    // furniture, for the sales-plan look: a bed and wardrobe in a bedroom, a sofa and dining set in the living room
+    if ((r.kind === "MBR" || r.kind === "BR") && w >= 1.8 && h >= 1.8) {
+      const bw = r.kind === "MBR" ? 1.5 : 0.9, bl = 1.9;
+      if (long) { out.push({ kind: "bed", x: x + 0.1, y: y + Math.max(0.1, (h - bw) / 2), w: bl, h: bw, rot: 270 }); if (w - bl > 0.8) out.push({ kind: "wardrobe", x: x + w - 0.65, y: y + 0.1, w: 0.6, h: Math.min(1.5, h - 0.2), rot: 90 }); }
+      else { out.push({ kind: "bed", x: x + Math.max(0.1, (w - bw) / 2), y: y + 0.1, w: bw, h: bl, rot: 0 }); if (h - bl > 0.8) out.push({ kind: "wardrobe", x: x + 0.1, y: y + h - 0.65, w: Math.min(1.5, w - 0.2), h: 0.6, rot: 0 }); }
+    }
+    if (r.kind === "LD" && !r.space && w >= 2.2 && h >= 2.2) {
+      if (long) { out.push({ kind: "sofa", x: x + 0.15, y: y + h - 0.95, w: Math.min(2.0, w * 0.5), h: 0.85, rot: 180 }); out.push({ kind: "dining", x: x + w - 1.45, y: y + 0.35, w: 1.2, h: 0.8, rot: 0 }); }
+      else { out.push({ kind: "sofa", x: x + w - 0.95, y: y + h - 2.15, w: 0.85, h: Math.min(2.0, h * 0.45), rot: 90 }); out.push({ kind: "dining", x: x + 0.3, y: y + 0.4, w: 0.8, h: 1.2, rot: 90 }); }
+    }
+  }
+  // an open kitchen drawn as a zone: its counter with sink and hob along its longer side
+  for (const z of u.zones || []) {
+    if (z.kind !== "OKIT" && z.kind !== "KIT") continue;
+    const x = n(z.x), y = n(z.y), w = n(z.w), h = n(z.h);
+    out.push(w >= h ? { kind: "counter", x: x + 0.05, y: y + 0.05, w: Math.max(1, w - 0.1), h: 0.6, rot: 0 } : { kind: "counter", x: x + 0.05, y: y + 0.05, w: 0.6, h: Math.max(1, h - 0.1), rot: 0 });
   }
   return out;
 }

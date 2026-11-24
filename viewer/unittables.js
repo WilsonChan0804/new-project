@@ -3,7 +3,7 @@
  * brochure's. Rooms are rectangles to the wall centrelines (m, x to the
  * right, y down the page); `facade` is the window side, `partySides` the
  * sides on other units. Adjust them to the project. */
-import { scaleTo, fromRows, genWindows, genFixtures } from "./unitcore.js";
+import { scaleTo, fromRows, genWindows, genFixtures, zoneKitchens } from "./unitcore.js";
 
 const base = { wall: 0.1, party: 0.15, part: 0.075 };
 const R = (id, kind, name, x, y, w, h) => ({ id, kind, name, x, y, w, h });
@@ -52,6 +52,44 @@ const RAW = {
     extras: [{ kind: "roof", x: 3.0, y: 5.2, w: 6.7, h: 1.0 }, { kind: "bay", x: 0, y: 5.2, w: 3.0, h: 1.3, parts: [{ kind: "bal", len: 1.6 }, { kind: "up", len: 1.2 }, { kind: "acp", len: 0.6 }] }],
     doors: [{ room: "e", side: "n", at: 0.05, w: 0.9, entry: true }, { room: "b", side: "s", at: 0.4, w: 0.75 }, { room: "r2", side: "n", at: 1.1, w: 0.8 }, { room: "r1", side: "n", at: 1.1, w: 0.8 }, { room: "m", side: "w", at: 0.1, w: 0.8 }],
   }),
+  /* the office's typical units (LWK + Partners typical floor plans), from their dimension strings - each scaled to the saleable area printed under it */
+  "LWK-1BR": Object.assign({}, base, {
+    name: "1-bedroom (262 ft²)", type: "1R", ft2: 262, src: "after the office's typical plan 1BR OPT1 (262 ft²): bath 2025 × 1150, MBR 2025 × 2320, L/D 2350 × 4420",
+    facade: "s", partySides: ["w", "e"],
+    rooms: [R("b", "BATH", "Bath", 0, 0, 2.1, 1.3), R("h", "LOBBY", "", 2.1, 0, 2.45, 1.3),
+      R("m", "MBR", "Master bedroom", 0, 1.3, 2.1, 3.1), R("l", "LD", "Living / dining", 2.1, 1.3, 2.45, 3.1)],
+    zones: [{ kind: "OKIT", x: 3.25, y: 0, w: 1.3, h: 1.3 }],
+    extras: [{ kind: "bay", x: 1.0, y: 4.4, w: 3.55, h: 1.5, parts: [{ kind: "up", len: 1.1 }, { kind: "bal", len: 2.45 }] }, { kind: "pd", x: 0, y: -0.7, w: 1.2, h: 0.7 }],
+    doors: [{ room: "h", side: "n", at: 0.1, w: 0.9, entry: true }, { room: "b", side: "e", at: 0.3, w: 0.75 }, { room: "m", side: "e", at: 0.2, w: 0.82 }],
+  }),
+  "LWK-2BR": Object.assign({}, base, {
+    name: "2-bedroom (360 ft²)", type: "2R", ft2: 360, src: "after the office's typical plan 2BR OPT1 (359.8 ft²): BR 2025 × 2920, L/D 2400 × 4320, BR 2000 × 2195, bath 1250 × 2050",
+    facade: "n", partySides: ["w", "e"],
+    rooms: [R("r1", "BR", "Bedroom 1", 0, 0, 2.1, 3.6), R("l", "LD", "Living / dining", 2.1, 0, 2.5, 5.2),
+      R("r2", "BR", "Bedroom 2", 4.6, 0, 2.1, 2.3), R("b", "BATH", "Bath", 4.6, 2.3, 2.1, 2.9)],
+    zones: [{ kind: "OKIT", x: 2.1, y: 4.4, w: 1.9, h: 0.8 }],
+    extras: [{ kind: "bay", x: 1.1, y: -1.6, w: 3.5, h: 1.6, parts: [{ kind: "up", len: 1.0 }, { kind: "bal", len: 2.5 }] }],
+    doors: [{ room: "l", side: "s", at: 1.55, w: 0.95, entry: true }, { room: "r1", side: "e", at: 2.7, w: 0.82 }, { room: "r2", side: "w", at: 1.4, w: 0.82 }, { room: "b", side: "w", at: 0.5, w: 0.75 }],
+  }),
+  "LWK-2.5BR": Object.assign({}, base, {
+    name: "2-bedroom + study (435 ft²)", type: "2R", ft2: 435, src: "after the office's typical plan 2.5BR OPT1 (434.8 - 443.9 ft²): BR 2025 × 2150, L/D 2450 × 5175, MBR 2000 × 2750",
+    facade: "s", partySides: ["w", "e"],
+    rooms: [R("b", "BATH", "Bath", 0, 0, 2.1, 1.9), R("s", "STUDY", "Study", 0, 1.9, 2.1, 1.55), R("r1", "BR", "Bedroom 1", 0, 3.45, 2.1, 2.25),
+      R("l", "LD", "Living / dining", 2.1, 0, 2.55, 5.7), R("e", "STORE", "Store", 4.65, 0, 2.1, 1.0), R("h", "LOBBY", "", 4.65, 1.0, 2.1, 1.85), R("m", "MBR", "Master bedroom", 4.65, 2.85, 2.1, 2.85)],
+    zones: [{ kind: "OKIT", x: 2.1, y: 0, w: 2.0, h: 0.85 }],
+    extras: [{ kind: "bay", x: 2.1, y: 5.7, w: 2.6, h: 1.5, parts: [{ kind: "bal", len: 1.6 }, { kind: "up", len: 1.0 }] }],
+    doors: [{ room: "h", side: "n", at: 0.05, w: 0.95, entry: true }, { room: "b", side: "e", at: 0.5, w: 0.75 }, { room: "s", side: "e", at: 0.3, w: 0.8 }, { room: "r1", side: "e", at: 0.3, w: 0.82 }, { room: "m", side: "n", at: 0.2, w: 0.82 }, { room: "e", side: "s", at: 0.6, w: 0.7 }],
+  }),
+  "LWK-3BR": Object.assign({}, base, {
+    name: "3-bedroom (3BR-1)", type: "3R", src: "after the office's typical plan 3BR-1 option 1: L/D 2600 × 4050, BR1 / BR2 2050 × 2150, corridor 900, bath 2050 × 1450, MBR 3175 × 2050, curtain wall at the MBR",
+    facade: "n", partySides: ["w"],
+    rooms: [R("l", "LD", "Living / dining", 0, 0, 2.7, 5.6), R("r1", "BR", "Bedroom 1", 2.7, 0, 2.15, 2.25), R("r2", "BR", "Bedroom 2", 4.85, 0, 2.15, 2.25),
+      R("h", "LOBBY", "", 2.7, 2.25, 4.3, 1.0), R("b", "BATH", "Bath 1", 2.7, 3.25, 2.15, 1.55), R("m", "MBR", "Master bedroom", 4.85, 3.25, 3.3, 2.15)],
+    zones: [{ kind: "OKIT", x: 0, y: 3.4, w: 0.9, h: 2.2 }],
+    walls: { "m:e": { f: "cw" } },
+    extras: [{ kind: "bay", x: 0, y: -1.6, w: 2.7, h: 1.6, parts: [{ kind: "bal", len: 1.7 }, { kind: "up", len: 1.0 }] }],
+    doors: [{ room: "l", side: "s", at: 1.0, w: 0.95, entry: true }, { room: "r1", side: "s", at: 1.2, w: 0.82 }, { room: "r2", side: "s", at: 0.2, w: 0.82 }, { room: "b", side: "n", at: 0.6, w: 0.75 }, { room: "m", side: "n", at: 0.3, w: 0.82 }],
+  }),
 };
 
 const STUDIO = fromRows(Object.assign({}, base, {
@@ -65,6 +103,7 @@ const STUDIO = fromRows(Object.assign({}, base, {
 STUDIO.doors = [{ room: "r1", side: "n", at: 0.3, w: 0.75 }, { room: "r2", side: "n", at: 0.6, w: 0.9, entry: true }];
 STUDIO.src = "a compact studio";
 
-const finish = (t) => { t.windows = genWindows(t); t.fixtures = genFixtures(t); return t; };
+const finish = (t) => { t.windows = genWindows(t); t.fixtures = genFixtures(t); zoneKitchens(t); return t; };
+const scaled = (t) => (t.ft2 ? scaleTo(t, t.ft2) : JSON.parse(JSON.stringify(t)));
 export const TEMPLATES = Object.assign({ studio: finish(STUDIO) },
-  Object.fromEntries(Object.entries(RAW).map(([k, t]) => [k, finish(scaleTo(t, t.ft2))])));
+  Object.fromEntries(Object.entries(RAW).map(([k, t]) => [k, finish(scaled(t))])));

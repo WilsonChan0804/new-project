@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-18", date: "25 Nov 2026",
+    items: [
+      "**Unit plans drawn like the office's typical plans** - walls at their real thickness with thin face lines: external and party walls RC in dark grey hatch, partitions block in diagonal hatch, precast in diagonal and dashed hatch; doors with frames, a thin leaf and swing; windows frame - glass - frame; a curtain wall with mullions and its 100 mm RC curb (300 mm high) inside. Fittings and furniture redrawn: WC with cistern, basin, shower tray, bath, kitchen counter with sink and two-ring hob, fridge, washing machine, wardrobe, beds with pillows, sofa, dining set, desk.",
+      "**The open kitchen is a zone** inside the living / dining, drawn dashed and resized on its own (drag it by its outline, or its corners) - it no longer moves any wall. The **living / dining is one space with its foyer** (one label and area; **One space (L-shaped)** / **Separate the spaces** on a wall's menu). Existing units change over by themselves, their areas the same.",
+      "**Area lines** (tool bar): the **saleable line** (red) and the **GFA line** (blue) on the plan, with the sums under them, to check the table's figures.",
+      "**More templates** from the office's typical plans: 1-bedroom (262 ft²), 2-bedroom (360 ft²), 2-bedroom + study (435 ft²) and 3-bedroom with a curtain wall corner.",
+      "**4 · Floors: walls and real staircases** - an RC wall round every core piece (250 mm) and party walls between units (200 mm), both settable, taking their space and counted in the GFA; each staircase drawn from its width, the storey height, riser and going - its risers, treads in two flights, landings at least its width, the well, UP / DN.",
+    ],
+  },
+  {
     version: "2027-03-17", date: "25 Nov 2026",
     items: [
       "**Move a programme between a project and My programmes** - in the programme picker, **Move to my programmes …** makes a project programme yours and takes it out of the project (the project's first programme can only be copied), and **Move into a project …** puts one of yours into a project and takes it out of My programmes. **Copy** stays for keeping both. Deleted programmes are kept on the server for the site admin to bring back.",

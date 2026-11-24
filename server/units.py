@@ -46,7 +46,7 @@ def clean_unit(u):
         raise HTTPException(status_code=400, detail="A unit is rooms")
     if len(json.dumps(u)) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="The unit is too big")
-    out = {k: u[k] for k in ("name", "type", "wall", "party", "part", "left", "right", "corridor", "rows", "rooms", "doors", "windows", "fixtures", "walls", "extras", "facade", "facadeType", "partySides", "src", "ft2", "note") if k in u}
+    out = {k: u[k] for k in ("name", "type", "wall", "party", "part", "left", "right", "corridor", "rows", "rooms", "doors", "windows", "fixtures", "walls", "extras", "facade", "facadeType", "partySides", "src", "ft2", "note", "zones", "zonesDone") if k in u}
     out["name"] = str(out.get("name") or "Unit")[:80]
     return out
 

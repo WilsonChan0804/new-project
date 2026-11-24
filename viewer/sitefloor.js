@@ -154,8 +154,10 @@ function render() {
       <tr><td>Floor plate</td><td>${f1(F.plate)} m²</td><td>${f1(r.L)} × ${f1(r.D)} m</td></tr>
       <tr><td>Units (GFA)</td><td>${f1(F.unitGfa)} m²</td><td>saleable ${f1(F.saleable)} m²</td></tr>
       <tr><td>Corridor</td><td>${f1(F.corridor)} m²</td><td>${f2(r.cw)} m wide${F.wideEx ? ` · ${f1(F.wideEx)} m² exempt (wider corridor, JPN 1)` : ""}</td></tr>
-      <tr><td>Staircases</td><td>${f1(F.stair)} m²</td><td>${r.nS} × ${o.stairWidth} mm</td></tr>
+      <tr><td>Staircases</td><td>${f1(F.stair)} m²</td><td>${r.nS} × ${o.stairWidth} mm · ${r.stair.risers} risers of ${Math.round(r.stair.riser * 1000)} mm, ${r.stair.t1} + ${r.stair.t2} treads at ${Math.round(r.stair.going * 1000)}, run ${f2(r.stair.run)} m, landings ${f2(r.stair.landing)} m · inside ${f2(r.stair.W)} × ${f2(r.stair.D)} m</td></tr>
       <tr><td>Lift shafts</td><td>${f1(F.lift)} m²</td><td>${r.nL} lifts</td></tr>
+      <tr><td>Core walls</td><td>${f1(F.coreWalls)} m²</td><td>refuse room and riser walls (the staircases' and lifts' are in theirs)</td></tr>
+      <tr><td>Party walls</td><td>${f1(F.partyWalls)} m²</td><td>between units, beyond what the plans hold</td></tr>
       <tr><td>Refuse room</td><td>${f1(F.refuse)} m²</td><td>exempt (APP-151 item 2.1)</td></tr>
       <tr><td>E&M riser</td><td>${f1(F.riser)} m²</td><td>exempt (items 2.2, 21)</td></tr>
       <tr><td>Residual → E&M</td><td>${f1(F.residual)} m²</td><td>taken as exempt E&M - check its use${F.plate && F.residual / F.plate > 0.1 ? ` · <b class="bad">${f0(F.residual / F.plate * 100)}% of the plate</b>: a ${f1(2 * r.deep + r.cw)} m deep plate fits these units` : ""}</td></tr>
@@ -178,7 +180,8 @@ function render() {
   h += `<div class="st-card"><h3>Core and corridor</h3><div class="fl-set">
     <label>Corridor ${num("corridor", 0.05, o.corridor, "Clear width, m")} m</label>
     <label>Core <select data-fo="core"${dis}><option value="middle"${o.core === "middle" ? " selected" : ""}>in the middle</option><option value="ends"${o.core === "ends" ? " selected" : ""}>staircases at the ends</option></select></label>
-    <label>Staircases ${num("stairs", 1, o.stairs, "How many", 44)} × ${num("stairWidth", 50, o.stairWidth, "Width, mm", 64)} mm</label>
+    <label>Staircases ${num("stairs", 1, o.stairs, "How many", 44)} × ${num("stairWidth", 50, o.stairWidth, "Width, mm", 64)} mm · riser ≤ ${num("riser", 0.005, o.riser, "m (MoE: 0.175 at most)", 56)} going ${num("going", 0.005, o.going, "m (MoE: 0.225 at least)", 56)} m</label>
+    <label>Walls: core RC ${num("coreWall", 0.025, o.coreWall, "m, round the staircases, lifts, refuse room, riser", 56)} m · party RC ${num("partyWall", 0.025, o.partyWall, "m, between units", 56)} m</label>
     <label>Lifts ${num("lifts", 1, o.lifts || "", "Leave empty: by service time", 44)} <small>(auto ${r.lifts.n})</small></label>
     <label>Persons a flat ${num("persons", 0.5, o.persons, "For the lifts", 44)}</label>
     <label>5-min capacity ${num("hc5", 0.5, o.hc5, "% of the population", 44)}% · interval ≤ ${num("interval", 5, o.interval, "s", 44)} s</label>
@@ -224,7 +227,7 @@ function onClick(ev) {
 }
 
 /* ---------- the plan */
-const KC = { LD: "#c6d9ef", MBR: "#d5e4f5", BR: "#d5e4f5", OKIT: "#f4e3c6", KIT: "#f4e3c6", BATH: "#d6eee8", ENS: "#d6eee8", LOBBY: "#e7eaee", STORE: "#e7eaee" };
+const KC = { BATH: "#eef6f4", ENS: "#eef6f4", STORE: "#f3f1ea" };   // the rooms otherwise pale, as on the unit plans
 let DRAG = null;           // a drag on the plan: {k: unit|core|vert, i, x, y, dx, dy, moved} (px)
 function drawPlan() {
   const host = $("#st-fplan"), r = LAST;
@@ -249,9 +252,12 @@ function drawPlan() {
     const dg = DRAG && DRAG.moved && DRAG.k === "core" && DRAG.i === ci, c = dg ? Object.assign({}, c0, DRAG.at) : c0;
     const X = sx(c.x), Y = sy(c.y), w = c.w * SC, h = c.h * SC, bad = c0.flags && c0.flags.length, sel = CSEL === ci, tg = hot && hot.ci === ci;
     const fill = c.kind === "stair" ? "#ffe0c2" : c.kind === "lift" ? "#dad7f0" : c.kind === "refuse" ? "#e3e7d3" : "#f1d6d6";
-    g += `<g${dg ? ' opacity="0.8"' : ""}><rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="${fill}" stroke="${sel || tg ? "#f28022" : bad ? "#c62828" : "#333"}" stroke-width="${sel || tg || bad ? 2.5 : 1.2}" />`;
-    if (c.kind === "stair") { const k = 7, vert = h >= w; for (let i = 1; i < k; i++) g += vert ? `<line x1="${X + 2}" y1="${Y + h * i / k}" x2="${X + w / 2 - 1}" y2="${Y + h * i / k}" stroke="#a5642a" stroke-width="0.6" /><line x1="${X + w / 2 + 1}" y1="${Y + h * i / k}" x2="${X + w - 2}" y2="${Y + h * i / k}" stroke="#a5642a" stroke-width="0.6" />` : `<line x1="${X + w * i / k}" y1="${Y + 2}" x2="${X + w * i / k}" y2="${Y + h / 2 - 1}" stroke="#a5642a" stroke-width="0.6" /><line x1="${X + w * i / k}" y1="${Y + h / 2 + 1}" x2="${X + w * i / k}" y2="${Y + h - 2}" stroke="#a5642a" stroke-width="0.6" />`; }
-    if (c.kind === "lift") g += `<line x1="${X}" y1="${Y}" x2="${X + w}" y2="${Y + h}" stroke="#555" stroke-width="0.6" /><line x1="${X + w}" y1="${Y}" x2="${X}" y2="${Y + h}" stroke="#555" stroke-width="0.6" />`;
+    // the RC wall round it (half its thickness inside its footprint each side), the clear inside
+    const cw2 = (r.coreWall || 0.25) / 2 * SC, IX = X + cw2, IY = Y + cw2, iw = Math.max(0, w - 2 * cw2), ih = Math.max(0, h - 2 * cw2);
+    g += `<g${dg ? ' opacity="0.8"' : ""}><rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="url(#hp-rc)" stroke="${sel || tg ? "#f28022" : bad ? "#c62828" : "#111"}" stroke-width="${sel || tg || bad ? 2.5 : 0.9}" />`;
+    g += `<rect x="${IX}" y="${IY}" width="${iw}" height="${ih}" fill="${c.kind === "stair" ? "#fff" : fill}" stroke="#111" stroke-width="0.8" />`;
+    if (c.kind === "stair") g += stairSvg(r.stair, IX, IY, iw, ih);
+    if (c.kind === "lift") g += `<line x1="${IX}" y1="${IY}" x2="${IX + iw}" y2="${IY + ih}" stroke="#555" stroke-width="0.6" /><line x1="${IX + iw}" y1="${IY}" x2="${IX}" y2="${IY + ih}" stroke="#555" stroke-width="0.6" /><rect x="${IX + iw * 0.15}" y="${IY + ih * 0.1}" width="${iw * 0.7}" height="${ih * 0.75}" fill="none" stroke="#555" stroke-width="0.5" />`;
     if (Math.max(w, h) > fs * 2.5) g += `<text x="${X + w / 2}" y="${Y + h / 2 + 4}" text-anchor="middle" font-size="${fs - 1}" font-weight="700" fill="#222" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">${esc(c.label)}</text>`;
     g += `<rect class="fl-u" data-ci="${ci}" x="${X}" y="${Y}" width="${w}" height="${h}" fill="transparent" /></g>`;
   }
@@ -260,12 +266,24 @@ function drawPlan() {
     const sel = PSEL === pi, tg = hot && hot.pi === pi, bad = q.flags && q.flags.length;
     g += `<g${dg ? ' opacity="0.75"' : ""}>`;
     for (const e of q.extras) g += `<rect x="${sx(ox + e.x)}" y="${sy(oy + e.y)}" width="${e.w * SC}" height="${e.h * SC}" fill="#dfe9f3" stroke="#3c4650" stroke-width="0.8" stroke-dasharray="4 2" />`;
-    for (const rm of q.rooms) g += `<rect x="${sx(ox + rm.x)}" y="${sy(oy + rm.y)}" width="${rm.w * SC}" height="${rm.h * SC}" fill="${KC[rm.kind] || "#c6d9ef"}" stroke="#4a5866" stroke-width="0.7" />`;
-    g += `<rect x="${sx(ox)}" y="${sy(oy)}" width="${q.w * SC}" height="${q.h * SC}" fill="${tg ? "rgba(242,128,34,.22)" : bad ? "rgba(198,40,40,.12)" : "none"}" stroke="${sel || tg ? "#f28022" : bad ? "#c62828" : "#111"}" stroke-width="${sel || tg || bad ? 3 : 2}" />`;
+    for (const rm of q.rooms) g += `<rect x="${sx(ox + rm.x)}" y="${sy(oy + rm.y)}" width="${rm.w * SC}" height="${rm.h * SC}" fill="${KC[rm.kind] || "#fbf3d5"}" stroke="#555" stroke-width="${Math.max(0.4, SC * 0.012)}" />`;
+    // its walls: the outline at the plan's external wall, RC hatched
+    const wt = Math.max(1.2, (q.u.wall || 0.1) * SC);
+    g += `<rect x="${sx(ox)}" y="${sy(oy)}" width="${q.w * SC}" height="${q.h * SC}" fill="${tg ? "rgba(242,128,34,.22)" : bad ? "rgba(198,40,40,.12)" : "none"}" stroke="${sel || tg ? "#f28022" : bad ? "#c62828" : "#444"}" stroke-width="${sel || tg || bad ? 3 : wt}" />`;
     if (q.corner) { const X = sx(q.corner === "w" ? ox : ox + q.w); g += `<line x1="${X}" y1="${sy(oy)}" x2="${X}" y2="${sy(oy + q.h)}" stroke="#2b6c8f" stroke-width="4" />`; }
     if (q.w * SC > fs * 5) g += `<text x="${sx(ox + q.w / 2)}" y="${sy(oy + q.h / 2)}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#1f2a36" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">${esc(q.name || "Unit")}${q.m && !/mirrored/.test(q.name || "") ? " ⇋" : ""}</text>
       <text x="${sx(ox + q.w / 2)}" y="${sy(oy + q.h / 2) + fs + 2}" text-anchor="middle" font-size="${fs - 1}" fill="${bad ? "#c62828" : "#3c4650"}" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">${bad ? esc(q.flags[0]) : `${f1(q.fig.saleable)} m² · ${f2(q.w)} m`}</text>`;
     g += `<rect class="fl-u" data-pi="${pi}" x="${sx(ox)}" y="${sy(oy)}" width="${q.w * SC}" height="${q.h * SC}" fill="transparent" /></g>`;
+  }
+  // the RC party walls between neighbouring units
+  for (const band of ["s", "n"]) {
+    const qs = r.placed.filter((o) => o.band === band).sort((a, b) => a.x - b.x);
+    for (let k = 1; k < qs.length; k++) {
+      const A = qs[k - 1], Bq = qs[k], mid = (A.x + A.w + Bq.x) / 2, t = Math.max(0.2, Bq.x - (A.x + A.w) + (A.u.party || 0.15));
+      if (Bq.x - (A.x + A.w) > 0.6) continue;
+      const y0 = Math.max(A.y, Bq.y), y1 = Math.min(A.y + A.h, Bq.y + Bq.h);
+      if (y1 - y0 > 0.1) g += `<rect x="${sx(mid - t / 2)}" y="${sy(y0)}" width="${t * SC}" height="${(y1 - y0) * SC}" fill="url(#hp-rc)" stroke="#111" stroke-width="0.8" pointer-events="none" />`;
+    }
   }
   // the plate's corners to drag, a + on each edge to add one
   if (can) {
@@ -279,8 +297,32 @@ function drawPlan() {
   g += dim(sx(0), sy(0) - 16, sx(r.L), sy(0) - 16, f2(r.L) + " m");
   g += dim(sx(0) - 16, sy(0), sx(0) - 16, sy(r.D), f2(r.D) + " m", true);
   const F = r.figures;
-  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${g}
+  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif"><defs><pattern id="hp-rc" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><rect width="5" height="5" fill="#8b9096"/><line x1="0" y1="0" x2="0" y2="5" stroke="#5c6166" stroke-width="1.2"/></pattern></defs>${g}
     <text x="12" y="${bh - 12}" font-size="12" fill="#5b6b7b">${F.units} flats · GFA ${f1(F.gfa)} m² of ${f1(F.plate)} m²${SWAP ? " · tap the other one to swap with" : ""}</text></svg>${pop(r, sx, sy, bw, bh)}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
+}
+/* a dog-leg staircase in its clear inside: two flights along the longer side with their treads at the going, the well, landings at both ends, UP and DN, a break line */
+function stairSvg(st, X, Y, W, H) {
+  if (!st) return "";
+  const along = H >= W, L = along ? H : W, A = along ? W : H;     // L: the flights' length, A: across both flights
+  const k = L / (st.run + 2 * st.landing), run = st.run * k, land = st.landing * k, fw = (A - st.well * (A / st.W)) / 2, wl = A - 2 * fw;
+  let g = "";
+  const P = (u, v) => (along ? [X + v, Y + u] : [X + u, Y + v]);       // u along the flights, v across
+  const line = (u1, v1, u2, v2, w = 0.6, extra = "") => { const [a, b] = P(u1, v1), [c, d] = P(u2, v2); return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#222" stroke-width="${w}"${extra} />`; };
+  // the well and its handrail
+  const [wx, wy] = P(land, fw), [ww, wh] = along ? [wl, run] : [run, wl];
+  g += `<rect x="${wx}" y="${wy}" width="${ww}" height="${wh}" fill="#fff" stroke="#222" stroke-width="0.8" />`;
+  // the landings' edges and the treads of each flight
+  g += line(land, 0, land, A, 0.8) + line(land + run, 0, land + run, A, 0.8);
+  for (let i = 1; i < st.t1; i++) g += line(land + i * run / st.t1, 0, land + i * run / st.t1, fw, 0.5);
+  for (let i = 1; i < st.t2; i++) g += line(land + i * run / st.t2, fw + wl, land + i * run / st.t2, A, 0.5);
+  // UP along the first flight, DN along the second; a break line across the first
+  const ar = (u1, u2, v, lab) => { const [a, b] = P(u1, v), [c, d] = P(u2, v); const ang = Math.atan2(d - b, c - a), hx = c - 5 * Math.cos(ang - 0.5), hy = d - 5 * Math.sin(ang - 0.5), jx = c - 5 * Math.cos(ang + 0.5), jy = d - 5 * Math.sin(ang + 0.5); return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#a5642a" stroke-width="0.8" /><path d="M ${hx} ${hy} L ${c} ${d} L ${jx} ${jy}" fill="none" stroke="#a5642a" stroke-width="0.8" /><text x="${a}" y="${b}" font-size="7" fill="#a5642a" dx="2" dy="-2">${lab}</text>`; };
+  g += ar(land + run * 0.95, land + run * 0.1, fw / 2, "UP") + ar(land + run * 0.1, land + run * 0.95, fw + wl + fw / 2, "DN");
+  const [b1x, b1y] = P(land + run * 0.55, 0), [b2x, b2y] = P(land + run * 0.45, fw);
+  g += `<line x1="${b1x}" y1="${b1y}" x2="${b2x}" y2="${b2y}" stroke="#222" stroke-width="0.9" stroke-dasharray="none" />`;
+  const [lx, ly] = P(land / 2, A / 2);
+  g += `<text x="${lx}" y="${ly + 3}" text-anchor="middle" font-size="7" fill="#333" pointer-events="none">${st.risers}R@${Math.round(st.riser * 1000)} · ${Math.round(st.going * 1000)}G</text>`;
+  return g;
 }
 /* the small menu by the selected unit or core piece */
 function pop(r, sx, sy, bw, bh) {
