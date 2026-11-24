@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-10", date: "25 Nov 2026",
+    items: [
+      "**Unit editor: ▭ + Room** - choose the room kind beside the tool and drag a rectangle on the plan: it snaps to the walls already there (within 0.25 m) and to the 50 mm grid, shows its size as you drag, and is refused if it overlaps a room. A kitchen or bathroom gets its fittings. Make a unit bigger, add a store, a study or a second bathroom.",
+      "**⇋ Mirror** - the handed copy of a unit: rooms, doors (hinges too), windows, fittings, the bay and party sides flipped left to right; the areas stay the same. Press it again (or Undo) to go back.",
+    ],
+  },
+  {
     version: "2027-03-09", date: "24 Nov 2026",
     items: [
       "**Unit editor**: dimension chains on every side (each room's span and the overall), and while you drag a wall the two rooms' new sizes and the distance show live. Tools over the plan: **+ Door**, **+ Window**, **✂ Split** a room (a new wall), **+ Fitting**; click a wall to **delete it** (or put it back), **join** the rooms, give it its own thickness or façade; click a door to **flip** its hinge or swing and drag it along the wall; click a fitting to **rotate** it 90° (R) or move it.",

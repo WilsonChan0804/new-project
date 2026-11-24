@@ -70,5 +70,23 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 2\.1/.test(w)), "a be
   const fp = U.figures(T);
   ok(near(fp.pcEx, e.len * 0.15, 1e-3) && fp.capped > f0.capped, "a precast wall 150 mm: its thickness exempt, under the cap");
 }
+// round 3: add a room, mirror a unit
+{
+  const T = JSON.parse(JSON.stringify(TEMPLATES["2R-B"])), f0 = U.figures(T);
+  const [x0, y0, x1, y1] = f0.box;
+  const v = U.addRoom(T, { x: x1, y: y0, w: 2.42, h: 2.6 }, "STORE");
+  ok(v && v.rooms.length === T.rooms.length + 1 && near(v.rooms.at(-1).w, 2.4, 1e-9) && near(U.figures(v).area, f0.area + 2.4 * 2.6, 1e-6), "add a 2.4 × 2.6 m room beside the unit (50 mm grid): the area grows by 6.24 m²");
+  ok(U.addRoom(T, { x: x0 + 0.5, y: y0 + 0.5, w: 2, h: 2 }, "BR") === null, "a room over another is refused");
+  ok(U.addRoom(T, { x: x1, y: y0, w: 0.4, h: 2 }, "BR") === null, "a room under 0.6 m is refused");
+  const M = U.mirrorUnit(T), fm = U.figures(M);
+  ok(near(fm.area, f0.area, 1e-6) && near(fm.saleable, f0.saleable, 1e-6) && near(fm.gfa, f0.gfa, 1e-6), "mirrored: the same areas, saleable and GFA");
+  const r0 = T.rooms[0], rm = M.rooms[0];
+  const ex = [x0, x1, ...(T.extras || []).flatMap((e) => [e.x, e.x + e.w])], Sx = Math.min(...ex) + Math.max(...ex);
+  ok(near(rm.x, Sx - r0.x - r0.w, 1e-6) && near(rm.y, r0.y, 1e-9), "mirrored: rooms flipped about the unit's middle (with its bay)");
+  const dW = T.doors.findIndex((d) => d.side === "e" || d.side === "w");
+  ok(dW < 0 || M.doors[dW].side === { e: "w", w: "e" }[T.doors[dW].side], "a door on an east / west side moves to the other side");
+  const MM = U.mirrorUnit(M);
+  ok(MM.rooms.every((r, i) => near(r.x, T.rooms[i].x, 1e-6)) && MM.name === T.name && JSON.stringify(MM.doors) === JSON.stringify(T.doors.map((d) => Object.assign({}, d, { at: +(+d.at).toFixed(3) }, ("hinge" in d || d.swing) ? { hinge: d.hinge === "end" ? "end" : "start" } : {}))), "mirrored twice: back to the start");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

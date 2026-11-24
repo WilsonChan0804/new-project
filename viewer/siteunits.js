@@ -131,7 +131,7 @@ function render() {
       <div class="un-tabs">${tabs || `<p class="st-need">No units yet: start from a template or the office library.</p>`}</div>
       ${can ? `<div class="st-row"><select data-unew><option value="">+ New from a template …</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}${t.src ? " · " + esc(t.src.replace(/^after /, "")) : ""}</option>`).join("")}</select>
         <select data-ulib><option value="">+ From the office library …</option>${libOpt}</select></div>
-        ${u ? `<div class="st-row"><button type="button" class="ghost st-ib" data-udup>Duplicate</button><button type="button" class="ghost st-ib" data-udel>Remove</button><button type="button" class="ghost st-ib" data-usave title="${u.libId ? "Update the entry it came from" : "Add it to the office library"}">${u.libId ? "Update in the office library" : "Save to the office library"}</button><button type="button" class="ghost st-ib" data-usavenew>Save as new</button><button type="button" class="ghost st-ib" data-usvg>SVG</button></div>` : ""}` : ""}
+        ${u ? `<div class="st-row"><button type="button" class="ghost st-ib" data-udup>Duplicate</button><button type="button" class="ghost st-ib" data-umir title="A handed copy: the same layout flipped left to right">⇋ Mirror</button><button type="button" class="ghost st-ib" data-udel>Remove</button><button type="button" class="ghost st-ib" data-usave title="${u.libId ? "Update the entry it came from" : "Add it to the office library"}">${u.libId ? "Update in the office library" : "Save to the office library"}</button><button type="button" class="ghost st-ib" data-usavenew>Save as new</button><button type="button" class="ghost st-ib" data-usvg>SVG</button></div>` : ""}` : ""}
     </section>
     ${body}`;
   drawPlan();
@@ -172,6 +172,7 @@ async function onClick(ev) {
   if (d.uundo) return undo(+d.uundo);
   if (d.usel != null) { st.sel = +d.usel; SELR = null; C.save(); return render(); }
   if (!u) return;
+  if (d.umir != null) { const v = U.mirrorUnit(ensure(u)); delete v.libId; st.list[st.sel] = v; SEL = null; return changed(); }
   if (d.udup != null) { st.list.push(copyNamed(u, st.list)); st.sel = st.list.length - 1; return changed(); }
   if (d.udel != null) { if (!confirm(`Remove ${u.name}?`)) return; st.list.splice(st.sel, 1); st.sel = Math.min(st.sel, st.list.length - 1); return changed(); }
   if (d.usave != null || d.usavenew != null) {
@@ -208,7 +209,8 @@ async function onClick(ev) {
 /* ---------- the plan, as a sales brochure: walls, windows, doors, fittings, labels, dimension chains */
 let SC = 60, OX = 40, OY = 40, BX = 0, BY = 0;
 let SEL = null;      // {t: "wall"|"door"|"win"|"fix", i | key}
-let TOOL = "select"; // select | door | window | split-x | split-y | fix:<kind>
+let TOOL = "select"; // select | door | window | split-x | split-y | room | fix:<kind>
+let ROOMK = "BR";     // the kind a drawn room gets
 let LIVE = null;     // while a wall line is dragged: {axis, at, d}
 const DIMS = () => { try { return localStorage.getItem("lwk-viewer:un-dims") || "chains"; } catch (e) { return "chains"; } };
 const FIXK = { bath: "Bath tub", shower: "Shower", wc: "WC", basin: "Basin", counter: "Kitchen counter", sink: "Sink", hob: "Hob", wardrobe: "Wardrobe" };
@@ -244,7 +246,7 @@ function drawPlan() {
   // the extras behind: bays as one dashed outline with their parts
   for (const [xi, e] of (u.extras || []).entries()) {
     const X = sx(e.x), Y = sy(e.y), w = e.w * SC, h = e.h * SC, sp = (+e.splay || 0) * SC;
-    const pts = sp ? `${X},${Y} ${X + w},${Y} ${X + w},${Y + h - sp} ${X + w - sp},${Y + h} ${X},${Y + h}` : `${X},${Y} ${X + w},${Y} ${X + w},${Y + h} ${X},${Y + h}`;
+    const pts = sp && e.splayL ? `${X},${Y} ${X + w},${Y} ${X + w},${Y + h} ${X + sp},${Y + h} ${X},${Y + h - sp}` : sp ? `${X},${Y} ${X + w},${Y} ${X + w},${Y + h - sp} ${X + w - sp},${Y + h} ${X},${Y + h}` : `${X},${Y} ${X + w},${Y} ${X + w},${Y + h} ${X},${Y + h}`;
     g += `<polygon data-xi="${xi}" points="${pts}" fill="${e.kind === "roof" ? "#eef1f4" : "#dfe9f3"}" stroke="#3c4650" stroke-width="1.2" stroke-dasharray="${e.kind === "pd" || e.kind === "af" ? "0" : "6 3"}" />`;
     const parts = e.kind === "bay" ? U.expandBays([e]) : [e];
     parts.forEach((p, k) => {
@@ -369,7 +371,8 @@ function fixture(x, sx, sy, sel, i) {
 function toolbar() {
   if (!C.can()) return "";
   const b = (t, l, ti) => `<button type="button" data-tool="${t}" class="${TOOL === t ? "on" : ""}" title="${ti}">${l}</button>`;
-  return `<div class="un-bar">${b("select", "↖ Select", "Click a wall, door, window or fitting; drag a wall line")}${b("door", "+ Door", "Click a wall where the door goes")}${b("window", "+ Window", "Click an external wall")}${b("split-x", "✂ Split │", "Click a room: a new wall up and down at that point")}${b("split-y", "✂ Split ─", "Click a room: a new wall across at that point")}
+  return `<div class="un-bar">${b("select", "↖ Select", "Click a wall, door, window or fitting; drag a wall line")}${b("door", "+ Door", "Click a wall where the door goes")}${b("window", "+ Window", "Click an external wall")}${b("split-x", "✂ Split │", "Click a room: a new wall up and down at that point")}${b("split-y", "✂ Split ─", "Click a room: a new wall across at that point")}${b("room", "▭ + Room", "Drag a rectangle beside the rooms: a new room (snaps to the walls, 50 mm grid)")}
+    <select data-roomk title="The kind of the room you draw">${Object.entries(U.KINDS).map(([k, q]) => `<option value="${k}"${ROOMK === k ? " selected" : ""}>${q.label}</option>`).join("")}</select>
     <select data-fixadd title="Click a room to place it"><option value="">+ Fitting …</option>${Object.entries(FIXK).map(([k, v]) => `<option value="${k}"${TOOL === "fix:" + k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <select data-dims title="Dimensions"><option value="chains"${DIMS() === "chains" ? " selected" : ""}>Dimensions: chains</option><option value="overall"${DIMS() === "overall" ? " selected" : ""}>overall</option><option value="off"${DIMS() === "off" ? " selected" : ""}>off</option></select></div>`;
 }
@@ -415,12 +418,32 @@ function edgeRoomSide(e) {
   return null;
 }
 
+/* a point for a new room: to an existing wall line within 0.25 m, else the 50 mm grid */
+function snapRoom(u, P) {
+  const xs = [], ys = [];
+  for (const r of (u && u.rooms) || []) { xs.push(+r.x, +r.x + +r.w); ys.push(+r.y, +r.y + +r.h); }
+  const s1 = (v, L) => { let b = null; for (const a of L) if (Math.abs(a - v) <= 0.25 && (b == null || Math.abs(a - v) < Math.abs(b - v))) b = a; return b != null ? b : Math.round(v * 20) / 20; };
+  return [s1(P[0], xs), s1(P[1], ys)];
+}
+/* the rubber-band rectangle while a room is drawn, with its size */
+function roomPreview(d) {
+  const svg = $("#st-uplan svg"); if (!svg || !d.P1) return;
+  let g = svg.querySelector(".un-newroom");
+  if (!g) { g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.setAttribute("class", "un-newroom"); svg.appendChild(g); }
+  const x0 = Math.min(d.P0[0], d.P1[0]), y0 = Math.min(d.P0[1], d.P1[1]), w = Math.abs(d.P1[0] - d.P0[0]), h = Math.abs(d.P1[1] - d.P0[1]);
+  const X = OX + (x0 - BX) * SC, Y = OY + (y0 - BY) * SC;
+  const ok = U.addRoom(cur(), { x: x0, y: y0, w, h }, ROOMK);
+  g.innerHTML = `<rect x="${X}" y="${Y}" width="${w * SC}" height="${h * SC}" fill="${ok ? "rgba(242,128,34,.18)" : "rgba(200,40,40,.15)"}" stroke="${ok ? "#f28022" : "#c62828"}" stroke-width="1.5" stroke-dasharray="6 3" />
+    <text x="${X + w * SC / 2}" y="${Y + h * SC / 2}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#b4520a">${f2(w)} × ${f2(h)} m · ${f2(w * h)} m²</text>`;
+}
+
 function wirePlan() {
   const host = $("#st-uplan");
   let drag = null;
   host.addEventListener("change", (ev) => {
     const t = ev.target, u = cur(); if (!u) return;
     if (t.dataset.dims != null) { try { localStorage.setItem("lwk-viewer:un-dims", t.value); } catch (e) {} return drawPlan(); }
+    if (t.dataset.roomk != null) { ROOMK = t.value; TOOL = "room"; return drawPlan(); }
     if (t.dataset.fixadd != null) { TOOL = t.value ? "fix:" + t.value : "select"; return drawPlan(); }
     if (t.dataset.pwf != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; o.f = t.value; if (t.value === "cw") u.windows = u.windows.filter((w) => !(w.room === SEL.key.split(":")[0] && w.side === SEL.key.split(":")[1])); return changed(); }
     if (t.dataset.pwt != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; if (t.value === "") delete o.t; else o.t = Math.max(0, parseFloat(t.value)); return changed(); }
@@ -465,6 +488,10 @@ function wirePlan() {
         if (v === u) return toast("Too near the room's edge", true);
         { const st0 = store(); st0.list[st0.sel] = v; } TOOL = "select"; return changed();
       }
+      if (TOOL === "room") {
+        drag = { kind: "newroom", P0: snapRoom(u, P), P1: null };
+        host.setPointerCapture(ev.pointerId); ev.preventDefault(); return;
+      }
       if (TOOL.startsWith("fix:") && t.dataset.rid) {
         const k = TOOL.slice(4), sz = { bath: [1.5, 0.7], shower: [0.9, 0.9], wc: [0.4, 0.65], basin: [0.5, 0.4], counter: [1.8, 0.6], sink: [0.6, 0.5], hob: [0.6, 0.5], wardrobe: [1.2, 0.6] }[k];
         u.fixtures.push({ kind: k, x: +(P[0] - sz[0] / 2).toFixed(2), y: +(P[1] - sz[1] / 2).toFixed(2), w: sz[0], h: sz[1], rot: 0 });
@@ -486,6 +513,7 @@ function wirePlan() {
   host.addEventListener("pointermove", (ev) => {
     if (!drag) return;
     const st = store(), P = toPlan(ev);
+    if (drag.kind === "newroom") { drag.P1 = snapRoom(cur(), P); return roomPreview(drag); }
     if (drag.kind === "wall") {
       const e = drag.e, v = e.x1 === e.x2, dist = v ? (ev.clientX - drag.x) / SC : (ev.clientY - drag.y) / SC;
       if (Math.abs(dist) < 0.025 && !drag.moved) return;
@@ -509,6 +537,18 @@ function wirePlan() {
   const end = () => {
     if (!drag) return;
     const d = drag; drag = null; LIVE = null;
+    if (d.kind === "newroom") {
+      const u = cur(); if (!u || !d.P1) return drawPlan();
+      const rect = { x: Math.min(d.P0[0], d.P1[0]), y: Math.min(d.P0[1], d.P1[1]), w: Math.abs(d.P1[0] - d.P0[0]), h: Math.abs(d.P1[1] - d.P0[1]) };
+      if (rect.w < 0.05 && rect.h < 0.05) return drawPlan();
+      const v = U.addRoom(u, rect, ROOMK);
+      if (!v) { toast("A room is at least 0.6 × 0.6 m and does not overlap another room", true); return drawPlan(); }
+      const nr = v.rooms[v.rooms.length - 1];
+      if (Array.isArray(v.fixtures)) v.fixtures.push(...U.genFixtures({ rooms: [nr] }));
+      { const st0 = store(); st0.list[st0.sel] = v; }
+      SELR = nr.id; SEL = null;
+      return changed();
+    }
     if (d.kind === "wall" && !d.moved) { SEL = { t: "wall", key: d.key }; return drawPlan(); }
     if (d.moved) changed(); else drawPlan();
   };

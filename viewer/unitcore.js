@@ -296,6 +296,51 @@ export function joinRooms(u, a, b) {
   return v;
 }
 
+/* add a room: a rectangle {x, y, w, h} on the 50 mm grid; null when it
+   overlaps a room already there or is under 0.6 m either way */
+export function addRoom(u, rect, kind = "BR", name) {
+  const q = (a) => Math.round(a * 20) / 20;
+  const R = { x: q(rect.x), y: q(rect.y), w: q(rect.w), h: q(rect.h) };
+  if (R.w < 0.6 || R.h < 0.6) return null;
+  for (const r of u.rooms || []) {
+    const ox = Math.min(R.x + R.w, n(r.x) + n(r.w)) - Math.max(R.x, n(r.x));
+    const oy = Math.min(R.y + R.h, n(r.y) + n(r.h)) - Math.max(R.y, n(r.y));
+    if (ox > 0.01 && oy > 0.01) return null;
+  }
+  const v = JSON.parse(JSON.stringify(u));
+  let i = 1; const ids = new Set(v.rooms.map((r) => r.id));
+  while (ids.has("n" + i)) i++;
+  v.rooms.push(Object.assign({ id: "n" + i, kind, name: name || (KINDS[kind] || {}).label || kind }, R));
+  return v;
+}
+
+/* the unit mirrored left to right (a handed unit: the same layout, flipped) */
+export function mirrorUnit(u) {
+  const v = JSON.parse(JSON.stringify(u));
+  const xs = [...(v.rooms || []).flatMap((r) => [n(r.x), n(r.x) + n(r.w)]), ...(v.extras || []).flatMap((e) => [n(e.x), n(e.x) + n(e.w)])];
+  const S = Math.min(...xs) + Math.max(...xs), fx = (o) => { o.x = +(S - n(o.x) - n(o.w)).toFixed(3); };
+  const ew = { e: "w", w: "e", n: "n", s: "s" };
+  const rooms = new Map((v.rooms || []).map((r) => [r.id, r]));
+  for (const o of [...(v.doors || []), ...(v.windows || [])]) {
+    const r = rooms.get(o.room); if (!r) continue;
+    if (o.side === "n" || o.side === "s") o.at = +(n(r.w) - n(o.at) - n(o.w || 0.8)).toFixed(3);
+    else o.side = ew[o.side];
+    if ("hinge" in o || o.swing) o.hinge = o.hinge === "end" ? "start" : "end";
+  }
+  for (const r of v.rooms || []) fx(r);
+  for (const e of v.extras || []) { fx(e); if (e.splay) e.splayL = !e.splayL; }
+  for (const x of v.fixtures || []) { fx(x); if (x.rot === 90) x.rot = 270; else if (x.rot === 270) x.rot = 90; }
+  v.partySides = (v.partySides || []).map((s) => ew[s]);
+  if (v.facade) v.facade = ew[v.facade];
+  if (v.walls) {
+    const w2 = {};
+    for (const [k, o] of Object.entries(v.walls)) { const m = /^(.*):([nsew])$/.exec(k); w2[m ? m[1] + ":" + ew[m[2]] : k] = o; }
+    v.walls = w2;
+  }
+  v.name = /\(mirrored\)$/.test(v.name || "") ? v.name.replace(/ \(mirrored\)$/, "") : (v.name || "Unit") + " (mirrored)";
+  return v;
+}
+
 /* the fittings a room of each kind gets at first: bath / shower, WC, basin;
    kitchen counter with sink and hob; [{kind, x, y, w, h, rot}] */
 export function genFixtures(u) {
