@@ -254,6 +254,27 @@ class PdfWide(unittest.TestCase):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    @unittest.skipUnless(shutil.which("pdftotext"), "needs poppler")
+    def test_links_across_pages_and_office_fit(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            rows = [dict(SPEC["rows"][1], name="Task %d" % i, bstart=None, bfinish=None) for i in range(60)]
+            rows[55] = dict(rows[55], start="2027-03-22", finish="2027-04-09")
+            spec = dict(SPEC, rows=rows, links=[{"from": 5, "to": 55, "type": "FS"}], paper="A4", orient="portrait",
+                        cover=dict(SPEC["cover"], office="LWK + PARTNERS ARCHITECTS LIMITED"), _plain=True)
+            data = programme_pdf.build(spec)
+            p = os.path.join(tmp, "x.pdf")
+            with open(p, "wb") as f:
+                f.write(data)
+            pages = subprocess.run(["pdftotext", "-layout", p, "-"], capture_output=True, text=True).stdout.split("\f")
+            self.assertGreaterEqual(len([x for x in pages if x.strip()]), 2)
+            self.assertIn("to p.2", pages[0])
+            self.assertIn("from p.1", pages[1])
+            # the office's name is fitted (smaller than its 10 pt) to the narrow A4 box
+            self.assertNotRegex(data.decode("latin-1"), r"/F\d+ 10 Tf[^T]*\(LWK \+ PARTNERS ARCHITECTS")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -224,8 +224,13 @@ def build(spec):
         bw = (30 if small else 42) * mm
         c.setFillColor(ACCENT)
         c.rect(m, y0, 3 * mm, title_h, stroke=0, fill=1)
-        put(c, m + 6 * mm, y0 + title_h - 8.5 * mm, cover.get("office") or "LWK + PARTNERS", 10, True, INK)
-        put(c, m + 6 * mm, y0 + title_h - 13 * mm, "Architecture", 6.5, False, MUTED)
+        # the office's name fitted to its box (it ran into the title on narrow pages)
+        office, ow = cover.get("office") or "LWK + PARTNERS", bw - 9 * mm
+        osz = 10
+        while osz > 6.5 and pdfmetrics.stringWidth(office, font(office, True), osz) > ow:
+            osz -= 0.5
+        put(c, m + 6 * mm, y0 + title_h - 8.5 * mm, office, osz, True, INK, width=ow)
+        put(c, m + 6 * mm, y0 + title_h - 13 * mm, "Architecture", 6.5, False, MUTED, width=ow)
         c.setStrokeColor(LINE)
         c.setLineWidth(0.4)
         c.line(m + bw, y0, m + bw, y0 + title_h)
@@ -400,6 +405,23 @@ def build(spec):
       span = (d1 - d0).days + 1
       per_day = gw / span
       unit = "week" if per_day * 7 >= 7 * mm else "month" if per_day * 30 >= 6 * mm else "quarter"
+      hy0 = body_top - head_h
+      y_bot0 = hy0 - per * rh
+
+      def pos_of(ri):
+          """where a row's bar is, whatever page it is on: (x start, x end, y middle, page) - as the bars are drawn"""
+          r = rows[ri]
+          a, b = day(r.get("start")), day(r.get("finish"))
+          if not a:
+              return None
+          b = b or a
+          i = ri % per
+          cy = hy0 - (i + 1) * rh + rh / 2 + (rh * 0.07 if show.get("baseline") else 0)
+          if r.get("milestone") and not r.get("summary"):
+              cx = X(a) + (per_day if r.get("ms_end") else 0)
+              return (cx, cx, cy, ri // per)
+          return (X(a), X(b, True), cy, ri // per)
+
       for pg in range(pages):
         geo = {}
         if pno[0]:
@@ -510,9 +532,61 @@ def build(spec):
                     f, t = int(ln.get("from")), int(ln.get("to"))
                 except (TypeError, ValueError):
                     continue
-                if f not in geo or t not in geo or geo[f][3] != pg or geo[t][3] != pg:
-                    continue
                 typ = str(ln.get("type") or "FS")
+                if f < 0 or t < 0 or f >= len(rows) or t >= len(rows):
+                    continue
+                if not (f in geo and t in geo and geo[f][3] == pg and geo[t][3] == pg):
+                    # one end on another page: the line runs to the chart's edge here, and on from the same x there
+                    F, T = pos_of(f), pos_of(t)
+                    if not F or not T or F[3] == T[3] or pg not in (F[3], T[3]):
+                        continue
+                    col = CRIT if ln.get("critical") and show.get("critical") else hexc(ln.get("color"), LINK)
+                    c.setStrokeColor(col)
+                    c.setFillColor(col)
+                    sty = ln.get("style") or ("dashed" if ln.get("drive") is False else "solid")
+                    st = 1.2 * mm
+                    xs = F[0] if typ[0] == "S" else F[1]
+                    xt = T[0] if typ[1] == "S" else T[1]
+                    out = xs + st if typ[0] == "F" else xs - st
+                    elbow = (typ[1] == "S" and out <= xt - 0.6 * mm) or (typ[1] == "F" and out >= xt + 0.6 * mm)
+                    tx = (max(out, xt + 0.8 * mm) if typ[1] == "S" else min(out, xt - 0.8 * mm)) if elbow else out
+                    fwd = T[3] > F[3]                       # on a later page: down the page, off its foot
+                    here = pg == F[3]
+                    edge = (y_bottom if fwd else hy) if here else (hy if fwd else y_bottom)
+                    other = (s_i * pages + (T[3] if here else F[3]) + 1)
+                    c.setDash(*({"dashed": (2.2, 1.4), "dotted": (0.5, 1.2)}.get(sty, ())))
+                    p = c.beginPath()
+                    if here:
+                        p.moveTo(xs, F[2])
+                        p.lineTo(tx, F[2])
+                        p.lineTo(tx, edge)
+                        c.drawPath(p, stroke=1, fill=0)
+                        c.setDash()
+                    else:
+                        ty2 = T[2]
+                        d = -1 if fwd else 1
+                        bh = rh * 0.25
+                        if elbow:
+                            y_to = ty2 + (bh if d < 0 else -bh)
+                            p.moveTo(tx, edge)
+                            p.lineTo(tx, y_to)
+                            c.drawPath(p, stroke=1, fill=0)
+                            c.setDash()
+                            arrow(tx, y_to, 0, d)
+                        else:
+                            yb = ty2 - (rh / 2) * d
+                            xin = xt - st if typ[1] == "S" else xt + st
+                            p.moveTo(tx, edge)
+                            p.lineTo(tx, yb)
+                            p.lineTo(xin, yb)
+                            p.lineTo(xin, ty2)
+                            p.lineTo(xt, ty2)
+                            c.drawPath(p, stroke=1, fill=0)
+                            c.setDash()
+                            arrow(xt, ty2, 1 if typ[1] == "S" else -1, 0)
+                    # where it goes on (or comes from)
+                    put(c, tx + 0.8 * mm, edge + (1.2 * mm if edge == y_bottom else -2.6 * mm), ("to p.%d" if here else "from p.%d") % other, 4.8, False, col)
+                    continue
                 fa, fb, fy, _ = geo[f]
                 ta, tb, ty2, _ = geo[t]
                 xs = fa if typ[0] == "S" else fb

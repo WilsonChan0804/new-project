@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-20", date: "25 Nov 2026",
+    items: [
+      "**Programme PDF: links across pages** - a link between tasks on different pages is now drawn: on one page it runs to the chart's foot (or top), marked **to p.N**, and on the other it comes in at the same place, marked **from p.N**, in the link's own colour and style.",
+      "**Programme PDF: the title block** - the office's name is fitted to its box and no longer runs into the title; **Project start / finish** print the first task's start and the last task's finish, as the summary shows.",
+    ],
+  },
+  {
     version: "2027-03-19", date: "25 Nov 2026",
     items: [
       "**Programme: the link box shows whole** - a link clicked low in the window opened its box (type, lag, line, colour) squeezed into a thin strip; it now opens at the click, wholly on screen, as does the right-click menu (and the chat's room menu).",

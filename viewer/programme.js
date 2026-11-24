@@ -1670,7 +1670,7 @@ async function pdfDlg() {
   }
   const spec = {
     name: fileName("pdf"), paper: f.paper.value, orient: f.orient.value, range: { from: f.from.value, to: f.to.value },
-    start: P.sched.start, finish: P.sched.finish,
+    start: P.sched.first, finish: P.sched.last,
     cover: Object.assign({ title: "Indicative Project Programme", project: P.projectName || project() || "" }, c, { status_date: f.status.checked ? c.status_date || "" : "" }),
     columns: P.d.columns.map((k) => ({ key: k, label: COLS[k].short || COLS[k].label, w: Math.round(COLS[k].mm * colW(k) / COLS[k].w), align: COLS[k].align || "left" })),
     rows, links, remarks: P.d.remarks,

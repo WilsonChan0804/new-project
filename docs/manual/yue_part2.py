@@ -197,7 +197,7 @@ PART = [
     H3('俾客嘅 PDF 同 CSV'),
     UL([
         '**Set up > Title block and remarks：** 標題（例如 *Indicative Project Programme*）、project、客戶、revision、日期、prepared by、status date，同埋印喺圖下面嘅編號備註。',
-        '**Export > PDF：** A3、A4 或者 A1，橫或者直，日期範圍、baseline、critical path、link、進度同 status line。會照頁面顯示嘅欄同行嚟印（摺埋嘅 summary 都係摺埋），連顏色、線款同 category，向下頁數唔夠會自動加，橫向可以揀 **Pages wide** 1 - 6（或者 Auto）：橫向後面嘅頁會重複 ID 同工序名。每頁都有 title block、圖例，同埋顯示嗰頁行數同日期嘅頁碼。副本會放喺 **Folders > 00 BIM > Exports > Programme**。',
+        '**Export > PDF：** A3、A4 或者 A1，橫或者直，日期範圍、baseline、critical path、link、進度同 status line。會照頁面顯示嘅欄同行嚟印（摺埋嘅 summary 都係摺埋），連顏色、線款同 category，向下頁數唔夠會自動加，橫向可以揀 **Pages wide** 1 - 6（或者 Auto）：橫向後面嘅頁會重複 ID 同工序名。每頁都有 title block、圖例，同埋顯示嗰頁行數同日期嘅頁碼。兩個工序喺唔同頁嘅 link，會喺一頁畫到圖表邊（**to p.N**），喺另一頁由同一個位置接落去（**from p.N**）。副本會放喺 **Folders > 00 BIM > Exports > Programme**。',
         '**Export > MS Project XML** 出一個 MS Project 開得到嘅檔（File > Open）：工序、層級、工期、連類型同 lag 嘅 link、% done、備註、負責人同連假期嘅日曆。**Import** 可以讀返呢種檔，或者直接讀 **.mpp** 檔，亦可以揀用埋佢嘅工作週；constraint 都會讀（start no earlier than、finish no earlier than）。Manually scheduled 嘅 summary 會跟返佢下面工序嘅日子。Related link 會唔包括（MS Project 冇呢種 link）。冇得直接 export .mpp：只有 MS Project 先寫得 .mpp，所以 export XML 之後喺 MS Project 開，再 File > Save As > .mpp。Server 要有 Java 同 MPXJ 先讀到 .mpp（run.bat 會裝 MPXJ）。',
         '**手機**（直擺或者打橫）：工具列得一行，向左右掃就見到其他掣；喺 chart 度掃就可以前後睇時間。手機都用得 **Set up**；其他修改要用電腦或者 iPad。',
         '**Zoom：** Day / Week / Month / Quarter、**Fit**（成個進度表），或者一步步咁 zoom：**− / +** 掣、− 同 + 鍵，或者喺 chart 上面 Ctrl 或 Shift + 滾輪（以滑鼠位置為中心）。',
