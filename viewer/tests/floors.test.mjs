@@ -66,5 +66,31 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const Cq = F.layout({ poly, mix, storeys: 30, corners: true, seq: Co.seq });
   ok(JSON.stringify(Cq.placed.map((q) => [q.name, q.x])) === JSON.stringify(Co.placed.map((q) => [q.name, q.x])), "corner units: the snapshot lays out the same");
 }
+// the core and the units by hand, the plate's frame kept
+{
+  const poly = [[0, 0], [48, 0], [48, 16], [0, 16]];
+  const A = F.layout({ poly, mix, storeys: 30 });
+  const core = JSON.parse(JSON.stringify(A.coreOut));
+  // the lifts to the south side, against the corridor
+  for (const c of core) if (c.kind === "lift") c.y = A.y1;
+  const B = F.layout({ poly, mix, storeys: 30, pieces: core });
+  const lifts = B.core.filter((c) => c.kind === "lift"), sUnits = B.placed.filter((q) => q.band === "s");
+  ok(B.coreEdited && lifts.every((c) => near(c.y, A.y1, 1e-9)) && !sUnits.some((q) => lifts.some((c) => Math.min(q.x + q.w, c.x + c.w) - Math.max(q.x, c.x) > 0.05)), "the lifts moved to the south side: the units there go round them");
+  ok(B.checks.find((c) => c.what === "Clashes").ok, "no clashes");
+  const seq = JSON.parse(JSON.stringify(A.seq)); seq.s[0].x = 20;
+  const Cx = F.layout({ poly, mix, storeys: 30, seq }), fx = Cx.placed.find((q) => q.band === "s" && q.si === 0);
+  ok(near(fx.x, 20, 1e-9) && fx.fixed, "a unit put by hand at x = 20 stays there");
+  const seq2 = JSON.parse(JSON.stringify(A.seq)); seq2.s[0].x = 44;
+  const Cy = F.layout({ poly, mix, storeys: 30, seq: seq2 });
+  ok(Cy.issues.some((t) => /outside the plate/.test(t)), "a unit pushed past the plate's end: flagged outside the plate");
+  const seq3 = JSON.parse(JSON.stringify(A.seq)); seq3.s[1].x = seq3.s[0].x = undefined; seq3.s[0].x = 3; seq3.s[1].x = 5;
+  ok(F.layout({ poly, mix, storeys: 30, seq: seq3 }).issues.some((t) => /overlaps/.test(t)), "two units put on each other: flagged");
+  const seq4 = JSON.parse(JSON.stringify(A.seq)); seq4.s[0].r = 90;
+  ok(F.layout({ poly: [[0, 0], [48, 0], [48, 24], [0, 24]], mix, storeys: 30, seq: seq4 }).issues.some((t) => /entrance not on the corridor/.test(t)), "a unit turned 90°: its entrance not on the corridor");
+  const t = 0.4, rp = poly.map(([x, y]) => [x * Math.cos(t) - y * Math.sin(t), x * Math.sin(t) + y * Math.cos(t)]);
+  const fr0 = F.frame(rp), moved = rp.map((p, i) => (i === 1 ? [p[0] + 3, p[1] + 6] : p)), fr1 = F.frame(moved, { ux: fr0.ux, uy: fr0.uy });
+  ok(near(fr1.ux, fr0.ux, 1e-12) && near(fr1.uy, fr0.uy, 1e-12), "the frame kept on its axis while a corner moves");
+  ok(F.snap1(8.17, 2, [10.3]) === 8.3 && F.snap1(3.02, 2, [20]) === 3, "snap to a neighbour's edge within 0.3 m, else the 50 mm grid");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

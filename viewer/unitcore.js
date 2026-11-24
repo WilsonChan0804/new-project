@@ -126,6 +126,16 @@ export function edges(u) {
 }
 
 /* an open kitchen and the living room share no wall */
+/* a partition's solid part: walls[key] = {s, e}, metres from its start
+   (its lower x or y) - the rest of the line open; [s, e] in metres */
+export function solidPart(u, e) {
+  const o = (u.walls || {})[e.key] || {};
+  if (e.kind !== "part" || (o.s == null && o.e == null)) return [0, e.len];
+  const a = Math.max(0, Math.min(e.len, n(o.s, 0))), b = Math.max(a, Math.min(e.len, n(o.e, e.len)));
+  return [a, b];
+}
+export function solidLen(u, e) { if (isOpen(u, e)) return 0; const [a, b] = solidPart(u, e); return b - a; }
+
 export function isOpen(u, e) {
   if (e.kind !== "part") return false;
   if (e.removed) return true;
@@ -143,7 +153,7 @@ export function figures(u0) {
   const E = edges(u);
   const extL = E.filter((e) => e.kind === "ext").reduce((s, e) => s + e.len, 0);
   const partyL = E.filter((e) => e.kind === "party").reduce((s, e) => s + e.len, 0);
-  const partL = E.filter((e) => e.kind === "part" && !isOpen(u, e)).reduce((s, e) => s + e.len, 0);
+  const partL = E.filter((e) => e.kind === "part" && !isOpen(u, e)).reduce((s, e) => s + solidLen(u, e), 0);
   // to the outside of the external walls (the outline grown by half the wall; the corners add 4 small squares), to the middle of party walls
   // each external wall at its thickness and façade
   const facOf = (e) => ((u.walls || {})[e.key] || {}).f || u.facadeType || "rc";
@@ -156,7 +166,7 @@ export function figures(u0) {
   const pcEx = E.filter((e) => e.kind === "ext" && e.facade === "pc").reduce((s2, e) => s2 + e.len * Math.min(e.t, FACADES.pc.max), 0);
   // inside the walls: each wall at its own thickness where it has one
   const tOf = (e) => (e.t != null ? e.t : e.kind === "ext" ? wall : e.kind === "party" ? party : pt);
-  const internal = Math.max(0, area - E.filter((e) => e.kind !== "part" || !isOpen(u, e)).reduce((s2, e) => s2 + e.len * tOf(e) / 2 * (e.kind === "part" ? 1 : 1), 0));
+  const internal = Math.max(0, area - E.filter((e) => e.kind !== "part" || !isOpen(u, e)).reduce((s2, e) => s2 + (e.kind === "part" ? solidLen(u, e) : e.len) * tOf(e) / 2, 0));
   void partL;
   const ex = expandBays(u.extras || []).map((e) => Object.assign({ area: e.splay ? n(e.w) * n(e.h) - n(e.splay) ** 2 / 2 : n(e.w) * n(e.h) }, e));
   const sum = (k) => ex.filter((e) => e.kind === k).reduce((s, e) => s + e.area, 0);

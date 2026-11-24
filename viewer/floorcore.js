@@ -34,19 +34,27 @@ export const DEF = {
 };
 
 /* the plate's long axis: the oriented rectangle of the least area */
-export function frame(poly) {
+export function frame(poly, axis) {
   const P = (poly || []).filter((p) => p && p.length >= 2);
   if (P.length < 3) return null;
   let best = null;
-  for (let i = 0; i < P.length; i++) {
-    const a = P[i], b = P[(i + 1) % P.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (L < 1e-6) continue;
-    const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L;
+  if (axis && Number.isFinite(axis.ux) && Number.isFinite(axis.uy)) {
+    // a frame kept while the plate is edited: the same axis, so the plan does not turn
+    const k = Math.hypot(axis.ux, axis.uy) || 1, ux = axis.ux / k, uy = axis.uy / k;
     const us = P.map((p) => p[0] * ux + p[1] * uy), vs = P.map((p) => -p[0] * uy + p[1] * ux);
-    const w = Math.max(...us) - Math.min(...us), h = Math.max(...vs) - Math.min(...vs);
-    const o = { ux, uy, u0: Math.min(...us), v0: Math.min(...vs), L: w, D: h, area: w * h };
-    if (w < h) Object.assign(o, { ux: -uy, uy: ux, u0: Math.min(...vs), v0: Math.min(...us.map((q) => -q)), L: h, D: w });
-    if (!best || o.area < best.area - 1e-6) best = o;
+    best = { ux, uy, u0: Math.min(...us), v0: Math.min(...vs), L: Math.max(...us) - Math.min(...us), D: Math.max(...vs) - Math.min(...vs) };
+  }
+  if (!best) {
+    for (let i = 0; i < P.length; i++) {
+      const a = P[i], b = P[(i + 1) % P.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (L < 1e-6) continue;
+      const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L;
+      const us = P.map((p) => p[0] * ux + p[1] * uy), vs = P.map((p) => -p[0] * uy + p[1] * ux);
+      const w = Math.max(...us) - Math.min(...us), h = Math.max(...vs) - Math.min(...vs);
+      const o = { ux, uy, u0: Math.min(...us), v0: Math.min(...vs), L: w, D: h, area: w * h };
+      if (w < h) Object.assign(o, { ux: -uy, uy: ux, u0: Math.min(...vs), v0: Math.min(...us.map((q) => -q)), L: h, D: w });
+      if (!best || o.area < best.area - 1e-6) best = o;
+    }
   }
   if (!best) return null;
   const { ux, uy, u0, v0 } = best;
@@ -100,7 +108,7 @@ export function lifts(o) {
    the checks. */
 export function layout(o) {
   const p = Object.assign({}, DEF, o || {});
-  const F = frame(p.poly);
+  const F = frame(p.poly, p.frame);
   if (!F) return null;
   const L = F.L, D = F.D, cw = n(p.corridor, 1.5);
   // the units, in the order of the mix, turned to face out
@@ -128,7 +136,7 @@ export function layout(o) {
   const sw = n(p.stairWidth, 1200) / 1000, stW = r3(2 * sw + 0.1 + 0.3), stD = r3(Math.min(dN, 2 * sw + 2.0 + 0.3));
   const fl = { flats: want.length };
   const lf = lifts({ floors: n(p.floorsAbove, n(p.storeys, 1)), population: want.length * n(p.storeys, 1) * n(p.persons, 3), car: p.car, storeyH: p.storeyH, hc5: p.hc5, interval: p.interval });
-  const nL = Math.max(1, Math.round(n(p.lifts, 0)) || lf.n), nS = Math.max(1, Math.round(n(p.stairs, 2)));
+  let nL = Math.max(1, Math.round(n(p.lifts, 0)) || lf.n), nS = Math.max(1, Math.round(n(p.stairs, 2)));
   const core = [];
   const put = (kind, w, d, label) => core.push({ kind, w: r3(w), h: r3(Math.min(d, dN)), label });
   const mid = [];
@@ -151,13 +159,27 @@ export function layout(o) {
   }
   void put;
   for (const c of core) c.y = r3(y0 - c.h);
-  // free runs along each band
+  // a core moved by hand: its pieces as stored, anywhere on the plate
+  const coreAuto = core.map((c) => Object.assign({}, c));
+  const coreEdited = Array.isArray(p.pieces) && p.pieces.length > 0;
+  if (coreEdited) {
+    core.length = 0; xs = [];
+    for (const c of p.pieces) {
+      const q = { kind: c.kind, label: c.label || c.kind, x: r3(n(c.x)), y: r3(n(c.y)), w: r3(Math.max(0.3, n(c.w, 1))), h: r3(Math.max(0.3, n(c.h, 1))) };
+      core.push(q); if (q.kind === "stair") xs.push(q.x + q.w / 2);
+    }
+    nS = Math.max(1, core.filter((c) => c.kind === "stair").length); nL = Math.max(1, core.filter((c) => c.kind === "lift").length);
+  }
+  // free runs along each band: what the pieces standing on it leave
   const runs = [];
-  const busy = core.map((c) => [c.x, c.x + c.w]).sort((a, b) => a[0] - b[0]);
-  let x = 0;
-  for (const [a, b] of busy) { if (a - x > 0.3) runs.push({ band: "n", x0: x, x1: a }); x = Math.max(x, b); }
-  if (L - x > 0.3) runs.push({ band: "n", x0: x, x1: L });
-  runs.unshift({ band: "s", x0: 0, x1: L });
+  const bandY = { n: [0, y0], s: [y1, D] };
+  for (const band of ["s", "n"]) {
+    const [ya, yb] = bandY[band];
+    const busy = core.filter((c) => Math.min(c.y + c.h, yb) - Math.max(c.y, ya) > 0.05).map((c) => [c.x, c.x + c.w]).sort((a, b) => a[0] - b[0]);
+    let x = 0;
+    for (const [a, b] of busy) { if (a - x > 0.3) runs.push({ band, x0: x, x1: a }); x = Math.max(x, b); }
+    if (L - x > 0.3) runs.push({ band, x0: x, x1: L });
+  }
   const inside = (q) => {
     const pts = [[q.x + 0.05, q.y + 0.05], [q.x + q.w - 0.05, q.y + 0.05], [q.x + q.w - 0.05, q.y + q.h - 0.05], [q.x + 0.05, q.y + q.h - 0.05]];
     return pts.every(([px, py]) => inPoly(F.poly, px, py));
@@ -166,7 +188,7 @@ export function layout(o) {
   // each side: its runs, taken from the left end (and with corner units from the right end too, alternately)
   const sides = { s: runs.filter((r) => r.band === "s").map((r) => ({ l: r.x0, r: r.x1 })), n: runs.filter((r) => r.band === "n").map((r) => ({ l: r.x0, r: r.x1 })) };
   const depth = { s: dS, n: dN };
-  const tOf = (u, band) => turn(u, (TO_N[entrySide(u)] || 0) + (band === "n" ? 2 : 0));
+  const tOf = (u, band, r = 0) => turn(u, (TO_N[entrySide(u)] || 0) + (band === "n" ? 2 : 0) + Math.round(n(r) / 90));
   const cursor = { s: { i: 0, j: sides.s.length - 1 }, n: { i: 0, j: sides.n.length - 1 } };
   // put a unit of width W at the current run of this end; null when no run of that end has room
   const take = (band, end, t, probe) => {
@@ -188,16 +210,36 @@ export function layout(o) {
     return null;
   };
   const order = { s: 0, n: 0 };
-  const placeAt = (u, band, box, t, e) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: order[band]++, m: !!(e && e.m), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras }));
+  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras }));
   if (SEQ) {
+    // units put by hand (x given) first, where they were put; the runs keep clear of them
     for (const band of ["s", "n"]) {
       SEQ[band].forEach((e, k) => {
-        const u = unitOf(e), t = tOf(u, band);
+        if (e.x == null) return;
+        const u = unitOf(e), t = tOf(u, band, e.r), x = r3(n(e.x)), y = band === "s" ? y1 : y0 - t.D;
+        placeAt(u, band, { x, y: r3(y), w: t.W, h: t.D }, t, e, k);
+        for (const run of sides[band]) {
+          if (x + t.W <= run.l + 1e-6 || x >= run.r - 1e-6) continue;
+          // split the run round it: keep the longer side in this run, the rest as a new run
+          const leftPart = { l: run.l, r: Math.max(run.l, x) }, rightPart = { l: Math.min(run.r, x + t.W), r: run.r };
+          Object.assign(run, leftPart.r - leftPart.l >= rightPart.r - rightPart.l ? leftPart : rightPart);
+          const other = run.l === leftPart.l && run.r === leftPart.r ? rightPart : leftPart;
+          if (other.r - other.l > 0.3) sides[band].push(other);
+        }
+        sides[band].sort((a, b) => a.l - b.l);
+      });
+      cursor[band] = { i: 0, j: sides[band].length - 1 };
+    }
+    for (const band of ["s", "n"]) {
+      SEQ[band].forEach((e, k) => {
+        if (e.x != null) return;
+        order[band] = k;
+        const u = unitOf(e), t = tOf(u, band, e.r);
         if (t.D > depth[band] + 0.05) { order[band]++; return left.push({ u, why: `${u.name || "Unit"} is ${t.D.toFixed(2)} m deep from its entrance; the ${band === "s" ? "south" : "north"} side is ${depth[band].toFixed(2)} m` }); }
         const end = p.corners && k % 2 ? "r" : "l";
         const box = take(band, end, t) || take(band, end === "l" ? "r" : "l", t);
         if (!box) { order[band]++; return left.push({ u, why: `no room left along the corridor for ${u.name || "a unit"}` }); }
-        placeAt(u, band, box, t, e);
+        placeAt(u, band, box, t, e, k);
       });
     }
   } else {
@@ -225,6 +267,23 @@ export function layout(o) {
   // the flats at the plate's ends: corner units, their end wall a second façade
   for (const q of placed) q.corner = q.x < 0.05 ? "w" : q.x + q.w > L - 0.05 ? "e" : "";
   const cornerFac = placed.filter((q) => q.corner).reduce((s2, q) => s2 + q.h, 0);
+  // what a hand-placed layout may get wrong: overlaps, outside the plate, the entrance turned away from the corridor
+  const ov = (a, b) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.05 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.05;
+  const issues = [];
+  for (const [i, q] of placed.entries()) {
+    q.flags = [];
+    if (!inside(q)) q.flags.push("outside the plate");
+    for (const [j, o] of placed.entries()) if (j !== i && ov(q, o)) { q.flags.push("overlaps " + (o.name || "a unit")); break; }
+    const c = core.find((cc) => ov(q, cc)); if (c) q.flags.push("overlaps " + c.label);
+    if (q.r % 360) q.flags.push("entrance not on the corridor");
+    for (const fl of q.flags) issues.push(`${q.name}: ${fl}`);
+  }
+  for (const [i, c] of core.entries()) {
+    c.flags = [];
+    if (!inside(c)) c.flags.push("outside the plate");
+    for (const [j, o] of core.entries()) if (j > i && ov(c, o)) c.flags.push("overlaps " + o.label);
+    for (const fl of c.flags) issues.push(`${c.label}: ${fl}`);
+  }
   const seqOut = { s: placed.filter((q) => q.band === "s").sort((a, b) => a.si - b.si).map((q) => ({ u: q.name, m: q.m })), n: placed.filter((q) => q.band === "n").sort((a, b) => a.si - b.si).map((q) => ({ u: q.name, m: q.m })) };
   // those that did not fit stay in the edited floor (listed as not placed) so it still matches the mix
   if (!SEQ) for (const q of left) seqOut.s.push({ u: q.u.name, m: false });
@@ -258,12 +317,14 @@ export function layout(o) {
   const checks = [
     { what: "Staircases (Table B3, the workbook's quick check)", ok: qs.status === "ok", text: `${nS} × ${n(p.stairWidth, 1200)} mm for ${qs.total} persons over ${qs.storeys} storeys: ${qs.per} each, capacity ${qs.capacity ?? "–"}${qs.suggest ? ` · ${qs.suggest.width} mm would do` : ""}` },
     { what: "Travel: flat door to a staircase (B11)", ok: worst.d <= (worst.lim || tr.max) + 1e-9, text: placed.length ? `${worst.d} m from ${worst.name}${worst.dead ? ", in a dead end" : ""}, limit ${worst.lim || tr.max} m` : "–" },
-    { what: "Lifts by service time", ok: (n(p.lifts, 0) || lf.n) >= lf.n, text: `${nL} lift${nL > 1 ? "s" : ""}: round trip ${lf.rtt} s, interval ${Math.round(lf.rtt / nL)} s, 5-min capacity ${r3(nL * 300 * lf.P / lf.rtt / (lf.population || 1) * 100)}% (needs ${lf.n})` },
+    { what: "Lifts by service time", ok: nL >= lf.n, text: `${nL} lift${nL > 1 ? "s" : ""}: round trip ${lf.rtt} s, interval ${Math.round(lf.rtt / nL)} s, 5-min capacity ${r3(nL * 300 * lf.P / lf.rtt / (lf.population || 1) * 100)}% (needs ${lf.n})` },
     { what: "Units placed", ok: !left.length, text: `${placed.length} of ${want.length}` },
+    { what: "Clashes", ok: !issues.length, text: issues.length ? issues.slice(0, 6).join("; ") + (issues.length > 6 ? ` … ${issues.length - 6} more` : "") : "none: inside the plate, nothing overlapping" },
   ];
   if (between != null) checks.push({ what: "Between the staircases", ok: between <= tr.between, text: `${between} m, at most ${tr.between} m (B11.3(b))` });
   return {
     seq: SEQ ? { s: SEQ.s.map((e) => Object.assign({}, e)), n: SEQ.n.map((e) => Object.assign({}, e)) } : seqOut, edited: !!SEQ, note, cornerFac: r3(cornerFac),
+    coreOut: core.map((c) => ({ kind: c.kind, label: c.label, x: c.x, y: c.y, w: c.w, h: c.h })), coreAuto, coreEdited, issues, frameAxis: { ux: F.ux, uy: F.uy },
     F, L: r3(L), D: r3(D), y0, y1, cw, core, placed, left, stairsX: xs.map(r3), lifts: lf, nL, nS, stairs: qs, checks,
     figures: {
       plate: r3(plate), units: placed.length, saleable: r3(sale), unitGfa: r3(unitGfa), corridor: r3(corrA), wideEx: r3(wideEx),
@@ -283,4 +344,12 @@ export function inPoly(P, x, y) {
     if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
   }
   return c;
+}
+
+/* a position snapped to the edges near it (within tol), else to the grid:
+   v the moving thing's start, w its size, edges the lines it may meet */
+export function snap1(v, w, edges, tol = 0.3, grid = 0.05) {
+  let best = null;
+  for (const e of edges) for (const c of [e - v, e - (v + w)]) if (Math.abs(c) <= tol && (best == null || Math.abs(c) < Math.abs(best))) best = c;
+  return best != null ? r3(v + best) : r3(Math.round(v / grid) * grid);
 }

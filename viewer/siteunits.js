@@ -39,10 +39,14 @@ export function store() {
   const st = s.units;
   if (!Array.isArray(st.list)) st.list = [];
   for (let i = 0; i < st.list.length; i++) if (st.list[i] && st.list[i].rows) st.list[i] = U.fromRows(st.list[i]);
-  for (const u of st.list) { if (!Array.isArray(u.windows)) u.windows = U.genWindows(u); if (!Array.isArray(u.fixtures)) u.fixtures = U.genFixtures(u); }
+  for (const u of st.list) { if (!Array.isArray(u.windows)) u.windows = U.genWindows(u); if (!Array.isArray(u.fixtures)) u.fixtures = U.genFixtures(u); if (u.orig == null) setOrig(u); }
   if (st.sel == null || st.sel >= st.list.length) st.sel = st.list.length ? 0 : -1;
   return st;
 }
+/* the unit as it was loaded or last saved, for Reset */
+const bare = (u) => { const c = JSON.parse(JSON.stringify(u)); delete c.orig; delete c.libId; return JSON.stringify(c); };
+function setOrig(u) { u.orig = bare(u); }
+const unsaved = (u) => !!(u && u.orig && bare(u) !== u.orig);
 const cur = () => { const st = store(); return st.list[st.sel] || null; };
 const copyNamed = (u, list) => { const c = JSON.parse(JSON.stringify(u)); let nm = c.name || "Unit", k = 2; while (list.some((q) => q.name === nm)) nm = `${c.name} (${k++})`; c.name = nm; return c; };
 
@@ -129,7 +133,7 @@ function render() {
   const libOpt = (LIB.units || []).map((x) => `<option value="${esc(x.id)}">${esc(x.name)} · ${U.figures(x.unit).saleableFt} ft²${x.by ? " · " + esc(x.by) : ""}</option>`).join("");
   $("#st-upanel").innerHTML = `
     <section class="st-card">
-      <div class="st-head"><b>Units</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-uundo="-1"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-uundo="1"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button></span>` : ""}<span class="muted" id="un-saved">${can ? "Saved with the project" : "View only"}</span></div>
+      <div class="st-head"><b>Units</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-uundo="-1"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-uundo="1"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button>${unsaved(u) ? `<button type="button" class="ghost st-ib" data-ureset title="Back to the unit as it was made or last saved to the library">⟲ Reset</button>` : ""}</span>` : ""}<span class="muted" id="un-saved">${can ? "Saved with the project" : "View only"}</span></div>
       <div class="un-tabs">${tabs || `<p class="st-need">No units yet: start from a template or the office library.</p>`}</div>
       ${can ? `<div class="st-row"><select data-unew><option value="">+ New from a template …</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}${t.src ? " · " + esc(t.src.replace(/^after /, "")) : ""}</option>`).join("")}</select>
         <select data-ulib><option value="">+ From the office library …</option>${libOpt}</select></div>
@@ -142,8 +146,8 @@ function render() {
 function onChange(ev) {
   const t = ev.target, st = store(), u = cur(), d = t.dataset;
   const num = (v, x) => (isNaN(parseFloat(v)) ? x : parseFloat(v));
-  if (d.unew != null && t.value) { st.list.push(copyNamed(TEMPLATES[t.value], st.list)); st.sel = st.list.length - 1; SELR = null; return changed(); }
-  if (d.ulib != null && t.value) { const x = LIB.units.find((q) => q.id === t.value); if (x) { const c = copyNamed(x.unit.rows ? U.fromRows(x.unit) : x.unit, st.list); c.libId = x.id; st.list.push(c); st.sel = st.list.length - 1; toast(`${x.name} copied into this project`); return changed(); } }
+  if (d.unew != null && t.value) { const c = ensure(copyNamed(TEMPLATES[t.value], st.list)); setOrig(c); st.list.push(c); st.sel = st.list.length - 1; SELR = null; return changed(); }
+  if (d.ulib != null && t.value) { const x = LIB.units.find((q) => q.id === t.value); if (x) { const c = copyNamed(x.unit.rows ? U.fromRows(x.unit) : x.unit, st.list); c.libId = x.id; ensure(c); setOrig(c); st.list.push(c); st.sel = st.list.length - 1; toast(`${x.name} copied into this project`); return changed(); } }
   if (!u) return;
   if (d.uf) { u[d.uf] = ["name", "facade", "facadeType"].includes(d.uf) ? t.value : Math.max(0, num(t.value, u[d.uf])); return changed(); }
   if (d.ups) { const s2 = new Set(u.partySides || []); if (t.checked) s2.add(d.ups); else s2.delete(d.ups); u.partySides = [...s2]; return changed(); }
@@ -175,6 +179,11 @@ async function onClick(ev) {
   if (d.usel != null) { st.sel = +d.usel; SELR = null; C.save(); return render(); }
   if (!u) return;
   if (d.umir != null) { const v = U.mirrorUnit(ensure(u)); delete v.libId; st.list[st.sel] = v; SEL = null; return changed(); }
+  if (d.ureset != null) {
+    if (!confirm(`Reset ${u.name} to how it was ${u.libId ? "saved in the office library" : "when it was made"}? (Undo brings the edits back)`)) return;
+    const v = JSON.parse(u.orig); v.orig = u.orig; if (u.libId) v.libId = u.libId;
+    st.list[st.sel] = v; SEL = null; SELR = null; return changed();
+  }
   if (d.udup != null) { st.list.push(copyNamed(u, st.list)); st.sel = st.list.length - 1; return changed(); }
   if (d.udel != null) { if (!confirm(`Remove ${u.name}?`)) return; st.list.splice(st.sel, 1); st.sel = Math.min(st.sel, st.list.length - 1); return changed(); }
   if (d.usave != null || d.usavenew != null) {
@@ -188,11 +197,11 @@ async function onClick(ev) {
         const nm = prompt("Name in the office library", u.name + " (edited)"); if (!nm) return;
         u.name = nm;
       }
-      const body = JSON.parse(JSON.stringify(u)); delete body.libId;
+      const body = JSON.parse(JSON.stringify(u)); delete body.libId; delete body.orig;
       LIB = await api("/api/units/library", { method: "PUT", body: JSON.stringify({ id, unit: body }) });
       const row = id ? LIB.units.find((x) => x.id === id) : LIB.units.slice().reverse().find((x) => x.name === u.name);
       if (row) u.libId = row.id;
-      C.save(); toast(`${u.name} saved to the office library`); render();
+      setOrig(u); C.save(); toast(`${u.name} saved to the office library`); render();
     } catch (e) { toast(e.message, true); }
     return;
   }
@@ -212,6 +221,7 @@ async function onClick(ev) {
 let SC = 60, OX = 40, OY = 40, BX = 0, BY = 0;
 const ZM = PZ.create(); // the plan's zoom and pan
 let ZFOR = null;        // the unit it is for
+let WENDS = null;       // a selected partition's two ends on the plan
 let SEL = null;      // {t: "wall"|"door"|"win"|"fix", i | key}
 let TOOL = "select"; // select | door | window | split-x | split-y | room | fix:<kind>
 let ROOMK = "BR";     // the kind a drawn room gets
@@ -269,6 +279,7 @@ function drawPlan() {
   // the fittings
   for (const [i, x] of u.fixtures.entries()) g += fixture(x, sx, sy, SEL && SEL.t === "fix" && SEL.i === i, i);
   // the walls
+  WENDS = null;
   for (const e of f.edges) {
     const sel = SEL && SEL.t === "wall" && SEL.key === e.key;
     if (U.isOpen(u, e)) { g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : "#4a5866"}" stroke-width="${sel ? 3 : 1}" stroke-dasharray="6 4" />`; continue; }
@@ -287,7 +298,16 @@ function drawPlan() {
       g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : "#6f7b87"}" stroke-width="${Math.max(4, t)}" stroke-linecap="square" /><line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="#fff" stroke-width="1" stroke-dasharray="2 5" />`;
       continue;
     }
-    g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : e.kind === "part" ? "#2a2f35" : "#111"}" stroke-width="${Math.max(e.kind === "part" ? 2 : 3.5, t)}" stroke-linecap="square" />`;
+    if (e.kind === "part") {
+      // a shortened partition: the open part dashed, the solid part at its thickness; its two ends to drag when selected
+      const [a, b] = U.solidPart(u, e), v = e.x1 === e.x2, P = (d) => (v ? [e.x1, e.y1 + d] : [e.x1 + d, e.y1]);
+      if (b - a < e.len - 1e-6) g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="#4a5866" stroke-width="1" stroke-dasharray="6 4" />`;
+      const A = P(a), B = P(b);
+      g += `<line x1="${sx(A[0])}" y1="${sy(A[1])}" x2="${sx(B[0])}" y2="${sy(B[1])}" stroke="${sel ? "#f28022" : "#2a2f35"}" stroke-width="${Math.max(2, t)}" stroke-linecap="square" />`;
+      if (sel && C.can()) WENDS = { key: e.key, pts: [[A, "s"], [B, "e"]] };
+      continue;
+    }
+    g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="${sel ? "#f28022" : "#111"}" stroke-width="${Math.max(3.5, t)}" stroke-linecap="square" />`;
   }
   // the wall lines to drag / click
   for (const e of f.edges) {
@@ -326,6 +346,8 @@ function drawPlan() {
     g += `<text x="${X}" y="${small ? Y + fs / 3 : Y - 4}" text-anchor="middle" font-size="${fs}" fill="#1f2a36" pointer-events="none">${esc(k.zh)}${no ? " " + no : ""}</text>` + (small && !lv ? "" : `<text x="${X}" y="${Y + fs}" text-anchor="middle" font-size="${fs - 1}" fill="#1f2a36" pointer-events="none">${esc(k.ab)}${no}</text>
       <text x="${X}" y="${Y + fs * 2 + 2}" text-anchor="middle" font-size="${lv ? fs : fs - 3}" font-weight="${lv ? 700 : 400}" fill="${lv ? "#b4520a" : "#5b6b7b"}" pointer-events="none">${f2(r.w)} × ${f2(r.h)}</text>`);
   }
+  // a selected partition's ends: drag to shorten it
+  if (WENDS) for (const [p, k] of WENDS.pts) g += `<circle class="un-wend" data-wend="${k}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7" fill="#fff" stroke="#f28022" stroke-width="2.5" />`;
   g += dims(u, f, sx, sy);
   if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f2(LIVE.d)} m</text>`;
   g += `<text x="${bw - 20}" y="${bh - 18}" text-anchor="end" font-size="11" fill="#6b7785">${esc(u.name || "")} · ${f.saleableFt} ft² · ${f1(f.saleable)} m²</text>`;
@@ -395,7 +417,8 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     at = [sx((e.x1 + e.x2) / 2), sy((e.y1 + e.y2) / 2)];
     const o = u.walls[e.key] || {}, open = U.isOpen(u, e), def = e.kind === "ext" ? u.wall : e.kind === "party" ? u.party : u.part;
     html = `<b>${e.kind === "ext" ? "External wall" : e.kind === "party" ? "Party wall" : "Partition"}</b> ${f2(e.len)} m
-      ${e.kind === "part" ? `<button type="button" data-pw="toggle">${open ? "Put the wall back" : "Delete wall"}</button><button type="button" data-pw="join">Join the rooms</button>` : ""}
+      ${e.kind === "part" ? `<button type="button" data-pw="toggle">${open ? "Put the wall back" : "Delete wall"}</button><button type="button" data-pw="join">Join the rooms</button>
+        ${open ? "" : `<label>solid from <input type="number" step="0.05" min="0" data-pws value="${f2(U.solidPart(u, e)[0])}"> to <input type="number" step="0.05" min="0" data-pwe value="${f2(U.solidPart(u, e)[1])}"> m</label>${o.s != null || o.e != null ? `<button type="button" data-pw="full">Full length</button>` : ""}<small>or drag its ends</small>`}` : ""}
       ${e.kind === "ext" ? `<label>façade <select data-pwf>${Object.entries(U.FACADES).map(([k, q]) => `<option value="${k}"${(o.f || u.facadeType || "rc") === k ? " selected" : ""}>${q.label}</option>`).join("")}</select></label>` : ""}
       <label>thickness <input type="number" step="0.005" min="0" data-pwt value="${o.t != null ? o.t : ""}" placeholder="${e.kind === "ext" && U.FACADES[o.f || u.facadeType || "rc"].t != null ? U.FACADES[o.f || u.facadeType || "rc"].t : def}"> m</label>
       <button type="button" data-pw="door">+ Door here</button>${e.kind !== "part" ? `<button type="button" data-pw="win">+ Window here</button>` : ""}`;
@@ -457,6 +480,13 @@ function wirePlan() {
     if (t.dataset.roomk != null) { ROOMK = t.value; TOOL = "room"; return drawPlan(); }
     if (t.dataset.fixadd != null) { TOOL = t.value ? "fix:" + t.value : "select"; return drawPlan(); }
     if (t.dataset.pwf != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; o.f = t.value; if (t.value === "cw") u.windows = u.windows.filter((w) => !(w.room === SEL.key.split(":")[0] && w.side === SEL.key.split(":")[1])); return changed(); }
+    if (t.dataset.pws != null || t.dataset.pwe != null) {
+      const e = U.figures(u).edges.find((q) => q.key === SEL.key); if (!e) return;
+      const o = u.walls[SEL.key] = u.walls[SEL.key] || {}, [a, b] = U.solidPart(u, e), v = Math.round((parseFloat(t.value) || 0) * 20) / 20;
+      if (t.dataset.pws != null) o.s = Math.max(0, Math.min(v, b - 0.1)); else o.e = Math.min(e.len, Math.max(v, a + 0.1));
+      if (o.s === 0) delete o.s; if (o.e != null && Math.abs(o.e - e.len) < 1e-6) delete o.e;
+      return changed();
+    }
     if (t.dataset.pwt != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; if (t.value === "") delete o.t; else o.t = Math.max(0, parseFloat(t.value)); return changed(); }
     if (t.dataset.pdw != null) { u.doors[SEL.i].w = Math.max(0.5, parseFloat(t.value) || 0.8); return changed(); }
     if (t.dataset.pww != null) { u.windows[SEL.i].w = Math.max(0.3, parseFloat(t.value) || 1); return changed(); }
@@ -471,6 +501,7 @@ function wirePlan() {
     const f = U.figures(u);
     if (d.pw) {
       const e = f.edges.find((q) => q.key === SEL.key); if (!e) return;
+      if (d.pw === "full") { const o = u.walls[e.key] || {}; delete o.s; delete o.e; return changed(); }
       if (d.pw === "toggle") { const o = u.walls[e.key] = u.walls[e.key] || {}; o.open = !U.isOpen(u, e); return changed(); }
       if (d.pw === "join") { const v = U.joinRooms(u, e.a, e.b); if (!v) return toast("These two rooms do not make one rectangle", true); { const st0 = store(); st0.list[st0.sel] = v; } SEL = null; return changed(); }
       const rs = edgeRoomSide(e);
@@ -516,7 +547,8 @@ function wirePlan() {
       }
       return;
     }
-    if (t.dataset.di != null) { SEL = { t: "door", i: +t.dataset.di }; if (can) drag = { kind: "door", i: +t.dataset.di, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
+    if (t.dataset.wend && WENDS && can) { drag = { kind: "wend", key: WENDS.key, end: t.dataset.wend, u0: JSON.parse(JSON.stringify(u)), moved: false }; }
+    else if (t.dataset.di != null) { SEL = { t: "door", i: +t.dataset.di }; if (can) drag = { kind: "door", i: +t.dataset.di, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.wi != null) { SEL = { t: "win", i: +t.dataset.wi }; if (can) drag = { kind: "win", i: +t.dataset.wi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.fi != null) { SEL = { t: "fix", i: +t.dataset.fi }; if (can) drag = { kind: "fix", i: +t.dataset.fi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.ek) {
@@ -544,6 +576,13 @@ function wirePlan() {
       st.list[st.sel] = U.moveLine(drag.u0, v ? "x" : "y", v ? e.x1 : e.y1, dist, drag.alt ? (v ? e.y1 : e.x1) : null, drag.alt ? (v ? e.y2 : e.x2) : null);
       LIVE = { axis: v ? "x" : "y", at: (v ? e.x1 : e.y1) + Math.round(dist * 20) / 20, d: Math.round(dist * 20) / 20 };
       return render();
+    }
+    if (drag.kind === "wend") {
+      const v = JSON.parse(JSON.stringify(drag.u0)), e = U.figures(v).edges.find((q) => q.key === drag.key); if (!e) return;
+      const along = Math.round(((e.x1 === e.x2 ? P[1] - e.y1 : P[0] - e.x1)) * 20) / 20, [a, b] = U.solidPart(v, e), o = v.walls[e.key] = v.walls[e.key] || {};
+      if (drag.end === "s") o.s = Math.max(0, Math.min(along, b - 0.1)); else o.e = Math.min(e.len, Math.max(along, a + 0.1));
+      if (o.s === 0) delete o.s; if (o.e != null && Math.abs(o.e - e.len) < 1e-6) delete o.e;
+      drag.moved = true; st.list[st.sel] = v; return drawPlan();
     }
     const dx = P[0] - drag.P[0], dy = P[1] - drag.P[1];
     if (Math.hypot(dx, dy) < 0.03 && !drag.moved) return;

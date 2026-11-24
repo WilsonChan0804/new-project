@@ -643,6 +643,8 @@ function wireFind() {
     const ll = q.match(/^\s*(2[12]\.\d+)\s*,\s*(11[34]\.\d+)\s*$/);
     if (ll) { map.setView([+ll[1], +ll[2]], 18); box.hidden = true; return; }
     box.hidden = false; box.innerHTML = `<p class="muted">Finding …</p>`;
+    // a lot number (STTL 121, TKOTL 137, IL 152, DD 123 Lot 456): the Lands Department's lot search and boundary
+    if (LOT_RE.test(q)) return findLot(q, box);
     try {
       const r = await api("/api/site/search?" + new URLSearchParams({ q }));
       const rows = r.results || [];
@@ -660,6 +662,50 @@ function wireFind() {
     } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
   };
   $("#st-find").addEventListener("submit", go);
+}
+
+/* ---------- find by lot number: LandsD Land Parcel Number search + the iC1000 Lot Index (/api/site/lot, /api/site/lotgeom) */
+const LOT_RE = /^\s*(([A-Z]{0,6}L)\s*\d+[A-Z]?|DD\s*\d+\s*(LOT\s*(NO\.?)?)?\s*\d+[A-Z]?)(\s*(S\.?|SEC\.?|SECTION)\s*[A-Z]\b.*|\s*R\.?P\.?)?\s*$/i;
+let lotLayer = null;
+async function findLot(q, box) {
+  let rows = [];
+  try { rows = (await api("/api/site/lot?" + new URLSearchParams({ no: q }))).results || []; }
+  catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; return; }
+  if (!rows.length) { box.innerHTML = `<p class="muted">No lot found for "${esc(q)}". Lot numbers look like STTL 121, TKOTL 137, IL 152 or DD 123 Lot 456.</p>`; return; }
+  box.innerHTML = `<p class="muted">${rows.length > 1 ? "Lots found - choose one" : "Lot found"} (Lands Department)</p>` + rows.map((x, i) => `<button type="button" data-lot="${i}"><b>${esc(x.name)}</b> <span>${esc(x.place)}</span>${x.score != null && x.score < 100 ? `<small>match ${Math.round(x.score)}</small>` : ""}</button>`).join("");
+  box.onclick = async (ev) => {
+    const b = ev.target.closest("[data-lot]"), u = ev.target.closest("[data-lotuse]");
+    if (u && box._lot) return useLot(box._lot, box);
+    if (!b) return;
+    const x = rows[+b.dataset.lot];
+    map.setView(S.hk80ToWgs84(x.x, x.y), 18);
+    b.disabled = true;
+    try {
+      const g = (await api("/api/site/lotgeom?" + new URLSearchParams({ id: x.id, x: x.x, y: x.y, ext: (x.ext || []).join(","), type: x.type || "lot" }))).lot;
+      const rings = g.rings.map((r) => r.map(([e, n]) => S.hk80ToWgs84(e, n)));
+      if (lotLayer) lotLayer.remove();
+      lotLayer = L_.polygon(rings, { color: "#c62828", weight: 3, dashArray: "6 4", fillColor: "#c62828", fillOpacity: 0.08 }).addTo(map).bindTooltip(esc(g.name), { permanent: true, direction: "center", className: "st-edge-lab st" });
+      map.fitBounds(lotLayer.getBounds(), { padding: [60, 60], maxZoom: 19 });
+      const area = S.area(rings[0]);
+      box._lot = { name: g.name, id: g.id, pts: rings[0], area };
+      box.innerHTML = `<div class="st-lot"><b>${esc(g.name)}</b> <span>${esc(x.place)}</span><br><small>${f1(area)} m² from the lot boundary (LandsD iC1000 - for identification only, not a survey)${g.rings.length > 1 ? ` · ${g.rings.length} parts, the first is used` : ""}</small>
+        <div class="st-row">${CAN ? `<button type="button" class="primary st-ib" data-lotuse>Use as the site boundary</button>` : ""}<a class="st-link" href="${OZP_PORTAL}" target="_blank" rel="noopener">Open the OZP portal ›</a></div>
+        <small class="muted">The zoning: choose the plan and zone under <b>3 · Planning and lease</b>; the plan's Notes can be read there. Lot data © Lands Department.</small></div>` + rows.map((y, i) => `<button type="button" data-lot="${i}"><b>${esc(y.name)}</b> <span>${esc(y.place)}</span></button>`).join("");
+    } catch (e) { b.disabled = false; toast(e.message, true); }
+  };
+}
+function useLot(lot, box) {
+  const s = study();
+  if (s.pts.length >= 3 && !confirm(`Replace the site boundary with ${lot.name} (${f1(lot.area)} m²)?`)) return;
+  lastPts = snap();
+  s.pts = lot.pts.slice(); s.streets = {}; s.roads = {}; s.factor = null;
+  s.lot = { name: lot.name, id: lot.id, area: Math.round(lot.area * 100) / 100 };
+  if (!s.name) s.name = lot.name;
+  if (!(s.target > 0)) s.target = Math.round(lot.area * 100) / 100;
+  if (lotLayer) { lotLayer.remove(); lotLayer = null; }
+  box.hidden = true;
+  changed(); fit();
+  hint(`${lot.name}: ${f1(lot.area)} m². Mark the streets (click an edge); Undo shape puts the old boundary back.`, 8000);
 }
 
 /* ---------- start */

@@ -4721,6 +4721,13 @@ try:
 except Exception as _ex:
     print("units not loaded: %s" % _ex)
 
+# Site study: find a site by lot number (sitelot.py).
+try:
+    import sitelot
+    sitelot.register(app, sys.modules[__name__])
+except Exception as _ex:
+    print("sitelot not loaded: %s" % _ex)
+
 # Site study OZP list and Notes reader (ozp.py).
 try:
     import ozp

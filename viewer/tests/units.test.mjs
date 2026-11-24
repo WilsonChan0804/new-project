@@ -88,5 +88,13 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 2\.1/.test(w)), "a be
   const MM = U.mirrorUnit(M);
   ok(MM.rooms.every((r, i) => near(r.x, T.rooms[i].x, 1e-6)) && MM.name === T.name && JSON.stringify(MM.doors) === JSON.stringify(T.doors.map((d) => Object.assign({}, d, { at: +(+d.at).toFixed(3) }, ("hinge" in d || d.swing) ? { hinge: d.hinge === "end" ? "end" : "start" } : {}))), "mirrored twice: back to the start");
 }
+// a shortened partition: the open part is floor
+{
+  const T = JSON.parse(JSON.stringify(TEMPLATES["2R-B"])), f0 = U.figures(T);
+  const e = f0.edges.find((q) => q.kind === "part" && !U.isOpen(T, q) && q.len > 1.5);
+  T.walls = { [e.key]: { s: 0, e: e.len / 2 } };
+  const f1 = U.figures(T);
+  ok(near(U.solidLen(T, e), e.len / 2, 1e-9) && near(f1.internal - f0.internal, e.len / 2 * T.part / 2, 2e-3) && near(f1.area, f0.area, 1e-9), "a partition shortened to half: half its length × t/2 more usable floor, the same area");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

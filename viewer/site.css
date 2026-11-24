@@ -274,3 +274,7 @@ body.st-planfull .st-map-wrap { min-height: 100%; }
   .pz-bar { right: 6px; bottom: 30px; }
   .pz-bar button { min-width: 36px; height: 34px; }
 }
+.st-lot { padding: 8px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.st-lot small { display: block; color: var(--muted); margin-top: 3px; }
+.fl-v { cursor: move; } .fl-vm { cursor: copy; }
+.fl-pop button.on { background: var(--accent); color: #fff; }

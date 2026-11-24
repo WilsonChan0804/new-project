@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-13", date: "25 Nov 2026",
+    items: [
+      "**Find a site by its lot number** - type a lot (STTL 121, TKOTL 137, IL 152, DD 123 Lot 456) in the Find box: the Lands Department's lot search lists the matches, choosing one draws the lot's boundary from the iC1000 Lot Index, and **Use as the site boundary** makes it the site (its area, name and corners). Then pick the plan and zone under Planning and lease, or open the OZP portal.",
+      "**4 · Floors, by hand** - drag the staircases, lifts, refuse room and E&M riser anywhere on the plate (the units flow round them), **⟳ rotate** a piece, **swap** two, **+ Lift**, **Remove**, **Reset core**. Units go where they are dropped, snapping to the edges near (Alt: no snap), and can be **rotated**; overlaps, units outside the plate and entrances turned off the corridor are flagged under **Clashes**. Drag the **plate's corners** (or its **+** to add one) to reshape the floor plate on the same page, or **Fit the plate to the units**.",
+      "**Unit editor** - a partition can be **shortened**: select it and drag its ends (or type where the solid part runs), the rest opens up; **Full length** puts it back. **⟲ Reset** takes an edited unit back to how it was made or last saved to the office library (Undo brings the edits back).",
+    ],
+  },
+  {
     version: "2027-03-12", date: "25 Nov 2026",
     items: [
       "**Unit and floor plans on a phone**: the plan now fits the screen (smaller margins, labels and dimensions sized to the scale), **pinch to zoom**, drag the background to pan, the mouse wheel zooms on a computer. A zoom bar: **＋ / − / Fit** and **⤢** for the plan full screen (the panel hidden; press again to bring it back). The tool bar scrolls sideways on a phone.",
