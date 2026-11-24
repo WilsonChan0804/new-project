@@ -6,6 +6,12 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-17", date: "25 Nov 2026",
+    items: [
+      "**Move a programme between a project and My programmes** - in the programme picker, **Move to my programmes …** makes a project programme yours and takes it out of the project (the project's first programme can only be copied), and **Move into a project …** puts one of yours into a project and takes it out of My programmes. **Copy** stays for keeping both. Deleted programmes are kept on the server for the site admin to bring back.",
+    ],
+  },
+  {
     version: "2027-03-16", date: "25 Nov 2026",
     items: [
       "**Programme START, FINISH and duration come from the tasks** - they were measured from Set up's **Project start**, so an old project start (e.g. 2021) gave a START no task has and a far too long duration. Now START is the first task's start, FINISH the last task's finish (click either to go to that task), and a note says when the Project start is well before the first task, with **Use the first task's date** or **Clear it**.",

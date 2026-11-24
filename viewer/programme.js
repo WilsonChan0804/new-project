@@ -1477,13 +1477,15 @@ function whichMenu(anchor) {
   const mineActs = `<div class="po-row" data-a="newmine"><b>+ New programme of my own</b><br><small class="muted">not in a project - empty, or a copy of the one open</small></div>`
     + (P.mine && P.mineMeta && P.mineMeta.role === "owner" ? `<div class="po-row" data-a="share">Share this programme ...</div>` : "")
     + (P.mine ? `<div class="po-row" data-a="toproj">Copy into a project ...</div>` : "")
+    + (P.mine && P.mineMeta && P.mineMeta.role === "owner" ? `<div class="po-row" data-a="mvproj">Move into a project ...<br><small class="muted">it goes there, and out of My programmes</small></div>` : "")
     + (P.mine && P.doc.can_edit ? `<div class="po-row" data-a="ren">Rename this programme ...</div>` : "")
     + (P.mine && P.mineMeta && P.mineMeta.role === "owner" ? `<div class="po-row" data-a="del">Delete this programme ...</div>` : "");
   const projHead = project() ? `<div class="po-head">This project${P.projectName ? ": " + esc(P.projectName) : ""}</div>` : "";
   const el = pop(anchor, projHead + P.list.map((x) => `<div class="po-row${x.id === cur ? " on" : ""}" data-pg="${esc(x.id)}"><b>${x.id === cur ? "&#10003; " : ""}${esc(x.name)}</b><br><small class="muted">${x.tasks} task${x.tasks === 1 ? "" : "s"}${x.at ? " · saved " + esc(x.at.slice(0, 10)) + (x.by ? " by " + esc(x.by) : "") : ""}</small></div>`).join("")
     + (!P.mine && P.doc.can_edit && project() ? `<div class="po-row" data-a="new"><b>+ New programme in this project</b><br><small class="muted">empty, or a copy of this one</small></div>`
       + `<div class="po-row" data-a="ren">Rename this programme ...</div>`
-      + (cur !== "main" ? `<div class="po-row" data-a="del">Delete this programme ...</div>` : "") : "")
+      + (cur !== "main" ? `<div class="po-row" data-a="del">Delete this programme ...</div>` : "")
+      + `<div class="po-row" data-a="mvmine">${cur !== "main" ? "Move to my programmes ..." : "Copy to my programmes ..."}<br><small class="muted">${cur !== "main" ? "it becomes yours, and leaves this project" : "the project's first programme stays; a copy becomes yours"}</small></div>` : "")
     + `<hr><div class="po-head">My programmes <small class="muted">(not in a project)</small></div>` + mineRows + mineActs, 320);
   el.addEventListener("click", async (ev) => {
     const r = ev.target.closest("[data-pg],[data-a],[data-mine]");
@@ -1493,7 +1495,9 @@ function whichMenu(anchor) {
     if (r.dataset.mine) { if (r.dataset.mine !== P.mine) goMine(r.dataset.mine); return; }
     if (r.dataset.a === "newmine") return newMine();
     if (r.dataset.a === "share") return shareMine();
-    if (r.dataset.a === "toproj") return mineToProject();
+    if (r.dataset.a === "toproj") return mineToProject(false);
+    if (r.dataset.a === "mvproj") return mineToProject(true);
+    if (r.dataset.a === "mvmine") return projToMine(cur);
     if (P.mine && r.dataset.a === "ren") {
       const f = await modal("Rename the programme", `<label>Name<input name="name" maxlength="80" value="${esc(P.pgName)}" required></label>`, "Rename");
       if (!f || !f.name.value.trim()) return;
@@ -1563,17 +1567,33 @@ async function shareMine() {
   for (const sel of f.querySelectorAll("select[data-uid]")) if (sel.value) share[sel.dataset.uid] = sel.value;
   try { await api("/api/myprog/list/" + P.mine, { method: "PATCH", body: JSON.stringify({ share, all: f.all.value }) }); await loadList(); toast("Shared"); } catch (e) { toast(e.message, true); }
 }
-async function mineToProject() {
+/* a project programme to one's own: a copy made yours, then (not the first) taken out of the project */
+async function projToMine(cur) {
+  const move = cur !== "main";
+  const f = await modal(move ? "Move to my programmes" : "Copy to my programmes", `<label>Name<input name="name" maxlength="80" value="${esc(P.pgName)}"></label>
+    <p class="muted">${move ? `It becomes a programme of your own (not shared yet) and is taken out of this project for everyone - the project's people no longer see it (the site admin can still get the project copy back from the server).` : "This is the project's first programme, which stays in the project; a copy becomes yours."}</p>`, move ? "Move" : "Copy");
+  if (!f) return;
+  if (P.pending) await save();
+  try {
+    const n = await api("/api/myprog/list", { method: "POST", body: JSON.stringify({ name: f.name.value.trim() || P.pgName, from: { project: project(), pg: P.pg || "" } }) });
+    if (move) await api("/api/programme/list/" + cur, { method: "DELETE" });
+    P.pending = false;
+    toast(move ? "Moved to My programmes" : "Copied to My programmes");
+    location.href = mineUrl(n.id);
+  } catch (e) { toast(e.message, true); }
+}
+async function mineToProject(move) {
   let ps = [];
   try { const r = await api("/api/projects"); ps = (r.projects || r || []).filter((p) => !p.role || ["member", "publisher", "admin"].includes(p.role)); } catch (e) {}
   if (!ps.length) return toast("You are not a member of a project to copy it into", true);
-  const f = await modal("Copy into a project", `<label>Project<select name="p">${ps.map((p) => `<option value="${esc(p.id)}">${esc(p.name || p.title || p.id)}</option>`).join("")}</select></label>
-    <label>Name there<input name="name" maxlength="80" value="${esc(P.pgName)}"></label><p class="muted">A copy: this programme stays yours as it is.</p>`, "Copy");
+  const f = await modal(move ? "Move into a project" : "Copy into a project", `<label>Project<select name="p">${ps.map((p) => `<option value="${esc(p.id)}">${esc(p.name || p.title || p.id)}</option>`).join("")}</select></label>
+    <label>Name there<input name="name" maxlength="80" value="${esc(P.pgName)}"></label><p class="muted">${move ? "It goes into the project for its people, and out of My programmes (also for anyone you shared it with)." : "A copy: this programme stays yours as it is."}</p>`, move ? "Move" : "Copy");
   if (!f) return;
   if (P.pending) await save();
   try {
     const n = await api(`/api/myprog/${P.mine}/to-project`, { method: "POST", body: JSON.stringify({ project: f.p.value, name: f.name.value.trim() || P.pgName }) });
-    toast("Copied - opening it in the project");
+    if (move) { await api("/api/myprog/list/" + P.mine, { method: "DELETE" }); P.pending = false; }
+    toast((move ? "Moved" : "Copied") + " - opening it in the project");
     location.href = `/programme.html?project=${encodeURIComponent(f.p.value)}&pg=${encodeURIComponent(n.id)}`;
   } catch (e) { toast(e.message, true); }
 }
