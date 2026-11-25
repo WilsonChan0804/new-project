@@ -177,7 +177,9 @@ export function joinWalls(a, b, tol = 0.01) {
   const i = k0;
   if (i > 0 && i < path.length - 1) {
     const d1 = dirOf(path[i - 1], path[i]).d, d2 = dirOf(path[i], path[i + 1]).d;
-    if (Math.abs(d1[0] * d2[1] - d1[1] * d2[0]) < 1e-6 && d1[0] * d2[0] + d1[1] * d2[1] > 0) {
+    // straight within 2 mm (points are kept to the millimetre)
+    const A = path[i - 1], B = path[i + 1], P = path[i], LAB = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1, off = Math.abs((B[0] - A[0]) * (A[1] - P[1]) - (A[0] - P[0]) * (B[1] - A[1])) / LAB;
+    if ((Math.abs(d1[0] * d2[1] - d1[1] * d2[0]) < 1e-6 || off < 0.002) && d1[0] * d2[0] + d1[1] * d2[1] > 0) {
       const l1 = segLen(path, i - 1);
       for (const o of ops) { if (o.seg === i) { o.seg = i - 1; o.at = r3(n(o.at) + l1); } else if (o.seg > i) o.seg -= 1; }
       path = [...path.slice(0, i), ...path.slice(i + 1)];

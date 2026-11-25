@@ -474,6 +474,13 @@ function drawPlan() {
     const at = wallAt(a, b), t = at ? at.t : wallT(d.room, d.side), o = at ? at.o : 0, vert = a[0] === b[0], st = sel ? "#f28022" : "#222";
     const hit = `<line class="un-hit" data-di="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${t * SC + 4}" />`;
     if (d.type === "sliding" || d.type === "sliding2") { g += slideSvg(a, b, t, o, vert, st, d, sel, sx, sy) + hit; continue; }
+    if (d.type === "panel") {
+      // an access panel: three lines on the wall across it
+      const nm = vert ? [1, 0] : [0, 1], P2 = (p, nn) => [p[0] + nm[0] * (o + nn), p[1] + nm[1] * (o + nn)];
+      const ln = (p, q, w) => `<line x1="${sx(p[0])}" y1="${sy(p[1])}" x2="${sx(q[0])}" y2="${sy(q[1])}" stroke="${st}" stroke-width="${w}" />`;
+      g += `<polygon points="${[P2(a, -t / 2), P2(b, -t / 2), P2(b, t / 2), P2(a, t / 2)].map((q) => sx(q[0]) + "," + sy(q[1])).join(" ")}" fill="#fff" stroke="${st}" stroke-width="0.6" />` + ln(P2(a, -t * 0.35), P2(b, -t * 0.35), 0.6) + ln(P2(a, 0), P2(b, 0), 0.6) + ln(P2(a, t * 0.35), P2(b, t * 0.35), 0.6) + hit;
+      continue;
+    }
     if (d.type === "opening") {
       // an opening: the jambs, no leaf; a dashed line across
       const nm = vert ? [1, 0] : [0, 1], P2 = (p, nn) => [p[0] + nm[0] * (o + nn), p[1] + nm[1] * (o + nn)];
@@ -716,7 +723,7 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     const d = u.doors[SEL.i], r = d && u.rooms.find((q) => q.id === d.room); if (!r) return "";
     const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
     const dt = d.type || "hinged";
-    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["door2", "Double"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening (no leaf)"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" || dt === "door2" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : dt === "opening" ? "" : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
+    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["door2", "Double"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening (no leaf)"], ["panel", "Access panel"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" || dt === "door2" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : dt === "opening" ? "" : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
   } else if (SEL.t === "win") {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
@@ -801,7 +808,7 @@ function placeOpening(hit, id, w) {
     if (id === "cw") { const o = u.walls[e.key] = u.walls[e.key] || {}; o.f = "cw"; SEL = { t: "wall", key: e.key }; return changed(); }
     u.windows.push({ room: rs.room, side: rs.side, at, w: +ww.toFixed(2) }); SEL = { t: "win", i: u.windows.length - 1 }; return changed();
   }
-  const type = { door: null, door2: "door2", doorU: "door2", sliding: "sliding", sliding2: "sliding2", opening: "opening" }[id];
+  const type = { door: null, door2: "door2", doorU: "door2", sliding: "sliding", sliding2: "sliding2", opening: "opening", panel: "panel" }[id];
   u.doors.push(Object.assign({ room: rs.room, side: rs.side, at, w: +ww.toFixed(2), hinge: "start", swing: "in" }, type ? { type } : {}));
   SEL = { t: "door", i: u.doors.length - 1 }; return changed();
 }

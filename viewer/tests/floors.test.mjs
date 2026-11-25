@@ -360,5 +360,22 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const sq = F.clipToRect([[0, 0], [4, 0], [0, 4]], { x0: 1, y0: 1, x1: 3, y1: 3 });
   ok(near(Math.abs(F.area(sq)), 2, 1e-9), "clipToRect: a triangle cut to a square");
 }
+// the plate fitted close round the layout: gaps under the fit gap closed, the corners on the shapes'
+{
+  const R = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const o1 = F.hugOutline([R(0, 0, 10, 8), R(10.3, 0, 20, 6)], 0.5);
+  ok(o1 && near(Math.abs(F.area(o1)), 140, 0.01) && o1.length === 6, "hugOutline: a 300 mm gap closed, one outline of 6 corners (" + JSON.stringify(o1) + ")");
+  const o2 = F.hugOutline([R(0, 0, 10, 8), R(10.7, 0, 20, 8), R(0, 8, 20, 9.5)], 0.5);
+  ok(o2 && Math.abs(F.area(o2)) < 20 * 9.5 - 0.7 * 8 + 0.01 && Math.abs(F.area(o2)) > 20 * 9.5 - 0.7 * 8 - 0.5, "hugOutline: a 700 mm gap wider than 500 mm stays a notch");
+  const a = 0.3, rot = (Q) => Q.map(([x, y]) => [20 + (x - 20) * Math.cos(a) - y * Math.sin(a), (x - 20) * Math.sin(a) + y * Math.cos(a)]);
+  const o3 = F.hugOutline([R(0, 0, 20, 8), rot(R(20, 0, 35, 8))], 0.5);
+  ok(o3 && o3.some((p) => near(p[0], 20 + 15 * Math.cos(a), 1e-3) && near(p[1], 15 * Math.sin(a), 1e-3)) && o3.length <= 7, "hugOutline: a turned leg's corner kept exactly, the edges straight (" + o3.length + " corners)");
+  // the riser's door: an access panel unless set
+  const sq = [[0, 0], [48, 0], [48, 16], [0, 16]], L0 = F.layout({ poly: sq, mix, storeys: 30 });
+  const rz = L0.core.find((c) => c.kind === "riser");
+  ok(rz && rz.doors.length && rz.doors[0].type === "panel", "the E&M riser's way in is an access panel");
+  const L1 = F.layout({ poly: sq, mix, storeys: 30, pieces: L0.coreOut.map((c) => (c.kind === "riser" ? Object.assign({}, c, { door: { side: rz.doors[0].side, at: 0.5, type: "door" } }) : c)) });
+  ok(L1.core.find((c) => c.kind === "riser").doors[0].type === "door", "a door set on it is kept");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

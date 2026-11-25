@@ -790,6 +790,7 @@ function onEdge(P, x, y, tol = 1e-6) {
 }
 /* a polygon cut to a rectangle {x0, y0, x1, y1} (Sutherland-Hodgman: the rectangle is convex, the polygon need not be) */
 /* a cell's middle: of its part inside, when it is cut */
+const norm2 = (v) => { const L = Math.hypot(v[0], v[1]) || 1; return [v[0] / L, v[1] / L]; };
 const cellMid = (c) => (c.poly ? [c.poly.reduce((a, p) => a + p[0], 0) / c.poly.length, c.poly.reduce((a, p) => a + p[1], 0) / c.poly.length] : [(c.x0 + c.x1) / 2, (c.y0 + c.y1) / 2]);
 const cellArea = (c) => (c.poly ? Math.abs(area2(c.poly)) : (c.x1 - c.x0) * (c.y1 - c.y0));
 export function clipToRect(P, r) {
@@ -891,7 +892,7 @@ export function coreDoors(core, o) {
       const at = Math.max(0, Math.min(1, Number(c.door.at != null ? c.door.at : 0.5)));
       const w = c.kind === "lift" ? 1.0 : c.kind === "stair" || c.kind === "lobby" ? 0.9 : 0.75;
       door(c, c.door.side, start + t + (len - 2 * t) * at, w, c.kind === "stair" || c.kind === "lobby", c.kind === "lift");
-      if (c.door.type && c.doors.length) c.doors[c.doors.length - 1].type = c.door.type;
+      if (c.doors.length) { if (c.door.type) c.doors[c.doors.length - 1].type = c.door.type; else if (c.kind === "riser") c.doors[c.doors.length - 1].type = "panel"; }
       extra(c);
       continue;
     }
@@ -925,7 +926,7 @@ export function coreDoors(core, o) {
       if (o.per > 1) { door(c, f.side, A + (B - A) * 0.27, 0.9, true, false, A, B); door(c, f.side, A + (B - A) * 0.73, 0.9, true, false, A, B); } else door(c, f.side, m, 0.9, true, false, A, B);
     } else if (c.kind === "lift") door(c, f.side, m, 1.0, false, true, A, B);
     else if (c.kind === "lobby") door(c, f.side, m, 0.9, true, false, A, B);
-    else door(c, f.side, m, 0.75, false, false, A, B);
+    else { door(c, f.side, m, c.kind === "riser" ? 0.6 : 0.75, false, false, A, B); if (c.kind === "riser" && c.doors.length) c.doors[c.doors.length - 1].type = "panel"; }   // a PD / riser: an access panel, not a door
     extra(c);
   }
   return core;
@@ -1099,4 +1100,122 @@ export function shiftFrame(f, du, dv) {
   else if (dv && Number(f.gridY) > 0) f.gridOY = R(dv);
   if (f.corrY != null) f.corrY = R(Number(f.corrY) + dv);
   return f;
+}
+
+/* the outline round a set of convex shapes (the units' rooms out to their walls' faces, the core, the corridor), in one
+   frame: the shapes filled on a grid of cell, the gaps and notches narrower than gap closed, holes filled, the largest
+   piece's outer edge traced, straightened (Douglas-Peucker) and its corners put back on the shapes' own corners near them */
+export function hugOutline(shapes, gap = 0.5, cell = 0.05) {
+  const S2 = (shapes || []).filter((q) => q && q.length >= 3);
+  if (!S2.length) return null;
+  const all = S2.flat(), pad = gap + 3 * cell;
+  const X0 = Math.min(...all.map((p) => p[0])) - pad, Y0 = Math.min(...all.map((p) => p[1])) - pad;
+  const nx = Math.ceil((Math.max(...all.map((p) => p[0])) + pad - X0) / cell), ny = Math.ceil((Math.max(...all.map((p) => p[1])) + pad - Y0) / cell);
+  let G = new Uint8Array(nx * ny);
+  // each convex shape: a row's span between its edges at the cells' middle
+  for (const Q of S2) {
+    const ya = Math.min(...Q.map((p) => p[1])), yb = Math.max(...Q.map((p) => p[1]));
+    for (let j = Math.max(0, Math.floor((ya - Y0) / cell)); j <= Math.min(ny - 1, Math.ceil((yb - Y0) / cell)); j++) {
+      const cy = Y0 + (j + 0.5) * cell; let a = Infinity, b = -Infinity;
+      for (let k = 0; k < Q.length; k++) { const p = Q[k], q = Q[(k + 1) % Q.length]; if ((p[1] > cy) !== (q[1] > cy)) { const x = p[0] + (cy - p[1]) * (q[0] - p[0]) / (q[1] - p[1]); a = Math.min(a, x); b = Math.max(b, x); } }
+      if (a > b) continue;
+      for (let i = Math.max(0, Math.round((a - X0) / cell)); i < Math.min(nx, Math.round((b - X0) / cell)); i++) G[j * nx + i] = 1;
+    }
+  }
+  // the closing: grown by r cells then shrunk by r (a square; rows then columns, each by a running count)
+  const r = Math.max(0, Math.round(gap / 2 / cell));
+  const pass = (A, want) => {
+    const out = new Uint8Array(A.length);
+    const tmp = new Uint8Array(A.length);
+    for (let j = 0; j < ny; j++) { let c = 0; for (let i = -r; i < nx + r; i++) { const add = i + r, rem = i - r - 1; if (add < nx && A[j * nx + add] === want) c++; if (rem >= 0 && rem < nx && A[j * nx + rem] === want) c--; if (i >= 0 && i < nx) tmp[j * nx + i] = c > 0 ? want : 1 - want; } }
+    for (let i = 0; i < nx; i++) { let c = 0; for (let j = -r; j < ny + r; j++) { const add = j + r, rem = j - r - 1; if (add < ny && tmp[add * nx + i] === want) c++; if (rem >= 0 && rem < ny && tmp[rem * nx + i] === want) c--; if (j >= 0 && j < ny) out[j * nx + i] = c > 0 ? want : 1 - want; } }
+    return out;
+  };
+  if (r > 0) G = pass(pass(G, 1), 0);
+  // holes filled: what of the outside the border does not reach is inside
+  const outside = new Uint8Array(G.length), st = [];
+  for (let i = 0; i < nx; i++) for (const j of [0, ny - 1]) if (!G[j * nx + i]) { outside[j * nx + i] = 1; st.push(j * nx + i); }
+  for (let j = 0; j < ny; j++) for (const i of [0, nx - 1]) if (!G[j * nx + i] && !outside[j * nx + i]) { outside[j * nx + i] = 1; st.push(j * nx + i); }
+  while (st.length) { const c = st.pop(), i = c % nx, j = (c - i) / nx; for (const [a, b] of [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]) { if (a < 0 || b < 0 || a >= nx || b >= ny) continue; const k = b * nx + a; if (!G[k] && !outside[k]) { outside[k] = 1; st.push(k); } } }
+  // the largest piece
+  const lab = new Int32Array(G.length); let best = 0, bestN = 0, id = 0;
+  for (let k = 0; k < G.length; k++) {
+    if (outside[k] || lab[k]) continue;
+    id++; let n2 = 0; const s3 = [k]; lab[k] = id;
+    while (s3.length) { const c = s3.pop(), i = c % nx, j = (c - i) / nx; n2++; for (const [a, b] of [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]) { if (a < 0 || b < 0 || a >= nx || b >= ny) continue; const q = b * nx + a; if (!outside[q] && !lab[q]) { lab[q] = id; s3.push(q); } } }
+    if (n2 > bestN) { bestN = n2; best = id; }
+  }
+  if (!best) return null;
+  const inn = (i, j) => i >= 0 && j >= 0 && i < nx && j < ny && lab[j * nx + i] === best;
+  // its outer edge: the cell sides with it on the left, chained (corners kept where the edge turns)
+  const nxt = new Map(), K = (i, j) => i + "," + j;
+  for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
+    if (inn(i, j) && !inn(i, j - 1)) nxt.set(K(i, j) + ">", [i + 1, j]);        // top side, going +x
+    if (inn(i - 1, j - 1) && !inn(i - 1, j)) nxt.set(K(i, j) + "<", [i - 1, j]); // bottom side of the cell above-left, going -x
+    if (inn(i - 1, j) && !inn(i, j)) nxt.set(K(i, j) + "v", [i, j + 1]);        // right side, going +y
+    if (inn(i, j - 1) && !inn(i - 1, j - 1)) nxt.set(K(i, j) + "^", [i, j - 1]);  // left side, going -y
+  }
+  // start at the top-left most top side, walk keeping the inside on the right of the direction (y down: clockwise on screen)
+  let s0 = null; for (const k of nxt.keys()) if (k.endsWith(">")) { const [i, j] = k.slice(0, -1).split(",").map(Number); if (!s0 || j < s0[1] || (j === s0[1] && i < s0[0])) s0 = [i, j]; }
+  if (!s0) return null;
+  const ring = []; let cur = s0, dir = ">", guard = 0;
+  const turnOrder = { ">": ["v", ">", "^"], "v": ["<", "v", ">"], "<": ["^", "<", "v"], "^": [">", "^", "<"] };
+  do {
+    const nq = nxt.get(K(cur[0], cur[1]) + dir); if (!nq) break;
+    ring.push(cur); cur = nq;
+    const d2 = turnOrder[dir].find((d) => nxt.has(K(cur[0], cur[1]) + d)); if (!d2) break; dir = d2;
+  } while (!(cur[0] === s0[0] && cur[1] === s0[1] && dir === ">") && guard++ < 1e6);
+  // corners only, then straightened
+  let P = ring.map(([i, j]) => [X0 + i * cell, Y0 + j * cell]);
+  const col = (a, b, c) => Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) < 1e-9;
+  P = P.filter((p, k) => !col(P[(k - 1 + P.length) % P.length], p, P[(k + 1) % P.length]));
+  const dp = (pts, tol) => {
+    if (pts.length < 3) return pts;
+    const a = pts[0], b = pts[pts.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-9; let mi = 0, md = 0;
+    for (let k = 1; k < pts.length - 1; k++) { const d = Math.abs((b[0] - a[0]) * (a[1] - pts[k][1]) - (a[0] - pts[k][0]) * (b[1] - a[1])) / L; if (d > md) { md = d; mi = k; } }
+    return md > tol ? [...dp(pts.slice(0, mi + 1), tol).slice(0, -1), ...dp(pts.slice(mi), tol)] : [a, b];
+  };
+  // split the closed ring at its two farthest points, straighten each half
+  let fi = 0; for (let k = 1; k < P.length; k++) if (Math.hypot(P[k][0] - P[0][0], P[k][1] - P[0][1]) > Math.hypot(P[fi][0] - P[0][0], P[fi][1] - P[0][1])) fi = k;
+  P = [...dp(P.slice(0, fi + 1), cell * 1.2).slice(0, -1), ...dp([...P.slice(fi), P[0]], cell * 1.2).slice(0, -1)];
+  // the corners back on the shapes' corners near them; else the lines through them on the shapes' faces near them
+  // (kept only if no shape then pokes out of it: else the grid's outline, a cell out from the shapes, is taken)
+  const P0 = P.map((p) => [p[0], p[1]]);
+  const V = all;
+  P = P.map((p) => { let bq = null, bd = cell * 3; for (const v of V) { const d = Math.hypot(v[0] - p[0], v[1] - p[1]); if (d < bd) { bd = d; bq = v; } } return bq ? Object.assign([bq[0], bq[1]], { on: 1 }) : p; });
+  // a point left by the grid next to a corner put back: dropped
+  P = P.filter((p, k) => p.on || ![P[(k - 1 + P.length) % P.length], P[(k + 1) % P.length]].some((q) => q.on && Math.hypot(q[0] - p[0], q[1] - p[1]) < cell * 4));
+  P = P.filter((p, k, A) => { const q = A[(k + 1) % A.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-6; });
+  const xsV = V.map((v) => v[0]), ysV = V.map((v) => v[1]);
+  const near1 = (A, v) => { let b = null, bd = cell * 0.9; for (const a of A) { const d = Math.abs(a - v); if (d < bd) { bd = d; b = a; } } return b; };
+  for (let k = 0; k < P.length; k++) {
+    const a = P[k], b = P[(k + 1) % P.length];
+    if (Math.abs(a[0] - b[0]) < cell * 0.5) { const x = near1(xsV, (a[0] + b[0]) / 2); if (x != null) { a[0] = x; b[0] = x; } }
+    if (Math.abs(a[1] - b[1]) < cell * 0.5) { const y = near1(ysV, (a[1] + b[1]) / 2); if (y != null) { a[1] = y; b[1] = y; } }
+  }
+  P = P.map((p) => [r3(p[0]), r3(p[1])]).filter((p, k, A) => { const q = A[(k + 1) % A.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-6; });
+  // points on a straight run (within 60 mm of the line through their neighbours): dropped, one at a time
+  const off = (a, p, b) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-9; return Math.abs((b[0] - a[0]) * (a[1] - p[1]) - (a[0] - p[0]) * (b[1] - a[1])) / L; };
+  const tidy = (Q) => { for (let again = true; again && Q.length > 3;) { again = false; for (let k = 0; k < Q.length; k++) { const a = Q[(k - 1 + Q.length) % Q.length], b = Q[(k + 1) % Q.length]; if (off(a, Q[k], b) < 0.06) { Q.splice(k, 1); again = true; break; } } } return Q; };
+  P = tidy(P);
+  // every shape inside it: points along each face, 50 mm in from it
+  const probes = [];
+  for (const Sh of S2) {
+    const cx = Sh.reduce((a2, p) => a2 + p[0], 0) / Sh.length, cy = Sh.reduce((a2, p) => a2 + p[1], 0) / Sh.length;
+    for (let k = 0; k < Sh.length; k++) {
+      const a = Sh[k], b = Sh[(k + 1) % Sh.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n3 = Math.max(1, Math.ceil(L / 0.25));
+      for (let i = 0; i <= n3; i++) { const p = [a[0] + (b[0] - a[0]) * i / n3, a[1] + (b[1] - a[1]) * i / n3], d = Math.hypot(cx - p[0], cy - p[1]) || 1, e = Math.min(0.05, d / 2); probes.push([p[0] + (cx - p[0]) / d * e, p[1] + (cy - p[1]) / d * e]); }
+    }
+  }
+  const holds = (Q) => Q.length >= 3 && probes.every((v) => inPoly(Q, v[0], v[1]));
+  if (!holds(P)) {
+    // the grid's outline grown by a cell (its edges then clear the shapes' faces), straightened only
+    const cx = P0.reduce((a2, p) => a2 + p[0], 0) / P0.length, cy = P0.reduce((a2, p) => a2 + p[1], 0) / P0.length;
+    void cx; void cy;
+    // the ring goes with the inside on its right (y down): (-dy, dx) of an edge points in; each corner moved out along the two edges' normals
+    const grow = (R0, d) => R0.map((p, k) => { const a = R0[(k - 1 + R0.length) % R0.length], b = R0[(k + 1) % R0.length]; const n1 = norm2([a[1] - p[1], p[0] - a[0]]), n2 = norm2([p[1] - b[1], b[0] - p[0]]), m = norm2([n1[0] + n2[0], n1[1] + n2[1]]), cs = Math.max(0.5, m[0] * n1[0] + m[1] * n1[1]); return [r3(p[0] - m[0] * d / cs), r3(p[1] - m[1] * d / cs)]; });
+    let Q = P0; for (let k = 1; k <= 4 && !holds(Q); k++) Q = grow(P0, cell * k);
+    P = tidy(Q);
+  }
+  return P.length >= 3 ? P : null;
 }

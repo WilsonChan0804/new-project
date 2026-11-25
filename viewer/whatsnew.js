@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-29", date: "29 Nov 2026",
+    items: [
+      "**Fit plate follows the layout** - the plate is drawn close round the units (out to their walls' outer faces; balconies, UP and A/C platforms left out), the core and the corridor. Gaps and notches narrower than the fit gap (0.5 m, set in Core and corridor) are closed.",
+      "**Walls snap to the units and the core** - a wall point snaps to the corners and faces of the units' and the core's walls, the corridor and the plate, and a wall drawn at its angle stops where it meets a face; dragging a wall's point snaps the same way.",
+      "**A clearer floor plan**: staircases with UP and DN arrows and a break line (the treads above it dashed); lifts with the car, its guide rails and the counterweight; doors with their frames; curtain walls with mullions and glass panels; and an **access panel** (three lines on the wall, AP) for a PD or E&M riser - also in the library.",
+      "**More in 3D**: windows with sill, glass, frame and head; curtain walls with mullions and a transom; balconies with glass balustrades, UP with railings, A/C platforms with louvres; access panels; and windows on the floors below.",
+    ],
+  },
+  {
     version: "2027-03-28", date: "28 Nov 2026",
     items: [
       "**A bend on any floor plate** - on a plate with cut or slanted corners the corridor's + now adds a bend (the corridor's ends are brought in to the plate's edge); only a point that moves is checked against the plate.",

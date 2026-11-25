@@ -117,6 +117,7 @@ const PATHS = {
   extra: "M4 4h12v10H4zM4 14v6h16v-6M8 17h8",
   elev: "M4 20h16M6 20V8h5v12M13 20V4h5v16",
   edit: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4",
+  panel: "M3 9h18v6H3zM3 10.5h18M3 12h18M3 13.5h18",
   keys: "M3 7h18v10H3zM6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M8 14h8",
 };
 
@@ -138,7 +139,7 @@ const CATEGORY = {
   unit: "shape", stair: "shape", lift: "shape", refuse: "shape", riser: "shape", room: "shape", fixture: "shape", extra: "shape",
   door: "text", door2: "text", sliding: "text", window: "text", opening: "text", library: "text",
   cut: "erase", rotate: "select", mirror: "select", grid: "view", snap: "view", redo: "data", plan: "view", threed: "view",
-  context: "shape", bend: "line", corner: "shape", shadow: "view", elev: "view", edit: "select", keys: "data",
+  context: "shape", bend: "line", corner: "shape", shadow: "view", elev: "view", edit: "select", keys: "data", panel: "text",
 };
 
 export function iconSvg(name, size) {

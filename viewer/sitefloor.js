@@ -349,6 +349,7 @@ function render0() {
     ${r.left.length ? `<ul class="un-warn">${[...new Set(r.left.map((q) => q.why))].map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}</details>`;
   h += `<details class="st-card" data-card="set"${open("set", false)}><summary><b>Core and corridor</b></summary><div class="fl-set">
     <label>Corridor ${num("corridor", 0.05, o.corridor, "Clear width, m")} m</label>
+    <label>Fit plate: gaps under ${num("fitGap", 0.05, o.fitGap != null && o.fitGap !== "" ? o.fitGap : 0.5, "Fit the plate: gaps and notches narrower than this are closed (m)", 56)} m closed</label>
     <label>Core <select data-fo="core"${dis}><option value="middle"${o.core === "middle" ? " selected" : ""}>in the middle</option><option value="ends"${o.core === "ends" ? " selected" : ""}>staircases at the ends</option><option value="behind"${o.core === "behind" ? " selected" : ""}>staircase behind the lifts</option></select></label>
     <label>Staircase <select data-fo="stairType"${dis}><option value="dogleg"${o.stairType === "dogleg" ? " selected" : ""}>dog-leg</option><option value="dogleg2"${o.stairType === "dogleg2" ? " selected" : ""}>dog-leg, 2 risers on the half landing</option><option value="scissor"${o.stairType === "scissor" ? " selected" : ""}>scissor</option></select></label>
     <label><input type="checkbox" data-fo="lobby"${o.lobby ? " checked" : ""}${dis}> Protected lobby ${num("lobbyDepth", 0.05, o.lobbyDepth, "m, its clear depth", 56)} m</label>
@@ -412,7 +413,7 @@ function toolbarHtml() {
     G.push([{ id: "lib", icon: "library", title: "Doors, windows and openings: drag one onto a wall", key: "D", on: PT.libraryOpen() }]);
   }
   G.push([{ id: "grid", icon: "grid", title: "Grid: 1 m background and the structural grid", key: "G", on: GRID() }, { id: "snap", icon: "snap", title: "Snap to edges and the grid (hold Alt: free)", on: SNAP() },
-    ...(can ? [{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }, { id: "fitplate", icon: "corner", title: "Fit the plate round its units and core" }, { id: "reset", icon: "reset", title: "Reset the units to automatic", disabled: !(LAST && LAST.edited) }] : [])]);
+    ...(can ? [{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }, { id: "fitplate", icon: "corner", title: "Fit the plate close round the units (balconies, UP, A/C left out), the core and the corridor; gaps under the fit gap (Core and corridor) closed" }, { id: "reset", icon: "reset", title: "Reset the units to automatic", disabled: !(LAST && LAST.edited) }] : [])]);
   G.push(viewG);
   return PT.toolbar(G, null, "floors");
 }
@@ -420,7 +421,7 @@ function mountBars() {
   if (!ON) return PT.unmount("floors");
   PT.mount("floors", toolbarHtml(), VIEW === "plan" && C.can() && LAST ? propHtml() : "", VIEW === "plan" ? PT.OPENINGS : null);
 }
-const TYPES = [["door", "Door"], ["door2", "Double door"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening"], ["window", "Window"], ["cw", "Curtain wall"]];
+const TYPES = [["door", "Door"], ["door2", "Double door"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening"], ["panel", "Access panel"], ["window", "Window"], ["cw", "Curtain wall"]];
 function propHtml() {
   const r = LAST, o = opts(cur()), x = cur();
   const acts = (list) => list.map(([id, icon, title, dis]) => ({ id, icon, title, disabled: !!dis }));
@@ -882,7 +883,7 @@ function drawLeg(l, SX, SY, fs, PTW) {
     const tw = Number(c.wt) > 0 ? Number(c.wt) : cwl, IX = sx(c.x + tw), IY = sy(c.y + tw), iw = Math.max(0, (c.w - 2 * tw) * SC), ih = Math.max(0, (c.h - 2 * tw) * SC);
     g += `<rect x="${IX}" y="${IY}" width="${iw}" height="${ih}" fill="${KF[c.kind] || "#f1d6d6"}" />`;
     if (c.kind === "stair") g += stairSvg(r.stair, IX, IY, iw, ih);
-    if (c.kind === "lift") g += `<line x1="${IX}" y1="${IY}" x2="${IX + iw}" y2="${IY + ih}" stroke="#555" stroke-width="0.6" /><line x1="${IX + iw}" y1="${IY}" x2="${IX}" y2="${IY + ih}" stroke="#555" stroke-width="0.6" /><rect x="${IX + iw * 0.15}" y="${IY + ih * 0.1}" width="${iw * 0.7}" height="${ih * 0.75}" fill="none" stroke="#555" stroke-width="0.5" />`;
+    if (c.kind === "lift") g += liftSvg(c, IX, IY, iw, ih);
   }
   for (const [li, q] of r.placed.entries()) {
     const { x: ox, y: oy } = uview[li];
@@ -925,11 +926,7 @@ function drawLeg(l, SX, SY, fs, PTW) {
       g += v ? `<rect x="${sx(c0)}" y="${sy(s0)}" width="${(c1 - c0) * SC}" height="${(s1 - s0) * SC}" fill="#fff" pointer-events="none" />` : `<rect x="${sx(s0)}" y="${sy(c0)}" width="${(s1 - s0) * SC}" height="${(c1 - c0) * SC}" fill="#fff" pointer-events="none" />`;
       const cm = (c0 + c1) / 2;
       if (o.k === "win") g += L(c0, 0.7, "#111") + L(cm - 0.012, 0.45, "#2b6cb0") + L(cm + 0.012, 0.45, "#2b6cb0") + L(c1, 0.7, "#111");
-      else {
-        g += L(cm, Math.max(1, SC * 0.02), "#2b6cb0");
-        const k = Math.max(1, Math.round((s1 - s0) / 1.5));
-        for (let i = 0; i <= k; i++) { const p0 = s0 + (s1 - s0) * i / k; g += v ? `<rect x="${sx(c0)}" y="${sy(p0) - 1.5}" width="${(c1 - c0) * SC}" height="3" fill="#222" pointer-events="none" />` : `<rect x="${sx(p0) - 1.5}" y="${sy(c0)}" width="3" height="${(c1 - c0) * SC}" fill="#222" pointer-events="none" />`; }
-      }
+      else g += cwSvg((ss, nn) => (v ? [cm + nn, s0 + ss] : [s0 + ss, cm + nn]), s1 - s0, c1 - c0, sx, sy);
     }
   }
   let doorHits = "";
@@ -981,11 +978,30 @@ function doorSvg(d, ox, oy, t, sx, sy, sel) {
   if (type === "lift") return ln([H[0], H[1] + d.sn[1] * 0.06 + d.sn[0] * 0], [(H[0] + O[0]) / 2 + al[0] * 0.05 + d.sn[0] * 0.06, (H[1] + O[1]) / 2 + al[1] * 0.05 + d.sn[1] * 0.06], 1) + ln([(H[0] + O[0]) / 2 - al[0] * 0.05 + d.sn[0] * 0.12, (H[1] + O[1]) / 2 - al[1] * 0.05 + d.sn[1] * 0.12], [O[0] + d.sn[0] * 0.12, O[1] + d.sn[1] * 0.12], 1);
   const half = (t || 0.2) / 2;
   if (type === "window" || type === "cw") return poly([P(0, -half), P(L2, -half), P(L2, half), P(0, half)]) + ln(P(0, -0.012), P(L2, -0.012), 0.45, ' stroke-opacity="0.8"') + ln(P(0, 0.012), P(L2, 0.012), 0.45);
+  // an access panel (into a PD / E&M space): three lines on the wall across its width, a small AP by it
+  if (type === "panel") { const mid = P(L2 / 2, -half - 0.18), fz = Math.max(6, Math.min(9, SC * 0.18)); return poly([P(0, -half), P(L2, -half), P(L2, half), P(0, half)]) + ln(P(0, -half * 0.7), P(L2, -half * 0.7), 0.6) + ln(P(0, 0), P(L2, 0), 0.6) + ln(P(0, half * 0.7), P(L2, half * 0.7), 0.6) + `<text x="${sx(mid[0])}" y="${sy(mid[1]) + fz / 3}" text-anchor="middle" font-size="${fz}" fill="#555" pointer-events="none">AP</text>`; }
   if (type === "opening") return ln(P(0, -half), P(0, half), 0.8) + ln(P(L2, -half), P(L2, half), 0.8) + ln(P(0, 0), P(L2, 0), 0.5, ' stroke-dasharray="3 2"');
-  if (type === "sliding" || type === "sliding2") { const lt = Math.min(0.04, half / 2), m2 = L2 / 2, ov = 0.05; return poly([P(0, -lt), P(m2 + ov, -lt), P(m2 + ov, 0), P(0, 0)]) + poly([P(m2 - ov, 0), P(L2, 0), P(L2, lt), P(m2 - ov, lt)], type === "sliding" ? "#eef4fa" : "#fff"); }
+  if (type === "sliding" || type === "sliding2") { const lt = Math.min(0.04, half / 2), m2 = L2 / 2, ov = 0.05, jw = Math.min(0.05, L2 / 10); return poly([P(0, -half), P(jw, -half), P(jw, half), P(0, half)], "#fff") + poly([P(L2 - jw, -half), P(L2, -half), P(L2, half), P(L2 - jw, half)], "#fff") + poly([P(0, -lt), P(m2 + ov, -lt), P(m2 + ov, 0), P(0, 0)]) + poly([P(m2 - ov, 0), P(L2, 0), P(L2, lt), P(m2 - ov, lt)], type === "sliding" ? "#eef4fa" : "#fff"); }
   const sw = (h0, o0, len) => { const T = [h0[0] + d.sn[0] * len, h0[1] + d.sn[1] * len], cr = (T[0] - h0[0]) * (o0[1] - h0[1]) - (T[1] - h0[1]) * (o0[0] - h0[0]); return ln(h0, T, Math.max(0.6, SC * 0.03)) + `<path d="M ${sx(T[0])} ${sy(T[1])} A ${len * SC} ${len * SC} 0 0 ${cr > 0 ? 1 : 0} ${sx(o0[0])} ${sy(o0[1])}" fill="none" stroke="${sel ? st : "#444"}" stroke-width="0.5" pointer-events="none" />`; };
-  if (type === "door2") { const M2 = [(H[0] + O[0]) / 2, (H[1] + O[1]) / 2]; return sw(H, M2, L2 / 2) + sw(O, M2, L2 / 2); }
-  return sw(H, O, L2);
+  // a rebated frame at each jamb, flush with the face the door opens to (50 mm frame, its stop 15 mm, at most 100 mm deep); the leaf hung inside it
+  const fw = Math.min(0.05, L2 / 8), fd = Math.min(t || 0.2, 0.1), stp = 0.015, lt = 0.04, sn = d.sn;
+  const FP = (s2, depth) => [H[0] + al[0] * s2 + sn[0] * (half - depth), H[1] + al[1] * s2 + sn[1] * (half - depth)];
+  const frame = (s0, sg) => poly([[0, 0], [fw, 0], [fw, lt], [fw + stp, lt], [fw + stp, fd], [0, fd]].map(([uu, nn]) => FP(s0 + sg * uu, nn)));
+  const Hf = FP(fw, 0), Of = FP(L2 - fw, 0);
+  if (type === "door2") { const M2 = FP(L2 / 2, 0); return frame(0, 1) + frame(L2, -1) + sw(Hf, M2, L2 / 2 - fw) + sw(Of, M2, L2 / 2 - fw); }
+  return frame(0, 1) + frame(L2, -1) + sw(Hf, Of, L2 - 2 * fw);
+}
+/* a curtain wall along a wall: P(s, n) the plan point s along it (0 .. L) and n across it from its middle line (T thick):
+   its glass panels between two thin frame lines, a mullion (75 x 150 mm) at each end and about every 1.5 m */
+function cwSvg(P, L, T, sx, sy, sel) {
+  const poly = (q, fill, st = "none", w = 0) => `<polygon points="${q.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="${fill}" stroke="${st}" stroke-width="${w}" pointer-events="none" />`;
+  const ln = (a, b, col, w) => `<line x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="${col}" stroke-width="${w}" pointer-events="none" />`;
+  const gl = 0.025, mw = 0.075, md = Math.min(0.15, T * 0.9), col = sel ? "#f28022" : "#2b6cb0";
+  let g = poly([P(0, -T / 2), P(L, -T / 2), P(L, T / 2), P(0, T / 2)], "#fff");
+  g += poly([P(0, -gl), P(L, -gl), P(L, gl), P(0, gl)], "#d6e6f5") + ln(P(0, -gl), P(L, -gl), col, 0.7) + ln(P(0, gl), P(L, gl), col, 0.7);
+  const k = Math.max(1, Math.round(L / 1.5));
+  for (let i = 0; i <= k; i++) { const c = Math.min(L - mw / 2, Math.max(mw / 2, (L * i) / k)); g += poly([P(c - mw / 2, -md / 2), P(c + mw / 2, -md / 2), P(c + mw / 2, md / 2), P(c - mw / 2, md / 2)], "#334", "#111", 0.4); }
+  return g;
 }
 /* an opening in a floor wall: o.a .. o.b on its middle line, its faces A and B, its type */
 function openingSvg(o, sx, sy, sel) {
@@ -993,11 +1009,34 @@ function openingSvg(o, sx, sy, sel) {
   let g = `<polygon points="${P(o.A[0])} ${P(o.A[1])} ${P(o.B[1])} ${P(o.B[0])}" fill="#fff" stroke="none" pointer-events="none" />`;
   const L = Math.hypot(o.b[0] - o.a[0], o.b[1] - o.a[1]);
   const d = { H: o.hinge === "end" ? o.b : o.a, O: o.hinge === "end" ? o.a : o.b, sn: [Math.round(o.nl[0] * (o.swing === "out" ? -1 : 1) * 1000) / 1000, Math.round(o.nl[1] * (o.swing === "out" ? -1 : 1) * 1000) / 1000], w: L, type: o.type || "door" };
-  if (d.type === "cw") { g += `<line x1="${sx(o.a[0])}" y1="${sy(o.a[1])}" x2="${sx(o.b[0])}" y2="${sy(o.b[1])}" stroke="${sel ? st : "#2b6cb0"}" stroke-width="${Math.max(1, SC * 0.03)}" pointer-events="none" />`; const k = Math.max(1, Math.round(L / 1.5)); for (let i = 0; i <= k; i++) { const p = [o.A[0][0] + (o.A[1][0] - o.A[0][0]) * i / k, o.A[0][1] + (o.A[1][1] - o.A[0][1]) * i / k], q = [o.B[0][0] + (o.B[1][0] - o.B[0][0]) * i / k, o.B[0][1] + (o.B[1][1] - o.B[0][1]) * i / k]; g += `<line x1="${sx(p[0])}" y1="${sy(p[1])}" x2="${sx(q[0])}" y2="${sy(q[1])}" stroke="#222" stroke-width="2.5" pointer-events="none" />`; } return g; }
+  if (d.type === "cw") { const dx = (o.b[0] - o.a[0]) / (L || 1), dy = (o.b[1] - o.a[1]) / (L || 1); return g + cwSvg((ss, nn) => [o.a[0] + dx * ss - dy * nn, o.a[1] + dy * ss + dx * nn], L, o.t || 0.2, sx, sy, sel); }
   return g + doorSvg(d, 0, 0, o.t, sx, sy, sel);
 }
 /* a staircase in its clear inside: a dog-leg (two flights along the longer side, the well, landings at both ends; "dogleg2" with two
    risers across the half landing) or a scissor (two single flights side by side, opposite ways, an RC wall between); UP / DN, a break line */
+/* a lift in its clear shaft (X, Y, W, H on the plan): the car with its clearances, the counterweight on its rails at the
+   back (the side away from its door), the car's guide rails at its sides */
+function liftSvg(c, X, Y, W, H) {
+  const side = ((c.doors || []).find((d) => d.slide || d.type === "lift") || (c.doors || [])[0] || {}).side || "s";
+  // in the shaft's own terms: f the depth from the door, s across
+  const vert = side === "n" || side === "s", D = vert ? H : W, Wd = vert ? W : H, k = SC;
+  const cwD = Math.min(0.32 * k, D * 0.16), gap = Math.min(0.08 * k, Wd * 0.05), front = Math.min(0.06 * k, D * 0.04);
+  const R = (f0, f1, s0, s1) => { let x0, x1, y0, y1; if (vert) { x0 = X + s0; x1 = X + s1; if (side === "s") { y0 = Y + H - f1; y1 = Y + H - f0; } else { y0 = Y + f0; y1 = Y + f1; } } else { y0 = Y + s0; y1 = Y + s1; if (side === "e") { x0 = X + W - f1; x1 = X + W - f0; } else { x0 = X + f0; x1 = X + f1; } } return [x0, y0, x1 - x0, y1 - y0]; };
+  const rect = (q, ex) => `<rect x="${q[0]}" y="${q[1]}" width="${Math.max(0, q[2])}" height="${Math.max(0, q[3])}" ${ex} pointer-events="none" />`;
+  let g = "";
+  // the car
+  const car = R(front, D - cwD - gap, gap * 1.5, Wd - gap * 1.5);
+  g += rect(car, 'fill="#f3f2fb" stroke="#444" stroke-width="0.8"');
+  g += rect(R(front + 2, D - cwD - gap - 2, gap * 1.5 + 2, Wd - gap * 1.5 - 2), 'fill="none" stroke="#999" stroke-width="0.4"');
+  // the counterweight, hatched, on its two rails
+  const cwW = Wd * 0.55, s0 = (Wd - cwW) / 2;
+  g += rect(R(D - cwD + gap * 0.3, D - gap * 0.6, s0, s0 + cwW), 'fill="url(#fl-rc)" stroke="#333" stroke-width="0.6"');
+  for (const sR of [s0 - 2.5, s0 + cwW + 0.5]) g += rect(R(D - cwD + gap * 0.1, D - gap * 0.4, sR, sR + 2), 'fill="#333"');
+  // the car's guide rails, half way along its sides
+  const fm = (front + D - cwD - gap) / 2;
+  for (const sR of [gap * 0.3, Wd - gap * 1.2]) g += rect(R(fm - 3, fm + 3, sR, sR + gap * 0.9), 'fill="#333"');
+  return g;
+}
 function stairSvg(st, X, Y, W, H) {
   if (!st) return "";
   const along = H >= W, L = along ? H : W, A = along ? W : H;
@@ -1005,22 +1044,27 @@ function stairSvg(st, X, Y, W, H) {
   let g = "";
   const P = (u, v) => (along ? [X + v, Y + u] : [X + u, Y + v]);
   const line = (u1, v1, u2, v2, w = 0.6, extra = "") => { const [a, b] = P(u1, v1), [c, d] = P(u2, v2); return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#222" stroke-width="${w}"${extra} />`; };
-  const ar = (u1, u2, v, lab) => { const [a, b] = P(u1, v), [c, d] = P(u2, v); const ang = Math.atan2(d - b, c - a), hx = c - 5 * Math.cos(ang - 0.5), hy = d - 5 * Math.sin(ang - 0.5), jx = c - 5 * Math.cos(ang + 0.5), jy = d - 5 * Math.sin(ang + 0.5); return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#a5642a" stroke-width="0.8" /><path d="M ${hx} ${hy} L ${c} ${d} L ${jx} ${jy}" fill="none" stroke="#a5642a" stroke-width="0.8" /><text x="${a}" y="${b}" font-size="7" fill="#a5642a" dx="2" dy="-2">${lab}</text>`; };
+  // an arrow from its start (a dot, its label by it) to its head
+  const ar = (u1, u2, v, lab) => { const [a, b] = P(u1, v), [c, d] = P(u2, v); const ang = Math.atan2(d - b, c - a), hx = c - 6 * Math.cos(ang - 0.45), hy = d - 6 * Math.sin(ang - 0.45), jx = c - 6 * Math.cos(ang + 0.45), jy = d - 6 * Math.sin(ang + 0.45); return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#a5642a" stroke-width="0.9" /><path d="M ${hx} ${hy} L ${c} ${d} L ${jx} ${jy} Z" fill="#a5642a" stroke="#a5642a" stroke-width="0.6" /><circle cx="${a}" cy="${b}" r="1.8" fill="#a5642a" /><text x="${a}" y="${b}" font-size="7" font-weight="600" fill="#a5642a" dx="${along ? 3 : -2}" dy="${along ? 3 : -3}"${along ? "" : ' text-anchor="end"'}>${lab}</text>`; };
   const [wx, wy] = P(land, fw), [ww, wh] = along ? [wl, run] : [run, wl];
-  const brk = (v0, v1) => { const [b1x, b1y] = P(land + run * 0.55, v0), [b2x, b2y] = P(land + run * 0.45, v1); return `<line x1="${b1x}" y1="${b1y}" x2="${b2x}" y2="${b2y}" stroke="#222" stroke-width="0.9" />`; };
+  // the break line: a zig-zag across the flight where the plan cuts it (the treads beyond are above the cut: dashed)
+  const uB = land + run * 0.5;
+  const brk = (v0, v1) => { const dv = v1 - v0, z = Math.min(run * 0.1, Math.abs(dv) * 0.35), pts = [[uB + z * 2, v0], [uB + z * 0.6, v0 + dv * 0.42], [uB + z * 1.6, v0 + dv * 0.5], [uB - z * 0.6, v0 + dv * 0.58], [uB - z * 2, v1]].map(([u, v]) => P(u, v)); return `<polyline points="${pts.map((q) => q.join(",")).join(" ")}" fill="none" stroke="#fff" stroke-width="3" /><polyline points="${pts.map((q) => q.join(",")).join(" ")}" fill="none" stroke="#222" stroke-width="1.1" />`; };
+  const tread = (u, v0, v1, cut) => line(u, v0, u, v1, 0.5, cut && u < uB ? ' stroke-dasharray="2 1.5" stroke-opacity="0.7"' : "");
   g += line(land, 0, land, A, 0.8) + line(land + run, 0, land + run, A, 0.8);
   if (st.type === "scissor") {
     g += `<rect x="${wx}" y="${wy}" width="${ww}" height="${wh}" fill="url(#fl-rc)" stroke="#222" stroke-width="0.8" />`;
-    for (let i = 1; i < st.t1; i++) { const u = land + i * run / st.t1; g += line(u, 0, u, fw, 0.5) + line(u, fw + wl, u, A, 0.5); }
-    g += ar(land + run * 0.95, land + run * 0.08, fw / 2, "UP A") + ar(land + run * 0.05, land + run * 0.92, fw + wl + fw / 2, "UP B");
+    for (let i = 1; i < st.t1; i++) { const u = land + i * run / st.t1; g += tread(u, 0, fw, true) + line(u, fw + wl, u, A, 0.5, u > land + run - (uB - land) ? ' stroke-dasharray="2 1.5" stroke-opacity="0.7"' : ""); }
     g += brk(0, fw) + brk(fw + wl, A);
+    g += ar(land + run * 0.95, uB + run * 0.04, fw / 2, "UP A") + ar(land + run * 0.05, uB - run * 0.04, fw + wl + fw / 2, "UP B");
   } else {
     g += `<rect x="${wx}" y="${wy}" width="${ww}" height="${wh}" fill="#fff" stroke="#222" stroke-width="0.8" />`;
-    for (let i = 1; i < st.t1; i++) g += line(land + i * run / st.t1, 0, land + i * run / st.t1, fw, 0.5);
-    for (let i = 1; i < st.t2; i++) g += line(land + i * run / st.t2, fw + wl, land + i * run / st.t2, A, 0.5);
+    for (let i = 1; i < st.t1; i++) g += tread(land + i * run / st.t1, 0, fw, true);
+    for (let i = 1; i < st.t2; i++) g += tread(land + i * run / st.t2, fw + wl, A, false);
     if (st.land2) g += line(0, fw, land, fw, 0.5) + line(0, fw + wl, land, fw + wl, 0.5);
-    g += ar(land + run * 0.95, land + run * 0.1, fw / 2, "UP") + ar(land + run * 0.1, land + run * 0.95, fw + wl + fw / 2, "DN");
     g += brk(0, fw);
+    // UP from the floor's landing to the break; DN from the floor's landing down the other flight
+    g += ar(land + run * 0.95, uB + run * 0.05, fw / 2, "UP") + ar(land + run * 0.95, land + run * 0.08, fw + wl + fw / 2, "DN");
   }
   const [lx, ly] = P(land / 2, st.land2 ? A / 4 : A / 2);
   g += `<text x="${lx}" y="${ly + 3}" text-anchor="middle" font-size="7" fill="#333" pointer-events="none">${st.risers}R@${Math.round(st.riser * 1000)} · ${Math.round(st.going * 1000)}G</text>`;
@@ -1162,25 +1206,66 @@ function typedPoint() {
   drawPlan();
 }
 /* a point being drawn: onto a wall's end or face end, the plate's corners, else held to 15° steps from the last (Shift: free) */
-function drawPt(ev) {
-  const P = toPlan(ev), W = WALLDRAW, last = W && W.pts[W.pts.length - 1], tol = 12 / SC;
-  const cands = [...LAST.F.poly];
-  for (const w of LAST.walls || []) {
-    cands.push(...w.path);
-    const [oa, ob] = WC.offsets(w.t, w.just);
-    for (const o of [oa, ob]) { const q = WC.offsetPath(w.path, o); cands.push(q[0], q[q.length - 1]); }
+/* what a wall's point snaps to, in the plate frame (worked out once a layout): the corners and faces of the units'
+   walls (their outer faces, the balconies left out), of the core's walls, the corridor's sides, the plate, the floor walls */
+let SNAPG = null;
+function snapGeo() {
+  if (SNAPG && SNAPG.r === LAST) return SNAPG;
+  const pts = [], segs = [], quad = (Q) => { pts.push(...Q); for (let k = 0; k < Q.length; k++) segs.push([Q[k], Q[(k + 1) % Q.length]]); };
+  quad(LAST.F.poly);
+  for (const l of legs()) {
+    const r = l.r, cw = r.coreWall || 0.25;
+    const rect = (x0, y0, x1, y1) => quad([[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((q) => fromLeg(l, q)));
+    for (const q of r.placed) { const g2 = (q.wt || 0.15) / 2; for (const rm of q.rooms) rect(q.x + rm.x - g2, q.y + rm.y - g2, q.x + rm.x + rm.w + g2, q.y + rm.y + rm.h + g2); }
+    for (const c of r.core) if (c.kind !== "passage") { const t = (Number(c.wt) > 0 ? Number(c.wt) : cw) / 2; rect(c.x - t, c.y - t, c.x + c.w + t, c.y + c.h + t); rect(c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t); }
+    if (r.corr) rect(r.corr.x0, r.y0, r.corr.x1, r.y1);
   }
-  if (W && W.kind !== "wall") cands.push(...LAST.spine.path);
-  if (W) cands.push(...W.pts.slice(0, -1));
-  if (SNAP() && !ev.altKey) { let best = null, bd = tol; for (const c of cands) { const d = Math.hypot(c[0] - P[0], c[1] - P[1]); if (d < bd) { bd = d; best = c; } } if (best) return [R3(best[0]), R3(best[1])]; }
+  for (const w of LAST.walls || []) {
+    pts.push(...w.path);
+    const [oa, ob] = WC.offsets(w.t, w.just);
+    for (const o of [oa, ob]) { const q = WC.offsetPath(w.path, o); pts.push(q[0], q[q.length - 1]); for (let k = 0; k < q.length - 1; k++) segs.push([q[k], q[k + 1]]); }
+  }
+  return (SNAPG = { r: LAST, pts, segs });
+}
+/* a plan point snapped: to a corner near it; else where the line from the last point (in 15° steps) meets a face near it;
+   else onto a face near it; else the 15° step and a length in 50 mm. Alt: free; Shift: any angle */
+function snapPoint(P, last, ev, extra) {
+  const tol = 12 / SC, free = !SNAP() || ev.altKey;
+  if (!free) {
+    const G = snapGeo(), cands = [...G.pts, ...(extra || [])];
+    let best = null, bd = tol;
+    for (const c of cands) { const d = Math.hypot(c[0] - P[0], c[1] - P[1]); if (d < bd) { bd = d; best = c; } }
+    if (best) return [R3(best[0]), R3(best[1])];
+    // the line from the last point at its angle step, to where it meets a face
+    if (last && !ev.shiftKey) {
+      const q0 = WC.snapAngle(last, P, 15), d = WC.dirOf(last, q0).d; let bt = null, bd2 = tol;
+      for (const [a, b] of G.segs) {
+        const ex = b[0] - a[0], ey = b[1] - a[1], den = d[0] * ey - d[1] * ex; if (Math.abs(den) < 1e-9) continue;
+        const t = ((a[0] - last[0]) * ey - (a[1] - last[1]) * ex) / den, u = ((a[0] - last[0]) * d[1] - (a[1] - last[1]) * d[0]) / den;
+        if (t <= 0.05 || u < -1e-6 || u > 1 + 1e-6) continue;
+        const X = [last[0] + d[0] * t, last[1] + d[1] * t], dd = Math.hypot(X[0] - q0[0], X[1] - q0[1]); if (dd < bd2) { bd2 = dd; bt = X; }
+      }
+      if (bt) return [R3(bt[0]), R3(bt[1])];
+    }
+    // onto the face nearest
+    let bs = null, bd3 = tol;
+    for (const [a, b] of G.segs) { const q = WC.nearestOnPath(P, [a, b]); if (q && q.d < bd3) { bd3 = q.d; bs = q.p; } }
+    if (bs && !last) return [R3(bs[0]), R3(bs[1])];
+    if (bs && last && ev.shiftKey) return [R3(bs[0]), R3(bs[1])];
+  }
   let q = last && !ev.shiftKey ? WC.snapAngle(last, P, 15) : P;
-  if (SNAP() && !ev.altKey && last) { const L = Math.hypot(q[0] - last[0], q[1] - last[1]), L2 = Math.round(L * 20) / 20, d = WC.dirOf(last, q).d; q = [last[0] + d[0] * L2, last[1] + d[1] * L2]; }
-  else if (!last) q = [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20];
+  if (!free && last) { const L = Math.hypot(q[0] - last[0], q[1] - last[1]), L2 = Math.round(L * 20) / 20, d = WC.dirOf(last, q).d; q = [last[0] + d[0] * L2, last[1] + d[1] * L2]; }
+  else if (!free && !last) q = [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20];
   return [R3(q[0]), R3(q[1])];
+}
+function drawPt(ev) {
+  const P = toPlan(ev), W = WALLDRAW, last = W && W.pts[W.pts.length - 1];
+  const extra = [...(W && W.kind !== "wall" ? LAST.spine.path : []), ...(W ? W.pts.slice(0, -1) : [])];
+  return snapPoint(P, last, ev, extra);
 }
 
 /* ---------- openings: dropped from the library, added by right-click, slid along their walls */
-const LIBTYPE = { door: "door", door2: "door2", doorU: "door2", sliding: "sliding", sliding2: "sliding2", opening: "opening", window: "window", cw: "cw" };
+const LIBTYPE = { door: "door", door2: "door2", doorU: "door2", sliding: "sliding", sliding2: "sliding2", opening: "opening", panel: "panel", window: "window", cw: "cw" };
 /* where an opening would go at a plate-frame point: on a core piece's face, or a floor wall */
 function openingTarget(P, w) {
   for (const l of legs()) {
@@ -1395,7 +1480,10 @@ function wirePlan() {
       DRAG.box = b;
     } else if (DRAG.k === "fwpt" || DRAG.k === "fwseg") {
       const w = LAST.walls[DRAG.i], P = w.path.map((q) => q.slice());
-      const mv = (k) => { const p0 = w.path[k]; let q = [p0[0] + dx / SC, p0[1] + dy / SC]; if (DRAG.k === "fwpt" && !ev.shiftKey) { const nb = P[k - 1] || P[k + 1]; if (nb) q = WC.snapAngle(nb, q, 15); } P[k] = snap ? [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20] : [R3(q[0]), R3(q[1])]; };
+      const mv = (k) => { const p0 = w.path[k]; let q = [p0[0] + dx / SC, p0[1] + dy / SC];
+        // a point dragged: snapped as when drawing (to the units' and core's faces and corners); a segment moved: by 50 mm
+        if (DRAG.k === "fwpt") { P[k] = snapPoint(q, P[k - 1] || P[k + 1] || null, ev); return; }
+        P[k] = snap ? [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20] : [R3(q[0]), R3(q[1])]; };
       if (DRAG.k === "fwpt") mv(DRAG.p); else { mv(DRAG.p); mv(DRAG.p + 1); }
       DRAG.path = P;
     } else if (DRAG.k === "spsel") {
@@ -1505,11 +1593,20 @@ function removeCorner(i) {
 /* the plate's rectangle round itself, its units and core (the frame's axes) */
 function fitPlate() {
   const r = LAST; if (!r) return;
-  const pts = [...r.F.poly];
-  for (const l of legs()) { for (const q of l.r.placed) pts.push(fromLeg(l, [q.x, q.y]), fromLeg(l, [q.x + q.w, q.y + q.h]), fromLeg(l, [q.x + q.w, q.y]), fromLeg(l, [q.x, q.y + q.h])); for (const c of l.r.core) pts.push(fromLeg(l, [c.x, c.y]), fromLeg(l, [c.x + c.w, c.y + c.h])); }
-  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
-  const a = Math.min(...xs), b = Math.max(...xs), c = Math.min(...ys), d = Math.max(...ys);
-  editPlate(() => [[a, c], [b, c], [b, d], [a, d]]);
+  // the plate drawn close round the units (out to their walls' outer faces; balconies, UP and A/C platforms left out),
+  // the core and the corridor, gaps narrower than the fit gap closed
+  const shapes = [];
+  for (const l of legs()) {
+    const L = l.r, cw = L.coreWall || 0.25, rect = (x0, y0, x1, y1) => shapes.push([[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((q) => fromLeg(l, q)));
+    for (const q of L.placed) { const g2 = (q.wt || 0.15) / 2; for (const rm of q.rooms) rect(q.x + rm.x - g2, q.y + rm.y - g2, q.x + rm.x + rm.w + g2, q.y + rm.y + rm.h + g2); }
+    for (const c of L.core) if (c.kind !== "passage") { const t = (Number(c.wt) > 0 ? Number(c.wt) : cw) / 2; rect(c.x - t, c.y - t, c.x + c.w + t, c.y + c.h + t); }
+    else for (const q of c.rects || []) rect(q.x0, q.y0, q.x1, q.y1);
+    if (L.corr) rect(L.corr.x0, L.y0, L.corr.x1, L.y1);
+  }
+  const gap = Number(opts(cur()).fitGap); 
+  const ring = FC.hugOutline(shapes, gap >= 0 && isFinite(gap) ? gap : 0.5);
+  if (!ring) return toast("Nothing on the floor to fit the plate round", true);
+  editPlate(() => ring);
 }
 export function refresh() { if (ON) render(); }
 void UC;

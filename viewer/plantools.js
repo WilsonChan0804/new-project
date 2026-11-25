@@ -20,6 +20,7 @@ export const OPENINGS = [
   { id: "sliding", icon: "sliding", label: "Sliding, 1 leaf", w: 1.2 },
   { id: "sliding2", icon: "sliding", label: "Sliding, 2 leaves", w: 2.0 },
   { id: "opening", icon: "opening", label: "Opening", w: 0.9 },
+  { id: "panel", icon: "panel", label: "Access panel", w: 0.6 },
   { id: "window", icon: "window", label: "Window", w: 1.2 },
   { id: "cw", icon: "window", label: "Curtain wall", w: 3.0 },
 ];
@@ -83,6 +84,7 @@ export function tileSvg(id) {
   else if (id === "sliding") g += `<rect x="12" y="27.5" width="18" height="2.5" fill="#fff" stroke="${W}"/><rect x="26" y="30" width="18" height="2.5" fill="#eef4fa" stroke="${W}"/>` + L(16, 22, 26, 22, 0.8);
   else if (id === "sliding2") g += `<rect x="12" y="27.5" width="17" height="2.5" fill="#fff" stroke="${W}"/><rect x="27" y="30" width="17" height="2.5" fill="#fff" stroke="${W}"/>` + L(24, 22, 16, 22, 0.8) + L(32, 38, 40, 38, 0.8);
   else if (id === "opening") g += L(12, 27, 12, 33) + L(44, 27, 44, 33) + `<line x1="12" y1="30" x2="44" y2="30" stroke="${W}" stroke-width=".6" stroke-dasharray="2 2"/>`;
+  else if (id === "panel") g += `<rect x="12" y="27" width="32" height="6" fill="#fff"/>` + L(12, 28, 44, 28, 0.7) + L(12, 30, 44, 30, 0.7) + L(12, 32, 44, 32, 0.7) + `<text x="28" y="22" font-size="7" text-anchor="middle" fill="${W}">AP</text>`;
   else if (id === "window") g += `<rect x="12" y="27" width="32" height="6" fill="#fff" stroke="${W}"/>` + L(12, 29.4, 44, 29.4, 0.6) + L(12, 30.6, 44, 30.6, 0.6);
   else if (id === "cw") g += `<rect x="12" y="28.5" width="32" height="3" fill="#dbe9f7" stroke="#2b6cb0"/>` + L(12, 27, 12, 33, 2) + L(28, 27, 28, 33, 2) + L(44, 27, 44, 33, 2);
   return `<svg viewBox="0 0 56 44" width="56" height="44">${g}</svg>`;
