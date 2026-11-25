@@ -6,6 +6,18 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-31", date: "1 Dec 2026",
+    items: [
+      "**Schemes A, B, C** in 2 · Massing: save the massing (with its floors) as a scheme, change it, save another, then **Compare** them side by side - GFA, PR, SC, height, flats, mix, saleable, efficiency, the 10% cap - the best of each row in green. Open a scheme to carry on from it (Undo brings back the one before).",
+      "**Target mix** on 4 · Floors: give the shares by type (studio, 1-, 2-, 3-room) and the flats a floor (or as many as fit); **Fill to target** chooses the unit mix and lays the floor out again, and shows target against laid out, with the yield.",
+      "**Dimensions on 4 · Floors**: the plate overall, the units' widths along each side of the corridor and the corridor's clear width (on / off in the toolbar).",
+      "**Exports**: the typical floor as **DXF or DWG** (walls, doors, rooms, balconies, furniture, labels on their layers), the **unit and area schedules** in Excel; on 3 · Units a **brochure page** for this unit or all of them (A4: the plan with furniture and dimensions, the areas, a north point - print or save as PDF) and a unit schedule in Excel.",
+      "**Furniture**: single, double and queen beds, 2- and 3-seat sofas, dining for 4 or 6, TV and shoe cabinets, wardrobes and desks in 3 · Units (R turns one); shown faint on 4 · Floors (on / off) and as low boxes in its 3D.",
+      "**Sun and shadow study** in 2 · Massing 3D: choose the day (equinoxes, 21 Jun, 21 Dec) and the time, or play the day - the sun is placed for Hong Kong, the shadows fall on the site and the buildings around.",
+      "**Fixed**: a door dropped on a core piece's door now replaces it (no double lobby door); a unit's doors are drawn in their walls as built (no frame off a partition); pulling the corridor's end out no longer moves the units, and its end snaps to a wall's face; the lower floors in 3D leave out the balconies, UP and A/C platforms, which show as themselves.",
+    ],
+  },
+  {
     version: "2027-03-30", date: "30 Nov 2026",
     items: [
       "**Fit plate on the walls' faces** - the fitted plate now lies exactly on the units' external walls' outer faces and the core's walls (no strip left outside them); gaps under the fit gap are still closed.",

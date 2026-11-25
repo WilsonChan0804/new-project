@@ -188,6 +188,8 @@ export const LEGEND_ITEMS = {
     { svg: SW.fill("#e3edf9", "#7fa6d6", "3 2"), label: "Lift lobby exempt (JPN 1)" },
     { svg: SW.hatch("#f6e7c4", "#d9b56a"), label: "E&M left over (exempt, to check)" },
     { svg: SW.fill("#dfe9f3", "#3c4650", "4 2"), label: "Balcony / UP / A/C platform" },
+    { svg: `<rect x="5" y="2" width="14" height="13" fill="#fff" stroke="#2a2f35" stroke-width="0.6" opacity="0.6"/><rect x="7" y="3" width="4" height="2" fill="none" stroke="#2a2f35" stroke-width="0.5" opacity="0.6"/><rect x="13" y="3" width="4" height="2" fill="none" stroke="#2a2f35" stroke-width="0.5" opacity="0.6"/>`, label: "Fittings and furniture (from 3 · Units, faint)" },
+    { svg: `<line x1="3" y1="9" x2="21" y2="9" stroke="#333" stroke-width="0.7"/><line x1="1.5" y1="10.5" x2="4.5" y2="7.5" stroke="#333"/><line x1="19.5" y1="10.5" x2="22.5" y2="7.5" stroke="#333"/><text x="12" y="7" font-size="5" text-anchor="middle">5.100</text>`, label: "Dimension (m)" },
     "Core",
     { svg: `${SW.fill("#e5e1f5", "#444")}<rect x="7" y="3" width="14" height="3" fill="#d9dce0" stroke="#333" stroke-width="0.5"/>`, label: "Lift: car, counterweight at the back" },
     { svg: `${SW.fill("#fff", "#222")}<polyline points="8,13 8,4 20,4 20,13" fill="none" stroke="#a5642a" stroke-width="1"/><circle cx="8" cy="13" r="1.3" fill="#a5642a"/>`, label: "Staircase: UP / DN walking line, break line" },
