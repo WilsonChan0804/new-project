@@ -123,7 +123,8 @@ export function init(ctx) {
     { keys: "Wheel / pinch", label: "Zoom", group: "View" }, { keys: "Drag the empty plan", label: "Pan", group: "View" },
   ], "4 · Floors");
   // for the browser tests: the layout, and a plan point on the screen
-  window.__floors = { last: () => LAST, screen: (p) => { const b = $("#st-fplan").getBoundingClientRect(); return [b.left + OX + (p[0] - X0) * SC, b.top + OY + (p[1] - Y0) * SC]; }, leg: (k, p) => fromLeg(legK(k), p) };
+  window.__floors = { last: () => LAST, screen: (p) => { const b = $("#st-fplan").getBoundingClientRect(); return [b.left + OX + (p[0] - X0) * SC, b.top + OY + (p[1] - Y0) * SC]; }, leg: (k, p) => fromLeg(legK(k), p),
+    drop: (P, type, w) => addOpening(openingTarget(P, w), type, w), spine: (fn) => editSpine(fn), FC };
   // digits typed while drawing: the next segment's length
   document.addEventListener("keydown", (ev) => {
     if (!ON || !WALLDRAW || !WALLDRAW.pts.length || ev.target.closest("input,select,textarea")) return;
@@ -925,7 +926,10 @@ function drawLeg(l, SX, SY, fs, PTW) {
   for (const ln of outlineOf(WR)) g += `<line x1="${sx(ln.x1)}" y1="${sy(ln.y1)}" x2="${sx(ln.x2)}" y2="${sy(ln.y2)}" stroke="${ln.k === "join" ? "#666" : "#111"}" stroke-width="${ln.k === "join" ? 0.4 : ln.k === "blk" ? LWf * 0.75 : LWf}" stroke-linecap="square" pointer-events="none" />`;
   // the doors: the units' and the core's, by their type
   const D = (d, ox, oy, t, sel) => doorSvg(d, ox, oy, t, sx, sy, sel);
-  for (const [li, q] of r.placed.entries()) for (const d of q.doors || []) g += D(d, uview[li].x, uview[li].y, q.wt || 0.15);
+  for (const [li, q] of r.placed.entries()) {
+    const rects = (q.doors || []).length ? FC.placedWalls(q, { x: 0, y: 0 }).rects : [];
+    for (const d of q.doors || []) { const a = FC.doorOnWall(d, rects, q.wt || 0.15); g += D(a.d, uview[li].x, uview[li].y, a.t); }
+  }
   // the windows and the curtain walls in the units' external walls
   for (const [li, q] of r.placed.entries()) {
     if (!(q.ops || []).length) continue;
@@ -1237,10 +1241,15 @@ function snapGeo() {
   for (const l of legs()) {
     const r = l.r, cw = r.coreWall || 0.25;
     const rect = (x0, y0, x1, y1) => quad([[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((q) => fromLeg(l, q)));
-    for (const q of r.placed) { const g2 = (q.wt || 0.15) / 2; for (const rm of q.rooms) rect(q.x + rm.x - g2, q.y + rm.y - g2, q.x + rm.x + rm.w + g2, q.y + rm.y + rm.h + g2); }
+    for (const q of r.placed) {
+      const g2 = (q.wt || 0.15) / 2; for (const rm of q.rooms) rect(q.x + rm.x - g2, q.y + rm.y - g2, q.x + rm.x + rm.w + g2, q.y + rm.y + rm.h + g2);
+      // the walls as built (their real faces)
+      for (const w of FC.placedWalls(q, { x: q.x, y: q.y }).rects) rect(w.x0, w.y0, w.x1, w.y1);
+    }
     // a core piece's box is out to its walls' outer faces; their inner faces a wall in
     for (const c of r.core) if (c.kind !== "passage") { const t = Number(c.wt) > 0 ? Number(c.wt) : cw; rect(c.x, c.y, c.x + c.w, c.y + c.h); rect(c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t); }
-    if (r.corr) rect(r.corr.x0, r.y0, r.corr.x1, r.y1);
+    // the corridor's own box (marked, so its end is not snapped to itself)
+    if (r.corr) { const n0 = segs.length; rect(r.corr.x0, r.y0, r.corr.x1, r.y1); for (let k = n0; k < segs.length; k++) segs[k][0] = Object.assign(segs[k][0].slice(), { corr: true }); }
   }
   for (const w of LAST.walls || []) {
     pts.push(...w.path);
@@ -1314,8 +1323,17 @@ function nearestFace(c, p) {
 function addOpening(tg, type, w) {
   if (!tg) return toast("Drop it on a wall: a core piece's or one drawn on the floor (a unit's doors are edited in 3 · Units)", true);
   if (tg.kind === "wall") return editWalls((A) => { const wl = A[tg.wi]; wl.openings = Array.isArray(wl.openings) ? wl.openings : []; wl.openings.push({ seg: tg.seg, at: tg.at, w: R3(w), type }); OPSEL = { wi: tg.wi, oi: wl.openings.length - 1 }; return null; });
-  const i = pIdx(tg.ci);
-  return editCore((P) => { const q = P[i]; q.openings = Array.isArray(q.openings) ? q.openings : []; q.openings.push({ side: tg.side, at: tg.at, w: R3(w), type }); return i; });
+  const i = pIdx(tg.ci), c = LAST.core[tg.ci];
+  // dropped on a door already there (its own, or one added): that one becomes this, not a second one over it
+  const t = Number(c.wt) > 0 ? Number(c.wt) : LAST.coreWall || 0.25, L = ((tg.side === "n" || tg.side === "s") ? c.w : c.h) - 2 * t;
+  const hit = (c.doors || []).find((d) => d.side === tg.side && Math.abs(atOnFace(c, d) - tg.at) * L < (w + (d.w || 0.9)) / 2 - 0.02);
+  return editCore((P) => {
+    const q = P[i]; q.openings = Array.isArray(q.openings) ? q.openings : [];
+    if (hit && hit.oi != null && q.openings[hit.oi]) Object.assign(q.openings[hit.oi], { side: tg.side, at: tg.at, w: R3(w), type });
+    else if (hit) q.door = Object.assign({}, q.door, { side: tg.side, at: tg.at, type });
+    else q.openings.push({ side: tg.side, at: tg.at, w: R3(w), type });
+    return i;
+  });
 }
 function libOver(item, ev) {
   if (!ON || VIEW !== "plan" || !LAST) return;
@@ -1529,6 +1547,18 @@ function wirePlan() {
       const sp = LAST.spine.path.map((q) => q.slice()), p0 = sp[DRAG.p], nb = sp[DRAG.p - 1] || sp[DRAG.p + 1];
       let q = [p0[0] + dx / SC, p0[1] + dy / SC];
       if (!ev.shiftKey && nb) q = WC.snapAngle(nb, q, 15);
+      // along its line, onto a face near it (a unit's or the core's wall, a wall drawn, the plate's edge): an end put on a wall's face
+      if (nb && SNAP() && !ev.altKey) {
+        const G = snapGeo(), dl = WC.dirOf(nb, q).d, tol = 12 / SC; let bt = null, bd = tol;
+        for (const [a, b] of G.segs) {
+          if (a.corr) continue;
+          const ex = b[0] - a[0], ey = b[1] - a[1], den = dl[0] * ey - dl[1] * ex; if (Math.abs(den) < 1e-9) continue;
+          const t = ((a[0] - nb[0]) * ey - (a[1] - nb[1]) * ex) / den, u = ((a[0] - nb[0]) * dl[1] - (a[1] - nb[1]) * dl[0]) / den;
+          if (t <= 0.5 || u < -1e-6 || u > 1 + 1e-6) continue;
+          const X = [nb[0] + dl[0] * t, nb[1] + dl[1] * t], dd = Math.hypot(X[0] - q[0], X[1] - q[1]); if (dd < bd) { bd = dd; bt = X; }
+        }
+        if (bt) q = bt;
+      }
       sp[DRAG.p] = [R3(q[0]), R3(q[1])];
       DRAG.path = sp;
     } else if (DRAG.k === "ppt") {

@@ -76,17 +76,23 @@ function scene(THREE, Orbit, host) {
     const legGroup = (l) => { const g = new THREE.Group(); g.position.set(l.xf.ox, -l.xf.oy, 0); g.rotation.z = -l.xf.ang; grp.add(g); return g; };
     const LG = legs.map(legGroup);
     // the lower floors: a slab, a box a unit, the core all the way up
+    const later = [];
     for (let k = 0; k < lower; k++) {
       const z = k * H;
       slab(grp, r.F.poly, z, z + sl, mat(0xc9ced4));
       legs.forEach((l, li) => {
         for (const q of l.r.placed) {
-          box(LG[li], q.x, q.y, q.x + q.w, q.y + q.h, z + sl, z + H, mat(colOf.get(q.name), 0.92), true);
+          // its body (the rooms), not its box: the balcony, UP and A/C platform are not in it, but drawn as themselves
+          for (const rm of q.rooms) box(LG[li], q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h, z + sl, z + H, mat(colOf.get(q.name), 0.92), true);
+          for (const e of q.extras || []) later.push(() => extra3d(LG[li], q, e, z + sl));
           // its windows and curtain walls on the outside, as glass a little proud of the box
           for (const o of q.ops || []) {
             const ax = q.x + o.a[0], ay = q.y + o.a[1], bx = q.x + o.b[0], by = q.y + o.b[1], vv = Math.abs(ax - bx) < 1e-6, za = z + sl + (o.k === "win" ? 0.9 : 0), zb = z + sl + (o.k === "win" ? 2.2 : H - sl - 0.2);
-            const out = vv ? (Math.abs(ax - q.x) < Math.abs(ax - q.x - q.w) ? -1 : 1) : (Math.abs(ay - q.y) < Math.abs(ay - q.y - q.h) ? -1 : 1);
-            const c = vv ? (out < 0 ? q.x : q.x + q.w) : (out < 0 ? q.y : q.y + q.h), e2 = 0.02 * out;
+            // on the rooms' face it is in, a little proud on the side away from the rooms
+            const mx = (ax + bx) / 2, my = (ay + by) / 2, inR = (px, py) => q.rooms.some((rm) => px > q.x + rm.x && px < q.x + rm.x + rm.w && py > q.y + rm.y && py < q.y + rm.y + rm.h);
+            const out = vv ? (inR(mx - 0.1, my) ? 1 : -1) : (inR(mx, my - 0.1) ? 1 : -1);
+            const w0 = FC.placedWalls(q).rects.find((w) => mx >= w.x0 - 0.02 && mx <= w.x1 + 0.02 && my >= w.y0 - 0.02 && my <= w.y1 + 0.02);
+            const c = w0 ? (vv ? (out > 0 ? w0.x1 : w0.x0) : (out > 0 ? w0.y1 : w0.y0)) : vv ? ax : ay, e2 = 0.02 * out;
             if (vv) box(LG[li], Math.min(c, c + e2), Math.min(ay, by), Math.max(c, c + e2), Math.max(ay, by), za, zb, mat(0x8fc3ea, 0.6));
             else box(LG[li], Math.min(ax, bx), Math.min(c, c + e2), Math.max(ax, bx), Math.max(c, c + e2), za, zb, mat(0x8fc3ea, 0.6));
           }
@@ -164,6 +170,7 @@ function scene(THREE, Orbit, host) {
         else { for (let p = s0 + 0.05; p < s1 - 0.02; p += 0.1) B(p - 0.012, p + 0.012, z0 + 0.05, z0 + 1.0, louvreM, 0.04); B(s0, s1, z0 + 1.0, z0 + 1.04, steelM, 0.04); }
       }
     }
+    for (const f of later) f();
     legs.forEach((l, li) => buildLeg(LG[li], l.r, z, wz, wh));
     function buildLeg(grp, r) {
     box(grp, r.corr ? r.corr.x0 : 0, r.y0, r.corr ? r.corr.x1 : r.L, r.y1, wz, wz + 0.01, mat(0xe6e9ee));
@@ -174,10 +181,13 @@ function scene(THREE, Orbit, host) {
       // its walls, cut by its doors, a lintel over each door; its windows and curtain walls in them
       const PW = FC.placedWalls(q), ops = (q.ops || []).map((o) => ({ k: o.k, a: [q.x + o.a[0], q.y + o.a[1]], b: [q.x + o.b[0], q.y + o.b[1]] }));
       for (const w of PW.rects) wall3d(grp, w, ops, wz, wh, w.m === "blk" ? blkM : w.m === "pc" ? pcM : rcM);
-      for (const s2 of PW.ops) {
-        const v = Math.abs(s2.x1 - s2.x2) < 1e-6, t = 0.15;
-        if (v) box(grp, s2.x1 - t / 2, s2.y1, s2.x1 + t / 2, s2.y2, wz + 2.1, wz + wh, blkM);
-        else box(grp, s2.x1, s2.y1 - t / 2, s2.x2, s2.y1 + t / 2, wz + 2.1, wz + wh, blkM);
+      // a lintel over each door, in the wall as built (its line and thickness)
+      const loc = (q.doors || []).length ? FC.placedWalls(q, { x: 0, y: 0 }).rects : [];
+      for (const d0 of q.doors || []) {
+        const { d, t } = FC.doorOnWall(d0, loc, q.wt || 0.15), v = Math.abs(d.H[0] - d.O[0]) < 1e-6;
+        const x1 = q.x + Math.min(d.H[0], d.O[0]), x2 = q.x + Math.max(d.H[0], d.O[0]), y1 = q.y + Math.min(d.H[1], d.O[1]), y2 = q.y + Math.max(d.H[1], d.O[1]);
+        if (v) box(grp, x1 - t / 2, y1, x1 + t / 2, y2, wz + 2.1, wz + wh, blkM);
+        else box(grp, x1, y1 - t / 2, x2, y1 + t / 2, wz + 2.1, wz + wh, blkM);
       }
     }
     // the core: its RC walls (shared where pieces meet, cut by the doors), the lift cars, the staircases' flights

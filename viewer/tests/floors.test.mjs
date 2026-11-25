@@ -340,6 +340,11 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   ok(m.k === 1 && near(m.f([25, 5])[0], 25, 1e-9) && near(m.f([25, 5])[1], 6.5, 1e-9), "arcMap: a leg moved 1.5 m across takes a point 1.5 m with it");
   const t = 0.3, m2 = F.arcMap(sp, [[0, 8], [20, 8], [20 + 20 * Math.cos(t), 8 + 20 * Math.sin(t)]], 1, [30, 8]), q = m2.f([30, 8]);
   ok(near(q[0], 20 + 10 * Math.cos(t), 1e-9) && near(q[1], 8 + 10 * Math.sin(t), 1e-9) && near(m2.rot, t, 1e-9), "arcMap: a turned leg takes a point along it, turned");
+  // the corridor's start pulled out 3 m: what stands by the first leg stays where it is
+  const m3 = F.arcMap(sp, [[-3, 8], [20, 8], [40, 8]], 0, [6, 5]), q3 = m3.f([6, 5]);
+  ok(near(q3[0], 6, 1e-9) && near(q3[1], 5, 1e-9), "arcMap: the corridor's start pulled out keeps the units by it");
+  const m4 = F.arcMap([[0, 8], [40, 8]], [[-3, 8], [40, 8]], 0, [6, 5]), q4 = m4.f([6, 5]);
+  ok(near(q4[0], 6, 1e-9) && near(q4[1], 5, 1e-9), "arcMap: a straight corridor's start pulled out keeps the units");
   const poly = [[0, 0], [46, 0], [46, 16.5], [0, 16.5]], base = { poly, frame: { ux: 1, uy: 0 }, mix, storeys: 30, persons: 3 };
   const R0 = F.layoutLegs(base), y0 = (R0.y0 + R0.y1) / 2;
   const M = F.migrateToSpine(R0, [[R0.spine.path[0][0], y0 + 1.5], [R0.spine.path[1][0], y0 + 1.5]], true);

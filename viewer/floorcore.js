@@ -687,10 +687,14 @@ export function arcMap(spOld, spNew, kOld, P) {
   const kO = Math.max(0, Math.min(spOld.length - 2, kOld)), o = seg(spOld, kO), S0 = arcStarts(spOld), S1 = arcStarts(spNew);
   const t = (P[0] - o.a[0]) * o.d[0] + (P[1] - o.a[1]) * o.d[1], v = (P[0] - o.a[0]) * o.n[0] + (P[1] - o.a[1]) * o.n[1], s = S0[kO] + t;
   // the same legs (one moved or turned): each its own, from its start; else (a bend added or taken away) by the distance along the whole corridor
-  let k = 0, u;
-  if (spOld.length === spNew.length) { k = kO; u = t; }
-  else { while (k < spNew.length - 2 && s > S1[k + 1]) k++; u = s - S1[k]; }
-  const q = seg(spNew, k), P2 = [q.a[0] + q.d[0] * u + q.n[0] * v, q.a[1] + q.d[1] * u + q.n[1] * v];
+  let k = 0, u, fromEnd = false;
+  const same = (p, q2) => Math.hypot(p[0] - q2[0], p[1] - q2[1]) < 1e-6;
+  if (spOld.length === spNew.length) {
+    k = kO; u = t;
+    // its start moved but its end did not (an end of the corridor pulled out or in): measured from its end, so what stands by it stays
+    if (!same(spOld[kO], spNew[kO]) && same(spOld[kO + 1], spNew[kO + 1])) { fromEnd = true; u = t - o.L; }
+  } else { while (k < spNew.length - 2 && s > S1[k + 1]) k++; u = s - S1[k]; }
+  const q = seg(spNew, k), base = fromEnd ? spNew[k + 1] : q.a, P2 = [base[0] + q.d[0] * u + q.n[0] * v, base[1] + q.d[1] * u + q.n[1] * v];
   const rot = Math.atan2(q.d[1], q.d[0]) - Math.atan2(o.d[1], o.d[0]), c = Math.cos(rot), sn = Math.sin(rot);
   return { k, rot, f: (pt) => { const dx = pt[0] - P[0], dy = pt[1] - P[1]; return [P2[0] + c * dx - sn * dy, P2[1] + sn * dx + c * dy]; } };
 }
@@ -935,7 +939,13 @@ export function coreDoors(core, o) {
     (c.openings || []).forEach((q, i) => {
       const horiz = q.side === "n" || q.side === "s", t = wtOf(c), len = horiz ? c.w : c.h, start = horiz ? c.x : c.y, k0 = c.doors.length;
       door(c, q.side, start + t + (len - 2 * t) * q.at, n(q.w, 0.9), c.kind === "stair" || c.kind === "lobby", q.type === "sliding" || q.type === "sliding2");
-      if (c.doors.length > k0) Object.assign(c.doors[k0], { type: q.type, oi: i });
+      if (c.doors.length > k0) {
+        // one over a door already on that wall: not drawn twice (the one there stays; this one is flagged to be moved or removed)
+        const a = c.doors[k0], span = (d) => (horiz ? [Math.min(d.H[0], d.O[0]), Math.max(d.H[0], d.O[0])] : [Math.min(d.H[1], d.O[1]), Math.max(d.H[1], d.O[1])]);
+        const [a0, a1] = span(a), over = c.doors.slice(0, k0).some((d) => d.side === a.side && span(d)[0] < a1 - 0.02 && span(d)[1] > a0 + 0.02);
+        if (over) { c.doors.pop(); const fl = `two openings over each other on ${c.label || c.kind}'s wall`; c.flags = c.flags || []; if (!c.flags.includes(fl)) c.flags.push(fl); }
+        else Object.assign(a, { type: q.type, oi: i });
+      }
     });
   }
 }
@@ -1003,6 +1013,26 @@ function placedWalls0(q) {
   const ops = (q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
   const G = wallGeom(pu, ed, { tOf, isOpen: (e) => U.isOpen(pu, e), solid: (e) => U.solidPart(pu, e), openings: ops });
   return { rects: G.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
+}
+
+/* a unit's door put on the wall it is in, as built: the wall pieces either side of it (rects in the unit's frame) give the
+   line of its middle and its thickness (a partition built to one side of a room's edge, or thinner than the unit's wall) -> {d, t} */
+export function doorOnWall(d, rects, t0) {
+  const horiz = Math.abs(d.H[1] - d.O[1]) < 1e-6, line = horiz ? d.H[1] : d.H[0];
+  const lo = Math.min(horiz ? d.H[0] : d.H[1], horiz ? d.O[0] : d.O[1]), hi = Math.max(horiz ? d.H[0] : d.H[1], horiz ? d.O[0] : d.O[1]);
+  let best = null;
+  for (const r of rects || []) {
+    const a0 = horiz ? r.y0 : r.x0, a1 = horiz ? r.y1 : r.x1, s0 = horiz ? r.x0 : r.y0, s1 = horiz ? r.x1 : r.y1;
+    // across the door's line, running along it, its end at the door's jamb
+    if (line < a0 - 0.02 || line > a1 + 0.02 || a1 - a0 > 0.6 || s1 - s0 < a1 - a0 - 1e-6) continue;
+    const gap = Math.min(Math.abs(s1 - lo), Math.abs(s0 - hi));
+    if (gap > 0.03) continue;
+    const off = Math.abs((a0 + a1) / 2 - line);
+    if (!best || gap + off < best.sc) best = { sc: gap + off, m: (a0 + a1) / 2, t: a1 - a0 };
+  }
+  if (!best || (Math.abs(best.m - line) < 1e-4 && Math.abs(best.t - t0) < 1e-4)) return { d, t: t0 };
+  const mv = (p) => (horiz ? [p[0], best.m] : [best.m, p[1]]);
+  return { d: Object.assign({}, d, { H: mv(d.H), O: mv(d.O) }), t: r3(best.t) };
 }
 
 /* the core's RC walls: each piece's four bands (coreWall), the doors cut through every band at them */
