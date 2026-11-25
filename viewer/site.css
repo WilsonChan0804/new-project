@@ -405,3 +405,5 @@ body.st-units:not(.st-inplace) #st-uplan > .un-bar { display: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sch-box, :root:not([data-theme="light"]) .sch-t th:first-child, :root:not([data-theme="light"]) .sch-t td:first-child { background: #1e252d; color: #e6eaee; } :root:not([data-theme="light"]) .sch-t th, :root:not([data-theme="light"]) .sch-t td { border-color: #333c46; } :root:not([data-theme="light"]) .sch-t td.sch-best { background: #1e3b28; color: #8fe0a8; } }
 .fl-tgt b.good { color: #1b7f3b; } .fl-tgt b.bad { color: #c62828; }
 .fl-tgt th { font-weight: 600; font-size: 11px; color: #667; text-align: left; }
+.ms-sunt { font-size: 11px; color: #555; white-space: nowrap; }
+#st-views input[data-sunh] { width: 140px; }

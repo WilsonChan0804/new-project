@@ -116,6 +116,7 @@ function scene(THREE, Orbit, host) {
         else slab(grp, Q, wz + 2.1, wz + wh, blkM);
       }
     }
+    const furnM = mat(0xf4f1ea), FIXH = { wardrobe: 2.1, counter: 0.9, sink: 0.9, hob: 0.9, fridge: 1.8, wm: 0.85, bath: 0.55, shower: 0.03, wc: 0.4, basin: 0.85, bed1: 0.5, bed: 0.5, bedq: 0.5, sofa: 0.8, sofa2: 0.8, dining: 0.75, dining6: 0.75, desk: 0.75, tv: 0.5, shoe: 1.0 };
     const glassM = mat(0x8fc3ea, 0.38), frameM = mat(0x3a4048), steelM = mat(0x59616b), louvreM = mat(0x8d949c);
     // a wall (axis-aligned box in a leg) with the windows and curtain walls on it: solid where there is none,
     // a window: a sill to 1.0 m, glass in a frame to 2.3 m, a head above; a curtain wall: glass slab to soffit, mullions about 1.5 m apart, a transom at 1.1 m
@@ -178,6 +179,8 @@ function scene(THREE, Orbit, host) {
       // the floor of each room, by its use
       for (const rm of q.rooms) box(grp, q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h, wz, wz + 0.02, mat(/BATH|ENS/.test(rm.kind) ? 0xd9ebe7 : colOf.get(q.name)));
       for (const e of q.extras || []) extra3d(grp, q, e, wz);
+      // the fittings and furniture as low boxes (a wardrobe full height, a counter to the worktop)
+      for (const fx of q.fixtures || []) { const h = FIXH[fx.kind] || 0.5; box(grp, q.x + fx.x, q.y + fx.y, q.x + fx.x + fx.w, q.y + fx.y + fx.h, wz + 0.02, wz + 0.02 + h, furnM); }
       // its walls, cut by its doors, a lintel over each door; its windows and curtain walls in them
       const PW = FC.placedWalls(q), ops = (q.ops || []).map((o) => ({ k: o.k, a: [q.x + o.a[0], q.y + o.a[1]], b: [q.x + o.b[0], q.y + o.b[1]] }));
       for (const w of PW.rects) wall3d(grp, w, ops, wz, wh, w.m === "blk" ? blkM : w.m === "pc" ? pcM : rcM);

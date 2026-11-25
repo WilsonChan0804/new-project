@@ -10,6 +10,7 @@ import * as UC from "./unitcore.js";
 import { toast } from "./tasks-util.js";
 import * as PT from "./plantools.js";
 import * as SCH from "./schemes.js";
+import * as SUN from "./sun.js";
 import { iconSvg, iconColor } from "./icons.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -151,9 +152,26 @@ function viewsBar() {
     ${VIEW === "plan" && C.can() ? IB('data-tool="measure"', "measure", "Measure: snaps to the site and the footprints", TOOL && TOOL.kind === "measure") + IB('data-tool="context"', "context", "Draw a neighbouring building for the 3D view", TOOL && TOOL.kind === "context") : ""}
     ${VIEW === "plan" ? gridBar() : ""}
     ${VIEW === "plan" ? IB("data-snap", "snap", "Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)", SNAP) : `${IB("data-shadow", "shadow", "Shadows on / off", SHADOW)}${IB("data-ctx3d", "world", "The buildings around: the Lands Department's 3D Spatial Data (CSDI)", CTX3D)}<select data-ctxr title="How far around: the map and the buildings, each side of the site">${[250, 500, 1000, 1500].map((v) => `<option value="${v}"${v === ctxR() ? " selected" : ""}>± ${v.toLocaleString("en-GB")} m</option>`).join("")}</select><span class="ms-ctxst" id="ms-ctxst"></span>`}
+    ${VIEW === "3d" ? IB("data-sun", "plane", "Sun and shadow study: a date and the time of day (Hong Kong)", !!SUNS.on) + (SUNS.on ? sunBar() : "") : ""}
     ${VIEW !== "plan" ? IB("data-png", "camera", "Save this view as a picture (PNG)") : ""}${VIEW === "plan" || VIEW === "3d" ? levelBar() : ""}<span class="pt-sep"></span>${IB("data-legend", "legend", "Legend: what the colours and lines mean")}${IB("data-keys", "keys", "Keyboard shortcuts  (?)")}`;
   // each button's tooltip with its key from the user's keys
   for (const [id, , , , sel] of MKEYS) { const b = document.querySelector(sel), k = PT.KS.keyFor("massing", id); if (b && k) b.title += "  (" + k + ")"; }
+}
+/* the sun study's bar: the date, the time (a slider and play), where the sun is */
+let SUNS = { on: false, d: "06-21", h: 10 }, SUNT = null;
+function sunBar() {
+  const [mo, dy] = SUNS.d.split("-").map(Number), p = SUN.position(mo, dy, SUNS.h), dl = SUN.daylight(mo, dy);
+  return `<select data-sund title="The day">${SUN.PRESETS.map(([v, l]) => `<option value="${v}"${v === SUNS.d ? " selected" : ""}>${l}</option>`).join("")}</select>
+    <input type="range" min="${Math.ceil((dl.rise || 6) * 4) / 4}" max="${Math.floor((dl.set || 18) * 4) / 4}" step="0.25" value="${SUNS.h}" data-sunh title="The time of day (local)">
+    <button type="button" data-sunplay class="pt-b wt" title="Play the day"><span>${SUNT ? "❚❚" : "▶"}</span></button>
+    <small class="ms-sunt" id="ms-sunt">${SUN.hhmm(SUNS.h)} · sun ${Math.round(p.az)}° / ${Math.max(0, p.alt).toFixed(0)}° up</small>`;
+}
+function applySun() {
+  if (!T3 || !T3.setSun) return;
+  if (!SUNS.on) return T3.setSun(null);
+  const [mo, dy] = SUNS.d.split("-").map(Number), p = SUN.position(mo, dy, SUNS.h);
+  T3.setSun(p.dir);
+  const el = document.getElementById("ms-sunt"); if (el) el.textContent = `${SUN.hhmm(SUNS.h)} · sun ${Math.round(p.az)}° / ${Math.max(0, p.alt).toFixed(0)}° up`;
 }
 function gridBar() {
   const g = mass().grid, s = C.study(), can = C.can() ? "" : " disabled";
@@ -214,6 +232,16 @@ function onViews(ev) {
   if (t.dataset.snap != null && ev.type === "click") { SNAP = !SNAP; setPref("snap", SNAP); return viewsBar(); }
   if (t.dataset.ctxr != null && ev.type === "change") { mass().ctxR = +t.value; C.save(); return draw3d(); }
   if (t.dataset.ctx3d != null && ev.type === "click") { CTX3D = !CTX3D; setPref("ctx3d", CTX3D); viewsBar(); if (T3) T3.context(CTX3D ? C.study() : null); return; }
+  if (t.dataset.sun != null && ev.type === "click") { SUNS.on = !SUNS.on; if (!SUNS.on && SUNT) { clearInterval(SUNT); SUNT = null; } if (SUNS.on && !SHADOW) { SHADOW = true; if (T3) T3.shadow(true); } viewsBar(); applySun(); return; }
+  if (t.dataset.sund != null && ev.type === "change") { SUNS.d = t.value; const [mo, dy] = SUNS.d.split("-").map(Number), dl = SUN.daylight(mo, dy); SUNS.h = Math.max(dl.rise || 6, Math.min(dl.set || 18, SUNS.h)); viewsBar(); applySun(); return; }
+  if (t.dataset.sunh != null && ev.type === "input") { SUNS.h = +t.value; applySun(); return; }
+  if (t.closest && t.closest("[data-sunplay]") && ev.type === "click") {
+    if (SUNT) { clearInterval(SUNT); SUNT = null; return viewsBar(); }
+    const [mo, dy] = SUNS.d.split("-").map(Number), dl = SUN.daylight(mo, dy);
+    if (SUNS.h >= (dl.set || 18) - 0.3) SUNS.h = Math.ceil((dl.rise || 6) * 4) / 4;
+    SUNT = setInterval(() => { SUNS.h = +(SUNS.h + 0.25).toFixed(2); if (SUNS.h > (dl.set || 18) || !SUNS.on || VIEW !== "3d") { clearInterval(SUNT); SUNT = null; viewsBar(); return; } const r = document.querySelector("[data-sunh]"); if (r) r.value = SUNS.h; applySun(); }, 250);
+    viewsBar(); return;
+  }
   if (t.dataset.shadow != null && ev.type === "click") { SHADOW = !SHADOW; setPref("shadow", SHADOW); viewsBar(); if (T3) T3.shadow(SHADOW); return; }
   if (t.dataset.tool && ev.type === "click") {
     if (TOOL && TOOL.kind === t.dataset.tool) return endTool();
@@ -731,6 +759,7 @@ async function draw3d() {
   T3.build(model(), C.study(), mass(), VIEW, ELEV, C.potential());
   T3.context(CTX3D ? C.study() : null);
   if (VIEW === "sect") T3.cut(CUT);
+  if (VIEW === "3d") applySun(); else if (T3.setSun) T3.setSun(null);
 }
 function makeScene(THREE, Orbit, host) {
   const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -1042,7 +1071,7 @@ function makeScene(THREE, Orbit, host) {
   /* elevation / section: flat, clear colours (the sun off, more sky light); the CSDI surroundings near the line only, pale grey */
   const look = () => {
     const flat = mode !== "3d";
-    hemi.intensity = flat ? 3.1 : 2.0; sun.intensity = flat ? 0 : 1.0;
+    hemi.intensity = flat ? 3.1 : 2.0; sun.intensity = flat ? 0 : SUNDIR && SUNDIR[2] <= 0 ? 0 : 1.0;
     if (!ctxMesh) return;
     const s = LOOK.s, o = s && s.pts.length >= 3 ? S.centroid(s.pts) : null, LN = flat && o ? lineOf(s, o, LOOK.view, LOOK.elev) : null;
     if (!LN || !ctxComp) { ctxMesh.visible = ctxOn; if (nearMesh) nearMesh.visible = false; return; }
@@ -1117,12 +1146,19 @@ function makeScene(THREE, Orbit, host) {
     } catch (e) { status("surroundings not loaded: " + e.message); }
     ctxBusy = false;
   };
+  // the sun from a direction [east, north, up] (a shadow study), or back to the fixed light (null)
+  let SUNDIR = null;
+  const setSun = (dir) => {
+    SUNDIR = dir; const RR = ctxR() * 2;
+    if (dir) sun.position.set(dir[0] * RR, dir[1] * RR, Math.max(0.01, dir[2]) * RR); else sun.position.set(-250, -350, 500);
+    look();
+  };
   const shadow = (on) => { sun.castShadow = on; if (ctxMesh) { ctxMesh.castShadow = on; ctxMesh.receiveShadow = on; } if (group) group.traverse((x) => { if (x.isMesh) { x.castShadow = on; x.receiveShadow = on; } }); };
   resize(); loop();
   // for the browser tests: the level being edited, and a model point on the screen
   const editInfo = () => (EDIT ? { fp: EDIT.fp.map((p) => p.slice()), z: EDIT.z } : null);
   const screen = (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam), rc = r.domElement.getBoundingClientRect(); return [rc.left + (v.x + 1) / 2 * rc.width, rc.top + (1 - v.y) / 2 * rc.height]; };
-  return { context, shadow, build, resize, cut, editInfo, screen, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); },
+  return { context, shadow, setSun, build, resize, cut, editInfo, screen, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); },
     // a small picture for a scheme (kept with it, so small: 240 px wide, JPEG)
     thumb: () => { r.render(scene, cam); const src = r.domElement, w = 240, h = Math.round(w * src.height / Math.max(1, src.width)), cv = document.createElement("canvas"); cv.width = w; cv.height = h; const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.drawImage(src, 0, 0, w, h); return cv.toDataURL("image/jpeg", 0.7); } };
 }
