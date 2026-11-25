@@ -128,7 +128,7 @@ export function init(ctx) {
   ], "4 · Floors");
   // for the browser tests: the layout, and a plan point on the screen
   window.__floors = { last: () => LAST, screen: (p) => { const b = $("#st-fplan").getBoundingClientRect(); return [b.left + OX + (p[0] - X0) * SC, b.top + OY + (p[1] - Y0) * SC]; }, leg: (k, p) => fromLeg(legK(k), p),
-    drop: (P, type, w) => addOpening(openingTarget(P, w), type, w), spine: (fn) => editSpine(fn), FC };
+    drop: (P, type, w) => addOpening(openingTarget(P, w), type, w), spine: (fn) => editSpine(fn), FC, snapGeo: () => snapGeo(), sc: () => SC };
   // digits typed while drawing: the next segment's length
   document.addEventListener("keydown", (ev) => {
     if (!ON || !WALLDRAW || !WALLDRAW.pts.length || ev.target.closest("input,select,textarea")) return;

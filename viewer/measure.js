@@ -13,7 +13,8 @@ export function create() {
 export function snap(P, geo, tol) {
   let best = null, bd = tol;
   for (const c of geo.pts || []) { const d = Math.hypot(c[0] - P[0], c[1] - P[1]); if (d < bd) { bd = d; best = { p: [c[0], c[1]], kind: "corner" }; } }
-  for (const s of geo.segs || []) { const m = [(s[0][0] + s[1][0]) / 2, (s[0][1] + s[1][1]) / 2], d = Math.hypot(m[0] - P[0], m[1] - P[1]); if (d < bd) { bd = d; best = { p: m, seg: s, kind: "middle" }; } }
+  // a face's middle (not a short one's: the end of a thin wall would take the point off the face it is on)
+  for (const s of geo.segs || []) { if (Math.hypot(s[1][0] - s[0][0], s[1][1] - s[0][1]) < 3 * tol) continue; const m = [(s[0][0] + s[1][0]) / 2, (s[0][1] + s[1][1]) / 2], d = Math.hypot(m[0] - P[0], m[1] - P[1]); if (d < bd) { bd = d; best = { p: m, seg: s, kind: "middle" }; } }
   if (best) { best.segs = segsAt(best.p, geo.segs); return best; }
   let bs = null; bd = tol;
   for (const s of geo.segs || []) { const q = near(P, s); if (q.d < bd) { bd = q.d; bs = { p: q.p, segs: [s], kind: "face" }; } }
@@ -37,6 +38,9 @@ export function measureOf(A, B) {
     if (Math.abs(d1[0] * d2[1] - d1[1] * d2[0]) > 1e-3) continue;
     const n = [-d1[1], d1[0]], gap = (s2[0][0] - A.p[0]) * n[0] + (s2[0][1] - A.p[1]) * n[1];
     if (Math.abs(gap) < 1e-6) continue;
+    // faces across the line between the points (at corners, each has faces both ways: the ones the measure crosses)
+    const ab = [B.p[0] - A.p[0], B.p[1] - A.p[1]], L = Math.hypot(ab[0], ab[1]);
+    if (L > 1e-6 && Math.abs(ab[0] * n[0] + ab[1] * n[1]) / L < 0.7) continue;
     // B square to A's face, onto B's face
     if (!bestC || Math.abs(gap) < Math.abs(bestC.gap)) bestC = { gap, n };
   }
