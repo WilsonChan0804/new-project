@@ -356,14 +356,15 @@ export function moveLine(u, axis, at, d, lo, hi, seed) {
     const spans = onLine.filter((r) => only.has(r.id)).map(span);
     inSpan = (a0, a1) => spans.some(([p, q]) => Math.min(a1, q) - Math.max(a0, p) > 0.01);
   }
+  const started = new Set();   // the rooms whose start corner moves: their doors and windows along the other way keep their place
   for (const r of v.rooms) {
     if (only && !only.has(r.id)) continue;
     if (axis === "x" && inSpan(r.y, r.y + r.h)) {
-      if (on(r.x, at)) { r.x += step; r.w -= step; }
+      if (on(r.x, at)) { r.x += step; r.w -= step; started.add(r.id); }
       else if (on(r.x + r.w, at)) r.w += step;
     }
     if (axis === "y" && inSpan(r.x, r.x + r.w)) {
-      if (on(r.y, at)) { r.y += step; r.h -= step; }
+      if (on(r.y, at)) { r.y += step; r.h -= step; started.add(r.id); }
       else if (on(r.y + r.h, at)) r.h += step;
     }
   }
@@ -372,6 +373,16 @@ export function moveLine(u, axis, at, d, lo, hi, seed) {
     if (axis === "y" && on(x.y, at) && inSpan(x.x, x.x + x.w)) x.y += step;
   }
   if (v.rooms.some((r) => r.w < 0.5 || r.h < 0.5)) return u;
+  // a door or window on a side along the moved line's other way is measured from the room's start: held where it stands
+  // (kept on its side when the wall comes past it)
+  const rm = new Map(v.rooms.map((r) => [r.id, r]));
+  for (const o of [...(v.doors || []), ...(v.windows || [])]) {
+    if (!started.has(o.room)) continue;
+    const r = rm.get(o.room), along = axis === "x" ? o.side === "n" || o.side === "s" : o.side === "e" || o.side === "w";
+    if (!along) continue;
+    const len = axis === "x" ? r.w : r.h, w = n(o.w || 0.8);
+    o.at = +Math.max(0, Math.min(Math.max(0, len - w), n(o.at) - step)).toFixed(3);
+  }
   for (const r of v.rooms) for (const k of ["x", "y", "w", "h"]) r[k] = +r[k].toFixed(3);
   return v;
 }

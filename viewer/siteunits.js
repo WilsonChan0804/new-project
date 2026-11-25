@@ -43,7 +43,7 @@ export function init(ctx) {
   PT.KS.register("units", () => ON && !INPLACE, [
     { id: "select", key: "v", label: "Select", group: "Draw", run: tool("select") },
     // R on a selected fitting or balcony turns it (below), not the room tool
-    { id: "room", key: "r", label: "Room", group: "Draw", run: () => (SEL && (SEL.t === "fix" || SEL.t === "x") ? false : tool("room")()) },
+    { id: "room", key: "r", label: "Room", group: "Draw", run: () => ((SEL && (SEL.t === "fix" || SEL.t === "x")) || TOOL.startsWith("fix:") ? false : tool("room")()) },
     { id: "split-x", key: "|", label: "Split a room │", group: "Draw", run: tool("split-x") },
     { id: "split-y", key: "-", label: "Split a room ─", group: "Draw", run: tool("split-y") },
     { id: "door", key: "d", label: "Door", group: "Add", run: tool("door") },
@@ -54,7 +54,7 @@ export function init(ctx) {
     { id: "measure", key: "q", label: "Measure (two points; parallel faces: the clear width)", group: "View", run: () => { if (!ON) return false; TOOL = TOOL === "measure" ? "select" : "measure"; SEL = null; drawPlan(); } },
   ], [
     { keys: "Ctrl+Z / Ctrl+Y", label: "Undo / redo", group: "Edit" }, { keys: "Delete", label: "Remove the selected (a wall: opened)", group: "Edit" }, { keys: "Esc", label: "Select tool, clear the selection", group: "Edit" },
-    { keys: "R", label: "Turn the selected fitting or balcony", group: "Edit" }, { keys: "F", label: "Flip the selected door's hinge", group: "Edit" }, { keys: "Right-click", label: "Menu: door type, delete…", group: "Edit" },
+    { keys: "Space / R", label: "Turn the selected fitting or balcony 90°, or the one about to be placed", group: "Edit" }, { keys: "Space", label: "A selected door: its swing round its four ways (hinge, in / out)", group: "Edit" }, { keys: "F", label: "Flip the selected door's hinge", group: "Edit" }, { keys: "Right-click", label: "Menu: door type, delete…", group: "Edit" },
     { keys: "Alt + drag a wall", label: "Move the whole aligned line", group: "Edit" }, { keys: "Wheel / pinch", label: "Zoom", group: "View" }, { keys: "Drag the empty plan", label: "Pan", group: "View" },
   ], "3 · Units");
 }
@@ -133,7 +133,10 @@ function undo(step) {
   if (k < 0 || k >= HIST.length) return toast(step < 0 ? "Nothing to undo" : "Nothing to redo");
   HI = k; C.study().units = JSON.parse(HIST[HI]); C.save(); render();
 }
-function changed() { snap(); C.save(); render(); if (INPLACE && INPLACE.onChange) INPLACE.onChange(); }
+/* the units' figures for their tabs, kept per unit (an edit forgets the one edited) */
+const FIGC = new WeakMap();
+const tabFig = (x) => { let f = FIGC.get(x); if (!f) { f = U.figures(x); FIGC.set(x, f); } return f; };
+function changed() { const st0 = store(); if (st0 && st0.list && st0.list[st0.sel]) FIGC.delete(st0.list[st0.sel]); snap(); C.save(); render(); if (INPLACE && INPLACE.onChange) INPLACE.onChange(); }
 
 /* ---------- the panel */
 function render() {
@@ -142,7 +145,7 @@ function render() {
   const kindOpt = (k) => Object.entries(U.KINDS).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
   const exOpt = (k) => Object.entries(Object.assign({ bay: { label: "Balcony / UP / A/C bay" } }, U.EXTRAS)).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
   const num = (attr, v, step = 0.05) => `<input type="number" step="${step}" ${attr} value="${esc(v == null || v === "" ? "" : (+v).toFixed(3))}"${dis}>`;
-  const tabs = st.list.map((x, i) => `<button type="button" class="un-tab${i === st.sel ? " on" : ""}" data-usel="${i}">${esc(x.name || "Unit")}<small>${U.figures(x).saleableFt} ft²</small></button>`).join("");
+  const tabs = st.list.map((x, i) => `<button type="button" class="un-tab${i === st.sel ? " on" : ""}" data-usel="${i}">${esc(x.name || "Unit")}<small>${tabFig(x).saleableFt} ft²</small></button>`).join("");
   let body = "";
   if (u) {
     const f = U.figures(u);
@@ -204,8 +207,8 @@ function render() {
     <section class="st-card">
       <div class="st-head"><b>Units</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-uundo="-1"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-uundo="1"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button>${unsaved(u) ? `<button type="button" class="ghost st-ib" data-ureset title="Back to the unit as it was made or last saved to the library">⟲ Reset</button>` : ""}</span>` : ""}<span class="muted" id="un-saved">${can ? "Saved with the project" : "View only"}</span></div>
       <div class="un-tabs">${tabs || `<p class="st-need">No units yet: start from a template or the office library.</p>`}</div>
-      ${can ? `<div class="st-row"><select data-unew><option value="">+ New from a template …</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}${t.src ? " · " + esc(t.src.replace(/^after /, "")) : ""}</option>`).join("")}</select>
-        <select data-ulib><option value="">+ From the office library …</option>${libOpt}</select></div>
+      ${can ? `<div class="st-row"><select data-unew data-pick="tpl"><option value="">+ New from a template …</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}${t.src ? " · " + esc(t.src.replace(/^after /, "")) : ""}</option>`).join("")}</select>
+        <select data-ulib data-pick="ulib"><option value="">+ From the office library …</option>${libOpt}</select></div>
         ${u ? `<div class="st-row"><button type="button" class="ghost st-ib" data-udup>Duplicate</button><button type="button" class="ghost st-ib" data-umir title="A handed copy: the same layout flipped left to right">⇋ Mirror</button><button type="button" class="ghost st-ib" data-udel>Remove</button><button type="button" class="ghost st-ib" data-usave title="${u.libId ? "Update the entry it came from" : "Add it to the office library"}">${u.libId ? "Update in the office library" : "Save to the office library"}</button><button type="button" class="ghost st-ib" data-usavenew>Save as new</button><button type="button" class="ghost st-ib" data-usvg>SVG</button></div>` : ""}` : ""}
     </section>
     ${body}`;
@@ -302,6 +305,7 @@ let SEL = null;      // {t: "wall"|"door"|"win"|"fix", i | key}
 let TOOL = "select"; // select | door | window | split-x | split-y | room | fix:<kind>
 let HOVW = null;      // a library opening dragged over a wall: {e, along}
 let ROOMK = "BR";     // the kind a drawn room gets
+let GHOST = null, FIXROT = 0;   // a fitting about to be placed: under the cursor, turned by Space / R
 let LIVE = null;     // while a wall line is dragged: {axis, at, d}
 const DIMS = () => { try { return localStorage.getItem("lwk-viewer:un-dims") || "chains"; } catch (e) { return "chains"; } };
 /* what + Balcony / UP adds outside a wall: its depth from the wall and its length along it; a bay's parts */
@@ -338,6 +342,37 @@ const FIXSZ = { bath: [1.5, 0.7], shower: [0.9, 0.9], wc: [0.4, 0.65], basin: [0
 const DRAWAS = { bed1: "bed", bedq: "bed", sofa2: "sofa", dining6: "dining" };
 const fixOpts = (cur2) => `<optgroup label="Fittings">${Object.entries(FIXK).filter(([k]) => !FURN.has(k)).map(([k, v]) => `<option value="${k}"${cur2 === k ? " selected" : ""}>${esc(v)}</option>`).join("")}</optgroup><optgroup label="Furniture">${Object.entries(FIXK).filter(([k]) => FURN.has(k)).map(([k, v]) => `<option value="${k}"${cur2 === k ? " selected" : ""}>${esc(v)}</option>`).join("")}</optgroup>`;
 
+/* small drawings for the pickers: a unit's plan (rooms, balcony / UP / A/C dashed, its fittings), a fitting or a piece of furniture */
+export function unitThumb(u, W = 88, H = 66) {
+  if (!u || !Array.isArray(u.rooms) || !u.rooms.length) return "";
+  const R = [...u.rooms, ...(u.extras || [])].map((r) => [+r.x || 0, +r.y || 0, +r.w || 0, +r.h || 0]);
+  const x0 = Math.min(...R.map((r) => r[0])), y0 = Math.min(...R.map((r) => r[1])), x1 = Math.max(...R.map((r) => r[0] + r[2])), y1 = Math.max(...R.map((r) => r[1] + r[3]));
+  const k = Math.min((W - 6) / Math.max(0.5, x1 - x0), (H - 6) / Math.max(0.5, y1 - y0)), ox = (W - (x1 - x0) * k) / 2, oy = (H - (y1 - y0) * k) / 2;
+  const sx = (v) => ox + (v - x0) * k, sy = (v) => oy + (v - y0) * k;
+  let g = "";
+  for (const e of u.extras || []) g += `<rect x="${sx(+e.x)}" y="${sy(+e.y)}" width="${(+e.w) * k}" height="${(+e.h) * k}" fill="#eef3f8" stroke="#6b7c8f" stroke-width="0.5" stroke-dasharray="2 1.2"/>`;
+  for (const r of u.rooms) g += `<rect x="${sx(+r.x)}" y="${sy(+r.y)}" width="${(+r.w) * k}" height="${(+r.h) * k}" fill="${ROOMFILL[r.kind] || "#fbf3d5"}" stroke="#4a525b" stroke-width="${Math.max(0.6, 0.15 * k)}"/>`;
+  for (const f of Array.isArray(u.fixtures) ? u.fixtures : U.genFixtures(u)) g += fixture(f, sx, sy, false, -1, k).replace(/ class="un-fix"| class="un-fhit"| data-fi="-1"/g, "");
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+export function fixThumb(kind, W = 88, H = 66) {
+  const sz = FIXSZ[kind]; if (!sz) return "";
+  const k = Math.min((W - 10) / sz[0], (H - 20) / sz[1]), ox = (W - sz[0] * k) / 2, oy = (H - 12 - sz[1] * k) / 2;
+  const f = { kind, x: 0, y: 0, w: sz[0], h: sz[1], rot: 0 };
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${fixture(f, (v) => ox + v * k, (v) => oy + v * k, false, -1, k).replace(/ class="un-fix"| class="un-fhit"| data-fi="-1"/g, "")}<text x="${W / 2}" y="${H - 1}" text-anchor="middle" font-size="8" fill="#6b7480">${sz[0]} × ${sz[1]} m</text></svg>`;
+}
+PT.previews("fix", (k) => fixThumb(k));
+PT.previews("tpl", (k) => unitThumb(TEMPLATES[k] && (TEMPLATES[k].rooms ? TEMPLATES[k] : U.fromRows(TEMPLATES[k]))));
+PT.previews("ulib", (id) => { const x = (LIB.units || []).find((q) => String(q.id) === String(id)); return x ? unitThumb(x.unit) : ""; });
+PT.previews("unit", (name) => { const s = C && C.study(), l = s && s.units && Array.isArray(s.units.list) ? s.units.list : []; return unitThumb(l.find((q) => q.name === name)); });
+
+/* a fitting of kind k centred on P, turned FIXROT quarter turns (the stored box is its footprint) */
+function ghostFix(k, P) {
+  const sz = FIXSZ[k] || [0.6, 0.6];
+  let f = { kind: k, x: +(P[0] - sz[0] / 2).toFixed(2), y: +(P[1] - sz[1] / 2).toFixed(2), w: sz[0], h: sz[1], rot: 0 };
+  for (let i = 0; i < FIXROT; i++) f = U.rotateFixture(f);
+  return f;
+}
 function ensure(u) {
   if (!Array.isArray(u.windows)) u.windows = U.genWindows(u);
   if (!Array.isArray(u.fixtures)) u.fixtures = U.genFixtures(u);
@@ -572,6 +607,7 @@ function drawPlan() {
   if (WENDS) for (const [p, k] of WENDS.pts) g += `<circle class="un-wend" data-wend="${k}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7" fill="#fff" stroke="#f28022" stroke-width="2.5" />`;
   g += dims(u, f, sx, sy);
   if (HOVW) g += `<line x1="${sx(HOVW.e.x1)}" y1="${sy(HOVW.e.y1)}" x2="${sx(HOVW.e.x2)}" y2="${sy(HOVW.e.y2)}" stroke="#1f6feb" stroke-width="8" stroke-opacity="0.45" pointer-events="none" />`;
+  if (GHOST && TOOL.startsWith("fix:")) g += `<g pointer-events="none" opacity="0.6">${fixture(ghostFix(TOOL.slice(4), GHOST), sx, sy, true, -1).replace(/ class="un-fix"| class="un-fhit"| data-fi="-1"/g, "")}</g>`;
   if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f3(LIVE.d)} m</text>`;
   g += `<text x="${bw - 20}" y="${bh - 18}" text-anchor="end" font-size="11" fill="#6b7785">${esc(u.name || "")} · ${f.saleableFt} ft² · ${f1(f.saleable)} m²</text>`;
   if (!INPLACE) g += ME.svg(MEAS, sx, sy);
@@ -587,7 +623,7 @@ function topBar() {
   if (can) {
     G.push([T("room", "room", "Room: drag a rectangle beside the rooms", "R"), { html: sel("data-roomk", Object.entries(U.KINDS).map(([k, q]) => [k, q.label]), ROOMK, "The kind of the room you draw") }, T("split-x", "split", "Split │: click a room", "", "│"), T("split-y", "split", "Split ─: click a room", "", "─")]);
     G.push([T("door", "door", "Door: click a wall", "D"), T("window", "window", "Window: click an external wall", "W"), { id: "lib", icon: "library", title: "Doors, windows and openings: drag one onto a wall", on: PT.libraryOpen() }]);
-    G.push([{ html: sel("data-xadd", [["", "Balcony / UP …"], ...Object.entries(XADD).map(([k, v]) => [k, v.label])], TOOL.startsWith("x:") ? TOOL.slice(2) : "", "Then click an external wall: it goes outside it") }, { html: `<select data-fixadd title="A fitting or furniture: then click a room to place it (R turns it)" class="pt-sel"><option value="">Fitting / furniture …</option>${fixOpts(TOOL.startsWith("fix:") ? TOOL.slice(4) : "")}</select>` }]);
+    G.push([{ html: sel("data-xadd", [["", "Balcony / UP …"], ...Object.entries(XADD).map(([k, v]) => [k, v.label])], TOOL.startsWith("x:") ? TOOL.slice(2) : "", "Then click an external wall: it goes outside it") }, { html: `<select data-fixadd data-pick="fix" title="A fitting or furniture: then click a room to place it (Space or R turns it)" class="pt-sel"><option value="">Fitting / furniture …</option>${fixOpts(TOOL.startsWith("fix:") ? TOOL.slice(4) : "")}</select>` }]);
   }
   G.push([T("measure", "measure", "Measure: click two points (they snap to the walls' faces and corners; two parallel faces give the clear width); Esc clears", "Q")]);
   G.push([{ html: sel("data-alines", [["off", "Area lines: off"], ["saleable", "Saleable line"], ["gfa", "GFA line"], ["both", "Saleable + GFA"]], ALINES(), "The saleable and GFA lines") }, { html: sel("data-dims", [["chains", "Dims: chains"], ["overall", "Dims: overall"], ["off", "Dims: off"]], DIMS(), "Dimensions") }]);
@@ -753,7 +789,7 @@ function toolbar() {
   return `<div class="un-bar">${b("select", "↖ Select", "Click a wall, door, window, fitting, balcony or UP; drag a wall (Alt: the whole aligned line)")}${b("door", "+ Door", "Click a wall where the door goes")}${b("window", "+ Window", "Click an external wall")}${b("split-x", "✂ Split │", "Click a room: a new wall up and down at that point")}${b("split-y", "✂ Split ─", "Click a room: a new wall across at that point")}${b("room", "▭ + Room", "Drag a rectangle beside the rooms: a new room (snaps to the walls, 50 mm grid)")}
     <select data-roomk title="The kind of the room you draw">${Object.entries(U.KINDS).map(([k, q]) => `<option value="${k}"${ROOMK === k ? " selected" : ""}>${q.label}</option>`).join("")}</select>
     <select data-xadd title="Then click an external wall: it goes outside it"><option value="">+ Balcony / UP …</option>${Object.entries(XADD).map(([k, v]) => `<option value="${k}"${TOOL === "x:" + k ? " selected" : ""}>${v.label}</option>`).join("")}</select>
-    <select data-fixadd title="Click a room to place it"><option value="">+ Fitting / furniture …</option>${fixOpts(TOOL.startsWith("fix:") ? TOOL.slice(4) : "")}</select>
+    <select data-fixadd data-pick="fix" title="Click a room to place it"><option value="">+ Fitting / furniture …</option>${fixOpts(TOOL.startsWith("fix:") ? TOOL.slice(4) : "")}</select>
     <select data-alines title="The saleable and GFA lines, to check the figures"><option value="off"${ALINES() === "off" ? " selected" : ""}>Area lines: off</option><option value="saleable"${ALINES() === "saleable" ? " selected" : ""}>Saleable line</option><option value="gfa"${ALINES() === "gfa" ? " selected" : ""}>GFA line</option><option value="both"${ALINES() === "both" ? " selected" : ""}>Saleable + GFA</option></select>
     <select data-dims title="Dimensions"><option value="chains"${DIMS() === "chains" ? " selected" : ""}>Dimensions: chains</option><option value="overall"${DIMS() === "overall" ? " selected" : ""}>overall</option><option value="off"${DIMS() === "off" ? " selected" : ""}>off</option></select></div>`;
 }
@@ -927,7 +963,7 @@ function wirePlan() {
     if (t.dataset.xadd != null) { TOOL = t.value ? "x:" + t.value : "select"; SEL = null; return drawPlan(); }
     if (t.dataset.pxw != null || t.dataset.pxh != null) { const e = u.extras[SEL.i]; const v = Math.max(0.2, Math.round((parseFloat(t.value) || 0) * 20) / 20); if (t.dataset.pxw != null) e.w = v; else e.h = v; keepArea(e, t.dataset.pxw != null ? "w" : "h"); return changed(); }
     if (t.dataset.pxfree != null) { const e = u.extras[SEL.i]; if (t.checked) delete e.free; else e.free = true; if (!e.free) keepArea(e, e.h >= e.w ? "w" : "h"); return changed(); }
-    if (t.dataset.fixadd != null) { TOOL = t.value ? "fix:" + t.value : "select"; return drawPlan(); }
+    if (t.dataset.fixadd != null) { TOOL = t.value ? "fix:" + t.value : "select"; FIXROT = 0; GHOST = null; SEL = null; return drawPlan(); }
     if (t.dataset.pwf != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; o.f = t.value; if (t.value === "cw") u.windows = u.windows.filter((w) => !(w.room === SEL.key.split(":")[0] && w.side === SEL.key.split(":")[1])); return changed(); }
     if (t.dataset.pws != null || t.dataset.pwe != null) {
       const e = U.figures(u).edges.find((q) => q.key === SEL.key); if (!e) return;
@@ -1072,9 +1108,8 @@ function wirePlan() {
         cap(host, ev); ev.preventDefault(); return;
       }
       if (TOOL.startsWith("fix:") && t.dataset.rid) {
-        const k = TOOL.slice(4), sz = FIXSZ[k] || [0.6, 0.6];
-        u.fixtures.push({ kind: k, x: +(P[0] - sz[0] / 2).toFixed(2), y: +(P[1] - sz[1] / 2).toFixed(2), w: sz[0], h: sz[1], rot: 0 });
-        SEL = { t: "fix", i: u.fixtures.length - 1 }; TOOL = "select"; return changed();
+        u.fixtures.push(ghostFix(TOOL.slice(4), P));
+        SEL = { t: "fix", i: u.fixtures.length - 1 }; TOOL = "select"; GHOST = null; FIXROT = 0; return changed();
       }
       return;
     }
@@ -1095,6 +1130,7 @@ function wirePlan() {
   });
   host.addEventListener("pointermove", (ev) => {
     if (PZ.move(ZM, ev, host.getBoundingClientRect())) return drawPlan();
+    if (!drag && TOOL.startsWith("fix:") && cur()) { GHOST = toPlan(ev); if (!drawPlan.raf) drawPlan.raf = requestAnimationFrame(() => { drawPlan.raf = 0; drawPlan(); }); return; }
     if (!drag && TOOL === "measure" && cur()) { MEAS.hover = ME.snap(toPlan(ev), measureGeo(ensure(cur())), 12 / SC); if (!drawPlan.raf) drawPlan.raf = requestAnimationFrame(() => { drawPlan.raf = 0; drawPlan(); }); return; }
     if (!drag) return;
     if (drag.kind === "pan") {
@@ -1188,7 +1224,15 @@ function wirePlan() {
   document.addEventListener("keydown", (ev) => {
     if (!ON || ev.target.closest("input,select,textarea")) return;
     if (ev.key === "Escape") { if (TOOL === "measure" && (MEAS.a || MEAS.list.length)) { if (MEAS.a) MEAS.a = null; else ME.clear(MEAS); return drawPlan(); } TOOL = "select"; SEL = null; drawPlan(); }
-    const u = cur(); if (!u || !SEL || !C.can()) return;
+    const u = cur(); if (!u || !C.can()) return;
+    // Space (as in Revit): turn what is about to be placed, or the selected: a fitting 90°, a door's swing round its four ways
+    if ((ev.key === " " || ev.key.toLowerCase() === "r") && TOOL.startsWith("fix:") && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); FIXROT = (FIXROT + 1) % 4; return drawPlan(); }
+    if (!SEL) return;
+    if (ev.key === " " && !ev.ctrlKey && !ev.metaKey) {
+      if (SEL.t === "fix") { ev.preventDefault(); u.fixtures[SEL.i] = U.rotateFixture(u.fixtures[SEL.i]); return changed(); }
+      if (SEL.t === "x") { ev.preventDefault(); const e = u.extras[SEL.i]; [e.w, e.h] = [e.h, e.w]; return changed(); }
+      if (SEL.t === "door") { ev.preventDefault(); const dd = u.doors[SEL.i], k = (dd.hinge === "end" ? 1 : 0) + (dd.swing === "out" ? 2 : 0), n2 = [1, 3, 0, 2][k]; dd.hinge = n2 & 1 ? "end" : "start"; dd.swing = n2 & 2 ? "out" : "in"; return changed(); }
+    }
     if (ev.key === "Delete" || ev.key === "Backspace") {
       if (SEL.t === "door") u.doors.splice(SEL.i, 1); else if (SEL.t === "win") u.windows.splice(SEL.i, 1); else if (SEL.t === "fix") u.fixtures.splice(SEL.i, 1); else if (SEL.t === "x") u.extras.splice(SEL.i, 1); else if (SEL.t === "z") u.zones.splice(SEL.i, 1);
       else if (SEL.t === "wall") { (u.walls[SEL.key] = u.walls[SEL.key] || {}).open = true; }

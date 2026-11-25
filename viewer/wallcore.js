@@ -233,3 +233,17 @@ export function placeOpening(w, seg, s, o) {
   const len = segLen(cleanPath(w.path), seg), ow = Math.min(n(o.w, 0.9), len);
   return Object.assign({}, o, { seg, w: r3(ow), at: r3(Math.max(0, Math.min(len - ow, s - ow / 2))) });
 }
+
+/* the wall's path changed to P1 (same points, some moved): an opening on a segment whose start moved keeps its place on
+   the plan (measured again from the new start, kept on its segment); one on the segment moved whole (moved) goes with it */
+export function keepOpenings(w, P1, moved) {
+  const P0 = w.path || [];
+  return (w.openings || []).map((o) => {
+    const j = o.seg, a0 = P0[j], b0 = P0[j + 1], a1 = P1[j], b1 = P1[j + 1];
+    if (!a0 || !b0 || !a1 || !b1 || j === moved || (Math.abs(a0[0] - a1[0]) < 1e-9 && Math.abs(a0[1] - a1[1]) < 1e-9)) return Object.assign({}, o);
+    const L0 = Math.hypot(b0[0] - a0[0], b0[1] - a0[1]) || 1, L1 = Math.hypot(b1[0] - a1[0], b1[1] - a1[1]) || 1;
+    const A = [a0[0] + (b0[0] - a0[0]) / L0 * n(o.at), a0[1] + (b0[1] - a0[1]) / L0 * n(o.at)];
+    const at = ((A[0] - a1[0]) * (b1[0] - a1[0]) + (A[1] - a1[1]) * (b1[1] - a1[1])) / L1;
+    return Object.assign({}, o, { at: r3(Math.max(0, Math.min(Math.max(0, L1 - n(o.w, 0.9)), at))) });
+  });
+}

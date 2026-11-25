@@ -1014,11 +1014,24 @@ export function placedWalls(q, at) {
   if (!w) { w = placedWalls0(q); PW.set(q.rooms, w); }
   return { rects: w.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: w.ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
 }
-function placedWalls0(q) {
+/* a unit's body in plan (its own frame): its rooms and its walls with no openings, out to the external walls' outer faces
+   (balconies, UP and A/C platforms left out); kept with its walls */
+const PB = new WeakMap();
+export function unitBody(q) {
+  let b = PB.get(q.rooms);
+  if (b === undefined) {
+    const sh = q.rooms.map((rm) => [[rm.x, rm.y], [rm.x + rm.w, rm.y], [rm.x + rm.w, rm.y + rm.h], [rm.x, rm.y + rm.h]]);
+    for (const r of placedWalls0(q, true).rects) sh.push([[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]]);
+    b = hugOutline(sh, 0.02) || null;
+    PB.set(q.rooms, b);
+  }
+  return b;
+}
+function placedWalls0(q, solid) {
   const ox = 0, oy = 0;
   const pu = { rooms: q.rooms, walls: Object.fromEntries(Object.entries(q.u.walls || {}).filter(([k2]) => k2.includes("|"))), partySides: [] };
   const ed = U.edges(pu), tOf = (e) => (e.kind === "part" ? Number(q.u.part ?? 0.075) || 0.075 : Number(q.u.wall ?? 0.15) || 0.15);
-  const ops = (q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
+  const ops = (solid ? [] : q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
   const G = wallGeom(pu, ed, { tOf, isOpen: (e) => U.isOpen(pu, e), solid: (e) => U.solidPart(pu, e), openings: ops });
   return { rects: G.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
 }

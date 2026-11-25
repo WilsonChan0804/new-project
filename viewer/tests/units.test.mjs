@@ -192,5 +192,15 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a be
   u.doorNib = 0.1;
   ok(U.doorStops(u, d).some((q) => q.end === "start" && Math.abs(q.at - 0.1375) < 0.002), "with a 100 mm nib it stands 100 mm off the face");
 }
+// a wall moved: a door in a wall along the other way stays where it stands; one on the moved wall goes with it
+{
+  const u2 = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], rooms: [R("a", "LD", 0, 0, 3, 3), R("b", "BR", 3, 0, 2.5, 3)], extras: [],
+    doors: [{ room: "b", side: "s", at: 1.0, w: 0.8 }, { room: "b", side: "w", at: 1.0, w: 0.8 }], windows: [{ room: "b", side: "n", at: 0.5, w: 1.2 }] };
+  const m2 = U.moveLine(u2, "x", 3, -0.4);
+  ok(near(m2.rooms[1].x + m2.doors[0].at, 4.0, 1e-9) && near(m2.rooms[1].x + m2.windows[0].at, 3.5, 1e-9), "the wall between moved: the door and window in the south / north walls keep their places (x 4.0, 3.5)");
+  ok(near(m2.doors[1].at, 1.0, 1e-9) && near(m2.rooms[1].x, 2.6, 1e-9), "the door in the moved wall goes with it");
+  const m3 = U.moveLine(u2, "x", 3, 0.6);
+  ok(near(m3.doors[0].at, 0.4, 1e-9) && near(m3.windows[0].at, 0, 1e-9), "a wall moved past a door: it is kept on its side (at 0.4; the window at 0)");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

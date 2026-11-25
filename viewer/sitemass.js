@@ -156,6 +156,7 @@ function viewsBar() {
     ${VIEW !== "plan" ? IB("data-png", "camera", "Save this view as a picture (PNG)") : ""}${VIEW === "plan" || VIEW === "3d" ? levelBar() : ""}<span class="pt-sep"></span>${IB("data-legend", "legend", "Legend: what the colours and lines mean")}${IB("data-keys", "keys", "Keyboard shortcuts  (?)")}`;
   // each button's tooltip with its key from the user's keys
   for (const [id, , , , sel] of MKEYS) { const b = document.querySelector(sel), k = PT.KS.keyFor("massing", id); if (b && k) b.title += "  (" + k + ")"; }
+  PT.syncLegend();
 }
 /* the sun study's bar: the date, the time (a slider and play), where the sun is */
 let SUNS = { on: false, d: "06-21", h: 10 }, SUNT = null;
@@ -184,21 +185,7 @@ function onViews(ev) {
   if (t.dataset.cut != null && ev.type === "input") { CUT = +t.value; if (T3) T3.cut(CUT); return; }
   if (t.dataset.png != null && ev.type === "click") return png();
   if (t.dataset.keys != null && ev.type === "click") return PT.KS.openPage("massing");
-  if (t.dataset.legend != null && ev.type === "click") return PT.toggleLegend(t, () => {
-    const sw = (c, st = "#333", dash = "") => `<rect x="2" y="2" width="24" height="12" fill="${c}" stroke="${st}" stroke-width="0.8"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`, ln = (c, dash = "", w = 1.6) => `<line x1="2" y1="8" x2="26" y2="8" stroke="${c}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`;
-    return ["Uses", ...Object.values(M.USES).map((u) => ({ svg: sw(u.color), label: u.label })),
-      "On the plan and in 3D",
-      { svg: sw("#e2ebdd", "#2e7d32"), label: "The site" },
-      { svg: sw("none", "#1f6feb", "5 4"), label: "Floors with a plate of their own" },
-      { svg: sw("#fbd9bb", "#f28022"), label: "The level being edited (its corners orange)" },
-      { svg: sw("#dfe3e8", "#b8bec6"), label: "Neighbouring buildings" },
-      { svg: sw("#2ea043", "#2ea043"), label: "Refuge floor due" },
-      "Elevation and section",
-      { svg: ln("#666666"), label: "Site level (mPD)" },
-      { svg: ln("#9aa3ad", "3 2", 1), label: "Floor levels: ▽ +mPD and the floor" },
-      { svg: ln("#8a6d3b"), label: "Top of the building" },
-      { svg: ln("#cf222e", "4 3"), label: "Height limit (OZP)" }];
-  });
+  if (t.dataset.legend != null && ev.type === "click") return PT.toggleLegend(t, "massing");
   if (t.dataset.level != null && ev.type === "change") {
     if (!t.value) { SELG = null; return render(); }
     const [bid, gi] = [t.value.slice(0, t.value.lastIndexOf(":")), +t.value.slice(t.value.lastIndexOf(":") + 1)];
@@ -363,7 +350,7 @@ function mixOf(g) {
 function mixRow(g, bi, gi, ga, dis) {
   if (g.use !== "dom" || !unitList().length) return "";
   const list = unitList(), mx = mixOf(g), n = Number(g.n) || 0;
-  const items = (g.mix || []).map((x, mi) => `<span class="ms-mix"><select data-gmu="${bi}.${gi}.${mi}"${dis}>${list.map((u) => `<option${u.name === x.u ? " selected" : ""}>${esc(u.name)}</option>`).join("")}</select>×<input type="number" min="0" step="1" data-gmn="${bi}.${gi}.${mi}" value="${esc(x.n)}"${dis}>${dis ? "" : `<button type="button" class="ghost st-ib" data-gmdel="${bi}.${gi}.${mi}">×</button>`}</span>`).join("");
+  const items = (g.mix || []).map((x, mi) => `<span class="ms-mix"><select data-gmu="${bi}.${gi}.${mi}" data-pick="unit"${dis}>${list.map((u) => `<option${u.name === x.u ? " selected" : ""}>${esc(u.name)}</option>`).join("")}</select>×<input type="number" min="0" step="1" data-gmn="${bi}.${gi}.${mi}" value="${esc(x.n)}"${dis}>${dis ? "" : `<button type="button" class="ghost st-ib" data-gmdel="${bi}.${gi}.${mi}">×</button>`}</span>`).join("");
   const fill = ga ? mx.gfa / ga : 0;
   return `<tr class="ms-part"><td colspan="8">Units / floor: ${items}${dis ? "" : `<button type="button" class="ghost st-ib" data-gmadd="${bi}.${gi}">+ unit</button>`}
     ${mx.n ? `<small> = ${mx.n * n} flats · ${f1(mx.sale / mx.n)} m² saleable on average · units ${f0(mx.gfa)} of ${f0(ga)} m² a floor (${f0(fill * 100)}%)${fill > 1 ? " – more than the floor" : ""}</small>` : ""}</td></tr>`;
@@ -948,20 +935,25 @@ function makeScene(THREE, Orbit, host) {
     for (const x of st) {
       if (x.block.fp.length < 3) continue;
       for (const p of x.block.fp) span = Math.max(span, Math.hypot(p[0], p[1]));
-      const shapes = new Map();
+      const shapes = new Map(), geoC = new Map(), matC = new Map(); let edgeM = null;
       for (const sto of x.storeys) {
         const fp = sto.fp && sto.fp.length >= 3 ? sto.fp : x.block.fp;
         if (!shapes.has(fp)) shapes.set(fp, shape(fp));
         const sh = shapes.get(fp);
         const u = M.USES[sto.use] || M.USES.dom;
-        const geo = new THREE.ExtrudeGeometry(sh, { depth: Math.max(0.05, sto.h - 0.12), bevelEnabled: false });
-        const mesh = new THREE.Mesh(geo, mat({ color: new THREE.Color(u.color), transparent: sto.storey === false, opacity: sto.storey === false ? 0.75 : 1, clippingPlanes: clipping, side: THREE.DoubleSide }));
+        // the storeys of one plate and height share one shape, its edges and a material (a tall block builds quickly)
+        const dep = Math.max(0.05, sto.h - 0.12), gk = (sh._gk || (sh._gk = String(geoC.size) + "#" + Math.random().toString(36).slice(2, 7))) + ":" + dep.toFixed(3);
+        if (!geoC.has(gk)) { const g0 = new THREE.ExtrudeGeometry(sh, { depth: dep, bevelEnabled: false }); geoC.set(gk, { geo: g0, edges: new THREE.EdgesGeometry(g0, 30) }); }
+        const geo = geoC.get(gk).geo, selG = SELG && SELG.b === sto.block && SELG.g === sto.gi && mode === "3d", mk = u.color + ":" + (sto.storey === false);
+        if (selG || !matC.has(mk)) { const m0 = mat({ color: new THREE.Color(u.color), transparent: sto.storey === false, opacity: sto.storey === false ? 0.75 : 1, clippingPlanes: clipping, side: THREE.DoubleSide }); if (selG) var selM = m0; else matC.set(mk, m0); }
+        const mesh = new THREE.Mesh(geo, selG ? selM : matC.get(mk));
         mesh.position.z = sto.z0; mesh.castShadow = SHADOW; mesh.receiveShadow = SHADOW;
         mesh.userData = { bid: sto.block, gi: sto.gi };
         if (SELG && SELG.b === sto.block && SELG.g === sto.gi && mode === "3d") { mesh.material.emissive = new THREE.Color(0xf28022); mesh.material.emissiveIntensity = 0.35; }
         group.add(mesh);
         const flat = mode !== "3d";
-        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: flat ? 0x1b232c : 0x28323c, transparent: true, opacity: flat ? 0.85 : 0.3, clippingPlanes: clipping }));
+        if (!edgeM) edgeM = new THREE.LineBasicMaterial({ color: flat ? 0x1b232c : 0x28323c, transparent: true, opacity: flat ? 0.85 : 0.3, clippingPlanes: clipping });
+        const edges = new THREE.LineSegments(geoC.get(gk).edges, edgeM);
         edges.position.z = sto.z0; group.add(edges);
         zmax = Math.max(zmax, sto.z1);
       }
@@ -1181,3 +1173,19 @@ export function comps(arr) {
   for (let i = 0; i < nt; i++) { const c = tri[i]; for (let k = 0; k < 3; k++) { const x = arr[i * 9 + k * 3], y = arr[i * 9 + k * 3 + 1]; if (x < box[c * 4]) box[c * 4] = x; if (y < box[c * 4 + 1]) box[c * 4 + 1] = y; if (x > box[c * 4 + 2]) box[c * 4 + 2] = x; if (y > box[c * 4 + 3]) box[c * 4 + 3] = y; } }
   return { n: map.size, tri, box };
 }
+/* the legend's items on Massing */
+PT.legendItems("massing", () => {
+  const sw = (c, st = "#333", dash = "") => `<rect x="2" y="2" width="24" height="12" fill="${c}" stroke="${st}" stroke-width="0.8"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`, ln = (c, dash = "", w = 1.6) => `<line x1="2" y1="8" x2="26" y2="8" stroke="${c}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`;
+  return ["Uses", ...Object.values(M.USES).map((u) => ({ svg: sw(u.color), label: u.label })),
+    "On the plan and in 3D",
+    { svg: sw("#e2ebdd", "#2e7d32"), label: "The site" },
+    { svg: sw("none", "#1f6feb", "5 4"), label: "Floors with a plate of their own" },
+    { svg: sw("#fbd9bb", "#f28022"), label: "The level being edited (its corners orange)" },
+    { svg: sw("#dfe3e8", "#b8bec6"), label: "Neighbouring buildings" },
+    { svg: sw("#2ea043", "#2ea043"), label: "Refuge floor due" },
+    "Elevation and section",
+    { svg: ln("#666666"), label: "Site level (mPD)" },
+    { svg: ln("#9aa3ad", "3 2", 1), label: "Floor levels: ▽ +mPD and the floor" },
+    { svg: ln("#8a6d3b"), label: "Top of the building" },
+    { svg: ln("#cf222e", "4 3"), label: "Height limit (OZP)" }];
+});

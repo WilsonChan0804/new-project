@@ -48,5 +48,17 @@ ok(near(po.at, 3.1), "an opening dropped near the end stays on the segment");
 ok(near(W.snapAngle([0, 0], [10, 1])[1], 0) && near(W.snapAngle([0, 0], [10, 2.5], 15)[1], Math.hypot(10, 2.5) * Math.sin(Math.PI / 12), 1e-3), "15° steps while drawing");
 const cl = W.clipHalf([[0, 0], [10, 0], [10, 10], [0, 10]], [4, 0], [1, 0]);
 ok(near(W.polyArea(cl), 60), "a plate clipped at x = 4: 60 m² left");
+// a wall's start point dragged: its door keeps its place on the plan; a segment moved whole: its door goes with it
+{
+  const w = { path: [[0, 0], [10, 0], [10, 5]], openings: [{ seg: 0, at: 4, w: 0.9 }, { seg: 1, at: 1, w: 0.9 }] };
+  const o1 = W.keepOpenings(w, [[-2, 0], [10, 0], [10, 5]], -1);
+  ok(Math.abs(o1[0].at - 6) < 1e-9 && o1[1].at === 1, "start pulled back 2 m: the door at x 4 stays (at 6 from the new start)");
+  const o2 = W.keepOpenings(w, [[0, 1], [10, 1], [10, 5]], 0);
+  ok(o2[0].at === 4, "the first segment moved whole: its door with it");
+  const o3 = W.keepOpenings(w, [[0, 0], [12, 0], [12, 5]], 0);
+  ok(o3[1].at === 1, "the second segment's start moved square to it: its door at the same distance along");
+  const o4 = W.keepOpenings(w, [[6, 0], [10, 0], [10, 5]], -1);
+  ok(o4[0].at === 0, "the start dragged past the door: kept on its segment (at 0)");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

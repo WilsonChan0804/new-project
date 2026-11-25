@@ -14,7 +14,7 @@ const COLS = [0xf6d7a7, 0xcfe3f5, 0xd9ecd0, 0xf3cfd6, 0xe3dbf3, 0xf7e7b4, 0xd2ec
 export async function show(host, r, o) {
   if (!V) V = await import("./vendor/three-fragments.js");
   if (!R) R = scene(V.THREE, V.OrbitControls, host);
-  R.build(r, o || {});
+  const t0 = performance.now(); R.build(r, o || {}); window.__f3dT = { build: Math.round((performance.now() - t0) * 10) / 10, objects: R.count ? R.count() : null };
   return R;
 }
 export function hide() { if (R) R.paused = true; }
@@ -63,6 +63,7 @@ function scene(THREE, Orbit, host) {
     const sh = new THREE.Shape(); poly.forEach(([x, y], i) => (i ? sh.lineTo(x, -y) : sh.moveTo(x, -y))); sh.closePath();
     const me = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: z1 - z0, bevelEnabled: false }), m); me.position.z = z0; g.add(me);
   };
+  self.count = () => { let n = 0; if (grp) grp.traverse(() => n++); return n; };
   self.build = (r, o) => {
     self.paused = false;
     if (grp) { sc.remove(grp); grp.traverse((q) => q.geometry && q.geometry.dispose()); }
@@ -76,30 +77,42 @@ function scene(THREE, Orbit, host) {
     const legGroup = (l) => { const g = new THREE.Group(); g.position.set(l.xf.ox, -l.xf.oy, 0); g.rotation.z = -l.xf.ang; grp.add(g); return g; };
     const LG = legs.map(legGroup);
     // the lower floors: a slab, a box a unit, the core all the way up
-    const later = [];
-    for (let k = 0; k < lower; k++) {
-      const z = k * H;
-      slab(grp, r.F.poly, z, z + sl, mat(0xc9ced4));
+    const later = [], bodies = new Map();
+    const bodyGeo = (q, h) => {
+      if (bodies.has(q.rooms)) return bodies.get(q.rooms);
+      const P = FC.unitBody(q); let v = null;
+      if (P) { const sh = new THREE.Shape(); P.forEach(([x, y], i) => (i ? sh.lineTo(x, -y) : sh.moveTo(x, -y))); sh.closePath(); const geo = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false }); v = { geo, edges: new THREE.EdgesGeometry(geo) }; }
+      bodies.set(q.rooms, v); return v;
+    };
+    // one lower floor made once (z = 0) and copied up: the copies share its shapes, so a tall block is quick
+    const lowerTpl = () => {
+      const T = new THREE.Group(), z = 0, TL = legs.map((l) => { const g = new THREE.Group(); g.position.set(l.xf.ox, -l.xf.oy, 0); g.rotation.z = -l.xf.ang; T.add(g); return g; });
+      slab(T, r.F.poly, z, z + sl, mat(0xc9ced4));
       legs.forEach((l, li) => {
         for (const q of l.r.placed) {
           // its body (the rooms), not its box: the balcony, UP and A/C platform are not in it, but drawn as themselves
-          for (const rm of q.rooms) box(LG[li], q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h, z + sl, z + H, mat(colOf.get(q.name), 0.92), true);
-          for (const e of q.extras || []) later.push(() => extra3d(LG[li], q, e, z + sl));
+          // out to its external walls' outer faces: one shape a unit, made once and used on every floor
+          const bg = bodyGeo(q, H - sl);
+          if (bg) { const me = new THREE.Mesh(bg.geo, mat(colOf.get(q.name), 0.92)); me.position.set(q.x, -q.y, z + sl); TL[li].add(me); const l = new THREE.LineSegments(bg.edges, edgeM); l.position.copy(me.position); TL[li].add(l); }
+          else for (const rm of q.rooms) box(TL[li], q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h, z + sl, z + H, mat(colOf.get(q.name), 0.92), true);
+          for (const e of q.extras || []) extra3d(TL[li], q, e, z + sl);
           // its windows and curtain walls on the outside, as glass a little proud of the box
+          const PWR = (q.ops || []).length ? FC.placedWalls(q).rects : [];
           for (const o of q.ops || []) {
             const ax = q.x + o.a[0], ay = q.y + o.a[1], bx = q.x + o.b[0], by = q.y + o.b[1], vv = Math.abs(ax - bx) < 1e-6, za = z + sl + (o.k === "win" ? 0.9 : 0), zb = z + sl + (o.k === "win" ? 2.2 : H - sl - 0.2);
             // on the rooms' face it is in, a little proud on the side away from the rooms
             const mx = (ax + bx) / 2, my = (ay + by) / 2, inR = (px, py) => q.rooms.some((rm) => px > q.x + rm.x && px < q.x + rm.x + rm.w && py > q.y + rm.y && py < q.y + rm.y + rm.h);
             const out = vv ? (inR(mx - 0.1, my) ? 1 : -1) : (inR(mx, my - 0.1) ? 1 : -1);
-            const w0 = FC.placedWalls(q).rects.find((w) => mx >= w.x0 - 0.02 && mx <= w.x1 + 0.02 && my >= w.y0 - 0.02 && my <= w.y1 + 0.02);
+            const w0 = PWR.find((w) => mx >= w.x0 - 0.02 && mx <= w.x1 + 0.02 && my >= w.y0 - 0.02 && my <= w.y1 + 0.02);
             const c = w0 ? (vv ? (out > 0 ? w0.x1 : w0.x0) : (out > 0 ? w0.y1 : w0.y0)) : vv ? ax : ay, e2 = 0.02 * out;
-            if (vv) box(LG[li], Math.min(c, c + e2), Math.min(ay, by), Math.max(c, c + e2), Math.max(ay, by), za, zb, mat(0x8fc3ea, 0.6));
-            else box(LG[li], Math.min(ax, bx), Math.min(c, c + e2), Math.max(ax, bx), Math.max(c, c + e2), za, zb, mat(0x8fc3ea, 0.6));
+            if (vv) box(TL[li], Math.min(c, c + e2), Math.min(ay, by), Math.max(c, c + e2), Math.max(ay, by), za, zb, mat(0x8fc3ea, 0.6));
+            else box(TL[li], Math.min(ax, bx), Math.min(c, c + e2), Math.max(ax, bx), Math.max(c, c + e2), za, zb, mat(0x8fc3ea, 0.6));
           }
         }
-        for (const c of l.r.core) if (c.kind !== "passage") box(LG[li], c.x, c.y, c.x + c.w, c.y + c.h, z + sl, z + H, mat(0x9aa1a8), true);
+        for (const c of l.r.core) if (c.kind !== "passage") box(TL[li], c.x, c.y, c.x + c.w, c.y + c.h, z + sl, z + H, mat(0x9aa1a8), true);
       });
-    }
+      return T;
+    };
     // the top floor, open
     const z = lower * H, wz = z + sl, wh = Math.min(H - sl, 2.8);
     slab(grp, r.F.poly, z, wz, mat(0xd4d8dd));
@@ -172,6 +185,7 @@ function scene(THREE, Orbit, host) {
       }
     }
     for (const f of later) f();
+    if (lower > 0) { const T = lowerTpl(); for (let k = 0; k < lower; k++) { const c = k ? T.clone() : T; c.position.z = k * H; grp.add(c); } }
     legs.forEach((l, li) => buildLeg(LG[li], l.r, z, wz, wh));
     function buildLeg(grp, r) {
     box(grp, r.corr ? r.corr.x0 : 0, r.y0, r.corr ? r.corr.x1 : r.L, r.y1, wz, wz + 0.01, mat(0xe6e9ee));

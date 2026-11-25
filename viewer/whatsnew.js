@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-01", date: "2 Dec 2026",
+    items: [
+      "**Previews when you choose**: the template and office library lists, the fittings and furniture list on 3 · Units, the unit type on 4 · Floors and the units in the 2 · Massing mix open as a card of small plans (a search box when the list is long) - click one to choose it.",
+      "**Space, as in Revit**: on 3 · Units a fitting about to be placed follows the cursor and Space (or R) turns it before you click; Space turns a selected fitting or balcony 90° and steps a selected door round its four ways. On 4 · Floors a tap of Space turns the selected unit or core piece, Shift+Space mirrors a unit, and on a door it puts the hinge on the other side (Space held and dragged still pans).",
+      "**Pin the legend**: the pin in the legend keeps it open at the right, under its button, on 2 · Massing, 3 · Units and 4 · Floors (each page's own items) and after a reload.",
+      "**Fixed**: Fit plate now goes out to the walls drawn on the floor; in 3D the lower floors' units go out to their external walls' outer faces (to the plate's edge); moving a wall in 3 · Units keeps the doors and windows in the walls along the other way where they stand, and dragging a drawn wall's end on 4 · Floors keeps its doors in place; the Massing toolbar no longer stays on the Site page.",
+      "**Quicker**: the 3D of a typical floor builds one lower floor and copies it up (the copies share it), the Massing 3D shares each storey's shape, and the units' tabs keep their figures.",
+    ],
+  },
+  {
     version: "2027-03-31", date: "1 Dec 2026",
     items: [
       "**Schemes A, B, C** in 2 · Massing: save the massing (with its floors) as a scheme, change it, save another, then **Compare** them side by side - GFA, PR, SC, height, flats, mix, saleable, efficiency, the 10% cap - the best of each row in green. Open a scheme to carry on from it (Undo brings back the one before).",

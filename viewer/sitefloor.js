@@ -28,7 +28,13 @@ const $ = (s, r = document) => r.querySelector(s);
 let SPACE = false;
 const MEAS = ME.create();   // the measures on the plan (for the visit)
 addEventListener("keydown", (ev) => { if (ev.code === "Space" && !ev.target.closest("input,textarea,select")) { if (ON && !SPACE) { SPACE = true; } if (ON && document.getElementById("st-fplan") && !document.getElementById("st-fplan").hidden) ev.preventDefault(); } });
-addEventListener("keyup", (ev) => { if (ev.code === "Space") SPACE = false; });
+let SPACEPAN = false;   // Space held to pan: on its release nothing is turned
+addEventListener("keyup", (ev) => {
+  if (ev.code !== "Space") return;
+  const tap = SPACE && !SPACEPAN; SPACE = false; SPACEPAN = false;
+  // Space tapped (as in Revit): the selected unit or core piece turned 90° (Shift: a unit mirrored), a door's hinge flipped
+  if (tap && ON && !ev.target.closest("input,textarea,select") && !$("#st-fpanel").hidden) spaceTurn(ev.shiftKey);
+});
 const cap = (el, ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic or finished pointer */ } };
 const f3 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -121,7 +127,7 @@ export function init(ctx) {
     { id: "v:3d", key: "t", label: "Plan / 3D", group: "View", run: () => onTool(VIEW === "plan" ? "v:3d" : "v:plan") },
   ], [
     { keys: "Ctrl+Z / Ctrl+Y", label: "Undo / redo", group: "Edit" }, { keys: "Ctrl+C / Ctrl+X / Ctrl+V", label: "Copy / cut / paste", group: "Edit" }, { keys: "Ctrl+D", label: "Duplicate", group: "Edit" },
-    { keys: "Delete", label: "Remove the selected", group: "Edit" }, { keys: "Esc", label: "Stop drawing / clear the selection", group: "Edit" }, { keys: "Right-click", label: "Menu: copy, paste, add a door…", group: "Edit" },
+    { keys: "Delete", label: "Remove the selected", group: "Edit" }, { keys: "Space (tap)", label: "Turn the selected unit or core piece 90°; a door: its hinge to the other side (Space held and dragged: pan)", group: "Edit" }, { keys: "Shift+Space", label: "Mirror the selected unit", group: "Edit" }, { keys: "Esc", label: "Stop drawing / clear the selection", group: "Edit" }, { keys: "Right-click", label: "Menu: copy, paste, add a door…", group: "Edit" },
     { keys: "Enter / double-click", label: "End a wall or corridor", group: "While drawing" }, { keys: "Tab", label: "Wall line: centre / left / right", group: "While drawing" },
     { keys: "0–9 .", label: "Type the next segment's length", group: "While drawing" }, { keys: "Shift", label: "Any angle (no 15° steps)", group: "While drawing" }, { keys: "Alt", label: "No snapping", group: "While drawing" },
     { keys: "Wheel / pinch", label: "Zoom", group: "View" }, { keys: "Drag the empty plan", label: "Pan", group: "View" },
@@ -137,6 +143,12 @@ export function init(ctx) {
   }, true);
 }
 const mid = () => (LAST ? [LAST.L / 2, LAST.D / 2] : [0, 0]);
+function spaceTurn(shift) {
+  if (VIEW !== "plan" || !C.can() || !LAST) return;
+  if (OPSEL && opAt(OPSEL)) return onTool("o:flip");
+  if (CSEL != null && LAST.core[CSEL]) return onTool("c:rot");
+  if (PSEL != null && LAST.placed[PSEL]) return onTool(shift ? "u:flip" : "u:rot");
+}
 function clearSel() { PSEL = CSEL = WSEL = VSEL = PTSEL = OPSEL = SPPT = null; SPSEL = false; SWAP = false; JOINA = null; }
 function setTool(t) {
   TOOL = t; WALLDRAW = null; JOINA = null; LIBHOV = null;
@@ -617,7 +629,7 @@ function propHtml() {
   if (PSEL != null && r.placed[PSEL]) {
     const q = r.placed[PSEL], l = legK(q.leg || 0);
     return PT.propBar({ icon: "unit", text: q.name, sub: `${f1(q.fig.saleable)} m² saleable${q.flags && q.flags.length ? " · " + q.flags[0] : ""}` }, [
-      { key: "u.type", type: "sel", label: "type", value: q.entry.u || q.name, options: units().map((u) => [u.name, u.name]) },
+      { key: "u.type", type: "sel", pick: "unit", label: "type", value: q.entry.u || q.name, options: units().map((u) => [u.name, u.name]) },
       { key: "u.x", label: "at", value: q.x - l.A[0], unit: "m", title: "Along the corridor from its start" },
       { key: "u.side", type: "seg", value: q.band, options: [["n", "↑", "This side of the corridor"], ["s", "↓", "The other side"]] },
     ], acts([["u:flip", "mirror", "Mirror it"], ["u:rot", "rotate", "Turn it 90°"], ["u:swap", "flip", "Swap with … (then click the other)"], ...(q.fixed ? [["u:free", "align", "Back into the row along the corridor"]] : []), ["u:edit", "edit", "Edit this unit type in place"], ["u:variant", "copy", "A variant for this flat only"], ["u:del", "trash", "Remove (Delete)"]]));
@@ -627,7 +639,7 @@ function propHtml() {
     { key: "t.t", label: "t", value: WT().t || Number(o.coreWall) || 0.25, unit: "m", step: 0.005 }, { key: "t.m", type: "sel", value: WT().m, options: [["rc", "RC"], ["blk", "Block"]] },
     { key: "t.just", type: "seg", value: WT().just, options: [["c", "justc", "Centre line (Tab)"], ["l", "justl", "Left face on the line"], ["r", "justr", "Right face on the line"]] }], []);
   if (TOOL === "corridor" || TOOL === "lobby") return PT.propBar({ icon: TOOL === "corridor" ? "corridor" : "passage", text: TOOL === "corridor" ? "Corridor" : "Lobby / passage", sub: "click points along its middle · Enter to end" }, [{ key: "f.corridor", label: "width", value: o.corridor, unit: "m", step: 0.05 }], []);
-  if (TOOL === "unit") return PT.propBar({ icon: "unit", text: "Add a unit", sub: "click beside the corridor" }, [{ key: "t.unit", type: "sel", value: ADDU() || (units()[0] || {}).name, options: units().map((u) => [u.name, u.name]) }], []);
+  if (TOOL === "unit") return PT.propBar({ icon: "unit", text: "Add a unit", sub: "click beside the corridor" }, [{ key: "t.unit", type: "sel", pick: "unit", value: ADDU() || (units()[0] || {}).name, options: units().map((u) => [u.name, u.name]) }], []);
   if (TOOL.startsWith("add:")) return PT.propBar({ icon: TOOL.slice(4), text: "Add " + ({ stair: "a staircase", lift: "a lift", refuse: "a refuse room", riser: "an E&M riser", lobby: "a protected lobby" }[TOOL.slice(4)]), sub: "click where it goes" }, [], []);
   if (TOOL === "split") return PT.propBar({ icon: "split", text: "Cut a wall", sub: "click it where it is to be cut" }, [], []);
   if (TOOL === "join") return PT.propBar({ icon: "join", text: "Join walls", sub: JOINA != null ? "now click the wall to join it to" : "click the first wall" }, [], []);
@@ -898,7 +910,7 @@ function drawPlan0() {
   for (const q of LG) g += q.over;
   // the walls drawn on the floor, at any angle: their outlines first, their fills over them, so walls that meet read as one
   const FILL = { blk: "url(#fl-blk)", rc: "url(#fl-rc)" };
-  const wview = (r.walls || []).map((w, wi) => (DRAG && DRAG.moved && (DRAG.k === "fwpt" || DRAG.k === "fwseg") && DRAG.i === wi && DRAG.path ? FC.floorWalls([Object.assign({}, w, { path: DRAG.path })], w.t)[0] || w : w));
+  const wview = (r.walls || []).map((w, wi) => (DRAG && DRAG.moved && (DRAG.k === "fwpt" || DRAG.k === "fwseg") && DRAG.i === wi && DRAG.path ? FC.floorWalls([Object.assign({}, w, { path: DRAG.path, openings: WC.keepOpenings(w, DRAG.path, DRAG.k === "fwseg" ? DRAG.p : -1) })], w.t)[0] || w : w));
   const LWf = Math.max(0.7, Math.min(1.3, SC * 0.03)), pts = (P) => P.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ");
   for (const w of wview) for (const q of w.pieces) g += `<polygon points="${pts(q)}" fill="#111" stroke="#111" stroke-width="${LWf * 2}" stroke-linejoin="miter" pointer-events="none" />`;
   for (const w of wview) for (const q of w.pieces) g += `<polygon points="${pts(q)}" fill="${FILL[w.m] || FILL.rc}" stroke="none" pointer-events="none" />`;
@@ -1594,7 +1606,7 @@ function wirePlan() {
     if (ev.target.closest(".pz-bar")) return;
     if (ev.button === 2) return;   // the right button: its menu
     // the middle button (or Space held): pan, whatever is under it
-    if (ev.button === 1 || SPACE) { ev.preventDefault(); DRAG = null; pan = { x: ev.clientX, y: ev.clientY, px: ZM.px, py: ZM.py, moved: false }; cap(host, ev); return; }
+    if (ev.button === 1 || SPACE) { if (SPACE) SPACEPAN = true; ev.preventDefault(); DRAG = null; pan = { x: ev.clientX, y: ev.clientY, px: ZM.px, py: ZM.py, moved: false }; cap(host, ev); return; }
     if (TOOL === "measure" && LAST && ev.button === 0) { ev.preventDefault(); ME.click(MEAS, ME.snap(toPlan(ev), snapGeo(), 12 / SC)); drawPlan(); return; }
     const can = C.can(), t = ev.target;
     // drawing a polyline: each click a point; a second click on the last point (or double-click, Enter) ends it
@@ -1748,7 +1760,7 @@ function wirePlan() {
     if (d.k === "spsel") { host.title = ""; if (d.moved && d.path && SPSEL) return editSpine(() => d.path, true); clearSel(); SPSEL = true; return drawPlan(); }
     if (d.k === "vert") { if (d.moved && d.poly) { VSEL = null; return editPlate(() => d.poly); } const now = Date.now(), dbl = drawPlan.lastV && drawPlan.lastV.i === d.i && now - drawPlan.lastV.t < 450; drawPlan.lastV = { i: d.i, t: now }; if (dbl) { drawPlan.lastV = null; return removeCorner(d.i); } clearSel(); VSEL = d.i; return drawPlan(); }
     if (d.k === "cedge") { if (!d.moved || !d.box) return drawPlan(); const A = legK(d.leg).A, i = pIdx(d.i); return editCore((P) => { Object.assign(P[i], { x: R3(d.box.x - A[0]), y: R3(d.box.y - A[1]), w: d.box.w, h: d.box.h }); return i; }); }
-    if (d.k === "fwpt" || d.k === "fwseg") { if (!d.moved || !d.path) return drawPlan(); return editWalls((A) => { A[d.i].path = WC.cleanPath(d.path); return d.i; }); }
+    if (d.k === "fwpt" || d.k === "fwseg") { if (!d.moved || !d.path) return drawPlan(); return editWalls((A) => { A[d.i].openings = WC.keepOpenings(A[d.i], d.path, d.k === "fwseg" ? d.p : -1); A[d.i].path = WC.cleanPath(d.path); return d.i; }); }
     if (d.k === "spt") { if (!d.moved || !d.path) { SPSEL = true; SPPT = d.p; return drawPlan(); } SPPT = d.p; return editSpine(() => d.path, true); }
     if (d.k === "ppt") { if (!d.moved || !d.path) return drawPlan(); const A = legK(d.leg).A, i = pIdx(d.i); return editCore((P) => { P[i].path = FC.orthoPath(d.path).map((p) => [R3(p[0] - A[0]), R3(p[1] - A[1])]); if (P[i].for) P[i].auto = false; return i; }); }
     if (d.k === "cdo") {
@@ -1806,6 +1818,8 @@ function fitPlate() {
     else for (const q of c.rects || []) rect(q.x0, q.y0, q.x1, q.y1);
     if (L.corr) rect(L.corr.x0, L.y0, L.corr.x1, L.y1);
   }
+  // the walls drawn on the floor: the plate goes out to their outer faces too
+  for (const w of r.walls || []) for (const q of w.pieces || []) if (q.length >= 3) shapes.push(q.map((p) => [p[0], p[1]]));
   const gap = Number(opts(cur()).fitGap); 
   const ring = FC.hugOutline(shapes, gap >= 0 && isFinite(gap) ? gap : 0.5);
   if (!ring) return toast("Nothing on the floor to fit the plate round", true);

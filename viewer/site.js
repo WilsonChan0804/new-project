@@ -16,6 +16,7 @@ import { OZP, OZP_PORTAL } from "./ozptables.js";
 import * as MS from "./sitemass.js";
 import * as UN from "./siteunits.js";
 import * as FL from "./sitefloor.js";
+import { syncLegend } from "./plantools.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -880,6 +881,7 @@ function zoningBox(s) {
     if (m === "units" || m === "floors") $("#st-panel").hidden = true;
     draw(); if (m === "site") { panel(); tools(); }
     try { sessionStorage.setItem("lwk-viewer:site-mode", m); } catch (e) {}
+    syncLegend();
   };
   document.querySelector(".st-mode").addEventListener("click", (ev) => { const b = ev.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });
   let m0 = "site"; try { m0 = new URLSearchParams(location.search).get("mode") || sessionStorage.getItem("lwk-viewer:site-mode") || "site"; } catch (e) {}
