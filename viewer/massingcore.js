@@ -57,7 +57,7 @@ export function stacks(m) {
     const a = b.fp && b.fp.length >= 3 ? areaXY(b.fp) : 0;
     let k = base(b), z = zOf(b);
     const storeys = [];
-    for (const g of groupsOf(b)) {
+    for (const [gi, g] of groupsOf(b).entries()) {
       const u = USES[g.use] || USES.dom;
       const fp = g.fp && g.fp.length >= 3 ? g.fp : b.fp, ga = g.fp && g.fp.length >= 3 ? areaXY(g.fp) : a;
       const isStorey = g.storey == null ? u.storey !== false : !!g.storey;
@@ -73,7 +73,7 @@ export function stacks(m) {
           const gfa = pa * acc / 100;
           // the floor area not counted is the concession; any extra (balconies, UP outside the footprint) on top
           const conc = pa - gfa + (pc === pieces[0] ? Number(g.extra) || 0 : 0);
-          storeys.push({ block: b.id, no, storey: isStorey, use: pc.use, cls: pu.cls, cap: !!pu.cap, h: g.h, z0: z, z1: z + g.h, area: pa, gfa, conc, fp: pc.fp, part: !pc.whole });
+          storeys.push({ block: b.id, gi, no, storey: isStorey, use: pc.use, cls: pu.cls, cap: !!pu.cap, h: g.h, z0: z, z1: z + g.h, area: pa, gfa, conc, fp: pc.fp, part: !pc.whole });
         }
         z += g.h;
       }

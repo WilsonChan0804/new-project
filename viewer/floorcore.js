@@ -1178,44 +1178,59 @@ export function hugOutline(shapes, gap = 0.5, cell = 0.05) {
   // split the closed ring at its two farthest points, straighten each half
   let fi = 0; for (let k = 1; k < P.length; k++) if (Math.hypot(P[k][0] - P[0][0], P[k][1] - P[0][1]) > Math.hypot(P[fi][0] - P[0][0], P[fi][1] - P[0][1])) fi = k;
   P = [...dp(P.slice(0, fi + 1), cell * 1.2).slice(0, -1), ...dp([...P.slice(fi), P[0]], cell * 1.2).slice(0, -1)];
-  // the corners back on the shapes' corners near them; else the lines through them on the shapes' faces near them
-  // (kept only if no shape then pokes out of it: else the grid's outline, a cell out from the shapes, is taken)
-  const P0 = P.map((p) => [p[0], p[1]]);
-  const V = all;
-  P = P.map((p) => { let bq = null, bd = cell * 3; for (const v of V) { const d = Math.hypot(v[0] - p[0], v[1] - p[1]); if (d < bd) { bd = d; bq = v; } } return bq ? Object.assign([bq[0], bq[1]], { on: 1 }) : p; });
-  // a point left by the grid next to a corner put back: dropped
-  P = P.filter((p, k) => p.on || ![P[(k - 1 + P.length) % P.length], P[(k + 1) % P.length]].some((q) => q.on && Math.hypot(q[0] - p[0], q[1] - p[1]) < cell * 4));
-  P = P.filter((p, k, A) => { const q = A[(k + 1) % A.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-6; });
-  const xsV = V.map((v) => v[0]), ysV = V.map((v) => v[1]);
-  const near1 = (A, v) => { let b = null, bd = cell * 0.9; for (const a of A) { const d = Math.abs(a - v); if (d < bd) { bd = d; b = a; } } return b; };
-  for (let k = 0; k < P.length; k++) {
-    const a = P[k], b = P[(k + 1) % P.length];
-    if (Math.abs(a[0] - b[0]) < cell * 0.5) { const x = near1(xsV, (a[0] + b[0]) / 2); if (x != null) { a[0] = x; b[0] = x; } }
-    if (Math.abs(a[1] - b[1]) < cell * 0.5) { const y = near1(ysV, (a[1] + b[1]) / 2); if (y != null) { a[1] = y; b[1] = y; } }
-  }
-  P = P.map((p) => [r3(p[0]), r3(p[1])]).filter((p, k, A) => { const q = A[(k + 1) % A.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-6; });
-  // points on a straight run (within 60 mm of the line through their neighbours): dropped, one at a time
+  // each edge put on the shapes' face it follows: the outermost face parallel to it (within 1 degree) and within 1.5 cells,
+  // its corners where the edges' lines then cross; an edge on no face (across a gap closed) stays where the grid put it
+  const segs = [];
+  for (const Sh of S2) for (let k = 0; k < Sh.length; k++) { const a = Sh[k], b = Sh[(k + 1) % Sh.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L > 1e-6) segs.push([a, b, [(b[0] - a[0]) / L, (b[1] - a[1]) / L]]); }
   const off = (a, p, b) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-9; return Math.abs((b[0] - a[0]) * (a[1] - p[1]) - (a[0] - p[0]) * (b[1] - a[1])) / L; };
-  const tidy = (Q) => { for (let again = true; again && Q.length > 3;) { again = false; for (let k = 0; k < Q.length; k++) { const a = Q[(k - 1 + Q.length) % Q.length], b = Q[(k + 1) % Q.length]; if (off(a, Q[k], b) < 0.06) { Q.splice(k, 1); again = true; break; } } } return Q; };
-  P = tidy(P);
-  // every shape inside it: points along each face, 50 mm in from it
+  const tidy = (Q) => { for (let again = true; again && Q.length > 3;) { again = false; for (let k = 0; k < Q.length; k++) { const a = Q[(k - 1 + Q.length) % Q.length], b = Q[(k + 1) % Q.length]; if (off(a, Q[k], b) < 0.006 || Math.hypot(Q[k][0] - b[0], Q[k][1] - b[1]) < 1e-4) { Q.splice(k, 1); again = true; break; } } } return Q; };
+  P = tidy(P.map((p) => [p[0], p[1]]));
+  // the edges as lines: a direction d, the outward normal o (the ring keeps its inside on the right, y down), the offset c = o . p
+  const lines = P.map((p, k) => { const q = P[(k + 1) % P.length], L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1e-9, d = [(q[0] - p[0]) / L, (q[1] - p[1]) / L], o = [d[1], -d[0]]; return { d, o, c: o[0] * p[0] + o[1] * p[1], a: p, b: q }; });
+  const sin1 = Math.sin(3 * Math.PI / 180);
+  for (const ln of lines) {
+    const t0 = Math.min(ln.d[0] * ln.a[0] + ln.d[1] * ln.a[1], ln.d[0] * ln.b[0] + ln.d[1] * ln.b[1]), t1 = Math.max(ln.d[0] * ln.a[0] + ln.d[1] * ln.a[1], ln.d[0] * ln.b[0] + ln.d[1] * ln.b[1]);
+    let best = null;
+    for (const [a, b, d] of segs) {
+      if (Math.abs(d[0] * ln.d[1] - d[1] * ln.d[0]) > sin1) continue;
+      const c2 = ln.o[0] * a[0] + ln.o[1] * a[1]; if (Math.abs(c2 - ln.c) > cell * 2) continue;
+      const s0 = Math.min(ln.d[0] * a[0] + ln.d[1] * a[1], ln.d[0] * b[0] + ln.d[1] * b[1]), s1 = Math.max(ln.d[0] * a[0] + ln.d[1] * a[1], ln.d[0] * b[0] + ln.d[1] * b[1]);
+      if (Math.min(s1, t1) - Math.max(s0, t0) < Math.min(0.05, (t1 - t0) / 2)) continue;
+      if (best == null || c2 > best) best = c2;
+    }
+    if (best != null) { ln.c = best; ln.on = true; } else ln.c = ln.c + cell * 0.5;   // across a gap: half a cell out, clear of what it closes
+    // a snapped edge takes its face's own direction
+    if (best != null) { const f = segs.find(([a, b, d]) => Math.abs(d[0] * ln.d[1] - d[1] * ln.d[0]) <= sin1 && Math.abs(ln.o[0] * a[0] + ln.o[1] * a[1] - best) < 1e-9); if (f) { const sg = f[2][0] * ln.d[0] + f[2][1] * ln.d[1] >= 0 ? 1 : -1; ln.d = [f[2][0] * sg, f[2][1] * sg]; ln.o = [ln.d[1], -ln.d[0]]; ln.c = ln.o[0] * f[0][0] + ln.o[1] * f[0][1]; } }
+  }
+  // a short step the grid left between two edges on faces (at a turned corner): dropped, its neighbours meet
+  for (let again = true; again && lines.length > 3;) { again = false; for (let k = 0; k < lines.length; k++) { const A = lines[(k - 1 + lines.length) % lines.length], B = lines[k], Cn = lines[(k + 1) % lines.length]; if (!B.on && (A.on || Cn.on) && Math.hypot(B.b[0] - B.a[0], B.b[1] - B.a[1]) < cell * 8 && Math.abs(A.d[0] * Cn.d[1] - A.d[1] * Cn.d[0]) > 0.05) { lines.splice(k, 1); again = true; break; } } }
+  // edges next to each other on the same face: one
+  for (let k = lines.length - 1; k > 0 && lines.length > 3; k--) { const A = lines[k - 1], B = lines[k]; if (A.on && B.on && Math.abs(A.d[0] * B.d[1] - A.d[1] * B.d[0]) < 1e-9 && A.d[0] * B.d[0] + A.d[1] * B.d[1] > 0 && Math.abs(A.c - B.c) < 1e-6) lines.splice(k, 1); }
+  const corners = () => lines.map((B, k) => { const A = lines[(k - 1 + lines.length) % lines.length], det = A.o[0] * B.o[1] - A.o[1] * B.o[0];
+    if (Math.abs(det) < 1e-9) { const p = B.a, t = B.c - (B.o[0] * p[0] + B.o[1] * p[1]); return [p[0] + B.o[0] * t, p[1] + B.o[1] * t]; }
+    return [(A.c * B.o[1] - A.o[1] * B.c) / det, (A.o[0] * B.c - A.c * B.o[0]) / det]; });
+  // every shape inside: points along each face, 50 mm in from it; one outside pushes the edge nearest it out to it
   const probes = [];
-  for (const Sh of S2) {
+  const inPiece = (Sh) => { const cx = Sh.reduce((a2, p) => a2 + p[0], 0) / Sh.length, cy = Sh.reduce((a2, p) => a2 + p[1], 0) / Sh.length, i = Math.floor((cx - X0) / cell), j = Math.floor((cy - Y0) / cell); return inn(i, j); };
+  for (const Sh of S2.filter(inPiece)) {
     const cx = Sh.reduce((a2, p) => a2 + p[0], 0) / Sh.length, cy = Sh.reduce((a2, p) => a2 + p[1], 0) / Sh.length;
     for (let k = 0; k < Sh.length; k++) {
       const a = Sh[k], b = Sh[(k + 1) % Sh.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n3 = Math.max(1, Math.ceil(L / 0.25));
       for (let i = 0; i <= n3; i++) { const p = [a[0] + (b[0] - a[0]) * i / n3, a[1] + (b[1] - a[1]) * i / n3], d = Math.hypot(cx - p[0], cy - p[1]) || 1, e = Math.min(0.05, d / 2); probes.push([p[0] + (cx - p[0]) / d * e, p[1] + (cy - p[1]) / d * e]); }
     }
   }
-  const holds = (Q) => Q.length >= 3 && probes.every((v) => inPoly(Q, v[0], v[1]));
-  if (!holds(P)) {
-    // the grid's outline grown by a cell (its edges then clear the shapes' faces), straightened only
-    const cx = P0.reduce((a2, p) => a2 + p[0], 0) / P0.length, cy = P0.reduce((a2, p) => a2 + p[1], 0) / P0.length;
-    void cx; void cy;
-    // the ring goes with the inside on its right (y down): (-dy, dx) of an edge points in; each corner moved out along the two edges' normals
-    const grow = (R0, d) => R0.map((p, k) => { const a = R0[(k - 1 + R0.length) % R0.length], b = R0[(k + 1) % R0.length]; const n1 = norm2([a[1] - p[1], p[0] - a[0]]), n2 = norm2([p[1] - b[1], b[0] - p[0]]), m = norm2([n1[0] + n2[0], n1[1] + n2[1]]), cs = Math.max(0.5, m[0] * n1[0] + m[1] * n1[1]); return [r3(p[0] - m[0] * d / cs), r3(p[1] - m[1] * d / cs)]; });
-    let Q = P0; for (let k = 1; k <= 4 && !holds(Q); k++) Q = grow(P0, cell * k);
-    P = tidy(Q);
+  let Q = corners();
+  for (let it = 0; it < 4; it++) {
+    const bad = probes.filter((v) => !inPoly(Q, v[0], v[1])); if (!bad.length) break;
+    for (const v of bad) {
+      let bk = -1, bd = Infinity;
+      for (let k = 0; k < Q.length; k++) { const a = Q[k], b = Q[(k + 1) % Q.length], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1e-9, t = Math.max(0, Math.min(1, ((v[0] - a[0]) * dx + (v[1] - a[1]) * dy) / L2)), d = Math.hypot(a[0] + t * dx - v[0], a[1] + t * dy - v[1]); if (d < bd) { bd = d; bk = k; } }
+      const ln = lines[bk];   // edge bk runs from corner bk to corner bk + 1: line bk
+      const need = ln.o[0] * v[0] + ln.o[1] * v[1] + 0.051; if (need > ln.c) ln.c = need;
+    }
+    Q = corners();
   }
+  // corners are where line k-1 meets line k: corner k starts edge k
+  P = tidy(Q.map((p) => [r3(p[0]), r3(p[1])]));
   return P.length >= 3 ? P : null;
 }

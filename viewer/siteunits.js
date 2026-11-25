@@ -11,6 +11,7 @@ import { toast } from "./tasks-util.js";
 import * as PZ from "./planzoom.js";
 import { wallGeom } from "./unitwalls.js";
 import * as PT from "./plantools.js";
+import * as ME from "./measure.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const cap = (el, ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic or finished pointer */ } };
@@ -50,6 +51,7 @@ export function init(ctx) {
     { id: "lib", key: "l", label: "Doors, windows, openings library", group: "Add", run: () => { if (!can()) return false; PT.toggleLibrary(); drawPlan(); } },
     { id: "alines", key: "a", label: "Area lines: off / saleable / GFA / both", group: "View", run: cyc("lwk-viewer:un-alines", ["off", "saleable", "gfa", "both"]) },
     { id: "dims", key: "m", label: "Dimensions: chains / overall / off", group: "View", run: cyc("lwk-viewer:un-dims", ["chains", "overall", "off"]) },
+    { id: "measure", key: "q", label: "Measure (two points; parallel faces: the clear width)", group: "View", run: () => { if (!ON) return false; TOOL = TOOL === "measure" ? "select" : "measure"; SEL = null; drawPlan(); } },
   ], [
     { keys: "Ctrl+Z / Ctrl+Y", label: "Undo / redo", group: "Edit" }, { keys: "Delete", label: "Remove the selected (a wall: opened)", group: "Edit" }, { keys: "Esc", label: "Select tool, clear the selection", group: "Edit" },
     { keys: "R", label: "Turn the selected fitting or balcony", group: "Edit" }, { keys: "F", label: "Flip the selected door's hinge", group: "Edit" }, { keys: "Right-click", label: "Menu: door type, delete…", group: "Edit" },
@@ -337,6 +339,18 @@ function ensure(u) {
   return u;
 }
 /* a point along a room's side: its two ends in plan metres */
+/* the measures on the unit plan (for the visit), and what they snap to: the walls' faces and ends, the rooms' corners */
+const MEAS = ME.create();
+function measureGeo(u) {
+  const f = U.figures(u), pts = [], segs = [];
+  for (const e of f.edges) {
+    if (U.isOpen(u, e)) continue;
+    const t = U.tOfU ? U.tOfU(u, e) : 0.1, v = Math.abs(e.x1 - e.x2) < 1e-6;
+    for (const sg of [-1, 1]) { const a = v ? [e.x1 + sg * t / 2, e.y1] : [e.x1, e.y1 + sg * t / 2], b = v ? [e.x2 + sg * t / 2, e.y2] : [e.x2, e.y2 + sg * t / 2]; segs.push([a, b]); pts.push(a, b); }
+  }
+  for (const r of u.rooms) pts.push([r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]);
+  return { pts, segs };
+}
 function sideSeg(r, side, at, w) {
   if (side === "n") return [[r.x + at, r.y], [r.x + at + w, r.y], [0, 1]];
   if (side === "s") return [[r.x + at, r.y + r.h], [r.x + at + w, r.y + r.h], [0, -1]];
@@ -554,6 +568,7 @@ function drawPlan() {
   if (HOVW) g += `<line x1="${sx(HOVW.e.x1)}" y1="${sy(HOVW.e.y1)}" x2="${sx(HOVW.e.x2)}" y2="${sy(HOVW.e.y2)}" stroke="#1f6feb" stroke-width="8" stroke-opacity="0.45" pointer-events="none" />`;
   if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f3(LIVE.d)} m</text>`;
   g += `<text x="${bw - 20}" y="${bh - 18}" text-anchor="end" font-size="11" fill="#6b7785">${esc(u.name || "")} · ${f.saleableFt} ft² · ${f1(f.saleable)} m²</text>`;
+  if (!INPLACE) g += ME.svg(MEAS, sx, sy);
   host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${HATCH}${g}</svg>${INPLACE ? toolbar() + popup(u, f, sx, sy, bw, bh) : ""}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
   if (!INPLACE) { const pp = popup(u, f, sx, sy, bw, bh); PT.mount("units", topBar(), pp ? `<div class="pt-prop un-prop">${pp.replace(/^<div class="un-pop"[^>]*>/, "").replace(/<\/div>$/, "")}</div>` : `<div class="pt-prop"><span class="pt-pt"><b>${esc(u.name || "Unit")}</b><small>${f.saleableFt} ft² · ${f1(f.saleable)} m² · click a wall, door or room · right-click for more</small></span></div>`, C.can() ? PT.OPENINGS : null); }
   else PT.unmount("units");
@@ -568,6 +583,7 @@ function topBar() {
     G.push([T("door", "door", "Door: click a wall", "D"), T("window", "window", "Window: click an external wall", "W"), { id: "lib", icon: "library", title: "Doors, windows and openings: drag one onto a wall", on: PT.libraryOpen() }]);
     G.push([{ html: sel("data-xadd", [["", "Balcony / UP …"], ...Object.entries(XADD).map(([k, v]) => [k, v.label])], TOOL.startsWith("x:") ? TOOL.slice(2) : "", "Then click an external wall: it goes outside it") }, { html: sel("data-fixadd", [["", "Fitting …"], ...Object.entries(FIXK).map(([k, v]) => [k, v])], TOOL.startsWith("fix:") ? TOOL.slice(4) : "", "Then click a room to place it") }]);
   }
+  G.push([T("measure", "measure", "Measure: click two points (they snap to the walls' faces and corners; two parallel faces give the clear width); Esc clears", "Q")]);
   G.push([{ html: sel("data-alines", [["off", "Area lines: off"], ["saleable", "Saleable line"], ["gfa", "GFA line"], ["both", "Saleable + GFA"]], ALINES(), "The saleable and GFA lines") }, { html: sel("data-dims", [["chains", "Dims: chains"], ["overall", "Dims: overall"], ["off", "Dims: off"]], DIMS(), "Dimensions") }]);
   if (can) G.push([{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }]);
   return PT.toolbar(G, null, "units");
@@ -723,7 +739,7 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     const d = u.doors[SEL.i], r = d && u.rooms.find((q) => q.id === d.room); if (!r) return "";
     const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
     const dt = d.type || "hinged";
-    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["door2", "Double"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening (no leaf)"], ["panel", "Access panel"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" || dt === "door2" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : dt === "opening" ? "" : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
+    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["door2", "Double"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening (no leaf)"], ["panel", "Access panel"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" || dt === "door2" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : dt === "opening" ? "" : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="pushs" title="Its start against the wall it is nearest (its face)">⇤ Push to the wall</button><button type="button" data-pd="pushe" title="Its end against the wall it is nearest (its face)">Push to the wall ⇥</button><label title="How far a pushed door stands off the wall's face">nib <select data-pdnib>${[0, 0.1].map((v) => `<option value="${v}"${+(u.doorNib || 0) === v ? " selected" : ""}>${v * 1000} mm</option>`).join("")}</select></label><button type="button" data-pd="del">Remove</button><small>drag it along the wall: it stops at the walls' faces (Alt: free)</small>`;
   } else if (SEL.t === "win") {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
@@ -818,7 +834,8 @@ function onContext(ev) {
   ev.preventDefault();
   const u = ensure(u0), t = ev.target, f = U.figures(u), hit = wallUnder(ev, 0.4), M2 = [];
   const del = (fn) => ({ label: "Delete", key: "Del", danger: true, action: () => { fn(); SEL = null; changed(); } });
-  if (t.dataset.di != null) { const i = +t.dataset.di; SEL = { t: "door", i }; drawPlan(); M2.push(...[["hinged", "Hinged door"], ["door2", "Double door"], ["sliding2", "Sliding door"], ["opening", "Opening"]].map(([k, l]) => ({ label: "Make it: " + l, action: () => { if (k === "hinged") delete u.doors[i].type; else u.doors[i].type = k; changed(); } })), { label: "Flip the hinge", action: () => { const dd = u.doors[i]; dd.hinge = dd.hinge === "end" ? "start" : "end"; changed(); } }, "-", del(() => u.doors.splice(i, 1))); }
+  if (t.dataset.di != null) { const i = +t.dataset.di; SEL = { t: "door", i }; drawPlan(); M2.push(...[["hinged", "Hinged door"], ["door2", "Double door"], ["sliding2", "Sliding door"], ["opening", "Opening"]].map(([k, l]) => ({ label: "Make it: " + l, action: () => { if (k === "hinged") delete u.doors[i].type; else u.doors[i].type = k; changed(); } })), { label: "Flip the hinge", action: () => { const dd = u.doors[i]; dd.hinge = dd.hinge === "end" ? "start" : "end"; changed(); } },
+      ...["start", "end"].map((en) => ({ label: en === "start" ? "⇤ Push to the wall" : "Push to the wall ⇥", action: () => { const dd = u.doors[i], st = U.doorStops(u, dd).filter((q) => q.end === en); if (!st.length) return toast("No wall meets this side", true); const at0 = +dd.at || 0; dd.at = st.reduce((m, q) => (Math.abs(q.at - at0) < Math.abs(m.at - at0) ? q : m)).at; changed(); } })), "-", del(() => u.doors.splice(i, 1))); }
   else if (t.dataset.wi != null) { const i = +t.dataset.wi; SEL = { t: "win", i }; drawPlan(); M2.push(del(() => u.windows.splice(i, 1))); }
   else if (t.dataset.fi != null) { const i = +t.dataset.fi; SEL = { t: "fix", i }; drawPlan(); M2.push({ label: "Rotate 90°", action: () => { u.fixtures[i] = U.rotateFixture(u.fixtures[i]); changed(); } }, { label: "Copy", action: () => PT.clip.set("fixture", u.fixtures[i]) }, del(() => u.fixtures.splice(i, 1))); }
   else if (t.dataset.xi != null) { const i = +t.dataset.xi; SEL = { t: "x", i }; drawPlan(); M2.push({ label: "Rotate", action: () => { const e = u.extras[i]; [e.w, e.h] = [e.h, e.w]; changed(); } }, del(() => u.extras.splice(i, 1))); }
@@ -860,6 +877,7 @@ function wirePlan() {
     if (t.dataset.pwa != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; if (t.value) o.align = t.value; else delete o.align; return changed(); }
     if (t.dataset.pwt != null) { const o = u.walls[SEL.key] = u.walls[SEL.key] || {}; if (t.value === "") delete o.t; else o.t = Math.max(0, parseFloat(t.value)); return changed(); }
     if (t.dataset.pdt != null) { const dd = u.doors[SEL.i]; if (t.value === "hinged") delete dd.type; else dd.type = t.value; return changed(); }
+    if (t.dataset.pdnib != null) { u.doorNib = +t.value || 0; if (!u.doorNib) delete u.doorNib; return changed(); }
     if (t.dataset.pdw != null) { u.doors[SEL.i].w = Math.max(0.5, parseFloat(t.value) || 0.8); return changed(); }
     if (t.dataset.pww != null) { u.windows[SEL.i].w = Math.max(0.3, parseFloat(t.value) || 1); return changed(); }
     if (t.dataset.pfw != null) { u.fixtures[SEL.i].w = Math.max(0.2, parseFloat(t.value) || 0.5); return changed(); }
@@ -900,7 +918,9 @@ function wirePlan() {
       }
       if (d.pw === "win") { const r = u.rooms.find((q) => q.id === rs.room), ww = Math.min(1.5, e.len - 0.4); u.windows.push({ room: rs.room, side: rs.side, at: +((rs.from - (rs.side === "n" || rs.side === "s" ? r.x : r.y)) + (e.len - ww) / 2).toFixed(2), w: +ww.toFixed(2) }); SEL = { t: "win", i: u.windows.length - 1 }; return changed(); }
     }
-    if (d.pd) { const dd = u.doors[SEL.i]; if (d.pd === "hinge") dd.hinge = dd.hinge === "end" ? "start" : "end"; if (d.pd === "swing") dd.swing = dd.swing === "out" ? "in" : "out"; if (d.pd === "del") { u.doors.splice(SEL.i, 1); SEL = null; } return changed(); }
+    if (d.pd) { const dd = u.doors[SEL.i]; if (d.pd === "hinge") dd.hinge = dd.hinge === "end" ? "start" : "end"; if (d.pd === "swing") dd.swing = dd.swing === "out" ? "in" : "out"; if (d.pd === "del") { u.doors.splice(SEL.i, 1); SEL = null; }
+      if (d.pd === "pushs" || d.pd === "pushe") { const st = U.doorStops(u, dd).filter((q) => q.end === (d.pd === "pushs" ? "start" : "end")); if (!st.length) return toast("No wall meets this side", true); const at0 = +dd.at || 0; dd.at = st.reduce((m, q) => (Math.abs(q.at - at0) < Math.abs(m.at - at0) ? q : m)).at; }
+      return changed(); }
     if (d.px) {
       const e = u.extras[SEL.i]; if (!e) return;
       if (d.px === "rot") { [e.w, e.h] = [e.h, e.w]; return changed(); }
@@ -935,6 +955,7 @@ function wirePlan() {
     },
   });
   host.addEventListener("contextmenu", (ev) => onContext(ev));
+  host.addEventListener("mousedown", (ev) => { if (ev.button === 1) ev.preventDefault(); });   // no autoscroll
   host.addEventListener("pointerdown", (ev) => {
     const t = ev.target, u0 = cur(); if (!u0 || ev.target.closest(".un-bar,.un-pop,.pz-bar")) return;
     // a second finger: whatever was being dragged goes back, and the two pinch the plan
@@ -942,6 +963,9 @@ function wirePlan() {
       if (drag) { if (drag.u0) { const st0 = store(); st0.list[st0.sel] = drag.u0; } drag = null; LIVE = null; }
       cap(host, ev); ev.preventDefault(); drawPlan(); return;
     }
+    // the middle button: pan, whatever is under it
+    if (ev.button === 1) { ev.preventDefault(); drag = { kind: "pan", x: ev.clientX, y: ev.clientY, px: ZM.px, py: ZM.py, moved: false }; cap(host, ev); return; }
+    if (TOOL === "measure" && ev.button === 0) { ev.preventDefault(); ME.click(MEAS, ME.snap(toPlan(ev), measureGeo(ensure(u0)), 12 / SC)); drawPlan(); return; }
     const u = ensure(u0), f = U.figures(u), P = toPlan(ev), can = C.can();
     // tools that click a room or a wall
     if (can && TOOL !== "select") {
@@ -1006,6 +1030,7 @@ function wirePlan() {
   });
   host.addEventListener("pointermove", (ev) => {
     if (PZ.move(ZM, ev, host.getBoundingClientRect())) return drawPlan();
+    if (!drag && TOOL === "measure" && cur()) { MEAS.hover = ME.snap(toPlan(ev), measureGeo(ensure(cur())), 12 / SC); if (!drawPlan.raf) drawPlan.raf = requestAnimationFrame(() => { drawPlan.raf = 0; drawPlan(); }); return; }
     if (!drag) return;
     if (drag.kind === "pan") {
       const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
@@ -1037,7 +1062,8 @@ function wirePlan() {
     if (drag.kind === "door" || drag.kind === "win") {
       const o = (drag.kind === "door" ? v.doors : v.windows)[drag.i], r = v.rooms.find((q) => q.id === o.room);
       const L = o.side === "n" || o.side === "s" ? r.w : r.h, delta = o.side === "n" || o.side === "s" ? dx : dy;
-      o.at = Math.max(0, Math.min(L - (+o.w || 0.8), snapv((+o.at || 0) + delta)));
+      const raw = (+o.at || 0) + delta, sn = drag.kind === "door" && !ev.altKey ? U.snapDoorAt(v, o, raw) : null;
+      o.at = Math.max(0, Math.min(L - (+o.w || 0.8), sn != null ? sn : snapv(raw)));
     } else if (drag.kind === "fix") { const x = v.fixtures[drag.i]; x.x = snapv(x.x + dx); x.y = snapv(x.y + dy); }
     else if (drag.kind === "zone" || drag.kind === "zh") {
       // a zone: moved or a corner pulled, to the wall lines near (0.25 m) or the 50 mm grid; no room changes
@@ -1096,7 +1122,7 @@ function wirePlan() {
   }, { passive: false });
   document.addEventListener("keydown", (ev) => {
     if (!ON || ev.target.closest("input,select,textarea")) return;
-    if (ev.key === "Escape") { TOOL = "select"; SEL = null; drawPlan(); }
+    if (ev.key === "Escape") { if (TOOL === "measure" && (MEAS.a || MEAS.list.length)) { if (MEAS.a) MEAS.a = null; else ME.clear(MEAS); return drawPlan(); } TOOL = "select"; SEL = null; drawPlan(); }
     const u = cur(); if (!u || !SEL || !C.can()) return;
     if (ev.key === "Delete" || ev.key === "Backspace") {
       if (SEL.t === "door") u.doors.splice(SEL.i, 1); else if (SEL.t === "win") u.windows.splice(SEL.i, 1); else if (SEL.t === "fix") u.fixtures.splice(SEL.i, 1); else if (SEL.t === "x") u.extras.splice(SEL.i, 1); else if (SEL.t === "z") u.zones.splice(SEL.i, 1);

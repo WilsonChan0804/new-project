@@ -20,8 +20,13 @@ import * as PZ from "./planzoom.js";
 import * as PT from "./plantools.js";
 import { outlineOf } from "./unitwalls.js";
 import * as UN from "./siteunits.js";
+import * as ME from "./measure.js";
 
 const $ = (s, r = document) => r.querySelector(s);
+let SPACE = false;
+const MEAS = ME.create();   // the measures on the plan (for the visit)
+addEventListener("keydown", (ev) => { if (ev.code === "Space" && !ev.target.closest("input,textarea,select")) { if (ON && !SPACE) { SPACE = true; } if (ON && document.getElementById("st-fplan") && !document.getElementById("st-fplan").hidden) ev.preventDefault(); } });
+addEventListener("keyup", (ev) => { if (ev.code === "Space") SPACE = false; });
 const cap = (el, ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic or finished pointer */ } };
 const f3 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -92,7 +97,7 @@ export function init(ctx) {
     "ctrl+z": () => undo(-1), "ctrl+y": () => undo(1),
     "ctrl+c": () => (plan() ? copySel(false) : false), "ctrl+x": () => (plan() ? copySel(true) : false), "ctrl+v": () => (plan() ? paste(CTXP || mid()) : false), "ctrl+d": () => (plan() ? duplicate() : false),
     delete: () => (plan() ? delSel() : false), backspace: () => (plan() ? delSel() : false),
-    escape: () => { if (WALLDRAW) { WALLDRAW = null; return drawPlan(); } if (TOOL !== "select") { setTool("select"); return; } clearSel(); drawPlan(); },
+    escape: () => { if (TOOL === "measure" && (MEAS.a || MEAS.list.length)) { if (MEAS.a) MEAS.a = null; else ME.clear(MEAS); return drawPlan(); } if (WALLDRAW) { WALLDRAW = null; return drawPlan(); } if (TOOL !== "select") { setTool("select"); return; } clearSel(); drawPlan(); },
     enter: () => { if (!WALLDRAW) return false; if (WALLDRAW.typed) typedPoint(); else finishDraw(); },
     tab: () => { if (!WALLDRAW || WALLDRAW.kind !== "wall") return false; const j = WT().just; setPref("fl-wj", j === "c" ? "l" : j === "l" ? "r" : "c"); drawPlan(); },
   });
@@ -106,6 +111,7 @@ export function init(ctx) {
     tl("lib", "d", "Doors, windows, openings library", "Add"),
     { id: "grid", key: "g", label: "Grid on / off", group: "View", run: () => onTool("grid") },
     { id: "snap", key: "n", label: "Snap on / off", group: "View", run: () => onTool("snap") },
+    { id: "measure", key: "m", label: "Measure (two points; parallel faces: the clear width)", group: "View", run: () => (VIEW === "plan" ? onTool("measure") : false) },
     { id: "fit", key: "f", label: "Fit the plan in the window", group: "View", run: () => { if (VIEW !== "plan") return false; VIEWKEY = ""; PZ.reset(ZM); drawPlan(); } },
     tl("fitplate", "p", "Fit the plate round its units and core", "Edit"),
     { id: "v:3d", key: "t", label: "Plan / 3D", group: "View", run: () => onTool(VIEW === "plan" ? "v:3d" : "v:plan") },
@@ -404,7 +410,7 @@ function resetFloor() { editFloor((f) => { delete f.seq; delete f.legSeq; delete
 function toolbarHtml() {
   const can = C.can(), T = (id, icon, title, key, extra) => Object.assign({ id, icon, title, key, on: TOOL === id }, extra || {});
   const viewG = [{ id: "v:plan", icon: "plan", title: "Plan", on: VIEW === "plan" }, { id: "v:3d", icon: "threed", title: "3D", on: VIEW === "3d" }];
-  if (VIEW === "3d") return PT.toolbar([viewG, [{ id: "v:all", icon: "elev", title: "All the floors", on: pref("fl-3dshow", "all") === "all" }, { id: "v:top", icon: "plane", title: "The typical floor", on: pref("fl-3dshow", "all") === "top" }]]);
+  if (VIEW === "3d") return PT.toolbar([viewG, [{ id: "v:all", icon: "elev", title: "All the floors", on: pref("fl-3dshow", "all") === "all" }, { id: "v:top", icon: "plane", title: "The typical floor", on: pref("fl-3dshow", "all") === "top" }]], null, "floors");
   const G = [[T("select", "select", "Select and move", "V")]];
   if (can) {
     G.push([T("wall", "wall", "Wall: click its points, double-click or Enter to end; Tab: centre / left / right line", "W"), T("split", "split", "Cut a wall where you click", "X"), T("join", "join", "Join two walls that meet: click one, then the other", "J")]);
@@ -412,16 +418,20 @@ function toolbarHtml() {
     G.push([T("unit", "unit", "Unit: choose it in the bar, then click where it goes", "U"), T("add:stair", "stair", "Staircase: click where it goes", "S"), T("add:lift", "lift", "Lift"), T("add:refuse", "refuse", "Refuse room"), T("add:riser", "riser", "E&M riser"), T("add:lobby", "lobby", "Protected lobby")]);
     G.push([{ id: "lib", icon: "library", title: "Doors, windows and openings: drag one onto a wall", key: "D", on: PT.libraryOpen() }]);
   }
-  G.push([{ id: "grid", icon: "grid", title: "Grid: 1 m background and the structural grid", key: "G", on: GRID() }, { id: "snap", icon: "snap", title: "Snap to edges and the grid (hold Alt: free)", on: SNAP() },
+  G.push([{ id: "measure", icon: "measure", title: "Measure: click two points (they snap to corners and faces; two parallel faces give the clear width); Esc clears", key: "M", on: TOOL === "measure" }, { id: "grid", icon: "grid", title: "Grid: 1 m background and the structural grid", key: "G", on: GRID() }, { id: "snap", icon: "snap", title: "Snap to edges and the grid (hold Alt: free)", on: SNAP() },
     ...(can ? [{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }, { id: "fitplate", icon: "corner", title: "Fit the plate close round the units (balconies, UP, A/C left out), the core and the corridor; gaps under the fit gap (Core and corridor) closed" }, { id: "reset", icon: "reset", title: "Reset the units to automatic", disabled: !(LAST && LAST.edited) }] : [])]);
   G.push(viewG);
   return PT.toolbar(G, null, "floors");
 }
 function mountBars() {
   if (!ON) return PT.unmount("floors");
-  PT.mount("floors", toolbarHtml(), VIEW === "plan" && C.can() && LAST ? propHtml() : "", VIEW === "plan" ? PT.OPENINGS : null);
+  PT.mount("floors", toolbarHtml(), VIEW === "plan" && LAST && TOOL === "measure" ? measureBar() : VIEW === "plan" && C.can() && LAST ? propHtml() : "", VIEW === "plan" ? PT.OPENINGS : null);
 }
 const TYPES = [["door", "Door"], ["door2", "Double door"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening"], ["panel", "Access panel"], ["window", "Window"], ["cw", "Curtain wall"]];
+function measureBar() {
+  const n = MEAS.list.length, last = MEAS.list[n - 1];
+  return PT.propBar({ icon: "measure", text: "Measure", sub: MEAS.a ? "now the second point" : last ? `last: ${f3(last.L)} m${last.clear ? " clear (between parallel faces)" : ""}` : "click two points: corners, faces' middles, or on a face" }, [], [{ id: "m:clear", icon: "trash", title: "Clear the measures (Esc)", disabled: !n && !MEAS.a }]);
+}
 function propHtml() {
   const r = LAST, o = opts(cur()), x = cur();
   const acts = (list) => list.map(([id, icon, title, dis]) => ({ id, icon, title, disabled: !!dis }));
@@ -515,6 +525,8 @@ function onTool(id) {
     VIEW = v; setPref("fl-view", VIEW); if (VIEW === "plan") { $("#st-f3d").hidden = true; $("#st-fplan").hidden = false; drawPlan(); } return draw3d();
   }
   if (id === "lib") { PT.toggleLibrary(); return drawPlan(); }
+  if (id === "measure") { setTool(TOOL === "measure" ? "select" : "measure"); return drawPlan(); }
+  if (id === "m:clear") { ME.clear(MEAS); return drawPlan(); }
   if (id === "grid") { setPref("fl-grid", GRID() ? "off" : "on"); return drawPlan(); }
   if (id === "snap") { setPref("fl-snap", SNAP() ? "off" : "on"); return drawPlan(); }
   if (id === "undo") return undo(-1);
@@ -826,6 +838,7 @@ function drawPlan0() {
   g += dim(sx(0) - 16, sy(0), sx(0) - 16, sy(r.D), f3(r.D) + " m", true);
   const F = r.figures, cursor = TOOL === "select" ? "" : TOOL === "split" ? "crosshair" : TOOL === "join" ? "pointer" : "crosshair";
   host.style.cursor = cursor;
+  g += ME.svg(MEAS, sx, sy);
   host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif"><defs><pattern id="fl-rc" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><rect width="5" height="5" fill="#8b9096"/><line x1="0" y1="0" x2="0" y2="5" stroke="#5c6166" stroke-width="1.2"/></pattern><pattern id="fl-blk" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="4" height="4" fill="#fff"/><line x1="0" y1="0" x2="0" y2="4" stroke="#8a8f95" stroke-width="0.6"/></pattern><pattern id="fl-em" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(-45)"><rect width="8" height="8" fill="#f6e7c4"/><line x1="0" y1="0" x2="0" y2="8" stroke="#d9b56a" stroke-width="0.8"/></pattern><pattern id="fl-lx" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-45)"><rect width="7" height="7" fill="#e3edf9"/><line x1="0" y1="0" x2="0" y2="7" stroke="#7fa6d6" stroke-width="0.7"/></pattern><pattern id="fl-ex" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><rect width="7" height="7" fill="#e3f1e3"/><line x1="0" y1="0" x2="0" y2="7" stroke="#8cc28c" stroke-width="0.7"/></pattern>${bgGrid}</defs>${bgGrid ? `<rect width="${bw}" height="${bh}" fill="url(#fl-g5)" pointer-events="none" />` : ""}${g}
     <text x="12" y="${bh - 12}" font-size="12" fill="#5b6b7b">${F.units} flats · GFA ${f1(F.gfa)} m² of ${f1(F.plate)} m²${SWAP ? " · click the other one to swap with" : ""}</text></svg>${PZ.bar(document.body.classList.contains("st-planfull"))}`;
   mountBars();
@@ -1030,7 +1043,7 @@ function liftSvg(c, X, Y, W, H) {
   g += rect(R(front + 2, D - cwD - gap - 2, gap * 1.5 + 2, Wd - gap * 1.5 - 2), 'fill="none" stroke="#999" stroke-width="0.4"');
   // the counterweight, hatched, on its two rails
   const cwW = Wd * 0.55, s0 = (Wd - cwW) / 2;
-  g += rect(R(D - cwD + gap * 0.3, D - gap * 0.6, s0, s0 + cwW), 'fill="url(#fl-rc)" stroke="#333" stroke-width="0.6"');
+  g += rect(R(D - cwD + gap * 0.3, D - gap * 0.6, s0, s0 + cwW), 'fill="#d9dce0" stroke="#333" stroke-width="0.6"');
   for (const sR of [s0 - 2.5, s0 + cwW + 0.5]) g += rect(R(D - cwD + gap * 0.1, D - gap * 0.4, sR, sR + 2), 'fill="#333"');
   // the car's guide rails, half way along its sides
   const fm = (front + D - cwD - gap) / 2;
@@ -1044,19 +1057,25 @@ function stairSvg(st, X, Y, W, H) {
   let g = "";
   const P = (u, v) => (along ? [X + v, Y + u] : [X + u, Y + v]);
   const line = (u1, v1, u2, v2, w = 0.6, extra = "") => { const [a, b] = P(u1, v1), [c, d] = P(u2, v2); return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#222" stroke-width="${w}"${extra} />`; };
-  // an arrow from its start (a dot, its label by it) to its head
-  const ar = (u1, u2, v, lab) => { const [a, b] = P(u1, v), [c, d] = P(u2, v); const ang = Math.atan2(d - b, c - a), hx = c - 6 * Math.cos(ang - 0.45), hy = d - 6 * Math.sin(ang - 0.45), jx = c - 6 * Math.cos(ang + 0.45), jy = d - 6 * Math.sin(ang + 0.45); return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#a5642a" stroke-width="0.9" /><path d="M ${hx} ${hy} L ${c} ${d} L ${jx} ${jy} Z" fill="#a5642a" stroke="#a5642a" stroke-width="0.6" /><circle cx="${a}" cy="${b}" r="1.8" fill="#a5642a" /><text x="${a}" y="${b}" font-size="7" font-weight="600" fill="#a5642a" dx="${along ? 3 : -2}" dy="${along ? 3 : -3}"${along ? "" : ' text-anchor="end"'}>${lab}</text>`; };
   const [wx, wy] = P(land, fw), [ww, wh] = along ? [wl, run] : [run, wl];
   // the break line: a zig-zag across the flight where the plan cuts it (the treads beyond are above the cut: dashed)
   const uB = land + run * 0.5;
-  const brk = (v0, v1) => { const dv = v1 - v0, z = Math.min(run * 0.1, Math.abs(dv) * 0.35), pts = [[uB + z * 2, v0], [uB + z * 0.6, v0 + dv * 0.42], [uB + z * 1.6, v0 + dv * 0.5], [uB - z * 0.6, v0 + dv * 0.58], [uB - z * 2, v1]].map(([u, v]) => P(u, v)); return `<polyline points="${pts.map((q) => q.join(",")).join(" ")}" fill="none" stroke="#fff" stroke-width="3" /><polyline points="${pts.map((q) => q.join(",")).join(" ")}" fill="none" stroke="#222" stroke-width="1.1" />`; };
+  // the break: two parallel zig-zag lines about 150 mm apart, white between them
+  const gapB = Math.max(3, 0.15 * SC);
+  const zig = (u0, v0, v1) => { const dv = v1 - v0, z = Math.min(run * 0.08, Math.abs(dv) * 0.3); return [[u0 + z * 2, v0], [u0 + z * 0.5, v0 + dv * 0.42], [u0 + z * 1.5, v0 + dv * 0.5], [u0 - z * 0.5, v0 + dv * 0.58], [u0 - z * 2, v1]].map(([u, v]) => P(u, v)); };
+  const brk = (v0, v1) => { const A = zig(uB + gapB / 2, v0, v1), B = zig(uB - gapB / 2, v0, v1), pl = (q) => q.map((p) => p.join(",")).join(" ");
+    return `<polygon points="${pl([...A, ...B.slice().reverse()])}" fill="#fff" stroke="none" /><polyline points="${pl(A)}" fill="none" stroke="#222" stroke-width="0.9" /><polyline points="${pl(B)}" fill="none" stroke="#222" stroke-width="0.9" />`; };
+  // the walking line: a dot and its label at its start, along its points, an arrowhead and a label at its end
+  const walk = (pts, l0, l1) => { const Q = pts.map(([u, v]) => P(u, v)), n2 = Q.length, [c, d] = Q[n2 - 1], [a, b] = Q[n2 - 2], ang = Math.atan2(d - b, c - a), hx = c - 6 * Math.cos(ang - 0.45), hy = d - 6 * Math.sin(ang - 0.45), jx = c - 6 * Math.cos(ang + 0.45), jy = d - 6 * Math.sin(ang + 0.45);
+    const lab = (p, t, dy) => `<text x="${p[0]}" y="${p[1] + dy}" text-anchor="middle" font-size="7" font-weight="600" fill="#a5642a">${t}</text>`;
+    return `<polyline points="${Q.map((q) => q.join(",")).join(" ")}" fill="none" stroke="#a5642a" stroke-width="0.9" /><path d="M ${hx} ${hy} L ${c} ${d} L ${jx} ${jy} Z" fill="#a5642a" /><circle cx="${Q[0][0]}" cy="${Q[0][1]}" r="1.8" fill="#a5642a" />` + (l0 ? lab(Q[0], l0, along ? 9 : -4) : "") + (l1 ? lab(Q[n2 - 1], l1, along ? 9 : -4) : ""); };
   const tread = (u, v0, v1, cut) => line(u, v0, u, v1, 0.5, cut && u < uB ? ' stroke-dasharray="2 1.5" stroke-opacity="0.7"' : "");
   g += line(land, 0, land, A, 0.8) + line(land + run, 0, land + run, A, 0.8);
   if (st.type === "scissor") {
     g += `<rect x="${wx}" y="${wy}" width="${ww}" height="${wh}" fill="url(#fl-rc)" stroke="#222" stroke-width="0.8" />`;
     for (let i = 1; i < st.t1; i++) { const u = land + i * run / st.t1; g += tread(u, 0, fw, true) + line(u, fw + wl, u, A, 0.5, u > land + run - (uB - land) ? ' stroke-dasharray="2 1.5" stroke-opacity="0.7"' : ""); }
     g += brk(0, fw) + brk(fw + wl, A);
-    g += ar(land + run * 0.95, uB + run * 0.04, fw / 2, "UP A") + ar(land + run * 0.05, uB - run * 0.04, fw + wl + fw / 2, "UP B");
+    g += walk([[land + run * 0.95, fw / 2], [land + run * 0.06, fw / 2]], "UP A", "") + walk([[land + run * 0.05, fw + wl + fw / 2], [land + run * 0.94, fw + wl + fw / 2]], "UP B", "");
   } else {
     g += `<rect x="${wx}" y="${wy}" width="${ww}" height="${wh}" fill="#fff" stroke="#222" stroke-width="0.8" />`;
     for (let i = 1; i < st.t1; i++) g += tread(land + i * run / st.t1, 0, fw, true);
@@ -1064,9 +1083,11 @@ function stairSvg(st, X, Y, W, H) {
     if (st.land2) g += line(0, fw, land, fw, 0.5) + line(0, fw + wl, land, fw + wl, 0.5);
     g += brk(0, fw);
     // UP from the floor's landing to the break; DN from the floor's landing down the other flight
-    g += ar(land + run * 0.95, uB + run * 0.05, fw / 2, "UP") + ar(land + run * 0.95, land + run * 0.08, fw + wl + fw / 2, "DN");
+    // one walking line: UP at the foot of the first flight, up it, across the half landing, down the second to DN
+    g += walk([[land + run * 0.95, fw / 2], [land * 0.5, fw / 2], [land * 0.5, fw + wl + fw / 2], [land + run * 0.95, fw + wl + fw / 2]], "UP", "DN");
   }
-  const [lx, ly] = P(land / 2, st.land2 ? A / 4 : A / 2);
+  // the risers and going: on the half landing, clear of the walking line across it
+  const [lx, ly] = P(st.type === "scissor" ? land / 2 : land * 0.2, st.land2 ? A / 4 : A / 2);
   g += `<text x="${lx}" y="${ly + 3}" text-anchor="middle" font-size="7" fill="#333" pointer-events="none">${st.risers}R@${Math.round(st.riser * 1000)} · ${Math.round(st.going * 1000)}G</text>`;
   return g;
 }
@@ -1217,7 +1238,8 @@ function snapGeo() {
     const r = l.r, cw = r.coreWall || 0.25;
     const rect = (x0, y0, x1, y1) => quad([[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((q) => fromLeg(l, q)));
     for (const q of r.placed) { const g2 = (q.wt || 0.15) / 2; for (const rm of q.rooms) rect(q.x + rm.x - g2, q.y + rm.y - g2, q.x + rm.x + rm.w + g2, q.y + rm.y + rm.h + g2); }
-    for (const c of r.core) if (c.kind !== "passage") { const t = (Number(c.wt) > 0 ? Number(c.wt) : cw) / 2; rect(c.x - t, c.y - t, c.x + c.w + t, c.y + c.h + t); rect(c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t); }
+    // a core piece's box is out to its walls' outer faces; their inner faces a wall in
+    for (const c of r.core) if (c.kind !== "passage") { const t = Number(c.wt) > 0 ? Number(c.wt) : cw; rect(c.x, c.y, c.x + c.w, c.y + c.h); rect(c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t); }
     if (r.corr) rect(r.corr.x0, r.y0, r.corr.x1, r.y1);
   }
   for (const w of LAST.walls || []) {
@@ -1398,6 +1420,8 @@ function onContext(ev) {
 function wirePlan() {
   const host = $("#st-fplan");
   let pan = null;
+  host.addEventListener("auxclick", (ev) => { if (ev.button === 1) ev.preventDefault(); });
+  host.addEventListener("mousedown", (ev) => { if (ev.button === 1) ev.preventDefault(); });   // no autoscroll
   host.addEventListener("contextmenu", onContext);
   host.addEventListener("click", (ev) => {
     const b = ev.target.closest("button"); if (!b) return;
@@ -1407,6 +1431,9 @@ function wirePlan() {
   host.addEventListener("pointerdown", (ev) => {
     if (ev.target.closest(".pz-bar")) return;
     if (ev.button === 2) return;   // the right button: its menu
+    // the middle button (or Space held): pan, whatever is under it
+    if (ev.button === 1 || SPACE) { ev.preventDefault(); DRAG = null; pan = { x: ev.clientX, y: ev.clientY, px: ZM.px, py: ZM.py, moved: false }; cap(host, ev); return; }
+    if (TOOL === "measure" && LAST && ev.button === 0) { ev.preventDefault(); ME.click(MEAS, ME.snap(toPlan(ev), snapGeo(), 12 / SC)); drawPlan(); return; }
     const can = C.can(), t = ev.target;
     // drawing a polyline: each click a point; a second click on the last point (or double-click, Enter) ends it
     if (WALLDRAW && LAST && can && ev.button === 0) {
@@ -1448,6 +1475,7 @@ function wirePlan() {
     cap(host, ev); ev.preventDefault();
   });
   host.addEventListener("pointermove", (ev) => {
+    if (TOOL === "measure" && LAST && !pan) { MEAS.hover = ME.snap(toPlan(ev), snapGeo(), 12 / SC); if (!drawPlan.raf) drawPlan.raf = requestAnimationFrame(() => { drawPlan.raf = 0; drawPlan(); }); return; }
     if (WALLDRAW && LAST && WALLDRAW.pts.length) { WALLDRAW.hover = drawPt(ev); if (!drawPlan.raf) drawPlan.raf = requestAnimationFrame(() => { drawPlan.raf = 0; drawPlan(); }); return; }
     if (PZ.move(ZM, ev, host.getBoundingClientRect())) return drawPlan();
     if (pan) { const dx = ev.clientX - pan.x, dy = ev.clientY - pan.y; if (!pan.moved && Math.hypot(dx, dy) < 4) return; pan.moved = true; ZM.px = pan.px + dx; ZM.py = pan.py + dy; return drawPlan(); }
@@ -1598,8 +1626,9 @@ function fitPlate() {
   const shapes = [];
   for (const l of legs()) {
     const L = l.r, cw = L.coreWall || 0.25, rect = (x0, y0, x1, y1) => shapes.push([[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((q) => fromLeg(l, q)));
-    for (const q of L.placed) { const g2 = (q.wt || 0.15) / 2; for (const rm of q.rooms) rect(q.x + rm.x - g2, q.y + rm.y - g2, q.x + rm.x + rm.w + g2, q.y + rm.y + rm.h + g2); }
-    for (const c of L.core) if (c.kind !== "passage") { const t = (Number(c.wt) > 0 ? Number(c.wt) : cw) / 2; rect(c.x - t, c.y - t, c.x + c.w + t, c.y + c.h + t); }
+    // a unit: its rooms and its walls at their own thickness (so the edge is on the external walls' outer faces)
+    for (const q of L.placed) { for (const rm of q.rooms) rect(q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h); for (const w of FC.placedWalls(q).rects) rect(w.x0, w.y0, w.x1, w.y1); }
+    for (const c of L.core) if (c.kind !== "passage") rect(c.x, c.y, c.x + c.w, c.y + c.h);   // its box is out to its walls' outer faces
     else for (const q of c.rects || []) rect(q.x0, q.y0, q.x1, q.y1);
     if (L.corr) rect(L.corr.x0, L.y0, L.corr.x1, L.y1);
   }

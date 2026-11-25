@@ -5,6 +5,7 @@ import { TEMPLATES } from "../unittables.js";
 
 let fails = 0;
 const ok = (c, m) => { if (!c) { fails++; console.log("FAIL " + m); } else console.log("PASS " + m); };
+const r3 = (v) => Math.round(v * 1000) / 1000;
 const near = (a, b, e) => Math.abs(a - b) <= e;
 
 // the plate's long axis, whatever way it is turned
@@ -376,6 +377,17 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   ok(rz && rz.doors.length && rz.doors[0].type === "panel", "the E&M riser's way in is an access panel");
   const L1 = F.layout({ poly: sq, mix, storeys: 30, pieces: L0.coreOut.map((c) => (c.kind === "riser" ? Object.assign({}, c, { door: { side: rz.doors[0].side, at: 0.5, type: "door" } }) : c)) });
   ok(L1.core.find((c) => c.kind === "riser").doors[0].type === "door", "a door set on it is kept");
+}
+// fit plate: the outline on the units' external walls' outer faces
+{
+  const sq = [[0, 0], [48, 0], [48, 16], [0, 16]], L0 = F.layout({ poly: sq, mix, storeys: 30 }), shapes = [];
+  const rect = (x0, y0, x1, y1) => shapes.push([[x0, y0], [x1, y0], [x1, y1], [x0, y1]]);
+  let wx0 = Infinity, wy0 = Infinity, wy1 = -Infinity;
+  for (const q of L0.placed) { for (const rm of q.rooms) rect(q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h); for (const w of F.placedWalls(q).rects) { rect(w.x0, w.y0, w.x1, w.y1); wx0 = Math.min(wx0, w.x0); wy0 = Math.min(wy0, w.y0); wy1 = Math.max(wy1, w.y1); } }
+  for (const c of L0.core) if (c.kind !== "passage") rect(c.x, c.y, c.x + c.w, c.y + c.h);
+  rect(L0.corr.x0, L0.y0, L0.corr.x1, L0.y1);
+  const o = F.hugOutline(shapes, 0.5), xs = o.map((p) => p[0]), ys = o.map((p) => p[1]);
+  ok(Math.abs(Math.min(...ys) - wy0) < 0.001 && Math.abs(Math.max(...ys) - wy1) < 0.001 && Math.min(...xs) <= wx0 + 0.001, `fit plate on the walls' outer faces: top ${Math.min(...ys)} / ${r3(wy0)}, bottom ${Math.max(...ys)} / ${r3(wy1)}`);
 }
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

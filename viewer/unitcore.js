@@ -570,3 +570,30 @@ export function extrasToFace(u) {
   u.xFace = 1;
   return moved;
 }
+
+/* a wall's thickness, as the plan draws it */
+export const tOfU = (u, e) => { const wall = +(u.wall ?? 0.15), pt = +(u.part ?? 0.075), party = +(u.party ?? 0.15); return e.t != null ? e.t : e.kind === "ext" ? (FACADES[e.facade] && FACADES[e.facade].t != null ? FACADES[e.facade].t : wall) : e.kind === "party" ? party : pt; };
+/* where a door on a room's side may stand flush with a wall meeting that side (the room's own corners, a partition
+   on either side of it): its start just past a wall's face, or its end just short of one -> the "at" values (from the
+   room's edge line), each {at, end: "start" | "end"} */
+export function doorStops(u, d, nib) {
+  const r = (u.rooms || []).find((q) => q.id === d.room); if (!r) return [];
+  const f = figures(u), w = +d.w || 0.8, nb = nib != null ? nib : +(u.doorNib || 0), out = [];
+  const horiz = d.side === "n" || d.side === "s", line = d.side === "n" ? r.y : d.side === "s" ? r.y + r.h : d.side === "w" ? r.x : r.x + r.w;
+  const s0 = horiz ? r.x : r.y, L = horiz ? r.w : r.h;
+  for (const e of f.edges) {
+    const v = Math.abs(e.x1 - e.x2) < 1e-6;
+    if (v !== horiz) continue;                         // a wall square to the side
+    const p = horiz ? e.x1 : e.y1, a = horiz ? Math.min(e.y1, e.y2) : Math.min(e.x1, e.x2), b = horiz ? Math.max(e.y1, e.y2) : Math.max(e.x1, e.x2);
+    if (p < s0 - 1e-6 || p > s0 + L + 1e-6 || line < a - 1e-6 || line > b + 1e-6) continue;
+    const t = tOfU(u, e), rel = p - s0;
+    out.push({ at: +(rel + t / 2 + nb).toFixed(3), end: "start" }, { at: +(rel - t / 2 - nb - w).toFixed(3), end: "end" });
+  }
+  return out.filter((q) => q.at >= -1e-6 && q.at <= L - w + 1e-6);
+}
+/* a door's place along its side snapped to a wall's face near it (within tol), else null */
+export function snapDoorAt(u, d, at, tol = 0.15) {
+  let best = null;
+  for (const q of doorStops(u, d)) if (Math.abs(q.at - at) <= tol && (!best || Math.abs(q.at - at) < Math.abs(best.at - at))) best = q;
+  return best ? best.at : null;
+}

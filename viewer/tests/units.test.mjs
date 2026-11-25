@@ -183,5 +183,14 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a be
   const es = U.edges(B).find((e) => e.key === "a:s"), en = U.edges(B).find((e) => e.key === "a:n");
   ok(U.byOutdoor(B, es) && !U.byOutdoor(B, en), "the wall the balcony touches is by the outdoors (a sliding door there)");
 }
+// a door pushed to a wall: its jamb on the face of the wall meeting its side
+{
+  const u = JSON.parse(JSON.stringify(TEMPLATES["2R-B"])), d = u.doors.find((q) => q.room === "b");
+  const st = U.doorStops(u, d);
+  ok(st.some((q) => q.end === "start" && Math.abs(q.at - 0.0375) < 0.002) && st.some((q) => q.end === "end" && Math.abs(q.at - (1.55 - 0.0375 - d.w)) < 0.002), "a door's stops: just past the 75 mm partition's face, and its end on the far one");
+  ok(Math.abs(U.snapDoorAt(u, d, 0.12) - 0.0375) < 0.002 && U.snapDoorAt(u, d, 0.4) == null, "dragged near the wall it snaps to its face; away from it, it does not");
+  u.doorNib = 0.1;
+  ok(U.doorStops(u, d).some((q) => q.end === "start" && Math.abs(q.at - 0.1375) < 0.002), "with a 100 mm nib it stands 100 mm off the face");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

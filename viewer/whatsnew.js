@@ -6,6 +6,19 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-30", date: "30 Nov 2026",
+    items: [
+      "**Fit plate on the walls' faces** - the fitted plate now lies exactly on the units' external walls' outer faces and the core's walls (no strip left outside them); gaps under the fit gap are still closed.",
+      "**Doors pushed to the wall** - a unit's door dragged along its wall stops with its frame against the face of a wall meeting that side (Alt: free); ⇤ / ⇥ Push to the wall in its bar and its right-click menu, with a 0 or 100 mm nib.",
+      "**Measure** on 4 · Floors (M) and 3 · Units (Q): click two points - they snap to corners, faces' middles and faces; two parallel faces give the clear width between them. Measures stay until Esc.",
+      "**The middle mouse button pans** the plans, the Massing map and the 3D views (Space and drag too, on Floors).",
+      "**Staircases as drawn on plans**: one walking line from UP at the foot of the first flight, across the half landing, down to DN; a double break line. The lift's counterweight is no longer hatched.",
+      "**Massing: edit any level's plate** - pick the floors in the level list (or click them in 3D) and drag their corners on the plan or in 3D (+ for a corner more, right-click to remove one); ≡ below / ≡ above / ≡ block match the plate of the floors below or above, or the block's.",
+      "**Elevation and section: every floor level** - a line at each floor and its mark (▽ +mPD · floor).",
+      "**A legend** on 2 · Massing, 3 · Units and 4 · Floors (the list icon in the toolbar).",
+    ],
+  },
+  {
     version: "2027-03-29", date: "29 Nov 2026",
     items: [
       "**Fit plate follows the layout** - the plate is drawn close round the units (out to their walls' outer faces; balconies, UP and A/C platforms left out), the core and the corridor. Gaps and notches narrower than the fit gap (0.5 m, set in Core and corridor) are closed.",

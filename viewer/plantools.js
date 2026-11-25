@@ -43,7 +43,7 @@ const btn = (b, active) => {
 /* the toolbar: groups of {id, icon, title, key, on, text, disabled} (or "|", or {html}) */
 export function toolbar(groups, active, page) {
   KPAGE = page || "";
-  const G = page ? [...groups, [{ id: "keys", icon: "keys", title: "Keyboard shortcuts", key: "?" }]] : groups;
+  const G = page ? [...groups, [...(LEGEND_ITEMS[page] ? [{ id: "legend", icon: "legend", title: "Legend: what the colours, hatches and symbols mean" }] : []), { id: "keys", icon: "keys", title: "Keyboard shortcuts", key: "?" }]] : groups;
   const h = `<div class="pt-bar" role="toolbar">${G.map((g) => `<div class="pt-grp">${g.map((b) => btn(b, active)).join("")}</div>`).join("")}</div>`;
   KPAGE = ""; return h;
 }
@@ -115,6 +115,7 @@ function wire() {
   h.addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-pt]");
     if (b) { ev.preventDefault(); if (b.dataset.pt === "keys") return KS.openPage(PAGE);
+      if (b.dataset.pt === "legend") return toggleLegend(b, LEGEND_ITEMS[PAGE] || []);
       if (b.dataset.pt === "lib:close") { libOpen = false; return cur().refresh && cur().refresh(); } return cur().tool && cur().tool(b.dataset.pt, b, ev); }
     const s = ev.target.closest("button[data-pp]");
     if (s) { ev.preventDefault(); return cur().prop && cur().prop(s.dataset.pp, s.dataset.v, s); }
@@ -169,4 +170,74 @@ export function keys(on, map) {
     const f = map[k]; if (!f) return;
     if (f(ev) !== false) ev.preventDefault();
   });
+}
+
+/* ---------- the legend: a card of what the plan's colours, hatches and symbols mean, opened from a toolbar button.
+   items: [{svg: an inner SVG drawing in a 28 x 16 box, label}] or "group name" strings */
+const SW = {
+  fill: (c, st = "#333", dash = "") => `<rect x="2" y="2" width="24" height="12" fill="${c}" stroke="${st}" stroke-width="0.8"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`,
+  hatch: (c, l) => `<rect x="2" y="2" width="24" height="12" fill="${c}"/>${[0, 6, 12, 18, 24].map((x) => `<line x1="${x}" y1="14" x2="${x + 8}" y2="2" stroke="${l}" stroke-width="0.8"/>`).join("")}<rect x="2" y="2" width="24" height="12" fill="none" stroke="${l}" stroke-width="0.6"/>`,
+  line: (c, w = 1.5, dash = "") => `<line x1="2" y1="8" x2="26" y2="8" stroke="${c}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`,
+};
+export const LEGEND_ITEMS = {
+  floors: [
+    "Rooms and spaces",
+    { svg: SW.fill("#fbf3d5"), label: "Unit (flat)" },
+    { svg: SW.fill("#eceff3", "#9aa5b1"), label: "Corridor" },
+    { svg: SW.fill("#e3f1e3", "#8cc28c", "3 2"), label: "Corridor exempt (JPN 1)" },
+    { svg: SW.fill("#e3edf9", "#7fa6d6", "3 2"), label: "Lift lobby exempt (JPN 1)" },
+    { svg: SW.hatch("#f6e7c4", "#d9b56a"), label: "E&M left over (exempt, to check)" },
+    { svg: SW.fill("#dfe9f3", "#3c4650", "4 2"), label: "Balcony / UP / A/C platform" },
+    "Core",
+    { svg: `${SW.fill("#e5e1f5", "#444")}<rect x="7" y="3" width="14" height="3" fill="#d9dce0" stroke="#333" stroke-width="0.5"/>`, label: "Lift: car, counterweight at the back" },
+    { svg: `${SW.fill("#fff", "#222")}<polyline points="8,13 8,4 20,4 20,13" fill="none" stroke="#a5642a" stroke-width="1"/><circle cx="8" cy="13" r="1.3" fill="#a5642a"/>`, label: "Staircase: UP / DN walking line, break line" },
+    { svg: SW.fill("#e3e7d3"), label: "Refuse room" },
+    { svg: SW.fill("#f1d6d6"), label: "E&M riser / PD" },
+    "Walls and openings",
+    { svg: SW.fill("#8b9096", "#5c6166"), label: "RC wall" },
+    { svg: SW.hatch("#fff", "#8a8f95"), label: "Block wall" },
+    { svg: SW.fill("#a9b0b7", "#5c6166", "3 2"), label: "Precast wall" },
+    { svg: `<line x1="4" y1="14" x2="4" y2="2" stroke="#222" stroke-width="1.3"/><path d="M4 2 A12 12 0 0 1 16 14" fill="none" stroke="#444" stroke-width="0.7"/><rect x="2" y="13" width="3" height="2" fill="#fff" stroke="#222" stroke-width="0.5"/>`, label: "Door, with its frame" },
+    { svg: `<rect x="2" y="6" width="12" height="2" fill="#fff" stroke="#222" stroke-width="0.6"/><rect x="12" y="8" width="12" height="2" fill="#fff" stroke="#222" stroke-width="0.6"/>`, label: "Sliding door" },
+    { svg: `<rect x="2" y="5" width="24" height="6" fill="#fff" stroke="#111" stroke-width="0.7"/><line x1="2" y1="7.5" x2="26" y2="7.5" stroke="#2b6cb0" stroke-width="0.5"/><line x1="2" y1="8.5" x2="26" y2="8.5" stroke="#2b6cb0" stroke-width="0.5"/>`, label: "Window" },
+    { svg: `<rect x="2" y="7" width="24" height="2" fill="#d6e6f5" stroke="#2b6cb0" stroke-width="0.6"/><rect x="2" y="6" width="2" height="4" fill="#334"/><rect x="13" y="6" width="2" height="4" fill="#334"/><rect x="24" y="6" width="2" height="4" fill="#334"/>`, label: "Curtain wall: mullions, panels" },
+    { svg: `<rect x="2" y="5" width="24" height="6" fill="#fff" stroke="#222" stroke-width="0.6"/><line x1="2" y1="6.5" x2="26" y2="6.5" stroke="#222" stroke-width="0.6"/><line x1="2" y1="8" x2="26" y2="8" stroke="#222" stroke-width="0.6"/><line x1="2" y1="9.5" x2="26" y2="9.5" stroke="#222" stroke-width="0.6"/>`, label: "Access panel (AP)" },
+    "Lines",
+    { svg: SW.line("#c62828", 0.9, "8 3 2 3"), label: "Structural grid" },
+    { svg: SW.line("#0b57d0", 1.2), label: "Measure" },
+  ],
+  units: [
+    "Rooms",
+    { svg: SW.fill("#fbf3d5"), label: "Living, bedrooms, kitchen" },
+    { svg: SW.fill("#eef6f4"), label: "Bathroom" },
+    { svg: SW.fill("#f3f1ea"), label: "Store" },
+    { svg: SW.fill("#dfe9f3", "#3c4650", "4 2"), label: "Balcony / UP / A/C platform" },
+    "Walls and openings",
+    { svg: SW.fill("#8b9096", "#5c6166"), label: "External / party wall (RC)" },
+    { svg: SW.hatch("#fff", "#8a8f95"), label: "Partition (block)" },
+    { svg: SW.fill("#a9b0b7", "#5c6166", "3 2"), label: "Precast wall" },
+    { svg: `<line x1="4" y1="14" x2="4" y2="2" stroke="#222" stroke-width="1.3"/><path d="M4 2 A12 12 0 0 1 16 14" fill="none" stroke="#444" stroke-width="0.7"/>`, label: "Door" },
+    { svg: `<rect x="2" y="5" width="24" height="6" fill="#fff" stroke="#111" stroke-width="0.7"/><line x1="2" y1="8" x2="26" y2="8" stroke="#2b6cb0" stroke-width="0.6"/>`, label: "Window" },
+    { svg: `<rect x="2" y="7" width="24" height="2" fill="#d6e6f5" stroke="#2b6cb0" stroke-width="0.6"/><rect x="2" y="6" width="2" height="4" fill="#222"/><rect x="24" y="6" width="2" height="4" fill="#222"/>`, label: "Curtain wall" },
+    { svg: `<line x1="2" y1="6" x2="26" y2="6" stroke="#222" stroke-width="0.6"/><line x1="2" y1="8" x2="26" y2="8" stroke="#222" stroke-width="0.6"/><line x1="2" y1="10" x2="26" y2="10" stroke="#222" stroke-width="0.6"/>`, label: "Access panel" },
+    "Lines",
+    { svg: SW.line("#c62828", 1.6, "9 3 2 3"), label: "Saleable area line" },
+    { svg: SW.line("#1565c0", 1.6, "6 3"), label: "GFA line" },
+    { svg: SW.line("#0b57d0", 1.2), label: "Measure" },
+  ],
+};
+let LEG = null;
+/* open or close the legend card under the button b: items, or a function giving them */
+export function toggleLegend(b, items) {
+  if (LEG) { LEG.remove(); LEG = null; return; }
+  const list = typeof items === "function" ? items() : items;
+  const el = document.createElement("div");
+  el.className = "pt-legend";
+  el.innerHTML = `<div class="pt-legh"><b>Legend</b><button type="button" class="pt-b" data-legclose title="Close">${iconSvg("close", 14)}</button></div><div class="pt-legb">${list.map((q) => (typeof q === "string" ? `<h5>${esc(q)}</h5>` : `<div class="pt-legi"><svg viewBox="0 0 28 16" width="28" height="16">${q.svg}</svg><span>${esc(q.label)}</span></div>`)).join("")}</div>`;
+  document.body.appendChild(el);
+  const r = b.getBoundingClientRect();
+  el.style.left = Math.max(8, Math.min(innerWidth - el.offsetWidth - 8, r.left)) + "px";
+  el.style.top = Math.min(innerHeight - el.offsetHeight - 8, r.bottom + 6) + "px";
+  el.addEventListener("click", (ev) => { if (ev.target.closest("[data-legclose]")) { el.remove(); LEG = null; } });
+  LEG = el;
 }

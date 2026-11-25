@@ -28,6 +28,7 @@ function scene(THREE, Orbit, host) {
   sc.background = new THREE.Color(0xf3f5f8);
   const cam = new THREE.PerspectiveCamera(36, 1, 0.5, 5000); cam.up.set(0, 0, 1);
   const ctl = new Orbit(cam, rd.domElement);
+  ctl.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };   // the middle button pans
   ctl.enableDamping = true;
   sc.add(new THREE.HemisphereLight(0xffffff, 0xdfe3e8, 2.2));
   const sun = new THREE.DirectionalLight(0xffffff, 1.1); sun.position.set(-60, -90, 140); sc.add(sun);

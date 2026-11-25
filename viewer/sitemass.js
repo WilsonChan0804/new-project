@@ -58,7 +58,13 @@ export function init(ctx) {
       if (k === "y" || (k === "z" && ev.shiftKey)) { ev.preventDefault(); return undo(1); }
     }
     if (ev.key === "Escape" && TOOL) endTool(); if (ev.key === "Enter" && TOOL && TOOL.kind === "context") finishContext(); });
+  window.__mass = { t3: () => T3, selg: () => SELG };
   const map = C.map();
+  // the middle button drags the map (Leaflet pans with the left only)
+  { const el = map.getContainer(); let mp = null;
+    el.addEventListener("mousedown", (ev) => { if (ev.button !== 1) return; ev.preventDefault(); mp = [ev.clientX, ev.clientY]; });
+    addEventListener("mousemove", (ev) => { if (!mp) return; map.panBy([mp[0] - ev.clientX, mp[1] - ev.clientY], { animate: false }); mp = [ev.clientX, ev.clientY]; });
+    addEventListener("mouseup", (ev) => { if (ev.button === 1) mp = null; }); }
   map.on("click", (ev) => { if (!ON || !TOOL) return; toolClick(ev); });
   map.on("dblclick", () => { if (ON && TOOL && TOOL.kind === "context") finishContext(); });
   map.on("mousemove", (ev) => { if (ON && TOOL && TOOL.kind === "measure" && TOOL.a) rubber(ev); });
@@ -116,6 +122,21 @@ const MKEYS = [
   ["measure", "m", "Measure (plan)", "Tools", '#st-views [data-tool="measure"]'], ["context", "k", "Draw a neighbouring building (plan)", "Tools", '#st-views [data-tool="context"]'],
   ["grid", "g", "Grid on / off (plan)", "Tools", "#st-views [data-grid]"], ["snap", "n", "Snap on / off (plan)", "Tools", "#st-views [data-snap]"],
 ];
+/* the level whose plate is edited (on the plan and in 3D): the block's, or a floor group's own; and its plate matched to another's */
+function levelBar() {
+  const m = mass(), st = M.stacks(model()), opts = [["", "Plate: the block's"]];
+  for (const b of m.blocks) {
+    const sts = (st.find((x) => x.block.id === b.id) || { storeys: [] }).storeys;
+    (b.groups || []).forEach((g, gi) => {
+      const nos = sts.filter((q) => q.gi === gi && q.no != null).map((q) => q.no), lab = (M.USES[g.use] || {}).label || g.use;
+      opts.push([b.id + ":" + gi, `${b.name || "Block"} · ${lab}${nos.length ? ` · floors ${Math.min(...nos)}–${Math.max(...nos)}` : ""}${g.fp ? " ▱" : ""}`]);
+    });
+  }
+  const cur2 = SELG ? SELG.b + ":" + SELG.g : "", can = C.can() ? "" : " disabled";
+  const IB2 = (attr, t, title, dis) => `<button type="button" ${attr} class="pt-b wt" title="${esc(title)}"${dis || !C.can() ? " disabled" : ""}><span>${t}</span></button>`;
+  return `<span class="pt-sep"></span><select data-level title="The level whose plate you edit: on the plan, or click it in 3D and drag its corners"${can}>${opts.map(([v, l]) => `<option value="${esc(v)}"${v === cur2 ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`
+    + (SELG ? IB2('data-match="below"', "≡ below", "Match the plate of the floors below (or the block's)") + IB2('data-match="above"', "≡ above", "Match the plate of the floors above") + IB2('data-match="block"', "≡ block", "Back to the block's plate") : "");
+}
 function viewsBar() {
   const s = C.study(), n = s.pts.length, no = {};
   const names = (i) => { const id = s.streets && s.streets[i]; const r = id != null && s.roads && s.roads[id]; return r && r.name ? r.name : id != null ? "Street" : "Edge " + (i + 1) + "–" + ((i + 1) % n + 1); };
@@ -129,7 +150,7 @@ function viewsBar() {
     ${VIEW === "plan" && C.can() ? IB('data-tool="measure"', "measure", "Measure: snaps to the site and the footprints", TOOL && TOOL.kind === "measure") + IB('data-tool="context"', "context", "Draw a neighbouring building for the 3D view", TOOL && TOOL.kind === "context") : ""}
     ${VIEW === "plan" ? gridBar() : ""}
     ${VIEW === "plan" ? IB("data-snap", "snap", "Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)", SNAP) : `${IB("data-shadow", "shadow", "Shadows on / off", SHADOW)}${IB("data-ctx3d", "world", "The buildings around: the Lands Department's 3D Spatial Data (CSDI)", CTX3D)}<select data-ctxr title="How far around: the map and the buildings, each side of the site">${[250, 500, 1000, 1500].map((v) => `<option value="${v}"${v === ctxR() ? " selected" : ""}>± ${v.toLocaleString("en-GB")} m</option>`).join("")}</select><span class="ms-ctxst" id="ms-ctxst"></span>`}
-    ${VIEW !== "plan" ? IB("data-png", "camera", "Save this view as a picture (PNG)") : ""}<span class="pt-sep"></span>${IB("data-keys", "keys", "Keyboard shortcuts  (?)")}`;
+    ${VIEW !== "plan" ? IB("data-png", "camera", "Save this view as a picture (PNG)") : ""}${VIEW === "plan" || VIEW === "3d" ? levelBar() : ""}<span class="pt-sep"></span>${IB("data-legend", "legend", "Legend: what the colours and lines mean")}${IB("data-keys", "keys", "Keyboard shortcuts  (?)")}`;
   // each button's tooltip with its key from the user's keys
   for (const [id, , , , sel] of MKEYS) { const b = document.querySelector(sel), k = PT.KS.keyFor("massing", id); if (b && k) b.title += "  (" + k + ")"; }
 }
@@ -144,6 +165,42 @@ function onViews(ev) {
   if (t.dataset.cut != null && ev.type === "input") { CUT = +t.value; if (T3) T3.cut(CUT); return; }
   if (t.dataset.png != null && ev.type === "click") return png();
   if (t.dataset.keys != null && ev.type === "click") return PT.KS.openPage("massing");
+  if (t.dataset.legend != null && ev.type === "click") return PT.toggleLegend(t, () => {
+    const sw = (c, st = "#333", dash = "") => `<rect x="2" y="2" width="24" height="12" fill="${c}" stroke="${st}" stroke-width="0.8"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`, ln = (c, dash = "", w = 1.6) => `<line x1="2" y1="8" x2="26" y2="8" stroke="${c}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`;
+    return ["Uses", ...Object.values(M.USES).map((u) => ({ svg: sw(u.color), label: u.label })),
+      "On the plan and in 3D",
+      { svg: sw("#e2ebdd", "#2e7d32"), label: "The site" },
+      { svg: sw("none", "#1f6feb", "5 4"), label: "Floors with a plate of their own" },
+      { svg: sw("#fbd9bb", "#f28022"), label: "The level being edited (its corners orange)" },
+      { svg: sw("#dfe3e8", "#b8bec6"), label: "Neighbouring buildings" },
+      { svg: sw("#2ea043", "#2ea043"), label: "Refuge floor due" },
+      "Elevation and section",
+      { svg: ln("#666666"), label: "Site level (mPD)" },
+      { svg: ln("#9aa3ad", "3 2", 1), label: "Floor levels: ▽ +mPD and the floor" },
+      { svg: ln("#8a6d3b"), label: "Top of the building" },
+      { svg: ln("#cf222e", "4 3"), label: "Height limit (OZP)" }];
+  });
+  if (t.dataset.level != null && ev.type === "change") {
+    if (!t.value) { SELG = null; return render(); }
+    const [bid, gi] = [t.value.slice(0, t.value.lastIndexOf(":")), +t.value.slice(t.value.lastIndexOf(":") + 1)];
+    pickLevel(bid, gi);
+    C.hint(VIEW === "3d" ? "Drag this level's corners (orange) in 3D; click a + for a corner more." : "Drag this level's corners on the plan; add corners on its edges.", 5000);
+    return;
+  }
+  if (t.dataset.match && ev.type === "click" && SELG) {
+    const m = mass(), b = m.blocks.find((q) => q.id === SELG.b); if (!b) return;
+    const g = b.groups[SELG.g], cp = (fp) => fp.map((q) => q.slice());
+    if (t.dataset.match === "block") delete g.fp;
+    else {
+      // the nearest group below / above with a plate of its own; else the block's
+      const step = t.dataset.match === "below" ? -1 : 1;
+      let src = null; for (let k = SELG.g + step; k >= 0 && k < b.groups.length; k += step) if (b.groups[k].fp && b.groups[k].fp.length >= 3) { src = b.groups[k].fp; break; }
+      if (!src && step < 0) src = b.fp;
+      if (!src) return C.hint("No floors above with a plate of their own.", 3000);
+      g.fp = cp(src);
+    }
+    return changed();
+  }
   const g = mass().grid;
   if (t.dataset.grid != null && ev.type === "click") { g.on = !g.on; C.save(); viewsBar(); return drawPlan(); }
   if (t.dataset.gstep != null && ev.type === "change") { g.step = Math.max(0.1, parseFloat(t.value) || 3); C.save(); return drawPlan(); }
@@ -182,7 +239,14 @@ function endTool() {
 }
 
 /* ---------- the panel (numbers only: fast, also while dragging) */
-function render() { if (!ON) return; panel(); drawPlan(); if (VIEW !== "plan") draw3d(); }
+function render() { if (!ON) return; panel(); drawPlan(); if (VIEW !== "plan") draw3d(); viewsBar(); }
+/* a level picked to edit: its own plate from now on (a copy of the block's when it has none) */
+function pickLevel(bid, gi) {
+  const b = mass().blocks.find((q) => q.id === bid), g = b && b.groups[gi]; if (!g) return;
+  SEL = bid; SELG = { b: bid, g: gi };
+  if (!g.fp && b.fp && b.fp.length >= 3) { g.fp = b.fp.map((q) => q.slice()); return changed(); }
+  render();
+}
 function panel() {
   const s = C.study(), m = mass(), can = C.can(), dis = can ? "" : " disabled";
   const A = C.siteArea(), pot = C.potential();
@@ -646,6 +710,7 @@ function makeScene(THREE, Orbit, host) {
   const ortho = new THREE.OrthographicCamera(-100, 100, 100, -100, -5000, 5000); ortho.up.set(0, 0, 1);
   let cam = persp;
   const ctl = new Orbit(persp, r.domElement);
+  ctl.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };   // the middle button pans
   const hemi = new THREE.HemisphereLight(0xffffff, 0xe6e9ee, 2.0); scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffffff, 1.0);
   sun.position.set(-250, -350, 500); sun.castShadow = true;
@@ -706,6 +771,84 @@ function makeScene(THREE, Orbit, host) {
     ground.receiveShadow = true;
     scene.add(ground);
   };
+  /* editing a level's plate in 3D: its outline at its top, a handle at each corner (drag it on that level's plane),
+     a "+" at each edge's middle (click: a corner there); right-click a handle: remove it */
+  let EDIT = null;
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const editOverlay = (mdl, st, span) => {
+    EDIT = null;
+    if (mode !== "3d" || !SELG) return;
+    const B = mdl.blocks.find((b) => b.id === SELG.b); if (!B) return;
+    const G = (B.groups || [])[SELG.g]; if (!G) return;
+    const fp = (G.fp && G.fp.length >= 3 ? G.fp : B.fp).map((p) => p.slice()); if (fp.length < 3) return;
+    const sts = (st.find((x) => x.block.id === B.id) || { storeys: [] }).storeys.filter((q) => q.gi === SELG.g);
+    if (!sts.length) return;
+    const z = Math.max(...sts.map((q) => q.z1)) + 0.05, rH = Math.max(0.35, span / 140);
+    const g2 = new THREE.Group(); group.add(g2);
+    const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(fp.map(([x, y]) => new THREE.Vector3(x, y, z))), new THREE.LineBasicMaterial({ color: 0xf28022, depthTest: false }));
+    line.renderOrder = 10; g2.add(line);
+    const hv = new THREE.MeshBasicMaterial({ color: 0xf28022, depthTest: false }), hm = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false });
+    const handles = [];
+    fp.forEach(([x, y], k) => { const m2 = new THREE.Mesh(new THREE.SphereGeometry(rH, 14, 10), hv); m2.position.set(x, y, z); m2.renderOrder = 11; m2.userData = { hv: k }; g2.add(m2); handles.push(m2); });
+    fp.forEach((p, k) => { const q = fp[(k + 1) % fp.length], m2 = new THREE.Mesh(new THREE.BoxGeometry(rH * 1.2, rH * 1.2, rH * 1.2), hm); m2.position.set((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, z); m2.renderOrder = 11; m2.userData = { hm: k }; g2.add(m2); handles.push(m2); });
+    // what a corner snaps to: the other plates' corners
+    const snapPts = mdl.blocks.flatMap((b) => [...(b.fp || []), ...(b.groups || []).flatMap((q) => q.fp || [])]);
+    EDIT = { fp, z, handles, line, g2, snapPts, rH };
+  };
+  const rayAt = (ev) => { const rc = r.domElement.getBoundingClientRect(); ndc.set(((ev.clientX - rc.left) / rc.width) * 2 - 1, -((ev.clientY - rc.top) / rc.height) * 2 + 1); ray.setFromCamera(ndc, cam); return ray; };
+  const onPlane = (ev, z) => { const rr = rayAt(ev), pl = new THREE.Plane(new THREE.Vector3(0, 0, 1), -z), out = new THREE.Vector3(); return rr.ray.intersectPlane(pl, out) ? [out.x, out.y] : null; };
+  const commitEdit = () => {
+    if (!EDIT) return;
+    const m = mass(), b = m.blocks.find((q) => q.id === SELG.b), o = origin(); if (!b || !o) return;
+    const g = b.groups[SELG.g]; if (!g) return;
+    g.fp = S.fromXY(EDIT.fp, o); changed();
+  };
+  let DR = null;
+  r.domElement.addEventListener("pointerdown", (ev) => {
+    if (mode !== "3d" || ev.button !== 0) { DR = null; return; }
+    DR = { x: ev.clientX, y: ev.clientY, moved: false };
+    if (!EDIT || !C.can()) return;
+    const hit = rayAt(ev).intersectObjects(EDIT.handles, false)[0];
+    if (!hit) return;
+    const u = hit.object.userData;
+    if (u.hm != null) { const k = u.hm, p = EDIT.fp[k], q = EDIT.fp[(k + 1) % EDIT.fp.length]; EDIT.fp.splice(k + 1, 0, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]); DR = null; ev.stopPropagation(); return commitEdit(); }
+    DR.k = u.hv; ctl.enabled = false; ev.stopPropagation();
+    try { r.domElement.setPointerCapture(ev.pointerId); } catch (e) { /* synthetic */ }
+  }, true);
+  r.domElement.addEventListener("pointermove", (ev) => {
+    if (!DR) return;
+    if (Math.hypot(ev.clientX - DR.x, ev.clientY - DR.y) > 4) DR.moved = true;
+    if (DR.k == null || !EDIT) return;
+    let p = onPlane(ev, EDIT.z); if (!p) return;
+    // to another plate's corner within a handle's reach, else to 50 mm
+    let best = null, bd = EDIT.rH * 2.5;
+    for (const q of EDIT.snapPts) { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd && !(EDIT.fp[DR.k] === q)) { bd = d; best = q; } }
+    p = best && !ev.altKey ? [best[0], best[1]] : [Math.round(p[0] * 20) / 20, Math.round(p[1] * 20) / 20];
+    EDIT.fp[DR.k] = p; EDIT.handles[DR.k].position.set(p[0], p[1], EDIT.z);
+    const k2 = EDIT.fp.length;
+    for (let k = 0; k < k2; k++) { const a = EDIT.fp[k], c = EDIT.fp[(k + 1) % k2]; EDIT.handles[k2 + k].position.set((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, EDIT.z); }
+    EDIT.line.geometry.setFromPoints(EDIT.fp.map(([x, y]) => new THREE.Vector3(x, y, EDIT.z)));
+  });
+  r.domElement.addEventListener("pointerup", (ev) => {
+    const d = DR; DR = null; ctl.enabled = true;
+    if (!d) return;
+    if (d.k != null) { if (d.moved) commitEdit(); return; }
+    if (d.moved || mode !== "3d") return;
+    // a click: the level under it chosen (or none)
+    const meshes = group ? group.children.filter((q) => q.isMesh && q.userData && q.userData.bid) : [];
+    const hit = rayAt(ev).intersectObjects(meshes, false)[0];
+    const u = hit && hit.object.userData;
+    if (u && !(SELG && SELG.b === u.bid && SELG.g === u.gi)) { pickLevel(u.bid, u.gi); C.hint("This level's plate: drag its corners (orange), click a + for a corner more, right-click a corner to remove it. Click elsewhere to finish.", 6000); }
+    else if (!u && SELG) { SELG = null; render(); }
+  });
+  r.domElement.addEventListener("contextmenu", (ev) => {
+    if (!EDIT || mode !== "3d" || !C.can()) return;
+    const hit = rayAt(ev).intersectObjects(EDIT.handles, false)[0];
+    if (!hit || hit.object.userData.hv == null) return;
+    ev.preventDefault();
+    if (EDIT.fp.length <= 3) return C.hint("A plate keeps 3 corners at least.", 3000);
+    EDIT.fp.splice(hit.object.userData.hv, 1); commitEdit();
+  });
   const build = (mdl, s, m, view, elev, pot) => {
     { const RR = ctxR(); persp.far = Math.max(30000, RR * 8); persp.updateProjectionMatrix(); Object.assign(sun.shadow.camera, { left: -RR, right: RR, top: RR, bottom: -RR, far: RR * 6 }); sun.shadow.camera.updateProjectionMatrix(); }
     mode = view === "plan" ? "3d" : view;
@@ -749,6 +892,8 @@ function makeScene(THREE, Orbit, host) {
         const geo = new THREE.ExtrudeGeometry(sh, { depth: Math.max(0.05, sto.h - 0.12), bevelEnabled: false });
         const mesh = new THREE.Mesh(geo, mat({ color: new THREE.Color(u.color), transparent: sto.storey === false, opacity: sto.storey === false ? 0.75 : 1, clippingPlanes: clipping, side: THREE.DoubleSide }));
         mesh.position.z = sto.z0; mesh.castShadow = SHADOW; mesh.receiveShadow = SHADOW;
+        mesh.userData = { bid: sto.block, gi: sto.gi };
+        if (SELG && SELG.b === sto.block && SELG.g === sto.gi && mode === "3d") { mesh.material.emissive = new THREE.Color(0xf28022); mesh.material.emissiveIntensity = 0.35; }
         group.add(mesh);
         const flat = mode !== "3d";
         const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: flat ? 0x1b232c : 0x28323c, transparent: true, opacity: flat ? 0.85 : 0.3, clippingPlanes: clipping }));
@@ -780,6 +925,7 @@ function makeScene(THREE, Orbit, host) {
       }
     }
     scene.add(group);
+    editOverlay(mdl, st, span);
     // elevation / section: square to a site edge
     if ((mode === "elev" || mode === "sect") && o) {
       const sxy = S.toXY(s.pts, o), e = Math.min(elev, sxy.length - 1), a = sxy[e], b = sxy[(e + 1) % sxy.length];
@@ -806,6 +952,24 @@ function makeScene(THREE, Orbit, host) {
       };
       line(0, 0x666666);
       labels.push({ x: far[0], y: far[1], z: 0, t: `${f1(lv)} mPD site level`, cls: "lv" });
+      // each floor's level: a thin line across the building, its mark (▽ +mPD, the floor) at the building's end
+      const tick = (z, t0, t1, col) => { const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(along[0] * t0, along[1] * t0, z), new THREE.Vector3(along[0] * t1, along[1] * t1, z)]); group.add(new THREE.Line(g, new THREE.LineDashedMaterial({ color: col, dashSize: 1.2, gapSize: 0.8 }))); group.children[group.children.length - 1].computeLineDistances(); };
+      for (const bb of bs) {
+        const pts = bb.storeys.flatMap((q) => q.fp || []); if (!pts.length) continue;
+        const ts = pts.map((p) => p[0] * along[0] + p[1] * along[1]);
+        let t0 = Math.min(...ts) - 3, t1 = Math.max(...ts) + 3;
+        // the marks at the end on the right of the view
+        ortho.updateMatrixWorld(); const sxOf = (t) => new THREE.Vector3(along[0] * t, along[1] * t, 0).project(ortho).x;
+        if (sxOf(t0) > sxOf(t1)) [t0, t1] = [t1, t0];
+        const lvls = []; const seen = new Set();
+        for (const q of bb.storeys) { if (seen.has(q.z0)) continue; seen.add(q.z0); lvls.push(q); }
+        const many = lvls.length > 24;
+        lvls.forEach((q, i) => {
+          tick(q.z0, t0, t1, 0x9aa3ad);
+          const first = i === 0 || lvls[i - 1].gi !== q.gi || lvls[i - 1].block !== q.block;
+          if (!many || first || (q.no != null && q.no % 5 === 0)) labels.push({ x: along[0] * t1, y: along[1] * t1, z: q.z0, t: `▽ ${(lv + q.z0) >= 0 ? "+" : ""}${f2(lv + q.z0)} mPD · ${q.no == null ? (M.USES[q.use] || {}).label || q.use : q.no === 1 ? "G/F" : q.no - 1 + "/F"}`, cls: "lvf" });
+        });
+      }
       for (const bb of bs) {
         const top = bb.storeys.length ? bb.storeys[bb.storeys.length - 1].z1 : 0;
         line(top, 0x8a6d3b);
@@ -919,7 +1083,10 @@ function makeScene(THREE, Orbit, host) {
   };
   const shadow = (on) => { sun.castShadow = on; if (ctxMesh) { ctxMesh.castShadow = on; ctxMesh.receiveShadow = on; } if (group) group.traverse((x) => { if (x.isMesh) { x.castShadow = on; x.receiveShadow = on; } }); };
   resize(); loop();
-  return { context, shadow, build, resize, cut, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
+  // for the browser tests: the level being edited, and a model point on the screen
+  const editInfo = () => (EDIT ? { fp: EDIT.fp.map((p) => p.slice()), z: EDIT.z } : null);
+  const screen = (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam), rc = r.domElement.getBoundingClientRect(); return [rc.left + (v.x + 1) / 2 * rc.width, rc.top + (1 - v.y) / 2 * rc.height]; };
+  return { context, shadow, build, resize, cut, editInfo, screen, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
 }
 
 /* the buildings in a triangle soup (9 floats a triangle): triangles that share a corner are one building;
