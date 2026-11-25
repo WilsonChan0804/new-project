@@ -8,6 +8,8 @@ import * as S from "./sitecore.js";
 import * as M from "./massingcore.js";
 import * as UC from "./unitcore.js";
 import { toast } from "./tasks-util.js";
+import * as PT from "./plantools.js";
+import { iconSvg, iconColor } from "./icons.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -55,6 +57,17 @@ export function init(ctx) {
   map.on("click", (ev) => { if (!ON || !TOOL) return; toolClick(ev); });
   map.on("dblclick", () => { if (ON && TOOL && TOOL.kind === "context") finishContext(); });
   map.on("mousemove", (ev) => { if (ON && TOOL && TOOL.kind === "measure" && TOOL.a) rubber(ev); });
+  // right-click the map: paste a copied block there
+  map.on("contextmenu", (ev) => { if (!ON || !C.can() || VIEW !== "plan" || !PT.clip.get("block")) return; PT.ctx(ev.originalEvent, [{ label: "Paste the block here", action: () => pasteBlock([ev.latlng.lat, ev.latlng.lng]) }]); });
+}
+/* a copied block put down with its middle at a point */
+function pasteBlock(at) {
+  const c = PT.clip.get("block"); if (!c) return;
+  const b = c.data, m = mass(), mid = S.centroid(b.fp), dl = at[0] - mid[0], dg = at[1] - mid[1];
+  const shift = (fp) => fp.map(([a, g]) => [a + dl, g + dg]);
+  b.id = uid(); b.name = (b.name || "Block") + " (copy)"; b.fp = shift(b.fp); b.fromSite = false;
+  for (const g of b.groups || []) if (g.fp) g.fp = shift(g.fp);
+  m.blocks.push(b); SEL = b.id; changed();
 }
 
 /* a site edge's name: its number and the street on it */
@@ -97,20 +110,22 @@ function viewsBar() {
   const names = (i) => { const id = s.streets && s.streets[i]; const r = id != null && s.roads && s.roads[id]; return r && r.name ? r.name : id != null ? "Street" : "Edge " + (i + 1) + "–" + ((i + 1) % n + 1); };
   void no;
   const el = $("#st-views");
-  el.innerHTML = `<button type="button" data-v="plan"${VIEW === "plan" ? ' class="on"' : ""}>Plan</button><button type="button" data-v="3d"${VIEW === "3d" ? ' class="on"' : ""}>3D</button><button type="button" data-v="elev"${VIEW === "elev" ? ' class="on"' : ""}>Elevation</button><button type="button" data-v="sect"${VIEW === "sect" ? ' class="on"' : ""}>Section</button>
+  el.classList.add("ms-ibar");
+  const IB = (attr, icon, title, on) => `<button type="button" ${attr} class="pt-b${on ? " on" : ""}" title="${esc(title)}" style="--ico:${iconColor(icon)}">${iconSvg(icon, 18)}</button>`;
+  el.innerHTML = `${IB('data-v="plan"', "plan", "Plan", VIEW === "plan")}${IB('data-v="3d"', "threed", "3D", VIEW === "3d")}${IB('data-v="elev"', "elev", "Elevation", VIEW === "elev")}${IB('data-v="sect"', "section", "Section", VIEW === "sect")}<span class="pt-sep"></span>
     ${VIEW === "elev" || VIEW === "sect" ? `<select data-elev title="Looking at the building square to this edge">${s.pts.map((p, i) => `<option value="${i}"${i === ELEV ? " selected" : ""}>${VIEW === "elev" ? "from " : "along "}${esc(edgeName(i))}</option>`).join("")}</select>` : ""}
     ${VIEW === "sect" ? `<input type="range" min="0" max="100" value="${CUT}" data-cut title="Where the section cuts">` : ""}
-    ${VIEW === "plan" && C.can() ? `<button type="button" data-tool="measure" class="${TOOL && TOOL.kind === "measure" ? "on" : ""}" title="Measure: snaps to the site and the footprints">📏</button><button type="button" data-tool="context" class="${TOOL && TOOL.kind === "context" ? "on" : ""}" title="Draw a neighbouring building for the 3D view">+ Context</button>` : ""}
+    ${VIEW === "plan" && C.can() ? IB('data-tool="measure"', "measure", "Measure: snaps to the site and the footprints", TOOL && TOOL.kind === "measure") + IB('data-tool="context"', "context", "Draw a neighbouring building for the 3D view", TOOL && TOOL.kind === "context") : ""}
     ${VIEW === "plan" ? gridBar() : ""}
-    ${VIEW === "plan" ? `<button type="button" data-snap class="${SNAP ? "on" : ""}" title="Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)">⌖ Snap</button>` : `<button type="button" data-shadow class="${SHADOW ? "on" : ""}" title="Shadows on / off">☀ Shadow</button><button type="button" data-ctx3d class="${CTX3D ? "on" : ""}" title="The buildings around: the Lands Department's 3D Spatial Data (CSDI)">🏙 Surroundings</button><select data-ctxr title="How far around: the map and the buildings, each side of the site">${[250, 500, 1000, 1500].map((v) => `<option value="${v}"${v === ctxR() ? " selected" : ""}>± ${v.toLocaleString("en-GB")} m</option>`).join("")}</select><span class="ms-ctxst" id="ms-ctxst"></span>`}
-    ${VIEW !== "plan" ? `<button type="button" data-png title="Save this view as a picture">PNG</button>` : ""}`;
+    ${VIEW === "plan" ? IB("data-snap", "snap", "Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)", SNAP) : `${IB("data-shadow", "shadow", "Shadows on / off", SHADOW)}${IB("data-ctx3d", "world", "The buildings around: the Lands Department's 3D Spatial Data (CSDI)", CTX3D)}<select data-ctxr title="How far around: the map and the buildings, each side of the site">${[250, 500, 1000, 1500].map((v) => `<option value="${v}"${v === ctxR() ? " selected" : ""}>± ${v.toLocaleString("en-GB")} m</option>`).join("")}</select><span class="ms-ctxst" id="ms-ctxst"></span>`}
+    ${VIEW !== "plan" ? IB("data-png", "camera", "Save this view as a picture (PNG)") : ""}`;
 }
 function gridBar() {
   const g = mass().grid, s = C.study(), can = C.can() ? "" : " disabled";
-  return `<button type="button" data-grid class="${g.on ? "on" : ""}" title="A grid to draw to; corners snap to it">＃ Grid</button>${g.on ? `<input type="number" min="0.1" step="0.1" data-gstep value="${g.step}" title="Grid spacing, m"${can}><small>m</small><input type="number" step="0.5" data-gang value="${+(+g.ang).toFixed(2)}" title="Grid rotation, degrees"${can}><small>°</small><select data-galign title="Square the grid to a site edge"${can}><option value="">∥ edge …</option>${s.pts.map((p, i) => `<option value="${i}">${esc(edgeName(i))}</option>`).join("")}</select>` : ""}`;
+  return `<button type="button" data-grid class="pt-b${g.on ? " on" : ""}" title="A grid to draw to; corners snap to it" style="--ico:${iconColor("grid")}">${iconSvg("grid", 18)}</button>${g.on ? `<input type="number" min="0.1" step="0.1" data-gstep value="${g.step}" title="Grid spacing, m"${can}><small>m</small><input type="number" step="0.5" data-gang value="${+(+g.ang).toFixed(2)}" title="Grid rotation, degrees"${can}><small>°</small><select data-galign title="Square the grid to a site edge"${can}><option value="">∥ edge …</option>${s.pts.map((p, i) => `<option value="${i}">${esc(edgeName(i))}</option>`).join("")}</select>` : ""}`;
 }
 function onViews(ev) {
-  const t = ev.target;
+  const t = (ev.target.closest && ev.target.closest("button,select,input")) || ev.target;   // an icon's drawing: its button
   if (t.dataset.v && ev.type === "click") return setView(t.dataset.v);
   if (t.dataset.elev != null && ev.type === "change") { ELEV = +t.value; return draw3d(); }
   if (t.dataset.cut != null && ev.type === "input") { CUT = +t.value; if (T3) T3.cut(CUT); return; }
@@ -429,6 +444,16 @@ function drawPlan() {
     const sel = SEL === b.id;
     const pg = L.polygon(b.fp, { color: sel ? "#d1660e" : "#7a6a55", weight: sel ? 2.5 : 1, fillColor: col, fillOpacity: b.on ? 0.85 : 0.6 }).addTo(layer);
     pg.on("click", () => { if (TOOL) return; SEL = b.id; render(); });
+    if (can) pg.on("contextmenu", (ev) => {
+      L.DomEvent.stop(ev); SEL = b.id; render();
+      const bi = m.blocks.indexOf(b);
+      PT.ctx(ev.originalEvent, [
+        { label: "Copy", key: "Ctrl+C", action: () => PT.clip.set("block", b) },
+        { label: "Paste here", key: "Ctrl+V", disabled: !PT.clip.get("block"), action: () => pasteBlock([ev.latlng.lat, ev.latlng.lng]) },
+        { label: "Duplicate", action: () => { const c = JSON.parse(JSON.stringify(b)); c.id = uid(); c.name += " (copy)"; const o2 = origin(); if (o2) c.fp = S.fromXY(S.toXY(c.fp, o2).map(([x, y]) => [x + 10, y - 10]), o2); m.blocks.push(c); SEL = c.id; changed(); } },
+        "-", { label: "Delete the block", danger: true, action: () => { m.blocks.splice(bi, 1); SEL = null; changed(); } },
+      ]);
+    });
     // floors with their own plate (from 4 · Floors, or set here): dashed over the block, so the change shows
     for (const [gi2, g2] of (b.groups || []).entries()) if (g2.fp && g2.fp.length >= 3 && !(SELG && SELG.b === b.id && SELG.g === gi2)) L.polygon(g2.fp, { color: "#1f6feb", weight: 1.8, dashArray: "5 4", fill: false, interactive: false }).bindTooltip(`${esc(b.name)}: ${g2.n} × ${esc((M.USES[g2.use] || {}).label || g2.use)} - their own plate, ${f0(S.area(g2.fp))} m²${g2.accFrom === "floors" ? " (from 4 · Floors)" : ""}`, { sticky: true }).addTo(layer);
     if (!sel) { pg.bindTooltip(`${esc(b.name)} · ${f0(S.area(b.fp))} m²`, { direction: "center", className: "st-edge-lab" }); continue; }
@@ -452,7 +477,7 @@ function drawPlan() {
       const mk = L.marker(p, { draggable: true, icon: L.divIcon({ className: "st-vx ms-vx", iconSize: [12, 12] }), title: "Drag; right-click to remove" }).addTo(layer);
       mk.on("drag", (ev) => { const ll = ev.target.getLatLng(); const sn = SNAP && !(ev.originalEvent && ev.originalEvent.altKey) ? snapLL([ll.lat, ll.lng], T.fp, i) : null; if (sn) ev.target.setLatLng(sn); T.fp[i] = sn || [ll.lat, ll.lng]; if (T === b) b.fromSite = false; live(); });
       mk.on("dragend", () => changed());
-      mk.on("contextmenu", (ev) => { L.DomEvent.stop(ev); if (T.fp.length <= 3) return toast("A footprint needs three corners", true); T.fp.splice(i, 1); changed(); });
+      mk.on("contextmenu", (ev) => { L.DomEvent.stop(ev); PT.ctx(ev.originalEvent, [{ label: "Remove the corner", danger: true, disabled: T.fp.length <= 3, action: () => { T.fp.splice(i, 1); changed(); } }, { label: "Add a corner after it", action: () => { const q = T.fp[(i + 1) % T.fp.length]; T.fp.splice(i + 1, 0, [(T.fp[i][0] + q[0]) / 2, (T.fp[i][1] + q[1]) / 2]); changed(); } }]); });
     });
     T.fp.forEach((p, i) => {
       const q = T.fp[(i + 1) % T.fp.length];

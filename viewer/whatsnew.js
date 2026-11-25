@@ -6,6 +6,17 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-26", date: "26 Nov 2026",
+    items: [
+      "**Site study plans work like a drawing tool** - in 2 · Massing, 3 · Units and 4 · Floors the tools are icons along the top of the plan (hover for their names and keys), and what you select shows its sizes in a **property bar** under them: widths and lengths, wall thickness, a staircase's type, width, riser and going, a door's type and width. Fewer words, more drawing.",
+      "**Right-click** anything on the plan: cut, copy, paste, duplicate, delete, rotate, mirror; on a wall, **add a door, a sliding door, a window or an opening there**; on a corner, remove it. Ctrl+C / X / V / D and Delete work too.",
+      "**A library of doors, windows and openings** (the ▦ icon): door, double door, sliding (1 or 2 leaves), an opening with no leaf, window, curtain wall - drag one onto a wall: a core piece's, a wall drawn on the floor, or a unit's. A door is moved by dragging it along its wall, round the corners onto the next face.",
+      "**Walls drawn as polylines, at any angle** - the Wall tool draws a double-line wall point by point (15° steps, Shift: free, type a length then Enter), on its centre line or with its left or right face on the line (Tab); walls that meet read as one. **Cut** a wall where you click, **Join** two that meet; drag a point or a whole segment.",
+      "**The corridor can turn** - draw it with the Corridor tool, or select it and drag its + to add a bend at any angle: the units are laid out along each leg on both sides, the core stands in one leg (choose which), travel distance is measured along the corridor, and a staircase can be moved into another leg. Lobbies and passages are drawn the same way.",
+      "**The left panel is shorter**: the figures, the checks and the settings in cards that fold away.",
+    ],
+  },
+  {
     version: "2027-03-25", date: "26 Nov 2026",
     items: [
       "**4 · Floors: plate edits stay put** - moving one corner of the plate and then another no longer makes everything jump: the units, the core and the corridor keep their places, and the view does not refit.",

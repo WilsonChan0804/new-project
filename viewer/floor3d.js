@@ -66,18 +66,32 @@ function scene(THREE, Orbit, host) {
     const colOf = new Map();
     for (const q of r.placed) if (!colOf.has(q.name)) colOf.set(q.name, COLS[colOf.size % COLS.length]);
     const lower = show === "top" ? 0 : N - 1;
+    // each leg of the floor in its own direction (one leg: as it is)
+    const legs = r.legs && r.legs.length ? r.legs : [{ r, xf: { ox: 0, oy: 0, ang: 0 } }];
+    const legGroup = (l) => { const g = new THREE.Group(); g.position.set(l.xf.ox, -l.xf.oy, 0); g.rotation.z = -l.xf.ang; grp.add(g); return g; };
+    const LG = legs.map(legGroup);
     // the lower floors: a slab, a box a unit, the core all the way up
     for (let k = 0; k < lower; k++) {
       const z = k * H;
       slab(grp, r.F.poly, z, z + sl, mat(0xc9ced4));
-      for (const q of r.placed) box(grp, q.x, q.y, q.x + q.w, q.y + q.h, z + sl, z + H, mat(colOf.get(q.name), 0.92), true);
-      for (const c of r.core) if (c.kind !== "passage") box(grp, c.x, c.y, c.x + c.w, c.y + c.h, z + sl, z + H, mat(0x9aa1a8), true);
+      legs.forEach((l, li) => {
+        for (const q of l.r.placed) box(LG[li], q.x, q.y, q.x + q.w, q.y + q.h, z + sl, z + H, mat(colOf.get(q.name), 0.92), true);
+        for (const c of l.r.core) if (c.kind !== "passage") box(LG[li], c.x, c.y, c.x + c.w, c.y + c.h, z + sl, z + H, mat(0x9aa1a8), true);
+      });
     }
     // the top floor, open
     const z = lower * H, wz = z + sl, wh = Math.min(H - sl, 2.8);
     slab(grp, r.F.poly, z, wz, mat(0xd4d8dd));
-    box(grp, 0, r.y0, r.L, r.y1, wz, wz + 0.01, mat(0xe6e9ee));
     const rcM = mat(0xa3a9b0), blkM = mat(0xeeeae0), pcM = mat(0xa9b0b7);
+    if (r.corrPoly && r.multi) slab(grp, r.corrPoly, wz, wz + 0.01, mat(0xe6e9ee));
+    // the walls drawn on the floor (any angle): their solid parts, a lintel over each opening
+    for (const w of r.walls || []) {
+      for (const q of w.pieces || []) slab(grp, q, wz, wz + wh, w.m === "blk" ? blkM : rcM);
+      for (const o of w.ops || []) if (o.type !== "window" && o.type !== "cw") slab(grp, [o.A[0], o.A[1], o.B[1], o.B[0]], wz + 2.1, wz + wh, blkM);
+    }
+    legs.forEach((l, li) => buildLeg(LG[li], l.r, z, wz, wh));
+    function buildLeg(grp, r) {
+    box(grp, r.corr ? r.corr.x0 : 0, r.y0, r.corr ? r.corr.x1 : r.L, r.y1, wz, wz + 0.01, mat(0xe6e9ee));
     for (const q of r.placed) {
       // the floor of each room, by its use
       for (const rm of q.rooms) box(grp, q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h, wz, wz + 0.02, mat(/BATH|ENS/.test(rm.kind) ? 0xd9ebe7 : colOf.get(q.name)));
@@ -101,10 +115,9 @@ function scene(THREE, Orbit, host) {
       if (c.kind === "stair" && r.stair) stairs(grp, r.stair, c.x + t, c.y + t, c.w - 2 * t, c.h - 2 * t, z, H, box, mat(0xc8c2b6));
       if (c.kind === "refuse" || c.kind === "riser") box(grp, c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t, wz, wz + 0.02, mat(c.kind === "refuse" ? 0xe3e7d3 : 0xf1d6d6));
     }
-    // the walls drawn on the floor
-    for (const w of r.walls || []) for (const q of w.rects) box(grp, q.x0, q.y0, q.x1, q.y1, wz, wz + wh, w.m === "blk" ? blkM : rcM, true);
     // the E&M regions left over
     for (const zr of r.residuals || []) for (const c of zr.cells) box(grp, c.x0, c.y0, c.x1, c.y1, wz, wz + 0.03, mat(0xf3dfae));
+    }
     // the camera: once, from the south-west above, the whole stack in view
     const k2 = `${r.L}|${r.D}|${N}|${show}`;
     if (first || k2 !== key) {

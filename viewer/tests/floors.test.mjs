@@ -246,5 +246,54 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   ok(win && near(Math.hypot(win.b[0] - win.a[0], win.b[1] - win.a[1]), 1, 1e-6) && win.no[0] === 1 && win.no[1] === 0, "a north window, turned a quarter: 1 m long, facing east");
   ok(cw && T.doors[0].type === "sliding2", "the curtain wall edge and the sliding door come through");
 }
+// a bending corridor: an L-shaped plate, the spine along both arms
+{
+  const mx = [{ u: TEMPLATES["2R-B"], n: 6 }, { u: TEMPLATES["1R-B"], n: 6 }];
+  const poly = [[0, 0], [50, 0], [50, 17], [17, 17], [17, 50], [0, 50]];
+  const one = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3 });
+  const plain = F.layout({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3 });
+  ok(one.legs.length === 1 && one.figures.gfa === plain.figures.gfa && one.placed.length === plain.placed.length, "no spine: one leg, the same as ever");
+  const R = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, spine: { path: [[50, 8.5], [8.5, 8.5], [8.5, 50]] } });
+  ok(R.multi && R.legs.length === 2 && R.legs.every((l) => l.r.placed.length > 0), "an L: two legs, units on both (" + R.legs.map((l) => l.r.placed.length).join(" + ") + ")");
+  ok(R.placed.length === 12 && !R.issues.length, "all 12 flats placed, none outside the plate or overlapping");
+  ok(R.legs[0].r.core.length > 0 && R.legs[1].r.core.length === 0 && R.coreLeg === 0, "the core in the longer leg");
+  const toP = (l, pt) => [l.xf.ox + l.xf.c * pt[0] - l.xf.s * pt[1], l.xf.oy + l.xf.s * pt[0] + l.xf.c * pt[1]];
+  const inL = (x, y) => F.inPoly(poly, x, y);
+  ok(R.legs.every((l) => l.r.placed.every((q) => [[q.x + 0.3, q.y + 0.3], [q.x + q.w - 0.3, q.y + q.h - 0.3]].every((pt) => inL(...toP(l, pt))))), "each unit inside the L in the plate frame");
+  ok(near(R.figures.corridor, (41.5 + 41.5) * 1.5, 1e-6), "the corridor: the spine's length × its width (" + R.figures.corridor + " m²)");
+  ok(near(R.figures.gfa, R.legs.reduce((s, l) => s + l.r.figures.gfa, 0), 1e-6) && R.figures.plate === Math.round(Math.abs(F.area(poly)) * 1000) / 1000, "the figures summed over the legs, on the whole plate");
+  ok(R.checks.some((c) => /along the corridor/.test(c.text)), "travel measured along the bending corridor");
+  ok(R.legs.every((l) => l.r.figures.residual > 50) && R.figures.gfa + R.figures.residual <= R.figures.plate + 1, `what is left found in both legs (${R.legs.map((l) => Math.round(l.r.figures.residual)).join(" + ")} m²), within the plate`);
+  // a staircase moved into the far leg: the far end is no longer a dead end
+  const pc = R.coreOut.map((c) => Object.assign({}, c));
+  const st = R.legs[0].r.coreOut.find((c) => c.kind === "stair" && c.label === "Stair B");
+  const moved = [...R.legs[0].r.coreOut.filter((c) => c !== st && c.kind !== "passage"), Object.assign({}, st, { leg: 1, x: 30, y: 0.5 })];
+  void pc;
+  const R2 = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, spine: { path: [[50, 8.5], [8.5, 8.5], [8.5, 50]] }, pieces: moved });
+  ok(R2.legs[1].r.core.some((c) => c.kind === "stair"), "a staircase put in the far leg stands there");
+  const tv = (r) => Number((r.checks.find((c) => /^Travel/.test(c.what)).text.match(/^([\d.]+)/) || [0, 99])[1]);
+  ok(tv(R2) < tv(R), `travel shorter with it (${tv(R)} -> ${tv(R2)} m)`);
+  // 120 degrees
+  const a = Math.PI / 3, P = [[0, 0], [40, 0]], e = [40 + 30 * Math.cos(a), 30 * Math.sin(a)];
+  const poly2 = [[0, -9], [40 + 9 * Math.tan(a / 2), -9], [e[0] + 9 * Math.sin(a), e[1] - 9 * Math.cos(a)], [e[0] - 9 * Math.sin(a), e[1] + 9 * Math.cos(a)], [40 - 9 * Math.tan(a / 2), 9], [0, 9]];
+  const fr = F.frame(poly2, { ux: 1, uy: 0 }), sp = [...P, e].map((q) => fr.to(q));
+  const R3 = F.layoutLegs({ poly: poly2, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, spine: { path: sp } });
+  ok(R3.legs.length === 2 && Math.abs(R3.legs[1].xf.ang - R3.legs[0].xf.ang) > 0.9 && R3.placed.length >= 8 && !R3.issues.length, `a bend of 120° (turning 60°): two legs, ${R3.placed.length} flats, no clashes`);
+  // a wall across the far leg ends its corridor
+  const R4 = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, spine: { path: [[50, 8.5], [8.5, 8.5], [8.5, 50]] }, walls: [{ path: [[6, 40], [11, 40]], t: 0.2 }] });
+  ok(R4.figures.corridor < R.figures.corridor - 5 && R4.fwallA > 0, "a wall across the far leg cuts its corridor (" + R4.figures.corridor + " m²)");
+}
+// openings on core pieces
+{
+  const sq = [[0, 0], [48, 0], [48, 16], [0, 16]];
+  const A = F.layout({ poly: sq, mix, storeys: 30 });
+  const pcs = A.coreOut.map((c) => (c.kind === "lift" && c.label === "Lift 1" ? Object.assign({}, c, { openings: [{ side: "n", at: 0.5, w: 1.0, type: "window" }] }) : c.kind === "refuse" ? Object.assign({}, c, { door: { side: "s", at: 0.5, type: "opening" } }) : c));
+  const B = F.layout({ poly: sq, mix, storeys: 30, pieces: pcs });
+  const l1 = B.core.find((c) => c.label === "Lift 1"), rf = B.core.find((c) => c.kind === "refuse");
+  ok(l1.doors.length === 2 && l1.doors[1].type === "window" && l1.doors[1].side === "n", "a window added on a lift's back wall");
+  ok(rf.doors[0].type === "opening", "the refuse room's door made an opening");
+  ok(F.coreWallRects(B.core, 0.25).length > F.coreWallRects(A.core, 0.25).length, "the walls cut at the new opening");
+  ok(B.coreOut.find((c) => c.label === "Lift 1").openings.length === 1, "and kept with the piece");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

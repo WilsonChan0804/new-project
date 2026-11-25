@@ -10,6 +10,7 @@ import { api } from "./nav.js";
 import { toast } from "./tasks-util.js";
 import * as PZ from "./planzoom.js";
 import { wallGeom } from "./unitwalls.js";
+import * as PT from "./plantools.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const cap = (el, ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic or finished pointer */ } };
@@ -35,6 +36,7 @@ export function init(ctx) {
     if (k === "y" || (k === "z" && ev.shiftKey)) { ev.preventDefault(); undo(1); }
   });
   wirePlan();
+  PT.keys(() => ON && !INPLACE && C.can(), { v: () => { TOOL = "select"; drawPlan(); }, r: () => { TOOL = "room"; drawPlan(); }, d: () => { TOOL = "door"; drawPlan(); }, w: () => { TOOL = "window"; drawPlan(); } });
 }
 export function store() {
   const s = C.study();
@@ -100,7 +102,7 @@ export async function show(on, opts) {
   $("#st-upanel").hidden = !on;
   $("#st-uplan").hidden = !on;
   document.body.classList.toggle("st-units", on);
-  if (!on) return;
+  if (!on) { PT.unmount("units"); return; }
   if (!HIST.length) snap();
   render();
   try { LIB = await api("/api/units/library"); render(); } catch (e) {}
@@ -278,6 +280,7 @@ const ROOMFILL = { LD: "#fbf3d5", MBR: "#fbf3d5", BR: "#fbf3d5", STUDY: "#fbf3d5
 const ALINES = () => { try { return localStorage.getItem("lwk-viewer:un-alines") || "off"; } catch (e) { return "off"; } };
 let SEL = null;      // {t: "wall"|"door"|"win"|"fix", i | key}
 let TOOL = "select"; // select | door | window | split-x | split-y | room | fix:<kind>
+let HOVW = null;      // a library opening dragged over a wall: {e, along}
 let ROOMK = "BR";     // the kind a drawn room gets
 let LIVE = null;     // while a wall line is dragged: {axis, at, d}
 const DIMS = () => { try { return localStorage.getItem("lwk-viewer:un-dims") || "chains"; } catch (e) { return "chains"; } };
@@ -451,7 +454,28 @@ function drawPlan() {
     const r = u.rooms.find((q) => q.id === d.room); if (!r) continue;
     const dw = +d.w || 0.8, [a, b, inn] = sideSeg(r, d.side, +d.at || 0, dw), sel = SEL && SEL.t === "door" && SEL.i === i;
     const at = wallAt(a, b), t = at ? at.t : wallT(d.room, d.side), o = at ? at.o : 0, vert = a[0] === b[0], st = sel ? "#f28022" : "#222";
-    if (d.type === "sliding" || d.type === "sliding2") { g += slideSvg(a, b, t, o, vert, st, d, sel, sx, sy); g += `<line class="un-hit" data-di="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${t * SC + 4}" />`; continue; }
+    const hit = `<line class="un-hit" data-di="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${t * SC + 4}" />`;
+    if (d.type === "sliding" || d.type === "sliding2") { g += slideSvg(a, b, t, o, vert, st, d, sel, sx, sy) + hit; continue; }
+    if (d.type === "opening") {
+      // an opening: the jambs, no leaf; a dashed line across
+      const nm = vert ? [1, 0] : [0, 1], P2 = (p, nn) => [p[0] + nm[0] * (o + nn), p[1] + nm[1] * (o + nn)];
+      const ln = (p, q, w, ex = "") => `<line x1="${sx(p[0])}" y1="${sy(p[1])}" x2="${sx(q[0])}" y2="${sy(q[1])}" stroke="${st}" stroke-width="${w}"${ex} />`;
+      g += `<polygon points="${[P2(a, -t / 2), P2(b, -t / 2), P2(b, t / 2), P2(a, t / 2)].map((q) => sx(q[0]) + "," + sy(q[1])).join(" ")}" fill="#fff" stroke="none" />` + ln(P2(a, -t / 2), P2(a, t / 2), 0.8) + ln(P2(b, -t / 2), P2(b, t / 2), 0.8) + ln(P2(a, 0), P2(b, 0), 0.5, ' stroke-dasharray="3 2"') + hit;
+      continue;
+    }
+    if (d.type === "door2" && !d._half) {
+      // a double door: two leaves meeting in the middle
+      const h1 = Object.assign({}, d, { _half: 1, w: dw / 2, hinge: "start" }), h2 = Object.assign({}, d, { _half: 1, at: (+d.at || 0) + dw / 2, w: dw / 2, hinge: "end" });
+      u.doors.splice(i, 1, h1); g += drawDoorOnce(i); u.doors.splice(i, 1, h2); g += drawDoorOnce(i); u.doors.splice(i, 1, d);
+      g += hit; continue;
+    }
+    g += drawDoorOnce(i) + hit;
+  }
+  function drawDoorOnce(i) {
+    let g = "";
+    const d = u.doors[i], r = u.rooms.find((q) => q.id === d.room);
+    const dw = +d.w || 0.8, [a, b, inn] = sideSeg(r, d.side, +d.at || 0, dw), sel = SEL && SEL.t === "door" && SEL.i === i;
+    const at = wallAt(a, b), t = at ? at.t : wallT(d.room, d.side), o = at ? at.o : 0, vert = a[0] === b[0], st = sel ? "#f28022" : "#222";
     const k = d.swing === "out" ? -1 : 1, sn = [inn[0] * k, inn[1] * k];                   // the side the door opens to
     const al = vert ? [0, 1] : [1, 0], ctr = vert ? [o, 0] : [0, o];
     const fw = 0.05, fd = Math.min(t, 0.1), stp = 0.015, lt = 0.04;
@@ -465,7 +489,7 @@ function drawPlan() {
     g += poly([[fw, 0], [fw + lt, 0], [fw + lt, -lw2], [fw, -lw2]].map(([uu, nn]) => pt2(hinge[0], hinge[1], uu, nn)));
     const cr = (tip[0] - Hp[0]) * (shut[1] - Hp[1]) - (tip[1] - Hp[1]) * (shut[0] - Hp[0]);
     g += `<path d="M ${sx(tip[0])} ${sy(tip[1])} A ${lw2 * SC} ${lw2 * SC} 0 0 ${cr > 0 ? 1 : 0} ${sx(shut[0])} ${sy(shut[1])}" fill="none" stroke="${st}" stroke-width="${sel ? 1.4 : 0.45}" />`;
-    g += `<line class="un-hit" data-di="${i}" x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="transparent" stroke-width="${t * SC + 4}" />`;
+    return g;
   }
   // the zones' hit areas and labels (over the walls, under the room labels)
   for (const [zi, z] of (u.zones || []).entries()) {
@@ -501,9 +525,26 @@ function drawPlan() {
   // a selected partition's ends: drag to shorten it
   if (WENDS) for (const [p, k] of WENDS.pts) g += `<circle class="un-wend" data-wend="${k}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7" fill="#fff" stroke="#f28022" stroke-width="2.5" />`;
   g += dims(u, f, sx, sy);
+  if (HOVW) g += `<line x1="${sx(HOVW.e.x1)}" y1="${sy(HOVW.e.y1)}" x2="${sx(HOVW.e.x2)}" y2="${sy(HOVW.e.y2)}" stroke="#1f6feb" stroke-width="8" stroke-opacity="0.45" pointer-events="none" />`;
   if (LIVE) g += `<text x="${bw / 2}" y="${bh - 40}" text-anchor="middle" font-size="14" font-weight="700" fill="#b4520a">${LIVE.d >= 0 ? "+" : ""}${f3(LIVE.d)} m</text>`;
   g += `<text x="${bw - 20}" y="${bh - 18}" text-anchor="end" font-size="11" fill="#6b7785">${esc(u.name || "")} · ${f.saleableFt} ft² · ${f1(f.saleable)} m²</text>`;
-  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${HATCH}${g}</svg>${toolbar()}${popup(u, f, sx, sy, bw, bh)}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
+  host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif">${HATCH}${g}</svg>${INPLACE ? toolbar() + popup(u, f, sx, sy, bw, bh) : ""}${PZ.bar(document.body.classList.contains("st-planfull"))}`;
+  if (!INPLACE) { const pp = popup(u, f, sx, sy, bw, bh); PT.mount("units", topBar(), pp ? `<div class="pt-prop un-prop">${pp.replace(/^<div class="un-pop"[^>]*>/, "").replace(/<\/div>$/, "")}</div>` : `<div class="pt-prop"><span class="pt-pt"><b>${esc(u.name || "Unit")}</b><small>${f.saleableFt} ft² · ${f1(f.saleable)} m² · click a wall, door or room · right-click for more</small></span></div>`, C.can() ? PT.OPENINGS : null); }
+  else PT.unmount("units");
+}
+/* the icon toolbar along the top of the unit plan */
+function topBar() {
+  const can = C.can(), T = (id, icon, title, key, text) => ({ id, icon, title, key, text, on: TOOL === id });
+  const sel = (attr, opts, cur2, ttl) => `<select ${attr} title="${esc(ttl)}" class="pt-sel">${opts.map(([v, l]) => `<option value="${esc(v)}"${v === cur2 ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  const G = [[T("select", "select", "Select: click a wall, door, window, fitting, balcony or UP; drag a wall (Alt: the whole line)", "V")]];
+  if (can) {
+    G.push([T("room", "room", "Room: drag a rectangle beside the rooms", "R"), { html: sel("data-roomk", Object.entries(U.KINDS).map(([k, q]) => [k, q.label]), ROOMK, "The kind of the room you draw") }, T("split-x", "split", "Split │: click a room", "", "│"), T("split-y", "split", "Split ─: click a room", "", "─")]);
+    G.push([T("door", "door", "Door: click a wall", "D"), T("window", "window", "Window: click an external wall", "W"), { id: "lib", icon: "library", title: "Doors, windows and openings: drag one onto a wall", on: PT.libraryOpen() }]);
+    G.push([{ html: sel("data-xadd", [["", "Balcony / UP …"], ...Object.entries(XADD).map(([k, v]) => [k, v.label])], TOOL.startsWith("x:") ? TOOL.slice(2) : "", "Then click an external wall: it goes outside it") }, { html: sel("data-fixadd", [["", "Fitting …"], ...Object.entries(FIXK).map(([k, v]) => [k, v])], TOOL.startsWith("fix:") ? TOOL.slice(4) : "", "Then click a room to place it") }]);
+  }
+  G.push([{ html: sel("data-alines", [["off", "Area lines: off"], ["saleable", "Saleable line"], ["gfa", "GFA line"], ["both", "Saleable + GFA"]], ALINES(), "The saleable and GFA lines") }, { html: sel("data-dims", [["chains", "Dims: chains"], ["overall", "Dims: overall"], ["off", "Dims: off"]], DIMS(), "Dimensions") }]);
+  if (can) G.push([{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }]);
+  return PT.toolbar(G);
 }
 
 /* the dimension chains: a tick at every wall line along each side, the room spans between, the overall outside */
@@ -656,7 +697,7 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     const d = u.doors[SEL.i], r = d && u.rooms.find((q) => q.id === d.room); if (!r) return "";
     const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
     const dt = d.type || "hinged";
-    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
+    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["door2", "Double"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening (no leaf)"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" || dt === "door2" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : dt === "opening" ? "" : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="del">Remove</button><small>drag it along the wall</small>`;
   } else if (SEL.t === "win") {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
@@ -715,10 +756,64 @@ function roomPreview(d) {
     <text x="${X + w * SC / 2}" y="${Y + h * SC / 2}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#b4520a">${f3(w)} × ${f3(h)} m · ${f2(w * h)} m²</text>`;
 }
 
+/* the unit's wall under the pointer (within tol m): {e, rs, along (m from the room's corner on that side)} */
+function wallUnder(ev, tol) {
+  const u = cur(); if (!u) return null;
+  const b = $("#st-uplan").getBoundingClientRect();
+  if (ev.clientX < b.left || ev.clientX > b.right || ev.clientY < b.top || ev.clientY > b.bottom) return null;
+  const P = toPlan(ev), f = U.figures(u);
+  let best = null;
+  for (const e of f.edges) {
+    const v = e.x1 === e.x2, d = v ? Math.abs(P[0] - e.x1) : Math.abs(P[1] - e.y1), lo = v ? Math.min(e.y1, e.y2) : Math.min(e.x1, e.x2), hi = v ? Math.max(e.y1, e.y2) : Math.max(e.x1, e.x2), s = v ? P[1] : P[0];
+    if (s < lo - 0.05 || s > hi + 0.05 || d > tol || U.isOpen(u, e)) continue;
+    if (!best || d < best.d) best = { e, d };
+  }
+  if (!best) return null;
+  const rs = edgeRoomSide(best.e), r = u.rooms.find((q) => q.id === rs.room);
+  return { e: best.e, rs, along: rs.side === "n" || rs.side === "s" ? P[0] - r.x : P[1] - r.y, r };
+}
+/* an opening of the library's (or the menu's) kind put on that wall */
+function placeOpening(hit, id, w) {
+  const u = cur(); if (!u || !C.can()) return;
+  const { e, rs, along, r } = hit, L = rs.side === "n" || rs.side === "s" ? r.w : r.h;
+  const ww = Math.min(Number(w) || 0.9, e.len - 0.1), at = +Math.max(0, Math.min(L - ww, along - ww / 2)).toFixed(2);
+  if (id === "window" || id === "cw") {
+    if (e.kind === "part") return toast("A window goes on an external wall", true);
+    if (id === "cw") { const o = u.walls[e.key] = u.walls[e.key] || {}; o.f = "cw"; SEL = { t: "wall", key: e.key }; return changed(); }
+    u.windows.push({ room: rs.room, side: rs.side, at, w: +ww.toFixed(2) }); SEL = { t: "win", i: u.windows.length - 1 }; return changed();
+  }
+  const type = { door: null, door2: "door2", doorU: "door2", sliding: "sliding", sliding2: "sliding2", opening: "opening" }[id];
+  u.doors.push(Object.assign({ room: rs.room, side: rs.side, at, w: +ww.toFixed(2), hinge: "start", swing: "in" }, type ? { type } : {}));
+  SEL = { t: "door", i: u.doors.length - 1 }; return changed();
+}
+/* the right-click menu: on a wall, a door or window, a room, a fitting or balcony */
+function onContext(ev) {
+  const u0 = cur(); if (!u0 || !C.can()) return;
+  ev.preventDefault();
+  const u = ensure(u0), t = ev.target, f = U.figures(u), hit = wallUnder(ev, 0.4), M2 = [];
+  const del = (fn) => ({ label: "Delete", key: "Del", danger: true, action: () => { fn(); SEL = null; changed(); } });
+  if (t.dataset.di != null) { const i = +t.dataset.di; SEL = { t: "door", i }; drawPlan(); M2.push(...[["hinged", "Hinged door"], ["door2", "Double door"], ["sliding2", "Sliding door"], ["opening", "Opening"]].map(([k, l]) => ({ label: "Make it: " + l, action: () => { if (k === "hinged") delete u.doors[i].type; else u.doors[i].type = k; changed(); } })), { label: "Flip the hinge", action: () => { const dd = u.doors[i]; dd.hinge = dd.hinge === "end" ? "start" : "end"; changed(); } }, "-", del(() => u.doors.splice(i, 1))); }
+  else if (t.dataset.wi != null) { const i = +t.dataset.wi; SEL = { t: "win", i }; drawPlan(); M2.push(del(() => u.windows.splice(i, 1))); }
+  else if (t.dataset.fi != null) { const i = +t.dataset.fi; SEL = { t: "fix", i }; drawPlan(); M2.push({ label: "Rotate 90°", action: () => { u.fixtures[i] = U.rotateFixture(u.fixtures[i]); changed(); } }, { label: "Copy", action: () => PT.clip.set("fixture", u.fixtures[i]) }, del(() => u.fixtures.splice(i, 1))); }
+  else if (t.dataset.xi != null) { const i = +t.dataset.xi; SEL = { t: "x", i }; drawPlan(); M2.push({ label: "Rotate", action: () => { const e = u.extras[i]; [e.w, e.h] = [e.h, e.w]; changed(); } }, del(() => u.extras.splice(i, 1))); }
+  else if (hit) {
+    const e = hit.e; SEL = { t: "wall", key: e.key }; drawPlan();
+    M2.push({ label: "Add a door here", action: () => placeOpening(hit, "door", 0.8) }, { label: "Add a sliding door here", action: () => placeOpening(hit, "sliding2", Math.min(2.0, e.len - 0.4)) }, { label: "Add an opening here", action: () => placeOpening(hit, "opening", 0.9) });
+    if (e.kind !== "part") M2.push({ label: "Add a window here", action: () => placeOpening(hit, "window", 1.2) }, "-", { label: e.kind === "party" ? "Make it external" : "Make it a party wall", action: () => { const o = u.walls[e.key] = u.walls[e.key] || {}, k = e.kind === "party" ? "ext" : "party", side = (u.partySides || []).includes(e.face) ? "party" : "ext"; if (k === side) delete o.kind; else o.kind = k; changed(); } });
+    else M2.push("-", { label: U.isOpen(u, e) ? "Put the wall back" : "Delete the wall", action: () => { const o = u.walls[e.key] = u.walls[e.key] || {}; o.open = !U.isOpen(u, e); changed(); } }, { label: "Join the two rooms", action: () => { const v = U.joinRooms(u, e.a, e.b); if (!v) return toast("These two rooms do not make one rectangle", true); const st0 = store(); st0.list[st0.sel] = v; SEL = null; changed(); } });
+  } else if (t.dataset.rid) {
+    const P = toPlan(ev), r = u.rooms.find((q) => q.id === t.dataset.rid);
+    const sp = (ax) => () => { const v = U.splitRoom(u, r.id, ax, ax === "x" ? P[0] - r.x : P[1] - r.y); if (v === u) return toast("Too near the room's edge", true); const st0 = store(); st0.list[st0.sel] = v; changed(); };
+    M2.push({ label: "Split │ here", action: sp("x") }, { label: "Split ─ here", action: sp("y") });
+    const fc = PT.clip.get("fixture"); if (fc) M2.push({ label: "Paste the fitting here", action: () => { const q = fc.data; u.fixtures.push(Object.assign({}, q, { x: +(P[0] - q.w / 2).toFixed(2), y: +(P[1] - q.h / 2).toFixed(2) })); changed(); } });
+  } else return;
+  void f;
+  PT.ctx(ev, M2);
+}
 function wirePlan() {
-  const host = $("#st-uplan");
+  const host = $("#st-uplan"), top = $("#st-ptop");
   let drag = null;
-  host.addEventListener("change", (ev) => {
+  const planChange = (ev) => {
     const t = ev.target, u = cur(); if (!u) return;
     if (t.dataset.alines != null) { try { localStorage.setItem("lwk-viewer:un-alines", t.value); } catch (e) {} return drawPlan(); }
     if (t.dataset.dims != null) { try { localStorage.setItem("lwk-viewer:un-dims", t.value); } catch (e) {} return drawPlan(); }
@@ -743,8 +838,10 @@ function wirePlan() {
     if (t.dataset.pww != null) { u.windows[SEL.i].w = Math.max(0.3, parseFloat(t.value) || 1); return changed(); }
     if (t.dataset.pfw != null) { u.fixtures[SEL.i].w = Math.max(0.2, parseFloat(t.value) || 0.5); return changed(); }
     if (t.dataset.pfh != null) { u.fixtures[SEL.i].h = Math.max(0.2, parseFloat(t.value) || 0.5); return changed(); }
-  });
-  host.addEventListener("click", (ev) => {
+  };
+  host.addEventListener("change", planChange);
+  if (top) top.addEventListener("change", (ev) => { if (ON && !INPLACE) planChange(ev); });
+  const planClick = (ev) => {
     const t = ev.target.closest("button"); const u = cur(); if (!t || !u) return;
     if (t.dataset.pz) return PZ.barClick(ZM, t, host.getBoundingClientRect(), drawPlan);
     const d = t.dataset;
@@ -794,7 +891,24 @@ function wirePlan() {
     if (d.pz2 === "del") { u.zones.splice(SEL.i, 1); SEL = null; return changed(); }
     if (d.pwin === "del") { u.windows.splice(SEL.i, 1); SEL = null; return changed(); }
     if (d.pf) { if (d.pf === "rot") u.fixtures[SEL.i] = U.rotateFixture(u.fixtures[SEL.i]); if (d.pf === "del") { u.fixtures.splice(SEL.i, 1); SEL = null; } return changed(); }
+  };
+  host.addEventListener("click", planClick);
+  if (top) top.addEventListener("click", (ev) => { if (ON && !INPLACE && !ev.target.closest("[data-pt]")) planClick(ev); });
+  // the top bar's tools, the library dropped onto a wall
+  PT.handlers("units", {
+    tool: (id) => {
+      if (id === "lib") { PT.toggleLibrary(); return drawPlan(); }
+      if (id === "undo") return undo(-1);
+      if (id === "redo") return undo(1);
+      TOOL = TOOL === id && id !== "select" ? "select" : id; SEL = null; drawPlan();
+    },
+    refresh: () => drawPlan(),
+    drag: {
+      over: (item, ev) => { HOVW = ON ? wallUnder(ev, 0.5) : null; drawPlan(); },
+      drop: (item, ev) => { HOVW = null; const hit = ON ? wallUnder(ev, 0.5) : null; if (!hit) { drawPlan(); return toast("Drop it on a wall of the unit", true); } placeOpening(hit, item.id, item.w); },
+    },
   });
+  host.addEventListener("contextmenu", (ev) => onContext(ev));
   host.addEventListener("pointerdown", (ev) => {
     const t = ev.target, u0 = cur(); if (!u0 || ev.target.closest(".un-bar,.un-pop,.pz-bar")) return;
     // a second finger: whatever was being dragged goes back, and the two pinch the plan
