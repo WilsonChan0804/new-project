@@ -63,6 +63,30 @@ function scene(THREE, Orbit, host) {
     const sh = new THREE.Shape(); poly.forEach(([x, y], i) => (i ? sh.lineTo(x, -y) : sh.moveTo(x, -y))); sh.closePath();
     const me = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: z1 - z0, bevelEnabled: false }), m); me.position.z = z0; g.add(me);
   };
+  // a group's meshes and lines merged into one shape a material (a floor drawn in a few calls, not thousands)
+  const mergeGroup = (T) => {
+    T.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(T.matrixWorld).invert(), buckets = new Map();
+    T.traverse((o) => {
+      if (!(o.isMesh || o.isLineSegments) || !o.geometry || !o.geometry.attributes.position) return;
+      const line = !o.isMesh, k = (line ? "l" : "m") + o.material.uuid;
+      let b = buckets.get(k); if (!b) buckets.set(k, (b = { mat: o.material, line, pos: [], nor: [] }));
+      const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+      if (!line && !g.attributes.normal) g.computeVertexNormals();
+      b.pos.push(g.attributes.position.array); if (!line) b.nor.push(g.attributes.normal.array);
+      g.dispose();
+    });
+    const cat = (arrs) => { const r = new Float32Array(arrs.reduce((a2, q) => a2 + q.length, 0)); let o = 0; for (const q of arrs) { r.set(q, o); o += q.length; } return r; };
+    const out = new THREE.Group();
+    for (const b of buckets.values()) {
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(cat(b.pos), 3));
+      if (!b.line) g.setAttribute("normal", new THREE.BufferAttribute(cat(b.nor), 3));
+      g.computeBoundingSphere();
+      out.add(b.line ? new THREE.LineSegments(g, b.mat) : new THREE.Mesh(g, b.mat));
+    }
+    return out;
+  };
   self.count = () => { let n = 0; if (grp) grp.traverse(() => n++); return n; };
   self.build = (r, o) => {
     self.paused = false;
@@ -185,7 +209,7 @@ function scene(THREE, Orbit, host) {
       }
     }
     for (const f of later) f();
-    if (lower > 0) { const T = lowerTpl(); for (let k = 0; k < lower; k++) { const c = k ? T.clone() : T; c.position.z = k * H; grp.add(c); } }
+    if (lower > 0) { const T0 = lowerTpl(), T = mergeGroup(T0); T0.traverse((q) => q.geometry && q.geometry.dispose()); for (let k = 0; k < lower; k++) { const c = k ? T.clone() : T; c.position.z = k * H; grp.add(c); } }
     legs.forEach((l, li) => buildLeg(LG[li], l.r, z, wz, wh));
     function buildLeg(grp, r) {
     box(grp, r.corr ? r.corr.x0 : 0, r.y0, r.corr ? r.corr.x1 : r.L, r.y1, wz, wz + 0.01, mat(0xe6e9ee));
