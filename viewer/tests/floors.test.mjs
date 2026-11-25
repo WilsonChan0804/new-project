@@ -394,5 +394,16 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const o = F.hugOutline(shapes, 0.5), xs = o.map((p) => p[0]), ys = o.map((p) => p[1]);
   ok(Math.abs(Math.min(...ys) - wy0) < 0.001 && Math.abs(Math.max(...ys) - wy1) < 0.001 && Math.min(...xs) <= wx0 + 0.001, `fit plate on the walls' outer faces: top ${Math.min(...ys)} / ${r3(wy0)}, bottom ${Math.max(...ys)} / ${r3(wy1)}`);
 }
+{
+  // a target mix: 40 / 40 / 20 of 10 flats, each type to its unit (the current mix's first)
+  const U = (name, br) => ({ name, rooms: [{ kind: "LD" }, ...Array.from({ length: br }, (_, i) => ({ kind: i ? "BR" : "MBR" }))] });
+  const lib = [U("S1", 0), U("A1", 1), U("A2", 1), U("B1", 2), U("C1", 3)];
+  const mx = F.mixForTarget(lib, { 0: 40, 1: 40, 2: 20 }, 10, [{ u: "A2", n: 3 }]);
+  const by = Object.fromEntries(mx.map((q) => [q.u, q.n]));
+  ok(by.S1 === 4 && by.A2 === 4 && by.B1 === 2 && !by.A1 && mx.reduce((s, q) => s + q.n, 0) === 10, "mixForTarget: 40/40/20 of 10 -> " + JSON.stringify(mx));
+  const m2 = F.mixForTarget(lib, { 1: 1, 2: 1, 3: 1 }, 7, []);
+  ok(m2.reduce((s, q) => s + q.n, 0) === 7 && m2.every((q) => q.n >= 2), "mixForTarget: thirds of 7 -> " + JSON.stringify(m2));
+  ok(F.unitType(U("x", 5)) === "3" && F.unitType(U("y", 0)) === "0", "unitType: by bedrooms, 3 or more as one");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

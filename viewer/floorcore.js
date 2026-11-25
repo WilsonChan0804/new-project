@@ -1015,6 +1015,36 @@ function placedWalls0(q) {
   return { rects: G.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
 }
 
+/* a unit's type for the mix: by its bedrooms (0: an open studio, 1, 2, 3 or more; as the HK 1-, 2-, 3-room) */
+export const MIX_TYPES = [["0", "Studio (open)"], ["1", "1-room · 1 bedroom"], ["2", "2-room · 2 bedrooms"], ["3", "3-room+ · 3 bedrooms or more"]];
+export function unitType(u) {
+  const rooms = (u && u.rooms) || [], b = rooms.filter((r) => r.kind === "MBR" || r.kind === "BR").length;
+  return String(Math.min(3, b));
+}
+/* a mix for a target: shares {type: %} of n flats (largest remainder), each type's flats to the units of that type in the
+   current mix (in their proportion), else the library's first of that type -> [{u (name), n}] */
+export function mixForTarget(lib, shares, n, current) {
+  const types = Object.keys(shares || {}).filter((k) => Number(shares[k]) > 0), tot = types.reduce((s, k) => s + Number(shares[k]), 0);
+  if (!tot || !(n > 0)) return [];
+  const raw = types.map((k) => ({ k, v: (Number(shares[k]) / tot) * n }));
+  raw.forEach((x) => { x.n = Math.floor(x.v); });
+  let left = n - raw.reduce((s, x) => s + x.n, 0);
+  for (const x of [...raw].sort((a, c) => (c.v - c.n) - (a.v - a.n))) { if (left <= 0) break; x.n++; left--; }
+  const out = [];
+  for (const x of raw) {
+    if (!x.n) continue;
+    const cur = (current || []).filter((q) => { const u = lib.find((v) => v.name === q.u); return u && unitType(u) === x.k; });
+    const pool = cur.length ? cur.map((q) => ({ u: q.u, w: Number(q.n) || 1 })) : (() => { const u = lib.find((v) => unitType(v) === x.k); return u ? [{ u: u.name, w: 1 }] : []; })();
+    if (!pool.length) continue;
+    const W = pool.reduce((s, q) => s + q.w, 0), parts = pool.map((q) => ({ u: q.u, v: (q.w / W) * x.n }));
+    parts.forEach((p) => { p.n = Math.floor(p.v); });
+    let l2 = x.n - parts.reduce((s, p) => s + p.n, 0);
+    for (const p of [...parts].sort((a, c) => (c.v - c.n) - (a.v - a.n))) { if (l2 <= 0) break; p.n++; l2--; }
+    for (const p of parts) if (p.n) out.push({ u: p.u, n: p.n });
+  }
+  return out;
+}
+
 /* a unit's door put on the wall it is in, as built: the wall pieces either side of it (rects in the unit's frame) give the
    line of its middle and its thickness (a partition built to one side of a room's edge, or thinner than the unit's wall) -> {d, t} */
 export function doorOnWall(d, rects, t0) {

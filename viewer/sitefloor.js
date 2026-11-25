@@ -144,14 +144,14 @@ function setTool(t) {
 /* the floor settings' history, per floor group */
 function snapF(x) {
   if (FKEY !== x.key) { FH = []; FI = -1; FKEY = x.key; }
-  const g = x.b.groups[x.gi], j = JSON.stringify({ floor: g.floor || {}, fp: g.fp || null }); if (FH[FI] === j) return;
+  const g = x.b.groups[x.gi], j = JSON.stringify({ floor: g.floor || {}, fp: g.fp || null, mix: g.mix || null }); if (FH[FI] === j) return;
   FH = FH.slice(0, FI + 1); FH.push(j); if (FH.length > 60) FH.shift(); FI = FH.length - 1;
 }
 function undo(step) {
   const x = cur(); if (!x || !C.can()) return;
   snapF(x);
   const k = FI + step; if (k < 0 || k >= FH.length) return toast(step < 0 ? "Nothing to undo" : "Nothing to redo");
-  FI = k; const v = JSON.parse(FH[FI]), g = x.b.groups[x.gi]; g.floor = v.floor; if (v.fp) g.fp = v.fp; else delete g.fp; clearSel(); C.save(); render();
+  FI = k; const v = JSON.parse(FH[FI]), g = x.b.groups[x.gi]; g.floor = v.floor; if (v.fp) g.fp = v.fp; else delete g.fp; if (v.mix) g.mix = v.mix; clearSel(); C.save(); render();
 }
 /* an edit of the floor's units, each leg's list (SQ(leg)): the automatic layout taken as it stands first */
 function edit(fn) {
@@ -352,6 +352,7 @@ function render0() {
       <tr><td>Units' concessions</td><td>${f1(F.unitEx)} m²</td><td>balcony, UP, A/C, façade</td></tr>
       ${F.mic ? `<tr><td>MiC</td><td>${f1(F.mic)} m²</td><td>${o.micPct}% (JPN 8)</td></tr>` : ""}
     </table></details></div>`;
+  h += targetCard(x, r, can, open);
   h += `<details class="st-card" data-card="chk"${open("chk", true)}><summary><b>Checks</b> <small>${r.checks.filter((c) => !c.ok).length ? `<span class="bad">${r.checks.filter((c) => !c.ok).length} to look at</span>` : "all clear"}</small></summary><ul class="fl-checks">${r.checks.map((c) => `<li class="${c.ok ? "ok" : "bad"}"><b>${c.ok ? "✓" : "✗"} ${esc(c.what)}</b><br><small>${esc(c.text)}</small></li>`).join("")}</ul>
     ${r.left.length ? `<ul class="un-warn">${[...new Set(r.left.map((q) => q.why))].map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}</details>`;
   h += `<details class="st-card" data-card="set"${open("set", false)}><summary><b>Core and corridor</b></summary><div class="fl-set">
@@ -375,8 +376,55 @@ function render0() {
   if (VIEW === "3d") draw3d();
 }
 
+/* the target mix: shares by type, a number of flats a floor (or as many as fit); filled, and how near the layout comes */
+function targetCard(x, r, can, open) {
+  const T = (x.g.floor && x.g.floor.target) || {}, sh = T.shares || {}, dis = can ? "" : " disabled";
+  const got = {}, n = r.placed.length; for (const q of r.placed) { const k = FC.unitType(q.u); got[k] = (got[k] || 0) + 1; }
+  const tot = FC.MIX_TYPES.reduce((s2, [k]) => s2 + (Number(sh[k]) || 0), 0), has = tot > 0;
+  const lib = units(), avail = new Set(lib.map((u) => FC.unitType(u)));
+  const rows = FC.MIX_TYPES.map(([k, lab]) => {
+    const want = has ? (Number(sh[k]) || 0) / tot * 100 : null, now = n ? (got[k] || 0) / n * 100 : 0, d = want == null || (sh[k] == null && !got[k]) ? null : now - want;
+    return `<tr><td>${esc(lab)}${avail.has(k) ? "" : ' <small class="muted" title="No unit of this type in 3 · Units">(none in Units)</small>'}</td><td><input type="number" min="0" max="100" step="5" data-ftg="${k}" value="${sh[k] != null ? esc(sh[k]) : ""}" style="width:52px"${dis}>%</td><td>${got[k] || 0} <small>(${f0(now)}%)</small></td><td>${d == null ? "" : `<b class="${Math.abs(d) <= 100 / Math.max(1, n) + 0.01 ? "good" : "bad"}">${d >= 0 ? "+" : ""}${f0(d)}%</b>`}</td></tr>`;
+  }).join("");
+  const sale = r.placed.reduce((s2, q) => s2 + ((q.fig && q.fig.saleable) || 0), 0), fl = Number(x.g.n) || 1;
+  return `<details class="st-card" data-card="tgt"${open("tgt", false)}><summary><b>Target mix</b> <small>${has ? `${n} flats a floor` : "shares by type"}</small></summary>
+    <table class="ms-fig fl-tgt"><tr><th></th><th>target</th><th>laid out</th><th>Δ</th></tr>${rows}</table>
+    <div class="st-row"><label>Flats a floor <input type="number" min="1" step="1" data-ftg="n" value="${T.n != null ? esc(T.n) : ""}" placeholder="most" title="Empty: as many as fit" style="width:60px"${dis}></label>${can ? `<button type="button" class="primary st-ib" data-ffill${has ? "" : " disabled"} title="Choose the unit mix to meet the shares (from the units of each type in the mix, else from 3 · Units) and lay the floor out again">Fill to target</button>` : ""}</div>
+    <p class="st-note">Yield: ${n} × ${fl} floors = <b>${f0(n * fl)} flats</b> · ${f0(sale * fl)} m² saleable · ${n ? f1(sale / n) : "–"} m² on average · GFA ${f0(r.figures.gfa * fl)} m²</p></details>`;
+}
+/* the mix chosen for the target and laid out: so many flats, or as many as fit (one more until one is left over) */
+function fillTarget() {
+  const x = cur(); if (!x || !LAST || !C.can()) return;
+  const T = (x.g.floor && x.g.floor.target) || {}, lib = units();
+  const tryN = (k) => { const mix = FC.mixForTarget(lib, T.shares, k, x.g.mix); const m2 = []; for (const q of mix) { const u = lib.find((v) => v.name === q.u); if (u) m2.push({ u, n: q.n }); } const r = layoutOf(Object.assign({}, opts(x), { poly: x.fp, mix: m2, lib, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1, seq: null, legSeq: null })); return { mix, r }; };
+  let best;
+  if (Number(T.n) > 0) best = tryN(Number(T.n));
+  else {
+    // as many as fit: down from the flats now until all of them fit, then up one at a time while they still do
+    const fits = (t, k) => t.r && !(t.r.left && t.r.left.length) && t.r.placed.length >= k;
+    let k = Math.max(1, LAST.placed.length); best = tryN(k);
+    while (k > 1 && !fits(best, k)) { k--; best = tryN(k); }
+    for (let i = 0; i < 30 && fits(best, k); i++) { const nx = tryN(k + 1); if (!fits(nx, k + 1)) break; best = nx; k++; }
+  }
+  if (!best.mix.length) return toast("No unit of the types asked for: add one in 3 · Units", true);
+  snapF(x);
+  const g = x.b.groups[x.gi], f = g.floor = g.floor || {};
+  g.mix = best.mix; delete f.seq; delete f.legSeq; delete f.corrY;
+  snapF(x); C.save(); clearSel(); render();
+  toast(`Mix set: ${best.mix.map((q) => `${q.u} × ${q.n}`).join(", ")}`);
+}
+function setTarget(k, v) {
+  const x = cur(); if (!x || !C.can()) return;
+  const g = x.b.groups[x.gi], f = g.floor = g.floor || {}, T = f.target = f.target || { shares: {} };
+  T.shares = T.shares || {};
+  if (k === "n") { if (v === "" || !(Number(v) > 0)) delete T.n; else T.n = Math.round(Number(v)); }
+  else if (v === "" || v == null) delete T.shares[k]; else T.shares[k] = Math.max(0, Number(v));
+  C.save(); render();
+}
+
 function onChange(ev) {
   const t = ev.target, list = groups(), x = cur(list);
+  if (t.dataset.ftg != null) return setTarget(t.dataset.ftg, t.value);
   if (t.dataset.fsel != null) { SEL = t.value; clearSel(); PZ.reset(ZM); return render(); }
   if (t.dataset.ffollow != null && x && C.can()) { const g = x.b.groups[x.gi], f = g.floor = g.floor || {}; if (t.checked) delete f.follow; else { f.follow = false; delete g.accFrom; } C.save(); return render(); }
   if (!x || !C.can()) return;
@@ -399,6 +447,7 @@ function onClick(ev) {
   if (d && ev.target.closest("summary")) setTimeout(() => setPref("fl-card-" + d.dataset.card, d.open ? "1" : "0"), 0);
   const t = ev.target.closest("button"); if (!t) return;
   if (t.dataset.freset != null) return resetFloor();
+  if (t.dataset.ffill != null) return fillTarget();
   if (t.dataset.fuse != null && LAST) {
     const x = cur(); if (!x) return;
     x.b.groups[x.gi].acc = Math.round(LAST.figures.acc * 10) / 10;

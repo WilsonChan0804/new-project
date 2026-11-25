@@ -384,3 +384,24 @@ body.st-units:not(.st-inplace) #st-uplan > .un-bar { display: none; }
 .pt-legb h5 { margin: 8px 0 3px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: #b4520a; }
 .pt-legi { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
 .pt-legi svg { flex: 0 0 auto; border-radius: 2px; background: #f7f8fa; }
+
+/* schemes: compare side by side */
+.sch-modal { position: fixed; inset: 0; z-index: 3000; background: rgba(20, 24, 30, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.sch-box { background: #fff; color: #1f2a36; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); max-width: min(1100px, 100%); max-height: 90vh; display: flex; flex-direction: column; }
+.sch-h { display: flex; gap: 12px; align-items: baseline; padding: 14px 16px 8px; }
+.sch-h span { color: #667; font-size: 12px; flex: 1; }
+.sch-h button { border: 0; background: none; font-size: 16px; cursor: pointer; }
+.sch-scroll { overflow: auto; padding: 0 16px; }
+.sch-t { border-collapse: collapse; font-size: 13px; }
+.sch-t th, .sch-t td { padding: 6px 12px; border-bottom: 1px solid #e3e6ea; text-align: right; white-space: nowrap; }
+.sch-t th:first-child, .sch-t td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
+.sch-t th { vertical-align: bottom; }
+.sch-t th img { display: block; width: 160px; border-radius: 6px; margin: 0 0 6px auto; }
+.sch-t th small { display: block; color: #889; font-weight: 400; }
+.sch-t td.sch-sub { color: #667; }
+.sch-t td.sch-best { background: #e3f5e8; color: #1b6b35; font-weight: 700; }
+.sch-f { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px 14px; }
+.ms-sch .ms-schb { text-align: right; white-space: nowrap; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sch-box, :root:not([data-theme="light"]) .sch-t th:first-child, :root:not([data-theme="light"]) .sch-t td:first-child { background: #1e252d; color: #e6eaee; } :root:not([data-theme="light"]) .sch-t th, :root:not([data-theme="light"]) .sch-t td { border-color: #333c46; } :root:not([data-theme="light"]) .sch-t td.sch-best { background: #1e3b28; color: #8fe0a8; } }
+.fl-tgt b.good { color: #1b7f3b; } .fl-tgt b.bad { color: #c62828; }
+.fl-tgt th { font-weight: 600; font-size: 11px; color: #667; text-align: left; }

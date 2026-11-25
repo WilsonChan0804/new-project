@@ -9,6 +9,7 @@ import * as M from "./massingcore.js";
 import * as UC from "./unitcore.js";
 import { toast } from "./tasks-util.js";
 import * as PT from "./plantools.js";
+import * as SCH from "./schemes.js";
 import { iconSvg, iconColor } from "./icons.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -98,8 +99,8 @@ function mass() {
   return m;
 }
 const origin = () => { const s = C.study(); return s.pts.length >= 3 ? S.centroid(s.pts) : null; };
-function model() {
-  const o = origin(), m = mass();
+function model(m0) {
+  const o = origin(), m = m0 || mass();
   const xy = (fp) => (o && fp && fp.length >= 3 ? S.toXY(fp, o) : null);
   return { blocks: m.blocks.map((b) => Object.assign({}, b, { fp: xy(b.fp) || [], groups: (b.groups || []).map((g) => Object.assign({}, g, { fp: xy(g.fp) })) })) };
 }
@@ -280,6 +281,7 @@ function panel() {
       ${ref}
       <p class="muted st-note">${esc(M.REFUGE.src)}: over ${M.REFUGE.over} storeys above the lowest ground storey - not over ${M.REFUGE.roofUpTo}, a refuge on the roof may do; otherwise refuge floors not more than ${M.REFUGE.every} storeys apart (${M.REFUGE.everyUc6} for UC 6). The refuge floor is not counted, plant storeys are; a transfer plate or an E&M zone that is not a storey is not.</p>
     </section>
+    ${!noSite ? schemesCard(can) : ""}
     ${m.blocks.map((b, bi) => blockCard(b, bi, m, dis)).join("")}
     ${can && !noSite ? `<div class="st-row ms-add"><button type="button" class="primary" data-ma="podium">+ Podium</button><button type="button" class="ghost" data-ma="tower">+ Tower</button><button type="button" class="ghost" data-ma="example">Example: podium + tower</button></div>` : ""}
     ${m.context.length ? `<section class="st-card"><div class="st-head"><b>Surroundings</b><span class="muted">for the 3D view</span></div>
@@ -288,6 +290,39 @@ function panel() {
       <div class="st-head"><b>Export</b></div>
       <div class="st-row"><button type="button" class="ghost" data-mx="obj"${m.blocks.length ? "" : " disabled"}>OBJ (3D)</button><button type="button" class="ghost" data-mx="png">PNG</button><button type="button" class="ghost" data-mx="gbp"${can && f.gfa ? "" : " disabled"}>Send GFA and height to GBP workbook</button></div>
     </section>`;
+}
+
+/* a massing's figures for the schemes' table */
+function schemeFig(m0) {
+  const s = C.study(), m = m0 || mass(), f = M.figures(model(m), C.siteArea(), s.plan && s.plan.level, m.uc6);
+  let fl = 0, sa = 0; const by = {};
+  for (const b of m.blocks || []) for (const g of b.groups || []) { const x = mixOf(g), k = Number(g.n) || 0; fl += x.n * k; sa += x.sale * k; for (const q of g.mix || []) by[q.u] = (by[q.u] || 0) + (Number(q.n) || 0) * k; }
+  const r1 = (x) => (x == null ? null : Math.round(x * 1000) / 1000);
+  const mix = fl ? Object.entries(by).sort((a, c) => c[1] - a[1]).map(([u, n]) => `${u.replace(/\s*\(.*$/, "")} ${Math.round(n / fl * 100)}%`).join(" · ") : "";
+  return { gfa: f.gfa, dgfa: f.dgfa, ngfa: f.ngfa, pr: f.pr, sc: f.sc, height: f.height, mpd: f.mpd, storeys: f.storeys, flats: fl, mix, sale: r1(sa), avg: fl ? r1(sa / fl) : null, eff: f.dgfa ? r1(sa / f.dgfa * 100) : null, capPct: f.gfa ? r1(f.capConc / f.gfa * 100) : null };
+}
+function schemesCard(can) {
+  const L = SCH.list(C.study());
+  return `<section class="st-card ms-sch"><div class="st-head"><b>Schemes</b><span class="muted">options to compare</span></div>
+    ${L.length ? `<table class="ms-groups"><tbody>${L.map((x) => `<tr><td><b>${esc(x.name)}</b><br><small class="muted">${esc(String(x.at || "").slice(0, 10))}${x.fig ? ` · GFA ${f0(x.fig.gfa)} m² · ${f0(x.fig.flats)} flats` : ""}</small></td><td class="ms-schb">${can ? `<button type="button" class="ghost st-ib" data-sch="open" data-sid="${x.id}" title="Make this scheme the massing you edit (the one now can be saved first)">Open</button><button type="button" class="ghost st-ib" data-sch="ren" data-sid="${x.id}" title="Rename">✎</button><button type="button" class="ghost st-ib" data-sch="dup" data-sid="${x.id}" title="Duplicate">⧉</button><button type="button" class="ghost st-ib" data-sch="del" data-sid="${x.id}" title="Delete">×</button>` : ""}</td></tr>`).join("")}</tbody></table>` : `<p class="muted st-note">Save the massing as Scheme A, change it, save it as Scheme B, then compare them side by side.</p>`}
+    <div class="st-row">${can ? `<button type="button" class="primary" data-sch="save">Save as scheme</button>` : ""}<button type="button" class="ghost" data-sch="cmp"${L.length ? "" : " disabled"}>Compare</button></div></section>`;
+}
+function onScheme(d) {
+  const s = C.study(), L = SCH.list(s), x = L.find((q) => q.id === d.sid);
+  if (d.sch === "save") {
+    const name = prompt("Name of this scheme", SCH.nextName(s)); if (name == null) return;
+    let png = null; try { if (T3 && VIEW !== "plan") png = T3.thumb ? T3.thumb() : null; } catch (e) { png = null; }
+    SCH.save(s, name.trim() || SCH.nextName(s), schemeFig(), png); C.save(); toast(`Saved as ${name.trim() || "a scheme"}`); return render();
+  }
+  if (d.sch === "cmp") {
+    const cols = [{ name: "Now", current: true, fig: schemeFig() }, ...L.map((q) => ({ id: q.id, name: q.name, at: q.at, png: q.png, fig: schemeFig(q.massing) }))];
+    return SCH.compare(cols, (id) => onScheme({ sch: "open", sid: id }));
+  }
+  if (!x) return;
+  if (d.sch === "open") { if (!confirm(`Open ${x.name}? The massing you have now is replaced (Undo brings it back; save it as a scheme first to keep it).`)) return; SCH.open(s, x.id); SELG = null; SEL = null; changed(); toast(`${x.name} opened`); return; }
+  if (d.sch === "ren") { const n = prompt("Rename the scheme", x.name); if (n && n.trim()) { x.name = n.trim(); C.save(); render(); } return; }
+  if (d.sch === "dup") { SCH.duplicate(s, x.id); C.save(); return render(); }
+  if (d.sch === "del") { if (!confirm(`Delete ${x.name}?`)) return; SCH.remove(s, x.id); C.save(); return render(); }
 }
 
 /* the units on these floors (domestic): from 3 · Units, so many a floor */
@@ -436,6 +471,7 @@ function onClick(ev) {
   const card = ev.target.closest(".ms-block");
   if (card && SEL !== card.dataset.bid && !ev.target.closest("button,input,select")) { SEL = card.dataset.bid; SELG = null; render(); return; }
   if (d.undo) return undo(+d.undo);
+  if (d.sch) return onScheme(d);
   if (d.ma) {
     if (d.ma === "example") {
       const p = { id: uid(), name: "Podium", setback: 3, groups: [{ use: "lobby", n: 1, h: 6 }, { use: "car", n: 2, h: 4.5 }, { use: "club", n: 1, h: 5 }, { use: "transfer", n: 1, h: 2.5 }] };
@@ -1086,7 +1122,9 @@ function makeScene(THREE, Orbit, host) {
   // for the browser tests: the level being edited, and a model point on the screen
   const editInfo = () => (EDIT ? { fp: EDIT.fp.map((p) => p.slice()), z: EDIT.z } : null);
   const screen = (x, y, z) => { const v = new THREE.Vector3(x, y, z).project(cam), rc = r.domElement.getBoundingClientRect(); return [rc.left + (v.x + 1) / 2 * rc.width, rc.top + (1 - v.y) / 2 * rc.height]; };
-  return { context, shadow, build, resize, cut, editInfo, screen, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); } };
+  return { context, shadow, build, resize, cut, editInfo, screen, png: () => { r.render(scene, cam); return r.domElement.toDataURL("image/png"); },
+    // a small picture for a scheme (kept with it, so small: 240 px wide, JPEG)
+    thumb: () => { r.render(scene, cam); const src = r.domElement, w = 240, h = Math.round(w * src.height / Math.max(1, src.width)), cv = document.createElement("canvas"); cv.width = w; cv.height = h; const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.drawImage(src, 0, 0, w, h); return cv.toDataURL("image/jpeg", 0.7); } };
 }
 
 /* the buildings in a triangle soup (9 floats a triangle): triangles that share a corner are one building;
