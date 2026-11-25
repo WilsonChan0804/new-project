@@ -116,7 +116,15 @@ export function turn(u, k) {
     const no = rot(NRM[e.face] || [0, 1]);
     ops.push({ k: "cw", a: P2([e.x1, e.y1]), b: P2([e.x2, e.y2]), no: [Math.round(no[0]), Math.round(no[1])] });
   }
-  return { rooms, extras, doors, ops, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.15) };
+  // the fittings and furniture: each about its middle, turned with the rooms
+  let fx = [];
+  try { fx = Array.isArray(u.fixtures) ? u.fixtures : U.genFixtures(u); } catch (ex) { fx = []; }
+  const fixtures = fx.map((x) => {
+    // its box (x, y, w, h) is what it covers, so turned a quarter its sides swap; its rotation (how it is drawn) adds the turn
+    const w0 = n(x.w), h0 = n(x.h), r0 = ((n(x.rot) % 360) + 360) % 360, c = rot([n(x.x) + w0 / 2, n(x.y) + h0 / 2]), w = q % 2 ? h0 : w0, h = q % 2 ? w0 : h0;
+    return { kind: x.kind, w, h, rot: (r0 + 90 * q) % 360, x: r3(c[0] - mx - w / 2), y: r3(c[1] - my - h / 2) };
+  });
+  return { rooms, extras, doors, ops, fixtures, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.15) };
 }
 /* the side the entrance is on (the corridor side), else opposite the façade */
 export function entrySide(u) {
@@ -338,7 +346,7 @@ export function layout(o) {
     return null;
   };
   const order = { s: 0, n: 0 };
-  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors, ops: t.ops, wt: t.wall }));
+  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors, ops: t.ops, fixtures: t.fixtures, wt: t.wall }));
   if (SEQ) {
     // units put by hand (x given) first, where they were put; the runs keep clear of them
     for (const band of ["s", "n"]) {

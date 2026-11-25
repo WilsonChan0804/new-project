@@ -6,7 +6,7 @@
  */
 import * as U from "./unitcore.js";
 import { TEMPLATES } from "./unittables.js";
-import { api } from "./nav.js";
+import { api, headers } from "./nav.js";
 import { toast } from "./tasks-util.js";
 import * as PZ from "./planzoom.js";
 import { wallGeom } from "./unitwalls.js";
@@ -330,7 +330,13 @@ export function keepArea(e, changed) {
   }
   return e;
 }
-const FIXK = { bath: "Bath tub", shower: "Shower", wc: "WC", basin: "Basin", counter: "Kitchen counter (sink + hob)", sink: "Sink", hob: "Hob", fridge: "Fridge", wm: "Washing machine", wardrobe: "Wardrobe", bed: "Bed", sofa: "Sofa", dining: "Dining set", desk: "Desk" };
+const FIXK = { bath: "Bath tub", shower: "Shower", wc: "WC", basin: "Basin", counter: "Kitchen counter (sink + hob)", sink: "Sink", hob: "Hob", fridge: "Fridge", wm: "Washing machine",
+  bed1: "Single bed 0.9 × 1.9", bed: "Double bed 1.5 × 1.9", bedq: "Queen bed 1.5 × 2.0", wardrobe: "Wardrobe 0.6 deep", sofa2: "Sofa, 2 seats", sofa: "Sofa, 3 seats", dining: "Dining for 4", dining6: "Dining for 6", desk: "Desk", tv: "TV cabinet", shoe: "Shoe cabinet" };
+/* the furniture (the rest are fittings), each kind's size and how it is drawn */
+const FURN = new Set(["bed1", "bed", "bedq", "wardrobe", "sofa2", "sofa", "dining", "dining6", "desk", "tv", "shoe"]);
+const FIXSZ = { bath: [1.5, 0.7], shower: [0.9, 0.9], wc: [0.4, 0.65], basin: [0.5, 0.4], counter: [1.8, 0.6], sink: [0.6, 0.5], hob: [0.6, 0.5], fridge: [0.6, 0.65], wm: [0.6, 0.6], wardrobe: [1.2, 0.6], bed1: [0.9, 1.9], bed: [1.5, 1.9], bedq: [1.5, 2.0], sofa2: [1.5, 0.85], sofa: [1.8, 0.85], dining: [1.2, 0.8], dining6: [1.8, 0.9], desk: [1.0, 0.55], tv: [1.8, 0.4], shoe: [0.9, 0.35] };
+const DRAWAS = { bed1: "bed", bedq: "bed", sofa2: "sofa", dining6: "dining" };
+const fixOpts = (cur2) => `<optgroup label="Fittings">${Object.entries(FIXK).filter(([k]) => !FURN.has(k)).map(([k, v]) => `<option value="${k}"${cur2 === k ? " selected" : ""}>${esc(v)}</option>`).join("")}</optgroup><optgroup label="Furniture">${Object.entries(FIXK).filter(([k]) => FURN.has(k)).map(([k, v]) => `<option value="${k}"${cur2 === k ? " selected" : ""}>${esc(v)}</option>`).join("")}</optgroup>`;
 
 function ensure(u) {
   if (!Array.isArray(u.windows)) u.windows = U.genWindows(u);
@@ -581,12 +587,64 @@ function topBar() {
   if (can) {
     G.push([T("room", "room", "Room: drag a rectangle beside the rooms", "R"), { html: sel("data-roomk", Object.entries(U.KINDS).map(([k, q]) => [k, q.label]), ROOMK, "The kind of the room you draw") }, T("split-x", "split", "Split │: click a room", "", "│"), T("split-y", "split", "Split ─: click a room", "", "─")]);
     G.push([T("door", "door", "Door: click a wall", "D"), T("window", "window", "Window: click an external wall", "W"), { id: "lib", icon: "library", title: "Doors, windows and openings: drag one onto a wall", on: PT.libraryOpen() }]);
-    G.push([{ html: sel("data-xadd", [["", "Balcony / UP …"], ...Object.entries(XADD).map(([k, v]) => [k, v.label])], TOOL.startsWith("x:") ? TOOL.slice(2) : "", "Then click an external wall: it goes outside it") }, { html: sel("data-fixadd", [["", "Fitting …"], ...Object.entries(FIXK).map(([k, v]) => [k, v])], TOOL.startsWith("fix:") ? TOOL.slice(4) : "", "Then click a room to place it") }]);
+    G.push([{ html: sel("data-xadd", [["", "Balcony / UP …"], ...Object.entries(XADD).map(([k, v]) => [k, v.label])], TOOL.startsWith("x:") ? TOOL.slice(2) : "", "Then click an external wall: it goes outside it") }, { html: `<select data-fixadd title="A fitting or furniture: then click a room to place it (R turns it)" class="pt-sel"><option value="">Fitting / furniture …</option>${fixOpts(TOOL.startsWith("fix:") ? TOOL.slice(4) : "")}</select>` }]);
   }
   G.push([T("measure", "measure", "Measure: click two points (they snap to the walls' faces and corners; two parallel faces give the clear width); Esc clears", "Q")]);
   G.push([{ html: sel("data-alines", [["off", "Area lines: off"], ["saleable", "Saleable line"], ["gfa", "GFA line"], ["both", "Saleable + GFA"]], ALINES(), "The saleable and GFA lines") }, { html: sel("data-dims", [["chains", "Dims: chains"], ["overall", "Dims: overall"], ["off", "Dims: off"]], DIMS(), "Dimensions") }]);
   if (can) G.push([{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }]);
+  G.push([{ id: "brochure", icon: "pdf", title: "Unit plans as a brochure: one A4 a unit, with its furniture, dimensions and areas (print, or save as PDF)" }, { id: "uxlsx", icon: "export", title: "Unit schedule (Excel): every unit's areas" }]);
   return PT.toolbar(G, null, "units");
+}
+
+/* ---------- the brochure: each unit's plan as on the sales brochures (A4, its furniture and dimensions, the areas) */
+function brochure(which) {
+  const st = store(); if (!st.list.length) return toast("No unit to print", true);
+  const host = $("#st-uplan"), keep = { sel: st.sel, SEL, TOOL, SELR, style: host.getAttribute("style") || "", z: JSON.stringify(ZM) };
+  const pages = [];
+  try {
+    host.setAttribute("style", keep.style + ";width:1000px;height:1100px;position:fixed;left:-5000px;top:0");
+    SEL = null; SELR = null; TOOL = "select";
+    (which || [st.sel]).forEach((i) => {
+      const u = st.list[i]; if (!u) return;
+      st.sel = i; ZFOR = null; drawPlan();
+      const svg = host.querySelector("svg"); if (!svg) return;
+      const c = svg.cloneNode(true);
+      c.querySelectorAll("[class*=hit], .un-fhit, [data-wend], .pt-bar").forEach((x) => x.remove());
+      c.setAttribute("viewBox", `0 0 ${svg.clientWidth || 1000} ${svg.clientHeight || 1100}`); c.removeAttribute("width"); c.removeAttribute("height");
+      const f = U.figures(ensure(u)), ft = (m) => Math.round(m * U.M2_FT2);
+      const row = (l, m) => (m > 0 ? `<tr><td>${esc(l)}</td><td>${m.toFixed(3)} m²</td><td>${ft(m).toLocaleString("en-GB")} ft²</td></tr>` : "");
+      pages.push(`<section class="pg"><header><h1>${esc(u.name || "Unit")}</h1><span>${esc(C.study().name || "")}</span></header><div class="plan">${c.outerHTML}</div>
+        <table><tbody>${row("Saleable area", f.saleable)}${row("Balcony", f.bal)}${row("Utility platform", f.up)}${row("Air-conditioning plant platform", f.acp)}</tbody></table>
+        <footer><svg width="34" height="44" viewBox="0 0 34 44"><path d="M17 2 L28 40 L17 32 L6 40 Z" fill="#222"/><text x="17" y="44" text-anchor="middle" font-size="9">N</text></svg><small>The saleable area as defined in the Residential Properties (First-hand Sales) Ordinance (Cap. 621): the unit's floor area to the outside of its external walls and the middle of the walls it shares; balcony, utility platform and A/C platform listed apart. For a scheme study, not for sale.</small></footer></section>`);
+    });
+  } finally {
+    host.setAttribute("style", keep.style); st.sel = keep.sel; SEL = keep.SEL; TOOL = keep.TOOL; SELR = keep.SELR; ZFOR = keep.sel; try { Object.assign(ZM, JSON.parse(keep.z)); } catch (e) {} drawPlan();
+  }
+  const w = window.open("", "_blank"); if (!w) return toast("Allow pop-ups to print the brochure", true);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Unit plans</title><style>
+    @page { size: A4; margin: 12mm; } body { font: 12px/1.4 system-ui, sans-serif; color: #222; margin: 0; }
+    .pg { page-break-after: always; display: flex; flex-direction: column; height: 270mm; } .pg:last-child { page-break-after: auto; }
+    header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.5px solid #222; margin-bottom: 6mm; } h1 { font-size: 20px; margin: 0 0 2mm; }
+    .plan { flex: 1; min-height: 0; } .plan svg { width: 100%; height: 100%; }
+    table { border-collapse: collapse; margin: 4mm 0; } td { padding: 2px 14px 2px 0; } td:nth-child(2), td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
+    footer { display: flex; gap: 12px; align-items: flex-end; color: #555; } footer small { font-size: 9px; }
+    @media screen { body { background: #e8eaed; } .pg { background: #fff; width: 186mm; margin: 10mm auto; padding: 12mm; box-shadow: 0 2px 10px rgba(0,0,0,.15); } }
+  </style></head><body>${pages.join("")}<script>setTimeout(() => window.print(), 400);<\/script></body></html>`);
+  w.document.close();
+}
+/* the unit schedule: every unit in 3 · Units with its areas (Excel) */
+async function unitsXlsx() {
+  const st = store(); if (!st.list.length) return toast("No unit", true);
+  const r3 = (v) => Math.round((Number(v) || 0) * 1000) / 1000;
+  const rows = st.list.map((u) => { const f = U.figures(ensure(u)); return [u.name || "Unit", r3(f.saleable), f.saleableFt, r3(f.gfa), r3(f.bal), r3(f.up), r3(f.acp), r3(f.balEx + f.upEx + f.acpCapEx), f.efficiency != null ? r3(f.efficiency * 100) : ""]; });
+  const sheets = [{ name: "Units", title: "Unit schedule", note: "Saleable to Cap. 621; GFA and exemptions as in 3 · Units", head: ["Unit", "Saleable m2", "Saleable ft2", "GFA m2", "Balcony m2", "UP m2", "A/C m2", "Exempt m2", "Internal ÷ GFA %"], widths: [36, 12, 12, 12, 12, 10, 10, 12, 14], rows }];
+  try {
+    const res = await fetch("/api/gbp/xlsx", { method: "POST", headers: headers(true), body: JSON.stringify({ name: "Unit schedule", sheets }) });
+    if (!res.ok) { let m = "HTTP " + res.status; try { m = (await res.json()).detail || m; } catch (e) {} throw new Error(m); }
+    const blob = await res.blob(), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "Unit schedule.xlsx"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000); toast("Saved the unit schedule (Excel)");
+  } catch (e) { toast("No Excel: " + e.message, true); }
 }
 
 /* the dimension chains: a tick at every wall line along each side, the room spans between, the overall outside */
@@ -621,16 +679,21 @@ function dims(u, f, sx, sy) {
 }
 
 /* a fitting or a piece of furniture as on the office's plans: drawn at rotation 0 in its own box, then turned */
-function fixture(x, sx, sy, sel, i) {
+/* a fitting or a piece of furniture for another plan (Floors): sx / sy its plan to screen, k its pixels a metre, faint */
+export function fixtureSvg(x, sx, sy, k) { return `<g pointer-events="none" opacity="0.55">${fixture(x, sx, sy, false, -1, k).replace(/ class="un-fix"| class="un-fhit"| data-fi="-1"/g, "")}</g>`; }
+function fixture(x, sx, sy, sel, i, k0) {
+  const SC_ = k0 || SC;
   const rot = ((+x.rot || 0) % 360 + 360) % 360, q = rot === 90 || rot === 270;
-  const W = (q ? x.h : x.w) * SC, H = (q ? x.w : x.h) * SC, cx = sx(x.x + x.w / 2), cy = sy(x.y + x.h / 2);
+  const W = (q ? x.h : x.w) * SC_, H = (q ? x.w : x.h) * SC_, cx = sx(x.x + x.w / 2), cy = sy(x.y + x.h / 2);
   const st = sel ? "#f28022" : "#2a2f35", sw = sel ? 1.6 : 0.6, th = 0.45;
   const R = (a, b, c, d, extra = "") => `<rect x="${a}" y="${b}" width="${Math.max(0, c)}" height="${Math.max(0, d)}" fill="#fff" stroke="${st}" stroke-width="${sw}"${extra} />`;
   const Ln = (a, b, c, d, w = th, dash = "") => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="${st}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""} />`;
   const Ci = (a, b, r, w = th) => `<circle cx="${a}" cy="${b}" r="${Math.max(0.5, r)}" fill="none" stroke="${st}" stroke-width="${w}" />`;
   const m = Math.min(W, H);
   let d = "";
-  switch (x.kind) {
+  switch (DRAWAS[x.kind] || x.kind) {
+    case "tv": d = R(0, 0, W, H) + Ln(W * 0.2, H * 0.35, W * 0.8, H * 0.35, th * 1.6) + `<text x="${W / 2}" y="${H * 0.85}" text-anchor="middle" font-size="${Math.max(4, Math.min(W, H) * 0.4)}" fill="${st}">TV</text>`; break;
+    case "shoe": d = R(0, 0, W, H) + Ln(0, 0, W, H) + Ln(W, 0, 0, H); break;
     case "bath": d = R(0, 0, W, H) + `<rect x="${W * 0.06}" y="${H * 0.1}" width="${W * 0.88}" height="${H * 0.8}" rx="${m * 0.3}" fill="none" stroke="${st}" stroke-width="${th}" />` + Ci(W * 0.85, H / 2, m * 0.05); break;
     case "shower": d = R(0, 0, W, H) + Ln(0, 0, W, H) + Ln(W, 0, 0, H) + Ci(W / 2, H / 2, m * 0.07) + Ci(W / 2, H / 2, m * 0.03); break;
     case "wc": {
@@ -646,7 +709,7 @@ function fixture(x, sx, sy, sel, i) {
     case "basin": d = R(0, 0, W, H) + `<ellipse cx="${W / 2}" cy="${H * 0.55}" rx="${W * 0.34}" ry="${H * 0.32}" fill="none" stroke="${st}" stroke-width="${th}" />` + Ci(W / 2, H * 0.14, m * 0.05); break;
     case "counter": {
       // a kitchen counter: its front line dashed (the wall cabinets above), a sink and a two-ring hob
-      const L = W >= H, sw2 = L ? Math.min(W * 0.32, 0.55 * SC) : W * 0.7, sh2 = L ? H * 0.7 : Math.min(H * 0.32, 0.55 * SC);
+      const L = W >= H, sw2 = L ? Math.min(W * 0.32, 0.55 * SC_) : W * 0.7, sh2 = L ? H * 0.7 : Math.min(H * 0.32, 0.55 * SC_);
       d = R(0, 0, W, H) + (L ? Ln(0, H * 0.9, W, H * 0.9, th, "4 2") : Ln(W * 0.9, 0, W * 0.9, H, th, "4 2"));
       const sxx = L ? W * 0.12 : (W - sw2) / 2, syy = L ? (H - sh2) / 2 : H * 0.12;
       d += `<rect x="${sxx}" y="${syy}" width="${sw2}" height="${sh2}" rx="3" fill="#fff" stroke="${st}" stroke-width="${th}" />` + Ci(sxx + sw2 / 2, syy + sh2 / 2, m * 0.06);
@@ -660,20 +723,20 @@ function fixture(x, sx, sy, sel, i) {
     case "wm": d = R(0, 0, W, H) + Ci(W / 2, H / 2, m * 0.34) + Ci(W / 2, H / 2, m * 0.2) + `<text x="${W / 2}" y="${H * 0.95}" text-anchor="middle" font-size="${Math.max(4, m * 0.14)}" fill="${st}">W/M</text>`; break;
     case "wardrobe": {
       d = `<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="${st}" stroke-width="${sw}" />` + Ln(0, H / 2, W, H / 2, th, "3 2");
-      const n2 = Math.max(2, Math.round(W / (0.12 * SC)));
+      const n2 = Math.max(2, Math.round(W / (0.12 * SC_)));
       for (let k = 1; k < n2; k++) d += Ln(W * k / n2, H * 0.2, W * k / n2, H * 0.8, 0.35);
       break;
     }
     case "bed": {
       // a bed, its head at the top: pillows (two on a double), the cover folded back at one corner
-      const dbl = W > 1.2 * SC;
+      const dbl = W > 1.2 * SC_;
       d = R(0, 0, W, H) + (dbl ? R(W * 0.06, H * 0.04, W * 0.4, H * 0.14) + R(W * 0.54, H * 0.04, W * 0.4, H * 0.14) : R(W * 0.12, H * 0.04, W * 0.76, H * 0.14));
       d += Ln(0, H * 0.22, W, H * 0.22) + `<path d="M ${W * 0.55} ${H * 0.22} L ${W} ${H * 0.22} L ${W} ${H * 0.5} Z" fill="#fff" stroke="${st}" stroke-width="${th}" />` + Ln(W * 0.55, H * 0.22, W, H * 0.5);
       break;
     }
     case "sofa": d = R(0, 0, W, H) + R(0, 0, W, H * 0.25) + R(0, H * 0.25, W * 0.1, H * 0.75) + R(W * 0.9, H * 0.25, W * 0.1, H * 0.75) + Ln(W / 2, H * 0.25, W / 2, H); break;
     case "dining": {
-      const cw = Math.min(W * 0.28, 0.45 * SC), ch = Math.min(H * 0.32, 0.42 * SC);
+      const cw = Math.min(W * 0.28, 0.45 * SC_), ch = Math.min(H * 0.32, 0.42 * SC_);
       for (const fx of [0.2, 0.62]) d += R(W * fx, -ch * 0.75, cw, ch) + R(W * fx, H - ch * 0.25, cw, ch);
       d += R(0, 0, W, H);
       break;
@@ -690,7 +753,7 @@ function toolbar() {
   return `<div class="un-bar">${b("select", "↖ Select", "Click a wall, door, window, fitting, balcony or UP; drag a wall (Alt: the whole aligned line)")}${b("door", "+ Door", "Click a wall where the door goes")}${b("window", "+ Window", "Click an external wall")}${b("split-x", "✂ Split │", "Click a room: a new wall up and down at that point")}${b("split-y", "✂ Split ─", "Click a room: a new wall across at that point")}${b("room", "▭ + Room", "Drag a rectangle beside the rooms: a new room (snaps to the walls, 50 mm grid)")}
     <select data-roomk title="The kind of the room you draw">${Object.entries(U.KINDS).map(([k, q]) => `<option value="${k}"${ROOMK === k ? " selected" : ""}>${q.label}</option>`).join("")}</select>
     <select data-xadd title="Then click an external wall: it goes outside it"><option value="">+ Balcony / UP …</option>${Object.entries(XADD).map(([k, v]) => `<option value="${k}"${TOOL === "x:" + k ? " selected" : ""}>${v.label}</option>`).join("")}</select>
-    <select data-fixadd title="Click a room to place it"><option value="">+ Fitting …</option>${Object.entries(FIXK).map(([k, v]) => `<option value="${k}"${TOOL === "fix:" + k ? " selected" : ""}>${v}</option>`).join("")}</select>
+    <select data-fixadd title="Click a room to place it"><option value="">+ Fitting / furniture …</option>${fixOpts(TOOL.startsWith("fix:") ? TOOL.slice(4) : "")}</select>
     <select data-alines title="The saleable and GFA lines, to check the figures"><option value="off"${ALINES() === "off" ? " selected" : ""}>Area lines: off</option><option value="saleable"${ALINES() === "saleable" ? " selected" : ""}>Saleable line</option><option value="gfa"${ALINES() === "gfa" ? " selected" : ""}>GFA line</option><option value="both"${ALINES() === "both" ? " selected" : ""}>Saleable + GFA</option></select>
     <select data-dims title="Dimensions"><option value="chains"${DIMS() === "chains" ? " selected" : ""}>Dimensions: chains</option><option value="overall"${DIMS() === "overall" ? " selected" : ""}>overall</option><option value="off"${DIMS() === "off" ? " selected" : ""}>off</option></select></div>`;
 }
@@ -946,6 +1009,8 @@ function wirePlan() {
       if (id === "lib") { PT.toggleLibrary(); return drawPlan(); }
       if (id === "undo") return undo(-1);
       if (id === "redo") return undo(1);
+      if (id === "brochure") { const st = store(), bt = document.querySelector('[data-pt="brochure"]'), r0 = bt ? bt.getBoundingClientRect() : { left: 400, bottom: 120 }; return PT.ctx({ preventDefault() {}, clientX: r0.left, clientY: r0.bottom + 4 }, [{ label: `This unit: ${(cur() || {}).name || "Unit"}`, action: () => brochure([st.sel]) }, { label: `All ${st.list.length} units`, action: () => brochure(st.list.map((_, i) => i)) }]); }
+      if (id === "uxlsx") return unitsXlsx();
       TOOL = TOOL === id && id !== "select" ? "select" : id; SEL = null; drawPlan();
     },
     refresh: () => drawPlan(),
@@ -1007,7 +1072,7 @@ function wirePlan() {
         cap(host, ev); ev.preventDefault(); return;
       }
       if (TOOL.startsWith("fix:") && t.dataset.rid) {
-        const k = TOOL.slice(4), sz = { bath: [1.5, 0.7], shower: [0.9, 0.9], wc: [0.4, 0.65], basin: [0.5, 0.4], counter: [1.8, 0.6], sink: [0.6, 0.5], hob: [0.6, 0.5], fridge: [0.6, 0.65], wm: [0.6, 0.6], wardrobe: [1.2, 0.6], bed: [1.5, 1.9], sofa: [1.8, 0.85], dining: [1.2, 0.8], desk: [1.0, 0.55] }[k];
+        const k = TOOL.slice(4), sz = FIXSZ[k] || [0.6, 0.6];
         u.fixtures.push({ kind: k, x: +(P[0] - sz[0] / 2).toFixed(2), y: +(P[1] - sz[1] / 2).toFixed(2), w: sz[0], h: sz[1], rot: 0 });
         SEL = { t: "fix", i: u.fixtures.length - 1 }; TOOL = "select"; return changed();
       }

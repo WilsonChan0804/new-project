@@ -21,6 +21,8 @@ import * as PT from "./plantools.js";
 import { outlineOf } from "./unitwalls.js";
 import * as UN from "./siteunits.js";
 import * as ME from "./measure.js";
+import * as DM from "./dims.js";
+import { headers } from "./nav.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 let SPACE = false;
@@ -59,6 +61,8 @@ const pref = (k, d) => { try { return localStorage.getItem("lwk-viewer:" + k) ||
 const setPref = (k, v) => { try { localStorage.setItem("lwk-viewer:" + k, v); } catch (e) { /* private window */ } };
 let VIEW = pref("fl-view", "plan");
 const GRID = () => pref("fl-grid", "on") === "on";
+const DIMS = () => pref("fl-dims", "on") === "on";
+const FURN = () => pref("fl-furn", "on") === "on";
 // the wall tool's settings
 const WT = () => ({ t: Number(pref("fl-wt", "")) || null, m: pref("fl-wm", "rc"), just: pref("fl-wj", "c") });
 const ADDU = () => pref("fl-addu", "");
@@ -456,6 +460,75 @@ function onClick(ev) {
 }
 function resetFloor() { editFloor((f) => { delete f.seq; delete f.legSeq; delete f.corrY; }); clearSel(); }
 
+/* ---------- exports: the floor as DXF (plan metres, Y up), the unit and area schedules as Excel */
+function exportMenu() {
+  const b = document.querySelector('#st-fplan [data-pt="export"], [data-pt="export"]'), r0 = b ? b.getBoundingClientRect() : { left: 400, bottom: 120 };
+  PT.ctx({ preventDefault() {}, clientX: r0.left, clientY: r0.bottom + 4 }, [
+    { label: "Floor plan as DXF (AutoCAD / Revit)", action: () => exportDxf("dxf") },
+    { label: "Floor plan as DWG", action: () => exportDxf("dwg") },
+    "-",
+    { label: "Unit and area schedules (Excel)", action: () => exportXlsx() },
+  ]);
+}
+/* the floor's entities in plan metres, each on its layer (Y up for CAD) */
+function floorEnts() {
+  const r = LAST, E = [], Y = (p) => [Math.round(p[0] * 1000) / 1000, Math.round(-p[1] * 1000) / 1000];
+  const pl = (l, pts, closed = true) => E.push({ t: "pl", l, p: pts.map(Y), closed });
+  const rect = (l, L, x0, y0, x1, y1) => pl(l, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((q) => fromLeg(L, q)));
+  const txt = (l, p, h, s2, rot = 0) => E.push({ t: "text", l, p: Y(p), h, s: s2, a: "c", v: "m", r: rot });
+  pl("A-SLAB-OUTL", r.F.poly);
+  pl("A-CORR", WC.wallPoly(r.spine.path, r.cw, "c"));
+  for (const L of legs()) {
+    const lr = L.r, ang = -(L.xf.ang || 0) * 180 / Math.PI;
+    for (const q of lr.placed) {
+      for (const rm of q.rooms) rect("A-AREA-ROOM", L, q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h);
+      for (const e of q.extras || []) rect("A-AREA-BAL", L, q.x + e.x, q.y + e.y, q.x + e.x + e.w, q.y + e.y + e.h);
+      for (const w of FC.placedWalls(q).rects) rect(w.m === "blk" ? "A-WALL-BLK" : "A-WALL-RC", L, w.x0, w.y0, w.x1, w.y1);
+      const loc = (q.doors || []).length ? FC.placedWalls(q, { x: 0, y: 0 }).rects : [];
+      for (const d0 of q.doors || []) { const { d } = FC.doorOnWall(d0, loc, q.wt || 0.15), H = [q.x + d.H[0], q.y + d.H[1]], O = [q.x + d.O[0], q.y + d.O[1]], w = Math.hypot(O[0] - H[0], O[1] - H[1]); E.push({ t: "line", l: "A-DOOR", p: [Y(fromLeg(L, H)), Y(fromLeg(L, [H[0] + d.sn[0] * w, H[1] + d.sn[1] * w]))] }); }
+      for (const fx of q.fixtures || []) { const rq = fx.rot === 90 || fx.rot === 270, w = rq ? fx.h : fx.w, h = rq ? fx.w : fx.h, cx = q.x + fx.x + fx.w / 2, cy = q.y + fx.y + fx.h / 2; rect("A-FURN", L, cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2); }
+      txt("A-AREA-IDEN", fromLeg(L, [q.x + q.w / 2, q.y + q.h / 2]), 0.25, `${q.name || "Unit"} · ${(q.fig && q.fig.saleable || 0).toFixed(1)} m2`, ang);
+    }
+    for (const w of FC.coreWallRects(lr.core, lr.coreWall || r.coreWall || 0.25)) rect("A-WALL-CORE", L, w.x0, w.y0, w.x1, w.y1);
+    for (const c of lr.core) { if (c.kind === "passage") continue; txt("A-AREA-IDEN", fromLeg(L, [c.x + c.w / 2, c.y + c.h / 2]), 0.25, c.label || c.kind, ang); for (const d of c.doors || []) E.push({ t: "line", l: "A-DOOR", p: [Y(fromLeg(L, d.H)), Y(fromLeg(L, d.O))] }); }
+  }
+  for (const w of r.walls || []) for (const q of w.pieces || []) pl(w.m === "blk" ? "A-WALL-BLK" : "A-WALL-RC", q);
+  return E;
+}
+async function exportDxf(fmt) {
+  const x = cur(); if (!x || !LAST) return;
+  try { const { downloadCad } = await import("./sbddxf.js"); const n = await downloadCad(floorEnts(), `${x.b.name || "Block"} typical floor`, fmt); toast(`Saved the floor plan (${Math.round(n / 1024)} kB)`); }
+  catch (e) { toast("No CAD file: " + e.message, true); }
+}
+/* the unit schedule (each unit type: areas, a floor, the group) and the area schedule (the floor's areas, the group's) */
+async function exportXlsx() {
+  const x = cur(); if (!x || !LAST) return;
+  const r = LAST, F = r.figures, fl = Number(x.g.n) || 1, by = new Map();
+  for (const q of r.placed) { const k = q.name || "Unit"; if (!by.has(k)) by.set(k, { q, n: 0 }); by.get(k).n++; }
+  const r1 = (v) => Math.round((Number(v) || 0) * 1000) / 1000;
+  const units = [...by.values()].map(({ q, n }) => { const f = q.fig || {}; return [q.name, FC.MIX_TYPES.find((t) => t[0] === FC.unitType(q.u))[1], r1(f.saleable), r1(f.gfa), r1(f.bal), r1(f.up), r1(f.acp), n, n * fl, r1(f.saleable * n * fl)]; });
+  const tot = units.reduce((s2, u) => [s2[0] + u[7], s2[1] + u[8], s2[2] + u[9]], [0, 0, 0]);
+  units.push(["TOTAL", "", "", "", "", "", "", tot[0], tot[1], r1(tot[2])]);
+  const area = [["Floor plate", F.plate, F.plate * fl, ""], ["Units (GFA)", F.unitGfa, F.unitGfa * fl, ""], ["Saleable", F.saleable, F.saleable * fl, ""], ["Corridor", F.corridor, F.corridor * fl, ""],
+    ["Wider corridor exempt", -F.wideEx, -F.wideEx * fl, "JPN 1"], ["Wider lift lobby exempt", -F.lobbyEx, -F.lobbyEx * fl, "JPN 1"], ["Staircases", F.stair, F.stair * fl, ""], ["Lift shafts", F.lift, F.lift * fl, ""],
+    ["Protected lobbies", F.lobby, F.lobby * fl, ""], ["Core and floor walls", F.coreWalls, F.coreWalls * fl, ""], ["Party walls", F.partyWalls, F.partyWalls * fl, ""],
+    ["Refuse room", F.refuse, F.refuse * fl, "exempt"], ["E&M riser", F.riser, F.riser * fl, "exempt"], ["Residual (E&M)", F.residual, F.residual * fl, "check its use"],
+    ["Units' concessions (balcony, UP, A/C)", F.unitEx, F.unitEx * fl, "APP-19, APP-42"], ["GFA", F.gfa, F.gfa * fl, ""]].map((q) => [q[0], r1(q[1]), r1(q[2]), q[3]]);
+  const name = `${x.b.name || "Block"} - ${x.label.replace(/^.*· /, "")} schedules`;
+  const sheets = [
+    { name: "Unit schedule", title: `Unit schedule · ${x.label}`, note: `${fl} floors · ${r.placed.length} flats a floor`, head: ["Unit", "Type", "Saleable m2", "GFA m2", "Balcony m2", "UP m2", "A/C m2", "A floor", "All floors", "Saleable total m2"], widths: [34, 26, 12, 12, 12, 10, 10, 10, 12, 16], rows: units },
+    { name: "Area schedule", title: `Area schedule · ${x.label}`, note: "A typical floor and the floor group; exempt items as negative", head: ["Item", "A floor m2", `${fl} floors m2`, "Note"], widths: [40, 14, 16, 20], rows: area },
+  ];
+  try {
+    const res = await fetch("/api/gbp/xlsx", { method: "POST", headers: headers(true), body: JSON.stringify({ name, sheets }) });
+    if (!res.ok) { let m = "HTTP " + res.status; try { m = (await res.json()).detail || m; } catch (e) {} throw new Error(m); }
+    const blob = await res.blob(), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name.replace(/[\\/:*?"<>|]+/g, "_") + ".xlsx"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast("Saved the schedules (Excel)");
+  } catch (e) { toast("No Excel: " + e.message, true); }
+}
+
 /* ---------- the toolbar and the property bar */
 function toolbarHtml() {
   const can = C.can(), T = (id, icon, title, key, extra) => Object.assign({ id, icon, title, key, on: TOOL === id }, extra || {});
@@ -469,6 +542,8 @@ function toolbarHtml() {
     G.push([{ id: "lib", icon: "library", title: "Doors, windows and openings: drag one onto a wall", key: "D", on: PT.libraryOpen() }]);
   }
   G.push([{ id: "measure", icon: "measure", title: "Measure: click two points (they snap to corners and faces; two parallel faces give the clear width); Esc clears", key: "M", on: TOOL === "measure" }, { id: "grid", icon: "grid", title: "Grid: 1 m background and the structural grid", key: "G", on: GRID() }, { id: "snap", icon: "snap", title: "Snap to edges and the grid (hold Alt: free)", on: SNAP() },
+    { id: "dims", icon: "dimension", title: "Dimensions: the plate overall, the units' widths along the corridor, the corridor's clear width", on: DIMS() }, { id: "furn", icon: "fixture", title: "Fittings and furniture in the units (set in 3 · Units)", on: FURN() },
+    { id: "export", icon: "export", title: "Export: the floor as DXF (AutoCAD / Revit), the unit and area schedules as Excel" },
     ...(can ? [{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }, { id: "fitplate", icon: "corner", title: "Fit the plate close round the units (balconies, UP, A/C left out), the core and the corridor; gaps under the fit gap (Core and corridor) closed" }, { id: "reset", icon: "reset", title: "Reset the units to automatic", disabled: !(LAST && LAST.edited) }] : [])]);
   G.push(viewG);
   return PT.toolbar(G, null, "floors");
@@ -578,6 +653,9 @@ function onTool(id) {
   if (id === "measure") { setTool(TOOL === "measure" ? "select" : "measure"); return drawPlan(); }
   if (id === "m:clear") { ME.clear(MEAS); return drawPlan(); }
   if (id === "grid") { setPref("fl-grid", GRID() ? "off" : "on"); return drawPlan(); }
+  if (id === "dims") { setPref("fl-dims", DIMS() ? "off" : "on"); mountBars(); return drawPlan(); }
+  if (id === "furn") { setPref("fl-furn", FURN() ? "off" : "on"); mountBars(); return drawPlan(); }
+  if (id === "export") return exportMenu();
   if (id === "snap") { setPref("fl-snap", SNAP() ? "off" : "on"); return drawPlan(); }
   if (id === "undo") return undo(-1);
   if (id === "redo") return undo(1);
@@ -812,6 +890,11 @@ function drawPlan0() {
   // every leg's left-over and strips first, then every leg's units and core over them, so no leg covers another's units
   const LG = legs().map((l) => drawLeg(l, sx, sy, fs, PTW));
   for (const q of LG) g += q.under;
+  // the plate's overall dimensions, above and to the left
+  if (DIMS() && SC > 3) {
+    const P = r.F.poly, xs = P.map((p) => p[0]), ys = P.map((p) => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), dfs = Math.max(8, Math.min(11, SC * 0.25));
+    g += DM.chain([x0, y0], [x1, y0], [0, x1 - x0], 46, sx, sy, { fs: dfs }) + DM.chain([x0, y1], [x0, y0], [0, y1 - y0], 46, sx, sy, { fs: dfs });
+  }
   for (const q of LG) g += q.over;
   // the walls drawn on the floor, at any angle: their outlines first, their fills over them, so walls that meet read as one
   const FILL = { blk: "url(#fl-blk)", rc: "url(#fl-rc)" };
@@ -952,6 +1035,7 @@ function drawLeg(l, SX, SY, fs, PTW) {
     const { x: ox, y: oy } = uview[li];
     for (const e of q.extras) g += `<rect x="${sx(ox + e.x)}" y="${sy(oy + e.y)}" width="${e.w * SC}" height="${e.h * SC}" fill="#dfe9f3" stroke="#3c4650" stroke-width="0.8" stroke-dasharray="4 2" />`;
     for (const rm of q.rooms) g += `<rect x="${sx(ox + rm.x)}" y="${sy(oy + rm.y)}" width="${rm.w * SC}" height="${rm.h * SC}" fill="${KC[rm.kind] || "#fbf3d5"}" />`;
+    if (FURN() && SC > 12) for (const fx of q.fixtures || []) g += UN.fixtureSvg(Object.assign({}, fx, { x: ox + fx.x, y: oy + fx.y }), sx, sy, SC);
   }
   // every wall of the leg as one: the units' (cut by their doors), the core's (cut by its doors), the party walls between units
   const WR = [];
@@ -1029,6 +1113,17 @@ function drawLeg(l, SX, SY, fs, PTW) {
     g += `<rect class="fl-u" data-pi="${pi}" x="${sx(ox)}" y="${sy(oy)}" width="${q.w * SC}" height="${q.h * SC}" fill="transparent" />`;
   }
   for (const w of PTW.filter((q) => q.leg === l.k)) { const sel = PTSEL && PTSEL.key === w.key && PTSEL.leg === l.k; g += `<rect class="fl-fw" data-ptw="${w.key}" data-leg="${l.k}" x="${sx(w.x0) - 3}" y="${sy(w.y0)}" width="${(w.x1 - w.x0) * SC + 6}" height="${(w.y1 - w.y0) * SC}" fill="${sel ? "rgba(242,128,34,.25)" : "transparent"}" stroke="${sel ? "#f28022" : "none"}" stroke-width="1.5" />`; }
+  // the dimensions: the units' widths along each side of the corridor, and the corridor's clear width
+  if (DIMS() && VIEW === "plan" && SC > 6) {
+    const dfs = Math.max(7.5, Math.min(10, SC * 0.22)), off = Math.max(18, Math.min(34, SC * 0.9));
+    for (const band of ["n", "s"]) {
+      const qs = r.placed.map((q, k) => ({ q, at: uview[k] })).filter((o) => o.q.band === band); if (!qs.length) continue;
+      const xs = qs.flatMap((o) => [o.at.x, o.at.x + o.q.w]), x0 = Math.min(...xs), x1 = Math.max(...xs);
+      const yo = band === "n" ? Math.min(...qs.map((o) => o.at.y)) : Math.max(...qs.map((o) => o.at.y + o.q.h));
+      g += DM.chain([x0, yo], [x1, yo], xs.map((x) => x - x0), band === "n" ? off : -off, sx, sy, { fs: dfs });
+    }
+    if (r.corr && r.y1 > r.y0) { const xm = r.corr.x0 + Math.min(1.2, (r.corr.x1 - r.corr.x0) / 2); g += DM.chain([xm, r.y0], [xm, r.y1], [0, r.y1 - r.y0], 0, sx, sy, { fs: dfs, col: "#0b57d0" }); }
+  }
   // a piece or unit dragged in from another leg: where it lands, turned with this leg
   if (DRAG && DRAG.cross && DRAG.cross.k === l.k) { const c2 = DRAG.cross; g += `<rect x="${sx(c2.x)}" y="${sy(c2.y)}" width="${c2.w * SC}" height="${c2.h * SC}" fill="rgba(242,128,34,.18)" stroke="#f28022" stroke-width="2" stroke-dasharray="6 3" pointer-events="none" />`; }
   return { under: `<g transform="${tf}" pointer-events="none">${under}</g>`, over: `<g transform="${tf}" data-legg="${l.k}">${g}</g>` };
