@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-28", date: "28 Nov 2026",
+    items: [
+      "**A bend on any floor plate** - on a plate with cut or slanted corners the corridor's + now adds a bend (the corridor's ends are brought in to the plate's edge); only a point that moves is checked against the plate.",
+      "**The core moves with the corridor** - drag the corridor or one of its legs across and the lifts, staircases, refuse room and risers move with it, keeping their distance along it and their offset from it; turn a leg and they turn with it. You can drag the corridor straight away, without selecting it first.",
+      "**No unit lost** when the corridor is moved or bent: a unit that no longer fits is kept and flagged, so you can see it and move it.",
+      "**The E&M left over stays inside the plate** at a bend: cut along the plate's edge and the line between two legs, with no gaps and its area counted only once.",
+      "**Faster Floors**: the layout is kept and reused instead of worked out again, and the leftover area is drawn as one shape a region - a redraw and a drag are about twice as fast.",
+    ],
+  },
+  {
     version: "2027-03-27", date: "27 Nov 2026",
     items: [
       "**A bend keeps the units** - adding a bend to the corridor with its + (or drawing a new one) now carries the units and the core over to the new legs, instead of starting the floor again. A core turns with its leg as one group.",

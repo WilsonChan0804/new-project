@@ -267,18 +267,41 @@ const units = () => { const s = C.study(); return (s.units && Array.isArray(s.un
 function cur(list) { const L = list || groups(); return L.find((x) => x.key === SEL) || L.find((x) => (x.g.mix || []).length) || L[0] || null; }
 const opts = (x) => Object.assign({}, FC.DEF, { storeyH: Number(x.g.h) || FC.DEF.storeyH }, x.g.floor || {});
 
+/* timings (?debug=floors: also in the console) */
+const DEBUG = /[?&]debug=floors\b/.test(location.search);
+const TIMES = (window.__floorsT = {});
+function timed(name, fn) {
+  const t0 = performance.now(), v = fn(), dt = performance.now() - t0;
+  TIMES[name] = Math.round(dt * 10) / 10; TIMES[name + "#"] = (TIMES[name + "#"] || 0) + 1;
+  if (DEBUG && dt > 4) console.log(`[floors] ${name} ${dt.toFixed(1)} ms`);
+  return v;
+}
+/* the layout, kept for the same input: a selection or a redraw lays nothing out again, and carry's trials are reused */
+const LCACHE = new Map();
+function layoutOf(inp) {
+  const keys = Object.keys(inp).filter((k) => inp[k] != null && k !== "lib" && k !== "mix").sort();
+  // the units it can use: only those named in it (the whole library is large)
+  const names = new Set((inp.mix || []).map((q) => q.u && q.u.name));
+  for (const sq of [inp.seq, ...(inp.legSeq || [])]) if (sq) for (const e of [...(sq.s || []), ...(sq.n || [])]) names.add(e.u);
+  const key = JSON.stringify(keys.map((k) => [k, inp[k]])) + "|" + JSON.stringify((inp.mix || []).map((q) => [q.u, q.n])) + "|" + JSON.stringify((inp.lib || []).filter((u) => names.has(u.name)));
+  if (LCACHE.has(key)) { const r = LCACHE.get(key); LCACHE.delete(key); LCACHE.set(key, r); return r; }
+  const r = timed("layout", () => FC.layoutLegs(inp));
+  LCACHE.set(key, r); while (LCACHE.size > 12) LCACHE.delete(LCACHE.keys().next().value);
+  return r;
+}
 function compute(x) {
   const list = units(), mix = [];
   for (const q of x.g.mix || []) { const u = list.find((v) => v.name === q.u); if (u) mix.push({ u, n: Number(q.n) || 0 }); }
   const o = opts(x);
-  const r = FC.layoutLegs(Object.assign({}, o, { poly: x.fp, mix, lib: list, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1 }));
+  const r = layoutOf(Object.assign({}, o, { poly: x.fp, mix, lib: list, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1 }));
   // a selection by the stored piece: its place in the new core
   if (r && CSEL && typeof CSEL === "object") { const k = r.core.findIndex((c, ci) => (c.pi != null ? c.pi : ci) === CSEL.pi); CSEL = k >= 0 ? k : null; }
   return r;
 }
 
 /* ---------- the panel: the figures, the checks, the settings */
-function render() {
+function render() { return timed("render", render0); }
+function render0() {
   if (!ON) return;
   const P = $("#st-fpanel"), list = groups(), x = cur(list), can = C.can(), dis = can ? "" : " disabled";
   if (!x) {
@@ -627,8 +650,11 @@ function editSpine(fn, keepSel) {
   const out0 = fn(sp0.map((p) => p.slice()));
   if (!out0 || out0.length < 2) return;
   const out = out0.map((p) => [R3(p[0]), R3(p[1])]);
-  // the corridor kept on the plate
-  if (!out.every(onPlate)) return toast("The corridor would leave the floor plate", true);
+  // an end off the plate (a straight corridor runs the plate's box; a corner may be cut): brought in to the plate's edge
+  for (const [e, nb] of [[0, 1], [out.length - 1, out.length - 2]]) if (!onPlate(out[e])) { const q = toPlateEdge(out[e], out[nb]); if (q) out[e] = q; }
+  // the corridor kept on the plate: the points that moved or are new
+  const bad = out.findIndex((p) => !sp0.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < 1e-3) && !onPlate(p));
+  if (bad >= 0) return toast(bad === 0 || bad === out.length - 1 ? "That end of the corridor would be off the floor plate" : "That bend would be off the floor plate", true);
   return editFloor((f) => {
     carry(f, out);
     f.spine = { path: out };
@@ -636,22 +662,40 @@ function editSpine(fn, keepSel) {
   });
 }
 /* a point on the plate, its edges included (within 50 mm) */
+/* from p (off the plate) towards q: the first point on the plate's edge, a little inside */
+function toPlateEdge(p, q) {
+  const P = LAST.F.poly, dx = q[0] - p[0], dy = q[1] - p[1]; let best = null;
+  for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], ex = b[0] - a[0], ey = b[1] - a[1], den = dx * ey - dy * ex;
+    if (Math.abs(den) < 1e-12) continue;
+    const t = ((a[0] - p[0]) * ey - (a[1] - p[1]) * ex) / den, u = ((a[0] - p[0]) * dy - (a[1] - p[1]) * dx) / den;
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1 && (best == null || t < best)) best = t;
+  }
+  if (best == null) return null;
+  const L = Math.hypot(dx, dy) || 1, t2 = Math.min(1, best + 0.02 / L);
+  return [R3(p[0] + dx * t2), R3(p[1] + dy * t2)];
+}
 function onPlate(p) {
   const P = LAST.F.poly; if (WC.inPoly(P, p[0], p[1])) return true;
   for (let i = 0; i < P.length; i++) { const q = WC.nearestOnPath(p, [P[i], P[(i + 1) % P.length]]); if (q && q.d <= 0.05) return true; }
   return false;
 }
 /* the units and the core as they stand, carried onto a new corridor line, so none is lost */
-function carry(f, out) {
+function carry(f, out) { return timed("carry", () => carry0(f, out)); }
+function carry0(f, out) {
   // both ways tried - each unit where it stands, or in its order laid along the new legs - the one that places more, with fewer clashes, kept
   const x = cur(), list = units(), mix = [];
   for (const q of x.g.mix || []) { const u = list.find((v) => v.name === q.u); if (u) mix.push({ u, n: Number(q.n) || 0 }); }
   const trial = (M3) => {
+    // as the floor will be stored (so the one kept is the layout the page then shows, from the cache)
     const o = Object.assign({}, opts(x), { seq: M3.seq || null, legSeq: M3.legSeq || null, spine: { path: out }, pieces: M3.pieces || null, corrY: null });
-    const r = FC.layoutLegs(Object.assign(o, { poly: x.fp, mix, lib: list, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1 }));
+    if (!M3.seq) o.seq = null; if (M3.seq) { o.legSeq = null; o.coreLeg = null; } else if (o.coreLeg != null && o.coreLeg >= out.length - 1) o.coreLeg = null;
+    if (!M3.pieces) o.pieces = null;
+    const r = layoutOf(Object.assign(o, { poly: x.fp, mix, lib: list, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1 }));
     // the units standing clear (inside the plate, on nothing else) first, then the fewer clashes; those that do not fit stay in the floor's list
     trial.last = r;
-    return r ? [r.placed.filter((q) => !(q.flags && q.flags.length)).length * 10 + r.core.filter((c) => !(c.flags && c.flags.length)).length, -r.issues.length] : [-1, -1e9];
+    // no unit lost first (one flagged is shown and can be moved; one dropped is not seen), then those clear, then the core clear
+    return r ? [r.placed.length * 1000 + r.placed.filter((q) => !(q.flags && q.flags.length)).length * 10 + r.core.filter((c) => !(c.flags && c.flags.length)).length, -r.issues.length] : [-1, -1e9];
   };
   const A1 = FC.migrateToSpine(LAST, out, true), A2 = FC.migrateToSpine(LAST, out, false), cands = [A1, A2];
   // each where it stands, but those that then clash laid along their leg again
@@ -665,7 +709,9 @@ function carry(f, out) {
   if (!LAST.coreEdited) cands.push(Object.assign({}, A2, { pieces: null }));
   if (!LAST.coreEdited && !LAST.edited) cands.push({ legSeq: null, seq: null, pieces: null, fresh: true });
   let M2 = cands[0], best = null;
-  for (const c of cands) { const sc = trial(c); if (!best || sc[0] > best[0] || (sc[0] === best[0] && sc[1] > best[1])) { best = sc; M2 = c; } }
+  // the first that places every unit and piece clear of the rest is taken: the others are not tried
+  const clean = (r) => r && r.placed.length >= LAST.placed.length && !(r.left && r.left.length) && !r.issues.length && r.placed.every((q) => !(q.flags && q.flags.length)) && r.core.every((c) => !(c.flags && c.flags.length));
+  for (const c of cands) { const sc = trial(c); if (!best || sc[0] > best[0] || (sc[0] === best[0] && sc[1] > best[1])) { best = sc; M2 = c; } if (clean(trial.last)) break; }
   if (M2.seq) { f.seq = M2.seq; delete f.legSeq; delete f.coreLeg; }
   else if (M2.legSeq) { f.legSeq = M2.legSeq; delete f.seq; if (f.coreLeg != null && f.coreLeg >= out.length - 1) delete f.coreLeg; }
   else { delete f.seq; delete f.legSeq; }
@@ -676,7 +722,8 @@ function carry(f, out) {
 /* ---------- the plan */
 const KC = { BATH: "#eef6f4", ENS: "#eef6f4", STORE: "#f3f1ea" };   // the rooms otherwise pale, as on the unit plans
 let DRAG = null;           // a drag on the plan: {k, i (global), leg, x, y, dx, dy (px, in the leg's axes), moved}
-function drawPlan() {
+function drawPlan() { return timed("draw", drawPlan0); }
+function drawPlan0() {
   const host = $("#st-fplan"), r = LAST;
   if (!r) { if (!host.innerHTML) host.innerHTML = `<div class="un-empty">Choose a floor group.</div>`; mountBars(); return; }
   const bw = host.clientWidth || 900, bh = host.clientHeight || 700;
@@ -790,7 +837,14 @@ function drawLeg(l, SX, SY, fs, PTW) {
   let g = "";
   // what is left of the plate: found by itself, each region E&M
   for (const z of r.residuals || []) {
-    for (const c of z.cells) g += `<rect x="${sx(c.x0)}" y="${sy(c.y0)}" width="${(c.x1 - c.x0) * SC + 0.5}" height="${(c.y1 - c.y0) * SC + 0.5}" fill="url(#fl-em)" pointer-events="none" />`;
+    // one path a region (its cells, those cut by a slanted edge as their part inside): one element, not one a cell
+    const n1 = (v) => Math.round(v * 10) / 10;
+    let d = "";
+    for (const c of z.cells) {
+      if (c.poly) d += "M" + c.poly.map((q) => n1(sx(q[0])) + " " + n1(sy(q[1]))).join("L") + "Z";
+      else { const x0 = n1(sx(c.x0)), y0 = n1(sy(c.y0)), x1 = n1(sx(c.x1) + 0.5), y1 = n1(sy(c.y1) + 0.5); d += `M${x0} ${y0}H${x1}V${y1}H${x0}Z`; }
+    }
+    if (d) g += `<path d="${d}" fill="url(#fl-em)" pointer-events="none" />`;
     if (z.area >= 1) g += `<text x="${sx(z.at[0])}" y="${sy(z.at[1]) + fs / 3}" text-anchor="middle" font-size="${fs - 1}" fill="#7a5a1a" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3" pointer-events="none">E&amp;M ${f1(z.area)} m²</text>`;
   }
   const CX0 = r.corr ? r.corr.x0 : 0, CX1 = r.corr ? r.corr.x1 : r.L;
@@ -1315,7 +1369,9 @@ function wirePlan() {
     if (!DRAG) return;
     const rdx = ev.clientX - DRAG.x, rdy = ev.clientY - DRAG.y;
     if (!DRAG.moved && Math.hypot(rdx, rdy) < 6) return;
-    if (!C.can() || (DRAG.k === "spsel" && !SPSEL)) return;
+    if (!C.can()) return;
+    // the corridor dragged: selected as it moves
+    if (DRAG.k === "spsel" && !SPSEL) { clearSel(); SPSEL = true; }
     DRAG.moved = true;
     const l = DRAG.leg != null ? legK(DRAG.leg) : null;
     const [dx, dy] = l ? rotIn(l, rdx, rdy) : [rdx, rdy];
@@ -1346,7 +1402,10 @@ function wirePlan() {
       // a leg dragged across: both its points square to it, the corridor kept on the plate
       const sp = LAST.spine.path, j = DRAG.seg, { nl } = WC.dirOf(sp[j], sp[j + 1]);
       let off = (dx * nl[0] + dy * nl[1]) / SC; if (snap) off = Math.round(off * 20) / 20;
-      const fits = (o) => { const P2 = sp.map((p, k) => (k === j || k === j + 1 ? [p[0] + nl[0] * o, p[1] + nl[1] * o] : p)); return WC.wallPoly([P2[j], P2[j + 1]], LAST.cw, "c").every(onPlate) ? P2 : null; };
+      const fits = (o) => { const P2 = sp.map((p, k) => (k === j || k === j + 1 ? [p[0] + nl[0] * o, p[1] + nl[1] * o] : p)); // both faces of the moved leg on the plate (a spine end may stand off it, at a cut corner: it is brought in to the edge)
+        const a = P2[j], b = P2[j + 1], d = WC.dirOf(a, b).d, h = LAST.cw / 2, t0 = j === 0 ? 0.1 : 0, t1 = j + 1 === sp.length - 1 ? 0.9 : 1;
+        for (let t = t0; t <= t1 + 1e-9; t += (t1 - t0) / 8) for (const sg of [-1, 1]) { const q = [a[0] + (b[0] - a[0]) * t - d[1] * h * sg, a[1] + (b[1] - a[1]) * t + d[0] * h * sg]; if (!onPlate(q)) return null; }
+        return P2; };
       let P2 = fits(off); for (let t = 0; !P2 && t < 12; t++) { off /= 2; P2 = fits(off); }
       DRAG.path = P2 ? P2.map((p) => [R3(p[0]), R3(p[1])]) : sp; DRAG.off = P2 ? off : 0;
       host.title = `${off >= 0 ? "+" : ""}${f3(off)} m`;
@@ -1396,7 +1455,7 @@ function wirePlan() {
     if (!DRAG) return;
     const d = DRAG; DRAG = null; LIBHOV = null;
     const r = LAST;
-    if (d.k === "spsel") { host.title = ""; if (d.moved && d.path && SPSEL) return editSpine(() => d.path, true); const was = SPSEL; clearSel(); SPSEL = !was; return drawPlan(); }
+    if (d.k === "spsel") { host.title = ""; if (d.moved && d.path && SPSEL) return editSpine(() => d.path, true); clearSel(); SPSEL = true; return drawPlan(); }
     if (d.k === "vert") { if (d.moved && d.poly) { VSEL = null; return editPlate(() => d.poly); } const now = Date.now(), dbl = drawPlan.lastV && drawPlan.lastV.i === d.i && now - drawPlan.lastV.t < 450; drawPlan.lastV = { i: d.i, t: now }; if (dbl) { drawPlan.lastV = null; return removeCorner(d.i); } clearSel(); VSEL = d.i; return drawPlan(); }
     if (d.k === "cedge") { if (!d.moved || !d.box) return drawPlan(); const A = legK(d.leg).A, i = pIdx(d.i); return editCore((P) => { Object.assign(P[i], { x: R3(d.box.x - A[0]), y: R3(d.box.y - A[1]), w: d.box.w, h: d.box.h }); return i; }); }
     if (d.k === "fwpt" || d.k === "fwseg") { if (!d.moved || !d.path) return drawPlan(); return editWalls((A) => { A[d.i].path = WC.cleanPath(d.path); return d.i; }); }

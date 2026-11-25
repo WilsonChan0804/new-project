@@ -116,7 +116,12 @@ function scene(THREE, Orbit, host) {
       if (c.kind === "refuse" || c.kind === "riser") box(grp, c.x + t, c.y + t, c.x + c.w - t, c.y + c.h - t, wz, wz + 0.02, mat(c.kind === "refuse" ? 0xe3e7d3 : 0xf1d6d6));
     }
     // the E&M regions left over
-    for (const zr of r.residuals || []) for (const c of zr.cells) box(grp, c.x0, c.y0, c.x1, c.y1, wz, wz + 0.03, mat(0xf3dfae));
+    for (const zr of r.residuals || []) for (const c of zr.cells) {
+      if (!c.poly) { box(grp, c.x0, c.y0, c.x1, c.y1, wz, wz + 0.03, mat(0xf3dfae)); continue; }
+      // a cell cut by a slanted edge: only its part inside the plate
+      const sh = new THREE.Shape(); c.poly.forEach(([x, y], i) => (i ? sh.lineTo(x, -y) : sh.moveTo(x, -y))); sh.closePath();
+      const me = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.03, bevelEnabled: false }), mat(0xf3dfae)); me.position.z = wz; grp.add(me);
+    }
     }
     // the camera: once, from the south-west above, the whole stack in view
     const k2 = `${r.L}|${r.D}|${N}|${show}`;

@@ -333,5 +333,32 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   ok(F.coreWallRects(B.core, 0.25).length > F.coreWallRects(A.core, 0.25).length, "the walls cut at the new opening");
   ok(B.coreOut.find((c) => c.label === "Lift 1").openings.length === 1, "and kept with the piece");
 }
+// the corridor moved or bent: what stands by it keeps its distance along it and its offset from it
+{
+  const sp = [[0, 8], [20, 8], [40, 8]], m = F.arcMap(sp, [[0, 9.5], [20, 9.5], [40, 9.5]], 1, [25, 5]);
+  ok(m.k === 1 && near(m.f([25, 5])[0], 25, 1e-9) && near(m.f([25, 5])[1], 6.5, 1e-9), "arcMap: a leg moved 1.5 m across takes a point 1.5 m with it");
+  const t = 0.3, m2 = F.arcMap(sp, [[0, 8], [20, 8], [20 + 20 * Math.cos(t), 8 + 20 * Math.sin(t)]], 1, [30, 8]), q = m2.f([30, 8]);
+  ok(near(q[0], 20 + 10 * Math.cos(t), 1e-9) && near(q[1], 8 + 10 * Math.sin(t), 1e-9) && near(m2.rot, t, 1e-9), "arcMap: a turned leg takes a point along it, turned");
+  const poly = [[0, 0], [46, 0], [46, 16.5], [0, 16.5]], base = { poly, frame: { ux: 1, uy: 0 }, mix, storeys: 30, persons: 3 };
+  const R0 = F.layoutLegs(base), y0 = (R0.y0 + R0.y1) / 2;
+  const M = F.migrateToSpine(R0, [[R0.spine.path[0][0], y0 + 1.5], [R0.spine.path[1][0], y0 + 1.5]], true);
+  const R1 = F.layoutLegs(Object.assign({}, base, { spine: { path: [[R0.spine.path[0][0], y0 + 1.5], [R0.spine.path[1][0], y0 + 1.5]] }, seq: M.seq, pieces: M.pieces }));
+  ok(R1.core.length === R0.core.length && R0.core.every((c) => { const d = R1.core.find((e) => e.label === c.label); return d && near(d.y - c.y, 1.5, 1e-3) && near(d.x, c.x, 1e-3); }), "the corridor moved 1.5 m across: its core moves 1.5 m with it");
+  const mid = R0.spine.path.map((p) => p.slice()); mid.splice(1, 0, [(mid[0][0] + mid[1][0]) / 2, mid[0][1]]);
+  const M2 = F.migrateToSpine(R0, mid, true), R2 = F.layoutLegs(Object.assign({}, base, { spine: { path: mid }, legSeq: M2.legSeq, pieces: M2.pieces }));
+  const abs = (R, c) => { const l = R.legs[c.leg]; return [l.xf.ox + l.xf.c * c.x - l.xf.s * c.y, l.xf.oy + l.xf.s * c.x + l.xf.c * c.y]; };
+  ok(R0.core.every((c) => { const d = R2.core.find((e) => e.label === c.label); if (!d) return false; const a = abs(R0, c), b = abs(R2, d); return Math.hypot(a[0] - b[0], a[1] - b[1]) < 1e-3; }), "a bend added in a straight run: the core where it was");
+}
+// the E&M left over at a slanted edge: only its part inside the plate drawn and counted
+{
+  const poly = [[0, 0], [30, 0], [30, 20], [0, 20]], t = 20 * Math.PI / 180;
+  const R = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: [], storeys: 6, spine: { path: [[0, 13.4], [14, 13.4], [14 + 16.5 * Math.cos(t), 13.4 - 16.5 * Math.sin(t)]] } });
+  const toP = (l, p) => [l.xf.ox + l.xf.c * p[0] - l.xf.s * p[1], l.xf.oy + l.xf.s * p[0] + l.xf.c * p[1]];
+  const outside = R.legs.some((l) => l.r.residuals.some((z) => z.cells.some((c) => (c.poly || [[c.x0, c.y0], [c.x1, c.y0], [c.x1, c.y1], [c.x0, c.y1]]).some((p) => { const q = toP(l, p); return q[0] < -0.01 || q[0] > 30.01 || q[1] < -0.01 || q[1] > 20.01; }))));
+  ok(!outside, "a leg turned 20°: its E&M left over all inside the plate");
+  ok(R.figures.residual < 600 - R.figures.corridor - 1, "and its area within the plate's (" + R.figures.residual + " m²)");
+  const sq = F.clipToRect([[0, 0], [4, 0], [0, 4]], { x0: 1, y0: 1, x1: 3, y1: 3 });
+  ok(near(Math.abs(F.area(sq)), 2, 1e-9), "clipToRect: a triangle cut to a square");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

@@ -477,7 +477,7 @@ export function layout(o) {
     { what: "Staircases (Table B3, the workbook's quick check)", ok: qs.status === "ok", text: `${nS} × ${n(p.stairWidth, 1200)} mm for ${qs.total} persons over ${qs.storeys} storeys: ${qs.per} each, capacity ${qs.capacity ?? "–"}${qs.suggest ? ` · ${qs.suggest.width} mm would do` : ""}` },
     { what: "Travel: flat door to a staircase (B11)", ok: worst.d <= (worst.lim || tr.max) + 1e-9, text: placed.length ? `${worst.d} m from ${worst.name}${worst.dead ? ", in a dead end" : ""}, limit ${worst.lim || tr.max} m` : "–" },
     { what: "Lifts by service time", ok: nL >= lf.n, text: `${nL} lift${nL > 1 ? "s" : ""}: round trip ${lf.rtt} s, interval ${Math.round(lf.rtt / nL)} s, 5-min capacity ${r3(nL * 300 * lf.P / lf.rtt / (lf.population || 1) * 100)}% (needs ${lf.n})` },
-    { what: "Units placed", ok: !left.length, text: `${placed.length} of ${want.length}` },
+    { what: "Units placed", ok: !left.length, text: want.length ? `${placed.length} of ${want.length}` : `${placed.length} placed by hand (no unit mix)` },
     { what: "Clashes", ok: !issues.length, text: issues.length ? issues.slice(0, 6).join("; ") + (issues.length > 6 ? ` … ${issues.length - 6} more` : "") : "none: inside the plate, nothing overlapping" },
   ];
   if (between != null) checks.push({ what: "Between the staircases", ok: between <= tr.between, text: `${between} m, at most ${tr.between} m (B11.3(b))` });
@@ -617,10 +617,10 @@ export function layoutLegs(o) {
     if (!others.length) continue;
     l.r.residuals = l.r.residuals.map((z) => {
       const cells = z.cells.filter((c) => !others.some((pq) => inPoly(pq, (c.x0 + c.x1) / 2, (c.y0 + c.y1) / 2)));
-      const area2 = cells.reduce((s2, c) => s2 + (c.x1 - c.x0) * (c.y1 - c.y0), 0);
+      const area2 = cells.reduce((s2, c) => s2 + cellArea(c), 0);
       if (cells.length === z.cells.length) return z;
-      const big = cells.reduce((m2, c) => (!m2 || (c.x1 - c.x0) * (c.y1 - c.y0) > (m2.x1 - m2.x0) * (m2.y1 - m2.y0) ? c : m2), null);
-      return big ? Object.assign({}, z, { cells, area: r3(area2), at: [(big.x0 + big.x1) / 2, (big.y0 + big.y1) / 2] }) : null;
+      const big = cells.reduce((m2, c) => (!m2 || cellArea(c) > cellArea(m2) ? c : m2), null);
+      return big ? Object.assign({}, z, { cells, area: r3(area2), at: cellMid(big) }) : null;
     }).filter((z) => z && z.area >= 0.5);
     l.r.figures.residual = r3(l.r.residuals.reduce((s2, z) => s2 + z.area, 0));
   }
@@ -637,7 +637,7 @@ export function layoutLegs(o) {
   const left = [...legs.flatMap((l) => (legSeq[l.k] ? l.r.left : [])), ...pool.map((u) => ({ u, why: `no room left along the corridor for ${u.name || "a unit"}` }))];
   const checks = C0.checks.filter((c) => /Staircases|Lifts/.test(c.what));
   checks.push({ what: "Travel: flat door to a staircase (B11)", ok: worst.d <= (worst.lim || tr.max) + 1e-9, text: placedN ? `${worst.d} m along the corridor from ${worst.name}${worst.dead ? ", in a dead end" : ""}, limit ${worst.lim || tr.max} m` : "–" });
-  checks.push({ what: "Units placed", ok: placedN >= wantN, text: `${placedN} of ${wantN} on ${legs.length} legs` });
+  checks.push({ what: "Units placed", ok: placedN >= wantN, text: wantN ? `${placedN} of ${wantN} on ${legs.length} legs` : `${placedN} placed by hand on ${legs.length} legs (no unit mix)` });
   checks.push({ what: "Clashes", ok: !issues.length, text: issues.length ? issues.slice(0, 6).join("; ") + (issues.length > 6 ? ` … ${issues.length - 6} more` : "") : "none: inside the plate, nothing overlapping" });
   if (sArc.length >= 2) checks.push({ what: "Between the staircases", ok: hi - lo <= tr.between, text: `${r3(hi - lo)} m along the corridor, at most ${tr.between} m (B11.3(b))` });
   const jp = (k) => legs.reduce((s2, l) => s2 + (Number(l.r.jpn1[k]) || 0), 0);
@@ -678,46 +678,57 @@ export function fromLegRel(sp, k, q) {
 /* a floor's units and core pieces, as laid out (R from layoutLegs), carried onto a new spine (plate frame): each into the leg
    its middle stands by, on its side of the corridor, from that leg's spine start -> {legSeq, pieces} (or {seq, pieces} for a
    straight spine along the plate, stored as layout() reads them) */
+/* the start of each segment of a spine, as distance along it */
+export function arcStarts(sp) { const out = [0]; for (let k = 0; k < sp.length - 1; k++) out.push(out[k] + Math.hypot(sp[k + 1][0] - sp[k][0], sp[k + 1][1] - sp[k][1])); return out; }
+/* a plate point P near segment kOld of the old spine, taken to the new spine at the same distance along it and the same
+   offset from it: {k (the new segment), f (a map of plate points, turning with the corridor about P), rot (the turn)} */
+export function arcMap(spOld, spNew, kOld, P) {
+  const seg = (sp, k) => { const a = sp[k], b = sp[k + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, d = [(b[0] - a[0]) / L, (b[1] - a[1]) / L]; return { a, d, n: [-d[1], d[0]], L }; };
+  const kO = Math.max(0, Math.min(spOld.length - 2, kOld)), o = seg(spOld, kO), S0 = arcStarts(spOld), S1 = arcStarts(spNew);
+  const t = (P[0] - o.a[0]) * o.d[0] + (P[1] - o.a[1]) * o.d[1], v = (P[0] - o.a[0]) * o.n[0] + (P[1] - o.a[1]) * o.n[1], s = S0[kO] + t;
+  // the same legs (one moved or turned): each its own, from its start; else (a bend added or taken away) by the distance along the whole corridor
+  let k = 0, u;
+  if (spOld.length === spNew.length) { k = kO; u = t; }
+  else { while (k < spNew.length - 2 && s > S1[k + 1]) k++; u = s - S1[k]; }
+  const q = seg(spNew, k), P2 = [q.a[0] + q.d[0] * u + q.n[0] * v, q.a[1] + q.d[1] * u + q.n[1] * v];
+  const rot = Math.atan2(q.d[1], q.d[0]) - Math.atan2(o.d[1], o.d[0]), c = Math.cos(rot), sn = Math.sin(rot);
+  return { k, rot, f: (pt) => { const dx = pt[0] - P[0], dy = pt[1] - P[1]; return [P2[0] + c * dx - sn * dy, P2[1] + sn * dx + c * dy]; } };
+}
 export function migrateToSpine(R, sp2, keepX) {
   const toP = (l, pt) => [l.xf.ox + l.xf.c * pt[0] - l.xf.s * pt[1], l.xf.oy + l.xf.s * pt[0] + l.xf.c * pt[1]];
   const straight = sp2.length === 2 && Math.abs(sp2[1][1] - sp2[0][1]) < 1e-6;
-  const legOf = (pt) => { if (straight) return 0; let best = 0, bd = Infinity; for (let k = 0; k < sp2.length - 1; k++) { const q = WC.nearestOnPath(pt, [sp2[k], sp2[k + 1]]); if (q && q.d < bd) { bd = q.d; best = k; } } return best; };
   const rel = (k, pt) => (straight ? [pt[0], pt[1] - sp2[0][1]] : toLegRel(sp2, k, pt));
+  // the old corridor's line: what stands by it keeps its distance along it and its offset from it
+  const sp1 = R.spine && Array.isArray(R.spine.path) && R.spine.path.length >= 2 ? R.spine.path : [[0, 0], [1, 0]];
+  const AM = (l, P) => { const m = arcMap(sp1, sp2, l.k, P); if (straight) m.k = 0; return m; };
+  // the leg frame turned 180° against the old one (turned with the corridor): the sides of a door swap
+  const flipOf = (l, m) => { const ax = straight ? { ux: 1, uy: 0 } : legAxis(sp2, m.k), c = Math.cos(m.rot), sn = Math.sin(m.rot); return ax.ux * (c * l.xf.c - sn * l.xf.s) + ax.uy * (sn * l.xf.c + c * l.xf.s) < 0; };
   const nL = straight ? 1 : sp2.length - 1, seqs = Array.from({ length: nL }, () => ({ s: [], n: [] }));
   for (const l of R.legs || []) for (const q of l.r.placed) {
     const cs = [[q.x, q.y], [q.x + q.w, q.y], [q.x + q.w, q.y + q.h], [q.x, q.y + q.h]].map((pt) => toP(l, pt));
-    const mid = [(cs[0][0] + cs[2][0]) / 2, (cs[0][1] + cs[2][1]) / 2], k = legOf(mid), rs = cs.map((pt) => rel(k, pt)), rm = rel(k, mid);
+    const mid = [(cs[0][0] + cs[2][0]) / 2, (cs[0][1] + cs[2][1]) / 2], m = AM(l, mid), k = Math.min(nL - 1, m.k), rs = cs.map((pt) => rel(k, m.f(pt))), rm = rel(k, m.f(mid));
     // in order along the leg; a unit put by hand keeps its place, the others are laid along it again (so none overlap)
     seqs[k][rm[1] < 0 ? "n" : "s"].push(Object.assign({ u: (q.entry && q.entry.u) || q.name, m: !!q.m, at: Math.min(...rs.map((v) => v[0])) }, q.fixed || keepX ? { x: r3(Math.min(...rs.map((v) => v[0]))) } : {}, q.r ? { r: q.r } : {}));
   }
   for (const S2 of seqs) for (const b of ["s", "n"]) { S2[b].sort((a, c) => a.at - c.at); for (const e of S2[b]) delete e.at; }
-  const pieces = [];
-  // a leg's core moves as one: all its pieces into the new leg by their middle together (so a core across a joint is not torn apart)
+  const pieces = [], FLIP = { n: "s", s: "n", e: "w", w: "e" };
+  // a leg's core moves as one: mapped by its middle, each piece keeping its place about it (so a core across a joint is not torn apart, and it turns with its leg)
   for (const l of R.legs || []) {
-    const cs = l.r.core.filter((c) => c.kind !== "passage");
     if (!l.r.core.length) continue;
-    const gm = cs.length ? toP(l, [cs.reduce((s2, c) => s2 + c.x + c.w / 2, 0) / cs.length, cs.reduce((s2, c) => s2 + c.y + c.h / 2, 0) / cs.length]) : null;
-    l.kGroup = gm ? legOf(gm) : null;
-    // the group turns with its leg: its middle goes where it was, the pieces keep their places about it in the leg's own frame
-    if (gm) {
-      l.gmOld = [cs.reduce((s2, c) => s2 + c.x + c.w / 2, 0) / cs.length, cs.reduce((s2, c) => s2 + c.y + c.h / 2, 0) / cs.length];
-      l.gmNew = rel(l.kGroup, gm);
-      const ax = straight ? { ux: 1, uy: 0 } : legAxis(sp2, l.kGroup);
-      l.gSign = ax.ux * l.xf.c + ax.uy * l.xf.s < 0 ? -1 : 1;
+    const cs = l.r.core.filter((c) => c.kind !== "passage"), G = cs.length ? cs : l.r.core;
+    const gm = toP(l, [G.reduce((s2, c) => s2 + c.x + c.w / 2, 0) / G.length, G.reduce((s2, c) => s2 + c.y + c.h / 2, 0) / G.length]);
+    const m = AM(l, gm), k = Math.min(nL - 1, m.k), flip = flipOf(l, m);
+    const map = (pt) => rel(k, m.f(toP(l, pt)));
+    for (const c of l.r.core) {
+      const rm = map([c.x + c.w / 2, c.y + c.h / 2]);
+      const q = { kind: c.kind, label: c.label, x: r3(rm[0] - c.w / 2), y: r3(rm[1] - c.h / 2), w: c.w, h: c.h, full: true };
+      if (straight) q.y = r3(q.y + sp2[0][1]); else q.leg = k;
+      if (c.kind === "passage" && Array.isArray(c.path)) { q.path = orthoPath(c.path.map((pt) => { const v = map(pt); return straight ? [r3(v[0]), r3(v[1] + sp2[0][1])] : [r3(v[0]), r3(v[1])]; })); q.width = c.width; q.auto = false; }
+      for (const key of ["door", "openings", "wt", "for"]) if (c[key] != null) q[key] = JSON.parse(JSON.stringify(c[key]));
+      if (flip) for (const o of [q.door, ...(q.openings || [])]) if (o && FLIP[o.side]) { o.side = FLIP[o.side]; if (o.at != null) o.at = r3(1 - o.at); }
+      if (c.kind === "passage" && c.for) q.auto = true;
+      pieces.push(q);
     }
-  }
-  const FLIP = { n: "s", s: "n", e: "w", w: "e" };
-  for (const l of R.legs || []) for (const c of l.r.core) {
-    const k = l.kGroup != null ? l.kGroup : legOf(toP(l, [c.x + c.w / 2, c.y + c.h / 2]));
-    const map = l.gmNew ? (pt) => [l.gmNew[0] + l.gSign * (pt[0] - l.gmOld[0]), l.gmNew[1] + l.gSign * (pt[1] - l.gmOld[1])] : (pt) => rel(k, toP(l, pt));
-    const rm = map([c.x + c.w / 2, c.y + c.h / 2]);
-    const q = { kind: c.kind, label: c.label, x: r3(rm[0] - c.w / 2), y: r3(rm[1] - c.h / 2), w: c.w, h: c.h, full: true };
-    if (straight) q.y = r3(q.y + sp2[0][1]); else q.leg = k;
-    if (c.kind === "passage" && Array.isArray(c.path)) { q.path = orthoPath(c.path.map((pt) => { const v = map(pt); return straight ? [r3(v[0]), r3(v[1] + sp2[0][1])] : [r3(v[0]), r3(v[1])]; })); q.width = c.width; q.auto = false; }
-    for (const key of ["door", "openings", "wt", "for"]) if (c[key] != null) q[key] = JSON.parse(JSON.stringify(c[key]));
-    if (l.gSign < 0) for (const o of [q.door, ...(q.openings || [])]) if (o && FLIP[o.side]) { o.side = FLIP[o.side]; if (o.at != null) o.at = r3(1 - o.at); }
-    if (c.kind === "passage" && c.for) q.auto = true;
-    pieces.push(q);
   }
   return straight ? { seq: seqs[0], pieces } : { legSeq: seqs, pieces };
 }
@@ -772,6 +783,26 @@ export function unionArea(rects) {
   return a;
 }
 
+const area2 = (P) => { let s2 = 0; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; s2 += a[0] * b[1] - b[0] * a[1]; } return s2 / 2; };
+function onEdge(P, x, y, tol = 1e-6) {
+  for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L2)); if (Math.hypot(a[0] + t * dx - x, a[1] + t * dy - y) <= tol) return true; }
+  return false;
+}
+/* a polygon cut to a rectangle {x0, y0, x1, y1} (Sutherland-Hodgman: the rectangle is convex, the polygon need not be) */
+/* a cell's middle: of its part inside, when it is cut */
+const cellMid = (c) => (c.poly ? [c.poly.reduce((a, p) => a + p[0], 0) / c.poly.length, c.poly.reduce((a, p) => a + p[1], 0) / c.poly.length] : [(c.x0 + c.x1) / 2, (c.y0 + c.y1) / 2]);
+const cellArea = (c) => (c.poly ? Math.abs(area2(c.poly)) : (c.x1 - c.x0) * (c.y1 - c.y0));
+export function clipToRect(P, r) {
+  let out = P.map((p) => [p[0], p[1]]);
+  const edges = [[(p) => p[0] >= r.x0, (a, b) => { const t = (r.x0 - a[0]) / (b[0] - a[0]); return [r.x0, a[1] + t * (b[1] - a[1])]; }], [(p) => p[0] <= r.x1, (a, b) => { const t = (r.x1 - a[0]) / (b[0] - a[0]); return [r.x1, a[1] + t * (b[1] - a[1])]; }],
+    [(p) => p[1] >= r.y0, (a, b) => { const t = (r.y0 - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), r.y0]; }], [(p) => p[1] <= r.y1, (a, b) => { const t = (r.y1 - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), r.y1]; }]];
+  for (const [inside, cut] of edges) {
+    const src = out; out = [];
+    for (let i = 0; i < src.length; i++) { const a = src[i], b = src[(i + 1) % src.length], ia = inside(a), ib = inside(b); if (ia) out.push(a); if (ia !== ib) out.push(cut(a, b)); }
+    if (!out.length) break;
+  }
+  return out;
+}
 /* what of the plate nothing covers: connected regions of cells, each {area, box, at (its largest cell's middle), cells};
    slivers (under 0.5 m2, or under 0.4 m across) left out */
 export function residualRegions(poly, rects, minA = 0.5, minW = 0.4, polys) {
@@ -794,6 +825,7 @@ export function residualRegions(poly, rects, minA = 0.5, minW = 0.4, polys) {
       for (let i = i0; i < i1; i++) for (let j = j0; j < j1; j++) if (inPoly(q, (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2)) cov[i * ny + j] = 1;
     }
   }
+  const slanted = poly.some((p, i) => { const q = poly[(i + 1) % poly.length]; return Math.abs(q[0] - p[0]) > 1e-6 && Math.abs(q[1] - p[1]) > 1e-6; });
   // inside the plate: one crossing test a row of cells (the cells' middles on a line y)
   for (let j = 0; j < ny; j++) {
     if (ys[j + 1] - ys[j] < 1e-6) continue;
@@ -805,6 +837,8 @@ export function residualRegions(poly, rects, minA = 0.5, minW = 0.4, polys) {
       const cx = (xs[i] + xs[i + 1]) / 2;
       let n = 0; for (const c of cuts) if (c < cx) n++;
       if (n % 2) free[i * ny + j] = 1;
+      // its middle outside but part of it inside (a slanted edge across it): kept, cut to that part below
+      else if (slanted && Math.abs(area2(clipToRect(poly, { x0: xs[i], y0: ys[j], x1: xs[i + 1], y1: ys[j + 1] }))) > 0.01) free[i * ny + j] = 1;
     }
   }
   const seen = new Uint8Array(free.length), out = [];
@@ -816,10 +850,15 @@ export function residualRegions(poly, rects, minA = 0.5, minW = 0.4, polys) {
       for (const [a, b] of [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]) { if (a < 0 || b < 0 || a >= nx || b >= ny) continue; const q = a * ny + b; if (free[q] && !seen[q]) { seen[q] = 1; st.push(q); } }
     }
     let area = 0, big = null, bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-    const rc = cells.map(([i, j]) => { const r = { x0: xs[i], y0: ys[j], x1: xs[i + 1], y1: ys[j + 1] }; const a = (r.x1 - r.x0) * (r.y1 - r.y0); area += a; if (!big || a > big.a) big = Object.assign({ a }, r); bx0 = Math.min(bx0, r.x0); by0 = Math.min(by0, r.y0); bx1 = Math.max(bx1, r.x1); by1 = Math.max(by1, r.y1); return r; });
+    const rc = cells.map(([i, j]) => {
+      const r = { x0: xs[i], y0: ys[j], x1: xs[i + 1], y1: ys[j + 1] };
+      // a cell across a slanted edge of the plate (or of the leg's part of it): only its part inside, drawn and counted
+      let a = (r.x1 - r.x0) * (r.y1 - r.y0);
+      if (![[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]].every(([x, y]) => inPoly(poly, x, y) || onEdge(poly, x, y))) { const cp = clipToRect(poly, r); if (cp.length >= 3) { r.poly = cp; a = Math.abs(area2(cp)); } }
+      area += a; if (!big || a > big.a) big = Object.assign({ a }, r); bx0 = Math.min(bx0, r.x0); by0 = Math.min(by0, r.y0); bx1 = Math.max(bx1, r.x1); by1 = Math.max(by1, r.y1); return r; });
     // slivers left out: too small, or thin (its box, as a region can be cut into small cells where polygons were sampled)
     if (area < minA || Math.min(bx1 - bx0, by1 - by0) < minW || (PL.length === 0 && Math.min(big.x1 - big.x0, big.y1 - big.y0) < minW)) continue;
-    out.push({ area: r3(area), box: { x: bx0, y: by0, w: bx1 - bx0, h: by1 - by0 }, at: [(big.x0 + big.x1) / 2, (big.y0 + big.y1) / 2], cells: rc });
+    out.push({ area: r3(area), box: { x: bx0, y: by0, w: bx1 - bx0, h: by1 - by0 }, at: cellMid(big), cells: rc });
   }
   return out;
 }
