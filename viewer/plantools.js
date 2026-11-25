@@ -8,6 +8,7 @@
  */
 import { iconSvg, iconColor, hasIcon } from "./icons.js";
 import { openMenu } from "./ctxmenu.js";
+import * as KS from "./keysheet.js";
 
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -27,18 +28,25 @@ export const OPEN_BY = Object.fromEntries(OPENINGS.map((o) => [o.id, o]));
 let HOST = null, PAGE = "", H = {}, libOpen = false;
 const host = () => HOST || (HOST = document.getElementById("st-ptop"));
 
+let KPAGE = "";
 const btn = (b, active) => {
   if (b === "|") return `<span class="pt-sep"></span>`;
   if (b.html) return b.html;
+  // the key the user has for it (the shortcuts table), else the one given
+  if (KPAGE && b.id && b.id in KS.keysOf(KPAGE)) b = Object.assign({}, b, { key: KS.keyFor(KPAGE, b.id) });
   const on = b.on != null ? b.on : active === b.id;
   const ic = hasIcon(b.icon) ? iconSvg(b.icon, 18) : `<b>${esc(b.text || b.icon)}</b>`;
   return `<button type="button" class="pt-b${on ? " on" : ""}${b.text && hasIcon(b.icon) ? " wt" : ""}" data-pt="${esc(b.id)}" title="${esc(b.title + (b.key ? "  (" + b.key + ")" : ""))}" style="--ico:${hasIcon(b.icon) ? iconColor(b.icon) : "#555"}"${b.disabled ? " disabled" : ""}>${ic}${b.text ? `<span>${esc(b.text)}</span>` : ""}</button>`;
 };
 
 /* the toolbar: groups of {id, icon, title, key, on, text, disabled} (or "|", or {html}) */
-export function toolbar(groups, active) {
-  return `<div class="pt-bar" role="toolbar">${groups.map((g) => `<div class="pt-grp">${g.map((b) => btn(b, active)).join("")}</div>`).join("")}</div>`;
+export function toolbar(groups, active, page) {
+  KPAGE = page || "";
+  const G = page ? [...groups, [{ id: "keys", icon: "keys", title: "Keyboard shortcuts", key: "?" }]] : groups;
+  const h = `<div class="pt-bar" role="toolbar">${G.map((g) => `<div class="pt-grp">${g.map((b) => btn(b, active)).join("")}</div>`).join("")}</div>`;
+  KPAGE = ""; return h;
 }
+export { KS };
 
 /* a property bar: a title (an icon and words), fields and action buttons.
    field: {key, label, icon, type: num|sel|seg|chk|txt|read, value, step, min, max, unit, options: [[v, l]] | [[v, icon, title]], title, w} */
@@ -104,7 +112,8 @@ function wire() {
   const cur = () => H[PAGE] || {};
   h.addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-pt]");
-    if (b) { ev.preventDefault(); if (b.dataset.pt === "lib:close") { libOpen = false; return cur().refresh && cur().refresh(); } return cur().tool && cur().tool(b.dataset.pt, b, ev); }
+    if (b) { ev.preventDefault(); if (b.dataset.pt === "keys") return KS.openPage(PAGE);
+      if (b.dataset.pt === "lib:close") { libOpen = false; return cur().refresh && cur().refresh(); } return cur().tool && cur().tool(b.dataset.pt, b, ev); }
     const s = ev.target.closest("button[data-pp]");
     if (s) { ev.preventDefault(); return cur().prop && cur().prop(s.dataset.pp, s.dataset.v, s); }
   });

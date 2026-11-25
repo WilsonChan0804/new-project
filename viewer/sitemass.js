@@ -46,6 +46,11 @@ export function init(ctx) {
   $("#st-views").addEventListener("change", onViews);
   $("#st-views").addEventListener("input", onViews);
   window.addEventListener("resize", () => T3 && T3.resize());
+  // the keys the user can change (the shortcuts table: ? or the ⌨ button): each clicks its button in the bar
+  PT.KS.register("massing", () => ON, MKEYS.map(([id, key, label, group, sel]) => ({ id, key, label, group, sel })), [
+    { keys: "Ctrl+Z / Ctrl+Y", label: "Undo / redo", group: "Edit" }, { keys: "Esc", label: "Stop measuring or drawing", group: "Edit" }, { keys: "Enter / double-click", label: "Finish a neighbouring building", group: "Edit" },
+    { keys: "Right-click a block", label: "Copy, paste, remove…", group: "Edit" }, { keys: "Alt + drag", label: "No snapping", group: "Edit" },
+  ], "2 · Massing");
   document.addEventListener("keydown", (ev) => {
     if (ON && (ev.ctrlKey || ev.metaKey) && !ev.target.closest("input,select,textarea")) {
       const k = ev.key.toLowerCase();
@@ -105,6 +110,12 @@ export function show(on) {
 export function refresh() { if (ON) render(); }
 
 /* ---------- views: Plan / 3D / Elevation / Section, and the plan tools */
+const MKEYS = [
+  ["plan", "p", "Plan", "View", '#st-views [data-v="plan"]'], ["3d", "3", "3D", "View", '#st-views [data-v="3d"]'],
+  ["elev", "e", "Elevation", "View", '#st-views [data-v="elev"]'], ["sect", "s", "Section", "View", '#st-views [data-v="sect"]'],
+  ["measure", "m", "Measure (plan)", "Tools", '#st-views [data-tool="measure"]'], ["context", "k", "Draw a neighbouring building (plan)", "Tools", '#st-views [data-tool="context"]'],
+  ["grid", "g", "Grid on / off (plan)", "Tools", "#st-views [data-grid]"], ["snap", "n", "Snap on / off (plan)", "Tools", "#st-views [data-snap]"],
+];
 function viewsBar() {
   const s = C.study(), n = s.pts.length, no = {};
   const names = (i) => { const id = s.streets && s.streets[i]; const r = id != null && s.roads && s.roads[id]; return r && r.name ? r.name : id != null ? "Street" : "Edge " + (i + 1) + "–" + ((i + 1) % n + 1); };
@@ -118,7 +129,9 @@ function viewsBar() {
     ${VIEW === "plan" && C.can() ? IB('data-tool="measure"', "measure", "Measure: snaps to the site and the footprints", TOOL && TOOL.kind === "measure") + IB('data-tool="context"', "context", "Draw a neighbouring building for the 3D view", TOOL && TOOL.kind === "context") : ""}
     ${VIEW === "plan" ? gridBar() : ""}
     ${VIEW === "plan" ? IB("data-snap", "snap", "Snap corners to the site, the other footprints and the neighbours (Alt while dragging: free)", SNAP) : `${IB("data-shadow", "shadow", "Shadows on / off", SHADOW)}${IB("data-ctx3d", "world", "The buildings around: the Lands Department's 3D Spatial Data (CSDI)", CTX3D)}<select data-ctxr title="How far around: the map and the buildings, each side of the site">${[250, 500, 1000, 1500].map((v) => `<option value="${v}"${v === ctxR() ? " selected" : ""}>± ${v.toLocaleString("en-GB")} m</option>`).join("")}</select><span class="ms-ctxst" id="ms-ctxst"></span>`}
-    ${VIEW !== "plan" ? IB("data-png", "camera", "Save this view as a picture (PNG)") : ""}`;
+    ${VIEW !== "plan" ? IB("data-png", "camera", "Save this view as a picture (PNG)") : ""}<span class="pt-sep"></span>${IB("data-keys", "keys", "Keyboard shortcuts  (?)")}`;
+  // each button's tooltip with its key from the user's keys
+  for (const [id, , , , sel] of MKEYS) { const b = document.querySelector(sel), k = PT.KS.keyFor("massing", id); if (b && k) b.title += "  (" + k + ")"; }
 }
 function gridBar() {
   const g = mass().grid, s = C.study(), can = C.can() ? "" : " disabled";
@@ -130,6 +143,7 @@ function onViews(ev) {
   if (t.dataset.elev != null && ev.type === "change") { ELEV = +t.value; return draw3d(); }
   if (t.dataset.cut != null && ev.type === "input") { CUT = +t.value; if (T3) T3.cut(CUT); return; }
   if (t.dataset.png != null && ev.type === "click") return png();
+  if (t.dataset.keys != null && ev.type === "click") return PT.KS.openPage("massing");
   const g = mass().grid;
   if (t.dataset.grid != null && ev.type === "click") { g.on = !g.on; C.save(); viewsBar(); return drawPlan(); }
   if (t.dataset.gstep != null && ev.type === "change") { g.step = Math.max(0.1, parseFloat(t.value) || 3); C.save(); return drawPlan(); }

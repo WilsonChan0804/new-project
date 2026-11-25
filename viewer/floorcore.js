@@ -296,6 +296,11 @@ export function layout(o) {
   };
   // a unit at (x, y): its own shape - each room out to its walls' outer faces - not its bounding box; the balcony, UP and A/C platform left out
   const insideUnit = (x, y, rooms, wall) => unitInside(F.poly, x, y, rooms, wall);
+  const BLK = Array.isArray(p.blockPolys) ? p.blockPolys : [];
+  // the checks: against the whole plate (a leg of a bending corridor is placed in its own part, but may reach past it)
+  const fullP = Array.isArray(p.fullPoly) && p.fullPoly.length >= 3 ? p.fullPoly : F.poly;
+  const insideFull = (q) => [[q.x + 0.05, q.y + 0.05], [q.x + q.w - 0.05, q.y + 0.05], [q.x + q.w - 0.05, q.y + q.h - 0.05], [q.x + 0.05, q.y + q.h - 0.05]].every(([px, py]) => inPoly(fullP, px, py));
+  void inside;
   // two units, or a unit and a core piece, overlapping: by their rooms (a unit's wall may share a core wall)
   const roomsOv = (q, b, tol) => q.rooms.some((r) => Math.min(q.x + r.x + r.w, b.x + b.w) - Math.max(q.x + r.x, b.x) > tol && Math.min(q.y + r.y + r.h, b.y + b.h) - Math.max(q.y + r.y, b.y) > tol);
   const unitsOv = (q, o) => o.rooms.some((r) => roomsOv(q, { x: o.x + r.x, y: o.y + r.y, w: r.w, h: r.h }, 0.05));
@@ -321,6 +326,8 @@ export function layout(o) {
         if (x < run.l - 1e-6 || x + t.W > run.r + 0.01) break;
         const y = band === "s" ? y1 + t.wall / 2 : y0 - t.D - t.wall / 2, box = { x: r3(x), y: r3(y), w: t.W, h: t.D };
         if (!insideUnit(box.x, box.y, t.rooms, t.wall)) continue;
+        // clear of what the other legs of a bending corridor already hold
+        if (BLK.length && t.rooms.some((rm) => { const q = [[box.x + rm.x - t.wall / 2 + 0.05, box.y + rm.y - t.wall / 2 + 0.05], [box.x + rm.x + rm.w + t.wall / 2 - 0.05, box.y + rm.y - t.wall / 2 + 0.05], [box.x + rm.x + rm.w + t.wall / 2 - 0.05, box.y + rm.y + rm.h + t.wall / 2 - 0.05], [box.x + rm.x - t.wall / 2 + 0.05, box.y + rm.y + rm.h + t.wall / 2 - 0.05]]; return BLK.some((b) => quadsOverlap(q, b)); })) continue;
         const key = band + ":" + order[band];
         if (!probe) { if (end === "l") run.l = r3(x + t.W + gapOf(t, key)); else run.r = r3(x - gapOf(t, key)); if (end === "l") c.i = k; else c.j = k; }
         return Object.assign(box, { gs: end, gk: key });
@@ -393,7 +400,7 @@ export function layout(o) {
   const issues = [];
   for (const [i, q] of placed.entries()) {
     q.flags = [];
-    if (!insideUnit(q.x, q.y, q.rooms, q.wt)) q.flags.push("outside the plate");
+    if (!unitInside(fullP, q.x, q.y, q.rooms, q.wt)) q.flags.push("outside the plate");
     for (const [j, o] of placed.entries()) if (j !== i && ov(q, o) && unitsOv(q, o)) { q.flags.push("overlaps " + (o.name || "a unit")); break; }
     const c = core.find((cc) => roomsOv(q, cc, cwl / 2 + 0.05)); if (c) q.flags.push("overlaps " + c.label);
     if (q.r % 360) q.flags.push("entrance not on the corridor");
@@ -401,7 +408,7 @@ export function layout(o) {
   }
   for (const [i, c] of core.entries()) {
     c.flags = [];
-    if (!inside(c)) c.flags.push("outside the plate");
+    if (!insideFull(c)) c.flags.push("outside the plate");
     for (const [j, o] of core.entries()) if (j > i && ov(c, o, cwl + 0.05)) c.flags.push("overlaps " + o.label);
     for (const fl of c.flags) issues.push(`${c.label}: ${fl}`);
   }
@@ -517,7 +524,10 @@ export function layoutLegs(o) {
   const cw = n(p.corridor, 1.5), XY = sp.map((q) => PF.from(q)), m = XY.length - 1;
   const D = XY.slice(0, m).map((a, k) => WC.dirOf(a, XY[k + 1]));
   const nb = (j) => { const a = D[j - 1].d, b = D[j].d, x = a[0] + b[0], y = a[1] + b[1], L = Math.hypot(x, y) || 1; return [x / L, y / L]; };
-  const lens = D.map((q) => q.L), coreLeg = p.coreLeg != null && p.coreLeg >= 0 && p.coreLeg < m ? Math.round(p.coreLeg) : lens.indexOf(Math.max(...lens));
+  const lens = D.map((q) => q.L), hasPieces = Array.isArray(p.pieces) && p.pieces.length > 0;
+  // the core's leg: as set; with pieces placed, the leg holding most of them; else the longest
+  const byPieces = () => { const c = new Array(m).fill(0); for (const q of p.pieces) { const k = q.leg == null ? -1 : q.leg; if (k >= 0 && k < m) c[k]++; } const mx = Math.max(...c); return mx > 0 ? c.indexOf(mx) : null; };
+  const coreLeg = p.coreLeg != null && p.coreLeg >= 0 && p.coreLeg < m ? Math.round(p.coreLeg) : (hasPieces && byPieces() != null ? byPieces() : lens.indexOf(Math.max(...lens)));
   // the order the legs take their units: the core's leg, then out from it
   const order = [coreLeg]; for (let d = 1; order.length < m; d++) { if (coreLeg - d >= 0) order.push(coreLeg - d); if (coreLeg + d < m) order.push(coreLeg + d); }
   const want = []; for (const q of p.mix || []) for (let i = 0; i < Math.max(0, Math.round(n(q.n))); i++) want.push(q.u);
@@ -546,11 +556,13 @@ export function layoutLegs(o) {
     const pcs = Array.isArray(p.pieces) && p.pieces.length ? p.pieces.map((c, i) => Object.assign({}, c, { _i: i })).filter((c) => (c.leg == null ? coreLeg : c.leg) === k).map((c) => Object.assign(c, { x: r3(n(c.x) + A[0]), y: r3(n(c.y) + A[1]) }, Array.isArray(c.path) ? { path: c.path.map((pt) => [r3(n(pt[0]) + A[0]), r3(n(pt[1]) + A[1])]) } : {})) : null;
     const q = Object.assign({}, p, extra || {}, {
       poly: sub, frame: axis, corrY: A[1] - cw / 2, corrSpan: [Math.min(A[0], B[0]), Math.max(A[0], B[0])],
-      core: k === coreLeg ? p.core : "none", seq: seqIn,
+      // pieces placed: each leg has those it holds, and no leg makes a core of its own
+      core: hasPieces ? "none" : k === coreLeg ? p.core : "none", seq: seqIn,
       // the core pieces stand in their own legs (piece.leg; none: the core's leg)
       pieces: pcs,
       walls: (p.walls || []).map((w) => Object.assign({}, w, { path: (w.path || []).map(T) })), noWallArea: true,
-      coverPolys: [corrPolyXY.map((pt) => LF.to(pt))], popFloorAll: popAll, noLeftInSeq: true, partyT: (p.legPartyT || [])[k] || (k === 0 ? p.partyT : null),
+      coverPolys: [corrPolyXY.map((pt) => LF.to(pt))], popFloorAll: popAll, noLeftInSeq: true,
+      blockPolys: legs.flatMap((l0) => [...l0.r.placed.flatMap((q2) => q2.rooms.map((rm) => [[q2.x + rm.x - q2.wt / 2, q2.y + rm.y - q2.wt / 2], [q2.x + rm.x + rm.w + q2.wt / 2, q2.y + rm.y - q2.wt / 2], [q2.x + rm.x + rm.w + q2.wt / 2, q2.y + rm.y + rm.h + q2.wt / 2], [q2.x + rm.x - q2.wt / 2, q2.y + rm.y + rm.h + q2.wt / 2]])), ...l0.r.core.map((c) => [[c.x, c.y], [c.x + c.w, c.y], [c.x + c.w, c.y + c.h], [c.x, c.y + c.h]])].map((qd) => qd.map((pt) => LF.to(PF.from([l0.xf.ox + l0.xf.c * pt[0] - l0.xf.s * pt[1], l0.xf.oy + l0.xf.s * pt[0] + l0.xf.c * pt[1]]))))), fullPoly: p.poly.map((pt) => LF.to([n(pt[0]), n(pt[1])])), partyT: (p.legPartyT || [])[k] || (k === 0 ? p.partyT : null),
     });
     if (k < coreLeg) q.corrAnchor = B[0]; else if (k > coreLeg) q.corrAnchor = A[0];
     if (!legSeq[k]) q.mix = pool.map((u) => ({ u, n: 1 }));
@@ -589,6 +601,29 @@ export function layoutLegs(o) {
     const dead = nSAll < 2 || a < lo || a > hi, lim = dead ? tr.deadend : tr.max;
     if (d / lim > worst.d / (worst.lim || 1)) worst = { d: r3(d), dead, lim, name: q.name };
   }
+  // across the legs: a unit or piece of one leg on another's; and what is left of each leg not under another leg's units
+  const quad = (l, q) => [[q.x, q.y], [q.x + q.w, q.y], [q.x + q.w, q.y + q.h], [q.x, q.y + q.h]].map((pt) => toP(l, pt));
+  const roomQuads = (l, q) => q.rooms.map((rm) => quad(l, { x: q.x + rm.x - q.wt / 2 + 0.05, y: q.y + rm.y - q.wt / 2 + 0.05, w: rm.w + q.wt - 0.1, h: rm.h + q.wt - 0.1 }));
+  const things = legs.flatMap((l) => [...l.r.placed.map((q) => ({ l, q, name: q.name, polys: roomQuads(l, q) })), ...l.r.core.filter((c) => c.kind !== "passage").map((c) => ({ l, q: c, name: c.label, polys: [quad(l, { x: c.x + 0.05, y: c.y + 0.05, w: c.w - 0.1, h: c.h - 0.1 })] }))]);
+  for (let i = 0; i < things.length; i++) for (let j = i + 1; j < things.length; j++) {
+    const A = things[i], B = things[j]; if (A.l === B.l) continue;
+    if (A.polys.some((pa) => B.polys.some((pb) => quadsOverlap(pa, pb)))) {
+      A.q.flags.push("overlaps " + B.name); B.q.flags.push("overlaps " + A.name);
+      A.l.r.issues.push(`${A.name}: overlaps ${B.name}`);
+    }
+  }
+  for (const l of legs) {
+    const others = things.filter((t) => t.l !== l).flatMap((t) => t.polys).map((pq) => pq.map((pt) => { const dx = pt[0] - l.xf.ox, dy = pt[1] - l.xf.oy; return [l.xf.c * dx + l.xf.s * dy, -l.xf.s * dx + l.xf.c * dy]; }));
+    if (!others.length) continue;
+    l.r.residuals = l.r.residuals.map((z) => {
+      const cells = z.cells.filter((c) => !others.some((pq) => inPoly(pq, (c.x0 + c.x1) / 2, (c.y0 + c.y1) / 2)));
+      const area2 = cells.reduce((s2, c) => s2 + (c.x1 - c.x0) * (c.y1 - c.y0), 0);
+      if (cells.length === z.cells.length) return z;
+      const big = cells.reduce((m2, c) => (!m2 || (c.x1 - c.x0) * (c.y1 - c.y0) > (m2.x1 - m2.x0) * (m2.y1 - m2.y0) ? c : m2), null);
+      return big ? Object.assign({}, z, { cells, area: r3(area2), at: [(big.x0 + big.x1) / 2, (big.y0 + big.y1) / 2] }) : null;
+    }).filter((z) => z && z.area >= 0.5);
+    l.r.figures.residual = r3(l.r.residuals.reduce((s2, z) => s2 + z.area, 0));
+  }
   const walls = floorWalls(p.walls, C0.coreWall);
   const fwallA = walls.reduce((s2, w) => s2 + w.pieces.reduce((a, q) => a + WC.polyArea(q), 0), 0);
   const sum = (k) => legs.reduce((s2, l) => s2 + (Number(l.r.figures[k]) || 0), 0);
@@ -613,6 +648,78 @@ export function layoutLegs(o) {
     jpn1: Object.assign({}, C0.jpn1, { corrLen: r3(jp("corrLen")) }), legSeq: legs.map((l) => l.r.seq), edited: legs.some((l) => l.r.edited),
     residuals: legs.flatMap((l) => l.r.residuals.map((z) => Object.assign({ leg: l.k }, z))), frameAxis: { ux: PF.ux, uy: PF.uy },
   });
+}
+
+/* two convex quadrilaterals overlapping (more than touching): the separating axis test */
+export function quadsOverlap(A, B) {
+  for (const P of [A, B]) for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], nx = b[1] - a[1], ny = a[0] - b[0];
+    const pa = A.map((q) => q[0] * nx + q[1] * ny), pb = B.map((q) => q[0] * nx + q[1] * ny);
+    if (Math.max(...pa) <= Math.min(...pb) + 1e-9 || Math.max(...pb) <= Math.min(...pa) + 1e-9) return false;
+  }
+  return true;
+}
+/* a leg of a spine (plate frame): its axis, turned to read left to right as layoutLegs turns it -> {ux, uy} */
+export function legAxis(sp, k) {
+  const a = sp[k], b = sp[k + 1], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, d = [dx / L, dy / L];
+  const rev = d[0] < -1e-9 || (Math.abs(d[0]) <= 1e-9 && d[1] < 0);
+  return rev ? { ux: -d[0], uy: -d[1] } : { ux: d[0], uy: d[1] };
+}
+/* a plate-frame point in leg k's frame, from the leg's spine start (as stored: units' x, pieces' x / y) */
+export function toLegRel(sp, k, pt) {
+  const { ux, uy } = legAxis(sp, k), dx = pt[0] - sp[k][0], dy = pt[1] - sp[k][1];
+  return [dx * ux + dy * uy, -dx * uy + dy * ux];
+}
+export function fromLegRel(sp, k, q) {
+  const { ux, uy } = legAxis(sp, k);
+  return [sp[k][0] + q[0] * ux - q[1] * uy, sp[k][1] + q[0] * uy + q[1] * ux];
+}
+
+/* a floor's units and core pieces, as laid out (R from layoutLegs), carried onto a new spine (plate frame): each into the leg
+   its middle stands by, on its side of the corridor, from that leg's spine start -> {legSeq, pieces} (or {seq, pieces} for a
+   straight spine along the plate, stored as layout() reads them) */
+export function migrateToSpine(R, sp2, keepX) {
+  const toP = (l, pt) => [l.xf.ox + l.xf.c * pt[0] - l.xf.s * pt[1], l.xf.oy + l.xf.s * pt[0] + l.xf.c * pt[1]];
+  const straight = sp2.length === 2 && Math.abs(sp2[1][1] - sp2[0][1]) < 1e-6;
+  const legOf = (pt) => { if (straight) return 0; let best = 0, bd = Infinity; for (let k = 0; k < sp2.length - 1; k++) { const q = WC.nearestOnPath(pt, [sp2[k], sp2[k + 1]]); if (q && q.d < bd) { bd = q.d; best = k; } } return best; };
+  const rel = (k, pt) => (straight ? [pt[0], pt[1] - sp2[0][1]] : toLegRel(sp2, k, pt));
+  const nL = straight ? 1 : sp2.length - 1, seqs = Array.from({ length: nL }, () => ({ s: [], n: [] }));
+  for (const l of R.legs || []) for (const q of l.r.placed) {
+    const cs = [[q.x, q.y], [q.x + q.w, q.y], [q.x + q.w, q.y + q.h], [q.x, q.y + q.h]].map((pt) => toP(l, pt));
+    const mid = [(cs[0][0] + cs[2][0]) / 2, (cs[0][1] + cs[2][1]) / 2], k = legOf(mid), rs = cs.map((pt) => rel(k, pt)), rm = rel(k, mid);
+    // in order along the leg; a unit put by hand keeps its place, the others are laid along it again (so none overlap)
+    seqs[k][rm[1] < 0 ? "n" : "s"].push(Object.assign({ u: (q.entry && q.entry.u) || q.name, m: !!q.m, at: Math.min(...rs.map((v) => v[0])) }, q.fixed || keepX ? { x: r3(Math.min(...rs.map((v) => v[0]))) } : {}, q.r ? { r: q.r } : {}));
+  }
+  for (const S2 of seqs) for (const b of ["s", "n"]) { S2[b].sort((a, c) => a.at - c.at); for (const e of S2[b]) delete e.at; }
+  const pieces = [];
+  // a leg's core moves as one: all its pieces into the new leg by their middle together (so a core across a joint is not torn apart)
+  for (const l of R.legs || []) {
+    const cs = l.r.core.filter((c) => c.kind !== "passage");
+    if (!l.r.core.length) continue;
+    const gm = cs.length ? toP(l, [cs.reduce((s2, c) => s2 + c.x + c.w / 2, 0) / cs.length, cs.reduce((s2, c) => s2 + c.y + c.h / 2, 0) / cs.length]) : null;
+    l.kGroup = gm ? legOf(gm) : null;
+    // the group turns with its leg: its middle goes where it was, the pieces keep their places about it in the leg's own frame
+    if (gm) {
+      l.gmOld = [cs.reduce((s2, c) => s2 + c.x + c.w / 2, 0) / cs.length, cs.reduce((s2, c) => s2 + c.y + c.h / 2, 0) / cs.length];
+      l.gmNew = rel(l.kGroup, gm);
+      const ax = straight ? { ux: 1, uy: 0 } : legAxis(sp2, l.kGroup);
+      l.gSign = ax.ux * l.xf.c + ax.uy * l.xf.s < 0 ? -1 : 1;
+    }
+  }
+  const FLIP = { n: "s", s: "n", e: "w", w: "e" };
+  for (const l of R.legs || []) for (const c of l.r.core) {
+    const k = l.kGroup != null ? l.kGroup : legOf(toP(l, [c.x + c.w / 2, c.y + c.h / 2]));
+    const map = l.gmNew ? (pt) => [l.gmNew[0] + l.gSign * (pt[0] - l.gmOld[0]), l.gmNew[1] + l.gSign * (pt[1] - l.gmOld[1])] : (pt) => rel(k, toP(l, pt));
+    const rm = map([c.x + c.w / 2, c.y + c.h / 2]);
+    const q = { kind: c.kind, label: c.label, x: r3(rm[0] - c.w / 2), y: r3(rm[1] - c.h / 2), w: c.w, h: c.h, full: true };
+    if (straight) q.y = r3(q.y + sp2[0][1]); else q.leg = k;
+    if (c.kind === "passage" && Array.isArray(c.path)) { q.path = orthoPath(c.path.map((pt) => { const v = map(pt); return straight ? [r3(v[0]), r3(v[1] + sp2[0][1])] : [r3(v[0]), r3(v[1])]; })); q.width = c.width; q.auto = false; }
+    for (const key of ["door", "openings", "wt", "for"]) if (c[key] != null) q[key] = JSON.parse(JSON.stringify(c[key]));
+    if (l.gSign < 0) for (const o of [q.door, ...(q.openings || [])]) if (o && FLIP[o.side]) { o.side = FLIP[o.side]; if (o.at != null) o.at = r3(1 - o.at); }
+    if (c.kind === "passage" && c.for) q.auto = true;
+    pieces.push(q);
+  }
+  return straight ? { seq: seqs[0], pieces } : { legSeq: seqs, pieces };
 }
 
 export function area(P) { let s = 0; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; }

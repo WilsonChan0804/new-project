@@ -283,6 +283,44 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const R4 = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, spine: { path: [[50, 8.5], [8.5, 8.5], [8.5, 50]] }, walls: [{ path: [[6, 40], [11, 40]], t: 0.2 }] });
   ok(R4.figures.corridor < R.figures.corridor - 5 && R4.fwallA > 0, "a wall across the far leg cuts its corridor (" + R4.figures.corridor + " m²)");
 }
+// a bend added to a floor of units placed by hand (no mix): its units go into the new legs
+{
+  const poly = [[0, 0], [50, 0], [50, 17], [17, 17], [17, 50], [0, 50]];
+  const U2 = TEMPLATES["2R-B"], U1 = TEMPLATES["1R-B"], lib = [U2, U1];
+  const seq = { s: [{ u: U2.name }, { u: U1.name }, { u: U2.name }], n: [{ u: U1.name }, { u: U1.name }] };
+  const A = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: [], lib, seq, storeys: 30, persons: 3, corrY: 7.75 });
+  ok(A.placed.length === 5, "a floor of 5 units put by hand, no mix: " + A.placed.length);
+  const sp2 = [[50, 8.5], [8.5, 8.5], [8.5, 50]], M2 = F.migrateToSpine(A, sp2);
+  const n2 = M2.legSeq.reduce((s2, q) => s2 + q.s.length + q.n.length, 0);
+  ok(n2 === 5 && M2.pieces.length === A.core.length, `carried onto the bent spine: ${n2} units, ${M2.pieces.length} pieces`);
+  const B = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: [], lib, storeys: 30, persons: 3, spine: { path: sp2 }, legSeq: M2.legSeq, pieces: M2.pieces });
+  ok(B.placed.length === 5, "laid out on the bent corridor: all 5 still there (" + B.placed.length + ")");
+  // the stored form: from the leg's spine start, in the plate frame
+  const l1 = B.legs[1], q = l1.r.placed[0];
+  if (q) { const pP = F.fromLegRel(sp2, 1, [q.x - l1.A[0], q.y - l1.A[1]]), pX = [l1.xf.ox + l1.xf.c * q.x - l1.xf.s * q.y, l1.xf.oy + l1.xf.s * q.x + l1.xf.c * q.y]; ok(near(pP[0], pX[0], 1e-6) && near(pP[1], pX[1], 1e-6), "a leg's stored positions: from its spine start (toLegRel / fromLegRel)"); }
+  const rt = F.toLegRel(sp2, 1, F.fromLegRel(sp2, 1, [3.2, -1.5]));
+  ok(near(rt[0], 3.2, 1e-9) && near(rt[1], -1.5, 1e-9), "to and from a leg's frame");
+  // two legs' units on each other: flagged
+  const mx = [{ u: TEMPLATES["2R-B"], n: 6 }, { u: TEMPLATES["1R-B"], n: 6 }];
+  const R = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, spine: { path: sp2 } });
+  const ls = R.legSeq.map((q2) => JSON.parse(JSON.stringify(q2)));
+  // a unit of leg 0 moved to the corner, onto leg 1's first unit
+  const e = ls[0].s[0];
+  e.x = -48;   // leg 0 runs from x 50: 48 m along it is the corner, where leg 1's units stand
+  const R2 = F.layoutLegs({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, spine: { path: sp2 }, legSeq: ls });
+  const qd = (l, q) => [[q.x, q.y], [q.x + q.w, q.y], [q.x + q.w, q.y + q.h], [q.x, q.y + q.h]].map(([u, v]) => [l.xf.ox + l.xf.c * u - l.xf.s * v, l.xf.oy + l.xf.s * u + l.xf.c * v]);
+  let silent = 0;
+  const rq = (l, q) => q.rooms.map((rm) => qd(l, { x: q.x + rm.x, y: q.y + rm.y, w: rm.w, h: rm.h }));
+  for (const qa of R2.legs[0].r.placed) for (const qb of R2.legs[1].r.placed) if (rq(R2.legs[0], qa).some((A2) => rq(R2.legs[1], qb).some((B2) => F.quadsOverlap(A2, B2))) && !(qa.flags.length || qb.flags.length)) silent++;
+  ok(silent === 0, "a unit pushed to the corner: the other leg's units keep clear of it, or the clash is flagged (" + R2.issues.slice(0, 2).join("; ") + ")");
+  ok(F.quadsOverlap([[0, 0], [2, 0], [2, 2], [0, 2]], [[1, 1], [3, 1], [3, 3], [1, 3]]) && !F.quadsOverlap([[0, 0], [2, 0], [2, 2], [0, 2]], [[2.5, 0], [4, 0], [4, 2], [2.5, 2]]), "quadsOverlap: overlapping and apart");
+  // the E&M left over: none of it under the other leg's units
+  const under = R.legs.some((l) => l.r.residuals.some((z) => z.cells.some((c) => R.legs.filter((o) => o !== l).some((o) => o.r.placed.some((u) => {
+    const cx = (c.x0 + c.x1) / 2, cy = (c.y0 + c.y1) / 2, P = [l.xf.ox + l.xf.c * cx - l.xf.s * cy, l.xf.oy + l.xf.s * cx + l.xf.c * cy], dx = P[0] - o.xf.ox, dy = P[1] - o.xf.oy, lp = [o.xf.c * dx + o.xf.s * dy, -o.xf.s * dx + o.xf.c * dy];
+    return lp[0] > u.x + 0.3 && lp[0] < u.x + u.w - 0.3 && u.rooms.some((rm) => lp[0] > u.x + rm.x + 0.2 && lp[0] < u.x + rm.x + rm.w - 0.2 && lp[1] > u.y + rm.y + 0.2 && lp[1] < u.y + rm.y + rm.h - 0.2);
+  })))));
+  ok(!under, "no E&M hatch under the other leg's units");
+}
 // openings on core pieces
 {
   const sq = [[0, 0], [48, 0], [48, 16], [0, 16]];

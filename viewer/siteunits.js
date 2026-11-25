@@ -36,7 +36,25 @@ export function init(ctx) {
     if (k === "y" || (k === "z" && ev.shiftKey)) { ev.preventDefault(); undo(1); }
   });
   wirePlan();
-  PT.keys(() => ON && !INPLACE && C.can(), { v: () => { TOOL = "select"; drawPlan(); }, r: () => { TOOL = "room"; drawPlan(); }, d: () => { TOOL = "door"; drawPlan(); }, w: () => { TOOL = "window"; drawPlan(); } });
+  // the keys the user can change (the shortcuts table: ? or the ⌨ button)
+  const can = () => ON && C.can(), tool = (id) => () => { if (!can()) return false; TOOL = TOOL === id && id !== "select" ? "select" : id; SEL = null; drawPlan(); };
+  const cyc = (k, vals) => () => { let v; try { v = localStorage.getItem(k); } catch (e) { /* none */ } const i = vals.indexOf(v || vals[0]); try { localStorage.setItem(k, vals[(i + 1) % vals.length]); } catch (e) { /* private */ } drawPlan(); };
+  PT.KS.register("units", () => ON && !INPLACE, [
+    { id: "select", key: "v", label: "Select", group: "Draw", run: tool("select") },
+    // R on a selected fitting or balcony turns it (below), not the room tool
+    { id: "room", key: "r", label: "Room", group: "Draw", run: () => (SEL && (SEL.t === "fix" || SEL.t === "x") ? false : tool("room")()) },
+    { id: "split-x", key: "|", label: "Split a room │", group: "Draw", run: tool("split-x") },
+    { id: "split-y", key: "-", label: "Split a room ─", group: "Draw", run: tool("split-y") },
+    { id: "door", key: "d", label: "Door", group: "Add", run: tool("door") },
+    { id: "window", key: "w", label: "Window", group: "Add", run: tool("window") },
+    { id: "lib", key: "l", label: "Doors, windows, openings library", group: "Add", run: () => { if (!can()) return false; PT.toggleLibrary(); drawPlan(); } },
+    { id: "alines", key: "a", label: "Area lines: off / saleable / GFA / both", group: "View", run: cyc("lwk-viewer:un-alines", ["off", "saleable", "gfa", "both"]) },
+    { id: "dims", key: "m", label: "Dimensions: chains / overall / off", group: "View", run: cyc("lwk-viewer:un-dims", ["chains", "overall", "off"]) },
+  ], [
+    { keys: "Ctrl+Z / Ctrl+Y", label: "Undo / redo", group: "Edit" }, { keys: "Delete", label: "Remove the selected (a wall: opened)", group: "Edit" }, { keys: "Esc", label: "Select tool, clear the selection", group: "Edit" },
+    { keys: "R", label: "Turn the selected fitting or balcony", group: "Edit" }, { keys: "F", label: "Flip the selected door's hinge", group: "Edit" }, { keys: "Right-click", label: "Menu: door type, delete…", group: "Edit" },
+    { keys: "Alt + drag a wall", label: "Move the whole aligned line", group: "Edit" }, { keys: "Wheel / pinch", label: "Zoom", group: "View" }, { keys: "Drag the empty plan", label: "Pan", group: "View" },
+  ], "3 · Units");
 }
 export function store() {
   const s = C.study();
@@ -465,7 +483,7 @@ function drawPlan() {
     }
     if (d.type === "door2" && !d._half) {
       // a double door: two leaves meeting in the middle
-      const h1 = Object.assign({}, d, { _half: 1, w: dw / 2, hinge: "start" }), h2 = Object.assign({}, d, { _half: 1, at: (+d.at || 0) + dw / 2, w: dw / 2, hinge: "end" });
+      const h1 = Object.assign({}, d, { _half: 1, w: dw / 2, hinge: "start", _noJamb: "b" }), h2 = Object.assign({}, d, { _half: 1, at: (+d.at || 0) + dw / 2, w: dw / 2, hinge: "end", _noJamb: "a" });
       u.doors.splice(i, 1, h1); g += drawDoorOnce(i); u.doors.splice(i, 1, h2); g += drawDoorOnce(i); u.doors.splice(i, 1, d);
       g += hit; continue;
     }
@@ -482,10 +500,11 @@ function drawPlan() {
     // a point by the jamb J: uu along the opening (into it), nn from the swing face into the wall (negative: out in the room)
     const pt2 = (J, s2, uu, nn) => [J[0] + ctr[0] + al[0] * s2 * uu + sn[0] * (t / 2 - nn), J[1] + ctr[1] + al[1] * s2 * uu + sn[1] * (t / 2 - nn)];
     const poly = (ps) => `<polygon points="${ps.map((q) => sx(q[0]) + "," + sy(q[1])).join(" ")}" fill="#fff" stroke="${st}" stroke-width="0.7" />`;
-    for (const [J, s2] of [[a, 1], [b, -1]]) g += poly([[0, 0], [fw, 0], [fw, lt], [fw + stp, lt], [fw + stp, fd], [0, fd]].map(([uu, nn]) => pt2(J, s2, uu, nn)));
+    // a double door's halves: no frame where the two leaves meet
+    for (const [J, s2, nm] of [[a, 1, "a"], [b, -1, "b"]]) if (d._noJamb !== nm) g += poly([[0, 0], [fw, 0], [fw, lt], [fw + stp, lt], [fw + stp, fd], [0, fd]].map(([uu, nn]) => pt2(J, s2, uu, nn)));
     const hinge = d.hinge === "end" ? [b, -1] : [a, 1], other = d.hinge === "end" ? [a, 1] : [b, -1];
-    const lw2 = dw - 2 * fw;
-    const Hp = pt2(hinge[0], hinge[1], fw, 0), tip = pt2(hinge[0], hinge[1], fw, -lw2), shut = pt2(other[0], other[1], fw, 0);
+    const lw2 = dw - (d._noJamb ? fw : 2 * fw), sf = d._noJamb ? 0 : fw;
+    const Hp = pt2(hinge[0], hinge[1], fw, 0), tip = pt2(hinge[0], hinge[1], fw, -lw2), shut = pt2(other[0], other[1], sf, 0);
     g += poly([[fw, 0], [fw + lt, 0], [fw + lt, -lw2], [fw, -lw2]].map(([uu, nn]) => pt2(hinge[0], hinge[1], uu, nn)));
     const cr = (tip[0] - Hp[0]) * (shut[1] - Hp[1]) - (tip[1] - Hp[1]) * (shut[0] - Hp[0]);
     g += `<path d="M ${sx(tip[0])} ${sy(tip[1])} A ${lw2 * SC} ${lw2 * SC} 0 0 ${cr > 0 ? 1 : 0} ${sx(shut[0])} ${sy(shut[1])}" fill="none" stroke="${st}" stroke-width="${sel ? 1.4 : 0.45}" />`;
@@ -544,7 +563,7 @@ function topBar() {
   }
   G.push([{ html: sel("data-alines", [["off", "Area lines: off"], ["saleable", "Saleable line"], ["gfa", "GFA line"], ["both", "Saleable + GFA"]], ALINES(), "The saleable and GFA lines") }, { html: sel("data-dims", [["chains", "Dims: chains"], ["overall", "Dims: overall"], ["off", "Dims: off"]], DIMS(), "Dimensions") }]);
   if (can) G.push([{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }]);
-  return PT.toolbar(G);
+  return PT.toolbar(G, null, "units");
 }
 
 /* the dimension chains: a tick at every wall line along each side, the room spans between, the overall outside */

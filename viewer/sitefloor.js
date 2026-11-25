@@ -38,6 +38,7 @@ let WSEL = null;          // the selected floor wall: index into the floor's wal
 let WSEG = 0;             // its selected segment
 let OPSEL = null;         // the selected opening: {ci, di} on a core piece, or {wi, oi} on a floor wall
 let SPSEL = false;        // the corridor (its spine) selected
+let SPPT = null;          // a selected point of it (a bend): its turn in the bar
 let WALLDRAW = null;      // a polyline being drawn: {kind: wall|corridor|lobby, pts, hover, typed}
 let JOINA = null;         // the join tool: the first wall picked
 let VSEL = null;          // the selected corner of the plate
@@ -94,10 +95,27 @@ export function init(ctx) {
     escape: () => { if (WALLDRAW) { WALLDRAW = null; return drawPlan(); } if (TOOL !== "select") { setTool("select"); return; } clearSel(); drawPlan(); },
     enter: () => { if (!WALLDRAW) return false; if (WALLDRAW.typed) typedPoint(); else finishDraw(); },
     tab: () => { if (!WALLDRAW || WALLDRAW.kind !== "wall") return false; const j = WT().just; setPref("fl-wj", j === "c" ? "l" : j === "l" ? "r" : "c"); drawPlan(); },
-    v: () => setTool("select"), w: () => setTool("wall"), x: () => setTool("split"), j: () => setTool("join"), c: () => setTool("corridor"), l: () => setTool("lobby"),
-    u: () => setTool("unit"), s: () => setTool("add:stair"), d: () => { PT.toggleLibrary(); drawPlan(); }, g: () => { setPref("fl-grid", GRID() ? "off" : "on"); drawPlan(); },
-    f: () => { VIEWKEY = ""; PZ.reset(ZM); drawPlan(); },
   });
+  // the keys the user can change (the shortcuts table: ? or the ⌨ button)
+  const tl = (id, key, label, group) => ({ id, key, label, group: group || "Draw", run: () => (plan() ? onTool(id) : false) });
+  PT.KS.register("floors", () => ON && !$("#st-fpanel").hidden, [
+    { id: "select", key: "v", label: "Select and move", group: "Draw", run: () => (plan() ? setTool("select") : false) },
+    tl("wall", "w", "Wall"), tl("split", "x", "Cut a wall"), tl("join", "j", "Join walls"),
+    tl("corridor", "c", "Corridor"), tl("lobby", "l", "Lobby / passage"),
+    tl("unit", "u", "Unit", "Add"), tl("add:stair", "s", "Staircase", "Add"), tl("add:lift", "i", "Lift", "Add"), tl("add:refuse", "r", "Refuse room", "Add"), tl("add:riser", "e", "E&M riser", "Add"), tl("add:lobby", "b", "Protected lobby", "Add"),
+    tl("lib", "d", "Doors, windows, openings library", "Add"),
+    { id: "grid", key: "g", label: "Grid on / off", group: "View", run: () => onTool("grid") },
+    { id: "snap", key: "n", label: "Snap on / off", group: "View", run: () => onTool("snap") },
+    { id: "fit", key: "f", label: "Fit the plan in the window", group: "View", run: () => { if (VIEW !== "plan") return false; VIEWKEY = ""; PZ.reset(ZM); drawPlan(); } },
+    tl("fitplate", "p", "Fit the plate round its units and core", "Edit"),
+    { id: "v:3d", key: "t", label: "Plan / 3D", group: "View", run: () => onTool(VIEW === "plan" ? "v:3d" : "v:plan") },
+  ], [
+    { keys: "Ctrl+Z / Ctrl+Y", label: "Undo / redo", group: "Edit" }, { keys: "Ctrl+C / Ctrl+X / Ctrl+V", label: "Copy / cut / paste", group: "Edit" }, { keys: "Ctrl+D", label: "Duplicate", group: "Edit" },
+    { keys: "Delete", label: "Remove the selected", group: "Edit" }, { keys: "Esc", label: "Stop drawing / clear the selection", group: "Edit" }, { keys: "Right-click", label: "Menu: copy, paste, add a door…", group: "Edit" },
+    { keys: "Enter / double-click", label: "End a wall or corridor", group: "While drawing" }, { keys: "Tab", label: "Wall line: centre / left / right", group: "While drawing" },
+    { keys: "0–9 .", label: "Type the next segment's length", group: "While drawing" }, { keys: "Shift", label: "Any angle (no 15° steps)", group: "While drawing" }, { keys: "Alt", label: "No snapping", group: "While drawing" },
+    { keys: "Wheel / pinch", label: "Zoom", group: "View" }, { keys: "Drag the empty plan", label: "Pan", group: "View" },
+  ], "4 · Floors");
   // for the browser tests: the layout, and a plan point on the screen
   window.__floors = { last: () => LAST, screen: (p) => { const b = $("#st-fplan").getBoundingClientRect(); return [b.left + OX + (p[0] - X0) * SC, b.top + OY + (p[1] - Y0) * SC]; }, leg: (k, p) => fromLeg(legK(k), p) };
   // digits typed while drawing: the next segment's length
@@ -108,7 +126,7 @@ export function init(ctx) {
   }, true);
 }
 const mid = () => (LAST ? [LAST.L / 2, LAST.D / 2] : [0, 0]);
-function clearSel() { PSEL = CSEL = WSEL = VSEL = PTSEL = OPSEL = null; SPSEL = false; SWAP = false; JOINA = null; }
+function clearSel() { PSEL = CSEL = WSEL = VSEL = PTSEL = OPSEL = SPPT = null; SPSEL = false; SWAP = false; JOINA = null; }
 function setTool(t) {
   TOOL = t; WALLDRAW = null; JOINA = null; LIBHOV = null;
   if (t !== "select") clearSel();
@@ -373,7 +391,7 @@ function toolbarHtml() {
   G.push([{ id: "grid", icon: "grid", title: "Grid: 1 m background and the structural grid", key: "G", on: GRID() }, { id: "snap", icon: "snap", title: "Snap to edges and the grid (hold Alt: free)", on: SNAP() },
     ...(can ? [{ id: "undo", icon: "undo", title: "Undo", key: "Ctrl+Z" }, { id: "redo", icon: "redo", title: "Redo", key: "Ctrl+Y" }, { id: "fitplate", icon: "corner", title: "Fit the plate round its units and core" }, { id: "reset", icon: "reset", title: "Reset the units to automatic", disabled: !(LAST && LAST.edited) }] : [])]);
   G.push(viewG);
-  return PT.toolbar(G);
+  return PT.toolbar(G, null, "floors");
 }
 function mountBars() {
   if (!ON) return PT.unmount("floors");
@@ -408,8 +426,11 @@ function propHtml() {
   }
   if (SPSEL) {
     const sp = r.spine.path, lens = sp.slice(1).map((q, k) => Math.hypot(q[0] - sp[k][0], q[1] - sp[k][1]));
-    return PT.propBar({ icon: "corridor", text: "Corridor", sub: r.multi ? `${r.legs.length} legs · ${lens.map(f1).join(" + ")} m` : `${f1(lens[0])} m` }, [
-      { key: "f.corridor", label: "width", value: o.corridor, unit: "m", step: 0.05 },
+    const ang = (k) => Math.round(Math.atan2(-(sp[k + 1][1] - sp[k][1]), sp[k + 1][0] - sp[k][0]) * 1800 / Math.PI) / 10;
+    const legF = lens.flatMap((L, k) => [{ key: "s.len." + k, label: lens.length > 1 ? `leg ${k + 1}` : "length", value: L, unit: "m", w: 64, title: "Its length: the corridor beyond it moves along" }, { key: "s.ang." + k, label: "∠", value: ang(k), unit: "°", step: 0.5, dp: 1, w: 56, title: "Its direction on the plan: the corridor beyond it turns" }]);
+    const bendF = SPPT != null && SPPT > 0 && SPPT < sp.length - 1 ? [{ key: "s.bend." + SPPT, label: `bend ${SPPT}`, value: bendAt(sp, SPPT), unit: "°", step: 0.5, dp: 1, w: 56, title: "The angle between the two legs at this bend (180°: straight on)" }] : [];
+    return PT.propBar({ icon: "corridor", text: "Corridor", sub: r.multi ? `${r.legs.length} legs` : "drag it across, or its + to bend it" }, [
+      { key: "f.corridor", label: "width", value: o.corridor, unit: "m", step: 0.05 }, ...legF, ...bendF,
       ...(r.multi ? [{ key: "s.coreLeg", type: "sel", label: "core in", value: r.coreLeg, options: r.legs.map((l) => [l.k, "leg " + (l.k + 1)]) }] : []),
     ], acts([["s:bend", "bend", "Add a bend in the longest leg's middle; drag it out"], ["s:straight", "reset", "Back to one straight corridor", !(x.g.floor || {}).spine]]));
   }
@@ -493,13 +514,19 @@ function onTool(id) {
   }
   if (k === "vx" && a === "del") return removeCorner(VSEL);
   if (k === "s") {
-    if (a === "straight") { SPSEL = false; return editFloor((f) => { delete f.spine; delete f.legSeq; delete f.coreLeg; if (f.pieces && f.pieces.some((c) => c.leg)) delete f.pieces; }); }
+    if (a === "straight") {
+      // one straight corridor along the plate, through the first leg's middle
+      const sp = LAST.spine.path, y = (sp[0][1] + sp[1][1]) / 2, xs = LAST.F.poly.map((p) => p[0]);
+      const line = [[Math.min(...xs), y], [Math.max(...xs), y]];
+      SPSEL = false;
+      return editFloor((f) => { carry(f, line); delete f.spine; f.corrY = R3(y - (Number(opts(cur()).corridor) || 1.5) / 2); });
+    }
     if (a === "bend") return editSpine((sp) => { let best = 0, bl = -1; for (let j = 0; j < sp.length - 1; j++) { const l = WC.segLen(sp, j); if (l > bl) { bl = l; best = j; } } const p0 = sp[best], p1 = sp[best + 1]; sp.splice(best + 1, 0, [R3((p0[0] + p1[0]) / 2), R3((p0[1] + p1[1]) / 2)]); return sp; });
   }
 }
 function onProp(key, v) {
   const r = LAST, x = cur(); if (!r || !x || !C.can()) return;
-  const num = parseFloat(v), [k, a] = key.split(".");
+  const num = parseFloat(v), k = key.split(".")[0], a = key.slice(k.length + 1);
   if (k === "f") return setFloor(a, v);
   if (k === "t") {
     if (a === "t") setPref("fl-wt", num > 0 ? String(num) : "");
@@ -540,6 +567,16 @@ function onProp(key, v) {
     return editPlate((P) => { if (a === "x") P[i][0] = num; if (a === "y") P[i][1] = num; if (a === "len" && num > 0) { const n2 = (i + 1) % P.length, d = [P[n2][0] - P[i][0], P[n2][1] - P[i][1]], L = Math.hypot(...d) || 1; P[n2] = [R3(P[i][0] + d[0] / L * num), R3(P[i][1] + d[1] / L * num)]; } return P; });
   }
   if (k === "s" && a === "coreLeg") return editFloor((f) => { f.coreLeg = +v; delete f.pieces; delete f.legSeq; });
+  if (k === "s" && /^(len|ang|bend)\.\d+$/.test(a) && !isNaN(num)) {
+    const [what, js] = a.split("."), j = +js;
+    return editSpine((sp) => {
+      if (what === "len") { if (!(num > 0.5)) return null; const d = WC.dirOf(sp[j], sp[j + 1]).d, np = [sp[j][0] + d[0] * num, sp[j][1] + d[1] * num]; return moveRest(sp, j + 1, [np[0] - sp[j + 1][0], np[1] - sp[j + 1][1]]); }
+      if (what === "ang") return turnRest(sp, j, -num * Math.PI / 180 - Math.atan2(sp[j + 1][1] - sp[j][1], sp[j + 1][0] - sp[j][0]));
+      // a bend: the angle between its legs; the legs after it turn about it, the way it turns now
+      const cur0 = bendAt(sp, j), t0 = turnAt(sp, j), want = Math.max(1, Math.min(180, num));
+      return turnRest(sp, j, (t0 >= 0 ? 1 : -1) * (want - cur0) * Math.PI / 180);
+    }, true);
+  }
   if (k === "u") {
     const q = r.placed[PSEL], me = entryOf(q), l = legK(me.leg);
     if (a === "type") return edit((SQ) => { SQ(me.leg)[me.band][me.i].u = v; return PSEL; });
@@ -560,6 +597,12 @@ function onProp(key, v) {
     }
   }
 }
+/* a spine's bend k: the angle between its legs (180: straight on), and its turn (signed, on the plan) */
+function turnAt(sp, k) { const a0 = Math.atan2(-(sp[k][1] - sp[k - 1][1]), sp[k][0] - sp[k - 1][0]), a1 = Math.atan2(-(sp[k + 1][1] - sp[k][1]), sp[k + 1][0] - sp[k][0]); let t = (a1 - a0) * 180 / Math.PI; while (t > 180) t -= 360; while (t < -180) t += 360; return t; }
+function bendAt(sp, k) { return Math.round((180 - Math.abs(turnAt(sp, k))) * 10) / 10; }
+/* the points from i on moved by d; the points after j turned by an angle about point j (y down: positive turns clockwise on the plan) */
+function moveRest(sp, i, d) { return sp.map((p, k) => (k >= i ? [p[0] + d[0], p[1] + d[1]] : p)); }
+function turnRest(sp, j, an) { const c = Math.cos(an), s2 = Math.sin(an), o = sp[j]; return sp.map((p, k) => (k > j ? [o[0] + (p[0] - o[0]) * c - (p[1] - o[1]) * s2, o[1] + (p[0] - o[0]) * s2 + (p[1] - o[1]) * c] : p)); }
 /* the selected opening's stored record, edited */
 function editOpening(fn) {
   const s = OPSEL; if (!s) return;
@@ -579,17 +622,55 @@ function atOnFace(c, d) {
   return Math.max(0, Math.min(1, (m - a) / (L || 1)));
 }
 /* the corridor's spine edited (one made from the straight corridor first) */
-function editSpine(fn) {
+function editSpine(fn, keepSel) {
+  const sp0 = (LAST.spine.path || []).map((p) => p.slice());
+  const out0 = fn(sp0.map((p) => p.slice()));
+  if (!out0 || out0.length < 2) return;
+  const out = out0.map((p) => [R3(p[0]), R3(p[1])]);
+  // the corridor kept on the plate
+  if (!out.every(onPlate)) return toast("The corridor would leave the floor plate", true);
   return editFloor((f) => {
-    const sp = (f.spine && Array.isArray(f.spine.path) ? f.spine.path : LAST.spine.path).map((p) => p.slice());
-    const out = fn(sp, f);
-    if (!out || out.length < 2) return;
-    const was = !!f.spine;
+    carry(f, out);
     f.spine = { path: out };
-    if (!was) { delete f.seq; delete f.corrY; if (Array.isArray(f.pieces)) for (const c of f.pieces) c.leg = c.leg || 0; }
-    if (out.length !== (LAST.spine.path || []).length) { delete f.legSeq; }
-    SPSEL = true;
+    SPSEL = true; if (!keepSel) SPPT = null;
   });
+}
+/* a point on the plate, its edges included (within 50 mm) */
+function onPlate(p) {
+  const P = LAST.F.poly; if (WC.inPoly(P, p[0], p[1])) return true;
+  for (let i = 0; i < P.length; i++) { const q = WC.nearestOnPath(p, [P[i], P[(i + 1) % P.length]]); if (q && q.d <= 0.05) return true; }
+  return false;
+}
+/* the units and the core as they stand, carried onto a new corridor line, so none is lost */
+function carry(f, out) {
+  // both ways tried - each unit where it stands, or in its order laid along the new legs - the one that places more, with fewer clashes, kept
+  const x = cur(), list = units(), mix = [];
+  for (const q of x.g.mix || []) { const u = list.find((v) => v.name === q.u); if (u) mix.push({ u, n: Number(q.n) || 0 }); }
+  const trial = (M3) => {
+    const o = Object.assign({}, opts(x), { seq: M3.seq || null, legSeq: M3.legSeq || null, spine: { path: out }, pieces: M3.pieces || null, corrY: null });
+    const r = FC.layoutLegs(Object.assign(o, { poly: x.fp, mix, lib: list, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1 }));
+    // the units standing clear (inside the plate, on nothing else) first, then the fewer clashes; those that do not fit stay in the floor's list
+    trial.last = r;
+    return r ? [r.placed.filter((q) => !(q.flags && q.flags.length)).length * 10 + r.core.filter((c) => !(c.flags && c.flags.length)).length, -r.issues.length] : [-1, -1e9];
+  };
+  const A1 = FC.migrateToSpine(LAST, out, true), A2 = FC.migrateToSpine(LAST, out, false), cands = [A1, A2];
+  // each where it stands, but those that then clash laid along their leg again
+  trial(A1);
+  if (trial.last && A1.legSeq) {
+    const A3 = JSON.parse(JSON.stringify(A1));
+    for (const l of trial.last.legs) for (const q of l.r.placed) if (q.flags && q.flags.length) { const e = ((A3.legSeq[l.k] || {})[q.band] || [])[q.si]; if (e) delete e.x; }
+    cands.push(A3);
+  }
+  // a core never moved by hand is laid out again; a floor never edited, all of it
+  if (!LAST.coreEdited) cands.push(Object.assign({}, A2, { pieces: null }));
+  if (!LAST.coreEdited && !LAST.edited) cands.push({ legSeq: null, seq: null, pieces: null, fresh: true });
+  let M2 = cands[0], best = null;
+  for (const c of cands) { const sc = trial(c); if (!best || sc[0] > best[0] || (sc[0] === best[0] && sc[1] > best[1])) { best = sc; M2 = c; } }
+  if (M2.seq) { f.seq = M2.seq; delete f.legSeq; delete f.coreLeg; }
+  else if (M2.legSeq) { f.legSeq = M2.legSeq; delete f.seq; if (f.coreLeg != null && f.coreLeg >= out.length - 1) delete f.coreLeg; }
+  else { delete f.seq; delete f.legSeq; }
+  delete f.corrY;
+  if (M2.pieces && LAST.core.length) f.pieces = M2.pieces; else if (!M2.pieces) delete f.pieces;
 }
 
 /* ---------- the plan */
@@ -614,11 +695,14 @@ function drawPlan() {
   let bgGrid = "";
   let g = `<polygon points="${poly.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="#fbf3dc" fill-opacity="0.85" stroke="#7a6a3a" stroke-width="1.5" />`;
   // the corridor (a bending one: its mitred shape, the knuckles too); picked to edit its line
-  const spPath = DRAG && DRAG.k === "spt" && DRAG.path ? DRAG.path : r.spine.path;
+  const spPath = DRAG && (DRAG.k === "spt" || DRAG.k === "spsel") && DRAG.path ? DRAG.path : r.spine.path;
   const cpoly = WC.wallPoly(spPath, r.cw, "c");
   g += `<polygon class="fl-sp" data-spine="1" points="${cpoly.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="#eceff3" stroke="${SPSEL ? "#f28022" : "#9aa5b1"}" stroke-width="${SPSEL ? 2 : 0.8}" />`;
   const PTW = drawPlan.ptw = [];
-  for (const l of legs()) g += drawLeg(l, sx, sy, fs, PTW);
+  // every leg's left-over and strips first, then every leg's units and core over them, so no leg covers another's units
+  const LG = legs().map((l) => drawLeg(l, sx, sy, fs, PTW));
+  for (const q of LG) g += q.under;
+  for (const q of LG) g += q.over;
   // the walls drawn on the floor, at any angle: their outlines first, their fills over them, so walls that meet read as one
   const FILL = { blk: "url(#fl-blk)", rc: "url(#fl-rc)" };
   const wview = (r.walls || []).map((w, wi) => (DRAG && DRAG.moved && (DRAG.k === "fwpt" || DRAG.k === "fwseg") && DRAG.i === wi && DRAG.path ? FC.floorWalls([Object.assign({}, w, { path: DRAG.path })], w.t)[0] || w : w));
@@ -641,6 +725,21 @@ function drawPlan() {
     g += `<polyline points="${pts(spPath)}" fill="none" stroke="#f28022" stroke-width="1.5" stroke-dasharray="6 4" pointer-events="none" />`;
     spPath.forEach((p, k) => { g += `<circle class="fl-ppt" data-spt="${k}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7.5" fill="#fff" stroke="#f28022" stroke-width="2.5" />`; });
     for (let k = 0; k < spPath.length - 1; k++) { const m2 = [(spPath[k][0] + spPath[k + 1][0]) / 2, (spPath[k][1] + spPath[k + 1][1]) / 2]; g += `<g class="fl-ppt" data-spm="${k}"><circle data-spm="${k}" cx="${sx(m2[0])}" cy="${sy(m2[1])}" r="7" fill="#f28022" stroke="#fff" stroke-width="1.5" /><text x="${sx(m2[0])}" y="${sy(m2[1]) + 4}" text-anchor="middle" font-size="12" fill="#fff" pointer-events="none">+</text></g>`; }
+  }
+  // the corridor's legs: each its length and direction, each bend its turn (the corridor selected)
+  if (SPSEL) {
+    const ang = (a, b) => Math.atan2(-(b[1] - a[1]), b[0] - a[0]) * 180 / Math.PI;
+    for (let k = 0; k < spPath.length - 1; k++) {
+      const a = spPath[k], b = spPath[k + 1], m2 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], L = Math.hypot(b[0] - a[0], b[1] - a[1]), dg = ang(a, b);
+      g += `<text x="${sx(m2[0])}" y="${sy(m2[1]) - Math.max(10, r.cw * SC / 2 + 6)}" text-anchor="middle" font-size="12" font-weight="700" fill="#c25e0a" paint-order="stroke" stroke="#fff" stroke-width="3.5" pointer-events="none">${f1(L)} m · ${Math.round(dg * 10) / 10}°</text>`;
+    }
+    for (let k = 1; k < spPath.length - 1; k++) {
+      const a0 = ang(spPath[k - 1], spPath[k]), a1 = ang(spPath[k], spPath[k + 1]); let t = a1 - a0; while (t > 180) t -= 360; while (t < -180) t += 360;
+      const P0 = spPath[k], R2 = 24, s0 = (180 + a0) * Math.PI / 180, s1 = a1 * Math.PI / 180;
+      const e0 = [sx(P0[0]) + R2 * Math.cos(s0), sy(P0[1]) - R2 * Math.sin(s0)], e1 = [sx(P0[0]) + R2 * Math.cos(s1), sy(P0[1]) - R2 * Math.sin(s1)];
+      g += `<path d="M ${e0[0]} ${e0[1]} A ${R2} ${R2} 0 0 ${t > 0 ? 1 : 0} ${e1[0]} ${e1[1]}" fill="none" stroke="#1f6feb" stroke-width="1.5" pointer-events="none" />`;
+      g += `<text x="${sx(P0[0]) + 30}" y="${sy(P0[1]) + 30}" font-size="12" font-weight="700" fill="#1f6feb" paint-order="stroke" stroke="#fff" stroke-width="3.5" pointer-events="none">${Math.round(Math.abs(180 - Math.abs(t)) * 10) / 10}°${SPPT === k ? " ✎" : ""}</text>`;
+    }
   }
   // a library opening dragged over: where it would go
   if (LIBHOV) g += `<line x1="${sx(LIBHOV.a[0])}" y1="${sy(LIBHOV.a[1])}" x2="${sx(LIBHOV.b[0])}" y2="${sy(LIBHOV.b[1])}" stroke="#1f6feb" stroke-width="${Math.max(5, LIBHOV.t * SC)}" stroke-opacity="0.55" pointer-events="none" />`;
@@ -703,6 +802,7 @@ function drawLeg(l, SX, SY, fs, PTW) {
     g += strip(J.lobby.x0, J.lobby.x1, J.lobW, "fl-lx", "#1565c0", `lift lobby exempt ${f3(J.lobW)} m`);
   } else g += strip(CX0, CX1, J.corrW || 0, "fl-ex", "#2e7d32", `corridor exempt ${f3(J.corrW || 0)} m (JPN 1)`);
   if ((CX1 - CX0) * SC > 160) g += `<text x="${sx((CX0 + CX1) / 2)}" y="${sy(r.y0 + r.cw / 2) + fs / 3}" text-anchor="middle" font-size="${fs}" fill="#5b6b7b" pointer-events="none">CORRIDOR ${f3(r.cw)} m</text>`;
+  const under = g; g = "";
   const hot = DRAG && DRAG.moved && (DRAG.k === "unit" || DRAG.k === "core") && DRAG.leg === l.k ? dropTarget(DRAG) : null;
   const cwl = r.coreWall || 0.25;
   // the core's pieces where they are (one being dragged at its new place), their doors with them
@@ -812,7 +912,9 @@ function drawLeg(l, SX, SY, fs, PTW) {
     g += `<rect class="fl-u" data-pi="${pi}" x="${sx(ox)}" y="${sy(oy)}" width="${q.w * SC}" height="${q.h * SC}" fill="transparent" />`;
   }
   for (const w of PTW.filter((q) => q.leg === l.k)) { const sel = PTSEL && PTSEL.key === w.key && PTSEL.leg === l.k; g += `<rect class="fl-fw" data-ptw="${w.key}" data-leg="${l.k}" x="${sx(w.x0) - 3}" y="${sy(w.y0)}" width="${(w.x1 - w.x0) * SC + 6}" height="${(w.y1 - w.y0) * SC}" fill="${sel ? "rgba(242,128,34,.25)" : "transparent"}" stroke="${sel ? "#f28022" : "none"}" stroke-width="1.5" />`; }
-  return `<g transform="${tf}" data-legg="${l.k}">${g}</g>`;
+  // a piece or unit dragged in from another leg: where it lands, turned with this leg
+  if (DRAG && DRAG.cross && DRAG.cross.k === l.k) { const c2 = DRAG.cross; g += `<rect x="${sx(c2.x)}" y="${sy(c2.y)}" width="${c2.w * SC}" height="${c2.h * SC}" fill="rgba(242,128,34,.18)" stroke="#f28022" stroke-width="2" stroke-dasharray="6 3" pointer-events="none" />`; }
+  return { under: `<g transform="${tf}" pointer-events="none">${under}</g>`, over: `<g transform="${tf}" data-legg="${l.k}">${g}</g>` };
 }
 
 /* a door in plan: its hinge H, closed end O, the side it opens to sn - hinged (leaf and swing), double, sliding, an opening, a window */
@@ -991,7 +1093,7 @@ function finishDraw() {
   WALLDRAW = { kind: W.kind, pts: [] };
   if (pts.length < 2) return drawPlan();
   if (W.kind === "wall") { const wt = WT(); return editWalls((A) => { A.push({ path: pts.map((p) => [R3(p[0]), R3(p[1])]), t: wt.t || Number(opts(cur()).coreWall) || 0.25, m: wt.m, just: wt.just }); return A.length - 1; }); }
-  if (W.kind === "corridor") { setTool("select"); toast("The corridor follows its new line; the units are laid along it again"); return editFloor((f) => { f.spine = { path: pts.map((p) => [R3(p[0]), R3(p[1])]) }; delete f.legSeq; delete f.seq; delete f.corrY; delete f.coreLeg; delete f.pieces; SPSEL = true; }); }
+  if (W.kind === "corridor") { setTool("select"); return editSpine(() => pts); }
   if (W.kind === "lobby") {
     const l = legAt(pts[0]), lp = pts.map((p) => toLeg(l, p)).map((p) => [R3(p[0] - l.A[0]), R3(p[1] - l.A[1])]);
     return editCore((P) => { P.push({ kind: "passage", label: "Passage", path: FC.orthoPath(lp), width: Number(opts(cur()).corridor) || 1.5, leg: l.k, auto: false }); return P.length - 1; });
@@ -1202,7 +1304,7 @@ function wirePlan() {
     if (t.dataset.vi != null && LAST && can) DRAG = { k: "vert", i: +t.dataset.vi, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false };
     else if (t.dataset.pi != null && LAST) { const L1 = localOf("placed", +t.dataset.pi, "po"); DRAG = { k: "unit", i: +t.dataset.pi, li: L1.i, leg: L1.l.k, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; }
     else if (t.dataset.ci != null && LAST) { const L1 = localOf("core", +t.dataset.ci, "co"); DRAG = { k: "core", i: +t.dataset.ci, li: L1.i, leg: L1.l.k, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; }
-    else if (t.dataset.spine != null && LAST) DRAG = { k: "spsel", x: ev.clientX, y: ev.clientY, moved: false };
+    else if (t.dataset.spine != null && LAST) { const q = WC.nearestOnPath(toPlan(ev), LAST.spine.path); DRAG = { k: "spsel", seg: q ? q.seg : 0, x: ev.clientX, y: ev.clientY, moved: false }; }
     else pan = { x: ev.clientX, y: ev.clientY, px: ZM.px, py: ZM.py, moved: false };
     cap(host, ev); ev.preventDefault();
   });
@@ -1213,7 +1315,7 @@ function wirePlan() {
     if (!DRAG) return;
     const rdx = ev.clientX - DRAG.x, rdy = ev.clientY - DRAG.y;
     if (!DRAG.moved && Math.hypot(rdx, rdy) < 6) return;
-    if (!C.can() || DRAG.k === "spsel") return;
+    if (!C.can() || (DRAG.k === "spsel" && !SPSEL)) return;
     DRAG.moved = true;
     const l = DRAG.leg != null ? legK(DRAG.leg) : null;
     const [dx, dy] = l ? rotIn(l, rdx, rdy) : [rdx, rdy];
@@ -1240,6 +1342,14 @@ function wirePlan() {
       const mv = (k) => { const p0 = w.path[k]; let q = [p0[0] + dx / SC, p0[1] + dy / SC]; if (DRAG.k === "fwpt" && !ev.shiftKey) { const nb = P[k - 1] || P[k + 1]; if (nb) q = WC.snapAngle(nb, q, 15); } P[k] = snap ? [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20] : [R3(q[0]), R3(q[1])]; };
       if (DRAG.k === "fwpt") mv(DRAG.p); else { mv(DRAG.p); mv(DRAG.p + 1); }
       DRAG.path = P;
+    } else if (DRAG.k === "spsel") {
+      // a leg dragged across: both its points square to it, the corridor kept on the plate
+      const sp = LAST.spine.path, j = DRAG.seg, { nl } = WC.dirOf(sp[j], sp[j + 1]);
+      let off = (dx * nl[0] + dy * nl[1]) / SC; if (snap) off = Math.round(off * 20) / 20;
+      const fits = (o) => { const P2 = sp.map((p, k) => (k === j || k === j + 1 ? [p[0] + nl[0] * o, p[1] + nl[1] * o] : p)); return WC.wallPoly([P2[j], P2[j + 1]], LAST.cw, "c").every(onPlate) ? P2 : null; };
+      let P2 = fits(off); for (let t = 0; !P2 && t < 12; t++) { off /= 2; P2 = fits(off); }
+      DRAG.path = P2 ? P2.map((p) => [R3(p[0]), R3(p[1])]) : sp; DRAG.off = P2 ? off : 0;
+      host.title = `${off >= 0 ? "+" : ""}${f3(off)} m`;
     } else if (DRAG.k === "spt") {
       const sp = LAST.spine.path.map((q) => q.slice()), p0 = sp[DRAG.p], nb = sp[DRAG.p - 1] || sp[DRAG.p + 1];
       let q = [p0[0] + dx / SC, p0[1] + dy / SC];
@@ -1263,7 +1373,20 @@ function wirePlan() {
       const w = LAST.walls[DRAG.wi], o = w.openings[DRAG.oi], P = toPlan(ev), [oa, ob] = WC.offsets(w.t, w.just), cpath = WC.offsetPath(w.path, (oa + ob) / 2), q = WC.nearestOnPath(P, cpath);
       const po = WC.placeOpening(w, q.seg, q.s, o), d = WC.dirOf(cpath[q.seg], cpath[q.seg + 1]).d;
       DRAG.op = po; LIBHOV = { a: [cpath[q.seg][0] + d[0] * po.at, cpath[q.seg][1] + d[1] * po.at], b: [cpath[q.seg][0] + d[0] * (po.at + po.w), cpath[q.seg][1] + d[1] * (po.at + po.w)], t: w.t };
-    } else DRAG.at = dragAt(DRAG, ev.altKey);
+    } else {
+      DRAG.at = dragAt(DRAG, ev.altKey);
+      // along the corridor into another leg: it turns with that leg
+      DRAG.cross = null;
+      if (MULTI() && (DRAG.k === "unit" || DRAG.k === "core")) {
+        const tl = legAt(toPlan(ev));
+        if (tl && tl.k !== DRAG.leg) {
+          const own = legK(DRAG.leg).r, it = DRAG.k === "unit" ? own.placed[DRAG.li] : own.core[DRAG.li], lp = toLeg(tl, toPlan(ev));
+          let y = lp[1] - it.h / 2, band = null;
+          if (DRAG.k === "unit") { band = lp[1] > (tl.r.y0 + tl.r.y1) / 2 ? "s" : "n"; y = band === "s" ? tl.r.y1 + it.wt / 2 : tl.r.y0 - it.h - it.wt / 2; }
+          DRAG.cross = { k: tl.k, x: R3(lp[0] - it.w / 2), y: R3(y), w: it.w, h: it.h, band };
+        }
+      }
+    }
     if (!drawPlan.raf) drawPlan.raf = requestAnimationFrame(() => { drawPlan.raf = 0; drawPlan(); });
   });
   const end = (ev) => {
@@ -1273,11 +1396,11 @@ function wirePlan() {
     if (!DRAG) return;
     const d = DRAG; DRAG = null; LIBHOV = null;
     const r = LAST;
-    if (d.k === "spsel") { const was = SPSEL; clearSel(); SPSEL = !was; return drawPlan(); }
+    if (d.k === "spsel") { host.title = ""; if (d.moved && d.path && SPSEL) return editSpine(() => d.path, true); const was = SPSEL; clearSel(); SPSEL = !was; return drawPlan(); }
     if (d.k === "vert") { if (d.moved && d.poly) { VSEL = null; return editPlate(() => d.poly); } const now = Date.now(), dbl = drawPlan.lastV && drawPlan.lastV.i === d.i && now - drawPlan.lastV.t < 450; drawPlan.lastV = { i: d.i, t: now }; if (dbl) { drawPlan.lastV = null; return removeCorner(d.i); } clearSel(); VSEL = d.i; return drawPlan(); }
     if (d.k === "cedge") { if (!d.moved || !d.box) return drawPlan(); const A = legK(d.leg).A, i = pIdx(d.i); return editCore((P) => { Object.assign(P[i], { x: R3(d.box.x - A[0]), y: R3(d.box.y - A[1]), w: d.box.w, h: d.box.h }); return i; }); }
     if (d.k === "fwpt" || d.k === "fwseg") { if (!d.moved || !d.path) return drawPlan(); return editWalls((A) => { A[d.i].path = WC.cleanPath(d.path); return d.i; }); }
-    if (d.k === "spt") { if (!d.moved || !d.path) { SPSEL = true; return drawPlan(); } return editSpine(() => d.path); }
+    if (d.k === "spt") { if (!d.moved || !d.path) { SPSEL = true; SPPT = d.p; return drawPlan(); } SPPT = d.p; return editSpine(() => d.path, true); }
     if (d.k === "ppt") { if (!d.moved || !d.path) return drawPlan(); const A = legK(d.leg).A, i = pIdx(d.i); return editCore((P) => { P[i].path = FC.orthoPath(d.path).map((p) => [R3(p[0] - A[0]), R3(p[1] - A[1])]); if (P[i].for) P[i].auto = false; return i; }); }
     if (d.k === "cdo") {
       if (!d.moved || !d.prev) return drawPlan();
@@ -1290,6 +1413,7 @@ function wirePlan() {
         if (SWAP && CSEL != null && CSEL !== d.i) { const a = pIdx(CSEL), b = pIdx(d.i); SWAP = false; return editCore((P) => { swapCore(P, a, b); return b; }); }
         const was = CSEL === d.i; clearSel(); CSEL = was ? null : d.i; return drawPlan();
       }
+      if (d.cross) { const tl = legK(d.cross.k), i = pIdx(d.i); return editCore((P) => { const q = P[i]; q.leg = tl.k; q.x = R3(d.cross.x - tl.A[0]); q.y = R3(d.cross.y - tl.A[1]); if (Array.isArray(q.path)) { delete q.path; q.auto = !!q.for; } return i; }); }
       const tg = dropTarget(d);
       if (tg && tg.ci != null) { const a = pIdx(d.i), b = pIdx(tg.ci); return editCore((P) => { swapCore(P, a, b); return b; }); }
       const at = d.at || dragAt(d, ev.altKey), A = legK(d.leg).A, i = pIdx(d.i), c0 = legK(d.leg).r.core[d.li];
@@ -1301,6 +1425,7 @@ function wirePlan() {
       const was = PSEL === d.i; clearSel(); PSEL = was ? null : d.i; return drawPlan();
     }
     const tg = dropTarget(d), me = entryOf(q);
+    if (d.cross) { const tl = legK(d.cross.k); return edit((SQ) => { const [e] = SQ(me.leg)[me.band].splice(me.i, 1); e.x = R3(d.cross.x - tl.A[0]); SQ(tl.k)[d.cross.band].push(e); }); }
     if (tg && tg.pi != null) return edit((SQ) => { swapEntries(SQ, me, entryOf(r.placed[tg.pi])); });
     const at = d.at || dragAt(d, ev.altKey), A = legK(d.leg).A;
     return edit((SQ) => {

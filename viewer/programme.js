@@ -13,6 +13,7 @@ import { api, project } from "./nav.js";
 import { ensureSignedIn, header } from "./pagekit.js";
 import { $, esc, toast, pop, closePop, modal, uid, placeAt } from "./tasks-util.js";
 import * as PC from "./progcore.js";
+import { openSheet } from "./keysheet.js";
 
 let RH = 30;                   // row height, px (Format: compact 24 / normal 30 / roomy 38)
 const HEAD = 46;               // header height, px
@@ -2295,9 +2296,11 @@ async function start() {
   wirePanZoom();
 
   // keys
+  $("#pg-keys").addEventListener("click", keySheet);
   document.addEventListener("keydown", (ev) => {
-    if (ev.target.closest && ev.target.closest("input, textarea, select, .t-modal")) return;
+    if (ev.target.closest && ev.target.closest("input, textarea, select, .t-modal, .ks-modal")) return;
     const k = ev.key;
+    if (k === "?" && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { ev.preventDefault(); return keySheet(); }
     if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
     else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "y") { ev.preventDefault(); redo(); }
     else if ((ev.ctrlKey || ev.metaKey) && k === "Enter") { ev.preventDefault(); add("task"); }
@@ -2340,3 +2343,20 @@ function midDay() {
 }
 
 start().catch((e) => { if (!/Set your own password/.test(e.message)) toast(e.message, true); });
+
+/* the page's keys, a table to read (opened with ? or the ⌨ button) */
+function keySheet() {
+  const F = (keys, label, group) => ({ keys, label, group });
+  openSheet("Programme", [], [
+    F("Ctrl+Enter", "A new task under the selected row", "Rows"), F("Delete", "Delete the selected rows", "Rows"),
+    F("Ctrl+C / Ctrl+X / Ctrl+V", "Copy / cut / paste rows", "Rows"), F("Ctrl+D", "Duplicate the selected rows", "Rows"),
+    F("Alt+↑ / Alt+↓", "Move the rows up / down", "Rows"), F("Alt+Shift+← / Alt+Shift+→", "Outdent / indent", "Rows"),
+    F("Alt+← / Alt+→", "Nudge the bars a day earlier / later", "Rows"),
+    F("↑ / ↓", "Select the row above / below", "Select and edit"), F("Shift+↑ / Shift+↓", "Add to the selection", "Select and edit"),
+    F("Ctrl+click / Shift+click", "Pick several rows / a run of rows", "Select and edit"), F("Enter / F2", "Edit the cell", "Select and edit"),
+    F("Type", "Start editing the cell with that letter", "Select and edit"), F("Esc", "Close the properties panel", "Select and edit"),
+    F("Ctrl+Z / Ctrl+Y", "Undo / redo", "Select and edit"),
+    F("+ / −", "Zoom the timescale in / out", "View"), F("Ctrl+wheel / Shift+wheel", "Zoom the timescale", "View"),
+    F("Right-click", "Menu for a row or a bar", "View"), F("?", "This table", "View"),
+  ]);
+}

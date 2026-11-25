@@ -6,6 +6,18 @@
 
 export const ENTRIES = [
   {
+    version: "2027-03-27", date: "27 Nov 2026",
+    items: [
+      "**A bend keeps the units** - adding a bend to the corridor with its + (or drawing a new one) now carries the units and the core over to the new legs, instead of starting the floor again. A core turns with its leg as one group.",
+      "**Move a leg across** - select the corridor and drag one of its legs up or down, square to itself; it stops at the floor plate's edge.",
+      "**Angles on the corridor** - with the corridor selected, each leg shows its length and direction and each bend its angle. Type a leg's angle or length in the property bar, or click a bend point and type its angle, to turn the legs after it.",
+      "**Things turn with the corridor** - drag a unit or a core piece from one leg into another and it turns to that leg. Units at a bend are no longer hidden under the other leg's leftover area, and clashes between legs are flagged.",
+      "**The double door** has a frame at each side only, its two leaves meeting in the middle.",
+      "**Clearer icons**: a unit is a flat with its door, a lift a car with ▲▼, refuse a bin, a riser pipes; Cut is scissors and Join a chain link.",
+      "**Keyboard shortcuts for the tools, and a table of them** - press **?** or the ⌨ icon in 2 · Massing, 3 · Units and 4 · Floors. Click a key in the table and press another to change it (kept in this browser). The **Programme** page has its table too (? or ⌨).",
+    ],
+  },
+  {
     version: "2027-03-26", date: "26 Nov 2026",
     items: [
       "**Site study plans work like a drawing tool** - in 2 · Massing, 3 · Units and 4 · Floors the tools are icons along the top of the plan (hover for their names and keys), and what you select shows its sizes in a **property bar** under them: widths and lengths, wall thickness, a staircase's type, width, riser and going, a door's type and width. Fewer words, more drawing.",
