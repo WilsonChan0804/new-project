@@ -209,8 +209,15 @@ body.st-units #st-tools, body.st-units .st-find, body.st-units #st-hits, body.st
 .un-rh input { width: 52px; }
 .un-ra { margin-left: auto; }
 .un-room { display: flex; align-items: center; gap: 4px; font-size: 12px; margin: 3px 0 0 6px; padding-left: 6px; box-shadow: inset 4px 0 0 var(--c); flex-wrap: wrap; }
-.un-room select { font-size: 12px; width: 120px; }
-.un-room input { width: 52px; font-size: 12px; }
+.un-room select { font-size: 12px; width: auto; flex: 1 1 110px; min-width: 0; max-width: 100%; }
+.un-room input:not([type=checkbox]) { width: 62px; font-size: 12px; }
+.un-room input[type=number] { -moz-appearance: textfield; appearance: textfield; padding-right: 4px; }
+.un-room input[type=number]::-webkit-inner-spin-button, .un-room input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.un-room .un-x { margin-left: auto; flex: none; }
+.un-room .un-l2 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; width: 100%; padding: 2px 0 4px; }
+.un-room .un-l2 label { display: inline-flex; align-items: center; gap: 4px; }
+.un-walls label { min-width: 0; }
+.un-walls select { max-width: 100%; }
 .un-room input[data-un] { width: 100px; }
 .un-room small { color: var(--muted); }
 .un-walls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; }
@@ -219,8 +226,8 @@ body.st-units #st-tools, body.st-units .st-find, body.st-units #st-hits, body.st
 .ms-mix { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; } .ms-mix select { width: 90px !important; } .ms-mix input { width: 40px; }
 body.st-units .leaflet-control-container { display: none; }
 .un-room.sel { background: var(--accent-soft); }
-.un-room .un-nm { width: 96px; }
-.un-room .un-xy input, .un-room .un-wh input { width: 46px; }
+.un-room .un-nm { width: auto; flex: 1 1 90px; min-width: 60px; }
+.un-room .un-xy input, .un-room .un-wh input { width: 58px; }
 .un-room .un-xy { color: var(--muted); }
 .un-party { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .un-r { cursor: pointer; }

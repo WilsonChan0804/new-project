@@ -6,6 +6,16 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-03", date: "26 Nov 2026",
+    items: [
+      "**Dimensions inside the rooms** on 3 · Units: each room's size label is its clear size inside its walls, and the dimension chains run room by room inside the walls, with the walls between, to the outer faces (\"Dims: wall centres\" keeps the old chains).",
+      "**Room names**: bilingual (中 / EN), English or Chinese - the toolbar's Names list on 3 · Units.",
+      "**Templates the office can edit**: a unit made from a template has **Save as the template** - + New from a template then gives that layout to everyone (marked \"edited by the office\"); **Template as built in** brings the original back.",
+      "**Right-click a unit's tab** on 3 · Units: open, rename, duplicate, mirror, save to the office library (or as new), save as the template, SVG, remove.",
+      "**Fixed**: the curtain wall's curb, glass and mullions stop at the walls at its ends (no longer over them); the rooms, doors and balconies in the Units panel are on two lines so every figure shows in full.",
+    ],
+  },
+  {
     version: "2027-04-02", date: "26 Nov 2026",
     items: [
       "**5 · Mix**, a new page: the **flat mix table** - each flat type with its saleable area (ft² or m²), total SA and units, grouped by band (studio, 1-BR, 2-BR, 3-BR, special) with each band's units, % by number and % by area - and the **diagrammatic elevation** of each tower: a row for each floor, each flat in its type's colour with its SA, round the plate (the north side left to right, the core, the south side right to left), the floor groups marked (16 FLOOR, 13+1 FLOOR), the refuge floor, transfer plate, clubhouse, retail, car park and the podium under the towers as bands, the top in mPD. Change a type's colour in the table; notes under it; Excel (coloured), PNG, SVG and Print / PDF. Click a flat to open its floor.",
