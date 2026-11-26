@@ -235,13 +235,13 @@ function onChange(ev) {
     const i = +d["r" + k], r = R(i), CL = clearAll(u), c = CL.boxes[i], v = num(t.value, NaN);
     if (!isFinite(v)) return render();
     // from the figure as shown (to the mm): typed 0.150 less moves the wall 0.150, whatever half-millimetre a wall leaves
-    const cur0 = Math.round({ x: c.x0 - CL.x0, y: c.y0 - CL.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 }[k] * 1000) / 1000, D = Math.round((v - cur0) * 1000) / 1000;
-    if (!D) return render();
+    const cur0 = { x: c.x0 - CL.x0, y: c.y0 - CL.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 }[k], D = v - cur0;
+    if (Math.abs(D) < 2.5e-4) return render();
     const nw = k === "w" ? v : k === "x" ? c.x1 - c.x0 - D : c.x1 - c.x0, nh = k === "h" ? v : k === "y" ? c.y1 - c.y0 - D : c.y1 - c.y0;
     if (nw < 0.5 || nh < 0.5) { toast("A room is 0.5 m inside its walls at least", true); return render(); }
     const axis = k === "x" || k === "w" ? "x" : "y", at = k === "x" ? r.x : k === "y" ? r.y : k === "w" ? r.x + r.w : r.y + r.h;
-    const st0 = store(); st0.list[st0.sel] = U.moveLine(u, axis, at, D, null, null, [r.id], true);
-    return changed();
+    if (!typedMove(u, axis, at, D, [r.id])) render();
+    return;
   }
   const D = (k) => u.doors[+k];
   if (d.dr != null) { D(d.dr).room = t.value; return changed(); }
@@ -695,6 +695,23 @@ function drawPlan() {
     for (const [c, X, Y] of [["n", (B.x0 + B.x1) / 2, B.y0], ["s", (B.x0 + B.x1) / 2, B.y1], ["w", B.x0, (B.y0 + B.y1) / 2], ["e", B.x1, (B.y0 + B.y1) / 2]])
       g += `<circle class="un-fh" data-fh="${SEL.i}:${c}" cx="${sx(X)}" cy="${sy(Y)}" r="5" fill="#fff" stroke="#f28022" stroke-width="2" style="cursor:${c === "n" || c === "s" ? "ns" : "ew"}-resize"><title>Drag to make it ${c === "n" || c === "s" ? "deeper / shallower" : "wider / narrower"} (to a wall face; Alt: free)</title></circle>`;
   }
+  // the selected wall's temporary dimensions (as Revit): the clear width of the room each side of it - click one to type
+  if (SEL && SEL.t === "wall" && C.can()) {
+    const e = f.edges.find((q) => q.key === SEL.key);
+    if (e && !U.isOpen(u, e)) {
+      // about a quarter along the wall: clear of the rooms' names in their middles
+      const v = e.x1 === e.x2, line = v ? e.x1 : e.y1, mid = v ? e.y1 + (e.y2 - e.y1) * 0.27 : e.x1 + (e.x2 - e.x1) * 0.27;
+      const rs = [e.a, e.b].filter(Boolean).map((id) => u.rooms.find((q) => q.id === id)).filter(Boolean);
+      for (const r of rs) {
+        const c = clearBox(r, GEOR), before = v ? Math.abs(r.x + r.w - line) < 0.01 : Math.abs(r.y + r.h - line) < 0.01;
+        const a = v ? c.x0 : c.y0, b = v ? c.x1 : c.y1, at = Math.max(v ? r.y + 0.3 : r.x + 0.3, Math.min(v ? r.y + r.h - 0.3 : r.x + r.w - 0.3, mid));
+        const P = (q) => (v ? [sx(q), sy(at)] : [sx(at), sy(q)]), A = P(a), Bp = P(b), M = [(A[0] + Bp[0]) / 2, (A[1] + Bp[1]) / 2], L = f3(b - a);
+        g += `<line x1="${A[0]}" y1="${A[1]}" x2="${Bp[0]}" y2="${Bp[1]}" stroke="#1f6feb" stroke-width="1" pointer-events="none" />`;
+        for (const T of [A, Bp]) g += v ? `<line x1="${T[0]}" y1="${T[1] - 5}" x2="${T[0]}" y2="${T[1] + 5}" stroke="#1f6feb" stroke-width="1" pointer-events="none" />` : `<line x1="${T[0] - 5}" y1="${T[1]}" x2="${T[0] + 5}" y2="${T[1]}" stroke="#1f6feb" stroke-width="1" pointer-events="none" />`;
+        g += `<g class="un-td" data-td="${before ? "b" : "a"}:${esc(r.id)}"><rect x="${M[0] - 24}" y="${M[1] - 9}" width="48" height="16" rx="8" fill="#fff" stroke="#1f6feb" data-td="${before ? "b" : "a"}:${esc(r.id)}" /><text x="${M[0]}" y="${M[1] + 3}" text-anchor="middle" font-size="10" font-weight="700" fill="#1f6feb" data-td="${before ? "b" : "a"}:${esc(r.id)}">${L}</text><title>Click and type the clear width: the selected wall moves (the room beside it follows)</title></g>`;
+      }
+    }
+  }
   // the labels: one a space, at its largest piece, its area when it has more than one
   for (const r of u.rooms) {
     if (r.space && r.space !== r.id) continue;
@@ -808,6 +825,51 @@ function wallRects(u, f) {
   for (const d of u.doors || []) { const r = u.rooms.find((q) => q.id === d.room); if (r) { const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); OPS.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); } }
   return wallGeom(u, f.edges, { tOf, isOpen: (e) => U.isOpen(u, e), solid: (e) => U.solidPart(u, e), openings: OPS });
 }
+/* a figure typed: the wall line moves by D (to the mm), the rooms on it with it (as a drag); refused when a room would be
+   under 0.5 m inside its walls */
+function typedMove(u, axis, at, D, seed) {
+  if (Math.abs(D) < 2.5e-4) return false;
+  const v = U.moveLine(u, axis, at, D, null, null, seed, true), cl = clearAll(v);
+  if (cl.boxes.some((c) => c.x1 - c.x0 < 0.5 - 1e-6 || c.y1 - c.y0 < 0.5 - 1e-6)) { toast("A room is 0.5 m inside its walls at least", true); return false; }
+  const st0 = store(); st0.list[st0.sel] = v; changed(); return true;
+}
+/* a number typed over a dimension on the plan (Enter: apply, Esc or away: cancel) */
+function dimInput(el, value, apply) {
+  const host = $("#st-uplan"), hb = host.getBoundingClientRect(), b = el.getBoundingClientRect();
+  const old = host.querySelector(".un-dimin"); if (old) old.remove();
+  const inp = document.createElement("input");
+  inp.type = "number"; inp.step = "0.005"; inp.className = "un-dimin"; inp.value = value;
+  inp.style.left = (b.left + b.width / 2 - hb.left - 36) + "px"; inp.style.top = (b.top + b.height / 2 - hb.top - 12) + "px";
+  host.appendChild(inp); inp.focus(); inp.select();
+  let done = false;
+  const close = () => { if (done) return; done = true; inp.remove(); };
+  inp.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "Escape") { ev.preventDefault(); close(); }
+    else if (ev.key === "Enter") { ev.preventDefault(); const x = parseFloat(inp.value); close(); if (isFinite(x)) apply(Math.round(x * 1000) / 1000); }
+  });
+  inp.addEventListener("blur", close);
+  inp.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+}
+/* a dimension clicked: a temporary one of the selected wall ("b" the room before it, "a" after) or a chain's room piece */
+function onDimClick(el) {
+  const u0 = cur(); if (!u0 || !C.can()) return;
+  const u = ensure(u0), f = U.figures(u), rects = wallRects(u, f).rects;
+  if (el.dataset.td) {
+    const [side, rid] = el.dataset.td.split(":"), e = SEL && SEL.t === "wall" && f.edges.find((q) => q.key === SEL.key), r = u.rooms.find((q) => q.id === rid);
+    if (!e || !r) return;
+    const v = e.x1 === e.x2, c = clearBox(r, rects), now = v ? c.x1 - c.x0 : c.y1 - c.y0;
+    dimInput(el, f3(now), (x) => { const D = x - now; typedMove(u, v ? "x" : "y", v ? e.x1 : e.y1, side === "b" ? D : -D, [e.a, e.b].filter(Boolean)); });
+    return;
+  }
+  if (el.dataset.cd) {
+    const [rid, k] = el.dataset.cd.split(":"), r = u.rooms.find((q) => q.id === rid); if (!r) return;
+    const c = clearBox(r, rects), now = k === "w" ? c.x1 - c.x0 : c.y1 - c.y0;
+    // on the unit's outline: the whole straight wall (the façade stays straight); inside: that piece of partition
+    const at = k === "w" ? r.x + r.w : r.y + r.h, outer = Math.abs(at - (k === "w" ? f.box[2] : f.box[3])) < 0.01;
+    dimInput(el, f3(now), (x) => typedMove(u, k === "w" ? "x" : "y", at, x - now, outer ? null : [r.id]));
+  }
+}
 /* each room's clear box, and the unit's inside corner (the least clear x and y): what the panel shows */
 function clearAll(u) {
   const f = U.figures(u), rects = wallRects(u, f).rects, boxes = u.rooms.map((r) => clearBox(r, rects));
@@ -838,6 +900,23 @@ function clearBox(r, rects) {
   if (y1 === r.y + r.h) for (const q of R) if (along(q.x0, q.x1, r.x + m, r.x + r.w - m) && q.y0 <= r.y + r.h + e && q.y1 >= r.y + r.h - e && q.y0 > r.y + r.h / 2) y1 = Math.min(y1, q.y0);
   if (x0 === r.x) for (const q of R) if (along(q.y0, q.y1, r.y + m, r.y + r.h - m) && q.x0 <= r.x + e && q.x1 >= r.x - e && q.x1 < r.x + r.w / 2) x0 = Math.max(x0, q.x1);
   if (x1 === r.x + r.w) for (const q of R) if (along(q.y0, q.y1, r.y + m, r.y + r.h - m) && q.x0 <= r.x + r.w + e && q.x1 >= r.x + r.w - e && q.x0 > r.x + r.w / 2) x1 = Math.min(x1, q.x0);
+  // still open (no wall on it: open to the next room): to the far face of the wall that carries its line on beyond the
+  // room (the kitchen open to the living room ends where the living room starts, under the bath's partition)
+  const carry = (line, horiz, lo, hi) => {
+    let best = null;
+    for (const q of R) {
+      const th = horiz ? q.y1 - q.y0 : q.x1 - q.x0, a0 = horiz ? q.x0 : q.y0, a1 = horiz ? q.x1 : q.y1, b0 = horiz ? q.y0 : q.x0, b1 = horiz ? q.y1 : q.x1;
+      // a wall that ends in the room's corner (by up to half a wall) still carries the line on; one across the room does not
+      if (th > 0.4 || b0 > line + e || b1 < line - e || Math.min(a1, hi) - Math.max(a0, lo) > 0.2) continue;
+      const d = Math.max(0, a1 <= (lo + hi) / 2 ? lo - a1 : a0 - hi);
+      if (d <= 0.6 && (!best || d < best.d)) best = { d, b0, b1 };
+    }
+    return best;
+  };
+  if (y0 === r.y) { const c = carry(r.y, true, r.x, r.x + r.w); if (c) y0 = c.b0; }
+  if (y1 === r.y + r.h) { const c = carry(r.y + r.h, true, r.x, r.x + r.w); if (c) y1 = c.b1; }
+  if (x0 === r.x) { const c = carry(r.x, false, r.y, r.y + r.h); if (c) x0 = c.b0; }
+  if (x1 === r.x + r.w) { const c = carry(r.x + r.w, false, r.y, r.y + r.h); if (c) x1 = c.b1; }
   return { x0, y0, x1, y1 };
 }
 /* the dimension chains: a tick at every wall line along each side, the room spans between, the overall outside */
@@ -849,15 +928,18 @@ function dims(u, f, sx, sy) {
   let g = "";
   const DO = Math.max(14, Math.min(26, SC * 0.45)), dfs = Math.max(8, Math.min(10, SC * 0.22));
   const tick = (X, Y, v) => (v ? `<line x1="${X - 4}" y1="${Y + 4}" x2="${X + 4}" y2="${Y - 4}" stroke="#333" />` : `<line x1="${X - 4}" y1="${Y + 4}" x2="${X + 4}" y2="${Y - 4}" stroke="#333" />`);
-  const chainH = (vals, Y) => {
-    const v = [...new Set(vals.map((q) => +q.toFixed(3)))].sort((a, b) => a - b);
+  const uniq = (vals) => { const v = vals.filter((q) => isFinite(q)).sort((a, b) => a - b), out = []; for (const q of v) if (!out.length || q - out[out.length - 1] > 5e-4) out.push(q); return out; };
+  // a piece that is a room's clear width / depth (pieces: [{a, b, cd}]) is clickable: type a figure to move its wall
+  const cdOf = (pieces, a, b) => { const p = (pieces || []).find((q) => Math.abs(q.a - a) < 6e-4 && Math.abs(q.b - b) < 6e-4); return p ? ` data-cd="${esc(p.cd)}" class="un-cd"` : ""; };
+  const chainH = (vals, Y, pieces) => {
+    const v = uniq(vals);
     g += `<line x1="${sx(v[0])}" y1="${Y}" x2="${sx(v[v.length - 1])}" y2="${Y}" stroke="#333" stroke-width="0.8" />`;
-    v.forEach((q, i) => { g += tick(sx(q), Y, true); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${(sx(q) + sx(v[i - 1])) / 2}" y="${Y - 3}" text-anchor="middle" font-size="${dfs}">${f3(L)}</text>`; } });
+    v.forEach((q, i) => { g += tick(sx(q), Y, true); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${(sx(q) + sx(v[i - 1])) / 2}" y="${Y - 3}" text-anchor="middle" font-size="${dfs}"${cdOf(pieces, v[i - 1], q)}>${f3(L)}</text>`; } });
   };
-  const chainV = (vals, X) => {
-    const v = [...new Set(vals.map((q) => +q.toFixed(3)))].sort((a, b) => a - b);
+  const chainV = (vals, X, pieces) => {
+    const v = uniq(vals);
     g += `<line x1="${X}" y1="${sy(v[0])}" x2="${X}" y2="${sy(v[v.length - 1])}" stroke="#333" stroke-width="0.8" />`;
-    v.forEach((q, i) => { g += tick(X, sy(q), false); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${X - 4}" y="${(sy(q) + sy(v[i - 1])) / 2}" text-anchor="middle" font-size="${dfs}" transform="rotate(-90 ${X - 4} ${(sy(q) + sy(v[i - 1])) / 2})">${f3(L)}</text>`; } });
+    v.forEach((q, i) => { g += tick(X, sy(q), false); if (i) { const L = q - v[i - 1]; if ((L * SC) > dfs * 2.6) g += `<text x="${X - 4}" y="${(sy(q) + sy(v[i - 1])) / 2}" text-anchor="middle" font-size="${dfs}" transform="rotate(-90 ${X - 4} ${(sy(q) + sy(v[i - 1])) / 2})"${cdOf(pieces, v[i - 1], q)}>${f3(L)}</text>`; } });
   };
   const top = sy(oy0) - DO, bot = sy(oy1) + DO, lef = sx(ox0) - DO, rig = sx(ox1) + DO;
   // the walls' outer faces (the overall), from the walls as built
@@ -865,10 +947,11 @@ function dims(u, f, sx, sy) {
   if (mode === "chains") {
     // inside each room (its clear width) and the walls between, to the outer faces: as the sales brochures
     const C = (r) => clearBox(r, WR);
-    chainH([ofx0, ofx1, ...R.filter((r) => Math.abs(r.y - y0) < e).flatMap((r) => { const c = C(r); return [c.x0, c.x1]; })], top);
-    chainH([ofx0, ofx1, ...R.filter((r) => Math.abs(r.y + r.h - y1) < e).flatMap((r) => { const c = C(r); return [c.x0, c.x1]; })], bot);
-    chainV([ofy0, ofy1, ...R.filter((r) => Math.abs(r.x - x0) < e).flatMap((r) => { const c = C(r); return [c.y0, c.y1]; })], lef);
-    chainV([ofy0, ofy1, ...R.filter((r) => Math.abs(r.x + r.w - x1) < e).flatMap((r) => { const c = C(r); return [c.y0, c.y1]; })], rig);
+    const side = (rs, k) => { const ps = rs.map((r) => { const c = C(r); return k === "w" ? { a: c.x0, b: c.x1, cd: r.id + ":w" } : { a: c.y0, b: c.y1, cd: r.id + ":h" }; }); return { vals: ps.flatMap((p) => [p.a, p.b]), ps }; };
+    const T = side(R.filter((r) => Math.abs(r.y - y0) < e), "w"), B = side(R.filter((r) => Math.abs(r.y + r.h - y1) < e), "w");
+    const Lf = side(R.filter((r) => Math.abs(r.x - x0) < e), "h"), Rt = side(R.filter((r) => Math.abs(r.x + r.w - x1) < e), "h");
+    chainH([ofx0, ofx1, ...T.vals], top, T.ps); chainH([ofx0, ofx1, ...B.vals], bot, B.ps);
+    chainV([ofy0, ofy1, ...Lf.vals], lef, Lf.ps); chainV([ofy0, ofy1, ...Rt.vals], rig, Rt.ps);
   } else if (mode === "centre") {
     chainH(R.filter((r) => Math.abs(r.y - y0) < e).flatMap((r) => [r.x, r.x + r.w]), top);
     chainH(R.filter((r) => Math.abs(r.y + r.h - y1) < e).flatMap((r) => [r.x, r.x + r.w]), bot);
@@ -939,8 +1022,9 @@ function fixture(x, sx, sy, sel, i, k0) {
     }
     case "sofa": d = R(0, 0, W, H) + R(0, 0, W, H * 0.25) + R(0, H * 0.25, W * 0.1, H * 0.75) + R(W * 0.9, H * 0.25, W * 0.1, H * 0.75) + Ln(W / 2, H * 0.25, W / 2, H); break;
     case "dining": {
-      const cw = Math.min(W * 0.28, 0.45 * SC_), ch = Math.min(H * 0.32, 0.42 * SC_);
-      for (const fx of [0.2, 0.62]) d += R(W * fx, -ch * 0.75, cw, ch) + R(W * fx, H - ch * 0.25, cw, ch);
+      // the chairs evenly along each long side, each in the middle of its share: 2 a side (dining for 4), 3 (for 6)
+      const n = x.kind === "dining6" ? 3 : 2, slot = W / n, cw = Math.min(slot * 0.85, 0.45 * SC_), ch = Math.min(H * 0.32, 0.42 * SC_);
+      for (let k = 0; k < n; k++) { const cx0 = slot * (k + 0.5) - cw / 2; d += R(cx0, -ch * 0.75, cw, ch) + R(cx0, H - ch * 0.25, cw, ch); }
       d += R(0, 0, W, H);
       break;
     }
@@ -1226,7 +1310,10 @@ function wirePlan() {
   host.addEventListener("contextmenu", (ev) => onContext(ev));
   host.addEventListener("mousedown", (ev) => { if (ev.button === 1) ev.preventDefault(); });   // no autoscroll
   host.addEventListener("pointerdown", (ev) => {
-    const t = ev.target, u0 = cur(); if (!u0 || ev.target.closest(".un-bar,.un-pop,.pz-bar")) return;
+    const t = ev.target, u0 = cur(); if (!u0 || ev.target.closest(".un-bar,.un-pop,.pz-bar,.un-dimin")) return;
+    // a dimension: type its figure
+    const dm = ev.button === 0 && t.closest && t.closest("[data-td],[data-cd]");
+    if (dm && C.can()) { ev.preventDefault(); ev.stopPropagation(); setTimeout(() => onDimClick(dm), 0); return; }
     // a second finger: whatever was being dragged goes back, and the two pinch the plan
     if (PZ.down(ZM, ev)) {
       if (drag) { if (drag.u0) { const st0 = store(); st0.list[st0.sel] = drag.u0; } drag = null; LIVE = null; }

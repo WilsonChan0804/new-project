@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-05", date: "26 Nov 2026",
+    items: [
+      "**Type a dimension to move a wall, as in Revit** (3 · Units): select a wall and its temporary dimensions show the clear width of the room each side - click one, type the figure, Enter: the wall moves, the room beside it follows. The dimension chains' room figures can be typed too (on the outline the whole straight wall moves). Esc cancels.",
+      "**One set of figures**: the panel, the room labels and the dimension chains now agree to the millimetre; a room open to the next (an open kitchen) is measured to where the next room starts (the bath's 1.950 + its 75 mm partition).",
+      "**Dining tables**: the chairs evenly spaced and symmetric; Dining for 6 has its 6 chairs.",
+    ],
+  },
+  {
     version: "2027-04-04", date: "26 Nov 2026",
     items: [
       "**Rooms in clear sizes** on 3 · Units: the panel's x, y, width and depth are the room's inside the walls (as the plan's labels and dimension chains), x and y from the unit's inside corner.",

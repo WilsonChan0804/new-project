@@ -490,3 +490,10 @@ body.st-mix #st-tools, body.st-mix .st-find, body.st-mix #st-hits, body.st-mix #
 .ms-sbdf { margin: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: #fff; color: #111; }
 .ms-sbdf svg { width: 100%; height: auto; display: block; }
 .ms-sbdf figcaption { font-size: 12px; margin-bottom: 4px; }
+
+/* units: typed dimensions (as Revit) */
+#st-uplan .un-cd { cursor: text; }
+#st-uplan .un-cd:hover { fill: #1f6feb; text-decoration: underline; }
+#st-uplan .un-td { cursor: text; }
+#st-uplan .un-td:hover rect { fill: #e8f0fe; }
+.un-dimin { position: absolute; z-index: 20; width: 72px; font: 600 12px/1.2 system-ui, sans-serif; padding: 3px 5px; border: 2px solid #1f6feb; border-radius: 6px; background: #fff; color: #111; text-align: center; }

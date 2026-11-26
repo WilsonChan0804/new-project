@@ -335,8 +335,8 @@ function touches(r, x) {
 /* move the wall line at x = X (vertical) or y = Y (horizontal) by d: every
    room edge on it within the span moves, so the rooms stay tiled */
 export function moveLine(u, axis, at, d, lo, hi, seed, exact) {
-  // a drag: to the 50 mm grid; a figure typed (exact): to the millimetre
-  const v = JSON.parse(JSON.stringify(u)), step = exact ? Math.round(d * 1000) / 1000 : Math.round(d * 20) / 20;
+  // a drag: to the 50 mm grid; a figure typed (exact): to the half millimetre (a 75 mm partition's half is 37.5)
+  const v = JSON.parse(JSON.stringify(u)), step = exact ? Math.round(d * 2000) / 2000 : Math.round(d * 20) / 20;
   if (!step) return v;
   const on = (a, b) => Math.abs(a - b) < 0.01;
   let inSpan = (a0, a1) => lo == null || (a1 > lo + 0.01 && a0 < hi - 0.01);
