@@ -48,7 +48,7 @@
 
 <main id="st">
   <aside class="st-side" id="st-side">
-    <div class="st-mode"><button type="button" data-mode="site" class="on">1 · Site</button><button type="button" data-mode="mass">2 · Massing</button><button type="button" data-mode="units">3 · Units</button><button type="button" data-mode="floors">4 · Floors</button></div>
+    <div class="st-mode"><button type="button" data-mode="site" class="on">1 · Site</button><button type="button" data-mode="mass">2 · Massing</button><button type="button" data-mode="units">3 · Units</button><button type="button" data-mode="floors">4 · Floors</button><button type="button" data-mode="mix">5 · Mix</button></div>
     <form class="st-find" id="st-find" onsubmit="return false">
       <input id="st-q" type="search" placeholder="Find a place: address, building, lot (e.g. TKO Area 137)">
       <button type="submit" class="primary" id="st-go">Find</button>
@@ -58,6 +58,7 @@
     <div id="st-mpanel" hidden></div>
     <div id="st-upanel" hidden></div>
     <div id="st-fpanel" hidden></div>
+    <div id="st-xpanel" hidden></div>
   </aside>
   <div class="st-map-wrap">
     <div id="st-map"></div>
@@ -67,6 +68,7 @@
     <div id="st-uplan" hidden></div>
     <div id="st-fplan" hidden></div>
     <div id="st-f3d" hidden></div>
+    <div id="st-xview" hidden></div>
     <div id="st-ptop" class="pt-top" hidden></div>
     <div class="st-views" id="st-views" hidden><button type="button" data-v="plan" class="on">Plan</button><button type="button" data-v="3d">3D</button></div>
   </div>

@@ -20,7 +20,7 @@ class Core(object):
         self.CFG = {"data": d}
 
 
-U = {"name": "1-room A", "type": "1R", "rows": [{"depth": 2.4, "rooms": [{"kind": "BR", "w": 2.4}]}], "extras": [], "junk": 1}
+U = {"name": "1-room A", "type": "1R", "rows": [{"depth": 2.4, "rooms": [{"kind": "BR", "w": 2.4}]}], "extras": [], "band": "sp", "libId": "x", "orig": "{}"}
 
 
 class Library(unittest.TestCase):
@@ -36,7 +36,9 @@ class Library(unittest.TestCase):
         self.assertEqual(len(d["units"]), 1)
         row = d["units"][0]
         self.assertEqual((row["name"], row["by"]), ("1-room A", "Wilson"))
-        self.assertNotIn("junk", row["unit"])
+        self.assertNotIn("libId", row["unit"])
+        self.assertNotIn("orig", row["unit"])
+        self.assertEqual(row["unit"].get("band"), "sp")     # a newer setting kept (a key list lost them)
         u2 = dict(U, name="1-room B")
         d = units.put(self.core, row["id"], u2, "Wilson")
         self.assertEqual([x["name"] for x in d["units"]], ["1-room B"])

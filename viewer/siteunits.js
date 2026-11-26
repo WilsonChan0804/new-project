@@ -5,6 +5,7 @@
  * and the office's library (/api/units/library). Kept in study.units.
  */
 import * as U from "./unitcore.js";
+import { unitType as fcUnitType } from "./floorcore.js";
 import { TEMPLATES } from "./unittables.js";
 import { api, headers } from "./nav.js";
 import { toast } from "./tasks-util.js";
@@ -197,6 +198,7 @@ function render() {
           <label>External walls <select data-uf="facadeType"${dis}>${Object.entries(U.FACADES).map(([k, q]) => `<option value="${k}"${(u.facadeType || "rc") === k ? " selected" : ""}>${q.label}</option>`).join("")}</select></label>
           <label>GFA measured to: external walls <select data-uf="gfaExt"${dis}>${[["outer", "outer face"], ["centre", "centre"], ["inner", "inner face"]].map(([k, v]) => `<option value="${k}"${(u.gfaExt || "outer") === k ? " selected" : ""}>${v}</option>`).join("")}</select> · party walls <select data-uf="gfaParty"${dis}>${[["centre", "centre"], ["outer", "outer face"]].map(([k, v]) => `<option value="${k}"${(u.gfaParty || "centre") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <label>Partitions in line with a thicker wall <select data-uf="join"${dis}><option value="edge"${u.join !== "centre" ? " selected" : ""}>flush with its inside face</option><option value="centre"${u.join === "centre" ? " selected" : ""}>centre to centre</option></select></label>
+          <label title="The band this unit goes in on the flat mix table (5 · Mix): by its bedrooms, or set here (a special unit)">Mix band <select data-uf="band"${dis}>${[["", `Auto (by bedrooms: ${["Studio", "1-BR", "2-BR", "3-BR"][Number(fcUnitType(u))]})`], ["0", "Studio"], ["1", "1-BR"], ["2", "2-BR"], ["3", "3-BR"], ["sp", "Special unit"]].map(([k, v]) => `<option value="${k}"${(u.band || "") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <label>Façade (windows) <select data-uf="facade"${dis}>${Object.entries(SIDES).map(([k, v]) => `<option value="${k}"${(u.facade || "s") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <span class="un-party">Party walls on: ${Object.entries(SIDES).map(([k, v]) => `<label class="st-chk"><input type="checkbox" data-ups="${k}"${(u.partySides || []).includes(k) ? " checked" : ""}${dis}> ${v}</label>`).join("")}</span>
         </div>
@@ -221,7 +223,7 @@ function onChange(ev) {
   if (d.unew != null && t.value) { const c = ensure(copyNamed(TEMPLATES[t.value], st.list)); setOrig(c); st.list.push(c); st.sel = st.list.length - 1; SELR = null; return changed(); }
   if (d.ulib != null && t.value) { const x = LIB.units.find((q) => q.id === t.value); if (x) { const c = copyNamed(x.unit.rows ? U.fromRows(x.unit) : x.unit, st.list); c.libId = x.id; ensure(c); setOrig(c); st.list.push(c); st.sel = st.list.length - 1; toast(`${x.name} copied into this project`); return changed(); } }
   if (!u) return;
-  if (d.uf) { u[d.uf] = ["name", "facade", "facadeType", "join", "gfaExt", "gfaParty"].includes(d.uf) ? t.value : Math.max(0, num(t.value, u[d.uf])); return changed(); }
+  if (d.uf) { u[d.uf] = d.uf === "band" && !t.value ? (delete u.band, undefined) : ["name", "facade", "facadeType", "join", "gfaExt", "gfaParty", "band"].includes(d.uf) ? t.value : Math.max(0, num(t.value, u[d.uf])); return changed(); }
   if (d.ups) { const s2 = new Set(u.partySides || []); if (t.checked) s2.add(d.ups); else s2.delete(d.ups); u.partySides = [...s2]; return changed(); }
   const R = (k) => u.rooms[+k];
   if (d.rk != null) { const r = R(d.rk), old = (U.KINDS[r.kind] || {}).label; r.kind = t.value; if (!r.name || r.name === old) r.name = U.KINDS[t.value].label; return changed(); }
@@ -274,7 +276,13 @@ async function onClick(ev) {
       LIB = await api("/api/units/library", { method: "PUT", body: JSON.stringify({ id, unit: body }) });
       const row = id ? LIB.units.find((x) => x.id === id) : LIB.units.slice().reverse().find((x) => x.name === u.name);
       if (row) u.libId = row.id;
-      setOrig(u); C.save(); toast(`${u.name} saved to the office library`); render();
+      setOrig(u);
+      // the project's other copies of that library unit (picked from it before): updated too when asked; each keeps its name
+      const others = row ? st.list.filter((q) => q && q !== u && q.libId === row.id) : [];
+      if (others.length && confirm(`${others.length} other cop${others.length > 1 ? "ies" : "y"} of it in this project (${others.map((q) => q.name).join(", ")}): update ${others.length > 1 ? "them" : "it"} to this layout too?`)) {
+        for (const q of others) { const i = st.list.indexOf(q), c = JSON.parse(JSON.stringify(body)); c.name = q.name; c.libId = row.id; ensure(c); setOrig(c); st.list[i] = c; }
+      }
+      C.save(); toast(`${u.name} saved to the office library${others.length ? "" : ""}`); render();
     } catch (e) { toast(e.message, true); }
     return;
   }
@@ -289,6 +297,22 @@ async function onClick(ev) {
   if (d.bpdel) { const [i, k] = d.bpdel.split(".").map(Number), e = u.extras[i], q = e.parts.splice(k, 1)[0]; if (e.h >= e.w) e.h = +(e.h - q.len).toFixed(3); else e.w = +(e.w - q.len).toFixed(3); if (!e.parts.length) u.extras.splice(i, 1); return changed(); }
 }
 
+/* a fitting's box on the plan (turned 90 or 270: its width and depth swap about its middle) */
+function fixBox(x) {
+  const rot = ((+x.rot || 0) % 360 + 360) % 360, q = rot === 90 || rot === 270, bw = q ? +x.h : +x.w, bh = q ? +x.w : +x.h, cx = +x.x + x.w / 2, cy = +x.y + x.h / 2;
+  return { x0: cx - bw / 2, x1: cx + bw / 2, y0: cy - bh / 2, y1: cy + bh / 2, q };
+}
+/* the lines a zone or a fitting snaps to: the walls' centre lines and both their faces -> {xs, ys} */
+function snapLines(v) {
+  const xs = [], ys = [], wall = +(v.wall ?? 0.15), pt = +(v.part ?? 0.075), party = +(v.party ?? 0.15);
+  for (const r of v.rooms) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
+  for (const e of U.edges(v)) {
+    const t = e.t != null ? e.t : e.kind === "ext" ? U.extWallT(v, e) : e.kind === "party" ? party : pt;
+    void wall;
+    if (e.x1 === e.x2) xs.push(e.x1 - t / 2, e.x1 + t / 2); else ys.push(e.y1 - t / 2, e.y1 + t / 2);
+  }
+  return { xs: [...new Set(xs.map((q) => +q.toFixed(4)))], ys: [...new Set(ys.map((q) => +q.toFixed(4)))] };
+}
 /* ---------- the plan, as a sales brochure: walls, doors, fixtures, labels */
 /* ---------- the plan, as a sales brochure: walls, windows, doors, fittings, labels, dimension chains */
 let SC = 60, OX = 40, OY = 40, BX = 0, BY = 0;
@@ -485,18 +509,43 @@ function drawPlan() {
     const sel = SEL && SEL.t === "wall" && SEL.key === e.key, t = tOf(e), v = e.x1 === e.x2;
     const nx = e.face === "e" ? 1 : e.face === "w" ? -1 : 0, ny = e.face === "s" ? 1 : e.face === "n" ? -1 : 0;
     if (e.kind === "ext" && e.facade === "cw") {
-      // a curtain wall: glazing in the outer part with mullions every 1.2 m or so; a 100 mm RC curb (300 mm high) on the inside
-      const o1 = t / 2, cur = 0.1, gl = (off) => v ? `<line x1="${sx(e.x1 + nx * off)}" y1="${sy(e.y1 - 0.05)}" x2="${sx(e.x1 + nx * off)}" y2="${sy(e.y2 + 0.05)}" stroke="#2b6c8f" stroke-width="0.7" />` : `<line x1="${sx(e.x1 - 0.05)}" y1="${sy(e.y1 + ny * off)}" x2="${sx(e.x2 + 0.05)}" y2="${sy(e.y1 + ny * off)}" stroke="#2b6c8f" stroke-width="0.7" />`;
-      const cb = v ? [sx(Math.min(e.x1 - nx * o1, e.x1 - nx * (o1 + cur))), sy(e.y1), cur * SC, e.len * SC] : [sx(e.x1), sy(Math.min(e.y1 - ny * o1, e.y1 - ny * (o1 + cur))), e.len * SC, cur * SC];
-      g += `<rect x="${cb[0]}" y="${cb[1]}" width="${cb[2]}" height="${cb[3]}" fill="url(#hp-rc)" stroke="#222" stroke-width="${LW * 0.7}" />`;
-      g += gl(o1 * 0.15) + gl(o1 * 0.65) + gl(-o1);
-      const k = Math.max(1, Math.round(e.len / 1.2));
-      for (let j = 0; j <= k; j++) {
-        const q = e.len * j / k, mw = 0.05, md = t;
-        g += v ? `<rect x="${sx(e.x1 - md / 2)}" y="${sy(e.y1 + q - mw / 2)}" width="${md * SC}" height="${mw * SC}" fill="#2b6c8f" />` : `<rect x="${sx(e.x1 + q - mw / 2)}" y="${sy(e.y1 - md / 2)}" width="${mw * SC}" height="${md * SC}" fill="#2b6c8f" />`;
+      // a curtain wall: the glass panes flush with the mullions' outer face, a mullion every 1.2 m or so; a 100 mm curb
+      // (a low wall, 300 mm high: light, not hatched) on the inside - not under a door (to the balcony); doors and windows
+      // in it as on any wall (the panes and mullions stop at them, a mullion each side)
+      const o1 = t / 2, cur = 0.1, gt = 0.024, mw = 0.05, md = t, len = e.len;
+      const R = (a0, a1, f0, f1, fill, st, sw, extra = "") => {
+        const lo = Math.min(f0, f1), hi = Math.max(f0, f1);
+        return v ? `<rect x="${sx(e.x1 + Math.min(nx * lo, nx * hi))}" y="${sy(e.y1 + a0)}" width="${(hi - lo) * SC}" height="${(a1 - a0) * SC}" fill="${fill}" stroke="${st}" stroke-width="${sw}"${extra} />`
+          : `<rect x="${sx(e.x1 + a0)}" y="${sy(e.y1 + Math.min(ny * lo, ny * hi))}" width="${(a1 - a0) * SC}" height="${(hi - lo) * SC}" fill="${fill}" stroke="${st}" stroke-width="${sw}"${extra} />`;
+      };
+      // its openings, along it
+      const spans = [];
+      for (const [list, kind] of [[u.doors || [], "door"], [u.windows || [], "win"]]) for (const d of list) {
+        const r = u.rooms.find((q) => q.id === d.room); if (!r) continue;
+        const [pa, pb] = sideSeg(r, d.side, +d.at || 0, +d.w || (kind === "door" ? 0.8 : 1));
+        if (v ? Math.abs(pa[0] - e.x1) > 1e-6 || Math.abs(pb[0] - e.x1) > 1e-6 : Math.abs(pa[1] - e.y1) > 1e-6 || Math.abs(pb[1] - e.y1) > 1e-6) continue;
+        const s0 = v ? Math.min(pa[1], pb[1]) - e.y1 : Math.min(pa[0], pb[0]) - e.x1, s1 = v ? Math.max(pa[1], pb[1]) - e.y1 : Math.max(pa[0], pb[0]) - e.x1;
+        if (s1 <= 0 || s0 >= len) continue;
+        spans.push({ a: Math.max(0, s0), b: Math.min(len, s1), kind });
       }
+      spans.sort((p1, p2) => p1.a - p2.a);
+      const minus = (lo, hi, cut) => { let out = [[lo, hi]]; for (const c of cut) out = out.flatMap(([x0, x1]) => (c.b <= x0 || c.a >= x1 ? [[x0, x1]] : [[x0, c.a], [c.b, x1]].filter(([q0, q1]) => q1 - q0 > 1e-3))); return out; };
+      // the curb: not under the doors
+      for (const [c0, c1] of minus(0, len, spans.filter((q) => q.kind === "door"))) g += R(c0, c1, -o1, -(o1 + cur), "#e4e7eb", "#6b7480", LW * 0.5);
+      // the mullions: on the module, none inside an opening, one each side of it
+      const k = Math.max(1, Math.round(len / 1.2)), ms = new Set();
+      for (let j = 0; j <= k; j++) { const q = len * j / k; if (!spans.some((sp) => q > sp.a + mw && q < sp.b - mw)) ms.add(+q.toFixed(4)); }
+      for (const sp of spans) { ms.add(+sp.a.toFixed(4)); ms.add(+sp.b.toFixed(4)); }
+      const mlist = [...ms].sort((p1, p2) => p1 - p2);
+      // the glass: a pane between each two mullions, its outer face flush with theirs (the wall's outer face)
+      for (let j = 0; j < mlist.length - 1; j++) {
+        const a0 = mlist[j], a1 = mlist[j + 1], mid = (a0 + a1) / 2;
+        if (spans.some((sp) => mid > sp.a && mid < sp.b) || a1 - a0 < 0.02) continue;
+        g += R(a0 + mw / 2, a1 - mw / 2, o1, o1 - gt, "#cfe6f3", "#2b6c8f", 0.6);
+      }
+      for (const q of mlist) g += R(Math.max(0, q - mw / 2), Math.min(len, q + mw / 2), o1, o1 - md, "#2b6c8f", "none", 0);
       if (sel) g += `<line x1="${sx(e.x1)}" y1="${sy(e.y1)}" x2="${sx(e.x2)}" y2="${sy(e.y2)}" stroke="#f28022" stroke-width="2" />`;
-      if (SC > 45) { const mx = sx((e.x1 + e.x2) / 2 - nx * (o1 + cur + 0.12)), my = sy((e.y1 + e.y2) / 2 - ny * (o1 + cur + 0.12)); g += `<text x="${mx}" y="${my}" font-size="8" fill="#2b6c8f" text-anchor="middle" pointer-events="none"${v ? ` transform="rotate(-90 ${mx} ${my})"` : ""}>C.W. · 100 RC curb 300 H</text>`; }
+      if (SC > 45) { const mx = sx((e.x1 + e.x2) / 2 - nx * (o1 + cur + 0.12)), my = sy((e.y1 + e.y2) / 2 - ny * (o1 + cur + 0.12)); g += `<text x="${mx}" y="${my}" font-size="8" fill="#2b6c8f" text-anchor="middle" pointer-events="none"${v ? ` transform="rotate(-90 ${mx} ${my})"` : ""}>C.W. · 100 curb 300 H${spans.some((q) => q.kind === "door") ? " (none at the door)" : ""}</text>`; }
       continue;
     }
   }
@@ -578,7 +627,14 @@ function drawPlan() {
     // picked by its dashed outline, so the fittings inside it stay clickable
     g += `<rect class="un-z" data-zi="${zi}" x="${sx(z.x)}" y="${sy(z.y)}" width="${z.w * SC}" height="${z.h * SC}" fill="none" stroke="transparent" stroke-width="10" pointer-events="stroke" />`;
     g += `<text x="${X}" y="${Y - 2}" text-anchor="middle" font-size="${fs}" fill="#1f2a36" pointer-events="none">${esc(k.zh || "")}</text><text x="${X}" y="${Y + fs}" text-anchor="middle" font-size="${fs - 1}" fill="#1f2a36" pointer-events="none">${esc(k.ab || z.kind)}</text>`;
-    if (SEL && SEL.t === "z" && SEL.i === zi && C.can()) for (const [cx, cy, c] of [[z.x, z.y, "nw"], [z.x + z.w, z.y, "ne"], [z.x + z.w, z.y + z.h, "se"], [z.x, z.y + z.h, "sw"]]) g += `<rect class="un-zh" data-zh="${zi}:${c}" x="${sx(cx) - 5}" y="${sy(cy) - 5}" width="10" height="10" fill="#fff" stroke="#f28022" stroke-width="2" />`;
+    if (SEL && SEL.t === "z" && SEL.i === zi && C.can()) for (const [cx, cy, c] of [[z.x, z.y, "nw"], [z.x + z.w, z.y, "ne"], [z.x + z.w, z.y + z.h, "se"], [z.x, z.y + z.h, "sw"], [z.x + z.w / 2, z.y, "n"], [z.x + z.w, z.y + z.h / 2, "e"], [z.x + z.w / 2, z.y + z.h, "s"], [z.x, z.y + z.h / 2, "w"]]) g += c.length === 2 ? `<rect class="un-zh" data-zh="${zi}:${c}" x="${sx(cx) - 5}" y="${sy(cy) - 5}" width="10" height="10" fill="#fff" stroke="#f28022" stroke-width="2" style="cursor:${c === "nw" || c === "se" ? "nwse" : "nesw"}-resize" />` : `<circle class="un-zh" data-zh="${zi}:${c}" cx="${sx(cx)}" cy="${sy(cy)}" r="5" fill="#fff" stroke="#f28022" stroke-width="2" style="cursor:${c === "n" || c === "s" ? "ns" : "ew"}-resize"><title>Drag this edge (to a wall's face or centre line; Alt: free)</title></circle>`;
+  }
+  // the selected fitting's edges: drag one to make it wider or longer
+  if (SEL && SEL.t === "fix" && u.fixtures[SEL.i] && C.can()) {
+    const B = fixBox(u.fixtures[SEL.i]);
+    g += `<text x="${sx((B.x0 + B.x1) / 2)}" y="${sy(B.y0) - 8}" text-anchor="middle" font-size="10" font-weight="700" fill="#b4520a" pointer-events="none" paint-order="stroke" stroke="#fff" stroke-width="3">${f3(B.x1 - B.x0)} × ${f3(B.y1 - B.y0)}</text>`;
+    for (const [c, X, Y] of [["n", (B.x0 + B.x1) / 2, B.y0], ["s", (B.x0 + B.x1) / 2, B.y1], ["w", B.x0, (B.y0 + B.y1) / 2], ["e", B.x1, (B.y0 + B.y1) / 2]])
+      g += `<circle class="un-fh" data-fh="${SEL.i}:${c}" cx="${sx(X)}" cy="${sy(Y)}" r="5" fill="#fff" stroke="#f28022" stroke-width="2" style="cursor:${c === "n" || c === "s" ? "ns" : "ew"}-resize"><title>Drag to make it ${c === "n" || c === "s" ? "deeper / shallower" : "wider / narrower"} (to a wall face; Alt: free)</title></circle>`;
   }
   // the labels: one a space, at its largest piece, its area when it has more than one
   for (const r of u.rooms) {
@@ -838,7 +894,7 @@ function popup(u, f, sx, sy, bw = 9999, bh = 9999) {
     const d = u.doors[SEL.i], r = d && u.rooms.find((q) => q.id === d.room); if (!r) return "";
     const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
     const dt = d.type || "hinged";
-    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["door2", "Double"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening (no leaf)"], ["panel", "Access panel"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" || dt === "door2" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : dt === "opening" ? "" : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="pushs" title="Its start against the wall it is nearest (its face)">⇤ Push to the wall</button><button type="button" data-pd="pushe" title="Its end against the wall it is nearest (its face)">Push to the wall ⇥</button><label title="How far a pushed door stands off the wall's face">nib <select data-pdnib>${[0, 0.1].map((v) => `<option value="${v}"${+(u.doorNib || 0) === v ? " selected" : ""}>${v * 1000} mm</option>`).join("")}</select></label><button type="button" data-pd="del">Remove</button><small>drag it along the wall: it stops at the walls' faces (Alt: free)</small>`;
+    html = `<b>Door</b> <label>type <select data-pdt>${[["hinged", "Hinged"], ["door2", "French (double)"], ["sliding", "Sliding, 1 leaf"], ["sliding2", "Sliding, 2 leaves"], ["opening", "Opening (no leaf)"], ["panel", "Access panel"]].map(([k, l]) => `<option value="${k}"${dt === k ? " selected" : ""}>${l}</option>`).join("")}</select></label>${dt === "hinged" || dt === "door2" ? `<button type="button" data-pd="hinge">⇋ Flip hinge</button><button type="button" data-pd="swing">${d.swing === "out" ? "Swing in" : "Swing out"}</button>` : dt === "opening" ? "" : `<button type="button" data-pd="hinge">⇋ Flip leaves</button>`}<label>w <input type="number" step="0.05" data-pdw value="${n3(d.w)}"> m</label><button type="button" data-pd="pushs" title="Its start against the wall it is nearest (its face)">⇤ Push to the wall</button><button type="button" data-pd="pushe" title="Its end against the wall it is nearest (its face)">Push to the wall ⇥</button><label title="How far a pushed door stands off the wall's face">nib <select data-pdnib>${[0, 0.1].map((v) => `<option value="${v}"${+(u.doorNib || 0) === v ? " selected" : ""}>${v * 1000} mm</option>`).join("")}</select></label><button type="button" data-pd="del">Remove</button><small>drag it along the wall: it stops at the walls' faces (Alt: free)</small>`;
   } else if (SEL.t === "win") {
     const w = u.windows[SEL.i], r = w && u.rooms.find((q) => q.id === w.room); if (!r) return "";
     const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); at = [sx((a[0] + b[0]) / 2), sy((a[1] + b[1]) / 2)];
@@ -933,14 +989,14 @@ function onContext(ev) {
   ev.preventDefault();
   const u = ensure(u0), t = ev.target, f = U.figures(u), hit = wallUnder(ev, 0.4), M2 = [];
   const del = (fn) => ({ label: "Delete", key: "Del", danger: true, action: () => { fn(); SEL = null; changed(); } });
-  if (t.dataset.di != null) { const i = +t.dataset.di; SEL = { t: "door", i }; drawPlan(); M2.push(...[["hinged", "Hinged door"], ["door2", "Double door"], ["sliding2", "Sliding door"], ["opening", "Opening"]].map(([k, l]) => ({ label: "Make it: " + l, action: () => { if (k === "hinged") delete u.doors[i].type; else u.doors[i].type = k; changed(); } })), { label: "Flip the hinge", action: () => { const dd = u.doors[i]; dd.hinge = dd.hinge === "end" ? "start" : "end"; changed(); } },
+  if (t.dataset.di != null) { const i = +t.dataset.di; SEL = { t: "door", i }; drawPlan(); M2.push(...[["hinged", "Hinged door"], ["door2", "French door (double)"], ["sliding2", "Sliding door"], ["opening", "Opening"]].map(([k, l]) => ({ label: "Make it: " + l, action: () => { if (k === "hinged") delete u.doors[i].type; else u.doors[i].type = k; changed(); } })), { label: "Flip the hinge", action: () => { const dd = u.doors[i]; dd.hinge = dd.hinge === "end" ? "start" : "end"; changed(); } },
       ...["start", "end"].map((en) => ({ label: en === "start" ? "⇤ Push to the wall" : "Push to the wall ⇥", action: () => { const dd = u.doors[i], st = U.doorStops(u, dd).filter((q) => q.end === en); if (!st.length) return toast("No wall meets this side", true); const at0 = +dd.at || 0; dd.at = st.reduce((m, q) => (Math.abs(q.at - at0) < Math.abs(m.at - at0) ? q : m)).at; changed(); } })), "-", del(() => u.doors.splice(i, 1))); }
   else if (t.dataset.wi != null) { const i = +t.dataset.wi; SEL = { t: "win", i }; drawPlan(); M2.push(del(() => u.windows.splice(i, 1))); }
   else if (t.dataset.fi != null) { const i = +t.dataset.fi; SEL = { t: "fix", i }; drawPlan(); M2.push({ label: "Rotate 90°", action: () => { u.fixtures[i] = U.rotateFixture(u.fixtures[i]); changed(); } }, { label: "Copy", action: () => PT.clip.set("fixture", u.fixtures[i]) }, del(() => u.fixtures.splice(i, 1))); }
   else if (t.dataset.xi != null) { const i = +t.dataset.xi; SEL = { t: "x", i }; drawPlan(); M2.push({ label: "Rotate", action: () => { const e = u.extras[i]; [e.w, e.h] = [e.h, e.w]; changed(); } }, del(() => u.extras.splice(i, 1))); }
   else if (hit) {
     const e = hit.e; SEL = { t: "wall", key: e.key }; drawPlan();
-    M2.push({ label: "Add a door here", action: () => placeOpening(hit, "door", 0.8) }, { label: "Add a sliding door here", action: () => placeOpening(hit, "sliding2", Math.min(2.0, e.len - 0.4)) }, { label: "Add an opening here", action: () => placeOpening(hit, "opening", 0.9) });
+    M2.push({ label: "Add a door here", action: () => placeOpening(hit, "door", 0.8) }, { label: "Add a sliding door here", action: () => placeOpening(hit, "sliding2", Math.min(2.0, e.len - 0.4)) }, { label: "Add a French door here (double)", action: () => placeOpening(hit, "door2", Math.min(1.5, e.len - 0.2)) }, { label: "Add an opening here", action: () => placeOpening(hit, "opening", 0.9) });
     if (e.kind !== "part") M2.push({ label: "Add a window here", action: () => placeOpening(hit, "window", 1.2) }, "-", { label: e.kind === "party" ? "Make it external" : "Make it a party wall", action: () => { const o = u.walls[e.key] = u.walls[e.key] || {}, k = e.kind === "party" ? "ext" : "party", side = (u.partySides || []).includes(e.face) ? "party" : "ext"; if (k === side) delete o.kind; else o.kind = k; changed(); } });
     else M2.push("-", { label: U.isOpen(u, e) ? "Put the wall back" : "Delete the wall", action: () => { const o = u.walls[e.key] = u.walls[e.key] || {}; o.open = !U.isOpen(u, e); changed(); } }, { label: "Join the two rooms", action: () => { const v = U.joinRooms(u, e.a, e.b); if (!v) return toast("These two rooms do not make one rectangle", true); const st0 = store(); st0.list[st0.sel] = v; SEL = null; changed(); } });
   } else if (t.dataset.rid) {
@@ -1113,6 +1169,7 @@ function wirePlan() {
       }
       return;
     }
+    if (t.dataset.fh && can) { const [fi, c] = t.dataset.fh.split(":"); drag = { kind: "fh", i: +fi, c, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; cap(host, ev); ev.preventDefault(); return; }
     if (t.dataset.zh && can) { const [zi, c] = t.dataset.zh.split(":"); drag = { kind: "zh", i: +zi, c, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; }
     else if (t.dataset.zi != null) { SEL = { t: "z", i: +t.dataset.zi }; if (can) drag = { kind: "zone", i: +t.dataset.zi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
     else if (t.dataset.xi != null) { SEL = { t: "x", i: +t.dataset.xi }; if (can) drag = { kind: "x", i: +t.dataset.xi, P, u0: JSON.parse(JSON.stringify(u)), moved: false }; drawPlan(); }
@@ -1166,16 +1223,24 @@ function wirePlan() {
       const raw = (+o.at || 0) + delta, sn = drag.kind === "door" && !ev.altKey ? U.snapDoorAt(v, o, raw) : null;
       o.at = Math.max(0, Math.min(L - (+o.w || 0.8), sn != null ? sn : snapv(raw)));
     } else if (drag.kind === "fix") { const x = v.fixtures[drag.i]; x.x = snapv(x.x + dx); x.y = snapv(x.y + dy); }
+    else if (drag.kind === "fh") {
+      // one edge of a fitting pulled: the other stays; to a wall face or centre line near (0.15 m), else 10 mm
+      const x = v.fixtures[drag.i], B = fixBox(x), { xs, ys } = snapLines(v), c = drag.c;
+      const s1 = (p, L) => { let b = null; for (const a of L) if (Math.abs(a - p) <= 0.15 && (b == null || Math.abs(a - p) < Math.abs(b - p))) b = a; return ev.altKey || b == null ? Math.round(p * 100) / 100 : +b.toFixed(3); };
+      if (c === "w") B.x0 = Math.min(B.x1 - 0.2, s1(B.x0 + dx, xs)); if (c === "e") B.x1 = Math.max(B.x0 + 0.2, s1(B.x1 + dx, xs));
+      if (c === "n") B.y0 = Math.min(B.y1 - 0.2, s1(B.y0 + dy, ys)); if (c === "s") B.y1 = Math.max(B.y0 + 0.2, s1(B.y1 + dy, ys));
+      const bw = +(B.x1 - B.x0).toFixed(3), bh = +(B.y1 - B.y0).toFixed(3), cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2;
+      x.w = B.q ? bh : bw; x.h = B.q ? bw : bh; x.x = +(cx - x.w / 2).toFixed(3); x.y = +(cy - x.h / 2).toFixed(3);
+    }
     else if (drag.kind === "zone" || drag.kind === "zh") {
       // a zone: moved or a corner pulled, to the wall lines near (0.25 m) or the 50 mm grid; no room changes
-      const z = v.zones[drag.i], xs = [], ys = [];
-      for (const r of v.rooms) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
+      const z = v.zones[drag.i], { xs, ys } = snapLines(v);
       const s1 = (p, L) => { let b = null; for (const a of L) if (Math.abs(a - p) <= 0.25 && (b == null || Math.abs(a - p) < Math.abs(b - p))) b = a; return ev.altKey || b == null ? snapv(p) : +b.toFixed(3); };
       if (drag.kind === "zone") { const sn = (p, w, L) => { let b = null; for (const a of L) for (const c of [a - p, a - (p + w)]) if (Math.abs(c) <= 0.25 && (b == null || Math.abs(c) < Math.abs(b))) b = c; return ev.altKey || b == null ? snapv(p) : +(p + b).toFixed(3); }; z.x = sn(z.x + dx, z.w, xs); z.y = sn(z.y + dy, z.h, ys); }
       else {
         let x0 = z.x, y0 = z.y, x1 = z.x + z.w, y1 = z.y + z.h;
-        if (drag.c.includes("w")) x0 = s1(x0 + dx, xs); else x1 = s1(x1 + dx, xs);
-        if (drag.c.includes("n")) y0 = s1(y0 + dy, ys); else y1 = s1(y1 + dy, ys);
+        if (drag.c.includes("w")) x0 = s1(x0 + dx, xs); else if (drag.c.includes("e")) x1 = s1(x1 + dx, xs);
+        if (drag.c.includes("n")) y0 = s1(y0 + dy, ys); else if (drag.c.includes("s")) y1 = s1(y1 + dy, ys);
         if (x1 - x0 >= 0.3 && y1 - y0 >= 0.3) Object.assign(z, { x: +x0.toFixed(3), y: +y0.toFixed(3), w: +(x1 - x0).toFixed(3), h: +(y1 - y0).toFixed(3) });
       }
     }

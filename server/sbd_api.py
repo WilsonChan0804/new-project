@@ -7,6 +7,8 @@
   GET  /api/sbd                 what the page shows: the model, the result and
                                 the status of a check still running
   POST /api/sbd/run             run again {axis, angle_deg, levels} (member)
+  POST /api/sbd/check           a check of a model sent with it (the site study's
+                                massing), answered with the result; nothing kept
   POST /api/sbd/cad             the drawings as DXF / DWG (?format=dxf|dwg)
   GET  /api/sbd/model.json      the model as kept (to send for a check)
   GET  /api/sbd/template.dxf    the CAD template (no Revit: draw the model in CAD)
@@ -38,6 +40,9 @@ MAX_MODEL = 200 * 1024 * 1024
 # server keeps answering meanwhile, and a model too big to check in time
 # says so instead of keeping a process busy for hours
 SBD_LIMIT_S = int(os.environ.get("SBD_LIMIT_S") or 20 * 60)
+# the massing's check (simple prisms): answered while the page waits
+SBD_CHECK_S = int(os.environ.get("SBD_CHECK_S") or 180)
+MAX_CHECK = 20 * 1024 * 1024
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAFE = re.compile(r"^[0-9a-f]{8,32}$")
 
@@ -224,8 +229,10 @@ def register(app, core):
     children = {}                       # project -> the check's process now running
     stopped = set()
 
-    def run_job(pid, model, axis, angle_deg, levels):
+    def run_job(pid, model, axis, angle_deg, levels, limit=None, key=None):
         """engine.run in its own process, lower priority; the result."""
+        limit = limit or SBD_LIMIT_S
+        key = key or pid
         d = _dir(core, pid)
         tag = uuid.uuid4().hex[:8]
         src, dst = os.path.join(d, "job-%s.in.json" % tag), os.path.join(d, "job-%s.out.json" % tag)
@@ -237,15 +244,15 @@ def register(app, core):
             kw["preexec_fn"] = lambda: os.nice(10)
         p = subprocess.Popen([sys.executable, "-m", "sbd.job", src, dst], cwd=HERE,
                              stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, **kw)
-        children[pid] = p
+        children[key] = p
         try:
             try:
-                _, err = p.communicate(timeout=SBD_LIMIT_S)
+                _, err = p.communicate(timeout=limit)
             except subprocess.TimeoutExpired:
                 p.kill()
                 p.communicate()
                 raise RuntimeError("the check took over %d min and was stopped - send the model (Checks > SBD > Model (JSON)) "
-                                   "for a look" % max(1, SBD_LIMIT_S // 60))
+                                   "for a look" % max(1, limit // 60))
             r = _read(dst)
             if r is None:
                 if p in stopped:
@@ -255,8 +262,8 @@ def register(app, core):
                 raise RuntimeError(r["error"])
             return r
         finally:
-            if children.get(pid) is p:
-                children.pop(pid, None)
+            if children.get(key) is p:
+                children.pop(key, None)
             stopped.discard(p)
             for f in (src, dst, dst + ".tmp"):
                 try:
@@ -487,6 +494,40 @@ def register(app, core):
                     _write(os.path.join(_dir(core, pid), "status.json"), st)
         threading.Thread(target=job, daemon=True).start()
         return {"ok": True, "running": True}
+
+    @app.post("/api/sbd/check")
+    async def sbd_check(request: Request, x_viewer_token: str = Header(default=""), x_project: str = Header(default="")):
+        """The site study's massing checked as it is (APP-152 Design
+        Requirements (1) and (2)): the model comes with the request and the
+        result goes back with the answer; the project's SBD model (3D page,
+        from Revit or CAD) is not touched."""
+        w, _ = core.require_project(request, x_project, "member", x_viewer_token)
+        raw = await request.body()
+        if len(raw) > MAX_CHECK:
+            raise HTTPException(status_code=413, detail="The massing is over 20 MB")
+        try:
+            data = json.loads(raw.decode("utf-8"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Not JSON")
+        model = clean_model(data)
+        model["source"], model["frame"] = "massing", "drawn"
+        if len(model["site"]) < 3 or not model["masses"]:
+            raise HTTPException(status_code=400, detail="Draw the site and the massing first")
+        with guard:
+            busy = (x_project + ":check") in children
+        if busy:
+            stop_running(x_project + ":check")
+
+        def _go():
+            try:
+                r = run_job(x_project, model, "street", 0.0, None, limit=SBD_CHECK_S, key=x_project + ":check")
+            except RuntimeError as e:
+                raise HTTPException(status_code=422, detail=str(e)[:400])
+            r["run_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+            r["run_by"] = w.name or ""
+            r.pop("trace", None)
+            return r
+        return await run_in_threadpool(_go)
 
     @app.post("/api/sbd/cad")
     async def sbd_cad(request: Request, format: str = "dxf", name: str = "SBD", x_viewer_token: str = Header(default=""),

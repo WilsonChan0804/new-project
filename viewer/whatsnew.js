@@ -6,6 +6,17 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-02", date: "26 Nov 2026",
+    items: [
+      "**5 · Mix**, a new page: the **flat mix table** - each flat type with its saleable area (ft² or m²), total SA and units, grouped by band (studio, 1-BR, 2-BR, 3-BR, special) with each band's units, % by number and % by area - and the **diagrammatic elevation** of each tower: a row for each floor, each flat in its type's colour with its SA, round the plate (the north side left to right, the core, the south side right to left), the floor groups marked (16 FLOOR, 13+1 FLOOR), the refuge floor, transfer plate, clubhouse, retail, car park and the podium under the towers as bands, the top in mPD. Change a type's colour in the table; notes under it; Excel (coloured), PNG, SVG and Print / PDF. Click a flat to open its floor.",
+      "**Mix band** on 3 · Units: a unit goes in its band by its bedrooms, or set it (a special unit).",
+      "**APP-152 in 2 · Massing**: the **building setback** - on a street under 15 m wide, the building up to 15 m above the street at least 7.5 m from the street's centreline (each street on the site's edges checked live, the line dashed orange on the plan, a plate too near drawn red, the 15 m line in elevation) - and the **building separation**: Check runs the 3D page's SBD engine on the massing (P in the Low, Middle and High zones on Planes X and Y, against the required P; the street canyon Lp ≤ 5U) with the zone plans. Greenery comes later.",
+      "**3 · Units**: the open kitchen (and any zone) has a handle on each edge as well as its corners, and snaps to the walls' faces as well as their centre lines; a selected fitting or piece of furniture has a handle on each side - drag it to make it wider or deeper (its size shown; it snaps to wall faces, Alt: free).",
+      "**Curtain wall**: the glass panes flush with the mullions' outer face; the curb a light low wall (not hatched like the RC), and none under a door - the sliding door to the balcony; doors (sliding, French) and windows can go on a curtain wall, the mullions and glass stopping at them.",
+      "**Fixed**: saving a unit to the office library kept only some of its settings - now everything is kept (a bigger unit is accepted too); updating a library unit offers to update the project's other copies of it.",
+    ],
+  },
+  {
     version: "2027-04-01", date: "2 Dec 2026",
     items: [
       "**Previews when you choose**: the template and office library lists, the fittings and furniture list on 3 · Units, the unit type on 4 · Floors and the units in the 2 · Massing mix open as a card of small plans (a search box when the list is long) - click one to choose it.",

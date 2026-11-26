@@ -135,7 +135,8 @@ def run_search(q, fetch=None):
 
 
 def make_xlsx(sheets, project=""):
-    """sheets: [{name, title, note, head: [..], rows: [[..]], marks: ["ok"|"fail"|"check"|""], widths}]"""
+    """sheets: [{name, title, note, head: [..], rows: [[..]], marks: ["ok"|"fail"|"check"|"bold"|""], widths,
+    fills: [[cell fill "#rrggbb" | None, ..] per row]}]"""
     import xlsx
     wb = xlsx.Workbook()
     st_title = wb.style(bold=True, size=12)
@@ -145,6 +146,8 @@ def make_xlsx(sheets, project=""):
     st_fail = wb.style(border=True, wrap=True, color="B42318", bold=True)
     st_check = wb.style(border=True, wrap=True, color="9A6700")
     st_ok = wb.style(border=True, wrap=True, color="1A7F37")
+    st_bold = wb.style(border=True, wrap=True, bold=True)
+    fill_st = {}
     for s in sheets or []:
         head = [str(h) for h in (s.get("head") or [])][:60]
         widths = s.get("widths") or [max(10, min(48, len(h) + 4)) for h in head]
@@ -164,6 +167,16 @@ def make_xlsx(sheets, project=""):
             for v in r[:60]:
                 vals.append(v if isinstance(v, (int, float)) and not isinstance(v, bool) else ("" if v is None else str(v)))
             styles = [st] * len(vals)
+            fr = (s.get("fills") or [])[i] if i < len(s.get("fills") or []) else None
+            if isinstance(fr, list):
+                for j, fc in enumerate(fr[:len(vals)]):
+                    if isinstance(fc, str) and re.match(r"^#?[0-9A-Fa-f]{6}$", fc):
+                        key = fc.lstrip("#").upper()
+                        if key not in fill_st:
+                            fill_st[key] = wb.style(border=True, wrap=True, fill=key, bold=m == "bold")
+                        styles[j] = fill_st[key]
+            if m == "bold":
+                styles = [x if x is not st else st_bold for x in styles]
             if m in ("ok", "fail", "check") and vals:
                 styles[-1] = {"ok": st_ok, "fail": st_fail, "check": st_check}[m]
             ws.row(vals, styles=styles)

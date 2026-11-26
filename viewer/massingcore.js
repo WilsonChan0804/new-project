@@ -313,3 +313,132 @@ export function strips(fp, shares) {
   }
   return out;
 }
+
+/* ---------- APP-152 Sustainable Building Design Guidelines */
+export const SBD = { setback: 7.5, below: 15, wide: 15, defWidth: 8, src: "PNAP APP-152, Design Requirement (1)(b): building setback" };
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+function segDist(p, a, b) {
+  const d = sub(b, a), L2 = d[0] * d[0] + d[1] * d[1];
+  const t = L2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / L2)) : 0;
+  return Math.hypot(p[0] - a[0] - t * d[0], p[1] - a[1] - t * d[1]);
+}
+const segsCross = (a, b, c, d) => { const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])); return o(a, b, c) * o(a, b, d) < 0 && o(c, d, a) * o(c, d, b) < 0; };
+/* the least distance from a polygon to a segment (0 when they cross) */
+export function polySegDist(P, a, b) {
+  let m = Infinity;
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i], q = P[(i + 1) % P.length];
+    if (segsCross(p, q, a, b)) return 0;
+    m = Math.min(m, segDist(p, a, b), segDist(a, p, q), segDist(b, p, q));
+  }
+  return m;
+}
+const signedArea = (P) => { let s = 0; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; };
+/* each site edge's outward normal */
+export function outward(site, i) {
+  const a = site[i], b = site[(i + 1) % site.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, ccw = signedArea(site) > 0;
+  const n = [(b[1] - a[1]) / L, -(b[0] - a[0]) / L];
+  return ccw ? n : [-n[0], -n[1]];
+}
+/* the street edges and their widths: [{edge, road, name, width, assumed}] (roads {id: {name, width}}) */
+export function streetEdges(site, streets, roads, names) {
+  const out = [];
+  for (let i = 0; i < (site || []).length; i++) {
+    const rid = streets && streets[i]; if (rid == null || rid === "") continue;
+    const r = (roads && roads[rid]) || {}, w = Number(r.width);
+    out.push({ edge: i, road: String(rid), name: (names && names[rid]) || r.name || "Street", width: w > 0 ? w : SBD.defWidth, assumed: !(w > 0) });
+  }
+  return out;
+}
+/* Design Requirement (1)(b): on a street under 15 m wide, the building from the street level up to 15 m set back to be
+   at least 7.5 m from the street's centreline. storeys from stacks/buildings ({z0, fp, block, no, use}); z above the
+   street (the site level) -> [{edge, road, name, width, applies, centre: [a, b], need (from the boundary), min (to the
+   centreline), ok, worst}] */
+export function streetSetback(storeys, site, edges) {
+  return (edges || []).map((e) => {
+    const a = site[e.edge], b = site[(e.edge + 1) % site.length], n = outward(site, e.edge), h = e.width / 2;
+    const centre = [[a[0] + n[0] * h, a[1] + n[1] * h], [b[0] + n[0] * h, b[1] + n[1] * h]];
+    const row = Object.assign({}, e, { applies: e.width < SBD.wide, centre, need: Math.max(0, SBD.setback - h), min: null, ok: true, worst: null });
+    if (!row.applies) return row;
+    for (const s of storeys || []) {
+      if (!(s.z0 < SBD.below - 1e-9) || !s.fp || s.fp.length < 3) continue;
+      const d = polySegDist(s.fp, centre[0], centre[1]);
+      if (row.min == null || d < row.min) { row.min = Math.round(d * 1000) / 1000; row.worst = { block: s.block, no: s.no, use: s.use, fp: s.fp }; }
+    }
+    row.ok = row.min == null || row.min >= SBD.setback - 1e-6;
+    return row;
+  });
+}
+
+/* a polygon in triangles (ear clipping; counter-clockwise indices) */
+export function triangulate(P) {
+  const n = P.length; if (n < 3) return [];
+  const idx = [...Array(n).keys()]; if (signedArea(P) < 0) idx.reverse();
+  const cross = (a, b, c) => (P[b][0] - P[a][0]) * (P[c][1] - P[a][1]) - (P[b][1] - P[a][1]) * (P[c][0] - P[a][0]);
+  const inside = (p, a, b, c) => { const s = (x, y, z) => (P[y][0] - P[x][0]) * (p[1] - P[x][1]) - (P[y][1] - P[x][1]) * (p[0] - P[x][0]); return s(a, b) >= -1e-12 && s(b, c) >= -1e-12 && s(c, a) >= -1e-12; };
+  const out = []; let guard = 0;
+  while (idx.length > 3 && guard++ < 10000) {
+    let cut = false;
+    for (let i = 0; i < idx.length; i++) {
+      const a = idx[(i + idx.length - 1) % idx.length], b = idx[i], c = idx[(i + 1) % idx.length];
+      if (cross(a, b, c) <= 1e-12) continue;
+      if (idx.some((k) => k !== a && k !== b && k !== c && inside(P[k], a, b, c))) continue;
+      out.push([a, b, c]); idx.splice(i, 1); cut = true; break;
+    }
+    if (!cut) { for (let i = 1; i < idx.length - 1; i++) out.push([idx[0], idx[i], idx[i + 1]]); return out; }
+  }
+  if (idx.length === 3) out.push([idx[0], idx[1], idx[2]]);
+  return out;
+}
+/* a prism: the polygon from z0 to z1 -> {verts, tris} (outward faces) */
+export function prism(P, z0, z1) {
+  const ccw = signedArea(P) > 0, Q = ccw ? P : [...P].reverse(), n = Q.length, T = triangulate(Q);
+  const verts = [...Q.map((p) => [p[0], p[1], z0]), ...Q.map((p) => [p[0], p[1], z1])], tris = [];
+  for (const [a, b, c] of T) { tris.push([a, c, b]); tris.push([a + n, b + n, c + n]); }
+  for (let i = 0; i < n; i++) { const j = (i + 1) % n; tris.push([i, j, j + n]); tris.push([i, j + n, i + n]); }
+  return { verts, tris };
+}
+/* the massing as the SBD engine takes it (sbd.json, metres): the site, one mass for each block (its storeys with the
+   same plate in one prism), the streets (each run of edges of one road: its centreline and the opposite side) */
+export function toSbd(m, site, edges, level, name) {
+  const lv = Number(level) || 0, masses = [];
+  for (const x of stacks(m)) {
+    const v = [], t = [];
+    let run = null;
+    const flush = () => { if (!run) return; const pr = prism(run.fp, lv + run.z0, lv + run.z1), o = v.length; v.push(...pr.verts); t.push(...pr.tris.map(([a, b, c]) => [a + o, b + o, c + o])); run = null; };
+    for (const s of x.storeys) {
+      if (!s.fp || s.fp.length < 3 || s.use === "void") { flush(); continue; }
+      if (run && run.fp === s.fp && Math.abs(run.z1 - s.z0) < 1e-6) { run.z1 = s.z1; continue; }
+      if (run && run.fp === s.fp && s.z0 < run.z1 - 1e-6) continue; // another strip of the same floor
+      flush(); run = { fp: s.fp, z0: s.z0, z1: s.z1 };
+    }
+    flush();
+    if (t.length) masses.push({ id: x.block.id, name: x.block.name || x.block.id, verts: v, tris: t });
+  }
+  // the streets: consecutive edges of one road as one street
+  const runs = [];
+  for (const e of edges || []) {
+    const last = runs[runs.length - 1];
+    if (last && last.road === e.road && (last.edges[last.edges.length - 1].edge + 1) % site.length === e.edge) last.edges.push(e);
+    else runs.push({ road: e.road, name: e.name, width: e.width, edges: [e] });
+  }
+  if (runs.length > 1 && runs[0].road === runs[runs.length - 1].road && runs[runs.length - 1].edges[runs[runs.length - 1].edges.length - 1].edge === site.length - 1 && runs[0].edges[0].edge === 0) { const l = runs.pop(); runs[0].edges = l.edges.concat(runs[0].edges); }
+  const off = (es, d) => {
+    const lines = es.map((e) => { const a = site[e.edge], b = site[(e.edge + 1) % site.length], n = outward(site, e.edge); return [[a[0] + n[0] * d, a[1] + n[1] * d], [b[0] + n[0] * d, b[1] + n[1] * d]]; });
+    const pts = [lines[0][0]];
+    for (let i = 0; i < lines.length - 1; i++) {
+      const [p, q] = lines[i], [r, s2] = lines[i + 1], d1 = sub(q, p), d2 = sub(s2, r), den = d1[0] * d2[1] - d1[1] * d2[0];
+      if (Math.abs(den) < 1e-9) { pts.push([(q[0] + r[0]) / 2, (q[1] + r[1]) / 2]); continue; }
+      const tt = ((r[0] - p[0]) * d2[1] - (r[1] - p[1]) * d2[0]) / den;
+      pts.push([p[0] + d1[0] * tt, p[1] + d1[1] * tt]);
+    }
+    pts.push(lines[lines.length - 1][1]);
+    return pts;
+  };
+  const r3 = (p) => [Math.round(p[0] * 1000) / 1000, Math.round(p[1] * 1000) / 1000];
+  const streets = runs.map((r) => {
+    const cl = off(r.edges, r.width / 2), op = off(r.edges, r.width), near = off(r.edges, 0);
+    return { name: r.name, centreline: cl.map(r3), opposite: op.map(r3), outline: [...near, ...[...op].reverse()].map(r3), width_m: r.width, level: lv };
+  });
+  return { version: 1, units: "m", source: "massing", model: name || "Site study massing", ground_z: lv, ground_source: "the site level (site study)", site: site.map(r3), masses, streets, street_axis: null };
+}

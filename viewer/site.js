@@ -16,6 +16,7 @@ import { OZP, OZP_PORTAL } from "./ozptables.js";
 import * as MS from "./sitemass.js";
 import * as UN from "./siteunits.js";
 import * as FL from "./sitefloor.js";
+import * as MX from "./sitemix.js";
 import { syncLegend } from "./plantools.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -877,8 +878,8 @@ function zoningBox(s) {
   });
   const setMode = (m) => {
     for (const b of document.querySelectorAll(".st-mode [data-mode]")) b.classList.toggle("on", b.dataset.mode === m);
-    stopModes(); MS.show(m === "mass"); UN.show(m === "units"); FL.show(m === "floors");
-    if (m === "units" || m === "floors") $("#st-panel").hidden = true;
+    stopModes(); MS.show(m === "mass"); UN.show(m === "units"); FL.show(m === "floors"); MX.show(m === "mix");
+    if (m === "units" || m === "floors" || m === "mix") $("#st-panel").hidden = true;
     draw(); if (m === "site") { panel(); tools(); }
     try { sessionStorage.setItem("lwk-viewer:site-mode", m); } catch (e) {}
     syncLegend();
@@ -887,6 +888,7 @@ function zoningBox(s) {
   let m0 = "site"; try { m0 = new URLSearchParams(location.search).get("mode") || sessionStorage.getItem("lwk-viewer:site-mode") || "site"; } catch (e) {}
   UN.init({ study, save, can: () => CAN });
   FL.init({ study, save, can: () => CAN, S });
-  if (m0 === "mass" || m0 === "units" || m0 === "floors") setMode(m0);
+  MX.init({ study, save, can: () => CAN, S, go: (m) => setMode(m) });
+  if (m0 === "mass" || m0 === "units" || m0 === "floors" || m0 === "mix") setMode(m0);
   window.__site = { study, S, map: () => map }; // for the tests
 })();

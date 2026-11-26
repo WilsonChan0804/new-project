@@ -17,7 +17,7 @@ import uuid
 from fastapi import HTTPException, Request, Header
 
 MAX_UNITS = 500
-MAX_BYTES = 64 * 1024
+MAX_BYTES = 256 * 1024
 
 
 def _path(core):
@@ -46,7 +46,10 @@ def clean_unit(u):
         raise HTTPException(status_code=400, detail="A unit is rooms")
     if len(json.dumps(u)) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="The unit is too big")
-    out = {k: u[k] for k in ("name", "type", "wall", "party", "part", "left", "right", "corridor", "rows", "rooms", "doors", "windows", "fixtures", "walls", "extras", "facade", "facadeType", "partySides", "src", "ft2", "note", "zones", "zonesDone", "join", "variantOf", "gfaExt", "gfaParty", "xFace") if k in u}
+    # every setting of the unit kept (a key list here lost the newer ones), not what only a project's copy has
+    out = {k: v for k, v in u.items() if isinstance(k, str) and len(k) <= 40 and k not in ("libId", "orig")}
+    if isinstance(out.get("rooms"), list) and out["rooms"]:
+        out.pop("rows", None)       # laid out already: the rooms are the unit, not the rows it was made from
     out["name"] = str(out.get("name") or "Unit")[:80]
     return out
 

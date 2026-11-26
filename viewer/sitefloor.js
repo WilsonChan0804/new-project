@@ -322,6 +322,22 @@ function compute(x) {
   return r;
 }
 
+/* every domestic group with its typical floor laid out (5 · Mix): [{x, r | null, mix: [{u, n}]}] */
+export function layouts() {
+  if (!C) return [];
+  const list = units();
+  return groups().map((x) => {
+    const mix = [];
+    for (const q of x.g.mix || []) { const u = list.find((v) => v.name === q.u); if (u) mix.push({ u, n: Number(q.n) || 0 }); }
+    const hand = !!((x.g.floor || {}).seq || (x.g.floor || {}).legSeq);
+    let r = null;
+    if (mix.length || hand) { try { r = layoutOf(Object.assign({}, opts(x), { poly: x.fp, mix, lib: list, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1 })); } catch (e) { r = null; } }
+    return { x, r, mix };
+  });
+}
+/* open a group (from 5 · Mix) */
+export function select(key) { SEL = key; if (ON) render(); }
+
 /* ---------- the panel: the figures, the checks, the settings */
 function render() { return timed("render", render0); }
 function render0() {

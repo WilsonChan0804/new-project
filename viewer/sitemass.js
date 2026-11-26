@@ -296,6 +296,7 @@ function panel() {
       ${ref}
       <p class="muted st-note">${esc(M.REFUGE.src)}: over ${M.REFUGE.over} storeys above the lowest ground storey - not over ${M.REFUGE.roofUpTo}, a refuge on the roof may do; otherwise refuge floors not more than ${M.REFUGE.every} storeys apart (${M.REFUGE.everyUc6} for UC 6). The refuge floor is not counted, plant storeys are; a transfer plate or an E&M zone that is not a storey is not.</p>
     </section>
+    ${!noSite ? sbdCard(can) : ""}
     ${!noSite ? schemesCard(can) : ""}
     ${m.blocks.map((b, bi) => blockCard(b, bi, m, dis)).join("")}
     ${can && !noSite ? `<div class="st-row ms-add"><button type="button" class="primary" data-ma="podium">+ Podium</button><button type="button" class="ghost" data-ma="tower">+ Tower</button><button type="button" class="ghost" data-ma="example">Example: podium + tower</button></div>` : ""}
@@ -487,6 +488,7 @@ function onClick(ev) {
   if (card && SEL !== card.dataset.bid && !ev.target.closest("button,input,select")) { SEL = card.dataset.bid; SELG = null; render(); return; }
   if (d.undo) return undo(+d.undo);
   if (d.sch) return onScheme(d);
+  if (d.sbd) return onSbd(d.sbd);
   if (d.ma) {
     if (d.ma === "example") {
       const p = { id: uid(), name: "Podium", setback: 3, groups: [{ use: "lobby", n: 1, h: 6 }, { use: "car", n: 2, h: 4.5 }, { use: "club", n: 1, h: 5 }, { use: "transfer", n: 1, h: 2.5 }] };
@@ -557,6 +559,84 @@ function download(text, name, type) {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
+/* ---------- APP-152 (Sustainable Building Design): the street setback here, the separation by the server's engine */
+let SBDR = null; // {key, r, at} the last check of the separation; {busy}
+function sbdInput() {
+  const s = C.study(), o = origin(); if (!o) return null;
+  const site = S.toXY(s.pts, o), md = model();
+  const no = {}; Object.keys(s.roads || {}).forEach((id) => { const r = s.roads[id]; if (r && r.name) no[id] = r.name; });
+  const edges = M.streetEdges(site, s.streets, s.roads, no).map((e) => Object.assign(e, { name: e.name === "Street" ? `Street on E${e.edge + 1}` : e.name }));
+  const storeys = M.stacks(md).flatMap((x) => x.storeys.map((q) => Object.assign({ bname: x.block.name || "Block" }, q)));
+  return { s, o, site, md, edges, storeys, set: M.streetSetback(storeys, site, edges) };
+}
+function sbdCard(can) {
+  const I = sbdInput(); if (!I) return "";
+  const rows = I.set.map((r) => `<tr class="${!r.applies ? "" : r.ok ? "ok" : "bad"}"><td>E${r.edge + 1} · ${esc(r.name)}<br><small class="muted">${f1(r.width)} m wide${r.assumed ? " (taken: no width given on 1 · Site)" : ""}</small></td>`
+    + (r.applies ? `<td class="n">${r.min == null ? "–" : f2(r.min) + " m"}</td><td>${r.min == null ? "nothing below 15 m" : r.ok ? "≥ 7.5 m · complies" : `under 7.5 m: set back ≥ ${f2(r.need)} m from the boundary (${esc(I.storeys.find((q) => q.fp === r.worst.fp)?.bname || "")}${r.worst.no ? `, storey ${r.worst.no}` : ""})`}</td>` : `<td class="n">–</td><td class="muted">15 m or wider: not applicable</td>`) + `</tr>`).join("");
+  const key = sbdKey(I), R = SBDR && SBDR.r, stale = R && SBDR.key !== key;
+  const pz = (a) => (a ? (a.P_zone != null ? a.P_zone : a.P) : null), zl = { LOW: "Low 0-20 m", MIDDLE: "Middle 20-60 m", HIGH: "High 60 m +" };
+  const cell = (a) => (a && a.P != null ? `<td class="n ${a.pass === false ? "bad" : a.pass === true ? "ok" : ""}">${f1(pz(a))}%</td>` : `<td class="n muted">–</td>`);
+  const sep = !R ? `<p class="muted st-note">${SBDR && SBDR.busy ? "Checking…" : SBDR && SBDR.err ? `<span class="bad">${esc(SBDR.err)}</span>` : "The permeability P (S1, S2, S3 and the air corridors) in the Low, Middle and High zones, and Lp ≤ 5U of the buildings on a street: by the 3D page's SBD engine, on this massing."}</p>`
+    : `<div class="ms-sbdv ${R.pass == null ? "" : R.pass ? "ok" : "bad"}">${R.required_p != null ? `P <b>${f1(R.controlling_p)}%</b> · required ${f1(R.required_p)}%${R.required_p_y != null ? ` (Plane Y ${f1(R.required_p_y)}%)` : ""} · <b>${R.pass ? "complies" : "does not comply"}</b>` : `P ${f1(R.controlling_p)}% · no P required: site under 2 ha and Lp under 60 m (Table 1)`}${stale ? ` <span class="muted">· the massing has changed since</span>` : ""}</div>
+      <table class="ms-sbdt"><tr><th>Zone</th><th class="n">Plane X</th><th class="n">Plane Y</th></tr>${R.zones.map((z) => `<tr><td>${zl[z.zone] || z.zone}</td>${z.assessed ? cell(z.axis1) + cell(z.axis2) : `<td colspan="2" class="muted">not reached</td>`}</tr>`).join("")}</table>
+      <p class="muted st-note">Site ${f0(R.site_area_m2)} m² · Lp ${f1(R.lp && R.lp.projected_m)} m (projected, all buildings)${(R.warnings || []).length ? " · " + R.warnings.map(esc).join(" · ") : ""}</p>
+      ${(R.case1 || []).some((c) => c.buildings.length) ? `<table class="ms-sbdt"><tr><th title="Design Requirement (1)(a): the facade length along a street, Lp ≤ 5 × the canyon's U">Street canyon</th><th class="n">Lp</th><th class="n">5U</th></tr>${R.case1.flatMap((c) => c.buildings.map((b) => `<tr class="${b.pass ? "ok" : "bad"}"><td>${zl[c.zone] || c.zone} · ${esc(b.name || b.building)}${b.ctrl_street ? ` <small class="muted">${esc(b.ctrl_street)}</small>` : ""}</td><td class="n">${f1(b.Lp_m)}</td><td class="n">${f1(b.Lp_max_m)}</td></tr>`)).join("")}</table>` : ""}`;
+  return `<section class="st-card ms-sbd">
+      <div class="st-head"><b>SBD · APP-152</b><span class="muted">Sustainable Building Design Guidelines</span></div>
+      <h4>Building setback · (1)(b)</h4>
+      ${I.edges.length ? `<table class="ms-sbdt"><tr><th>Street</th><th class="n">To centreline</th><th></th></tr>${rows}</table>
+      <p class="muted st-note">A street under 15 m wide: the building from the street level up to 15 m stands at least 7.5 m from the street's centreline (on the plan: the orange dashed line). The street level is taken as the site level.</p>` : `<p class="muted st-note">Mark the streets on the site's edges (1 · Site) to check the setback.</p>`}
+      <h4>Building separation · (2) <span class="ms-sbdb"><button type="button" class="ghost st-ib" data-sbd="check"${SBDR && SBDR.busy ? " disabled" : ""}>${R ? "Check again" : "Check"}</button>${R ? `<button type="button" class="ghost st-ib" data-sbd="details">Plans…</button>` : ""}</span></h4>
+      ${sep}
+      <h4>Site coverage of greenery · (3)</h4>
+      <p class="muted st-note">Not assessed yet.</p>
+    </section>`;
+}
+function sbdKey(I) { return hashStr(JSON.stringify([I.site, I.edges, I.md.blocks.map((b) => [b.on, b.fp, b.groups])])); }
+const hashStr = (t) => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+async function onSbd(k) {
+  const I = sbdInput(); if (!I) return;
+  if (k === "details") return sbdPlans();
+  if (!I.md.blocks.length) return toast("Add a block first", true);
+  SBDR = { busy: true }; render();
+  const lv = I.s.plan && I.s.plan.level, body = M.toSbd(I.md, I.site, I.edges, lv === "" || lv == null ? 0 : Number(lv), "Site study massing");
+  try {
+    const res = await fetch("/api/sbd/check", { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, C.headers()), body: JSON.stringify(body) });
+    if (!res.ok) { let m = "HTTP " + res.status; try { m = (await res.json()).detail || m; } catch (e) { /* none */ } throw new Error(m); }
+    const r = await res.json();
+    if (r.ok === false) throw new Error((r.warnings || []).join("; ") || "no result");
+    SBDR = { key: sbdKey(I), r, at: Date.now() };
+  } catch (e) { SBDR = { err: "No check: " + e.message }; }
+  render();
+}
+async function sbdPlans() {
+  const R = SBDR && SBDR.r; if (!R) return;
+  let SB = null; try { SB = await import("./sbd.js"); } catch (e) { return toast("Cannot draw the plans: " + e.message, true); }
+  const back = document.createElement("div"); back.className = "sch-modal";
+  const zl = { LOW: "Low zone (0-20 m)", MIDDLE: "Middle zone (20-60 m)", HIGH: "High zone (60 m +)" };
+  const parts = [];
+  for (const z of R.zones.filter((q) => q.assessed)) for (const ax of ["axis1", "axis2"]) {
+    let svg = ""; try { svg = SB.zoneSvg(R, z.zone, ax); } catch (e) { svg = `<p class="muted">${esc(e.message)}</p>`; }
+    const a = z[ax] || {};
+    parts.push(`<figure class="ms-sbdf"><figcaption><b>${zl[z.zone]}</b> · ${ax === "axis1" ? "Plane X" : "Plane Y"} · P ${f1(a.P_zone != null ? a.P_zone : a.P)}%${a.required_p != null ? ` (required ${f1(a.required_p)}%)` : ""}</figcaption>${svg}</figure>`);
+  }
+  back.innerHTML = `<div class="sch-box ms-sbdbox"><div class="st-head"><b>SBD · APP-152: building separation, zone by zone</b><button type="button" class="ghost st-ib" data-x>Close</button></div><div class="ms-sbdg">${parts.join("") || "<p class='muted'>No zone reached.</p>"}</div></div>`;
+  back.addEventListener("click", (ev) => { if (ev.target === back || ev.target.closest("[data-x]")) back.remove(); });
+  document.body.appendChild(back);
+}
+/* the plan: the 7.5 m line of each street under 15 m, and the plate that comes nearer, red */
+function drawSbd(L, s, o) {
+  if (!o || s.pts.length < 3) return;
+  const I = sbdInput(); if (!I) return;
+  for (const r of I.set) {
+    if (!r.applies) continue;
+    const a = I.site[r.edge], b = I.site[(r.edge + 1) % I.site.length], n = M.outward(I.site, r.edge), d = r.need;
+    const line = S.fromXY([[a[0] - n[0] * d, a[1] - n[1] * d], [b[0] - n[0] * d, b[1] - n[1] * d]], o);
+    L.polyline(line, { color: "#f28022", weight: 2, dashArray: "8 6", interactive: true }).bindTooltip(`APP-152 setback: 7.5 m from the centreline of ${esc(r.name)} (${f1(r.width)} m wide) - ${f2(d)} m in from the boundary, for the building up to 15 m above the street`, { sticky: true }).addTo(layer);
+    if (!r.ok && r.worst) L.polygon(S.fromXY(r.worst.fp, o), { color: "#c62828", weight: 2.5, fill: false, dashArray: "3 3", interactive: false }).addTo(layer);
+  }
+}
+
 /* ---------- the plan: footprints, their corners and set-backs, measure, context */
 function drawPlan() {
   const L = C.L, m = mass(), can = C.can() && !TOOL, s = C.study(), o = origin();
@@ -566,6 +646,7 @@ function drawPlan() {
     const q = s.pts[(i + 1) % s.pts.length];
     L.marker([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], { interactive: false, icon: L.divIcon({ className: "ms-eno", html: `<span>E${i + 1}</span>`, iconSize: [0, 0] }) }).addTo(layer);
   });
+  drawSbd(L, s, o);
   for (const c of m.context) L.polygon(c.fp, { color: "#8d949c", weight: 1, fillColor: "#c3c8ce", fillOpacity: 0.5, interactive: false }).addTo(layer);
   for (const b of m.blocks) {
     if (!b.fp || b.fp.length < 3) continue;
@@ -1009,6 +1090,8 @@ function makeScene(THREE, Orbit, host) {
       };
       line(0, 0x666666);
       labels.push({ x: far[0], y: far[1], z: 0, t: `${f1(lv)} mPD site level`, cls: "lv" });
+      // APP-152 setback: up to 15 m above the street (a street under 15 m wide)
+      { const I = sbdInput(); if (I && I.set.some((r) => r.applies)) { line(15, 0xf28022, true); labels.push({ x: -far[0], y: -far[1], z: 15, t: `15 m above the street · APP-152 setback (7.5 m from the centreline below it)`, cls: "lim" }); } }
       // each floor's level: a thin line across the building, its mark (▽ +mPD, the floor) at the building's end
       const tick = (z, t0, t1, col) => { const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(along[0] * t0, along[1] * t0, z), new THREE.Vector3(along[0] * t1, along[1] * t1, z)]); group.add(new THREE.Line(g, new THREE.LineDashedMaterial({ color: col, dashSize: 1.2, gapSize: 0.8 }))); group.children[group.children.length - 1].computeLineDistances(); };
       for (const bb of bs) {
@@ -1187,5 +1270,8 @@ PT.legendItems("massing", () => {
     { svg: ln("#666666"), label: "Site level (mPD)" },
     { svg: ln("#9aa3ad", "3 2", 1), label: "Floor levels: ▽ +mPD and the floor" },
     { svg: ln("#8a6d3b"), label: "Top of the building" },
-    { svg: ln("#cf222e", "4 3"), label: "Height limit (OZP)" }];
+    { svg: ln("#cf222e", "4 3"), label: "Height limit (OZP)" },
+    "APP-152",
+    { svg: ln("#f28022", "8 6", 2), label: "Plan: 7.5 m from the centreline of a street under 15 m wide; elevation: 15 m above the street" },
+    { svg: ln("#c62828", "3 3", 2.5), label: "A plate nearer the street than that" }];
 });

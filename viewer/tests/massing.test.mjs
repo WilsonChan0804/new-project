@@ -66,5 +66,27 @@ ok((obj.match(/^v /gm) || []).length === 43 * 8 && /^o Tower_dom$/m.test(obj), "
   const f6 = M.figures({ blocks: [{ id: "a", fp: sq(30, 25), groups: [{ use: "retail", n: 2, h: 5, parts: [{ use: "retail", share: 60 }, { use: "car", share: 40 }] }, { use: "dom", n: 3, h: 3 }] }] }, 1000, 0);
   ok(near(f6.ngfa, 2 * 450, 0.01) && f6.storeys === 5 && near(f6.dgfa, 3 * 750, 0.01), "split floors: retail 900 m2 GFA, car park none, 5 storeys");
 }
+
+// APP-152 Design Requirement (1)(b): 7.5 m from the centreline of a street under 15 m wide, up to 15 m above it
+{
+  const site = sq(60, 40); // edge 0 runs along y = 0: the street is south of it
+  const at = (y0) => M.stacks({ blocks: [{ id: "a", fp: sq(20, 10, 10, y0), groups: [{ use: "dom", n: 10, h: 3 }] }] })[0].storeys;
+  const E6 = M.streetEdges(site, { 0: "r1" }, { r1: { name: "Kau Road", width: 6 } });
+  const a = M.streetSetback(at(4), site, E6)[0], b = M.streetSetback(at(4.5), site, E6)[0];
+  ok(a.applies && !a.ok && near(a.min, 7, 1e-9) && near(a.need, 4.5, 1e-9), `a 6 m street: 4 m from the boundary is 7 m from the centreline - short of 7.5 m (${a.min})`);
+  ok(b.ok && near(b.min, 7.5, 1e-9), "4.5 m from the boundary: 7.5 m, complies");
+  const w15 = M.streetSetback(at(1), site, M.streetEdges(site, { 0: "r1" }, { r1: { width: 15 } }))[0];
+  ok(!w15.applies && w15.ok, "a 15 m street: not applicable");
+  const up = M.stacks({ blocks: [{ id: "p", fp: sq(60, 10, 0, 8), groups: [{ use: "retail", n: 1, h: 16 }] }, { id: "t", on: "p", fp: sq(20, 10, 10, 1), groups: [{ use: "dom", n: 10, h: 3 }] }] });
+  const st = up.flatMap((x) => x.storeys);
+  ok(M.streetSetback(st, site, E6)[0].min === 11, "only the building up to 15 m above the street: the podium 8 m back counts, the tower from 16 m does not (" + M.streetSetback(st, site, E6)[0].min + ")");
+  ok(near(M.streetEdges(site, { 0: "r9" }, {})[0].width, 8, 1e-9) && M.streetEdges(site, { 0: "r9" }, {})[0].assumed, "no width: 8 m taken, and said so");
+  const body = M.toSbd({ blocks: [{ id: "a", name: "T1", fp: sq(20, 10, 10, 5), groups: [{ use: "dom", n: 10, h: 3 }] }] }, site, E6, 5);
+  const ms = body.masses[0];
+  ok(body.masses.length === 1 && ms.verts.length === 8 && ms.tris.length === 12 && Math.max(...ms.verts.map((v) => v[2])) === 35, "the SBD model: one prism of 12 triangles to +35 m");
+  ok(body.streets.length === 1 && near(body.streets[0].centreline[0][1], -3, 1e-9) && near(body.streets[0].opposite[0][1], -6, 1e-9), "the street's centreline 3 m out, its far side 6 m out");
+  const L = M.triangulate([[0, 0], [10, 0], [10, 10], [5, 4], [0, 10]]);
+  ok(L.length === 3, "an L-shaped plate in 3 triangles");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

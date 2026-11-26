@@ -15,7 +15,7 @@ const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</
 /* the doors, windows and openings to drag onto a wall: id, icon, label, default width */
 export const OPENINGS = [
   { id: "door", icon: "door", label: "Door", w: 0.9 },
-  { id: "door2", icon: "door2", label: "Double door", w: 1.5 },
+  { id: "door2", icon: "door2", label: "Double / French door", w: 1.5 },
   { id: "doorU", icon: "door2", label: "Unequal double", w: 1.2 },
   { id: "sliding", icon: "sliding", label: "Sliding, 1 leaf", w: 1.2 },
   { id: "sliding2", icon: "sliding", label: "Sliding, 2 leaves", w: 2.0 },
@@ -275,7 +275,7 @@ function visibleLegendButton() {
   for (const b of document.querySelectorAll('[data-pt="legend"], [data-legend]')) {
     if (!b.offsetParent) continue;
     const r = b.getBoundingClientRect(); if (!r.width) continue;
-    return { b, page: b.dataset.pt === "legend" ? PAGE : "massing" };
+    return { b, page: b.dataset.pt === "legend" ? PAGE : (b.dataset.legend || "massing") };
   }
   return null;
 }
