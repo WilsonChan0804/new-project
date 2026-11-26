@@ -202,5 +202,14 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a be
   const m3 = U.moveLine(u2, "x", 3, 0.6);
   ok(near(m3.doors[0].at, 0.4, 1e-9) && near(m3.windows[0].at, 0, 1e-9), "a wall moved past a door: it is kept on its side (at 0.4; the window at 0)");
 }
+// a figure typed: the shared line moves to the millimetre, both rooms with it (no gap)
+{
+  const u = { name: "t", wall: 0.15, part: 0.075, rooms: [{ id: "a", kind: "BATH", x: 0, y: 0, w: 1.65, h: 2 }, { id: "b", kind: "OKIT", x: 1.65, y: 0, w: 1.8, h: 2 }, { id: "c", kind: "LD", x: 0, y: 2, w: 3.45, h: 3.5 }], doors: [], windows: [], extras: [] };
+  const m = U.moveLine(u, "x", 1.65, -0.137, null, null, ["a"], true);
+  const A = m.rooms.find((r) => r.id === "a"), B = m.rooms.find((r) => r.id === "b"), Cc = m.rooms.find((r) => r.id === "c");
+  ok(near(A.w, 1.513, 1e-9) && near(B.x, 1.513, 1e-9) && near(B.w, 1.937, 1e-9) && near(A.x + A.w, B.x, 1e-9), `exact: the bath 1.513 wide, the kitchen from 1.513 (they still share the partition)`);
+  ok(near(Cc.w, 3.45, 1e-9), "the living room below, not on that piece of line, stays");
+  ok(near(U.moveLine(u, "x", 1.65, -0.137, null, null, ["a"]).rooms[0].w, 1.5, 1e-9), "a drag still goes to the 50 mm grid");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

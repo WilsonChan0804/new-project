@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-04", date: "26 Nov 2026",
+    items: [
+      "**Rooms in clear sizes** on 3 · Units: the panel's x, y, width and depth are the room's inside the walls (as the plan's labels and dimension chains), x and y from the unit's inside corner.",
+      "**Typing a size moves the wall**: a new width moves the room's east wall, a new depth its south wall, x its west wall and y its north wall - the rooms on that wall move with it, as when it is dragged, so a partition stays one partition (it no longer split into two external walls with a gap). Sizes go to the millimetre.",
+    ],
+  },
+  {
     version: "2027-04-03", date: "26 Nov 2026",
     items: [
       "**Dimensions inside the rooms** on 3 · Units: each room's size label is its clear size inside its walls, and the dimension chains run room by room inside the walls, with the walls between, to the outer faces (\"Dims: wall centres\" keeps the old chains).",

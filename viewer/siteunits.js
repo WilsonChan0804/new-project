@@ -18,7 +18,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const cap = (el, ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic or finished pointer */ } };
 const esc = (x) => String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const f1 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
-const f3 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+const f3 = (x) => (x == null || isNaN(x) ? "–" : (Math.round(Number(x) * 1000 + 1e-6) / 1000).toLocaleString("en-GB", { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
 const n3 = (x) => (x == null || x === "" || isNaN(x) ? "" : Number(x).toFixed(3));
 const f2 = (x) => (x == null || isNaN(x) ? "–" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const SIDES = { n: "top", e: "right", s: "bottom", w: "left" };
@@ -146,16 +146,17 @@ function render() {
   const st = store(), u = cur(), can = C.can(), dis = can ? "" : " disabled";
   const kindOpt = (k) => Object.entries(U.KINDS).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
   const exOpt = (k) => Object.entries(Object.assign({ bay: { label: "Balcony / UP / A/C bay" } }, U.EXTRAS)).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
-  const num = (attr, v, step = 0.05) => `<input type="number" step="${step}" ${attr} value="${esc(v == null || v === "" ? "" : (+v).toFixed(3))}"${dis}>`;
+  const num = (attr, v, step = 0.05) => `<input type="number" step="${step}" ${attr} value="${esc(v == null || v === "" ? "" : (Math.round(+v * 1000 + 1e-6) / 1000).toFixed(3))}"${dis}>`;
   const tabs = st.list.map((x, i) => `<button type="button" class="un-tab${i === st.sel ? " on" : ""}" data-usel="${i}">${esc(x.name || "Unit")}<small>${tabFig(x).saleableFt} ft²</small></button>`).join("");
   let body = "";
   if (u) {
     const f = U.figures(u);
     const big = (l, v, s2) => `<div class="st-big"><small>${l}</small><b>${v}</b>${s2 ? `<span>${s2}</span>` : ""}</div>`;
+    const CL = clearAll(u);
     const rooms = u.rooms.map((r, i) => `<div class="un-room${SELR === r.id ? " sel" : ""}" data-rid="${esc(r.id)}">
         <select data-rk="${i}"${dis}>${kindOpt(r.kind)}</select><input class="un-nm" data-rn="${i}" value="${esc(r.name || "")}" placeholder="name"${dis}>${can ? `<button type="button" class="ghost st-ib un-x" data-rdel="${i}" title="Remove the room">×</button>` : ""}
-        <span class="un-l2"><span class="un-xy">x ${num(`data-rx="${i}"`, r.x)} y ${num(`data-ry="${i}"`, r.y)}</span><span class="un-wh">${num(`data-rw="${i}"`, r.w)} × ${num(`data-rh="${i}"`, r.h)} m</span>
-        <small>${f2(r.w * r.h)} m²</small></span></div>`).join("");
+        <span class="un-l2">${(() => { const c = CL.boxes[i], ttl = (t2) => ` title="${t2}"`; return `<span class="un-xy">x <span${ttl("Its inside face from the unit's inside corner: moves its west wall (the room beside it follows; its east wall stays)")}>${num(`data-rx="${i}"`, c.x0 - CL.x0, 0.005)}</span> y <span${ttl("Its inside face from the unit's inside corner: moves its north wall (the room beside it follows)")}>${num(`data-ry="${i}"`, c.y0 - CL.y0, 0.005)}</span></span><span class="un-wh"><span${ttl("Its clear width inside the walls: moves its east wall (the room beside it follows)")}>${num(`data-rw="${i}"`, c.x1 - c.x0, 0.005)}</span> × <span${ttl("Its clear depth inside the walls: moves its south wall (the room beside it follows)")}>${num(`data-rh="${i}"`, c.y1 - c.y0, 0.005)}</span> m</span>`; })()}
+        <small title="To the wall centre lines (as the GFA)">${f2(r.w * r.h)} m²</small></span></div>`).join("");
     const doors = (u.doors || []).map((d, i) => `<div class="un-room">
         <select data-dr="${i}"${dis}>${u.rooms.map((r) => `<option value="${esc(r.id)}"${r.id === d.room ? " selected" : ""}>${esc(r.name || (U.KINDS[r.kind] || {}).label)}</option>`).join("")}</select>
         <select data-ds="${i}"${dis}>${Object.entries(SIDES).map(([k, v]) => `<option value="${k}"${k === d.side ? " selected" : ""}>${v} wall</option>`).join("")}</select>
@@ -181,7 +182,7 @@ function render() {
         <p class="muted st-note">Saleable area (First-hand Sales Ordinance s.8): to the outside of external walls and the middle of party walls, partitions included; balcony and utility platform added, A/C platform, pipe duct and features not. Façades: curtain wall ${esc(U.FACADES.cw.src)}; precast ${esc(U.FACADES.pc.src)}. Concessions: balcony ${esc(U.RULES.bal.src)}; utility platform ${esc(U.RULES.up.src)}; A/C platform ${esc(U.RULES.acp.src)}.</p>
       </section>
       <section class="st-card">
-        <div class="st-head"><b>Rooms</b><span class="muted">to the wall centrelines · drag a wall on the plan</span></div>
+        <div class="st-head"><b>Rooms</b><span class="muted">clear sizes, inside the walls · drag a wall on the plan</span></div>
         ${rooms}${can ? `<button type="button" class="ghost st-ib" data-radd>+ Room</button>` : ""}
       </section>
       <section class="st-card">
@@ -229,7 +230,19 @@ function onChange(ev) {
   const R = (k) => u.rooms[+k];
   if (d.rk != null) { const r = R(d.rk), old = (U.KINDS[r.kind] || {}).label; r.kind = t.value; if (!r.name || r.name === old) r.name = U.KINDS[t.value].label; return changed(); }
   if (d.rn != null) { R(d.rn).name = t.value; return changed(); }
-  for (const k of ["x", "y", "w", "h"]) if (d["r" + k] != null) { R(d["r" + k])[k] = Math.round(num(t.value, 0) * 20) / 20; if (k === "w" || k === "h") R(d["r" + k])[k] = Math.max(0.5, R(d["r" + k])[k]); return changed(); }
+  // a clear figure typed: the wall on that side moves by the difference, the rooms on its line with it (as a drag: no gap)
+  for (const k of ["x", "y", "w", "h"]) if (d["r" + k] != null) {
+    const i = +d["r" + k], r = R(i), CL = clearAll(u), c = CL.boxes[i], v = num(t.value, NaN);
+    if (!isFinite(v)) return render();
+    // from the figure as shown (to the mm): typed 0.150 less moves the wall 0.150, whatever half-millimetre a wall leaves
+    const cur0 = Math.round({ x: c.x0 - CL.x0, y: c.y0 - CL.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 }[k] * 1000) / 1000, D = Math.round((v - cur0) * 1000) / 1000;
+    if (!D) return render();
+    const nw = k === "w" ? v : k === "x" ? c.x1 - c.x0 - D : c.x1 - c.x0, nh = k === "h" ? v : k === "y" ? c.y1 - c.y0 - D : c.y1 - c.y0;
+    if (nw < 0.5 || nh < 0.5) { toast("A room is 0.5 m inside its walls at least", true); return render(); }
+    const axis = k === "x" || k === "w" ? "x" : "y", at = k === "x" ? r.x : k === "y" ? r.y : k === "w" ? r.x + r.w : r.y + r.h;
+    const st0 = store(); st0.list[st0.sel] = U.moveLine(u, axis, at, D, null, null, [r.id], true);
+    return changed();
+  }
   const D = (k) => u.doors[+k];
   if (d.dr != null) { D(d.dr).room = t.value; return changed(); }
   if (d.ds != null) { D(d.ds).side = t.value; return changed(); }
@@ -524,10 +537,7 @@ function drawPlan() {
   };
   const LW = Math.max(0.8, Math.min(1.4, SC * 0.022));   // wall faces, as the plans' heavier line
   // the openings cut the walls: windows and doors on their lines
-  const OPS = [];
-  for (const w of u.windows) { const r = u.rooms.find((q) => q.id === w.room); if (r) { const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); OPS.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); } }
-  for (const d of u.doors || []) { const r = u.rooms.find((q) => q.id === d.room); if (r) { const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); OPS.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); } }
-  const GEO = wallGeom(u, f.edges, { tOf, isOpen: (e) => U.isOpen(u, e), solid: (e) => U.solidPart(u, e), openings: OPS });
+  const GEO = wallRects(u, f);
   GEOR = GEO.rects;
   // the open (or shortened) partitions: a dashed line to find them
   for (const e of f.edges) {
@@ -789,6 +799,20 @@ async function unitsXlsx() {
   } catch (e) { toast("No Excel: " + e.message, true); }
 }
 
+/* the walls as built (their rects, lines and offsets): for the plan and for the panel's clear sizes */
+function wallRects(u, f) {
+  const wall = +(u.wall ?? 0.15), pt = +(u.part ?? 0.075), party = +(u.party ?? 0.15);
+  const tOf = (e) => (e.t != null ? e.t : e.kind === "ext" ? (U.FACADES[e.facade] && U.FACADES[e.facade].t != null ? U.FACADES[e.facade].t : wall) : e.kind === "party" ? party : pt);
+  const OPS = [];
+  for (const w of u.windows || []) { const r = u.rooms.find((q) => q.id === w.room); if (r) { const [a, b] = sideSeg(r, w.side, +w.at || 0, +w.w || 1); OPS.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); } }
+  for (const d of u.doors || []) { const r = u.rooms.find((q) => q.id === d.room); if (r) { const [a, b] = sideSeg(r, d.side, +d.at || 0, +d.w || 0.8); OPS.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); } }
+  return wallGeom(u, f.edges, { tOf, isOpen: (e) => U.isOpen(u, e), solid: (e) => U.solidPart(u, e), openings: OPS });
+}
+/* each room's clear box, and the unit's inside corner (the least clear x and y): what the panel shows */
+function clearAll(u) {
+  const f = U.figures(u), rects = wallRects(u, f).rects, boxes = u.rooms.map((r) => clearBox(r, rects));
+  return { boxes, x0: Math.min(...boxes.map((b) => b.x0)), y0: Math.min(...boxes.map((b) => b.y0)) };
+}
 /* a room inside its walls (as built, the walls' rects): its clear box {x0, y0, x1, y1}; a side with no wall (open) stays
    on its line. Probed at a quarter, the middle and three quarters along each side (a door cuts the wall at one) */
 let GEOR = [];
@@ -808,6 +832,12 @@ function clearBox(r, rects) {
       }
     }
   }
+  // a side no probe found a wall on (a door across most of it): the wall pieces anywhere along it, away from its corners
+  const m = 0.2, along = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0) > 0.01;
+  if (y0 === r.y) for (const q of R) if (along(q.x0, q.x1, r.x + m, r.x + r.w - m) && q.y0 <= r.y + e && q.y1 >= r.y - e && q.y1 < r.y + r.h / 2) y0 = Math.max(y0, q.y1);
+  if (y1 === r.y + r.h) for (const q of R) if (along(q.x0, q.x1, r.x + m, r.x + r.w - m) && q.y0 <= r.y + r.h + e && q.y1 >= r.y + r.h - e && q.y0 > r.y + r.h / 2) y1 = Math.min(y1, q.y0);
+  if (x0 === r.x) for (const q of R) if (along(q.y0, q.y1, r.y + m, r.y + r.h - m) && q.x0 <= r.x + e && q.x1 >= r.x - e && q.x1 < r.x + r.w / 2) x0 = Math.max(x0, q.x1);
+  if (x1 === r.x + r.w) for (const q of R) if (along(q.y0, q.y1, r.y + m, r.y + r.h - m) && q.x0 <= r.x + r.w + e && q.x1 >= r.x + r.w - e && q.x0 > r.x + r.w / 2) x1 = Math.min(x1, q.x0);
   return { x0, y0, x1, y1 };
 }
 /* the dimension chains: a tick at every wall line along each side, the room spans between, the overall outside */
