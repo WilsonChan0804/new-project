@@ -50,7 +50,7 @@ def ask_settings(doc, app, sp_path):
         choices[group_name] = labels
 
     picked = forms.SelectFromList.show(
-        choices, title="1/4  Pick shared parameters (switch group at the top)",
+        choices, title="1/4  Pick shared parameters  -  %s" % sp_path,
         group_selector_title="Shared parameter group:",
         multiselect=True, button_name="Next", width=650, height=650)
     if not picked:
