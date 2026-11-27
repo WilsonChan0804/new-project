@@ -405,5 +405,77 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   ok(m2.reduce((s, q) => s + q.n, 0) === 7 && m2.every((q) => q.n >= 2), "mixForTarget: thirds of 7 -> " + JSON.stringify(m2));
   ok(F.unitType(U("x", 5)) === "3" && F.unitType(U("y", 0)) === "0", "unitType: by bedrooms, 3 or more as one");
 }
+// ---------- corridor networks: a T, a loop, an H ----------
+{
+  const mx = [{ u: TEMPLATES["2R-B"], n: 10 }, { u: TEMPLATES["1R-B"], n: 10 }];
+  const toP = (l, pt) => [l.xf.ox + l.xf.c * pt[0] - l.xf.s * pt[1], l.xf.oy + l.xf.s * pt[0] + l.xf.c * pt[1]];
+  const corners = (l, q) => q.rooms.map((rm) => [[q.x + rm.x, q.y + rm.y], [q.x + rm.x + rm.w, q.y + rm.y], [q.x + rm.x + rm.w, q.y + rm.y + rm.h], [q.x + rm.x, q.y + rm.y + rm.h]].map((pt) => toP(l, pt)));
+  const inCorr = (R, P) => (R.corrPolys || []).some((qd) => F.inPoly(qd, P[0], P[1]));
+  const noUnitOnCorr = (R) => R.legs.every((l) => l.r.placed.every((q) => corners(l, q).every((qd) => { const c = [(qd[0][0] + qd[2][0]) / 2, (qd[0][1] + qd[2][1]) / 2]; return !inCorr(R, c); })));
+  // a T: the bar along the top, the stem down the middle
+  const polyT = [[0, 0], [60, 0], [60, 17], [38.5, 17], [38.5, 50], [21.5, 50], [21.5, 17], [0, 17]];
+  const net = { nodes: [[2, 8.5], [58, 8.5], [30, 8.5], [30, 48]], edges: [[0, 2], [2, 1], [2, 3]] };
+  const T = F.layoutLegs({ poly: polyT, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, net });
+  ok(T && T.multi && T.legs.length === 3 && T.legs.every((l) => l.r.placed.length > 0), "a T: three legs, units on each (" + (T ? T.legs.map((l) => l.r.placed.length).join(" + ") : "-") + ")");
+  ok(T && !T.issues.length, "none outside the plate or overlapping: " + (T ? T.issues.slice(0, 3).join("; ") : ""));
+  ok(T && noUnitOnCorr(T), "no unit on the corridor (the junction kept clear)");
+  ok(T && T.spine.path === null && T.net.edges.length === 3 && T.corrPolys.length === 3, "the result carries the network, no single path");
+  ok(T && near(T.figures.corridor, 56 * 1.5 + (48 - 9.25) * 1.5, 0.05), `the corridor's area: the union, the junction counted once (${T && T.figures.corridor} m², 142.125)`);
+  ok(T && T.coreLeg === 2, "the core in the longest leg (the stem)");
+  const trT = T && T.checks.find((c) => /^Travel/.test(c.what));
+  ok(trT && /dead end/.test(trT.text), "the bar's arms, no staircase beyond them: dead ends (" + (trT && trT.text) + ")");
+  // a loop: a ring corridor round a square plate's middle
+  const polyL = [[0, 0], [42, 0], [42, 42], [0, 42]];
+  const netL = { nodes: [[9, 9], [33, 9], [33, 33], [9, 33]], edges: [[0, 1], [1, 2], [2, 3], [3, 0]] };
+  const Lp = F.layoutLegs({ poly: polyL, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, net: netL });
+  ok(Lp && Lp.legs.length === 4 && Lp.legs.filter((l) => l.r.placed.length > 0).length >= 3, "a loop: four legs, units round it (" + (Lp ? Lp.legs.map((l) => l.r.placed.length).join(" + ") : "-") + ")");
+  ok(Lp && !Lp.issues.length && noUnitOnCorr(Lp), "no clashes, none on the corridor: " + (Lp ? Lp.issues.slice(0, 3).join("; ") : ""));
+  const trL = Lp && Lp.checks.find((c) => /^Travel/.test(c.what));
+  ok(trL && !/dead end/.test(trL.text), "round a loop nothing is a dead end (" + (trL && trL.text) + ")");
+  ok(Lp && near(Lp.figures.corridor, 4 * 24 * 1.5, 0.05), `the ring's area: 4 × 24 × 1.5 (${Lp && Lp.figures.corridor} m²)`);
+  // an H
+  const polyH = [[0, 0], [50, 0], [50, 40], [0, 40]];
+  const netH = { nodes: [[9, 2], [9, 38], [41, 2], [41, 38], [9, 20], [41, 20]], edges: [[0, 4], [4, 1], [2, 5], [5, 3], [4, 5]] };
+  const Hh = F.layoutLegs({ poly: polyH, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, net: netH });
+  ok(Hh && Hh.legs.length === 5 && !Hh.issues.length && noUnitOnCorr(Hh) && Hh.placed.length >= 12, "an H: five legs, no clashes, " + (Hh ? Hh.placed.length : 0) + " flats");
+  // the graph: shortest ways and dead ends
+  const G = F.netGraph({ nodes: [[0, 0], [10, 0], [10, 10], [0, 10]], edges: [[0, 1], [1, 2], [2, 3], [3, 0]] });
+  const a = G.on(0, [2, 0]), b = G.on(2, [3, 10]);
+  ok(near(G.dist(G.from(a), a, b), 2 + 10 + 3, 1e-9), "round a square: the short way round (15 m, not 25)");
+  ok(G.bothWays(a, [b]), "on a loop a door reaches a staircase both ways");
+  const G2 = F.netGraph(F.toNet([[0, 0], [10, 0], [20, 0]]));
+  ok(!G2.bothWays(G2.on(0, [2, 0]), [G2.on(1, [15, 0])]) && G2.bothWays(G2.on(1, [12, 0]), [G2.on(0, [5, 0]), G2.on(1, [18, 0])]), "on a path: beyond the last staircase a dead end, between two not");
+  ok(F.netPath({ nodes: [[0, 0], [5, 0], [5, 5]], edges: [[2, 1], [1, 0]] }).length === 3 && F.netPath(netL) === null && F.netPath(net) === null, "a network read back as a path only when it is one");
+  // a path given as a network: the same as the spine
+  const polyL2 = [[0, 0], [50, 0], [50, 17], [17, 17], [17, 50], [0, 50]], mx2 = [{ u: TEMPLATES["2R-B"], n: 6 }, { u: TEMPLATES["1R-B"], n: 6 }];
+  const A1 = F.layoutLegs({ poly: polyL2, frame: { ux: 1, uy: 0 }, mix: mx2, storeys: 30, persons: 3, spine: { path: [[50, 8.5], [8.5, 8.5], [8.5, 50]] } });
+  const A2 = F.layoutLegs({ poly: polyL2, frame: { ux: 1, uy: 0 }, mix: mx2, storeys: 30, persons: 3, net: F.toNet([[50, 8.5], [8.5, 8.5], [8.5, 50]]) });
+  ok(A2.figures.gfa === A1.figures.gfa && A2.placed.length === A1.placed.length && A2.spine.path && A2.spine.path.length === 3, "a path given as a network: the same layout as the spine");
+}
+// carried onto an edited network: a node moved, a branch added, a leg taken away
+{
+  const mx = [{ u: TEMPLATES["2R-B"], n: 10 }, { u: TEMPLATES["1R-B"], n: 10 }];
+  const polyT = [[0, 0], [60, 0], [60, 17], [38.5, 17], [38.5, 50], [21.5, 50], [21.5, 17], [0, 17]];
+  const base = { poly: polyT, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3 };
+  const net = { nodes: [[2, 8.5], [58, 8.5], [30, 8.5], [30, 48]], edges: [[0, 2], [2, 1], [2, 3]] };
+  const T = F.layoutLegs(Object.assign({}, base, { net }));
+  const net2 = JSON.parse(JSON.stringify(net)); net2.nodes[3] = [30, 44];
+  const M = F.migrateNet(T, net2, true);
+  ok(M.legSeq.length === 3 && M.legSeq.reduce((s2, q) => s2 + q.s.length + q.n.length, 0) === T.placed.length && M.pieces.length === T.core.length, "the stem shortened: every unit and core piece carried over");
+  const T2 = F.layoutLegs(Object.assign({}, base, { net: net2, legSeq: M.legSeq, pieces: M.pieces }));
+  ok(T2 && T2.placed.length >= T.placed.length - 2 && T2.core.length === T.core.length, `laid out again with them: ${T2 && T2.placed.length} of ${T.placed.length} flats, the core kept`);
+  // a path (an L) branched into a T
+  const L = { nodes: [[2, 8.5], [30, 8.5], [30, 48]], edges: [[0, 1], [1, 2]] };
+  const RL = F.layoutLegs(Object.assign({}, base, { net: L }));
+  const nb = JSON.parse(JSON.stringify(L)); nb.nodes.push([58, 8.5]); nb.edges.push([1, 3]);
+  const MB = F.migrateNet(RL, nb, true);
+  ok(MB.legSeq.length === 3 && MB.legSeq.reduce((s2, q) => s2 + q.s.length + q.n.length, 0) === RL.placed.length, "an L branched into a T: its units kept on their legs");
+  // an edge cut: two
+  const sn = JSON.parse(JSON.stringify(net)), v = F.splitNetEdge(sn, 2, [30, 30]);
+  ok(v === 4 && sn.edges.length === 4 && sn.edges[2][1] === 4 && sn.edges[3][0] === 4, "a leg cut at a point: the first part keeps its number, the second is new");
+  // back to straight: one edge along the plate
+  const st = F.migrateNet(T, { nodes: [[2, 8.5], [58, 8.5]], edges: [[0, 1]] }, true);
+  ok(st.seq && !st.legSeq && st.pieces.every((c) => c.leg == null), "onto one straight corridor: a plain seq, as layout() reads it");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

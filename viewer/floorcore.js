@@ -517,9 +517,12 @@ export function layoutLegs(o) {
   const p = Object.assign({}, DEF, o || {});
   const PF = frame(p.poly, p.frame);
   if (!PF) return null;
-  const sp = p.spine && Array.isArray(p.spine.path) ? WC.cleanPath(p.spine.path) : null;
+  // the corridor: a network (f.net: nodes and edges, the plate frame), or a path (f.spine.path: an edge each segment)
+  const NET = netOf(p);
+  const PATH = !!NET && NET.edges.every(([a, b], k) => a === k && b === k + 1) && NET.nodes.length === NET.edges.length + 1;
+  const sp = NET && PATH ? NET.nodes : null;
   const straight = sp && sp.length === 2 && Math.abs(sp[1][1] - sp[0][1]) < 1e-6;
-  if (!sp || sp.length < 2 || straight) {
+  if (!NET || straight) {
     const q = Object.assign({}, p);
     if (straight) { const a = Math.min(sp[0][0], sp[1][0]), b = Math.max(sp[0][0], sp[1][0]); q.corrY = sp[0][1] - n(p.corridor, 1.5) / 2; if (a > 0.05 || b < PF.L - 0.05) q.corrSpan = [a, b]; }
     const r = layout(q); if (!r) return r;
@@ -531,35 +534,43 @@ export function layoutLegs(o) {
     r.corrPoly = WC.wallPoly(r.spine.path, r.cw, "c");
     return r;
   }
-  const cw = n(p.corridor, 1.5), XY = sp.map((q) => PF.from(q)), m = XY.length - 1;
-  const D = XY.slice(0, m).map((a, k) => WC.dirOf(a, XY[k + 1]));
-  const nb = (j) => { const a = D[j - 1].d, b = D[j].d, x = a[0] + b[0], y = a[1] + b[1], L = Math.hypot(x, y) || 1; return [x / L, y / L]; };
+  const cw = n(p.corridor, 1.5), NP = NET.nodes, XY = NP.map((q) => PF.from(q)), EG = NET.edges, m = EG.length;
+  const D = EG.map(([a, b]) => WC.dirOf(XY[a], XY[b]));
+  // each node's edges; an edge's way out of a node
+  const inc = XY.map(() => []); EG.forEach(([a, b], k) => { inc[a].push(k); inc[b].push(k); });
+  const away = (k, v) => (EG[k][0] === v ? D[k].d : [-D[k].d[0], -D[k].d[1]]);
   const lens = D.map((q) => q.L), hasPieces = Array.isArray(p.pieces) && p.pieces.length > 0;
   // the core's leg: as set; with pieces placed, the leg holding most of them; else the longest
   const byPieces = () => { const c = new Array(m).fill(0); for (const q of p.pieces) { const k = q.leg == null ? -1 : q.leg; if (k >= 0 && k < m) c[k]++; } const mx = Math.max(...c); return mx > 0 ? c.indexOf(mx) : null; };
   const coreLeg = p.coreLeg != null && p.coreLeg >= 0 && p.coreLeg < m ? Math.round(p.coreLeg) : (hasPieces && byPieces() != null ? byPieces() : lens.indexOf(Math.max(...lens)));
   // the order the legs take their units: the core's leg, then out from it
-  const order = [coreLeg]; for (let d = 1; order.length < m; d++) { if (coreLeg - d >= 0) order.push(coreLeg - d); if (coreLeg + d < m) order.push(coreLeg + d); }
+  // breadth first from it (on a path: the core's leg, then out from it either way); each node's hops from the core's leg
+  const order = [coreLeg], seen = new Set(order);
+  for (let i = 0; i < order.length; i++) { const k = order[i]; for (const j of [...new Set(EG[k].flatMap((v) => inc[v]))].filter((j) => !seen.has(j)).sort((a, b) => a - b)) { seen.add(j); order.push(j); } }
+  for (let k = 0; k < m; k++) if (!seen.has(k)) order.push(k);
+  const hop = XY.map(() => Infinity); { const Q = [...EG[coreLeg]]; for (const v of Q) hop[v] = 0; for (let i = 0; i < Q.length; i++) for (const j of inc[Q[i]]) for (const w of EG[j]) if (hop[w] === Infinity) { hop[w] = hop[Q[i]] + 1; Q.push(w); } }
   const want = []; for (const q of p.mix || []) for (let i = 0; i < Math.max(0, Math.round(n(q.n))); i++) want.push(q.u);
   const legSeq = Array.isArray(p.legSeq) ? p.legSeq : [];
   // units in the legs edited by hand come out of the mix for the others
   const used = new Map();
   for (const sq of legSeq) if (sq) for (const e of [...(sq.s || []), ...(sq.n || [])]) used.set(e.u, (used.get(e.u) || 0) + 1);
   let pool = want.filter((u) => { const k = used.get(u.name) || 0; if (k > 0) { used.set(u.name, k - 1); return false; } return true; });
-  const corrPolyXY = WC.wallPoly(XY, cw, "c");
+  // the corridor's shape: a path's mitred band; a network's legs each a band, run on by half the width into each joint
+  const corrQuadsXY = PATH ? null : EG.map(([a, b], k) => { const d = D[k].d, nn = [-d[1] * cw / 2, d[0] * cw / 2], ea = inc[a].length > 1 ? cw / 2 : 0, eb = inc[b].length > 1 ? cw / 2 : 0, A0 = [XY[a][0] - d[0] * ea, XY[a][1] - d[1] * ea], B0 = [XY[b][0] + d[0] * eb, XY[b][1] + d[1] * eb]; return [[A0[0] + nn[0], A0[1] + nn[1]], [B0[0] + nn[0], B0[1] + nn[1]], [B0[0] - nn[0], B0[1] - nn[1]], [A0[0] - nn[0], A0[1] - nn[1]]]; });
+  const corrPolyXY = PATH ? WC.wallPoly(XY, cw, "c") : null;
   const legs = [];
   // the persons and lifts for the whole floor (all the mix's flats), not the core leg's alone
   const fac = (b1("1b-1") || {}).factor || 9;
   const popAll = want.reduce((s2, u) => s2 + (p.persons != null && p.persons !== "" && Number(p.persons) > 0 ? Number(p.persons) : ceilPersons(U.figures(u).internal / fac)), 0);
   const run = (k, extra) => {
     let sub = p.poly.map((q) => [n(q[0]), n(q[1])]);
-    if (k > 0) sub = WC.clipHalf(sub, XY[k], nb(k));
-    if (k < m - 1) { const v = nb(k + 1); sub = WC.clipHalf(sub, XY[k + 1], [-v[0], -v[1]]); }
+    // its part of the plate: at each of its ends, the side of the bisector with every other leg there that is its own
+    for (const v of EG[k]) { const uk = away(k, v); for (const j of inc[v]) { if (j === k) continue; const uj = away(j, v), nx = uk[0] - uj[0], ny = uk[1] - uj[1], L = Math.hypot(nx, ny); if (L < 1e-9) continue; sub = WC.clipHalf(sub, XY[v], [nx / L, ny / L]); } }
     if (sub.length < 3) return null;
     // the leg's axis along it, turned to read left to right on the plan (its labels the right way up)
     const fw = D[k].d[0] * PF.ux + D[k].d[1] * PF.uy, rev = fw < -1e-9 || (Math.abs(fw) <= 1e-9 && -D[k].d[0] * PF.uy + D[k].d[1] * PF.ux < 0);
     const axis = rev ? { ux: -D[k].d[0], uy: -D[k].d[1] } : { ux: D[k].d[0], uy: D[k].d[1] }, LF = frame(sub, axis);
-    const A = LF.to(XY[k]), B = LF.to(XY[k + 1]), T = (pt) => LF.to(PF.from(pt));
+    const A = LF.to(XY[EG[k][0]]), B = LF.to(XY[EG[k][1]]), T = (pt) => LF.to(PF.from(pt));
     // what is stored for a leg (its units' x, its pieces) is measured from its spine's start, so it stays put when the plate changes
     const sh = (e) => (e.x != null ? Object.assign({}, e, { x: r3(n(e.x) + A[0]) }) : Object.assign({}, e));
     const seqIn = legSeq[k] ? { s: (legSeq[k].s || []).map(sh), n: (legSeq[k].n || []).map(sh) } : null;
@@ -571,10 +582,13 @@ export function layoutLegs(o) {
       // the core pieces stand in their own legs (piece.leg; none: the core's leg)
       pieces: pcs,
       walls: (p.walls || []).map((w) => Object.assign({}, w, { path: (w.path || []).map(T) })), noWallArea: true,
-      coverPolys: [corrPolyXY.map((pt) => LF.to(pt))], popFloorAll: popAll, noLeftInSeq: true,
+      coverPolys: (PATH ? [corrPolyXY] : corrQuadsXY).map((qd) => qd.map((pt) => LF.to(pt))), popFloorAll: popAll, noLeftInSeq: true,
       blockPolys: legs.flatMap((l0) => [...l0.r.placed.flatMap((q2) => q2.rooms.map((rm) => [[q2.x + rm.x - q2.wt / 2, q2.y + rm.y - q2.wt / 2], [q2.x + rm.x + rm.w + q2.wt / 2, q2.y + rm.y - q2.wt / 2], [q2.x + rm.x + rm.w + q2.wt / 2, q2.y + rm.y + rm.h + q2.wt / 2], [q2.x + rm.x - q2.wt / 2, q2.y + rm.y + rm.h + q2.wt / 2]])), ...l0.r.core.map((c) => [[c.x, c.y], [c.x + c.w, c.y], [c.x + c.w, c.y + c.h], [c.x, c.y + c.h]])].map((qd) => qd.map((pt) => LF.to(PF.from([l0.xf.ox + l0.xf.c * pt[0] - l0.xf.s * pt[1], l0.xf.oy + l0.xf.s * pt[0] + l0.xf.c * pt[1]]))))), fullPoly: p.poly.map((pt) => LF.to([n(pt[0]), n(pt[1])])), partyT: (p.legPartyT || [])[k] || (k === 0 ? p.partyT : null),
     });
-    if (k < coreLeg) q.corrAnchor = B[0]; else if (k > coreLeg) q.corrAnchor = A[0];
+    // the wall cuts keep the end toward the core
+    { const ha = hop[EG[k][0]], hb = hop[EG[k][1]]; if (k !== coreLeg && hb < ha) q.corrAnchor = B[0]; else if (k !== coreLeg && ha < hb) q.corrAnchor = A[0]; }
+    // in a network: the other legs' corridors kept clear too
+    if (!PATH) q.blockPolys = q.blockPolys.concat(corrQuadsXY.filter((_, j) => j !== k).map((qd) => qd.map((pt) => LF.to(pt))));
     if (!legSeq[k]) q.mix = pool.map((u) => ({ u, n: 1 }));
     const r = layout(q); if (!r) return null;
     for (const q2 of r.placed) q2.leg = k;
@@ -596,21 +610,19 @@ export function layoutLegs(o) {
   if (!coreR) return null;
   const C0 = legs.find((l) => l.k === coreLeg).r;
   const toP = (l, pt) => [l.xf.ox + l.xf.c * pt[0] - l.xf.s * pt[1], l.xf.oy + l.xf.s * pt[0] + l.xf.c * pt[1]];
-  // along the spine: each flat door and each staircase, by the distance along it
-  const cum = [0]; for (let k = 0; k < m; k++) cum.push(cum[k] + WC.segLen(sp, k));
-  const arc = (pt) => { const q = WC.nearestOnPath(pt, sp); return cum[q.seg] + q.s; };
-  const cl = legs.find((l) => l.k === coreLeg), yc = (cl.r.y0 + cl.r.y1) / 2;
-  const sArc = legs.flatMap((l) => l.r.stairsX.map((x) => arc(toP(l, [x, (l.r.y0 + l.r.y1) / 2]))));
-  void yc;
+  // along the corridor (a graph): each flat door and each staircase on its leg, the shortest way between them
+  const G = netGraph(NET), mid = (l, x) => G.on(l.k, toP(l, [x, (l.r.y0 + l.r.y1) / 2]));
+  const SP = legs.flatMap((l) => l.r.stairsX.map((x) => mid(l, x)));
   const nSAll = legs.reduce((s2, l) => s2 + (l.r.core.some((c) => c.kind === "stair") ? l.r.nS : 0), 0) || C0.nS;
   const tr = travelFor("1b");
   let worst = { d: 0, dead: false, name: "" };
-  const lo = Math.min(...sArc), hi = Math.max(...sArc);
+  const fromS = SP.map((S0) => G.from(S0));
   for (const l of legs) for (const q of l.r.placed) {
-    const a = arc(toP(l, [q.x + q.w / 2, (l.r.y0 + l.r.y1) / 2])), d = (sArc.length ? Math.min(...sArc.map((x) => Math.abs(x - a))) : Infinity) + cw / 2;
-    const dead = nSAll < 2 || a < lo || a > hi, lim = dead ? tr.deadend : tr.max;
+    const P = mid(l, q.x + q.w / 2), d = (SP.length ? Math.min(...fromS.map((dist, i) => G.dist(dist, SP[i], P))) : Infinity) + cw / 2;
+    const dead = nSAll < 2 || !G.bothWays(P, SP), lim = dead ? tr.deadend : tr.max;
     if (d / lim > worst.d / (worst.lim || 1)) worst = { d: r3(d), dead, lim, name: q.name };
   }
+  let spread = 0; for (let i = 0; i < SP.length; i++) for (let j = i + 1; j < SP.length; j++) spread = Math.max(spread, G.dist(fromS[i], SP[i], SP[j]));
   // across the legs: a unit or piece of one leg on another's; and what is left of each leg not under another leg's units
   const quad = (l, q) => [[q.x, q.y], [q.x + q.w, q.y], [q.x + q.w, q.y + q.h], [q.x, q.y + q.h]].map((pt) => toP(l, pt));
   const roomQuads = (l, q) => q.rooms.map((rm) => quad(l, { x: q.x + rm.x - q.wt / 2 + 0.05, y: q.y + rm.y - q.wt / 2 + 0.05, w: rm.w + q.wt - 0.1, h: rm.h + q.wt - 0.1 }));
@@ -640,6 +652,7 @@ export function layoutLegs(o) {
   const plate = Math.abs(area(PF.poly));
   const fig = {};
   for (const k of ["units", "saleable", "unitGfa", "corridor", "wideEx", "lobbyEx", "stair", "lift", "lobby", "refuse", "riser", "coreWalls", "partyWalls", "residual", "mic", "unitEx", "gfa"]) fig[k] = r3(sum(k));
+  if (!PATH) { const dU = unionAreaConvex(corrQuadsXY) - lens.reduce((s2, L) => s2 + L * cw, 0); fig.corridor = r3(fig.corridor + dU); fig.gfa = r3(fig.gfa + dU); }
   fig.coreWalls = r3(fig.coreWalls + fwallA); fig.gfa = r3(fig.gfa + fwallA * (1 - (p.mic ? n(p.micPct, 10) / 100 : 0)));
   Object.assign(fig, { plate: r3(plate), acc: plate ? r3(fig.gfa / plate * 100) : null, efficiency: fig.gfa ? r3(fig.saleable / fig.gfa * 100) : null, conc: r3(plate - fig.gfa) });
   const placedN = legs.reduce((s2, l) => s2 + l.r.placed.length, 0), wantN = want.length;
@@ -649,17 +662,82 @@ export function layoutLegs(o) {
   checks.push({ what: "Travel: flat door to a staircase (B11)", ok: worst.d <= (worst.lim || tr.max) + 1e-9, text: placedN ? `${worst.d} m along the corridor from ${worst.name}${worst.dead ? ", in a dead end" : ""}, limit ${worst.lim || tr.max} m` : "–" });
   checks.push({ what: "Units placed", ok: placedN >= wantN, text: wantN ? `${placedN} of ${wantN} on ${legs.length} legs` : `${placedN} placed by hand on ${legs.length} legs (no unit mix)` });
   checks.push({ what: "Clashes", ok: !issues.length, text: issues.length ? issues.slice(0, 6).join("; ") + (issues.length > 6 ? ` … ${issues.length - 6} more` : "") : "none: inside the plate, nothing overlapping" });
-  if (sArc.length >= 2) checks.push({ what: "Between the staircases", ok: hi - lo <= tr.between, text: `${r3(hi - lo)} m along the corridor, at most ${tr.between} m (B11.3(b))` });
+  if (SP.length >= 2) checks.push({ what: "Between the staircases", ok: spread <= tr.between, text: `${r3(spread)} m along the corridor, at most ${tr.between} m (B11.3(b))` });
   const jp = (k) => legs.reduce((s2, l) => s2 + (Number(l.r.jpn1[k]) || 0), 0);
   return Object.assign({}, C0, {
     multi: true, coreLeg, legs: (() => { let po = 0, co = 0; return legs.map((l) => { const o2 = { k: l.k, r: l.r, xf: l.xf, A: l.A, po, co }; po += l.r.placed.length; co += l.r.core.length; return o2; }); })(), F: PF,
-    core: legs.flatMap((l) => l.r.core), coreOut: legs.flatMap((l) => l.r.coreOut), coreEdited: legs.some((l) => l.r.coreEdited), L: r3(PF.L), D: r3(PF.D), cw, spine: { path: sp.map((q) => [r3(q[0]), r3(q[1])]), width: cw },
-    corrPoly: WC.wallPoly(sp, cw, "c"), walls, fwallA: r3(fwallA), placed: legs.flatMap((l) => l.r.placed), left, issues, checks, figures: fig,
+    core: legs.flatMap((l) => l.r.core), coreOut: legs.flatMap((l) => l.r.coreOut), coreEdited: legs.some((l) => l.r.coreEdited), L: r3(PF.L), D: r3(PF.D), cw,
+    spine: PATH ? { path: sp.map((q) => [r3(q[0]), r3(q[1])]), width: cw } : { path: null, width: cw }, net: { nodes: NP.map((q) => [r3(q[0]), r3(q[1])]), edges: EG.map((e) => e.slice()) },
+    corrPoly: PATH ? WC.wallPoly(sp, cw, "c") : null, corrPolys: PATH ? [WC.wallPoly(sp, cw, "c")] : corrQuadsXY.map((qd) => qd.map((pt) => PF.to(pt))), walls, fwallA: r3(fwallA), placed: legs.flatMap((l) => l.r.placed), left, issues, checks, figures: fig,
     jpn1: Object.assign({}, C0.jpn1, { corrLen: r3(jp("corrLen")) }), legSeq: legs.map((l) => l.r.seq), edited: legs.some((l) => l.r.edited),
     residuals: legs.flatMap((l) => l.r.residuals.map((z) => Object.assign({ leg: l.k }, z))), frameAxis: { ux: PF.ux, uy: PF.uy },
   });
 }
 
+/* the corridor network of a floor's settings: f.net {nodes [[x, y]], edges [[a, b]]} (the plate frame) tidied - edges of no
+   length and repeats out, nodes no edge uses out - else the spine's path as a chain; null for none */
+export function netOf(p) {
+  if (p && p.net && Array.isArray(p.net.nodes) && Array.isArray(p.net.edges) && p.net.edges.length) {
+    const nodes = p.net.nodes.map((q) => [n(q[0]), n(q[1])]), seen = new Set(), E = [];
+    for (const e of p.net.edges) {
+      const a = Math.round(n(e[0])), b = Math.round(n(e[1]));
+      if (a === b || !nodes[a] || !nodes[b] || Math.hypot(nodes[b][0] - nodes[a][0], nodes[b][1] - nodes[a][1]) < 0.3) continue;
+      const k = Math.min(a, b) + ":" + Math.max(a, b); if (seen.has(k)) continue; seen.add(k); E.push([a, b]);
+    }
+    if (!E.length) return null;
+    const used = [...new Set(E.flat())].sort((a, b) => a - b), map = new Map(used.map((v, i) => [v, i]));
+    return { nodes: used.map((v) => nodes[v]), edges: E.map(([a, b]) => [map.get(a), map.get(b)]) };
+  }
+  const sp = p && p.spine && Array.isArray(p.spine.path) ? WC.cleanPath(p.spine.path) : null;
+  if (!sp || sp.length < 2) return null;
+  return toNet(sp);
+}
+/* a path as a network: its points the nodes, each segment an edge (in order) */
+export function toNet(path) { return { nodes: path.map((q) => [n(q[0]), n(q[1])]), edges: path.slice(1).map((_, k) => [k, k + 1]) }; }
+/* the network as a path when it is one (one chain, edges in order from one end): its points, else null */
+export function netPath(net) {
+  if (!net || !net.edges.length) return null;
+  const deg = net.nodes.map(() => 0); for (const [a, b] of net.edges) { deg[a]++; deg[b]++; }
+  if (deg.some((d) => d > 2) || deg.filter((d) => d === 1).length !== 2 || net.edges.length !== net.nodes.length - 1) return null;
+  const adj = net.nodes.map(() => []); for (const [a, b] of net.edges) { adj[a].push(b); adj[b].push(a); }
+  let v = deg.indexOf(1), prev = -1; const out = [];
+  for (let i = 0; i < net.nodes.length; i++) { out.push(net.nodes[v]); const nx = adj[v].find((w) => w !== prev); prev = v; if (nx == null) break; v = nx; }
+  return out.length === net.nodes.length ? out.map((q) => q.slice()) : null;
+}
+/* the corridor as a graph (the plate frame): a point on an edge {k, t (from its start), L}; the distances from a point to every
+   node; the shortest way between two points; whether a point reaches a staircase both ways (not in a dead end) */
+export function netGraph(net) {
+  const NP = net.nodes, EG = net.edges, L = EG.map(([a, b]) => Math.hypot(NP[b][0] - NP[a][0], NP[b][1] - NP[a][1]));
+  const inc = NP.map(() => []); EG.forEach(([a, b], k) => { inc[a].push(k); inc[b].push(k); });
+  const on = (k, P) => { const [a, b] = EG[k], A = NP[a], B = NP[b], t = ((P[0] - A[0]) * (B[0] - A[0]) + (P[1] - A[1]) * (B[1] - A[1])) / (L[k] || 1); return { k, t: Math.max(0, Math.min(L[k], t)), L: L[k] }; };
+  const dij = (src, skip) => {
+    const dist = NP.map(() => Infinity), done = new Uint8Array(NP.length);
+    for (const s0 of src) if (s0.d < dist[s0.v]) dist[s0.v] = s0.d;
+    for (;;) {
+      let v = -1, best = Infinity; for (let i = 0; i < dist.length; i++) if (!done[i] && dist[i] < best) { best = dist[i]; v = i; }
+      if (v < 0) break; done[v] = 1;
+      for (const j of inc[v]) { if (j === skip) continue; const w = EG[j][0] === v ? EG[j][1] : EG[j][0]; if (best + L[j] < dist[w]) dist[w] = best + L[j]; }
+    }
+    return dist;
+  };
+  const from = (A) => dij([{ v: EG[A.k][0], d: A.t }, { v: EG[A.k][1], d: A.L - A.t }]);
+  const dist = (dA, A, B) => { const g = Math.min(dA[EG[B.k][0]] + B.t, dA[EG[B.k][1]] + (B.L - B.t)); return A.k === B.k ? Math.min(Math.abs(A.t - B.t), g) : g; };
+  // both ways: toward its edge's start and toward its end, each reaching a staircase without coming back past it
+  const bothWays = (P, S) => {
+    const [a, b] = EG[P.k], dA = dij([{ v: a, d: 0 }], P.k), dB = dij([{ v: b, d: 0 }], P.k);
+    const reach = (dX, side) => S.some((s0) => (s0.k === P.k ? (side === "a" ? s0.t < P.t - 1e-6 || dX[b] < Infinity && s0.t > P.t + 1e-6 : s0.t > P.t + 1e-6 || dX[a] < Infinity && s0.t < P.t - 1e-6) : dX[EG[s0.k][0]] < Infinity || dX[EG[s0.k][1]] < Infinity));
+    return reach(dA, "a") && reach(dB, "b");
+  };
+  return { on, from, dist, bothWays, L, inc };
+}
+/* the area of a union of convex polygons: inclusion-exclusion over the groups that overlap */
+export function unionAreaConvex(polys) {
+  const P = polys.map((q) => (area(q) < 0 ? q.slice().reverse() : q.slice()));
+  let tot = 0;
+  const go = (start, cur, sign) => { for (let j = start; j < P.length; j++) { const c = U.clipConvex(cur, P[j]); if (c.length < 3) continue; const a = Math.abs(area(c)); if (a < 1e-9) continue; tot += sign * a; go(j + 1, c, -sign); } };
+  for (let i = 0; i < P.length; i++) { tot += Math.abs(area(P[i])); go(i + 1, P[i], -1); }
+  return tot;
+}
 /* two convex quadrilaterals overlapping (more than touching): the separating axis test */
 export function quadsOverlap(A, B) {
   for (const P of [A, B]) for (let i = 0; i < P.length; i++) {
@@ -707,6 +785,50 @@ export function arcMap(spOld, spNew, kOld, P) {
   const q = seg(spNew, k), base = fromEnd ? spNew[k + 1] : q.a, P2 = [base[0] + q.d[0] * u + q.n[0] * v, base[1] + q.d[1] * u + q.n[1] * v];
   const rot = Math.atan2(q.d[1], q.d[0]) - Math.atan2(o.d[1], o.d[0]), c = Math.cos(rot), sn = Math.sin(rot);
   return { k, rot, f: (pt) => { const dx = pt[0] - P[0], dy = pt[1] - P[1]; return [P2[0] + c * dx - sn * dy, P2[1] + sn * dx + c * dy]; } };
+}
+/* a floor's units and core pieces, as laid out (R), carried onto a new corridor network (the plate frame): each unit into the
+   leg nearest its middle, on its side, from that leg's start; each leg's core as one by its middle -> {legSeq, pieces}; a
+   straight network along the plate: {seq, pieces} as layout() reads them */
+export function migrateNet(R, net2, keepX) {
+  const toP = (l, pt) => [l.xf.ox + l.xf.c * pt[0] - l.xf.s * pt[1], l.xf.oy + l.xf.s * pt[0] + l.xf.c * pt[1]];
+  const NP = net2.nodes, EG = net2.edges, nL = EG.length;
+  const straight = nL === 1 && Math.abs(NP[EG[0][1]][1] - NP[EG[0][0]][1]) < 1e-6;
+  const ax = (k) => { const a = NP[EG[k][0]], b = NP[EG[k][1]], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, d = [(b[0] - a[0]) / L, (b[1] - a[1]) / L]; const rev = d[0] < -1e-9 || (Math.abs(d[0]) <= 1e-9 && d[1] < 0); return rev ? { ux: -d[0], uy: -d[1] } : { ux: d[0], uy: d[1] }; };
+  const rel = (k, pt) => { if (straight) return [pt[0], pt[1] - NP[EG[0][0]][1]]; const { ux, uy } = ax(k), a = NP[EG[k][0]], dx = pt[0] - a[0], dy = pt[1] - a[1]; return [dx * ux + dy * uy, -dx * uy + dy * ux]; };
+  const nearest = (P) => { let best = 0, bd = Infinity; for (let k = 0; k < nL; k++) { const q = WC.nearestOnPath(P, [NP[EG[k][0]], NP[EG[k][1]]]); if (q && q.d < bd) { bd = q.d; best = k; } } return best; };
+  const seqs = Array.from({ length: nL }, () => ({ s: [], n: [] }));
+  for (const l of R.legs || []) for (const q of l.r.placed) {
+    const cs = [[q.x, q.y], [q.x + q.w, q.y], [q.x + q.w, q.y + q.h], [q.x, q.y + q.h]].map((pt) => toP(l, pt));
+    const mid = [(cs[0][0] + cs[2][0]) / 2, (cs[0][1] + cs[2][1]) / 2], k = nearest(mid), rs = cs.map((pt) => rel(k, pt)), rm = rel(k, mid);
+    seqs[k][rm[1] < 0 ? "n" : "s"].push(Object.assign({ u: (q.entry && q.entry.u) || q.name, m: !!q.m, at: Math.min(...rs.map((v) => v[0])) }, q.fixed || keepX ? { x: r3(Math.min(...rs.map((v) => v[0]))) } : {}, q.r ? { r: q.r } : {}));
+  }
+  for (const S2 of seqs) for (const b of ["s", "n"]) { S2[b].sort((a, c) => a.at - c.at); for (const e of S2[b]) delete e.at; }
+  const pieces = [], FLIP = { n: "s", s: "n", e: "w", w: "e" };
+  for (const l of R.legs || []) {
+    if (!l.r.core.length) continue;
+    const cs = l.r.core.filter((c) => c.kind !== "passage"), G0 = cs.length ? cs : l.r.core;
+    const gl = [G0.reduce((s2, c) => s2 + c.x + c.w / 2, 0) / G0.length, G0.reduce((s2, c) => s2 + c.y + c.h / 2, 0) / G0.length], gm = toP(l, gl);
+    const k = nearest(gm), A2 = straight ? { ux: 1, uy: 0 } : ax(k), flip = A2.ux * l.xf.c + A2.uy * l.xf.s < 0, sg = flip ? -1 : 1, g0 = rel(k, gm);
+    // each piece kept about the core's middle, in the new leg's axes (turned half round with its leg: mirrored both ways)
+    const map = (pt) => [g0[0] + sg * (pt[0] - gl[0]), g0[1] + sg * (pt[1] - gl[1])];
+    for (const c of l.r.core) {
+      const rm = map([c.x + c.w / 2, c.y + c.h / 2]);
+      const q = { kind: c.kind, label: c.label, x: r3(rm[0] - c.w / 2), y: r3(rm[1] - c.h / 2), w: c.w, h: c.h, full: true };
+      if (straight) q.y = r3(q.y + NP[EG[0][0]][1]); else q.leg = k;
+      if (c.kind === "passage" && Array.isArray(c.path)) { q.path = orthoPath(c.path.map((pt) => { const v = map(pt); return straight ? [r3(v[0]), r3(v[1] + NP[EG[0][0]][1])] : [r3(v[0]), r3(v[1])]; })); q.width = c.width; q.auto = false; }
+      for (const key of ["door", "openings", "wt", "for"]) if (c[key] != null) q[key] = JSON.parse(JSON.stringify(c[key]));
+      if (flip) for (const o of [q.door, ...(q.openings || [])]) if (o && FLIP[o.side]) { o.side = FLIP[o.side]; if (o.at != null) o.at = r3(1 - o.at); }
+      if (c.kind === "passage" && c.for) q.auto = true;
+      pieces.push(q);
+    }
+  }
+  return straight ? { seq: seqs[0], pieces } : { legSeq: seqs, pieces };
+}
+/* a network's edge cut at point P (on it): the first part keeps the edge, the second is a new one -> the new node's index */
+export function splitNetEdge(net, k, P) {
+  const v = net.nodes.length; net.nodes.push([r3(P[0]), r3(P[1])]);
+  const [a, b] = net.edges[k]; net.edges[k] = [a, v]; net.edges.push([v, b]);
+  return v;
 }
 export function migrateToSpine(R, sp2, keepX) {
   const toP = (l, pt) => [l.xf.ox + l.xf.c * pt[0] - l.xf.s * pt[1], l.xf.oy + l.xf.s * pt[0] + l.xf.c * pt[1]];

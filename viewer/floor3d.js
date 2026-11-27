@@ -141,7 +141,7 @@ function scene(THREE, Orbit, host) {
     const z = lower * H, wz = z + sl, wh = Math.min(H - sl, 2.8);
     slab(grp, r.F.poly, z, wz, mat(0xd4d8dd));
     const rcM = mat(0xa3a9b0), blkM = mat(0xeeeae0), pcM = mat(0xa9b0b7);
-    if (r.corrPoly && r.multi) slab(grp, r.corrPoly, wz, wz + 0.01, mat(0xe6e9ee));
+    if (r.multi) for (const cp of r.corrPoly ? [r.corrPoly] : r.corrPolys || []) slab(grp, cp, wz, wz + 0.01, mat(0xe6e9ee));
     // the walls drawn on the floor (any angle): their solid parts, a lintel over each opening
     for (const w of r.walls || []) {
       for (const q of w.pieces || []) slab(grp, q, wz, wz + wh, w.m === "blk" ? blkM : rcM);

@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-09", date: "27 Nov 2026",
+    items: [
+      "**Corridors that branch and loop** on 4 · Floors: the corridor is now a network - a T, an H, a loop or any branching. With the **Corridor** tool (C), start a run on the corridor to branch from it, end it on the corridor to join it (closing a loop or making an H); select the corridor to drag its points, click a leg's + for a bend, right-click a point or a leg to take it out, or to put the core on that leg.",
+      "**Each leg laid out on its own**: its part of the plate up to the bisectors with the legs at each junction, the units both sides of it, the junction kept clear; units and core carried over when the network changes. The corridor's area is the union of its legs (a junction counted once).",
+      "**Travel along the network** (B11): the shortest way from each flat door to a staircase, through the junctions; a dead end is a door that reaches a staircase one way only - nothing round a loop is one; the stair spread is the longest way between two staircases. 3D, the DXF and the Mix elevation follow the network.",
+    ],
+  },
+  {
     version: "2027-04-08", date: "27 Nov 2026",
     items: [
       "**Polygon rooms** on 3 · Units: a room can be any shape. **Make a polygon** (a room's line in the panel, or right-click it), then drag its corners on the plan - the rooms meeting at a corner move with it, so they still meet; a + on each edge adds a corner, right-click a corner to take it out. The **Polygon room** tool (P) draws one: click its corners (they snap to the grid and the rooms' corners and edges), the first corner or Enter closes it.",

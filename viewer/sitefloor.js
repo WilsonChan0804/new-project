@@ -19,6 +19,7 @@ import { toast } from "./tasks-util.js";
 import * as PZ from "./planzoom.js";
 import * as PT from "./plantools.js";
 import { outlineOf, polyLines } from "./unitwalls.js";
+import { clipConvex } from "./unitcore.js";
 import * as UN from "./siteunits.js";
 import * as ME from "./measure.js";
 import * as DM from "./dims.js";
@@ -82,12 +83,22 @@ const toLeg = (l, [x, y]) => { const dx = x - l.xf.ox, dy = y - l.xf.oy; return 
 const rotIn = (l, dx, dy) => [l.xf.c * dx + l.xf.s * dy, -l.xf.s * dx + l.xf.c * dy];
 const pIdx = (ci) => { const c = LAST && LAST.core[ci]; return c && c.pi != null ? c.pi : ci; };
 const localOf = (arr, gi, key) => { const q = LAST[arr][gi]; if (!q) return null; const l = legK(q.leg || 0); return { l, i: gi - l[key], q }; };
+/* the corridor a network (branches, a loop: not one path) - its nodes and edges in the plate frame */
+const NETM = () => !!(LAST && LAST.net && !(LAST.spine && LAST.spine.path));
+function netNow() { return NETM() ? JSON.parse(JSON.stringify(LAST.net)) : FC.toNet(LAST.spine.path); }
+const legEnds = (k) => { if (NETM()) { const N = LAST.net, e = N.edges[k]; return [N.nodes[e[0]], N.nodes[e[1]]]; } const sp = LAST.spine.path; return [sp[k], sp[k + 1]]; };
+/* a network's legs as bands (the plate frame), each run on by half the width into a joint */
+function netQuads(net, cw) {
+  const deg = net.nodes.map(() => 0); for (const [a, b] of net.edges) { deg[a]++; deg[b]++; }
+  return net.edges.map(([a, b]) => { const A = net.nodes[a], B = net.nodes[b], L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1, d = [(B[0] - A[0]) / L, (B[1] - A[1]) / L], nn = [-d[1] * cw / 2, d[0] * cw / 2], ea = deg[a] > 1 ? cw / 2 : 0, eb = deg[b] > 1 ? cw / 2 : 0, A0 = [A[0] - d[0] * ea, A[1] - d[1] * ea], B0 = [B[0] + d[0] * eb, B[1] + d[1] * eb]; return [[A0[0] + nn[0], A0[1] + nn[1]], [B0[0] + nn[0], B0[1] + nn[1]], [B0[0] - nn[0], B0[1] - nn[1]], [A0[0] - nn[0], A0[1] - nn[1]]]; });
+}
+void clipConvex;
 /* the leg whose part of the floor holds a plate-frame point (nearest its spine) */
 function legAt(P) {
   const L = legs(); if (L.length <= 1) return L[0];
   let best = L[0], bd = Infinity;
   for (const l of L) {
-    const sp = LAST.spine.path, a = sp[l.k], b = sp[l.k + 1], q = WC.nearestOnPath(P, [a, b]);
+    const [a, b] = legEnds(l.k), q = WC.nearestOnPath(P, [a, b]);
     if (q && q.d < bd) { bd = q.d; best = l; }
   }
   return best;
@@ -534,7 +545,7 @@ function floorEnts() {
   const rect = (l, L, x0, y0, x1, y1) => pl(l, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((q) => fromLeg(L, q)));
   const txt = (l, p, h, s2, rot = 0) => E.push({ t: "text", l, p: Y(p), h, s: s2, a: "c", v: "m", r: rot });
   pl("A-SLAB-OUTL", r.F.poly);
-  pl("A-CORR", WC.wallPoly(r.spine.path, r.cw, "c"));
+  for (const cp of r.corrPolys || [WC.wallPoly(r.spine.path, r.cw, "c")]) pl("A-CORR", cp);
   for (const L of legs()) {
     const lr = L.r, ang = -(L.xf.ang || 0) * 180 / Math.PI;
     for (const q of lr.placed) {
@@ -640,6 +651,12 @@ function propHtml() {
       { key: "w.ang", label: "∠", value: ang, unit: "°", step: 0.5, dp: 1, w: 56, title: "Its angle on the plan" },
     ], acts([["w:split", "split", "Cut it at the selected segment's middle"], ["w:copy", "copy", "Copy (Ctrl+C)"], ["w:del", "trash", "Remove (Delete)"]]));
   }
+  if (SPSEL && NETM()) {
+    return PT.propBar({ icon: "corridor", text: "Corridor", sub: `${r.legs.length} legs · drag a point · + adds a bend · draw from it to branch, to it to join` }, [
+      { key: "f.corridor", label: "width", value: o.corridor, unit: "m", step: 0.05 },
+      { key: "s.coreLeg", type: "sel", label: "core in", value: r.coreLeg, options: r.legs.map((l) => [l.k, "leg " + (l.k + 1)]) },
+    ], acts([["s:straight", "reset", "Back to one straight corridor"]]));
+  }
   if (SPSEL) {
     const sp = r.spine.path, lens = sp.slice(1).map((q, k) => Math.hypot(q[0] - sp[k][0], q[1] - sp[k][1]));
     const ang = (k) => Math.round(Math.atan2(-(sp[k + 1][1] - sp[k][1]), sp[k + 1][0] - sp[k][0]) * 1800 / Math.PI) / 10;
@@ -737,10 +754,10 @@ function onTool(id) {
   if (k === "s") {
     if (a === "straight") {
       // one straight corridor along the plate, through the first leg's middle
-      const sp = LAST.spine.path, y = (sp[0][1] + sp[1][1]) / 2, xs = LAST.F.poly.map((p) => p[0]);
+      const sp = LAST.spine.path || legEnds(LAST.coreLeg || 0), y = (sp[0][1] + sp[1][1]) / 2, xs = LAST.F.poly.map((p) => p[0]);
       const line = [[Math.min(...xs), y], [Math.max(...xs), y]];
       SPSEL = false;
-      return editFloor((f) => { carry(f, line); delete f.spine; f.corrY = R3(y - (Number(opts(cur()).corridor) || 1.5) / 2); });
+      return editFloor((f) => { carry(f, line); delete f.spine; delete f.net; f.corrY = R3(y - (Number(opts(cur()).corridor) || 1.5) / 2); });
     }
     if (a === "bend") return editSpine((sp) => { let best = 0, bl = -1; for (let j = 0; j < sp.length - 1; j++) { const l = WC.segLen(sp, j); if (l > bl) { bl = l; best = j; } } const p0 = sp[best], p1 = sp[best + 1]; sp.splice(best + 1, 0, [R3((p0[0] + p1[0]) / 2), R3((p0[1] + p1[1]) / 2)]); return sp; });
   }
@@ -855,9 +872,41 @@ function editSpine(fn, keepSel) {
   if (bad >= 0) return toast(bad === 0 || bad === out.length - 1 ? "That end of the corridor would be off the floor plate" : "That bend would be off the floor plate", true);
   return editFloor((f) => {
     carry(f, out);
-    f.spine = { path: out };
+    f.spine = { path: out }; delete f.net;
     SPSEL = true; if (!keepSel) SPPT = null;
   });
+}
+/* the corridor network edited: a path again is kept as the spine; else the network (its units and core carried onto it) */
+function editNet(net0, keepSel) {
+  const net = { nodes: net0.nodes.map((p) => [R3(p[0]), R3(p[1])]), edges: net0.edges.map((e) => e.slice()) };
+  const clean = FC.netOf({ net });
+  if (!clean) return toast("The corridor needs one leg at least", true);
+  if (clean.nodes.some((p) => !onPlate(p))) return toast("A corridor point would be off the floor plate", true);
+  const path = FC.netPath(clean);
+  if (path) return editSpine(() => path, keepSel);
+  return editFloor((f) => { carry(f, clean); f.net = clean; delete f.spine; delete f.corrY; SPSEL = true; });
+}
+/* a corridor drawn: from a point on the corridor a branch (a T), to a point on it a join (an H, a loop); else in place of it */
+function drawCorridor(pts) {
+  const net = netNow(), tol = Math.max(0.8, LAST.cw * 0.75);
+  const hit = (N, P, not) => {
+    let best = null;
+    N.nodes.forEach((q, i) => { const d = Math.hypot(q[0] - P[0], q[1] - P[1]); if (d <= tol && i !== not && (!best || d < best.d)) best = { d, node: i }; });
+    if (best) return best;
+    N.edges.forEach((e, k) => { const q = WC.nearestOnPath(P, [N.nodes[e[0]], N.nodes[e[1]]]); if (q && q.d <= tol && (!best || q.d < best.d)) best = { d: q.d, edge: k, P: q.p }; });
+    return best;
+  };
+  const h0 = hit(net, pts[0]), h1 = hit(net, pts[pts.length - 1]);
+  if (!h0 && !h1) return editSpine(() => pts);
+  const at = (h) => (h.node != null ? h.node : FC.splitNetEdge(net, h.edge, h.P));
+  let prev = h0 ? at(h0) : (net.nodes.push(pts[0].slice()), net.nodes.length - 1);
+  const first = prev;
+  for (let i = 1; i < pts.length - 1; i++) { net.nodes.push(pts[i].slice()); net.edges.push([prev, net.nodes.length - 1]); prev = net.nodes.length - 1; }
+  // the end: on the network (found again, an edge may have been cut at the start) or free
+  const h2 = h1 ? hit(net, pts[pts.length - 1], first) : null;
+  const last = h2 ? at(h2) : (net.nodes.push(pts[pts.length - 1].slice()), net.nodes.length - 1);
+  if (last !== prev) net.edges.push([prev, last]);
+  return editNet(net);
 }
 /* a point on the plate, its edges included (within 50 mm) */
 /* from p (off the plate) towards q: the first point on the plate's edge, a little inside */
@@ -883,11 +932,12 @@ function carry(f, out) { return timed("carry", () => carry0(f, out)); }
 function carry0(f, out) {
   // both ways tried - each unit where it stands, or in its order laid along the new legs - the one that places more, with fewer clashes, kept
   const x = cur(), list = units(), mix = [];
+  const isNet = !!(out && out.nodes), nE = isNet ? out.edges.length : out.length - 1;
   for (const q of x.g.mix || []) { const u = list.find((v) => v.name === q.u); if (u) mix.push({ u, n: Number(q.n) || 0 }); }
   const trial = (M3) => {
     // as the floor will be stored (so the one kept is the layout the page then shows, from the cache)
-    const o = Object.assign({}, opts(x), { seq: M3.seq || null, legSeq: M3.legSeq || null, spine: { path: out }, pieces: M3.pieces || null, corrY: null });
-    if (!M3.seq) o.seq = null; if (M3.seq) { o.legSeq = null; o.coreLeg = null; } else if (o.coreLeg != null && o.coreLeg >= out.length - 1) o.coreLeg = null;
+    const o = Object.assign({}, opts(x), { seq: M3.seq || null, legSeq: M3.legSeq || null, spine: isNet ? null : { path: out }, net: isNet ? out : null, pieces: M3.pieces || null, corrY: null });
+    if (!M3.seq) o.seq = null; if (M3.seq) { o.legSeq = null; o.coreLeg = null; } else if (o.coreLeg != null && o.coreLeg >= nE) o.coreLeg = null;
     if (!M3.pieces) o.pieces = null;
     const r = layoutOf(Object.assign(o, { poly: x.fp, mix, lib: list, storeys: Number(x.g.n) || 1, floorsAbove: x.top || Number(x.g.n) || 1 }));
     // the units standing clear (inside the plate, on nothing else) first, then the fewer clashes; those that do not fit stay in the floor's list
@@ -895,7 +945,8 @@ function carry0(f, out) {
     // no unit lost first (one flagged is shown and can be moved; one dropped is not seen), then those clear, then the core clear
     return r ? [r.placed.length * 1000 + r.placed.filter((q) => !(q.flags && q.flags.length)).length * 10 + r.core.filter((c) => !(c.flags && c.flags.length)).length, -r.issues.length] : [-1, -1e9];
   };
-  const A1 = FC.migrateToSpine(LAST, out, true), A2 = FC.migrateToSpine(LAST, out, false), cands = [A1, A2];
+  const mig = (keep) => (isNet || NETM() ? FC.migrateNet(LAST, isNet ? out : FC.toNet(out), keep) : FC.migrateToSpine(LAST, out, keep));
+  const A1 = mig(true), A2 = mig(false), cands = [A1, A2];
   // each where it stands, but those that then clash laid along their leg again
   trial(A1);
   if (trial.last && A1.legSeq) {
@@ -911,7 +962,7 @@ function carry0(f, out) {
   const clean = (r) => r && r.placed.length >= LAST.placed.length && !(r.left && r.left.length) && !r.issues.length && r.placed.every((q) => !(q.flags && q.flags.length)) && r.core.every((c) => !(c.flags && c.flags.length));
   for (const c of cands) { const sc = trial(c); if (!best || sc[0] > best[0] || (sc[0] === best[0] && sc[1] > best[1])) { best = sc; M2 = c; } if (clean(trial.last)) break; }
   if (M2.seq) { f.seq = M2.seq; delete f.legSeq; delete f.coreLeg; }
-  else if (M2.legSeq) { f.legSeq = M2.legSeq; delete f.seq; if (f.coreLeg != null && f.coreLeg >= out.length - 1) delete f.coreLeg; }
+  else if (M2.legSeq) { f.legSeq = M2.legSeq; delete f.seq; if (f.coreLeg != null && f.coreLeg >= nE) delete f.coreLeg; }
   else { delete f.seq; delete f.legSeq; }
   delete f.corrY;
   if (M2.pieces && LAST.core.length) f.pieces = M2.pieces; else if (!M2.pieces) delete f.pieces;
@@ -926,8 +977,8 @@ function drawPlan0() {
   if (!r) { if (!host.innerHTML) host.innerHTML = `<div class="un-empty">Choose a floor group.</div>`; mountBars(); return; }
   const bw = host.clientWidth || 900, bh = host.clientHeight || 700;
   // the box: the plate and its corridor
-  const xs = [...r.F.poly.map((p) => p[0]), ...((r.spine && r.spine.path) || []).map((p) => p[0])];
-  const ys = [...r.F.poly.map((p) => p[1]), ...((r.spine && r.spine.path) || []).map((p) => p[1])];
+  const xs = [...r.F.poly.map((p) => p[0]), ...((r.spine && r.spine.path) || (r.net && r.net.nodes) || []).map((p) => p[0])];
+  const ys = [...r.F.poly.map((p) => p[1]), ...((r.spine && r.spine.path) || (r.net && r.net.nodes) || []).map((p) => p[1])];
   const gk = cur() ? cur().key : "";
   if (!DRAG && (VIEWKEY !== gk || !drawPlan.W)) { X0 = Math.min(0, ...xs); Y0 = Math.min(0, ...ys); drawPlan.W = Math.max(r.L, ...xs) - X0; drawPlan.H = Math.max(r.D, ...ys) - Y0; VIEWKEY = gk; }
   const W = drawPlan.W, H = drawPlan.H, top = 96;   // room for the toolbar and the property bar
@@ -940,9 +991,17 @@ function drawPlan0() {
   let bgGrid = "";
   let g = `<polygon points="${poly.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="#fbf3dc" fill-opacity="0.85" stroke="#7a6a3a" stroke-width="1.5" />`;
   // the corridor (a bending one: its mitred shape, the knuckles too); picked to edit its line
-  const spPath = DRAG && (DRAG.k === "spt" || DRAG.k === "spsel") && DRAG.path ? DRAG.path : r.spine.path;
-  const cpoly = WC.wallPoly(spPath, r.cw, "c");
-  g += `<polygon class="fl-sp" data-spine="1" points="${cpoly.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="#eceff3" stroke="${SPSEL ? "#f28022" : "#9aa5b1"}" stroke-width="${SPSEL ? 2 : 0.8}" />`;
+  const NM = NETM(), spPath = NM ? [] : DRAG && (DRAG.k === "spt" || DRAG.k === "spsel") && DRAG.path ? DRAG.path : r.spine.path;
+  const netV = NM ? (DRAG && DRAG.k === "nnode" && DRAG.net ? DRAG.net : r.net) : null;
+  if (NM) {
+    // a network: each leg a band (picked to edit it), the bands' outline as one
+    const Q = netQuads(netV, r.cw);
+    Q.forEach((qd, k) => { g += `<polygon class="fl-sp" data-spine="1" data-nleg="${k}" points="${qd.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="#eceff3" stroke="none" />`; });
+    for (const ln of polyLines(Q.map((pts) => ({ pts, m: "rc" })))) g += `<line x1="${sx(ln.x1)}" y1="${sy(ln.y1)}" x2="${sx(ln.x2)}" y2="${sy(ln.y2)}" stroke="${SPSEL ? "#f28022" : "#9aa5b1"}" stroke-width="${SPSEL ? 2 : 0.8}" pointer-events="none" />`;
+  } else {
+    const cpoly = WC.wallPoly(spPath, r.cw, "c");
+    g += `<polygon class="fl-sp" data-spine="1" points="${cpoly.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="#eceff3" stroke="${SPSEL ? "#f28022" : "#9aa5b1"}" stroke-width="${SPSEL ? 2 : 0.8}" />`;
+  }
   const PTW = drawPlan.ptw = [];
   // every leg's left-over and strips first, then every leg's units and core over them, so no leg covers another's units
   const LG = legs().map((l) => drawLeg(l, sx, sy, fs, PTW));
@@ -970,14 +1029,22 @@ function drawPlan0() {
       for (let k = 0; k < w.path.length - 1; k++) { const m2 = [(w.path[k][0] + w.path[k + 1][0]) / 2, (w.path[k][1] + w.path[k + 1][1]) / 2]; g += `<rect class="fl-ppt" data-fwseg="${k}" x="${sx(m2[0]) - 5}" y="${sy(m2[1]) - 5}" width="10" height="10" fill="#f28022" stroke="#fff" stroke-width="1.5" style="cursor:move" />`; }
     }
   }
+  // a network's points to drag, a + in each leg to add a bend, each leg's length
+  if (NM && (SPSEL || TOOL === "corridor") && can) {
+    for (const [a, b] of netV.edges) g += `<line x1="${sx(netV.nodes[a][0])}" y1="${sy(netV.nodes[a][1])}" x2="${sx(netV.nodes[b][0])}" y2="${sy(netV.nodes[b][1])}" stroke="#f28022" stroke-width="1.5" stroke-dasharray="6 4" pointer-events="none" />`;
+    netV.nodes.forEach((p, i) => { g += `<circle class="fl-ppt" data-nnode="${i}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7.5" fill="#fff" stroke="#f28022" stroke-width="2.5"><title>Drag this point (Shift: free of 15°); right-click to take it out; draw from it with the corridor tool to branch</title></circle>`; });
+    netV.edges.forEach(([a, b], k) => { const m2 = [(netV.nodes[a][0] + netV.nodes[b][0]) / 2, (netV.nodes[a][1] + netV.nodes[b][1]) / 2], L = Math.hypot(netV.nodes[b][0] - netV.nodes[a][0], netV.nodes[b][1] - netV.nodes[a][1]);
+      g += `<g class="fl-ppt" data-nedge="${k}"><circle data-nedge="${k}" cx="${sx(m2[0])}" cy="${sy(m2[1])}" r="7" fill="#f28022" stroke="#fff" stroke-width="1.5" /><text x="${sx(m2[0])}" y="${sy(m2[1]) + 4}" text-anchor="middle" font-size="12" fill="#fff" pointer-events="none">+</text></g>`;
+      if (SPSEL) g += `<text x="${sx(m2[0])}" y="${sy(m2[1]) - Math.max(12, r.cw * SC / 2 + 8)}" text-anchor="middle" font-size="12" font-weight="700" fill="#c25e0a" paint-order="stroke" stroke="#fff" stroke-width="3.5" pointer-events="none">leg ${k + 1} · ${f1(L)} m</text>`; });
+  }
   // the corridor's line when selected: its points to drag, a + in each leg to add a bend
-  if ((SPSEL || TOOL === "corridor") && can) {
+  if (!NM && (SPSEL || TOOL === "corridor") && can) {
     g += `<polyline points="${pts(spPath)}" fill="none" stroke="#f28022" stroke-width="1.5" stroke-dasharray="6 4" pointer-events="none" />`;
     spPath.forEach((p, k) => { g += `<circle class="fl-ppt" data-spt="${k}" cx="${sx(p[0])}" cy="${sy(p[1])}" r="7.5" fill="#fff" stroke="#f28022" stroke-width="2.5" />`; });
     for (let k = 0; k < spPath.length - 1; k++) { const m2 = [(spPath[k][0] + spPath[k + 1][0]) / 2, (spPath[k][1] + spPath[k + 1][1]) / 2]; g += `<g class="fl-ppt" data-spm="${k}"><circle data-spm="${k}" cx="${sx(m2[0])}" cy="${sy(m2[1])}" r="7" fill="#f28022" stroke="#fff" stroke-width="1.5" /><text x="${sx(m2[0])}" y="${sy(m2[1]) + 4}" text-anchor="middle" font-size="12" fill="#fff" pointer-events="none">+</text></g>`; }
   }
   // the corridor's legs: each its length and direction, each bend its turn (the corridor selected)
-  if (SPSEL) {
+  if (SPSEL && !NM) {
     const ang = (a, b) => Math.atan2(-(b[1] - a[1]), b[0] - a[0]) * 180 / Math.PI;
     for (let k = 0; k < spPath.length - 1; k++) {
       const a = spPath[k], b = spPath[k + 1], m2 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], L = Math.hypot(b[0] - a[0], b[1] - a[1]), dg = ang(a, b);
@@ -1422,7 +1489,7 @@ function finishDraw() {
   WALLDRAW = { kind: W.kind, pts: [] };
   if (pts.length < 2) return drawPlan();
   if (W.kind === "wall") { const wt = WT(); return editWalls((A) => { A.push({ path: pts.map((p) => [R3(p[0]), R3(p[1])]), t: wt.t || Number(opts(cur()).coreWall) || 0.25, m: wt.m, just: wt.just }); return A.length - 1; }); }
-  if (W.kind === "corridor") { setTool("select"); return editSpine(() => pts); }
+  if (W.kind === "corridor") { setTool("select"); return drawCorridor(pts); }
   if (W.kind === "lobby") {
     const l = legAt(pts[0]), lp = pts.map((p) => toLeg(l, p)).map((p) => [R3(p[0] - l.A[0]), R3(p[1] - l.A[1])]);
     return editCore((P) => { P.push({ kind: "passage", label: "Passage", path: FC.orthoPath(lp), width: Number(opts(cur()).corridor) || 1.5, leg: l.k, auto: false }); return P.length - 1; });
@@ -1497,7 +1564,7 @@ function snapPoint(P, last, ev, extra) {
 }
 function drawPt(ev) {
   const P = toPlan(ev), W = WALLDRAW, last = W && W.pts[W.pts.length - 1];
-  const extra = [...(W && W.kind !== "wall" ? LAST.spine.path : []), ...(W ? W.pts.slice(0, -1) : [])];
+  const extra = [...(W && W.kind !== "wall" ? LAST.spine.path || (LAST.net && LAST.net.nodes) || [] : []), ...(W ? W.pts.slice(0, -1) : [])];
   return snapPoint(P, last, ev, extra);
 }
 
@@ -1620,6 +1687,21 @@ function onContext(ev) {
     const tg = openingTarget(P, 0.9), q = WC.nearestOnWalls(P, LAST.walls, 2);
     if (t.dataset.fwo != null) { const [w1, o1] = t.dataset.fwo.split(":").map(Number); OPSEL = { wi: w1, oi: o1 }; WSEL = null; M2.push({ label: "Make it a door", action: () => editOpening((o) => { o.type = "door"; }) }, { label: "Make it sliding", action: () => editOpening((o) => { o.type = "sliding2"; }) }, { label: "Make it an opening", action: () => editOpening((o) => { o.type = "opening"; }) }, { label: "Make it a window", action: () => editOpening((o) => { o.type = "window"; }) }, "-", { label: "Delete", danger: true, action: delSel }); }
     else M2.push(...addOps(tg && tg.kind === "wall" ? tg : null), "-", { label: "Cut the wall here", action: () => q && editWalls((A) => { const parts = WC.splitWall(A[q.i], q.seg, q.s); A.splice(q.i, 1, ...parts); return q.i; }) }, { label: "Delete this segment", action: () => q && editWalls((A) => { const parts = WC.deleteSegment(A[q.i], q.seg); A.splice(q.i, 1, ...parts); }) }, "-", ...common(true), "-", { label: "Delete the wall", key: "Del", danger: true, action: delSel });
+  } else if (t.dataset.nnode != null && NETM()) {
+    const i = +t.dataset.nnode, N = netNow(), es = N.edges.map((e, k) => [e, k]).filter(([e]) => e.includes(i));
+    SPSEL = true; drawPlan();
+    M2.push({ label: es.length === 2 ? "Take out this bend (its two legs one)" : es.length === 1 ? "Take out this end (its leg)" : "Take out this junction (its legs too)", danger: es.length > 2, action: () => {
+      if (es.length === 2) { const o = es.map(([e]) => (e[0] === i ? e[1] : e[0])); N.edges = N.edges.filter((e) => !e.includes(i)); N.edges.push(o); }
+      else N.edges = N.edges.filter((e) => !e.includes(i));
+      return editNet(N);
+    } });
+  } else if ((t.dataset.spine != null || t.dataset.nedge != null) && NETM()) {
+    SPSEL = true; drawPlan();
+    const N = netNow(); let k = t.dataset.nleg != null ? +t.dataset.nleg : t.dataset.nedge != null ? +t.dataset.nedge : null;
+    if (k == null) { let bd = Infinity; N.edges.forEach((e, j) => { const q = WC.nearestOnPath(P, [N.nodes[e[0]], N.nodes[e[1]]]); if (q && q.d < bd) { bd = q.d; k = j; } }); }
+    const q = WC.nearestOnPath(P, [N.nodes[N.edges[k][0]], N.nodes[N.edges[k][1]]]);
+    M2.push({ label: "Add a bend here", action: () => { FC.splitNetEdge(N, k, q.p); return editNet(N); } }, { label: `The core on leg ${k + 1}`, action: () => editFloor((f) => { f.coreLeg = k; delete f.pieces; delete f.legSeq; }) }, "-",
+      { label: "Take out this leg", danger: true, disabled: N.edges.length <= 1, action: () => { N.edges.splice(k, 1); return editNet(N); } }, { label: "Straight again", action: () => onTool("s:straight") });
   } else if (t.dataset.spt != null) {
     const k = +t.dataset.spt; SPSEL = true; drawPlan();
     M2.push({ label: "Remove this bend", disabled: !(k > 0 && k < LAST.spine.path.length - 1), action: () => editSpine((sp) => { sp.splice(k, 1); return sp; }) });
@@ -1682,6 +1764,8 @@ function wirePlan() {
     const legOfEl = () => { const gEl = t.closest("[data-legg]"); return gEl ? +gEl.dataset.legg : 0; };
     if (t.dataset.fwpt != null && WSEL != null && can) { DRAG = { k: "fwpt", i: WSEL, p: +t.dataset.fwpt, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; cap(host, ev); ev.preventDefault(); return; }
     if (t.dataset.fwseg != null && WSEL != null && can) { WSEG = +t.dataset.fwseg; DRAG = { k: "fwseg", i: WSEL, p: +t.dataset.fwseg, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; cap(host, ev); ev.preventDefault(); return; }
+    if (t.dataset.nnode != null && can && NETM()) { DRAG = { k: "nnode", p: +t.dataset.nnode, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; cap(host, ev); ev.preventDefault(); return; }
+    if (t.dataset.nedge != null && can && NETM()) { ev.preventDefault(); const N = netNow(), e = N.edges[+t.dataset.nedge], a = N.nodes[e[0]], b = N.nodes[e[1]]; FC.splitNetEdge(N, +t.dataset.nedge, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); return editNet(N); }
     if (t.dataset.spt != null && can) { DRAG = { k: "spt", p: +t.dataset.spt, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; cap(host, ev); ev.preventDefault(); return; }
     if (t.dataset.spm != null && can) { const k = +t.dataset.spm; ev.preventDefault(); return editSpine((sp) => { const a = sp[k], b = sp[k + 1]; sp.splice(k + 1, 0, [R3((a[0] + b[0]) / 2), R3((a[1] + b[1]) / 2)]); return sp; }); }
     if (t.dataset.fwo != null && can) { const [wi, oi] = t.dataset.fwo.split(":").map(Number); clearSel(); OPSEL = { wi, oi }; DRAG = { k: "fwo", wi, oi, x: ev.clientX, y: ev.clientY, moved: false }; cap(host, ev); ev.preventDefault(); return drawPlan(); }
@@ -1694,6 +1778,7 @@ function wirePlan() {
     if (t.dataset.vi != null && LAST && can) DRAG = { k: "vert", i: +t.dataset.vi, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false };
     else if (t.dataset.pi != null && LAST) { const L1 = localOf("placed", +t.dataset.pi, "po"); DRAG = { k: "unit", i: +t.dataset.pi, li: L1.i, leg: L1.l.k, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; }
     else if (t.dataset.ci != null && LAST) { const L1 = localOf("core", +t.dataset.ci, "co"); DRAG = { k: "core", i: +t.dataset.ci, li: L1.i, leg: L1.l.k, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false }; }
+    else if (t.dataset.spine != null && LAST && NETM()) { clearSel(); SPSEL = true; ev.preventDefault(); return drawPlan(); }
     else if (t.dataset.spine != null && LAST) { const q = WC.nearestOnPath(toPlan(ev), LAST.spine.path); DRAG = { k: "spsel", seg: q ? q.seg : 0, x: ev.clientX, y: ev.clientY, moved: false }; }
     else pan = { x: ev.clientX, y: ev.clientY, px: ZM.px, py: ZM.py, moved: false };
     cap(host, ev); ev.preventDefault();
@@ -1738,6 +1823,13 @@ function wirePlan() {
         P[k] = snap ? [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20] : [R3(q[0]), R3(q[1])]; };
       if (DRAG.k === "fwpt") mv(DRAG.p); else { mv(DRAG.p); mv(DRAG.p + 1); }
       DRAG.path = P;
+    } else if (DRAG.k === "nnode") {
+      // a network's point: to 15° from a leg's other end (Shift: free), the 50 mm grid
+      const N = netNow(), p0 = N.nodes[DRAG.p], nbs = N.edges.filter((e) => e.includes(DRAG.p)).map((e) => N.nodes[e[0] === DRAG.p ? e[1] : e[0]]);
+      let q = [p0[0] + dx / SC, p0[1] + dy / SC];
+      if (!ev.shiftKey && nbs.length === 1) q = WC.snapAngle(nbs[0], q, 15);
+      if (snap) q = [Math.round(q[0] * 20) / 20, Math.round(q[1] * 20) / 20];
+      N.nodes[DRAG.p] = [R3(q[0]), R3(q[1])]; DRAG.net = N; DRAG.moved = true;
     } else if (DRAG.k === "spsel") {
       // a leg dragged across: both its points square to it, the corridor kept on the plate
       const sp = LAST.spine.path, j = DRAG.seg, { nl } = WC.dirOf(sp[j], sp[j + 1]);
@@ -1812,6 +1904,7 @@ function wirePlan() {
     if (d.k === "cedge") { if (!d.moved || !d.box) return drawPlan(); const A = legK(d.leg).A, i = pIdx(d.i); return editCore((P) => { Object.assign(P[i], { x: R3(d.box.x - A[0]), y: R3(d.box.y - A[1]), w: d.box.w, h: d.box.h }); return i; }); }
     if (d.k === "fwpt" || d.k === "fwseg") { if (!d.moved || !d.path) return drawPlan(); return editWalls((A) => { A[d.i].openings = WC.keepOpenings(A[d.i], d.path, d.k === "fwseg" ? d.p : -1); A[d.i].path = WC.cleanPath(d.path); return d.i; }); }
     if (d.k === "spt") { if (!d.moved || !d.path) { SPSEL = true; SPPT = d.p; return drawPlan(); } SPPT = d.p; return editSpine(() => d.path, true); }
+    if (d.k === "nnode") { if (!d.moved || !d.net) { SPSEL = true; return drawPlan(); } return editNet(d.net, true); }
     if (d.k === "ppt") { if (!d.moved || !d.path) return drawPlan(); const A = legK(d.leg).A, i = pIdx(d.i); return editCore((P) => { P[i].path = FC.orthoPath(d.path).map((p) => [R3(p[0] - A[0]), R3(p[1] - A[1])]); if (P[i].for) P[i].auto = false; return i; }); }
     if (d.k === "cdo") {
       if (!d.moved || !d.prev) return drawPlan();
