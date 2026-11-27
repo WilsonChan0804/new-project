@@ -116,6 +116,14 @@ export function show(on) {
   if (on) { if (!HIST.length) snapHist(); layer.addTo(C.map()); render(); viewsBar(); } else { endTool(); layer.remove(); setView("plan"); }
 }
 export function refresh() { if (ON) render(); }
+/* the step bar's line for 2 · Massing: over a limit (amber), or the GFA */
+export function status() {
+  if (!C) return null;
+  const s = C.study(); if (!s.pts || s.pts.length < 3) return null;
+  const m = mass(); if (!m.blocks.length) return { meta: "No blocks yet" };
+  const f = M.figures(model(), C.siteArea(), s.plan && s.plan.level, m.uc6), over = M.against(f, C.potential()).filter((r) => r.status === "over");
+  return over.length ? { meta: over.length === 1 ? `${over[0].label} over` : `${over.length} over the limits`, warn: true } : { meta: `GFA ${f0(f.gfa)} m²` };
+}
 
 /* ---------- views: Plan / 3D / Elevation / Section, and the plan tools */
 const MKEYS = [

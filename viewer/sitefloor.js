@@ -335,6 +335,17 @@ export function layouts() {
     return { x, r, mix };
   });
 }
+/* the step bar's line for 4 · Floors: clashes (amber), else the flats a floor */
+export function status() {
+  if (!C) return null;
+  const L = layouts(); if (!L.length) return null;
+  const laid = L.filter((o) => o.r && (o.r.placed || []).length);
+  if (!laid.length) return { meta: "Not laid out yet", warn: true };
+  const clash = laid.reduce((a, o) => a + (o.r.issues || []).length, 0);
+  if (clash) return { meta: `${clash} clash${clash > 1 ? "es" : ""}`, warn: true };
+  const x = laid.find((o) => o.x.key === SEL) || laid[0];
+  return { meta: `${x.r.placed.length} flats a floor${laid.length > 1 ? ` · ${laid.length} groups` : ""}` };
+}
 /* open a group (from 5 · Mix) */
 export function select(key) { SEL = key; if (ON) render(); }
 

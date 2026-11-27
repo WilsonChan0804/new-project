@@ -71,6 +71,8 @@ export function init(ctx) {
     { keys: "Alt + drag a wall", label: "Move the whole aligned line", group: "Edit" }, { keys: "Wheel / pinch", label: "Zoom", group: "View" }, { keys: "Drag the empty plan", label: "Pan", group: "View" },
   ], "3 · Units");
 }
+/* the step bar's line for 3 · Units */
+export function status() { if (!C) return null; const n = store().list.length; return n ? { meta: `${n} unit type${n > 1 ? "s" : ""}` } : { meta: "No units yet" }; }
 export function store() {
   const s = C.study();
   s.units = s.units && typeof s.units === "object" ? s.units : {};
@@ -158,16 +160,17 @@ function render() {
   const kindOpt = (k) => Object.entries(U.KINDS).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
   const exOpt = (k) => Object.entries(Object.assign({ bay: { label: "Balcony / UP / A/C bay" } }, U.EXTRAS)).map(([v, q]) => `<option value="${v}"${v === k ? " selected" : ""}>${q.label}</option>`).join("");
   const num = (attr, v) => `<input type="number" step="${stepL()}" ${attr} value="${esc(iL(v))}"${dis}>`;
-  const tabs = st.list.map((x, i) => `<button type="button" class="un-tab${i === st.sel ? " on" : ""}" data-usel="${i}">${esc(x.name || "Unit")}<small>${tabFig(x).saleableFt} ft²</small></button>`).join("");
-  let body = "";
+  let body = "", RIGHTHTML = "";
   if (u) {
     const f = U.figures(u);
     const big = (l, v, s2) => `<div class="st-big"><small>${l}</small><b>${v}</b>${s2 ? `<span>${s2}</span>` : ""}</div>`;
     const CL = clearAll(u);
     const rooms = u.rooms.map((r, i) => `<div class="un-room${SELR === r.id ? " sel" : ""}" data-rid="${esc(r.id)}">
         <select data-rk="${i}"${dis}>${kindOpt(r.kind)}</select><input class="un-nm" data-rn="${i}" value="${esc(r.name || "")}" placeholder="name"${dis}>${can ? `<button type="button" class="ghost st-ib un-x" data-rdel="${i}" title="Remove the room">×</button>` : ""}
-        <span class="un-l2">${(() => { const c = CL.boxes[i], ttl = (t2) => ` title="${t2}"`; return `<span class="un-xy">x <span${ttl("Its inside face from the unit's inside corner: moves its west wall (the room beside it follows; its east wall stays)")}>${num(`data-rx="${i}"`, RP(c.x0) - RP(CL.x0))}</span> y <span${ttl("Its inside face from the unit's inside corner: moves its north wall (the room beside it follows)")}>${num(`data-ry="${i}"`, RP(c.y0) - RP(CL.y0))}</span></span><span class="un-wh"><span${ttl("Its clear width inside the walls: moves its east wall (the room beside it follows)")}>${num(`data-rw="${i}"`, RP(c.x1) - RP(c.x0))}</span> × <span${ttl("Its clear depth inside the walls: moves its south wall (the room beside it follows)")}>${num(`data-rh="${i}"`, RP(c.y1) - RP(c.y0))}</span> ${uL()}</span>`; })()}
-        <small title="To the wall centre lines (as the GFA)">${f2(r.w * r.h)} m²</small></span></div>`).join("");
+        <span class="un-g4">${(() => { const c = CL.boxes[i], F = (k, l, ttl, v) => `<label title="${ttl}"><small>${l}</small>${num(`data-r${k}="${i}"`, v)}</label>`;
+          return F("x", "x", "Its inside face from the unit's inside corner: moves its west wall (the room beside it follows; its east wall stays)", RP(c.x0) - RP(CL.x0)) + F("y", "y", "Its inside face from the unit's inside corner: moves its north wall (the room beside it follows)", RP(c.y0) - RP(CL.y0))
+            + F("w", "w", "Its clear width inside the walls: moves its east wall (the room beside it follows)", RP(c.x1) - RP(c.x0)) + F("h", "d", "Its clear depth inside the walls: moves its south wall (the room beside it follows)", RP(c.y1) - RP(c.y0)); })()}</span>
+        <small class="un-area" title="To the wall centre lines (as the GFA)">${f2(r.w * r.h)} m² · ${uL()}</small></div>`).join("");
     const doors = (u.doors || []).map((d, i) => `<div class="un-room">
         <select data-dr="${i}"${dis}>${u.rooms.map((r) => `<option value="${esc(r.id)}"${r.id === d.room ? " selected" : ""}>${esc(r.name || (U.KINDS[r.kind] || {}).label)}</option>`).join("")}</select>
         <select data-ds="${i}"${dis}>${Object.entries(SIDES).map(([k, v]) => `<option value="${k}"${k === d.side ? " selected" : ""}>${v} wall</option>`).join("")}</select>
@@ -175,38 +178,15 @@ function render() {
         <span class="un-l2"><label>at ${num(`data-da="${i}"`, d.at)}</label><label>w ${num(`data-dw="${i}"`, d.w)} ${uL()}</label><label class="st-chk"><input type="checkbox" data-de="${i}"${d.entry ? " checked" : ""}${dis}> entrance</label></span></div>`).join("");
     const extras = (u.extras || []).map((e, i) => `<div class="un-room">
         <select data-ek="${i}"${dis}>${exOpt(e.kind)}</select>${can ? `<button type="button" class="ghost st-ib un-x" data-edel="${i}" title="Remove">×</button>` : ""}
-        <span class="un-l2"><span class="un-xy">x ${num(`data-ex="${i}"`, e.x)} y ${num(`data-ey="${i}"`, e.y)}</span><span class="un-wh">${num(`data-ew="${i}"`, e.w)} × ${num(`data-eh="${i}"`, e.h)} ${uL()}</span>
+        <span class="un-g4"><label><small>x</small>${num(`data-ex="${i}"`, e.x)}</label><label><small>y</small>${num(`data-ey="${i}"`, e.y)}</label><label><small>w</small>${num(`data-ew="${i}"`, e.w)}</label><label><small>d</small>${num(`data-eh="${i}"`, e.h)}</label></span><span class="un-l2">
         ${e.kind === "bal" || e.kind === "up" || e.kind === "bay" ? `<label>splay ${num(`data-esp="${i}"`, e.splay || 0)}</label>` : ""}
         ${e.kind === "bay" ? `<div class="un-bay">${(e.parts || []).map((q, k) => `<span><select data-bpk="${i}.${k}"${dis}>${["bal", "up", "acp"].map((v) => `<option value="${v}"${v === q.kind ? " selected" : ""}>${U.EXTRAS[v].label}</option>`).join("")}</select> ${num(`data-bpl="${i}.${k}"`, q.len)} ${uL()}${can ? `<button type="button" class="ghost st-ib" data-bpdel="${i}.${k}">×</button>` : ""}</span>`).join("")}${can ? `<button type="button" class="ghost st-ib" data-bpadd="${i}">+ part</button>` : ""}<small>parts along the bay's long side</small></div>` : ""}
         ${e.kind === "acp" ? `<label class="st-chk" title="Meets the Code of Practice for external maintenance (APP-19 3(c))"><input type="checkbox" data-edfs="${i}"${e.dfs ? " checked" : ""}${dis}> DfS</label>` : ""}</span></div>`).join("");
-    body = `
-      <section class="st-card">
-        <div class="st-head"><input class="ms-name" data-uf="name" value="${esc(u.name || "")}"${dis}><span class="muted">${f3(f.W)} × ${f3(f.D)} ${uL()}</span></div>
-        ${u.src ? `<p class="muted st-note">${esc(u.src)}</p>` : ""}
-        <div class="st-bigs un-bigs">
-          ${big("Saleable area", `${f1(f.saleable)} <i>m²</i>`, `<b>${f.saleableFt} ft²</b> · balcony ${f2(f.bal)} + UP ${f2(f.up)} m² included`)}
-          ${big("Unit GFA", `${f1(f.gfa)} <i>m²</i>`, `enclosed ${f2(f.enclosed)} m²`)}
-          ${big("Concessions", `${f2(f.balEx + f.upEx + f.acpFree + f.acpCapEx + f.cwEx + f.pcEx)} <i>m²</i>`, `under the 10% cap ${f2(f.capped)}${f.pcEx ? ` (precast façade ${f2(f.pcEx)})` : ""} · A/C platforms not counted ${f2(f.acpFree)}${f.cwEx ? ` · curtain wall ${f2(f.cwEx)} not GFA` : ""}`)}
-          ${big("Usable", `${f1(f.internal)} <i>m²</i>`, `inside the walls · ${f.efficiency ? Math.round(f.efficiency * 100) : "–"}% of the GFA`)}
-        </div>
-        ${f.warn.length ? `<ul class="un-warn">${f.warn.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : `<p class="st-sent good">No warnings.</p>`}
-        <p class="muted st-note">Saleable area (First-hand Sales Ordinance s.8): to the outside of external walls and the middle of party walls, partitions included; balcony and utility platform added, A/C platform, pipe duct and features not. Façades: curtain wall ${esc(U.FACADES.cw.src)}; precast ${esc(U.FACADES.pc.src)}. Concessions: balcony ${esc(U.RULES.bal.src)}; utility platform ${esc(U.RULES.up.src)}; A/C platform ${esc(U.RULES.acp.src)}.</p>
-      </section>
-      <section class="st-card">
-        <div class="st-head"><b>Rooms</b><span class="muted">clear sizes, inside the walls · drag a wall on the plan</span></div>
-        ${rooms}${can ? `<button type="button" class="ghost st-ib" data-radd>+ Room</button>` : ""}
-      </section>
-      <section class="st-card">
-        <div class="st-head"><b>Doors</b></div>
-        ${doors || `<p class="muted st-note">None.</p>`}${can ? `<button type="button" class="ghost st-ib" data-dadd>+ Door</button>` : ""}
-      </section>
-      <section class="st-card">
-        <div class="st-head"><b>Balcony, UP, A/C platform, P.D., A.F.</b></div>
-        ${extras || `<p class="muted st-note">None.</p>`}${can ? `<button type="button" class="ghost st-ib" data-eadd>+ Add</button>` : ""}
-      </section>
-      <section class="st-card">
-        <div class="st-head"><b>Walls and sides</b></div>
-        <div class="un-walls">
+    // the parts of the unit: one at a time (Rooms, Doors, Outdoor, Walls), as tabs
+    const PT_ = PTAB();
+    const part = PT_ === "doors" ? `${doors || `<p class="muted st-note">No doors yet.</p>`}${can ? `<button type="button" class="un-add" data-dadd>+ Door</button>` : ""}`
+      : PT_ === "outdoor" ? `${extras || `<p class="muted st-note">No balcony, UP or A/C platform.</p>`}${can ? `<button type="button" class="un-add" data-eadd>+ Balcony / UP / A/C</button>` : ""}`
+      : PT_ === "walls" ? `<div class="un-walls">
           <label>External ${num('data-uf="wall"', u.wall)} ${uL()}</label><label>Party ${num('data-uf="party"', u.party)} ${uL()}</label><label>Partition ${num('data-uf="part"', u.part)} ${uL()}</label>
           <label>External walls <select data-uf="facadeType"${dis}>${Object.entries(U.FACADES).map(([k, q]) => `<option value="${k}"${(u.facadeType || "rc") === k ? " selected" : ""}>${q.label}</option>`).join("")}</select></label>
           <label>GFA measured to: external walls <select data-uf="gfaExt"${dis}>${[["outer", "outer face"], ["centre", "centre"], ["inner", "inner face"]].map(([k, v]) => `<option value="${k}"${(u.gfaExt || "outer") === k ? " selected" : ""}>${v}</option>`).join("")}</select> · party walls <select data-uf="gfaParty"${dis}>${[["centre", "centre"], ["outer", "outer face"]].map(([k, v]) => `<option value="${k}"${(u.gfaParty || "centre") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
@@ -214,19 +194,28 @@ function render() {
           <label title="The band this unit goes in on the flat mix table (5 · Mix): by its bedrooms, or set here (a special unit)">Mix band <select data-uf="band"${dis}>${[["", `Auto (by bedrooms: ${["Studio", "1-BR", "2-BR", "3-BR"][Number(fcUnitType(u))]})`], ["0", "Studio"], ["1", "1-BR"], ["2", "2-BR"], ["3", "3-BR"], ["sp", "Special unit"]].map(([k, v]) => `<option value="${k}"${(u.band || "") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <label>Façade (windows) <select data-uf="facade"${dis}>${Object.entries(SIDES).map(([k, v]) => `<option value="${k}"${(u.facade || "s") === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
           <span class="un-party">Party walls on: ${Object.entries(SIDES).map(([k, v]) => `<label class="st-chk"><input type="checkbox" data-ups="${k}"${(u.partySides || []).includes(k) ? " checked" : ""}${dis}> ${v}</label>`).join("")}</span>
-        </div>
+        </div>`
+      : `<div class="un-ptip">Clear sizes inside the walls · drag a wall on the plan to resize, or click its dimension and type</div>${rooms}${can ? `<button type="button" class="un-add" data-radd>+ Room</button>` : ""}`;
+    body = `
+      <section class="st-card un-ucard">
+        <div class="un-uhead"><div class="un-uname"><input class="ms-name" data-uf="name" value="${esc(u.name || "")}"${dis} aria-label="Unit name"><small class="muted">${u.src ? esc(u.src) + " · " : ""}${fL(f.W)} × ${fL(f.D)} ${uL()}</small></div>${can ? `<button type="button" class="un-more" data-umore title="More: save as new, SVG, reset, remove …" aria-label="More actions">⋯</button>` : ""}</div>
+        ${can ? `<div class="un-chips"><button type="button" data-udup>Duplicate</button><button type="button" data-umir title="A handed copy: the same layout flipped left to right">⇋ Mirror</button><button type="button" data-usave title="${u.libId ? "Update the entry it came from" : "Add it to the office library"}">${u.libId ? "Update in the office library" : "Save to the office library"}</button>${u.tplOf && TEMPLATES[u.tplOf] ? `<button type="button" data-utpl title="Make this unit the template for everyone in the office">Save as the template</button>` : ""}</div>
+        <div hidden>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-uundo="-1"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-uundo="1"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button>${unsaved(u) ? `<button type="button" class="ghost st-ib" data-ureset title="Back to the unit as it was made or last saved to the library">⟲ Reset</button>` : ""}</span>` : ""}<button type="button" data-usavenew>Save as new</button><button type="button" data-usvg>SVG</button><button type="button" data-udel>Remove</button>${unsaved(u) ? `<button type="button" data-ureset>Reset</button>` : ""}${u.tplOf && tplOverride(u.tplOf) ? `<button type="button" data-utplreset>Template as built in</button>` : ""}</div>` : ""}
+        <div class="un-ptabs" role="tablist" aria-label="Unit parts">${[["rooms", "Rooms", u.rooms.length], ["doors", "Doors", (u.doors || []).length], ["outdoor", "Outdoor", (u.extras || []).length], ["walls", "Walls", null]].map(([k, l, n]) => `<button type="button" role="tab" data-ptab="${k}"${PT_ === k ? ' class="on" aria-selected="true"' : ""}>${l}${n != null ? ` <small>${n}</small>` : ""}</button>`).join("")}</div>
+        <div class="un-part">${part}</div>
       </section>`;
+    RIGHTHTML = areasHtml(u, f);
   }
   const libOpt = (LIB.units || []).filter((x) => !(x.unit && x.unit.tplFor)).map((x) => `<option value="${esc(x.id)}">${esc(x.name)} · ${U.figures(x.unit).saleableFt} ft²${x.by ? " · " + esc(x.by) : ""}</option>`).join("");
+  const tiles = st.list.map((x, i) => { const fx = tabFig(x); return `<button type="button" class="un-tab${i === st.sel ? " on" : ""}" data-usel="${i}"><b>${esc(x.name || "Unit")}</b><small>${fx.saleableFt} ft² · ${f1(fx.saleable)} m²</small></button>`; }).join("");
   $("#st-upanel").innerHTML = (INPLACE ? `<section class="st-card un-inplace"><div class="st-head"><b>✎ Editing ${esc(u ? u.name : "")} in place</b><button type="button" class="primary st-ib" data-uinpl>Done</button></div><p class="st-note">${esc(INPLACE.title || "")} - the floor is laid out again with it when you are done.${u && u.variantOf ? ` A variant of ${esc(u.variantOf)}, for that flat only.` : " Changes are to this unit type: every flat of it changes."}</p></section>` : "") + `
-    <section class="st-card">
-      <div class="st-head"><b>Units</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-uundo="-1"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-uundo="1"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button>${unsaved(u) ? `<button type="button" class="ghost st-ib" data-ureset title="Back to the unit as it was made or last saved to the library">⟲ Reset</button>` : ""}</span>` : ""}<span class="muted" id="un-saved">${can ? "Saved with the project" : "View only"}</span></div>
-      <div class="un-tabs">${tabs || `<p class="st-need">No units yet: start from a template or the office library.</p>`}</div>
-      ${can ? `<div class="st-row"><select data-unew data-pick="tpl"><option value="">+ New from a template …</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}${tplOverride(k) ? " · edited by the office" : t.src ? " · " + esc(t.src.replace(/^after /, "")) : ""}</option>`).join("")}</select>
-        <select data-ulib data-pick="ulib"><option value="">+ From the office library …</option>${libOpt}</select></div>
-        ${u ? `<div class="st-row"><button type="button" class="ghost st-ib" data-udup>Duplicate</button><button type="button" class="ghost st-ib" data-umir title="A handed copy: the same layout flipped left to right">⇋ Mirror</button><button type="button" class="ghost st-ib" data-udel>Remove</button><button type="button" class="ghost st-ib" data-usave title="${u.libId ? "Update the entry it came from" : "Add it to the office library"}">${u.libId ? "Update in the office library" : "Save to the office library"}</button><button type="button" class="ghost st-ib" data-usavenew>Save as new</button>${u.tplOf && TEMPLATES[u.tplOf] ? `<button type="button" class="ghost st-ib" data-utpl title="Make this unit the template &quot;${esc(TEMPLATES[u.tplOf].name)}&quot; for everyone in the office: + New from a template gives it from now on">Save as the template</button>${tplOverride(u.tplOf) ? `<button type="button" class="ghost st-ib" data-utplreset title="The template as it was built in (the office's edit removed)">Template as built in</button>` : ""}` : ""}<button type="button" class="ghost st-ib" data-usvg>SVG</button></div>` : ""}` : ""}
+    <section class="st-card un-lib">
+      <div class="st-head"><b>Units in this project</b><span class="muted" id="un-saved">${can ? "Saved with the project" : "View only"}</span></div>
+      <div class="un-tabs">${tiles || `<p class="st-need">No units yet: start from a template or the office library.</p>`}</div>
+      ${can ? `<div class="un-adds"><label class="un-addsel"><select data-unew data-pick="tpl"><option value="">+ From a template</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}${tplOverride(k) ? " · edited by the office" : t.src ? " · " + esc(t.src.replace(/^after /, "")) : ""}</option>`).join("")}</select></label><label class="un-addsel"><select data-ulib data-pick="ulib"><option value="">+ Office library</option>${libOpt}</select></label></div>` : ""}
     </section>
-    ${body}`;
+    ${body}${INPLACE && u ? RIGHTHTML : ""}`;
+  const R_ = $("#st-uright"); if (R_) R_.innerHTML = u ? RIGHTHTML : `<section class="st-card"><p class="muted">Pick a unit, or start one from a template.</p></section>`;
   drawPlan();
 }
 
@@ -275,6 +264,8 @@ async function onClick(ev) {
   const t = ev.target.closest("button"); if (!t) return;
   const st = store(), u = cur(), d = t.dataset;
   if (d.uundo) return undo(+d.uundo);
+  if (d.ptab) { try { localStorage.setItem("lwk-viewer:un-ptab", d.ptab); } catch (e) { /* none */ } return render(); }
+  if (d.umore != null) { const r = t.getBoundingClientRect(); return onTabMenu({ preventDefault() {}, clientX: r.left, clientY: r.bottom + 4, target: t }, st.sel); }
   if (d.uinpl != null) { const cb = INPLACE && INPLACE.onDone; await show(false); if (cb) cb(); return; }
   if (d.usel != null) { st.sel = +d.usel; SELR = null; C.save(); return render(); }
   if (!u) return;
@@ -344,10 +335,10 @@ function fixBox(x) {
   return { x0: cx - bw / 2, x1: cx + bw / 2, y0: cy - bh / 2, y1: cy + bh / 2, q };
 }
 /* right-click a unit's tab: open, rename, duplicate, mirror, save to the library, remove */
-function onTabMenu(ev) {
-  const b = ev.target.closest(".un-tab[data-usel]"); if (!b) return;
+function onTabMenu(ev, at) {
+  const b = at == null ? ev.target.closest(".un-tab[data-usel]") : null; if (at == null && !b) return;
   ev.preventDefault();
-  const st = store(), i = +b.dataset.usel, can = C.can();
+  const st = store(), i = at != null ? at : +b.dataset.usel, can = C.can();
   const go = (attr) => { if (st.sel !== i) { st.sel = i; SELR = null; SEL = null; C.save(); render(); } const el = $(`#st-upanel [${attr}]`); if (el) el.click(); };
   const u = st.list[i]; if (!u) return;
   PT.ctx(ev, [
@@ -360,6 +351,8 @@ function onTabMenu(ev) {
     { label: "Save as new in the office library…", disabled: !can, action: () => go("data-usavenew") },
     ...(u.tplOf && TEMPLATES[u.tplOf] ? [{ label: `Save as the template "${TEMPLATES[u.tplOf].name}"`, disabled: !can, action: () => go("data-utpl") }] : []),
     { label: "SVG of the plan", action: () => go("data-usvg") },
+    ...(st.list[i] && unsaved(st.list[i]) ? [{ label: "⟲ Reset (as made or last saved)", disabled: !can, action: () => go("data-ureset") }] : []),
+    ...(st.list[i] && st.list[i].tplOf && tplOverride(st.list[i].tplOf) ? [{ label: "Template as built in", disabled: !can, action: () => go("data-utplreset") }] : []),
     "-",
     { label: "Remove", danger: true, disabled: !can, action: () => go("data-udel") },
   ]);
@@ -398,6 +391,8 @@ let ROOMK = "BR";     // the kind a drawn room gets
 let GHOST = null, FIXROT = 0;   // a fitting about to be placed: under the cursor, turned by Space / R
 let LIVE = null;     // while a wall line is dragged: {axis, at, d}
 const DIMS = () => { try { return localStorage.getItem("lwk-viewer:un-dims") || "chains"; } catch (e) { return "chains"; } };
+/* the panel's part shown: rooms, doors, outdoor (balcony, UP, A/C) or walls */
+const PTAB = () => { try { return localStorage.getItem("lwk-viewer:un-ptab") || "rooms"; } catch (e) { return "rooms"; } };
 /* the room names: both (Chinese over English, as the brochures), English or Chinese */
 const LANG = () => { try { return localStorage.getItem("lwk-viewer:un-lang") || "both"; } catch (e) { return "both"; } };
 /* what + Balcony / UP adds outside a wall: its depth from the wall and its length along it; a bay's parts */
@@ -827,6 +822,27 @@ async function unitsXlsx() {
   } catch (e) { toast("No Excel: " + e.message, true); }
 }
 
+/* the results on the right: the saleable area large, GFA / concessions / usable, the parts by area, the warnings, how
+   the areas are measured */
+function areasHtml(u, f) {
+  const conc = f.balEx + f.upEx + f.acpFree + f.acpCapEx + f.cwEx + f.pcEx, within = f.enclosed;
+  const rows = [["Within the line", within, within, Math.max(0, f.enclosed - f.cwEx - f.pcEx), "#ebcb86"], ["Balcony", f.bal, f.bal, f.bal - f.balEx, "#8fbf8f"], ["Utility platform", f.up, f.up, f.up - f.upEx, "#8faedc"], ["A/C platform", f.acp, null, null, "#b5b1aa"]].filter((r) => r[1] > 1e-6 || r[0] === "Within the line");
+  const tot = rows.reduce((a, r) => a + r[1], 0) || 1, sum = (k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  const c = (v) => (v == null ? "—" : f2(v));
+  return `<section class="st-card un-areas">
+      <div class="un-sa"><small>Saleable area</small><div><b>${f.saleableFt}</b> <i>ft²</i><span>${f1(f.saleable)} m²</span></div><small class="muted">Includes ${f.up ? `UP ${f2(f.up)} m²` : "no UP"} · balcony ${f2(f.bal)} m²</small></div>
+      <div class="un-kpis"><div><small>Unit GFA</small><b>${f1(f.gfa)}</b><span>m²</span></div><div><small>Concessions</small><b>${f2(conc)}</b><span>${f.capped ? `${f2(f.capped)} under the 10% cap` : "under the 10% cap"}</span></div><div><small>Usable</small><b>${f1(f.internal)}</b><span>${f.efficiency ? Math.round(f.efficiency * 100) + "% of GFA" : "m²"}</span></div></div>
+      <div class="un-bar2" title="The parts by area">${rows.map((r) => `<i style="width:${(r[1] / tot * 100).toFixed(1)}%;background:${r[4]}" title="${esc(r[0])} ${f2(r[1])} m²"></i>`).join("")}</div>
+      <table class="un-parts-t"><thead><tr><th>Part</th><th>m²</th><th>Saleable</th><th>GFA</th></tr></thead><tbody>
+        ${rows.map((r) => `<tr><td><i class="sw" style="background:${r[4]}"></i>${esc(r[0])}</td><td>${f2(r[1])}</td><td>${c(r[2])}</td><td>${c(r[3])}</td></tr>`).join("")}
+        <tr class="tot"><td>Total</td><td>${f2(sum(1))}</td><td>${f2(sum(2))}</td><td>${f2(f.gfa)}</td></tr></tbody></table>
+    </section>
+    ${f.warn.map((w) => `<section class="un-warncard"><b>▲</b><span>${esc(w)}</span></section>`).join("") || `<section class="un-okcard">✓ No warnings</section>`}
+    <section class="st-card un-how"><details><summary>How the areas are measured</summary>
+      <p><b>Saleable area</b> (First-hand Sales Ordinance s.8): to the outside of external walls and the middle of party walls, partitions included; balcony and utility platform added; A/C platform, pipe duct and features not.</p>
+      <p><b>Concessions</b>: balcony ${esc(U.RULES.bal.src)}; utility platform ${esc(U.RULES.up.src)}; A/C platform ${esc(U.RULES.acp.src)}.</p>
+      <p><b>Façades</b>: curtain wall ${esc(U.FACADES.cw.src)}; precast ${esc(U.FACADES.pc.src)}.</p></details></section>`;
+}
 /* the walls as built (their rects, lines and offsets): for the plan and for the panel's clear sizes */
 function wallRects(u, f) {
   const wall = +(u.wall ?? 0.15), pt = +(u.part ?? 0.075), party = +(u.party ?? 0.15);

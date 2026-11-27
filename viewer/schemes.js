@@ -13,13 +13,13 @@ export function nextName(study) {
 }
 export function save(study, name, fig, png) {
   const s = { id: "s" + Math.random().toString(36).slice(2, 8), name: name || nextName(study), at: new Date().toISOString(), massing: JSON.parse(JSON.stringify(study.massing || {})), fig: fig || null, png: png || null };
-  list(study).push(s);
+  list(study).push(s); study.schemeOn = s.id;   // the scheme the study is on (the step bar's chip)
   return s;
 }
 /* the study's massing becomes the scheme's (the scheme kept as it is) */
 export function open(study, id) {
   const s = list(study).find((x) => x.id === id); if (!s) return false;
-  study.massing = JSON.parse(JSON.stringify(s.massing || {}));
+  study.massing = JSON.parse(JSON.stringify(s.massing || {})); study.schemeOn = s.id;
   return true;
 }
 export function remove(study, id) { const L = list(study), i = L.findIndex((x) => x.id === id); if (i >= 0) L.splice(i, 1); return i >= 0; }

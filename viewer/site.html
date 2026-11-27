@@ -46,9 +46,24 @@
   </div>
 </header>
 
+<div class="st-hbar" id="st-bar">
+  <div class="st-hbar-t"><b>Site study</b><button type="button" class="st-chip" id="st-scheme" title="The scheme you are on (2 · Massing, Schemes)">No scheme yet</button></div>
+  <nav class="st-mode st-steps" aria-label="Site study steps">
+    <button type="button" data-mode="site" class="on"><i>1</i><span><b>Site</b><small data-st="site"></small></span></button><span class="st-sep" aria-hidden="true">›</span>
+    <button type="button" data-mode="mass"><i>2</i><span><b>Massing</b><small data-st="mass"></small></span></button><span class="st-sep" aria-hidden="true">›</span>
+    <button type="button" data-mode="units"><i>3</i><span><b>Units</b><small data-st="units"></small></span></button><span class="st-sep" aria-hidden="true">›</span>
+    <button type="button" data-mode="floors"><i>4</i><span><b>Floors</b><small data-st="floors"></small></span></button><span class="st-sep" aria-hidden="true">›</span>
+    <button type="button" data-mode="mix"><i>5</i><span><b>Mix</b><small data-st="mix"></small></span></button>
+  </nav>
+  <div class="st-hbar-r">
+    <span class="st-saved" id="st-barsaved">Saved with the project</span>
+    <button type="button" class="st-ibtn" data-bar="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button type="button" class="st-ibtn" data-bar="redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+    <button type="button" class="st-next" data-bar="next" id="st-next">Next: Massing ›</button>
+  </div>
+</div>
 <main id="st">
   <aside class="st-side" id="st-side">
-    <div class="st-mode"><button type="button" data-mode="site" class="on">1 · Site</button><button type="button" data-mode="mass">2 · Massing</button><button type="button" data-mode="units">3 · Units</button><button type="button" data-mode="floors">4 · Floors</button><button type="button" data-mode="mix">5 · Mix</button></div>
     <form class="st-find" id="st-find" onsubmit="return false">
       <input id="st-q" type="search" placeholder="Find a place: address, building, lot (e.g. TKO Area 137)">
       <button type="submit" class="primary" id="st-go">Find</button>
@@ -71,7 +86,15 @@
     <div id="st-xview" hidden></div>
     <div id="st-ptop" class="pt-top" hidden></div>
     <div class="st-views" id="st-views" hidden><button type="button" data-v="plan" class="on">Plan</button><button type="button" data-v="3d">3D</button></div>
+    <button type="button" class="st-rtoggle" id="st-rtoggle" hidden title="The results panel">Results</button>
   </div>
+  <aside class="st-right" id="st-right" hidden>
+    <div id="st-sright" hidden></div>
+    <div id="st-mright" hidden></div>
+    <div id="st-uright" hidden></div>
+    <div id="st-fright" hidden></div>
+    <div id="st-xright" hidden></div>
+  </aside>
 </main>
 
 <div id="gate-back" hidden>

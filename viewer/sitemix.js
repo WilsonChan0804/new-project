@@ -43,6 +43,12 @@ export function show(on) {
   if (on) render();
 }
 export function refresh() { if (ON) render(); }
+/* the step bar's line for 5 · Mix */
+export function status() {
+  if (!C) return null; const s = C.study(); if (!s.pts || s.pts.length < 3) return null;
+  const T = (LAST && ON ? LAST : compute()).T;
+  return T.total.n ? { meta: `${T.total.n.toLocaleString("en-GB")} flats · ${T.total.types} types` } : { meta: "No flats yet" };
+}
 
 /* ---------- the figures */
 function model() {

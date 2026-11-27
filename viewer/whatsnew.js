@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-06", date: "27 Nov 2026",
+    items: [
+      "**The site study, redesigned** (first part): a header strip with the five steps - each with its state under its name (the site's area and class, the massing over a limit in amber, the unit types, the floors' clashes, the flats and types) - the scheme you are on, Saved, Undo / Redo and **Next**. Every page has its inputs on the left, the plan in the middle and its results on the right (on a narrower screen behind a Results button; on a phone below).",
+      "**3 · Units**: the project's units as tiles (ft² and m²), + From a template / + Office library; the unit card with its actions and a ⋯ menu; Rooms, Doors, Outdoor and Walls as tabs, each room's x, y, w, d in a row of four. On the right, **Unit areas**: the saleable area large, GFA, concessions and usable, the parts by area (saleable and GFA), the warnings and how the areas are measured.",
+      "**Dimensions that add up**: each chain's pieces now add up to its overall exactly (the faces are placed to the millimetre first), and every piece shows its figure - a 75 or 100 mm wall's outside the chain, with a leader. **Units: mm, cm or m** (the toolbar) for the plan, the panel and the property bar.",
+    ],
+  },
+  {
     version: "2027-04-05", date: "26 Nov 2026",
     items: [
       "**Type a dimension to move a wall, as in Revit** (3 · Units): select a wall and its temporary dimensions show the clear width of the room each side - click one, type the figure, Enter: the wall moves, the room beside it follows. The dimension chains' room figures can be typed too (on the outline the whole straight wall moves). Esc cancels.",

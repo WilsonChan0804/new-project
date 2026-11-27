@@ -32,6 +32,24 @@ let WB = { rev: 0, data: {} }, CAN = false, ST = null, map = null;
 let L_ = null, layer = null, drawing = null, saveT = null, lastPts = null;
 let PICK = null, MEAS = null; // picking edges for a street id; measuring: {a} or {}
 
+/* the step bar: each step's state under its name, refreshed a moment after a change */
+const STEPS = ["site", "mass", "units", "floors", "mix"], STEPNAME = { site: "Site", mass: "Massing", units: "Units", floors: "Floors", mix: "Mix" };
+const RIGHT = new Set(["units"]);   // the pages with a results panel on the right
+let MODE = "site", BAR = null, BART = null;
+function barSoon() { clearTimeout(BART); BART = setTimeout(barNow, 500); }
+function barNow() {
+  if (!BAR) return;
+  for (const k of STEPS) {
+    const el = document.querySelector(`[data-st="${k}"]`); if (!el) continue;
+    let st = null; try { st = BAR[k](); } catch (e) { st = null; }
+    el.textContent = st && st.meta ? st.meta : "";
+    el.classList.toggle("st-w", !!(st && st.warn));
+  }
+  const s = WB.data.study || {}, sch = (s.schemes || []).find((q) => q.id === s.schemeOn);
+  const chip = document.getElementById("st-scheme");
+  if (chip) chip.textContent = sch ? sch.name : (s.schemes || []).length ? `${s.schemes.length} scheme${s.schemes.length > 1 ? "s" : ""}` : "No scheme yet";
+}
+export function bar() { barSoon(); }
 function study() {
   const d = WB.data;
   d.study = d.study || {};
@@ -71,7 +89,8 @@ function pruneRoads(s) {
 function save() {
   if (!CAN) return;
   clearTimeout(saveT);
-  for (const id of ["#st-saved", "#ms-saved", "#un-saved"]) { const e = $(id); if (e) e.textContent = "Saving …"; }
+  for (const id of ["#st-saved", "#ms-saved", "#un-saved", "#st-barsaved"]) { const e = $(id); if (e) e.textContent = "Saving …"; }
+  barSoon();
   saveT = setTimeout(push, 700);
 }
 async function push(again) {
@@ -87,9 +106,9 @@ async function push(again) {
     else if (!WB.data.quick && quick) WB.data.quick = quick;
     return push(true);
   }
-  if (!res.ok) { for (const id of ["#st-saved", "#ms-saved", "#un-saved"]) { const e = $(id); if (e) e.textContent = "Not saved"; } toast((body && body.detail && (body.detail.message || body.detail)) || "Not saved", true); return; }
+  if (!res.ok) { for (const id of ["#st-saved", "#ms-saved", "#un-saved", "#st-barsaved"]) { const e = $(id); if (e) e.textContent = "Not saved"; } toast((body && body.detail && (body.detail.message || body.detail)) || "Not saved", true); return; }
   WB.rev = body.rev; push.quickSent = null;
-  for (const id of ["#st-saved", "#ms-saved", "#un-saved"]) { const e = $(id); if (e) e.textContent = "Saved with the project"; }
+  for (const id of ["#st-saved", "#ms-saved", "#un-saved", "#st-barsaved"]) { const e = $(id); if (e) e.textContent = "Saved with the project"; }
 }
 
 /* ---------- the map */
@@ -877,7 +896,17 @@ function zoningBox(s) {
     },
   });
   const setMode = (m) => {
-    for (const b of document.querySelectorAll(".st-mode [data-mode]")) b.classList.toggle("on", b.dataset.mode === m);
+    MODE = m;
+    for (const b of document.querySelectorAll(".st-mode [data-mode]")) { b.classList.toggle("on", b.dataset.mode === m); if (b.dataset.mode === m) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); }
+    // the right-hand panel: the page's results (those pages that have one)
+    const rid = { site: "#st-sright", mass: "#st-mright", units: "#st-uright", floors: "#st-fright", mix: "#st-xright" };
+    for (const [k, id] of Object.entries(rid)) { const el = $(id); if (el) el.hidden = k !== m; }
+    const hasR = RIGHT.has(m);
+    $("#st-right").hidden = !hasR; $("#st-rtoggle").hidden = !hasR;
+    document.body.classList.toggle("st-has-right", hasR);
+    const i = STEPS.indexOf(m), nx = STEPS[i + 1];
+    $("#st-next").textContent = nx ? `Next: ${STEPNAME[nx]} ›` : "Done ✓"; $("#st-next").disabled = !nx;
+    barSoon();
     stopModes(); MS.show(m === "mass"); UN.show(m === "units"); FL.show(m === "floors"); MX.show(m === "mix");
     if (m === "units" || m === "floors" || m === "mix") $("#st-panel").hidden = true;
     draw(); if (m === "site") { panel(); tools(); }
@@ -885,6 +914,19 @@ function zoningBox(s) {
     syncLegend();
   };
   document.querySelector(".st-mode").addEventListener("click", (ev) => { const b = ev.target.closest("[data-mode]"); if (b) setMode(b.dataset.mode); });
+  $("#st-bar").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-bar]"); if (!b) return;
+    if (b.dataset.bar === "next") { const nx = STEPS[STEPS.indexOf(MODE) + 1]; if (nx) setMode(nx); return; }
+    // the page's own undo / redo (its keys)
+    const redo = b.dataset.bar === "redo";
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: redo ? "y" : "z", ctrlKey: true, bubbles: true, cancelable: true }));
+  });
+  $("#st-scheme").addEventListener("click", () => { setMode("mass"); setTimeout(() => { const c = document.querySelector("#st-mpanel .ms-sch"); if (c) c.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60); });
+  $("#st-rtoggle").addEventListener("click", () => document.body.classList.toggle("st-right-open"));
+  // the page below the header strip: its height as the strip wraps
+  { const sb = $("#st-bar"), fit = () => document.body.style.setProperty("--bar-h", sb.offsetHeight + "px"); fit(); if (window.ResizeObserver) new ResizeObserver(fit).observe(sb); else window.addEventListener("resize", fit); }
+  BAR = { site: () => { const s2 = study(); if (s2.pts.length < 3) return { meta: "Draw the boundary", warn: true }; const c = clsOf(s2); return { meta: `${Math.round(siteAreaOf(s2)).toLocaleString("en-GB")} m²${c && c.cls ? " · Class " + c.cls : ""}` }; },
+    mass: () => MS.status && MS.status(), units: () => UN.status && UN.status(), floors: () => FL.status && FL.status(), mix: () => MX.status && MX.status() };
   let m0 = "site"; try { m0 = new URLSearchParams(location.search).get("mode") || sessionStorage.getItem("lwk-viewer:site-mode") || "site"; } catch (e) {}
   UN.init({ study, save, can: () => CAN });
   FL.init({ study, save, can: () => CAN, S });
