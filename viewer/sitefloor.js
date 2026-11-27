@@ -18,7 +18,7 @@ import * as UC from "./unitcore.js";
 import { toast } from "./tasks-util.js";
 import * as PZ from "./planzoom.js";
 import * as PT from "./plantools.js";
-import { outlineOf } from "./unitwalls.js";
+import { outlineOf, polyLines } from "./unitwalls.js";
 import * as UN from "./siteunits.js";
 import * as ME from "./measure.js";
 import * as DM from "./dims.js";
@@ -538,9 +538,9 @@ function floorEnts() {
   for (const L of legs()) {
     const lr = L.r, ang = -(L.xf.ang || 0) * 180 / Math.PI;
     for (const q of lr.placed) {
-      for (const rm of q.rooms) rect("A-AREA-ROOM", L, q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h);
+      for (const rm of q.rooms) { if (rm.pts) pl("A-AREA-ROOM", rm.pts.map((p) => fromLeg(L, [q.x + p[0], q.y + p[1]]))); else rect("A-AREA-ROOM", L, q.x + rm.x, q.y + rm.y, q.x + rm.x + rm.w, q.y + rm.y + rm.h); }
       for (const e of q.extras || []) rect("A-AREA-BAL", L, q.x + e.x, q.y + e.y, q.x + e.x + e.w, q.y + e.y + e.h);
-      for (const w of FC.placedWalls(q).rects) rect(w.m === "blk" ? "A-WALL-BLK" : "A-WALL-RC", L, w.x0, w.y0, w.x1, w.y1);
+      { const pw = FC.placedWalls(q); if (pw.polys.length) for (const w of pw.polys) pl(w.m === "blk" ? "A-WALL-BLK" : "A-WALL-RC", w.pts.map((p) => fromLeg(L, p))); else for (const w of pw.rects) rect(w.m === "blk" ? "A-WALL-BLK" : "A-WALL-RC", L, w.x0, w.y0, w.x1, w.y1); }
       const loc = (q.doors || []).length ? FC.placedWalls(q, { x: 0, y: 0 }).rects : [];
       for (const d0 of q.doors || []) { const { d } = FC.doorOnWall(d0, loc, q.wt || 0.15), H = [q.x + d.H[0], q.y + d.H[1]], O = [q.x + d.O[0], q.y + d.O[1]], w = Math.hypot(O[0] - H[0], O[1] - H[1]); E.push({ t: "line", l: "A-DOOR", p: [Y(fromLeg(L, H)), Y(fromLeg(L, [H[0] + d.sn[0] * w, H[1] + d.sn[1] * w]))] }); }
       for (const fx of q.fixtures || []) { const rq = fx.rot === 90 || fx.rot === 270, w = rq ? fx.h : fx.w, h = rq ? fx.w : fx.h, cx = q.x + fx.x + fx.w / 2, cy = q.y + fx.y + fx.h / 2; rect("A-FURN", L, cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2); }
@@ -1091,12 +1091,13 @@ function drawLeg(l, SX, SY, fs, PTW) {
   for (const [li, q] of r.placed.entries()) {
     const { x: ox, y: oy } = uview[li];
     for (const e of q.extras) g += `<rect x="${sx(ox + e.x)}" y="${sy(oy + e.y)}" width="${e.w * SC}" height="${e.h * SC}" fill="#dfe9f3" stroke="#3c4650" stroke-width="0.8" stroke-dasharray="4 2" />`;
-    for (const rm of q.rooms) g += `<rect x="${sx(ox + rm.x)}" y="${sy(oy + rm.y)}" width="${rm.w * SC}" height="${rm.h * SC}" fill="${KC[rm.kind] || "#fbf3d5"}" />`;
+    for (const rm of q.rooms) g += rm.pts ? `<polygon points="${rm.pts.map((p) => sx(ox + p[0]) + "," + sy(oy + p[1])).join(" ")}" fill="${KC[rm.kind] || "#fbf3d5"}" />` : `<rect x="${sx(ox + rm.x)}" y="${sy(oy + rm.y)}" width="${rm.w * SC}" height="${rm.h * SC}" fill="${KC[rm.kind] || "#fbf3d5"}" />`;
     if (FURN() && SC > 12) for (const fx of q.fixtures || []) g += UN.fixtureSvg(Object.assign({}, fx, { x: ox + fx.x, y: oy + fx.y }), sx, sy, SC);
   }
   // every wall of the leg as one: the units' (cut by their doors), the core's (cut by its doors), the party walls between units
-  const WR = [];
-  for (const [li, q] of r.placed.entries()) WR.push(...FC.placedWalls(q, uview[li]).rects);
+  const WR = [], WP = [];
+  // a unit with polygon rooms: its walls as polygons (drawn with their own outline), the rest as rectangles in one union
+  for (const [li, q] of r.placed.entries()) { const pw = FC.placedWalls(q, uview[li]); if (pw.polys.length) WP.push(...pw.polys); else WR.push(...pw.rects); }
   WR.push(...FC.coreWallRects(cview, cwl));
   const PT0 = MULTI() ? ((o0.legPartyT || [])[l.k] || {}) : (o0.partyT || {});
   for (const band of ["s", "n"]) {
@@ -1112,6 +1113,10 @@ function drawLeg(l, SX, SY, fs, PTW) {
   }
   const FILL = { blk: "url(#fl-blk)", rc: "url(#fl-rc)", pc: "url(#fl-rc)" };
   for (const m of ["blk", "pc", "rc"]) for (const w of WR) if (w.m === m) g += `<rect x="${sx(w.x0)}" y="${sy(w.y0)}" width="${(w.x1 - w.x0) * SC}" height="${(w.y1 - w.y0) * SC}" fill="${FILL[m]}" pointer-events="none" />`;
+  if (WP.length) {
+    for (const m of ["blk", "pc", "rc"]) for (const w of WP) if (w.m === m) g += `<polygon points="${w.pts.map((p) => sx(p[0]) + "," + sy(p[1])).join(" ")}" fill="${FILL[m]}" pointer-events="none" />`;
+    for (const ln of polyLines(WP)) g += `<line x1="${sx(ln.x1)}" y1="${sy(ln.y1)}" x2="${sx(ln.x2)}" y2="${sy(ln.y2)}" stroke="${ln.k === "join" ? "#666" : "#111"}" stroke-width="${ln.k === "join" ? 0.4 : 1}" pointer-events="none" />`;
+  }
   const LWf = Math.max(0.7, Math.min(1.3, SC * 0.03));
   for (const ln of outlineOf(WR)) g += `<line x1="${sx(ln.x1)}" y1="${sy(ln.y1)}" x2="${sx(ln.x2)}" y2="${sy(ln.y2)}" stroke="${ln.k === "join" ? "#666" : "#111"}" stroke-width="${ln.k === "join" ? 0.4 : ln.k === "blk" ? LWf * 0.75 : LWf}" stroke-linecap="square" pointer-events="none" />`;
   // the doors: the units' and the core's, by their type

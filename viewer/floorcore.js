@@ -12,7 +12,7 @@
  */
 import * as U from "./unitcore.js";
 import { quickStairs, travelFor, b1, ceilPersons } from "./gbpcore.js";
-import { wallGeom, outlineOf, rasterise } from "./unitwalls.js";
+import { wallGeom, polyWallGeom, outlineOf, rasterise } from "./unitwalls.js";
 import * as WC from "./wallcore.js";
 
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
@@ -80,22 +80,22 @@ export function turn(u, k) {
   const q = ((k % 4) + 4) % 4;
   const rot = ([x, y]) => { let p = [x, y]; for (let i = 0; i < q; i++) p = [-p[1], p[0]]; return p; };
   const box = (r) => { const a = rot([n(r.x), n(r.y)]), b = rot([n(r.x) + n(r.w), n(r.y) + n(r.h)]); return { x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]), w: Math.abs(b[0] - a[0]), h: Math.abs(b[1] - a[1]) }; };
-  const rooms = (u.rooms || []).map((r) => Object.assign({}, r, box(r)));
+  const rooms = (u.rooms || []).map((r) => Object.assign({}, r, box(r), U.isPoly(r) ? { pts: r.pts.map((p) => rot([n(p[0]), n(p[1])])) } : {}));
   const extras = U.expandBays(u.extras || []).map((e) => Object.assign({}, e, box(e)));
   const all = [...rooms, ...extras];
   const mx = Math.min(...all.map((r) => r.x)), my = Math.min(...all.map((r) => r.y));
-  for (const r of all) { r.x = r3(r.x - mx); r.y = r3(r.y - my); r.w = r3(r.w); r.h = r3(r.h); }
+  for (const r of all) { r.x = r3(r.x - mx); r.y = r3(r.y - my); r.w = r3(r.w); r.h = r3(r.h); if (r.pts) r.pts = r.pts.map((p) => [r3(p[0] - mx), r3(p[1] - my)]); }
   const W = Math.max(...all.map((r) => r.x + r.w)), D = Math.max(...all.map((r) => r.y + r.h));
   // the doors, turned with the rooms: the hinge H, the closed end O, the side it opens to (sn), its width
   const doors = [];
   for (const d of u.doors || []) {
     const r = (u.rooms || []).find((q) => q.id === d.room); if (!r) continue;
-    const at = n(d.at), w = n(d.w, 0.8), x = n(r.x), y = n(r.y), rw = n(r.w), rh = n(r.h);
-    const seg = d.side === "n" ? [[x + at, y], [x + at + w, y], [0, 1]] : d.side === "s" ? [[x + at, y + rh], [x + at + w, y + rh], [0, -1]] : d.side === "w" ? [[x, y + at], [x, y + at + w], [1, 0]] : [[x + rw, y + at], [x + rw, y + at + w], [-1, 0]];
+    const w = n(d.w, 0.8), seg = U.openSeg(r, d, 0.8);
     const k2 = d.swing === "out" ? -1 : 1, H = d.hinge === "end" ? seg[1] : seg[0], O = d.hinge === "end" ? seg[0] : seg[1];
     const P = (pt) => { const q2 = rot(pt); return [r3(q2[0] - mx), r3(q2[1] - my)]; };
     const sn = rot([seg[2][0] * k2, seg[2][1] * k2]);
-    doors.push(Object.assign({ H: P(H), O: P(O), sn: [Math.round(sn[0]), Math.round(sn[1])], w, entry: !!d.entry }, d.type && d.type !== "hinged" ? { type: d.type, flip: d.hinge === "end" } : {}));
+    const sq = Math.abs(sn[0]) < 1e-9 || Math.abs(sn[1]) < 1e-9;
+    doors.push(Object.assign({ H: P(H), O: P(O), sn: sq ? [Math.round(sn[0]), Math.round(sn[1])] : sn, w, entry: !!d.entry }, d.type && d.type !== "hinged" ? { type: d.type, flip: d.hinge === "end" } : {}));
   }
   // the windows and the curtain-wall edges: segments [a, b] turned with the rooms, the outward normal on
   const P2 = (pt) => { const q2 = rot(pt); return [r3(q2[0] - mx), r3(q2[1] - my)]; };
@@ -104,8 +104,9 @@ export function turn(u, k) {
   const ops = [];
   for (const wi of u.windows || []) {
     const r = (u.rooms || []).find((q) => q.id === wi.room); if (!r) continue;
-    const [a, b] = seg2(r, wi.side, n(wi.at), n(wi.w, 1)), no = rot(NRM[wi.side] || [0, 1]);
-    ops.push({ k: "win", a: P2(a), b: P2(b), no: [Math.round(no[0]), Math.round(no[1])] });
+    const sgw = wi.edge != null ? U.openSeg(r, wi, 1) : null;
+    const [a, b] = sgw ? sgw : seg2(r, wi.side, n(wi.at), n(wi.w, 1)), no = rot(sgw ? [-sgw[2][0], -sgw[2][1]] : NRM[wi.side] || [0, 1]);
+    ops.push({ k: "win", a: P2(a), b: P2(b), no: sgw && e2a(no) ? no : [Math.round(no[0]), Math.round(no[1])] });
   }
   let E = null;
   try { E = U.edges(u); } catch (ex) { E = []; }
@@ -113,8 +114,8 @@ export function turn(u, k) {
     if (e.kind !== "ext") continue;
     const f = ((u.walls || {})[e.key] || {}).f || u.facadeType;
     if (f !== "cw") continue;
-    const no = rot(NRM[e.face] || [0, 1]);
-    ops.push({ k: "cw", a: P2([e.x1, e.y1]), b: P2([e.x2, e.y2]), no: [Math.round(no[0]), Math.round(no[1])] });
+    const no = rot(e.angled ? [e.nx, e.ny] : NRM[e.face] || [0, 1]);
+    ops.push({ k: "cw", a: P2([e.x1, e.y1]), b: P2([e.x2, e.y2]), no: e.angled ? no : [Math.round(no[0]), Math.round(no[1])] });
   }
   // the fittings and furniture: each about its middle, turned with the rooms
   let fx = [];
@@ -126,6 +127,7 @@ export function turn(u, k) {
   });
   return { rooms, extras, doors, ops, fixtures, W: r3(W), D: r3(D), party: n(u.party, 0.15), wall: n(u.wall, 0.15) };
 }
+const e2a = (v) => Math.abs(v[0]) > 1e-9 && Math.abs(v[1]) > 1e-9;
 /* the side the entrance is on (the corridor side), else opposite the façade */
 export function entrySide(u) {
   const d = (u.doors || []).find((q) => q.entry) || (u.doors || []).find((q) => { const r = (u.rooms || []).find((x) => x.id === q.room); return r && r.kind === "LOBBY"; });
@@ -1012,7 +1014,8 @@ export function placedWalls(q, at) {
   const ox = at ? at.x : q.x, oy = at ? at.y : q.y;
   let w = PW.get(q.rooms);
   if (!w) { w = placedWalls0(q); PW.set(q.rooms, w); }
-  return { rects: w.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: w.ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
+  return { rects: w.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: w.ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })),
+    polys: (w.polys || []).map((p) => ({ m: p.m, pts: p.pts.map(([x, y]) => [ox + x, oy + y]) })) };
 }
 /* a unit's body in plan (its own frame): its rooms and its walls with no openings, out to the external walls' outer faces
    (balconies, UP and A/C platforms left out); kept with its walls */
@@ -1020,8 +1023,10 @@ const PB = new WeakMap();
 export function unitBody(q) {
   let b = PB.get(q.rooms);
   if (b === undefined) {
-    const sh = q.rooms.map((rm) => [[rm.x, rm.y], [rm.x + rm.w, rm.y], [rm.x + rm.w, rm.y + rm.h], [rm.x, rm.y + rm.h]]);
-    for (const r of placedWalls0(q, true).rects) sh.push([[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]]);
+    const sh = q.rooms.flatMap((rm) => (rm.pts ? U.convexParts(rm.pts) : [[[rm.x, rm.y], [rm.x + rm.w, rm.y], [rm.x + rm.w, rm.y + rm.h], [rm.x, rm.y + rm.h]]]));
+    const pw = placedWalls0(q, true);
+    if (pw.polys) for (const p of pw.polys) sh.push(p.pts);
+    else for (const r of pw.rects) sh.push([[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]]);
     b = hugOutline(sh, 0.02) || null;
     PB.set(q.rooms, b);
   }
@@ -1032,8 +1037,8 @@ function placedWalls0(q, solid) {
   const pu = { rooms: q.rooms, walls: Object.fromEntries(Object.entries(q.u.walls || {}).filter(([k2]) => k2.includes("|"))), partySides: [] };
   const ed = U.edges(pu), tOf = (e) => (e.kind === "part" ? Number(q.u.part ?? 0.075) || 0.075 : Number(q.u.wall ?? 0.15) || 0.15);
   const ops = (solid ? [] : q.doors || []).map((d) => ({ x1: d.H[0], y1: d.H[1], x2: d.O[0], y2: d.O[1] })).map((s) => (s.x1 > s.x2 || s.y1 > s.y2 ? { x1: s.x2, y1: s.y2, x2: s.x1, y2: s.y1 } : s));
-  const G = wallGeom(pu, ed, { tOf, isOpen: (e) => U.isOpen(pu, e), solid: (e) => U.solidPart(pu, e), openings: ops });
-  return { rects: G.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })) };
+  const poly = U.hasPoly(pu), G = (poly ? polyWallGeom : wallGeom)(pu, ed, { tOf, isOpen: (e) => U.isOpen(pu, e), solid: (e) => U.solidPart(pu, e), openings: ops });
+  return { rects: G.rects.map((r) => ({ x0: ox + r.x0, y0: oy + r.y0, x1: ox + r.x1, y1: oy + r.y1, m: r.m })), ops: ops.map((s) => ({ x1: ox + s.x1, y1: oy + s.y1, x2: ox + s.x2, y2: oy + s.y2 })), polys: poly ? G.polys : null };
 }
 
 /* a unit's type for the mix: by its bedrooms (0: an open studio, 1, 2, 3 or more; as the HK 1-, 2-, 3-room) */

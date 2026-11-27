@@ -6,6 +6,14 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-08", date: "27 Nov 2026",
+    items: [
+      "**Polygon rooms** on 3 · Units: a room can be any shape. **Make a polygon** (a room's line in the panel, or right-click it), then drag its corners on the plan - the rooms meeting at a corner move with it, so they still meet; a + on each edge adds a corner, right-click a corner to take it out. The **Polygon room** tool (P) draws one: click its corners (they snap to the grid and the rooms' corners and edges), the first corner or Enter closes it.",
+      "**Angled walls**: a sloping edge gets its wall at its thickness, mitred where it meets the others; the saleable and GFA lines follow it; doors, windows and curtain walls go on it as on any wall (the door tool, or right-click it). A polygon room's panel lists its edges: type one's length and its far corner moves along it; the plan dimensions each side of the outline, and the selected room's edges (click one to type).",
+      "**Fittings turned to a wall**: right-click a fitting near a sloping wall - *Turn it to the wall nearby*. On 4 · Floors a unit with polygon rooms is drawn with its true shape, in the plan, 3D and the DXF.",
+    ],
+  },
+  {
     version: "2027-04-07", date: "27 Nov 2026",
     items: [
       "**The site study, redesigned** (second part): every page now has its results on the right. **1 · Site**: 4 · Development potential (B(P)R, OZP and lease, the strictest marked) and 5 · GBP workbook on the right.",

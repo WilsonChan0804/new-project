@@ -1,7 +1,7 @@
 /* node viewer/tests/units.test.mjs - unit plans: areas and concessions */
 import * as U from "../unitcore.js";
 import { TEMPLATES } from "../unittables.js";
-import { wallGeom, outlineOf } from "../unitwalls.js";
+import { wallGeom, outlineOf, polyWallGeom } from "../unitwalls.js";
 
 let fails = 0;
 const ok = (c, m) => { if (!c) { fails++; console.log("FAIL " + m); } else console.log("PASS " + m); };
@@ -210,6 +210,87 @@ ok(U.figures(narrow).warn.some((w) => /Bedroom 1: .* under 1\.9/.test(w)), "a be
   ok(near(A.w, 1.513, 1e-9) && near(B.x, 1.513, 1e-9) && near(B.w, 1.937, 1e-9) && near(A.x + A.w, B.x, 1e-9), `exact: the bath 1.513 wide, the kitchen from 1.513 (they still share the partition)`);
   ok(near(Cc.w, 3.45, 1e-9), "the living room below, not on that piece of line, stays");
   ok(near(U.moveLine(u, "x", 1.65, -0.137, null, null, ["a"]).rooms[0].w, 1.5, 1e-9), "a drag still goes to the 50 mm grid");
+}
+
+// ---------- polygon rooms ----------
+{
+  // every template through the polygon path (one room made a polygon of its own corners): the same figures
+  const same = (a, b) => Math.abs(a - b) < 1e-6;
+  let bad = [];
+  for (const [k, t0] of Object.entries(TEMPLATES)) {
+    const t = U.fromRows(JSON.parse(JSON.stringify(t0)));
+    if (!t.rooms || !t.rooms.length) continue;
+    const A = U.figures(t), p = U.toPoly(JSON.parse(JSON.stringify(t)), t.rooms[0].id), B = U.figures(p);
+    const sumL = (F, kind) => F.edges.filter((e) => e.kind === kind).reduce((s2, e) => s2 + e.len, 0);
+    for (const f of ["area", "internal", "enclosed", "saleable", "gfa", "ringArea", "gfaRing"]) if (!same(A[f], B[f])) bad.push(`${k} ${f} ${A[f]} / ${B[f]}`);
+    for (const kind of ["ext", "party", "part"]) if (!same(sumL(A, kind), sumL(B, kind))) bad.push(`${k} ${kind} length ${sumL(A, kind)} / ${sumL(B, kind)}`);
+    const keys = (F) => [...new Set(F.edges.map((e) => e.key))].sort().join(",");
+    if (keys(A) !== keys(B).replace(/:e\d+/g, "")) { const ka = keys(A), kb = keys(B); if (ka !== kb) bad.push(`${k} keys ${ka} / ${kb}`); }
+  }
+  ok(!bad.length, "every template's figures and walls the same through the polygon path" + (bad.length ? ": " + bad.slice(0, 4).join(" | ") : ""));
+
+  // a trapezoid room beside a rectangle: the angled outer wall, one partition, the area by its points
+  const tz = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], extras: [], rooms: [R("a", "LD", 0, 0, 3, 4), Object.assign(R("b", "BR", 3, 0, 3, 4), { pts: [[3, 0], [5, 0], [6, 4], [3, 4]] })] };
+  const ft = U.figures(tz);
+  ok(near(ft.area, 12 + (2 + 3) / 2 * 4, 1e-9), "a trapezoid room: its area by its points (12 + 10)");
+  const ang = ft.edges.filter((e) => e.angled);
+  ok(ang.length === 1 && ang[0].kind === "ext" && near(ang[0].len, Math.hypot(1, 4), 1e-6) && ang[0].key === "b:e1", "its sloping side one angled outer wall, keyed b:e1");
+  ok(ft.edges.filter((e) => e.kind === "part").length === 1 && near(ft.edges.find((e) => e.kind === "part").len, 4, 1e-9), "one partition 4 m between them");
+  // the outline: moved out by half the wall on every side, the sloping one too
+  const per = ft.edges.filter((e) => e.kind === "ext").reduce((s2, e) => s2 + e.len, 0);
+  ok(ft.ringS.rings.length === 1 && ft.ringS.area > 22 + per * 0.1 - 1e-6 && ft.ringS.area < 22 + per * 0.1 + 0.2, `the saleable line round it: ${ft.ringS.area.toFixed(3)} m² (22 + the half walls ${(per * 0.1).toFixed(3)} + the corners)`);
+  // its walls: a mitred band on the slope, no gaps in the union (the lines close round)
+  const G = polyWallGeom(tz, ft.edges, { tOf: (e) => (e.kind === "part" ? 0.1 : 0.2), isOpen: () => false, solid: (e) => [0, e.len], openings: [] });
+  ok(G.polys.length === ft.edges.length && G.polys.every((q) => U.polyArea(q.pts) !== 0), "a band for every wall");
+  const outer = G.lines.filter((l) => l.k === "rc"), len2 = outer.reduce((s2, l) => s2 + Math.hypot(l.x2 - l.x1, l.y2 - l.y1), 0);
+  ok(len2 > 2 * per - 0.5 && len2 < 2 * per + 1.5, `the walls' outer lines both faces round: ${len2.toFixed(2)} m (twice ${per.toFixed(2)})`);
+  // the joint at the trapezoid's corners: the bands meet (the slope's band ends on the north wall's band)
+  const slope = G.polys.find((q) => q.key === "b:e1");
+  ok(slope && slope.pts.some((q) => near(q[1], -0.1, 1e-6)) && slope.pts.some((q) => near(q[1], 4.1, 1e-6)), "the sloping wall's band runs to the outer faces of the walls it meets (mitred)");
+
+  // a door on the angled edge, and its stops at the walls' faces
+  const td = JSON.parse(JSON.stringify(tz)); td.doors = [{ room: "b", edge: 1, at: 1, w: 0.9 }];
+  const [da, db] = U.openSeg(td.rooms[1], td.doors[0]);
+  ok(near(Math.hypot(db[0] - da[0], db[1] - da[1]), 0.9, 1e-9) && near(da[0], 5 + 1 / Math.hypot(1, 4), 1e-9), "a door on the sloping edge: 0.9 m along it, 1 m from its start");
+  const st = U.doorStops(td, td.doors[0]);
+  ok(st.length >= 1 && st.every((q) => q.at > 0), "its stops at the faces of the walls at the edge's ends: " + st.map((q) => q.at).join(", "));
+
+  // a corner dragged: shared by both rooms, they still meet
+  const sq = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], extras: [], rooms: [R("a", "LD", 0, 0, 3, 4), R("b", "BR", 3, 0, 3, 4)] };
+  const mv = U.moveVertex(sq, [3, 4], [3.5, 4]);
+  ok(mv && U.isPoly(mv.rooms[0]) && U.isPoly(mv.rooms[1]) && near(U.figures(mv).area, 24, 1e-9), "the corner at (3, 4) dragged to (3.5, 4): both rooms polygons, the total kept 24 m²");
+  ok(U.figures(mv).edges.filter((e) => e.kind === "part").length === 1 && U.figures(mv).edges.find((e) => e.kind === "part").angled, "the partition now angled, still one");
+  // an edge moved out along its normal: the ends slide along the edges each side
+  const me = U.moveEdge(tz, "b", 1, 0.5, true), fm = U.figures(me);
+  ok(near(fm.area, ft.area + 0.5 * (Math.hypot(1, 4)), 0.1) && U.ptsOf(me.rooms[1]).length === 4, `the sloping wall moved out 0.5 m: ${fm.area.toFixed(3)} m² (about 0.5 × its length more)`);
+  // a corner added on the partition (on both rooms), then moved: they still meet
+  const iv = U.insertVertex(sq, "a", 1, [3, 2]);
+  ok(iv && U.ptsOf(iv.rooms[0]).length === 5 && U.ptsOf(iv.rooms[1]).length === 5, "a corner added on the partition: on both rooms");
+  const iv2 = U.moveVertex(iv, [3, 2], [3.4, 2]), fi = U.figures(iv2);
+  ok(iv2 && near(fi.area, 24, 1e-9) && fi.edges.filter((e) => e.kind === "part").length === 2, "moved: a bent partition of two pieces, the total kept");
+  const rv = U.removeVertex(iv2, "a", 2);
+  ok(rv && U.ptsOf(rv.rooms[0]).length === 4, "a corner taken out again");
+  // a polygon drawn: refused over a room, added beside
+  ok(U.addPolyRoom(sq, [[1, 1], [2, 1], [2, 2]]) === null, "a new polygon over a room: refused");
+  const ap = U.addPolyRoom(sq, [[6, 0], [8, 0], [7, 2], [6, 2]], "STUDY");
+  ok(ap && ap.rooms.length === 3 && near(U.figures(ap).area, 24 + 3, 1e-9) && U.figures(ap).edges.some((e) => e.kind === "part" && near(e.len, 2, 1e-9)), "beside the rooms: added (3 m²), sharing 2 m of wall");
+  // mirrored: the area kept, the door on the mirrored edge
+  const mi = U.mirrorUnit(td), fmi = U.figures(mi);
+  const dm = mi.doors[0], rb = mi.rooms.find((r) => r.id === "b"), [ma, mb] = U.openSeg(rb, dm);
+  ok(near(fmi.area, ft.area, 1e-9) && near(Math.hypot(mb[0] - ma[0], mb[1] - ma[1]), 0.9, 1e-9) && fmi.edges.some((e) => e.angled), "mirrored: the same area, the door still 0.9 m on the sloping edge");
+  ok(near(Math.min(ma[0], mb[0]), 6 - Math.max(da[0], db[0]), 1e-3), "the door's place mirrored");
+  // an edge moved with a room beside part of it: that room's corner on the edge moves too (it stays a rectangle)
+  {
+    const tee = { wall: 0.2, party: 0.2, part: 0.1, partySides: [], extras: [], rooms: [Object.assign(R("a", "LD", 0, 0, 3, 4), { pts: [[0, 0], [3, 0], [3, 4], [0, 4]] }), R("b", "BR", 3, 0, 2, 2), R("c", "BATH", 3, 2, 2, 2)] };
+    const m2 = U.moveEdge(tee, "a", 1, 0.5, true);
+    const b2 = m2.rooms.find((r) => r.id === "b"), c2 = m2.rooms.find((r) => r.id === "c");
+    ok(!U.isPoly(b2) && !U.isPoly(c2) && near(b2.x, 3.5, 1e-9) && near(b2.w, 1.5, 1e-9) && near(c2.w, 1.5, 1e-9) && near(U.figures(m2).area, 20, 1e-9), "the edge beside two rooms moved 0.5 m: both stay rectangles 1.5 m wide, the total kept");
+  }
+  // the least width of a polygon room
+  ok(near(U.minWidth([[0, 0], [4, 0], [4, 2.5], [0, 2.5]]), 2.5, 1e-9) && U.minWidth([[0, 0], [4, 0], [2, 3]]) > 2.2, "the least width across: 2.5 for a 4 × 2.5, the triangle's height-ish");
+  // a narrow polygon room warns
+  const nw = JSON.parse(JSON.stringify(tz)); nw.rooms[1].pts = [[3, 0], [4.2, 0], [4.2, 4], [3, 4]]; nw.rooms[1].w = 1.2;
+  ok(U.figures(nw).warn.some((w) => /under 1\.9/.test(w)), "a polygon bedroom 1.2 m across warns");
 }
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);

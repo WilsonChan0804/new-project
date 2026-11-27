@@ -96,13 +96,14 @@ function grid(rooms) {
    an outer wall is party when its side is in partySides, unless walls[key].kind says ext or party for it alone */
 /* a door beside a balcony or utility platform: the external wall the extra touches */
 export function byOutdoor(u, e) {
-  if (!e || e.kind === "part") return false;
+  if (!e || e.kind === "part" || e.angled) return false;
   const v = e.x1 === e.x2;
   return expandBays(u.extras || []).some((x) => (x.kind === "bal" || x.kind === "up") && (v
     ? (Math.abs(n(x.x) - e.x1) < 0.35 || Math.abs(n(x.x) + n(x.w) - e.x1) < 0.35) && n(x.y) < Math.max(e.y1, e.y2) - 0.3 && n(x.y) + n(x.h) > Math.min(e.y1, e.y2) + 0.3
     : (Math.abs(n(x.y) - e.y1) < 0.35 || Math.abs(n(x.y) + n(x.h) - e.y1) < 0.35) && n(x.x) < Math.max(e.x1, e.x2) - 0.3 && n(x.x) + n(x.w) > Math.min(e.x1, e.x2) + 0.3));
 }
 export function edges(u) {
+  if (hasPoly(u)) return polyEdges(u);
   const rooms = u.rooms || [], G = grid(rooms), out = [];
   const party = new Set(u.partySides || []);
   const push = (e) => {
@@ -169,7 +170,7 @@ export function isOpen(u, e) {
 export function outline(u, mode = "saleable", E0) {
   const rooms = u.rooms || [];
   if (!rooms.length) return { rings: [], area: 0 };
-  const G = grid(rooms), E = E0 || edges(u), inn = (i, j) => !!G.at(i, j);
+  const E = E0 || edges(u), G = hasPoly(u) ? null : grid(rooms), inn = (i, j) => !!G.at(i, j);
   const wall = n(u.wall, 0.1);
   const facOf = (e) => ((u.walls || {})[e.key] || {}).f || u.facadeType || "rc";
   // the GFA's lines, as the user sets them: external walls to their outer face (default), centre or inner face; party walls to their centre (default) or outer face
@@ -183,6 +184,7 @@ export function outline(u, mode = "saleable", E0) {
     if (mode === "gfa" && f === "pc") return gExt === "outer" ? t / 2 - Math.min(t, FACADES.pc.max) : base;
     return base;
   };
+  if (hasPoly(u)) return polyOutline(E, offOf);
   // the boundary in unit pieces, each directed with the inside on its left (y down: outward normal = (dy, -dx))
   const segs = [];
   const edgeAt = (face, x1, y1, x2, y2) => E.find((e) => e.kind !== "part" && e.face === face && (face === "e" || face === "w" ? Math.abs(e.x1 - x1) < EPS && e.y1 <= Math.min(y1, y2) + EPS && e.y2 >= Math.max(y1, y2) - EPS : Math.abs(e.y1 - y1) < EPS && e.x1 <= Math.min(x1, x2) + EPS && e.x2 >= Math.max(x1, x2) - EPS));
@@ -258,7 +260,7 @@ export function figures(u0) {
   const u = u0 && u0.rows ? fromRows(u0) : u0;
   const rooms = u.rooms || [];
   const wall = n(u.wall, 0.1), party = n(u.party, 0.15), pt = n(u.part, 0.075);
-  const area = rooms.reduce((s, r) => s + n(r.w) * n(r.h), 0); // the rooms tile: no overlaps
+  const area = rooms.reduce((s, r) => s + roomArea(r), 0); // the rooms tile: no overlaps
   const E = edges(u);
   const extL = E.filter((e) => e.kind === "ext").reduce((s, e) => s + e.len, 0);
   const partyL = E.filter((e) => e.kind === "party").reduce((s, e) => s + e.len, 0);
@@ -298,7 +300,8 @@ export function figures(u0) {
     if (r.space && r.space !== r.id) continue;          // a piece of another room's space: that room is checked
     const k = KINDS[r.kind];
     const parts = rooms.filter((q) => spaceOf(q) === r.id);
-    if (k && parts.length < 2 && Math.min(n(r.w), n(r.h)) < k.min - 1e-9) warn.push(`${r.name || k.label}: ${Math.min(n(r.w), n(r.h)).toFixed(2)} m is under ${k.min} m`);
+    const mw = isPoly(r) ? minWidth(ptsOf(r)) : Math.min(n(r.w), n(r.h));
+    if (k && parts.length < 2 && mw < k.min - 1e-9) warn.push(`${r.name || k.label}: ${mw.toFixed(2)} m is under ${k.min} m`);
     const hasWin = Array.isArray(u.windows) ? u.windows.some((w) => parts.some((q) => q.id === w.room)) : E.some((e) => e.kind === "ext" && e.a === r.id && e.face === (u.facade || "s")) || (u.extras || []).some((x) => touches(r, x));
     if (k && k.hab && !hasWin)
       warn.push(`${r.name || k.label}: no window on the façade`);
@@ -315,7 +318,7 @@ export function figures(u0) {
   }
   if (bal && balOk * RULES.bal.share > balCap + 1e-9) warn.push(`Balcony exemption capped at ${balCap.toFixed(2)} m² for this unit`);
   if (up && upOk * RULES.up.share > RULES.up.max + 1e-9) warn.push(`Utility platform exemption capped at ${RULES.up.max} m²`);
-  const xs = rooms.flatMap((r) => [n(r.x), n(r.x) + n(r.w)]), ys = rooms.flatMap((r) => [n(r.y), n(r.y) + n(r.h)]);
+  const xs = rooms.flatMap((r) => ptsOf(r).map((q) => q[0])), ys = rooms.flatMap((r) => ptsOf(r).map((q) => q[1]));
   const r3 = (x) => Math.round(x * 1000) / 1000;
   return {
     unit: u, edges: E, area: r3(area), internal: r3(internal), enclosed: r3(enclosed), bal: r3(bal), up: r3(up), acp: r3(acp),
@@ -394,7 +397,7 @@ export function scaleTo(u, ft2) {
   const at = (k) => {
     const v = JSON.parse(JSON.stringify(u));
     const sx = (x) => Math.round(x * k * 20) / 20;
-    v.rooms = u.rooms.map((r) => ({ ...r, x: sx(r.x), y: sx(r.y), w: +(sx(r.x + r.w) - sx(r.x)).toFixed(3), h: +(sx(r.y + r.h) - sx(r.y)).toFixed(3) }));
+    v.rooms = u.rooms.map((r) => (isPoly(r) ? setPts({ ...r }, r.pts.map(([x, y]) => [sx(x), sx(y)])) : { ...r, x: sx(r.x), y: sx(r.y), w: +(sx(r.x + r.w) - sx(r.x)).toFixed(3), h: +(sx(r.y + r.h) - sx(r.y)).toFixed(3) }));
     v.extras = (u.extras || []).map((e) => ({ ...e, x: sx(e.x), y: sx(e.y) }));
     if (u.zones) v.zones = u.zones.map((z) => ({ ...z, x: sx(z.x), y: sx(z.y), w: +(sx(z.x + z.w) - sx(z.x)).toFixed(3), h: +(sx(z.y + z.h) - sx(z.y)).toFixed(3) }));
     return v;
@@ -476,10 +479,27 @@ export function mirrorUnit(u) {
   const v = JSON.parse(JSON.stringify(u));
   const xs = [...(v.rooms || []).flatMap((r) => [n(r.x), n(r.x) + n(r.w)]), ...(v.extras || []).flatMap((e) => [n(e.x), n(e.x) + n(e.w)])];
   const S = Math.min(...xs) + Math.max(...xs), fx = (o) => { o.x = +(S - n(o.x) - n(o.w)).toFixed(3); };
+  // a polygon room: its points flipped and their order reversed (edge i becomes edge N - 2 - i, run the other way)
+  const PN = new Map();
+  for (const r of v.rooms || []) if (isPoly(r)) { PN.set(r.id, { N: r.pts.length, lens: r.pts.map((_, i) => edgeOf(r, i).len) }); r.pts = r.pts.map(([x, y]) => [r4(S - x), y]).reverse(); }
+  for (const o of [...(v.doors || []), ...(v.windows || [])]) {
+    const pn = PN.get(o.room); if (!pn || o.edge == null) continue;
+    const L = pn.lens[o.edge] || 0, k = ((pn.N - 2 - o.edge) % pn.N + pn.N) % pn.N;
+    o.edge = k; o.at = r4(L - n(o.at) - n(o.w || 0.8)); o._pm = 1;
+  }
+  if (v.walls) {
+    const w2 = {};
+    for (const [k, o] of Object.entries(v.walls)) {
+      const c = k.lastIndexOf(":e"), id = c > 0 ? k.slice(0, c) : null, pn = id && PN.get(id), i = pn ? Number(k.slice(c + 2)) : NaN;
+      if (pn && Number.isInteger(i)) w2[id + ":e" + (((pn.N - 2 - i) % pn.N) + pn.N) % pn.N] = o; else w2[k] = o;
+    }
+    v.walls = w2;
+  }
   const ew = { e: "w", w: "e", n: "n", s: "s" };
   const rooms = new Map((v.rooms || []).map((r) => [r.id, r]));
   for (const o of [...(v.doors || []), ...(v.windows || [])]) {
     const r = rooms.get(o.room); if (!r) continue;
+    if (o._pm) { delete o._pm; if ("hinge" in o || o.swing) o.hinge = o.hinge === "end" ? "start" : "end"; continue; }
     if (o.side === "n" || o.side === "s") o.at = +(n(r.w) - n(o.at) - n(o.w || 0.8)).toFixed(3);
     else o.side = ew[o.side];
     if ("hinge" in o || o.swing) o.hinge = o.hinge === "end" ? "start" : "end";
@@ -504,6 +524,7 @@ export function mirrorUnit(u) {
 export function genFixtures(u) {
   const out = [];
   for (const r of u.rooms || []) {
+    if (isPoly(r)) continue;
     const x = n(r.x), y = n(r.y), w = n(r.w), h = n(r.h), long = w >= h;
     if (r.kind === "BATH" || r.kind === "ENS") {
       if (Math.max(w, h) >= 2.0) out.push(long ? { kind: "bath", x: x + 0.1, y: y + 0.1, w: 1.5, h: 0.7, rot: 0 } : { kind: "bath", x: x + 0.1, y: y + 0.1, w: 0.7, h: 1.5, rot: 0 });
@@ -563,7 +584,7 @@ export function extWallT(u, e) {
 const rr3 = (x) => Math.round(x * 1000) / 1000;
 export function extrasToFace(u) {
   if (u.xFace) return false;
-  const E = edges(u).filter((e) => e.kind === "ext" || e.kind === "party");
+  const E = edges(u).filter((e) => (e.kind === "ext" || e.kind === "party") && !e.angled);
   let moved = false;
   for (const x of u.extras || []) {
     const X0 = n(x.x), Y0 = n(x.y), X1 = X0 + n(x.w), Y1 = Y0 + n(x.h);
@@ -591,6 +612,21 @@ export const tOfU = (u, e) => { const wall = +(u.wall ?? 0.15), pt = +(u.part ??
 export function doorStops(u, d, nib) {
   const r = (u.rooms || []).find((q) => q.id === d.room); if (!r) return [];
   const f = figures(u), w = +d.w || 0.8, nb = nib != null ? nib : +(u.doorNib || 0), out = [];
+  if (d.edge != null && isPoly(r)) {
+    // the walls meeting the edge (an end on its line, across it): each face's place along the edge, through its angle
+    const E = edgeOf(r, d.edge);
+    for (const e of f.edges) {
+      for (const [P, Q] of [[[e.x1, e.y1], [e.x2, e.y2]], [[e.x2, e.y2], [e.x1, e.y1]]]) {
+        const off = (P[0] - E.p[0]) * E.nrm[0] + (P[1] - E.p[1]) * E.nrm[1]; if (Math.abs(off) > 1e-3) continue;
+        const s = (P[0] - E.p[0]) * E.d[0] + (P[1] - E.p[1]) * E.d[1]; if (s < -1e-3 || s > E.len + 1e-3) continue;
+        const L = Math.hypot(Q[0] - P[0], Q[1] - P[1]) || 1, sn = Math.abs(((Q[0] - P[0]) * E.nrm[0] + (Q[1] - P[1]) * E.nrm[1]) / L);
+        if (sn < 0.3) continue;                            // along the edge: not across it
+        const half = tOfU(u, e) / 2 / sn;
+        out.push({ at: +(s + half + nb).toFixed(3), end: "start" }, { at: +(s - half - nb - w).toFixed(3), end: "end" });
+      }
+    }
+    return out.filter((q) => q.at >= -1e-6 && q.at <= E.len - w + 1e-6);
+  }
   const horiz = d.side === "n" || d.side === "s", line = d.side === "n" ? r.y : d.side === "s" ? r.y + r.h : d.side === "w" ? r.x : r.x + r.w;
   const s0 = horiz ? r.x : r.y, L = horiz ? r.w : r.h;
   for (const e of f.edges) {
@@ -609,3 +645,354 @@ export function snapDoorAt(u, d, at, tol = 0.15) {
   for (const q of doorStops(u, d)) if (Math.abs(q.at - at) <= tol && (!best || Math.abs(q.at - at) < Math.abs(best.at - at))) best = q;
   return best ? best.at : null;
 }
+
+/* ---------- polygon rooms ----------
+   a room may be a polygon: pts [[x, y], ...] in plan metres, in the rectangle's order (y down: positive shoelace area,
+   the outward normal of an edge p -> q is (dy, -dx)); x, y, w, h stay its bounding box. A room without pts is the
+   rectangle it always was. A door or window on a polygon room is {room, edge: i, at, w}: at metres from the edge's
+   start (pts[i]) towards pts[i + 1]. */
+export const isPoly = (r) => !!(r && Array.isArray(r.pts) && r.pts.length >= 3);
+export const hasPoly = (u) => !!(u && (u.rooms || []).some(isPoly));
+export function ptsOf(r) {
+  if (isPoly(r)) return r.pts.map(([x, y]) => [n(x), n(y)]);
+  const x = n(r.x), y = n(r.y), w = n(r.w), h = n(r.h);
+  return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+}
+export function polyArea(p) { let s = 0; for (let k = 0; k < p.length; k++) { const a = p[k], b = p[(k + 1) % p.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; }
+export function polyCentroid(p) {
+  let a = 0, cx = 0, cy = 0;
+  for (let k = 0; k < p.length; k++) { const P = p[k], Q = p[(k + 1) % p.length], c = P[0] * Q[1] - Q[0] * P[1]; a += c; cx += (P[0] + Q[0]) * c; cy += (P[1] + Q[1]) * c; }
+  if (Math.abs(a) < 1e-12) return [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length];
+  return [cx / (3 * a), cy / (3 * a)];
+}
+export const roomArea = (r) => (isPoly(r) ? Math.abs(polyArea(ptsOf(r))) : n(r.w) * n(r.h));
+/* the least width across a room: the narrowest of its hull's widths (each hull edge to its farthest point) */
+export function minWidth(p) {
+  const H = hull(p); if (H.length < 3) return 0;
+  let best = Infinity;
+  for (let k = 0; k < H.length; k++) {
+    const a = H[k], b = H[(k + 1) % H.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 1e-9) continue;
+    let far = 0; for (const q of H) far = Math.max(far, Math.abs((q[0] - a[0]) * (b[1] - a[1]) - (q[1] - a[1]) * (b[0] - a[0])) / L);
+    best = Math.min(best, far);
+  }
+  return isFinite(best) ? best : 0;
+}
+function hull(p) {
+  const P = p.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]); if (P.length < 3) return P;
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
+  for (const q of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of P.slice().reverse()) { while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+const r4 = (v) => +(+v).toFixed(4);
+/* a room's polygon set: tidied (no repeated or straight-on points), turned to the rectangle's order, its box kept */
+export function setPts(r, pts0) {
+  let p = pts0.map(([x, y]) => [r4(x), r4(y)]).filter((q, k, a) => k === 0 || Math.hypot(q[0] - a[k - 1][0], q[1] - a[k - 1][1]) > 1e-4);
+  if (p.length > 1 && Math.hypot(p[0][0] - p[p.length - 1][0], p[0][1] - p[p.length - 1][1]) < 1e-4) p.pop();
+  if (polyArea(p) < 0) p.reverse();
+  r.pts = p;
+  const xs = p.map((q) => q[0]), ys = p.map((q) => q[1]);
+  r.x = r4(Math.min(...xs)); r.y = r4(Math.min(...ys)); r.w = r4(Math.max(...xs) - r.x); r.h = r4(Math.max(...ys) - r.y);
+  return r;
+}
+/* edge i of a room: {p, q, len, d (along), nrm (outward)} */
+export function edgeOf(r, i) {
+  const P = ptsOf(r), k = ((i % P.length) + P.length) % P.length, p = P[k], q = P[(k + 1) % P.length];
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1e-9, d = [(q[0] - p[0]) / len, (q[1] - p[1]) / len];
+  return { p, q, len, d, nrm: [d[1], -d[0]], i: k };
+}
+/* a door or window's two ends in plan metres and the normal into its room: [a, b, inward] */
+export function openSeg(r, o, w0) {
+  const at = n(o.at), w = n(o.w, w0 || 0.8);
+  if (o.edge != null && isPoly(r)) { const E = edgeOf(r, o.edge); return [[E.p[0] + E.d[0] * at, E.p[1] + E.d[1] * at], [E.p[0] + E.d[0] * (at + w), E.p[1] + E.d[1] * (at + w)], [-E.nrm[0], -E.nrm[1]]]; }
+  const side = o.side;
+  if (side === "n") return [[r.x + at, r.y], [r.x + at + w, r.y], [0, 1]];
+  if (side === "s") return [[r.x + at, r.y + r.h], [r.x + at + w, r.y + r.h], [0, -1]];
+  if (side === "w") return [[r.x, r.y + at], [r.x, r.y + at + w], [1, 0]];
+  return [[r.x + r.w, r.y + at], [r.x + r.w, r.y + at + w], [-1, 0]];
+}
+/* a rectangle room made a polygon: its doors and windows put on its edges (n 0, e 1, s 2, w 3; s and w run backwards) */
+export function toPoly(u, rid) {
+  const r = (u.rooms || []).find((q) => q.id === rid); if (!r || isPoly(r)) return u;
+  const w = n(r.w), h = n(r.h);
+  for (const o of [...(u.doors || []), ...(u.windows || [])]) {
+    if (o.room !== rid || o.edge != null) continue;
+    const ow = n(o.w, 0.8), at = n(o.at);
+    if (o.side === "n") { o.edge = 0; o.at = r4(at); }
+    else if (o.side === "e") { o.edge = 1; o.at = r4(at); }
+    else if (o.side === "s") { o.edge = 2; o.at = r4(w - at - ow); flipHinge(o); }
+    else if (o.side === "w") { o.edge = 3; o.at = r4(h - at - ow); flipHinge(o); }
+    delete o.side;
+  }
+  const W = u.walls || {};
+  const map = { n: 0, e: 1, s: 2, w: 3 };
+  for (const k of Object.keys(W)) { const m = /^(.*):([nsew])$/.exec(k); if (m && m[1] === rid) { W[rid + ":e" + map[m[2]]] = W[k]; } }
+  setPts(r, ptsOf(r));
+  return u;
+}
+function flipHinge(o) { if ("hinge" in o || o.swing) o.hinge = o.hinge === "end" ? "start" : "end"; }
+const near2 = (a, b, tol = 1e-3) => Math.abs(a[0] - b[0]) < tol && Math.abs(a[1] - b[1]) < tol;
+/* every room's corners at point P (within 1 mm) moved to Q - so the rooms meeting there still meet. A rectangle room
+   whose corner moves becomes a polygon unless it stays a rectangle. -> a new unit, or null when a room would fold */
+export function moveVertex(u, P, Q) { return moveVertices(u, [[P, Q]]); }
+export function moveVertices(u, moves) {
+  const v = JSON.parse(JSON.stringify(u));
+  for (const r of v.rooms || []) {
+    const pts = ptsOf(r);
+    let hit = false;
+    const out = pts.map((q) => { const m = moves.find(([P]) => near2(q, P)); if (m) { hit = true; return [m[1][0], m[1][1]]; } return q; });
+    if (!hit) continue;
+    if (polyArea(out) <= 0.05 || selfCrosses(out)) return null;
+    const rect = out.length === 4 && !isPoly(r) && isAxisRect(out);
+    if (rect) { const xs = out.map((q) => q[0]), ys = out.map((q) => q[1]); const x0 = Math.min(...xs), y0 = Math.min(...ys); shiftRectOpenings(v, r, x0, y0); r.x = r4(x0); r.y = r4(y0); r.w = r4(Math.max(...xs) - x0); r.h = r4(Math.max(...ys) - y0); continue; }
+    if (!isPoly(r)) toPoly(v, r.id);
+    // keep the order of the points (the edges' numbers: the doors on them)
+    r.pts = out.map(([x, y]) => [r4(x), r4(y)]);
+    const xs = r.pts.map((q) => q[0]), ys = r.pts.map((q) => q[1]);
+    r.x = r4(Math.min(...xs)); r.y = r4(Math.min(...ys)); r.w = r4(Math.max(...xs) - r.x); r.h = r4(Math.max(...ys) - r.y);
+  }
+  return v;
+}
+function isAxisRect(p) {
+  const xs = [...new Set(p.map((q) => r4(q[0])))], ys = [...new Set(p.map((q) => r4(q[1])))];
+  return xs.length === 2 && ys.length === 2 && p.every((q, k) => { const a = p[(k + 1) % 4]; return Math.abs(a[0] - q[0]) < 1e-6 || Math.abs(a[1] - q[1]) < 1e-6; });
+}
+/* a rectangle's start corner moved: its doors and windows on the sides along that way keep their place in plan */
+function shiftRectOpenings(v, r, x0, y0) {
+  const dx = x0 - n(r.x), dy = y0 - n(r.y);
+  for (const o of [...(v.doors || []), ...(v.windows || [])]) {
+    if (o.room !== r.id || o.edge != null) continue;
+    if ((o.side === "n" || o.side === "s") && dx) o.at = r4(Math.max(0, n(o.at) - dx));
+    if ((o.side === "e" || o.side === "w") && dy) o.at = r4(Math.max(0, n(o.at) - dy));
+  }
+}
+export function selfCrosses(p) {
+  const N = p.length, X = (a, b, c, d) => { const o = (P, Q, R) => (Q[0] - P[0]) * (R[1] - P[1]) - (Q[1] - P[1]) * (R[0] - P[0]); const d1 = o(a, b, c), d2 = o(a, b, d), d3 = o(c, d, a), d4 = o(c, d, b); return d1 * d2 < -1e-12 && d3 * d4 < -1e-12; };
+  for (let i = 0; i < N; i++) for (let j = i + 2; j < N; j++) { if (i === 0 && j === N - 1) continue; if (X(p[i], p[(i + 1) % N], p[j], p[(j + 1) % N])) return true; }
+  return false;
+}
+/* a corner added on edge i of room rid at point P (on it): on the room, and on the room across that edge (its edge there
+   too), so the two still meet when the corner moves; the doors on the edges after it renumbered */
+export function insertVertex(u, rid, i, P) {
+  let v = JSON.parse(JSON.stringify(u));
+  const r = v.rooms.find((q) => q.id === rid); if (!r) return u;
+  const add = (room, k) => {
+    if (!isPoly(room)) toPoly(v, room.id);
+    const E = edgeOf(room, k), s = (P[0] - E.p[0]) * E.d[0] + (P[1] - E.p[1]) * E.d[1];
+    if (s < 0.05 || s > E.len - 0.05) return false;
+    room.pts.splice(E.i + 1, 0, [r4(P[0]), r4(P[1])]);
+    for (const o of [...(v.doors || []), ...(v.windows || [])]) {
+      if (o.room !== room.id || o.edge == null) continue;
+      if (o.edge > E.i) o.edge++;
+      else if (o.edge === E.i && n(o.at) >= s - 1e-6) { o.edge++; o.at = r4(n(o.at) - s); }
+    }
+    return true;
+  };
+  if (!add(r, i)) return u;
+  // the room across: an edge through P running the other way
+  for (const q of v.rooms) {
+    if (q.id === rid) continue;
+    const Q = ptsOf(q);
+    for (let k = 0; k < Q.length; k++) {
+      const a = Q[k], b = Q[(k + 1) % Q.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 1e-6) continue;
+      const cr = ((P[0] - a[0]) * (b[1] - a[1]) - (P[1] - a[1]) * (b[0] - a[0])) / L, t = ((P[0] - a[0]) * (b[0] - a[0]) + (P[1] - a[1]) * (b[1] - a[1])) / L;
+      if (Math.abs(cr) < 1e-3 && t > 1e-3 && t < L - 1e-3) { add(q, k); break; }
+    }
+  }
+  return v;
+}
+/* corner i of a room taken out (at least 3 left); the doors on its two edges onto the one edge */
+export function removeVertex(u, rid, i) {
+  const v = JSON.parse(JSON.stringify(u)), r = v.rooms.find((q) => q.id === rid); if (!r) return u;
+  if (!isPoly(r)) toPoly(v, rid);
+  const N = r.pts.length; if (N <= 3) return u;
+  const k = ((i % N) + N) % N, prev = (k - 1 + N) % N, Lp = edgeOf(r, prev).len;
+  const pts = r.pts.filter((_, j) => j !== k);
+  if (polyArea(pts) <= 0.05 || selfCrosses(pts)) return u;
+  for (const o of [...(v.doors || []), ...(v.windows || [])]) {
+    if (o.room !== rid || o.edge == null) continue;
+    if (o.edge === k) { o.edge = prev; o.at = r4(n(o.at) + Lp); }
+    if (o.edge > k) o.edge--;
+    if (k === 0 && o.edge === N - 1) o.edge = N - 2;
+  }
+  r.pts = pts;
+  setBox(r);
+  return v;
+}
+function setBox(r) { const xs = r.pts.map((q) => q[0]), ys = r.pts.map((q) => q[1]); r.x = r4(Math.min(...xs)); r.y = r4(Math.min(...ys)); r.w = r4(Math.max(...xs) - r.x); r.h = r4(Math.max(...ys) - r.y); }
+/* edge i of a room moved out along its normal by d: its ends slide along the edges before and after it (they keep their
+   angle), the rooms meeting at those corners with them */
+export function moveEdge(u, rid, i, d, exact) {
+  const r = (u.rooms || []).find((q) => q.id === rid); if (!r) return u;
+  const step = exact ? Math.round(d * 2000) / 2000 : Math.round(d * 200) / 200; if (!step) return u;
+  const P = ptsOf(r), N = P.length, k = ((i % N) + N) % N, E = edgeOf(r, k);
+  const off = (p) => [p[0] + E.nrm[0] * step, p[1] + E.nrm[1] * step];
+  const slide = (corner, other) => {   // where the moved line meets the line through corner and other
+    const a = off(E.p), dir = E.d, b = corner, e2 = [other[0] - corner[0], other[1] - corner[1]];
+    const den = dir[0] * e2[1] - dir[1] * e2[0];
+    if (Math.abs(den) < 1e-9) return off(corner);
+    const t = ((b[0] - a[0]) * e2[1] - (b[1] - a[1]) * e2[0]) / den;
+    return [a[0] + dir[0] * t, a[1] + dir[1] * t];
+  };
+  const p0 = P[k], p1 = P[(k + 1) % N];
+  const n0 = slide(p0, P[(k - 1 + N) % N]), n1 = slide(p1, P[(k + 2) % N]);
+  // the other rooms' corners along the edge (a room beside part of it) move straight out with it
+  const moves = [[p0, n0], [p1, n1]];
+  for (const q of u.rooms || []) for (const c of ptsOf(q)) {
+    const s2 = (c[0] - p0[0]) * E.d[0] + (c[1] - p0[1]) * E.d[1], o = (c[0] - p0[0]) * E.nrm[0] + (c[1] - p0[1]) * E.nrm[1];
+    if (Math.abs(o) < 1e-3 && s2 > 1e-3 && s2 < E.len - 1e-3 && !moves.some(([A]) => near2(A, c))) moves.push([c, off(c)]);
+  }
+  return moveVertices(u, moves) || u;
+}
+/* edge i of a room to length L: its far end moved along it */
+export function setEdgeLen(u, rid, i, L) {
+  const r = (u.rooms || []).find((q) => q.id === rid); if (!r || !(L > 0.1)) return u;
+  const E = edgeOf(r, i);
+  return moveVertex(u, E.q, [E.p[0] + E.d[0] * L, E.p[1] + E.d[1] * L]) || u;
+}
+/* a polygon room drawn: added when it overlaps no room (by more than a sliver) */
+export function addPolyRoom(u, pts, kind = "BR", name) {
+  const v = JSON.parse(JSON.stringify(u)), R = setPts({}, pts);
+  if (R.pts.length < 3 || polyArea(R.pts) < 0.36 || selfCrosses(R.pts)) return null;
+  for (const r of v.rooms || []) if (overlapArea(ptsOf(r), R.pts) > 0.02) return null;
+  let i = 1; const ids = new Set(v.rooms.map((r) => r.id)); while (ids.has("n" + i)) i++;
+  v.rooms.push(Object.assign({ id: "n" + i, kind, name: name || (KINDS[kind] || {}).label || kind }, R));
+  return v;
+}
+/* the area two polygons share: one clipped by the other's convex pieces (the clipper triangulated by its fan when convex,
+   else by ear clipping) */
+export function overlapArea(A, B) {
+  let s = 0;
+  for (const tri of convexParts(B)) { const c = clipConvex(A, tri); if (c.length >= 3) s += Math.abs(polyArea(c)); }
+  return s;
+}
+export function convexParts(p) {
+  const q = polyArea(p) < 0 ? p.slice().reverse() : p.slice();
+  if (isConvex(q)) return [q];
+  const out = [], idx = q.map((_, k) => k);
+  const cr = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  let guard = 0;
+  while (idx.length > 3 && guard++ < 500) {
+    let cut = false;
+    for (let k = 0; k < idx.length; k++) {
+      const a = q[idx[(k - 1 + idx.length) % idx.length]], b = q[idx[k]], c = q[idx[(k + 1) % idx.length]];
+      if (cr(a, b, c) <= 1e-12) continue;
+      if (idx.some((j) => { const P = q[j]; if (P === a || P === b || P === c) return false; return cr(a, b, P) > 0 && cr(b, c, P) > 0 && cr(c, a, P) > 0; })) continue;
+      out.push([a, b, c]); idx.splice(k, 1); cut = true; break;
+    }
+    if (!cut) break;
+  }
+  if (idx.length === 3) out.push(idx.map((j) => q[j]));
+  return out;
+}
+function isConvex(p) { let sg = 0; for (let k = 0; k < p.length; k++) { const a = p[k], b = p[(k + 1) % p.length], c = p[(k + 2) % p.length], z = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]); if (Math.abs(z) < 1e-12) continue; if (!sg) sg = Math.sign(z); else if (Math.sign(z) !== sg) return false; } return true; }
+/* Sutherland-Hodgman: subject (any) clipped by a convex polygon (positive area) */
+export function clipConvex(subj, clip) {
+  let out = subj.slice();
+  for (let k = 0; k < clip.length && out.length; k++) {
+    const a = clip[k], b = clip[(k + 1) % clip.length], inside = (p) => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= -1e-12;
+    const inp = out; out = [];
+    for (let j = 0; j < inp.length; j++) {
+      const P = inp[j], Q = inp[(j + 1) % inp.length], pi = inside(P), qi = inside(Q);
+      if (pi) out.push(P);
+      if (pi !== qi) { const d1 = (b[0] - a[0]) * (P[1] - a[1]) - (b[1] - a[1]) * (P[0] - a[0]), d2 = (b[0] - a[0]) * (Q[1] - a[1]) - (b[1] - a[1]) * (Q[0] - a[0]), t = d1 / (d1 - d2); out.push([P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t]); }
+    }
+  }
+  return out;
+}
+
+/* the edges of a unit with polygon rooms: each room's edges against every other's - where two run along each other the
+   other way (within 1 mm) a partition, the rest outside walls; the same form as edges() for rectangles (an edge square
+   to the axes keeps its face n / e / s / w and its key), an angled one keyed "room:e<i>", angled: true */
+function polyEdges(u) {
+  const rooms = u.rooms || [], party = new Set(u.partySides || []), out = [], TOL = 1e-3;
+  const S = rooms.map((r) => { const P = ptsOf(r); return P.map((p, i) => { const q = P[(i + 1) % P.length], L = Math.hypot(q[0] - p[0], q[1] - p[1]); return L < 1e-6 ? null : { p, q, L, dx: (q[0] - p[0]) / L, dy: (q[1] - p[1]) / L, i }; }).filter(Boolean); });
+  const faceOf = (nx, ny) => (Math.abs(ny) < 1e-9 ? (nx > 0 ? "e" : "w") : Math.abs(nx) < 1e-9 ? (ny > 0 ? "s" : "n") : "");
+  const emit = (k, s, lo, hi, kind, j) => {
+    const A = [s.p[0] + s.dx * lo, s.p[1] + s.dy * lo], B = [s.p[0] + s.dx * hi, s.p[1] + s.dy * hi];
+    const nx = s.dy, ny = -s.dx, face = faceOf(nx, ny), axis = !!face;
+    let x1 = A[0], y1 = A[1], x2 = B[0], y2 = B[1];
+    if (axis && (x1 > x2 + 1e-9 || y1 > y2 + 1e-9)) [x1, y1, x2, y2] = [x2, y2, x1, y1];
+    const e = { x1: r4(x1), y1: r4(y1), x2: r4(x2), y2: r4(y2), nx, ny, ei: s.i, ri: rooms[k].id };
+    if (kind === "part") {
+      // a = the room left of / above a square partition (as with rectangles); an angled one: the room it was found from
+      let a = rooms[k].id, b = rooms[j].id;
+      if (axis && (face === "w" || face === "n")) [a, b] = [b, a];
+      Object.assign(e, { kind: "part", face: "", a, b, angled: !axis });
+    } else Object.assign(e, { kind: face && party.has(face) ? "party" : "ext", face, a: rooms[k].id, b: null, angled: !axis });
+    out.push(e);
+  };
+  for (let k = 0; k < rooms.length; k++) for (const s of S[k]) {
+    const sh = [];
+    for (let j = 0; j < rooms.length; j++) {
+      if (j === k) continue;
+      for (const t of S[j]) {
+        if (s.dx * t.dx + s.dy * t.dy > -0.99999) continue;
+        const d = (t.p[0] - s.p[0]) * s.dy - (t.p[1] - s.p[1]) * s.dx;
+        if (Math.abs(d) > TOL) continue;
+        const a = (t.q[0] - s.p[0]) * s.dx + (t.q[1] - s.p[1]) * s.dy, b = (t.p[0] - s.p[0]) * s.dx + (t.p[1] - s.p[1]) * s.dy;
+        const lo = Math.max(0, Math.min(a, b)), hi = Math.min(s.L, Math.max(a, b));
+        if (hi - lo > TOL) sh.push({ lo, hi, j });
+      }
+    }
+    sh.sort((p, q) => p.lo - q.lo);
+    for (const q of sh) if (k < q.j) emit(k, s, q.lo, q.hi, "part", q.j);
+    let at = 0;
+    for (const q of sh) { if (q.lo > at + TOL) emit(k, s, at, q.lo, "ext"); at = Math.max(at, q.hi); }
+    if (s.L > at + TOL) emit(k, s, at, s.L, "ext");
+  }
+  const W = u.walls || {}, seen = new Map();
+  return out.map((e) => {
+    let key = e.kind === "part" ? [e.a, e.b].sort().join("|") : e.angled ? e.a + ":e" + e.ei : e.a + ":" + e.face;
+    if (e.kind === "part" && e.angled) { const c = seen.get(key) || 0; seen.set(key, c + 1); if (c) key += "#" + c; }
+    const o = W[key] || {};
+    if (e.kind !== "part" && (o.kind === "ext" || o.kind === "party")) e.kind = o.kind;
+    return Object.assign(e, { len: Math.hypot(e.x2 - e.x1, e.y2 - e.y1), key, t: o.t != null && o.t !== "" ? Number(o.t) : null, removed: !!o.open });
+  });
+}
+/* the outline of a unit with polygon rooms: the outer edges, each along its room's boundary (outward normal (dy, -dx)),
+   chained into rings, each moved out by its own offset, the corners where the moved lines meet */
+function polyOutline(E, offOf) {
+  const segs = [];
+  for (const e of E) {
+    if (e.kind === "part") continue;
+    const nx = e.nx != null ? e.nx : e.face === "e" ? 1 : e.face === "w" ? -1 : 0, ny = e.ny != null ? e.ny : e.face === "s" ? 1 : e.face === "n" ? -1 : 0;
+    const d = [-ny, nx];
+    let p = [e.x1, e.y1], q = [e.x2, e.y2];
+    if ((q[0] - p[0]) * d[0] + (q[1] - p[1]) * d[1] < 0) [p, q] = [q, p];
+    segs.push({ p, q, nx, ny, off: offOf(e) });
+  }
+  const key = (pt) => pt[0].toFixed(3) + "," + pt[1].toFixed(3);
+  const from = new Map();
+  for (const sg of segs) { const k = key(sg.p); if (!from.has(k)) from.set(k, []); from.get(k).push(sg); }
+  const used = new Set(), rings = [];
+  for (const s0 of segs) {
+    if (used.has(s0)) continue;
+    const chain = [];
+    let sg = s0, guard = 0;
+    while (sg && !used.has(sg) && guard++ < 10000) {
+      used.add(sg); chain.push(sg);
+      const nx = (from.get(key(sg.q)) || []).filter((c) => !used.has(c));
+      // where two rings touch, turn left first
+      sg = nx.length > 1 ? nx.slice().sort((a, b) => turn(sg, b) - turn(sg, a))[0] : nx[0] || null;
+    }
+    const runs = [];
+    for (const c of chain) { const l = runs[runs.length - 1]; if (l && Math.abs(l.nx - c.nx) < 1e-6 && Math.abs(l.ny - c.ny) < 1e-6 && Math.abs(l.off - c.off) < EPS) l.q = c.q; else runs.push(Object.assign({}, c)); }
+    if (runs.length > 1) { const f = runs[0], l = runs[runs.length - 1]; if (Math.abs(f.nx - l.nx) < 1e-6 && Math.abs(f.ny - l.ny) < 1e-6 && Math.abs(f.off - l.off) < EPS) { f.p = l.p; runs.pop(); } }
+    const pts = [];
+    for (let k = 0; k < runs.length; k++) {
+      const A = runs[k], B = runs[(k + 1) % runs.length];
+      const a0 = [A.p[0] + A.nx * A.off, A.p[1] + A.ny * A.off], dA = [-A.ny, A.nx];
+      const b0 = [B.p[0] + B.nx * B.off, B.p[1] + B.ny * B.off], dB = [-B.ny, B.nx];
+      const den = dA[0] * dB[1] - dA[1] * dB[0];
+      if (Math.abs(den) < 1e-9) pts.push([A.q[0] + A.nx * A.off, A.q[1] + A.ny * A.off], [B.p[0] + B.nx * B.off, B.p[1] + B.ny * B.off]);
+      else { const t = ((b0[0] - a0[0]) * dB[1] - (b0[1] - a0[1]) * dB[0]) / den; pts.push([a0[0] + dA[0] * t, a0[1] + dA[1] * t]); }
+    }
+    if (pts.length >= 3) rings.push(pts.map(([x, y]) => [+x.toFixed(4), +y.toFixed(4)]));
+  }
+  let a = 0;
+  for (const r of rings) a += polyArea(r);
+  return { rings, area: Math.abs(a) };
+}
+/* how far left the next segment turns from this one (radians, -pi..pi) */
+function turn(a, b) { const d1 = [-a.ny, a.nx], d2 = [-b.ny, b.nx]; return Math.atan2(d1[0] * d2[1] - d1[1] * d2[0], d1[0] * d2[0] + d1[1] * d2[1]); }

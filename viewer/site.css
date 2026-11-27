@@ -661,3 +661,11 @@ body.st-mix #st-tools, body.st-mix .st-find, body.st-mix #st-hits, body.st-mix #
 #st-fpanel .st-bigs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ms-gwrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
 .ms-gwrap tr.ms-part td { white-space: normal; }
+/* polygon rooms (3 · Units) */
+.un-drag.a { cursor: move; }
+.un-pv { cursor: move; }
+.un-pm { cursor: copy; }
+.un-pedges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 6px; margin-top: 4px; }
+.un-pedges label { display: flex; flex-direction: column; gap: 1px; font-size: 11px; }
+.un-pedges input { width: 100%; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--st-accent, #b4500a); font: inherit; font-size: inherit; text-decoration: underline; cursor: pointer; }
