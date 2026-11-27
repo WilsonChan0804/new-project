@@ -87,6 +87,15 @@ def existing_group(definition):
         return definition.ParameterGroup
 
 
+def data_type_key(definition):
+    """Comparable data-type key, e.g. 'autodesk.spec:spec.string' or 'Text'."""
+    try:
+        type_id = definition.GetDataType().TypeId or ""
+        return type_id.split("-")[0]  # drop the version suffix (-2.0.0)
+    except AttributeError:
+        return str(definition.ParameterType)
+
+
 def spec_label(definition):
     try:
         return LabelUtils.GetLabelForSpec(definition.GetDataType())
@@ -218,6 +227,16 @@ def apply_shared_parameters(doc, app, definitions, category_ids, is_instance,
             name = definition.Name
             found = existing.get(name)
 
+            # Same GUID already in the model (project parameter or inside a
+            # loaded family) but with a different data type -> Revit conflict.
+            spe = SharedParameterElement.Lookup(doc, definition.GUID)
+            if spe is not None and data_type_key(spe.GetDefinition()) != data_type_key(definition):
+                log.append((name, "SKIPPED - TYPE CONFLICT: this GUID is already in the "
+                                  "model as '%s', the shared parameter file says '%s'. "
+                                  "Run 'Check Conflicts'."
+                            % (spec_label(spe.GetDefinition()), spec_label(definition))))
+                continue
+
             if found is not None and found[2] != definition.GUID:
                 log.append((name, "SKIPPED - a different parameter with this name "
                                   "already exists in the file"))
@@ -337,3 +356,104 @@ def _remove_local(local_path):
             pass
     backup = os.path.splitext(local_path)[0] + "_backup"
     shutil.rmtree(backup, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# Conflict checking
+# ---------------------------------------------------------------------------
+def families_with_parameter(doc, guid):
+    """Names of loadable families in `doc` that themselves contain the shared
+    parameter `guid` (opens candidate families in the background)."""
+    from Autodesk.Revit.DB import FamilyInstance, FamilySymbol, FilteredElementCollector
+
+    candidates, checked = {}, set()
+
+    def consider(family, element):
+        fid = id_value(family.Id)
+        if fid in checked:
+            return
+        if element.get_Parameter(guid) is not None:
+            checked.add(fid)
+            candidates[fid] = family
+
+    for sym in FilteredElementCollector(doc).OfClass(FamilySymbol):
+        consider(sym.Family, sym)
+    for inst in FilteredElementCollector(doc).OfClass(FamilyInstance):
+        consider(inst.Symbol.Family, inst)
+
+    names = []
+    for family in candidates.values():
+        if family.IsInPlace:
+            names.append(family.Name + " (in-place)")
+            continue
+        try:
+            fam_doc = doc.EditFamily(family)
+        except Exception:
+            names.append(family.Name + " (could not open to check)")
+            continue
+        try:
+            if fam_doc.FamilyManager.get_Parameter(guid) is not None:
+                names.append(family.Name)
+        finally:
+            fam_doc.Close(False)
+    return sorted(names)
+
+
+def find_conflicts(doc, sp_groups, check_families=True):
+    """Compare the model with the shared parameter file.
+
+    Returns a list of dicts:
+      kind      'TYPE' (same GUID, different data type) or
+                'NAME' (same name, different GUID)
+      name, guid, model_type, file_type, project_param (bool), families
+    """
+    by_guid = {}
+    by_name = {}
+    for definitions in sp_groups.values():
+        for d in definitions:
+            by_guid[str(d.GUID)] = d
+            by_name.setdefault(d.Name, []).append(d)
+
+    bound = project_parameters(doc)
+    bound_guids = set(str(g) for (_, _, g) in bound.values() if g is not None)
+
+    from Autodesk.Revit.DB import FilteredElementCollector
+    conflicts = []
+    for spe in FilteredElementCollector(doc).OfClass(SharedParameterElement):
+        model_def = spe.GetDefinition()
+        guid = str(spe.GuidValue)
+        file_def = by_guid.get(guid)
+
+        if file_def is not None:
+            if data_type_key(model_def) == data_type_key(file_def):
+                continue
+            kind = "TYPE"
+        else:
+            same_name = by_name.get(model_def.Name)
+            if not same_name:
+                continue  # parameter not in this shared parameter file at all
+            file_def = same_name[0]
+            kind = "NAME"
+
+        conflicts.append({
+            "kind": kind,
+            "name": model_def.Name,
+            "guid": guid,
+            "file_guid": str(file_def.GUID),
+            "model_type": spec_label(model_def),
+            "file_type": spec_label(file_def),
+            "project_param": guid in bound_guids,
+            "families": families_with_parameter(doc, spe.GuidValue) if check_families else [],
+        })
+    return sorted(conflicts, key=lambda c: c["name"])
+
+
+def open_read_only(app, path):
+    """Open a model in the background without touching central. Close with Close(False)."""
+    from Autodesk.Revit.DB import DetachFromCentralOption
+    options = OpenOptions()
+    if BasicFileInfo.Extract(path).IsWorkshared:
+        options.DetachFromCentralOption = DetachFromCentralOption.DetachAndPreserveWorksets
+    options.SetOpenWorksetsConfiguration(
+        WorksetConfiguration(WorksetConfigurationOption.CloseAllWorksets))
+    return app.OpenDocumentFile(_model_path(path), options)
