@@ -32,6 +32,7 @@ export function init(ctx) {
   C = ctx;
   const P = $("#st-xpanel"), V = $("#st-xview");
   P.addEventListener("click", onClick); V.addEventListener("click", onClick);
+  { const R = $("#st-xright"); if (R) { R.addEventListener("click", onClick); R.addEventListener("change", onChange); } }
   P.addEventListener("change", onChange); V.addEventListener("change", onChange);
   V.addEventListener("pointermove", hover);
   V.addEventListener("pointerleave", () => { const t = $(".mx-tip"); if (t) t.hidden = true; });
@@ -110,23 +111,57 @@ function render() {
     <section class="st-card"><h3>Domestic floors</h3>
       <ul class="fl-checks">${D.L.map((o) => `<li class="${o.r && (o.r.placed || []).length ? "" : "bad"}"><a href="#" data-g="${esc(o.x.key)}">${esc(o.x.label)}</a><br><small>${o.r && (o.r.placed || []).length ? `${o.r.placed.length} flats a floor × ${o.x.g.n} = ${o.r.placed.length * o.x.g.n}` : o.mix.length ? `from the mix: ${o.mix.reduce((a, q) => a + q.n, 0)} a floor (not laid out)` : "no unit mix"}</small></li>`).join("") || `<li class="bad">No domestic floors in the massing</li>`}</ul>
     </section>
-    <section class="st-card"><h3>Export</h3>
-      <div class="row wrap">
-        <button type="button" data-x="xlsx">Excel</button>
-        <button type="button" data-x="png" title="The elevation as a picture">PNG</button>
-        <button type="button" data-x="svg" title="The elevation as a drawing (SVG)">SVG</button>
-        <button type="button" data-x="print">Print / PDF</button>
-      </div>
-    </section>`;
-  V.innerHTML = `<div class="mx-bar"><span class="mx-ttl">Flat mix</span><span class="spacer"></span>${legendBtn()}</div>
+`;
+  V.innerHTML = `<div class="mx-bar"><span class="mx-ttl">Flat mix</span><span class="spacer"></span><span class="mx-exp"><button type="button" data-x="xlsx">Excel</button><button type="button" data-x="png" title="The elevation as a picture">PNG</button><button type="button" data-x="svg" title="The elevation as a drawing (SVG)">SVG</button><button type="button" data-x="print">Print / PDF</button></span>${legendBtn()}</div>
     <div class="mx-body">
-      ${view !== "elev" ? `<div class="mx-tblw">${tableHtml(D, can)}<label class="mx-notes"><span class="muted small">Notes under the table</span><textarea data-x="notes" rows="3"${can ? "" : " disabled"} placeholder="#Minimized corridor layout&#10;^Based on with communal area at every 2 floors">${esc((s.mix || {}).notes || "")}</textarea></label></div>` : ""}
+      ${view !== "elev" ? `<div class="mx-tblw">${shareBar(D)}${tableHtml(D, can)}<label class="mx-notes"><span class="muted small">Notes under the table</span><textarea data-x="notes" rows="3"${can ? "" : " disabled"} placeholder="#Minimized corridor layout&#10;^Based on with communal area at every 2 floors">${esc((s.mix || {}).notes || "")}</textarea></label></div>` : ""}
       ${view !== "table" ? `<div class="mx-elw">${elevSvg(D)}</div>` : ""}
     </div><div class="mx-tip" hidden></div>`;
+  { const R = $("#st-xright"); if (R) R.innerHTML = briefHtml(D) + towersHtml(D); }
   PT.syncLegend();
 }
 const legendBtn = () => `<button type="button" class="pt-b" data-legend="mix" title="Legend: the flat types' colours and the uses" style="--ico:${iconColor("legend")}">${iconSvg("legend", 18)}</button>`;
 
+/* the share of the flats by band, as one bar */
+function shareBar(D) {
+  const T = D.T; if (!T.total.n) return "";
+  return `<div class="mx-share" role="img" aria-label="Share of flats by band">${T.bands.map((b) => `<i style="width:${b.pn}%;background:${b.rows[Math.floor(b.rows.length / 2)].color}" title="${esc(b.label)}: ${b.n} flats, ${p2(b.pn)}"></i>`).join("")}</div>
+    <div class="mx-sharek">${T.bands.map((b) => `<span><i style="background:${b.rows[Math.floor(b.rows.length / 2)].color}"></i>${esc(b.label)} ${p2(b.pn)}</span>`).join("")}</div>`;
+}
+/* against the brief: the target mix set on 4 · Floors (each floor group's, by its flats), band by band */
+function briefHtml(D) {
+  const want = {}, MAP = { "0": "0", "1": "1", "2": "2", "3": "3" };
+  let W = 0;
+  for (const o of D.L) {
+    const T = (o.x.g.floor && o.x.g.floor.target) || {}, sh = T.shares || {}, tot = Object.values(sh).reduce((a, v) => a + (Number(v) || 0), 0);
+    if (!tot) continue;
+    const flats = (o.r && (o.r.placed || []).length ? o.r.placed.length : (o.mix || []).reduce((a, q) => a + q.n, 0)) * (Number(o.x.g.n) || 1);
+    for (const [k, v] of Object.entries(sh)) want[MAP[k] || k] = (want[MAP[k] || k] || 0) + (Number(v) || 0) / tot * flats;
+    W += flats;
+  }
+  const N = D.T.total.n;
+  const rows = W ? D.T.bands.filter((b) => b.k !== "sp" || want.sp).map((b) => {
+    const t = (want[b.k] || 0) / W * 100, d = b.pn - t, nf = Math.round(t / 100 * N) - b.n;
+    return `<div class="mx-br"><div><b>${esc(b.label)}</b><span>${p2(b.pn)}</span><small>target ${t.toFixed(0)}%</small></div><div class="mx-brbar"><i style="width:${Math.min(100, b.pn)}%"></i><u style="left:${Math.min(100, t)}%"></u></div><small class="${Math.abs(d) < 0.5 ? "ok" : "off"}">${Math.abs(d) < 0.5 ? "on target" : `${Math.abs(d).toFixed(1)} points ${d > 0 ? "over" : "under"}${nf ? ` · ${Math.abs(nf)} flat${Math.abs(nf) > 1 ? "s" : ""} ${nf > 0 ? "short" : "extra"}` : ""}`}</small></div>`;
+  }).join("") : `<p class="muted st-note">No target mix yet: set one for a floor group on 4 · Floors (Target mix), and it is checked here.</p>`;
+  return `<section class="st-card mx-brief"><div class="st-head"><b>Against the brief</b><span class="muted">the target mix</span></div>${rows}
+    <div class="mx-avg"><span>Average saleable</span><b>${N ? saTxt(D.T.total.tot / N) : "–"} ${saUnit()}</b></div></section>`;
+}
+/* the towers: flats and saleable area each, with their domestic floors */
+function towersHtml(D) {
+  if (!D.E.length) return "";
+  const fl = (k) => (k <= 1 ? "G/F" : k - 1 + "/F");
+  const rows = D.E.map((b) => {
+    const dom = b.rows.filter((r) => r.cells && r.cells.some((c) => c.kind === "unit"));
+    const n = dom.reduce((a, r) => a + r.cells.filter((c) => c.kind === "unit").length, 0), sa = dom.reduce((a, r) => a + r.cells.reduce((x, c) => x + (c.kind === "unit" ? c.sa : 0), 0), 0);
+    const nos = dom.map((r) => r.no).filter((x) => x != null);
+    return { name: b.name, floors: nos.length ? `${fl(Math.min(...nos))}–${fl(Math.max(...nos))}` : "", n, sa };
+  });
+  const N = rows.reduce((a, r) => a + r.n, 0), SA = rows.reduce((a, r) => a + r.sa, 0);
+  return `<section class="st-card mx-tow"><div class="st-head"><b>By tower</b></div><table class="mx-towt"><thead><tr><th>Tower</th><th>Flats</th><th>SA ${saUnit()}</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td>${esc(r.name)}<small>${r.floors}</small></td><td>${n0(r.n)}</td><td>${saTxt(r.sa)}</td></tr>`).join("")}
+    <tr class="tot"><td>Total</td><td>${n0(N)}</td><td>${saTxt(SA)}</td></tr></tbody></table></section>`;
+}
 /* the table, as the reference: bands with their rotated label, each type's row in its colour, the band's totals merged */
 function tableHtml(D, can) {
   const T = D.T, U = saUnit();
@@ -137,7 +172,7 @@ function tableHtml(D, can) {
     b.rows.forEach((r, i) => {
       const st = `background:${r.color};color:${X.ink(r.color)}`;
       h += `<tr class="${sp ? "mx-sp" : ""}">`;
-      if (i === 0) h += `<td class="mx-bk" rowspan="${b.rows.length}">${sp ? "" : `<span title="${b.label}: ${b.rows.length} type${b.rows.length > 1 ? "s" : ""}">${b.rows.length > 1 ? `${b.rows.length} TYPE` : b.short}</span>`}</td>`;
+      if (i === 0) h += `<td class="mx-bk${b.rows.length < 3 ? " mx-bk1" : ""}" rowspan="${b.rows.length}">${sp ? "" : `<span title="${b.label}: ${b.rows.length} type${b.rows.length > 1 ? "s" : ""}">${b.rows.length >= 3 ? `${b.rows.length} TYPE` : b.short}</span>`}</td>`;
       h += `<td class="mx-no" style="${st}">${can ? `<label class="mx-sw" title="Change this type's colour"><input type="color" data-x="color" data-u="${esc(r.name)}" value="${r.color}">${r.no}</label>` : r.no}</td>`;
       h += `<td class="mx-nm" style="${st}">${esc(r.name)}</td><td class="n" style="${st}">${saTxt(r.sa)}</td><td class="n" style="${st}">${saTxt(r.tot)}</td><td class="n" style="${st}">${n0(r.n)}</td>`;
       if (i === 0) h += `<td class="n mx-sub" rowspan="${b.rows.length}" style="background:${mid};color:${X.ink(mid)}">${n0(b.n)}</td><td class="n" rowspan="${b.rows.length}">${p2(b.pn)}</td><td class="n" rowspan="${b.rows.length}">${p2(b.pa)}</td>`;

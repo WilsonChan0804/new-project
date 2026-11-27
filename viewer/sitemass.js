@@ -35,6 +35,7 @@ export function init(ctx) {
   layer = C.L.layerGroup();
   const P = $("#st-mpanel");
   P.addEventListener("change", onChange);
+  { const RP = $("#st-mright"); if (RP) { RP.addEventListener("change", onChange); RP.addEventListener("click", onClick); } }
   P.addEventListener("click", onClick);
   P.addEventListener("toggle", (ev) => { const t = ev.target; if (t.dataset && t.dataset.topen != null) { const b = mass().blocks[+t.dataset.topen]; if (b) b.toolsOpen = t.open; } }, true);
   P.addEventListener("contextmenu", (ev) => {
@@ -289,8 +290,8 @@ function panel() {
   const noSite = s.pts.length < 3;
   const capPct = f.gfa ? f.capConc / f.gfa * 100 : 0;
   $("#st-mpanel").innerHTML = `
-    <section class="st-card">
-      <div class="st-head"><b>Massing</b>${can ? `<span class="ms-undo"><button type="button" class="ghost st-ib" data-undo="-1" title="Undo (Ctrl+Z)"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-undo="1" title="Redo (Ctrl+Y)"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button></span>` : ""}<span class="muted" id="ms-saved">${can ? "Saved with the project" : "View only"}</span></div>
+    <section class="st-card ms-lim" data-r="1">
+      <div class="st-head"><b>${esc((SCH.list(C.study()).find((q) => q.id === C.study().schemeOn) || {}).name || "The massing")} against the limits</b>${rows.filter((r) => r.status === "over").length ? `<span class="ms-overn">${rows.filter((r) => r.status === "over").length} over</span>` : ""}${can ? `<span class="ms-undo" hidden><button type="button" class="ghost st-ib" data-undo="-1" title="Undo (Ctrl+Z)"${HI > 0 ? "" : " disabled"}>↶ Undo</button><button type="button" class="ghost st-ib" data-undo="1" title="Redo (Ctrl+Y)"${HI < HIST.length - 1 ? "" : " disabled"}>↷</button></span>` : ""}<span class="muted" id="ms-saved">${can ? "Saved with the project" : "View only"}</span></div>
       ${noSite ? `<p class="st-need">Draw the site boundary first (1 · Site).</p>` : ""}
       <div class="ms-sum">${rows.map(bar).join("")}
         ${(() => { let fl = 0, sa = 0; for (const b of m.blocks) for (const g of b.groups || []) { const x = mixOf(g); fl += x.n * (Number(g.n) || 0); sa += x.sale * (Number(g.n) || 0); } return fl ? `<div class="ms-row"><span>Flats</span><b>${f0(fl)}</b><em>${f0(sa)} m² saleable · ${f1(sa / fl)} m² on average${f.dgfa ? ` · saleable ÷ domestic GFA ${f0(sa / f.dgfa * 100)}%` : ""}</em></div>` : ""; })()}
@@ -299,7 +300,7 @@ function panel() {
         <div class="ms-row ${capPct > 10 ? "over" : ""}"><span>Concessions</span><b>${f0(f.capConc)} <small>m²</small></b><em>under the 10% cap: ${f1(capPct)}% of the GFA${capPct > 10 ? " – over 10%" : ""} · ${f0(f.conc - f.capConc)} m² more exempt (car park, plant, refuge, clubhouse ...)</em></div>
       </div>
     </section>
-    <section class="st-card">
+    <section class="st-card" data-r="1">
       <div class="st-head"><b>Refuge floors</b><label class="st-chk"><input type="checkbox" data-mf="uc6"${m.uc6 ? " checked" : ""}${dis}> Use Classification 6</label></div>
       ${ref}
       <p class="muted st-note">${esc(M.REFUGE.src)}: over ${M.REFUGE.over} storeys above the lowest ground storey - not over ${M.REFUGE.roofUpTo}, a refuge on the roof may do; otherwise refuge floors not more than ${M.REFUGE.every} storeys apart (${M.REFUGE.everyUc6} for UC 6). The refuge floor is not counted, plant storeys are; a transfer plate or an E&M zone that is not a storey is not.</p>
@@ -310,12 +311,35 @@ function panel() {
     ${can && !noSite ? `<div class="st-row ms-add"><button type="button" class="primary" data-ma="podium">+ Podium</button><button type="button" class="ghost" data-ma="tower">+ Tower</button><button type="button" class="ghost" data-ma="example">Example: podium + tower</button></div>` : ""}
     ${m.context.length ? `<section class="st-card"><div class="st-head"><b>Surroundings</b><span class="muted">for the 3D view</span></div>
       <table class="ms-groups"><tbody>${m.context.map((c, i) => `<tr><td>${esc(c.name || "Building " + (i + 1))}</td><td>${f0(S.area(c.fp))} m²</td><td><input type="number" min="0" step="1" data-ctx="${i}" value="${esc(c.h)}"${dis}> m high</td><td>${can ? `<button type="button" class="ghost st-ib" data-ctxdel="${i}">×</button>` : ""}</td></tr>`).join("")}</tbody></table></section>` : ""}
-    <section class="st-card">
+    ${!noSite && m.blocks.length ? stackCard(m) : ""}
+    <section class="st-card" data-r="1">
       <div class="st-head"><b>Export</b></div>
       <div class="st-row"><button type="button" class="ghost" data-mx="obj"${m.blocks.length ? "" : " disabled"}>OBJ (3D)</button><button type="button" class="ghost" data-mx="png">PNG</button><button type="button" class="ghost" data-mx="gbp"${can && f.gfa ? "" : " disabled"}>Send GFA and height to GBP workbook</button></div>
     </section>`;
+  { const P = $("#st-mpanel"), R = $("#st-mright"); if (R) { R.innerHTML = ""; for (const el of [...P.querySelectorAll('[data-r="1"]')]) R.appendChild(el); } }
 }
 
+/* the stack: each building's storeys by use, as a small elevation (the full one in 5 · Mix) */
+function stackCard(m) {
+  const md = model(m), B = M.buildings(md); if (!B.length) return "";
+  const H = Math.max(1, ...B.map((b) => (b.storeys.length ? b.storeys[b.storeys.length - 1].z1 : 0))), K = 150 / H, W = 44, G = 14;
+  const used = new Set();
+  let x = 6, svg = "";
+  for (const b of B) {
+    const seen = new Set();
+    for (const q of b.storeys) {
+      const key = q.block + "|" + q.z0.toFixed(2); if (seen.has(key)) continue; seen.add(key);
+      const u = M.USES[q.use] || {}; used.add(q.use);
+      svg += `<rect x="${x}" y="${(160 - q.z1 * K).toFixed(1)}" width="${W}" height="${Math.max(0.8, (q.z1 - q.z0) * K - 0.4).toFixed(1)}" fill="${u.color || "#ccc"}"><title>${esc(b.top.name || "")} · ${esc(u.label || q.use)}${q.no ? " · storey " + q.no : ""}</title></rect>`;
+    }
+    svg += `<text x="${x + W / 2}" y="174" text-anchor="middle" font-size="9" fill="currentColor">${esc((b.top.name || "").slice(0, 9))}</text>`;
+    x += W + G;
+  }
+  const w = x - G + 6;
+  return `<section class="st-card ms-stack" data-r="1"><div class="st-head"><b>Stack</b><a href="#" data-mtomix class="muted">Full elevation in 5 · Mix ›</a></div>
+    <svg viewBox="0 0 ${w} 180" width="100%" height="180" role="img" aria-label="The buildings' floors by use"><line x1="0" y1="160" x2="${w}" y2="160" stroke="currentColor" stroke-width=".6"/>${svg}</svg>
+    <div class="ms-skey">${[...used].map((k) => `<span><i style="background:${(M.USES[k] || {}).color || "#ccc"}"></i>${esc((M.USES[k] || {}).label || k)}</span>`).join("")}</div></section>`;
+}
 /* a massing's figures for the schemes' table */
 function schemeFig(m0) {
   const s = C.study(), m = m0 || mass(), f = M.figures(model(m), C.siteArea(), s.plan && s.plan.level, m.uc6);
@@ -410,7 +434,7 @@ function blockCard(b, bi, m, dis) {
         <small>every edge moves out the distance; a minus figure moves them in</small></div>
     </details>`}
     ${b.edges ? `<p class="muted st-note">Set-backs: ${b.edges.map((d, i) => `E${i + 1} ${f1(d)} m`).join(" · ")}</p>` : ""}
-    <table class="ms-groups"><thead><tr><th>Use</th><th>No.</th><th>Ht m</th><th title="The share of the floor area counted as GFA">GFA %</th><th title="Concession per floor: area × (1 − GFA %) + extra">Conc.</th><th title="Extra concession per floor (outside the footprint)">+Extra</th><th title="Counts as a storey">St.</th><th></th></tr></thead><tbody>${gr}</tbody></table>
+    <div class="ms-gwrap"><table class="ms-groups"><thead><tr><th>Use</th><th>No.</th><th>Ht m</th><th title="The share of the floor area counted as GFA">GFA %</th><th title="Concession per floor: area × (1 − GFA %) + extra">Conc.</th><th title="Extra concession per floor (outside the footprint)">+Extra</th><th title="Counts as a storey">St.</th><th></th></tr></thead><tbody>${gr}</tbody></table></div>
     ${dis ? "" : `<div class="st-row"><button type="button" class="ghost st-ib" data-gadd="${bi}">+ Floors above</button><button type="button" class="ghost st-ib" data-gtr="${bi}">+ Transfer plate</button><button type="button" class="ghost st-ib" data-bdup="${bi}">Duplicate</button><button type="button" class="ghost st-ib" data-bdel="${bi}">Remove</button></div>`}
   </section>`;
 }
@@ -491,6 +515,7 @@ function footprint(kind, b) {
 }
 
 function onClick(ev) {
+  if (ev.target.closest("[data-mtomix]")) { ev.preventDefault(); const b = document.querySelector('.st-mode [data-mode="mix"]'); if (b) b.click(); return; }
   const t = ev.target.closest("button") || ev.target, m = mass(), d = t.dataset || {};
   const card = ev.target.closest(".ms-block");
   if (card && SEL !== card.dataset.bid && !ev.target.closest("button,input,select")) { SEL = card.dataset.bid; SELG = null; render(); return; }
@@ -589,7 +614,7 @@ function sbdCard(can) {
       <table class="ms-sbdt"><tr><th>Zone</th><th class="n">Plane X</th><th class="n">Plane Y</th></tr>${R.zones.map((z) => `<tr><td>${zl[z.zone] || z.zone}</td>${z.assessed ? cell(z.axis1) + cell(z.axis2) : `<td colspan="2" class="muted">not reached</td>`}</tr>`).join("")}</table>
       <p class="muted st-note">Site ${f0(R.site_area_m2)} m² · Lp ${f1(R.lp && R.lp.projected_m)} m (projected, all buildings)${(R.warnings || []).length ? " · " + R.warnings.map(esc).join(" · ") : ""}</p>
       ${(R.case1 || []).some((c) => c.buildings.length) ? `<table class="ms-sbdt"><tr><th title="Design Requirement (1)(a): the facade length along a street, Lp ≤ 5 × the canyon's U">Street canyon</th><th class="n">Lp</th><th class="n">5U</th></tr>${R.case1.flatMap((c) => c.buildings.map((b) => `<tr class="${b.pass ? "ok" : "bad"}"><td>${zl[c.zone] || c.zone} · ${esc(b.name || b.building)}${b.ctrl_street ? ` <small class="muted">${esc(b.ctrl_street)}</small>` : ""}</td><td class="n">${f1(b.Lp_m)}</td><td class="n">${f1(b.Lp_max_m)}</td></tr>`)).join("")}</table>` : ""}`;
-  return `<section class="st-card ms-sbd">
+  return `<section class="st-card ms-sbd" data-r="1">
       <div class="st-head"><b>SBD · APP-152</b><span class="muted">Sustainable Building Design Guidelines</span></div>
       <h4>Building setback · (1)(b)</h4>
       ${I.edges.length ? `<table class="ms-sbdt"><tr><th>Street</th><th class="n">To centreline</th><th></th></tr>${rows}</table>

@@ -98,6 +98,9 @@ export function init(ctx) {
   const P = $("#st-fpanel");
   P.addEventListener("change", onChange);
   P.addEventListener("click", onClick);
+  // the results on the right: the checks, the core and corridor (the same handlers)
+  const RP = $("#st-fright");
+  if (RP) { RP.addEventListener("change", onChange); RP.addEventListener("click", onClick); RP.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.matches("input")) ev.target.blur(); }); }
   P.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.matches("input")) ev.target.blur(); });
   window.addEventListener("resize", () => ON && drawPlan());
   wirePlan();
@@ -263,6 +266,7 @@ export function show(on) {
   $("#st-fplan").hidden = !on || VIEW === "3d";
   if (!on && $("#st-f3d")) $("#st-f3d").hidden = true;
   document.body.classList.toggle("st-floors", on);
+  if (!on) { const c0 = $("#st-fcap"); if (c0) c0.hidden = true; }
   if (on) render(); else PT.unmount("floors");
 }
 
@@ -357,7 +361,7 @@ function render0() {
   if (!x) {
     P.innerHTML = `<div class="st-card"><h3>4 · Floors</h3><p class="st-note">Draw a block in <b>2 · Massing</b> with a domestic floor group, and give it a <b>unit mix</b> (units from <b>3 · Units</b>). Its typical floor is laid out here.</p></div>`;
     $("#st-fplan").innerHTML = `<div class="un-empty">No domestic floor group yet.</div>`;
-    LAST = null; PT.unmount("floors"); return;
+    LAST = null; PT.unmount("floors"); { const R0 = $("#st-fright"); if (R0) R0.innerHTML = ""; const c0 = $("#st-fcap"); if (c0) c0.hidden = true; } return;
   }
   SEL = x.key;
   const r = LAST = compute(x), o = opts(x);
@@ -396,9 +400,16 @@ function render0() {
       ${F.mic ? `<tr><td>MiC</td><td>${f1(F.mic)} m²</td><td>${o.micPct}% (JPN 8)</td></tr>` : ""}
     </table></details></div>`;
   h += targetCard(x, r, can, open);
-  h += `<details class="st-card" data-card="chk"${open("chk", true)}><summary><b>Checks</b> <small>${r.checks.filter((c) => !c.ok).length ? `<span class="bad">${r.checks.filter((c) => !c.ok).length} to look at</span>` : "all clear"}</small></summary><ul class="fl-checks">${r.checks.map((c) => `<li class="${c.ok ? "ok" : "bad"}"><b>${c.ok ? "✓" : "✗"} ${esc(c.what)}</b><br><small>${esc(c.text)}</small></li>`).join("")}</ul>
-    ${r.left.length ? `<ul class="un-warn">${[...new Set(r.left.map((q) => q.why))].map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}</details>`;
-  h += `<details class="st-card" data-card="set"${open("set", false)}><summary><b>Core and corridor</b></summary><div class="fl-set">
+  {
+    const bad = r.checks.filter((c) => !c.ok).length, good = r.checks.length - bad, clashes = r.placed.map((q, pi) => ({ q, pi })).filter((o) => o.q.flags && o.q.flags.length);
+    const coreBad = r.core.map((c, ci) => ({ c, ci })).filter((o) => o.c.flags && o.c.flags.length);
+    h += `<section class="st-card fl-chk" data-r="1"><div class="st-head"><b>Checks</b></div>
+      <div class="fl-chips"><span class="ok">${good} passed</span>${bad ? `<span class="bad">${bad} to fix</span>` : ""}${clashes.length + coreBad.length ? `<span class="clash">${clashes.length + coreBad.length} clash${clashes.length + coreBad.length > 1 ? "es" : ""}</span>` : ""}</div>
+      ${clashes.length + coreBad.length ? `<div class="fl-clash"><div class="fl-clh"><b>Clashes</b><small class="muted">units overlapping each other, the core or the plate's edge</small></div><ol>${clashes.map((o) => `<li><span>${esc(o.q.name)}: ${esc(o.q.flags[0])}</span><button type="button" data-floc="${o.pi}">Locate</button></li>`).join("")}${coreBad.map((o) => `<li><span>${esc(o.c.label || o.c.kind)}: ${esc(o.c.flags[0])}</span><button type="button" data-flocc="${o.ci}">Locate</button></li>`).join("")}</ol></div>` : ""}
+      <ul class="fl-checks">${r.checks.map((c) => `<li class="${c.ok ? "ok" : "bad"}"><b>${c.ok ? "✓" : "✗"} ${esc(c.what)}</b><br><small>${esc(c.text)}</small></li>`).join("")}</ul>
+      ${r.left.length ? `<ul class="un-warn">${[...new Set(r.left.map((q) => q.why))].map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}</section>`;
+  }
+  h += `<details class="st-card" data-card="set" data-r="1"${open("set", true)}><summary><b>Core and corridor</b></summary><div class="fl-set">
     <label>Corridor ${num("corridor", 0.05, o.corridor, "Clear width, m")} m</label>
     <label>Fit plate: gaps under ${num("fitGap", 0.05, o.fitGap != null && o.fitGap !== "" ? o.fitGap : 0.5, "Fit the plate: gaps and notches narrower than this are closed (m)", 56)} m closed</label>
     <label>Core <select data-fo="core"${dis}><option value="middle"${o.core === "middle" ? " selected" : ""}>in the middle</option><option value="ends"${o.core === "ends" ? " selected" : ""}>staircases at the ends</option><option value="behind"${o.core === "behind" ? " selected" : ""}>staircase behind the lifts</option></select></label>
@@ -415,6 +426,11 @@ function render0() {
     </div>
     <p class="st-note">Lifts: round trip ${r.lifts.rtt} s, ${r.lifts.population} persons (CIBSE Guide D). Staircases: Table B1 / B3.</p></details>`;
   P.innerHTML = h;
+  // the results to the right-hand panel
+  const RPn = $("#st-fright"); if (RPn) { RPn.innerHTML = ""; for (const el of [...P.querySelectorAll('[data-r="1"]')]) RPn.appendChild(el); }
+  // the caption on the plan: which floors, and the scale
+  { const cap = $("#st-fcap"), top = x.top || Number(x.g.n), n0 = Number(x.g.n) || 1, from = top - n0 + 1, fl = (k) => (k <= 1 ? "G/F" : k - 1 + "/F");
+    if (cap) { cap.hidden = false; cap.textContent = `Typical floor · ${n0 > 1 ? fl(from) + "–" + fl(top) : fl(top)} · ${x.b.name || "Block"} · ${n0} floor${n0 > 1 ? "s" : ""}`; } }
   drawPlan();
   if (VIEW === "3d") draw3d();
 }
@@ -489,6 +505,8 @@ function onClick(ev) {
   const d = ev.target.closest("details[data-card]");
   if (d && ev.target.closest("summary")) setTimeout(() => setPref("fl-card-" + d.dataset.card, d.open ? "1" : "0"), 0);
   const t = ev.target.closest("button"); if (!t) return;
+  if (t.dataset.floc != null) { clearSel(); PSEL = +t.dataset.floc; if (VIEW !== "plan") onTool("v:plan"); return drawPlan(); }
+  if (t.dataset.flocc != null) { clearSel(); CSEL = +t.dataset.flocc; if (VIEW !== "plan") onTool("v:plan"); return drawPlan(); }
   if (t.dataset.freset != null) return resetFloor();
   if (t.dataset.ffill != null) return fillTarget();
   if (t.dataset.fuse != null && LAST) {
@@ -1012,7 +1030,7 @@ function drawPlan0() {
   host.style.cursor = cursor;
   g += ME.svg(MEAS, sx, sy);
   host.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" font-family="'Noto Sans HK', 'PingFang HK', sans-serif"><defs><pattern id="fl-rc" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><rect width="5" height="5" fill="#8b9096"/><line x1="0" y1="0" x2="0" y2="5" stroke="#5c6166" stroke-width="1.2"/></pattern><pattern id="fl-blk" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="4" height="4" fill="#fff"/><line x1="0" y1="0" x2="0" y2="4" stroke="#8a8f95" stroke-width="0.6"/></pattern><pattern id="fl-em" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(-45)"><rect width="8" height="8" fill="#f6e7c4"/><line x1="0" y1="0" x2="0" y2="8" stroke="#d9b56a" stroke-width="0.8"/></pattern><pattern id="fl-lx" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-45)"><rect width="7" height="7" fill="#e3edf9"/><line x1="0" y1="0" x2="0" y2="7" stroke="#7fa6d6" stroke-width="0.7"/></pattern><pattern id="fl-ex" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><rect width="7" height="7" fill="#e3f1e3"/><line x1="0" y1="0" x2="0" y2="7" stroke="#8cc28c" stroke-width="0.7"/></pattern>${bgGrid}</defs>${bgGrid ? `<rect width="${bw}" height="${bh}" fill="url(#fl-g5)" pointer-events="none" />` : ""}${g}
-    <text x="12" y="${bh - 12}" font-size="12" fill="#5b6b7b">${F.units} flats · GFA ${f1(F.gfa)} m² of ${f1(F.plate)} m²${SWAP ? " · click the other one to swap with" : ""}</text></svg>${PZ.bar(document.body.classList.contains("st-planfull"))}`;
+    ${SWAP ? `<text x="12" y="${bh - 56}" font-size="12" fill="#5b6b7b">Click the other one to swap with</text>` : ""}</svg>${PZ.bar(document.body.classList.contains("st-planfull"))}`;
   mountBars();
 }
 

@@ -34,7 +34,7 @@ let PICK = null, MEAS = null; // picking edges for a street id; measuring: {a} o
 
 /* the step bar: each step's state under its name, refreshed a moment after a change */
 const STEPS = ["site", "mass", "units", "floors", "mix"], STEPNAME = { site: "Site", mass: "Massing", units: "Units", floors: "Floors", mix: "Mix" };
-const RIGHT = new Set(["units"]);   // the pages with a results panel on the right
+const RIGHT = new Set(["site", "mass", "units", "floors", "mix"]);   // the pages with a results panel on the right
 let MODE = "site", BAR = null, BART = null;
 function barSoon() { clearTimeout(BART); BART = setTimeout(barNow, 500); }
 function barNow() {
@@ -453,13 +453,14 @@ function panel(light) {
       <p class="muted st-note">B(P)R reg. 2: class B is a corner site on two specified streets, class C on three. The pieces of one street are one street; streets meet at a corner on edges side by side, or across a short splay (under ${S.SPLAY} m). A street with no width is taken as ${S.STREET_MIN} m or more; one under ${S.STREET_MIN} m does not count.</p>
     </section>` : ""}
     ${planCards(s, n >= 3 ? (s.target > 0 && ok ? s.target : a) : s.target || null, cls)}
-    <section class="st-card">
+    <section class="st-card" data-r="1">
       <div class="st-head"><b>5 · GBP workbook</b></div>
       <p class="muted st-note">Puts the site area${n >= 3 ? ` (${f3(s.target > 0 && ok ? s.target : a)} m²)` : ""} and the class of site${cls ? ` (${cls.cls})` : ""} into the workbook's step 1, for everyone on the project.</p>
       <div class="st-row"><button type="button" class="primary" id="st-send"${n >= 3 && CAN ? "" : " disabled"}>Send to GBP workbook</button>
       <a class="st-link" id="st-open" href="codes.html?${new URLSearchParams({ project: project(), tab: "gbp", sec: "site" })}">Open GBP workbook ›</a></div>
       ${sentNote()}
     </section>`;
+  { const R = $("#st-sright"); if (R) { R.innerHTML = ""; for (const x of [...el.querySelectorAll('[data-r="1"]')]) R.appendChild(x); } }
 }
 /* ---------- 3 Planning (OZP) and lease, 4 development potential */
 /* the plans known: built in (ozptables.js) and the office list (/api/ozp) */
@@ -547,7 +548,7 @@ function planCards(s, areaM2, cls) {
       ${z && z.note ? `<p class="muted st-note">${esc(z.note)}</p>` : ""}
       ${P ? `<p class="muted st-note">${esc(P.common)} <i>Source: ${esc(P.name)}, ${esc(P.src)}.</i></p>` : `<p class="muted st-note">Read the plan's Notes on the OZP portal and type the restrictions.</p>`}
     </section>
-    <section class="st-card" id="st-pot">
+    <section class="st-card" id="st-pot" data-r="1">
       <div class="st-head"><b>4 · Development potential</b><span class="muted">the strictest governs</span></div>
       ${areaM2 ? "" : `<p class="st-need">Give the site area (step 1) for the GFAs.</p>`}
       <table class="st-pot"><thead><tr><th></th><th>B(P)R</th><th>OZP</th><th>Lease</th><th>Governs</th></tr></thead><tbody>
@@ -562,8 +563,7 @@ function sentNote() {
   const a = S.area(s.pts), same = s.pts.length >= 3 && Math.abs(q.area - (s.target > 0 && Math.abs(a - s.target) < 0.05 ? s.target : a)) < 0.01;
   return `<p class="st-sent ${same ? "good" : "warn"}">The workbook has ${f3(q.area)} m², class ${esc(q.cls || "–")}${same ? "" : " — not the same as here"}.</p>`;
 }
-function wirePanel() {
-  const el = $("#st-panel");
+function wirePanel(el) {
   el.addEventListener("change", (ev) => {
     const t = ev.target, s = study();
     if (t.dataset.zshow != null) { s.zoneOff = !t.checked; drawZoning(); save(); return; }
@@ -870,7 +870,7 @@ function zoningBox(s) {
   const me = await ensureSignedIn();
   header(me);
   if (!project()) { $("#st-panel").innerHTML = `<p class="st-need">Open a project first (Projects).</p>`; return; }
-  initMap(); wireTools(); wirePanel(); wireFind();
+  initMap(); wireTools(); wirePanel($("#st-panel")); wirePanel($("#st-sright")); wireFind();
   try {
     const wb = await api("/api/gbp");
     WB = { rev: wb.rev || 0, data: wb.data || {} };
@@ -931,6 +931,6 @@ function zoningBox(s) {
   UN.init({ study, save, can: () => CAN });
   FL.init({ study, save, can: () => CAN, S });
   MX.init({ study, save, can: () => CAN, S, go: (m) => setMode(m) });
-  if (m0 === "mass" || m0 === "units" || m0 === "floors" || m0 === "mix") setMode(m0);
+  setMode(["mass", "units", "floors", "mix"].includes(m0) ? m0 : "site");
   window.__site = { study, S, map: () => map }; // for the tests
 })();

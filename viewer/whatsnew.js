@@ -6,6 +6,15 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-07", date: "27 Nov 2026",
+    items: [
+      "**The site study, redesigned** (second part): every page now has its results on the right. **1 · Site**: 4 · Development potential (B(P)R, OZP and lease, the strictest marked) and 5 · GBP workbook on the right.",
+      "**2 · Massing**: the figures as **the scheme against the limits** (a badge when any is over), with a small **stack** of each building's uses (its link opens the full elevation in 5 · Mix), refuge floors, APP-152 and Export on the right.",
+      "**4 · Floors**: **Checks** on the right - passed / to fix / clashes as chips, the clashes listed with **Locate** (selects the piece and shows it on the plan), then the core and corridor details; the plan's caption gives the typical floor, its levels and block.",
+      "**5 · Mix**: the exports in the report's header, a share-by-type bar above the table, the elevation as before; on the right **Against the brief** (each type against the floors' target mix: points over or under, flats short or extra, the average saleable) and the flats by tower.",
+    ],
+  },
+  {
     version: "2027-04-06", date: "27 Nov 2026",
     items: [
       "**The site study, redesigned** (first part): a header strip with the five steps - each with its state under its name (the site's area and class, the massing over a limit in amber, the unit types, the floors' clashes, the flats and types) - the scheme you are on, Saved, Undo / Redo and **Next**. Every page has its inputs on the left, the plan in the middle and its results on the right (on a narrower screen behind a Results button; on a phone below).",
