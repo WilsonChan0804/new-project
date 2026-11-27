@@ -6,6 +6,13 @@
 
 export const ENTRIES = [
   {
+    version: "2027-04-10", date: "27 Nov 2026",
+    items: [
+      "**Flats trimmed to fit** on 4 · Floors: where the plate's edge slopes, or at a corridor junction, a flat that does not fit whole at the end of its run is cut to fit - its rooms clipped to the plate (less half its wall) - when it loses no more than the share set in **Core and corridor** (*Trim flats to fit by up to 15 %*; 0: never), each room keeping half its area and its least width at least.",
+      "A trimmed flat is drawn with its true outline, its saleable area and GFA less what it lost; **Checks** lists the trimmed flats with **Locate**; **5 · Mix** gives them a row of their own (*· trimmed*) in their type's band.",
+    ],
+  },
+  {
     version: "2027-04-09", date: "27 Nov 2026",
     items: [
       "**Corridors that branch and loop** on 4 · Floors: the corridor is now a network - a T, an H, a loop or any branching. With the **Corridor** tool (C), start a run on the corridor to branch from it, end it on the corridor to join it (closing a loop or making an H); select the corridor to drag its points, click a leg's + for a bend, right-click a point or a leg to take it out, or to put the core on that leg.",

@@ -19,6 +19,7 @@ const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
 const n = (x, d = 0) => (Number.isFinite(Number(x)) ? Number(x) : d);
 
 export const DEF = {
+  trimPct: 15,          // a flat may be trimmed to the plate (its edge, a junction) by up to this % of its saleable area; 0: never
   corridor: 1.5,        // m, clear width (B(P)R / MoE: at least 1.05 m for a route)
   wideBase: 1.5,        // JPN 1 wider common corridor: the part wider than this ...
   wideMax: 2.4,         // ... up to this width is exempt (check against JPN 1)
@@ -323,7 +324,7 @@ export function layout(o) {
   // each side: its runs, taken from the left end (and with corner units from the right end too, alternately)
   const sides = { s: runs.filter((r) => r.band === "s").map((r) => ({ l: r.x0, r: r.x1 })), n: runs.filter((r) => r.band === "n").map((r) => ({ l: r.x0, r: r.x1 })) };
   const depth = { s: dS, n: dN };
-  const tOf = (u, band, r = 0) => turn(u, (TO_N[entrySide(u)] || 0) + (band === "n" ? 2 : 0) + Math.round(n(r) / 90));
+  const tOf = (u, band, r = 0) => Object.assign(turn(u, (TO_N[entrySide(u)] || 0) + (band === "n" ? 2 : 0) + Math.round(n(r) / 90)), { u0: u });
   const cursor = { s: { i: 0, j: sides.s.length - 1 }, n: { i: 0, j: sides.n.length - 1 } };
   // put a unit of width W at the current run of this end; null when no run of that end has room
   const take = (band, end, t, probe) => {
@@ -331,6 +332,18 @@ export function layout(o) {
     let k = end === "l" ? c.i : c.j;
     while (k >= 0 && k < R.length && (end === "l" ? k <= c.j : k >= c.i)) {
       const run = R[k];
+      // at the run's end, where it does not fit whole (the plate's sloping edge, a junction): trimmed to fit, when it loses little
+      {
+        const x = end === "l" ? run.l : run.r - t.W, y = band === "s" ? y1 + t.wall / 2 : y0 - t.D - t.wall / 2;
+        if (x >= run.l - 1e-6 && x + t.W <= run.r + 0.01 && !insideUnit(r3(x), r3(y), t.rooms, t.wall)) {
+          const tq = trimAt(band, end, t, run);
+          if (tq) {
+            const key = band + ":" + order[band];
+            if (!probe) { if (end === "l") run.l = r3(tq.box.x + t.W + gapOf(t, key)); else run.r = r3(tq.box.x - gapOf(t, key)); if (end === "l") c.i = k; else c.j = k; }
+            return Object.assign(tq.box, { gs: end, gk: key, trim: tq });
+          }
+        }
+      }
       for (let nudge = 0, nn = Math.max(40, Math.ceil((run.r - run.l) / 0.25) + 1); nudge < nn; nudge++) {
         const x = end === "l" ? run.l + nudge * 0.25 : run.r - t.W - nudge * 0.25;
         if (x < run.l - 1e-6 || x + t.W > run.r + 0.01) break;
@@ -348,7 +361,52 @@ export function layout(o) {
     return null;
   };
   const order = { s: 0, n: 0 };
-  const placeAt = (u, band, box, t, e, si) => placed.push(Object.assign({ u, name: u.name, band, fig: figOf(u), si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors, ops: t.ops, fixtures: t.fixtures, wt: t.wall }));
+  // a flat trimmed to fit: its rooms clipped to the plate's part (less half its wall), each room kept at half its area and its
+  // least width at least, the whole losing at most trimPct of its saleable area -> {box, rooms (in the flat's frame), lost} or null
+  const trimPct = n(p.trimPct, 15), REG = (() => {
+    if (!(trimPct > 0)) return null;
+    let P0 = F.poly.map((q) => q.slice()); if (area(P0) < 0) P0.reverse();
+    return U.convexParts(P0);
+  })();
+  const trimAt = (band, end, t, run) => {
+    if (!REG || run.r - run.l < t.W - 0.01) return null;
+    const x = end === "l" ? run.l : run.r - t.W, y = band === "s" ? y1 + t.wall / 2 : y0 - t.D - t.wall / 2;
+    const box = { x: r3(x), y: r3(y), w: t.W, h: t.D }, h = t.wall / 2;
+    // the part of the plate holding the flat's middle, set in by half its wall
+    const cx = box.x + t.W / 2, cy = box.y + t.D / 2;
+    let part = REG.find((q) => inPoly(q, cx, cy)) || REG.reduce((m2, q) => (Math.abs(area(q)) > Math.abs(area(m2)) ? q : m2), REG[0]);
+    for (let i = 0, P = part.slice(); i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nv = [-(b[1] - a[1]) / L, (b[0] - a[0]) / L]; part = WC.clipHalf(part, [a[0] + nv[0] * h, a[1] + nv[1] * h], nv); if (part.length < 3) return null; }
+    if (area(part) < 0) part = part.slice().reverse();
+    let lost = 0, cut = false;
+    const rooms = [];
+    for (const rm of t.rooms) {
+      const P = rm.pts ? rm.pts.map((q) => [box.x + q[0], box.y + q[1]]) : [[box.x + rm.x, box.y + rm.y], [box.x + rm.x + rm.w, box.y + rm.y], [box.x + rm.x + rm.w, box.y + rm.y + rm.h], [box.x + rm.x, box.y + rm.y + rm.h]];
+      const a0 = Math.abs(area(P)), C = U.clipConvex(P, part), a1 = C.length >= 3 ? Math.abs(area(C)) : 0;
+      if (a1 < a0 - 1e-4) cut = true;
+      if (a1 < a0 * 0.5 - 1e-6) return null;
+      const min = (U.KINDS[rm.kind] || {}).min || 0.8;
+      if (a1 < a0 - 1e-4 && U.minWidth(C) < Math.min(min, Math.min(rm.w, rm.h)) - 1e-6) return null;
+      lost += a0 - a1;
+      rooms.push(a1 < a0 - 1e-4 ? U.setPts(Object.assign({}, rm), C.map((q) => [r3(q[0] - box.x), r3(q[1] - box.y)])) : rm);
+    }
+    if (!cut) return null;
+    const sale = (figOf(t.u0 || {}) || {}).saleable || t.rooms.reduce((s2, rm) => s2 + rm.w * rm.h, 0);
+    if (lost > sale * trimPct / 100 + 1e-6) return null;
+    // clear of what the other legs hold
+    if (BLK.length && rooms.some((rm) => { const q = (rm.pts || [[rm.x, rm.y], [rm.x + rm.w, rm.y], [rm.x + rm.w, rm.y + rm.h], [rm.x, rm.y + rm.h]]).map((v) => [box.x + v[0], box.y + v[1]]); return U.convexParts(q).some((cp) => BLK.some((b) => quadsOverlap(cp, b))); })) return null;
+    return { box, rooms, lost: r3(lost) };
+  };
+  const placeAt = (u, band, box0, t0, e, si) => {
+    const tr = box0.trim, box = Object.assign({}, box0); delete box.trim;
+    let t = t0, fig = figOf(u);
+    if (tr) {
+      // the fittings standing in what is left; the figures less what is lost
+      const inR = (fx) => { const c = [fx.x + fx.w / 2, fx.y + fx.h / 2]; return tr.rooms.some((rm) => (rm.pts ? inPoly(rm.pts, c[0], c[1]) : c[0] > rm.x && c[0] < rm.x + rm.w && c[1] > rm.y && c[1] < rm.y + rm.h)); };
+      t = Object.assign({}, t0, { rooms: tr.rooms, fixtures: (t0.fixtures || []).filter(inR) });
+      fig = Object.assign({}, fig, { saleable: r3(fig.saleable - tr.lost), gfa: r3(fig.gfa - tr.lost), internal: r3(Math.max(0, fig.internal - tr.lost)), saleableFt: Math.round((fig.saleable - tr.lost) * U.M2_FT2), trimmed: tr.lost });
+    }
+    placed.push(Object.assign({ u, name: u.name, band, fig, si: si != null ? si : order[band]++, m: !!(e && e.m), r: (e && n(e.r)) || 0, fixed: !!(e && e.x != null), entry: e || { u: u.name, m: false } }, box, { rooms: t.rooms, extras: t.extras, doors: t.doors, ops: t.ops, fixtures: t.fixtures, wt: t.wall }, tr ? { trim: { lost: tr.lost } } : {}));
+  };
   if (SEQ) {
     // units put by hand (x given) first, where they were put; the runs keep clear of them
     for (const band of ["s", "n"]) {
@@ -491,6 +549,8 @@ export function layout(o) {
     { what: "Clashes", ok: !issues.length, text: issues.length ? issues.slice(0, 6).join("; ") + (issues.length > 6 ? ` … ${issues.length - 6} more` : "") : "none: inside the plate, nothing overlapping" },
   ];
   if (between != null) checks.push({ what: "Between the staircases", ok: between <= tr.between, text: `${between} m, at most ${tr.between} m (B11.3(b))` });
+  const trimmed = placed.filter((q) => q.trim);
+  if (trimmed.length) checks.push({ what: "Flats trimmed to fit", ok: true, trim: true, text: trimmed.map((q) => `${q.name} −${q.trim.lost.toFixed(2)} m²`).join("; ") + ` (each at most ${n(p.trimPct, 15)}% of its saleable area)` });
   return {
     seq: SEQ ? { s: SEQ.s.map((e) => Object.assign({}, e)), n: SEQ.n.map((e) => Object.assign({}, e)) } : seqOut, edited: !!SEQ, note, cornerFac: r3(cornerFac),
     jpn1: { lobby: llob, corrW: r3(exCorrW), lobW: r3(exLobW), corrLen: r3(Math.max(0, corrLen - lobLen)), lobLen: r3(lobLen) },
@@ -662,6 +722,7 @@ export function layoutLegs(o) {
   checks.push({ what: "Travel: flat door to a staircase (B11)", ok: worst.d <= (worst.lim || tr.max) + 1e-9, text: placedN ? `${worst.d} m along the corridor from ${worst.name}${worst.dead ? ", in a dead end" : ""}, limit ${worst.lim || tr.max} m` : "–" });
   checks.push({ what: "Units placed", ok: placedN >= wantN, text: wantN ? `${placedN} of ${wantN} on ${legs.length} legs` : `${placedN} placed by hand on ${legs.length} legs (no unit mix)` });
   checks.push({ what: "Clashes", ok: !issues.length, text: issues.length ? issues.slice(0, 6).join("; ") + (issues.length > 6 ? ` … ${issues.length - 6} more` : "") : "none: inside the plate, nothing overlapping" });
+  { const tq = legs.flatMap((l) => l.r.placed.filter((q) => q.trim)); if (tq.length) checks.push({ what: "Flats trimmed to fit", ok: true, trim: true, text: tq.map((q) => `${q.name} −${q.trim.lost.toFixed(2)} m²`).join("; ") + ` (each at most ${n(p.trimPct, 15)}% of its saleable area)` }); }
   if (SP.length >= 2) checks.push({ what: "Between the staircases", ok: spread <= tr.between, text: `${r3(spread)} m along the corridor, at most ${tr.between} m (B11.3(b))` });
   const jp = (k) => legs.reduce((s2, l) => s2 + (Number(l.r.jpn1[k]) || 0), 0);
   return Object.assign({}, C0, {
@@ -1249,6 +1310,15 @@ void outlineOf;
 export function unitInside(poly, x, y, rooms, wall) {
   const g = (wall || 0) / 2 - 0.06;
   for (const r of rooms) {
+    if (r.pts) {
+      // a trimmed (polygon) room: its edges, a little in from them, every metre
+      const P = r.pts, c = P.reduce((m2, q) => [m2[0] + q[0] / P.length, m2[1] + q[1] / P.length], [0, 0]);
+      for (let k = 0; k < P.length; k++) {
+        const a = P[k], b = P[(k + 1) % P.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]), m2 = Math.max(1, Math.ceil(L));
+        for (let i = 0; i <= m2; i++) { const q = [a[0] + (b[0] - a[0]) * i / m2, a[1] + (b[1] - a[1]) * i / m2], d = Math.hypot(c[0] - q[0], c[1] - q[1]) || 1, s2 = 0.06 / d; if (!inPoly(poly, x + q[0] + (c[0] - q[0]) * s2, y + q[1] + (c[1] - q[1]) * s2)) return false; }
+      }
+      continue;
+    }
     const x0 = x + r.x - g, y0 = y + r.y - g, x1 = x + r.x + r.w + g, y1 = y + r.y + r.h + g;
     const nx = Math.max(1, Math.ceil(x1 - x0)), ny = Math.max(1, Math.ceil(y1 - y0));
     for (let i = 0; i <= nx; i++) for (const yy of [y0, y1]) if (!inPoly(poly, x0 + (x1 - x0) * i / nx, yy)) return false;

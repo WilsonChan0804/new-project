@@ -15,6 +15,8 @@ export const BANDS = [
   { k: "3", label: "3-BR", short: "3-BR" },
   { k: "sp", label: "Special unit", short: "SPECIAL" },
 ];
+/* a flat trimmed to fit the plate: its own row, named so */
+export const TRIM = " · trimmed";
 /* a unit's band: set on the unit (Units page, "Mix band"), else by its bedrooms */
 export function band(u) {
   const b = u && u.band;
@@ -52,7 +54,7 @@ export function ring(r) {
   const at = (l, x) => off.get(l.k) + x;
   const N = [], S = [];
   for (const l of legs) for (const q of l.r.placed || []) {
-    const c = { kind: "unit", name: q.name, sa: q.fig ? Number(q.fig.saleable) || 0 : 0, key: at(l, q.x + q.w / 2), band: q.band };
+    const c = { kind: "unit", name: q.trim ? q.name + TRIM : q.name, sa: q.fig ? Number(q.fig.saleable) || 0 : 0, key: at(l, q.x + q.w / 2), band: q.band };
     (q.band === "n" ? N : S).push(c);
   }
   N.sort((a, b) => a.key - b.key); S.sort((a, b) => b.key - a.key);
@@ -77,7 +79,7 @@ export function table(rows, lib, over) {
     o.n += Number(r.n) || 0;
     by.set(r.name, o);
   }
-  const find = (nm) => (lib || []).find((u) => u.name === nm);
+  const find = (nm) => (lib || []).find((u) => u.name === nm || u.name + TRIM === nm);
   const all = [...by.values()].filter((r) => r.n > 0).map((r) => Object.assign(r, { band: band(find(r.name) || {}), tot: r.sa * r.n }));
   const N = all.reduce((s, r) => s + r.n, 0), T = all.reduce((s, r) => s + r.tot, 0);
   const bands = [];
@@ -105,7 +107,7 @@ export function rowsOf(groups, saOf) {
   for (const G of groups || []) {
     const floors = Math.max(0, Math.round(Number(G.floors) || 0));
     if (!floors) continue;
-    if (G.r) for (const q of G.r.placed || []) out.push({ name: q.name, sa: saOf ? saOf(q.u || q.name, q) : (q.fig ? q.fig.saleable : 0), n: floors });
+    if (G.r) for (const q of G.r.placed || []) out.push({ name: q.trim ? q.name + TRIM : q.name, sa: saOf ? saOf(q.u || q.name, q) : (q.fig ? q.fig.saleable : 0), n: floors });
     else for (const m of G.mix || []) if (m.u) out.push({ name: m.u.name, sa: saOf ? saOf(m.u) : 0, n: floors * (Number(m.n) || 0) });
   }
   return out;

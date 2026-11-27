@@ -477,5 +477,23 @@ ok(ends.stairsX[0] < 3 && ends.stairsX[1] > 87, "staircases at the ends");
   const st = F.migrateNet(T, { nodes: [[2, 8.5], [58, 8.5]], edges: [[0, 1]] }, true);
   ok(st.seq && !st.legSeq && st.pieces.every((c) => c.leg == null), "onto one straight corridor: a plain seq, as layout() reads it");
 }
+// ---------- flats trimmed to fit: a plate with sloping ends ----------
+{
+  const mx = [{ u: TEMPLATES["2R-B"], n: 6 }, { u: TEMPLATES["1R-B"], n: 6 }];
+  const poly = [[0, 0], [52, 0], [52, 17], [3, 17]];
+  const off = F.layout({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, trimPct: 0 });
+  const on = F.layout({ poly, frame: { ux: 1, uy: 0 }, mix: mx, storeys: 30, persons: 3, trimPct: 15 });
+  const tq = on.placed.filter((q) => q.trim);
+  ok(off.placed.every((q) => !q.trim) && on.placed.length >= off.placed.length && tq.length >= 1, `trimming on: ${on.placed.length} flats (${tq.length} trimmed), off: ${off.placed.length}`);
+  ok(tq.every((q) => q.trim.lost > 0 && q.trim.lost <= q.fig.saleable / 0.85 * 0.15 + 1e-6 && q.rooms.some((rm) => rm.pts)), "each trimmed flat loses at most 15%, its cut rooms polygons");
+  ok(tq.every((q) => Math.abs(q.fig.saleable - (F.layout({ poly: [[0, 0], [200, 0], [200, 17], [0, 17]], frame: { ux: 1, uy: 0 }, mix: [{ u: q.u, n: 1 }], storeys: 30 }).placed[0].fig.saleable - q.trim.lost)) < 1e-6), "its saleable area the type's less what is lost");
+  ok(!on.issues.length, "none outside the plate or overlapping: " + on.issues.slice(0, 3).join("; "));
+  ok(on.checks.some((c) => c.trim && /trimmed/.test(c.what)), "the checks list the trimmed flats");
+  const X = await import("../mixcore.js");
+  const rows = X.rowsOf([{ floors: 10, r: on }], (u, q) => q.fig.saleable);
+  ok(rows.some((r) => / · trimmed$/.test(r.name)), "the mix: a trimmed flat its own row");
+  const T = X.table(rows, [TEMPLATES["2R-B"], TEMPLATES["1R-B"]]);
+  ok(T.bands.flatMap((b) => b.rows).filter((r) => / · trimmed$/.test(r.name)).every((r) => r.band === "1" || r.band === "2"), "in its type's band");
+}
 console.log(fails ? fails + " FAILED" : "all passed");
 process.exit(fails ? 1 : 0);
